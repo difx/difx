@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: util.h 4795 2012-09-06 20:21:51Z WalterBrisken $
+ * $Id$
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
- * $LastChangedRevision: 4795 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2012-09-06 14:21:51 -0600 (Thu, 06 Sep 2012) $
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 

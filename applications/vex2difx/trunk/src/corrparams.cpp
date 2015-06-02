@@ -1608,7 +1608,7 @@ void AntennaSetup::copyGlobalZoom(const GlobalZoom &globalZoom)
 	}
 }
 
-bool AntennaSetup::hasBasebandFile(const VexInterval &interval) const
+bool AntennaSetup::hasBasebandFile(const Interval &interval) const
 {
 	for(std::vector<VexBasebandFile>::const_iterator it = basebandFiles.begin(); it != basebandFiles.end(); ++it)
 	{

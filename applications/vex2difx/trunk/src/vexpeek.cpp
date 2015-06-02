@@ -74,7 +74,7 @@ double totalDiskUsageGB(const VexData *V, const std::string &antName)
 			continue;
 		}
 
-		const VexInterval *I = scan->getAntennaInterval(antName);
+		const Interval *I = scan->getAntennaInterval(antName);
 		if(!I)
 		{
 			continue;
@@ -100,20 +100,20 @@ double totalDiskUsageGB(const VexData *V, const std::string &antName)
 
 void antennaSummary(const VexData *V, int doFormat, int doUsage)
 {
-	std::map<std::string,VexInterval> as;
+	std::map<std::string,Interval> as;
 	std::map<std::string,std::string> af;
 
 	for(unsigned int s = 0; s < V->nScan(); ++s)
 	{
 		const VexScan *scan = V->getScan(s);
 
-		for(std::map<std::string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 		{
-			const VexInterval &vi = it->second;
+			const Interval &vi = it->second;
 
 			if(as.count(it->first) == 0)
 			{
-				as[it->first] = VexInterval(vi);
+				as[it->first] = Interval(vi);
 
 				// get format
 				const VexMode *M = V->getModeByDefName(scan->modeDefName);
@@ -144,7 +144,7 @@ void antennaSummary(const VexData *V, int doFormat, int doUsage)
 
 	std::cout.precision(13);
 
-	for(std::map<std::string,VexInterval>::const_iterator it = as.begin(); it != as.end(); ++it)
+	for(std::map<std::string,Interval>::const_iterator it = as.begin(); it != as.end(); ++it)
 	{
 		std::cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop;
 		if(doFormat)

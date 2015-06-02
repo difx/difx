@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2014 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2015 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -79,60 +79,6 @@ bool operator<(const VexEvent &a, const VexEvent &b)
 	}
 
 	return a.name < b.name;
-}
-
-// returns a negative number if no overlap
-double VexInterval::overlap(const VexInterval &v) const
-{
-	return std::min(mjdStop, v.mjdStop) - std::max(mjdStart, v.mjdStart);
-}
-
-void VexInterval::logicalAnd(double start, double stop)
-{
-	if(mjdStart < start)
-	{
-		mjdStart = start;
-	}
-	if(mjdStop > stop)
-	{
-		mjdStop = stop;
-	}
-}
-
-void VexInterval::logicalAnd(const VexInterval &v)
-{
-	if(mjdStart < v.mjdStart)
-	{
-		mjdStart = v.mjdStart;
-	}
-	if(mjdStop > v.mjdStop)
-	{
-		mjdStop = v.mjdStop;
-	}
-}
-
-void VexInterval::logicalOr(double start, double stop)
-{
-	if(mjdStart > start)
-	{
-		mjdStart = start;
-	}
-	if(mjdStop < stop)
-	{
-		mjdStop = stop;
-	}
-}
-
-void VexInterval::logicalOr(const VexInterval &v)
-{
-	if(mjdStart > v.mjdStart)
-	{
-		mjdStart = v.mjdStart;
-	}
-	if(mjdStop < v.mjdStop)
-	{
-		mjdStop = v.mjdStop;
-	}
 }
 
 void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz)
@@ -821,7 +767,7 @@ void VexJob::assignVSNs(const VexData &V)
 	for(std::vector<std::string>::const_iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		const VexScan* S = V.getScanByDefName(*s);
-		for(std::map<std::string,VexInterval>::const_iterator a = S->stations.begin(); a != S->stations.end(); ++a)
+		for(std::map<std::string,Interval>::const_iterator a = S->stations.begin(); a != S->stations.end(); ++a)
 		{
 			if(find(antennas.begin(), antennas.end(), a->first) == antennas.end())
 			{
@@ -1105,7 +1051,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 
 					exit(EXIT_FAILURE);
 				}
-				for(std::map<std::string,VexInterval>::const_iterator sa = scan->stations.begin(); sa != scan->stations.end(); ++sa)
+				for(std::map<std::string,Interval>::const_iterator sa = scan->stations.begin(); sa != scan->stations.end(); ++sa)
 				{
 					if(antIds.count(sa->first) == 0)
 					{
@@ -1127,7 +1073,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 
 					exit(EXIT_FAILURE);
 				}
-				for(std::map<std::string,VexInterval>::const_iterator sa = scan->stations.begin(); sa != scan->stations.end(); ++sa)
+				for(std::map<std::string,Interval>::const_iterator sa = scan->stations.begin(); sa != scan->stations.end(); ++sa)
 				{
 					if(antIds.count(sa->first) == 0)
 					{
@@ -1229,7 +1175,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 	return flags.size();
 }
 
-void VexJobGroup::createJobs(std::vector<VexJob> &jobs, VexInterval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const
+void VexJobGroup::createJobs(std::vector<VexJob> &jobs, Interval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const
 {
 	std::list<VexEvent>::const_iterator s, e;
 	jobs.push_back(VexJob());
@@ -1257,7 +1203,7 @@ void VexJobGroup::createJobs(std::vector<VexJob> &jobs, VexInterval &jobTimeRang
 
 				exit(EXIT_FAILURE);
 			}
-			VexInterval scanTimeRange(s->mjd, e->mjd);
+			Interval scanTimeRange(s->mjd, e->mjd);
 			scanTimeRange.logicalAnd(jobTimeRange);
 			if(scanTimeRange.duration() > 0.0)
 			{
@@ -1324,7 +1270,7 @@ const VexScan *VexData::getScanByAntennaTime(const std::string &antName, double 
 {
 	for(std::vector<VexScan>::const_iterator it = scans.begin(); it != scans.end(); ++it)
 	{
-		const VexInterval *interval = it->getAntennaInterval(antName);
+		const Interval *interval = it->getAntennaInterval(antName);
 		if(interval)
 		{
 			if(interval->contains(mjd))
@@ -1347,7 +1293,7 @@ unsigned int VexScan::nAntennasWithRecordedData(const VexData *V) const
 		return 0;
 	}
 
-	for(std::map<std::string,VexInterval>::const_iterator it = stations.begin(); it != stations.end(); ++it)
+	for(std::map<std::string,Interval>::const_iterator it = stations.begin(); it != stations.end(); ++it)
 	{
 		std::map<std::string,VexSetup>::const_iterator S = M->setups.find(it->first);
 		if(S != M->setups.end() && S->second.nRecordChan > 0 && S->second.formatName != "NONE" && getRecordEnable(it->first) == true)
@@ -1393,9 +1339,9 @@ bool VexScan::getRecordEnable(const std::string &antName) const
 	}
 }
 
-const VexInterval *VexScan::getAntennaInterval(const std::string &antName) const
+const Interval *VexScan::getAntennaInterval(const std::string &antName) const
 {
-	std::map<std::string,VexInterval>::const_iterator it = stations.find(antName);
+	std::map<std::string,Interval>::const_iterator it = stations.find(antName);
 	if(it != stations.end())
 	{
 		return &it->second;
@@ -1713,7 +1659,7 @@ unsigned int VexData::nVSN(const std::string &antName) const
 	}
 }
 
-void VexData::addVSN(const std::string &antName, const std::string &vsn, const VexInterval &timeRange)
+void VexData::addVSN(const std::string &antName, const std::string &vsn, const Interval &timeRange)
 {
 	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
@@ -1725,7 +1671,7 @@ void VexData::addVSN(const std::string &antName, const std::string &vsn, const V
 	}
 }
 
-std::string VexData::getVSN(const std::string &antName, const VexInterval &timeRange) const
+std::string VexData::getVSN(const std::string &antName, const Interval &timeRange) const
 {
 	const VexAntenna *A;
 	double best = 0.0;
@@ -1755,7 +1701,7 @@ std::string VexData::getVSN(const std::string &antName, const VexInterval &timeR
 	return bestVSN;
 }
 
-void VexData::setExper(const std::string &name, const VexInterval &experTimeRange)
+void VexData::setExper(const std::string &name, const Interval &experTimeRange)
 {
 	double a=1.0e7, b=0.0;
 
@@ -1836,7 +1782,7 @@ void VexData::addBreaks(const std::vector<double> &breaks)
 	}
 }
 
-std::ostream& operator << (std::ostream &os, const VexInterval &x)
+std::ostream& operator << (std::ostream &os, const Interval &x)
 {
 	int p = os.precision();
 
@@ -1865,12 +1811,12 @@ std::ostream& operator << (std::ostream &os, const VexSource &x)
 std::ostream& operator << (std::ostream &os, const VexScan &x)
 {
 	os << "Scan " << x.defName << 
-		"\n  timeRange=" << (const VexInterval&)x <<
+		"\n  timeRange=" << (const Interval&)x <<
 		"\n  mode=" << x.modeDefName <<
 		"\n  source=" << x.sourceDefName << 
 		"\n  size=" << x.size << " bytes \n";
 
-	for(std::map<std::string,VexInterval>::const_iterator iter = x.stations.begin(); iter != x.stations.end(); ++iter)
+	for(std::map<std::string,Interval>::const_iterator iter = x.stations.begin(); iter != x.stations.end(); ++iter)
 	{
 		os << "  " << iter->first << " range=" << iter->second << std::endl;
 	}
@@ -1991,7 +1937,7 @@ std::ostream& operator << (std::ostream &os, const VexEOP &x)
 
 std::ostream& operator << (std::ostream &os, const VexBasebandFile &x)
 {
-	os << "Baseband(" << x.filename << ", " << (const VexInterval&)x << ")";
+	os << "Baseband(" << x.filename << ", " << (const Interval&)x << ")";
 
 	return os;
 }
@@ -2002,7 +1948,7 @@ std::ostream& operator << (std::ostream &os, const VexJob &x)
 	
 	os.precision(12);
 	os << "Job " << x.jobSeries << "_" << x.jobId << std::endl;
-	os << "  " << (const VexInterval&)x << std::endl;
+	os << "  " << (const Interval&)x << std::endl;
 	os << "  duty cycle = " << x.dutyCycle << std::endl;
 	os << "  scans =";
 	for(std::vector<std::string>::const_iterator s = x.scans.begin(); s != x.scans.end(); ++s)
@@ -2026,7 +1972,7 @@ std::ostream& operator << (std::ostream &os, const VexJobGroup &x)
 	int p = os.precision();
 	
 	os.precision(12);
-	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << (const VexInterval &)x << std::endl;
+	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << (const Interval &)x << std::endl;
 	os.precision(p);
 	
 	return os;

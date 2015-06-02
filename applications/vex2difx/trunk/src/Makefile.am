@@ -14,6 +14,8 @@ vex2difx_SOURCES = \
 	corrparams.cpp \
 	freq.h \
 	freq.cpp \
+	interval.h \
+	interval.cpp \
 	makejobs.h \
 	makejobs.cpp \
 	mediachange.h \
@@ -35,6 +37,8 @@ vexpeek_SOURCES = \
 	corrparams.h \
 	timeutils.h \
 	timeutils.cpp \
+	interval.h \
+	interval.cpp \
 	util.h \
 	util.cpp \
 	vexpeek.cpp

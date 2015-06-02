@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2014 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2015 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,6 +36,7 @@
 #include <iostream>
 #include <map>
 #include <difxio.h>
+#include "interval.h"
 
 extern const double RAD2ASEC;
 
@@ -76,43 +77,16 @@ public:
 	VexEvent(double m, enum EventType e, const std::string &a, const std::string &b) : mjd(m), eventType(e), name(a), scan(b) {}
 };
 
-class VexInterval
-{
-public:
-	double mjdStart;
-	double mjdStop;
-
-	VexInterval(double start=0.0, double end=0.0) : mjdStart(start), mjdStop(end) {}
-	VexInterval(const VexInterval &vi) : mjdStart(vi.mjdStart), mjdStop(vi.mjdStop) {}
-	double duration() const { return mjdStop-mjdStart; }
-	double duration_seconds() const { return 86400.0*(mjdStop-mjdStart); }
-	double overlap(const VexInterval &v) const;
-	double overlap_seconds(const VexInterval &v) const { return 86400.0*overlap(v); }
-	double center() const { return 0.5*(mjdStart+mjdStop); }
-	void shift(double deltaT) { mjdStart += deltaT; mjdStop += deltaT; }
-	void setTimeRange(double start, double stop) { mjdStart = start; mjdStop = stop; }
-	void setTimeRange(const VexInterval &v) { mjdStart = v.mjdStart; mjdStop = v.mjdStop; }
-	void logicalAnd(double start, double stop);
-	void logicalAnd(const VexInterval &v);
-	void logicalOr(double start, double stop);
-	void logicalOr(const VexInterval &v);
-	bool contains(double mjd) const { return (mjdStart <= mjd) && (mjd <= mjdStop); }
-	bool contains(const VexInterval &v) const { return (mjdStart <= v.mjdStart) && (mjdStop >= v.mjdStop); }
-	bool containsAbsolutely(double mjd) const { return (mjdStart < mjd) && (mjd < mjdStop); }
-	bool containsAbsolutely(const VexInterval &v) const { return (mjdStart < v.mjdStart) && (mjdStop > v.mjdStop); }
-	bool isCausal() const { return (mjdStart <= mjdStop); }
-};
-
-class VexBasebandFile : public VexInterval
+class VexBasebandFile : public Interval
 {
 	public:
 	std::string filename;
 
-	VexBasebandFile(const std::string &name, const VexInterval &timeRange) : VexInterval(timeRange), filename(name) {} 
-	VexBasebandFile(const std::string &name, double start=-1.0e9, double stop=1.0e9) : VexInterval(start, stop), filename(name) {}
+	VexBasebandFile(const std::string &name, const Interval &timeRange) : Interval(timeRange), filename(name) {} 
+	VexBasebandFile(const std::string &name, double start=-1.0e9, double stop=1.0e9) : Interval(start, stop), filename(name) {}
 };
 
-class VexScan : public VexInterval
+class VexScan : public Interval
 {
 public:
 	std::string defName;				// name of this scan
@@ -120,7 +94,7 @@ public:
 
 	std::string modeDefName;
 	std::string sourceDefName;	
-	std::map<std::string,VexInterval> stations;
+	std::map<std::string,Interval> stations;
 	std::map<std::string,bool> recordEnable;	// This is true of the drive number is non-zero
 	std::string corrSetupName;			// points to CorrSetup entry
 	double size;					// [bytes] approx. correlated size
@@ -129,7 +103,7 @@ public:
 	VexScan(): size(0), mjdVex(0.0) {};
 	unsigned int nAntennasWithRecordedData(const VexData *V) const;
 	unsigned int nRecordChan(const VexData *V, const std::string &antName) const;
-	const VexInterval *getAntennaInterval(const std::string &antName) const;
+	const Interval *getAntennaInterval(const std::string &antName) const;
 	bool getRecordEnable(const std::string &antName) const;
 };
 
@@ -292,18 +266,18 @@ public:
 	int setkv(const std::string &key, const std::string &value);
 };
 
-class VexExper : public VexInterval
+class VexExper : public Interval
 {
 public:
-	VexExper() : VexInterval(0.0, 1000000.0) {}
+	VexExper() : Interval(0.0, 1000000.0) {}
 
 	std::string name;
 };
 
-class VexJob : public VexInterval
+class VexJob : public Interval
 {
 public:
-	VexJob() : VexInterval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1), dutyCycle(1.0), dataSize(0.0) {}
+	VexJob() : Interval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1), dutyCycle(1.0), dataSize(0.0) {}
 
 	void assignVSNs(const VexData &V);
 	std::string getVSN(const std::string &antName) const;
@@ -322,7 +296,7 @@ public:
 	double dataSize;		// [bytes] estimate of data output size
 };
 
-class VexJobFlag : public VexInterval
+class VexJobFlag : public Interval
 {
 public:
 	static const unsigned int JOB_FLAG_RECORD = 1 << 0;
@@ -330,12 +304,12 @@ public:
 	static const unsigned int JOB_FLAG_TIME   = 1 << 2;
 	static const unsigned int JOB_FLAG_SCAN   = 1 << 3;
 	VexJobFlag() : antId(-1) {}
-	VexJobFlag(double start, double stop, int ant) : VexInterval(start, stop), antId(ant) {}
+	VexJobFlag(double start, double stop, int ant) : Interval(start, stop), antId(ant) {}
 
 	int antId;
 };
 
-class VexJobGroup : public VexInterval
+class VexJobGroup : public Interval
 {
 public:
 	std::vector<std::string> scans;
@@ -343,7 +317,7 @@ public:
 
 	bool hasScan(const std::string &scanName) const;
 	void genEvents(const std::list<VexEvent> &eventList);
-	void createJobs(std::vector<VexJob> &jobs, VexInterval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const;
+	void createJobs(std::vector<VexJob> &jobs, Interval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const;
 };
 
 class VexData
@@ -419,8 +393,8 @@ public:
 	bool usesMode(const std::string &modeDefName) const;
 
 	unsigned int nVSN(const std::string &antName) const;
-	void addVSN(const std::string &antName, const std::string &vsn, const VexInterval &timeRange);
-	std::string getVSN(const std::string &antName, const VexInterval &timeRange) const;
+	void addVSN(const std::string &antName, const std::string &vsn, const Interval &timeRange);
+	std::string getVSN(const std::string &antName, const Interval &timeRange) const;
 
 	unsigned int nEvent() const { return events.size(); }
 	const std::list<VexEvent> *getEvents() const;
@@ -429,11 +403,11 @@ public:
 	void sortEvents();
 
 	const VexExper *getExper() const { return &exper; }
-	void setExper(const std::string &name, const VexInterval &experTimeRange);
+	void setExper(const std::string &name, const Interval &experTimeRange);
 };
 
 bool operator < (const VexEvent &a, const VexEvent &b);
-std::ostream& operator << (std::ostream &os, const VexInterval &x);
+std::ostream& operator << (std::ostream &os, const Interval &x);
 std::ostream& operator << (std::ostream &os, const VexSource &x);
 std::ostream& operator << (std::ostream &os, const VexScan &x);
 std::ostream& operator << (std::ostream &os, const VexAntenna &x);

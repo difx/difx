@@ -27,24 +27,60 @@
  *
  *==========================================================================*/
 
-#ifndef __MEDIACHANGE_H__
-#define __MEDIACHANGE_H__
-
-#include <ostream>
-#include <string>
-#include <list>
+#include <algorithm>
 #include "interval.h"
 
-class MediaChange : public Interval
+// returns a negative number if no overlap
+double Interval::overlap(const Interval &v) const
 {
-public:
-	MediaChange(std::string A, double start, double stop) : Interval(start, stop), ant(A) {}
+	return std::min(mjdStop, v.mjdStop) - std::max(mjdStart, v.mjdStart);
+}
 
-	std::string ant;
-};
+void Interval::logicalAnd(double start, double stop)
+{
+	if(mjdStart < start)
+	{
+		mjdStart = start;
+	}
+	if(mjdStop > stop)
+	{
+		mjdStop = stop;
+	}
+}
 
-std::ostream& operator << (std::ostream& os, const MediaChange& x);
+void Interval::logicalAnd(const Interval &v)
+{
+	if(mjdStart < v.mjdStart)
+	{
+		mjdStart = v.mjdStart;
+	}
+	if(mjdStop > v.mjdStop)
+	{
+		mjdStop = v.mjdStop;
+	}
+}
 
-int nGap(const std::list<MediaChange> &m, double mjd);
+void Interval::logicalOr(double start, double stop)
+{
+	if(mjdStart > start)
+	{
+		mjdStart = start;
+	}
+	if(mjdStop < stop)
+	{
+		mjdStop = stop;
+	}
+}
 
-#endif
+void Interval::logicalOr(const Interval &v)
+{
+	if(mjdStart > v.mjdStart)
+	{
+		mjdStart = v.mjdStart;
+	}
+	if(mjdStop < v.mjdStop)
+	{
+		mjdStop = v.mjdStop;
+	}
+}
+

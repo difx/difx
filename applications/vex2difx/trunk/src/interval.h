@@ -27,24 +27,34 @@
  *
  *==========================================================================*/
 
-#ifndef __MEDIACHANGE_H__
-#define __MEDIACHANGE_H__
+#ifndef __INTERVAL_H__
+#define __INTERVAL_H__
 
-#include <ostream>
-#include <string>
-#include <list>
-#include "interval.h"
-
-class MediaChange : public Interval
+class Interval
 {
 public:
-	MediaChange(std::string A, double start, double stop) : Interval(start, stop), ant(A) {}
+	double mjdStart;
+	double mjdStop;
 
-	std::string ant;
+	Interval(double start=0.0, double end=0.0) : mjdStart(start), mjdStop(end) {}
+	Interval(const Interval &vi) : mjdStart(vi.mjdStart), mjdStop(vi.mjdStop) {}
+	double duration() const { return mjdStop-mjdStart; }
+	double duration_seconds() const { return 86400.0*(mjdStop-mjdStart); }
+	double overlap(const Interval &v) const;
+	double overlap_seconds(const Interval &v) const { return 86400.0*overlap(v); }
+	double center() const { return 0.5*(mjdStart+mjdStop); }
+	void shift(double deltaT) { mjdStart += deltaT; mjdStop += deltaT; }
+	void setTimeRange(double start, double stop) { mjdStart = start; mjdStop = stop; }
+	void setTimeRange(const Interval &v) { mjdStart = v.mjdStart; mjdStop = v.mjdStop; }
+	void logicalAnd(double start, double stop);
+	void logicalAnd(const Interval &v);
+	void logicalOr(double start, double stop);
+	void logicalOr(const Interval &v);
+	bool contains(double mjd) const { return (mjdStart <= mjd) && (mjd <= mjdStop); }
+	bool contains(const Interval &v) const { return (mjdStart <= v.mjdStart) && (mjdStop >= v.mjdStop); }
+	bool containsAbsolutely(double mjd) const { return (mjdStart < mjd) && (mjd < mjdStop); }
+	bool containsAbsolutely(const Interval &v) const { return (mjdStart < v.mjdStart) && (mjdStop > v.mjdStop); }
+	bool isCausal() const { return (mjdStart <= mjdStop); }
 };
-
-std::ostream& operator << (std::ostream& os, const MediaChange& x);
-
-int nGap(const std::list<MediaChange> &m, double mjd);
 
 #endif

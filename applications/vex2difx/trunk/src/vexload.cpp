@@ -534,7 +534,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 						break;
 					}
 
-					VexInterval vsnTimeRange(t1+0.001/86400.0, t2);
+					Interval vsnTimeRange(t1+0.001/86400.0, t2);
 
 					if(!vsnTimeRange.isCausal())
 					{
@@ -630,7 +630,7 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 	return nWarn;
 }
 
-static VexInterval adjustTimeRange(std::map<std::string, double> &antStart, std::map<std::string, double> &antStop, unsigned int minSubarraySize)
+static Interval adjustTimeRange(std::map<std::string, double> &antStart, std::map<std::string, double> &antStop, unsigned int minSubarraySize)
 {
 	std::list<double> start;
 	std::list<double> stop;
@@ -653,7 +653,7 @@ static VexInterval adjustTimeRange(std::map<std::string, double> &antStart, std:
 	if(antStart.size() < minSubarraySize)
 	{
 		// Return an acausal interval
-		return VexInterval(1, 0);
+		return Interval(1, 0);
 	}
 
 	for(std::map<std::string, double>::iterator it = antStart.begin(); it != antStart.end(); ++it)
@@ -699,7 +699,7 @@ static VexInterval adjustTimeRange(std::map<std::string, double> &antStart, std:
 		}
 	}
 
-	return VexInterval(mjdStart, mjdStop);
+	return Interval(mjdStart, mjdStop);
 }
 
 static int getScans(VexData *V, Vex *v, const CorrParams &params)
@@ -713,7 +713,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		VexScan *S;
 		std::map<std::string,double> antStart, antStop;
 		std::map<std::string,bool> recordEnable;
-		std::map<std::string,VexInterval> stations;
+		std::map<std::string,Interval> stations;
 		double startScan, stopScan;
 		double mjd;
 		int link, name;
@@ -792,7 +792,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 			vex_field(T_STATION, p, 7, &link, &name, &value, &units);
 			recordEnable[stationName] = (atoi(value) > 0);
 
-			stations[stationName] = VexInterval(startAnt, stopAnt);
+			stations[stationName] = Interval(startAnt, stopAnt);
 
 			antStart[stationName] = startAnt;
 			antStop[stationName] = stopAnt;
@@ -805,7 +805,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 
 		// Adjust start and stop times so that the minimum subarray size is
 		// always honored.  The return value becomes
-		VexInterval timeRange = adjustTimeRange(antStart, antStop, params.minSubarraySize);
+		Interval timeRange = adjustTimeRange(antStart, antStop, params.minSubarraySize);
 
 		// If the min subarray condition never occurs, then skip the scan
 		if(timeRange.duration_seconds() < 0.5)
@@ -1602,7 +1602,7 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 		std::string vsn(p->label);
 		fixOhs(vsn);
 
-		VexInterval vsnTimeRange(vexDate(p->start)+0.001/86400.0, vexDate(p->stop));
+		Interval vsnTimeRange(vexDate(p->start)+0.001/86400.0, vexDate(p->stop));
 
 		if(!vsnTimeRange.isCausal())
 		{
@@ -1828,7 +1828,7 @@ static int getExper(VexData *V, Vex *v, const CorrParams &params)
 
 	Upper(experimentName);
 
-	V->setExper(experimentName, VexInterval(start, stop));
+	V->setExper(experimentName, Interval(start, stop));
 
 	return nWarn;
 }

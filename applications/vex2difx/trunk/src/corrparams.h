@@ -38,6 +38,7 @@
 #include <iostream>
 #include <difxio.h>
 
+#include "interval.h"
 #include "vextables.h"
 
 extern const double MJD_UNIX0;	// MJD at beginning of unix time
@@ -133,7 +134,7 @@ public:
 	int setkv(const std::string &key, const std::string &value);
 	int setkv(const std::string &key, const std::string &value, ZoomFreq * zoomFreq);
 	void copyGlobalZoom(const GlobalZoom &globalZoom);
-	bool hasBasebandFile(const VexInterval &interval) const;	// Returns true if at least one baseband file exists over the provided interval
+	bool hasBasebandFile(const Interval &interval) const;	// Returns true if at least one baseband file exists over the provided interval
 
 	std::string vexName;	// Antenna name as it appears in vex file
 	std::string difxName;	// Antenna name (if different) to appear in difx
@@ -255,7 +256,7 @@ public:
 	std::string corrSetupName;	/* pointer to CorrSetup */
 };
 
-class CorrParams : public VexInterval
+class CorrParams : public Interval
 {
 public:
 	CorrParams();

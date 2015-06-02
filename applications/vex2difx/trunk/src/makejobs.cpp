@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: util.h 4795 2012-09-06 20:21:51Z WalterBrisken $
+ * $Id$
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
- * $LastChangedRevision: 4795 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2012-09-06 14:21:51 -0600 (Thu, 06 Sep 2012) $
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -69,7 +69,7 @@ static void genJobGroups(std::vector<VexJobGroup> &JGs, const VexData *V, const 
 	while(!scans.empty())
 	{
 		const VexScan *scan = V->getScanByDefName(scans.front());
-		int nRecordedAnt = scan->nAntennasWithRecordedData(V);
+		unsigned int nRecordedAnt = scan->nAntennasWithRecordedData(V);
 
 		if(nRecordedAnt < P->minSubarraySize)
 		{
@@ -148,7 +148,7 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 	double start;
 	int nAnt;
 	int nLoop = 0;
-	VexInterval scanRange;
+	Interval scanRange;
 
 	// first initialize recordStop and usage
 	for(std::list<VexEvent>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
@@ -206,7 +206,7 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 					changes.push_back(MediaChange(e->name, recordStop[e->name], e->mjd));
 					if(verbose > 0)
 					{
-						std::cout << "Media change: " << e->name << " " << (VexInterval)(changes.back()) << std::endl;
+						std::cout << "Media change: " << e->name << " " << (Interval)(changes.back()) << std::endl;
 					}
 				}
 			}
@@ -306,7 +306,7 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 	start = JG.mjdStart;
 	for(std::list<double>::const_iterator t = breaks.begin(); t != breaks.end(); ++t)
 	{
-		VexInterval jobTimeRange(start, *t);
+		Interval jobTimeRange(start, *t);
 		if(jobTimeRange.duration() > P->minLength)
 		{
 			JG.createJobs(Js, jobTimeRange, V, P->maxLength, P->maxSize);

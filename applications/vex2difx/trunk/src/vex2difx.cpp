@@ -1786,7 +1786,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		const VexSource *src = V->getSourceByDefName(S->sourceDefName);
 
 		// Determine interval where scan and job overlap
-		VexInterval scanInterval(*S);
+		Interval scanInterval(*S);
 		scanInterval.logicalAnd(J);
 
 		corrSetup = P->getCorrSetup(S->corrSetupName);
