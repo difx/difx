@@ -572,7 +572,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		{
 			char sep = '/';
 			std::stringstream threadSS;
-			for(int threadId = 0; threadId < setup->channels.size(); ++threadId)
+			for(unsigned int threadId = 0; threadId < setup->channels.size(); ++threadId)
 			{
 				threadSS << sep;
 				threadSS << setup->channels[threadId].threadId;
@@ -2555,22 +2555,26 @@ static void runCommand(const char *cmd, int verbose)
 
 int main(int argc, char **argv)
 {
+	CorrParams *P;
 	VexData *V;
 	const VexScan * S;
-	CorrParams *P;
 	const SourceSetup * sourceSetup;
 	vector<VexJob> J;
 	string shelfFile;
+	string missingDataFile;	// created if file-based and no files for a particular antenna/job are found
+	string v2dFile;
+	string command;
 	int verbose = 0;
 	int ok;
-	string v2dFile;
 	bool writeParams = 0;
 	bool deleteOld = 0;
 	bool strict = 1;
 	int nWarn = 0;
+	int nSkip = 0;
 	int nDigit;
 	int nJob = 0;
 	int nMulti = 0;
+	std::list<std::pair<int,std::string> > removedAntennas;
 
 	if(argc < 2)
 	{
@@ -2704,6 +2708,12 @@ int main(int argc, char **argv)
 	shelfFile += string(".shelf");
 	nWarn += P->loadShelves(shelfFile);
 
+	// delete "no data" file before starting
+	missingDataFile = v2dFile.substr(0, v2dFile.find_last_of('.'));
+	missingDataFile += string(".nodata");
+	command = "rm -f " + missingDataFile;
+	system(command.c_str());
+
 	V = loadVexFile(*P, &nWarn);
 
 	if(!V)
@@ -2791,7 +2801,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	makeJobs(J, V, P, verbose);
+	makeJobs(J, V, P, removedAntennas, verbose);
 
 	if(verbose > 1)
 	{
@@ -2866,7 +2876,14 @@ int main(int argc, char **argv)
 		{
 			cout << *j;
 		}
-		nJob += writeJob(*j, V, P, -1, verbose, &of, nDigit, 0, strict);
+		if(j->jobSeries == "-")
+		{
+			++nSkip;
+		}
+		else
+		{
+			nJob += writeJob(*j, V, P, -1, verbose, &of, nDigit, 0, strict);
+		}
 	}
 	of.close();
 
@@ -2890,6 +2907,33 @@ int main(int argc, char **argv)
 		cout << endl;
 		cout << "The user supplied the following comments in the .v2d file:" << endl;
 		cout << P->v2dComment << endl;
+	}
+
+	if(!removedAntennas.empty())
+	{
+		ofstream of;
+		int lastJobId = -1;
+		int n = 0;
+
+		of.open(missingDataFile.c_str());
+		of << "The following job numbers have had antennas removed because they have no baseband data files:";
+		for(list<pair<int,string> >::const_iterator it = removedAntennas.begin(); it != removedAntennas.end(); ++it)
+		{
+			if(it->first != lastJobId)
+			{
+				of << endl;
+				of << "job " << it->first << " :";
+				lastJobId = it->first;
+				++n;
+			}
+			of << " " << it->second;
+		}
+		of << endl;
+		of.close();
+
+		cout << endl;
+		cout << "Warning: " << n << " jobs had one or more antennas removed due to missing baseband data." << endl;
+		cout << "See " << missingDataFile << " for details." << endl;
 	}
 
 	delete V;

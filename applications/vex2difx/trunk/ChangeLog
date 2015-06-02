@@ -8,6 +8,8 @@ Version 2.5.0
     assignments will be drawn.
 * outPath global parameter added: all .difx/ output gets put here rather than ./
 * split vex2difx.cpp into smaller pieces (in progress)
+* if baseband data files are provided via file lists and some jobs have
+  missing data, exlude antennas as necessary and write a "nodata" file
 
 Version 2.4.0
 ~~~~~~~~~~~~~

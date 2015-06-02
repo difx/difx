@@ -29,7 +29,6 @@
 
 #include <cstdlib>
 #include <sstream>
-#include <list>
 #include <map>
 #include "makejobs.h"
 #include "mediachange.h"
@@ -320,7 +319,7 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 	}
 }
 
-void makeJobs(std::vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
+void makeJobs(std::vector<VexJob>& J, VexData *V, const CorrParams *P, std::list<std::pair<int,std::string> > &removedAntennas, int verbose)
 {
 	std::vector<VexJobGroup> JG;
 
@@ -373,7 +372,41 @@ void makeJobs(std::vector<VexJob>& J, VexData *V, const CorrParams *P, int verbo
 		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
 		j->assignVSNs(*V);
 
-		jobId++;
+		// Here we need to check if there really is data for all the stations in the job.
+		//   If not, remove the antenna and add to the "no data" table.
+		for(std::map<std::string,std::string>::iterator it = j->vsns.begin(); it != j->vsns.end(); ++it)
+		{
+			if(it->second == "None")
+			{
+				const AntennaSetup *as = P->getAntennaSetup(it->first);
+				if(!as->basebandFiles.empty())
+				{
+					if(!as->hasBasebandFile(*j))	// test if all baseband files are out of time range
+					{
+						removedAntennas.push_back(std::pair<int,std::string>(jobId, it->first));
+						if(verbose > 0)
+						{
+							std::cout << "Removed " << it->first << " from jobId " << jobId << " because no data exists." << std::endl;
+						}
+						j->vsns.erase(it);
+
+						// this is a bit ugly.  Any better way to remove one item from a map from within?
+						it = j->vsns.begin();
+						if(it == j->vsns.end())
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+		
+		// If fewer than minSubarray antennas remain, then mark the job as bad and exclude writing it later.
+		if(j->vsns.size() < P->minSubarraySize)
+		{
+			j->jobSeries = "-";	// Flag to not actually produce this job
+		}
+		++jobId;
 	}
 	V->sortEvents();
 }

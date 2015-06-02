@@ -729,18 +729,21 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 
 		Llist *lowls = L;
 		lowls=find_lowl(lowls,T_COMMENT);
-		while(lowls != NULL) {
-			int pos;
+		while(lowls != NULL)
+		{
+			size_t pos;
 			// assume our comments are clustered together at beginning of scan definition
-	        if(((Lowl *)lowls->ptr)->statement != T_COMMENT) {
-            	break;
-        	}
+			if(((Lowl *)lowls->ptr)->statement != T_COMMENT)
+			{
+				break;
+			}
 			// get comment content
 			vex_field(T_COMMENT, (void *)((Lowl *)lowls->ptr)->item, 1, &link, &name, &value, &units);
 
-			tmpIntent = (!value)?"":value;
+			tmpIntent = (!value) ? "" : value;
 			pos = tmpIntent.find("intent = \"", 0);
-			if( pos != string::npos ) {
+			if(pos != string::npos)
+			{
 				// +10 to skip the search string
 				pos += 10;
 				// trim everything except the actual tmpIntent string
@@ -1511,7 +1514,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 			// Sort channels by name and then assign sequential thread Id
 			std::sort(setup.channels.begin(), setup.channels.end());
-			for(int threadId = 0; threadId < setup.channels.size(); ++threadId)
+			for(unsigned int threadId = 0; threadId < setup.channels.size(); ++threadId)
 			{
 				setup.channels[threadId].threadId = threadId;
 			}

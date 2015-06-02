@@ -133,17 +133,18 @@ public:
 	int setkv(const std::string &key, const std::string &value);
 	int setkv(const std::string &key, const std::string &value, ZoomFreq * zoomFreq);
 	void copyGlobalZoom(const GlobalZoom &globalZoom);
+	bool hasBasebandFile(const VexInterval &interval) const;	// Returns true if at least one baseband file exists over the provided interval
 
-	std::string vexName;		// Antenna name as it appears in vex file
+	std::string vexName;	// Antenna name as it appears in vex file
 	std::string difxName;	// Antenna name (if different) to appear in difx
 	double X, Y, Z;		// [m] Station coordinates to override vex
 	double axisOffset;	// [m]
 	int clockorder;		// Order of clock poly (if overriding)
 	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)
-	std::vector<double> freqClockOffs; // clock offsets for the individual frequencies
-	std::vector<double> freqClockOffsDelta; // clock offsets between pols for the individual frequencies
-	std::vector<double> freqPhaseDelta; // Phase difference between pols for each frequency
-	std::vector<double> loOffsets; //LO offsets for each individual frequency
+	std::vector<double> freqClockOffs;	// Clock offsets for the individual frequencies
+	std::vector<double> freqClockOffsDelta; // Clock offsets between pols for the individual frequencies
+	std::vector<double> freqPhaseDelta;	// Phase difference between pols for each frequency
+	std::vector<double> loOffsets;		// LO offsets for each individual frequency
 	VexClock clock;
 	double deltaClock;	// sec
 	double deltaClockRate;	// sec/sec

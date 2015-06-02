@@ -1608,6 +1608,19 @@ void AntennaSetup::copyGlobalZoom(const GlobalZoom &globalZoom)
 	}
 }
 
+bool AntennaSetup::hasBasebandFile(const VexInterval &interval) const
+{
+	for(std::vector<VexBasebandFile>::const_iterator it = basebandFiles.begin(); it != basebandFiles.end(); ++it)
+	{
+		if(it->overlap(interval) > 0.0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 int GlobalZoom::setkv(const std::string &key, const std::string &value, ZoomFreq *zoomFreq)
 {
 	int nWarn = 0;
