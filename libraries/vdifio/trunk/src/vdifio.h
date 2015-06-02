@@ -292,7 +292,7 @@ void resetvdiffilesummary(struct vdif_file_summary *sum);
 
 void printvdiffilesummary(const struct vdif_file_summary *sum);
 
-static inline void vdiffilesummarysetsamplerate(struct vdif_file_summary *sum, long sampRateHz) { sum->framesPerSecond = sampRateHz*sum->nBit/(8*(sum->frameSize-VDIF_HEADER_BYTES)); }
+static inline void vdiffilesummarysetsamplerate(struct vdif_file_summary *sum, int64_t sampRateHz) { sum->framesPerSecond = sampRateHz*sum->nBit/(8*(sum->frameSize-VDIF_HEADER_BYTES)); }
 
 /* does same as above, but with different input */
 static inline void vdiffilesummarysetbitrate(struct vdif_file_summary *sum, int bitRateMbps) { sum->framesPerSecond = bitRateMbps*125000/(sum->nThread*(sum->frameSize-VDIF_HEADER_BYTES)); }

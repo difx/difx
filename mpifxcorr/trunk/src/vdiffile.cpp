@@ -339,7 +339,7 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 
 		return;
 	}
-	vdiffilesummarysetsamplerate(&fileSummary, static_cast<long>(bw*2*1000000));
+	vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2*1000000));
 
 	// If verbose...
 	printvdiffilesummary(&fileSummary);
