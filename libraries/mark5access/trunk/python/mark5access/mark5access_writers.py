@@ -46,7 +46,13 @@ class VDIFEncapsulator:
 				self.payloadbytes -= 1
 				self.fps = ((Rmbps*1e6/8) / self.payloadbytes)
 			print ('*** Reduced to %u-byte payload.' % (self.payloadbytes))
-		self.fmt = 'VDIF_%u-%u-%u-%u' % (self.payloadbytes,Rmbps,nch,nbit)
+
+		# Create format description
+
+		if not(complex):
+			self.fmt = 'VDIF_%u-%u-%u-%u' % (self.payloadbytes,Rmbps,nch,nbit)
+		else:
+			self.fmt = 'VDIFC_%u-%u-%u-%u' % (self.payloadbytes,Rmbps,nch,nbit)
 
 		## Create template header
 
