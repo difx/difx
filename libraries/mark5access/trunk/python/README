@@ -188,12 +188,38 @@ Example: counts = mark5access.helpers.count_high_states(ms, 8192)
 
 3.3.4 mark5access.helpers.make_decoder_array(ms, nsamples, [dtype=ctypes data type])
 
-Returns Returns a 'nchan x nsamples' array that can be passed to 
+Returns a 'nchan x nsamples' array that can be passed to 
 one of the mark5_stream_decode variants. The default data type
 of ctypes.c_float can be used in conjunction with mark5_stream_decode(), 
 while ctypes.c_double is required for mark5_stream_decode_double().
 
 Example: pdata = mark5access.helpers.make_decoder_array(ms, 8192)
+
+
+3.3.5 mark5access.helpers.get_VDIF_time_from_MJD(mjd, second)
+
+Returns a tuple (refep,refsec) containing the VDIF Reference
+Epoch and VDIF Seconds since Reference Epoch that correspond
+to the given MJD day and second-of-day.
+
+
+3.3.6 mark5access.writers.VDIFEncapsulator class
+
+A basic VDIF encapsulator with a file-like interface.
+The values in VDIF frame headers can be specified with 
+a mark5access-like format string (e.g., VDIF_8192-1024-1-32).
+
+User provided binary data (Python strings) write()'n to the
+class are encapsulated into VDIF frames. Frame numbers and
+timestamps are advanced automatically.
+
+The class assists in writing data that has been decoded 
+via mark5access read functionality and processed in some
+way in the user application, e.g., filtered or upsampled.
+
+The class does not contain sample quantization conversions,
+this is up to the user application.
+
 
 
 3.4 Example programs
