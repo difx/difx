@@ -57,7 +57,7 @@ static void usage(const char *pgm)
 	printf("  <n> is the number of samples per channel to decode\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 	printf("The following options are supported\n\n");
-	printf("    --double    Double sidebade (complex) data\n");
+	printf("    --double    Double sideband (complex) data\n");
 	printf("                If using VDIF, specify VDIFC (complex VDIF) under dataformat\n\n");
 	printf("    --format=%%f Format specifier for sample printout (default: %%2.0f)\n\n");
 	printf("    --help      This list\n\n");
