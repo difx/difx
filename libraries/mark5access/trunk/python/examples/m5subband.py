@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-m5subband.py ver. 1.0   Jan Wagner  20150413
+m5subband.py ver. 1.1   Jan Wagner  20150603
  
 Extracts a narrow subband via filtering raw VLBI data. 
 Reads formats supported by the mark5access library.
@@ -15,8 +15,8 @@ Usage : m5subband.py <infile> <dataformat> <outfile>
     Mark5B-512-16-2
     VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
 
-  <outfile>   output file for 32-bit complex float subband data
-  <if_nr>     the IF i.e. baseband channel to be filtered
+  <outfile>   file to write 32-bit complex float band data (VDIFC format)
+  <if_nr>     the IF i.e. baseband channel to be filtered (1...nchan)
   <factor>    overlap-add factor during filtering (typ. 4)
   <Ldft>      length of DFT
   <start_bin> take output starting from bin (0...Ldft-2)
@@ -25,10 +25,12 @@ Usage : m5subband.py <infile> <dataformat> <outfile>
   <offset> is the byte offset into the file
 """
 
-import ctypes, numpy, sys
+import ctypes, numpy, re, struct, sys
 import mark5access as m5lib
 from datetime import datetime
 from scipy import stats
+
+refMJD_Mark5B = 57000 # reference MJD for Mark5B input data
 
 def usage():
 	print __doc__
@@ -49,12 +51,14 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 		m5fmt  = m5lib.new_mark5_format_generic_from_string(fmt)
 		ms     = m5lib.new_mark5_stream_absorb(m5file, m5fmt)
 		dms    = ms.contents
+		m5lib.mark5_stream_fix_mjd(ms, refMJD_Mark5B)
+		(mjd,sec,ns) = m5lib.helpers.get_sample_time(ms)
 	except:
 		print ('Error: problem opening or decoding %s\n' % (fn))
 		return 1
 
 	# Safety checks
-	if (if_nr<1) or (if_nr>dms.nchan) or (factor<0) or (factor>32) or (Ldft<2) or (start_bin>stop_bin) or (stop_bin>=Ldft):
+	if (if_nr<0) or (if_nr>=dms.nchan) or (factor<0) or (factor>32) or (Ldft<2) or (start_bin>stop_bin) or (stop_bin>=Ldft):
 		print ('Error: invalid command line arguments')
 		return 1
 	if (Ldft % factor)>0:
@@ -91,13 +95,30 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 	win_out = numpy.cos((numpy.pi/Lout)*(numpy.linspace(0,Lout-1,Lout) - 0.5*(Lout-1)))
 	win_out = numpy.resize(win_out.astype(fp), new_shape=(factor,Lout))
 
+	# Prepare VDIF output file with reduced data rate and same starting timestamp
+	fsout   = float(dms.samprate)*(nout/float(nin))
+	outMbps = fsout*1e-6 * 64
+	vdiffmt = 'VDIF_8192-%u-1-32' % (outMbps)
+	if not(int(outMbps) == outMbps):
+		print ('*** Warning: output rate is non-integer (%e Ms/s)! ***' % (outMbps))
+
+	(vdifref,vdifsec) = m5lib.helpers.get_VDIF_time_from_MJD(mjd,sec+1e-9*ns)
+
+	vdif = m5lib.writers.VDIFEncapsulator()
+	vdif.open(fout, format=vdiffmt, complex=True, station='SB')
+	vdif.set_time(vdifref,vdifsec, framenr=0)
+	vdiffmt = vdif.get_format()
+
 	# Report
 	bw = float(dms.samprate)*0.5
+	print ('Input file   : start MJD %u/%.6f sec' % (mjd,sec+ns*1e-9))
 	print ('Bandwidth    : %u kHz in, %.2f kHz out, bandwidth reduction of ~%.2f:1' % (1e-3*bw, nout*1e-3*bw/nin, float(nin)/nout))
 	print ('Input side   : %u-point DFT with %u bins (%u...%u) extracted' % (nin,nout,start_bin,stop_bin))
 	print ('Output side  : %u-point IDFT with %u-point zero padding' % (Lout,Lout-nout))
 	print ('Overlap      : %u samples on input, %u samples on output' % (nin-nin/factor,Lout-Lout/factor))
-	print ('Phasors      : %s : %s ...' % (str(rot_f0), str([rot_f0**t for t in range(factor+2)])))
+	print ('Phasors      : %s^t : %s ...' % (str(rot_f0), str([rot_f0**t for t in range(factor+2)])))
+	print ('Output file  : rate %.3f Mbps, %u fps, format %s' 
+		% (outMbps,vdif.get_fps(),vdif.get_format()) )
 
 	# Do filtering
 	print ('Filtering...')
@@ -146,17 +167,18 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 			# so we need to zero out the undesired values shifted back in by the circular shift:
 			oconcat[(-Lout/factor):] = 0
 
-		# Output
-		write_complex2file(fout, oconcat[0:Lout])
+		# Output complex time domain data
+		vdif.write(oconcat[0:Lout].view('float32').tostring())
 
 		# Reporting
 		if (iter % 100)==0:
-			(mjd,sec,ns) = m5lib.helpers.get_frame_time(ms)
+			(mjd,sec,ns) = m5lib.helpers.get_sample_time(ms)
 			T_abs = sec + 1e-9*ns
 			T_count = 1e-9*dms.framens * dms.nvalidatepass
 			print ('Iter %7d : %u/%f : %u : %f sec\r' % (iter, mjd,T_abs, dms.nvalidatepass, T_count)),
 		iter = iter + 1
 
+	vdif.close()
 	return 0
 
 
@@ -168,10 +190,6 @@ def next_even(n):
 	"""Returns the even number closest to and larger than or equal to n"""
 	return int(n + n%2)
 
-def write_complex2file(fout,carr):
-	"""Write complex numbers into flat file, Python {re,im} format"""
-	fout.write(carr.view('float32'))
-
 def main(argv=sys.argv):
 	if len(argv) not in [9,10]:
 		usage()
@@ -181,15 +199,13 @@ def main(argv=sys.argv):
 	if len(argv) == 10:
 		offset = int(argv[9])
 
-	if_nr  = int(argv[4])
+	if_nr  = int(argv[4])-1
 	factor = int(argv[5])
 	Ldft   = int(argv[6])
 	start_bin = int(argv[7])
 	stop_bin  = int(argv[8])
 
-	fout = open(argv[3], 'wb')
-	rc = m5subband(argv[1],argv[2], fout, if_nr, factor,Ldft,start_bin,stop_bin, offset)
-	fout.close()
+	rc = m5subband(argv[1],argv[2],argv[3], if_nr, factor,Ldft,start_bin,stop_bin, offset)
 
 	return rc
 
