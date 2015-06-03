@@ -14,15 +14,15 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'A VDIF spectrometer for multi-thread VDIF data.  Uses vmux'
 	print 'and m5spec to do the heavy lifting.\n'
-	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile> [<offset>]\n'
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile> [nbit] [<offset>]\n'
 	print '  <infile> is the name of the VDIF file\n'
 	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
 	print '  <data rate> is the stream data rate (Mbps)\n'
 	print '  <nchan> is the number of spectral channels to make per baseband channel\n'
 	print '  <nint> is the number of FFT frames to spectrometize\n'
 	print '  <outfile> is the name of the output file\n'
-	print '  <offset> optionally jump into input file by this many bytes\n'
 	print '  <nbit> is number of bits per sample (default is 2)\n'
+	print '  <offset> optionally jump into input file by this many bytes\n'
 	print 'Note: Only works on 2-bit real data for now...\n'
 
 if len(argv) < 8:
