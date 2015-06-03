@@ -83,13 +83,12 @@ static void usage(const char *pgm)
 	printf("  <nint> is the number of FFT frames to spectrometize\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
-	printf("\n\n\n");
+	printf("\n");
 	printf("The following options are supported\n\n");
 	printf("    -dbbc      Assume dBBC polarisation order (all Rcp then all Lcp)\n\n");
 	printf("    -nopol     Do not compute cross pol terms\n\n");
 	printf("    -double    Double sidebade (complex) data\n\n");
 	printf("    -help      This list\n\n");
-	printf("The folllowing options are supported\n\n");
 }
 
 int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked, int doublesideband)
