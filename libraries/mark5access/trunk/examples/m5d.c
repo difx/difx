@@ -257,7 +257,6 @@ int main(int argc, char **argv)
 		optind++;
 	}
 	optc = argc - optind;
-	printf(" optc=%d\n", optc);
 
 	if(optc == 1)
 	{
