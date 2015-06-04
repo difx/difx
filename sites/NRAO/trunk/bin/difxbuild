@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# vim: tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
+
 from os import environ, system, getcwd, chdir, popen, readlink
 from os.path import isdir, isfile, islink, join, dirname
 from sys import argv, exit, platform, version_info
@@ -11,8 +13,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.44'
-verdate = '20141104'
+version = '0.47'
+verdate = '20150603'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -20,8 +22,8 @@ difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 openmpiVersion = '1.6'
 pgplotVersion = '5.2'
 pngVersion = '1.2.50'
-schedVersion = '11.2'
-schedUpdate = '.u1'
+schedVersion = '11.4'
+schedUpdate = ''
 skedVersion = '2013jan23'
 m4Version = '1.4.16'
 autoconfVersion = '2.69'
@@ -30,7 +32,7 @@ libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
 pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz
-gpstkVersion = '2.3'
+gpstkVersion = '2.5'
 libeventVersion = '2.0.21'
 expatVersion = '2.1.0'
 libmicrohttpdVersion = '0.9.35'
@@ -409,6 +411,19 @@ def filterComponentsOrig(origComps, args):
 	return comps
 
 def filterComponents(origComps, args):
+
+	legalArgs = ['all', 'core', 'slave']
+	for p in origComps:
+		legalArgs.append(p[0])
+
+	nBad = 0
+	for a in args:
+		if not a in legalArgs:
+			print "Unrecognized argument: %s" % a
+			nBad += 1
+	if nBad > 0:
+		exit(0)
+
 	if 'all' in args:
 		comps = []
 		for c in origComps:
@@ -444,6 +459,8 @@ def filterComponents(origComps, args):
 					continue
 				if c[0] in local:
 					comps.append(c)
+
+
 	return comps				
 				
 
@@ -2338,7 +2355,8 @@ def gpstk(origComps, params, args, verbose, pretend):
 	if not isdir(archSrcDir):
 		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
 	
-	origSrcDir = '%s/gpstk' % archSrcDir
+	origSrcDir1 = '%s/gpstk' % archSrcDir
+	origSrcDir2 = '%s/gpstk-%s.src' % (archSrcDir, gpstkVersion)
 	gpstkSrcDir = '%s/gpstk-%s' % (archSrcDir, gpstkVersion)
 	if isdir(gpstkSrcDir):
 		print 'Stopping because %s exists' % gpstkSrcDir
@@ -2346,13 +2364,15 @@ def gpstk(origComps, params, args, verbose, pretend):
 	
 	chdir(archSrcDir)
 	execute('tar zxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
-	execute('mv %s %s' % (origSrcDir, gpstkSrcDir), verbose, pretend)
+	if isdir(origSrcDir1):
+		execute('mv %s %s' % (origSrcDir1, gpstkSrcDir), verbose, pretend)
+	elif isdir(origSrcDir2):
+		execute('mv %s %s' % (origSrcDir2, gpstkSrcDir), verbose, pretend)
 
 	chdir(gpstkSrcDir)
-	execute('mkdir build', verbose, pretend)
-	chdir(gpstkSrcDir + '/build')
+	chdir(gpstkSrcDir + '/dev')
 	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
-	execute('cmake -DCMAKE_INSTALL_PREFIX:PATH=%s ../' % (difxBase + arch), verbose, pretend)
+	execute('cmake -DCMAKE_INSTALL_PREFIX:PATH=%s' % (difxBase + arch), verbose, pretend)
 	execute('make -j%d' % numMakeCpus, verbose, pretend)
 	execute('make install', verbose, pretend)
 
@@ -2379,7 +2399,7 @@ def gpstk(origComps, params, args, verbose, pretend):
 	out.write('Requires:\n')
 	out.write('Version: %s\n' % gpstkVersion)
 	out.write('Libs: -L${libdir} -lgpstk\n')
-	out.write('Cflags: -I${includedir}/gpstk\n')
+	out.write('Cflags: -I${includedir}\n')
 	out.close()
 
 def sked(origComps, params, args, verbose, pretend):
