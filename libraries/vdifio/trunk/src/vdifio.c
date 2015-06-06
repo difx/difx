@@ -301,6 +301,10 @@ static void fprintVDIFHeaderHex(FILE *out, const vdif_header *header)
 
 static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 {
+	const char *stnCode;
+
+	stnCode = ((const char *)header) + 12;
+
 	fprintf(out, "VDIF Header\n");
 	fprintf(out, "  epoch = 0x%X = %d\n", header->epoch, header->epoch);
 	fprintf(out, "  seconds = 0x%X = %d\n", header->seconds, header->seconds);
@@ -312,7 +316,14 @@ static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 	fprintf(out, "  legacymode = %d\n", header->legacymode);
 	fprintf(out, "  invalid = %d\n", header->invalid);
 	fprintf(out, "  version = %d\n", header->version);
-	fprintf(out, "  stationid = 0x%X = %d\n", header->stationid, header->stationid);
+	if(stnCode[0] >= ' ' && stnCode[0] <= 127 && (stnCode[1] >= ' ' || stnCode[1] == 0) && stnCode[1] <= 127)
+	{
+		fprintf(out, "  stationid = 0x%X = %d = '%c%c'\n", header->stationid, header->stationid, stnCode[0], stnCode[1]);
+	}
+	else
+	{
+		fprintf(out, "  stationid = 0x%X = %d\n", header->stationid, header->stationid);
+	}
 	fprintf(out, "  iscomplex = %d\n", header->iscomplex);
 	if(header->legacymode == 0)
 	{
@@ -353,7 +364,7 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 {
 	if(header->legacymode == 0)
 	{
-		fprintf(out, "%5d %8d %5d %6d %6d %5d %4d %d %d %d %3d", header->epoch, header->seconds, header->frame, header->threadid, header->framelength8*8, 1 << header->nchan, header->nbits+1, header->legacymode, header->invalid, header->iscomplex, header->eversion);
+		fprintf(out, "%5d %8d %6d %6d %6d %5d %4d %d %d %d %3d", header->epoch, header->seconds, header->frame, header->threadid, header->framelength8*8, 1 << header->nchan, header->nbits+1, header->legacymode, header->invalid, header->iscomplex, header->eversion);
 		if(header->eversion == 1)
 		{
 			const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
@@ -385,7 +396,7 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 
 static void fprintVDIFHeaderColumns(FILE *out, const vdif_header *header)
 {
-	fprintf(out, "Epoch  Seconds Frame Thread Length Chans Bits L I C EDV");
+	fprintf(out, "Epoch  Seconds  Frame Thread Length Chans Bits L I C EDV");
 	if(header->eversion == 1)
 	{
 		fprintf(out, " SampleRate   SyncWord Name");
