@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Walter Brisken, Adam Deller                     *
+ *   Copyright (C) 2014-2015 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,12 +30,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "vdifio.h"
+#include "vdif_mark6.h"
 
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20140502";
+const char version[] = "0.2";
+const char verdate[] = "20150606";
 
 static void usage()
 {
@@ -43,7 +45,7 @@ static void usage()
 	fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
 	fprintf(stderr, "\nUsage: %s <VDIF input file> <framesize> [<prtlev>]\n", program);
 	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
-	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA)\n");
+	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA, 8224 for R2DBE)\n");
 	fprintf(stderr, "\n<prtlev> is output type: hex short long\n\n");
 	fprintf(stderr, "In normal operation this program searches for valid VDIF frames.\n");
 	fprintf(stderr, "The heuristics used to identify valid frames are somewhat weak as\n");
@@ -66,6 +68,8 @@ int main(int argc, char **argv)
 	const vdif_header *header;
 	int nSkip = 0;
 	int force = 0;
+	int n;	/* count read loops */
+	int isMark6 = 0;
 
 	if(argc < 3 || argc > 4)
 	{
@@ -131,9 +135,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	for(;;)
+	for(n = 0;; ++n)
 	{
 		int index, fill, readbytes;
+		uint32_t firstword;
 
 		index = 0;
 
@@ -141,6 +146,16 @@ int main(int argc, char **argv)
 		if(readbytes <= 0)
 		{
 			break;
+		}
+		if(n == 0)
+		{
+			firstword = *((uint32_t *)buffer);
+			if(firstword == MARK6_START_OF_FILE)
+			{
+				printf("This looks like a Mark6 data file.  I'll skip the first 28 bytes.\n");
+				index += 28;	// the first header is larger than the inter-chunk headers
+				isMark6 = 1;
+			}
 		}
 		fill = readbytes + leftover;
 		for(;;)
@@ -153,6 +168,7 @@ int main(int argc, char **argv)
 				break;
 			}
 			header = (const vdif_header *)(buffer + index);
+
 			if(force == 0)	/* if not forced, look for a match */
 			{
 				if(getVDIFFrameBytes(header) != framesize)

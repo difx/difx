@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2009-2011 by Adam Deller/Walter Brisken/Chris Phillips   *
+ *  Copyright (C) 2009-2015 by Adam Deller/Walter Brisken/Chris Phillips   *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -362,7 +362,12 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 			samprate = edv1->samprate * (edv1->samprateunits ? 1000000LL : 1000LL);
 			fprintf(out, " %10lld 0x%08X %8s", samprate, edv1->syncword, edv1->name);
 		}
-		else if(header->eversion ==3)
+		else if(header->eversion == 2)
+		{
+			const vdif_edv2_header *edv2 = (const vdif_edv2_header *)header;
+			fprintf(out, " %8d %13d %Lu", edv2->polblock, edv2->FPGA_PPS_diff, edv2->psn);
+		}
+		else if(header->eversion == 3)
 		{
 			const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
 			long long int samprate;
@@ -385,7 +390,11 @@ static void fprintVDIFHeaderColumns(FILE *out, const vdif_header *header)
 	{
 		fprintf(out, " SampleRate   SyncWord Name");
 	}
-	if(header->eversion == 3)
+	else if(header->eversion == 2)
+	{
+		fprintf(out, " PolBlock FPGA_PPS_diff PSN");
+	}
+	else if(header->eversion == 3)
 	{
 		fprintf(out, " SampleRate   SyncWord DBE IF Sub Tuning(MHz) Side Rev Pers");
 	}

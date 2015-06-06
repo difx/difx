@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2013 by Adam Deller / Walter Brisken               *
+ *   Copyright (C) 2009-2015 by Adam Deller / Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -98,6 +98,33 @@ typedef struct vdif_edv1_header {	/* NICT extensions: see http://www.vlbi.org/vd
    
    char name[8];		// DAS/Station Name
  } vdif_edv1_header;
+
+typedef struct vdif_edv2_header {	/* For R2DBE, reverse engineered from startup script --WFB 20150606 */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
+   uint32_t nchan : 5;
+   uint32_t version : 3;
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;
+   uint32_t iscomplex : 1;
+
+   uint32_t polblock : 8;	// just a guess at length
+   uint32_t dummy1 : 16;	
+   uint32_t eversion : 8;
+
+   int32_t FPGA_PPS_diff;	// just a guess at the signedness
+
+   uint64_t psn;		// packet serial number
+} vdif_edv2_header;
 
 typedef struct vdif_edv3_header {	/* VLBA extensions: see http://www.vlbi.org/vdif/docs/vlbaupgradememo42.pdf */
    uint32_t seconds : 30;

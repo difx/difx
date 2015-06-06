@@ -1,5 +1,6 @@
 h_sources = \
-	vdifio.h
+	vdifio.h \
+	vdif_mark6.h
 
 c_sources = \
 	vdifbuffer.c \
