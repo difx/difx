@@ -138,7 +138,6 @@ int main(int argc, char **argv)
 	for(n = 0;; ++n)
 	{
 		int index, fill, readbytes;
-		uint32_t firstword;
 
 		index = 0;
 
@@ -149,12 +148,34 @@ int main(int argc, char **argv)
 		}
 		if(n == 0)
 		{
-			firstword = *((uint32_t *)buffer);
-			if(firstword == MARK6_START_OF_FILE)
+			const Mark6Header *m6h;
+			m6h = (const Mark6Header *)buffer;
+			if(m6h->sync_word == MARK6_SYNC)
 			{
-				printf("This looks like a Mark6 data file.  I'll skip the first 28 bytes.\n");
-				index += 28;	// the first header is larger than the inter-chunk headers
-				isMark6 = 1;
+				int headerSize = 0;
+				int blockHeaderSize = 0;
+				int skipSize = 0;
+
+				headerSize = sizeof(Mark6Header);
+
+				if(m6h->version == 1)
+				{
+					blockHeaderSize = sizeof(Mark6BlockHeader_ver1);
+				}
+				else if(m6h->version == 2)
+				{
+					blockHeaderSize = sizeof(Mark6BlockHeader_ver2);
+				}
+
+				skipSize = headerSize + blockHeaderSize;
+
+				if(skipSize > 0)
+				{
+					printf("This looks like a Mark6 data file.  I'll skip the first %d bytes.\n", skipSize);
+					printMark6Header(m6h);
+					index += skipSize;	// the first header is larger than the inter-chunk headers
+					isMark6 = 1;
+				}
 			}
 		}
 		fill = readbytes + leftover;

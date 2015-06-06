@@ -6,6 +6,7 @@ c_sources = \
 	vdifbuffer.c \
 	vdiffile.c \
 	vdifio.c \
+	vdif_mark6.c \
 	decode.c \
 	vdifmux.c
 

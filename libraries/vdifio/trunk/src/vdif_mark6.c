@@ -27,43 +27,37 @@
 //
 //============================================================================
 
-#ifndef __VDIF_MARK6_H__
-#define __VDIF_MARK6_H__
+#include <stdio.h>
+#include "vdif_mark6.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define str(s) #s
 
-#include <stdint.h>
-
-#define MARK6_SYNC	0xfeed6666
-
-typedef struct
+const char *mark6PacketFormat(int formatId)
 {
-	uint32_t sync_word;	/* nominally the number above */
-	int32_t version;
-	int block_size;
-	int packet_format;
-	int packet_size;
-} Mark6Header;
-
-typedef struct
-{
-	int32_t blocknum;
-	int32_t wb_size;
-} Mark6BlockHeader_ver2;
-
-typedef struct
-{
-	int32_t blocknum;
-} Mark6BlockHeader_ver1;
-
-const char *mark6PacketFormat(int formatId);
-
-void printMark6Header(const Mark6Header *header);
-
-#ifdef __cplusplus
+	if(formatId == 0)
+	{
+		return "VDIF";
+	}
+	else if(formatId == 1)
+	{
+		return "Mark5b";
+	}
+	else if(formatId == 2)
+	{
+		return "Unknown";
+	}
+	else
+	{
+		return "Illegal value!";
+	}
 }
-#endif
 
-#endif
+void printMark6Header(const Mark6Header *header)
+{
+	printf("Mark6 header\n");
+	printf("  sync_word = 0x%8x%s\n", header->sync_word, (header->sync_word == MARK6_SYNC) ? "" : " which is weird; it should be " str(MARK6_SYNC) );
+	printf("  version = %d\n", header->version);
+	printf("  block_size = %d\n", header->block_size);
+	printf("  packet_format = %d = %s\n", header->packet_format, mark6PacketFormat(header->packet_format));
+	printf("  packet_size = %d\n", header->packet_size);
+}
