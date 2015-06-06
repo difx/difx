@@ -52,6 +52,22 @@ const char *mark6PacketFormat(int formatId)
 	}
 }
 
+int mark6BlockHeaderSize(int version)
+{
+	if(version == 1)
+	{
+		return sizeof(Mark6BlockHeader_ver1);
+	}
+	else if(version == 2)
+	{
+		return sizeof(Mark6BlockHeader_ver2);
+	}
+	else
+	{
+		return -1;
+	}
+}
+
 void printMark6Header(const Mark6Header *header)
 {
 	printf("Mark6 header\n");

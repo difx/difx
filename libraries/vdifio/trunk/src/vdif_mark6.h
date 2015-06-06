@@ -60,6 +60,8 @@ typedef struct
 
 const char *mark6PacketFormat(int formatId);
 
+int mark6BlockHeaderSize(int version);
+
 void printMark6Header(const Mark6Header *header);
 
 #ifdef __cplusplus

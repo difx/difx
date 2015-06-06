@@ -70,6 +70,8 @@ int main(int argc, char **argv)
 	int force = 0;
 	int n;	/* count read loops */
 	int isMark6 = 0;
+	int mk6BlockHeaderSize = 0;
+	int framesPerMark6Block = 0;
 
 	if(argc < 3 || argc > 4)
 	{
@@ -153,41 +155,41 @@ int main(int argc, char **argv)
 			if(m6h->sync_word == MARK6_SYNC)
 			{
 				int headerSize = 0;
-				int blockHeaderSize = 0;
-				int skipSize = 0;
 
 				headerSize = sizeof(Mark6Header);
 
-				if(m6h->version == 1)
-				{
-					blockHeaderSize = sizeof(Mark6BlockHeader_ver1);
-				}
-				else if(m6h->version == 2)
-				{
-					blockHeaderSize = sizeof(Mark6BlockHeader_ver2);
-				}
+				mk6BlockHeaderSize = mark6BlockHeaderSize(m6h->version);
 
-				skipSize = headerSize + blockHeaderSize;
-
-				if(skipSize > 0)
+				if(mk6BlockHeaderSize > 0)
 				{
-					printf("This looks like a Mark6 data file.  I'll skip the first %d bytes.\n", skipSize);
+					printf("This looks like a Mark6 data file.  I'll skip the first %d bytes.\n", headerSize);
 					printMark6Header(m6h);
-					index += skipSize;	// the first header is larger than the inter-chunk headers
+					index += headerSize;	// the first header is larger than the inter-chunk headers
 					isMark6 = 1;
+					framesPerMark6Block = (m6h->block_size - mk6BlockHeaderSize)/m6h->packet_size;
 				}
 			}
 		}
 		fill = readbytes + leftover;
 		for(;;)
 		{
-			if(fill-index < framesize)
+			if(fill-index < framesize + mk6BlockHeaderSize)
 			{
 				/* need more data */
 				leftover = fill-index;
 				memmove(buffer, buffer+index, leftover);
 				break;
 			}
+
+			if(isMark6)
+			{
+				if(framesread % framesPerMark6Block == 0)
+				{
+					/* skip over the block headers to prevent warnings */
+					index += mk6BlockHeaderSize;
+				}
+			}
+
 			header = (const vdif_header *)(buffer + index);
 
 			if(force == 0)	/* if not forced, look for a match */
