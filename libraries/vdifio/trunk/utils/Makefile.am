@@ -25,7 +25,8 @@ bin_PROGRAMS = \
 	vsum
 
 noinst_PROGRAMS = \
-	testcornerturners
+	testcornerturners \
+	testmk6
 
 dist_bin_SCRIPTS = \
 	vdifbstate \
@@ -89,3 +90,6 @@ vmux_SOURCES = \
 
 vsum_SOURCES = \
 	vsum.c
+
+testmk6_SOURCES = \
+	testmk6.c
