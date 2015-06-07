@@ -376,7 +376,7 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 		else if(header->eversion == 2)
 		{
 			const vdif_edv2_header *edv2 = (const vdif_edv2_header *)header;
-			fprintf(out, " %8d %13d %Lu", edv2->polblock, edv2->FPGA_PPS_diff, edv2->psn);
+			fprintf(out, " %8d %13d %Lu", edv2->polblock, edv2->FPGA_PPS_diff, (long long unsigned int)(edv2->psn));
 		}
 		else if(header->eversion == 3)
 		{

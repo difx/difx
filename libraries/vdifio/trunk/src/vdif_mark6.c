@@ -226,7 +226,7 @@ static int nextMark6File(const Mark6Descriptor *m6d)
 		}
 	}
 
-printf("Advancing from file:block %d:%d to %d:%d\n", m6d->currentFileNum, m6d->currentBlockNum, nextFileNum, nextBlockNum);
+//printf("Advancing from file:block %d:%d to %d:%d\n", m6d->currentFileNum, m6d->currentBlockNum, nextFileNum, nextBlockNum);
 
 	return nextFileNum;
 }
@@ -241,7 +241,7 @@ Mark6Descriptor *openMark6(int nFile, char **fileList)
 	m6d = (Mark6Descriptor *)calloc(1, sizeof(Mark6Descriptor));
 	if(!m6d)
 	{
-		fprintf(stderr, "Error: cannot allocate %d bytes for Mark6Descriptor\n", sizeof(Mark6Descriptor));
+		fprintf(stderr, "Error: cannot allocate %d bytes for Mark6Descriptor\n", (int)(sizeof(Mark6Descriptor)));
 
 		return 0;
 	}
@@ -254,7 +254,7 @@ Mark6Descriptor *openMark6(int nFile, char **fileList)
 	m6d->mk6Files = (Mark6File *)calloc(nFile, sizeof(Mark6File));
 	if(!m6d)
 	{
-		fprintf(stderr, "Error: cannot allocate %d * %d bytes for Mark6Files\n", nFile, sizeof(Mark6File));
+		fprintf(stderr, "Error: cannot allocate %d * %d bytes for Mark6Files\n", nFile, (int)sizeof(Mark6File));
 	
 		free(m6d);
 
