@@ -248,9 +248,10 @@ void plot_results(Configuration * config, Model * model)
 	}
 
 	//plot something - data is from resultbuffer[at] to resultbuffer[at+numchannels+1]
-	sprintf(plplotname, "lba-%d-f%d-b%d.png/png", i, j, b);
-
-	plstart(plplotname,1,3);
+	sprintf(plplotname, "lba-%d-f%d-b%d.png", i, j, b);
+	plsdev("png");
+	plsfnam(plplotname);
+	plstart("png",1,3);
 
 	//FIXME
 	status = 1;
@@ -367,13 +368,17 @@ void plot_results(Configuration * config, Model * model)
       for(int k=0;k<config->getDNumRecordedBands(currentconfig, i); k++) {
 
 	if (j==0) {
-	  sprintf(plplotname, "lba-auto%d-f%d-b0.png/png",
+	  sprintf(plplotname, "lba-auto%d-f%d-b0.png",
 		  i, k);
-	  plstart(plplotname,1,1);
+	  plsdev("png");
+	  plsfnam(plplotname);
+	  plstart("png",1,1);
 	} else {
-	  sprintf(plplotname, "lba-autocross%d-b%d.png/png",
+	  sprintf(plplotname, "lba-autocross%d-b%d.png",
 		  i, k);
-	  plstart(plplotname,1,2);
+	  plsdev("png");
+	  plsfnam(plplotname);
+	  plstart("png",1,2);
 	}
 	{
 	  float max, min;
