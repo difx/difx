@@ -37,6 +37,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "vdifio.h"
 
 #define MARK6_SYNC	0xfeed6666
 
@@ -107,6 +108,71 @@ void printMark6(const Mark6Descriptor *m6d);
 
 ssize_t readMark6(Mark6Descriptor *m6d, void *buf, size_t count);
 
+
+/* *** implemented in vdifmark6mux.c *** */
+
+/* used to mux multiple Mark6 files together, possibly muxing threads, streams, and interleaved samples */
+/* Assumed constant for all input files: nBit, nChan/thread, same interleave */
+/* If interleaved samples (a la DDC3), nChan/thread must = 1 */
+
+/* This structure can be constructed with the function configurevdifmark6mux() which reads a template file and a file parameter that replaces a wildcard */
+
+struct vdif_mark6_mux_stream
+{
+	Mark6Descriptor *m6d;				/* handle for a block of mark6 data files */
+	uint16_t slotIndex[VDIF_MAX_THREAD_ID+1];	/* map from threadId to multiplexed data slot */
+};
+
+/* Unclear if this is needed yet */
+struct vdif_mark6_mux_slot
+{
+	int streamId;
+	int threadId;
+};
+
+struct vdif_mark6_mux
+{
+	int inputFrameSize;			/* size of one input data frame, inc header */
+	int inputDataSize;			/* size of one input data frame, without header */
+	int outputFrameSize;			/* size of one output data frame, inc header */
+	int outputDataSize;			/* size of one output data frame, without header */
+	int inputFramesPerSecond;		/* per thread */
+	int bitsPerSample;			/* per sample */
+	int bitsPerSlot;			/* effectively bitsPerSample * chans per thread */
+	int nThread;
+	int nSort;
+	int nGap;
+	int frameGranularity;
+	int nOutputChan;			/* rounded up to nearest power of 2 */
+
+	int nStream;
+	struct vdif_mark6_mux_stream *streams;
+
+	int nSlot;
+	struct vdif_mark6_mux_slot *slots;
+
+	uint64_t goodMask;			/* specify criterion for successful reassembly.  bit field: set to 1 per slot desired. */
+};
+
+struct vdif_mark6_mux_statistics
+{
+};
+
+struct vdif_mark6_mux *configurevdifmark6mux(const char *templateFilename, const char *fileParameter);
+
+void deletevdifmark6mux(struct vdif_mark6_mux *vm);
+
+void printvdifmark6mux(const struct vdif_mark6_mux *vm);
+
+int vdifmark6mux(unsigned char *dest, int destSize, const unsigned char **src, const int *srcSize, const struct vdif_mark6_mux *vm, int64_t startOutputFrameNumber, struct vdif_mark6_mux_statistics *stats);
+
+struct vdif_mark6_mux_statistics *newvdifmark6muxstatistics(const struct vdif_mark6_mux *vm);
+
+void deletevdifmark6muxstatistics(struct vdif_mark6_mux_statistics *stats);
+
+void printvdifmark6muxstatistics(const struct vdif_mark6_mux_statistics *stats);
+
+void resetvdifmark6muxstatistics(struct vdif_mark6_mux_statistics *stats);
 
 #ifdef __cplusplus
 }

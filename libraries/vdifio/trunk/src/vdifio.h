@@ -226,6 +226,11 @@ int determinevdifframesize(const unsigned char *buffer, int bufferSize);
 int determinevdifframeoffset(const unsigned char *buffer, int bufferSize, int frameSize);
 
 
+/* *** implemented in cornerturners.c *** */
+
+void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned char * const *, int);
+
+
 /* *** implemented in vdifmux.c *** */
 
 #define VDIF_MUX_FLAG_GOTOEND			0x01		/* risk inability to sort in order to possibly reach end of input array */
@@ -249,7 +254,7 @@ struct vdif_mux {
   int nOutputChan;					/* nThread rounded up to nearest power of 2 */
   unsigned int flags;
   uint16_t chanIndex[VDIF_MAX_THREAD_ID+1];		/* map from threadId to channel number (0 to nThread-1) */
-  uint32_t goodMask;
+  uint64_t goodMask;
   void (*cornerTurner)(unsigned char *, const unsigned char * const *, int);
 };
 
@@ -277,7 +282,7 @@ struct vdif_mux_statistics {
   int outputFramesPerSecond;	/* from call */
   int nOutputFrame;		/* length of usable output data measured in frames */
   int epoch;			/* from first header */
-  long long startFrameNumber;
+  int64_t startFrameNumber;
 
   /* start time of output data */
   /* duration of output data */
@@ -288,7 +293,7 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 
 void printvdifmux(const struct vdif_mux *vm);
 
-int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int srcSize, const struct vdif_mux *vm, long long startOutputFrameNumber, struct vdif_mux_statistics *stats);
+int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int srcSize, const struct vdif_mux *vm, int64_t startOutputFrameNumber, struct vdif_mux_statistics *stats);
 
 void printvdifmuxstatistics(const struct vdif_mux_statistics *stats);
 
@@ -330,7 +335,7 @@ static inline int vdiffilesummarygetsamplerate(const struct vdif_file_summary *s
 /* returns Mbps */
 static inline int vdiffilesummarygetbitrate(const struct vdif_file_summary *sum) { return sum->framesPerSecond*(sum->frameSize-VDIF_HEADER_BYTES)*sum->nThread/125000; }
 
-static inline int vdiffilesummarygetstartns(const struct vdif_file_summary *sum) { return (int)((long long)(sum->startFrame)*1000000000LL/sum->framesPerSecond); }
+static inline int vdiffilesummarygetstartns(const struct vdif_file_summary *sum) { return (int)((int64_t)(sum->startFrame)*1000000000LL/sum->framesPerSecond); }
 
 static inline int vdiffilesummarygetstartsecond(const struct vdif_file_summary *sum) { return sum->startSecond % 86400; }
 

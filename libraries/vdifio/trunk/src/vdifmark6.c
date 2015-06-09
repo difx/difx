@@ -31,7 +31,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "vdif_mark6.h"
+#include "vdifmark6.h"
 
 #define str(s) #s
 

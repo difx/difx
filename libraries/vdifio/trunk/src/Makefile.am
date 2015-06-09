@@ -1,13 +1,15 @@
 h_sources = \
 	vdifio.h \
-	vdif_mark6.h
+	vdifmark6.h
 
 c_sources = \
+	cornerturners.c \
+	decode.c \
 	vdifbuffer.c \
 	vdiffile.c \
 	vdifio.c \
-	vdif_mark6.c \
-	decode.c \
+	vdifmark6.c \
+	vdifmark6mux.c \
 	vdifmux.c
 
 library_includedir = $(includedir)

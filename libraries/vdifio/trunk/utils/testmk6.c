@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "vdif_mark6.h"
+#include "vdifmark6.h"
 
 int main(int argc, char **argv)
 {

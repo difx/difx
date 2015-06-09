@@ -32,7 +32,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "vdifio.h"
-#include "vdif_mark6.h"
+#include "vdifmark6.h"
 
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";

@@ -6,6 +6,10 @@ Version 1.1
 * Support new EDV2 that is produced by R2DBE.  Note that no official documentation exists at this time.  Interface is reverse engineered for now.
 * Add Mark6 awareness to printVDIFheader.  If the Mark6 signature is found at the beginning, 28 bytes will be skipped to allow proper decoding.
 * testmk6: test/example program for mark6 reading capabilities.  Does simple gather operation and file summary at this point.
+* changes to multiplexing: increase max number of threads to mux to 64, warn if too many threads are being muxed, move out cornerturners to their own file.
+  - note: ABI change.  Recompile of all code using vdifio is needed after updating to this version
+  - note: this code is not yet tested as of June 9, 2015
+* change a few key variables from "long long" to "int64_t" 
 
 Version 1.0
 ~~~~~~~~~~~
