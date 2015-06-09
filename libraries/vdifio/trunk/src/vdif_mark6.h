@@ -44,15 +44,15 @@ typedef struct
 {
 	uint32_t sync_word;	/* nominally the number above */
 	int32_t version;
-	int block_size;
+	int block_size;		/* taken to be the largest block size to be encountered.  Can be less though.  Use wb_size on a per-packet basis. */
 	int packet_format;
 	int packet_size;
 } Mark6Header;
 
 typedef struct
 {
-	int32_t blocknum;
-	int32_t wb_size;
+	int32_t blocknum;	/* block number.  Note: when subblocks are used (multiple simulaneous output streams) each stream will share the sequence of block numbers */
+	int32_t wb_size;	/* size of a written block, including this header */
 } Mark6BlockHeader_ver2;
 
 typedef struct
@@ -62,17 +62,15 @@ typedef struct
 
 typedef struct
 {
-	FILE *in;			/* actual file descriptor */
+	FILE *in;				/* actual file descriptor */
 	char *fileName;
-	int version;			/* from Mark6Header */
-	int blockSize;			/* from Mark6Header */
-	int blockHeaderSize;		/* from mark6BlockHeaderSize() */
-	int packetSize;			/* from Mark6Header */
-	int payloadSize;		/* block_size - blockHdeader_size */
-	int payloadBytes;		/* actual number of payload bytes (usually == payload_size) */
-	char *buffer;			/* to store a full block, including header.  Allocated upon fopen() */
-	const char *data;		/* points to payload within buffer */
-	const int32_t *blockNumPtr;	/* points to block number within buffer */
+	int version;				/* from Mark6Header */
+	int maxBlockSize;			/* from Mark6Header */
+	int blockHeaderSize;			/* [bytes] from mark6BlockHeaderSize() */
+	int packetSize;				/* [bytes] from Mark6Header */
+	int payloadBytes;			/* [bytes] actual number of payload bytes (usually == payload_size) */
+	char *data;				/* points to payload within buffer */
+	Mark6BlockHeader_ver2 blockHeader;	/* header corresponding to recent data */
 } Mark6File;
 
 typedef struct

@@ -110,11 +110,10 @@ int openMark6File(Mark6File *m6f, const char *filename)
 
 		return -2;
 	}
-	m6f->blockSize = header.block_size;
+	m6f->maxBlockSize = header.block_size;
 	m6f->packetSize = header.packet_size;
-	m6f->payloadSize = m6f->blockSize - m6f->blockHeaderSize;
-	m6f->buffer = (char *)malloc(m6f->blockSize);
-	if(!m6f->buffer)
+	m6f->data = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
+	if(!m6f->data)
 	{
 		fclose(m6f->in);
 		free(m6f->fileName);
@@ -123,12 +122,10 @@ int openMark6File(Mark6File *m6f, const char *filename)
 
 		return -3;
 	}
-	m6f->data = m6f->buffer + m6f->blockHeaderSize;
-	m6f->blockNumPtr = (const int32_t *)(m6f->buffer);
+	m6f->blockHeader.blocknum = -1;
+	m6f->blockHeader.wb_size = m6f->maxBlockSize;
 
 	m6f->payloadBytes = 0;	/* nothing read yet */
-
-	memset(m6f->buffer, 0, m6f->blockHeaderSize);
 
 	return 0;
 }
@@ -152,12 +149,10 @@ int closeMark6File(Mark6File *m6f)
 		free(m6f->fileName);
 		m6f->fileName = 0;
 	}
-	if(m6f->buffer)
+	if(m6f->data)
 	{
-		free(m6f->buffer);
-		m6f->buffer = 0;
+		free(m6f->data);
 		m6f->data = 0;
-		m6f->blockNumPtr = 0;
 	}
 	m6f->version = -1;
 
@@ -175,12 +170,11 @@ void printMark6File(const Mark6File *m6f)
 	{
 		printf("  Filename = %s\n", m6f->fileName);
 		printf("  Mark6 version = %d\n", m6f->version);
-		printf("  Block size = %d\n", m6f->blockSize);
-		printf("    Header size = %d\n", m6f->blockHeaderSize);
-		printf("    Payload size = %d\n", m6f->payloadSize);
+		printf("  Max block size = %d\n", m6f->maxBlockSize);
+		printf("  Block header size = %d\n", m6f->blockHeaderSize);
 		printf("  Packet size = %d\n", m6f->packetSize);
 		printf("  Payload bytes = %d (bytes currently residing in core)\n", m6f->payloadBytes);
-		printf("  Current block number = %d\n", *(m6f->blockNumPtr));
+		printf("  Current block number = %d\n", m6f->blockHeader.blocknum);
 	}
 }
 
@@ -189,14 +183,16 @@ ssize_t Mark6FileReadBlock(Mark6File *m6f)
 {
 	ssize_t v;
 
-	v = fread(m6f->buffer, 1, m6f->blockSize, m6f->in);
-	if(v < m6f->blockHeaderSize)
+	/* Note: the following will only update the value of "blocknum" for Mark6 version 1 (which is hopefully out of circulation). */
+	/* For Mark6 ver. 2, both "blocknum" and "wb_size" are updated. */
+	v = fread(&m6f->blockHeader, m6f->blockHeaderSize, 1, m6f->in);
+	if(v != 1)
 	{
 		m6f->payloadBytes = 0;
 	}
 	else
 	{
-		m6f->payloadBytes = v - m6f->blockHeaderSize;
+		m6f->payloadBytes = fread(m6f->data, 1, m6f->blockHeader.wb_size - m6f->blockHeaderSize, m6f->in);
 	}
 
 	return m6f->payloadBytes;
@@ -218,7 +214,7 @@ static int nextMark6File(const Mark6Descriptor *m6d)
 		{
 			continue;
 		}
-		blockNum = *(m6d->mk6Files[i].blockNumPtr);
+		blockNum = m6d->mk6Files[i].blockHeader.blocknum;
 		if(blockNum > m6d->currentBlockNum && (blockNum < nextBlockNum || nextBlockNum == -1))
 		{
 			nextFileNum = i;
@@ -292,7 +288,7 @@ Mark6Descriptor *openMark6(int nFile, char **fileList)
 	m6d->currentFileNum = nextMark6File(m6d);
 	if(m6d->currentFileNum >= 0)
 	{
-		m6d->currentBlockNum = *(m6d->mk6Files[m6d->currentFileNum].blockNumPtr);
+		m6d->currentBlockNum = m6d->mk6Files[m6d->currentFileNum].blockHeader.blocknum;
 	}
 
 	return m6d;
@@ -386,7 +382,7 @@ ssize_t readMark6(Mark6Descriptor *m6d, void *buf, size_t count)
 			m6d->currentFileNum = nextMark6File(m6d);
 			if(m6d->currentFileNum >= 0)
 			{
-				m6d->currentBlockNum = *(m6d->mk6Files[m6d->currentFileNum].blockNumPtr);
+				m6d->currentBlockNum = m6d->mk6Files[m6d->currentFileNum].blockHeader.blocknum;
 			}
 			else
 			{
