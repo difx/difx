@@ -371,7 +371,7 @@ ssize_t readMark6(Mark6Descriptor *m6d, void *buf, size_t count)
 			toRead = f->payloadBytes - m6d->index;
 		}
 
-		memcpy(buffer, f->buffer+m6d->index, toRead);
+		memcpy(buffer, f->data+m6d->index, toRead);
 		
 		m6d->index += toRead;
 		count -= toRead;

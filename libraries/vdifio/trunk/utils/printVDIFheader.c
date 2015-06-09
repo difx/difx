@@ -202,6 +202,13 @@ int main(int argc, char **argv)
 				}
 				if(header->eversion == 0 && (header->extended1 != 0 || header->extended2 != 0 || header->extended3 != 0 || header->extended1 != 0))
 				{
+					static int first = 1;
+
+					if(first)
+					{
+						first = 0;
+						fprintf(stderr, "Error: non-compliant VDIF data: this data has EDV set to 0 but the extended header is not identically 0\n");
+					}
 					++index;
 					++nSkip;
 					continue;
