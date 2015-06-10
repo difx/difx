@@ -417,7 +417,14 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       second = timedouble - (minute*100 + hour*10000);
       iss >> mjddouble; //mjd
       mjd = int(mjddouble);
+      // David Nice says that the correct time is the fractional MJD, and the HHMMSS is rounded to the nearest second
+      // and hence not guaranteed to be correct.  Hence the new check and changed value of mjdfraction below.
       mjdfraction = double(hour)/24.0 + double(minute)/1440.0 + second/86400.0;
+      if(abs(mjdfraction - (mjddouble - mjd)) > 0.00002/86400) {
+        csevere << startl << "Times in the polyco header (as given by HHMMSS vs fractional MJD) differ by more than 20 microseconds.  Using the fractional MJD." << endl;
+      }
+      mjdfraction = mjddouble - mjd;
+
       iss >> dm; //dm
 
       //check if we missed anything important
