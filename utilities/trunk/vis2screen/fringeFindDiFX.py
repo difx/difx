@@ -45,23 +45,7 @@ if inputfile == "":
 if numfreqs == 0:
     parser.error("Couldn't parse input file " + inputfile + " correctly")
 
-chans = []
-amp = []
-phase = []
-vis = []
-lag = []
-lagamp = []
-lagampsum = []
-for j in range(maxchannels):
-    amp.append(0.0)
-    phase.append(0.0)
-    vis.append(0.0)
-    lag.append(0.0)
-    lagamp.append(0.0)
-    lagampsum.append(0.0)
-    
-for i in range(maxchannels):
-    chans.append(i)
+lagampsum = numpy.zeros(maxchannels)
 
 difxinput = open(args[0])
 nextheader = parseDiFX.parse_output_header(difxinput)
@@ -80,28 +64,23 @@ while not len(nextheader) == 0:
         print "How embarrassing - you have tried to read files with more than " + \
             str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
         sys.exit()
-    buffer    = difxinput.read(8*nchan)
-    for j in range(nchan):
-        cvis = struct.unpack("ff", buffer[8*j:8*(j+1)])
-        vis[j] = complex(cvis[0], cvis[1])
-        amp[j] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
-        phase[j] = math.atan2(cvis[1], cvis[0])*180.0/math.pi
+    vis = numpy.fromstring(difxinput.read(8*nchan), dtype='complex64')
+    amp = numpy.abs(vis)
+    phase = numpy.angle(vis, deg=True)
     if (targetbaseline < 0 or targetbaseline == baseline) and \
        not (nozero and (ant1 == ant2)) and \
        not (dozero and (ant1 != ant2)) and \
        (targetfreq < 0 or targetfreq == freqindex):
         lag = fft.ifft(vis, nchan)
-        for j in range(nchan/2):
-            lagamp[j+nchan/2] = abs(lag[j])
-        for j in range(nchan/2):
-            lagamp[j] = abs(lag[j+nchan/2])
-            lagampsum[j] += lagamp[j]
+        lagamp = fft.fftshift(abs(lag))
+        lagampsum[0:nchan] = numpy.add(lagampsum[0:nchan], lagamp)
+
         maxlagamp = numpy.max(lagamp[:nchan])
         lagamprms = numpy.std(lagamp[:nchan])
         maxlagchan = numpy.argmax(lagamp[:nchan])
         if maxlagamp/lagamprms > minsnr:
-            print "Detection on time %d:%f, baseline %d, freq index %d, pol %s on channel %d at S/N: %f" % \
-                  (mjd, seconds, baseline, freqindex, polpair, maxlagchan - nchan/2, maxlagamp/lagamprms)
+            print "Detection on time %d:%f, baseline %d (%d-%d), freq index %d, pol %s on channel %d at S/N: %f" % \
+                  (mjd, seconds, baseline, ant2, ant1, freqindex, polpair, maxlagchan - nchan/2, maxlagamp/lagamprms)
     nextheader = parseDiFX.parse_output_header(difxinput)
 
 if nchan < 0:
