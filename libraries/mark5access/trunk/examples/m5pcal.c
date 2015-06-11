@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2015 by Walter Brisken & Jan Wagner                *
+ *   Copyright (C) 2010-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,8 +40,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.7";
-const char verdate[] = "20130521";
+const char version[] = "0.8";
+const char verdate[] = "20150611";
 
 int ChunkSize = 0;
 const int MaxTones = 4096;
@@ -79,7 +79,7 @@ static void usage(const char *pgm)
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
-	printf("  <freq1> ... is/are the frequencies (MHz) relative to baseband of the first\n");
+	printf("  <freq1> ... is/are the frequencies (in MHz) relative to baseband of the first\n");
 	printf("      tone to detect; there should be one specified per baseband channel (IF)\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("Options can include:\n\n");
@@ -99,6 +99,11 @@ static void usage(const char *pgm)
 	printf("  -i <number>  Assume a pulse cal comb interval of <number> MHz [1]\n\n");
 	printf("  --edge <number>\n");
 	printf("  -e <number>  Don't use channels closer than <number> MHz to the edge in delay calc.\n\n");
+	printf("Notes:\n\n");
+	printf("   The position of the first tone in a baseband channel (<freq1> for baseband 1, and so on)\n");
+	printf("   must not be larger than the tone interval (-i <number>). All tones are extracted from\n");
+	printf("   each baseband channel. The tone interval is allowed to exceed the bandwidth of a baseband\n");
+	printf("   channel in which case <freqN> will effectively select just a single tone from the baseband.\n\n");
 }
 
 static double calcDelay(int nTone, double *toneFreq_MHz, double *toneAmp, double *tonePhase, double bandCenter, double bandValid)
@@ -285,7 +290,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 	double toneFreq[MaxTones];
 	int DFTlen;
 	fftw_plan plan;
-	int ns;
+	int ns, startMJD;
 	double startSec, stopSec;
 
 	ms = new_mark5_stream_absorb(
@@ -366,6 +371,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 		bins[i] = (double complex *)malloc(DFTlen*sizeof(double complex));
 	}
 
+	startMJD = ms->mjd;
 	stopSec = ms->sec + ms->ns*1.0e-9;
 
 	for(N = 0; N < nDelay; ++N)
@@ -416,7 +422,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 			break;
 		}
 
-		stopSec = ms->sec + ms->ns*1.0e-9 + total/(double)(ms->samprate);
+		stopSec = (ms->mjd - startMJD)*86400.0 + ms->sec + ms->ns*1.0e-9 + total/(double)(ms->samprate);
 
 		if(nInt < 1)
 		{
