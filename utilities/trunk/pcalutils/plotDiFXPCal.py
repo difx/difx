@@ -19,6 +19,7 @@ Optional arguments;
   --txt      to store phases and amplitudes into a text file,
              discarding details about frequency and polarization
   band,tone  to select specific tone(s) of a band rather than all
+             the first tone in the first band is 1,1
 
 Has some similarity to 'plotpcal' from vex2difx: plotDiFXPCal.py
 has no automatic tone selection, and lacks x/y and delay plots,
@@ -48,8 +49,8 @@ def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
             station = line[0]
             mjd = float(line[1])
             tint = float(line[2])*86400.0 
-            npol = int(line[3])
-            nsubband = int(line[4])
+            npol = max(int(line[3]), 1)
+            nsubband = max(int(line[4]), 1)
             ntones = int(line[5])
             # line = ...,  '21997' 'R' '-2.03274e-05'  '9.69250e-05', ...]
             tone = line[6:]
