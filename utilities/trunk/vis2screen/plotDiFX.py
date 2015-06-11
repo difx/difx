@@ -152,7 +152,7 @@ while not len(nextheader[0]) == 0 and keeplooping:
         freqindex[i] = nextheader[i][5]
         polpair[i] = nextheader[i][6]
         nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
-        buffer = difxinputs[i].read(8*nchan[i])
+        vis[i] = numpy.fromstring(difxinputs[i].read(8*nchan[i]), dtype='complex64')
         if nchan[i] > maxchannels:
             print "How embarrassing - you have tried to read files with more than " + \
                 str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
@@ -176,15 +176,12 @@ while not len(nextheader[0]) == 0 and keeplooping:
 				print 'Skip old baseline %s with desired freq %d = %d' % (str(baseline[i]),freqindex[i],targetfreq)
 			targetbaseline = 13
 
-        for j in range(nchan[i]):
-            cvis = struct.unpack("ff", buffer[8*j:8*(j+1)])
-            vis[i][j] = complex(cvis[0], cvis[1])
-            amp[i][j] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
-            phase[i][j] = math.atan2(cvis[1], cvis[0])
+        amp[i] = numpy.abs(vis[i])
+        phase[i] = numpy.angle(vis[i])
 
         if unwrap:
 	    phase[i] = (numpy.unwrap(phase[i]))
-        phase[i] = numpy.array(phase[i])*180.0/math.pi
+        phase[i] *= 180.0/math.pi
 
 	if (targetbaseline < 0 or targetbaseline == baseline[i]) and \
 	    (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist) and \
