@@ -2463,12 +2463,13 @@ int CorrParams::checkSetupValidity()
 
 			if(c->explicitFFTSpecRes)
 			{
-				std::cerr << "Warning: number of channels and spectral resolutions provided!  Ignoring number of channels\n";
+				std::cerr << "Warning: number of channels and spectral resolutions provided!  Ignoring number of channels"  << std::endl;
 				++nWarn;
 			}
 			else if(minBW != maxBW)
 			{
-				std::cerr << "Warning: cannot specify number of channels when different sub-band bandwidths exist within one setup\n";
+				std::cerr << "Warning: cannot specify number of channels when different sub-band bandwidths exist within one setup." << std::endl;
+				std::cerr << "Note! If you get this message while performing zoom-banding the fix is probably to specify specRes instead of nChan." << std::endl;
 				++nWarn;
 			}
 			else

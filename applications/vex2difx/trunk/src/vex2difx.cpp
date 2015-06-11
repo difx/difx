@@ -1156,7 +1156,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 							altFreqId = D->datastream[a2].recFreqId[f2];
 							if(D->freq[freqId].freq == D->freq[altFreqId].freq &&
 							   D->freq[freqId].bw   == D->freq[altFreqId].bw &&
-                               D->freq[altFreqId].sideband == 'U')
+							   D->freq[altFreqId].sideband == 'U')
 							{
 								n2 = DifxDatastreamGetRecBands(D->datastream+a2, altFreqId, a2p, a2c);
 							}
