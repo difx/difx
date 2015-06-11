@@ -6,6 +6,11 @@ all: depcheck vdifio/vdifio.py
 clean:
 	rm -f $(FILES)
 
+dist:
+	# will be packaged by toplevel
+distdir:
+	# will be packaged by toplevel
+
 install: vdifio/vdifio.py
 	python setup.py install
 
