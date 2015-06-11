@@ -227,11 +227,8 @@ static int nextMark6File(const Mark6Descriptor *m6d)
 	return nextFileNum;
 }
 
-/* This call _does_ create the new Mark6Descriptor structure and fills it in. */
-Mark6Descriptor *openMark6(int nFile, char **fileList)
+Mark6Descriptor *newMark6()
 {
-	int i;
-	int nBad = 0;
 	Mark6Descriptor *m6d;
 
 	m6d = (Mark6Descriptor *)calloc(1, sizeof(Mark6Descriptor));
@@ -242,47 +239,74 @@ Mark6Descriptor *openMark6(int nFile, char **fileList)
 		return 0;
 	}
 
-	m6d->nFile = nFile;
+	m6d->nFile = 0;
+	m6d->mk6Files = 0;
 	m6d->currentFileNum = -1;
 	m6d->currentBlockNum = -1;
 	m6d->index = 0;
 
-	m6d->mk6Files = (Mark6File *)calloc(nFile, sizeof(Mark6File));
+}
+
+/* This call _does_ create the new Mark6Descriptor structure and fills it in. */
+Mark6Descriptor *openMark6(int nFile, char **fileList)
+{
+	Mark6Descriptor *m6d;
+	int nBad;
+
+	m6d = newMark6();
 	if(!m6d)
 	{
-		fprintf(stderr, "Error: cannot allocate %d * %d bytes for Mark6Files\n", nFile, (int)sizeof(Mark6File));
+		return 0;
+	}
+
+	nBad = addMark6Files(m6d, nFile, fileList);
+	if(nBad > 0)
+	{
+		fprintf(stderr, "Cannot create Mark6Descriptor because %d/%d files could not be opened\n", nBad, nFile);
+		closeMark6(m6d);
+
+		return 0;
+	}
+
+	return m6d;
+}
+
+/* function to add more files to a Mark6 descriptor */
+int addMark6Files(Mark6Descriptor *m6d, int nFile, char **fileList)
+{
+	int i;
+	int nBad = 0;
+	int startFile;
+
+	startFile = m6d->nFile;
+	m6d->nFile += nFile;
+
+	m6d->mk6Files = (Mark6File *)realloc(m6d->mk6Files, m6d->nFile*sizeof(Mark6File));
+	if(!m6d)
+	{
+		fprintf(stderr, "Error: cannot (re)allocate %d * %d bytes for Mark6Files\n", nFile, (int)sizeof(Mark6File));
 	
 		free(m6d);
 
 		return 0;
 	}
+	memset(m6d->mk6Files + startFile, 0, nFile*sizeof(Mark6File));
 
 	for(i = 0; i < nFile; ++i)
 	{
 		int v;
 
-		v = openMark6File(m6d->mk6Files + i, fileList[i]);
+		v = openMark6File(m6d->mk6Files + startFile + i, fileList[i]);
 
 		if(v < 0)
 		{
 			fprintf(stderr, "Mark6 file %s cannot be opened.  Error code = %d\n", fileList[i], v);
 			++nBad;
 		}
-	}
-
-	if(nBad > 0)
-	{
-		fprintf(stderr, "Cannot create Mark6Descriptor because %d/%d files could not be opened\n", nBad, nFile);
-
-		closeMark6(m6d);
-
-		return 0;
-	}
-
-	/* load first block from each file */
-	for(i = 0; i < nFile; ++i)
-	{
-		Mark6FileReadBlock(m6d->mk6Files + i);
+		else
+		{
+			Mark6FileReadBlock(m6d->mk6Files + i);
+		}
 	}
 
 	m6d->currentFileNum = nextMark6File(m6d);
@@ -291,7 +315,7 @@ Mark6Descriptor *openMark6(int nFile, char **fileList)
 		m6d->currentBlockNum = m6d->mk6Files[m6d->currentFileNum].blockHeader.blocknum;
 	}
 
-	return m6d;
+	return nBad;
 }
 
 int closeMark6(Mark6Descriptor *m6d)

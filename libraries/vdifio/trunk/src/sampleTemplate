@@ -1,0 +1,14 @@
+# e.g., /mnt/disks//1/0/data/a90xx_PV_090-0030.vdif
+
+# inputs
+mountPoint = /mnt/disks
+stream0 = /[12]/*/data		# files are globbed from mountPoint + '/' + streamX + '/' + filename
+stream1 = /[34]/*/data	
+frameSize = 8224		# in principle this and the next 2 are determined by looking at data...
+bitsPerSample = 2
+chansPerThread = 1		# defaults to 1 if not provided
+interleaveFactor = 1		# defaults to 1 if not provided
+
+# outputs
+slot0 = 0, 0	# stream, thread
+slot1 = 1, 0

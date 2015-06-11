@@ -39,7 +39,8 @@ extern "C" {
 #include <unistd.h>
 #include "vdifio.h"
 
-#define MARK6_SYNC	0xfeed6666
+#define MARK6_SYNC		0xfeed6666
+#define MAX_VDIF_MUX_SLOTS	64
 
 typedef struct
 {
@@ -100,7 +101,11 @@ void printMark6File(const Mark6File *m6f);
 ssize_t Mark6FileReadBlock(Mark6File *m6f);
 
 
+Mark6Descriptor *newMark6();
+
 Mark6Descriptor *openMark6(int nFile, char **fileList);
+
+int addMark6Files(Mark6Descriptor *m6d, int nFile, char **fileList);
 
 int closeMark6(Mark6Descriptor *m6d);
 
@@ -120,14 +125,7 @@ ssize_t readMark6(Mark6Descriptor *m6d, void *buf, size_t count);
 struct vdif_mark6_mux_stream
 {
 	Mark6Descriptor *m6d;				/* handle for a block of mark6 data files */
-	uint16_t slotIndex[VDIF_MAX_THREAD_ID+1];	/* map from threadId to multiplexed data slot */
-};
-
-/* Unclear if this is needed yet */
-struct vdif_mark6_mux_slot
-{
-	int streamId;
-	int threadId;
+	int16_t slotIndex[VDIF_MAX_THREAD_ID+1];	/* map from threadId to multiplexed data slot */
 };
 
 struct vdif_mark6_mux
@@ -139,17 +137,15 @@ struct vdif_mark6_mux
 	int inputFramesPerSecond;		/* per thread */
 	int bitsPerSample;			/* per sample */
 	int bitsPerSlot;			/* effectively bitsPerSample * chans per thread */
-	int nThread;
+	int nSlot;
 	int nSort;
 	int nGap;
 	int frameGranularity;
 	int nOutputChan;			/* rounded up to nearest power of 2 */
+	unsigned int flags;			/* some additional control parameters */
 
 	int nStream;
 	struct vdif_mark6_mux_stream *streams;
-
-	int nSlot;
-	struct vdif_mark6_mux_slot *slots;
 
 	uint64_t goodMask;			/* specify criterion for successful reassembly.  bit field: set to 1 per slot desired. */
 };
@@ -158,7 +154,8 @@ struct vdif_mark6_mux_statistics
 {
 };
 
-struct vdif_mark6_mux *configurevdifmark6mux(const char *templateFilename, const char *fileParameter);
+
+struct vdif_mark6_mux *configurevdifmark6mux(const char *templateFilename, const char *fileParameter, int inputFramesPerSecond);
 
 void deletevdifmark6mux(struct vdif_mark6_mux *vm);
 
