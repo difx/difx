@@ -11,6 +11,11 @@ install: mark5access/mark5access.py
 	python setup.py install
 	cp $(SCRIPTS) /usr/local/bin/
 
+# empty targets to keep toplevel happy
+dist: ;
+distdir: ;
+distclean: ;
+
 ### Checks
 
 XML2PY_V := $(shell xml2py --help 2>/dev/null)
