@@ -119,7 +119,7 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 
 	if(nThread > sizeof(vm->goodMask)*8)
 	{
-		fprintf(stderr, "Error: configurevdifmux: cannot run vdifmux on more than %d threads; %d requested.\n", sizeof(vm->goodMask)*8, nThread);
+		fprintf(stderr, "Error: configurevdifmux: cannot run vdifmux on more than %d threads; %d requested.\n", (int)sizeof(vm->goodMask)*8, nThread);
 
 		return -3;
 	}

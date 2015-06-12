@@ -284,7 +284,7 @@ struct vdif_mark6_mux *configurevdifmark6mux(const char *templateFilename, const
 
 			if(slotId < 0 || slotId >= MAX_VDIF_MUX_SLOTS)
 			{
-				fprintf(stderr, "Error: configurevdifmark6mux: slot %d not supported.  The maximum number of slots is %d.  Note slot numbers start at 0.\n", MAX_VDIF_MUX_SLOTS);
+				fprintf(stderr, "Error: configurevdifmark6mux: slot %d not supported.  The maximum number of slots is %d.  Note slot numbers start at 0.\n", slotId, MAX_VDIF_MUX_SLOTS);
 				deletevdifmark6mux(vm);
 				vm = 0;
 

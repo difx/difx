@@ -245,6 +245,7 @@ Mark6Descriptor *newMark6()
 	m6d->currentBlockNum = -1;
 	m6d->index = 0;
 
+	return m6d;
 }
 
 /* This call _does_ create the new Mark6Descriptor structure and fills it in. */
