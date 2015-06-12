@@ -856,6 +856,11 @@ static int convertFits(struct CommandLineOptions *opts, int passNum, int *nWitho
 
 			D = mergeDifxInputs(D1, D2, opts->verbose);
 
+			if(D->nEOP < D1->nEOP || D->nEOP < D2->nEOP)
+			{
+				fprintf(stderr, "  Warning: merging of EOP table from file %s failed.  EOP data will be lost for entire merged job set.\n", opts->baseFile[i]);
+			}
+
 			deleteDifxInput(D1);
 			deleteDifxInput(D2);
 

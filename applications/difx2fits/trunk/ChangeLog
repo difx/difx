@@ -1,6 +1,8 @@
 Version 3.5.0
 * Post DiFX 2.4
 * Remove duplicate RDATE keywords from AG and ML tables
+* With changes in difxio, ensure same-day EOPs are equal before merging jobs
+* plotpcal2 : second attempt to plot pcals in a more general way.  Still not super satisfactory.
 
 Version 3.4.0
 * Add command line option --primary-band.  This causes a keyword to be added to the output FITS file.  Intended for VLITE.
