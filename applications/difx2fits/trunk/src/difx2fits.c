@@ -819,12 +819,12 @@ static int nEOPDays(const DifxInput * const *Dset, int n)
 
 static int loadDifxInputSet(const struct CommandLineOptions *opts)
 {
-	DifxInput **D;
+	DifxInput **Dset;
 	enum EOPMergeMode eopMergeMode;
 	int i;
 
-	D = (DifxInput **)calloc(opts->nBaseFile*sizeof(DifxInput *));
-	if(!D)
+	Dset = (DifxInput **)calloc(opts->nBaseFile, sizeof(DifxInput *));
+	if(!Dset)
 	{
 		fprintf(stderr, "Error: cannot allocate %d bytes for %d DifxInput structures\n", opts->nBaseFile*sizeof(DifxInput *), opts->nBaseFile);
 
@@ -837,21 +837,21 @@ static int loadDifxInputSet(const struct CommandLineOptions *opts)
 		{
 			printf("Loading %s\n", opts->baseFile[i]);
 		}
-		D[i] = loadDifxInput(opts->baseFile[i]);
-		if(!D[i])
+		Dset[i] = loadDifxInput(opts->baseFile[i]);
+		if(!Dset[i])
 		{
 			int j;
 
 			fprintf(stderr, "loadDifxInput failed on <%s>.\n", opts->baseFile[i]);
 
-			deleteDifxInputSet(D, opts->nBaseFile);
+			deleteDifxInputSet(Dset, opts->nBaseFile);
 
 			return 0;
 		}
 	}
 	if(opts->eopMergeMode == EOPMergeModeUnspecified)
 	{
-		if(nEOPDays(const DifxInput * const *Dset, int n) > DIFXIO_MAX_EOP_PER_FITS)
+		if(nEOPDays(Dset, opts->nBaseFile) > DIFXIO_MAX_EOP_PER_FITS)
 		{
 			/* here only allow merging if EOP sets match exactly */
 			eopMergeMode = EOPMergeModeStrict;
@@ -869,13 +869,13 @@ static int loadDifxInputSet(const struct CommandLineOptions *opts)
 
 	for(i = 0; i < opts->eopMergeMode; ++i)
 	{
-		if(D[i].eopMergeMode == EOPMergeModeUnspecified)
+		if(Dset[i]->eopMergeMode == EOPMergeModeUnspecified)
 		{
-			D[i].eopMergeMode = eopMergeMode;
+			Dset[i]->eopMergeMode = eopMergeMode;
 		}
 	}
 
-	return D;
+	return Dset;
 }
 
 /* FIXME: use opts->eopMergeMode to drive merging of files */
