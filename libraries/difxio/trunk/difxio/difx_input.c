@@ -220,7 +220,7 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 		fprintDifxScan(fp, D->scan + i);
 	}
 
-	fprintf(fp, "  EOP merge mode = %d = %s\n", D->D->eopMergeMode, eopMergeModeNames[D->eopMergeMode]);
+	fprintf(fp, "  EOP merge mode = %d = %s\n", D->eopMergeMode, eopMergeModeNames[D->eopMergeMode]);
 	fprintf(fp, "  nEOP = %d\n", D->nEOP);
 	if(D->eop) 
 	{

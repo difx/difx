@@ -265,7 +265,7 @@ int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int 
 			return 0;
 		}
 	}
-	else if(MergeMode == EOPMergeModeStrict)
+	else if(eopMergeMode == EOPMergeModeStrict)
 	{
 		if(nde == nde1 && nde == nde2)
 		{
@@ -276,10 +276,8 @@ int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int 
 			return 0;
 		}
 	}
-	else
-	{
-		return 0;
-	}
+
+	return 0;
 }
 
 /* returns number of lines written */
