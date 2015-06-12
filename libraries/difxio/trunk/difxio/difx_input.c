@@ -46,6 +46,14 @@ const char toneSelectionNames[][MAX_TONE_SELECTION_STRING_LENGTH] =
 	"unknown"
 };
 
+const char eopMergeModeNames[][MAX_EOP_MERGE_MODE_STRING_LENGTH] =
+{
+	"unspecified",
+	"strict",
+	"relaxed",
+	"illegal"
+};
+
 enum ToneSelection stringToToneSelection(const char *str)
 {
 	enum ToneSelection ts;
@@ -69,6 +77,7 @@ DifxInput *newDifxInput()
 	D = (DifxInput *)calloc(1, sizeof(DifxInput));
 	D->specAvg = 1;
 	D->visBufferLength = 32;
+	D->eopMergeMode = EOPMergeModeUnspecified;
 
 	return D;
 }
@@ -211,6 +220,7 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 		fprintDifxScan(fp, D->scan + i);
 	}
 
+	fprintf(fp, "  EOP merge mode = %d = %s\n", D->D->eopMergeMode, eopMergeModeNames[D->eopMergeMode]);
 	fprintf(fp, "  nEOP = %d\n", D->nEOP);
 	if(D->eop) 
 	{

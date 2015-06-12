@@ -240,8 +240,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, in
 	return de;
 }
 
-/* For downstream compatibility, EOPs are compatible if the total number is <= 6 and if the overlapping dates have the same values */
-int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2)
+int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, enum EOPMergeMode eopMergeMode)
 {
 	DifxEOP *de;
 	int nde;
@@ -255,9 +254,27 @@ int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int 
 
 	deleteDifxEOPArray(de);
 
-	if(nde <= 6)
+	if(eopMergeMode == EOPMergeModeRelaxed)
 	{
-		return 1;
+		if(nde <= DIFXIO_MAX_EOP_PER_FITS)
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	else if(MergeMode == EOPMergeModeStrict)
+	{
+		if(nde == nde1 && nde == nde2)
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
 	}
 	else
 	{

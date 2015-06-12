@@ -71,15 +71,11 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
 		}
 	}
 
-/*
-	Commented out for now.  Need a new logical leap here as compatibility of EOP sets is
-	not transitive as is the case for the other tables.
-
-	if(areDifxEOPsCompatible(D1->eop, D1->nEOP, D2->eop, D2->nEOP) == 0)
+	if(D1->eopMergeMode != D2->eopMergeMode || areDifxEOPsCompatible(D1->eop, D1->nEOP, D2->eop, D2->nEOP, D1->eopMergeMode) == 0)
 	{
 		return 0;
 	}
-*/
+
 	for(a1 = 0; a1 < D1->nAntenna; ++a1)
 	{
 		int a2;
@@ -221,6 +217,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose
 		&(D->nScan));
 
 	/* merge DifxEOP table */
+	D->eopMergeMode = D1->eopMergeMode;
 	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
 		&(D->nEOP));
 	

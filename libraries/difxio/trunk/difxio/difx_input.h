@@ -40,6 +40,7 @@
 #define MAX_ANTENNA_MOUNT_NAME_LENGTH	8
 #define MAX_SAMPLING_NAME_LENGTH	16
 #define MAX_TONE_SELECTION_STRING_LENGTH 12
+#define MAX_EOP_MERGE_MODE_STRING_LENGTH 16
 
 #define DIFXIO_FILENAME_LENGTH		256
 #define DIFXIO_NAME_LENGTH		32
@@ -61,6 +62,8 @@
 #define DIFXIO_POL_ERROR		0x100
 #define DIFXIO_POL_RL			(DIFXIO_POL_R | DIFXIO_POL_L)
 #define DIFXIO_POL_XY			(DIFXIO_POL_X | DIFXIO_POL_Y)
+
+#define DIFXIO_MAX_EOP_PER_FITS		6
 
 #ifdef __cplusplus
 extern "C" {
@@ -145,19 +148,30 @@ extern const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH];
 /* keep this current with toneSelectionNames[] in difx_input.c */
 enum ToneSelection
 {
-	ToneSelectionVex = 0,	// trust the vex file	[default]
-	ToneSelectionNone,	// Don't pass any tones along
-	ToneSelectionEnds,	// send along two tones at edges of the band
-	ToneSelectionAll,	// send along all tones
-	ToneSelectionSmart,	// like Ends, but try to stay toneGuard MHz away from band edges
-	ToneSelectionMost,	// all except those within toneGuard
-	ToneSelectionUnknown,	// an error condition
+	ToneSelectionVex = 0,		/* trust the vex file	[default] */
+	ToneSelectionNone,		/* Don't pass any tones along */
+	ToneSelectionEnds,		/* send along two tones at edges of the band */
+	ToneSelectionAll,		/* send along all tones */
+	ToneSelectionSmart,		/* like Ends, but try to stay toneGuard MHz away from band edges */
+	ToneSelectionMost,		/* all except those within toneGuard */
+	ToneSelectionUnknown,		/* an error condition */
 
-	NumToneSelections	// needs to be at end of list
+	NumToneSelections		/* needs to be at end of list */
 };
 
 extern const char toneSelectionNames[][MAX_TONE_SELECTION_STRING_LENGTH];
 
+
+enum EOPMergeMode
+{
+	EOPMergeModeUnspecified = 0,
+	EOPMergeModeStrict,		/* here only allow merging if EOP sets match exactly */
+	EOPMergeModeRelaxed,		/* here allow non-contradictory EOP sets to be merged as long as common days have identical values */
+
+	NumEOPMergeModes		/* must remain as last entry */
+};
+
+extern const char eopMergeModeNames[][MAX_EOP_MERGE_MODE_STRING_LENGTH];
 
 /* Straight from DiFX frequency table */
 typedef struct
@@ -547,6 +561,7 @@ typedef struct
 	int dataBufferFactor;
         int nDataSegments;
         enum OutputFormatType outputFormat;
+	enum EOPMergeMode eopMergeMode;
 
 	int nCore;		/* from the .threads file, or zero if no file */
 	int *nThread;		/* [coreId]: how many threads to use on each core */
@@ -784,7 +799,7 @@ void fprintDifxEOPSummary(FILE *fp, const DifxEOP *de);
 void copyDifxEOP(DifxEOP *dest, const DifxEOP *src);
 int isSameDifxEOP(const DifxEOP *de1, const DifxEOP *de2);
 DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde);
-int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2);
+int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, enum EOPMergeMode eopMergeMode);
 int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de);
 
 /* DifxSpacecraft functions */
