@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -91,10 +91,28 @@ void copyDifxEOP(DifxEOP *dest, const DifxEOP *src)
 	memcpy(dest, src, sizeof(DifxEOP));
 }
 
+int isSameDifxEOP(const DifxEOP *de1, const DifxEOP *de2)
+{
+	if(de1->mjd == de2->mjd &&
+	   de1->tai_utc == de2->tai_utc &&
+	   de1->ut1_utc == de2->ut1_utc &&
+	   de1->xPole == de2->xPole &&
+	   de1->yPole == de2->yPole)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 /* Note this function returns the number of merged EOP entries on the call 
  * stack : nde */
-DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, 
-	const DifxEOP *de2, int nde2, int *nde)
+
+/* FIXME: verify EOPs from the same day have the same values.  
+   Calling functions should be informed and act appropriately.  */
+DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde)
 {
 	DifxEOP *de;
 	int mjdMin=-1, mjdMax=-1;
@@ -175,8 +193,22 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 		}
 		else if(de1[i1].mjd <= de2[i2].mjd)
 		{
+			/* Two EOPs from the same day.  Make sure they are equal in value.  Then */
+			/* arbitrarily choose to tahe from the first array. */
+			/* If they are different, return a null pointer and set nde to 0, */
+			/* indicating failure to merge.  */
+
+			if(isSameDifxEOP(de1 + i1, de2 + i2) == 0)
+			{
+				/* OOPS! EOPs have differing values.  cannot merge! */
+				*nde = 0;
+				deleteDifxEOPArray(de);
+
+				return 0;
+			}
+
 			src = 1;
-			/* for two eops from same day, take the first */
+
 			if(de1[i1].mjd == de2[i2].mjd)
 			{
 				i2++;
@@ -206,6 +238,31 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 	*nde = i;
 
 	return de;
+}
+
+/* For downstream compatibility, EOPs are compatible if the total number is <= 6 and if the overlapping dates have the same values */
+int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2)
+{
+	DifxEOP *de;
+	int nde;
+
+	de = mergeDifxEOPArrays(de1, nde1, de2, nde2, &nde);
+	if(!de)
+	{
+		/* merging fails! */
+		return 0;
+	}
+
+	deleteDifxEOPArray(de);
+
+	if(nde <= 6)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 /* returns number of lines written */

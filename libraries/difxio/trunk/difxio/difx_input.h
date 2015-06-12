@@ -782,7 +782,9 @@ void fprintDifxEOP(FILE *fp, const DifxEOP *de);
 void printDifxEOPSummary(const DifxEOP *de);
 void fprintDifxEOPSummary(FILE *fp, const DifxEOP *de);
 void copyDifxEOP(DifxEOP *dest, const DifxEOP *src);
+int isSameDifxEOP(const DifxEOP *de1, const DifxEOP *de2);
 DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde);
+int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2);
 int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de);
 
 /* DifxSpacecraft functions */

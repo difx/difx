@@ -1,3 +1,7 @@
+3.5.0
+* Post DiFX 2.4
+* Consider equality of EOP values when merging jobs
+
 3.4.0
 * Fix X/Y polarization issue
 * Change internal representation of networkPort from integer to string to accomodate ethernet device names

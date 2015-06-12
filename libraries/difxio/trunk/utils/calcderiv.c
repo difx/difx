@@ -471,7 +471,7 @@ int main(int argc, char **argv)
 	int a;
 	int verbose = 0;
 	double deltaLM = 10.0/206265.0;		/* (rad) about 10 arcseconds */
-	double deltaXYZ = 100.0;		/* (m) */
+	double deltaXYZ = 1000.0;		/* (m) */
 
 	for(a = 1; a < argc; ++a)
 	{

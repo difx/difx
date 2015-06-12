@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -69,6 +69,11 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
 		{
 			return 0;
 		}
+	}
+
+	if(areDifxEOPsCompatible(D1->eop, D1->nEOP, D2->eop, D2->nEOP) == 0)
+	{
+		return 0;
 	}
 
 	for(a1 = 0; a1 < D1->nAntenna; ++a1)
