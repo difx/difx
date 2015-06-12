@@ -70,6 +70,7 @@ struct CommandLineOptions
 	double jobMatrixDeltaT; /* seconds */
 	char *primaryBand;	/* for VLITE */
 	char *historyFile;	/* if set, dump contents to FITS history */
+	enum EOPMergeMode eopMergeMode;
 };
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
