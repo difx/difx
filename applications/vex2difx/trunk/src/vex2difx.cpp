@@ -98,6 +98,7 @@ static bool usesCannonicalVDIFThreadIds(const char *antName)
 	}
 }
 
+/* FIXME: this function needs to consider bytes/sample denominator = 8/(nBit*nRecChan) */
 static int calculateWorstcaseGuardNS(double sampleRate, int subintNS)
 {
 	double sampleTimeNS = 1.0e9/sampleRate;
@@ -150,7 +151,7 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 	job->subarrayId = 0;
 	snprintf(job->obsCode, DIFXIO_OBSCODE_LENGTH, "%s", obsCode.c_str());
 	job->obsCode[7] = 0;
-	snprintf(job->taperFunction, DIFXIO_TAPER_LENGTH, "%s", "UNIFORM");
+	job->taperFunction = TaperFunctionUniform;
 	job->polyOrder = 5;
 	job->polyInterval = 120;
 	job->aberCorr = AberCorrExact;
