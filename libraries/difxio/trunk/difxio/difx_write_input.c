@@ -250,8 +250,8 @@ int writeDifxInput(const DifxInput *D)
 
 	if(D->nJob != 1)
 	{
-		fprintf(stderr, "writeDifxInput: nJob = %d (not 1)\n", 
-			D->nJob);
+		fprintf(stderr, "writeDifxInput: nJob = %d (not 1)\n", D->nJob);
+
 		return -1;
 	}
 
