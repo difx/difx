@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,6 +41,28 @@ const char aberCorrStrings[][MAX_ABER_CORR_STRING_LENGTH] =
 	"NO ATMOS"
 };
 
+
+const char taperFunctionNames[][MAX_TAPER_FUNCTION_STRING_LENGTH] =
+{
+	"UNIFORM",
+	"UNKNOWN"
+};
+
+enum TaperFunction stringToTaperFunction(const char *str)
+{
+	enum TaperFunction f;
+
+	for(f = 0; f < NumTaperFunctions; ++f)
+	{
+		if(strcasecmp(str, taperFunctionNames[f]) == 0)
+		{
+			break;
+		}
+	}
+
+	return f;
+}
+
 DifxJob *newDifxJobArray(int nJob)
 {
 	DifxJob *dj;
@@ -50,8 +72,8 @@ DifxJob *newDifxJobArray(int nJob)
 	for(j = 0; j < nJob; j++)
 	{
 		snprintf(dj[j].obsCode,       DIFXIO_OBSCODE_LENGTH,  "%s", "DIFX");
-		snprintf(dj[j].taperFunction, DIFXIO_TAPER_LENGTH,    "%s", "UNIFORM");
 		snprintf(dj[j].calcServer,    DIFXIO_HOSTNAME_LENGTH, "%s", "UNKNOWN");
+		dj[j].taperFunction = TaperFunctionUniform;
 		dj[j].calcProgram = -1;
 		dj[j].calcVersion = -1;
 	}

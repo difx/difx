@@ -46,14 +46,6 @@ const char toneSelectionNames[][MAX_TONE_SELECTION_STRING_LENGTH] =
 	"unknown"
 };
 
-const char eopMergeModeNames[][MAX_EOP_MERGE_MODE_STRING_LENGTH] =
-{
-	"unspecified",
-	"strict",
-	"relaxed",
-	"illegal"
-};
-
 enum ToneSelection stringToToneSelection(const char *str)
 {
 	enum ToneSelection ts;
@@ -769,9 +761,9 @@ static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
 
 	/* Fill in the info about quantisation, format etc for this phased array output */
 	r = DifxParametersfind(pp, 0, "OUTPUT TYPE");
-	snprintf(dpa->outputType, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(pp, r));
+	dpa->outputType = stringToPhasedArrayOutputType(DifxParametersvalue(pp, r));
 	r = DifxParametersfind(pp, r, "OUTPUT FORMAT");
-	snprintf(dpa->outputFormat, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(pp, r));
+	dpa->outputFormat = stringToPhasedArrayOutputFormat(DifxParametersvalue(pp, r));
 	r = DifxParametersfind(pp, r, "ACC TIME (NS)");
 	dpa->accTime = atoi(DifxParametersvalue(pp, r));
 	r = DifxParametersfind(pp, r, "COMPLEX OUTPUT");
@@ -1940,7 +1932,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	row = DifxParametersfind(cp, 0, "TAPER FUNCTION");
 	if(row >= 0)
 	{
-		snprintf(D->job->taperFunction, DIFXIO_TAPER_LENGTH, "%s", DifxParametersvalue(cp, row));
+		D->job->taperFunction = stringToTaperFunction(DifxParametersvalue(cp, row));
 	}
 	row = DifxParametersfind(cp, 0, "VEX FILE");
 	if(row >= 0)

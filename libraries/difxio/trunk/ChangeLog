@@ -5,6 +5,8 @@
   - Relaxed means merge EOPs if they are consistent, with a resulting maximum of 6 days of values
   - Strict means only merge if EOPs cover the same days
   - In either case, refuse to merge if the EOPs are different on any day
+* Replaced string with enums for three parameter names
+  - Note: this breaks API compatibility.  Be sure to recompile all dependent code after updating difxio.
 
 3.4.0
 * Fix X/Y polarization issue

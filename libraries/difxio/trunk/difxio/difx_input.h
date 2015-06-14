@@ -39,8 +39,11 @@
 #define MAX_DATA_SOURCE_NAME_LENGTH	16
 #define MAX_ANTENNA_MOUNT_NAME_LENGTH	8
 #define MAX_SAMPLING_NAME_LENGTH	16
-#define MAX_TONE_SELECTION_STRING_LENGTH 12
-#define MAX_EOP_MERGE_MODE_STRING_LENGTH 16
+#define MAX_TONE_SELECTION_STRING_LENGTH	12
+#define MAX_EOP_MERGE_MODE_STRING_LENGTH	16
+#define MAX_PHASED_ARRAY_TYPE_STRING_LENGTH	16
+#define MAX_PHASED_ARRAY_FORMAT_STRING_LENGTH	16
+#define MAX_TAPER_FUNCTION_STRING_LENGTH	16
 
 #define DIFXIO_FILENAME_LENGTH		256
 #define DIFXIO_NAME_LENGTH		32
@@ -50,7 +53,6 @@
 #define DIFXIO_HOSTNAME_LENGTH		32
 #define DIFXIO_OBSCODE_LENGTH		8
 #define DIFXIO_SESSION_LENGTH		8
-#define DIFXIO_TAPER_LENGTH		8
 #define DIFXIO_SHELF_LENGTH		8
 #define DIFXIO_RX_NAME_LENGTH		8
 #define DIFXIO_ETH_DEV_SIZE		12
@@ -109,6 +111,7 @@ enum DataSource
 
 extern const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH];
 
+
 /* keep this current with samplingTypeNames in difx_datastream.c */
 enum SamplingType
 {
@@ -119,6 +122,7 @@ enum SamplingType
 };
 
 extern const char samplingTypeNames[][MAX_SAMPLING_NAME_LENGTH];
+
 
 /* keep this current with antennaMountTypeNames in difx_antenna.c */
 /* Note that the numbering scheme is based on the FITS-IDI defs, but with XYNS added at end */
@@ -136,6 +140,7 @@ enum AntennaMountType
 	NumAntennaMounts		/* must remain as last entry */
 };
 
+
 enum OutputFormatType
 {
 	OutputFormatDIFX = 0,
@@ -144,6 +149,7 @@ enum OutputFormatType
 };
 
 extern const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH];
+
 
 /* keep this current with toneSelectionNames[] in difx_input.c */
 enum ToneSelection
@@ -162,6 +168,7 @@ enum ToneSelection
 extern const char toneSelectionNames[][MAX_TONE_SELECTION_STRING_LENGTH];
 
 
+/* keep this current with eopMergeModeNames[] in difx_eop.c */
 enum EOPMergeMode
 {
 	EOPMergeModeUnspecified = 0,
@@ -172,6 +179,42 @@ enum EOPMergeMode
 };
 
 extern const char eopMergeModeNames[][MAX_EOP_MERGE_MODE_STRING_LENGTH];
+
+
+/* keep this current with phasedArrayOutputTypeNames[] in difx_phasedarray.c */
+enum PhasedArrayOutputType
+{
+	PhasedArrayOutputTypeFilterBank = 0,
+	PhasedArrayOutputTypeTimeSeries,
+
+	NumPhasedArrayOutputTypes	/* must remain as last entry */
+};
+
+extern const char phasedArrayOutputTypeNames[][MAX_PHASED_ARRAY_TYPE_STRING_LENGTH];
+
+
+/* keep this current with phasedArrayOutputFormatNames[] in difx_phasedarray.c */
+enum PhasedArrayOutputFormat
+{
+	PhasedArrayOutputFormatDIFX = 0,
+	PhasedArrayOutputFormatVDIF,
+
+	NumPhasedArrayOutputFormats	/* must remain as last entry */
+};
+
+extern const char phasedArrayOutputFormatNames[][MAX_PHASED_ARRAY_FORMAT_STRING_LENGTH];
+
+
+/* keep this current with taperFunctionNames in difx_job.c */
+enum TaperFunction
+{
+	TaperFunctionUniform = 0,
+
+	NumTaperFunctions		/* must remain as last entry */
+};
+
+extern const char taperFunctionNames[][MAX_TAPER_FUNCTION_STRING_LENGTH];
+
 
 /* Straight from DiFX frequency table */
 typedef struct
@@ -225,10 +268,9 @@ typedef struct
 
 typedef struct
 {
-	char fileName[DIFXIO_FILENAME_LENGTH];	/* Phased array config filename */
-	/* FIXME: next two parameters should become enums */
-	char outputType[DIFXIO_NAME_LENGTH];	/* FILTERBANK or TIMESERIES */
-	char outputFormat[DIFXIO_NAME_LENGTH];	/* DIFX or VDIF */
+	char fileName[DIFXIO_FILENAME_LENGTH];		/* Phased array config filename */
+	enum PhasedArrayOutputType outputType;		/* FILTERBANK or TIMESERIES */
+	enum PhasedArrayOutputFormat outputFormat;	/* DIFX or VDIF */
 	double accTime;		/* Accumulation time in ns for phased array output */
 	/* FIXME: below should be part of an enum */
 	int complexOutput;	/* 1=true (complex output), 0=false (real output) */
@@ -497,9 +539,7 @@ typedef struct
 	int subarrayId;		/* sub array number of the specified sub-job */
 	char obsCode[DIFXIO_OBSCODE_LENGTH];	 /* project name */
 	char obsSession[DIFXIO_SESSION_LENGTH];	 /* project session (e.g., A, B, C1) */
-
-	/* FIXME; taperFunction should become an enum */
-	char taperFunction[DIFXIO_TAPER_LENGTH]; /* usually "UNIFORM" */
+	enum TaperFunction taperFunction;	 /* currently only "UNIFORM" is supported */
 	char calcServer[DIFXIO_HOSTNAME_LENGTH]; /* name of calc server */
 	int calcVersion;	/* version number of calc server */
 	int calcProgram;	/* RPC program id of calc server */
@@ -584,6 +624,7 @@ typedef struct
 } DifxInput;
 
 /* DifxJob functions */
+enum TaperFunction stringToTaperFunction(const char *str);
 DifxJob *newDifxJobArray(int nJob);
 void deleteDifxJobArray(DifxJob *dj, int nJob);
 void printDifxJob(const DifxJob *dj);
@@ -689,15 +730,15 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName);
 int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco);
 
 /* DifxPhasedArray functions */
+enum PhasedArrayOutputType stringToPhasedArrayOutputType(const char *str);
+enum PhasedArrayOutputFormat stringToPhasedArrayOutputFormat(const char *str);
 DifxPhasedArray *newDifxPhasedarrayArray(int nPhasedArray);
 DifxPhasedArray *growDifxPhasedarrayArray(DifxPhasedArray *dpa, int origSize);
 void deleteDifxPhasedarrayArray(DifxPhasedArray *dpa, int nPhasedArray);
 void fprintDifxPhasedArray(FILE *fp, const DifxPhasedArray *dpa);
 void printDifxPhasedArray(const DifxPhasedArray *dpa);
-int isSameDifxPhasedArray(const DifxPhasedArray *dpa1, 
-	const DifxPhasedArray *dpa2);
-DifxPhasedArray *dupDifxPhasedarrayArray(const DifxPhasedArray *src, 
-	int nPhasedArray);
+int isSameDifxPhasedArray(const DifxPhasedArray *dpa1, const DifxPhasedArray *dpa2);
+DifxPhasedArray *dupDifxPhasedarrayArray(const DifxPhasedArray *src, int nPhasedArray);
 DifxPhasedArray *mergeDifxPhasedarrayArrays(const DifxPhasedArray *dpa1, 
 	int ndpa1, const DifxPhasedArray *dpa2, int ndpa2, 
 	int *phasedArrayIdRemap, int *ndpa);
@@ -790,6 +831,7 @@ int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds,
 int padDifxScans(DifxInput *D);
 
 /* DifxEOP functions */
+enum EOPMergeMode stringToEOPMergeMode(const char *str);
 DifxEOP *newDifxEOPArray(int nEOP);
 void deleteDifxEOPArray(DifxEOP *de);
 void printDifxEOP(const DifxEOP *de);

@@ -33,6 +33,28 @@
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
+const char eopMergeModeNames[][MAX_EOP_MERGE_MODE_STRING_LENGTH] =
+{
+	"unspecified",
+	"strict",
+	"relaxed",
+	"illegal"
+};
+
+enum EOPMergeMode stringToEOPMergeMode(const char *str)
+{
+	enum EOPMergeMode e;
+
+	for(e = 0; e < NumEOPMergeModes; ++e)
+	{
+		if(strcasecmp(str, eopMergeModeNames[e]) == 0)
+		{
+			break;
+		}
+	}
+
+	return e;
+}
 
 DifxEOP *newDifxEOPArray(int nEOP)
 {

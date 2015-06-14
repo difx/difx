@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,6 +32,50 @@
 #include <string.h>
 #include "difxio/difx_input.h"
 
+
+const char phasedArrayOutputTypeNames[][MAX_PHASED_ARRAY_TYPE_STRING_LENGTH] =
+{
+	"FILTERBANK",
+	"TIMESERIES",
+	"UNKNOWN"
+};
+
+const char phasedArrayOutputFormatNames[][MAX_PHASED_ARRAY_FORMAT_STRING_LENGTH] =
+{
+	"DIFX",
+	"VDIF",
+	"UNKNOWN"
+};
+
+enum PhasedArrayOutputType stringToPhasedArrayOutputType(const char *str)
+{
+	enum PhasedArrayOutputType t;
+
+	for(t = 0; t < NumPhasedArrayOutputTypes; ++t)
+	{
+		if(strcmp(str, phasedArrayOutputTypeNames[t]) == 0)
+		{
+			break;
+		}
+	}
+
+	return t;
+}
+
+enum PhasedArrayOutputFormat stringToPhasedArrayOutputFormat(const char *str)
+{
+	enum PhasedArrayOutputFormat f;
+
+	for(f = 0; f < NumPhasedArrayOutputFormats; ++f)
+	{
+		if(strcmp(str, phasedArrayOutputFormatNames[f]) == 0)
+		{
+			break;
+		}
+	}
+
+	return f;
+}
 
 DifxPhasedArray *newDifxPhasedarrayArray(int nPhasedArray)
 {
@@ -66,8 +110,8 @@ void fprintDifxPhasedArray(FILE *fp, const DifxPhasedArray *dpa)
 	if(dpa)
 	{
 		fprintf(fp, "    Filename = %s\n", dpa->fileName);
-		fprintf(fp, "    Output type = %s\n", dpa->outputType);
-		fprintf(fp, "    Output format = %s\n", dpa->outputFormat);
+		fprintf(fp, "    Output type = %s\n", phasedArrayOutputTypeNames[dpa->outputType]);
+		fprintf(fp, "    Output format = %s\n", phasedArrayOutputFormatNames[dpa->outputFormat]);
 		fprintf(fp, "    Accumulation time (ns) = %f\n", dpa->accTime);
 		fprintf(fp, "    Complex output: %d\n", dpa->complexOutput);
 		fprintf(fp, "    Output quantisation bits: %d\n", dpa->quantBits);
@@ -94,8 +138,8 @@ int isSameDifxPhasedArray(const DifxPhasedArray *dpa1, const DifxPhasedArray *dp
 void copyDifxPhasedArray(DifxPhasedArray *dest, const DifxPhasedArray *src)
 {
 	snprintf(dest->fileName, DIFXIO_NAME_LENGTH, "%s", src->fileName);
-	snprintf(dest->outputType, DIFXIO_NAME_LENGTH, "%s", src->outputType);
-	snprintf(dest->outputFormat, DIFXIO_NAME_LENGTH, "%s", src->outputFormat);
+	dest->outputType = src->outputType;
+	dest->outputFormat = src->outputFormat;
 	dest->accTime = src->accTime;
 	dest->complexOutput = src->complexOutput;
 	dest->quantBits = src->quantBits;

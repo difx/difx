@@ -108,7 +108,7 @@ int writeDifxCalc(const DifxInput *D)
 		writeDifxDateLines(out, roundSeconds(D->mjdStart));
 	}
 	writeDifxLineInt(out, "SPECTRAL AVG", D->specAvg);
-	writeDifxLine(out, "TAPER FUNCTION", D->job->taperFunction);
+	writeDifxLine(out, "TAPER FUNCTION", taperFunctionNames[D->job->taperFunction]);
 	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1, 0, 1);
         writeDifxSourceArray(out, D->nSource, D->source, 1, 1, 0);
 	writeDifxScanArray(out, D->nScan, D->scan, D->config);
