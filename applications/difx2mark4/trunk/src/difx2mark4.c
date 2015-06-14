@@ -267,13 +267,6 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan, int *nScanTot)
         fprintf (stderr, "Data geometry changes during obs\n");
         return 0; 
         }
-
-    if(strcmp (D->job->taperFunction, "UNIFORM") != 0)
-        {
-        fprintf (stderr, "Taper func %s not supported.  "
-            "Using UNIFORM.\n", D->job->taperFunction);
-        strcpy(D->job->taperFunction, "UNIFORM");
-        }
                                 // add in this batch of scans to total
     *nScanTot += D->nScan;
 
