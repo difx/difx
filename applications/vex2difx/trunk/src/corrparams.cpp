@@ -1568,7 +1568,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 		}
 
 		// This is a bit tricky.  All parameters must be together, with @ replacing =, and separated by /
-		// e.g., addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
+		// e.g., addZoomFreq = freq@1649.99/bw@1.0/noparent@TRUE/specAvg@1
 		// only freq and bw are compulsory; default is parent values and don't correlate parent
 		zoomFreqs.push_back(ZoomFreq());
 		ZoomFreq * newfreq = &(zoomFreqs.back());

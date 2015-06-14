@@ -2391,11 +2391,10 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		{
 			DifxInputAllocThreads(D, P->nCore);
 			DifxInputSetThreads(D, P->nThread);
-
-#warning "FIXME: ultimately move this to writeDifxInput()"
 			DifxInputWriteThreads(D);
 		}
 
+		// write machines file if possible
 		if(!P->machines.empty())
 		{
 			char machinesFile[DIFXIO_FILENAME_LENGTH];
