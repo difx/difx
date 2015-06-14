@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2015 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -128,7 +128,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteInteger(out, "OVERSAMP", 0, "");
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
 	fitsWriteInteger(out, "FFT_TWID", 1, "Version of FFT twiddle table used");
-	fitsWriteString(out, "TAPER_FN", D->job->taperFunction, "");
+	fitsWriteString(out, "TAPER_FN", taperFunctionNames[D->job->taperFunction], "");
 	fitsWriteFloat(out, "DELTAT", polyDuration/86400.0, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
 #warning "populate the new keyword below"

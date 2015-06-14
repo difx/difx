@@ -1069,12 +1069,6 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 		return 0;
 	}
 
-	if(strcmp(D->job->taperFunction, "UNIFORM") != 0)
-	{
-		fprintf(stderr, "Taper func %s not supported.  Using UNIFORM.\n", D->job->taperFunction);
-		strcpy(D->job->taperFunction, "UNIFORM");
-	}
-
 	if(opts->fitsFile)
 	{
 		if (passNum == 0)
