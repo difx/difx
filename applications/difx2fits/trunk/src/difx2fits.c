@@ -848,6 +848,26 @@ static int loadDifxInputSet(const struct CommandLineOptions *opts)
 
 			return 0;
 		}
+		if(opts->specAvg)
+		{
+			Dset[i]->specAvg = opts->specAvg;
+		}
+		if(opts->nOutChan >= 1)
+		{
+			Dset[i]->nOutChan = opts->nOutChan;
+		}
+		else if(opts->nOutChan > 0.0) /* interpret in fractional sense */
+		{
+			Dset[i]->nOutChan = Dset[i]->freq[0].nChan*opts->nOutChan/Dset[i]->freq[0].specAvg;
+		}
+		if(opts->startChan >= 1)
+		{
+			Dset[i]->startChan = opts->startChan;
+		}
+		else if(opts->startChan > 0.0)
+		{
+			Dset[i]->startChan = (Dset[i]->freq[0].nChan*opts->startChan) + 0.5;
+		}
 	}
 	if(opts->eopMergeMode == EOPMergeModeUnspecified)
 	{
@@ -867,7 +887,7 @@ static int loadDifxInputSet(const struct CommandLineOptions *opts)
 		eopMergeMode = opts->eopMergeMode;
 	}
 
-	for(i = 0; i < opts->eopMergeMode; ++i)
+	for(i = 0; i < opts->nBaseFile; ++i)
 	{
 		if(Dset[i]->eopMergeMode == EOPMergeModeUnspecified)
 		{
@@ -881,7 +901,7 @@ static int loadDifxInputSet(const struct CommandLineOptions *opts)
 /* FIXME: use opts->eopMergeMode to drive merging of files */
 static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, int passNum, int *nWithoutPhaseCentre)
 {
-	DifxInput *D, *D1, *D2;
+	DifxInput *D;
 	struct fitsPrivate outfile;
 	char outFitsName[DIFXIO_FILENAME_LENGTH];
 	int i;
@@ -904,6 +924,8 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 	for(i = 0; i < opts->nBaseFile; ++i)
 	{
+		DifxInput *D2;
+
 		D2 = Dset[i];
 		if(Dset[i] == 0)
 		{
@@ -926,29 +948,11 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 			continue;
 		}
-		if(opts->specAvg)
-		{
-			D2->specAvg = opts->specAvg;
-		}
-		if(opts->nOutChan >= 1)
-		{
-			D2->nOutChan = opts->nOutChan;
-		}
-		else if(opts->nOutChan > 0.0) /* interpret in fractional sense */
-		{
-			D2->nOutChan = D2->freq[0].nChan*opts->nOutChan/D->freq[0].specAvg;
-		}
-		if(opts->startChan >= 1)
-		{
-			D2->startChan = opts->startChan;
-		}
-		else if(opts->startChan > 0.0)
-		{
-			D2->startChan = (D2->freq[0].nChan*opts->startChan) + 0.5;
-		}
 
 		if(D)
 		{
+			DifxInput *D1;
+
 			D1 = D;
 
 			if(!areDifxInputsMergable(D1, D2) ||
@@ -970,7 +974,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 			deleteDifxInput(D1);
 			deleteDifxInput(D2);
-			D1 = D2 = Dset[i] = 0;
+			D1 = D2 = 0;
 
 			if(!D)
 			{
@@ -984,6 +988,10 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 			D = D2;
 		}
 
+		/* Dset[i] was absorbed and will be freed automatically at end of conversion */
+		/* Setting to zero prevents future reuse of this job */
+		Dset[i] = 0;
+
 		++nConverted;
 		if(opts->dontCombine)
 		{
@@ -995,7 +1003,6 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 	{
 		return 0;
 	}
-
 
 	if(opts->verbose > 2)
 	{
@@ -1071,7 +1078,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 	if(opts->fitsFile)
 	{
-		if (passNum == 0)
+		if(passNum == 0)
 		{
 			strcpy(outFitsName, opts->fitsFile);
 		}
