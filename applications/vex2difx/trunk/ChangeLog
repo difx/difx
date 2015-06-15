@@ -10,6 +10,9 @@ Version 2.5.0
 * split vex2difx.cpp into smaller pieces (in progress)
 * if baseband data files are provided via file lists and some jobs have
   missing data, exlude antennas as necessary and write a "nodata" file
+* Fix guardNS calculation (finally!)...
+  - Needed to consider bits per sample and number of baseband channels
+  - Swiftly moving sources and/or antennas could still trigger this problem
 
 Version 2.4.0
 ~~~~~~~~~~~~~
@@ -17,11 +20,9 @@ Version 2.4.0
 * Adapt to string-based networkPort in support of raw sockets
 * Detect mismatched bandwidths and issue warning
 * Fix smart tone selection for phase cal interval != 1 MHz
-* Make tone selection default the same whether an ANTENNA section exists or
-  not (default is Smart)
+* Make tone selection default the same whether an ANTENNA section exists or not (default is Smart)
 * EB and AR to use VLBA Cannonical Thread Ids for VDIF
-* Respect record enable bit in SCHED section (enable column must be > 0 to
-  retain the data)
+* Respect record enable bit in SCHED section (enable column must be > 0 to retain the data)
 * Bugfix for allocating bands to baselines for some combinations of zoom bands and LSB
 * Reading complex type and #bits from vexfile
 * Version for DiFX-2.4, Nov 4, 2014
@@ -45,8 +46,7 @@ Version 2.2.0
 * c++11 compliance
 * Don't allow subintNS greater than about 1 second (to ward off MODE errors)
 * Remove "using namespace std" from .h files; goal is to remove them from .cpp files in time
-* Track oversample value in channel structure; move checking downstream to
-  more relevant code.
+* Track oversample value in channel structure; move checking downstream to more relevant code.
 * Add a few features (ephemDeltaT, ephemStellarAber, ephemClockError) useful in
   exploring spacecraft ephemeris but probably not useful for operations
 * change zoom band definition to always be USB (specify lower edge freq)

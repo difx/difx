@@ -202,13 +202,12 @@ public:
 	int addSubband(double freq, double bandwidth, char sideband, char pol, int oversamp);
 	int getPols(char *pols) const;
 	int getBits() const;
+	int getMinBits() const;
+	int getMinSubbands() const;
 	const VexSetup* getSetup(const std::string &antName) const;
 	double getLowestSampleRate() const;
 	double getHighestSampleRate() const;
 	double getAverageSampleRate() const;
-#if 0
-	int getOversampleFactor() const;
-#endif
 
 	std::string defName;
 

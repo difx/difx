@@ -333,7 +333,6 @@ int VexMode::getBits() const
 	unsigned int nBit = setups.begin()->second.nBit;
 	std::map<std::string,VexSetup>::const_iterator it;
 
-
 	for(it = setups.begin(); it != setups.end(); ++it)
 	{
 		if(it->second.nBit != nBit)
@@ -355,6 +354,42 @@ int VexMode::getBits() const
 	}
 
 	return nBit;
+}
+
+int VexMode::getMinBits() const
+{
+	unsigned int minBit = 0;
+	std::map<std::string,VexSetup>::const_iterator it;
+
+	for(it = setups.begin(); it != setups.end(); ++it)
+	{
+		if(it->second.nBit > 0 && (it->second.nBit < minBit || minBit == 0))
+		{
+			minBit = it->second.nBit;
+		}
+
+	}
+
+	return minBit;
+}
+
+int VexMode::getMinSubbands() const
+{
+	int minSubbands = 0;
+	std::map<std::string,VexSetup>::const_iterator it;
+
+	for(it = setups.begin(); it != setups.end(); ++it)
+	{
+		int s;
+
+		s = it->second.channels.size();
+		if(s > 0 && (s < minSubbands || minSubbands == 0))
+		{
+			minSubbands = s;
+		}
+	}
+
+	return minSubbands;
 }
 
 const VexSetup* VexMode::getSetup(const std::string &antName) const

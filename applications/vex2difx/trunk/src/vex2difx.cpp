@@ -98,8 +98,7 @@ static bool usesCannonicalVDIFThreadIds(const char *antName)
 	}
 }
 
-/* FIXME: this function needs to consider bytes/sample denominator = 8/(nBit*nRecChan) */
-static int calculateWorstcaseGuardNS(double sampleRate, int subintNS)
+static int calculateWorstcaseGuardNS(double sampleRate, int subintNS, int nBit, int nSubband)
 {
 	double sampleTimeNS = 1.0e9/sampleRate;
 	double nsAccumulate = sampleTimeNS;
@@ -108,6 +107,11 @@ static int calculateWorstcaseGuardNS(double sampleRate, int subintNS)
 	while(fabs(nsAccumulate - static_cast<int>(nsAccumulate)) > 1.0e-12)
 	{
 		nsAccumulate += sampleTimeNS;
+	}
+
+	if(nBit*nSubband < 8)
+	{
+		nsAccumulate = nsAccumulate*8.0/(nBit*nSubband);
 	}
 
 	return static_cast<int>(nsAccumulate + MaxEarthGeomSlipRate*subintNS*1.0e-9 + 1.0);
@@ -1567,7 +1571,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	//adjustment to get to an integer NS + geometric rate slippage (assumes Earth-based antenna)
 	if(!corrSetup->explicitGuardNS)
 	{
-		config->guardNS = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), config->subintNS);
+		config->guardNS = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), config->subintNS, mode->getMinBits(), mode->getMinSubbands());
 	}
 	//config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
 	//if(config->overSamp <= 0)
@@ -2220,7 +2224,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 				D->config[configId].xmacLength = minChans;
 			}
 		}
-		worstcaseguardns = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), D->config[configId].subintNS);
+		worstcaseguardns = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), D->config[configId].subintNS, mode->getMinBits(), mode->getMinSubbands());
 		if(D->config[configId].guardNS < worstcaseguardns)
 		{
 			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << D->config[configId].guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
