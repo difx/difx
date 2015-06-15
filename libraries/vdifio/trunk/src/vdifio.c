@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <inttypes.h>
 #include "vdifio.h"
 
 
@@ -336,6 +337,17 @@ static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 			fprintf(out, "  syncword = 0x%08X\n", edv1->syncword);
 			fprintf(out, "  name = %8s", edv1->name);
 		}
+		else if(header->eversion == 2)
+		{
+			const vdif_edv2_header *edv2 = (const vdif_edv2_header *)header;
+
+			fprintf(out, "  polblock = %d\n", edv2->polblock);
+			fprintf(out, "  quadrant-1 = %d\n", edv2->quadrantminus1);
+			fprintf(out, "  correlator = %d\n", edv2->correlator);
+			fprintf(out, "  sync/magic = %x\n", edv2->sync);
+			fprintf(out, "  PIC status = %" PRIu32, edv2->status);
+			fprintf(out, "  VTP PSN = %" PRIu64, edv2->psn);
+		}
 		else if(header->eversion == 3)
 		{
 			const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
@@ -376,7 +388,7 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 		else if(header->eversion == 2)
 		{
 			const vdif_edv2_header *edv2 = (const vdif_edv2_header *)header;
-			fprintf(out, " %8d %13d %Lu", edv2->polblock, edv2->FPGA_PPS_diff, (long long unsigned int)(edv2->psn));
+			fprintf(out, " %8d %13d %" PRIu64, edv2->polblock, edv2->status, edv2->psn);
 		}
 		else if(header->eversion == 3)
 		{

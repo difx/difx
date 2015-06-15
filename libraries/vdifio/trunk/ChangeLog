@@ -3,12 +3,11 @@ Version 1.1
 * Post DiFX-2.4
 * Added incrementVDIFHeader
 * vsum: error message -> stderr, not stdout
-* Support new EDV2 that is produced by R2DBE.  Note that no official documentation exists at this time.  Interface is reverse engineered for now.
+* Support new EDV2 that is produced by ALMA and R2DBE.  Work here is based on spec with lots of TBDs
 * Add Mark6 awareness to printVDIFheader.  If the Mark6 signature is found at the beginning, 28 bytes will be skipped to allow proper decoding.
 * testmk6: test/example program for mark6 reading capabilities.  Does simple gather operation and file summary at this point.
 * changes to multiplexing: increase max number of threads to mux to 64, warn if too many threads are being muxed, move out cornerturners to their own file.
   - note: ABI change.  Recompile of all code using vdifio is needed after updating to this version
-  - note: this code is not yet tested as of June 9, 2015
 * change a few key variables from "long long" to "int64_t" 
 
 Version 1.0
@@ -30,8 +29,7 @@ Version 1.0
 	getVDIFFrameMJDSec
 	setVDIFEpochTime
 * Added new utility printVDIFgaps to examine a VDIF stream for missing data
-* vdifmux now fed by a structure.  This allows for safer, faster and more
-	flexible muxing.
+* vdifmux now fed by a structure.  This allows for safer, faster and more flexible muxing.
 * printVDIFheader: when legacy data don't print any EDV info
 * multi2singlethreadVDIF: fixed bug where frames with invalid bit set had zero epoch and wrong seconds
 * captureUDPVDIF: properly use skipbytes at the front and back of the packet

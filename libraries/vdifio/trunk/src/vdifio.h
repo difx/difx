@@ -46,8 +46,10 @@ extern "C" {
 #define VDIF_SUMMARY_MAX_THREADS	64
 #define VDIF_SUMMARY_FILE_LENGTH	256
 
-#define VDIF_NOERROR 0
-#define VDIF_ERROR 1
+#define VDIF_NOERROR			0
+#define VDIF_ERROR			1
+
+#define VDIF_ALMA_SYNC			0xA5AE5
 
 /* *** implemented in vdifio.c *** */
 
@@ -55,18 +57,23 @@ typedef struct vdif_header {
    uint32_t seconds : 30;
    uint32_t legacymode : 1;
    uint32_t invalid : 1;
+
    uint32_t frame : 24;
    uint32_t epoch : 6;
    uint32_t unassigned : 2;
+   
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
    uint32_t version : 3;
+   
    uint32_t stationid : 16;
    uint32_t threadid : 10;
    uint32_t nbits : 5;
    uint32_t iscomplex : 1;
+   
    uint32_t extended1 : 24;
    uint32_t eversion : 8;
+   
    uint32_t extended2;
    uint32_t extended3;
    uint32_t extended4;
@@ -99,7 +106,7 @@ typedef struct vdif_edv1_header {	/* NICT extensions: see http://www.vlbi.org/vd
    char name[8];		// DAS/Station Name
  } vdif_edv1_header;
 
-typedef struct vdif_edv2_header {	/* For R2DBE, reverse engineered from startup script --WFB 20150606 */
+typedef struct vdif_edv2_header {	/* For ALMA & R2DBE, incomplete document describing this from Chet to Walter via email: 20150615 */
    uint32_t seconds : 30;
    uint32_t legacymode : 1;
    uint32_t invalid : 1;
@@ -117,11 +124,13 @@ typedef struct vdif_edv2_header {	/* For R2DBE, reverse engineered from startup 
    uint32_t nbits : 5;
    uint32_t iscomplex : 1;
 
-   uint32_t polblock : 8;	// just a guess at length
-   uint32_t dummy1 : 16;	
+   uint32_t polblock : 1;
+   uint32_t quadrantminus1 : 2;	// 0 = quad 1, 1 = quad 2, ...
+   uint32_t correlator : 1;	// 0 = 2-ant corr, 1 = BL corr
+   uint32_t sync : 20;		// For ALMA this is set to 0xA5AE5
    uint32_t eversion : 8;
 
-   int32_t FPGA_PPS_diff;	// just a guess at the signedness
+   uint32_t status;		// use may vary
 
    uint64_t psn;		// packet serial number
 } vdif_edv2_header;
