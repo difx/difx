@@ -12,7 +12,7 @@ from sys import exit, argv
 
 def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'A VDIF decoder for multi-thread VDIF data.  Uses vmux'
+	print 'A VDIF decoder for multi-thread, single channel VDIF data.  Uses vmux'
 	print 'and m5d to do the heavy lifting.\n'
 	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <n> [<offset> [<nbit>] ]\n'
 	print '  <infile> is the name of the VDIF file\n'
