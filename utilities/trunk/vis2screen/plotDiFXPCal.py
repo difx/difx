@@ -2,8 +2,10 @@
 """
 plotDiFXPCal.py version 1.0  Jan Wagner  20150508
 
-Usage: plotDiFXPCal.py [--pdf] [--txt] <output_1.difx> <station> 
-                       [<band>,<tone>[,<tone>,...]] [<band>,<tone>[...]] 
+Usage: plotDiFXPCal.py [--pdf] [--txt] 
+           [--dly=<band>,<tone>,<band>,<tone>,...]
+           <output_1.difx> <station> 
+           [<band>,<tone>[,<tone>,...]] [<band>,<tone>[...]] 
 
 Currently supports the DiFX 2.4 format of PCAL files.
 
@@ -18,8 +20,12 @@ Optional arguments;
   --pdf      to generate PDF file of plot
   --txt      to store phases and amplitudes into a text file,
              discarding details about frequency and polarization
-  band,tone  to select specific tone(s) of a band rather than all
-             the first tone in the first band is 1,1
+  --dly=...  to combine specific tones (at least two) of arbitrary
+             bands in a calculation of a best-fit delay, given by 
+                'delay[s] = - delta phi[rad] / delta nu[Hz]'
+             and to be plotted in a separate window
+  band,tone  to select specific rather than all tone(s) of a band,
+             with the first tone in the first band being 1,1
 
 Has some similarity to 'plotpcal' from vex2difx: plotDiFXPCal.py
 has no automatic tone selection, and lacks x/y and delay plots,
@@ -32,7 +38,7 @@ import numpy, pylab
 
 difxVersion = 240
 
-def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
+def parsepcalfile(infile,band_tone_sel=()):
     """Loads selected (or all) PCal tones from a DiFX 2.4.x PCAL file"""
 
     pcalvalues = {}
@@ -79,7 +85,7 @@ def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
     return pcaldata
 
 
-def plotpcal(pcaldata,infile,band_tone_sel=(),doPDF=False,doTxt=True):
+def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False,doTxt=True):
 
     pcalvalues = pcaldata[0]
     times = pcaldata[1]
@@ -157,6 +163,62 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),doPDF=False,doTxt=True):
         f.close()
         print ('Saved PCAL data without polarization and frequency infos into %s' % (outfile))
 
+    # Also plot a single fitted delay?
+    if len(delay_band_tone_sel)>0:
+        # Make matrix of 'phases = freq x phase[t,freq]'
+        ids    = pcalvalues.keys()
+        freqs  = numpy.zeros(0)
+        phases = numpy.zeros(0)
+        dlyids = []
+        for bt in delay_band_tone_sel:
+            id     = ids[band_tone_sel.index(bt)]
+            f      = float(id[:-1]) * 1e6 # in Hz
+            ph     = numpy.angle(pcalvalues[id])
+            freqs  = numpy.append(freqs, f)
+            dlyids.append(id)
+            if len(phases)==0:
+                phases = numpy.array(ph)
+            else:
+                phases = numpy.vstack([phases, ph])
+
+        # Fit slope ("delay") through freq x phase[f] at each time t  
+        # TODO: least-squares fitting with phase unwrapping
+        A = numpy.array([freqs, numpy.ones_like(freqs)])
+        (m,b) = numpy.linalg.lstsq(A.T, phases)[0]
+        dly_est = -m[:]
+
+        # Plot the delay against time
+        pylab.figure(figsize=(16,6))
+        pylab.gcf().set_facecolor('white')
+        pylab.plot(T, 1e6*dly_est, 'kx')
+        pylab.axis('tight')
+        pylab.title('Delay over %s' % (str(dlyids)))
+        pylab.xlabel('Time in Seconds since MJD %.6f' % min(times))
+        pylab.ylabel('Delay (microseconds)')
+        pylab.draw()
+        if doPDF:
+            outfile = os.path.basename(infile.name) + '.delay.pdf'
+            pylab.savefig(outfile, bbox_extra_artist=[h_leg])
+            print ('Saved plot to %s' % outfile)
+
+        # Plot an example of the fit at some time t0
+        t0   = 0
+        line = -dly_est[t0]*freqs + b[t0]
+        legs = dlyids
+        legs.append('LSQ fit')
+
+        pylab.figure(figsize=(16,6))
+        pylab.gcf().set_facecolor('white')
+        for i in xrange(len(freqs)):
+            pylab.plot(freqs[i]*1e-6, phases[i][t0]*(180/numpy.pi), 'x')
+        pylab.plot(freqs*1e-6, line*(180/numpy.pi),'r-')
+        pylab.gca().set_xlim([numpy.min(freqs)*0.9e-6, numpy.max(freqs)*1.1e-6])
+        pylab.legend(legs)
+        pylab.title('Example of fit at %d:th time sample' % (t0))
+        pylab.xlabel('Frequency (MHz)')
+        pylab.ylabel('Phase (deg)')
+        pylab.draw()
+
     pylab.show()
     return
 
@@ -165,6 +227,8 @@ def main(argv=sys.argv):
     args = argv[1:]
     doTxt = False
     doPDF = False
+    toneSel = []
+    dlySel = []
 
     # Optional args
     while (len(args) > 0) and (args[0][0:2] == '--'):
@@ -172,6 +236,9 @@ def main(argv=sys.argv):
             doPDF = True
         if args[0] == '--txt':
             doTxt = True
+        if args[0][:6] == '--dly=':
+            dlySel = [int(x)-1 for x in args[0][6:].split(',')]
+            dlySel = zip(dlySel[::2], dlySel[1::2])
         args = args[1:]
 
     if len(args)<2:
@@ -186,18 +253,23 @@ def main(argv=sys.argv):
         sys.exit(1)
 
     # Prepare the selection of bands and tones ([] means all tones)
-    sel = []
     if len(args)>2:
         for bt in args[2:]:
            bt = bt.split(',')
            for tt in bt[1:]:
-              sel.append( (int(bt[0])-1, int(tt)-1) )
+              toneSel.append( (int(bt[0])-1, int(tt)-1) )
+
+    # If tones were picked for delay calcs, make sure they are also in toneSel
+    if len(dlySel)>0:
+        for dd in dlySel:
+           if dd not in toneSel:
+              toneSel.append(dd)
 
     # Plot each file
     for af in antennafiles:
         infile = open(af, 'r')
-        pc = parsepcalfile(infile,sel)
-        plotpcal(pc,infile,sel,doPDF,doTxt)
+        pc = parsepcalfile(infile,toneSel)
+        plotpcal(pc,infile,toneSel,dlySel,doPDF,doTxt)
         infile.close()
 
 if __name__ == '__main__':
