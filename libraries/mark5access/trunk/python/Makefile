@@ -1,20 +1,27 @@
 ### Standard targets
-FILES := mark5_stream_tmp.h mark5access_api.xml mark5access/mark5access.py
+AUTOGENFILES := mark5_stream_tmp.h mark5access_api.xml mark5access/mark5access.py
 SCRIPTS := examples/m5stat.py examples/m5subband.py examples/m5time.py examples/m5spec.py examples/m5tone.py
+DOCS := AUTHORS COMPILING LICENSE.txt README TODO
 
 all: depcheck mark5access/mark5access.py 
 
 clean:
-	rm -f $(FILES)
+	rm -f $(AUTOGENFILES)
 
 install: mark5access/mark5access.py
 	python setup.py install
 	cp $(SCRIPTS) /usr/local/bin/
 
-# empty targets to keep toplevel happy
 dist: ;
-distdir: ;
+
 distclean: ;
+
+distdir: clean
+	cp -af $(DOCS) Makefile setup.py $(distdir)
+	mkdir -p $(distdir)/examples/
+	cp -af $(SCRIPTS) $(distdir)/examples/
+	mkdir -p $(distdir)/mark5access/
+	cp -af mark5access/*.py $(distdir)/mark5access/
 
 ### Checks
 
