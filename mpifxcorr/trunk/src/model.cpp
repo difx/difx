@@ -591,6 +591,7 @@ bool Model::readPolynomialSamples(ifstream * input)
   int year, month, day, hour, minute, second, mjd, daysec;
   string line, key;
   bool polyok = true;
+  bool hasXYZDerivatives = false;
 
   config->getinputline(input, &imfilename, "IM FILENAME");
   input->close();
@@ -687,7 +688,12 @@ bool Model::readPolynomialSamples(ifstream * input)
     scantable[i].parang = new f64***[scantable[i].nummodelsamples];
     scantable[i].clock = new f64**[scantable[i].nummodelsamples];
     for(int j=0;j<scantable[i].nummodelsamples;j++) {
-      config->getinputline(input, &line, "SCAN ", i);
+      config->getinputkeyval(input, &key, &line);
+      if(key.find("DELTA XYZ") != string::npos)
+      {
+        hasXYZDerivatives = true;
+        config->getinputkeyval(input, &key, &line);
+      }
       mjd = atoi(line.c_str());
       config->getinputline(input, &line, "SCAN ", i);
       daysec = atoi(line.c_str());
@@ -781,6 +787,13 @@ bool Model::readPolynomialSamples(ifstream * input)
           if(!polyok) {
             cfatal << startl << "IM file has problem with polynomials - aborting!" << endl;
             return false;
+          }
+          if(hasXYZDerivatives)
+          {
+            for(int skip = 0; skip < 9; ++skip) {
+              // just skip over the next 9 lines which are not used by mpifxcorr
+              config->getinputkeyval(input, &key, &line);
+            }
           }
         }
       }
