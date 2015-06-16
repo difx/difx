@@ -1,18 +1,25 @@
 ### Standard targets
-FILES := vdifio_api.xml vdifio/vdifio.py
+AUTOGENFILES := vdifio_api.xml vdifio/vdifio.py
+DOCS := README
 
 all: depcheck vdifio/vdifio.py 
 
 clean:
-	rm -f $(FILES)
+	rm -f $(AUTOGENFILES)
 
 install: vdifio/vdifio.py
 	python setup.py install
 
-# empty targets to keep toplevel happy
 dist: ;
-distdir: ;
+
 distclean: ;
+
+distdir: clean
+	cp -af $(DOCS) Makefile setup.py $(distdir)
+	mkdir -p $(distdir)/vdifio/
+	cp -af vdifio/*.py $(distdir)/vdifio/
+	mkdir -p $(distdir)/examples/
+	cp -af examples/vdif* $(distdir)/examples/
 
 ### Checks
 
