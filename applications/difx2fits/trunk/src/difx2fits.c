@@ -169,6 +169,7 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 		if(opts->nBaseFile > 0)
 		{
 			int i;
+
 			for(i = 0; i < opts->nBaseFile; ++i)
 			{
 				if(opts->baseFile[i])
@@ -201,16 +202,17 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 int exceedOpenFileLimit(int numFiles)
 {
         struct rlimit limit;
-	//
-	// Get max number of open files that the OS allows
-	if (getrlimit(RLIMIT_NOFILE, &limit) != 0) 
+	
+	/* Get max number of open files that the OS allows */
+	if(getrlimit(RLIMIT_NOFILE, &limit) != 0) 
 	{
 		printf("Cannot determine user file open limit (errno=%d)\n", errno);
+
 		return 1;
 	}
-	//
-	// Check if the number of DIFX files (plus a buffer of 20) exceed OS limit
-	if (numFiles + 20 >= limit.rlim_cur)
+	
+	/* Check if the number of DIFX files (plus a buffer of 20) exceed OS limit */
+	if(numFiles + 20 >= limit.rlim_cur)
 	{
 		return 1;
 	}
@@ -583,8 +585,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	return 0;
 }
 
-static const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
-	struct fitsPrivate *out, struct CommandLineOptions *opts)
+static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -783,7 +784,7 @@ static void deleteDifxInputSet(DifxInput **Dset, int n)
 }
 
 /* return number of days, inclusive, spanned by a number n of provided DifxInput structures */
-static int nEOPDays(const DifxInput * const *Dset, int n)
+static int nEOPDays(DifxInput **Dset, int n)
 {
 	int minDay = 1000000, maxDay = -1000000;	/* MJD */
 	int i;
@@ -817,7 +818,7 @@ static int nEOPDays(const DifxInput * const *Dset, int n)
 	return maxDay - minDay + 1;
 }
 
-static int loadDifxInputSet(const struct CommandLineOptions *opts)
+static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 {
 	DifxInput **Dset;
 	enum EOPMergeMode eopMergeMode;

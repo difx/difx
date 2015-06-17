@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -95,7 +95,7 @@ int getGateWindow(const DifxPulsar *dp, int bin,
 
 const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	struct CommandLineOptions *opts)
+	const struct CommandLineOptions *opts)
 {
 	char bandFormFloat[8], polyFormDouble[8];
 
