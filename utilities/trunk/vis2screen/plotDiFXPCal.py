@@ -28,8 +28,8 @@ Optional arguments;
              with the first tone in the first band being 1,1
 
 Has some similarity to 'plotpcal' from vex2difx: plotDiFXPCal.py
-has no automatic tone selection, and lacks x/y and delay plots,
-but is much faster, and produces optional PDF and ASCII output files.
+has no automatic tone selection, and lacks x/y plots, but is much 
+faster, and produces optional PDF and ASCII output files.
 
 """
 
@@ -42,6 +42,7 @@ def parsepcalfile(infile,band_tone_sel=()):
     """Loads selected (or all) PCal tones from a DiFX 2.4.x PCAL file"""
 
     pcalvalues = {}
+    pcalids = []
     times = numpy.zeros(0)
 
     for line in infile:
@@ -78,18 +79,20 @@ def parsepcalfile(infile,band_tone_sel=()):
                 id = pc[0] + pc[1] # + ' tone ' + str(tonenr)
                 if not(id in pcalvalues):
                    pcalvalues[id] = numpy.zeros(0)
+                   pcalids.append(id)
                    print ('New band added: %s' % (id))
                 pcalvalues[id] = numpy.append(pcalvalues[id], [float(pc[2]) + 1j*float(pc[3])])
 
-    pcaldata = (pcalvalues,times,tint)
+    pcaldata = (pcalvalues,pcalids,times,tint)
     return pcaldata
 
 
 def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False,doTxt=True):
 
     pcalvalues = pcaldata[0]
-    times = pcaldata[1]
-    tint = pcaldata[2]
+    pcalids = pcaldata[1]
+    times = pcaldata[2]
+    tint = pcaldata[3]
 
     # Settings for plot
     colormp = pylab.cm.jet(numpy.linspace(0,1,len(pcalvalues.keys())))
@@ -98,8 +101,11 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
     markers = iter(markers * Nrep)
     colors  = iter(colormp)
     handles = []
-    ids     = sorted(pcalvalues.keys())
+    ids     = pcalids
     T       = (times - min(times)) * 86400.0  # MJD into seconds
+    if False:
+         # Follow alpahnumerical order, instead of user-specified order?
+         ids = sorted(pcalvalues.keys())
     phstep  = float(30)
 
     # Actual plot
@@ -166,9 +172,9 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
     # Also plot a single fitted delay?
     if len(delay_band_tone_sel)>0:
         # Make matrix of 'phases = freq x phase[t,freq]'
-        ids    = pcalvalues.keys()
+        ids    = pcalids
         freqs  = numpy.zeros(0)
-        phases = numpy.zeros(0)
+        phases = numpy.zeros(0) # shape later is (Ntones,Ntimes)
         dlyids = []
         for bt in delay_band_tone_sel:
             id     = ids[band_tone_sel.index(bt)]
@@ -181,8 +187,10 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
             else:
                 phases = numpy.vstack([phases, ph])
 
+        # Unwrap the phase (risky if only few tones!)
+        phases = numpy.unwrap(phases,axis=0)
+
         # Fit slope ("delay") through freq x phase[f] at each time t  
-        # TODO: least-squares fitting with phase unwrapping
         A = numpy.array([freqs, numpy.ones_like(freqs)])
         (m,b) = numpy.linalg.lstsq(A.T, phases)[0]
         dly_est = -m[:]
@@ -190,23 +198,31 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
         # Plot the delay against time
         pylab.figure(figsize=(16,6))
         pylab.gcf().set_facecolor('white')
-        pylab.plot(T, 1e6*dly_est, 'kx')
+        pylab.plot(T, 1e9*dly_est, 'kx')
         pylab.axis('tight')
         pylab.title('Delay over %s' % (str(dlyids)))
         pylab.xlabel('Time in Seconds since MJD %.6f' % min(times))
-        pylab.ylabel('Delay (microseconds)')
+        pylab.ylabel('Delay (nanoseconds)')
         pylab.draw()
         if doPDF:
             outfile = os.path.basename(infile.name) + '.delay.pdf'
             pylab.savefig(outfile, bbox_extra_artist=[h_leg])
-            print ('Saved plot to %s' % outfile)
+            print ('Saved delay plot to %s' % outfile)
+        if doTxt:
+            outfile = os.path.basename(infile.name) + '.delay.txt'
+            f = open(outfile,'w')
+            f.write('# MJD | delay (nanosec) based on tones %s\n' % (str(dlyids)))
+            for ii in range(len(times)):
+                f.write('%.7f %.6f\n' % (times[ii],1e9*dly_est[ii]))
+            f.write('\n')
+            f.close()
+            print ('Saved delay data into %s' % (outfile))
 
         # Plot an example of the fit at some time t0
         t0   = 0
         line = -dly_est[t0]*freqs + b[t0]
         legs = dlyids
         legs.append('LSQ fit')
-
         pylab.figure(figsize=(16,6))
         pylab.gcf().set_facecolor('white')
         for i in xrange(len(freqs)):
