@@ -5,6 +5,7 @@ Version 3.5.0
 * Make use of EOP merging mode concept.  See changelog in difxio.
 * Slight restructuring if difx2fits.c: load all filesets at beginning; no need to keep reloading them
 * plotpcal2 : second attempt to plot pcals in a more general way.  Still not super satisfactory.
+* Fix a case where absence of pulse cal file leads to seg fault (NRAO bug VLB-134, second part)
 
 Version 3.4.0
 * Add command line option --primary-band.  This causes a keyword to be added to the output FITS file.  Intended for VLITE.

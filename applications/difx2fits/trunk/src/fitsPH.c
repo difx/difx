@@ -1281,6 +1281,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				}
 				else /* reading difx-extracted pcals */
 				{	
+					if(!inDifx)
+					{
+						printf("\n    No DiFX file to read for antenna %s", D->antenna[a].name);
+						break;
+					}
 					rv = fgets(line, MaxLineLength, inDifx);
 					if(!rv)
 					{
