@@ -827,7 +827,7 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 	Dset = (DifxInput **)calloc(opts->nBaseFile, sizeof(DifxInput *));
 	if(!Dset)
 	{
-		fprintf(stderr, "Error: cannot allocate %d bytes for %d DifxInput structures\n", opts->nBaseFile*sizeof(DifxInput *), opts->nBaseFile);
+		fprintf(stderr, "Error: cannot allocate %d bytes for %d DifxInput structures\n", (int)(opts->nBaseFile*sizeof(DifxInput *)), opts->nBaseFile);
 
 		return 0;
 	}
@@ -841,8 +841,6 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 		Dset[i] = loadDifxInput(opts->baseFile[i]);
 		if(!Dset[i])
 		{
-			int j;
-
 			fprintf(stderr, "loadDifxInput failed on <%s>.\n", opts->baseFile[i]);
 
 			deleteDifxInputSet(Dset, opts->nBaseFile);
