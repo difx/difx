@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -66,7 +66,7 @@ DifxModel *dupDifxModelColumn(const DifxModel *src, int nPoint)
 	dest = (DifxModel *)calloc(nPoint+3, sizeof(DifxModel));
 	
 	/* offset array as per above */
-	dest++;
+	++dest;
 
 	memcpy(dest-1, src-1, (nPoint+3)*sizeof(DifxModel));
 

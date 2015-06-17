@@ -3707,6 +3707,62 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
                         free(D->scan[scanId].im);
                         D->scan[scanId].im = p2;
 		}
+
+		/* correct the L,M model extension table, if present */
+		if(D->scan[scanId].imLM)
+		{
+			DifxPolyModelLMExtension ***p2;
+
+			p2 = (DifxPolyModelLMExtension ***)calloc(D->nAntenna*(D->scan[scanId].nPhaseCentres+1), sizeof(DifxPolyModelLMExtension **));
+			for(antennaId = 0; antennaId < D->scan[scanId].nAntenna; antennaId++)
+			{
+				if(D->scan[scanId].imLM[antennaId])
+				{
+					int antennaId2;
+
+					antennaId2 = old2new[antennaId];
+					if(antennaId2 < 0 || antennaId2 >= D->nAntenna)
+					{
+						fprintf(stderr, "Developer error: DifxInputSortAntennas: LM: old2new[%d] = %d; nAnt = %d\n", antennaId, antennaId2, D->scan[scanId].nAntenna);
+
+						continue;
+					}
+
+					p2[antennaId2] = D->scan[scanId].imLM[antennaId];
+				}
+			}
+
+			free(D->scan[scanId].imLM);
+			D->scan[scanId].imLM = p2;
+		}
+
+		/* correct the X,Y,Z model extension table, if present */
+		if(D->scan[scanId].imXYZ)
+		{
+			DifxPolyModelXYZExtension ***p2;
+
+			p2 = (DifxPolyModelXYZExtension ***)calloc(D->nAntenna*(D->scan[scanId].nPhaseCentres+1), sizeof(DifxPolyModelXYZExtension **));
+			for(antennaId = 0; antennaId < D->scan[scanId].nAntenna; antennaId++)
+			{
+				if(D->scan[scanId].imXYZ[antennaId])
+				{
+					int antennaId2;
+
+					antennaId2 = old2new[antennaId];
+					if(antennaId2 < 0 || antennaId2 >= D->nAntenna)
+					{
+						fprintf(stderr, "Developer error: DifxInputSortAntennas: XYZ: old2new[%d] = %d; nAnt = %d\n", antennaId, antennaId2, D->scan[scanId].nAntenna);
+
+						continue;
+					}
+
+					p2[antennaId2] = D->scan[scanId].imXYZ[antennaId];
+				}
+			}
+
+			free(D->scan[scanId].imXYZ);
+			D->scan[scanId].imXYZ = p2;
+		}
 	
 		D->scan[scanId].nAntenna = D->nAntenna;
 	}

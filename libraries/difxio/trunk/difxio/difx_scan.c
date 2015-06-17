@@ -40,7 +40,7 @@ DifxScan *newDifxScanArray(int nScan)
 	int s;
 
 	ds = (DifxScan *)calloc(nScan, sizeof(DifxScan));
-	for(s = 0; s < nScan; s++)
+	for(s = 0; s < nScan; ++s)
 	{
 		ds[s].configId = -1;
 		ds[s].pointingCentreSrc = -1;
@@ -77,7 +77,7 @@ void deleteDifxScanArray(DifxScan *ds, int nScan)
 
 	if(ds)
 	{
-		for(s = 0; s < nScan; s++)
+		for(s = 0; s < nScan; ++s)
 		{
 			deleteDifxScanInternals(ds + s);
 		}
@@ -97,15 +97,12 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 	fprintf(fp, "    Max NS between AC averages = %d\n", ds->maxNSBetweenACAvg);
 	fprintf(fp, "    Pointing centre source index = %d\n", ds->pointingCentreSrc);
         fprintf(fp, "    Number of phase centres = %d\n", ds->nPhaseCentres);
-	for(i = 0; i < ds->nPhaseCentres; i++) 
+	for(i = 0; i < ds->nPhaseCentres; ++i) 
 	{
-	        fprintf(fp, "    Phase centre %d source index = %d\n", 
-			i, ds->phsCentreSrcs[i]);
-		fprintf(fp, "    Original job phase centre %d source index = %d\n",
-			i, ds->orgjobPhsCentreSrcs[i]);
+	        fprintf(fp, "    Phase centre %d source index = %d\n", i, ds->phsCentreSrcs[i]);
+		fprintf(fp, "    Original job phase centre %d source index = %d\n", i, ds->orgjobPhsCentreSrcs[i]);
 	}
 	fprintf(fp, "    nAntenna %d\n", ds->nAntenna);
-
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
 
 	if(ds->nPhaseCentres < 1 || ds->pointingCentreSrc == ds->phsCentreSrcs[0])
@@ -117,15 +114,15 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 		nModel = ds->nPhaseCentres + 1;
 	}
 
-	if(ds->nPoly > 0 && ds->nAntenna > 1)
+	if(ds->nPoly > 0 && ds->nAntenna > 0)
 	{
 		if(ds->im)
 		{
-			for(i = 0; i < ds->nAntenna; i++)
+			for(i = 0; i < ds->nAntenna; ++i)
 			{
 				if(ds->im[i])
 				{
-					for(j = 0; j < nModel; j++)
+					for(j = 0; j < nModel; ++j)
 					{
 						fprintDifxPolyModel(fp, ds->im[i][j]);
 					}
@@ -150,8 +147,7 @@ void printDifxScan(const DifxScan *ds)
 
 void fprintDifxScanSummary(FILE *fp, const DifxScan *ds)
 {
-	fprintf(fp, "  Start=%12.6f end=%12.6f identifier=%s\n", 
-		ds->mjdStart, ds->mjdEnd, ds->identifier);
+	fprintf(fp, "  Start=%12.6f end=%12.6f identifier=%s\n", ds->mjdStart, ds->mjdEnd, ds->identifier);
 	fprintf(fp, "    PointingSourceIndex = %d\n", ds->pointingCentreSrc);
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
 }
@@ -161,9 +157,7 @@ void printDifxScanSummary(const DifxScan *ds)
 	fprintDifxScanSummary(stdout, ds);
 }
 
-void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *sourceIdRemap, const int *jobIdRemap, 
-	const int *configIdRemap, const int *antennaIdRemap)
+void copyDifxScan(DifxScan *dest, const DifxScan *src, const int *sourceIdRemap, const int *jobIdRemap, const int *configIdRemap, const int *antennaIdRemap)
 {
 	int i, j, srcAntenna, destAntenna;
 
@@ -178,21 +172,17 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	dest->nPhaseCentres = src->nPhaseCentres;
 	if(sourceIdRemap)
 	{
-//		printf("About to do the source re-mapping\n");
-//		printf("Source pointing centre was %d\n", src->pointingCentreSrc);
-//		printf("This will be re-mapped to %d\n", sourceIdRemap[src->pointingCentreSrc]);
 		dest->pointingCentreSrc = sourceIdRemap[src->pointingCentreSrc];
-		for(i=0;i<src->nPhaseCentres;i++)
+		for(i = 0; i < src->nPhaseCentres; ++i)
 		{
 			dest->phsCentreSrcs[i] = sourceIdRemap[src->phsCentreSrcs[i]];
 			dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
 		}
-//		printf("Done with source re-mapping\n");
 	}
 	else
 	{
 		dest->pointingCentreSrc = src->pointingCentreSrc;
-		for(i = 0; i < src->nPhaseCentres; i++)
+		for(i = 0; i < src->nPhaseCentres; ++i)
 		{
 			dest->phsCentreSrcs[i] = src->phsCentreSrcs[i];
 			dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
@@ -222,7 +212,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	dest->nAntenna = src->nAntenna;
 	if(antennaIdRemap)
 	{
-		for(i = 0; i < src->nAntenna; i++)
+		for(i = 0; i < src->nAntenna; ++i)
 		{
 			destAntenna = antennaIdRemap[i];
 			if(destAntenna >= dest->nAntenna)
@@ -235,7 +225,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	if(src->im)
 	{
 		dest->im = (DifxPolyModel ***)calloc(dest->nAntenna, sizeof(DifxPolyModel **));
-		for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
+		for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
 		{
 			if(src->im[srcAntenna] == 0)
 			{
@@ -254,16 +244,16 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 			{
 				fprintf(stderr, "Error allocating space for IM table! Aborting");
 
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
-			for(j = 0; j < src->nPhaseCentres+1; j++)
+			for(j = 0; j < src->nPhaseCentres+1; ++j)
 			{
 				dest->im[destAntenna][j] = dupDifxPolyModelColumn(src->im[srcAntenna][j], dest->nPoly);
 				if(dest->im[destAntenna][j] == 0)
 				{
 					fprintf(stderr, "Error allocating space for IM table! Aborting");
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 			}
 		}
@@ -276,7 +266,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	if(src->imLM)
 	{
 		dest->imLM = (DifxPolyModelLMExtension ***)calloc(dest->nAntenna, sizeof(DifxPolyModelLMExtension **));
-		for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
+		for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
 		{
 			if(src->imLM[srcAntenna] == 0)
 			{
@@ -295,16 +285,16 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 			{
 				fprintf(stderr, "Error allocating space for LM Extension table! Aborting");
 
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
-			for(j = 0; j < src->nPhaseCentres+1; j++)
+			for(j = 0; j < src->nPhaseCentres+1; ++j)
 			{
 				dest->imLM[destAntenna][j] = dupDifxPolyModelLMExtensionColumn(src->imLM[srcAntenna][j], dest->nPoly);
 				if(dest->imLM[destAntenna][j] == 0)
 				{
 					fprintf(stderr, "Error allocating space for LM Extension table! Aborting");
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 			}
 		}
@@ -317,7 +307,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	if(src->imXYZ)
 	{
 		dest->imXYZ = (DifxPolyModelXYZExtension ***)calloc(dest->nAntenna, sizeof(DifxPolyModelXYZExtension **));
-		for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
+		for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
 		{
 			if(src->imXYZ[srcAntenna] == 0)
 			{
@@ -336,16 +326,16 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 			{
 				fprintf(stderr, "Error allocating space for XYZ Extension table! Aborting");
 
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
-			for(j = 0; j < src->nPhaseCentres+1; j++)
+			for(j = 0; j < src->nPhaseCentres+1; ++j)
 			{
 				dest->imXYZ[destAntenna][j] = dupDifxPolyModelXYZExtensionColumn(src->imXYZ[srcAntenna][j], dest->nPoly);
 				if(dest->imXYZ[destAntenna][j] == 0)
 				{
 					fprintf(stderr, "Error allocating space for XYZ Extension table! Aborting");
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 			}
 		}
@@ -417,8 +407,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		{
 			if(ds2[i2].configId >= 0)
 			{
-				copyDifxScan(ds + i, ds2 + i2, sourceIdRemap,
-					jobIdRemap, configIdRemap, antennaIdRemap);
+				copyDifxScan(ds + i, ds2 + i2, sourceIdRemap, jobIdRemap, configIdRemap, antennaIdRemap);
 				i++;
 			}
 			i2++;
@@ -426,10 +415,6 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	}
 
 	*nds = i;
-
-/*
-	printf("After merging two inputs, which had nScan %d and %d, the result has nScan %d\n", nds1, nds2, *nds);
-*/
 
 	return ds;
 }

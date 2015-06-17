@@ -7,6 +7,7 @@
   - In either case, refuse to merge if the EOPs are different on any day
 * Replaced string with enums for three parameter names
   - Note: this breaks API compatibility.  Be sure to recompile all dependent code after updating difxio.
+* Fix merging of tables containing model extensions when different scans have different subsets of antennas
 
 3.4.0
 * Fix X/Y polarization issue
