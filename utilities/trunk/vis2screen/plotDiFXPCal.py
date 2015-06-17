@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-plotDiFXPCal.py version 1.0  Jan Wagner  20150508
+plotDiFXPCal.py version 1.1  Jan Wagner  20150617
 
 Usage: plotDiFXPCal.py [--pdf] [--txt] 
            [--dly=<band>,<tone>,<band>,<tone>,...]
@@ -23,13 +23,15 @@ Optional arguments;
   --dly=...  to combine specific tones (at least two) of arbitrary
              bands in a calculation of a best-fit delay, given by 
                 'delay[s] = - delta phi[rad] / delta nu[Hz]'
-             and to be plotted in a separate window
+             and later plotted in a separate window
   band,tone  to select specific rather than all tone(s) of a band,
              with the first tone in the first band being 1,1
 
 Has some similarity to 'plotpcal' from vex2difx: plotDiFXPCal.py
 has no automatic tone selection, and lacks x/y plots, but is much 
-faster, and produces optional PDF and ASCII output files.
+faster, and produces optional PDF and ASCII output files. The delay
+calculation allows tones from multiple subbands to be combined,
+useful for subbands produced by a wideband digital filterbank.
 
 """
 
