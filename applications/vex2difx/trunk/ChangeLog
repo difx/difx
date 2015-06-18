@@ -7,9 +7,10 @@ Version 2.5.0
     antenna machine assignments and the usual head / core processor
     assignments will be drawn.
 * outPath global parameter added: all .difx/ output gets put here rather than ./
-* split vex2difx.cpp into smaller pieces (in progress)
-* if baseband data files are provided via file lists and some jobs have
+* Split vex2difx.cpp into smaller pieces (in progress)
+* If baseband data files are provided via file lists and some jobs have
   missing data, exlude antennas as necessary and write a "nodata" file
+* Allow phase cal interval of 200 MHz (KVN) without warning since exraction works
 * Fix guardNS calculation (finally!)...
   - Needed to consider bits per sample and number of baseband channels
   - Swiftly moving sources and/or antennas could still trigger this problem
