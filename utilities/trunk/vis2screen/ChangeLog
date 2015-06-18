@@ -1,3 +1,8 @@
+Version 0.6
+* New utility plotDiFXPCal.py
+* fringeFindDiFX.py: switched to numpy, options to show/hide zero baseline data (-z, -Z)
+* plotDiFX.py: switched to numpy
+
 Version 0.5
 * plotDynamicSpectrum.py: bugfixes, plus in all-IF mode also plot phases in a second figure
 * plotDiFX: option to unwrap phase, option to exclude autocorrelations from plot
