@@ -7,29 +7,30 @@ Usage: plotDiFXPCal.py [--pdf] [--txt]
            <output_1.difx> <station> 
            [<band>,<tone>[,<tone>,...]] [<band>,<tone>[...]] 
 
-Currently supports the DiFX 2.4 format of PCAL files.
-
 Plots the contents of the PCAL file of the given station,
 showing amplitude and phase against time for all tones.
+Currently supports the DiFX 2.4 format of PCAL files.
 
-Arguments:
-  <output_1.difx>  the DiFX output to read
-  <station>        the two-letter station name
-
-Optional arguments;
+Options:
   --pdf      to generate PDF file of plot
   --txt      to store phases and amplitudes into a text file,
              discarding details about frequency and polarization
   --dly=...  to combine specific tones (at least two) of arbitrary
              bands in a calculation of a best-fit delay, given by 
-                'delay[s] = - delta phi[rad] / delta nu[Hz]'
+                'delay[s] = - delta phi[rad] / 2pi delta nu[Hz]'
              and later plotted in a separate window
-  band,tone  to select specific rather than all tone(s) of a band,
-             with the first tone in the first band being 1,1
+
+Arguments:
+  <output_1.difx>  the DiFX output to read
+  <station>        the two-letter station name
+
+Optional arguments:
+  band,tone  to select specific rather than all tone(s) of all bands,
+             1,1 is the first tone in the first band
 
 Has some similarity to 'plotpcal' from vex2difx: plotDiFXPCal.py
-has no automatic tone selection, and lacks x/y plots, but is much 
-faster, and produces optional PDF and ASCII output files. The delay
+has no automatic tone selection, no x/y plots, but is faster (x25),
+and produces optional PDF and ASCII output files. The delay
 calculation allows tones from multiple subbands to be combined,
 useful for subbands produced by a wideband digital filterbank.
 
@@ -53,6 +54,7 @@ def parsepcalfile(infile,band_tone_sel=()):
         if (difxVersion == 240) and line[0]=='#':
             continue
 
+        # Decode the information in the current line
         if (difxVersion == 240):
             # line = ['KY', '57092.6388948', '0.0000119', '1', '8', '16', <pcal data>]
             station = line[0]
@@ -71,6 +73,7 @@ def parsepcalfile(infile,band_tone_sel=()):
             else:
                 selected = band_tone_sel
 
+        # Pick selected tones from current PCal line
         for pol in range(npol):
             for (band,tonenr) in selected:
                 if (tonenr >= ntones) or (band >= nsubband):
@@ -90,6 +93,12 @@ def parsepcalfile(infile,band_tone_sel=()):
 
 
 def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False,doTxt=True):
+    """
+    Produces plots of amplitude and phase of the selected tones.
+    If delay_band_tone_sel is non-empty, determines the group delay using these tones.
+    Writes plots into PDF files if doPDF=True. 
+    Writes plot data into text files if doTxt=True.
+    """
 
     pcalvalues = pcaldata[0]
     pcalids = pcaldata[1]
@@ -153,10 +162,13 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
                         bbox_to_anchor=(0.5,-0.25),ncol=4,prop={'size':12},numpoints=1)
     print ('Plotted %u averaging periods x %u tones.' % (len(T),len(ids)))
 
+    # Optional output of plot as a PDF
     if doPDF:
         outfile = os.path.basename(infile.name) + '.pdf'
         pylab.savefig(outfile, bbox_extra_artist=[h_leg])
         print ('Saved plot to %s' % outfile)
+
+    # Optional output of data into a text file
     if doTxt:
         outfile = os.path.basename(infile.name) + '.txt'
         f = open(outfile,'w')
@@ -171,12 +183,12 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
         f.close()
         print ('Saved PCAL data without polarization and frequency infos into %s' % (outfile))
 
-    # Also plot a single fitted delay?
+    # Optionally determine and plot a single fitted group delay
     if len(delay_band_tone_sel)>0:
         # Make matrix of 'phases = freq x phase[t,freq]'
         ids    = pcalids
         freqs  = numpy.zeros(0)
-        phases = numpy.zeros(0) # shape later is (Ntones,Ntimes)
+        phases = numpy.zeros(0) # shape later will be (Ntones,Ntimes)
         dlyids = []
         for bt in delay_band_tone_sel:
             id     = ids[band_tone_sel.index(bt)]
@@ -192,8 +204,9 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
         # Unwrap the phase (risky if only few tones!)
         phases = numpy.unwrap(phases,axis=0)
 
-        # Fit slope ("delay") through freq x phase[f] at each time t  
-        A = numpy.array([freqs, numpy.ones_like(freqs)])
+        # Fit slope ("delay") through freq x phase[f] at each time t
+        omegas = 2*numpy.pi*freqs
+        A = numpy.array([omegas, numpy.ones_like(omegas)])
         (m,b) = numpy.linalg.lstsq(A.T, phases)[0]
         dly_est = -m[:]
 
@@ -222,7 +235,7 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
 
         # Plot an example of the fit at some time t0
         t0   = 0
-        line = -dly_est[t0]*freqs + b[t0]
+        line = -dly_est[t0]*omegas + b[t0]
         legs = dlyids
         legs.append('LSQ fit')
         pylab.figure(figsize=(16,6))
