@@ -857,6 +857,7 @@ int computeDifxSpacecraftEphemerisFromXYZ(DifxSpacecraft *ds, double mjd0,      
 DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1, const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds);
 int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd, sixVector *interpolatedPosition);
 int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds);
+void sixVectorSetTime(sixVector *v, int mjd, double sec);
 
 /* DifxSource functions */
 DifxSource *newDifxSourceArray(int nSource);

@@ -147,8 +147,19 @@ int computeDifxSpacecraftEphemerisFromXYZ(DifxSpacecraft *ds, double mjd0, doubl
 	doublereal state[6];
 	int p;
 
-	ds->nPoint = nPoint;
-	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
+	{
+		ds->nPoint = nPoint;
+		ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+		
+		for(p = 0; p < ds->nPoint; ++p)
+		{
+			double m = mjd0 + p*deltat;
+
+			ds->pos[p].mjd = m;
+			ds->pos[p].fracDay = m - ds->pos[p].mjd;
+		}
+	}
 
 	state[0] = X/1000.0;
 	state[1] = Y/1000.0;
@@ -159,19 +170,16 @@ int computeDifxSpacecraftEphemerisFromXYZ(DifxSpacecraft *ds, double mjd0, doubl
 
 	for(p = 0; p < nPoint; ++p)
 	{
-		long double mjd, jd;
+		long double jd;
 		char jdstr[24];
 		doublereal et;
 
-		mjd = mjd0 + p*deltat;
-		jd = mjd + 2400000.5 + ephemClockError/86400.0;
+		jd = 2400000.5 + ds->pos[p].mjd + ds->pos[p].fracDay + ephemClockError/86400.0;
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
 
 		TEME2J2000(et, state);
 
-		ds->pos[p].mjd = mjd;
-		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
 		ds->pos[p].X = state[0]*1000.0;	/* Convert to m and m/s from km and km/s */
 		ds->pos[p].Y = state[1]*1000.0;
 		ds->pos[p].Z = state[2]*1000.0;
@@ -196,6 +204,20 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 	int spiceHandle;
 	int p;
 
+	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
+	{
+		ds->nPoint = nPoint;
+		ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+		
+		for(p = 0; p < ds->nPoint; ++p)
+		{
+			double m = mjd0 + p*deltat;
+
+			ds->pos[p].mjd = m;
+			ds->pos[p].fracDay = m - ds->pos[p].mjd;
+		}
+	}
+
 	ldpool_c(naifFile);
 	spklef_c(ephemFile, &spiceHandle);
 
@@ -204,19 +226,18 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 	{
 		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_bsp: spacecraft name %s is too long %d > %d\n", objectName, p, DIFXIO_NAME_LENGTH-1);
 	}
-	ds->nPoint = nPoint;
-	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
-	for(p = 0; p < nPoint; ++p)
+	for(p = 0; p < ds->nPoint; ++p)
 	{
 		double state[6], range;
-		long double mjd, jd;
+		long double jd;
 		char jdstr[24];
 		double et;
 		
-		mjd = mjd0 + p*deltat;
-		jd = mjd + 2400000.5 + ephemClockError/86400.0;
+		/* time to evaluate ephemeris */
+		jd = 2400000.5 + ds->pos[p].mjd + ds->pos[p].fracDay + ephemClockError/86400.0;
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
+
 		/* 399 is the earth geocenter */
 		if(ephemStellarAber < -0.5)
 		{
@@ -243,10 +264,9 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 				state[q] += ephemStellarAber*(state2[q] - state[q]);
 			}
 		}
-
-		ds->pos[p].mjd = mjd;
-		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
-		ds->pos[p].X = state[0]*1000.0;	/* Convert to m and m/s from km and km/s */
+		
+		/* Convert to m and m/s from km and km/s */
+		ds->pos[p].X = state[0]*1000.0;
 		ds->pos[p].Y = state[1]*1000.0;
 		ds->pos[p].Z = state[2]*1000.0;
 		ds->pos[p].dX = state[3]*1000.0;
@@ -364,6 +384,20 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 
 	ldpool_c(naifFile);
 
+	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
+	{
+		ds->nPoint = nPoint;
+		ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+		
+		for(p = 0; p < ds->nPoint; ++p)
+		{
+			double m = mjd0 + p*deltat;
+
+			ds->pos[p].mjd = m;
+			ds->pos[p].fracDay = m - ds->pos[p].mjd;
+		}
+	}
+
 	for(;;)
 	{
 		char *rv;
@@ -424,20 +458,18 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 	{
 		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_tle: spacecraft name %s is too long %d > %d\n", objectName, p, DIFXIO_NAME_LENGTH-1);
 	}
-	ds->nPoint = nPoint;
-	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
 
 	for(p = 0; p < nPoint; ++p)
 	{
-		long double mjd, jd;
+		long double jd;
 		char jdstr[24];
 		doublereal et;
 		int set;
 		doublereal state[6];
 		double f = -1.0;
 
-		mjd = mjd0 + p*deltat;
-		jd = mjd + 2400000.5 + ephemClockError/86400.0;
+		/* time to evaluate ephemeris */
+		jd = 2400000.5 + ds->pos[p].mjd + ds->pos[p].fracDay + ephemClockError/86400.0;
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
 
@@ -468,8 +500,6 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 
 		TEME2J2000(et, state);
 
-		ds->pos[p].mjd = mjd;
-		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
 		ds->pos[p].X = state[0]*1000.0;	/* Convert to m and m/s from km and km/s */
 		ds->pos[p].Y = state[1]*1000.0;
 		ds->pos[p].Z = state[2]*1000.0;
@@ -781,3 +811,26 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 
 	return n;
 }
+
+/* properly handles seconds outside range [0,86400) and retains precision */
+void sixVectorSetTime(sixVector *v, int mjd, double sec)
+{
+	if(sec < 0)
+	{
+		int N = (int)((-sec)/86400.0) + 1;
+
+		sec += N*86400.0;
+		mjd -= N;
+	}
+	if(sec >= 86400.0)
+	{
+		int N = (int)(sec/86400.0);
+
+		sec -= N*86400.0;
+		mjd += N;
+	}
+
+	v->mjd = mjd;
+	v->fracDay = sec/86400.0;
+}
+
