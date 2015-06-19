@@ -38,7 +38,6 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 {
 #warning "FIXME: startChan, nInChan and nOutChan are probably vestigial; clean them up?"
 	if(D1->specAvg != D2->specAvg ||
-	   D1->job->aberCorr != D2->job->aberCorr ||
 	   strncmp(D1->job->difxVersion, D2->job->difxVersion, DIFXIO_VERSION_LENGTH) ||
 	   strncmp(D1->job->difxLabel, D2->job->difxLabel, DIFXIO_VERSION_LENGTH))
 	{
@@ -225,6 +224,16 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose
 	D->spacecraft = mergeDifxSpacecraft(D1->spacecraft, D1->nSpacecraft,
 		D2->spacecraft, D2->nSpacecraft,
 		spacecraftIdRemap, &(D->nSpacecraft));
+
+	/* handle some random bits */
+	if(D1->job->aberCorr != D2->job->aberCorr)
+	{
+		D->job->aberCorr = AberCorrMixed;
+		if(D1->job->aberCorr != AberCorrMixed && D2->job->aberCorr != AberCorrMixed)
+		{
+			fprintf(stderr, "Warning: merging two DifxInput structures that have had different aberration correction types\n");
+		}
+	}
 
 	/* store the remappings of the added job in case it is useful later */
 	job = D->job + D1->nJob;	/* points to first (probably only) job from D2 */

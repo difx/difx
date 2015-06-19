@@ -92,6 +92,7 @@ enum AberCorr
 	AberCorrApproximate,
 	AberCorrExact,
 	AberCorrNoAtmos,
+	AberCorrMixed,		/* output may have more than one aberration correction applied */
 	NumAberCorrOptions	/* must remain as last entry */
 };
 

@@ -38,7 +38,8 @@ const char aberCorrStrings[][MAX_ABER_CORR_STRING_LENGTH] =
 	"UNCORRECTED",
 	"APPROXIMATE",
 	"EXACT",
-	"NO ATMOS"
+	"NO ATMOS",
+	"MIXED"
 };
 
 
