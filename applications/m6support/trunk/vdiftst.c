@@ -301,7 +301,7 @@ static int analyze_fragment_vdif(const char *path, struct stat *vfuse,
     VDIFHeader *v0, *v1, *vp, *vf;
     FILE *fp = fopen(path, "r");
 
-    if (!fp) return(perror("fopen"),1);
+    if (!fp) return(fprintf(vdflog,"%s: ",path),perror("fopen"),1);
 
     /* get the first two headers, and the length */
     head_off = prefix + offset;
@@ -313,11 +313,11 @@ static int analyze_fragment_vdif(const char *path, struct stat *vfuse,
     v0 = (VDIFHeader *)buf;
     pkt_len = 8 * v0->w3.df_len;
     if ((pkt_len < 32) || (pkt_len > (BUF_SIZ - 32)))
-        return(fprintf(vdflog, "Error: unusual frame length of %u bytes in %s\n", pkt_len,path), 4);
+        return(fprintf(vdflog, "Error: unusual frame length of %u bytes in %s\n",pkt_len,BUF_SIZ-32,path), 4);
 
     read_len = pkt_len + offset;
     v1 = (VDIFHeader *)(buf + read_len);
-    if ((rv = headers_differ(v0, v1, 0))) return(100 + rv + fclose(fp));
+    if ((rv = headers_differ(v0, v1, 0))) return(fprintf(stderr,"%s: VDIF header mismatch\n",path), 100 + rv + fclose(fp));
     notice_maxfrcounter(v0);
     notice_maxfrcounter(v1);
 
@@ -333,8 +333,8 @@ static int analyze_fragment_vdif(const char *path, struct stat *vfuse,
         return(perror("fread"), 13 + fclose(fp));
     vp = (VDIFHeader *)end;
     vf = (VDIFHeader *)(end + read_len);
-    if ((rv = headers_differ(v0, vp, 1))) return(200 + rv + fclose(fp));
-    if ((rv = headers_differ(vp, vf, 0))) return(300 + rv + fclose(fp));
+    if ((rv = headers_differ(v0, vp, 1))) return(fprintf(stderr,"%s: VDIF header mismatch\n",path), 200 + rv + fclose(fp));
+    if ((rv = headers_differ(vp, vf, 0))) return(fprintf(stderr,"%s: VDIF header mismatch\n",path), 300 + rv + fclose(fp));
     notice_maxfrcounter(vp);
     notice_maxfrcounter(vf);
 
@@ -368,18 +368,18 @@ static int analyze_fragment_sgv2(const char *path, struct stat *vfuse,
     FILE *fp = fopen(path, "r");
     VDIFHeader *v0, *v1, *vp, *vf;
 
-    if (!fp) return(perror("fopen"),1);
+    if (!fp) return(fprintf(vdflog,"%s: ",path),perror("fopen"),1);
 
     /* get the file and block headers and some checks */
     if (7 != fread(words, 4, 7, fp)) return(2 + fclose(fp));
     if (words[0] != 0xfeed6666) return(3 + fclose(fp));
     if (words[1] != 0x2) return(4 + fclose(fp));
     block_size = words[2];
-    if (block_size > pars->writeblocker) return(5 + fclose(fp));
+    if (block_size > pars->writeblocker) return(fprintf(vdflog, "Error: blocksize %d>%d\n",block_size,pars->writeblocker),5 + fclose(fp));
     if (words[3] != 0x0) return(6 + fclose(fp));     /* VDIF */
     header_pkt_len = words[4];
-    if ((pkt_len < 32) || (pkt_len > (BUF_SIZ - 32)))
-        return(fprintf(vdflog, "Error: unusual frame length of %u bytes in %s\n", header_pkt_len,path), 7);
+    if ((header_pkt_len < 32) || (header_pkt_len > (BUF_SIZ - 32)))
+        return(fprintf(vdflog, "Error: unusual frame length of %u bytes (<32|>%d) in %s\n", header_pkt_len,BUF_SIZ-32,path), 7);
 
     /* get the first two headers, and the length */
     if ((nb = fread(buf, 1, BUF_SIZ-1, fp)) < BUF_SIZ-1)
