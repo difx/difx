@@ -592,6 +592,7 @@ bool Model::readPolynomialSamples(ifstream * input)
   string line, key;
   bool polyok = true;
   bool hasXYZDerivatives = false;
+  bool hasLMDerivatives = false;
 
   config->getinputline(input, &imfilename, "IM FILENAME");
   input->close();
@@ -694,6 +695,11 @@ bool Model::readPolynomialSamples(ifstream * input)
         hasXYZDerivatives = true;
         config->getinputkeyval(input, &key, &line);
       }
+      else if(key.find("DELTA LM") != string::npos)
+      {
+        hasLMDerivatives = true;
+        config->getinputkeyval(input, &key, &line);
+      }
       mjd = atoi(line.c_str());
       config->getinputline(input, &line, "SCAN ", i);
       daysec = atoi(line.c_str());
@@ -792,6 +798,13 @@ bool Model::readPolynomialSamples(ifstream * input)
           {
             for(int skip = 0; skip < 9; ++skip) {
               // just skip over the next 9 lines which are not used by mpifxcorr
+              config->getinputkeyval(input, &key, &line);
+            }
+          }
+          if(hasLMDerivatives)
+          {
+            for(int skip = 0; skip < 5; ++skip) {
+              // just skip over the next 5 lines which are not used by mpifxcorr
               config->getinputkeyval(input, &key, &line);
             }
           }
