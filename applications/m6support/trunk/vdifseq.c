@@ -466,7 +466,7 @@ static THIERnode *dir_hier_add(char *part, int depth)
     THIERnode **leaf, *node;
     if (!part && (depth<0)) { /* finish up */
         leaf = tfind(&tmp, &thier_root, &thier_comp);
-        if (!leaf) perror("tfind-hier");
+        if (!leaf) return(fprintf(vdflog,"tfind-hier error: leaf is NULL\n"),NULL);
         if ((*leaf)->type == 'D') (*leaf)->type = 'S';
         return(*leaf);
     } else if (!part) { /* initialize temp with the root */
@@ -479,11 +479,11 @@ static THIERnode *dir_hier_add(char *part, int depth)
         tmp.path[VDIFUSE_MAX_PATH-1] = 0;
         tmp.type = 'D';
         node = (THIERnode *)malloc(sizeof(THIERnode));
-        if (!node) perror("malloc-hier");
+        if (!node) return(fprintf(vdflog,"malloc-hier error: node is NULL\n"),NULL);
         if (vdifuse_debug>4) fprintf(vdflog, "hier:malloc %p\n", node);
         memcpy(node, &tmp, sizeof(THIERnode));
         leaf = tsearch(node, &thier_root, &thier_comp);
-        if (!leaf) perror("tsearch-hier");
+        if (!leaf) return(fprintf(vdflog,"tsearch-hier error: find/create returned NULL\n"),NULL);
         if (strcmp(tmp.path, (*leaf)->path)) fprintf(vdflog,
             "Tree Search Corrupt Dir with %s v %s\n", tmp.path, (*leaf)->path);
     }
@@ -520,6 +520,7 @@ static int fragment_in_hierarchy(VDIFUSEntry *vc, uint32_t limit)
     }
     free(copy);
     hn = dir_hier_add(NULL, -1);
+    if (vc->hier || hn || hn->path) return(fprintf(vdflog,"frag_in_hier: dir_hier_add misbehaved\n"),3);
     strcpy(vc->hier, hn->path);
     return( fragment_in_fragtree(vc) );
 }

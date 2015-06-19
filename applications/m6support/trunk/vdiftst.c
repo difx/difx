@@ -313,7 +313,7 @@ static int analyze_fragment_vdif(const char *path, struct stat *vfuse,
     v0 = (VDIFHeader *)buf;
     pkt_len = 8 * v0->w3.df_len;
     if ((pkt_len < 32) || (pkt_len > (BUF_SIZ - 32)))
-        return(fprintf(vdflog, "Error: unusual frame length of %u bytes\n", pkt_len), 4);
+        return(fprintf(vdflog, "Error: unusual frame length of %u bytes in %s\n", pkt_len,path), 4);
 
     read_len = pkt_len + offset;
     v1 = (VDIFHeader *)(buf + read_len);
@@ -379,7 +379,7 @@ static int analyze_fragment_sgv2(const char *path, struct stat *vfuse,
     if (words[3] != 0x0) return(6 + fclose(fp));     /* VDIF */
     header_pkt_len = words[4];
     if ((pkt_len < 32) || (pkt_len > (BUF_SIZ - 32)))
-        return(fprintf(vdflog, "Error: unusual frame length of %u bytes\n", header_pkt_len), 7);
+        return(fprintf(vdflog, "Error: unusual frame length of %u bytes in %s\n", header_pkt_len,path), 7);
 
     /* get the first two headers, and the length */
     if ((nb = fread(buf, 1, BUF_SIZ-1, fp)) < BUF_SIZ-1)
