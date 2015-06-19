@@ -55,6 +55,7 @@ static int accepted_as_frag(VDIFUSEntry *vc)
     if ((rigor & vp->how_rigorous) == vp->how_rigorous) {
         if ((cfe = create_fragment_vfuse(vc, vd_num_entries, vp, rigor))) {// ||
             /* then we not able to accept this as a fragment */
+            vc->etype = VDIFUSE_ENTRY_INVALID;
 	    if (vdifuse_debug>2) fprintf(vdflog,
 		"    but failed [create:%d]\n", cfe);
             if (vdifuse_debug>0) fprintf(vdflog,
@@ -441,7 +442,7 @@ static int load_cache(char *cache)
     vd_cache = (VDIFUSEntry*)calloc(vd_num_entries, sizeof(VDIFUSEntry));
     if (!vd_cache) return(perror("calloc"),1);
     fp = fopen(cache, "r");
-    if (!fp) return(perror("fopen"),2);
+    if (!fp) return(fprintf(stderr,"%s: ",cache),perror("load_cache fopen"),2);
     ne = fread(vd_cache, sizeof(VDIFUSEntry), vd_num_entries, fp);
     if (ne != vd_num_entries)
         return(fprintf(stderr, "Failed to load complete cache\n"));
@@ -461,7 +462,7 @@ static int dump_cache(void)
     if (!vd_cache || vd_num_entries == 0 || !vd_cache_file)
         return(0);   /* no work */
     fp = fopen(vd_cache_file, "w");
-    if (!fp) return(perror("fopen"),1);
+    if (!fp) return(fprintf(stderr,"%s: ",vd_cache_file),perror("dump_cache fopen"),1);
     ne = fwrite(vd_cache, sizeof(VDIFUSEntry), vd_num_entries, fp);
     if (ne != vd_num_entries)
         return(fprintf(stderr, "Failed to write complete cache\n"));
