@@ -229,11 +229,6 @@ void split(const std::string &str, std::vector<std::string> &tokens, const std::
 	}
 }
 
-static bool sortStartMjdDescendingFunc(VexBasebandFile a, VexBasebandFile b)
-{
-	return (a.mjdStart<b.mjdStart);
-}
-
 int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandFile> &basebandFiles)
 {
 	const int MaxLineLength=1024;

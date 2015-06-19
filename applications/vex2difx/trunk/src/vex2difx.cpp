@@ -2255,9 +2255,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	if(!spacecraftSet.empty())
 	{
 		DifxSpacecraft *ds;
-		double fracday0, deltat;
-		int mjdint, n0, nPoint, v;
-		double mjd0;
+		int v;
 
 		D->spacecraft = newDifxSpacecraftArray(spacecraftSet.size());
 		D->nSpacecraft = spacecraftSet.size();
@@ -2273,12 +2271,24 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 				
 				exit(EXIT_FAILURE);
 			}
-			mjdint = static_cast<int>(J.mjdStart);
-			fracday0 = J.mjdStart-mjdint;
-			deltat = phaseCentre->ephemDeltaT/86400.0;	// convert from seconds to days
-			n0 = static_cast<int>(fracday0/deltat - 12);	// start ephmemeris at least 2 points early
-			mjd0 = mjdint + n0*deltat;			// always start an integer number of increments into day
-			nPoint = static_cast<int>(J.duration()/deltat) + 28; // make sure to extend beyond the end of the job
+
+			const long int deltaT = phaseCentre->ephemDeltaT;	// seconds -- interval between ephemeris calculations.  24 sec is normal
+			const int intMJD = static_cast<int>(D->mjdStart);
+			// start time in seconds rounded down to nearest 2 minute boundary, and then one more
+			const int secStart = (static_cast<int>((D->mjdStart - intMJD)*720.0) - 1)*120;
+			// end time in seconds rounded up to nearest 2 minute boundary, and then one more
+			const int secEnd = static_cast<int>((D->mjdStop - intMJD)*720.0 + 1.999)*120;
+			const int nPoint = (secEnd - secStart)/deltaT + 1;
+			const double mjd0 = intMJD + secStart/86400.0;
+
+			/* initialize state vector structure with evaluation times */
+			ds->nPoint = nPoint;
+			ds->pos = (sixVector *)calloc(ds->nPoint, sizeof(sixVector));
+			for(int p = 0; p < nPoint; ++p)
+			{
+				sixVectorSetTime(ds->pos + p, intMJD, secStart + p*deltaT);
+			}
+
 			if(!phaseCentre->ephemObject.empty())		// process a .bsp file through spice
 			{
 				if(verbose > 0)
@@ -2286,14 +2296,15 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 					cout << "Computing ephemeris:" << endl;
 					cout << "  source name = " << phaseCentre->difxName << endl;
 					cout << "  ephem object name = " << phaseCentre->ephemObject << endl;
-					cout << "  mjd = " << mjdint << "  deltat = " << deltat << endl;
-					cout << "  startPoint = " << n0 << "  nPoint = " << nPoint << endl;
+					cout << "  start mjd = " << intMJD << "  sec = " << secStart << endl;
+					cout << "  deltaT = " << phaseCentre->ephemDeltaT << " sec" << endl;
+					cout << "  nPoint = " << nPoint << endl;
 					cout << "  ephemFile = " << phaseCentre->ephemFile << endl;
 					cout << "  naifFile = " << phaseCentre->naifFile << endl;
 					cout << "  ephemStellarAber = " << phaseCentre->ephemStellarAber << endl;
 					cout << "  ephemClockError = " << phaseCentre->ephemClockError << endl;
 				}
-				v = computeDifxSpacecraftEphemeris(ds, mjd0, deltat, nPoint, 
+				v = computeDifxSpacecraftEphemeris(ds, mjd0, deltaT/86400.0, nPoint, 
 					phaseCentre->ephemObject.c_str(),
 					phaseCentre->naifFile.c_str(),
 					phaseCentre->ephemFile.c_str(), 
@@ -2310,7 +2321,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			{
 				/* Note: these calculations are extremely naive and don't yield a model good for VLBI correlation */
 
-				v = computeDifxSpacecraftEphemerisFromXYZ(ds, mjd0, deltat, nPoint, 
+				v = computeDifxSpacecraftEphemerisFromXYZ(ds, mjd0, deltaT/86400.0, nPoint, 
 					phaseCentre->X, phaseCentre->Y, phaseCentre->Z,
 					phaseCentre->naifFile.c_str(),
 					phaseCentre->ephemClockError);
