@@ -520,7 +520,7 @@ static int fragment_in_hierarchy(VDIFUSEntry *vc, uint32_t limit)
     }
     free(copy);
     hn = dir_hier_add(NULL, -1);
-    if (vc->hier || hn || hn->path) return(fprintf(vdflog,"frag_in_hier: dir_hier_add misbehaved\n"),3);
+    if (!vc->hier || !hn || !hn->path) return(fprintf(vdflog,"frag_in_hier: dir_hier_add misbehaved\n"),3);
     strcpy(vc->hier, hn->path);
     return( fragment_in_fragtree(vc) );
 }
