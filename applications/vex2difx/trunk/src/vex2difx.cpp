@@ -2291,6 +2291,8 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 
 			if(!phaseCentre->ephemObject.empty())		// process a .bsp file through spice
 			{
+				const char *naifFile;
+
 				if(verbose > 0)
 				{
 					cout << "Computing ephemeris:" << endl;
@@ -2304,9 +2306,26 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 					cout << "  ephemStellarAber = " << phaseCentre->ephemStellarAber << endl;
 					cout << "  ephemClockError = " << phaseCentre->ephemClockError << endl;
 				}
+
+				if(phaseCentre->naifFile.empty())
+				{
+					v = populateSpiceLeapSecondsFromEOP(D->eop, D->nEOP);
+					if(v != 0)
+					{
+						cerr << "Error: populateSpiceLeapSecondsFromEOP returned " << v << endl;
+
+						exit(EXIT_FAILURE);
+					}
+					naifFile = 0;
+				}
+				else
+				{
+					naifFile = phaseCentre->naifFile.c_str();
+				}
+
 				v = computeDifxSpacecraftEphemeris(ds, mjd0, deltaT/86400.0, nPoint, 
 					phaseCentre->ephemObject.c_str(),
-					phaseCentre->naifFile.c_str(),
+					naifFile,
 					phaseCentre->ephemFile.c_str(), 
 					phaseCentre->ephemStellarAber,
 					phaseCentre->ephemClockError);

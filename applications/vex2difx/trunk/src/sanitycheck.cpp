@@ -78,9 +78,9 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		{
 			n += 4;
 		}
-		if(n != 0 && n != 7)
+		if(n != 0 && n != 3 && n != 7)
 		{
-			std::cerr << "Warning: source " << s->vexName << " seems to have an incomplete set of ephemeris parameters.  All or none of ephemObject, ephemFile, naifFile must be given.  Error code = " << n << std::endl;
+			std::cerr << "Warning: source " << s->vexName << " seems to have an unsupported set of ephemeris parameters.  Both or neither of ephemObject and ephemFile bust be given and naifFile cannot occur without both of them.  Error code = " << n << std::endl;
 			++nWarn;
 		}
 	}

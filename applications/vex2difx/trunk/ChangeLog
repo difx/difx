@@ -14,6 +14,8 @@ Version 2.5.0
 * Fix guardNS calculation (finally!)...
   - Needed to consider bits per sample and number of baseband channels
   - Swiftly moving sources and/or antennas could still trigger this problem
+* leap second file now optional for spice kernel evaluation.
+  - If not provided, the EOPs from within the DifxInput structure will be used
 
 Version 2.4.0
 ~~~~~~~~~~~~~
