@@ -118,11 +118,11 @@ void printDifxSpacecraft(const DifxSpacecraft *ds)
 }
 
 #if HAVE_SPICE
-static void TEME2J2000(doublereal et, doublereal state[6])
+static void TEME2J2000(double et, double state[6])
 {
-	doublereal precm[36];
-	doublereal invprecm[36];
-	doublereal tmpstate[6];
+	double precm[36];
+	double invprecm[36];
+	double tmpstate[6];
 	int six = 6;
 	int i;
 
@@ -144,7 +144,7 @@ static void TEME2J2000(doublereal et, doublereal state[6])
 int computeDifxSpacecraftEphemerisFromXYZ(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, double X, double Y, double Z, const char *naifFile, double ephemClockError)
 {
 #if HAVE_SPICE
-	doublereal state[6];
+	double state[6];
 	int p;
 
 	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
@@ -166,13 +166,16 @@ int computeDifxSpacecraftEphemerisFromXYZ(DifxSpacecraft *ds, double mjd0, doubl
 	state[2] = Z/1000.0;
 	state[3] = state[4] = state[5] = 0.0;
 
-	ldpool_c(naifFile);
+	if(naifFile)
+	{
+		ldpool_c(naifFile);
+	}
 
 	for(p = 0; p < nPoint; ++p)
 	{
 		long double jd;
 		char jdstr[24];
-		doublereal et;
+		double et;
 
 		jd = 2400000.5 + ds->pos[p].mjd + ds->pos[p].fracDay + ephemClockError/86400.0;
 		sprintf(jdstr, "JD %18.12Lf", jd);
@@ -218,7 +221,11 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 		}
 	}
 
-	ldpool_c(naifFile);
+	if(naifFile)
+	{
+		ldpool_c(naifFile);
+	}
+
 	spklef_c(ephemFile, &spiceHandle);
 
 	p = snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", objectName);
@@ -316,10 +323,10 @@ static int findBestSet(double e, SpiceDouble *epochs, int nEpoch, double *f)
 	return -1;
 }
 
-void evaluateTLE(doublereal et, doublereal *elems, doublereal *state)
+void evaluateTLE(double et, double *elems, double *state)
 {
 	double R;
-	doublereal geophysConsts[] = 	/* values from http://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/spicelib/ev2lin.html */
+	double geophysConsts[] = 	/* values from http://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/spicelib/ev2lin.html */
 	{
 		1.082616e-3,		/* J2 gravitational harmonic for earth */
 		-2.53881e-6,		/* J3 gravitational harmonic for earth */
@@ -367,7 +374,7 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 	const SpiceInt MaxLineLength = 512;
 	const SpiceInt firstYear = 2000;
 	int p;
-	doublereal elems[MaxEphemElementSets][NElement];
+	double elems[MaxEphemElementSets][NElement];
 	SpiceDouble epochs[MaxEphemElementSets];
 	int nSet = 0;
 	FILE *in;
@@ -382,7 +389,10 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 		return -1;
 	}
 
-	ldpool_c(naifFile);
+	if(naifFile)
+	{
+		ldpool_c(naifFile);
+	}
 
 	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
 	{
@@ -463,9 +473,9 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 	{
 		long double jd;
 		char jdstr[24];
-		doublereal et;
+		double et;
 		int set;
-		doublereal state[6];
+		double state[6];
 		double f = -1.0;
 
 		/* time to evaluate ephemeris */
@@ -488,7 +498,7 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 		{
 			/* linear interpolation between two TLE values */
 
-			doublereal state2[6];
+			double state2[6];
 			int j;
 
 			evaluateTLE(et, elems[set+1], state2);
@@ -834,3 +844,56 @@ void sixVectorSetTime(sixVector *v, int mjd, double sec)
 	v->fracDay = sec/86400.0;
 }
 
+/* puts some parameters into the spice pool.  Call this function instead of
+ * supplying a leapsecond kernel file.
+ */
+int populateSpiceLeapSecondsFromEOP(const DifxEOP *eop, int nEOP)
+{
+	const double naif_deltet_delta_t_a = 32.184;
+	const double naif_deltet_k = 1.657e-3;
+	const double naif_deltet_eb = 1.671e-2; 
+	const double naif_deltet_m[2] = { 6.23999600, 1.99096871e-7 };
+	double *naif_taiutc;
+	int e;
+	int nLeapSec = 0;
+	double lastLeapSec = -1000.0;
+
+#if HAVE_SPICE
+	if(nEOP < 1)
+	{
+		fprintf(stderr, "Error: populateSpiceLeapSecondsFromEOP: too few values supplied (nEOP = %d)\n", nEOP);
+
+		return -2;
+	}
+
+	pdpool_c("DELTET/DELTA_T_A", 1, &naif_deltet_delta_t_a);
+	pdpool_c("DELTET/K",         1, &naif_deltet_k);
+	pdpool_c("DELTET/EB",        1, &naif_deltet_eb);
+	pdpool_c("DELTET/M",         2, naif_deltet_m);
+
+	naif_taiutc = (double *)malloc(2*nEOP*sizeof(double));
+
+	for(e = 0; e < nEOP; ++e)
+	{
+		if(eop[e].tai_utc != lastLeapSec)
+		{
+			naif_taiutc[2*nLeapSec] = eop[e].tai_utc;
+			naif_taiutc[2*nLeapSec+1] = (eop[e].mjd - 51544.5)*86400.0;
+			
+			lastLeapSec = naif_taiutc[2*nLeapSec];
+
+			++nLeapSec;
+		}
+	}
+
+	pdpool_c("DELTET/DELTA_AT",  2*nLeapSec, naif_taiutc);
+
+	free(naif_taiutc);
+
+	return 0;
+#else
+	fprintf(stderr, "Error: populateSpiceLeapSecondsFromEOP: spice not compiled into difxio.\n");
+	
+	return -1;
+#endif
+}

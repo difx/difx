@@ -858,6 +858,7 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1, const D
 int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd, sixVector *interpolatedPosition);
 int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds);
 void sixVectorSetTime(sixVector *v, int mjd, double sec);
+int populateSpiceLeapSecondsFromEOP(const DifxEOP *eop, int nEOP);
 
 /* DifxSource functions */
 DifxSource *newDifxSourceArray(int nSource);
