@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Walter Brisken                                  *
+ *   Copyright (C) 2014-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -48,7 +48,7 @@ static void usage(const char *pgm)
 
 int main(int argc, char **argv)
 {
-	int outputBytes = 100000;
+	int outputBytes = 102400;
 	int nTest = 10000;
 
 	if(argc > 1 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0))

@@ -11,11 +11,15 @@ Version 1.1
 * change a few key variables from "long long" to "int64_t" 
 * cornerturners now all use sized integers for variables that care
 * new corner turners:
-  4-bit with 16 threads
+  - 1-bit with 16 threads		(slow and convoluted; likely possible to do better)
+  - 4-bit with 16 threads
+  - 16-bit with 2, 4, 8, 16 threads
+  - 32-bit with 2, 4, 8, 16 threads
+  - 64-bit with 2, 4, 8, 16 threads
+  - Why need for large words?  It turns out that multiplexing multiple channels per thread is mathematically identical to multiplexing one channel per thread but with a total bit width of nBit*nChan
 * VDIF multiplexer now supports multiplexing threads with more than one channel.
   - currently only at the API level; changes to utilities will come...
   - a change in the API for configurevdifmux() is likely coming that will simplify use of this.  For now, use setvdifmuxinputchannels() after configurevdifmux()
-
 
 Version 1.0
 ~~~~~~~~~~~
