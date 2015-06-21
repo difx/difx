@@ -134,6 +134,7 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 
 	vm->inputFrameSize = inputFrameSize;
 	vm->inputFramesPerSecond = inputFramesPerSecond;
+	vm->inputChannelsPerThread = 1;	/* Use setvdifmuxinputchannels() if this is not desired */
 	vm->frameGranularity = inputFramesPerSecond/gcd(inputFramesPerSecond, 1000000000);
 	vm->nBit = nBit;
 	vm->nSort = nSort;
@@ -195,6 +196,38 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 	return 0;
 }
 
+int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread)
+{
+	if(!vm)
+	{
+		fprintf(stderr, "Error: setvdifmuxinputchannels called with null vdif_mux structure\n");
+
+		return -1;
+	}
+
+	if(inputChannelsPerThread <= 0)
+	{
+		fprintf(stderr, "Error: setvdifmuxinputchannels called with %d channels per thread\n", inputChannelsPerThread);
+
+		return -2;
+	}
+
+	vm->inputChannelsPerThread = inputChannelsPerThread;
+
+	for(vm->nOutputChan = 1; vm->nOutputChan < vm->nThread; vm->nOutputChan *= 2) ;
+	vm->nOutputChan *= vm->inputChannelsPerThread;
+
+	vm->cornerTurner = getCornerTurner(vm->nThread, vm->nBit*vm->inputChannelsPerThread);
+	if(vm->cornerTurner == 0)
+	{
+		fprintf(stderr, "No corner turner implemented for %d threads and %d bits\n", vm->nThread, vm->nBit*vm->inputChannelsPerThread);
+		
+		return -1;
+	}
+
+	return 0;
+}
+
 void printvdifmux(const struct vdif_mux *vm)
 {
 	if(vm)
@@ -208,6 +241,7 @@ void printvdifmux(const struct vdif_mux *vm)
 		printf("  outputDataSize = %d\n", vm->outputDataSize);
 		printf("  inputFramesPerSecond = %d\n", vm->inputFramesPerSecond);
 		printf("  frameGranularity = %d\n", vm->frameGranularity);
+		printf("  inputChannelsPerThread = %d\n", vm->inputChannelsPerThread);
 		printf("  nBit = %d\n", vm->nBit);
 		printf("  nSort = %d\n", vm->nSort);
 		printf("  nGap = %d\n", vm->nGap);
@@ -216,11 +250,26 @@ void printvdifmux(const struct vdif_mux *vm)
 		printf("  goodMask = 0x%" PRIx64 "\n", vm->goodMask);
 		printf("  flags = 0x%02x\n", vm->flags);
 		printf("  thread to channel map:\n");
-		for(i = 0; i <= VDIF_MAX_THREAD_ID; ++i)
+		if(vm->inputChannelsPerThread == 1)
 		{
-			if(vm->chanIndex[i] != MAGIC_BAD_THREAD)
+			for(i = 0; i <= VDIF_MAX_THREAD_ID; ++i)
 			{
-				printf("    %d -> %d\n", i, vm->chanIndex[i]);
+				if(vm->chanIndex[i] != MAGIC_BAD_THREAD)
+				{
+					printf("    %d -> %d\n", i, vm->chanIndex[i]);
+				}
+			}
+		}
+		else
+		{
+			for(i = 0; i <= VDIF_MAX_THREAD_ID; ++i)
+			{
+				if(vm->chanIndex[i] != MAGIC_BAD_THREAD)
+				{
+					printf("    %d -> %d-%d\n", i, 
+						vm->chanIndex[i]*vm->inputChannelsPerThread, 
+						(vm->chanIndex[i]+1)*vm->inputChannelsPerThread-1);
+				}
 			}
 		}
 	}
@@ -359,7 +408,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			continue;
 		}
 		if(getVDIFFrameBytes(vh) != vm->inputFrameSize ||
-		   getVDIFNumChannels(vh) != 1 ||
+		   getVDIFNumChannels(vh) != vm->inputChannelsPerThread ||
 		   getVDIFBitsPerSample(vh) != vm->nBit)
 		{
 			i += 4;
@@ -803,131 +852,3 @@ void resetvdifmuxstatistics(struct vdif_mux_statistics *stats)
 	}
 }
 
-static int testCornerTurn(const unsigned char *outputBuffer, const unsigned char * const *threadData, int outputBytes, int nt, int b)
-{
-	int nError = 0;
-	int nSample = 8*outputBytes/b;	/* total samples in output stream */
-	int s;
-	int ut;	/* lowest power of 2 >= nt */
-	unsigned int bitmask;
-
-	for(ut = 1; ut < nt; ut *= 2);
-
-	bitmask = (1 << b) - 1;
-
-	for(s = 0; s < nSample; ++s)
-	{
-		int t;	/* thread */
-		unsigned int outputvalue, inputvalue;
-		int outputsample, outputshift, inputsample, inputshift;
-
-		t = s % ut;
-		if(t >= nt)
-		{
-			/* ignore padded data */
-			continue;
-		}
-
-		outputsample = s*b / 8;
-		outputshift = (s*b) % 8;
-		outputvalue = (outputBuffer[outputsample] >> outputshift) & bitmask;
-
-		inputsample = s*b/ut / 8;
-		inputshift = (s*b/ut) % 8;
-		inputshift /= b;
-		inputshift *= b;
-		inputvalue = (threadData[t][inputsample] >> inputshift) & bitmask;
-
-		if(outputvalue != inputvalue)
-		{
-			++nError;
-		}
-	}
-
-	return nError;
-}
-
-void testvdifcornerturners(int outputBytes, int nTest)
-{
-	const char devRandom[] = "/dev/urandom";
-	const int bits[] = {1, 2, 4, 8, 0};
-	const int maxThreads = 16;
-	int bi;
-	int t;
-	unsigned char *threadData[maxThreads];
-	unsigned char *outputBuffer;
-
-	for(t = 0; t < maxThreads; ++t)
-	{
-		FILE *in;
-		int nRead;
-		threadData[t] = (unsigned char *)malloc(outputBytes);
-		
-		/* fill with random values */
-		in = fopen(devRandom, "r");
-		if(!in)
-		{
-			fprintf(stderr, "Error: cannot open %s\n", devRandom);
-
-			return;
-		}
-
-		nRead = fread(threadData[t], 1, outputBytes, in);
-		if(nRead <= 0)
-		{
-			fprintf(stderr, "Error: cannot read from %s\n", devRandom);
-			fclose(in);
-
-			return;
-		}
-
-		fclose(in);
-	}
-	outputBuffer = (unsigned char *)malloc(outputBytes);
-
-	for(bi = 0; bits[bi]; ++bi)
-	{
-		int b = bits[bi];
-		int nt;
-		for(nt = -maxThreads; nt <= maxThreads; ++nt)
-		{
-			int i;
-			void (*cornerTurner)(unsigned char *, const unsigned char * const *, int);
-			clock_t t0, t1;
-			int nError;
-			
-			cornerTurner = getCornerTurner(nt, b);
-
-			if(!cornerTurner)
-			{
-				continue;
-			}
-			printf("%d bits  %d threads...  ", b, nt);
-			fflush(stdout);
-
-			t0 = clock();
-			for(i = 0; i < nTest; ++i)
-			{
-				cornerTurner(outputBuffer, (const unsigned char * const*)threadData, outputBytes);
-			}
-			t1 = clock();
-			if(t1 > t0)
-			{
-				printf("Took %d microseconds -> %0.0f Mbps", (int)(t1-t0), (8.0*nTest*outputBytes/(t1-t0)));
-			}
-			else
-			{
-				printf("Weird; took 0 time.");
-			}
-
-			nError = testCornerTurn(outputBuffer, (const unsigned char * const*)threadData, outputBytes, abs(nt), b);
-			printf("   %d samples of %d were wrong.\n", nError, 8*outputBytes/b);
-		}
-	}
-
-	free(outputBuffer);
-	for(t = 0; t < maxThreads; ++t)
-	{
-		free(threadData[t]);
-	}
-}
