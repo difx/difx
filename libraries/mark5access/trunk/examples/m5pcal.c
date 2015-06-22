@@ -201,8 +201,8 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 {
 	int nTone;
 	int startTone;
-	int f0_kHz, f1_kHz, df_kHz, f, flsb;
-	int bw_kHz;
+	long f0_kHz, f1_kHz, df_kHz, f, flsb;
+	long bw_kHz;
 	int chan;
 	complex double z;
 
@@ -222,7 +222,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 		return 0;
 	}
 
-	bw_kHz = (int)(bw_MHz*1000.0+0.5);
+	bw_kHz = (long)(bw_MHz*1000.0+0.5);
 
 	if(freq_kHz >= 0.0)
 	{
@@ -234,7 +234,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 		for(nTone = 0; nTone < MaxTones; nTone++)
 		{
 			f = (startTone + nTone)*df_kHz + freq_kHz;
-			if(f >= f1_kHz)
+			if((f >= f1_kHz) || (f >= bw_kHz))
 			{
 				break;
 			}
