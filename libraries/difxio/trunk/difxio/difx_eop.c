@@ -131,9 +131,6 @@ int isSameDifxEOP(const DifxEOP *de1, const DifxEOP *de2)
 
 /* Note this function returns the number of merged EOP entries on the call 
  * stack : nde */
-
-/* FIXME: verify EOPs from the same day have the same values.  
-   Calling functions should be informed and act appropriately.  */
 DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde)
 {
 	DifxEOP *de;
@@ -216,7 +213,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, in
 		else if(de1[i1].mjd <= de2[i2].mjd)
 		{
 			/* Two EOPs from the same day.  Make sure they are equal in value.  Then */
-			/* arbitrarily choose to tahe from the first array. */
+			/* arbitrarily choose to take from the first array. */
 			/* If they are different, return a null pointer and set nde to 0, */
 			/* indicating failure to merge.  */
 
@@ -267,6 +264,7 @@ int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int 
 	DifxEOP *de;
 	int nde;
 
+	/* test mergability by actually trying.  Then delete the outcome if it is good. */
 	de = mergeDifxEOPArrays(de1, nde1, de2, nde2, &nde);
 	if(!de)
 	{
