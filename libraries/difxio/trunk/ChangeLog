@@ -8,6 +8,7 @@
 * Replaced string with enums for three parameter names
   - Note: this breaks API compatibility.  Be sure to recompile all dependent code after updating difxio.
 * Fix merging of tables containing model extensions when different scans have different subsets of antennas
+* New utility: tabulatedelays.  Will make a list of evaluated delay polynomials every 24 seconds (on the usual grid of model points).  Delays and rates are printed.
 
 3.4.0
 * Fix X/Y polarization issue

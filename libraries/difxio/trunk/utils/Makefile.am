@@ -11,13 +11,17 @@ endif
 bin_PROGRAMS = \
 	$(fftw_progs) \
 	calcderiv \
-	difxcalculator
+	difxcalculator \
+	tabulatedelays
 
 calcderiv_SOURCES = \
 	calcderiv.c
 
 difxcalculator_SOURCES = \
 	difxcalculator.c
+
+tabulatedelays_SOURCES = \
+	tabulatedelays.c
 
 if WITH_FFTW
 psrflag_SOURCES = \
