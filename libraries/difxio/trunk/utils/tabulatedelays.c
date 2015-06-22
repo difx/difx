@@ -44,6 +44,11 @@ void usage()
 	printf("options can include:\n");
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
+	printf("--az       print azimuth [deg], rate [deg/s] instead of delay, rate\n\n");
+	printf("--el       print elevation [deg], rate [deg/s] instead of delay, rate\n\n");
+	printf("--dry      print dry atmosphere delay [us]\n\n");
+	printf("--wet      print dry atmosphere delay [us]\n\n");
+	printf("--uvw      print antenna u,v,w [m] instead of delay,date\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 	printf("All normal program output goes to stdout.\n\n");
 	printf("This program reads through one or more difx datasets and\n");
@@ -51,6 +56,16 @@ void usage()
 	printf("time grid (every 24 seconds).  Delays and rates are both\n");
 	printf("calculated.  Output should be self explanatory.\n\n");
 }
+
+enum Item
+{
+	ItemDelay = 0,
+	ItemAz,
+	ItemEl,
+	ItemDry,
+	ItemWet,
+	ItemUVW
+};
 
 /* Use Cramer's rule to evaluate polynomial */
 double evaluatePoly(const double *p, int n, double x)
@@ -103,7 +118,7 @@ int main(int argc, char **argv)
 	DifxInput *D = 0;
 	int a, s;
 	int mergable, compatible;
-	int nJob = 0;
+	int item = ItemDelay;
 	
 	for(a = 1; a < argc; ++a)
 	{
@@ -115,6 +130,26 @@ int main(int argc, char **argv)
 				usage();
 
 				exit(EXIT_SUCCESS);
+			}
+			else if(strcmp(argv[a], "--az") == 0)
+			{
+				item = ItemAz;
+			}
+			else if(strcmp(argv[a], "--el") == 0)
+			{
+				item = ItemEl;
+			}
+			else if(strcmp(argv[a], "--dry") == 0)
+			{
+				item = ItemDry;
+			}
+			else if(strcmp(argv[a], "--wet") == 0)
+			{
+				item = ItemWet;
+			}
+			else if(strcmp(argv[a], "--uvw") == 0)
+			{
+				item = ItemUVW;
 			}
 			else
 			{
@@ -162,19 +197,9 @@ int main(int argc, char **argv)
 				D = 0;
 			}
 		}
-		if(!D)
-		{
-			fprintf(stderr, "File %s -> D == 0.  Quitting\n", argv[a]);
-
-			return EXIT_FAILURE;
-		}
-		else
-		{
-			++nJob;
-		}
 	}
 
-	if(nJob == 0)
+	if(!D)
 	{
 		fprintf(stderr, "Nothing to do!  Quitting.  Run with -h for help information\n");
 
@@ -200,8 +225,34 @@ int main(int argc, char **argv)
 	printf("# 1. mjd [day]\n");
 	for(a = 0; a < D->nAntenna; ++a)
 	{
-		printf("# %d. Antenna %d (%s) delay [us]\n", 2+2*a, a, D->antenna[a].name);
-		printf("# %d. Antenna %d (%s) rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+		switch(item)
+		{
+		case ItemDelay:
+			printf("# %d. Antenna %d (%s) delay [us]\n", 2+2*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+			break;
+		case ItemAz:
+			printf("# %d. Antenna %d (%s) azimuth [deg]\n", 2+2*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) azimuth rate [deg/s]\n", 3+2*a, a, D->antenna[a].name);
+			break;
+		case ItemEl:
+			printf("# %d. Antenna %d (%s) geometric elevation [deg]\n", 2+2*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) geometric elevation rate [deg/s]\n", 3+2*a, a, D->antenna[a].name);
+			break;
+		case ItemDry:
+			printf("# %d. Antenna %d (%s) dry atmosphere delay [us]\n", 2+2*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) dry atmosphere rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+			break;
+		case ItemWet:
+			printf("# %d. Antenna %d (%s) wet atmosphere delay [us]\n", 2+2*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) wet atmosphere rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+			break;
+		case ItemUVW:
+			printf("# %d. Antenna %d (%s) baseline U [m]\n", 2+3*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) baseline V [m]\n", 3+3*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) baseline W [m]\n", 4+3*a, a, D->antenna[a].name);
+			break;
+		}
 	}
 
 	for(s = 0; s < D->nScan; ++s)
@@ -213,6 +264,13 @@ int main(int argc, char **argv)
 		ds = D->scan + s;
 
 		printf("\n# scan %d of %d: source = %s\n", s+1, D->nScan, D->source[ds->phsCentreSrcs[0]].name);
+
+		if(!ds->im)
+		{
+			printf("#   No IM table for this scan\n");
+
+			continue;
+		}
 
 		for(refAnt = 0; refAnt < D->nAntenna; ++refAnt)
 		{
@@ -227,7 +285,7 @@ int main(int argc, char **argv)
 
 			printf("#   No delays\n");
 
-			break;
+			continue;
 		}
 
 		for(p = 0; p < ds->nPoly; ++p)
@@ -238,33 +296,78 @@ int main(int argc, char **argv)
 			{
 				printf("%14.8f", ds->im[refAnt][0][p].mjd + (ds->im[refAnt][0][p].sec + i*24)/86400.0);
 
-				for(a = 0; a < D->nAntenna; ++a)
+				if(item == ItemUVW)
 				{
-					double d, r;
-
-					if(ds->im[a] == 0)
+					for(a = 0; a < D->nAntenna; ++a)
 					{
-						/* print zeros in cases where there is no data */
-						d = r = 0.0;
-					}
-					else
-					{
-						d = evaluatePoly(ds->im[a][0][p].delay, ds->im[a][0][p].order+1, 24*i);
-						r = evaluatePolyDeriv(ds->im[a][0][p].delay, ds->im[a][0][p].order+1, 24*i);
-					}
+						double u, v, w;
 
-					/* print to picosecond and picosecond/sec precision */
-					printf("   %12.6f %9.6f", d, r);
+						if(ds->im[a] == 0)
+						{
+							u = v = w = 0.0;
+						}
+						else
+						{
+							u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, 24*i);
+							v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, 24*i);
+							w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, 24*i);
+						}
+
+						/* print to mm precision */
+						printf("   %12.3f %12.3f %12.3f", u, v, w); 
+					}
 				}
+				else
+				{
+					for(a = 0; a < D->nAntenna; ++a)
+					{
+						double v1, v2;
+						const double *poly;
 
+						switch(item)
+						{
+						case ItemDelay:
+							poly = ds->im[a][0][p].delay;
+							break;
+						case ItemAz:
+							poly = ds->im[a][0][p].az;
+							break;
+						case ItemEl:
+							poly = ds->im[a][0][p].elgeom;
+							break;
+						case ItemDry:
+							poly = ds->im[a][0][p].dry;
+							break;
+						case ItemWet:
+							poly = ds->im[a][0][p].wet;
+							break;
+						default:
+							fprintf(stderr, "Weird!\n");
+
+							exit(EXIT_FAILURE);
+						}
+
+						if(ds->im[a] == 0)
+						{
+							/* print zeros in cases where there is no data */
+							v1 = v2 = 0.0;
+						}
+						else
+						{
+							v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, 24*i);
+							v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, 24*i);
+						}
+
+						/* print to picosecond and femtosecond/sec precision */
+						printf("   %12.6f %12.9f", v1, v2);
+					}
+				}
 				printf("\n");
 			}
 		}
 	}
 
 	deleteDifxInput(D);
-
-	printf("\nIt seems %d job(s) tested successfully.\n", nJob);
 
 	return EXIT_SUCCESS;
 }
