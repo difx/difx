@@ -41,6 +41,7 @@ dozero         = options.zero
 if inputfile == "":
     parser.error("You must supply an input file!")
 
+(numtelescopes, telescopes) = parseDiFX.get_telescopetable_info(inputfile)
 (numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
 if numfreqs == 0:
     parser.error("Couldn't parse input file " + inputfile + " correctly")
@@ -60,6 +61,8 @@ while not len(nextheader) == 0:
     nchan     = freqs[freqindex].numchan/freqs[freqindex].specavg
     ant1      = baseline % 256
     ant2      = (baseline-ant1)/256
+    ant1name  = telescopes[ant1-1].name
+    ant2name  = telescopes[ant2-1].name
     if nchan > maxchannels:
         print "How embarrassing - you have tried to read files with more than " + \
             str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
@@ -79,8 +82,8 @@ while not len(nextheader) == 0:
         lagamprms = numpy.std(lagamp[:nchan])
         maxlagchan = numpy.argmax(lagamp[:nchan])
         if maxlagamp/lagamprms > minsnr:
-            print "Detection on time %d:%f, baseline %d (%d-%d), freq index %d, pol %s on channel %d at S/N: %f" % \
-                  (mjd, seconds, baseline, ant2, ant1, freqindex, polpair, maxlagchan - nchan/2, maxlagamp/lagamprms)
+            print "Detection on time %d:%f, baseline %d (%d-%d/%s-%s), freq index %d, pol %s on channel %d at S/N: %f" % \
+                  (mjd, seconds, baseline, ant2, ant1, ant1name, ant2name, freqindex, polpair, maxlagchan - nchan/2, maxlagamp/lagamprms)
     nextheader = parseDiFX.parse_output_header(difxinput)
 
 if nchan < 0:
