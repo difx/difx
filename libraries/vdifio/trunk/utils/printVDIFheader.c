@@ -36,14 +36,14 @@
 
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20150606";
+const char version[] = "0.3";
+const char verdate[] = "20150621";
 
 static void usage()
 {
 	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
 	fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
-	fprintf(stderr, "\nUsage: %s <VDIF input file> <framesize> [<prtlev>]\n", program);
+	fprintf(stderr, "\nUsage: %s <VDIF input file> [<framesize> [<prtlev>] ]\n", program);
 	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
 	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA, 8224 for R2DBE)\n");
 	fprintf(stderr, "\n<prtlev> is output type: hex short long\n\n");
@@ -53,7 +53,9 @@ static void usage()
 	fprintf(stderr, "If the data are known to contain only entire, valid VDIF frames of\n");
 	fprintf(stderr, "of constant length (equal to that provided), <prtlev> can be set to\n");
 	fprintf(stderr, "one of the following: forcehex forceshort forcelong.  If one of\n");
-	fprintf(stderr, "these is used, the frame finding heuristics are bypassed.\n\n");
+	fprintf(stderr, "these is used, the frame finding heuristics are bypassed.\n");
+	fprintf(stderr, "If <framesize> is not provided, or if it is set to 0, the frame size\n");
+	fprintf(stderr, "will be determined by the first frame, _even if it is invalid_!\n\n");
 }
 
 int main(int argc, char **argv)
@@ -62,7 +64,7 @@ int main(int argc, char **argv)
 	char buffer[MaxFrameSize];
 	enum VDIFHeaderPrintLevel lev = VDIFHeaderPrintLevelShort;
 	int leftover = 0;
-	int framesize;
+	int framesize = 0;
 	FILE *input;
 	long long framesread = 0;
 	const vdif_header *header;
@@ -73,7 +75,7 @@ int main(int argc, char **argv)
 	int mk6BlockHeaderSize = 0;
 	int framesPerMark6Block = 0;
 
-	if(argc < 3 || argc > 4)
+	if(argc < 2 || argc > 4)
 	{
 		usage();
 
@@ -95,8 +97,26 @@ int main(int argc, char **argv)
 		}
 	}
 
-	framesize = atoi(argv[2]);
-	if(argc == 4)
+	if(argc > 2)
+	{
+		framesize = atoi(argv[2]);
+		if(framesize > 0)
+		{
+			if(framesize < VDIF_HEADER_BYTES || framesize > MaxFrameSize)
+			{
+				fprintf(stderr, "Error: provided framesize is %d bytes, which is outside the range [%d, %d]\n", framesize, VDIF_HEADER_BYTES , MaxFrameSize);
+
+				exit(EXIT_FAILURE);
+			}
+			if(framesize % 8 != 0)
+			{
+				fprintf(stderr, "Error: provided framesize must be divisible by 8\n");
+
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+	if(argc > 3)
 	{
 		if(strcmp(argv[3], "force") == 0)
 		{
@@ -137,13 +157,35 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(framesize <= 0)
+	{
+		int readbytes;
+
+		readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
+		if(readbytes != VDIF_HEADER_BYTES)
+		{
+			fprintf(stderr, "Cannot read %d bytes to decode first frame header\n", VDIF_HEADER_BYTES);
+
+			exit(EXIT_FAILURE);
+		}
+		leftover = VDIF_HEADER_BYTES;
+		framesize = getVDIFFrameBytes((const vdif_header *)buffer);
+		if(framesize < VDIF_HEADER_BYTES || framesize > MaxFrameSize)
+		{
+			fprintf(stderr, "Error: first frame indicates framesize is %d bytes, which is outside the range [%d, %d]\n", framesize, VDIF_HEADER_BYTES , MaxFrameSize);
+
+			exit(EXIT_FAILURE);
+		}
+		printf("Set framesize to be %d bytes, based on first frame found\n", framesize);
+	}
+
 	for(n = 0;; ++n)
 	{
 		int index, fill, readbytes;
 
 		index = 0;
 
-  		readbytes = fread(buffer+leftover, 1, MaxFrameSize-leftover, input); //read the VDIF header
+  		readbytes = fread(buffer+leftover, 1, MaxFrameSize-leftover, input);
 		if(readbytes <= 0)
 		{
 			break;

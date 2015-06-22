@@ -34,8 +34,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.4";
-const char verdate[] = "20150331";
+const char version[] = "0.5";
+const char verdate[] = "20150621";
 
 const int defaultChunkSize = 2000000;
 
@@ -59,7 +59,9 @@ int main(int argc, char **argv)
 	const char *inFile;
 	const char *outFile;
 	off_t offset = 0;
-	int nBit = 2;
+	int nBit = 0;
+	int nChanPerThread;
+	const vdif_header *vh;
 	struct vdif_mux vm;
 	int flags = 0;
 
@@ -78,8 +80,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "<threadList> is a comma-separated list of integers in range 0 to 1023;\n    the order of the numbers is significant and dictates the order of\n    channels in the output data\n\n");
 		fprintf(stderr, "<outputFile> is the name of the output, single-thread VDIF file,\n    or - for stdout\n\n");
 		fprintf(stderr, "<offset> is an optional offset into the input file (in bytes)\n\n");
-		fprintf(stderr, "<nbit> is number of bits per sample (default = %d)\n\n", nBit);
+		fprintf(stderr, "<nbit> is number of bits per sample (default: use value in VDIF header)\n\n");
 		fprintf(stderr, "<chunkSize> is (roughly) how many bytes to operate on at a time\n    [default=%d]\n\n", defaultChunkSize);
+		fprintf(stderr, "Note: as of version 0.5 this program supports multi-channel multi-thread input data\n\n");
 
 		return 0;
 	}
@@ -205,7 +208,24 @@ int main(int argc, char **argv)
 	src = (unsigned char *)malloc(srcChunkSize);
 	dest = (unsigned char *)malloc(destChunkSize);
 
-	leftover = 0;
+	/* read just enough of the stream to peek at a frame header */
+	n = fread(src, 1, VDIF_HEADER_BYTES, in);
+	if(n != VDIF_HEADER_BYTES)
+	{
+		fprintf(stderr, "Error reading first header.  Only %d of %d bytes were read\n", n, VDIF_HEADER_BYTES);
+
+		return EXIT_FAILURE;
+	}
+	leftover = VDIF_HEADER_BYTES;
+
+	vh = (const vdif_header *)src;
+
+	/* Eventually get rid of command line specification of nBit altogether */
+	if(nBit <= 0)
+	{
+		nBit = getVDIFBitsPerSample(vh);
+		printf("Got %d bits per sample from the first frame header\n", nBit);
+	}
 
 	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, nBit, nThread, threads, nSort, nGap, flags);
 	if(rv < 0)
@@ -213,6 +233,20 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error configuring vdifmux: %d\n", rv);
 
 		return EXIT_FAILURE;
+	}
+
+	nChanPerThread = getVDIFNumChannels(vh);
+	printf("Got %d chans per thread from the first frame header\n", nChanPerThread);
+	if(nChanPerThread != 1)
+	{
+		printf("Setting nChanPerThread to %d based on first frame header\n", nChanPerThread);
+		rv = setvdifmuxinputchannels(&vm, nChanPerThread);
+		if(rv < 0)
+		{
+			fprintf(stderr, "Error adjusting vdifmux for %d channels per thread\n", nChanPerThread);
+
+			return EXIT_FAILURE;
+		}
 	}
 
 	if(strcmp(outFile, "-") != 0)

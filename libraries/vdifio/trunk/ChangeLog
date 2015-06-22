@@ -4,7 +4,11 @@ Version 1.1
 * Added incrementVDIFHeader
 * vsum: error message -> stderr, not stdout
 * Support new EDV2 that is produced by ALMA and R2DBE.  Work here is based on spec with TBDs: http://vlbi.org/vdif/docs/alma-vdif-edv.pdf
-* Add Mark6 awareness to printVDIFheader.  If the Mark6 signature is found at the beginning, 28 bytes will be skipped to allow proper decoding.
+* New functionality in printVDIFheader:
+  - Add Mark6 awareness:  If the Mark6 signature is found at the beginning, 28 bytes will be skipped to allow proper decoding.
+  - If framesize is not provided at the command line, take from first frame
+* New functionality in vmux
+  - Support multiplexing multi-channel multi-thread data (each thread must have same general parameters)
 * testmk6: test/example program for mark6 reading capabilities.  Does simple gather operation and file summary at this point.
 * changes to multiplexing: increase max number of threads to mux to 64, warn if too many threads are being muxed, move out cornerturners to their own file.
   - note: ABI change.  Recompile of all code using vdifio is needed after updating to this version
@@ -18,7 +22,6 @@ Version 1.1
   - 64-bit with 2, 4, 8, 16 threads
   - Why need for large words?  It turns out that multiplexing multiple channels per thread is mathematically identical to multiplexing one channel per thread but with a total bit width of nBit*nChan
 * VDIF multiplexer now supports multiplexing threads with more than one channel.
-  - currently only at the API level; changes to utilities will come...
   - a change in the API for configurevdifmux() is likely coming that will simplify use of this.  For now, use setvdifmuxinputchannels() after configurevdifmux()
 
 Version 1.0
