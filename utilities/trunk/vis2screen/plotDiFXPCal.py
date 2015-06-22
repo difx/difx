@@ -80,6 +80,8 @@ def parsepcalfile(infile,band_tone_sel=()):
                    continue
                 i = vals_per_tone * (pol*(nsubband/npol)*ntones + band*ntones + tonenr)
                 pc = tone[i:(i+vals_per_tone)]
+                if (pc[0] == '-1'):
+                   continue
 
                 id = pc[0] + pc[1] # + ' tone ' + str(tonenr)
                 if not(id in pcalvalues):
