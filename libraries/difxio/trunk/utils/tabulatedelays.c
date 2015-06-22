@@ -214,11 +214,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	strcpy(D->job->inputFile, "input.test");
-	strcpy(D->job->calcFile, "calc.test");
-	strcpy(D->job->threadsFile, "threads.test");
-	strcpy(D->job->imFile, "im.test");
-	strcpy(D->job->outputFile, "output.test");
+	DifxInputSortAntennas(D, 0);
 
 	printf("# produced by program %s ver. %s\n\n", program, version);
 	printf("# Columns are:\n");
@@ -322,30 +318,6 @@ int main(int argc, char **argv)
 					for(a = 0; a < D->nAntenna; ++a)
 					{
 						double v1, v2;
-						const double *poly;
-
-						switch(item)
-						{
-						case ItemDelay:
-							poly = ds->im[a][0][p].delay;
-							break;
-						case ItemAz:
-							poly = ds->im[a][0][p].az;
-							break;
-						case ItemEl:
-							poly = ds->im[a][0][p].elgeom;
-							break;
-						case ItemDry:
-							poly = ds->im[a][0][p].dry;
-							break;
-						case ItemWet:
-							poly = ds->im[a][0][p].wet;
-							break;
-						default:
-							fprintf(stderr, "Weird!\n");
-
-							exit(EXIT_FAILURE);
-						}
 
 						if(ds->im[a] == 0)
 						{
@@ -354,6 +326,31 @@ int main(int argc, char **argv)
 						}
 						else
 						{
+							const double *poly;
+
+							switch(item)
+							{
+							case ItemDelay:
+								poly = ds->im[a][0][p].delay;
+								break;
+							case ItemAz:
+								poly = ds->im[a][0][p].az;
+								break;
+							case ItemEl:
+								poly = ds->im[a][0][p].elgeom;
+								break;
+							case ItemDry:
+								poly = ds->im[a][0][p].dry;
+								break;
+							case ItemWet:
+								poly = ds->im[a][0][p].wet;
+								break;
+							default:
+								fprintf(stderr, "Weird!\n");
+
+								exit(EXIT_FAILURE);
+							}
+
 							v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, 24*i);
 							v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, 24*i);
 						}
