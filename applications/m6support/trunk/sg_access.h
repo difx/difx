@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.h 2473 2014-09-15 19:43:25Z gbc $
+ * $Id: sg_access.h 3071 2015-04-29 14:46:48Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -32,7 +32,7 @@ typedef struct sg_mmap_info {
 typedef struct sg_info {
     /* general support */
     SGMMInfo    smi;            /* memory mapping information */
-    double      eval_time;      /* diagnostic on file access time */
+    double      eval_time;      /* open: time opened, closed: time open */
     int         verbose;        /* diagnostic on internal processing */
     char        *name;          /* a malloc'd copy of the file name */
 
@@ -140,7 +140,8 @@ extern uint32_t *sg_pkt_blkby(SGInfo *sgi,
  * It returns the number of packets failing the signature check (0 through nl,
  * inclusive), or the end-of-block check.
  */
-extern int sg_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end);
+extern int sg_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end,
+    int *nv);
 extern int sg_pkt_times(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end);
 
 /*
@@ -151,12 +152,19 @@ extern void sg_report(SGInfo *sgi, char *label);
 extern char *sg_repstr(SGInfo *sgi, char *label);
 
 /* Computes the vdif header signature from a pointer to 1st header word */
-extern uint64_t sg_get_vsig(uint32_t *vhp, void *orig, int verb);
+extern uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb,
+    char *lab, VDIFsigu *vc);
 extern void sg_set_station_id_mask(int mask);
 extern int sg_get_station_id_mask(void);
 
+/* Extra effort if file starts out invalid */
+extern void sg_set_user_poff_and_size(const char *arg);
+
 /* Returns vextime for seconds in a ref epoch */
 extern char *sg_vextime(int re, int secs);
+
+/* Returns time since previous, otherwise current */
+extern double current_or_elapsed_secs(double *previous);
 
 /* For reconnecting stdout to something else */
 extern void sg_logger(FILE *fp);

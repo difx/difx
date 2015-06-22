@@ -28,7 +28,7 @@ dist_bin_SCRIPTS = $(test_scripts)
 check_PROGRAMS =
 TESTS = 
 
-scanext=exthdr.c almahdr.c
+scanext=exthdr.c almahdr.c r2dbehdr.c
 scan_check_SOURCES = scan_check.c per_file.c sg_access.c sc_stats.c $(scanext)
 scan_check_CPPFLAGS = -DEXTEND_HCHK=1
 

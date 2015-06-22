@@ -1,5 +1,5 @@
 /*
- * $Id: vdifopt.c 2706 2014-12-15 15:07:17Z gbc $
+ * $Id: vdifopt.c 3022 2015-04-15 18:20:49Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we do the command-line processing to drive the support for fuse.
@@ -225,8 +225,9 @@ static int vdifuse_implement(void)
     struct stat sb, mp;
 
     if (!vdifuse_cache) return(fprintf(stderr, "A cache is required.\n"));
-    if (!vdifuse_mount || stat(vdifuse_mount, &mp))
-        return(fprintf(stderr, "A valid mount point is required\n"));
+    // TODO: shifted this test until later...ok?
+    //if (!vdifuse_mount || stat(vdifuse_mount, &mp))
+    //    return(fprintf(stderr, "A valid mount point is required\n"));
 
     if (!vdifuse_create && stat(vdifuse_cache, &sb)) return(fprintf(stderr,
         "VDIFuse metadata cache %s is missing.\n", vdifuse_cache));
@@ -248,13 +249,25 @@ static int vdifuse_implement(void)
         vdifuse_report_metadata(vdifuse_cache, &sb))
             return(fprintf(stderr, "Metadata cache is unusable\n"));
 
-    if (vdifuse_access_metadata(vdifuse_cache, &sb, &mp))
-        return(fprintf(stderr, "Unable to use the cache\n"));
-    vdifuse_enable =
-        vdifuse_use_it ? VDIFUSE_ENABLE_DOIT : VDIFUSE_ENABLE_SKIP;
+    // TODO: none of this is needed if we don't have a mount
+    if (vdifuse_mount) {
+        if (stat(vdifuse_mount, &mp))
+            return(fprintf(stderr, "A valid mount point is required\n"));
 
-    if (vorr_init())
-        return(fprintf(stderr, "Unable to initialize for use.\n"));
+        if (vdifuse_access_metadata(vdifuse_cache, &sb, &mp))
+            return(fprintf(stderr, "Unable to use the cache\n"));
+
+        if (vorr_init())
+            return(fprintf(stderr, "Unable to initialize for use.\n"));
+
+        vdifuse_enable =
+            vdifuse_use_it ? VDIFUSE_ENABLE_DOIT : VDIFUSE_ENABLE_SKIP;
+    } else {
+        if (vdifuse_use_it)
+            return(fprintf(stderr, "A valid mount point is required\n"));
+
+        vdifuse_enable = VDIFUSE_ENABLE_SKIP;
+    }
     return(vdifuse_finish());
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsup.c 2706 2014-12-15 15:07:17Z gbc $
+ * $Id: vdifsup.c 3143 2015-06-22 14:31:24Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -442,7 +442,8 @@ static int load_cache(char *cache)
     vd_cache = (VDIFUSEntry*)calloc(vd_num_entries, sizeof(VDIFUSEntry));
     if (!vd_cache) return(perror("calloc"),1);
     fp = fopen(cache, "r");
-    if (!fp) return(fprintf(stderr,"%s: ",cache),perror("load_cache fopen"),2);
+    if (!fp) return(fprintf(stderr,"%s: ", cache),
+        perror("load_cache fopen"),2);
     ne = fread(vd_cache, sizeof(VDIFUSEntry), vd_num_entries, fp);
     if (ne != vd_num_entries)
         return(fprintf(stderr, "Failed to load complete cache\n"));
@@ -462,7 +463,8 @@ static int dump_cache(void)
     if (!vd_cache || vd_num_entries == 0 || !vd_cache_file)
         return(0);   /* no work */
     fp = fopen(vd_cache_file, "w");
-    if (!fp) return(fprintf(stderr,"%s: ",vd_cache_file),perror("dump_cache fopen"),1);
+    if (!fp) return(fprintf(stderr,"%s: ",vd_cache_file),
+        perror("dump_cache fopen"),1);
     ne = fwrite(vd_cache, sizeof(VDIFUSEntry), vd_num_entries, fp);
     if (ne != vd_num_entries)
         return(fprintf(stderr, "Failed to write complete cache\n"));
@@ -544,12 +546,17 @@ int describe_directory(VDIFUSEntry *vp)
 int describe_struct(void)
 {
     fprintf(vdflog,
-        "The cache consists of entries of size %d including\n"
-        "a union of size %d ( vfuse=%d vfdir=%d vpars=%d ),\n"
-        "paths of no more than %d bytes and sgv2 data (size=%d)\n",
+        "Size: The cache consists of entries of size %d including\n"
+        "Size: a union of size %d ( vfuse=%d vpars=%d vseqi=%d voids=%d),\n"
+        "Size: paths of no more than %d bytes and sgv2 data (size=%d)\n"
+        "Size: 6*4 + 8 + %d + 3*%d = %d\n",
         sizeof(VDIFUSEntry), sizeof(union vdifuse_union),
-        sizeof(struct stat), sizeof(struct dirent), sizeof(VDIFUSEpars),
-        VDIFUSE_MAX_PATH, sg_info_size());
+        sizeof(struct stat), sizeof(VDIFUSEpars),
+        sizeof(uint32_t)*VDIFUSE_MAX_SEQI,
+        sizeof(void *)*VDIFUSE_NUM_VOIDS,
+        VDIFUSE_MAX_PATH, sg_info_size(),
+        sizeof(union vdifuse_union), VDIFUSE_MAX_PATH,
+        6*4 + 8 + sizeof(union vdifuse_union) + 3*VDIFUSE_MAX_PATH);
 }
 
 int describe_params(VDIFUSEntry *vp)
@@ -663,7 +670,7 @@ static int report_on_cache(void)
     long ee;
     long frags = 0, seqs = 0, dirs = 0, params = 0, anc = 0, invalids = 0;
     VDIFUSEntry *vp;
-    for (ee = 0, vp = vd_cache; ee < vd_num_entries; ee++, vp++)
+    for (ee = 0, vp = vd_cache; ee < vd_num_entries; ee++, vp++) {
         switch (vp->etype) {
         case VDIFUSE_ENTRY_FRAGMENT:
             frags++;
@@ -691,10 +698,12 @@ static int report_on_cache(void)
             fprintf(vdflog, "Entry %d (%s) marked invalid\n", ee, vp->path);
             break;
         }
+    }
 
     if (vdifuse_debug>0) fprintf(vdflog,
         "Have %lu frags %lu seqs %lu dirs %lu params %lu anc %lu invalids\n",
         frags, seqs, dirs, params, anc, invalids);
+    fflush(vdflog);
     return(0);
 }
 

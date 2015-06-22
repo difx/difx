@@ -11,12 +11,17 @@ cpus=0
 cps=8
 label=unknown
 slot=0
-purge=false
+purge=true
+cullrate=64.25
+cullrate=0.00
+hammerkill=$HOME/hammerkill
+hammerpause=$HOME/hammerpause
 
 # our tools; mentioned here to allow replacements
 timer=/usr/bin/time
 maker=/usr/sbin/xfs_mkfile
 chker=/usr/bin/cksum
+bcalc=/usr/bin/bc
 fmt=%Y%m%d%H%M%S
 
 # see the table at end of file
@@ -32,7 +37,8 @@ where the options are any of these:
     prefix=$prefix      prefix to empty files written
     suffix=$suffix      suffix to empty files written
     maxfiles=$maxfiles    maximum number of files / disk
-    purge=$purge      remove files when done
+    purge=$purge       remove files when done
+    cullrate=$cullrate   cull files slower than this
 
 will write empty files to all the disks of the slots appearing
 in the slots argument, up to a maximum of maxfiles per disk.
@@ -42,9 +48,13 @@ for comparison on the read stage.  The canonical list is:
 $canon
 
 Once launched, the script spawns several jobs per slot, logging
-its output to a per-slot file.  To stop this script, send a HUP
-(kill -1 <pid>) to the parent script, found by:
-    ps x | grep $0 | grep -v label= | grep -v grep
+its output to a per-slot file.  To stop or pause this script:
+
+    touch $hammerkill
+    touch $hammerpause
+
+respectively.  The file must then be removed to continue or to
+run the script on a subsequent occasion.
 
 If purge is true, the temporary files (and anything else in the
 data directories) will be removed if the script is allowed to
@@ -52,6 +62,18 @@ finish.  You can also accomplish this manually with maxfiles=0.
 
 Note that if you want to condition completely, you should fill
 it completely (or plan to) before setting purge=true.
+
+If the cullrate is nonzero, files with write rates slower than
+this value will be culled to a location that is not purged on
+each disk and consequently will survive the purge.  This will
+thereby reduce the module capacity, but retain the required
+write speed across the remaining module capacity.
+
+The script expects to use these programs (which must be installed):
+$timer
+$maker
+$chker
+$bcalc
 "
 [ -n "$1" -a "$1" = '--help' ] && { echo "$USAGE" ; exit 0 ; }
 args="$@"
@@ -59,6 +81,18 @@ while [ $# -gt 0 ] ; do eval "$1"; shift; done
 
 # find out how many CPUs so we can share the resources
 [ "$cpus" -eq 0 ] && cpus=`grep processor /proc/cpuinfo | wc -l`
+
+for e in $timer $maker $chker $bcalc 
+do [ -x $e ] || { echo $e is not installed ; exit 1; } ; done
+
+[ -f "$hammerkill" ] && {
+    echo "I see $hammerkill, you need to remove it"
+    exit 2
+}
+[ -f "$hammerpause" ] && {
+    echo "I see $hammerpause, you need to remove it"
+    exit 2
+}
 
 #
 # slot=0 is the parent
@@ -85,8 +119,16 @@ while [ $# -gt 0 ] ; do eval "$1"; shift; done
     wait
 }
 
+# for cull activities
+greater() {
+    ( echo $1 \> $2 ) | $bcalc -lq
+}
+cull=false
+[ `greater $cullrate 0.00` -eq 1 ] && cull=true
+
+# for rate calculations
 dorate() {
-    ( echo scale=2 ; echo $1 / 1024 / 1024 / $2 ) | bc -lq
+    ( echo scale=2 ; echo $1 / 1024 / 1024 / $2 ) | $bcalc -lq
 }
 
 #
@@ -119,6 +161,28 @@ dorate() {
             $label writing files of size $size ($bytes) w/cksum $sum"
     echo "$header" | sed -e 's/^[ ]*/# /'
 
+    # make sure data directories exist
+    for disk in $disks
+    do
+        [ -d $disk/data ] || {
+            echo $label creating data directories
+            mkdir $disk/data &&
+                chgrp mark6 $disk/data && chmod 2775 $disk/data &&
+                ls -ld $disk/data
+        }
+    done
+
+    # and also the cull directories
+    $cull && for disk in $disks
+    do
+        [ -d $disk/cull ] || {
+            echo $label creating cull directories
+            mkdir $disk/cull &&
+                chgrp mark6 $disk/cull && chmod 2775 $disk/cull &&
+                ls -ld $disk/cull
+        }
+    done
+
     # skip this step if only purging
     [ "$maxfiles" -gt 0 ] && working=true || working=false
     while $working
@@ -138,12 +202,15 @@ dorate() {
             echo $disk \($n/$maxfiles\) on cpu-$c using $kilos of $free
             tag=`date -u +$fmt`
             file=$disk/data/$prefix-$tag.$suffix
+            [ -d $disk/data ] || continue
             ( set -- `$timer -f %e $maker -v $size $file 2>&1`
               #rate=$(($bytes / 1024 / 1024 / $4))
               rate=`dorate $bytes $4`
               echo $@ $rate MB/s write
               set -- `$timer -f %e $chker $file 2>&1`
-              file=$3
+              # rename file by write rate
+              mv $3 $3.$rate
+              file=$3.$rate
               [ "$1" -eq $sum ] && cs=$1-aok || cs=$1-err
               [ "$2" -eq $bytes ] && bs=$2-aok || bs=$2-err
               #rate=$(($bytes / 1024 / 1024 / $4))
@@ -155,7 +222,33 @@ dorate() {
         echo "# waiting on $jb at $tag"
         trap "kill $jb 2>/dev/null" 0 1 2 15
         wait
+        [ -f "$hammerkill" ] && working=false
+        while [ -f "$hammerpause" ] ; do echo sleep 30 ... && sleep 30 ; done
     done
+
+    # do not go on
+    [ -f $hammerkill ] && {
+        echo "exciting prematurely due to $hammerkill"
+        echo "cull $cull -> false, purge $purge -> false"
+        cull=false
+        purge=false
+    }
+
+    # cull the slower-written files to saved location
+    $cull && {
+        echo culling data files at cull rate $cullrate
+        for disk in $disks
+        do
+            data=$disk/data
+            cull=$disk/cull
+            for f in $data/$prefix-$tag.$suffix.*
+            do
+                rate=`echo $f | sed "s/.*$suffix.//"`
+                comp=`greater $rate $cullrate`
+                [ "$comp" -eq 0 ] && echo culling $f && mv $f $cull
+            done
+        done
+    }
 
     # free the disk resources
     $purge && {
@@ -168,7 +261,7 @@ dorate() {
             mv $data $data-die && mkdir $data &&
                 chgrp mark6 $data && chmod g+sw $data &&
                 echo "# $label purging... $data" &&
-                rm -rf $disk/data-die* &
+                rm -rf $data-die* &
             jr="$jr $!"
         done
 

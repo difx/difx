@@ -1,5 +1,5 @@
 /*
- * $Id: vdifseq.c 2392 2014-08-19 20:09:07Z gbc $
+ * $Id: vdifseq.c 3143 2015-06-22 14:31:24Z gbc $
  *
  * This file does the work of building sequences.
  */
@@ -459,14 +459,20 @@ static int fragment_in_fragtree(VDIFUSEntry *vc)
  *   (NULL,-1) to finish it
  *      which enters it into the hierachy "/...", and
  *      returns a temporary string for copying to the cache entry.
+ * TODO: force vdif termination.  This must be done carefully to
+ *       avoid breaking the heirarchy (a tdelete() and a tsearch()
+ *       are needed on the revised leaf path).
+ * TODO: might consider putting the full scan name at depth.
  */
 static THIERnode *dir_hier_add(char *part, int depth)
 {
     static THIERnode tmp;
     THIERnode **leaf, *node;
+    char *vdif;
     if (!part && (depth<0)) { /* finish up */
         leaf = tfind(&tmp, &thier_root, &thier_comp);
-        if (!leaf) return(fprintf(vdflog,"tfind-hier error: leaf is NULL\n"),NULL);
+        if (!leaf) return(fprintf(vdflog,
+            "tfind-hier error: no leaf\n"), NULL);
         if ((*leaf)->type == 'D') (*leaf)->type = 'S';
         return(*leaf);
     } else if (!part) { /* initialize temp with the root */
@@ -479,15 +485,18 @@ static THIERnode *dir_hier_add(char *part, int depth)
         tmp.path[VDIFUSE_MAX_PATH-1] = 0;
         tmp.type = 'D';
         node = (THIERnode *)malloc(sizeof(THIERnode));
-        if (!node) return(fprintf(vdflog,"malloc-hier error: node is NULL\n"),NULL);
-        if (vdifuse_debug>4) fprintf(vdflog, "hier:malloc %p\n", node);
+        if (!node) return(fprintf(vdflog,
+            "malloc-hier error: no node\n"), NULL);
+        if (vdifuse_debug>4) fprintf(vdflog,
+            "hier:malloc %p %s\n", node, tmp.path);
         memcpy(node, &tmp, sizeof(THIERnode));
         leaf = tsearch(node, &thier_root, &thier_comp);
-        if (!leaf) return(fprintf(vdflog,"tsearch-hier error: find/create returned NULL\n"),NULL);
+        if (!leaf) return(fprintf(vdflog,
+            "tsearch-hier error: find/create: no leaf\n"), NULL);
         if (strcmp(tmp.path, (*leaf)->path)) fprintf(vdflog,
             "Tree Search Corrupt Dir with %s v %s\n", tmp.path, (*leaf)->path);
     }
-    return(0);
+    return(NULL);
 }
 
 /*
@@ -509,18 +518,24 @@ static int fragment_in_hierarchy(VDIFUSEntry *vc, uint32_t limit)
     if (!copy) { perror("malloc"); return(1); }
     slash = strrchr(vc->path, '/');
     if (!slash) { free(copy); return(2); }
-    /* copy contains the basename of the fragment */
-    part = strtok(strcpy(copy, slash+1), "_.");
     (void)dir_hier_add(NULL, limit);
-    /* expect to find "vdif" as the last bit */
-    while (part && strcmp(part, "vdif") && (depth < limit)) {
-        (void)dir_hier_add(part, depth);
-        depth ++;
-        part = strtok(NULL, (depth < limit-1) ? "_." : "_");
+    if (limit == 0) {
+        /* use the whole name */
+        (void)dir_hier_add(slash+1, depth);
+    } else {
+        /* copy contains the basename of the fragment */
+        part = strtok(strcpy(copy, slash+1), "_.");
+        /* expect to find "vdif" as the last bit */
+        while (part && strcmp(part, "vdif") && (depth < limit)) {
+            (void)dir_hier_add(part, depth);
+            depth ++;
+            part = strtok(NULL, (depth < limit-1) ? "_." : "_");
+        }
     }
     free(copy);
     hn = dir_hier_add(NULL, -1);
-    if (!vc->hier || !hn || !hn->path) return(fprintf(vdflog,"frag_in_hier: dir_hier_add misbehaved\n"),3);
+    if (!vc->hier || !hn || !hn->path) return(fprintf(vdflog,
+        "frag_in_hier: dir_hier_add misbehaved\n"), 3);
     strcpy(vc->hier, hn->path);
     return( fragment_in_fragtree(vc) );
 }

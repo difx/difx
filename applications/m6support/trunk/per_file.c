@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 2562 2014-10-09 16:39:23Z gbc $
+ * $Id: per_file.c 3071 2015-04-29 14:46:48Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -50,12 +50,15 @@ static struct checker_work {
 
     /* evolving */
     char        *cur_file;          /* name of the current file */
+    char        *pickername;        /* name of picker */
     uint32_t    cur_numb;           /* and its ordinal number */
-    uint32_t    pkts_passed;        /* number of packets passing */
-    uint32_t    pkts_failed;        /* number of packets failing */
-    uint32_t    pkts_tested;        /* number of packets tested */
-    uint32_t    pkts_timing;        /* packets w/timing issues */
+    uint64_t    pkts_passed;        /* number of packets passing */
+    uint64_t    pkts_failed;        /* number of packets failing */
+    uint64_t    pkts_tested;        /* number of packets tested */
+    uint64_t    pkts_timing;        /* packets w/timing issues */
+    uint64_t    pkts_filled;        /* packets marked invalid */
     double      avail_process_secs; /* time remaining before alarm */
+    double      file_start_secs;    /* time current file started */
     double      file_process_secs;  /* current file consumption */
     double      total_process_secs; /* total time consumed */
 } work = {
@@ -67,8 +70,15 @@ static struct checker_work {
     .station_mask = SG_STATION_MASK
 };
 
-static double capture_process_secs(int elapsed);
-#define time_to_bail() ((capture_process_secs(1) > work.alarm_secs) ? 1 : 0)
+/*
+ * Returns 1 if we have exceeded the limit
+ */
+static int time_to_bail(void)
+{
+    work.file_process_secs = current_or_elapsed_secs(&work.file_start_secs);
+    if (work.file_process_secs > work.alarm_secs) return(1);
+    return(0);
+}
 
 /*
  * Type for a generic packet finder
@@ -161,12 +171,26 @@ static uint32_t *sequence_packet_fl(int *nlp, uint32_t **endp)
 }
 
 /*
+ * For reporting purposes
+ */
+static char *picker_name(Random_Picker *picker)
+{
+    if (picker == random_packet_sg) return("rndsg"); else
+    if (picker == random_packet_fl) return("rndfl"); else
+    if (picker == random_packet_er) return("rnder"); else
+    if (picker == sequence_packet_sg) return("seqsg"); else
+    if (picker == sequence_packet_fl) return("seqfl"); else
+    if (picker == sequence_packet_er) return("seqer"); else
+    return("check");
+}
+
+/*
  * For the number of requested loops, check the
  * packet and its statistics, as requested.
  */
 static void check_random(Random_Picker *rp)
 {
-    int nl, tt, ii, fails;
+    int nl, tt, ii, fails, fills;
     uint32_t *pkt, *end;
     for (tt = 0; tt < work.pkts_loops; tt++) {
         pkt = (*rp)(&nl, &end);
@@ -177,7 +201,8 @@ static void check_random(Random_Picker *rp)
         }
         if (nl > work.pkts_runs) nl = work.pkts_runs;
         work.pkts_tested += nl;
-        fails = sg_pkt_check(&work.sgi, pkt, nl, end);
+        fails = sg_pkt_check(&work.sgi, pkt, nl, end, &fills);
+        work.pkts_filled += fills;
         work.pkts_failed += fails;
         work.pkts_passed += (nl - fails);
         if (fails == 0)
@@ -199,7 +224,7 @@ static void check_random(Random_Picker *rp)
  */
 static void check_sequence(Random_Picker *rp)
 {
-    int tt, nl, num_check, fails;
+    int tt, nl, num_check, fails, fills;
     uint32_t *pkt, *end;
     num_check = (work.pkts_runs == 0) ? work.sgi.total_pkts : work.pkts_runs;
     for (tt = 0; tt < num_check; tt++) {
@@ -210,11 +235,12 @@ static void check_sequence(Random_Picker *rp)
             continue;
         }
         work.pkts_tested += 1;
-        fails = sg_pkt_check(&work.sgi, pkt, 1, end);
-        work.pkts_failed += fails;
-        work.pkts_passed += (nl - fails);
+        fails = sg_pkt_check(&work.sgi, pkt, 1, end, &fills);
+        work.pkts_filled += fills;
+        work.pkts_failed += fails ? 1 : 0;
+        work.pkts_passed += fails ? 0 : 1;
         if (fails == 0)
-            work.pkts_timing += sg_pkt_times(&work.sgi, pkt, 1, end);
+            work.pkts_timing += sg_pkt_times(&work.sgi, pkt, 2, end);
         if (fails == 0 && work.stat_octets > 0)
             stats_check(&work.bsi, (uint64_t*)(pkt));
 #if EXTEND_HCHK
@@ -233,12 +259,12 @@ static void summary_report(void)
     
     snprintf(lab, 6, "%05d", work.cur_numb);
     if (verb>0) fprintf(stdout,
-        "%s:Report for %s (%.1fms) %s\n"
-        "%s:check %u pass + %u fail | %u timing / %u tested\n",
+        "%s:%s (%.1fms) %s\n"
+        "%s:%s %lu pass + %lu fail | %lu time %lu fill / %lu tested\n",
         lab, work.cur_file, 1.0e3 * work.total_process_secs,
              sg_vextime(work.sgi.ref_epoch, work.sgi.first_secs),
-        lab, work.pkts_passed, work.pkts_failed,
-             work.pkts_timing, work.pkts_tested);
+        lab, work.pickername, work.pkts_passed, work.pkts_failed,
+             work.pkts_timing, work.pkts_filled, work.pkts_tested);
     strcat(lab, ":");
     if (verb>0) sg_report(&work.sgi, lab);
     strcat(lab, "stats:");
@@ -376,7 +402,7 @@ char *m6sc_sr_status(const char *scanref)
     datasize = (double)work.sci.npkts * (double)work.sci.bpp / 1e9;
 
     streamrate = (duration > 0.0) ? 8.0 * datasize / duration : 0.0;
-    // missing bytes
+    // TODO: account for missing bytes
 
     snprintf(work.sci.status, sizeof(work.sci.status),
         "%s:%s:vdif:%s:%.3f:%.3f:%.3f:%d",
@@ -415,6 +441,7 @@ char *m6sc_sr_scinfo(void)
  * Capture the processing time; if elapsed is 0, we want to get
  * the start time; otherwise, compute elapsed process time.
  */
+#ifdef DEAD_OLD_CODE
 static double capture_process_secs(int elapsed)
 {
     static struct timeval now;
@@ -430,6 +457,7 @@ static double capture_process_secs(int elapsed)
     }
     return(dnow);
 }
+#endif /* DEAD_OLD_CODE */
 
 /*
  * Handlers called for SIGQUIT and SIGALRM
@@ -437,15 +465,25 @@ static double capture_process_secs(int elapsed)
 static void progress(int signum)
 {
     if (signum != SIGQUIT) return;
-    fprintf(stdout, "\nFile-%d: %s, (%u pass + %u fail) / %u\n",
+    fprintf(stdout,
+        "\n%05d:%s (%lu pass %lu fail %lu time %lu fill)/%lu\n",
         work.cur_numb, work.cur_file,
-        work.pkts_passed, work.pkts_failed, work.pkts_tested);
+        work.pkts_passed, work.pkts_failed,
+        work.pkts_timing, work.pkts_filled, work.pkts_tested);
 }
 static void all_done(int signum)
 {
-    if (signum != SIGALRM) return;
-    fprintf(stdout, "alarm: Timeout!\n");
-    work.file_process_secs = capture_process_secs(1);
+    if (signum != SIGALRM && signum != SIGINT) return;
+    if (signum == SIGALRM) fprintf(stdout, "alarm: Timeout!\n");
+    if (signum == SIGINT) fprintf(stdout, "signal: Interrupt!\n");
+
+    /* now perform the cleanup work from m6sc_per_file() */
+    sg_close(&work.sgi);
+
+    work.file_process_secs = current_or_elapsed_secs(&work.file_start_secs);
+    work.total_process_secs += work.file_process_secs;
+    work.avail_process_secs -= work.file_process_secs;
+
     summary_report();
     exit(0);
 }
@@ -479,6 +517,9 @@ static int set_alarm_sig(int files)
             "alarm: Terminating after %u (%g) secs\n",
                 alarm_secs, work.avail_process_secs);
         alarm(alarm_secs);
+
+        if (sigaction(SIGINT, &bail, (struct sigaction*)0))
+            return(perror("sigaction"),1);
     }
 
     if (sigaction(SIGQUIT, &chck, (struct sigaction*)0))
@@ -521,6 +562,7 @@ static int help_chk_opt(void)
         work.station_mask);
     fprintf(stdout, "  exthdr=<str>     examine extended headers (%s)\n",
         work.extend_hchk ? "inactive" : "activated");
+    fprintf(stdout, "  ofs=<int>:<int>  user supplied offset and size\n");
     /* ispy is not settable from command line */
     fprintf(stdout, "\n");
     fprintf(stdout, "Generally speaking, you can increase the amount\n");
@@ -531,6 +573,11 @@ static int help_chk_opt(void)
     fprintf(stdout, "through the number of packets specified by runs.\n");
     fprintf(stdout, "To do the whole file sequentially, set runs=0.\n");
     fprintf(stdout, "Use exthdr=help for help with those options.\n");
+
+    fprintf(stdout, "The ofs= argument supplies an offset in the pkt\n");
+    fprintf(stdout, "read size where the VDIF packet is found together\n");
+    fprintf(stdout, "with that read size.  This is used to \"try harder\n");
+    fprintf(stdout, "to find a valid packet if there are invalid packets\n");
     return(1);
 }
 
@@ -594,6 +641,10 @@ int m6sc_set_chk_opt(const char *arg)
         if (verb>1) fprintf(stdout,
             "opt: %s extended headers\n", work.extend_hchk
                 ? "Examining" : "Ignoring");
+    } else if (!strncmp(arg, "ofs=", 4)) {
+        sg_set_user_poff_and_size(arg+4);
+        if (verb>1) fprintf(stdout,
+            "opt: Set packet offset and size using %s\n", arg+4);
     } else {
         fprintf(stderr, "Unknown option %s\n", arg);
         return(1);
@@ -666,25 +717,29 @@ int m6sc_per_file(const char *file, int files, int verbose)
     strcpy((work.cur_file = malloc(strlen(file) + 2)), file);
     work.pkts_timing = work.pkts_tested = 0;
     work.pkts_passed = work.pkts_failed = 0;
+    work.pkts_filled = 0;
     work.sgi.verbose = verb;
     memset(&work.bsi, 0, sizeof(BSInfo));
 #if EXTEND_HCHK
     if (work.extend_hchk) extended_hdr_verb(verb, work.cur_file);
 #endif /* EXTEND_HCHK */
-
-    work.file_process_secs = capture_process_secs(0);
+    work.file_process_secs = 0.0;
+    work.file_start_secs = current_or_elapsed_secs((double *)0);
 
     (void)sg_open(file, &work.sgi);
+
     work.bsi.packet_octets = work.sgi.vdif_signature.bits.df_len - 4;
     if (work.bsi.packet_octets > work.stat_octets)
         work.bsi.packet_octets = work.stat_octets;
     work.bsi.bits_sample = work.sgi.vdif_signature.bits.bps + 1;
+
     if (work.pkts_loops > 0) {
         switch (work.sgi.sg_version) {
         case SG_VERSION_OK_2: picker = random_packet_sg; break;
         case SG_VERSION_FLAT: picker = random_packet_fl; break;
         default:              picker = random_packet_er; break;
         }
+        work.pickername = picker_name(picker);
         check_random(picker);
     } else {
         switch (work.sgi.sg_version) {
@@ -692,11 +747,14 @@ int m6sc_per_file(const char *file, int files, int verbose)
         case SG_VERSION_FLAT: picker = sequence_packet_fl; break;
         default:              picker = sequence_packet_er; break;
         }
+        work.pickername = picker_name(picker);
         check_sequence(picker);
     }
+
     sg_close(&work.sgi);
 
-    work.file_process_secs = capture_process_secs(1);
+    // work.file_process_secs = capture_process_secs(1); // DEAD_OLD_CODE
+    work.file_process_secs = current_or_elapsed_secs(&work.file_start_secs);
     work.total_process_secs += work.file_process_secs;
     work.avail_process_secs -= work.file_process_secs;
 

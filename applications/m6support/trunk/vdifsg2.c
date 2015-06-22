@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.c 2392 2014-08-19 20:09:07Z gbc $
+ * $Id: vdifsg2.c 2861 2015-02-15 19:34:01Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -36,7 +36,7 @@ double secs_since(struct timeval *when)
  */
 uint64_t sg_signature(uint32_t *vh)
 {
-    return(sg_get_vsig(vh, (void*)0, 0));
+    return(sg_get_vsig(vh, (void*)0, 0, "sgn:", (VDIFsigu*)0));
 }
 
 /*

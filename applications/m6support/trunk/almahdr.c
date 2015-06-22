@@ -1,5 +1,5 @@
 /*
- * $Id: almahdr.c 2562 2014-10-09 16:39:23Z gbc $
+ * $Id: almahdr.c 3008 2015-04-14 19:01:58Z gbc $
  *
  * Support for ALMA extended headers
  */
@@ -130,7 +130,7 @@ void alma_hdr_chk(const int id, const uint32_t status, const uint32_t frame)
 void alma_hdr_help(void)
 {
     fprintf(stdout,
-        "The mask may be set to ignore certain data:\n"
+        "\nALMA: The mask may be set to ignore certain data:\n"
         "  0x01 -  status bits\n"
         "  0x02 -  Maser PPS - internal PPS\n"
         "  0x04 -  GPS PPS - internal PPS\n"

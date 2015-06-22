@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.c 2392 2014-08-19 20:09:07Z gbc $
+ * $Id: vdifuse.c 3022 2015-04-15 18:20:49Z gbc $
  *
  * Fuse for vdif files for use with Mark6 or other
  * applications where vdif files are scattered around.
@@ -269,8 +269,8 @@ int main(int argc, char *argv[])
         if (vdifuse_enable == VDIFUSE_ENABLE_HELP) rv = 0;
         if (rv) fprintf(stderr, "Fuse error %d\n", rv);
         if (rv<0) rv = -rv;
+        if (vdifuse_debug>4) fprintf(vdflog, "fuse_main...finished.\n");
     }
-    if (vdifuse_debug>4) fprintf(vdflog, "fuse_main...finished.\n");
     return(rv);
 }
 
