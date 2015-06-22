@@ -472,13 +472,13 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 				double bandCenter, bandValid;
 				double f0, f1, delay;
 
+				nTone = getTones(freq_kHz[i], bins[i], DFTlen/2, bw_MHz, interval_MHz, ns, toneFreq, toneAmp, tonePhase);
+
 				f0 = fabs(freq_kHz[i]/1000.0);
-				f1 = fabs(freq_kHz[i]/1000.0 + bw_MHz);
+				f1 = nTone * fabs(freq_kHz[i]/1000.0);
 
 				bandCenter = 0.5*(f0+f1);
 				bandValid = 0.5*fabs(bw_MHz) - edge_MHz;
-
-				nTone = getTones(freq_kHz[i], bins[i], DFTlen/2, bw_MHz, interval_MHz, ns, toneFreq, toneAmp, tonePhase);
 
 				delay = calcDelay(nTone, toneFreq, toneAmp, tonePhase, bandCenter, bandValid);
 
