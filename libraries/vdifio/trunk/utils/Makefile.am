@@ -22,7 +22,8 @@ bin_PROGRAMS = \
 	vdif2to8 \
 	vdifChanSelect \
 	vmux \
-	vsum
+	vsum \
+	generateVDIF
 
 noinst_PROGRAMS = \
 	testcornerturners \
@@ -85,6 +86,9 @@ vdif2to8_SOURCES = \
 
 vdifChanSelect_SOURCES = \
 	vdifChanSelect.c
+
+generateVDIF_SOURCES = \
+	generateVDIF.c
 
 vmux_SOURCES = \
 	vmux.c
