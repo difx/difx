@@ -30,6 +30,7 @@
 #include "config.h"
 #include <complex.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -201,8 +202,8 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 {
 	int nTone;
 	int startTone;
-	long f0_kHz, f1_kHz, df_kHz, f, flsb;
-	long bw_kHz;
+	int64_t f0_kHz, f1_kHz, df_kHz, f, flsb;
+	int64_t bw_kHz;
 	int chan;
 	complex double z;
 
@@ -502,6 +503,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 						}
 						fprintf(out, "%d %f %d %.3f %6.4f %6.2f %f\n",
 							N, 0.5*(startSec+stopSec), j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI, delay);
+						fflush(out);
 					}
 					if(nTone > 1)
 					{
