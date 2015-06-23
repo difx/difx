@@ -22,6 +22,7 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 
 # Checks for libraries.
+AC_CHECK_LIB(m, sqrt)
 
 # Checks for header files.
 
