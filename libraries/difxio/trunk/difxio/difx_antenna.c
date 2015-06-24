@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -99,10 +99,10 @@ DifxAntenna *newDifxAntennaArray(int nAntenna)
 	int a, i;
 
 	da = (DifxAntenna *)calloc(nAntenna, sizeof(DifxAntenna));
-	for(a = 0; a < nAntenna; a++)
+	for(a = 0; a < nAntenna; ++a)
 	{
 		da[a].spacecraftId = -1;
-		for(i=0; i<MAX_MODEL_ORDER; i++)
+		for(i = 0;  i <MAX_MODEL_ORDER; ++i)
 		{
 			da[a].clockcoeff[i] = 0.0;
 		}
@@ -122,14 +122,12 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 
 	fprintf(fp, "  DifxAntenna [%s] : %p\n", da->name, da);
 	fprintf(fp, "    Clock reference MJD = %f\n", da->clockrefmjd);
-	for(i=0;i<da->clockorder+1;i++)
+	for(i = 0; i < da->clockorder+1; ++i)
 	{
-		fprintf(fp, "    Clock coeff[%d] = %e us/s^%d\n", i, 
-			da->clockcoeff[i], i);
+		fprintf(fp, "    Clock coeff[%d] = %e us/s^%d\n", i, da->clockcoeff[i], i);
 	}
 	fprintf(fp, "    Mount = %d = %s\n", da->mount, antennaMountTypeNames[da->mount]);
-	fprintf(fp, "    Offset = %f, %f, %f m\n", 
-		da->offset[0], da->offset[1], da->offset[2]);
+	fprintf(fp, "    Offset = %f, %f, %f m\n", da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
 	fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
 }
@@ -183,7 +181,7 @@ int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2)
 	{
 		return 0;
 	}
-	for(i=1;i<da1->clockorder;i++)
+	for(i = 1; i < da1->clockorder; ++i)
 	{
 		if(da1->clockcoeff[i] != da2->clockcoeff[i])
 		{
@@ -194,7 +192,7 @@ int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2)
 	epochdiff = (da2->clockrefmjd - da1->clockrefmjd)*86400.0;
 	dt = 1.0;
 	deltad = 0.0;
-	for(i=0;i<da1->clockorder;i++)
+	for(i = 0; i < da1->clockorder; ++i)
 	{
 		deltad += (da1->clockcoeff[i] - da2->clockcoeff[i])*dt;
 		dt *= epochdiff;
@@ -215,12 +213,12 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src->name);
 	dest->clockrefmjd = src->clockrefmjd;
 	dest->clockorder  = src->clockorder;
-	for(i=0; i<MAX_MODEL_ORDER; i++)
+	for(i = 0; i < MAX_MODEL_ORDER; ++i)
 	{
 		dest->clockcoeff[i] = src->clockcoeff[i];
 	}
 	dest->mount = src->mount;
-	for(i = 0; i < 3; i++)
+	for(i = 0; i < 3; ++i)
 	{
 		dest->offset[i] = src->offset[i];
 	}
@@ -232,7 +230,7 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 	dest->dZ = src->dZ;
 }
 
-/* dt is in microseconds */
+/* dt is in seconds */
 /* returns number of coefficients copied = order+1, or < 0 on error */
 int getDifxAntennaShiftedClock(const DifxAntenna *da, double dt, int outputClockSize, double *clockOut)
 {
@@ -282,9 +280,9 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	*nda = nda1;
 
 	/* first identify entries that differ and assign new antennaIds */
-	for(j = 0; j < nda2; j++)
+	for(j = 0; j < nda2; ++j)
 	{
-		for(i = 0; i < nda1; i++)
+		for(i = 0; i < nda1; ++i)
 		{
 			if(isSameDifxAntenna(da1 + i, da2 + j))
 			{
@@ -302,13 +300,13 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	da = newDifxAntennaArray(*nda);
 	
 	/* now copy da1 */
-	for(i = 0; i < nda1; i++)
+	for(i = 0; i < nda1; ++i)
 	{
 		copyDifxAntenna(da + i, da1 + i);
 	}
 
 	/* now copy unique members of da2 */
-	for(j = 0; j < nda2; j++)
+	for(j = 0; j < nda2; ++j)
 	{
 		if(antennaIdRemap[j] >= nda1)
 		{
@@ -335,7 +333,7 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 	}
 	n = 1;
 
-	for(i = 0; i < nAntenna; i++)
+	for(i = 0; i < nAntenna; ++i)
 	{
 		if(doClock)
 		{
@@ -345,49 +343,39 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 		{
 			writeDifxLine1(out, "TELESCOPE %d NAME", i, da[i].name);
 		}
-		n++;
+		++n;
 		if(doMount)
 		{
-			writeDifxLine1(out, "TELESCOPE %d MOUNT", i,
-				antennaMountTypeNames[da[i].mount]);
-			n++;
+			writeDifxLine1(out, "TELESCOPE %d MOUNT", i, antennaMountTypeNames[da[i].mount]);
+			++n;
 		}
 		if(doOffset)
 		{
-			writeDifxLineDouble1(out, "TELESCOPE %d OFFSET (m)", i, 
-				"%8.6f", da[i].offset[0]);
-			n++;
+			writeDifxLineDouble1(out, "TELESCOPE %d OFFSET (m)", i, "%8.6f", da[i].offset[0]);
+			++n;
 		}
 		if(doCoords)
 		{
-			writeDifxLineDouble1(out, "TELESCOPE %d X (m)", i,
-				"%8.6f", da[i].X);
-			writeDifxLineDouble1(out, "TELESCOPE %d Y (m)", i,
-				"%8.6f", da[i].Y);
-			writeDifxLineDouble1(out, "TELESCOPE %d Z (m)", i,
-				"%8.6f", da[i].Z);
+			writeDifxLineDouble1(out, "TELESCOPE %d X (m)", i, "%8.6f", da[i].X);
+			writeDifxLineDouble1(out, "TELESCOPE %d Y (m)", i, "%8.6f", da[i].Y);
+			writeDifxLineDouble1(out, "TELESCOPE %d Z (m)", i, "%8.6f", da[i].Z);
 			n += 3;
 		}
 		if(doClock)
 		{
-			writeDifxLineDouble1(out, "CLOCK REF MJD %d", i, 
-				"%15.10f", da[i].clockrefmjd);
-			writeDifxLineInt1(out, "CLOCK POLY ORDER %d", i, 
-				da[i].clockorder);
-			writeDifxLine(out, "@ ***** Clock poly coeff N", 
-				" has units microsec / sec^N ***** @");
-			for(j=0;j<da[i].clockorder+1;j++)
+			writeDifxLineDouble1(out, "CLOCK REF MJD %d", i, "%15.10f", da[i].clockrefmjd);
+			writeDifxLineInt1(out, "CLOCK POLY ORDER %d", i, da[i].clockorder);
+			writeDifxLine(out, "@ ***** Clock poly coeff N", " has units microsec / sec^N ***** @");
+			for(j = 0; j < da[i].clockorder + 1; ++j)
 			{
-				writeDifxLineDouble2(out, "CLOCK COEFF %d/%d", i, j,
-				"%17.15e", da[i].clockcoeff[j]);
+				writeDifxLineDouble2(out, "CLOCK COEFF %d/%d", i, j, "%17.15e", da[i].clockcoeff[j]);
 			}
 			n += 3+da[i].clockorder+1;
 		}
 		if(doShelf)
 		{
-			writeDifxLine1(out, "TELESCOPE %d SHELF", i,
-				da[i].shelf);
-			n++;
+			writeDifxLine1(out, "TELESCOPE %d SHELF", i, da[i].shelf);
+			++n;
 		}
 	}
 
