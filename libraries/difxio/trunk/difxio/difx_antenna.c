@@ -122,7 +122,7 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 
 	fprintf(fp, "  DifxAntenna [%s] : %p\n", da->name, da);
 	fprintf(fp, "    Clock reference MJD = %f\n", da->clockrefmjd);
-	for(i = 0; i < da->clockorder+1; ++i)
+	for(i = 0; i <= da->clockorder; ++i)
 	{
 		fprintf(fp, "    Clock coeff[%d] = %e us/s^%d\n", i, da->clockcoeff[i], i);
 	}
@@ -172,6 +172,7 @@ int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)
 	}
 }
 
+/* FIXME: I think the logic here may be a bit corrupt.  Low danger as truely identical clocks will still pass. */
 int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2)
 {
 	int i;
@@ -181,7 +182,7 @@ int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2)
 	{
 		return 0;
 	}
-	for(i = 1; i < da1->clockorder; ++i)
+	for(i = 1; i <= da1->clockorder; ++i)
 	{
 		if(da1->clockcoeff[i] != da2->clockcoeff[i])
 		{
@@ -192,7 +193,7 @@ int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2)
 	epochdiff = (da2->clockrefmjd - da1->clockrefmjd)*86400.0;
 	dt = 1.0;
 	deltad = 0.0;
-	for(i = 0; i < da1->clockorder; ++i)
+	for(i = 0; i <= da1->clockorder; ++i)
 	{
 		deltad += (da1->clockcoeff[i] - da2->clockcoeff[i])*dt;
 		dt *= epochdiff;
@@ -236,7 +237,7 @@ int getDifxAntennaShiftedClock(const DifxAntenna *da, double dt, int outputClock
 {
 	int i;
 	double a[MAX_MODEL_ORDER+1];
-	double t2, t3, t4, t5;
+	double t2, t3, t4, t5;	/* units: sec^n, n = 2, 3, 4, 5 */
 
 	if(!da)
 	{
@@ -269,6 +270,34 @@ int getDifxAntennaShiftedClock(const DifxAntenna *da, double dt, int outputClock
 	}
 
 	return da->clockorder + 1;
+}
+
+/* returns antenna's clock model in microseconds */
+double evaluateDifxAntennaClock(const DifxAntenna *da, double mjd)
+{
+	double dt;	/* [sec] time since the clock epoch */
+	double C;
+	double dtn;
+	int i;
+
+	if(!da)
+	{
+		fprintf(stderr, "Error: evaluateDifxAntennaClock called with null DifxAntenna pointer\n");
+
+		exit(EXIT_FAILURE);
+	}
+
+	dt = (mjd - da->clockrefmjd)*86400.0;
+
+	dtn = 1.0;
+	C = 0.0;
+	for(i = 0; i <= da->clockorder; ++i)
+	{
+		C += da->clockcoeff[i]*dtn;
+		dtn *= dt;
+	}
+
+	return C;
 }
 
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
@@ -366,7 +395,7 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 			writeDifxLineDouble1(out, "CLOCK REF MJD %d", i, "%15.10f", da[i].clockrefmjd);
 			writeDifxLineInt1(out, "CLOCK POLY ORDER %d", i, da[i].clockorder);
 			writeDifxLine(out, "@ ***** Clock poly coeff N", " has units microsec / sec^N ***** @");
-			for(j = 0; j < da[i].clockorder + 1; ++j)
+			for(j = 0; j <= da[i].clockorder; ++j)
 			{
 				writeDifxLineDouble2(out, "CLOCK COEFF %d/%d", i, j, "%17.15e", da[i].clockcoeff[j]);
 			}
