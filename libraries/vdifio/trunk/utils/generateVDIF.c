@@ -15,6 +15,7 @@
 
 #define OPENREADOPTIONS O_RDONLY|O_LARGEFILE
 #define OPENWRITEOPTIONS O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE
+#include <sys/stat.h>    /* for S_* modes on some flavors */
 
 #endif
 
