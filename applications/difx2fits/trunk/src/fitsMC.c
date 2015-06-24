@@ -74,7 +74,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	const DifxConfig *config;
 	const DifxScan *scan;
 	const DifxPolyModel *P;
-	double time, deltat, deltat2, deltatn;      
+	double time;
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
 	double clock, clockRate, c1, c2;
@@ -181,6 +181,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 			/* loop over original .input file antenna list */
 			for(a = 0; a < config->nAntenna; ++a)
 			{
+				DifxAntenna *da;
+
 				dsId = config->ant2dsId[a];
 				if(dsId < 0 || dsId >= D->nDatastream)
 				{
@@ -194,6 +196,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 					continue;
 				}
 
+				da = D->antenna + antId;	/* pointer to DifxAntenna structure */
+
 				/* ... and to FITS antennaId */
 				antId1 = antId + 1;
 
@@ -202,7 +206,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 					if(skip[antId] == 0)
 					{
 						printf("\n    Polynomial model error : skipping antId %d = %s", 
-						antId, D->antenna[antId].name);
+						antId, da->name);
 						++skip[antId];
 						++printed;
 						++skipped;
@@ -213,7 +217,6 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 				P = scan->im[antId][phaseCentre] + p;
 
 				time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
-				deltat = (P->mjd - D->antenna[antId].clockrefmjd)*86400.0 + P->sec;
 
 				/* in general, convert from (us) to (sec) */
 				atmosDelay = (P->dry[0] + P->wet[0])*1.0e-6;
@@ -224,22 +227,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 				delay     = -P->delay[0]*1.0e-6 - atmosDelay;
 				delayRate = -P->delay[1]*1.0e-6 - atmosRate;
 
-				deltatn = 1.0;
-				c1 = 0.0;
-				for(j = 0; j < D->antenna[antId].clockorder; ++j)
-				{
-					c1 = c1 + D->antenna[antId].clockcoeff[j] * deltatn;
-					deltatn = deltatn * deltat;
-				}
-				deltat2 = deltat + P->validDuration/86400.0;
-				deltatn = 1.0;
-				c2 = 0.0;
-				for(j=0; j<D->antenna[antId].clockorder; ++j)
-				{
-					c2 = c2 + D->antenna[antId].clockcoeff[j] * deltatn;
-					deltatn = deltatn * deltat2;
-				}
-
+				c1 = evaluateDifxAntennaClock(da, P->mjd + P->sec/86400.0);
+				c2 = evaluateDifxAntennaClock(da, P->mjd + (P->sec + P->validDuration)/86400.0);
 				clockRate = ((c2-c1)/P->validDuration)*1.0e-6;
 				clock     = c1*1.0e-6;
 
