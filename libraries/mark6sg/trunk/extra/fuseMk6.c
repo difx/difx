@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <memory.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include <mark6sg.h>
 
@@ -16,18 +17,22 @@
 void usage(void)
 {
 	printf("\n"
-		"Mark6 Scatter-Gather data interpretation layer   v1.00  Jan Wagner 28112014\n"
+		"Mark6 Scatter-Gather data interpretation layer   v1.10  Jan Wagner 24062015\n"
 		"\n"
-		"Usage: fuseMk6 <mountpoint>\n"
+		"Usage: fuseMk6 [-v] <mountpoint>\n"
 		"\n"
 		"Presents Mark6 scatter-gather mode (SG) recordings as single files.\n"
-		"The Mark6 SG disks are assumed to be already mounted (/mnt/disks/[1-4]/[0-7]/)\n"
+		"The SG disks are assumed to be already mounted (/mnt/disks/[1-4]/[0-7]/)\n"
 		"\n"
-		"The Mark6 SG recording mode produces multiple files for each VLBI scan.\n"
-		"These SG files contain metadata and the actual VLBI data (typically VDIF or Mark5B)\n"
-		"in a somewhat random time order. The fuseMk6 file system layer takes care\n"
-		"of presenting the SG files as sorted data without SG-related metadata.\n"
+		"The Mark6 SG recording mode stripes data of a VLBI recording across multiple\n"
+                "files, each of them generally placed on its own disk or file system.\n"
+		"These SG files contain metadata and the actual VLBI data striped out in a\n"
+		"somewhat random time order. The fuseMk6 layer uses the 'libmark6sg' library\n"
+                "to hide the SG striping and metadata.\n"
 		"\n"
+                "Options:\n"
+                "   -v    verbose mode (puts fuseMk6 into 'foreground' mode),\n"
+                "         repeat to increase verbosity\n\n"
 	);
 }
 
@@ -85,15 +90,13 @@ static int fusem6_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi)
 {
 	ssize_t nrd;
-	off_t   off;
+	static pthread_mutex_t rdlock = PTHREAD_MUTEX_INITIALIZER;
 
-	off = mark6_sg_lseek(fi->fh, offset, SEEK_SET);
-	if (off != offset)
-		printf("seek()=%ld != %ld\n", off, offset);
-
-	nrd = mark6_sg_read(fi->fh, buf, size);
+	pthread_mutex_lock(&rdlock);
+	nrd = mark6_sg_pread(fi->fh, buf, size, offset);
 	if (nrd != size)
-		printf("read()=%ld != req=%lu\n", nrd, size);
+		printf("pread()=%ld != req=%lu\n", nrd, size);
+	pthread_mutex_unlock(&rdlock);
 
 	return (nrd > 0) ? nrd : 0;
 }
@@ -177,19 +180,29 @@ static struct fuse_operations fusem6_oper = {
 
 int main(int argc, char *argv[])
 {
-	int rc = 0, i;
+	int rc = 0, verbosity = 0, i = 0;
 	int fuse_argc;
 	char** fuse_argv;
+	char* mountpoint = NULL;
 	m6sg_slistmeta_t* json_slist_ptr;
 
-	if (argc != 2)
+	/* Arguments */
+	mountpoint = argv[argc-1];
+	for (i=1; i<argc; i++)
+	{
+		if (strcmp(argv[i], "-v") == 0)
+		{
+			verbosity++;
+		}
+	}
+	if ((argc < 2) || (mountpoint[0] == '-'))
 	{
 		usage();
 		return -1;
 	}
 
-	/* Enable debug printouts? */
-	// if (1) { mark6_sg_verbositylevel(2); }
+	/* Set library verbosity */
+	mark6_sg_verbositylevel(verbosity);
 
 	/* Get scan list from Mark6sg library */
 	m_nscans = mark6_sg_list_all_scans(&m_scannamelist);
@@ -206,6 +219,7 @@ int main(int argc, char *argv[])
 		// the total file size (based on the assumption that no disks failed)
 		// Due to the above reasons for now we use fake file size and time...
 		time_t t0 = time(NULL);
+		m_scanstatlist[i].st_nlink = 1;
 		m_scanstatlist[i].st_uid   = 1000;
 		m_scanstatlist[i].st_gid   = 1000;
 		m_scanstatlist[i].st_atime = t0;
@@ -245,11 +259,17 @@ int main(int argc, char *argv[])
 	fuse_argc = 0;
 	fuse_argv = malloc(16*sizeof(char**));
 	fuse_argv[fuse_argc++] = argv[0];
-	fuse_argv[fuse_argc++] = "-oallow_other,direct_io,sync_read"; // sync_read is crucial!
-	// Uncomment for debugging purposes:
-	//fuse_argv[fuse_argc++] = "-f";     // foreground mode
-	//fuse_argv[fuse_argc++] = "-d";     // debug infos
-	fuse_argv[fuse_argc++] = argv[1];
+	fuse_argv[fuse_argc++] = "-oallow_other";
+	fuse_argv[fuse_argc++] = "-odirect_io";
+        if (verbosity > 0)
+        {
+		fuse_argv[fuse_argc++] = "-f";     // foreground mode to show libmark6sg printouts
+	}
+	if (verbosity > 3)
+	{
+		fuse_argv[fuse_argc++] = "-d";     // show FUSE debug infos
+	}
+	fuse_argv[fuse_argc++] = mountpoint;
 
 	rc = fuse_main(fuse_argc, fuse_argv, &fusem6_oper, NULL);
 	return rc;

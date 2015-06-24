@@ -31,6 +31,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdint.h>
 
 // Defines
 #define MARK6_SG_SYNC_WORD          0xfeed6666
@@ -44,7 +45,7 @@ extern int m_m6sg_dbglevel;
 // Struct used by library to describe a group of files and their block content
 typedef struct m6sg_blockmeta_tt {
     int      file_id;        // index into the filename list (same list as passed to mark6_sg_blocklist())
-    int      blocknum;       // block number
+    int32_t  blocknum;       // block number
     int      packetsize;     // size of packets that Mark6 software thought were recorded
     off_t    file_offset;    // byte offset to the VLBI data in the file specified by file_id
     size_t   datalen;        // length in bytes of the VLBI data stored in the block
@@ -64,7 +65,7 @@ typedef struct m6sg_slistmeta_tt {
 extern int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char*** filenamelist);
 extern int mark6_sg_filelist_uniques(int nfiles, const char** filenamelist, char*** uniquenamelist);
 extern int mark6_sg_list_all_scans(char*** uniquenamelist);
-extern int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
+extern size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
 extern int mark6_sg_verbositylevel(int);
 extern int mark6_sg_collect_metadata(m6sg_slistmeta_t**);
 

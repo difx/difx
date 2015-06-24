@@ -9,6 +9,10 @@ recorded in SG (scatter-gather) mode with the Mark6 software.
 The library functions gather the scattered pieces of scan data and 
 provide access to it via standard VFS-like functions (e.g., open, read).
 
+Include:         #include <mark6sg.h> 
+Dynamic link:    LDLIBS=-lmark6sg     or link against   libmark6sg.la
+Static link:     LDLIBS=libmark6sg.a  
+
 The VFS-like interface is
 
   mark6_sg_open()
@@ -21,14 +25,15 @@ Convenience functions are
 
   mark6_sg_verbositylevel()
   mark6_sg_packetsize()
+  mark6_sg_stripesize()
 
   mark6_sg_list_all_scans()
 
-Include: #include <mark6sg.h> 
-Link:    LDLIBS=-lmark6sg     or link against   libmark6sg.la
+To keep the implementation simple the functions are not thread-safe
+and the external use of mutexes may be required.
 
 The current interface is C only, not C++.
-To keep the implementation simple the functions are not yet thread-safe.
+
 
 -----------------------------------------------------------------------------
 
@@ -78,7 +83,13 @@ C: mark6_sg_verbositylevel(0);
 
 C: int packetsize = mark6_sg_packetsize(fd);
 
-  Opens the packet size that the Mark6 software thought it was recording.
+  Returns the packet size that the Mark6 software thought it was recording.
+  Here 'fd' is the file descriptor of a scan opened with mark6_sg_open().
+
+c: size_t stripesize = mark6_sg_stripesize(fd);
+
+  Returns the stripe size ("block size"), not counting extra Mark6 metadata,
+  of the first block of a recording. Does not check for a variable block size.
   Here 'fd' is the file descriptor of a scan opened with mark6_sg_open().
 
 C: char** uniquenamelist;

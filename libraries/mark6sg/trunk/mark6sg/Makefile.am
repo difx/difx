@@ -9,7 +9,7 @@ INCLUDES = -I$(top_srcdir)
 lib_LTLIBRARIES = libmark6sg.la
 
 libmark6sg_la_SOURCES = $(h_sources) $(c_sources)
-libmark6sg_la_LDFLAGS = -version-info $(LIBRARY_VERSION)
+libmark6sg_la_LDFLAGS = -version-info $(LIBRARY_VERSION) -pthread
 # libmark6sg_la_LIBDADD = ../jsmn/libjsmn.a ../jsmn/jsmn.o
-libmark6sg_la_CFLAGS = -Wall -I../jsmn/
+libmark6sg_la_CFLAGS = -Wall -I../jsmn/ -pthread
 

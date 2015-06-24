@@ -1,15 +1,18 @@
-h_sources = mark6_sg_utils.h mark6_sg_vfs.h
-c_sources = mark6_sg_utils.c mark6_sg_vfs.c ../jsmn/jsmn.c
 
-library_includedir = $(includedir)/mark6sg
-library_include_HEADERS = $(h_sources)
+bin_PROGRAMS = m6sg_blocknrs m6sg_gather mk6copy fuseMk6
+bin_SCRIPTS = m6sg_mount
 
-INCLUDES = -I$(top_srcdir)
+m6sg_blocknrs_SOURCES = m6sg_blocknrs.c
 
-lib_LTLIBRARIES = libmark6sg.la
+m6sg_gather_CFLAGS = -I$(top_srcdir)/mark6sg -I$(srcdir)/.. -Wall
+m6sg_gather_LDADD = $(top_builddir)/mark6sg/libmark6sg.la -lm
+m6sg_gather_SOURCES = m6sg_gather.c
 
-libmark6sg_la_SOURCES = $(h_sources) $(c_sources)
-libmark6sg_la_LDFLAGS = -version-info $(LIBRARY_VERSION)
-# libmark6sg_la_LIBDADD = ../jsmn/libjsmn.a ../jsmn/jsmn.o
-libmark6sg_la_CFLAGS = -Wall -I../jsmn/
+# fuseMk6_LDADD = $(top_builddir)/mark6sg/libmark6sg.la -lm -lfuse 
+fuseMk6_LDADD = $(top_builddir)/mark6sg/.libs/libmark6sg.a -lm -lfuse 
+fuseMk6_CFLAGS = -I$(top_srcdir)/mark6sg -I$(srcdir)/.. -Wall -D_FILE_OFFSET_BITS=64 -O3 -g
+
+# mk6copy_LDADD = $(top_builddir)/mark6sg/libmark6sg.la -lm -lrt
+mk6copy_LDADD = $(top_builddir)/mark6sg/.libs/libmark6sg.a -lm -lrt
+mk6copy_CFLAGS = -I$(top_srcdir)/mark6sg -I$(srcdir)/.. -Wall -D_FILE_OFFSET_BITS=64 -O3 -g
 

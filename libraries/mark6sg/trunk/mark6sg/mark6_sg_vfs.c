@@ -26,32 +26,54 @@
 // $LastChangedDate$
 //
 //============================================================================
+#define _GNU_SOURCE
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glob.h>
 #include <linux/limits.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "mark6_sg_vfs.h"
 
+// Prefetch (via mmap() MAP_POPULATE-like threaded forced kernel page faults)
+#define USE_MAP_POPULATE_LIKE_PREFETCH 1
+#define PREFETCH_NUM_FILES             (vfd->nfiles)  // to use all files, specify (vfd->nfiles)
+#define PREFETCH_NUM_BLOCKS_PER_FILE   8
+
 // Internal structs
+typedef struct touch_blocks_ctx_tt {
+    pthread_t tid;
+    void*  vfd;
+    int    idx;
+    size_t startblk;
+    size_t endblk;
+} touch_blocks_ctx_t;
+
 typedef struct m6sg_virt_filedescr {
     int       valid;
     int       eof;
     size_t    len;
     off_t     rdoffset;
-    int       rdblock;
+    size_t    rdblock;
     int       nfiles;
     char**    filepathlist;
     char**    filenamelist; // (unused, although populated)
-    FILE*     fds[MARK6_SG_MAXFILES];
-    int       nblocks;
+    int       fds[MARK6_SG_MAXFILES];
+    void*     fmmap[MARK6_SG_MAXFILES];
+    off_t     fsize[MARK6_SG_MAXFILES];
+    size_t    nblocks;
     m6sg_blockmeta_t* blks;
+    touch_blocks_ctx_t touch_ctxs[MARK6_SG_MAXFILES];
+    size_t             touchblock;
+    pthread_mutex_t    touch_lock;
 } m6sg_virt_filedescr_t;
 
 typedef struct m6sg_virt_open_files {
@@ -60,6 +82,8 @@ typedef struct m6sg_virt_open_files {
 } m6sg_virt_open_files_t;
 
 static m6sg_virt_open_files_t m6sg_open_files_list = { 0, NULL };
+
+static int touch_next_blocks(m6sg_virt_filedescr_t*, size_t);
 
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -73,6 +97,7 @@ static m6sg_virt_open_files_t m6sg_open_files_list = { 0, NULL };
 int mark6_sg_open(const char *scanname, int flags)
 {
     m6sg_virt_filedescr_t* vfd;
+    struct stat st;
     int fd, i;
 
     // Ignore prefixed path
@@ -116,14 +141,46 @@ int mark6_sg_open(const char *scanname, int flags)
     vfd = &m6sg_open_files_list.fd_list[fd];
     memset((void*)vfd, 0, sizeof(m6sg_virt_filedescr_t));
     vfd->valid = 1;
+    pthread_mutex_init(&(vfd->touch_lock), NULL);
 
     // Gather all metadata about the scan's files
     vfd->nfiles  = mark6_sg_filelist_from_name(scanname, &(vfd->filepathlist), &(vfd->filenamelist));
     vfd->nblocks = mark6_sg_blocklist(vfd->nfiles, (const char**)(vfd->filepathlist), &(vfd->blks));
     for (i=0; i<(vfd->nfiles); i++)
     {
-        vfd->fds[i] = fopen(vfd->filepathlist[i], "r");
+        int flags;
+
+        stat(vfd->filepathlist[i], &st);
+        vfd->fsize[i] = st.st_size;
+
+        vfd->fds[i] = open(vfd->filepathlist[i], O_RDONLY|O_LARGEFILE);
+        if (vfd->fds[i] < 0)
+        {
+            perror(vfd->filepathlist[i]);
+            vfd->fmmap[i] = NULL; // segfault later
+            continue;
+        }
+
+        flags = MAP_PRIVATE;
+        flags |= MAP_NORESERVE;
+        // flags |= MAP_POPULATE; // terribly slow since entire(?) file is read first, blocking
+        // flags |= MAP_HUGETLB;  // not for mmap() of normal files
+        vfd->fmmap[i] = mmap(NULL, vfd->fsize[i], PROT_READ, flags, vfd->fds[i], 0);
+        if (vfd->fmmap[i] == MAP_FAILED)
+        {
+            perror("mmap");
+        }
+
+        if (m_m6sg_dbglevel>1) { printf("mmap() file %2d to virtual addr %p\n", i, vfd->fmmap[i]); }
+
+        flags = MADV_SEQUENTIAL;
+        // flags |= MADV_WILLNEED; // very slow yet somewhat faster than MAP_POPULATE
+        madvise(vfd->fmmap[i], vfd->fsize[i], flags);
+
+        if (m_m6sg_dbglevel>1) { printf("madvise() file %2d\n", i); }
+
     }
+
     if (vfd->nfiles <= 0)
     {
         mark6_sg_close(fd);
@@ -166,11 +223,28 @@ int mark6_sg_close(int fd)
         return -1;
     }
 
+#if (USE_MAP_POPULATE_LIKE_PREFETCH != 0)
+    for (i=0; i < vfd->nfiles; i++)
+    {
+        if (vfd->touch_ctxs[i].tid != 0)
+        {
+            if (m_m6sg_dbglevel>1) { printf("join() on prefetch thread %d\n", i); }
+            pthread_join(vfd->touch_ctxs[i].tid, NULL);
+        }
+    }
+#endif
+    pthread_mutex_destroy(&(vfd->touch_lock));
+
     for (i=0; i < vfd->nfiles; i++)
     {
         free(vfd->filepathlist[i]);
         free(vfd->filenamelist[i]);
-        fclose(vfd->fds[i]);
+        if (vfd->fmmap[i] != NULL)
+        {
+            if (m_m6sg_dbglevel>1) { printf("munmap() file %2d virtual addr %p\n", i, vfd->fmmap[i]); }
+            munmap(vfd->fmmap[i], vfd->fsize[i]);
+        }
+        close(vfd->fds[i]);
     }
     free(vfd->filepathlist);
     free(vfd->filenamelist);
@@ -189,12 +263,7 @@ int mark6_sg_close(int fd)
 ssize_t mark6_sg_read(int fd, void* buf, size_t count)
 {
     m6sg_virt_filedescr_t* vfd;
-    size_t nread = 0;
-    size_t nremain = count;
-    FILE* infile;
-    int   blk;
-    off_t blkstart, blkstop;
-
+    ssize_t nrd;
 
     // Catch some error conditions
     if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
@@ -209,44 +278,94 @@ ssize_t mark6_sg_read(int fd, void* buf, size_t count)
         errno = EBADF;
         return -1;
     }
-    if (vfd->rdoffset > vfd->len)
+
+    // Start read from offset via pread()
+    nrd = mark6_sg_pread(fd, buf, count, vfd->rdoffset);
+    if (vfd->rdoffset >= vfd->len)
+    {
+        vfd->eof = 1;
+        return 0;
+    }
+
+    return nrd;
+}
+
+/**
+ * Read a piece of data from a scattered file.
+ * Similar behaviour as 'man 2 pread'.
+ * Nearly thread safe but updates vfd->rdblock
+ * and vfd->rdoffset at end of the read.
+ */
+ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
+{
+    m6sg_virt_filedescr_t* vfd;
+    size_t nread = 0;
+    size_t nremain = count;
+    size_t blk, prevblk, i;
+
+    // Catch some error conditions
+    if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    vfd = &m6sg_open_files_list.fd_list[fd];
+    if (!vfd->valid)
+    {
+        errno = EBADF;
+        return -1;
+    }
+    if (rdoffset > vfd->len)
     {
         vfd->eof = 1;
         return 0;
     }
 
     // Perform read
-    while ((nremain > 0) && (vfd->rdoffset < vfd->len))
+    blk = vfd->rdblock;
+    prevblk = blk;
+    while ((nremain > 0) && (rdoffset < vfd->len))
     {
-        size_t navail, nskip, nwanted, nrd;
-        off_t  foff;
+        size_t navail, nskip, nwanted;
         int    fid;
-        blk      = vfd->rdblock;
-        blkstart = vfd->blks[blk].virtual_offset;
-        blkstop  = vfd->blks[blk].datalen + blkstart;
-        fid      = vfd->blks[blk].file_id;
-        infile   = vfd->fds[fid];
-        if ((vfd->rdoffset < blkstart) || (vfd->rdoffset >= blkstop))
+        off_t  foff;
+        off_t  blkstart = vfd->blks[blk].virtual_offset;
+        off_t  blkstop  = vfd->blks[blk].datalen + blkstart;
+
+        if ((rdoffset < blkstart) || (rdoffset >= blkstop))
         {
-            vfd->rdblock = (vfd->rdblock + 1) % vfd->nblocks;
+            blk = (blk + 1) % vfd->nblocks;
             continue; // try other blocks until finding correct one
         }
 
-        nskip   = vfd->rdoffset - blkstart;
-        navail  = blkstop - vfd->rdoffset;
+        nskip   = rdoffset - blkstart;
+        navail  = blkstop - rdoffset;
         nwanted = (nremain < navail) ? nremain : navail;
 
         // Read the data from file on disk
+        fid  = vfd->blks[blk].file_id;
         foff = vfd->blks[blk].file_offset + nskip;
-        fseek(infile, foff, SEEK_SET);
-        nrd = fread(buf+nread, 1, nwanted, infile); // TODO: what to do when nrd != wnanted
+        memcpy(buf+nread, ((char*)vfd->fmmap[fid]) + foff, nwanted);
 
-        if (m_m6sg_dbglevel>0) { printf("read() file %2d offset %ld : virtual offset %ld : req %ld read %ld\n", fid, foff, vfd->rdoffset, nwanted, nrd); }
+        if (m_m6sg_dbglevel>2) { printf("memcpy() file %2d offset %ld : virtual offset %ld : req %ld\n", fid, foff, rdoffset, nwanted); }
 
-        vfd->rdoffset += nwanted;
-        nread         += nwanted;
-        nremain       -= nwanted;
+        rdoffset += nwanted;
+        nread    += nwanted;
+        nremain  -= nwanted;
     }
+
+    // Remember current block nr (not exactly thread safe, but non-critical)
+    vfd->rdblock = blk;
+    vfd->rdoffset = rdoffset;
+
+    // Trigger a preload of future mmap()'ed data in the background
+#if (USE_MAP_POPULATE_LIKE_PREFETCH != 0)
+    if (blk >= (vfd->touchblock + PREFETCH_NUM_BLOCKS_PER_FILE)) // *vfd->nfiles reduces speed for some reason
+    {
+        touch_next_blocks(vfd, blk);
+    }
+#endif
 
     return nread;
 }
@@ -323,7 +442,7 @@ int mark6_sg_fstat(int fd, struct stat *buf)
     }
 
     // Take basic 'stat' infos from first file
-    fstat(fileno(vfd->fds[0]), buf); // TODO: check return value?
+    fstat(vfd->fds[0], buf); // TODO: check return value?
 
     // Do some adjustments
     buf->st_size = vfd->len;
@@ -358,5 +477,139 @@ int mark6_sg_packetsize(int fd)
     {
         return vfd->blks[0].packetsize;
     }
+    return 0;
+}
+
+
+/**
+ * Return the stripe size (without metadata length).
+ */
+ssize_t mark6_sg_stripesize(int fd)
+{
+    m6sg_virt_filedescr_t* vfd;
+
+    // Catch some error conditions
+    if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    vfd = &m6sg_open_files_list.fd_list[fd];
+    if (!vfd->valid)
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    if (vfd->nblocks > 0)
+    {
+        return (ssize_t)(vfd->blks[0].datalen);
+    }
+
+    return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+////// Local Functions ///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+
+void* touch_next_blocks_thread(void* p_ctx)
+{
+    size_t blk, off, off_inc = 0, off_stop, ntouched = 0;
+
+    touch_blocks_ctx_t*    ctx_host = (touch_blocks_ctx_t*)p_ctx;
+    m6sg_virt_filedescr_t* vfd_host = (m6sg_virt_filedescr_t*)(ctx_host->vfd);
+    int fid = -1, my_id = ctx_host->idx;
+
+    touch_blocks_ctx_t*    ctx = NULL;
+    m6sg_virt_filedescr_t* vfd = malloc(sizeof(m6sg_virt_filedescr_t));
+    if (!vfd)
+    {
+        return NULL;
+    }
+
+    // Copy the descriptor since relevant counters (though not array contents) can change
+    pthread_mutex_lock(&(vfd_host->touch_lock));
+    memcpy((void*)vfd, (void*)vfd_host, sizeof(m6sg_virt_filedescr_t));
+    vfd_host->touchblock = ctx_host->startblk + PREFETCH_NUM_BLOCKS_PER_FILE; // *nfiles reduces speed for some reason
+    pthread_mutex_unlock(&(vfd_host->touch_lock));
+
+    // Change to own context
+    ctx = &(vfd->touch_ctxs[my_id]);
+
+    // Find nearest read location
+    for (blk=ctx->startblk; blk<vfd->nblocks; blk++)
+    {
+        if (vfd->blks[blk].file_id == my_id) { break; }
+    }
+
+    // Touch the subsequent PREFETCH_NUM_BLOCKS_PER_FILE blocks page-wise
+    if (blk < vfd->nblocks)
+    {
+        fid      = vfd->blks[blk].file_id;
+        off      = vfd->blks[blk].file_offset;
+        off_inc  = getpagesize();
+        off_stop = off + PREFETCH_NUM_BLOCKS_PER_FILE*vfd->blks[blk].datalen;
+        char* p  = (char*)(vfd->fmmap[fid]);
+        while ((off < vfd->fsize[fid]) && (off < off_stop))
+        {
+            // Reference the data to cause page fault and a kernel
+            // fetch of missing page from underlying mmap()'ed file.
+            // Data is not actually used here. The pages cached by
+            // kernel will however be available in future read() calls.
+            int dummy = p[off];
+            off += off_inc;
+            if (m_m6sg_dbglevel>10) { fprintf(stderr, "thread %2d file %2d dummy=%d\n", my_id, fid, dummy); }
+            ntouched++;
+
+            // Stop of other thread launched
+            if (ctx->tid != ctx_host->tid)
+            {
+                break;
+            }
+        }
+    }
+    free(vfd);
+
+    if (m_m6sg_dbglevel>4) { fprintf(stderr, "thread %2d file %2d inc %zu touched %zu from blk %zu (startblk %zu)\n", my_id, fid, off_inc, ntouched, blk, ctx->startblk); }
+
+    return NULL;
+}
+
+/**
+ * Start several threads to preload the next blocks into kernel page cache.
+ * Simulates mmap(MAP_POPULATE) but does not load the entire files.
+ */
+static int touch_next_blocks(m6sg_virt_filedescr_t* vfd, size_t startblk)
+{
+    int i;
+
+#if 0
+    // Join earlier prefetch
+    for (i=0; i<vfd->nfiles; i++)
+    {
+        pthread_mutex_lock(&(vfd->touch_lock));
+        if (vfd->touch_ctxs[i].tid != 0)
+        {
+            pthread_join(vfd->touch_ctxs[i].tid, NULL);
+            vfd->touch_ctxs[i].tid = 0;
+        }
+        pthread_mutex_unlock(&(vfd->touch_lock));
+    }
+#endif
+
+    // Start new prefetch
+    for (i=0; i<vfd->nfiles; i++)
+    {
+        pthread_mutex_lock(&(vfd->touch_lock));
+        vfd->touch_ctxs[i].idx = i;
+        vfd->touch_ctxs[i].vfd = vfd;
+        vfd->touch_ctxs[i].startblk = startblk;
+        vfd->touch_ctxs[i].endblk = startblk; // unused
+        pthread_create(&(vfd->touch_ctxs[i].tid), NULL, touch_next_blocks_thread, &(vfd->touch_ctxs[i]));
+        pthread_mutex_unlock(&(vfd->touch_lock));
+    }
+
     return 0;
 }

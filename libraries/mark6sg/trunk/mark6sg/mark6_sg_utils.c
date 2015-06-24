@@ -26,21 +26,24 @@
 // $LastChangedDate$
 //
 //============================================================================
+#include "mark6_sg_utils.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glob.h>
 #include <linux/limits.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <jsmn.h> // Jasmine/JSMN C parser library for JSON
 
-#include "mark6_sg_utils.h"
 
 // Global library debug level
 int m_m6sg_dbglevel = 0;
@@ -67,25 +70,157 @@ int m_m6sg_dbglevel = 0;
 // The below structures are adopted from the source code of the
 // Mark6 program 'd-plane' version 1.12:
 
-struct file_header_tag              // file header - one per file
+// File header - one per file
+struct file_header_tag
 {
-    unsigned int sync_word;         // MARK6_SG_SYNC_WORD
-    int version;                    // defines format of file
-    int block_size;                 // length of blocks including header (bytes)
-    int packet_format;              // format of data packets, enumerated below
-    int packet_size;                // length of packets (bytes)
+    uint32_t sync_word;         // MARK6_SG_SYNC_WORD
+    int32_t  version;           // defines format of file
+    int32_t  block_size;        // length of blocks including header (bytes)
+    int32_t  packet_format;     // format of data packets, enumerated below
+    int32_t  packet_size;       // length of packets (bytes)
 };
 
-typedef struct wb_header_tag_v2     // write block header - version 2
+// Write block header - version 2
+typedef struct wb_header_tag_v2
 {
-    int blocknum;                   // block number, starting at 0
-    int wb_size;                    // same as block_size, or occasionally shorter
+    int32_t blocknum;           // block number, starting at 0
+    int32_t wb_size;            // same as block_size, or occasionally shorter
 } wb_header_tag_v2_t;
 
-typedef struct wb_header_tag_v1     // write block header - version 1
+// Write block header - version 1
+typedef struct wb_header_tag_v1
 {
-    int blocknum;                   // block number, starting at 0
+    int32_t blocknum;           // block number, starting at 0
 } wb_header_tag_v1_t;
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+////// Local Functions   /////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+
+typedef struct blklist_thread_ctx_tt {
+    const char*       filename;
+    int               fileidx;
+    m6sg_blockmeta_t* blks;
+    size_t            nallocated;
+    size_t            nblocks;
+} blklist_thread_ctx_t;
+
+
+/**
+ * Helper for qsort() to allow sorting a scatter-gather block list.
+ */
+int m6sg_block_comparefunc(const void* a, const void* b)
+{
+   m6sg_blockmeta_t* A = (m6sg_blockmeta_t*)a;
+   m6sg_blockmeta_t* B = (m6sg_blockmeta_t*)b;
+   return (A->blocknum - B->blocknum);
+}
+
+/**
+ * Thread worker that reads all block headers from one file.
+ */
+static void* thread_extract_file_blocklist(void* v_args)
+{
+    struct file_header_tag  fhdr;
+    struct wb_header_tag_v2 bhdr;
+    size_t bhdr_size;
+    struct stat st;
+
+    blklist_thread_ctx_t* ctx = (blklist_thread_ctx_t*)v_args;
+    ctx->nblocks    = 0;
+    ctx->nallocated = 0;
+    ctx->blks       = NULL;
+
+    FILE* f = fopen(ctx->filename, "r");
+    if (NULL == f)
+    {
+        fprintf(stderr, "thread_extract_file_blocklist: file %2d: could not open %s: %s\n", ctx->fileidx, ctx->filename, strerror(errno));
+        return NULL;
+    }
+
+    // Make good initial guess for #blocks in file
+    stat(ctx->filename, &st);
+    ctx->nallocated = st.st_size/9998760L;
+    ctx->blks = malloc(ctx->nallocated * sizeof(m6sg_blockmeta_t));
+
+    // Read main header
+    memset(&fhdr, 0, sizeof(fhdr));
+    fread(&fhdr, sizeof(fhdr), 1, f);
+    switch (fhdr.version)
+    {
+        case 1:
+            bhdr_size = sizeof(wb_header_tag_v1_t);
+            break;
+        case 2:
+            bhdr_size = sizeof(wb_header_tag_v2_t);
+            break;
+        default:
+            fprintf(stderr, "thread_extract_file_blocklist: file %2d: %s: unsupported Scatter Gather format version %d!", ctx->fileidx, ctx->filename, fhdr.version);
+            fclose(f);
+            return NULL;
+    }
+
+    if (m_m6sg_dbglevel > 1) { printf("thread_extract_file_blocklist: file %2d block size %d bytes, packet size %d bytes\n", ctx->fileidx, fhdr.block_size, fhdr.packet_size); }
+
+    // Read all block headers
+    memset(&bhdr, 0, sizeof(bhdr));
+    while (1)
+    {
+        size_t nrd = fread(&bhdr, bhdr_size, 1, f);
+        if ((nrd != 1) || feof(f))
+        {
+            fclose(f);
+            break;
+        }
+        if (m_m6sg_dbglevel > 1) { printf("File %2d block size %d has nr %d\n", ctx->fileidx, bhdr.wb_size, bhdr.blocknum); }
+
+        // Append block infos to block list
+        if (ctx->nblocks >= ctx->nallocated)
+        {
+            ctx->nallocated = 2*(ctx->nblocks + 1);
+            void* p = realloc(ctx->blks, ctx->nallocated*sizeof(m6sg_blockmeta_t));
+            if (NULL == p)
+            {
+                fprintf(stderr, "thread_extract_file_blocklist: failed to grow in-memory block list to %zu blocks!\n", ctx->nallocated);
+                fclose(f);
+                return NULL;
+            }
+            ctx->blks = (m6sg_blockmeta_t*)p;
+        }
+        ctx->blks[ctx->nblocks].file_id     = ctx->fileidx;
+        ctx->blks[ctx->nblocks].packetsize  = fhdr.packet_size;
+        ctx->blks[ctx->nblocks].blocknum    = bhdr.blocknum;
+        ctx->blks[ctx->nblocks].file_offset = ftell(f); // points to VLBI data, block header was already read/skipped
+        switch (fhdr.version)
+        {
+            case 2:
+                ctx->blks[ctx->nblocks].datalen = bhdr.wb_size - bhdr_size;
+                break;
+            case 1:
+            default:
+                ctx->blks[ctx->nblocks].datalen = fhdr.block_size - bhdr_size;
+                break;
+        }
+
+        // Seek to next block header
+        fseek(f, ctx->blks[ctx->nblocks].datalen, SEEK_CUR);
+        ctx->nblocks++;
+    }
+
+    if (ctx->nblocks == 0)
+    {
+        fprintf(stderr, "thread_extract_file_blocklist: no data found in file %2d.\n", ctx->fileidx);
+    }
+    else
+    {
+        // Pre-sort
+        if (m_m6sg_dbglevel > 0) { printf("File %2d had %zu blocks. Pre-sorting...\n", ctx->fileidx, ctx->nblocks); }
+        qsort((void*)ctx->blks, ctx->nblocks, sizeof(m6sg_blockmeta_t), m6sg_block_comparefunc);
+    }
+
+    return NULL;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -253,15 +388,6 @@ int mark6_sg_filelist_uniques(int nfiles, const char** filenamelist, char*** uni
     return nunique;
 }
 
-/**
- * Helper for qsort() to allow sorting a scatter-gather block list.
- */
-int m6sg_block_comparefunc(const void* a, const void* b)
-{
-   m6sg_blockmeta_t* A = (m6sg_blockmeta_t*)a;
-   m6sg_blockmeta_t* B = (m6sg_blockmeta_t*)b;
-   return (A->blocknum - B->blocknum);
-}
 
 /**
  * Make an ordered list of the scatter-gather blocks in a list of files.
@@ -269,108 +395,59 @@ int m6sg_block_comparefunc(const void* a, const void* b)
  * The output list can be used to look up "linear" byte offsets in a
  * virtual "de-scattered" scan, sans all the metadata of the individual files.
  */
-int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist)
+size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist)
 {
-    FILE*  f[MARK6_SG_MAXFILES];
-    size_t nrd;
-    int    nopened = 0;
-
-    struct file_header_tag  fhdr[MARK6_SG_MAXFILES];
-    struct wb_header_tag_v2 bhdr[MARK6_SG_MAXFILES];
-    size_t bhdr_size = sizeof(wb_header_tag_v2_t);
+    blklist_thread_ctx_t** ctxs;
+    pthread_t* tids;
 
     struct timeval tv_start;
 
     m6sg_blockmeta_t* blks = NULL;
     m6sg_blockmeta_t* prevblk = NULL;
-    int nblocks = 0, nallocated = 0, nmissing = 0;
-    int i, j;
+    size_t nblocks = 0, ncopied = 0, nmissing = 0;
+    size_t i, j;
 
     gettimeofday(&tv_start, NULL);
 
-    if (nfiles > MARK6_SG_MAXFILES)
-    {
-        fprintf(stderr, "mark6_sg_blocklist: nfiles %d > Mark6 limit of %d, will check only the first %d\n", nfiles, MARK6_SG_MAXFILES, MARK6_SG_MAXFILES);
-        nfiles = MARK6_SG_MAXFILES;
-    }
-
-    // Get the file format descriptor of each file
-    memset(&fhdr, 0, sizeof(fhdr));
+    // Create contexts for threads that read out block infos from each file
+    tids = (pthread_t*)malloc(nfiles*sizeof(pthread_t));
+    ctxs = (blklist_thread_ctx_t**)malloc(nfiles*sizeof(blklist_thread_ctx_t*));
     for (i=0; i<nfiles; i++)
     {
-        f[i] = fopen(filenamelist[i], "r");
-        if (NULL == f[i])
-        {
-            fprintf(stderr, "mark6_sg_blocklist: file %2d: could not open %s: %s\n", i, filenamelist[i], strerror(errno));
-            continue;
-        }
-
-        fread(&fhdr[i], sizeof(struct file_header_tag), 1, f[i]);
-        switch (fhdr[i].version)
-        {
-            case 1:
-                bhdr_size = sizeof(wb_header_tag_v1_t);
-                break;
-            case 2:
-                bhdr_size = sizeof(wb_header_tag_v2_t);
-                break;
-            default:
-                fprintf(stderr, "mark6_sg_blocklist: file %2d: %s: unsupported Scatter Gather format version %d!", i, filenamelist[i], fhdr[i].version);
-                fclose(f[i]);
-                continue;
-        }
-
-        nopened++;
-        if (m_m6sg_dbglevel > 0) { printf("mark6_sg_blocklist: file %2d block size %d bytes, packet size %d bytes\n", i, fhdr[i].block_size, fhdr[i].packet_size); }
+        ctxs[i] = (blklist_thread_ctx_t*)malloc(sizeof(blklist_thread_ctx_t));
+        ctxs[i]->fileidx = i;
+        ctxs[i]->filename = filenamelist[i];
     }
 
-    // Get all block descriptors from all files
-    memset(&bhdr, 0, sizeof(bhdr));
-    if (m_m6sg_dbglevel > 0) { printf("Extracting block list from %d files...\n", nfiles); }
-    while (nopened>0)
+    // Start parallel read of block infos
+    for (i=0; i<nfiles; i++)
     {
-        for (i=0; i<nfiles; i++)
+        if(pthread_create(&tids[i], NULL, thread_extract_file_blocklist, ctxs[i]))
         {
-            if (f[i] == NULL) { continue; }
-
-            // Get block header
-            nrd = fread(&bhdr[i], bhdr_size, 1, f[i]);
-            if ((nrd != 1) || feof(f[i]))
-            {
-                fclose(f[i]);
-                f[i] = NULL;
-                nopened--;
-                continue;
-            }
-            if (m_m6sg_dbglevel > 2) { printf("File %2d block size %d has nr %d\n", i, bhdr[i].wb_size, bhdr[i].blocknum); }
-
-            // Append block infos to our block list
-            nblocks++;
-            if (nblocks > nallocated)
-            {
-                nallocated = 2*nblocks;
-                void* p = realloc(blks, nallocated*sizeof(m6sg_blockmeta_t));
-                if (NULL == p)
-                {
-                    fprintf(stderr, "mark6_sg_blocklist: failed to grow in-memory block list to %d blocks!\n", nallocated);
-                    for (j=0; j<nfiles; j++) { fclose(f[j]); }
-                    nopened = 0;
-                    nblocks--;
-                    break;
-                }
-                blks = (m6sg_blockmeta_t*)p;
-            }
-            blks[nblocks-1].file_id     = i;
-            blks[nblocks-1].packetsize  = fhdr[i].packet_size;
-            blks[nblocks-1].blocknum    = bhdr[i].blocknum;
-            blks[nblocks-1].file_offset = ftell(f[i]); // points to VLBI data, block header was already read/skipped
-            blks[nblocks-1].datalen     = (fhdr[i].version == 1) ? (fhdr[i].block_size - bhdr_size) :
-                                          (fhdr[i].version == 2) ? (bhdr[i].wb_size - bhdr_size)    : (fhdr[i].block_size - bhdr_size) ;
-
-            // Seek to next block header
-            fseek(f[i], blks[nblocks-1].datalen, SEEK_CUR);
+            fprintf(stderr, "Error creating thread %zu/%d\n", i+1, nfiles);
+            return 0;
         }
     }
+
+    // Wait for all threads to finish
+    nblocks = 0;
+    for (i=0; i<nfiles; i++)
+    {
+        pthread_join(tids[i], NULL);
+        nblocks += ctxs[i]->nblocks;
+    }
+    blks = malloc(nblocks*sizeof(m6sg_blockmeta_t));
+
+    // Concatenate the thread sub-results into 'blks'
+    ncopied = 0;
+    for (i=0; i<nfiles; i++)
+    {
+        memcpy(&blks[ncopied], ctxs[i]->blks, ctxs[i]->nblocks*sizeof(m6sg_blockmeta_t));
+        ncopied += ctxs[i]->nblocks;
+        free(ctxs[i]->blks);
+        free(ctxs[i]);
+    }
+    free(ctxs);
 
     if (nblocks == 0)
     {
@@ -380,8 +457,9 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
     }
 
     // Sort the block list
-    if (m_m6sg_dbglevel > 0) { printf("Got %d blocks. Sorting...\n", nblocks); }
-    qsort((void*)blks, nblocks, sizeof(m6sg_blockmeta_t), m6sg_block_comparefunc);
+    if (m_m6sg_dbglevel > 0) { printf("Got %zu blocks. Sorting...\n", nblocks); }
+    qsort((void*)blks, nblocks, sizeof(m6sg_blockmeta_t), m6sg_block_comparefunc); // if random
+    // mergesort((void*)blks, nblocks, sizeof(m6sg_blockmeta_t), m6sg_block_comparefunc); // if partly pre-sorted; libbsd required
 
     // Go through the block list and calculate "virtual" byte offsets
     prevblk = &blks[0];
@@ -403,7 +481,7 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
         prevblk = &blks[i];
     }
 
-    if (m_m6sg_dbglevel > 1)
+    if (m_m6sg_dbglevel > 0)
     {
         struct timeval tv_stop;
         gettimeofday(&tv_stop, NULL);
@@ -414,18 +492,19 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
     {
         for (i=0; i<nblocks; i++)
         {
-            printf("Blocklist %2d --> file %2d, blocknum %2d, virt offset %ld\n", i, blks[i].file_id, blks[i].blocknum, blks[i].virtual_offset);
+            printf("Blocklist %2zu --> file %2d, blocknum %2d, virt offset %ld\n", i, blks[i].file_id, blks[i].blocknum, blks[i].virtual_offset);
         }
     }
 
     if (nmissing > 0)
     {
-        fprintf(stderr, "Scan is missing %d blocks of data, possibly due to a missing scatter-gather file.\n", nmissing);
+        fprintf(stderr, "Scan is missing %zu blocks of data, possibly due to a missing scatter-gather file.\n", nmissing);
     }
 
     *blocklist = blks;
     return nblocks;
 }
+
 
 /**
  * Read the context of all Mark6 SG metadata files, i.e., the 'slist' (JSON) and 'group' (flat text)

@@ -1,6 +1,6 @@
 
 
-  == Mark6 Scatter-Gather File Abstraction : mark6sg v1.0.0 ==
+  == Mark6 Scatter-Gather File Abstraction : mark6sg v1.10.0 ==
 
 
 The library is available under a GNU GPL 3.0 license.
@@ -8,16 +8,26 @@ The library is available under a GNU GPL 3.0 license.
 The library provides file-like access to recordings made in 
 the Mark6 SG (scatter-gather) mode. Documentation on how
 to use the library from user programs can be found under 
-the doc/ directory.
+the doc/ directory. The VLBI data in such recordings can
+be in any format i.e. even malformed VDIF data is fine.
 
-An example program can be found under test/
+Directories
 
-See COMPILING for instructions to build the library.
+  ./doc/     : Basic documentation
+  ./mark6sg/ : The actual library source code
+  ./jsmn/    : A copy of the required Jasmin JSON parser
+  ./test/    : An example program for using the library
+  ./extra/   : Some utilities using the library
+
+See ./COMPILING for instructions to build the library.
 
 The last step ('sudo make install') will install the library, 
 header files, and a package config file. You may check if
 the latter worked via
-  pkg-config --cflags mark6sg
+
+$ pkg-config --cflags mark6sg
+
+Extra utilities:
 
 $ m6sg_mount [-u]
 
@@ -36,9 +46,14 @@ $ m6sg_gather [--list | <scanname> <destination|->]
  When invoked with --list, all scans on the Mark6 disks are listed.
  These scan names can be used as the <scanname> argument later.
 
-$ fuseMk6 /mnt/mark6sg
+$ mk6copy [-s] <scanname> <destination>
 
- A simple file system example based on 'mark6sg' library functions. 
+ Quite similar to 'm6sg_gather' but with less features.
+ Shows progress and throughput when started with -s.
+
+$ fuseMk6 [-v [-v] [-v] ...] /mnt/mark6sg
+
+ A simple file system example based on 'mark6sg' library functions.
 
  This FUSE-based file system presents scatter-gather filesets as single files.
 
@@ -50,16 +65,56 @@ $ fuseMk6 /mnt/mark6sg
 
    1) scan size : the Mark6 'slist' metadata contains only an inexact estimate
 
-      This means that the size of "files" listed under /mnt/mark6sg 
+      This means that the size of "files" listed under /mnt/mark6sg
       can change somewhat at the first time they are opened.
       Only when a "file" is opened will the mark6sg library calculate
       the true scan length, accounting also for example for lost disks.
 
    2) scan timestamp : the Mark6 'slist' metadata has some kind of timestamp
 
-      This time stamp from 'slist' is used as the "file" modification 
+      This time stamp from 'slist' is used as the "file" modification
       date&time, shown when doing e.g. an "ls -al /mnt/mark6sg".
 
       The timestamp appears to match the scan data start time (e.g.,
       the first VDIF frame time stamp), but it is not certain whether
       this will really always be the case (depends on Mark6 cplane/dplane).
+
+ For performance tests, clear the page cache before benchmarking:
+
+    echo 3 > /proc/sys/vm/drop_caches
+
+
+Comparative benchmarks for libmark6sg
+
+   Recording test_KY_170-0829.vdif of 303GB is striped accross 16 disks.
+
+   == vdifuse 0.15 ==
+   $ echo 3 > /proc/sys/vm/drop_caches
+   $ vdifuse -a /mnt/vdifuse-cache/cachefile -xm6sg -xrate=12500 /mnt/vdifuse /mnt/disks/[1-2]/[0-7]   
+   $ dd if=/mnt/vdifuse/sequences/test/KY/170-0829.vdif of=/dev/null bs=1M count=$((50*1024))
+   53687091200 bytes (54 GB) copied, 320.684 s, 155 MB/s
+
+   == mark6sg (libmark6sg v1.10) ==
+   $ echo 3 > /proc/sys/vm/drop_caches
+   $ fuseMk6 /mnt/mark6sg
+   $ dd if=/mnt/mark6sg/test_KY_170-0829.vdif of=/dev/null bs=1M count=$((50*1024))
+   53687091200 bytes (54 GB) copied, 58.0031 s, 926 MB/s
+   (of the 58s about 12s were overhead to initially extract all scatter-gather metadata)
+
+   == mk6copy (libmark6sg v1.10) ==
+   $ echo 3 > /proc/sys/vm/drop_caches
+   $ mk6copy -s test_KY_170-0829.vdif /dev/null  # timing excludes initial metadata scan
+   ... Copied: 27.04/303.0 GB     Mark6 read: 2183.99 MB/s     File write: 3604443.17 MB/s
+
+   == gather (MIT Haystack; version with added stdout support) ==
+   $ echo 3 > /proc/sys/vm/drop_caches
+   $ gather /mnt/disks/[1-2]/[0-7]/test_KY_170-0829.vdif - | pv > /dev/null
+   ... 57GB 0:00:39 [1.46GB/s]
+
+   == MD5SUM of vdifuse and fuseMk6 outputs ==
+
+   $ dd if=/mnt/vdifuse/sequences/test/KY/170-0829.vdif bs=10M count=32 | md5sum
+   44025ce2382eb108a1d15ebaf7959a09 -
+
+   $ dd if=/mnt/mark6sg/test_KY_170-0829.vdif bs=10M count=32 | md5sum
+   44025ce2382eb108a1d15ebaf7959a09 -

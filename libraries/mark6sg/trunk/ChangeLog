@@ -1,2 +1,12 @@
+Version 1.1.0
+* libmark6sg: new mark6_sg_stripesize() API function
+* libmark6sg: blocklist extraction with one thread per file for major speedup
+* libmark6sg: read functionality reimplemented via mmap()
+* libmark6sg: added background threads that touch upcoming mmap()'ed pages,
+              causing kernel to prefetch the pages in parallel from all files
+              and giving factor ~10 higher throughput (now ~1 GB/s)
+* fuseMk6: new command line option -v
+* mk6copy: simple copying utility like 'm6sg_gather' but with timing reports
+
 Version 1.0.0
 * Support the Mark6 Scatter-Gather formats v1 and v2
