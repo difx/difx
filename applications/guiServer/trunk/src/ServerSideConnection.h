@@ -120,7 +120,6 @@ namespace guiServer {
         //!  multicast group and port settings.
         //---------------------------------------------------------------------
         void startMulticastMonitor() {
-        printf( "starting multicast monitor\n" );
             //  Shut down the existing monitor if there is one.
             if ( _monitorSocket != NULL ) {
                 _monitorSocket->closeFd();
