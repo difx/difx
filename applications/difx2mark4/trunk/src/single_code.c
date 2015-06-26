@@ -11,7 +11,8 @@ char single_code (char *station)
 
     char c,
          *fname,
-         buff[5];
+         *frc,
+         buff[16];
 
     static int first_time = TRUE,
                ncodes;
@@ -44,14 +45,16 @@ char single_code (char *station)
                 }
             do
                 {
-                rc = fread (buff, sizeof(char), 5, fin);  
+                frc = fgets (buff, sizeof(buff)-2, fin);
                                     // strip off lf character
-                memcpy (codes[i], buff, 4);
+                if (frc != NULL && strlen(buff) >= 4)
+                    memcpy (codes[i++], buff, 4);
                 }
             while
-                 (rc > 0 && ++i < 500);
+                 (!feof(fin) && i < 500);
                                     // fell out of loop, append the default table
             }
+                                    // append hard-coded list of stations
         memcpy (codes[i], code_table[0], 208);
         ncodes = i + 52;
         first_time = FALSE;
