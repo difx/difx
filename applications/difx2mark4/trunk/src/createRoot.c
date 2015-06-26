@@ -659,6 +659,11 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                 valtime.minute, (int)valtime.second, -(D->antenna+n)->clockcoeff[0],
                 caltime.year, caltime.day, caltime.hour,
                 caltime.minute, (int)caltime.second, -1e-6 * (D->antenna+n)->clockcoeff[1]);
+            if (!isalnum((stns + n)->intl_name[0]))
+                {
+                printf ("Warning! Station %d has non-alphanumeric name %c%c (%02x%02x in hex).\n",
+                    n, (stns + n)->intl_name[0], (stns + n)->intl_name[1]);
+                }
             }
 
         //FIXME output difxio EOPs
