@@ -547,6 +547,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
             return(-1);
             }
         printf ("      number of stations: %d\n", nsite);
+        if (nsite != nant)
+            printf ("Warning! Got %d stations ($SITE) but %d antennas ($STATION).\n", nsite, nant);
                                     // append extra statements to the end of the file
 
                                     // generate $FREQ block
@@ -666,8 +668,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                 caltime.minute, (int)caltime.second, -1e-6 * (D->antenna+n)->clockcoeff[1]);
             if (!isalnum((stns + n)->intl_name[0]))
                 {
-                printf ("Warning! Station '%c%c' has non-alphanumeric name '%c%c'. "
-                  "Check your $HOPS_STATION_CODE file.\n",
+                printf ("Warning! Station '%c%c' has non-alphanumeric site_ID of 0x%02X 0x%02X in hex.\n",
                     (stns + n)->difx_name[0], (stns + n)->difx_name[1],
                     (stns + n)->intl_name[0], (stns + n)->intl_name[1]);
                 }
