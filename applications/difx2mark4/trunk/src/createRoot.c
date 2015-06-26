@@ -666,8 +666,10 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                 caltime.minute, (int)caltime.second, -1e-6 * (D->antenna+n)->clockcoeff[1]);
             if (!isalnum((stns + n)->intl_name[0]))
                 {
-                printf ("Warning! Station %d has non-alphanumeric name %c%c (%02x%02x in hex).\n",
-                    n, (stns + n)->intl_name[0], (stns + n)->intl_name[1]);
+                printf ("Warning! Station '%c%c' has non-alphanumeric name '%c%c'. "
+                  "Check your $HOPS_STATION_CODE file.\n",
+                    (stns + n)->difx_name[0], (stns + n)->difx_name[1],
+                    (stns + n)->intl_name[0], (stns + n)->intl_name[1]);
                 }
             }
 
