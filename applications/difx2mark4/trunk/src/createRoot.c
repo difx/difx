@@ -585,7 +585,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                     if (pfb[i].stn[k].pcal_int != 0
                      && pfb[i].stn[k].pcal_int != 1
                      && pfb[i].stn[k].pcal_int != 5
-                     && pfb[i].stn[k].pcal_int != 10)
+                     && pfb[i].stn[k].pcal_int != 10
+                     && pfb[i].stn[k].pcal_int != 200)
                         printf ("Warning! Pcal interval of %d MHz has no BBC statement.\n",
                                 pfb[i].stn[k].pcal_int);
                     ik = i;         // save i for which k applied
@@ -597,27 +598,31 @@ int createRoot (DifxInput *D,           // difx input structure pointer
             }
         fprintf (fout, "$BBC;\n");
         fprintf (fout, "  def bbcs;\n");
-        fprintf (fout, "    BBC_assign = &BBCL0 : 01 : &IFL0;\n");
-        fprintf (fout, "    BBC_assign = &BBCR0 : 02 : &IFR0;\n");
-        fprintf (fout, "    BBC_assign = &BBCL1 : 03 : &IFL1;\n");
-        fprintf (fout, "    BBC_assign = &BBCR1 : 04 : &IFR1;\n");
-        fprintf (fout, "    BBC_assign = &BBCL5 : 05 : &IFL5;\n");
-        fprintf (fout, "    BBC_assign = &BBCR5 : 06 : &IFR5;\n");
-        fprintf (fout, "    BBC_assign = &BBCL10: 07 : &IFL10;\n");
-        fprintf (fout, "    BBC_assign = &BBCR10: 08 : &IFR10;\n");
+        fprintf (fout, "    BBC_assign = &BBCL0  : 01 : &IFL0;\n");
+        fprintf (fout, "    BBC_assign = &BBCR0  : 02 : &IFR0;\n");
+        fprintf (fout, "    BBC_assign = &BBCL1  : 03 : &IFL1;\n");
+        fprintf (fout, "    BBC_assign = &BBCR1  : 04 : &IFR1;\n");
+        fprintf (fout, "    BBC_assign = &BBCL5  : 05 : &IFL5;\n");
+        fprintf (fout, "    BBC_assign = &BBCR5  : 06 : &IFR5;\n");
+        fprintf (fout, "    BBC_assign = &BBCL10 : 07 : &IFL10;\n");
+        fprintf (fout, "    BBC_assign = &BBCR10 : 08 : &IFR10;\n");
+        fprintf (fout, "    BBC_assign = &BBCL200: 09 : &IFL200;\n");
+        fprintf (fout, "    BBC_assign = &BBCR200: 10 : &IFR200;\n");
         fprintf (fout, "  enddef;\n");
         
         fprintf (fout, "$IF;\n");
         fprintf (fout, "  def ifs;\n");
                                    
-        fprintf (fout, "    if_def = &IFL0 : 1N : L : 10000.0 MHz : U : 0 MHz : 0 Hz;\n");
-        fprintf (fout, "    if_def = &IFR0 : 2N : R : 10000.0 MHz : U : 0 MHz : 0 Hz;\n");
-        fprintf (fout, "    if_def = &IFL1 : 1N : L : 10000.0 MHz : U : 1 MHz : 0 Hz;\n");
-        fprintf (fout, "    if_def = &IFR1 : 2N : R : 10000.0 MHz : U : 1 MHz : 0 Hz;\n");
-        fprintf (fout, "    if_def = &IFL5 : 1N : L : 10000.0 MHz : U : 5 MHz : 0 Hz;\n");
-        fprintf (fout, "    if_def = &IFR5 : 2N : R : 10000.0 MHz : U : 5 MHz : 0 Hz;\n");
-        fprintf (fout, "    if_def = &IFL10: 1N : L : 10000.0 MHz : U :10 MHz : 0 Hz;\n");
-        fprintf (fout, "    if_def = &IFR10: 2N : R : 10000.0 MHz : U :10 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFL0 : 1N : L : 10000.0 MHz : U :   0 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFR0 : 2N : R : 10000.0 MHz : U :   0 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFL1 : 1N : L : 10000.0 MHz : U :   1 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFR1 : 2N : R : 10000.0 MHz : U :   1 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFL5 : 1N : L : 10000.0 MHz : U :   5 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFR5 : 2N : R : 10000.0 MHz : U :   5 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFL10: 1N : L : 10000.0 MHz : U :  10 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFR10: 2N : R : 10000.0 MHz : U :  10 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFL200:1N : L : 10000.0 MHz : U : 200 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFR200:2N : R : 10000.0 MHz : U : 200 MHz : 0 Hz;\n");
         fprintf (fout, "  enddef;\n");
         
         fprintf (fout, "$TRACKS;\n");
