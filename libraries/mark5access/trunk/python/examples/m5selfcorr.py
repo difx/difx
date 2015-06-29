@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 """
 m5selfcorr.py ver. 1.0   Jan Wagner  20150619
 
