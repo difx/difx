@@ -224,7 +224,6 @@ void ServerSideConnection::runMachinesDefinition( MachinesDefinitionInfo* machin
         if ( S->testProcessors ) {
             monitor->sendPacket( MACHINE_DEF_RUNNING_MPIRUN_TESTS, NULL, 0 );
             for ( i = processNodes.begin(); i != processNodes.end(); ) {
-                printf( "%s %d\n", i->c_str(), *j );
                 snprintf( nodename, MAX_COMMAND_SIZE, "%s", i->c_str() );
                 //  Create a test file name.
                 snprintf( testPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/test_%s", workingDir, nodename );

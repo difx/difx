@@ -442,6 +442,9 @@ namespace guiServer {
                 else if ( strstr( thisPtr, "LOAD_MESSAGES" ) != NULL ) {
                     _relayLoadPackets = true;
                 } 
+                else if ( strstr( thisPtr, "MARK5STATUS_MESSAGES" ) != NULL ) {
+                    _relayMark5StatusPackets = true;
+                } 
                 else if ( strstr( thisPtr, "MACHINESDEFINITION_MESSAGES" ) != NULL ) {
                     _relayMachinesDefinitionPackets = true;
                 } 
@@ -462,9 +465,6 @@ namespace guiServer {
                 } 
                 else if ( strstr( thisPtr, "WEIGHT_MESSAGES" ) != NULL ) {
                     _relayWeightPackets = true;
-                } 
-                else if ( strstr( thisPtr, "MARK5STATUS_MESSAGES" ) != NULL ) {
-                    _relayMark5StatusPackets = true;
                 } 
                 else if ( strstr( thisPtr, "UNKNOWN_MESSAGES" ) != NULL ) {
                     _relayUnknownPackets = true;
