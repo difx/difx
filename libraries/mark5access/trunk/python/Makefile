@@ -1,6 +1,6 @@
 ### Standard targets
 AUTOGENFILES := mark5_stream_tmp.h mark5access_api.xml mark5access/mark5access.py
-SCRIPTS := examples/m5stat.py examples/m5subband.py examples/m5time.py examples/m5spec.py examples/m5tone.py
+SCRIPTS := examples/m5stat.py examples/m5subband.py examples/m5time.py examples/m5spec.py examples/m5tone.py examples/m5selfcorr.py
 DOCS := AUTHORS COMPILING LICENSE.txt README TODO
 
 all: depcheck mark5access/mark5access.py 
