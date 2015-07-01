@@ -10,9 +10,16 @@
 //
 //==============================================================================
 #include <string.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <network/TCPSocket.h>
+
+//------------------------------------------------------------------------------------
+//  Do-nothing signal handler for SIGPIPEs.  These occur occasionally during writes
+//  to a busted socket.  Avoids killing the whole server.
+//------------------------------------------------------------------------------------
+void sigHandler(int signo) {}
 
 namespace network {
 
@@ -77,6 +84,12 @@ namespace network {
             
             _serverUp = true;
 
+            //  Avoid killing the whole server on a bad socket write.
+            struct sigaction act;
+            memset(&act, 0, sizeof(act));
+            act.sa_handler = sigHandler;
+            sigaction(SIGPIPE, &act, NULL);
+
         }
 
         //----------------------------------------------------------------------------
@@ -86,6 +99,7 @@ namespace network {
             if ( _listenFd > -1 )
                 close( _listenFd );
         }
+
 
         //----------------------------------------------------------------------------
         //  Wait for a client connection.  If one occurs, return a pointer to a new
