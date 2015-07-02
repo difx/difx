@@ -78,59 +78,59 @@ def getUsage():
 
 class Parser:
 
-    def __init__(self):
-        self._parser = expat.ParserCreate()
-        self._parser.StartElementHandler = self.start
-        self._parser.EndElementHandler = self.end
-        self._parser.CharacterDataHandler = self.data
-	self.message = ''
-	self.mjd = 0.0
-	self.state = ''
-	self.tmp = ''
-	self.ok = False
-	self.unit = ''
-	self.mpiId = -1
-	self.id = ''
-	self.tag = ''
+	def __init__(self):
+		self._parser = expat.ParserCreate()
+		self._parser.StartElementHandler = self.start
+		self._parser.EndElementHandler = self.end
+		self._parser.CharacterDataHandler = self.data
+		self.message = ''
+		self.mjd = 0.0
+		self.state = ''
+		self.tmp = ''
+		self.ok = False
+		self.unit = ''
+		self.mpiId = -1
+		self.id = ''
+		self.tag = ''
 
-    def feed(self, data):
-        self._parser.Parse(data, 0)
+	def feed(self, data):
+		self._parser.Parse(data, 0)
 
-    def close(self):
-        self._parser.Parse("", 1) # end of data
-        del self._parser # get rid of circular references
+	def close(self):
+		self._parser.Parse("", 1) # end of data
+		del self._parser # get rid of circular references
 
-    def start(self, tag, attrs):
-        self.tag = tag
-        self.tmp = ''
-        if tag == 'difxStatus':
-                self.ok = True
+	def start(self, tag, attrs):
+		self.tag = tag
+		self.tmp = ''
+		if tag == 'difxStatus':
+			self.ok = True
 
-    def end(self, tag):
-        if tag == 'message' and self.ok:
-		self.message = self.tmp
-	elif tag == 'state':
-		self.state = self.tmp
-	elif tag == 'visibilityMJD':
-		self.mjd = float(self.tmp)
-	elif tag == 'from':
-		self.unit = lower(self.tmp)
-	elif tag == 'identifier':
-		self.id = self.tmp
-	elif tag == 'mpiProcessId':
-		self.mpiId = int(self.tmp)
+	def end(self, tag):
+		if tag == 'message' and self.ok:
+			self.message = self.tmp
+		elif tag == 'state':
+			self.state = self.tmp
+		elif tag == 'visibilityMJD':
+			self.mjd = float(self.tmp)
+		elif tag == 'from':
+			self.unit = lower(self.tmp)
+		elif tag == 'identifier':
+			self.id = self.tmp
+		elif tag == 'mpiProcessId':
+			self.mpiId = int(self.tmp)
 
-    def data(self, data):
-        if self.tag == 'message':
-            self.tmp = self.tmp + data	
-        else:
-            self.tmp = data
+	def data(self, data):
+		if self.tag == 'message':
+			self.tmp = self.tmp + data	
+		else:
+			self.tmp = data
 
-    def getInfo(self):
-	if self.ok:
-        	return 'MPI[%2d] %-9s %-12s %-7s %s' % (self.mpiId, self.unit, self.id, self.state, self.message)
-	else:
-		return ''
+	def getInfo(self):
+		if self.ok:
+			return 'MPI[%2d] %-9s %-12s %-7s %s' % (self.mpiId, self.unit, self.id, self.state, self.message)
+		else:
+			return ''
 
 def watchJob(jobId):
 	
@@ -158,25 +158,73 @@ def watchJob(jobId):
 	try:
 		while 1:
 			try:
-			    message = s.recv(1500)
-			    if len(message) > 0 and message[0] == '<':
-				p = Parser()
-				p.feed(message)
-				info = p.getInfo()
-				p.close()
-				now = time()
+				message = s.recv(1500)
+				if len(message) > 0 and message[0] == '<':
+					p = Parser()
+					p.feed(message)
+					info = p.getInfo()
+					p.close()
+					now = time()
 	#			print now
-				if p.ok and p.id == jobId:
-					if p.state == 'Running':
-						if verbose > 0:
-							stdout.write('.')
-							stdout.flush()
-					else:
-						if verbose > 0:
-							stdout.write("<%s>" % p.state)
-							stdout.flush()
-					if p.state == 'MpiDone' or p.state == 'Crashed':
-						return
+					if p.ok and p.id == jobId:
+						if p.state == 'Running':
+							if verbose > 0:
+								stdout.write('.')
+								stdout.flush()
+						else:
+							if verbose > 0:
+								stdout.write("<%s>" % p.state)
+								stdout.flush()
+						if p.state == 'MpiDone' or p.state == 'Crashed':
+							return
+			except socket.timeout:
+				pass
+	except KeyboardInterrupt:
+		pass
+	
+	if verbose > 1:
+			print 'Watching %s:' % jobId
+
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+			print 'DIFX_MESSAGE_PORT needs to be defined'
+			exit(0)
+	else:
+			port = int(port)
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+			print 'DIFX_MESSAGE_GROUP needs to be defined'
+			exit(0)
+
+	# FIXME: eventually migrate to IPv6 compliant multicast receive
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.bind(('', port))
+	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+	try:
+		while 1:
+			try:
+				message = s.recv(1500)
+				if len(message) > 0 and message[0] == '<':
+					p = Parser()
+					p.feed(message)
+					info = p.getInfo()
+					p.close()
+					now = time()
+					#			print now
+					if p.ok and p.id == jobId:
+						if p.state == 'Running':
+							if verbose > 0:
+								stdout.write('.')
+								stdout.flush()
+						else:
+							if verbose > 0:
+								stdout.write("<%s>" % p.state)
+								stdout.flush()
+						if p.state == 'MpiDone' or p.state == 'Crashed':
+							return
 			except socket.timeout:
 				pass
 	except KeyboardInterrupt:
@@ -189,7 +237,8 @@ def updateMpiOptions():
 	if opt is not None:
 		mpiOptions = opt
 
-        
+
+	
 def updateEnvironment(filename):
 	
 	savedEnvironment = []
@@ -282,18 +331,18 @@ def sendMessage(fileBase, state, statusmessage):
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
 		"<difxMessage>" \
 		  "<header>" \
-		    "<from>%s</from>" \
-		    "<mpiProcessId>-1</mpiProcessId>" \
-		    "<identifier>%s</identifier>" \
-		    "<type>DifxStatusMessage</type>" \
+			"<from>%s</from>" \
+			"<mpiProcessId>-1</mpiProcessId>" \
+			"<identifier>%s</identifier>" \
+			"<type>DifxStatusMessage</type>" \
 		  "</header>" \
 		  "<body>" \
-		    "<seqNumber>-1</seqNumber>" \
-		    "<difxStatus>" \
-		      "<state>%s</state>" \
-		      "<message>%s</message>" \
-		      "<visibilityMJD>0</visibilityMJD>" \
-		    "</difxStatus>" \
+			"<seqNumber>-1</seqNumber>" \
+			"<difxStatus>" \
+			  "<state>%s</state>" \
+			  "<message>%s</message>" \
+			  "<visibilityMJD>0</visibilityMJD>" \
+			"</difxStatus>" \
 		  "</body>" \
 		"</difxMessage>\n" % \
 		(socket.gethostname(), identifier, state, statusmessage)
@@ -378,21 +427,21 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
 		"<difxMessage>" \
 		  "<header>" \
-		    "<from>startdifx</from>" \
-		    "<to>%s</to>" \
-		    "<mpiProcessId>-1</mpiProcessId>" \
-		    "<identifier>%s</identifier>" \
-		    "<type>DifxStart</type>" \
+			"<from>startdifx</from>" \
+			"<to>%s</to>" \
+			"<mpiProcessId>-1</mpiProcessId>" \
+			"<identifier>%s</identifier>" \
+			"<type>DifxStart</type>" \
 		  "</header>" \
 		  "<body>" \
-		    "<difxStart>" \
-		      "<input>%s</input>" \
-		      "<manager node=\"%s\"/>" \
-		      "<datastream nodes=\"%s\"/>" \
-		      "%s" \
-		      "<difxVersion>%s</difxVersion>" \
-		      "%s" \
-		    "</difxStart>" \
+			"<difxStart>" \
+			  "<input>%s</input>" \
+			  "<manager node=\"%s\"/>" \
+			  "<datastream nodes=\"%s\"/>" \
+			  "%s" \
+			  "<difxVersion>%s</difxVersion>" \
+			  "%s" \
+			"</difxStart>" \
 		  "</body>" \
 		"</difxMessage>\n" % \
 		(headNode, identifier, inputFile, corrHeadNode, dataStreams, processors, difxVersion, restartOption)
@@ -471,8 +520,8 @@ def doMachines(fileBase, machinesPolicy, cache):
 	return len(open(machinesFile).readlines())
 
 def handler(signum, frame):
-    print 'Signal handler called with signal', signum
-    exit(0)
+	print 'Signal handler called with signal', signum
+	exit(0)
 
 # Start difx with DifxStartMessage
 def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds):
@@ -487,13 +536,13 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 	if not isfile(fileBase+'.im'):
 		if makeModel and isfile(fileBase+'.calc'):
 			calcOptions = ""
-                        if override:
-                                calcOptions += "--override-version "
+			if override:
+				calcOptions += "--override-version "
 
-                        for i in range(verbose):
-                                calcOptions += "-v "
+			for i in range(verbose):
+				calcOptions += "-v "
 
-                        system('%s %s %s.calc' % (calcif, calcOptions, fileBase))
+			system('%s %s %s.calc' % (calcif, calcOptions, fileBase))
 	
 		else:
 			return 'Error: model not available for %s' % fileBase
@@ -558,7 +607,7 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 			system('rm -rf %s.difx' % fileBase)
 		else:
 			print 'Warning: output file %s.difx exists' % fileBase
-                        return
+			return
 	
 	np = doMachines(fileBase, machinesPolicy, machinesCache)
 	if np <= 0:
@@ -669,30 +718,30 @@ fb = None
 for a in args[start:]:
 	# check for extension
 	if a[-6:] == '.input':
-                fb = a[:-6]
+		fb = a[:-6]
 	elif a[-8:] == '.joblist':
-                d = open(a).readlines()
-                for l in d:
-                        parts = l.split()
-                        if len(parts) == 0:
-                                job = strip(l)
-                        else:
-                                job = strip(parts[0])
+		d = open(a).readlines()
+		for l in d:
+			parts = l.split()
+			if len(parts) == 0:
+				job = strip(l)
+			else:
+				job = strip(parts[0])
 
-                        if job.startswith("#") or job.startswith("exper"):
-                                continue
-                        if parts[0] == '/':
-                                fileBaseList.append(parts[0])
-                        else:
-                                fileBaseList.append(cwd + '/' + parts[0])
-        else:
-                fb = a
+			if job.startswith("#") or job.startswith("exper"):
+				continue
+			if parts[0] == '/':
+				fileBaseList.append(parts[0])
+			else:
+				fileBaseList.append(cwd + '/' + parts[0])
+	else:
+		fb = a
 
 	if fb != None:
-        	if fb[0] == '/':
-                        fileBaseList.append(a)
-                else:
-                        fileBaseList.append(cwd + '/' + fb)
+		if fb[0] == '/':
+			fileBaseList.append(a)
+		else:
+			fileBaseList.append(cwd + '/' + fb)
 	
 # verify that joblist is not empty
 if len(fileBaseList) < 1:
