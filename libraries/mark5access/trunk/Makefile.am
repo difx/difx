@@ -12,7 +12,7 @@ EXTRA_DIST = \
 	TODO \
 	mark5access.spec.in
 
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = $(SUBDIRS) python
 
 dist-hook: mark5access.spec
 	cp mark5access.spec $(distdir)
