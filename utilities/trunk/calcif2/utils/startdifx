@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2012 by Walter Brisken and Helge Rottmann          *
+#   Copyright (C) 2008-2015 by Walter Brisken and Helge Rottmann          *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '2.3.0'
-VERDATE = '20131108'
+VERSION = '2.3.1'
+VERDATE = '20150702'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -183,6 +183,13 @@ def watchJob(jobId):
 		pass
 
 
+def updateMpiOptions():
+	global mpiOptions
+	opt = getenv('DIFX_MPIRUNOPTIONS')
+	if opt is not None:
+		mpiOptions = opt
+
+        
 def updateEnvironment(filename):
 	
 	savedEnvironment = []
@@ -618,6 +625,7 @@ restartSeconds = 0.0
 fileBaseList = []
 cwd = getcwd()
 machinesCache = ['','',['Nothing to see here']]
+updateMpiOptions()
 
 signal.signal(signal.SIGINT, handler)
 
