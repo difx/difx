@@ -33,6 +33,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <dirent.h>
 #include <string.h>
@@ -49,7 +51,7 @@ const char verdate[] = "2015 May 21";
 
 const int MJD_UNIX0 = 40587;	// MJD at beginning of unix time
 
-static long eofReadLength = (80000+40000);
+static int64_t eofReadLength = (80000+40000);
 
 int die = 0;
 
@@ -91,10 +93,10 @@ int is_reasonable_timediff(double startmjd, double stopmjd)
 	return ( (startmjd <= stopmjd) && ((stopday-startday) <= 1) );
 }
 
-struct mark5_stream *openmk5(const char *filename, const char *formatname, long *offset)
+struct mark5_stream *openmk5(const char *filename, const char *formatname, int64_t *offset)
 {
 	struct mark5_stream *ms;
-	long offset0 = *offset;
+	int64_t offset0 = *offset;
 	char did_fail = 0;
 	while (1) {
                 ms = new_mark5_stream_absorb(
@@ -105,7 +107,7 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, long 
                 {
 			if (*offset < (offset0 + 32*43500L))
 			{
-                        	fprintf(stderr, "problem at initial decode of %s at offset %lld, trying new offset\n", filename, (long long int)(*offset));
+                        	fprintf(stderr, "problem at initial decode of %s at offset %"PRId64", trying new offset\n", filename, *offset);
 				*offset += 43500;
 				did_fail = 1;
 				continue;
@@ -120,11 +122,11 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, long 
                 {
 			if (did_fail)
 			{
-				fprintf(stderr, "decode %s at offset %lld succeeded\n\n", filename, (long long int)(*offset));
+				fprintf(stderr, "decode %s at offset %"PRId64" succeeded\n\n", filename, *offset);
 			}
                         break;
                 }
-                fprintf(stderr, "File offset %ld: decoded suspect sample rate %d, trying new offset\n", *offset, ms->samprate);
+                fprintf(stderr, "File offset %"PRId64": decoded suspect sample rate %d, trying new offset\n", *offset, ms->samprate);
                 delete_mark5_stream(ms);
                 (*offset) += 43500;
 	}
@@ -138,7 +140,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 	int status = 0, corrupt = 0;
 	int mjd, sec;
         double ns, startmjd, stopmjd = 0.0, eofmjd = 0.0;
-	long validoffset = 0;
+	int64_t validoffset = 0;
 
 	// open with seeking to first valid-looking frame pair
 	ms = openmk5(filename, formatname, &validoffset);
@@ -158,14 +160,11 @@ int verify(const char *filename, const char *formatname, int refMJD)
 	stopmjd = startmjd;
 	eofReadLength = ms->datawindowsize;
 
-	FILE *fp = fopen(filename, "rb");
+	struct stat st;
+	stat(filename, &st);
+	int64_t length = st.st_size;
 
-	fseek (fp,0L,SEEK_END);
-        long length = ftell(fp);
-        fclose (fp);
-
-
-	long numFrames = length / ms->framebytes;
+	int64_t numFrames = length / ms->framebytes;
 	double jumpNs = numFrames * ms->framens;
 
 	double skipNs = ns + jumpNs;
