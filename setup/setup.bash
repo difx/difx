@@ -8,7 +8,8 @@ export PGPLOTDIR=
 export IPPROOT=/opt/intel/ipp/5.2/ia32
 
 ####### COMPILER ############################
-export MPICXX=/usr/bin/mpicxx
+export DIFXMPIDIR=/usr
+export MPICXX="${DIFXMPIDIR}"/bin/mpicxx
 
 ####### LIBRARY PATHS #######################
 ####### Uncomment and modify if needed, #####
@@ -94,7 +95,8 @@ else
 fi
 
 ####### LIBRARY/EXECUTABLE PATHS ############
-PrependPath PATH             ${DIFXROOT}/bin
+PrependPath PATH             "${DIFXMPIDIR}"/bin
+PrependPath PATH             "${DIFXROOT}"/bin
 if [ -z "${IPP_LIBRARY_PATH}" ]; then
     PrependPath LD_LIBRARY_PATH "${IPP_LIBRARY_PATH}"
 fi

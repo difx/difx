@@ -9,8 +9,9 @@ setenv DIFX_PREFIX $DIFXROOT
 setenv PGPLOTDIR 
 setenv IPPROOT /opt/intel/ipp/5.2/ia32
 
-####### COMPILER ############################
-setenv MPICXX /usr/bin/mpicxx
+####### MPI SOFTWARE AND COMPILER ###########
+setenv DIFXMPIDIR=/usr
+setenv MPICXX $DIFXMPIDIR/bin/mpicxx
 
 ####### LIBRARY PATHS #######################
 ####### Uncomment and modify if needed, #####
@@ -67,6 +68,7 @@ else
 endif
 
 ####### LIBRARY/EXECUTABLE PATHS ############
+PREPEND PATH             ${DIFXMPIDIR}/bin
 PREPEND PATH             ${DIFXROOT}/bin
 if $?IPP_LIBRARY_PATH then
     PREPEND LD_LIBRARY_PATH $IPP_LIBRARY_PATH
