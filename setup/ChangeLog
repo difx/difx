@@ -1,0 +1,12 @@
+2015-07-03  James Anderson  <anderson@gfz-potsdam.de>
+
+	* setup.csh:
+	* setup.bash: add things to get DiFX working on OpenSuSE 13.1 /
+	Open MPI 1.8.4
+
+	* install-difx: add extra library target for python
+
+2015-05-15  James Anderson  <anderson@gfz-potsdam.de>
+
+	* install-difx: bugfixes and changes to allow individual package selection
+
