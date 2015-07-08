@@ -121,7 +121,7 @@ class MainWindow(GenericWindow):
         col6 = ListboxColumn("created", 14) 
         col7 = ListboxColumn("archived", 14)
         col8 = ListboxColumn("released", 14) 
-        self.grdExps = MultiListbox(frmExps, col1, col2, col3, col4, col5, col6, col7, col8)
+        self.grdExps = MultiListbox(frmExps, 16, col1, col2, col3, col4, col5, col6, col7, col8)
         self.grdExps.bindEvent("<ButtonRelease-1>", self.selectExpEvent)
         
         btnAddExp = Button(frmExps, text="Add experiment", command=self.addExperimentDlg.show)
