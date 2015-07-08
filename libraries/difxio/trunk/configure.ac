@@ -47,6 +47,10 @@ fi
 AM_CONDITIONAL(HAVE_SPICE, $spice_enabled)
 
 PKG_CHECK_MODULES(GSL, gsl, [hasgsl=true], [hasgsl=false])
+if test "$hasgsl" == "true"; then
+	AC_DEFINE([HAVE_GSL], 1, [1=has GSL (Gnu Scientific Library)])
+fi
+AM_CONDITIONAL(WITH_GSL, $hasgsl)
 
 spicelibs="$SPICE_LIBS"
 AC_SUBST(spicelibs)

@@ -9,6 +9,7 @@
   - Note: this breaks API compatibility.  Be sure to recompile all dependent code after updating difxio.
 * Fix merging of tables containing model extensions when different scans have different subsets of antennas
 * New utility: tabulatedelays.  Will make a list of evaluated delay polynomials every 24 seconds (on the usual grid of model points).  Delays and rates are printed.
+* New utility: reducepoly.  Will reduce the order of the delay model polynomial.  [Needs GSL]
 * New function: evaluateDifxAntennaClock
 * Write Parallactic Angle and/or Refraction Corrected Elevation to .im file if they are populated
 

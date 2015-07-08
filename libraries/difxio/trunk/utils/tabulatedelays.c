@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: testdifxinput.c 5285 2013-05-08 07:14:47Z WalterBrisken $
+ * $Id$
  * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 5285 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2013-05-08 01:14:47 -0600 (Wed, 08 May 2013) $
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -286,11 +286,11 @@ int main(int argc, char **argv)
 
 		for(p = 0; p < ds->nPoly; ++p)
 		{
-			const int N = (p == ds->nPoly-1) ? 6 : 5;
+			const int N = (p == ds->nPoly-1) ? 16 : 15;
 
 			for(i = 0; i < N; ++i)
 			{
-				printf("%14.8f", ds->im[refAnt][0][p].mjd + (ds->im[refAnt][0][p].sec + i*24)/86400.0);
+				printf("%14.8f", ds->im[refAnt][0][p].mjd + (ds->im[refAnt][0][p].sec + i*8)/86400.0);
 
 				if(item == ItemUVW)
 				{
@@ -304,9 +304,9 @@ int main(int argc, char **argv)
 						}
 						else
 						{
-							u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, 24*i);
-							v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, 24*i);
-							w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, 24*i);
+							u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, 8*i);
+							v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, 8*i);
+							w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, 8*i);
 						}
 
 						/* print to mm precision */
@@ -351,8 +351,8 @@ int main(int argc, char **argv)
 								exit(EXIT_FAILURE);
 							}
 
-							v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, 24*i);
-							v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, 24*i);
+							v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, 8*i);
+							v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, 8*i);
 						}
 
 						/* print to picosecond and femtosecond/sec precision */
