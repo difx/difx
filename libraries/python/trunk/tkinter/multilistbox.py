@@ -24,7 +24,7 @@ class ListboxColumn(object):
     
 class MultiListbox(Frame):
   
-   def __init__(self, master, *columns):
+   def __init__(self, master, height, *columns):
       
       Frame.__init__(self, master)
       
@@ -32,6 +32,7 @@ class MultiListbox(Frame):
       self.headerColor = self["bg"]
       
       self.data = []
+      self.height = height
       self.columns = columns
       self.lists = []
       #self.columnFilters={}
@@ -40,7 +41,6 @@ class MultiListbox(Frame):
       self.searchEntries={}
       self.origData = None
       enableSearch = False
-      
   
       m = PanedWindow(self)
       m.config(handlesize=0, sashrelief=RAISED, sashwidth=2, borderwidth=5)
@@ -79,7 +79,7 @@ class MultiListbox(Frame):
          
          self.colmapping[btnHeader]=(len(self.lists),1)
          
-         lb = Listbox(frame, width=column.width, borderwidth=1, selectborderwidth=0,
+         lb = Listbox(frame, width=column.width, height=self.height, borderwidth=1, selectborderwidth=0,
                         relief=FLAT, exportselection=FALSE)
          
          lb.grid(row=3, column=colNum, sticky=E+W)
