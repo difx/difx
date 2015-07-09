@@ -23,6 +23,7 @@ Version 1.1
   - Why need for large words?  It turns out that multiplexing multiple channels per thread is mathematically identical to multiplexing one channel per thread but with a total bit width of nBit*nChan
 * VDIF multiplexer now supports multiplexing threads with more than one channel.
   - a change in the API for configurevdifmux() is likely coming that will simplify use of this.  For now, use setvdifmuxinputchannels() after configurevdifmux()
+* New utility: filterVDIF.  It extracts certain threads and summarized what it found.  Similar to extractVDIFThreads.
 
 Version 1.0
 ~~~~~~~~~~~
