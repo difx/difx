@@ -119,15 +119,17 @@ class MainWindow(GenericWindow):
         self.chkDirLess = Checkbutton(self.frmMain, text = "modules w/o .dir", variable = self.filterDirLess, command=self.updateSlotListbox)
         self.chkUnscanned = Checkbutton(self.frmMain, text = "unscanned .dir", variable = self.filterUnscanned, command=self.updateSlotListbox)
         
-        col1 = ListboxColumn("slot",10, searchable=True)
-        col2 = ListboxColumn("vsn",10, sortable=True)
-        col3 = ListboxColumn("station",4, sortable=True)
-        col4 = ListboxColumn("experiments",30)
-        col5 = ListboxColumn("scans",4)
-        col6 = ListboxColumn("capacity",5) 
-        col7 = ListboxColumn("datarate",5)
-        col8 = ListboxColumn("received",15)
-        self.grdSlot = MultiListbox(self.frmMain, 16, col1, col2, col3, col4, col5, col6, col7, col8)
+	colList = []
+	colList.append(ListboxColumn("slot",4, searchable=True))
+	colList.append(ListboxColumn("vsn",6, searchable=True))
+        colList.append(ListboxColumn("station",3, sortable=True))
+        colList.append(ListboxColumn("experiments",30))
+        colList.append(ListboxColumn("scans",3))
+        colList.append(ListboxColumn("capacity",4) )
+        colList.append(ListboxColumn("datarate",4))
+        colList.append(ListboxColumn("received",15))
+	columns = tuple(colList)
+        self.grdSlot = MultiListbox(self.frmMain, 16, *columns)
         self.grdSlot.bindEvent("<ButtonRelease-1>", self.selectSlotEvent)
         self.btnNewModule = Button (self.frmMain, text="Check-in module", command=self.checkinModule)
           
@@ -949,7 +951,7 @@ class CheckinWindow(GenericWindow):
         
     def _splitVSNLabelScan(self):
         
-        m = re.match('([a-zA-Z]+[\+-]\d+)/(\d+)/(.+)', self.txtVSN.get().lstrip())
+        m = re.match('([a-zA-Z]+[%\+-]\d+)/(\d+)/(.+)', self.txtVSN.get().lstrip())
      
         if (m != None):
             vsn = upper(m.group(1))
@@ -1747,7 +1749,6 @@ class AddExperimentWindow(GenericWindow):
         
         self.parent.dlg.grab_set()
         self.parent.updateExperimentListbox()
-       # self.parent.parent.updateExpFilter()
         self.parent.txtVSN.focus_set()
         self.dlg.destroy()
         
