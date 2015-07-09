@@ -77,6 +77,7 @@ class MainWindow(GenericWindow):
         self.filterDirLess = IntVar()
         self.filterUnscanned = IntVar()
         self.filterExpVar = StringVar()
+        self.filterModuleTypeVar = StringVar()
         
         self.expFilterItems = []
         self.labelSizeX = 320
@@ -84,6 +85,14 @@ class MainWindow(GenericWindow):
         self.moduleFilter = ""
         self.slotFilter = ""
         self.forceCheckout = False
+        self.moduleTypes = ['all','SATA','PATA','Mark6']
+        
+        self.filterModuleTypeVar.set(self.moduleTypes[0])
+        
+        # regular expressions for matching various VSN types
+        self.patternSataVSN = re.compile('([a-zA-Z]+[-]\d+)')
+        self.patternPataVSN = re.compile('([a-zA-Z]+[\+]\d+)')
+        self.patternMark6VSN = re.compile('([a-zA-Z]+[%]\d+)')
                 
     def show(self):
         
@@ -107,18 +116,22 @@ class MainWindow(GenericWindow):
         self.rootWidget.config(menu=menubar)
         
         # frames
-        self.frmMain = LabelFrame(self.rootWidget, text="Filter")
+        self.frmFilter = LabelFrame(self.rootWidget, text="Filter")
+        self.frmMain = LabelFrame(self.rootWidget, text="Modules")
         self.frmDetail = LabelFrame(self.rootWidget, text="Detail")
         frmAction = LabelFrame(self.rootWidget, text="Actions")
         frmStatus = LabelFrame(self.rootWidget, text="Status")
         
+        
         self.btnQuit = Button(self.rootWidget, text="Exit", command=self.rootWidget.destroy)
         
-        #widgets on frmMain       
-        self.chkRelease = Checkbutton(self.frmMain, text = "releasable modules", variable = self.filterReleaseList, command=self.updateSlotListbox)
-        self.chkDirLess = Checkbutton(self.frmMain, text = "modules w/o .dir", variable = self.filterDirLess, command=self.updateSlotListbox)
-        self.chkUnscanned = Checkbutton(self.frmMain, text = "unscanned .dir", variable = self.filterUnscanned, command=self.updateSlotListbox)
+        # widgets on frmFilter       
+        self.chkRelease = Checkbutton(self.frmFilter, text = "show releasable modules", variable = self.filterReleaseList, command=self.updateSlotListbox)
+        self.chkDirLess = Checkbutton(self.frmFilter, text = "show modules without .dir file", variable = self.filterDirLess, command=self.updateSlotListbox)
+        self.chkUnscanned = Checkbutton(self.frmFilter, text = "show modules with unscanned .dir files", variable = self.filterUnscanned, command=self.updateSlotListbox)
+        self.cboModuleType = OptionMenu(self.frmFilter, self.filterModuleTypeVar, *self.moduleTypes, command=self.applyModuleFilter)
         
+        # widgets on frmMain
 	colList = []
 	colList.append(ListboxColumn("slot",4, searchable=True))
 	colList.append(ListboxColumn("vsn",6, searchable=True))
@@ -173,17 +186,23 @@ class MainWindow(GenericWindow):
         self.btnRescan = Button (frmAction, text="Rescan directory", command=self.rescanModuleEvent,state=DISABLED)
         self.btnExpad = Button (frmAction, text="Show exp. details", command=self.showExpDetailEvent,state=DISABLED) 
 	
-        # arrange objects on grid       
-        self.frmMain.grid(row=1,rowspan=3,column=0, sticky=E+W+N+S)   
-        self.frmDetail.grid(row=1, column=3, sticky=E+W+N+S )
-        frmAction.grid(row=2,column=3,sticky=N+S+E+W)
-        frmStatus.grid(row=3,column=3,sticky=N+S+E+W)
-        self.btnQuit.grid(row=10,columnspan=5, pady=5, padx=10, sticky=E)
+        # arrange objects on grid     
+        self.frmFilter.grid(row=3,column=0, sticky=E+W+N+S,padx=2,pady=2) 
+        self.frmMain.grid(row=1,rowspan=2,column=0, sticky=E+W+N+S, padx=2,pady=2)   
+        self.frmDetail.grid(row=1, column=3, sticky=E+W+N+S, padx=2,pady=2 )
+        frmAction.grid(row=2,column=3,sticky=N+S+E+W, padx=2,pady=2)
+        frmStatus.grid(row=3,column=3,sticky=N+S+E+W, padx=2,pady=2)
+        self.btnQuit.grid(row=10,column=0, columnspan=4, sticky=E, padx=2,pady=2)
+        
+        # arrange objects on frmFilter
+        Label(self.frmFilter, text = "state: ").grid(row=1, column=0, sticky=W)
+        self.chkRelease.grid(row=1, column=1, sticky=W)
+        self.chkDirLess.grid(row=2, column=1, sticky=W)
+        self.chkUnscanned.grid(row=3, column=1, sticky=W)
+        Label(self.frmFilter, text = "module type: ").grid(row=10, column=0, sticky=W)
+        self.cboModuleType.grid(row=10,column=1, sticky=W)
         
         # arrange objects on frmMain
-        self.chkRelease.grid(row=1, column=0, columnspan=3, sticky=W)
-        self.chkDirLess.grid(row=2, column=0, columnspan=3, sticky=W)
-        self.chkUnscanned.grid(row=3, column=0, columnspan=3, sticky=W)
         self.grdSlot.grid(row=10, column=0, sticky=N+S+E+W)
         self.btnNewModule.grid(row=20, columnspan=2, sticky=E+W+S, pady=5, padx=5)        
         
@@ -326,9 +345,13 @@ class MainWindow(GenericWindow):
         self.cboExpFilter.configure(text=item)
         self.filterExpVar.set(item)
       
+        self.updateSlotListox()
+        
+
+    def applyModuleFilter(self, value):
+        
         self.updateSlotListbox()
         
-           
     def updateSlotListbox(self):
         
         session = dbConn.session()
@@ -347,12 +370,23 @@ class MainWindow(GenericWindow):
         
         self.grdSlot.clearData()
         
+        # check setting of moduleType filter
+        if (self.filterModuleTypeVar.get() == "SATA"):
+            pattern = self.patternSataVSN
+        elif (self.filterModuleTypeVar.get() == "PATA"):
+            pattern = self.patternPataVSN
+        elif (self.filterModuleTypeVar.get() == "Mark6"):
+            pattern = self.patternMark6VSN
+        else:
+            pattern = None
+        
         for slot in slots:
-            
-            expList = []
-            for exp in slot.module.experiments:
-                    expList.append(exp.code)
-                    
+                             
+            # check if module matches the filtered module type
+            if (pattern != None):
+                 
+                if not pattern.match(slot.module.vsn):
+                    continue
                     
             #check if "released" checkbox is activated
             if (self.filterReleaseList.get()):
@@ -371,6 +405,11 @@ class MainWindow(GenericWindow):
             if (self.filterUnscanned.get()):
                 if (slot.module.numScans != None):
                     continue
+            
+            expList = []
+            for exp in slot.module.experiments:
+                    expList.append(exp.code)
+            
          
             self.grdSlot.appendData((slot.location, slot.module.vsn, slot.module.stationCode, " ".join(expList), slot.module.numScans, slot.module.capacity, slot.module.datarate, slot.module.received))
             
