@@ -169,16 +169,21 @@ void put_t101 (struct type_101 *t101,
                char *ref_chan,
                char *rem_chan)
     {
+    char a, b;
+    a = ref_chan[4];
+    b = rem_chan[4];
                                     // mk4 index is based on difx freq index & pol pair
     t101->index = 10 * find;
-    if      (ref_chan[4] == 'L' && rem_chan[4] == 'L')
+                                    // encode L,X,H pol the same, ditto for R,Y,V
+    if      (strchr ("LXH", a) != NULL && strchr ("LXH", b) != NULL)
         t101->index += 1;
-    else if (ref_chan[4] == 'R' && rem_chan[4] == 'R')
+    else if (strchr ("RYV", a) != NULL && strchr ("RYV", b) != NULL)
         t101->index += 2;
-    else if (ref_chan[4] == 'L' && rem_chan[4] == 'R')
+    else if (strchr ("LXH", a) != NULL && strchr ("RYV", b) != NULL)
         t101->index += 3;
-    else if (ref_chan[4] == 'R' && rem_chan[4] == 'L')
+    else if (strchr ("RYV", a) != NULL && strchr ("LXH", b) != NULL)
         t101->index += 4;
+
                                     // insert channel ids into the type 101 record
     strcpy (t101->ref_chan_id, ref_chan);
     strcpy (t101->rem_chan_id, rem_chan);
