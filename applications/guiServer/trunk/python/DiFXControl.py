@@ -200,7 +200,7 @@ class Client:
 			host = "localhost"
 		if port == None:
 			port = 50401
-			connectInfo = ( host, port )
+		connectInfo = ( host, port )
 		try:
 			self.sock.connect( connectInfo )
 		except socket.error, ( value, message ):
