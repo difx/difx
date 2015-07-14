@@ -72,7 +72,7 @@ static int calcDecimation(int overSamp)
 	}
 }
 
-static bool usesCannonicalVDIFThreadIds(const char *antName)
+static bool usesCanonicalVDIFThreadIds(const char *antName)
 {
 	// Add here any known antennas that use VDIF thread ids that start at 0 for the first record channel and increment by 1 for each additional record channel
 	if(strcasecmp(antName, "BR") == 0 ||
@@ -573,7 +573,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	  else 
 	    {
 	      
-	      if(usesCannonicalVDIFThreadIds(antName.c_str()))
+	      if(usesCanonicalVDIFThreadIds(antName.c_str()) && (setup->channels.size() > 1))
 		{
 			char sep = '/';
 			std::stringstream threadSS;
