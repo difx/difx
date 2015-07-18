@@ -15,7 +15,7 @@ Usage : m5subband.py <infile> <dataformat> <outfile>
     Mark5B-512-16-2
     VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
 
-  <outfile>   file to write 32-bit complex float band data (VDIFC format)
+  <outfile>   output file for 32-bit float subband data (VDIF format)
   <if_nr>     the IF i.e. baseband channel to be filtered (1...nchan)
   <factor>    overlap-add factor during filtering (typ. 4)
   <Ldft>      length of DFT
@@ -97,7 +97,7 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 
 	# Prepare VDIF output file with reduced data rate and same starting timestamp
 	fsout   = float(dms.samprate)*(nout/float(nin))
-	outMbps = fsout*1e-6 * 64
+	outMbps = fsout*1e-6 * 32
 	vdiffmt = 'VDIF_8192-%u-1-32' % (outMbps)
 	if not(int(outMbps) == outMbps):
 		print ('*** Warning: output rate is non-integer (%e Ms/s)! ***' % (outMbps))
@@ -105,7 +105,7 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 	(vdifref,vdifsec) = m5lib.helpers.get_VDIF_time_from_MJD(mjd,sec+1e-9*ns)
 
 	vdif = m5lib.writers.VDIFEncapsulator()
-	vdif.open(fout, format=vdiffmt, complex=True, station='SB')
+	vdif.open(fout, format=vdiffmt, complex=False, station='SB')
 	vdif.set_time(vdifref,vdifsec, framenr=0)
 	vdiffmt = vdif.get_format()
 
@@ -167,8 +167,9 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 			# so we need to zero out the undesired values shifted back in by the circular shift:
 			oconcat[(-Lout/factor):] = 0
 
-		# Output complex time domain data
-		vdif.write(oconcat[0:Lout].view('float32').tostring())
+		# Output real part of complex time domain data
+		# (If suppression of upper Nyquist is zone desired, should write out both real&imag)
+		vdif.write(numpy.real(oconcat[0:Lout]).view('float32').tostring())
 
 		# Reporting
 		if (iter % 100)==0:
