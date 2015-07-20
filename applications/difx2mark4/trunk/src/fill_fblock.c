@@ -217,7 +217,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                         buff[4] = pfb[n].stn[k].pol;
                         strcpy (pfb[n].stn[k].chan_id, buff);
                         sbind  = (pfb[n].stn[k].sideband == 'U') ? 0 : 1;
-                        polind = (pfb[n].stn[k].pol      == 'R') ? 0 : 1;
+                        polind = (pfb[n].stn[k].pol == 'R' 
+                               || pfb[n].stn[k].pol == 'X') ? 0 : 1;
                                     // see if first mention for ant, freq, sb, & pol
                         if (first[sbind][polind])
                             {

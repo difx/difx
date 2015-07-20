@@ -57,7 +57,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     char inname[DIFXIO_FILENAME_LENGTH], // file name of input data file
          dirname[DIFXIO_FILENAME_LENGTH],
          blines[2*NUMFILS],         // baselines list, as in ABXYJK
-         poltab [4][3] = {"LL", "RR", "LR", "RL"},
+         poltabc [4][3] = {"LL", "RR", "LR", "RL"},
+         poltabl [4][3] = {"XX", "YY", "XY", "YX"},
          c;
                                     // variables that need persistence due to exit
                                     // up into caller over scan boundaries
@@ -344,7 +345,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             u.t120.index = 10 * rec->freq_index + 1;
                                     // tack on offset that represents polarization
             for (i=0; i<4; i++)     
-                if (strncmp (poltab[i], rec->pols, 2) == 0)
+                if (strncmp (poltabc[i], rec->pols, 2) == 0
+                 || strncmp (poltabl[i], rec->pols, 2) == 0)
                     u.t120.index += i;
                                     // copy over weight into former flag field
                                     // use -0.0 to denote zero, for backward compatibility

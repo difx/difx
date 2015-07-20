@@ -634,7 +634,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
             fprintf (fout, "    BBC_assign = &BBCX10 : 07 : &IFX10;\n");
             fprintf (fout, "    BBC_assign = &BBCX200: 09 : &IFX200;\n");
             }
-        if (R_used)
+        if (Y_used)
             {
             fprintf (fout, "    BBC_assign = &BBCY0  : 02 : &IFY0;\n");
             fprintf (fout, "    BBC_assign = &BBCY1  : 04 : &IFY1;\n");
