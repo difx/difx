@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include "difx_input.h"
 
-const char program[] = "calculatedelays";
+const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20150622";
@@ -319,7 +319,11 @@ int main(int argc, char **argv)
 					{
 						double v1, v2;
 
-						if(ds->im[a] == 0)
+						if(a >= ds->nAntenna)
+						{
+							v1 = v2 = -1.0;
+						}
+						else if(ds->im[a] == 0)
 						{
 							/* print zeros in cases where there is no data */
 							v1 = v2 = 0.0;
