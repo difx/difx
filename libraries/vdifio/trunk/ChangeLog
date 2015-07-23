@@ -2,6 +2,7 @@ Version 1.1
 ~~~~~~~~~~~
 * Post DiFX-2.4
 * Added incrementVDIFHeader
+* Added ctypes-based Python bindings and one example (vdifio_1.py)
 * vsum: error message -> stderr, not stdout
 * Support new EDV2 that is produced by ALMA and R2DBE.  Work here is based on spec with TBDs: http://vlbi.org/vdif/docs/alma-vdif-edv.pdf
 * New functionality in printVDIFheader:
