@@ -14,10 +14,14 @@ except ImportError:
     from distutils.core import setup
     from distutils.core import Command
 
-src_path = os.path.relpath(os.path.join(os.path.dirname(__file__),'.'))
-src_path += '/'
+src_path = os.path.dirname(os.path.realpath(__file__)) + '/'
+try:
+    obj_path = sys.argv[sys.argv.index('--build-base') + 1] + '/'
+except:
+    obj_path = src_path
 
-c_h_file = src_path + '../src/vdifio.h'
+c_h_file   = src_path + '../src/vdifio.h'
+c_lib_file = obj_path + '../src/.libs/libvdifio.so'
 ctypes_xml_file = 'vdifio_api.xml'
 ctypes_api_file = 'vdifio/vdifio.py'
 
@@ -60,7 +64,7 @@ def build_ctypes():
     xml2py_flags.extend(['-s','vdif_edv1_header', '-s','vdif_edv3_header', '-s','vdif_mux'])
     xml2py_flags.extend(['-s','vdif_mux_statistics', '-s','vdif_file_summary'])
     xml2py_flags.extend(['-r','VDIF', '-r','vdif', '-r','vdifmux']) # functions to include in wrapper
-    xml2py_flags.extend(['-l','../src/.libs/libvdifio.so'])
+    xml2py_flags.extend(['-l',c_lib_file])
     xml2py_args = ['xml2py.py', 'vdifio_api.xml']
     xml2py_args.extend(xml2py_flags)
     xml2py.main(xml2py_args)
@@ -70,7 +74,7 @@ def build_ctypes():
         with open(ctypes_api_file, 'w') as fout:
             with open(ctypes_api_file+'.tmp', 'r') as fin:
                 for line in fin:
-                    fout.write(line.replace('../src/.libs/libvdifio.so', 'libvdifio.so'))
+                    fout.write(line.replace(c_lib_file, 'libvdifio.so'))
         os.remove(ctypes_api_file+'.tmp')
     except:
         pass

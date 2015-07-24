@@ -6,7 +6,7 @@ EXTRA_DIST = setup.py Makefile.am README examples/vdifio_1.py examples/vdifio_1.
 
 all-local:
 	(cd $(srcdir); $(PYTHON) setup.py build \
-	--build-base $(shell readlink -f $(builddir))/build \
+	--build-base $(shell readlink -f $(builddir)) \
 	--verbose)
 
 install-exec-local:
