@@ -10,7 +10,8 @@ EXTRA_DIST = \
 	examples/m5stat.py \
 	examples/m5subband.py \
 	examples/m5time.py \
-	examples/m5tone.py
+	examples/m5tone.py \
+	patch/codegenerator.patch
 
 # Makefile.am to combine autotools and Python setuptools.
 # Based on https://blog.kevin-brown.com/programming/2014/09/24/combining-autotools-and-setuptools.html
