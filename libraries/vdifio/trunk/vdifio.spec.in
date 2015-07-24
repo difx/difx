@@ -1,7 +1,7 @@
 Summary: Library and utilities to work with VDIF data
 Name: vdifio
 Version: @version@
-Release: 4
+Release: 1
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/vdifio-@version@-buildroot
@@ -33,6 +33,7 @@ make
 %{_libdir}/libvdifio.so.0.0.0
 %{_libdir}/pkgconfig/vdifio.pc
 %{_includedir}/vdifio.h
+%{_includedir}/vdifmark6.h
 %{_bindir}/stripVDIF
 %{_bindir}/captureUDPVDIF
 %{_bindir}/multi2singlethreadVDIF
@@ -41,6 +42,8 @@ make
 %{_bindir}/fakemultiVDIF
 %{_bindir}/extractSingleVDIFThread
 %{_bindir}/extractVDIFThreads
+%{_bindir}/filterVDIF
+%{_bindir}/generateVDIF
 %{_bindir}/countVDIFPackets
 %{_bindir}/printVDIF
 %{_bindir}/printVDIFheader
