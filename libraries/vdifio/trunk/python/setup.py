@@ -26,7 +26,7 @@ c_lib_file = obj_path + '../src/.libs/libvdifio.so'
 c_lib_obj  = 'libvdifio.so'
 ctypes_xml_file = 'vdifio_api.xml'
 ctypes_api_file = 'vdifio/vdifio.py'
-
+check_for_func  = 'createVDIFHeader'
 
 # Ctypeslib generator invocations based on "reference" examples at
 # https://github.com/piranna/cusepy/blob/master/setup.py
@@ -80,6 +80,16 @@ def build_ctypes():
         os.remove(ctypes_api_file+'.tmp')
     except:
         pass
+
+    # Make sure the generated .py seems okay -- regexp to select functions was ok?
+    func_found = False
+    with open(ctypes_api_file, 'r') as fin:
+        for line in fin:
+            if check_for_func in line:
+                func_found = True
+    if not func_found:
+        print ('Error: ctypeslib did not extract function names. For old ctypeslib might need a patch.')
+        sys.exit(-1)
 
 
 if 'build' in sys.argv:
