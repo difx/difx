@@ -25,6 +25,7 @@ c_lib_file = obj_path + '../mark5access/.libs/libmark5access.so'
 c_lib_obj  = 'libmark5access.so'
 ctypes_xml_file = 'mark5access_api.xml'
 ctypes_api_file = 'mark5access/mark5access.py'
+check_for_func  = 'new_mark5_format'
 
 # Ctypeslib generator invocations based on "reference" examples at
 # https://github.com/piranna/cusepy/blob/master/setup.py
@@ -76,7 +77,7 @@ def build_ctypes():
     xml2py_flags.extend(['-s','Mark5Blanker'])
     xml2py_flags.extend(['-s','mark5_stream'])          # structs to include in wrapper
     xml2py_flags.extend(['-s','mark5_stream_generic', '-s','mark5_format_generic', '-s','mark5_format'])
-    xml2py_flags.extend(['-r','"mark5"'])               # functions to include in wrapper
+    xml2py_flags.extend(['-r','mark5'])                 # functions to include in wrapper
     xml2py_flags.extend(['-l',c_lib_file])
     xml2py_args = ['xml2py.py', ctypes_xml_file]
     xml2py_args.extend(xml2py_flags)
@@ -91,6 +92,16 @@ def build_ctypes():
         os.remove(ctypes_api_file+'.tmp')
     except:
         pass
+
+    # Make sure the generated .py seems okay -- regexp to select mark5* functions was ok?
+    func_found = False
+    with open(ctypes_api_file, 'r') as fin:
+        for line in fin:
+            if check_for_func in line:
+                func_found = True
+    if not func_found:
+        print ('Error: ctypeslib did not extract function names. For old ctypeslib might need a patch.')
+        sys.exit(-1)
 
 if 'build' in sys.argv:
     build_ctypes()
