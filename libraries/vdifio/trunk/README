@@ -6,7 +6,7 @@ autoconf
 autoheader
 automake -a -c
 
-./configure --prefix=${DIFXROOT}
+./configure --enable-python --prefix=${DIFXROOT}
 
 make
 # (su root?)
