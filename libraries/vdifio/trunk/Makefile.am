@@ -1,15 +1,14 @@
+if ENABLE_PYTHON_CTYPES
+PYTHON_OPT = python
+endif
+
 SUBDIRS = \
 	src \
-	utils
-
-if ENABLE_PYTHON_CTYPES
-SUBDIRS += python
-endif
+	utils \
+	$(PYTHON_OPT)
 
 EXTRA_DIST = \
 	vdifio.spec.in
-
-DIST_SUBDIRS = $(SUBDIRS) python
 
 dist-hook: vdifio.spec
 	cp vdifio.spec $(distdir)

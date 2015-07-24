@@ -66,5 +66,6 @@ AC_OUTPUT([ \
 	vdifio.spec \
 	src/Makefile \
 	utils/Makefile \
+	python/Makefile \
 	vdifio.pc \
 ])

@@ -76,7 +76,7 @@ def build_ctypes():
         pass
 
 
-if sys.argv[-1]=='build':
+if 'build' in sys.argv:
     build_ctypes()
 
 setup(
