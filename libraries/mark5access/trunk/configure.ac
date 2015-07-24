@@ -76,5 +76,6 @@ AC_OUTPUT([ \
 	bbsum/Makefile \
 	examples/Makefile \
 	doc/Makefile \
+        python/Makefile \
 ])
 
