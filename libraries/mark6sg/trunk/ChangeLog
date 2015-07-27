@@ -1,3 +1,8 @@
+Version 1.1.5
+* libmark6sg: new mark6_sg_set_rootpattern() API function
+* fuseMk6: new command line option '-r <rootpattern>', for example
+*          -r /mnt/disks/[1-4]/[0-7]/data/
+
 Version 1.1.0
 * libmark6sg: new mark6_sg_stripesize() API function
 * libmark6sg: blocklist extraction with one thread per file for major speedup

@@ -68,6 +68,7 @@ extern int mark6_sg_list_all_scans(char*** uniquenamelist);
 extern size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
 extern int mark6_sg_verbositylevel(int);
 extern int mark6_sg_collect_metadata(m6sg_slistmeta_t**);
+extern char* mark6_sg_set_rootpattern(const char* new_sg_root_pattern);
 
 #ifdef __cplusplus
 // TODO: allow alternate compilation with C++ class def

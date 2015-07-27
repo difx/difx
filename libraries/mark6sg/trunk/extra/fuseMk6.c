@@ -19,7 +19,7 @@ void usage(void)
 	printf("\n"
 		"Mark6 Scatter-Gather data interpretation layer   v1.10  Jan Wagner 24062015\n"
 		"\n"
-		"Usage: fuseMk6 [-v] <mountpoint>\n"
+		"Usage: fuseMk6 [-v] [-r pattern] <mountpoint>\n"
 		"\n"
 		"Presents Mark6 scatter-gather mode (SG) recordings as single files.\n"
 		"The SG disks are assumed to be already mounted (/mnt/disks/[1-4]/[0-7]/)\n"
@@ -32,7 +32,9 @@ void usage(void)
 		"\n"
                 "Options:\n"
                 "   -v    verbose mode (puts fuseMk6 into 'foreground' mode),\n"
-                "         repeat to increase verbosity\n\n"
+                "         repeat to increase verbosity\n"
+                "   -r    set root pattern (default is %s)\n\n",
+		MARK6_SG_ROOT_PATTERN
 	);
 }
 
@@ -194,8 +196,17 @@ int main(int argc, char *argv[])
 		{
 			verbosity++;
 		}
+		else if ((strcmp(argv[i], "-r") == 0) && ((i+1) < argc))
+		{
+			mark6_sg_set_rootpattern(argv[i+1]);
+			i++;
+		}
+		else
+		{
+			break;
+		}
 	}
-	if ((argc < 2) || (mountpoint[0] == '-'))
+	if (((argc-i) != 1) || (mountpoint[0] == '-'))
 	{
 		usage();
 		return -1;

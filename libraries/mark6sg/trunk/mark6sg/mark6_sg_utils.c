@@ -93,6 +93,9 @@ typedef struct wb_header_tag_v1
     int32_t blocknum;           // block number, starting at 0
 } wb_header_tag_v1_t;
 
+// Base directory
+static char* mark6_sg_root_pattern = MARK6_SG_ROOT_PATTERN;
+static int mark6_sg_root_pattern_changed = 0;
 
 //////////////////////////////////////////////////////////////////////////////////////
 ////// Local Functions   /////////////////////////////////////////////////////////////
@@ -248,7 +251,7 @@ static int globerr(const char *path, int eerrno)
 /**
  * List all "scans" on the Mark6.
  * Internally this first assembles a list of all Mark6 scatter-gather
- * file recordings (e.g. all files in"/mnt/disks/[1-4]/[0-7]/"). It then
+ * file recordings (e.g. all files in "/mnt/disks/[1-4]/[0-7]/"). It then
  * builds a list of unique files based on the file name without file path.
  */
 int mark6_sg_list_all_scans(char*** uniquenamelist)
@@ -295,7 +298,7 @@ int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char
     searchpattern = (char*)malloc(PATH_MAX);
     if (NULL == searchpattern) { return -1; }
 
-    snprintf(searchpattern, PATH_MAX-1,  "%s%s", MARK6_SG_ROOT_PATTERN, scanname);
+    snprintf(searchpattern, PATH_MAX-1,  "%s%s", mark6_sg_root_pattern, scanname);
     rc = glob(searchpattern, GLOB_MARK, globerr, &g);
     free(searchpattern);
 
@@ -405,7 +408,7 @@ size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_
     m6sg_blockmeta_t* blks = NULL;
     m6sg_blockmeta_t* prevblk = NULL;
     size_t nblocks = 0, ncopied = 0, nmissing = 0;
-    size_t i, j;
+    size_t i;
 
     gettimeofday(&tv_start, NULL);
 
@@ -508,7 +511,7 @@ size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_
 
 /**
  * Read the context of all Mark6 SG metadata files, i.e., the 'slist' (JSON) and 'group' (flat text)
- * files found under /mnt/disks/.meta/[1-4]/[0-7]/. Duplicate metadata entries are removed.
+ * files found under e.g. /mnt/disks/.meta/[1-4]/[0-7]/. Duplicate metadata entries are removed.
  * Produces a linked list of scanlist metadata entries. Allocates the required memory.
  * Returns the number of entries, or -1 on error.
  */
@@ -718,4 +721,23 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
 
     if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %d unique scans added\n", nscans); }
     return nscans;
+}
+
+/**
+ * Change the base search pattern for SG files used by the library,
+ * for example "/mnt/disks/[1-4]/[0-7]/data/".
+ */
+char* mark6_sg_set_rootpattern(const char* new_sg_root_pattern)
+{
+    if (NULL != new_sg_root_pattern)
+    {
+        if (0 != mark6_sg_root_pattern_changed)
+        {
+            free(mark6_sg_root_pattern);
+        }
+        mark6_sg_root_pattern = strdup(new_sg_root_pattern);
+        mark6_sg_root_pattern_changed = 1;
+        return mark6_sg_root_pattern;
+    }
+    return NULL;
 }
