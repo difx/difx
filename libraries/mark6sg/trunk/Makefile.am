@@ -7,8 +7,6 @@ EXTRA_DIST = COMPILING mark6sg.spec.in
 dist-hook: mark6sg.spec
 	cp mark6sg.spec $(distdir)
 
-DIST_SUBDIRS = jsmn mark6sg test extra
-
 library_includedir = $(includedir)
 library_include_HEADERS = mark6sg.h
 

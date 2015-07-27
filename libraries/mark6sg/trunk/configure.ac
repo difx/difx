@@ -1,4 +1,4 @@
-AC_INIT([mark6sg], [1.1.0], [Jan Wagner jwagner@kasi.re.kr])
+AC_INIT([mark6sg], [1.1.5], [Jan Wagner jwagner@kasi.re.kr])
 
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
@@ -38,8 +38,9 @@ AC_SUBST(version)
 AC_OUTPUT([ \
 	Makefile         \
 	mark6sg/Makefile \
-        test/Makefile    \
-        extra/Makefile   \
+	test/Makefile    \
+	extra/Makefile   \
+	jsmn/Makefile    \
 	mark6sg.pc       \
 	mark6sg.spec
 ])

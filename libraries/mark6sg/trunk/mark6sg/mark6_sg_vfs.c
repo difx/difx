@@ -301,7 +301,7 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
     m6sg_virt_filedescr_t* vfd;
     size_t nread = 0;
     size_t nremain = count;
-    size_t blk, prevblk, i;
+    size_t blk, prevblk;
 
     // Catch some error conditions
     if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))

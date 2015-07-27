@@ -2,6 +2,7 @@ Version 1.1.5
 * libmark6sg: new mark6_sg_set_rootpattern() API function
 * fuseMk6: new command line option '-r <rootpattern>', for example
 *          -r /mnt/disks/[1-4]/[0-7]/data/
+* support out-of-tree builds (TODO: use static linking to libjsmn)
 
 Version 1.1.0
 * libmark6sg: new mark6_sg_stripesize() API function
