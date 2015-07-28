@@ -91,15 +91,34 @@ public class PassNode extends QueueBrowserContainerNode {
         _popup.add( menuItem4 );
         _typeMenu = new JMenu( "Set Type" );
         _popup.add( _typeMenu );
-        JMenuItem copyItem = new JMenuItem( "Copy" );
-        copyItem.setToolTipText( "Make a copy of this Pass, its properties, and all contained Jobs." );
-        copyItem.addActionListener(new ActionListener() {
+//        JMenuItem copyItem = new JMenuItem( "Copy" );
+//        copyItem.setToolTipText( "Make a copy of this Pass, its properties, and all contained Jobs." );
+//        copyItem.addActionListener(new ActionListener() {
+//            public void actionPerformed( ActionEvent e ) {
+//                copyAction();
+//            }
+//        });
+//        _popup.add( copyItem );
+//        copyItem.setEnabled( false );
+        _popup.add( new JSeparator() );
+        ZMenuItem removeButton = new ZMenuItem( "Remove Pass from Queue Browser" );
+        removeButton.setToolTipText( "Remove this Pass (non-destructively) from the browser.\n"
+                + "All files and database entries will remain intact." );
+        removeButton.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                copyAction();
+                removeAction();
             }
         });
-        _popup.add( copyItem );
-        copyItem.setEnabled( false );
+        _popup.add( removeButton );
+        ZMenuItem removeSelectedButton = new ZMenuItem( "Remove Selected Jobs" );
+        removeSelectedButton.setToolTipText( "Remove selected jobs within this pass from the browser.\n"
+                + "All files and database entries will remain intact." );
+        removeSelectedButton.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                removeSelectedAction();
+            }
+        });
+        _popup.add( removeSelectedButton );
         JMenuItem menuItem2 = new JMenuItem( "Delete Selected Jobs" );
         menuItem2.setToolTipText( "Delete any selected jobs within this Pass." );
         menuItem2.addActionListener(new ActionListener() {
@@ -319,6 +338,41 @@ public class PassNode extends QueueBrowserContainerNode {
                     _settings.queueBrowser().removeJobFromSchedule( thisJob );
                     thisJob.removeFromDatabase();
                     removeChild( thisJob );
+                }
+            }
+        } catch ( java.util.ConcurrentModificationException e ) {}
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Remove all jobs in this pass, and then the pass itself, from the
+    //!  queue browser.
+    //--------------------------------------------------------------------------
+    public void removeAction() {
+        try {
+            for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
+                JobNode thisJob = (JobNode)(iter.next());
+                _settings.queueBrowser().removeJobFromSchedule( thisJob );
+            }
+            clearChildren();
+            ((BrowserNode)(this.getParent())).removeChild( this );
+        } catch ( java.util.ConcurrentModificationException e ) {}
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Remove any selected jobs in this pass from the queue browser.
+    //--------------------------------------------------------------------------
+    public void removeSelectedAction() {
+        try {
+            boolean foundSelected = true;
+            while ( foundSelected ) {
+                foundSelected = false;
+                for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext() && !foundSelected; ) {
+                    JobNode thisJob = (JobNode)(iter.next());
+                    if ( thisJob.selected() ) {
+                        foundSelected = true;
+                        _settings.queueBrowser().removeJobFromSchedule( thisJob );
+                        removeChild( thisJob );
+                    }
                 }
             }
         } catch ( java.util.ConcurrentModificationException e ) {}

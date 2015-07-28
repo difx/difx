@@ -96,6 +96,7 @@ import edu.nrao.difx.difxutilities.TabCompletedTextField;
 import edu.nrao.difx.difxcontroller.DiFXMessageProcessor;
 
 import java.sql.ResultSet;
+import javax.swing.SwingConstants;
 
 public class SystemSettings extends JFrame {
     
@@ -872,7 +873,7 @@ public class SystemSettings extends JFrame {
         jobProcessingPanel.add( _restrictSourcesCheck );
         _viewRestrictedSourceList = new ZButton( "Allowed Sources" );
         _viewRestrictedSourceList.setBounds( 920, 105, 140, 25 );
-        _viewRestrictedSourceList.toolTip( "View/edit the list nodes that are \"allowed\" data sources.", null );
+        _viewRestrictedSourceList.toolTip( "View/edit the list of nodes that are \"allowed\" data sources.", null );
         _viewRestrictedSourceList.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( _restrictedSourceListDisplay == null ) {
@@ -1010,7 +1011,7 @@ public class SystemSettings extends JFrame {
         forEachLabel.setBounds( 555, 160, 75, 25 );
         jobProcessingPanel.add( forEachLabel );
         _baselineCheck = new ZCheckBox( "Baseline" );
-        _baselineCheck.setBounds( 635, 160, 125, 25 );
+        _baselineCheck.setBounds( 635, 160, 100, 25 );
         _baselineCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _jobCheck.setSelected( false );
@@ -1027,6 +1028,50 @@ public class SystemSettings extends JFrame {
             }
         } );
         jobProcessingPanel.add( _jobCheck );
+        JLabel restrictProcessorsLabel = new JLabel( "Restrict Nodes to:   List" );
+        restrictProcessorsLabel.setBounds(  540, 160, 350, 25 );
+        restrictProcessorsLabel.setHorizontalAlignment( JLabel.RIGHT );
+        jobProcessingPanel.add( restrictProcessorsLabel );
+        _restrictListCheck = new ZCheckBox( "" );
+        _restrictListCheck.setBounds( 895, 160, 20, 20 );
+        _restrictListCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _restrictListCheck.isSelected() )
+                    _restrictPatternCheck.setSelected( false );
+            }
+        } );
+        jobProcessingPanel.add( _restrictListCheck );
+        _viewRestrictedProcessorList = new ZButton( "Allowed List" );
+        _viewRestrictedProcessorList.setBounds( 920, 160, 140, 25 );
+        _viewRestrictedProcessorList.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                ProcessorCheckList pcl = new ProcessorCheckList( MouseInfo.getPointerInfo().getLocation().x, 
+                        MouseInfo.getPointerInfo().getLocation().y );
+                pcl.setVisible( true );
+            }
+        } );
+        jobProcessingPanel.add( _viewRestrictedProcessorList );
+        JLabel restrictProcessorPatternLabel = new JLabel( "Pattern" );
+        restrictProcessorPatternLabel.setBounds( 690, 185, 200, 20 );
+        restrictProcessorPatternLabel.setHorizontalAlignment( JLabel.RIGHT );
+        jobProcessingPanel.add( restrictProcessorPatternLabel );
+        _restrictPatternCheck = new ZCheckBox( "" );
+        _restrictPatternCheck.setBounds( 895, 185, 20, 20 );
+        _restrictPatternCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _restrictPatternCheck.isSelected() )
+                    _restrictListCheck.setSelected( false );
+            }
+        } );
+        jobProcessingPanel.add( _restrictPatternCheck );
+        _processorPattern = new FormattedTextField();
+        _processorPattern.setBounds( 920, 185, 140, 25 );
+        _processorPattern.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                generateAllowedProcessorList();
+            }
+        } );
+        jobProcessingPanel.add( _processorPattern );
         JLabel schedulerLabel = new JLabel( "Scheduler Settings:" );
         schedulerLabel.setBounds( 30, 215, 200, 25 );
         schedulerLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
@@ -1108,6 +1153,7 @@ public class SystemSettings extends JFrame {
                 + "try to rebuild and rerun the job without the offending station(s)." );
         _tryToSkipMissingStations.setBounds( 850, 240, 200, 25 );
         jobProcessingPanel.add( _tryToSkipMissingStations );
+        _tryToSkipMissingStations.setVisible( false );
         _clearCorrelationStatisticsButton = new ZButton( "Clear Statistics" );
         _clearCorrelationStatisticsButton.setToolTipText( "Zero the statistics used to estimate processing times.\n"
                 + "Subsequent estimates will have no knowledge of previous job execution times." );
@@ -2081,6 +2127,7 @@ public class SystemSettings extends JFrame {
         _inactivityWarning.intValue( 60 );
         _inactivityError.intValue( 180 );
         generateMark5PatternList();
+        generateAllowedProcessorList();
         _ipAddress.setText( "224.2.2.1" );
         _port.intValue( 52525 );
         _bufferSize.intValue( 1500 );
@@ -2161,7 +2208,7 @@ public class SystemSettings extends JFrame {
         _useMaxSecondsForHardware.setSelected( false );
         _maxSecondsForProcessing.intValue( 1800 );
         _useMaxSecondsForProcessing.setSelected( false );
-        _tryToSkipMissingStations.setSelected( true );
+        _tryToSkipMissingStations.setSelected( false );
         _queueBrowserSettings.showCompleted = true;
         _queueBrowserSettings.showIncomplete = true;
         _queueBrowserSettings.showSelected = true;
@@ -2489,6 +2536,13 @@ public class SystemSettings extends JFrame {
     protected void generateMark5PatternList() {
         //  List is a single comma-separated string.
         _mark5PatternList = _mark5Pattern.getText().split( "[,\\s]+" );
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Generate a list of allowed processors (identical logic, different place).
+    //--------------------------------------------------------------------------
+    protected void generateAllowedProcessorList() {
+        _processorPatternList = _processorPattern.getText().split( "[,\\s]+" );
     }
     
     /*
@@ -3300,6 +3354,26 @@ public class SystemSettings extends JFrame {
                 panel.filelist( antennaDefault.isFilelist() );
                 panel.source( antennaDefault.getSource() );
                 panel.dataPath( antennaDefault.getDataPath() );
+            }
+            for ( Iterator<DoiSystemConfig.AllowedProcessor> iter = doiConfig.getAllowedProcessor().iterator(); iter.hasNext(); ) {
+                DoiSystemConfig.AllowedProcessor allowed = iter.next();
+                //  Create a list of allowed processors.
+                if ( _restrictedProcessorList == null ) {
+                    _restrictedProcessorList = new ArrayList<String>();
+                }
+                boolean found = false;
+                for ( Iterator<String> iter1 = _restrictedProcessorList.iterator(); iter1.hasNext() && !found; ) {
+                    if ( iter1.next().contentEquals( allowed.getNode() ) )
+                        found = true;
+                }
+                if ( !found )
+                    _restrictedProcessorList.add( allowed.getNode() );
+            }
+            _restrictListCheck.setSelected( doiConfig.isRestrictListCheck() );
+            _restrictPatternCheck.setSelected( doiConfig.isRestrictPatternCheck() );
+            if ( doiConfig.getProcessorPattern() != null ) {
+                _processorPattern.setText( doiConfig.getProcessorPattern() );
+                generateAllowedProcessorList();
             }
 
             _defaultNames.eliminateNonrespondingProcessors = doiConfig.isDefaultNamesEliminateNonrespondingProcessors();
@@ -4148,6 +4222,18 @@ public class SystemSettings extends JFrame {
                 doiConfig.getAntennaDefault().add( antennaDefault );
             }
         }
+        if ( _restrictedProcessorList != null ) {
+            for ( Iterator<String> iter = _restrictedProcessorList.iterator(); iter.hasNext(); ) {
+                String nodeName = iter.next();
+                DoiSystemConfig.AllowedProcessor allowed = factory.createDoiSystemConfigAllowedProcessor();
+                allowed.setNode( nodeName );
+                doiConfig.getAllowedProcessor().add( allowed );
+            }
+        }
+        doiConfig.setRestrictListCheck( _restrictListCheck.isSelected() );
+        doiConfig.setRestrictPatternCheck( _restrictPatternCheck.isSelected() );
+        if ( _processorPattern.getText() != null )
+            doiConfig.setProcessorPattern( _processorPattern.getText() );
 
         //  Build a lists of processors and Mark5s that are "invisible".  This comes
         //  from the hardware list.
@@ -6077,6 +6163,12 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _threadsPerCheck;
     protected ZCheckBox _baselineCheck;
     protected ZCheckBox _jobCheck;
+    protected ZCheckBox _restrictListCheck;
+    protected ZCheckBox _restrictPatternCheck;
+    protected ZButton _viewRestrictedProcessorList;
+    protected ArrayList<String> _restrictedProcessorList;
+    protected FormattedTextField _processorPattern;
+    protected String[] _processorPatternList;
     protected ZCheckBox _sequentialCheck;
     protected ZCheckBox _simultaneousCheck;
     protected NumberBox _maxJobs;
@@ -6102,6 +6194,42 @@ public class SystemSettings extends JFrame {
     public boolean threadsPerCheck() { return _threadsPerCheck.isSelected(); }
     public boolean baselineCheck() { return _baselineCheck.isSelected(); }
     public boolean jobCheck() { return _jobCheck.isSelected(); }
+    public boolean restrictListCheck() { return _restrictListCheck.isSelected(); }
+    public boolean restrictPatternCheck() { return _restrictPatternCheck.isSelected(); }
+    public boolean isInRestrictedProcessorList( String node ) {
+        //  If there is no list, accept the node.  Is this what we really want?
+        if ( _restrictedProcessorList == null )
+            return true;
+        else {
+            for ( Iterator<String> name = _restrictedProcessorList.iterator(); name.hasNext(); ) {
+                if ( name.next().contentEquals( node ) )
+                    return true;
+            }
+        }
+        return false;
+    }
+    public boolean isInRestrictedProcessorPattern( String node ) {
+        if ( _processorPatternList != null ) {
+            for ( int i = 0; i < _processorPatternList.length; ++i ) {
+                try {
+                    if ( node.matches( _processorPatternList[i] ) )
+                        return true;
+                } catch ( java.util.regex.PatternSyntaxException e ) {
+                    _messageCenter.error ( 0, "SystemSettings", "unparseable pattern in processor node pattern list - \"" + _processorPatternList[i] + "\"" );
+                }
+            }
+        }
+        return false;
+    }
+    public boolean processorNotRestricted( String node ) {
+        if ( restrictListCheck() && !isInRestrictedProcessorList( node ) ) {
+            return false;
+        }
+        if ( restrictPatternCheck() && !isInRestrictedProcessorPattern( node ) ) {
+            return false;
+        }
+        return true;
+    }
     public boolean sequentialCheck() { return _sequentialCheck.isSelected(); }
     public boolean simultaneousCheck() { return _simultaneousCheck.isSelected(); }
     public int maxJobs() { return _maxJobs.intValue(); }
@@ -6109,7 +6237,75 @@ public class SystemSettings extends JFrame {
     public int maxSecondsForProcessing() { return _maxSecondsForProcessing.intValue(); }
     public boolean useMaxSecondsForHardware() { return _useMaxSecondsForHardware.isSelected(); }
     public boolean useMaxSecondsForProcessing() { return _useMaxSecondsForProcessing.isSelected(); }
-    public boolean tryToSkipMissingStations() { return _tryToSkipMissingStations.isSelected(); }
+    public boolean tryToSkipMissingStations() { 
+        //  Don't use this capability for the moment...maybe forever!
+        //return _tryToSkipMissingStations.isSelected(); 
+        return false;
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Class to display a checklist of all possible processors and allow
+    //!  users to select them.
+    //--------------------------------------------------------------------------
+    public class ProcessorCheckList extends JFrame {
+        public ProcessorCheckList( int x, int y ) {
+            setLookAndFeel();
+            this.setLayout( null );
+            //  Figure out how big to make this thing.  We need room for all known
+            //  processor nodes and a couple of buttons.
+            int xsize = 400;
+            int ysize = 70 + 20 * hardwareMonitor().processorNodes().children().size();
+            this.setBounds( x, y, xsize, ysize );
+            this.setTitle( "Select Allowed Processors" );
+            int yp = 10;
+            _cbs = new ArrayList<ZCheckBox>();
+            for ( Iterator<BrowserNode> iter = hardwareMonitor().processorNodes().childrenIterator(); iter.hasNext(); ) {
+                BrowserNode node = iter.next();
+                ZCheckBox cb = new ZCheckBox( node.name() );
+                cb.setBounds( 20, yp, 300, 20 );
+                if ( _restrictedProcessorList != null ) {
+                    for ( Iterator<String> name = _restrictedProcessorList.iterator(); name.hasNext(); ) {
+                        if ( name.next().contentEquals( node.name() ) )
+                            cb.setSelected( true );
+                    }
+                }
+                else
+                    cb.setSelected( true );
+                yp += 20;
+                this.add( cb );
+                _cbs.add( cb );
+            }
+            _frame = this;
+            yp += 10;
+            ZButton select = new ZButton( "Select" );
+            select.setBounds( 280, yp, 100, 20 );
+            select.setToolTipText( "Select the currently-checked processing nodes." );
+            select.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _restrictedProcessorList == null )
+                        _restrictedProcessorList = new ArrayList<String>();
+                    _restrictedProcessorList.clear();
+                    for ( Iterator<ZCheckBox> cbs = _cbs.iterator(); cbs.hasNext(); ) {
+                        ZCheckBox cb = cbs.next();
+                        if ( cb.isSelected() )
+                            _restrictedProcessorList.add( cb.getText() );
+                    }
+                    _frame.setVisible( false );
+                }
+            } );
+            this.add( select );
+            ZButton cancel = new ZButton( "Cancel" );
+            cancel.setBounds( 170, yp, 100, 20 );
+            cancel.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _frame.setVisible( false );
+                }
+            } );
+            this.add( cancel );
+        }
+        protected ArrayList<ZCheckBox> _cbs;
+        ProcessorCheckList _frame;
+    }
     
     protected ZCheckBox _requestAllMessages;
     protected ZCheckBox _requestSpecificMessages;

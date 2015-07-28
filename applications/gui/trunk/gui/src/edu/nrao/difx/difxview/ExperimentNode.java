@@ -84,6 +84,15 @@ public class ExperimentNode extends QueueBrowserContainerNode {
             }
         });
         _popup.add( deleteSelectedItem );
+        ZMenuItem removeExperimentItem = new ZMenuItem( "Remove Experiment from Queue Browser" );
+        removeExperimentItem.setToolTipText( "Remove this Experiment from the Queue Browser.  All associated"
+                + "files and database entries will remain intact." );
+        removeExperimentItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                removeAction();
+            }
+        });
+        _popup.add( removeExperimentItem );
         JMenuItem deleteExperimentItem = new JMenuItem( "Delete Experiment" );
         deleteExperimentItem.setToolTipText( "Remove this Experiment from the database.  The Experiment must be empty!" );
         deleteExperimentItem.addActionListener(new ActionListener() {
@@ -157,6 +166,21 @@ public class ExperimentNode extends QueueBrowserContainerNode {
         if ( _settings != null )
             _labelWidth = _settings.jobColumnSpecs().name.width + 74;
         super.positionItems();
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Remove all jobs in this pass, and then the pass itself, from the
+    //!  queue browser.
+    //--------------------------------------------------------------------------
+    public void removeAction() {
+        try {
+            for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
+                PassNode thisPass = (PassNode)(iter.next());
+                thisPass.removeAction();
+            }
+            clearChildren();
+            ((BrowserNode)(this.getParent())).removeChild( this );
+        } catch ( java.util.ConcurrentModificationException e ) {}
     }
     
     /*

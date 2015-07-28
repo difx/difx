@@ -1093,9 +1093,9 @@ public class JobEditorMonitor extends JFrame {
                     if ( externalOperation )
                         return false;
                     if ( _dataSourcesTested )
-                        _messageDisplayPanel.warning( 0, "node selection", "Unable to select a node that meets data source requirements" );
+                        _jobNode.warningMessage( "Unable to select a node that meets data source requirements" );
                     else
-                        _messageDisplayPanel.error( 0, "node selection", "No nodes are available to act as data sources." );
+                        _jobNode.errorMessage( "No nodes are available to act as data sources." );
                 }
             }
         }
@@ -1154,8 +1154,9 @@ public class JobEditorMonitor extends JFrame {
                     if ( thisPaneNode != null ) {
                         //  Eliminate the node if it is the head node.
                         if ( _settings.useHeadNodeCheck() || !thisNode.name().contentEquals( _settings.headNode() ) ) {
+                            //  Eliminate this node if it does not fall into a "restricted" set of nodes.
+                            boolean useThis = _settings.processorNotRestricted( thisNode.name() );
                             //  Eliminate this node if it is used as a data source and we aren't sharing.
-                            boolean useThis = true;
                             if ( !_settings.shareDataSourcesAsProcessors() ) {
                                 //  Is the node already used as a data source?
                                 if ( thisNode.isDataSource() )
@@ -1205,8 +1206,48 @@ public class JobEditorMonitor extends JFrame {
             //  We do this if the user wants a specific number of nodes devoted to each
             //  process.
             else if ( _settings.nodesPerCheck() ) {
+                //  Check if there are enough nodes available to do this (busy or not)
+                int availableHW = 0;
+                for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                        iter2.hasNext(); ) {
+                    ProcessorNode thisNode = (ProcessorNode)(iter2.next());
+                    //  Make sure this node is in the pane that displays processor nodes.
+                    //  If for some reason it is not, we can't use it.
+                    PaneProcessorNode thisPaneNode = processorNodeByName( thisNode.name() );
+                    if ( thisPaneNode != null ) {
+                        //  Eliminate the node if it is the head node.
+                        if ( _settings.useHeadNodeCheck() || !thisNode.name().contentEquals( _settings.headNode() ) ) {
+                            //  Eliminate this node if it does not fall into a "restricted" set of nodes.
+                            boolean useThis = _settings.processorNotRestricted( thisNode.name() );
+                            //  Eliminate this node if it is used as a data source and we aren't sharing.
+                            if ( !_settings.shareDataSourcesAsProcessors() ) {
+                                //  Is the node already used as a data source?
+                                if ( thisNode.isDataSource() )
+                                    useThis = false;
+                                //  Is it "reserved" as a data source above?
+                                for ( Iterator<UsedNode> iter3 = dataSourceNodes.iterator(); iter3.hasNext(); ) {
+                                    if ( iter3.next().processorNode.name().contentEquals( thisNode.name() ) )
+                                        useThis = false;
+                                }
+                            }
+                            if ( useThis )
+                                ++availableHW;
+                        }
+                    }
+                }
+                //  So...how'd that go?  Is there enough hardware?  If so, follow user specifications.
+                //  If not, use all processors available to get as close as possible to what
+                //  the user wants.
+                int nodesToUse = _settings.nodesPer();
+                if ( availableHW == 0 ) {
+                    _jobNode.errorMessage( "Zero processors available under current specifications!" );
+                }
+                else if ( availableHW < nodesToUse ) {
+                    nodesToUse = availableHW;
+                    _jobNode.warningMessage( "Processor specification cannot be met!  Processing with available " + availableHW + " nodes." );
+                }
                 //  We want to reserve a specific number of nodes for each "process number".
-                for ( int j = 0; j < _settings.nodesPer(); ++j ) {
+                for ( int j = 0; j < availableHW; ++j ) {
                     ProcessorNode foundNode = null;
                     //  Look at each available node and see if we can use it (until we find one
                     //  that works).
@@ -1219,8 +1260,9 @@ public class JobEditorMonitor extends JFrame {
                         if ( thisPaneNode != null ) {
                             //  Eliminate the node if it is the head node.
                             if ( _settings.useHeadNodeCheck() || !thisNode.name().contentEquals( _settings.headNode() ) ) {
+                                //  Eliminate this node if it does not fall into a "restricted" set of nodes.
+                                boolean useThis = _settings.processorNotRestricted( thisNode.name() );
                                 //  Eliminate this node if it is used as a data source and we aren't sharing.
-                                boolean useThis = true;
                                 if ( !_settings.shareDataSourcesAsProcessors() ) {
                                     //  Is the node already used as a data source?
                                     if ( thisNode.isDataSource() )
@@ -1292,8 +1334,9 @@ public class JobEditorMonitor extends JFrame {
                     if ( thisPaneNode != null ) {
                         //  Eliminate the node if it is the head node.
                         if ( _settings.useHeadNodeCheck() || !thisNode.name().contentEquals( _settings.headNode() ) ) {
+                            //  Eliminate this node if it does not fall into a "restricted" set of nodes.
+                            boolean useThis = _settings.processorNotRestricted( thisNode.name() );
                             //  Eliminate this node if it is used as a data source and we aren't sharing.
-                            boolean useThis = true;
                             if ( !_settings.shareDataSourcesAsProcessors() ) {
                                 //  Is the node already used as a data source?
                                 if ( thisNode.isDataSource() )
@@ -1362,18 +1405,18 @@ public class JobEditorMonitor extends JFrame {
             if ( threadBasedFailure ) {
                 if ( externalOperation )
                     return false;
-                _messageDisplayPanel.warning( 0, "node selection", "Not enough free threads to meet processing requirements." );
+                _jobNode.warningMessage( "Not enough free threads to meet processing requirements." );
             }
             if ( nodeBasedFailure ) {
                 if ( externalOperation )
                     return false;
-                _messageDisplayPanel.warning( 0, "node selection", "Not enough free nodes to meet processing requirements." );
+                _jobNode.warningMessage( "Not enough free nodes to meet processing requirements." );
             }
         }
         else {
             if ( externalOperation )
                 return false;
-            _messageDisplayPanel.error( 0, "node selection", "Not enough nodes to EVER meet processing requirements." );
+            _jobNode.errorMessage( "Not enough nodes to EVER meet processing requirements." );
         }
         return true;
     }

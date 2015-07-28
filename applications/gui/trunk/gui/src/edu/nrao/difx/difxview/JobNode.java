@@ -215,15 +215,25 @@ public class JobNode extends QueueBrowserNode {
         _liveMonitorMenuItem.setEnabled( false );
         _popup.add( _liveMonitorMenuItem );
         _popup.add( new JSeparator() );
-        JMenuItem selectMenuItem = new JMenuItem( "Toggle Selection" );
+        JMenuItem selectMenuItem = new ZMenuItem( "Toggle Selection" );
         selectMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 selectionButtonAction();
             }
         });
         _popup.add( selectMenuItem );
-        JMenuItem deleteItem = new JMenuItem( "Delete" );
-        deleteItem.setToolTipText( "Delete this experiment.  Deletions also apply to the database (if used)." );
+        JMenuItem removeMenuItem = new ZMenuItem( "Remove from Queue Browser" );
+        removeMenuItem.setToolTipText( "Remove this job from the Queue Browser.  This does not delete\n"
+                + "associated files and database entries." );
+        removeMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                removeAction();
+            }
+        });
+        _popup.add( removeMenuItem );
+        JMenuItem deleteItem = new ZMenuItem( "Delete" );
+        deleteItem.setToolTipText( "Delete this experiment and all files associated with it.  Deletions\n"
+                + "also apply to the database (if used).  This process is <<red>>NOT REVERSIBLE!<</color>>" );
         deleteItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 deleteAction();
@@ -465,6 +475,7 @@ public class JobNode extends QueueBrowserNode {
             state().setText( "Scheduled" );
             state().setBackground( Color.YELLOW );
             state().updateUI();
+            warningMessage( "" );
             autostate( AUTOSTATE_SCHEDULED );
         }
     }
@@ -578,6 +589,8 @@ public class JobNode extends QueueBrowserNode {
                     }
                 }
             }
+        schedulerWarningMessages();
+        schedulerErrorMessages();
         }
     }
     
@@ -598,7 +611,8 @@ public class JobNode extends QueueBrowserNode {
     public void autostartJobStart() {
         resetIdleTime();
         autostate( AUTOSTATE_RUNNING );
-        _editorMonitor.startJob( false );
+        if ( _editorMonitor != null )
+            _editorMonitor.startJob( false );
     }
     
     /*
@@ -622,6 +636,53 @@ public class JobNode extends QueueBrowserNode {
         state().setText( "Auto Timeout (Proc)" );
         state().setBackground( Color.RED );
         state().updateUI();
+    }
+    
+    String _currentWarningMessage = "";
+    String _currentErrorMessage = "";
+    boolean _warningNew;
+    boolean _errorNew;
+    
+    //--------------------------------------------------------------------------
+    //  Set the warning message.  If it is a change from what existed, set an
+    //  appropriate flag.
+    //--------------------------------------------------------------------------
+    void warningMessage( String newMessage ) {
+        if ( !_currentWarningMessage.contentEquals( newMessage ) ) {
+            _currentWarningMessage = newMessage;
+            if ( _currentWarningMessage != "" )
+                _warningNew = true;
+        }
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Send any (new) warning message to the messaging system.  
+    //--------------------------------------------------------------------------
+    void schedulerWarningMessages() {
+        if ( _warningNew )
+            _settings.messageCenter().warning( 0, "Scheduler: " + name(), _currentWarningMessage );
+        _warningNew = false;
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Set the error message.  If it is a change from what existed, set an
+    //  appropriate flag.
+    //--------------------------------------------------------------------------
+    void errorMessage( String newMessage ) {
+        if ( !_currentErrorMessage.contentEquals( newMessage ) ) {
+            _currentErrorMessage = newMessage;
+            if ( _currentErrorMessage != "" )
+                _errorNew = true;
+        }
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Send any (new) error message to the messaging system.  
+    //--------------------------------------------------------------------------
+    void schedulerErrorMessages() {
+        if ( _errorNew )
+            _settings.messageCenter().error( 0, "Scheduler: " + name(), _currentErrorMessage );
+        _errorNew = false;
     }
     
     /*
@@ -678,6 +739,15 @@ public class JobNode extends QueueBrowserNode {
         g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING,
                      RenderingHints.VALUE_ANTIALIAS_ON );
         super.paintComponent( g );
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Remove this job from the queue browser.  This just makes the job
+    //!  invisible - all associated files and database entries still exist.
+    //--------------------------------------------------------------------------
+    public void removeAction() {
+        _settings.queueBrowser().removeJobFromSchedule( this );
+        ((BrowserNode)(this.getParent())).removeChild( this );
     }
     
     /*
