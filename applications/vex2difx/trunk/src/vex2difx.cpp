@@ -393,7 +393,14 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, const
 				++di;
 			}
 
-			snprintf(difxAntennas[antennaId].shelf, DIFXIO_SHELF_LENGTH, "%s", shelf.c_str());
+			if(shelf.empty())
+			{
+				snprintf(difxAntennas[antennaId].shelf, DIFXIO_SHELF_LENGTH, "NONE");
+			}
+			else
+			{
+				snprintf(difxAntennas[antennaId].shelf, DIFXIO_SHELF_LENGTH, "%s", shelf.c_str());
+			}
 
 			++antennaId;
 		}

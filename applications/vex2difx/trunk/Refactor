@@ -28,7 +28,12 @@ Test status:
 
 bd178e1: (Module swaps, pulsar)
 
-dq522:  (Many modes)
+dq029:  (Many modes, VLBA, 1, 2 -bit)
+  looks good
+  also tested FAKE mode here
+  also tested eVLBI modes here
+
+dq522:  (Many modes, VDIF)
   some antenna coords differ in their last digit
   flag: flag file is empty	 (maybe OK, because new vex2difx excluded the antenna)
 
@@ -54,6 +59,11 @@ bh207g4: (clock break)
 
 To test:
 
+x   * fake mode
+x   * eVLBI
+* S2/LBA formats
+* profile mode
+x   * non-2 bit
 x   * clock break in .vex.obs file
 x   * clock offsets
 x   * LO offsets
