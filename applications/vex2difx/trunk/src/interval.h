@@ -30,6 +30,8 @@
 #ifndef __INTERVAL_H__
 #define __INTERVAL_H__
 
+#include <iostream>
+
 class Interval
 {
 public:
@@ -56,5 +58,7 @@ public:
 	bool containsAbsolutely(const Interval &v) const { return (mjdStart < v.mjdStart) && (mjdStop > v.mjdStop); }
 	bool isCausal() const { return (mjdStart <= mjdStop); }
 };
+
+std::ostream& operator << (std::ostream &os, const Interval &x);
 
 #endif

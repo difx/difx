@@ -16,6 +16,15 @@ Version 2.5.0
   - Swiftly moving sources and/or antennas could still trigger this problem
 * leap second file now optional for spice kernel evaluation.
   - If not provided, the EOPs from within the DifxInput structure will be used
+* Major restructuring of code to facilitate multiple datastream support
+  - vex2 support is being anticipated
+  - Break out each vex table structure into its own .h/.cpp file pair
+  - Vex tables remain const except through access from VexData structure
+  - Load vex file without reference to the CorrParams structure (.v2d file)
+  - Data (files, modules, network info) are tied to a VexAntenna structure
+  - Multiple data streams (VexStream objects) are referenced from setups
+  - Some incomplete migrations remain:
+    - eventually job construction should not directly reference CorrParams structure.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

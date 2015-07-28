@@ -1,0 +1,72 @@
+
+Goal: all data from which difx schedules are derived come from VexTables
+
+Exceptions: zoom bands, machines
+
+
+Urgent:
+
+Eventually:
+
+* RECORD flag... how to handle?
+  - Handled OK for now.  Eventually maybe RECORD flags should be done per datastream???
+
+* zoom bands are property of corrparams
+  - OK for now.  Eventually migrate to VexSetup
+
+* name mappings (sources, antennas, ...) as specified in v2d file end up in a renaming map
+
+* move all relevant functionality into applyCorrParams()
+  - clocks
+  - zoom
+  - correlator parameters
+
+* restore decimation / oversampling?
+
+
+Test status:
+
+bd178e1: (Module swaps, pulsar)
+
+dq522:  (Many modes)
+  some antenna coords differ in their last digit
+  flag: flag file is empty	 (maybe OK, because new vex2difx excluded the antenna)
+
+td091a:  
+  some antenna coords differ in their last digit
+
+rv111:   (VDIF, Mark4)
+
+bf115q:  (Mark5B)
+  slight differences in antenna coords
+  slight differences in flag file
+
+ts036h:  (Files)
+
+bb320k1: (zoom, spacecraft)
+  looks OK!
+
+bd179a9: (multi phase center)
+  looks OK!
+
+bh207g4: (clock break)
+  looks OK!
+
+To test:
+
+x   * clock break in .vex.obs file
+x   * clock offsets
+x   * LO offsets
+x   * polarization swap
+... * various ways to specify VDIF format
+x   * test multi-thread multi-channel VDIF simply by specifying fewer threads than record chans
+x   * multi-phase-center
+x   * file-based
+x   * zoom
+
+Operate rules from v2d onto vex structure
+ - setups/modes and scans using them
+ - sources and the scans they are in?
+ - explicit scan names?
+
+

@@ -26,7 +26,7 @@ libvex_la_SOURCES = \
 	vex_get.c \
 	vex_put.c \
 	vex_util.c \
-	$(srcdir)/vex_parse.y \
+	vex_parse.y \
 	vex.yy.l
 
 pkgconfigdir = $(libdir)/pkgconfig

@@ -30,7 +30,7 @@
 #ifndef __SANITYCHECK_H__
 #define __SANITYCHECK_H__
 
-#include "vextables.h"
+#include "vex_data.h"
 #include "corrparams.h"
 
 int sanityCheckConsistency(const VexData *V, const CorrParams *P);

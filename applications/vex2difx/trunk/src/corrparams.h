@@ -39,11 +39,15 @@
 #include <difxio.h>
 
 #include "interval.h"
-#include "vextables.h"
+#include "freq.h"
+#include "vex_data.h"
 
 extern const double MJD_UNIX0;	// MJD at beginning of unix time
 extern const double SEC_DAY;
 extern const double MUSEC_DAY;
+
+#define AXIS_OFFSET_NOT_SET	-999
+#define ANTENNA_COORD_NOT_SET	-9e10
 
 #define MAX_DX_ORDER	4
 
@@ -127,6 +131,50 @@ public:
 	std::vector<ZoomFreq> zoomFreqs;
 };
 
+/* Datastreams...
+
+How do multi-datastreams work in vex2difx?
+
+1. Datastreams contain format and data source information for a subset of channels produced by an antenna
+2. If an antenna has no representative ANTENNA section, then the vex file must provide all of the information and only one datastream can be configured for that antenna
+3. ANTENNA sections can reference zero or more DATASTREAM sections with the datastreams parameter
+4. If no DATASTREAM is provided, then the datastream-specific info comes from the vex file with possible overrides from the ANTENNA section.  After file loading a single entry in the datastreams vector is populated.
+5. If multiple datastreams are created, each datastream (currently) must contain a single contiguous block of baseband channels (bands) from the VEX file.  If the datastream baseband channels in the vex file are not contiguous they will need to be manually reordered.
+6. If the number of baseband channels (bands) is not specified for datastreams of an antenna, it will be assumed that the datastreams evenly divide the number of recorded baseband channels in the vex file.  It is an error if the number of baseband channels in datastreams does not equal the number of recorded baseband channels in the vex file.
+7. Information that applies to all datastreams for an antenna can be provided in the ANTENNA section.
+8. It is not allowed to specify conflicting information in the ANTENNA section and a related DATASTREAM section; i.e., there is no overriding specified values.
+9. If multiple datastreams are defined then there is no mechanism to support modes with varying numbers of recorded channels.
+10. It is likely problematic for two streams to have identical channels or overlapping channels with zoom bands entirely within the overlap
+
+TODO:
+* DATA table needs populating (file lists or network info)
+* Test all non-fake modes
+*/
+
+class DatastreamSetup
+{
+public:
+	DatastreamSetup(const std::string &name);
+	int setkv(const std::string &key, const std::string &value);
+	bool hasBasebandData(const Interval &interval) const;	// Returns true if at least one baseband file exists over the provided interval
+	int merge(const DatastreamSetup *dss);
+
+	std::string difxName;
+	std::string vsn;	// if provided manually
+	std::vector<VexBasebandData> basebandFiles;	// files to correlate
+	std::string networkPort;// For eVLBI : port for this antenna.  A non-number indicates raw mode attached to an ethernet interface
+	int windowSize;		// For eVLBI : TCP window size
+	std::string machine;	// If set, use specified machine as datastream node for this antenna
+	std::string format;	// Override format from .vex file.
+				// This is sometimes needed because format not known always at scheduling time
+				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
+	enum DataSource dataSource;
+	enum SamplingType dataSampling;
+
+	int startBand;		// within the antenna's baseband channels (defined in vex order), where does this datastream start? [0-based]; -1 indicates not initialized
+	int nBand;		// number of baseband channels provided by this datastream
+};
+
 class AntennaSetup
 {
 public:
@@ -134,7 +182,9 @@ public:
 	int setkv(const std::string &key, const std::string &value);
 	int setkv(const std::string &key, const std::string &value, ZoomFreq * zoomFreq);
 	void copyGlobalZoom(const GlobalZoom &globalZoom);
-	bool hasBasebandFile(const Interval &interval) const;	// Returns true if at least one baseband file exists over the provided interval
+	bool hasBasebandData(const Interval &interval) const;	// Returns true if at least one baseband file exists over the provided interval
+	enum DataSource getDataSource() const;
+	const std::string &getFormat() const;
 
 	std::string vexName;	// Antenna name as it appears in vex file
 	std::string difxName;	// Antenna name (if different) to appear in difx
@@ -147,23 +197,14 @@ public:
 	std::vector<double> freqPhaseDelta;	// Phase difference between pols for each frequency
 	std::vector<double> loOffsets;		// LO offsets for each individual frequency
 	VexClock clock;
-	double deltaClock;	// sec
-	double deltaClockRate;	// sec/sec
+	double deltaClock;	// [sec]
+	double deltaClockRate;	// [sec/sec]
 	// flag
-	// media
 	bool polSwap;		// If true, swap polarizations
-	std::string format;	// Override format from .vex file.
-				// This is sometimes needed because format not known always at scheduling time
-				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
-	enum DataSource dataSource;
-	enum SamplingType dataSampling;
-	std::vector<VexBasebandFile> basebandFiles;	// files to correlate
-	std::string networkPort;// For eVLBI : port for this antenna.  A non-number indicates raw mode attached to an ethernet interface
-	int windowSize;		// For eVLBI : TCP window size
 	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
 	enum ToneSelection toneSelection;	// Which tones to propagate to FITS
 	double toneGuardMHz;	// to avoid getting tones too close to band edges; default = bandwidth/8
-	int tcalFrequency;	// Hz (= 80 for VLBA)
+	int tcalFrequency;	// [Hz] (= 80 for VLBA)
 
 	// No more than one of the following can be used at a time:
 	std::vector<ZoomFreq> zoomFreqs;//List of zoom freqs to add for this antenna
@@ -172,8 +213,12 @@ public:
 	// antenna-specific start and stop times
 	double mjdStart;
 	double mjdStop;
-	
-	std::string machine;	// If set, use specified machine as datastream node for this antenna	FIXME: eventually make this a std::list<std::string> for multi-datastream support
+
+	DatastreamSetup defaultDatastreamSetup;	// only used to contain defaults used in creating datastreamSetups
+	std::list<std::string> datastreamList;	// list of datastreams provided in v2d file
+	std::vector<DatastreamSetup> datastreamSetups;
+private:
+	void addDatastream(const std::string &dsName);
 };
 
 class CorrSetup
@@ -243,7 +288,7 @@ public:
 	CorrRule(const std::string &name = "rule_default");
 
 	int setkv(const std::string &key, const std::string &value);
-	bool match(const std::string &scan, const std::string &source, const std::string &mode, char cal, int qual) const;
+	bool match(const std::string &scan, const std::string &source, const std::string &mode) const;
 
 	std::string ruleName;
 
@@ -263,9 +308,6 @@ public:
 	CorrParams(const std::string &fileName);
 	int checkSetupValidity();
 
-	int loadShelves(const std::string &fileName);
-	const char *getShelf(const std::string &vsn) const;
-
 	int setkv(const std::string &key, const std::string &value);
 	int load(const std::string &fileName);
 	void defaults();
@@ -283,11 +325,13 @@ public:
 	const SourceSetup *getSourceSetup(const std::string &name) const;
 	const SourceSetup *getSourceSetup(const std::vector<std::string> &names) const;
 	const PhaseCentre *getPhaseCentre(const std::string &difxname) const;
+	const DatastreamSetup *getDatastreamSetup(const std::string &name) const;
 	const AntennaSetup *getAntennaSetup(const std::string &name) const;
+	AntennaSetup *getNonConstAntennaSetup(const std::string &name);
 	const GlobalZoom *getGlobalZoom(const std::string &name) const;
 	const VexClock *getAntennaClock(const std::string &antName) const;
 
-	const std::string &findSetup(const std::string &scan, const std::string &source, const std::string &mode, char cal, int qual) const;
+	const std::string &findSetup(const std::string &scan, const std::string &source, const std::string &mode) const;
 	const std::string &getNewSourceName(const std::string &origName) const;
 	
 	/* global parameters */
@@ -317,7 +361,6 @@ public:
 	int minReadSize;	// Min (Bytes) amount of data to read into datastream at a time
 	unsigned int invalidMask;
 	int visBufferLength;
-	int overSamp;		// A user supplied override to oversample factor
 	enum OutputFormatType outputFormat; // DIFX or ASCII
 	std::string v2dComment;
 	std::string outPath;	// If supplied, put the .difx/ output within the supplied directory rather in ./ .
@@ -337,6 +380,9 @@ public:
 	/* manually provided EOPs */
 	std::vector<VexEOP> eops;
 
+	/* datastream setup definitions */
+	std::vector<DatastreamSetup> datastreamSetups;
+
 	/* antenna setups to apply */
 	std::vector<AntennaSetup> antennaSetups;
 
@@ -353,9 +399,10 @@ public:
 private:
 	void addAntenna(const std::string &antName);
 	void addBaseline(const std::string &baselineName);
-	std::map<std::string,std::string> shelves;
 };
 
+std::ostream& operator << (std::ostream &os, const DatastreamSetup &x);
+std::ostream& operator << (std::ostream &os, const AntennaSetup &x);
 std::ostream& operator << (std::ostream &os, const CorrSetup &x);
 std::ostream& operator << (std::ostream &os, const CorrRule &x);
 std::ostream& operator << (std::ostream &os, const CorrParams &x);

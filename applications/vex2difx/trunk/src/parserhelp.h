@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2014-2015 by Chris Phillips                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,77 +20,50 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream/src/vex2difx.cpp $
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
  *
  *==========================================================================*/
 
-#include <algorithm>
-#include "interval.h"
+#ifndef __PARSERHELP_H__
+#define __PARSERHELP_H__
 
-// returns a negative number if no overlap
-double Interval::overlap(const Interval &v) const
+#include <string>
+#include <vector>
+
+enum charType
 {
-	return std::min(mjdStop, v.mjdStop) - std::max(mjdStart, v.mjdStart);
-}
+	SIGN,
+	DIGIT,
+	DOT,
+	E,
+	SPACE,
+	CHARERROR
+};
 
-void Interval::logicalAnd(double start, double stop)
-{
-	if(mjdStart < start)
-	{
-		mjdStart = start;
-	}
-	if(mjdStop > stop)
-	{
-		mjdStop = stop;
-	}
-}
+enum charType whatChar(const char a);
 
-void Interval::logicalAnd(const Interval &v)
-{
-	if(mjdStart < v.mjdStart)
-	{
-		mjdStart = v.mjdStart;
-	}
-	if(mjdStop > v.mjdStop)
-	{
-		mjdStop = v.mjdStop;
-	}
-}
+int getDouble(std::string &value, double &x);
+  
+int getOp(std::string &value, int &plus);
 
-void Interval::logicalOr(double start, double stop)
-{
-	if(mjdStart > start)
-	{
-		mjdStart = start;
-	}
-	if(mjdStop < stop)
-	{
-		mjdStop = stop;
-	}
-}
+// Read a string consisting of a series of additions and subtrations (only) and return a double
+double parseDouble(const std::string &value);
 
-void Interval::logicalOr(const Interval &v)
-{
-	if(mjdStart > v.mjdStart)
-	{
-		mjdStart = v.mjdStart;
-	}
-	if(mjdStop < v.mjdStop)
-	{
-		mjdStop = v.mjdStop;
-	}
-}
+// Turns a string into MJD
+// The following formats are allowd:
+// 1. decimal mjd:  55345.113521
+// 2. ISO 8601 dateTtime strings:  2009-03-08T12:34:56.121
+// 3. VLBA-like time:   2009MAR08-12:34:56.121
+// 4. vex time: 2009y245d08h12m24s"
+double parseTime(const std::string &timeStr);
 
-std::ostream& operator << (std::ostream &os, const Interval &x)
-{
-	int p = os.precision();
+double parseCoord(const char *str, char type);
 
-	os.precision(12);
-	os << "mjd(" << x.mjdStart << "," << x.mjdStop << ")";
-	os.precision(p);
+void split(const std::string &str, std::vector<std::string> &tokens, const std::string &delimiters = " ");
 
-	return os;
-}
+bool parseBoolean(const std::string &str);
+
+#endif

@@ -30,11 +30,12 @@
 #include <cstdlib>
 #include <sstream>
 #include <map>
+#include "jobgroup.h"
 #include "makejobs.h"
 #include "mediachange.h"
 
 // A is assumed to be the first scan in time order
-bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
+static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 {
 	if(((B->mjdStart < A->mjdStop) && (fabs(B->mjdStart-A->mjdStop) > 1.0e-8)) ||
 	   (B->mjdStart > A->mjdStop + P->maxGap))
@@ -60,7 +61,7 @@ bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 
 // Divides scans into different groups where each group contains scans that can be correlated at the same time.
 // This does not pay attention to media or clock breaks
-static void genJobGroups(std::vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P, int verbose)
+static void genJobGroups(std::vector<JobGroup> &JGs, const VexData *V, const CorrParams *P, const std::list<Event> &events, int verbose)
 {
 	unsigned int nNoRecordScan = 0;
 	std::list<std::string> scans;
@@ -69,7 +70,7 @@ static void genJobGroups(std::vector<VexJobGroup> &JGs, const VexData *V, const 
 	while(!scans.empty())
 	{
 		const VexScan *scan = V->getScanByDefName(scans.front());
-		unsigned int nRecordedAnt = scan->nAntennasWithRecordedData(V);
+		unsigned int nRecordedAnt = V->nAntennasWithRecordedData(*scan);
 
 		if(nRecordedAnt < P->minSubarraySize)
 		{
@@ -83,19 +84,21 @@ static void genJobGroups(std::vector<VexJobGroup> &JGs, const VexData *V, const 
 
 			continue;
 		}
-		JGs.push_back(VexJobGroup());
-		VexJobGroup &JG = JGs.back();
+		JGs.push_back(JobGroup());
+		JobGroup &JG = JGs.back();
 		JG.scans.push_back(scans.front());
 		JG.setTimeRange(*scan);
 		scans.pop_front();
 
 		const VexScan *scan1 = V->getScanByDefName(JG.scans.back());
-		const CorrSetup *corrSetup1 = P->getCorrSetup(scan1->corrSetupName);
+		const std::string &corrSetupName1 = P->findSetup(scan1->defName, scan1->sourceDefName, scan1->modeDefName);
+		const CorrSetup *corrSetup1 = P->getCorrSetup(corrSetupName1);
 
 		for(std::list<std::string>::iterator it = scans.begin(); it != scans.end();)
 		{
 			const VexScan *scan2 = V->getScanByDefName(*it);
-			const CorrSetup *corrSetup2 = P->getCorrSetup(scan2->corrSetupName);
+			const std::string &corrSetupName2 = P->findSetup(scan2->defName, scan2->sourceDefName, scan2->modeDefName);
+			const CorrSetup *corrSetup2 = P->getCorrSetup(corrSetupName2);
 
 			// Skip any scans that don't overlap with .v2d mjdStart and mjdStop
 			if(P->overlap(*scan2) <= 0.0)
@@ -126,15 +129,14 @@ static void genJobGroups(std::vector<VexJobGroup> &JGs, const VexData *V, const 
 		std::cout << nNoRecordScan << " scans dropped because they recorded no baseband data." << std::endl;
 	}
 
-	const std::list<VexEvent> *events = V->getEvents();
-	for(std::vector<VexJobGroup>::iterator jg = JGs.begin(); jg != JGs.end(); ++jg)
+	for(std::vector<JobGroup>::iterator jg = JGs.begin(); jg != JGs.end(); ++jg)
 	{
-		jg->genEvents(*events);
+		jg->genEvents(events);
 		jg->logicalAnd(*P);		// possibly shrink job group to requested range
 	}
 }
 
-static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrParams *P, int verbose)
+static void genJobs(std::vector<Job> &Js, const JobGroup &JG, const VexData *V, const CorrParams *P, int verbose)
 {
 	std::map<std::string,double> recordStop;
 	std::map<double,int> usage;
@@ -151,17 +153,17 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 	Interval scanRange;
 
 	// first initialize recordStop and usage
-	for(std::list<VexEvent>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
+	for(std::list<Event>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
 	{
-		if(e->eventType == VexEvent::RECORD_START)
+		if(e->eventType == Event::RECORD_START)
 		{
 			recordStop[e->name] = -1.0;
 		}
-		if(e->eventType == VexEvent::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd < scanRange.mjdStart))
+		if(e->eventType == Event::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd < scanRange.mjdStart))
 		{
 			scanRange.mjdStart = e->mjd;
 		}
-		if(e->eventType == VexEvent::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd > scanRange.mjdStop))
+		if(e->eventType == Event::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd > scanRange.mjdStop))
 		{
 			scanRange.mjdStop = e->mjd;
 		}
@@ -173,8 +175,9 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 
 	scanRange.logicalAnd(*P);	// Shrink time range to v2d start / stop interval
 
+
 	// populate changes, times, and usage
-	for(std::list<VexEvent>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
+	for(std::list<Event>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
 	{
 		if(mjdLast > 0.0 && e->mjd > mjdLast)
 		{
@@ -195,7 +198,7 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 			}
 		}
 
-		if(e->eventType == VexEvent::RECORD_START)
+		if(e->eventType == Event::RECORD_START)
 		{
 			if(recordStop[e->name] > 0.0)
 			{
@@ -211,23 +214,23 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 				}
 			}
 		}
-		else if(e->eventType == VexEvent::RECORD_STOP)
+		else if(e->eventType == Event::RECORD_STOP)
 		{
 			recordStop[e->name] = e->mjd;
 		}
-		else if(e->eventType == VexEvent::ANT_SCAN_START)
+		else if(e->eventType == Event::ANT_SCAN_START)
 		{
 			++usage[e->mjd];
 		}
-		else if(e->eventType == VexEvent::ANT_SCAN_STOP)
+		else if(e->eventType == Event::ANT_SCAN_STOP)
 		{
 			--usage[e->mjd];
 		}
-		else if(e->eventType == VexEvent::CLOCK_BREAK ||
-			e->eventType == VexEvent::LEAP_SECOND ||
-			e->eventType == VexEvent::ANTENNA_START ||
-			e->eventType == VexEvent::ANTENNA_STOP ||
-			e->eventType == VexEvent::MANUAL_BREAK)
+		else if(e->eventType == Event::CLOCK_BREAK ||
+			e->eventType == Event::LEAP_SECOND ||
+			e->eventType == Event::ANTENNA_START ||
+			e->eventType == Event::ANTENNA_STOP ||
+			e->eventType == Event::MANUAL_BREAK)
 		{
 			if(JG.containsAbsolutely(e->mjd))
 			{
@@ -249,7 +252,7 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 			std::cerr << "Developer error: jobs not converging after " << nLoop << " tries.\n" << std::endl;
 
 			std::cerr << "Events:" << std::endl;
-			std::list<VexEvent>::const_iterator iter;
+			std::list<Event>::const_iterator iter;
 			for(iter = JG.events.begin(); iter != JG.events.end(); ++iter)
 			{
 				std::cerr << "   " << *iter << std::endl;
@@ -319,46 +322,30 @@ static void genJobs(std::vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, 
 	}
 }
 
-void makeJobs(std::vector<VexJob>& J, VexData *V, const CorrParams *P, std::list<std::pair<int,std::string> > &removedAntennas, int verbose)
+void makeJobs(std::vector<Job>& J, const VexData *V, const CorrParams *P, std::list<Event> &events, std::list<std::pair<int,std::string> > &removedAntennas, int verbose)
 {
-	std::vector<VexJobGroup> JG;
-
-	// Add antenna start/stops
-
-	std::vector<AntennaSetup>::const_iterator as;
-	for(as = P->antennaSetups.begin(); as != P->antennaSetups.end(); ++as)
-	{
-		if(as->mjdStart > 0.0)
-		{
-			V->addEvent(as->mjdStart, VexEvent::ANTENNA_START, as->vexName);
-		}
-		if(as->mjdStop > 0.0)
-		{
-			V->addEvent(as->mjdStop, VexEvent::ANTENNA_STOP, as->vexName);
-		}
-	}
-	V->sortEvents();
+	std::vector<JobGroup> JG;
 
 	// Do splitting of jobs
-	genJobGroups(JG, V, P, verbose);
+	genJobGroups(JG, V, P, events, verbose);
 
 	if(verbose > 0)
 	{
 		std::cout << JG.size() << " job groups created:" << std::endl;
-		for(std::vector<VexJobGroup>::const_iterator jg = JG.begin(); jg != JG.end(); ++jg)
+		for(std::vector<JobGroup>::const_iterator jg = JG.begin(); jg != JG.end(); ++jg)
 		{
 			std::cout << "  " << *jg;
 		}
 	}
 
-	for(std::vector<VexJobGroup>::const_iterator jg = JG.begin(); jg != JG.end(); ++jg)
+	for(std::vector<JobGroup>::const_iterator jg = JG.begin(); jg != JG.end(); ++jg)
 	{
 		genJobs(J, *jg, V, P, verbose);
 	}
 
 	// Finalize all the new job structures
 	int jobId = P->startSeries;
-	for(std::vector<VexJob>::iterator j = J.begin(); j != J.end(); ++j)
+	for(std::vector<Job>::iterator j = J.begin(); j != J.end(); ++j)
 	{
 		std::ostringstream name;
 		j->jobSeries = P->jobSeries;
@@ -368,45 +355,18 @@ void makeJobs(std::vector<VexJob>& J, VexData *V, const CorrParams *P, std::list
 		// becomes part of the filenames
 		name << j->jobSeries << "_" << j->jobId;
 
-		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
-		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
-		j->assignVSNs(*V);
+		addEvent(events, j->mjdStart, Event::JOB_START, name.str());
+		addEvent(events, j->mjdStop,  Event::JOB_STOP,  name.str());
 
-		// Here we need to check if there really is data for all the stations in the job.
-		//   If not, remove the antenna and add to the "no data" table.
-		for(std::map<std::string,std::string>::iterator it = j->vsns.begin(); it != j->vsns.end(); ++it)
-		{
-			if(it->second == "None")
-			{
-				const AntennaSetup *as = P->getAntennaSetup(it->first);
-				if(!as->basebandFiles.empty())
-				{
-					if(!as->hasBasebandFile(*j))	// test if all baseband files are out of time range
-					{
-						removedAntennas.push_back(std::pair<int,std::string>(jobId, it->first));
-						if(verbose > 0)
-						{
-							std::cout << "Removed " << it->first << " from jobId " << jobId << " because no data exists." << std::endl;
-						}
-						j->vsns.erase(it);
-
-						// this is a bit ugly.  Any better way to remove one item from a map from within?
-						it = j->vsns.begin();
-						if(it == j->vsns.end())
-						{
-							break;
-						}
-					}
-				}
-			}
-		}
+		// finds antennas that are active during at least a subset of the jobs scans and have media
+		j->assignAntennas(*V, removedAntennas);
 		
 		// If fewer than minSubarray antennas remain, then mark the job as bad and exclude writing it later.
-		if(j->vsns.size() < P->minSubarraySize)
+		if(j->jobAntennas.size() < P->minSubarraySize)
 		{
 			j->jobSeries = "-";	// Flag to not actually produce this job
 		}
 		++jobId;
 	}
-	V->sortEvents();
+	events.sort();
 }

@@ -7,21 +7,22 @@ x. load params file
 x. Pulsar support
 x. Spacecraft support
 x. Handle files (i.e., not Mark5 modules)
-7. Handle multiple phase centers
+x. Handle multiple phase centers
 x. full paths to files
 x. guardblocks, blocks per send
-10. what to do about modes that don't support all antennas? (c081a.skd currently fails)
+x. what to do about modes that don't support all antennas? (c081a.skd currently fails)
 	- Adam suggests populating a bogus datastream entry with no corresponding baselines
 x. support mark5b
-12. support VDIF
+x. support VDIF
 x. support baselines=
 x. implement maxLength
 x. use antennas, not modules, in antenna count
 x. support time formats other than mjd
 x. support EVLBI
-18. clean up oversampling/decimation support
+18. reimplement oversampling/decimation support in a cleaner way
 19. Clean up antenna names/defs as done for sources
-20. Currently corrparams is used both during vex parsing and at input building time.  It would be nice to eventually make the vex parsing independent of corrparams.
+x. Currently corrparams is used both during vex parsing and at input building time.  It would be nice to eventually make the vex parsing independent of corrparams.
+21. vex2 support
 
 Concerns outside vex2difx proper
 

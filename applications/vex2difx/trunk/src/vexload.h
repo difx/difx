@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,8 +30,9 @@
 #ifndef __VEXLOAD_H__
 #define __VEXLOAD_H__
 
-#include "corrparams.h"
+#include <string>
+#include <vex_data.h>
 
-VexData *loadVexFile(const CorrParams &P, int * numWarnings);
+VexData *loadVexFile(const std::string &vexFile, int *numWarnings);
 
 #endif

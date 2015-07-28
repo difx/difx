@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,5 +45,21 @@ int fvex_dec(char **field, double *dec);
 }
 
 int checkCRLF(const char *filename);
+
+//FIXME: add DOYtoMJD from vexload also to timeutils?
+
+//FIXME: move to timeutils?
+/* round to nearest second */
+double roundSeconds(double mjd);
+
+/* check if an integer is a power of 2 */
+bool isPowerOf2(int n);
+
+int nextPowerOf2(int x);
+
+/* Modified from http://www-graphics.stanford.edu/~seander/bithacks.html */
+int intlog2(unsigned int v);
+
+char swapPolarizationCode(char pol);
 
 #endif

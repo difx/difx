@@ -39,13 +39,12 @@ This is a helper class used within vex2difx.cpp
 class freq
 {
 public:
-	freq(double f=0.0, double b=0.0, char s=' ', double isr=0.0, double osr=0.0, int os=0, int d=0, int iz=0, unsigned int t=0) 
-		: fq(f), bw(b), inputSpecRes(isr), outputSpecRes(osr), overSamp(os), decimation(d), isZoomFreq(iz), toneSetId(t), sideBand(s) {};
+	freq(double f=0.0, double b=0.0, char s=' ', double isr=0.0, double osr=0.0, int d=0, int iz=0, unsigned int t=0) 
+		: fq(f), bw(b), inputSpecRes(isr), outputSpecRes(osr), decimation(d), isZoomFreq(iz), toneSetId(t), sideBand(s) {};
 	double fq;		// Hz
 	double bw;		// Hz
 	double inputSpecRes;	// Hz
 	double outputSpecRes;	// Hz
-	int overSamp;
 	int decimation;
 	int isZoomFreq;
 	unsigned int toneSetId;
@@ -54,6 +53,6 @@ public:
 	int specAvg() const { return static_cast<int>(outputSpecRes/inputSpecRes + 0.5); }
 };
 
-int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int os, int d, int iz, unsigned int t);
+int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t);
 
 #endif

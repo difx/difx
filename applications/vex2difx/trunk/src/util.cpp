@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Walter Brisken                                  *
+ *   Copyright (C) 2012-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,50 +27,145 @@
  *
  *==========================================================================*/
 
+#include <set>
+#include <string>
 #include <cstdio>
+#include <cstdlib>
 #include "util.h"
 
 /* Function to look through a file to make sure it is not DOS formatted */
 int checkCRLF(const char *filename)
 {
+	static std::set<std::string> processedFiles;
 	const int bufferSize = 1024;
 	const char cr = 0x0d;
 	FILE *in;
 	char buffer[bufferSize];
 	int n;
 
-	printf("Checking %s\n", filename);
-
-	in = fopen(filename, "rb");
-	if(!in)
+	if(processedFiles.find(filename) == processedFiles.end())
 	{
-		fprintf(stderr, "Error: cannot open %s\n", filename);
+		printf("Checking %s\n", filename);
+		processedFiles.insert(filename);
 
-		return -1;
-	}
-
-	for(;;)
-	{
-		n = fread(buffer, 1, bufferSize, in);
-		if(n < 1)
+		in = fopen(filename, "rb");
+		if(!in)
 		{
-			break;
+			fprintf(stderr, "Error: cannot open %s\n", filename);
+
+			return -1;
 		}
 
-		for(int i = 0; i < n; ++i)
+		for(;;)
 		{
-			if(buffer[i] == cr)
+			n = fread(buffer, 1, bufferSize, in);
+			if(n < 1)
 			{
-				fprintf(stderr, "Error: %s appears to be in DOS format.  Please run dos2unix or equivalent and try again.\n", filename);
+				break;
+			}
 
-				fclose(in);
+			for(int i = 0; i < n; ++i)
+			{
+				if(buffer[i] == cr)
+				{
+					fprintf(stderr, "Error: %s appears to be in DOS format.  Please run dos2unix or equivalent and try again.\n", filename);
 
-				return -1;
+					fclose(in);
+
+					return -1;
+				}
 			}
 		}
-	}
 
-	fclose(in);
+		fclose(in);
+	}
 
 	return 0;
 }
+
+/* round to nearest second */
+double roundSeconds(double mjd)
+{
+	int intmjd, intsec;
+
+	intmjd = static_cast<int>(mjd);
+	intsec = static_cast<int>((mjd - intmjd)*86400.0 + 0.5);
+
+	return intmjd + intsec/86400.0;
+}
+
+/* check if an integer is a power of 2 */
+bool isPowerOf2(int n)
+{
+	if(!(n & (n - 1))) 
+	{
+		return true;
+	}
+
+	return false; // also true for zero but this shouldn't concern us
+}
+
+// round up to the next power of two
+// There must be a more elegant solution!
+int nextPowerOf2(int x)
+{
+	int n=0; 
+	int m=0;
+	
+	for(int i=0; i < 31; ++i)
+	{
+		if(x & (1 << i))
+		{
+			++n;
+			m = i;
+		}
+	}
+
+	if(n < 2)
+	{
+		return x;
+	}
+	else
+	{
+		return 2<<m;
+	}
+}
+
+/* Modified from http://www-graphics.stanford.edu/~seander/bithacks.html */
+int intlog2(unsigned int v)
+{
+	const unsigned int b[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000};
+	const unsigned int S[] = {1, 2, 4, 8, 16};
+	unsigned int r = 0; // result of log2(v) will go here
+
+	for(int i = 4; i >= 0; --i) 
+	{
+		if(v & b[i])
+		{
+			v >>= S[i];
+			r |= S[i];
+		} 
+	}
+
+	return r;
+}
+
+char swapPolarizationCode(char pol)
+{
+	switch(pol)
+	{
+	case 'R':
+		return 'L';
+	case 'L':
+		return 'R';
+	case 'X':
+		return 'Y';
+	case 'Y':
+		return 'X';
+	default:
+		fprintf(stderr, "Error: unknown polarization: %c\n", pol);
+
+		exit(EXIT_FAILURE);
+	}
+}
+

@@ -29,7 +29,9 @@
 
 #include "freq.h"
 
-int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int os, int d, int iz, unsigned int t)
+// Returns index of requested (fq, bw, sb, ...) from freqs.
+// If not in freqs, it is added first
+int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t)
 {
 	for(std::vector<freq>::const_iterator it = freqs.begin(); it != freqs.end(); ++it)
 	{
@@ -38,7 +40,6 @@ int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double is
 		   sb  == it->sideBand &&
 		   isr == it->inputSpecRes &&
 		   osr == it->outputSpecRes &&
-		   os  == it->overSamp &&
 		   d   == it->decimation &&
 		   iz  == it->isZoomFreq &&
 		   t   == it->toneSetId)
@@ -49,7 +50,7 @@ int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double is
 	}
 
 	// not in list yet, so add
-	freqs.push_back(freq(fq, bw, sb, isr, osr, os, d, iz, t));
+	freqs.push_back(freq(fq, bw, sb, isr, osr, d, iz, t));
 
 	return freqs.size() - 1;
 }
