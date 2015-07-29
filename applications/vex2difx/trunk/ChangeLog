@@ -25,6 +25,8 @@ Version 2.5.0
   - Multiple data streams (VexStream objects) are referenced from setups
   - Some incomplete migrations remain:
     - eventually job construction should not directly reference CorrParams structure.
+* Don't export the vex library anymore.  It causes some trouble
+* Some other confugure.ac / Makefile.am cleanups
 
 Version 2.4.0
 ~~~~~~~~~~~~~

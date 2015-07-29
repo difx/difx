@@ -5,6 +5,8 @@ AC_C_BIGENDIAN
  
 AM_INIT_AUTOMAKE
 
+AC_CONFIG_MACRO_DIR([m4])
+
 AC_PROG_CC
 AC_PROG_F77
 AC_PROG_CPP
@@ -30,7 +32,6 @@ CXXFLAGS="${CFLAGS}"
 AC_OUTPUT([ \
 	Makefile \
 	vex/Makefile \
-	vex/vex.pc \
 	src/Makefile \
 	utilities/Makefile \
 ])
