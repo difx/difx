@@ -9,6 +9,7 @@ int main(int argc, char **argv)
 	unsigned char frame[FRAMESIZE];
 	FILE *in;
 	int i, v;
+	int frameNum, lastFrameNum = 1000000000;
 
 	if(argc > 1)
 	{
@@ -49,8 +50,17 @@ int main(int argc, char **argv)
 			break;
 		}
 
-		printf("%02X%02X%02X%02X %c %5ld  ", frame[3], frame[2], frame[1], frame[0], (frame[5] & 0x80 ? '*' : ' '), frame[4]+256L*(frame[5] & 0x7F));
-		printf("%02X%02X%02X%02X %02X%02X%02X%02X\n", frame[11], frame[10], frame[9], frame[8], frame[15], frame[14], frame[13], frame[12]);
+		frameNum = frame[4]+256L*(frame[5] & 0x7F);
+
+		printf("%02X%02X%02X%02X %c %5ld  ", frame[3], frame[2], frame[1], frame[0], (frame[5] & 0x80 ? '*' : ' '), frameNum);
+		printf("%02X%02X%02X%02X %02X%02X%02X%02X", frame[11], frame[10], frame[9], frame[8], frame[15], frame[14], frame[13], frame[12]);
+		if(frameNum > lastFrameNum && frameNum != lastFrameNum+1)
+		{
+			printf("  skipped %d frames", frameNum-lastFrameNum-1);
+		}
+		printf("\n");
+
+		lastFrameNum = frameNum;
 	}
 	fclose(in);
 

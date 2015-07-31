@@ -5,6 +5,7 @@ Verion 1.5.3
 * m5pcal: now supports tones at non-integer MHz, better supports wideband recordings, 
   adds FFT length (--chunksize) option, and is updated to behave more DiFX-like
 * m5d: adds complex decode (--double) and custom printout format (e.g., --format=%f)
+* test5b: will now report skipped frames
 
 Version 1.5.2
 * Post DiFX-2.4
