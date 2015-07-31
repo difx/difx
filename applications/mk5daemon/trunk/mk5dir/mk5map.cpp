@@ -35,6 +35,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <time.h>
 #include <sys/time.h>
 #include <difxmessage.h>
@@ -134,6 +135,7 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 	unsigned int a, b;
 	struct mark5_format *mf;
 	int n;
+	int nz;
 
 	byte = -1;
 
@@ -148,8 +150,14 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 	}
 
 	a = pos >> 32;
-	b = pos % (1LL << 32);
+	b = pos & 0xFFFFFFFFLL;
+	memset(buffer, 0, BufferLength);
 	WATCHDOGTEST( XLRReadData(*xlrDev, buffer, a, b, BufferLength));
+	nz = countZeros(buffer, BufferLength/sizeof(streamstordatatype));
+	if(nz > BufferLength/sizeof(streamstordatatype)/2)
+	{
+		printf("Read from %Ld led to %d zero records out of %d records\n", pos, (long long)nz, BufferLength/sizeof(streamstordatatype));
+	}
 
 	mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, BufferLength));
 	if(!mf)
@@ -183,7 +191,14 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 		framebytes = mf->framebytes;
 		frameoffset = mf->frameoffset;
 
-		printf("tracks=%d framespersecond=%d framebytes=%d framenum=%d frameoffset=%d framens=%f\n", tracks, framespersecond, framebytes, frame, frameoffset, mf->framens);
+		if(mf->format == 2)
+		{
+			const unsigned char *H = ((const unsigned char *)buffer)+frameoffset;
+			frame = H[4]+256L*(H[5] & 0x7F);
+			ns = mf->framens * frame;
+		}
+
+		printf("tracks=%d framespersecond=%d framebytes=%d framenum=%d frameoffset=%d framens=%f ns=%d\n", tracks, framespersecond, framebytes, frame, frameoffset, mf->framens, ns);
 		
 		delete_mark5_format(mf);
 
@@ -608,12 +623,12 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 		if(out)
 		{
 			fprintf(out, "%14Ld %14Ld %5d %5d %5d %5d %f %d  %d %d %d No%04d\n",
-				d1->byte, d2->byte-d1->byte, d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
+				(long long)(d1->byte), (long long)(d2->byte-d1->byte), d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
 		}
 		if(verbose > -1 || !out)
 		{
 			printf("%14Ld %14Ld %5d %5d %5d %5d %f %d  %d %d %d No%04d\n",
-				d1->byte, d2->byte-d1->byte, d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
+				(long long)(d1->byte), (long long)(d2->byte-d1->byte), d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
 		}
 
 		d1 = d2;
