@@ -920,12 +920,24 @@ void VexData::cloneStreams(const std::string &modeName, const std::string &antNa
 		std::map<std::string,VexSetup>::iterator it = M.setups.find(antName);
 		if(it != M.setups.end())
 		{
+			int nrc;
+
+			if(it->second.streams.size() == 1 && it->second.streams[0].nRecordChan % copies == 0)
+			{
+				nrc = it->second.streams[0].nRecordChan/copies;
+			}
+			else
+			{
+				nrc = it->second.streams[0].nRecordChan;
+			}
 			it->second.streams.resize(copies);
+			it->second.streams[0].nRecordChan = nrc;
 			if(copies > 1)
 			{
 				for(int c = 1; c < copies; ++c)
 				{
 					it->second.streams[c] = it->second.streams[0];
+					it->second.streams[c].nRecordChan = nrc;
 				}
 			}
 		}
