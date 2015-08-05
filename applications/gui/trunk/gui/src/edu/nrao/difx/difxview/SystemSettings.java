@@ -475,7 +475,7 @@ public class SystemSettings extends JFrame {
             }
         });
         difxControlPanel.add( _channelAllData );
-        _difxVersion = new JComboBox();
+        _difxVersion = new JComboBox<Object>();
         _difxVersion.setToolTipText( "Run all DiFX applications (vex2difx, mpifxcorr, etc.) using this DiFx version." );
         _difxVersion.setEditable( true );
         //  This little bit causes a typed-in item to be treated as a new version.
@@ -1151,9 +1151,14 @@ public class SystemSettings extends JFrame {
         _tryToSkipMissingStations = new ZCheckBox( "Try To Skip Missing Stations" );
         _tryToSkipMissingStations.setToolTipText( "If a job was unable to run because station data are missing,\n"
                 + "try to rebuild and rerun the job without the offending station(s)." );
-        _tryToSkipMissingStations.setBounds( 850, 240, 200, 25 );
-        jobProcessingPanel.add( _tryToSkipMissingStations );
+        //_tryToSkipMissingStations.setBounds( 850, 240, 200, 25 );
+        //jobProcessingPanel.add( _tryToSkipMissingStations );
         _tryToSkipMissingStations.setVisible( false );
+        _yieldToOtherSessions = new ZCheckBox( "Yield to Other Sessions" );
+        _yieldToOtherSessions.setToolTipText( "Do not use data or processing nodes that appear to be in use by\n"
+                + "other DiFX users." );
+        _yieldToOtherSessions.setBounds( 850, 240, 200, 25 );
+        jobProcessingPanel.add( _yieldToOtherSessions );
         _clearCorrelationStatisticsButton = new ZButton( "Clear Statistics" );
         _clearCorrelationStatisticsButton.setToolTipText( "Zero the statistics used to estimate processing times.\n"
                 + "Subsequent estimates will have no knowledge of previous job execution times." );
@@ -2209,6 +2214,7 @@ public class SystemSettings extends JFrame {
         _maxSecondsForProcessing.intValue( 1800 );
         _useMaxSecondsForProcessing.setSelected( false );
         _tryToSkipMissingStations.setSelected( false );
+        _yieldToOtherSessions.setSelected( true );
         _queueBrowserSettings.showCompleted = true;
         _queueBrowserSettings.showIncomplete = true;
         _queueBrowserSettings.showSelected = true;
@@ -3317,6 +3323,7 @@ public class SystemSettings extends JFrame {
                 _maxSecondsForProcessing.intValue( doiConfig.getMaxSecondsForProcessing() );
             _useMaxSecondsForProcessing.setSelected( doiConfig.isUseMaxSecondsForProcessing() );
             _tryToSkipMissingStations.setSelected( !doiConfig.isTryToSkipMissingStationsCheck() );
+            _yieldToOtherSessions.setSelected( !doiConfig.isYieldToOtherSessions() );
             if ( doiConfig.getCorrelationTimeSum() != 0.0 )
                 _correlationTimeSum = doiConfig.getCorrelationTimeSum();
             if ( doiConfig.getCorrelationTimeN() != 0.0 )
@@ -4172,6 +4179,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setUseMaxSecondsForProcessing( _useMaxSecondsForProcessing.isSelected() );
         doiConfig.setSimultaneousCheck( !_simultaneousCheck.isSelected() );
         doiConfig.setTryToSkipMissingStationsCheck( !_tryToSkipMissingStations.isSelected() );
+        doiConfig.setYieldToOtherSessions( !_yieldToOtherSessions.isSelected() );
         if ( _correlationTimeSum != null )
             doiConfig.setCorrelationTimeSum( _correlationTimeSum );
         if ( _correlationTimeN != null )
@@ -4918,7 +4926,7 @@ public class SystemSettings extends JFrame {
     protected SaneTextField _difxMonitorHost;
     protected NumberBox _difxMonitorPort;
     protected SaneTextField _difxControlUser;
-    protected JComboBox _difxVersion;
+    protected JComboBox<Object> _difxVersion;
     protected ZCheckBox _useDefaultStartScript;
     protected SaneTextField _difxBase;
     protected GuiServerConnection _guiServerConnection;
@@ -5564,7 +5572,7 @@ public class SystemSettings extends JFrame {
                 }
             }
         }
-        
+
         public PanelItem addItem() {
             PanelItem newPanel = new PanelItem();
             //  Create a new Text Field in which a path can be entered.
@@ -5572,7 +5580,7 @@ public class SystemSettings extends JFrame {
             newPanel.textField.setToolTipText( "Path to associate with a node.  Any file that exists below this\n"
                     + "path will be assigned the selected node as a data source." );
             //  Create a new combo box with all possible data source nodes.
-            newPanel.comboBox = new JComboBox();
+            newPanel.comboBox = new JComboBox<String>();
             newPanel.comboBox.setToolTipText( "Node name to use as the data source for the given path." );
             newPanel.comboBox.setEditable( true );
             for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
@@ -5605,7 +5613,7 @@ public class SystemSettings extends JFrame {
             newPanel.add( newPanel.comboBox );
             newPanel.textField.setBounds( 25, 0, 500, 25 );
             newPanel.comboBox.setBounds( 525, 0, 300, 25 );
-            final JComboBox thisBox = newPanel.comboBox;
+            final JComboBox<String> thisBox = newPanel.comboBox;
             newPanel.comboBox.addPopupMenuListener( new PopupMenuListener() {
                 public void popupMenuCanceled( PopupMenuEvent e) {
                 }
@@ -5642,7 +5650,7 @@ public class SystemSettings extends JFrame {
         public class PanelItem extends JPanel {
             public ZButton delete;
             public TabCompletedTextField textField;
-            public JComboBox comboBox;
+            public JComboBox<String> comboBox;
         }
         
         /*
@@ -5807,14 +5815,14 @@ public class SystemSettings extends JFrame {
         public PanelItem addItem() {
             PanelItem newPanel = new PanelItem();
             //  Create a new combo box with all possible data source nodes.
-            newPanel.comboBox = new JComboBox();
+            newPanel.comboBox = new JComboBox<String>();
             newPanel.comboBox.setEditable( true );
             for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
                     iter.hasNext(); ) {
                 ProcessorNode thisModule = (ProcessorNode)(iter.next());
                 newPanel.comboBox.addItem( thisModule.name() );
             }
-            final JComboBox thisBox = newPanel.comboBox;
+            final JComboBox<String> thisBox = newPanel.comboBox;
             newPanel.comboBox.addPopupMenuListener( new PopupMenuListener() {
                 public void popupMenuCanceled( PopupMenuEvent e) {
                 }
@@ -5872,7 +5880,7 @@ public class SystemSettings extends JFrame {
         
         public class PanelItem extends JPanel {
             public ZButton delete;
-            public JComboBox comboBox;
+            public JComboBox<String> comboBox;
         }
         
         /*
@@ -6007,7 +6015,7 @@ public class SystemSettings extends JFrame {
             PanelItem newPanel = new PanelItem();
             newPanel.antennaName = new FormattedTextField();
             newPanel.add( newPanel.antennaName );
-            newPanel.source = new JComboBox();
+            newPanel.source = new JComboBox<String>();
             newPanel.source.setEditable( false );
             newPanel.source.addItem( "Files" );
             newPanel.source.addItem( "Module" );
@@ -6053,7 +6061,7 @@ public class SystemSettings extends JFrame {
         public class PanelItem extends JPanel {
             public ZButton delete;
             public FormattedTextField antennaName;
-            public JComboBox source;
+            public JComboBox<String> source;
             public TabCompletedTextField dataPath;
             public ZCheckBox filelist;
             public String antennaName() {
@@ -6177,6 +6185,7 @@ public class SystemSettings extends JFrame {
     protected NumberBox _maxSecondsForProcessing;
     protected ZCheckBox _useMaxSecondsForProcessing;
     protected ZCheckBox _tryToSkipMissingStations;
+    protected ZCheckBox _yieldToOtherSessions;
     
     public boolean useHeadNodeCheck() { return _useHeadNodeCheck.isSelected(); }
     public boolean restrictSources() { return _restrictSourcesCheck.isSelected(); }
@@ -6241,6 +6250,9 @@ public class SystemSettings extends JFrame {
         //  Don't use this capability for the moment...maybe forever!
         //return _tryToSkipMissingStations.isSelected(); 
         return false;
+    }
+    public boolean yieldToOtherSessions() { 
+        return _yieldToOtherSessions.isSelected(); 
     }
     
     //--------------------------------------------------------------------------

@@ -99,6 +99,8 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
      */
     public int measureDataHeight() {
         int height = 0;
+        if ( _messageList == null )
+            return 0;
         synchronized( _messageList ) {
             for ( Iterator<MessageNode> iter = _messageList.iterator(); iter.hasNext(); ) {
                 MessageNode thisMessage = iter.next();

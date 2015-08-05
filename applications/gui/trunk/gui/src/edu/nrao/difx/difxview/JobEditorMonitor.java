@@ -1058,6 +1058,13 @@ public class JobEditorMonitor extends JFrame {
                     if ( useNode && !_settings.shareDataSourcesBetweenJobs() && thisNode.isDataSource() ) {
                         useNode = false;
                     }
+                    //  If an independent process (someone else running DiFX) appears to be using this node,
+                    //  and we are not stepping on what others are doing, don't use it.
+                    if ( useNode && _settings.yieldToOtherSessions() && thisNode.activeJob() != null && thisNode.activeJob().trim() != "" ) {
+                        //  Okay, processor is working on something...but it isn't one of our jobs, is it?
+                        if ( !_settings.queueBrowser().isJobInSchedule( thisNode.activeJob() ) )
+                            useNode = false;
+                    }
                     //  Make sure the minimum number of threads required is avaible on this node.
                     if ( useNode ) {
                         int totalThreadsUsed = thisNode.threadsUsed();
@@ -1167,6 +1174,13 @@ public class JobEditorMonitor extends JFrame {
                                         useThis = false;
                                 }
                             }
+                            //  If an independent process (someone else running DiFX) appears to be using this node,
+                            //  and we are not stepping on what others are doing, don't use it.
+                            if ( useThis && _settings.yieldToOtherSessions() && thisNode.activeJob() != null && thisNode.activeJob().trim() != "" ) {
+                                //  Okay, processor is working on something...but it isn't one of our jobs, is it?
+                                if ( !_settings.queueBrowser().isJobInSchedule( thisNode.activeJob() ) )
+                                    useThis = false;
+                            }
                             //  See if the number of available threads is sufficient to match
                             //  what the user wants.
                             if ( useThis ) {
@@ -1220,7 +1234,7 @@ public class JobEditorMonitor extends JFrame {
                             //  Eliminate this node if it does not fall into a "restricted" set of nodes.
                             boolean useThis = _settings.processorNotRestricted( thisNode.name() );
                             //  Eliminate this node if it is used as a data source and we aren't sharing.
-                            if ( !_settings.shareDataSourcesAsProcessors() ) {
+                            if ( useThis && !_settings.shareDataSourcesAsProcessors() ) {
                                 //  Is the node already used as a data source?
                                 if ( thisNode.isDataSource() )
                                     useThis = false;
@@ -1229,6 +1243,13 @@ public class JobEditorMonitor extends JFrame {
                                     if ( iter3.next().processorNode.name().contentEquals( thisNode.name() ) )
                                         useThis = false;
                                 }
+                            }
+                            //  If an independent process (someone else running DiFX) appears to be using this node,
+                            //  and we are not stepping on what others are doing, don't use it.
+                            if ( useThis && _settings.yieldToOtherSessions() && thisNode.activeJob() != null && thisNode.activeJob().trim() != "" ) {
+                                //  Okay, processor is working on something...but it isn't one of our jobs, is it?
+                                if ( !_settings.queueBrowser().isJobInSchedule( thisNode.activeJob() ) )
+                                    useThis = false;
                             }
                             if ( useThis )
                                 ++availableHW;
@@ -1241,13 +1262,14 @@ public class JobEditorMonitor extends JFrame {
                 int nodesToUse = _settings.nodesPer();
                 if ( availableHW == 0 ) {
                     _jobNode.errorMessage( "Zero processors available under current specifications!" );
+                    nodesToUse = 0;
                 }
                 else if ( availableHW < nodesToUse ) {
                     nodesToUse = availableHW;
                     _jobNode.warningMessage( "Processor specification cannot be met!  Processing with available " + availableHW + " nodes." );
                 }
                 //  We want to reserve a specific number of nodes for each "process number".
-                for ( int j = 0; j < availableHW; ++j ) {
+                for ( int j = 0; j < nodesToUse; ++j ) {
                     ProcessorNode foundNode = null;
                     //  Look at each available node and see if we can use it (until we find one
                     //  that works).
@@ -1282,6 +1304,13 @@ public class JobEditorMonitor extends JFrame {
                                         if ( iter3.next().processorNode.name().contentEquals( thisNode.name() ) )
                                             useThis = false;
                                     }
+                                }
+                                //  If an independent process (someone else running DiFX) appears to be using this node,
+                                //  and we are not stepping on what others are doing, don't use it.
+                                if ( useThis && _settings.yieldToOtherSessions() && thisNode.activeJob() != null && thisNode.activeJob().trim() != "" ) {
+                                    //  Okay, processor is working on something...but it isn't one of our jobs, is it?
+                                    if ( !_settings.queueBrowser().isJobInSchedule( thisNode.activeJob() ) )
+                                        useThis = false;
                                 }
                                 //  See if the number of available threads is sufficient to match
                                 //  what the user wants.
@@ -1346,6 +1375,13 @@ public class JobEditorMonitor extends JFrame {
                                     if ( iter3.next().processorNode.name().contentEquals( thisNode.name() ) )
                                         useThis = false;
                                 }
+                            }
+                            //  If an independent process (someone else running DiFX) appears to be using this node,
+                            //  and we are not stepping on what others are doing, don't use it.
+                            if ( useThis && _settings.yieldToOtherSessions() && thisNode.activeJob() != null && thisNode.activeJob().trim() != "" ) {
+                                //  Okay, processor is working on something...but it isn't one of our jobs, is it?
+                                if ( !_settings.queueBrowser().isJobInSchedule( thisNode.activeJob() ) )
+                                    useThis = false;
                             }
                             if ( useThis ) {
                                 //  See how many threads this node has free.
@@ -1807,9 +1843,45 @@ public class JobEditorMonitor extends JFrame {
      */
     public void startJob( boolean applyMachinesInThread ) {
         _jobNode.setJobStart();
+        _jobNode.setState( "Node Allocation", Color.YELLOW );
+        //  "Reserve" the resources we need for this process - we tell the nodes themselves
+        //  that they are "busy".  Headnode first.
+        for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                iter2.hasNext(); ) {
+            ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+            if ( usedNode.name().contentEquals( _headNode.getText() ) )
+                usedNode.addJob( this, 1, ProcessorNode.CurrentUse.HEADNODE );
+        }
+        //  Then all of the "checked" data stream node names.
+        for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
+                iter.hasNext(); ) {
+            DataSource thisNode = (DataSource)(iter.next());
+            //  Tell this node it is being used as a data source, and add it to the list
+            //  of nodes employed by this job.
+            for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                    iter2.hasNext(); ) {
+                ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+                if ( usedNode.name().contentEquals( thisNode.sourceNode() ) )
+                    usedNode.addJob( this, _settings.threadsPerDataSource(), ProcessorNode.CurrentUse.DATASOURCE );
+            }
+        }
+        //  And the processing nodes.
+        for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
+                iter.hasNext(); ) {
+            PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
+            if ( thisNode.selected() ) {
+                for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                        iter2.hasNext(); ) {
+                    ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+                    if ( usedNode.name().contentEquals( thisNode.name() ) )
+                        usedNode.addJob( this, thisNode.threads(), ProcessorNode.CurrentUse.PROCESSOR );
+                }
+            }
+        }
+        
         //  Has the user already generated .threads and .machines files (which is
         //  done when the "Apply" button in the Machines List settings is pushed)?
-        //  Alternatively, has the use edited and uploaded .machines and .threads
+        //  Alternatively, has the user edited and uploaded .machines and .threads
         //  files by hand?  If these things have not been done, the files need to
         //  be generated before running.  The thread we create will do this and then
         //  restart the job.  We also have the option of NOT doing this in a thread,
@@ -1854,14 +1926,14 @@ public class JobEditorMonitor extends JFrame {
         // -- manager, enabled only
         DifxStart.Manager manager = command.factory().createDifxStartManager();
         manager.setNode( _headNode.getText() );
-        //  Tell this node it is being used as a head node, and add it to the list
-        //  of nodes employed by this job.
-        for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
-                iter2.hasNext(); ) {
-            ProcessorNode usedNode = (ProcessorNode)(iter2.next());
-            if ( usedNode.name().contentEquals( _headNode.getText() ) )
-                usedNode.addJob( this, 1, ProcessorNode.CurrentUse.HEADNODE );
-        }
+//        //  Tell this node it is being used as a head node, and add it to the list
+//        //  of nodes employed by this job.
+//        for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+//                iter2.hasNext(); ) {
+//            ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+//            if ( usedNode.name().contentEquals( _headNode.getText() ) )
+//                usedNode.addJob( this, 1, ProcessorNode.CurrentUse.HEADNODE );
+//        }
         jobStart.setManager( manager );
 
         // -- set difx version to use
@@ -1881,14 +1953,14 @@ public class JobEditorMonitor extends JFrame {
                 iter.hasNext(); ) {
             DataSource thisNode = (DataSource)(iter.next());
             dataNodeNames += thisNode.sourceNode() + " ";
-            //  Tell this node it is being used as a data source, and add it to the list
-            //  of nodes employed by this job.
-            for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
-                    iter2.hasNext(); ) {
-                ProcessorNode usedNode = (ProcessorNode)(iter2.next());
-                if ( usedNode.name().contentEquals( thisNode.sourceNode() ) )
-                    usedNode.addJob( this, _settings.threadsPerDataSource(), ProcessorNode.CurrentUse.DATASOURCE );
-            }
+//            //  Tell this node it is being used as a data source, and add it to the list
+//            //  of nodes employed by this job.
+//            for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+//                    iter2.hasNext(); ) {
+//                ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+//                if ( usedNode.name().contentEquals( thisNode.sourceNode() ) )
+//                    usedNode.addJob( this, _settings.threadsPerDataSource(), ProcessorNode.CurrentUse.DATASOURCE );
+//            }
         }
         dataStream.setNodes( dataNodeNames );
         jobStart.setDatastream(dataStream);
@@ -1903,14 +1975,14 @@ public class JobEditorMonitor extends JFrame {
                 process.setNodes( thisNode.name() );
                 process.setThreads( thisNode.threadsText() );
                 jobStart.getProcess().add( process );
-                //  Tell this node it is being used as a processor, and add it to the list
-                //  of nodes employed by this job.
-                for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
-                        iter2.hasNext(); ) {
-                    ProcessorNode usedNode = (ProcessorNode)(iter2.next());
-                    if ( usedNode.name().contentEquals( thisNode.name() ) )
-                        usedNode.addJob( this, thisNode.threads(), ProcessorNode.CurrentUse.PROCESSOR );
-                }
+//                //  Tell this node it is being used as a processor, and add it to the list
+//                //  of nodes employed by this job.
+//                for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+//                        iter2.hasNext(); ) {
+//                    ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+//                    if ( usedNode.name().contentEquals( thisNode.name() ) )
+//                        usedNode.addJob( this, thisNode.threads(), ProcessorNode.CurrentUse.PROCESSOR );
+//                }
             }
         }
 
@@ -2625,12 +2697,12 @@ public class JobEditorMonitor extends JFrame {
             for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
                     iter.hasNext(); ) {
                 ProcessorNode thisModule = (ProcessorNode)(iter.next());
-                _sourceNode.addItem( thisModule.name() );
+                _sourceNode.addItem( new NodePanel( thisModule.name(), null, null, null ) );
             }
             for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
                     iter.hasNext(); ) {
                 Mark5Node thisModule = (Mark5Node)(iter.next());
-                _sourceNode.addItem( thisModule.name() );
+                _sourceNode.addItem( new NodePanel( thisModule.name(), null, null, null ) );
             }
         }
         
@@ -2654,10 +2726,18 @@ public class JobEditorMonitor extends JFrame {
          * node name.
          */
         public void setSourceNode( String name ) {
-            _sourceNode.setSelectedItem( name );
+            int num = _sourceNode.getItemCount();
+            boolean found = false;
+            for ( int i = 0; i < num && !found; ++i ) {
+                NodePanel node = _sourceNode.getItemAt( i );
+                if ( node.name().contentEquals( name ) ) {
+                    found = true;
+                    _sourceNode.setSelectedIndex( i );
+                }
+            }
         }
         
-        public String sourceNode() { return (String)_sourceNode.getSelectedItem(); }
+        public String sourceNode() { return ((NodePanel)_sourceNode.getSelectedItem()).name(); }
         public String sourceType() { return _sourceType.getText(); }
         public String antenna() { return _antenna.getText(); }
         public boolean missing() { return _missing; }
@@ -2692,7 +2772,7 @@ public class JobEditorMonitor extends JFrame {
             }
         }
 
-        class StyledComboBox extends JComboBox {
+        class StyledComboBox extends JComboBox<JobEditorMonitor.NodePanel> {
             public StyledComboBox() {
                 setUI( new StyledComboBoxUI() );
                 setBackground( Color.WHITE );
@@ -2807,38 +2887,38 @@ public class JobEditorMonitor extends JFrame {
         
         protected JLabel _moduleName;
         
-        public class NodePanel extends JComponent {
-            public NodePanel( String name, String moduleA, String moduleB, String activeBank ) {
-                _name = name;
-                _moduleA = moduleA;
-                _moduleB = moduleB;
-            }
-            //  Override the "toString()" method to create a string out of the
-            //  name and any modules contained.
-            public String toString() {
-                //  Try to get things to align properly...
-                String rtn = _name + "                     ";
-                if ( _moduleA.length() > 0 && !_moduleA.equalsIgnoreCase( "none" ) )
-                    rtn += "          " + _moduleA;
-                if ( _moduleB.length() > 0 && !_moduleB.equalsIgnoreCase( "none" ) )
-                    rtn += "          " + _moduleB;
-                return rtn;
-            }
-            public String name() { return _name; }
-            public String moduleA() { return _moduleA; }
-            public String moduleB() { return _moduleB; }
-            public void moduleA( String newVal ) { _moduleA = newVal; }
-            public void moduleB( String newVal ) { _moduleB = newVal; }
-            public String activeBank() { return _activeBank; }
-            protected String _name;
-            protected String _moduleA;
-            protected String _moduleB;
-            protected String _activeBank;
-            
-        }
-        
     }
     
+    public class NodePanel extends JComponent {
+        public NodePanel( String name, String moduleA, String moduleB, String activeBank ) {
+            _name = name;
+            _moduleA = moduleA;
+            _moduleB = moduleB;
+        }
+        //  Override the "toString()" method to create a string out of the
+        //  name and any modules contained.
+        public String toString() {
+            //  Try to get things to align properly...
+            String rtn = _name + "                     ";
+            if ( _moduleA != null && _moduleA.length() > 0 && !_moduleA.equalsIgnoreCase( "none" ) )
+                rtn += "          " + _moduleA;
+            if ( _moduleB != null && _moduleB.length() > 0 && !_moduleB.equalsIgnoreCase( "none" ) )
+                rtn += "          " + _moduleB;
+            return rtn;
+        }
+        public String name() { return _name; }
+        public String moduleA() { return _moduleA; }
+        public String moduleB() { return _moduleB; }
+        public void moduleA( String newVal ) { _moduleA = newVal; }
+        public void moduleB( String newVal ) { _moduleB = newVal; }
+        public String activeBank() { return _activeBank; }
+        protected String _name;
+        protected String _moduleA;
+        protected String _moduleB;
+        protected String _activeBank;
+
+    }
+        
     /*
      * Data source from a file.
      */

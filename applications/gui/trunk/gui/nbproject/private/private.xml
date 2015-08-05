@@ -111,14 +111,6 @@
     </editor-bookmarks>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0">
         <file>
-            <url>src/edu/nrao/difx/difxview/JobEditorMonitor.java</url>
-            <bookmark id="0">
-                <name/>
-                <line>922</line>
-                <key/>
-            </bookmark>
-        </file>
-        <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Queue.java</url>
             <bookmark id="0">
                 <name/>
@@ -128,6 +120,14 @@
             <bookmark id="0">
                 <name/>
                 <line>870</line>
+                <key/>
+            </bookmark>
+        </file>
+        <file>
+            <url>src/edu/nrao/difx/difxview/JobEditorMonitor.java</url>
+            <bookmark id="0">
+                <name/>
+                <line>922</line>
                 <key/>
             </bookmark>
         </file>
@@ -164,7 +164,7 @@
             <url>src/edu/nrao/difx/difxview/JobNode.java</url>
             <bookmark id="0">
                 <name/>
-                <line>528</line>
+                <line>529</line>
                 <key/>
             </bookmark>
         </file>
@@ -313,12 +313,12 @@
             </bookmark>
             <bookmark id="0">
                 <name/>
-                <line>2895</line>
+                <line>2901</line>
                 <key/>
             </bookmark>
             <bookmark id="0">
                 <name/>
-                <line>4891</line>
+                <line>4897</line>
                 <key/>
             </bookmark>
         </file>
@@ -424,15 +424,18 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/JobEditorMonitor.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxdatabase/QueueDBConnection.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/SystemSettings.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/ProcessorNodesHeader.java</file>
             <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/ProcessorNode.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/ColumnTextArea.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/JobNode.java</file>
             <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/ExperimentEditor.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/HardwareMonitorPanel.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxutilities/GuiServerConnection.java</file>
             <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/Mark5Node.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxutilities/DiFXCommand_ls.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxdatabase/QueueDBConnection.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/ProcessorNodesHeader.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/SystemSettings.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/JobNode.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/ColumnTextArea.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/StationPanel.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/HardwareMonitorPanel.java</file>
             <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/JobNodesHeader.java</file>
             <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/QueueBrowserPanel.java</file>
         </group>

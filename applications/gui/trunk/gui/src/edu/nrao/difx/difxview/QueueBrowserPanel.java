@@ -2303,6 +2303,18 @@ public class QueueBrowserPanel extends TearOffPanel {
         return found;
     }
     
+    boolean isJobInSchedule( String name ) {
+        boolean found = false;
+        synchronized ( _scheduleQueue ) {
+            for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !found; ) {
+                JobNode thisJob = iter.next();
+                if ( thisJob.name().contentEquals( name ) ) {
+                    found = true;
+                }
+            }
+        }
+        return found;
+    }
     
     class ScheduleThread extends Thread {
         public boolean keepGoing = true;

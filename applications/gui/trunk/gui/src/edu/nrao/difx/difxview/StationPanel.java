@@ -127,7 +127,7 @@ public class StationPanel extends IndexedPanel {
         dataNodeLabel.setBounds( 415, 30, 60, 25 );
         dataNodeLabel.setHorizontalAlignment( JLabel.RIGHT );
         _dataSourcePanel.add( dataNodeLabel );
-        _sourceNodeChoice = new JComboBox();
+        _sourceNodeChoice = new JComboBox<String>();
         _sourceNodeChoice.addPopupMenuListener( new PopupMenuListener() {
             public void popupMenuWillBecomeVisible( PopupMenuEvent e ) {
                 String currentItem = (String)_sourceNodeChoice.getSelectedItem();
@@ -161,9 +161,7 @@ public class StationPanel extends IndexedPanel {
         vsnLabel.setBounds( 100, 60, 95, 25 );
         vsnLabel.setHorizontalAlignment( JLabel.RIGHT );
         _dataSourcePanel.add( vsnLabel );
-        //  See "Stupid Java tricks" comment elsewhere in this file.
-        _vsnList = new JComboBox();
-//        _vsnList = new JComboBox<String>();
+        _vsnList = new JComboBox<String>();
         _vsnList.setBounds( 230, 60, 150, 25 );
         _vsnList.setToolTipText( "VSN of module containing data for this antenna." );
         _vsnList.setEditable( true );
@@ -387,7 +385,7 @@ public class StationPanel extends IndexedPanel {
         //  Get the default value of the tone selection from the settings...we have
         //  to do it here because some of the callbacks below will mess it up.
         String defaultToneSelection = _settings.toneSelection();
-        _toneSelection = new JComboBox();
+        _toneSelection = new JComboBox<String>();
         _toneSelection.setBounds( 150, 30, 120, 25 );
         _toneSelection.setToolTipText( "Use an algorithm to choose tones for you." );
         _toneSelection.setEditable( true );
@@ -1346,10 +1344,7 @@ public class StationPanel extends IndexedPanel {
     protected JCheckBox _eVLBICheck;
     protected ZCheckBox _fakeCheck;
     protected NumberBox _eVLBIPort;
-    //  Stupid Java tricks...the following line produces warnings under later versions, but
-    //  the next line (which fixes the warnings) will not compile under earlier versions.
-    protected JComboBox _vsnList;
-//    protected JComboBox<String> _vsnList;
+    protected JComboBox<String> _vsnList;
     protected SaneTextField _dataFormat;
     protected JLabel _dataSource;
     protected EventListenerList _changeListeners;
@@ -1371,7 +1366,7 @@ public class StationPanel extends IndexedPanel {
     protected IndexedPanel _settingsPanel;
     
     protected JCheckBox _useSourceNode;
-    protected JComboBox _sourceNodeChoice;
+    protected JComboBox<String> _sourceNodeChoice;
     
     protected NumberBox _positionX;
     protected NumberBox _positionY;
@@ -1381,7 +1376,7 @@ public class StationPanel extends IndexedPanel {
     protected double _zpos;
     
     protected NumberBox _deltaClock;
-    protected JComboBox _toneSelection;
+    protected JComboBox<String> _toneSelection;
     protected NumberBox _phaseCalInt;
     
     protected VexFileParser _vexData;

@@ -183,7 +183,7 @@ public class ExperimentEditor extends JFrame {
         statusLabel.setBounds( 10, 50, 85, 25 );
         statusLabel.setHorizontalAlignment( JLabel.RIGHT );
         namePanel.add( statusLabel );
-        _statusList = new JComboBox();
+        _statusList = new JComboBox<String>();
         _statusList.setBounds( 100, 50, 210, 25 );
         _statusList.setToolTipText( "List of possible status settings for this experiment." );
         _statusList.setBackground( Color.WHITE );
@@ -1068,7 +1068,7 @@ public class ExperimentEditor extends JFrame {
 //            }
 //        });
 //        buttonPanel.add( _useStagingArea );
-        _passTypeList = new JComboBox();
+        _passTypeList = new JComboBox<String>();
         _passTypeList.setBounds( 130, 20, 150, 25 );
         _passTypeList.setToolTipText( "List of possible pass types." );
         _passTypeList.setBackground( Color.WHITE );
@@ -1099,7 +1099,7 @@ public class ExperimentEditor extends JFrame {
                     }
                 }
                 if ( !found ) {
-                    _passTypeList.addItem( _passTypeList.getEditor().getItem() );
+                    _passTypeList.addItem( (String)_passTypeList.getEditor().getItem() );
                     _passTypeList.setSelectedIndex( _passTypeList.getItemCount() - 1 );
                 }
                 _currentPassType = (String)_passTypeList.getSelectedItem();
@@ -3559,7 +3559,7 @@ public class ExperimentEditor extends JFrame {
     protected boolean _saveInDataBase;
     protected JButton _okButton;
     protected JLabel _status;
-    protected JComboBox _statusList;
+    protected JComboBox<String> _statusList;
     protected SystemSettings _settings;
     protected JLabel _directoryAsLabel;
     protected TabCompletedTextField _directory;
@@ -3602,7 +3602,7 @@ public class ExperimentEditor extends JFrame {
     protected String _startingV2dFileContent;
     protected JButton _previousVexFileButton;
     protected JPopupMenu _previousVexFileMenu;
-    protected JComboBox _passTypeList;
+    protected JComboBox<String> _passTypeList;
     protected String _currentPassType;
     protected JLabel _dataLabel;
     protected JCheckBox _currentDataCheck;

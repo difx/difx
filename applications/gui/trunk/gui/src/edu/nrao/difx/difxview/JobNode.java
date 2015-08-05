@@ -531,31 +531,35 @@ public class JobNode extends QueueBrowserNode {
                         //  Run a "data" check to see if, for whatever reason, data are not
                         //  available for this job.
                         if ( !_editorMonitor.dataAvailableCheck() ) {
-                            //  See if it is possible to skip stations and continue running
-                            //  if the appropriate setting allows this.
-                            if ( _settings.tryToSkipMissingStations() && _editorMonitor.skipStationsMissingData() ) {
-                                _editorMonitor.removeSkippedStations( true );
-                                setState( "Rebuilding Job", Color.YELLOW );
-                                while ( autostate() != AUTOSTATE_RESOURCE_TIMEOUT && !_editorMonitor.rebuildFailed() &&
-                                        !_editorMonitor.rebuildSuccess() ) {
-                                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
-                                }
-                                if ( autostate() == AUTOSTATE_RESOURCE_TIMEOUT ) {
-                                    return;
-                                }
-                                else if ( _editorMonitor.rebuildFailed() ) {
-                                    setState( "Rebuild Failed", Color.RED );
-                                    autostate( AUTOSTATE_FAILED );
-                                }
-                            }
-                            else {
-                                autostate( AUTOSTATE_FAILED );
-                                return;
-                            }
+                            //  We no longer want to do this but I'm clinging to it because it took
+                            //  so long to code correctly.  Commented out for now...
+//                            //  See if it is possible to skip stations and continue running
+//                            //  if the appropriate setting allows this.
+//                            if ( _settings.tryToSkipMissingStations() && _editorMonitor.skipStationsMissingData() ) {
+//                                _editorMonitor.removeSkippedStations( true );
+//                                setState( "Rebuilding Job", Color.YELLOW );
+//                                while ( autostate() != AUTOSTATE_RESOURCE_TIMEOUT && !_editorMonitor.rebuildFailed() &&
+//                                        !_editorMonitor.rebuildSuccess() ) {
+//                                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+//                                }
+//                                if ( autostate() == AUTOSTATE_RESOURCE_TIMEOUT ) {
+//                                    return;
+//                                }
+//                                else if ( _editorMonitor.rebuildFailed() ) {
+//                                    setState( "Rebuild Failed", Color.RED );
+//                                    autostate( AUTOSTATE_FAILED );
+//                                }
+//                            }
+//                            else {
+//                                autostate( AUTOSTATE_FAILED );
+//                                return;
+//                            }
+                            autostate( AUTOSTATE_FAILED );
+                            return;
                         }
                         _editorMonitor.loadHardwareLists();
                     }
-                    if ( _editorMonitor.selectNodeDefaults( false, true ) ) {
+                    if ( _editorMonitor.selectNodeDefaults( true, true ) ) {
                         if ( autostate() == AUTOSTATE_UNSCHEDULED )
                             setState( "Unscheduled", Color.GRAY );
                         else {
@@ -604,6 +608,12 @@ public class JobNode extends QueueBrowserNode {
         checkResources.start();
     }
     
+    class JobStartThread extends Thread {
+        public void run() {
+            if ( _editorMonitor != null )
+                _editorMonitor.startJob( false );
+        }
+    }
     /*
      * Function to run a job that has resources allocated.  The startJob() function
      * already runs a thread to do the delayed work.
@@ -611,8 +621,10 @@ public class JobNode extends QueueBrowserNode {
     public void autostartJobStart() {
         resetIdleTime();
         autostate( AUTOSTATE_RUNNING );
-        if ( _editorMonitor != null )
-            _editorMonitor.startJob( false );
+        JobStartThread jobStartThread = new JobStartThread();
+        jobStartThread.start();
+        //  Give the thread time to "reserve" necessary data and processing nodes.
+        try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
     }
     
     /*
@@ -1367,8 +1379,8 @@ public class JobNode extends QueueBrowserNode {
     public void showOutputFile( boolean newVal ) { _outputFile.setVisible( newVal ); }
     public void showOutputSize( boolean newVal ) { _outputSize.setVisible( newVal ); }
     public void showDifxVersion( boolean newVal ) { _difxVersion.setVisible( newVal ); }
-    public void showSpeedUpFactor( boolean newVal ) { _speedUpFactor.setVisible( newVal ); }
-    public void showTimeRemaining( boolean newVal ) { _timeRemaining.setVisible( newVal ); }
+    public void showSpeedUpFactor( boolean newVal ) { _speedUpFactor.setVisible( false ); }
+    public void showTimeRemaining( boolean newVal ) { _timeRemaining.setVisible( false ); }
     public void showNumAntennas( boolean newVal ) { _numAntennas.setVisible( newVal ); }
     public void showNumForeignAntennas( boolean newVal ) { _numForeignAntennas.setVisible( newVal ); }
     public void showDutyCycle( boolean newVal ) { _dutyCycleText.setVisible( newVal ); }
@@ -1448,7 +1460,7 @@ public class JobNode extends QueueBrowserNode {
         _startTime.setTime( new Date() );
         correlationStart( _startTime.mjd() );
         running( true );
-        setState( "Initializing", Color.YELLOW );
+//        setState( "Initializing", Color.YELLOW );
         setProgress( 0 );
         _jobTotalTime = null;
         _jobCorrelationTime = null;

@@ -366,6 +366,9 @@
                 <xsd:element ref="baselineCheck" />
                 <xsd:element ref="jobCheck" />
                 <xsd:element ref="sequentialCheck" />
+                <xsd:element ref="restrictListCheck" />
+                <xsd:element ref="restrictPatternCheck" />
+                <xsd:element ref="processorPattern" />
                 <xsd:element ref="maxJobs" />
                 <xsd:element ref="maxSecondsForHardware" />
                 <xsd:element ref="useMaxSecondsForHardware" />
@@ -373,6 +376,7 @@
                 <xsd:element ref="useMaxSecondsForProcessing" />
                 <xsd:element ref="simultaneousCheck" />
                 <xsd:element ref="tryToSkipMissingStationsCheck" />
+                <xsd:element ref="yieldToOtherSessions" />
                 <xsd:element ref="correlationTimeSum" />
                 <xsd:element ref="correlationTimeN" />
                 <xsd:element name="pathNodePair" maxOccurs="unbounded" minOccurs="0">
@@ -392,6 +396,11 @@
                         <xsd:attribute name="filelist" type="xsd:boolean"/>
                         <xsd:attribute name="source" type="xsd:string"/>
                         <xsd:attribute name="dataPath" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="allowedProcessor" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="node" type="xsd:string"/>
                     </xsd:complexType>
                 </xsd:element>
                 
@@ -657,6 +666,9 @@
     <xsd:element name="baselineCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="jobCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="sequentialCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="restrictListCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="restrictPatternCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="processorPattern" type="xsd:string"></xsd:element>
     <xsd:element name="maxJobs" type="xsd:int"></xsd:element>
     <xsd:element name="maxSecondsForHardware" type="xsd:int"></xsd:element>
     <xsd:element name="useMaxSecondsForHardware" type="xsd:boolean"></xsd:element>
@@ -664,6 +676,7 @@
     <xsd:element name="useMaxSecondsForProcessing" type="xsd:boolean"></xsd:element>
     <xsd:element name="simultaneousCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="tryToSkipMissingStationsCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="yieldToOtherSessions" type="xsd:boolean"></xsd:element>
     <xsd:element name="correlationTimeSum" type="xsd:double"></xsd:element>
     <xsd:element name="correlationTimeN" type="xsd:double"></xsd:element>
 

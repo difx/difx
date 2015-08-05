@@ -204,14 +204,14 @@ public class JobNodesHeader extends BrowserNode {
                 updateDisplayedData();
             }
         });
-        _popup.add( _showSpeedUpFactor );
+        //_popup.add( _showSpeedUpFactor );
         _showTimeRemaining = new JCheckBoxMenuItem( "Time Remaining" );
         _showTimeRemaining.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 updateDisplayedData();
             }
         });
-        _popup.add( _showTimeRemaining );
+        //_popup.add( _showTimeRemaining );
         _showNumAntennas = new JCheckBoxMenuItem( "# Antennas" );
         _showNumAntennas.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -485,8 +485,8 @@ public class JobNodesHeader extends BrowserNode {
         _showOutputFile.setState( true );
         _showOutputSize.setState( true );
         _showDifxVersion.setState( true );
-        _showSpeedUpFactor.setState( true );
-        _showTimeRemaining.setState( true );
+        //_showSpeedUpFactor.setState( true );
+        //_showTimeRemaining.setState( true );
         _showNumAntennas.setState( true );
         _showNumForeignAntennas.setState( true );
         _showDutyCycle.setState( true );
@@ -689,8 +689,8 @@ public class JobNodesHeader extends BrowserNode {
         _showOutputFile.setState( _settings.jobColumnSpecs().outputFile.show );
         _showOutputSize.setState( _settings.jobColumnSpecs().outputSize.show );
         _showDifxVersion.setState( _settings.jobColumnSpecs().difxVersion.show );
-        _showSpeedUpFactor.setState( _settings.jobColumnSpecs().speedUpFactor.show );
-        _showTimeRemaining.setState( _settings.jobColumnSpecs().timeRemaining.show );
+        _showSpeedUpFactor.setState( false/*_settings.jobColumnSpecs().speedUpFactor.show*/ );
+        _showTimeRemaining.setState( false/*_settings.jobColumnSpecs().timeRemaining.show*/ );
         _showNumAntennas.setState( _settings.jobColumnSpecs().numAntennas.show );
         _showNumForeignAntennas.setState( _settings.jobColumnSpecs().numForeignAntennas.show );
         _showDutyCycle.setState( _settings.jobColumnSpecs().dutyCycle.show );
@@ -1158,8 +1158,8 @@ public class JobNodesHeader extends BrowserNode {
         _outputFile.setVisible( _showOutputFile.getState() );
         _outputSize.setVisible( _showOutputSize.getState() );
         _difxVersion.setVisible( _showDifxVersion.getState() );
-        _speedUpFactor.setVisible( _showSpeedUpFactor.getState() );
-        _timeRemaining.setVisible( _showTimeRemaining.getState() );
+        _speedUpFactor.setVisible( false/*_showSpeedUpFactor.getState()*/ );
+        _timeRemaining.setVisible( false/*_showTimeRemaining.getState()*/ );
         _numAntennas.setVisible( _showNumAntennas.getState() );
         _numForeignAntennas.setVisible( _showNumForeignAntennas.getState() );
         _dutyCycle.setVisible( _showDutyCycle.getState() );
@@ -1184,8 +1184,8 @@ public class JobNodesHeader extends BrowserNode {
         _settings.jobColumnSpecs().outputFile.show = _showOutputFile.getState();
         _settings.jobColumnSpecs().outputSize.show = _showOutputSize.getState();
         _settings.jobColumnSpecs().difxVersion.show = _showDifxVersion.getState();
-        _settings.jobColumnSpecs().speedUpFactor.show = _showSpeedUpFactor.getState();
-        _settings.jobColumnSpecs().timeRemaining.show = _showTimeRemaining.getState();
+        _settings.jobColumnSpecs().speedUpFactor.show = false;//_showSpeedUpFactor.getState();
+        _settings.jobColumnSpecs().timeRemaining.show = false;//_showTimeRemaining.getState();
         _settings.jobColumnSpecs().numAntennas.show = _showNumAntennas.getState();
         _settings.jobColumnSpecs().numForeignAntennas.show = _showNumForeignAntennas.getState();
         _settings.jobColumnSpecs().dutyCycle.show = _showDutyCycle.getState();
