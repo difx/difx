@@ -58,7 +58,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20150527");
+const string verdate("20150706");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -1252,7 +1252,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 		if(readSize > P->maxReadSize)
 		{
-			cerr << "Warning - a single FFT gives a read size of " << readSize << " bytes" << endl;
+			cerr << "Warning: a single FFT gives a read size of " << readSize << " bytes" << endl;
 			cerr << "The maximum read size has been set (or defaulted) to " << P->maxReadSize << endl;
 			cerr << "There are known problems with Mark5 module playback at large read sizes" << endl;
 			cerr << "If you want to try with the large read size, set maxReadSize in the global area of the .v2d file" << endl;
@@ -2522,9 +2522,9 @@ int main(int argc, char **argv)
 	string command;
 	int verbose = 0;
 	int ok;
-	bool writeParams = 0;
-	bool deleteOld = 0;
-	bool strict = 1;
+	bool writeParams = false;
+	bool deleteOld = false;
+	bool strict = true;
 	int nWarn = 0;
 	int nError = 0;
 	int nSkip = 0;
@@ -2605,7 +2605,7 @@ int main(int argc, char **argv)
 	{
 		//job numbers into the tens of thousands will be truncated in difxmessage.  Better warn the user.
 		cout << "Filename " << v2dFile << " is too long - its job name might be truncated by difxmessage!" << endl;
-		cout << "You are strongly suggested to choose a shorter .v2d name (root shorter than 26 characters)" << endl;
+		cout << "You are strongly encouraged to choose a shorter .v2d name (root shorter than 26 characters)" << endl;
 	}
 
 	if(v2dFile.empty())

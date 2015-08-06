@@ -632,21 +632,16 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 	else if(key == "naifFile")
 	{
 		ss >> pc->naifFile;
-		if(pc->naifFile < "naif0010.tls")
+		if(pc->naifFile < "naif0011.tls")
 		{
-			if(time(0) > 1341100800)	// July 1, 2012
+			if(time(0) > 1435708800)	// July 1, 2012
 			{
 				std::cout << "Error: naif0010.tls or newer is needed for correct ephemeris evaluation.  An old or unrecognized file, " << pc->naifFile << " was supplied." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
-			else
-			{
-				std::cout << "Warning: Using old NAIF file: " << pc->naifFile << ".  Please upgrade to naif0010.tls or newer." << std::endl;
-				std::cout << "After July 1, 2012, this will be an error and vex2difx will not run." << std::endl;
-				nWarn++;
-			}
 		}
+		std::cout << "Hint to user: inclusion of naif (leap second kernel) files is no longer needed." << std::endl;
 	}
 	else if(key == "doPointingCentre" || key == "doPointingCenter")
 	{
