@@ -32,6 +32,7 @@ CXXFLAGS="${CFLAGS}"
 AC_OUTPUT([ \
 	Makefile \
 	vex/Makefile \
+	vexdatamodel/Makefile \
 	src/Makefile \
 	utilities/Makefile \
 ])
