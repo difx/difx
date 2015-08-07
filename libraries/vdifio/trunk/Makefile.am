@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 if ENABLE_PYTHON_CTYPES
 PYTHON_OPT = python
 endif
