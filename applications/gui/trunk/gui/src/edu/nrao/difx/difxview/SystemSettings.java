@@ -1145,7 +1145,7 @@ public class SystemSettings extends JFrame {
         _maxSecondsForProcessing.minimum( 10 );
         _maxSecondsForProcessing.precision( 0 );
         jobProcessingPanel.add( _maxSecondsForProcessing );
-        JLabel maxSecondsForProcessingLabel = new JLabel( "Processing Time Limit (Seconds)" );
+        JLabel maxSecondsForProcessingLabel = new JLabel( "Inactive Process Time Limit (Seconds)" );
         maxSecondsForProcessingLabel.setBounds( 580, 265, 300, 25 );
         jobProcessingPanel.add( maxSecondsForProcessingLabel );
         _tryToSkipMissingStations = new ZCheckBox( "Try To Skip Missing Stations" );

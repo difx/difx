@@ -2388,15 +2388,17 @@ public class QueueBrowserPanel extends TearOffPanel {
                     //  If there has been no activity for the maximum number of seconds allowed
                     //  to either check resources or run jobs, try unscheduling an activity in
                     //  an effort to kick the correlator back into action.
-                    if ( !didSomething && _settings.useMaxSecondsForHardware() ) {
+                    if ( !didSomething && ( _settings.useMaxSecondsForHardware() || _settings.useMaxSecondsForProcessing() ) ) {
                         for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !didSomething; ) {
                             JobNode thisJob = iter.next();
                             if ( thisJob.autostate() == JobNode.AUTOSTATE_INITIALIZING && 
+                                _settings.useMaxSecondsForHardware() &&
                                 thisJob.idleTime() >= _settings.maxSecondsForHardware() ) {
                                 thisJob.autoUnscheduleResourceAllocation();
                                 didSomething = true;
                             }
                             else if ( thisJob.autostate() == JobNode.AUTOSTATE_RUNNING && 
+                                _settings.useMaxSecondsForProcessing() &&
                                 thisJob.idleTime() >= _settings.maxSecondsForProcessing() ) {
                                 thisJob.autoUnscheduleProcessing();
                                 didSomething = true;
