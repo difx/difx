@@ -21,7 +21,9 @@ Usage : m5subband.py <infile> <dataformat> <outfile>
   <Ldft>      length of DFT
   <start_bin> take output starting from bin (0...Ldft-2)
   <stop_bin>  take output ending with bin (start_bin...Ldft-1)
- 
+              note that for real-valued VLBI data 0..Ldft/2 contains
+              the spectrum and Ldft/2+1...Ldft-1 its mirror image
+
   <offset> is the byte offset into the file
 """
 
@@ -96,8 +98,9 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 	win_out = numpy.resize(win_out.astype(fp), new_shape=(factor,Lout))
 
 	# Prepare VDIF output file with reduced data rate and same starting timestamp
-	fsout   = float(dms.samprate)*(nout/float(nin))
-	outMbps = fsout*1e-6 * 32
+	bwout   = float(dms.samprate)*(nout/float(nin))
+        fsout   = 2*bwout
+	outMbps = fsout*1e-6 * 32  # 32 for real-valued data, 64 for complex data
 	vdiffmt = 'VDIF_8192-%u-1-32' % (outMbps)
 	if not(int(outMbps) == outMbps):
 		print ('*** Warning: output rate is non-integer (%e Ms/s)! ***' % (outMbps))
@@ -151,8 +154,8 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 		# Copy the desired bins and fix DC/Nyquist bins
 		for ii in range(factor):
 			flt_out[ii][0:nout] = F[ii][start_bin:(start_bin+nout)]
-			flt_out[ii][0]      = numpy.real(flt_out[ii][0])
-			flt_out[ii][nout-1] = numpy.real(flt_out[ii][nout-1])
+			flt_out[ii][0]      = 0.0 # numpy.real(flt_out[ii][0])
+			flt_out[ii][nout-1] = 0.0 # numpy.real(flt_out[ii][nout-1])
 
 		# Do inverse 1D DFT and window the result
 		F = numpy.fft.ifft(flt_out)
