@@ -168,10 +168,10 @@ namespace network {
             int ret;
             fd_set wfds;
             pthread_mutex_lock( &_writeMutex );
-            FD_ZERO( &wfds );
-            FD_SET( _fd, &wfds );
             while ( soFar < nBytes ) {
 
+                FD_ZERO( &wfds );
+                FD_SET( _fd, &wfds );
                 ret = select( _fd + 1, NULL, &wfds, NULL, _timeout );
                 if ( ret == -1 ) {  //  broken socket
                     return -1;

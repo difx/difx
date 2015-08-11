@@ -500,7 +500,7 @@ void ServerSideConnection::turnLoggingOff( DifxStartInfo* startInfo ) {
 //!  Code was mostly swiped from difxmessage/utils/difxlog.c.
 //-----------------------------------------------------------------------------
 void ServerSideConnection::logDifxMessage( DifxMessageGeneric* G, char* message ) {
-	const int TimeLength = 32;
+	const int TimeLength = 64;
 	const int TagLength = 64+DIFX_MESSAGE_PARAM_LENGTH;
 	int logLevel = DIFX_ALERT_LEVEL_INFO;
 	time_t t;
@@ -517,8 +517,10 @@ void ServerSideConnection::logDifxMessage( DifxMessageGeneric* G, char* message 
 	        //  Time-tag the message and include it in the logfile.
 	        if ( startInfo->logFile ) {
 		        time( &t );
-		        strcpy( timestr, ctime( &t ) );
-		        timestr[strlen( timestr )-1] = 0;
+		        strncpy( timestr, ctime( &t ), TimeLength - 1 );
+		        timestr[TimeLength-1] = 0;
+			//  Get rid of newline character.
+			timestr[strlen( timestr ) - 1] = 0;
 			    int l = snprintf( tag, TagLength, "%s %3d %s", timestr, G->mpiId, G->from );
 			    if( l >= TagLength )
 				    fprintf( stderr, "Developer error: TagLength is too small for timestr='%s', mpiIf=%d, from='%s'\n", timestr, G->mpiId, G->from );
