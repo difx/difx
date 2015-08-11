@@ -727,6 +727,7 @@ public class ProcessorNode extends BrowserNode {
     public void numCores( int newVal ) { _numCores.setText( "" + newVal ); }
     
     public String activeJob() { return _activeJob.getText(); }
+    public void clearActiveJob() { _activeJob.setText( "" ); }
         
     ProcessorMonitorWindow _monitor;
 //    MessageWindow _alertWindow;

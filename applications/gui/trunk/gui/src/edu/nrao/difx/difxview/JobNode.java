@@ -267,7 +267,30 @@ public class JobNode extends QueueBrowserNode {
         _stopJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( updateEditorMonitor( 1000 ) )
+                    //  This will force the scheduler to stop paying attention to the job.
+                    autostate( AUTOSTATE_DONE );
                     _editorMonitor.stopJob();
+                    //  Clear the job from the nodes in the hardware monitor.  This should
+                    //  occur on its own, but sometimes it doesn't.  Give the "stop" command
+                    //  a chance to work.
+                    Thread clearThread = new Thread() {
+                        public void run() {
+                            try { Thread.sleep( 5 ); } catch ( Exception e ) {}
+                            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
+                                    iter.hasNext(); ) {
+                                BrowserNode thisModule = iter.next();
+                                if ( ((ProcessorNode)(thisModule)).activeJob().contentEquals( name() ) )
+                                    ((ProcessorNode)(thisModule)).clearActiveJob();
+                            }
+                            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
+                                    iter.hasNext(); ) {
+                                BrowserNode thisModule = iter.next();
+                                if ( ((ProcessorNode)(thisModule)).activeJob().contentEquals( name() ) )
+                                    ((ProcessorNode)(thisModule)).clearActiveJob();
+                            }
+                        }
+                    };
+                    clearThread.start();
             }
         });
         _stopJobItem.setEnabled( false );
