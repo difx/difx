@@ -2309,7 +2309,7 @@ int CorrParams::checkSetupValidity()
 
 		if(!c->nFFTChan && !c->nOutputChan && !c->explicitFFTSpecRes && !c->explicitOutputSpecRes)
 		{
-			std::cerr << "WARNING: No information was provided regarding spectral resolution.  Basic defaults WILL be used.  Please check that this suits your needs." << std::endl;
+			std::cerr << "Warning: No information was provided regarding spectral resolution.  Basic defaults WILL be used.  Please check that this suits your needs." << std::endl;
 			++nWarn;
 		}
 

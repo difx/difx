@@ -1372,15 +1372,24 @@ static int getEOPs(VexData *V, Vex *v)
 static int getExper(VexData *V, Vex *v)
 {
 	llist *block;
-	double start=0.0, stop=0.0;
+	double start, stop;
 	int nWarn = 0;
 	std::string experimentName;
+
+	start = V->getEarliestScanStart() - 1.0/86400.0;
+	stop = V->getLatestScanStop() + 1.0/86400.0;
 
 	block = find_block(B_EXPER, v);
 
 	if(!block)
 	{
-		return -1;
+		std::cerr << "Warning: no EXPER block found in the vex file.  That is bad." << std::endl;
+
+		V->setExper("RANDOM", Interval(start, stop));
+		
+		++nWarn;
+
+		return nWarn;
 	}
 
 	for(Llist *defs=((struct block *)block->ptr)->items; defs; defs=defs->next)
@@ -1419,6 +1428,10 @@ static int getExper(VexData *V, Vex *v)
 			V->vexStartTime[14] = '\0';
 			V->vexStartTime[17] = '\0';
 		}
+		else
+		{
+			std::cerr << "Note: The vex file has no exper_nominal_start parameter defined in the EXPER section.  Making assumptions..." << std::endl;
+		}
 
 		lowls = find_lowl(refs, T_EXPER_NOMINAL_STOP);
 		if(lowls)
@@ -1434,6 +1447,10 @@ static int getExper(VexData *V, Vex *v)
 			V->vexStopTime[11] = '\0';
 			V->vexStopTime[14] = '\0';
 			V->vexStopTime[17] = '\0';
+		}
+		else
+		{
+			std::cerr << "Note: The vex file has no exper_nominal_stop parameter defined in the EXPER section.  Making assumptions..." << std::endl;
 		}
 	}
 

@@ -26,7 +26,8 @@ Version 2.5.0
   - Some incomplete migrations remain:
     - eventually job construction should not directly reference CorrParams structure.
 * Don't export the vex library anymore.  It causes some trouble
-* Some other confugure.ac / Makefile.am cleanups
+* Some other configure.ac / Makefile.am cleanups
+* If EXPER section is missing or incomplete, let user know and if forced, make assumptions.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

@@ -1,6 +1,7 @@
 #ifndef __VEX_EXPER_H__
 #define __VEX_EXPER_H__
 
+#include <iostream>
 #include "interval.h"
 
 class VexExper : public Interval
@@ -10,5 +11,7 @@ public:
 
 	std::string name;
 };
+
+std::ostream& operator << (std::ostream &os, const VexExper &x);
 
 #endif

@@ -1014,6 +1014,46 @@ void VexData::setStreamBands(const std::string &modeName, const std::string &ant
 	}
 }
 
+double VexData::getEarliestScanStart() const
+{
+	double start = 1000000.0;
+
+	for(std::vector<VexScan>::const_iterator it = scans.begin(); it != scans.end(); ++it)
+	{
+		if(it->mjdStart < start)
+		{
+			start = it->mjdStart;
+		}
+	}
+
+	if(start > 999999)
+	{
+		start = -1000000.0;
+	}
+
+	return start;
+}
+
+double VexData::getLatestScanStop() const
+{
+	double stop = -1000000.0;
+
+	for(std::vector<VexScan>::const_iterator it = scans.begin(); it != scans.end(); ++it)
+	{
+		if(it->mjdStop > stop)
+		{
+			stop = it->mjdStop;
+		}
+	}
+
+	if(stop < -999999)
+	{
+		stop = 1000000.0;
+	}
+
+	return stop;
+}
+
 std::ostream& operator << (std::ostream &os, const VexData &x)
 {
 	int n = x.nSource();

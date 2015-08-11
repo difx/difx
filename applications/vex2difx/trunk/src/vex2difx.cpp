@@ -218,7 +218,7 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, const CorrP
 		clockrefmjd = ant->getVexClocks(J.mjdStart, A[i].clockcoeff);
 		if(clockrefmjd < 0.0 && !P->fakeDatasource)
 		{
-			cerr << "WARNING: Job " << J.jobSeries << " " << J.jobId << ": no clock offsets being applied to antenna " << *a << endl;
+			cerr << "Warning: Job " << J.jobSeries << " " << J.jobId << ": no clock offsets being applied to antenna " << *a << endl;
 			cerr << "          Unless this is intentional, your results will suffer!" << endl;
 		}
 		A[i].clockrefmjd = clockrefmjd;
@@ -2223,11 +2223,11 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	globalBandwidth = populateBaselineTable(D, P, corrSetup, blockedfreqids);
 	if(globalBandwidth < 0)	// Implies conflicting frequencies found
 	{
-		cerr << "WARNING: differing correlation channel bandwidths found.  You can correlate this data, but won't be able to convert to FITS!" << endl;
+		cerr << "Warning: differing correlation channel bandwidths found.  You can correlate this data, but won't be able to convert to FITS!" << endl;
 	}
 	if(globalBandwidth == 0) // Implies no baselines found
 	{
-		cerr << "WARNING: no correlatable baselines were found." << endl;
+		cerr << "Warning: no correlatable baselines were found." << endl;
 	}
 
 	// Merge identical table entries
@@ -2828,11 +2828,11 @@ int main(int argc, char **argv)
 	{
 		if(nWarn == 1)
 		{
-			cout << "FYI: Proceeding even though there was a warning." << endl;
+			cout << "Note: Proceeding even though there was a warning." << endl;
 		}
 		else
 		{
-			cout << "FYI: Proceeding even though there were " << nWarn << " warnings." << endl;
+			cout << "Note: Proceeding even though there were " << nWarn << " warnings." << endl;
 		}
 	}
 

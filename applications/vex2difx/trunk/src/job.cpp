@@ -124,7 +124,7 @@ int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const
 		}
 
 		// FIXME: Really this should ask the question of the Setup, not the antenna...
-		if(ant->hasVSNs())
+		if(ant->dataSource != DataSourceModule)
 		{
 			// Aha! not module based so unflag JOB_FLAG_RECORD
 			flagMask[antId] &= ~JobFlag::JOB_FLAG_RECORD;

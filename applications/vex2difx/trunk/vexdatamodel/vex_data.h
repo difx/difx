@@ -97,6 +97,8 @@ public:
 	void cloneStreams(const std::string &modeName, const std::string &antName, int copies);
 	bool setFormat(const std::string &modeName, const std::string &antName, int dsId, const std::string &formatName);
 	void setStreamBands(const std::string &modeName, const std::string &antName, int dsId, int nBand, int startBand);
+	double getEarliestScanStart() const;
+	double getLatestScanStop() const;
 
 	double obsStart() const { return exper.mjdStart; }
 	double obsStop() const { return exper.mjdStop; }
