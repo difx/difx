@@ -292,11 +292,9 @@ namespace guiServer {
                     break;
                 case CHANNEL_ALL_DATA_ON:
                     _channelAllData = true;
-                    printf( "channeling data!\n" );
                     break;
                 case CHANNEL_ALL_DATA_OFF:
                     _channelAllData = false;
-                    printf( "data channel off\n" );
                     break;
                 case CHANNEL_DATA:
                     channelData( data, nBytes );
@@ -364,7 +362,6 @@ namespace guiServer {
                 //  version is then transmitted back to the GUI so it knows it is an option.
                 for ( unsigned int i = 0; i < globbuf.gl_pathc; ++i ) {
                     std::string nextPath( globbuf.gl_pathv[i] );
-                    printf( "%s\n", nextPath.c_str() );
                     int nPos = nextPath.rfind( "setup_difx." );
                     if ( nPos < (int)nextPath.length() - (int)strlen( "setup_difx." ) &&
                         nextPath.rfind( ".csh" ) + 4 != nextPath.length() &&
