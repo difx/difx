@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2013 by Walter Brisken                             *
+#   Copyright (C) 2008-2015 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -39,14 +39,18 @@ import struct
 from xml.parsers import expat
 from copy import deepcopy
 from time import asctime
+import signal
 
 program = 'errormon'
 author  = 'Walter Brisken'
-version = '0.6'
-verdate = '20130508'
+version = '0.8'
+verdate = '20150811'
 
 alertLevels = ['FATAL', 'SEVERE', 'ERROR', 'WARNING', 'INFO', 'VERBOSE', 'DEBUG', 'IGNORE']
 
+def signal_handler(signal, frame):
+	print('You pressed Ctrl+C!')
+	exit(0)
 
 def usage(prog):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
@@ -61,56 +65,56 @@ def usage(prog):
 
 class Parser:
 
-    def __init__(self):
-        self._parser = expat.ParserCreate()
-        self._parser.StartElementHandler = self.start
-        self._parser.EndElementHandler = self.end
-        self._parser.CharacterDataHandler = self.data
-	self.message = ''
-	self.severity = -1
-	self.tmp = ''
-	self.ok = False
-	self.unit = ''
-	self.mpiid = -1
-	self.id = ''
-	self.tag = ''
+	def __init__(self):
+		self._parser = expat.ParserCreate()
+		self._parser.StartElementHandler = self.start
+		self._parser.EndElementHandler = self.end
+		self._parser.CharacterDataHandler = self.data
+		self.message = ''
+		self.severity = -1
+		self.tmp = ''
+		self.ok = False
+		self.unit = ''
+		self.mpiid = -1
+		self.id = ''
+		self.tag = ''
 
-    def feed(self, data):
-        self._parser.Parse(data, 0)
+	def feed(self, data):
+		self._parser.Parse(data, 0)
 
-    def close(self):
-        self._parser.Parse("", 1) # end of data
-        del self._parser # get rid of circular references
+	def close(self):
+		self._parser.Parse("", 1) # end of data
+		del self._parser # get rid of circular references
 
-    def start(self, tag, attrs):
-        self.tag = tag
-        self.tmp = ''
-        if tag == 'difxAlert':
-                self.ok = True
+	def start(self, tag, attrs):
+		self.tag = tag
+		self.tmp = ''
+		if tag == 'difxAlert':
+			self.ok = True
 
-    def end(self, tag):
-        if tag == 'alertMessage' and self.ok:
-		self.message = self.tmp
-	elif tag == 'severity':
-		self.severity = int(self.tmp)
-	elif tag == 'from':
-		self.unit = lower(self.tmp)
-	elif tag == 'identifier':
-		self.id = self.tmp
-	elif tag == 'mpiProcessId':
-		self.mpiid = int(self.tmp)
+	def end(self, tag):
+		if tag == 'alertMessage' and self.ok:
+			self.message = self.tmp
+		elif tag == 'severity':
+			self.severity = int(self.tmp)
+		elif tag == 'from':
+			self.unit = lower(self.tmp)
+		elif tag == 'identifier':
+			self.id = self.tmp
+		elif tag == 'mpiProcessId':
+			self.mpiid = int(self.tmp)
 
-    def data(self, data):
-        if self.tag == 'alertMessage':
-            self.tmp = self.tmp + data	
-        else:
-            self.tmp = data
+	def data(self, data):
+		if self.tag == 'alertMessage':
+			self.tmp = self.tmp + data	
+		else:
+			self.tmp = data
 
-    def getinfo(self):
-	if self.ok:
-        	return 'MPI[%2d] %-9s %-12s %-7s %s' % (self.mpiid, self.unit, self.id, alertLevels[self.severity], self.message)
-	else:
-		return ''
+	def getinfo(self):
+		if self.ok:
+			return 'MPI[%2d] %-9s %-12s %-7s %s' % (self.mpiid, self.unit, self.id, alertLevels[self.severity], self.message)
+		else:
+			return ''
 
 def run(maxlevel):
 	
@@ -136,14 +140,14 @@ def run(maxlevel):
 	try:
 		while 1:
 			try:
-			    message = s.recv(1500)
-			    if len(message) > 0 and message[0] == '<':
-				p = Parser()
-				p.feed(message)
-				info = p.getinfo()
-				p.close()
-				if len(info) > 0 and p.severity <= maxlevel:
-					print asctime(), info
+				message = s.recv(1500)
+				if len(message) > 0 and message[0] == '<':
+					p = Parser()
+					p.feed(message)
+					info = p.getinfo()
+					p.close()
+					if len(info) > 0 and p.severity <= maxlevel:
+						print asctime(), info
 			except socket.timeout:
 				pass
 			except expat.ExpatError:
@@ -151,6 +155,9 @@ def run(maxlevel):
 				print message
 	except KeyboardInterrupt:
 		pass
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 if len(argv) > 1:
 	if argv[1] in ['-h', '--help']:

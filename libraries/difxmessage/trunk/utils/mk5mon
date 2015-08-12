@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2013 by Walter Brisken                             *
+#   Copyright (C) 2008-2015 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -39,11 +39,16 @@ import struct
 from xml.parsers import expat
 from copy import deepcopy
 import curses
+import signal
+
+def signal_handler(signal, frame):
+	print('You pressed Ctrl+C!')
+	raise KeyboardInterrupt
 
 program = 'mk5mon'
 author  = 'Walter Brisken'
-version = '0.3'
-verdate = '20130820'
+version = '0.4'
+verdate = '20150811'
 
 def usage(prog):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
@@ -260,6 +265,10 @@ def readmachines(machinesfile, verbose):
 		print 'IS MK5   = ', ismk5
 
 	return machines,cores,ismk5
+
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 if len(argv) >= 2:
 	if len(argv) == 2 and argv[1] in ['-h', '--help']:

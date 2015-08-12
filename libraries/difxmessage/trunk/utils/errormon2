@@ -24,14 +24,21 @@ from glob import glob
 from xml.parsers import expat
 from copy import deepcopy
 from time import asctime
+import signal
 
 program = 'errormon2'
 author  = 'Walter Brisken + ?'
-version = '0.6'
-verdate = '20130508'
+version = '0.7'
+verdate = '20150811'
 
 splitByID = False
 splitLoggers = {}
+
+def signal_handler(signal, frame):
+        print('You pressed Ctrl+C!')
+	exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 def usage(prog):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
@@ -43,6 +50,7 @@ def usage(prog):
 	print '  -s        split messages into separate log files'
 	print '            based on the ID/experiment code\n'
 	print '<maxlevel>  is the max alert error level to print\n'
+	print 'Levels are: 0=fatal, 1=severe, 2=error, 3=warning, 4=info, 5=verbose, 6=debug\n'
 
 ##############################################################################
 # Parameters
@@ -88,12 +96,12 @@ difxLogger = logging.getLogger('DiFXAlert')
 # By convention these are set up hierarchically with dot notation.
 # We could have one per machine e.g. host1.DifxLoadMessage etc.
 logs = {'DifxLoadMessage':    logging.getLogger('DifxLoadMessage'),
-        'DifxErrorMessage':   logging.getLogger('DifxErrorMessage'),
-        'Mark5StatusMessage': logging.getLogger('Mark5StatusMessage'),
-        'DifxStatusMessage':  logging.getLogger('DifxStatusMessage'),
-        'DifxInfoMessage':    logging.getLogger('DifxInfoMessage'),
-        'DifxWeightMessage':  logging.getLogger('DifxWeightMessage'),
-        'DifxCommand':        logging.getLogger('DifxCommand')}
+	'DifxErrorMessage':   logging.getLogger('DifxErrorMessage'),
+	'Mark5StatusMessage': logging.getLogger('Mark5StatusMessage'),
+	'DifxStatusMessage':  logging.getLogger('DifxStatusMessage'),
+	'DifxInfoMessage':    logging.getLogger('DifxInfoMessage'),
+	'DifxWeightMessage':  logging.getLogger('DifxWeightMessage'),
+	'DifxCommand':        logging.getLogger('DifxCommand')}
 
 ###############################################################################
 # Set up logging to stdout
@@ -107,22 +115,21 @@ difxLogger.addHandler(stdout_handler)
 # Set up logging to file
 ###############################################################################
 def makeFileHandler(logpath, logname, logcount):
-    try:
-    	file_handler = logging.handlers.RotatingFileHandler(path.join(logpath, logname),
-                                                        backupCount = logcount)
-    	file_handler.setFormatter(logfile_format)
-    	file_handler.setLevel(alertLevels[logfile_level])
-    	file_handler.doRollover()
-    	return file_handler
-    except:
-    	return None
+	try:
+		file_handler = logging.handlers.RotatingFileHandler(path.join(logpath, logname), backupCount = logcount)
+		file_handler.setFormatter(logfile_format)
+		file_handler.setLevel(alertLevels[logfile_level])
+		file_handler.doRollover()
+		return file_handler
+	except:
+		return None
 
 fh = makeFileHandler(logpath, logname, logcount)
 try:
-    difxLogger.addHandler(fh)
+	difxLogger.addHandler(fh)
 except:
-    # Adding exc_info=True writes the python exception to the log
-    difxLogger.log(alertLevels[3], "Error starting log file. Only log to stdout", exc_info=True)
+	# Adding exc_info=True writes the python exception to the log
+	difxLogger.log(alertLevels[3], "Error starting log file. Only log to stdout", exc_info=True)
 
 ###############################################################################
 # Set up other loggers. See
@@ -132,107 +139,107 @@ except:
 # Virtually the same as errormon
 ###############################################################################
 class Parser:
-    def __init__(self):
-        self._parser = expat.ParserCreate()
-        self._parser.StartElementHandler = self.start
-        self._parser.EndElementHandler = self.end
-        self._parser.CharacterDataHandler = self.data
-        self.message = ''
-        self.severity = -1
-        self.tmp = ''
-        self.ok = False
-        self.unit = ''
-        self.mpiid = -1
-        self.id = ''
-	self.tag = ''
+	def __init__(self):
+		self._parser = expat.ParserCreate()
+		self._parser.StartElementHandler = self.start
+		self._parser.EndElementHandler = self.end
+		self._parser.CharacterDataHandler = self.data
+		self.message = ''
+		self.severity = -1
+		self.tmp = ''
+		self.ok = False
+		self.unit = ''
+		self.mpiid = -1
+		self.id = ''
+		self.tag = ''
 
-    def feed(self, data):
-        self._parser.Parse(data, 0)
+	def feed(self, data):
+		self._parser.Parse(data, 0)
 
-    def close(self):
-	try:
-        	self._parser.Parse("", 1) # end of data
-        	del self._parser # get rid of circular references
-	except expat.ExpatError:
-		print 'Error parsing :', self.message, " len=", len(self.message)
-		exit(0)
+	def close(self):
+		try:
+			self._parser.Parse("", 1) # end of data
+			del self._parser # get rid of circular references
+		except expat.ExpatError:
+			print 'Error parsing :', self.message, " len=", len(self.message)
+			exit(0)
 
-    def start(self, tag, attrs):
-        self.tag = tag
-        if tag == 'difxAlert':
-            self.ok = True
-	    self.tmp = ''
+	def start(self, tag, attrs):
+		self.tag = tag
+		if tag == 'difxAlert':
+			self.ok = True
+			self.tmp = ''
 
-    def end(self, tag):
-        if tag == 'alertMessage' and self.ok:
-            self.message = self.tmp
-        if tag == 'severity':
-            self.severity = int(self.tmp)
-        if tag == 'from':
-            self.unit = lower(self.tmp)
-        if tag == 'identifier':
-            self.id = self.tmp
-        if tag == 'mpiProcessId':
-            self.mpiid = int(self.tmp)
+	def end(self, tag):
+		if tag == 'alertMessage' and self.ok:
+			self.message = self.tmp
+		if tag == 'severity':
+			self.severity = int(self.tmp)
+		if tag == 'from':
+			self.unit = lower(self.tmp)
+		if tag == 'identifier':
+			self.id = self.tmp
+		if tag == 'mpiProcessId':
+			self.mpiid = int(self.tmp)
 
-    def data(self, data):
-        if self.tag == 'alertMessage':
-            self.tmp = self.tmp + data
-        else:
-            self.tmp = data
+	def data(self, data):
+		if self.tag == 'alertMessage':
+			self.tmp = self.tmp + data
+		else:
+			self.tmp = data
 
-    def getinfo(self):
-        if self.ok:
-            return self.severity, 'MPI[%2d] %-9s %-12s %s' % (self.mpiid, self.unit, self.id, self.message)
-        else:
-            return self.severity, '' 
+	def getinfo(self):
+		if self.ok:
+			return self.severity, 'MPI[%2d] %-9s %-12s %s' % (self.mpiid, self.unit, self.id, self.message)
+		else:
+			return self.severity, '' 
 
 def run():
-    port = getenv('DIFX_MESSAGE_PORT')
-    if port == None:
-        print 'DIFX_MESSAGE_PORT needs to be defined'
-        exit(0)
-    else:
-        port = int(port)
-    group = getenv('DIFX_MESSAGE_GROUP')
-    if group == None:
-        print 'DIFX_MESSAGE_GROUP needs to be defined'
-        exit(0)
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		print 'DIFX_MESSAGE_PORT needs to be defined'
+		exit(0)
+	else:
+		port = int(port)
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		exit(0)
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 768000)
-    s.bind(('', port))
-    mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
-    s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-    #s.settimeout(dt)
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 768000)
+	s.bind(('', port))
+	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+	#s.settimeout(dt)
 
-    try:
-	    while 1:
-		try:
-		    message = s.recv(1500)
-		    if len(message) > 0 and message[0] == '<':
-			p = Parser()
-			p.feed(message)
-			level, info = p.getinfo()
-			id = p.id
-			p.close()
-			if len(info) > 0:
-			    difxLogger.log(alertLevels[level], info)
-			    if splitByID:
-				if not(id in splitLoggers):
-				    fh = makeFileHandler(logpath, logname + '-' + id, logcount)
-				    splitLoggers[id] = logging.getLogger('DiFXAlert'+id)
-				    splitLoggers[id].addHandler(fh)
-				splitLoggers[id].log(alertLevels[level], info)
-		except socket.timeout:
-		    pass
-		except expat.ExpatError:
-		    print asctime(), '*** Unparsable message received ***'
-		    print message
-		    exit(0)
-    except KeyboardInterrupt:
-	    pass
+	try:
+		while 1:
+			try:
+				message = s.recv(1500)
+				if len(message) > 0 and message[0] == '<':
+					p = Parser()
+					p.feed(message)
+					level, info = p.getinfo()
+					id = p.id
+					p.close()
+					if len(info) > 0:
+						difxLogger.log(alertLevels[level], info)
+						if splitByID:
+							if not(id in splitLoggers):
+								fh = makeFileHandler(logpath, logname + '-' + id, logcount)
+								splitLoggers[id] = logging.getLogger('DiFXAlert'+id)
+								splitLoggers[id].addHandler(fh)
+							splitLoggers[id].log(alertLevels[level], info)
+			except socket.timeout:
+				pass
+			except expat.ExpatError:
+				print asctime(), '*** Unparsable message received ***'
+				print message
+				exit(0)
+	except KeyboardInterrupt:
+		pass
 
 try:
 	optlist, args = getopt.getopt(argv[1:], 'hs', ['help','split'])

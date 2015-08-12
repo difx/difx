@@ -39,12 +39,17 @@ import struct
 from xml.parsers import expat
 from copy import deepcopy
 import curses
+import signal
+import sys
 
 program = 'cpumon'
 author  = 'Walter Brisken'
-version = '0.3'
-verdate = '20130508'
+version = '0.4'
+verdate = '20150811'
 
+def signal_handler(signal, frame):
+	print('You pressed Ctrl+C!')
+	raise KeyboardInterrupt
 
 def usage(prog):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
@@ -212,6 +217,10 @@ def listen(port, group):
 		return 1
 	d.close()
 	return 0
+
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 if len(argv) >= 2:
 	if len(argv) == 2 and argv[1] in ['-h', '--help']:
