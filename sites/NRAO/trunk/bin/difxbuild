@@ -13,8 +13,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.47'
-verdate = '20150603'
+version = '0.49'
+verdate = '20150807'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -503,6 +503,13 @@ component_vdifio_trunk = \
 	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
 ]
 
+component_mark6sg_trunk = \
+[ \
+	'mark6sg', \
+	'https://svn.atnf.csiro.au/difx/libraries/mark6sg/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
 component_mpifxcorr_trunk = \
 [ \
 	'mpifxcorr', \
@@ -663,6 +670,7 @@ components['DIFX-DEVEL'] = \
 	component_difxmessage_trunk, \
 	component_mark5access_trunk, \
 	component_vdifio_trunk, \
+	component_mark6sg_trunk, \
 	component_mpifxcorr_trunk, \
 	component_difx2fits_trunk, \
 	component_difx2mark4_trunk, \
@@ -1307,6 +1315,10 @@ components['DIFX-2.4'] = \
 	component_difxmonitor_2_4, \
 	component_vlite_trunk, \
 ]
+
+# handle patch versions cleanly
+components['DIFX-2.4.1'] = components['DIFX-2.4']
+components['DIFX-2.4.2'] = components['DIFX-2.4']
 
 # commands each have the following elements:
 # [
