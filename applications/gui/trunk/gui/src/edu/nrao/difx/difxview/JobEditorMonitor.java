@@ -2834,7 +2834,7 @@ public class JobEditorMonitor extends JFrame {
         public ModuleSource( int index ) {
             super( index );
             moduleName( _inputFile.dataTable().idx[index].file[0] );
-            if ( _chooseBasedOnModule.isSelected() )
+            //if ( _chooseBasedOnModule.isSelected() )
                 pickAppropriateSourceNode();
         }
         
