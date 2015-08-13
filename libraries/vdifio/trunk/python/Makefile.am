@@ -9,8 +9,10 @@ all-local:
 	--build-base $(shell readlink -f $(builddir)))
 
 install-exec-local:
+	mkdir -p $(DESTDIR)$(prefix)/lib/python/
 	$(PYTHON) $(srcdir)/setup.py install \
-	--prefix $(DESTDIR)$(prefix)
+	--prefix $(DESTDIR)$(prefix) --install-lib=$(DESTDIR)$(prefix)/lib/python/
+# TODO: DiFX uses peculiar location, not the standard site-packages, need to choose lib vs lib64 above
 
 # not supported by very old Python setuptools:
 #	--single-version-externally-managed \
