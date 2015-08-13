@@ -1944,7 +1944,7 @@ public class JobEditorMonitor extends JFrame {
                 _machinesAppliedByHand = true;
             }
         }
-        _jobNode.estimateJobTime();
+        //_jobNode.estimateJobTime();
         DiFXCommand command = new DiFXCommand( _settings );
         command.header().setType( "DifxStart" );
         command.mpiProcessId( "-1" );
@@ -2677,7 +2677,6 @@ public class JobEditorMonitor extends JFrame {
             _sourceFormat.setText( _inputFile.datastreamTable().idx[_index].dataFormat );
             _sourceType.setText( _inputFile.datastreamTable().idx[_index].dataSource );
             buildSourceNodeList();
-            pickAppropriateSourceNode();
         }
         
         @Override
@@ -2834,7 +2833,7 @@ public class JobEditorMonitor extends JFrame {
         public ModuleSource( int index ) {
             super( index );
             moduleName( _inputFile.dataTable().idx[index].file[0] );
-            //if ( _chooseBasedOnModule.isSelected() )
+            if ( _chooseBasedOnModule.isSelected() )
                 pickAppropriateSourceNode();
         }
         
@@ -2871,7 +2870,7 @@ public class JobEditorMonitor extends JFrame {
          */
         public void checkSelectedSourceNode() {
             NodePanel selection = (NodePanel)_sourceNode.getSelectedItem();
-             if ( selection == null ) return;
+            if ( selection == null ) return;
             if ( selection.moduleA().contentEquals( _moduleName.getText() ) ||
                  selection.moduleB().contentEquals( _moduleName.getText() ) ) {
                 _moduleName.setForeground( Color.BLUE );

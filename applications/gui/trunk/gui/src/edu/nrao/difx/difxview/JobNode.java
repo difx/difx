@@ -43,6 +43,7 @@ import java.util.Iterator;
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxAlert;
 import edu.nrao.difx.xmllib.difxmessage.DifxStatus;
+import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import javax.swing.JOptionPane;
@@ -293,7 +294,7 @@ public class JobNode extends QueueBrowserNode {
                     clearThread.start();
             }
         });
-        _stopJobItem.setEnabled( false );
+        //_stopJobItem.setEnabled( false );
         _popup.add( _stopJobItem );
         
     }
@@ -1276,6 +1277,40 @@ public class JobNode extends QueueBrowserNode {
         return ret;
     }
     
+    DiFXCommand_getFile _fileGet;
+    //--------------------------------------------------------------------------
+    //  Download and parse the "difxlog" file for this job, if it exists.  This
+    //  gives us the job run history, which is used (among other things) to set
+    //  the current job state.
+    //--------------------------------------------------------------------------
+    public void parseLogFile() {
+        //  Create a log file name from the input file name.  A null pointer exception
+        //  indicates the input file name has not been set or has not been set correctly.
+        try {
+            _logFile = _inputFile.getText().replace( ".input", ".difxlog" );
+        } catch ( NullPointerException e ) {
+            return;
+        }
+        _fileGet = new DiFXCommand_getFile( _logFile, _settings );
+        if ( _fileGet.error() != null ) {
+            return;
+        }
+        _fileGet.addEndListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                //  This is where we actually parse the file.  Only do so if there is a file and
+                //  it was read completely.
+                if ( _fileGet.fileSize() > 0 && _fileGet.fileSize() == _fileGet.inString().length() ) {
+                    setState( "LOG", Color.GREEN );
+                }
+                else
+                    setState( "not Started", Color.LIGHT_GRAY );
+            }
+        });
+        try { 
+            _fileGet.readString();
+        } catch ( java.net.UnknownHostException e ) {}
+    }
+    
     public void inputFile( String newVal, boolean loadNow ) { 
         _inputFile.setText( newVal );
         //  Convert to a file to extract the directory path...
@@ -1469,7 +1504,7 @@ public class JobNode extends QueueBrowserNode {
     }
     public void lockState( boolean newVal ) {
         _lockState = newVal;
-        _stopJobItem.setEnabled( !newVal );
+        //_stopJobItem.setEnabled( !newVal );
         if ( _editorMonitor != null )
             _editorMonitor.lockState( newVal );
     }
@@ -1650,7 +1685,7 @@ public class JobNode extends QueueBrowserNode {
     protected boolean _weightsBuilt;
     
     protected JobNode _this;
-    protected ActivityLogFile _logFile;
+    protected String _logFile;
     
     protected Object _antennaLock;
         

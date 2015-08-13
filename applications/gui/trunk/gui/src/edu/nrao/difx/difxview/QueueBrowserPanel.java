@@ -1143,6 +1143,8 @@ public class QueueBrowserPanel extends TearOffPanel {
                         thisJob.status( dbJobStatusList.getString( "status" ) );
                         thisJob.active( dbJobStatusList.getBoolean( "active" ) );
                     }
+                    //  If the job has a log file, parse it to find the run state.
+                    thisJob.parseLogFile();
                 }
             }
         } catch ( Exception e ) {
@@ -2145,6 +2147,8 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisJob.pass( thisPass.name() );
             thisJob.passNode( thisPass );
             thisJob.inputFile( inputFile, false );
+            //thisJob.setState( "getting log", Color.yellow );
+            //thisJob.parseLogFile();
 //            //  Create a new log file for this job using what we expect its name to be.
 //            thisJob.logFile( new ActivityLogFile( inputFile.substring( 0, inputFile.lastIndexOf( "/" ) ) + "/guiLogs"
 //                    + inputFile.substring( inputFile.lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) ) );

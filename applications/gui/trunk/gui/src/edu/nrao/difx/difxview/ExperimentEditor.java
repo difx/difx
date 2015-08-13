@@ -3430,6 +3430,8 @@ public class ExperimentEditor extends JFrame {
                     _newPass.stateLabel( "adding .im file for \"" + jobName + "\"", Color.YELLOW, true );
                     newJob.state().setText( "not started" );
                     newJob.state().setBackground( Color.LIGHT_GRAY );
+                    //  No need for this - the job is brand new!
+                    //newJob.parseLogFile();
                 }
             }
             else {
