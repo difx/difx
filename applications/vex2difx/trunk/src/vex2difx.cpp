@@ -488,7 +488,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			r -= startBand;
 			if(r < 0 || r >= D->datastream[dsId].nRecBand)
 			{
-				cerr << "Error: setFormat: index to record channel = " << r << " is out of range" << endl;
+				cerr << "Error: setFormat: index to record channel=" << r << " is out of range" << endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1963,7 +1963,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 							}
 							nZoomFreqs = nZoom;	// set to actual number needed
 							DifxDatastreamAllocZoomBands(dd, nZoomBands);
-							
+
 							nZoomBands = 0;
 							for(int i = 0; i < nZoomFreqs; ++i)
 							{
@@ -1990,7 +1990,8 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 								if(polcount != dd->nZoomPol[i])
 								{
 									cout << "Developer error: didn't find all zoom pols (was looking for " << dd->nZoomPol[i] << ", only found " << polcount << ")!!" << endl;
-									
+									cout << "  Ant=" << antName << " zoomfreq " << i << "/" << nZoomFreqs << " nZoomPol[" << i << "]=" << dd->nZoomPol[i] << std::endl;
+
 									exit(EXIT_FAILURE);
 								}
 							}

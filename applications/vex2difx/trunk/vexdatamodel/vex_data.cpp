@@ -442,6 +442,14 @@ const VexMode *VexData::getModeByDefName(const std::string &defName) const
 	return 0;
 }
 
+void VexData::generateRecordChans()
+{
+	for(std::vector<VexMode>::iterator it = modes.begin(); it != modes.end(); ++it)
+	{
+		it->generateRecordChans();
+	}
+}
+
 unsigned int VexData::nRecordChan(const VexMode &mode, const std::string &antName) const
 {
 	unsigned int nRecChan = 0;

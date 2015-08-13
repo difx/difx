@@ -861,7 +861,7 @@ static int getModes(VexData *V, Vex *v)
 			}
 			else
 			{
-				std::cerr << "Unable to determine data format for antenna " << antName << std::endl;
+				std::cerr << "Note: Unable to determine data format for antenna " << antName << " based on vex file.  Will rely on other information." << std::endl;
 
 				stream.format = VexStream::FormatNone;
 			}

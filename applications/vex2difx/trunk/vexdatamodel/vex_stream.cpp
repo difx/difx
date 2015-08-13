@@ -294,7 +294,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 		VDIFFrameSize = matchInt(formatName, match[2]);
 		nBit = matchInt(formatName, match[3]);
-		singleThread = isSingleThreadVDIF(formatName);
+		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
@@ -308,7 +308,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		}
 		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 		VDIFFrameSize = matchInt(formatName, match[2]);
-		singleThread = isSingleThreadVDIF(formatName);
+		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
@@ -340,7 +340,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		}
 		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 		fanout = matchInt(formatName, match[2]);
-		singleThread = isSingleThreadVDIF(formatName);
+		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
@@ -355,7 +355,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		// Mbps not captured
 		nRecordChan = matchInt(formatName, match[3]);
 		nBit = matchInt(formatName, match[4]);
-		singleThread = isSingleThreadVDIF(formatName);
+		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}

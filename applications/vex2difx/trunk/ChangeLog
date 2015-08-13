@@ -28,6 +28,12 @@ Version 2.5.0
 * Don't export the vex library anymore.  It causes some trouble
 * Some other configure.ac / Makefile.am cleanups
 * If EXPER section is missing or incomplete, let user know and if forced, make assumptions.
+* If vex file does not specify a record channel ordering (e.g., through TRACKS), an ordering is determined via sorting channels by their names
+* Improve uniformity of classification of messages to users.  This is how they should be chosen:
+  - Note : Indication that some (usually safe) assumptions are being made because of incomplete information.
+  - Warning : Indication that something doesn't seem right.  Will proceed if forced.
+  - Error : A problem with input data that cannot be ignored.
+  - Developer error : A case where the program detected internal self inconsistency.  This implies a bug in the code.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

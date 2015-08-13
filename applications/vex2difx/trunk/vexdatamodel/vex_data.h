@@ -99,6 +99,7 @@ public:
 	void setStreamBands(const std::string &modeName, const std::string &antName, int dsId, int nBand, int startBand);
 	double getEarliestScanStart() const;
 	double getLatestScanStop() const;
+	void generateRecordChans();
 
 	double obsStart() const { return exper.mjdStart; }
 	double obsStop() const { return exper.mjdStop; }

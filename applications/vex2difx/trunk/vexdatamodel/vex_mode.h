@@ -29,6 +29,7 @@ public:
 	void setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling);
 	void setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz);
 	void selectTones(const std::string &antName, enum ToneSelection selection, double guardBandMHz);
+	void generateRecordChans();
 
 	std::string defName;
 

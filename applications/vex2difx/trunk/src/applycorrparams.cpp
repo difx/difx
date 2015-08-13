@@ -251,6 +251,9 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 		}
 	}
 
+	// For modes where record channels were not explicitly assigned, use ordering by channel name
+	V->generateRecordChans();
+
 	// Tones
 	for(unsigned int a = 0; a < V->nAntenna(); ++a)
 	{

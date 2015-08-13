@@ -124,7 +124,7 @@ static void genJobGroups(std::vector<JobGroup> &JGs, const VexData *V, const Cor
 		}
 	}
 
-	if(verbose + nNoRecordScan > 0)
+	if(verbose && nNoRecordScan > 0)
 	{
 		std::cout << nNoRecordScan << " scans dropped because they recorded no baseband data." << std::endl;
 	}

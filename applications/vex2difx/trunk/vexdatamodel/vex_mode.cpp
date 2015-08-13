@@ -336,6 +336,18 @@ void VexMode::selectTones(const std::string &antName, enum ToneSelection selecti
 	}
 }
 
+void VexMode::generateRecordChans()
+{
+	for(std::map<std::string,VexSetup>::iterator it = setups.begin(); it != setups.end(); ++it)
+	{
+		if(!it->second.hasUniqueRecordChans())
+		{
+			std::cout << "Note: Mode " << defName << " antenna " << it->first << " did not have a channel ordering defined.  Sorting by channel names to establish the order." << std::endl;
+			it->second.assignRecordChans();
+		}
+	}
+}
+
 std::ostream& operator << (std::ostream &os, const VexMode &x)
 {
 	unsigned int nSubband = x.subbands.size();

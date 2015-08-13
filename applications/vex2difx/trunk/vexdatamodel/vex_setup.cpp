@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <set>
 #include "vex_setup.h"
 
 int VexSetup::phaseCalIntervalMHz() const
@@ -57,6 +59,34 @@ double VexSetup::dataRateMbps() const
 	}
 
 	return rate;
+}
+
+double VexSetup::sortChannels()
+{
+	sort(channels.begin(), channels.end());
+}
+
+bool VexSetup::hasUniqueRecordChans() const
+{
+	std::set<int> ids;
+
+	for(std::vector<VexChannel>::const_iterator it = channels.begin(); it != channels.end(); ++it)
+	{
+		ids.insert(it->recordChan);
+	}
+
+	return (ids.size() == channels.size());
+}
+
+void VexSetup::assignRecordChans()
+{
+	int id = 0;
+
+	sort(channels.begin(), channels.end());
+	for(std::vector<VexChannel>::iterator it = channels.begin(); it != channels.end(); ++it)
+	{
+		it->recordChan = id++;
+	}
 }
 
 void VexSetup::setPhaseCalInterval(int phaseCalIntervalMHz)

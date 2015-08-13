@@ -45,7 +45,7 @@ int checkCRLF(const char *filename)
 
 	if(processedFiles.find(filename) == processedFiles.end())
 	{
-		printf("Checking %s\n", filename);
+		printf("Checking: %s\n", filename);
 		processedFiles.insert(filename);
 
 		in = fopen(filename, "rb");
