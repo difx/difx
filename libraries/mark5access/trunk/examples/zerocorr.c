@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,8 +39,8 @@
 
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20110926";
+const char version[] = "0.3";
+const char verdate[] = "20150814";
 
 const int MaxLineLen = 256;
 
@@ -514,7 +514,7 @@ static void usage(const char *pgm)
 "   3  Real value of the visibility\n"
 "   4  Imaginary value of the visibility\n"
 "   5  Amplitude\n"
-"   6  Phase\n"
+"   6  Phase (rad)\n"
 "   7  Autocorrelation of the first datastream (real only)\n"
 "   8  Autocorrelation of the second datastream (real only)\n\n");
 	printf("The lags output file (specified in line 16 above) has 7 columns:\n"
@@ -523,7 +523,7 @@ static void usage(const char *pgm)
 "   3  Real value of the lag function\n"
 "   4  Imaginary value of the lag function\n"
 "   5  Amplitude\n"
-"   6  Phase\n"
+"   6  Phase (rad)\n"
 "   7  Window function\n\n");
 	printf("Control-C will stop this program after the next FFT is completed and\n"
 "will write the partial results to the output files.\n\n");
@@ -628,7 +628,7 @@ static int zerocorr(const char *confFile, int verbose)
 		{
 			x = creal(B->visibility[j])*scale;
 			y = cimag(B->visibility[j])*scale;
-			fprintf(B->outVis, "%d %e  %f %f %f %f  %f %f\n", j, j*B->deltaF, x, y, sqrt(x*x+y*y), atan2(y, x), B->ac1[j]/n, B->ac2[j]/n);
+			fprintf(B->outVis, "%d %e  %e %e %e %e  %e %e\n", j, j*B->deltaF, x, y, sqrt(x*x+y*y), atan2(y, x), B->ac1[j]/n, B->ac2[j]/n);
 		}
 
 		fftw_execute(B->plan);
@@ -641,7 +641,7 @@ static int zerocorr(const char *confFile, int verbose)
 			window = (B->nChan/2 - abs(j))/(float)(B->nChan/2);
 			x = creal(B->lags[index])*scale;
 			y = cimag(B->lags[index])*scale;	
-			fprintf(B->outLag, "%d %e  %f %f %f %f  %f\n", j, j*B->deltaT, x, y, sqrt(x*x+y*y), atan2(y, x), window);
+			fprintf(B->outLag, "%d %e  %e %e %e %e  %e\n", j, j*B->deltaT, x, y, sqrt(x*x+y*y), atan2(y, x), window);
 		}
 	}
 

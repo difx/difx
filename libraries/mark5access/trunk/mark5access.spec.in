@@ -10,6 +10,8 @@ Requires: fftw3 >= 3.2.0
 Prefix: /usr
 Source: mark5access-@version@.tar.gz
 
+%define debug_package %{nil}
+
 %description
 Baseband data decoder
 
