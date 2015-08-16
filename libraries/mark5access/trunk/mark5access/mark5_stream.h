@@ -48,6 +48,7 @@ typedef double complex mark5_double_complex;
 typedef float complex  mark5_float_complex;
 #endif
 
+#include <stdint.h>
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -94,7 +95,7 @@ struct mark5_stream
 	int mjd;		/* date of first found frame */
 	int sec;		/* time of first found frame */
 	int ns;			/* ns portion of time of first frame */
-	int samprate;		/* (Hz) of de-fanned stream */
+	int64_t samprate;	/* (Hz) of de-fanned stream */
 	int frameoffset;	/* bytes into stream of first frame */
 	int framesamples;	/* number of samples per chan in a frame */
 	double framens;		/* nanoseconds per frame */

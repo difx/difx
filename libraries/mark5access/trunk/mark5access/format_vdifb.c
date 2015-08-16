@@ -2099,7 +2099,7 @@ static int mark5_format_vdifb_init(struct mark5_stream *ms)
 			framensNum, framensDen);
 			ms->framegranularity = 1;
 		}
-		ms->samprate = ms->framesamples*(1000000000.0/ms->framens);
+		ms->samprate = ((int64_t)ms->framesamples)*(1000000000.0/ms->framens);
         }
         else
         {
