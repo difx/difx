@@ -117,4 +117,4 @@ neuteredmpifxcorr_SOURCES = \
 
 neuteredmpifxcorr_CXXFLAGS = -DNEUTERED_DIFX $(AM_CXXFLAGS)
 
-neuteredmpifxcorr_LDADD = $(top_builddir)/src/libfxcorr.a
+neuteredmpifxcorr_LDADD = libfxcorr.a
