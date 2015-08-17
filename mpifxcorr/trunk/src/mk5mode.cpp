@@ -59,7 +59,8 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
         mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
         samplestounpack += mark5stream->samplegranularity;
-      sprintf(mark5stream->streamname, "DS%d", dsindex);
+      string orig_streamname(mark5stream->streamname);
+      sprintf(mark5stream->streamname, "DS%d <%s>", dsindex, orig_streamname.c_str());
       if(framesamples != mark5stream->framesamples)
       {
         cfatal << startl << "Mk5Mode::Mk5Mode : framesamples inconsistent (told " << framesamples << "/ stream says " << mark5stream->framesamples << ") - for stream index " << dsindex << endl;
