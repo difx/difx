@@ -73,6 +73,7 @@ enum Mark5Format
 #define MAXBLANKZONES		32
 #define OPTIMAL_2BIT_HIGH	3.3359
 #define MARK5_STREAM_ID_LENGTH	256
+#define MARK5_STREAM_MAXBUFSIZE (1<<20)	/* maximum bytes for buffer, length must fit 'int' */
 
 enum Mark5Blanker
 {

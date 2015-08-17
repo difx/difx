@@ -6800,8 +6800,8 @@ static int mark5_format_vlba_nomod_init(struct mark5_stream *ms)
 		}
 
 		/* look through entire data window, up to 1Mibytes */
-		bytes = ms->datawindowsize < (1<<20) ?
-			ms->datawindowsize : (1<<20);
+		bytes = ms->datawindowsize < MARK5_STREAM_MAXBUFSIZE ?
+			ms->datawindowsize : MARK5_STREAM_MAXBUFSIZE;
 		ms->frameoffset = findfirstframe(ms->datawindow, bytes, nRealTrack);
 		if(ms->frameoffset < 0)
 		{

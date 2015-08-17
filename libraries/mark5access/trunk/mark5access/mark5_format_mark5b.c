@@ -2861,8 +2861,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		}
 
 		/* look through entire data window, up to 1Mibytes */
-		bytes = ms->datawindowsize < (1<<20) ?
-			ms->datawindowsize : (1<<20);
+		bytes = ms->datawindowsize < MARK5_STREAM_MAXBUFSIZE ?
+			ms->datawindowsize : MARK5_STREAM_MAXBUFSIZE;
 
 		/* first look for normal Mark5B sync word */
 		ms->frameoffset = findfirstframe(ms->datawindow, bytes, mark5bSync);

@@ -67,6 +67,12 @@ static int mark5_stream_file_fill(struct mark5_stream *ms, int offset, int lengt
 	
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
+	if(length > F->buffersize)
+	{
+		fprintf(m5stderr, "Error filling from file: <%s> : request for %d bytes exceeds buffersize of %d\n", F->files[F->curfile], length, F->buffersize);
+		perror(0);
+	}
+
 	buffer = F->buffer + offset;
 
 	n = read(F->in, buffer, length);
@@ -378,13 +384,14 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename, long lo
 	if(in == 0)
 	{
 		F->filesize = 1LL<<61;
-		F->buffersize = 1<<19;
+		F->buffersize = MARK5_STREAM_MAXBUFSIZE/2;
 		snprintf(F->files[0], MARK5_STREAM_ID_LENGTH, "%s", "<stdin>");
 	}
 	else
 	{
 		F->filesize = fileStatus.st_size;
-		F->buffersize = F->filesize > 1<<20 ? 1<<20 : F->filesize;
+		F->buffersize = F->filesize > MARK5_STREAM_MAXBUFSIZE ?
+				MARK5_STREAM_MAXBUFSIZE : F->filesize;
 		snprintf(F->files[0], MARK5_STREAM_ID_LENGTH, "%s", filename);
 	}
 	F->nfiles = 1;
