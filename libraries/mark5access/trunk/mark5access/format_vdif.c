@@ -3885,6 +3885,16 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 {
 	const unsigned int *header;
 
+	/* Check for overly unusual header (note that VDIF has no Sync/Magic) */
+	header = (const unsigned int *)ms->frame;
+	if(header[2] == 0)
+	{
+#ifdef DEBUG
+		fprintf(m5stderr, "mark5_format_vdif_validate: Skipping frame with Data Frame Length of zero\n");
+#endif
+		return 0;
+	}
+
 	if(ms->mjd && ms->framenum % ms->framegranularity == 0)
 	{
 		int mjd_d, mjd_t, sec_d, sec_t;
@@ -3911,7 +3921,6 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 	}
 
 	/* Check the invalid bit */
-	header = (const unsigned int *)ms->frame;
 	if((header[0] >> 31) & 0x01)
 	{
 #ifdef DEBUG
