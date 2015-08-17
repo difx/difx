@@ -131,6 +131,7 @@ void DataStream::initialise()
     cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << bufferbytes + overflowbytes << ") - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
+  vectorZero_u8(databuffer, bufferbytes + overflowbytes + 4);
   tempbuf = 0;
   tempbytes = 0;
   int mindatabytes = config->getDataBytes(0, streamnum);

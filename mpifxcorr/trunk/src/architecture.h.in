@@ -209,6 +209,7 @@
 
 #define vectorSum_cf32(src, length, sum, hint)                              ippsSum_32fc(src, length, sum, hint)
 
+#define vectorZero_u8(dest, length)                                         ippsZero_8u(dest, length)
 #define vectorZero_cf32(dest, length)                                       ippsZero_32fc(dest, length)
 #define vectorZero_cf64(dest, length)                                       ippsZero_64fc(dest, length)
 #define vectorZero_f32(dest, length)                                        ippsZero_32f(dest, length)
@@ -402,6 +403,9 @@ inline vecStatus genericCopy_f64(const f64 * src, f64 * dest, int length)
 { for(int i=0;i<length;i++) {dest[i] = src[i];} return vecNoErr; }
 
 // Zero // Replace with memset(d,0,l*size(d[0]))
+inline vecStatus genericZero_u8(u8 * dest, int length)
+{ memset((void *) dest, 0, length*sizeof(dest[0])); return vecNoErr; } 
+
 inline vecStatus genericZero_32s(s32 * dest, int length)
 { for(int i=0;i<length;i++) dest[i] = 0; return vecNoErr; } // memset(dest,0,length*sizeof(dest[0]))
 inline vecStatus genericZero_32f(f32 * dest, int length)
@@ -812,6 +816,7 @@ inline vecStatus genericMaxIndx_32f(f32 *src, int len, f32 *max, int *imax)
 
 #define vectorSum_cf32(src, length, sum, hint)                              genericSum_32fc(src, length, sum, hint)
 
+#define vectorZero_u8(dest, length)                                         genericZero_8u(dest, length)
 #define vectorZero_cf32(dest, length)                                       genericZero_32fc(dest, length)
 #define vectorZero_cf64(dest, length)                                       genericZero_64fc(dest, length)
 #define vectorZero_f32(dest, length)                                        genericZero_32f(dest, length)
