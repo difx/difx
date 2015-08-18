@@ -866,73 +866,57 @@ static int getModes(VexData *V, Vex *v)
 				stream.format = VexStream::FormatNone;
 			}
 
-			// FIXME: move this to a later sanity check
-#if 0
-			if(stream.formatName == "VLBA" || stream.formatName == "VLBN")
+			for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
 			{
-				double totalDataRateMHz = stream.dataRateMHz();
+				std::string chanName;
+				bool sign;
+				int dasNum;
+				
+				vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
+				chanName = value;
+				vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
+				sign = (value[0] == 's');
+				vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
+				sscanf(value, "%d", &dasNum);
 
-				if(totalDataRate > 0.0 && totalDataRate < 16.0)
+				for(int k = 5; k < 9; ++k)
 				{
-					std::cout << "*** Warning: a " << stream.formatName << " mode was found with sample rate " << (totalDataRateMHz) << " Mbps, which is less than the minimum 16 Mbps that can make use of this record format.  It is likely this mode will produce unusual results.  The suggested fix is to add additional channels in the vex file to bring the total bit rate up to 16 Mbps, which is very likely what the formatter did at the time of recording." << std::endl;
-				}
-			}
-#endif
-
-			if(stream.isTrackFormat())
-			{
-				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
-				{
-					std::string chanName;
-					bool sign;
-					int dasNum;
+					int chanNum;
 					
-					vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
-					chanName = value;
-					vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
-					sign = (value[0] == 's');
-					vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
-					sscanf(value, "%d", &dasNum);
-
-					for(int k = 5; k < 9; ++k)
+					if(vex_field(T_FANOUT_DEF, p, k, &link, &name, &value, &units) < 0)
 					{
-						int chanNum;
-						
-						if(vex_field(T_FANOUT_DEF, p, k, &link, &name, &value, &units) < 0)
-						{
-							break;
-						}
-						++nTrack;
-						sscanf(value, "%d", &chanNum);
-						chanNum += 32*(dasNum-1);
-						if(sign)
-						{
-							ch2tracks[chanName].sign.push_back(chanNum);
-						}
-						else
-						{
-							nBit = 2;
-							ch2tracks[chanName].mag.push_back(chanNum);
-						}
+						break;
 					}
-				}
-				if(!ch2tracks.empty())
-				{
-					int fanout;
-
-					fanout = nTrack/ch2tracks.size()/nBit;
-					if(stream.formatHasFanout())
+					++nTrack;
+					sscanf(value, "%d", &chanNum);
+					chanNum += 32*(dasNum-1);
+					if(sign)
 					{
-						stream.setFanout(fanout);
+						ch2tracks[chanName].sign.push_back(chanNum);
 					}
-
-					// FIXME: what to do if nBit and nRecordChan already set but they disagree?
-
-					stream.nRecordChan = ch2tracks.size();
-					stream.nBit = nBit;
+					else
+					{
+						nBit = 2;
+						ch2tracks[chanName].mag.push_back(chanNum);
+					}
 				}
 			}
-			else if(stream.isLBAFormat())
+			if(!ch2tracks.empty())
+			{
+				int fanout;
+
+				fanout = nTrack/ch2tracks.size()/nBit;
+				if(stream.formatHasFanout())
+				{
+					stream.setFanout(fanout);
+				}
+
+				// FIXME: what to do if nBit and nRecordChan already set but they disagree?
+
+				stream.nRecordChan = ch2tracks.size();
+				stream.nBit = nBit;
+			}
+			if(stream.isLBAFormat())
 			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
 				{

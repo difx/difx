@@ -12,6 +12,7 @@ regex_t VexStream::matchType4;
 regex_t VexStream::matchType5;
 regex_t VexStream::matchType6;
 regex_t VexStream::matchType7;
+regex_t VexStream::matchType8;
 
 bool VexStream::isInit(Init());	// force execution of the function below to initialize regular expressions
 bool VexStream::Init()
@@ -78,6 +79,15 @@ bool VexStream::Init()
 	if(v != 0)
 	{
 		std::cerr << "Developer Error: VexStream::Init(): compiling matchType7 failed" << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+
+	// of form <fmt>/<bits>	 or <fmt>-<bits>
+	v = regcomp(&matchType8, "^([A-Z]*VDIF[A-Z]*)[-/]([1-9]+[0-9]*)$", REG_EXTENDED);
+	if(v != 0)
+	{
+		std::cerr << "Developer Error: VexStream::Init(): compiling matchType8 failed" << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -377,6 +387,18 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		// Mbps not captured
 		nRecordChan = matchInt(formatName, match[4]);
 		nBit = matchInt(formatName, match[5]);
+
+		return true;
+	}
+	else if(regexec(&matchType8, formatName.c_str(), 3, match, 0) == 0)
+	{
+		// of form <fmr>/<bits> or <fmt>-<bits>
+		format = stringToDataFormat(formatName.substr(0, match[1].rm_eo));
+		if(format == NumDataFormats)
+		{
+			return false;
+		}
+		nBit = matchInt(formatName, match[2]);
 
 		return true;
 	}

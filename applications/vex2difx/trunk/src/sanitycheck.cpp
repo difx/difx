@@ -30,6 +30,7 @@
 #include <vector>
 #include <list>
 #include <iostream>
+#include <cstdlib>
 #include "sanitycheck.h"
 
 static bool illegalSourceName(const std::string &name)
@@ -181,6 +182,24 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 							++nWarn;
 						}
 					}
+				}
+			}
+		}
+	}
+
+	for(int m = 0; m < V->nMode(); ++m)
+	{
+		const VexMode *M = V->getMode(m);
+		for(std::map<std::string,VexSetup>::const_iterator  s = M->setups.begin(); s != M->setups.end(); ++s)
+		{
+			for(std::vector<VexStream>::const_iterator t = s->second.streams.begin(); t != s->second.streams.end(); ++t)
+			{
+				if(t->nBit == 0)
+				{
+					std::cerr << "Error: number of bits not defined for mode " << M->defName <<" antenna " << s->first << std::endl;
+
+					exit(EXIT_FAILURE);
+
 				}
 			}
 		}

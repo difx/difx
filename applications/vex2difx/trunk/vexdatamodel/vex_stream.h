@@ -66,6 +66,7 @@ private:
 	static regex_t matchType5;	// of form <fmt>_<size>-<Mbps>-<nChan>-<bits>	(VDIF specific)
 	static regex_t matchType6;	// of form <fmt>-<Mbps>-<nChan>-<bits>
 	static regex_t matchType7;	// of form <fmt>1_<fanout>-<Mbps>-<nChan>-<bits> (VLBA, VLBN, Mark4 only)
+	static regex_t matchType8;	// of form <fmt>/<size> or <fmt>-<size>
 };
 
 std::ostream& operator << (std::ostream &os, const VexStream &x);
