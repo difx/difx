@@ -89,31 +89,64 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	request->axis_type_a = "altz";
 	request->axis_off_a = 0.0;
 
+	/* check that the available EOPs bracket the observation */
+	if(D->eop[D->nEOP-1].mjd < D->mjdStart ||
+	   D->eop[0].mjd         > D->mjdStop)
+	{
+		fprintf(stderr, "EOPs don't bracket the observation.\n");
+		fprintf(stderr, "%d < %lg || %d > %lg\n",
+		    D->eop[MAX_EOPS-1].mjd, D->mjdStart,
+		    D->eop[0].mjd, D->mjdStop);
+		return -2;
+	}
+
 	if(D->nEOP >= MAX_EOPS)
 	{
-		for(i = 0; i < MAX_EOPS; ++i)
+		/* Try to grab MAX_EOPS values centered on observation */
+		int j, mjdMid = (int)lrint((D->mjdStart + D->mjdStop) / 2.0);
+		for(j = 0; j < D->nEOP; j++)
 		{
-			request->EOP_time[i] = D->eop[i].mjd;
-			request->tai_utc[i]  = D->eop[i].tai_utc;
-			request->ut1_utc[i]  = D->eop[i].ut1_utc;
-			request->xpole[i]    = D->eop[i].xPole;
-			request->ypole[i]    = D->eop[i].yPole;
+			if(D->eop[j].mjd == mjdMid)
+			{
+				if(j >= 2)
+					j -= 2;
+				else
+					j = 0;
+				if(j > D->nEOP - MAX_EOPS)
+					j = D->nEOP - MAX_EOPS;
+				break;
+			}
+		}
+		/* if that didn't work, fall back to the original logic */
+		if(j >= D->nEOP) j = 0;
+		fprintf(stderr, "Obs. MJD %lf..%lf, using EOP[%d..%d]\n",
+			D->mjdStart, D->mjdStop, j, j+MAX_EOPS-1);
+		for(i = 0; i < MAX_EOPS; ++i, ++j)
+		{
+			request->EOP_time[i] = D->eop[j].mjd;
+			request->tai_utc[i]  = D->eop[j].tai_utc;
+			request->ut1_utc[i]  = D->eop[j].ut1_utc;
+			request->xpole[i]    = D->eop[j].xPole;
+			request->ypole[i]    = D->eop[j].yPole;
 		}
 	}
 	else
 	{
-		fprintf(stderr, "Not enough eop values present (%d < %d)\n", D->nEOP, MAX_EOPS);
-
+		fprintf(stderr, "Not enough EOP values present (%d < %d)\n",
+			D->nEOP, MAX_EOPS);
 		return -1;
 	}
 
-	/* check that eops bracket the observation */
-	if(D->eop[MAX_EOPS-1].mjd < D->mjdStart ||
-	   D->eop[0].mjd          > D->mjdStop)
+	/* check that the selected EOPs bracket the observation */
+	if(request->EOP_time[MAX_EOPS-1] < D->mjdStart ||
+	   request->EOP_time[0]          > D->mjdStop)
 	{
-		fprintf(stderr, "EOPs don't bracket the observation.\n");
-
-		return -2;
+		fprintf(stderr,
+		    "Selected EOPs don't bracket the observation:\n"
+		    "%d < %lg || %d > %lg\n",
+		    request->EOP_time[MAX_EOPS-1], D->mjdStart,
+		    request->EOP_time[0], D->mjdStop);
+		return -3;
 	}
 
 	return 0;
