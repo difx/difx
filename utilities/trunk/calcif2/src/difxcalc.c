@@ -100,6 +100,12 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 		return -2;
 	}
 
+	if(D->nEOP != MAX_EOPS) fprintf(stderr,
+		"***\n"
+		"*** Warning: Only 5 EOPs total are properly supported.\n"
+		"***          Incorrect results may follow in FITS.\n"
+		"***\n");
+
 	if(D->nEOP >= MAX_EOPS)
 	{
 		/* Try to grab MAX_EOPS values centered on observation */
