@@ -875,7 +875,7 @@ void VexData::setSampling(const std::string &antName, unsigned int streamId, enu
 {
 	for(std::vector<VexMode>::iterator it = modes.begin(); it != modes.end(); ++it)
 	{
-		setSampling(antName, streamId, dataSampling);
+		it->setSampling(antName, streamId, dataSampling);
 	}
 }
 
