@@ -83,7 +83,7 @@ bool VexStream::Init()
 		exit(EXIT_FAILURE);
 	}
 
-	// of form <fmt>/<bits>	 or <fmt>-<bits>
+	// of form (<fmt>/<bits> or <fmt>-<bits>) or (<fmt>/<size> or <fmt>-<size>  VDIF only)
 	v = regcomp(&matchType8, "^([A-Z]*VDIF[A-Z]*)[-/]([1-9]+[0-9]*)$", REG_EXTENDED);
 	if(v != 0)
 	{
@@ -229,6 +229,11 @@ bool VexStream::parseThreads(const std::string &threadList)
 	return true;
 }
 
+static int matchInt(const std::string &str, const regmatch_t &match)
+{
+	return atoi(str.substr(match.rm_so, match.rm_eo-match.rm_so).c_str());
+}
+
 // Accepts strings of the following formats and populates appropriate members:
 
 // VDIF/<size>/<bits>  -> format=VDIF,  VDIFFrameSize=<size>, nBit = <bits>, nThread=1, threads=[]
@@ -236,12 +241,6 @@ bool VexStream::parseThreads(const std::string &threadList)
 // VDIF_<size>-<Mbps>-<nChan>-<bits>   -> format=VDIF,  VDIFFrameSize=<size>+32, nBit=<bits>, nThread=1, threads=[], nChan=<nChan>
 // VDIFL_<size>-<Mbps>-<nChan>-<bits>  -> format=VDIFL, VDIFFrameSize=<size>+16, nBit=<bits>, nThread=1, threads=[], nChan=<nChan>
 // INTERLACEDVDIF/0:1:16:17/1032/2
-
-static int matchInt(const std::string &str, const regmatch_t &match)
-{
-	return atoi(str.substr(match.rm_so, match.rm_eo-match.rm_so).c_str());
-}
-
 void VexStream::setVDIFSubformat(const std::string &str)
 {
 	if(strcasecmp(str.c_str(), "VDIFC") == 0 || strcasecmp(str.c_str(), "INTERLACEDVDIFC") == 0)
@@ -392,13 +391,21 @@ bool VexStream::parseFormatString(const std::string &formatName)
 	}
 	else if(regexec(&matchType8, formatName.c_str(), 3, match, 0) == 0)
 	{
-		// of form <fmr>/<bits> or <fmt>-<bits>
+		// of form (<fmt>/<bits> or <fmt>-<bits>) or (<fmt>/<size> or <fmt>-<size>  VDIF only)
 		format = stringToDataFormat(formatName.substr(0, match[1].rm_eo));
 		if(format == NumDataFormats)
 		{
 			return false;
 		}
-		nBit = matchInt(formatName, match[2]);
+		int v = matchInt(formatName, match[2]);
+		if(v > 32 && isVDIFFormat())
+		{
+			VDIFFrameSize = v;	
+		}
+		else
+		{
+			nBit = v;
+		}
 
 		return true;
 	}
