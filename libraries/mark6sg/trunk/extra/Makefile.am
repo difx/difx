@@ -1,15 +1,19 @@
-DIST_EXTRA = m6sg_blocknrs.c fuseMk6.c mk6copy.c m6sg_gather.c
+DIST_EXTRA = m6sg_blocknrs.c mk6copy.c m6sg_gather.c fuseMk6.c
+bin_PROGRAMS = m6sg_blocknrs m6sg_gather mk6copy
+
+if USE_FUSE
+bin_PROGRAMS += fuseMk6
+endif
 
 dist_bin_SCRIPTS = m6sg_mount
 
-bin_PROGRAMS = m6sg_blocknrs m6sg_gather mk6copy fuseMk6
 bin_SCRIPTS = m6sg_mount
 
 m6sg_gather_CFLAGS = -I$(top_srcdir)/mark6sg -I$(top_srcdir) -Wall
 m6sg_gather_LDADD = $(top_builddir)/mark6sg/libmark6sg.la -lm
 m6sg_gather_SOURCES = m6sg_gather.c
 
-fuseMk6_LDADD = $(top_builddir)/mark6sg/libmark6sg.la -lm -lfuse 
+fuseMk6_LDADD = $(top_builddir)/mark6sg/libmark6sg.la -lm 
 fuseMk6_CFLAGS = -I$(top_srcdir)/mark6sg -I$(top_srcdir) -Wall -D_FILE_OFFSET_BITS=64 -O3 -g
 fuseMk6_SOURCES = fuseMk6.c
 
