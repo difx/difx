@@ -895,6 +895,7 @@ void VexData::setCanonicalVDIF(const std::string &modeName, const std::string &a
 				{
 					sit->nBit = 2;
 					sit->nThread = sit->nRecordChan;
+					sit->singleThread = false;
 					sit->threads.clear();
 					for(unsigned int c = 0; c < sit->nRecordChan; ++c)
 					{
