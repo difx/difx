@@ -1,3 +1,6 @@
+Version 1.1.6
+* mark6sg/*.h: allow inclusion from C++ files
+
 Version 1.1.5
 * libmark6sg: new mark6_sg_set_rootpattern() API function
 * fuseMk6: new command line option '-r <rootpattern>', for example

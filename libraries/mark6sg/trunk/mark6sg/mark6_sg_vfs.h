@@ -37,6 +37,10 @@
 
 #include "mark6_sg_utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Library functions
 extern int     mark6_sg_open (const char *scanname, int flags);
 extern int     mark6_sg_close(int fd);
@@ -47,5 +51,9 @@ extern int     mark6_sg_fstat(int fd, struct stat *buf);
 
 extern int     mark6_sg_packetsize(int fd);
 extern ssize_t mark6_sg_stripesize(int fd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

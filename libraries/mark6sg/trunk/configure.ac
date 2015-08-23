@@ -1,4 +1,4 @@
-AC_INIT([mark6sg], [1.1.5], [Jan Wagner jwagner@kasi.re.kr])
+AC_INIT([mark6sg], [1.1.6], [Jan Wagner jwagner@kasi.re.kr])
 
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])

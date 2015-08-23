@@ -33,6 +33,10 @@
 #include <sys/stat.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Defines
 #define MARK6_SG_SYNC_WORD          0xfeed6666
 #define MARK6_SG_MAXFILES           32
@@ -71,7 +75,7 @@ extern int mark6_sg_collect_metadata(m6sg_slistmeta_t**);
 extern char* mark6_sg_set_rootpattern(const char* new_sg_root_pattern);
 
 #ifdef __cplusplus
-// TODO: allow alternate compilation with C++ class def
+}
 #endif
 
 #endif
