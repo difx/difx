@@ -41,6 +41,7 @@
 #include "vdifnetwork.h"
 #include "vdiffake.h"
 #include "vdifmark5.h"
+#include "vdifmark6.h"
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
 #include "string.h"
@@ -383,6 +384,8 @@ int main(int argc, char *argv[])
       int datastreamnum = myID - fxcorr::FIRSTTELESCOPEID;
       if(config->isVDIFFile(datastreamnum)) {
         stream = new VDIFDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isVDIFMark6(datastreamnum)) {
+        stream = new VDIFMark6DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isVDIFMark5(datastreamnum)) {
         stream = new VDIFMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isVDIFNetwork(datastreamnum)) {

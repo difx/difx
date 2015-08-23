@@ -849,6 +849,21 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 
     switch(fringerotationorder) {
       case 1: // linear
+
+/* The actual calculation that is going on for the linear case is as follows:
+
+   Calculate complexrotator[j]  (for j = 0 to fftchanels-1) as:
+
+   complexrotator[j] = exp( 2 pi i * (A*j + B) )
+
+   where:
+
+   A = a*lofreq/fftchannels - sampletime*1.0e-6*recordedfreqlooffsets[i]
+   B = b*lofreq/fftchannels + fraclofreq*integerdelay - recordedfreqlooffsets[i]*fracwalltime - fraclooffset*intwalltime
+
+   And a, b are computed outside the recordedfreq loop (variable i)
+*/
+
         status = vectorMulC_f64(subxval, lofreq, subphase, arraystridelength);
         if(status != vecNoErr)
           csevere << startl << "Error in linearinterpolate lofreq sub multiplication!!!" << status << endl;

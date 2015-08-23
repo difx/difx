@@ -54,7 +54,6 @@ public:
   virtual void initialise();
 
 protected:
-  #include <vector>
  /** 
   * Calculates the correct offset from the start of the databuffer for a given time in the correlation, 
   * and calculates valid bits for each FFT block as control information to pass to the Cores

@@ -87,6 +87,28 @@ fi
 AM_CONDITIONAL(WITH_SS, $ss_enabled)
 
 dnl **********************************************************
+dnl **** Look for Mark6 scatter/gather library            ****
+dnl **** cause mark6 datastreams to be built if found     ****
+dnl **********************************************************
+mk6_enabled=true
+PKG_CHECK_EXISTS([mark6sg >= 1.1.6],
+	[ PKG_CHECK_MODULES(MK6, mark6sg) ],
+	[ AC_MSG_NOTICE([Did not find mark6sg in $PKG_CONFIG_PATH])
+	  mk6_enabled=false])
+if test ${mk6_enabled} = true; then
+	CPPFLAGS="${CPPFLAGS} ${MK6_CFLAGS}"
+	CXXFLAGS="${CXXFLAGS} ${MK6_CFLAGS}"
+	AC_CHECK_HEADERS([mark6sg/mark6_sg_vfs.h])
+else
+	MK6_CFLAGS=""
+	MK6_LIBS=""
+	echo 'No suitable mark6sg.pc file was found so the Mark6'
+	echo 'support will be suppressed.  See the documentation'
+	echo 'if you are surprised by this.'
+fi
+AM_CONDITIONAL(WITH_MK6, $mk6_enabled)
+
+dnl **********************************************************
 dnl **** Find mark5access library                         ****
 dnl **********************************************************
 PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.5.1)

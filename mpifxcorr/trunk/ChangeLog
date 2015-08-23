@@ -4,6 +4,7 @@ Version 2.5
 * Slightly more instructive messages when model files have disagreements with .calc files.
 * Check for time disagreements in polyco headers: the fractional MJD is supposed to be definitive, while the HHMMSS value can be rounded
 * Support .im files that contain some additional information (mpifxcorr now just ignores the info)
+* First bits of code for native Mark6 in place.  This relies on Jan Wagner's mark6sg library.  UNTESTED and INCOMPLETE
 
 Version 2.4
 ~~~~~~~~~~~

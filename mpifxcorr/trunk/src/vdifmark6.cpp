@@ -12,27 +12,29 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id$
+// $Id: vdiffile.cpp 6684 2015-06-02 11:40:23Z HelgeRottmann $
 // $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/mk5.cpp $
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
+// $LastChangedRevision: 6684 $
+// $Author: HelgeRottmann $
+// $LastChangedDate: 2015-06-02 06:40:23 -0500 (Tue, 02 Jun 2015) $
 //
 //============================================================================
 #include <cmath>
 #include <cstring>
 #include <mpi.h>
 #include <iomanip>
+#include <unistd.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <sys/socket.h>
+#include <mark6sg/mark6_sg_vfs.h>
 #include "config.h"
 #include "alert.h"
-#include "vdiffile.h"
+#include "vdifmark6.h"
 #include "mode.h"
 
-#include <unistd.h>
 
 
 /* TODO: 
@@ -40,243 +42,65 @@
  */
 
 
-/// VDIFDataStream -------------------------------------------------------
+/// VDIFMark6DataStream -------------------------------------------------------
 
-VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
- : DataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
+VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
+ : VDIFDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
-	//each data buffer segment contains an integer number of frames, because thats the way config determines max bytes
-	lastconfig = -1;
-
-	// switched power output assigned a name based on the datastream number (MPIID-1)
-	int spf_Hz = conf->getDSwitchedPowerFrequency(id-1);
-	if(spf_Hz > 0)
-	{
-		switchedpower = new SwitchedPower(conf, id);
-		switchedpower->frequency = spf_Hz;
-	}
-	else
-	{
-		switchedpower = 0;
-	}
-
-	// Set some VDIF muxer parameters
-	nSort = 32;	// allow data to be this many frames out of order without any loss at read boundaries
-	nGap = 1000;	// a gap of this many frames will trigger an interruption of muxing
-	startOutputFrameNumber = -1;
-	memset(&vm, 0, sizeof(vm));
-
-	// Make read buffer a bit bigger than a data segment size so extra bytes can be filtered out 
-	// The excess should be limited to avoid large memory moves of extra data
-	// But the amount of excess should be large enough to encompass all reasonable amounts of interloper data
-	// Here we choose 1/10 extra as a compromise.  Might be worth a revisit in the future.
-
-	readbuffersize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*11LL/10LL;
-	readbuffersize -= (readbuffersize % 8); // make it a multiple of 8 bytes
-	readbufferleftover = 0;
-	readbuffer = 0;	// to be allocated via initialize();
-
-	// Don't bother to do another read iteration just to salvage this many bytes at the end of a file/scan
-	minleftoverdata = 20000;
-
-	resetvdifmuxstatistics(&vstats);
-	nthreads = 0; // no threads identified yet
-	threads = 0;  // null pointer indicating not yet initialized
-	invalidtime = 0;
-
-	samplingtype = Configuration::REAL;
+	cwarn << startl << "Starting Mark6 datastream.  This is experimental at this time!" << endl;
+	mark6fd = -1;	// indicate file not open
+	mark6eof = false;
 }
 
-VDIFDataStream::~VDIFDataStream()
+VDIFMark6DataStream::~VDIFMark6DataStream()
 {
-	cinfo << startl << "VDIF multiplexing statistics: nValidFrame=" << vstats.nValidFrame << " nInvalidFrame=" << vstats.nInvalidFrame << " nDiscardedFrame=" << vstats.nDiscardedFrame << " nWrongThread=" << vstats.nWrongThread << " nSkippedByte=" << vstats.nSkippedByte << " nFillByte=" << vstats.nFillByte << " nDuplicateFrame=" << vstats.nDuplicateFrame << " bytesProcessed=" << vstats.bytesProcessed << " nGoodFrame=" << vstats.nGoodFrame << " nCall=" << vstats.nCall << endl;
-	if(vstats.nWrongThread > 0)
-	{
-		cerror << startl << "One or more wrong-threads were identified.  This may indicate a correlator configuration error." << endl;
-	}
-	if(vstats.nDuplicateFrame > 0)
-	{
-		cerror << startl << "One or more duplicate data frames (same time and thread) were found.  This may indicate serious problems with the digital back end configuration." << endl;
-	}
-	if(vstats.nFillByte > 3*vstats.bytesProcessed/4)
-	{
-		cerror << startl << "More than three quarters of the data from this station was unrecoverable (fill pattern)." << endl;
-	}
-	if(vstats.nFillByte > vstats.bytesProcessed/2)
-	{
-		cwarn << startl << "More than half of the data from this station was unrecoverable (fill pattern)." << endl;
-	}
-	if(vstats.nSkippedByte > vstats.bytesProcessed/20)
-	{
-		cwarn << startl << "More than 5 percent of data from this antenna were unwanted packets.  This could indicate a problem in the routing of data from the digital back end to the recorder." << endl;
-	}
-
-	//printvdifmuxstatistics(&vstats);
-	if(switchedpower)
-	{
-		delete switchedpower;
-	}
-	if(readbuffer)
-	{
-		delete [] readbuffer;
-	}
+	cwarn << startl << "Ending Mark6 datastream.  Maybe it worked?" << endl;
+	closeMark6();
 }
 
-void VDIFDataStream::initialise()
+void VDIFMark6DataStream::closeMark6()
 {
-	readbuffer = new unsigned char[readbuffersize];
-	DataStream::initialise();
+	if(mark6fd >= 0)
+	{
+		mark6_sg_close(mark6fd);
+	}
+	mark6fd = -1;
+	mark6eof = false;
 }
 
-int VDIFDataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
+void VDIFMark6DataStream::openfile(int configindex, int fileindex)
 {
-	int bufferindex, framesin, vlbaoffset, looksegment, payloadbytes, framespersecond, framebytes;
-	float datarate;
+  closeMark6();
 
-	bufferindex = DataStream::calculateControlParams(scan, offsetsec, offsetns);
+  cverbose << startl << "Mark6 datastream " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
+  if(fileindex >= confignumfiles[configindex]) //run out of files - time to stop reading
+  {
+    dataremaining = false;
+    keepreading = false;
+    cinfo << startl << "Mark6 datastream " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
+    return;
+  }
+  
+  dataremaining = true;
 
-	if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] == Mode::INVALID_SUBINT)
-	{
-		return 0;
-	}
+  mark6fd = mark6_sg_open(datafilenames[configindex][fileindex].c_str(), O_RDONLY);
 
-	looksegment = atsegment;
-	if(bufferinfo[atsegment].configindex < 0) //will get garbage using this to set framebytes etc
-	{
-		//look at the following segment - normally has sensible info
-		looksegment = (atsegment+1)%numdatasegments;
-		if(bufferinfo[atsegment].nsinc != bufferinfo[looksegment].nsinc)
-		{
-			cwarn << startl << "Incorrectly set config index at scan boundary! Flagging this subint" << endl;
-			bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
-	
-			return bufferindex;
-		}
-	}
-	if(bufferinfo[looksegment].configindex < 0)
-	{
-		//Sometimes the next segment is still showing invalid due to the geometric delay.
-		//try the following segment - if thats no good, get out
-		//this is not entirely safe since the read thread may not have set the configindex yet, but at worst
-		//one subint will be affected
-		looksegment = (looksegment+1)%numdatasegments;
-		if(bufferinfo[looksegment].configindex < 0)
-		{
-			cwarn << startl << "Cannot find a valid configindex to set Mk5-related info.  Flagging this subint" << endl;
-			bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+  cverbose << startl << "mark6fd is " << mark6fd << endl;
+  if(mark6fd < 0)
+  {
+    cerror << startl << "Cannot open mark6 data file " << datafilenames[configindex][fileindex] << endl;
+    dataremaining = false;
+    return;
+  }
 
-			return bufferindex;
-		}
-		if(bufferinfo[atsegment].nsinc != bufferinfo[looksegment].nsinc)
-		{
-			cwarn << startl << "Incorrectly set config index at scan boundary! Flagging this subint" << endl;
-			bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+  cinfo << startl << "Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
 
-			return bufferindex;
-		}
-	}
-
-	//if we got here, we found a configindex we are happy with.  Find out the mk5 details
-	payloadbytes = config->getFramePayloadBytes(bufferinfo[looksegment].configindex, streamnum);
-	framebytes = config->getFrameBytes(bufferinfo[looksegment].configindex, streamnum);
-	framespersecond = config->getFramesPerSecond(bufferinfo[looksegment].configindex, streamnum);
-	payloadbytes *= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
-	framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum) + VDIF_HEADER_BYTES;
-	framespersecond /= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
-
-	samplingtype = config->getDSampling(bufferinfo[looksegment].configindex, streamnum);
-
-	//set the fraction of data to use to determine system temperature based on data rate
-	//the values set here work well for the today's computers and clusters...
-	datarate = static_cast<float>(framebytes)*static_cast<float>(framespersecond)*8.0/1.0e6;  // in Mbps
-	if(datarate < 512)
-	{
-		switchedpowerincrement = 1;
-	}
-	else
-	{
-		switchedpowerincrement = static_cast<int>(datarate/512 + 0.1);
-	}
-
-	//do the necessary correction to start from a frame boundary; work out the offset from the start of this segment
-	vlbaoffset = bufferindex - atsegment*readbytes;
-
-	if(vlbaoffset < 0)
-	{
-		cfatal << startl << "VDIFDataStream::calculateControlParams: vlbaoffset<0: vlbaoffset=" << vlbaoffset << " bufferindex=" << bufferindex << " atsegment=" << atsegment << " readbytes=" << readbytes << ", framebytes=" << framebytes << ", payloadbytes=" << payloadbytes << endl;
-		bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
-		// WFB20120123 MPI_Abort(MPI_COMM_WORLD, 1);
-		
-		return 0;
-	}
-
-	// bufferindex was previously computed assuming no framing overhead
-	framesin = vlbaoffset/payloadbytes;
-
-	// here we enforce frame granularity.  We simply back up to the previous frame that is a multiple of the frame granularity.
-	if(framesin % vm.frameGranularity != 0)
-	{
-		framesin -= (framesin % vm.frameGranularity);
-	}
-
-	// Note here a time is needed, so we only count payloadbytes
-	long long segoffns = bufferinfo[atsegment].scanns + (long long)((1000000000.0*framesin)/framespersecond);
-	bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = bufferinfo[atsegment].scanseconds + ((int)(segoffns/1000000000));
-	bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2] = ((int)(segoffns%1000000000));
-
-	//go back to nearest frame -- here the total number of bytes matters
-	bufferindex = atsegment*readbytes + framesin*framebytes;
-
-	//if we are right at the end of the last segment, and there is a jump after this segment, bail out
-	if(bufferindex == bufferbytes)
-	{
-		if(bufferinfo[atsegment].scan != bufferinfo[(atsegment+1)%numdatasegments].scan ||
-		   ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000 +
-		   bufferinfo[(atsegment+1)%numdatasegments].scanns - bufferinfo[atsegment].scanns - bufferinfo[atsegment].nsinc != 0))
-		{
-			bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
-			
-			return 0; //note exit here!!
-		}
-		else
-		{
-			cwarn << startl << "Developer error mk5: bufferindex == bufferbytes in a 'normal' situation" << endl;
-		}
-	}
-
-	if(bufferindex > bufferbytes) /* WFB: this was >= */
-	{
-		cfatal << startl << "VDIFDataStream::calculateControlParams: bufferindex>=bufferbytes: bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << " atsegment = " << atsegment << endl;
-		bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
-		MPI_Abort(MPI_COMM_WORLD, 1);
-
-		return 0;
-	}
-
-	return bufferindex;
+  isnewfile = true;
+  //read the header and set the appropriate times etc based on this information
+  initialiseFile(configindex, fileindex);
 }
 
-void VDIFDataStream::updateConfig(int segmentindex)
-{
-	//run the default update config, then add additional information specific to Mk5
-	DataStream::updateConfig(segmentindex);
-	if(bufferinfo[segmentindex].configindex < 0) //If the config < 0 we can skip this scan
-	{
-		return;
-	}
-
-	int oframebytes = (config->getFrameBytes(bufferinfo[segmentindex].configindex, streamnum) - VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum) + VDIF_HEADER_BYTES;
-	int oframespersecond = config->getFramesPerSecond(bufferinfo[segmentindex].configindex, streamnum) / config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum);
-
-	//correct the nsinc - should be number of output frames*frame time
-	bufferinfo[segmentindex].nsinc = int(((bufferbytes/numdatasegments)/oframebytes)*(1000000000.0/double(oframespersecond)) + 0.5);
-
-	//take care of the case where an integral number of frames is not an integral number of blockspersend - ensure sendbytes is long enough
-	//note below, the math should produce a pure integer, but add 0.5 to make sure that the fuzziness of floats doesn't cause an off-by-one error
-	bufferinfo[segmentindex].sendbytes = int(((((double)bufferinfo[segmentindex].sendbytes)* ((double)config->getSubintNS(bufferinfo[segmentindex].configindex)))/(config->getSubintNS(bufferinfo[segmentindex].configindex) + config->getGuardNS(bufferinfo[segmentindex].configindex)) + 0.5));
-}
-
-void VDIFDataStream::initialiseFile(int configindex, int fileindex)
+void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 {
 	int nrecordedbands, fanout;
 	Configuration::datasampling sampling;
@@ -320,15 +144,15 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
-	cinfo << startl << "VDIFDataStream::initialiseFile format=" << formatname << endl;
+	cinfo << startl << "VDIFMark6DataStream::initialiseFile format=" << formatname << endl;
 
 	// Here we need to open the file, read the start time, jump if necessary, and if past end of file, dataremaining = false.  Then set readseconds...
 
 	// First we get a description of the contents of the purported VDIF file and exit if it looks like not VDIF at all
-	rv = summarizevdiffile(&fileSummary, datafilenames[configindex][fileindex].c_str(), inputframebytes);
+	rv = summarizemark6vdiffile(&fileSummary, datafilenames[configindex][fileindex].c_str(), inputframebytes);
 	if(rv < 0)
 	{
-		cwarn << startl << "VDIFDataStream::initialiseFile: summary of file " << datafilenames[configindex][fileindex] << " resulted in error code " << rv << ".  This does not look like valid VDIF data." << endl;
+		cwarn << startl << "VDIFMark6DataStream::initialiseFile: summary of file " << datafilenames[configindex][fileindex] << " resulted in error code " << rv << ".  This does not look like valid VDIF data." << endl;
 		dataremaining = false;
 
 		return;
@@ -368,32 +192,28 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 	// Advance into file if requested
 	if(fileSummary.firstFrameOffset + dataoffset > 0)
 	{
-		cverbose << startl << "About to seek to byte " << fileSummary.firstFrameOffset << " plus jump " << dataoffset << " to get to the first wanted frame" << endl;
+		off_t seek_pos;
+		cverbose << startl << "Mark6 about to seek to byte " << fileSummary.firstFrameOffset << " plus jump " << dataoffset << " to get to the first wanted frame" << endl;
 
-		input.seekg(fileSummary.firstFrameOffset + dataoffset, ios_base::beg);
-		if(input.peek() == EOF)
+		seek_pos = mark6_sg_lseek(mark6fd, fileSummary.firstFrameOffset + dataoffset, SEEK_SET);
+
+		if(seek_pos != fileSummary.firstFrameOffset + dataoffset)
 		{
 			cinfo << startl << "File " << datafilenames[configindex][fileindex] << " ended before the currently desired time" << endl;
 			dataremaining = false;
-			input.clear();
+			closeMark6();
 		}
 	}
-}
-
-int VDIFDataStream::testForSync(int configindex, int buffersegment)
-{
-	// not needed.  vdifmux always leaves perfectly synchonized data behind
-	return 0;
 }
 
 
 // This function does the actual file IO, readbuffer management, and VDIF multiplexing.  The result after each
 // call is, hopefully, readbytes of multiplexed data being put into buffer segment with potentially some 
 // read data left over in the read buffer ready for next time
-int VDIFDataStream::dataRead(int buffersegment)
+int VDIFMark6DataStream::dataRead(int buffersegment)
 {
 	unsigned char *destination;
-	int bytes;
+	int bytes, bytestoread;
 	int muxReturn;
 	unsigned int bytesvisible;
 
@@ -403,7 +223,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 	bytes = readbuffersize - readbufferleftover;
 
 	// if the file is exhausted, just multiplex any leftover data and return
-	if(input.eof())
+	if(mark6eof)
 	{
 		// If there is some data left over, just demux that and send it out
 		if(readbufferleftover > minleftoverdata)
@@ -425,10 +245,14 @@ int VDIFDataStream::dataRead(int buffersegment)
 	}
 
 	// execute the file read
-	input.clear();
-
 	input.read(reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytes);
-	bytes = input.gcount();
+	bytestoread = bytes;
+	bytes = mark6_sg_read(mark6fd, reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytestoread);
+	if(bytes < bytestoread)
+	{
+		// file ran out
+		mark6eof = true;
+	}
 
 	bytesvisible = readbufferleftover + bytes;
 
@@ -511,7 +335,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 
 		readbufferleftover = 0;
 	}
-	if(readbufferleftover <= minleftoverdata && input.eof())
+	if(readbufferleftover <= minleftoverdata && mark6eof)
 	{
 		readbufferleftover = 0;
 
@@ -522,7 +346,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 	return bytes;
 }
 
-void VDIFDataStream::diskToMemory(int buffersegment)
+void VDIFMark6DataStream::mark6ToMemory(int buffersegment)
 {
 	u32 *buf;
 
@@ -553,7 +377,7 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 	// did we just cross into next scan?
 	if(readseconds >= model->getScanDuration(readscan))
 	{
-		cinfo << startl << "diskToMemory: end of schedule scan " << readscan << " of " << model->getNumScans() << " detected" << endl;
+		cinfo << startl << "mark6ToMemory: end of schedule scan " << readscan << " of " << model->getNumScans() << " detected" << endl;
 
 		// find next valid schedule scan
 		do
@@ -582,7 +406,7 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 			bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = model->getScanDuration(model->getNumScans()-1);
 			bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
 		}
-		cinfo << startl << "diskToMemory: starting schedule scan " << readscan << endl;
+		cinfo << startl << "mark6ToMemory: starting schedule scan " << readscan << endl;
 	}
 
 	if(switchedpower && bufferinfo[buffersegment].validbytes > 0)
@@ -607,12 +431,12 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 	}
 }
 
-void VDIFDataStream::loopfileread()
+void VDIFMark6DataStream::loopfileread()
 {
 	int perr;
 	int numread = 0;
 
-cverbose << startl << "Starting loopfileread()" << endl;
+cverbose << startl << "Starting VDIFMark6DataStream::loopfileread()" << endl;
 
 	//lock the outstanding send lock
 	perr = pthread_mutex_lock(&outstandingsendlock);
@@ -626,20 +450,20 @@ cverbose << startl << "Starting loopfileread()" << endl;
 	keepreading = true;
 	while(!dataremaining && keepreading)
 	{
-cverbose << startl << "opening file " << filesread[bufferinfo[0].configindex] << endl;
+cverbose << startl << "Mark6: opening file " << filesread[bufferinfo[0].configindex] << endl;
 		openfile(bufferinfo[0].configindex, filesread[bufferinfo[0].configindex]++);
-		if(!dataremaining)
+		if(!dataremaining && mark6fd >= 0)
 		{
-			input.close();
+			closeMark6();
 		}
 	}
 
-cverbose << startl << "Opened first usable file" << endl;
+cverbose << startl << "Mark6: Opened first usable file" << endl;
 
 	if(keepreading)
 	{
-		diskToMemory(numread++);
-		diskToMemory(numread++);
+		mark6ToMemory(numread++);
+		mark6ToMemory(numread++);
 		lastvalidsegment = numread;
 		perr = pthread_mutex_lock(&(bufferlock[numread]));
 		if(perr != 0)
@@ -659,10 +483,10 @@ cverbose << startl << "Opened first usable file" << endl;
 	}
 	if(keepreading)
 	{
-		diskToMemory(numread++);
+		mark6ToMemory(numread++);
 	}
 
-cverbose << startl << "Opened first usable file" << endl;
+cverbose << startl << "Mark6: Opened first usable file" << endl;
 
 	while(keepreading && (bufferinfo[lastvalidsegment].configindex < 0 || filesread[bufferinfo[lastvalidsegment].configindex] <= confignumfiles[bufferinfo[lastvalidsegment].configindex]))
 	{
@@ -688,7 +512,7 @@ cverbose << startl << "Opened first usable file" << endl;
 			}
 
 			//do the read
-			diskToMemory(lastvalidsegment);
+			mark6ToMemory(lastvalidsegment);
 			numread++;
 
 			if(isnewfile) //had to wait before unlocking file
@@ -705,7 +529,7 @@ cverbose << startl << "Opened first usable file" << endl;
 		if(keepreading)
 		{
 cverbose << startl << "keepreading is true" << endl;
-			input.close();
+			closeMark6();
 
 			//if we need to, change the config
 			int nextconfigindex = config->getScanConfigIndex(readscan);
@@ -752,9 +576,9 @@ cverbose << startl << "keepreading is true" << endl;
 			}
 		}
 	}
-	if(input.is_open())
+	if(mark6fd >= 0)
 	{
-		input.close();
+		closeMark6();
 	}
 	if(numread > 0)
 	{
