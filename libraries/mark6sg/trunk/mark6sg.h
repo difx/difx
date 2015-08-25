@@ -29,8 +29,8 @@
 #ifndef MARK6_SG__H
 #define MARK6_SG__H
 
-#include "mark6_sg_utils.h"
-#include "mark6_sg_vfs.h"
+#include <mark6sg/mark6_sg_utils.h>
+#include <mark6sg/mark6_sg_vfs.h>
 
 #endif
 
