@@ -1,8 +1,4 @@
 
-- Add interface to allow a user-provided alternate Mark6 disk array
-  mount point; the current Mark6 "standard" mount points /mnt/disks/[1-4]/[0-7]/ 
-  are assumed for now...
-
 - Add more thorough checks to input file quality (check magic word,
   check that all file headers indicate the same packet size and block size,
   etc)
