@@ -1,7 +1,7 @@
 #include <fstream>
+#include <vexdatamodel.h>
 #include "job.h"
 #include "jobflag.h"
-#include "util.h"
 
 void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> > &removedAntennas)
 {

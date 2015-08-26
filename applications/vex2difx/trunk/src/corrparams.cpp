@@ -40,11 +40,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <difxio.h>
-#include "util.h"
+#include <vexdatamodel.h>
+
 #include "timeutils.h"
 #include "corrparams.h"
 #include "parserhelp.h"
-#include "vex_basebanddata.h"
 
 const double PhaseCentre::DEFAULT_RA  = -999.9;
 const double PhaseCentre::DEFAULT_DEC = -999.9;

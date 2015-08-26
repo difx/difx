@@ -36,8 +36,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include "vex_data.h"
-#include "vexload.h"
+#include <vexdatamodel.h>
 
 const std::string program("vexpeek");
 const std::string version("0.7");

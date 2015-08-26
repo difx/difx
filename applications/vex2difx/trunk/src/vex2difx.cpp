@@ -39,12 +39,10 @@
 #include <sys/stat.h>
 #include <difxio/difx_input.h>
 #include <difxmessage.h>
-#include "vex_data.h"
-#include "event.h"
+#include <vexdatamodel.h>
+
 #include "corrparams.h"
-#include "vexload.h"
 #include "freq.h"
-#include "util.h"
 #include "job.h"
 #include "makejobs.h"
 #include "timeutils.h"
