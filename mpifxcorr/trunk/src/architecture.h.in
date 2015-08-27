@@ -403,7 +403,7 @@ inline vecStatus genericCopy_f64(const f64 * src, f64 * dest, int length)
 { for(int i=0;i<length;i++) {dest[i] = src[i];} return vecNoErr; }
 
 // Zero // Replace with memset(d,0,l*size(d[0]))
-inline vecStatus genericZero_u8(u8 * dest, int length)
+inline vecStatus genericZero_8u(u8 * dest, int length)
 { memset((void *) dest, 0, length*sizeof(dest[0])); return vecNoErr; } 
 
 inline vecStatus genericZero_32s(s32 * dest, int length)
