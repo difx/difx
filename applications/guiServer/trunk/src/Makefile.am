@@ -20,6 +20,7 @@ guiServer_SOURCES = \
 	ExecuteSystem.h \
 	mk5Control.cpp \
 	mark5Copy.cpp \
+	getJobStatus.cpp \
 	mk5ControlConnection.h \
 	GUIClient.h
 

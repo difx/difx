@@ -62,6 +62,7 @@ namespace guiServer {
         static const int CHANNEL_CONNECTION             = 21;
         static const int CHANNEL_DATA                   = 22;
         static const int GENERATE_FILELIST              = 23;
+        static const int GET_JOB_STATUS                 = 24;
 
         static const int MAX_COMMAND_SIZE = 1024;
         
@@ -301,6 +302,9 @@ namespace guiServer {
                     break;
                 case GENERATE_FILELIST:
                     startGenerateFileList( data, nBytes );
+                    break;
+                case GET_JOB_STATUS:
+                    startGetJobStatus( data, nBytes );
                     break;
                 default:
                     break;
@@ -986,7 +990,53 @@ namespace guiServer {
             delete info;
             return NULL;
         }
-        
+
+        //-----------------------------------------------------------------------------
+        //!  Structure used to pass data to a getJobStatus thread.
+        //-----------------------------------------------------------------------------
+        struct GetJobStatusInfo {
+            pthread_t threadId;
+            ServerSideConnection* ssc;
+            int shortStatus;
+            std::string files;
+            std::string address;
+            int port;
+        };
+
+        //---------------------------------------------------------------------
+        //!  Static function to request the status of a list of jobs.
+        //---------------------------------------------------------------------
+        void startGetJobStatus( char* data, const int nBytes ) {
+            GetJobStatusInfo* getJobStatusInfo = new GetJobStatusInfo;
+            getJobStatusInfo->ssc = this;
+            char* dataPtr = data;
+            getJobStatusInfo->shortStatus = ntohl( *(int*)dataPtr );
+            dataPtr += 4;
+            int len = ntohl( *(int*)dataPtr );
+            dataPtr += 4;
+            getJobStatusInfo->files.assign( dataPtr, len );
+            dataPtr += len;
+            //  The IP address of the GUI
+            len = ntohl( *(int*)dataPtr );
+            dataPtr += 4;
+            getJobStatusInfo->address.assign( dataPtr, len );
+            dataPtr += len;
+            //  The communications port.
+            getJobStatusInfo->port = ntohl( *(int*)dataPtr );
+            pthread_t threadId;
+            pthread_create( &threadId, NULL, staticGetJobStatus, (void*)(getJobStatusInfo) );
+        }
+                
+        //---------------------------------------------------------------------
+        //!  Static function to request the status of a list of jobs.
+        //---------------------------------------------------------------------
+        static void* staticGetJobStatus( void* a ) {
+            GetJobStatusInfo* info = (GetJobStatusInfo*)a;
+            info->ssc->getJobStatusThread( info );
+            delete info;
+            return NULL;
+        }
+                
         //---------------------------------------------------------------------
         //!  Structure used to generate file lists.
         //---------------------------------------------------------------------
@@ -1126,6 +1176,7 @@ namespace guiServer {
         int is_reasonable_timediff( double startmjd, double stopmjd );  // in generateFileList.cpp
         void mark5Control( DifxMessageGeneric* G );
         void mark5ControlThread( Mark5ControlInfo* info );  //  in mark5Control.cpp
+        void getJobStatusThread( GetJobStatusInfo* info );  //  in getJobStatus.cpp
         void diagnostic( const int severity, const char *fmt, ... );
         int popenRWE( int *rwepipe, const char *exe, const char *const argv[] );
         int pcloseRWE( int pid, int *rwepipe );
