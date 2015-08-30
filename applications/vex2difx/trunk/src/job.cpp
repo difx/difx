@@ -1,3 +1,4 @@
+#include <cstring>
 #include <fstream>
 #include <vexdatamodel.h>
 #include "job.h"
@@ -90,10 +91,18 @@ bool Job::hasScan(const std::string &scanName) const
 	return find(scans.begin(), scans.end(), scanName) != scans.end();
 }
 
+struct iless
+{
+	bool operator()(const std::string& a, const std::string& b) const 
+	{
+		return strcasecmp(a.c_str(), b.c_str()) < 0;
+	}
+};
+
 int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const char *fileName, unsigned int invalidMask) const
 {
 	std::vector<JobFlag> flags;
-	std::map<std::string,int> antIds;
+	std::map<std::string,int,iless> antIds;
 	unsigned int nAnt = 0;
 	std::ofstream of;
 
@@ -123,7 +132,6 @@ int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const
 			exit(EXIT_FAILURE);
 		}
 
-		// FIXME: Really this should ask the question of the Setup, not the antenna...
 		if(ant->dataSource != DataSourceModule)
 		{
 			// Aha! not module based so unflag JOB_FLAG_RECORD
