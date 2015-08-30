@@ -6,7 +6,6 @@
 #include "vex_channel.h"
 #include "vex_clock.h"
 #include "vex_data.h"
-#include "vexdatamodel.h"
 #include "vex_eop.h"
 #include "vex_exper.h"
 #include "vex_if.h"

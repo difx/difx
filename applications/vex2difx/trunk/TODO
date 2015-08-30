@@ -23,6 +23,7 @@ x. support EVLBI
 19. Clean up antenna names/defs as done for sources
 x. Currently corrparams is used both during vex parsing and at input building time.  It would be nice to eventually make the vex parsing independent of corrparams.
 21. vex2 support
+22. option for not splitting scans where a non-member antenna has a clock break 
 
 Concerns outside vex2difx proper
 
