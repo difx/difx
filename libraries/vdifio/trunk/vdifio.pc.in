@@ -4,8 +4,8 @@ libdir=@libdir@
 includedir=@includedir@
 	
 Name: vdifio
-Description: Library for parsing header info of VDIF frames
+Description: Library for parsing VDIF header frames, multiplexing VDIF data, and summarizing contents of VDIF files
 Requires:
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lvdifio
-Cflags: -I${includedir}
+Libs: -L${libdir} -lvdifio @mark6sglibs@
+Cflags: -I${includedir} @mark6sgcflags@

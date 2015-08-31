@@ -32,59 +32,12 @@
 #include <string.h>
 #include <assert.h>
 #include <inttypes.h>
+#include "dateutils.h"
 #include "vdifio.h"
 
 
 #define VDIF_VERSION 0
 
-#define UNIXZERO_MJD 40587
-
-void mjd2ymd(int mjd, int *year, int *month, int *day)
-{
-	int jd, temp1, temp2;
-
-	jd = mjd + 2400001;
-
-	// Do some rather cryptic calculations
-
-	temp1 = 4*(jd+((6*(((4*jd-17918)/146097)))/4+1)/2-37);
-	temp2 = 10*(((temp1-237)%1461)/4)+5;
-
-	*year = temp1/1461-4712;
-	*month =((temp2/306+2)%12)+1;
-	*day = (temp2%306)/10+1;
-}
-
-int ymd2doy(int yr, int mo, int day)
-{
-        int monstart1[] = {0,31,59,90,120,151,181,212,243,273,304,334};
-        int monstart2[] = {0,31,60,91,121,152,182,213,244,274,305,335};
-        int L2;
-
-        L2 = yr/4-(yr+7)/4-yr/100+(yr+99)/100+yr/400-(yr+399)/400;
-        if(L2 == -1)
-        {
-                return day + monstart2[mo-1];
-        }
-        else
-        {
-                return day + monstart1[mo-1];
-        }
-}
-
-int ymd2mjd(int yr, int mo, int day)
-{
-        int doy;
-        int yr1 = yr - 1;
-
-        doy = ymd2doy(yr, mo, day);
-
-        return doy-678576+365*yr1+yr1/4-yr1/100+yr1/400;
-}
-
-//int epoch2mjd(int epoch) {
-//  return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1); // Year and Jan/July
-//}
 
 int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int bits, int nchan,
 		      int iscomplex, char stationid[3]) {

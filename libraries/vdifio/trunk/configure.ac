@@ -23,6 +23,11 @@ AC_PROG_LIBTOOL
 
 # Checks for libraries.
 AC_CHECK_LIB(m, sqrt)
+PKG_CHECK_MODULES([MARK6SG], [mark6sg], [HAVE_MARK6SG=1], [HAVE_MARK6SG=0])
+AM_CONDITIONAL([WITH_MARK6SG], [test "$HAVE_MARK6SG" -eq 1])
+LIBS="${LIBS} ${MARK6SG_LIBS}"
+CFLAGS="${CFLAGS} ${MARK6SG_CFLAGS}"
+
 
 # Checks for header files.
 
@@ -56,7 +61,17 @@ if test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes"; then
 fi
 AM_CONDITIONAL([ENABLE_PYTHON_CTYPES], [test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes" -a -n "$GOT_PYTHON_CTYPES"])
 
-# Preparte output files
+PKG_CHECK_MODULES(MARK6SG, [mark6sg >= 1.1.6], [hasmark6sg=true], [hasmark6sg=false])
+if test "$hasmark6sg" == "true"; then
+	AC_DEFINE([HAVE_MARK6SG], 1, [1=has mark6sg])
+fi
+AM_CONDITIONAL(WITH_MARK6SG, $hasmark6sg)
+LIBS="${LIBS} ${MARK6SG_LIBS}"
+CFLAGS="${CFLAGS} ${MARK6SG_CFLAGS}"
+AC_SUBST(mark6sglibs, [${MARK6SG_LIBS}])
+AC_SUBST(mark6sgcflags, [${MARK6SG_CFLAGS}])
+
+# Prepare output files
 
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)

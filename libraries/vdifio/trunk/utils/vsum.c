@@ -32,11 +32,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vdifio.h>
+#include "config.h"
+#ifdef HAVE_MARK6SG
+#include <mark6sg/mark6_sg_utils.h>
+#include <vdifmark6sg.h>
+#endif
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.3";
-const char verdate[] = "20150318";
+const char version[] = "0.4";
+const char verdate[] = "20150831";
 
 static void usage(const char *pgm)
 {
@@ -47,7 +52,94 @@ static void usage(const char *pgm)
 	printf("  <options> can include:\n");
 	printf("    -h or --help      print this usage information and quit\n");
 	printf("    -s or --shortsum  print a short summary, also usable for input to vex2difx\n");
+	printf("    -6 or --mark6     operate directly on Mark6 module data\n");
+#ifndef HAVE_MARK6SG
+	printf("        NOTE: mark6sg library not compiled in so this option is not available\n");
+#endif
+	printf("    --allmark6        operate directly on all Mark6 scans found on mounted modules\n");
+#ifndef HAVE_MARK6SG
+	printf("        NOTE: mark6sg library not compiled in so this option is not available\n");
+#endif
 	printf("\n");
+}
+
+void summarizeFile(const char *fileName, int shortSum, int isMark6)
+{
+	struct vdif_file_summary sum;
+	int r;
+
+	if(isMark6)
+	{
+#ifdef HAVE_MARK6SG
+		r = summarizevdifmark6(&sum, fileName, 0);
+#else
+		fprintf(stderr, "Error: mark6sg library support is not compiled in so the direct Mark6 option is not available.\n");
+	
+		exit(EXIT_FAILURE);
+#endif
+	}
+	else
+	{
+		r = summarizevdiffile(&sum, fileName, 0);
+	}
+
+	if(r < 0)
+	{
+		fprintf(stderr, "File %s VDIF summary failed with return value %d\n\n", fileName, r);
+	}
+	else if(shortSum)
+	{
+		const int MaxFilenameLength = 512;
+		double mjd1, mjd2;
+		char fullFileName[MaxFilenameLength];
+
+		mjd1 = vdiffilesummarygetstartmjd(&sum) + (sum.startSecond % 86400)/86400.0;
+		mjd2 = mjd1 + (sum.endSecond - sum.startSecond + 1)/86400.0;
+
+		if(fileName[0] != '/' && isMark6 == 0)
+		{
+			char path[MaxFilenameLength];
+			getcwd(path, MaxFilenameLength);
+			snprintf(fullFileName, MaxFilenameLength, "%s/%s", path, fileName);
+		}
+		else
+		{
+			snprintf(fullFileName, MaxFilenameLength, "%s", fileName);
+		}
+		printf("%s %14.8f %14.8f\n", fullFileName, mjd1, mjd2);
+	}
+	else
+	{
+		printvdiffilesummary(&sum);
+	}
+}
+
+void processAllMark6Scans(int shortSum)
+{
+#ifdef HAVE_MARK6SG
+	int nScan;
+	char **scanList;
+
+	nScan = mark6_sg_list_all_scans(&scanList);
+	if(nScan > 0)
+	{
+		int s;
+		for(s = 0; s < nScan; ++s)
+		{
+			summarizeFile(scanList[s], shortSum, 1);
+			free(scanList[s]);
+		}
+		free(scanList);
+	}
+	else
+	{
+		fprintf(stderr, "No scans found on Mark6 modules\n");
+	}
+#else
+	fprintf(stderr, "Error: mark6sg library support is not compiled in so the direct Mark6 option is not available.\n");
+	
+	exit(EXIT_FAILURE);
+#endif
 }
 
 int main(int argc, char **argv)
@@ -60,16 +152,16 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		struct vdif_file_summary sum;
-		int a, r;
-		int shortsum = 0;
+		int a;
+		int shortSum = 0;
+		int isMark6 = 0;
 
 		for(a = 1; a < argc; ++a)
 		{
 			if(strcmp(argv[a], "-s") == 0 ||
 			   strcmp(argv[a], "--shortsum") == 0)
 			{
-				shortsum = 1;
+				shortSum = 1;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
@@ -78,38 +170,20 @@ int main(int argc, char **argv)
 
 				exit(EXIT_SUCCESS);
 			}
+			else if(strcmp(argv[a], "-6") == 0 ||
+			   strcmp(argv[a], "--mark6") == 0)
+			{
+				isMark6 = 1;
+			}
+			else if(strcmp(argv[a], "--allmark6") == 0)
+			{
+				processAllMark6Scans(shortSum);
+				
+				exit(EXIT_SUCCESS);
+			}
 			else
 			{
-				r = summarizevdiffile(&sum, argv[a], 0);
-
-				if(r < 0)
-				{
-					fprintf(stderr, "File %s VDIF summary failed with return value %d\n\n", argv[a], r);
-				}
-				else if(shortsum)
-				{
-					double mjd1, mjd2;
-					char filename[1000];
-
-					mjd1 = vdiffilesummarygetstartmjd(&sum) + (sum.startSecond % 86400)/86400.0;
-					mjd2 = mjd1 + (sum.endSecond - sum.startSecond + 1)/86400.0;
-
-					if(argv[a][0] != '/')
-					{
-						char path[1000];
-						getcwd(path, 1000);
-						snprintf(filename, 1000, "%s/%s", path, argv[a]);
-					}
-					else
-					{
-						snprintf(filename, 1000, "%s", argv[a]);
-					}
-					printf("%s %14.8f %14.8f\n", filename, mjd1, mjd2);
-				}
-				else
-				{
-					printvdiffilesummary(&sum);
-				}
+				summarizeFile(argv[a], shortSum, isMark6);
 			}
 		}
 	}

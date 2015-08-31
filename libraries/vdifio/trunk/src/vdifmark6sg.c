@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2015 Walter Brisken                                *
+ *   Copyright (C) 2015 Walter Brisken                                     *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,89 +32,43 @@
 #include <stdlib.h>
 #include <vdifio.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <mark6sg/mark6_sg_vfs.h>
 #include "dateutils.h"
 #include "config.h"
 
-
-void resetvdiffilesummary(struct vdif_file_summary *sum)
-{
-	memset(sum, 0, sizeof(struct vdif_file_summary));
-}
-
-void printvdiffilesummary(const struct vdif_file_summary *sum)
-{
-	int i;
-
-	printf("VDIF file: %s\n", sum->fileName);
-	printf("  size = %lld bytes\n", sum->fileSize);
-	printf("  nThread = %d\n", sum->nThread);
-	printf("  Thread Ids =");
-	for(i = 0; i < sum->nThread; ++i)
-	{
-		if(i < VDIF_SUMMARY_MAX_THREADS)
-		{
-			printf(" %d", sum->threadIds[i]);
-		}
-		else
-		{
-			printf(" .");
-		}
-	}
-	printf("\n");
-	printf("  frame size = %d bytes\n", sum->frameSize);
-	if(sum->framesPerSecond > 0)
-	{
-		printf("  frame rate = %d per second\n", sum->framesPerSecond);
-	}
-	else
-	{
-		printf("  frame rate is unknown\n");
-	}
-	printf("  bits per sample = %d\n", sum->nBit);
-	printf("  VDIF epoch = %d\n", sum->epoch);
-	printf("  start MJD = %d\n", vdiffilesummarygetstartmjd(sum));
-	printf("  start second = %d\n", sum->startSecond % 86400);
-	printf("  start frame = %d\n", sum->startFrame);
-	printf("  end second = %d\n", sum->endSecond % 86400);
-	printf("  end frame = %d\n", sum->endFrame);
-	printf("  first frame offset = %d bytes\n", sum->firstFrameOffset);
-}
-
-int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum)
-{
-	return ymd2mjd(2000 + sum->epoch/2, (sum->epoch%2)*6+1, 1) + sum->startSecond/86400;
-}
-
-int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize)
+int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int frameSize)
 {
 	int bufferSize = 2000000;	/* 2 MB should encounter all threads of a usual VDIF file */
 	unsigned char *buffer;
 	struct stat st;
 	int rv, i, N;
-	FILE *in;
+	int mk6fd;
 	char hasThread[VDIF_MAX_THREAD_ID + 1];
 	struct vdif_header *vh0;	/* pointer to the prototype header */
 
 	/* Initialize things */
 
 	resetvdiffilesummary(sum);
-	strncpy(sum->fileName, fileName, VDIF_SUMMARY_FILE_LENGTH-1);
+	strncpy(sum->fileName, scanName, VDIF_SUMMARY_FILE_LENGTH-1);
 	memset(hasThread, 0, sizeof(hasThread));
 	sum->startSecond = 1<<30;
 
-	rv = stat(fileName, &st);
+	mk6fd = mark6_sg_open(scanName, O_RDONLY);
+	if(!mk6fd)
+	{
+		return -2;
+	}
+
+	rv = mark6_sg_fstat(mk6fd, &st);
 	if(rv < 0)
 	{
+		mark6_sg_close(mk6fd);
+
 		return -1;
 	}
 
 	sum->fileSize = st.st_size;
-
-	in = fopen(fileName, "r");
-	if(!in)
-	{
-		return -2;
-	}
 
 	if(sum->fileSize < 2*bufferSize)
 	{
@@ -124,7 +78,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 	buffer = (unsigned char *)malloc(bufferSize);
 	if(!buffer)
 	{
-		fclose(in);
+		mark6_sg_close(mk6fd);
 
 		return -3;
 	}
@@ -132,10 +86,10 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 
 	/* Get initial information */
 
-	rv = fread(buffer, 1, bufferSize, in);
+	rv = mark6_sg_read(mk6fd, buffer, bufferSize);
 	if(rv < bufferSize)
 	{
-		fclose(in);
+		mark6_sg_close(mk6fd);
 		free(buffer);
 
 		return -4;
@@ -148,7 +102,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 		frameSize = determinevdifframesize(buffer, bufferSize);
 		if(frameSize <= 0)
 		{
-			fclose(in);
+			mark6_sg_close(mk6fd);
 			free(buffer);
 
 			return -5;
@@ -163,7 +117,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 	sum->firstFrameOffset = determinevdifframeoffset(buffer, bufferSize, frameSize);
 	if(sum->firstFrameOffset < 0)
 	{
-		fclose(in);
+		mark6_sg_close(mk6fd);
 		free(buffer);
 
 		return -6;
@@ -223,19 +177,10 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 	{
 		int offset;
 
-		rv = fseeko(in, sum->fileSize - bufferSize, SEEK_SET);
-		if(rv != 0)
-		{
-			fclose(in);
-			free(buffer);
-
-			return -7;
-		}
-
-		rv = fread(buffer, 1, bufferSize, in);
+		rv = mark6_sg_pread(mk6fd, buffer, bufferSize, sum->fileSize - bufferSize);
 		if(rv < bufferSize)
 		{
-			fclose(in);
+			mark6_sg_close(mk6fd);
 			free(buffer);
 
 			return -8;
@@ -244,7 +189,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 		offset = determinevdifframeoffset(buffer, bufferSize, frameSize);
 		if(offset < 0)
 		{
-			fclose(in);
+			mark6_sg_close(mk6fd);
 			free(buffer);
 
 			return -9;
@@ -316,7 +261,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 	/* Clean up */
 
 	free(buffer);
-	fclose(in);
+	mark6_sg_close(mk6fd);
 
 	return 0;
 }
