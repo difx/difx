@@ -627,6 +627,22 @@ static int parseDifxPulseCal(const char *line,
 
 	n = sscanf(line, "%31s%lf%f%d%d%d%n", antName, time, &timeInt, &dsIndex, &nRecBand, &nt, &p);
 
+	if (dsId != dsIndex)
+	{
+		static int nDStreamMatchError = 0;
+
+		++nDStreamMatchError;
+		if(nDStreamMatchError <= 20)
+		{
+			printf("\nWarning: parseDifxPulseCal: %s datastream '%d' on current line of PCAL file doesn't match expected '%d'\n", antName, dsIndex, dsId);
+		}
+		if(nDStreamMatchError == 20)
+		{
+			printf(" ^-Note: No more warnings of this kind will be produced\n");
+		}
+		return -1;
+	}
+
 	if(nt > array_MAX_TONES)
 	{
 		static int nTooManyError = 0;
