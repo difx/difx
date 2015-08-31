@@ -26,6 +26,7 @@
 #include "datastream.h"
 #include <dirent.h>
 #include <cmath>
+#include <set>
 #include <string>
 #include <sstream>
 #include <string.h>
@@ -98,14 +99,18 @@ void Visibility::initialisePcalFiles()
 {
   char pcalfilename[256];
   ofstream pcaloutput;
+  set<string> completedstations;
 
+  // Create one .pcal file per station, shared by that station's datastreams.
   for(int i=0;i<numdatastreams;i++)
   {
     for(int c=0;c<config->getNumConfigs();c++)
     {
+      if(completedstations.find(config->getDStationName(c, i)) != completedstations.end())
+        continue;	
       if(config->getDPhaseCalIntervalMHz(c, i) > 0)
       {
-        sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getTelescopeName(i).c_str());
+        sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getDStationName(c, i).c_str());
         pcaloutput.open(pcalfilename, ios::app);
 
         // Write a few comments at top of PCAL file
@@ -114,11 +119,11 @@ void Visibility::initialisePcalFiles()
         pcaloutput << "# File version = 1" << endl; // If need be, this version can be changed in the future.
         pcaloutput << "# Start MJD = " << config->getStartMJD() << endl;
         pcaloutput << "# Start seconds = " << config->getStartSeconds() << endl;
-        pcaloutput << "# Telescope name = " << config->getTelescopeName(i) << endl;
+        pcaloutput << "# Telescope name = " << config->getDStationName(c, i) << endl;
 
         pcaloutput.close();
+        completedstations.insert(config->getDStationName(c, i));
       }
-      break;  // just do it once; go to next antenna once one config w/ pulse cal is found
     }
   }
 }       
@@ -914,7 +919,7 @@ The four columns are:
       nonzero = false;
       // write the header string
       sprintf(pcalstr, "%s %13.7f %9.7f %d %d %d",
-              config->getTelescopeName(i).c_str(), pcalmjd,
+              config->getDStationName(currentconfigindex, i).c_str(), pcalmjd,
               config->getIntTime(currentconfigindex)/86400.0, i,
               config->getDNumRecordedBands(currentconfigindex, i),
               config->getDMaxRecordedPCalTones(currentconfigindex, i)); 
@@ -961,7 +966,7 @@ The four columns are:
       } // end of recorded band loop
       if(nonzero) // If at least one tone had non-zero amplitude, write the line to the file
       {
-        sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getTelescopeName(i).c_str());
+        sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getDStationName(currentconfigindex, i).c_str());
         pcaloutput.open(pcalfilename, ios::app);
         pcaloutput << pcalline << endl;
         pcaloutput.close();
