@@ -15,9 +15,9 @@ mark5_files = \
 endif
 
 # eventually Mark6 source files go here...
-if WITH_MK6
+if WITH_MARK6SG
 mark6_files = \
-	vdifmark6_stubs.cpp
+	vdifmark6.cpp
 else
 mark6_files = \
 	vdifmark6_stubs.cpp
@@ -98,7 +98,8 @@ libmpifxcorr_a_SOURCES = \
 	vdiffake.cpp \
 	vdifnetwork.cpp \
 	datamuxer.cpp \
-	$(mark5_files)
+	$(mark5_files) \
+	$(mark6_files)
 
 libfxcorr_a_SOURCES = \
 	configuration.cpp \

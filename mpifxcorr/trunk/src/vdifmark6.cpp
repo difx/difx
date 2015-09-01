@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <mark6sg/mark6_sg_vfs.h>
+#include <vdifmark6sg.h>
 #include "config.h"
 #include "alert.h"
 #include "vdifmark6.h"
@@ -149,7 +150,7 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	// Here we need to open the file, read the start time, jump if necessary, and if past end of file, dataremaining = false.  Then set readseconds...
 
 	// First we get a description of the contents of the purported VDIF file and exit if it looks like not VDIF at all
-	rv = summarizemark6vdiffile(&fileSummary, datafilenames[configindex][fileindex].c_str(), inputframebytes);
+	rv = summarizevdifmark6(&fileSummary, datafilenames[configindex][fileindex].c_str(), inputframebytes);
 	if(rv < 0)
 	{
 		cwarn << startl << "VDIFMark6DataStream::initialiseFile: summary of file " << datafilenames[configindex][fileindex] << " resulted in error code " << rv << ".  This does not look like valid VDIF data." << endl;
