@@ -1301,7 +1301,7 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	}
 	if(ms->samprate > 0)
 	{
-		fprintf(m5stdout, "  sample rate = %d Hz\n", ms->samprate);
+		fprintf(m5stdout, "  sample rate = %lld Hz\n", (long long)ms->samprate);
 	}
 	fprintf(m5stdout, "  offset = %d\n", ms->frameoffset);
 	fprintf(m5stdout, "  framebytes = %d bytes\n", ms->framebytes);
