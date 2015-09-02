@@ -126,7 +126,7 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, int64
 			}
                         break;
                 }
-                fprintf(stderr, "File offset %"PRId64": decoded suspect sample rate %d, trying new offset\n", *offset, ms->samprate);
+                fprintf(stderr, "File offset %"PRId64": decoded suspect sample rate %"PRId64", trying new offset\n", *offset, ms->samprate);
                 delete_mark5_stream(ms);
                 (*offset) += 43500;
 	}
