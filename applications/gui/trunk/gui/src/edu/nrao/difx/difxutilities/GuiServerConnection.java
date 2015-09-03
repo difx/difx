@@ -68,6 +68,7 @@ public class GuiServerConnection {
     public final int CHANNEL_CONNECTION             = 21;
     public final int CHANNEL_DATA                   = 22;
     public final int GENERATE_FILELIST              = 23;
+    public final int GET_JOB_STATUS                 = 24;
 
     public GuiServerConnection( SystemSettings settings, String IP, int port ) {
         _settings = settings;

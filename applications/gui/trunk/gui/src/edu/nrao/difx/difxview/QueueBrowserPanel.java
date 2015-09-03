@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
+import java.util.HashMap;
 
 import edu.nrao.difx.difxcontroller.DiFXMessageProcessor;
 
@@ -20,6 +21,7 @@ import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import edu.nrao.difx.difxutilities.DiFXCommand_ls;
 import edu.nrao.difx.difxutilities.TabCompletedTextField;
+import edu.nrao.difx.difxutilities.ChannelServerSocket;
 
 import java.awt.*;
 
@@ -1144,7 +1146,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                         thisJob.active( dbJobStatusList.getBoolean( "active" ) );
                     }
                     //  If the job has a log file, parse it to find the run state.
-                    thisJob.parseLogFile();
+                    //thisJob.parseLogFile();
                 }
             }
         } catch ( Exception e ) {
@@ -1239,7 +1241,6 @@ public class QueueBrowserPanel extends TearOffPanel {
             } );
             helpMenu.add( helpIndexItem );
 
-            //_fileFilter = new SaneTextField();
             _fileFilter = new TabCompletedTextField( _settings );
             _fileFilter.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent evt ) {
@@ -1340,20 +1341,27 @@ public class QueueBrowserPanel extends TearOffPanel {
                 }
             } );
             _this.add( _updateButton );
-            _expandAllButton = new JButton( "Expand All" );
-            _expandAllButton.addActionListener( new ActionListener() {
+//            _expandAllButton = new JButton( "Expand All" );
+//            _expandAllButton.addActionListener( new ActionListener() {
+//                public void actionPerformed( ActionEvent evt ) {
+//                    expandAll();
+//                }
+//            } );
+//            _this.add( _expandAllButton ) ;
+//            _collapseAllButton = new JButton( "Collapse All" );
+//            _collapseAllButton.addActionListener( new ActionListener() {
+//                public void actionPerformed( ActionEvent evt ) {
+//                    collapseAll();
+//                }
+//            } );
+//            _this.add( _collapseAllButton ) ;
+            _selectIncompleteButton = new JButton( "Select Incomplete" );
+            _selectIncompleteButton.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent evt ) {
-                    expandAll();
+                    selectIncompleteAction();
                 }
             } );
-            _this.add( _expandAllButton ) ;
-            _collapseAllButton = new JButton( "Collapse All" );
-            _collapseAllButton.addActionListener( new ActionListener() {
-                public void actionPerformed( ActionEvent evt ) {
-                    collapseAll();
-                }
-            } );
-            _this.add( _collapseAllButton ) ;
+            _this.add( _selectIncompleteButton ) ;
             _selectAllButton = new JButton( "Select All" );
             _selectAllButton.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent evt ) {
@@ -1484,10 +1492,11 @@ public class QueueBrowserPanel extends TearOffPanel {
                 _preview.setBounds( 10, 225, w - 25, h - 265 );
                 _autoUpdate.setBounds( w - 300, h - 30, 160, 25 );
                 _applyButton.setBounds( w - 130, h - 30, 115, 25 );
-                _expandAllButton.setBounds( 10, h - 30, 115, 25 );
-                _collapseAllButton.setBounds( 130, h - 30, 115, 25 );
-                _selectAllButton.setBounds( 250, h - 30, 115, 25 );
-                _deselectAllButton.setBounds( 370, h - 30, 115, 25 );
+//                _expandAllButton.setBounds( 10, h - 30, 115, 25 );
+//                _collapseAllButton.setBounds( 130, h - 30, 115, 25 );
+                _selectIncompleteButton.setBounds( 10, h - 30, 150, 25 );
+                _selectAllButton.setBounds( 165, h - 30, 150, 25 );
+                _deselectAllButton.setBounds( 320, h - 30, 150, 25 );
             }
         }
         
@@ -1517,6 +1526,9 @@ public class QueueBrowserPanel extends TearOffPanel {
             if ( !searchStr.endsWith( ".input" ) ) {
                 searchStr += "*.input";
             }
+            //  Get the status of all jobs (by reading .difxlog files).  The "true" flag
+            //  indicates that all we want is a quick single-string status.
+            getJobStatus( searchStr, true );
             ls = new DiFXCommand_ls( searchStr, _settings );
             //  Set the callback for when the list is complete.  
             ls.addEndListener( new ActionListener() {
@@ -1609,10 +1621,16 @@ public class QueueBrowserPanel extends TearOffPanel {
                     //  this is accurate...
                     String shortName = nextFile.substring( nextFile.lastIndexOf( "/" ) + 1 );
                     jobName = shortName.substring( 0, shortName.lastIndexOf( "." ) );
+                    
+                    //  Get the "simple" status of this job.  We hope the status update is done by
+                    //  now???
+                    String status = null;
+                    if ( haveSimpleStatus( nextFile ) )
+                        status = getSimpleStatus( nextFile );
 
                     //  Create a new job entry and add it to the proper location in the preview browser.
                     //  Create experiments and passes as necessary.
-                    LocalJobNode newJob = new LocalJobNode( jobName, nextFile );
+                    LocalJobNode newJob = new LocalJobNode( jobName, nextFile, status );
                     newJob.addSelectionButton( null, null );
                     newJob.selected( true );
                     newJob.xOffset( 20 );
@@ -1684,22 +1702,40 @@ public class QueueBrowserPanel extends TearOffPanel {
         }
         
         public class LocalJobNode extends BrowserNode {
-            LocalJobNode( String name, String inputFile ) {
+            LocalJobNode( String name, String inputFile, String status ) {
                 super( name );
                 _inputFile.setText( inputFile );
+                if ( status != null ) {
+                    _status.setText( status );
+                    if ( status.contentEquals( "Done" ) )
+                        _status.setBackground( Color.GREEN );
+                    else {
+                        _status.setText( "Run Failed" );
+                        _status.setBackground( Color.RED );
+                    }
+                }
+                else {
+                    _status.setText( "not Started" );
+                    _status.setBackground( Color.LIGHT_GRAY );
+                }
             }
             @Override
             public void createAdditionalItems() {
                 _inputFile = new JLabel( "" );
                 this.add( _inputFile );
+                _status = new ColumnTextArea( "" );
+                this.add( _status );
             }
             @Override
             public void positionItems() {
                 super.positionItems();
-                _inputFile.setBounds( 400, 0, 1000, _ySize );
+                _status.setBounds( 400, 1, 140, _ySize - 2 );
+                _inputFile.setBounds( 550, 0, 1000, _ySize );
             }
             public String inputFile() { return _inputFile.getText(); }
             protected JLabel _inputFile;
+            public String status() { return _status.getText(); }
+            protected ColumnTextArea _status;
             public String vexFile() { return _vexFile; }
             public void vexFile( String newVal ) { _vexFile = newVal; }
             protected String _vexFile;
@@ -1830,6 +1866,30 @@ public class QueueBrowserPanel extends TearOffPanel {
             _preview.listChange();
         }
         
+        public void selectIncompleteAction() {
+            for ( Iterator<BrowserNode> iter = _preview.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+                BrowserNode thisExperiment = iter.next();
+                boolean experimentSelected = false;
+                for ( Iterator<BrowserNode> iter2 = thisExperiment.childrenIterator(); iter2.hasNext(); ) {
+                    BrowserNode thisPass = iter2.next();
+                    boolean passSelected = false;
+                    for ( Iterator<BrowserNode> iter3 = thisPass.childrenIterator(); iter3.hasNext(); ) {
+                        LocalJobNode jobNode = (LocalJobNode)iter3.next();
+                        if ( !jobNode.status().contentEquals( "Done" ) ) {
+                            jobNode.selected( true );
+                            passSelected = true;
+                        }
+                        else
+                            jobNode.selected( false );
+                    }
+                    thisPass.selected( passSelected );
+                    experimentSelected |= passSelected;
+                }
+                thisExperiment.selected( experimentSelected );
+            }
+            _preview.listChange();
+        }
+        
         public void selectAll() {
             for ( Iterator<BrowserNode> iter = _preview.browserTopNode().childrenIterator(); iter.hasNext(); ) {
                 BrowserNode thisExperiment = iter.next();
@@ -1864,7 +1924,6 @@ public class QueueBrowserPanel extends TearOffPanel {
         protected JMenuBar _menuBar;
         protected DiskSearchRules _this;
         protected boolean _allObjectsBuilt;
-        //protected SaneTextField _fileFilter;
         TabCompletedTextField _fileFilter;
         protected JCheckBox _experimentBasedOnPath;
         protected JCheckBox _experimentNamed;
@@ -1879,12 +1938,199 @@ public class QueueBrowserPanel extends TearOffPanel {
         protected JButton _applyButton;
         protected JLabel _spinnerLabel;
         protected JButton _updateButton;
-        protected JButton _collapseAllButton;
-        protected JButton _expandAllButton;
+//        protected JButton _collapseAllButton;
+//        protected JButton _expandAllButton;
+        protected JButton _selectIncompleteButton;
         protected JButton _selectAllButton;
         protected JButton _deselectAllButton;
         ArrayList<String> _newList;
         
+    }
+    
+    //--------------------------------------------------------------------------
+    //  A function to create a list of files and their "status" values, as
+    //  seen by the guiServer.  This function starts a thread to obtain this information.
+    //--------------------------------------------------------------------------
+    public void getJobStatus( String fileList, boolean shortStatus ) {
+        int port = _settings.newDifxTransferPort( 0, 100, true, true );
+        if ( port == -1 ) {
+            return;
+        }
+        //  Create packet data to transmit all we need for the filelist generation
+        //  on guiServer.  4 bytes for the "short status" flag...
+        int nbytes = 4;
+        //  4 bytes for the length of the file list, then enough to contain the list.
+        nbytes += 4;
+        nbytes += fileList.length();
+        //  Space for the address.
+        nbytes += 4;
+        nbytes += _settings.guiServerConnection().myIPAddress().length();
+        //  4 bytes for the port...
+        nbytes += 4;
+        //  Allocate a properly-sized buffer for the message.
+        java.nio.ByteBuffer bb = java.nio.ByteBuffer.allocate( nbytes );
+        //  The short status flag - determines whether we want a single-string status
+        //  (such as "Done") or a complex one including all previous activities.
+        if ( shortStatus )
+            bb.putInt( 1 );
+        else
+            bb.putInt( 0 );
+        //  Add the file list.
+        bb.putInt( fileList.length() );
+        bb.put( fileList.getBytes() );
+        //  The communications IP address.
+        bb.putInt( _settings.guiServerConnection().myIPAddress().length() );
+        bb.put( _settings.guiServerConnection().myIPAddress().getBytes() );
+        //  Finally, the communications port.
+        bb.putInt( port );
+        //  Convert to byte data.
+        byte [] getJobStatusData = bb.array();
+        //  Start a thread to monitor generate of the filelist.  The thread (below) is
+        //  self-terminating.
+        GetJobStatusMonitor monitor = new GetJobStatusMonitor( port );
+        monitor.start();
+        //  Wait a second for the monitor to start.  Not sure why it takes so long, but
+        //  this seems to be a problem.
+        try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+        //  Send the request to the guiServer - it will connect with the thread.
+        _settings.guiServerConnection().sendPacket( _settings.guiServerConnection().GET_JOB_STATUS,
+                getJobStatusData.length, getJobStatusData );
+    }
+    
+    protected HashMap<String, String> _simpleStatusMap;
+    
+    //--------------------------------------------------------------------------
+    //  This thread opens and monitors a TCP socket for data from the guiServer as it
+    //  determines the "status" of a list of jobs.
+    //--------------------------------------------------------------------------
+    protected class GetJobStatusMonitor extends Thread {
+        
+        public GetJobStatusMonitor( int port ) {
+            _port = port;
+        }
+        
+        /*
+         * These packet types are exchanged with the "GetJobStatusConnection" class in the
+         * guiServer application on the DiFX host.
+         */
+        protected final int GET_JOB_STATUS_TASK_TERMINATED                     = 100;
+        protected final int GET_JOB_STATUS_TASK_ENDED_GRACEFULLY               = 101;
+        protected final int GET_JOB_STATUS_TASK_STARTED                        = 102;
+        protected final int GET_JOB_STATUS_INPUT_FILE_NAME                     = 104;
+        protected final int GET_JOB_STATUS_NO_DIFXLOG                          = 105;
+        protected final int GET_JOB_STATUS_STATUS                              = 106;
+        protected final int GET_JOB_STATUS_OPEN_ERROR                          = 107;
+        protected final int GET_JOB_STATUS_NO_STATUS                           = 108;
+        
+        @Override
+        public void run() {
+            //  Open a new server socket and await a connection.  The connection
+            //  will timeout after a given number of seconds (nominally 10).
+            try {
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
+                ssock.setSoTimeout( 10000 );  //  timeout is in millisec
+                try {
+                    ssock.accept();
+                    //  Loop collecting diagnostic packets from the guiServer.  These
+                    //  are identified by an initial integer, and then are followed
+                    //  by a data length, then data.
+                    boolean connected = true;
+                    String _currentInputFile = null;
+                    String _currentStatus = null;
+                    while ( connected ) {
+                        //  Read the packet type as an integer.  The packet types
+                        //  are defined above (within this class).
+                        int packetType = ssock.readInt();
+                        //  Read the size of the incoming data (bytes).
+                        int packetSize = ssock.readInt();
+                        //  Read the data (as raw bytes)
+                        byte [] data = null;
+                        if ( packetSize > 0 ) {
+                            data = new byte[packetSize];
+                            ssock.readFully( data, 0, packetSize );
+                        }
+                        //  Interpret the packet type.
+                        if ( packetType == GET_JOB_STATUS_TASK_TERMINATED ) {
+                            saveSimpleStatus( _currentInputFile, _currentStatus );
+                            connected = false;
+                        }
+                        else if ( packetType == GET_JOB_STATUS_TASK_ENDED_GRACEFULLY ) {
+                            saveSimpleStatus( _currentInputFile, _currentStatus );
+                            connected = false;
+                        }
+                        else if ( packetType == GET_JOB_STATUS_TASK_STARTED ) {
+                            //  Zorch the current map of simple statuses...
+                            if ( _simpleStatusMap == null )
+                                _simpleStatusMap = new HashMap<String,String>();
+                            else {
+                                synchronized( _simpleStatusMap ) {
+                                    _simpleStatusMap.clear();
+                                }
+                            }
+                        }
+                        else if ( packetType == GET_JOB_STATUS_INPUT_FILE_NAME ) {
+                            //  If we have information on a previous .input file, dump it in the
+                            //  hash map.
+                            saveSimpleStatus( _currentInputFile, _currentStatus );
+                            _currentInputFile = new String( data );
+                            _currentStatus = null;
+                        }
+                        else if ( packetType == GET_JOB_STATUS_NO_DIFXLOG ) {
+                        }
+                        else if ( packetType == GET_JOB_STATUS_NO_STATUS ) {
+                            //  A log file exists, but has no status.  This may indicate a
+                            //  job that didn't start properly - probably an interesting piece of
+                            //  information.
+                            _currentStatus = "no status";
+                        }
+                        else if ( packetType == GET_JOB_STATUS_STATUS ) {
+                            _currentStatus = new String( data ).trim();
+                        }
+                        else if ( packetType == GET_JOB_STATUS_OPEN_ERROR ) {
+                            _settings.messageCenter().error( 0, "getJobStatus", "Error opening .difxlog file: " + new String( data ) );
+                        }
+                    }
+                } catch ( java.net.SocketTimeoutException e ) {
+                }
+                ssock.close();
+            } catch ( java.io.IOException e ) {
+                e.printStackTrace();
+            }
+            _settings.releaseTransferPort( _port );
+        }
+        
+        void saveSimpleStatus( String inputFile, String status ) {
+            if ( inputFile != null ) {
+                synchronized( _simpleStatusMap ) {
+                    _simpleStatusMap.put( inputFile, status );
+                }
+            }
+        }
+        
+        protected int _port;
+        
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Get the "simple" status for the named input file.
+    //--------------------------------------------------------------------------
+    public String getSimpleStatus( String inputFile ) {
+        String ret = null;
+        synchronized( _simpleStatusMap ) {
+            ret = _simpleStatusMap.get( inputFile );
+        }
+        return ret;
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Return whether or not we have a status associated with this input file.
+    //--------------------------------------------------------------------------
+    public boolean haveSimpleStatus( String inputFile ) {
+        boolean ret;
+        synchronized( _simpleStatusMap ) {
+            ret = _simpleStatusMap.containsKey( inputFile );
+        }
+        return ret;
     }
     
     /*
@@ -2147,6 +2393,16 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisJob.pass( thisPass.name() );
             thisJob.passNode( thisPass );
             thisJob.inputFile( inputFile, false );
+            //  Try to get the "simple" status of this job.
+            String status = getSimpleStatus( inputFile );
+            if ( status != null ) {
+                if ( status.contentEquals( "Done" ) )
+                    thisJob.setState( "Done", Color.GREEN );
+                else
+                    thisJob.setState( "Run Failed", Color.RED );
+            }
+            else
+                thisJob.setState( "not Started", Color.LIGHT_GRAY );
             //thisJob.setState( "getting log", Color.yellow );
             //thisJob.parseLogFile();
 //            //  Create a new log file for this job using what we expect its name to be.

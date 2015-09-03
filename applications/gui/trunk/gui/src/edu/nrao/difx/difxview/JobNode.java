@@ -1278,37 +1278,71 @@ public class JobNode extends QueueBrowserNode {
     }
     
     DiFXCommand_getFile _fileGet;
+    static Object _fileGetSync;
+    static Boolean _fileGetLocked;
+    static int _threadCount;
     //--------------------------------------------------------------------------
     //  Download and parse the "difxlog" file for this job, if it exists.  This
     //  gives us the job run history, which is used (among other things) to set
     //  the current job state.
     //--------------------------------------------------------------------------
     public void parseLogFile() {
-        //  Create a log file name from the input file name.  A null pointer exception
-        //  indicates the input file name has not been set or has not been set correctly.
-        try {
-            _logFile = _inputFile.getText().replace( ".input", ".difxlog" );
-        } catch ( NullPointerException e ) {
-            return;
+        //  Set up a lock so we only do one of these at a time.
+        if ( _fileGetSync == null ) {
+            _fileGetSync = new Object();
+            _fileGetLocked = new Boolean( false );
         }
-        _fileGet = new DiFXCommand_getFile( _logFile, _settings );
-        if ( _fileGet.error() != null ) {
-            return;
-        }
-        _fileGet.addEndListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                //  This is where we actually parse the file.  Only do so if there is a file and
-                //  it was read completely.
-                if ( _fileGet.fileSize() > 0 && _fileGet.fileSize() == _fileGet.inString().length() ) {
-                    setState( "LOG", Color.GREEN );
+        //  Do the operation in a thread using the lock.
+        Thread parseLogThread = new Thread() {
+            public void run() {
+                ++_threadCount;
+                //  Wait for the lock to be free so only one of these is done at a time.
+                boolean blocked = true;
+                while ( blocked ) {
+                    synchronized( _fileGetSync ) {
+                        if ( !_fileGetLocked ) {
+                            _fileGetLocked = true;
+                            blocked = false;
+                            System.out.println( "   LOCK: thread count is " + _threadCount );
+                        }
+                    }
+                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
                 }
-                else
-                    setState( "not Started", Color.LIGHT_GRAY );
+                //  Create a log file name from the input file name.  A null pointer exception
+                //  indicates the input file name has not been set or has not been set correctly.
+                try {
+                    _logFile = _inputFile.getText().replace( ".input", ".difxlog" );
+                } catch ( NullPointerException e ) {
+                    return;
+                }
+                _fileGet = new DiFXCommand_getFile( _logFile, _settings );
+                if ( _fileGet.error() != null ) {
+                    return;
+                }
+                _fileGet.addEndListener( new ActionListener() {
+                    public void actionPerformed( ActionEvent e ) {
+                        //  This is where we actually parse the file.  Only do so if there is a file and
+                        //  it was read completely.
+                        if ( _fileGet.fileSize() > 0 && _fileGet.fileSize() == _fileGet.inString().length() ) {
+                            setState( "LOG", Color.GREEN );
+                        }
+                        else
+                            setState( "not Started", Color.LIGHT_GRAY );
+                        //  Release the lock.
+                        System.out.println( "done reading" );
+                        synchronized( _fileGetSync ) {
+                            _fileGetLocked = false;
+                            System.out.println( "RELEASE: thread count is " + _threadCount );
+                        }
+                    }
+                });
+                try { 
+                    _fileGet.readString();
+                } catch ( java.net.UnknownHostException e ) {}
+                --_threadCount;
             }
-        });
-        try { 
-            _fileGet.readString();
-        } catch ( java.net.UnknownHostException e ) {}
+        };
+        parseLogThread.start();
     }
     
     public void inputFile( String newVal, boolean loadNow ) { 
