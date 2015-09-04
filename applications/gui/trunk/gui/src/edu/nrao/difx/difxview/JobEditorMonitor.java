@@ -19,6 +19,7 @@ import edu.nrao.difx.difxutilities.ChannelServerSocket;
 import edu.nrao.difx.difxutilities.DiFXCommand_ls;
 import edu.nrao.difx.difxutilities.DiFXCommand_mv;
 import edu.nrao.difx.difxutilities.DiFXCommand_vex2difx;
+import static edu.nrao.difx.difxview.JobNode.AUTOSTATE_STOPPED;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxMachinesDefinition;
@@ -2339,11 +2340,11 @@ public class JobEditorMonitor extends JFrame {
         
     }
     
-    /*
-     * This is used to remove this job from the nodes where it has reserved resources,
-     * freeing up those resources for other jobs.  This should only be called when the
-     * job is stopped, or when it is assumed to have stopped.
-     */
+    //--------------------------------------------------------------------------
+    //  This is used to remove this job from the nodes where it has reserved resources,
+    //  freeing up those resources for other jobs.  This should only be called when the
+    //  job is stopped, or when it is assumed to have stopped.
+    //--------------------------------------------------------------------------
     public void flushFromActiveNodes() {
         for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
                 iter2.hasNext(); ) {
@@ -2404,6 +2405,34 @@ public class JobEditorMonitor extends JFrame {
             java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
                     e.getMessage() );  //BLAT should be a pop-up
         }
+        //  Clear the job from the nodes in the hardware monitor.  This should
+        //  occur on its own, but sometimes it doesn't.
+        Thread clearThread = new Thread() {
+            public void run() {
+                //  Give the "stop" command a chance to work.
+                try { Thread.sleep( 500 ); } catch ( Exception ex ) {}
+                for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
+                        iter.hasNext(); ) {
+                    BrowserNode thisModule = iter.next();
+                    if ( ((ProcessorNode)(thisModule)).activeJob().contentEquals( _jobNode.name() ) )
+                        ((ProcessorNode)(thisModule)).clearActiveJob();
+                }
+                for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
+                        iter.hasNext(); ) {
+                    BrowserNode thisModule = iter.next();
+                    if ( ((ProcessorNode)(thisModule)).activeJob().contentEquals( _jobNode.name() ) )
+                        ((ProcessorNode)(thisModule)).clearActiveJob();
+                }
+                //  Redo this, just in case.
+                _jobNode.autostate( AUTOSTATE_STOPPED );
+                //  Free up resources...this should happen elsewhere, but doing it here shouldn't
+                //  hurt.
+                flushFromActiveNodes();
+                //  Safe to let the user start it again.
+                _jobNode._scheduleJobItem.setEnabled( true );
+            }
+        };
+        clearThread.start();
     }
     
     /*

@@ -1159,17 +1159,20 @@ public class SystemSettings extends JFrame {
                 + "other DiFX users." );
         _yieldToOtherSessions.setBounds( 850, 240, 200, 25 );
         jobProcessingPanel.add( _yieldToOtherSessions );
-        _clearCorrelationStatisticsButton = new ZButton( "Clear Statistics" );
-        _clearCorrelationStatisticsButton.setToolTipText( "Zero the statistics used to estimate processing times.\n"
-                + "Subsequent estimates will have no knowledge of previous job execution times." );
-        _clearCorrelationStatisticsButton.setBounds( 850, 265, 140, 25 );
-        _clearCorrelationStatisticsButton.addActionListener( new ActionListener() {
+        _clearActiveNodesButton = new ZButton( "Clear Active Nodes" );
+        _clearActiveNodesButton.setToolTipText( "Remove all \"active\" nodes from the scheduler.\n"
+                + "Use only when jobs appear to be seriously stuck." );
+        _clearActiveNodesButton.setBounds( 850, 265, 160, 25 );
+        _clearActiveNodesButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _correlationTimeSum = null;
-                _correlationTimeN = null;
+                for ( Iterator<BrowserNode> iter2 = hardwareMonitor().processorNodes().children().iterator();
+                        iter2.hasNext(); ) {
+                    ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+                    usedNode.removeAllJobs();
+                }
             }
         } );
-        jobProcessingPanel.add( _clearCorrelationStatisticsButton );
+        jobProcessingPanel.add( _clearActiveNodesButton );
 
         IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
         databasePanel.openHeight( 305 );
@@ -5733,7 +5736,7 @@ public class SystemSettings extends JFrame {
             _correlationTimeN += newVal;
     }
     
-    protected ZButton _clearCorrelationStatisticsButton;
+    protected ZButton _clearActiveNodesButton;
     
     /*
      * Class to display a list of nodes that are permitted to be used as source node.

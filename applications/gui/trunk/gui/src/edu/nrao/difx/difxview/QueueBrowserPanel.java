@@ -1574,6 +1574,8 @@ public class QueueBrowserPanel extends TearOffPanel {
             _updateButton.setVisible( true );
         }
         
+        protected ArrayList<LocalJobNode> _missingSimpleStatus;
+        
         /*
          * Do user-specified translation of path names (or whatever) to obtain
          * experiment and pass names for each found input file.  The items that
@@ -1581,6 +1583,10 @@ public class QueueBrowserPanel extends TearOffPanel {
          */
         public void translateList() {
             _preview.clear();
+            if ( _missingSimpleStatus == null )
+                _missingSimpleStatus = new ArrayList<LocalJobNode>();
+            else
+                _missingSimpleStatus.clear();
             Iterator<String> iter = _newList.iterator();
             while ( iter.hasNext() ) {
                 String nextFile = iter.next();
@@ -1625,7 +1631,8 @@ public class QueueBrowserPanel extends TearOffPanel {
                     //  Get the "simple" status of this job.  We hope the status update is done by
                     //  now???
                     String status = null;
-                    if ( haveSimpleStatus( nextFile ) )
+                    boolean hasStatus = haveSimpleStatus( nextFile );
+                    if ( hasStatus )
                         status = getSimpleStatus( nextFile );
 
                     //  Create a new job entry and add it to the proper location in the preview browser.
@@ -1634,6 +1641,10 @@ public class QueueBrowserPanel extends TearOffPanel {
                     newJob.addSelectionButton( null, null );
                     newJob.selected( true );
                     newJob.xOffset( 20 );
+
+                    //  Save a list of jobs that have missing status.  These will be fixed below.
+                    if ( !hasStatus )
+                        _missingSimpleStatus.add( newJob );
 
                     //  Search for the experiment name...
                     BrowserNode experimentList = _preview.browserTopNode();
@@ -1690,6 +1701,26 @@ public class QueueBrowserPanel extends TearOffPanel {
             _preview.setBounds( _preview.getX(), _preview.getY(), _preview.getWidth(), _preview.getHeight() );
             _preview.updateUI();
             _this.newSize();
+            //  Launch a repeating thread to try to update the "simple status" of each
+            //  job.  This runs forever...um, is this a good idea?
+            Thread statusUpdateThread = new Thread() {
+                public void run() {
+                    while ( _missingSimpleStatus.size() > 0 ) {
+                        int n = _missingSimpleStatus.size();
+                        try {
+                            for ( int i = 0; i < n; ++i ) {
+                                LocalJobNode node = _missingSimpleStatus.get(i);
+                                if ( haveSimpleStatus( node.inputFile() ) ) {
+                                    node.setStatus( getSimpleStatus( node.inputFile() ) );
+                                    _missingSimpleStatus.remove(i);
+                                }
+                            }
+                        } catch ( java.lang.IndexOutOfBoundsException ex ) {}
+                        try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
+                    }
+                }
+            };
+            statusUpdateThread.start();
         }
         
         public class LocalBrowserNode extends BrowserNode {
@@ -1705,6 +1736,9 @@ public class QueueBrowserPanel extends TearOffPanel {
             LocalJobNode( String name, String inputFile, String status ) {
                 super( name );
                 _inputFile.setText( inputFile );
+                setStatus( status );
+            }
+            public void setStatus( String status ) {
                 if ( status != null ) {
                     _status.setText( status );
                     if ( status.contentEquals( "Done" ) )
@@ -1985,7 +2019,7 @@ public class QueueBrowserPanel extends TearOffPanel {
         bb.putInt( port );
         //  Convert to byte data.
         byte [] getJobStatusData = bb.array();
-        //  Start a thread to monitor generate of the filelist.  The thread (below) is
+        //  Start a thread to monitor generation of the job status list.  The thread (below) is
         //  self-terminating.
         GetJobStatusMonitor monitor = new GetJobStatusMonitor( port );
         monitor.start();
@@ -2609,13 +2643,16 @@ public class QueueBrowserPanel extends TearOffPanel {
                             thisJob.state().updateUI();
                         }
                         else if ( thisJob.autostate() == JobNode.AUTOSTATE_DONE ) {
-                            thisJob.freeResources( 60 );
+                            thisJob.freeMonitor( 60 );
                             iter.remove();
                         }
                         else if ( thisJob.autostate() == JobNode.AUTOSTATE_UNSCHEDULED ||
                                 thisJob.autostate() == JobNode.AUTOSTATE_FAILED ||
-                                thisJob.autostate() == JobNode.AUTOSTATE_RESOURCE_TIMEOUT )
+                                thisJob.autostate() == JobNode.AUTOSTATE_RESOURCE_TIMEOUT ||
+                                thisJob.autostate() == JobNode.AUTOSTATE_STOPPED ) {
                             iter.remove();
+                            thisJob.flushFromActiveNodes();
+                        }
                     }
                     //  If any jobs are running and we are only supposed to run jobs sequentially,
                     //  we are done for this cycle.  Also bail out if we are running as many jobs
@@ -2686,6 +2723,8 @@ public class QueueBrowserPanel extends TearOffPanel {
                                         thisPass.addCompleted( 1 );
                                         break;
                                     case JobNode.AUTOSTATE_FAILED:
+                                    case JobNode.AUTOSTATE_RESOURCE_TIMEOUT:
+                                    case JobNode.AUTOSTATE_STOPPED:
                                         thisPass.addFailed( 1 );
                                         break;
                                     case JobNode.AUTOSTATE_INITIALIZING:

@@ -863,6 +863,13 @@ public class ProcessorNode extends BrowserNode {
             if ( thisUse.jobEditor == job )
                 iter.remove();
         }
+        if ( job._jobNode.name().contentEquals( activeJob() ) )
+            clearActiveJob();
+        changeThreadsUsed();
+    }
+    public void removeAllJobs() {
+        _usageList.clear();
+        clearActiveJob();
         changeThreadsUsed();
     }
     public void addJob( JobEditorMonitor job, int threads, int use ) {

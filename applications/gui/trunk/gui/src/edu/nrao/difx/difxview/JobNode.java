@@ -242,9 +242,6 @@ public class JobNode extends QueueBrowserNode {
         });
         _popup.add( deleteItem );
         _popup.add( new JSeparator() );
-//        JMenuItem menuItem8 = new JMenuItem( "Queue" );
-//        menuItem8.setToolTipText( "Put this job in the runnable queue." );
-//        _popup.add( menuItem8 );
         _scheduleJobItem = new ZMenuItem( "Schedule to Run" );
         _scheduleJobItem.setToolTipText( "Schedule this job to the be run using the automated scheduler\n"
                 + "according to user settings that govern scheduled jobs." );
@@ -268,33 +265,11 @@ public class JobNode extends QueueBrowserNode {
         _stopJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( updateEditorMonitor( 1000 ) )
-                    //  This will force the scheduler to stop paying attention to the job.
-                    autostate( AUTOSTATE_DONE );
                     _editorMonitor.stopJob();
-                    //  Clear the job from the nodes in the hardware monitor.  This should
-                    //  occur on its own, but sometimes it doesn't.  Give the "stop" command
-                    //  a chance to work.
-                    Thread clearThread = new Thread() {
-                        public void run() {
-                            try { Thread.sleep( 5 ); } catch ( Exception e ) {}
-                            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
-                                    iter.hasNext(); ) {
-                                BrowserNode thisModule = iter.next();
-                                if ( ((ProcessorNode)(thisModule)).activeJob().contentEquals( name() ) )
-                                    ((ProcessorNode)(thisModule)).clearActiveJob();
-                            }
-                            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
-                                    iter.hasNext(); ) {
-                                BrowserNode thisModule = iter.next();
-                                if ( ((ProcessorNode)(thisModule)).activeJob().contentEquals( name() ) )
-                                    ((ProcessorNode)(thisModule)).clearActiveJob();
-                            }
-                        }
-                    };
-                    clearThread.start();
+                //  This will force the scheduler to stop paying attention to the job.
+                autostate( AUTOSTATE_STOPPED );
             }
         });
-        //_stopJobItem.setEnabled( false );
         _popup.add( _stopJobItem );
         
     }
@@ -456,6 +431,7 @@ public class JobNode extends QueueBrowserNode {
     public final static int AUTOSTATE_UNSCHEDULED      = 6;
     public final static int AUTOSTATE_FAILED           = 7;
     public final static int AUTOSTATE_RESOURCE_TIMEOUT = 8;
+    public final static int AUTOSTATE_STOPPED          = 9;
     
     protected Integer _autostate;
     public int autostate() {
@@ -674,6 +650,15 @@ public class JobNode extends QueueBrowserNode {
         state().updateUI();
     }
     
+    //--------------------------------------------------------------------------
+    //  Catch-all when the scheduler wants to free resources allocated to this
+    //  job (won't hurt if none are allocated).
+    //--------------------------------------------------------------------------
+    public void flushFromActiveNodes() {
+        if ( _editorMonitor != null )
+            _editorMonitor.flushFromActiveNodes();
+    }
+    
     String _currentWarningMessage = "";
     String _currentErrorMessage = "";
     boolean _warningNew;
@@ -726,8 +711,8 @@ public class JobNode extends QueueBrowserNode {
      * (if the garbage collector does its job).  This is performed in a thread after the
      * given number of seconds.
      */
-    public void freeResources( int delay ) {
-        FreeResourcesThread freeThread = new FreeResourcesThread( delay );
+    public void freeMonitor( int delay ) {
+        FreeMonitorThread freeThread = new FreeMonitorThread( delay );
         freeThread.start();
     }
     
@@ -736,8 +721,8 @@ public class JobNode extends QueueBrowserNode {
      * instance associated with this job.  This is useful if you are running tons of jobs
      * as the EditorMonitor can swallow lots of memory.
      */
-    public class FreeResourcesThread extends Thread {
-        public FreeResourcesThread( int delay ) {
+    public class FreeMonitorThread extends Thread {
+        public FreeMonitorThread( int delay ) {
             _delay = delay;
         }
         public void run() {
