@@ -15,15 +15,19 @@ $FINALS_FILE = "usno_finals.erp";
 $FINALS_URL = "http://gemini.gsfc.nasa.gov/solve_save/$FINALS_FILE";
 
 $eopCount = 0;
+$eopSuffix = "";
 
-if ($#ARGV != 1)
+if ($#ARGV < 1)
 {
-	&printUsage;
+	&printUsage && die("\n");
 }
 	
-
 $date = $ARGV[0];
 $numEop = $ARGV[1];
+if ($#ARGV == 2)
+{
+    $eopSuffix = $ARGV[2];
+}
 
 # split date into year and doy, calculate julian date
 if ($date =~ /(\d{4})-(\d+)/)
@@ -31,16 +35,21 @@ if ($date =~ /(\d{4})-(\d+)/)
 	$year = $1;
 	$doy = $2;
 	#print "year: $year $doy\n";
-	$jdate = &calcJD($year,$doy, 23, 59, 59);
+	#$jdate = &calcJD($year,$doy, 23, 59, 59);
+	$jdate = &calcJD($year,$doy, 0, 0, 0);
 }
 else
 {
-	&printUsage;
+	&printUsage && die("\n");
 }
 
 
-# Leap second 30.Jun 2012
-if ($jdate > 2456109.5) 
+# Leap second 30.Jun 2012, 30.Jun 2015
+if ($jdate > 2457203.5)
+{
+        $TAIUTC = 36;
+}
+elsif ($jdate > 2456109.5) 
 {
 	$TAIUTC = 35;
 }
@@ -84,7 +93,7 @@ while (<INFILE>)
 			$ut1utc  = $fields[3]  / 1e6 + $TAIUTC; 
 			$eopDay = $doy + $eopCount;
 
-			print OUTFILE "  def EOP$eopCount;\n";
+			print OUTFILE "  def EOP$eopDay$eopSuffix;\n";
 			print OUTFILE "    TAI-UTC= $TAIUTC sec;\n";
 			print OUTFILE "    A1-TAI= 0 sec;\n";
 			print OUTFILE "    eop_ref_epoch=$year" . "y$eopDay" . "d;\n";
@@ -122,21 +131,23 @@ sub calcJD
 
         $jd += $hour/24 + $minute/1440 + $second / 86400 + 2400000.5;
 
+        print "Returning JD",$jd,"\n";
         return($jd)
 }
 
 sub printUsage
 {
-        print "----------------------------------------------------------------------------------\n";
+        print "----------------------------------------------------------------------\n";
         print " Script to obtain EOP values from this URL:\n";
 	print " $FINALS_URL\n";
 	print " The EOPS are reformated to a format that can be used in the vex file \n";
-        print "---------------------------------------------- -----------------------------------\n";
-        print "\nUsage: $0 yyyy-doy numEOP\n\n";
+        print "----------------------------------------------------------------------\n";
+        print "\nUsage: $0 yyyy-doy numEOP [EOPsuffix]\n\n";
         print "yyyy-doy: the year and day-of-year of the first EOP value to obtain\n";
-        print "numEOP:  the number of EOPs to get\n\n";
+        print "numEOP:  the number of EOPs to get\n";
+        print "if provided, EOPsuffix will be appended to the EOP def name.\n";
         print "output will be written to EOP.txt\n\n";
-        print "---------------------------------------------- -----------------------------------\n";
+        print "----------------------------------------------------------------------\n";
 	exit;
 }
 
