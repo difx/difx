@@ -65,6 +65,7 @@ class MainWindow(GenericWindow):
         self.changeSlotDlg = ChangeSlotWindow(self, rootWidget)  
         self.labelOptionsDlg= LabelOptionsWindow(self,rootWidget)
         self.databaseOptionsDlg= DatabaseOptionsWindow(self,rootWidget)
+        self.notificationOptionsDlg= NotificationOptionsWindow(self,rootWidget)
         self.scanModulesDlg = ScanModulesWindow(self, rootWidget)
 	self.editExpDlg = EditExperimentsWindow(self, rootWidget)
         
@@ -110,6 +111,7 @@ class MainWindow(GenericWindow):
         optionmenu = Menu(menubar, tearoff=0)
         optionmenu.add_command(label="Label options", command=self.showLabelOptions)
         optionmenu.add_command(label="Database options", command=self.showDatabaseOptions)
+        optionmenu.add_command(label="Notification options", command=self.showNotificationOptions)
 
         menubar.add_cascade(label="Options", menu=optionmenu)
 
@@ -144,7 +146,7 @@ class MainWindow(GenericWindow):
 	columns = tuple(colList)
         self.grdSlot = MultiListbox(self.frmMain, 16, *columns)
         self.grdSlot.bindEvent("<ButtonRelease-1>", self.selectSlotEvent)
-        self.btnNewModule = Button (self.frmMain, text="Check-in module", command=self.checkinModule)
+        self.btnNewModule = Button (self.frmMain, text="Check-in module", command=self.showCheckinWindow)
           
         
         # widgets on frmStatus
@@ -653,27 +655,16 @@ class MainWindow(GenericWindow):
         session = dbConn.session()
         
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
-        
+                
+        self.scanModulesDlg.config = self.config
         self.scanModulesDlg.scanModules(slot.module)
         
         session.close()
         
-    def assignExperimentEvent(self):
         
-        if self.selectedSlotIndex == -1:
-            return
-        
-        session = dbConn.session()
-        
-        slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
-        
-        self.scanModulesDlg.scanModules(slot.module)
-        
-        session.close()
-
-      
     def scanModuleEvent(self):
        
+        self.scanModulesDlg.config = self.config
         self.scanModulesDlg.scanModules()
             
             
@@ -820,21 +811,41 @@ class MainWindow(GenericWindow):
             self.btnEditModule["state"] = DISABLED
             
         
-    def checkinModule(self):
+    def showCheckinWindow(self):
+        '''
+        Displays the module checkin dialog
+        '''
         
         self.checkinDlg.show()
         
     def showLabelOptions(self):
+        '''
+        Displays the label options dialog
+        '''
              
         self.labelOptionsDlg.config = self.config
         self.labelOptionsDlg.show()
         
     def showDatabaseOptions(self):
+        '''
+        Displays the database options dialog
+        '''
              
         self.databaseOptionsDlg.config = self.config
         self.databaseOptionsDlg.show()
+        
+    def showNotificationOptions(self):
+        '''
+        Displays the notification options dialog
+        '''
+             
+        self.notificationOptionsDlg.config = self.config
+        self.notificationOptionsDlg.show()
     
     def showEditExperimentsWindow(self):
+        '''
+        Displays the experiment dialog
+        '''
 
         if (self.selectedSlotIndex < 0):
             return
@@ -1176,6 +1187,73 @@ class ChangeSlotWindow(GenericWindow):
         self.dlg.destroy()
         
         session.close()
+        
+class NotificationOptionsWindow(GenericWindow):
+    '''
+    '''
+    def __init__(self, parent, rootWidget=None):
+        
+        # call super class constructor
+        super( NotificationOptionsWindow, self ).__init__(parent, rootWidget)
+    
+    def show(self):
+        
+        # create modal dialog
+        self.dlg = Toplevel(self.rootWidget, takefocus=True)
+        self.dlg.title ("Notification Options")
+        self.dlg.transient(self.rootWidget)
+        self.dlg.state("normal")
+        self.dlg.grab_set()
+        
+        self._setupWidgets()
+        
+    def _setupWidgets(self):
+        
+        self.notificationEnabledVar = IntVar()
+              
+        frmMain = LabelFrame(self.dlg)
+        frmMain.grid(row=0, column=0, sticky=E+W+N+S, ipadx=3, ipady=3)
+        frmBtn = LabelFrame(self.dlg)
+        frmBtn.grid(row=1, column=0, sticky=E+W)
+        
+        Label(frmMain, text="Enable email notifications").grid(row=0, column=0, sticky=W, padx=3)
+        Label(frmMain, text="SMTP Server").grid(row=1, column=0, sticky=W, padx=3)
+        Label(frmMain, text="From address").grid(row=2, column=0, sticky=W, padx=3)
+        Label(frmMain, text="To address (comma-separated)").grid(row=3, column=0, sticky=W, padx=3)
+        
+        self.chkEnable = Checkbutton(frmMain, variable=self.notificationEnabledVar)
+        self.txtSMTPServer = Entry(frmMain)
+        self.txtSMTPFrom = Entry(frmMain)
+        self.txtSMTPTo = Entry(frmMain)
+        
+        Button(frmBtn, text="OK", command=self.saveConfig).grid(row=0, column=0, sticky=W+E)
+        Button(frmBtn, text="Cancel", command=self.dlg.destroy).grid(row=0, column=5, sticky=W+E) 
+
+        self.notificationEnabledVar.set(self.config.get("Comedia", "enableEmailNotification"))
+        self.txtSMTPServer.insert(0, self.config.get("Comedia", "smtpServer"))
+        self.txtSMTPFrom.insert(0, self.config.get("Comedia", "smtpFrom"))
+        self.txtSMTPTo.insert(0, self.config.get("Comedia", "smtpTo"))
+        
+        
+        self.chkEnable.grid(row=0, column=5, sticky=W)
+        self.txtSMTPServer.grid(row=1, column=5, sticky=W)
+        self.txtSMTPFrom.grid(row=2, column=5, sticky=W)
+        self.txtSMTPTo.grid(row=3, column=5, sticky=W)
+        
+    def saveConfig(self):
+        '''
+        Saves the notification option settings into the configuration file and closes the options dialog
+        '''
+        
+        self.config.set("Comedia", "enableEmailNotification", self.notificationEnabledVar.get())
+        self.config.set("Comedia", "smtpServer", self.txtSMTPServer.get())
+        self.config.set("Comedia", "smtpFrom", self.txtSMTPFrom.get())
+        self.config.set("Comedia", "smtpTo", self.txtSMTPTo.get())
+
+        
+        self.config.writeConfig()
+            
+        self.dlg.destroy()
         
 class DatabaseOptionsWindow(GenericWindow):
      
@@ -1640,13 +1718,51 @@ class ScanModulesWindow(GenericWindow):
             
         session.close()
             
+    def notifyAddExperiment(self, vsn, addedExps):
+        '''
+        Sends an email notification that unknown experiments have been found on the  module
+        '''
+        
+        if len(addedExps) == 0:
+            return
+        
+        if self.config.get('Comedia', 'enableEmailNotification') == 0:
+            return
+        
+	import smtplib
+        from email.mime.text import MIMEText
+
+        server = self.config.get('Comedia', 'smtpServer')
+	sender = self.config.get('Comedia', 'smtpFrom')
+	receiver = self.config.get('Comedia', 'smtpTo')
+        
+        text = "The module with the VSN: " + vsn + " contains data from experiments with unknown state.\n\n"
+        text += "Please update the state of the following experiments:\n"
+
+        for code in addedExps:
+            text += code + "\n"
+        
+        text += "\nNOTE: Leaving experiments in unknown state will prevent modules from being released."
+
+	msg = MIMEText(text)
+
+        msg['Subject'] = '[comedia] modules with unknown experiments have arrived'
+        msg['From'] = sender
+        msg['To'] = receiver
+
+        # Send the message 
+        s = smtplib.SMTP(server)
+        s.sendmail(sender, receiver.split(","), msg.as_string())
+        s.quit()
+
+
     def updateModuleEvent(self):
         
         session = dbConn.session()
         
         for checkModule in self.checkList:
             
-            module = getModuleByVSN(session,checkModule.vsn)
+            module = getModuleByVSN(session, checkModule.vsn)
             
             if (module == None):
                 continue
@@ -1657,12 +1773,18 @@ class ScanModulesWindow(GenericWindow):
                 module.experiments = []
                 
                 # loop over all scanned experiment codes
+		unknownExps = []
                 for expCode in checkModule.scannedExps:
                     
                     if (not experimentExists(session, expCode)):
-                       
+                    
                         # add new experiment
                         addExperiment(session, expCode)
+                        unknownExps.append(expCode)
+                    else:
+                        # check if state is unknown
+                        if getExperimentStatusCode(session, expCode) == 0:
+                            unknownExps.append(expCode)
                         
                         
                     exp = getExperimentByCode(session, expCode)
@@ -1672,6 +1794,10 @@ class ScanModulesWindow(GenericWindow):
                         
                 session.commit()
                 session.flush()
+
+		#send email notofication about added experiments
+		if len(unknownExps) > 0:
+			self.notifyAddExperiment(checkModule.vsn, unknownExps)
                 
                 continue
             # action was 'remind again'
@@ -1857,7 +1983,11 @@ class ComediaConfig(DifxDbConfig):
         self.config.set('Comedia', 'headerLine', 'Correlator Media Library')
         self.config.set('Comedia', 'fontFile', '/usr/share/fonts/truetype/arial.ttf')
         self.config.set('Comedia', 'fontSize', '24')
-        self.config.set('Comedia', 'printCommand', 'lpr -P')   
+        self.config.set('Comedia', 'printCommand', 'lpr -P')
+        self.config.set('Comedia', 'smtpServer', 'localhost')
+        self.config.set('Comedia', 'smtpFrom', 'comedia@localhost')
+        self.config.set('Comedia', 'smtpTo', '')
+        self.config.set('Comedia', 'enableEmailNotification', '0')
           
 if __name__ == "__main__":
     
