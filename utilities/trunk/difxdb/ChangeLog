@@ -1,12 +1,14 @@
-Version 2.4
-Tagged DiFX-2.4 on Nov 4, 2014
+* post 2.4 changes
+getreleaselist: order output by experiment code
+comedia: email notification for modules containing unknown experiments
+expad: show number of modules for each experiment
 
-1.2
-* Tagged as DiFX-2.4 on Nov 4, 2014
+*Version 2.4
+Tagged DiFX-2.4 on Nov 4, 2014
 
 1.1
 * Various developmental improvements between DiFX-2.1 and DiFX-2.2
 * Tagged as DiFX-2.2 on May 31, 2013 
 
-1.0 
+*1.0 
 * Initial version
