@@ -117,11 +117,12 @@ class MainWindow(GenericWindow):
         col2 = ListboxColumn("number", 4)
         col3 = ListboxColumn("status", 10)
         col4 = ListboxColumn("type", 8)
-        col5 = ListboxColumn("analyst", 12)
-        col6 = ListboxColumn("created", 14) 
-        col7 = ListboxColumn("archived", 14)
-        col8 = ListboxColumn("released", 14) 
-        self.grdExps = MultiListbox(frmExps, 16, col1, col2, col3, col4, col5, col6, col7, col8)
+        col5 = ListboxColumn("modules", 4)
+        col6 = ListboxColumn("analyst", 12)
+        col7 = ListboxColumn("created", 14) 
+        col8 = ListboxColumn("archived", 14)
+        col9 = ListboxColumn("released", 14) 
+        self.grdExps = MultiListbox(frmExps, 16, col1, col2, col3, col4, col5, col6, col7, col8, col9)
         self.grdExps.bindEvent("<ButtonRelease-1>", self.selectExpEvent)
         
         btnAddExp = Button(frmExps, text="Add experiment", command=self.addExperimentDlg.show)
@@ -178,7 +179,6 @@ class MainWindow(GenericWindow):
         self.cboType.bind('<ButtonRelease-1>', self.onExpDetailChange)
         self.btnUpdate["state"] = DISABLED
         self.btnDelete["state"] = DISABLED
-        
 
   
     def onExpDetailChange(self, Event):
@@ -279,12 +279,12 @@ class MainWindow(GenericWindow):
             expTypes = [] 
             for type in exp.types:
                 expTypes.append(type.type)
-            
+
             username = ""
             if exp.user is not None:
                 username = exp.user.name
                 
-            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), username, exp.dateCreated,  exp.dateArchived, exp.dateReleased))
+            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), len(exp.modules), username, exp.dateCreated,  exp.dateArchived, exp.dateReleased))
      
         session.close()
         
