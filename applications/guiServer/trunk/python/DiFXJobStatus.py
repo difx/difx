@@ -62,7 +62,10 @@ class DiFXJobStatus( DiFXControl.Client ):
 		#  Now we wait for the responses to pile in.
 		wait = self._client._waitTime
 		while wait > 0.0 and not self.jobStatusComplete:
-			time.sleep( 0.01 )
+			try:
+				time.sleep( 0.01 )
+			except KeyboardInterrupt:
+				self.jobStatusComplete = True			
 			wait -= 0.01
 		self._client.closeChannel( channel )
 		return self.jobStatusList
