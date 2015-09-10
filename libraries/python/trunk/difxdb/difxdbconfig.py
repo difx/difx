@@ -22,7 +22,7 @@ class DifxDbConfig(object):
         Checks if the configuration file exists. If yes it will be read.
         If the file does not exist but create is set to 'True' a default 
         configuration file will be created. If create is set to 'False' (default)
-        an IO Exption will be raised
+        an IO Exception will be raised
         '''
         
         self.configFile = configFile
