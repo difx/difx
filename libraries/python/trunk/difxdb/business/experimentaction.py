@@ -40,10 +40,17 @@ def getExperiments(session):
 
 def getExperimentByCode(session, code):
     '''
-    Returns the Experiment object referencesd by the given experiment code
+    Returns the Experiment object referenced by the given experiment code
     '''
     
     return(session.query(model.Experiment).filter_by(code=code).one())
+
+def getExperimentStatusCode(session, code):
+    '''
+    Returns the status code of the experiment with the given experiment code
+    '''
+    exp = session.query(model.Experiment).filter_by(code=code).one()
+    return(exp.status.statuscode)
     
 def getActiveExperimentCodes(session):
     '''
