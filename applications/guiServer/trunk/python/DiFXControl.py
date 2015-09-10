@@ -5,30 +5,11 @@ import select
 import struct
 import os
 import xml.dom.minidom
-
-RELAY_PACKET                   = 1
-RELAY_COMMAND_PACKET           = 2
-COMMAND_PACKET                 = 3
-INFORMATION_PACKET             = 4
-WARNING_PACKET                 = 5
-ERROR_PACKET                   = 6
-MULTICAST_SETTINGS_PACKET      = 7
-GUISERVER_VERSION              = 8
-GUISERVER_DIFX_VERSION         = 9
-AVAILABLE_DIFX_VERSION         = 10
-DIFX_BASE                      = 11
-GUISERVER_ENVIRONMENT          = 12
-DIFX_SETUP_PATH                = 13
-START_DIFX_MONITOR             = 14
-DIFX_RUN_LABEL                 = 15
-GUISERVER_USER                 = 16
-MESSAGE_SELECTION_PACKET       = 17
-CHANNEL_ALL_DATA               = 18
-CHANNEL_ALL_DATA_ON            = 19
-CHANNEL_ALL_DATA_OFF           = 20
-CHANNEL_CONNECTION             = 21
-CHANNEL_DATA                   = 22
-GENERATE_FILELIST              = 23
+#  Forward declaration of the Client class so the following imports don't gag.  
+class Client:
+	pass
+import DiFXls
+import DiFXJobStatus
 
 #===============================================================================
 #  Thread to monitor a socket from the difxServer.  
@@ -134,19 +115,49 @@ class MonitorThread( threading.Thread ):
 		self.failCallback = callbackFunction
 
 #===============================================================================
-#  The Client class makes a TCP connection to a difxServer on a specified address and
-#  port.
+## Hello, this is an overview!
+#
+#  The Client class makes a TCP connection to a server at a specified address and
+#  port and provides methods for controlling and receiving feedback from DiFX
+#  processes.
 #
 #  difx = DiFXControl.Client()
 #  difx.connect( ( hostname (string), port (integer) ) )
 #  difx.monitor()        #  start a thread for incoming messages
-#===============================================================================
+#
+#<!---======================================================================--->
 class Client:
 	
 	#  Failure types - returned by the failure callback.
 	BROKEN_SOCKET                       = 1
 	FAILED_CONNECTION                   = 2
-	 
+	
+	#  Packet types used in communication with the server.
+	RELAY_PACKET                   = 1
+	RELAY_COMMAND_PACKET           = 2
+	COMMAND_PACKET                 = 3
+	INFORMATION_PACKET             = 4
+	WARNING_PACKET                 = 5
+	ERROR_PACKET                   = 6
+	MULTICAST_SETTINGS_PACKET      = 7
+	GUISERVER_VERSION              = 8
+	GUISERVER_DIFX_VERSION         = 9
+	AVAILABLE_DIFX_VERSION         = 10
+	DIFX_BASE                      = 11
+	GUISERVER_ENVIRONMENT          = 12
+	DIFX_SETUP_PATH                = 13
+	START_DIFX_MONITOR             = 14
+	DIFX_RUN_LABEL                 = 15
+	GUISERVER_USER                 = 16
+	MESSAGE_SELECTION_PACKET       = 17
+	CHANNEL_ALL_DATA               = 18
+	CHANNEL_ALL_DATA_ON            = 19
+	CHANNEL_ALL_DATA_OFF           = 20
+	CHANNEL_CONNECTION             = 21
+	CHANNEL_DATA                   = 22
+	GENERATE_FILELIST              = 23
+	GET_JOB_STATUS                 = 24
+
 	def __init__( self ):
 		self.socketOK = True
 		try:
@@ -161,7 +172,93 @@ class Client:
 		self.allCallbacks = []
 		self.relayCallbacks = []
 		self.failCallbacks = []
+		self.versionInfoCallbacks = []
 		self.bytesReceived = 0
+		self.versionPreference = None
+		self.serverVersion = None
+		self.difxBase = None
+		self.serverUser = None
+		self.availableVersion = []
+		self.serverEnvironment = {}
+		self._runFile = None
+		self._channelData = False
+		self._waitTime = 5.0
+		self.channelPool = 12345
+		self.channelCallbacks = {}
+		
+	#---------------------------------------------------------------------------
+	#  Global wait time (in seconds) that the client will wait for commands to
+	#  respond.  Defaults is 5.0 seconds.
+	#---------------------------------------------------------------------------
+	def waitTime( self, newVal ):
+		_waitTime = newVal
+		
+	#---------------------------------------------------------------------------
+	#  Generate a unique "channel" number for channeled communication and assign
+	#  a callback function to it ("None" is permitted).  The "channel" number is
+	#  a unique identifier such that the incoming channeled data tagged with it
+	#  goes to the correct callback.
+	#  Don't worry about confusing channel numbers between client connections -
+	#  they only need to be unique within the client connection.
+	#---------------------------------------------------------------------------
+	def newChannel( self, callback ):
+		++self.channelPool
+		self.channelCallbacks[self.channelPool] = callback
+		return self.channelPool
+		
+	#<!------------------------------------------------------------------------>
+	## Utility function for interpreting the server packet protocol.
+	#
+	#    @param data A new piece of data to add to the packet.
+	#    @param packet A (possibly partial) packet in the form of a tuple.
+	#
+	#  This is a self-contained function that operates only on data it is given.
+	#  The data are interpreted as part of the server packet protocol where
+	#  an integer packet ID is followed by an integer data length followed by
+	#  a bunch of data when that length is zero.  A tuple consisting of the
+	#  packet ID, the length, the data, and a boolean indicating whether the
+	#  packet is complete is returned.  This tuple is the same used as an
+	#  argument.
+	#
+	#  The use of the tuple (instead of class variables) eliminates problems
+	#  where multiple operations step on each other when interpreting the
+	#  protocol simultaneously.
+	#<!------------------------------------------------------------------------>
+	def packetProtocol( self, data, packet ):
+		if packet == None or packet[3] == True:
+			#  No existing packet data or last packet was completely parsed.
+			packetId = None
+			packetLen = None
+			packetData = None
+			packetComplete = False
+		else:
+			packetId = packet[0]
+			packetLen = packet[1]
+			packetData = packet[2]
+			packetComplete = False
+		#  Fill in the packet data based on what we should be expecting next.
+		if packetId == None:
+			packetId = socket.ntohl( self.i.unpack( data[0:4] )[0] )
+		elif packetLen == None:
+			packetLen = socket.ntohl( self.i.unpack( data[0:4] )[0] )
+			if packetLen == 0:
+				packetComplete = True
+			else:
+				packetData = ""
+		else:
+			packetData += data
+			if len( packetData ) >= packetLen:
+				packetComplete = True
+		return ( packetId, packetLen, packetData, packetComplete )
+		
+	#---------------------------------------------------------------------------
+	#  Cleans up a channel for channeled connections when it is no longer needed.
+	#---------------------------------------------------------------------------
+	def closeChannel( self, channelNum ):
+		try:
+			del self.channelCallbacks[channelNum]
+		except KeyError:
+			print "no such channel key: " + str( channelNum )
 		
 	#---------------------------------------------------------------------------	
 	#  Functions for adding new callbacks for each packet type.  This is for
@@ -205,18 +302,20 @@ class Client:
 		try:
 			self.sock.connect( connectInfo )
 		except socket.error, ( value, message ):
-			print "Could not connect socket:", message
+			print "Could not connect socket (" + str( host ) + ", " + str( port ) + "):", message
 			self.socketOK = False
 			
 	#---------------------------------------------------------------------------
 	#  Create an instance of the monitor thread so we can use it to read
 	#  packets, but don't start it - so its basically non-threaded.  This is
-	#  useful if we have an external thread that does a select on the socket.
+	#  useful if we have an external thread that does a select on the socket
+	#  (which I have to do when using the fltk GUI stuff).
 	#---------------------------------------------------------------------------
 	def passiveMonitor( self ):
 		self.monitorThread = MonitorThread( self.sock )
 		self.monitorThread.setCallback( self.packetCallback )
 		self.monitorThread.setFailCallback( self.failCallback )
+		self.channelData()
 
 	#---------------------------------------------------------------------------	
 	#  Activate a thread that will monitor incoming data.
@@ -226,6 +325,7 @@ class Client:
 		self.monitorThread.setCallback( self.packetCallback )
 		self.monitorThread.setFailCallback( self.failCallback )
 		self.monitorThread.start()
+		self.channelData()
 
 	#---------------------------------------------------------------------------	
 	#  Close the socket.  If there is a monitoring thread, stop it first.
@@ -247,6 +347,23 @@ class Client:
 		self.sock.sendall( self.i.pack( socket.htonl( packetId ) ) )
 		self.sock.sendall( self.i.pack( socket.htonl( len( data ) ) ) )
 		self.sock.sendall( data )
+		
+	#---------------------------------------------------------------------------
+	#  Send a "command" packet containing the included XML packet data.
+	#  This function composes the header and includes the data.  Formatted for
+	#  readability (at the expense of sending some extra bytes).
+	#---------------------------------------------------------------------------
+	def sendCommandPacket( self, command, packetData ):
+		totalPacketData = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+		totalPacketData += "<difxMessage>\n"
+		totalPacketData += "	<header>\n"
+		totalPacketData += "		<type>" + command + "</type>\n"
+		totalPacketData += "	</header>\n"
+		totalPacketData += "	<body>\n"
+		totalPacketData += packetData
+		totalPacketData += "	</body>\n"
+		totalPacketData += "</difxMessage>"
+		self.sendPacket( self.COMMAND_PACKET, totalPacketData )
 
 	#---------------------------------------------------------------------------	
 	#  Send a "relay packet" command.  This will trigger the difxServer to provide all
@@ -255,9 +372,9 @@ class Client:
 	#---------------------------------------------------------------------------	
 	def relayPackets( self, on = True ):
 		if on:
-			self.sendPacket( RELAY_PACKET, self.i.pack( socket.htonl( 1 ) ) )
+			self.sendPacket( self.RELAY_PACKET, self.i.pack( socket.htonl( 1 ) ) )
 		else:
-			self.sendPacket( RELAY_PACKET, self.i.pack( 0 ) )
+			self.sendPacket( self.RELAY_PACKET, self.i.pack( 0 ) )
 			
 	#---------------------------------------------------------------------------	
 	#  Related to the above function - this function will specify a list of UDP
@@ -356,18 +473,86 @@ class Client:
 					mTypes.append( "MARK5COPY_MESSAGES" )
 			#  Translaste the list into a string with newlines.
 			packetData = "\n".join( mTypes )
-		self.sendPacket( MESSAGE_SELECTION_PACKET, packetData )
+		self.sendPacket( self.MESSAGE_SELECTION_PACKET, packetData )
+		
+	#---------------------------------------------------------------------------
+	#  Request all data be "channeled" - that is, instead of opening new sockets
+	#  for operation-specific communication, the server will channel all through
+	#  the primary connection socket.  This changes the way the data are parsed
+	#  on the client end.  This function can be used to turn channeling on or
+	#  off.
+	#
+	#  Channeling is recommended, and may become the only communications method
+	#  in the future.
+	#---------------------------------------------------------------------------
+	def channelData( self, on = True ):
+		if on:
+			self.sendPacket( self.CHANNEL_ALL_DATA_ON )
+			self._channelData = True
+		else:
+			self.sendPacket( self.CHANNEL_ALL_DATA_OFF )
+			self._channelData = False
+			
+	#---------------------------------------------------------------------------
+	#  Send a "guiServer Version" request - the server will respond with a
+	#  bunch of version information messages, including the GUISERVER_VERSION,
+	#  DIFX_BASE, GUISERVER_USER, AVAILABLE_DIFX_VERSION, GUISERVER_ENVIRONMENT,
+	#  and CHANNEL_ALL_DATA packet IDs.  The results of all of these are parsed
+	#  locally.
+	#---------------------------------------------------------------------------
+	def versionRequest( self ):
+		self.sendPacket( self.GUISERVER_VERSION )
+		
+	#---------------------------------------------------------------------------
+	#  Send a "file operation" command.  There are a bunch of different file
+	#  operations.  XML is formatted to be pretty on the other end (for
+	#  diagnostic purposes).
+	#---------------------------------------------------------------------------
+	def fileOperation( self, channel, command, args, path, dataNode ):
+		#  Compose an XML string holding the command.
+		#  And send it.
+		packetData = "		<port>" + str( channel ) + "</port>\n"
+		packetData += "		<operation>" + command + "</operation>\n"
+		if args != None:
+			packetData += "		<arg>" + args + "</arg>\n"
+		packetData += "		<path>" + path + "</path>\n"
+		if dataNode != None:
+			packetData += "		<dataNode>" + path + "</dataNode>\n"
+		self.sendCommandPacket( "DifxFileOperation", packetData )
 		
 	#---------------------------------------------------------------------------	
 	#  Callback function for the socket monitor.  Triggered when a new packet is
-	#  received.
+	#  received.  With the exception of the "version" information, which is all
+	#  stored locally, packet IDs trigger unique callback functions.
 	#---------------------------------------------------------------------------	
 	def packetCallback( self, packetId, data ):
-		if packetId == RELAY_PACKET:
+		if packetId == self.RELAY_PACKET:
 			for cb in self.relayCallbacks:
 				cb( data )
+		elif packetId == self.GUISERVER_VERSION:
+			self.serverVersion = data
+		elif packetId == self.GUISERVER_USER:
+			self.serverUser = data
+		elif packetId == self.AVAILABLE_DIFX_VERSION:
+			self.availableVersion.append( data )
+		elif packetId == self.GUISERVER_ENVIRONMENT:
+			#  Break environment variable definitions into their "name" and "value"
+			#  components.
+			if data.find( "=" ) >= 0:
+				name = data[0:data.find( "=" )]
+				self.serverEnvironment[name] = data[data.find( "=" ) + 1:]
+			else:
+				print "something wrong with environment defintion: " + str( data )
+		elif packetId == self.CHANNEL_ALL_DATA:
+			#  This is received at the end of a response to a version request.  We
+			#  use it to indicate that the request has been completed.
+			self.channelResponse = True
+		elif packetId == self.CHANNEL_DATA:
+			#  This, on the other hand, is genuine data, directed to a specific
+			#  "channel port".
+			self.consumeChannelData( data )
 		for cb in self.allCallbacks:
-			cb( data )
+			cb( packetId, data )
 
 	#---------------------------------------------------------------------------	
 	#  Callback function for failures in the socket monitor.
@@ -382,6 +567,143 @@ class Client:
 			else:
 				cb( self.BROKEN_SOCKET )
 				
+	#---------------------------------------------------------------------------
+	#  Query the server for DiFX Versions available and either set the version
+	#  preferred by this client to one specified as an argument, or use the
+	#  version of the server if not specified.  This function has to sleep while
+	#  waiting for all responses from the server.
+	#
+	#  The client's preferred version is something that should be set before any
+	#  DiFX operations are run.
+	#---------------------------------------------------------------------------
+	def version( self, preference = None ):
+		self.channelResponse = False
+		self.versionRequest()
+		#  Wait for the channel reponse to be set to True, indicating all version
+		#  information has been downloaded.  A five second limit is put on this
+		#  wait.
+		wait = self._waitTime
+		while wait > 0.0 and not self.channelResponse:
+			time.sleep( 0.01 )
+			wait -= 0.01
+		#  Set the version preference if the version request worked, either to
+		#  our preference if requested or "DIFX_DEVEL" if not.
+		if self.channelResponse:
+			if preference == None:
+				preference = "DIFX_DEVEL"
+			#  Is this available?
+			try:
+				self.availableVersion.index( preference )
+				self.versionPreference = preference
+				#  Try also setting the "generic run file" appropriate to this
+				#  version.
+				self.setVersionRunFile( self.versionPreference )
+			except:
+				pass
+		else:
+			print "SERVER DID NOT RESPOND!"
+				
+	#---------------------------------------------------------------------------
+	#  Set the generic run file based on a version name.
+	#---------------------------------------------------------------------------
+	def setVersionRunFile( self, version ):
+		#  See if this version is available, bail out if not.
+		try:
+			self.availableVersion.index( version )
+			#  Compose a name for the generic run file, if we can do that.  Bail out
+			#  if we fail at any point.
+			base = self.getenv( "DIFX_BASE" )
+			if base != None:
+				self.runFile( base + "/bin/rungeneric." + version )
+			else:
+				print "setVersionRunFile: no DIFX_BASE environment variable defined."
+		except:
+			print "setVersionRunFile: requested version \"" + str( version ) + "\" is not available."
+		
+	#---------------------------------------------------------------------------
+	#  Set the generic run file for all DiFX processes.  The generic run file is
+	#  a script that runs a given executable, often after setting proper environment
+	#  variables and other items.  The "difxbuild" process creates generic run files
+	#  for each DiFX version they create - these are in $DIFX_BASE/bin/rungenerc.[VERSION].
+	#  The file defined here will be used to run all DiFX operations.
+	#---------------------------------------------------------------------------
+	def runFile( self, newVal ):
+		self._runFile = newVal
+			
+	#---------------------------------------------------------------------------
+	#  Return the value of an environment variable as seen by the server.  If the
+	#  variable does not exist, "None" is returned.
+	#---------------------------------------------------------------------------
+	def getenv( self, varName ):
+		try:
+			return self.serverEnvironment[varName]
+		except:
+			return None
+			
+	#<!------------------------------------------------------------------------>
+	## Run an "ls" command on the server with the specified path.
+	#
+	#    @param path Full path that should be listed (as one would pass to "ls").
+	#    @param args Standard "ls" arguments - optional.
+	#
+	#  This function returns either after the ls is complete or the "waitTime"
+	#  passes.
+	#<!------------------------------------------------------------------------>
+	def ls( self, path, args = None ):
+		return DiFXls.DiFXls(self).ls( path, args )
+			
+	#<!------------------------------------------------------------------------>
+	## Get the "status" of a job or jobs using .input file path.
+	#
+	#    @param path Full path that should be listed (as one would pass to "ls").
+	#    @param shortStatus True/False whether a "short" status (including
+	#                       only the final job state) is requested.  Faster
+	#                       and easier to deal with for large numbers of jobs!
+	#
+	#  This function returns either after the requested status information is
+	#  returned or the "waitTime" passes.
+	#<!------------------------------------------------------------------------>
+	def jobStatus( self, path, shortStatus ):
+		return DiFXJobStatus.DiFXJobStatus(self).jobStatus( path, shortStatus )
+			
+	#<!------------------------------------------------------------------------>
+	## Run a "mkdir" command on the server with the specified path.
+	#
+	#    @param path Full path of the directory that should be created.
+	#
+	#  The server does not currently accept any arguments to mkdir unfortunately.
+	#  Nor does it produce any direct feedback.  Error messages will be produced,
+	#  but they have to be collected using RELAY_PACKETs.
+	#
+	#<!------------------------------------------------------------------------>
+	def mkdir( self, path ):
+		channel = self.newChannel( None )
+		self.fileOperation( channel, "mkdir", None, path, None )
+		self.closeChannel( channel )
+		
+	#---------------------------------------------------------------------------
+	#  Run a "rmdir" command on the server with the specified path.  Similar
+	#  to mkdir - no arguments, no feedback.
+	#---------------------------------------------------------------------------
+	def rmdir( self, path ):
+		channel = self.newChannel( None )
+		self.fileOperation( channel, "rmdir", None, path, None )
+		self.closeChannel( channel )
+		
+	#---------------------------------------------------------------------------
+	#  Respond to a single packet containing channeled data.  We parse out the
+	#  "port" number to find an appropriate callback for the data.
+	#---------------------------------------------------------------------------
+	def consumeChannelData( self, data ):
+		#  Split off the first 4 bytes, which should identify the "channel".
+		channel = socket.ntohl( self.i.unpack( data[0:4] )[0] )
+		newData = data[4:]
+		#  Use the channel number to do the proper callback.
+		try:
+			if self.channelCallbacks[channel] != None:
+				self.channelCallbacks[channel]( newData )
+		except KeyError:
+			print "effort to direct channeled data to channel number " + channel + " failed - no defined callback"
 
 #===============================================================================
 #  Below are a series of classes for parsing and storing the information

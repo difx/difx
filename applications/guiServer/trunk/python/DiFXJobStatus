@@ -1,0 +1,140 @@
+#!/usr/bin/env python
+################################################################################
+#
+#  DiFXJobStuat
+#
+#  Obtain the "status" of job(s) on the DiFX server using the .input file(s)
+#  path.
+#
+################################################################################
+program = 'DiFXJobStatus'
+version = '0.1'
+author  = 'John Spitzak'
+verdate = '20150909'
+
+import os
+import sys
+import time
+import DiFXControl
+
+#===============================================================================
+#  MAIN
+#===============================================================================
+host = None
+port = None
+
+#  Locate a "default" DiFX Version from environment variables.  User may change this
+#  with command line arguments.
+try:
+	DiFXVersion = os.environ["DIFX_VERSION"]
+except:
+	DiFXVersion = "DIFX_DEVEL"
+
+try:
+	i = 1
+	pathStr = None
+	repeat = False
+	repeatSeconds = 0
+	shortStatus = True
+	while i < len( sys.argv ):
+		#  Check against legal argument types.  The final argument must be a path to
+		#  .input file(s).
+		if sys.argv[i] in [ "-h", "--help" ]:
+			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+			print "Obtain the status of jobs on the DiFX software correlator."
+			print "Usage: %s [options] <path>" % ( sys.argv[0] )
+			print ""
+			print "Options can include:"
+			print ""
+			print "   --difx VERSION"
+			print "   -D VERSION Run using a specific DiFX version.  If not specified"
+			print "              the value of the DIFX_VERSION environment variable will"
+			print "              be used.  Failing that, \"DIFX_DEVEL\" will be used."
+			print ""
+			print "   --help"
+			print "   -h         Print this help information and quit."
+			print ""
+			print "   --hostname NAME"
+			print "   -H NAME    Use NAME as the host of the difxServer program."
+			print "              Default is to use DIFX_CONTROL_HOST environment variable."
+			print ""
+			print "   --port PORT"
+			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
+			print "              Default is to use DIFX_CONTROL_PORT environment variable."
+			print ""
+			print "   --long"
+			print "   -l         Provide a \"long\" job status, which includes job run history."
+			print "              Currently not implemented."
+			print ""
+			print "   --repeat SEC"
+			print "   -r SEC     Repeat the job status command after a delay of SEC seconds."
+			print "              By default there is no repeat."
+			print "   --short"
+			print "   -s         Provide only the final job state as the status (much faster"
+			print "              and easier to deal with if you have lots of jobs).  This is the"
+			print "              default."
+			print ""
+			print ""
+			exit( 0 )
+		elif sys.argv[i] in [ "-H", "--hostname" ]:
+			host = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-D", "--difx" ]:
+			DiFXVersion = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-P", "--port" ]:
+			port = int( sys.argv[i+1] )
+			i = i + 1
+		elif sys.argv[i] in [ "-r", "--repeat" ]:
+			repeatSeconds = int( sys.argv[i+1] )
+			repeat = True
+			i = i + 1
+		elif sys.argv[i] in [ "-s", "--short" ]:
+			shortStatus = True
+		else:
+			pathStr = sys.argv[i]
+		i = i + 1
+		
+except RuntimeError:
+	print "Usage: %s [options] <path>" % ( sys.argv[0] )
+	exit( 0 )
+	
+keepGoing = True
+	
+#  Open a new connection to the difxServer...
+difx = DiFXControl.Client()
+difx.connect( host, port )
+
+if difx.socketOK:
+	difx.monitor()
+	difx.version( DiFXVersion )
+	
+	while keepGoing:
+		statusList = difx.jobStatus( pathStr, shortStatus )
+		if statusList == None:
+			print "No .input files found."
+		else:
+			if repeat:
+				os.system( 'cls' if os.name == 'nt' else 'clear' )
+			maxLen = 0
+			for item in statusList:
+				if len( item[0] ) > maxLen:
+					maxLen = len( item[0] )
+			for item in statusList:
+				outStr = item[0]
+				while len( outStr ) < maxLen + 5:
+					outStr += " "
+				outStr += item[1]
+				print outStr
+		if repeat:
+			try:
+				time.sleep( repeatSeconds )
+			except KeyboardInterrupt:
+				keepGoing = False
+		else:
+			keepGoing = False
+
+
+difx.close()
+
+

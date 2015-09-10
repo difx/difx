@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+################################################################################
+#
+#  DiFXVersion
+#
+#  Print version information for the DiFX server, available DiFX software
+#  versions, and other stuff.
+#
+################################################################################
+program = 'DiFXVersion'
+version = '0.1'
+author  = 'John Spitzak'
+verdate = '20150714'
+
+import sys
+import DiFXControl
+
+#===============================================================================
+#  MAIN
+#===============================================================================
+host = None
+port = None
+showDifxEnv = False
+showEnv = False 
+showVer = False
+
+try:
+	i = 1
+	while i < len( sys.argv ):
+		#  Check against legal command line arguments.  There are no other arguments
+		#  to this application.
+		if sys.argv[i] in [ "-h", "--help" ]:
+			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+			print "Returns version information for a DiFX software correlator."
+			print "Usage: %s [options]" % ( sys.argv[0] )
+			print ""
+			print "Options can include:"
+			print ""
+			print "   --difx"
+			print "   -d         Show DiFX-related environment variables under which the server"
+			print "              (and thus DiFX applications) will be run."
+			print ""
+			print "   --env"
+			print "   -e         Show ALL environment variables under which the server"
+			print "              (and thus DiFX applications) will be run."
+			print ""
+			print "   --help"
+			print "   -h         Print this help information and quit."
+			print ""
+			print "   --hostname NAME"
+			print "   -H NAME    Use NAME as the host of the difxServer program."
+			print "              Default is to use DIFX_CONTROL_HOST environment variable."
+			print ""
+			print "   --port PORT"
+			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
+			print "              Default is to use DIFX_CONTROL_PORT environment variable."
+			print ""
+			print "   --versions"
+			print "   -v         Show available DiFX versions."
+			print ""
+			exit( 0 )
+		elif sys.argv[i] in [ "-H", "--hostname" ]:
+			host = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-d", "--difx" ]:
+			showDifxEnv = True
+		elif sys.argv[i] in [ "-e", "--env" ]:
+			showEnv = True
+		elif sys.argv[i] in [ "-v", "--versions" ]:
+			showVer = True
+		elif sys.argv[i] in [ "-P", "--port" ]:
+			port = int( sys.argv[i+1] )
+			i = i + 1
+		else:
+			raise RuntimeError
+		i = i + 1
+
+except RuntimeError:
+	print "Usage: %s [options] [<list of message types>]" % ( sys.argv[0] )
+	exit( 0 )
+	
+#  Open a new connection to the difxServer...
+difx = DiFXControl.Client()
+difx.connect( host = host, port = port )
+if difx.socketOK:
+
+	difx.monitor()
+	difx.version( "DIFX-DEVEL" )
+	print "Server version:                   " + str( difx.serverVersion )
+	print "DiFX will be run by user:         " + str( difx.serverUser )
+	print "DiFX will run using version:      " + str( difx.versionPreference )
+	if showVer:
+		if len( difx.availableVersion ) > 0:
+			print "Available DiFX Versions:"
+			for ver in difx.availableVersion:
+				print "     " + str( ver )
+		else:
+			print "No DiFX versions available to this server."
+	if showDifxEnv:
+		if len( difx.serverEnvironment ):
+			headerPrinted = False
+			for key in difx.serverEnvironment.keys():
+				#  Locate anything that looks DiFX related...hopefully all will
+				#  be found.
+				printIt = False
+				name = key.upper()
+				if name.find( "DIFX" ) >= 0:
+					printIt = True
+				if name.find( "MARK5" ) >= 0:
+					printIt = True
+				if name.find( "MK5" ) >= 0:
+					printIt = True
+				if name.find( "STREAMSTOR" ) >= 0:
+					printIt = True
+				if name.find( "HOPS" ) >= 0:
+					printIt = True
+				if name.find( "CALC" ) >= 0:
+					printIt = True
+				if printIt:
+					if not headerPrinted:
+						print "DiFX-Related Environment Variables:"
+						headerPrinted = True
+					newStr = key
+					while len( newStr ) < 30:
+						newStr += " "
+					newStr += "= "
+					newStr += difx.serverEnvironment[key]
+					print newStr
+	if showEnv:
+		if len( difx.serverEnvironment ):
+			print "All Server Environment Variables:"
+			for key in difx.serverEnvironment.keys():
+				newStr = key
+				while len( newStr ) < 30:
+					newStr += " "
+				newStr += "= "
+				newStr += difx.serverEnvironment[key]
+				print newStr
+	
+difx.close()
+
+

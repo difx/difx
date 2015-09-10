@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 ################################################################################
-#
-#  DiFXBusy
+#\example DiFXBusy
 #
 #  Monitors messages that help indicate how "busy" a correlator is.  Three
 #  different aspects of correlator operations can be monitored (by default they

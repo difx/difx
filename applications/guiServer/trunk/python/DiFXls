@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+################################################################################
+#
+#  DiFXls
+#
+#  Run a simple "ls" file operation on the DiFX server.
+#
+################################################################################
+program = 'DiFXls'
+version = '0.1'
+author  = 'John Spitzak'
+verdate = '20150909'
+
+import sys
+import time
+import DiFXControl
+
+#===============================================================================
+#  MAIN
+#===============================================================================
+host = None
+port = None
+
+#  Locate a "default" DiFX Version from environment variables.  User may change this
+#  with command line arguments.
+try:
+	DiFXVersion = os.environ["DIFX_VERSION"]
+except:
+	DiFXVersion = "DIFX_DEVEL"
+
+try:
+	i = 1
+	otherArgs = []
+	argStr = None
+	pathStr = None
+	while i < len( sys.argv ):
+		#  Check against legal argument types.  Anything we don't recognize is assumed
+		#  to be an argument or a path.
+		if sys.argv[i] in [ "-h", "--help" ]:
+			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+			print "Runs an \"ls\" on a specified path on the DiFX software correlator."
+			print "Usage: %s [options] [ls arguments] [path]" % ( sys.argv[0] )
+			print ""
+			print "Options can include:"
+			print ""
+			print "   --difx VERSION"
+			print "   -D VERSION Run using a specific DiFX version.  If not specified"
+			print "              the value of the DIFX_VERSION environment variable will"
+			print "              be used.  Failing that, \"DIFX_DEVEL\" will be used."
+			print ""
+			print "   --help"
+			print "   -h         Print this help information and quit."
+			print ""
+			print "   --hostname NAME"
+			print "   -H NAME    Use NAME as the host of the difxServer program."
+			print "              Default is to use DIFX_CONTROL_HOST environment variable."
+			print ""
+			print "   --port PORT"
+			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
+			print "              Default is to use DIFX_CONTROL_PORT environment variable."
+			print ""
+			exit( 0 )
+		elif sys.argv[i] in [ "-H", "--hostname" ]:
+			host = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-D", "--difx" ]:
+			DiFXVersion = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-P", "--port" ]:
+			port = int( sys.argv[i+1] )
+			i = i + 1
+		else:
+			#  Store other arguments to be parsed below.  These can include command-line
+			#  arguments directed at the "ls" command on the server - note that because
+			#  we have a few of our own arguments, -D, -h, -H, and -P won't work.  Not
+			#  a big deal I hope?
+			otherArgs.append( sys.argv[i] )
+		i = i + 1
+		
+	#  All other arguments form passed arguments to the server or the path name(s)
+	#  used for the ls.  We decide which is which based on the preceding hyphen.
+	for arg in otherArgs:
+		if arg[0] == "-":
+			if argStr == None:
+				argStr = arg
+			else:
+				argStr += " " + arg
+		else:
+			if pathStr == None:
+				pathStr = arg
+			else:
+				pathStr = " " + arg
+
+except RuntimeError:
+	print "Usage: %s [options] <path>" % ( sys.argv[0] )
+	exit( 0 )
+	
+#  Open a new connection to the difxServer...
+difx = DiFXControl.Client()
+difx.connect( host, port )
+
+if difx.socketOK:
+	difx.monitor()
+	difx.version( DiFXVersion )
+	#  Do the "ls" with optional arguments.  If no path is given the current path
+	#  of the server will be used...whatever that is.
+	if pathStr == None:
+		pathStr = "."
+	dirlist = difx.ls( pathStr, argStr )
+	if dirlist == None:
+		print "No such file or directory"
+	else:
+		for item in dirlist:
+			print item	
+
+difx.close()
+
+
