@@ -13,6 +13,7 @@
 #include <string>
 #include <stdio.h>
 #include <unistd.h>
+#include <time.h>
 #include <errno.h>
 #include <GUIClient.h>
 #include <map>
@@ -22,7 +23,6 @@ using namespace guiServer;
 //-----------------------------------------------------------------------------
 //  These are packet types used for exchanging data with the GUI.
 //-----------------------------------------------------------------------------
-static const int GET_JOB_STATUS_TASK_TERMINATED                     = 109;
 static const int GET_JOB_STATUS_TASK_ENDED_GRACEFULLY               = 101;
 static const int GET_JOB_STATUS_TASK_STARTED                        = 102;
 static const int GET_JOB_STATUS_INPUT_FILE_NAME                     = 104;
@@ -30,6 +30,9 @@ static const int GET_JOB_STATUS_NO_DIFXLOG                          = 105;
 static const int GET_JOB_STATUS_STATUS                              = 106;
 static const int GET_JOB_STATUS_OPEN_ERROR                          = 107;
 static const int GET_JOB_STATUS_NO_STATUS                           = 108;
+static const int GET_JOB_STATUS_TASK_TERMINATED                     = 109;
+static const int GET_JOB_STATUS_TIME_STRING                         = 110;
+static const int GET_JOB_STATUS_FORK_FAILED                         = 111;
 
 //-----------------------------------------------------------------------------
 //!  Thread function for running the operation.
@@ -53,6 +56,15 @@ void ServerSideConnection::getJobStatusThread( GetJobStatusInfo* getJobStatusInf
         delete monitor;
 	    return;
     }
+    
+    //  Generate a time stamp for this activity.  This is simply sent to the client program
+    //  where it can be compared to the time stamps applied to each log item.
+    time_t t;
+    char timebuf[26];
+    time( &t );
+    ctime_r( &t, timebuf );
+    timebuf[strlen( timebuf ) - 1] = 0;
+    monitor->sendPacket( GET_JOB_STATUS_TIME_STRING, timebuf, strlen( timebuf ) );
 
     //  To list all of the job files, run "ls".  Each line of response should be a valid job
     //  filename.    
@@ -61,7 +73,12 @@ void ServerSideConnection::getJobStatusThread( GetJobStatusInfo* getJobStatusInf
 	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
 	std::string inputFile;
 	FILE* pp = popen( pCommand, "r" );
-	while ( fgets( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, pp ) != NULL ) {
+	if ( pp == NULL ) {
+	    monitor->sendPacket( GET_JOB_STATUS_FORK_FAILED, NULL, 0 );
+	    delete monitor;
+	    keepGoing = false;
+	}
+	while ( keepGoing && fgets( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, pp ) != NULL ) {
 
 	    //  If this is a .input file, convert it to a .difxlog file.
 	    if ( strlen( fullPath ) > 0 && fullPath[strlen( fullPath ) - 1] == '\n' )
@@ -80,24 +97,47 @@ void ServerSideConnection::getJobStatusThread( GetJobStatusInfo* getJobStatusInf
                 }
                 else {
                     //  Parse the file.
-                    char finalStatus[100];
+                    char finalStatus[512];
                     char logLine[512];
                     finalStatus[0] = 0;
                     while ( fgets( logLine, 512, fp ) != NULL ) {
-                        //  Make sure this line makes sense to us!
-                        if ( strlen( logLine ) > 48 ) {
+                        //  Make sure there is something to this line...a time stamp and source at least.
+                        if ( strlen( logLine ) > 30 ) {
+                            //  Each log entry has a time stamp (24 characters), an MPI process number (I believe
+                            //  there is one/processor), and a source - the hostname involved.
+                            char timeStamp[25];
+                            strncpy( timeStamp, logLine, 24 );
+                            timeStamp[24] = 0;
+                            int mpiProcess;
+                            sscanf( logLine + 25, "%d", &mpiProcess );
+                            int pos = 29;
+                            char source[100];
+                            int i = 0;
+                            while ( logLine[pos+i] != 0 && logLine[pos+i] != ' ' ) {
+                                source[i] = logLine[pos+i];
+                                ++i;
+                            }
+                            source[i] = 0;
+                            pos += i;
                             //  Find what kind of log entry this is - it follows the date, time, and source.
-                            int pos = 48;
-                            while ( logLine[pos] == ' ' )
+                            while ( logLine[pos] == ' ' && logLine[pos] != 0 )
                                 ++pos;
+                            char entryType[100];
+                            i = 0;
+                            while ( logLine[pos+i] != ' ' && logLine[pos+i] != 0 ) {
+                                entryType[i] = logLine[pos+i];
+                                ++i;
+                            }
+                            entryType[i] = 0;
                             //  First we handle the "short" status case, where the only thing we are 
                             //  interested in is the final "STATUS".
                             if ( getJobStatusInfo->shortStatus ) {
-                                if ( !strncmp( logLine + pos, "STATUS", 6 ) ) {
+                                if ( !strncmp( entryType, "STATUS", 6 ) ) {
                                     pos += 6;
                                     while ( logLine[pos] == ' ' )
                                         ++pos;
-                                    strncpy( finalStatus, logLine + pos, 100 );
+                                    strncpy( finalStatus, timeStamp, 511 );
+                                    strncat( finalStatus, logLine + pos, 511 - strlen( finalStatus ) );
                                     finalStatus[99] = 0;
                                     if ( strlen( finalStatus ) > 0 && finalStatus[strlen( finalStatus ) - 1] == '\n' )
                                         finalStatus[strlen( finalStatus ) - 1] = 0;
@@ -105,6 +145,7 @@ void ServerSideConnection::getJobStatusThread( GetJobStatusInfo* getJobStatusInf
                             }  
                         }         
                     }
+                    fclose( fp );
                     if ( finalStatus[0] != 0 )
                         monitor->sendPacket( GET_JOB_STATUS_STATUS, finalStatus, strlen( finalStatus ) );
                     else
