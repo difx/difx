@@ -38,6 +38,7 @@ class DiFXJobStatus( DiFXControl.Client ):
 	def jobStatus( self, path, shortStatus ):
 		self.jobStatusComplete = False
 		self.jobStatusList = None
+		self.jobStatusListTime = None
 		self.currentInputFile = None
 		self.packetData = None
 		channel = self._client.newChannel( self.jobStatusCallback )
@@ -68,9 +69,8 @@ class DiFXJobStatus( DiFXControl.Client ):
 				self.jobStatusComplete = True			
 			wait -= 0.01
 		self._client.closeChannel( channel )
-		return self.jobStatusList
+		return ( self.jobStatusListTime, self.jobStatusList )
 		
-	GET_JOB_STATUS_TASK_TERMINATED                     = 109
 	GET_JOB_STATUS_TASK_ENDED_GRACEFULLY               = 101
 	GET_JOB_STATUS_TASK_STARTED                        = 102
 	GET_JOB_STATUS_INPUT_FILE_NAME                     = 104
@@ -78,6 +78,9 @@ class DiFXJobStatus( DiFXControl.Client ):
 	GET_JOB_STATUS_STATUS                              = 106
 	GET_JOB_STATUS_OPEN_ERROR                          = 107
 	GET_JOB_STATUS_NO_STATUS                           = 108
+	GET_JOB_STATUS_TASK_TERMINATED                     = 109
+	GET_JOB_STATUS_TIME_STRING                         = 110
+	GET_JOB_STATUS_FORK_FAILED                         = 111
 
 	#<!------------------------------------------------------------------------>
 	## Callback function for a "GET_JOB_STATUS" command response.
@@ -102,19 +105,25 @@ class DiFXJobStatus( DiFXControl.Client ):
 				self.jobStatusList = []
 			elif packetId == self.GET_JOB_STATUS_INPUT_FILE_NAME:
 				if self.currentInputFile != None and not self.statusFound:
-					self.jobStatusList.append( ( self.currentInputFile, "Unknown" ) )
+					self.jobStatusList.append( ( self.currentInputFile, ( "", "Unknown" ) ) )
 				self.currentInputFile = self.packetData[2]
 				self.statusFound = False
 			elif packetId == self.GET_JOB_STATUS_NO_DIFXLOG:
-				self.jobStatusList.append( ( self.currentInputFile, "No .difxlog" ) )
+				self.jobStatusList.append( ( self.currentInputFile, ( "", "No .difxlog" ) ) )
 				self.statusFound = True
 			elif packetId == self.GET_JOB_STATUS_STATUS:
-				self.jobStatusList.append( ( self.currentInputFile, self.packetData[2] ) )
+				#  The first 25 characters of the job status are the time stamp.
+				print self.packetData[2][:25] + "     " + self.packetData[2][25:]
+				self.jobStatusList.append( ( self.currentInputFile, ( self.packetData[2][:24], self.packetData[2][24:] ) ) )
 				self.statusFound = True
 			elif packetId == self.GET_JOB_STATUS_OPEN_ERROR:
-				self.jobStatusList.append( ( self.currentInputFile, ".difxlog open error" ) )
+				self.jobStatusList.append( ( self.currentInputFile, ( "", ".difxlog open error" ) ) )
 				self.statusFound = True
 			elif packetId == self.GET_JOB_STATUS_NO_STATUS:
-				self.jobStatusList.append( ( self.currentInputFile, "No status in .difxlog" ) )
+				self.jobStatusList.append( ( self.currentInputFile, ( "", "No status in .difxlog" ) ) )
 				self.statusFound = True
+			elif packetId == self.GET_JOB_STATUS_FORK_FAILED:
+				print "server fork failure"
+			elif packetId == self.GET_JOB_STATUS_TIME_STRING:
+				self.jobStatusListTime = self.packetData[2]
 

@@ -36,6 +36,7 @@ try:
 	repeat = False
 	repeatSeconds = 0
 	shortStatus = True
+	displayTime = True
 	while i < len( sys.argv ):
 		#  Check against legal argument types.  The final argument must be a path to
 		#  .input file(s).
@@ -69,10 +70,15 @@ try:
 			print "   --repeat SEC"
 			print "   -r SEC     Repeat the job status command after a delay of SEC seconds."
 			print "              By default there is no repeat."
+			print ""
 			print "   --short"
 			print "   -s         Provide only the final job state as the status (much faster"
 			print "              and easier to deal with if you have lots of jobs).  This is the"
 			print "              default."
+			print ""
+			print "   --time"
+			print "   -t         Turn off the time stamp in the short output.  By default a"
+			print "              time stamp is displayed with each status."
 			print ""
 			print ""
 			exit( 0 )
@@ -91,6 +97,8 @@ try:
 			i = i + 1
 		elif sys.argv[i] in [ "-s", "--short" ]:
 			shortStatus = True
+		elif sys.argv[i] in [ "-t", "--time" ]:
+			displayTime = False
 		else:
 			pathStr = sys.argv[i]
 		i = i + 1
@@ -109,23 +117,40 @@ if difx.socketOK:
 	difx.monitor()
 	difx.version( DiFXVersion )
 	
-	while keepGoing:
-		statusList = difx.jobStatus( pathStr, shortStatus )
-		if statusList == None:
-			print "No .input files found."
-		else:
-			if repeat:
-				os.system( 'cls' if os.name == 'nt' else 'clear' )
-			maxLen = 0
-			for item in statusList:
-				if len( item[0] ) > maxLen:
-					maxLen = len( item[0] )
-			for item in statusList:
-				outStr = item[0]
-				while len( outStr ) < maxLen + 5:
-					outStr += " "
-				outStr += item[1]
-				print outStr
+	while difx.socketOK and keepGoing:
+		statusInfo = difx.jobStatus( pathStr, shortStatus )
+		#  How we interpret the status information is dependent on what we asked
+		#  for...shortStatus includes only a time stamp and one line of data for
+		#  each .input file.
+		if shortStatus:
+			statusTime = statusInfo[0]
+			statusList = statusInfo[1]
+			if statusList == None:
+				print "No .input files found."
+			else:
+				if repeat:
+					os.system( 'cls' if os.name == 'nt' else 'clear' )
+				if statusTime != None and displayTime:
+					print statusTime
+				maxLen1 = 0
+				maxLen2 = 0
+				for item in statusList:
+					if len( item[0] ) > maxLen1:
+						maxLen1 = len( item[0] )
+					if displayTime and len( item[1][1] ) > maxLen2:
+						maxLen2 = len( item[1][1] )
+				if displayTime:
+					maxLen2 = maxLen2 + 5
+				for item in statusList:
+					outStr = item[0]
+					while len( outStr ) < maxLen1 + 5:
+						outStr += " "
+					outStr += item[1][1]
+					if displayTime:
+						while len( outStr ) < maxLen1 + maxLen2 + 5:
+							outStr += " "
+						outStr += item[1][0]
+					print outStr
 		if repeat:
 			try:
 				time.sleep( repeatSeconds )

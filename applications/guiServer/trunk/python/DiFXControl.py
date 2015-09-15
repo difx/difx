@@ -335,7 +335,11 @@ class Client:
 			self.monitorThread.stop()
 			self.bytesReceived = self.monitorThread.bytesReceived
 		if self.socketOK:
-			self.sock.shutdown( socket.SHUT_RDWR )
+			try:
+				self.sock.shutdown( socket.SHUT_RDWR )
+			except:
+				#  Ignore errors
+				pass
 		self.sock.close()
 
 	#---------------------------------------------------------------------------	
@@ -344,9 +348,14 @@ class Client:
 	#  data.  The packet IDs are listed all defined at the top of this file.
 	#---------------------------------------------------------------------------	
 	def sendPacket( self, packetId, data = "" ):
-		self.sock.sendall( self.i.pack( socket.htonl( packetId ) ) )
-		self.sock.sendall( self.i.pack( socket.htonl( len( data ) ) ) )
-		self.sock.sendall( data )
+		#  A socket error of any sort is interpreted as a broken socket, which is
+		#  usually a pretty good guess.
+		try:
+			self.sock.sendall( self.i.pack( socket.htonl( packetId ) ) )
+			self.sock.sendall( self.i.pack( socket.htonl( len( data ) ) ) )
+			self.sock.sendall( data )
+		except:
+			self.socketOK = False
 		
 	#---------------------------------------------------------------------------
 	#  Send a "command" packet containing the included XML packet data.
@@ -583,9 +592,16 @@ class Client:
 		#  information has been downloaded.  A five second limit is put on this
 		#  wait.
 		wait = self._waitTime
-		while wait > 0.0 and not self.channelResponse:
-			time.sleep( 0.01 )
-			wait -= 0.01
+		while self.socketOK and wait > 0.0 and not self.channelResponse:
+			#  If the initial socket connection wasn't good, we'll hang here for
+			#  the wait time, which might cause the user to issue a keyboard
+			#  interrupt.  Capture that.
+			try:
+				time.sleep( 0.01 )
+				wait -= 0.01
+			except:
+				self.socketOK = False
+				pass
 		#  Set the version preference if the version request worked, either to
 		#  our preference if requested or "DIFX_DEVEL" if not.
 		if self.channelResponse:
@@ -601,6 +617,7 @@ class Client:
 			except:
 				pass
 		else:
+			self.socketOK = False
 			print "SERVER DID NOT RESPOND!"
 				
 	#---------------------------------------------------------------------------
@@ -661,7 +678,8 @@ class Client:
 	#                       and easier to deal with for large numbers of jobs!
 	#
 	#  This function returns either after the requested status information is
-	#  returned or the "waitTime" passes.
+	#  returned or the "waitTime" passes.  See the DiFXJobStatus.jobStatus()
+	#  for details on the return values.
 	#<!------------------------------------------------------------------------>
 	def jobStatus( self, path, shortStatus ):
 		return DiFXJobStatus.DiFXJobStatus(self).jobStatus( path, shortStatus )
