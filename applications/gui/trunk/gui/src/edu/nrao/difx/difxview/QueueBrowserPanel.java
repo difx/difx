@@ -2047,7 +2047,6 @@ public class QueueBrowserPanel extends TearOffPanel {
          * These packet types are exchanged with the "GetJobStatusConnection" class in the
          * guiServer application on the DiFX host.
          */
-        protected final int GET_JOB_STATUS_TASK_TERMINATED                     = 100;
         protected final int GET_JOB_STATUS_TASK_ENDED_GRACEFULLY               = 101;
         protected final int GET_JOB_STATUS_TASK_STARTED                        = 102;
         protected final int GET_JOB_STATUS_INPUT_FILE_NAME                     = 104;
@@ -2055,6 +2054,9 @@ public class QueueBrowserPanel extends TearOffPanel {
         protected final int GET_JOB_STATUS_STATUS                              = 106;
         protected final int GET_JOB_STATUS_OPEN_ERROR                          = 107;
         protected final int GET_JOB_STATUS_NO_STATUS                           = 108;
+        protected final int GET_JOB_STATUS_TASK_TERMINATED                     = 109;
+        protected final int GET_JOB_STATUS_TIME_STRING                         = 110;
+        protected final int GET_JOB_STATUS_FORK_FAILED                         = 111;
         
         @Override
         public void run() {
@@ -2118,10 +2120,19 @@ public class QueueBrowserPanel extends TearOffPanel {
                             _currentStatus = "no status";
                         }
                         else if ( packetType == GET_JOB_STATUS_STATUS ) {
-                            _currentStatus = new String( data ).trim();
+                            _currentStatus = new String( data ).substring( 24 ).trim();
                         }
                         else if ( packetType == GET_JOB_STATUS_OPEN_ERROR ) {
                             _settings.messageCenter().error( 0, "getJobStatus", "Error opening .difxlog file: " + new String( data ) );
+                        }
+                        else if ( packetType == GET_JOB_STATUS_TIME_STRING ) {
+                            //  Data is a time stamp at the start of the job status request.
+                            //  It can be compared to time stamps that tell when each status
+                            //  value was updated.
+                        }
+                        else if ( packetType == GET_JOB_STATUS_FORK_FAILED ) {
+                            //  The job status request won't work, but we ignore this message
+                            //  (it will send a TERMINATED message momentarily).
                         }
                     }
                 } catch ( java.net.SocketTimeoutException e ) {
