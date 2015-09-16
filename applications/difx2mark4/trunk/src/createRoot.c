@@ -46,7 +46,10 @@ int createRoot (DifxInput *D,           // difx input structure pointer
         L_used = FALSE,             // true iff some LCP is present, etc.
         R_used = FALSE,
         X_used = FALSE,
-        Y_used = FALSE;
+        Y_used = FALSE,
+        dstr,
+        redstr,
+        antbits[100];
 
     char s[256],
          *pst[50],
@@ -61,7 +64,10 @@ int createRoot (DifxInput *D,           // difx input structure pointer
          c,
          current_site[3],
          line[30000],
-         def_block[30000];
+         def_block[30000],
+         trax1b[100],
+         trax2b[100],
+         antnam[4];
 
     double freak,
            fract;
@@ -116,6 +122,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
 
     FILE *fin,
          *fout;
+
+    DifxDatastream *pdds;
                                     // function prototypes
     void fake_bocf_period(char [256], DifxConfig *);
     int isValidAntenna(const DifxInput *, char *, int);
@@ -313,16 +321,39 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                                     // synthesize new ref's at end of MODE
                     else if (strncmp (pst[0], "enddef", 6) == 0)
                         {
+                        strcpy (trax1b, "    ref $TRACKS = trax_1bit");
+                        strcpy (trax2b, "    ref $TRACKS = trax_2bit");
+
+                                    // create list of quantization bits per antenna
+                        for (dstr=0; dstr<D->nDatastream; dstr++)
+                            {
+                            if ((D->job[jobId]).datastreamIdRemap)
+                                redstr = *((D->job[jobId]).datastreamIdRemap + dstr);
+                            else
+                                redstr = dstr;
+                            pdds = D->datastream + redstr;
+                            antbits[pdds->antennaId] = pdds->quantBits;
+                            }
+
                                     // insert one freq line per used antenna
                         for (n = 0; n < D->nAntenna; n++)
                             if (D->scan[scanId].im != NULL 
                              && D->scan[scanId].im[n] != 0)
+                                {
                                     // FIXME - generate antenna name from station
-                                fprintf (fout, "    ref $FREQ = ant%02d:%c%c;\n",
-                                      n, D->antenna[n].name[0], tolower (D->antenna[n].name[1]));
+                                sprintf (antnam, ":%c%c", D->antenna[n].name[0], 
+                                                 tolower (D->antenna[n].name[1]));
+                                fprintf (fout, "    ref $FREQ = ant%02d%s;\n", n, antnam);
+                                    // add antenna to appropriate trax statement
+                                if (antbits[n] == 1)
+                                    strcat (trax1b, antnam);
+                                else if (antbits[n] == 2)
+                                    strcat (trax2b, antnam);
+                                }
                         fprintf (fout, "    ref $BBC = bbcs;\n");
                         fprintf (fout, "    ref $IF = ifs;\n");
-                        fprintf (fout, "    ref $TRACKS = trax;\n");
+                        fprintf (fout, "%s;\n", trax1b);
+                        fprintf (fout, "%s;\n", trax2b);
                         }
                     }
                 break;
@@ -682,9 +713,11 @@ int createRoot (DifxInput *D,           // difx input structure pointer
         fprintf (fout, "  enddef;\n");
         
         fprintf (fout, "$TRACKS;\n");
-        fprintf (fout, "  def trax;\n");
-                                    // FIXME - assumes global bits/sample
-        fprintf (fout, "    bits/sample = %d;\n", pfb[0].stn[0].bs);
+        fprintf (fout, "  def trax_1bit;\n");
+        fprintf (fout, "    bits/sample = 1;\n");
+        fprintf (fout, "  enddef;\n");
+        fprintf (fout, "  def trax_2bit;\n");
+        fprintf (fout, "    bits/sample = 2;\n");
         fprintf (fout, "  enddef;\n");
                                    // generate $SOURCE section from difx header
         rad2hms (D->source[sourceId].ra,  hms);
