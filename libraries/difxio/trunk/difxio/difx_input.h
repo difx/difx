@@ -107,6 +107,7 @@ enum DataSource
 	DataSourceFile,
 	DataSourceNetwork,
 	DataSourceFake,
+	DataSourceMark6,
 	NumDataSources		/* must remain as last entry */
 };
 

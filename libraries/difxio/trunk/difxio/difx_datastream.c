@@ -43,6 +43,7 @@ const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH] =
 	"FILE",
 	"NETWORK",
 	"FAKE",
+	"MARK6",
 	"ERROR"		/* takes place of NumDataSources */
 };
 

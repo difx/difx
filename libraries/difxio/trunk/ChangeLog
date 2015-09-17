@@ -12,6 +12,7 @@
 * New utility: reducepoly.  Will reduce the order of the delay model polynomial.  [Needs GSL]
 * New function: evaluateDifxAntennaClock
 * Write Parallactic Angle and/or Refraction Corrected Elevation to .im file if they are populated
+* Support MARK6 data source
 
 3.4.0
 * Fix X/Y polarization issue
