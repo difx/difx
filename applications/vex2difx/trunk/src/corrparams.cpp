@@ -845,7 +845,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 
 bool DatastreamSetup::hasBasebandData(const Interval &interval) const
 {
-	if(dataSource == DataSourceFile)
+	if(dataSource == DataSourceFile || dataSource == DataSourceMark6)
 	{
 		for(std::vector<VexBasebandData>::const_iterator it = basebandFiles.begin(); it != basebandFiles.end(); ++it)
 		{
@@ -903,7 +903,7 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 		dataSampling = dss->dataSampling;	
 	}
 
-	if(dataSource == DataSourceFile)
+	if(dataSource == DataSourceFile || dataSource == DataSourceMark6)
 	{
 		if(!basebandFiles.empty())
 		{
@@ -1216,6 +1216,16 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 		defaultDatastreamSetup.dataSource = DataSourceFile;
 		defaultDatastreamSetup.basebandFiles.push_back(VexBasebandData(value, 0));
 	}
+	else if(key == "mark6file" || key == "mark6files")
+	{
+		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceNone)
+		{
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
+			++nWarn;
+		}
+		defaultDatastreamSetup.dataSource = DataSourceMark6;
+		defaultDatastreamSetup.basebandFiles.push_back(VexBasebandData(value, 0));
+	}
 	else if(key == "filelist")
 	{
 		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceNone)
@@ -1224,6 +1234,16 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		defaultDatastreamSetup.dataSource = DataSourceFile;
+		loadBasebandFilelist(value, defaultDatastreamSetup.basebandFiles);
+	}
+	else if(key == "mark6filelist")
+	{
+		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceNone)
+		{
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
+			++nWarn;
+		}
+		defaultDatastreamSetup.dataSource = DataSourceMark6;
 		loadBasebandFilelist(value, defaultDatastreamSetup.basebandFiles);
 	}
 	else if(key == "networkPort")
