@@ -15,7 +15,7 @@ public:
 	VexSetup() : streams(1) {};
 	int phaseCalIntervalMHz() const;
 	const VexIF *getIF(const std::string &ifName) const;
-	double sortChannels();				// sorts by channel name
+	void sortChannels();				// sorts by channel name
 	bool hasUniqueRecordChans() const;		// true if each channel's recordChan parameter is unique
 	void assignRecordChans();
 	double firstTuningForIF(const std::string &ifName) const;	// returns Hz

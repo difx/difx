@@ -187,7 +187,7 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		}
 	}
 
-	for(int m = 0; m < V->nMode(); ++m)
+	for(unsigned int m = 0; m < V->nMode(); ++m)
 	{
 		const VexMode *M = V->getMode(m);
 		for(std::map<std::string,VexSetup>::const_iterator  s = M->setups.begin(); s != M->setups.end(); ++s)

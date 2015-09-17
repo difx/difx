@@ -92,6 +92,7 @@ public:
 	void setModule(unsigned int antId, unsigned int streamId, const std::string &vsn);
 	void setNetworkParameters(unsigned int antId, unsigned int streamId, const std::string &networkPort, int windowSize);
 	void setFake(unsigned int antId);
+	void setMark6(unsigned int antId);
 	void setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling);
 	void setCanonicalVDIF(const std::string &modeName, const std::string &antName);
 	void cloneStreams(const std::string &modeName, const std::string &antName, int copies);

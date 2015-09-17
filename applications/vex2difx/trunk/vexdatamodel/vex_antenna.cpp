@@ -36,6 +36,7 @@ bool VexAntenna::hasData(const Interval &timerange) const
 		rv = true;
 		break;
 	case DataSourceFile:
+	case DataSourceMark6:
 		for(std::vector<VexBasebandData>::const_iterator it = files.begin(); it != files.end(); ++it)
 		{
 			if(it->overlap(timerange) > 0.0)
@@ -67,7 +68,7 @@ int VexAntenna::nDatastreamWithData(const Interval &timerange) const
 {
 	int n = 0;
  
-	if(dataSource == DataSourceFile)
+	if(dataSource == DataSourceFile || dataSource == DataSourceMark6)
 	{
 		return nRepresentedDatastreams(files);
 	}

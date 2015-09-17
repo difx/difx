@@ -753,6 +753,16 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 		dataSource = DataSourceFile;
 		basebandFiles.push_back(VexBasebandData(value, 0));
 	}
+	else if(key == "mark6file" || key == "mark6files")
+	{
+		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
+		{
+			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
+			++nWarn;
+		}
+		dataSource = DataSourceMark6;
+		basebandFiles.push_back(VexBasebandData(value, 0));
+	}
 	else if(key == "filelist")
 	{
 		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
@@ -761,6 +771,16 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		dataSource = DataSourceFile;
+		loadBasebandFilelist(value, basebandFiles);
+	}
+	else if(key == "mark6filelist")
+	{
+		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
+		{
+			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
+			++nWarn;
+		}
+		dataSource = DataSourceMark6;
 		loadBasebandFilelist(value, basebandFiles);
 	}
 	else if(key == "networkPort")

@@ -168,6 +168,10 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 			case DataSourceFake:
 				V->setFake(a);
 				break;
+			case DataSourceMark6:
+				V->setFiles(a, i, dss.basebandFiles);
+				V->setMark6(a);
+				break;
 			default:
 				break;
 			}

@@ -34,6 +34,7 @@ Version 2.5.0
   - Warning : Indication that something doesn't seem right.  Will proceed if forced.
   - Error : A problem with input data that cannot be ignored.
   - Developer error : A case where the program detected internal self inconsistency.  This implies a bug in the code.
+* Support mark6 media
 
 Version 2.4.0
 ~~~~~~~~~~~~~

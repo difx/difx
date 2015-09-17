@@ -61,7 +61,7 @@ double VexSetup::dataRateMbps() const
 	return rate;
 }
 
-double VexSetup::sortChannels()
+void VexSetup::sortChannels()
 {
 	sort(channels.begin(), channels.end());
 }

@@ -810,7 +810,6 @@ void VexData::addVSNEvents(std::list<Event> &events) const
 				addEvent(events, vit->mjdStop,  Event::RECORD_STOP,  it->defName);
 			}
 		}
-		
 	}
 }
 
@@ -845,7 +844,10 @@ void VexData::setFiles(unsigned int antId, unsigned int streamId, const std::vec
 	{
 		antennas[antId].files.push_back(VexBasebandData(it->filename, streamId, *it));
 	}
-	antennas[antId].dataSource = DataSourceFile;
+	if(antennas[antId].dataSource != DataSourceMark6)	// Both Mark6 and File data source use the same file list
+	{
+		antennas[antId].dataSource = DataSourceFile;
+	}
 }
 
 void VexData::setModule(unsigned int antId, unsigned int streamId, const std::string &vsn)
@@ -869,6 +871,11 @@ void VexData::setNetworkParameters(unsigned int antId, unsigned int streamId, co
 void VexData::setFake(unsigned int antId)
 {
 	antennas[antId].dataSource = DataSourceFake;
+}
+
+void VexData::setMark6(unsigned int antId)
+{
+	antennas[antId].dataSource = DataSourceMark6;
 }
 
 void VexData::setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling)
