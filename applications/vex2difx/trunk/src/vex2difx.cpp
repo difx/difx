@@ -321,6 +321,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, const
 					snprintf(dd->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", ant->ports[d].networkPort.c_str());
 					break;
 				case DataSourceFile:
+				case DataSourceMark6:
 					{
 						int nFile = ant->files.size();
 						int count = 0;
