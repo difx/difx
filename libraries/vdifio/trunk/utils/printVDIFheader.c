@@ -37,7 +37,7 @@
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.3";
-const char verdate[] = "20150621";
+const char verdate[] = "20150917";
 
 static void usage()
 {
@@ -56,6 +56,8 @@ static void usage()
 	fprintf(stderr, "these is used, the frame finding heuristics are bypassed.\n");
 	fprintf(stderr, "If <framesize> is not provided, or if it is set to 0, the frame size\n");
 	fprintf(stderr, "will be determined by the first frame, _even if it is invalid_!\n\n");
+	fprintf(stderr, "This can be run on Mark6 directly.  Must set <framesize> and\n");
+	fprintf(stderr, "<prtlev> must be set to one of the force options.\n\n");
 }
 
 int main(int argc, char **argv)
@@ -204,7 +206,7 @@ int main(int argc, char **argv)
 
 				if(mk6BlockHeaderSize > 0)
 				{
-					printf("This looks like a Mark6 data file.  I'll skip the first %d bytes.\n", headerSize);
+					printf("This looks like a Mark6 data file (version=%d).  I'll skip the first %d bytes.\n", m6h->version, headerSize);
 					printMark6Header(m6h);
 					index += headerSize;	// the first header is larger than the inter-chunk headers
 					isMark6 = 1;

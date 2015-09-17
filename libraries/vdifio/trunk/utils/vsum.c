@@ -41,7 +41,7 @@
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.4";
-const char verdate[] = "20150831";
+const char verdate[] = "20150917";
 
 static void usage(const char *pgm)
 {
@@ -113,6 +113,31 @@ void summarizeFile(const char *fileName, int shortSum, int isMark6)
 		printvdiffilesummary(&sum);
 	}
 }
+void summarizeSingleMark6File(const char *fileName, int shortSum)
+{
+#ifdef HAVE_MARK6SG
+	static char **scanList = 0;
+	static int nScan = -1;
+
+	if(nScan == -1)
+	{
+		nScan = mark6_sg_list_all_scans(&scanList);
+		if(nScan <= 0)
+		{
+			fprintf(stderr, "Error: no mark6 scans found\n");
+		
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	summarizeFile(fileName, shortSum, 1);
+
+#else
+	fprintf(stderr, "Error: mark6sg library support is not compiled in so the direct Mark6 option is not available.\n");
+
+	exit(EXIT_FAILURE);
+#endif
+}
 
 void processAllMark6Scans(int shortSum)
 {
@@ -156,6 +181,10 @@ int main(int argc, char **argv)
 		int shortSum = 0;
 		int isMark6 = 0;
 
+#ifdef HAVE_MARK6SG
+		mark6_sg_set_rootpattern("/mnt/disks/[1-4]/[0-7]/data/");
+#endif
+
 		for(a = 1; a < argc; ++a)
 		{
 			if(strcmp(argv[a], "-s") == 0 ||
@@ -183,7 +212,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				summarizeFile(argv[a], shortSum, isMark6);
+				summarizeSingleMark6File(argv[a], shortSum);
 			}
 		}
 	}
