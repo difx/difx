@@ -51,6 +51,7 @@ VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, i
 	cwarn << startl << "Starting Mark6 datastream.  This is experimental at this time!" << endl;
 	mark6fd = -1;	// indicate file not open
 	mark6eof = false;
+	mark6_sg_set_rootpattern("/mnt/disks/[1-4]/[0-7]/data/");
 }
 
 VDIFMark6DataStream::~VDIFMark6DataStream()
