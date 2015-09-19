@@ -1,14 +1,5 @@
-if WITH_MARK6SG
-mark6sg_sources = \
-	vdifmark6sg.c
-mark6sg_includeheaders = \
-	vdifmark6sg.h
-else
-mark6sg_sources =
-mark6sg_includeheaders =
-endif
 
-sources = $(mark6sg_sources) \
+sources = \
 	cornerturners.c \
 	dateutils.c \
 	dateutils.h \
@@ -19,14 +10,14 @@ sources = $(mark6sg_sources) \
 	vdifio.h \
 	vdifmark6.c \
 	vdifmark6.h \
-	vdifmark6mux.c \
 	vdifmux.c
 
 includeheaders = \
-	vdifio.h
+	vdifio.h \
+	vdifmark6.h
 
 library_includedir = $(includedir)
-library_include_HEADERS = $(includeheaders) $(mark6sg_includeheaders)
+library_include_HEADERS = $(includeheaders)
 
 lib_LTLIBRARIES = \
 	libvdifio.la

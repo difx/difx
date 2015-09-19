@@ -25,7 +25,8 @@ Version 1.1
 * VDIF multiplexer now supports multiplexing threads with more than one channel.
   - a change in the API for configurevdifmux() is likely coming that will simplify use of this.  For now, use setvdifmuxinputchannels() after configurevdifmux()
 * New utility: filterVDIF.  It extracts certain threads and summarized what it found.  Similar to extractVDIFThreads.
-* Optional mark6sg dependency.  If met, will support summarizing contents of VDIF data on Mark6 modules.
+* New utility: mk6gather: reads a VDIF stream from a Mark6 unit and writes it to a file.  Time reordering is done at the packet level.
+* New utility: mk6ls: lists Mark6 "files" on system.  Respects ENV VAR MARK6_ROOT
 
 Version 1.0
 ~~~~~~~~~~~

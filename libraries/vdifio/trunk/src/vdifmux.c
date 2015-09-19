@@ -378,7 +378,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	for(i = 0; i <= N;)
 	{
 		const unsigned char *cur = src + i;
-		const vdif_header *vh = (vdif_header *)cur;
+		const vdif_header *vh = (const vdif_header *)cur;
 		int64_t frameNumber;
 		int destIndex;		/* frame index into destination array */
 		int chanId;

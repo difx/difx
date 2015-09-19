@@ -553,10 +553,50 @@ void printvdifmark6mux(const struct vdif_mark6_mux *vm)
 	}
 }
 
-int vdifmark6mux(unsigned char *dest, int destSize, const unsigned char **src, const int *srcSize, const struct vdif_mark6_mux *vm, int64_t startOutputFrameNumber, struct vdif_mark6_mux_statistics *stats)
+int vdifmark6mux(unsigned char *dest, int destSize, const struct vdif_mark6_mux *vmm, int64_t startOutputFrameNumber, struct vdif_mux_statistics *stats)
 {
+	int srcSize;
+	int nThread;
+	int nSlot;	/* nThread rounded up to power of 2 */
+	struct vdif_mux *vm;
+	int s, v;
+	const vdif_header *vh;
 
-	return 0;
+	vm = &(vmm->vm);
+
+	/* compute list of threads based on slotIndex in the vdif_mark6_mux_streams */
+
+
+	srcSize = nSlot * destSize * vm->inputFrameSize;
+	if(srcSize > vmm->scratchSize)
+	{
+		vmm->scratchSize = srcSize;
+		vmm->scratch = realloc(vmm->scratch, srcSize);
+	}
+
+	/* initialize the scratch, ensuring all packets are invalid */
+	memset(vmm->scratch, 1, srcSize);
+
+	/* identify startOutputFrameNumber if not specified */
+	if(startOutputFrameNumber < 0)
+	{
+		for(s = 0; s < vmm->nStream; ++s)
+		{
+			int frameNumber;
+
+			vh = (const vdif_header *)(vmm->streams[s].m6d->mk6Files[vmm->streams[s].currentFileNum]
+			frameNumber = (int64_t)(getVDIFFrameEpochSecOffset(vh)) * vm->inputFramesPerSecond + getVDIFFrameNumber(vh);
+		}
+	}
+
+	/* loop over streams, copying frames to scratch as appropriate */
+	for(s = 0; s < vmm->nStream; ++s)
+	{
+	}
+
+	v = vdifmux(dest, destSize, vmm->scratch, srcSize, vm, startOutputFrameNumber, stats);
+
+	return v;
 }
 
 struct vdif_mark6_mux_statistics *newvdifmark6muxstatistics(const struct vdif_mark6_mux *vm)
