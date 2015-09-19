@@ -113,7 +113,7 @@ Mark6Gatherer *openMark6Gatherer(int nFile, char **fileList);
 off_t getMark6GathererFileSize(const Mark6Gatherer *m6g);
 
 /* pass, e.g., /mnt/disks/?/?/data/exp1_stn1_scan1.vdif */
-Mark6Gatherer *openMark6GathererFromTemplate(const char *template);
+Mark6Gatherer *openMark6GathererFromTemplate(const char *fileTemplate);
 
 int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList);
 

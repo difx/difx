@@ -337,7 +337,7 @@ Mark6Gatherer *openMark6Gatherer(int nFile, char **fileList)
 }
 
 /* pass, e.g., /mnt/disks/?/?/data/exp1_stn1_scan1.vdif */
-Mark6Gatherer *openMark6GathererFromTemplate(const char *template)
+Mark6Gatherer *openMark6GathererFromTemplate(const char *fileTemplate)
 {
 	const int MaxFilenameSize = 256;
 	char fileName[MaxFilenameSize];
@@ -345,13 +345,13 @@ Mark6Gatherer *openMark6GathererFromTemplate(const char *template)
 	int v;
 	Mark6Gatherer *m6g;
 
-	if(template[0] == '/')
+	if(fileTemplate[0] == '/')
 	{
-		snprintf(fileName, MaxFilenameSize, "%s", template);
+		snprintf(fileName, MaxFilenameSize, "%s", fileTemplate);
 	}
 	else
 	{
-		snprintf(fileName, MaxFilenameSize, "%s/%s", getMark6Root(), template);
+		snprintf(fileName, MaxFilenameSize, "%s/%s", getMark6Root(), fileTemplate);
 	}
 
 	v = glob(fileName, GLOB_NOSORT, 0, &G);
@@ -363,7 +363,7 @@ Mark6Gatherer *openMark6GathererFromTemplate(const char *template)
 	}
 	else
 	{
-		fprintf(stderr, "Cannot create Mark6Gatherer because %s matched no files\n", template);
+		fprintf(stderr, "Cannot create Mark6Gatherer because %s matched no files\n", fileTemplate);
 
 		return 0;
 	}
