@@ -367,7 +367,18 @@ Mark6Gatherer *openMark6GathererFromTemplate(const char *template)
 
 		return 0;
 	}
-	m6g->packetSize = m6g->mk6Files[0].packetSize;
+
+	if(m6g)
+	{
+		if(m6g->nFile == 0)
+		{
+			closeMark6Gatherer(m6g);
+
+			return 0;
+		}
+
+		m6g->packetSize = m6g->mk6Files[0].packetSize;
+	}
 
 	return m6g;
 }
@@ -382,12 +393,10 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 	m6g->nFile += nFile;
 
 	m6g->mk6Files = (Mark6File *)realloc(m6g->mk6Files, m6g->nFile*sizeof(Mark6File));
-	if(!m6g)
+	if(!m6g->mk6Files)
 	{
 		fprintf(stderr, "Error: cannot (re)allocate %d * %d bytes for Mark6Files\n", nFile, (int)sizeof(Mark6File));
 	
-		free(m6g);
-
 		return 0;
 	}
 	memset(m6g->mk6Files + startFile, 0, nFile*sizeof(Mark6File));

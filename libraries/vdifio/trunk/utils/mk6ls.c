@@ -42,13 +42,20 @@ int main(int argc, char **argv)
 				int f;
 
 				G = openMark6GathererFromTemplate(fileList[i]);
-				size = getMark6GathererFileSize(G);
-				printf("%s   %d  %lld  %s\n", fileList[i], G->nFile, size, isMark6GatherComplete(G) ? "complete" : "incomplete");
-				for(f = 0; f < G->nFile; ++f)
+				if(G)
 				{
-					printMark6File(&(G->mk6Files[f]));
+					size = getMark6GathererFileSize(G);
+					printf("%s   %d  %lld  %s\n", fileList[i], G->nFile, size, isMark6GatherComplete(G) ? "(complete)" : "(incomplete)");
+					for(f = 0; f < G->nFile; ++f)
+					{
+						printMark6File(&(G->mk6Files[f]));
+					}
+					closeMark6Gatherer(G);
 				}
-				closeMark6Gatherer(G);
+				else
+				{
+					printf("%s  (invalid Mark6 file)\n", fileList[i]);
+				}
 			}
 			else if(longPrint)
 			{
@@ -56,9 +63,16 @@ int main(int argc, char **argv)
 				long long int size;
 
 				G = openMark6GathererFromTemplate(fileList[i]);
-				size = getMark6GathererFileSize(G);
-				printf("%s   %d  %lld  %s\n", fileList[i], G->nFile, size, isMark6GatherComplete(G) ? "complete" : "incomplete");
-				closeMark6Gatherer(G);
+				if(G)
+				{
+					size = getMark6GathererFileSize(G);
+					printf("%s   %d  %lld  %s\n", fileList[i], G->nFile, size, isMark6GatherComplete(G) ? "(complete)" : "(incomplete)");
+					closeMark6Gatherer(G);
+				}
+				else
+				{
+					printf("%s  (invalid Mark6 file)\n", fileList[i]);
+				}
 			}
 			else
 			{
