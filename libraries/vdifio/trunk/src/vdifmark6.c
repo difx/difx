@@ -418,7 +418,6 @@ int isMark6GatherComplete(const Mark6Gatherer *m6g)
 {
 	int f;
 	int a = 0, b = 1000000;
-	/* for now, declare success if the lowest block2 value is 1 more than the highest block1 value */
 
 	if(m6g->nFile == 0)
 	{
@@ -437,7 +436,7 @@ int isMark6GatherComplete(const Mark6Gatherer *m6g)
 		}
 	}
 
-	if(b == a+1)
+	if(b == a+1 && b == m6g->nFile)
 	{
 		return 1;
 	}
