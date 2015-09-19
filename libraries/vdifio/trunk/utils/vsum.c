@@ -32,11 +32,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vdifio.h>
+#include <vdifmark6.h>
 #include "config.h"
-#ifdef HAVE_MARK6SG
-#include <mark6sg/mark6_sg_utils.h>
-#include <vdifmark6sg.h>
-#endif
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
@@ -53,13 +50,7 @@ static void usage(const char *pgm)
 	printf("    -h or --help      print this usage information and quit\n");
 	printf("    -s or --shortsum  print a short summary, also usable for input to vex2difx\n");
 	printf("    -6 or --mark6     operate directly on Mark6 module data\n");
-#ifndef HAVE_MARK6SG
-	printf("        NOTE: mark6sg library not compiled in so this option is not available\n");
-#endif
 	printf("    --allmark6        operate directly on all Mark6 scans found on mounted modules\n");
-#ifndef HAVE_MARK6SG
-	printf("        NOTE: mark6sg library not compiled in so this option is not available\n");
-#endif
 	printf("\n");
 }
 
@@ -70,13 +61,7 @@ void summarizeFile(const char *fileName, int shortSum, int isMark6)
 
 	if(isMark6)
 	{
-#ifdef HAVE_MARK6SG
 		r = summarizevdifmark6(&sum, fileName, 0);
-#else
-		fprintf(stderr, "Error: mark6sg library support is not compiled in so the direct Mark6 option is not available.\n");
-	
-		exit(EXIT_FAILURE);
-#endif
 	}
 	else
 	{
@@ -113,58 +98,33 @@ void summarizeFile(const char *fileName, int shortSum, int isMark6)
 		printvdiffilesummary(&sum);
 	}
 }
-void summarizeSingleMark6File(const char *fileName, int shortSum)
-{
-#ifdef HAVE_MARK6SG
-	static char **scanList = 0;
-	static int nScan = -1;
-
-	if(nScan == -1)
-	{
-		nScan = mark6_sg_list_all_scans(&scanList);
-		if(nScan <= 0)
-		{
-			fprintf(stderr, "Error: no mark6 scans found\n");
-		
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	summarizeFile(fileName, shortSum, 1);
-
-#else
-	fprintf(stderr, "Error: mark6sg library support is not compiled in so the direct Mark6 option is not available.\n");
-
-	exit(EXIT_FAILURE);
-#endif
-}
 
 void processAllMark6Scans(int shortSum)
 {
-#ifdef HAVE_MARK6SG
-	int nScan;
-	char **scanList;
+	char **fileList;
+	int n;
 
-	nScan = mark6_sg_list_all_scans(&scanList);
-	if(nScan > 0)
+	n = getMark6FileList(&fileList);
+
+	if(n == 0)
 	{
-		int s;
-		for(s = 0; s < nScan; ++s)
-		{
-			summarizeFile(scanList[s], shortSum, 1);
-			free(scanList[s]);
-		}
-		free(scanList);
+		printf("No Mark6 files found in %s\n", getMark6Root());
 	}
 	else
 	{
-		fprintf(stderr, "No scans found on Mark6 modules\n");
-	}
-#else
-	fprintf(stderr, "Error: mark6sg library support is not compiled in so the direct Mark6 option is not available.\n");
+		int i;
+
+		for(i = 0; i < n; ++i)
+		{
+			summarizeFile(fileList[i], shortSum, 1);
+		}
 	
-	exit(EXIT_FAILURE);
-#endif
+		for(i = 0; i < n; ++i)
+		{
+			free(fileList[i]);
+		}
+		free(fileList);
+	}
 }
 
 int main(int argc, char **argv)
@@ -180,10 +140,6 @@ int main(int argc, char **argv)
 		int a;
 		int shortSum = 0;
 		int isMark6 = 0;
-
-#ifdef HAVE_MARK6SG
-		mark6_sg_set_rootpattern("/mnt/disks/[1-4]/[0-7]/data/");
-#endif
 
 		for(a = 1; a < argc; ++a)
 		{
@@ -212,7 +168,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				summarizeSingleMark6File(argv[a], shortSum);
+				summarizeFile(argv[a], shortSum, isMark6);
 			}
 		}
 	}

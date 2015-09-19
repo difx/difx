@@ -24,12 +24,12 @@ bin_PROGRAMS = \
 	vdifChanSelect \
 	vmux \
 	vsum \
-	generateVDIF
+	generateVDIF \
+	mk6gather \
+	mk6ls
 
 noinst_PROGRAMS = \
-	testcornerturners \
-	testmk6 \
-	testmk6mux
+	testcornerturners
 
 dist_bin_SCRIPTS = \
 	vdifbstate \
@@ -39,6 +39,12 @@ dist_bin_SCRIPTS = \
 
 testcornerturners_SOURCES = \
 	testcornerturners.c
+
+mk6gather_SOURCES = \
+	mk6gather.c
+
+mk6ls_SOURCES = \
+	mk6ls.c
 
 stripVDIF_SOURCES = \
 	stripVDIF.c
@@ -103,8 +109,3 @@ vmux_SOURCES = \
 vsum_SOURCES = \
 	vsum.c
 
-testmk6_SOURCES = \
-	testmk6.c
-
-testmk6mux_SOURCES = \
-	testmk6mux.c

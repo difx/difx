@@ -37,7 +37,7 @@
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.3";
-const char verdate[] = "20150917";
+const char verdate[] = "20150918";
 
 static void usage()
 {
@@ -56,8 +56,7 @@ static void usage()
 	fprintf(stderr, "these is used, the frame finding heuristics are bypassed.\n");
 	fprintf(stderr, "If <framesize> is not provided, or if it is set to 0, the frame size\n");
 	fprintf(stderr, "will be determined by the first frame, _even if it is invalid_!\n\n");
-	fprintf(stderr, "This can be run on Mark6 directly.  Must set <framesize> and\n");
-	fprintf(stderr, "<prtlev> must be set to one of the force options.\n\n");
+	fprintf(stderr, "This can be run on Mark6 data directly.\n\n");
 }
 
 int main(int argc, char **argv)
@@ -253,9 +252,6 @@ int main(int argc, char **argv)
 						first = 0;
 						fprintf(stderr, "Error: non-compliant VDIF data: this data has EDV set to 0 but the extended header is not identically 0\n");
 					}
-					++index;
-					++nSkip;
-					continue;
 				}
 				if(header->eversion == 1 || header->eversion == 3)
 				{
