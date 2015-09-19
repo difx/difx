@@ -78,6 +78,7 @@ typedef struct
 	char *data;				/* points to payload within buffer */
 	Mark6BlockHeader_ver2 blockHeader;	/* header corresponding to recent data */
 	struct stat stat;			/* stat, as read before file open */
+	int32_t block1, block2;			/* set at open: the first two block numbers in the file */
 } Mark6File;
 
 typedef struct
@@ -118,6 +119,8 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList);
 
 int closeMark6Gatherer(Mark6Gatherer *m6g);
 
+int isMark6GatherComplete(const Mark6Gatherer *m6g);
+
 void printMark6Gatherer(const Mark6Gatherer *m6g);
 
 int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count);
@@ -130,29 +133,6 @@ const char *getMark6Root();
 
 int getMark6FileList(char ***fileList);
 
-
-/* Remove below here? */
-/* Eventually remove this evolutionary dead end */
-typedef struct
-{
-	int nFile;
-	Mark6File *mk6Files;
-	int currentFileNum;		/* -1 if none, or 0 to nFile-1 */
-	int currentBlockNum;		/* -1 on init */
-	int index;			/* index to buffer of currentFileNum */
-} Mark6Descriptor;
-
-Mark6Descriptor *newMark6();
-
-Mark6Descriptor *openMark6(int nFile, char **fileList);
-
-int addMark6Files(Mark6Descriptor *m6d, int nFile, char **fileList);
-
-int closeMark6(Mark6Descriptor *m6d);
-
-void printMark6(const Mark6Descriptor *m6d);
-
-ssize_t readMark6(Mark6Descriptor *m6d, void *buf, size_t count);
 
 
 #ifdef __cplusplus

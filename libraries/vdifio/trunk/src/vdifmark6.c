@@ -87,6 +87,57 @@ void printMark6Header(const Mark6Header *header)
 }
 
 
+static int getFirstBlocks(Mark6File *m6f)
+{
+	int32_t size;
+	off_t offset;
+	int v;
+
+	/* get some information about blocks */
+	offset = ftello(m6f->in);
+	if(offset < 0)
+	{
+		return -1;
+	}
+
+	v = fread(&(m6f->block1), sizeof(m6f->block1), 1, m6f->in);
+	if(v < 1)
+	{
+		return -2;
+	}
+	if(m6f->version == 1)
+	{
+		size = m6f->maxBlockSize;
+	}
+	else
+	{
+		v = fread(&size, sizeof(size), 1, m6f->in);
+		if(v < 1)
+		{
+			return -3;
+		}
+	}
+
+	v = fseeko(m6f->in, offset + size , SEEK_SET);
+	if(v != 0)
+	{
+		return -4;
+	}
+	v = fread(&(m6f->block2), sizeof(m6f->block1), 1, m6f->in);
+	if(v < 1)
+	{
+		return -5;
+	}
+
+	v = fseeko(m6f->in, offset, SEEK_SET);
+	if(v != 0)
+	{
+		return -6;
+	}
+
+	return 0;
+}
+
 /* this assumes *m6f is already allocated but that the structures within are not. */
 /* no attempt is made here to free existing data */
 
@@ -133,6 +184,16 @@ int openMark6File(Mark6File *m6f, const char *filename)
 
 	m6f->payloadBytes = 0;	/* nothing read yet */
 
+	if(getFirstBlocks(m6f) < 0)
+	{
+		fclose(m6f->in);
+		free(m6f->fileName);
+		m6f->in = 0;
+		m6f->fileName = 0;
+
+		return -4;
+	}
+
 	return 0;
 }
 
@@ -178,12 +239,14 @@ void printMark6File(const Mark6File *m6f)
 		printf("  Mark6 version = %d\n", m6f->version);
 		printf("  Max block size = %d\n", m6f->maxBlockSize);
 		printf("  Block header size = %d\n", m6f->blockHeaderSize);
+		printf("  First two block numbers = %d, %d\n", m6f->block1, m6f->block2);
 		printf("  Packet size = %d\n", m6f->packetSize);
 		printf("  Payload bytes = %d (bytes currently residing in core)\n", m6f->payloadBytes);
 		printf("  Current block number = %d\n", m6f->blockHeader.blocknum);
 		printf("  Current index within block = %d\n", m6f->index);
 		printf("  Second = %d\n", (int)(m6f->frame >> 24));
 		printf("  Frame in second = %d\n", (int)(m6f->frame & 0xFFFFFF));
+		printf("  File size = %lld\n", (long long)(m6f->stat.st_size));
 	}
 }
 
@@ -348,6 +411,40 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 	m6g->packetSize = m6g->mk6Files[0].packetSize;
 
 	return nBad;
+}
+
+/* return 1 if all files are present (with no extras) and 0 otherwise */
+int isMark6GatherComplete(const Mark6Gatherer *m6g)
+{
+	int f;
+	int a = 0, b = 1000000;
+	/* for now, declare success if the lowest block2 value is 1 more than the highest block1 value */
+
+	if(m6g->nFile == 0)
+	{
+		return 0;
+	}
+
+	for(f = 0; f < m6g->nFile; ++f)
+	{
+		if(m6g->mk6Files[f].block1 > a)
+		{
+			a = m6g->mk6Files[f].block1;
+		}
+		if(m6g->mk6Files[f].block2 < b)
+		{
+			b = m6g->mk6Files[f].block2;
+		}
+	}
+
+	if(b == a+1)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 int closeMark6Gatherer(Mark6Gatherer *m6g)

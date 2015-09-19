@@ -37,8 +37,8 @@
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.4";
-const char verdate[] = "20150917";
+const char version[] = "0.5";
+const char verdate[] = "20150919";
 
 static void usage(const char *pgm)
 {
