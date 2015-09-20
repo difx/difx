@@ -20,6 +20,8 @@ int main(int argc, char **argv)
 	printf("Opening all files matching %s\n", argv[1]);
 	G = openMark6GathererFromTemplate(argv[1]);
 
+	seekMark6Gather(G, getMark6GathererFileSize(G)/2);
+
 	out = fopen("gather.out", "w");
 
 	printMark6Gatherer(G);

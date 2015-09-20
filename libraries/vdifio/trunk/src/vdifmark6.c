@@ -164,6 +164,81 @@ static void *mark6Reader(void *arg)
 	return 0;
 }
 
+struct seekArgs
+{
+	Mark6File *m6f;
+	off_t position;		/* SEEK_SET argument */
+	int nFile;		/* number of files in the fileset */
+};
+
+static void *mark6Seeker(void *arg)
+{
+	struct seekArgs *S = (struct seekArgs *)arg;
+	off_t pos;
+	int blockSize;
+	int targetBlock;
+	int i;
+
+	/* what we do is:
+	   1. wait for any ongoing reads to complete
+	   2. figure out where we need to be
+	   3. reposition the file at the correct location
+	   4. give control back to reader thread
+	   5. explicitly load the next block
+	 */
+
+	pthread_barrier_wait(&S->m6f->readBarrier);
+
+	/* calculate nominal position */
+	blockSize = S->m6f->maxBlockSize - ((S->m6f->maxBlockSize-S->m6f->blockHeaderSize) % S->m6f->packetSize);
+	targetBlock = S->position/(blockSize - S->m6f->blockHeaderSize);
+	pos = sizeof(Mark6Header) + blockSize*targetBlock/S->nFile;
+
+	if(pos >= S->m6f->stat.st_size)
+	{
+		targetBlock = S->m6f->stat.st_size/(blockSize - S->m6f->blockHeaderSize)/S->nFile;
+		pos = sizeof(Mark6Header) + blockSize*targetBlock;
+	}
+
+	/* Iterate up to 5 times to get a better position */
+	for(i = 0; i < 5; ++i)
+	{
+		int32_t block;
+		int deltaBlock;
+
+		fseeko(S->m6f->in, pos, SEEK_SET);
+		fread(&block, sizeof(int32_t), 1, S->m6f->in);
+
+printf("Seek: %s  i=%d b=%d t=%d pos=%lld\n", S->m6f->fileName, i, block, targetBlock, (long long)pos);
+
+		/* if it is within 4 blocks of the target and positioned earlier than that, then call it good enough */
+		if(block < targetBlock && block > targetBlock - (4*S->nFile))
+		{
+			break;
+		}
+
+		deltaBlock = block - targetBlock;
+printf("deltaBlock = %d\n", deltaBlock);
+
+		if(deltaBlock < S->nFile)
+		{
+			pos -= blockSize;
+		}
+		else
+		{
+			pos -= blockSize * (deltaBlock/S->nFile);
+		}
+	}
+
+	fseeko(S->m6f->in, pos, SEEK_SET);
+
+	pthread_barrier_wait(&S->m6f->readBarrier);
+	
+	Mark6FileReadBlock(S->m6f);
+
+	return 0;
+}
+
 static void deallocateMark6File(Mark6File *m6f)
 {
 	if(m6f->in)
@@ -554,6 +629,48 @@ void printMark6Gatherer(const Mark6Gatherer *m6g)
 			printMark6File(m6g->mk6Files + i);
 		}
 	}
+}
+
+int seekMark6Gather(Mark6Gatherer *m6g, off_t position)
+{
+	pthread_attr_t attr;
+	pthread_t *seekThread;
+	struct seekArgs *S;
+	int t;
+
+	if(!m6g)
+	{
+		return -1;
+	}
+	if(position >= getMark6GathererFileSize(m6g))
+	{
+		return -2;
+	}
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	seekThread = (pthread_t *)malloc(m6g->nFile*sizeof(pthread_t));
+	S = (struct seekArgs *)malloc(m6g->nFile*sizeof(struct seekArgs));
+
+	for(t = 0; t < m6g->nFile; ++t)
+	{
+		S[t].m6f = &m6g->mk6Files[t];
+		S[t].nFile = m6g->nFile;
+		S[t].position = position;
+		pthread_create(seekThread + t, &attr, mark6Seeker, S + t);
+	}
+
+	pthread_attr_destroy(&attr);
+
+	for(t = 0; t < m6g->nFile; ++t)
+	{
+		pthread_join(seekThread[t], 0);
+	}
+
+	free(seekThread);
+	free(S);
+
+	return 0;
 }
 
 int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)

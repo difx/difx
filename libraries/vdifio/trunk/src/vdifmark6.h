@@ -134,6 +134,8 @@ int isMark6GatherComplete(const Mark6Gatherer *m6g);
 
 void printMark6Gatherer(const Mark6Gatherer *m6g);
 
+int seekMark6Gather(Mark6Gatherer *m6g, off_t position);
+
 int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count);
 
 
