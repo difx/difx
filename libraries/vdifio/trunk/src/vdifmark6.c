@@ -179,61 +179,61 @@ static void *mark6Seeker(void *arg)
 	int targetBlock;
 	int i;
 
-	/* what we do is:
-	   1. wait for any ongoing reads to complete
-	   2. figure out where we need to be
-	   3. reposition the file at the correct location
-	   4. give control back to reader thread
-	   5. explicitly load the next block
-	 */
-
+	/*   1. wait for any ongoing reads to complete */
 	pthread_barrier_wait(&S->m6f->readBarrier);
 
-	/* calculate nominal position */
-	blockSize = S->m6f->maxBlockSize - ((S->m6f->maxBlockSize-S->m6f->blockHeaderSize) % S->m6f->packetSize);
-	targetBlock = S->position/(blockSize - S->m6f->blockHeaderSize);
-	pos = sizeof(Mark6Header) + blockSize*targetBlock/S->nFile;
-
-	if(pos >= S->m6f->stat.st_size)
+	/*   2. figure out where we need to be */ 
+	if(S->position == 0)
 	{
-		targetBlock = S->m6f->stat.st_size/(blockSize - S->m6f->blockHeaderSize)/S->nFile;
-		pos = sizeof(Mark6Header) + blockSize*targetBlock;
+		pos = sizeof(Mark6Header);
+	}
+	else
+	{
+		blockSize = S->m6f->maxBlockSize - ((S->m6f->maxBlockSize-S->m6f->blockHeaderSize) % S->m6f->packetSize);
+		targetBlock = S->position/(blockSize - S->m6f->blockHeaderSize);
+		pos = sizeof(Mark6Header) + blockSize*targetBlock/S->nFile;
+
+		if(pos >= S->m6f->stat.st_size)
+		{
+			targetBlock = S->m6f->stat.st_size/(blockSize - S->m6f->blockHeaderSize)/S->nFile;
+			pos = sizeof(Mark6Header) + blockSize*targetBlock;
+		}
+
+		/* Iterate up to 5 times to get a better position */
+		for(i = 0; i < 5; ++i)
+		{
+			int32_t block;
+			int deltaBlock;
+
+			fseeko(S->m6f->in, pos, SEEK_SET);
+			fread(&block, sizeof(int32_t), 1, S->m6f->in);
+
+			deltaBlock = block - targetBlock;
+
+			/* if it is within 4 blocks of the target and positioned earlier than that, then call it good enough */
+			if(deltaBlock <= 0 && deltaBlock > -(4*S->nFile))
+			{
+				break;
+			}
+
+			if(deltaBlock < S->nFile && deltaBlock > 0)
+			{
+				pos -= blockSize;
+			}
+			else
+			{
+				pos -= blockSize * (deltaBlock/S->nFile);
+			}
+		}
 	}
 
-	/* Iterate up to 5 times to get a better position */
-	for(i = 0; i < 5; ++i)
-	{
-		int32_t block;
-		int deltaBlock;
-
-		fseeko(S->m6f->in, pos, SEEK_SET);
-		fread(&block, sizeof(int32_t), 1, S->m6f->in);
-
-printf("Seek: %s  i=%d b=%d t=%d pos=%lld\n", S->m6f->fileName, i, block, targetBlock, (long long)pos);
-
-		/* if it is within 4 blocks of the target and positioned earlier than that, then call it good enough */
-		if(block < targetBlock && block > targetBlock - (4*S->nFile))
-		{
-			break;
-		}
-
-		deltaBlock = block - targetBlock;
-printf("deltaBlock = %d\n", deltaBlock);
-
-		if(deltaBlock < S->nFile)
-		{
-			pos -= blockSize;
-		}
-		else
-		{
-			pos -= blockSize * (deltaBlock/S->nFile);
-		}
-	}
-
+	/*   3. reposition the file at the correct location */
 	fseeko(S->m6f->in, pos, SEEK_SET);
 
+	/*   4. give control back to reader thread */
 	pthread_barrier_wait(&S->m6f->readBarrier);
-	
+
+	/*   5. explicitly load the next block */
 	Mark6FileReadBlock(S->m6f);
 
 	return 0;
@@ -340,8 +340,11 @@ int closeMark6File(Mark6File *m6f)
 		return -1;
 	}
 	m6f->stopReading = 1;
-	pthread_barrier_wait(&m6f->readBarrier);
-	pthread_join(m6f->readThread, 0);
+	if(m6f->in)
+	{
+		pthread_barrier_wait(&m6f->readBarrier);
+		pthread_join(m6f->readThread, 0);
+	}
 
 	deallocateMark6File(m6f);
 
@@ -721,16 +724,122 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 	return n;
 }
 
+struct sumArgs
+{
+	Mark6File *m6f;
+	char hasThread[VDIF_MAX_THREAD_ID + 1];
+	int endSecond;
+	int endFrame;
+	int bufferSize;
+	int frameSize;
+	int epoch;
+	int nBit;
+};
+
+static void *fileEndSummarizer(void *arg)
+{
+	struct sumArgs *S = (struct sumArgs *)arg;
+	int offset;
+	Mark6File *F;
+	FILE *in;
+	unsigned char *buffer;
+	struct vdif_header *vh0;
+	int i, N, rv;
+
+	F = S->m6f;
+
+	if(F->stat.st_size < S->bufferSize)
+	{
+		return 0;
+	}
+
+	in = fopen(F->fileName, "r");
+		
+	rv = fseeko(in, F->stat.st_size - S->bufferSize, SEEK_SET);
+	if(rv != 0)
+	{
+		fclose(in);
+
+		return (void *)(-7);
+	}
+
+	buffer = (unsigned char *)malloc(S->bufferSize);
+
+	rv = fread(buffer, 1, S->bufferSize, in);
+	if(rv < S->bufferSize)
+	{
+		fclose(in);
+		free(buffer);
+
+		return (void *)(-8);
+	}
+
+	offset = determinevdifframeoffset(buffer, S->bufferSize, S->frameSize);
+	if(offset < 0)
+	{
+		fclose(in);
+		free(buffer);
+
+		return (void *)(-9);
+	}
+	vh0 = (struct vdif_header *)(buffer + offset);
+	N = S->bufferSize - S->frameSize - VDIF_HEADER_BYTES;
+
+	for(i = 0; i < N; )
+	{
+		struct vdif_header *vh;
+		int f, s;
+
+		vh = (struct vdif_header *)(buffer + i);
+		s = getVDIFFrameEpochSecOffset(vh);
+		
+		if(getVDIFFrameBytes(vh) == S->frameSize &&
+		   getVDIFEpoch(vh) == S->epoch &&
+		   getVDIFBitsPerSample(vh) == S->nBit &&
+		   abs(s - getVDIFFrameEpochSecOffset(vh0)) < 2)
+		{
+			S->hasThread[getVDIFThreadID(vh)] = 1;
+			f = getVDIFFrameNumber(vh);
+
+			if(s > S->endSecond)
+			{
+				S->endSecond = s;
+				S->endFrame = f;
+			}
+			else if(s == S->endSecond && f > S->endFrame)
+			{
+				S->endFrame = f;
+			}
+
+			i += S->frameSize;
+		}
+		else
+		{
+			/* Not a good frame. */
+			++i;
+		}
+	}
+
+	fclose(in);
+	free(buffer);
+
+	return 0;
+}
+
+
 /* scan name should be the template file to match */
 int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int frameSize)
 {
 	int bufferSize = 2000000;	/* 2 MB should encounter all threads of a usual VDIF file */
 	unsigned char *buffer;
-	int rv, i, N, f;
+	int i, N, f;
 	int readBytes;
 	char hasThread[VDIF_MAX_THREAD_ID + 1];
 	struct vdif_header *vh0;	/* pointer to the prototype header */
 	Mark6Gatherer *G;
+	struct sumArgs *S;
+	pthread_t *sumThread;
+	pthread_attr_t attr;
 
 	/* Initialize things */
 
@@ -848,92 +957,52 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 		}
 	}
 
+	free(buffer);
+
 	/* Work on end of file, if file is long enough */
 
+	S = (struct sumArgs *)calloc(G->nFile, sizeof(struct sumArgs));
+	sumThread = (pthread_t *)malloc(G->nFile*sizeof(pthread_t));
+
 	/* Here read bits of the ends of each file of the set to make sure the info we get is complete */
+	/* Do this in parallel for each file */
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
 	for(f = 0; f < G->nFile; ++f)
 	{
-		int offset;
-		Mark6File *F;
-		FILE *in;
+		S[f].m6f = G->mk6Files + f;
+		S[f].bufferSize = bufferSize;
+		S[f].frameSize = frameSize;
+		S[f].epoch = sum->epoch;
+		S[f].nBit = sum->nBit;
 
-		F = &G->mk6Files[f];
-
-		if(F->stat.st_size < bufferSize)
-		{
-			continue;
-		}
-
-		in = fopen(F->fileName, "r");
-			
-		rv = fseeko(in, F->stat.st_size - bufferSize, SEEK_SET);
-		if(rv != 0)
-		{
-			fclose(in);
-			closeMark6Gatherer(G);
-			free(buffer);
-
-			return -7;
-		}
-
-		rv = fread(buffer, 1, bufferSize, in);
-		if(rv < bufferSize)
-		{
-			fclose(in);
-			closeMark6Gatherer(G);
-			free(buffer);
-
-			return -8;
-		}
-
-		offset = determinevdifframeoffset(buffer, bufferSize, frameSize);
-		if(offset < 0)
-		{
-			fclose(in);
-			closeMark6Gatherer(G);
-			free(buffer);
-
-			return -9;
-		}
-		vh0 = (struct vdif_header *)(buffer + offset);
-
-		for(i = 0; i < N; )
-		{
-			struct vdif_header *vh;
-			int f, s;
-
-			vh = (struct vdif_header *)(buffer + i);
-			s = getVDIFFrameEpochSecOffset(vh);
-			
-			if(getVDIFFrameBytes(vh) == frameSize &&
-			   getVDIFEpoch(vh) == sum->epoch &&
-			   getVDIFBitsPerSample(vh) == sum->nBit &&
-			   abs(s - getVDIFFrameEpochSecOffset(vh0)) < 2)
-			{
-				hasThread[getVDIFThreadID(vh)] = 1;
-				f = getVDIFFrameNumber(vh);
-
-				if(s > sum->endSecond)
-				{
-					sum->endSecond = s;
-					sum->endFrame = f;
-				}
-				else if(s == sum->endSecond && f > sum->endFrame)
-				{
-					sum->endFrame = f;
-				}
-
-				i += frameSize;
-			}
-			else
-			{
-				/* Not a good frame. */
-				++i;
-			}
-		}
-
-		fclose(in);
+		pthread_create(&sumThread[f], &attr, fileEndSummarizer, S + f);
 	}
+
+	pthread_attr_destroy(&attr);
+
+	for(f = 0; f < G->nFile; ++f)
+	{
+		pthread_join(sumThread[f], 0);
+
+		for(i = 0; i <= VDIF_MAX_THREAD_ID; ++i)
+		{
+			hasThread[i] += S[f].hasThread[i];
+		}
+		if(S[f].endSecond > sum->endSecond)
+		{
+			sum->endSecond = S[f].endSecond;
+			sum->endFrame = S[f].endFrame;
+		}
+		else if(S[f].endSecond == sum->endSecond && S[f].endFrame > sum->endFrame)
+		{
+			sum->endFrame = S[f].endFrame;
+		}
+	}
+
+	free(sumThread);
+	free(S);
 
 
 	/* Finalize summary */
@@ -953,7 +1022,6 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 
 	/* Clean up */
 
-	free(buffer);
 	closeMark6Gatherer(G);
 
 	return 0;
