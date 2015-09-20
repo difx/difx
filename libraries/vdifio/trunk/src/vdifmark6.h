@@ -39,6 +39,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "vdifio.h"
 
 #define MARK6_SYNC		0xfeed6666
@@ -79,6 +80,16 @@ typedef struct
 	Mark6BlockHeader_ver2 blockHeader;	/* header corresponding to recent data */
 	struct stat stat;			/* stat, as read before file open */
 	int32_t block1, block2;			/* set at open: the first two block numbers in the file */
+
+	/* some parallel-read infrastructure */
+	int stopReading;			/* if > 0, get out of read loop */
+	pthread_t readThread;
+	pthread_barrier_t readBarrier;
+	Mark6BlockHeader_ver2 readHeader;	/* header corresponding to recent data */
+	char *readBuffer;			/* same size as data[] above */
+	int readBytes;				/* how many bytes were actually read */
+
+
 } Mark6File;
 
 typedef struct

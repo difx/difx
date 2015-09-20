@@ -100,7 +100,7 @@ static int getFirstBlocks(Mark6File *m6f)
 		return -1;
 	}
 
-	v = fread(&(m6f->block1), sizeof(m6f->block1), 1, m6f->in);
+	v = fread(&m6f->block1, sizeof(m6f->block1), 1, m6f->in);
 	if(v < 1)
 	{
 		return -2;
@@ -123,7 +123,7 @@ static int getFirstBlocks(Mark6File *m6f)
 	{
 		return -4;
 	}
-	v = fread(&(m6f->block2), sizeof(m6f->block1), 1, m6f->in);
+	v = fread(&m6f->block2, sizeof(m6f->block1), 1, m6f->in);
 	if(v < 1)
 	{
 		return -5;
@@ -138,74 +138,34 @@ static int getFirstBlocks(Mark6File *m6f)
 	return 0;
 }
 
-/* this assumes *m6f is already allocated but that the structures within are not. */
-/* no attempt is made here to free existing data */
-
-/* returns 0 on success, or error code otherwise */
-int openMark6File(Mark6File *m6f, const char *filename)
+static void *mark6Reader(void *arg)
 {
-	Mark6Header header;
+	Mark6File *m6f = (Mark6File *)arg;
 
-	stat(filename, &m6f->stat);
-	m6f->in = fopen(filename, "r");
-	if(!m6f->in)
+	do
 	{
-		m6f->fileName = 0;
+		int v;
 
-		return -1;
-	}
-	m6f->fileName = strdup(filename);
-	fread(&header, sizeof(header), 1, m6f->in);
-	m6f->version = header.version;
-	m6f->blockHeaderSize = mark6BlockHeaderSize(header.version);
-	if(m6f->blockHeaderSize <= 0)
-	{
-		fclose(m6f->in);
-		free(m6f->fileName);
-		m6f->in = 0;
-		m6f->fileName = 0;
+		pthread_barrier_wait(&m6f->readBarrier);
 
-		return -2;
-	}
-	m6f->maxBlockSize = header.block_size;
-	m6f->packetSize = header.packet_size;
-	m6f->data = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
-	if(!m6f->data)
-	{
-		fclose(m6f->in);
-		free(m6f->fileName);
-		m6f->in = 0;
-		m6f->fileName = 0;
-
-		return -3;
-	}
-	m6f->blockHeader.blocknum = -1;
-	m6f->blockHeader.wb_size = m6f->maxBlockSize;
-
-	m6f->payloadBytes = 0;	/* nothing read yet */
-
-	if(getFirstBlocks(m6f) < 0)
-	{
-		fclose(m6f->in);
-		free(m6f->fileName);
-		m6f->in = 0;
-		m6f->fileName = 0;
-
-		return -4;
-	}
+		v = fread(&m6f->readHeader, m6f->blockHeaderSize, 1, m6f->in);
+		if(v == 1)
+		{
+			m6f->readBytes = fread(m6f->readBuffer, 1, m6f->blockHeader.wb_size - m6f->blockHeaderSize, m6f->in);
+		}
+		else
+		{
+			m6f->readBytes = 0;
+		}
+		
+		pthread_barrier_wait(&m6f->readBarrier);
+	} while(!m6f->stopReading);
 
 	return 0;
 }
 
-/* m6f is not freed itself in this call, but all internal structures are freed. */
-int closeMark6File(Mark6File *m6f)
+static void deallocateMark6File(Mark6File *m6f)
 {
-	if(!m6f)
-	{
-		fprintf(stderr, "Error: closeMark6File called with null pointer\n");
-
-		return -1;
-	}
 	if(m6f->in)
 	{
 		fclose(m6f->in);
@@ -221,7 +181,94 @@ int closeMark6File(Mark6File *m6f)
 		free(m6f->data);
 		m6f->data = 0;
 	}
+	if(m6f->readBuffer)
+	{
+		free(m6f->readBuffer);
+		m6f->readBuffer = 0;
+	}
 	m6f->version = -1;
+}
+
+/* this assumes *m6f is already allocated but that the structures within are not. */
+/* no attempt is made here to free existing data */
+
+/* returns 0 on success, or error code otherwise */
+int openMark6File(Mark6File *m6f, const char *filename)
+{
+	Mark6Header header;
+	pthread_attr_t attr;
+
+	stat(filename, &m6f->stat);
+	m6f->in = fopen(filename, "r");
+	if(!m6f->in)
+	{
+		deallocateMark6File(m6f);
+
+		return -1;
+	}
+	m6f->fileName = strdup(filename);
+	fread(&header, sizeof(header), 1, m6f->in);
+	m6f->version = header.version;
+	m6f->blockHeaderSize = mark6BlockHeaderSize(header.version);
+	if(m6f->blockHeaderSize <= 0)
+	{
+		deallocateMark6File(m6f);
+
+		return -2;
+	}
+	m6f->maxBlockSize = header.block_size;
+	m6f->packetSize = header.packet_size;
+	m6f->data = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
+	if(!m6f->data)
+	{
+		deallocateMark6File(m6f);
+
+		return -3;
+	}
+	m6f->readBuffer = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
+	if(!m6f->readBuffer)
+	{
+		deallocateMark6File(m6f);
+
+		return -5;
+	}
+	m6f->blockHeader.blocknum = -1;
+	m6f->blockHeader.wb_size = m6f->maxBlockSize;
+
+	m6f->payloadBytes = 0;	/* nothing read yet */
+
+	if(getFirstBlocks(m6f) < 0)
+	{
+		deallocateMark6File(m6f);
+
+		return -4;
+	}
+
+	/* start reading thread */
+	pthread_barrier_init(&m6f->readBarrier, 0, 2);
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	pthread_create(&m6f->readThread, &attr, mark6Reader, m6f);
+	pthread_attr_destroy(&attr);
+	pthread_barrier_wait(&m6f->readBarrier);
+
+	return 0;
+}
+
+/* m6f is not freed itself in this call, but all internal structures are freed. */
+int closeMark6File(Mark6File *m6f)
+{
+	if(!m6f)
+	{
+		fprintf(stderr, "Error: closeMark6File called with null pointer\n");
+
+		return -1;
+	}
+	m6f->stopReading = 1;
+	pthread_barrier_wait(&m6f->readBarrier);
+	pthread_join(m6f->readThread, 0);
+
+	deallocateMark6File(m6f);
 
 	return 0;
 }
@@ -253,26 +300,35 @@ void printMark6File(const Mark6File *m6f)
 /* Returns 0 on EOF */
 ssize_t Mark6FileReadBlock(Mark6File *m6f)
 {
-	ssize_t v;
+	pthread_barrier_wait(&m6f->readBarrier);
 
-	/* Note: the following will only update the value of "blocknum" for Mark6 version 1 (which is hopefully out of circulation). */
-	/* For Mark6 ver. 2, both "blocknum" and "wb_size" are updated. */
-	v = fread(&m6f->blockHeader, m6f->blockHeaderSize, 1, m6f->in);
-	if(v != 1)
+	m6f->payloadBytes = m6f->readBytes;
+
+	if(m6f->payloadBytes == 0)
 	{
-		m6f->payloadBytes = 0;
 		m6f->index = 0;
 		m6f->frame = 0;
 	}
 	else
 	{
-		vdif_header *vh = (vdif_header *)(m6f->data);
+		char *tmp;
+		vdif_header *vh;
 		
-		m6f->payloadBytes = fread(m6f->data, 1, m6f->blockHeader.wb_size - m6f->blockHeaderSize, m6f->in);
 		m6f->payloadBytes -= (m6f->payloadBytes % m6f->packetSize);
+
+		memcpy(&m6f->blockHeader, &m6f->readHeader, m6f->blockHeaderSize);
+		
+		tmp = m6f->data;
+		m6f->data = m6f->readBuffer;
+		m6f->readBuffer = tmp;
+
 		m6f->index = 0;
+
+		vh = (vdif_header *)(m6f->data);
 		m6f->frame = ((uint64_t)(getVDIFFrameEpochSecOffset(vh)) << 24LL) | getVDIFFrameNumber(vh);
 	}
+
+	pthread_barrier_wait(&m6f->readBarrier);
 
 	return m6f->payloadBytes;
 }
@@ -529,7 +585,7 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 			return n;
 		}
 
-		F = &(m6g->mk6Files[f]);
+		F = &m6g->mk6Files[f];
 		memcpy(buf, F->data + F->index, m6g->packetSize);
 		buf += m6g->packetSize;
 		n += m6g->packetSize;
@@ -682,26 +738,31 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 	{
 		int offset;
 		Mark6File *F;
+		FILE *in;
 
-		F = &(G->mk6Files[f]);
+		F = &G->mk6Files[f];
 
 		if(F->stat.st_size < bufferSize)
 		{
 			continue;
 		}
+
+		in = fopen(F->fileName, "r");
 			
-		rv = fseeko(F->in, F->stat.st_size - bufferSize, SEEK_SET);
+		rv = fseeko(in, F->stat.st_size - bufferSize, SEEK_SET);
 		if(rv != 0)
 		{
+			fclose(in);
 			closeMark6Gatherer(G);
 			free(buffer);
 
 			return -7;
 		}
 
-		rv = fread(buffer, 1, bufferSize, F->in);
+		rv = fread(buffer, 1, bufferSize, in);
 		if(rv < bufferSize)
 		{
+			fclose(in);
 			closeMark6Gatherer(G);
 			free(buffer);
 
@@ -711,6 +772,7 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 		offset = determinevdifframeoffset(buffer, bufferSize, frameSize);
 		if(offset < 0)
 		{
+			fclose(in);
 			closeMark6Gatherer(G);
 			free(buffer);
 
@@ -752,6 +814,8 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 				++i;
 			}
 		}
+
+		fclose(in);
 	}
 
 
