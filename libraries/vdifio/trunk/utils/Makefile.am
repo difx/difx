@@ -26,7 +26,8 @@ bin_PROGRAMS = \
 	vsum \
 	generateVDIF \
 	mk6gather \
-	mk6ls
+	mk6ls \
+	mk6vmux
 
 noinst_PROGRAMS = \
 	testcornerturners
@@ -45,6 +46,9 @@ mk6gather_SOURCES = \
 
 mk6ls_SOURCES = \
 	mk6ls.c
+
+mk6vmux_SOURCES = \
+	mk6vmux.c
 
 stripVDIF_SOURCES = \
 	stripVDIF.c

@@ -229,6 +229,7 @@ static void *mark6Seeker(void *arg)
 
 	/*   3. reposition the file at the correct location */
 	fseeko(S->m6f->in, pos, SEEK_SET);
+	S->m6f->index = 0;
 
 	/*   4. give control back to reader thread */
 	pthread_barrier_wait(&S->m6f->readBarrier);
