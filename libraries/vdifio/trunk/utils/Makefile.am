@@ -27,6 +27,7 @@ bin_PROGRAMS = \
 	generateVDIF \
 	mk6gather \
 	mk6ls \
+	mk6summary \
 	mk6vmux
 
 noinst_PROGRAMS = \
@@ -46,6 +47,9 @@ mk6gather_SOURCES = \
 
 mk6ls_SOURCES = \
 	mk6ls.c
+
+mk6summary_SOURCES = \
+	mk6summary.c
 
 mk6vmux_SOURCES = \
 	mk6vmux.c
