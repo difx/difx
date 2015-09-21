@@ -817,8 +817,8 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
       framebytes = getFrameBytes(configindex, datastreamindex);
       if (stream.sampling==COMPLEX) framesamples /=2;
       if(stream.format == INTERLACEDVDIF) { //separate frames for each subband - change numsamples, framebytes to the muxed version
-        framesamples *= getDNumRecordedBands(configindex, datastreamindex);
-        framebytes = (framebytes - VDIF_HEADER_BYTES)*getDNumRecordedBands(configindex, datastreamindex) + VDIF_HEADER_BYTES; // Assumed INTERLACED is never legacy
+        framesamples *= getDNumMuxThreads(configindex, datastreamindex);
+        framebytes = (framebytes - VDIF_HEADER_BYTES)*getDNumMuxThreads(configindex, datastreamindex) + VDIF_HEADER_BYTES; // Assumed INTERLACED is never legacy
       }
       return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
 
