@@ -73,6 +73,8 @@ int main(int argc, char **argv)
 	int force = 0;
 	int n;	/* count read loops */
 	int isMark6 = 0;
+	int mk6Version = 0;
+	int mk6PacketSize = 0;
 	int mk6BlockHeaderSize = 0;
 	int framesPerMark6Block = 0;
 
@@ -183,6 +185,7 @@ int main(int argc, char **argv)
 	for(n = 0;; ++n)
 	{
 		int index, fill, readbytes;
+		int fr;
 
 		index = 0;
 
@@ -210,6 +213,8 @@ int main(int argc, char **argv)
 					index += headerSize;	// the first header is larger than the inter-chunk headers
 					isMark6 = 1;
 					framesPerMark6Block = (m6h->block_size - mk6BlockHeaderSize)/m6h->packet_size;
+					mk6Version = m6h->version;
+					mk6PacketSize = m6h->packet_size;
 				}
 			}
 		}
@@ -226,8 +231,14 @@ int main(int argc, char **argv)
 
 			if(isMark6)
 			{
-				if(framesread % framesPerMark6Block == 0)
+				if(fr == framesPerMark6Block)
 				{
+					fr = 0;
+					if(mk6Version > 1)
+					{
+						int32_t *blockSize = (int32_t *)(buffer+index+4);
+						framesPerMark6Block = (*blockSize - mk6BlockHeaderSize)/mk6PacketSize;
+					}
 					/* skip over the block headers to prevent warnings */
 					index += mk6BlockHeaderSize;
 				}
@@ -260,6 +271,8 @@ int main(int argc, char **argv)
 					ui = (const uint32_t *)(buffer + index);
 					if(ui[5] != 0xACABFEED)
 					{
+						++index;
+						++nSkip;
 						continue;
 					}
 				}
@@ -288,6 +301,7 @@ int main(int argc, char **argv)
 			
 			index += framesize;
 			++framesread;
+			++fr;
 		}
 	}
 
