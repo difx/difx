@@ -153,6 +153,9 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	}
 	setvdifmuxinputchannels(&vm, nChanPerThread);
 
+	// If verbose...
+	printvdifmux(&vm);
+
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
 	if(fanout != 1)
 	{
@@ -173,9 +176,9 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 
 		return;
 	}
-	vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2*1000000));
 
 	// If verbose...
+	vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nChanPerThread));
 	printvdiffilesummary(&fileSummary);
 
 	// Here set readseconds to time since beginning of job
@@ -237,11 +240,14 @@ int VDIFMark6DataStream::dataRead(int buffersegment)
 	int bytes, bytestoread;
 	int muxReturn;
 	unsigned int bytesvisible;
+	int rbs;
+
+	rbs = readbuffersize - (readbuffersize % inputframebytes);
 
 	destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
 	// Bytes to read
-	bytes = readbuffersize - readbufferleftover;
+	bytes = rbs - readbufferleftover;
 
 	// if the file is exhausted, just multiplex any leftover data and return
 	if(mark6eof)
@@ -279,6 +285,9 @@ int VDIFMark6DataStream::dataRead(int buffersegment)
 
 	// multiplex and corner turn the data
 	muxReturn = vdifmux(destination, readbytes, readbuffer, bytesvisible, &vm, startOutputFrameNumber, &vstats);
+
+printvdifmuxstatistics(&vstats);
+printVDIFHeader((vdif_header *)destination, VDIFHeaderPrintLevelShort);
 
 	if(muxReturn < 0)
 	{

@@ -344,9 +344,9 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 
 		return;
 	}
-	vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2*1000000));
 
 	// If verbose...
+	vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nChanPerThread));
 	printvdiffilesummary(&fileSummary);
 
 	// Here set readseconds to time since beginning of job
