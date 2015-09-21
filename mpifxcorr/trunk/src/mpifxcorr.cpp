@@ -41,7 +41,7 @@
 #include "vdifnetwork.h"
 #include "vdiffake.h"
 #include "vdifmark5.h"
-#include "vdifmark6.h"
+#include "vdifmark6_datastream.h"
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
 #include "string.h"

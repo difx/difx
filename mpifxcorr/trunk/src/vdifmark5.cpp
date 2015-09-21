@@ -386,6 +386,17 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
+	int nChanPerThread = nrecordedbands/nthreads;
+	if(nChanPerThread != 1)
+	{
+		cinfo << startl << "Note: " << nChanPerThread << " channels reside on each thread.  Support for this is new.  Congratulations for being bold and trying this out!  Warranty void in the 193 UN recognized nations." << endl;
+	}
+	if(nChanPerThread * nthreads != nrecordedbands)
+	{
+		cerror << startl << "Error: " << nrecordedbands << " bands were recorded but they are divided unequally across " << nthreads << " threads.  This is not allowed.  Things will probably get very bad soon..." << endl;
+	}
+	setvdifmuxinputchannels(&vm, nChanPerThread);
+
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout != 1)
         {

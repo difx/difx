@@ -23,6 +23,7 @@
 #define VDIFMARK6FILE_H
 
 #include <vdifio.h>
+#include <vdifmark6.h>
 #include "vdiffile.h"
 
 /**
@@ -67,7 +68,7 @@ protected:
 private:
   void closeMark6();
 
-  int mark6fd;  /* file descriptor for use within mark6sg library */
+  Mark6Gatherer *mark6gather;  /* structure for Mark6 file gathering */
   bool mark6eof;  /* if true, current file has been exhausted */
 };
 

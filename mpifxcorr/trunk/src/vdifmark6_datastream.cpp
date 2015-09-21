@@ -29,12 +29,11 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include <mark6sg/mark6_sg_vfs.h>
-#include <vdifmark6sg.h>
 #include "config.h"
 #include "alert.h"
 #include "vdifmark6.h"
 #include "mode.h"
+#include "vdifmark6_datastream.h"
 
 
 
@@ -49,9 +48,8 @@ VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, i
  : VDIFDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
 	cwarn << startl << "Starting Mark6 datastream.  This is experimental at this time!" << endl;
-	mark6fd = -1;	// indicate file not open
+	mark6gather = 0;
 	mark6eof = false;
-	mark6_sg_set_rootpattern("/mnt/disks/[1-4]/[0-7]/data/");
 }
 
 VDIFMark6DataStream::~VDIFMark6DataStream()
@@ -62,11 +60,11 @@ VDIFMark6DataStream::~VDIFMark6DataStream()
 
 void VDIFMark6DataStream::closeMark6()
 {
-	if(mark6fd >= 0)
+	if(mark6gather != 0)
 	{
-		mark6_sg_close(mark6fd);
+		closeMark6Gatherer(mark6gather);
 	}
-	mark6fd = -1;
+	mark6gather = 0;
 	mark6eof = false;
 }
 
@@ -85,14 +83,19 @@ void VDIFMark6DataStream::openfile(int configindex, int fileindex)
   
   dataremaining = true;
 
-  mark6fd = mark6_sg_open(datafilenames[configindex][fileindex].c_str(), O_RDONLY);
+  mark6gather = openMark6GathererFromTemplate(datafilenames[configindex][fileindex].c_str());
 
-  cverbose << startl << "mark6fd is " << mark6fd << endl;
-  if(mark6fd < 0)
+  cverbose << startl << "mark6gather is " << mark6gather << endl;
+  if(mark6gather == 0)
   {
     cerror << startl << "Cannot open mark6 data file " << datafilenames[configindex][fileindex] << endl;
     dataremaining = false;
     return;
+  }
+
+  if(isMark6GatherComplete(mark6gather) == 0)
+  {
+    cwarn << startl << "Warning: Mark6 file " << datafilenames[configindex][fileindex] << " seems to have an incomplete set of files.  Your weights may suffer if this is true." << endl;
   }
 
   cinfo << startl << "Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
@@ -138,6 +141,17 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 		cfatal << startl << "configurevmux failed with return code " << rv << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
+
+	int nChanPerThread = nrecordedbands/nthreads;
+	if(nChanPerThread != 1)
+	{
+		cinfo << startl << "Note: " << nChanPerThread << " channels reside on each thread.  Support for this is new.  Congratulations for being bold and trying this out!  Warranty void in the 193 UN recognized nations." << endl;
+	}
+	if(nChanPerThread * nthreads != nrecordedbands)
+	{
+		cerror << startl << "Error: " << nrecordedbands << " bands were recorded but they are divided unequally across " << nthreads << " threads.  This is not allowed.  Things will probably get very bad soon..." << endl;
+	}
+	setvdifmuxinputchannels(&vm, nChanPerThread);
 
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
 	if(fanout != 1)
@@ -192,12 +206,16 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 	
 	// Advance into file if requested
+#if 0
+
+FIXME: get seeking working
+
 	if(fileSummary.firstFrameOffset + dataoffset > 0)
 	{
 		off_t seek_pos;
 		cverbose << startl << "Mark6 about to seek to byte " << fileSummary.firstFrameOffset << " plus jump " << dataoffset << " to get to the first wanted frame" << endl;
 
-		seek_pos = mark6_sg_lseek(mark6fd, fileSummary.firstFrameOffset + dataoffset, SEEK_SET);
+		seek_pos = mark6_sg_lseek(mark6gather, fileSummary.firstFrameOffset + dataoffset, SEEK_SET);
 
 		if(seek_pos != fileSummary.firstFrameOffset + dataoffset)
 		{
@@ -206,6 +224,7 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 			closeMark6();
 		}
 	}
+#endif
 }
 
 
@@ -249,7 +268,7 @@ int VDIFMark6DataStream::dataRead(int buffersegment)
 	// execute the file read
 	input.read(reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytes);
 	bytestoread = bytes;
-	bytes = mark6_sg_read(mark6fd, reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytestoread);
+	bytes = mark6Gather(mark6gather, reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytestoread);
 	if(bytes < bytestoread)
 	{
 		// file ran out
@@ -454,7 +473,7 @@ cverbose << startl << "Starting VDIFMark6DataStream::loopfileread()" << endl;
 	{
 cverbose << startl << "Mark6: opening file " << filesread[bufferinfo[0].configindex] << endl;
 		openfile(bufferinfo[0].configindex, filesread[bufferinfo[0].configindex]++);
-		if(!dataremaining && mark6fd >= 0)
+		if(!dataremaining && mark6gather != 0)
 		{
 			closeMark6();
 		}
@@ -578,7 +597,7 @@ cverbose << startl << "keepreading is true" << endl;
 			}
 		}
 	}
-	if(mark6fd >= 0)
+	if(mark6gather != 0)
 	{
 		closeMark6();
 	}
