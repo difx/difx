@@ -301,7 +301,7 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
     m6sg_virt_filedescr_t* vfd;
     size_t nread = 0;
     size_t nremain = count;
-    size_t blk, prevblk;
+    size_t blk, prevblk, i;
 
     // Catch some error conditions
     if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
@@ -333,10 +333,16 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
         off_t  blkstart = vfd->blks[blk].virtual_offset;
         off_t  blkstop  = vfd->blks[blk].datalen + blkstart;
 
-        if ((rdoffset < blkstart) || (rdoffset >= blkstop))
+        // If current block is wrong, try others until finding correct one
+        if (rdoffset < blkstart)
+        {
+            blk = (blk + (vfd->nblocks - 1)) % vfd->nblocks; // "blk--" with wrap
+            continue;
+        }
+        if (rdoffset >= blkstop)
         {
             blk = (blk + 1) % vfd->nblocks;
-            continue; // try other blocks until finding correct one
+            continue;
         }
 
         nskip   = rdoffset - blkstart;
