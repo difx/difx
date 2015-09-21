@@ -23,6 +23,8 @@ import sys
 import os
 import re, shlex, operator
 
+mounter_version = 2  # 1 for old version by J. Wagner, 2 for newer version by H. Verkouter
+
 # A note on Mark6 disk controller cards (MPT2SAS)
 #
 #   Mark6 has one or two MPT2SAS controller cards
@@ -112,6 +114,7 @@ class MounterV1(MounterBase):
 
 	def __init__(self):
 		super(MounterV1,self).__init__()
+		# print 'Using mounter class version 1'
 
 	def getPartitions(self):
 		partitions = []
@@ -187,6 +190,7 @@ class MounterV2(MounterBase):
 
 	def __init__(self):
 		super(MounterV2,self).__init__()
+		# print 'Using mounter class version 2'
 
 	def getPartitions(self):
 		# Follow Haystack convention; map MPTSAS controller => drives => modules
@@ -274,7 +278,7 @@ class MounterV2(MounterBase):
 		return reduce(mk_mount, sorted(lst, key=operator.itemgetter(0, 1)), [])
 
 	def getMountables(self,partitions,mounted):
-		return make_mount_list(set(partitions) - set(mounted))
+		return self.make_mount_list(set(partitions) - set(mounted))
 
 	def doBatchMount(self,mountlist):
 		# Mount in the order below so it looks "pretty" in /etc/mtab
@@ -289,7 +293,7 @@ class MounterV2(MounterBase):
 
 	def getUnMountables(self,partitions,mounted):
 		# transform list of mounted disks into a list of unmountables
-		return make_mount_list(mounted)
+		return self.make_mount_list(mounted)
 
 	def doBatchUnMount(self,mountlist):
 		for m in mountlist:
@@ -299,12 +303,21 @@ class MounterV2(MounterBase):
 
 ### Command Line #########################################################################
 if __name__ == '__main__':
-	# m = MounterV1()
-	m = MounterV2()
-
-	(Lpart,Lmount)  = m.getPartitions()
-	(Lmountables)   = m.getMountables(Lpart,Lmount)
-	(Lunmountables) = m.getUnMountables(Lpart,Lmount)
+	
+	if mounter_version == 1:
+		m = MounterV1()
+		(Lpart,Lmount)  = m.getPartitions()
+		(Lmountables)   = m.getMountables(Lpart,Lmount)
+		(Lunmountables) = m.getUnMountables(Lpart,Lmount)
+	elif mounter_version == 2:
+		m = MounterV2()
+		Lpart         = m.getPartitions()
+		Lmount        = m.getMounted()
+		Lmountables   = m.getMountables(Lpart, Lmount)
+		Lunmountables = m.getUnMountables(Lpart, Lmount)
+	else:
+		print 'm6sg_mount has unsupported hard-coded mount interface version! please edit m6sg_mount!'
+		sys.exit(-1)
 
 	if len(sys.argv)!=1 and len(sys.argv)!=2 or (len(sys.argv)==2 and not sys.argv[1]=='-u'):
 		print 'Usage: m6sg_mount [-u]'
