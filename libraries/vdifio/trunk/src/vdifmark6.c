@@ -40,6 +40,11 @@
 
 const char DefaultMark6Root[] = "/mnt/disks/*/*/data";
 
+static inline uint64_t vdifFrame(vdif_header *vh)
+{
+	return ((uint64_t)(getVDIFFrameEpochSecOffset(vh)) << 24LL) | getVDIFFrameNumber(vh);
+}
+
 const char *mark6PacketFormat(int formatId)
 {
 	if(formatId == 0)
@@ -151,7 +156,7 @@ static void *mark6Reader(void *arg)
 		v = fread(&m6f->readHeader, m6f->blockHeaderSize, 1, m6f->in);
 		if(v == 1)
 		{
-			m6f->readBytes = fread(m6f->readBuffer, 1, m6f->blockHeader.wb_size - m6f->blockHeaderSize, m6f->in);
+			m6f->readBytes = fread(m6f->readBuffer, 1, m6f->readHeader.wb_size - m6f->blockHeaderSize, m6f->in);
 		}
 		else
 		{
@@ -171,12 +176,53 @@ struct seekArgs
 	int nFile;		/* number of files in the fileset */
 };
 
+/* Returns 0 on EOF */
+static ssize_t Mark6FileReadBlock(Mark6File *m6f, int slotIndex)
+{
+	Mark6BufferSlot *slot;
+
+	slot = m6f->slot + slotIndex;
+
+	pthread_barrier_wait(&m6f->readBarrier);
+
+	slot->payloadBytes = m6f->readBytes;
+
+	if(slot->payloadBytes == 0)
+	{
+		slot->index = 0;
+		slot->frame = 0;
+	}
+	else
+	{
+		char *tmp;
+		vdif_header *vh;
+		
+		slot->payloadBytes -= (slot->payloadBytes % m6f->packetSize);
+
+		memcpy(&slot->blockHeader, &m6f->readHeader, m6f->blockHeaderSize);
+		
+		tmp = slot->data;
+		slot->data = m6f->readBuffer;
+		m6f->readBuffer = tmp;
+
+		slot->index = 0;
+
+		vh = (vdif_header *)(slot->data);
+		slot->frame = vdifFrame(vh);
+	}
+
+	pthread_barrier_wait(&m6f->readBarrier);
+
+	return slot->payloadBytes;
+}
+
 static void *mark6Seeker(void *arg)
 {
 	struct seekArgs *S = (struct seekArgs *)arg;
 	off_t pos;
 	int blockSize;
 	int targetBlock;
+	int slotIndex;
 	int i;
 
 	/*   1. wait for any ongoing reads to complete */
@@ -229,19 +275,23 @@ static void *mark6Seeker(void *arg)
 
 	/*   3. reposition the file at the correct location */
 	fseeko(S->m6f->in, pos, SEEK_SET);
-	S->m6f->index = 0;
 
 	/*   4. give control back to reader thread */
 	pthread_barrier_wait(&S->m6f->readBarrier);
 
-	/*   5. explicitly load the next block */
-	Mark6FileReadBlock(S->m6f);
+	/*   5. explicitly load the next block for each slot */
+	for(slotIndex = 0; slotIndex < MARK6_BUFFER_SLOTS; ++slotIndex)
+	{
+		Mark6FileReadBlock(S->m6f, slotIndex);
+	}
 
 	return 0;
 }
 
 static void deallocateMark6File(Mark6File *m6f)
 {
+	int s;
+
 	if(m6f->in)
 	{
 		fclose(m6f->in);
@@ -252,10 +302,13 @@ static void deallocateMark6File(Mark6File *m6f)
 		free(m6f->fileName);
 		m6f->fileName = 0;
 	}
-	if(m6f->data)
+	for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
 	{
-		free(m6f->data);
-		m6f->data = 0;
+		if(m6f->slot[s].data)
+		{
+			free(m6f->slot[s].data);
+			m6f->slot[s].data = 0;
+		}
 	}
 	if(m6f->readBuffer)
 	{
@@ -273,6 +326,7 @@ int openMark6File(Mark6File *m6f, const char *filename)
 {
 	Mark6Header header;
 	pthread_attr_t attr;
+	int slotIndex;
 
 	stat(filename, &m6f->stat);
 	m6f->in = fopen(filename, "r");
@@ -292,15 +346,9 @@ int openMark6File(Mark6File *m6f, const char *filename)
 
 		return -2;
 	}
+	m6f->readHeader.wb_size = m6f->maxBlockSize;
 	m6f->maxBlockSize = header.block_size;
 	m6f->packetSize = header.packet_size;
-	m6f->data = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
-	if(!m6f->data)
-	{
-		deallocateMark6File(m6f);
-
-		return -3;
-	}
 	m6f->readBuffer = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
 	if(!m6f->readBuffer)
 	{
@@ -308,16 +356,32 @@ int openMark6File(Mark6File *m6f, const char *filename)
 
 		return -5;
 	}
-	m6f->blockHeader.blocknum = -1;
-	m6f->blockHeader.wb_size = m6f->maxBlockSize;
-
-	m6f->payloadBytes = 0;	/* nothing read yet */
 
 	if(getFirstBlocks(m6f) < 0)
 	{
 		deallocateMark6File(m6f);
 
 		return -4;
+	}
+
+	for(slotIndex = 0; slotIndex < MARK6_BUFFER_SLOTS; ++slotIndex)
+	{
+		Mark6BufferSlot *slot;
+
+		slot = m6f->slot + slotIndex;
+
+		slot->data = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
+		if(!slot->data)
+		{
+			deallocateMark6File(m6f);
+
+			return -3;
+		}
+
+		slot->blockHeader.blocknum = -1;
+		slot->blockHeader.wb_size = m6f->maxBlockSize;
+
+		slot->payloadBytes = 0;	/* nothing read yet */
 	}
 
 	/* start reading thread */
@@ -361,55 +425,25 @@ void printMark6File(const Mark6File *m6f)
 	}
 	else
 	{
+		int s;
 		printf("  Filename = %s\n", m6f->fileName);
 		printf("  Mark6 version = %d\n", m6f->version);
 		printf("  Max block size = %d\n", m6f->maxBlockSize);
 		printf("  Block header size = %d\n", m6f->blockHeaderSize);
 		printf("  First two block numbers = %d, %d\n", m6f->block1, m6f->block2);
-		printf("  Packet size = %d\n", m6f->packetSize);
-		printf("  Payload bytes = %d (bytes currently residing in core)\n", m6f->payloadBytes);
-		printf("  Current block number = %d\n", m6f->blockHeader.blocknum);
-		printf("  Current index within block = %d\n", m6f->index);
-		printf("  Second = %d\n", (int)(m6f->frame >> 24));
-		printf("  Frame in second = %d\n", (int)(m6f->frame & 0xFFFFFF));
 		printf("  File size = %lld\n", (long long)(m6f->stat.st_size));
+		printf("  Packet size = %d\n", m6f->packetSize);
+
+		for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
+		{
+			printf("  Slot %d\n", s);
+			printf("    Payload bytes = %d (bytes currently residing in core)\n", m6f->slot[s].payloadBytes);
+			printf("    Current block number = %d\n", m6f->slot[s].blockHeader.blocknum);
+			printf("    Current index within block = %d\n", m6f->slot[s].index);
+			printf("    Second = %d\n", (int)(m6f->slot[s].frame >> 24));
+			printf("    Frame in second = %d\n", (int)(m6f->slot[s].frame & 0xFFFFFF));
+		}
 	}
-}
-
-/* Returns 0 on EOF */
-ssize_t Mark6FileReadBlock(Mark6File *m6f)
-{
-	pthread_barrier_wait(&m6f->readBarrier);
-
-	m6f->payloadBytes = m6f->readBytes;
-
-	if(m6f->payloadBytes == 0)
-	{
-		m6f->index = 0;
-		m6f->frame = 0;
-	}
-	else
-	{
-		char *tmp;
-		vdif_header *vh;
-		
-		m6f->payloadBytes -= (m6f->payloadBytes % m6f->packetSize);
-
-		memcpy(&m6f->blockHeader, &m6f->readHeader, m6f->blockHeaderSize);
-		
-		tmp = m6f->data;
-		m6f->data = m6f->readBuffer;
-		m6f->readBuffer = tmp;
-
-		m6f->index = 0;
-
-		vh = (vdif_header *)(m6f->data);
-		m6f->frame = ((uint64_t)(getVDIFFrameEpochSecOffset(vh)) << 24LL) | getVDIFFrameNumber(vh);
-	}
-
-	pthread_barrier_wait(&m6f->readBarrier);
-
-	return m6f->payloadBytes;
 }
 
 
@@ -549,7 +583,11 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 		}
 		else
 		{
-			Mark6FileReadBlock(m6g->mk6Files + i);
+			int s;
+			for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
+			{
+				Mark6FileReadBlock(m6g->mk6Files + i, s);
+			}
 		}
 	}
 	m6g->packetSize = m6g->mk6Files[0].packetSize;
@@ -685,40 +723,46 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 
 	while(n < count)
 	{
-		int i;
+		int f, s, fileIndex, slotIndex;
 		uint64_t lowestFrame;
-		int f;
 		Mark6File *F;
+		Mark6BufferSlot *slot;
 
-		lowestFrame = m6g->mk6Files[0].frame+1;
-		f = -1;
+		lowestFrame = m6g->mk6Files[0].slot[0].frame+1;
+		fileIndex = -1;
+		slotIndex = -1;
 
-		for(i = 0; i < m6g->nFile; ++i)
+		for(f = 0; f < m6g->nFile; ++f)
 		{
-			if(m6g->mk6Files[i].payloadBytes > 0 && m6g->mk6Files[i].frame < lowestFrame)
+			for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
 			{
-				lowestFrame = m6g->mk6Files[i].frame;
-				f = i;
+				if(m6g->mk6Files[f].slot[s].payloadBytes > 0 && m6g->mk6Files[f].slot[s].frame < lowestFrame)
+				{
+					lowestFrame = m6g->mk6Files[f].slot[s].frame;
+					fileIndex = f;
+					slotIndex = s;
+				}
 			}
 		}
-		if(f < 0)
+		if(fileIndex < 0)
 		{
 			return n;
 		}
 
-		F = &m6g->mk6Files[f];
-		memcpy(buf, F->data + F->index, m6g->packetSize);
+		F = &m6g->mk6Files[fileIndex];
+		slot = F->slot + slotIndex;
+		memcpy(buf, slot->data + slot->index, m6g->packetSize);
 		buf += m6g->packetSize;
 		n += m6g->packetSize;
-		F->index += m6g->packetSize;
-		if(F->index >= F->payloadBytes)
+		slot->index += m6g->packetSize;
+		if(slot->index >= slot->payloadBytes)
 		{
-			Mark6FileReadBlock(F);
+			Mark6FileReadBlock(F, slotIndex);
 		}
 		else
 		{
-			vdif_header *vh = (vdif_header *)(F->data + F->index);
-			F->frame = ((uint64_t)getVDIFFrameEpochSecOffset(vh) << 24LL) | getVDIFFrameNumber(vh);
+			vdif_header *vh = (vdif_header *)(slot->data + slot->index);
+			slot->frame = vdifFrame(vh);
 		}
 	}
 

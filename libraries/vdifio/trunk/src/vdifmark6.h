@@ -44,6 +44,7 @@ extern "C" {
 
 #define MARK6_SYNC		0xfeed6666
 #define MAX_VDIF_MUX_SLOTS	64
+#define MARK6_BUFFER_SLOTS	2
 
 typedef struct
 {
@@ -67,19 +68,25 @@ typedef struct
 
 typedef struct
 {
+	int payloadBytes;			/* [bytes] actual number of payload bytes (usually == payload_size) */
+	int index;				/* index into data[] */
+	uint64_t frame;				/* from VDIF header */
+	char *data;				/* points to payload within buffer */
+	Mark6BlockHeader_ver2 blockHeader;	/* header corresponding to recent data */
+} Mark6BufferSlot;
+
+typedef struct
+{
 	FILE *in;				/* actual file descriptor */
 	char *fileName;
 	int version;				/* from Mark6Header */
 	int maxBlockSize;			/* from Mark6Header */
 	int blockHeaderSize;			/* [bytes] from mark6BlockHeaderSize() */
 	int packetSize;				/* [bytes] from Mark6Header */
-	int payloadBytes;			/* [bytes] actual number of payload bytes (usually == payload_size) */
-	int index;				/* index into data[] */
-	uint64_t frame;				/* from VDIF header */
-	char *data;				/* points to payload within buffer */
-	Mark6BlockHeader_ver2 blockHeader;	/* header corresponding to recent data */
 	struct stat stat;			/* stat, as read before file open */
 	int32_t block1, block2;			/* set at open: the first two block numbers in the file */
+
+	Mark6BufferSlot slot[MARK6_BUFFER_SLOTS];	/* Allow MARK6_BUFFER_SLOTS blocks to be visible to gatherer at once */
 
 	/* some parallel-read infrastructure */
 	int stopReading;			/* if > 0, get out of read loop */
@@ -113,8 +120,6 @@ int openMark6File(Mark6File *m6f, const char *filename);
 int closeMark6File(Mark6File *m6f);
 
 void printMark6File(const Mark6File *m6f);
-
-ssize_t Mark6FileReadBlock(Mark6File *m6f);
 
 
 Mark6Gatherer *newMark6Gatherer();

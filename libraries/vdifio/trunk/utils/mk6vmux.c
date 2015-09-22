@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 	fprintf(stderr, "Got %d chans per thread from the first frame header\n", nChanPerThread);
 	if(nChanPerThread != 1)
 	{
-		printf(stderr, "Setting nChanPerThread to %d based on first frame header\n", nChanPerThread);
+		fprintf(stderr, "Setting nChanPerThread to %d based on first frame header\n", nChanPerThread);
 		rv = setvdifmuxinputchannels(&vm, nChanPerThread);
 		if(rv < 0)
 		{
