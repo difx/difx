@@ -96,8 +96,8 @@ static unsigned int gcd(unsigned int u, unsigned int v)
  *	length of single-thread VDIF data packet
  * inputFramesPerSecond:
  *	Number of frames per second per thread of input to expect
- * nBit:
- *	number of bits per sample
+ * bitsPerSample:
+ *	number of bits per sample (for complex, number of bits per component)
  * nThread:
  *	number of input threads.
  * threadIds:
@@ -113,9 +113,10 @@ static unsigned int gcd(unsigned int u, unsigned int v)
  *
  * see ../utils/vmux.c for example usage of this function
  */
-int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, int flags)
+int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPerSecond, int bitsPerSample, int nThread, const int *threadIds, int nSort, int nGap, int flags)
 {
 	int i;
+	int nBit;	/* bits to corner turn together */
 
 	if(nThread > sizeof(vm->goodMask)*8)
 	{
@@ -124,6 +125,16 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 		return -3;
 	}
 
+	if(flags & VDIF_MUX_FLAG_COMPLEX)
+	{
+		vm->complexFactor = 2;
+	}
+	else
+	{
+		vm->complexFactor = 1;
+	}
+
+	nBit = bitsPerSample * vm->complexFactor;
 	vm->cornerTurner = getCornerTurner(nThread, nBit);
 	if(vm->cornerTurner == 0)
 	{
@@ -136,7 +147,7 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 	vm->inputFramesPerSecond = inputFramesPerSecond;
 	vm->inputChannelsPerThread = 1;	/* Use setvdifmuxinputchannels() if this is not desired */
 	vm->frameGranularity = inputFramesPerSecond/gcd(inputFramesPerSecond, 1000000000);
-	vm->nBit = nBit;
+	vm->bitsPerSample = bitsPerSample;
 	vm->nSort = nSort;
 	vm->nGap = nGap;
 	nThread = abs(nThread);	/* in case a special corner turner was requested */
@@ -175,7 +186,6 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 		vm->outputFrameSize = vm->outputDataSize + VDIF_HEADER_BYTES;
 	}
 
-
 	for(i = 0; i <= VDIF_MAX_THREAD_ID; ++i)
 	{
 		vm->chanIndex[i] = MAGIC_BAD_THREAD;
@@ -198,6 +208,8 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 
 int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread)
 {
+	int nBit;	/* total bits to be corner turned together */
+
 	if(!vm)
 	{
 		fprintf(stderr, "Error: setvdifmuxinputchannels called with null vdif_mux structure\n");
@@ -217,10 +229,11 @@ int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread)
 	for(vm->nOutputChan = 1; vm->nOutputChan < vm->nThread; vm->nOutputChan *= 2) ;
 	vm->nOutputChan *= vm->inputChannelsPerThread;
 
-	vm->cornerTurner = getCornerTurner(vm->nThread, vm->nBit*vm->inputChannelsPerThread);
+	nBit = vm->bitsPerSample*vm->inputChannelsPerThread*vm->complexFactor;
+	vm->cornerTurner = getCornerTurner(vm->nThread, nBit);
 	if(vm->cornerTurner == 0)
 	{
-		fprintf(stderr, "No corner turner implemented for %d threads and %d bits\n", vm->nThread, vm->nBit*vm->inputChannelsPerThread);
+		fprintf(stderr, "No corner turner implemented for %d threads and %d bits\n", vm->nThread, nBit);
 		
 		return -1;
 	}
@@ -242,7 +255,8 @@ void printvdifmux(const struct vdif_mux *vm)
 		printf("  inputFramesPerSecond = %d\n", vm->inputFramesPerSecond);
 		printf("  frameGranularity = %d\n", vm->frameGranularity);
 		printf("  inputChannelsPerThread = %d\n", vm->inputChannelsPerThread);
-		printf("  nBit = %d\n", vm->nBit);
+		printf("  bitsPerSample = %d\n", vm->bitsPerSample);
+		printf("  complexFactor = %d\n", vm->complexFactor);
 		printf("  nSort = %d\n", vm->nSort);
 		printf("  nGap = %d\n", vm->nGap);
 		printf("  nThread = %d\n", vm->nThread);
@@ -409,7 +423,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		}
 		if(getVDIFFrameBytes(vh) != vm->inputFrameSize ||
 		   getVDIFNumChannels(vh) != vm->inputChannelsPerThread ||
-		   getVDIFBitsPerSample(vh) != vm->nBit)
+		   getVDIFBitsPerSample(vh) != vm->bitsPerSample)
 		{
 			i += 4;
 			nSkip += 4;

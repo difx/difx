@@ -257,12 +257,13 @@ struct vdif_mux {
   int outputDataSize;					/* size of one output data frame, without header */
   int inputFramesPerSecond;				/* per thread */
   int inputChannelsPerThread;				/* default is 1, unless this is changed with setvdifmuxinputchannels() */
-  int nBit;						/* per sample */
+  int bitsPerSample;					/* per sample (a complex number is considered 2 samples here) */
   int nThread;
   int nSort;
   int nGap;
   int frameGranularity;
   int nOutputChan;					/* nThread rounded up to nearest power of 2, then multiplied by input chans per thread */
+  int complexFactor;					/* should be 1 (real) or 2 (complex).  Used in selecting cornerturner */
   unsigned int flags;
   uint16_t chanIndex[VDIF_MAX_THREAD_ID+1];		/* map from threadId to channel number (0 to nThread-1) */
   uint64_t goodMask;
@@ -300,7 +301,7 @@ struct vdif_mux_statistics {
 };
 
 /* return 0 on success, or code on error */
-int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, int flags);
+int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPerSecond, int bitsPerSample, int nThread, const int *threadIds, int nSort, int nGap, int flags);
 
 int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread);
 
