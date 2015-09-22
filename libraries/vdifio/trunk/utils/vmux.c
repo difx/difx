@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 	const char *inFile;
 	const char *outFile;
 	off_t offset = 0;
-	int nBit = 0;
+	int bitsPerSample = 0;
 	int nChanPerThread;
 	const vdif_header *vh;
 	struct vdif_mux vm;
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 	}
 	if(argc > 7)
 	{
-		nBit = atoi(argv[7]);
+		bitsPerSample = atoi(argv[7]);
 	}
 	if(argc > 8)
 	{
@@ -220,14 +220,13 @@ int main(int argc, char **argv)
 
 	vh = (const vdif_header *)src;
 
-	/* Eventually get rid of command line specification of nBit altogether */
-	if(nBit <= 0)
+	if(bitsPerSample <= 0)
 	{
-		nBit = getVDIFBitsPerSample(vh);
-		printf("Got %d bits per sample from the first frame header\n", nBit);
+		bitsPerSample = getVDIFBitsPerSample(vh);
+		printf("Got %d bits per sample from the first frame header\n", bitsPerSample);
 	}
 
-	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, nBit, nThread, threads, nSort, nGap, flags);
+	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, bitsPerSample, nThread, threads, nSort, nGap, flags);
 	if(rv < 0)
 	{
 		fprintf(stderr, "Error configuring vdifmux: %d\n", rv);

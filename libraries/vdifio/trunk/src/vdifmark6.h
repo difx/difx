@@ -44,7 +44,7 @@ extern "C" {
 
 #define MARK6_SYNC		0xfeed6666
 #define MAX_VDIF_MUX_SLOTS	64
-#define MARK6_BUFFER_SLOTS	2
+#define MARK6_BUFFER_SLOTS	4
 
 typedef struct
 {
