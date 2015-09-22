@@ -641,7 +641,7 @@ int Configuration::getDataBytes(int configindex, int datastreamindex) const
         nbands *= 2;
       }
 
-      payloadbytes *= nbands;
+      payloadbytes *= getDNumMuxThreads(configindex, datastreamindex);
       framebytes = payloadbytes + VDIF_HEADER_BYTES; // Assume INTERLACEDVDIF always non-legacy
     }
     numframes = (validlength/payloadbytes + 2);

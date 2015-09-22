@@ -50,6 +50,8 @@ VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, i
 	cwarn << startl << "Starting Mark6 datastream.  This is experimental at this time!" << endl;
 	mark6gather = 0;
 	mark6eof = false;
+	nSort = 20;
+	nGap = 100;
 }
 
 VDIFMark6DataStream::~VDIFMark6DataStream()
@@ -282,9 +284,16 @@ int VDIFMark6DataStream::dataRead(int buffersegment)
 	input.read(reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytes);
 	bytestoread = bytes;
 	bytes = mark6Gather(mark6gather, reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytestoread);
+cinfo << startl << "Mark6 Gather: " << bytestoread << " requested, " << bytes << " received." << endl;
 	if(bytes < bytestoread)
 	{
 		// file ran out
+		mark6eof = true;
+	}
+
+	if(bytestoread == 0)
+	{
+		cwarn << startl << "Weird: bytes to read is zero!" << endl;
 		mark6eof = true;
 	}
 
