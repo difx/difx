@@ -2321,6 +2321,39 @@ static void cornerturn_4thread_64bit(unsigned char *outputBuffer, const unsigned
   }
 }
 
+static void cornerturn_4thread_128bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint64_t *t0 = (const uint64_t *)(threadBuffers[0]);
+  const uint64_t *t1 = (const uint64_t *)(threadBuffers[1]);
+  const uint64_t *t2 = (const uint64_t *)(threadBuffers[2]);
+  const uint64_t *t3 = (const uint64_t *)(threadBuffers[3]);
+  uint64_t *out = (uint64_t *)(outputBuffer);
+
+  n = outputDataSize/64;
+
+  for(i = 0; i < n; ++i)
+  {
+    *out = t0[i];
+    ++out;
+    *out = t0[i];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t3[i];
+    ++out;
+    *out = t3[i];
+    ++out;
+  }
+}
+
 static void cornerturn_8thread_64bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
@@ -2605,6 +2638,17 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return 0;
 		}
 	}
+	else if(nBit == 128)
+	{
+		switch(nThread)
+		{
+		case 4:
+			return cornerturn_4thread_128bit;
+		/* unsupported cases */
+		default:
+			return 0;
+		}
+	}
 	else
 	{
 		return 0;
@@ -2696,7 +2740,7 @@ static int testCornerTurn(const unsigned char *outputBuffer, const unsigned char
 void testvdifcornerturners(int outputBytes, int nTest)
 {
 	const char devRandom[] = "/dev/urandom";
-	const int bits[] = { 1, 2, 4, 8, 16, 32, 64, 0 };
+	const int bits[] = { 1, 2, 4, 8, 16, 32, 64, 128, 0 };
 	const int maxThreads = 16;
 	int bi;
 	int t;

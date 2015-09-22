@@ -247,6 +247,7 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 #define VDIF_MUX_FLAG_ENABLEVALIDITY		0x04		/* if set, throw away VDIF frames coming in with invalid bit set */
 #define	VDIF_MUX_FLAG_INPUTLEGACY		0x08		/* if set, accept LEGACY frames; NOT YET IMPLEMENTED */
 #define	VDIF_MUX_FLAG_OUTPUTLEGACY		0x10		/* if set, produce LEGACY frames; NOT YET IMPLEMENTED */
+#define VDIF_MUX_FLAG_COMPLEX			0x20		/* if set, data is complex (so 2x as many bits per logical sample) */
 
 
 struct vdif_mux {

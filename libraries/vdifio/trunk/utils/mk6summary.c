@@ -11,6 +11,7 @@ void summarize(const char *fileName)
 	int i;
 	Mark6BlockHeader_ver2 *h;
 	int s;
+	vdif_header *v1, *v2;
 
 	in = fopen(fileName, "r");
 	if(in == 0)
@@ -35,6 +36,8 @@ void summarize(const char *fileName)
 	h = (Mark6BlockHeader_ver2 *)buffer;
 	data = buffer + s;
 
+	v1 = (vdif_header *)data;
+
 	for(i = 0; ; ++i)
 	{
 		int v, j, n;
@@ -54,15 +57,15 @@ void summarize(const char *fileName)
 		}
 		for(j = 0; j < n; ++j)
 		{
-			vdif_header *V;
-
-			V = (vdif_header *)(data + j*H.packet_size);
-			if(getVDIFFrameBytes(V) == H.packet_size)
+			v2 = (vdif_header *)(data + j*H.packet_size);
+			if(getVDIFFrameBytes(v2) == H.packet_size)
 			{
 				++nSize;
 			}
 		}
-		printf("%d %d %d/%d\n", i, h->blocknum, nSize, n);
+		printf("%d %d %d/%d  %d:%05d:%d - %d:%05d:%d\n", i, h->blocknum, nSize, n,
+			getVDIFFrameEpochSecOffset(v1), getVDIFFrameNumber(v1), getVDIFThreadID(v1),
+			getVDIFFrameEpochSecOffset(v2), getVDIFFrameNumber(v2), getVDIFThreadID(v2));
 	}
 
 	free(buffer);
