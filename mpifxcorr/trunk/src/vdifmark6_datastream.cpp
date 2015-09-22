@@ -111,6 +111,7 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	Configuration::datasampling sampling;
 	Configuration::dataformat format;
 	double bw;
+	int muxFlags;
 	int rv;
 
 	long long dataoffset = 0;
@@ -119,7 +120,7 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 
 	format = config->getDataFormat(configindex, streamnum);
 	sampling = config->getDSampling(configindex, streamnum);
-	nbits = config->getDNumBits(configindex, streamnum);
+	nbits = config->getDNumBits(configindex, streamnum);	/* Bits per sample.  If complex, bits per component. */
 	nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
 	inputframebytes = config->getFrameBytes(configindex, streamnum);
 	framespersecond = config->getFramesPerSecond(configindex, streamnum)/config->getDNumMuxThreads(configindex, streamnum);
@@ -135,7 +136,13 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
 	threads = config->getDMuxThreadMap(configindex, streamnum);
 
-	rv = configurevdifmux(&vm, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, VDIF_MUX_FLAG_RESPECTGRANULARITY);
+	muxFlags = VDIF_MUX_FLAG_RESPECTGRANULARITY;
+	if(sampling == Configuration::COMPLEX)
+	{
+		cinfo << startl << "Note: this is complex sampled data.  Multiplexing complex data is poorly tested." << endl;
+		muxFlags |= VDIF_MUX_FLAG_COMPLEX;
+	}
+	rv = configurevdifmux(&vm, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, muxFlags);
 	if(rv < 0)
 	{
 		cfatal << startl << "configurevmux failed with return code " << rv << endl;

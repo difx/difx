@@ -1,10 +1,12 @@
 Version 2.5
 ~~~~~~~~~~~
-* Another 0.5ns jitter was found in Mark5B processing for data rates >= 2 Gbps.  This is now filed (2015 Feb 22 -- WFB)
+* Another 0.5ns jitter was found in Mark5B processing for data rates >= 2 Gbps.  This is now fixed (2015 Feb 22 -- WFB)
 * Slightly more instructive messages when model files have disagreements with .calc files.
 * Check for time disagreements in polyco headers: the fractional MJD is supposed to be definitive, while the HHMMSS value can be rounded
 * Support .im files that contain some additional information (mpifxcorr now just ignores the info)
-* First bits of code for native Mark6 in place.  This relies on Jan Wagner's mark6sg library and vdifio linked to mark6sg as well.  UNTESTED.
+* First bits of code for native Mark6 in place.  This relies on some mark6 "gather" code in the vdifio library.
+* Add support for VDIF with multiple channels per thread and multiple threads.
+* Add support for complex VDIF with multiple threads
 
 Version 2.4
 ~~~~~~~~~~~
