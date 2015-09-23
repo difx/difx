@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	const char *inFile;
 	const char *outFile;
 	off_t offset = 0;
-	int nBit = 0;
+	int bitsPerSample = 0;
 	int nChanPerThread;
 	const vdif_header *vh;
 	struct vdif_mux vm;
@@ -208,10 +208,10 @@ int main(int argc, char **argv)
 
 	vh = (const vdif_header *)src;
 
-	nBit = getVDIFBitsPerSample(vh);
-	fprintf(stderr, "Got %d bits per sample from the first frame header\n", nBit);
+	bitsPerSample = getVDIFBitsPerSample(vh);
+	fprintf(stderr, "Got %d bits per sample from the first frame header\n", bitsPerSample);
 
-	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, nBit, nThread, threads, nSort, nGap, flags);
+	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, bitsPerSample, nThread, threads, nSort, nGap, flags);
 	if(rv < 0)
 	{
 		fprintf(stderr, "Error configuring vdifmux: %d\n", rv);
@@ -262,8 +262,6 @@ int main(int argc, char **argv)
 			nSort = -nSort;
 		}
 		V = vdifmux(dest, destChunkSize, src, n+leftover, &vm, nextFrame, &stats);
-
-		printvdifmuxstatistics(&stats);
 
 		if(V < 0)
 		{
