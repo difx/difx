@@ -21,12 +21,15 @@ Version 1.1
   - 16-bit with 2, 4, 8, 16 threads
   - 32-bit with 2, 4, 8, 16 threads
   - 64-bit with 2, 4, 8, 16 threads
+  - 128-bit with 2, 4, 8, 16 threads
   - Why need for large words?  It turns out that multiplexing multiple channels per thread is mathematically identical to multiplexing one channel per thread but with a total bit width of nBit*nChan
 * VDIF multiplexer now supports multiplexing threads with more than one channel.
   - a change in the API for configurevdifmux() is likely coming that will simplify use of this.  For now, use setvdifmuxinputchannels() after configurevdifmux()
 * New utility: filterVDIF.  It extracts certain threads and summarized what it found.  Similar to extractVDIFThreads.
 * New utility: mk6gather: reads a VDIF stream from a Mark6 unit and writes it to a file.  Time reordering is done at the packet level.
 * New utility: mk6ls: lists Mark6 "files" on system.  Respects ENV VAR MARK6_ROOT
+* New utility: mk6vmux: directly multiplexes VDIF data from a Mark6 module
+* vmux and mk6vmux (and in general any multiplexing) can be done on complex data
 
 Version 1.0
 ~~~~~~~~~~~

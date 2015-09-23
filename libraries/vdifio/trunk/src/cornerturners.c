@@ -2529,6 +2529,99 @@ static void cornerturn_8thread_128bit(unsigned char *outputBuffer, const unsigne
   }
 }
 
+static void cornerturn_16thread_128bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint64_t *t0  = (const uint64_t *)(threadBuffers[0]);
+  const uint64_t *t1  = (const uint64_t *)(threadBuffers[1]);
+  const uint64_t *t2  = (const uint64_t *)(threadBuffers[2]);
+  const uint64_t *t3  = (const uint64_t *)(threadBuffers[3]);
+  const uint64_t *t4  = (const uint64_t *)(threadBuffers[4]);
+  const uint64_t *t5  = (const uint64_t *)(threadBuffers[5]);
+  const uint64_t *t6  = (const uint64_t *)(threadBuffers[6]);
+  const uint64_t *t7  = (const uint64_t *)(threadBuffers[7]);
+  const uint64_t *t8  = (const uint64_t *)(threadBuffers[8]);
+  const uint64_t *t9  = (const uint64_t *)(threadBuffers[9]);
+  const uint64_t *t10 = (const uint64_t *)(threadBuffers[10]);
+  const uint64_t *t11 = (const uint64_t *)(threadBuffers[11]);
+  const uint64_t *t12 = (const uint64_t *)(threadBuffers[12]);
+  const uint64_t *t13 = (const uint64_t *)(threadBuffers[13]);
+  const uint64_t *t14 = (const uint64_t *)(threadBuffers[14]);
+  const uint64_t *t15 = (const uint64_t *)(threadBuffers[15]);
+  uint64_t *out = (uint64_t *)(outputBuffer);
+
+  n = outputDataSize/128;
+
+  for(i = 0; i < n; i+=2)
+  {
+    *out = t0[i];
+    ++out;
+    *out = t0[i+1];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t1[i+1];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t2[i+1];
+    ++out;
+    *out = t3[i];
+    ++out;
+    *out = t3[i+1];
+    ++out;
+    *out = t4[i];
+    ++out;
+    *out = t4[i+1];
+    ++out;
+    *out = t5[i];
+    ++out;
+    *out = t5[i+1];
+    ++out;
+    *out = t6[i];
+    ++out;
+    *out = t6[i+1];
+    ++out;
+    *out = t7[i];
+    ++out;
+    *out = t7[i+1];
+    ++out;
+    *out = t8[i];
+    ++out;
+    *out = t8[i+1];
+    ++out;
+    *out = t9[i];
+    ++out;
+    *out = t9[i+1];
+    ++out;
+    *out = t10[i];
+    ++out;
+    *out = t10[i+1];
+    ++out;
+    *out = t11[i];
+    ++out;
+    *out = t11[i+1];
+    ++out;
+    *out = t12[i];
+    ++out;
+    *out = t12[i+1];
+    ++out;
+    *out = t13[i];
+    ++out;
+    *out = t13[i+1];
+    ++out;
+    *out = t14[i];
+    ++out;
+    *out = t14[i+1];
+    ++out;
+    *out = t15[i];
+    ++out;
+    *out = t15[i+1];
+    ++out;
+  }
+}
+
 
 void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned char * const *, int)
 {
@@ -2725,6 +2818,8 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_4thread_128bit;
 		case 8:
 			return cornerturn_8thread_128bit;
+		case 16:
+			return cornerturn_16thread_128bit;
 		/* unsupported cases */
 		default:
 			return 0;

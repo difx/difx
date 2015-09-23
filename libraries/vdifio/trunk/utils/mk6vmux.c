@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2015 by Walter Brisken                             *
+ *   Copyright (C) 2015 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: vmux.c 6770 2015-06-22 02:54:13Z WalterBrisken $
+// $Id$
 // $HeadURL: $
-// $LastChangedRevision: 6770 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2015-06-21 20:54:13 -0600 (Sun, 21 Jun 2015) $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -36,7 +36,7 @@
 const char program[] = "mk6vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.1";
-const char verdate[] = "20150621";
+const char verdate[] = "20150923";
 
 const int defaultChunkSize = 2000000;
 
@@ -210,6 +210,12 @@ int main(int argc, char **argv)
 
 	bitsPerSample = getVDIFBitsPerSample(vh);
 	fprintf(stderr, "Got %d bits per sample from the first frame header\n", bitsPerSample);
+
+	if(getVDIFComplex(vh) != 0)
+	{
+		flags |= VDIF_MUX_FLAG_COMPLEX;
+		printf("Looks like complex sampled data.  Will take this into consideration.\n");
+	}
 
 	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, bitsPerSample, nThread, threads, nSort, nGap, flags);
 	if(rv < 0)

@@ -34,8 +34,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.5";
-const char verdate[] = "20150621";
+const char version[] = "0.6";
+const char verdate[] = "20150923";
 
 const int defaultChunkSize = 2000000;
 
@@ -224,6 +224,12 @@ int main(int argc, char **argv)
 	{
 		bitsPerSample = getVDIFBitsPerSample(vh);
 		printf("Got %d bits per sample from the first frame header\n", bitsPerSample);
+	}
+
+	if(getVDIFComplex(vh) != 0)
+	{
+		flags |= VDIF_MUX_FLAG_COMPLEX;
+		printf("Looks like complex sampled data.  Will take this into consideration.\n");
 	}
 
 	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, bitsPerSample, nThread, threads, nSort, nGap, flags);
