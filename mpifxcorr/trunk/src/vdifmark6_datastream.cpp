@@ -163,7 +163,7 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	setvdifmuxinputchannels(&vm, nChanPerThread);
 
 	// If verbose...
-	printvdifmux(&vm);
+	//printvdifmux(&vm);
 
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
 	if(fanout != 1)
@@ -188,7 +188,7 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 
 	// If verbose...
 	vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nChanPerThread));
-	printvdiffilesummary(&fileSummary);
+	//printvdiffilesummary(&fileSummary);
 
 	// Here set readseconds to time since beginning of job
 	readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;
@@ -301,9 +301,6 @@ cinfo << startl << "Mark6 Gather: " << bytestoread << " requested, " << bytes <<
 
 	// multiplex and corner turn the data
 	muxReturn = vdifmux(destination, readbytes, readbuffer, bytesvisible, &vm, startOutputFrameNumber, &vstats);
-
-printvdifmuxstatistics(&vstats);
-printVDIFHeader((vdif_header *)destination, VDIFHeaderPrintLevelShort);
 
 	if(muxReturn < 0)
 	{
