@@ -614,8 +614,10 @@ class MainWindow(GenericWindow):
         dirFile = buildDirFilename(settings["dirPath"], module.vsn)
         if os.path.isfile(dirFile):
             os.remove(dirFile)
-        else:
-            print "Warning: file %s does not exists" % dirFile
+	# delete .bindir file
+	bindirFile = dirFile[:-3] + "bindir"
+        if os.path.isfile(bindirFile):
+            os.remove(bindirFile)
             
         session.close()
             
