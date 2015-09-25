@@ -118,30 +118,44 @@ int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco)
 
 void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src)
 {
-	snprintf(dest->fileName, DIFXIO_FILENAME_LENGTH, "%s", src->fileName);
-	if(dest->coef)
+	if(dest != src)
 	{
-		free(dest->coef);
-		dest->coef = 0;
-		dest->nCoef = 0;
-	}
-	if(src->coef)
-	{
-		int c;
-
-		dest->nCoef = src->nCoef;
-		dest->coef = (double *)malloc(dest->nCoef*sizeof(double));
-		for(c = 0; c < dest->nCoef; ++c)
+		if(dest == 0 || src == 0)
 		{
-			dest->coef[c] = src->coef[c];
+			fprintf(stderr, "Error: copyDifxPolyco: src=%p dest=%p but both must be non-null\n", src, dest);
+
+			exit(EXIT_FAILURE);
 		}
+
+		snprintf(dest->fileName, DIFXIO_FILENAME_LENGTH, "%s", src->fileName);
+		if(dest->coef)
+		{
+			free(dest->coef);
+			dest->coef = 0;
+			dest->nCoef = 0;
+		}
+		if(src->coef)
+		{
+			int c;
+
+			dest->nCoef = src->nCoef;
+			dest->coef = (double *)malloc(dest->nCoef*sizeof(double));
+			for(c = 0; c < dest->nCoef; ++c)
+			{
+				dest->coef[c] = src->coef[c];
+			}
+		}
+		dest->dm = src->dm;
+		dest->refFreq = src->refFreq;
+		dest->mjd = src->mjd;
+		dest->nBlk = src->nBlk;
+		dest->p0 = src->p0;
+		dest->f0 = src->f0;
 	}
-	dest->dm = src->dm;
-	dest->refFreq = src->refFreq;
-	dest->mjd = src->mjd;
-	dest->nBlk = src->nBlk;
-	dest->p0 = src->p0;
-	dest->f0 = src->f0;
+	else
+	{
+		fprintf(stderr, "Developer error: copyDifxPolyco: src = dest.  Bad things will be coming...\n");
+	}
 }
 
 DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco)

@@ -140,15 +140,28 @@ int isSameDifxPulsar(const DifxPulsar *dp1, const DifxPulsar *dp2)
 
 void copyDifxPulsar(DifxPulsar *dest, const DifxPulsar *src)
 {
-	snprintf(dest->fileName, DIFXIO_FILENAME_LENGTH, "%s", src->fileName);
-	dest->nPolyco = src->nPolyco;
-	dest->polyco = dupDifxPolycoArray(src->polyco, src->nPolyco);
-	dest->nBin = src->nBin;
-	dest->binEnd = (double *)malloc(dest->nBin*sizeof(double));
-	memcpy(dest->binEnd, src->binEnd, dest->nBin*sizeof(double));
-	dest->binWeight = (double *)malloc(dest->nBin*sizeof(double));
-	memcpy(dest->binWeight, src->binWeight, dest->nBin*sizeof(double));
-	dest->scrunch = src->scrunch;
+	if(dest != src)
+	{
+		if(dest == 0 || src == 0)
+		{
+			fprintf(stderr, "Error: copyDifxPulsar: src=%p dest=%p but both must be non-null\n", src, dest);
+
+			exit(EXIT_FAILURE);
+		}
+		snprintf(dest->fileName, DIFXIO_FILENAME_LENGTH, "%s", src->fileName);
+		dest->nPolyco = src->nPolyco;
+		dest->polyco = dupDifxPolycoArray(src->polyco, src->nPolyco);
+		dest->nBin = src->nBin;
+		dest->binEnd = (double *)malloc(dest->nBin*sizeof(double));
+		memcpy(dest->binEnd, src->binEnd, dest->nBin*sizeof(double));
+		dest->binWeight = (double *)malloc(dest->nBin*sizeof(double));
+		memcpy(dest->binWeight, src->binWeight, dest->nBin*sizeof(double));
+		dest->scrunch = src->scrunch;
+	}
+	else
+	{
+		fprintf(stderr, "Developer error: copyDifxPulsar: src = dest.  Bad things will be coming...\n");
+	}
 }
 
 DifxPulsar *dupDifxPulsarArray(const DifxPulsar *src, int nPulsar)

@@ -43,6 +43,19 @@ const char aberCorrStrings[][MAX_ABER_CORR_STRING_LENGTH] =
 };
 
 
+enum AberCorr stringToAberCorr(const char* str)
+{
+	enum AberCorr ac;
+	for(ac = 0; ac < NumAberCorrOptions; ++ac)
+	{
+		if(strcmp(aberCorrStrings[ac], str) == 0)
+		{
+			return ac;
+		}
+	}
+	return AberCorrUncorrected;
+}
+
 const char taperFunctionNames[][MAX_TAPER_FUNCTION_STRING_LENGTH] =
 {
 	"UNIFORM",
@@ -70,13 +83,16 @@ DifxJob *newDifxJobArray(int nJob)
 	int j;
 
 	dj = (DifxJob *)calloc(nJob, sizeof(DifxJob));
-	for(j = 0; j < nJob; j++)
+	for(j = 0; j < nJob; ++j)
 	{
 		snprintf(dj[j].obsCode,       DIFXIO_OBSCODE_LENGTH,  "%s", "DIFX");
 		snprintf(dj[j].calcServer,    DIFXIO_HOSTNAME_LENGTH, "%s", "UNKNOWN");
 		dj[j].taperFunction = TaperFunctionUniform;
 		dj[j].calcProgram = -1;
 		dj[j].calcVersion = -1;
+		dj[j].polyOrder = DIFXIO_DEFAULT_POLY_ORDER;
+		dj[j].polyInterval = DIFXIO_DEFAULT_POLY_INTERVAL;
+		dj[j].aberCorr = DIFXIO_DEFAULT_ABER_CORR_TYPE;
 	}
 
 	return dj;
@@ -85,66 +101,37 @@ DifxJob *newDifxJobArray(int nJob)
 void deleteDifxJobArray(DifxJob *djarray, int nJob)
 {
 	int j;
-	DifxJob *dj;
 
-	if(!djarray)
+	if(!djarray || nJob == 0)
 	{
 		return;
 	}
-	for(j = 0; j < nJob; j++)
+	for(j = 0; j < nJob; ++j)
 	{
+		DifxJob *dj;
+		
 		dj = djarray + j;
 
-		if(dj->flag)
-		{
-			deleteDifxAntennaFlagArray(dj->flag);
-			dj->flag = 0;
-		}
-		if(dj->jobIdRemap)
-		{
-			deleteRemap(dj->jobIdRemap);
-			dj->jobIdRemap = 0;
-		}
-		if(dj->freqIdRemap)
-		{
-			deleteRemap(dj->freqIdRemap);
-			dj->freqIdRemap = 0;
-		}
-		if(dj->antennaIdRemap)
-		{
-			deleteRemap(dj->antennaIdRemap);
-			dj->antennaIdRemap = 0;
-		}
-		if(dj->datastreamIdRemap)
-		{
-			deleteRemap(dj->datastreamIdRemap);
-			dj->datastreamIdRemap = 0;
-		}
-		if(dj->baselineIdRemap)
-		{
-			deleteRemap(dj->baselineIdRemap);
-			dj->baselineIdRemap = 0;
-		}
-		if(dj->pulsarIdRemap)
-		{
-			deleteRemap(dj->pulsarIdRemap);
-			dj->pulsarIdRemap = 0;
-		}
-		if(dj->configIdRemap)
-		{
-			deleteRemap(dj->configIdRemap);
-			dj->configIdRemap = 0;
-		}
-		if(dj->sourceIdRemap)
-		{
-			deleteRemap(dj->sourceIdRemap);
-			dj->sourceIdRemap = 0;
-		}
-		if(dj->spacecraftIdRemap)
-		{
-			deleteRemap(dj->spacecraftIdRemap);
-			dj->spacecraftIdRemap = 0;
-		}
+		deleteDifxAntennaFlagArray(dj->flag);
+		dj->flag = 0;
+		deleteRemap(dj->jobIdRemap);
+		dj->jobIdRemap = 0;
+		deleteRemap(dj->freqIdRemap);
+		dj->freqIdRemap = 0;
+		deleteRemap(dj->antennaIdRemap);
+		dj->antennaIdRemap = 0;
+		deleteRemap(dj->datastreamIdRemap);
+		dj->datastreamIdRemap = 0;
+		deleteRemap(dj->baselineIdRemap);
+		dj->baselineIdRemap = 0;
+		deleteRemap(dj->pulsarIdRemap);
+		dj->pulsarIdRemap = 0;
+		deleteRemap(dj->configIdRemap);
+		dj->configIdRemap = 0;
+		deleteRemap(dj->sourceIdRemap);
+		dj->sourceIdRemap = 0;
+		deleteRemap(dj->spacecraftIdRemap);
+		dj->spacecraftIdRemap = 0;
 	}
 	free(djarray);
 }
@@ -187,28 +174,40 @@ void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap)
 {
 	int f;
 	
-	memcpy(dest, src, sizeof(DifxJob));
-
-	if(src->nFlag > 0)
+	if(dest != src)
 	{
-		dest->flag = newDifxAntennaFlagArray(src->nFlag);
-		dest->nFlag = src->nFlag;
-		for(f = 0; f < dest->nFlag; f++)
+		if(dest == 0 || src == 0)
 		{
-			copyDifxAntennaFlag(dest->flag + f,
-				src->flag + f, antennaIdRemap);
-		}
-	}
+			fprintf(stderr, "Error: copyDifxJob: src=%p dest=%p but both must be non-null\n", src, dest);
 
-	dest->jobIdRemap = dupRemap(src->jobIdRemap);
-	dest->freqIdRemap = dupRemap(src->freqIdRemap);
-	dest->antennaIdRemap = dupRemap(src->antennaIdRemap);
-	dest->datastreamIdRemap = dupRemap(src->datastreamIdRemap);
-	dest->baselineIdRemap = dupRemap(src->baselineIdRemap);
-	dest->pulsarIdRemap = dupRemap(src->pulsarIdRemap);
-	dest->configIdRemap = dupRemap(src->configIdRemap);
-	dest->sourceIdRemap = dupRemap(src->sourceIdRemap);
-	dest->spacecraftIdRemap = dupRemap(src->spacecraftIdRemap);
+			exit(EXIT_FAILURE);
+		}
+		*dest = *src;
+
+		if(src->nFlag > 0)
+		{
+			dest->flag = newDifxAntennaFlagArray(src->nFlag);
+			dest->nFlag = src->nFlag;
+			for(f = 0; f < dest->nFlag; ++f)
+			{
+				copyDifxAntennaFlag(dest->flag + f, src->flag + f, antennaIdRemap);
+			}
+		}
+
+		dest->jobIdRemap = dupRemap(src->jobIdRemap);
+		dest->freqIdRemap = dupRemap(src->freqIdRemap);
+		dest->antennaIdRemap = dupRemap(src->antennaIdRemap);
+		dest->datastreamIdRemap = dupRemap(src->datastreamIdRemap);
+		dest->baselineIdRemap = dupRemap(src->baselineIdRemap);
+		dest->pulsarIdRemap = dupRemap(src->pulsarIdRemap);
+		dest->configIdRemap = dupRemap(src->configIdRemap);
+		dest->sourceIdRemap = dupRemap(src->sourceIdRemap);
+		dest->spacecraftIdRemap = dupRemap(src->spacecraftIdRemap);
+	}
+	else
+	{
+		fprintf(stderr, "Developer error: copyDifxJob: src = dest.  Bad things will be coming...\n");
+	}
 }
 
 /* simply append dj2 after dj1 return new size on call stack : ndj */
@@ -219,7 +218,7 @@ DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 	DifxJob *dj;
 	int i;
 
-	for(i = 0; i < ndj2; i++)
+	for(i = 0; i < ndj2; ++i)
 	{
 		jobIdRemap[i] = ndj1 + i;
 	}
@@ -227,11 +226,11 @@ DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 	*ndj = ndj1 + ndj2;
 	dj = newDifxJobArray(*ndj);
 
-	for(i = 0; i < ndj1; i++)
+	for(i = 0; i < ndj1; ++i)
 	{
 		copyDifxJob(dj + i, dj1 + i, 0);
 	}
-	for(i = 0; i < ndj2; i++)
+	for(i = 0; i < ndj2; ++i)
 	{
 		copyDifxJob(dj + ndj1 + i, dj2 + i, antennaIdRemap);
 	}
@@ -251,7 +250,7 @@ void generateDifxJobFileBase(DifxJob *dj, char *fileBase)
 		return;
 	}
 
-	for(i = p = 0; dj->outputFile[i]; i++)
+	for(i = p = 0; dj->outputFile[i]; ++i)
 	{
 		if(dj->outputFile[i] == '/')
 		{
@@ -264,7 +263,7 @@ void generateDifxJobFileBase(DifxJob *dj, char *fileBase)
 
 	strcpy(fileBase, dj->outputFile + p);
 
-	for(i = p = 0; fileBase[i]; i++)
+	for(i = p = 0; fileBase[i]; ++i)
 	{
 		if(fileBase[i] == '.')
 		{

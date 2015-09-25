@@ -78,50 +78,17 @@ void deleteDifxInput(DifxInput *D)
 {
 	if(D)
 	{
-		if(D->config)
-		{
-			deleteDifxConfigArray(D->config, D->nConfig);
-		}
-		if(D->datastream)
-		{
-			deleteDifxDatastreamArray(D->datastream, D->nDatastream);
-		}
-		if(D->baseline)
-		{
-			deleteDifxBaselineArray(D->baseline, D->nBaseline);
-		}
-		if(D->freq)
-		{
-			deleteDifxFreqArray(D->freq, D->nFreq);
-		}
-		if(D->antenna)
-		{
-			deleteDifxAntennaArray(D->antenna, D->nAntenna);
-		}
-		if(D->scan)
-		{
-			deleteDifxScanArray(D->scan, D->nScan);
-		}
-		if(D->source)
-		{
-			deleteDifxSourceArray(D->source, D->nSource);
-		}
-		if(D->eop)
-		{
-			deleteDifxEOPArray(D->eop);
-		}
-		if(D->job)
-		{
-			deleteDifxJobArray(D->job, D->nJob);
-		}
-		if(D->rule)
-		{
-			deleteDifxRuleArray(D->rule);
-		}
-		if(D->nThread)
-		{
-			DifxInputAllocThreads(D, 0);
-		}
+		deleteDifxConfigArray(D->config, D->nConfig);
+		deleteDifxDatastreamArray(D->datastream, D->nDatastream);
+		deleteDifxBaselineArray(D->baseline, D->nBaseline);
+		deleteDifxFreqArray(D->freq, D->nFreq);
+		deleteDifxAntennaArray(D->antenna, D->nAntenna);
+		deleteDifxScanArray(D->scan, D->nScan);
+		deleteDifxSourceArray(D->source, D->nSource);
+		deleteDifxEOPArray(D->eop);
+		deleteDifxJobArray(D->job, D->nJob);
+		deleteDifxRuleArray(D->rule);
+		DifxInputAllocThreads(D, 0);
 		free(D);
 	}
 }
@@ -1934,6 +1901,16 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		D->job->taperFunction = stringToTaperFunction(DifxParametersvalue(cp, row));
 	}
+	row = DifxParametersfind(cp, 0, "DELAY POLY ORDER");
+	if(row > 0)
+	{
+		D->job->polyOrder = atoi(DifxParametersvalue(cp, row));
+	}
+	row = DifxParametersfind(cp, 0, "DELAY POLY INTERVAL");
+	if(row > 0)
+	{
+		D->job->polyInterval = atoi(DifxParametersvalue(cp, row));
+	}
 	row = DifxParametersfind(cp, 0, "VEX FILE");
 	if(row >= 0)
 	{
@@ -2237,6 +2214,10 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 
 		for(s = 0; s < D->nSpacecraft; ++s)
 		{
+			int isRadioastron;
+			
+			isRadioastron = 0;
+
 			row = DifxParametersfind(cp, row, "FRAME");
 			if(row > 0)
 			{
@@ -2256,10 +2237,14 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			snprintf(D->spacecraft[s].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, rows[0]));
 			D->spacecraft[s].nPoint = atoi(DifxParametersvalue(cp, rows[1]));
 			D->spacecraft[s].pos = (sixVector *)calloc(D->spacecraft[s].nPoint, sizeof(sixVector));
+
+			/* allocate Radioastron extension variables proactively, but delete later if not needed */
+			D->spacecraft[s].timeFrameOffset = (RadioastronTimeFrameOffset *)calloc(D->spacecraft[s].nPoint, sizeof(RadioastronTimeFrameOffset));
+			D->spacecraft[s].axisVectors = (RadioastronAxisVectors *)calloc(D->spacecraft[s].nPoint, sizeof(RadioastronAxisVectors));
+			
 			row = rows[N_SPACECRAFT_ROWS-1];
 			for(i = 0; i < D->spacecraft[s].nPoint; ++i)
 			{
-				double time;
 				const char *str;
 				int n;
 				
@@ -2271,24 +2256,43 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 					return 0;
 				}
 				str = DifxParametersvalue(cp, row);
-				n = sscanf(str, "%lf%Lf%Lf%Lf%Lf%Lf%Lf",
-					&time,
-					&(D->spacecraft[s].pos[i].X),
-					&(D->spacecraft[s].pos[i].Y),
-					&(D->spacecraft[s].pos[i].Z),
-					&(D->spacecraft[s].pos[i].dX),
-					&(D->spacecraft[s].pos[i].dY),
-					&(D->spacecraft[s].pos[i].dZ));
-				if(n != 7)
+				n = sscanf(str, "%d%lf%Lf%Lf%Lf%Lf%Lf%Lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
+						  &(D->spacecraft[s].pos[i].mjd),
+						  &(D->spacecraft[s].pos[i].fracDay),
+						  &(D->spacecraft[s].pos[i].X),
+						  &(D->spacecraft[s].pos[i].Y),
+						  &(D->spacecraft[s].pos[i].Z),
+						  &(D->spacecraft[s].pos[i].dX),
+						  &(D->spacecraft[s].pos[i].dY),
+						  &(D->spacecraft[s].pos[i].dZ),
+						  &(D->spacecraft[s].timeFrameOffset[i].Delta_t),
+						  &(D->spacecraft[s].timeFrameOffset[i].dtdtau),
+						  &(D->spacecraft[s].axisVectors[i].X[0]),
+						  &(D->spacecraft[s].axisVectors[i].X[1]),
+						  &(D->spacecraft[s].axisVectors[i].X[2]),
+						  &(D->spacecraft[s].axisVectors[i].Y[0]),
+						  &(D->spacecraft[s].axisVectors[i].Y[1]),
+						  &(D->spacecraft[s].axisVectors[i].Y[2]),
+						  &(D->spacecraft[s].axisVectors[i].Z[0]),
+						  &(D->spacecraft[s].axisVectors[i].Z[1]),
+						  &(D->spacecraft[s].axisVectors[i].Z[2]));
+				if(n == 19)	/* extended state vector format for radioastron */
+				{
+					isRadioastron = 1;
+				}
+				else if(n != 8)
 				{
 					fprintf(stderr, "Spacecraft %d table, row %d screwed up\n", s, i);
 					
 					return 0;
 				}
-				D->spacecraft[s].pos[i].mjd = (int)time;
-				time -= D->spacecraft[s].pos[i].mjd;
-				/* Force to be exactly on second boundary */
-				D->spacecraft[s].pos[i].fracDay = ((int)(time*86400.0 + 0.5))/86400.0;
+			}
+			if(!isRadioastron)
+			{
+				free(D->spacecraft[s].timeFrameOffset);
+				D->spacecraft[s].timeFrameOffset = 0;
+				free(D->spacecraft[s].axisVectors);
+				D->spacecraft[s].axisVectors = 0;
 			}
 		}
 	}
@@ -2391,10 +2395,19 @@ static int parsePoly1(DifxParameters *p, int r, char *key, int i1, int i2, doubl
 	return r;
 }
 
-static int parsePoly1_limited(DifxParameters *p, int r, int dr, char *key, int i1, int i2, double *array, int n)
+static int parsePoly1_limited(DifxParameters *p, int r, int dr, char *key, int i1, int i2, double *array, int n, int zeroMissing)
 {
 	const char *v;
 	int i, l, m;
+
+	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
+	 * wants, namely 0xFFFFFFFF */
+	union
+	{
+		int64_t i64;
+		float d;
+	} nan;
+	nan.i64 = -1;
 
 	if(r < 0)
 	{
@@ -2404,6 +2417,20 @@ static int parsePoly1_limited(DifxParameters *p, int r, int dr, char *key, int i
 	r = DifxParametersfind2_limited(p, r, dr, key, i1, i2);
 	if(r < 0)
 	{
+		if(zeroMissing)
+		{
+			for(i = 0; i < n; ++i)
+			{
+				array[i] = 0.0;
+			}
+		}
+		else
+		{
+			for(i = 0; i < n; ++i)
+			{
+				array[i] = nan.d;
+			}
+		}
 		return -1;
 	}
 
@@ -2430,6 +2457,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	int order, interval;
 	enum AberCorr ac;
 	int *antennaMap;
+	const int smallRange = 20;
 
 	if(!D)
 	{
@@ -2613,12 +2641,12 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 						return 0;
 					}
 					/* don't require the following 6 parameters, so don't adjust r when reading them */
-					parsePoly1_limited(mp, r, 10, "SRC %d ANT %d DRY (us)", src, t, scan->im[a][src][p].dry, order+1);
-					parsePoly1_limited(mp, r, 10, "SRC %d ANT %d WET (us)", src, t, scan->im[a][src][p].wet, order+1);
-					parsePoly1_limited(mp, r, 10, "SRC %d ANT %d AZ", src, t, scan->im[a][src][p].az, order+1);
-					parsePoly1_limited(mp, r, 10, "SRC %d ANT %d EL CORR", src, t, scan->im[a][src][p].elcorr, order+1);
-					parsePoly1_limited(mp, r, 10, "SRC %d ANT %d EL GEOM", src, t, scan->im[a][src][p].elgeom, order+1);
-					parsePoly1_limited(mp, r, 10, "SRC %d ANT %d PAR ANGLE", src, t, scan->im[a][src][p].parangle, order+1);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d DRY (us)", src, t, scan->im[a][src][p].dry, order+1, 1);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d WET (us)", src, t, scan->im[a][src][p].wet, order+1, 1);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d AZ", src, t, scan->im[a][src][p].az, order+1, 0);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d EL CORR", src, t, scan->im[a][src][p].elcorr, order+1, 0);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d EL GEOM", src, t, scan->im[a][src][p].elgeom, order+1, 0);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d PAR ANGLE", src, t, scan->im[a][src][p].parangle, order+1, 0);
 					/* the next three again are required */
 					r = parsePoly1(mp, r, "SRC %d ANT %d U (m)", src, t, scan->im[a][src][p].u, order+1);
 					if(r < 0)

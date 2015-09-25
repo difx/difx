@@ -64,7 +64,10 @@ void copyDifxRule(DifxRule *dest, DifxRule *src)
 
 void deleteDifxRuleArray(DifxRule *dr)
 {
-	free(dr);
+	if(dr)
+	{
+		free(dr);
+	}
 }
 
 void fprintDifxRule(FILE *fp, const DifxRule *dr)

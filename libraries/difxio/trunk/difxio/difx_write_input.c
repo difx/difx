@@ -117,7 +117,7 @@ static int writeFreqTable(FILE *out, const DifxInput *D)
 static int writeTelescopeTable(FILE *out, const DifxInput *D)
 {
 	fprintf(out, "# TELESCOPE TABLE ##!\n");
-	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 0, 0, 0, 1, 0);
+	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 0, 0, 0, 1, 0, 0);
 	fprintf(out, "\n");
 
 	return 0;

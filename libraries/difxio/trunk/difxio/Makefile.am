@@ -4,7 +4,8 @@ h_sources = \
 	parsevis.h \
 	difx_write.h \
 	difx_calculator.h \
-	difx_tcal.h
+	difx_tcal.h \
+	difx_radioastron.h
 c_sources = \
 	difx_input.c \
 	difx_input_merge.c \

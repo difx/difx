@@ -109,8 +109,12 @@ int writeDifxCalc(const DifxInput *D)
 	}
 	writeDifxLineInt(out, "SPECTRAL AVG", D->specAvg);
 	writeDifxLine(out, "TAPER FUNCTION", taperFunctionNames[D->job->taperFunction]);
-	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1, 0, 1);
-        writeDifxSourceArray(out, D->nSource, D->source, 1, 1, 0);
+#ifdef RA_MERGED
+	writeDifxLineInt(out, "DELAY POLY ORDER", D->job->polyOrder);
+	writeDifxLineInt(out, "DELAY POLY INTERVAL", D->job->polyInterval);
+#endif
+	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1, 0, 1, 1);
+        writeDifxSourceArray(out, D->nSource, D->source, 1, 1, 1);
 	writeDifxScanArray(out, D->nScan, D->scan, D->config);
 	writeDifxEOPArray(out, D->nEOP, D->eop);
 	writeDifxSpacecraftArray(out, D->nSpacecraft, D->spacecraft);

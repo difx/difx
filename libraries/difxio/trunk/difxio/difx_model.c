@@ -32,6 +32,7 @@
 #include <string.h>
 #include "difxio/difx_input.h"
 
+#error "This file is no longer used."
 
 DifxModel **newDifxModelArray(int nAntenna, int nPoint)
 {

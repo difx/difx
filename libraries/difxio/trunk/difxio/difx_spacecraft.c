@@ -68,10 +68,18 @@ DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n)
 	{
 		snprintf(dest[s].name, DIFXIO_NAME_LENGTH, "%s", src[s].name);
 		dest[s].nPoint = src[s].nPoint;
-		dest[s].pos = (sixVector *)calloc(dest[s].nPoint,
-			sizeof(sixVector));
-		memcpy(dest[s].pos, src[s].pos, 
-			dest[s].nPoint*sizeof(sixVector));
+		dest[s].pos = (sixVector *)calloc(dest[s].nPoint, sizeof(sixVector));
+		memcpy(dest[s].pos, src[s].pos, dest[s].nPoint*sizeof(sixVector));
+		if(src[s].timeFrameOffset)
+		{
+			dest[s].timeFrameOffset = (RadioastronTimeFrameOffset *)calloc(dest[s].nPoint, sizeof(RadioastronTimeFrameOffset));
+			memcpy(dest[s].timeFrameOffset, src[s].timeFrameOffset, dest[s].nPoint*sizeof(RadioastronTimeFrameOffset));
+		}
+		if(src[s].axisVectors)
+		{
+			dest[s].axisVectors = (RadioastronAxisVectors *)calloc(dest[s].nPoint, sizeof(RadioastronAxisVectors));
+			memcpy(dest[s].axisVectors, src[s].axisVectors, dest[s].nPoint*sizeof(RadioastronAxisVectors));
+		}
 	}
 
 	return dest;
@@ -84,7 +92,16 @@ void deleteDifxSpacecraftInternals(DifxSpacecraft *ds)
 		free(ds->pos);
 		ds->pos = 0;
 	}
-	
+	if(ds->timeFrameOffset)
+	{
+		free(ds->timeFrameOffset);
+		ds->timeFrameOffset = 0;
+	}
+	if(ds->axisVectors)
+	{
+		free(ds->axisVectors);
+		ds->axisVectors = 0;
+	}
 }
 
 void deleteDifxSpacecraftArray(DifxSpacecraft *ds, int nSpacecraft)
@@ -104,12 +121,11 @@ void deleteDifxSpacecraftArray(DifxSpacecraft *ds, int nSpacecraft)
 void fprintDifxSpacecraft(FILE *fp, const DifxSpacecraft *ds)
 {
 	fprintf(fp, "  DifxSpacecraft : %p\n", ds);
-	if(!ds)
+	if(ds)
 	{
-		return;
+		fprintf(fp, "    Name = %s\n", ds->name);
+		fprintf(fp, "    Num points = %d\n", ds->nPoint);
 	}
-	fprintf(fp, "    Name = %s\n", ds->name);
-	fprintf(fp, "    Num points = %d\n", ds->nPoint);
 }
 
 void printDifxSpacecraft(const DifxSpacecraft *ds)
@@ -778,14 +794,38 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd, si
 	return r;
 }
 
+/* used to generate an MJD with more precision than a single double */
+static int snprintIntDouble(char *s, int maxLength, int i, double d)
+{
+	const int maxDoubleLength=30;
+	char ds[maxDoubleLength];
+
+	if(d < 0.0 || d >= 1.0)
+	{
+		fprintf(stderr, "Warning: preciseprint(%d, %20.18f): precision being lost because double portion is outside [0,1)\n", i, d);
+		if(d < 0.0)
+		{
+			d += (int)d + 1;
+		}
+		i += (int)d;
+		d -= (int)d;
+	}
+	snprintf(ds, maxDoubleLength, "%20.18f", d);
+
+	return snprintf(s, maxLength, "%d%s", i, ds+1);
+}
+
 int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 {
 	const int MaxLineLength = 256;
+	const int MaxMJDStringLength = 40;
 	int n;
 	int i, j, v;
 	char value[MaxLineLength];
 	const sixVector *V;
-	long double mjd;
+	const RadioastronTimeFrameOffset *TFO;
+	const RadioastronAxisVectors *AV;
+	char mjdString[MaxMJDStringLength];
 
 	writeDifxLineInt(out, "NUM SPACECRAFT", nSpacecraft);
 	n = 1;
@@ -797,24 +837,65 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 		}
 		writeDifxLine1(out, "SPACECRAFT %d NAME", i, ds[i].name);
 		writeDifxLineInt1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
-		for(j = 0; j < ds[i].nPoint; ++j)
+		if(ds[i].axisVectors == 0 || ds[i].timeFrameOffset == 0)
 		{
-			V = ds[i].pos + j;
-			mjd = V->mjd + V->fracDay;
-			v = snprintf(value, MaxLineLength,
-				"%17.12Lf "
-				"%18.14Le %18.14Le %18.14Le "
-				"%18.14Le %18.14Le %18.14Le", 
-				mjd, 
-				V->X, V->Y, V->Z,
-				V->dX, V->dY, V->dZ);
-			if(v >= MaxLineLength)
+			for(j = 0; j < ds[i].nPoint; ++j)
 			{
-				fprintf(stderr, "Error: Spacecraft %d row %d is too long!\n", i, j);
+				V = ds[i].pos + j;
+				snprintIntDouble(mjdString, MaxMJDStringLength, V->mjd, V->fracDay);
+				v = snprintf(value, MaxLineLength,
+					"%s "
+					"%18.14Le %18.14Le %18.14Le "
+					"%18.14Le %18.14Le %18.14Le", 
+					mjdString, 
+					V->X, V->Y, V->Z,
+					V->dX, V->dY, V->dZ);
+				if(v >= MaxLineLength)
+				{
+					fprintf(stderr, "Error: Spacecraft %d row %d is too long!\n", i, j);
 
-				return -1;
+					return -1;
+				}
+				writeDifxLine2(out, "SPACECRAFT %d ROW %d", i, j, value);
 			}
-			writeDifxLine2(out, "SPACECRAFT %d ROW %d", i, j, value);
+		}
+		else if(ds[i].axisVectors == 0 && ds[i].timeFrameOffset == 0)
+		{
+			for(j = 0; j < ds[i].nPoint; ++j)
+			{
+				V = ds[i].pos + j;
+				TFO = ds[i].timeFrameOffset + j;
+				AV = ds[i].axisVectors + j;
+				snprintIntDouble(mjdString, MaxMJDStringLength, V->mjd, V->fracDay);
+				v = snprintf(value, MaxLineLength,
+					 "%s "
+					 "%27.19Le %27.19Le %27.19Le "
+					 "%27.19Le %27.19Le %27.19Le "
+					 "%24.16e %24.16e "
+					 "%24.16e %24.16e %24.16e "
+					 "%24.16e %24.16e %24.16e "
+					 "%24.16e %24.16e %24.16e", 
+					 mjdString,
+					 V->X, V->Y, V->Z,
+					 V->dX, V->dY, V->dZ,
+					 TFO->Delta_t, TFO->dtdtau,
+					 AV->X[0], AV->X[1], AV->X[2],
+					 AV->Y[0], AV->Y[1], AV->Y[2],
+					 AV->Z[0], AV->Z[1], AV->Z[2]);
+				if(v >= MaxLineLength)
+				{
+					fprintf(stderr, "Error: Spacecraft %d row %d is too long!\n", i, j);
+
+					return -1;
+				}
+				writeDifxLine2(out, "SPACECRAFT %d ROW %d", i, j, value);
+			}
+		}
+		else
+		{
+			fprintf(stderr, "Error: spacecraft number=%d: axisVectors=%p timeFrameOffset=%p but both must be null or non-null\n", i, ds[i].axisVectors, ds[i].timeFrameOffset);
+
+			exit(EXIT_FAILURE);
 		}
 		n += (ds[i].nPoint + 2);
 	}

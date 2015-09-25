@@ -98,10 +98,6 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 	{
 		fprintf(fp, "    Rx name = %s\n", df->rxName);
 	}
-#if 0
-	fprintf(fp, "    Oversamp = %d\n", df->overSamp);
-	fprintf(fp, "    Decimation = %d\n", df->decimation);
-#endif
 	fprintf(fp, "    Num tones = %d  [", df->nTone);
 	if(df->nTone > 0)
 	{
@@ -210,23 +206,32 @@ int isDifxIFInsideDifxFreq(const DifxIF *di, const DifxFreq *df)
 
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 {
-	dest->freq       = src->freq;
-	dest->bw         = src->bw;
-	dest->sideband   = src->sideband;
-	dest->nChan      = src->nChan;
-	dest->specAvg    = src->specAvg;
-	dest->overSamp   = src->overSamp;
-	dest->decimation = src->decimation;
-
-	DifxFreqAllocTones(dest, src->nTone);
-	if(src->nTone > 0)
+	if(dest != src)
 	{
-		int t;
-
-		for(t = 0; t < src->nTone; ++t)
+		if(dest == 0 || src == 0)
 		{
-			dest->tone[t] = src->tone[t];
+			fprintf(stderr, "Error: copyDifxFreq: src=%p dest=%p but both must be non-null\n", src, dest);
+
+			exit(EXIT_FAILURE);
 		}
+		*dest = *src;
+		dest->tone = 0;
+
+		if(src->nTone > 0)
+		{
+			int t;
+
+			DifxFreqAllocTones(dest, src->nTone);
+			
+			for(t = 0; t < src->nTone; ++t)
+			{
+				dest->tone[t] = src->tone[t];
+			}
+		}
+	}
+	else
+	{
+		fprintf(stderr, "Developer error: copyDifxFreq: src = dest.  Bad things will be coming...\n");
 	}
 }
 

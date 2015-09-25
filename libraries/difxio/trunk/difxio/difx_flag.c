@@ -60,11 +60,9 @@ void fprintDifxAntennaFlagArray(FILE *fp, const DifxAntennaFlag *df, int nf)
 	int f;
 
 	fprintf(fp, "  Difx Antenna Flag : %p\n", df);
-	for(f = 0; f < nf; f++)
+	for(f = 0; f < nf; ++f)
 	{
-		fprintf(fp, "    Flag: AntId=%d  times %12.6f to %12.6f\n", 
-			df[f].antennaId,
-			df[f].mjd1, df[f].mjd2);
+		fprintf(fp, "    Flag: AntId=%d  times %12.6f to %12.6f\n", df[f].antennaId, df[f].mjd1, df[f].mjd2);
 	}
 }
 
@@ -73,19 +71,30 @@ void printDifxAntennaFlagArray(const DifxAntennaFlag *df, int nf)
 	fprintDifxAntennaFlagArray(stdout, df, nf);
 }
 
-void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src,
-	const int *antennaIdRemap)
+void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src, const int *antennaIdRemap)
 {
-	memcpy(dest, src, sizeof(DifxAntennaFlag));
-	if(antennaIdRemap)
+	
+	if(dest != src)
 	{
-		dest->antennaId = antennaIdRemap[dest->antennaId];
+		if(dest == 0 || src == 0)
+		{
+			fprintf(stderr, "Error: copyDifxAntennaFlag: src=%p dest=%p but both must be non-null\n", src, dest);
+
+			exit(EXIT_FAILURE);
+		}
+		*dest = *src;
+		if(antennaIdRemap)
+		{
+			dest->antennaId = antennaIdRemap[dest->antennaId];
+		}
+	}
+	else
+	{
+		fprintf(stderr, "Developer error: copyDifxAntennaFlag: src = dest.  Bad things will be coming...\n");
 	}
 }
 
-DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, 
-	int ndf1, const DifxAntennaFlag *df2, int ndf2, 
-	const int *antennaIdRemap, int *ndf)
+DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, int ndf1, const DifxAntennaFlag *df2, int ndf2, const int *antennaIdRemap, int *ndf)
 {
 	DifxAntennaFlag *df;
 	int i;
@@ -98,14 +107,13 @@ DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1,
 
 	df = newDifxAntennaFlagArray(*ndf);
 
-	if(ndf1 > 0) for(i = 0; i < ndf1; i++)
+	if(ndf1 > 0) for(i = 0; i < ndf1; ++i)
 	{
 		copyDifxAntennaFlag(df + i, df1 + i, 0);
 	}
-	if(ndf2 > 0) for(i = 0; i < ndf2; i++)
+	if(ndf2 > 0) for(i = 0; i < ndf2; ++i)
 	{
-		copyDifxAntennaFlag(df + ndf1 + i, df2 + i,
-			antennaIdRemap);
+		copyDifxAntennaFlag(df + ndf1 + i, df2 + i, antennaIdRemap);
 	}
 
 	return df;

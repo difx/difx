@@ -157,8 +157,7 @@ int writeDifxLine1(FILE *out, const char *key, int i1, const char *value)
 	return writeDifxLine(out, k, value);
 }
 
-int writeDifxLine2(FILE *out, const char *key, int i1, int i2, 
-	const char *value)
+int writeDifxLine2(FILE *out, const char *key, int i1, int i2, const char *value)
 {
 	char k[MAX_DIFX_KEY_LEN+1];
 
@@ -167,8 +166,7 @@ int writeDifxLine2(FILE *out, const char *key, int i1, int i2,
 	return writeDifxLine(out, k, value);
 }
 
-int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3, 
-	const char *value)
+int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3, const char *value)
 {
 	char k[MAX_DIFX_KEY_LEN+1];
 
@@ -186,6 +184,22 @@ int writeDifxLineBoolean(FILE *out, const char *key, int value)
 	else
 	{
 		return writeDifxLine(out, key, "FALSE");
+	}
+}
+
+int writeDifxLineBoolean1(FILE *out, const char *key, int i1, int value)
+{
+	char k[MAX_DIFX_KEY_LEN+1];
+
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1);
+	
+	if(value)
+	{
+		return writeDifxLine(out, k, "TRUE");
+	}
+	else
+	{
+		return writeDifxLine(out, k, "FALSE");
 	}
 }
 
@@ -225,8 +239,17 @@ int writeDifxLineInt2(FILE *out, const char *key, int i1, int i2, int value)
 	return writeDifxLine(out, k, v);
 }
 
-int writeDifxLineDouble(FILE *out, const char *key, const char *format, 
-	double value)
+int writeDifxLineHex(FILE *out, const char *key, unsigned long value)
+{
+	const int numLength = 32;
+	char v[numLength];
+
+	snprintf(v, numLength, "0x%lX", value);
+
+	return writeDifxLine(out, key, v);
+}
+
+int writeDifxLineDouble(FILE *out, const char *key, const char *format, double value)
 {
 	const int numLength = 32;
 	char v[numLength];
@@ -245,8 +268,7 @@ int writeDifxLineDouble(FILE *out, const char *key, const char *format,
 	return writeDifxLine(out, key, v);
 }
 
-int writeDifxLineDouble1(FILE *out, const char *key, int i1, 
-	const char *format, double value)
+int writeDifxLineDouble1(FILE *out, const char *key, int i1, const char *format, double value)
 {
 	const int numLength = 32;
 	char v[numLength];
@@ -268,8 +290,7 @@ int writeDifxLineDouble1(FILE *out, const char *key, int i1,
 	return writeDifxLine(out, k, v);
 }
 
-int writeDifxLineDouble2(FILE *out, const char *key, int i1, int i2,
-	const char *format, double value)
+int writeDifxLineDouble2(FILE *out, const char *key, int i1, int i2, const char *format, double value)
 {
 	const int numLength = 32;
 	char v[numLength];
@@ -299,7 +320,7 @@ int writeDifxLineArray(FILE *out, const char *key, const double *array, int n)
 
 	for(i = 0; i < n; ++i)
 	{
-		fprintf(out, "%22.15e%c", array[i], (i < n-1) ? '\t' : '\n');
+		fprintf(out, "%24.16e%c", array[i], (i < n-1) ? '\t' : '\n');
 	}
 
 	return 0;
@@ -386,5 +407,4 @@ int writeDifxDateLines(FILE *out, double mjd)
 
 	return 0;
 }
-
 

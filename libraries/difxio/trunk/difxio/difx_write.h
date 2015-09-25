@@ -47,14 +47,14 @@ int writeDifxLine(FILE *out, const char *key, const char *value);
 
 int writeDifxLine1(FILE *out, const char *key, int i1, const char *value);
 
-int writeDifxLine2(FILE *out, const char *key, int i1, int i2, 
-	const char *value);
+int writeDifxLine2(FILE *out, const char *key, int i1, int i2, const char *value);
 
-int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3, 
-	const char *value);
+int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3, const char *value);
 
 
 int writeDifxLineBoolean(FILE *out, const char *key, int value);
+
+int writeDifxLineBoolean1(FILE *out, const char *key, int i1, int value);
 
 
 int writeDifxLineInt(FILE *out, const char *key, int value);
@@ -63,31 +63,25 @@ int writeDifxLineInt1(FILE *out, const char *key, int i1, int value);
 
 int writeDifxLineInt2(FILE *out, const char *key, int i1, int i2, int value);
 
-
-int writeDifxLineDouble(FILE *out, const char *key, const char *format, 
-        double value);
-
-int writeDifxLineDouble1(FILE *out, const char *key, int i1, 
-	const char *format, double value);
-
-int writeDifxLineDouble2(FILE *out, const char *key, int i1, int i2,
-	const char *format, double value);
+int writeDifxLineHex(FILE *out, const char *key, unsigned long value);
 
 
-int writeDifxLineArray(FILE *out, const char *key, 
-	const double *array, int n);
+int writeDifxLineDouble(FILE *out, const char *key, const char *format, double value);
 
-int writeDifxLineArray1(FILE *out, const char *key, int i1, 
-	const double *array, int n);
+int writeDifxLineDouble1(FILE *out, const char *key, int i1, const char *format, double value);
 
-int writeDifxLineArray2(FILE *out, const char *key, int i1, int i2, 
-	const double *array, int n);
+int writeDifxLineDouble2(FILE *out, const char *key, int i1, int i2, const char *format, double value);
 
-int writeDifxLineStringArray(FILE *out, const char *key,
-	const DifxStringArray *sa);
 
-int writeDifxLineStringArray1(FILE *out, const char *key,
-	int i1, const DifxStringArray *sa);
+int writeDifxLineArray(FILE *out, const char *key, const double *array, int n);
+
+int writeDifxLineArray1(FILE *out, const char *key, int i1, const double *array, int n);
+
+int writeDifxLineArray2(FILE *out, const char *key, int i1, int i2, const double *array, int n);
+
+int writeDifxLineStringArray(FILE *out, const char *key, const DifxStringArray *sa);
+
+int writeDifxLineStringArray1(FILE *out, const char *key, int i1, const DifxStringArray *sa);
 
 int writeDifxDateLines(FILE *out, double mjd);
 

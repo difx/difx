@@ -32,13 +32,15 @@
 
 #include <stdio.h>
 #include "parsedifx.h"
+#include "difx_radioastron.h"
 
-#define MAX_MODEL_ORDER			5
-#define MAX_PHS_CENTRES			1000
-#define MAX_ABER_CORR_STRING_LENGTH	16
-#define MAX_DATA_SOURCE_NAME_LENGTH	16
-#define MAX_ANTENNA_MOUNT_NAME_LENGTH	8
-#define MAX_SAMPLING_NAME_LENGTH	16
+#define MAX_MODEL_ORDER				5
+#define MAX_PHS_CENTRES				1000
+#define MAX_ABER_CORR_STRING_LENGTH		16
+#define MAX_DATA_SOURCE_NAME_LENGTH		16
+#define MAX_ANTENNA_MOUNT_NAME_LENGTH		8
+#define MAX_ANTENNA_SITE_NAME_LENGTH		16
+#define MAX_SAMPLING_NAME_LENGTH		16
 #define MAX_TONE_SELECTION_STRING_LENGTH	12
 #define MAX_EOP_MERGE_MODE_STRING_LENGTH	16
 #define MAX_PHASED_ARRAY_TYPE_STRING_LENGTH	16
@@ -66,6 +68,11 @@
 #define DIFXIO_POL_XY			(DIFXIO_POL_X | DIFXIO_POL_Y)
 
 #define DIFXIO_MAX_EOP_PER_FITS		6
+
+#define DIFXIO_DEFAULT_POLY_ORDER	5
+#define DIFXIO_DEFAULT_POLY_INTERVAL	120
+#define DIFXIO_DEFAULT_ABER_CORR_TYPE	AberCorrExact
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,6 +149,16 @@ enum AntennaMountType
 	NumAntennaMounts		/* must remain as last entry */
 };
 
+/* keep this current with antennaSiteTypeNames in difx_antenna.c */
+enum AntennaSiteType
+{
+    AntennaSiteFixed = 0,
+    AntennaSiteEarth_Orbiting = 1,
+    AntennaSiteOther = 2,
+    NumAntennaSiteTypes     /* must remain as last entry */
+};
+
+extern const char antennaSiteTypeNames[][MAX_ANTENNA_SITE_NAME_LENGTH];
 
 enum OutputFormatType
 {
@@ -392,6 +409,7 @@ typedef struct
 	int clockorder;		/* Polynomial order of the clock model */
 	double clockcoeff[MAX_MODEL_ORDER+1];	/* clock polynomial coefficients (us, us/s, us/s^2... */
 	enum AntennaMountType mount;
+	enum AntennaSiteType siteType;
 	double offset[3];	/* axis offset, (m) */
 	double X, Y, Z;		/* telescope position, (m) */
 	double dX, dY, dZ;	/* telescope position derivative, (m/s) */
@@ -506,10 +524,12 @@ typedef struct
 
 typedef struct
 {
-	char name[DIFXIO_NAME_LENGTH];	/* name of spacecraft */
-	int nPoint;			/* number of entries in ephemeris */
-	sixVector *pos;			/* array of positions and velocities */
-	char frame[DIFXIO_NAME_LENGTH];	/* coordinate frame */
+	char name[DIFXIO_NAME_LENGTH];			/* name of spacecraft */
+	int nPoint;					/* number of entries in ephemeris */
+	sixVector *pos;					/* array of positions and velocities */
+	RadioastronTimeFrameOffset *timeFrameOffset;	/* array of time frame offsets*/
+	RadioastronAxisVectors *axisVectors;		/* array of axis vectors */
+	char frame[DIFXIO_NAME_LENGTH];			/* coordinate frame */
 } DifxSpacecraft;
 
 typedef struct
@@ -626,6 +646,7 @@ typedef struct
 } DifxInput;
 
 /* DifxJob functions */
+enum AberCorr stringToAberCorr(const char* str);
 enum TaperFunction stringToTaperFunction(const char *str);
 DifxJob *newDifxJobArray(int nJob);
 void deleteDifxJobArray(DifxJob *dj, int nJob);
@@ -633,9 +654,7 @@ void printDifxJob(const DifxJob *dj);
 void fprintDifxJob(FILE *fp, const DifxJob *dj);
 void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap);
 void generateDifxJobFileBase(DifxJob *dj, char *fileBase);
-DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
-	const DifxJob *dj2, int ndj2, int *jobIdRemap, 
-	int *antennaIdRemap, int *ndj);
+DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1, const DifxJob *dj2, int ndj2, int *jobIdRemap, int *antennaIdRemap, int *ndj);
 
 /* DifxFreq functions */
 DifxFreq *newDifxFreqArray(int nFreq);
@@ -655,6 +674,7 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df);
 
 /* DifxAntenna functions */
 enum AntennaMountType stringToMountType(const char *str);
+enum AntennaSiteType stringToSiteType(const char *str);
 DifxAntenna *newDifxAntennaArray(int nAntenna);
 void deleteDifxAntennaArray(DifxAntenna *da, int nAntenna);
 void printDifxAntenna(const DifxAntenna *da);
@@ -665,10 +685,8 @@ int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2);
 int getDifxAntennaShiftedClock(const DifxAntenna *da, double dt, int outputClockSize, double *clockOut);
 double evaluateDifxAntennaClock(const DifxAntenna *da, double mjd);
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
-DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
-	const DifxAntenna *da2, int nda2, int *antennaIdRemap, int *nda);
-int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
-        int doMount, int doOffset, int doCoords, int doClock, int doShelf);
+DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1, const DifxAntenna *da2, int nda2, int *antennaIdRemap, int *nda);
+int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da, int doMount, int doOffset, int doCoords, int doClock, int doShelf, int doSpacecraft);
 
 /* DifxDatastream functions */
 enum DataSource stringToDataSource(const char *str);
@@ -799,8 +817,9 @@ int ruleAppliesToScanSource(const DifxRule * dr, const DifxScan * ds, const Difx
 DifxPolyModel ***newDifxPolyModelArray(int nAntenna, int nSrcs, int nPoly);
 DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly);
 void deleteDifxPolyModelArray(DifxPolyModel ***dpm, int nAntenna, int nSrcs);
-void printDifxPolyModel(const DifxPolyModel *dpm);
-void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm);
+void printDifxPolyModel(const DifxPolyModel *dpm, int antennaId, int sourceId, int polyId);
+void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm, int antennaId, int sourceId, int polyId);
+void fprintDifxPolyModelWithIndices(FILE *fp, const DifxPolyModel *dpm, int antennaId, int sourceId, int polyId);
 
 DifxPolyModelLMExtension ***newDifxPolyModelLMExtensionArray(int nAntenna, int nSrcs, int nPoly);
 DifxPolyModelLMExtension *dupDifxPolyModelLMExtensionColumn(const DifxPolyModelLMExtension *src, int nPoly);

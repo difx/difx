@@ -165,11 +165,11 @@ void deleteDifxBaselineInternals(DifxBaseline *db)
 
 void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline)
 {
-	int b;
-	
 	if(db)
 	{
-		for(b = 0; b < nBaseline; b++)
+		int b;
+
+		for(b = 0; b < nBaseline; ++b)
 		{
 			deleteDifxBaselineInternals(db + b);
 		}

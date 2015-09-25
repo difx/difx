@@ -54,29 +54,32 @@ DifxScan *newDifxScanArray(int nScan)
 
 void deleteDifxScanInternals(DifxScan *ds)
 {
-	if(ds->im)
+	if(ds)
 	{
-		deleteDifxPolyModelArray(ds->im, ds->nAntenna, ds->nPhaseCentres+1);
-		ds->im = 0;
-	}
-	if(ds->imLM)
-	{
-		deleteDifxPolyModelLMExtensionArray(ds->imLM, ds->nAntenna, ds->nPhaseCentres+1);
-		ds->imLM = 0;
-	}
-	if(ds->imXYZ)
-	{
-		deleteDifxPolyModelXYZExtensionArray(ds->imXYZ, ds->nAntenna, ds->nPhaseCentres+1);
-		ds->imXYZ = 0;
+		if(ds->im)
+		{
+			deleteDifxPolyModelArray(ds->im, ds->nAntenna, ds->nPhaseCentres+1);
+			ds->im = 0;
+		}
+		if(ds->imLM)
+		{
+			deleteDifxPolyModelLMExtensionArray(ds->imLM, ds->nAntenna, ds->nPhaseCentres+1);
+			ds->imLM = 0;
+		}
+		if(ds->imXYZ)
+		{
+			deleteDifxPolyModelXYZExtensionArray(ds->imXYZ, ds->nAntenna, ds->nPhaseCentres+1);
+			ds->imXYZ = 0;
+		}
 	}
 }
 
 void deleteDifxScanArray(DifxScan *ds, int nScan)
 {
-	int s;
-
 	if(ds)
 	{
+		int s;
+		
 		for(s = 0; s < nScan; ++s)
 		{
 			deleteDifxScanInternals(ds + s);
@@ -87,11 +90,13 @@ void deleteDifxScanArray(DifxScan *ds, int nScan)
 
 void fprintDifxScan(FILE *fp, const DifxScan *ds)
 {
-	int i, j, nModel;
+	int i, j, k, nModel;
 
 	fprintf(fp, "  DifxScan [%s] : %p\n", ds->identifier, ds);
 	fprintf(fp, "    Start = MJD %12.6f\n", ds->mjdStart);
 	fprintf(fp, "    End   = MJD %12.6f\n", ds->mjdEnd);
+	fprintf(fp, "    startSeconds = %6d since model reference\n", ds->startSeconds);
+	fprintf(fp, "    durSeconds   = %6d\n", ds->durSeconds);
 	fprintf(fp, "    Observing mode = %s\n", ds->obsModeName);
 	fprintf(fp, "    Max NS between UV shifts = %d\n", ds->maxNSBetweenUVShifts);
 	fprintf(fp, "    Max NS between AC averages = %d\n", ds->maxNSBetweenACAvg);
@@ -102,7 +107,9 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 	        fprintf(fp, "    Phase centre %d source index = %d\n", i, ds->phsCentreSrcs[i]);
 		fprintf(fp, "    Original job phase centre %d source index = %d\n", i, ds->orgjobPhsCentreSrcs[i]);
 	}
+	fprintf(fp, "    nPoly    = %d\n", ds->nPoly);
 	fprintf(fp, "    nAntenna %d\n", ds->nAntenna);
+	fprintf(fp, "    jobId    = %d\n", ds->jobId);
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
 
 	if(ds->nPhaseCentres < 1 || ds->pointingCentreSrc == ds->phsCentreSrcs[0])
@@ -124,7 +131,10 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 				{
 					for(j = 0; j < nModel; ++j)
 					{
-						fprintDifxPolyModel(fp, ds->im[i][j]);
+						for(k = 0; k < ds->nPoly; ++k)
+						{
+							fprintDifxPolyModel(fp, ds->im[i][j] + k, i, j, k);
+						}
 					}
 				}
 				else
@@ -159,190 +169,204 @@ void printDifxScanSummary(const DifxScan *ds)
 
 void copyDifxScan(DifxScan *dest, const DifxScan *src, const int *sourceIdRemap, const int *jobIdRemap, const int *configIdRemap, const int *antennaIdRemap)
 {
-	int i, j, srcAntenna, destAntenna;
+	if(dest != src)
+	{
+		int i, j, srcAntenna, destAntenna;
 
-	dest->mjdStart     = src->mjdStart;
-	dest->mjdEnd       = src->mjdEnd;
-	dest->startSeconds = src->startSeconds;
-        dest->durSeconds   = src->durSeconds;
-	dest->maxNSBetweenUVShifts = src->maxNSBetweenUVShifts;
-	dest->maxNSBetweenACAvg = src->maxNSBetweenACAvg;
-	snprintf(dest->identifier, DIFXIO_NAME_LENGTH, "%s", src->identifier);
-	snprintf(dest->obsModeName, DIFXIO_NAME_LENGTH, "%s", src->obsModeName);
-	dest->nPhaseCentres = src->nPhaseCentres;
-	if(sourceIdRemap)
-	{
-		dest->pointingCentreSrc = sourceIdRemap[src->pointingCentreSrc];
-		for(i = 0; i < src->nPhaseCentres; ++i)
+		if(dest == 0 || src == 0)
 		{
-			dest->phsCentreSrcs[i] = sourceIdRemap[src->phsCentreSrcs[i]];
-			dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
-		}
-	}
-	else
-	{
-		dest->pointingCentreSrc = src->pointingCentreSrc;
-		for(i = 0; i < src->nPhaseCentres; ++i)
-		{
-			dest->phsCentreSrcs[i] = src->phsCentreSrcs[i];
-			dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
-		}
-	}
-	if(jobIdRemap)
-	{
-		dest->jobId = jobIdRemap[src->jobId];
-	}
-	else
-	{
-		dest->jobId = src->jobId;
-	}
-	if(configIdRemap && src->configId >= 0)
-	{
-		dest->configId = configIdRemap[src->configId];
-	}
-	else
-	{
-		dest->configId = src->configId;
-	}
-	dest->startSeconds = src->startSeconds;
-	dest->durSeconds   = src->durSeconds;
-	dest->nPoly        = src->nPoly;
+			fprintf(stderr, "Error: copyDifxScan: src=%p dest=%p but both must be non-null\n", src, dest);
 
-	/* figure out how many antennas needed in this scan */
-	dest->nAntenna = src->nAntenna;
-	if(antennaIdRemap)
-	{
-		for(i = 0; i < src->nAntenna; ++i)
+			exit(EXIT_FAILURE);
+		}
+
+		dest->mjdStart     = src->mjdStart;
+		dest->mjdEnd       = src->mjdEnd;
+		dest->startSeconds = src->startSeconds;
+		dest->durSeconds   = src->durSeconds;
+		dest->maxNSBetweenUVShifts = src->maxNSBetweenUVShifts;
+		dest->maxNSBetweenACAvg = src->maxNSBetweenACAvg;
+		snprintf(dest->identifier, DIFXIO_NAME_LENGTH, "%s", src->identifier);
+		snprintf(dest->obsModeName, DIFXIO_NAME_LENGTH, "%s", src->obsModeName);
+		dest->nPhaseCentres = src->nPhaseCentres;
+		if(sourceIdRemap)
 		{
-			destAntenna = antennaIdRemap[i];
-			if(destAntenna >= dest->nAntenna)
+			dest->pointingCentreSrc = sourceIdRemap[src->pointingCentreSrc];
+			for(i = 0; i < src->nPhaseCentres; ++i)
 			{
-				dest->nAntenna = destAntenna+1;
+				dest->phsCentreSrcs[i] = sourceIdRemap[src->phsCentreSrcs[i]];
+				dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
 			}
 		}
-	}
-
-	if(src->im)
-	{
-		dest->im = (DifxPolyModel ***)calloc(dest->nAntenna, sizeof(DifxPolyModel **));
-		for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
+		else
 		{
-			if(src->im[srcAntenna] == 0)
+			dest->pointingCentreSrc = src->pointingCentreSrc;
+			for(i = 0; i < src->nPhaseCentres; ++i)
 			{
-				continue; //must have had a change of num antennas at some stage
+				dest->phsCentreSrcs[i] = src->phsCentreSrcs[i];
+				dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
 			}
-			if(antennaIdRemap)
-			{
-				destAntenna = antennaIdRemap[srcAntenna];
-			}
-			else
-			{
-				destAntenna = srcAntenna;
-			}
-			dest->im[destAntenna] = (DifxPolyModel **)calloc(dest->nPhaseCentres+1, sizeof(DifxPolyModel *));
-			if(dest->im[destAntenna] == 0)
-			{
-				fprintf(stderr, "Error allocating space for IM table! Aborting");
+		}
+		if(jobIdRemap)
+		{
+			dest->jobId = jobIdRemap[src->jobId];
+		}
+		else
+		{
+			dest->jobId = src->jobId;
+		}
+		if(configIdRemap && src->configId >= 0)
+		{
+			dest->configId = configIdRemap[src->configId];
+		}
+		else
+		{
+			dest->configId = src->configId;
+		}
+		dest->startSeconds = src->startSeconds;
+		dest->durSeconds   = src->durSeconds;
+		dest->nPoly        = src->nPoly;
 
-				exit(EXIT_FAILURE);
-			}
-			for(j = 0; j < src->nPhaseCentres+1; ++j)
+		/* figure out how many antennas needed in this scan */
+		dest->nAntenna = src->nAntenna;
+		if(antennaIdRemap)
+		{
+			for(i = 0; i < src->nAntenna; ++i)
 			{
-				dest->im[destAntenna][j] = dupDifxPolyModelColumn(src->im[srcAntenna][j], dest->nPoly);
-				if(dest->im[destAntenna][j] == 0)
+				destAntenna = antennaIdRemap[i];
+				if(destAntenna >= dest->nAntenna)
+				{
+					dest->nAntenna = destAntenna+1;
+				}
+			}
+		}
+
+		if(src->im)
+		{
+			dest->im = (DifxPolyModel ***)calloc(dest->nAntenna, sizeof(DifxPolyModel **));
+			for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
+			{
+				if(src->im[srcAntenna] == 0)
+				{
+					continue; //must have had a change of num antennas at some stage
+				}
+				if(antennaIdRemap)
+				{
+					destAntenna = antennaIdRemap[srcAntenna];
+				}
+				else
+				{
+					destAntenna = srcAntenna;
+				}
+				dest->im[destAntenna] = (DifxPolyModel **)calloc(dest->nPhaseCentres+1, sizeof(DifxPolyModel *));
+				if(dest->im[destAntenna] == 0)
 				{
 					fprintf(stderr, "Error allocating space for IM table! Aborting");
 
 					exit(EXIT_FAILURE);
 				}
+				for(j = 0; j < src->nPhaseCentres+1; ++j)
+				{
+					dest->im[destAntenna][j] = dupDifxPolyModelColumn(src->im[srcAntenna][j], dest->nPoly);
+					if(dest->im[destAntenna][j] == 0)
+					{
+						fprintf(stderr, "Error allocating space for IM table! Aborting");
+
+						exit(EXIT_FAILURE);
+					}
+				}
 			}
 		}
-	}
-	else
-	{
-		dest->im = 0;
-	}
-
-	if(src->imLM)
-	{
-		dest->imLM = (DifxPolyModelLMExtension ***)calloc(dest->nAntenna, sizeof(DifxPolyModelLMExtension **));
-		for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
+		else
 		{
-			if(src->imLM[srcAntenna] == 0)
-			{
-				continue; 
-			}
-			if(antennaIdRemap)
-			{
-				destAntenna = antennaIdRemap[srcAntenna];
-			}
-			else
-			{
-				destAntenna = srcAntenna;
-			}
-			dest->imLM[destAntenna] = (DifxPolyModelLMExtension **)calloc(dest->nPhaseCentres+1, sizeof(DifxPolyModelLMExtension *));
-			if(dest->imLM[destAntenna] == 0)
-			{
-				fprintf(stderr, "Error allocating space for LM Extension table! Aborting");
+			dest->im = 0;
+		}
 
-				exit(EXIT_FAILURE);
-			}
-			for(j = 0; j < src->nPhaseCentres+1; ++j)
+		if(src->imLM)
+		{
+			dest->imLM = (DifxPolyModelLMExtension ***)calloc(dest->nAntenna, sizeof(DifxPolyModelLMExtension **));
+			for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
 			{
-				dest->imLM[destAntenna][j] = dupDifxPolyModelLMExtensionColumn(src->imLM[srcAntenna][j], dest->nPoly);
-				if(dest->imLM[destAntenna][j] == 0)
+				if(src->imLM[srcAntenna] == 0)
+				{
+					continue; 
+				}
+				if(antennaIdRemap)
+				{
+					destAntenna = antennaIdRemap[srcAntenna];
+				}
+				else
+				{
+					destAntenna = srcAntenna;
+				}
+				dest->imLM[destAntenna] = (DifxPolyModelLMExtension **)calloc(dest->nPhaseCentres+1, sizeof(DifxPolyModelLMExtension *));
+				if(dest->imLM[destAntenna] == 0)
 				{
 					fprintf(stderr, "Error allocating space for LM Extension table! Aborting");
 
 					exit(EXIT_FAILURE);
 				}
+				for(j = 0; j < src->nPhaseCentres+1; ++j)
+				{
+					dest->imLM[destAntenna][j] = dupDifxPolyModelLMExtensionColumn(src->imLM[srcAntenna][j], dest->nPoly);
+					if(dest->imLM[destAntenna][j] == 0)
+					{
+						fprintf(stderr, "Error allocating space for LM Extension table! Aborting");
+
+						exit(EXIT_FAILURE);
+					}
+				}
 			}
 		}
-	}
-	else
-	{
-		dest->imLM = 0;
-	}
-
-	if(src->imXYZ)
-	{
-		dest->imXYZ = (DifxPolyModelXYZExtension ***)calloc(dest->nAntenna, sizeof(DifxPolyModelXYZExtension **));
-		for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
+		else
 		{
-			if(src->imXYZ[srcAntenna] == 0)
-			{
-				continue; 
-			}
-			if(antennaIdRemap)
-			{
-				destAntenna = antennaIdRemap[srcAntenna];
-			}
-			else
-			{
-				destAntenna = srcAntenna;
-			}
-			dest->imXYZ[destAntenna] = (DifxPolyModelXYZExtension **)calloc(dest->nPhaseCentres+1, sizeof(DifxPolyModelXYZExtension *));
-			if(dest->imXYZ[destAntenna] == 0)
-			{
-				fprintf(stderr, "Error allocating space for XYZ Extension table! Aborting");
+			dest->imLM = 0;
+		}
 
-				exit(EXIT_FAILURE);
-			}
-			for(j = 0; j < src->nPhaseCentres+1; ++j)
+		if(src->imXYZ)
+		{
+			dest->imXYZ = (DifxPolyModelXYZExtension ***)calloc(dest->nAntenna, sizeof(DifxPolyModelXYZExtension **));
+			for(srcAntenna = 0; srcAntenna < src->nAntenna; ++srcAntenna)
 			{
-				dest->imXYZ[destAntenna][j] = dupDifxPolyModelXYZExtensionColumn(src->imXYZ[srcAntenna][j], dest->nPoly);
-				if(dest->imXYZ[destAntenna][j] == 0)
+				if(src->imXYZ[srcAntenna] == 0)
+				{
+					continue; 
+				}
+				if(antennaIdRemap)
+				{
+					destAntenna = antennaIdRemap[srcAntenna];
+				}
+				else
+				{
+					destAntenna = srcAntenna;
+				}
+				dest->imXYZ[destAntenna] = (DifxPolyModelXYZExtension **)calloc(dest->nPhaseCentres+1, sizeof(DifxPolyModelXYZExtension *));
+				if(dest->imXYZ[destAntenna] == 0)
 				{
 					fprintf(stderr, "Error allocating space for XYZ Extension table! Aborting");
 
 					exit(EXIT_FAILURE);
 				}
+				for(j = 0; j < src->nPhaseCentres+1; ++j)
+				{
+					dest->imXYZ[destAntenna][j] = dupDifxPolyModelXYZExtensionColumn(src->imXYZ[srcAntenna][j], dest->nPoly);
+					if(dest->imXYZ[destAntenna][j] == 0)
+					{
+						fprintf(stderr, "Error allocating space for XYZ Extension table! Aborting");
+
+						exit(EXIT_FAILURE);
+					}
+				}
 			}
+		}
+		else
+		{
+			dest->imXYZ = 0;
 		}
 	}
 	else
 	{
-		dest->imXYZ = 0;
+		fprintf(stderr, "Developer error: copyDifxScan: src = dest.  Bad things will be coming...\n");
 	}
 }
 
@@ -399,7 +423,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 			if(ds1[i1].configId >= 0)
 			{
 				copyDifxScan(ds + i, ds1 + i1, 0, 0, 0, 0);
-				i++;
+				++i;
 			}
 			i1++;
 		}
@@ -408,7 +432,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 			if(ds2[i2].configId >= 0)
 			{
 				copyDifxScan(ds + i, ds2 + i2, sourceIdRemap, jobIdRemap, configIdRemap, antennaIdRemap);
-				i++;
+				++i;
 			}
 			i2++;
 		}
@@ -433,11 +457,11 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double iat, double *dt)
 	}
 	if(!ds->im || ds->nPoly < 1)
 	{
-		return -1;
+		return -2;
 	}
 
 	/* be sure to find an antenna with im model data */
-	for(i = 0; i < ds->nAntenna; i++)
+	for(i = 0; i < ds->nAntenna; ++i)
 	{
 		im = ds->im[i];
 		if(im)
@@ -448,10 +472,10 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double iat, double *dt)
 
 	if(!im)
 	{
-		return -1;
+		return -3;
 	}
 
-	for(i = 0; i < ds->nPoly; i++)
+	for(i = 0; i < ds->nPoly; ++i)
 	{
 		dp = im[0] + i;
 		m1 = (dp->mjd - mjd) + dp->sec/86400.0;
@@ -467,7 +491,7 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double iat, double *dt)
 	}
 
 	/* outside range */
-	return -1;
+	return -4;
 }
 
 /* dc must point to the base of a configuration array */
@@ -485,7 +509,7 @@ int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, const DifxConfig *d
 	writeDifxLineInt1(out, "SCAN %d AC AVG INTERVAL (NS)", scanId, ds->maxNSBetweenACAvg);
 	writeDifxLineInt1(out, "SCAN %d POINTING SRC", scanId, ds->pointingCentreSrc);
         writeDifxLineInt1(out, "SCAN %d NUM PHS CTRS", scanId, ds->nPhaseCentres);
-	for(i = 0; i < ds->nPhaseCentres; i++)
+	for(i = 0; i < ds->nPhaseCentres; ++i)
 	{
 		writeDifxLineInt2(out, "SCAN %d PHS CTR %d", scanId, i, ds->phsCentreSrcs[i]);
 	}
@@ -500,7 +524,7 @@ int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, const DifxConfi
 	writeDifxLineInt(out, "NUM SCANS", nScan);
 	n = 1;
 
-	for(i = 0; i < nScan; i++)
+	for(i = 0; i < nScan; ++i)
 	{
 		n += writeDifxScan(out, ds, i, dc);
 	}

@@ -39,13 +39,22 @@ const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH] =
 {
 	"AZEL",
 	"EQUA",
-	"SPACE",	/* note: this will fall back to AZEL in calcserver */
+	"SPACE",	/* spacecraft */
 	"XYEW",
 	"NASR",		/* note: this will correctly fall back to AZEL in calcserver */
 	"NASL",		/* note: this will correctly fall back to AZEL in calcserver */
 	"XYNS",		/* note: no FITS-IDI support */
 	"OTHER"		/* don't expect the right parallactic angle or delay model! */
 };
+
+/* These names must match what VEX expects */
+const char antennaSiteTypeNames[][MAX_ANTENNA_SITE_NAME_LENGTH] =
+{
+	"fixed",
+	"earth_orbit",
+	"OTHER"
+};
+
 
 enum AntennaMountType stringToMountType(const char *str)
 {
@@ -63,7 +72,9 @@ enum AntennaMountType stringToMountType(const char *str)
 		return AntennaMountEquatorial;
 	}
 	if(strcasecmp(str, "SPACE") == 0 ||
+	   strcasecmp(str, "SPAC") == 0 ||
 	   strcasecmp(str, "ORBIT") == 0 ||
+	   strcasecmp(str, "ORBI") == 0 ||
 	   strcasecmp(str, "ORBITING") == 0)
 	{
 		return AntennaMountOrbiting;
@@ -93,6 +104,21 @@ enum AntennaMountType stringToMountType(const char *str)
 	
 }
 
+enum AntennaSiteType stringToSiteType(const char *str)
+{
+	enum AntennaSiteType t;
+
+	for(t = 0; t < NumAntennaSiteTypes; ++t)
+	{
+		if(strcasecmp(str, antennaSiteTypeNames[t]) == 0)
+		{
+			break;
+		}
+	}
+
+	return t;
+}
+
 DifxAntenna *newDifxAntennaArray(int nAntenna)
 {
 	DifxAntenna* da;
@@ -113,7 +139,10 @@ DifxAntenna *newDifxAntennaArray(int nAntenna)
 
 void deleteDifxAntennaArray(DifxAntenna *da, int nAntenna)
 {
-	free(da);
+	if(nAntenna > 0 && da != 0)
+	{
+		free(da);
+	}
 }
 
 void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
@@ -127,6 +156,7 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 		fprintf(fp, "    Clock coeff[%d] = %e us/s^%d\n", i, da->clockcoeff[i], i);
 	}
 	fprintf(fp, "    Mount = %d = %s\n", da->mount, antennaMountTypeNames[da->mount]);
+        fprintf(fp, "    Site Type = %d = %s\n", da->siteType, antennaSiteTypeNames[da->siteType]);
 	fprintf(fp, "    Offset = %f, %f, %f m\n", da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
 	fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
@@ -143,6 +173,7 @@ void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da)
 	fprintf(fp, "    Clock: Ref time %f, Order = %d, linear approx %e us + %e us/s\n", 
 		da->clockrefmjd, da->clockorder, da->clockcoeff[0], da->clockcoeff[1]);
 	fprintf(fp, "    Mount = %s\n", antennaMountTypeNames[da->mount]);
+        fprintf(fp, "    Site Type = %d = %s\n", da->siteType, antennaSiteTypeNames[da->siteType]);
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
@@ -159,7 +190,8 @@ void printDifxAntennaSummary(const DifxAntenna *da)
 
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)
 {
-	if(strcmp(da1->name, da2->name) == 0 &&
+	if((da1->spacecraftId < 0) && (da2->spacecraftId < 0) &&
+	   strcmp(da1->name, da2->name) == 0 &&
 	   fabs(da1->X - da2->X) < 1.0 &&
 	   fabs(da1->Y - da2->Y) < 1.0 &&
 	   fabs(da1->Z - da2->Z) < 1.0)
@@ -209,26 +241,22 @@ int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2)
 
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 {
-	int i;
-	
-	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src->name);
-	dest->clockrefmjd = src->clockrefmjd;
-	dest->clockorder  = src->clockorder;
-	for(i = 0; i < MAX_MODEL_ORDER; ++i)
+	if(dest != src)
 	{
-		dest->clockcoeff[i] = src->clockcoeff[i];
+		if(dest == 0 || src == 0)
+		{
+			fprintf(stderr, "Developer error: copyDifxAntenna: dest=%p src=%p.  Both must be non-null\n", dest, src);
+		}
+		else
+		{
+			/* Warning: if dynamic objects are added to DifxAntenna then this needs to be changed */
+			*dest = *src;
+		}
 	}
-	dest->mount = src->mount;
-	for(i = 0; i < 3; ++i)
+	else
 	{
-		dest->offset[i] = src->offset[i];
+		fprintf(stderr, "Developer error: copyDifxAntenna: src = dest.  Bad things will be coming...\n");
 	}
-	dest->X  = src->X;
-	dest->Y  = src->Y;
-	dest->Z  = src->Z;
-	dest->dX = src->dX;
-	dest->dY = src->dY;
-	dest->dZ = src->dZ;
 }
 
 /* dt is in seconds */
@@ -249,7 +277,7 @@ int getDifxAntennaShiftedClock(const DifxAntenna *da, double dt, int outputClock
 		return -2;
 	}
 
-	for(i = 0; i < MAX_MODEL_ORDER+1; i++)             // pad out input array to full order with 0's
+	for(i = 0; i < MAX_MODEL_ORDER+1; ++i)             // pad out input array to full order with 0's
 	{
 		a[i] = (i <= da->clockorder) ? da->clockcoeff[i] : 0.0;
 	}
@@ -346,8 +374,7 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	return da;
 }
 
-int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da, 
-	int doMount, int doOffset, int doCoords, int doClock, int doShelf)
+int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da, int doMount, int doOffset, int doCoords, int doClock, int doShelf, int doSpacecraft)
 {
 	int n;	/* number of lines written */
 	int i, j;
@@ -406,6 +433,13 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 			writeDifxLine1(out, "TELESCOPE %d SHELF", i, da[i].shelf);
 			++n;
 		}
+#ifdef RA_MERGED
+		if(doSpacecraft)
+		{
+			writeDifxLineInt1(out, "TELESCOPE %d S/CRAFT ID", i, da[i].spacecraftId);
+			++n;
+		}
+#endif
 	}
 
 	return n;

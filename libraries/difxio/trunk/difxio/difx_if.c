@@ -53,7 +53,7 @@ int isSameDifxIF(const DifxIF *di1, const DifxIF *di2)
 		return 0;
 	}
 
-	for(i = 0; i < di1->nPol; i++)
+	for(i = 0; i < di1->nPol; ++i)
 	{
 		if(di1->pol[i] != di2->pol[i])
 		{
@@ -138,8 +138,7 @@ void fprintDifxIFSummary(FILE *fp, const DifxIF *di)
 		v = snprintf(pols, PolStringLength, "(%d)", di->nPol);
 	}
 
-	fprintf(fp, "    Freq=%f MHz  BW=%f MHz Sideband=%c Pols=%s\n",
-		di->freq, di->bw, di->sideband, pols);
+	fprintf(fp, "    Freq=%f MHz  BW=%f MHz Sideband=%c Pols=%s\n", di->freq, di->bw, di->sideband, pols);
 
 	if(v >= PolStringLength)
 	{

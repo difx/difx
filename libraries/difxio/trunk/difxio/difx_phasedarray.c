@@ -137,12 +137,20 @@ int isSameDifxPhasedArray(const DifxPhasedArray *dpa1, const DifxPhasedArray *dp
 
 void copyDifxPhasedArray(DifxPhasedArray *dest, const DifxPhasedArray *src)
 {
-	snprintf(dest->fileName, DIFXIO_NAME_LENGTH, "%s", src->fileName);
-	dest->outputType = src->outputType;
-	dest->outputFormat = src->outputFormat;
-	dest->accTime = src->accTime;
-	dest->complexOutput = src->complexOutput;
-	dest->quantBits = src->quantBits;
+	if(dest != src)
+	{
+		if(dest == 0 || src == 0)
+		{
+			fprintf(stderr, "Error: copyDifxPhasedArray: src=%p dest=%p but both must be non-null\n", src, dest);
+
+			exit(EXIT_FAILURE);
+		}
+		*dest = *src;
+	}
+	else
+	{
+		fprintf(stderr, "Developer error: copyDifxPhasedArray: src = dest.  Bad things will be coming...\n");
+	}
 }
 
 DifxPhasedArray *dupDifxPhasedarrayArray(const DifxPhasedArray *src, int nPhasedArray)
