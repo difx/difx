@@ -13,6 +13,11 @@
 * New function: evaluateDifxAntennaClock
 * Write Parallactic Angle and/or Refraction Corrected Elevation to .im file if they are populated
 * Support MARK6 data source
+* Improved precision on some output values
+* Improved sanity checking on many internal functions
+* Some merging from the RadioAstron branch
+  - James Anderson to fill in details here
+  - Some new capabilities commented out with  "#ifdef RA_MERGED .. #endif" constructs, awaiting changes in mpifxcorr
 
 3.4.0
 * Fix X/Y polarization issue

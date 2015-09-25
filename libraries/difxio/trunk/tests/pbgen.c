@@ -464,7 +464,7 @@ int main(int argc, char **argv)
 					}
 					else if(n < 0)
 					{
-						fprintf(stderr, "Error: interferometer model index out of range: scanId=%d mjd=%12.6f\n", s, mjd);
+						fprintf(stderr, "Error: interferometer model index out of range: scanId=%d mjd=%12.6f reported nScan=%d\n", s, mjd, n);
 					}
 					else
 					{
