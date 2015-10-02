@@ -232,17 +232,17 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         }
     if (opts->verbose > 1)
         {
-        printf ("              sb p 1st a id  z pc  freq    bw   ch_id\n");
+        printf ("              sb p 1st a id  z pc bs  freq    bw   ch_id\n");
         for (n=0; n<nprod; n++)     // debug - print out fblock table
-            printf ("    fblock[%02d] %c %c %2d %2d %2d %2d %1d %.3f %.3f %s\n"
-                      "               %c %c %2d %2d %2d %2d %1d %.3f %.3f %s\n",
+            printf ("    fblock[%02d] %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n"
+                      "               %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n",
                   n, pfb[n].stn[0].sideband, pfb[n].stn[0].pol, pfb[n].stn[0].first_time,
                   pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].zoom, 
-                  pfb[n].stn[0].pcal_int, pfb[n].stn[0].freq,
+                  pfb[n].stn[0].pcal_int, pfb[n].stn[0].bs, pfb[n].stn[0].freq,
                   pfb[n].stn[0].bw, pfb[n].stn[0].chan_id,
                   pfb[n].stn[1].sideband, pfb[n].stn[1].pol, pfb[n].stn[1].first_time,
                   pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].zoom, 
-                  pfb[n].stn[1].pcal_int, pfb[n].stn[1].freq, 
+                  pfb[n].stn[1].pcal_int, pfb[n].stn[1].bs, pfb[n].stn[1].freq, 
                   pfb[n].stn[1].bw, pfb[n].stn[1].chan_id);
         }
 

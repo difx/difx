@@ -3,6 +3,7 @@
 //
 //  first created from createType1s                  rjc  2012.5.8
 //  broke out put_t101 into a routine, fixed ac's    rjc  2013.9.12
+//  added Van Vleck scale factor calculation         rjc  2015.10.2
 
 #include <stdio.h>
 #include <string.h>
@@ -18,6 +19,8 @@
 
 #define XS_CONVENTION
 
+#define SCALE 10000.0               // amplitude factor to normalize for fourfit
+
 int new_type1 (DifxInput *D,                    // ptr to a filled-out difx input structure
                struct fblock_tag *pfb,          // ptr to filled-in fblock table
                int nb,                          // (next open) index to base_index array
@@ -25,6 +28,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                int a2, 
                int blind, 
                int *base_index,
+               double *scale_factor,            // Van Vleck correction per baseline
                struct stations *stns,
                char *blines,                    // array of character pairs
                struct CommandLineOptions *opts, // ptr to input options
@@ -41,6 +45,13 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
         k,
         ref,
         rem;
+                                    // factors are sqrt (Van Vleck correction) for 1b, 2b case
+                                    // quantization correction factor is pi/2 for
+                                    // 1x1 bit, or ~1.13 for 2x2 bit (see TMS, p.300)
+                                    // 1x2 bit uses harmonic mean of 1x1 and 2x2
+                                    // Note that these values apply to the weak signal
+                                    // (i.e. cross-correlation) case only.
+    double factor[2] = {1.25331, 1.06448};
 
     struct type_000 t000;
     struct type_100 t100;
@@ -144,18 +155,26 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                 {
                 put_t101 (&t101, fout[nb], pfb[n].stn[0].find,
                           pfb[n].stn[0].chan_id, pfb[n].stn[1].chan_id);
+                scale_factor[nb] = SCALE * factor[pfb[n].stn[0].bs - 1]
+                                         * factor[pfb[n].stn[1].bs - 1];
                 }
             }
 
         else                        // auto-correlations
             {                       // ref station
             if (a1 == pfb[n].stn[0].ant && pfb[n].stn[0].first_time)
+                {
                 put_t101 (&t101, fout[nb], pfb[n].stn[0].find,
                           pfb[n].stn[0].chan_id, pfb[n].stn[0].chan_id);
+                scale_factor[nb] = SCALE;
+                }
                                     // rem station
             if (a1 == pfb[n].stn[1].ant && pfb[n].stn[1].first_time)
+                {
                 put_t101 (&t101, fout[nb], pfb[n].stn[1].find,
                           pfb[n].stn[1].chan_id, pfb[n].stn[1].chan_id);
+                scale_factor[nb] = SCALE;
+                }
             }
         }
     return (0);

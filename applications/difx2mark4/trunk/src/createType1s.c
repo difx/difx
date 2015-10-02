@@ -18,7 +18,6 @@
 
 #define XS_CONVENTION
 
-#define SCALE 10000.0               // amplitude factor to normalize for fourfit
 #define NOVIS -9999                 // indicates no visibility records in RAM
 
 
@@ -69,8 +68,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     static vis_record *rec,
                       *vrec;
     
-    double q_factor,                // quantization correction factor
-           scale_factor,            // scaling factor includes Van Vleck and SCALE
+    double scale_factor[NUMFILS],   // scaling factor includes Van Vleck and fourfit SCALE
            sb_factor[64],           // +1 | -1 for USB | LSB by channel
            rscaled,
            iscaled,
@@ -93,19 +91,12 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     int recordIsFlagged (double, int, int, const DifxJob *);
     int getBaselineIndex (DifxInput *, int, int);
     int openReadVisFile (FILE *, vis_record *, int);
-    int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, 
+    int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, double *,
                    struct stations *, char *, struct CommandLineOptions *, FILE **, 
                    int, char *, char *, char *, char *, int, int);
     void write_t120 (struct type_120 *, FILE *);
 
                                     // initialize memory as necessary
-                                    // quantization correction factor is pi/2 for
-                                    // 1 bit, or ~1.13 for 2 bit (see TMS, p.300)
-                                    // Note that these values apply to the weak signal
-                                    // (i.e. cross-correlation) case only.
-    q_factor = (D->quantBits == 1) ? 1.57080 : 1.13312;
-    if (opts->verbose > 0)
-        printf ("      visibility scale factor %9.5lf\n", q_factor * SCALE);
                                     // compensate for LSB fringe rotator direction
     for (i=0; i<D->nFreq; i++)
         sb_factor[i] = ((D->freq+i)->sideband == 'U') ? 1.0 : -1.0;
@@ -113,6 +104,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     for (i=0; i<NUMFILS; i++)
         {
         base_index[i] = -1;
+        scale_factor[i] = 1.0;
         n120[i] = 0;
         }
                                     // number of (spectral) visibility points per array
@@ -248,8 +240,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 a1 = rec->baseline / 256 - 1; 
                 a2 = rec->baseline % 256 - 1; 
                 }
-                                    // no Van Vleck for strong signal (autocorr) case
-            scale_factor = (a1 == a2) ? SCALE : q_factor * SCALE;
 
                                     // check that both antennas are in the root file
             if((stns + a1)->inscan != TRUE || (stns + a2)->inscan != TRUE)
@@ -290,9 +280,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                 rec->baseline);
                         blind = 0;      // use first one in list and muster on
                         }
-                    rc = new_type1 (D, pfb, n, a1, a2, blind, base_index, stns, blines, opts, 
-                               fout, nvis, rootname, node, rcode, corrdate, 
-                               rec->baseline, scanId);
+                    rc = new_type1 (D, pfb, n, a1, a2, blind, base_index, scale_factor, stns,
+                                    blines, opts, fout, nvis, rootname, node, rcode, corrdate, 
+                                    rec->baseline, scanId);
                     if (rc < 0)
                         return (rc);
                     break;
@@ -324,8 +314,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     }
                 else
                     {
-                    rscaled = rec->comp[i].real * scale_factor;
-                    iscaled = rec->comp[i].imag * scale_factor;
+                    rscaled = rec->comp[i].real * scale_factor[n];
+                    iscaled = rec->comp[i].imag * scale_factor[n];
                     }
 
                 if (sb_factor[rec->freq_index] > 0)
@@ -442,4 +432,8 @@ int recordIsFlagged (double t, int a1, int a2, const DifxJob *job)
             }
         }
     return 0;
+    }
+
+double scale_baseline (struct fblock_tag *pfb, int a1, int a2)
+    {
     }
