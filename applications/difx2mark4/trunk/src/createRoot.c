@@ -67,6 +67,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
          def_block[30000],
          trax1b[100],
          trax2b[100],
+         trax1b_used,
+         trax2b_used,
          antnam[4];
 
     double freak,
@@ -323,6 +325,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                         {
                         strcpy (trax1b, "    ref $TRACKS = trax_1bit");
                         strcpy (trax2b, "    ref $TRACKS = trax_2bit");
+                        trax1b_used = FALSE;
+                        trax2b_used = FALSE;
 
                                     // create list of quantization bits per antenna
                         for (dstr=0; dstr<D->nDatastream; dstr++)
@@ -346,14 +350,23 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                                 fprintf (fout, "    ref $FREQ = ant%02d%s;\n", n, antnam);
                                     // add antenna to appropriate trax statement
                                 if (antbits[n] == 1)
+                                    {
                                     strcat (trax1b, antnam);
+                                    trax1b_used = TRUE;
+                                    }
                                 else if (antbits[n] == 2)
+                                    {
                                     strcat (trax2b, antnam);
+                                    trax2b_used = TRUE;
+                                    }
                                 }
                         fprintf (fout, "    ref $BBC = bbcs;\n");
                         fprintf (fout, "    ref $IF = ifs;\n");
-                        fprintf (fout, "%s;\n", trax1b);
-                        fprintf (fout, "%s;\n", trax2b);
+                                    // only print references that are actually used
+                        if (trax1b_used)
+                            fprintf (fout, "%s;\n", trax1b);
+                        if (trax2b_used)
+                            fprintf (fout, "%s;\n", trax2b);
                         }
                     }
                 break;
