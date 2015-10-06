@@ -1,5 +1,5 @@
 /*
- * $Id: vdifopt.c 3022 2015-04-15 18:20:49Z gbc $
+ * $Id: vdifopt.c 3486 2015-10-05 17:10:14Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we do the command-line processing to drive the support for fuse.
@@ -87,7 +87,7 @@ static int vdifsup_help(char *fullname, char *help)
 }
 static int vdifsup_vers(void)
 {
-    fprintf(stderr, "vdifuse version %.1f\n", VDIFUSE_VERSION);
+    fprintf(stderr, "vdifuse version %.2f\n", VDIFUSE_VERSION);
     vdifuse_enable = VDIFUSE_ENABLE_HELP;   /* just to fuse_main() help */
     return(1);                              /* yes, this was version */
 }

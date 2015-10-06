@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.h 3071 2015-04-29 14:46:48Z gbc $
+ * $Id: sg_access.h 3476 2015-10-03 19:25:56Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -168,6 +168,10 @@ extern double current_or_elapsed_secs(double *previous);
 
 /* For reconnecting stdout to something else */
 extern void sg_logger(FILE *fp);
+
+/* For optimizing read performance */
+extern void sg_advice(SGInfo *sgi, void *pkt, int dir);
+extern void sg_advice_term(int mmfd);
 
 #endif /* sg_access_h */
 

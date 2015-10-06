@@ -37,7 +37,7 @@ vdif_time_SOURCES   = vdif_time_main.c vdif_time.c
 if WITH_FUSE
 if HAVE_FUSE
 vdsrc = vdifuse.c vdifopt.c vdifsup.c vdiftst.c vdifseq.c \
-	vdiforr.c vdifsg2.c sg_access.c vdiflat.c vdifrex.c
+	vdiforr.c vdifsg2.c sg_access.c sg_advice.c vdiflat.c vdifrex.c
 dist_vdifuse_SOURCES = $(vdsrc)
 else
 dist_vdifuse_SOURCES =
@@ -52,7 +52,7 @@ vdifuse_LDADD = $(FUSE_LIBS)
 bin_PROGRAMS = scan_check vdif_time $(vdifuse)
 
 CLEANFILES = 
-DISTCLEANFILES = depcomp install-sh test-driver missing
+DISTCLEANFILES = depcomp install-sh test-driver missing compile
 
 #
 # eof

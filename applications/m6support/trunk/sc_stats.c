@@ -1,5 +1,5 @@
 /*
- * $Id: sc_stats.c 1726 2014-01-02 22:05:47Z gbc $
+ * $Id: sc_stats.c 3495 2015-10-05 19:42:26Z gbc $
  *
  * Statistics checker for scan check
  */
@@ -67,6 +67,30 @@ void stats_check(BSInfo *bsi, uint64_t *optr)
     bsi->bpkts ++;
     if (2 == bsi->bits_sample) return(stats_check_2bits(bsi, optr));
     if (1 == bsi->bits_sample) return(stats_check_1bit(bsi, optr));
+}
+
+/*
+ * Delta stats--called with new data in bsi, lst a copy from
+ * previous call and del a place to put manufactured diff.
+ */
+void stats_delta(BSInfo *bsi, BSInfo *lst, BSInfo *del,
+                 uint32_t *pkt, int count, int fnum, void *start)
+{
+    static char lab[] = "0000               ";
+    char *rep;
+    int ii;
+    snprintf(lab, 13, "%05d:delta:", fnum);
+
+    del->bpkts = bsi->bpkts - lst->bpkts;
+    del->bcounts = bsi->bcounts - lst->bcounts;
+    for (ii = 0; ii < 4; ii++)
+        del->bstates[ii] = bsi->bstates[ii] - lst->bstates[ii];
+    del->packet_octets = bsi->packet_octets;
+    del->bits_sample = bsi->bits_sample;
+    rep = stats_repstr(del, lab);
+    fprintf(stdout, "%s delta at pkt %08X(%u) for %d\n%s",
+        lab, ((void*)pkt - start), ((void*)pkt - start), count, rep);
+    *lst = *bsi;    /* for next time */
 }
 
 /*

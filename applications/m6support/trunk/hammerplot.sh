@@ -26,6 +26,8 @@ do
     out=$hm-`date +%Y%m%d`.png
     echo Host-Module: $hm ' -> ' $out
 
+    reqwrite=`(echo scale=4;echo 2 \* 8224 / 32 / 8)|bc -lq`
+
     grep 'write$' $l |\
     awk -v min=200 '$5<min{min=$5}{print $5}END{print "#write ",min}' >> $data
     echo '' >> $data
@@ -38,15 +40,19 @@ do
     echo '' >> $data
     mods="$mods $hm-read"
 
+    grep 'write$' $l |\
+    awk '$5>'"$reqwrite"'{o++;}{t++}END{print "#frac ",100.*o/t}' >> $data
+
     minwrite=`grep '^#write' $data | sort -n | head -1 | cut -c8-`
     minread=`grep '^#read' $data | sort -n | head -1 | cut -c7-`
     margin=`(echo scale=4;echo $minwrite \* 32 \* 8 / \(2 \* 8224 \) )|bc -lq`
+    fraclow=`grep '^#frac' $data | cut -c7-`"% Ok Writes"
 
     sed 's/^....//' > $gnu <<....EOF
     set key below
     set xlabel 'file count'
     set ylabel 'Rate (MB/s)'
-    set title "$hm RW Performance, WorstWrite/Required = $margin"
+    set title "$hm RW Performance, WorstWrite/Required = $margin, $fraclow"
     set term png notransparent large size 960,640
     set output '$png'
 ....EOF
@@ -56,6 +62,7 @@ do
     pd=$data
     sls='ls 1'
     als='ls 2'
+    rls='ls 3'
     for m in $mods
     do
         cat >> $gnu <<........EOF
@@ -68,7 +75,8 @@ do
     done
 
     echo "$minwrite w l $sls title 'min write $minwrite', \\" >> $gnu
-    echo "$minread w l $als title 'min read $minread'" >> $gnu
+    echo "$minread w l $als title 'min read $minread', \\" >> $gnu
+    echo "$reqwrite w l $rls title 'req read $reqwrite'" >> $gnu
     echo 'set output' >> $gnu
 
     gnuplot $gnu

@@ -1,5 +1,5 @@
 /*
- * $Id: sc_stats.h 1694 2013-12-27 20:31:27Z gbc $
+ * $Id: sc_stats.h 3490 2015-10-05 19:24:31Z gbc $
  *
  * Statistics checker for scan check
  */
@@ -31,6 +31,10 @@ extern char *stats_repstr(BSInfo *bsi, char *label);
 extern void stats_check_2bits(BSInfo *bsi, uint64_t *optr);
 extern void stats_check_1bit(BSInfo *bsi, uint64_t *optr);
 extern void stats_check(BSInfo *bsi, uint64_t *optr);
+
+/* Delta stats module */
+extern void stats_delta(BSInfo *bsi, BSInfo *lst, BSInfo *del,
+                        uint32_t *pkt, int count, int fnum, void *start);
 
 #endif /* sc_stats_h */
 

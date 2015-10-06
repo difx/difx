@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.c 2861 2015-02-15 19:34:01Z gbc $
+ * $Id: vdifsg2.c 3481 2015-10-05 15:33:55Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "vdifsg2.h"
 
@@ -204,10 +205,11 @@ static void member_show(SGV2sfrag *sfn, int ith)
  * TODO: packet times if we have invalid packets
  *       would need to be extrapolated to block edges
  */
-static void member_move(SGV2sfrag *sfp, off_t blk)
+static void member_move(SGV2sfrag *sfp, off_t blk, int dir)
 {
     uint32_t *pp;
-    if (vdifuse_debug>5) fprintf(vdflog, "member_move(%s)\n", sfp->sgi->name);
+    if (vdifuse_debug>5) fprintf(vdflog,
+        "member_move(%s) %s\n", sfp->sgi->name, dir>0 ? "fw" : "bw");
     if (blk < 0 || blk > sfp->sgi->sg_total_blks) {
         sfp->err |= SGV2_ERR_BLKERR;
         return;
@@ -227,6 +229,8 @@ static void member_move(SGV2sfrag *sfp, off_t blk)
     pp += (sfp->sgi->read_size/sizeof(uint32_t)) * (sfp->nblk-1);
     sfp->pten = packet_time((VDIFHeader *)pp);
     if (sfp->pten < sfp->ptbe) sfp->err |= SGV2_ERR_TIME_B;
+    /* advise mmap() machinery of our intentions */
+    sg_advice(sfp->sgi, pp, dir);
 }
 
 /*
@@ -251,7 +255,7 @@ static int member_init(SGV2sfrag *sfp)
         msbs = sfp->sgi->sg_sh_pkts;
     if (0 < sfp->sgi->sg_se_pkts && sfp->sgi->sg_se_pkts < msbs)
         msbs = sfp->sgi->sg_se_pkts;
-    member_move(sfp, 0);                /* start at the beginning */
+    member_move(sfp, 0, 1);         /* start at the beginning */
     if (vdifuse_debug>1) fprintf(vdflog,
         "member_init %d#%d %.8f..%.8f %u pps\n",
             sfp->sgi->smi.mmfd, sfp->cblk, sfp->first, sfp->final,
@@ -397,7 +401,7 @@ static int predecessors_leave_gap(int jj, SGV2sfrag *jth,
     while (dt >= mint && jth->cblk > 0) {
         /* peek at jth's predecessor */
         SGV2sfrag tmp = *jth;
-        member_move(&tmp, jth->cblk - 1);
+        member_move(&tmp, jth->cblk - 1, -1);
         odt = dt;
         dt = tmp.ptbe - pten;
         if (dt > 0.0) {
@@ -434,7 +438,7 @@ static int successor_closes_gap(SGV2sdata *sdp, double ptbe, int jj)
         /* peek at ith's successor */
         SGV2sfrag tmp = *(sdp->stripe[ii].sfrag);
         if (tmp.cblk < tmp.sgi->sg_total_blks) {
-            member_move(&tmp, tmp.cblk + 1);
+            member_move(&tmp, tmp.cblk + 1, 1);
             dt = tmp.pten - ptbe;
             if (dt < 0.0) {
                 /* found an earlier block */
@@ -690,7 +694,7 @@ static int stripe_walk(SGV2sdata *sdp, int dir)
             nrd = 0;
             cblk = ith->cblk;
             ptbe = ith->ptbe;
-            member_move(ith, nblk);
+            member_move(ith, nblk, dir);
             if (vdifuse_debug>3) fprintf(vdflog,
                 "  stripe%02d@%-2d #%u %.9f (%d) -> #%u %.9f %lu\n",
                 ii, ith->sgi->smi.mmfd, cblk, ptbe, ord,

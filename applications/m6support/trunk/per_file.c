@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 3071 2015-04-29 14:46:48Z gbc $
+ * $Id: per_file.c 3492 2015-10-05 19:37:21Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -45,6 +45,7 @@ static struct checker_work {
     uint32_t    pkts_loops;         /* number of packets to hit */
     uint32_t    pkts_runs;          /* number of packets in a row */
     uint32_t    stat_octets;        /* max number of samples/packet */
+    uint32_t    stat_delta;         /* dump stats after so many pkts */
     uint32_t    station_mask;       /* bits of station to check */
     uint32_t    extend_hchk;        /* check the extended header */
 
@@ -61,6 +62,10 @@ static struct checker_work {
     double      file_start_secs;    /* time current file started */
     double      file_process_secs;  /* current file consumption */
     double      total_process_secs; /* total time consumed */
+
+    /* delta stats */
+    BSInfo      bdel, blst;         /* used by stat_delta */
+    off_t       np0, np1;           /* packet offsets */
 } work = {
     .alarm_secs = 60.0,             /* a minute per file is alot */
     .trial_seed = 17,               /* doesn't really matter */
@@ -215,6 +220,9 @@ static void check_random(Random_Picker *rp)
 #if EXTEND_HCHK
         if (work.extend_hchk) extended_hdr_chk(pkt);
 #endif /* EXTEND_HCHK */
+        if (work.stat_delta)
+            stats_delta(&work.bsi, &work.blst, &work.bdel,
+                pkt, nl, work.cur_numb, work.sgi.smi.start);
         if (time_to_bail()) break;
     }
 }
@@ -225,10 +233,11 @@ static void check_random(Random_Picker *rp)
 static void check_sequence(Random_Picker *rp)
 {
     int tt, nl, num_check, fails, fills;
-    uint32_t *pkt, *end;
+    uint32_t *pkt, *end, *pkt0 = 0;
     num_check = (work.pkts_runs == 0) ? work.sgi.total_pkts : work.pkts_runs;
     for (tt = 0; tt < num_check; tt++) {
         pkt = (*rp)(&nl, &end);
+        if (pkt0 == 0) pkt0 = pkt;
         if (!pkt) {
             work.pkts_failed ++;
             work.pkts_tested ++;
@@ -246,6 +255,12 @@ static void check_sequence(Random_Picker *rp)
 #if EXTEND_HCHK
         if (work.extend_hchk) extended_hdr_chk(pkt);
 #endif /* EXTEND_HCHK */
+        if (work.stat_delta &&
+            ((tt % work.stat_delta) == (work.stat_delta - 1))) {
+                stats_delta(&work.bsi, &work.blst, &work.bdel,
+                pkt0, work.stat_delta, work.cur_numb, work.sgi.smi.start);
+            pkt0 = pkt;
+        }
         if (time_to_bail()) break;
     }
 }
@@ -558,6 +573,8 @@ static int help_chk_opt(void)
         work.pkts_runs);
     fprintf(stdout, "  stats=<int>      # octets/packet to test (%u)\n",
         work.stat_octets);
+    fprintf(stdout, "  sdelta=<int>     dump statistics after (%u) pkts\n",
+        work.stat_delta);
     fprintf(stdout, "  smask=<int>      station bits to check (%u)\n",
         work.station_mask);
     fprintf(stdout, "  exthdr=<str>     examine extended headers (%s)\n",
@@ -626,6 +643,11 @@ int m6sc_set_chk_opt(const char *arg)
             work.stat_octets = SG_MAX_VDIF_BYTES/8;
         if (verb>1) fprintf(stdout,
             "opt: Statistics on %u octets per packet\n", work.stat_octets);
+    } else if (!strncmp(arg, "sdelta=", 7)) {
+        work.stat_delta = atoi(arg+7);
+        if (work.stat_delta < 0) work.stat_delta = 0;
+        if (verb>1) fprintf(stdout,
+            "opt: Statistics dump every %u packets\n", work.stat_delta);
     } else if (!strncmp(arg, "smask=", 6)) {
         sg_set_station_id_mask(atoi(arg+6));
         work.station_mask = sg_get_station_id_mask();
@@ -672,6 +694,8 @@ char *m6sc_get_chk_opt(const char *arg)
         snprintf(answer, sizeof(answer), "%u", work.pkts_runs);
     } else if (!strncmp(arg, "stats", 5)) {
         snprintf(answer, sizeof(answer), "%u", work.stat_octets);
+    } else if (!strncmp(arg, "sdelta", 6)) {
+        snprintf(answer, sizeof(answer), "%u", work.stat_delta);
     } else if (!strncmp(arg, "smask", 5)) {
         snprintf(answer, sizeof(answer), "%u", work.station_mask);
     } else {
@@ -720,6 +744,8 @@ int m6sc_per_file(const char *file, int files, int verbose)
     work.pkts_filled = 0;
     work.sgi.verbose = verb;
     memset(&work.bsi, 0, sizeof(BSInfo));
+    memset(&work.bdel, 0, sizeof(BSInfo));
+    memset(&work.blst, 0, sizeof(BSInfo));
 #if EXTEND_HCHK
     if (work.extend_hchk) extended_hdr_verb(verb, work.cur_file);
 #endif /* EXTEND_HCHK */
@@ -764,6 +790,9 @@ int m6sc_per_file(const char *file, int files, int verbose)
     n++;
     return( work.pkts_failed ? 1 : 0);
 }
+
+/* performance stub we don't need */
+void sg_advice_term(int mmfd) { return; }
 
 /*
  * eof

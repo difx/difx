@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.c 3072 2015-04-29 14:57:07Z gbc $
+ * $Id: sg_access.c 3476 2015-10-03 19:25:56Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -198,6 +198,7 @@ static void mm_term(SGMMInfo *smi, int verb)
     /* final user */
     if (verb > 1) fprintf(sgalog, "Final User Term %d\n", smi->users);
     if (smi->mmfd < 0) return;
+    sg_advice_term(smi->mmfd);
     if (close(smi->mmfd)) perror("mm_term:close");
     smi->mmfd = -1;
     if (munmap(smi->start, smi->size)) perror("munmap");
