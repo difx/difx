@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-plotDiFXPCal.py version 1.1  Jan Wagner  20150617
+plotDiFXPCal.py version 1.2  Jan Wagner  20151006
 
 Usage: plotDiFXPCal.py [--pdf] [--txt] 
            [--dly=<band>,<tone>,<band>,<tone>,...]
@@ -60,27 +60,29 @@ def parsepcalfile(infile,band_tone_sel=()):
             station = line[0]
             mjd = float(line[1])
             tint = float(line[2])*86400.0 
-            npol = max(int(line[3]), 1)
+            dstream = max(int(line[3]), 1)
             nsubband = max(int(line[4]), 1)
             ntones = int(line[5])
+
             # line = ...,  '21997' 'R' '-2.03274e-05'  '9.69250e-05', ...]
             tone = line[6:]
+            vals_per_tone = 4 # freq pol re im
 
-            vals_per_tone = 4
             times = numpy.append(times, [mjd])
             if len(band_tone_sel)==0:
-                selected = [(b,t) for b in range(nsubband/npol) for t in range(ntones)]
+                selected = [(b,t) for b in range(nsubband) for t in range(ntones)]
             else:
                 selected = band_tone_sel
 
         # Pick selected tones from current PCal line
+        npol = 1 # in DiFX post-2.4.0 trunk, dstream# replaces npol in the text file... 
         for pol in range(npol):
             for (band,tonenr) in selected:
                 if (tonenr >= ntones) or (band >= nsubband):
                    continue
                 i = vals_per_tone * (pol*(nsubband/npol)*ntones + band*ntones + tonenr)
                 pc = tone[i:(i+vals_per_tone)]
-                if (pc[0] == '-1'):
+                if (pc[0] == '-1') or (pc[0] == '0'):
                    continue
 
                 id = pc[0] + pc[1] # + ' tone ' + str(tonenr)
@@ -149,6 +151,8 @@ def plotpcal(pcaldata,infile,band_tone_sel=(),delay_band_tone_sel=(),doPDF=False
 
     ax1.set_xlim([min(T)-tint/2,max(T)+tint/2])
     ax2.set_xlim([min(T)-tint/2,max(T)+tint/2])
+
+    ax1.set_ylim([0, 1.1])
 
     # Adjust phase axis limits to a 'phstep' granularity
     ylims2 = ax2.get_ylim()
