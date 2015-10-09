@@ -114,7 +114,11 @@ int writeDifxCalc(const DifxInput *D)
 	writeDifxLineInt(out, "DELAY POLY INTERVAL", D->job->polyInterval);
 #endif
 	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1, 0, 1, 1);
+#ifdef RA_MERGED
         writeDifxSourceArray(out, D->nSource, D->source, 1, 1, 1);
+#else
+        writeDifxSourceArray(out, D->nSource, D->source, 1, 1, 0);
+#endif
 	writeDifxScanArray(out, D->nScan, D->scan, D->config);
 	writeDifxEOPArray(out, D->nEOP, D->eop);
 	writeDifxSpacecraftArray(out, D->nSpacecraft, D->spacecraft);
