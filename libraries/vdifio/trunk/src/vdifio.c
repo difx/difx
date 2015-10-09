@@ -315,6 +315,21 @@ static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 			fprintf(out, "  rev = %d.%d\n", edv3->majorrev, edv3->minorrev);
 			fprintf(out, "  personalitytype = 0x%2X\n", edv3->personalitytype);
 		}
+		else if(header->eversion == 4)
+		{
+			const vdif_edv4_header *edv4 = (const vdif_edv4_header *)header;
+			int64_t i;
+
+			fprintf(out, "  old EDV = %d\n", edv4->oldEDV);
+			fprintf(out, "  number of merged threads = %d\n", edv4->mergedthreads);
+			fprintf(out, "  syncword = 0x%08X\n", edv4->syncword);
+			fprintf(out, "  validity mask = 0x");
+			for(i = edv4->mergedthreads - 1; i >= 0; --i)
+			{
+				fprintf(out, "%c", ((edv4->validitymask) & (1LL << i)) ? '1' : '0');
+			}
+			fprintf(out, "\n");
+		}
 		else
 		{
 			fprintf(out, "  extended1 = %06X\n", header->extended1);
@@ -351,6 +366,17 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 			samprate = edv3->samprate * (edv3->samprateunits ? 1000000LL : 1000LL);
 			fprintf(out, " %10lld 0x%08X %3d %2d %2d %10.6f    %c %d.%d 0x%2X", samprate, edv3->syncword, edv3->dbeunit, edv3->ifnumber, edv3->subband, edv3->tuning/16777216.0, edv3->sideband ? 'U' : 'L', edv3->majorrev, edv3->minorrev, edv3->personalitytype);
 		}
+		else if(header->eversion == 4)
+		{
+			const vdif_edv4_header *edv4 = (const vdif_edv4_header *)header;
+			int64_t i;
+
+			fprintf(out, "  %3d    %2d   0x%08X 0x", edv4->oldEDV, edv4->mergedthreads, edv4->syncword);
+			for(i = edv4->mergedthreads - 1; i >= 0; --i)
+			{
+				fprintf(out, "%c", ((edv4->validitymask) & (1LL << i)) ? '1' : '0');
+			}
+		}
 	}
 	else
 	{
@@ -373,6 +399,10 @@ static void fprintVDIFHeaderColumns(FILE *out, const vdif_header *header)
 	else if(header->eversion == 3)
 	{
 		fprintf(out, " SampleRate   SyncWord DBE IF Sub Tuning(MHz) Side Rev Pers");
+	}
+	else if(header->eversion == 4)
+	{
+		fprintf(out, " OldEDV MgdThds SyncWord ValidityMask");
 	}
 	fprintf(out, "\n");
 }

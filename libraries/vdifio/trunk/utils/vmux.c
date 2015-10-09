@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 	int nChanPerThread;
 	const vdif_header *vh;
 	struct vdif_mux vm;
-	int flags = 0;
+	int flags = VDIF_MUX_FLAG_PROPAGATEVALIDITY;
 
 	if(argc < 6)
 	{

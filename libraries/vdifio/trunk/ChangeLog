@@ -30,12 +30,12 @@ Version 1.1
 * New utility: mk6ls: lists Mark6 "files" on system.  Respects ENV VAR MARK6_ROOT
 * New utility: mk6vmux: directly multiplexes VDIF data from a Mark6 module
 * vmux and mk6vmux (and in general any multiplexing) can be done on complex data
+* Support for partial frame validity in multiplexed VDIF data (pending VDIF committee approval of EDV version 4 requested by WFB on 2015/10/09)
 
 Version 1.0
 ~~~~~~~~~~~
 * ******* NOTE CHANGES TO THE API *********
-* Changed parameter in createVDIFHeader (pass size of dataarray not full
-	VDIF frame).
+* Changed parameter in createVDIFHeader (pass size of dataarray not full VDIF frame).
 * Changed function of getVDIFEpoch and setVDIFFrameSecond
 * Renamed:
 	getVDIFMJD

@@ -90,7 +90,7 @@ typedef struct vdif_edv1_header {	/* NICT extensions: see http://www.vlbi.org/vd
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
-   uint32_t version : 3;
+   uint32_t version : 3;	// Set to 1
    
    uint32_t stationid : 16;
    uint32_t threadid : 10;
@@ -117,7 +117,7 @@ typedef struct vdif_edv2_header {	/* For ALMA & R2DBE, incomplete document descr
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
-   uint32_t version : 3;
+   uint32_t version : 3;	// Set to 2
    
    uint32_t stationid : 16;
    uint32_t threadid : 10;
@@ -155,7 +155,7 @@ typedef struct vdif_edv3_header {	/* VLBA extensions: see http://www.vlbi.org/vd
 
    uint32_t samprate : 23;	// in samprateunits
    uint32_t samprateunits : 1;	// 0 = kHz, 1 = MHz
-   uint32_t eversion : 8;
+   uint32_t eversion : 8;	// set to 3
    
    uint32_t syncword;		// 0xACABFEED
    
@@ -170,6 +170,34 @@ typedef struct vdif_edv3_header {	/* VLBA extensions: see http://www.vlbi.org/vd
    uint32_t dbeunit : 4;	// which unit produced this data
    uint32_t unassigned2 : 4;
  } vdif_edv3_header;
+
+typedef struct vdif_edv4_header {	/* proposed extension extensions: (WFB email to VDIF committee 2015/10/09) */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
+   uint32_t nchan : 5;
+   uint32_t version : 3;
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;
+   uint32_t iscomplex : 1;
+
+   uint32_t dummy : 8;
+   uint32_t oldEDV : 8;		// EDV of pre-merged streams
+   uint32_t mergedthreads : 8;	// Number of threads merged to get to this VDIF frame */
+   uint32_t eversion : 8;	// Should be set to 4
+   
+   uint32_t syncword;		// 0xACABFEED
+   
+   uint64_t validitymask;	// bits set if data is present
+ } vdif_edv4_header;
 
 enum VDIFHeaderPrintLevel	// for printVDIFHeader function
 {
@@ -248,6 +276,7 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 #define	VDIF_MUX_FLAG_INPUTLEGACY		0x08		/* if set, accept LEGACY frames; NOT YET IMPLEMENTED */
 #define	VDIF_MUX_FLAG_OUTPUTLEGACY		0x10		/* if set, produce LEGACY frames; NOT YET IMPLEMENTED */
 #define VDIF_MUX_FLAG_COMPLEX			0x20		/* if set, data is complex (so 2x as many bits per logical sample) */
+#define VDIF_MUX_FLAG_PROPAGATEVALIDITY		0x40		/* if set, change output VDIF to EDV 4 with per-input-thread validity */
 
 
 struct vdif_mux {
@@ -281,6 +310,7 @@ struct vdif_mux_statistics {
   long long nDuplicateFrame;		/* number of frames found with the same time & thread */
   long long bytesProcessed;		/* total bytes consumed from */
   long long nGoodFrame;			/* number of fully usable output frames */
+  long long nPartialFrame;		/* number of partial frames produced (EDV4 only) */
   int nCall;				/* how many calls to vdifmux since last reset */
 
   /* These remaining fields are set each time */

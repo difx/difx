@@ -345,6 +345,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int nEnd = 0;				/* number of frames processed after the end of the buffer first reached */
 	int nGoodOutput = 0;
 	int nBadOutput = 0;
+	int nPartialOutput = 0;
 	int nWrongThread = 0;
 	int seconds, frameNum;
 	vdif_header outputHeader;
@@ -454,7 +455,28 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		if(vhUnset)
 		{
 			memcpy(&outputHeader, vh, 16);
-			memset(((char *)&outputHeader) + 16, 0, 16);
+			if(vm->flags & VDIF_MUX_FLAG_PROPAGATEVALIDITY)
+			{
+				vdif_edv4_header *edv4 = (vdif_edv4_header *)(&outputHeader);
+
+				edv4->dummy = 0;
+				if(vh->legacymode)
+				{
+					edv4->oldEDV = 0;
+				}
+				else
+				{
+					edv4->oldEDV = vh->eversion;
+				}
+				edv4->mergedthreads = vm->nThread;
+				edv4->eversion = 4;
+				edv4->syncword = 0xACABFEED;
+				edv4->validitymask = 0;
+			}
+			else
+			{
+				memset(((char *)&outputHeader) + 16, 0, 16);
+			}
 
 			/* use this first good frame to generate the prototype VDIF header for the output */
 			setVDIFNumChannels(&outputHeader, vm->nOutputChan);
@@ -690,24 +712,34 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			const uint64_t *p = (const uint64_t *)(dest + vm->outputFrameSize*f);
 			uint64_t mask = p[3];
 
-			if(mask != vm->goodMask)
+			if(vm->flags & VDIF_MUX_FLAG_PROPAGATEVALIDITY)
 			{
-				const unsigned char * const *threadBuffers = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
-				int t;
-				
-				highestDestIndex = f-1;
-				for(t = 0; t < vm->nThread; ++t)
+				if(mask == 0)
 				{
-					if(mask & (1<<t))
+					highestDestIndex = f-1;
+				}
+			}
+			else
+			{
+				if(mask != vm->goodMask)
+				{
+					const unsigned char * const *threadBuffers = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
+					int t;
+					
+					highestDestIndex = f-1;
+					for(t = 0; t < vm->nThread; ++t)
 					{
-						int d;
-
-						d = threadBuffers[t] - src - VDIF_HEADER_BYTES;	/* this is number of bytes into input stream */
-						if(d < bytesProcessed)
+						if(mask & (1<<t))
 						{
-							bytesProcessed = d;
+							int d;
+
+							d = threadBuffers[t] - src - VDIF_HEADER_BYTES;	/* this is number of bytes into input stream */
+							if(d < bytesProcessed)
+							{
+								bytesProcessed = d;
+							}
+							--nValidFrame;
 						}
-						--nValidFrame;
 					}
 				}
 			}
@@ -722,24 +754,34 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			const uint64_t *p = (const uint64_t *)(dest + vm->outputFrameSize*f);
 			uint64_t mask = p[3];
 
-			if(mask != vm->goodMask)
+			if(vm->flags & VDIF_MUX_FLAG_PROPAGATEVALIDITY)
 			{
-				const unsigned char * const *threadBuffers = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
-				int t;
-				
-				highestDestIndex = f-1;
-				for(t = 0; t < vm->nThread; ++t)
+				if(mask == 0)
 				{
-					if(mask & (1<<t))
+					highestDestIndex = f-1;
+				}
+			}
+			else
+			{
+				if(mask != vm->goodMask)
+				{
+					const unsigned char * const *threadBuffers = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
+					int t;
+					
+					highestDestIndex = f-1;
+					for(t = 0; t < vm->nThread; ++t)
 					{
-						int d;
-
-						d = threadBuffers[t] - src - VDIF_HEADER_BYTES;	/* this is number of bytes into input stream */
-						if(d < bytesProcessed)
+						if(mask & (1<<t))
 						{
-							bytesProcessed = d;
+							int d;
+
+							d = threadBuffers[t] - src - VDIF_HEADER_BYTES;	/* this is number of bytes into input stream */
+							if(d < bytesProcessed)
+							{
+								bytesProcessed = d;
+							}
+							--nValidFrame;
 						}
-						--nValidFrame;
 					}
 				}
 			}
@@ -770,22 +812,69 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		setVDIFFrameEpochSecOffset((vdif_header *)frame, seconds);
 		setVDIFFrameNumber((vdif_header *)frame, frameNum);
 
-		if(mask == vm->goodMask)
+		if(vm->flags & VDIF_MUX_FLAG_PROPAGATEVALIDITY)
 		{
-			const unsigned char * const *threadBuffers = (const unsigned char * const *)(frame + VDIF_HEADER_BYTES);
+			if(mask != 0)
+			{
+				const unsigned char **threadBuffers = (const unsigned char **)(frame + VDIF_HEADER_BYTES);
+				vdif_edv4_header *edv4 = (vdif_edv4_header *)frame;
+				edv4->validitymask = mask;
 
-			/* Note: The following function only works because all of the corner turners make a copy of the
-			 * thread pointers before beginning */
-			vm->cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, vm->outputDataSize);
+				if(mask != vm->goodMask)
+				{
+					int64_t i;
+					/* point to random data rather than nowhere for invalid frames */
 
-			++nGoodOutput;
+					for(i = 0; i < vm->nThread; ++i)
+					{
+						if( (mask & (1LL << i)) == 0)
+						{
+							threadBuffers[i] = src;
+						}
+					}
+
+				}
+
+				/* Note: The following function only works because all of the corner turners make a copy of the
+				 * thread pointers before beginning */
+				vm->cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, vm->outputDataSize);
+
+				if(mask == vm->goodMask)
+				{
+					++nGoodOutput;
+				}
+				else
+				{
+					++nPartialOutput;
+				}
+			}
+			else
+			{
+				/* Set invalid bit */
+				setVDIFFrameInvalid((vdif_header *)frame, 1);
+
+				++nBadOutput;
+			}
 		}
 		else
 		{
-			/* Set invalid bit */
-			setVDIFFrameInvalid((vdif_header *)frame, 1);
+			if(mask == vm->goodMask)
+			{
+				const unsigned char * const *threadBuffers = (const unsigned char * const *)(frame + VDIF_HEADER_BYTES);
 
-			++nBadOutput;
+				/* Note: The following function only works because all of the corner turners make a copy of the
+				 * thread pointers before beginning */
+				vm->cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, vm->outputDataSize);
+
+				++nGoodOutput;
+			}
+			else
+			{
+				/* Set invalid bit */
+				setVDIFFrameInvalid((vdif_header *)frame, 1);
+
+				++nBadOutput;
+			}
 		}
 
 		++frameNum;
@@ -800,23 +889,24 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		stats->nValidFrame += nValidFrame;
 		stats->nInvalidFrame += nInvalidFrame;
-		stats->nDiscardedFrame += (nValidFrame - vm->nThread*nGoodOutput);
+		stats->nDiscardedFrame += (nValidFrame - vm->nThread*(nGoodOutput + nPartialOutput));
 		stats->nWrongThread += nWrongThread;
 		stats->nDuplicateFrame += nDup;
 		stats->nSkippedByte += nSkip;
 		stats->nFillByte += nFill;
 		stats->bytesProcessed += bytesProcessed;
 		stats->nGoodFrame += nGoodOutput;
+		stats->nPartialFrame += nPartialOutput;
 
 		stats->srcSize = srcSize;
 		stats->srcUsed = bytesProcessed;
 		stats->destSize = destSize;
-		stats->destUsed = (nGoodOutput + nBadOutput)*vm->outputFrameSize;
+		stats->destUsed = (nGoodOutput + nBadOutput + nPartialOutput)*vm->outputFrameSize;
 		stats->inputFrameSize = vm->inputFrameSize;
 		stats->outputFrameSize = vm->outputFrameSize;
 		stats->outputFrameGranularity = vm->frameGranularity;
 		stats->outputFramesPerSecond = vm->inputFramesPerSecond;
-		stats->nOutputFrame = nGoodOutput + nBadOutput;
+		stats->nOutputFrame = nGoodOutput + nBadOutput + nPartialOutput;
 		stats->epoch = epoch;
 		stats->startFrameNumber = startFrameNumber;
 		
@@ -841,6 +931,7 @@ void printvdifmuxstatistics(const struct vdif_mux_statistics *stats)
 		printf("  Number of fill pattern bytes       = %lld\n", stats->nFillByte);
 		printf("  Total number of bytes processed    = %lld\n", stats->bytesProcessed);
 		printf("  Total number of good output frames = %lld\n", stats->nGoodFrame);
+		printf("  Total number of partial out frames = %lld\n", stats->nPartialFrame);
 		printf("Properties of output data from recent call:\n");
 		printf("  Input frame size                   = %d\n", stats->inputFrameSize);
 		printf("  Output frame size                  = %d\n", stats->outputFrameSize);
@@ -854,7 +945,7 @@ void printvdifmuxstatistics(const struct vdif_mux_statistics *stats)
 	}
 	else
 	{
-		fprintf(stderr, "Weird: printvdifmuxstatistics called with null pointer\n");
+		fprintf(stderr, "Weird: printvdifmuxstatistics called with null pointer.\n");
 	}
 }
 
