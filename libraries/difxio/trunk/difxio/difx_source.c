@@ -256,11 +256,13 @@ int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds, int doCal
 			writeDifxLineInt1(out, "SOURCE %d QUAL", i, ds[i].qual);
 	                ++n;
 		}
+#ifdef RA_MERGED
                 if(doSpacecraftID)
 		{
                         writeDifxLineInt1(out, "SOURCE %d S/CRAFT ID", i, ds[i].spacecraftId);
                         ++n;
                 }
+#endif
         }
 
         return n;
