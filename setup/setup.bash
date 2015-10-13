@@ -54,6 +54,16 @@ else
   return
 fi
 
+PurgePath()
+{
+Path="$1"
+eval CurPath=\$"$Path"
+if [ -x /bin/awk ] && [ -x /bin/sed ];
+then
+  eval export $Path=$(echo ${CurPath} | /bin/awk -v RS=: -v ORS=: '/\<DiFX\>/ {next} {print}' IGNORECASE=1 | /bin/sed 's/:*$//')
+fi
+}
+
 PrependPath()
 {
 Path="$1"
@@ -79,6 +89,14 @@ else
     eval export $Path="$NewItem"
 fi
 }
+
+####### PURGE EXISTING DIFX FROM PATHS ######
+PurgePath PERL5LIB
+PurgePath PATH
+PurgePath LD_LIBRARY_PATH
+PurgePath DYLD_LIBRARY_PATH
+PurgePath PYTHONPATH
+PurgePath PKG_CONFIG_PATH
 
 ####### 32/64 BIT DEPENDENT MODIFICATIONS ###
 arch=(`uname -m`)
