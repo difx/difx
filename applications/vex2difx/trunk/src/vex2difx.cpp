@@ -1101,9 +1101,6 @@ static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 	D->nEOP = nEOP;
 	D->eop = newDifxEOPArray(D->nEOP);
 
-	cerr.precision(9);
-	cerr << "HR: start: " << D->mjdStart << " stop: " << D->mjdStop << endl;
-
 	for(int e = 0; e < nEOP; ++e)
 	{
 		D->eop[e].mjd = static_cast<int>(E[e].mjd);
@@ -1111,9 +1108,6 @@ static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 		D->eop[e].ut1_utc = E[e].ut1_utc;
 		D->eop[e].xPole = E[e].xPole*180.0*3600.0/M_PI;
 		D->eop[e].yPole = E[e].yPole*180.0*3600.0/M_PI;
-
-		cerr.precision(9);
-		cerr << "HR: eop: " << e << " mjd: " << D->eop[e].mjd << endl;
 	}
 }
 
