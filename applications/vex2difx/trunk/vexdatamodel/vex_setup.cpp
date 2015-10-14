@@ -209,6 +209,7 @@ unsigned int VexSetup::getMaxBits() const
 	return nBit;
 }
 
+/* returns lowest sample rate in samples per second */
 double VexSetup::getLowestSampleRate() const
 {
 	double sr = 0.0;
@@ -228,6 +229,7 @@ double VexSetup::getLowestSampleRate() const
 	return sr;
 }
 
+/* returns highest sample rate in samples per second */
 double VexSetup::getHighestSampleRate() const
 {
 	double sr = 0.0;
@@ -243,6 +245,7 @@ double VexSetup::getHighestSampleRate() const
 	return sr;
 }
 
+/* returns average sample rate in samples per second */
 double VexSetup::getAverageSampleRate() const
 {
 	double sr = 0.0;

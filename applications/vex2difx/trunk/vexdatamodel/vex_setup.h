@@ -28,9 +28,9 @@ public:
 	unsigned int getBits() const;
 	unsigned int getMinBits() const;
 	unsigned int getMaxBits() const;
-	double getLowestSampleRate() const;
-	double getHighestSampleRate() const;
-	double getAverageSampleRate() const;
+	double getLowestSampleRate() const;	/* samples per second */
+	double getHighestSampleRate() const;	/* samples per second */
+	double getAverageSampleRate() const;	/* samples per second */
 
 	std::map<std::string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
 	std::vector<VexChannel> channels;

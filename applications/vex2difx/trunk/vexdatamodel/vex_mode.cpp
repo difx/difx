@@ -198,6 +198,7 @@ const VexSetup* VexMode::getSetup(const std::string &antName) const
 	return &it->second;
 }
 
+/* Returns lowest sample rate in samples/second */
 double VexMode::getLowestSampleRate() const
 {
 	if(setups.empty())
@@ -227,6 +228,7 @@ double VexMode::getLowestSampleRate() const
 	}
 }
 
+/* Returns highest sample rate in samples/second */
 double VexMode::getHighestSampleRate() const
 {
 	if(setups.empty())
@@ -251,6 +253,7 @@ double VexMode::getHighestSampleRate() const
 	}
 }
 
+/* Returns average sample rate in samples/second */
 double VexMode::getAverageSampleRate() const
 {
 	if(setups.empty())

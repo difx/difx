@@ -35,7 +35,8 @@ double Job::calcOps(const VexData *V, int fftSize, bool doPolar) const
 {
 	double ops = 0.0;
 	int nAnt, nPol, nSubband;
-	double sampRate, seconds;
+	double sampRate;	/* [samples per second] */
+	double seconds;
 	const VexMode *M;
 	char pols[8];
 	double opsPerSample;

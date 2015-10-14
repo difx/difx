@@ -22,9 +22,9 @@ public:
 	int getMinSubbands() const;
 	int nStream() const;
 	const VexSetup* getSetup(const std::string &antName) const;
-	double getLowestSampleRate() const;
-	double getHighestSampleRate() const;
-	double getAverageSampleRate() const;
+	double getLowestSampleRate() const;	/* samples per second */
+	double getHighestSampleRate() const;	/* samples per second */
+	double getAverageSampleRate() const;	/* samples per second */
 	void swapPolarization(const std::string &antName);
 	void setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling);
 	void setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz);
