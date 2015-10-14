@@ -190,9 +190,7 @@ const VexSetup* VexMode::getSetup(const std::string &antName) const
 	it = setups.find(antName);
 	if(it == setups.end())
 	{
-		std::cerr << "Error: VexMode::getSetup: antName=" << antName << " not found." << std::endl;
-		
-		exit(EXIT_FAILURE);
+		return 0;
 	}
 
 	return &it->second;
