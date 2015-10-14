@@ -195,7 +195,6 @@ int createRoot (DifxInput *D,           // difx input structure pointer
         fclose (fin);
         return (-1);
         }
-    fprintf (fout, "* correlated from input file %s\n*\n", D->job[jobId].inputFile);
     current_block = NO_BLOCK;
                                     // loop over all statements in input file
     while (fgets (line, 256, fin) != NULL)
@@ -285,7 +284,11 @@ int createRoot (DifxInput *D,           // difx input structure pointer
             case GLOBAL:
                                     // insert a dummy EOP ref (which is fine for fourfit)
                 if (strncmp (pst[0], "$GLOBAL", 7) == 0)
-                    strcat (line, "    ref $EOP = EOP_DIFX_INPUT;\n"); 
+                    {
+                    strcat (line, "* correlated from input file ");
+                    strcat (line, D->job[jobId].inputFile);
+                    strcat (line, "\n    ref $EOP = EOP_DIFX_INPUT;\n"); 
+                    }
                 else if (strncmp (pst[0], "ref", 3) == 0 
                       && strncmp (pst[1], "$SCHEDULING_PARAMS", 18) == 0)
                     line[0] = '*';  // comment out ref to deleted section 
