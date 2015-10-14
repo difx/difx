@@ -53,3 +53,5 @@
      	- Added mjd2epoch
 0.77 15 Aug 2014
 	- Added mjd2vextime
+0.78 28 Apr 2015
+	- Bump version number due to CPAN issue. No real changes
