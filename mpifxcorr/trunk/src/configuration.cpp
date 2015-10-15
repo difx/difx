@@ -1218,9 +1218,11 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].format = MARK5B;
     else if(line == "KVN5B")
       datastreamtable[i].format = KVN5B;
-    else if(line == "VDIF")
+    else if(line == "VDIF") {
       datastreamtable[i].format = VDIF;
-    else if(line == "VDIFL") {
+      datastreamtable[i].nummuxthreads = 1;//In case 'vdifio' instead of 'mark5access' does decoding
+      datastreamtable[i].muxthreadmap = new int[1];
+    } else if(line == "VDIFL") {
       datastreamtable[i].format = VDIFL;
     } else if(line.substr(0,14) == "INTERLACEDVDIF") {
       datastreamtable[i].format = INTERLACEDVDIF;
