@@ -114,6 +114,7 @@ void * launchCommandMonitorThread(void * c) {
   cinfo << startl << "Receive socket opened; socket is " << socket << endl;
   if (socket < 0) {
     cwarn << startl << "Could not open command monitoring socket! Aborting message receive thread." << endl;
+    config->setCommandThreadFailed();
   }
   else {
     config->setCommandThreadInitialised();
@@ -340,7 +341,7 @@ int main(int argc, char *argv[])
     csevere << startl << "Error creating command monitoring thread!" << endl;
   else {
     //wait for commandmonthread to be initialised
-    while(!config->commandThreadInitialised()) {
+    while(!config->commandThreadInitialised() && !config->commandThreadFailed()) {
       usleep(1);
     }
   }

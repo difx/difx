@@ -399,7 +399,9 @@ public:
   inline bool isCoreProcess() const { return mpiid >= fxcorr::FIRSTTELESCOPEID + numdatastreams; }
   inline bool isDatastreamProcess() const { return mpiid >= fxcorr::FIRSTTELESCOPEID && mpiid < fxcorr::FIRSTTELESCOPEID + numdatastreams; }
   inline void setCommandThreadInitialised() { commandthreadinitialised = true; }
+  inline void setCommandThreadFailed() { commandthreadfailed = true; }
   inline bool commandThreadInitialised() { return commandthreadinitialised; }
+  inline bool commandThreadFailed() { return commandthreadfailed; }
   inline void setDumpSTAState(bool setval) { dumpsta = setval; }
   inline void setDumpLTAState(bool setval) { dumplta = setval; }
   inline void setDumpKurtosisState(bool setval) { dumpkurtosis = setval; }
@@ -921,7 +923,7 @@ private:
   int mpiid;
   char header[MAX_KEY_LENGTH];
   bool commonread, configread, datastreamread, freqread, ruleread, baselineread;
-  bool consistencyok, commandthreadinitialised, dumpsta, dumplta, dumpkurtosis;
+  bool consistencyok, commandthreadinitialised, commandthreadfailed, dumpsta, dumplta, dumpkurtosis;
   int visbufferlength, databufferfactor, numdatasegments;
   int numdatastreams, numbaselines, numcoreconfs;
   int executeseconds, startmjd, startseconds, startns;
