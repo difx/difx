@@ -329,7 +329,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return (f == INTERLACEDVDIF && s == MK6MODULE);
+    return ((f == INTERLACEDVDIF || f == VDIF) && s == MK6MODULE);
   }
   inline bool isNetwork(int datastreamindex) const
   {
