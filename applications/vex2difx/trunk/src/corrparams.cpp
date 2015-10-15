@@ -755,9 +755,9 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "mark6file" || key == "mark6files")
 	{
-		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
+		if(dataSource != DataSourceMark6 && dataSource != DataSourceNone)
 		{
-			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
+			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceMark6] << std::endl;
 			++nWarn;
 		}
 		dataSource = DataSourceMark6;
@@ -775,9 +775,9 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "mark6filelist")
 	{
-		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
+		if(dataSource != DataSourceMark6 && dataSource != DataSourceNone)
 		{
-			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
+			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceMark6] << std::endl;
 			++nWarn;
 		}
 		dataSource = DataSourceMark6;
@@ -1218,9 +1218,9 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "mark6file" || key == "mark6files")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceMark6 && defaultDatastreamSetup.dataSource != DataSourceNone)
 		{
-			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceMark6] << std::endl;
 			++nWarn;
 		}
 		defaultDatastreamSetup.dataSource = DataSourceMark6;
@@ -1238,9 +1238,9 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "mark6filelist")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceMark6 && defaultDatastreamSetup.dataSource != DataSourceNone)
 		{
-			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceMark6] << std::endl;
 			++nWarn;
 		}
 		defaultDatastreamSetup.dataSource = DataSourceMark6;
