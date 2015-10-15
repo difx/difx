@@ -328,7 +328,7 @@ if components["difxmessage"]:
 if components["mark5access"]:
 	libtargets.append(["mark5access",difx_version, True,True,True,False])
 if components["python"]:
-	libtargets.append(["python",     difx_version, True,True,True,False])
+	libtargets.append(["python",     difx_version, True,True,False,False])
 if components["vdifio"]:
 	libtargets.append(["vdifio",     difx_version, True,True,True,False])
 
