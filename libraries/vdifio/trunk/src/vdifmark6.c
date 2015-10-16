@@ -532,7 +532,7 @@ Mark6Gatherer *openMark6GathererFromTemplate(const char *fileTemplate)
 	}
 	else
 	{
-		fprintf(stderr, "Cannot create Mark6Gatherer because %s matched no files\n", fileTemplate);
+		fprintf(stderr, "Cannot create Mark6Gatherer because %s matched no files\n", fileName);
 
 		return 0;
 	}
