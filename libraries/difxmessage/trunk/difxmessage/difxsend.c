@@ -469,8 +469,12 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
 	int size = 0;
 	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
 	char body[DIFX_MESSAGE_LENGTH];
+	char message[DIFX_MESSAGE_LENGTH];
 
-	char msn1[DIFX_MESSAGE_MARK6_MSN_LENGTH+2], msn2[10], msn3[10], msn4[10];
+	char msn1[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
+	char msn2[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
+	char msn3[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
+	char msn4[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
 	
 	// validate msn1 and covert to upper case
 	if(strlen(mark6status->msn1) != 8)
@@ -555,6 +559,25 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
                 mark6status->position,
                 mark6status->rate,
                 mark6status->dataMJD);
+
+	if(size >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendMark6Status: message body overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	size = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat, 
+		DifxMessageTypeStrings[DIFX_MESSAGE_MARK6STATUS],
+		difxMessageSequenceNumber++, body);
+
+	if(size >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendMark6Status: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+	
+	return difxMessageSend2(message, size);
 
 
 	return(0);

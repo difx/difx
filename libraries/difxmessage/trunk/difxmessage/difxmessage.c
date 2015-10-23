@@ -116,6 +116,7 @@ const char DifxMessageTypeStrings[][24] =
 	"Unknown",
 	"DifxLoadMessage",
 	"DifxAlertMessage",
+	"Mark6StatusMessage",
 	"Mark5StatusMessage",
 	"DifxStatusMessage",
 	"DifxInfoMessage",
