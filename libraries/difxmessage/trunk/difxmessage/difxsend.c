@@ -459,6 +459,107 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 	return 0;
 }
 
+/**
+ * Sends out a message containing the Mark6 status information. 
+ * @return 0 in case of success; -1 otherwise
+ */
+int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
+{
+	int i;
+	int size = 0;
+	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
+	char body[DIFX_MESSAGE_LENGTH];
+
+	char msn1[DIFX_MESSAGE_MARK6_MSN_LENGTH+2], msn2[10], msn3[10], msn4[10];
+	
+	// validate msn1 and covert to upper case
+	if(strlen(mark6status->msn1) != 8)
+        {
+                strcpy(msn1, "none");
+        }
+        else
+        {
+                for(i = 0; i < 9; ++i)
+                {
+                        msn1[i] = toupper(mark6status->msn1[i]);
+                }
+        }
+	// validate msn2 and covert to upper case
+	if(strlen(mark6status->msn2) != 8)
+        {
+                strcpy(msn2, "none");
+        }
+        else
+        {
+                for(i = 0; i < 9; ++i)
+                {
+                        msn2[i] = toupper(mark6status->msn2[i]);
+                }
+        }
+	// validate msn3 and covert to upper case
+	if(strlen(mark6status->msn3) != 8)
+        {
+                strcpy(msn3, "none");
+        }
+        else
+        {
+                for(i = 0; i < 9; ++i)
+                {
+                        msn3[i] = toupper(mark6status->msn3[i]);
+                }
+        }
+	// validate msn4 and covert to upper case
+	if(strlen(mark6status->msn4) != 8)
+        {
+                strcpy(msn4, "none");
+        }
+        else
+        {
+                for(i = 0; i < 9; ++i)
+                {
+                        msn4[i] = toupper(mark6status->msn4[i]);
+                }
+        }
+
+	size = snprintf(scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", mark6status->scanName);
+
+        if(size >= DIFX_MESSAGE_MAX_SCANNAME_LEN)
+        {
+                fprintf(stderr, "difxMessageSendMark6Status: scanName is too long (%d >= %d) and has been truncated.\n", size, DIFX_MESSAGE_MAX_SCANNAME_LEN);
+        }
+
+        size = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+                "<mark6Status>"
+                  "%s"
+                  "<bank1MSN>%s</bank1MSN>"
+                  "<bank2MSN>%s</bank2MSN>"
+                  "<bank3MSN>%s</bank3MSN>"
+                  "<bank4MSN>%s</bank4MSN>"
+                  "<state>%s</state>"
+                  "<scanNumber>%d</scanNumber>"
+                  "<scanName>%s</scanName>"
+                  "<position>%lld</position>"
+                  "<playRate>%7.3f</playRate>"
+                  "<dataMJD>%13.7f</dataMJD>"
+                "</mark6Status>",
+
+                difxMessageInputFilenameTag,
+                msn1,
+                msn2,
+                msn3,
+                msn4,
+                Mark6StateStrings[mark6status->state],
+                mark6status->scanNumber,
+                scanName,
+                mark6status->position,
+                mark6status->rate,
+                mark6status->dataMJD);
+
+
+	return(0);
+}
+
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 {
 	char message[DIFX_MESSAGE_LENGTH];

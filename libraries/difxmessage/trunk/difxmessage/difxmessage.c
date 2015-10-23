@@ -33,6 +33,37 @@
 #include "../config.h"
 #include "difxmessageinternal.h"
 
+/* Note! Keep this in sync with enum Mark6Status in difxmessage.h */
+const char Mark6StateStrings[][24] = 
+{
+	"Opening",
+	"Open",
+	"Close",
+	"GetDirectory",
+	"GotDirectory",
+	"Play",
+	"Idle",
+	"Error",
+	"Busy",
+	"Initializing",
+	"Resetting",
+	"Rebooting",
+	"PowerOff",
+	"NoData",
+	"NoMoreData",
+	"PlayInvalid",
+	"PlayStart",
+	"Copy",
+	"Condition",
+	"CondError",
+	"Test",
+	"TestWrite",
+	"TestRead",
+	"Booting",
+	"Recording",
+	"CopyTo"
+};
+
 /* Note! Keep this in sync with enum Mk5Status in difxmessage.h */
 const char Mk5StateStrings[][24] = 
 {

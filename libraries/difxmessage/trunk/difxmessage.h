@@ -54,6 +54,7 @@ extern "C" {
 #define DIFX_MESSAGE_N_DRIVE_STATS_BINS	8
 #define DIFX_MESSAGE_N_CONDITION_BINS	DIFX_MESSAGE_N_DRIVE_STATS_BINS	/* deprecated */
 #define DIFX_MESSAGE_MARK5_VSN_LENGTH	8
+#define DIFX_MESSAGE_MARK6_MSN_LENGTH	8
 #define DIFX_MESSAGE_DISC_SERIAL_LENGTH	31
 #define DIFX_MESSAGE_DISC_MODEL_LENGTH	31
 #define DIFX_MESSAGE_MAX_SMART_IDS	32
@@ -120,6 +121,39 @@ enum Mk5State
 };
 
 extern const char Mk5StateStrings[][24];
+
+enum Mark6State
+{
+	MARK6_STATE_OPENING = 0,
+	MARK6_STATE_OPEN, 
+	MARK6_STATE_CLOSE, 
+	MARK6_STATE_GETDIR, 
+	MARK6_STATE_GOTDIR, 
+	MARK6_STATE_PLAY, 
+	MARK6_STATE_IDLE, 
+	MARK6_STATE_ERROR,
+	MARK6_STATE_BUSY,
+	MARK6_STATE_INITIALIZING,
+	MARK6_STATE_RESETTING,
+	MARK6_STATE_REBOOTING,
+	MARK6_STATE_POWEROFF,
+	MARK6_STATE_NODATA,
+	MARK6_STATE_NOMOREDATA,
+	MARK6_STATE_PLAYINVALID,
+	MARK6_STATE_START,
+	MARK6_STATE_COPY,	/* Copy from the module */
+	MARK6_STATE_CONDITION,
+	MARK6_STATE_COND_ERROR,
+	MARK6_STATE_TEST,
+	MARK6_STATE_TESTWRITE,
+	MARK6_STATE_TESTREAD,
+	MARK6_STATE_BOOTING,
+	MARK6_STATE_RECORD,
+	MARK6_STATE_COPYTO,	/* Copy to the module */
+	NUM_MARK6_STATES	/* this needs to be the last line of enum */
+};
+
+extern const char Mark6StateStrings[][24];
 
 /* Note! Keep this in sync with DifxStateStrings[][24] in difxmessage.c */
 enum DifxState
@@ -241,6 +275,22 @@ typedef struct
 	float rate;		/* Mbps */
 	double dataMJD;
 } DifxMessageMk5Status;
+
+typedef struct
+{
+        enum Mark6State state;
+	char msn1[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+	char msn2[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+	char msn3[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+	char msn4[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+        unsigned int status;
+        int scanNumber;
+	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
+        long long position;     /* play pointer */
+        float rate;             /* Mbps */
+        double dataMJD;
+} DifxMessageMark6Status;
+
 
 typedef struct
 {
@@ -489,6 +539,7 @@ typedef struct
 	union
 	{
 		DifxMessageMk5Status	mk5status;
+		DifxMessageMark6Status	mark6status;
 		DifxMessageMk5Version	mk5version;
 		DifxMessageLoad		load;
 		DifxMessageAlert	alert;
@@ -576,6 +627,7 @@ const char *getDifxMessageIdentifier();
 
 int difxMessageSend2(const char *message, int size);
 int difxMessageSendProcessState(const char *state);
+int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);
 int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats);
