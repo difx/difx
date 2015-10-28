@@ -118,15 +118,15 @@ int get_vis (char *vf_name,                   // name of input file
                 }
             else
                 {
-                fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n",
-                pv->sync, pv->version);
+                fprintf(stderr, "Error parsing Swinburne header: got a sync of %x and version"
+                        " of %d in record %d\n", pv->sync, pv->version, *nvrec);
                 return -4;
                 }
             }
         else
             {
-            fprintf (stderr, "Error parsing header: got an unrecognized sync of %x\n", 
-                     pv->sync);
+            fprintf (stderr, "Error parsing Swinburne header: got an unrecognized sync"
+                    " of %x in record %d\n", pv->sync, *nvrec);
             return -5;
             }
                                     // allocate more memory and copy record in

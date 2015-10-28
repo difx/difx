@@ -489,7 +489,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                     continue;
                                                 findex = *(pdds->zoomFreqId + *(pdds->zoomBandFreqId + i));
                                                 // zoom bands are always usb, is it in this one?
-                                                if (freq - D->freq[findex].freq < D->freq[findex].bw)
+                                                if (freq - D->freq[findex].freq < D->freq[findex].bw
+                                                 && freq - D->freq[findex].freq > 0.0)
                                                     {  // yes
                                                     jf = findex;
                                                     break;
