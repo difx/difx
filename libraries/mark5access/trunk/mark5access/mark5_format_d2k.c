@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -250,8 +250,8 @@ static int mark5_format_mark5b_fixmjd(struct mark5_stream *ms, int refmjd)
 
 static int mark5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -306,8 +306,8 @@ static int mark5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -354,8 +354,8 @@ static int mark5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -398,8 +398,8 @@ static int mark5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms, in
 
 static int mark5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -441,8 +441,8 @@ static int mark5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms, in
 
 static int mark5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -493,8 +493,8 @@ static int mark5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -539,8 +539,8 @@ static int mark5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -583,8 +583,8 @@ static int mark5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms, in
 
 static int mark5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -633,8 +633,8 @@ static int mark5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -678,8 +678,8 @@ static int mark5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -724,8 +724,8 @@ static int mark5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms, in
 
 static int mark5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -773,8 +773,8 @@ static int mark5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -822,8 +822,8 @@ static int mark5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -872,8 +872,8 @@ static int mark5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms, in
 
 static int mark5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -932,8 +932,8 @@ static int mark5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms, i
 
 static int mark5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -992,8 +992,8 @@ static int mark5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms, i
 
 static int mark5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1054,8 +1054,8 @@ static int mark5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms, i
 
 static int mark5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1134,8 +1134,8 @@ static int mark5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms, i
 
 static int mark5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1214,8 +1214,8 @@ static int mark5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms, i
 
 static int mark5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1297,8 +1297,8 @@ static int mark5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms, i
 
 static int mark5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -1345,8 +1345,8 @@ static int mark5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -1389,8 +1389,8 @@ static int mark5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1432,8 +1432,8 @@ static int mark5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms, in
 
 static int mark5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -1478,8 +1478,8 @@ static int mark5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -1521,8 +1521,8 @@ static int mark5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1565,8 +1565,8 @@ static int mark5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, in
 
 static int mark5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -1610,8 +1610,8 @@ static int mark5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -1655,8 +1655,8 @@ static int mark5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1701,8 +1701,8 @@ static int mark5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms, in
 
 static int mark5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -1753,8 +1753,8 @@ static int mark5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms, i
 
 static int mark5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -1805,8 +1805,8 @@ static int mark5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms, i
 
 static int mark5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1858,8 +1858,8 @@ static int mark5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms, i
 
 static int mark5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1922,8 +1922,8 @@ static int mark5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms, i
 
 static int mark5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1986,8 +1986,8 @@ static int mark5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms, i
 
 static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2053,8 +2053,8 @@ static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms, i
 
 static int mark5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2096,8 +2096,8 @@ static int mark5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms, int
 
 static int mark5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2137,8 +2137,8 @@ static int mark5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms, int
 
 static int mark5b_count_2bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2178,8 +2178,8 @@ static int mark5b_count_2bitstream_2bit_decimation4(struct mark5_stream *ms, int
 
 static int mark5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2221,8 +2221,8 @@ static int mark5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms, int
 
 static int mark5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2262,8 +2262,8 @@ static int mark5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms, int
 
 static int mark5b_count_4bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2304,8 +2304,8 @@ static int mark5b_count_4bitstream_2bit_decimation4(struct mark5_stream *ms, int
 
 static int mark5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2347,8 +2347,8 @@ static int mark5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms, int
 
 static int mark5b_count_8bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2390,8 +2390,8 @@ static int mark5b_count_8bitstream_2bit_decimation2(struct mark5_stream *ms, int
 
 static int mark5b_count_8bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2434,8 +2434,8 @@ static int mark5b_count_8bitstream_2bit_decimation4(struct mark5_stream *ms, int
 
 static int mark5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -2484,8 +2484,8 @@ static int mark5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -2534,8 +2534,8 @@ static int mark5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2585,8 +2585,8 @@ static int mark5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms, in
 
 static int mark5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -2647,8 +2647,8 @@ static int mark5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms, in
 
 static int mark5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -2709,8 +2709,8 @@ static int mark5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms, in
 
 static int mark5b_count_32bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1, *fp2, *fp3;
 	int o, i, df;
 	int nblank = 0;
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2012 by Walter Brisken                             *
+ *   Copyright (C) 2006-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -111,12 +111,12 @@ struct mark5_stream
 	int consecutivefails;	/* number of validations failed in a row */
 
 	/* internal state parameters: not to be used by users */
-	unsigned char *frame;
-	unsigned char *payload;
-	int payloadoffset;	    /* == payload - frame */
-	long long datawindowsize;     /* number of bytes resident at a time */
-	unsigned char *datawindow;	    /* pointer to data window */
-	int readposition;	    /* index into frame of current read */
+	const unsigned char *frame;
+	const unsigned char *payload;
+	int payloadoffset;		/* == payload - frame */
+	long long datawindowsize;	/* number of bytes resident at a time */
+	const unsigned char *datawindow;	/* pointer to data window */
+	int readposition;	/* index into frame of current read */
 
 	/* data blanking */
 	int log2blankzonesize;
@@ -139,8 +139,7 @@ struct mark5_stream
         int (*complex_decode)(struct mark5_stream *ms, int nsamp, mark5_float_complex **data);
 	int (*validate)(const struct mark5_stream *ms);
 	int (*resync)(struct mark5_stream *ms);
-	int (*gettime)(const struct mark5_stream *ms, int *mjd, 
-		int *sec, double *ns);
+	int (*gettime)(const struct mark5_stream *ms, int *mjd, int *sec, double *ns);
 	int (*fixmjd)(struct mark5_stream *ms, int refmjd);
 	void *formatdata;
 
@@ -228,7 +227,7 @@ int mark5_stream_count_high_states(struct mark5_stream *ms, int nsamp, unsigned 
 
 /*   Memory based stream */
 
-struct mark5_stream_generic *new_mark5_stream_memory(void *data, unsigned int nbytes);
+struct mark5_stream_generic *new_mark5_stream_memory(const void *data, unsigned int nbytes);
 
 /*   File based stream */
 
@@ -242,13 +241,13 @@ int mark5_stream_file_add_infile(struct mark5_stream *ms, const char *filename);
 
 struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders);
 
-int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked, int nsamp);
+int mark5_unpack(struct mark5_stream *ms, const void *packed, float **unpacked, int nsamp);
 
-int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed, int offsetsamples, float **unpacked, int nsamp);
+int mark5_unpack_with_offset(struct mark5_stream *ms, const void *packed, int offsetsamples, float **unpacked, int nsamp);
 
-int mark5_unpack_complex(struct mark5_stream *ms, void *packed, mark5_float_complex **unpacked, int nsamp);
+int mark5_unpack_complex(struct mark5_stream *ms, const void *packed, mark5_float_complex **unpacked, int nsamp);
 
-int mark5_unpack_complex_with_offset(struct mark5_stream *ms, void *packed, int offsetsamples, mark5_float_complex **unpacked, int nsamp);
+int mark5_unpack_complex_with_offset(struct mark5_stream *ms, const void *packed, int offsetsamples, mark5_float_complex **unpacked, int nsamp);
 
 
 /* SPECIFIC FORMAT TYPES */

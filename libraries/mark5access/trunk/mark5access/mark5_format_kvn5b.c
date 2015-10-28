@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2013 by Walter Brisken and Richard Dodson          *
+ *   Copyright (C) 2007-2015 by Walter Brisken and Richard Dodson          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -245,8 +245,8 @@ static int mark5_format_kvn5b_fixmjd(struct mark5_stream *ms, int refmjd)
 
 static int kvn5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -301,8 +301,8 @@ static int kvn5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -349,8 +349,8 @@ static int kvn5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -393,8 +393,8 @@ static int kvn5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms, int
 
 static int kvn5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -436,8 +436,8 @@ static int kvn5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms, int
 
 static int kvn5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -488,8 +488,8 @@ static int kvn5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -534,8 +534,8 @@ static int kvn5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -578,8 +578,8 @@ static int kvn5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms, int
 
 static int kvn5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -628,8 +628,8 @@ static int kvn5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -673,8 +673,8 @@ static int kvn5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -719,8 +719,8 @@ static int kvn5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms, int
 
 static int kvn5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -768,8 +768,8 @@ static int kvn5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -817,8 +817,8 @@ static int kvn5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -867,8 +867,8 @@ static int kvn5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms, int
 
 static int kvn5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -927,8 +927,8 @@ static int kvn5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms, in
 
 static int kvn5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -987,8 +987,8 @@ static int kvn5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms, in
 
 static int kvn5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1049,8 +1049,8 @@ static int kvn5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms, in
 
 static int kvn5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1129,8 +1129,8 @@ static int kvn5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms, in
 
 static int kvn5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1209,8 +1209,8 @@ static int kvn5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms, in
 
 static int kvn5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // No 1 bit KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1292,8 +1292,8 @@ static int kvn5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms, in
 
 static int kvn5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {  // KVN Mode 1: [256MHz-2b]*1 stream: Same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -1340,8 +1340,8 @@ static int kvn5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN Mode 1: [256MHz-2b]*1 stream: Same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -1384,8 +1384,8 @@ static int kvn5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN Mode 1: [256MHz-2b]*1 stream: Same as Mark5B
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1427,9 +1427,9 @@ static int kvn5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms, int
 
 static int kvn5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN Mode 2: [128MHz-2b]*2stream (1024 MBps 32MHz clock)
-	unsigned char *buf;
-	float *fp0,*fp1,*fp2,*fp3;
-	int o, i, h, k;
+	const unsigned char *buf;
+	const float *fp0,*fp1,*fp2,*fp3;
+	int o, i;
 	int nblank = 0;
 
 	buf = ms->payload;
@@ -1492,8 +1492,8 @@ static int kvn5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN Mode 2: [128MHz-2b]*2stream (1024 MBps 32MHz clock) every other sample
-	unsigned char *buf;
-	float *fp0,*fp1,*fp2,*fp3;
+	const unsigned char *buf;
+	const float *fp0,*fp1,*fp2,*fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1543,14 +1543,13 @@ static int kvn5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN Mode 2: [128MHz-2b]*2stream (1024 MBps 32MHz clock) every 4th sample
-	unsigned char *buf;
-	float *fp0,*fp1,*fp2,*fp3;
-	int o, i, df;
+	const unsigned char *buf;
+	const float *fp0,*fp1,*fp2,*fp3;
+	int o, i;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	df = ms->decimation/2;
 
 	for(o = 0; o < nsamp; o+=2)
 	{
@@ -1591,8 +1590,8 @@ static int kvn5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int
 
 static int kvn5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) 
-	unsigned char *buf;
-	float *fp1, *fp2, *fp3, *fp0;
+	const unsigned char *buf;
+	const float *fp1, *fp2, *fp3, *fp0;
 	int o, i;
 	int nblank = 0;
 
@@ -1651,8 +1650,8 @@ static int kvn5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) every other sample
-	unsigned char *buf;
-	float *fp1, *fp2, *fp3, *fp0;
+	const unsigned char *buf;
+	const float *fp1, *fp2, *fp3, *fp0;
 	int o, i;
 	int nblank = 0;
 
@@ -1702,14 +1701,13 @@ static int kvn5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) every 4th sample
-	unsigned char *buf;
-	float *fp1, *fp2, *fp3, *fp0;
-	int o, i, df;
+	const unsigned char *buf;
+	const float *fp1, *fp2, *fp3, *fp0;
+	int o, i;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	df = ms->decimation;
 
 	for(o = 0; o < nsamp; ++o)
 	{
@@ -1750,8 +1748,8 @@ static int kvn5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms, int
 
 static int kvn5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN mode 4: [32 MHz-2b]*8 streams
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1815,8 +1813,8 @@ static int kvn5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms, in
 
 static int kvn5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN mode 4: [32 MHz-2b]*8 streams every other sample
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1870,14 +1868,13 @@ static int kvn5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms, in
 
 static int kvn5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // KVN mode 4: [32 MHz-2b]*8 streams every 4th sample
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
-	int o, i, df;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
+	int o, i;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	df = ms->decimation*2 - 1;
 
 	for(o = 0; o < nsamp; ++o)
 	{
@@ -1923,8 +1920,8 @@ static int kvn5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms, in
 
 static int kvn5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 { // KVM mode 5&6: [16MHz-2b]*16 stream. Equiv to Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1987,8 +1984,8 @@ static int kvn5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms, in
 
 static int kvn5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 { // No equiv KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -2051,8 +2048,8 @@ static int kvn5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms, in
 
 static int kvn5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 { // No equiv KVN mode. Left same as Mark5B
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2118,8 +2115,8 @@ static int kvn5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms, in
 
 static int kvn5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2161,8 +2158,8 @@ static int kvn5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms, int 
 
 static int kvn5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2202,8 +2199,8 @@ static int kvn5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms, int 
 
 static int kvn5b_count_2bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2243,8 +2240,8 @@ static int kvn5b_count_2bitstream_2bit_decimation4(struct mark5_stream *ms, int 
 
 static int kvn5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2286,8 +2283,8 @@ static int kvn5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms, int 
 
 static int kvn5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2327,8 +2324,8 @@ static int kvn5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms, int 
 
 static int kvn5b_count_4bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2369,8 +2366,8 @@ static int kvn5b_count_4bitstream_2bit_decimation4(struct mark5_stream *ms, int 
 
 static int kvn5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2412,8 +2409,8 @@ static int kvn5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms, int 
 
 static int kvn5b_count_8bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -2455,8 +2452,8 @@ static int kvn5b_count_8bitstream_2bit_decimation2(struct mark5_stream *ms, int 
 
 static int kvn5b_count_8bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp;
+	const unsigned char *buf;
+	const unsigned char *fp;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2499,8 +2496,8 @@ static int kvn5b_count_8bitstream_2bit_decimation4(struct mark5_stream *ms, int 
 
 static int kvn5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -2549,8 +2546,8 @@ static int kvn5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
 
@@ -2599,8 +2596,8 @@ static int kvn5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1;
 	int o, i, df;
 	int nblank = 0;
 
@@ -2650,8 +2647,8 @@ static int kvn5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms, int
 
 static int kvn5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -2712,8 +2709,8 @@ static int kvn5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms, int
 
 static int kvn5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -2774,8 +2771,8 @@ static int kvn5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms, int
 
 static int kvn5b_count_32bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
-	unsigned char *buf;
-	unsigned char *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const unsigned char *fp0, *fp1, *fp2, *fp3;
 	int o, i, df;
 	int nblank = 0;
 

@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
 		frameNum = frame[4]+256L*(frame[5] & 0x7F);
 
-		printf("%02X%02X%02X%02X %c %5ld  ", frame[3], frame[2], frame[1], frame[0], (frame[5] & 0x80 ? '*' : ' '), frameNum);
+		printf("%02X%02X%02X%02X %c %5d  ", frame[3], frame[2], frame[1], frame[0], (frame[5] & 0x80 ? '*' : ' '), frameNum);
 		printf("%02X%02X%02X%02X %02X%02X%02X%02X", frame[11], frame[10], frame[9], frame[8], frame[15], frame[14], frame[13], frame[12]);
 		if(frameNum > lastFrameNum && frameNum != lastFrameNum+1)
 		{

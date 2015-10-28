@@ -109,18 +109,17 @@ struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders)
 	return V;
 }
 
-int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked, 
-	int nsamp)
+int mark5_unpack(struct mark5_stream *ms, const void *packed, float **unpacked, int nsamp)
 {
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
-		ms->payload = (unsigned char *)packed;
+		ms->payload = (const unsigned char *)packed;
 		ms->blanker(ms);
 	}
 	else
 	{
 		//go back to previous frame so we can make use of next() and its validation
-		ms->frame = (unsigned char *)packed - ms->framebytes;
+		ms->frame = (const unsigned char *)packed - ms->framebytes;
 		mark5_stream_next_frame(ms); //this also sets ms->payload()
 	}
 	ms->readposition = 0;
@@ -128,18 +127,17 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 	return ms->decode(ms, nsamp, unpacked);
 }
 
-int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed, 
-	int offsetsamples, float **unpacked, int nsamp)
+int mark5_unpack_with_offset(struct mark5_stream *ms, const void *packed, int offsetsamples, float **unpacked, int nsamp)
 {
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
-		ms->payload = (unsigned char *)packed;
+		ms->payload = (const unsigned char *)packed;
 		ms->blanker(ms);
 	}
 	else
 	{
 		//go back to previous frame so we can make use of next() and its validation
-		ms->frame = (unsigned char *)packed + (offsetsamples/ms->framesamples)*ms->framebytes - ms->framebytes;
+		ms->frame = (const unsigned char *)packed + (offsetsamples/ms->framesamples)*ms->framebytes - ms->framebytes;
 		mark5_stream_next_frame(ms); //this also sets ms->payload()
 	}
 
@@ -151,19 +149,18 @@ int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed,
 
 
 
-int mark5_unpack_complex(struct mark5_stream *ms, void *packed, 
-			 mark5_float_complex **unpacked, int nsamp)
+int mark5_unpack_complex(struct mark5_stream *ms, const void *packed, mark5_float_complex **unpacked, int nsamp)
 {
 	int v;
 	int c;
 
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
-		ms->payload = (unsigned char *)packed;
+		ms->payload = (const unsigned char *)packed;
 	}
 	else
 	{
-		ms->frame = (unsigned char *)packed;
+		ms->frame = (const unsigned char *)packed;
 		v = ms->validate(ms);
 		if(!v)
 		{
@@ -181,7 +178,7 @@ int mark5_unpack_complex(struct mark5_stream *ms, void *packed,
 		}
 		ms->frame = 0;
 
-		ms->payload = (unsigned char *)packed + ms->payloadoffset;
+		ms->payload = (const unsigned char *)packed + ms->payloadoffset;
 	}
 	ms->readposition = 0;
 	
@@ -190,18 +187,17 @@ int mark5_unpack_complex(struct mark5_stream *ms, void *packed,
 	return ms->complex_decode(ms, nsamp, unpacked);
 }
 
-int mark5_unpack_complex_with_offset(struct mark5_stream *ms, void *packed, 
-	int offsetsamples, mark5_float_complex **unpacked, int nsamp)
+int mark5_unpack_complex_with_offset(struct mark5_stream *ms, const void *packed, int offsetsamples, mark5_float_complex **unpacked, int nsamp)
 {
 	int v;
 
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
-		ms->payload = (unsigned char *)packed;
+		ms->payload = (const unsigned char *)packed;
 	}
 	else
 	{
-		ms->frame = (unsigned char *)packed + (offsetsamples/ms->framesamples)*ms->framebytes;
+		ms->frame = (const unsigned char *)packed + (offsetsamples/ms->framesamples)*ms->framebytes;
 		v = ms->validate(ms);
 		if(!v)
 		{
@@ -213,7 +209,7 @@ int mark5_unpack_complex_with_offset(struct mark5_stream *ms, void *packed,
 		}
 		ms->frame = 0;
 
-		ms->payload = (unsigned char *)packed + ms->payloadoffset;
+		ms->payload = (const unsigned char *)packed + ms->payloadoffset;
 	}
 	/* add to offset the integer number of frames */
 	ms->payload += ms->framebytes*(offsetsamples/ms->framesamples);
@@ -225,5 +221,4 @@ int mark5_unpack_complex_with_offset(struct mark5_stream *ms, void *packed,
 
 	return ms->complex_decode(ms, nsamp, unpacked);
 }
-
 

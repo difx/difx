@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2014 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2015 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2014,7 +2014,6 @@ static int vdif_decode_4channel_8bit_decimation1(struct mark5_stream *ms, int ns
 static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const float *buf;
-	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -3704,7 +3703,8 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 {
 	struct mark5_format_vdif *f;
 	unsigned int word2;
-	unsigned char *headerbytes, bitspersample;
+	const unsigned char *headerbytes;
+	unsigned char bitspersample;
 	int framensNum, framensDen, dataframelength;
 	double dns;
 
@@ -4516,4 +4516,8 @@ int get_vdif_threads(const unsigned char *data, size_t length, int dataframesize
 	}
 
 	return nThread;
+}
+
+void blank_vdik_EDV4(const void *packed, int offsetsamples, float **unpacked, int nsamp, int *validsamples)
+{
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2012 by Walter Brisken                             *
+ *   Copyright (C) 2006-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,14 +33,14 @@
 
 struct mark5_stream_memory
 {
-	unsigned char *start;
-	unsigned char *end;			/* derived by init() */
+	const unsigned char *start;
+	const unsigned char *end;			/* derived by init() */
 	unsigned int nbytes;
 };
 
 static int mark5_stream_memory_init(struct mark5_stream *ms)
 {
-	unsigned char *start;
+	const unsigned char *start;
 	unsigned int nbytes;
 
 	snprintf(ms->streamname, MARK5_STREAM_ID_LENGTH, "Memory");
@@ -58,7 +58,7 @@ static int mark5_stream_memory_init(struct mark5_stream *ms)
 
 static int mark5_stream_memory_next(struct mark5_stream *ms)
 {
-	unsigned char *end;
+	const unsigned char *end;
 
 	end = ((struct mark5_stream_memory *)(ms->inputdata))->end;
 	
@@ -79,7 +79,7 @@ static int mark5_stream_memory_next(struct mark5_stream *ms)
 
 static int mark5_stream_memory_seek(struct mark5_stream *ms, long long framenum)
 {
-	unsigned char *start, *end;
+	const unsigned char *start, *end;
 	
 	start = ((struct mark5_stream_memory *)(ms->inputdata))->start;
 	end = ((struct mark5_stream_memory *)(ms->inputdata))->end;
@@ -102,14 +102,14 @@ static int mark5_stream_memory_final(struct mark5_stream *ms)
 	return 0;
 }
 
-struct mark5_stream_generic *new_mark5_stream_memory(void *data, unsigned int nbytes)
+struct mark5_stream_generic *new_mark5_stream_memory(const void *data, unsigned int nbytes)
 {
 	struct mark5_stream_generic *s;
 	struct mark5_stream_memory *M;
 
 	s = (struct mark5_stream_generic *)calloc(1, sizeof(struct mark5_stream_generic));
 	M = (struct mark5_stream_memory *)calloc(1, sizeof(struct mark5_stream_memory));
-	M->start = (unsigned char *)data;
+	M->start = (const unsigned char *)data;
 	M->nbytes = nbytes;
 
 	s->init_stream = mark5_stream_memory_init;

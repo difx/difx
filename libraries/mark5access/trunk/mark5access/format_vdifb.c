@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2013 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2015 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2041,7 +2041,8 @@ static int mark5_format_vdifb_init(struct mark5_stream *ms)
 {
 	struct mark5_format_vdifb *f;
 	unsigned int word2;
-	unsigned char *headerbytes, bitspersample;
+	const unsigned char *headerbytes;
+	unsigned char bitspersample;
 	int framensNum, framensDen, dataframelength;
 	double dns;
 
