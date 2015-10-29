@@ -51,7 +51,7 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	}
 	else if ( !strcmp( S->operation, "rmdir" ) ) {
 	    //  The "rmdir" command doesn't remove content.
-		snprintf( command, MAX_COMMAND_SIZE, "rm %s 2>&1", S->path );
+		snprintf( command, MAX_COMMAND_SIZE, "rmdir %s 2>&1", S->path );
   		FILE* fp = popen( command, "r" );
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
