@@ -32,24 +32,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5d";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.3";
-const char verdate[] = "20150306";
+const char version[] = "1.4";
+const char verdate[] = "20151029";
 
 static void usage(const char *pgm)
 {
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 decoder.  Can decode VLBA, Mark3/4, and Mark5B "
-		"formats using the\nmark5access library.\n\n");
+	printf("A Mark5 decoder.  Can decode VLBA, Mark3/4, and Mark5B formats using the\nmark5access library.\n\n");
 	printf("Usage : %s <file> <dataformat> <n> [<offset>]\n\n", pgm);
 	printf("  <file> is the name of the input file\n\n");
-	printf("  <dataformat> should be of the form: "
-		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
+	printf("  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
@@ -63,8 +62,183 @@ static void usage(const char *pgm)
 	printf("    --help      This list\n\n");
 }
 
-static int decode(const char *filename, const char *formatname, const char *f,
-	long long offset, long long n)
+
+typedef struct vdif_edv4_header {	/* proposed extension extensions: (WFB email to VDIF committee 2015/10/09) */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
+   uint32_t nchan : 5;
+   uint32_t version : 3;
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;
+   uint32_t iscomplex : 1;
+
+   uint32_t dummy : 8;
+   uint32_t oldEDV : 8;		// EDV of pre-merged streams
+   uint32_t mergedthreads : 8;	// Number of threads merged to get to this VDIF frame */
+   uint32_t eversion : 8;	// Should be set to 4
+   
+   uint32_t syncword;		// 0xACABFEED
+   
+   uint64_t validitymask;	// bits set if data is present
+ } vdif_edv4_header;
+
+
+static int decode_short(const char *filename, const char *formatname, const char *f, long long offset, int n)
+{
+	struct mark5_stream *ms;
+	float **data;
+	int i, j, k, status;
+	int chunk = 20000;
+	int total, unpacked;
+	int *invalid;
+	int *validsum;
+	int rawsize;
+	int start;
+	unsigned char *raw;
+	FILE *in;
+	int edv4 = 0;
+
+	total = unpacked = 0;
+
+	in = fopen(filename, "r");
+	if(!in)
+	{
+		fprintf(stderr, "Error: could not open %s for read\n", filename);
+
+		return EXIT_FAILURE;
+	}
+	if(offset != lseek(fileno(in), offset, SEEK_SET))
+	{
+		fprintf(stderr, "Error: can't seek %lld bytes into %s\n", offset, filename);
+		fclose(in);
+
+		return EXIT_FAILURE;
+	}
+
+	ms = new_mark5_stream( new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
+	if(!ms)
+	{
+		fprintf(stderr, "Error: problem opening or decoding %s\n", filename);
+		fclose(in);
+
+		return EXIT_FAILURE;
+	}
+
+	data = (float **)malloc(ms->nchan*sizeof(float *));
+	for(i = 0; i < ms->nchan; ++i)
+	{
+		data[i] = (float *)malloc(chunk*sizeof(float));
+	}
+	rawsize = ms->nchan*ms->nbit*ms->framebytes/(8LL*ms->databytes) + 2*ms->framebytes;
+	raw = (unsigned char *)malloc(rawsize);
+	invalid = (int *)calloc(ms->nchan, sizeof(int));
+	validsum = (int *)calloc(ms->nchan, sizeof(int));
+
+	fread(raw, 1, rawsize, in);
+	fclose(in);
+
+	mark5_stream_print(ms);
+
+	if(n % (long long)(ms->samplegranularity) > 0LL)
+	{
+		printf("EOF reached; reducing read size from %d", n);
+		n -= (n % (long long)(ms->samplegranularity));
+		printf(" to %d\n", n);
+	}
+
+	start = 0;
+	for(; n > 0; n -= chunk)
+	{
+		if(n < chunk)
+		{
+			chunk = n;
+		}
+		status = mark5_unpack_with_offset(ms, raw, start, data, chunk);
+		
+		if(status < 0)
+		{
+			printf("<EOF> status=%d\n", status);
+			
+			break;
+		}
+		else
+		{
+			total += chunk;
+			unpacked += status;
+		}
+
+		for(j = 0; j < ms->nchan; ++j)
+		{
+			validsum[j] += status;
+		}
+
+		if(ms->format == MK5_FORMAT_VDIF)
+		{
+			const vdif_edv4_header *V;
+
+			V = (const vdif_edv4_header *)raw;
+
+			if(V->eversion == 4)
+			{
+				++edv4;
+				blank_vdif_EDV4(raw, start, data, chunk, invalid);
+				
+				for(j = 0; j < ms->nchan; ++j)
+				{
+					validsum[j] -= invalid[j];
+				}
+			}
+		}
+
+		for(j = 0; j < chunk; j++)
+		{
+			for(k = 0; k < ms->nchan; k++)
+			{
+				printf(f, data[k][j]);
+			}
+			printf("\n");
+		}
+
+		start += chunk;
+	}
+
+	if(edv4)
+	{
+		for(j = 0; j < ms->nchan; ++j)
+		{
+			fprintf(stderr, "chan %d : %d / %d samples unpacked\n", j, validsum[j], total);
+		}
+	}
+	else
+	{
+		fprintf(stderr, "%d / %d samples unpacked\n", unpacked, total);
+	}
+
+	for(i = 0; i < ms->nchan; i++)
+	{
+		free(data[i]);
+	}
+	free(data);
+
+	delete_mark5_stream(ms);
+
+	free(raw);
+	free(invalid);
+	free(validsum);
+
+	return EXIT_SUCCESS;
+}
+
+static int decode(const char *filename, const char *formatname, const char *f, long long offset, long long n)
 {
 	struct mark5_stream *ms;
 	float **data;
@@ -85,7 +259,7 @@ static int decode(const char *filename, const char *formatname, const char *f,
 	}
 
 	data = (float **)malloc(ms->nchan*sizeof(float *));
-	for(i = 0; i < ms->nchan; i++)
+	for(i = 0; i < ms->nchan; ++i)
 	{
 		data[i] = (float *)malloc(chunk*sizeof(float));
 	}
@@ -142,8 +316,7 @@ static int decode(const char *filename, const char *formatname, const char *f,
 	return EXIT_SUCCESS;
 }
 
-static int decode_complex(const char *filename, const char *formatname, const char *f,
-	long long offset, long long n)
+static int decode_complex(const char *filename, const char *formatname, const char *f, long long offset, long long n)
 {
 	struct mark5_stream *ms;
 	float complex **data;
@@ -324,7 +497,14 @@ int main(int argc, char **argv)
 	{
 		char* f = (char*)malloc(strlen(format)+10);
 		sprintf(f, "%s ", format);
-		retval = decode(argv[optind], argv[optind+1], f, offset, n);
+		if(n < 100000)
+		{
+			retval = decode_short(argv[optind], argv[optind+1], f, offset, n);
+		}
+		else
+		{
+			retval = decode(argv[optind], argv[optind+1], f, offset, n);
+		}
 	}
 
 	return retval;

@@ -4518,6 +4518,214 @@ int get_vdif_threads(const unsigned char *data, size_t length, int dataframesize
 	return nThread;
 }
 
-void blank_vdik_EDV4(const void *packed, int offsetsamples, float **unpacked, int nsamp, int *validsamples)
+typedef struct vdif_edv4_header {	/* proposed extension extensions: (WFB email to VDIF committee 2015/10/09) */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
+   uint32_t nchan : 5;
+   uint32_t version : 3;
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;
+   uint32_t iscomplex : 1;
+
+   uint32_t dummy : 8;
+   uint32_t oldEDV : 8;		// EDV of pre-merged streams
+   uint32_t mergedthreads : 8;	// Number of threads merged to get to this VDIF frame */
+   uint32_t eversion : 8;	// Should be set to 4
+   
+   uint32_t syncword;		// 0xACABFEED
+   
+   uint64_t validitymask;	// bits set if data is present
+ } vdif_edv4_header;
+
+/* works only on real-valued VDIF */
+/* this function returns into invalidsamples[] number of _additional_ samples 
+   found invalid, above and beyond that found by the decoder (e.g., from frames
+   with invalid bit set or truncated frames with fill pattern */
+void blank_vdif_EDV4(const void *packed, int offsetsamples, float **unpacked, int nsamp, int *invalidsamples)
 {
+	const vdif_edv4_header *V;	
+	int nChan;
+	int frameLength;
+	int sampPerFrame;
+	uint64_t goodMask;
+	int frameNum;
+	int start, end;
+	int c, s, N;
+	int d, v;
+
+	V = (const vdif_edv4_header *)packed;
+	nChan = 1 << (V->nchan);
+	frameLength = V->framelength8 * 8;
+	sampPerFrame = (frameLength - 32)*8/(nChan*(V->nbits + 1));
+	goodMask = (1 << nChan) - 1;
+
+	if(nChan > 64)
+	{
+		d = nChan / 64;
+	}
+	else
+	{
+		d = 1;
+	}
+
+	for(c = 0; c < nChan; ++c)
+	{
+		invalidsamples[c] = 0;
+	}
+
+	frameNum = offsetsamples / sampPerFrame;
+	V = (const vdif_edv4_header *)(packed + frameNum*frameLength);
+	start = offsetsamples % sampPerFrame;
+	if(start + nsamp < sampPerFrame)
+	{
+		end = start + nsamp;
+	}
+	else
+	{
+		end = sampPerFrame;
+	}
+
+	v = 0;
+	for(;;)
+	{
+		N = end - start;
+		if(V->invalid == 0 && V->validitymask != goodMask)
+		{
+			/* only count valid frames with incomplete validity mask */
+
+			for(c = 0; c < nChan; ++c)
+			{
+				if((V->validitymask & (1 << (c/d))) == 0)
+				{
+					for(s = 0; s < N; ++s)
+					{
+						if(unpacked[c][s+v] != 0.0)
+						{
+							unpacked[c][s+v] = 0.0;
+							++invalidsamples[c];
+						}
+					}
+				}
+			}
+		}
+	
+		nsamp -= N;
+		if(nsamp <= 0)
+		{
+			break;
+		}
+		v += N;
+		++frameNum;
+		V = (const vdif_edv4_header *)(packed + frameNum*frameLength);
+		start = 0;
+		if(nsamp < sampPerFrame)
+		{
+			end = nsamp;
+		}
+		else
+		{
+			end = sampPerFrame;
+		}
+	}
+}
+
+/* works only on complex-valued VDIF */
+/* this function returns into invalidsamples[] number of _additional_ samples 
+   found invalid, above and beyond that found by the decoder (e.g., from frames
+   with invalid bit set or truncated frames with fill pattern */
+void blank_vdif_EDV4_complex(const void *packed, int offsetsamples, mark5_float_complex **unpacked, int nsamp, int *invalidsamples)
+{
+	const vdif_edv4_header *V;	
+	int nChan;
+	int frameLength;
+	int sampPerFrame;
+	uint64_t goodMask;
+	int frameNum;
+	int start, end;
+	int c, s, N;
+	int d, v;
+
+	V = (const vdif_edv4_header *)packed;
+	nChan = 1 << (V->nchan);
+	frameLength = V->framelength8 * 8;
+	sampPerFrame = (frameLength - 32)*8/(nChan*(V->nbits + 1));
+	goodMask = (1 << nChan) - 1;
+
+	if(nChan > 64)
+	{
+		d = nChan / 64;
+	}
+	else
+	{
+		d = 1;
+	}
+
+	for(c = 0; c < nChan; ++c)
+	{
+		invalidsamples[c] = 0;
+	}
+
+	frameNum = offsetsamples / sampPerFrame;
+	V = (const vdif_edv4_header *)(packed + frameNum*frameLength);
+	start = offsetsamples % sampPerFrame;
+	if(start + nsamp < sampPerFrame)
+	{
+		end = start + nsamp;
+	}
+	else
+	{
+		end = sampPerFrame;
+	}
+
+	v = 0;
+	for(;;)
+	{
+		N = end - start;
+		if(V->invalid == 0 && V->validitymask != goodMask)
+		{
+			/* only count valid frames with incomplete validity mask */
+
+			for(c = 0; c < nChan; ++c)
+			{
+				if((V->validitymask & (1 << (c/d))) == 0)
+				{
+					for(s = 0; s < N; ++s)
+					{
+						if(unpacked[c][s+v] != 0.0)
+						{
+							unpacked[c][s+v] = 0.0;
+							++invalidsamples[c];
+						}
+					}
+				}
+			}
+		}
+	
+		nsamp -= N;
+		if(nsamp <= 0)
+		{
+			break;
+		}
+		v += N;
+		++frameNum;
+		V = (const vdif_edv4_header *)(packed + frameNum*frameLength);
+		start = 0;
+		if(nsamp < sampPerFrame)
+		{
+			end = nsamp;
+		}
+		else
+		{
+			end = sampPerFrame;
+		}
+	}
 }

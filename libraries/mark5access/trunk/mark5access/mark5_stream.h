@@ -284,6 +284,10 @@ int get_vdif_complex(const unsigned char *data);
 
 int get_vdif_threads(const unsigned char *data, size_t length, int dataframesize);
 
+void blank_vdif_EDV4(const void *packed, int offsetsamples, float **unpacked, int nsamp, int *invalidsamples);
+
+void blank_vdif_EDV4_complex(const void *packed, int offsetsamples, mark5_float_complex **unpacked, int nsamp, int *invalidsamples);
+
 /*   VDIFB pseudo-format */
 
 struct mark5_format_generic *new_mark5_format_vdifb(int Mbps, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
