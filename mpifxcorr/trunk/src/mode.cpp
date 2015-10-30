@@ -60,6 +60,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     isfft = false;
   }
 
+  perbandweights = 0;
   model = config->getModel();
   initok = true;
   intclockseconds = int(floor(config->getDClockCoeff(configindex, dsindex, 0)/1000000.0 + 0.5));
@@ -451,6 +452,10 @@ Mode::~Mode()
 {
   int status;
 
+  if(perbandweights)
+  {
+    delete [] perbandweights;
+  }
   vectorFree(validflags);
   for(int j=0;j<numrecordedbands+numzoombands;j++)
   {
@@ -1218,7 +1223,14 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 	    csevere << startl << "Error in autocorrelation!!!" << status << endl;
 
 	  //store the weight
-	  weights[0][j] += dataweight;
+          if(perbandweights)
+          {
+	    weights[0][j] += perbandweights[j];
+          }
+          else
+          {
+	    weights[0][j] += dataweight;
+          }
 	}
       }
     }
@@ -1276,8 +1288,16 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 	  csevere << startl << "Error in cross-polar autocorrelation!!!" << status << endl;
       
 	//store the weights
-	weights[1][indices[0]] += dataweight;
-	weights[1][indices[1]] += dataweight;
+        if(perbandweights)
+        {
+	  weights[1][indices[0]] += perbandweights[indices[0]]*perbandweights[indices[1]];
+	  weights[1][indices[1]] += perbandweights[indices[0]]*perbandweights[indices[1]];
+        }
+        else
+        {
+	  weights[1][indices[0]] += dataweight;
+	  weights[1][indices[1]] += dataweight;
+        }
       }
     }
     
@@ -1289,8 +1309,14 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 	  csevere << startl << "Error in autocorrelation!!!" << status << endl;
 
 	//store the weight
-	weights[0][indices[k]] += dataweight;
-
+        if(perbandweights)
+        {
+	  weights[0][indices[k]] += perbandweights[indices[k]];
+        }
+        else
+        {
+	  weights[0][indices[k]] += dataweight;
+        }
       }
     }
   }

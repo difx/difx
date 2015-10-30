@@ -30,6 +30,7 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
   char formatname[64];
 
   fanout = config->genMk5FormatName(format, nrecordedbands, recordedbw, nbits, sampling, framebytes, conf->getDDecimationFactor(confindex, dsindex), conf->getDNumMuxThreads(confindex, dsindex), formatname);
+  invalid = 0;
   if(fanout < 0)
     initok = false;
   else
@@ -70,6 +71,11 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
       {
         this->framesamples = mark5stream->framesamples;
       }
+      if(format == Configuration::INTERLACEDVDIF)
+      {
+        perbandweights = new f32[nrecordedbands];
+        invalid = new int[nrecordedbands];
+      }
     }
   }
 }
@@ -77,41 +83,82 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
 Mk5Mode::~Mk5Mode()
 {
   delete_mark5_stream(mark5stream);
+  if(invalid)
+  {
+    delete [] invalid;
+  }
 }
 
 float Mk5Mode::unpack(int sampleoffset)
 {
-  int goodsamples;
-  int mungedoffset;
+  float goodsamples;
+  int mungedoffset = 0;
 
   //work out where to start from
   unpackstartsamples = sampleoffset - (sampleoffset % mark5stream->samplegranularity);
 
   //unpack one frame plus one FFT size worth of samples
-  if (usecomplex) 
+  if(usecomplex) 
+  {
     goodsamples = mark5_unpack_complex_with_offset(mark5stream, data, unpackstartsamples, (mark5_float_complex**)unpackedcomplexarrays, samplestounpack);
+  }
   else
+  {
     goodsamples = mark5_unpack_with_offset(mark5stream, data, unpackstartsamples, unpackedarrays, samplestounpack);
+  }
   if(mark5stream->samplegranularity > 1)
     { // CHRIS not sure what this is mean to do
       // WALTER: unpacking of some mark5 modes (those with granularity > 1) must be unpacked not as individual samples but in groups of sample granularity
+    int erasedsamples = 0;
+
     mungedoffset = sampleoffset % mark5stream->samplegranularity;
     for(int i = 0; i < mungedoffset; i++) {
-      if(unpackedarrays[0][i] != 0.0) {
-        goodsamples--;
+      for(int b = 0; b < mark5stream->nchan; ++b) {
+        if(unpackedarrays[b][i] != 0.0) {
+          unpackedarrays[b][i] = 0.0;
+          erasedsamples++;
+        }
       }
     }
     for(int i = unpacksamples + mungedoffset; i < samplestounpack; i++) {
-      if(unpackedarrays[0][i] != 0.0) {
-        goodsamples--;
+      for(int b = 0; b < mark5stream->nchan; ++b) {
+        if(unpackedarrays[b][i] != 0.0) {
+          unpackedarrays[b][i] = 0.0;
+          erasedsamples++;
+        }
       }
     }
+    goodsamples -= erasedsamples/(float)(mark5stream->nchan);
+  }
+  if(perbandweights)
+  {
+    int totalinvalid;
+
+    if(usecomplex)
+    {
+      blank_vdif_EDV4_complex(data, unpackstartsamples, (mark5_float_complex**)unpackedcomplexarrays, samplestounpack, invalid);
+    }
+    else
+    {
+      blank_vdif_EDV4(data, unpackstartsamples, unpackedarrays, samplestounpack, invalid);
+    }
+
+    totalinvalid = 0;
+    for(int b = 0; b < mark5stream->nchan; ++b)
+    {
+      perbandweights[b] = (goodsamples - invalid[b])/(float)unpacksamples;
+      totalinvalid += invalid[b];
+    }
+
+    goodsamples -= (float)totalinvalid/(float)(mark5stream->nchan);
   }
 
   if(goodsamples < 0)
   {
     cerror << startl << "Error trying to unpack Mark5 format data at sampleoffset " << sampleoffset << " from data seconds " << datasec << " plus " << datans << " ns!!!" << endl;
     goodsamples = 0;
+    for(int b = 0; b < mark5stream->nchan; ++b)
+      invalid[b] = 0;
   }
 
   return goodsamples/(float)unpacksamples;

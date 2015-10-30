@@ -380,10 +380,9 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
 	threads = config->getDMuxThreadMap(configindex, streamnum);
 
-	muxFlags = VDIF_MUX_FLAG_RESPECTGRANULARITY;
+	muxFlags = VDIF_MUX_FLAG_RESPECTGRANULARITY | VDIF_MUX_FLAG_PROPAGATEVALIDITY;
 	if(sampling == Configuration::COMPLEX)
 	{
-		cinfo << startl << "Note: this is complex sampled data.  Multiplexing complex data is poorly tested." << endl;
 		muxFlags |= VDIF_MUX_FLAG_COMPLEX;
 	}
 	rv = configurevdifmux(&vm, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, muxFlags);

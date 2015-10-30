@@ -690,6 +690,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   int starttimens;
   int fftsize;
   int numBufferedFFTs;
+  float weight1, weight2;
 #endif
   int perr;
 
@@ -917,6 +918,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                   vis1 = &(m1->getFreqs(config->getBDataStream1BandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop)[xmacstart]);
                   vis2 = &(m2->getConjugatedFreqs(config->getBDataStream2BandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop)[xmacstart]);
 
+                  weight1 = m1->getDataWeight(config->getBDataStream1BandIndex(procslots[index].configindex, j, localfreqindex, p));
+                  weight2 = m2->getDataWeight(config->getBDataStream2BandIndex(procslots[index].configindex, j, localfreqindex, p));
+
                   if(procslots[index].pulsarbin)
                   {
                     //multiply into scratch space
@@ -927,7 +931,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     //if scrunching, add into temp accumulate space, otherwise add into normal space
                     if(procslots[index].scrunchoutput)
                     {
-                      bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop]/(freqchannels);
+                      bweight = weight1*weight2/freqchannels;
                       destchan = xmacstart;
                       for(int l=0;l<xmacstridelength;l++)
                       {
@@ -941,7 +945,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     }
                     else
                     {
-                      bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop]/(freqchannels);
+                      bweight = weight1*weight2/freqchannels;
                       destchan = xmacstart;
                       for(int l=0;l<xmacstridelength;l++)
                       {
@@ -966,7 +970,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                 }
               }
 	      if(procslots[index].pulsarbin && !procslots[index].scrunchoutput)
-	        resultindex += config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex)*  procslots[index].numpulsarbins*xmacstridelength;
+	        resultindex += config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex)*procslots[index].numpulsarbins*xmacstridelength;
               else
 	        resultindex += config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex)*xmacstridelength;
             }
@@ -1008,6 +1012,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
         {
           if(config->isFrequencyUsed(procslots[index].configindex, f))
           {
+            freqchannels = config->getFNumChannels(f);
             for(int j=0;j<numbaselines;j++)
 	    {
 	      localfreqindex = config->getBLocalFreqIndex(procslots[index].configindex, j, f);
@@ -1015,9 +1020,14 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
 	      {
 	        ds1index = config->getBOrderedDataStream1Index(procslots[index].configindex, j);
 	        ds2index = config->getBOrderedDataStream2Index(procslots[index].configindex, j);
-	        bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop];
+	        m1 = modes[ds1index];
+	        m2 = modes[ds2index];
 	        for(int p=0;p<config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex);p++)
 		{
+                  weight1 = m1->getDataWeight(config->getBDataStream1BandIndex(procslots[index].configindex, j, localfreqindex, p));
+                  weight2 = m2->getDataWeight(config->getBDataStream2BandIndex(procslots[index].configindex, j, localfreqindex, p));
+                  bweight = weight1*weight2;
+
 		  scratchspace->baselineweight[f][0][j][p] += bweight;
 		}
 	      }

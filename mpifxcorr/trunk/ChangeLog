@@ -7,6 +7,7 @@ Version 2.5
 * First bits of code for native Mark6 in place.  This relies on some mark6 "gather" code in the vdifio library.
 * Add support for VDIF with multiple channels per thread and multiple threads.
 * Add support for complex VDIF with multiple threads
+* Add support for per-band data weights.  Currently only implemented for Interlaced VDIF
 
 Version 2.4
 ~~~~~~~~~~~

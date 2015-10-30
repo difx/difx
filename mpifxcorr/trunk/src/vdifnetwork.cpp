@@ -302,6 +302,7 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 	double bw;
 	int rv;
 	int doUpdate = 0;
+	int muxFlags;
 
 	format = config->getDataFormat(configindex, streamnum);
 	sampling = config->getDSampling(configindex, streamnum);
@@ -321,7 +322,12 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
 	threads = config->getDMuxThreadMap(configindex, streamnum);
 
-	rv = configurevdifmux(&vm, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, VDIF_MUX_FLAG_RESPECTGRANULARITY);
+	muxFlags = VDIF_MUX_FLAG_RESPECTGRANULARITY | VDIF_MUX_FLAG_PROPAGATEVALIDITY;
+	if(sampling == Configuration::COMPLEX)
+	{
+		muxFlags |= VDIF_MUX_FLAG_COMPLEX;
+	}
+	rv = configurevdifmux(&vm, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, muxFlags);
 	if(rv < 0)
 	{
 		cfatal << startl << "configurevmux failed with return code " << rv << endl;

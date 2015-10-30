@@ -157,6 +157,12 @@ Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int
   inline f32 getWeight(bool crosspol, int outputband) const { return weights[(crosspol)?1:0][outputband]; }
 
  /**
+  * Grabs the data weight for a given band
+  * @param outputband The band index
+  */
+  inline f32 getDataWeight(int outputband) const { return perbandweights ? perbandweights[outputband] : dataweight; }
+
+ /**
   * Gets the expected decorrelation ("van Vleck correction" ) for a given number of bits.
   * All cases other than 1 and 2 are approximate only!!!
   * @param nbits The number of bits
@@ -239,6 +245,7 @@ protected:
   double a0, b0, c0, a, b, c, quadadd1, quadadd2;
   double fftstartmicrosec, fftdurationmicrosec, intclockseconds;
   f32 dataweight;
+  f32 * perbandweights;
   int samplesperblock, samplesperlookup, numlookups, flaglength, autocorrwidth;
   int datascan, datasec, datans, datalengthbytes, usecomplex, usedouble;
   bool filterbank, calccrosspolautocorrs, fractionalLoFreq, initok, isfft, linear2circular;
