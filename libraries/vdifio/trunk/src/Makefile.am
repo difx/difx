@@ -3,7 +3,6 @@ sources = \
 	cornerturners.c \
 	dateutils.c \
 	dateutils.h \
-	decode.c \
 	vdifbuffer.c \
 	vdiffile.c \
 	vdifio.c \

@@ -457,18 +457,12 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			memcpy(&outputHeader, vh, 16);
 			if(vm->flags & VDIF_MUX_FLAG_PROPAGATEVALIDITY)
 			{
+				/* FIXME: handle heirarchical multiplexing */
+
 				vdif_edv4_header *edv4 = (vdif_edv4_header *)(&outputHeader);
 
 				edv4->dummy = 0;
-				if(vh->legacymode)
-				{
-					edv4->oldEDV = 0;
-				}
-				else
-				{
-					edv4->oldEDV = vh->eversion;
-				}
-				edv4->mergedthreads = vm->nThread;
+				edv4->masklength = vm->nThread;
 				edv4->eversion = 4;
 				edv4->syncword = 0xACABFEED;
 				edv4->validitymask = 0;

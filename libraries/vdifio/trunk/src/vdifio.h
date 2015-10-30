@@ -189,9 +189,8 @@ typedef struct vdif_edv4_header {	/* proposed extension extensions: (WFB email t
    uint32_t nbits : 5;
    uint32_t iscomplex : 1;
 
-   uint32_t dummy : 8;
-   uint32_t oldEDV : 8;		// EDV of pre-merged streams
-   uint32_t mergedthreads : 8;	// Number of threads merged to get to this VDIF frame */
+   uint32_t dummy : 16;
+   uint32_t masklength : 8;	// number of bits in the validity mask.  Should be equal to, or exact divisor of number of channels
    uint32_t eversion : 8;	// Should be set to 4
    
    uint32_t syncword;		// 0xACABFEED
@@ -388,11 +387,6 @@ int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum);
 static inline int vdiffilesummarygetbytespersecond(const struct vdif_file_summary *sum) { return sum->frameSize*sum->framesPerSecond; }
 
 int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize);
-
-
-/* implemented in decode.c */
-
-int decodeSingleChannelVDIF(const unsigned char *vdifFrame, float *samples, int maxSamples);
 
 
 #ifdef __cplusplus

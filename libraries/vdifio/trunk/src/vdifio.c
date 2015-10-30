@@ -320,11 +320,10 @@ static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 			const vdif_edv4_header *edv4 = (const vdif_edv4_header *)header;
 			int64_t i;
 
-			fprintf(out, "  old EDV = %d\n", edv4->oldEDV);
-			fprintf(out, "  number of merged threads = %d\n", edv4->mergedthreads);
+			fprintf(out, "  masklength = %d\n", edv4->masklength);
 			fprintf(out, "  syncword = 0x%08X\n", edv4->syncword);
 			fprintf(out, "  validity mask = 0x");
-			for(i = edv4->mergedthreads - 1; i >= 0; --i)
+			for(i = edv4->masklength - 1; i >= 0; --i)
 			{
 				fprintf(out, "%c", ((edv4->validitymask) & (1LL << i)) ? '1' : '0');
 			}
@@ -371,8 +370,8 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 			const vdif_edv4_header *edv4 = (const vdif_edv4_header *)header;
 			int64_t i;
 
-			fprintf(out, "  %3d    %2d   0x%08X 0x", edv4->oldEDV, edv4->mergedthreads, edv4->syncword);
-			for(i = edv4->mergedthreads - 1; i >= 0; --i)
+			fprintf(out, "  %2d   0x%08X 0x", edv4->masklength, edv4->syncword);
+			for(i = edv4->masklength - 1; i >= 0; --i)
 			{
 				fprintf(out, "%c", ((edv4->validitymask) & (1LL << i)) ? '1' : '0');
 			}
@@ -402,7 +401,7 @@ static void fprintVDIFHeaderColumns(FILE *out, const vdif_header *header)
 	}
 	else if(header->eversion == 4)
 	{
-		fprintf(out, " OldEDV MgdThds SyncWord ValidityMask");
+		fprintf(out, " MgdThds SyncWord ValidityMask");
 	}
 	fprintf(out, "\n");
 }
