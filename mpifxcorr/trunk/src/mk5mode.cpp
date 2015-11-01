@@ -46,9 +46,7 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
       samplestounpack = recordedbandchan*2;
     }
     //create the mark5_stream used for unpacking
-    mark5stream = new_mark5_stream(
-        new_mark5_stream_unpacker(0),
-    new_mark5_format_generic_from_string(formatname) );
+    mark5stream = new_mark5_stream( new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
     if(mark5stream == 0)
     {
       cfatal << startl << "Mk5Mode::Mk5Mode : mark5stream is null" << endl;
@@ -75,6 +73,8 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
       {
         perbandweights = new f32[nrecordedbands];
         invalid = new int[nrecordedbands];
+        for(int b = 0; b < nrecordedbands; ++b)
+          perbandweights[b] = 0.0;
       }
     }
   }
