@@ -63,7 +63,9 @@ int main(int argc, char *argv[])
       }
       for(int j=1;j<config->getFreqTableLength();j++) {
         if(config->getFNumChannels(j)/config->getFChannelsToAverage(j) != nchannels) {
-          cerr << "Error - input file " << i << " has different numbers of channels - aborting!!!" << endl;
+          cerr << "Error - input file " << i << " has different numbers of channels "
+               << "(expected " << nchannels << ", got " << config->getFNumChannels(j)/config->getFChannelsToAverage(j) << ") "
+               << "- aborting!!!" << endl;
           return EXIT_FAILURE;
         }
       }
@@ -80,8 +82,12 @@ int main(int argc, char *argv[])
     }
     else {
       for(int j=0;j<config->getFreqTableLength();j++) {
-        cerr << "Error - input file " << i << " has different numbers of channels - aborting!!!" << endl;
-        return EXIT_FAILURE;
+        if(config->getFNumChannels(j)/config->getFChannelsToAverage(j) != nchannels) {
+          cerr << "Error - input file " << i << " has different numbers of channels "
+               << "(expected " << nchannels << ", got " << config->getFNumChannels(j)/config->getFChannelsToAverage(j) << ") "
+               << "- aborting!!!" << endl;
+          return EXIT_FAILURE;
+        }
       }
     }
     if (config->getNumPulsarBins(0) != nbins) {
@@ -132,7 +138,7 @@ int main(int argc, char *argv[])
       input->close();
       delete input;
     }
-    cout << "Finished job " << i+1 << "/" << njobs << endl;
+    cout << "Finished job " << i << "/" << njobs << endl;
     cout << "Max visibility was " << maxvisibility << endl;
     cout << "Number of visibilities (not individual channels) was " << viscount << endl;
     cout << "Mean visibility was " << vissum/(viscount*(nchannels-2)) << endl;
@@ -185,7 +191,7 @@ int main(int argc, char *argv[])
   
   cout << "Number of non-contibuting bins was " << nbins-ncontributingbins << endl;
 
-  cout << "About to write out the profile file" << endl;
+  cout << "About to write out the profile file (profile.out)" << endl;
   //write out the profile file
   output = new ofstream("profile.out");
   *output << setprecision(15);
