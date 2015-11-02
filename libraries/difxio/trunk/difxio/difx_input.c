@@ -537,13 +537,14 @@ static int generateAipsIFs(DifxInput *D, int configId)
 		}
 	}
 
-	if(dc->polMask & DIFXIO_POL_ERROR || 
-	   dc->polMask == 0 || 
-	   ((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY)) )
+	if(dc->polMask & DIFXIO_POL_ERROR || dc->polMask == 0)
 	{
 		fprintf(stderr, "Error: generateAipsIFs: polMask = 0x%03x is unsupported!\n", dc->polMask);
-
 		return -1;
+	}
+    else if ((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY))
+	{
+		fprintf(stderr, "Warning: generateAipsIFs: polMask = 0x%03x is unsupported!\n", dc->polMask);
 	}
 
 	/* populate polarization matrix for this configuration */
