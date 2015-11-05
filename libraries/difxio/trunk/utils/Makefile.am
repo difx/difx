@@ -16,9 +16,13 @@ endif
 bin_PROGRAMS = \
 	$(fftw_progs) \
 	$(gsl_progs) \
+	avgDiFX \
 	calcderiv \
 	difxcalculator \
 	tabulatedelays
+
+avgDiFX_SOURCES = \
+	avgDiFX.c
 
 calcderiv_SOURCES = \
 	calcderiv.c

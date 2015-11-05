@@ -18,6 +18,7 @@
 * Some merging from the RadioAstron branch
   - James Anderson to fill in details here
   - Some new capabilities commented out with  "#ifdef RA_MERGED .. #endif" constructs, awaiting changes in mpifxcorr
+* Add start of avgDiFX: program to average two .difx/DIFX... files 
 
 3.4.0
 * Fix X/Y polarization issue
