@@ -79,7 +79,7 @@ namespace guiServer {
             _receiveActive = false;
             _guiClient = guiClient;
             _guiClient->packetExchange(); 
-            pthread_create( &_receiveId, NULL, staticReceiveThread, this );               
+            pthread_create( &_receiveId, NULL, staticReceiveThread, this );
         }
         
         ~DifxMonitorExchange() {
@@ -547,7 +547,8 @@ namespace guiServer {
                     //  severed by a client "CLOSE_CONNECTION" message we need to give the closeConnection()
                     //  function time to work.
                     sleep( 1 );
-                    _guiClient->formatPacket( ERROR, "problem with socket connection to monitor_server: %d returned", ret );
+                    if ( _keepGoing )
+                        _guiClient->formatPacket( ERROR, "problem with socket connection to monitor_server: %d returned", ret );
                 }
                 else {
                     threadTimeoutCount = 0;
@@ -733,7 +734,8 @@ namespace guiServer {
                             //  Send amplitude data to the client.  For sending these plot data we are using
                             //  "composed" packets, explained in the PacketExchange.  Double precision numbers
                             //  are sent as strings because Java and C++ don't appear to play nicely together.
-                            _guiClient->composePacket( AMPLITUDE_DATA, nChannels * sizeof( double ) + 4 * sizeof( int ) );
+                            //_guiClient->composePacket( AMPLITUDE_DATA, nChannels * sizeof( double ) + 4 * sizeof( int ) );
+                            _guiClient->composePacket( AMPLITUDE_DATA, nChannels * 14 + 4 * sizeof( int ) );
                             _guiClient->composeInt( &iProduct );
                             _guiClient->composeInt( &nChannels );
                             _guiClient->composeInt( &timeStamp );
@@ -741,7 +743,8 @@ namespace guiServer {
                             _guiClient->composeStringDouble( amp, nChannels );
                             _guiClient->composeEnd();
                             //  Phase data.
-                            _guiClient->composePacket( PHASE_DATA, nChannels * sizeof( double ) + 4 * sizeof( int ) );
+                            //_guiClient->composePacket( PHASE_DATA, nChannels * sizeof( double ) + 4 * sizeof( int ) );
+                            _guiClient->composePacket( PHASE_DATA, nChannels * 14 + 4 * sizeof( int ) );
                             _guiClient->composeInt( &iProduct );
                             _guiClient->composeInt( &nChannels );
                             _guiClient->composeInt( &timeStamp );
@@ -750,7 +753,8 @@ namespace guiServer {
                             _guiClient->composeEnd();
                             //  Lag data require some rearrange.
 //                            _guiClient->composePacket( LAG_DATA, 2 * ( nChannels + 1) * sizeof( double ) + 4 * sizeof( int ) );
-/**/                            _guiClient->composePacket( LAG_DATA, ( 2 + useFFTSize ) * sizeof( double ) + 4 * sizeof( int ) );
+                            //_guiClient->composePacket( LAG_DATA, ( 2 + useFFTSize ) * sizeof( double ) + 4 * sizeof( int ) );
+                            _guiClient->composePacket( LAG_DATA, ( 2 + useFFTSize ) * 14 + 4 * sizeof( int ) );
                             _guiClient->composeInt( &iProduct );
 //                            _guiClient->composeInt( &nChannels );
 /**/                            int halfSize = useFFTSize / 2;
@@ -798,7 +802,8 @@ namespace guiServer {
                             snr = (float)( max / stddev );
                             
                             //  Send mean amplitude data to the client.
-                            _guiClient->composePacket( MEAN_AMPLITUDE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            //_guiClient->composePacket( MEAN_AMPLITUDE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            _guiClient->composePacket( MEAN_AMPLITUDE_DATA, nChannels * 14 + 3 * sizeof( int ) );
                             _guiClient->composeInt( &iProduct );
                             _guiClient->composeInt( &nChannels );
                             _guiClient->composeInt( &timeStamp );
@@ -806,7 +811,8 @@ namespace guiServer {
                             _guiClient->composeStringDouble( amp, nChannels );
                             _guiClient->composeEnd();
                             //  Phase data.
-                            _guiClient->composePacket( MEAN_PHASE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            //_guiClient->composePacket( MEAN_PHASE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            _guiClient->composePacket( MEAN_PHASE_DATA, nChannels * 14 + 3 * sizeof( int ) );
                             _guiClient->composeInt( &iProduct );
                             _guiClient->composeInt( &nChannels );
                             _guiClient->composeInt( &timeStamp );
@@ -814,7 +820,8 @@ namespace guiServer {
                             _guiClient->composeStringDouble( phase, nChannels );
                             _guiClient->composeEnd();
                             //  Lag data require some rearrange.
-                            _guiClient->composePacket( MEAN_LAG_DATA, ( 2 + useFFTSize ) * sizeof( double ) + 4 * sizeof( int ) );
+                            //_guiClient->composePacket( MEAN_LAG_DATA, ( 2 + useFFTSize ) * sizeof( double ) + 4 * sizeof( int ) );
+                            _guiClient->composePacket( MEAN_LAG_DATA, ( 2 + useFFTSize ) * 14 + 4 * sizeof( int ) );
                             _guiClient->composeInt( &iProduct );
                             halfSize = useFFTSize / 2;
                             _guiClient->composeInt( &halfSize );
