@@ -70,7 +70,7 @@ enum Item
 /* Use Cramer's rule to evaluate polynomial */
 double evaluatePoly(const double *p, int n, double x)
 {
-	double y;
+	long double y;
 	int i;
 
 	if(n == 1)
@@ -80,7 +80,7 @@ double evaluatePoly(const double *p, int n, double x)
 
 	y = p[n-1];
 
-	for(i = n-2; i >= 0; i--)
+	for(i = n-2; i >= 0; --i)
 	{
 		y = x*y + p[i];
 	}
@@ -90,7 +90,7 @@ double evaluatePoly(const double *p, int n, double x)
 
 double evaluatePolyDeriv(const double *p, int n, double x)
 {
-	double y;
+	long double y;
 	int i;
 
 	if(n == 1)
@@ -105,7 +105,7 @@ double evaluatePolyDeriv(const double *p, int n, double x)
 
 	y = (n-1)*p[n-1];
 
-	for(i = n-2; i >= 1; i--)
+	for(i = n-2; i >= 1; --i)
 	{
 		y = x*y + i*p[i];
 	}

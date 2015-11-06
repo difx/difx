@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <glob.h>
+#include "difx_input.h"
 #include "parsevis.h"
 
 typedef struct
@@ -199,102 +204,282 @@ void printBinaryHeaderShort(const BinaryHeader *H)
 	printf("%5d %5d %8.2f %2d %2d %2d %s %2d %5.3f (%-6.4e, %-6.4e, %-6.4e)\n", H->baselineId, H->mjd, H->sec, H->configId, H->sourceId, H->freqId, H->pol, H->binId, H->weight, H->uvw[0], H->uvw[1], H->uvw[2]);
 }
 
+typedef struct
+{
+	FILE *in;
+	DifxInput *D;
+	char outputFile[DIFXIO_FILENAME_LENGTH];
+	BinaryHeader curHeader, lastHeader;
+	int n;	/* headers read to date */
+	int nChan;
+	float *data;
+} AverageInput;
+
+void deleteAverageInput(AverageInput *A)
+{
+	if(A)
+	{
+		if(A->D)
+		{
+			deleteDifxInput(A->D);
+		}
+		if(A->in)
+		{
+			fclose(A->in);
+		}
+		if(A->data)
+		{
+			free(A->data);
+		}
+		free(A);
+	}
+}
+
+AverageInput *openAverageInput(const char *filename)
+{
+	AverageInput *A;
+	glob_t G;
+	char pattern[DIFXIO_FILENAME_LENGTH];
+
+	A = (AverageInput *)calloc(1, sizeof(AverageInput));
+
+	A->D = loadDifxInput(filename);
+	if(!A->D)
+	{
+		fprintf(stderr, "Cannot open DiFX fileset %s for read\n", filename);
+
+		deleteAverageInput(A);
+
+		return 0;
+	}
+	A->D = updateDifxInput(A->D);
+	if(!A->D)
+	{
+		fprintf(stderr, "Update failed for DiFX fileset %s.  Quitting\n", filename);
+
+		deleteAverageInput(A);
+		
+		return 0;
+	}
+	A->D->eopMergeMode = EOPMergeModeRelaxed;
+
+	A->nChan = A->D->freq->nChan;
+	A->data = (float *)malloc(A->nChan*2*sizeof(float));
+
+	snprintf(pattern, DIFXIO_FILENAME_LENGTH, "%s/DIFX*", A->D->job->outputFile);
+	glob(pattern, 0, 0, &G);
+
+	if(G.gl_pathc != 1)
+	{
+		fprintf(stderr, "Need exactly one DIFX* file in %s; found %d\n", A->D->job->outputFile, G.gl_pathc);
+
+		globfree(&G);
+		deleteAverageInput(A);
+
+		return 0;
+	}
+
+	snprintf(A->outputFile, DIFXIO_FILENAME_LENGTH, "%s", G.gl_pathv[0]);
+	globfree(&G);
+
+printf("Opening %s\n", A->outputFile);
+	A->in = fopen(A->outputFile, "r");
+	if(!A->in)
+	{
+		fprintf(stderr, "Cannot open DiFX data file %s for read\n", A->D->job->outputFile);
+
+		deleteAverageInput(A);
+
+		return 0;
+	}
+
+	return A;
+}
+
+int readAverageInput(AverageInput *A)
+{
+	int rv;
+
+	copyBinaryHeader(&A->lastHeader, &A->curHeader);
+	rv = readBinaryHeader(&A->curHeader, A->in);
+	if(rv != 0)
+	{
+		if(feof(A->in))
+		{
+			return -1;
+		}
+		else
+		{
+			fprintf(stderr, "Error reading header %d: %d\n", A->n, rv);
+	
+			return -2;
+		}
+	}
+	rv = fread(A->data, 2*sizeof(float), A->nChan, A->in);
+	if(rv != A->nChan)
+	{
+		fprintf(stderr, "Cannot read data array %d: %d/%d complex values read\n", A->n, rv, A->nChan);
+	
+		return -3;
+	}
+
+	if(A->n != 0)
+	{
+		rv = compareBinaryHeaders(&A->lastHeader, &A->curHeader);
+		if(rv >= 0)
+		{
+			printf("Weird: last two headers were in the wrong order; cmp=%d:\n", rv);
+			printf("   %8d : ", A->n);
+			printBinaryHeaderShort(&A->lastHeader);
+			printf("   %8d : ", A->n+1);
+			printBinaryHeaderShort(&A->curHeader);
+
+			return -4;
+		}
+	}
+
+	++A->n;
+
+	return 0;
+}
+
+
 int main(int argc, char **argv)
 {
-	FILE *in1, *in2, *out;
-	BinaryHeader cH1, lH1;
-	BinaryHeader cH2, lH2;
-	int n1 = 0;
-	int n2 = 0;
-	int nChan = 320;
-	int rv;
-	int c;
-	float *data1;
-	float *data2;
+	char path[DIFXIO_FILENAME_LENGTH];
+	char outputFilename[DIFXIO_FILENAME_LENGTH];
+	FILE *out;
+	int rv, c, i;
+	const char *p;
+	AverageInput *A1, *A2;
+	int n0=0, n1=0, n2=0;
 
 	if(argc < 4)
 	{
-		fprintf(stderr, "Seek help\n");
+		fprintf(stderr, "Usage: <Difx Fileset 1> <Difx Fileset 2> <Output Difx Fileset>\n");
 
 		return EXIT_SUCCESS;
 	}
-	in1 = fopen(argv[1], "r");
-	if(!in1)
+
+	A1 = openAverageInput(argv[1]);
+	if(!A1)
 	{
-		fprintf(stderr, "Cannot open %s for read\n", argv[1]);
+		return EXIT_FAILURE;
+	}
+
+	A2 = openAverageInput(argv[2]);
+	if(!A2)
+	{
+		deleteAverageInput(A1);
 
 		return EXIT_FAILURE;
 	}
 
-	in2 = fopen(argv[2], "r");
-	if(!in2)
+	if(!areDifxInputsCompatible(A1->D, A2->D))
 	{
-		fprintf(stderr, "Cannot open %s for read\n", argv[2]);
+		fprintf(stderr, "Input files are not compatible\n");
+
+		deleteAverageInput(A1);
+		deleteAverageInput(A2);
 
 		return EXIT_FAILURE;
 	}
 
-	out = fopen(argv[3], "w");
+	rv = readAverageInput(A1);
+	if(rv != 0)
+	{
+		fprintf(stderr, "Error reading first header1: %d\n", rv);
+
+		deleteAverageInput(A1);
+		deleteAverageInput(A2);
+	
+		return EXIT_FAILURE;
+	}
+
+	rv = readAverageInput(A2);
+	if(rv != 0)
+	{
+		fprintf(stderr, "Error reading first header2: %d\n", rv);
+
+		deleteAverageInput(A1);
+		deleteAverageInput(A2);
+	
+		return EXIT_FAILURE;
+	}
+
+	printf("First file, first ");
+	printBinaryHeaderLong(&A1->curHeader);
+	printf("Second file, first ");
+	printBinaryHeaderLong(&A2->curHeader);
+
+	if(argv[3][0] == '/')
+	{
+		path[0] = 0;
+	}
+	else
+	{
+		getcwd(path, DIFXIO_FILENAME_LENGTH);
+	}
+
+	p = 0;
+	for(i = 0; A1->outputFile[i]; ++i)
+	{
+		if(A1->outputFile[i] == '/')
+		{
+			p = A1->outputFile + i + 1;
+		}
+	}
+
+	if(p == 0)
+	{
+		fprintf(stderr, "WEIRD! p = 0\n");
+
+		return EXIT_FAILURE;
+	}
+
+	snprintf(outputFilename, DIFXIO_FILENAME_LENGTH, "%s/%s.difx/%s", path, argv[3], p); 
+
+printf("Output file name = %s\n", outputFilename);
+
+	snprintf(A1->D->job->inputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.input", path, argv[3]);
+	snprintf(A1->D->job->calcFile, DIFXIO_FILENAME_LENGTH, "%s/%s.calc", path, argv[3]);
+	snprintf(A1->D->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s/%s.threads", path, argv[3]);
+	snprintf(A1->D->job->imFile, DIFXIO_FILENAME_LENGTH, "%s/%s.im", path, argv[3]);
+	snprintf(A1->D->job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", path, argv[3]);
+
+	writeDifxCalc(A1->D);
+	writeDifxInput(A1->D);
+	writeDifxIM(A1->D);
+
+	rv = mkdir(A1->D->job->outputFile, 0700);
+	if(rv != 0)
+	{
+		fprintf(stderr, "Error: cannot make directory: %s\n", A1->D->job->outputFile);
+
+		deleteAverageInput(A1);
+		deleteAverageInput(A2);
+
+		return EXIT_FAILURE;
+	}
+
+	out = fopen(outputFilename, "w");
 	if(!out)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", argv[3]);
 
-		return EXIT_FAILURE;
-	}
+		deleteAverageInput(A1);
+		deleteAverageInput(A2);
 
-	data1 = (float *)malloc(nChan*2*sizeof(float));
-	data2 = (float *)malloc(nChan*2*sizeof(float));
-
-	rv = readBinaryHeader(&cH1, in1);
-	if(rv != 0)
-	{
-		fprintf(stderr, "Error reading first header1: %d\n", rv);
-	
 		return EXIT_FAILURE;
 	}
-	rv = fread(data1, 2*sizeof(float), nChan, in1);
-	if(rv != nChan)
-	{
-		fprintf(stderr, "Cannot read first data1 array: %d/%d complex values read\n", rv, nChan);
-	
-		return EXIT_FAILURE;
-	}
-
-	rv = readBinaryHeader(&cH2, in2);
-	if(rv != 0)
-	{
-		fprintf(stderr, "Error reading first header1: %d\n", rv);
-	
-		return EXIT_FAILURE;
-	}
-	rv = fread(data2, 2*sizeof(float), nChan, in2);
-	if(rv != nChan)
-	{
-		fprintf(stderr, "Cannot read first data2 array: %d/%d complex values read\n", rv, nChan);
-	
-		return EXIT_FAILURE;
-	}
-	printf("First file, first ");
-	printBinaryHeaderLong(&cH1);
-	printf("Second file, first ");
-	printBinaryHeaderLong(&cH2);
-	printf("1 : %8d : ", n1);
-	printBinaryHeaderShort(&cH1);
-	printf("2 : %8d : ", n2);
-	printBinaryHeaderShort(&cH2);
-
-	++n1;
-	++n2;
 
 	for(;;)
 	{
-		c = compareBinaryHeaders(&cH1, &cH2);
+		c = compareBinaryHeaders(&A2->curHeader, &A2->curHeader);
 
 		if(c == 0)
 		{
-			int i;
-			
-			rv = writeBinaryHeader(&cH1, out);
+			rv = writeBinaryHeader(&A1->curHeader, out);
 			if(rv != 0)
 			{
 				fprintf(stderr, "Problem writing.  Disk full?\n");
@@ -302,21 +487,22 @@ int main(int argc, char **argv)
 				break;
 			}
 			
-			for(i = 0; i < 2*nChan; ++i)
+			for(i = 0; i < 2*A1->nChan; ++i)
 			{
-				data1[i] = 0.5*(data1[i] + data2[i]);
+				A1->data[i] = 0.5*(A1->data[i] + A2->data[i]);
 			}
-			rv = fwrite(data1, 2*sizeof(float), nChan, out);
-			if(rv != nChan)
+			rv = fwrite(A1->data, 2*sizeof(float), A1->nChan, out);
+			if(rv != A1->nChan)
 			{
 				fprintf(stderr, "Problem writing.  Disk full?\n");
 
 				break;
 			}
+			++n0;
 		}
 		else if(c <= 0)
 		{
-			rv = writeBinaryHeader(&cH1, out);
+			rv = writeBinaryHeader(&A1->curHeader, out);
 			if(rv != 0)
 			{
 				fprintf(stderr, "Problem writing.  Disk full?\n");
@@ -324,17 +510,18 @@ int main(int argc, char **argv)
 				break;
 			}
 			
-			rv = fwrite(data1, 2*sizeof(float), nChan, out);
-			if(rv != nChan)
+			rv = fwrite(A1->data, 2*sizeof(float), A1->nChan, out);
+			if(rv != A1->nChan)
 			{
 				fprintf(stderr, "Problem writing.  Disk full?\n");
 
 				break;
 			}
+			++n1;
 		}
 		else
 		{
-			rv = writeBinaryHeader(&cH2, out);
+			rv = writeBinaryHeader(&A2->curHeader, out);
 			if(rv != 0)
 			{
 				fprintf(stderr, "Problem writing.  Disk full?\n");
@@ -342,96 +529,41 @@ int main(int argc, char **argv)
 				break;
 			}
 			
-			rv = fwrite(data2, 2*sizeof(float), nChan, out);
-			if(rv != nChan)
+			rv = fwrite(A2->data, 2*sizeof(float), A2->nChan, out);
+			if(rv != A2->nChan)
 			{
 				fprintf(stderr, "Problem writing.  Disk full?\n");
 
 				break;
 			}
+			++n2;
 		}
 
 		if(c <= 0)
 		{
-			copyBinaryHeader(&lH1, &cH1);
-			rv = readBinaryHeader(&cH1, in1);
-			if(rv == -1)
+			rv = readAverageInput(A1);
+			if(rv < 0)
 			{
 				break;
 			}
-			if(rv != 0)
-			{
-				fprintf(stderr, "Error reading header1 num %d: %d\n", n1, rv);
-				break;
-			}
-			rv = fread(data1, 2*sizeof(float), nChan, in1);
-			if(rv != nChan)
-			{
-				fprintf(stderr, "Cannot read data1 array %d: %d/%d complex values read\n", n1, rv, nChan);
-				break;
-			}
-
-			//printf("1 : %8d : ", n1);
-			//printBinaryHeaderShort(&cH1);
-
-			rv = compareBinaryHeaders(&lH1, &cH1);
-			if(rv >= 0)
-			{
-				printf("Weird: last two header1s were in the wrong order; cmp=%d:\n", rv);
-				printf("  1 : %8d : ", n1-1);
-				printBinaryHeaderShort(&lH1);
-				printf("  1 : %8d : ", n1);
-				printBinaryHeaderShort(&cH1);
-
-				break;
-			}
-
-			++n1;
 		}
 
 		if(c >= 0)
 		{
-			copyBinaryHeader(&lH2, &cH2);
-			rv = readBinaryHeader(&cH2, in2);
-			if(rv == -1)
+			rv = readAverageInput(A2);
+			if(rv < 0)
 			{
 				break;
 			}
-			if(rv != 0)
-			{
-				fprintf(stderr, "Error reading header2 num %d: %d\n", n2, rv);
-				break;
-			}
-			rv = fread(data2, 2*sizeof(float), nChan, in2);
-			if(rv != nChan)
-			{
-				fprintf(stderr, "Cannot read data2 array %d: %d/%d complex values read\n", n2, rv, nChan);
-				break;
-			}
-
-			//printf("2 : %8d : ", n2);
-			//printBinaryHeaderShort(&cH2);
-
-			rv = compareBinaryHeaders(&lH2, &cH2);
-			if(rv >= 0)
-			{
-				printf("Weird: last two header2s were in the wrong order; cmp=%d:\n", rv);
-				printf("  2 : %8d : ", n2-1);
-				printBinaryHeaderShort(&lH2);
-				printf("  2 : %8d : ", n2);
-				printBinaryHeaderShort(&cH2);
-
-				break;
-			}
-
-			++n2;
 		}
 	}
 
-	free(data1);
-	free(data2);
-	fclose(in1);
-	fclose(in2);
+	printf("%d records averaged from both files\n", n0);
+	printf("%d records copied from first file\n", n1);
+	printf("%d records copied from second file\n", n2);
+
+	deleteAverageInput(A1);
+	deleteAverageInput(A2);
 	fclose(out);
 
 	return 0;
