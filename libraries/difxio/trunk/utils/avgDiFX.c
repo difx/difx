@@ -8,6 +8,23 @@
 #include "difx_input.h"
 #include "parsevis.h"
 
+const char program[] = "avgDiFX";
+const char author[] = "Walter Brisken <wbrisken@nrao.edu>";
+const char version[] = "0.1";
+const char verdate[] = "2015 Nov 08";
+
+void usage(const char *pgm)
+{
+	fprintf(stderr, "\n%s %s  %s  %s\n\n", program, version, author, verdate);
+	fprintf(stderr, "A program to average visibility data from two difx filesets\n\n");
+	fprintf(stderr, "Usage: <Difx Fileset 1> <Difx Fileset 2> <Output Difx Fileset>\n\n");
+	fprintf(stderr, "A file set is specified either by its .input file, or by the\n");
+	fprintf(stderr, "portion of the .input file before \".input\".\n\n");
+	fprintf(stderr, "The first two filesets must exist, have identical parameters,\n");
+	fprintf(stderr, "and should overlap in time.  The files from the first of these\n");
+	fprintf(stderr, "will be duplicated to form the scaffold for the output fileset\n\n");
+}
+
 typedef struct
 {
 	unsigned int sync;
@@ -271,7 +288,7 @@ AverageInput *openAverageInput(const char *filename)
 
 	if(G.gl_pathc != 1)
 	{
-		fprintf(stderr, "Need exactly one DIFX* file in %s; found %d\n", A->D->job->outputFile, G.gl_pathc);
+		fprintf(stderr, "Need exactly one DIFX* file in %s; found %d\n", A->D->job->outputFile, (int)(G.gl_pathc));
 
 		globfree(&G);
 		deleteAverageInput(A);
@@ -343,31 +360,55 @@ int readAverageInput(AverageInput *A)
 	return 0;
 }
 
+/* copies, removing .input if need be */
+void arg2fileset(char *dest, const char *src, int length)
+{
+	int l;
+
+	snprintf(dest, length, "%s", src);
+
+	l = strlen(dest);
+	if(l > 6)
+	{
+		if(strcmp(dest+l-6, ".input") == 0)
+		{
+			dest[l-6] = 0;
+		}
+	}
+}
 
 int main(int argc, char **argv)
 {
 	char path[DIFXIO_FILENAME_LENGTH];
 	char outputFilename[DIFXIO_FILENAME_LENGTH];
+	char cmd[2*DIFXIO_FILENAME_LENGTH];
 	FILE *out;
 	int rv, c, i;
 	const char *p;
 	AverageInput *A1, *A2;
 	int n0=0, n1=0, n2=0;
+	char inputFileset1[DIFXIO_FILENAME_LENGTH] = "";
+	char inputFileset2[DIFXIO_FILENAME_LENGTH] = "";
+	char outputFileset[DIFXIO_FILENAME_LENGTH] = "";
 
-	if(argc < 4)
+	if(argc != 4)
 	{
-		fprintf(stderr, "Usage: <Difx Fileset 1> <Difx Fileset 2> <Output Difx Fileset>\n");
+		usage(argv[0]);
 
 		return EXIT_SUCCESS;
 	}
 
-	A1 = openAverageInput(argv[1]);
+	arg2fileset(inputFileset1, argv[1], DIFXIO_FILENAME_LENGTH);
+	arg2fileset(inputFileset2, argv[2], DIFXIO_FILENAME_LENGTH);
+	arg2fileset(outputFileset, argv[3], DIFXIO_FILENAME_LENGTH);
+
+	A1 = openAverageInput(inputFileset1);
 	if(!A1)
 	{
 		return EXIT_FAILURE;
 	}
 
-	A2 = openAverageInput(argv[2]);
+	A2 = openAverageInput(inputFileset2);
 	if(!A2)
 	{
 		deleteAverageInput(A1);
@@ -412,7 +453,7 @@ int main(int argc, char **argv)
 	printf("Second file, first ");
 	printBinaryHeaderLong(&A2->curHeader);
 
-	if(argv[3][0] == '/')
+	if(outputFileset[0] == '/')
 	{
 		path[0] = 0;
 	}
@@ -437,15 +478,13 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	snprintf(outputFilename, DIFXIO_FILENAME_LENGTH, "%s/%s.difx/%s", path, argv[3], p); 
+	snprintf(outputFilename, DIFXIO_FILENAME_LENGTH, "%s/%s.difx/%s", path, outputFileset, p); 
 
-printf("Output file name = %s\n", outputFilename);
-
-	snprintf(A1->D->job->inputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.input", path, argv[3]);
-	snprintf(A1->D->job->calcFile, DIFXIO_FILENAME_LENGTH, "%s/%s.calc", path, argv[3]);
-	snprintf(A1->D->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s/%s.threads", path, argv[3]);
-	snprintf(A1->D->job->imFile, DIFXIO_FILENAME_LENGTH, "%s/%s.im", path, argv[3]);
-	snprintf(A1->D->job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", path, argv[3]);
+	snprintf(A1->D->job->inputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.input", path, outputFileset);
+	snprintf(A1->D->job->calcFile, DIFXIO_FILENAME_LENGTH, "%s/%s.calc", path, outputFileset);
+	snprintf(A1->D->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s/%s.threads", path, outputFileset);
+	snprintf(A1->D->job->imFile, DIFXIO_FILENAME_LENGTH, "%s/%s.im", path, outputFileset);
+	snprintf(A1->D->job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", path, outputFileset);
 
 	writeDifxCalc(A1->D);
 	writeDifxInput(A1->D);
@@ -462,10 +501,13 @@ printf("Output file name = %s\n", outputFilename);
 		return EXIT_FAILURE;
 	}
 
+	snprintf(cmd, 2*DIFXIO_FILENAME_LENGTH, "cp -f %s.difx/PCAL* %s.difx", inputFileset1, outputFileset);
+	system(cmd);
+
 	out = fopen(outputFilename, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Cannot open %s for write\n", argv[3]);
+		fprintf(stderr, "Cannot open %s for write\n", outputFileset);
 
 		deleteAverageInput(A1);
 		deleteAverageInput(A2);
