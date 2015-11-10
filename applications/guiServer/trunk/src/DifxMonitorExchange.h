@@ -152,6 +152,9 @@ namespace guiServer {
         //!  Respond to a GUI instruction to close this connection.
         //-----------------------------------------------------------------------------
         void closeConnection() {
+            _keepGoing = false;
+            _receiveActive = false;
+            sleep( 2 );
             if ( _monitorServerClient != NULL )
                 delete _monitorServerClient;
             _monitorServerClient = NULL;
@@ -166,7 +169,6 @@ namespace guiServer {
         //-----------------------------------------------------------------------------
         void inputFilePath( char* data, const int nBytes ) {
 	        char message[DIFX_MESSAGE_LENGTH];
-            printf( "input file path is \"%s\"\n", data );
 
             //  See if the "monitor_server" program is running (with the proper port).  If not,
             //  start it up.
@@ -212,10 +214,8 @@ namespace guiServer {
             //  At the moment the port is hard-wired to 52300 which might not be a perfect
             //  long term solution.  The host is the local host (so I'm using the loopback
             //  address).
-            printf( "making client connection to monitor_server\n" );
             _monitorServerClient = new network::TCPClient( "127.0.0.1", 52300 );
             _monitorServerClient->waitForConnect();
-            printf( "connection established!\n" );
             if ( _monitorServerClient->connected() ) {
                 int status;
                 _monitorServerClient->reader( (char*)(&status), sizeof( int ) );
@@ -419,15 +419,12 @@ namespace guiServer {
         //!  Respond to a GUI product request.
         //-----------------------------------------------------------------------------
         void endProductRequests( char* data, const int nBytes ) {
-            printf( "at end of requests...there are %d\n", (int)_productList.size() );
             if ( _productList.size() > 0 ) {
                 //  See if we need to make a new connection to the monitor server.  This might happen if a request
                 //  was already made, run through, and timed out.
                 if ( _monitorServerClient == NULL ) {
-                    printf( "making client connection\n" );
                     _monitorServerClient = new network::TCPClient( "127.0.0.1", 52300 );
                     _monitorServerClient->waitForConnect();
-                    printf( "connection established!\n" );
                     if ( _monitorServerClient->connected() ) {
                         int status;
                         _monitorServerClient->reader( (char*)(&status), sizeof( int ) );
@@ -523,7 +520,9 @@ namespace guiServer {
                 //  Read the next block of visibility data.  We put a timeout on this to kill
                 //  the thread when the user isn't doing anything.
                 _monitorServerClient->setTimeout( 1 );
-                int ret = _monitorServerClient->reader( (char*)&timeStamp, sizeof( int ) );
+                int ret = 0;
+                if ( _keepGoing )
+                    ret = _monitorServerClient->reader( (char*)&timeStamp, sizeof( int ) );
                 _monitorServerClient->setTimeout();
                 //  The thread timeout scheme is "activated" by the first data to be received.
                 //  It uses the "model" count (three times the time between the first two data blocks)
@@ -534,7 +533,8 @@ namespace guiServer {
                     if ( threadTimeoutActive ) {
                         ++threadTimeoutCount;
                         if ( threadTimeoutCount > 3 * threadTimeoutModelCount ) {
-                            _guiClient->formatPacket( WARNING, "real-time monitor thread has timed out after %d seconds of inactivity", 2 * threadTimeoutModelCount );
+                            if ( _keepGoing )
+                                _guiClient->formatPacket( WARNING, "real-time monitor thread has timed out after %d seconds of inactivity", 2 * threadTimeoutModelCount );
                             _visConnectionOperating = false;
                         }
                     }
@@ -841,7 +841,6 @@ namespace guiServer {
                     }
                 }
             }
-            printf( "stopping visibility monitor\n" );
             if ( vis64 != NULL )
                 ippsFree( vis64 );
             if ( amp != NULL )

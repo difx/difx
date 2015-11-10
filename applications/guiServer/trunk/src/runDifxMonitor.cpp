@@ -47,13 +47,10 @@ void ServerSideConnection::runDifxMonitor( DifxMonitorInfo* monitorInfo ) {
     
     }
 
-    printf( "closing the monitor socket\n" );
     exchange->closeConnection();
-    printf( "deleting packet exchange\n" );
-    sleep( 1 );
+    sleep( 2 );
     delete client;
     delete exchange;
-    printf( "exiting monitor thread\n" );
     
 }
 
