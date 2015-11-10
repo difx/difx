@@ -1,0 +1,341 @@
+#!/usr/bin/env python
+################################################################################
+#\defgroup difxjobcontrol DiFXJobControl
+#
+#\brief Run a job on the DiFX server with limited controls.
+#
+#  Usage:  <b><code>DiFXJobControl [options] [.input path]</code></b>
+#
+#  <i>DiFXJobControl</i> attempts to run a single job on the DiFX server.  The job is
+#  identified by the complete path to its associated <code>.input</code> file on
+#  the server - this is the only required argument.
+#
+#  <i>DiFXJobControl</i> allows you to specify the head node, data source nodes,
+#  processors, and threads used to run the job (if you specify one, you must specify
+#  them all!).  Left to its own devices it will attempt to use <code>.machines</code>
+#  and <code>.threads</code> files, if they exist.
+#
+#  This program is meant to show how to use the DiFXJobControl.Client class to
+#  run a job.  However it is by no means a complete test of that class or its
+#  capabilities.
+#
+#  <a name=DIFXJOBCONTROL_ARGS><h3>Command Line Arguments</h3></a>
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-d, --datasource <i>NODE</i></b></pre> <td>Add <i>NODE</i> to the list of data sources used to process the job.
+#                                                          If data sources are included head node, processors and threads must
+#                                                          be specified as well.  This argument can be used multiple times.
+#  <tr><td><pre><b>-D, --difx <i>VERSION</i></b></pre>    <td>Run using a specific DiFX version.  If not specified
+#                                                          the value of the DIFX_VERSION environment variable will
+#                                                          be used.  Failing that, "DIFX-DEVEL" will be used.
+#  <tr><td><pre><b>-h, --help</b></pre>                   <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>   <td>Use <i>NAME</i> as the host of the  DiFX Server program.
+#                                                          Default is to use DIFX_CONTROL_HOST environment variable.
+#  <tr><td><pre><b>-m, --manager <i>NODE</i></b></pre> <td>Make <i>NODE</i> the head node used for the job.
+#                                                          If the head node is specified processors, data sources and threads must
+#                                                          be specified as well.
+#  <tr><td><pre><b>-p, --processor <i>NODE</i></b></pre> <td>Add <i>NODE</i> to the list of processors used for the job.
+#                                                          If processors are included head node, data sources and threads must
+#                                                          be specified as well.  The total number of thread specifications
+#                                                          must match the number of processor specifications.  This argument can be used multiple times.
+#  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>       <td>Use <i>PORT</i> as the TCP port to communicated with the DiFX Server.
+#                                                          Default is to use DIFX_CONTROL_PORT environment variable.
+#  <tr><td><pre><b>-r, --realtime</b></pre>               <td>Turn on the real time monitor - this will produce a list of real time
+#                                                          "products" from which the user will be prompted to select one or more.
+#  <tr><td><pre><b>-t, --threads <i>NUM</i></b></pre> <td> Use <i>NUM</i> threads for the corresponding processor.
+#                                                          If threads are included head node, data sources and processors must
+#                                                          be specified as well.  The total number of thread specifications
+#                                                          must match the number of processor specifications.  This argument can be used multiple times.
+#  </table
+#
+################################################################################
+program = 'DiFXls'
+version = '0.1'
+author  = 'John Spitzak'
+verdate = '20151028'
+
+import sys
+import time
+import DiFXJobControl
+import DiFXControl
+
+difx = None
+
+def messageCallback( argstr ):
+	print str( argstr )
+	
+def warningCallback( argstr ):
+	print "WARNING: " + str( argstr )
+	
+def errorCallback( argstr ):
+	print "ERROR: " + str( argstr )
+	
+def ampCB():
+	print "got amplitude callback"
+	print difx.amplitude
+	print difx.amplitudeIProduct, difx.amplitudeNChannels, difx.amplitudeTimeStamp, difx.amplitudeIntegrationTime
+
+def phaseCB():
+	print "got phase callback"
+	print difx.phase
+	print difx.phaseIProduct, difx.phaseNChannels, difx.phaseTimeStamp, difx.phaseIntegrationTime
+
+def lagCB():
+	print "got lag callback"
+	print difx.lag
+	print difx.lagIProduct, difx.lagHalfSize, difx.lagTimeStamp, difx.lagIntegrationTime
+	print difx.lagDelay, difx.lagSnr
+
+def meanLagCB():
+	#  Get the frequency for these values...
+	freq = difx.productByIndex()[difx.meanLagIProduct][1]
+	print freq, "Delay:", difx.meanLagDelay, "SNR:", difx.meanLagSnr
+
+#===============================================================================
+#  Class used to respond to callbacks.
+#===============================================================================
+class Responder:
+	def __init__( self ):
+		self.jobName = None
+		self.jobProgress = 0
+
+	#---------------------------------------------------------------------------	
+	#  Callback triggered when the monitoring client receives a new DiFX message.
+	#---------------------------------------------------------------------------	
+	def difxRelayCallback( self, data ):
+		#  Parse the message.
+		xmlDat = DiFXControl.parseXML( data )
+		#  See if this is a message type we are interested in.
+		if xmlDat.typeStr == "DifxStatusMessage":
+			#  Make sure the identifier (job name) is one we are interested in.
+			if self.jobName != None and xmlDat.identifier == self.jobName:
+				#  Compute a progress value.  The data for this might not be there, so we
+				#  have some default situations.
+				try:
+					self.jobProgress = 100.0 * ( float( xmlDat.visibilityMJD ) - float( xmlDat.jobstartMJD ) ) / ( float( xmlDat.jobstopMJD ) - float( xmlDat.jobstartMJD ) )
+				except:
+					if xmlDat.state == "Done" or xmlDat.state == "MpiDone":
+						self.jobProgress = 100
+					elif xmlDat.state == "Ending":
+						#  Ending state is annoying - use the job's known progress
+						pass
+					else:
+						self.jobProgress = 0
+				print xmlDat.state + "   " + str( int( self.jobProgress ) ) + "% complete"
+
+#===============================================================================
+#  MAIN
+#===============================================================================
+host = None
+port = None
+dataSources = []
+processors = []
+threads = []
+headNode = None
+inputFile = None
+bail = False
+realtime = False
+
+#  Locate a "default" DiFX Version from environment variables.  User may change this
+#  with command line arguments.
+try:
+	DiFXVersion = os.environ["DIFX_VERSION"]
+except:
+	DiFXVersion = "DIFX-DEVEL"
+
+try:
+	i = 1
+	otherArgs = []
+	argStr = None
+	pathStr = None
+	while i < len( sys.argv ):
+		#  Check against legal argument types.  Anything we don't recognize is assumed
+		#  to be an argument or a path.
+		if sys.argv[i] in [ "-h", "--help" ]:
+			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+			print "Run a job on the DiFX software correlator using its .input file path."
+			print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
+			print ""
+			print "Options can include:"
+			print ""
+			print "   --datasource NODE"
+			print "   -d NODE    Add a data source node to the list of such sources."
+			print ""
+			print "   --difx VERSION"
+			print "   -D VERSION Run using a specific DiFX version.  If not specified"
+			print "              the value of the DIFX_VERSION environment variable will"
+			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
+			print ""
+			print "   --help"
+			print "   -h         Print this help information and quit."
+			print ""
+			print "   --hostname NAME"
+			print "   -H NAME    Use NAME as the host of the difxServer program."
+			print "              Default is to use DIFX_CONTROL_HOST environment variable."
+			print ""
+			print "   --manager NODE"
+			print "   -m NODE    Use NODE as the \"head node\" (or \"manager\" node)"
+			print ""
+			print "   --processor NODE"
+			print "   -p NODE    Add a processor node to the list of processors.  There"
+			print "              must be a corresponding threads entry."
+			print ""
+			print "   --port PORT"
+			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
+			print "              Default is to use DIFX_CONTROL_PORT environment variable."
+			print ""
+			print "   --realtime"
+			print "   -r         Turn on the real time monitor - this will produce a list of"
+			print "              real time \"products\" from which the user will be prompted"
+			print "              to select one or more."
+			print ""
+			print "   --threads NUM"
+			print "   -t NUM     Assign NUM threads to the corresponding processor entry."
+			print ""
+			exit( 0 )
+		elif sys.argv[i] in [ "-d", "--datasource" ]:
+			dataSources.append( sys.argv[i+1] )
+			i = i + 1
+		elif sys.argv[i] in [ "-p", "--processor" ]:
+			processors.append( sys.argv[i+1] )
+			i = i + 1
+		elif sys.argv[i] in [ "-t", "--threads" ]:
+			threads.append( int( sys.argv[i+1] ) )
+			i = i + 1
+		elif sys.argv[i] in [ "-H", "--hostname" ]:
+			host = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-m", "--manager" ]:
+			headNode = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-D", "--difx" ]:
+			DiFXVersion = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-P", "--port" ]:
+			port = int( sys.argv[i+1] )
+			i = i + 1
+		elif sys.argv[i] in [ "-r", "--realtime" ]:
+			realtime = True
+			i = i + 1
+		else:
+			#  The final argument is assumed to be the .input file name
+			inputFile = sys.argv[i]
+			i = i + 1
+	
+except RuntimeError:
+	print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
+	exit( 0 )
+	
+#  Check a few things...
+if inputFile == None:
+	print "ERROR: .input file required to identify the job"
+	bail = True
+	
+if len( dataSources ) > 0 or headNode != None or len( processors ) > 0:
+	problem = False
+	if len( processors ) == 0:
+		print "ERROR: No processors included!"
+		problem = True
+	if len( dataSources ) == 0:
+		print "ERROR: No data sources included!"
+		problem = True
+	if headNode == None:
+		print "ERROR: Head node not defined!"
+		problem = True
+	if problem:
+		print "ERROR: ALL datasources, processors and the head node must be specified if any of them are."
+		bail = True
+	if len( processors ) != len( threads ):
+		print "ERROR: There must be one thread specification for each processor specification."
+		bail = True
+	
+if bail:
+	print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
+	exit( 0 )
+	
+difx = DiFXJobControl.Client()
+difx.connect()
+difx.monitor()
+#  Check the existence of the .input file.
+if difx.ls( inputFile ) == None:
+	print "ERROR: .input file not found"
+	difx.close()
+	exit( 0 )
+difx.version( DiFXVersion )
+#difx.inputFile( "/data1/correlator/guiTest/newTest/Production_Pass/newTest_01.input" )
+difx.inputFile( inputFile )
+#  If machine specifications were included on the command line, use them.
+if headNode != None:
+	difx.clearDataSources()
+	difx.clearProcessors()
+	difx.headNode( headNode )
+	for node in dataSources:
+		difx.addDataSource( node )
+	i = 0;
+	for node in processors:
+		difx.addProcessor( node, threads[i] )
+		i += 1
+	#  Not sure if we should always do this!
+	difx.testProcessors( True )
+	#  But this is certainly necessary
+	difx.defineMachines()
+else:
+	#  Make sure threads and machines files exist.
+	if difx.ls( inputFile.replace( ".input", ".machines" ) ) == None:
+		print "ERROR: .machines file \"" + inputFile.replace( ".input", ".machines" ) + "\" does not exist"
+		bail = True
+	if difx.ls( inputFile.replace( ".input", ".threads" ) ) == None:
+		print "ERROR: .threads file \"" + inputFile.replace( ".input", ".threads" ) + "\" does not exist"
+		bail = True
+	if bail:
+		difx.close()
+		exit( 0 )
+	#  Get the existing machines specifications.
+	difx.getMachines()
+difx.messageCallback( messageCallback )
+difx.warningCallback( warningCallback )
+difx.errorCallback( errorCallback )
+difx.messageSelection( ( "DifxStatusMessage", ) )
+responder = Responder()
+difx.addRelayCallback( responder.difxRelayCallback )
+difx.relayPackets()
+#  Find the job name
+responder.jobName = inputFile[inputFile.rfind( "/" ) + 1:inputFile.rfind( "." )]
+if realtime:
+	difx.startMonitor()
+	monScans = difx.getMonitorProducts()
+	if monScans != None:
+		print "The following products are available for real time monitoring:"
+		for scan in monScans:
+			print "", scan[0]
+			for baseline in scan[7]:
+				if len( baseline[3] ) > 0:
+					print "\t", baseline[0] + " -", baseline[1], "frequencies"
+					for frequency in baseline[3]:
+						print frequency[0], "\t", frequency[1]
+				if len( baseline[4] ) > 0:
+					print "\tAutocorrelations (frequency, telescope)"
+					for ac in baseline[4]:
+						print ac[0], "\t", ac[2], ac[1]
+	l = raw_input( "select products: " )
+	#  Assuming the user typed something...
+	if len( l.strip() ) > 0:
+		#  split by commas
+		productList = []
+		for product in l.split( "," ):
+			productList.append( int( product.strip() ) )
+		if len( productList ) > 0:
+			difx.requestProducts( productList )
+			difx.runWithMonitor( True )
+			difx.monitorDataCallbacks( None, None, None, None, None, meanLagCB )
+#  Make the wait time huge to avoid a timeout while the job is starting
+difx.waitTime( 300.0 )
+difx.start()
+print "start returned!"
+#time.sleep( 5 )
+if realtime:
+	print "stop the monitor"
+	difx.stopMonitor()
+	time.sleep( 4 )
+difx.close()
+

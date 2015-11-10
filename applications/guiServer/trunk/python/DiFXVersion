@@ -1,10 +1,53 @@
 #!/usr/bin/env python
 ################################################################################
+#\defgroup difxversion DiFXVersion
 #
-#  DiFXVersion
-#
-#  Print version information for the DiFX server, available DiFX software
+#\brief Print version information for the DiFX server, available DiFX software
 #  versions, and other stuff.
+#
+#  Usage:  <b><code>DiFXVersion [options]</code></b>
+#
+#  <i>DiFXVersion</i> will display the DiFX version that will be used to run
+#  all DiFX processes on the server.  It can also be used to:
+#
+#  <ul>
+#  <li>Display all DiFX versions the server has access to (a version can be
+#      selected through the DiFXControl.Client class using the <b>version()</b>
+#      function).
+#  <li>Display all DiFX-related environment variables as seen by the server -
+#      these will determine how DiFX will be run.
+#  <li>Display <i>ALL</i> environment variables as veiwed by the DiFX server.
+#  </ul>
+#
+#  Control of the DiFX versions (both obtaining a proper list of them and setting
+#  which version is used by the DiFX server) is dependent on the existence of
+#  "generic run" files in the <code>$DIFX_BASE/bin</code> directory.  These files,
+#  which take the form:
+#<pre>        $DIFX_BASE/bin/rungeneric.{VERSION_NAME}</pre>
+#  are
+#  scripts that export a bunch of version-specific environment settings and then
+#  execute all arguments passed to them, such that:
+#<pre>        $DIFX_BASE/bin/rungeneric.DIFX-DEVEL foo</pre>
+#  will execute the "DIFX-DEVEL" version of the application "foo".  The setup
+#  files may or may not be created as part of the DiFX installation process.
+#  At USNO the <a href="https://safe.nrao.edu/wiki/bin/view/HPC/UsnoDifxInstallation">difxbuild</a>
+#  process is used for all DiFX build/installs, and it is known to create setup
+#  files properly.
+#
+#  <h3>Command Line Arguments</h3>
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-d, --difx</b></pre>                   <td>Show DiFX-related environment variables under which the server
+#                                                            (and thus DiFX applications) will be run.
+#  <tr><td><pre><b>-e, --env</b></pre>                    <td>Show <i>ALL</i> environment variables under which the server
+#                                                            (and thus DiFX applications) will be run.
+#  <tr><td><pre><b>-h, --help</b></pre>                   <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>   <td>Use <i>NAME</i> as the host of the DiFX server program.
+#                                                          Default is to use DIFX_CONTROL_HOST environment variable.
+#  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>       <td>Use <i>PORT</i> as the TCP port to communicated with the DiFX server.
+#                                                          Default is to use DIFX_CONTROL_PORT environment variable.
+#  <tr><td><pre><b>-v, --versions</b></pre>               <td>Show available DiFX versions.
+#  </table>
 #
 ################################################################################
 program = 'DiFXVersion'

@@ -1,9 +1,38 @@
 #!/usr/bin/env python
 ################################################################################
+#\defgroup difxls DiFXls
 #
-#  DiFXls
+#\brief Run a simple "ls" file operation on the DiFX server.
 #
-#  Run a simple "ls" file operation on the DiFX server.
+#   Usage:  <b><code>DiFXls [ls arguments] [path]</code></b>
+#
+#   <i>DiFXls</i> can be used to run an <i>ls</i> command on the DiFX server with an
+#  (almost) complete set of <i>ls</i> arguments.  The returned output will be
+#  identical to that which would be seen if running from the
+#  command line as the DiFX user (the user running the server).
+#
+#  The final argument to <i>DiFXls</i> is interpreted as a path.  Any preceding
+#  arguments that are not recoginized as <a href=#DIFXLS_ARGS>DiFXls-specific arguments</a> are passed
+#  verbatim to the <i>ls</i> command on the server.  Running
+#  <i>DiFXls</i> without any arguments at all also works.
+#
+#  <a name=DIFXLS_ARGS><h3>Command Line Arguments Not Passed to <i>ls</i></h3></a>
+#
+#  <i>DiFXls</i> intercepts a small number of command line arguments for its own
+#  purposes (all others are sent to the server as arguments to the <i>ls</i>
+#  command).  Some of these override <i>ls</i> arguments, including -D, -h, -H,
+#  and -P.  Hopefully this does not amount to a critical loss of functionality.
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-D, --difx <i>VERSION</i></b></pre>    <td>Run using a specific DiFX version.  If not specified
+#                                                          the value of the DIFX_VERSION environment variable will
+#                                                          be used.  Failing that, "DIFX-DEVEL" will be used.
+#  <tr><td><pre><b>-h, --help</b></pre>                   <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>   <td>Use <i>NAME</i> as the host of the difxServer program.
+#                                                          Default is to use DIFX_CONTROL_HOST environment variable.
+#  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>       <td>Use <i>PORT</i> as the TCP port to communicated with the difxServer.
+#                                                          Default is to use DIFX_CONTROL_PORT environment variable.
+#  </table
 #
 ################################################################################
 program = 'DiFXls'
@@ -26,7 +55,7 @@ port = None
 try:
 	DiFXVersion = os.environ["DIFX_VERSION"]
 except:
-	DiFXVersion = "DIFX_DEVEL"
+	DiFXVersion = "DIFX-DEVEL"
 
 try:
 	i = 1
@@ -46,7 +75,7 @@ try:
 			print "   --difx VERSION"
 			print "   -D VERSION Run using a specific DiFX version.  If not specified"
 			print "              the value of the DIFX_VERSION environment variable will"
-			print "              be used.  Failing that, \"DIFX_DEVEL\" will be used."
+			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
 			print ""
 			print "   --help"
 			print "   -h         Print this help information and quit."

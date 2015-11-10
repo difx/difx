@@ -1,0 +1,148 @@
+#!/usr/bin/env python
+################################################################################
+#\defgroup difxgetfile DiFXgetFile
+#
+#\brief Get the contents of a file on the server.
+#
+#   Usage:  <b><code>DiFXgetFile [args] \<source path\> [destination path]</code></b>
+#
+#   <i>DiFXgetFile</i> obtains a single file from the DiFX server.  The content
+#  of the file will be directed to stdout, or alternatively to a specified path.
+#  When the path is specified stdout is used to give a text-based progress bar.
+#
+#  <h3>Command Line Arguments</h3>
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-h, --help</b></pre>                   <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>   <td>Use <i>NAME</i> as the host of the difxServer program.
+#                                                          Default is to use DIFX_CONTROL_HOST environment variable.
+#  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>       <td>Use <i>PORT</i> as the TCP port to communicated with the difxServer.
+#                                                          Default is to use DIFX_CONTROL_PORT environment variable.
+#  </table
+#
+################################################################################
+program = 'DiFXgetFile'
+version = '0.1'
+author  = 'John Spitzak'
+verdate = '20151019'
+
+import sys
+import time
+#import DiFXControl
+import DiFXFileTransfer
+
+difx = None
+
+#===============================================================================
+#  Callback for when a file transfer has made some progress.
+#===============================================================================
+def progress():
+	outStr = ""
+	totalchars = len( str( difx.fileSize ) )
+	shortchars = len( str( len( difx.fileData ) ) )
+	while shortchars < totalchars:
+		outStr += " "
+		shortchars += 1
+	outStr += str( len( difx.fileData ) ) + "/" + str( difx.fileSize ) + " ["
+	numOut = 80 * len( difx.fileData ) / difx.fileSize
+	fullCount = 0
+	while numOut > 0:
+		outStr += "X"
+		numOut -= 1
+		fullCount += 1
+	while fullCount < 80:
+		outStr += " "
+		fullCount += 1
+	outStr += "]\r"
+#	n = len( outStr )
+#	while n > 0:
+#		outStr += "\b"
+#		n -= 1
+	print outStr,
+	sys.stdout.flush()
+
+#===============================================================================
+#  Callback for when a file transfer is complete.
+#===============================================================================
+def finished():
+	progress()
+	print ""
+
+#===============================================================================
+#  MAIN
+#===============================================================================
+host = None
+port = None
+pathStr = None
+destination = None
+
+try:
+	i = 1
+	while i < len( sys.argv ):
+		#  Check against legal argument types.  Anything we don't recognize is assumed
+		#  to be an argument or a path.
+		if sys.argv[i] in [ "-h", "--help" ]:
+			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+			print "Gets the content of a specified path on the DiFX server, writing to an"
+			print "optional destination (or stdout)."
+			print "Usage: %s [options] <path> [destination]" % ( sys.argv[0] )
+			print ""
+			print "Options can include:"
+			print ""
+			print "   --help"
+			print "   -h         Print this help information and quit."
+			print ""
+			print "   --hostname NAME"
+			print "   -H NAME    Use NAME as the host of the difxServer program."
+			print "              Default is to use DIFX_CONTROL_HOST environment variable."
+			print ""
+			print "   --port PORT"
+			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
+			print "              Default is to use DIFX_CONTROL_PORT environment variable."
+			print ""
+			exit( 0 )
+		elif sys.argv[i] in [ "-H", "--hostname" ]:
+			host = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-D", "--difx" ]:
+			DiFXVersion = sys.argv[i+1]
+			i = i + 1
+		elif sys.argv[i] in [ "-P", "--port" ]:
+			port = int( sys.argv[i+1] )
+			i = i + 1
+		else:
+			#  The first non-argument item should be the path to the file we want to get,
+			#  the next is the (optional) destination.
+			if pathStr == None:
+				pathStr = sys.argv[i]
+			else:
+				destination = sys.argv[i]
+		i = i + 1
+		
+except RuntimeError:
+	print "Usage: %s [options] <path>" % ( sys.argv[0] )
+	exit( 0 )
+	
+#  Open a new connection to the difxServer using the DiFXFileTransfer package...
+difx = DiFXFileTransfer.Client()
+difx.connect( host, port )
+
+if difx.socketOK:
+	difx.monitor()
+	#  If destination has a value we can use stdout to make the nifty little text graph.
+	if destination != None:
+		difx.intervalCallback( progress )
+		difx.finalCallback( finished )
+	fileContent = difx.getFile( pathStr )
+	if fileContent == None:
+		print "No such file or directory"
+	else:
+		if destination == None:
+			print fileContent
+		else:
+			f = open( destination, "w" )
+			f.write( fileContent )
+			f.close()
+difx.close()
+
+

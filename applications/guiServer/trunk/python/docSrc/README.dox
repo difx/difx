@@ -1,0 +1,11 @@
+/**
+\mainpage DiFX Python Interface
+    
+    The DiFX Python Interface to the <i>guiServer</i>
+   application provides
+   Python classes that can be used to control and monitor DiFX processing. It includes a
+   number of
+   demonstration programs that use the interface.    
+
+
+*/

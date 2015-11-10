@@ -1,76 +1,60 @@
 #!/usr/bin/env python
 ################################################################################
-#\defgroup difxmkdir DiFXmkdir
+#\defgroup difxsendfile DiFXsendFile
 #
-#\brief Run a simple "mkdir" file operation on the DiFX server.
+#\brief Send data to a file location on the server.
 #
-#  Usage:  <b><code>DiFXmkdir [options] PATH</code></b>
+#   Usage:  <b><code>DiFXsendFile [args] [source path] \<destination path\></code></b>
 #
-#  <i>DiFXMkdir</i> can be used to make a new directory on the DiFX server.
-#  If given a complex path serveral levels of which don't exist it will create
-#  all necessary directories.  The directory is built on the server using a
-#  standard <i>mkdir</i> command which cannot be modified with any arguments.
-#
-#  The user running the DiFX server must have permission to perform the <i>mkdir</i>
-#  operation.
+#   <i>DiFXsendFile</i> sends data to a specified path destination on the DiFX
+#  server.  If two path names are given as arguments the first is assumed to
+#  be the full path of a local file from which data will be read, and the second
+#  is assumed to be its destination on the server.  If one path name is given
+#  as an argument it is interpreted as the destination and data are expected
+#  from stdin.
 #
 #  <h3>Command Line Arguments</h3>
 #
 #  <table border="0" cellspacing="25">
-#  <tr><td><pre><b>-D, --difx <i>VERSION</i></b></pre>    <td>Run using a specific DiFX version.  If not specified
-#                                                          the value of the DIFX_VERSION environment variable will
-#                                                          be used.  Failing that, "DIFX-DEVEL" will be used.
 #  <tr><td><pre><b>-h, --help</b></pre>                   <td>Print help information and quit.
 #  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>   <td>Use <i>NAME</i> as the host of the difxServer program.
 #                                                          Default is to use DIFX_CONTROL_HOST environment variable.
 #  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>       <td>Use <i>PORT</i> as the TCP port to communicated with the difxServer.
 #                                                          Default is to use DIFX_CONTROL_PORT environment variable.
-#  </table>
+#  </table
 #
 ################################################################################
-program = 'DiFXmkdir'
+program = 'DiFXsendFile'
 version = '0.1'
 author  = 'John Spitzak'
-verdate = '20150721'
+verdate = '20151021'
 
 import sys
 import time
-import DiFXControl
+import DiFXFileTransfer
+
+difx = None
 
 #===============================================================================
 #  MAIN
 #===============================================================================
 host = None
 port = None
-pathStr = None
-usageError = False
-
-#  Locate a "default" DiFX Version from environment variables.  User may change this
-#  with command line arguments.
-try:
-	DiFXVersion = os.environ["DIFX_VERSION"]
-except:
-	DiFXVersion = "DIFX-DEVEL"
+source = None
+destination = None
 
 try:
 	i = 1
-	otherArgs = []
-	argStr = None
-	pathStr = None
 	while i < len( sys.argv ):
 		#  Check against legal argument types.  Anything we don't recognize is assumed
-		#  to be part of a list of message types.
+		#  to be an argument or a path.
 		if sys.argv[i] in [ "-h", "--help" ]:
 			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "Creates a specified path on the DiFX software correlator."
-			print "Usage: %s [options] PATH" % ( sys.argv[0] )
+			print "Send data from either a named file or stdin to a destination file"
+			print "on the server."
+			print "Usage: %s [options] [source] <destination>" % ( sys.argv[0] )
 			print ""
 			print "Options can include:"
-			print ""
-			print "   --difx VERSION"
-			print "   -D VERSION Run using a specific DiFX version.  If not specified"
-			print "              the value of the DIFX_VERSION environment variable will"
-			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
 			print ""
 			print "   --help"
 			print "   -h         Print this help information and quit."
@@ -94,33 +78,35 @@ try:
 			port = int( sys.argv[i+1] )
 			i = i + 1
 		else:
-			otherArgs.append( sys.argv[i] )
+			#  There may only be a destination, or there might be a source and a
+			#  destination.  We'll sort that out below.
+			if source == None:
+				source = sys.argv[i]
+			else:
+				destination = sys.argv[i]
 		i = i + 1
 		
-	#  Last argument is the path name of the directory we are making.  The server
-	#  doesn't accept any arguments for mkdir, which is annoying.
-	for arg in otherArgs:
-		pathStr = arg
-
 except RuntimeError:
-	usageError = True
-	
-if pathStr == None:
-	usageError = True
-	
-if usageError:
-	print "Usage: %s [options] <path>" % ( sys.argv[0] )
+	print "Usage: %s [options] [source] <destination>" % ( sys.argv[0] )
 	exit( 0 )
 	
+#  If only one path was specified, it is a destination - so we have to fix our
+#  interpretation of the command line and read data from stdin.
+if destination == None:
+	destination = source
+	data = sys.stdin.read()
+else:
+	f = open( source, "r" )
+	data = f.read()
+	
 #  Open a new connection to the difxServer...
-difx = DiFXControl.Client()
-difx.connect( host = host, port = port )
+difx = DiFXFileTransfer.Client()
+difx.connect( host, port )
 
 if difx.socketOK:
 	difx.monitor()
-	difx.version( DiFXVersion )
-	difx.mkdir( pathStr )
-
+	fileSize = difx.sendFile( destination, data )
+	print "wrote " + str( fileSize ) + " bytes"
 difx.close()
 
 

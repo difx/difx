@@ -1,0 +1,848 @@
+/**
+\page howToUse How to Use the Interface
+
+\brief Instructions and Code Snippets Showing How to Use the DiFX Python Interface
+
+This document outlines how to use the DiFX Python Interface with Python coding examples.  Most
+of this code is swiped directly of the Example Programs - when and from where will be noted in the text.
+
+\tableofcontents
+
+\section theDifxServer The DiFX Server to Your Python Client
+
+The DiFX software package is primarily a collection of stand-alone processes originally designed to be run
+individually from the command line.  These processes communicate with each other to some degree, but there
+is no overall "controlling" process that runs them all.  
+
+The <i>guiServer</i> process was created as a server for DiFX GUI clients.  Using a simple communications
+protocol based on one or more TCP connections, <i>guiServer</i> acts on instructions from the GUI to
+execute different DiFX processes (often using <i>system()</i> commands) and reports their results.  The
+Python DiFX Interface utilizes this same protocol, appearing to <i>guiServer</i> like a GUI client.
+
+As a consequence of this arrangement, <i>guiServer</i> must be running for the DiFX Python Interface
+to work.
+
+\subsection runningGuiServer Running guiServer
+
+The <i>guiServer</i> process is part of the DiFX source tree.  It is a C++ program that must be run on
+a system and under a user that has access to all data required for DiFX work, write permission in locations
+where DiFX processes need to write things, and execute permission for all DiFX processes as well as <i>mpirun</i>.
+
+The best place to run <i>guiServer</i> is on the "head node" of your DiFX cluster, using whatever user name
+you would use to run a DiFX process by hand (in the following examples this user will be called "oper").
+Assuming your DiFX environment variables have been set up properly, <i>guiServer</i> should run from the
+command line.  It will respond with the port number at which clients can connect.
+
+<pre>
+	oper@headnode DIFX-DEVEL ~> guiServer
+	server at port 50200
+	guiServer: wait for new client connection
+</pre>
+
+Alternatively you can specify the port number you want:
+
+<pre>
+	oper@headnode DIFX-DEVEL ~> guiServer 50400
+	server at port 50400
+	guiServer: wait for new client connection
+</pre>
+
+\section makingClientConnection Making a Client Connection
+
+Before doing anything, the DiFX Python Interface must make a client connection to <i>guiServer</i>.
+This is done using an instance of the DiFXControl.Client class.  The <i>connect()</i> method is
+used to make the connection.  It has two, optional arguments - a string containing the name of
+the host where <i>guiServer</i> is running (as it is addressed from where the client is running)
+and an integer representing the port number provided by <i>guiServer</i>.
+
+\code{.py}
+import DiFXControl
+
+difx = DiFXControl.Client()
+difx.connect( "headnode.difxcluster", 50400 )
+\endcode
+
+Your <i>guiServer</i> session will respond to this with the following (or something similar):
+
+<pre>
+	guiServer: client connection from address 127.0.0.1
+	guiServer: wait for new client connection
+</pre>
+
+If the hostname or port is not provided, or is set to <code>None</code>, the <i>connect()</i> method will
+employ some defaults.  If the hostname is not provided, it will use the value of the environment variable
+"DIFX_CONTROL_HOST".  Failing that, it will guess the hostname is "localhost".  If the port is omitted,
+the environment variables "DIFX_CONTROL_PORT" and "DIFX_MESSAGE_PORT" will be used, with 50401 serving as
+the final default of they don't exist.
+
+\subsection closing Closing the Client Connection
+
+When you are done with a client connection, it is best to close it.  This is done with the <i>close()</i>
+method:
+
+\code{.py}
+import DiFXControl
+
+difx = DiFXControl.Client()
+difx.connect( "headnode.difxcluster", 50400 )
+
+difx.close()
+\endcode
+
+The <i>guiServer</i> session will respond with:
+
+<pre>
+	127.0.0.1 disconnected
+</pre>
+
+\section runningTheMonitor Monitoring Communications from the Server
+
+The client connection to <i>guiServer</i> is two-way - in addition to allowing commands to be
+sent to the server, it allows the server to send data back (the server can also be set to
+relay the UDP communications between DiFX processes - see \ref difxMessages "DiFX UDP Messages").  
+Nominally the client ignores this
+communication, but the <i>monitor()</i> function can be used to start a DiFXControl.MonitorThread
+that consumes and appropriately distributes it.
+
+\code{.py}
+import DiFXControl
+
+difx = DiFXControl.Client()
+difx.connect( "headnode.difxcluster", 50400 )
+difx.monitor()
+\endcode
+
+\subsection whatThe Why Doesn't the Client Monitor Automatically?
+
+It would appear that monitoring communicaiton from the server is something the client would
+always want to do, which begs the question: why require the user to run the <i>monitor()</i> function
+by hand - why not just make it part of the <i>connect()</i> function?
+
+The reason is the DiFXControl.MonitorThread runs a <i>select()</i> on the TCP socket to respond
+to incoming data.  There are times when you might want to run your own <i>select()</i> on the socket,
+and the DiFXControl.MonitorThread would mess things up.  At the same time, you might want some of
+the functionality of the DiFXControl.MonitorThread - its ability to interpret the <i>guiServer</i>
+packet protocol and trigger callbacks for instance.  For these purposes there is a <i>passiveMonitor()</i>
+method which creates an instance of DiFXControl.MonitorThread but doesn't start it.  If you wish to
+do your own <i>select()</i>, the DiFXControl.Client <i>sock</i> variable gives you access to the
+TCP socket.
+
+\code{.py}
+import DiFXControl
+import select
+
+difx = DiFXControl.Client()
+difx.connect( "headnode.difxcluster", 50400 )
+difx.passiveMonitor()
+
+#  Run select yourself
+iwtd, owtd, ewtd = select.select( [difx.sock], [], [], .05 )
+
+#  Do stuff...
+\endcode
+
+\subsection relayPackets Collecting Relayed DiFX Communication
+
+A particular type of server-to-client communication is the relay of DiFX UDP packets.  Many of
+the DiFX processes use UDP broadcasts to report progress or status, and these packets can be
+intercepted by <i>guiServer</i> and relayed to the Python Interface.  This topic is complex
+enough that it is given its own section: \ref difxMessages "DiFX UDP Messages".
+
+\section environment Viewing (and Changing) Your DiFX Run Environment
+
+The DiFXControl.Client class can query <i>guiServer</i> to obtain information about its run environment
+that may influence how DiFX processes will be run.  In response to the DiFXControl.Client.versionRequest()
+method, <i>guiServer</i> will provide information about the user that is running it, the DiFX version
+it was run under and will run other DiFX processes under (not necessarily the same!), available DiFX
+versions, and evironment variable values.  All these data will be stored in class variables.
+
+\code{.py}
+import DiFXControl
+import time
+
+difx = DiFXControl.Client()
+difx.connect( "headnode.difxcluster", 50400 )
+difx.monitor()
+
+#  Send a request for version information.  Response is threaded so give it a second
+#  to complete.
+difx.versionRequest()
+time.sleep( 1.0 )
+
+#  Print results
+print "Server version:                   " + str( difx.serverVersion )
+print "DiFX will be run by user:         " + str( difx.serverUser )
+print "DiFX will run using version:      " + str( difx.versionPreference )
+\endcode
+
+The environment variables are stored as a dictionary list, where the environment variable name is
+the key to its value.  Here we print out the entire list which might be pretty long.
+
+\code{.py}
+#  Print the environment variables seen by guiServer.
+for key in difx.serverEnvironment.keys():
+    print key + " = " + difx.serverEnvironment[key]
+\endcode
+
+\subsection Using Different DiFX Versions
+
+Depending on how DiFX is installed on your system, you may have access to multiple versions of the software.  There
+are occasionally reasons why you would wish to run using one version or another.  <i>GuiServer</i> can run all DiFX
+processes using any available version as long as a specific structure is in place (this structure is installed
+automatically as part of the <a href="https://safe.nrao.edu/wiki/bin/view/HPC/UsnoDifxInstallation">difxbuild</a> 
+process, and possibly other installation procedures).
+
+For <i>guiServer</i> to run a given version, it must have access to a "rungeneric" file.  These are scripts stored
+in the path:
+<pre>
+$DIFX_BASE/bin/rungeneric.{VERSION_NAME}
+</pre>
+Each script sets up all required environment variables and whatever else needs to be done to execute a DiFX process
+using the given DiFX version.  <i>GuiServer</i> runs DiFX processes through the script.  For instance, to run
+the DiFX process <i>vex2difx</i> using version DIFX-DEVEL, <i>guiServer</i> will do the following:
+<pre>
+$DIFX_BASE/bin/rungeneric.DIFX_DEVEL vex2difx [args]
+</pre>
+
+This structure is a complexity, but it allows <i>guiServer</i> to run any version of DiFX that you have installed,
+and to switch between them with ease.  And you don't have to use it - <i>guiServer</i> will <i>try</i> to run this
+way, but if you don't have the proper "rungeneric" files in the right place, it will execute DiFX commands without
+any preceding script.
+
+<i>GuiServer</i> itself is version-dependent, but it is designed with this "version flexibility" in mind so most
+versions of <i>guiServer</i> should be able to run most versions of DiFX.  That being said, there is no guarantee
+that incompatibilities will not surface at some point.
+
+The DiFXControl.Client.versionRequest() call allows you to see the DiFX versions that <i>guiServer</i> has access to:
+
+\code{.py}
+#  Send a version request and wait a couple of seconds for it to complete
+difx.versionRequest()
+time.sleep( 2.0 )
+if len( difx.availableVersion ) > 0:
+    print "Available DiFX Versions:"
+    for ver in difx.availableVersion:
+        print str( ver )
+else:
+    print "No DiFX versions available to this server."
+\endcode
+
+You can then set your DiFX version at any time using the DiFXControl.Client.version() method.  Any subsequent DiFX 
+operations will use the version you set:
+
+\code{.py}
+#  Set the version to DIFX_DEVEL.
+difx.version( "DIFX_DEVEL" )
+
+#  do DiFX stuff...
+\endcode
+
+The DiFXControl.Client.version() method also queries the available versions and will not set
+the version you request unless it is available.
+
+\section simpleOperations Performing Simple File Operations
+
+<i>GuiServer</i> permits a limited number of simple file operations, including moving, removing, and
+creating new files and directories.  The user running <i>guiServer</i> must have permission to run
+these operations for them to succeed.  With the exception of \ref lsOperation "ls", these operations
+take place (and succeed or fail) silently (although failures will produce DiFX errors that can be
+collected via \ref relayPackets "relayed packets").
+
+It should be noted that in allowing these operations <i>guiServer</i> is opening what is potentially
+a gaping security hole - a TCP connection without password protection is being given permission to
+create, move, and delete files.  Argument lists to commands are terminated and limited in length, but are not examined for
+malicious activities.  This is possibly a candidate for a future fix, but for the moment <i>guiServer</i>
+depends on your DiFX cluster being in a fire-walled, protected network, surrounded by friendly scientists
+and operators.
+
+\subsection simpleCommands Simple Operations: mv, rm, mkdir, rmdir
+
+The <i>mv, rm, mkdir</i> and <i>rmdir</i> commands have specific functions within the DiFXControl.Client class
+that can be used to perform them.  The <i>rm()</i> function accepts arguments that are passed to the <i>rm</i>
+command on the server, the others do not accept any arguments.  The <i>mkdir</i> operation will create all
+missing levels of a specified path (equivalent to running "mkdir -p" on the command line).
+
+\code{.py}
+import DiFXControl
+
+difx = DiFXControl.Client()
+difx.connect( "headnode.difxcluster", 50400 )
+
+#  Make a new directory
+difx.mkdir( "/full/path/to/new/directory" )
+
+#  Remove the directory
+difx.rmdir( "/full/path/to/undesired/directory" )
+
+#  Remove a path (using -r argument)
+difx.rm( "/full/path/to/remove", "-r" )
+
+#  Move a file
+difx.mv( "/full/path/of/file", "/full/path/of/destination" )
+
+difx.close()
+\endcode
+
+\subsection lsOperation The ls Command
+
+The <i>ls</i> operation is slightly more complicated because it generates a response, and
+the response will come in an undetermined amount of time (hopefully quickly).  The DiFXControl.Client.ls()
+function utilizes the DiFXls.Client class to send the <i>ls</i> command and wait for a response (the length
+of the wait can be set using the DiFXControl.Client.waitTime() method).  The result of the <i>ls</i>
+operation is returned as a list of strings.  In this example, the <i>ls</i> operation is run with the
+"-l" argument - DiFXControl.Client.ls() accepts (almost) all normal <i>ls</i> arguments.
+
+\code{.py}
+import DiFXControl
+
+difx = DiFXControl.Client()
+difx.connect( "headnode.difxcluster", 50400 )
+difx.monitor()
+
+dirlist = difx.ls( "/full/path", "-l" )
+if dirlist == None:
+	print "No such file or directory"
+else:
+	for item in dirlist:
+		print item
+\endcode
+
+While the DiFXControl.Client.ls() is waiting, it isn't doing anything.  You may wish to accomplish other
+things during this wait, or change the process in other ways.  The DiFXls.Client class contains code that can
+be taken apart and rearranged to hopefully accomplish what you wish.
+
+\section feedback Collecting Information Provided by Running Processes
+
+The DiFXContol.Client class provides a number of callback structures that allow
+calling programs to monitor progress or become aware of problems.  They all
+require the same structure on the part of the calling program:
+	<ol>
+	<li>A function is defined to accept either zero or one arguments, depending on
+	    the callback type (see below).
+	<li>A callback request is added to the client.  Whenever the condition associated
+	    with the callback type is encountered, a call to the callback function will
+	    be made.
+	</ol>
+	
+Below is a code example that sets up a "message" type callback.
+
+\code{.py}
+#  Define a callback function for messages.  They expect one argument (that
+#  would be the message!)
+def myMessageCallback( argstr ):
+	print "Hey!  You have a message: " + argstr
+	
+#  Set message callback for subsequent DiFX processes
+difx.messageCallback( myMessageCallback )
+
+#  Do DiFX Stuff
+...
+\endcode
+
+The following callback "types" follow this structure.  To use them, replace the name of the type
+in the above code ("Message" or "message") with the name of the type you are interested in.  All
+types may be monitored at the same time.
+
+<dl>
+<dt>Message
+<dd>Provides information about running processes when they are running well, triggered when
+something of significance happens.  A string argument contains the message.
+<dt>Warning
+<dd>Triggered when something goes wrong in a process that (possibly) can be recovered from.
+Processing is continuing.  A string argument contains the warning.
+<dt>Error
+<dd>Triggered when something goes wrong in a process that (probably) necessitates killing it.
+Processing is (almost always) stopping.  A string argument contains the error.
+<dt>Timeout
+<dd>The DiFXControl.Client class maintains a "time out" interval after which it will give up
+waiting for a response from the server.  This function is called when that occurs.  No arguments.
+<dt>Interval
+<dd>This is called when some milestone of partial completion of a process is passed, for example
+a file transfer has moved a portion of the data.  No arguments are included, however the
+callback may indicate that there are new data settings that can be consulted to measure progress.
+<dt>Final
+<dd>Triggered when a process completes.  There are no arguments.  This callback is occasionally
+employed by the control classes internally, however only in methods that do not return until
+complete (so this shouldn't be a problem).
+</dl>
+
+You can also obtain information from running processes by monitoring DiFX message traffic.
+This traffic is far more cluttered, but also provides considerably more detail.  See the
+section on \ref messages "Monitoring DiFX Messages" for detail.
+
+\section fileTransfer Transfering File Data Between Client and Server
+
+The DiFXFileTransfer.Client class can be used to obtain the contents of files on
+the DiFX server and to create files on the server.  It inherits the DiFXControl.Client class
+and can also be called from that class.
+
+To get the contents of a file, the DiFXFileTransfer.Client.getFile() method can be used
+(DiFXControl.Client also has a method with the same name that does the same thing).
+
+\code{.py}
+#  New instance of the client...
+difx = DiFXFileTransfer.Client()
+difx.connect()
+difx.monitor()
+
+#  Get the file...
+fileStr = difx.getFile( "/full/path/to/the/file" )
+
+#  "fileStr" is a string that now contains the contents of the file
+...
+\endcode
+
+Sending file content follows a similar pattern using the DiFXFileTransfer.Client.sendFile() method.  The content is a string variable.
+
+\code{.py}
+#  Some data...
+fileData = "this is the file data"
+
+#  Send it
+difx.sendFile( "/full/path/to/the/newfile", fileData )
+\endcode
+
+The \ref difxgetfile "DiFXgetFile" and \ref difxsendfile "DiFXsendFile" example programs show this
+class is action.
+
+\section messages Monitoring DiFX Messages
+
+Many DiFX processes broadcast UDP messages when they run.  The <i>guiServer</i> process collects these
+broadcasts and sends them, if requested, to client connections.  The DiFX Python Interface can be used
+to gather and parse this traffic to monitor the health and performance of the DiFX cluster and running
+processes.
+
+To collect the DiFX Message traffic, the DiFXControl.Client class must be told to "relay" message traffic:
+\code{.py}
+#  New Client instance
+difx = DiFXControl.Client()
+
+#  Make connection to DiFX server
+difx.connect( ( "localhost", 50401 ) )
+
+#  Start the monitor thread
+difx.monitor()
+
+#  Tell the Client to relay UDP packets
+difx.relayPackets()
+\endcode
+
+A specific callback can be defined for relay data.  This function can call the DiFXControl.parseXML function,
+which returns a class containing the data for the DiFX Message.  The class type can be determined from the
+<i>typeStr</i> variable of the DiFXControl.XMLMessage class (which is the base class for all of the other
+classes that might be returned).
+\code{.py}
+def messageCallback( self, data ):
+	#  Parse the message.
+	xmlDat = DiFXControl.parseXML( data )
+	print "got message of type " + xmlDat.typeStr
+		
+difx.addRelayCallback( messageCallback )
+\endcode
+
+You can request to have only specific message types relayed (by default all are relayed).  This is more
+efficient than collecting every message type and throwing away those you don't want because the instruction
+to relay a subset of messages is passed to the server, so unwanted messages never become part of the relay
+traffic.  To do so, the DiFXControl.Client.messageSelection() method is passed a list of message
+types (in the form of strings):
+\code{.py}
+messageTypes = []
+messageTypes.append( "DifxAlertMessage" )
+messageTypes.append( "DifxStatusMessage" )
+difx.messageSelection( messageTypes )
+\endcode
+
+All DiFX broadcast message types are defined in "difxmessage.h" in the difxmessage directory under the
+DiFX source tree.  The following (possibly incomplete and probably not fully accurate) table lists 
+the different message types (using the name that can be used to select them with DiFXControl.Client.messageSelection(),
+the class provided by DiFXControl.parseXML(), and a description of what (I think) they are used for (this
+is where the inaccuracies might appear).
+
+Note that many of the message types were created (and are exclusively used for) communication with 
+<i>guiServer</i>.  These message types will probably <i>not</i> appear as UDP broadcasts.
+
+<table>
+<tr><td>DifxLoadMessage         <td>DiFXControl.DifxLoadMessage           <td>Transmitted by processors or Mark5's (from <i>mk5daemon</i>), shows CPU load, transmit and receive rate.
+<tr><td>DifxAlertMessage        <td>DiFXControl.DifxAlertMessage          <td>Transmits an "alert" associated with an <code>.input</code> file - presumably a running job.
+<tr><td>Mark5StatusMessage      <td>DiFXControl.Mark5StatusMessage        <td>Transmitted by Mark5 units (from <i>mk5daemon</i>), shows VNS's for mounted modules, scan number being worked on, etc.
+<tr><td>DifxStatusMessage       <td>DiFXControl.DifxStatusMessage         <td>Transmits the status of a running job (indentified by <code>.input</code> file name) including current MJD and start/stop MJDs (all of which allow you to get a rough completion percentage).
+<tr><td>DifxInfoMessage         <td>DiFXControl.DifxInfoMessage           <td>Contains a single piece of information in the form of a string.
+<tr><td>DifxDatastreamMessage   <td>  <i>not available</i>                <td>Definition appears to be missing in <code>difxmessage.h</code>.  Is this message in use?
+<tr><td>DifxCommand             <td>DiFXControl.DifxCommandMessage        <td>Contains a single command (which is just a string).
+<tr><td>DifxParameter           <td>DiFXControl.DifxParameter             <td>Transmits a single parameter name and value.
+<tr><td>DifxStart               <td>DiFXControl.DifxStart                 <td>Instructs <i>guiServer</i> to start a job using its <code>.input</code> file name.  
+<tr><td>DifxStop                <td>DiFXControl.DifxStop                  <td>Instructs <i>guiServer</i> to try to stop a running job using the <code>.input</code> file name.  I say "try" because it is often unsuccessful.
+<tr><td>Mark5VersionMessage     <td>DiFXControl.Mark5VersionMessage       <td>Contains information about a Mark5 unit - firmware versions, that sort of thing.
+<tr><td>Mark5ConditionMessage   <td>  <i>not available</i>                <td>Deprecated
+<tr><td>DifxTransientMessage    <td>DiFXControl.DifxTransientMessage      <td>Used to tell Mk5daemon to copy some data at the end of the correlation to a disk file.
+<tr><td>DifxSmartMessage        <td>DiFXControl.DifxSmartMessage          <td>Contains <i>S.M.A.R.T.</i> information for one disk in a Mark5 module. Typically 8 such messages will be needed to convey results from the conditioning of one module.
+<tr><td>Mark5DriveStatsMessage  <td>DiFXControl.Mark5DriveStatsMessage    <td>Transmits drive statistics for Mark5 modules - serial numbers, VSNs, etc.
+<tr><td>DifxDiagnosticMessage   <td>DiFXControl.DifxDiagnosticMessage     <td>Used to pass out diagnostic-type info like buffer states.
+<tr><td>DifxFileTransfer        <td>DiFXControl.DifxFileTransfer          <td>Uses <i>guiServer</i> to grab the contents of a file from the DiFX server or push content into a named file on the DiFX server.
+<tr><td>DifxFileOperation       <td>DiFXControl.DifxFileOperation         <td>Tells <i>guiServer</i> to perform operations such as <i>mkdir</i>, <i>rmdir</i>, <i>ls</i> and <i>rm</i>.
+<tr><td>DifxVex2DifxRun         <td>DiFXControl.DifxVex2DifxRun           <td>Instructs <i>guiServer</i> to run the DiFX application <i>vex2difx</i>, which will create <code>.input</code> files out of <code>.vex</code> and <code>.v2d</code> files.
+<tr><td>DifxMachinesDefinition  <td>DiFXControl.DifxMachinesDefinition    <td>Instructs <i>guiServer</i> to build <code>.machines</code> and <code>.threads</code> files associated with a particular <code>.input</code> file.  Developed for the GUI/guiServer interface.
+<tr><td>DifxGetDirectory        <td>DiFXControl.DifxGetDirectory          <td>Starts a session with <i>guiServer</i> to obtain the directory for a Mark5 module.
+<tr><td>DifxMk5Control          <td>DiFXControl.DifxMk5Control            <td>Tells <i>guiServer</i> to run <i>mk5control</i> for a specific task - this will in turn generate another message type.
+<tr><td>DifxMark5Copy           <td>DiFXControl.DifxMark5Copy             <td>Tells <i>guiServer</i> to run <i>mk5cp</i> to make file copies of Mark5 data.
+</table>
+
+
+The \ref difxmessages "DiFXMessages" example program shows how to collect and parse all of the different
+DiFX message types.
+
+\section creatingJobs Creating New Jobs
+
+\section jobControl Starting, Stopping and Monitoring DiFX Jobs
+
+All job control is done using the DiFXJobControl.Client class, which inherits the DiFXControl.Client
+class.  Creating an instance of this class for job control is done in a pretty standard way.
+
+\code{.py}
+import DiFXJobControl
+
+difx = DiFXJobControl.Client()
+difx.connect()
+difx.monitor()
+\endcode
+
+While this class inherits the DiFXControl.Client class,
+it more complex than the \ref taskSpecific "Task-Specific Classes", and its methods cannot be called by the
+DiFXControl.Client class.
+
+\subsection jobControl_inputFile Identifying a Job Using the .input File
+
+Each job on the DiFX server can be uniquely identified by the full path to its <code>.input</code> file.  The
+<code>.input</code> file (along with some other files) contains a full description of a job, and must exist
+for DiFX to process it.  The <code>.input</code> file always has the extension ".input".  It is created from the <code>.vex</code> and <code>.vex</code>
+files by <i>vex2difx</i>.
+
+The DiFXJobControl.Client class uses the full path of the <code>.input</code> file to refer control and
+monitoring instructions to the correct job.  Before you start controlling a job, you must give the class
+an existing <code>.input</code> file to work with.
+
+\code{.py}
+#  Give the client class the name of the .input file for our job
+difx.inputFile( "/the/full/path/to/the/job.input" )
+\endcode
+
+\subsection jobControl_machines Defining Data Sources and Processors
+
+To run on a multi-processor system, DiFX requires a list of the processing nodes that will be used
+as data sources, those that will be used for processing along with the number of processing threads
+to run on each, and the name of the node that will serve as the manager of the others, or the "head node".
+These specifications are contained in two files on the DiFX server with the extensions ".machines" and
+".threads".  If these files exist for your <code>.input</code> file you can download 
+the content of them using the DiFXJobControl.Client.getMachines() method and examine it by using the
+DiFXJobControl.Client.headNode(), DiFXJobControl.Client.dataSources() and DiFXJobControl.Client.processors()
+methods.
+
+\code{.py}
+#  Get the content of the .machines and .threads files
+difx.getMachines()
+
+#  The head node is stored as a string
+print difx.headNode()
+
+#  The data sources are stored as a list of strings
+for node in difx.dataSources():
+	print node
+	
+#  The processors are stored as a list of tuples that have node names and threads
+for node in difx.processors():
+	print node[0] + "  " + str( node[1] )
+\endcode
+
+You can change the node names and threads in these lists using the DiFXJobControl.Client.headNode(),
+DiFXJobControl.Client.addDataSource() and DiFXJobControl.Client.addProcessor() methods, or clear
+them completely using the DiFXJobControl.Client.clearDataSources() and DiFXJobControl.Client.clearProcessors()
+methods.
+
+\code{.py}
+#  change the head node
+difx.headNode( "myHeadNode" )
+
+#  empty the data source list
+difx.clearDataSources()
+
+#  add a few data sources of our own
+difx.addDataSource( "myDataSource1" )
+difx.addDataSource( "myDataSource2" )
+
+#  add a few processors to the existing list, along with the threads to be used by
+#  each -- we are not emptying the list first so these are added to whatever was there.
+difx.addProcessor( "myProcessor1", 10 )
+difx.addProcessor( "myProcessor2", 8 )
+\endcode
+
+The above functions change the lists of nodes in the DiFXJobControl.Client class, but the <code>.machines</code> and
+<code>.threads</code> files on the DiFX server aren't changed until you run the DiFXJobControl.Client.defineMachines()
+method.
+
+\code{.py}
+#  create new .machines and .threads files using our definitions
+difx.defineMachines()
+\endcode
+
+
+\subsection jobControl_start Running a Job and Monitoring Progress
+
+Once the <code>.input</code> file is defined and the <code>.machines</code> and <code>.threads</code> files
+are in place, starting a job is a simple matter of calling the DiFXJobControl.Client.start() method.
+Calling the method without arguments will make it return only after the job is complete.  In this case
+we give the client a long "time out" period using the DiFXControl.Client.waitTime() method.  This keeps the
+start command from returning prematurely (which it may do if your system is slow to spawn a job - the
+wait time is something that has to be experimented with to tailor it for each system).
+
+\code{.py}
+#  Set a very long wait time so we don't time out waiting for the job to start
+difx.waitTime( 300.0 )
+
+#  Start the job - method will return when it is done
+difx.start()
+print "job done!"
+\endcode
+
+Alternatively you can start a job such that the method returns immediately.  This will allow you to
+do other things, but you won't necessarily know when it is done unless you make other monitoring
+arrangements.  No need to mess with the wait time in this case.
+
+\code{.py}
+#  Start the job - method will return immediately
+difx.start( False )
+print "job started!"
+\endcode
+
+\subsubsection monitor_progress How Can I See What is Going On?
+
+If you run a job using DiFXJobControl.Client.start() it will run silently, and except for returning
+when it is done (or failed), it won't tell you much about what is going on (you can also throw away
+that paltry piece of information by telling DiFXJobControl.Client.start() to return immediately).
+However, there is more information available.
+
+When <i>guiServer</i> runs a job in response to the DiFXJobControl.Client.start() method, it collects
+all output to <i>stdout</i> and <i>stderr</i> and transmits these data back to the client where they
+are treated as "messages", "warnings", and "errors".  These data can
+be monitored by setting appropriate callback functions (see \ref feedback "Collecting Information Provided by Running Processes").
+
+\code{.py}
+#  Callback functions for messages, warnings, and errors.
+def messageCallback( argstr ):
+	print str( argstr )
+	
+def warningCallback( argstr ):
+	print "WARNING: " + str( argstr )
+	
+def errorCallback( argstr ):
+	print "ERROR: " + str( argstr )
+	
+#  Assign the callbacks
+difx.messageCallback( messageCallback )
+difx.warningCallback( warningCallback )
+difx.errorCallback( errorCallback )
+
+#  Start the job - output will be printed by the callbacks
+difx.start()
+\endcode
+
+<i>GuiServer</i> provides some other feedback as well, mostly in the form of problems encountered
+when trying to start a job.  The client translates these data into messages, warnings, and errors
+as well, as it sees fit.
+
+You can also directly gather the feedback from <i>guiServer</i> yourself using your own assigned
+callback.  See the DiFXJobControl.Client.setStartCallback() method for more information.
+
+The trouble with monitoring messages, warnings, and errors is that DiFX simply does not provide much
+information to <i>stdout</i> and <i>stderr</i> while a job is running (there is a burst of information when it starts,
+but nothing after that). 
+A slightly trickier approach to viewing the progress of a job, but one that will provide you with more information, is to monitor DiFX
+message traffic, which is described in the \ref messages "Monitoring DiFX Messages" section above.  There are several DiFX UDP message
+types
+that contain information related to specific jobs (see the \ref difxbusy "DiFXBusy" example application), but for the following
+code example we will be collecting messages of the "DifxStatusMessage" type from which we can compute a (rough) completion percentage.
+
+\code{.py}
+#  Define a class to respond to messages
+class Responder:
+	def __init__( self ):
+		self.jobName = None
+		self.jobProgress = 0
+
+	#  Callback triggered when the monitoring client receives a new DiFX message.
+	def difxRelayCallback( self, data ):
+		#  Parse the message.
+		xmlDat = DiFXControl.parseXML( data )
+		#  See if this is a message type we are interested in.
+		if xmlDat.typeStr == "DifxStatusMessage":
+			#  Make sure the identifier (job name) is one we are interested in.
+			if self.jobName != None and xmlDat.identifier == self.jobName:
+				#  Compute a progress value.  The data for this might not be there, so we
+				#  have some default situations.
+				try:
+					self.jobProgress = 100.0 * ( float( xmlDat.visibilityMJD ) - float( xmlDat.jobstartMJD ) ) / ( float( xmlDat.jobstopMJD ) - float( xmlDat.jobstartMJD ) )
+				except:  #  Exception caused by failures of float conversions - because fields are empty
+					if xmlDat.state == "Done" or xmlDat.state == "MpiDone":
+						self.jobProgress = 100
+					elif xmlDat.state == "Ending":
+						#  Ending state is annoying - use the job's known progress
+						pass
+					else:
+						self.jobProgress = 0
+				#  print the results
+				print xmlDat.state + "   " + str( int( self.jobProgress ) ) + "% complete"
+				
+...
+
+#  Create a new Responder class instance
+responder = Responder()
+
+#  Tell it what the job name is (which we generate from the full path to the .input file)
+responder.jobName = inputFile[inputFile.rfind( "/" ) + 1:inputFile.rfind( "." )]
+
+#  Add the callback in the responder class instance
+difx.addRelayCallback( responder.difxRelayCallback )
+
+#  Turn on packet "relays" - this causes guiServer to feed DiFX message traffic to the client
+difx.relayPackets()
+
+#  Start the job and watch the results
+difx.start()
+\endcode
+
+
+\subsection jobControl_stop Stopping a Running Job
+
+<i>GuiServer</i> uses <i>mpirun</i> to spawn a job, and has little control over it once it has
+been started.  Once it has been started, a job will continue until completion (or failure), 
+even if <i>guiServer</i> is killed.  This can be annoying if you realize that a job is doing the
+wrong thing and wish it to stop consuming resources.  The DiFXJobControl.Client.stop() method
+can be used to attemp to stop a running job.  Unlike DiFXJobControl.Client.start() it has an
+(optional) <code>.input</code> file argument.
+
+\code{.py}
+#  Stop the previously referenced .input file
+difx.stop()
+
+#  Stop some different job using its input file path
+difx.stop( "/full/path/to/other/file.input" )
+\endcode
+
+The only problem with the DiFXJobControl.Client.stop() method is that it often quite mysterously
+fails to work.  Upon receipt of the stop request, <i>guiServer</i> will do everything in its
+power to stop a job, but often, and especially when some aspect of processing has become wedged
+(annoyingly the situation where you would most likely want to stop running), nothing happens.
+
+\subsection jobControl_monitor Monitoring the Data Output of a Running Job
+
+The DiFXJobControl.Client class has the ability to collect real-time data products from a
+running job.  This ability depends on the presence of the <i>monitor_server</i> application
+in the DiFX bin on the DiFX server (it doesn't have to be running - it just has to be there),
+and can only monitor one running job at a time (DiFX can run many simultaneously).
+The process is also a bit buggy.
+
+Real time monitoring can be instructed to collect a number of data "products" for each
+frequency in a scan.  As a time segment is processed within a scan, the data products will
+become available.  The products themselves are described in detail in the DiFXJobControl.Client.getMonitorProducts()
+method, but in brief summary they include:
+<ul>
+<li>Computed <b>amplitude</b> values for the segment
+<li>Computed <b>phase</b> values for the segment
+<li>Computed <b>lag</b> values, as well as <b>delay</b> and <b>signal-to-noise</b> for the segment
+<li>Computed <b>mean amplitude</b> values for the accumulated scan up to the segment
+<li>Computed <b>mean phase</b> values for the accumulated scan up to the segment
+<li>Computed <b>mean lag</b> values, as well as <b>mean delay</b> and <b>mean signal-to-noise</b> for the accumulated scan up to the segment
+</ul>
+
+These data are obtained by callback functions that you must create and assign.  The following
+code (with limited explanation) shows the collection of some real time data.
+\code{.py}
+#  Define a callback for lag data
+def lagCallback():
+	#  Print the array of lag data
+	print difx.lag
+	#  Print the delay and SNR
+	print difx.meanLagDelay, difx.meanLagSnr
+
+#  Create your class instance, define an .input file, etc.	
+...
+
+#  Start the real time monitor
+difx.startMonitor()
+
+#  Generate a list of available data products.  This will give you
+#  of "product numbers" that you put in a list (see below)
+monProducts = difx.getMonitorProducts()
+
+#  Request a list of product using their product numbers (see above).
+#  The numbers used here are arbitrary.  You can request any number of
+#  products that you like.
+difx.requestProducts( ( 3, 5, 8 ) )
+
+#  Turn monitoring on - the job will now run with the real time monitoring
+difx.runWithMonitor( True )
+
+#  Select your callbacks for one or more of the six product types.  We
+#  are only interested in the accumulated lag values
+difx.monitorDataCallbacks( None, None, None, None, None, lagCallback )
+
+#  Start the job - real time data will trigger the callback as each
+#  segment is processed.
+difx.start()
+
+#  Do this when you are done.
+difx.stopMonitor()
+\endcode
+
+There are problems with the real time monitor that make it not quite ready for prime time.
+If multiple jobs are run in dequence <i>guiServer</i> will occasionally (or perhaps the word should be
+"eventually") crash.  In addition, the <i>monitor_server</i>
+program will often not provide data after the first job and will need to be killed by hand.
+More work is necessary to clean this process up.
+
+\section jobHistory Obtaining the Run History of a Job
+
+Any job that has been run using <i>guiServer</i> or the <i>startdifx</i> script will add 
+to a record of run-time activities and final run status to a <code>.difxlog</code> file
+(located in the same directory as the <code>.input</code> file).
+The DiFXJobControl.Client.jobStatus() method can be used to trigger <i>guiServer</i> to
+parse a list of <code>.difxlog</code> files and return a description of their run history.
+
+\code{.py}
+#  Get status information for a list of .input files - normal "ls" wildcards permitted.
+statusInfo = difx.jobStatus( "/full/path/to/*.input" )
+
+#  Print the overall time stamp - first item in a returned tuple
+print statusInfo[0]
+
+#  Then results list - second item in the returned tuple
+if statusInfo[1] == None:
+	print "No .input files found."
+	
+else:
+	#  Each item (corresponds to each requested .input file) is a tuple itself.
+	#  Compose a line of output for each.
+	for item in statusInfo[1]:
+		#  First part of tuple is the .input file
+		outStr = item[0] + "      "
+		#  Second item of the tuple is yet another tuple, the second item of which
+		#  is the final status!
+		outStr += item[1][1]
+		print outStr
+\endcode
+
+The <code>.difxlog</code> file contains quite a bit of information about the run history of
+a job, but currently the DiFXJobControl.Client.jobStatus() method will only return the most
+recent status of a job (never started, successful, failed, running, etc).  This is useful
+information, but future expansion of the capability should be able to provide much more.
+
+\section vsnStuff Mark5-Specific Operations
+
+\subsection vsnStuff_mk5 Sending a Mark5 Command
+
+\subsection vsnStuff_directory Obtaining the Directory of a Mark5 Module
+
+\subsection vsnStuff_filelist Generating a New Mark5 "File List"
+
+\subsection vsnStuff_copy Copying Data from a Mark5 Module
+
+*/

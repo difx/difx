@@ -1,0 +1,27 @@
+/**
+\page pyFltk Python GUIs Using pyFltk 
+\brief Using <i>pyFltk</i> for GUI Applications
+
+I'm using the <a href="http://pyfltk.sourceforge.net/">pyFltk</a> package to draw the Python GUIs used in the example programs.
+It has a simple widget set, an excellent event handling model, and is well-adapted
+to object-oriented programming.    It installs readily on Linux machines (package managers should
+know how to find it), and with some minor trickiness under OSX.
+
+In all cases the use of GUIs in the example programs is optional - they all have
+a text-only interface available via command line arguments (usually "-t" or
+something like that - see the help - "-h" - for each application).  All applications
+will happily (and silently) revert to text-only operation if pyFltk can't be
+found.  Basically, if you don't want to bother with installing
+pyFltk things will work fine.
+
+PyFltk is a bit pre-release-ish, but I know how to make
+it do the things I want and I'm not interested at this point in wasting time learning some
+other package.
+
+<h3>FleWidgets</h3>
+
+The FleWidgets are a bunch of classes used to expand the capabilities of pyFltk.
+Mostly these are used to draw things that are missing from the widget set, or
+to make thinks look the way I like.
+
+*/

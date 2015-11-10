@@ -1,34 +1,78 @@
 #!/usr/bin/env python
 ################################################################################
-#\example DiFXBusy
+#\defgroup difxbusy DiFXBusy
 #
-#  Monitors messages that help indicate how "busy" a correlator is.  Three
+#\brief Monitors messages that help indicate how "busy" a correlator is.  
+#
+#  Usage: <b><code>DiFXBusy [options]</code></b>
+#
+#  <i>DiFXBusy</i> can be used to monitor jobs that a DiFX correlator is
+#  working on.  It provides a continuously-updating output showing which
+#  jobs are running, how far they have to go, and what processors and/or
+#  Mark5 units are being utilized.  When jobs complete they "linger" in
+#  the display for a period, but are then removed to avoid clutter.
+#
+#  <center>![DiFXBusy (text-based) showing two running jobs \"try1_01\" and \"try1_02\".](DiFXBusy.png)</center>
+#
+#  Three
 #  different aspects of correlator operations can be monitored (by default they
-#  all are, but you can shut things off).
+#  all are, but you can shut things off):
 #
-#  JOBS
+#  <h5>JOBS</h5>
 #
 #  List the job(s) the correlator is working on currently, along with their
-#  completion percentage.  Shortly after a job is "complete" it is removed unless
+#  completion percentage and current "state".  Shortly after a job is "complete" it is removed unless
 #  the user requests a "linger" option.  Jobs that are doing nothing for a period
 #  of time are also removed.
 #
-#  PROCESSORS and MARK5s
+#  <h5>PROCESSORS and MARK5s</h5>
 #
 #  Processors and Mark5s are listed as long as they are working on a job
 #  currently, along with their state, busy percentage, and any indication we
-#  have of what they are up to.
+#  have of what they are up to (usually listing the job they are working on).
 #
-#  DiFXBusy has two display options - a text-based display and a limited GUI based
-#  on the pyFltk package.  PyFltk is a bit pre-release-ish, but I know how to make
-#  it do the things I want and I'm not interested in wasting time learning some
-#  other package.  It installs readily on Linux machines (package managers should
-#  know how to find it), and with some minor trickiness under OSX.  If the
-#  package doesn't exist, DiFXBusy will revert to "text" mode (you can force
-#  text mode from the command line if you wish).
+#  <h3>GUI Option</h3>
 #
-#  The GUI version is limited to monitoring the progress of running jobs at the
-#  moment.  The text version has more information, arguably too much.
+#  <i>DiFXBusy</i> has two display options - a text-based display and a limited GUI based
+#  on the pyFltk package.  The GUI version is a little more experimental and is
+#  currently limited to monitoring the progress of running jobs.  The text version
+#  has more information, arguably too much.
+#
+#  <h3>Command Line Arguments</h3>
+#
+#  <i>DiFXBusy</i> has a number of command line arguments for tailoring its
+#  behavior and output.  The "-h" argument can be used to get an on-line list.
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-h, --help</b></pre>                   <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>  <td>Use <i>NAME</i> as the host of the difxServer program.
+#                                                          Default is to use the DIFX_CONTROL_HOST environment variable.
+#  <tr><td><b><pre>-i, --identifier <i>NAME</i></pre></b><td>Parse only messages with the named identifier.  This is (often)
+#                                                          the DiFX job name, so this option can be used to monitor a
+#                                                          job or jobs exclusively.  The named identifier is a regular
+#                                                          expression, so multiple jobs can be matched.
+#  <tr><td><pre><b>-j, --jobs</b></pre>                  <td>Display jobs - by turning this on other items (processors
+#                                                          and Mark5's) will be turned off unless requested
+#                                                          specifically - by default everything is displayed).
+#  <tr><td><pre><b>-k, --keep</b></pre>                  <td>Keep jobs on the list that are incomplete, even if they have
+#                                                          been idled or they exceed the linger limit.  This can be used
+#                                                          to see what happened when jobs fail or stall, but can clutter
+#                                                          the display.  By default we don't do this.
+#  <tr><td><pre><b>-l, --linger <i>[NUM]</i></b></pre>   <td>Permanently display jobs - by default they are removed
+#                                                          from the display shortly after they finish or if they don't
+#                                                          do anything for a while.  When included, a maximum of <i>NUM</i>
+#                                                          jobs will be displayed at any one time - oldest jobs are
+#                                                          deleted.  In GUI mode a <i>NUM</i> of 20 is the default.
+#  <tr><td><pre><b>-m, --mark5s</b></pre>                <td>Display Mark5s - by turning this on other items (jobs
+#                                                          and processors) will be turned off unless requested
+#                                                          specifically - by default everything is displayed).
+#  <tr><td><pre><b>-p, --processors</b></pre>            <td>Display processors - by turning this on other items (jobs
+#                                                          and Mark5's) will be turned off unless requested
+#                                                          specifically - by default everything is displayed).
+#  <tr><td><pre><b>-p, --port <i>PORT</i></b></pre>      <td>Use <i>PORT</i> as the TCP port to communicated with the difxServer.
+#                                                          Default is to use DIFX_CONTROL_PORT environment variable.
+#  <tr><td><pre><b>-t, --text</b></pre>                  <td>Produce only text-based output.  The default behavior is to
+#                                                          try to launch a small GUI (text will be used on failure).
 #
 ################################################################################
 program = 'DiFXBusy'

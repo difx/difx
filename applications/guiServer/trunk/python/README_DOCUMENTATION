@@ -1,0 +1,4 @@
+
+To create HTML documentation, run doxygen in the docSrc directory, then point a browser
+at doc/index.html.
+

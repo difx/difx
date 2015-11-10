@@ -1,11 +1,48 @@
 #!/usr/bin/env python
 ################################################################################
+#\defgroup difxjobstatus DiFXJobStatus
 #
-#  DiFXJobStuat
-#
-#  Obtain the "status" of job(s) on the DiFX server using the .input file(s)
+#\brief Obtain the "status" of job(s) on the DiFX server using the .input file(s)
 #  path.
 #
+#Usage: <b><code>DiFXJobStatus [options] <i>path</i></code></b>
+#
+#  <i>DiFXJobStatus</i> can be used to display the most recent "status" of a job
+#  or list of jobs on the DiFX server.  The status information is contained in
+#  the .difxlog file associated with each job.  If a job has been run with logging
+#  facilities turned on, the .difxlog file will contain information about it -
+#  <i>DiFXJobStatus</i> simply picks up the latest "STATUS" item and reports it.
+#  The status will be something like "completed", "failed", or "running".  If
+#  the .difxlog file does not exit, <i>DiFXJobStatus</i> will report that, too.
+#
+#  Jobs are specified by their .input file
+#  paths - wildcards can be used for a list of jobs.
+#
+#  <i>DiFXJobStatus</i> can be set to run in a "monitor" mode where it will
+#  repeatedly ask for the status of a job.  This provides a simple way of watching
+#  a job or group of jobs as they run and determining when they are finished.
+#
+#  <h3>Command Line Arguments</h3>
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-D, --difx <i>VERSION</i></b></pre>       <td>Run using a specific DiFX version.  If not specified
+#                                                             the value of the DIFX_VERSION environment variable will
+#                                                             be used.  Failing that, \"DIFX-DEVEL\" will be used.
+#  <tr><td><pre><b>-h, --help</b></pre>                      <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>      <td>Use <i>NAME</i> as the host of the difxServer program.
+#                                                             Default is to use DIFX_CONTROL_HOST environment variable.
+#  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>          <td>Use <i>PORT</i> as the TCP port to communicated with the difxServer.
+#                                                             Default is to use DIFX_CONTROL_PORT environment variable.
+#  <tr><td><pre><b>-l, --long</b></pre>                      <td>Provide a \"long\" job status, which includes job run history.
+#                                                             Currently not implemented.
+#  <tr><td><pre><b>-r, --repeat <i>SEC</i></b></pre>         <td>Repeat the job status command after a delay of <i>SEC</i> seconds.
+#                                                             By default there is no repeat.
+#  <tr><td><pre><b>-s, --short</b></pre>                     <td>Provide only the final job state as the status (much faster
+#                                                             and easier to deal with if you have lots of jobs).  This is the
+#                                                             default.
+#  <tr><td><pre><b>-t, --time</b></pre>                      <td>Turn off the time stamp in the short output.  By default a
+#                                                             time stamp is displayed with each status.
+#  </table>
 ################################################################################
 program = 'DiFXJobStatus'
 version = '0.1'
@@ -28,7 +65,7 @@ port = None
 try:
 	DiFXVersion = os.environ["DIFX_VERSION"]
 except:
-	DiFXVersion = "DIFX_DEVEL"
+	DiFXVersion = "DIFX-DEVEL"
 
 try:
 	i = 1
@@ -50,7 +87,7 @@ try:
 			print "   --difx VERSION"
 			print "   -D VERSION Run using a specific DiFX version.  If not specified"
 			print "              the value of the DIFX_VERSION environment variable will"
-			print "              be used.  Failing that, \"DIFX_DEVEL\" will be used."
+			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
 			print ""
 			print "   --help"
 			print "   -h         Print this help information and quit."

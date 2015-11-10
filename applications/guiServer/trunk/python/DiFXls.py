@@ -12,11 +12,11 @@ import DiFXControl
 #  The class inherits the DiFXControl.Client class.  A new instance with no
 #  arguments will create a new connection to the server.  If you already have
 #  DiFXControl.Client instance it can be used in the instantiation method
-#  (which should be more efficient).  This slightly odd structure also allows
+#  (eliminating an inefficient duplicate instantiation).  This slightly odd structure also allows
 #  the DiFXControl.Client class to have its own ls() method with low overhead.
 #
 #<!---======================================================================--->
-class DiFXls( DiFXControl.Client ):
+class Client( DiFXControl.Client ):
 
 	def __init__( self, client = None ):
 		if client == None:

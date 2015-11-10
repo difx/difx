@@ -1,15 +1,78 @@
 #!/usr/bin/env python
 ################################################################################
+#\defgroup difxmessages DiFXMessages
 #
-#  DiFXMessages
+#\brief Echo UDP message traffice from DiFX Processes  
 #
-#  Echo UDP message traffic from DiFX processes (mk5daemon, etc) by running as
-#  a client to difxServer.  Desired message traffic can be specified by number
-#  or name, and by source.  By default ALL traffic is echoed.
+#Usage: <b><code>DiFXMessages [options] [list of message types]</code></b>
 #
-#  Uses the DiFXControl.Client class (as well as other DiFXControl classes).
-#  Consult the "Responder" class in this file to see how DiFXControl classes
-#  organize DiFX output.
+#  <i>DiFXMessages</i> collects an echos UDP message traffic intercepted
+#  on the DiFX server.  Messages are printed in their raw XML form and/or
+#  parsed into component content. Desired message traffic can be limited to a
+#  message type (specified by name or a number), source hostname(s), or 
+#  message identifier (which is often a DiFX job name).  By default ALL traffic is echoed.
+#
+#  <h3>Command Line Arguments</h3>
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-h, --help</b></pre>                   <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>   <td>Use <i>NAME</i> as the host of the DiFX server program.
+#                                                          Default is to use DIFX_CONTROL_HOST environment variable.
+#  <tr><td><pre><b>-i, --identifier <i>NAME</i></b></pre> <td>Echo only messages with the named identifier.  This is (often)
+#                                                          the DiFX job name, so this option can be used to monitor a
+#                                                          job or jobs to some degree.  The named identifier is a regular
+#                                                          expression, so multiple jobs can be matched.
+#  <tr><td><pre><b>-p, --parse</b></pre>                  <td>Toggle whether to parse XML messages into a readable format.
+#                                                          Default is to do so.
+#  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>       <td>Use <i>PORT</i> as the TCP port to communicated with the DiFX server.
+#                                                          Default is to use DIFX_CONTROL_PORT environment variable.
+#  <tr><td><pre><b>-r, --raw</b></pre>                    <td>Toggle whether to echo \"raw\" XML message strings.  Default is
+#                                                          to do so.
+#  <tr><td><pre><b>-R, --restrict</b></pre>               <td>Tell difxServer to restrict messages it sends to those types
+#                                                          Selected.  This can cut down on socket traffic, however currently
+#                                                          not all message types are supported.  As a consequence this
+#                                                          feature is off by default.
+#  <tr><td><pre><b>-s, --source <i>LIST</i></b></pre>     <td>Echo only messages originating from one of the comma-separated LIST
+#                                                          of node names.  Default is to echo all sources.
+#  <tr><td><pre><b>-S, --stats</b></pre>                  <td>Toggle whether to produce a list of statistics (messages received, etc.)
+#                                                          when collection is terminated.  Default is not to do so.
+#  <tr><td><pre><b>-t, --type <i>LIST</i></b></pre>       <td>Indicate the following items are a list of message types you wish to
+#                                                          echo.  This isn't an explicitly required argument, as the list can be
+#                                                          included as the final argument(s) - seem below.
+#  </table>
+#
+#  <h4>list of message types</h4>
+#
+#  The "list of message types" that follows command line arguments is a comma-separated list of one or more message
+#  types, identified either by name or number.  Default behavior (when you list nothing) is to echo all messages.
+#  Legal message numbers and types are:
+#
+#  <table>
+#  <tr><td><b>Type Number<td>Type Name</b>
+#  <tr><td>1 <td>DifxLoadMessage
+#  <tr><td>2 <td>DifxAlertMessage
+#  <tr><td>3 <td>Mark5StatusMessage
+#  <tr><td>4 <td>DifxStatusMessage
+#  <tr><td>5 <td>DifxInfoMessage
+#  <tr><td>6 <td>DifxDatastreamMessage
+#  <tr><td>7 <td>DifxCommand
+#  <tr><td>8 <td>DifxParameter
+#  <tr><td>9 <td>DifxStart
+#  <tr><td>10 <td>DifxStop
+#  <tr><td>11 <td>Mark5VersionMessage
+#  <tr><td>12 <td>Mark5ConditionMessage
+#  <tr><td>13 <td>DifxTransientMessage
+#  <tr><td>14 <td>DifxSmartMessage
+#  <tr><td>15 <td>Mark5DriveStatsMessage
+#  <tr><td>16 <td>DifxDiagnosticMessage
+#  <tr><td>17 <td>DifxFileTransfer
+#  <tr><td>18 <td>DifxFileOperation
+#  <tr><td>19 <td>DifxVex2DifxRun
+#  <tr><td>20 <td>DifxMachinesDefinition
+#  <tr><td>21 <td>DifxGetDirectory
+#  <tr><td>22 <td>DifxMk5Control
+#  <tr><td>23 <td>DifxMark5Copy
+#  </table>
 #
 ################################################################################
 program = 'DiFXMessages'
