@@ -55,6 +55,7 @@ extern "C" {
 #define DIFX_MESSAGE_N_CONDITION_BINS	DIFX_MESSAGE_N_DRIVE_STATS_BINS	/* deprecated */
 #define DIFX_MESSAGE_MARK5_VSN_LENGTH	8
 #define DIFX_MESSAGE_MARK6_MSN_LENGTH	8
+#define DIFX_MESSAGE_MARK6_GROUP_LENGTH 35
 #define DIFX_MESSAGE_DISC_SERIAL_LENGTH	31
 #define DIFX_MESSAGE_DISC_MODEL_LENGTH	31
 #define DIFX_MESSAGE_MAX_SMART_IDS	32
@@ -284,6 +285,18 @@ typedef struct
 	char msn2[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
 	char msn3[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
 	char msn4[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+	char group1[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
+	char group2[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
+	char group3[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
+	char group4[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
+	int bank1Disks;
+	int bank2Disks;
+	int bank3Disks;
+	int bank4Disks;
+	int bank1MissingDisks;
+	int bank2MissingDisks;
+	int bank3MissingDisks;
+	int bank4MissingDisks;
         unsigned int status;
         int scanNumber;
 	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];

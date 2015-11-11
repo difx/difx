@@ -540,6 +540,18 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
                   "<bank2MSN>%s</bank2MSN>"
                   "<bank3MSN>%s</bank3MSN>"
                   "<bank4MSN>%s</bank4MSN>"
+                  "<bank1Group>%s</bank1Group>"
+                  "<bank2Group>%s</bank2Group>"
+                  "<bank3Group>%s</bank3Group>"
+                  "<bank4Group>%s</bank4Group>"
+                  "<bank1Disks>%d</bank1Disks>"
+                  "<bank2Disks>%d</bank2Disks>"
+                  "<bank3Disks>%d</bank3Disks>"
+                  "<bank4Disks>%d</bank4Disks>"
+                  "<bank1MissingDisks>%d</bank1MissingDisks>"
+                  "<bank2MissingDisks>%d</bank2MissingDisks>"
+                  "<bank3MissingDisks>%d</bank3MissingDisks>"
+                  "<bank4MissingDisks>%d</bank4MissingDisks>"
                   "<state>%s</state>"
                   "<scanNumber>%d</scanNumber>"
                   "<scanName>%s</scanName>"
@@ -553,6 +565,18 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
                 msn2,
                 msn3,
                 msn4,
+		mark6status->group1,	
+		mark6status->group2,	
+		mark6status->group3,	
+		mark6status->group4,	
+		mark6status->bank1Disks,	
+		mark6status->bank2Disks,	
+		mark6status->bank3Disks,	
+		mark6status->bank4Disks,	
+		mark6status->bank1MissingDisks,	
+		mark6status->bank2MissingDisks,	
+		mark6status->bank3MissingDisks,	
+		mark6status->bank4MissingDisks,	
                 Mark6StateStrings[mark6status->state],
                 mark6status->scanNumber,
                 scanName,
