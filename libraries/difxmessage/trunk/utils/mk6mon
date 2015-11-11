@@ -1,0 +1,326 @@
+#!/usr/bin/env python
+
+#**************************************************************************
+#   Copyright (C) 2008-2015 by Walter Brisken                             *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id: mk5mon 6917 2015-08-12 01:44:54Z WalterBrisken $
+# $HeadURL: $
+# $LastChangedRevision: 6917 $
+# $Author: WalterBrisken $
+# $LastChangedDate: 2015-08-12 03:44:54 +0200 (Mi, 12. Aug 2015) $
+#
+#============================================================================
+
+from string import split, strip, find, upper, lower
+from sys import argv, exit
+from os import popen, getenv
+from glob import glob
+import socket
+import struct
+from xml.parsers import expat
+from copy import deepcopy
+import curses
+import signal
+
+def signal_handler(signal, frame):
+	print('You pressed Ctrl+C!')
+	raise KeyboardInterrupt
+
+program = 'mk6mon'
+author  = 'Helge Rottmann'
+version = '0.1'
+verdate = '20151111'
+
+def usage(prog):
+	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'Usage: %s [options]\n' % prog
+	print 'options can include:'
+	print '  --help'
+	print '  -h        print help information and quit\n'
+
+class Mk5state:
+
+	def __init__(self):
+		self.ok    = False
+		self.pid   = 0
+		self.id    = ''
+		self.mk5   = ''
+		self.seq   = 0
+		self.msn1  = 'none'
+		self.msn2  = 'none'
+		self.msn3  = 'none'
+		self.msn4  = 'none'
+		self.disks1 = 0
+		self.disks2 = 0
+		self.disks3 = 0
+		self.disks4 = 0
+		self.bank  = ' '
+		self.state = 'Unknown'
+		self.scan  = 0
+		self.name  = ''
+		self.pos   = 0L
+		self.rate  = 0.0
+		self.date  = 0.0
+
+	def getstring(self):
+		if self.ok:
+			b1 = ' '
+			b2 = ' '
+			if self.bank == 'A':
+				b1 = '*'
+			elif self.bank == 'B':
+				b2 = '*'
+			if self.date > 0.0 and self.date < 1.0:
+				dateStr = '%10.4f s' % (self.date*86400.0)
+			else:
+				dateStr = '%12.6f' % self.date
+			str = '%10s %8s (%d) %8s (%d) %8s (%d) %8s (%d) %14s %7.2f %14d %4d %17s %13s ' % \
+				(self.mk5, self.msn1, self.disks1, self.msn2, self.disks2, self.msn3, self.disks3, self.msn4, self.disks4, self.state, \
+				 self.rate, self.pos, self.scan, self.name, dateStr)
+			#str = '%10s %c%8s %c%8s %14s %7.2f %14d %4d %17s %13s ' % \
+			#	(self.mk5, b1, self.msn1, b2, self.msn2, self.state, \
+			#	 self.rate, self.pos, self.scan, self.name, dateStr)
+		else:
+			str = ''
+		return str
+
+	def getmk5(self):
+		return self.mk5
+
+class Parser:
+
+	def __init__(self):
+		self._parser = expat.ParserCreate()
+		self._parser.StartElementHandler = self.start
+		self._parser.EndElementHandler = self.end
+		self._parser.CharacterDataHandler = self.data
+		self.info = Mk5state()
+		self.tmp = ''
+
+	def feed(self, data):
+		try:
+			self._parser.Parse(data, 0)
+		except expat.ExpatError:
+			print '\n\n XXX %s XXX' % data 
+
+	def close(self):
+		self._parser.Parse("", 1) # end of data
+		del self._parser # get rid of circular references
+
+	def start(self, tag, attrs):
+		pass
+
+	def end(self, tag):
+		if tag == 'mark6Status':
+			self.info.ok = True
+		if tag == 'bank1MSN':
+			if len(self.tmp) != 8:
+				self.info.msn1 = 'none'
+			else:
+				self.info.msn1 = upper(self.tmp)
+		if tag == 'bank2MSN':
+			if len(self.tmp) != 8:
+				self.info.msn2 = 'none'
+			else:
+				self.info.msn2 = upper(self.tmp)
+		if tag == 'bank3MSN':
+			if len(self.tmp) != 8:
+				self.info.msn3 = 'none'
+			else:
+				self.info.msn3 = upper(self.tmp)
+		if tag == 'bank4MSN':
+			if len(self.tmp) != 8:
+				self.info.msn4 = 'none'
+			else:
+				self.info.msn4 = upper(self.tmp)
+		if tag == 'bank1Disks':
+			self.info.disks1 = int(self.tmp)
+		if tag == 'bank2Disks':
+			self.info.disks2 = int(self.tmp)
+		if tag == 'bank3Disks':
+			self.info.disks3 = int(self.tmp)
+		if tag == 'bank4Disks':
+			self.info.disks4 = int(self.tmp)
+		if tag == 'from':
+			self.info.mk5 = lower(self.tmp)
+		if tag == 'state':
+			self.info.state = self.tmp
+		if tag == 'playRate':
+			self.info.rate = float(self.tmp)
+		if tag == 'dataMJD':
+			self.info.date = float(self.tmp)
+		if tag == 'position':
+			self.info.pos = int(self.tmp)
+		if tag == 'scanNumber':
+			self.info.scan = int(self.tmp)
+		if tag == 'scanName':
+			self.info.name = self.tmp
+		if tag == 'activeBank':
+			self.info.bank = self.tmp
+
+	def data(self, data):
+		self.tmp = data
+
+	def getinfo(self):
+		return self.info.getmk5(), self.info.getstring()
+
+class Display:
+
+	def __init__(self):
+		self.info = {}
+		self.rows = {}
+		self.curs = curses.initscr()
+		#curses.start_color()
+		#curses.init_pair(1, curses.COLOR_RED,curses.COLOR_WHITE)
+		curses.noecho()
+		curses.cbreak()
+		self.curs.keypad(1)
+		self.curs.refresh()
+
+	def close(self):
+		curses.nocbreak()
+		self.curs.keypad(0)
+		curses.echo()
+		curses.endwin()
+
+	def displayrow(self, info, row):
+		#self.curs.addstr(row, 0, info, curses.color_pair(1))
+		self.curs.addstr(row, 0, info)
+		self.curs.refresh()
+
+	def displayall(self):
+		keys = self.rows.keys()
+		for k in keys:
+			self.curs.addstr(self.rows[k], 0, self.info[k])
+			#self.curs.addstr(self.rows[k], 0, self.info[k], curses.color_pair(1))
+
+		self.curs.refresh()
+
+	def newdata(self, data):
+		k = data[0]
+		if self.rows.has_key(k):
+			self.info[k] = data[1]
+			self.displayrow(self.info[k], self.rows[k])
+		else:
+			self.rows[k] = 0
+			self.info[k] = data[1]
+			keys = self.rows.keys()
+			keys.sort()
+			i = 0
+			for k in keys:
+				self.rows[k] = i
+				i += 1
+			self.displayall()
+
+def listen(port, group):
+	dt = 0.0
+	t = 0
+	maxtime = 6000
+
+	# Now listen for responses, until either time runs out or we get all we need
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 768000)
+	s.bind(('', port))
+	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+	s.settimeout(0.2)
+	d = Display()
+	try:
+		while t < maxtime:
+			try:
+				message = s.recv(1500)
+			except socket.timeout:
+				t += dt
+				continue
+
+			if message[0] != '<':
+				continue
+
+			p = Parser()
+			p.feed(message)
+			machine, str = p.getinfo()
+			p.close()
+			if len(str) < 10:
+				continue
+			d.newdata([machine, str])
+	except KeyboardInterrupt:
+		d.close()
+		return 0
+	except:
+		d.close()
+		return 1
+	d.close()
+	return 0
+
+
+def readmachines(machinesfile, verbose):
+	machines = []
+	cores = []
+	ismk5 = {}
+	lines = open(machinesfile).readlines()
+	for l in lines:
+		l = split(strip(l), '#')[0]
+		s = split(l)
+		if len(s) >= 2:
+			machines.append(s[0])
+			cores.append(int(s[1]))
+			if len(s) >= 3:
+				ismk5[s[0]] = int(s[2])
+			else:
+				if s[0][:5] == 'mark5':
+					ismk5[s[0]] = 1
+				else:
+					ismk5[s[0]] = 0
+	if verbose > 1:
+		print 'MACHINES = ', machines
+		print 'CORES    = ', cores
+		print 'IS MK5   = ', ismk5
+
+	return machines,cores,ismk5
+
+
+
+signal.signal(signal.SIGINT, signal_handler)
+
+if len(argv) >= 2:
+	if len(argv) == 2 and argv[1] in ['-h', '--help']:
+		usage(argv[0])
+		exit(0)
+	else:
+		print 'Command line error.  Run with -h for help.\n'
+		exit(1)
+
+
+port = getenv('DIFX_MESSAGE_PORT')
+if port == None:
+	print 'DIFX_MESSAGE_PORT needs to be defined'
+	exit(0)
+else:
+	port = int(port)
+group = getenv('DIFX_MESSAGE_GROUP')
+if group == None:
+	print 'DIFX_MESSAGE_GROUP needs to be defined'
+	exit(0)
+
+while(listen(port, group)):
+	pass
