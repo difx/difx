@@ -288,7 +288,7 @@ class Client( DiFXControl.Client ):
 	#  @param node Node name of the head node, as <i>guiServer</i> would address it.
 	#
 	#<!------------------------------------------------------------------------>
-	def headNode( self, node ):
+	def setHeadNode( self, node ):
 		self._headNode = node
 	
 	#<!------------------------------------------------------------------------>
