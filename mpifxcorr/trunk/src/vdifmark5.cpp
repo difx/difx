@@ -392,21 +392,40 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
-	int nChanPerThread = nrecordedbands/nthreads;
-	if(nChanPerThread != 1)
-	{
-		cinfo << startl << "Note: " << nChanPerThread << " channels reside on each thread.  Support for this is new.  Congratulations for being bold and trying this out!  Warranty void in the 193 UN recognized nations." << endl;
-	}
-	if(nChanPerThread * nthreads != nrecordedbands)
-	{
-		cerror << startl << "Error: " << nrecordedbands << " bands were recorded but they are divided unequally across " << nthreads << " threads.  This is not allowed.  Things will probably get very bad soon..." << endl;
-	}
-	setvdifmuxinputchannels(&vm, nChanPerThread);
 
+	if(nrecordedbands > nthreads)
+	{
+		int nBandPerThread = nrecordedbands/nthreads;
+
+		cinfo << startl << "Note: " << nBandPerThread << " recoded channels (bands) reside on each thread.  Support for this is new.  Congratulations for being bold and trying this out!  Warranty void in the 193 UN recognized nations." << endl;
+		
+		if(nBandPerThread * nthreads != nrecordedbands)
+		{
+			cerror << startl << "Error: " << nrecordedbands << " recorded channels (bands) were recorded but they are divided unequally across " << nthreads << " threads.  This is not allowed.  Things will probably get very bad soon..." << endl;
+		}
+		setvdifmuxinputchannels(&vm, nBandPerThread);
+		vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nBandPerThread));
+	}
+	else if(nrecordedbands < nthreads)
+	{
+		/* must be a fanout mode (DBBC3 probably) */
+		int nThreadPerBand = nthreads/nrecordedbands;
+
+		cinfo << startl << "Note: " << nThreadPerBand << " threads are used to store each channel (band; e.g., this is a VDIF fanout mode).  Support for this is new.  Congratulations for experimenting with plausible code.  Warranty void on weekdays and select weekends." << endl.
+
+		if(nThreadPerBand * nrecordedbands != nthreads)
+		{
+			cerror << startl << "Error: " << nthreads << " threads were recorded but they are divided unequally across " << nrecordedbands << " record channels (bands).  This is not allowed.  Things are about to go from bad to worse.  Hold onto your HAT..." << endl;
+		}
+		setvdifmuxfanoutfactor(&vm, nThreadPerBand);
+		vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL/nThreadPerBand));
+	}
+
+	/* Note: the following fanout concept is an explicit one and is not relevant to VDIF in any way */
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout != 1)
         {
-		cfatal << startl << "Fanout is " << fanout << ", which is impossible; no choice but to abort!" << endl;
+		cfatal << startl << "Classic fanout is " << fanout << ", which is impossible; no choice but to abort!" << endl;
 #if HAVE_MARK5IPC
                 unlockMark5();
 #endif

@@ -8,6 +8,7 @@ Version 2.5
 * Add support for VDIF with multiple channels per thread and multiple threads.
 * Add support for complex VDIF with multiple threads
 * Add support for per-band data weights.  Currently only implemented for Interlaced VDIF
+* Add support for fanned-out VDIF (one channel interleaved across more than one thread).  This is relevant for some DDC3 modes.  Untested as of 2015 Nov 17
 
 Version 2.4
 ~~~~~~~~~~~
