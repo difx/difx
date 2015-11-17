@@ -89,6 +89,16 @@ static unsigned int gcd(unsigned int u, unsigned int v)
   return gcd((v - u) >> 1, u);
 }
 
+static void set_nOutputChan(struct vdif_mux *vm)
+{
+	int nt;
+
+	nt = vm->nThread / vm->fanoutFactor;
+	for(vm->nOutputChan = 1; vm->nOutputChan < nt; vm->nOutputChan *= 2) ;
+	vm->nOutputChan *= vm->inputChannelsPerThread;
+}
+
+
 
 /* Params are:
  *
@@ -159,9 +169,11 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 		vm->nGap = vm->nSort;
 	}
 
-	for(vm->nOutputChan = 1; vm->nOutputChan < vm->nThread; vm->nOutputChan *= 2) ;
+	/* by default, and in most cases, don't merge multiple threads into a single channel.  Can be overridden with a call to setvdifmuxfanoutfactor */
+	vm->fanoutFactor = 1;
 
 
+	set_nOutputChan(vm);
 
 	/* NOTE!!! legacy header support is not yet complete.  It is being designed so that it may be possible to come from and go to either LEGACY or nonLEGACY headers */
 	/* to complete the feature, all reference to VDIF_HEADER_BYTES in vdifmux() need to be replaced */
@@ -224,10 +236,16 @@ int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread)
 		return -2;
 	}
 
+	if(inputChannelsPerThread > 1 && vm->fanoutFactor > 1)
+	{
+		fprintf(stderr, "Error: setvdifmuxinputchannels: cannot have both inputChannelsPerThread and FanoutFactor > 1\n");
+		
+		return -3;
+	}
+
 	vm->inputChannelsPerThread = inputChannelsPerThread;
 
-	for(vm->nOutputChan = 1; vm->nOutputChan < vm->nThread; vm->nOutputChan *= 2) ;
-	vm->nOutputChan *= vm->inputChannelsPerThread;
+	set_nOutputChan(vm);
 
 	nBit = vm->bitsPerSample*vm->inputChannelsPerThread*vm->complexFactor;
 	vm->cornerTurner = getCornerTurner(vm->nThread, nBit);
@@ -237,6 +255,44 @@ int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread)
 		
 		return -1;
 	}
+
+	return 0;
+}
+
+/* Put in for DBBC3: allows data from multiple VDIF threads to be multiplexed into a single channel */
+int setvdifmuxfanoutfactor(struct vdif_mux *vm, int fanoutFactor)
+{
+	if(!vm)
+	{
+		fprintf(stderr, "Error: setvdifmuxfanoutfactor called with null vdif_mux structure\n");
+
+		return -1;
+	}
+
+	if(fanoutFactor < 1)
+	{
+		fprintf(stderr, "Error: setvdifmuxfanoutfactor given out of range input value: %d.\n", fanoutFactor);
+
+		return -2;
+	}
+
+	if(vm->inputChannelsPerThread > 1 && fanoutFactor > 1)
+	{
+		fprintf(stderr, "Error: setvdifmuxfanoutfactor: cannot have both inputChannelsPerThread=%d and FanoutFactor=%d > 1\n", vm->inputChannelsPerThread, fanoutFactor);
+		
+		return -3;
+	}
+
+	if(vm->nThread % fanoutFactor != 0)
+	{
+		fprintf(stderr, "Error: setvidfmuxfanoutfactor: fanoutFactor=%d does not divide nThread=%d\n", fanoutFactor, vm->nThread);
+
+		return -4;
+	}
+
+	vm->fanoutFactor = fanoutFactor;
+
+	set_nOutputChan(vm);
 
 	return 0;
 }
@@ -261,6 +317,7 @@ void printvdifmux(const struct vdif_mux *vm)
 		printf("  nGap = %d\n", vm->nGap);
 		printf("  nThread = %d\n", vm->nThread);
 		printf("  nOutputChan = %d\n", vm->nOutputChan);
+		printf("  fanoutFactor = %d\n", vm->fanoutFactor);
 		printf("  goodMask = 0x%" PRIx64 "\n", vm->goodMask);
 		printf("  flags = 0x%02x\n", vm->flags);
 		printf("  thread to channel map:\n");
@@ -462,7 +519,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				vdif_edv4_header *edv4 = (vdif_edv4_header *)(&outputHeader);
 
 				edv4->dummy = 0;
-				edv4->masklength = vm->nThread;
+				edv4->masklength = vm->nThread/vm->fanoutFactor;
 				edv4->eversion = 4;
 				edv4->syncword = 0xACABFEED;
 				edv4->validitymask = 0;
@@ -812,7 +869,28 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			{
 				const unsigned char **threadBuffers = (const unsigned char **)(frame + VDIF_HEADER_BYTES);
 				vdif_edv4_header *edv4 = (vdif_edv4_header *)frame;
-				edv4->validitymask = mask;
+				if(vm->fanoutFactor > 1)
+				{
+					int k;
+
+					edv4->validitymask = 0;
+					for(i = k = 0; i < vm->nThread; i += vm->fanoutFactor, ++k)
+					{
+						int m;
+						int j;
+						
+						m = 1;
+						for(j = 0; j < vm->fanoutFactor; ++j)
+						{
+							m &= (mask >> (i+j));
+						}
+						edv4->validitymask |= (m << k);
+					}
+				}
+				else
+				{
+					edv4->validitymask = mask;
+				}
 
 				if(mask != vm->goodMask)
 				{

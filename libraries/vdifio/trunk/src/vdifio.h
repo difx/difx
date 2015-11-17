@@ -292,6 +292,7 @@ struct vdif_mux {
   int frameGranularity;
   int nOutputChan;					/* nThread rounded up to nearest power of 2, then multiplied by input chans per thread */
   int complexFactor;					/* should be 1 (real) or 2 (complex).  Used in selecting cornerturner */
+  int fanoutFactor;					/* if > 1 _and_ if input frames have a single channel, will combine multiple threads into a single output channel; this is for DBBC3 */
   unsigned int flags;
   uint16_t chanIndex[VDIF_MAX_THREAD_ID+1];		/* map from threadId to channel number (0 to nThread-1) */
   uint64_t goodMask;
@@ -333,6 +334,7 @@ struct vdif_mux_statistics {
 int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPerSecond, int bitsPerSample, int nThread, const int *threadIds, int nSort, int nGap, int flags);
 
 int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread);
+int setvdifmuxfanoutfactor(struct vdif_mux *vm, int fanoutFactor);
 
 void printvdifmux(const struct vdif_mux *vm);
 
