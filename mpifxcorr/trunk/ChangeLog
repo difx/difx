@@ -9,6 +9,9 @@ Version 2.5
 * Add support for complex VDIF with multiple threads
 * Add support for per-band data weights.  Currently only implemented for Interlaced VDIF
 * Add support for fanned-out VDIF (one channel interleaved across more than one thread).  This is relevant for some DDC3 modes.  Untested as of 2015 Nov 17
+* If arrarystride is zero, calculate a reasonable value for it
+* If guardns is zero, set automatically.  It likely will fail for any satellite observation.
+* Introduce concept of rotatestridelen which is used for uvshifting.  It is based purely on xmacstridelen, unlike previous implementation which also considered arraystridelen
 
 Version 2.4
 ~~~~~~~~~~~

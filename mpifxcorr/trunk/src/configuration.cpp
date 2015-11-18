@@ -23,6 +23,7 @@
 #include <string.h>
 #include <climits>
 #include <ctype.h>
+#include <cmath>
 #include "mk5mode.h"
 #include "configuration.h"
 #include "mode.h"
@@ -31,6 +32,22 @@
 #include "vdifio.h"
 
 int Configuration::MONITOR_TCP_WINDOWBYTES;
+
+// finds the integer closest to but not less than the square root of fftchannels
+static unsigned int calcstridelength(unsigned int arraylength)
+{
+  unsigned int guess;
+
+  if(arraylength <= 8)
+    return arraylength;
+
+  // this is guaranteed to terminate when guess gets to 1
+  for(guess = sqrt(arraylength+0.1); ; --guess)
+  {
+    if(arraylength % guess == 0)
+      return arraylength / guess;
+  }
+}
 
 Configuration::Configuration(const char * configfile, int id, double restartsec)
   : mpiid(id), consistencyok(true), restartseconds(restartsec)
@@ -281,6 +298,7 @@ Configuration::~Configuration()
   {
     for(int i=0;i<numconfigs;i++)
     {
+      delete [] configs[i].arraystridelen;
       delete [] configs[i].datastreamindices;
       delete [] configs[i].baselineindices;
       delete [] configs[i].ordereddatastreamindices;
@@ -782,26 +800,26 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case LBASTD:
       if(stream.numbits != 2)
         cerror << startl << "All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
-      return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth,  stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, stream.linear2circular, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, LBAMode::stdunpackvalues);
+      return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth,  stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, stream.linear2circular, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, LBAMode::stdunpackvalues);
       break;
     case LBAVSOP:
       if(stream.numbits != 2)
         cerror << startl << "All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
-      return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, LBAMode::vsopunpackvalues);
+      return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, LBAMode::vsopunpackvalues);
       break;
     case LBA8BIT:
       if(stream.numbits != 8) {
         cerror << startl << "8BIT LBA mode must have 8 bits! aborting" << endl;
         return NULL;
       }
-      return new LBA8BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 8/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs);
+      return new LBA8BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 8/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs);
       break;
     case LBA16BIT:
       if(stream.numbits != 16) {
         cerror << startl << "16BIT LBA mode must have 16 bits! aborting" << endl;
         return NULL;
       }
-      return new LBA16BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 16/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs);
+      return new LBA16BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 16/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs);
       break;
     case MKIV:
     case VLBA:
@@ -820,7 +838,7 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
         framesamples *= getDNumMuxThreads(configindex, datastreamindex);
         framebytes = (framebytes - VDIF_HEADER_BYTES)*getDNumMuxThreads(configindex, datastreamindex) + VDIF_HEADER_BYTES; // Assumed INTERLACED is never legacy
       }
-      return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
+      return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
 
       break;
     default:
@@ -1071,6 +1089,7 @@ bool Configuration::processConfig(ifstream * input)
   estimatedbytes += numconfigs*sizeof(configdata);
   for(int i=0;i<numconfigs;i++)
   {
+    configs[i].arraystridelen = new int[numdatastreams];
     configs[i].datastreamindices = new int[numdatastreams];
     configs[i].baselineindices = new int [numbaselines];
     getinputline(input, &(configs[i].name), "CONFIG NAME");
@@ -1083,12 +1102,16 @@ bool Configuration::processConfig(ifstream * input)
     getinputline(input, &line, "FRINGE ROTN ORDER");
     configs[i].fringerotationorder = atoi(line.c_str());
     getinputline(input, &line, "ARRAY STRIDE LEN");
-    configs[i].arraystridelen = atoi(line.c_str());
-    if(configs[i].arraystridelen <= 0)
+    configs[i].arraystridelenfrominputfile = atoi(line.c_str());
+    if(configs[i].arraystridelenfrominputfile < 0)
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Invalid value for arraystridelength: " << configs[i].arraystridelen << endl;
+        cfatal << startl << "Invalid value for arraystridelength: " << configs[i].arraystridelenfrominputfile << endl;
       consistencyok = false;
+    }
+    for(int j=0;j<numdatastreams;++j)
+    {
+      configs[i].arraystridelen[j] = configs[i].arraystridelenfrominputfile;
     }
     getinputline(input, &line, "XMAC STRIDE LEN");
     configs[i].xmacstridelen = atoi(line.c_str());
@@ -1098,6 +1121,10 @@ bool Configuration::processConfig(ifstream * input)
         cfatal << startl << "Invalid value for xmaclength: " << configs[i].xmacstridelen << endl;
       consistencyok = false;
     }
+    // set rotate stride length to the smallest integer >= sqrt(xmacstridelen)
+    configs[i].rotatestridelen = calcstridelength(configs[i].xmacstridelen);
+    if(mpiid == 0)
+      cinfo << "Config[" << i << "]: setting rotate stride length to " << configs[i].rotatestridelen << " based on xmacstridelen = " << configs[i].xmacstridelen << endl;
     getinputline(input, &line, "NUM BUFFERED FFTS");
     configs[i].numbufferedffts = atoi(line.c_str());
     if(configs[i].numbufferedffts > maxnumbufferedffts)
@@ -2372,13 +2399,23 @@ bool Configuration::consistencyCheck()
       dsdata = &(datastreamtable[configs[i].datastreamindices[j]]);
       for(int k=0;k<dsdata->numrecordedfreqs;k++) {
         nchan = freqtable[dsdata->recordedfreqtableindices[k]].numchannels;
-        if(nchan % configs[i].arraystridelen != 0) {
-    //for(int j=0;j<freqtablelength;j++) {
-      //if(freqtable[j].numchannels % configs[i].arraystridelen != 0) {
+        if(configs[i].arraystridelen[j] == 0)
+        {
+          configs[i].arraystridelen[j] = calcstridelength(nchan);
+          if(mpiid == 0)
+            cinfo << startl << "Config[" << i << "] datastream[" << j << "] had its array stride length automatically set to " << configs[i].arraystridelen[j] << " based on nchan=" << nchan << endl;
+        }
+        if(nchan % configs[i].arraystridelen[j] != 0) {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Config[" << i << "] has a stride length of " << configs[i].arraystridelen << " which is not an integral divisor of the number of channels in frequency[" << k << "] of datastream " << j << " (which is " << nchan << ") - aborting!!!" << endl;
+            cfatal << startl << "Config[" << i << "] datastream[" << j << "] has an array stride length of " << configs[i].arraystridelen[j] << " which is not an integral divisor of the number of channels in frequency[" << k << "] (which is " << nchan << ") - aborting!!!" << endl;
           return false;
         }
+      }
+      if(configs[i].guardns == 0)
+      {
+        configs[i].guardns = globalmaxnsslip;
+        if(mpiid == 0)
+          cinfo << startl << "Config[" << i << "] had its guardns automatically set to " << configs[i].guardns << " since it was not set in the .input file" << endl;
       }
       if(configs[i].guardns < globalmaxnsslip) {
         if(mpiid == 0) //only write one copy of this error message

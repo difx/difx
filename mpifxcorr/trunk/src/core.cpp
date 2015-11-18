@@ -422,16 +422,12 @@ void Core::loopprocess(int threadid)
   dumpingsta = false;
   maxpolycos = 0;
   maxchan = config->getMaxNumChannels();
-  slen = config->getArrayStrideLength(0);
-  if(slen>config->getXmacStrideLength(0))
-    slen = config->getXmacStrideLength(0);
+  slen = config->getRotateStrideLength(0);
   maxrotatestrideplussteplength = slen + maxchan/slen;
   maxxmaclength = config->getXmacStrideLength(0);
   for(int i=1;i<config->getNumConfigs();i++)
   {
-    slen = config->getArrayStrideLength(i);
-    if(slen>config->getXmacStrideLength(i))
-      slen = config->getXmacStrideLength(i);
+    slen = config->getRotateStrideLength(i);
     strideplussteplen = slen + maxchan/slen;
     if(strideplussteplen > maxrotatestrideplussteplength)
       maxrotatestrideplussteplength = strideplussteplen;
@@ -443,6 +439,7 @@ void Core::loopprocess(int threadid)
   scratchspace->rotated = vectorAlloc_cf32(maxchan);
   scratchspace->channelsums = vectorAlloc_cf32(maxchan);
   scratchspace->argument = vectorAlloc_f32(3*maxrotatestrideplussteplength);
+  // FIXME: explicitly calculate "28" below.
   threadbytes[threadid] += 16*maxchan + 28*maxrotatestrideplussteplength;
 
   //work out whether we'll need to do any pulsar binning, and work out the maximum # channels (and # polycos if applicable)
@@ -1596,9 +1593,7 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   delaywindow = config->getFNumChannels(freqindex)/(config->getFreqTableBandwidth(freqindex)); //max lag (plus and minus)
   localfreqindex = config->getBLocalFreqIndex(procslots[index].configindex, baseline, freqindex);
   xmacstridelen = config->getXmacStrideLength(procslots[index].configindex);
-  rotatestridelen = config->getArrayStrideLength(procslots[index].configindex);
-  if(rotatestridelen > xmacstridelen)
-    rotatestridelen = xmacstridelen;
+  rotatestridelen = config->getRotateStrideLength(procslots[index].configindex);
   threadbinloop = 1;
   corebinloop = 1;
   if(procslots[index].pulsarbin)

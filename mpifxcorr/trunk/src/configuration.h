@@ -91,8 +91,9 @@ public:
   inline bool consistencyOK() const { return consistencyok; }
   inline bool anyUsbXLsb(int configindex) const { return configs[configindex].anyusbxlsb; }
   inline bool phasedArrayOn(int configindex) const { return configs[configindex].phasedarray; }
-  inline int getArrayStrideLength(int configindex) const { return configs[configindex].arraystridelen; }
+  inline int getArrayStrideLength(int configindex, int datastreamindex) const { return configs[configindex].arraystridelen[datastreamindex]; }
   inline int getXmacStrideLength(int configindex) const { return configs[configindex].xmacstridelen; }
+  inline int getRotateStrideLength(int configindex) const { return configs[configindex].rotatestridelen; }
   inline int getNumBufferedFFTs(int configindex) const { return configs[configindex].numbufferedffts; }
   inline int getThreadResultLength(int configindex) const { return configs[configindex].threadresultlength; }
   inline int getCoreResultLength(int configindex) const { return configs[configindex].coreresultlength; }
@@ -674,8 +675,10 @@ private:
     int subintns;
     int guardns;
     int fringerotationorder;
-    int arraystridelen;
+    int arraystridelenfrominputfile;
+    int * arraystridelen; //[datastream]
     int xmacstridelen;
+    int rotatestridelen;
     int numbufferedffts;
     bool writeautocorrs;
     bool pulsarbin;
@@ -699,7 +702,7 @@ private:
     int * numpafreqpols; //[freq]
     datadomain padomain;
     Polyco ** polycos;
-    int  * datastreamindices;
+    int  * datastreamindices; //[datastream]
     int  * ordereddatastreamindices;
     int  * baselineindices;
     bool * frequsedbybaseline;
