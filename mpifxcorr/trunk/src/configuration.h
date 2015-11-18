@@ -675,7 +675,6 @@ private:
     int subintns;
     int guardns;
     int fringerotationorder;
-    int arraystridelenfrominputfile;
     int * arraystridelen; //[datastream]
     int xmacstridelen;
     int rotatestridelen;

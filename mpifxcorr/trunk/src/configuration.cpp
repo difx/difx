@@ -1079,6 +1079,7 @@ void Configuration::processCommon(ifstream * input)
 bool Configuration::processConfig(ifstream * input)
 {
   string line;
+  int arraystridelenfrominputfile;
 
   maxnumpulsarbins = 0;
   maxnumbufferedffts = 0;
@@ -1102,16 +1103,16 @@ bool Configuration::processConfig(ifstream * input)
     getinputline(input, &line, "FRINGE ROTN ORDER");
     configs[i].fringerotationorder = atoi(line.c_str());
     getinputline(input, &line, "ARRAY STRIDE LEN");
-    configs[i].arraystridelenfrominputfile = atoi(line.c_str());
-    if(configs[i].arraystridelenfrominputfile < 0)
+    arraystridelenfrominputfile = atoi(line.c_str());
+    if(arraystridelenfrominputfile < 0)
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Invalid value for arraystridelength: " << configs[i].arraystridelenfrominputfile << endl;
+        cfatal << startl << "Invalid value for arraystridelength: " << arraystridelenfrominputfile << endl;
       consistencyok = false;
     }
     for(int j=0;j<numdatastreams;++j)
     {
-      configs[i].arraystridelen[j] = configs[i].arraystridelenfrominputfile;
+      configs[i].arraystridelen[j] = arraystridelenfrominputfile;
     }
     getinputline(input, &line, "XMAC STRIDE LEN");
     configs[i].xmacstridelen = atoi(line.c_str());
@@ -1124,7 +1125,7 @@ bool Configuration::processConfig(ifstream * input)
     // set rotate stride length to the smallest integer >= sqrt(xmacstridelen)
     configs[i].rotatestridelen = calcstridelength(configs[i].xmacstridelen);
     if(mpiid == 0)
-      cinfo << "Config[" << i << "]: setting rotate stride length to " << configs[i].rotatestridelen << " based on xmacstridelen = " << configs[i].xmacstridelen << endl;
+      cinfo << startl << "Config[" << i << "]: setting rotate stride length to " << configs[i].rotatestridelen << " based on xmacstridelen = " << configs[i].xmacstridelen << endl;
     getinputline(input, &line, "NUM BUFFERED FFTS");
     configs[i].numbufferedffts = atoi(line.c_str());
     if(configs[i].numbufferedffts > maxnumbufferedffts)
