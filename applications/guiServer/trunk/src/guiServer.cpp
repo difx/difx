@@ -127,9 +127,13 @@ int main( int argc, char **argv, char **envp ) {
     
     //  Bail out if we don't have a defined DiFX base.
     if ( difxBase[0] == 0 ) {
-        fprintf( stderr, "No DiFX base was defined (either command line or environment variable).\n" );
-        fprintf( stderr, "guiServer is terminating!\n" );
-        exit( EXIT_FAILURE );
+        fprintf( stderr, "No DiFX base was defined (either command line or environment variable) so\n" );
+        if ( getenv( "DIFX_VERSION" ) != NULL ) {
+            fprintf( stderr, "guiServer will be unable to control DiFX version - current is %s.\n", getenv( "DIFX_VERSION" ) );
+        }
+        else {
+            fprintf( stderr, "guiServer will be unable to control DiFX version - current version is UNKNOWN.\n" );
+        }
     }
     
     //  The TCP server for all connections.
@@ -137,7 +141,6 @@ int main( int argc, char **argv, char **envp ) {
     if ( !server->serverUp() )
         exit( EXIT_FAILURE );
     printf( "server at port %d\n", serverPort );
-    printf( "DiFX base is %s\n", difxBase );
     
     //  Initialize the list of client connections.
     _clientConnections.clear();

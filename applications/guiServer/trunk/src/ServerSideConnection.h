@@ -354,26 +354,27 @@ namespace guiServer {
                 sendPacket( GUISERVER_USER, username, strlen( username ) );
                 
             //  Find all available versions of DiFX software under the base.  Any of these
-            //  can be used when running DiFX programs (vex2difx, runmpifxcorr, etc.).
+            //  can be used when running DiFX programs (vex2difx, runmpifxcorr, etc.).  For
+            //  a version to be legal, it must have a "rungeneric" file in the bin directory
+            //  under the DIFX_BASE.  If there is not DIFX_BASE, or no bin directory, this
+            //  should all still work - it just won't find any legal versions.
             char searchStr[DIFX_MESSAGE_LENGTH];
-            snprintf( searchStr, DIFX_MESSAGE_LENGTH, "%s/bin/setup_difx.*", _difxBase );
-            //snprintf( searchStr, DIFX_MESSAGE_LENGTH, "%s/*/setup_difx.*", _difxBase );
+            snprintf( searchStr, DIFX_MESSAGE_LENGTH, "%s/bin/rungeneric.*", _difxBase );
             glob_t globbuf;
             if ( glob( searchStr, 0, NULL, &globbuf ) ) {
-                diagnostic( ERROR, "On DiFX Host \"%s\" returns empty or path does not exist\n", searchStr );
+                diagnostic( WARNING, "On DiFX Host \"%s\" returns empty or path does not exist - no versions of DiFX can be located.\n", searchStr );
             } else {
-                //  Parse the "version" out of the name of each setup file we find.  This
+                //  Parse the "version" out of the name of each rungeneric file we find.  This
                 //  version is then transmitted back to the GUI so it knows it is an option.
                 for ( unsigned int i = 0; i < globbuf.gl_pathc; ++i ) {
                     std::string nextPath( globbuf.gl_pathv[i] );
-                    int nPos = nextPath.rfind( "setup_difx." );
-                    if ( nPos < (int)nextPath.length() - (int)strlen( "setup_difx." ) &&
+                    int nPos = nextPath.rfind( "rungeneric." );
+                    if ( nPos < (int)nextPath.length() - (int)strlen( "rungeneric." ) &&
                         nextPath.rfind( ".csh" ) + 4 != nextPath.length() &&
                         nextPath.rfind( ".sh" ) + 3 != nextPath.length() )
-                        strncpy( newVersion, globbuf.gl_pathv[i] + nPos + strlen( "setup_difx." ), DIFX_MESSAGE_LENGTH );
+                        strncpy( newVersion, globbuf.gl_pathv[i] + nPos + strlen( "rungeneric." ), DIFX_MESSAGE_LENGTH );
                     else
                         newVersion[0] = 0;
-//                    strncpy( newVersion, globbuf.gl_pathv[i] + strlen( searchStr ) - 1, DIFX_MESSAGE_LENGTH );
                     if ( strlen( newVersion ) > 0 )
                         sendPacket( AVAILABLE_DIFX_VERSION, newVersion, strlen( newVersion ) );
                 }
