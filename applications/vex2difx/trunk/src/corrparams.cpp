@@ -382,7 +382,7 @@ int CorrSetup::testStrideLength() const
 {
 	int nWarn = 0;
 
-	if(xmacLength > 0)
+	if(strideLength > 0)
 	{
 		for(std::set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
 		{
@@ -2487,6 +2487,7 @@ int CorrParams::checkSetupValidity()
 				}
 			}
 		}
+#if 0
 		if(c->strideLength == 0)
 		{
 			if(c->minInputChans() > 0)
@@ -2506,6 +2507,7 @@ int CorrParams::checkSetupValidity()
 				}
 			}
 		}
+#endif
 	}
 
 	// check that all setups are sensible

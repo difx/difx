@@ -2064,7 +2064,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			}
 		}
 		worstcaseguardns = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), config->subintNS, mode->getMinBits(), mode->getMinSubbands());
-		if(config->guardNS < worstcaseguardns)
+		if(config->guardNS < worstcaseguardns && config->guardNS > 0)
 		{
 			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << config->guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
 			if(strict)

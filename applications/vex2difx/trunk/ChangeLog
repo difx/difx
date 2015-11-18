@@ -35,6 +35,8 @@ Version 2.5.0
   - Error : A problem with input data that cannot be ignored.
   - Developer error : A case where the program detected internal self inconsistency.  This implies a bug in the code.
 * Support mark6 media
+* Allow guardNS = 0 --> mpifxcorr choses the smallest reasonable value
+* Allow strideLength = 0 --> mpifxcorr choses a pretty good value for you (per datastream)
 
 Version 2.4.0
 ~~~~~~~~~~~~~
