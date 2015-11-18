@@ -121,6 +121,14 @@ static int getRecordChannel(const std::string &antName, const std::string &chanN
 		}
 
 		const Tracks &T = it->second;
+
+		if(T.sign.empty())
+		{
+			cerr << "Note: antenna " << antName << " has Mark5B format but no tracks defined in the vex file." << endl;
+
+			return -1;
+		}
+
 		delta = T.sign.size() + T.mag.size();
 		track = T.sign[0];
 
