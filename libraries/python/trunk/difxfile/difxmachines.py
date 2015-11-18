@@ -53,6 +53,16 @@ class DifxMachines(object):
 		for c in xrange(ord(c1), ord(c2)+1):
 			yield chr(c)
 
+	def getMk6Nodes(self):
+		"""
+		returns a list of all Mk6 nodes
+		"""
+		nodes = []
+		for name, node in self.nodes.iteritems():
+			if node.isMk6 == 1:
+				nodes.append(node)
+		return nodes
+	
 	def getMk5Nodes(self):
 		"""
 		returns a list of all Mk5 nodes
@@ -215,6 +225,8 @@ class DifxMachines(object):
 					for url in result.group(4).split():
 						if url.strip().startswith("mark5://"):
 							node.isMk5 = 1
+						elif url.strip().startswith("mark6://"):
+							node.isMk6 = 1
 						elif  url.strip().startswith("file://"):
 							# add trailing "/" (if not present)
 							if url.strip().endswith("/"):
@@ -247,12 +259,13 @@ class Node:
 	name = ""
 	threads = 0
 	isMk5 = 0
+	isMk6 = 0
 	isHeadnode = 0
 	fileUrls = []
 	networkUrls = []
 
 	def __str__(self):
-		result = "name=%s threads=%s isHeadnode=%s isMk5=%s fileUrls=%s networkUrls=%s" % (self.name, self.threads, self.isHeadnode, self.isMk5, self.fileUrls, self.networkUrls)
+		result = "name=%s threads=%s isHeadnode=%s isMk5=%s isMk6=%s fileUrls=%s networkUrls=%s" % (self.name, self.threads, self.isHeadnode, self.isMk5, self.isMk6, self.fileUrls, self.networkUrls)
 		return(result)
 		
 if __name__ == "__main__":
@@ -273,11 +286,16 @@ if __name__ == "__main__":
 	for node in difxmachines.getMk5Nodes():
 		print node.name
 
+	print "------------\nMark6 nodes:\n------------"
+	for node in difxmachines.getMk6Nodes():
+		print node.name
+
+
 	print "------------\nStorage nodes:\n------------"
 	for node in difxmachines.getStorageNodes():
 		print node.name
 
-		print "------------\nHead nodes:\n------------"
+	print "------------\nHead nodes:\n------------"
 	for node in difxmachines.getHeadNodes():
 		print node.name
 		
