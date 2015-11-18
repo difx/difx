@@ -182,7 +182,7 @@ class Client( DiFXControl.Client ):
 		self._testProcessors = False
 		self._forceJobStart = True
 		self._restartSeconds = 0.0
-		self._runWithMonitor = True
+		self._runWithMonitor = False
 		self._setMachinesDefCallback = None
 		self._setStartCallback = None
 		self.callbackExclusive = False

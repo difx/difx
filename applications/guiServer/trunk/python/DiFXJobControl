@@ -268,7 +268,7 @@ difx.inputFile( inputFile )
 if headNode != None:
 	difx.clearDataSources()
 	difx.clearProcessors()
-	difx.headNode( headNode )
+	difx.setHeadNode( headNode )
 	for node in dataSources:
 		difx.addDataSource( node )
 	i = 0;
