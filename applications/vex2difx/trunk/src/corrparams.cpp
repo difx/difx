@@ -2487,27 +2487,6 @@ int CorrParams::checkSetupValidity()
 				}
 			}
 		}
-#if 0
-		if(c->strideLength == 0)
-		{
-			if(c->minInputChans() > 0)
-			{
-				const int trialStrideLength[] = {128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
-				int goal;
-
-				goal = static_cast<int>(sqrt(static_cast<double>(c->minInputChans())) + 0.5);
-
-				for(int i = 0; ; ++i)
-				{
-					if(c->minInputChans() % trialStrideLength[i] == 0 && trialStrideLength[i] <= goal)
-					{
-						c->strideLength = trialStrideLength[i];
-						break;
-					}
-				}
-			}
-		}
-#endif
 	}
 
 	// check that all setups are sensible
