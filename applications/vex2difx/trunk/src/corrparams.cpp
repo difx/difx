@@ -2463,30 +2463,6 @@ int CorrParams::checkSetupValidity()
 			}
 			c->FFTSpecRes = c->outputSpecRes;
 		}
-
-		if(c->xmacLength == 0)
-		{
-			if(c->minInputChans() > 0)
-			{
-				if(c->minInputChans() > 128)
-				{
-					const int trialXmacLength[] = {512, 400, 256, 250, 128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
-
-					for(int i = 0; ; ++i)
-					{
-						if(c->minInputChans() % trialXmacLength[i] == 0)
-						{
-							c->xmacLength = trialXmacLength[i];
-							break;
-						}
-					}
-				}
-				else
-				{
-					c->xmacLength = c->minInputChans();
-				}
-			}
-		}
 	}
 
 	// check that all setups are sensible
