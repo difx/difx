@@ -799,6 +799,19 @@ private:
   sectionheader getSectionHeader(ifstream * input);
 
  /**
+  * Looks at number of output channels for each used frequency to determine the best xmac stride
+  * @param configId The configuration object ID 
+  * @return the best xmac stride
+  */
+  int calcgoodxmacstridelength(int configId) const;
+
+ /**
+  * As necessary sets the arraystridelen, xmacstridelen and rotatestridelen
+  * @return If consistency of the config object remains OK
+  */
+  bool setStrides();
+
+ /**
   * Checks a loaded file for consistency - ensuring all frequencies for a given datastream have the same bandwidth etc
   * @return If the configuration file was parsed without problems, true, else false
   */

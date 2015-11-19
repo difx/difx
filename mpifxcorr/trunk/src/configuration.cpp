@@ -30,6 +30,7 @@
 #include "visibility.h"
 #include "alert.h"
 #include "vdifio.h"
+#include "mathutil.h"
 
 int Configuration::MONITOR_TCP_WINDOWBYTES;
 
@@ -38,7 +39,7 @@ static unsigned int calcstridelength(unsigned int arraylength)
 {
   unsigned int guess;
 
-  if(arraylength <= 8)
+  if(arraylength <= 16)
     return arraylength;
 
   // this is guaranteed to terminate when guess gets to 1
@@ -265,6 +266,8 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
       if(consistencyok)
 	consistencyok = model->addClockTerms(telescopetable[i].name, telescopetable[i].clockrefmjd, telescopetable[i].clockorder, telescopetable[i].clockpoly, false);
     }
+    if(consistencyok)
+      consistencyok = setStrides();
     if(consistencyok)
       estimatedbytes += model->getEstimatedBytes();
     if(consistencyok)
@@ -1116,16 +1119,12 @@ bool Configuration::processConfig(ifstream * input)
     }
     getinputline(input, &line, "XMAC STRIDE LEN");
     configs[i].xmacstridelen = atoi(line.c_str());
-    if(configs[i].xmacstridelen <= 0)
+    if(configs[i].xmacstridelen < 0)
     {
       if(mpiid == 0) //only write one copy of this error message
         cfatal << startl << "Invalid value for xmaclength: " << configs[i].xmacstridelen << endl;
       consistencyok = false;
     }
-    // set rotate stride length to the smallest integer >= sqrt(xmacstridelen)
-    configs[i].rotatestridelen = calcstridelength(configs[i].xmacstridelen);
-    if(mpiid == 0)
-      cinfo << startl << "Config[" << i << "]: setting rotate stride length to " << configs[i].rotatestridelen << " based on xmacstridelen = " << configs[i].xmacstridelen << endl;
     getinputline(input, &line, "NUM BUFFERED FFTS");
     configs[i].numbufferedffts = atoi(line.c_str());
     if(configs[i].numbufferedffts > maxnumbufferedffts)
@@ -1582,7 +1581,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
   numcoreconfs = 0;
   if(!coreinput.is_open() || coreinput.bad())
   {
-    cerror << startl << "Could not open " << coreconffilename << " - will set all numthreads to 1!" << endl;
+    cwarn << startl << "Could not open " << coreconffilename << " - will set all numthreads to 1!" << endl;
   }
   else
   {
@@ -2171,6 +2170,90 @@ void Configuration::setDatastreamMuxInfo(int datastreamindex, string muxinfo)
     datastreamtable[datastreamindex].muxthreadmap[i] = threadindices[i];
 }
 
+int Configuration::calcgoodxmacstridelength(int configId) const
+{
+  int nchangcd = 0;
+  int target;  /* ignoring numerology, the best possible xmac stride */
+  double err = 1.0e12;
+  int beststride = 0;
+
+  // First get nchangcd : GCD of number of channels of each output frequency
+  for(int j=0;j<numbaselines;j++)
+  {
+    baselinedata bl;
+    bl = baselinetable[configs[configId].baselineindices[j]];
+    for(int k=0;k<bl.numfreqs;k++)
+    {
+      int nchan;
+      nchan = freqtable[bl.freqtableindices[k]].numchannels;
+      if(nchangcd == 0)
+      {
+        nchangcd = nchan;
+      }
+      else
+      {
+        nchangcd = gcd((long)nchangcd, (long)nchan);
+      }
+    }
+  }
+
+  target = 150;
+
+  // Now find a number that divides nchangcd and is as close as possible to target
+  for(int guess = nchangcd; guess > 0; --guess)
+  {
+    double d;
+    if(nchangcd % guess != 0)
+    {
+      continue;
+    }
+    d = fabs(guess - target);
+    if(d < err)
+    {
+      err = d;
+      beststride = guess;
+    }
+  }
+  
+  return beststride;
+}
+
+// sets arraystridelen, xmacstridelen, and rotatestridelen
+bool Configuration::setStrides()
+{
+  int nchan;
+  datastreamdata * dsdata;
+
+  for(int i=0;i<numconfigs;i++)
+  {
+    for(int j=0;j<numdatastreams;j++) {
+      dsdata = &(datastreamtable[configs[i].datastreamindices[j]]);
+      for(int k=0;k<dsdata->numrecordedfreqs;k++) {
+        nchan = freqtable[dsdata->recordedfreqtableindices[k]].numchannels;
+        if(configs[i].arraystridelen[j] == 0)
+        {
+          configs[i].arraystridelen[j] = calcstridelength(nchan);
+          if(mpiid == 0)
+            cinfo << startl << "Config[" << i << "] datastream[" << j << "] had its array stride length automatically set to " << configs[i].arraystridelen[j] << " based on nchan = " << nchan << endl;
+        }
+      }
+    }
+    if(configs[i].xmacstridelen == 0)
+    {
+      configs[i].xmacstridelen = calcgoodxmacstridelength(i);
+      if(mpiid == 0)
+        cinfo << startl << "Config[" << i << "] had its xmac stride length automatically set to " << configs[i].xmacstridelen << " based on numbers of output channels" << endl;
+    }
+
+    // set rotate stride length to the smallest integer >= sqrt(xmacstridelen)
+    configs[i].rotatestridelen = calcstridelength(configs[i].xmacstridelen);
+    if(mpiid == 0)
+      cinfo << startl << "Config[" << i << "]: setting rotate stride length to " << configs[i].rotatestridelen << " based on xmacstridelen = " << configs[i].xmacstridelen << endl;
+  }
+
+  return true;
+}
+
 bool Configuration::consistencyCheck()
 {
   int tindex, count, freqindex, freq1index, freq2index, confindex, timesec, initscan, initsec, framebytes, numbits;
@@ -2400,12 +2483,6 @@ bool Configuration::consistencyCheck()
       dsdata = &(datastreamtable[configs[i].datastreamindices[j]]);
       for(int k=0;k<dsdata->numrecordedfreqs;k++) {
         nchan = freqtable[dsdata->recordedfreqtableindices[k]].numchannels;
-        if(configs[i].arraystridelen[j] == 0)
-        {
-          configs[i].arraystridelen[j] = calcstridelength(nchan);
-          if(mpiid == 0)
-            cinfo << startl << "Config[" << i << "] datastream[" << j << "] had its array stride length automatically set to " << configs[i].arraystridelen[j] << " based on nchan=" << nchan << endl;
-        }
         if(nchan % configs[i].arraystridelen[j] != 0) {
           if(mpiid == 0) //only write one copy of this error message
             cfatal << startl << "Config[" << i << "] datastream[" << j << "] has an array stride length of " << configs[i].arraystridelen[j] << " which is not an integral divisor of the number of channels in frequency[" << k << "] (which is " << nchan << ") - aborting!!!" << endl;
@@ -2416,7 +2493,7 @@ bool Configuration::consistencyCheck()
       {
         configs[i].guardns = globalmaxnsslip;
         if(mpiid == 0)
-          cinfo << startl << "Config[" << i << "] had its guardns automatically set to " << configs[i].guardns << " since it was not set in the .input file" << endl;
+          cinfo << startl << "Config[" << i << "] had its guardns automatically set to " << configs[i].guardns << " since it was not set in the configuration file" << endl;
       }
       if(configs[i].guardns < globalmaxnsslip) {
         if(mpiid == 0) //only write one copy of this error message

@@ -23,6 +23,7 @@ mpifxcorr_SOURCES = \
 	datastream.cpp \
 	visibility.cpp \
 	configuration.cpp \
+	mathutil.cpp \
 	mode.cpp \
         model.cpp \
 	mk5.cpp \
@@ -48,6 +49,7 @@ library_include_HEADERS = \
 	architecture.h \
 	visibility.h \
 	configuration.h \
+	mathutil.h \
 	mk5.h \
 	mk5mode.h \
         model.h \
@@ -80,6 +82,7 @@ libmpifxcorr_a_SOURCES = \
 	mk5.cpp \
 	mk5mode.cpp \
 	fxmanager.cpp \
+	mathutil.cpp \
         model.cpp \
 	visibility.cpp \
 	alert.cpp \
@@ -95,6 +98,7 @@ libmpifxcorr_a_SOURCES = \
 libfxcorr_a_SOURCES = \
 	configuration.cpp \
 	pcal.cpp \
+	mathutil.cpp \
 	mode.cpp \
 	mk5mode.cpp \
 	polyco.cpp \
@@ -108,6 +112,7 @@ neuteredmpifxcorr_SOURCES = \
 	fxmanager.cpp \
 	core.cpp \
 	datastream.cpp \
+	mathutil.cpp \
 	mk5.cpp \
 	switchedpower.cpp \
 	mark5bfile.cpp \

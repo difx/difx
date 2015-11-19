@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken and Adam Deller                  *
+ *   Copyright (C) 2007-2015 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -52,6 +52,11 @@ public:
 			sendAlert();
 		}
 	}
+
+        void setAlertLevel(int level)
+        {
+                alertLevel = level;
+        }
 	
 	// operator << to take any type that can be << to a stringstream 
 	// and pass it into the internal stringstream

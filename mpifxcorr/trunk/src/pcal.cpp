@@ -65,6 +65,7 @@
 #ifndef UNIT_TEST
 #include "alert.h"
 #endif
+#include "mathutil.h"
 #include "pcal.h"
 #include "pcal_impl.h"
 #include <iostream>
@@ -176,33 +177,6 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BASE CLASS: Static helper funcs
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Greatest common divisor.
- */
-long long PCal::gcd(long a, long b)
-{
-    if (a == 0 || b == 0)
-        return std::max(a,b);
-    while (true) {
-        a = a%b;
-        if (a == 0) {
-           return b;
-        }
-        b = b%a;
-        if (b == 0) {
-           return a;
-        }
-    }
-}
-
-/**
- * Greatest common divisor, with rounding of floating point input args.
- */
-long long PCal::gcd(double a, double b)
-{
-    return gcd((long)floor(a + 0.5), (long)floor(b + 0.5));
-}
 
 /**
  * Return number of tones that fit the band, including any

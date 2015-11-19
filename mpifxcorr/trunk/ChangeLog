@@ -12,8 +12,11 @@ Version 2.5
 * If arrarystride is zero, calculate a reasonable value for it
   - Allows arraystride to be set separately per datastream
   - This is of particular use when datastreams have discrepant bandwidths (e.g., ALMA's 62.5 MHz vs normal 2^n MHz )
-* If guardns is zero, set automatically.  It likely will fail for any satellite observation.
+* If xmacstride is zero, calculate a reasonable value for it based on output frequencies' channel counts
 * Introduce concept of rotatestridelen which is used for uvshifting.  It is based purely on xmacstridelen, unlike previous implementation which also considered arraystridelen
+* If guardns is zero, set automatically.  It likely will fail for any satellite observation.
+* checkmpifxcorr: option to set max message level
+* checkmpifxcorr: can operate on multiple input files
 
 Version 2.4
 ~~~~~~~~~~~

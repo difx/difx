@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken and Adam Deller                  *
+ *   Copyright (C) 2007-2015 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -54,7 +54,10 @@ Alert cdebug(DIFX_ALERT_LEVEL_DEBUG);		// alert level 6
 Alert& Alert::sendAlert()
 {
 	// Send alert to appropriate place
-	difxMessageSendDifxAlert(alertString.str().c_str(), alertLevel);
+        if(alertLevel != DIFX_ALERT_LEVEL_DO_NOT_SEND)
+        {
+	  difxMessageSendDifxAlert(alertString.str().c_str(), alertLevel);
+        }
 
 	// Reset alert stream
 	alertString.str("");

@@ -1,6 +1,6 @@
 bin_PROGRAMS = checkmpifxcorr dedisperse_difx mpispeed
 
-AM_CXXFLAGS = -I$(srcdir)/../src/ -I../src/
+AM_CPPFLAGS = -I$(top_srcdir)/src
 
 checkmpifxcorr_SOURCES = \
 	checkmpifxcorr.cpp

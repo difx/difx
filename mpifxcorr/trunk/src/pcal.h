@@ -186,17 +186,6 @@ class PCal {
        */
       bool extractAndIntegrate_reference(f32 const* data, const size_t len, cf32* pcalout, const uint64_t sampleoffset);
 
-   public:
-     /**
-      * Return greatest common divisor.
-      */
-      static long long gcd(long, long);
-
-     /**
-      * Return greatest common divisor, with rounding of floating point input args.
-      */
-      static long long gcd(double, double);
-
    private:
       /* Testing */
       void invariant() { 
