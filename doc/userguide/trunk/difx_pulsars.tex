@@ -27,7 +27,7 @@ Pulsar {\em binning} is supported within DiFX.
 This entails generating a separate visibility spectrum for each requested range of pulse phase.
 There are no explicit limits to the number of pulse phase bins that are supported, however, data rates can become increasingly large.
 Currently AIPS does not support databases with multiple phase bins. 
-Until there is proper post-processig support for pulsar binning, a separate FITS file will be produced for each pulsar phase bin.
+Until there is proper post-processing support for pulsar binning, a separate FITS file will be produced for each pulsar phase bin.
 
 \item \label{psrmode:profile} {\bf Profile Mode}
 Profile mode is very different than the other three as it generates autocorrelations only that are used to determine the pulse shape and phase rather than generating cross correlations.
@@ -42,9 +42,11 @@ It could be that increasing the integration time helps; there is no reason not t
 \end{itemize}
 
 In all cases the observer will be responsible for providing a pulsar
-spin ephemeris.  Except for certain applications of mode 
-\ref{psrmode:bin} the ephemeris must be capable of pedicting the absolute
-rotation phase of the pulsar.
+spin ephemeris, and in all cases this ephemeris must provide an accurate
+description of the pulsar's rotation over the observation duration (the pulsar 
+phase must ont drift substantially with time).  If gating is to be applied then 
+the ephemeris must be additionally be capable
+of pedicting the absolute rotation phase of the pulsar.
 Enabling pulsar modes incurs a minimum correlation-time penalty of
 about 50\%.  High output data rates (computed from time resolution,
 number of spectral channels, and number of pulsar bins) may require 
@@ -74,6 +76,7 @@ Each {\tt .polyco} contains one or more polynomials along with metadata; an exam
  -0.18403230317431974D-18  0.25241984130137833D-20  0.13743173681516959D-21
 \end{verbatim}
 \noindent
+A description of the file format is available at \url{http://tempo.sourceforge.net/ref_man_sections/tz-polyco.txt}.
 Currently {\tt tempo} (version 1) is well supported and {\tt tempo2} is only supported in {\tt tempo1} compatibility mode.
 Eventual support for the {\tt tempo2} {\em predictors} will be added.
 All ephemerides must be made for the virtual Earth Center observatory (i.e., XYZ coordinates 0,0,0, usually observatory code 0; DiFX versions prior to 2.5 would not accept any non-numeric code even though they are legal).
