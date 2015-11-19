@@ -497,14 +497,94 @@ DiFX 2.2 was released on June 12, 2013.
 DiFX 2.3 was released on January 18, 2014.
 
 
+\subsection{DiFX 2.4}
+
+\subsubsection{New Features}
+
+\begin{enumerate}
+
+\item mpifxcorr
+\begin{itemize}
+\item Support a FAKE correlation mode for multi-threaded VDIF.
+\item The mpifxcorr produced PCAL files have had a format change that allows unambiguous interpretation across all use cases.
+\item Add network support (TCP, UDP and Raw Ethernet) for multi-threaded VDIF:
+1.\  TCP and UDP variants not tested yet;
+2.\  raw Ethernet variant is used for the VLITE project.
+\item Support updated Mark5 module directories.
+\item Better checking that Mark5 data being processed matches what is expected.
+\item Improved Mark5B decoding:
+1.\ Mark5B data streams are now filtered for extra or missing data;
+2.\ packets with invalid bit (actually the TVG bit) set replace missing data;
+3.\ this means any valid Mark5B data with the TVG bit set will not correlate.
+\item Information about each Mark5 unit used in ``native mode'' is emitted at start of jobs so it can be logged.
+\item Ultra-low frame rate VDIF data was affected by allowing a long ``sort window'' in the VDIF multiplexer.  
+This has been reduced to 32 frames and seems to work fine for all bandwidths now.
+\end{itemize}
+
+\item difx2fits
+\begin{itemize}
+\item Slightly improved compliance with the FITS-IDI convention:
+1.\ invalid Tsys values become NaN, not 999;
+2.\ populate {\tt DELTAT} keyword in ModelComps table.
+\end{itemize}
+
+\item difxio
+\begin{itemize}
+\item Support for X/Y polarization correlation.  Many fundamental issues with       
+  linear polarization remain though: 
+1.\ this does not support in a meaningful way Linear*Circular correlations;
+2.\ there is a terminology gap in many bits of software and file formats that confuses X/Y with H/V polarization bases;
+3.\ the intent of this support is for short baselines (VLITE).
+\end{itemize}
+
+\item mark5access
+\begin{itemize}
+\item Support for "d2k" mode in Mark5B format (swapped sign and mag bits).
+\item fixmark5b() function fixed for case that fill pattern is seen at the 1 second transition.
+\item Make use of the TVG bit as an "invalid frame" indicator for Mark5B data.
+\item m5bstate: support complex sampled data
+\end{itemize}
+
+\item mk5daemon
+\begin{itemize}
+\item New utility mk5putdir: reads a binary file and replaces a Mark5 directory with it.
+\item mk5dir: when reading the directories, saves a copy of the binary representation in case it is needed later (perhaps via mk5putdir)
+\item Reworked mark5 module directory support, including support for many new variants of the directory format.
+\item mk5erase will save a ``conditioning report'' to {\tt \$MARK5\_CONDITION\_PATH} if that environment variable is set.
+\end{itemize}
+
+\item vdifio
+\begin{itemize}
+\item Fairly large change to the API.  Please read the ChangeLog for details.
+\end{itemize}
+
+\item vex2difx
+\begin{itemize}
+\item Respect the record enable bit in the SCHED block.  If that value is 0 no correlation will be attempted for that antenna.
+\item Bug fixes preventing some LSB/zoom bands from being correlated.
+\item Complex data type and number of bits are now read from vex file.
+\end{itemize}
+
+\end{enumerate}
+
+\subsubsection{Bug fixes}
+
+\begin{enumerate}
+
+\item A ``jitter'' of 0.5~ns when using 2Gbps Mark5B format was fixed.  A fix was back-ported to DiFX 2.3.
+\item A similar jitter was corrected for high frame rate VDIF (problem identified by the VLITE project)
+\item Fix case of intermittant fringes that was due to incorrect assumption about the sizeof(unsigned long): 32 bits on a 32-bit system vs. 64 bits on a 64-bit system.
+Some other variable types were changed for long term type safety
+\item Fix off-by-one in correlation using LSB and zoom bands together.
+
+\end{enumerate}
+
 \subsection{Features left to implement}
 
 Here is a list of other features to add to DiFX that are not directly tied to any particular version:
 \begin{enumerate}
-\item Full VDIF support
 \item Support for K5 format
 \item Pulsar bins with proper output format
-\item Fast-forwarding over unneeded data in the native Mark5 module datastream
 \item Space VLBI support
 \item Playback of two independent modules in one Mark5 unit
 \item Non-bank-mode Mark5 support

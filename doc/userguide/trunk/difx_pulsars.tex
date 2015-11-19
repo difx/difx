@@ -2,13 +2,7 @@
 
 
 %TODO:
-%profile mode
-%  - cormac says > 10 min is problematic
-%polyco:
-%  - obs code had to be numeric prior to 2.5
-%  - always expects earth center based polycos
 %tempo2 example (Jan)
-%  - discourage use of temp2
 %profile2binconfig
 %  - 2 modes
 %  - single input file allowed
@@ -16,7 +10,7 @@
 
 
 
-DiFX supports three pulsar processing modes:
+DiFX supports four pulsar processing modes:
 
 \begin{itemize}
 
@@ -34,6 +28,16 @@ This entails generating a separate visibility spectrum for each requested range 
 There are no explicit limits to the number of pulse phase bins that are supported, however, data rates can become increasingly large.
 Currently AIPS does not support databases with multiple phase bins. 
 Until there is proper post-processig support for pulsar binning, a separate FITS file will be produced for each pulsar phase bin.
+
+\item \label{psrmode:profile} {\bf Profile Mode}
+Profile mode is very different than the other three as it generates autocorrelations only that are used to determine the pulse shape and phase rather than generating cross correlations.
+This mode is enabled by placing {\tt mode=profile} in the global scope of the {\tt .v2d} file (conventionally near the top).
+The {\tt .v2d} file can enable as many antennas as desired (they will be averaged, so if you have a single large antenna it is probably best to include only that one), but can only operate on one source at a time.
+The output of {\tt mpifxcorr} can be turned into an ASCII profile with {\tt difx2profile}.
+This profile can then be given to {\tt profile2binconfig.py} to generate the {\tt .binconfig} file that is used by the other three pulsar modes.
+There is some evidence that after about 10 minutes of integration the signal to noise ratio of the resultant profile stops growing.
+This remains to be fully understood.
+It could be that increasing the integration time helps; there is no reason not to use quite large integration times in this mode.
 
 \end{itemize}
 
@@ -56,8 +60,26 @@ This is a table of one or more polynomial entries, each of which evaluates the p
 The classic pulsar program {\tt Tempo} can be used to produce the polynomials required \cite{tempo}.
 The pulse phase must be evaluated at the Earth center which is usually specified in {\tt tempo} by station code 0 (zero).
 Many pulsars exhibit a great degree of timing noise and hence the prediction of absolute pulse phase may require updated timing observations.
-When submitting the polynomial for use at the correlator, please adhere to the following naming convention: {\em experiment}{\tt -}{\em pulsar}{\tt .polyco} , e.g., {\tt BB118A-B0950+08.polyco} .
+When submitting the polynomial for use at the VLBA correlator, please adhere to the following naming convention: {\em experiment}{\tt -}{\em pulsar}{\tt .polyco} , e.g., {\tt BB118A-B0950+08.polyco} .
 Instructions for generating the polynomial file are beyond the scope of this document.
+
+Each {\tt .polyco} contains one or more polynomials along with metadata; an example {\tt .polyco} file that is known to work with DiFX is shown immediately below:
+\begin{verbatim}
+1913+16     6-MAY-15   90748.00   57148.38041666690           168.742789 -0.722 -6.720
+   6095250832.610975   16.940537786201    0   30   15  1408.000 0.7785   3.0960
+  0.18914380470191894D-06  0.26835472311898462D+00 -0.10670985785738883D-02
+ -0.85567503020416261D-05 -0.55633960226391698D-07 -0.37190642692987219D-09
+ -0.58920583351397697D-12 -0.27311855964499407D-12 -0.21723579215912174D-13
+  0.11968684344685061D-14  0.92517174535020731D-16 -0.28179552068141251D-17
+ -0.18403230317431974D-18  0.25241984130137833D-20  0.13743173681516959D-21
+\end{verbatim}
+\noindent
+Currently {\tt tempo} (version 1) is well supported and {\tt tempo2} is only supported in {\tt tempo1} compatibility mode.
+Eventual support for the {\tt tempo2} {\em predictors} will be added.
+All ephemerides must be made for the virtual Earth Center observatory (i.e., XYZ coordinates 0,0,0, usually observatory code 0; DiFX versions prior to 2.5 would not accept any non-numeric code even though they are legal).
+Any reference frequency can be specified as the correlator takes dispersion into consideration.
+
+Note that although {\tt tempo} version 2 can produce usable {\tt .polyco} files experience has shown that version 1 has fewer failure modes.
 
 \subsection{Bin configuration file}
 
