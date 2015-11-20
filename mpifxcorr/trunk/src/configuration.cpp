@@ -1567,7 +1567,6 @@ bool Configuration::processDatastreamTable(ifstream * input)
     double ffttime = 1000.0*f.numchannels/f.bandwidth;
     double bpersenddouble = configs[i].subintns/ffttime;
     configs[i].blockspersend = int(bpersenddouble + 0.5);
-    cdebug << startl << "Blockspersend is " << configs[i].blockspersend << endl;
     if (fabs(bpersenddouble - configs[i].blockspersend) > Mode::TINY) {
       ok = false;
       if(mpiid == 0) //only write one copy of this error message

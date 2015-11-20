@@ -393,10 +393,10 @@ int main(int argc, char *argv[])
         stream = new VDIFNetworkDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isVDIFFake(datastreamnum)) {
         stream = new VDIFFakeDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-      //} else if(config->isMark5BFile(datastreamnum)) {
-      //  stream = new Mark5BDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-      //} else if(config->isMark5BMark5(datastreamnum)) {
-      //  stream = new Mark5BMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isMark5BFile(datastreamnum)) {
+        stream = new Mark5BDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isMark5BMark5(datastreamnum)) {
+        stream = new Mark5BMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isMkV(datastreamnum)) {
         stream = new Mk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isNativeMkV(datastreamnum))

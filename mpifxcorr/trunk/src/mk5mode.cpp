@@ -38,7 +38,6 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
     // since we allocated the max amount of space needed above, we need to change
     // this to the number actually needed.
     this->framesamples = framesamples;
-    cverbose << startl << "Frame samples here is " << framesamples << endl;
     if (usecomplex) {
       unpacksamples = recordedbandchan;
       samplestounpack = recordedbandchan;
