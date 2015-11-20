@@ -208,6 +208,7 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 
 	# First send out a call for VSNs
 	sendRequest("mark5","getvsn")
+	sendRequest("mark6","getvsn")
 
 	# Now listen for responses, until either time runs out or we get all we need
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
