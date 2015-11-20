@@ -3,6 +3,8 @@
 
 int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nError)
 {
+	VexStream tmpVS;	// used to hold output of format parsing
+
 	// merge sets of EOPs from vex and corr params file
 	if(!params.eops.empty())
 	{
@@ -231,14 +233,32 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 
 				if(!DS.format.empty())
 				{
+					bool A, B;
 					bool v;
 
-					v = V->setFormat(M->defName, it->first, ds, DS.format);
+					v = tmpVS.parseFormatString(DS.format);
 					if(!v)
 					{
 						std::cerr << "Error: format " << DS.format << " did not parse sensibly," << std::endl;
 						++nError;
 					}
+
+					A = isVDIFFormat(V->getFormat(M->defName, it->first, ds));
+					B = isVDIFFormat(tmpVS.format);
+					if(A != B)
+					{
+						if(A)
+						{
+							std::cerr << "Error: cannot change format from VDIF to any other non-VDIF format (antenna " << as->vexName << ") with the .v2d file.  You need to change the .vex file." << std::endl;
+						}
+						else
+						{
+							std::cerr << "Error: cannot change format to VDIF from any other non-VDIF format (antenna " << as->vexName << ") with the .v2d file.  You need to change the .vex file." << std::endl;
+						}
+						++nError;
+					}
+
+					v = V->setFormat(M->defName, it->first, ds, DS.format);
 				}
 
 				if(DS.nBand > 0 || DS.startBand >= 0)

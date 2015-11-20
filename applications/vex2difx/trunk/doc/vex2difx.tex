@@ -181,6 +181,10 @@ The sources of format class, listed in increasing priority, are:
 \item {\tt format} statement in a {\tt DATASTREAM} section of the \vd file
 \end{enumerate}
 
+Note!!! It is not always possible to change the format class via the {\tt .v2d} file.
+Specifically, at the moment, it is not possible to change between VDIF and any other format.
+This is because VDIF determines channel order strictly from the {\tt \$FREQ} section based on channel names and the other formats use the {\tt \$TRACKS} section and the parsing of the channel order is done while reading the {\tt .vex} file, before the contents of the {\tt .v2d} file are considered.
+
 \subsubsection{Number of bits}
 
 The number of bits per sample can be specified in the format parameters.

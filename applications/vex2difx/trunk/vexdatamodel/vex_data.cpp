@@ -972,6 +972,33 @@ void VexData::cloneStreams(const std::string &modeName, const std::string &antNa
 	}
 }
 
+VexStream::DataFormat VexData::getFormat(const std::string &modeName, const std::string &antName, int dsId) const
+{
+	int modeId = getModeIdByDefName(modeName);
+
+	if(modeId >= 0)
+	{
+		const VexMode &M = modes[modeId];
+		std::map<std::string,VexSetup>::const_iterator it = M.setups.find(antName);
+		if(it != M.setups.end())
+		{
+			return it->second.streams[dsId].format;
+		}
+		else
+		{
+			std::cerr << "Developer error: getFormat being called with antName = " << antName << " which is not found in mode " << modeName << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+	{
+		std::cerr << "Developer error: getFormat being called with modeName = " << modeName << " which returned modeId " << modeId << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+}
+
 bool VexData::setFormat(const std::string &modeName, const std::string &antName, int dsId, const std::string &formatName)
 {
 	int modeId = getModeIdByDefName(modeName);

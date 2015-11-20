@@ -96,6 +96,7 @@ public:
 	void setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling);
 	void setCanonicalVDIF(const std::string &modeName, const std::string &antName);
 	void cloneStreams(const std::string &modeName, const std::string &antName, int copies);
+	VexStream::DataFormat getFormat(const std::string &modeName, const std::string &antName, int dsId) const;
 	bool setFormat(const std::string &modeName, const std::string &antName, int dsId, const std::string &formatName);
 	void setStreamBands(const std::string &modeName, const std::string &antName, int dsId, int nBand, int startBand);
 	double getEarliestScanStart() const;

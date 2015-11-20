@@ -447,7 +447,7 @@ bool VexStream::formatHasFanout() const
 
 bool VexStream::isVDIFFormat() const
 {
-	return (format == FormatVDIF || format == FormatLegacyVDIF);
+	return ::isVDIFFormat(format);
 }
 
 void VexStream::setFanout(int fan)
@@ -535,6 +535,11 @@ int VexStream::dataFrameSize() const
 	}
 	
 	return s;
+}
+
+bool isVDIFFormat(VexStream::DataFormat format)
+{
+	return (format == VexStream::FormatVDIF || format == VexStream::FormatLegacyVDIF);
 }
 
 std::ostream& operator << (std::ostream &os, const VexStream &x)

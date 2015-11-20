@@ -69,6 +69,8 @@ private:
 	static regex_t matchType8;	// of form <fmt>/<size> or <fmt>-<size>
 };
 
+bool isVDIFFormat(VexStream::DataFormat format);
+
 std::ostream& operator << (std::ostream &os, const VexStream &x);
 
 #endif
