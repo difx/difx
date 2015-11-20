@@ -71,13 +71,18 @@ def getUsage():
 	
 	return(usage)
 
-class Parser:
+class MessageParser:
+    """
+    Parses Mark5StatusMessage and Mark6StatusMessage
+    """
 
     def __init__(self):
         self._parser = expat.ParserCreate()
         self._parser.StartElementHandler = self.start
         self._parser.EndElementHandler = self.end
         self._parser.CharacterDataHandler = self.data
+	self.fields = {}
+        self.type = 'unknown'
 	self.vsnA = 'none'
 	self.vsnB = 'none'
 	self.state = 'Unknown'
@@ -95,10 +100,15 @@ class Parser:
         del self._parser # get rid of circular references
 
     def start(self, tag, attrs):
-        if tag == 'mark5Status':
+        if tag == 'mark5Status' or tag=='mark6Status':
+		self.type = tag
 		self.ok = True
+    def parseMark6(self,tag):
 
-    def end(self, tag):
+	self.fields[tag] = self.tmp
+
+    def parseMark5(self,tag):
+
         if tag == 'bankAVSN' and self.ok:
 		if len(self.tmp) != 8:
 			self.vsnA = 'none'
@@ -109,24 +119,33 @@ class Parser:
 			self.vsnB = 'none'
 		else:
 			self.vsnB = upper(self.tmp)
+
+    def end(self, tag):
 	if tag == 'from':
 		self.unit = lower(self.tmp)
 	if tag == 'state' and self.ok:
 		self.state = self.tmp
+	if self.type == 'mark5Status':
+		self.parseMark5(tag)
+	if self.type == 'mark6Status':
+		self.parseMark6(tag)
 
     def data(self, data):
         self.tmp = data
 
     def getinfo(self):
 	if self.ok:
-        	return [self.unit, self.vsnA, self.vsnB, self.state, self.sender]
+		if self.type == 'mark5Status':
+			return [self.unit, self.type, self.vsnA, self.vsnB, self.state, self.sender]
+		elif self.type == 'mark6Status':
+                        return [self.unit, self.type, self.fields, self.state, self.sender]
 	else:
 		return ['unknown', 'none', 'none', 'Unknown', 'unknown']
 
-def vsn_request():
+def sendRequest(destination, command):
+
 	src = socket.gethostname()
-	dest = '<to>mark5</to>'
-	cmd = 'getvsn'
+	dest = '<to>%s</to>' %(destination)
 
 	message = \
 	  '<?xml version="1.0" encoding="UTF-8"?>\n' \
@@ -144,36 +163,51 @@ def vsn_request():
 	        '<command>%s</command>' \
 	      '</difxCommand>' \
 	    '</body>' \
-	  '</difxMessage>' % (src, dest, cmd)
+	  '</difxMessage>' % (src, dest, command)
 
-	return message
-
-def getVsnsByMulticast(maxtime, datastreams, verbose):
-	dt = 0.2
-	t = 0.0
-        modlist = []
-
-	port = getenv('DIFX_MESSAGE_PORT')
-	if port == None:
-		port = defaultDifxMessagePort
-	else:
-		port = int(port)
-	group = getenv('DIFX_MESSAGE_GROUP')
-	if group == None:
-		group = defaultDifxMessageGroup
-
-        for stream in datastreams:
-            if len(stream.vsn) > 0:
-                modlist.append(stream.vsn)
-            
-	missing = deepcopy(modlist)
-
-	message = vsn_request()
-
-	# First send out a call for VSNs
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
 	sock.sendto(message, (group, port))
+
+	return message
+
+def isModuleComplete(slot, message):
+	"""
+	Checks whether a Mark6 module has the expected number of disks
+	"""
+	key = slot + "Disks"	
+	if key in message.keys():
+		disks = int(message[key])
+	key = slot + "MissingDisks"
+	if key in message.keys():
+                missingDisks = int(message[key])
+		
+	if disks ==0: 
+		return False
+	if missingDisks > 0:
+		return False
+	
+	return True
+	
+def getVsnsByMulticast(maxtime, datastreams, verbose):
+	dt = 0.2
+	t = 0.0
+        vsnlist = []
+
+	count = 0
+        for stream in datastreams:
+	    count += 1
+            if len(stream.vsn) > 0:
+                vsnlist.append(stream.vsn)
+	    if len(stream.msn) > 0:
+		for m in stream.msn:
+			vsnlist.append(m)
+            
+	missingVsns = deepcopy(vsnlist)
+
+
+	# First send out a call for VSNs
+	sendRequest("mark5","getvsn")
 
 	# Now listen for responses, until either time runs out or we get all we need
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -186,13 +220,14 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 	results = []
 	machines = []
 	notidle = []
-	while t < maxtime and len(missing) > 0:
+	incomplete = []
+	while t < maxtime and len(missingVsns) > 0:
 		try:
 			message, address = s.recvfrom(2048)
 			sender = split(socket.gethostbyaddr(address[0])[0], '.')[0]
 			if verbose > 1:
 				print message
-			p = Parser()
+			p = MessageParser()
 			p.feed(sender, message)
 			info = p.getinfo()
 			p.close()
@@ -202,17 +237,26 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 				continue
 			machines.append(info[0])
 			results.append(info)
-			if info[1] in missing and info[2] in missing:
-				conflicts.append(info)
-			if info[1] in missing:
-				missing.remove(info[1])
-				if info[3] != 'Idle' and info[3] != 'Close':
-					notidle.append(info[1])
-			if info[2] in missing:
-				missing.remove(info[2])
-				if info[3] != 'Idle' and info[3] != 'Close':
-					notidle.append(info[2])
 
+			if info[1] == "mark5Status":
+				if info[2] in missingVsns and info[3] in missingVsns:
+					conflicts.append(info)
+				if info[2] in missingVsns:
+					missingVsns.remove(info[2])
+					if info[4] != 'Idle' and info[4] != 'Close':
+						notidle.append(info[2])
+				if info[3] in missingVsns:
+					missingVsns.remove(info[3])
+					if info[4] != 'Idle' and info[4] != 'Close':
+						notidle.append(info[3])
+			elif info[1] == 'mark6Status':
+				for key in ['slot1MSN', 'slot2MSN', 'slot3MSN', 'slot4MSN']:
+					if key in info[2].keys():
+						if info[2][key] in missingVsns:
+							missingVsns.remove(info[2][key])
+							if not isModuleComplete(key[:5], info[2]):
+								incomplete.append(info[2][key])
+					
 		except socket.timeout:
 			t += dt
 		except socket.herror:
@@ -220,15 +264,16 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 
 	results.sort()
 	conflicts.sort()
-	missing.sort()
+	missingVsns.sort()
 	notidle.sort()
+	incomplete.sort()
 
-	return results, conflicts, missing, notidle
+	return results, conflicts, missingVsns, notidle, incomplete
 
-def getVsnsFromInputFile(inputfile):
+def getDatastreamsFromInputFile(inputfile):
         """
         Parse the datastream section of the input file to
-        obtain VSNs file paths
+        obtain VSNs, MSNs and file paths
         """
         datastreams = []
 	nds = 0
@@ -272,6 +317,9 @@ def getVsnsFromInputFile(inputfile):
                         # obtain datastream index
 			numDS,index = split(keyparts[1], '/')
 			ds = int(numDS.strip())
+			idx = int(index.strip())
+
+			
 
                         if ds < nds:
                             if datastreams[ds].type == 'MODULE':
@@ -279,6 +327,8 @@ def getVsnsFromInputFile(inputfile):
                             elif datastreams[ds].type == 'FILE':
                                 if datastreams[ds].path == "":
                                     datastreams[ds].path = os.path.dirname(value)
+                            elif datastreams[ds].type == 'MARK6':
+                                datastreams[ds].msn.append(value)  
                              
             
 	return (datastreams)
@@ -334,28 +384,44 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 matchNode = ""
                 for r in results:
                     # find  module either in bank A or B
-                    if r[1] == stream.vsn or r[2] == stream.vsn:
+                    if r[2] == stream.vsn or r[3] == stream.vsn:
                             if r[0] in difxmachines.getMk5NodeNames():
                                 matchNode = r[0]
                             else:
                                 # use message sending host
-                                matchNode = r[4]
+                                matchNode = r[5]
 
                 if matchNode in difxmachines.getMk5NodeNames():
                     dsnodes.append(matchNode)
                 else:
                     print '%s not listed as an active mark5 host in machines file' % matchNode
                     return []
+
+            elif stream.type == "MARK6":    
+		matchNode = ""	
+		for r in results:
+                    # find  module either in bank A or B
+                            if r[0] in difxmachines.getMk6NodeNames():
+                                matchNode = r[0]
+                            else:
+                                # use message sending host
+                                matchNode = r[4]
+
+                if matchNode in difxmachines.getMk6NodeNames():
+                    dsnodes.append(matchNode)
+                else:
+                    print '%s not listed as an active mark6 host in machines file' % matchNode
+                    return []
                 
 	# write machine file
 	o = open(basename+'machines', 'w')
         
         # head node
-        o.write('%s slots=1 \n' % (hostname))
+        o.write('%s \n' % (hostname))
         
         # datastream nodes
         for node in dsnodes:
-            o.write('%s slots=1 \n' % (node))
+            o.write('%s \n' % (node))
             
         # compute nodes
         for node in difxmachines.getComputeNodes():
@@ -368,7 +434,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
             if node.name in hostname:
                 usedThreads = 1
                 
-            o.write('%s slots=1 \n' % (node.name))
+            o.write('%s \n' % (node.name))
             threads.append(node.threads-usedThreads)
         
 	return threads
@@ -407,18 +473,18 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 		print 'expecting input file'
 		exit(1)
 				
-        datastreams =  getVsnsFromInputFile(infile)
-
+        datastreams =  getDatastreamsFromInputFile(infile)
+ 
 	if not uniqueVsns(datastreams):
 		print 'ERROR: at least one duplicate VSN exists in %s !' % infile
 		exit(1)
                 
-	results, conflicts, missing, notidle = getVsnsByMulticast(5, datastreams, verbose)
+	results, conflicts, missing, notidle, incomplete = getVsnsByMulticast(5, datastreams, verbose)
 
 	if verbose > 0:
 		print 'Found modules:'
 		for r in results:
-			print '  %-10s : %10s %10s   %s' % (r[0], r[1], r[2], r[3])
+			print '  %-10s : %10s %10s   %s' % (r[0], r[2], r[3], r[4])
 
 	if len(conflicts) > 0:
 		ok = False
@@ -445,6 +511,12 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 		for n in notidle:
 			print '  %s' % n
 
+	if len(incomplete) > 0:
+		ok = False
+		print 'Incomplete modules:'
+		for i in incomplete:
+			print '  %s' % i
+
 	if not ok:
 		return 1
 
@@ -467,12 +539,22 @@ class Datastream:
         Storage class containing datastream description read from the input file
         NETWORK datastreams not yet supported
         """
-        type = ""
-        vsn = ""
-        path = ""
+	def __init__(self):
+		self.type = ""	# allowed types MODULE FILE MARK6
+		self.vsn = ""	# module VSN in case of MODULE datasource
+		self.msn = []	# module MSN in case of MARK6 datasource
+		self.path = ""    	# path in case of FILE datasource
+
+class Mark6Datastream(Datastream):
+	def __init__(self):
+		self.msn = []
+		self.group = []
+		self.disks = []
+		self.missingDisks = []
         
 if __name__ == "__main__":
 
+	test = 1
 	# catch ctrl+c
 	signal.signal(signal.SIGINT, signalHandler)
 
@@ -510,7 +592,7 @@ if __name__ == "__main__":
 
 	# check that cluster definition file exist
 	if not isfile(machinesfile):
-		sys.exit("Machines file not found: %s" % machinesfile)
+		sys.exit("Cluster definition file not found: %s" % machinesfile)
 
 	if getenv('DIFX_GROUP_ID'):
 		umask(2)
@@ -529,6 +611,16 @@ if __name__ == "__main__":
 
 	if verbose > 0:
 		print 'DIFX_MACHINES -> %s' % machinesfile
+
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		port = defaultDifxMessagePort
+	else:
+		port = int(port)
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		group = defaultDifxMessageGroup
+
 	
         # read machines file
 	difxmachines = DifxMachines(machinesfile)
