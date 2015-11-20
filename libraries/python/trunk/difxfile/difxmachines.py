@@ -62,6 +62,16 @@ class DifxMachines(object):
 			if node.isMk6 == 1:
 				nodes.append(node)
 		return nodes
+
+	def getMk6NodeNames(self):
+		"""
+		returns a list of all Mk6 node names
+		"""
+		nodes = []
+		for name, node in self.nodes.iteritems():
+			if node.isMk6 == 1:
+				nodes.append(node.name)
+		return nodes
 	
 	def getMk5Nodes(self):
 		"""
