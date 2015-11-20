@@ -321,7 +321,8 @@ void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 
 		return;
 	}
-	mark5bfilesummarysettotalbandwidth(&fileSummary, static_cast<int>(nbits*bw*nrecordedbands/2));
+	mark5bfilesummarysetbits(&fileSummary, nbits);
+	mark5bfilesummarysettotalbandwidth(&fileSummary, static_cast<int>(bw*nrecordedbands));
 	mark5bfilesummaryfixmjd(&fileSummary, config->getStartMJD());
 
 	// If verbose...
