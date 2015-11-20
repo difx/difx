@@ -481,7 +481,7 @@ void Visibility::writedata()
                   localfreqindex = config->getDLocalZoomFreqIndex(currentconfigindex, ds1, ds1bandindex-config->getDNumRecordedBands(currentconfigindex, ds1));
                   modifier *= config->getDZoomBandwidth(currentconfigindex, ds1, localfreqindex);
                   modifier /= config->getDRecordedBandwidth(currentconfigindex, ds1, config->getDZoomFreqParentFreqIndex(currentconfigindex, ds1, localfreqindex));
-                  scale *= modifier;
+                  scale *= sqrt(modifier);
                 }
                 if(ds2bandindex >= config->getDNumRecordedBands(currentconfigindex, ds2))
                 {
@@ -489,7 +489,7 @@ void Visibility::writedata()
                   localfreqindex = config->getDLocalZoomFreqIndex(currentconfigindex, ds2, ds2bandindex-config->getDNumRecordedBands(currentconfigindex, ds2));
                   modifier *= config->getDZoomBandwidth(currentconfigindex, ds2, localfreqindex);
                   modifier /= config->getDRecordedBandwidth(currentconfigindex, ds2, config->getDZoomFreqParentFreqIndex(currentconfigindex, ds2, localfreqindex));
-                  scale *= modifier;
+                  scale *= sqrt(modifier);
                 }
                 if(config->getDataFormat(currentconfigindex, ds1) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, ds1) == Configuration::LBAVSOP)
                   scale *= 4.0;
@@ -555,7 +555,7 @@ void Visibility::writedata()
                   localfreqindex = config->getDLocalZoomFreqIndex(currentconfigindex, i, k-config->getDNumRecordedBands(currentconfigindex, i));
                   modifier *= config->getDZoomBandwidth(currentconfigindex, i, localfreqindex);
                   modifier /= config->getDRecordedBandwidth(currentconfigindex, i, config->getDZoomFreqParentFreqIndex(currentconfigindex, i, localfreqindex));
-                  scale *= modifier*modifier;
+                  scale *= modifier;
                 }
                 if(config->getDataFormat(currentconfigindex, i) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, i) == Configuration::LBAVSOP)
                   scale *= 16.0;

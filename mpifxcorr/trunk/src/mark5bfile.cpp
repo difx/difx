@@ -297,6 +297,7 @@ void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 	}
 
 	bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
+        cverbose << startl << "Frames per second is " << framespersecond << ", nbits is " << nbits << ", nrecbands is " << nrecordedbands << ", framebytes is " << framebytes << ", frame granularity is " << framegranularity << endl;
 
 	startOutputFrameNumber = -1;
 
@@ -320,7 +321,7 @@ void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 
 		return;
 	}
-	mark5bfilesummarysettotalbandwidth(&fileSummary, static_cast<int>(bw*nrecordedbands*1000000));
+	mark5bfilesummarysettotalbandwidth(&fileSummary, static_cast<int>(nbits*bw*nrecordedbands/2));
 	mark5bfilesummaryfixmjd(&fileSummary, config->getStartMJD());
 
 	// If verbose...
@@ -343,7 +344,8 @@ void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 		const int n=10016, d=10000;	// numerator and denominator of framesize/payload ratio
 
 		// set byte offset to the requested time
-		dataoffset = static_cast<long long>(jumpseconds*static_cast<long long>(mark5bfilesummarygetbitrate(&fileSummary))/d*n/8 + 0.5);
+		dataoffset = static_cast<long long>(jumpseconds*static_cast<long long>(1000000*mark5bfilesummarygetbitrate(&fileSummary))/d*n/8 + 0.5);
+		cverbose << startl << "dataoffset is " << dataoffset << " because jumpseconds is " << jumpseconds << " and bitrate is " << mark5bfilesummarygetbitrate(&fileSummary) << endl;
 
 		readseconds += jumpseconds;
 	}
