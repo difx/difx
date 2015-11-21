@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <difxmessage.h>
 #include "configuration.h"
-#include "../src/alert.h"
+#include "alert.h"
 
 void usage(const char *pgm)
 {
