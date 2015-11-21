@@ -1,6 +1,7 @@
 bin_PROGRAMS = checkmpifxcorr dedisperse_difx mpispeed
 
-AM_CPPFLAGS = -I$(top_srcdir)/src
+# pick up built sources as well
+AM_CPPFLAGS = -I../src -I$(top_srcdir)/src
 
 checkmpifxcorr_SOURCES = \
 	checkmpifxcorr.cpp
