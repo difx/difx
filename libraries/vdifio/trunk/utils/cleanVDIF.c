@@ -31,16 +31,15 @@
 #include <stdlib.h>
 #include "vdifio.h"
 
-const char program[] = "printVDIF";
+const char program[] = "cleanVDIF";
 const char author[]  = "Adam Deller <adeller@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20100217";
+const char version[] = "0.2";
+const char verdate[] = "20151122";
 
 static void usage()
 {
-  fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
-          author, verdate);
-  fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
+  fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+  fprintf(stderr, "A program to read a VDIF file containing excess junk and write a cleaned up replacement.\n");
   fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> <Mbps> [-v]\n", program);
   fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read and clean\n");
   fprintf(stderr, "\n<VDIF output file> is the name of the VDIF file to write\n");

@@ -36,15 +36,15 @@
 
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.3";
-const char verdate[] = "20150918";
+const char version[] = "0.4";
+const char verdate[] = "20151122";
 
 static void usage()
 {
 	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
 	fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
 	fprintf(stderr, "\nUsage: %s <VDIF input file> [<framesize> [<prtlev>] ]\n", program);
-	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
+	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read (- for stdin)\n");
 	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA, 8224 for R2DBE)\n");
 	fprintf(stderr, "\n<prtlev> is output type: hex short long\n\n");
 	fprintf(stderr, "In normal operation this program searches for valid VDIF frames.\n");

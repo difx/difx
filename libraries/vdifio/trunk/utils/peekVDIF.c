@@ -23,11 +23,19 @@ int main(int argc, char **argv)
 
 	
 
-	if(argc < 2)
+	if(argc != 2)
 	{
+		fprintf(stderr, "Usage: %s <inputVDIFFile>\n", argv[0]);
+
 		exit(0);
 	}
 	in = fopen(argv[1], "r");
+	if(!in)
+	{
+		fprintf(stderr, "Error: file '%s' cannot be opened\n", argv[1]);
+
+		return EXIT_FAILURE;
+	}
 
 	data = (unsigned char *)malloc(MAX+1000);
 

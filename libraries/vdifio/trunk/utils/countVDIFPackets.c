@@ -31,10 +31,10 @@
 #include <stdlib.h>
 #include "vdifio.h"
 
-const char program[] = "padVDIF";
+const char program[] = "countVDIFpackets";
 const char author[]  = "Adam Deller <adeller@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20100217";
+const char version[] = "0.2";
+const char verdate[] = "20151122";
 
 static void usage()
 {
