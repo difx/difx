@@ -21,10 +21,17 @@ from xml.parsers import expat
 from copy import deepcopy
 from time import asctime
 
-program = 'statemon'
-author  = 'Walter Brisken'
-version = '0.3'
-verdate = '20110912'
+program = 'difxdiagnosticmon'
+version = '0.4'
+verdate = '20151122'
+
+def usage(pgm):
+	print '\n%s ver %s  %s\n' % (program, version, verdate)
+	print 'Program to print multicast diagnostic data from mpifxcorr.\n'
+	print 'Usage: %s [options]\n' % pgm
+	print 'options can include:'
+	print '  --help'
+	print '  -h        print help information and quit\n'
 
 class Parser:
 
@@ -114,7 +121,7 @@ class Parser:
 	else:
 		return ''
 
-def run(maxlevel):
+def run():
 	
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
@@ -153,9 +160,12 @@ def run(maxlevel):
 	except KeyboardInterrupt:
 		pass
 
-if len(argv) > 1:
-	maxlevel = int(argv[1])
-else:
-	maxlevel = 8
+for a in argv[1:]:
+	if a in ['-h', '--help']:
+		usage(argv[0])
+		exit(0)
+	else:
+		print 'Unknown option: %s.  Run with --help for help.' % a
+		exit(0)
 
-run(maxlevel)
+run()

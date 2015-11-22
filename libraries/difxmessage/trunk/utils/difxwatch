@@ -63,7 +63,7 @@ def getUsage():
     usage += "and progress of difx jobs.\n"
     usage += "Output is written to /tmp/difxwatch.log\n\n"
     usage += "Usage: %s [options] \n\n"  % __prog__
-    usage += "NOTE: %s requires DIFXMESSAGE_GROUP and DIFXMESSAGE_PORT environment variables to be defined"
+    usage += "NOTE: %s requires DIFXMESSAGE_GROUP and DIFXMESSAGE_PORT environment variables to be defined" % __prog__
 
 
     return(usage)
