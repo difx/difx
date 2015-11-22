@@ -51,6 +51,7 @@ void usage()
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
+	printf("The output is a text file that can be read by AIPS UVFLG called <exp>.<psr>.flag\n\n");
 }
 
 double interpolate(double x0, double y0, double x1, double y1, double x)
