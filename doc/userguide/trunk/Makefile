@@ -12,6 +12,8 @@ nraotexfiles = \
 
 texfiles = \
 	difx_versions.tex \
+	difx_sources.tex \
+	difx_formats.tex \
 	difx_pulsars.tex \
 	difx_conventions.tex \
 	difx_programs.tex \

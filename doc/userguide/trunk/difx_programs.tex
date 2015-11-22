@@ -17,15 +17,14 @@ The code for these programs can be made available upon request.
 
 
 % TODO
-% m5access: m5timeseries
 % add more hyperlinks (e.g., to vdifd, etc)
-% document VDIF in vex2difx and other new features
+% add mark5access python programs: m5selfcorr.py  m5spec.py  m5stat.py  m5subband.py  m5time.py  m5tone.py
 
 
 
 % avgDiFX ---------------------------------------------------------------------
 
-\subsection{avgDiFX} \label{sec:avgDiFX}
+\subsection{avgDiFX {\small $\mathrm{(package: difxio)}$}} \label{sec:avgDiFX}
 
 {\tt avgDiFX} is a utility packaged with difxio.
 It reads two complete DiFX filesets that need to cover the same timerange and have essentially the same array structure and produces a new complete fileset.
@@ -190,6 +189,29 @@ Except in the lowest verbosity mode (the default for {\tt -a}), module directori
 
 
 
+% cleanVDIF -------------------------------------------------------------------
+
+\subsection{cleanVDIF {\small $\mathrm{(package: vdifio)}$} \label{sec:printVDIF}}
+
+Program {\tt cleanVDIF} loops through a VDIF file writing valid content to a new output file.
+
+\begin{itemize}
+\item[] Usage: {\tt cleanVDIF} {\em inputvdiffile outputvdiffile Mbps} $[$ {\em options} $]$ 
+
+\item[] {\em inputvdiffile} is the recorded VDIF file to clean
+\item[] {\em outputvdiffile} is the corrected VDIF file to write
+\item[] {\em Mbps} is the data rate in megabits/second
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -v} or {\tt --verbose} : be verbose in execution
+\end{itemize}
+
+\item[] Example: {\tt cleanVDIF bad.vdif good.vdif 256}
+\end{itemize}
+
+
+
+
 % condition -------------------------------------------------------------------
 
 \subsection{condition {\small $\mathrm{(package: difx\_db)}$}}
@@ -245,6 +267,29 @@ Environment variable {\tt VLBA\_DB} must be set to point to the correct database
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
 \end{itemize}
 \item[] Example: {\tt condition\_watch}
+\end{itemize}
+
+
+
+
+
+
+
+% countVDIFpackets ------------------------------------------------------------
+
+\subsection{countVDIFpackets {\small $\mathrm{(package: vdifio)}$} \label{sec:countVDIFpackets}}
+
+Program {\tt countVDIFpacket} loops through a VDIF file and counts number of valid and skipped frames.
+Packet counts are performed only on the thread ID requested.
+
+\begin{itemize}
+\item[] Usage: {\tt countVDIFpackets} {\em vdiffile Mbps threadId}
+
+\item[] {\em vdiffile} is the recorded VDIF file
+\item[] {\em Mbps} is the data rate in megabits/second
+\item[] {\em threadId} is the threadId to report on
+
+\item[] Example: {\tt countVDIFpackets example.vdif 256 3}
 \end{itemize}
 
 
@@ -330,6 +375,12 @@ Notes:
 \item Mark5C observations require environment variable {\tt VLBAMPTS\_DB} to point to the new EVLA-style VLBA database
 \item Observations using the phased VLA require environment variable {\tt EVLAMPTS\_DB} to point to the EVLA monitor database
 \end{enumerate}
+
+
+
+
+% dedisperse_difx ------------------------------------------- INCOMPLETE -------
+
 
 
 
@@ -627,6 +678,26 @@ The {\tt .vex} file referenced within the {\tt .calc} file is also copied.
 
 
 
+% difxdiagnosticmon -----------------------------------------------------------
+
+\subsection{difxdiagnosticmon {\small $\mathrm{(package: difxmessage)}$}} \label{sec:difxdiagnosticmon} 
+
+Program {\tt difxdiagnosticmon} listens for multicast messages of the {\tt difxStatus} variety and simply prints their contents to the terminal.
+This is mainly useful for debugging {\tt mpifxcorr}.
+Diagnostic information that is produced includes status of internal buffers, memory usage, execution time, data throughput and lost subintegrations.
+
+\begin{itemize}
+\item[] Usage: {\tt difxdiagnosticmon} $[$ {\em options} $]$ 
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\end{itemize}
+\end{itemize}
+
+
+
+
+
 % difxlog ---------------------------------------------------------------------
 
 \subsection{difxlog {\small $\mathrm{(package: difxmessage)}$}} \label{sec:difxlogprogram} 
@@ -840,6 +911,44 @@ Note that environment variable {\tt VLBA\_DB} must be set to point to the Oracle
 
 
 
+% difxwatch -------------------------------------------------------------------
+
+\subsection{difxwatch {\small $\mathrm{(package: difxmessage)}$}} \label{sec:difxwatch} 
+
+Program {\tt difxwatch} can be used to monitor progress of ongoing DiFX jobs and kill jobs that appear to be hung.
+
+\begin{itemize}
+\item[] Usage: {\tt difxwatch} $[$ {\em options} $]$ 
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt --version} : show program's version number and exit
+\item[] {\tt -i} {\em idletime} or {\tt --idle-time} {\em idletime} : maximum number of seconds a job is allowed to be idle before it is killed.
+\end{itemize}
+\end{itemize}
+
+
+
+
+
+% dir2filelist.pl ---------------------------------------- INCOMPLETE ---------
+
+%----------------------------------------------------------------------------------
+%Script to convert a .dir file created by mk5dir into a filelist that can be 
+%evaluated by vex2difx (parameter filelist) 
+%---------------------------------------------- -----------------------------------
+
+%Usage: /export/home/shiitake/difx/WFBDIFX-TRUNK/bin/dir2filelist.pl dirfile [prefix]
+
+%dirfile: the .dir file created by mk5dir
+%prefix:  [optional] if given the prefix will be prepended to the disk filenames
+
+%output will be written to dirfile.filelist
+
+%---------------------------------------------- -----------------------------------
+
+
+
 % doi -------------------------------------------------------------------------
 
 \subsection{DiFX Operator Interface} \label{sec:doi}
@@ -925,6 +1034,59 @@ See documentation for {\tt difxlog} to see the list of alert levels.
 
 
 
+
+
+
+
+
+
+% extractSingleVDIFThread -----------------------------------------------------
+
+\subsection{extractSingleVDIFThread {\small $\mathrm{(package: vdifio)}$}}
+
+This program has been superceded by {\tt vmux} (see Sec.~\ref{sec:vmux}).
+
+
+
+
+
+% extractVDIFThreads ----------------------------------------------------------
+
+\subsection{extractVDIFThreads {\small $\mathrm{(package: vdifio)}$}} 
+
+This program has been superceded by {\tt vmux} (see Sec.~\ref{sec:vmux}).
+
+
+
+
+
+
+% fakemultiVDIF ----------------------------------------- INCOMPLETE ---------
+
+\subsection{fakemultiVDIF {\small $\mathrm{(package: vdifio)}$}} \label{sec:fakemultivdif}
+
+Note: the input file for {\tt fakemultiVDIF} must have a single thread or unpredictable results will occur.
+
+
+
+
+% fileto5c ----------------------------------------------- INCOMPLETE ---------
+
+\subsection{fileto5c {\small $\mathrm{(package: mark5daemon)}$}} \label{sec:fileto5c}
+
+
+
+
+
+% filterVDIF --------------------------------------------- INCOMPLETE ---------
+
+\subsection{filterVDIF {\small $\mathrm{(package: vdifio)}$}} \label{sec:filtervdif}
+
+
+
+% generateVDIF ------------------------------------------- INCOMPLETE ---------
+
+\subsection{generateVDIF {\small $\mathrm{(package: vdifio)}$}} \label{sec:generatevdif}
 
 
 
@@ -1444,6 +1606,14 @@ See the documentation for {\tt m5d} for information on specifying the data forma
 
 
 
+% m5slice ------------------------------------------------- INCOMPLETE --------
+
+\subsection{m5slice {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5slice}
+
+
+
+
+
 % m5spec ----------------------------------------------------------------------
 
 \subsection{m5spec {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5spec}
@@ -1870,6 +2040,29 @@ The columns being displayed are:
 
 
 
+% mk6gather ------------------------------------------------ INCOMPLETE -------
+
+
+
+% mk6ls ---------------------------------------------------- INCOMPLETE -------
+
+
+
+
+% mk6mon --------------------------------------------------- INCOMPLETE -------
+
+\subsection{mk6mon {\small $\mathrm{(package: difxmessage)}$}} \label{sec:mk6mon} 
+
+
+
+% mk6summary ----------------------------------------------- INCOMPLETE -------
+
+
+
+% mk6vmux -------------------------------------------------- INCOMPLETE -------
+
+
+
 
 
 % mpifxcorr -------------------------------------------------------------------
@@ -1900,6 +2093,8 @@ Within the DiFX framework, the user should never have to directly start {\tt mpi
 
 
 
+
+% multi2singlethreadVDIF ----------------------------------- INCOMPLETE -------
 
 
 
@@ -1954,6 +2149,11 @@ Newly inserted frames will have the invalid bit set.
 \item[] Example: {\tt padVDIF raw.vdif smooth.vdif 2048}
 \end{itemize}
 
+
+
+
+
+% peekVDIF --------------------------------------------- INCOMPLETE -----------
 
 
 
@@ -2049,6 +2249,57 @@ Program {\tt printVDIF} loops through a VDIF file inspecting each packet header 
 
 
 
+% printVDIFgaps ---------------------------------------------- INCOMPLETE -----
+
+\subsection{printVDIFgaps {\small $\mathrm{(package: vdifio)}$}} \label{sec:printVDIFgaps}
+
+
+
+% printVDIFheader -------------------------------------------------------------
+
+\subsection{printVDIFheader {\small $\mathrm{(package: vdifio)}$}} \label{sec:printVDIFheader}
+
+Program {\tt printVDIFheader} is a powerful diagnostic tool that prints details of each VDIF header found in a VDIF file.
+All fields of each header, including information in known Extended VDIF Headers (see Sec.~\ref{sec:vdifedv}) are printed.
+Three different print formats are allowed: compact {\tt short} version, detailed {\tt long}, and hexidecimal {\tt hex}.
+
+\begin{itemize}
+\item[] Usage: {\tt printVDIFheader} {\em inputFile} $ [ $ {\em inputFrameSize} $ [ $ {\em printLevel} $ ] ] $
+\item[] {\em inputFile} is the input multi-thread VDIF file, or {\tt -} for {\em stdin}
+\item[] {\em inputFrameSize} is the size of one thread's data frame, including header (for RDBE VDIF data this is 5032)
+\item[] {\em printLevel} describes what is to be printed; one of {\tt short}, {\tt long}, or {\tt hex}
+\end{itemize}
+
+Run this program with no arguments to get some additiona explanation.
+
+
+
+
+% psrflag ---------------------------------------------------------------------
+
+\subsection{psrflag {\small $\mathrm{(package: difxio)}$}} \label{sec:psrflag}
+
+{\tt psrflag} is a program that reads one or more DiFX filesets and produces a flag table readable by AIPS UVFLG that contains flags for times when the fringe rate, on a per-baseline basis, resonates with the pulse period, allowing DC bias to correlate.
+The pulsar {\tt .binconfig} file is used to determine the harmomic content of the pulsar profile.
+
+\begin{itemize}
+\item[] Usage: {\tt psrflag} $ [ $ {\em options} $ ] $ {\em inputFile} \ldots
+\item[] {\em inputFile} is the input multi-thread VDIF file; multiple may be provided
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print help information and quit
+\item[] {\tt -v} or {\tt --verbose} : be more verbose in execution
+\end{itemize}
+\end{itemize}
+
+
+% record5c ------------------------------------------------- INCOMPLETE -------
+
+\subsection{record5c {\small $\mathrm{(package: mark5daemon)}$}} \label{sec:record5c}
+
+
+
+
 % recover ---------------------------------------------------------------------
 
 \subsection{recover {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:recover}
@@ -2080,6 +2331,46 @@ There are three possible modes of operation that are selected with the {\em type
 These recovery attempts will not always be successful.
 
 
+
+
+
+% reducepoly ------------------------------------------------------------------
+
+\subsection{reducepoly {\small $\mathrm{(package: difxio)}$}} \label{sec:reducepoly}
+
+Program {\tt reducepoly} takes one or more DiFX file sets as input and will modify each fileset's delay model ({\tt .im} file) to have polynomial representations with fewer terms.
+All polynomials in the {\tt ,im} file will be reduced, including the baseline vectors, atmospheric components, azimuth, and elevation.
+The original {\tt .im} files will be overwritten.
+The main purpose of this program is to evaluate the impact of using different polynomial orders,
+
+\begin{itemize}
+\item[] Usage: {\tt reducepoly} $ [ $ {\em options} $ ] $ {\em inputFile} \ldots
+\item[] {\em inputFile} is the input multi-thread VDIF file, or {\tt -} for {\em stdin}; multiple may be provided
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print help information and quit
+\item[] {\tt -2} : reduce polynomials to two terms
+\item[] {\tt -3} : reduce polynomials to three terms
+\item[] {\tt -4} : reduce polynomials to four terms
+\item[] {\tt -5} : reduce polynomials to five terms
+\end{itemize}
+\end{itemize}
+
+
+% restartdifx ---------------------------------------------- INCOMPLETE -------
+
+
+
+
+% searchVDIF ----------------------------------------------- INCOMPLETE -------
+
+\subsection{searchVDIF {\small $\mathrm{(package: vdifio)}$}} \label{sec:searchVDIF}
+
+
+
+% stripVDIF ------------------------------------------------ INCOMPLETE -------
+
+\subsection{stripVDIF {\small $\mathrm{(package: vdifio)}$}} \label{sec:stripVDIF}
 
 
 
@@ -2195,6 +2486,31 @@ Program {\tt stripVDIF} strips network headers from a VDIF format basebad data f
 \end{itemize}
 
 
+
+
+
+
+% tabulatedelays --------------------------------------------------------------
+
+\subsection{tabulatedelays {\small $\mathrm{(package: difxio)}$}} \label{sec:tabulatedelays}
+
+Program {\tt tabulatedelays} takes one or more DiFX filesets and produces a text file containing, for each scan, a table of interferometer delays ($\mu$s) and rate ($\mu$s/s) based on the values in the {\tt .im} file at a cadence of one entry every 24 seconds (the same as that typically used in calculating the delay model polynomials).
+Based on command line options values other than the delay can be extracted and tabulated.
+The details of the output files are documented in comments at the top of the output file.
+
+\begin{itemize}
+\item[] Usage: {\tt tabulatedelays} $ [ $ {\em options} $ ] $ {\em inputFile} \ldots
+\item[] {\em inputFile} is the input multi-thread VDIF file, or {\tt -} for {\em stdin}; multiple may be provided
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print help information and quit
+\item[] {\tt --az} : print azimuth (deg) and azimuth rate (deg/s) instead of delay, rate
+\item[] {\tt --el} : print elevation (deg) and azimuth rate (deg/s) instead of delay, rate
+\item[] {\tt --dry} : print the dry component of atmospheric delay ($\mu$s) instead of delay, rate
+\item[] {\tt --wet} : print the wet component of atmospheric delay ($\mu$s) instead of delay, rate
+\item[] {\tt --uvw} : print the antenna-based baseline coordinates $(x, y, z)$ (meters) instead of delay, rate
+\end{itemize}
+\end{itemize}
 
 
 
@@ -2328,6 +2644,32 @@ If run with 2 {\tt -v} flags, each packet received will have its source and sequ
 
 
 
+% vdif2to8 --------------------------------------------------------------------
+
+\subsection{vdif2to8 {\small $\mathrm{(package: vdifio)}$}} \label{sec:vdif2to8}
+
+Program {\tt vdifb2to8} takes a 2-but sampled VDIF stream and reencodes it as 8-bit samples.
+It should work on any form of VDIF with 2 bits per sample (2+2 bits complex).
+It is anticipated that any 8-bit decoder will be performed with linear level spacings, unlike the case for 2-bit samples which use a high to low ratio of 3.3359 to minimized quantization noise.
+Given this anticipation the levels chosen in the output 8-bit stream correspond to levels of 35.5 and 118.5 counts for the low and high states respectively.
+These levels lead to a ratio as close to 3.3359 as possible.
+The 0.5 offset comes about from assuming that the 256 output states are centered on zero and thus range from -127.5 \ldots -0.5, 0.5 \ldots 127.5.
+Extra bytes in the input stream (not corresponding to valid VDIF frames) will be excised but invalid frames (as marked with the invalid bit) will be retained and encoded to 8 bits.
+
+\begin{itemize}
+\item[] Usage: {\tt vdif2to8} {\em inputFile} {\em frameSize} {\em outputFile}
+\item[] {\em inputFile} is the file to read (2 bits per sample)
+\item[] {\em frameSize} is the size of the VDIF frames including frame headers (5032 for VLBA or VLA VDIF data)
+\item[] {\em outputFile} is the output file (8 bits sper sample)
+\item[] Example: {\tt vdif2to8 input.vdif 5032 output.vdif}
+\end{itemize}
+
+
+
+
+
+
+
 % vdifbstate ------------------------------------------------------------------
 
 \subsection{vdifbstate {\small $\mathrm{(package: vdifio)}$}} \label{sec:vbstate}
@@ -2353,6 +2695,13 @@ Notes:
 \item If a non-power-of-two number of threads is requested, extra channels will be invented to pad out the next power of two.
 Data in these extra channels has undefined qualities.
 \end{enumerate}
+
+
+
+% vdifChanSelect ----------------------------------------- INCOMPLETE ---------
+
+\subsection{vdifChanSelect {\small $\mathrm{(package: vdifio)}$}} \label{sec:vdifChanSelect}
+
 
 
 
@@ -2524,7 +2873,10 @@ Most new features will be easy to implement so send a message to the difx-users 
 
 \subsubsection{VDIF issues}
 
-%FIXME
+Unlike for the other formats, VDIF does not make use of the {\tt \$TRACKS} section for numeric assignment of channel.
+Instead the channels as listed in the {\tt \$FREQ} section are sorted alphabetically by their link name (usually something like {\tt Ch01}.
+The alphabetical list is matched against the thread-channel order where the threads are listed in numeric order; the ``thread index'' takes precedence over the ``channel index''.
+The {\tt track\_frame\_format} parameter of the {\tt \$TRACKS} section is still required.
 
 \subsubsection{Mark5B issues}
 
@@ -2701,7 +3053,7 @@ Program {\tt vmux} takes a VDIF file with multiple threads of one channel each a
 In the case that a non-power-of-two number of channels are contained in the input file (or equivalently, a non-power-of-two number of threads are specified on the command line), the next power of two will be selected as the number of channels in the output thread and any unused channel slots will contain random data.
 
 \begin{itemize}
-\item[] Usage: {\tt vmux} {\em inputFile} {\em inputFrameSize} {\em framesPerSecond} {\em threadList} {\em outputFile} $[${\em offset} $[${\em chunkSize}$] ]$
+\item[] Usage: {\tt vmux} $[${\em options}$]$ {\em inputFile} {\em inputFrameSize} {\em framesPerSecond} {\em threadList} {\em outputFile} $[${\em offset} $[${\em chunkSize}$] ]$
 \item[] {\em inputFile} is the input multi-thread VDIF file, or {\tt -} for {\em stdin}
 \item[] {\em inputFrameSize} is the size of one thread's data frame, including header (for RDBE VDIF data this is 5032)
 \item[] {\em framesPerSecond} is the number of frames per second in the input file for each thread (and is thus the number of output frames per second as well)
@@ -2709,8 +3061,23 @@ In the case that a non-power-of-two number of channels are contained in the inpu
 \item[] {\em outputFile} is the name of the output, single-thread VDIF file, or {\tt -} for {\em stdout}
 \item[] {\em offset} is an optional offset into the input file (in bytes)
 \item[] {\em chunkSize} is (roughly) how many bytes to operate on at a time (default is 2000000)
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -v} or {\tt --verbose} : be more verbose in execution
+\item[] {\tt -q} or {\tt --quiet} : be less verbose in execution
+\item[] {\tt -f} {\em f} or {\tt --fanout} {\em f} : set fanout factor to {\em f}
+\item[] {\tt -e} or {\tt --EDV4} : convert VDIF extended data version to EDV4 (default)
+\item[] {\tt -n} or {\tt --noEDV4} : don't convert VDIF extended data version to EDV4
+\end{itemize}
 \end{itemize}
 
+The concept of fanout applies to certain variants of VDIF data where one logical sampled channel is interleaved multiple threads.
+Certain modes of the DBBC3 makes use of this mode.
+See Sec.~\ref{sec:vdiffanout} for details.
+
+VDIF Extended Data Version (EDV) 4 is used to contain per-channel validity flags within a multi-channel VDIF file.
+See Sec.~\ref{sec:vdifedv4} for details.
 
 
 
@@ -2777,8 +3144,19 @@ If the data is not recognized as VDIF, an error code will be printed; see below 
 Legacy format VDIF data is not supported.
 
 \begin{itemize}
-\item[] Usage: {\tt vsum} {\em file1} $[$ {\em file2} $[ \ldots ] ]$
+\item[] Usage: {\tt vsum} $[$ {\em options} $]$ {\em file1} $[$ {\em file2} $[ \ldots ] ]$
+\item[] {\em file1} \ldots is/are the VDIF file(s) to summarize
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -s} or {\tt --shortsum} : print one-line summary per file
+\item[] {\tt -6} or {\tt --mark6} : interpret provided file names as Mark6 scans
+\item[] {\tt --allmark6} : summarize all files found on mounted Mark6 modules
 \end{itemize}
+\end{itemize}
+
+If the {\tt -6} or {\tt --mark6} or {\tt --allmark6} option is used, it is assumed that the files are to be found in their expected location, which could be altered by an environment variable.
+See sec~\ref{sec:mark6path} for more details.
 
 If the summary operation failed for a file, one of the following error codes will be returned:
 \begin{center}
@@ -2795,7 +3173,7 @@ If the summary operation failed for a file, one of the following error codes wil
 \end{tabular}
 \end{center}
 
-
+The {\tt -s} or {\tt --shortsum} option produces output that can be used directly by {\tt vex2difx} as a file list.
 
 
 

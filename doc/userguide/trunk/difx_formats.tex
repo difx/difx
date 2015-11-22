@@ -1,0 +1,34 @@
+\section{Baseband Data Formats}
+
+\subsection{LBA} \label{sec:lbaformat}
+
+\subsection{VLBA} \label{sec:vlbaformat}
+
+\subsection{Mark IV} \label{sec:markivformat}
+
+\subsection{Mark5B} \label{sec:mark5bformat}
+
+\subsection{VDIF} \label{sec:vdifformat}
+
+The VLBI Data Interchange Format (FIXME: reference to \url{vlbi.org}) is a very flexible baseband data format being used in almost all new VLBI backends (in 2015).
+The variety of modes supported is very large.
+As of DiFX version 2.5 just about all possible modes are supported in one way or another.
+
+Some special VDIF concepts are described below.
+
+\subsubsection{Fanout modes} \label{sec:vdiffanout}
+
+The concept of fanout applies to certain variants of VDIF data where one logical sampled channel is interleaved multiple threads.
+Certain modes of the DBBC3 makes use of this mode.
+Reassembly of sampled data streams is possible using exactly the same mechanism as multiplexing multiple threads into a multi-channel, single-thread file.
+Certain restrictions and usage rules apply:
+\begin{enumerate}
+\item Total number of threads is a multiple of the fanout factor.
+\item The first {\em f} threads listed belong to the first channel to be reconstructed; these will become ``channel 0'' of the output single-thread VDIF file.
+\item It is not possible to make use of fanout mode on VDIF data that contains multiple channels within each thread.
+\end{enumerate}
+
+\subsubsection{Extended Data Versions} \label{sec:vdifedv}
+
+\subsubsection{Extended Data Version 4} \label{sec:vdifedv4}
+
