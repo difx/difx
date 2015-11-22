@@ -6,10 +6,10 @@ from os import getenv
 import socket
 import re
 
-program = 'mk5command'
-version = '0.4'
+program = 'mk5control'
+version = '0.5'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20100527'
+verdate = '20151118'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
