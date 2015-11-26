@@ -1,350 +1,103 @@
 #!/usr/bin/python
+"""
+Mark6 utility   m6sg_mount v2.0
 
-##########################################################################
-##
-## Mark6 utility   m6sg_mount v1.1    
-##
-## Usage:  m6sg_mount [-u]
-##
-## With the '-u' option all scatter-gather disks are unmounted.
-## With no options specified, all "diskpack" disks are mounted.
-##
-## The main purpose of this script is to avoid having to start cplane,
-## then dplane, and then send the necessary da-client commands.
-##
-## Authors
-## Jan Wagner 2014: basic version for quick (un)mounting
-## Harro Verkouter 2015: improvements to preseve consistent mount points
-##
-##########################################################################
+Usage:  m6sg_mount [-u]
 
-import subprocess
-import sys
-import os
-import re, shlex, operator
+With the '-u' option all scatter-gather disks are unmounted.
+With no options specified, all "diskpack" disks are mounted.
+The main purpose of this script is to avoid having to start cplane,
+then dplane, and then send the necessary da-client commands.
+"""
 
-mounter_version = 2  # 1 for old version by J. Wagner, 2 for newer version by H. Verkouter
+import pyudev, re, subprocess, sys
+MARK6_ROOT = '/mnt/disks/%d/%d'
+MARK6_META = '/mnt/disks/.meta/%d/%d'
+CHECK_RESULTS = False # specifies whether to check results from subprocess() launches
 
-# A note on Mark6 disk controller cards (MPT2SAS)
-#
-#   Mark6 has one or two MPT2SAS controller cards
-#
-#   Each MPT2SAS card has 4 connector slots ("4-lane" MiniSAS; SFF-8088)
-#   and each connector slot supports 4 SAS/SATA devices. 
-#   --> each MPT2SAS card offers 16 SAS/SATA ports in total.
-#
-#   Not counting the on-board SATA, the MPT2SAS card(s) offer physical
-#   port numbers 0..31, whether or not disks are actually attached.
-#
-#   The first MPT2SAS card  provides ports  0..15. 
-#   The second MPT2SAS card provides ports 16..31, if it is installed.
-#
-# Disk module cabling
-#
-#   Ports  0..3 and   4..7 are attached by two MiniSAS cables to disk module A.
-#   Ports 8..11 and 12..15 are attached by two MiniSAS cables to disk module B.
-#
-#   So to mount disks behind each of ports 0..31 we map each respective device
-#     "/dev/sd[a-zA-Z]+"  to a three element tuple:  (MODULE, SLOT, DEVICE) 
-#   such that it tells exactly which disk of which module a device actually is.
-#
-# In scatter-gather mode each disks contain 2 partitions:
-#
-#   sd<X>1 = data       default mountpoint /mnt/disks/<MODULE>/<SLOT>/
-#   sd<X>2 = metadata   default mountpoint /mnt/disks/.meta/<MODULE>/<SLOT>/
-#
-#   These are related to the physical port 'nr' (0..31) to which a disk is attached:
-#
-#     X = 'b' + nr           : from b to q on first MPT2SAS card
-#                              and  r to z to G on second MPT2SAS card
-#     MODULE = int(nr/8)+1   : from 1 to 4
-#     SLOT   = nr % 8        : from 0 to 7
-#     DEVICE = int(nr/16)    : from 0 to 1
-#
+# Changelog:
+# xx/2015 v1.0 Jan Wagner, basic version for quick (un)mounting
+# xx/2015 v1.1 Harro Verkouter, improvements to preseve consistent mount points
+# 11/2015 v2.0 Jan Wagner, updated to use pyudev instead of 3rd party 'lsscsi'
 
-# Interface + standard calls to /bin/mount and /bin/umount
-class MounterBase(object):
-	def __init__(self):
-		pass
-	def getPartitions(self):
-		pass
-	def getMounted(self):
-		pass
-	def getMountables(self,Lpart,Lmount):
-		pass
-	def getUnMountables(self,Lpart,Lmount):
-		pass
-	def doBatchMount(self,mountlist):
-		pass
-        def doBatchUnMount(self,mountlist):
-		pass
-	def doMount(self,dev,dir):
-		cmd_mount = ["sudo", "/bin/mount", dev,dir] 
-		cmd_chmod = ["sudo", "chmod", "775", dir]
-		cmd_chown = ["sudo", "chown", "root:mark6", dir]
-		(o,rc1) = subprocess.Popen(cmd_mount, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-		(o,rc2) = subprocess.Popen(cmd_chmod, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-		(o,rc3) = subprocess.Popen(cmd_chown, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-		if len(rc1)>0 or len(rc2)>0 or len(rc3)>0:
-			print rc1, rc2, rc3
-	def doUnMount(self,dir):
-		cmd_umount = ["sudo", "/bin/umount", dir]
-		(o,rc) = subprocess.Popen(cmd_umount, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-		if len(rc)>0:
-			print rc
-		return (o,rc)
+def list_MPT2SAS_disks():
+	list = []
+	context = pyudev.Context()
+	for dev in context.list_devices(subsystem='block', DEVTYPE='partition'):
+		pdev = dev.find_parent('pci')
+		if (pdev.driver == 'mpt2sas'):
+			entry = {}
+			entry['devnode'] = dev.device_node
+			entry['fs'] = dev.get('ID_FS_TYPE')
+			entry['diskmodel'] = dev.get('ID_MODEL')
+			entry['diskserial'] = dev.get('ID_SERIAL')
 
-# Short hands
-RUN    = subprocess.Popen
-SHLEX  = lambda arg: shlex.split(arg) if isinstance(arg, type("")) else arg
-STDOUT = lambda cmd: RUN(SHLEX(cmd), stdout=subprocess.PIPE).communicate(None)[0]
-LINES  = lambda cmd: STDOUT(cmd).split('\n')
+ 			# Determine which "slot" (module) and "disk" the SAS target belongs to
+			# E.g., DEVPATH /devices/pci0000:00/0000:00:02.0/0000:06:00.0/host0/port-0:15/end_device-0:15/target0:0:15/0:0:15:0/block/sdq/sdq1
+			# has 'target0:0:15' on 'host0' which means target 15 (0..15) which maps to module 2 (1..4), slot 7 (0..7)
+			#  - no SAS Expanders are assumed to be in use, and at most 16 SAS targets per controller
+			#  - SAS targets  0-7 on controller 0 are in "module 1" in "slots 0-7"
+			#  - SAS targets 8-15 on controller 0 are in "module 2" in "slots 0-7"
+			#  - SAS targets  0-7 on controller 1 are in "module 3" in "slots 0-7"
+			#  - SAS targets 8-15 on controller 1 are in "module 4" in "slots 0-7"
+			dp = dev['DEVPATH']
+			h = int(re.search('\/host([0-9]*)\/',dp).group(1))
+			t = re.search('\/target([0-9]*:[0-9]*:[0-9]*)\/',dp).group(1)
+			t = [int(x) for x in t.split(':')]
+			entry['mk6_module'] = (1 + t[-1]/8) + 2*h  # 1-based count
+			entry['mk6_slot']   = t[-1] % 8            # 0-based count
+			if dp[-1]=='1':
+				entry['mk6_mountpoint'] = MARK6_ROOT % (entry['mk6_module'],entry['mk6_slot'])
+			elif dp[-1]=='2':
+				entry['mk6_mountpoint'] = MARK6_META % (entry['mk6_module'],entry['mk6_slot'])
+			else:
+				entry['mk6_mountpoint'] = None
+			list.append(entry)
+	list = sorted(list, key=lambda k: k['mk6_mountpoint'])
+	return list
 
+def mount(dev,dir):
+	print ('Mounting %s to %s' % (dev,dir))
+	p = []
+	p.append( subprocess.Popen(["sudo", "/bin/mount", dev, dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
+	p.append( subprocess.Popen(["sudo", "/bin/chmod", "755", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
+	p.append( subprocess.Popen(["sudo", "/bin/chown", "root:mark6", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
+	return p
 
+def unmount(dir):
+	print ('Unmounting %s' % (dir))
+	p = subprocess.Popen(["sudo", "/bin/umount", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	return [p]
 
-### BASIC IMPLEMENTATION #################################################################
-#
-# This version simply mounts partitions of /proc/partitions to /mnt/disk/*/*/
-#
-# It does not ensure that for example /mnt/disk/1/0/ indeed will always be
-# the disk on physical port number 0 (counting in ports of MPT2SAS card(s)).
-#
+def mount_all():
+	procs = []
+	for entry in list_MPT2SAS_disks():
+		procs = procs + mount(entry['devnode'], entry['mk6_mountpoint'])
+	return procs
 
-class MounterV1(MounterBase):
+def unmount_all():
+	procs = []
+	for entry in list_MPT2SAS_disks():
+		procs = procs + unmount(entry['mk6_mountpoint'])
+	return procs
 
-	def __init__(self):
-		super(MounterV1,self).__init__()
-		# print 'Using mounter class version 1'
+def main(argv=sys.argv):
 
-	def getPartitions(self):
-		partitions = []
-		with open("/proc/partitions") as f:
-			partitions = f.readlines()
-		partitions[:] = [s.strip('\n') for s in partitions]
-		partitions[:] = [s.split(' ')[-1] for s in partitions[2:]]
-
-		mounted = []
-		with open("/etc/mtab") as f:
-			mounted = f.readlines()
-		mounted[:] = [s.split(' ')[0] for s in mounted]
-		mounted[:] = [s.split('/')[-1] for s in mounted]
-
-		partitions.sort()
-		mounted.sort()
-		return (partitions,mounted)
-
-	## Mounting
-	def getMountables(self,partitions,mounted):
-		unmounted = list(set(partitions).difference(mounted))
-		unmounted[:] = [s for s in unmounted if not s.startswith('sda')]
-		mountable = [s for s in unmounted if (s.startswith('sd') and s.endswith('1') and len(s)==4)]
-		mountable.sort()
-
-		mountlist = []
-		for pt in mountable:
-			disknr = ord(pt[-2]) - ord('b')
-			modnr  = (disknr/8) + 1
-			slotnr = disknr % 8
-			tp = (  '/dev/%s' % (pt), 
-				'/mnt/disks/%d/%d/' % (modnr,slotnr), 
-				'/dev/%s2' % (pt[:-1]), 
-				'/mnt/disks/.meta/%d/%d/' % (modnr,slotnr)
-			)
-			mountlist.append(tp)
-
-		return mountlist
-
-	def doBatchMount(self,mountlist):
-		# Mount in the order below so it looks "pretty" in /etc/mtab
-		# sdX1 --> /mnt/disks/a/b/
-		for m in mountlist:
-			super(MounterV1,self).doMount(m[0],m[1])
-		# sdX2 --> /mnt/disks/.meta/a/b/
-		for m in mountlist:
-			super(MounterV1,self).doMount(m[2],m[3])
-
-	## Unmounting
-	def getUnMountables(self,partitions,mounted):
-		mounted_sgdisks = ['/dev/%s' % (s) for s in mounted if (s.startswith('sd') and not s.startswith('sda'))]
-		mounted_sgdisks.sort()
-		return mounted_sgdisks
-
-	def doBatchUnMount(self,mountlist):
-		for m in mountlist:
-			super(MounterV1,self).doUnMount(m)
-
-
-
-### ADVANCED IMPLEMENTATION ##############################################################
-#
-# Harro Verkouter provided an updated m6sg_mount. This version is much more advanced.
-# It invokes 'lsscsi' to find out exactly which physical port each disk is attached to. 
-# The mount point is chosen accordingly -- and consistently.
-#
-# The method in Harro's update allows a disk e.g. on port 0 (counting in ports of MPT2SAS 
-# card(s)) to consistently get mounted to /mnt/disks/(.meta)/1/0/, regardless of which
-# device node the operating system semi-randomly assigned to it (/dev/sdb or other).
-#
-
-class MounterV2(MounterBase):
-
-	def __init__(self):
-		super(MounterV2,self).__init__()
-		# print 'Using mounter class version 2'
-
-	def getPartitions(self):
-		# Follow Haystack convention; map MPTSAS controller => drives => modules
-		# Pffff. "lsscsi -H" prints an arbitrary amount of whitespace AFTER the host type
-		#  $> lsscsi -H
-		#  [0]     mpt2sas
-		#  [2]     acpi
-		#   ...
-		#  $>
-		#
-		#  The number between []'s is the SCSI HBA number.
-		#  Filter the mpt2sas devices and extract their HBA id.
-		#
-		#  Then, use:
-		#  $> lsscsi -t <HBA>
-		#
-		#  To find out the connected devices.
-
-		# Regex to filter mpt2sas device and extract the HBA id
-		rxMPTSAS = re.compile(r"^\s*\[(?P<hba>[0-9]+)\]\s+mpt2sas\s*$")
-		# The output of lsscsi -t <hba> encodes the physical disk position and the device
-		rxDisk   = re.compile(r"^\[[^\]]+\]\s+disk\s+sas:0x44332211(?P<physpos>[0-9A-Fa-f]{2})\S+\s+(?P<device>\S+)$")
-
-		# The first MPT2SAS controller hosts disk modules 1 and 2,
-		# the (optional) second one disk modules 3 and 4.
-		def proc_disk(line):
-			# One line of output from lsscsi -t <hb> looks like below, encoding:
-			#   [0:0:70:0]   disk    sas:0x4433221109000000          /dev/sdb
-			#   [H:C:I:L]    <type>  sas:          ^^                device
-			#                              physical disk location
-			mo = rxDisk.match( line )
-			if mo is None:
-				return None
-			disknum = int(mo.group('physpos'), 16)
-			# disks 0-7 on this controller host module "0" on this controller, 8-15 module "1"
-			return (disknum/8, disknum % 8, mo.group('device'))
-
-		def proc_mptsas(acc, (controller, mo)):
-			# controller is the index of the controller, 0 .. n
-			# assume two modules / controller [hence 2*controller + mod
-			# and also, the module counting starts at "1" (not at "0")
-			reduce(lambda acc, (mod, dsk, dev): acc.append( (2*controller+1+mod, dsk, dev) ) or acc,
-				filter(lambda x: x is not None, map(proc_disk, LINES("lsscsi -t {0}".format(mo.group('hba'))))),
-				acc)
-			return acc
-
-		return reduce(proc_mptsas,
-			# enumerate all mpt2sas devices
-			enumerate(filter(lambda x: x is not None, map(lambda x: rxMPTSAS.match(x), LINES("lsscsi -H")))),
-			[])
-
-
-	def getMounted(self):
-		# Line looks like:
-		#  /dev/sdX1 /mnt/disks/MOD/DSK  ....
-		#  /dev/sdX2 /mnt/disks/.meta/MOD/DSK ....
-		# But we don't care about the meta data here
-		rxMountpoint = re.compile(r"^(?P<device>/dev/sd[^0-9]+)1\s+/mnt/disks/(?P<mod>[0-9]+)/(?P<disk>[0-9]+)")
-		def proc_mount(mp):
-			mo = rxMountpoint.search(mp)
-			if mo is None:
-				return None
-			# Ok, mp is the actual data mountpoint
-			# transform into tuple:
-			#   (MOD, DSK, dev)
-			return (int(mo.group('mod')), int(mo.group('disk')), mo.group('device'))
-
-		with open("/etc/mtab") as f:
-			return filter(lambda x: x is not None, map(proc_mount, f))
-
-	## Mounting
-
-	# Produce a sorted list of 4-element tuples:
-	#      (datapartition, datamountpoint, metapartition, metamountpoint)
-	#
-	#  'lst' is a list of three-element tuples:
-	#      (module, disk, basedev)
-	def make_mount_list(self,lst):
-		# produce a tuple with mount information
-		def mk_mount(acc, (mod, dsk, dev) ):
-			acc.append( ("{0}1".format(dev), "/mnt/disks/{0}/{1}".format(mod, dsk),
-						 "{0}2".format(dev), "/mnt/disks/.meta/{0}/{1}".format(mod, dsk)) )
-			return acc
-		# process all the mountpoints in the list. Make sure to sort by module, disk
-		return reduce(mk_mount, sorted(lst, key=operator.itemgetter(0, 1)), [])
-
-	def getMountables(self,partitions,mounted):
-		return self.make_mount_list(set(partitions) - set(mounted))
-
-	def doBatchMount(self,mountlist):
-		# Mount in the order below so it looks "pretty" in /etc/mtab
-		# sdX1 --> /mnt/disks/a/b/
-		for m in mountlist:
-			super(MounterV2,self).doMount(m[0],m[1])
-		# sdX2 --> /mnt/disks/.meta/a/b/
-		for m in mountlist:
-			super(MounterV2,self).doMount(m[2],m[3])
-
-	## Unmounting
-
-	def getUnMountables(self,partitions,mounted):
-		# transform list of mounted disks into a list of unmountables
-		return self.make_mount_list(mounted)
-
-	def doBatchUnMount(self,mountlist):
-		for m in mountlist:
-			(o,rc1) = super(MounterV2,self).doUnMount(m[0]) # umount data
-			(o,rc1) = super(MounterV2,self).doUnMount(m[2]) # umount meta
-
-
-### Command Line #########################################################################
-if __name__ == '__main__':
-	
-	if mounter_version == 1:
-		m = MounterV1()
-		(Lpart,Lmount)  = m.getPartitions()
-		(Lmountables)   = m.getMountables(Lpart,Lmount)
-		(Lunmountables) = m.getUnMountables(Lpart,Lmount)
-	elif mounter_version == 2:
-		m = MounterV2()
-		Lpart         = m.getPartitions()
-		Lmount        = m.getMounted()
-		Lmountables   = m.getMountables(Lpart, Lmount)
-		Lunmountables = m.getUnMountables(Lpart, Lmount)
-	else:
-		print 'm6sg_mount has unsupported hard-coded mount interface version! please edit m6sg_mount!'
+	if (not(len(argv) in [1,2]) or (len(argv)==2 and argv[1]!='-u')):
+		print __doc__
 		sys.exit(-1)
 
-	if len(sys.argv)!=1 and len(sys.argv)!=2 or (len(sys.argv)==2 and not sys.argv[1]=='-u'):
-		print 'Usage: m6sg_mount [-u]'
-		sys.exit(-1)
-
-	if len(sys.argv)==2:
-
-		print 'Mounted scatter-gather partitions that will be unmounted:\n%s\n' % (str(Lunmountables))
-		if len(Lunmountables)<1:
-			print 'Nothing to do.'
-			sys.exit(0)
-
-		print 'Continue (y/n)?'
-		a = raw_input()
-		if a=='y':
-			m.doBatchUnMount(Lunmountables)
-			print 'Done.'
+	if (len(argv)==2 and argv[1]=='-u'):
+		procs = unmount_all()
 	else:
+		procs = mount_all()
 
-		print 'Partitions to mount, and their mount points:\n%s\n' % (str(Lmountables))
-		if len(Lmountables)<1:
-			print 'Nothing to do.'
-			sys.exit(0)
+	if CHECK_RESULTS:
+		for p in procs:
+			(o,rc) = p.communicate()
+			if (len(rc)>0):
+				print rc
 
-		print 'Continue (y/n)?'
-		a = raw_input()
-		if a=='y':
-			m.doBatchMount(Lmountables)
-			print 'Done.'
+if __name__ == "__main__":
+	main(sys.argv)
 
