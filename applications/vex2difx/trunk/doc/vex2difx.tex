@@ -443,12 +443,25 @@ The following parameters are in this category:
 \subsubsection{Optimization parameters}
 
 \begin{itemize}
-\item {\tt subintNS}
-\item {\tt guardNS}
-\item {\tt postFFringe}
-\item {\tt fringRotOrder}
-\item {\tt strideLength}
-\item {\tt xmacLength}
+\item {\tt subintNS} : the length (in seconds) of a work package to be assigned to each core process.
+This number must be a multiple of the FFT size and it must evenly divide into the integration time.
+If excessively long the increased latency will cause slower performance on short jobs and it may require excessive memory.  The maximum allowed value is 2 seconds.  If too short loop overhead and increased interprocess bandwidth between core processes and the master process may cause performance problems, especially on long jobs.
+\item {\tt guardNS} : starting with DiFX 2.5, for all jobs this should be left unset for normal astrometry using Earth-based radio antennas.
+\item {\tt postFFringe} : if set to true, the fringe rotation will be performed after the FFT stage of the correlation.
+This leads to improved performance but decreased coherence of results. 
+For all long-baseline observations this should be left at its default value of ``false''.
+\item {\tt fringRotOrder} : the polynomial order of the fringe rotation function as applied on a per-FFT basis.
+Three options are currently supported: 0 means a constant function, effectively the same as setting {\tt postFFringe} to true; 1 means fringe rotation phase is a linear function of time (the default, and for VLBI usually is the correct option); and 2 means quadratic, which might be wanted for long FFT sizes on especially long baselines or in cases (spacecraft related) where the delay function is accelerating much faster than usual.
+\item {\tt strideLength} : in calculating the fringe rotation function this parameter is used to subdivide the problem.
+In general a number that divides the FFT size {\em for every antenna} and that is roughly the square root of this number is ideal.
+In cases where incommensurate sample rates (e.g., for EHT with 62.5~MHz vs.\ 64~MHz) it is difficult to set this optimally.
+With DiFX 2.5 and later, leaving it unset, or setting it to 0, will allow {\tt mpifxcorr} to determine this automatically {\em per antenna}, and that is recommended in just about every situation.
+\item {\tt xmacLength} : in performing the cross multiplications the problem is divided into ``strides'' of this size to keep recently loaded values in cache memory to improve performance.
+For typical $\sim 10$ antenna arrays a good value is around 128.
+For much larger arrays a smaller value may be better.
+Starting with DiFX 2.5 leaving this unset, or setting to 0, will cause the legal value nearest 128 to be used.
+Note that the value of this parameter must evenly divide the output spectrum size {\em for all bands}.
+When using zoom bands this is most constraining, so it is best to keep the number of channels in all zoom bands the same and to keep them a product of small numbers.
 
 \end{itemize}
 
