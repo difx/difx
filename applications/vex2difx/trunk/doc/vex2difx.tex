@@ -36,15 +36,15 @@
 Walter Brisken
 
 \vspace{10pt}
-{\em draft} 2015/09/02
+{\em draft} 2015/11/25
 \end{center}
 
 
 \section{Introduction}
 
-This document was produced to demystify the inner workings of \vexdifx...
+This document was produced to demystify the inner workings of \vexdifx.
 The version of \vexdifx covered here is that which will become part of the DiFX 2.5 release series.
-This version has had considerable changes since the most recent stable version (2.4.0).
+This version has had considerable changes since the most recent stable version (2.4.0), most of which are related to support for multiple datastreams per antenna and changes to the \vx file parser.
 
 \section{Sources of information}
 
@@ -57,7 +57,7 @@ Little attention will be paid to these cases where the source of information is 
 The \vexdifx wiki page and vex documentation should be sufficient to understand these cases.
 The more complicated options are those where settings in the \vd file are used to override those in the \vx file; that will be the primary focus of this document.
 
-Note that as of now the only version of the vex format that is supported is vex 1.5.
+Note that as of now the only version of the vex format that is supported is vex 1.5\footnote{See \url{http://vlbi.org/vex/docs/vex\%20definition\%2015b1.pdf}.}.
 This version of the standard itself is not fully capable of conveying many details of modern VLBI systems, including the VDIF format, some recording systems, and all eVLBI.
 The lack of unambiguous support by vex 1.5 means that \vexdifx had to adopt some conventions and make some assumptions.
 \vexdifx aims to warn the user when assumptions are being made.
@@ -82,6 +82,7 @@ The sections below detail how various bits of information get conveyed to the Di
 \subsection{Frequency tunings}
 
 At the moment the only way to specify frequency tunings is in the \vx file within a \$FREQ block.
+Please refer to vex 1.5 documentation for details.
 
 \subsection{Data format}
 
@@ -181,7 +182,7 @@ The sources of format class, listed in increasing priority, are:
 \item {\tt format} statement in a {\tt DATASTREAM} section of the \vd file
 \end{enumerate}
 
-Note!!! It is not always possible to change the format class via the {\tt .v2d} file.
+Note: it is not always possible to change the format class via the {\tt .v2d} file.
 Specifically, at the moment, it is not possible to change between VDIF and any other format.
 This is because VDIF determines channel order strictly from the {\tt \$FREQ} section based on channel names and the other formats use the {\tt \$TRACKS} section and the parsing of the channel order is done while reading the {\tt .vex} file, before the contents of the {\tt .v2d} file are considered.
 
@@ -314,7 +315,6 @@ There are two mechanisms:
 \item If no {\tt fanout\_def} statements are present, the channels as specified by {\tt chan\_def} statements in the {\tt \$FREQ} table are ordered alphabetically by the name of the channels.
 \end{itemize}
 
-\subsection{Multiple datastreams} \label{sec:mds}
 
 \subsection{Antenna properties}
 
@@ -326,24 +326,156 @@ Within the vex format itself there is a distinction between ``station'' and ``an
 By default the antenna name assigned by \vexdifx is the \defname of the corresponding entry in the {\tt \$STATION} block of the \vx file, promoted to all capital letters.
 Antenna names can be overridden in the \vd file within a corresponding {\tt ANTENNA} section through the use of the {\tt name} parameter.
 
+
+
+
 \subsubsection{Antenna coordinates}
+
+Antenna coordinates in the ITRF are usually provided in the {\tt vx} file.
+They can also be provided in an {\tt ANTENNA} section with the {\tt X}, {\tt Y}, and {\tt Z} parameters.
+Note that if one of these three parameters is specified the other two must be as well.
+The values in the \vd file will override those in the \vx file if provided.
+
 
 \subsubsection{Axis offsets}
 
+At this time the antenna axis offsets can only be supplied by the \vx file.
+
 \subsubsection{Clock models}
 
-\subsubsection{Ephemeris information}
+Specification of the clock model is somewhat complicated due to numerous options available.
+The convention used by vex is that the clock offset is positive if the Data Acquisition System (DAS) time tick is early (i.e., the station clock is running fast) and accordingly the full name in the vex file is {\em clock\_early}.
+In all other parts of the system the opposite sign convention is used, that is the clock offset is how late (slow) the DAS clock is.
+Thus there is the added confusion that clock information provided by the \vd file has the opposite sign as equivalent data in the \vx file.
+
+The \vx file can provide multiple clock models per antenna through a {\tt clock\_early} statement, each with four parameters:
+\begin{itemize}
+\item {\em Start} : the time at which the clock model becomes valid (implicitly overriding all previous models for that antenna).
+\item {\em Offset} : the amount the timestamp on data is early relative to actual time.
+\item {\em Epoch} : the time at which the value of {\em Offset} was the actual clock offset.
+\item {\em Rate} : the time derivative of {\em Offset}.
+\end{itemize}
+Note that the {\em Rate} value is a dimensionless number.
+Some debate centered on the appropriate units to assume: sec/sec and microsec/sec were both considered.
+DiFX assumes the units are sec/sec.
+Vex2 will more clearly specify this and also provide the option to make this explicit by supporting dimensionless units sec/sec and microsec/sec.
+If clock information is provided in both the \vx and \vd files the values in \vx will be considered first with the \vd parameters either adding to or replacing those in \vx.
+
+The \vd file can provide partial, full, or incremental clock information through the following parameters.
+\begin{itemize}
+\item {\tt clockOffset}
+\item {\tt clockRate}
+\item {\tt clockEpoch}
+\item {\tt deltaClock}
+\item {\tt deltaClockRate}
+\end{itemize}
+
+
+%\subsubsection{Ephemeris information}
+
+
+
+
+\subsection{Multiple datastreams} \label{sec:mds}
+
+A datastream in the DiFX context is a logical stream of data containing data from one or more baseband channels.
+A single file or a sequence of files that do not overlap in time could be a datastream.  A datasteam could also be recordings on a Mark5 module or a network socket from an eVLBI source.
+Use of multiple datastreams becomes important in heterogeneous VLBI arrays where one or more antenna records data onto two records simultanously.
+With the advent of very wideband backends (e.g., DBBC3, ALMA, other EHT telescopes, and VGOS) the use of multiple datastreams will become increasing important.
+
+New with the DiFX 2.5 version of \vexdifx is support for multiple datastreams per antenna.
+Support for this has always been present in {\tt mpifxcorr} but many of the support programs, such as \vexdifx let such capability lapse.
+Support for this in \vexdifx required substantial restructuring of its code but has left a relatively simple interface for the user.
+
+Currently datastreams can only be defined in the \vd file.
+This is done via a {\tt DATASTREAM} structure.
+If none of these are present then it is assumed that every antenna makes use of a single datastream.
+For antennas with multiple datastreams the following \vd file additions are needed:
+\begin{enumerate}
+\item A {\tt datastreams} parameter needs to be set in the antenna's {\tt ANTENNA} section.
+The argument is an ordered list of references to \vd {\tt DATASTREAM} sections.
+For example: \\
+
+{\tt ANTENNA PT \{ datastreams = PT1,PT2 \}} \\
+
+\item One or more {\tt DATASTREAM} sections must be added.
+An example:\\
+
+{\tt DATASTREAM PT1 \{ format = VDIF/0:1:2:3/5032/2 vsn = NRAO+001 \} } \\
+
+{\tt DATASTREAM PT2 \{ format = VDIF/4:5:6:7/5032/2 vsn = NRAO+002 \} } \\
+
+\end{enumerate}
+
+The contents of a {\tt DATASTREAM} section more or less mirror the data related parameters of the {\tt ANTENNA} section such as {\tt format}, {\tt file},  {\tt vsn}, {\tt filelist}, {\tt networkPort}.
+A complete list is maintained on the DiFX wiki\footnote{See \url{http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx}.}.
+
+While it may not always be required it is strongly encouraged that the full data format for a datastream be fully described in the {\tt DATASTREAM} section, including explicit thread Ids for VDIF.
+
+The \vx file explicitly states the number of baseband channels (called ``bands'' in DiFX parlance); call this number $n_{\rm band}$.
+By default these are divided equally between the $n_{\rm datastream}$ datastreams listed in the {\tt ANTENNA} section with the first $n_{\rm band}/n_{\rm datastream}$ being assigned to the first listed datastream, and subsequent blocks of $n_{\rm band}/n_{\rm datastream}$ being divvied out to the other datastreams in the order listed.
+It is possible to explicitly indicate how many bands are associated with a datastream with the {\tt nBand} parameter.
+This would allow the assumption of equal distribution to be broken if need be.
+It is, however, discouraged to make use of this parameter unless absolutely necessary as it causes problems in cases where the number of bands for a particular antenna changes through an experiment.
+It may be necessary to use multiple \vd files in complicated cases.
+
+Optionally each {\tt DATASTREAM} section can include a {\tt machine} parameter which can be used to assign a particular cluster node to host the {\tt mpifxcorr} datastream process.
+
+
 
 \subsection{Earth orientation parameters}
 
+
+
 \subsection{Correlator parameters}
 
+The \vx file currently has no provision for supplying correlator-specific parameters such as integration time, spectral resolution.
+These and other parameters can be set in the \vd file in the {\tt SETUP} sections.
+The following parameters are in this category:
+\begin{itemize}
+\item {\tt tInt} : the integration time (also called correlator dump interval or acquisition interval).  Default is 2 seconds.
+\item {\tt specRes} : the spectral resolution produced by the correlator.  Default is 0.5 MHz.
+\item {\tt fftSpecRes} : the spectral resolution produced at the FFT stage of the FX algorithm.  This value must be an integer multiple of {\tt specRes}.  Larger values will lead to increasingly confined spectral response but possibly at the expense of performance.  Default is 0.125 MHz.
+\item {\tt doPolar} : if true, correlate cross hands; otherwise only correlate parallel hands.  Default is true.  Savings in disk space and some execution time can be had by setting to false.
+
+\end{itemize}
+
+\subsubsection{Optimization parameters}
+
+\begin{itemize}
+\item {\tt subintNS}
+\item {\tt guardNS}
+\item {\tt postFFringe}
+\item {\tt fringRotOrder}
+\item {\tt strideLength}
+\item {\tt xmacLength}
+
+\end{itemize}
+
+
+
 \subsection{Zoom bands}
+
+
+
+\subsection{Pulse cal extraction}
 
 
 
 \section{Job separation} \label{sec:break}
 
 This section describes what triggers splitting of a project into more than one job.
+There are two fundamentally different reasons for jobs to be split into smaller pieces.
+\vexdifx will first split the scans into seperate groups depending on their observing mode.
+Observations made with different frequencies, bandwidths, sidebands, time resolution, or frequency resolution will be divided into different scan groups.
+Each of these scan groups may then be broken down futher according to the following criteria:
+\begin{itemize}
+\item {\em Single scan flag} : If the parameter {\tt singleScan} is set to true, there will be a job boundary between every scan.
+\item {\em Scan gap} : If the time between two scans in a scan group is larger than a preset duration they will be split (default is 3 minutes but this can be overridden with the {\tt maxGap} global parameter).
+\item {\em Max length} : If the total duration of a scans is to exceed a preset duration, then a job break will be forced between scans (default is 2 hours, but this can be overridden with the {\tt maxLength} global parameter).
+\item {\em Manual job break} : The \vd file can contain {\tt break} parameters; a job break will happen at the time provided to each of these.  These breaks can happen in the middle of a scan.
+\item {\em Clock break} : If an antenna has multiple clock models a job break will occur at the time of transition from one clock model to the next.
+\item {\em Media change} : If correlating off Mark5 or Mark6 media, a break will occur whenever media changes.  This can occur in the middle of a scan.
+\end{itemize}
 
 \end{document}
