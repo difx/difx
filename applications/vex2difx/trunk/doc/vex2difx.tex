@@ -126,7 +126,6 @@ See Table~\ref{tab:vdifclass} for specifying variations of the {\tt VDIF} format
 \hline
 0 & {\em class} & {\tt MARK5B} & \\
 1 & {\em class}\fs{\em threads}\fs{\em size}\fs{\em bits} & {\tt VDIF/0:1:2:3/5032/2} & For VDIF formats only. \\
-  &                                                       & {\tt VDIF/0,1,2,3/5032/2} & Commas or colons as separators. \\
 2 & {\em class}\fs{\em size}\fs{\em bits} & {\tt VDIF/5032/2} & For VDIF formats only. \\
 3 & {\em class} {\em size} & {\tt VDIF5032} & This syntax is discouraged. \\
 4 & {\em class}{\tt 1\_}{\em fanout} & {\tt VLBA1\_4} & For VLBA and Mark4 formats only. \\
@@ -347,6 +346,7 @@ Specification of the clock model is somewhat complicated due to numerous options
 The convention used by vex is that the clock offset is positive if the Data Acquisition System (DAS) time tick is early (i.e., the station clock is running fast) and accordingly the full name in the vex file is {\em clock\_early}.
 In all other parts of the system the opposite sign convention is used, that is the clock offset is how late (slow) the DAS clock is.
 Thus there is the added confusion that clock information provided by the \vd file has the opposite sign as equivalent data in the \vx file.
+Internally within \vexdifx and the {\tt .input} file used by {\tt mpifxcorr} the clock model is represented by a 5 term polynomial and a refrence epoch.
 
 The \vx file can provide multiple clock models per antenna through a {\tt clock\_early} statement, each with four parameters:
 \begin{itemize}
@@ -361,14 +361,18 @@ DiFX assumes the units are sec/sec.
 Vex2 will more clearly specify this and also provide the option to make this explicit by supporting dimensionless units sec/sec and microsec/sec.
 If clock information is provided in both the \vx and \vd files the values in \vx will be considered first with the \vd parameters either adding to or replacing those in \vx.
 
-The \vd file can provide partial, full, or incremental clock information through the following parameters.
+The \vd file can provide partial, full, or incremental clock information through the following parameters which can be set separately for each antenna in the {\tt ANTENNA} sections:
 \begin{itemize}
-\item {\tt clockOffset}
-\item {\tt clockRate}
-\item {\tt clockEpoch}
-\item {\tt deltaClock}
-\item {\tt deltaClockRate}
+\item {\tt clockEpoch} : the time (expressd as an MJD, in vex time, or in any other format known to \vexdifx) when the zero-order term of the full clock polynomial was the actual clock offset.
+\item {\tt clockOffset} (or {\tt clock0}) : the clock offset (in microseconds).  It is highly recommended that {\tt clockRate} and {\tt clockEpoch} also be provided if setting this.
+\item {\tt clockRate} (or {\tt clock1}) : the clock rate (in microseconds per second); {\tt clockOffset} and {\tt clockEpoch} must also be set if this is used.
+\item {\tt clock2} \ldots {\tt clock5} : the higher order clock polynomial coefficients.  Units for {\tt clock}$n$ are microseconds/sec$^n$.
+\item {\tt deltaClock} : a simple mechanism to add a correction to clock value in the \vx file.  Remember that the sign has opposite sense as compared to the \vx file.
+\item {\tt deltaClockRate} : a simple mechanism to add a correction to the clock rate value.  Note that if the clock epoch is very different than the experiment observation time this will also affect the clock offset at the start of the experiment, so it is not recommended to use this parameter unless the clock epoch occurs sometime during the experiment.
 \end{itemize}
+The \vx file can only provide a clock offset and a rate.
+The \vd file can contain a polynomial with up to 5 terms.
+The vex2 format will allow higher order clock models.
 
 
 %\subsubsection{Ephemeris information}
@@ -425,7 +429,33 @@ Optionally each {\tt DATASTREAM} section can include a {\tt machine} parameter w
 
 \subsection{Earth orientation parameters}
 
+Earth orientation parameters (EOPs) quantify the actual orientation of the earth relative to a uniformly rotation model.
+There are three quantities, the two coordinates defining the instantaneous spin axis and the spin phase, UT1-UTC.
+These are referenced to time in the TAI time system, which differs from UTC by number of leap seconds.
+Thus for each EOP entry 5 numbers are needed.
 
+The \vx file can provide these in the {\tt \$EOP} section.
+Due to some subtleties this is handled with a separate {\tt def} statement for each EOP entry even through the vex format nominally allows a single {\tt def} statement to accommodate multiple EOPs.
+Due to concerns about the ability for post-processing software to properly handle more than 5 EOP values (which will hopefully soon be reevaluated), it is strongly suggested that no matter how EOPs are provided that exactly 5 EOPS on consecutive UTC midnights are provided.
+
+\vd sets EOP values in order as follows:
+\begin{enumerate}
+\item EOP values in \vx file are stored in memory.
+\item EOP values from \vd are loaded.
+\begin{enumerate}
+\item EOPs that have the same time as those from \vx file replace those from the \vx file.
+\item EOPs that have unique times will be appended to the list from the \vx file.
+\end{enumerate}
+\item The EOPs are sorted in ascending time order.
+\end{enumerate}
+
+Note that one of the 5 numbers within a \vd EOP section, the UTC time for that entry, forms the name of that block.
+For example:
+
+{\tt EOP 55005 \{ tai\_utc=34 ut1\_utc=0.236958 xPole=0.10597 yPole=0.53906 \} }
+
+\noindent
+would deliver values valid at MJD 55055.
 
 \subsection{Correlator parameters}
 
@@ -472,6 +502,16 @@ When using zoom bands this is most constraining, so it is best to keep the numbe
 
 
 \subsection{Pulse cal extraction}
+
+Pulse cal tones are extracted using an efficient time-domain algorithm in {\tt mpifxcorr}.
+The algorithm is equally efficient to extract a single tone or all tones in a baseband channel.
+Given this {\tt mpifxcorr} essentially has two modes of operation: either extract no tones or extract all tones.
+The selection of which tones to retain in downstream processing can be deferred to post-correlation time.
+
+The version 1.5 \vx file contains insufficient information to fully specify pulse cal tone detection, however sensible defaults suffice in most cases (today), but this will change as baseband channels get wider and tone spacings other than 1~MHz become common. 
+
+In modes where a {\tt \$PHASE\_CAL\_DETECT} block is specified \vexdifx will by default set up pulse cal extraction assuming 1~MHz tone spacing and will recommend to downstream software to retain two tones near (but not too near) the band edges.
+See the \vexdifx wiki for details on changing the tones to be extracted and selected through use of the {\tt phaseCalInt}, {\tt toneSelection} and {\tt toneGuard} parameters.
 
 
 
