@@ -1371,6 +1371,7 @@ Multiple directories can be specified.
 \subsection{makefits {\small $\mathrm{(package: difx2fits)}$}} \label{sec:makefits}
 
 This program is tuned for NRAO use; some modifications may be required for use at other sites.
+In particular, this program requires that jobs were queued to be run in {\tt \$DIFX\_QUEUE\_BASE/}/{\em experiment}{\tt /}.
 
 Program {\tt makefits} is basically a wrapper for {\tt difx2fits} (\S\ref{sec:difx2fits}) that does some sanity checking and ensures that files end up in the proper places with the proper names.
 This program is intrinsically {\em pass-based} and it bases its functionality on the {\tt .joblist} (\S\ref{sec:joblistfile}) file that is written by {\tt vex2difx} (\S\ref{sec:vex2difx}).
@@ -1584,6 +1585,7 @@ Program {\tt m5pcal} can be used to extract pulse cal tones from baseband data i
 \item[] {\em options} can be:
 \begin{itemize}
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -c} {\em n} or {\tt --chunksize} {\em n} : use a fixed rather than automatic chunk size
 \item[] {\tt -v} or {\tt --verbose} : increase output verbosity
 \item[] {\tt -q} or {\tt --quiet} : decrease output verbosity
 \item[] {\tt -n} {\em n} : loop over {\em n} chunks of data (default is 1000)
@@ -1597,6 +1599,10 @@ Program {\tt m5pcal} can be used to extract pulse cal tones from baseband data i
 \item[] {\em freq1} \ldots is/are the frequencies (MHz) relative to baseband of the first tone to detect; there should be one {\em freq} specified per baseband channel
 \item[] {\em outfile} is the name of the output file
 \end{itemize}
+
+Note: The position of the first tone in a baseband channel ({\em freq1} for baseband 1, and so on) must not be larger than the tone interval (set with {\tt -i} {\em i}).
+All tones are extracted from each baseband channel.
+The tone interval is allowed to exceed the bandwidth of a baseband channel in which case {\em freqN} will effectively select just a single tone from the baseband.
 
 See the documentation for {\tt m5d} for information on specifying the data format.
 
@@ -2044,8 +2050,29 @@ The columns being displayed are:
 
 
 
-% mk6ls ---------------------------------------------------- INCOMPLETE -------
+% mk6ls -----------------------------------------------------------------------
 
+\subsection{mk6ls {\small $\mathrm{(package: vdifio)}$} \label{sec:mk6ls}}
+
+{\tt mk6ls} looks in the standard Mark6 mountpoint locations (either in {\tt /mnt/disks/*/*/data} or in the path pattern set by environment variable {\tt \$MARK6\_ROOT} for VDIF formatted files.
+Found files will be probed and summarized.
+
+Three printing levels are supported:
+\begin{itemize}
+\item {\em short} : Simply prints the file names.  The portion of the filename corresponding to the mountpoint location is excised.
+\item {\em long} : Prints the file names (same as for {\em short}), the number of actual files making up the virtual Mark6 file (e.g., scattered across multiple mountpoints), the full size of the virtual file, and an indication of the completeness of the virtual file set.
+\item {\em full} : Prints the same information as for {\em long} followed by details of the files, such as details of the Mark6 file version, block sizes, packet numbers.  This mode is mainly useful for developers with access to the vdifio source code.
+\end{itemize}
+
+\begin{itemize}
+\item[] Usage: {\tt mk6ls} $[$ {\em options} $]$
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -s} or {\tt --short} : print long form output (default)
+\item[] {\tt -l} or {\tt --long} : print long form output
+\item[] {\tt -f} or {\tt --full} : print full information for each file
+\end{itemize}
+\end{itemize}
 
 
 
