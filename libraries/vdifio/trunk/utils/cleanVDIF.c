@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: stripVDIF.c 2006 2010-03-04 16:43:04Z AdamDeller $
+ * $Id$
  * $HeadURL:  $
- * $LastChangedRevision: 2006 $
- * $Author: AdamDeller $
- * $LastChangedDate: 2010-03-04 09:43:04 -0700 (Thu, 04 Mar 2010) $
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
