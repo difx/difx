@@ -84,11 +84,11 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                             vr->pols[REF]);
                     continue;
                     }
-                                    // find rms power across the band and save its root
+                                    // find average power across the band and save its sqrt
                 sum = 0.0;
                 for (i=0; i<nvis; i++)
-                    sum += vr->comp[i].real * vr->comp[i].real;
-                pant[aref][fr][pol] = sqrt (sqrt (sum / nvis));
+                    sum += vr->comp[i].real;
+                pant[aref][fr][pol] = sqrt (sum / nvis);
                 }
             }
                                     // go through all records for current time again
