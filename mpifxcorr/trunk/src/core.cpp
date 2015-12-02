@@ -1021,8 +1021,48 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
 	        m2 = modes[ds2index];
 	        for(int p=0;p<config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex);p++)
 		{
-                  weight1 = m1->getDataWeight(config->getBDataStream1BandIndex(procslots[index].configindex, j, localfreqindex, p));
-                  weight2 = m2->getDataWeight(config->getBDataStream2BandIndex(procslots[index].configindex, j, localfreqindex, p));
+                  int b1index, ds1numrecordedbands;
+                  int b2index, ds2numrecordedbands;
+
+                  b1index = config->getBDataStream1BandIndex(procslots[index].configindex, j, localfreqindex, p);
+                  ds1numrecordedbands = config->getDNumRecordedBands(procslots[index].configindex, ds1index);
+                  if(b1index >= ds1numrecordedbands)
+                  {
+                    int ds1localfreqindex, ds1parentfreqindex;
+                    ds1localfreqindex = config->getDLocalZoomFreqIndex(procslots[index].configindex, ds1index, b1index-ds1numrecordedbands);
+                    ds1parentfreqindex = config->getDZoomFreqParentFreqIndex(procslots[index].configindex, ds1index, ds1localfreqindex);
+                    weight1 = 0.0;
+                    for(int l=0;l<ds1numrecordedbands;++l)
+                    {
+                      if(config->getDLocalRecordedFreqIndex(procslots[index].configindex, ds1index, l) == ds1parentfreqindex && config->getDZoomBandPol(procslots[index].configindex, ds1index, b1index-ds1numrecordedbands) == config->getDRecordedBandPol(procslots[index].configindex, ds1index, l))
+                      {
+                        b1index = l;
+                        break;
+                      }
+                    }
+                  }
+
+                  b2index = config->getBDataStream2BandIndex(procslots[index].configindex, j, localfreqindex, p);
+                  ds2numrecordedbands = config->getDNumRecordedBands(procslots[index].configindex, ds2index);
+                  if(b2index >= ds2numrecordedbands)
+                  {
+                    int ds2localfreqindex, ds2parentfreqindex;
+                    ds2localfreqindex = config->getDLocalZoomFreqIndex(procslots[index].configindex, ds2index, b2index-ds2numrecordedbands);
+                    ds2parentfreqindex = config->getDZoomFreqParentFreqIndex(procslots[index].configindex, ds2index, ds2localfreqindex);
+                    weight2 = 0.0;
+                    for(int l=0;l<ds2numrecordedbands;++l)
+                    {
+                      if(config->getDLocalRecordedFreqIndex(procslots[index].configindex, ds2index, l) == ds2parentfreqindex && config->getDZoomBandPol(procslots[index].configindex, ds2index, b2index-ds2numrecordedbands) == config->getDRecordedBandPol(procslots[index].configindex, ds2index, l))
+                      {
+                        b2index = l;
+                        break;
+                      }
+                    }
+                  }
+
+                  weight1 = m1->getDataWeight(b1index);
+                  weight2 = m2->getDataWeight(b2index);
+
                   bweight = weight1*weight2;
 
 		  scratchspace->baselineweight[f][0][j][p] += bweight;
