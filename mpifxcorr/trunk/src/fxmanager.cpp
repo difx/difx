@@ -117,7 +117,6 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     initsec = 0;
    }
 
-  numbaselines = (numdatastreams*(numdatastreams-1))/2;
   resultlength = config->getMaxCoreResultLength();
   resultbuffer = vectorAlloc_cf32(resultlength);
   estimatedbytes += resultlength*8;
