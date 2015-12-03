@@ -559,6 +559,24 @@ public:
   * @return The number of processing threads for the specified Core
   */
   int getCNumProcessThreads(int corenum) const;
+  
+ /**
+  * @param configindex The index of the configuration being used (from the table in the input file)
+  * @param configbaselineindex The index of the baseline (from the table in the input file)
+  * @param baselinefreqindex The local index of the baseline frequency list (could be a zoom band)
+  * @param polproductindex Polarization index _of the product_
+  * @return the record band index for the first datastream of a baseline given parameters, or -1 if not found
+  */
+  int getBDataStream1RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int polproductindex) const;
+  
+ /**
+  * @param configindex The index of the configuration being used (from the table in the input file)
+  * @param configbaselineindex The index of the baseline (from the table in the input file)
+  * @param baselinefreqindex The local index of the baseline frequency list (could be a zoom band)
+  * @param polproductindex Polarization index _of the product_
+  * @return the record band index for the second datastream of a baseline given parameters, or -1 if not found
+  */
+  int getBDataStream2RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int polproductindex) const;
 
  /**
   * @param telescopeindex The index of the telescope (from the table in the input file)

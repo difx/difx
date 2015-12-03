@@ -771,6 +771,74 @@ int Configuration::getCNumProcessThreads(int corenum) const
   return numprocessthreads[numcoreconfs-1];
 }
 
+int Configuration::getBDataStream1RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int polproductindex) const
+{
+  int dsindex;  // index to the datastream
+  int bandindex;        // band index for the datastream; could be a zoom band index
+  int numrecordedbands; // number of recorded bands for this datastream
+
+  dsindex = getBOrderedDataStream1Index(configindex, configbaselineindex);
+  bandindex = getBDataStream1BandIndex(configindex, configbaselineindex, baselinefreqindex, polproductindex);
+  numrecordedbands = getDNumRecordedBands(configindex, dsindex);
+  if(bandindex < numrecordedbands)  // a record band so things are easy
+  {
+    return bandindex;
+  }
+  else  // otherwise it is a zoom band so we need to find the parent band
+  {
+    int localfreqindex;   // within the datastream
+    int parentfreqindex; 
+    int zoomindex;        // within the datastream
+
+    localfreqindex = getDLocalZoomFreqIndex(configindex, dsindex, bandindex-numrecordedbands);
+    parentfreqindex = getDZoomFreqParentFreqIndex(configindex, dsindex, localfreqindex);
+    zoomindex = bandindex - numrecordedbands;
+    for(bandindex = 0; bandindex < numrecordedbands; ++bandindex)
+    {
+      if(getDLocalRecordedFreqIndex(configindex, dsindex, bandindex) == parentfreqindex && getDZoomBandPol(configindex, dsindex, zoomindex) == getDRecordedBandPol(configindex, dsindex, bandindex))
+      {
+        return bandindex;
+      }
+    }
+    cerror << startl << "Developer error: getBDataStream1RecordBandIndex: could not find record band corresponding to configindex " << configindex << " configbaselineindex " << configbaselineindex << " baselinefreqindex " << baselinefreqindex << " (which is a zoom freq) polproductindex " << polproductindex << endl;
+    return -1;
+  }
+}
+
+int Configuration::getBDataStream2RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int polproductindex) const
+{
+  int dsindex;  // index to the datastream
+  int bandindex;        // band index for the datastream; could be a zoom band index
+  int numrecordedbands; // number of recorded bands for this datastream
+
+  dsindex = getBOrderedDataStream2Index(configindex, configbaselineindex);
+  bandindex = getBDataStream2BandIndex(configindex, configbaselineindex, baselinefreqindex, polproductindex);
+  numrecordedbands = getDNumRecordedBands(configindex, dsindex);
+  if(bandindex < numrecordedbands)  // a record band so things are easy
+  {
+    return bandindex;
+  }
+  else  // otherwise it is a zoom band so we need to find the parent band
+  {
+    int localfreqindex;   // within the datastream
+    int parentfreqindex; 
+    int zoomindex;        // within the datastream
+
+    localfreqindex = getDLocalZoomFreqIndex(configindex, dsindex, bandindex-numrecordedbands);
+    parentfreqindex = getDZoomFreqParentFreqIndex(configindex, dsindex, localfreqindex);
+    zoomindex = bandindex - numrecordedbands;
+    for(bandindex = 0; bandindex < numrecordedbands; ++bandindex)
+    {
+      if(getDLocalRecordedFreqIndex(configindex, dsindex, bandindex) == parentfreqindex && getDZoomBandPol(configindex, dsindex, zoomindex) == getDRecordedBandPol(configindex, dsindex, bandindex))
+      {
+        return bandindex;
+      }
+    }
+    cerror << startl << "Developer error: getBDataStream2RecordBandIndex: could not find record band corresponding to configindex " << configindex << " configbaselineindex " << configbaselineindex << " baselinefreqindex " << baselinefreqindex << " (which is a zoom freq) polproductindex " << polproductindex << endl;
+    return -1;
+  }
+}
+
 bool Configuration::stationUsed(int telescopeindex) const
 {
   bool toreturn = false;
