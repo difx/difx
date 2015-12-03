@@ -237,8 +237,7 @@ public:
   inline int getBNumFreqs(int configindex, int configbaselineindex) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].numfreqs; }
   inline int getBFreqIndex(int configindex, int configbaselineindex, int baselinefreqindex) const
-    { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].freqtableindices[baselinefreqindex];
-    }
+    { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].freqtableindices[baselinefreqindex]; }
   inline int getBLocalFreqIndex(int configindex, int configbaselineindex, int freqtableindex) const { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].localfreqindices[freqtableindex]; }
   inline int getBFreqOddLSB(int configindex, int configbaselineindex, int freqtableindex) const { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].oddlsbfreqs[freqtableindex]; }
   inline int getBNumPolProducts(int configindex, int configbaselineindex, int baselinefreqindex) const
@@ -247,9 +246,12 @@ public:
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1bandindex[baselinefreqindex][baselinefreqdatastream1index]; }
   inline int getBDataStream2BandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream2index) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2bandindex[baselinefreqindex][baselinefreqdatastream2index]; }
+  inline int getBDataStream1RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream1index) const
+    { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1recordbandindex[baselinefreqindex][baselinefreqdatastream1index]; }
+  inline int getBDataStream2RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream2index) const
+    { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2recordbandindex[baselinefreqindex][baselinefreqdatastream2index]; }
   inline void getBPolPair(int configindex, int configbaselineindex, int baselinefreqindex, int freqpolindex, char polpair[3]) const
-    { const char * tpp = baselinetable[configs[configindex].baselineindices[configbaselineindex]].polpairs[baselinefreqindex][freqpolindex]; polpair[0] = tpp[0]; polpair[1] = tpp[1];
-    }
+    { const char * tpp = baselinetable[configs[configindex].baselineindices[configbaselineindex]].polpairs[baselinefreqindex][freqpolindex]; polpair[0] = tpp[0]; polpair[1] = tpp[1]; }
   inline char getOppositePol(char pol) const
     {
       if (pol == 'R') return 'L';
@@ -561,24 +563,6 @@ public:
   int getCNumProcessThreads(int corenum) const;
   
  /**
-  * @param configindex The index of the configuration being used (from the table in the input file)
-  * @param configbaselineindex The index of the baseline (from the table in the input file)
-  * @param baselinefreqindex The local index of the baseline frequency list (could be a zoom band)
-  * @param polproductindex Polarization index _of the product_
-  * @return the record band index for the first datastream of a baseline given parameters, or -1 if not found
-  */
-  int getBDataStream1RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int polproductindex) const;
-  
- /**
-  * @param configindex The index of the configuration being used (from the table in the input file)
-  * @param configbaselineindex The index of the baseline (from the table in the input file)
-  * @param baselinefreqindex The local index of the baseline frequency list (could be a zoom band)
-  * @param polproductindex Polarization index _of the product_
-  * @return the record band index for the second datastream of a baseline given parameters, or -1 if not found
-  */
-  int getBDataStream2RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int polproductindex) const;
-
- /**
   * @param telescopeindex The index of the telescope (from the table in the input file)
   * @return Whether there are any active datastreams (ie datastreams used by an active configuration) that belong to this telescope
   */
@@ -682,6 +666,8 @@ private:
     int * numpolproducts;
     int ** datastream1bandindex;
     int ** datastream2bandindex;
+    int ** datastream1recordbandindex;
+    int ** datastream2recordbandindex;
     char *** polpairs;
   } baselinedata;
 
@@ -928,6 +914,12 @@ private:
   * @return Whether the phased array config was successfully parsed (failure should abort)
   */
   bool processPhasedArrayConfig(string filename, int configindex);
+
+ /**
+  * Sets up an array of indices useful in determining the record band for a baseline frequency
+  * @return Whether the setting was successful
+  */
+  bool populateRecordBandIndicies();
 
  /**
   * Once the input file has been completely processed, provide all frequency info to the generated Polyco files

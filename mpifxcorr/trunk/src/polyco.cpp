@@ -329,7 +329,15 @@ void Polyco::setTime(int startmjd, double startmjdfraction)
 
     //now, we need to make sure our required valid length is not longer than the validity time we've just worked out
     if(maxdeltafreq/freqgradient < calclengthmins)
-      cerror << startl << "Polyco will not be accurate over entire range of " << calclengthmins << " as the frequency is changing too rapidly.  The maximum safe calc length would be " << maxdeltafreq/freqgradient << " - try reducing blocks per send or numchannels" << ", maxdeltaphase is " << maxdeltaphase << ", minbinwidth is " << minbinwidth << ", freqgradient is " << freqgradient << ", maxdeltafreq is " << maxdeltafreq << ", dm is " << dm << ", minlofreq is " << minlofreq << endl;
+    {
+      static bool first=true;
+
+      if(first)
+      {
+        cerror << startl << "Polyco will not be accurate over entire range of " << calclengthmins << " as the frequency is changing too rapidly.  The maximum safe calc length would be " << maxdeltafreq/freqgradient << " - try reducing blocks per send or numchannels" << ", maxdeltaphase is " << maxdeltaphase << ", minbinwidth is " << minbinwidth << ", freqgradient is " << freqgradient << ", maxdeltafreq is " << maxdeltafreq << ", dm is " << dm << ", minlofreq is " << minlofreq << ".  This message is printed only once per process." << endl;
+        first = false;
+      }
+    }
 
     //work out the initial dmphasecorrect array and set the lastphasecalctime
     calculateDMPhaseOffsets(calclengthmins/2);

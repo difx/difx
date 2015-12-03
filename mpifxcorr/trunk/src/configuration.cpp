@@ -278,6 +278,8 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
       consistencyok = populateResultLengths();
     if(consistencyok)
       consistencyok = consistencyCheck();
+    if(consistencyok)
+      consistencyok = populateRecordBandIndicies();
     commandthreadinitialised = false;
     dumpsta = false;
     dumplta = false;
@@ -352,9 +354,13 @@ Configuration::~Configuration()
       delete [] baselinetable[i].polpairs[j];
       delete [] baselinetable[i].datastream1bandindex[j];
       delete [] baselinetable[i].datastream2bandindex[j];
+      delete [] baselinetable[i].datastream1recordbandindex[j];
+      delete [] baselinetable[i].datastream2recordbandindex[j];
     }
     delete [] baselinetable[i].datastream1bandindex;
     delete [] baselinetable[i].datastream2bandindex;
+    delete [] baselinetable[i].datastream1recordbandindex;
+    delete [] baselinetable[i].datastream2recordbandindex;
     delete [] baselinetable[i].numpolproducts;
     delete [] baselinetable[i].freqtableindices;
     delete [] baselinetable[i].polpairs;
@@ -771,74 +777,6 @@ int Configuration::getCNumProcessThreads(int corenum) const
   return numprocessthreads[numcoreconfs-1];
 }
 
-int Configuration::getBDataStream1RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int polproductindex) const
-{
-  int dsindex;  // index to the datastream
-  int bandindex;        // band index for the datastream; could be a zoom band index
-  int numrecordedbands; // number of recorded bands for this datastream
-
-  dsindex = getBOrderedDataStream1Index(configindex, configbaselineindex);
-  bandindex = getBDataStream1BandIndex(configindex, configbaselineindex, baselinefreqindex, polproductindex);
-  numrecordedbands = getDNumRecordedBands(configindex, dsindex);
-  if(bandindex < numrecordedbands)  // a record band so things are easy
-  {
-    return bandindex;
-  }
-  else  // otherwise it is a zoom band so we need to find the parent band
-  {
-    int localfreqindex;   // within the datastream
-    int parentfreqindex; 
-    int zoomindex;        // within the datastream
-
-    localfreqindex = getDLocalZoomFreqIndex(configindex, dsindex, bandindex-numrecordedbands);
-    parentfreqindex = getDZoomFreqParentFreqIndex(configindex, dsindex, localfreqindex);
-    zoomindex = bandindex - numrecordedbands;
-    for(bandindex = 0; bandindex < numrecordedbands; ++bandindex)
-    {
-      if(getDLocalRecordedFreqIndex(configindex, dsindex, bandindex) == parentfreqindex && getDZoomBandPol(configindex, dsindex, zoomindex) == getDRecordedBandPol(configindex, dsindex, bandindex))
-      {
-        return bandindex;
-      }
-    }
-    cerror << startl << "Developer error: getBDataStream1RecordBandIndex: could not find record band corresponding to configindex " << configindex << " configbaselineindex " << configbaselineindex << " baselinefreqindex " << baselinefreqindex << " (which is a zoom freq) polproductindex " << polproductindex << endl;
-    return -1;
-  }
-}
-
-int Configuration::getBDataStream2RecordBandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int polproductindex) const
-{
-  int dsindex;  // index to the datastream
-  int bandindex;        // band index for the datastream; could be a zoom band index
-  int numrecordedbands; // number of recorded bands for this datastream
-
-  dsindex = getBOrderedDataStream2Index(configindex, configbaselineindex);
-  bandindex = getBDataStream2BandIndex(configindex, configbaselineindex, baselinefreqindex, polproductindex);
-  numrecordedbands = getDNumRecordedBands(configindex, dsindex);
-  if(bandindex < numrecordedbands)  // a record band so things are easy
-  {
-    return bandindex;
-  }
-  else  // otherwise it is a zoom band so we need to find the parent band
-  {
-    int localfreqindex;   // within the datastream
-    int parentfreqindex; 
-    int zoomindex;        // within the datastream
-
-    localfreqindex = getDLocalZoomFreqIndex(configindex, dsindex, bandindex-numrecordedbands);
-    parentfreqindex = getDZoomFreqParentFreqIndex(configindex, dsindex, localfreqindex);
-    zoomindex = bandindex - numrecordedbands;
-    for(bandindex = 0; bandindex < numrecordedbands; ++bandindex)
-    {
-      if(getDLocalRecordedFreqIndex(configindex, dsindex, bandindex) == parentfreqindex && getDZoomBandPol(configindex, dsindex, zoomindex) == getDRecordedBandPol(configindex, dsindex, bandindex))
-      {
-        return bandindex;
-      }
-    }
-    cerror << startl << "Developer error: getBDataStream2RecordBandIndex: could not find record band corresponding to configindex " << configindex << " configbaselineindex " << configbaselineindex << " baselinefreqindex " << baselinefreqindex << " (which is a zoom freq) polproductindex " << polproductindex << endl;
-    return -1;
-  }
-}
-
 bool Configuration::stationUsed(int telescopeindex) const
 {
   bool toreturn = false;
@@ -985,6 +923,8 @@ bool Configuration::processBaselineTable(ifstream * input)
     baselinetable[i].numpolproducts = new int[baselinetable[i].numfreqs];
     baselinetable[i].datastream1bandindex = new int*[baselinetable[i].numfreqs];
     baselinetable[i].datastream2bandindex = new int*[baselinetable[i].numfreqs];
+    baselinetable[i].datastream1recordbandindex = new int*[baselinetable[i].numfreqs];
+    baselinetable[i].datastream2recordbandindex = new int*[baselinetable[i].numfreqs];
     baselinetable[i].freqtableindices = new int[baselinetable[i].numfreqs];
     baselinetable[i].polpairs = new char**[baselinetable[i].numfreqs];
     for(int j=0;j<baselinetable[i].numfreqs;j++)
@@ -994,6 +934,8 @@ bool Configuration::processBaselineTable(ifstream * input)
       baselinetable[i].numpolproducts[j] = atoi(line.c_str());
       baselinetable[i].datastream1bandindex[j] = new int[baselinetable[i].numpolproducts[j]];
       baselinetable[i].datastream2bandindex[j] = new int[baselinetable[i].numpolproducts[j]];
+      baselinetable[i].datastream1recordbandindex[j] = new int[baselinetable[i].numpolproducts[j]];
+      baselinetable[i].datastream2recordbandindex[j] = new int[baselinetable[i].numpolproducts[j]];
       estimatedbytes += baselinetable[i].numpolproducts[j]*2*4;
       baselinetable[i].polpairs[j] = new char*[baselinetable[i].numpolproducts[j]];
       for(int k=0;k<baselinetable[i].numpolproducts[j];k++)
@@ -1100,6 +1042,96 @@ bool Configuration::processBaselineTable(ifstream * input)
     }
   }
   baselineread = true;
+  return true;
+}
+
+// must be called after consistencyCheck()
+bool Configuration::populateRecordBandIndicies()
+{
+  int baselinefreqindex, bandindex;
+  int dsindex1, dsindex2;
+  int numrecordedbands1, numrecordedbands2;
+
+  for(int configindex=0;configindex<numconfigs;++configindex)
+  {
+    for(int f=0;f<getFreqTableLength();f++)
+    {
+      if(isFrequencyUsed(configindex, f))
+      {
+        for(int configbaselineindex=0;configbaselineindex<numbaselines;++configbaselineindex)
+        {
+          baselinefreqindex = getBLocalFreqIndex(configindex, configbaselineindex, f);
+          if(baselinefreqindex >= 0)
+          {
+            dsindex1 = getBOrderedDataStream1Index(configindex, configbaselineindex);
+            numrecordedbands1 = getDNumRecordedBands(configindex, dsindex1);
+            dsindex2 = getBOrderedDataStream2Index(configindex, configbaselineindex);
+            numrecordedbands2 = getDNumRecordedBands(configindex, dsindex2);
+            for(int polproductindex=0;polproductindex<getBNumPolProducts(configindex, configbaselineindex, baselinefreqindex);++polproductindex)
+            {
+              // First the "1" index of the baseline
+              bandindex = getBDataStream1BandIndex(configindex, configbaselineindex, baselinefreqindex, polproductindex);
+              if(bandindex < numrecordedbands1)  // a record band so this is easy
+              {
+                baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1recordbandindex[baselinefreqindex][polproductindex] = bandindex;
+              }
+              else  // a zoom band
+              {
+                int localfreqindex; // within the datastream
+                int parentfreqindex;
+                int zoomindex;      // within the datastream
+
+                localfreqindex = getDLocalZoomFreqIndex(configindex, dsindex1, bandindex-numrecordedbands1);
+                parentfreqindex = getDZoomFreqParentFreqIndex(configindex, dsindex1, localfreqindex);
+                zoomindex = bandindex - numrecordedbands1;
+
+                baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1recordbandindex[baselinefreqindex][polproductindex] = -1;
+
+                for(bandindex = 0; bandindex < numrecordedbands1; ++bandindex)
+                {
+                  if(getDLocalRecordedFreqIndex(configindex, dsindex1, bandindex) == parentfreqindex && getDZoomBandPol(configindex, dsindex1, zoomindex) == getDRecordedBandPol(configindex, dsindex1, bandindex))
+                  {
+                    baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1recordbandindex[baselinefreqindex][polproductindex] = bandindex;
+                    break;
+                  }
+                }
+              }
+
+              // Then the "2" index of the baseline
+              bandindex = getBDataStream2BandIndex(configindex, configbaselineindex, baselinefreqindex, polproductindex);
+              if(bandindex < numrecordedbands2)  // a record band so this is easy
+              {
+                baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2recordbandindex[baselinefreqindex][polproductindex] = bandindex;
+              }
+              else  // a zoom band
+              {
+                int localfreqindex; // within the datastream
+                int parentfreqindex;
+                int zoomindex;      // within the datastream
+
+                localfreqindex = getDLocalZoomFreqIndex(configindex, dsindex2, bandindex-numrecordedbands2);
+                parentfreqindex = getDZoomFreqParentFreqIndex(configindex, dsindex2, localfreqindex);
+                zoomindex = bandindex - numrecordedbands2;
+
+                baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2recordbandindex[baselinefreqindex][polproductindex] = -1;
+
+                for(bandindex = 0; bandindex < numrecordedbands2; ++bandindex)
+                {
+                  if(getDLocalRecordedFreqIndex(configindex, dsindex2, bandindex) == parentfreqindex && getDZoomBandPol(configindex, dsindex2, zoomindex) == getDRecordedBandPol(configindex, dsindex2, bandindex))
+                  {
+                    baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2recordbandindex[baselinefreqindex][polproductindex] = bandindex;
+                    break;
+                  }
+                }
+              }
+
+            }
+          }
+        }
+      }
+    }
+  }
+
   return true;
 }
 
@@ -2313,10 +2345,10 @@ bool Configuration::setStrides()
         cinfo << startl << "Config[" << i << "] had its xmac stride length automatically set to " << configs[i].xmacstridelen << " based on numbers of output channels" << endl;
     }
 
-    // set rotate stride length to the smallest integer >= sqrt(xmacstridelen)
+    // set rotate stride length to the smallest integer divisor >= sqrt(xmacstridelen)
     configs[i].rotatestridelen = calcstridelength(configs[i].xmacstridelen);
     if(mpiid == 0)
-      cinfo << startl << "Config[" << i << "]: setting rotate stride length to " << configs[i].rotatestridelen << " based on xmacstridelen = " << configs[i].xmacstridelen << endl;
+      cinfo << startl << "Config[" << i << "] had its rotate stride length automatically set to " << configs[i].rotatestridelen << " based on xmacstridelen = " << configs[i].xmacstridelen << endl;
   }
 
   return true;
