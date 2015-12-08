@@ -661,7 +661,6 @@ class Client( DiFXControl.Client ):
 		self.jobComplete = False
 		self.packetData = None
 		self.channel = self._client.newChannel( self.startCallback )
-		print "start channel is " + str( self.channel )
 		packetData = "		<input>" + self._inputFile + "</input>\n"
 		#  The manager, datastream, and processor nodes are not used by the start process
 		#  on guiServer.  However, they are checked, so we need to include something for
@@ -759,6 +758,7 @@ class Client( DiFXControl.Client ):
 	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE   <td>121<td>
 	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN   <td>122<td>
 	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED   <td>123<td>
+	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG     <td>124<td>
 	#  </table>
 	#
 	#<!------------------------------------------------------------------------>
@@ -790,6 +790,7 @@ class Client( DiFXControl.Client ):
 	RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE   = 121
 	RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN   = 122
 	RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED   = 123
+	RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG     = 124
 	
 	#<!------------------------------------------------------------------------>
 	## Callback function for a "DifxStart" command response.
@@ -871,6 +872,8 @@ class Client( DiFXControl.Client ):
 				pass
 			elif packetId == self.RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED:
 				pass
+			elif packetId == self.RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG:
+				self.error( "Start failed - input file did not pass configuation test." )
 
 	#<!------------------------------------------------------------------------>
 	## Attempt to stop a running job.

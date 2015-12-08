@@ -46,6 +46,8 @@
 #                                                          If threads are included head node, data sources and processors must
 #                                                          be specified as well.  The total number of thread specifications
 #                                                          must match the number of processor specifications.  This argument can be used multiple times.
+#  <tr><td><pre><b>-w, --waitTime <i>NUM</i></b></pre>     <td>Wait NUM seconds before timing out of an operation due to inactivity.
+#                                                          This applies only to the start() method call.
 #  </table
 #
 ################################################################################
@@ -135,6 +137,7 @@ headNode = None
 inputFile = None
 bail = False
 realtime = False
+waitTime = None
 
 #  Locate a "default" DiFX Version from environment variables.  User may change this
 #  with command line arguments.
@@ -192,6 +195,10 @@ try:
 			print "   --threads NUM"
 			print "   -t NUM     Assign NUM threads to the corresponding processor entry."
 			print ""
+			print "   --waitTime NUM"
+			print "   -w NUM     Wait NUM seconds before timing out of an operation due to inactivity."
+			print "              This applies only to the \"start()\" method call."
+			print ""
 			exit( 0 )
 		elif sys.argv[i] in [ "-d", "--datasource" ]:
 			dataSources.append( sys.argv[i+1] )
@@ -216,6 +223,9 @@ try:
 			i = i + 1
 		elif sys.argv[i] in [ "-r", "--realtime" ]:
 			realtime = True
+			i = i + 1
+		elif sys.argv[i] in [ "-w", "--waitTime" ]:
+			waitTime = int( sys.argv[i+1] )
 			i = i + 1
 		else:
 			#  The final argument is assumed to be the .input file name
@@ -262,7 +272,6 @@ if difx.ls( inputFile ) == None:
 	difx.close()
 	exit( 0 )
 difx.version( DiFXVersion )
-#difx.inputFile( "/data1/correlator/guiTest/newTest/Production_Pass/newTest_01.input" )
 difx.inputFile( inputFile )
 #  If machine specifications were included on the command line, use them.
 if headNode != None:
@@ -329,12 +338,12 @@ if realtime:
 			difx.runWithMonitor( True )
 			difx.monitorDataCallbacks( None, None, None, None, None, meanLagCB )
 #  Make the wait time huge to avoid a timeout while the job is starting
-difx.waitTime( 300.0 )
+if waitTime != None:
+	difx.waitTime( waitTime )
+else:
+	difx.waitTime( 300.0 )
 difx.start()
-print "start returned!"
-#time.sleep( 5 )
 if realtime:
-	print "stop the monitor"
 	difx.stopMonitor()
 	time.sleep( 4 )
 difx.close()
