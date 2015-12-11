@@ -75,6 +75,13 @@ int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 				return 1;
 			}
 		}
+		else if(D->isMk6)
+		{
+			if(strcasecmp("mark6", G->to[t]) == 0)
+                        {
+                                return 1;
+                        }
+		}
 		else
 		{
 			if(strcasecmp("swc", G->to[t]) == 0)
@@ -125,6 +132,50 @@ int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 
 	return 0;
+}
+
+void handleMark6Status(Mk5Daemon *D, const DifxMessageGeneric *G)
+{
+	// only care if the message came from another process on same node 
+	if(strcmp(D->hostName, G->from) != 0)
+	{
+		return;
+	}
+
+	// only care if it is a mark6status from a datastream node
+	if(G->mpiId <= 0 || G->type != DIFX_MESSAGE_MARK6STATUS)
+	{
+		return;
+	}
+
+	strncpy(D->vsns[0], G->body.mark6status.msn1, 8);
+	D->vsns[0][8] = 0;
+	strncpy(D->vsns[1], G->body.mk5status.vsnB, 8);
+	D->vsns[1][8] = 0;
+
+	if(G->body.mk5status.state == MARK5_STATE_OPENING ||
+	   G->body.mk5status.state == MARK5_STATE_OPEN ||
+	   G->body.mk5status.state == MARK5_STATE_PLAY ||
+	   G->body.mk5status.state == MARK5_STATE_GETDIR ||
+	   G->body.mk5status.state == MARK5_STATE_GOTDIR)
+	{
+		if(D->process == PROCESS_NONE)
+		{
+			Logger_logData(D->log, "mpifxcorr started\n");
+		}
+		D->process = PROCESS_DATASTREAM;
+
+		// update timestamp of last update
+		D->lastMpifxcorrUpdate = time(0);
+	}
+
+	if(G->body.mk5status.state == MARK5_STATE_CLOSE)
+	{
+		D->process = PROCESS_NONE;
+		Logger_logData(D->log, "mpifxcorr finished\n");
+
+		D->lastMpifxcorrUpdate = 0;
+	}
 }
 
 void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
@@ -340,17 +391,25 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		Mk5Daemon_killJob(D, cmd + 14);
 	}
-#ifdef HAVE_XLRAPI_H
-	else if(strcasecmp(cmd, "Clear") == 0)
+	else if(strcasecmp(cmd, "GetVSN") == 0)
 	{
-		D->process = PROCESS_NONE;
+#ifdef HAVE_XLRAPI_H
 		if(D->isMk5)
 		{
 			Mk5Daemon_getModules(D);
 		}
+#endif
+#ifdef HAS_MARK6META
+		if(D->isMk6)
+		{
+			D->mark6->sendStatusMessage();
+		}
+#endif
 	}
-	else if(strcasecmp(cmd, "GetVSN") == 0)
+#ifdef HAVE_XLRAPI_H
+	else if(strcasecmp(cmd, "Clear") == 0)
 	{
+		D->process = PROCESS_NONE;
 		if(D->isMk5)
 		{
 			Mk5Daemon_getModules(D);

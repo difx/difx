@@ -19,6 +19,9 @@ AC_CHECK_LIB(expat, XML_Parse,,[AC_MSG_ERROR("need expat")])
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.4.0 difxmessage < 7])
 PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.4.0 mark5ipc < 7])
 PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.5.0])
+PKG_CHECK_MODULES(MARK6META, [mark6meta >= 0.1], [hasmark6meta=true] [AC_DEFINE(HAS_MARK6META, 1)], [hasmark6meta=false])
+
+AH_TEMPLATE(HAS_MARK6META, ["true if mark6meta library has been found"])
 
 streamstor_enabled=true
 PKG_CHECK_EXISTS([streamstor >= 8.0],
@@ -37,9 +40,10 @@ else
 	echo 'if you are surprised by this.'
 fi
 AM_CONDITIONAL(WITH_STREAMSTOR, $streamstor_enabled)
+AM_CONDITIONAL(WITH_MARK6META, $hasmark6meta)
 
-LIBS="${LIBS} ${STREAMSTOR_LIBS} `pkg-config --variable=StaticLibs difxmessage` `pkg-config --variable=StaticLibs mark5ipc` `pkg-config --variable=StaticLibs mark5access`"
-CPPFLAGS="-D_LARGE_FILE_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${STREAMSTOR_CFLAGS} ${CXXFLAGS} -O2 -Wall"
+LIBS="${LIBS} ${STREAMSTOR_LIBS} `pkg-config --variable=StaticLibs difxmessage` `pkg-config --variable=StaticLibs mark5ipc` `pkg-config --variable=StaticLibs mark5access` `pkg-config --variable=StaticLibs mark6meta`"
+CPPFLAGS="-D_LARGE_FILE_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK6META_CFLAGS} ${MARK5IPC_CFLAGS} ${STREAMSTOR_CFLAGS} ${CXXFLAGS} -O2 -Wall"
 CXXFLAGS="${CPPFLAGS}"
 
 version=AC_PACKAGE_VERSION

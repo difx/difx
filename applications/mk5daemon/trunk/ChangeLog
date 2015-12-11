@@ -7,6 +7,8 @@ Version 2.5.0
 * A few cleanups
 * mk5map now works better on mk5b data.  Still ugly.
 * Support for SDK 9.4: SS_MODE_PCI (default mode) is no longer an option, so don't set it.
+* Initial support for Mark6 units through the mark6meta library
+* Initial support for command line structure
 
 Version 2.4.0
 ~~~~~~~~~~~~~

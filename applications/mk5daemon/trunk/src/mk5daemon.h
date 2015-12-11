@@ -37,7 +37,11 @@
 #include <difxmessage.h>
 #include "config.h"
 #include "logger.h"
+#include "options.h"
 #include "../mk5dir/mark5directorystructs.h"
+#ifdef HAS_MARK6META
+#include <mark6meta/Mark6.h>
+#endif
 #ifdef HAVE_XLRAPI_H
 #include "smart.h"
 #endif
@@ -150,6 +154,7 @@ typedef struct
 	time_t lastMark5AUpdate;
 	time_t noDriver;		/* time when driver disappeared */
 	int isMk5;
+	int isMk6;
 	int isHeadNode;
 	long long lastRX, lastTX;
 	int idleCount;
@@ -214,6 +219,9 @@ typedef struct
 	unsigned int addressRejects;
 	unsigned int lengthRejects;
 	unsigned int fscRejects;
+#ifdef HAS_MARK6META
+        Mark6 *mark6;
+#endif
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
@@ -274,6 +282,7 @@ int handleVSIS(Mk5Daemon *D, int sock);
 
 int handleVSIS(Mk5Daemon *D, int sock);
 void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G);
+void handleMark6Status(Mk5Daemon *D, const DifxMessageGeneric *G);
 void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G);
 void handleDriveStats(Mk5Daemon *D, const DifxMessageGeneric *G);
 

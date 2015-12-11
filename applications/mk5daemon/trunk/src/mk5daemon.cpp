@@ -32,6 +32,8 @@
 #include <cstring>
 #include <cerrno>
 #include <string>
+#include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <unistd.h>
 #include <time.h>
@@ -52,9 +54,15 @@
 #include "../config.h"
 #include "logger.h"
 #include "proc.h"
+#ifdef HAS_MARK6META
+#include <mark6meta/Mark6.h>
+#include <mark6meta/Mark6Meta.h>
+#endif
 #ifdef HAVE_XLRAPI_H
 #include "watchdog.h"
 #endif
+
+using namespace std;
 
 const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
@@ -148,6 +156,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --isMk5 \n");
 	fprintf(stderr, "  -m             Force mk5daemon on this host to act as Mark5 regardless of hostname\n"); 
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --isMk6 \n");
+	fprintf(stderr, "  -6             Force mk5daemon on this host to act as Mark6 regardless of hostname\n"); 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --embedded\n");
 	fprintf(stderr, "  -e             Configure for running within a pipe and with messages to stdout\n");
@@ -344,14 +355,14 @@ void getLocalAddresses(std::list<std::string> *addrList)
 	freeifaddrs(localAddrs);
 }
 
-Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
+Mk5Daemon *newMk5Daemon(Options options)
 {
 	Mk5Daemon *D;
 	int n;
 
 	D = (Mk5Daemon *)calloc(1, sizeof(Mk5Daemon));
 	
-	D->log = newLogger(logPath);
+	D->log = newLogger(options.logPath);
 	D->process = PROCESS_NONE;
 	D->loadMonInterval = 10;	/* seconds */
 	D->macList = new std::map<MAC,bool>;
@@ -360,26 +371,39 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
         {
                 procGetCoresFromCpuInfo(&D->load.nCore);
         }
-
+	// hostname 
 	gethostname(D->hostName, MK5DAEMON_HOSTNAME_LENGTH);
 	D->hostName[MK5DAEMON_HOSTNAME_LENGTH-1] = 0;
+
+	// isMk5
 	D->isMk5 = strcasestr(D->hostName, "mark5") == 0 ? 0 : 1;
-	if(isMk5)
+	if(options.isMk5)
 	{
 		D->isMk5 = 1;
 	}
-	n = snprintf(D->userID, MAX_USERID_LENGTH, "%s", userID);
+	// isMk6
+	D->isMk6 = strcasestr(D->hostName, "mark6") == 0 ? 0 : 1;
+	if(options.isMk6)
+	{
+		D->isMk6 = 1;
+	}
+	// userid
+	n = snprintf(D->userID, MAX_USERID_LENGTH, "%s", options.userID);
 	if(n >= MAX_USERID_LENGTH)
 	{
-		fprintf(stderr, "Error: userID = %s is too long.  Won't use it!\n", userID);
+		fprintf(stderr, "Error: userID = %s is too long.  Won't use it!\n", options.userID);
 
 		snprintf(D->userID, MAX_USERID_LENGTH, "%s", DefaultDifxUser);
 	}
 	else
 	{
-		snprintf(D->userID, MAX_USERID_LENGTH, "%s", userID);
+		snprintf(D->userID, MAX_USERID_LENGTH, "%s", options.userID);
 	}
+	D->isHeadNode = options.isHeadNode;
+	D->isEmbedded = options.isEmbedded;
+
 	printf("isMk5 = %d hostname = %s\n", D->isMk5, D->hostName);
+	printf("isMk6 = %d hostname = %s\n", D->isMk6, D->hostName);
 	printf("spawned process userid = %s\n", D->userID);
 	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
@@ -832,6 +856,9 @@ void handleDifxMessage(Mk5Daemon *D, int noSu)
 		{
 			switch(G.type)
 			{
+                        case DIFX_MESSAGE_MARK6STATUS:
+				handleMark6Status(D, &G);
+				break;
 			case DIFX_MESSAGE_MARK5STATUS:
 				handleMk5Status(D, &G);
 				break;
@@ -961,87 +988,28 @@ bool Mk5Daemon_addrMatches(const Mk5Daemon *D, const char *addrString)
 	return false;
 }
 
-int main(int argc, char **argv)
+/**
+ * parse the command line
+ **/
+int parseCmd (int argc, char **argv, Options &options)
 {
-	// FIXME: fixed length string arrays should be revisited
-	Mk5Daemon *D;
-	time_t t, lastTime;
-	char message[DIFX_MESSAGE_LENGTH];
-	char str[16];
-	int isHeadNode = 0;
-	int isEmbedded = 0;
-	int noSu = 0;
 	int i;
-	const char *logPath;
-	const char *p, *u;
-	const char *userID;
-	const char *providedHostname = 0;
-	double mjd;
-	fd_set socks;
-	struct timeval timeout;
-	int readSocks;
-	int highSock;
-	int v;
-#ifdef HAVE_XLRAPI_H
-	time_t firstTime;
-	int halfInterval;
-	int ok = 0;	/* FIXME: combine with D->ready? */
-	int justStarted = 1;
-	int recordFD;
-	int isMk5 = 1;
-
-	if(XLRDeviceFind() < 1)
-	{
-		isMk5 = 0;
-	}
-#else
-	int isMk5 = 0;
-#endif
-
-	// Prevent any zombies
-	signal(SIGCHLD, SIG_IGN);
-
-	p = getenv("DIFX_LOG_PATH");
-	if(p)
-	{
-		logPath = p;
-	}
-	else
-	{
-		logPath = DefaultLogPath;
-	}
-
-	u = getenv("DIFX_USER_ID");
-	if(u)
-	{
-		userID = u;
-	}
-	else
-	{
-                userID = DefaultDifxUser;
-	}
-
-	sprintf(str, "%d", DefaultDifxMonitorPort);
-	setenv("DIFX_MESSAGE_PORT", str, 0);
-	setenv("DIFX_MESSAGE_GROUP", DefaultDifxGroup, 0);
-	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 0);
 
 	if(argc > 1) for(i = 1; i < argc; ++i)
 	{
 		if(strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--headnode") == 0)
 		{
-			isHeadNode = 1;
+			options.isHeadNode = 1;
 		}
 		else if(strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--embedded") == 0)
 		{
-			isEmbedded = 1;
-			logPath = "";
+			options.isEmbedded = 1;
+			options.logPath = "";
 		}
 		else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
 		{
 			usage(argv[0]);
-
-			return EXIT_SUCCESS;
+			return 0;
 		}
 		else if(strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
 		{
@@ -1049,55 +1017,138 @@ int main(int argc, char **argv)
 		}
 		else if(strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--nosu") == 0)
 		{
-			noSu = 1;
+			options.noSu = 1;
                 }
 		else if(strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--isMk5") == 0)
 		{
-			isMk5 = 1;
+			options.isMk5 = 1;
+                }
+		else if(strcmp(argv[i], "-6") == 0 || strcmp(argv[i], "--isMk6") == 0)
+		{
+			options.isMk6 = 1;
                 }
 		else if(i < argc-1)
 		{
 			if(strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--log-path") == 0)
 			{
 				++i;
-				if(strlen(argv[i]) >= MAX_FILENAME_SIZE)
+			/*	if(strlen(argv[i]) >= MAX_FILENAME_SIZE)
 				{
 					fprintf(stderr, "Error: logpath is longer than %d chars.\n", MAX_FILENAME_SIZE);
 
-					return EXIT_FAILURE;
-				}
-				logPath = argv[i];
+					return -1;
+				}*/
+				options.logPath = argv[i];
 			}
 			else if(strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--user") == 0)
 			{
 				++i;
+/*
 				if(strlen(argv[i]) >= MAX_USERID_LENGTH)
 				{
 					fprintf(stderr, "Error: userID is longer than %d chars.\n", MAX_USERID_LENGTH);
 
-					return EXIT_FAILURE;
-				}
-				userID = argv[i];
+					return -1;
+				}*/
+				options.userID = argv[i];
 			}
 			else if(strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--hostname") == 0)
 			{
 				++i;
-				providedHostname = argv[i];
+				options.providedHostname = argv[i];
 			}
 			else
 			{
 				usage(argv[0]);
 
-				return EXIT_FAILURE;
+				return -1;
 			}
 		}
 		else
 		{
 			usage(argv[0]);
 
-			return EXIT_FAILURE;
+			return -1;
 		}
 	}
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+    Options options;
+
+    // FIXME: fixed length string arrays should be revisited
+    Mk5Daemon *D;
+    time_t t, lastTime;
+    char message[DIFX_MESSAGE_LENGTH];
+    char str[16];
+    int i;
+    const char *p, *u;
+    double mjd;
+    fd_set socks;
+    struct timeval timeout;
+    int readSocks;
+    int highSock;
+    int v;
+
+   
+#ifdef HAVE_XLRAPI_H
+    time_t firstTime;
+    int halfInterval;
+    int ok = 0;	/* FIXME: combine with D->ready? */
+    int justStarted = 1;
+    int recordFD;
+    int isMk5 = 1;
+
+
+    if(XLRDeviceFind() < 1)
+    {
+            isMk5 = 0;
+    }
+#else
+    int isMk5 = 0;
+#endif
+
+    	
+    try
+    {
+       
+
+	// Prevent any zombies
+	signal(SIGCHLD, SIG_IGN);
+
+	p = getenv("DIFX_LOG_PATH");
+	if(p)
+	{
+		options.logPath = p;
+	}
+	else
+	{
+		options.logPath = DefaultLogPath;
+	}
+
+	u = getenv("DIFX_USER_ID");
+	if(u)
+	{
+		options.userID = u;
+	}
+	else
+	{
+                options.userID = DefaultDifxUser;
+	}
+
+	sprintf(str, "%d", DefaultDifxMonitorPort);
+	setenv("DIFX_MESSAGE_PORT", str, 0);
+	setenv("DIFX_MESSAGE_GROUP", DefaultDifxGroup, 0);
+	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 0);
+
+	// parse the command line options
+	if (parseCmd(argc, argv, options) == -1)
+		return(EXIT_FAILURE);
+	if (options.validate() < 0)
+		return(EXIT_FAILURE);
 
 	v = checkRunning("localhost");
 	if(v == 0)
@@ -1119,7 +1170,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if(!isEmbedded)
+	if(!options.isEmbedded)
 	{
 		if(fork())
 		{
@@ -1140,14 +1191,12 @@ int main(int argc, char **argv)
 
 	umask(02);
 
-	difxMessageInitFull(-1, program, providedHostname);
+	difxMessageInitFull(-1, program, options.providedHostname);
 	difxMessageSendDifxAlert("mk5daemon starting", DIFX_ALERT_LEVEL_INFO);
 
 	difxMessagePrint();
 
-	D = newMk5Daemon(logPath, userID, isMk5);
-	D->isHeadNode = isHeadNode;
-	D->isEmbedded = isEmbedded;
+	D = newMk5Daemon(options);
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Starting %s ver. %s\n", program, version);
 	Logger_logData(D->log, message);
@@ -1172,13 +1221,29 @@ int main(int argc, char **argv)
 	else
 	{
 		setWatchdogTimeout(60);
-		if(isEmbedded)
+		if(options.isEmbedded)
 		{
 			setWatchdogStream(stdout);
 		}
 	}
+        
+
 #endif
 
+	ofstream out("my_log");
+	clog.rdbuf(out.rdbuf());
+        if(options.isMk6)
+        {
+#ifdef HAS_MARK6META
+		clog << "test" << endl;
+		D->mark6 = new Mark6();
+#else
+		fprintf(stderr, "Error: mark6 option provided but Mark6 support is not compiled in.\n");
+
+		exit(EXIT_FAILURE);
+#endif
+	}
+        
 	while(!D->dieNow)
 	{
 		t = time(0);
@@ -1192,6 +1257,7 @@ int main(int argc, char **argv)
 			ok = (checkStreamstor(D, t) == 0);
 #endif
 
+			// check every 10 seconds
 			if( (t % D->loadMonInterval) == 0)
 			{
 				if(D->isHeadNode)
@@ -1207,6 +1273,7 @@ int main(int argc, char **argv)
 				Mk5Daemon_loadMon(D, mjd);
 			}
 #ifdef HAVE_XLRAPI_H
+			// check every 5 seconds
 			else if( (t % D->loadMonInterval) == halfInterval)
 			{
 				if(D->skipGetModule)
@@ -1217,7 +1284,19 @@ int main(int argc, char **argv)
 				{
 					Mk5Daemon_getModules(D);
 				}
+
+#ifdef HAS_MARK6META
+                                // check for new modules on a mark6
+                                if(options.isMk6)
+                                {
+clog << "pre poll" << endl;
+                                    D->mark6->pollDevices();
+                                    D->mark6->sendStatusMessage();
+                                }
+                                    //D->mark6.pollDevices();
+#endif
 			}
+			// determine streamstor version for mk5s once at startup
 			if(t - firstTime > 15 && D->isMk5 && isMk5)
 			{
 				if(justStarted)
@@ -1356,7 +1435,7 @@ int main(int argc, char **argv)
 		}
 		if(D->difxSock && FD_ISSET(D->difxSock, &socks))
 		{
-			handleDifxMessage(D, noSu);
+			handleDifxMessage(D, options.noSu);
 		}
 		if(D->processDone)
 		{
@@ -1390,4 +1469,37 @@ int main(int argc, char **argv)
 	deleteMk5Daemon(D);
 
 	return EXIT_SUCCESS;
+
+   }
+#ifdef HAS_MARK6META
+   catch(Mark6Exception& ex)
+   {
+    
+        cerr << "The following error has occured: " << ex.what() << endl;
+        cerr << "This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!" << endl;
+        cerr << "Aborting" << endl;
+        exit(EXIT_FAILURE);
+   }
+   catch(Mark6MountException& ex)
+   {
+        cerr << "The following error has occured: " << ex.what() << endl;
+        cerr << "This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!" << endl;
+        cerr << "Aborting" << endl;
+        exit(EXIT_FAILURE);
+       
+   }    
+   catch(Mark6InvalidMetadata& ex)
+   {
+        cerr << "The following error has occured: " << ex.what() << endl;
+        cerr << "Aborting" << endl;
+        exit(EXIT_FAILURE);
+   }
+#endif
+   catch(...)
+   {
+	cerr << "An unexpected error has occured. Aborting" << endl;
+	exit(EXIT_FAILURE);
+   }
+
+   return 0;
 }
