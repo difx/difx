@@ -6,8 +6,7 @@ StaticLibs=${libdir}/libmark6meta.a -ludev
 
 Name: mark6meta
 Description: library to process and manipulate Mark6 module metadata
-Requires:
+Requires: libudev difxmessage
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lmark6meta
-Libs.private: -ldifxmessage -ludev
 Cflags: -I${includedir}
