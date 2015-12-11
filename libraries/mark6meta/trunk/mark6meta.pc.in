@@ -2,12 +2,12 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
-StaticLibs=${libdir}/libmark6meta.a -ldifxmessage
+StaticLibs=${libdir}/libmark6meta.a -ludev
 
 Name: mark6meta
 Description: library to process and manipulate Mark6 module metadata
 Requires:
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lmark6meta
-Libs.private: -ldifxmessage
+Libs.private: -ldifxmessage -ludev
 Cflags: -I${includedir}
