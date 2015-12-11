@@ -1187,9 +1187,10 @@ static int getModes(VexData *V, Vex *v)
 
 			// Sort channels by name and then assign sequential thread Id
 			std::sort(setup.channels.begin(), setup.channels.end());
-			for(unsigned int threadId = 0; threadId < setup.channels.size(); ++threadId)
+			for(unsigned int recChan = 0; recChan < setup.channels.size(); ++recChan)
 			{
-				setup.channels[threadId].threadId = threadId;
+				setup.channels[recChan].threadId = recChan;
+				setup.channels[recChan].recordChan = recChan;
 			}
 		} // End of antenna loop
 	}
