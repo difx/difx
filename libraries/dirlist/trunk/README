@@ -1,0 +1,45 @@
+dirlist installs in a way that should be familiar to most that have installed
+modern Gnu software.
+
+To install from a .tar.gz distribution:
+
+tar zxvf dirlist-XXX.tar.gz
+cd dirlist-XXX
+./configure --prefix=${DIFXROOT}
+make
+(maybe become root here)
+make install
+
+
+To install from a fresh svn checkout, run the following:
+
+aclocal
+libtoolize --copy --force
+autoconf
+autoheader
+automake -a -c
+
+./configure --prefix=${DIFXROOT}
+make
+# (su root?)
+make install
+
+After an svn update, these steps do not need to be rerun.  usually just
+"make" will update everything properly, but sometimes it is necessary
+to run "autoreconf" before compiling again.  If that doesn't work,
+one can always fall back on the above sequence of commands.
+
+A make install will copy libraries into <prefix>/lib .  Make sure this
+path is either in /etc/ld.so.conf (ie, for /usr/local and /usr, usually),
+or in your LD_LIBRARY_PATH.  In the former case, running /sbin/ldconfig
+might be necessary to update some files.
+
+make install will also copy a package config file into
+<prefix>/lib/pkgconfig.  Make sure this path is in your PKG_CONFIG_PATH
+if you are to compile against this library.  you can test this by
+running
+
+pkg-config --cflags dirlist
+
+If you get a sensible answer then you are set.
+

@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+StaticLibs=${libdir}/libdirlist.a
+
+Name: dirlist
+Description: library to process and manipulate VLBI media directory lists
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -ldirlist
+Cflags: -I${includedir}
+

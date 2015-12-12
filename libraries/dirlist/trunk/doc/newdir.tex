@@ -1,0 +1,198 @@
+\documentclass[12pt]{article}
+
+% Notes to potential editors:
+% 1. Please don't change the line wrapping.
+%    Exactly one sentence per line!
+% 2. Update "date" and "version" below with each update
+% 3. Notation/style : 
+%   Program names and other text to be typed by user or returned by the computer in {\tt }
+%   Variables or arguments in {\em } or in $<$ $>$
+%   Filenames, especially long ones, in \nolinkurl{ }
+%   URLs go in \url{ }
+
+
+\usepackage[margin=0.75in,twoside,bindingoffset=0.25in]{geometry}
+\usepackage{graphics}
+\usepackage{tabularx}
+\usepackage{url}
+\usepackage{color}
+\definecolor{darkblue}{rgb}{0,0.3,0.4}
+\usepackage[colorlinks,linkcolor=blue,citecolor=blue,urlcolor=blue,pdftitle={A proposed new directory listing format for DiFX},pdfauthor={Walter Brisken}]{hyperref}
+
+
+\begin{document}
+
+\begin{center}
+
+\vspace{10pt}
+{\Large A proposed new directory listing format for DiFX}
+
+\vspace{15pt}
+Walter Brisken
+
+\vspace{5pt}
+12 Dec 2015
+\end{center}
+
+\section{Introduction}
+
+Many uses have been found for files containing directory listings of VLBI media.
+These include diagnostics of the recordings and correlation preparation.
+During correlation these listings are used by DiFX as an authoratative index to the data to be processed and in cases where recordings are problematic, such files can be edited by humans to remove problematic periods of time or repair incorrect information.
+
+The format currently used for correlation directly off Mark5 modules has been evolved from that used by the VLBA hardware correlator almost a decade ago.
+Over time the original, very simplistic, format has been strained by new requirements.
+Direct correlation from Mark6 modules will bring new needs.
+This document describes a proposed file format to supercede that currently used by DiFX.
+It will include support for file-based correlation as well as correlation off data modules and will be extensible to accomodate dramatically different needs in the future.
+A library (probably to be writen in C++) will be developed to handle I/O, validation and manipulation of such files, as well as conversion from existing formats.
+
+\section{Limitations of the current format}
+
+The currently used directory listing format is documented in the DiFX Reference Manual\footnote{\url{http://www.atnf.csiro.au/vlbi/dokuwiki/lib/exe/fetch.php/difx/difxuserguide.pdf}} the section titled ``Description of various files'', subection {\tt .dir}.
+It is specifically designed for Mark5 modules containing VLBA, Mark4, Mark5B or VDIF data formats.
+The file contains one header line, containing module-based information, followed by one line per scan.
+The main limitation is that in order to maintain some cross-version continuity the header line has become increasingly complicated.
+Likewise the scan rows have a fixed format that contains information no longer relevant to modern formats.
+Finally, hand editing of the file is precarious due to the need to maintain consistency between the header row and the data rows: the number of scans is explicitly contained in the header row.
+
+\section{Conventions used in this document}
+
+The following typography is used in this document:
+\begin{enumerate}
+\item Text in {\tt fixed space type} are explicit text that may appear within the file or the file's name.
+\item Text in {\em italics} represent named fields that will be replaced by explicit text in the file.
+\end{enumerate}
+
+\section{Requirements of new format}
+
+Based on past history and foreseen upcoming needs, the following are seen as requirements for a new format:
+\begin{enumerate}
+\item The file should be clearly identifiable as a directory listing file.
+\item The file must store data in human readable text.
+\item The file should be easy for humans to edit without introducing errors.
+\item The format should allow an extensible header: it should be possible to add additional information without breaking compatibity with previous generations of parsers.
+\item The format should support all past Mark5 use cases.
+\item The format should support all known Mark6 use cases.
+\item The format should allow identification of partner modules (Mark6 case).
+\item The format should support simple lists of files.
+\item The format should allow comments.
+\item The format should encourage storage of information useful for accountability (e.g., which program generated the file listing, when, and perhaps additional parameters).
+\item The format should allow for spaces and other awkward characters in file / scan names.
+\item The format should require explicit format versioning information to be present.
+\item Unix end-of-line characters characters should separate lines.
+\end{enumerate}
+
+In addition to these requirements there are some additional conventions or guidelines for software that write such files:
+\begin{enumerate}
+\item The file names should end in {\tt .list} to distinguish themselves from the old format {\tt .dir} files.
+\item A link to the file format documentation should be embedded in the file.
+\item Metadata that can be placed in machine readable fields should be (as opposed to within comments).
+\item The name and version number of the program writing the file should be included in the file.
+\item Whitespace within a line should consist only of spaces (not tabs).
+\item The {\tt class} and {\tt version} parameters should be the first and second parameters in the header section, respectively.
+\item The entries of the data section should be in time order.
+\end{enumerate}
+
+\section{Proposed format}
+
+The new directory files will have the following general properties:
+
+\begin{enumerate}
+\item An identifier line containing the exact words {\tt VLBI baseband data listing} must be the first line of the file.
+\item The header section containing {\em key = value} statements is next.
+\item The data list section containing one line per file or scan is last.
+\item Legal characters are drawn from the ASCII character set. 
+\item Special symbols include the hash-sign ({\tt \#}), the comma ({\tt ,}), the single quote ({\tt '}), the double quote ({\tt "}) and the equal sign ({\tt =}).
+\item Strings without white-space or special symbols can be represented without any quoting.
+\item Strings containing special symbols or white-space must be quoted within a pair of single quotes or double quotes\footnote{Strings containing one or more single quotes and one or more double quotes are problematic.  At the moment they simply are not supported.  If support is required at some point for complete generality, this could be done through implicit string concatennation and the use of a sequence of single and double quotes such as {\tt "Single quotes (') and double quotes ("'"'") could someday coexist."}.}.
+\item Comments can appear after a hash-sign ({\tt \#}) on any line except for the first line.
+\item Blank lines, or lines containing only comments, can be inserted anywhere, except before the identifier line.  These are considered {\em trivial} lines.
+\end{enumerate}
+
+\subsection{Header section}
+
+The header starts with the first {\em non-trivial} line of the file encountered after the identifier line.
+This section consists of lines containing {\em key = value} statements.
+Multiple {\em key = value} statements are not allowed on the same line.
+The format allows for any unquoted string to serve as a {\em key} and any string or comma-separated list of strings to serve as the {\em value}.
+It is not allowed for the same {\em key} to be repeated.
+There are five types of parameters:
+\begin{itemize}
+\item {\em required} : This key is required for the file to be legal.
+\item {\em conditionally required} : This key is required for some classes of formats (see Sec.~\ref{sec:data} for details on format classes).
+\item {\em recognized} : An optional parameter that has a specific meaning and may be used by some software.
+\item {\em reserved} : A parameter that currently is not in one of the above types but might be in the future, so its use is discouraged.
+\item {\em unrecognized} : Any other parameter.  Mostly these contain additional information that might be of interest to a human reader.
+\end{itemize}
+\noindent
+A table of keys and their types is shown in Table~\ref{tab:keys}:
+\begin{table}[h]
+\begin{tabularx}{\textwidth}{lllX}
+\hline
+Key & Type & Class & Description \\
+\hline
+{\tt class}             & req.  &        & Which class of data is represented in the data list section.  
+Allowed values will include: {\tt minimal}, {\tt mark5}, {\tt mark6}, {\tt mark6vdif}, {\tt file}. \\
+{\tt version}           & req.  &        & The version number of the data list section for the specific {\tt class}. \\
+{\tt startMJD}          & req.  &        & The start time of the first data in the listing. \\
+{\tt stopMJD}           & req.  &        & The stop time of the last data in the listing. \\
+{\tt vsn}               & cond. & mark5* & The (extended) Volume Serial Number of the module. \\
+{\tt msn}               & cond. & mark6* & The (extended) Module Serial Number of the module. \\
+{\tt experiments}       & opt.  &        & A list of experiment names contained within the directory. \\
+{\tt station}           & opt.  &        & The station name associated with the scans. \\
+{\tt realtime}          & opt.  & mark5* & Set to true to enable ``Realtime Playback Mode''; sometimes this helps modules that are problematic. \\
+{\tt partner}           & opt.  &        & Other members of a module group, comma separated. \\
+{\tt date}              & opt.  &        & Date (MJD) of creation of the file. \\
+{\tt documentation}     & opt.  &        & An URL pointing to documentation of the file. \\
+{\tt comment}           & opt.  &        & A comment to be presented to the user when the directory file is parsed.  This should go into correlator logs and could be used to capture identified problems with the data. \\
+{\tt hash}              & opt.  &        & A hash calculation of the directory information. The hash value can be compared against a hash evaluated on the primary directory information (such as the directory structure file of Mark6 or the directory structure on a Mark5 module) to determine if the directory structure is up to date or not. \\
+{\tt producedByProgram} & opt.  &        & The name of the program that wrote this file. \\
+{\tt producedByVersion} & opt.  &        & The version of the program that wrote this file. \\
+{\tt producedHostname}  & opt.  &        & The computer hostname on which the file was derived. \\
+{\tt pathPrefix}        & opt.  & file   & An optional prefix to prepend to all listed file names. \\
+{\tt mark6root}         & opt.  & mark6* & Specify a non-default path for Mark6 mountpoints.  The default if the {\tt MARK6ROOT} environment variable is not set is {\tt /mnt/disks/?/?/data/} . \\
+{\tt backend}           & res.  &        & The name of the digital backend producing the data. \\
+\hline
+\hline
+\end{tabularx}
+\caption{\label{tab:keys}
+The table of known and reserved keys as of the writing of this proposal.
+}
+\end{table}
+
+
+\subsection{Data section} \label{sec:data}
+
+The data section starts after the first line is encountered without an unquoted equal sign.
+It is an error to have an unquoted equal sign in the data section.
+Each data line will contain white-space separated fields in a specified order that depends on the value of the {\tt class} parameter.
+For generality a minimal subset of the fields, shown below, will be required to be the first fields of each row.
+In the case that {\tt class = minimal} no other fields are required.
+
+\begin{table}[h]
+\begin{tabularx}{\textwidth}{llX}
+\hline
+Key & type & Description \\
+\hline
+name & string & name of scan or file \\
+startMJD & float & start time in MJD + fraction \\
+stopMJD & float & stop time in MJD + fraction \\
+\hline
+\hline
+\end{tabularx}
+\caption{\label{tab:minimaldata}
+The first columns of every class and version of each data line.  In the case of the {\tt minimal} class, these for the complete data line.
+}
+\end{table}
+
+
+\subsubsection{Mark5 data section}
+
+\subsubsection{Mark6 native data section}
+
+\subsubsection{Mark6 vsum data section}
+
+\subsubsection{File list data section}
+
+\end{document}
