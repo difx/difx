@@ -13,13 +13,13 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.49'
-verdate = '20150807'
+version = '0.50'
+verdate = '20151212'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
-openmpiVersion = '1.6'
+openmpiVersion = '1.10'
 pgplotVersion = '5.2'
 pngVersion = '1.2.50'
 schedVersion = '11.4'
@@ -503,6 +503,20 @@ component_vdifio_trunk = \
 	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
 ]
 
+component_dirlist_trunk = \
+[ \
+	'dirlist', \
+	'https://svn.atnf.csiro.au/difx/libraries/dirlist/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6meta_trunk = \
+[ \
+	'mark6meta', \
+	'https://svn.atnf.csiro.au/difx/libraries/mark6meta/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
 component_mark6sg_trunk = \
 [ \
 	'mark6sg', \
@@ -670,6 +684,8 @@ components['DIFX-DEVEL'] = \
 	component_difxmessage_trunk, \
 	component_mark5access_trunk, \
 	component_vdifio_trunk, \
+	component_dirlist_trunk, \
+	component_mark6meta_trunk, \
 	component_mark6sg_trunk, \
 	component_mpifxcorr_trunk, \
 	component_difx2fits_trunk, \
