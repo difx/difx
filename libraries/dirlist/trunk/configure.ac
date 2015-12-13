@@ -38,4 +38,5 @@ AC_OUTPUT([
 	Makefile \
 	dirlist.pc \
 	src/Makefile \
+	tests/Makefile \
 ])

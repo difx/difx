@@ -1,7 +1,14 @@
 h_sources = \
+	parse.h \
+	dirlist_exception.h \
+	dirlist_parameter.h \
+	dirlist_datum.h \
 	dirlist.h
 
 cpp_sources = \
+	parse.cpp \
+	dirlist_parameter.cpp \
+	dirlist_datum.cpp \
 	dirlist.cpp
 
 library_includedir = $(includedir)/dirlist
