@@ -208,6 +208,12 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 
 	// Here set readseconds to time since beginning of job
 	readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;
+    if (fileSummary.framesPerSecond == 0)
+        {
+        fileSummary.framesPerSecond = 31250;
+        cwarn << startl << "mk6 framesPerSecond is unknown, setting to 31250" << endl;
+        }
+
 	readnanoseconds = vdiffilesummarygetstartns(&fileSummary);
 	currentdsseconds = activesec + model->getScanStartSec(activescan, config->getStartMJD(), config->getStartSeconds());
 
