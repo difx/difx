@@ -286,6 +286,7 @@ class MainWindow(GenericWindow):
             try:
                 font = PIL.ImageFont.truetype(self.config.get("Comedia","fontFile"), int(self.config.get("Comedia", "fontSize")))
             except:
+		print "Cannot find font: %s. Using default font" % (self.config.get("Comedia","fontFile"))
                 font = PIL.ImageFont.load_default()
             
             os.system('rm -f /tmp/comedia_tmp.png')
