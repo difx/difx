@@ -29,6 +29,7 @@ testephem_SOURCES = \
 
 pbgen_SOURCES = \
 	pbgen.c \
+	pbgen.h \
 	util.c \
 	util.h
 
