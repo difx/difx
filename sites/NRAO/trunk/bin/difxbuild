@@ -13,8 +13,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.50'
-verdate = '20151212'
+version = '0.51'
+verdate = '20151216'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -647,14 +647,14 @@ component_difxdb_trunk = \
 [ \
 	'difxdb', \
 	'https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb', \
-	['aclocal', 'autoconf', 'automake'] \
+	['aclocal', 'autoconf', 'automake', 'nodef'] \
 ]
 
 component_nraodifxdb_trunk = \
 [ \
 	'nraodifxdb', \
-	'https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/difxdb', \
-	['aclocal', 'autoconf', 'automake'] \
+	'https://svn.aoc.nrao.edu/repos/VLBA/nraodifxdb', \
+	['aclocal', 'autoconf', 'automake', 'nodef'] \
 ]
 
 component_difxmonitor_trunk = \
