@@ -40,7 +40,7 @@ mark5_stream._fields_ = [
     ('mjd', c_int),
     ('sec', c_int),
     ('ns', c_int),
-    ('samprate', c_int),
+    ('samprate', c_int64),
     ('frameoffset', c_int),
     ('framesamples', c_int),
     ('framens', c_double),
