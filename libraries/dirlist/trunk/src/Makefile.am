@@ -3,13 +3,18 @@ h_sources = \
 	dirlist_exception.h \
 	dirlist_parameter.h \
 	dirlist_datum.h \
-	dirlist.h
+	dirlist_datum_mark5.h \
+	dirlist_datum_mark6.h \
+	dirlist.h \
+	old_dirlist.h
 
 cpp_sources = \
 	parse.cpp \
 	dirlist_parameter.cpp \
 	dirlist_datum.cpp \
-	dirlist.cpp
+	dirlist_datum_mark5.cpp \
+	dirlist.cpp \
+	old_dirlist.cpp
 
 library_includedir = $(includedir)/dirlist
 library_include_HEADERS = $(h_sources)

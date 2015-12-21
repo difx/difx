@@ -13,6 +13,9 @@ public:
 	const std::string &getName() const { return name; }
 	double getMjdStart() const { return mjdStart; }
 	double getMjdStop() const { return mjdStop; }
+	void setName(const std::string &n) { name = n; }
+	void setMjdStart(double mjd) { mjdStart = mjd; }
+	void setMjdStop(double mjd) { mjdStop = mjd; }
 
 private:
 	double mjdStart, mjdStop;

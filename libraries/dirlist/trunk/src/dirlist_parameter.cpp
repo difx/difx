@@ -9,7 +9,7 @@ int DirListParameter::getInt(unsigned int index) const
 {
 	if(index >= items.size())
 	{
-		throw DirListException("getString(): index out of range.");
+		throw DirListException("getInt(): index out of range.");
 	}
 
 	return atoi(items[index].c_str());
@@ -19,7 +19,7 @@ double DirListParameter::getDouble(unsigned int index) const
 {
 	if(index >= items.size())
 	{
-		throw DirListException("getString(): index out of range.");
+		throw DirListException("getDouble(): index out of range.");
 	}
 
 	return atof(items[index].c_str());

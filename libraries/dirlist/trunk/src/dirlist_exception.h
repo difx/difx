@@ -8,7 +8,7 @@ class DirListException : public std::exception
 public:
 	DirListException(std::string msg) : err_msg(msg) {}
 	~DirListException() throw() {}
-	const char *what() const throw() { return err_msg.c_str(); }
+	virtual const char *what() const throw() { return err_msg.c_str(); }
 
 private:
 	std::string err_msg;
