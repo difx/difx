@@ -9,6 +9,7 @@ class DirListParameter
 {
 public:
 	DirListParameter() {}
+	DirListParameter(const std::string &k) { setKey(k); }
 	DirListParameter(const std::string &k, const std::string &v) { setKey(k); setValue(v); }
 	DirListParameter(const std::string &k, const std::string &v, const std::string &c) { setKey(k); setValue(v); setComment(c); }
 	~DirListParameter() {}
@@ -20,6 +21,8 @@ public:
 	const std::string &getKey() const { return key; }
 	const std::string &getValue() const { return value; }
 	const std::string &getComment() const { return comment; }
+	bool isTrue() const { return (value == "T" || value == "t" || value == "True" || value == "true" || value == "TRUE"); }
+	bool isFalse() const { return (value == "F" || value == "f" || value == "False" || value == "false" || value == "FALSE"); }
 	
 	// used to set fundamental and derived values
 	void setKey(const std::string &k) { key = k; }

@@ -9,6 +9,17 @@ class DirListDatumMark5 : public DirListDatum
 {
 public:
 	bool setFromString(const char *str);
+	long long getStart() const { return start; }
+	long long getLength() const { return length; }
+	double getDuration() const { return duration; }
+	int getMjd() const { return mjd; }
+	int getSec() const { return sec; }
+	int getFramenuminsecond() const { return framenuminsecond; }
+	int getFramespersecond() const { return framespersecond; }
+	int getFramebytes() const { return framebytes; }
+	int getFrameoffset() const { return frameoffset; }
+	int getTracks() const { return tracks; }
+	int getFormat() const { return format; }
 private:
 	long long start;
 	long long length;

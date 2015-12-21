@@ -1,4 +1,8 @@
+#include <cstdio>
+#include <ostream>
 #include "dirlist_datum_mark5.h"
+
+#define MODULE_LEGACY_SCAN_LENGTH	64
 
 bool DirListDatumMark5::setFromString(const char *str)
 {
@@ -26,7 +30,7 @@ bool DirListDatumMark5::setFromString(const char *str)
 
 std::ostream& operator << (std::ostream &os, const DirListDatumMark5 &x)
 {
-	os << DirListDatum::x << " " << start << " " << length << " " << duration << " " mjd << " " << sec << " " << framenuminsecond << " " << framespersecond << " " framebytes << " " << frameoffset << " " << tracks << " " << format;
+	os << dynamic_cast<const DirListDatum &>(x) << " " << x.getStart() << " " << x.getLength() << " " << x.getDuration() << " " << x.getMjd() << " " << x.getSec() << " " << x.getFramenuminsecond() << " " << x.getFramespersecond() << " " << x.getFramebytes() << " " << x.getFrameoffset() << " " << x.getTracks() << " " << x.getFormat();
 
 	return os;
 }

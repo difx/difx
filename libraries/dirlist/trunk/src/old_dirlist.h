@@ -4,7 +4,7 @@
 #include <sstream>
 #include "dirlist.h"
 
-int loadOldDirlist(DirList *D, const char *filename, std::stringstream &error);
+int loadOldDirlist(DirList &D, const char *filename, std::stringstream &error);
 
 
 #endif

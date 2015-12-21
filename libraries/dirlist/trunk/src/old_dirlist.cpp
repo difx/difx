@@ -1,8 +1,11 @@
 #include <cstdio>
+#include <cstring>
 #include "old_dirlist.h"
+#include "dirlist_datum_mark5.h"
 
+// Imports data from a legacy (Mark5) .dir file
 // returns an error code
-int loadOldDirlist(DirList *D, const char *filename, std::stringstream &error)
+int loadOldDirlist(DirList &D, const char *filename, std::stringstream &error)
 {
 	const int MaxLineLength = 255;
 	FILE *in;
@@ -51,22 +54,22 @@ int loadOldDirlist(DirList *D, const char *filename, std::stringstream &error)
 	D.setParameter("version", 1);
 	D.setParameter("vsn", dirLabel);
 	D.setParameter("hash", signature);
-	D.setParameter("realtime", false);
+	D.setParameter("realtime", "false");
 	D.setParameter("bankname", bankName);
 
 	for(j = 4; j < n; ++j)
 	{
 		if(strcmp(extra[j-4], "RT") == 0)
 		{
-			D.setParameter("realtime", true);
+			D.setParameter("realtime", "true");
 		}
 		else if(strcmp(extra[j-4], "Fast") == 0)
 		{
-			D.setParameter("fastdir", true);
+			D.setParameter("fastdir", "true");
 		}
 		else if(strcmp(extra[j-4], "Synth") == 0)
 		{
-			D.setParameter("synthetic", true);
+			D.setParameter("synthetic", "true");
 		}
 		else if(sscanf(extra[j-4], "%d", &i) == 1)
 		{
@@ -119,8 +122,8 @@ int loadOldDirlist(DirList *D, const char *filename, std::stringstream &error)
 	}
 	fclose(in);
 
-	setExperiment();
-	setStation();
+	D.setExperiments();
+	D.setStation();
 
 	return 0;
 }

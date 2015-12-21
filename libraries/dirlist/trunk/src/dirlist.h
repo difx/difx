@@ -2,6 +2,7 @@
 #define __DIRLIST_H__
 
 #include <ostream>
+#include <sstream>
 #include <utility>
 #include <vector>
 #include <string>
@@ -28,28 +29,46 @@ class DirList
 	};
 #endif
 public:
-	DirList() : identifierLine(DIRLIST_IDENTIFIER_LINE) {};
+	DirList() : identifier(DIRLIST_IDENTIFIER_LINE) {};
 	~DirList();
-	void load(const char *filename);
 	void clear();
+	void load(const char *filename);
+
 	void setDefaultIdentifier() { identifier = DIRLIST_IDENTIFIER_LINE; }
 	void setIdentifier(const std::string &str) { identifier = str; }
-	void setParameter(const std::string &key, const std::string &value, const std::string &comment = "");
-	void setParameter(const std::string &key, double value, const std::string &comment = "");
-	void setParameter(const std::string &key, int value, const std::string &comment = "");
-	void setParameter(const std::string &key, bool value, const std::string &comment = "");
 	bool isParameterTrue(const std::string &key);
 	bool isParameterFalse(const std::string &key);
 	void addDatum(DirListDatum *datum);
 	void setExperiments();
 	void setStation();
 
+	// Because this is a template type it must be kept in the .h file
+	template <typename Type> void setParameter(const std::string &key, const Type &value, const std::string &comment = "")
+	{
+		DirListParameter *P;
+		std::stringstream ss;
+
+		P = getParameter(key);
+		if(!P)
+		{
+			P = new DirListParameter(key);
+			parameters.push_back(P);
+		}
+
+		ss << value;
+		P->setValue(ss.str());
+		P->setComment(comment);
+	}
+
 private:
 //	enum FileType fileType;
 
-	std::string identifier;
-	std::vector<DirListParameter *> parameter;	// vector so items have an order
+	std::string identifier;				// file identifier -- the first line of the file
+	std::vector<DirListParameter *> parameters;	// vector so items have an order
 	std::vector<DirListDatum *> data;		// pointers to scan data
+
+protected:
+	DirListParameter *getParameter(const std::string &key);
 };
 
 std::ostream& operator << (std::ostream &os, const DirList &x);
