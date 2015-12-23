@@ -8,27 +8,26 @@
 class DirListDatumMark5 : public DirListDatum
 {
 public:
-	bool setFromString(const char *str);
+	virtual ~DirListDatumMark5() { }
+	bool setFromOldString(const char *str);
 	long long getStart() const { return start; }
 	long long getLength() const { return length; }
-	double getDuration() const { return duration; }
-	int getMjd() const { return mjd; }
-	int getSec() const { return sec; }
-	int getFramenuminsecond() const { return framenuminsecond; }
-	int getFramespersecond() const { return framespersecond; }
-	int getFramebytes() const { return framebytes; }
-	int getFrameoffset() const { return frameoffset; }
+	int getIntSec() const { return intSec; }
+	int getFrameNumInSecond() const { return frameNumInSecond; }
+	int getFramesPerSecond() const { return framesPerSecond; }
+	int getFrameBytes() const { return frameBytes; }
+	int getFrameOffset() const { return frameOffset; }
 	int getTracks() const { return tracks; }
 	int getFormat() const { return format; }
+	virtual void print(std::ostream &os, bool doEOL = true) const;
 private:
 	long long start;
 	long long length;
-	double duration;	/* scan duration in seconds */
-	int mjd, sec;		/* timestamp of first frame */
-	int framenuminsecond;	/* frame number since last 1 second tick */
-	int framespersecond;	/* number of frames per second (always integer) */
-	int framebytes;		/* length of entire frame in bytes */
-	int frameoffset;	/* bytes to start of first frame */
+	int intSec;		/* integer second portion of timestamp of first frame */
+	int frameNumInSecond;	/* frame number since last 1 second tick */
+	int framesPerSecond;	/* number of frames per second (always integer) */
+	int frameBytes;		/* length of entire frame in bytes */
+	int frameOffset;	/* bytes to start of first frame */
 	int tracks;
 	int format;
 	std::set<int> startThreads;	// set of threads present at beginning of the stream

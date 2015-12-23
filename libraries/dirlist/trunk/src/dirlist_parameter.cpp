@@ -72,6 +72,19 @@ void DirListParameter::print() const
 	std::cout << "  Full line = " << *this << std::endl;
 }
 
+void DirListParameter::print(std::ostream &os, bool doEOL) const
+{
+	os << getKey() << " = " << getValue();
+	if(hasComment())
+	{
+		os << " # " << getComment();
+	}
+	if(doEOL)
+	{
+		os << std::endl;
+	}
+}
+
 std::ostream& operator << (std::ostream &os, const DirListParameter &x)
 {
 	os << x.getKey() << " = " << x.getValue();

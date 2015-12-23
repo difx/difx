@@ -41,6 +41,7 @@ public:
 	void addDatum(DirListDatum *datum);
 	void setExperiments();
 	void setStation();
+	void print(std::ostream &os) const;
 
 	// Because this is a template type it must be kept in the .h file
 	template <typename Type> void setParameter(const std::string &key, const Type &value, const std::string &comment = "")

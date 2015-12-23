@@ -5,7 +5,7 @@
 
 // Imports data from a legacy (Mark5) .dir file
 // returns an error code
-int loadOldDirlist(DirList &D, const char *filename, std::stringstream &error)
+int loadOldDirList(DirList &D, const char *filename, std::stringstream &error)
 {
 	const int MaxLineLength = 255;
 	FILE *in;
@@ -19,6 +19,7 @@ int loadOldDirlist(DirList &D, const char *filename, std::stringstream &error)
 	unsigned int signature;
 
 	D.clear();
+	D.setDefaultIdentifier();
 
 	in = fopen(filename, "r");
 	if(!in)
@@ -103,16 +104,24 @@ int loadOldDirlist(DirList &D, const char *filename, std::stringstream &error)
 		v = fgets(line, MaxLineLength, in);
 		if(!v)
 		{
-			error << "Directory file: " << filename << " is corrupt (file too short).\n";
-			fclose(in);
+			break;
+		}
 
-			return -1;
+		// strip CR/LF chars from end
+		for(unsigned int i = 0; line[i]; ++i)
+		{
+			if(line[i] < ' ')
+			{
+				line[i] = 0;
+
+				break;
+			}
 		}
 		
 		DM5 = new DirListDatumMark5;
 		D.addDatum(DM5);
-		ok = DM5->setFromString(line);
-		if(ok != 0)
+		ok = DM5->setFromOldString(line);
+		if(!ok)
 		{
 			error << "Directory file: " << filename << " is corrupt: at least one scan line is invalid.\n";
 			fclose(in);

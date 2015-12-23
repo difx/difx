@@ -4,33 +4,41 @@
 
 #define MODULE_LEGACY_SCAN_LENGTH	64
 
-bool DirListDatumMark5::setFromString(const char *str)
+bool DirListDatumMark5::setFromOldString(const char *str)
 {
 	char scanName[MODULE_LEGACY_SCAN_LENGTH];
 	int n;
-	double mjdStart;
+	int p;
 	
-	n = sscanf(str, "%Ld%Ld%d%d%d%d%lf%d%d%d%d%63s",
-		&start, &length, &mjd, &sec, &framenuminsecond, &framespersecond,
-		&duration, &framebytes, &frameoffset, &tracks, &format, scanName);
+	n = sscanf(str, "%Ld%Ld%d%d%d%d%lf%d%d%d%d%63s%n",
+		&start, &length, &mjdStart, &intSec, &frameNumInSecond, &framesPerSecond,
+		&duration, &frameBytes, &frameOffset, &tracks, &format, scanName, &p);
 	
-	if(n != 12 || framebytes <= 0)
+	if(n != 12 || frameBytes <= 0)
 	{
 		return false;
 	}
 
-	mjdStart = mjd + (sec + (double)framenuminsecond/(double)framespersecond)/86400.0;
-
 	setName(scanName);
-	setMjdStart(mjdStart);
-	setMjdStop(mjdStart + duration/86400.0);
+	setSecStart(intSec + static_cast<double>(frameNumInSecond)/static_cast<double>(framesPerSecond));
+	setComment(str+p);
 
 	return true;
 }
 
+void DirListDatumMark5::print(std::ostream &os, bool doEOL) const
+{
+	DirListDatum::print(os, false);
+	os << " " << getStart() << " " << getLength() << " " << getIntSec() << " " << getFrameNumInSecond() << " " << getFramesPerSecond() << " " << getFrameBytes() << " " << getFrameOffset() << " "   << getTracks() << " " << getFormat();
+	if(doEOL)
+	{
+		os << std::endl;
+	}
+}
+
 std::ostream& operator << (std::ostream &os, const DirListDatumMark5 &x)
 {
-	os << dynamic_cast<const DirListDatum &>(x) << " " << x.getStart() << " " << x.getLength() << " " << x.getDuration() << " " << x.getMjd() << " " << x.getSec() << " " << x.getFramenuminsecond() << " " << x.getFramespersecond() << " " << x.getFramebytes() << " " << x.getFrameoffset() << " " << x.getTracks() << " " << x.getFormat();
+	os << dynamic_cast<const DirListDatum &>(x) << " " << x.getStart() << " " << x.getLength() << " " << x.getIntSec() << " " << x.getFrameNumInSecond() << " " << x.getFramesPerSecond() << " " << x.getFrameBytes() << " " << x.getFrameOffset() << " " << x.getTracks() << " " << x.getFormat();
 
 	return os;
 }

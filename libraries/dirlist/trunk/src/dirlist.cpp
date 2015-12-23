@@ -1,8 +1,15 @@
 #include "dirlist.h"
 
+DirList::~DirList()
+{
+	clear();
+}
+
 // empties contents on the datastructure
 void DirList::clear()
 {
+	identifier.clear();
+
 	for(std::vector<DirListParameter *>::iterator it = parameters.begin(); it != parameters.end(); ++it)
 	{
 		delete *it;
@@ -63,6 +70,7 @@ bool DirList::isParameterFalse(const std::string &key)
 
 void DirList::addDatum(DirListDatum *datum)
 {
+	data.push_back(datum);
 }
 
 void DirList::setExperiments()
@@ -73,4 +81,24 @@ void DirList::setStation()
 {
 }
 
+void DirList::print(std::ostream &os) const
+{
+	os << identifier << std::endl;
+	os << std::endl;
+	
+	for(std::vector<DirListParameter *>::const_iterator it = parameters.begin(); it != parameters.end(); ++it)
+	{
+		(*it)->print(os);
+	}
+	os << std::endl;
 
+	for(std::vector<DirListDatum *>::const_iterator it = data.begin(); it != data.end(); ++it)
+	{
+		(*it)->print(os, false);
+		if((*it)->hasComment())
+		{
+			(*it)->printComment(os, false);
+		}
+		os << std::endl;
+	}
+}
