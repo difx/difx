@@ -73,11 +73,19 @@ void DirList::addDatum(DirListDatum *datum)
 	data.push_back(datum);
 }
 
+void DirList::sort()
+{
+}
+
 void DirList::setExperiments()
 {
 }
 
 void DirList::setStation()
+{
+}
+
+void DirList::setPathPrefix()
 {
 }
 

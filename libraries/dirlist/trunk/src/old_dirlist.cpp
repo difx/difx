@@ -5,7 +5,7 @@
 
 // Imports data from a legacy (Mark5) .dir file
 // returns an error code
-int loadOldDirList(DirList &D, const char *filename, std::stringstream &error)
+int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 {
 	const int MaxLineLength = 255;
 	FILE *in;
@@ -21,10 +21,10 @@ int loadOldDirList(DirList &D, const char *filename, std::stringstream &error)
 	D.clear();
 	D.setDefaultIdentifier();
 
-	in = fopen(filename, "r");
+	in = fopen(fileName, "r");
 	if(!in)
 	{
-		error << "Cannot load file: " << filename << "\n";
+		error << "Cannot load file: " << fileName << "\n";
 
 		return -1;
 	}
@@ -32,7 +32,7 @@ int loadOldDirList(DirList &D, const char *filename, std::stringstream &error)
 	v = fgets(line, MaxLineLength, in);
 	if(!v)
 	{
-		error << "Directory file: " << filename << " is corrupt.\n";
+		error << "Directory file: " << fileName << " is corrupt.\n";
 		fclose(in);
 
 		return -1;
@@ -42,7 +42,7 @@ int loadOldDirList(DirList &D, const char *filename, std::stringstream &error)
 		dirLabel, &nscans, bankName, &signature, extra[0], extra[1], extra[2], extra[3], extra[4]);
 	if(n < 3)
 	{
-		error << "Directory file: " << filename << " is corrupt.\n";
+		error << "Directory file: " << fileName << " is corrupt.\n";
 		fclose(in);
 
 		return -1;
@@ -89,7 +89,7 @@ int loadOldDirList(DirList &D, const char *filename, std::stringstream &error)
 
 	if(nscans < 0)
 	{
-		error << "Directory file: " << filename << " is corrupt (nscans < 0).\n";
+		error << "Directory file: " << fileName << " is corrupt (nscans < 0).\n";
 		fclose(in);
 
 		return -1;
@@ -123,7 +123,7 @@ int loadOldDirList(DirList &D, const char *filename, std::stringstream &error)
 		ok = DM5->setFromOldString(line);
 		if(!ok)
 		{
-			error << "Directory file: " << filename << " is corrupt: at least one scan line is invalid.\n";
+			error << "Directory file: " << fileName << " is corrupt: at least one scan line is invalid.\n";
 			fclose(in);
 
 			return -1;

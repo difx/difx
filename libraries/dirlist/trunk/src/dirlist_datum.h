@@ -13,6 +13,9 @@ public:
 	const std::string &getName() const { return name; }
 	int getMjdStart() const { return mjdStart; }
 	double getSecStart() const { return secStart; }
+	int getIntSecStart() const { return static_cast<int>(secStart); }
+	int getIntNSStart() const { return static_cast<int>(1000000000.0*(secStart - static_cast<int>(secStart) )); }
+	double getFullMjdStart() const { return mjdStart + secStart/86400.0; }
 	double getDuration() const { return duration; }
 	void setName(const std::string &n) { name = n; }
 	void setMjdStart(int mjd) { mjdStart = mjd; }
@@ -24,11 +27,17 @@ public:
 	bool hasComment() const { return !comment.empty(); }
 	void setComment(const std::string &str) { comment = str; }
 
+	virtual long long getStartPointer() const { return 0; }	// FIXME: should throw
+	virtual long long getLength() const { return 0; } // FIXME: should throw
+	virtual int getTracks() const { return 1; } // FIXME: should throw
+
+	bool setFromOldFileListString(const char *str);
+
 protected:
 	// start time in MJD = mjdStart + secStart/86400.0
 	int mjdStart;
 	double secStart;
-	double duration;
+	double duration;		// [sec]
 	std::string name;		// name of file or scan
 	std::string comment;
 };

@@ -34,6 +34,9 @@ public:
 	void clear();
 	void load(const char *filename);
 
+	int nScan() const { return data.size(); }
+	const DirListDatum *getScan(unsigned int index) const { return data[index]; }
+
 	void setDefaultIdentifier() { identifier = DIRLIST_IDENTIFIER_LINE; }
 	void setIdentifier(const std::string &str) { identifier = str; }
 	bool isParameterTrue(const std::string &key);
@@ -41,6 +44,8 @@ public:
 	void addDatum(DirListDatum *datum);
 	void setExperiments();
 	void setStation();
+	void setPathPrefix();
+	void sort();
 	void print(std::ostream &os) const;
 
 	// Because this is a template type it must be kept in the .h file

@@ -11,15 +11,16 @@ public:
 	virtual ~DirListDatumMark5() { }
 	bool setFromOldString(const char *str);
 	long long getStart() const { return start; }
-	long long getLength() const { return length; }
+	virtual long long getLength() const { return length; }
 	int getIntSec() const { return intSec; }
 	int getFrameNumInSecond() const { return frameNumInSecond; }
 	int getFramesPerSecond() const { return framesPerSecond; }
 	int getFrameBytes() const { return frameBytes; }
 	int getFrameOffset() const { return frameOffset; }
-	int getTracks() const { return tracks; }
+	virtual int getTracks() const { return tracks; }
 	int getFormat() const { return format; }
 	virtual void print(std::ostream &os, bool doEOL = true) const;
+	virtual long long getStartPointer() const { return start + frameOffset; }
 private:
 	long long start;
 	long long length;

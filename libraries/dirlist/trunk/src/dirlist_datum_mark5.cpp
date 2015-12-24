@@ -4,6 +4,7 @@
 
 #define MODULE_LEGACY_SCAN_LENGTH	64
 
+// Parses a line from a .dir file
 bool DirListDatumMark5::setFromOldString(const char *str)
 {
 	char scanName[MODULE_LEGACY_SCAN_LENGTH];
