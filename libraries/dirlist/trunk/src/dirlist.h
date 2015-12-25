@@ -14,6 +14,11 @@
 #define DIRLIST_IDENTIFIER_LINE	"VLBI baseband data listing"
 
 
+// TODO
+// * Add functionality to print in comments meaning of each column in the data section
+// * Remove comments which are only whitespace
+
+
 class DirList
 {
 #if 0
@@ -42,8 +47,7 @@ public:
 	bool isParameterTrue(const std::string &key);
 	bool isParameterFalse(const std::string &key);
 	void addDatum(DirListDatum *datum);
-	void setExperiments();
-	void setStation();
+	void setStationAndExperiments();
 	void setPathPrefix();
 	void sort();
 	void print(std::ostream &os) const;
@@ -72,9 +76,8 @@ private:
 	std::string identifier;				// file identifier -- the first line of the file
 	std::vector<DirListParameter *> parameters;	// vector so items have an order
 	std::vector<DirListDatum *> data;		// pointers to scan data
-
-protected:
 	DirListParameter *getParameter(const std::string &key);
+	bool hasParameter(const std::string &key);
 };
 
 std::ostream& operator << (std::ostream &os, const DirList &x);

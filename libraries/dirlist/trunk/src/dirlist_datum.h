@@ -33,6 +33,8 @@ public:
 
 	bool setFromOldFileListString(const char *str);
 
+	bool operator<(const DirListDatum &rhs) const { return getFullMjdStart() < rhs.getFullMjdStart(); }
+
 protected:
 	// start time in MJD = mjdStart + secStart/86400.0
 	int mjdStart;

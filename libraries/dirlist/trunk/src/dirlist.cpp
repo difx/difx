@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "dirlist.h"
 
 DirList::~DirList()
@@ -42,6 +43,19 @@ DirListParameter *DirList::getParameter(const std::string &key)
 	return 0;
 }
 
+bool DirList::hasParameter(const std::string &key)
+{
+	for(std::vector<DirListParameter *>::iterator it = parameters.begin(); it != parameters.end(); ++it)
+	{
+		if((*it)->getKey() == key)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool DirList::isParameterTrue(const std::string &key)
 {
 	DirListParameter *P;
@@ -73,20 +87,66 @@ void DirList::addDatum(DirListDatum *datum)
 	data.push_back(datum);
 }
 
+bool compare_datum_star(const DirListDatum *a, const DirListDatum *b) 
+{
+	return (*a < *b);
+}
+
 void DirList::sort()
 {
+	std::sort(data.begin(), data.end(), compare_datum_star);
 }
 
-void DirList::setExperiments()
+void DirList::setStationAndExperiments()
 {
 }
 
-void DirList::setStation()
-{
-}
-
+// Note: Now this algorithm is pretty simple.  It will not detect a common super-directory if there are different subdirectories.
 void DirList::setPathPrefix()
 {
+	std::string common;
+	bool first = true;
+	size_t pos;
+
+	if(hasParameter("pathPrefix"))
+	{
+		return;
+	}
+
+	for(std::vector<DirListDatum *>::const_iterator it = data.begin(); it != data.end(); ++it)
+	{
+		pos = (*it)->getName().rfind('/');
+		if(pos == std::string::npos)
+		{
+			// no possibility of common string portion
+			return;
+		}
+		else
+		{
+			++pos;
+		}
+
+		if(first)
+		{
+			common = (*it)->getName().substr(0, pos);
+			first = false;
+		}
+		else
+		{
+			if(common != (*it)->getName().substr(0, pos))
+			{
+				return;
+			}
+		}
+	}
+
+	// if we got here then there is a common string
+
+	setParameter("pathPrefix", common);
+	for(std::vector<DirListDatum *>::const_iterator it = data.begin(); it != data.end(); ++it)
+	{
+		(*it)->setName((*it)->getName().substr(pos));
+	}
 }
 
 void DirList::print(std::ostream &os) const

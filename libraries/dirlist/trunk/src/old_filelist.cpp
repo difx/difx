@@ -58,9 +58,9 @@ int loadOldFileList(DirList &D, const char *fileName, std::stringstream &error)
 	}
 	fclose(in);
 
-	D.setExperiments();
-	D.setStation();
+	D.sort();
 	D.setPathPrefix();
+	D.setStationAndExperiments();
 
 	return 0;
 }

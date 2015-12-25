@@ -39,4 +39,5 @@ AC_OUTPUT([
 	dirlist.pc \
 	src/Makefile \
 	tests/Makefile \
+	utils/Makefile \
 ])
