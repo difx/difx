@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include "old_filelist.h"
+#include "utils.h"
 
 int loadOldFileList(DirList &D, const char *fileName, std::stringstream &error)
 {
@@ -28,21 +29,10 @@ int loadOldFileList(DirList &D, const char *fileName, std::stringstream &error)
 		char *v;
 		bool ok;
 
-		v = fgets(line, MaxLineLength, in);
+		v = fgetsNoCR(line, MaxLineLength, in);
 		if(!v)
 		{
 			break;
-		}
-
-		// strip CR/LF chars from end
-		for(unsigned int i = 0; line[i]; ++i)
-		{
-			if(line[i] < ' ')
-			{
-				line[i] = 0;
-
-				break;
-			}
 		}
 
 		DD = new DirListDatum;

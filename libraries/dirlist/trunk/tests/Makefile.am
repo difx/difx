@@ -6,6 +6,7 @@ noinst_PROGRAMS = \
 	test_dirlist_parameter \
 	test_old_read \
 	test_filelist_read \
+	test_copy \
 	test_tokenize
 
 test_dirlist_parameter_SOURCES = \

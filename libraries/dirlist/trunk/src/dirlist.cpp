@@ -1,5 +1,14 @@
+#include <vector>
+#include <string>
 #include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
 #include "dirlist.h"
+#include "dirlist_datum.h"
+#include "dirlist_datum_mark5.h"
+#include "utils.h"
+#include "parse.h"
 
 DirList::~DirList()
 {
@@ -25,9 +34,114 @@ void DirList::clear()
 }
 
 // loads a file in the native .dirlist format
-void DirList::load(const char *filename)
+void DirList::load(const char *fileName)
 {
+	const int MaxLineLength = 512;
+	FILE *in;
+	char line[MaxLineLength+1];
+	char *v;
+	std::vector<std::string> tokens;
+	std::string comment;
+	bool hasData = false;
+	DirListParameter *classParameter = 0;
+
 	clear();
+	setDefaultIdentifier();
+
+	in = fopen(fileName, "r");
+	if(!in)
+	{
+		throw DirListException("DirList::load(): Cannot open file.");
+	}
+
+	v = fgetsNoCR(line, MaxLineLength, in);
+	if(strcmp(line, DIRLIST_IDENTIFIER_LINE) != 0)
+	{
+		fclose(in);
+
+		throw DirListException("DirList::load(): Wrong identifier line.");
+	}
+
+	for(int lineNum = 2; !feof(in); ++lineNum)
+	{
+		v = fgetsNoCR(line, MaxLineLength, in);
+		if(v == 0)
+		{
+			break;
+		}
+		
+		tokenize(tokens, comment, line);
+
+		if(tokens.empty())
+		{
+			continue;
+		}
+
+		if(tokens.size() < 3)
+		{
+			fclose(in);
+
+			throw DirListException("DirList::load(): Data line with 1 or 2 tokens.  Line = ", lineNum);
+		}
+
+		if(tokens[1] == "=")	// It is a parameter
+		{
+			DirListParameter *P;
+
+			if(hasData)
+			{
+				fclose(in);
+
+				throw DirListException("DirList::load(): Parameter line found after data.  Line = ", lineNum);
+			}
+
+			P = new DirListParameter();
+			bool ok = P->setFromTokens(tokens);
+			if(!ok)
+			{
+				fclose(in);
+				delete P;
+
+				throw DirListException("DirList::load(): Unparsable parameter line.  Line = ", lineNum);
+			}
+			P->setComment(comment);
+			addParameter(P);
+		}
+		else
+		{
+			DirListDatum *DD;
+
+			if(!hasData)
+			{
+				hasData = true;
+				classParameter = getParameter("class");
+				if(!classParameter)
+				{
+					throw DirListException("DirList::load(): class parameter was not set.");
+				}
+			}
+
+			if(classParameter->getValue() == "mark5")
+			{
+				DD = new DirListDatumMark5;
+			}
+			else if(classParameter->getValue() == "file")
+			{
+				DD = new DirListDatum;
+			}
+			else
+			{
+				throw DirListException("DirList::load(): unsupported class parameter.");
+			}
+
+			DD->setFromTokens(tokens);
+			DD->setComment(comment);
+
+			addDatum(DD);
+		}
+	}
+
+	fclose(in);
 }
 
 DirListParameter *DirList::getParameter(const std::string &key)
@@ -80,11 +194,6 @@ bool DirList::isParameterFalse(const std::string &key)
 	}
 
 	return P->isFalse();
-}
-
-void DirList::addDatum(DirListDatum *datum)
-{
-	data.push_back(datum);
 }
 
 bool compare_datum_star(const DirListDatum *a, const DirListDatum *b) 

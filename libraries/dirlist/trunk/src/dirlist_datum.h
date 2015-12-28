@@ -30,6 +30,7 @@ public:
 	virtual long long getStartPointer() const { return 0; }	// FIXME: should throw
 	virtual long long getLength() const { return 0; } // FIXME: should throw
 	virtual int getTracks() const { return 1; } // FIXME: should throw
+	virtual bool setFromTokens(const std::vector<std::string> &tokens);
 
 	bool setFromOldFileListString(const char *str);
 

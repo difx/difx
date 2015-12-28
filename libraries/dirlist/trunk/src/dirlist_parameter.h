@@ -14,6 +14,8 @@ public:
 	DirListParameter(const std::string &k, const std::string &v, const std::string &c) { setKey(k); setValue(v); setComment(c); }
 	~DirListParameter() {}
 
+	bool setFromTokens(const std::vector<std::string> &tokens);
+
 	bool hasComment() const { return !comment.empty(); }
 	unsigned int size() const { return items.size(); }
 

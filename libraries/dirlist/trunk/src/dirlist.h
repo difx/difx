@@ -46,7 +46,8 @@ public:
 	void setIdentifier(const std::string &str) { identifier = str; }
 	bool isParameterTrue(const std::string &key);
 	bool isParameterFalse(const std::string &key);
-	void addDatum(DirListDatum *datum);
+	void addDatum(DirListDatum *datum) { data.push_back(datum); }
+	void addParameter(DirListParameter *param) { parameters.push_back(param); }
 	void setStationAndExperiments();
 	void setPathPrefix();
 	void sort();

@@ -1,5 +1,9 @@
 #include <cstdio>
+#include <cstdlib>
 #include <ostream>
+#include <string>
+#include <vector>
+#include "dirlist_exception.h"
 #include "dirlist_datum.h"
 
 // Parses a line from, e.g., output of vsum
@@ -44,6 +48,20 @@ void DirListDatum::printComment(std::ostream &os, bool doEOL) const
 	{
 		os << std::endl;
 	}
+}
+
+bool DirListDatum::setFromTokens(const std::vector<std::string> &tokens)
+{
+	if(tokens.size() < 4)
+	{
+		throw DirListException("DirListDatum::setFromTokens(): wrong number of tokens.  Should be 4.  Was ", tokens.size());
+	}
+	setName(tokens[0]);
+	setMjdStart(atoi(tokens[1].c_str()));
+	setSecStart(atof(tokens[2].c_str()));
+	setDuration(atof(tokens[3].c_str()));
+
+	return true;
 }
 
 std::ostream& operator << (std::ostream &os, const DirListDatum &x)

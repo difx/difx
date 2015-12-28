@@ -7,7 +7,8 @@ h_sources = \
 	dirlist_datum_mark6.h \
 	dirlist.h \
 	old_dirlist.h \
-	old_filelist.h
+	old_filelist.h \
+	utils.h
 
 cpp_sources = \
 	parse.cpp \
@@ -16,7 +17,8 @@ cpp_sources = \
 	dirlist_datum_mark5.cpp \
 	dirlist.cpp \
 	old_dirlist.cpp \
-	old_filelist.cpp
+	old_filelist.cpp \
+	utils.cpp
 
 library_includedir = $(includedir)/dirlist
 library_include_HEADERS = $(h_sources)

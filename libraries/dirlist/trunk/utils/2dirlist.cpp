@@ -46,6 +46,9 @@ int convert(const char *inputFile, const char *outputFile)
 		return EXIT_FAILURE;
 	}
 
+	D.setParameter("producedByProgram", program);
+	D.setParameter("producedByVersion", version);
+
 	out.open(outputFile, std::fstream::out);
 	if(!out.is_open())
 	{

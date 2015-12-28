@@ -1,9 +1,28 @@
 #include <cstdlib>
+#include <sstream>
 #include <iostream>
 #include "parse.h"
 #include "dirlist_parameter.h"
 #include "dirlist_exception.h"
 
+bool DirListParameter::setFromTokens(const std::vector<std::string> &tokens)
+{
+	std::stringstream ss;
+
+	items.clear();
+
+	setKey(tokens[0]);
+
+	for(std::vector<std::string>::const_iterator it = tokens.begin() + 2; it != tokens.end(); ++it)
+	{
+		ss << *it;
+	}
+	value = ss.str();
+	
+	separateStringList(items, ss.str());
+
+	return true;
+}
 
 int DirListParameter::getInt(unsigned int index) const
 {

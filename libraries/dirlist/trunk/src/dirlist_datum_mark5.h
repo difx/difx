@@ -21,6 +21,8 @@ public:
 	int getFormat() const { return format; }
 	virtual void print(std::ostream &os, bool doEOL = true) const;
 	virtual long long getStartPointer() const { return start + frameOffset; }
+	virtual bool setFromTokens(const std::vector<std::string> &tokens);
+
 private:
 	long long start;
 	long long length;

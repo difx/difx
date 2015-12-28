@@ -1,5 +1,7 @@
 #include <cstdio>
+#include <cstdlib>
 #include <ostream>
+#include "dirlist_exception.h"
 #include "dirlist_datum_mark5.h"
 
 #define MODULE_LEGACY_SCAN_LENGTH	64
@@ -35,6 +37,26 @@ void DirListDatumMark5::print(std::ostream &os, bool doEOL) const
 	{
 		os << std::endl;
 	}
+}
+
+bool DirListDatumMark5::setFromTokens(const std::vector<std::string> &tokens)
+{
+	if(tokens.size() < 13)
+	{
+		throw DirListException("DirListDatumMark5::setFromTokens(): too few tokens provided (13 needed); num provided was ", tokens.size());
+	}
+	DirListDatum::setFromTokens(tokens);
+	start = atoll(tokens[4].c_str());
+	length = atoll(tokens[5].c_str());
+	intSec = atoi(tokens[6].c_str());
+	frameNumInSecond = atoi(tokens[7].c_str());
+	framesPerSecond = atoi(tokens[8].c_str());
+	frameBytes = atoi(tokens[9].c_str());
+	frameOffset = atoi(tokens[10].c_str());
+	tracks = atoi(tokens[11].c_str());
+	format = atoi(tokens[12].c_str());
+
+	return true;
 }
 
 std::ostream& operator << (std::ostream &os, const DirListDatumMark5 &x)
