@@ -58,6 +58,7 @@ static const int RUN_DIFX_JOB_ENDED_WITH_ERRORS              = 120;
 static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE     = 121;
 static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN     = 122;
 static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED     = 123;
+static const int RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG       = 124;
 
 //-----------------------------------------------------------------------------
 //!  Called in response to a user request to start a DiFX session.  This function
@@ -146,7 +147,7 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
         delete jobMonitor;
 		return;
 	}
-
+	
     //  Make sure the filename can fit in our allocated space for such things.
 	if( strlen( S->inputFilename ) + 12 > DIFX_MESSAGE_FILENAME_LENGTH ) {
 		diagnostic( ERROR, "Filename %s is too long.", S->inputFilename );
@@ -156,6 +157,18 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 		return;
 	}
 	
+	//  Run a configuration check on the .input file.  This makes sure access to 
+	//  data sources is good, etc.
+    Configuration * config = new Configuration( S->inputFilename, 0 );
+    if ( !config->consistencyOK() ) {
+		diagnostic( ERROR, "Input file %s failed the configuration check.", S->inputFilename );
+    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+        delete jobMonitor;
+		return;
+    }
+
+
     jobMonitor->sendPacket( RUN_DIFX_PARAMETER_CHECK_SUCCESS, NULL, 0 );
 
     //  Find the "working directory" (where the .input file resides and data will be put), the
