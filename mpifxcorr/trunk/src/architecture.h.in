@@ -677,7 +677,7 @@ inline vecStatus genericSum_32f(const f32 *src, int length, f32 *sum)
 // FFTs
 inline vecStatus genericInitFFTR_f32(GenFFTPtrRf32 **fftspec, int order, int flag, vecHintAlg hint) 
 { fftspec[0] = (GenFFTPtrRf32 *) malloc(sizeof(GenFFTPtrRf32)); 
-  fftspec[0]->len = 2<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
+  fftspec[0]->len = 1<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
   fftspec[0]->in = (f32 *) fftwf_malloc(fftspec[0]->len*sizeof(f32)); 
   fftspec[0]->out = (cf32 *) fftwf_malloc((fftspec[0]->len/2+1)*sizeof(cf32)); 
   fftspec[0]->p = fftwf_plan_dft_r2c_1d(fftspec[0]->len,fftspec[0]->in, (fftwf_complex *) fftspec[0]->out, FFTW_ESTIMATE); 
@@ -685,7 +685,7 @@ inline vecStatus genericInitFFTR_f32(GenFFTPtrRf32 **fftspec, int order, int fla
 
 inline vecStatus genericInitFFTCR_f32(GenFFTPtrCRf32 **fftspec, int order, int flag, vecHintAlg hint) 
 { fftspec[0] = (GenFFTPtrCRf32 *) malloc(sizeof(GenFFTPtrCRf32)); 
-  fftspec[0]->len = 2<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
+  fftspec[0]->len = 1<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
   fftspec[0]->out = (f32 *) fftwf_malloc(fftspec[0]->len*sizeof(f32)); 
   fftspec[0]->in = (cf32 *) fftwf_malloc((fftspec[0]->len/2+1)*sizeof(cf32)); 
   fftspec[0]->p = fftwf_plan_dft_c2r_1d(fftspec[0]->len,(fftwf_complex *) fftspec[0]->in, fftspec[0]->out, FFTW_ESTIMATE); 
@@ -693,7 +693,7 @@ inline vecStatus genericInitFFTCR_f32(GenFFTPtrCRf32 **fftspec, int order, int f
 
 inline vecStatus genericInitFFTC_cf32(GenFFTPtrCfc32 **fftspec, int order, int flag, vecHintAlg hint)
 { fftspec[0] = (GenFFTPtrCfc32 *) malloc(sizeof(GenFFTPtrCfc32)); 
-  fftspec[0]->len = 2<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
+  fftspec[0]->len = 1<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
   fftspec[0]->in = (cf32 *) fftwf_malloc(fftspec[0]->len*sizeof(cf32));
   fftspec[0]->out = (cf32 *) fftwf_malloc(fftspec[0]->len*sizeof(cf32));
   fftspec[0]->p = fftwf_plan_dft_1d(fftspec[0]->len,(fftwf_complex *) fftspec[0]->in,(fftwf_complex *) fftspec[0]->out, FFTW_FORWARD, FFTW_ESTIMATE); 
