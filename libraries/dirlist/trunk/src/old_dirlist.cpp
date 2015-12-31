@@ -51,7 +51,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 	{
 		signature = ~0;
 	}
-	D.setParameter("class", "mark5", "Imported from .dir file");
+	D.setParameter("class", "mark5", " Imported from .dir file");
 	D.setParameter("version", 1);
 	D.setParameter("vsn", dirLabel);
 	D.setParameter("hash", signature);
@@ -131,8 +131,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 	}
 	fclose(in);
 
-	D.sort();
-	D.setStationAndExperiments();
+	D.organize();
 
 	return 0;
 }

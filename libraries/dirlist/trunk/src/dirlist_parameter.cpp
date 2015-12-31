@@ -96,7 +96,7 @@ void DirListParameter::print(std::ostream &os, bool doEOL) const
 	os << getKey() << " = " << getValue();
 	if(hasComment())
 	{
-		os << " # " << getComment();
+		os << " #" << getComment();
 	}
 	if(doEOL)
 	{
@@ -109,7 +109,7 @@ std::ostream& operator << (std::ostream &os, const DirListParameter &x)
 	os << x.getKey() << " = " << x.getValue();
 	if(x.hasComment())
 	{
-		os << " # " << x.getComment();
+		os << " #" << x.getComment();
 	}
 
 	return os;

@@ -33,7 +33,7 @@ void DirListDatum::print(std::ostream &os, bool doEOL) const
 {
 	int p = os.precision();
 	os.precision(12);
-	os << getName() << getName() << " " << getMjdStart() << " " << getSecStart() << " " << getDuration();
+	os << getName() << " " << getMjdStart() << " " << getSecStart() << " " << getDuration();
 	os.precision(p);
 	if(doEOL)
 	{

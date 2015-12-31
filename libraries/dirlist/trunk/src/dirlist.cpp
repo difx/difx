@@ -1,4 +1,5 @@
 #include <vector>
+#include <set>
 #include <string>
 #include <algorithm>
 #include <cstdio>
@@ -144,6 +145,21 @@ void DirList::load(const char *fileName)
 	fclose(in);
 }
 
+void DirList::addParameter(DirListParameter *param)
+{
+	for(std::vector<DirListParameter *>::iterator it = parameters.begin(); it != parameters.end(); ++it)
+	{
+		if((*it)->getKey() == param->getKey())
+		{
+			delete *it;
+			parameters.erase(it);
+			break;
+		}
+	}
+
+	parameters.push_back(param);
+}
+
 DirListParameter *DirList::getParameter(const std::string &key)
 {
 	for(std::vector<DirListParameter *>::iterator it = parameters.begin(); it != parameters.end(); ++it)
@@ -206,8 +222,149 @@ void DirList::sort()
 	std::sort(data.begin(), data.end(), compare_datum_star);
 }
 
+
+static void split(const std::string &s, char delim, std::vector<std::string> &elems)
+{
+	std::stringstream ss(s);
+	std::string item;
+	while(std::getline(ss, item, delim))
+	{
+		elems.push_back(item);
+	}
+}
+
+// BT127J2_HN_No0047BT127J2_HN_No0047
+// NRAO+324_0008_TS036H_PT_No0001
+
+// General strategy:
+// 1. lop everything before last / (including / itself)
+// 2. lop everything after first . (including . itself)
+// 3. split string by _ separator
+// 4. experiment is third to last field
+// 5. station is second to last field
+// 6. if number of stations found is not exactly 1, then don't do anything
 void DirList::setStationAndExperiments()
 {
+	std::set<std::string> stations;
+	std::set<std::string> expts;
+	std::vector<std::string> elems;
+	size_t start, stop, length;
+
+	for(std::vector<DirListDatum *>::const_iterator it = data.begin(); it != data.end(); ++it)
+	{
+		const std::string &str = (*it)->getName();
+		length = str.size();
+		start = 0;
+		stop = length;
+		
+		for(size_t i = 0; i < length; ++i)
+		{
+			if(str[i] == '/')
+			{
+				start = i+1;
+				stop = length;
+			}
+			else if(str[i] == '.')
+			{
+				stop = i;
+			}
+		}
+
+		split(str.substr(start, stop-start), '_', elems);
+		if(elems.size() > 2)
+		{
+			expts.insert(elems[elems.size() - 3]);
+			stations.insert(elems[elems.size() - 2]);
+		}
+		elems.clear();
+	}
+
+	if(stations.size() == 1)
+	{
+		std::stringstream value;
+
+		for(std::set<std::string>::const_iterator it = expts.begin(); it != expts.end(); ++it)
+		{
+			if(!value.str().empty())
+			{
+				value << ",";
+			}
+			value << *it;
+		}
+
+		setParameter("station", *stations.begin());
+		addParameter(new DirListParameter("experiments", value.str()));
+	}
+}
+
+void DirList::setTimerange()
+{
+	double mjdStart = 1.0e9;
+	double mjdStop = -1.0e9;
+	double s, e;
+
+	for(std::vector<DirListDatum *>::const_iterator it = data.begin(); it != data.end(); ++it)
+	{
+		s = (*it)->getFullMjdStart();
+		e = s + (*it)->getDuration();
+		if(s < mjdStart)
+		{
+			mjdStart = s;
+		}
+		if(e > mjdStop)
+		{
+			mjdStop = e;
+		}
+	}
+
+	if(mjdStart < mjdStop)
+	{
+		setParameter("startMJD", mjdStart);
+		setParameter("stopMJD", mjdStop);
+	}
+}
+
+// returns true if comment contains nothing but whitespace
+static bool isEmptyComment(const std::string &str)
+{
+	int l = str.size();
+
+	for(int i = 0; i < l; ++i)
+	{
+		if(str[i] > ' ')
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void DirList::removeEmptyComments()
+{
+	for(std::vector<DirListDatum *>::iterator it = data.begin(); it != data.end(); ++it)
+	{
+		if(isEmptyComment((*it)->getComment()))
+		{
+			(*it)->clearComment();
+		}
+	}
+
+	for(std::vector<DirListParameter *>::iterator it = parameters.begin(); it != parameters.end(); ++it)
+	{
+		if(isEmptyComment((*it)->getComment()))
+		{
+			(*it)->clearComment();
+		}
+	}
+}
+
+void DirList::organize()
+{
+	sort();
+	setStationAndExperiments();
+	setTimerange();
+	removeEmptyComments();
 }
 
 // Note: Now this algorithm is pretty simple.  It will not detect a common super-directory if there are different subdirectories.

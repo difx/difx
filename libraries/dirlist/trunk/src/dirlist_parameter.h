@@ -30,6 +30,7 @@ public:
 	void setKey(const std::string &k) { key = k; }
 	void setValue(const std::string &v);	// more complicated as this does some string manipulation
 	void setComment(const std::string &c) { comment = c; }
+	void clearComment() { comment.clear(); }
 
 	// returns values in native C++ types, unquoted.  index is zero based and is for array values
 	int getInt(unsigned int index = 0) const;

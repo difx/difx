@@ -23,9 +23,12 @@ public:
 	void setStart(int mjd, double sec) { mjdStart = mjd; secStart = sec; }
 	void setDuration(double dur) { duration = dur; }
 	virtual void print(std::ostream &os, bool doEOL = true) const;
+	
 	void printComment(std::ostream &os, bool doEOL = true) const;
 	bool hasComment() const { return !comment.empty(); }
+	const std::string &getComment() const { return comment; }
 	void setComment(const std::string &str) { comment = str; }
+	void clearComment() { comment.clear(); }
 
 	virtual long long getStartPointer() const { return 0; }	// FIXME: should throw
 	virtual long long getLength() const { return 0; } // FIXME: should throw

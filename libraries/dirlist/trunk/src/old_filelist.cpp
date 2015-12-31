@@ -20,7 +20,7 @@ int loadOldFileList(DirList &D, const char *fileName, std::stringstream &error)
 		return -1;
 	}
 
-	D.setParameter("class", "file", "Imported from filelist file");
+	D.setParameter("class", "file", " Imported from filelist file");
 	D.setParameter("version", 1);
 
 	for(int s = 0; !feof(in); ++s)
@@ -48,9 +48,8 @@ int loadOldFileList(DirList &D, const char *fileName, std::stringstream &error)
 	}
 	fclose(in);
 
-	D.sort();
+	D.organize();
 	D.setPathPrefix();
-	D.setStationAndExperiments();
 
 	return 0;
 }

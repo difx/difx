@@ -31,7 +31,7 @@
 Walter Brisken
 
 \vspace{5pt}
-12 Dec 2015
+31 Dec 2015
 \end{center}
 
 \section{Introduction}
@@ -45,7 +45,7 @@ Over time the original, very simplistic, format has been strained by new require
 Direct correlation from Mark6 modules will bring new needs.
 This document describes a proposed file format to supercede that currently used by DiFX.
 It will include support for file-based correlation as well as correlation off data modules and will be extensible to accomodate dramatically different needs in the future.
-A library (probably to be writen in C++) will be developed to handle I/O, validation and manipulation of such files, as well as conversion from existing formats.
+A C++ library is being developed to handle I/O, validation and manipulation of such files, as well as conversion from existing formats.
 
 \section{Limitations of the current format}
 
@@ -157,7 +157,7 @@ Allowed values will include: {\tt minimal}, {\tt mark5}, {\tt mark6}, {\tt mark6
 \hline
 \end{tabularx}
 \caption{\label{tab:keys}
-The table of known and reserved keys as of the writing of this proposal.
+The table of known and reserved keys as of the writing of this document.
 }
 \end{table}
 
@@ -169,6 +169,7 @@ It is an error to have an unquoted equal sign in the data section.
 Each data line will contain white-space separated fields in a specified order that depends on the value of the {\tt class} parameter.
 For generality a minimal subset of the fields, shown below, will be required to be the first fields of each row.
 In the case that {\tt class = minimal} no other fields are required.
+The fields on such a data line are documented in Table~\ref{tab:minimaldata}.
 
 \begin{table}[h]
 \begin{tabularx}{\textwidth}{llX}
@@ -190,10 +191,66 @@ The first columns of every class and version of each data line.  In the case of 
 
 \subsubsection{Mark5 data section}
 
+The data in a Mark5 directory list contains several fields to retain backward compatibility with the long-used {\tt .dir} files produced by {\tt mk5dir}.
+The full set of fields is documented in Table~\ref{tab:mark5data}.
+
+\begin{table}[h]
+\begin{tabularx}{\textwidth}{llX}
+\hline
+Key & type & Description \\
+\hline
+name & string & name of scan or file \\
+startMJD & int & start day in MJD \\
+startSec & float & start time in seconds \\
+duration & float & duration in seconds \\
+start & int & start of scan as a byte offset into module \\
+length & int & length of scan in bytes \\
+intSec & int & integer part of start time in seconds \\
+frameNumInSec & int & first frame number to be found \\
+framesPerSecond & int & number of frames per second in data \\
+frameBytes & int & number of bytes in one complete data frame, including header \\
+frameOffset & int & number of bytes from start of scan to first frame \\
+tracks & int & number of tape tracks; used only for Mark4 and VLBA formats \\
+format & int & format identifier; see Table~\ref{tab:mark5formats}. \\
+\hline
+\hline
+\end{tabularx}
+\caption{\label{tab:mark5data}
+The first four columns are identical to those in the {\tt minimal} class.
+The remaining fields are nearly identical to those in a {\tt .dir} file.
+}
+\end{table}
+
+\begin{table}[h]
+\begin{tabularx}{\textwidth}{llX}
+\hline
+Format number & name & Comment \\
+\hline
+-1 & Unknown & Not a format; set if the format could not be determined \\
+0  & VLBA & With data modulation \\
+1  & Mark4 & \\
+2  & Mark5B & \\
+3  & VDIF & VDIF with full headers \\
+4  & VDIFL & VDIF with legacy headers \\
+5  & K5 & K5 Format; not well supported \\
+6  & VLBN & VLBA-like format, but without data modulation \\
+7  & KVN5B & Essentially a Mark5B format but with different data layout \\
+\hline
+\hline
+\end{tabularx}
+\caption{\label{tab:mark5formats}
+The acceptable values of the format field in a Mark5 data line.
+The enumeration for these values is found in the mark5access package in {\tt mark5\_stream.h}.
+}
+\end{table}
+
 \subsubsection{Mark6 native data section}
 
 \subsubsection{Mark6 vsum data section}
 
 \subsubsection{File list data section}
+
+A file list containing a list of files and the time ranges contained within each, as is produced by {\tt vsum} or {\tt mk5bsum} uses a list with {\tt class = file}.
+The data lines are the same as for the minimal class, as documented in Table~\ref{tab:minimaldata}.
 
 \end{document}

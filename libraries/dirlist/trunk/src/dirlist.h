@@ -47,8 +47,11 @@ public:
 	bool isParameterTrue(const std::string &key);
 	bool isParameterFalse(const std::string &key);
 	void addDatum(DirListDatum *datum) { data.push_back(datum); }
-	void addParameter(DirListParameter *param) { parameters.push_back(param); }
+	void addParameter(DirListParameter *param);
 	void setStationAndExperiments();
+	void setTimerange();
+	void removeEmptyComments();
+	void organize();
 	void setPathPrefix();
 	void sort();
 	void print(std::ostream &os) const;
@@ -58,6 +61,8 @@ public:
 	{
 		DirListParameter *P;
 		std::stringstream ss;
+
+		ss.precision(14);
 
 		P = getParameter(key);
 		if(!P)
