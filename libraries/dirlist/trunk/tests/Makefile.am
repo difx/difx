@@ -20,3 +20,6 @@ test_filelist_read_SOURCES = \
 
 test_tokenize_SOURCES = \
 	test_tokenize.cpp
+
+test_copy_SOURCES = \
+	test_copy.cpp
