@@ -524,8 +524,8 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 		{
 			double scanstart, scanend;
 			scanPointer = dirlist.getMark5Scan(scanNum);
-			scanstart = scanPointer->getMjdStart();
-			scanend = scanPointer->getMjdEnd();
+			scanstart = scanPointer->getFullMjdStart();
+			scanend = scanPointer->getFullMjdEnd();
 
  			if(startmjd < scanstart && scanstart < jobEndMJD)  /* obs starts before data */
 			{
@@ -622,7 +622,7 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 		return;
         }
 
-	sendMark5Status(MARK5_STATE_GOTDIR, readpointer, scanPointer->getMjdStart(), 0.0);
+	sendMark5Status(MARK5_STATE_GOTDIR, readpointer, scanPointer->getFullMjdStart(), 0.0);
 
 	newscan = 1;
 

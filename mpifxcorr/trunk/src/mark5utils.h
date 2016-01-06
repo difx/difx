@@ -40,7 +40,15 @@
 #endif
 #endif
 
-int dirCallback(int scan, int nscan, int status, void *data);
+// Test for SDK 9+
+#ifdef XLR_MAX_IP_ADDR
+#define SDKVERSION 9
+typedef unsigned int streamstordatatype;
+#else
+#define SDKVERSION 8
+typedef unsigned long streamstordatatype;
+#endif
+
 
 bool legalVSN(const char *vsn);
 

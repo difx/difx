@@ -4,8 +4,6 @@ mark5_files = \
 	nativemk5.cpp \
 	mark5bmark5.cpp \
 	vdifmark5.cpp \
-	mark5dir.cpp \
-	mark5directorystructs.cpp \
 	watchdog.cpp
 else
 mark5_files = \
@@ -55,7 +53,6 @@ library_include_HEADERS = \
         model.h \
         mode.h \
 	polyco.h \
-	mark5dir.h \
 	nativemk5.h \
 	watchdog.h \
 	mark5utils.h \

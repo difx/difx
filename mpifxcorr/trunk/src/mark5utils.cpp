@@ -33,8 +33,8 @@
 #include <difxmessage.h>
 #include "config.h"
 #include "alert.h"
-#include "mark5dir.h"
 #include "watchdog.h"
+#include "mark5utils.h"
 
 #if HAVE_MARK5IPC
 #include <mark5ipc.h>
@@ -42,42 +42,6 @@
 
 #define XLR_WATERMARK_VALUE	0x0FF00FFFF0005555ULL
 
-int dirCallback(int scan, int nscan, int status, void *data)
-{
-	const int MessageLength=200;
-	char message[MessageLength];
-	int v;
-	DifxMessageMk5Status *mk5status;
-
-	mk5status = reinterpret_cast<DifxMessageMk5Status *>(data);
-	mk5status->scanNumber = scan + 1;
-	mk5status->position = nscan;
-	v = snprintf(mk5status->scanName, MODULE_SCAN_NAME_LENGTH, "%s", Mark5DirDescription[status]);
-	if(v >= MessageLength)
-	{
-		fprintf(stderr, "Warning: dirCallback: scanName: v=%d >= %d\n", v, MODULE_SCAN_NAME_LENGTH);
-	}
-
-	difxMessageSendMark5Status(mk5status);
-
-	if(status == MARK5_DIR_READ_ERROR)
-	{
-		v = snprintf(message, MessageLength, "XLR read error in decoding of scan %d\n", scan+1);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-	}
-	else if(status == MARK5_DIR_DECODE_ERROR)
-	{
-		v = snprintf(message, MessageLength, "Cannot decode scan %d\n", scan+1);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-	}
-
-	if(v >= MessageLength)
-	{
-		fprintf(stderr, "Warning: dirCallback: message: v=%d, >= %d\n", v, MessageLength);
-	}
-
-	return 0;
-}
 
 bool legalVSN(const char *vsn)
 {
