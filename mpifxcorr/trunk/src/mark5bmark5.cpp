@@ -459,11 +459,29 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 
 		if(dirlist.getConstParameter("class")->getValue() != "mark5")
 		{
-			cerror << startl << "Module " << datafilenames[configindex][fileindex] << "does not seem to describe a mark5 module!" << endl;
+			cerror << startl << "Module " << datafilenames[configindex][fileindex] << " directory does not seem to describe a mark5 module!" << endl;
 			dataremaining = false;
 			keepreading = false;
 
 			return;
+		}
+
+		const DirListParameter *hash = dirlist.getConstParameter("hash");
+		if(hash)
+		{
+			int signature = calculateMark5Signature(xlrDevice);
+			if(hash->getInt() != signature)
+			{
+				cerror << startl << "Module " << datafilenames[configindex][fileindex] << " directory is out of date (hash/signature in directory listing does not match that computed from the module." << endl;
+				dataremaining = false;
+				keepreading = false;
+
+				return;
+			}
+		}
+		else
+		{
+			cwarn << startl << "Module " << datafilenames[configindex][fileindex] << " directory does not contain a hash/signature" << endl;
 		}
 
 		if(dirlist.isParameterTrue("realtime"))

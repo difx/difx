@@ -267,3 +267,33 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, unsigned long long readpointer
 
 	return xlrRC;
 }
+
+int calculateMark5Signature(SSHANDLE xlrDevice)
+{
+	int signature = 1;
+	int len;
+
+	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
+	if(len > 128)
+	{
+		char *dirData = new char[len];
+
+		WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, dirData) );
+
+		for(int j = 32; j < len/4; ++j)
+		{
+			unsigned int x = ((unsigned int *)dirData)[j] + 1;
+			signature = signature ^ x;
+		}
+
+		/* prevent a zero signature */
+		if(signature == 0)
+		{
+			signature = 0x55555555;
+		}
+
+		delete[] dirData;
+	}
+
+	return signature;
+}

@@ -352,6 +352,24 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			return;
 		}
 
+		const DirListParameter *hash = dirlist.getConstParameter("hash");
+		if(hash)
+		{
+			int signature = calculateMark5Signature(xlrDevice);
+			if(hash->getInt() != signature)
+			{
+				cerror << startl << "Module " << datafilenames[configindex][fileindex] << " directory is out of date (hash/signature in directory listing does not match that computed from the module." << endl;
+				dataremaining = false;
+				keepreading = false;
+
+				return;
+			}
+		}
+		else
+		{
+			cwarn << startl << "Module " << datafilenames[configindex][fileindex] << " directory does not contain a hash/signature" << endl;
+		}
+
 		if(dirlist.getConstParameter("class")->getValue() != "mark5")
 		{
 			WATCHDOG( xlrRC = XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
@@ -947,10 +965,6 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 
 				state = MARK5_STATE_PLAY;
 				rate = (static_cast<double>(readpointer) + static_cast<double>(rbytes) - static_cast<double>(lastpos))*8.0/(tv_us - now_us);
-//				if(nrate > 1)
-//				{
-//					rate = (nrate*lastrate + 4*rate)/(nrate+4);
-//				}
 
 				// If in real-time mode, servo playback rate through adjustable inter-read delay
 				if(dirlist.getConstParameter("class")->getValue() != "mark5")
