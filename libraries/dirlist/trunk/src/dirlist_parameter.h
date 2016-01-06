@@ -33,13 +33,12 @@ public:
 	void clearComment() { comment.clear(); }
 
 	// returns values in native C++ types, unquoted.  index is zero based and is for array values
-	int getInt(unsigned int index = 0) const;
+	long long int getInt(unsigned int index = 0) const;
 	double getDouble(unsigned int index = 0) const;
 	const std::string &getString(unsigned int index = 0) const;
 
 	void print() const;		// diagnositic print
 	void print(std::ostream &os, bool doEOL = true) const;
-		
 
 private:
 	std::string key;

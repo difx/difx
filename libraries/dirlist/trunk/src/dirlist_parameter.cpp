@@ -24,14 +24,14 @@ bool DirListParameter::setFromTokens(const std::vector<std::string> &tokens)
 	return true;
 }
 
-int DirListParameter::getInt(unsigned int index) const
+long long int DirListParameter::getInt(unsigned int index) const
 {
 	if(index >= items.size())
 	{
 		throw DirListException("getInt(): index out of range.");
 	}
 
-	return atoi(items[index].c_str());
+	return atoll(items[index].c_str());
 }
 
 double DirListParameter::getDouble(unsigned int index) const
