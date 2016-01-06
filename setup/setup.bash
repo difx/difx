@@ -5,7 +5,7 @@ export DIFX_VERSION=trunk
 export DIFXROOT=/usr/local/difx
 export DIFX_PREFIX=$DIFXROOT
 export PGPLOTDIR=
-export IPPROOT=/opt/intel/ipp/5.2/ia32
+export IPPROOT=/opt/intel
 
 ####### COMPILER ############################
 export DIFXMPIDIR=/usr
