@@ -9,6 +9,7 @@
 #include "dirlist_exception.h"
 #include "dirlist_parameter.h"
 #include "dirlist_datum.h"
+#include "dirlist_datum_mark5.h"
 
 // FIXME: move to class constant?
 #define DIRLIST_IDENTIFIER_LINE	"VLBI baseband data listing"
@@ -38,9 +39,13 @@ public:
 	~DirList();
 	void clear();
 	void load(const char *filename);
+	int sanityCheck() const;
 
-	int nScan() const { return data.size(); }
-	const DirListDatum *getScan(unsigned int index) const { return data[index]; }
+	bool empty() const { return data.empty(); }
+	unsigned int nScan() const { return data.size(); }
+	const DirListDatum *getScan(unsigned int index) const { return index < data.size() ? data[index] : 0; }
+
+	const DirListDatumMark5 *getMark5Scan(unsigned int index) const;
 
 	void setDefaultIdentifier() { identifier = DIRLIST_IDENTIFIER_LINE; }
 	void setIdentifier(const std::string &str) { identifier = str; }
@@ -75,6 +80,8 @@ public:
 		P->setValue(ss.str());
 		P->setComment(comment);
 	}
+	const DirListParameter *getConstParameter(const std::string &key) const;
+	bool hasParameter(const std::string &key);
 
 private:
 //	enum FileType fileType;
@@ -82,8 +89,8 @@ private:
 	std::string identifier;				// file identifier -- the first line of the file
 	std::vector<DirListParameter *> parameters;	// vector so items have an order
 	std::vector<DirListDatum *> data;		// pointers to scan data
+
 	DirListParameter *getParameter(const std::string &key);
-	bool hasParameter(const std::string &key);
 };
 
 std::ostream& operator << (std::ostream &os, const DirList &x);

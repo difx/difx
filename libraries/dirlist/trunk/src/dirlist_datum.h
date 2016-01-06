@@ -2,6 +2,7 @@
 #define __DIRLIST_DATUM_H__
 
 #include <string>
+#include <vector>
 #include <ostream>
 
 // corresponds to a single scan;
@@ -12,6 +13,7 @@ public:
 	virtual ~DirListDatum() {}
 	const std::string &getName() const { return name; }
 	int getMjdStart() const { return mjdStart; }
+	int getMjdEnd() const { return mjdStart + duration/86400.0; }
 	double getSecStart() const { return secStart; }
 	int getIntSecStart() const { return static_cast<int>(secStart); }
 	int getIntNSStart() const { return static_cast<int>(1000000000.0*(secStart - static_cast<int>(secStart) )); }

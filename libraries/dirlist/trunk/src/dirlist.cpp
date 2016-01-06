@@ -145,6 +145,25 @@ void DirList::load(const char *fileName)
 	fclose(in);
 }
 
+int DirList::sanityCheck() const
+{
+	return 0;
+}
+
+const DirListDatumMark5 *DirList::getMark5Scan(unsigned int index) const
+{
+	if(index >= data.size())
+	{
+		return 0;
+	}
+	if(getConstParameter("class")->getValue() != "mark5")
+	{
+		return 0;
+	}
+
+	return dynamic_cast<const DirListDatumMark5 *>(data[index]);
+}
+
 void DirList::addParameter(DirListParameter *param)
 {
 	for(std::vector<DirListParameter *>::iterator it = parameters.begin(); it != parameters.end(); ++it)
@@ -163,6 +182,19 @@ void DirList::addParameter(DirListParameter *param)
 DirListParameter *DirList::getParameter(const std::string &key)
 {
 	for(std::vector<DirListParameter *>::iterator it = parameters.begin(); it != parameters.end(); ++it)
+	{
+		if((*it)->getKey() == key)
+		{
+			return *it;
+		}
+	}
+
+	return 0;
+}
+
+const DirListParameter *DirList::getConstParameter(const std::string &key) const
+{
+	for(std::vector<DirListParameter *>::const_iterator it = parameters.begin(); it != parameters.end(); ++it)
 	{
 		if((*it)->getKey() == key)
 		{
@@ -372,7 +404,7 @@ void DirList::setPathPrefix()
 {
 	std::string common;
 	bool first = true;
-	size_t pos;
+	size_t pos = 0;
 
 	if(hasParameter("pathPrefix"))
 	{

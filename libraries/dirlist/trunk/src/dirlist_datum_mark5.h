@@ -3,7 +3,7 @@
 
 #include <set>
 #include <ostream>
-#include "dirlist.h"
+#include "dirlist_datum.h"
 
 class DirListDatumMark5 : public DirListDatum
 {

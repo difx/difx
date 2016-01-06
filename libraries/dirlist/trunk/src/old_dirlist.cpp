@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include "old_dirlist.h"
 #include "dirlist_datum_mark5.h"
 
@@ -132,6 +133,49 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 	fclose(in);
 
 	D.organize();
+
+	return 0;
+}
+
+// looks in $MARK5_DIR_PATH, first for .dirlist, then .dir
+int mark5LegacyLoad(DirList &D, const char *vsn, std::stringstream &error)
+{
+	const int MaxFileNameLength = 256;
+	const char *mark5DirPath = getenv("MARK5_DIR_PATH");
+	char fileName[MaxFileNameLength];
+	std::stringstream err;
+
+	if(mark5DirPath == 0)
+	{
+		error << "Cannot load directory for Mark5 VSN " << vsn << " because environment variable MARK5_DIR_PATH is not set.";
+
+		return -1;
+	}
+
+	// first try loading .dirlist file
+	try
+	{
+		snprintf(fileName, MaxFileNameLength, "%s/%s.dirlist", mark5DirPath, vsn);
+		D.load(fileName);
+	}
+	catch(DirListException &e)
+	{
+		int rv;
+
+		snprintf(fileName, MaxFileNameLength, "%s/%s.dir", mark5DirPath, vsn);
+		rv = loadOldDirList(D, fileName, err);
+		if(rv < 0)
+		{
+			// Here both methods failed.  Populate the error string.
+			error << "Cannot load directory for Mark5 VSN " << vsn << ".  Attempt to load .dirlist file resulted in: '" << e.what() << "'.  Attempt to load .dir file resulted in: '" << err.str() << "'.  MARK5_DIR_PATH env. var. was set to '" << mark5DirPath << "'.";
+
+			return -2;
+		}
+		else
+		{
+			return rv;
+		}
+	}
 
 	return 0;
 }
