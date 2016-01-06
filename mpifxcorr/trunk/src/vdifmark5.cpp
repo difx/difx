@@ -1061,7 +1061,7 @@ void VDIFMark5DataStream::servoMark5()
 				rate = 0.0;
 				lastrate = 0.0;
 				nrate = 0;
-				fmjd2 = scanPointer->getMjdStart() + (scanPointer->getIntSec() + static_cast<double>(scanPointer->getFrameNumInSecond())/scanPointer->getFramesPerSecond())/86400.0;
+				fmjd2 = scanPointer->getFullMjdStart();
 				if(fmjd2 > fmjd)
 				{
 					fmjd = fmjd2;

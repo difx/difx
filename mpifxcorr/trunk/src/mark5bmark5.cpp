@@ -32,6 +32,7 @@
 #include "watchdog.h"
 #include "alert.h"
 #include "mark5utils.h"
+#include "dirlist/old_dirlist.h"
 
 #if HAVE_MARK5IPC
 #include <mark5ipc.h>
@@ -385,11 +386,9 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 	double bw;
 	int rv;
 
-	char defaultDirPath[] = ".";
 	double startmjd;
 	long long n;
 	int doUpdate = 0;
-	char *mk5dirpath;
 	XLR_RETURN_CODE xlrRC;
 
 	format = config->getDataFormat(configindex, streamnum);
@@ -420,34 +419,22 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 
 	cinfo << startl << "Module initialized: format=" << formatname << endl;
 
-	mk5dirpath = getenv("MARK5_DIR_PATH");
-	if(mk5dirpath == 0)
-	{
-		mk5dirpath = defaultDirPath;
-	}
-
 	startmjd = corrstartday + corrstartseconds/86400.0;
 
 	sendMark5Status(MARK5_STATE_GETDIR, 0, startmjd, 0.0);
 
-	if(module.nScans() == 0)
+	if(dirlist.empty())
 	{
+		stringstream err;
 		doUpdate = 1;
 		cinfo << startl << "Getting module " << datafilenames[configindex][fileindex] << " directory info." << endl;
-		rv = module.getCachedDirectory(xlrDevice, corrstartday, 
-			datafilenames[configindex][fileindex].c_str(), 
-			mk5dirpath, &dirCallback, &mk5status, 0, 0, 0, 1, -1, -1);
+
+		rv = mark5LegacyLoad(dirlist, datafilenames[configindex][fileindex].c_str(), err);
 
 		if(rv < 0)
 		{
-                	if(module.error.str().size() > 0)
-			{
-				cerror << startl << module.error.str() << " (error code=" << rv << ")" << endl;
-			}
-			else
-			{
-				cerror << startl << "Directory for module " << datafilenames[configindex][fileindex] << " is not up to date.  Error code is " << rv << " .  You should have received a more detailed error message than this!" << endl;
-			}
+			cerror << err.str() << endl;
+
 			sendMark5Status(MARK5_STATE_ERROR, 0, 0.0, 0.0);
 
 			dataremaining = false;
@@ -460,7 +447,7 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 			MPI_Abort(MPI_COMM_WORLD, 1);
 		}
 
-		rv = module.sanityCheck();
+		rv = dirlist.sanityCheck();
 		if(rv < 0)
 		{
 			cerror << startl << "Module " << datafilenames[configindex][fileindex] << " contains undecoded scans" << endl;
@@ -470,7 +457,16 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 			return;
 		}
 
-		if(module.mode == MARK5_READ_MODE_RT)
+		if(dirlist.getConstParameter("class")->getValue() != "mark5")
+		{
+			cerror << startl << "Module " << datafilenames[configindex][fileindex] << "does not seem to describe a mark5 module!" << endl;
+			dataremaining = false;
+			keepreading = false;
+
+			return;
+		}
+
+		if(dirlist.isParameterTrue("realtime"))
 		{
 			WATCHDOG( xlrRC = XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
 			if(xlrRC == XLR_SUCCESS)
@@ -481,7 +477,6 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 			{
 				cerror << startl << "Cannot set Mark5 data replacement mode / fill pattern" << endl;
 			}
-			// NOTE: removed WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 			cwarn << startl << "Enabled realtime playback mode" << endl;
 			readDelayMicroseconds = 80000;	// prime the read delay to speed up convergence to best value
 		}
@@ -495,13 +490,13 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 	{
 		int p = cinfo.precision();
 
-		cinfo << startl << "Advancing to next record scan from " << (scanNum+1) << " of " << module.nScans() << endl;
+		cinfo << startl << "Advancing to next record scan from " << (scanNum+1) << " of " << dirlist.nScan() << endl;
 		cinfo.precision(14);
-		cinfo << startl << "Scan start at MJD " << scanPointer->mjdStart() << " job ends at MJD " << jobEndMJD << endl;
+		cinfo << startl << "Scan start at MJD " << scanPointer->getMjdStart() << " job ends at MJD " << jobEndMJD << endl;
 		cinfo.precision(p);
 		++scanNum;
-		scanPointer = &module.scans[scanNum];
-		if(scanNum >= module.nScans() || scanPointer->mjdStart() > jobEndMJD)
+		scanPointer = dirlist.getMark5Scan(scanNum);
+		if(scanPointer == 0 || scanPointer->getMjdStart() > jobEndMJD)
 		{
 			cwarn << startl << "No more data for this job on this module" << endl;
 			scanPointer = 0;
@@ -515,34 +510,34 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 		}
 		cinfo << startl << "Landed on record scan " << (scanNum+1) << endl;
 		cinfo << startl << "readscan remains at " << readscan << endl;
-		readpointer = scanPointer->start + scanPointer->frameoffset;
-		readseconds = (scanPointer->mjd-corrstartday)*86400 + scanPointer->sec - corrstartseconds + intclockseconds;
+		readpointer = scanPointer->getStartPointer();
+		readseconds = (scanPointer->getMjdStart()-corrstartday)*86400 + scanPointer->getIntSecStart() - corrstartseconds + intclockseconds;
 
 		readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 
-		readnanoseconds = scanPointer->nsStart();
+		readnanoseconds = scanPointer->getIntNSStart();
 	}
 	else	/* first time this project */
 	{
 		n = 0;
-		for(scanNum = 0; scanNum < module.nScans(); ++scanNum)
+		for(scanNum = 0; scanNum < dirlist.nScan(); ++scanNum)
 		{
 			double scanstart, scanend;
-			scanPointer = &module.scans[scanNum];
-			scanstart = scanPointer->mjdStart();
-			scanend = scanPointer->mjdEnd();
+			scanPointer = dirlist.getMark5Scan(scanNum);
+			scanstart = scanPointer->getMjdStart();
+			scanend = scanPointer->getMjdEnd();
 
  			if(startmjd < scanstart && scanstart < jobEndMJD)  /* obs starts before data */
 			{
 				int prec = cinfo.precision();
 
 				cinfo.precision(12);
-				cinfo << startl << "NM5 : scan found (1): " << (scanNum+1) << " named " << scanPointer->name << "  startmjd=" << startmjd << "  scanstart=" << scanstart << "  scanend=" << scanend << endl;
+				cinfo << startl << "NM5 : scan found (1): " << (scanNum+1) << " named " << scanPointer->getName() << "  startmjd=" << startmjd << "  scanstart=" << scanstart << "  scanend=" << scanend << endl;
 				cinfo.precision(prec);
 
-				readpointer = scanPointer->start + scanPointer->frameoffset;
-				readseconds = (scanPointer->mjd-corrstartday)*86400 + scanPointer->sec - corrstartseconds + intclockseconds;
-				readnanoseconds = scanPointer->nsStart();
+				readpointer = scanPointer->getStartPointer();
+				readseconds = (scanPointer->getMjdStart()-corrstartday)*86400 + scanPointer->getIntSecStart() - corrstartseconds + intclockseconds;
+				readnanoseconds = scanPointer->getIntNSStart();
 				while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
 				{
 					++readscan;
@@ -560,19 +555,19 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 				int prec = cinfo.precision();
 
 				cinfo.precision(12);
-				cinfo << startl << "NM5 : scan found (2): " << (scanNum+1) << " named " << scanPointer->name << "  startmjd=" << startmjd << "  scanstart=" << scanstart << "  scanend=" << scanend << endl;
+				cinfo << startl << "NM5 : scan found (2): " << (scanNum+1) << " named " << scanPointer->getName() << "  startmjd=" << startmjd << "  scanstart=" << scanstart << "  scanend=" << scanend << endl;
 				cinfo.precision(prec);
 
-				readpointer = scanPointer->start + scanPointer->frameoffset;
+				readpointer = scanPointer->getStartPointer();
 				n = static_cast<long long>((
-					( ( (corrstartday - scanPointer->mjd)*86400 
-					+ corrstartseconds - scanPointer->sec) - scanPointer->nsStart()*1.e-9)
-					*scanPointer->framespersecond) + 0.5);
-				fbytes = scanPointer->framebytes;
+					( ( (corrstartday - scanPointer->getMjdStart())*86400 
+					+ corrstartseconds - scanPointer->getSecStart()))
+					*scanPointer->getFramesPerSecond()) + 0.5);
+				fbytes = scanPointer->getFrameBytes();
 				readpointer += n*fbytes;
-				if(readpointer >= scanPointer->start + scanPointer->length)
+				if(readpointer >= scanPointer->getStart() + scanPointer->getLength())
 				{
-					cerror << startl << "Scan " << (scanNum+1) << " duration seems misrepresented in the dir file.  Jumping to next scan to be safe." << endl;
+					cerror << startl << "Scan " << (scanNum+1) << " duration seems misrepresented in the directory listing.  Jumping to next scan to be safe." << endl;
 
 					readpointer = -1;
 
@@ -592,7 +587,7 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 				break;
 			}
 		}
-		if(scanNum >= module.nScans() || scanPointer == 0)
+		if(scanNum >= dirlist.nScan() || scanPointer == 0)
 		{
 			readpointer = -1;
 		}
@@ -600,11 +595,11 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 
 	if(readpointer >= 0)
 	{
-		cinfo << startl << "The frame start day is " << scanPointer->mjd << ", the frame start seconds is " << scanPointer->secStart() << ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << ", readpointer is " << readpointer << endl;
+		cinfo << startl << "The frame start day is " << scanPointer->getMjdStart() << ", the frame start seconds is " << scanPointer->getSecStart() << ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << ", readpointer is " << readpointer << endl;
 
-		if(module.scans[scanNum].format != MK5_FORMAT_MARK5B)
+		if(scanPointer->getFormat() != MK5_FORMAT_MARK5B)
 		{
-			cerror << startl << "Error! A Mark5B scan was expected (based on the .input file), but the scan for the matching time is not Mark5B formatted!  The actual format number (as found in the .dir file) is: " << module.scans[scanNum].format << endl;
+			cerror << startl << "Error! A Mark5B scan was expected (based on the .input file), but the scan for the matching time is not Mark5B formatted!  The actual format number (as found in the .dir file) is: " << scanPointer->getFormat() << endl;
 
 			readpointer = -1;
 		}
@@ -627,7 +622,7 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 		return;
         }
 
-	sendMark5Status(MARK5_STATE_GOTDIR, readpointer, scanPointer->mjdStart(), 0.0);
+	sendMark5Status(MARK5_STATE_GOTDIR, readpointer, scanPointer->getMjdStart(), 0.0);
 
 	newscan = 1;
 
@@ -644,7 +639,7 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 	}
 
 	// pointer to first byte after end of current scan
-	readend = scanPointer->start + scanPointer->length;
+	readend = scanPointer->getStart() + scanPointer->getLength();
 
 	lockstart = lockend = lastslot = -1;
 
@@ -1052,7 +1047,7 @@ void Mark5BMark5DataStream::servoMark5()
 				rate = 0.0;
 				lastrate = 0.0;
 				nrate = 0;
-				fmjd2 = scanPointer->mjd + (scanPointer->sec + static_cast<double>(scanPointer->framenuminsecond)/scanPointer->framespersecond)/86400.0;
+				fmjd2 = scanPointer->getFullMjdStart();
 				if(fmjd2 > fmjd)
 				{
 					fmjd = fmjd2;
@@ -1067,7 +1062,7 @@ void Mark5BMark5DataStream::servoMark5()
 				rate = (static_cast<double>(readpointer) - static_cast<double>(lastpos))*8.0/(tv_us - now_us);
 
 				// If in real-time mode, servo playback rate through adjustable inter-read delay
-				if(module.mode == MARK5_READ_MODE_RT)
+				if(dirlist.isParameterTrue("realtime"))
 				{
 					if(rate > HighRealTimeRate && lastrate > HighRealTimeRate && readDelayMicroseconds < 150000)
 					{
@@ -1207,7 +1202,7 @@ int Mark5BMark5DataStream::sendMark5Status(enum Mk5State state, long long positi
 	mk5status.scanNumber = scanNum+1;
 	if(scanPointer && scanNum >= 0)
 	{
-      		snprintf(mk5status.scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", scanPointer->name.c_str());
+      		snprintf(mk5status.scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", scanPointer->getName().c_str());
 	}
 	else
 	{

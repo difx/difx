@@ -30,7 +30,8 @@
 #include "config.h"
 
 #ifdef HAVE_XLRAPI_H
-#include "mark5dir.h"
+#include <xlrapi.h>
+#include <dirlist/dirlist.h>
 #endif
 
 #include "mark5bfile.h"
@@ -60,9 +61,9 @@ protected:
 
 private:
 #ifdef HAVE_XLRAPI_H
-	Mark5Module module;
+	DirList dirlist;
 	int scanNum;
-	const Mark5Scan *scanPointer;
+	const DirListDatumMark5 *scanPointer;
 	long long readpointer, readend;
 	SSHANDLE xlrDevice;
 	int readbufferslots;
