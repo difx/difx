@@ -32,6 +32,14 @@
 
 #include <xlrapi.h>
 
+#ifndef MARK5_FILL_PATTERN
+#ifdef WORDS_BIGENDIAN
+#define MARK5_FILL_PATTERN 0x44332211UL
+#else
+#define MARK5_FILL_PATTERN 0x11223344UL
+#endif
+#endif
+
 int dirCallback(int scan, int nscan, int status, void *data);
 
 bool legalVSN(const char *vsn);

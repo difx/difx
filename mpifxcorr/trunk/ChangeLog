@@ -17,6 +17,8 @@ Version 2.5
 * If guardns is zero, set automatically.  It likely will fail for any satellite observation.
 * checkmpifxcorr: option to set max message level
 * checkmpifxcorr: can operate on multiple input files
+* now require dirlist library for native Mark5 playback
+* VDIF Mark5 playback can now be based on new directory file format as documented in dirlist/doc/newdir.tex
 
 Version 2.4
 ~~~~~~~~~~~

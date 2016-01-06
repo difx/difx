@@ -71,25 +71,51 @@ PKG_CHECK_MODULES(MARK5IPC,
 AM_CONDITIONAL(WITH_MARK5IPC, $m5ipc_enabled)
 
 dnl **********************************************************
+dnl **** Look for dirlist library                         ****
+dnl **** Now required for native mark5 and mark6          ****
+dnl **********************************************************
+has_dirlist=true
+PKG_CHECK_EXISTS([dirlist >= 0.1],
+	[ PKG_CHECK_MODULES(DIRLIST, dirlist) ],
+	[ AC_MSG_NOTICE([Did not find dirlist in $PKG_CONFIG_PATH])
+	  has_dirlist=false])
+if test ${has_dirlist=true} = true; then
+	CPPFLAGS="${CPPFLAGS} ${DIRLIST_CFLAGS}"
+	CXXFLAGS="${CXXFLAGS} ${DIRLIST_CFLAGS}"
+else
+	DIRLIST_CFLAGS=""
+	DIRLIST_LIBS=""
+	echo ''
+	echo 'No suitable dirlist.pc file was found so native'
+	echo 'Mark5 and Mark6 support will not be attempted.'
+	echo ''
+fi
+AM_CONDITIONAL(HAS_DIRLIST, $has_dirlist)
+
+dnl **********************************************************
 dnl **** Look for StreamStor libraries                    ****
 dnl **** cause native Mark5 to be built if found.         ****
 dnl **********************************************************
-ss_enabled=true
-PKG_CHECK_EXISTS([streamstor >= 8.0],
-	[ PKG_CHECK_MODULES(SS, streamstor) ],
-	[ AC_MSG_NOTICE([Did not find STREAMSTOR in $PKG_CONFIG_PATH])
-	  ss_enabled=false])
-if test ${ss_enabled} = true; then
-	CPPFLAGS="${CPPFLAGS} ${SS_CFLAGS}"
-	CXXFLAGS="${CXXFLAGS} ${SS_CFLAGS}"
-	AC_CHECK_HEADERS([xlrapi.h])
+if test ${has_dirlist} = true; then
+	ss_enabled=true
+	PKG_CHECK_EXISTS([streamstor >= 8.0],
+		[ PKG_CHECK_MODULES(SS, streamstor) ],
+		[ AC_MSG_NOTICE([Did not find STREAMSTOR in $PKG_CONFIG_PATH])
+		  ss_enabled=false])
+	if test ${ss_enabled} = true; then
+		CPPFLAGS="${CPPFLAGS} ${SS_CFLAGS}"
+		CXXFLAGS="${CXXFLAGS} ${SS_CFLAGS}"
+		AC_CHECK_HEADERS([xlrapi.h])
+	else
+		SS_CFLAGS=""
+		SS_LIBS=""
+		echo ''
+		echo 'No suitable streamstor.pc file was found so the native'
+		echo 'Mark5 support will be suppressed.'
+		echo ''
+	fi
 else
-	SS_CFLAGS=""
-	SS_LIBS=""
-	echo ''
-	echo 'No suitable streamstor.pc file was found so the native'
-	echo 'Mark5 support will be suppressed.'
-	echo ''
+	ss_enabled=false
 fi
 AM_CONDITIONAL(WITH_SS, $ss_enabled)
 
@@ -102,8 +128,8 @@ dnl **********************************************************
 dnl for Mutex lock in datastream.cpp
 AC_CHECK_LIB(rt, clock_gettime)
 
-CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${MATH_CFLAGS} ${FFTW3_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET} ${OPENMP_CXXFLAGS}"
-LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${MATH_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} $LIBS"
+CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${MATH_CFLAGS} ${FFTW3_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET} ${OPENMP_CXXFLAGS} ${DIRLIST_CFLAGS}"
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${MATH_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"
