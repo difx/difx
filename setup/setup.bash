@@ -43,7 +43,7 @@ export CALC_SERVER=localhost
 ####### No User configurable values below here
 
 ####### Operating System, use $OSTYPE
-if [ "$OSTYPE" = "darwin" -o "$OSTYPE" = "darwin9.0" -o "$OSTYPE" = "darwin13" ]
+if [ "$OSTYPE" = "darwin" -o "$OSTYPE" = "darwin9.0" -o "$OSTYPE" = "darwin13"  -o "$OSTYPE" = "darwin15" ]
 then
  OS=darwin
 elif [ "$OSTYPE" = "linux" -o "$OSTYPE" = "linux-gnu" ] 
