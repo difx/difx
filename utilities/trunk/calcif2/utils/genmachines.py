@@ -464,7 +464,7 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
         # check if host is an allowed headnode
 	hostname = socket.gethostname()
 	if not hostname in difxmachines.getHeadNodeNames():
-		print 'ERROR: hostname is not an allowed headnode in the machines file : %s' % machinesfile
+		print 'ERROR: hostname (%s) is not an allowed headnode in the machines file : %s' % (hostname, machinesfile)
 		exit(1)
 
 	infile = files[0]
