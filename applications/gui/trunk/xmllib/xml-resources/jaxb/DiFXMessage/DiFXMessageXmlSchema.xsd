@@ -219,6 +219,7 @@
                 <xsd:element ref="defaultNamesDirListLocation"/>
                 <xsd:element ref="defaultJobCreationSanityCheck"/>
                 <xsd:element ref="defaultNamesRestrictHeadnodeProcessing"/>
+                <xsd:element ref="stopWhenConfigFailsFalse"/>
                 <xsd:element ref="defaultNamesEliminateNonrespondingProcessors"/>
                 <xsd:element ref="defaultNamesElimnateBusyProcessors"/>
                 <xsd:element ref="defaultNamesBusyPercentage"/>
@@ -524,6 +525,7 @@
     <xsd:element name="defaultNamesDirListLocation" type="xsd:string"></xsd:element>
     <xsd:element name="defaultJobCreationSanityCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesRestrictHeadnodeProcessing" type="xsd:boolean"></xsd:element>
+    <xsd:element name="stopWhenConfigFailsFalse" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesEliminateNonrespondingProcessors" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesElimnateBusyProcessors" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesBusyPercentage" type="xsd:double"></xsd:element>

@@ -120,7 +120,7 @@ public class QueueBrowserPanel extends TearOffPanel {
         ZMenuItem runSelectedItem = new ZMenuItem( "Schedule Selected" );
         runSelectedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                runSelected();
+                runSelected( false );
             }
         });
         _selectMenu.add( runSelectedItem );
@@ -130,7 +130,7 @@ public class QueueBrowserPanel extends TearOffPanel {
         ZMenuItem scheduleIncompleteItem = new ZMenuItem( "Schedule Incomplete" );
         scheduleIncompleteItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                scheduleIncomplete();
+                scheduleIncomplete( false );
             }
         });
         _selectMenu.add( scheduleIncompleteItem );
@@ -138,11 +138,37 @@ public class QueueBrowserPanel extends TearOffPanel {
         ZMenuItem scheduleAllItem = new ZMenuItem( "Schedule All" );
         scheduleAllItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                scheduleAll();
+                scheduleAll( false );
             }
         });
         _selectMenu.add( scheduleAllItem );
-        scheduleIncompleteItem.toolTip( "Schedule any jobs that do not have state \"Done\".\n", null );
+        scheduleAllItem.toolTip( "Schedule all jobs to run.", null );
+
+        ZMenuItem configTestSelectedItem = new ZMenuItem( "Config Test Selected" );
+        configTestSelectedItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                runSelected( true );
+            }
+        });
+        _selectMenu.add( configTestSelectedItem );
+        configTestSelectedItem.toolTip( "Schedule a configuration test on the selected jobs.\n", null );
+        ZMenuItem configTestIncompleteItem = new ZMenuItem( "Config Test Incomplete" );
+        configTestIncompleteItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                scheduleIncomplete( true );
+            }
+        });
+        _selectMenu.add( configTestIncompleteItem );
+        configTestIncompleteItem.toolTip( "Schedule any jobs that do not have state \"Done\" for a configuration test.", null );
+        ZMenuItem configTestAllItem = new ZMenuItem( "Config Test All" );
+        configTestAllItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                scheduleAll( true );
+            }
+        });
+        _selectMenu.add( configTestAllItem );
+        configTestAllItem.toolTip( "Schedule all jobs for a configuration test.\n", null );
+       
         ZMenuItem unscheduleSelectedItem = new ZMenuItem( "Remove Selected From Schedule" );
         unscheduleSelectedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -758,7 +784,7 @@ public class QueueBrowserPanel extends TearOffPanel {
     /*
      * Schedule all selected jobs to be run.
      */
-    protected void runSelected() {
+    protected void runSelected( boolean configOnly ) {
         synchronized ( _browserPane ) {
             for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
                 projectIter.hasNext(); ) {
@@ -769,7 +795,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                         for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
                             JobNode thisJob = (JobNode)jobIter.next();
                             if ( thisJob.selected() )
-                                thisJob.autoStartJob();
+                                thisJob.autoStartJob( configOnly );
                         }
                     }
                 }
@@ -780,7 +806,7 @@ public class QueueBrowserPanel extends TearOffPanel {
     /*
      * Schedule all jobs to be run whether they are selected or not.
      */
-    protected void scheduleAll() {
+    protected void scheduleAll( boolean configOnly ) {
         synchronized ( _browserPane ) {
             for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
                 projectIter.hasNext(); ) {
@@ -790,7 +816,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                         PassNode thisPass = (PassNode)(iter.next());
                         for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
                             JobNode thisJob = (JobNode)jobIter.next();
-                            thisJob.autoStartJob();
+                            thisJob.autoStartJob( configOnly );
                         }
                     }
                 }
@@ -801,7 +827,7 @@ public class QueueBrowserPanel extends TearOffPanel {
     /*
      * Schedule all jobs to be run if they are not currently "Done".
      */
-    protected void scheduleIncomplete() {
+    protected void scheduleIncomplete( boolean configOnly ) {
         synchronized ( _browserPane ) {
             for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
                 projectIter.hasNext(); ) {
@@ -812,7 +838,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                         for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
                             JobNode thisJob = (JobNode)jobIter.next();
                             if ( !thisJob.state().getText().contentEquals( "Done" ) )
-                                thisJob.autoStartJob();
+                                thisJob.autoStartJob( configOnly );
                         }
                     }
                 }

@@ -792,6 +792,17 @@ public class SystemSettings extends JFrame {
             }
         } );
         jobProcessingPanel.add( _useHeadNodeCheck );
+        _stopWhenConfigFails = new ZCheckBox( "Stop Job When Configuration Test Fails" );
+        _stopWhenConfigFails.setBounds( 760, 25, 250, 25 );
+        _stopWhenConfigFails.toolTip( "Stop running any job that fails its configuration test.\n"
+                + "This test checks the integrity of .input files, and is run"
+                + "prior to any job execution.", null );
+        _stopWhenConfigFails.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+            }
+        } );        
+        jobProcessingPanel.add( _stopWhenConfigFails );
+        
         JLabel dataSourceLabel = new JLabel( "Data Source Defaults:" );
         dataSourceLabel.setFont( new Font( dataSourceLabel.getFont().getFamily(), Font.BOLD, dataSourceLabel.getFont().getSize() ) );
         dataSourceLabel.setBounds( 30, 55, 200, 25 );
@@ -2299,6 +2310,7 @@ public class SystemSettings extends JFrame {
         _defaultNames.jobCreationSanityCheck = true;
         _defaultNames.restrictHeadnodeProcessing = true;
         _useHeadNodeCheck.setSelected( false );
+        _stopWhenConfigFails.setSelected( true );
         _restrictSourcesCheck.setSelected( false );
         _defaultNames.eliminateNonrespondingProcessors = false;
         _defaultNames.eliminateBusyProcessors = false;
@@ -3294,6 +3306,7 @@ public class SystemSettings extends JFrame {
             _defaultNames.jobCreationSanityCheck = doiConfig.isDefaultJobCreationSanityCheck();
             _defaultNames.restrictHeadnodeProcessing = doiConfig.isDefaultNamesRestrictHeadnodeProcessing();
             _useHeadNodeCheck.setSelected( !_defaultNames.restrictHeadnodeProcessing );
+            _stopWhenConfigFails.setSelected( !doiConfig.isStopWhenConfigFailsFalse() );
             
             _uniqueDataSource.setSelected( !doiConfig.isUniqueDataSource() );
             _assignBasedOnPath.setSelected( doiConfig.isAssignBasedOnPath() );
@@ -4164,6 +4177,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setAssignBasedOnPath( _assignBasedOnPath.isSelected( ) );
         doiConfig.setShareDataSourcesBetweenJobs( _shareDataSourcesBetweenJobs.isSelected() );
         doiConfig.setShareDataSourcesAsProcessors( _shareDataSourcesAsProcessors.isSelected() );
+        doiConfig.setStopWhenConfigFailsFalse( !_stopWhenConfigFails.isSelected() );
         doiConfig.setRestrictSources( _restrictSourcesCheck.isSelected() );
         doiConfig.setThreadsPerDataSource( _threadsPerDataSource.intValue() );
         doiConfig.setNodesPerCheck( !_nodesPerCheck.isSelected() );
@@ -6157,6 +6171,7 @@ public class SystemSettings extends JFrame {
     protected AntennaDefaultsDisplay _antennaDefaultsDisplay;
     
     protected ZCheckBox _useHeadNodeCheck;
+    protected ZCheckBox _stopWhenConfigFails;
     protected ZCheckBox _uniqueDataSource;
     protected ZCheckBox _assignBasedOnPath;
     protected ZButton _pathAssignments;
@@ -6191,6 +6206,7 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _yieldToOtherSessions;
     
     public boolean useHeadNodeCheck() { return _useHeadNodeCheck.isSelected(); }
+    public boolean stopWhenConfigFails() { return _stopWhenConfigFails.isSelected(); }
     public boolean restrictSources() { return _restrictSourcesCheck.isSelected(); }
     public boolean assignBasedOnPath() { return _assignBasedOnPath.isSelected(); }
     public boolean uniqueDataSource() { return _uniqueDataSource.isSelected(); }

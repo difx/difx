@@ -247,11 +247,21 @@ public class JobNode extends QueueBrowserNode {
                 + "according to user settings that govern scheduled jobs." );
         _scheduleJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                autoStartJob();
+                autoStartJob( false );
             }
         });
         _scheduleJobItem.setEnabled( false );
         _popup.add( _scheduleJobItem );
+        _scheduleConfigTestItem = new ZMenuItem( "Schedule Configuration Test" );
+        _scheduleConfigTestItem.setToolTipText( "Schedule the configuration test to be run on the .input file for this job.\n"
+                + "Only the test will run - the job will not." );
+        _scheduleConfigTestItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                autoStartJob( true );
+            }
+        });
+        _scheduleConfigTestItem.setEnabled( false );
+        _popup.add( _scheduleConfigTestItem );
         _unscheduleJobItem = new ZMenuItem( "Remove from Schedule" );
         _unscheduleJobItem.setToolTipText( "Remove this job from the scheduler list, if it is there.\n"
                 + "Removing a non-listed job is harmless." );
@@ -261,7 +271,7 @@ public class JobNode extends QueueBrowserNode {
             }
         });
         _popup.add( _unscheduleJobItem );
-        _stopJobItem = new JMenuItem( "Stop" );
+        _stopJobItem = new ZMenuItem( "Stop" );
         _stopJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( updateEditorMonitor( 1000 ) )
@@ -464,18 +474,25 @@ public class JobNode extends QueueBrowserNode {
             ++_idleTime;
         }
     }
+    boolean _schedulerConfigOnly;
+    public boolean schedulerConfigOnly() { return _schedulerConfigOnly; }
     /* 
      * Function to start a job - this checks that the "editor" exists (which includes
      * downloading necessary files), chooses default nodes (if the user hasn't picked
      * them), and runs the job, all in a thread.
      */
-    public void autoStartJob() {
+    public void autoStartJob( boolean configOnly ) {
         if ( _settings.queueBrowser().addJobToSchedule( this ) ) {
             _scheduleJobItem.setEnabled( false );
+            _scheduleConfigTestItem.setEnabled( false );
             state().setText( "Scheduled" );
             state().setBackground( Color.YELLOW );
             state().updateUI();
             warningMessage( "" );
+            if ( configOnly )
+                _schedulerConfigOnly = true;
+            else
+                _schedulerConfigOnly = false;
             autostate( AUTOSTATE_SCHEDULED );
         }
     }
@@ -493,7 +510,7 @@ public class JobNode extends QueueBrowserNode {
                 _editorMonitor.loadHardwareLists();
                 _editorMonitor.selectNodeDefaults( false, true );
                 _editorMonitor.setState( "Pre-Start", Color.YELLOW );
-                _editorMonitor.startJob( true );
+                _editorMonitor.startJob( true, false );
             }     
         }
     }
@@ -507,6 +524,7 @@ public class JobNode extends QueueBrowserNode {
         if ( _settings.queueBrowser().removeJobFromSchedule( _this ) ) {
             setState( "Unscheduled", Color.GRAY );
             _scheduleJobItem.setEnabled( true );
+            _scheduleConfigTestItem.setEnabled( true );
         }
     }
     
@@ -610,8 +628,12 @@ public class JobNode extends QueueBrowserNode {
     
     class JobStartThread extends Thread {
         public void run() {
-            if ( _editorMonitor != null )
-                _editorMonitor.startJob( false );
+            if ( _editorMonitor != null ) {
+                if ( _schedulerConfigOnly )
+                    _editorMonitor.startJob( false, true );
+                else
+                    _editorMonitor.startJob( false, false );
+            }
         }
     }
     /*
@@ -922,6 +944,7 @@ public class JobNode extends QueueBrowserNode {
                 _editorMonitor.parseInputFile();
                 _inputFileRequestComplete = true;
                 //_scheduleJobItem.setEnabled( true );
+                //_scheduleConfigTestItem.setEnabled( true );
                 //_stopJobItem.setEnabled( true );
                 //_monitorMenuItem.setEnabled( true );
                 //_liveMonitorMenuItem.setEnabled( true );
@@ -1337,6 +1360,7 @@ public class JobNode extends QueueBrowserNode {
         _directoryPath = tryFile.getParent();
         //  Now that we have an input file, enable controls associated with it.
         _scheduleJobItem.setEnabled( true );
+        _scheduleConfigTestItem.setEnabled( true );
         _stopJobItem.setEnabled( true );
         _monitorMenuItem.setEnabled( true );
         _liveMonitorMenuItem.setEnabled( true );
@@ -1697,9 +1721,10 @@ public class JobNode extends QueueBrowserNode {
     protected boolean _lockState;
 //    protected Integer _databaseJobId;
     
-    protected JMenuItem _scheduleJobItem;
-    protected JMenuItem _unscheduleJobItem;
-    protected JMenuItem _stopJobItem;
+    protected ZMenuItem _scheduleJobItem;
+    protected ZMenuItem _scheduleConfigTestItem;
+    protected ZMenuItem _unscheduleJobItem;
+    protected ZMenuItem _stopJobItem;
     
     protected boolean _weightsBuilt;
     

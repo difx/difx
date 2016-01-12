@@ -472,10 +472,20 @@ public class JobEditorMonitor extends JFrame {
         _startButton.setBounds( 10, 30, 110, 25 );
         _startButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                startJob( true );
+                startJob( true, false );
             }
         } );
         runControlPanel.add( _startButton );
+        _configButton = new ZButton( "Config Test" );
+        _configButton.toolTip( "Run a configuration test on the .input file and return.\n"
+                + "Except for the test, the job will not be run.", null );
+        _configButton.setBounds( 420, 30, 110, 25 );
+        _configButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                startJob( true, true );
+            }
+        } );
+        runControlPanel.add( _configButton );
         _stopButton = new JButton( "Stop" );
         _stopButton.setBounds( 10, 60, 110, 25 );
         _stopButton.addActionListener( new ActionListener() {
@@ -1870,13 +1880,14 @@ public class JobEditorMonitor extends JFrame {
      * a thread.
      */
     protected class ApplyMachinesThenStart extends Thread {
+        public boolean configTestOnly;
         @Override
         public void run() {
             MachinesDefinitionMonitor machines = applyMachinesAction();
             while ( machines.isAlive() )
                 try { Thread.sleep( 100 ); } catch ( Exception e ) {}
             _machinesAppliedByHand = true;
-            startJob( true );
+            startJob( true, configTestOnly );
         }
     }
     
@@ -1887,7 +1898,7 @@ public class JobEditorMonitor extends JFrame {
      * dedicated socket and report any errors.  In the latter case the job start
      * instruction is more of a "set and forget" kind of operation.
      */
-    public void startJob( boolean applyMachinesInThread ) {
+    public void startJob( boolean applyMachinesInThread, boolean configTestOnly ) {
         _jobNode.setJobStart();
         _jobNode.setState( "Node Allocation", Color.YELLOW );
         //  "Reserve" the resources we need for this process - we tell the nodes themselves
@@ -1935,6 +1946,7 @@ public class JobEditorMonitor extends JFrame {
         if ( !_machinesAppliedByHand ) {
             if ( applyMachinesInThread ) {
                 ApplyMachinesThenStart applyMachinesThread = new ApplyMachinesThenStart();
+                applyMachinesThread.configTestOnly = configTestOnly;
                 applyMachinesThread.start();
                 return;
             }
@@ -1966,6 +1978,10 @@ public class JobEditorMonitor extends JFrame {
         
         if ( _runMonitor.isSelected() )
             jobStart.setFunction( "RUN_MONITOR" );
+        else if ( configTestOnly )
+            jobStart.setFunction( "CONFIG_ONLY" );
+        else if ( _settings.stopWhenConfigFails() )
+            jobStart.setFunction( "BAIL_ON_CONFIG_FAIL" );
         else
             jobStart.setFunction( "USNO" ); 
 
@@ -2138,7 +2154,11 @@ public class JobEditorMonitor extends JFrame {
         protected final int RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE   = 121;
         protected final int RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN   = 122;
         protected final int RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED   = 123;
-
+        protected final int RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG     = 124;
+        protected final int RUN_DIFX_CONFIG_PASSED                    = 125;
+        protected final int RUN_DIFX_CONFIG_COMMAND_NOT_FOUND         = 126;
+        protected final int RUN_DIFX_RUN_CONFIG_CHECK                 = 127;
+        protected final int RUN_DIFX_STOPPED_AFTER_CONFIG             = 128;
                 
         @Override
         public void run() {
@@ -2207,6 +2227,7 @@ public class JobEditorMonitor extends JFrame {
                                 statusInfo( "job completed" );
                                 connected = false;
                                 statusPanelColor( _statusPanelBackground.darker() );
+                                lockState( true );
                             }
                             else if ( packetType == RUN_DIFX_JOB_STARTED ) {
                                 _doneWithErrors = false;
@@ -2299,6 +2320,31 @@ public class JobEditorMonitor extends JFrame {
                                         MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
                                 _liveMonitorWindow.connectionInfo( "NOT CONNECTED", "connection failed" );
                             }
+                            else if ( packetType == RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG ) {
+                                _messageDisplayPanel.error( 0, "job monitor", "Job .input file failed configuration test." );
+                                statusError( "configuration failure" );
+                                statusPanelColor( _statusPanelBackground.darker() );
+                                connected = false;
+                                _jobNode.setState( "Config Failed", Color.RED );
+                                _jobNode.lockState( true );
+                            }
+                            else if ( packetType == RUN_DIFX_STOPPED_AFTER_CONFIG ) {
+                                lockState( true );
+                                connected = false;
+                            }
+                            else if ( packetType == RUN_DIFX_CONFIG_PASSED ) {
+                                _messageDisplayPanel.warning( 0, "job monitor", "Job .input file configuration test passed." );
+                                statusInfo( "configuration passed" );
+                                _jobNode.setState( "Config Passed", Color.YELLOW );
+                            }
+                            else if ( packetType == RUN_DIFX_RUN_CONFIG_CHECK ) {
+                                _messageDisplayPanel.warning( 0, "job monitor", "Running configuration test." );
+                                statusInfo( "configuration test" );
+                                _jobNode.setState( "Config Check", Color.YELLOW );
+                            }
+                            else if ( packetType == RUN_DIFX_CONFIG_COMMAND_NOT_FOUND ) {
+                                _messageDisplayPanel.warning( 0, "job monitor", "Configuration test program does not exist." );
+                            }
                             else {
                                 _messageDisplayPanel.warning( 0, "GUI", "Ignoring unrecongized job monitor packet type (" + packetType + ")." );
                             }
@@ -2328,12 +2374,17 @@ public class JobEditorMonitor extends JFrame {
                 usedNode.removeJob( _this );
             }
             _jobNode._scheduleJobItem.setEnabled( true );
-            //  Base the final "autostate" on the color of the display.  This is pretty
-            //  kludgey, although it has the advantage that it will look consistent to the user.
-            if ( _jobNode.state().getBackground() == Color.RED )
-                _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
-            else
+            _jobNode._scheduleConfigTestItem.setEnabled( true );
+            if ( _jobNode.schedulerConfigOnly() )
                 _jobNode.autostate( JobNode.AUTOSTATE_DONE );
+            else {
+                //  Base the final "autostate" on the color of the display.  This is pretty
+                //  kludgey, although it has the advantage that it will look consistent to the user.
+                if ( _jobNode.state().getBackground() == Color.RED )
+                    _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
+                else
+                    _jobNode.autostate( JobNode.AUTOSTATE_DONE );
+            }
         }
         
         protected int _port;
@@ -2361,6 +2412,7 @@ public class JobEditorMonitor extends JFrame {
     public void setState( String newState, Color newColor ) {
         _state.setText( newState );
         _state.setBackground( newColor );
+        _state.updateUI();
     }
     
     //--------------------------------------------------------------------------
@@ -2430,6 +2482,7 @@ public class JobEditorMonitor extends JFrame {
                 flushFromActiveNodes();
                 //  Safe to let the user start it again.
                 _jobNode._scheduleJobItem.setEnabled( true );
+                _jobNode._scheduleConfigTestItem.setEnabled( true );
             }
         };
         clearThread.start();
@@ -3313,6 +3366,7 @@ public class JobEditorMonitor extends JFrame {
 
     
     protected JButton _startButton;
+    protected ZButton _configButton;
     protected JButton _stopButton;
     protected NumberBox _restartSeconds;
     protected JCheckBox _restartAt;

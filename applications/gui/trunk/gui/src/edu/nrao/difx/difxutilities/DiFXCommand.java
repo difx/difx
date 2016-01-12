@@ -82,6 +82,7 @@ public class DiFXCommand {
         _difxMsg.setBody( _body );
         JAXBDiFXProcessor xmlProc = new JAXBDiFXProcessor( _difxMsg );
         String xmlString = xmlProc.ConvertToXML();
+//        System.out.println( xmlString );
         if ( xmlString != null ) {
             if ( _settings.sendCommandsViaTCP() ) {
                 byte [] data = xmlString.getBytes();
