@@ -227,6 +227,11 @@ Version 0.1
 
 startdifx
 ~~~~~~~~~
+Version 2.5.0
+* Post DiFX 2.4
+* Evaluate DIFX_MPIRUNOPTIONS to set mpirun options
+* update the usage information
+
 Version 2.3.0
 * removed bynode mpirun option to be compatible with new genmachines
 * version for DiFX-2.3.0

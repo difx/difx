@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '2.3.1'
-VERDATE = '20150702'
+VERSION = '2.5.0'
+VERDATE = '20160112'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -70,9 +70,11 @@ def getUsage():
 	usage +=  '<start delay> is an optional delay (seconds) to add to the job start time\n'
 	usage +=  '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
 	usage +=  '<joblist> is a joblist file as created by vex2difx (must have .joblist extension)\n'
-	usage +=  'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT '
+	usage +=  '\nEnvironment:\n'
+	usage +=  'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT '
 	usage +=  'can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
-	usage +=  'If using the -m option the DIFX_HEAD_NODE environment must name the correlation head node.\n'
+	usage +=  'DIFX_HEAD_NODE must name the correlation head node (only if using the -m option).\n'
+	usage +=  'DIFX_MPIRUNOPTIONS can be used to pass options to the mpirun command.\n'
 
 	return(usage)
 
@@ -236,7 +238,6 @@ def updateMpiOptions():
 	opt = getenv('DIFX_MPIRUNOPTIONS')
 	if opt is not None:
 		mpiOptions = opt
-
 
 	
 def updateEnvironment(filename):
