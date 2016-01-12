@@ -48,8 +48,8 @@ except ImportError:
     sys.exit(1)
 
 author  = 'Walter Brisken and Helge Rottmann'
-version = '2.3.0'
-verdate = '20131108'
+version = '2.5.0'
+verdate = '20160112'
 minMachinefileVersion = "1.0"	# cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
@@ -418,11 +418,11 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 	o = open(basename+'machines', 'w')
         
         # head node
-        o.write('%s \n' % (hostname))
+        o.write('%s\n' % (hostname))
         
         # datastream nodes
         for node in dsnodes:
-            o.write('%s \n' % (node))
+            o.write('%s\n' % (node))
             
         # compute nodes
         for node in difxmachines.getComputeNodes():
@@ -435,7 +435,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
             if node.name in hostname:
                 usedThreads = 1
                 
-            o.write('%s \n' % (node.name))
+            o.write('%s\n' % (node.name))
             threads.append(node.threads-usedThreads)
         
 	return threads

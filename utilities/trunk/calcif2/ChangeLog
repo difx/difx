@@ -178,6 +178,11 @@ Version 1.5
 
 genmachines
 ~~~~~~~~~~~
+Version 2.5.0
+* Post DiFX 2.4
+* remove whitespace after hostname in generated machine file (causes mpirun failure)
+
+
 Version 2.3.0
 * adapt to new cluster definition file format
 * removed the overhead cores option
