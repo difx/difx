@@ -59,6 +59,10 @@ static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE     = 121;
 static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN     = 122;
 static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED     = 123;
 static const int RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG       = 124;
+static const int RUN_DIFX_CONFIG_PASSED                      = 125;
+static const int RUN_DIFX_CONFIG_COMMAND_NOT_FOUND           = 126;
+static const int RUN_DIFX_RUN_CONFIG_CHECK                   = 127;
+static const int RUN_DIFX_STOPPED_AFTER_CONFIG               = 128;
 
 //-----------------------------------------------------------------------------
 //!  Called in response to a user request to start a DiFX session.  This function
@@ -159,16 +163,59 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	
 	//  Run a configuration check on the .input file.  This makes sure access to 
 	//  data sources is good, etc.
-    Configuration * config = new Configuration( S->inputFilename, 0 );
-    if ( !config->consistencyOK() ) {
-		diagnostic( ERROR, "Input file %s failed the configuration check.", S->inputFilename );
-    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG, NULL, 0 );
-        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
-        delete jobMonitor;
-		return;
+	jobMonitor->sendPacket( RUN_DIFX_RUN_CONFIG_CHECK, NULL, 0 );
+	char command[MAX_COMMAND_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
+	snprintf( command, MAX_COMMAND_SIZE, 
+	          "%s checkmpifxcorr -i %s", 
+              _difxSetupPath,
+              S->inputFilename );
+    ExecuteSystem* executor = new ExecuteSystem( command );
+    bool errorDetected = false;
+    if ( executor->pid() > -1 ) {
+        while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
+            if ( ret == 1 ) { // stdout
+                if ( strlen( message ) > 0 ) {
+                    diagnostic( INFORMATION, "checkmpicorr... %s", message );
+                    //  If we've found errors, don't produce the "no errors" message, as that
+                    //  looks a bit silly.
+                    if ( !errorDetected || std::string( message ).find( "No errors with input" ) == std::string::npos )
+                        jobMonitor->sendPacket( RUN_DIFX_DIFX_MESSAGE, message, strlen( message ) );
+                }
+            }
+            else {            // stderr
+                diagnostic( WARNING, "checkmpifxcorr... %s", message );
+                jobMonitor->sendPacket( RUN_DIFX_DIFX_WARNING, message, strlen( message ) );
+                if ( std::string( message ).find( "command not found" ) != std::string::npos )
+                    jobMonitor->sendPacket( RUN_DIFX_CONFIG_COMMAND_NOT_FOUND, NULL, 0 );
+                else
+                    errorDetected = true;
+            }
+        }
     }
-
-
+    delete executor;
+    
+    //  Let the user know how the configuration test fared.
+    if ( errorDetected ) {
+        diagnostic( ERROR, "Input file %s failed the configuration check.", S->inputFilename );
+    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG, NULL, 0 );
+    }
+    else {
+        jobMonitor->sendPacket( RUN_DIFX_CONFIG_PASSED, NULL, 0 );
+    }
+    
+    //  And possibly bail out on this process here, dependent on what the user wants.
+    if ( S->function == DIFX_START_FUNCTION_CONFIG_ONLY || 
+        ( errorDetected &&  S->function == DIFX_START_FUNCTION_BAIL_ON_CONFIG_FAIL ) ) {
+        if ( errorDetected ) {
+            jobMonitor->sendPacket( RUN_DIFX_DIFX_ERROR, "Execution stopped.", strlen( "Execution stopped" ) );
+            diagnostic( ERROR, "Execution of job %s stopped.", S->inputFilename );
+        }
+        jobMonitor->sendPacket( RUN_DIFX_STOPPED_AFTER_CONFIG, NULL, 0 );
+        delete jobMonitor;
+        return;
+    }
+       
     jobMonitor->sendPacket( RUN_DIFX_PARAMETER_CHECK_SUCCESS, NULL, 0 );
 
     //  Find the "working directory" (where the .input file resides and data will be put), the
