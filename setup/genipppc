@@ -130,8 +130,12 @@ def genipppc(path, ippversion):
 			else:
 				libdir = 'intel64'
 			out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -L${base}/compiler/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir,libdir,libdir,libdir,libdir))
+
+		if major == 7:
+			out.write('Cflags: -I${base}/ipp/include\n')
+		else:
+			out.write('Cflags: -DIPP9 -I${base}/ipp/include\n')
             
-		out.write('Cflags: -I${base}/ipp/include\n')
 	else:
 		print 'Sorry, IPP %d not yet supported by this script\n' % major
 
