@@ -358,11 +358,12 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			int signature = calculateMark5Signature(xlrDevice);
 			if(hash->getInt() != signature)
 			{
+				cerror << startl << "(nativemk5.cpp) hash:" << hash->getInt() << " sig:" << signature << endl;
 				cerror << startl << "Module " << datafilenames[configindex][fileindex] << " directory is out of date (hash/signature in directory listing does not match that computed from the module." << endl;
-				dataremaining = false;
-				keepreading = false;
+				//dataremaining = false;
+				//keepreading = false;
 
-				return;
+				//return;
 			}
 		}
 		else
