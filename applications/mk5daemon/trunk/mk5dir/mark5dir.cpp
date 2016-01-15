@@ -1260,7 +1260,7 @@ static int repeatingData(const char *bufferStart, int framebytes)
 	return 0;
 }
 
-int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly, int startScan, int stopScan, const char *binFilename)
+int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly, int startScan, int stopScan, int forceVersion, const char *binFilename)
 {
 	XLR_RETURN_CODE xlrRC;
 	struct Mark5LegacyDirectory *legacyDir;
@@ -1306,7 +1306,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 		return -4;
 	}
 	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, dirLength, 0, dirData) );
-	v = getMark5DirectoryInfo(&dirInfo, dirData, dirLength);
+	v = getMark5DirectoryInfo(&dirInfo, dirData, dirLength, forceVersion);
 	if(v != Mark5DirectoryInfoSuccess)
 	{
 		FILE *out;
@@ -1764,7 +1764,7 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	int mjdref, const char *vsn, const char *dir,
 	int (*callback)(int, int, int, void *), void *data,
 	float *replacedFrac, int force, int optionFast, int cacheOnly,
-	int startScan, int stopScan)
+	int startScan, int stopScan, int forceVersion)
 {
 	const int FilenameLength = 256;
 	char filename[FilenameLength];
@@ -1799,7 +1799,7 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	}
 
 	fast = optionFast;
-	v = readDirectory(xlrDevice, mjdref, callback, data, replacedFrac, cacheOnly, startScan, stopScan, binFilename);
+	v = readDirectory(xlrDevice, mjdref, callback, data, replacedFrac, cacheOnly, startScan, stopScan, forceVersion, binFilename);
 
 	if(v >= 0)
 	{

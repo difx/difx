@@ -9,6 +9,7 @@ Version 2.5.0
 * Support for SDK 9.4: SS_MODE_PCI (default mode) is no longer an option, so don't set it.
 * Initial support for Mark6 units through the mark6meta library
 * Initial support for command line structure
+* mk5dir: can override (presumably incorrect) directory version number with --version1
 
 Version 2.4.0
 ~~~~~~~~~~~~~

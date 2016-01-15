@@ -116,7 +116,7 @@ extern const char Mark5DirectoryInfoStatusStrings[][40];
 
 int calculateMark5DirSignature(const unsigned char *data, int size);
 
-enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *info, const unsigned char *dirData, int dirSize);
+enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *info, const unsigned char *dirData, int dirSize, int forceVersion=-1);
 
 void fprintMark5DirectoryInfo(FILE *out, const struct Mark5DirectoryInfo *info);
 

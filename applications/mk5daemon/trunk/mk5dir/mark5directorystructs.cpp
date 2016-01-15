@@ -43,7 +43,7 @@ int calculateMark5DirSignature(const unsigned char *data, int size)
 	return signature;
 }
 
-enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *info, const unsigned char *dirData, int dirSize)
+enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *info, const unsigned char *dirData, int dirSize, int forceVersion)
 {
 	const int LegacyScanDirectorySize = 81952;
 	const int NeoLegacyScanDirectorySize = 5242912;
@@ -70,7 +70,14 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 
 		/* likely a Mark5C type; proceed as if, at least for now */
 		info->dirClass = Mark5DirClassMark5C;
-		info->dirVersion = head->version;
+		if(forceVersion >= 0)
+		{
+			info->dirVersion = forceVersion;
+		}
+		else
+		{
+			info->dirVersion = head->version;
+		}
 		info->nScan = dirSize / 128 - 1;
 		info->signature = calculateMark5DirSignature(dirData + 128, dirSize-128);
 
