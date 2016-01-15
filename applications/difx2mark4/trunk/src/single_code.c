@@ -3,14 +3,13 @@
 #include <stdlib.h>
 #include "difx2mark4.h"
 
-char single_code (char *station)
+char single_code (char *station, char *fname)
     {
     int i,
         j,
         rc;
 
     char c,
-         *fname,
          *frc,
          buff[16];
 
@@ -33,7 +32,8 @@ char single_code (char *station)
     if (first_time)
         {
         i = 0;
-        fname = getenv("HOPS_STATION_CODE");
+        if (!*fname)                // if not specified via command line, try env
+            fname = getenv("HOPS_STATION_CODE");
         if (fname)
             {
             fin = fopen (fname, "r");

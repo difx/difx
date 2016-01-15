@@ -507,7 +507,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                         line[0] = 0;
                         break;
                         }
-                    c = single_code (current_site);
+
+                    c = single_code (current_site, opts->scodeFile);
                     if (c == 0)
                         {
                         printf ("      All 52 codes used up, no code for %c%c\n",

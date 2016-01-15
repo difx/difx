@@ -20,6 +20,7 @@
 #define __DIFX2MARK4_H__
 
 #include <difxio/difx_input.h>
+#include <limits.h>
 
 #define MAX_INPUT_FILES 4096
 #define MAX_VIS 4096
@@ -36,6 +37,7 @@ struct CommandLineOptions
     {
     char exp_no[EXP_CODE_LEN+1];
     char *baseFile[MAX_INPUT_FILES];
+    char scodeFile[PATH_MAX];
     FILE **in;
     char *scan;
     int nBaseFile;
@@ -143,7 +145,7 @@ void normalize (struct CommandLineOptions *, vis_record *, int, int, int);
                                     // root_id.c
 char *root_id(int, int, int, int, int);
                                     // single_code.c
-char single_code (char *);
+char single_code (char *, char *);
                                     // swabr.c
 short short_reverse (short);
 unsigned short unsig_reverse (unsigned short);

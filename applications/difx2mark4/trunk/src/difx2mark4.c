@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <glob.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <time.h>
 #include "difx2mark4.h"
@@ -62,7 +63,10 @@ static int usage (const char *pgm)
     fprintf (stderr, "  -r or --raw               use raw mode - suppresses normalization\n\n");
     fprintf (stderr, "  -p or --pretend           dry run\n\n");
     fprintf (stderr, "  -b <code> <flo> <fhi>     Override freq band codes\n");
-    fprintf (stderr, "                            (can have multiple triplets)\n\n");
+    fprintf (stderr, "                            (can have multiple triplets)\n");
+    fprintf (stderr, "  -s or --scode <file>      Specify new VEX to mk4 station code mappings\n");
+    fprintf (stderr, "                            via a file with lines of the form:   X Xx\n");
+    fprintf (stderr, "\n");
 
     return 0;
     }
@@ -606,6 +610,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
                     {
                     i++;
                     opts->nOutChan = atof(argv[i]);
+                    }
+                else if(strcmp (argv[i], "--scode") == 0 ||
+                        strcmp (argv[i], "-s") == 0)
+                    {
+                    i++;
+                    strncpy(opts->scodeFile, argv[i], PATH_MAX-1);
                     }
                 else
                     {
