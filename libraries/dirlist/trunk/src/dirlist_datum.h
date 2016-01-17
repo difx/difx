@@ -17,7 +17,7 @@ public:
 	int getIntSecStart() const { return static_cast<int>(secStart); }
 	int getIntNSStart() const { return static_cast<int>(1000000000.0*(secStart - static_cast<int>(secStart) )); }
 	double getFullMjdStart() const { return mjdStart + secStart/86400.0; }
-	int getFullMjdEnd() const { return mjdStart + (secStart+duration)/86400.0; }
+	double getFullMjdEnd() const { return mjdStart + (secStart+duration)/86400.0; }
 	double getDuration() const { return duration; }
 	void setName(const std::string &n) { name = n; }
 	void setMjdStart(int mjd) { mjdStart = mjd; }

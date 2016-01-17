@@ -17,7 +17,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 	char dirLabel[MaxLineLength];
 	char extra[5][20];
 	int nNumber = 0;
-	unsigned int signature;
+	long long signature;
 
 	D.clear();
 	D.setDefaultIdentifier();
@@ -39,7 +39,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 		return -1;
 	}
 
-	n = sscanf(line, "%8s %d %1s %u %19s %19s %19s %19s %19s",
+	n = sscanf(line, "%8s %d %1s %Ld %19s %19s %19s %19s %19s",
 		dirLabel, &nscans, bankName, &signature, extra[0], extra[1], extra[2], extra[3], extra[4]);
 	if(n < 3)
 	{
