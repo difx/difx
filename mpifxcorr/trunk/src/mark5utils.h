@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2014 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -56,6 +56,8 @@ XLR_RETURN_CODE openMark5(SSHANDLE *xlrDevice);
 
 XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, unsigned long long readpointer, unsigned char *dest, unsigned int bytes, unsigned int readDelayMicroseconds);
 
-int calculateMark5Signature(SSHANDLE xlrDevice);
+unsigned int calculateMark5Signature(SSHANDLE xlrDevice);
+
+int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn);
 
 #endif

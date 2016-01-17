@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2014 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -268,9 +268,9 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, unsigned long long readpointer
 	return xlrRC;
 }
 
-int calculateMark5Signature(SSHANDLE xlrDevice)
+unsigned int calculateMark5Signature(SSHANDLE xlrDevice)
 {
-	int signature = 1;
+	unsigned int signature = 1;
 	int len;
 
 	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
@@ -296,4 +296,92 @@ int calculateMark5Signature(SSHANDLE xlrDevice)
 	}
 
 	return signature;
+}
+
+/* returns 0 or 1 for bank A or B, or < 0 if module not found or on error */
+int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
+{
+	S_BANKSTATUS bank_stat;
+	XLR_RETURN_CODE xlrRC;
+	S_DIR dir;
+	int b = -1;
+	int bank=-1;
+
+	WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat) );
+	if(xlrRC == XLR_SUCCESS)
+	{
+		if(strncasecmp(bank_stat.Label, vsn, 8) == 0)
+		{
+			b = 0;
+			bank = BANK_A;
+		}
+	}
+	else
+	{
+		return -2;
+	}
+
+	if(b == -1)
+	{
+		WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat) );
+		if(xlrRC == XLR_SUCCESS)
+		{
+			if(strncasecmp(bank_stat.Label, vsn, 8) == 0)
+			{
+				b = 1;
+				bank = BANK_B;
+			}
+		}
+		else
+		{
+			return -3;
+		}
+	}
+
+	if(bank < 0)
+	{
+		return -1;
+	}
+
+	WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat) );
+	if(xlrRC != XLR_SUCCESS)
+	{
+		return -4;
+	}
+
+	WATCHDOG( xlrRC = XLRSelectBank(xlrDevice, bank) );
+	if(xlrRC != XLR_SUCCESS)
+	{
+		b = -5 - b;
+	}
+	else
+	{
+		for(int i = 0; i < 100; ++i)
+		{
+			WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat) );
+			if(xlrRC != XLR_SUCCESS)
+			{
+				return -7;
+			}
+			if(bank_stat.State == STATE_READY && bank_stat.Selected)
+			{
+				break;
+			}
+			usleep(100000);
+		}
+
+		if(bank_stat.State != STATE_READY || !bank_stat.Selected)
+		{
+			b = -8;
+		}
+	}
+
+	/* the following line is essential to work around an apparent streamstor bug */
+	WATCHDOG( xlrRC = XLRGetDirectory(xlrDevice, &dir) );
+	if(xlrRC != XLR_SUCCESS)
+	{
+		return -9;
+	}
+
+	return b;
 }

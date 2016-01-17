@@ -272,6 +272,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	double startmjd;
 	int v, fanout;
 	long long n;
+	int bank;
 	int doUpdate = 0;
 	int nbits, nrecordedbands, framebytes, fbytes;
 	Configuration::dataformat format;
@@ -296,6 +297,23 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 #endif
                 MPI_Abort(MPI_COMM_WORLD, 1);
         }
+
+	bank = Mark5BankSetByVSN(xlrDevice, datafilenames[configindex][fileindex].c_str());
+	if(bank < 0)
+	{
+		cerror << startl << "Cannot find module " << datafilenames[configindex][fileindex] << endl;
+
+		dataremaining = false;
+		keepreading = false;
+		noMoreData = true;
+		sendMark5Status(MARK5_STATE_NODATA, 0, 0.0, 0.0);
+
+		return;
+	}
+	else
+	{
+		cinfo << startl << "Module " << datafilenames[configindex][fileindex] << " found in bank " << static_cast<char>('A' + bank) << endl;
+	}
 
 	cinfo << startl << "initialiseFile format=" << formatname << endl;
 	if(mark5stream)
@@ -355,15 +373,14 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		const DirListParameter *hash = dirlist.getConstParameter("hash");
 		if(hash)
 		{
-			int signature = calculateMark5Signature(xlrDevice);
+			long long signature = calculateMark5Signature(xlrDevice);
 			if(hash->getInt() != signature)
 			{
-				cerror << startl << "(nativemk5.cpp) hash:" << hash->getInt() << " sig:" << signature << endl;
-				cerror << startl << "Module " << datafilenames[configindex][fileindex] << " directory is out of date (hash/signature in directory listing does not match that computed from the module." << endl;
-				//dataremaining = false;
-				//keepreading = false;
+				cerror << startl << "Module " << datafilenames[configindex][fileindex] << " directory is out of date (hash/signature in directory listing does not match that computed from the module.  hash=" << hash->getInt() << " sig=" << signature << endl;
+				dataremaining = false;
+				keepreading = false;
 
-				//return;
+				return;
 			}
 		}
 		else
@@ -453,7 +470,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			scanstart = scanPointer->getFullMjdStart();
 			scanend = scanPointer->getFullMjdEnd();
 
- 			if(startmjd < scanstart)  /* obs starts before data */
+ 			if(startmjd <= scanstart)  /* obs starts before data */
 			{
 				cinfo << startl << "NM5 : scan found(1) : " << (scanNum+1) << endl;
 				readpointer = scanPointer->getStartPointer();
