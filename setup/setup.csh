@@ -7,10 +7,10 @@ setenv DIFX_VERSION trunk
 setenv DIFXROOT /usr/local/difx
 setenv DIFX_PREFIX $DIFXROOT
 setenv PGPLOTDIR 
-setenv IPPROOT /opt/intel/ipp/5.2/ia32
+setenv IPPROOT /opt/intel
 
 ####### MPI SOFTWARE AND COMPILER ###########
-setenv DIFXMPIDIR=/usr
+setenv DIFXMPIDIR /usr
 setenv MPICXX $DIFXMPIDIR/bin/mpicxx
 
 ####### LIBRARY PATHS #######################
@@ -75,7 +75,7 @@ if $?IPP_LIBRARY_PATH then
 endif
 if $?MPI_LIBRARY_PATH then
     PREPEND LD_LIBRARY_PATH $MPI_LIBRARY_PATH
-fi
+endif
 if ($DIFXOS == "darwin") then
   PREPEND DYLD_LIBRARY_PATH  ${DIFXROOT}/lib
   PREPEND DYLD_LIBRARY_PATH  ${PGPLOTDIR}
@@ -91,7 +91,11 @@ if ($?PKG_CONFIG_PATH) then
 else
   setenv PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
 endif
-PREPEND PYTHONPATH  $DIFXROOT/lib/python
+if ($?PYTHONPATH) then
+  PREPEND PYTHONPATH  $DIFXROOT/lib/python
+else 
+  setenv PYTHONPATH  $DIFXROOT/lib/python
+endif
 if ( $arch == "x86_64" ) then #64 bit
   PREPEND PKG_CONFIG_PATH  ${DIFXROOT}/lib64/pkgconfig
   PREPEND PYTHONPATH  $DIFXROOT/lib64/python
