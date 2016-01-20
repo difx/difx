@@ -27,7 +27,11 @@ def getippversion(path):
 	if not isfile(ippheader):
 		ippheader = path+'/ipp/include/ippversion.h'
 		if not isfile(ippheader):
-			ippheader = ''
+			ippheader = path+'/composerxe/ipp/include/ippversion.h'
+			if isfile(ippheader):
+				path += '/composerxe'
+			else:
+				ippheader = ''
 
 	if (ippheader==''):
 		print "Warning: ippversion.h not found, relying on IPP path ", path
@@ -43,7 +47,7 @@ def getippversion(path):
 					if len(possibilities) > 1:
 						print 'Guessing version == %s' % possibilities[-1]
 
-						return possibilities[-1]
+						return (path, possibilities[-1])
 					
 	else:
 		print "Reading version from ", ippheader
@@ -52,14 +56,14 @@ def getippversion(path):
 			m = search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
 			if (m != None):
 				print "Got version ", m.group(1)
-				return m.group(1)
+				return (path, m.group(1))
 			if (major == None):
 			    major = search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
 			if (minor == None):
 			    minor = search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
 		if (major != None and minor != None):
 			print "Have version ", major.group(1) + "." + minor.group(1)
-			return major.group(1) + "." + minor.group(1)
+			return (path, major.group(1) + "." + minor.group(1))
 		print "Sorry, cannot find IPP_VERSION_STR in ", ippheader
 		exit(0)
 	
@@ -90,7 +94,7 @@ def genipppc(path, ippversion):
 
 	# if no version actually supplied, try to guess from path
 	if ippversion == '':
-		ippversion = getippversion(path)
+		(path, ippversion) = getippversion(path)
 
 	ipparch = getarch()
     
