@@ -1906,6 +1906,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 						{
 							int *parentFreqIndices = new int[nZoomFreqs];
 							int nZoom;	// actual number of zoom freqs used
+							int nZoomSkip = 0;
 
 							DifxDatastreamAllocZoomFreqs(dd, nZoomFreqs);
 							
@@ -1914,58 +1915,46 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 							{
 								const ZoomFreq &zf = antennaSetup->zoomFreqs[i];
 
-								parentFreqIndices[i] = -1;
+								parentFreqIndices[nZoom] = -1;
 								for(int j = 0; j < dd->nRecFreq; ++j)
 								{
 									if(matchingFreq(zf, dd, j, freqs))
 									{
-										parentFreqIndices[i] = j;
+										parentFreqIndices[nZoom] = j;
 									}
 								}
-								if(parentFreqIndices[i] < 0)
+								if(parentFreqIndices[nZoom] < 0)
 								{
-									if(setup.nStream() == 1)
-									{
-										// definitely an error
-										cerr << "Error: Cannot find a parent freq for zoom band " << i << " of datastream " << ds << " for antenna " << antName << endl;
-										cerr << "Note: This might be caused by a frequency offset that is not a multiple of the spectral resolution" << endl;
-									
-										exit(EXIT_FAILURE);
-									}
-									else
-									{
-										static bool first = true;
-										if(first)
-										{
-											cerr << "Warning: Cannot find a parent freq for zoom band " << i << " of datastream " << ds << " for antenna " << antName << endl;
-											cerr << "Note: This might be caused by a frequency offset that is not a multiple of the spectral resolution" << endl;
-											cerr << "More likely it is because there are multiple datastreams and it could be that a different datastream hosts this zoom band." << endl;
-											cerr << "Similar warnings will be suppressed" << endl;
-										}
-										first = false;
-									}
+									nZoomSkip++;
+									cerr << "Warning: Cannot find a parent freq for zoom band " << i << " (" << zf.frequency << ") of datastream " << ds << " for antenna " << antName << endl;
+
+									continue;
 								}
 
 								zoomChans = static_cast<int>(zf.bandwidth/corrSetup->FFTSpecRes);
-								fqId = getFreqId(freqs, zf.frequency, zf.bandwidth, 'U', corrSetup->FFTSpecRes, corrSetup->outputSpecRes, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
 								if(zoomChans < minChans)
 								{
 									minChans = zoomChans;
 								}
+								fqId = getFreqId(freqs, zf.frequency, zf.bandwidth, 'U', corrSetup->FFTSpecRes, corrSetup->outputSpecRes, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
 								dd->zoomFreqId[nZoom] = fqId;
-								dd->nZoomPol[nZoom] = dd->nRecPol[parentFreqIndices[i]];
-								nZoomBands += dd->nRecPol[parentFreqIndices[i]];
+								dd->nZoomPol[nZoom] = dd->nRecPol[parentFreqIndices[nZoom]];
+								nZoomBands += dd->nRecPol[parentFreqIndices[nZoom]];
 								if(!zf.correlateparent)
 								{
-									blockedfreqids[dd->antennaId].insert(dd->recFreqId[parentFreqIndices[i]]);
+									blockedfreqids[dd->antennaId].insert(dd->recFreqId[parentFreqIndices[nZoom]]);
 								}
 								++nZoom;
 							}
-							nZoomFreqs = nZoom;	// set to actual number needed
+							if(nZoomSkip > 0)
+							{
+								cerr << "Warning: dropped " << nZoomSkip << " zoom bands, " << nZoom << " remain" << endl;
+							}
+                                                        dd->nZoomFreq = nZoom;
 							DifxDatastreamAllocZoomBands(dd, nZoomBands);
 
 							nZoomBands = 0;
-							for(int i = 0; i < nZoomFreqs; ++i)
+							for(int i = 0; i < nZoom; ++i)
 							{
 								int k = 0;
 
@@ -1990,7 +1979,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 								if(polcount != dd->nZoomPol[i])
 								{
 									cout << "Developer error: didn't find all zoom pols (was looking for " << dd->nZoomPol[i] << ", only found " << polcount << ")!!" << endl;
-									cout << "  Ant=" << antName << " zoomfreq " << i << "/" << nZoomFreqs << " nZoomPol[" << i << "]=" << dd->nZoomPol[i] << std::endl;
+									cout << "  Ant=" << antName << " zoomfreq " << i << "/" << nZoom << " nZoomPol[" << i << "]=" << dd->nZoomPol[i] << std::endl;
 
 									exit(EXIT_FAILURE);
 								}
