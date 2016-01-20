@@ -13,4 +13,5 @@ AC_OUTPUT([ \
 	getslot/Makefile \
 	getmodules/Makefile \
 	getexplist/Makefile \
+	difxdbModule/Makefile \
 ])

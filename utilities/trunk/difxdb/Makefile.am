@@ -1,3 +1,3 @@
-SUBDIRS = comedia expad getmodules getslot getreleaselist difxqueue getexplist
+SUBDIRS = comedia expad getmodules getslot getreleaselist difxqueue getexplist difxdbModule
 
 

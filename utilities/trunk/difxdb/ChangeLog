@@ -2,6 +2,7 @@
 getreleaselist: order output by experiment code
 comedia: email notification for modules containing unknown experiments
 expad: show number of modules for each experiment
+difxdbModule: new utility for obtaining module information
 
 *Version 2.4
 Tagged DiFX-2.4 on Nov 4, 2014
