@@ -8,7 +8,7 @@ clean : $(TARGETS)
 	rm -f *.o $^
 
 CC  = gcc
-CXX = mpicxx
+CXX = c++
 CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
 F77 = g77
 
