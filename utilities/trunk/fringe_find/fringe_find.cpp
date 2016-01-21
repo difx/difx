@@ -32,23 +32,38 @@ int main(int argc, char *argv[])
   Ipp32f stddev, minval, maxval, basicsnr, derivsnr, bestsnr;
   int minindex, maxindex, basicindex, bestindex, otherindex;
   IppsFFTSpec_R_32f* fftspec;
+  IppsDFTSpec_R_32f* dftspec;
+  IppStatus status;
+
   string commentstring;
   ifstream input;
+  int isFFT;
   int order = 0;
-  //float sumx = 0.0;
-  //float sumy = 0.0;
-  //float sumxsquared = 0.0;
-  //float sumysquared = 0.0;
-  //float sumxy = 0.0;
-  //float a = 0.0;
-  //float b = 0.0;
-  //Ipp32f rms, meanval, snr;
-  //Ipp32f * residuals = ippsMalloc_32f(maxchan-minchan);
+  int fftchannels = numchannels*2;
 
-  while(((numchannels*2) >> order) > 1)
-    order++;
+  //Uses bitwise test to check if numchannels is power of 2
+  if(!(fftchannels & (fftchannels - 1)))
+  {
+    isFFT = true;
+    cout << "Power of 2 so using FFT" << endl;
+  }
+  else
+  {
+    isFFT = false;
+    cout << "NOT a power of 2 so using DFT" << endl;
+  }
 
-  ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+  if (isFFT) {
+    while(((fftchannels) >> order) > 1)
+      order++;
+    status = ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+  } else {
+    ippsDFTInitAlloc_R_32f(&dftspec, fftchannels, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+  }
+  if (status != ippStsNoErr) {
+    cerr << "Error in FFT initialisation!!!" << status << endl;
+    exit(1);
+  }
 
   //work out if its a binary or ascii file
   int index = string(argv[1]).find_first_of('.');
@@ -77,12 +92,13 @@ int main(int argc, char *argv[])
       exit(1);
     }
 
-    //ignore the channel number
-    getline(input, line, ' ');
 
     //read in the data
-    for(int i=0;i<numchannels+1;i++)
+    for(int i=0;i<numchannels;i++)
     {
+      //ignore the channel number
+      getline(input, line, ' ');
+
       //read the amplitude
       getline(input, line, ' ');
       amplitudes[i] = atof(line.c_str());
@@ -90,19 +106,24 @@ int main(int argc, char *argv[])
       //read the phase
       getline(input, line);
       phases[i] = atof(line.c_str());
-
-      //ignore the channel number
-      getline(input, line, ' ');
     }
+    // Add a dummy value to the end
+    amplitudes[numchannels] = 0;
+    phases[numchannels] = 0;
 
-    ippsPolarToCart_32f(amplitudes, phases, realcomponent, imagcomponent, numchannels + 1);
+    ippsPolarToCart_32f(amplitudes, phases, realcomponent, imagcomponent, numchannels+1);
   }
 
   input.close();
 
-  ippsRealToCplx_32f(realcomponent, imagcomponent, complexfrequency, numchannels + 1);
-  ippsFFTInv_CCSToR_32f((Ipp32f*)complexfrequency, timedomain, fftspec, 0);
   
+  ippsRealToCplx_32f(realcomponent, imagcomponent, complexfrequency, numchannels + 1);
+  
+  if (isFFT) 
+    ippsFFTInv_CCSToR_32f((Ipp32f*)complexfrequency, timedomain, fftspec, 0);
+  else 
+    ippsDFTInv_CCSToR_32f((Ipp32f*)complexfrequency, timedomain, dftspec, 0);
+
   //rearrange the lags into order
   for(int i=0;i<numchannels*2;i++)
     lags[(i+numchannels)%(2*numchannels)] = timedomain[i];
