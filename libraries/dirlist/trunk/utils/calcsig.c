@@ -5,12 +5,13 @@
 unsigned int calculateMark5DirSignature(const unsigned char *data, int size)
 {
 	unsigned int signature;
+	int j;
 
 	signature = 1;
 
 	if(size > 0)
 	{
-		for(int j = 0; j < size/4; ++j)
+		for(j = 0; j < size/4; ++j)
 		{
 			unsigned int x = ((unsigned int *)data)[j] + 1;
 			signature = signature ^ x;
