@@ -172,7 +172,29 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   if(!configread || !ruleread || !commonread || !datastreamread || !freqread)
   {
     if(mpiid == 0) //only write one copy of this error message
+    {
+      if(!configread)
+      {
+        cerror << startl << "CONFIGURATION section not parsed" << endl;
+      }
+      if(!ruleread)
+      {
+        cerror << startl << "RULE section not parsed" << endl;
+      }
+      if(!commonread)
+      {
+        cerror << startl << "COMMON section not parsed" << endl;
+      }
+      if(!datastreamread)
+      {
+        cerror << startl << "DATASTREAM section not parsed" << endl;
+      }
+      if(!freqread)
+      {
+        cerror << startl << "FREQ section not parsed" << endl;
+      }
       cfatal << startl << "One or more sections missing from input file - aborting!!!" << endl;
+    }
     consistencyok = false;
   }
   input->close();
