@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -59,6 +59,7 @@ int main(int argc, char **argv)
 	const VexScan * S;
 	const SourceSetup * sourceSetup;
 	list<Event> events;
+	set<std::string> canonicalVDIFUsers;
 	string shelfFile;
 	string missingDataFile;	// created if file-based and no files for a particular antenna/job are found
 	string v2dFile;
@@ -185,7 +186,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	applyCorrParams(V, *P, nWarn, nError);
+	applyCorrParams(V, *P, nWarn, nError, canonicalVDIFUsers);
 	
 	V->generateEvents(events);
 	V->addBreakEvents(events, P->manualBreaks);

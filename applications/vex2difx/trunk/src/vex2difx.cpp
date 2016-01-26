@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -56,7 +56,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20150706");
+const string verdate("20160126");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -2509,6 +2509,7 @@ int main(int argc, char **argv)
 	const VexScan *S;
 	const SourceSetup *sourceSetup;
 	list<Event> events;
+	set<string> canonicalVDIFUsers;
 	vector<Job> J;
 	string shelfFile;
 	string missingDataFile;	// created if file-based and no files for a particular antenna/job are found
@@ -2678,8 +2679,20 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	applyCorrParams(V, *P, nWarn, nError);
+	applyCorrParams(V, *P, nWarn, nError, canonicalVDIFUsers);
 	calculateScanSizes(V, *P);
+
+	if(!canonicalVDIFUsers.empty())
+	{
+		cout << "Note: Canonical VDIF threads were assumed for the following antennas:";
+
+		for(set<string>::const_iterator it = canonicalVDIFUsers.begin(); it != canonicalVDIFUsers.end(); ++it)
+		{
+			cout << " " << *it;
+		}
+
+		cout << endl;
+	}
 	
 	V->generateEvents(events);
 	V->addBreakEvents(events, P->manualBreaks);

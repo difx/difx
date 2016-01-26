@@ -1,5 +1,37 @@
+/***************************************************************************
+ *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id$
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
+ *
+ *==========================================================================*/
+
+
 #include <cstring>
+#include <set>
 #include "vex_antenna.h"
+#include "util.h"
 
 // get the clock epoch as a MJD value (with fractional component), negative 
 // means not found.  Also fills in the first two coeffs, returned in seconds
@@ -110,18 +142,53 @@ bool isVLBA(const std::string &antName)
 bool usesCanonicalVDIF(const std::string &antName)
 {
 	// Add here any known antennas that use VDIF thread ids that start at 0 for the first record channel and increment by 1 for each additional record channel
-	if(isVLBA(antName) ||
-	   strcasecmp(antName.c_str(), "Gb") == 0 ||
-	   strcasecmp(antName.c_str(), "Eb") == 0 ||
-	   strcasecmp(antName.c_str(), "Ar") == 0 ||
-	   strcasecmp(antName.c_str(), "Y") == 0)
+	static int unset = true;
+	static std::set<std::string> canonicalVDIFUsers;
+	std::string ant = antName;
+	
+	Upper(ant);
+
+	if(unset)
 	{
-		return true;
+		unset = false;
+
+		char *e = getenv("CANONICAL_VDIF_USERS");
+		if(!e)
+		{
+			// must be capitalized
+			canonicalVDIFUsers.insert("BR");
+			canonicalVDIFUsers.insert("FD");
+			canonicalVDIFUsers.insert("HN");
+			canonicalVDIFUsers.insert("KP");
+			canonicalVDIFUsers.insert("LA");
+			canonicalVDIFUsers.insert("MK");
+			canonicalVDIFUsers.insert("NL");
+			canonicalVDIFUsers.insert("OV");
+			canonicalVDIFUsers.insert("PT");
+			canonicalVDIFUsers.insert("SC");
+			canonicalVDIFUsers.insert("GB");
+			canonicalVDIFUsers.insert("Y");
+		}
+		else
+		{
+			char separators[] = ",: ";
+			char *t;
+			std::string token;
+
+			t = strtok(e, separators);
+			while(t)
+			{
+				token = t;
+				Upper(token);
+				canonicalVDIFUsers.insert(token);
+
+				t = strtok(0, separators);
+			}
+		}
+		
 	}
-	else
-	{
-		return false;
-	}
+
+	return (canonicalVDIFUsers.find(ant) != canonicalVDIFUsers.end());
 }
 
 std::ostream& operator << (std::ostream &os, const VexAntenna &x)

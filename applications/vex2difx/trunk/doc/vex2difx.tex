@@ -291,7 +291,8 @@ The numbering scheme works as follows:
 \item The channels are then given sequential integer thread numbers starting with 0 for the first channel alphabetically listed.
 \end{enumerate}
 \vexdifx only assigns canonical thread numbers if no other source of thread information is present {\em and} they are from one of the antennas known to produce channels in canonical order.
-These antennas are those of the VLBA, GBT, VLA, Arecibo, and Effelsberg (using the RDBE backend, station code {\tt EB}).
+By default, these antennas are those of the VLBA, GBT (GB), and VLA (Y).
+The set of antennas making use of canonical thread numbers can be changed through use of environment variable {\tt CANONICAL\_VDIF\_USERS}.
 
 \subsubsection{Format overriding with multiple modes}
 

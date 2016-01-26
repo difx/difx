@@ -39,6 +39,7 @@ Version 2.5.0
 * Allow strideLength = 0 --> mpifxcorr chooses a pretty good value for you (per datastream)
 * Allow xmacLength = 0 -> mpifxcorr chooses a pretty good value for you
 * Don't allow changing from or to VDIF format with the .v2d file since channel order is defined differently for these two types.
+* Stations defaulting to use of Canonical VDIF threads changed to VLBA antennas, VLA, and GBT only (Arecibo and Effelsberg removed).  Can be changed through environment variable CANONICAL_VDIF_USERS
 
 Version 2.4.0
 ~~~~~~~~~~~~~

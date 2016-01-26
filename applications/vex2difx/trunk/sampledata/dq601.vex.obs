@@ -1,0 +1,1761 @@
+VEX_rev = 1.5;
+*    SCHED vers: Release 11.4.  March 14, 2015
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  11.4  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = DQ601;
+*                                                      +------------+
+*                         PI revision number:          |    1.0000  |
+*                                                      +------------+
+*    mode:       RDBE mostly 512 Mbps
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def DQ601;
+     exper_name = DQ601;
+     exper_description = "VLBA Monitoring";
+     PI_name = "NRAO AOC Data Analysts";
+     PI_email = analysts@nrao.edu;
+*    address:   NRAO-AOC
+*               P.O.Box O
+*               Socorro NM 87801, U.S.A.
+*                
+*    phone:     +1-505-835-7000 (front)
+*    during obs:+1-505-835-7359 (Paul)
+*    fax:        
+*    notes:     VLBA Monitoring test in dynamic scheduling
+*               and runs for 82 minutes (1.36 hours) total.
+*
+*    year, doy: 2016,   7
+*    date     : Thu  7 Jan 2016
+*    MJD      : 57394
+     exper_nominal_start=2016y007d12h31m24s;
+     exper_nominal_stop=2016y007d13h56m19s;
+*
+     target_correlator = SOCORRO;
+*
+*    integr_time    :     2.000 s
+*    number_channels:   128
+*    number_antenna : 10
+*    cross_polarize : Yes
+*    weight_func    : UNIFORM
+*    distrib_medium : DAT
+*    distrib_format : FITS
+*    source_pos_cat : SCHEDULE
+*    distribute_to  : 
+*                     Analysts Office
+*                     NRAO-AOC
+*                     P.O.Box O, Socorro NM 87801, U.S.A.
+*    corr_notes : 
+*               Please correlate at highest priority,
+*               and notify analysts when complete. ThanX..
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def band.9050;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 320.75MHz8x4MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@-500MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.20cm;
+     ref $PROCEDURES = Mode_02;
+     ref $FREQ = 1407.75MHz8x16MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@2400MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.13cm;
+     ref $PROCEDURES = Mode_03;
+     ref $FREQ = 2219.75MHz8x16MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@3100MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#03:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.6cm;
+     ref $PROCEDURES = Mode_04;
+     ref $FREQ = DualFreq8x16MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = DualFreqDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs#03:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#04:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.sx;
+     ref $PROCEDURES = Mode_05;
+     ref $FREQ = DualFreq8x8MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = DualFreqRPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs#04:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#03:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#05:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.6-64;
+     ref $PROCEDURES = Mode_06;
+     ref $FREQ = 4772.75MHz8x64MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@4100MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#04:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#06:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.6-2;
+     ref $PROCEDURES = Mode_07;
+     ref $FREQ = 4979.75MHz4x8MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@4100MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 4BBCs:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.4Ch2bit1to1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#07:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.4cm;
+     ref $PROCEDURES = Mode_08;
+     ref $FREQ = 8383.75MHz8x16MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@7600MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = DsbDetect:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.2cm;
+     ref $PROCEDURES = Mode_09;
+     ref $FREQ = 15269.984375MHz8x16MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@14600MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#08:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.1cm;
+     ref $PROCEDURES = Mode_10;
+     ref $FREQ = 22203.75MHz8x16MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@21500MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#09:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.7mm;
+     ref $PROCEDURES = Mode_11;
+     ref $FREQ = 43103.75MHz8x16MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@42400MHzDPolTone/1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#02:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#10:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def band.3mm;
+     ref $PROCEDURES = Mode_12;
+     ref $FREQ = 86172.75MHz8x64MHz:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@85500MHzDPolTone/1:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 8BBCs:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.8Ch2bit1to1#04:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#11:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*
+def ptd7mm;
+     ref $PROCEDURES = Mode_13;
+     ref $FREQ = 43115.75MHz4x16MHz:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@42400MHzDPolTone/1:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 4BBCs:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = VDIF.4Ch2bit1to1#02:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#12:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Sc;
+     ref $SITE = VLBA_SC;
+     ref $ANTENNA = VLBA_SC;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Hn;
+     ref $SITE = VLBA_HN;
+     ref $ANTENNA = VLBA_HN;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Nl;
+     ref $SITE = VLBA_NL;
+     ref $ANTENNA = VLBA_NL;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Fd;
+     ref $SITE = VLBA_FD;
+     ref $ANTENNA = VLBA_FD;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def La;
+     ref $SITE = VLBA_LA;
+     ref $ANTENNA = VLBA_LA;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Pt;
+     ref $SITE = VLBA_PT;
+     ref $ANTENNA = VLBA_PT;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Kp;
+     ref $SITE = VLBA_KP;
+     ref $ANTENNA = VLBA_KP;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Ov;
+     ref $SITE = VLBA_OV;
+     ref $ANTENNA = VLBA_OV;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Br;
+     ref $SITE = VLBA_BR;
+     ref $ANTENNA = VLBA_BR;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Mk;
+     ref $SITE = VLBA_MK;
+     ref $ANTENNA = VLBA_MK;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_02;
+     procedure_name_prefix =  "02";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_03;
+     procedure_name_prefix =  "03";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_04;
+     procedure_name_prefix =  "04";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_05;
+     procedure_name_prefix =  "05";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_06;
+     procedure_name_prefix =  "06";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_07;
+     procedure_name_prefix =  "07";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_08;
+     procedure_name_prefix =  "08";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_09;
+     procedure_name_prefix =  "09";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_10;
+     procedure_name_prefix =  "10";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_11;
+     procedure_name_prefix =  "11";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_12;
+     procedure_name_prefix =  "12";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_13;
+     procedure_name_prefix =  "13";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def VLBA_SC;
+     site_type = fixed;
+     site_name = VLBA_SC;
+     site_ID = Sc;
+*    elev=  -15.02 long= 064:35:01. lat= 17:45:23.7
+     site_position = 2607848.63790 m:-5488069.53580 m: 1932739.73260 m;
+     site_velocity =  0.007130   m/yr:  0.009460   m/yr:  0.012310  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 20.0: 25.0: 40.0: 45.0: 50.0: 55.0:
+                                60.0: 65.0: 70.0: 75.0: 80.0: 85.0: 95.0:100.0:
+                               105.0:110.0:115.0:120.0:125.0:130.0:135.0:140.0:
+                               145.0:150.0:155.0:160.0:165.0:175.0:180.0:185.0:
+                               190.0:200.0:205.0:210.0:215.0:220.0:230.0:235.0:
+                               240.0:245.0:250.0:260.0:265.0:270.0:275.0:280.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  3.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 6.0:  6.0:  8.0:  9.0:  9.0:  8.0:  8.0:  9.0:
+                                10.0: 12.0: 14.0: 16.0: 16.0: 15.0: 13.0: 13.0:
+                                12.0: 11.0: 11.0: 10.0:  9.0:  9.0: 11.0: 13.0:
+                                14.0: 14.0: 15.0: 13.0: 12.0: 10.0: 10.0:  9.0:
+                                 8.0:  8.0:  7.0:  7.0:  6.0:  4.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_HN;
+     site_type = fixed;
+     site_name = VLBA_HN;
+     site_ID = Hn;
+*    elev=  295.57 long= 071:59:11. lat= 42:56:01.0
+     site_position = 1446374.86580 m:-4447939.67740 m: 4322306.18380 m;
+     site_velocity = -0.015770   m/yr: -0.001520   m/yr:  0.004250  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 30.0: 35.0: 40.0: 45.0: 65.0: 70.0: 80.0:
+                                85.0: 90.0: 95.0:100.0:105.0:110.0:115.0:120.0:
+                               125.0:130.0:135.0:140.0:145.0:150.0:155.0:160.0:
+                               165.0:170.0:190.0:195.0:200.0:205.0:210.0:220.0:
+                               225.0:230.0:235.0:240.0:245.0:250.0:255.0:270.0:
+                               275.0:290.0:295.0:315.0:320.0:325.0:330.0:335.0:
+                               345.0:350.0:355.0:360.0;
+     horizon_map_el =  6.0 deg:  6.0:  6.0:  4.0:  5.0:  4.0:  4.0:  5.0:  5.0:
+                                 4.0:  5.0:  4.0:  4.0:  5.0:  3.0:  4.0:  4.0:
+                                 5.0:  4.0:  6.0:  5.0:  7.0:  7.0:  5.0:  3.0:
+                                 5.0:  4.0:  4.0:  2.0:  5.0:  5.0:  6.0:  6.0:
+                                 5.0:  6.0:  4.0:  5.0:  5.0:  4.0:  5.0:  5.0:
+                                 4.0:  4.0:  5.0:  5.0:  6.0:  5.0:  5.0:  6.0:
+                                 6.0:  5.0:  5.0:  6.0;
+enddef;
+*
+def VLBA_NL;
+     site_type = fixed;
+     site_name = VLBA_NL;
+     site_ID = Nl;
+*    elev=  222.24 long= 091:34:26. lat= 41:46:17.1
+     site_position = -130872.49870 m:-4762317.09250 m: 4226851.00140 m;
+     site_velocity = -0.015530   m/yr:  0.001460   m/yr: -0.002140  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 75.0: 80.0: 85.0:100.0:105.0:110.0:115.0:
+                               120.0:125.0:130.0:135.0:140.0:145.0:150.0:155.0:
+                               160.0:165.0:170.0:190.0:195.0:200.0:220.0:225.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  6.0:  6.0:  8.0:  7.0:  7.0:
+                                 6.0:  7.0:  7.0:  6.0:  6.0:  7.0:  7.0:  6.0:
+                                 5.0:  4.0:  3.0:  3.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_FD;
+     site_type = fixed;
+     site_name = VLBA_FD;
+     site_ID = Fd;
+*    elev= 1606.42 long= 103:56:41. lat= 30:38:06.1
+     site_position =-1324009.32660 m:-5332181.95470 m: 3231962.39490 m;
+     site_velocity = -0.012810   m/yr:  0.000480   m/yr: -0.004540  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0: 30.0: 35.0: 40.0: 45.0:
+                                50.0: 55.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:
+                                90.0: 95.0:100.0:105.0:110.0:115.0:150.0:155.0:
+                               160.0:220.0:225.0:230.0:240.0:245.0:250.0:255.0:
+                               260.0:265.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:325.0:330.0:335.0:340.0:
+                               345.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  5.0:  5.0:  3.0:  3.0:  2.0:  3.0:  2.0:
+                                 2.0:  3.0:  4.0:  7.0:  5.0:  4.0:  4.0:  5.0:
+                                 6.0:  6.0:  5.0:  4.0:  3.0:  2.0:  2.0:  3.0:
+                                 2.0:  2.0:  4.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:  2.0:
+                                 3.0:  4.0:  5.0:  4.0:  4.0:  5.0:  6.0:  6.0:
+                                 5.0:  5.0;
+enddef;
+*
+def VLBA_LA;
+     site_type = fixed;
+     site_name = VLBA_LA;
+     site_ID = La;
+*    elev= 1962.43 long= 106:14:44. lat= 35:46:30.4
+     site_position =-1449752.58390 m:-4975298.57570 m: 3709123.84590 m;
+     site_velocity = -0.014400   m/yr:  0.000550   m/yr: -0.004710  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 75.0: 80.0: 85.0:130.0:135.0:145.0:150.0:
+                               250.0:255.0:300.0:305.0:315.0:320.0:340.0:345.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  2.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  4.0:  4.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_PT;
+     site_type = fixed;
+     site_name = VLBA_PT;
+     site_ID = Pt;
+*    elev= 2364.69 long= 108:07:09. lat= 34:18:03.7
+     site_position =-1640953.93830 m:-5014816.02370 m: 3575411.79160 m;
+     site_velocity = -0.014610   m/yr: -0.000210   m/yr: -0.005210  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:165.0:
+                               170.0:180.0:185.0:190.0:195.0:200.0:240.0:245.0:
+                               250.0:255.0:265.0:270.0:275.0:280.0:285.0:360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  3.0:  2.0:  3.0:  2.0:  2.0:
+                                 3.0:  3.0:  4.0:  4.0:  3.0:  4.0:  4.0:  3.0:
+                                 4.0:  3.0:  3.0:  4.0:  3.0:  3.0:  2.0:  2.0;
+enddef;
+*
+def VLBA_KP;
+     site_type = fixed;
+     site_name = VLBA_KP;
+     site_ID = Kp;
+*    elev= 1901.99 long= 111:36:44. lat= 31:57:22.7
+     site_position =-1995678.84020 m:-5037317.69680 m: 3357328.02510 m;
+     site_velocity = -0.013740   m/yr:  0.000790   m/yr: -0.006170  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 45.0: 50.0: 55.0: 60.0: 65.0: 70.0: 75.0:
+                                80.0: 85.0: 90.0: 95.0:105.0:110.0:115.0:120.0:
+                               150.0:155.0:165.0:170.0:180.0:185.0:215.0:220.0:
+                               225.0:230.0:235.0:240.0:255.0:260.0:265.0:270.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  5.0:  6.0:  7.0:  7.0:  8.0:  8.0:
+                                 9.0:  6.0:  3.0:  2.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 4.0:  5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_OV;
+     site_type = fixed;
+     site_name = VLBA_OV;
+     site_ID = Ov;
+*    elev= 1196.31 long= 118:16:37. lat= 37:13:53.9
+     site_position =-2409150.40180 m:-4478573.11800 m: 3838617.33850 m;
+     site_velocity = -0.018570   m/yr:  0.006660   m/yr: -0.003330  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0: 25.0: 30.0: 35.0: 40.0:
+                                45.0: 50.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:
+                                90.0: 95.0:100.0:105.0:110.0:115.0:120.0:125.0:
+                               130.0:145.0:150.0:155.0:175.0:180.0:185.0:190.0:
+                               195.0:200.0:205.0:210.0:230.0:235.0:240.0:245.0:
+                               250.0:260.0:265.0:270.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:350.0:355.0:360.0;
+     horizon_map_el =  3.0 deg:  5.0:  5.0:  7.0:  9.0: 10.0: 12.0: 13.0: 13.0:
+                                14.0: 15.0: 15.0: 13.0: 12.0: 11.0: 10.0:  9.0:
+                                 8.0:  7.0:  6.0:  6.0:  5.0:  4.0:  3.0:  3.0:
+                                 4.0:  4.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 5.0:  5.0:  6.0:  7.0:  7.0:  6.0:  7.0:  8.0:
+                                 9.0:  9.0:  8.0:  7.0:  7.0:  5.0:  4.0:  4.0:
+                                 3.0:  3.0:  2.0:  2.0:  3.0:  3.0;
+enddef;
+*
+def VLBA_BR;
+     site_type = fixed;
+     site_name = VLBA_BR;
+     site_ID = Br;
+*    elev=  250.48 long= 119:40:59. lat= 48:07:52.4
+     site_position =-2112065.20620 m:-3705356.50480 m: 4726813.67590 m;
+     site_velocity = -0.014820   m/yr:  0.000510   m/yr: -0.007190  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 25.0: 30.0: 40.0: 45.0: 70.0:
+                                75.0:120.0:125.0:130.0:135.0:155.0:160.0:185.0:
+                               190.0:195.0:220.0:225.0:235.0:240.0:245.0:250.0:
+                               255.0:265.0:270.0:275.0:300.0:305.0:310.0:315.0:
+                               330.0:335.0:340.0:345.0:350.0:360.0;
+     horizon_map_el =  2.0 deg:  2.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:  4.0:
+                                 5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:  2.0:
+                                 3.0:  4.0:  4.0:  3.0:  3.0:  4.0:  4.0:  5.0:
+                                 6.0:  6.0:  5.0:  6.0:  6.0:  5.0:  6.0:  5.0:
+                                 5.0:  4.0:  4.0:  3.0:  2.0:  2.0;
+enddef;
+*
+def VLBA_MK;
+     site_type = fixed;
+     site_name = VLBA_MK;
+     site_ID = Mk;
+*    elev= 3763.02 long= 155:27:19. lat= 19:48:05.0
+     site_position =-5464075.18470 m:-2495248.10550 m: 2148297.36490 m;
+     site_velocity = -0.014440   m/yr:  0.062640   m/yr:  0.032340  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0:120.0:125.0:130.0:135.0:
+                               140.0:145.0:150.0:155.0:160.0:165.0:170.0:175.0:
+                               185.0:190.0:195.0:200.0:205.0:210.0:215.0:220.0:
+                               255.0:260.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:320.0:325.0:330.0:335.0:
+                               340.0:345.0:350.0:355.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  3.0:  3.0:  2.0:  2.0:  4.0:  5.0:  5.0:
+                                 4.0:  4.0:  6.0:  8.0:  8.0: 11.0: 12.0: 13.0:
+                                13.0: 11.0: 11.0:  9.0:  7.0:  5.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  5.0:  6.0:  8.0: 10.0: 12.0:
+                                14.0: 12.0: 11.0:  9.0: 10.0: 11.0: 10.0: 12.0:
+                                14.0: 12.0:  9.0:  7.0:  5.0;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def VLBA_SC;
+     axis_type = az : el;
+     antenna_motion = el :  28.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13460 m;
+enddef;
+*
+def VLBA_HN;
+     axis_type = az : el;
+     antenna_motion = el :  26.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  81.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13030 m;
+enddef;
+*
+def VLBA_NL;
+     axis_type = az : el;
+     antenna_motion = el :  28.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13080 m;
+enddef;
+*
+def VLBA_FD;
+     axis_type = az : el;
+     antenna_motion = el :  30.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13140 m;
+enddef;
+*
+def VLBA_LA;
+     axis_type = az : el;
+     antenna_motion = el :  29.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.0 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13210 m;
+enddef;
+*
+def VLBA_PT;
+     axis_type = az : el;
+     antenna_motion = el :  29.3 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13750 m;
+enddef;
+*
+def VLBA_KP;
+     axis_type = az : el;
+     antenna_motion = el :  29.4 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  80.8 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13120 m;
+enddef;
+*
+def VLBA_OV;
+     axis_type = az : el;
+     antenna_motion = el :  28.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13060 m;
+enddef;
+*
+def VLBA_BR;
+     axis_type = az : el;
+     antenna_motion = el :  29.0 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  83.6 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.12990 m;
+enddef;
+*
+def VLBA_MK;
+     axis_type = az : el;
+     antenna_motion = el :  28.3 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  86.8 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13430 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 2RDBE2+NONE<;
+     record_transport_type = Mark5C;
+     electronics_rack_type = RDBE2;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def J1229+0203;
+     source_name = J1229+0203;
+*    this source had calibrator code: V
+*    alternate source name: 3C273B
+*    alternate source name: 3C273
+*    alternate source name: 1226+023
+*    alternate source name: J1229+02
+*    GSFC 2015a astro solution, unpublished  31967 observations.
+     ra = 12h29m06.6997295s; dec =  02d03'08.598285"; ref_coord_frame = J2000;
+*    ra = 12h26m33.2458332s; dec =  02d19'43.305781"; ref_coord_frame = B1950;
+*    ra = 12h29m55.9636355s; dec =  01d57'48.830757"; ref_coord_frame = Date;
+enddef;
+*
+def 3C273;
+     source_name = 3C273;
+*    this source had calibrator code: V
+*    alternate source name: 3C273B
+*    alternate source name: J1229+0203
+*    alternate source name: 1226+023
+*    alternate source name: J1229+02
+*    GSFC 2015a astro solution, unpublished  31967 observations.
+     ra = 12h29m06.6997295s; dec =  02d03'08.598285"; ref_coord_frame = J2000;
+*    ra = 12h26m33.2458332s; dec =  02d19'43.305781"; ref_coord_frame = B1950;
+*    ra = 12h29m55.9636355s; dec =  01d57'48.830757"; ref_coord_frame = Date;
+enddef;
+*
+def J1310+3220;
+     source_name = J1310+3220;
+*    this source had calibrator code: V
+*    alternate source name: 1308+326
+*    alternate source name: J1310+32
+*    GSFC 2015a astro solution, unpublished 114443 observations.
+     ra = 13h10m28.6638489s; dec =  32d20'43.782933"; ref_coord_frame = J2000;
+*    ra = 13h08m07.5601295s; dec =  32d36'40.238864"; ref_coord_frame = B1950;
+*    ra = 13h11m13.2810692s; dec =  32d15'28.310294"; ref_coord_frame = Date;
+enddef;
+*
+def J1331+3030;
+     source_name = J1331+3030;
+*    this source had calibrator code: V
+*    alternate source name: 3C286
+*    alternate source name: 1328+307
+*    alternate source name: J1331+30
+*    GSFC 2015a astro solution, unpublished    225 observations.
+     ra = 13h31m08.2880505s; dec =  30d30'32.959236"; ref_coord_frame = J2000;
+*    ra = 13h28m49.6577583s; dec =  30d45'58.640594"; ref_coord_frame = B1950;
+*    ra = 13h31m52.0257782s; dec =  30d25'28.946357"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 320.75MHz8x4MHz;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =   8.000 Ms/sec;  * (2bits/sample)
+     chan_def = :   320.75 MHz : U :   4.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :   320.75 MHz : U :   4.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :   324.75 MHz : U :   4.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :   324.75 MHz : U :   4.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = :   328.75 MHz : U :   4.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :   328.75 MHz : U :   4.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = :   608.75 MHz : U :   4.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :   608.75 MHz : U :   4.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 1407.75MHz8x16MHz;
+* mode =  2    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  1407.75 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  1407.75 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :  1423.75 MHz : U :  16.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  1423.75 MHz : U :  16.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = :  1649.75 MHz : U :  16.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  1649.75 MHz : U :  16.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = :  1665.75 MHz : U :  16.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  1665.75 MHz : U :  16.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 2219.75MHz8x16MHz;
+* mode =  3    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  2219.75 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  2219.75 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :  2286.75 MHz : U :  16.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  2286.75 MHz : U :  16.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = :  2324.75 MHz : U :  16.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  2324.75 MHz : U :  16.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = :  2359.75 MHz : U :  16.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  2359.75 MHz : U :  16.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def DualFreq8x16MHz;
+* mode =  4    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4954.25 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  4954.25 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :  4970.25 MHz : U :  16.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  4970.25 MHz : U :  16.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = :  7294.75 MHz : U :  16.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  7294.75 MHz : U :  16.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = :  7278.75 MHz : U :  16.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  7278.75 MHz : U :  16.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def DualFreq8x8MHz;
+* mode =  5    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  16.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  8365.75 MHz : U :   8.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  8445.75 MHz : U :   8.00 MHz : &CH02 : &BBC02 : &U_Cal; *Rcp
+     chan_def = :  8805.75 MHz : U :   8.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  8925.75 MHz : U :   8.00 MHz : &CH04 : &BBC04 : &U_Cal; *Rcp
+     chan_def = :  2232.75 MHz : U :   8.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  2262.75 MHz : U :   8.00 MHz : &CH06 : &BBC06 : &U_Cal; *Rcp
+     chan_def = :  2352.75 MHz : U :   8.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  2372.75 MHz : U :   8.00 MHz : &CH08 : &BBC08 : &U_Cal; *Rcp
+enddef;
+*
+def 4772.75MHz8x64MHz;
+* mode =  6    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate = 128.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4772.75 MHz : U :  64.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  4772.75 MHz : U :  64.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :  4836.75 MHz : U :  64.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  4836.75 MHz : U :  64.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = :  4898.75 MHz : U :  64.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  4898.75 MHz : U :  64.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = :  5020.75 MHz : U :  64.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  5020.75 MHz : U :  64.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 4979.75MHz4x8MHz;
+* mode =  7    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  16.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4979.75 MHz : U :   8.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  4979.75 MHz : U :   8.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :  4981.25 MHz : U :   8.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  4981.25 MHz : U :   8.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+enddef;
+*
+def 8383.75MHz8x16MHz;
+* mode =  8    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  8383.75 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  8383.75 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :  8399.75 MHz : U :  16.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  8399.75 MHz : U :  16.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = :  8431.75 MHz : L :  16.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  8431.75 MHz : L :  16.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = :  8447.75 MHz : L :  16.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  8447.75 MHz : L :  16.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 15269.984375MHz8x16MHz;
+* mode =  9    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 15269.984375 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = : 15269.984375 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = : 15285.984375 MHz : U :  16.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = : 15285.984375 MHz : U :  16.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = : 15301.75 MHz : U :  16.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = : 15301.75 MHz : U :  16.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = : 15317.75 MHz : U :  16.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = : 15317.75 MHz : U :  16.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 22203.75MHz8x16MHz;
+* mode = 10    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 22203.75 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = : 22203.75 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = : 22219.75 MHz : U :  16.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = : 22219.75 MHz : U :  16.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = : 22235.75 MHz : U :  16.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = : 22235.75 MHz : U :  16.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = : 22251.75 MHz : U :  16.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = : 22251.75 MHz : U :  16.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 43103.75MHz8x16MHz;
+* mode = 11    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43103.75 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = : 43103.75 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = : 43119.75 MHz : U :  16.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = : 43119.75 MHz : U :  16.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = : 43135.75 MHz : U :  16.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = : 43135.75 MHz : U :  16.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = : 43151.75 MHz : U :  16.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = : 43151.75 MHz : U :  16.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 86172.75MHz8x64MHz;
+* mode = 12    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate = 128.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 86172.75 MHz : U :  64.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = : 86172.75 MHz : U :  64.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = : 86236.75 MHz : U :  64.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = : 86236.75 MHz : U :  64.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = : 86298.75 MHz : U :  64.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = : 86298.75 MHz : U :  64.00 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = : 86420.75 MHz : U :  64.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = : 86420.75 MHz : U :  64.00 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 43115.75MHz4x16MHz;
+* mode = 13    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43115.75 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = : 43115.75 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = : 43215.75 MHz : U :  16.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = : 43215.75 MHz : U :  16.00 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@-500MHzDPolTone/1;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_B : B : R :  -500.00 MHz : U : 1 MHz ; *   15400.00  15400.00  90cm     0 NARROW
+     if_def = &IF_D : D : L :  -500.00 MHz : U : 1 MHz ; *   15400.00  15400.00  90cm     0 NARROW
+enddef;
+*
+def LO@2400MHzDPolTone/1;
+* mode =  2    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_A : A : R :  2400.00 MHz : L : 1 MHz ; *   14600.00   2400.00  20cm     0 NA
+     if_def = &IF_C : C : L :  2400.00 MHz : L : 1 MHz ; *   14600.00   2400.00  20cm     0 NA
+enddef;
+*
+def LO@3100MHzDPolTone/1;
+* mode =  3    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_A : A : R :  3100.00 MHz : L : 1 MHz ; *   15400.00   3100.00  13cm     0 NA
+     if_def = &IF_C : C : L :  3100.00 MHz : L : 1 MHz ; *   15400.00   3100.00  13cm     0 NA
+enddef;
+*
+def DualFreqDPolTone/1;
+* mode =  4    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_A : A : R :  4100.00 MHz : U : 1 MHz ; *    8100.00   4100.00  6cm     0 NA
+     if_def = &IF_C : C : L :  4100.00 MHz : U : 1 MHz ; *    8100.00   4100.00  6cm     0 NA
+     if_def = &IF_B : B : R :  8100.00 MHz : L : 1 MHz ; *    8100.00   4100.00  6cm     0 NA
+     if_def = &IF_D : D : L :  8100.00 MHz : L : 1 MHz ; *    8100.00   4100.00  6cm     0 NA
+enddef;
+*
+def DualFreqRPolTone/1;
+* mode =  5    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_B : B : R :  7600.00 MHz : U : 1 MHz ; *    7600.00   3100.00  4cm     0 NA
+     if_def = &IF_D : D : R :  9600.00 MHz : L : 1 MHz ; *    7600.00   3100.00  4cm     0 NA
+     if_def = &IF_A : A : R :  3100.00 MHz : L : 1 MHz ; *    7600.00   3100.00  13cm     0 NA
+enddef;
+*
+def LO@4100MHzDPolTone/1;
+* mode =  6    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  7    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_A : A : R :  4100.00 MHz : U : 1 MHz ; *   13600.00   4100.00  6cm     0 NA
+     if_def = &IF_C : C : L :  4100.00 MHz : U : 1 MHz ; *   13600.00   4100.00  6cm     0 NA
+enddef;
+*
+def LO@7600MHzDPolTone/1;
+* mode =  8    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_B : B : R :  7600.00 MHz : U : 1 MHz ; *    7600.00  15100.00  4cm     0 NA
+     if_def = &IF_D : D : L :  7600.00 MHz : U : 1 MHz ; *    7600.00  15100.00  4cm     0 NA
+enddef;
+*
+def LO@14600MHzDPolTone/1;
+* mode =  9    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_B : B : R : 14600.00 MHz : U : 1 MHz ; *   14600.00  10900.00  2cm     0 NA
+     if_def = &IF_D : D : L : 14600.00 MHz : U : 1 MHz ; *   14600.00  10900.00  2cm     0 NA
+enddef;
+*
+def LO@21500MHzDPolTone/1;
+* mode = 10    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_B : B : R : 21500.00 MHz : U : 1 MHz ; *    9100.00   6100.00  1cm 12400 NA
+     if_def = &IF_D : D : L : 21500.00 MHz : U : 1 MHz ; *    9100.00   6100.00  1cm 12400 NA
+enddef;
+*
+def LO@42400MHzDPolTone/1;
+* mode = 11    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 13    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_A : A : R : 42400.00 MHz : U : 1 MHz ; *    3900.00   7600.00  7mm 34800 NA
+     if_def = &IF_C : C : L : 42400.00 MHz : U : 1 MHz ; *    3900.00   7600.00  7mm 34800 NA
+enddef;
+*
+def LO@85500MHzDPolTone/1;
+* mode = 12    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_B : B : R : 85500.00 MHz : U : 1 MHz ; *   12900.00   4900.00  3mm 72600 NA
+     if_def = &IF_D : D : L : 85500.00 MHz : U : 1 MHz ; *   12900.00   4900.00  3mm 72600 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 8BBCs;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  8    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  9    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 10    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 12    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     BBC_assign = &BBC01 :  1 : &IF_B;
+     BBC_assign = &BBC02 :  2 : &IF_D;
+     BBC_assign = &BBC03 :  3 : &IF_B;
+     BBC_assign = &BBC04 :  4 : &IF_D;
+     BBC_assign = &BBC05 :  5 : &IF_B;
+     BBC_assign = &BBC06 :  6 : &IF_D;
+     BBC_assign = &BBC07 :  7 : &IF_B;
+     BBC_assign = &BBC08 :  8 : &IF_D;
+enddef;
+*
+def 8BBCs#02;
+* mode =  2    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  3    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  6    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 11    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_C;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_C;
+     BBC_assign = &BBC05 :  5 : &IF_A;
+     BBC_assign = &BBC06 :  6 : &IF_C;
+     BBC_assign = &BBC07 :  7 : &IF_A;
+     BBC_assign = &BBC08 :  8 : &IF_C;
+enddef;
+*
+def 8BBCs#03;
+* mode =  4    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_C;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_C;
+     BBC_assign = &BBC05 :  5 : &IF_B;
+     BBC_assign = &BBC06 :  6 : &IF_D;
+     BBC_assign = &BBC07 :  7 : &IF_B;
+     BBC_assign = &BBC08 :  8 : &IF_D;
+enddef;
+*
+def 8BBCs#04;
+* mode =  5    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     BBC_assign = &BBC01 :  1 : &IF_B;
+     BBC_assign = &BBC02 :  2 : &IF_B;
+     BBC_assign = &BBC03 :  3 : &IF_D;
+     BBC_assign = &BBC04 :  4 : &IF_D;
+     BBC_assign = &BBC05 :  5 : &IF_A;
+     BBC_assign = &BBC06 :  6 : &IF_A;
+     BBC_assign = &BBC07 :  7 : &IF_A;
+     BBC_assign = &BBC08 :  8 : &IF_A;
+enddef;
+*
+def 4BBCs;
+* mode =  7    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 13    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_C;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_C;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def UsbDetect;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 :  4;
+enddef;
+*
+def UsbDetect#02;
+* mode =  2    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 16;
+enddef;
+*
+def UsbDetect#03;
+* mode =  3    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 16;
+enddef;
+*
+def UsbDetect#04;
+* mode =  4    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 16;
+enddef;
+*
+def UsbDetect#05;
+* mode =  5    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 :  8;
+enddef;
+*
+def UsbDetect#06;
+* mode =  6    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 64;
+enddef;
+*
+def UsbDetect#07;
+* mode =  7    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 :  8 :  0;
+enddef;
+*
+def DsbDetect;
+* mode =  8    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 16;
+enddef;
+*
+def UsbDetect#08;
+* mode =  9    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 16;
+enddef;
+*
+def UsbDetect#09;
+* mode = 10    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 16;
+enddef;
+*
+def UsbDetect#10;
+* mode = 11    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 16;
+enddef;
+*
+def UsbDetect#11;
+* mode = 12    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 64;
+enddef;
+*
+def UsbDetect#12;
+* mode = 13    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &U_Cal :  1 : 16 :  0;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def VDIF.8Ch2bit1to1;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    firmware_type = RDBE_DDC;
+*    format = VDIF, and fan-out = 1
+*    mode requires   8.00Mb/s/tr; stations using disks
+     track_frame_format = VDIF5032;
+     fanout_def =   : &CH01 : sign : 1:  1;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+     fanout_def =   : &CH02 : sign : 1:  2;
+     fanout_def =   : &CH02 :  mag : 1:  2;
+     fanout_def =   : &CH03 : sign : 1:  3;
+     fanout_def =   : &CH03 :  mag : 1:  3;
+     fanout_def =   : &CH04 : sign : 1:  4;
+     fanout_def =   : &CH04 :  mag : 1:  4;
+     fanout_def =   : &CH05 : sign : 1:  5;
+     fanout_def =   : &CH05 :  mag : 1:  5;
+     fanout_def =   : &CH06 : sign : 1:  6;
+     fanout_def =   : &CH06 :  mag : 1:  6;
+     fanout_def =   : &CH07 : sign : 1:  7;
+     fanout_def =   : &CH07 :  mag : 1:  7;
+     fanout_def =   : &CH08 : sign : 1:  8;
+     fanout_def =   : &CH08 :  mag : 1:  8;
+enddef;
+*
+def VDIF.8Ch2bit1to1#02;
+* mode =  2    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  3    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  4    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  8    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  9    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 10    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 11    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    firmware_type = RDBE_DDC;
+*    format = VDIF, and fan-out = 1
+*    mode requires  32.00Mb/s/tr; stations using disks
+     track_frame_format = VDIF5032;
+     fanout_def =   : &CH01 : sign : 1:  1;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+     fanout_def =   : &CH02 : sign : 1:  2;
+     fanout_def =   : &CH02 :  mag : 1:  2;
+     fanout_def =   : &CH03 : sign : 1:  3;
+     fanout_def =   : &CH03 :  mag : 1:  3;
+     fanout_def =   : &CH04 : sign : 1:  4;
+     fanout_def =   : &CH04 :  mag : 1:  4;
+     fanout_def =   : &CH05 : sign : 1:  5;
+     fanout_def =   : &CH05 :  mag : 1:  5;
+     fanout_def =   : &CH06 : sign : 1:  6;
+     fanout_def =   : &CH06 :  mag : 1:  6;
+     fanout_def =   : &CH07 : sign : 1:  7;
+     fanout_def =   : &CH07 :  mag : 1:  7;
+     fanout_def =   : &CH08 : sign : 1:  8;
+     fanout_def =   : &CH08 :  mag : 1:  8;
+enddef;
+*
+def VDIF.8Ch2bit1to1#03;
+* mode =  5    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    firmware_type = RDBE_DDC;
+*    format = VDIF, and fan-out = 1
+*    mode requires  16.00Mb/s/tr; stations using disks
+     track_frame_format = VDIF5032;
+     fanout_def =   : &CH01 : sign : 1:  1;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+     fanout_def =   : &CH02 : sign : 1:  2;
+     fanout_def =   : &CH02 :  mag : 1:  2;
+     fanout_def =   : &CH03 : sign : 1:  3;
+     fanout_def =   : &CH03 :  mag : 1:  3;
+     fanout_def =   : &CH04 : sign : 1:  4;
+     fanout_def =   : &CH04 :  mag : 1:  4;
+     fanout_def =   : &CH05 : sign : 1:  5;
+     fanout_def =   : &CH05 :  mag : 1:  5;
+     fanout_def =   : &CH06 : sign : 1:  6;
+     fanout_def =   : &CH06 :  mag : 1:  6;
+     fanout_def =   : &CH07 : sign : 1:  7;
+     fanout_def =   : &CH07 :  mag : 1:  7;
+     fanout_def =   : &CH08 : sign : 1:  8;
+     fanout_def =   : &CH08 :  mag : 1:  8;
+enddef;
+*
+def VDIF.8Ch2bit1to1#04;
+* mode =  6    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 12    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    firmware_type = RDBE_DDC;
+*    format = VDIF, and fan-out = 1
+*    mode requires 128.00Mb/s/tr; stations using disks
+     track_frame_format = VDIF5032;
+     fanout_def =   : &CH01 : sign : 1:  1;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+     fanout_def =   : &CH02 : sign : 1:  2;
+     fanout_def =   : &CH02 :  mag : 1:  2;
+     fanout_def =   : &CH03 : sign : 1:  3;
+     fanout_def =   : &CH03 :  mag : 1:  3;
+     fanout_def =   : &CH04 : sign : 1:  4;
+     fanout_def =   : &CH04 :  mag : 1:  4;
+     fanout_def =   : &CH05 : sign : 1:  5;
+     fanout_def =   : &CH05 :  mag : 1:  5;
+     fanout_def =   : &CH06 : sign : 1:  6;
+     fanout_def =   : &CH06 :  mag : 1:  6;
+     fanout_def =   : &CH07 : sign : 1:  7;
+     fanout_def =   : &CH07 :  mag : 1:  7;
+     fanout_def =   : &CH08 : sign : 1:  8;
+     fanout_def =   : &CH08 :  mag : 1:  8;
+enddef;
+*
+def VDIF.4Ch2bit1to1;
+* mode =  7    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    firmware_type = RDBE_DDC;
+*    format = VDIF, and fan-out = 1
+*    mode requires  16.00Mb/s/tr; stations using disks
+     track_frame_format = VDIF5032;
+     fanout_def =   : &CH01 : sign : 1:  1;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+     fanout_def =   : &CH02 : sign : 1:  2;
+     fanout_def =   : &CH02 :  mag : 1:  2;
+     fanout_def =   : &CH03 : sign : 1:  3;
+     fanout_def =   : &CH03 :  mag : 1:  3;
+     fanout_def =   : &CH04 : sign : 1:  4;
+     fanout_def =   : &CH04 :  mag : 1:  4;
+enddef;
+*
+def VDIF.4Ch2bit1to1#02;
+* mode = 13    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    firmware_type = RDBE_DDC;
+*    format = VDIF, and fan-out = 1
+*    mode requires  32.00Mb/s/tr; stations using disks
+     track_frame_format = VDIF5032;
+     fanout_def =   : &CH01 : sign : 1:  1;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+     fanout_def =   : &CH02 : sign : 1:  2;
+     fanout_def =   : &CH02 :  mag : 1:  2;
+     fanout_def =   : &CH03 : sign : 1:  3;
+     fanout_def =   : &CH03 :  mag : 1:  3;
+     fanout_def =   : &CH04 : sign : 1:  4;
+     fanout_def =   : &CH04 :  mag : 1:  4;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  2    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  3    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  4    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  5    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  6    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  7    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  8    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  9    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 10    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 11    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 12    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 13    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  2    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  3    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  4    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  5    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  6    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  7    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  8    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  9    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 10    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 11    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 12    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 13    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  2    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  3    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  4    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  5    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  6    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  7    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  8    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode =  9    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 10    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 11    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 12    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+* mode = 13    stations =Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment DQ601   
+* VLBA Monitoring                                                         
+scan No0077;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d12h31m24s; mode=band.20cm; source=J1310+3220;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    0 sec:  359 sec:    0.000 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:    0.000 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:    0.000 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:    0.000 GB:   : &ccw  : 1;
+     station=La:    0 sec:  359 sec:    0.000 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:    0.000 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:    0.000 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:    0.000 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:    0.000 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:    0.000 GB:   : &ccw  : 1;
+endscan;
+scan No0078;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d12h37m29s; mode=band.13cm; source=J1310+3220;
+     station=Sc:    0 sec:  359 sec:   23.123 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:   23.123 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:   23.123 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:   23.123 GB:   : &ccw  : 1;
+     station=La:    0 sec:  359 sec:   23.123 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:   23.123 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:   23.123 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:   23.123 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:   23.123 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:   23.123 GB:   : &ccw  : 1;
+endscan;
+scan No0079;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d12h43m34s; mode=band.6cm; source=J1310+3220;
+     station=Sc:    0 sec:  359 sec:   46.246 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:   46.246 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:   46.246 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:   46.246 GB:   : &ccw  : 1;
+     station=La:    0 sec:  359 sec:   46.246 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:   46.246 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:   46.246 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:   46.246 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:   46.246 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:   46.246 GB:   : &ccw  : 1;
+endscan;
+scan No0080;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d12h49m39s; mode=band.4cm; source=J1310+3220;
+     station=Sc:    0 sec:  359 sec:   69.369 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:   69.369 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:   69.369 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:   69.369 GB:   : &ccw  : 1;
+     station=La:    0 sec:  359 sec:   69.369 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:   69.369 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:   69.369 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:   69.369 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:   69.369 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:   69.369 GB:   : &ccw  : 1;
+endscan;
+scan No0081;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d12h55m44s; mode=band.sx; source=J1310+3220;
+     station=Sc:    0 sec:  359 sec:   92.492 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:   92.492 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:   92.492 GB:   : &n    : 1;
+     station=Fd:    1 sec:  359 sec:   92.492 GB:   : &ccw  : 1;
+     station=La:    0 sec:  359 sec:   92.492 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:   92.492 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:   92.492 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:   92.492 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:   92.492 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:   92.492 GB:   : &ccw  : 1;
+endscan;
+scan No0082;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d13h01m49s; mode=band.2cm; source=J1310+3220;
+     station=Sc:    0 sec:  359 sec:  104.054 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:  104.054 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:  104.054 GB:   : &n    : 1;
+     station=Fd:    1 sec:  359 sec:  104.022 GB:   : &ccw  : 1;
+     station=La:    1 sec:  359 sec:  104.054 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:  104.054 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:  104.054 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:  104.054 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:  104.054 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:  104.054 GB:   : &ccw  : 1;
+endscan;
+scan No0083;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d13h07m54s; mode=band.1cm; source=J1310+3220;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    0 sec:  359 sec:  127.177 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:  127.177 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:  127.177 GB:   : &n    : 1;
+     station=Fd:    1 sec:  359 sec:  127.080 GB:   : &ccw  : 1;
+     station=La:    1 sec:  359 sec:  127.112 GB:   : &n    : 1;
+     station=Pt:    1 sec:  359 sec:  127.177 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:  127.177 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:  127.177 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:  127.177 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:  127.177 GB:   : &ccw  : 1;
+endscan;
+scan No0084;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d13h13m59s; mode=band.6-64; source=J1310+3220;
+     station=Sc:    0 sec:  359 sec:  150.300 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:  150.300 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:  150.300 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:  150.139 GB:   : &ccw  : 1;
+     station=La:    1 sec:  359 sec:  150.171 GB:   : &n    : 1;
+     station=Pt:    1 sec:  359 sec:  150.235 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:  150.300 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:  150.300 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:  150.300 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:  150.300 GB:   : &ccw  : 1;
+endscan;
+scan No0085;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d13h20m04s; mode=band.6-2; source=J1310+3220;
+     station=Sc:    0 sec:  359 sec:  242.792 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:  242.792 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:  242.792 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:  242.631 GB:   : &ccw  : 1;
+     station=La:    1 sec:  359 sec:  242.406 GB:   : &n    : 1;
+     station=Pt:    1 sec:  359 sec:  242.470 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:  242.792 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  359 sec:  242.792 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:  242.792 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:  242.792 GB:   : &ccw  : 1;
+endscan;
+scan No0086;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d13h30m10s; mode=band.9050; source=J1331+3030;
+     station=Sc:    0 sec:  359 sec:  248.573 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:  248.573 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:  248.573 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:  248.412 GB:   : &n    : 1;
+     station=La:    0 sec:  359 sec:  248.170 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:  248.235 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:  248.573 GB:   : &n    : 1;
+     station=Ov:    0 sec:  359 sec:  248.573 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:  248.573 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:  248.573 GB:   : &ccw  : 1;
+endscan;
+scan No0087;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2016y007d13h38m22s; mode=band.7mm; source=J1310+3220;
+     station=Sc:    0 sec:  359 sec:  254.354 GB:   : &ccw  : 1;
+     station=Hn:    0 sec:  359 sec:  254.354 GB:   : &n    : 1;
+     station=Nl:    0 sec:  359 sec:  254.354 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:  254.192 GB:   : &cw   : 1;
+     station=La:    0 sec:  359 sec:  253.951 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:  254.015 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:  254.354 GB:   : &cw   : 1;
+     station=Ov:    0 sec:  359 sec:  254.354 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:  254.354 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:  254.354 GB:   : &ccw  : 1;
+endscan;
+scan No0088;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2016y007d13h48m08s; mode=ptd7mm; source=3C273;
+     station=Nl:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+     station=Fd:    0 sec:   60 sec:  277.316 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  277.074 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  277.138 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+endscan;
+scan No0089;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2016y007d13h49m14s; mode=ptd7mm; source=3C273;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Nl:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+     station=Fd:    0 sec:   60 sec:  277.316 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  277.074 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  277.138 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+endscan;
+scan No0090;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2016y007d13h48m08s; mode=ptd7mm; source=3C273;
+     station=Ov:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+endscan;
+scan No0091;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2016y007d13h49m14s; mode=ptd7mm; source=3C273;
+     station=Ov:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  277.477 GB:   : &n    : 0;
+endscan;
+scan No0092;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2016y007d13h50m20s; mode=band.3mm; source=J1229+0203;
+     station=Nl:    0 sec:  359 sec:  277.477 GB:   : &n    : 1;
+     station=Fd:    0 sec:  359 sec:  277.316 GB:   : &n    : 1;
+     station=La:    0 sec:  359 sec:  277.074 GB:   : &n    : 1;
+     station=Pt:    0 sec:  359 sec:  277.138 GB:   : &n    : 1;
+     station=Kp:    0 sec:  359 sec:  277.477 GB:   : &n    : 1;
+     station=Ov:    0 sec:  359 sec:  277.477 GB:   : &n    : 1;
+     station=Br:    0 sec:  359 sec:  277.477 GB:   : &n    : 1;
+     station=Mk:    0 sec:  359 sec:  277.477 GB:   : &n    : 1;
+endscan;
+*------------------------------------------------------------------------------
+*---- log data below was appended by vex2obs ver 0.2 ----
+*------------------------------------------------------------------------------
+$TAPELOG_OBS;
+def Br;
+  VSN = 1 : NRAO+445 : 2016y007d12h31m21s : 2016y007d13h56m20s;  * shelf = BB39
+enddef;
+def Fd;
+  VSN = 2 : NRAO+348 : 2016y007d12h31m21s : 2016y007d13h56m20s;  * shelf = BB13
+enddef;
+def Hn;
+  VSN = 1 : UNAM+010 : 2016y007d12h31m21s : 2016y007d13h44m22s;  * shelf = BB17
+enddef;
+def Kp;
+  VSN = 1 : NRAO+304 : 2016y007d12h31m21s : 2016y007d13h56m20s;  * shelf = BB25
+enddef;
+def La;
+  VSN = 1 : NRAO+343 : 2016y007d12h31m21s : 2016y007d13h56m20s;  * shelf = BB116
+enddef;
+def Mk;
+  VSN = 2 : UNAM+002 : 2016y007d12h31m21s : 2016y007d13h56m20s;  * shelf = BB54
+enddef;
+def Nl;
+  VSN = 2 : NRAO+366 : 2016y007d12h31m21s : 2016y007d13h56m20s;  * shelf = BB82
+enddef;
+def Ov;
+  VSN = 2 : NRAO+359 : 2016y007d12h31m21s : 2016y007d13h56m20s;  * shelf = BB10
+enddef;
+def Pt;
+  VSN = 2 : NRAO+425 : 2016y007d12h31m21s : 2016y007d13h56m20s;  * shelf = BB24
+enddef;
+def Sc;
+  VSN = 1 : NRAO+542 : 2016y007d12h31m21s : 2016y007d13h44m22s;  * shelf = BC73
+enddef;
+*------------------------------------------------------------------------------
+$CLOCK;
+def Br;
+  clock_early = 2016y007d12h31m24s : 2.65860530e-06 sec : 2015y363d03h33m20s : 5.46681027e-14;  * offset = -0.34 usec
+    * clock_start =  2702.88 ns  clock_end =  2703.16 ns
+enddef;
+def Fd;
+  clock_early = 2016y007d12h31m24s : 5.34931314e-07 sec : 2015y363d07h29m04s : 2.16557683e-13;  * offset = -0.39 usec
+    * clock_start =   707.25 ns  clock_end =   708.36 ns
+enddef;
+def Hn;
+  clock_early = 2016y007d12h31m24s : 2.04467616e-06 sec : 2015y363d03h33m20s : 1.10761579e-14;  * offset = -0.26 usec
+    * clock_start =  2053.65 ns  clock_end =  2053.70 ns
+enddef;
+def Kp;
+  clock_early = 2016y007d12h31m24s : 5.42608746e-07 sec : 2015y363d03h33m20s : 9.90913636e-14;  * offset = -0.26 usec
+    * clock_start =   622.86 ns  clock_end =   623.37 ns
+enddef;
+def La;
+  clock_early = 2016y007d12h31m24s : 2.76288816e-06 sec : 2015y363d03h33m20s : 6.91947752e-14;  * offset = -0.23 usec
+    * clock_start =  2818.93 ns  clock_end =  2819.28 ns
+enddef;
+def Mk;
+  clock_early = 2016y007d12h31m24s : -3.64423396e-06 sec : 2015y363d07h46m08s : -6.45201579e-13;  * offset = -0.17 usec
+    * clock_start = -4156.99 ns  clock_end = -4160.27 ns
+enddef;
+def Nl;
+  clock_early = 2016y007d12h31m24s : -1.69372731e-06 sec : 2015y363d03h33m20s : -7.36591108e-14;  * offset = -0.31 usec
+    * clock_start = -1753.38 ns  clock_end = -1753.76 ns
+enddef;
+def Ov;
+  clock_early = 2016y007d12h31m24s : -3.24570498e-06 sec : 2015y363d03h33m20s : -3.50695852e-13;  * offset = -0.35 usec
+    * clock_start = -3529.73 ns  clock_end = -3531.51 ns
+enddef;
+def Pt;
+  clock_early = 2016y007d12h31m24s : -9.88107779e-07 sec : 2015y365d03h33m20s : -4.31740196e-13;  * offset = -0.16 usec
+    * clock_start = -1263.16 ns  clock_end = -1265.36 ns
+enddef;
+def Sc;
+  clock_early = 2016y007d12h31m24s : 6.72424121e-07 sec : 2015y363d03h33m20s : 1.13608460e-13;  * offset = -0.45 usec
+    * clock_start =   764.43 ns  clock_end =   765.01 ns
+enddef;
+*------------------------------------------------------------------------------
+$EOP;
+def EOP57393_FINAL;
+  TAI-UTC= 36 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2016y006d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = 0.071941 sec;
+  x_wobble = 0.04234 asec;
+  y_wobble = 0.26180 asec;
+  * data version = 2016y015d00h00m00s;
+enddef;
+def EOP57394_RAPID;
+  TAI-UTC= 36 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2016y007d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = 0.070070 sec;
+  x_wobble = 0.04077 asec;
+  y_wobble = 0.26335 asec;
+  * data version = 2016y015d00h00m00s;
+enddef;
+def EOP57395_RAPID;
+  TAI-UTC= 36 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2016y008d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = 0.068303 sec;
+  x_wobble = 0.03946 asec;
+  y_wobble = 0.26513 asec;
+  * data version = 2016y015d00h00m00s;
+enddef;
+def EOP57396_RAPID;
+  TAI-UTC= 36 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2016y009d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = 0.066558 sec;
+  x_wobble = 0.03790 asec;
+  y_wobble = 0.26709 asec;
+  * data version = 2016y015d00h00m00s;
+enddef;
+def EOP57397_RAPID;
+  TAI-UTC= 36 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2016y010d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = 0.064785 sec;
+  x_wobble = 0.03603 asec;
+  y_wobble = 0.26891 asec;
+  * data version = 2016y015d00h00m00s;
+enddef;
