@@ -1185,12 +1185,15 @@ static int getModes(VexData *V, Vex *v)
 				stream.nRecordChan = nRecordChan;
 			}
 
-			// Sort channels by name and then assign sequential thread Id
-			std::sort(setup.channels.begin(), setup.channels.end());
-			for(unsigned int recChan = 0; recChan < setup.channels.size(); ++recChan)
+			if(stream.isVDIFFormat())
 			{
-				setup.channels[recChan].threadId = recChan;
-				setup.channels[recChan].recordChan = recChan;
+				// Sort channels by name and then assign sequential thread Id
+				std::sort(setup.channels.begin(), setup.channels.end());
+				for(unsigned int recChan = 0; recChan < setup.channels.size(); ++recChan)
+				{
+					setup.channels[recChan].threadId = recChan;
+					setup.channels[recChan].recordChan = recChan;
+				}
 			}
 		} // End of antenna loop
 	}
