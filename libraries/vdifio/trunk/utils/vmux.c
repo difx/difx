@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 
 	for(a = 1; a < argc; ++a)
 	{
-		if(argv[a][0] == '-')
+		if(argv[a][0] == '-' && strlen(argv[a]) > 1) 
 		{
 			if(strcmp(argv[a], "-h") == 0 || strcmp(argv[a], "--help") == 0)
 			{
