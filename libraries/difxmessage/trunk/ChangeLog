@@ -3,6 +3,11 @@ Version 2.5.0
 * Post DiFX-2.4
 * python functions errormon, errormon2, cpumon, mk5mon, statemon: explicitly capture ctrl-C
   - seemingly needed for some operating systems ???
+* mk5mon (ver 0.6):
+	- obtain station codes from difxdb (if enabled) and display them
+	- check for mk5daemon inactivity
+	- add options to set multicast group/port
+	- color coded output in case of errors
 
 Version 2.4.0
 ~~~~~~~~~~~~~

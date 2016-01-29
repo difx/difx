@@ -34,28 +34,33 @@ from string import split, strip, find, upper, lower
 from sys import argv, exit
 from os import popen, getenv
 from glob import glob
+from time import time
 import socket
 import struct
 from xml.parsers import expat
 from copy import deepcopy
+from optparse import OptionParser
 import curses
 import signal
+import os.path
+import subprocess
 
 def signal_handler(signal, frame):
 	print('You pressed Ctrl+C!')
 	raise KeyboardInterrupt
 
-program = 'mk5mon'
-author  = 'Walter Brisken'
-version = '0.4'
-verdate = '20150811'
+verNum = '0.6'
+__author__="Walter Brisken"
+__prog__ = os.path.basename(__file__)
+__build__= "$Revision$"
+__date__ ="$Date$"
+__lastAuthor__="$Author$"
 
-def usage(prog):
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s [options]\n' % prog
-	print 'options can include:'
-	print '  --help'
-	print '  -h        print help information and quit\n'
+def usage():
+	usage = ""
+	usage += "A program to monitor the mark5 machines"
+
+	return usage
 
 class Mk5state:
 
@@ -67,6 +72,8 @@ class Mk5state:
 		self.seq   = 0
 		self.vsnA  = 'none'
 		self.vsnB  = 'none'
+		self.stationA = '  '
+		self.stationB = '  '
 		self.bank  = ' '
 		self.state = 'Unknown'
 		self.scan  = 0
@@ -74,38 +81,21 @@ class Mk5state:
 		self.pos   = 0L
 		self.rate  = 0.0
 		self.date  = 0.0
-
-	def getstring(self):
-		if self.ok:
-			b1 = ' '
-			b2 = ' '
-			if self.bank == 'A':
-				b1 = '*'
-			elif self.bank == 'B':
-				b2 = '*'
-			if self.date > 0.0 and self.date < 1.0:
-				dateStr = '%10.4f s' % (self.date*86400.0)
-			else:
-				dateStr = '%12.6f' % self.date
-			str = '%10s %c%8s %c%8s %14s %7.2f %14d %4d %17s %13s ' % \
-				(self.mk5, b1, self.vsnA, b2, self.vsnB, self.state, \
-				 self.rate, self.pos, self.scan, self.name, dateStr)
-		else:
-			str = ''
-		return str
+		self.pollTime = 0.0
 
 	def getmk5(self):
 		return self.mk5
 
 class Parser:
 
-	def __init__(self):
+	def __init__(self, options):
 		self._parser = expat.ParserCreate()
 		self._parser.StartElementHandler = self.start
 		self._parser.EndElementHandler = self.end
 		self._parser.CharacterDataHandler = self.data
 		self.info = Mk5state()
 		self.tmp = ''
+		self.options = options
 
 	def feed(self, data):
 		try:
@@ -128,11 +118,22 @@ class Parser:
 				self.info.vsnA = 'none'
 			else:
 				self.info.vsnA = upper(self.tmp)
+				# obtain station code from DB (if enabled)
+				if self.options.difxdb == True:
+					child = subprocess.Popen(["difxdbModule", "--station", self.info.vsnA], stdout=subprocess.PIPE)
+					(stationA, stderr) = child.communicate()
+					self.info.stationA = strip(stationA)
+				
 		if tag == 'bankBVSN':
 			if len(self.tmp) != 8:
 				self.info.vsnB = 'none'
 			else:
 				self.info.vsnB = upper(self.tmp)
+				# obtain station code from DB (if enabled)
+				if self.options.difxdb == True:
+					child = subprocess.Popen(["difxdbModule", "--station", self.info.vsnB], stdout=subprocess.PIPE)
+					(stationB, stderr) = child.communicate()
+					self.info.stationB = strip(stationB)
 		if tag == 'from':
 			self.info.mk5 = lower(self.tmp)
 		if tag == 'state':
@@ -153,8 +154,11 @@ class Parser:
 	def data(self, data):
 		self.tmp = data
 
-	def getinfo(self):
+	def getinfo_old(self):
 		return self.info.getmk5(), self.info.getstring()
+
+	def getinfo(self):
+		return self.info.getmk5(), self.info
 
 class Display:
 
@@ -164,8 +168,14 @@ class Display:
 		self.curs = curses.initscr()
 		curses.noecho()
 		curses.cbreak()
+		curses.start_color()
+		curses.use_default_colors()
+		curses.init_pair(1, -1, -1)
+		curses.init_pair(2, curses.COLOR_RED, -1)
 		self.curs.keypad(1)
 		self.curs.refresh()
+		self.inactiveSecs = 30 # unit is considered inactive if no message has been received for this number of seconds
+		
 
 	def close(self):
 		curses.nocbreak()
@@ -174,21 +184,52 @@ class Display:
 		curses.endwin()
 
 	def displayrow(self, info, row):
-		self.curs.addstr(row, 0, info)
-		self.curs.refresh()
+		b1 = ' '
+		b2 = ' '
+		if info.bank == 'A':
+			b1 = '*'
+		elif info.bank == 'B':
+			b2 = '*'
 
-	def displayall(self):
-		keys = self.rows.keys()
-		for k in keys:
-			self.curs.addstr(self.rows[k], 0, self.info[k])
-		self.curs.refresh()
+		if info.state == "inactive":
+			dateStr = '%5.1f' % (time() - info.pollTime)
+		elif info.date > 0.0 and info.date < 1.0:
+			dateStr = '%10.4f s' % (info.date*86400.0)
+		else:
+			dateStr = '%12.6f' % info.date
+
+		stationA = info.stationA
+		stationB = info.stationB
+		if stationA == 'Unknown':
+			stationA = "  "
+		if stationB == 'Unknown':
+			stationB = "  "
+		
+
+		if options.difxdb == True:
+			rowStr = '%10s %c%8s(%2s) %c%8s(%2s) %14s %7.2f %14d %4d %17s %13s ' % \
+				 (info.mk5, b1, info.vsnA, stationA, b2, info.vsnB, stationB, info.state, \
+				 info.rate, info.pos, info.scan, info.name, dateStr)
+		else:
+			rowStr = '%10s %c%8s %c%8s %14s %7.2f %14d %4d %17s %13s ' % \
+				 (info.mk5, b1, info.vsnA, b2, info.vsnB, info.state, \
+				 info.rate, info.pos, info.scan, info.name, dateStr)
+			
+		if info.state == "inactive":
+			self.curs.addstr(row, 0, rowStr, curses.color_pair(2))
+		elif info.state == "Error":
+			self.curs.addstr(row, 0, rowStr, curses.color_pair(2)|curses.A_BOLD)
+		else:
+			self.curs.addstr(row, 0, rowStr, curses.color_pair(1))
 
 	def newdata(self, data):
 		k = data[0]
+		
 		if self.rows.has_key(k):
 			self.info[k] = data[1]
 			self.displayrow(self.info[k], self.rows[k])
 		else:
+			# a new machine has been found
 			self.rows[k] = 0
 			self.info[k] = data[1]
 			keys = self.rows.keys()
@@ -197,9 +238,17 @@ class Display:
 			for k in keys:
 				self.rows[k] = i
 				i += 1
-			self.displayall()
+				self.displayrow(self.info[k], self.rows[k])
 
-def listen(port, group):
+		# check for inactivity
+		for k in self.rows.keys():	
+			if time() - self.info[k].pollTime > self.inactiveSecs:
+				self.info[k].state = "inactive"
+				self.displayrow(self.info[k], self.rows[k])
+				
+		self.curs.refresh()
+
+def listen(port, group, options):
 	dt = 0.0
 	t = 0
 	maxtime = 6000
@@ -224,13 +273,16 @@ def listen(port, group):
 			if message[0] != '<':
 				continue
 
-			p = Parser()
+			p = Parser(options)
 			p.feed(message)
-			machine, str = p.getinfo()
+			machine, mk5info = p.getinfo()
 			p.close()
-			if len(str) < 10:
-				continue
-			d.newdata([machine, str])
+
+			mk5info.pollTime = time()
+			
+			if mk5info.ok == False:
+			 	continue
+			d.newdata([machine, mk5info])
 	except KeyboardInterrupt:
 		d.close()
 		return 0
@@ -266,29 +318,37 @@ def readmachines(machinesfile, verbose):
 
 	return machines,cores,ismk5
 
-
-
+# main
 signal.signal(signal.SIGINT, signal_handler)
+version = "%s version %s (revision %s)\nOriginal author: %s\nLast changes by: %s\nLast changes on: %s" % (__prog__, verNum, __build__, __author__, __lastAuthor__, __date__)
 
-if len(argv) >= 2:
-	if len(argv) == 2 and argv[1] in ['-h', '--help']:
-		usage(argv[0])
-		exit(0)
-	else:
-		print 'Command line error.  Run with -h for help.\n'
-		exit(1)
+optParser = OptionParser(usage=usage(), version=version)
 
+optParser.add_option("-d", "--difxdb", dest="difxdb", action="store_true", help="use difxdb to obtain station codes")
+optParser.add_option("-p", "--port", dest="port", default = "", help="set the multicast message port (overrides DIX_MESSAGE_PORT environment)")
+optParser.add_option("-g", "--group", dest="group", default = "", help="set the multicast message group (overrides DIX_MESSAGE_GROUP environment)")
+
+(options, args) = optParser.parse_args()
+
+if len(args) > 0:
+	optParser.print_help()
+	exit(1)
 
 port = getenv('DIFX_MESSAGE_PORT')
 if port == None:
-	print 'DIFX_MESSAGE_PORT needs to be defined'
-	exit(0)
-else:
-	port = int(port)
+	if options.port != "":
+		port = options.port
+	else:
+		print 'DIFX_MESSAGE_PORT needs to be defined, or use -p option'
+		exit(1)
+port = int(port)
+
 group = getenv('DIFX_MESSAGE_GROUP')
 if group == None:
-	print 'DIFX_MESSAGE_GROUP needs to be defined'
-	exit(0)
-
-while(listen(port, group)):
+	if options.group != "":
+                group = options.group
+        else:
+		print 'DIFX_MESSAGE_GROUP needs to be defined, or use -g option'
+		exit(1)
+while(listen(port, group, options)):
 	pass
