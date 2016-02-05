@@ -131,36 +131,6 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
     //=========================================================================
     jobMonitor->sendPacket( RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS, NULL, 0 );
 
-	//  Make sure all needed parameters are included in the message.
-	if ( S->headNode[0] == 0 ) {
-    	diagnostic( ERROR, "DiFX start failed - no headnode specified." );
-    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_HEADNODE, NULL, 0 );
-        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
-        delete jobMonitor;
-		return;
-	}
-	if ( S->nDatastream <= 0 ) {
-    	diagnostic( ERROR, "DiFX start failed - no data sources specified." );
-    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_DATASOURCES, NULL, 0 );
-        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
-        delete jobMonitor;
-		return;
-	}
-	if ( S->nProcess <= 0 ) {
-    	diagnostic( ERROR, "DiFX start failed - no processing nodes  specified." );
-    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_PROCESSORS, NULL, 0 );
-        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
-        delete jobMonitor;
-		return;
-	}
-	if ( S->inputFilename[0] == 0 ) {
-    	diagnostic( ERROR, "DiFX start failed - no input file specified" );
-    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED, NULL, 0 );
-        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
-        delete jobMonitor;
-		return;
-	}
-
 	//  Check to make sure the input file exists
 	if( access(S->inputFilename, R_OK) != 0 ) {
 		diagnostic( ERROR, "DiFX start failed - input file %s not found.", S->inputFilename );
@@ -234,6 +204,36 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
         return;
     }
        
+	//  Make sure all required machine specifications are included in the message.
+	if ( S->headNode[0] == 0 ) {
+		diagnostic( ERROR, "DiFX start failed - no headnode specified." );
+		jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_HEADNODE, NULL, 0 );
+	    jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+	    delete jobMonitor;
+		return;
+	}
+	if ( S->nDatastream <= 0 ) {
+		diagnostic( ERROR, "DiFX start failed - no data sources specified." );
+		jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_DATASOURCES, NULL, 0 );
+	    jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+	    delete jobMonitor;
+		return;
+	}
+	if ( S->nProcess <= 0 ) {
+		diagnostic( ERROR, "DiFX start failed - no processing nodes  specified." );
+		jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_PROCESSORS, NULL, 0 );
+	    jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+	    delete jobMonitor;
+		return;
+	}
+	if ( S->inputFilename[0] == 0 ) {
+		diagnostic( ERROR, "DiFX start failed - no input file specified" );
+		jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED, NULL, 0 );
+	    jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+	    delete jobMonitor;
+		return;
+	}
+
     jobMonitor->sendPacket( RUN_DIFX_PARAMETER_CHECK_SUCCESS, NULL, 0 );
 
     //  Find the "working directory" (where the .input file resides and data will be put), the
