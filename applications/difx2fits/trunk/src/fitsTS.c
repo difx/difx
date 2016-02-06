@@ -918,6 +918,12 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 				if(n > 1)
 				{
 					fprintf(stderr, "\nWarning: > 1 datastream for antennaId=%d.  This has not been tested.\n", antId);
+					fprintf(stderr, "Datastreams are:");
+					for(i = 0; i < n; ++i)
+					{
+						fprintf(stderr, " %d", origDsIds[i]);
+					}
+					fprintf(stderr, "\n");
 				}
 				for(i = 0; i < n; ++i)
 				{

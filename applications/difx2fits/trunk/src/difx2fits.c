@@ -82,7 +82,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  -B           <bin>  Select on this pulsar bin number\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --difx\n");
-	fprintf(stderr, "   -d                 Run on all .difx files in directory\n");
+	fprintf(stderr, "  -d                  Run on all .difx files in directory\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --no-model\n");
 	fprintf(stderr, "  -n                  Don't write model (ML) table\n");
@@ -1085,7 +1085,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 		{
 #warning "FIXME: multi-setup input would overwrite previously generated FITS, make tidier fix than a rename"
 			sprintf(outFitsName, "%s_setup%d", opts->fitsFile, passNum+1);
-			fprintf(stderr, "Warning: input file list contains difx with different setup(s). Writing setup %d to '%s'\n", passNum+1, outFitsName);
+			fprintf(stderr, "Warning: input file list contains difx output with different setup(s). Writing setup %d to '%s'\n", passNum+1, outFitsName);
 		}
 	}
 	else

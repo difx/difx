@@ -579,7 +579,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 			v += fread(&bin, sizeof(int), 1, dv->in);
 			v += fread(&weight, sizeof(double), 1, dv->in);
 			v += fread(uvw, sizeof(double), 3, dv->in);
-                        if(v != 13)
+                        if(v != headerFields)
                         {
 				fprintf(stderr, "Error parsing header: %d fields read; %d expected.\n", v, headerFields);
 
