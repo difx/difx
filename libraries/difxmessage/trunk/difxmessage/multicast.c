@@ -109,10 +109,12 @@ int openMultiCastSocket(const char *group, int port)
 		return -4;
 	}
 	
-	mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-	v = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq));
-	if(v < 0) 
-	{
+	// Is it really multicast
+	if (mreq.imr_multiaddr.s_addr>>28==14) {
+	  mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+	  v = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq));
+	  if(v < 0) 
+	    {
 		printf("Error: Cannot configure multicast.  This is likely due to\n");
 		printf("Your network configuration not having a route set for\n");
 		printf("The DIFX multicast group: %s .  This can be done\n", group);
@@ -122,8 +124,8 @@ int openMultiCastSocket(const char *group, int port)
 		printf("multicast traffic.\n");
 
 		return -5;
-	}
-	
+	    }
+	} 
 	return sock;
 }
 
