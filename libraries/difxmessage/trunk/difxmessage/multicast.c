@@ -109,8 +109,7 @@ int openMultiCastSocket(const char *group, int port)
 		return -4;
 	}
 
-	// Is it really multicast
-	if (ntohl(mreq.imr_multiaddr.s_addr)>>28==14) { 
+	if (!isDifxMessageUnicast()) { 
 	  mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 	  v = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq));
 	  if(v < 0) 
@@ -125,10 +124,7 @@ int openMultiCastSocket(const char *group, int port)
 
 		return -5;
 	    }
-	} else {
-	  printf("Warning - using unicast\n");
-	}
-
+	} 
 	return sock;
 }
 

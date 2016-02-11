@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <netinet/in.h>
+
 #include "../difxmessage.h"
 #include "difxmessageinternal.h"
 
@@ -50,6 +52,7 @@ int difxBinarySTAPort = -1;
 char difxBinaryLTAGroup[MAX_GROUP_SIZE] = "";
 int difxBinaryLTAPort = -1;
 int difxMessageInUse = 0;
+int difxMessageUnicast = 0;
 
 const char *getDifxMessageIdentifier()
 {
@@ -107,9 +110,25 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 		if(size >= MAX_GROUP_SIZE)
 		{
 			fprintf(stderr, "Error: difxMessageInit: env var DIFX_MESSAGE_GROUP too long\n");
-
+			difxMessageInUse = 0;
 			return -1;
 		}
+		// Is it unicast?
+
+		struct in_addr addr;
+		int status = inet_aton(difxMessageGroup, addr);
+		if(status==0) {
+		  fprintf(stderr, "Error: difxMessageInit. DIFX_MESSAGE_GROUP %s invalid\n", difxMessageGroup);
+		  difxMessageInUse = 0;
+		  return -1;
+		}
+		// Is it really multicast
+		if (ntohl(addr.s_addr)>>28!=14) { 
+		  difxMessageUnicast = 1;
+		  if (difxMessageMpiProcessId==0) 
+		    printf("Warning: Unicast difxMessage in use. Some functionallity may be reduced\n");
+		}
+
 	}
 	else
 	{

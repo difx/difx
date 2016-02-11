@@ -82,6 +82,10 @@ int MultiCastReceive(int sock, char *message, int maxlen, char *from);
 /* check whether using difxMessage or just cout/cerr */
 int isDifxMessageInUse();
 
+
+/* check whether using difxMessage is using Unicast messages */
+int isDifxMessageUnicast();
+
 /* Types of binary data to be sent */
 enum BinaryDataChannels
 {

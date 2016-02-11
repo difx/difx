@@ -48,5 +48,6 @@ extern int difxBinarySTAPort;
 extern char difxBinaryLTAGroup[16];
 extern int difxBinaryLTAPort;
 extern int difxMessageInUse;
+extern int difxMessageUnicast;
 
 #endif
