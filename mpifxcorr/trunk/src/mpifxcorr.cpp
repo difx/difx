@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
   bool monitor = false;
   string monitoropt;
   pthread_t commandthread;
-  pthread_attr_t attr;
+  //pthread_attr_t attr;
   int nameslength = 1;
   char monhostname[nameslength];
   int port=0, monitor_skip=0, namelen;
@@ -333,17 +333,24 @@ int main(int argc, char *argv[])
   }
 
   //handle difxmessage setup for sending and receiving
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-  perr = pthread_create(&commandthread, &attr, launchCommandMonitorThread, (void *)(config));
-  pthread_attr_destroy(&attr);
-  if (perr != 0)
-    csevere << startl << "Error creating command monitoring thread!" << endl;
-  else {
-    //wait for commandmonthread to be initialised
-    while(!config->commandThreadInitialised() && !config->commandThreadFailed()) {
-      usleep(1);
+  if (isDifxMessageInUse()) { 
+    // CJP - PTHREAD_CREATE_JOINABLE is the default
+    //pthread_attr_init(&attr);
+    //pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    //perr = pthread_create(&commandthread, &attr, launchCommandMonitorThread, (void *)(config));
+    perr = pthread_create(&commandthread, NULL, launchCommandMonitorThread, (void *)(config));
+    //pthread_attr_destroy(&attr);
+
+    if (perr != 0)
+      csevere << startl << "Error creating command monitoring thread!" << endl;
+    else {
+      //wait for commandmonthread to be initialised
+      while(!config->commandThreadInitialised() && !config->commandThreadFailed()) {
+	usleep(1);
+      }
     }
+  } else if (myID==0) { // Only warn on fxmanager
+    cout << "NOTE: commandThread not launched as DIFXmessages not enabled. Some functionality will not be available" << endl;
   }
   numdatastreams = config->getNumDataStreams();
   numcores = numprocs - (fxcorr::FIRSTTELESCOPEID + numdatastreams);
@@ -423,15 +430,21 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
   MPI_Finalize();
-  if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
-  perr = pthread_join(commandthread, NULL);
+  if (isDifxMessageInUse()) {
+    if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
+    sleep(1); // Give threads a chance to quit
+    perr = pthread_cancel(commandthread);
+    if (perr !=0) csevere << startl << "Error in cancelling commandthread!!!" << endl;
+    perr = pthread_join(commandthread, NULL);
+    if(perr != 0) csevere << startl << "Error in closing commandthread!!!" << endl;
+  }
+
   delete [] coreids;
   delete [] datastreamids;
 
   if(manager) delete manager;
   if(stream) delete stream;
   if(core) delete core;
-  if(perr != 0) csevere << startl << "Error in closing commandthread!!!" << endl;
 
   //delete config;  	// FIXME!!! Revisit this commented out destructor sometime.
   			// It is currently commented out to prevent hang on exit
