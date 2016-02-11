@@ -105,6 +105,7 @@ create_fsm ()
 
     fsm_table (NEED_VECTOR_CHAR,  ONE_CHAR,          INSERT_V_CHAR,  NEED_VECTOR_CHAR);
     fsm_table (NEED_VECTOR_CHAR,  TWO_CHAR,          INSERT_V_CHAR,  NEED_VECTOR_CHAR);
+    fsm_table (NEED_VECTOR_CHAR,  INTEGER,           INSERT_V_CHAR,  NEED_VECTOR_CHAR);
     fsm_table (NEED_VECTOR_CHAR,  MATCH_ALL,         POP_TOKEN,      BLOCK_INTERIOR);  
 
     fsm_table (NEED_CODES,        ONE_CHAR,          SAVE_CODES,     NEED_VECTOR_FLOAT);

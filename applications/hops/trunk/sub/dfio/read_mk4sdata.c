@@ -129,7 +129,7 @@ read_mk4sdata (char *filename,
                                         /* Identify channel and catch array */
                                         /* overflow condition */
                 chan = -1;
-                for (i=0; i<MAX_CHAN_PP; i++)
+                for (i=0; i<MAX_CHAN; i++)
                     {
                     if (sdata->model[i].chan_id[0] == '\0') break;
                     if (strcmp (chan_id, sdata->model[i].chan_id) == 0)
@@ -138,7 +138,7 @@ read_mk4sdata (char *filename,
                         break;
                         }
                     }
-                if (i == MAX_CHAN_PP)
+                if (i == MAX_CHAN)
                     {
                     msg ("Error, too many channel ids found %s", 2, filename);
                     return (-1);

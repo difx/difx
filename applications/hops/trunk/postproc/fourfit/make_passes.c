@@ -32,7 +32,7 @@ int *npass;
     {
     char fgroups[10], baseline[3], source[32], group;            
     struct freq_corel *fc;
-    int i, j, k, sb, nsub, start_offset, stop_offset, nindices, usb, lsb, f, ngpt;
+    int i, j, k, sb, nsub, start_offset, stop_offset, nindices, usb, lsb, f, ngpt, n;
     int scantime,f_c_index, pol, sbpol, ng, nsbind;     
     int polprod_present[4];
                                         // table of last polarizations (for summing, etc.)
@@ -158,6 +158,8 @@ int *npass;
         for (j=0; j<MAXFREQ; j++) 
             p->pass_data[j].data_alloc = FALSE;
         clear_pass (p);
+        for (j=0; j<4; j++)
+            p->pprods_present[j] = 0;
 
         p->pol = gptab[*npass].pol;
         p->npols = gptab[*npass].npols;
@@ -215,6 +217,9 @@ int *npass;
         p->stop = param->start + (stop_offset * param->acc_period);
         p->reftime = param->reftime;
 
+        for (n=0; n<2; n++)  
+            p->linpol[n] = 0;
+
         for (j=0; j<MAXFREQ; j++)     /* Loop over frequencies */
             {
                                         /* Pluck out freqs with matching fgroups */ 
@@ -226,34 +231,30 @@ int *npass;
             fc->freq_code = corel[j].freq_code;
             f_c_index = fcode(corel[j].freq_code);   
             fc->frequency = corel[j].frequency;
-            strncpy (fc->ch_usb_lcp[0], corel[j].ch_usb_lcp[0], 8);
-            strncpy (fc->ch_usb_lcp[1], corel[j].ch_usb_lcp[1], 8);
-            strncpy (fc->ch_usb_rcp[0], corel[j].ch_usb_rcp[0], 8);
-            strncpy (fc->ch_usb_rcp[1], corel[j].ch_usb_rcp[1], 8);
-            strncpy (fc->ch_lsb_lcp[0], corel[j].ch_lsb_lcp[0], 8);
-            strncpy (fc->ch_lsb_lcp[1], corel[j].ch_lsb_lcp[1], 8);
-            strncpy (fc->ch_lsb_rcp[0], corel[j].ch_lsb_rcp[0], 8);
-            strncpy (fc->ch_lsb_rcp[1], corel[j].ch_lsb_rcp[1], 8);
-            for (k=0; k<16; k++)
+                                        // loop over ref & rem stations
+            for (n=0; n<2; n++)  
                 {
-                fc->trk_lcp[0][k] = corel[j].trk_lcp[0][k];
-                fc->trk_lcp[1][k] = corel[j].trk_lcp[1][k];
-                fc->trk_rcp[0][k] = corel[j].trk_rcp[0][k];
-                fc->trk_rcp[1][k] = corel[j].trk_rcp[1][k];
-                fc->mean_lcp_trk_err[0][k] = corel[j].mean_lcp_trk_err[0][k];
-                fc->mean_lcp_trk_err[1][k] = corel[j].mean_lcp_trk_err[1][k];
-                fc->mean_rcp_trk_err[0][k] = corel[j].mean_rcp_trk_err[0][k];
-                fc->mean_rcp_trk_err[1][k] = corel[j].mean_rcp_trk_err[1][k];
+                strncpy (fc->ch_usb_lcp[n], corel[j].ch_usb_lcp[n], 8);
+                strncpy (fc->ch_usb_rcp[n], corel[j].ch_usb_rcp[n], 8);
+                strncpy (fc->ch_lsb_lcp[n], corel[j].ch_lsb_lcp[n], 8);
+                strncpy (fc->ch_lsb_rcp[n], corel[j].ch_lsb_rcp[n], 8);
+                for (k=0; k<16; k++)
+                    {
+                    fc->trk_lcp[n][k] = corel[j].trk_lcp[n][k];
+                    fc->trk_rcp[n][k] = corel[j].trk_rcp[n][k];
+                    msg ("trk_lcp[%d][%d] %d  _rcp %d", -3,
+                         n,k,fc->trk_lcp[n][k], fc->trk_rcp[n][k]);
+                    fc->mean_lcp_trk_err[n][k] = corel[j].mean_lcp_trk_err[n][k];
+                    fc->mean_rcp_trk_err[n][k] = corel[j].mean_rcp_trk_err[n][k];
+                    }
+                for (k=0; k<MAX_PCF; k++)
+                    fc->pc_freqs[n][k] = corel[j].pc_freqs[n][k];
+                
+                fc->bbc_lcp[n] = corel[j].bbc_lcp[n];
+                fc->bbc_rcp[n] = corel[j].bbc_rcp[n];
+                p->linpol[n] |= (ovex->st+param->ov_bline[n])->channels[j].polarization == 'X'
+                             || (ovex->st+param->ov_bline[n])->channels[j].polarization == 'Y';
                 }
-            for (k=0; k<MAX_PCF; k++)
-                {
-                fc->pc_freqs[0][k] = corel[j].pc_freqs[0][k];
-                fc->pc_freqs[1][k] = corel[j].pc_freqs[1][k];
-                }
-            fc->bbc_lcp[0] = corel[j].bbc_lcp[0];
-            fc->bbc_lcp[1] = corel[j].bbc_lcp[1];
-            fc->bbc_rcp[0] = corel[j].bbc_rcp[0];
-            fc->bbc_rcp[1] = corel[j].bbc_rcp[1];
             nindices = 0;
             usb = lsb = FALSE;
             for (sb = 0; sb < 2; sb++)

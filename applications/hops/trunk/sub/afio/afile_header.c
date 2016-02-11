@@ -162,14 +162,14 @@ char header50[] =
 
 char header51[] =
 "* ROOT   T SIZ         EXP# *************SCANID*************\
- PROCDATE     YEAR RUN#       SOURCE   BSQ\
+ PROCDATE     YEAR RUN#       SOURCE   BS Q\
  DUR LAG DRVS FQ CLERR   CLDIFF  STATUS\n";
 
 /************************************************************************/
 
 char header52[] =
 "* ROOT   T F# DUR  LEN  OFF  EXP# *************SCANID*************\
- PROCDATE     YEAR TIME*TAG OFF   SOURCE   BSQ\
+ PROCDATE     YEAR TIME*TAG OFF   SOURCE   BS Q\
  FM#C PL LAGS   AMP    SNR  PH   SNR   TYP  SBDLY  MBDLY    AMB   \
  DRATE  ELEVATION AZIMUTH      U       V    ESDESP\
  EPCH REF_FREQ TPHAS  TOTDRATE   TOTMBDELAY  TOTSBDMMBD COHTIMES\n\
@@ -187,6 +187,46 @@ char header53[] =
    CMBD     AMBIG     CRATE   ELEVATIONS  AZIMUTHS      EPOCH  REFFREQ\n";
 
 /************************************************************************/
+
+
+/* prototyping a version 6 */
+
+/************************************************************************/
+/************************    Version 6    *******************************/
+/************************************************************************/
+
+char header60[] =
+"* ROOT   T X# SIZ         EXP# *************SCANID*************\
+ PROCDATE     YEAR RUN#       SOURCE   STATIONS\n";
+
+/************************************************************************/
+
+char header61[] =
+"* ROOT   T SIZ         EXP# *************SCANID*************\
+ PROCDATE     YEAR RUN#       SOURCE   BS Q\
+ DUR LAG DRVS FQ CLERR   CLDIFF  STATUS\n";
+
+/************************************************************************/
+
+char header62[] =
+"* ROOT   T F# DUR  LEN  OFF  EXP# *************SCANID*************\
+ PROCDATE     YEAR TIME*TAG OFF   SOURCE   BS Q\
+ FM#C PL LAGS   AMP    SNR  PH   SNR   TYP  SBDLY  MBDLY    AMB   \
+ DRATE  ELEVATION AZIMUTH      U       V    ESDESP\
+ EPCH REF_FREQ TPHAS  TOTDRATE   TOTMBDELAY  TOTSBDMMBD COHTIMES\n\
+*            (    sec    )                                          \
+                  (deg)     (usec) (usec)  (usec)  (ps/s)   (deg)    \
+   (deg)    (megalambda)          (mmss) (MHz)   (deg)  (usec/sec) \
+  (usec)      (usec) (sec) *** NOT ALIGNED ***\n";
+
+/************************************************************************/
+
+char header63[] =
+"* EXP# T *************SCANID*************\
+ YEAR TIME*TAG OFF   SOURCE   FM LAGS TRI ROOTCODES\
+ EXTENTS LENGTHS        DUR OFF Q1Q2 ESDESP AMP         SNR  CPHS     CSBD\
+   CMBD     AMBIG     CRATE   ELEVATIONS  AZIMUTHS      EPOCH  REFFREQ\n";
+
 
 int
 afile_header(int version, int type, FILE* fp)
@@ -283,6 +323,21 @@ afile_header(int version, int type, FILE* fp)
 	    ret = fprintf (fp, header53);
 	    break;
 	case 54:
+	    break;
+
+	case 60:
+	    ret = fprintf (fp, header60);
+	    break;
+	case 61:
+	    ret = fprintf (fp, header61);
+	    break;
+	case 62:
+	    ret = fprintf (fp, header62);
+	    break;
+	case 63:
+	    ret = fprintf (fp, header63);
+	    break;
+	case 64:
 	    break;
 
 	default:

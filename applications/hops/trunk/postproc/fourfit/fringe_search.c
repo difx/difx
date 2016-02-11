@@ -17,8 +17,8 @@
 #include "vex.h"
 #include "pass_struct.h"
 #include "param_struct.h"
-
-#define MAX_ION_PTS 100
+                                    // number of points in fine search
+#define N_FINE_PTS 9
 
 int
 fringe_search (root, param, pass)
@@ -32,7 +32,6 @@ struct type_pass *pass;
         ilmax,
         level,
         ionloop,
-        fine_pts,
         rc,
         koff,
         nip;
@@ -102,9 +101,10 @@ struct type_pass *pass;
             }
                                         // prepare for ionospheric search
     center = (param->win_ion[0] + param->win_ion[1]) / 2.0;
-    if (param->ion_pts > MAX_ION_PTS)   // condition total # of points
+                                        // condition total # of points
+    if (param->ion_pts > MAX_ION_PTS - N_FINE_PTS - 1)   
         {
-        param->ion_pts = MAX_ION_PTS;
+        param->ion_pts = MAX_ION_PTS - N_FINE_PTS - 1;   
         msg ("limited ion search to %d points", 2, param->ion_pts);
         }
     coarse_spacing = param->win_ion[1] - param->win_ion[0];
@@ -115,7 +115,6 @@ struct type_pass *pass;
         }
 
     fine_spacing = 0.2 * coarse_spacing;
-    fine_pts = 7;
                                         // do search over ionosphere differential
                                         // TEC (if desired)
     for (level=0; level<3; level++)     // search level (coarse, fine, final)
@@ -145,14 +144,14 @@ struct type_pass *pass;
                     status.dtec[nip++][1] = values[k];
                     }
                 if (kmax == 0)          // coarse maximum up against lower edge?
-                    center = bottom + (fine_pts - 1) / 2.0 * fine_spacing;
+                    center = bottom + (N_FINE_PTS - 1) / 2.0 * fine_spacing;
                 else if (kmax == param->ion_pts) // upper edge?
                     center = bottom + (kmax - 1) * step 
-                                    - (fine_pts - 1) / 2.0 * fine_spacing;
+                                    - (N_FINE_PTS - 1) / 2.0 * fine_spacing;
                 else                    // max was one of the interior points
                     center = bottom + kmax * step;
 
-                ilmax = fine_pts;
+                ilmax = N_FINE_PTS;
                 step = fine_spacing;
                                         // make fine search symmetric about level 0 max
                 bottom = center - (ilmax - 1) / 2.0 * step;

@@ -49,8 +49,9 @@ int parser ()
         parsed_station,
         parsed_baseline[2],
         parsed_source[32],
-        parsed_codes[MAX_CHAN_PP],
-        *psc;
+        parsed_codes[MAXFREQ],
+        *psc,
+        chan[2];
 
    float fval;
 
@@ -126,7 +127,7 @@ int parser ()
             {
             case CLEAR_FREQS:                /* clear all freq codes to start */
                for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
-                  for (i=0; i<MAX_CHAN_PP; i++)
+                  for (i=0; i<MAXFREQ; i++)
                      cb_ptr->frequency[i] = 0;
                                                 /* and then save token number */
                
@@ -219,14 +220,16 @@ int parser ()
                        if (cb_ptr -> baseline[1] == WILDCARD)
                            cb_ptr -> station_delay.ref = 1e-9 * float_values[tval];
                        }
-                   else if (toknum == PC_DELAY_L_)
+                   else if (toknum == PC_DELAY_L_
+                         || toknum == PC_DELAY_X_)
                        {
                        if (cb_ptr -> baseline[0] == WILDCARD)
                            cb_ptr -> pc_delay_l.rem = 1e-9 * float_values[tval];
                        if (cb_ptr -> baseline[1] == WILDCARD)
                            cb_ptr -> pc_delay_l.ref = 1e-9 * float_values[tval];
                        }
-                   else if (toknum == PC_DELAY_R_)
+                   else if (toknum == PC_DELAY_R_ 
+                         || toknum == PC_DELAY_Y_)
                        {
                        if (cb_ptr -> baseline[0] == WILDCARD)
                            cb_ptr -> pc_delay_r.rem = 1e-9 * float_values[tval];
@@ -267,7 +270,7 @@ int parser ()
                for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
                    if (toknum == INDEX_)
                        {
-                       if (nv == 2*MAX_CHAN_PP)
+                       if (nv == 2*MAXFREQ)
                            {
                            msg ("Too many index numbers",2);
                            return (-1);
@@ -278,7 +281,7 @@ int parser ()
                    else if (toknum == PC_PHASE_)  /* is this phase cal phase? */
                        {
                        i = fcode(parsed_codes[nv]);
-                       if (i<0 || i>MAX_CHAN_PP-1)
+                       if (i<0 || i>MAXFREQ-1)
                            {
                            msg ("Invalid phase cal frequency code",2);
                            return (-1);
@@ -314,10 +317,11 @@ int parser ()
                            }
                        }
 
-                   else if (toknum == PC_PHASE_L_)  // is this L/X/H phase cal phase?
+                   else if (toknum == PC_PHASE_L_
+                         || toknum == PC_PHASE_X_)  // is this L/X/H phase cal phase?
                        {
                        i = fcode(parsed_codes[nv]);
-                       if (i<0 || i>MAX_CHAN_PP-1)
+                       if (i<0 || i>MAXFREQ-1)
                            {
                            msg ("Invalid phase cal frequency code",2);
                            return (-1);
@@ -345,10 +349,11 @@ int parser ()
                            }
                        }
 
-                   else if (toknum == PC_PHASE_R_)  // is this R/Y/V phase cal phase?
+                   else if (toknum == PC_PHASE_R_
+                         || toknum == PC_PHASE_Y_)  // is this R/Y/V phase cal phase?
                        {
                        i = fcode(parsed_codes[nv]);
-                       if (i<0 || i>MAX_CHAN_PP-1)
+                       if (i<0 || i>MAXFREQ-1)
                            {
                            msg ("Invalid phase cal frequency code",2);
                            return (-1);
@@ -379,7 +384,7 @@ int parser ()
                    else if (toknum == PC_FREQ_)    /* is this phase cal freq? */
                        {
                        i = fcode(parsed_codes[nv]);
-                       if (i<0 || i>MAX_CHAN_PP-1)
+                       if (i<0 || i>MAXFREQ-1)
                            {
                            msg ("Invalid phase cal frequency code",2);
                            return (-1);
@@ -412,7 +417,7 @@ int parser ()
                    else if (toknum == PC_TONEMASK_)  // pcal tone exclusion mask?
                        {
                        i = fcode(parsed_codes[nv]);
-                       if (i<0 || i>MAX_CHAN_PP-1)
+                       if (i<0 || i>MAXFREQ-1)
                            {
                            msg ("Invalid pcal freq code in tonemask",2);
                            return (-1);
@@ -430,7 +435,7 @@ int parser ()
                    else if (toknum == GATES_) /*are these freq. switch gates? */
                        {
                        i = fcode(parsed_codes[nv/2]);
-                       if (i<0 || i>MAX_CHAN_PP-1)
+                       if (i<0 || i>MAXFREQ-1)
                            {
                            msg ("Invalid gates frequency code",2);
                            return (-1);
@@ -523,7 +528,7 @@ int parser ()
                    else if (toknum == DELAY_OFFS_) // is this a channel delay offset?
                        {
                        i = fcode(parsed_codes[nv]);
-                       if (i<0 || i>MAX_CHAN_PP-1)
+                       if (i<0 || i>MAXFREQ-1)
                            {
                            msg ("Invalid delay offset frequency code",2);
                            return (-1);
@@ -550,29 +555,93 @@ int parser ()
                            cb_ptr -> delay_offs[i].rem = fval;
                            }
                        }
+
+                   else if (toknum == SAMPLER_DELAY_L_ || toknum == SAMPLER_DELAY_X_)
+                       {
+                       if (nv >= MAX_SAMP)
+                           {
+                           msg ("Too many (%d) sampler delays specified", 2, nv+1);
+                           return (-1);
+                           }
+                                   /* get coefficients from appropriate place */
+                       if (tokens[ntok].category == INTEGER)
+                           fval = tval;
+                       else
+                           fval = float_values[tval];
+                       fval *= 1e-9;      // convert ns -> sec
+                                          // insert to station, or rem if no wildcard
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> sampler_delay[nv][LXH].ref = fval;
+                       else if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> sampler_delay[nv][LXH].rem = fval;
+                       else 
+                           {
+                           cb_ptr -> sampler_delay[nv][LXH].ref = 0.0;
+                           cb_ptr -> sampler_delay[nv][LXH].rem = fval;
+                           }
+                       }
+
+                   else if (toknum == SAMPLER_DELAY_R_ || toknum == SAMPLER_DELAY_Y_)
+                       {
+                       if (nv >= MAX_SAMP)
+                           {
+                           msg ("Too many (%d) sampler delays specified", 2, nv+1);
+                           return (-1);
+                           }
+                                   /* get coefficients from appropriate place */
+                       if (tokens[ntok].category == INTEGER)
+                           fval = tval;
+                       else
+                           fval = float_values[tval];
+                       fval *= 1e-9;      // convert ns -> sec
+                                          // insert to station, or rem if no wildcard
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> sampler_delay[nv][RYV].ref = fval;
+                       else if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> sampler_delay[nv][RYV].rem = fval;
+                       else 
+                           {
+                           cb_ptr -> sampler_delay[nv][RYV].ref = 0.0;
+                           cb_ptr -> sampler_delay[nv][RYV].rem = fval;
+                           }
+                       }
                nv++;                       /* bump index for next vector parm */
                break;
 
 
 
             case INSERT_V_CHAR:                 /* first figure out side band */
-               if (tnum == TWO_CHAR_)
+               if (tnum == ONE_CHAR_)
                    {
-                   if (char_values[tval+1] == '+')
+                   chan[0] = char_values[tval];
+                   sideband = DSB;
+                   }
+               else if (tnum == TWO_CHAR_)
+                   {
+                   memcpy (chan, char_values+tval, 2);
+                   if (chan[1] == '+')
                        sideband = USB;
-                   else if (char_values[tval+1] == '-')
+                   else if (chan[1] == '-')
                        sideband = LSB;
                    else
                        sideband = -1;                        /* denotes error */
                    }
-               else                                   /* ONE_CHAR_ by default */
-                   sideband = DSB;
-
-               i = fcode(char_values[tval]);          /* get freq. array index */
-               if (i<0 || i>MAX_CHAN_PP-1 || sideband<0) /* trap error conditions */
+               else                                // must be an integer
                    {
-                   msg ("Errant freq element: %c%c", 2, 
-                         char_values[tval], char_values[tval+1]);
+                   if (tval >=0 && tval <= 9)
+                       {
+                       chan[0] = '0' + tval;
+                       sideband = DSB;
+                       }
+                   else
+                       chan[0] = '#';                 // null char will cause error
+                       chan[1] = '#';
+                   }
+
+               i = fcode(chan[0]);                       /* get freq. array index */
+               if (i<0 || i>MAXFREQ-1 || sideband<0) /* trap error conditions */
+                   {
+                   msg ("Errant freq element: %c%c", 2, chan[0], chan[1]);
                    return (-1);
                    }
                                         /* OK, load into appropriate c_blocks */
@@ -699,9 +768,9 @@ int parser ()
                break;
 
             case SAVE_CODES:
-               memset (parsed_codes,'\0',MAX_CHAN_PP);               /* pad with nulls */
+               memset (parsed_codes,'\0',MAXFREQ);               /* pad with nulls */
                i = strlen (char_values + tval);
-               i = (i > MAX_CHAN_PP) ? MAX_CHAN_PP : i;      /* move at most MAX_CHAN_PP chars */
+               i = (i > MAXFREQ) ? MAXFREQ : i;      /* move at most MAXFREQ chars */
 //               i = (i > 16) ? 16 : i;                /* move at most 16 chars */
                memcpy (parsed_codes, char_values + tval, i);
                break;

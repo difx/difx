@@ -46,7 +46,7 @@ struct freq_corel *corel)
     struct type_101 *t101;
     char st1, st2;
     struct index_tag *idx;
-    struct freqlist flist[MAX_CHAN_PP];
+    struct freqlist flist[MAXFREQ];
     
                                         /* Some initialization */
     for (i=0; i<MAXFREQ; i++) clear_freq_corel (corel+i);
@@ -66,7 +66,7 @@ struct freq_corel *corel)
         if ((t101 = idx->t101) == NULL) continue;
                                         /* Get chan array numbers from ids */
         st1ch = st2ch = -1;             /* first, initialize to catch non-detections */
-        for (ch=0; ch<MAX_CHAN_PP; ch++)
+        for (ch=0; ch<MAXFREQ; ch++)
             {
             refch = stn1->channels + ch;
             remch = stn2->channels + ch;
@@ -89,7 +89,7 @@ struct freq_corel *corel)
         refch = stn1->channels + st1ch;
         remch = stn2->channels + st2ch;
                                         /* Is it a valid baseline pair? */
-        for (fqno=0; fqno<MAX_CHAN_PP; fqno++)
+        for (fqno=0; fqno<MAXFREQ; fqno++)
             {
             if (flist[fqno].sky_frequency < 0.0) continue;
                                         /* Loop over sideband/pol combos as */
@@ -101,7 +101,7 @@ struct freq_corel *corel)
             if ((ref < 4) && (rem < 4)) break;
             }
                                         /* Not found, error */
-        if (fqno == MAX_CHAN_PP)
+        if (fqno == MAXFREQ)
             {
             msg ("Invalid channel ids in type 101 record, '%s' '%s'", 2,
                         t101->ref_chan_id, t101->rem_chan_id);

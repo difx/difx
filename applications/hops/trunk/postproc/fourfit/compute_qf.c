@@ -10,6 +10,7 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
 #include <string.h>
 #include "mk4_data.h"
 #include "pass_struct.h"
@@ -32,7 +33,7 @@ char *tape_qcode)
     int t1000_index, btable_index, fr, min, max, num_ap, ratio, perr;
     int slip_measure, slip_pct;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
-    double diff1, diff2, intg_time, dur, fract, c_mag();
+    double diff1, diff2, intg_time, dur, fract;
     extern struct type_statistics statistics;
     extern struct type_filter filter;
 
@@ -50,7 +51,7 @@ char *tape_qcode)
                                            cause a D-code */
         if ((status->ap_num[0][i] == 0) && (status->ap_num[1][i] == 0))
             missing_track = TRUE;
-        if (c_mag (status->fringe[i]) < (param->weak_channel * status->inc_avg_amp_freq))
+        if (cabs (status->fringe[i]) < (param->weak_channel * status->inc_avg_amp_freq))
             low_chan = TRUE;
                                         /* re-enable the following test;
                                          * change threshold units  rjc 2001.10.25 

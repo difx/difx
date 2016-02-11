@@ -38,8 +38,16 @@ struct freq_corel *corel;
     stn1 = stn2 = NULL;
     for (i=0; i<ovex->nst; i++)
         {
-        if (st1 == ovex->st[i].mk4_site_id) stn1 = ovex->st + i;
-        if (st2 == ovex->st[i].mk4_site_id) stn2 = ovex->st + i;
+        if (st1 == ovex->st[i].mk4_site_id) 
+            {
+            stn1 = ovex->st + i;
+            param.ov_bline[0] = i;
+            }
+        if (st2 == ovex->st[i].mk4_site_id)
+            {
+            stn2 = ovex->st + i;
+            param.ov_bline[1] = i;
+            }
         }
     if ((stn1 == NULL) || (stn2 == NULL))
         {

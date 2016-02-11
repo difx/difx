@@ -15,8 +15,8 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
 #include "mk4_data.h"
-#include "type_comp.h"
 
 FFT1 (In, NN, ISign,Out,rev)    
 complex In[MAXMAX*2], Out[MAXMAX*2];
@@ -28,8 +28,8 @@ int NN,ISign,rev;
                         /* Sort complex data into 1-dimen. array of length 2*NN */
     for (i=0;i<=NN-1;i++) 
         {
-        Data[2*i+1] = In[i].re;
-        Data[2*i+2] = In[i].im; 
+        Data[2*i+1] = creal (In[i]);
+        Data[2*i+2] = cimag (In[i]); 
         }
 
     n = 2*NN;
@@ -83,8 +83,7 @@ int NN,ISign,rev;
             }
         mmax = istep;
         }
-    Out[0].re = Data[1];
-    Out[0].im = Data[2];
+    Out[0] = Data[1] + I * Data[2];
     for (i=1;i<=NN-1;i++)
         {
         if (rev==1)
@@ -94,7 +93,6 @@ int NN,ISign,rev;
         else
            {j=2*i + 1;
            }
-        Out[i].re = Data[j];
-        Out[i].im = Data[j+1];
+        Out[i] = Data[j] + I * Data[j+1];
         }
     }

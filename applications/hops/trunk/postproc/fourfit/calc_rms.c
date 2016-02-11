@@ -9,6 +9,7 @@
 /************************************************************************/
 #include <math.h>
 #include <stdio.h>
+#include <complex.h>
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
@@ -17,8 +18,8 @@ void
 calc_rms (pass)
 struct type_pass *pass;
     {
-    complex vsum, vsumf, refpc, rempc, pcal, wght_phsr, c_add(), c_zero(), s_mult();
-    double true_nseg, apwt, wt, totwt, totap, c, c_phase(), c_mag();
+    complex vsum, vsumf, refpc, rempc, pcal, wght_phsr;
+    double true_nseg, apwt, wt, totwt, totap, c;
     double wtf, wtf_dsb, wt_dsb, mean_ap, ap_in_seg, usbfrac, lsbfrac;
     double ref_tperr, rem_tperr;
     double refpcwt, rempcwt;
@@ -64,15 +65,15 @@ struct type_pass *pass;
     totwt = 0.0; totap = 0.0;
     for (seg = 0; seg < status.nseg; seg++)
         {
-        vsum = c_zero();
+        vsum = 0.0;
         wt = 0.0;                       /* Loop over freqs, and ap's in segment */
         wt_dsb = 0.0;                   /* Loop over freqs, and ap's in segment */
                                         /* forming vector sum */
         for(fr = 0; fr < pass->nfreq; fr++)
             {
-            vsumf = c_zero();
-            refpc = c_zero();
-            rempc = c_zero();
+            vsumf = 0.0;
+            refpc = 0.0;
+            rempc = 0.0;
             refpcwt = rempcwt = 0.0;
             wtf = 0.0;
             wtf_dsb = 0.0;
@@ -148,14 +149,14 @@ struct type_pass *pass;
                                         /* The actual data */
                 if (apwt > 0.0)
                     totap += 1.0;
-                wght_phsr = s_mult (plot.phasor[fr][trueap], apwt);
-                vsum = c_add (vsum, wght_phsr);
-                vsumf = c_add (vsumf, wght_phsr);
+                wght_phsr = plot.phasor[fr][trueap] * apwt;
+                vsum = vsum + wght_phsr;
+                vsumf = vsumf + wght_phsr;
                                         /* Phasecals */
                 if (param.pc_mode[0] == MULTITONE)  // reference multitone?
                     {
                     pcal = datum->ref_sdata.mt_pcal[stnpol[0][pass->pol]];
-                    refpc = c_add (refpc, pcal);
+                    refpc = refpc + pcal;
                                     // add in appropriate weight
                     if (stnpol[0][pass->pol])
                         refpcwt += datum->ref_sdata.pcweight_rcp;
@@ -164,19 +165,19 @@ struct type_pass *pass;
                     }
                 else
                     {
-                    pcal = s_mult (datum->ref_sdata.phasecal_lcp[pass->pci[0][fr]],
-                                   datum->ref_sdata.pcweight_lcp);
-                    refpc = c_add (refpc, pcal);
-                    pcal = s_mult (datum->ref_sdata.phasecal_rcp[pass->pci[0][fr]],
-                                   datum->ref_sdata.pcweight_rcp);
-                    refpc = c_add (refpc, pcal);
+                    pcal = datum->ref_sdata.phasecal_lcp[pass->pci[0][fr]]
+                         * datum->ref_sdata.pcweight_lcp;
+                    refpc = refpc + pcal;
+                    pcal = datum->ref_sdata.phasecal_rcp[pass->pci[0][fr]]
+                         * datum->ref_sdata.pcweight_rcp;
+                    refpc = refpc + pcal;
                     refpcwt += datum->ref_sdata.pcweight_lcp + datum->ref_sdata.pcweight_rcp;
                     }
 
                 if (param.pc_mode[1] == MULTITONE)  // remote multitone?
                     {
                     pcal = datum->rem_sdata.mt_pcal[stnpol[1][pass->pol]];
-                    rempc = c_add (rempc, pcal);
+                    rempc = rempc + pcal;
                                     // add in appropriate weight
                     if (stnpol[1][pass->pol])
                         rempcwt += datum->rem_sdata.pcweight_rcp;
@@ -185,12 +186,12 @@ struct type_pass *pass;
                     }
                 else
                     {
-                    pcal = s_mult (datum->rem_sdata.phasecal_lcp[pass->pci[1][fr]],
-                                   datum->rem_sdata.pcweight_lcp);
-                    rempc = c_add (rempc, pcal);
-                    pcal = s_mult (datum->rem_sdata.phasecal_rcp[pass->pci[1][fr]],
-                                   datum->rem_sdata.pcweight_rcp);
-                    rempc = c_add (rempc, pcal);
+                    pcal = datum->rem_sdata.phasecal_lcp[pass->pci[1][fr]]
+                         * datum->rem_sdata.pcweight_lcp;
+                    rempc = rempc + pcal;
+                    pcal = datum->rem_sdata.phasecal_rcp[pass->pci[1][fr]]
+                         * datum->rem_sdata.pcweight_rcp;
+                    rempc = rempc + pcal;
                     rempcwt += datum->rem_sdata.pcweight_lcp + datum->rem_sdata.pcweight_rcp;
                     }
                 }
@@ -202,7 +203,7 @@ struct type_pass *pass;
             else 
                 {
                 plot.mean_ap[fr][seg] = mean_ap / wtf;
-                plot.seg_amp[fr][seg] = c_mag (vsumf) / wtf_dsb;
+                plot.seg_amp[fr][seg] = cabs (vsumf) / wtf_dsb;
                 plot.seg_frac_usb[fr][seg] = usbfrac / (double)apseg;
                 plot.seg_frac_lsb[fr][seg] = lsbfrac / (double)apseg;
                 if (ref_scount_usb == 0.0) ref_scount_usb = -1.0; /* No data, no plot */
@@ -224,16 +225,16 @@ struct type_pass *pass;
                 plot.seg_referr[fr][seg] = ref_tperr / (double)apseg;
                 plot.seg_remerr[fr][seg] = rem_tperr / (double)apseg;
                 }
-            plot.seg_phs[fr][seg] = c_phase (vsumf);
+            plot.seg_phs[fr][seg] = carg (vsumf);
                                         /* Pcals */
             if (refpcwt == 0.0)
                 plot.seg_refpcal[fr][seg] = 1000.0;
             else 
-                plot.seg_refpcal[fr][seg] = c_phase (refpc) * 180.0 / M_PI;
+                plot.seg_refpcal[fr][seg] = carg (refpc) * 180.0 / M_PI;
             if (rempcwt == 0.0) 
                 plot.seg_rempcal[fr][seg] = 1000.0;
             else
-                plot.seg_rempcal[fr][seg] = c_phase (rempc) * 180.0 / M_PI;
+                plot.seg_rempcal[fr][seg] = carg (rempc) * 180.0 / M_PI;
             }
                                         /* Record amp/phase for all freqs */
         if (pass->nfreq > 1)
@@ -250,12 +251,12 @@ struct type_pass *pass;
                     }
                 if (nfr > 0)
                     plot.mean_ap[pass->nfreq][seg] = mean_ap / (double)(nfr);
-                plot.seg_amp[pass->nfreq][seg] = c_mag (vsum) / wt_dsb;
+                plot.seg_amp[pass->nfreq][seg] = cabs (vsum) / wt_dsb;
                 }
-            plot.seg_phs[pass->nfreq][seg] = c_phase (vsum);
+            plot.seg_phs[pass->nfreq][seg] = carg (vsum);
             }
 
-        c = c_phase(vsum) - status.coh_avg_phase;
+        c = carg(vsum) - status.coh_avg_phase;
                                         // condition to lie in [-pi,pi] interval
         c = fmod (c, 2.0 * M_PI);
         if (c > M_PI)
@@ -267,7 +268,7 @@ struct type_pass *pass;
                                         /* Performs scalar sum over segments */
                                         /* of vector sums within segments and */
                                         /* over all freqs */
-        c = c_mag(vsum);
+        c = cabs(vsum);
         status.inc_avg_amp += c * status.amp_corr_fact;
         if (wt_dsb == 0) 
             c = 0.0;
@@ -292,7 +293,7 @@ struct type_pass *pass;
                                         /* Calculate frequency rms values */
     for(fr=0;fr<pass->nfreq;fr++)
         {
-        c = c_phase(status.fringe[fr]) - status.coh_avg_phase;
+        c = carg(status.fringe[fr]) - status.coh_avg_phase;
                                         // condition to lie in [-pi,pi] interval
         c = fmod (c, 2.0 * M_PI);
         if (c > M_PI)
@@ -300,7 +301,7 @@ struct type_pass *pass;
         else if (c < - M_PI)
             c += 2.0 * M_PI;
         status.freqrms_phase += c * c;
-        c = c_mag(status.fringe[fr]) - status.delres_max;
+        c = cabs(status.fringe[fr]) - status.delres_max;
         status.freqrms_amp += c * c;
         }
     if (pass->nfreq > 2)                // avoid 0/0 singularity

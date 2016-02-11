@@ -24,6 +24,7 @@ fourfit -t -d diskfile:ff-3372.ps -b TV:X \\ && echo \
 fourfit -t -d diskfile:ff-3372.ps -b TV:X \
     -c ./cf3372 \
     $DATADIR/3372/193-1757/0529+483.vtqbsq 2>/dev/null 1>&2
+[ -f ./ff-3372.ps ] || { echo ./ff-3372.ps missing && exit 2 ; }
 
 # pluck out line containing the snr and parse it
 line=$(grep '7570 9653' ./ff-3372.ps)

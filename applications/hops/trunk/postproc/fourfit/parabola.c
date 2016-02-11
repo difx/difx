@@ -21,7 +21,6 @@
 *                      cjl  99.12.1   Make test for 1-return more robust       *
 *******************************************************************************/
 #include <math.h>
-#include "type_comp.h"
 
 int parabola (y, lower, upper, x_max, amp_max, q)
 

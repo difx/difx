@@ -1,4 +1,4 @@
-This is a distribution of HOPS (version 3.10), the
+This is a distribution of HOPS (version 3.11), the
 Haystack Observatory Post-processing System software.
 
 
@@ -8,13 +8,13 @@ Haystack Observatory Post-processing System software.
 If you haven't already done so, unpack the tarball in a convenient place:
 
     cd /Somewhere
-    tar zxf hops-3.10.tar.gz
+    tar zxf hops-3.11.tar.gz
 
 and proceed with the standard build process, e.g.:
 
-    mkdir bld-3.10
-    cd bld-3.10
-    ../hops-3.10/configure
+    mkdir bld-3.11
+    cd bld-3.11
+    ../hops-3.11/configure
     make install
 
 which installs the tools into a subdirectory of /Somewhere.   You should
@@ -59,27 +59,29 @@ You may configure the software to build in the source directory
 not recommended or required.
 
 The complete software package requires X11, PGPLOT, (possibly) version
-1.2 of the PNG library and ghostscript (compiled with X11 support).
-Unfortunately these are often not to be found in the usual places,
-so configure may need some help to get it right.
+1.2 of the PNG library (depending on how PGPLOT was compiled), ghostscript
+(usuall compiled with X11 support) and FFTW3 (for FFTs).  Unfortunately
+these are often not to be found in the usual places, so configure may need
+some help to get it right.
 
-    ../hops-3.10/configure --help=short
+    ../hops-3.11/configure --help=short
 
 provides the (short) help on configure.  So if the default X11 search
 didn't work, one of these might find X11 on your system:
 
-    ../hops-3.10/configure --enable-xtrap
-    ../hops-3.10/configure --enable-pathx
+    ../hops-3.11/configure --enable-xtrap
+    ../hops-3.11/configure --enable-pathx
 
 Likewise, PGPLOT is normally installed in /usr/local/pgplot, but that
 may not be what you want:
 
-    ../hops-3.10/configure PGPLOT_DIR=/usr/local/pgplot64
+    ../hops-3.11/configure PGPLOT_DIR=/usr/local/pgplot64
 
 and if those fail, you can try setting more variables, e.g. the
-following works on MacOS with fink support for all the usual linux tools:
+following worked once upon a time  on MacOS with fink support for
+all the usual linux tools:
 
-    ../hops-3.10/configure \
+    ../hops-3.11/configure \
 	LDFLAGS=-L/usr/X11/lib \
 	CC=gcc-4 F77=gfortran \
 	X_INSANE='-lobjc -framework Foundation -L/sw/lib -lpng -laquaterm'
@@ -87,7 +89,8 @@ following works on MacOS with fink support for all the usual linux tools:
 In particular the X_INSANE variable is included last in the link step,
 (in fact, this gibberish works with the Fink MacOS pgplot package) so
 you can put all sorts of things here.  The underlying issue is that
-there are too many ways that pgplot might have been compiled.
+there are too many ways that pgplot might have been compiled.  Lately,
+we've had better luck with MacPorts.
 
 Note that if you set PGPLOT_DIR as an environment variable, this directory
 should contain (at least) the three files:
@@ -112,7 +115,7 @@ to identify all the flag/linkage information needed by all the fortran
 possibilites.  (Fortran is mostly used to compile pgplot, see above.)
 E.g.
 
-    ../hops-3.10/configure FLIBS='-lf2c -lgcc
+    ../hops-3.11/configure FLIBS='-lf2c -lgcc
 
 might be needed if f77 is really a wrapper around f2c.
 
@@ -142,7 +145,7 @@ at the top of the build directory.  They should be relatively quick
 and painless.  The x11 plotting is disabled for these tests, however
 you can see some plots quickly flash by with:
 
-    pushd $HOPS_ROOT/bld-3.10/data/ff_testdata
+    pushd $HOPS_ROOT/bld-3.11/data/ff_testdata
     make check test_gs_device=x11
 
 Additionally, from the same directory
@@ -151,7 +154,7 @@ Additionally, from the same directory
 
 to verify X11 display capabilities.  Or
 
-    pushd $HOPS_ROOT/hops-3.10/data/ff_testdata
+    pushd $HOPS_ROOT/hops-3.11/data/ff_testdata
     ./tst_fourfit.sh
 
 or just read the script and type the commands....
@@ -165,7 +168,7 @@ as a sub-shell of bash.  For example:
 
     tcsh> bash
     bash$ source ~/bin/hops.bash
-    Setup HOPS v3.10 with HOPS_ROOT=/home/gbc/HOPS for i686-3.10
+    Setup HOPS v3.11 with HOPS_ROOT=/home/gbc/HOPS for i686-3.11
     bash$ tcsh
 
 and if all the shell nesting bothers you
@@ -178,7 +181,7 @@ will get you a new window with your normal shell and the proper environment.
 4. Finally
 ----------
 
-Copyright (c) 1992-2011 by Haystack Observatory, MIT.
+Copyright (c) 1992-2015 by Haystack Observatory, MIT.
 See the included file "Copyright" for the full notice.
 
 Authors: Colin Lonsdale, Roger Cappallo, and many others.

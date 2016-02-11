@@ -1,5 +1,5 @@
 Documentation for the program "fourfit"
--- last update 2013.12.5
+-- last update 2015.12.7
 ---------------------------------------
 
 COMMAND NAME:   fourfit
@@ -228,13 +228,8 @@ syntax of the control file:
 * This file makes no semantic sense for a real experiment; rather, it is used
 * to illustrate typical command syntaxes.
 
-max_parity 0.001                       * global commands come first
-ref_freq  8213.15 
-x_crc       discard 
-x_slip_sync keep  
-y_slip_sync discard
+ref_freq  8213.15                 * global commands come first
 start -10
-use_samples true
 
 if station L and f_group X
    freqs a+ b c d- e f g h
@@ -323,7 +318,6 @@ ACTION KEYWORDS         VALUES
    ion_npts           int
    ion_win            2 floats
    lsb_offset         float
-   max_parity         float
    mb_win             2 floats
    mbd_anchor         'sbd' or 'model' (default: model)
    optimize_closure   'true' or 'false' (default: false)
@@ -332,9 +326,13 @@ ACTION KEYWORDS         VALUES
    pc_amp_hcode       float
    pc_delay_l         float
    pc_delay_r         float
+   pc_delay_x         float
+   pc_delay_y         float
    pc_phases          n char string, followed by n floats
    pc_phases_l        n char string, followed by n floats
    pc_phases_r        n char string, followed by n floats
+   pc_phases_x        n char string, followed by n floats
+   pc_phases_y        n char string, followed by n floats
    pc_freqs           n char string, followed by n floats
    pc_mode            `normal', `ap_by_ap', `manual', or 'multitone'
    pc_period          int
@@ -342,6 +340,10 @@ ACTION KEYWORDS         VALUES
    ra_offset          float
    ref_freq           float
    samplers           int, followed by up to 8 strings
+   sampler_delay_l    up to 8 floats
+   sampler_delay_r    up to 8 floats
+   sampler_delay_x    up to 8 floats
+   sampler_delay_y    up to 8 floats
    sb_win             2 floats
    skip               `true' or `false'
    start              integer
@@ -351,6 +353,12 @@ ACTION KEYWORDS         VALUES
    t_cohere           float
    use_samples        `true' or `false'
    weak_channel       float
+
+*** deprecated -- for backward mk4 compatibility only ***
+   index         alternate method used to select data channels, based on the
+                 original corel index number. Not as well supported as freqs,
+                 and is current being phased out.
+   max_parity         float
    x_crc              `keep' or `discard'
    x_slip_sync        `keep', `discard', or an integer
    y_crc              `keep' or `discard'
@@ -367,11 +375,6 @@ KEYWORD SEMANTICS
 
 **filtering**    determines whether or not each AP is accepted
 
-   max_parity    maximum allowable fraction of bytes in error
-   x_slip_sync   maximum # of frames w/ re-sync in reference station
-   y_slip_sync      "    "  "    "   "     "     " remote      "
-   x_crc         either keep or discard AP if reference time has CRC error
-   y_crc           "      "   "    "    "  "  remote      "   "   "    "
    freqs         controls which frequency channels get included in the fit.
                  The letters a-p correspond to the order that the frequencies
                  appear in the root file (assuming 16 channels). With no
@@ -379,9 +382,6 @@ KEYWORD SEMANTICS
                  A plus suffix denotes USB, a minus is used for LSB.
                  After 26 channels, the uppercase alphabet is used,
                  then 10 digits, finally '$' and '%' (i.e. 64 channels).
-   index         alternate method used to select data channels, based on the
-                 original corel index number. Not as well supported as freqs,
-                 and is current being phased out.
    start         start time for data to be included.
    stop          stop    "   "    "  "   "    "
                  Arguments of start and stop are integers with an optional
@@ -404,6 +404,13 @@ KEYWORD SEMANTICS
                  excluded.
    dc_block      if set to true, zero out lowest cross-power spectral
                  channel; useful for suppressing DC bias
+
+   *** deprecated filtering commands - for backward compatibility only: ***
+   max_parity    maximum allowable fraction of bytes in error
+   x_slip_sync   maximum # of frames w/ re-sync in reference station
+   y_slip_sync      "    "  "    "   "     "     " remote      "
+   x_crc         either keep or discard AP if reference time has CRC error
+   y_crc           "      "   "    "    "  "  remote      "   "   "    "
 
 **search**       control the fringe-searching process
 
@@ -442,6 +449,8 @@ KEYWORD SEMANTICS
              so specified are applied only to the first pol (L, X, or H)
    pc_phases_r specified in same manner as pc_phases, but the tone phases
              so specified are applied only to the second pol (R, Y, or V)
+   pc_phases_x synonym for pc_phases_l (see)
+   pc_phases_y synonym for pc_phases_r (see)
    pc_freqs  phase cal tone frequencies in KHz, for each of the listed
              freq channels iff not in range -64..64. Inside of this
              range, the value is interpreted as a tone #, with 1 being
@@ -462,6 +471,8 @@ KEYWORD SEMANTICS
              injection point, minus the the travel time from the pcal
              pulse generator to the injection point. It is specified
              separately for the two polarization senses.
+   pc_delay_x
+   pc_delay_y synonyms for pc_delay_l and pc_delay_r (see)
    lsb_offset additive phase in degrees, for the LSB relative to the USB;
              often necessary when correlating VLBA data against Mk 3
    ref_freq  specifies a frequency in MHz at which the phase delay
@@ -492,12 +503,21 @@ KEYWORD SEMANTICS
    optimize_closure modifies fine fringe search so as to minimize the
              contribution of non-closing delay errors to the closure phase;
              can result in poorer single-baseline fits
-   station_delay a priori guess at the delay from the pcal injection point
-             down to the digitizers (ns).
+   station_delay a priori guess at the delay of the pcal path, from maser
+             to the digitizers (ns). Recommended to use 
+             sampler_delay_l/r/x/y instead.
    mbd_anchor controls the basis for choosing the mbd ambiguity when
              forming the total. If 'sbd' then the ambiguity closest to
              the singleband delay is chosen; if 'model' then the
              ambiguity closest to the a priori model is chosen.
+   sampler_delay_l indexed by sampler, it is the center of the window
+             in which the pcal delay ambiguity will be resolved. Just like
+             the old station_delay, but now broken down by sampler and
+             polarization, since their cabling and filters will lead
+             to different delays. For LCP, in units of ns.
+   sampler_delay_r same as the above, but for RCP, instead of LCP.
+   sampler_delay_x synonym for sampler_delay_l.
+   sampler_delay_y synonym for sampler_delay_r.
 
 ** miscellaneous functions
    fmatch_bw_pct associate freqs < this percentage of bw together (25% default)
@@ -535,7 +555,8 @@ GENERAL GUIDELINES
    5) Wildcard "?" matches any single character for f_group, station, or
       baseline, any string (of up to 8 characters) for source, and any
       time-value for scan.
-   6) Phase cal and delay offsets are treated station by station. 
+   6) Phase cal and delay offsets are treated station by station. If not
+      in a "station context", then values are applied to remote stn only.
    7) Only freqs that are chosen for both stations in a baseline are 
       present in the fit.
    8) If multiple if-blocks match a particular passes' choice of baseline,

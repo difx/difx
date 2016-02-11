@@ -24,7 +24,7 @@ struct c_block *cblock;
    else
       {
       skip_it = TRUE;
-      for (i=0; i<2*MAX_CHAN_PP; i++)
+      for (i=0; i<2*MAXFREQ; i++)
 
          if (cblock->index[i] == NULLINT)
 	    break;                             /* quit looking at end of list */

@@ -21,7 +21,7 @@ struct inputs {
         char    triangles[80];
         char    quads[100];
         char    frequencies[10];
-        char    polarizations[13];
+        char    polarizations[49];
         int     experiment;
         char    qcodes[20];
         char    type[10];

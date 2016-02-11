@@ -23,7 +23,6 @@ void apply_passband (int sb,
     
     extern struct type_param param;
     extern struct type_status status;
-    complex c_zero (void);
     
                                     /* return immediately if no filtering
                                      * is desired (still set to defaults) */
@@ -90,11 +89,11 @@ void apply_passband (int sb,
                                     /* zero out data outside of passband */
     for (i=0;  incband && i<npts; i++)
         if (i < ibot || i > itop)
-            xp_spectrum[i] = c_zero ();
+            xp_spectrum[i] = 0.0;
                                     /* OR: zero out data inside passband */
     for (i=0; !incband && i<npts; i++)
         if (i > ibot && i < itop)
-            xp_spectrum[i] = c_zero ();
+            xp_spectrum[i] = 0.0;
     msg ("bw %lf bottom %lf top %lf ibot %d itop %d npts %d %s", 0,
           bw, bottom, top, ibot, itop, npts,
           incband ? "include" : "exclude");

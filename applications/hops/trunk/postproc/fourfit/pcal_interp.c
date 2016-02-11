@@ -37,7 +37,7 @@ int pcal_interp (struct mk4_sdata *sd1,
                  struct freq_corel *corel)
     {
     int stn, j, pc, ap, ch, f, ipc, ipcmin, ipcmax, i, n,
-        pc_index[MAX_CHAN_PP],
+        pc_index[MAXFREQ],
         numchans, new_chan, npts, nstart,
         ret, do309, numrecs, pc_max, jmax, tshift,
         iyr, idoy, idate, after_2012_124;
@@ -45,8 +45,7 @@ int pcal_interp (struct mk4_sdata *sd1,
     double start, stop, time[MAXSTATPER], pc_real[MAXSTATPER], pc_imag[MAXSTATPER];
     double realval, imagval, freq, u, v;
     char chan[9];
-    char chan_buffer[MAX_CHAN_PP][9];
-    complex c_zero();
+    char chan_buffer[MAXFREQ][9];
     struct freq_corel *fc;
     struct mk4_sdata *sd;
     struct type_308 *t308;
@@ -55,10 +54,10 @@ int pcal_interp (struct mk4_sdata *sd1,
     extern int do_accounting;
     extern struct mk4_corel cdata;
     
-    for (i=0; i<MAX_CHAN_PP; i++)
+    for (i=0; i<MAXFREQ; i++)
         pc_index[i] = -1;
                                         /* Initialize pcal arrays and data */
-    for (f=0; f<MAX_CHAN_PP; f++)
+    for (f=0; f<MAXFREQ; f++)
         {
         fc = corel + f;
         if (fc->frequency <= 0.0) continue;
@@ -72,8 +71,8 @@ int pcal_interp (struct mk4_sdata *sd1,
             isd = &(fc->data[ap].ref_sdata);
             for (j=0; j<MAX_PCF; j++)
                 {
-                isd->phasecal_lcp[j] = c_zero();
-                isd->phasecal_rcp[j] = c_zero();
+                isd->phasecal_lcp[j] = 0.0;
+                isd->phasecal_rcp[j] = 0.0;
                 }
             isd->pcweight_lcp = 0.0;
             isd->pcweight_rcp = 0.0;
@@ -81,8 +80,8 @@ int pcal_interp (struct mk4_sdata *sd1,
             isd = &(fc->data[ap].rem_sdata);
             for (j=0; j<MAX_PCF; j++)
                 {
-                isd->phasecal_lcp[j] = c_zero();
-                isd->phasecal_rcp[j] = c_zero();
+                isd->phasecal_lcp[j] = 0.0;
+                isd->phasecal_rcp[j] = 0.0;
                 }
             isd->pcweight_lcp = 0.0;
             isd->pcweight_rcp = 0.0;
@@ -114,10 +113,10 @@ int pcal_interp (struct mk4_sdata *sd1,
                                         /* Loop over channels */
                                         /* Assume that first 308/9 is like */
                                         /* all the rest, vis a vis chan order */
-        pc_max = (do309) ? MAX_CHAN_PP : 32;
+        pc_max = (do309) ? MAXFREQ : 32;
         for (n=0; n<numrecs; n++)
             {
-            jmax = do309 ? MAX_CHAN_PP : 32;
+            jmax = do309 ? MAXFREQ : 32;
             for (j=0; j<jmax; j++)
                 {
                 if (do309)          // copy in appropriate channel name
@@ -170,7 +169,7 @@ int pcal_interp (struct mk4_sdata *sd1,
             ch = NONE;
                                         // fc is link to appropriate data channel
                                         // ch will indicate polarization & sideband
-            for (f=0; f<MAX_CHAN_PP; f++)
+            for (f=0; f<MAXFREQ; f++)
                 {
                 fc = corel + f;
                 if (fc->frequency <= 0.0)
@@ -219,7 +218,7 @@ int pcal_interp (struct mk4_sdata *sd1,
             if (do309)
                 {
                 ipcmin = 0;             // we will be copying all tones for t309
-                ipcmax = MAX_CHAN_PP - 1;
+                ipcmax = MAXFREQ - 1;
                 }
             else                        // figure out which single tone for t308
                 {
@@ -327,7 +326,7 @@ int pcal_interp (struct mk4_sdata *sd1,
                                 {
                                     // if there is DSB data, then don't allow the LSB
                                     // pcal to overwrite what is already there
-                                if (ch == LSB_LCP && isd->phasecal_lcp[ipc].re != 0.0)
+                                if (ch == LSB_LCP && cabs(isd->phasecal_lcp[ipc]) != 0.0)
                                     break;
                                     // must renormalize to account for fraction of high data
                                     // see rjc's normalization notes from 2006.10.16
@@ -340,8 +339,7 @@ int pcal_interp (struct mk4_sdata *sd1,
                                     }
                                 }
 
-                            isd->phasecal_lcp[ipc].re = -realval;
-                            isd->phasecal_lcp[ipc].im = imagval;
+                            isd->phasecal_lcp[ipc] = -realval + I * imagval;
                             if ((realval != 0.0) || (imagval != 0.0))
                                 isd->pcweight_lcp = 1.0;
                             break;
@@ -351,7 +349,7 @@ int pcal_interp (struct mk4_sdata *sd1,
                                 {
                                     // if there is DSB data, then don't allow the LSB
                                     // pcal to overwrite what is already there
-                                if (ch == LSB_RCP && isd->phasecal_rcp[ipc].re != 0.0)
+                                if (ch == LSB_RCP && cabs (isd->phasecal_rcp[ipc]) != 0.0)
                                     break;
                                     // must renormalize to account for fraction of high data
                                     // see rjc's normalization notes from 2006.10.16
@@ -364,8 +362,7 @@ int pcal_interp (struct mk4_sdata *sd1,
                                     }
                                 }
 
-                            isd->phasecal_rcp[ipc].re = -realval;
-                            isd->phasecal_rcp[ipc].im = imagval;
+                            isd->phasecal_rcp[ipc] = -realval + I * imagval;
                             if ((realval != 0.0) || (imagval != 0.0))
                                 isd->pcweight_rcp = 1.0;
                             break;

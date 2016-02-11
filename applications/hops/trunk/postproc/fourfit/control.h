@@ -45,14 +45,14 @@ struct c_block                     /* Elemental control block structure */
    short skip;                     /* iff true, don't fourfit matching scans */
    double max_parity;              /* maximum parity error rate for AP acceptance */
    double ref_freq;                /* force fourfit to use this ref. freq. (MHz) */
-   int frequency[MAX_CHAN_PP];     /* accept USB, LSB, DSB iff = 1, 2, 3 */
-   short index[2*MAX_CHAN_PP];     /* index numbers of acceptable sidebands */
+   int frequency[MAXFREQ];         /* accept USB, LSB, DSB iff = 1, 2, 3 */
+   short index[2*MAXFREQ];         /* index numbers of acceptable sidebands */
    struct istats pc_mode;          /* phase cal modes */
    struct istats pc_period;        // phase cal integration period (in ap's)
-   struct dstats pc_freq[MAX_CHAN_PP]; /* phase cal freqs (KHz) by channel */
-   struct dstats pc_phase[MAX_CHAN_PP][2];/* phase cal phases by channel and pol 
+   struct dstats pc_freq[MAXFREQ]; /* phase cal freqs (KHz) by channel */
+   struct dstats pc_phase[MAXFREQ][2];/* phase cal phases by channel and pol 
                                              for manual or additive pcal */
-   struct istats pc_tonemask[MAX_CHAN_PP];// tone exclusion mask by channel in multitone
+   struct istats pc_tonemask[MAXFREQ];// tone exclusion mask by channel in multitone
    struct dstats lsb_offset;       /* LSB phase offset in degrees */
    short x_crc;                    /* flag to keep/discard AP having a crc error */
    short y_crc;
@@ -71,7 +71,7 @@ struct c_block                     /* Elemental control block structure */
    short use_samples;              /* iff true, use sample counts to normalize */
    short dc_block;                 // iff true, zero out DC subchannel of spectrum
    short optimize_closure;         // iff true, keep closure triangle noise small as possible
-   struct gat_struct gates[MAX_CHAN_PP]; /* relative on/off epochs (s), code, for each channel */
+   struct gat_struct gates[MAXFREQ]; /* relative on/off epochs (s), code, for each channel */
    int adhoc_phase;                /* defines type of ad hoc phase adjustments */
    double adhoc_tref;              /* reference time for either ad hoc model (s past hour */
    double adhoc_period;            /* period of sinewave (s) */
@@ -82,10 +82,12 @@ struct c_block                     /* Elemental control block structure */
    double passband[2];             /* passband for spectral filtering (MHz) */
    double t_cohere;                /* coherence time (s) for co-adding fringe rates */
    struct dstats ionosphere;       // a priori ionospheres (TEC units = 1e16 el/m^2)
-   struct dstats delay_offs[MAX_CHAN_PP];// additive delay offset(ns) by channel
+   struct dstats delay_offs[MAXFREQ];// additive delay offset(ns) by channel
    int nsamplers;                  // number of sampler strings
    char *psamplers[MAX_SAMP];      // pointer to each sampler string (or NULL)
    char sampler_codes[256];        // contains all sampler strings
+   struct dstats sampler_delay[MAX_SAMP][2]; // additive delay per sampler (s), in sampler
+                                   // order, for each of 2 polarizations (L/R = X/Y)
    int interpolator;               // interpolation method
    int mbd_anchor;                 // mbd ambiguity choice: model or sbd
    struct dstats station_delay;    // station delay pc inject->digitizer (s)

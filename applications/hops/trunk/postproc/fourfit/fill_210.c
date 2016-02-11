@@ -11,6 +11,7 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
 #include "mk4_data.h"
 #include "vex.h"
 #include "pass_struct.h"
@@ -25,14 +26,13 @@ struct type_status *status,
 struct type_210 *t210)
     {
     int i;
-    double c_mag(), c_phase();
 
     clear_210 (t210);
                                         /* Precalculated in make_plotdata() */
     for (i=0; i<pass->nfreq; i++)
         {
-        t210->amp_phas[i].ampl = (float)c_mag (status->fringe[i]) / 10000.0;
-        t210->amp_phas[i].phase = (float)c_phase (status->fringe[i]) * 180.0 / pi;
+        t210->amp_phas[i].ampl = (float)cabs (status->fringe[i]) / 10000.0;
+        t210->amp_phas[i].phase = (float)carg (status->fringe[i]) * 180.0 / pi;
         }
 
     return (0);

@@ -46,8 +46,8 @@ struct freq_corel *corel)
     double ratio, old_ratio;
     double lo_default, hi_default;
     char chan[9];
-    char chan_buffer[MAX_CHAN_PP][9];
-    int sc_index[MAX_CHAN_PP];
+    char chan_buffer[MAXFREQ][9];
+    int sc_index[MAXFREQ];
     int numchans, numscans, new_chan, is_unique;
     int ret, first_mess, npts, nstart;
     struct freq_corel *fc;
@@ -59,7 +59,7 @@ struct freq_corel *corel)
     first_mess = 1;
     status.stc_present = 0;         // indicate neither station having state counts
     
-    if (param->bits_sample == 2)
+    if (param->bits_sample[0] == 2) // in mk4 xf mode, both stns have same bits/samp
         {
         lo_default = 0.32;
         hi_default = 0.18;
@@ -71,7 +71,7 @@ struct freq_corel *corel)
         }
 
                                         /* Initialize stcount data */
-    for (f=0; f<MAX_CHAN_PP; f++)
+    for (f=0; f<MAXFREQ; f++)
         {
         fc = corel + f;
         if (fc->frequency <= 0.0) continue;
@@ -173,7 +173,7 @@ struct freq_corel *corel)
             strncpy (chan, chan_buffer[sc], 8);
                                         /* Find this channel in corel */
             ch = NONE;
-            for (f=0; f<MAX_CHAN_PP; f++)
+            for (f=0; f<MAXFREQ; f++)
                 {
                 fc = corel + f;
                 if (fc->frequency <= 0.0) continue;

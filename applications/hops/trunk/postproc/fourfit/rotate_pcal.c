@@ -10,18 +10,18 @@
 *****************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 
 
-rotate_pcal(pass)
-struct type_pass *pass;
+rotate_pcal(struct type_pass *pass)
     {
     int ap, fr, i, ip;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
-    complex rrpcal[2], c_mult(), c_exp(), c_add();
-    double theta, c_phase(), c_mag(),
+    complex rrpcal[2];
+    double theta, 
            phaze,thyme,thyme_n,zeta,
            deltaf, 
            eta[4];
@@ -93,27 +93,27 @@ struct type_pass *pass;
                         case NORMAL:
                         case MANUAL:
                                         // apply constant pcal to whole scan
-                            rrpcal[i] = c_exp (status.pc_phase[fr][i][stnpol[i][ip]]);
+                            rrpcal[i] = cexp (I * status.pc_phase[fr][i][stnpol[i][ip]]);
                             break;
                         case AP_BY_AP:
                                         // form difference with correct pol
                             rrpcal[i] = (stnpol[i][ip]) ?
                                 rrisd[i]->phasecal_rcp[pass->pci[i][fr]]:
                                 rrisd[i]->phasecal_lcp[pass->pci[i][fr]];
-                            rrpcal[i].im *= -1;
+                            rrpcal[i] = conj (rrpcal[i]);
                             break;
                         case MULTITONE:
                             rrpcal[i] = rrisd[i]->mt_pcal[stnpol[i][ip]];
                             break;
                         }
-                    theta += (2*i-1) * c_phase (rrpcal[i]);
+                    theta += (2*i-1) * carg (rrpcal[i]);
                     }
                                         // Zero pcal ampl => missing pcal data   
                                         // so don't rotate
-                if (c_mag (rrpcal[0]) + c_mag (rrpcal[1]) == 0.0) 
+                if (cabs (rrpcal[0]) + cabs (rrpcal[1]) == 0.0) 
                     theta = 0.0;
                                         // save resulting phasor in time-freq array
-                cor_data->pc_phasor[ip] = c_exp (theta - zeta - eta[ip]);
+                cor_data->pc_phasor[ip] = cexp (I * (theta - zeta + eta[ip]));
                 }
             }
         }

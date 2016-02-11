@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 533 2011-11-10 20:13:45Z gbc $
+# $Id: Makefile.am 1085 2015-03-16 17:00:04Z gbc $
 #
 
 #
@@ -33,6 +33,13 @@ else
 DIFXDIRS =
 TAR_DIFX =
 DCF_DIFX =
+endif
+
+# turn on OMPI test stuff -- not part of tar or distcheck
+if HAVE_OMPI
+OMPIDIRS = @OMPIDIR@
+else
+OMPIDIRS =
 endif
 
 # turn on code that doesn't work, yet and a few other things
@@ -74,7 +81,8 @@ SUBDIRS = . $(HOPSDIRS) \
 	  $(DIFXDIRS) \
 	  $(DEVLDIRS) \
 	  $(MARK5DIRS) \
-	  $(HOPSDATA)
+	  $(HOPSDATA) \
+	  $(OMPIDIRS)
 
 EXTRA_DIST = README.txt Fink.txt MacPorts.txt svnrev.txt Copyright configure_ac
 DIST_SUBDIRS = $(SUBDIRS)

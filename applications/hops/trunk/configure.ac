@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.10, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.11, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])
@@ -109,6 +109,8 @@ AM_CONDITIONAL(HAVE_DEVEL, $have_devel)
 # autoscan suggested list of checks follows
 
 # Checks for programs.
+AC_PATH_PROG([AUTORECONF], [autoreconf], [/bin/false])
+AC_PATH_PROG([ACLOCAL], [aclocal], [/bin/false])
 AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_F77
@@ -154,7 +156,14 @@ AC_SUBST(GS_COPYPAGE_OK)
 
 # PERL/Python might be in nonstandard locations
 AC_PATH_PROGS(PERL, perl, /bin/false)
-AC_PATH_PROGS(PYTHON, python, /bin/false)
+#AC_PATH_PROGS(PYTHON, python, /bin/false)
+AM_PATH_PYTHON([2.5],,[:])
+if [test "$PYTHON" != : -a "$pythondir" != ""] ; then
+    have_python=true
+else
+    have_python=false
+fi
+AM_CONDITIONAL([HAVE_PYTHON], [$have_python])
 
 # Checks for libraries.
 AC_CHECK_LIB(m, floorl)
@@ -236,6 +245,18 @@ fi
 have_gsl=false
 ### option disabled
 AM_CONDITIONAL(HAVE_GSL, $have_gsl)
+
+#
+# FFTW3 is now required
+#
+PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
+if [$hasfftw] ; then
+    AC_DEFINE([HAVE_FFTW], 1, [Define to 1 if FFTW is available])
+else
+    AC_DEFINE([HAVE_FFTW], 0, [Define to 1 if FFTW is available])
+fi
+AC_SUBST(FFTW3_CFLAGS)
+AC_SUBST(FFTW3_LIBS)
 AM_CONDITIONAL(HAVE_FFTW, $hasfftw)
 
 AC_ARG_VAR(X_INSANE, [Anything you need to append to the X11 link chain])
@@ -412,6 +433,11 @@ if [ test x$build_vendor = xapple ] ; then
     LDFLAGS="-all_load $LDFLAGS"
 fi
 
+have_ompi=false
+### option disabled
+AC_SUBST(OMPIDIR)
+AM_CONDITIONAL(HAVE_OMPI, [test $have_ompi = true])
+
 have_difx=false
 ### option disabled
 AC_SUBST(DIFXDIR)
@@ -472,6 +498,7 @@ if [ $have_hops = "true" ] ; then
 	postproc/fourmer/Makefile
 	postproc/fplot/Makefile
 	postproc/fringex/Makefile
+	postproc/snratio/Makefile
 	sub/Makefile
 	sub/afio/Makefile
 	sub/dfio/Makefile
@@ -485,6 +512,10 @@ if [ $have_hops = "true" ] ; then
     AC_CONFIG_FILES(
 	[scripts/vhelp.sh],
 	[chmod +x scripts/vhelp.sh]
+    )
+    AC_CONFIG_FILES(
+	[scripts/fourphase],
+	[chmod +x scripts/fourphase]
     )
 fi
 

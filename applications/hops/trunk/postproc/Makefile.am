@@ -1,11 +1,11 @@
 #
-# $Id: Makefile.am 364 2011-06-21 20:16:04Z gbc $
+# $Id: Makefile.am 1048 2015-03-04 14:55:00Z rjc $
 #
 
 if HAVE_DEVEL
-SUBDIRS = . adump aedit alist fourfit fourmer fplot fringex @IFFYDIR@
+SUBDIRS = . adump aedit alist fourfit fourmer fplot fringex snratio @IFFYDIR@
 else
-SUBDIRS = . adump aedit alist fourfit fourmer fplot fringex
+SUBDIRS = . adump aedit alist fourfit fourmer fplot fringex snratio
 endif
 DIST_SUBDIRS = $(SUBDIRS)
 

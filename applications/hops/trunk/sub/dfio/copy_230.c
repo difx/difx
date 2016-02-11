@@ -19,6 +19,7 @@
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include <complex.h>
 #include "bytflp.h"
 #include "type_230.h"
 #include "mk4_dfio.h"
@@ -31,6 +32,7 @@ copy_230 (struct type_230 *t230,
     short nspec_pts;
     int i, size, version, xpow_len;
     struct type_230_v0 *t230_v0;
+    double rpart, ipart;
                                         /* What version is requested for */
                                         /* the disk format? */
     sscanf (t230->version_no, "%2d", &version);
@@ -70,9 +72,10 @@ copy_230 (struct type_230 *t230,
         cp_float (t230_v0->usbweight, t230->usbweight);
         cp_float (t230_v0->lsbweight, t230->lsbweight);
         for (i=0; i<nspec_pts; i++)
-            {
-            cp_double (t230_v0->xpower[i].re, t230->xpower[i].re);
-            cp_double (t230_v0->xpower[i].im, t230->xpower[i].im);
+            {                           // complex copy
+            cp_double (rpart, creal (t230->xpower[i]));
+            cp_double (ipart, cimag (t230->xpower[i]));
+            t230_v0->xpower[i] = rpart + I * ipart;
             }
         size = sizeof (struct type_230_v0) - sizeof (complex) + xpow_len;
         return (size);

@@ -47,6 +47,10 @@ char *fpformat5 = "%*d %s %d %hd %hd %hd %hd %hd %s %2d%3d-%2d%2d%2d %d %d-%2d%2
 %2s %c%c %c%hd %2s %d %f %f %f %f %s %f %f %f %f %f %f %f %f %f %f %d %2hd%2hd %lf %f %lf %lf \
 %f %hd %hd";
 
+char *fpformat6 = "%*d %s %d %hd %hd %hd %hd %hd %s %2d%3d-%2d%2d%2d %d %d-%2d%2d%2d %hd %s \
+%2s %c%c %c%hd %2s %d %f %f %f %f %s %f %f %f %f %f %f %f %f %f %f %d %2hd%2hd %lf %f %lf %lf \
+%f %hd %hd";
+
 int
 parse_fsumm(char *line, fringesum *file)
     {
@@ -337,6 +341,69 @@ parse_fsumm(char *line, fringesum *file)
         case 5:
                                                 /* Version 5, Mk4 only, Sept 99 on */
             n = sscanf(line, fpformat5,
+                file->root_id,
+                &type, 
+                &(file->extent_no), 
+                &(file->duration),
+                &(file->length),
+                &(file->offset),
+                &(file->expt_no), 
+                file->scan_id,
+                &pyear, &pday, &phour, &pmin, &psec,
+                &syear, &sday, &shour, &smin, &ssec, 
+                &(file->scan_offset), 
+                file->source,
+                file->baseline,
+                &(file->quality),
+                &(file->errcode),
+                &(file->freq_code),
+                &(file->no_freq), 
+                file->polarization,
+                &(file->lags), 
+                &(file->amp), 
+                &(file->snr), 
+                &(file->resid_phas), 
+                &(file->phase_snr), 
+                file->datatype,
+                &(file->sbdelay), 
+                &(file->mbdelay), 
+                &(file->ambiguity),
+                &(file->delay_rate),
+                &(file->ref_elev),
+                &(file->rem_elev),
+                &(file->ref_az),
+                &(file->rem_az),
+                &(file->u),
+                &(file->v),
+                &(file->esdesp), 
+                &(file->epoch[0]), 
+                &(file->epoch[1]), 
+                &(file->ref_freq), 
+                &(file->total_phas), 
+                &(file->total_rate), 
+                &(file->total_mbdelay), 
+                &(file->total_sbresid), 
+                &(file->srch_cotime), 
+                &(file->noloss_cotime)); 
+                                        /* Check that the caller got it right */
+            if (type != 2)
+                {
+                msg ("parse_fsumm passed line of wrong type '%d'", 2, type);
+                return (-1);
+                }
+                                        /* Not even enough to id file */
+            if(n < 24 ) return(-1);
+
+            if (n < 52) 
+                {
+                incomplete = TRUE;
+                msg ("Incomplete parse, number parsed = %d", -3, n);
+                }
+            break;
+
+        case 6:
+                                                /* Version 6, EHT era */
+            n = sscanf(line, fpformat6,
                 file->root_id,
                 &type, 
                 &(file->extent_no), 

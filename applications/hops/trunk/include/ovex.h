@@ -27,6 +27,7 @@
 /*                                                                      */
 /************************************************************************/
 #include "mk4_typedefs.h"
+#include "mk4_sizes.h"
                                         /* source_type */
 #define         QUASAR      1
 #define         STAR        2
@@ -148,7 +149,7 @@ struct station_struct
     short               roll_increment;         /* Frames */
     float               roll_period;            /* Seconds */
     short               roll_seq[5][34][32];    /* Track numbers */
-    struct chan_struct  channels[64];
+    struct chan_struct  channels[MAX_CHAN];
     };
 
 struct scan_struct

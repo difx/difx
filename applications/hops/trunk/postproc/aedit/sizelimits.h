@@ -1,4 +1,4 @@
-#define MAXFREQ 16                      /* Max number of VC frequencies allowed */
+#define MAXFREQ 64                      /* Max number of VC frequencies allowed */
 #define MAXBANDS 10                     /* Max number of wavebands allowed */
 #define MAXGROUPS 20			/* Max number of freq groups in ccfile */
 #define MAXSTEXP 40                     /* Max stations allowed per experiment */

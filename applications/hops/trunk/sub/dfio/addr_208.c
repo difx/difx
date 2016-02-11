@@ -143,6 +143,7 @@ addr_208 (short version,
         cp_float (t208->totphase, t208_v1->totphase);
         cp_float (t208->totphase_ref, t208_v1->totphase_ref);
         cp_float (t208->resphase, t208_v1->resphase);
+        cp_float (t208->tec_error, t208_v1->tec_error);
 
         return (t208);
         }

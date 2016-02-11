@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <complex.h>
 #include "bytflp.h"
 #include "type_230.h"
 #include "mk4_dfio.h"
@@ -38,6 +39,7 @@ addr_230 ( short version,
     char *caddress;
     struct type_230 *t230;
     struct type_230_v0 *t230_v0;
+    double rpart, ipart;
                                         /* Need number of lags */
                                         /* up front */
     caddress = (char *)address;
@@ -85,9 +87,10 @@ addr_230 ( short version,
         cp_float (t230->usbweight, t230_v0->usbweight);
         cp_float (t230->lsbweight, t230_v0->lsbweight);
         for (i=0; i<nspec_pts; i++)
-            {
-            cp_double (t230->xpower[i].re, t230_v0->xpower[i].re);
-            cp_double (t230->xpower[i].im, t230_v0->xpower[i].im);
+            {                           // complex copy
+            cp_double (rpart, creal (t230_v0->xpower[i]));
+            cp_double (ipart, cimag (t230_v0->xpower[i]));
+            t230->xpower[i] = rpart + I * ipart;
             }
         return (t230);
         }

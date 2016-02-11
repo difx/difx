@@ -10,6 +10,7 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
@@ -23,7 +24,7 @@ int fr,
 struct type_212 *t212)
     {
     int i, ap_212, nap, ap, nrec, aprec, phase, pcal1, pcal2, nrec_per_fr, nalloc;
-    double factor, c_mag(), c_phase();
+    double factor;
     struct data_corel *datum;
     extern struct type_plot plot;
 
@@ -51,8 +52,8 @@ struct type_212 *t212)
             continue;
             }
                                         /* Amplitude and phase */
-        t212->data[ap_212].amp = c_mag (plot.phasor[fr][ap]) * status->amp_corr_fact;
-        t212->data[ap_212].phase = c_phase (plot.phasor[fr][ap]);
+        t212->data[ap_212].amp = cabs (plot.phasor[fr][ap]) * status->amp_corr_fact;
+        t212->data[ap_212].phase = carg (plot.phasor[fr][ap]);
         t212->data[ap_212].weight = plot.weights[fr][ap];
         }
 

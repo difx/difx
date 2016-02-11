@@ -1,8 +1,8 @@
 #ifndef PASS_STRUCT
 #define PASS_STRUCT
 
+#include <complex.h>
 #include "control.h"
-#include "type_comp.h"
 #include "mk4_data.h"
 #include "mk4_sizes.h"
 
@@ -77,7 +77,7 @@ struct freq_corel
 
 struct type_pass 
         {
-        struct freq_corel       pass_data[MAX_CHAN_PP];
+        struct freq_corel       pass_data[MAX_CHAN];
         int                     nfreq;
         int                     channels;
         int                     nlags;
@@ -85,10 +85,12 @@ struct type_pass
         int                     npctones;     // max number of pcal tones in any freq
         int                     ap_off;
         int                     pol;          // 0|1|2|3 = LL|RR|LR|RL or last pol if param.pol!=0
+        int                     linpol[2];    // 0|1 if circular|linear pol for ref & remote
         int                     npols;        // number of polarizations in coherent sum
+        int                     pprods_present[4]; // flags for pol.product present, like pol
         int                     autocorr;
-        int                     pci[2][MAX_CHAN_PP];  /* index of desired pcal tone by stn */
-        int                     pcinband[2][MAX_CHAN_PP][MAX_PCF];
+        int                     pci[2][MAX_CHAN];  /* index of desired pcal tone by stn */
+        int                     pcinband[2][MAX_CHAN][MAX_PCF];
         double                  start;
         double                  stop;
         double                  reftime;

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Id: chk_ff_2843.sh 974 2014-07-28 16:03:19Z rjc $
+# $Id: chk_ff_2843.sh 1032 2015-01-23 14:24:03Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -19,7 +19,9 @@ fourfit -t -d diskfile:ff-2843.ps -b AI:S \\ && echo \
 
 # AIT
 fourfit -t -d diskfile:ff-2843.ps -b AI:S \
-    $DATADIR/2843/321-1701_0552+398/0552+398.oifhak set start -3 2>/dev/null 1>&2
+    $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \
+    set start -3 2>/dev/null 1>&2
+[ -f ./ff-2843.ps ] || { echo ./ff-2843.ps missing && exit 2 ; }
 
 # pluck out line containing the snr and parse it
 line=$(grep '7570 9653' ./ff-2843.ps)

@@ -102,7 +102,7 @@ int mode;
                                         /* Check polarizations */
         if (strstr (fsumm.polarizations, datum->polarization) == NULL)
             {
-            if (strlen (fsumm.polarizations) == 12)
+            if (strlen (fsumm.polarizations) == 48)
                 {
                 msg ("Error, bad polarization information", 2);
                 return (-1);

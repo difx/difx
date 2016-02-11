@@ -2,7 +2,7 @@
 #define T230_VERSION 0
 
 #include "mk4_typedefs.h"
-#include "type_comp.h"
+#include <complex.h>
                                         /* Set this to current version, */
                                         /* defined to be same as app struct */
 #define type_230_v0 type_230

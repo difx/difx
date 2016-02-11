@@ -1,0 +1,232 @@
+#!/usr/bin/python
+#
+# fourphase - determines optimal delays and phases for coherently combining
+# 4 VGOS polarization products, and writes them into a fourfit control file
+#
+# first created                         2015.6.8  rjc
+
+import datetime
+import optparse
+import re
+import string
+import sys
+
+from subprocess import Popen, PIPE
+
+usage_text = '\n fourphase [options] <baseline> <root_filename>' \
+             '\n e.g.: fourphase GE -c ../cf_3419 3C279.xyzzys'
+parser = optparse.OptionParser(usage=usage_text)
+parser.add_option(
+    '-c', '--controlfile', dest='cfile', help='control-file name')
+
+parser.add_option(
+    '-o', '--outputfile', dest='ofile', help='output-file name, overrides default ' \
+                                             'of I appended to control-file name')
+
+parser.add_option(
+    '-p', '--plot', action='store_true', dest='fplot', help='display ff plots (false)',
+    default=False)
+
+parser.add_option(
+    '-v', '--verbose', action='store_true', dest='verbose', help='verbose mode (false)',
+    default=False)
+
+(opts, args) = parser.parse_args()
+
+if len(args) != 2:
+    print "use -h option for help"
+    sys.exit(0)
+
+if opts.verbose:
+    print 'opts: ', opts
+    print 'args: ', args
+                                    # initialization
+bline, root = args
+refstn = bline[0]
+remstn = bline[1]
+chans = 'abcdefghijklmnopqrstuvwxyzABCDEF '
+
+pol_prods = ['XX', 'YY', 'XY', 'YX']
+sbd = []
+mbd = []
+phase = []
+pc_phases = []
+tec = []
+ff = 'fourfit'
+bline = '-b' + bline
+                                    # insert control file name, if specified
+if opts.cfile:
+    cf = '-c' + opts.cfile
+else:
+    cf = ''
+                                    # determine output file name
+if opts.ofile:
+    of = opts.ofile
+else:
+    of = opts.cfile + 'I'
+    
+                                    # are fringe plots desired?
+if opts.fplot:
+    mode = '-pt'
+else:
+    mode = '-t'
+                                    # force a priori phases and delays to zero
+setstring = 'set if station ' + refstn + '\n'
+setstring += 'pc_delay_x 0.0' + '\n'
+setstring += 'pc_delay_y 0.0' + '\n'
+setstring += 'pc_phases_x ' + chans + 32 * ' 0.0' + '\n'
+setstring += 'pc_phases_y ' + chans + 32 * ' 0.0' + '\n'
+
+setstring += '\nif station ' + remstn + '\n'
+setstring += 'pc_delay_x 0.0' + '\n'
+setstring += 'pc_delay_y 0.0' + '\n'
+setstring += 'pc_phases_x ' + chans + 32 * ' 0.0' + '\n'
+setstring += 'pc_phases_y ' + chans + 32 * ' 0.0' + '\n'
+
+ionstring = '\nif\n'
+ionstring += 'ion_npts 21 ion_win -15.0 15.0\n'
+
+                                    # function to invoke ff on 1 pol. product
+def pol_prod (polar, extrastring):
+    dtec = 0.0
+    polar = '-P' + polar
+    msglev = '-m1'
+    pargs = [ff, mode, bline, polar, cf, msglev, root] + extrastring.split ()
+                                    # invoke fourfit via a pipe
+    try:
+        p = Popen (pargs, stdout=PIPE, stderr=PIPE)
+    except OSError, e:
+        print 'System error trying to run "', ff, '"'
+        print e.strerror
+        sys.exit ()
+
+    output, stderr = p.communicate()
+
+    for line in stderr.split('\n'):
+        fields = line.split ()
+        if re.search ('pc_phases', line):
+            pc_phases = [float (x) for x in fields[2:]]
+        elif re.search ('max555', line):
+            sbd = float (fields[7])
+            mbd = float (fields[9])
+        elif re.search ('residual phase', line):
+            phaze = float (fields[3])
+        elif re.search ('differential TEC', line):
+            dtec = float (fields[5])
+                                    # ensure that values were found
+    if 'pc_phases' in vars () and 'sbd' in vars () and 'mbd' in vars () and 'phaze' in vars ():
+        return sbd, mbd, phaze, pc_phases, dtec
+    else:
+        print 'fourfit returned an error: ', stderr
+        sys.exit ()
+
+
+                                    # find best-fit ionosphere in XX & YY
+if opts.verbose:
+    print 'fitting ionosphere tec'
+
+for polar in pol_prods[0:2]:
+    [sb, mb, phi, pcp, dtec] = pol_prod (polar, setstring + ionstring)
+    tec.append (dtec)
+
+tec_mean = 0.5 * (tec[0] + tec[1])
+
+ionstring = 'if station ' + remstn + '\n'
+ionstring += 'ion_npts 1 ionosphere ' + '%8.3f' % (tec_mean)
+
+                                    # Do initial fits for all 4 polarization products
+if opts.verbose:
+    print 'fitting polarization products'
+
+for polar in pol_prods:
+    [sb, mb, phi, pcp, dtec] = pol_prod (polar, setstring + ionstring)
+    sbd.append (sb)
+    mbd.append (mb)
+    phase.append (phi)
+    pc_phases.append (pcp)
+
+
+Xref = 0.0
+Xrem = -phase[0]
+                                    # get Y phases from XY fit
+Yref1 = -phase[2] + phase[1]
+Yrem1= -phase[2]
+                                    # get Y phases from YX fit
+Yref2=  -phase[0] + phase[3] + 180
+Yrem2=  -phase[0] + phase[3] - phase[1] + 180
+
+                                    # choose ambiguity for min. difference
+if Yref1 - Yref2 > 180:
+    Yref1 -= 360
+elif Yref2 - Yref1 > 180:
+    Yref2 -= 360
+
+if Yrem1 - Yrem2 > 180:
+    Yrem1 -= 360
+elif Yrem2 - Yrem1 > 180:
+    Yrem2 -= 360
+
+pc_phases_x_ref_list = 32 * [Xref]
+pc_phases_x_rem_list = 32 * [Xrem]
+                                    # use mean of XY and YX determinations
+pc_phases_y_ref_list = 32 * [0.5 * (Yref1 + Yref2)]
+pc_phases_y_rem_list = 32 * [0.5 * (Yrem1 + Yrem2)]
+
+pc_delay_x_ref = 500.0 * (mbd[2] - mbd[1])
+pc_delay_x_rem = 500.0 * (mbd[1] - mbd[3])
+pc_delay_y_ref = 500.0 * (mbd[3] - mbd[0])
+pc_delay_y_rem = 500.0 * (mbd[0] - mbd[2])
+
+if opts.verbose:
+    print 'X phases:', Xref, Xrem
+    print 'Y phases using XY link:', Yref1, Yrem1
+    print 'Y phases using YX link:', Yref2, Yrem2
+    print 'TEC XX %7.3f YY %7.3f mean %7.3f' % (tec[0], tec[1], tec_mean)
+    print refstn, ' Y-X delay (ns)', pc_delay_y_ref - pc_delay_x_ref
+    print remstn, ' Y-X delay (ns)', pc_delay_y_rem - pc_delay_x_rem
+    print refstn, ' Y-X phase (deg) %7.1f' % (pc_phases_y_ref_list[0] - pc_phases_x_ref_list[0])
+    print remstn, ' Y-X phase (deg) %7.1f' % (pc_phases_y_rem_list[0] - pc_phases_x_rem_list[0])
+
+
+pc_phases_x_ref = 'pc_phases_x ' + chans
+for x in pc_phases_x_ref_list:
+    pc_phases_x_ref += '%7.1f' % (x)
+
+pc_phases_x_rem = 'pc_phases_x ' + chans
+for x in pc_phases_x_rem_list:
+    pc_phases_x_rem += '%7.1f' % (x)
+
+pc_phases_y_ref = 'pc_phases_y ' + chans
+for x in pc_phases_y_ref_list:
+    pc_phases_y_ref += '%7.1f' % (x)
+
+pc_phases_y_rem = 'pc_phases_y ' + chans
+for x in pc_phases_y_rem_list:
+    pc_phases_y_rem += '%7.1f' % (x)
+                                    # open control file & new output
+ifile = open (opts.cfile, 'r')
+orig = ifile.read ()
+ifile.close ()
+
+ofile = open (of, 'w')
+ofile.write (orig)                  # copy contents of input cf)
+
+now = datetime.datetime.now ()
+ofile.write ('* following lines added by fourphase on ' + str (now))
+
+                                    # add lines for reference station
+ofile.write ('\nif station ' + refstn + '\n')
+ofile.write ('  pc_delay_x ' + '%8.3f' % (pc_delay_x_ref) + '\n')
+ofile.write ('  pc_delay_y ' + '%8.3f' % (pc_delay_y_ref) + '\n')
+ofile.write ('  ' + pc_phases_x_ref + '\n')
+ofile.write ('  ' + pc_phases_y_ref + '\n')
+                                    # add lines for remote station
+ofile.write ('\nif station ' + remstn + '\n')
+ofile.write ('* ionosphere ' + '%8.3f' % (tec_mean) + '\n')
+ofile.write ('  pc_delay_x ' + '%8.3f' % (pc_delay_x_rem) + '\n')
+ofile.write ('  pc_delay_y ' + '%8.3f' % (pc_delay_y_rem) + '\n')
+ofile.write ('  ' + pc_phases_x_rem + '\n')
+ofile.write ('  ' + pc_phases_y_rem + '\n')
+
+ofile.close ()
+

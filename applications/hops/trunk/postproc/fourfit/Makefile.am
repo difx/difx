@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 978 2014-07-31 19:01:01Z rjc $
+# $Id: Makefile.am 1140 2015-06-01 20:58:40Z rjc $
 #
 
 SUBDIRS = .
@@ -18,6 +18,7 @@ bin_SCRIPTS =
 check_PROGRAMS = fft_chk
 EXTRA_DIST = $(bin_SCRIPTS) new_parameters.txt
 
+if HAVE_FFTW
 if HAVE_PGPLOT
 if HAVE_X11
 if HAVE_PNG
@@ -37,7 +38,7 @@ fourfit_sources = \
 		  copy_cblock_parts.c gate_off.c \
 		  freq_spacing.c search_windows.c \
 		  delay_rate.c fft1.c update.c interp.c \
-		  create_fname.c comp_func.c parabola.c vrot.c \
+		  create_fname.c parabola.c vrot.c \
 		  get_bfstring.c skip_index.c \
 		  clear_plotdata.c calc_rms.c fill_fringe_info.c \
 		  display_fplot.c plot_complex.c \
@@ -50,7 +51,7 @@ fourfit_sources = \
 		  fill_212.c fill_230.c stcount_interp.c \
 		  calc_normalization.c apply_passband.c max555.c \
 		  interp555.c pcalibrate.c sampler_delays.c \
-		  norm.c make_plotdata.c output.c read_sdata.c \
+		  norm_xf.c norm_fx.c make_plotdata.c output.c read_sdata.c \
 		  diff_file_phase.c generate_graphs.c generate_text.c
 fourfit_SOURCES = $(fourfit_sources)
 
@@ -58,7 +59,7 @@ fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \
 		   -DFF_VER_NO=\"@PACKAGE_VERSION@\" \
 		   $(AM_CPPFLAGS)
 fourfit_LDADD = @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
-		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@
+		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@ @FFTW3_LIBS@
 fourfit_DEPENDENCIES = @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
 
 # check the fft code
@@ -73,9 +74,16 @@ endif !HAVE_X11
 else !HAVE_PGPLOT
 fourfit_SOURCES = you_lose.c
 endif !HAVE_PGPLOT
+else !HAVE_FFTW
+fourfit_SOURCES = you_lose.c
+endif !HAVE_FFTW
 
 you_lose.c: Makefile.am
-	echo 'main(){return(puts("Missing PNG, X11 or PGPLOT\n"));}' > $@
+	echo 'main(){return(' > $@
+	echo 'puts("One or more of the required packages:")+' >> $@
+	echo 'puts("PNG, X11, PGPLOT or FFTW3 is missing.")+' >> $@
+	echo 'puts("Check your installation are recompile.")' >> $@
+	echo ');}' >> $@
 
 CLEANFILES = you_lose.c
 

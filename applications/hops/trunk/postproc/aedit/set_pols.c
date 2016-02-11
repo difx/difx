@@ -24,6 +24,7 @@ char *arg1, *arg2, *remarg;
     extern struct inputs inp;
     char outbuf[150], buf[150];
     char *pol, *strtok();
+    char pol_list[5] = {"LRXY"};
 
     outbuf[0] = '\0';
 
@@ -32,8 +33,8 @@ char *arg1, *arg2, *remarg;
     pol = strtok(buf," ,");    /* Step through pols */
     while (pol != NULL) 
         {
-        if (((pol[0] != 'R') && (pol[0] != 'L'))
-                    || ((pol[1] != 'R') && (pol[1] != 'L')))
+        if (strchr (pol_list, pol[0]) == NULL
+         || strchr (pol_list, pol[1]) == NULL)
             {
             msg("Bad polarization '%s'", 2, pol);
             return(-1);

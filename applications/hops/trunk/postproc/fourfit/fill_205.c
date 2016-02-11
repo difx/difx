@@ -25,9 +25,9 @@ struct type_203 *t203,
 struct type_205 *t205)
     {
     int i, j, ch, nch, int_time, sb, ind,
-        nchan;
+        nchan, nfreqs;
     struct freq_corel *fc;
-    nchan = (strncmp (t203->version_no, "00", 2) == 0) ? 32 : 8*MAX_CHAN_PP;
+    nchan = (strncmp (t203->version_no, "00", 2) == 0) ? 32 : 8*MAXFREQ;
 
     clear_205 (t205);
                                         /* For now, UCT central is same as FRT */
@@ -72,11 +72,13 @@ struct type_205 *t205)
 
     t205->ref_freq = param->ref_freq;
     
-    for (ch=0; ch<MAX_CHAN_PP; ch++)
+    nfreqs = 0;
+    for (ch=0; ch<MAXFREQ; ch++)
         {
         fc = pass->pass_data + ch;
-        if (fc->frequency == 0.0) 
+        if (fc->frequency == 0.0 || nfreqs >= pass->nfreq) 
             continue;
+        nfreqs++;
         t205->ffit_chan[ch].ffit_chan_id = fc->freq_code;
         nch = 0;
         for (sb=0; sb<2; sb++)

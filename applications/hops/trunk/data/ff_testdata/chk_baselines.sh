@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_baselines.sh 940 2014-04-24 16:55:40Z gbc $
+# $Id: chk_baselines.sh 1082 2015-03-12 15:31:30Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -10,11 +10,12 @@ verb=false
 
 [ -d "$srcdir" ] || { echo srcdir not set; exit 1; }
 ${HOPS_SETUP-'false'} || . $srcdir/chk_env.sh
-export DATADIR=`cd $srcdir/testdata; pwd`
-
+export DATADIR=`pwd`/DD
+#export DATADIR=`cd $srcdir/testdata; pwd`
+ldir=`cd $srcdir/testdata ; pwd`
 rdir="$DATADIR/2843/321-1701_0552+398"
-targ="0552+398"
-time=oifhak
+$verb && echo ldir = $ldir
+$verb && echo DDIR = $rdir
 
 # use difx if defined, otherwise first group named
 for g in `groups`
@@ -24,7 +25,16 @@ do
 done
 $verb && echo using group $grp
 
-chmod +w $rdir
+# need to make a local copy to avoid race conditions
+# it is cheaper to link rather than to copy the data
+[ -d $rdir ] || mkdir -p $rdir
+chgrp -R $grp $DATADIR
+chmod -R 775 $DATADIR
+time=oifhak
+( cd $rdir && rm -f *.$time && ln -s $ldir/2843/321-1701_0552+398/* . )
+
+targ="0552+398"
+$verb && ls -l $rdir
 
 for bs in AI AT IT
 do

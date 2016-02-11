@@ -37,10 +37,10 @@
 
 #define MAXSTATIONS 32
 #define MAXIND 8192
-#define MAXAP 2048                      /* debug!! make larger, but with
+#define MAXAP 8192                      /* debug!! make larger, but with
                                            more clever code in plot_data.h 
                                            rjc 99.8.9                */
-#define MAXLAG 2048
+#define MAXLAG 8192
 
 #define MAXMAX 8192                     /* set this to max(MAXAP,MAXLAG) */
 
@@ -55,7 +55,8 @@
 /* #define MAX_APXLAG 262144 */
 /* #define MAX_APXLAG 1048576 */
 /* #define MAX_APXLAG 2097152 */
-#define MAX_APXLAG 4194304
+// #define MAX_APXLAG 4194304
+#define MAX_APXLAG MAXAP * MAXLAG
 #define MAXSPLINES 64                   /* Spline polynomial intervals */
 #define MAXSTATPER 3600                 /* Statistics acc periods  */
 
@@ -85,7 +86,7 @@ struct mk4_corel
 
 struct mk4_fringe
     {
-    void *allocated[MAX_CHAN_PP + 15];
+    void *allocated[MAXFREQ + 15];
     int nalloc;
     char *file_image;
     struct type_000 *id;
@@ -101,16 +102,16 @@ struct mk4_fringe
     struct type_210 *t210;
 /*     struct type_211 *t211; */
     int n212;
-    struct type_212 *t212[MAX_CHAN_PP];
+    struct type_212 *t212[MAXFREQ];
     struct type_220 *t220;
     struct type_221 *t221;
     int n230;
-    struct type_230 *t230[MAX_CHAN_PP * MAXAP];
+    struct type_230 *t230[MAXFREQ * MAXAP];
     };
 
 struct mk4_sdata
     {
-    void *allocated[2*MAXSPLINES*MAX_CHAN_PP + 7*MAXSTATPER + 3];
+    void *allocated[2*MAXSPLINES*MAXFREQ + 7*MAXSTATPER + 3];
     int nalloc;
     char *file_image;
     struct type_000 *id;
@@ -121,7 +122,7 @@ struct mk4_sdata
         struct type_301 *t301[MAXSPLINES];
         struct type_302 *t302[MAXSPLINES];
         struct type_303 *t303[MAXSPLINES];
-        } model[MAX_CHAN_PP];
+        } model[MAXFREQ];
     int n304;
     int n305;
     int n306;

@@ -20,14 +20,10 @@ Getting HOPS running via MacPorts.
     port search <portname>	    # look for packages (or see their site)
     sudo port install <portname>    # to actually install something
 
-2) MacOS doesn't have wget which I like for grabbing things from
-    anonymous ftp.  (curl should be able to do it, but I don't know
-    the proper incantation):
+2) For FFT support you'll need to install fftw3.
 
-    port search wget
-    sudo port install wget
-    # required dependencies:
-    # gettext expat libiconv gperf ncurses ncursesw libidn openssl zlib
+    sudo port install fftw-3
+    # no dependencies
 
 3) You'll need an explicit reference to ghostscript as /usr/bin/gs
 
@@ -56,21 +52,19 @@ Getting HOPS running via MacPorts.
     heck, it might even work.
 
 5) Grab Hops (3.3 is the current release via ftp--similar instructions
-    most likely to apply to later HOPS releases).
+    most likely to apply to later HOPS releases) using wget or your
+    favorite fetch tool (there is a port for wget).
 
     mkdir ~/HOPS
     cd ~/HOPS
 
-    wget ftp://gemini.haystack.mit.edu/pub/hops/README-3.10.txt
-    wget ftp://gemini.haystack.mit.edu/pub/hops/hops-3.10.tar.gz
+    wget ftp://gemini.haystack.mit.edu/pub/hops/README-3.11.txt
+    wget ftp://gemini.haystack.mit.edu/pub/hops/hops-3.11.tar.gz
 
 6) Configure it...
 
     Follow the instructions as in the README; however a few configure
     arguments are needed (depending on what happened with your X11 install):
-
-    ../hops-3.3/configure LDFLAGS=-L/usr/X11/lib \
-	PGPLOT_DIR=/opt/local/pgplot
 
     ../hops-3.10/configure LDFLAGS=-L/opt/local/lib FFLAGS=-c
 
@@ -99,11 +93,12 @@ Getting HOPS running via MacPorts.
     install with put a source-able script hops.bash into your
     ~/bin directory should you have one.
 
-    The 3.2 release requires <stdint.h> being included in the #else
-    case of T1.h.  That was fixed in 3.3.  However other less
-    obvious errors might still be present, so be ware....
+    This worked in 3.11 on my mac...
 
-    This worked in 3.10; it is unclear what prescription to
-    follow on all the intermediate releases.
+    cd build
+    ../trunk/configure \
+        LDFLAGS=-L/usr/X11/lib \
+        PNG12_LIB=/opt/local/lib/libpng12.dylib \
+        CPPFLAGS=-I/opt/local/include
 
 eof

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 577 2012-01-04 21:42:51Z gbc $
+# $Id: Makefile.am 1152 2015-07-01 16:00:44Z gbc $
 #
 
 SUBDIRS = .
@@ -7,7 +7,7 @@ SUBDIRS = .
 helpdir = $(pkgdatadir)/vhelp
 
 dist_bin_SCRIPTS =  vhelp env_check vhelper.sh pplot_print \
-		    hops_data_links.pl vhelp.sh
+		    hops_data_links.pl vhelp.sh fourphase
 dist_help_DATA   =  vhelp1.awk vhelp2.awk
 
 orig_scripts = vhelp.dist

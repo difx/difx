@@ -21,7 +21,7 @@ clear_203 (struct type_203 *t203)
     int i;
     int nchan;
 
-    nchan = (T203_VERSION == 1) ? 8 * MAX_CHAN_PP : 32;
+    nchan = (T203_VERSION == 1) ? 8 * MAXFREQ : 32;
 
     strncpy (t203->record_id, "203", 3);
     sprintf (version, "%02d", T203_VERSION);

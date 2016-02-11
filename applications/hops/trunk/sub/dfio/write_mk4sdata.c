@@ -71,7 +71,7 @@ write_mk4sdata (struct mk4_sdata *sdata,
     if (write_record ((char*)sdata->t300, fp, &bytes) < 0) quit;
     totbytes += bytes;
 
-    for (i=0; i<MAX_CHAN_PP; i++)
+    for (i=0; i<MAXFREQ; i++)
         for (j=0; j<MAXSPLINES; j++)
             {
             t301 = sdata->model[i].t301[j];

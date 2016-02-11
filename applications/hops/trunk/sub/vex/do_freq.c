@@ -54,7 +54,7 @@ do_freq (struct def_list *dl,
         if ISNAME ("chan_def")
             {
                                         /* Point at current channels array element */
-            if (*nchan >= MAX_CHAN_PP)
+            if (*nchan >= MAX_CHAN)
                     {
                     msg ("Too many channels in $FREQ def", 2);
                     return (1);

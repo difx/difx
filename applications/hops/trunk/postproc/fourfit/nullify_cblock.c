@@ -68,8 +68,14 @@ struct c_block *cb_ptr;
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = NULLFLOAT;
 
-    for (i=0; i<8; i++)
+    for (i=0; i<MAX_SAMP; i++)
+        {
         cb_ptr -> psamplers[i] = NULL;
+        cb_ptr -> sampler_delay[i][0].ref = NULLFLOAT;
+        cb_ptr -> sampler_delay[i][1].ref = NULLFLOAT;
+        cb_ptr -> sampler_delay[i][0].rem = NULLFLOAT;
+        cb_ptr -> sampler_delay[i][1].rem = NULLFLOAT;
+        }
 
     for (i=0; i<2; i++)
         {
@@ -91,7 +97,7 @@ struct c_block *cb_ptr;
     for (i=0; i<32; i++)
         cb_ptr -> source[i] = WILDCARD;
 
-    for (i=0; i<MAX_CHAN_PP; i++)
+    for (i=0; i<MAXFREQ; i++)
         {
         cb_ptr -> frequency[i] = NULLINT;
 
@@ -113,7 +119,7 @@ struct c_block *cb_ptr;
         cb_ptr -> delay_offs[i].rem = NULLFLOAT;
         }
 
-    for (i=0; i<2*MAX_CHAN_PP; i++)
+    for (i=0; i<2*MAXFREQ; i++)
         cb_ptr -> index[i]= NULLINT;
 
     return(0);

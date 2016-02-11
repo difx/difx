@@ -7,39 +7,45 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
+#include <fftw3.h>
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "control.h"
 
 #define MBD_GRID_MAX 8192
-int
-search (pass)
-struct type_pass *pass;
+int search (struct type_pass *pass)
     {
-    complex data[MBD_GRID_MAX], mb_delay[MBD_GRID_MAX], rate_spectrum[MAXFREQ][MAXAP];
+    fftw_complex *data; 
+    double mb_delay[MBD_GRID_MAX]; 
+    static complex rate_spectrum[MAXFREQ][MAXAP];
     static double amps[MBD_GRID_MAX][MAXAP], drtemp[MAXAP];
-    complex c_zero(), s_mult() ;
-    int cnt, fr, i, j, station, lag, dr_index, mbd_index, mbdmax[2*MAXLAG], ap, newmax;
-    int drmax[2*MAXLAG], max_mbd_cell, max_dr_cell, max_lag, drlag;
+    int cnt, fr, i, j, station, lag, dr_index, mbd_index, ap, newmax;
+    int max_mbd_cell, max_dr_cell, max_lag, drlag;
     int n, jlo, jhi;
+    static int mbdmax[2*MAXLAG], drmax[2*MAXLAG];
     extern struct type_param param;
     extern struct type_status status;
     extern struct type_plot plot;
-    double max_amp[2*MAXLAG], global_max, amp, c_phase(), c_mag();
+    double global_max, amp, c_phase(), c_mag();
+    static double max_amp[2*MAXLAG];
     extern int do_accounting;
+
+    fftw_plan fftplan;
 
     void pcalibrate (struct type_pass *, int);
 
-        /* A few more of these initializations might be done */
-        /* before SEARCH is called .                         */
-    
+                                        // Initialization
     cnt = 0;
     status.epoch_off_cent = 0.0;
     status.total_ap = 0;
     status.total_ap_frac = 0.0;
     status.total_usb_frac = 0.0;
     status.total_lsb_frac = 0.0;
+                                        // allocate fftw data array
+    data = fftw_malloc (sizeof (fftw_complex) * MBD_GRID_MAX);
+    
                                         /* Make sure data will fit (note that auto
                                          * correlations use up twice as many lags */
     if (param.nlags*param.num_ap > MAX_APXLAG)
@@ -77,6 +83,8 @@ struct type_pass *pass;
 
                                         // calculate phase cal corrections
     rotate_pcal (pass);
+    if (do_accounting) 
+        account ("Phase cal calculations");
 
     for (fr = 0; fr < pass->nfreq; fr++) 
         {      
@@ -86,7 +94,10 @@ struct type_pass *pass;
         status.ap_frac[1][fr] = 0.0;
                                         // convert the digital results to analog equivalents
         for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++)  
-            norm (pass, fr, ap);
+            if (param.corr_type == MK4HDW)
+                norm_xf (pass, fr, ap);
+            else                        // use spectral version
+                norm_fx (pass, fr, ap);
         
         msg ("Freq %d, ap's by sideband through norm = %d, %d", -1,
                 fr, status.ap_num[0][fr], status.ap_num[1][fr]);
@@ -110,7 +121,8 @@ struct type_pass *pass;
         return (-1);
         }
 
-    if (do_accounting) account ("Filtering and normalization");
+    if (do_accounting) 
+        account ("Normalization");
 
         /* This section generates the delay resolution function, and searches for   */
         /* the maximum. At each SB delay it generates a delay rate function for each */
@@ -124,6 +136,8 @@ struct type_pass *pass;
                                         /* the arrays here, rather than later on */
                                         /* in make_plotdata() */
     clear_plotdata();
+                                        // set up for later fft's
+    fftplan = fftw_plan_dft_1d (status.grid_points, data, data, FFTW_FORWARD, FFTW_MEASURE);
 
     for (lag = status.win_sb[0]; lag <= status.win_sb[1]; lag++)
         {
@@ -138,12 +152,13 @@ struct type_pass *pass;
             status.dr = dr_index;                       /* Clear data array and */
                                                 /* Fill with delay rate data */
             for (i = 0; i < status.grid_points; i++)
-                data[i] = c_zero();
+                data[i] = 0.0;
+                
             for (fr = 0; fr < pass->nfreq; fr++)
                 data[status.mb_index[fr]] = rate_spectrum[fr][dr_index];
 
-                                                /* FFT to delay res. function  */
-            FFT1 (data, status.grid_points, 1, data, 1);
+                                                // FFT to delay resolution function
+            fftw_execute (fftplan);
                                                 /* Copy back, with 0 delay in center */
                                                 /* Note that i might wrap around to 0 */
             i = status.win_mb[0] - 1;
@@ -152,7 +167,7 @@ struct type_pass *pass;
                 i = (i+1) % status.grid_points;
                 j = i-status.grid_points/2;
                 if (j < 0) j += status.grid_points;
-                mb_delay[i] = data[j];
+                mb_delay[i] = cabs (data[j]); 
                 }
             while (i != status.win_mb[1]);
                                                 /* Normalize delay res. value and store */
@@ -162,8 +177,7 @@ struct type_pass *pass;
                 mbd_index = (mbd_index+1) % status.grid_points;
                 status.mbd = mbd_index;
                                         // mean amplitude
-                amps[mbd_index][dr_index] = c_mag (mb_delay[mbd_index]) 
-                                            / status.total_ap_frac;
+                amps[mbd_index][dr_index] = mb_delay[mbd_index] / status.total_ap_frac;
                 }  
             while (mbd_index != status.win_mb[1]);
             }
@@ -230,6 +244,8 @@ struct type_pass *pass;
                                         /* Store mbdmax for this lag */
         update (pass, mbdmax[lag], max_amp[lag], lag, drmax[lag], LAG);
         }
+                                        // no more fft's to do, delete plan
+    fftw_destroy_plan (fftplan);
                                         /* search over lags for global maximum */
     global_max = -1.0;
     for (lag=status.win_sb[0]; lag <= status.win_sb[1]; lag++)
@@ -259,7 +275,7 @@ struct type_pass *pass;
 
     interp (pass);      /* Call interp() to interpolate more precise results */
     if (do_accounting) account ("Interpolate fringes");
-        
+    fftw_free (data);   // clean up the malloc'ed data array
     return (0);         /* This return should be modified to give some indication */
                         /* of whether the search was successful.                  */
     }   

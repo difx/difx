@@ -13,6 +13,7 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include <complex.h>
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "ovex.h"
@@ -63,9 +64,8 @@ void generate_text (struct scan_struct *root,
     extern char *pexec;
     extern char version_no[], progname[];
     extern char *sprint_char_arr(), *sprint_date();
-    extern double c_phase(), c_mag();
     struct stat xeq_stat;
-    int i, j;
+    int i, j, n, k;
     int start_plot, limit_plot;
     char *rootname;
     char buf[2560], psbuf[2560], output_filename[256];
@@ -78,13 +78,16 @@ void generate_text (struct scan_struct *root,
     int first;
     int numsb, srate;
     int pcaref, pcarem;
-    int eff_npols, polars;
+    int eff_npols, polars, polmsk;
+    char polchar[2][2] = {'L', 'R', 'X', 'Y'};
     FILE *popfil;
     char absexec[256], which_command[256];
     char buffer[32];
     static char *pcstr[5]={"","NORMAL","AP BY AP","MANUAL", "MULTITONE"};
     double delta_delay;
-    void stripbuf (char *);
+    void stripbuf (char *),
+         modify_pol (struct type_pass *, char *);
+    
 
                                         // precalculate general quantities
     numsb = 0;
@@ -162,22 +165,22 @@ void generate_text (struct scan_struct *root,
     else if (param.pol < 16)
         {
         polstrx[0] = '\0';
-        if (param.pol & POLMASK_LL)
+        if (param.pol & POLMASK_LL && pass->pprods_present[0])
             {
             strcat (polstrx, "+LL");
             polars |= LREF | LREM;
             }
-        if (param.pol & POLMASK_RR)
+        if (param.pol & POLMASK_RR && pass->pprods_present[1])
             {
             strcat (polstrx, "+RR");
             polars |= RREF | RREM;
             }
-        if (param.pol & POLMASK_LR)
+        if (param.pol & POLMASK_LR && pass->pprods_present[2])
             {
             strcat (polstrx, "+LR");
             polars |= LREF | RREM;
             }
-        if (param.pol & POLMASK_RL)
+        if (param.pol & POLMASK_RL && pass->pprods_present[3])
             {
             strcat (polstrx, "+RL");
             polars |= RREF | LREM;
@@ -189,6 +192,8 @@ void generate_text (struct scan_struct *root,
         sprintf (polstr, "Ixy");
         polars |= LREF | LREM | RREF | RREM;
         }
+                                        // substitute linear pol symbols if apropos
+    modify_pol (pass, polstr);
     sprintf (buf, "%.8s - %.8s, fgroup %c, pol %s", fringe.t202->ref_name,
                     fringe.t202->rem_name, pass->pass_data[0].fgroup, polstr);
     pscat ("/Helvetica-Bold findfont 140 scalefont setfont\n");
@@ -225,7 +230,7 @@ void generate_text (struct scan_struct *root,
     ypos -= spacing;
     sprintf (buf, "%.6f", status.dr_max_global * param.ref_freq);
     psright (1.0, ypos, buf); ypos -= spacing;
-    sprintf (buf, "%6.2f", param.ion_diff);
+    sprintf (buf, "%7.3f", param.ion_diff);
     psright (1.0, ypos, buf); ypos -= spacing;
     ypos -= spacing;
     sprintf (buf, "%.4f", fringe.t205->ref_freq);
@@ -425,11 +430,11 @@ void generate_text (struct scan_struct *root,
         psleft (xpos, ypos, buf);
         if (i == start_plot) psleft (labelpos, ypos, "Freq (MHz)");
         ypos -= spacing;
-        sprintf (buf, "%.1f", c_phase (status.fringe[i]) * 180.0 / pi);
+        sprintf (buf, "%.1f", carg (status.fringe[i]) * 180.0 / pi);
         psleft (xpos, ypos, buf);
         if (i == start_plot) psleft (labelpos, ypos, "Phase");
         ypos -= spacing;
-        sprintf (buf, "%.1f", c_mag (status.fringe[i]));
+        sprintf (buf, "%.1f", cabs (status.fringe[i]));
         psleft (xpos, ypos, buf);
         if (i == start_plot) psleft (labelpos, ypos, "Ampl.");
         ypos -= spacing;
@@ -473,58 +478,27 @@ void generate_text (struct scan_struct *root,
                 }
             ypos -= spacing;
             }
-                                        // reference mt delays by channel
-        if (param.pc_mode[0] == MULTITONE && polars & LREF)
-            {
-            sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][0][0]);
-            psleft (xpos, ypos, buf);
-            if (i == start_plot) 
-                {
-                psleft (labelpos, ypos, "PC L/X/H delays (ns)");
-                sprintf (buf, "%c", param.baseline[0]);
-                psright (0.04, ypos, buf);
-                }
-            ypos -= spacing;
-            }
-
-        if (param.pc_mode[1] == MULTITONE && polars & LREM) 
-            {
-            sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][1][0]);
-            psleft (xpos, ypos, buf);
-            if (i == start_plot) 
-                {
-                psleft (labelpos, ypos, "PC L/X/H delays (ns)");
-                sprintf (buf, "%c", param.baseline[1]);
-                psright (0.04, ypos, buf);
-                }
-            ypos -= spacing;
-            }
-
-        if (param.pc_mode[0] == MULTITONE && polars & RREF)
-            {
-            sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][0][1]);
-            psleft (xpos, ypos, buf);
-            if (i == start_plot) 
-                {
-                psleft (labelpos, ypos, "PC R/Y/V delays (ns)");
-                sprintf (buf, "%c", param.baseline[0]);
-                psright (0.04, ypos, buf);
-                }
-            ypos -= spacing;
-            }
-
-        if (param.pc_mode[1] == MULTITONE && polars & RREM)
-            {
-            sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][1][1]);
-            psleft (xpos, ypos, buf);
-            if (i == start_plot) 
-                {
-                psleft (labelpos, ypos, "PC R/Y/V delays (ns)");
-                sprintf (buf, "%c", param.baseline[1]);
-                psright (0.04, ypos, buf);
-                }
-            ypos -= spacing;
-            }
+                                        // print out mt delays for channel
+        polmsk = 1;
+        for (n=0;n<2;n++)               // stn loop over ref & rem
+            if (param.pc_mode[n] == MULTITONE)
+                for (k=0;k<2;k++)       // pol loop over L/X & R&Y
+                    {
+                    if (polars & polmsk)
+                        {
+                        sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][n][k]);
+                        psleft (xpos, ypos, buf);
+                        if (i == start_plot) 
+                            {
+                            sprintf (buf, "PC %c delays (ns)", polchar[pass->linpol[n]][k]);
+                            psleft (labelpos, ypos, buf);
+                            sprintf (buf, "%c", param.baseline[n]);
+                            psright (0.04, ypos, buf);
+                            }
+                        ypos -= spacing;
+                        }
+                    polmsk <<= 1;
+                    }
 
         sprintf (buf, "%d:%d", (int)rint((double)fringe.t207->ref_pcphase[i].lsb),
                                (int)rint((double)fringe.t207->rem_pcphase[i].lsb));
@@ -584,10 +558,10 @@ void generate_text (struct scan_struct *root,
             }
         ypos -= spacing;
                                         /* Channel ids, reference station */
-        if (polstr[0] == 'L')
+        if (polstr[0] == 'L' || polstr[0] == 'X')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_lcp[0],
                                    pass->pass_data[i].ch_lsb_lcp[0]);
-        else if (polstr[0] == 'R')
+        else if (polstr[0] == 'R' || polstr[0] == 'Y')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_rcp[0],
                                    pass->pass_data[i].ch_lsb_rcp[0]);
         stripbuf (buf);
@@ -613,7 +587,8 @@ void generate_text (struct scan_struct *root,
         first = TRUE;
         for (j=0; j<16; j++)
             {
-            if ((pass->pass_data[i].trk_lcp[0][j] > 0) && (polstr[0] == 'L'))
+            if ((pass->pass_data[i].trk_lcp[0][j] > 0) 
+             && ((polstr[0] == 'L') || (polstr[0] == 'X')))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_lcp[0][j]);
                 xposref = xpos + offset;
@@ -623,7 +598,8 @@ void generate_text (struct scan_struct *root,
                 offset += digitwidth * strlen (buf);
                 first = FALSE;
                 }
-            if ((pass->pass_data[i].trk_rcp[0][j] > 0) && (polstr[0] == 'R'))
+            if ((pass->pass_data[i].trk_rcp[0][j] > 0) 
+             && ((polstr[0] == 'R') || (polstr[0] == 'Y')))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_rcp[0][j]);
                 xposref = xpos + offset;
@@ -638,10 +614,10 @@ void generate_text (struct scan_struct *root,
         if (i == start_plot+limit_plot-2 && labelpos > xposref)  psleft (labelpos, ypos, "Tracks");
         ypos -= spacing;
                                         /* Channel ids, remote station */
-        if (polstr[1] == 'L')
+        if (polstr[1] == 'L' || polstr[1] == 'X')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_lcp[1],
                     pass->pass_data[i].ch_lsb_lcp[1]);
-        if (polstr[1] == 'R')
+        else if (polstr[1] == 'R' || polstr[1] == 'Y')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_rcp[1],
                     pass->pass_data[i].ch_lsb_rcp[1]);
         stripbuf (buf);
@@ -665,7 +641,8 @@ void generate_text (struct scan_struct *root,
         first = TRUE;
         for (j=0; j<16; j++)
             {
-            if ((pass->pass_data[i].trk_lcp[1][j] > 0) && (polstr[1] == 'L'))
+            if ((pass->pass_data[i].trk_lcp[1][j] > 0) 
+             && ((polstr[1] == 'L') || (polstr[1] == 'X')))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_lcp[1][j]);
                 xposrem = xpos + offset;
@@ -675,7 +652,8 @@ void generate_text (struct scan_struct *root,
                 offset += digitwidth * strlen (buf);
                 first = FALSE;
                 }
-            if ((pass->pass_data[i].trk_rcp[1][j] > 0) && (polstr[1] == 'R'))
+            if ((pass->pass_data[i].trk_rcp[1][j] > 0) 
+             && ((polstr[1] == 'R') || (polstr[1] == 'Y')))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_rcp[1][j]);
                 xposrem = xpos + offset;
@@ -693,9 +671,7 @@ void generate_text (struct scan_struct *root,
                                     // combining multiple bands    rjc 2010.1.5
         if (msglev < 2)
             {
-            fprintf (stderr, "%6.1f ", fmod((double)fringe.t207->ref_pcoffset[i].lsb 
-              - (double)fringe.t207->rem_pcoffset[i].lsb
-              + c_phase (status.fringe[i]) * 180.0 / pi
+            fprintf (stderr, "%6.1f ", fmod(carg (status.fringe[i]) * 180.0 / pi
               + 360 * delta_delay * (pass->pass_data[i].frequency 
                       - fringe.t205->ref_freq), 360.0));
             }
@@ -781,11 +757,11 @@ void generate_text (struct scan_struct *root,
     sprintf (buf, "%.1f", fringe.t208->resphase);
     psright (0.90, ypos, buf);
     ypos = yplace;
-    psleft (0.92, ypos, "+/-"); ypos -= 0.01;
-    psleft (0.92, ypos, "+/-"); ypos -= 0.01;
-    psleft (0.92, ypos, "+/-"); ypos -= 0.01;
-    psleft (0.92, ypos, "+/-"); ypos -= 0.01;
-    psleft (0.92, ypos, "+/-");
+    psleft (0.93, ypos, "+/-"); ypos -= 0.01;
+    psleft (0.93, ypos, "+/-"); ypos -= 0.01;
+    psleft (0.93, ypos, "+/-"); ypos -= 0.01;
+    psleft (0.93, ypos, "+/-"); ypos -= 0.01;
+    psleft (0.93, ypos, "+/-");
     ypos = yplace;
     sprintf (buf, "%.1E", fringe.t208->mbd_error);
     psright (1.0, ypos, buf); ypos -= 0.01;
@@ -807,8 +783,15 @@ void generate_text (struct scan_struct *root,
     psleft (0.35, ypos, buf);
     sprintf (buf, "Pcal mode: %s,  %s", pcstr[param.pc_mode[0]], pcstr[param.pc_mode[1]]);
     psleft (0.5, ypos, buf);
-    sprintf (buf, "Pcal period (AP's) %d,  %d", param.pc_period[0], param.pc_period[1]);
-    psleft (0.75, ypos, buf);
+    sprintf (buf, "PC period (AP's) %d,  %d", param.pc_period[0], param.pc_period[1]);
+    psleft (0.73, ypos, buf);
+    if (status.nion)
+        {
+        psleft (0.89, ypos, "dTEC");
+        psleft (0.93, ypos, "+/-");
+        sprintf (buf, "%6.3f", status.ion_sigmas[2]);
+        psright (1.0, ypos, buf);
+        }
     ypos -= 0.01;
     psleft (0.0, ypos, "ph/seg (deg)");
     sprintf (buf,"%.1f",status.timerms_phase);
@@ -835,7 +818,7 @@ void generate_text (struct scan_struct *root,
     psleft (0.23, ypos, "Interp.");
     sprintf (buf, "%.3f", status.interp_amp);
     psleft (0.35, ypos, buf);
-    sprintf (buf, "Bits/sample: %d", param.bits_sample);
+    sprintf (buf, "Bits/sample: %dx%d", param.bits_sample[0], param.bits_sample[1]);
     psleft (0.5, ypos, buf);
     if (param.use_sample_cnts)
         sprintf (buf, "SampCntNorm: enabled ");
@@ -871,7 +854,8 @@ void generate_text (struct scan_struct *root,
     psleft (0.23, ypos, "Inc. frq. avg.");
     sprintf (buf, "%.3f", fringe.t208->inc_chan_ampl);
     psleft (0.35, ypos, buf);
-    sprintf (buf, "Data rate(Mb/s): %d", numsb * eff_npols * srate * param.bits_sample);
+    sprintf (buf, "Data rate(Mb/s): %d", (int)(numsb * eff_npols * srate 
+            * sqrt ((double)(param.bits_sample[0] * param.bits_sample[1])) + 0.5));
     psleft (0.5, ypos, buf);
     sprintf (buf, "nlags: %d", param.nlags);
     psleft (0.65, ypos, buf);
@@ -963,3 +947,26 @@ void stripbuf (char *list)
     list[i] = '\0';
     }
 
+void modify_pol (struct type_pass *p, char *polstr)
+    {
+    int i;
+
+    for (i=0; i<strlen(polstr); i+=3)
+        {
+        if (p->linpol[0])           // reference linear pol?
+            {
+            if (polstr[i] == 'L')
+                polstr[i] = 'X';
+            else if (polstr[i] == 'R')
+                polstr[i] = 'Y';
+            }
+
+        if (p->linpol[1])           // remote linear pol?
+            {
+            if (polstr[i+1] == 'L')
+                polstr[i+1] = 'X';
+            else if (polstr[i+1] == 'R')
+                polstr[i+1] = 'Y';
+            }
+        }
+    }

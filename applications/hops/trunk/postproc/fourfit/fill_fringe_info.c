@@ -135,7 +135,9 @@ char *filename)
     status.resid_phase = status.coh_avg_phase * ( 180.0 / M_PI);
     status.mod_resid_phase *= 180.0 / M_PI;
     sband_err = sqrt (1.0 + 3.0 * (status.sbavg * status.sbavg));
-    status.phase_err = 180.0 * sband_err / (M_PI * status.snr) ;
+    status.phase_err = (status.nion == 0) ?
+        180.0 * sband_err / (M_PI * status.snr) :
+        360.0 * status.ion_sigmas[1];
     status.resid_ph_delay = status.coh_avg_phase / (2.0 * M_PI *ref_freq);
     status.ph_delay_err = sband_err / (2.0 * M_PI * status.snr * ref_freq);
 

@@ -8,10 +8,10 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "ovex.h"
-#include "type_comp.h"
 #include "cpgplot.h"
 
 int generate_graphs (struct scan_struct *root,
@@ -24,13 +24,12 @@ int generate_graphs (struct scan_struct *root,
     extern struct type_plot plot;
     extern struct type_param param;
     extern struct type_status status;
-    extern double c_phase(), c_mag();
     int i, j, maxj;
     int start_plot, limit_plot;
     char buf[2560], device[256];
     double drate, mbd, sbd;
     struct tm *gmtime();
-    float xr[2*MAXMAX], yr[2*MAXMAX], zr[2*MAXMAX];
+    static float xr[2*MAXMAX], yr[2*MAXMAX], zr[2*MAXMAX];
     float xmin, xmax, ymin, ymax, plotwidth;
     float xpos, offset, lwid, yplace;
     double max_dr_win, max_sb_win, max_mb_win;
@@ -42,7 +41,7 @@ int generate_graphs (struct scan_struct *root,
     int nlsb, nusb, izero;
                                         /* Build the proper device string for */
                                         /* vertically oriented color postscript */
-    sprintf (device, "%s/vcps", ps_file);
+    sprintf (device, "%s/VCPS", ps_file);
                                         /* Open the pgplot device */
     if (cpgopen (device) <= 0)
         {
@@ -249,8 +248,8 @@ int generate_graphs (struct scan_struct *root,
     for (i=0; i<ncp; i++)
         {
         xr[i] = xstart + (xend - xstart) * i / ncp;
-        yr[i] = c_mag (plot.cp_spectrum[i+izero]);
-        zr[i] = c_phase (plot.cp_spectrum[i+izero]) * 57.3;
+        yr[i] = cabs (plot.cp_spectrum[i+izero]);
+        zr[i] = carg (plot.cp_spectrum[i+izero]) * 57.3;
         if (yr[i] > ymax) ymax = yr[i];
         }
     ymin = (param.passband[0] == 0.0 && param.passband[1] == 1.0E6)

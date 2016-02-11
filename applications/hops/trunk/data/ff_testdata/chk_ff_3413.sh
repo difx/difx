@@ -27,6 +27,7 @@ fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \\ && echo \
 fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \
     -c ./cf3413 \
     $DATADIR/3413/278-1758/0552+398.wmtukg 2>/dev/null 1>&2
+[ -f ./ff-3413.ps ] || { echo ./ff-3413.ps missing && exit 2 ; }
 
 # pluck out line containing the snr and parse it
 line=$(grep '7570 9653' ./ff-3413.ps)

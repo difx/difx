@@ -1,5 +1,5 @@
 *
-* $Id: pformat.txt 498 2011-11-03 13:25:12Z gbc $
+* $Id: pformat.txt 1160 2015-07-20 14:13:39Z rjc $
 *
 * This is the vex parameter format definition file.  The format is 
 * field-based.  Comment lines begin with '*'.  All other lines must be
@@ -285,7 +285,7 @@ headstack_pos     OVEX HEAD_POS 1.5 5
 if_def            OVEX IF 1.5 7
     MAN LINK NONE
     MAN CHAR NONE
-    MAN CHAR NONE   R:L
+    MAN CHAR NONE   R:L:X:Y
     MAN REAL FREQ   >0.0
     MAN CHAR NONE   U:L
     OPT REAL FREQ

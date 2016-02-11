@@ -17,6 +17,8 @@
 #include "control.h"
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
+#include <complex.h>
 
 int
 precorrect (ovex, param, pass)
@@ -86,15 +88,7 @@ struct type_pass *pass;
                                     // Copy phase cal offsets; identify desired pcal tone freqs
     for (stn=0; stn<2; stn++)
         {
-        for (n=0; n<ovex->nst; n++)
-            if (ovex->st[n].mk4_site_id == param->baseline[stn])
-                break;
-
-        if (n == ovex->nst)
-            {
-            msg ("Couldn't find station %c in ovex in precorrect.c", 2, param->baseline[stn]);
-            return (-1);
-            }
+        n = param->ov_bline[stn];
         param->pcal_spacing[stn] = ovex->st[n].channels[0].pcal_spacing;
         
         for (fr = 0; fr < pass->nfreq; fr++)  

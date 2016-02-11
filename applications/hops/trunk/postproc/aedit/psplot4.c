@@ -102,9 +102,9 @@ esum *data;
             psscan->stations[s].stn = st_id;
                                         /* Has it been minus'ed? */
             if (scn->st[s].drive_no < 0) psscan->stations[s].minus = TRUE;
-                                        /* And check up to 16 channels for */
+                                        /* And check up to MAXFREQ channels for */
                                         /* the frequency groups */
-            for (ch=0; ch<16; ch++)
+            for (ch=0; ch<MAXFREQ; ch++)
                 {
                 if (scn->st[s].channels[ch].chan_name[0] == '\0') continue;
                 fg = scn->st[s].channels[ch].chan_name[0];

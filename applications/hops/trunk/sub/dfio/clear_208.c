@@ -54,4 +54,5 @@ clear_208 (struct type_208 *t208)
     t208->totphase = 0.0;
     t208->totphase_ref = 0.0;
     t208->resphase = 0.0;
+    t208->tec_error = 0.0;
     }

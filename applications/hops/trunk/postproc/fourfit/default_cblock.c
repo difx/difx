@@ -82,10 +82,16 @@ struct c_block *cb_ptr;
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = 0.0;       /* clear ad hoc phase polynomial */
 
-    for (i=0; i<MAX_SAMP; i++)
+    for (i=0; i<MAX_SAMP; i++)               // clear sampler parameters
+        {
         cb_ptr -> psamplers[i] = 0;
+        cb_ptr -> sampler_delay[i][0].ref = 0.0;
+        cb_ptr -> sampler_delay[i][1].ref = 0.0;
+        cb_ptr -> sampler_delay[i][0].rem = 0.0;
+        cb_ptr -> sampler_delay[i][1].rem = 0.0;
+        }
          
-    for (i=0; i<MAX_CHAN_PP; i++)
+    for (i=0; i<MAXFREQ; i++)
         {
         cb_ptr -> frequency[i] = DSB;        /* accept all frequency channels */
         cb_ptr -> pc_phase[i][0].ref = 0.0;

@@ -28,7 +28,7 @@ clear_mk4sdata (struct mk4_sdata *sdata)
     sdata->file_image = NULL;
     sdata->id = NULL;
     sdata->t300 = NULL;
-    for (i=0; i<MAX_CHAN_PP; i++)
+    for (i=0; i<MAXFREQ; i++)
         {
         sdata->model[i].chan_id[0] = '\0';
         for (j=0; j<MAXSPLINES; j++)

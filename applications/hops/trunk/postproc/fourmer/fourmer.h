@@ -1,5 +1,5 @@
 /*
- * $Id: fourmer.h 260 2011-05-19 21:10:14Z gbc $
+ * $Id: fourmer.h 1197 2015-09-10 12:38:41Z gbc $
  *
  * support for fourmer
  */
@@ -11,7 +11,7 @@
 #define MAX_BUFFER  256         // max lines in a merged section
 
 #define IDX_INC	    100		    // how much to shift indices
-#define NUM_CH_MAP  2*MAX_CHAN_PP   // size of index remapping
+#define NUM_CH_MAP  2*MAX_CHAN      // size of index remapping
 #define MAX_FPATH   1024	    // MAX_PATH?
 
 extern int msglev;

@@ -33,8 +33,8 @@ open_datafile (char filename[],
                int *type,
                FILE **fp)
     {
-    char relname[100], name[20], tempname[256];
-    char expdir[10], scandir[20];
+    char relname[100], name[50], tempname[256];
+    char expdir[50], scandir[50];
     char *ptr;
     struct type_000 id_record;
     struct stat fil_status;
@@ -56,17 +56,17 @@ open_datafile (char filename[],
         
                                         /* filename follows last '/' */
     ptr = strrchr (tempname, '/');
-    strcpy (name, ptr+1);
+    strncpy (name, ptr+1, sizeof (name));
                                         /* Now extract scan directory name */
     if (ptr != NULL) ptr[0] = '\0';
     ptr = strrchr (tempname, '/');
     if (ptr == NULL) scandir[0] = '\0';
-    else strcpy (scandir, ptr+1);
+    else strncpy (scandir, ptr+1, sizeof (scandir));
                                         /* Finally get expt dir name */
     if (ptr != NULL) ptr[0] = '\0';
     ptr = strrchr (tempname, '/');
     if (ptr == NULL) expdir[0] = '\0';
-    else strcpy (expdir, ptr+1);
+    else strncpy (expdir, ptr+1, sizeof (expdir));
                                         /* This fills f_info with useful data */
     if (check_name (name, &f_info) != 0)
         {
@@ -106,7 +106,7 @@ open_datafile (char filename[],
                                         /* cross-check given name versus */
                                         /* original name in type-000 record */
     ptr = strrchr (id_record.name, '/');
-    if (strcmp (name, ptr+1) != 0)
+    if (strncmp (name, ptr+1, sizeof (name)) != 0)
         {
         msg ("Error: File has been renamed from '%s' to '%s'", 2, ptr+1, name);
         fclose (*fp);
@@ -115,7 +115,7 @@ open_datafile (char filename[],
                                         /* Is the relative pathname proper */
                                         /* for this file? */
     sprintf (relname, "%s/%s/%s", expdir, scandir, name);
-    if (strcmp (id_record.name, relname) != 0)
+    if (strncmp (id_record.name, relname, sizeof (id_record.name)) != 0)
         {
         msg ("Warning, '%s' is not in a proper data directory location", 
                 0, filename);

@@ -1,5 +1,5 @@
 /*
- * $Id: fft_chk.c 377 2011-06-27 20:23:33Z gbc $
+ * $Id: fft_chk.c 1027 2015-01-22 15:41:59Z gbc $
  *
  * Program to verify that FFT1 is correct and to find its normalization.
  */
@@ -9,8 +9,8 @@
  */
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
 #include "mk4_data.h"
-#include "type_comp.h"
 
 extern int FFT1(complex In[MAXMAX*2], int NN, int ISign,
 		complex Out[MAXMAX*2], int rev);
@@ -39,17 +39,17 @@ double tol;
 static void dump(complex *a, complex *c, complex *b, int nn, int errs)
 {
     printf("%4d.re: %22.18f %22.18f %+.5f %d\n",
-	nn, a[nn].re, c[nn].re, (a[nn].re - b[nn].re)/tol, errs);
+	nn, creal(a[nn]), creal(c[nn]), creal(a[nn] - b[nn])/tol, errs);
     printf("%4d.im: %22.18f %22.18f %+.5f %d\n",
-	nn, a[nn].im, c[nn].im, (a[nn].im - b[nn].im)/tol, errs);
+	nn, cimag(a[nn]), cimag(c[nn]), cimag(a[nn] - b[nn])/tol, errs);
 }
 
 static int compare(complex *a, complex *c, complex *b, int nn)
 {
     int errs = 0, kk = 0;
     while (nn-- > 0) {
-	if (fabs(a[kk].re - b[kk].re) > tol) errs ++;
-	if (fabs(a[kk].im - b[kk].im) > tol) errs ++;
+	if (fabs(creal(a[kk] - b[kk])) > tol) errs ++;
+	if (fabs(cimag(a[kk] - b[kk])) > tol) errs ++;
 	if (verb>1) dump(a, c, b, kk, errs);
 	kk++;
     }
@@ -60,8 +60,8 @@ static void rand_junk(complex *d, int nn)
 {
     int	kk = 0;
     while (nn-- > 0) {
-	d[kk].re = (double)random()/(double)RAND_MAX - 0.5;
-	d[kk].im = (double)random()/(double)RAND_MAX - 0.5;
+	d[kk] = (double)random()/(double)RAND_MAX - 0.5 +
+	    I * (double)random()/(double)RAND_MAX - 0.5;
 	kk++;
     }
 }
@@ -74,8 +74,7 @@ static int dothedance(complex junk[2*MAXMAX], int nn)
     (void)FFT1(kunj, nn, -1, komp, 0);
     /* implicit inverse multiple by NN missing */
     for (kk = 0; kk < nn; kk++) {
-	komp[kk].re /= (double)nn;
-	komp[kk].im /= (double)nn;
+	komp[kk] /= (double)nn;
     }
     return(compare(junk, kunj, komp, nn));
 }
@@ -94,9 +93,8 @@ static int sin_test(int nn)
     int ii;
     if (verb>0) printf("sin_test(input,output,diff/tol,errs)\n");
     for (ii = 0; ii < nn; ii++) {
-	sinus[ii].re =  1.0 * sin(2.0*M_PI*(double)ii/(double)nn);
-	sinus[ii].re += 0.5 * sin(4.0*M_PI*(double)ii/(double)nn);
-	sinus[ii].im = 0;
+	sinus[ii] =  1.0 * sin(2.0*M_PI*(double)ii/(double)nn);
+	sinus[ii] += 0.5 * sin(4.0*M_PI*(double)ii/(double)nn);
     }
     return(dothedance(sinus, nn));
 }
@@ -107,9 +105,8 @@ static int cos_test(int nn)
     int ii;
     if (verb>0) printf("cos_test(input,output,diff/tol,errs)\n");
     for (ii = 0; ii < nn; ii++) {
-	sinus[ii].re =  1.0 * cos(2.0*M_PI*(double)ii/(double)nn);
-	sinus[ii].re += 0.5 * cos(4.0*M_PI*(double)ii/(double)nn);
-	sinus[ii].im = 0;
+	sinus[ii] =  1.0 * cos(2.0*M_PI*(double)ii/(double)nn);
+	sinus[ii] += 0.5 * cos(4.0*M_PI*(double)ii/(double)nn);
     }
     return(dothedance(sinus, nn));
 }

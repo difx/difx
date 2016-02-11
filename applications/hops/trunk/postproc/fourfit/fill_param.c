@@ -14,6 +14,7 @@
 /*                                                                      */
 /* Created 9 April 1998 by CJL                                          */
 /* added determination of corr_type   rjc  2010.3.16                    */
+/* added code for 1bit x 2bit         rjc  2015.9.11                    */
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
@@ -32,6 +33,7 @@ fill_param (struct scan_struct *ovex,
             struct mk4_corel *cdata,
             struct type_param *param)
     {
+    int i;
     double fact1, fact2, fact3;
     unsigned long ap_in_sysclks;
     extern struct c_block *cb_head;
@@ -40,30 +42,36 @@ fill_param (struct scan_struct *ovex,
     strncpy (param->baseline, cdata->t100->baseline, 2);
 
                                         /* Bits per sample */
-    if (stn1->bits_sample != stn2->bits_sample)
-        {
-        msg ("Mismatching bits/sample: %d vs. %d", 2,
-             stn1->bits_sample, stn2->bits_sample);
-        return (-1);
-        }
-    param->bits_sample = stn1->bits_sample;
-    if (param->bits_sample != 1 &&  param->bits_sample != 2)
-        {
-        msg ("Invalid bits/sample: %d", 2, param->bits_sample);
-        return (-1);
-        }
+    param->bits_sample[0] = stn1->bits_sample;
+    param->bits_sample[1] = stn2->bits_sample;
+    for (i=0; i<2; i++)                 // validate quantization parameters
+        if (param->bits_sample[i] != 1 &&  param->bits_sample[i] != 2)
+            {
+            msg ("Invalid bits/sample: %d", 2, param->bits_sample[i]);
+            return (-1);
+            }
                                         /* Sample period comes from inverse sample rate */
     msg ("samplerates %lf %lf\n", 0, stn1->samplerate, stn2->samplerate);
-    if (stn1->samplerate != stn2->samplerate)
-        msg ("Sample rate mismatch for stations %g %g, assuming zoom mode",
-        1, stn1->samplerate, stn2->samplerate);
     if (stn1->samplerate < stn2->samplerate)
         param->samp_period = 1.0  / stn1->samplerate;
     else
         param->samp_period = 1.0  / stn2->samplerate;
    
                                         /* Set the correlation type, lags */
-    param->nlags = cdata->t100->nlags;
+                                    // correlator-dependent snr loss factors
+    if (strcmp (ovex->correlator, "difx") == 0)
+        {
+        param->corr_type = DIFX;
+        param->nlags = 2 * cdata->t100->nlags;
+        fact3 = 0.970;              // bandpass (0.970)
+        }
+    else
+        {
+        param->corr_type = MK4HDW;
+        param->nlags = cdata->t100->nlags;
+        fact3 = 0.8995;             // bandpass (0.970) * rotator loss(0.960) 
+                                    // * discrete delay (0.966)
+        }
     if (param->nlags == 8)
         fact1 = 0.96;
     else if (param->nlags == 16)
@@ -71,22 +79,19 @@ fill_param (struct scan_struct *ovex,
     else 
         fact1 = 1.0;
                                     // Nyquist-sampling losses
-    if (stn1 -> bits_sample == 1) 
-        fact2 = 0.637;
-    else if (stn1 -> bits_sample == 2)
-        fact2 = 0.881;
-                                    // correlator-dependent snr loss factors
-    if (strcmp (ovex->correlator, "difx") == 0)
+    switch (param->bits_sample[0] + param->bits_sample[1])
         {
-        param->corr_type = DIFX;
-        fact3 = 0.970;              // bandpass (0.970)
+        case 2:                     // 1-bit x 1-bit
+            fact2 = 0.637;
+            break;
+        case 3:                     // 1-bit x 2-bits
+            fact2 = 0.749;          // approx. by harmonic mean of 1x1 & 2x2
+            break;
+        case 4:                     // 2-bits x 2-bits
+            fact2 = 0.881;
+            break;
         }
-    else
-        {
-        param->corr_type = MK4HDW;
-        fact3 = 0.8995;             // bandpass (0.970) * rotator loss(0.960) 
-                                    // * discrete delay (0.966)
-        }
+
     param->inv_sigma = fact1 * fact2 * fact3 * 
                        sqrt(param->acc_period / param->samp_period);
                                         /* bocf period */

@@ -58,7 +58,7 @@ struct datasumm {
         char                    *btq;
         int                     btq_allocated;
         char                    frequencies[MAXBANDS];
-        char                    polarizations[13];
+        char                    polarizations[49];
         int                     experiments[MAXEXPTS];
         int                     nexp;
         int                     qcodes[20];

@@ -72,7 +72,7 @@ int do_record_merge(char *fileAName, char *fileBName,
          *pchar,
          fullname[MAX_FPATH];
          
-    msg("beginning do_record_merge, MAX_CHAN_PP == %d", 0, MAX_CHAN_PP);
+    msg("beginning do_record_merge, MAX_CHAN == %d", 0, MAX_CHAN);
          
     get_abs_path (fileAName, fileAFullName);
     get_abs_path (fileBName, fileBFullName);

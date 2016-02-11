@@ -24,7 +24,7 @@ fringearray *fdata;
 int ndigits;
 FILE *fp;
     {
-    char filename[40], buf[500], vbuf[50], format[10];
+    char filename[40], buf[2000], vbuf[50], format[10];
     int i, syear, sday, shour, smin, ssec;
     double value;
     fringesum *data;

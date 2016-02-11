@@ -79,8 +79,9 @@ struct type_208 *t208)
     t208->resid_mbd = status->mbd_max_global;
     t208->resid_sbd = status->sbd_max;
     t208->resid_rate = status->corr_dr_max;
-    t208->mbd_error = (float)(1.0 
-                        / (2.0 * M_PI * status->freq_spread * status->snr));
+    t208->mbd_error = (status->nion == 0) ?
+        (float)(1.0 / (2.0 * M_PI * status->freq_spread * status->snr)) :
+        1e-3 * status->ion_sigmas[0];
                                         /* get proper weighting for sbd error estimate */
     status->sbavg = 0.0;
     for (fr = 0; fr < pass->nfreq; fr++)
@@ -111,6 +112,8 @@ struct type_208 *t208)
     t208->totphase_ref = fmod (apphase_ref + status->coh_avg_phase
                         * (180.0/M_PI) , 360.0);
     t208->resphase = fmod (status->coh_avg_phase * (180.0/M_PI), 360.0);
+
+    t208->tec_error = (status->nion) ? status->ion_sigmas[2] : 0.0;
 
     return (0);
     }

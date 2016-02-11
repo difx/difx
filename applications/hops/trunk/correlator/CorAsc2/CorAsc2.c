@@ -1199,7 +1199,7 @@ int main (int argc, char *argv[])
             {           /* Type 210? */
             /* Residual fringe amplitude and phase */
             (void) printf (" \n");
-            for (i = 0; i < 16; i++)
+            for (i = 0; i < 64; i++)
                 {           /* Each channel (?) */
                 (void) printf (" %2d ampl = %.3e ", i, flip_float(t210->amp_phas[i].ampl));
                 (void) printf (" phase = %.1f \n", flip_float(t210->amp_phas[i].phase));
@@ -1252,7 +1252,8 @@ int main (int argc, char *argv[])
             (void) printf (" Index    re          im \n");
             for (i = 0; i < flip_short(t230->nspec_pts); i++)   /* Each xpower[] */
                 (void) printf ("%3d %12.3e %12.3e \n",
-                       i, flip_double(t230->xpower[i].re), flip_double(t230->xpower[i].im));
+                       i, flip_double(creal(t230->xpower[i])),
+                       flip_double(cimag(t230->xpower[i])));
             }           /* End of if type 230 */
         /* ** Type-3xx records are in station-data files ** */
         /* * Type-300 record? * */

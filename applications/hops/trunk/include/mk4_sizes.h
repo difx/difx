@@ -21,8 +21,10 @@
 #define MAX_NUM_STN     32              /* max # of stations within a task */
 #define MAX_NUM_TAPES   32              /* max # of tape request lines */
 
-#define MAX_CHAN_PP     64
-#define MAX_CHAN_RT     16
+#define MAX_CHAN       128              // max # data channels (= difx bands)
+#define MAX_POLY_CHAN   16              // maximum number of polynomials
+
+#define MAXFREQ         64              // max # of freq channels
 
 #endif
 

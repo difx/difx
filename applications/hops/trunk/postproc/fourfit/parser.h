@@ -20,7 +20,7 @@ struct token_struct
    };
 
 
-#define MAX_TOKENS   100   /* Increase if many more tokens added */
+#define MAX_TOKENS   105   /* Increase if many more tokens added */
 #define MAX_STATES    20   /*     "    "   "    "   states   "   */
 
 
@@ -119,6 +119,14 @@ struct token_struct
 #define MBD_ANCHOR_      89
 #define MODEL_           90
 #define SBD_             91
+#define PC_PHASE_X_      92
+#define PC_PHASE_Y_      93
+#define PC_DELAY_X_      94
+#define PC_DELAY_Y_      95
+#define SAMPLER_DELAY_L_ 96
+#define SAMPLER_DELAY_R_ 97
+#define SAMPLER_DELAY_X_ 98
+#define SAMPLER_DELAY_Y_ 99
 
 
         /* Definitions of token categories */

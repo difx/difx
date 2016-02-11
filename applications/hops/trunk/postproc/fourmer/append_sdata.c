@@ -1,5 +1,5 @@
 /*
- * $Id: append_sdata.c 656 2012-02-27 18:35:21Z rjc $
+ * $Id: append_sdata.c 1197 2015-09-10 12:38:41Z gbc $
  *
  * Append sdataB to sdataC and edit channel names in the process.
  */
@@ -18,10 +18,10 @@ static void append_model(struct mk4_sdata *sdataC, struct mk4_sdata *sdataB)
     {
     int n, nA, nC, sp, isA;
 
-    for (n = 0; n < MAX_CHAN_PP; n++)
+    for (n = 0; n < MAX_CHAN; n++)
 	if (sdataC->model[n].chan_id[0] == '\0') break;
     nA = n;
-    for (n = 0; n < MAX_CHAN_PP; n++)
+    for (n = 0; n < MAX_CHAN; n++)
 	{
 	if (sdataB->model[n].chan_id[0] == '\0') break;
 	memcpy(&(sdataC->model[nA + n]),

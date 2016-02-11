@@ -66,7 +66,7 @@ struct type_203 *t203)
         strncpy (t203->channels[ch].rem_chan_id, t101->rem_chan_id, 8);
                                         /* Find the channel name in root */
         chfound = 0;
-        for (rootch=0; rootch<MAX_CHAN_PP; rootch++)
+        for (rootch=0; rootch<MAXFREQ; rootch++)
             {
             if (strncmp (t203->channels[ch].ref_chan_id, 
                         refst->channels[rootch].chan_name, 8) == 0)
@@ -93,7 +93,7 @@ struct type_203 *t203)
             }
                                         /* Point to next t203 channel */
         ch++;
-        if (ch == 8 * MAX_CHAN_PP)  // ensure there aren't too many channels
+        if (ch == 8 * MAXFREQ)      // ensure there aren't too many channels
             {
             msg ("Too many (%d) t101 channels for t203 record", 2, ch);
             return -1;

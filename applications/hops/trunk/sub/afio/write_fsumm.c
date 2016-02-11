@@ -66,6 +66,11 @@ char *fformat_v5 = "%1d %s 2 %2d %3d %3d %3d %4d %s %02d%03d-%02d%02d%02d %4d\
  %6.4f %8.3f %4.1f %4.1f %5.1f %5.1f %7.4g %7.4g %06d %02d%02d %8.2f %5.1f %11.8f\
  %13.6f %5.3f %3d %3d\n";
 
+char *fformat_v6 = "%1d %s 2 %2d %3d %3d %3d %4d %s %02d%03d-%02d%02d%02d %4d\
+ %03d-%02d%02d%02d %3d %-8s %s %c%c %c%02d %2s %4d %6.2f %#5.4g %5.1f %#5.4g %2s %9.6f %9.6f\
+ %6.4f %8.3f %4.1f %4.1f %5.1f %5.1f %7.4g %7.4g %06d %02d%02d %8.2f %5.1f %11.8f\
+ %13.6f %5.3f %3d %3d\n";
+
 int
 write_fsumm(fringesum *data, FILE *fp)
     {
@@ -354,6 +359,56 @@ write_fsumm(fringesum *data, FILE *fp)
                                         /* Version 5, Mk4 only, September 99 on */
             if (pyear > 100) pyear %= 100;
             sprintf (buf, fformat_v5,
+                data->version,
+                data->root_id,
+                data->extent_no,
+                data->duration,
+                data->length,
+                data->offset,
+                data->expt_no,
+                data->scan_id,
+                pyear, pday, phour, pmin, psec,
+                syear, sday, shour, smin, ssec,
+                data->scan_offset,
+                data->source,
+                data->baseline,
+                data->quality,
+                data->errcode,
+                data->freq_code,
+                data->no_freq,
+                data->polarization,
+                data->lags,
+                data->amp,
+                data->snr,
+                data->resid_phas,
+                data->phase_snr,
+                data->datatype,
+                data->sbdelay,
+                data->mbdelay,
+                data->ambiguity,
+                data->delay_rate,
+                data->ref_elev,
+                data->rem_elev,
+                data->ref_az,
+                data->rem_az,
+                data->u,
+                data->v,
+                data->esdesp,
+                data->epoch[0],
+                data->epoch[1],
+                data->ref_freq,
+                data->total_phas,
+                data->total_rate,
+                data->total_mbdelay,
+                data->total_sbresid,
+                data->srch_cotime,
+                data->noloss_cotime);
+            break;
+
+        case 6:
+                                        /* Version 6 EHT Era */
+            if (pyear > 100) pyear %= 100;
+            sprintf (buf, fformat_v6,
                 data->version,
                 data->root_id,
                 data->extent_no,

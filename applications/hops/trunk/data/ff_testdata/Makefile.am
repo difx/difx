@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 964 2014-07-25 16:36:47Z gbc $
+# $Id: Makefile.am 1199 2015-09-11 15:32:46Z gbc $
 #
 
 SUBDIRS =
@@ -81,7 +81,7 @@ dist_check_SCRIPTS = chk_env.sh $(TESTS)
 CLEANFILES = *.ps *.oifhak aedit.in *.out *.alist *.cofit *.coavg cf* *.avg
 
 clean-local:
-	rm -rf 2843 3365 path datadir
+	rm -rf DD 2843 3365 path datadir
 
 #
 # eof

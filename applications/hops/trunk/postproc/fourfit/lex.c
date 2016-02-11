@@ -313,7 +313,7 @@ char *next_token;
 
    n = strlen (next_token);
 
-   if (n < 1 || n > MAX_CHAN_PP)
+   if (n < 1 || n > MAXFREQ)
       validity = 0;                          /* wrong length, post as invalid */
 
    else
@@ -333,6 +333,6 @@ int fcode(char c)
 	int i;
 //	char fchars[64];
 	
-	for (i = 0; i < MAX_CHAN_PP; i++)
+	for (i = 0; i < MAXFREQ; i++)
 		if (c == fchars[i]) return i;
 	}

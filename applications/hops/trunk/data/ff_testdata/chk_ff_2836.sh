@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Id: chk_ff_2836.sh 974 2014-07-28 16:03:19Z rjc $
+# $Id: chk_ff_2836.sh 1032 2015-01-23 14:24:03Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -24,6 +24,7 @@ fourfit -t -d diskfile:ff-2836.ps -b AE:X \\ && echo \
 fourfit -t -d diskfile:ff-2836.ps -b AE:X \
     -c ./cf2836 \
     $DATADIR/2836/scan001/2145+067.olomfh 2>/dev/null 1>&2
+[ -f ./ff-2836.ps ] || { echo ./ff-2836.ps missing && exit 2 ; }
 
 # pluck out line containing the snr and parse it
 line=$(grep '7570 9653' ./ff-2836.ps)

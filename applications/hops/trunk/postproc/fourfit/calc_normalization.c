@@ -114,7 +114,7 @@ void calc_normalization (int sb,
                                      * thresholds */
             if (pass->autocorr)
                 scale /= cdiff;
-            else if (param.bits_sample == 1)
+            else if (param.bits_sample[0] == 1)
                 scale *= 1.568168 / cdiff;
             else
                 scale *= 0.971891 / cdiff;
@@ -131,7 +131,7 @@ void calc_normalization (int sb,
                                     /* normalize assuming nominal clipper levels */
         c0 = 3.0;                   /* no DC bias */
 
-        if (param.bits_sample == 1)
+        if (param.bits_sample[0] == 1) // assumes both same bits/sample for xf case
             {
             if (pass->autocorr)
                 scale *= 0.333333;

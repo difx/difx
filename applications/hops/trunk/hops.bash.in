@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id: hops.bash.in 728 2012-05-30 16:12:39Z gbc $
+# $Id: hops.bash.in 1287 2016-01-14 13:35:03Z gbc $
 #
 # Version @VERSION@
 #
@@ -18,6 +18,7 @@ will set up your HOPS environment by modifying the following variables:
     PATH            executable search path
     INFOPATH        info file search path
     LD_LIBRARY_PATH adds dynamic linkage to PGPLOT_DIR
+    PYTHONPATH      for a few useful python tools
 
     HOPS_ROOT       root of the HOPS package
     HOPS_VERS       version number of this package
@@ -61,30 +62,47 @@ nada)                                    ;;
 nada*)          echo "$Help"    ; exit 1 ;;
 esac
 
-# using variables as defined by config.status where possible
-# datarootdir is required for autoconf 2.6 and later
-[ -z "$prefix" ] && prefix=@prefix@
-[ -z "$exec_prefix" ] && exec_prefix=@exec_prefix@
-[ -z "$datarootdir" ] && datarootdir=@datarootdir@
-
 #
 # remove old version from PATH
 #
 [ -n "$HOPS_SETUP" -a -n "$HOPS_ROOT" ] && {
   [ "$HOPS_SETUP" = true ] || {
     [ -z "$HOPS_QUIET" ] && echo Revising HOPS version.
+    prefix=$hops_prefix
+    [ -z "$prefix" ] && prefix=@prefix@
+    exec_prefix=$hops_exec_prefix
+    [ -z "$exec_prefix" ] && exec_prefix=@exec_prefix@
+    datarootdir=$hops_datarootdir
+    [ -z "$datarootdir" ] && datarootdir=@datarootdir@
+    pythondir=$hops_pythondir
+    [ -z "$pythondir" ] && pythondir=@pythondir@
     Path=`echo $PATH | sed -e "s+@bindir@[:]*++g"`
     Info=`echo $INFOPATH | sed -e "s+@infodir@[:]*++g"`
     Libp=`echo $LD_LIBRARY_PATH | sed -e "s+@libdir@/hops[:]*++g"`
+    Pyp=`echo $PYTHONPATH | sed -e "s+@pkgpythondir@[:]*++g"`
     export PATH=$Path
     export INFOPATH=$Info
-    export LD_LIBRARY_PATH=Libp
+    export LD_LIBRARY_PATH=$Libp
+    export PYTHONPATH=$Pyp
     [ "$HOPS_SETUP" = false ] && HOPS_SETUP=''
     unset HOPS_ROOT HOPS_VERS HOPS_ARCH HOPS_DOCS
     unset PROGDOC TEXT AHELP DEF_CONTROL DATADIR
     unset SCHEDDIR AFILEDIR SYSVEX TASK BIN TMP
+    unset prefix exec_prefix datarootdir pythondir
+    unset Path Info Libp Pyp
   }
 }
+
+# using variables as defined by config.status where possible
+# datarootdir is required for autoconf 2.6 and later
+[ -z "$prefix" ] && prefix=@prefix@
+[ -z "$exec_prefix" ] && exec_prefix=@exec_prefix@
+[ -z "$datarootdir" ] && datarootdir=@datarootdir@
+[ -z "$pythondir" ] && pythondir=@pythondir@
+hops_prefix=$prefix
+hops_exec_prefix=$exec_prefix
+hops_datarootdir=$datarootdir
+hops_pythondir=$pythondir
 
 [ -z "$HOPS_SETUP" ] && {
     #
@@ -116,6 +134,10 @@ esac
 	LD_LIBRARY_PATH=@DIFXLIBS@:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=@libdir@/hops:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
+
+    [ -z "$PYTHONPATH" ] && PYTHONPATH=@pkgpythondir@ ||
+        PYTHONPATH=@pkgpythondir@:$PYTHONPATH
+    export PYTHONPATH
 
     # program documentation
     export HOPS_DOCS=@datadir@/hops
@@ -156,7 +178,8 @@ esac
 #
 # all done
 #
-unset Path Info Libp Setup Help Version exec_prefix prefix
+unset Path Info Libp Pyp Setup Help Version
+unset prefix exec_prefix datarootdir pythondir
 
 #
 # eof

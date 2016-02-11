@@ -23,6 +23,7 @@
 ****************************************************************************/
 
 #include <math.h>
+#include <complex.h>
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
@@ -33,7 +34,6 @@ int ap, fr, sb;
 double dr, mbd;
 struct type_pass *pass;
     {
-    complex c_exp();
     double theta;
     extern struct type_param param;
     extern struct type_status status;
@@ -57,5 +57,5 @@ struct type_pass *pass;
         
     theta *= (-2.0 * M_PI);             // convert to radians
 
-    return (c_exp(theta));              // return unit phasor
+    return (cexp(I * theta));              // return unit phasor
     }

@@ -125,6 +125,7 @@ copy_208 (struct type_208 *t208,
         cp_float (t208_v1->totphase, t208->totphase);
         cp_float (t208_v1->totphase_ref, t208->totphase_ref);
         cp_float (t208_v1->resphase, t208->resphase);
+        cp_float (t208_v1->tec_error, t208->tec_error);
 
         return (sizeof (struct type_208_v1));
         }

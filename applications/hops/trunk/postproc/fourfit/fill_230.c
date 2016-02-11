@@ -8,6 +8,8 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
+#include <fftw3.h>
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
@@ -21,12 +23,14 @@ int ap,
 struct type_230 *t230)
     {
     struct data_corel *datum;
-    complex work_array[4 * MAXLAG], value;
-    complex c_zero(), c_mult(), c_exp();
+    complex value;
+    static complex work_array[4 * MAXLAG];
     double theta;
     int i, j, lag, nl;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
     extern struct type_status status;
+    static int fftsize = 0;
+    static fftw_plan fftplan;
 
     clear_230 (t230);
     
@@ -37,11 +41,19 @@ struct type_230 *t230)
     t230->ap = ap;
     t230->usbweight = datum->usbfrac;
     t230->lsbweight = datum->lsbfrac;
-    if (datum->flag == 0) t230->usbweight = t230->lsbweight = -1.0;
+    if (datum->flag == 0) 
+        t230->usbweight = t230->lsbweight = -1.0;
 
-    for (i = 0; i < 4 * MAXLAG; i++) work_array[i] = c_zero();
+    for (i = 0; i < 4 * MAXLAG; i++) 
+        work_array[i] = 0.0;
                                         /* Fill padded work array */
     nl = param->nlags;
+    if (fftsize != 4 * nl)
+        {
+        fftsize = 4 * nl;
+        fftplan = fftw_plan_dft_1d (fftsize, work_array, work_array, FFTW_FORWARD, FFTW_MEASURE);
+        }
+
     for (lag = 0; lag < nl * 2; lag++)
         {
         j = lag - nl;
@@ -55,7 +67,7 @@ struct type_230 *t230)
         work_array[j] = datum->sbdelay[lag];
         }
                                         /* FFT sband delay to xpower spectrum */
-    FFT1 (work_array, 4 * nl, 1, work_array, 1);
+    fftw_execute (fftplan);
                                         /* Sort back into xpower array */
     for (i = 0; i < 2*nl; i++)
        {

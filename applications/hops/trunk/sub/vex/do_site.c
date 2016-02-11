@@ -57,16 +57,16 @@ do_site (struct def_list *dl,
 		stn->site_type = EARTH_ORBIT;
 	    }
 	else if ISNAME ("site_name")
-	    strcpy (stn->site_name, p_val.dval[0].data.strval);
+	    strncpy (stn->site_name, p_val.dval[0].data.strval, 9);
 	else if ISNAME ("site_ID")
-	    strcpy (stn->site_id, p_val.dval[0].data.strval);
+	    strncpy (stn->site_id, p_val.dval[0].data.strval, 3);
 	else if ISNAME ("mk4_site_ID")
 	    stn->mk4_site_id = p_val.dval[0].data.strval[0];
 	else if ISNAME ("site_position_epoch")
 	    memcpy (&(stn->coordinate_epoch), &(p_val.dval[0].data.epochval),
 			sizeof (struct date));
 	else if ISNAME ("occupation_code")
-	    strcpy (stn->occucode, p_val.dval[0].data.strval);
+	    strncpy (stn->occucode, p_val.dval[0].data.strval, 5);
 	else if ISNAME ("site_position")
 	    {
 	    stn->coordinates[0] = p_val.dval[0].data.realval;

@@ -142,6 +142,18 @@ struct c_block *f,*t;               // f (from) is source pointer
         strcpy (t->sampler_codes, f->sampler_codes);
         }
 
+    for (i=0; i<MAX_SAMP; i++)
+        {
+        if (f->sampler_delay[i][0].ref != NULLFLOAT)
+            t->sampler_delay[i][0].ref = f->sampler_delay[i][0].ref;
+        if (f->sampler_delay[i][1].ref != NULLFLOAT)
+            t->sampler_delay[i][1].ref = f->sampler_delay[i][1].ref;
+        if (f->sampler_delay[i][0].rem != NULLFLOAT)
+            t->sampler_delay[i][0].rem = f->sampler_delay[i][0].rem;
+        if (f->sampler_delay[i][1].rem != NULLFLOAT)
+            t->sampler_delay[i][1].rem = f->sampler_delay[i][1].rem;
+        }
+
     if (f->adhoc_poly[0] != NULLFLOAT)
         for (i=0; i<6; i++)
             if (f->adhoc_poly[i] != NULLFLOAT)
@@ -183,7 +195,7 @@ struct c_block *f,*t;               // f (from) is source pointer
 
                                     // only sidebands that are present in both the from-list
                                     // and the to-list are present in the resulting to-list
-    for (i=0; i<MAX_CHAN_PP; i++)                         
+    for (i=0; i<MAXFREQ; i++)                         
         {
         if (f->frequency[i] != NULLINT)
             t->frequency[i] &= f->frequency[i];

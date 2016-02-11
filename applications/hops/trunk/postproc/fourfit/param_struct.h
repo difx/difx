@@ -1,5 +1,4 @@
                                         /*  Definitions of major parameter structures */
-#define MAXFREQ   64
 #define MAXINDEX 256
 #define MAX_ION_PTS 100
 #define LAG 0
@@ -23,11 +22,12 @@ struct type_param
     int         maxap;                  /* Last AP number */
     int         num_ap;                 /* Number of Accumulation Periods */
     char        baseline[2];            /* Carried for convenience */
+    short       ov_bline[2];            // index into ovex station array for ref/rem
     short       corr_type;              /* Determines type_120 format */
     short       pol;                    // Polarization type - vals def'd in pass_struct.h
     char        *rf_fglist;             /* List of fgroups when refringing */
     double      cor_limit;              /* Maximum correlation amplitude */
-    int         bits_sample;            /* Bits per sample (1 or 2) */
+    int         bits_sample[2];         /* Bits per sample (1 or 2) for ref & rem */
     double      samp_period;            // Len sample period (interval between samp in s)
     short       pc_mode[2];             /* Phase cal mode by station */
     short       pc_period[2];           // Phase cal integration period (ap's)
@@ -171,5 +171,6 @@ struct type_status
     double      sbd_dec_width;
     double      delay_offs[MAXFREQ][2]; // delay offsets (ns) by channel and station
     double      dtec[MAX_ION_PTS][2];   // differential TEC pairs [index#][TEC:amplitude]
+    double      ion_sigmas[3];          // std dev of tau (ns), phi0 (rot), dTEC (TECU)
     int         nion;                   // number of points in the dtec array
     };

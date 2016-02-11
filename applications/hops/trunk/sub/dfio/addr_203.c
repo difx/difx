@@ -98,7 +98,7 @@ addr_203 (short version,
                                         /* (see bytflp.h) */
         strncpy (t203->record_id, "203", 3);
         strncpy (t203->version_no, "01", 2);
-        for (i=0; i<8*MAX_CHAN_PP; i++)
+        for (i=0; i<8*MAXFREQ; i++)
             {
             cp_short (t203->channels[i].index, t203_v1->channels[i].index);
             cp_short (t203->channels[i].sample_rate, t203_v1->channels[i].sample_rate);

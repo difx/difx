@@ -59,9 +59,10 @@ You may configure the software to build in the source directory
 not recommended or required.
 
 The complete software package requires X11, PGPLOT, (possibly) version
-1.2 of the PNG library and ghostscript (compiled with X11 support).
-Unfortunately these are often not to be found in the usual places,
-so configure may need some help to get it right.
+1.2 of the PNG library (depending on how PGPLOT was compiled), ghostscript
+(usuall compiled with X11 support) and FFTW3 (for FFTs).  Unfortunately
+these are often not to be found in the usual places, so configure may need
+some help to get it right.
 
     ../hops-@VERSION@/configure --help=short
 
@@ -77,7 +78,8 @@ may not be what you want:
     ../hops-@VERSION@/configure PGPLOT_DIR=/usr/local/pgplot64
 
 and if those fail, you can try setting more variables, e.g. the
-following works on MacOS with fink support for all the usual linux tools:
+following worked once upon a time  on MacOS with fink support for
+all the usual linux tools:
 
     ../hops-@VERSION@/configure \
 	LDFLAGS=-L/usr/X11/lib \
@@ -87,7 +89,8 @@ following works on MacOS with fink support for all the usual linux tools:
 In particular the X_INSANE variable is included last in the link step,
 (in fact, this gibberish works with the Fink MacOS pgplot package) so
 you can put all sorts of things here.  The underlying issue is that
-there are too many ways that pgplot might have been compiled.
+there are too many ways that pgplot might have been compiled.  Lately,
+we've had better luck with MacPorts.
 
 Note that if you set PGPLOT_DIR as an environment variable, this directory
 should contain (at least) the three files:
@@ -178,7 +181,7 @@ will get you a new window with your normal shell and the proper environment.
 4. Finally
 ----------
 
-Copyright (c) 1992-2011 by Haystack Observatory, MIT.
+Copyright (c) 1992-2015 by Haystack Observatory, MIT.
 See the included file "Copyright" for the full notice.
 
 Authors: Colin Lonsdale, Roger Cappallo, and many others.

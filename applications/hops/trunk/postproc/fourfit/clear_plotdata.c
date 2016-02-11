@@ -12,13 +12,12 @@
 #include "mk4_data.h"
 #include "plot_struct.h"
 #include <stdio.h>
+#include <complex.h>
 #include "mk4_sizes.h"
 
-void
-clear_plotdata ()
+void clear_plotdata ()
     {
     int i, j;
-    complex c_zero();
     extern struct type_plot plot;
 
     plot.num_ap = 0;
@@ -30,10 +29,9 @@ clear_plotdata ()
     for (i=0; i<MAXAP; i++) 
         {
         plot.d_rate[i] = 0.0;
-        for (j=0; j<MAX_CHAN_PP+1; j++)
+        for (j=0; j<MAXFREQ+1; j++)
             {
-            plot.phasor[j][i].re = 0.0;
-            plot.phasor[j][i].im = 0.0;
+            plot.phasor[j][i] = 0.0;
             plot.weights[j][i] = 0.0;
             plot.seg_amp[j][i] = 0.0;
             plot.seg_phs[j][i] = 0.0;
@@ -54,10 +52,9 @@ clear_plotdata ()
             plot.seg_rempcal[j][i] = 0.0;
             }
         }
-    for (i=0; i<MAX_CHAN_PP; i++)
+    for (i=0; i<MAXFREQ; i++)
         {
         plot.sb_amp[i] = 0.0;
-        plot.cp_spectrum[i].re = 0.0;
-        plot.cp_spectrum[i].im = 0.0;
+        plot.cp_spectrum[i] = 0.0;
         }
     }

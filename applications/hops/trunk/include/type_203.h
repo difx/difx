@@ -33,7 +33,7 @@ struct type_203
     char                record_id[3];           /* Standard 3-digit id */
     char                version_no[2];          /* Standard 2-digit version # */
     char                unused1[3];             /* Reserved space */
-    struct ch_struct    channels[8*MAX_CHAN_PP];/* channel-by-channel info */
+    struct ch_struct    channels[8*MAXFREQ];    /* channel-by-channel info */
     };
 
 #endif

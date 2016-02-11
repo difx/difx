@@ -71,7 +71,7 @@ struct type_208
     float               totphase;               /* Total observed fringe phase (deg) */
     float               totphase_ref;           /* Total phase at ref stn epoch */
     float               resphase;               /* Residual earth-centered phase (deg) */
-    char                unused2[4];
+    float               tec_error;              // std dev of tec estimate (TEC units)
     };
 
 #endif

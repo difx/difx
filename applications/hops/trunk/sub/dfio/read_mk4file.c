@@ -25,7 +25,8 @@ read_mk4file (FILE *fp,
               char **ptr)
     {
     int nb;
-    int fd, size;
+    int fd;
+    size_t size;
     struct stat file_status;
                                         /* Map stream pointer onto file */
                                         /* descriptor, and make stat() call */
@@ -47,7 +48,7 @@ read_mk4file (FILE *fp,
         msg ("Memory allocation error in read_mk4file()", 2);
         return (-1);
         }
-    msg ("Allocated %d bytes in read_mk4file, address %p", 0, size, *ptr);
+    msg ("Allocated %u bytes in read_mk4file, address %p", 0, size, *ptr);
                                         /* Make sure we are at start of file */
     rewind (fp);
                                         /* Read file in a single call, let */
@@ -56,7 +57,7 @@ read_mk4file (FILE *fp,
                                         /* Did it go OK? */
     if (nb != size)
         {
-        msg ("Error, expected %d bytes, read %d bytes", 2, size, nb);
+        msg ("Error, expected %u bytes, read %d bytes", 2, size, nb);
         return (-1);
         }
 

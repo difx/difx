@@ -11,6 +11,7 @@
 
 #include "mk4_data.h"
 #include <math.h>
+#include <complex.h>
 #include "param_struct.h"
 #include "pass_struct.h"
 #include <stdio.h>
@@ -20,15 +21,13 @@
 #define SD 3
 
 
-void
-interp(pass)
-struct type_pass *pass;
+void interp (struct type_pass *pass)
     {
     extern struct type_status status;
     extern struct type_param param;
-    complex X, pcal, delay[3], vrot(), c_zero(), c_add(), c_exp(), c_mult(), s_mult();
-    double sp, max, r_max, r, ph, c_phase(), peak, d_dr, d_mbd, dr, mbd,
-           pcr, theta, center_mag, c_mag(),q[3],lower,upper,frac, 
+    complex X, pcal, delay[3], vrot();
+    double sp, max, r_max, r, ph, peak, d_dr, d_mbd, dr, mbd,
+           pcr, theta, center_mag, q[3],lower,upper,frac, 
            dr_lower,dr_upper,mbd_lower,mbd_upper,sbd_lower,sbd_upper,
            dmin(),dmax(), dwin(), delay_mag[3], drpt, delta_dr, divisor, eks,
            xlim[3][2];
@@ -44,7 +43,7 @@ struct type_pass *pass;
     struct freq_corel *frq;
     struct interp_sdata *isd;
 
-    delay[1] = c_zero();
+    delay[1] = 0.0;
     status.pc_rate[0] = status.pc_rate[1] = 0.0;
     status.interp_err = 0;
                                         /* Interpolate to find phase-cal rate for normal mode */
@@ -60,7 +59,7 @@ struct type_pass *pass;
             for (index = 0; index < 3; index++)
                 {
                 r = status.pc_rate[station] + status.rate_sep * sp * (index-1); 
-                delay[index] = c_zero();
+                delay[index] = 0.0;
                 for (fr = 0; fr < pass->nfreq; fr++)
                     {                            /* Sum over all freqs & ap's */
                     frq = pass->pass_data + fr;
@@ -71,11 +70,11 @@ struct type_pass *pass;
                         else if (station == 1) 
                             isd = &(frq->data[ap].rem_sdata);
                                         // FIXME!! these pols shouldn't be added together
-                        pcal = c_add (isd->phasecal_lcp[pass->pci[station][fr]],
-                                          isd->phasecal_rcp[pass->pci[station][fr]]);
-                        if (c_mag (pcal) > 0.0) 
+                        pcal = isd->phasecal_lcp[pass->pci[station][fr]]
+                             + isd->phasecal_rcp[pass->pci[station][fr]];
+                        if (cabs (pcal) > 0.0) 
                             {
-                            ph = c_phase (pcal);
+                            ph = carg (pcal);
 
                             ph -= (status.pc_phase[fr][station][stnpol[station][pass->pol]]
                                + M_PI * status.pc_offset[fr][station][stnpol[station][pass->pol]] / 180.0);
@@ -83,15 +82,15 @@ struct type_pass *pass;
                             ph -= 2.0 * M_PI * frq->frequency * r * param.acc_period * ap;
 
                             msg  ("fr %d ap %d st %d freq %g pcal %f %f ph %g", -4, 
-                                   fr, ap, station, frq->frequency, pcal.re, pcal.im, ph);
+                                   fr, ap, station, frq->frequency, pcal, ph);
 
-                            delay[index] = c_add (delay[index], c_exp(ph));
+                            delay[index] = delay[index] + cexp(I * ph);
                             }
                         }
                     }
                 }
             for (i=0; i<3; i++)
-                delay_mag[i] = c_mag (delay[i]);
+                delay_mag[i] = cabs (delay[i]);
             ret = parabola (delay_mag, -1.0, 1.0, &r_max, &max, q);
             msg ("Interp: inter=%d station=%d delay_mag= [%lf,%lf,%lf] max=%lf r_max=%lf, ret=%d",-1,
                              inter,   station,   delay_mag[0],
@@ -166,7 +165,7 @@ struct type_pass *pass;
             for (imbd=0; imbd<5; imbd++)
                 for (idr=0; idr<5; idr++)
                     {
-                    z = c_zero ();
+                    z = 0.0;
                                     // calculate location of this tabular point
                     sbd = status.max_delchan    +        isbd - 2;
                     mbd = status.mbd_max_global + 0.5 * (imbd - 2) * status.mbd_sep;
@@ -182,8 +181,8 @@ struct type_pass *pass;
                                     // only rotate if "good" flag set
                             if (frq->data[ap].flag)
                                 {
-                                X = c_mult (frq->data[ap].sbdelay[sbd],
-                                            vrot (ap, dr, mbd, fr, 0, pass)); 
+                                X = frq->data[ap].sbdelay[sbd] 
+                                  * vrot (ap, dr, mbd, fr, 0, pass); 
                                     // Weight by fractional ap's
                                 frac = 0.0;
                                 if (frq->data[ap].usbfrac >= 0.0) 
@@ -194,12 +193,12 @@ struct type_pass *pass;
                                     // we use the mean fraction
                                 if ((frq->data[ap].usbfrac >= 0.0) 
                                     && (frq->data[ap].lsbfrac >= 0.0)) frac /= 2.0;
-                                X = s_mult (X, frac);
-                                z = c_add (z, X);
+                                X = X * frac;
+                                z = z + X;
                                 }
                         }
-                    z = s_mult (z, 1.0 / status.total_ap_frac);
-                    drf[isbd][imbd][idr] = c_mag (z);
+                    z = z * 1.0 / status.total_ap_frac;
+                    drf[isbd][imbd][idr] = cabs (z);
                     msg ("drf[%d][%d][%d] %lf", 0, isbd, imbd, idr, drf[isbd][imbd][idr]);
                     }
                                     // form the search bounds in all 3 dimensions
@@ -276,7 +275,7 @@ struct type_pass *pass;
                                       /* setup tabular interval for this variable */
                 for (index = 0; index < 3; index++)
                     {
-                    delay[index] = c_zero();
+                    delay[index] = 0.0;
 
                                       /* calculate location of this tabular point */
                     dr = status.dr_max_global + status.rate_sep * d_dr * (index-1);
@@ -299,11 +298,11 @@ struct type_pass *pass;
                                     {
                                     // temporary kludge for tests rjc 2001.1.29
                                     if (v == SD)
-                                      X = c_mult (frq->data[ap].sbdelay[sbd],
-                                                  vrot (ap, dr, mbd, fr, 0, pass)); 
+                                      X = frq->data[ap].sbdelay[sbd]
+                                        * vrot (ap, dr, mbd, fr, 0, pass); 
                                     else
-                                      X = c_mult (frq->data[ap].sbdelay[sbd],
-                                          vrot (ap, dr, mbd, fr, frq->data[ap].sband, pass)); 
+                                      X = frq->data[ap].sbdelay[sbd]
+                                        * vrot (ap, dr, mbd, fr, frq->data[ap].sband, pass); 
                                     // Weight by fractional ap's
                                     frac = 0.0;
                                     if (frq->data[ap].usbfrac >= 0.0) 
@@ -314,12 +313,12 @@ struct type_pass *pass;
                                     // we use the mean fraction
                                     if ((frq->data[ap].usbfrac >= 0.0) 
                                         && (frq->data[ap].lsbfrac >= 0.0)) frac /= 2.0;
-                                    X = s_mult (X, frac);
-                                    delay[index] = c_add (delay[index], X);
+                                    X = X * frac;
+                                    delay[index] = delay[index] + X;
                                     }
                             }
-                        delay[index] = s_mult (delay[index], 1.0 / status.total_ap_frac);
-                        delay_mag[index] = c_mag (delay[index]);
+                        delay[index] = delay[index] * 1.0 / status.total_ap_frac;
+                        delay_mag[index] = cabs (delay[index]);
                         }
                     else            // do incoherent averaging by counter-rotating and
                         {           // summing data to form a complex delay value; then, by
@@ -334,7 +333,7 @@ struct type_pass *pass;
                         divisor = 0.0;
                         for (n=-ndrpts; n<=ndrpts; n++)
                             {
-                            delay[index] = c_zero ();
+                            delay[index] = 0.0;
                             drpt = dr + n * delta_dr;
                                     // counter-rotate data from all freqs. and AP's
                             for (fr = 0; fr < pass->nfreq; fr++)
@@ -346,11 +345,11 @@ struct type_pass *pass;
                                         {
                                     // temporary kludge for tests rjc 2001.1.29
                                         if (v == SD)
-                                          X = c_mult (frq->data[ap].sbdelay[sbd],
-                                                      vrot (ap, drpt, mbd, fr, 0, pass)); 
+                                          X = frq->data[ap].sbdelay[sbd]
+                                            * vrot (ap, drpt, mbd, fr, 0, pass); 
                                         else
-                                          X = c_mult (frq->data[ap].sbdelay[sbd],
-                                              vrot (ap, drpt, mbd, fr, frq->data[ap].sband, pass));
+                                          X = frq->data[ap].sbdelay[sbd]
+                                            * vrot (ap, drpt, mbd, fr, frq->data[ap].sband, pass);
                                     // Weight by fractional ap's
                                         frac = 0.0;
                                         if (frq->data[ap].usbfrac >= 0.0) 
@@ -361,12 +360,12 @@ struct type_pass *pass;
                                     // we use the mean fraction
                                         if ((frq->data[ap].usbfrac >= 0.0) 
                                             && (frq->data[ap].lsbfrac >= 0.0)) frac /= 2.0;
-                                        X = s_mult (X, frac);
-                                        delay[index] = c_add (delay[index], X);
+                                        X = X * frac;
+                                        delay[index] = delay[index] + X;
                                         }
                                 }
-                            delay[index] = s_mult (delay[index], 1.0 / status.total_ap_frac);
-                            delay_mag[index] += c_mag (delay[index]);
+                            delay[index] = delay[index] * 1.0 / status.total_ap_frac;
+                            delay_mag[index] += cabs (delay[index]);
                             eks = n * pass->num_ap * param.acc_period / status.drsp_size * 2.0 * M_PI;
                             if (eks != 0.0)
                                 divisor += sin(eks) / eks * sin(eks) / eks;
@@ -447,7 +446,7 @@ struct type_pass *pass;
        status.corr_dr_max += status.pc_rate[1];
 
     msg ("phase cal rate %lg %lg", 0, status.pc_rate[0],status.pc_rate[1]);
-    msg ("fringe phase = %lf", 0, c_phase (delay[1]) * 180.0 / M_PI);
+    msg ("fringe phase = %lf", 0, carg (delay[1]) * 180.0 / M_PI);
     msg ("single band delay : %lg", 0, status.sbd_max);
     msg ("dr %lg mbd %lg dmax %lf",  0, status.corr_dr_max, 
                                 status.mbd_max_global, status.delres_max);

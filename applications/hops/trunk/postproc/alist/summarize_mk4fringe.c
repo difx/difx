@@ -25,7 +25,7 @@ fringesum *fsumm)
     {
     int i, j, basenum, lastslash, p_extent, lastchan, sb, nparents, frac;
     int pcal1, pcal2, pcal3, pcal4, filetype, polerr, chan;
-    int btable_index, duration, fullepoch, rem, isec;
+    int btable_index, duration, fullepoch, rem, isec, nchans;
     char fname[40], buf[7], c, baseline[3], refpol, rempol;
     struct date tempdate;
     extern int output_version, dofrnge, dofourfit;
@@ -68,8 +68,9 @@ fringesum *fsumm)
                                                 fr->t202->baseline);
         return (-1);
         }
+    nchans = (strcmp (fr->t205->version_no, "00") == 0) ? 16 : 64;
                                         /* Count frequencies from type 205 */
-    for (i=0; i<16; i++) 
+    for (i=0; i<nchans; i++) 
         if (fr->t205->ffit_chan[i].ffit_chan_id == ' ') break;
     fsumm->no_freq = i;
                                         /* fgroup from fourfit, in pass struct, */
@@ -85,7 +86,7 @@ fringesum *fsumm)
                                         /* Figure out polarization from type 205/203 */
     refpol = rempol = ' ';
     polerr = FALSE;
-    for (i=0; i<16; i++)
+    for (i=0; i<nchans; i++)
         {
         if (fr->t205->ffit_chan[i].ffit_chan_id == ' ') continue;
         for (j=0; j<4; j++)

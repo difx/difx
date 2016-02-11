@@ -16,7 +16,6 @@
 #include "root_records.h"
 #include "fringe_records.h"
 #include "type_corel.h"
-#include "type_comp.h"
 
 struct root_baseline {
 	struct type_2000 t2000[MAX_T2000];
