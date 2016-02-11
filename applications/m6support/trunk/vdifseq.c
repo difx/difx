@@ -1,5 +1,5 @@
 /*
- * $Id: vdifseq.c 3143 2015-06-22 14:31:24Z gbc $
+ * $Id: vdifseq.c 3675 2016-01-26 22:19:07Z gbc $
  *
  * This file does the work of building sequences.
  */
@@ -12,6 +12,8 @@
 #include "vdifuse.h"
 
 #define _GNU_SOURCE
+// FIXME also needed for tdestroy?
+#define __USE_GNU
 #include <search.h>
 
 static int twalk_thier_errors = 0;
@@ -62,7 +64,7 @@ static void thier_free(void *nodep)
  */
 static VDIFUSEntry *find_seq_parent(char *path)
 {
-    static dirname[VDIFUSE_MAX_PATH];
+    // FIXME: Unused // static dirname[VDIFUSE_MAX_PATH];
     static THIERnode tmp;
     char *basename;
     THIERnode **hp;
@@ -70,7 +72,8 @@ static VDIFUSEntry *find_seq_parent(char *path)
 
     basename = strrchr(strcpy(tmp.path, path), '/');
     if (vdifuse_debug>3) fprintf(vdflog, " (tfind)child: %s\n", tmp.path);
-    if (!basename) return;
+    // FIXME: null return ok?
+    if (!basename) return((VDIFUSEntry *)0);
     *basename++ = 0;
 
     hp = tfind(&tmp, &thier_root, &thier_comp);
@@ -246,8 +249,8 @@ static int tfrag_comp(const void *p1, const void *p2)
     if (e1->final.tv_sec > e2->final.tv_sec) return( 1);
     if (e1->final.tv_nsec < e2->final.tv_nsec) return(-1);
     if (e1->final.tv_nsec > e2->final.tv_nsec) return( 1);
-    /* well shucks, duplicate date? */
-    // TODO: invalidate one of them?
+    /* well shucks, duplicate data? */
+    /* TODO: invalidate one of them? */
     fprintf(vdflog,
         "F-CMP: %s and %s are duplicates\n", e1->path, e2->path);
     return(0);
@@ -386,8 +389,8 @@ static int finalize_sequences(void)
  *   create the cache entries for the required (sub)directories (thier_sdir)
  *   load them with their subdirectories or fragments (tfrag_sadd),
  *   provide the sequence sizes in vfuse data (finalize_sequences())
- *  (TODO: collapse fragments within the gap threshold into same sequence)
- *  (TODO: split sequences of different threads?)
+ * TODO: collapse fragments within the gap threshold into same sequence
+ * TODO: split sequences of different threads?
  *   delete the trees (thier_free, tfrag_free) since we no longer need them.
  */
 int create_sequences(void)
@@ -562,7 +565,7 @@ int create_fragtree(void)
         if (vc[ii].etype != VDIFUSE_ENTRY_FRAGMENT) continue;
         fhe = fragment_in_hierarchy(&vc[ii], limit);
         if (fhe) {
-            // TODO: mark frag as invalid as an alternative to error return
+            /* TODO: mark frag as invalid as an alternative to error return */
             errors ++;
             fprintf(stderr, "Problem adding frag %d to tree\n", ii);
         }

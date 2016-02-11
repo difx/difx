@@ -1,10 +1,11 @@
 /*
- * $Id: vdifopt.c 3486 2015-10-05 17:10:14Z gbc $
+ * $Id: vdifopt.c 3746 2016-02-09 23:12:13Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we do the command-line processing to drive the support for fuse.
  */
 
+#include <dirent.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -16,10 +17,12 @@
 int vdifuse_debug = 0;
 int vdifuse_enable = VDIFUSE_ENABLE_SKIP;   /* invoke fuse_main() */
 int vdifuse_protect = 0;
+int vdifuse_reuse = 0;
 FILE *vdflog = 0;
 
 /* principal support options */
 static int vdifuse_report = 0;
+static int vdifuse_vdlist = 0;
 static int vdifuse_create = 0;
 static int vdifuse_use_it = 0;
 static char *vdifuse_cache = NULL;
@@ -28,6 +31,7 @@ static char *vdifuse_mount = NULL;
 /* directory list to cache */
 static int vdifuse_ndirs = 0;
 static char **vdifuse_dirs = NULL;
+
 
 /*
  * Handlers for help and version
@@ -40,11 +44,16 @@ static int vdifsup_help(char *fullname, char *help)
     fprintf(stderr,
         "usage: %s [options] mount-point [directories]\n"
         "\n"
-        "  -v           verbose commentary, repeat for more\n"
+        "  -a <file>    all of the above with cache <file>\n"
+        "\n"
         "  -c <file>    create cache <file> for metadata (and exit)\n"
         "  -r <file>    check & report on cache <file> (and exit)\n"
         "  -u <file>    use cache <file> and go into background\n"
-        "  -a <file>    all of the above with cache <file>\n"
+        "  -m <file>    generate v2d-style filelist from <file>\n"
+        "\n"
+        "  -v           verbose commentary, repeatable for more\n"
+        "  -l <file>    log commentary to the specified file\n"
+        "  -t           provide a trace log in /tmp/vdifuse.<pid>\n"
         "  -x <key=val> set various processing parameters\n"
         "\n"
         "%s is expecting to scan some set of directories for valid VDIF\n"
@@ -63,16 +72,20 @@ static int vdifsup_help(char *fullname, char *help)
         "\n"
         "The -c/-r and -u option are available to step through the\n"
         "process (perhaps checking for errors), or to reuse a cache\n"
-        "that was created previously.\n"
+        "that was created previously.  The -m option is a variant of\n"
+        "the -r which provides a filelist suitable for use with DiFX.\n"
         "\n"
         "For usage examples,  use \"-xexamples\".\n"
         "For details on the fuse mounting options, use \"--HELP\".\n"
+        "(Fuse itself uses -d, -s, -f and a plethora of -o options.)\n"
         "For details on additional processing parameters, use \"-xhelp\".\n"
         "For details on a variety of known issues, use \"-xissues\".\n"
         "\n"
         "The fuse -f option keeps %s in the foreground, and if\n"
         "combined with -xdebug=N is the best way to debug issues.\n"
         "For convenience -v (repeated N) is equivalent to -xdebug=N.\n"
+        "\n"
+        "The -l/-t options are for debugging problematic files.\n"
         "\n",
         name, name, name, name
     );
@@ -120,18 +133,15 @@ static int horv(int *argc, char **argv[])
     ,cc,vdifuse_cache,optarg),NULL) 
 static char **separate_options(int *argc, char **argv[])
 {
-    int cc, nargc = 0;
+    int cc, nargc = 0, trace = 0;
     char **nargv = malloc(sizeof(char*)*(*argc));
     if (!nargv) return(perror("malloc"),NULL);
 
     vdflog = stdout;
     nargv[nargc++] = (*argv)[0];   /* program name for fuse invocation */
 
-    while ((cc = getopt(*argc, *argv, "l:a:dfso:c:r:u:vx:")) != -1)
+    while ((cc = getopt(*argc, *argv, "a:dfso:c:r:u:m:vx:l:t")) != -1)
     switch(cc) {
-    case 'l':
-        vdflog = fopen(optarg, "w");
-        break;
     case 'a':
         vdifuse_create = 1;
         vdifuse_report = 1;
@@ -158,6 +168,11 @@ static char **separate_options(int *argc, char **argv[])
         if (!vdifuse_cache) vdifuse_cache = optarg;
         else if (strcmp(vdifuse_cache, optarg)) return(vdiferr(cc));
         break;
+    case 'm':
+        vdifuse_vdlist = 1;
+        if (!vdifuse_cache) vdifuse_cache = optarg;
+        else if (strcmp(vdifuse_cache, optarg)) return(vdiferr(cc));
+        break;
     case 'r':
         vdifuse_report = 1;
         if (!vdifuse_cache) vdifuse_cache = optarg;
@@ -171,11 +186,18 @@ static char **separate_options(int *argc, char **argv[])
     case 'v':
         vdifuse_debug ++;
         break;
+    case 't':
+        trace ++;
+        break;
+    case 'l':
+        vdflog = fopen(optarg, "w");
+        break;
     case 'x':
         if (vdifuse_options(optarg)) return(NULL);
         break;
     }
     vdifuse_mount = nargv[nargc++] = (*argv)[optind];
+    if (trace) vdifuse_mktrace(vdifuse_cache, vdifuse_mount);
 
     /* first non-opt arg is mount point, the rest are directories */
     vdifuse_dirs = *argv + optind + 1;
@@ -207,14 +229,49 @@ static void vdifuse_plans(int oargc, char **oargv, int nargc, char **nargv)
         fprintf(vdflog, "\n");
     }
     if (vdifuse_debug>3) fprintf(vdflog,
-        "Cache: '%s' Debug=%d Create=%d Report=%d Access=%d\n",
+        "Cache: '%s' Debug=%d Create=%d Report=%d Access=%d Filelist=%d\n",
         vdifuse_cache, vdifuse_debug, vdifuse_create,
-        vdifuse_report, !vdifuse_create && !vdifuse_report);
+        vdifuse_report, !vdifuse_create && !vdifuse_report, vdifuse_vdlist);
     if (!vdifuse_use_it)
         fprintf(vdflog, "Mount with:   %s -u '%s' '%s'\n",
             nargv[0], vdifuse_cache, vdifuse_mount);
     else 
         fprintf(vdflog, "Unmount with: fusermount -u '%s'\n", vdifuse_mount);
+}
+
+/*
+ * Check to see if the requested mount point is already in use.
+ * IF so, the vdifuse_reuse flag will determine what happens next.
+ */
+static int mount_in_use(char *mp)
+{
+    DIR *dp;
+    struct dirent de, *dep;
+    int cnt = 0;
+    char *fusermount;
+    dp = opendir(mp);
+    if (!dp) return(fprintf(stderr, "%s isn't usable\n", mp));
+    while (1) {
+        if (readdir_r(dp, &de, &dep)) return(perror("readdir_r"),2);
+        if (dep && vdifuse_debug > 1) fprintf(stderr,
+            " Mount check: %s[%d] is %s\n", mp, cnt, de.d_name);
+        if (!dep) break;
+        cnt ++;
+        if (!strcmp(de.d_name, "..")) cnt--;
+        else if (!strcmp(de.d_name, ".")) cnt--;
+    }
+    if (closedir(dp)) return(perror("mount_in_use:closedir"), 1);
+    if (cnt == 0) return(0);
+    if (vdifuse_reuse == 0) return(fprintf(stderr,
+        "The mount point '%s' is currently being used with %d non-trivial\n"
+        "entries.  If you want to co-opt it for you use, unmount with:\n"
+        "\n    fusermount -u %s\n",
+        mp, cnt, mp));
+    fusermount = malloc(strlen(mp) + strlen("fusermount -u.."));
+    sprintf(fusermount, "fusermount -u %s", mp);
+    if (vdifuse_debug > 0) fprintf(stderr, "Invoking: %s\n", fusermount);
+    if (vdifuse_reuse != 0) return(system(fusermount));
+    return(fprintf(stderr, "Puzzling logic problem\n"));
 }
 
 /*
@@ -225,9 +282,6 @@ static int vdifuse_implement(void)
     struct stat sb, mp;
 
     if (!vdifuse_cache) return(fprintf(stderr, "A cache is required.\n"));
-    // TODO: shifted this test until later...ok?
-    //if (!vdifuse_mount || stat(vdifuse_mount, &mp))
-    //    return(fprintf(stderr, "A valid mount point is required\n"));
 
     if (!vdifuse_create && stat(vdifuse_cache, &sb)) return(fprintf(stderr,
         "VDIFuse metadata cache %s is missing.\n", vdifuse_cache));
@@ -248,8 +302,10 @@ static int vdifuse_implement(void)
     if (vdifuse_report &&
         vdifuse_report_metadata(vdifuse_cache, &sb))
             return(fprintf(stderr, "Metadata cache is unusable\n"));
+    if (vdifuse_vdlist &&
+        vdifuse_report_filelist(vdifuse_cache, &sb))
+            return(fprintf(stderr, "Cache unusable for filelist\n"));
 
-    // TODO: none of this is needed if we don't have a mount
     if (vdifuse_mount) {
         if (stat(vdifuse_mount, &mp))
             return(fprintf(stderr, "A valid mount point is required\n"));
@@ -259,6 +315,8 @@ static int vdifuse_implement(void)
 
         if (vorr_init())
             return(fprintf(stderr, "Unable to initialize for use.\n"));
+
+        if (mount_in_use(vdifuse_mount)) return(1);
 
         vdifuse_enable =
             vdifuse_use_it ? VDIFUSE_ENABLE_DOIT : VDIFUSE_ENABLE_SKIP;

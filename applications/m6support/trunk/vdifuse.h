@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.h 2507 2014-09-21 15:47:48Z gbc $
+ * $Id: vdifuse.h 3746 2016-02-09 23:12:13Z gbc $
  *
  * This file provides support for the fuse interface
  */
@@ -8,6 +8,7 @@
 #define vdifuse_h
 
 #include <dirent.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -56,6 +57,9 @@ extern int vdifuse_enable;
 /* protect the cache against accidental erasure */
 extern int vdifuse_protect;
 
+/* allow the mount point to be forcibly reused */
+extern int vdifuse_reuse;
+
 /* parse command-line options and trigger pre-fuse_main() work */
 extern int vdifsup_opts(int *argc, char **argv[]);
 
@@ -68,6 +72,8 @@ extern int vdifuse_create_metadata(
 
 /* (report and) check the VDIF metadata cache */
 extern int vdifuse_report_metadata(
+    char *cache, struct stat *sb);
+extern int vdifuse_report_filelist(
     char *cache, struct stat *sb);
 
 /* just use it at a particular mount point */
@@ -158,6 +164,12 @@ extern void vdifuse_topdir(int which, struct stat *stbuf);
 extern int get_vdifuse_fragment(int index, char **name, struct stat **stbuf);
 extern int get_vdifuse_sequence(int index, char **name, struct stat **stbuf);
 
+/* for ffi_info.errors */
+#define VDIFUSE_FFIERROR_NONE   0
+#define VDIFUSE_FFIERROR_EOF    1
+#define VDIFUSE_FFIERROR_READ   2
+#define VDIFUSE_FFIERROR_RPATH  3
+
 /* open, release and read support */
 typedef struct ffi_info {
     uint64_t        fh;     /* fuse_file_info.fh */
@@ -169,10 +181,11 @@ typedef struct ffi_info {
     int             numb;   /* of sequence members */
     struct timeval  topen;  /* when file was opened */
     uint64_t        totrb;  /* total bytes read */
+    int             errors; /* for support on errors */
     void            *sdata; /* private per-subtype state data */
     void            *sfrag; /* private per-subtype per-fragment data */
 } FFInfo;
-extern int vorrfd;          /* for errors */
+extern int vorrfd, realfd;  /* reserved fd in info cache */
 extern int vorr_init(void);
 extern int vorr_open(const char *fusepath, FFInfo *ffi);
 extern int vorr_release(const char *fusepath, FFInfo *ffi);
@@ -284,6 +297,17 @@ extern int reginclude(char *patt);
 extern int regexcludefile(char *file);
 extern int regincludefile(char *file);
 extern int regexcheck(char *path);
+
+/* trace utilities */
+extern void vdifuse_mktrace(char *c, char *m);
+extern void vdifuse_rmtrace(int rv);
+extern void vdifuse_trace(char *fmt, ...);
+extern void vdifuse_flush_trace(void);
+extern void vdifuse_bread(char *fmt, ...);
+extern void vdifuse_flush_bread(void);
+#define S1(X) #X
+#define S2(X) S1(X)
+#define VDT(FMT)  (__FILE__ ":" S2(__LINE__) " " FMT)
 
 #endif /* vdifuse_h */
 

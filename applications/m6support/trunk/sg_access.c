@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.c 3476 2015-10-03 19:25:56Z gbc $
+ * $Id: sg_access.c 3638 2016-01-11 17:10:07Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -13,6 +13,7 @@
 #define O_CLOEXEC 0
 #endif /* O_CLOEXEC */
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -956,6 +957,22 @@ void sg_access(const char *file, SGInfo *sgi)
     if (smi) sg_close(sgi);
 }
 
+char *sg_scode(int station)
+{
+    static char buf[20];
+    int lsb = (station & 0xff);
+    int msb = (station & 0xff00) >> 8;
+    if (isprint(lsb) && isprint(msb)) {
+        buf[0] = 'S';
+        buf[1] = msb;
+        buf[2] = lsb;
+        buf[3] = 0;
+    } else {
+        snprintf(buf, 20, "s%1X%1X", msb, lsb);
+    }
+    return(buf);
+}
+
 /*
  * A diagnostic method to describe the file on stdout
  */
@@ -973,7 +990,7 @@ char *sg_repstr(SGInfo *sgi, char *label)
             "%s%s %d@%d+%06d..%d+%06d\n"
             "%sSGv%d(%s) %luB %uB/Pkt %uP/b %ub %uP %.3lfms\n"
             "%swb:%u,%u,%uB %u(%u)+%ux%u+%u(%u)+%ux%u b(P)\n"
-            "%ssg:%0lX >%dP/s :%lu:%lu %u|%u|%u:%u| s%u %u#\n",
+            "%ssg:%0lX >%dP/s :%lu:%lu %u|%u|%u:%u| %s %u#\n",
             lab, sgi->name, sgi->ref_epoch,
                  sgi->first_secs, sgi->first_frame,
                  sgi->final_secs, sgi->final_frame,
@@ -991,7 +1008,7 @@ char *sg_repstr(SGInfo *sgi, char *label)
                  sgi->sg_sh_blk_off, sgi->sg_se_blk_off,
                  sgi->sg_fht_size, sgi->sg_wbht_size,
                  sgi->pkt_offset, sgi->pkt_size,
-                 sgi->vdif_signature.bits.stationID,
+                 sg_scode(sgi->vdif_signature.bits.stationID),
                  sgi->vdif_signature.bits.num_channels
         );
         break;
@@ -1002,7 +1019,7 @@ char *sg_repstr(SGInfo *sgi, char *label)
         snprintf(buf, sizeof(buf),
             "%s%s %d@%d+%06d..%d+%06d\n"
             "%sFLAT(%s) %luB %uB/Pkt %uP %.3lfms\n"
-            "%ssg:%0lX >%dP/s |%u:%u| s%u %u#\n",
+            "%ssg:%0lX >%dP/s |%u:%u| %s %u#\n",
             lab, sgi->name, sgi->ref_epoch,
                  sgi->first_secs, sgi->first_frame,
                  sgi->final_secs, sgi->final_frame,
@@ -1012,7 +1029,7 @@ char *sg_repstr(SGInfo *sgi, char *label)
                  1.0e3 * eval_time,
             lab, sgi->vdif_signature.word, sgi->frame_cnt_max,
                  sgi->pkt_offset, sgi->pkt_size,
-                 sgi->vdif_signature.bits.stationID,
+                 sg_scode(sgi->vdif_signature.bits.stationID),
                  sgi->vdif_signature.bits.num_channels
         );
         break;

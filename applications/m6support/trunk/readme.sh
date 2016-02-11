@@ -5,23 +5,22 @@
 #
 # $Id: readme.sh.in 2045 2014-05-24 16:18:09Z gbc $
 # -----------------------------------------------------------------------------
-# (c) Massachusetts Institute of Technology, 2013,2014
+# (c) Massachusetts Institute of Technology, 2013-2016
 #
-# Everything in this package is free sofware which you may
-# use and modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 3.0 of the License, or (at your option) any later version.
-#
-# This library is distributed in the hope that it will be useful,
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
-# This license is found in the tarball in lgpl-3.0.txt.
+# This license is found in the tarball in gpl-3.0.txt.
 #
 # The tarball may be untarred anywhere; then you can build and
 # installed it in $HOME with the following commands.  Since you
@@ -32,8 +31,8 @@
 # (the libraries to link to, the fuse-devel to compile).
 
 # untar:
-# tar zxf m6support-0.14.tar.gz
-# cd m6support-0.14
+# tar zxf m6support-0.15.tar.gz
+# cd m6support-0.15
 
 [ $# -eq 0 ] && {
 
@@ -42,14 +41,13 @@ aclocal
 autoconf
 autoheader
 automake -a
-./configure --prefix=$HOME
+./configure --prefix=$HOME --enable-fuse
 #/configure --prefix=/usr/local --enable-fuse  
 
-# build, check install and test
+# build, install and test
 make all
-#make check
+make check
 make install
-# make test
 
 }
 
@@ -79,7 +77,7 @@ and several test scripts:
 
 Each of these scripts/programs supports --help for more detailed usage.
 
-configure --help=short provides details on some configuration options.
+configure --help=short offers some configuration options.
 
 EOF
 

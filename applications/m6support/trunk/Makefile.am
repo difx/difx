@@ -4,7 +4,7 @@
 
 SUBDIRS = .
 
-EXTRA_DIST = readme.sh lgpl-3.0.txt
+EXTRA_DIST = readme.sh gpl-3.0.txt
 
 if WITH_FUSE
 if HAVE_FUSE
@@ -36,7 +36,7 @@ vdif_time_SOURCES   = vdif_time_main.c vdif_time.c
 
 if WITH_FUSE
 if HAVE_FUSE
-vdsrc = vdifuse.c vdifopt.c vdifsup.c vdiftst.c vdifseq.c \
+vdsrc = vdifuse.c vdifopt.c vdifsup.c vdiftst.c vdifseq.c vdiftrc.c \
 	vdiforr.c vdifsg2.c sg_access.c sg_advice.c vdiflat.c vdifrex.c
 dist_vdifuse_SOURCES = $(vdsrc)
 else

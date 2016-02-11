@@ -1,5 +1,5 @@
 /*
- * $Id: vdiforr.c 2392 2014-08-19 20:09:07Z gbc $
+ * $Id: vdiforr.c 3742 2016-02-08 19:11:34Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -18,20 +18,21 @@
 /*
  * In order to maintain information across oper/read/release
  * operations, we maintain our own table of FFInfo data, indexed
- * by one of the open file descriptors (ffi->fh).
+ * by one of the open file descriptors (ffi->fh).  Typically the
+ * caller is passingus an FFInfo structure of which only fh and flags
+ * might be real.
  *
  * realfd is a special value to flag realpath (fragments)
- * vorrfd is a special value to flag errors
+ * vorrfd is a special value to flag erroneous file descriptors.
+ * Neither of these slots in the FFInfo cache will be used.
  */
 static FFInfo *FFIcache;
-static int realfd;
+int realfd;
 int vorrfd;
 
 /*
  * The number of available file descriptors isn't known until runtime,
  * so we here allocate and initialize a table to hold open fds.
- *
- * TODO: there are alternatives to vdflog and stderr but this is adequate.
  */
 int vorr_init(void)
 {
@@ -42,6 +43,8 @@ int vorr_init(void)
     if (!FFIcache) return(perror("vorr_init"),2);
     realfd = fileno(vdflog);
     vorrfd = fileno(stderr);
+    FFIcache[realfd].errors = VDIFUSE_FFIERROR_RPATH;
+    FFIcache[vorrfd].errors = VDIFUSE_FFIERROR_RPATH;
     if (realfd < 0 || vorrfd < 0 || realfd == vorrfd)
         return(fprintf(stderr, "issues with fd for realpaths or errors\n"));
     return(0);
@@ -104,8 +107,7 @@ static uint32_t fusepath_to_index(const char *fusepath)
  * we call the appropriate methods to open/release the fragments.
  *
  * ffi->fh should be copied out to the fuse kernel.
- *
- * TODO: restrict ffi->flags to, e.g. read-only
+ * ffi->flags are along for the ride.
  */
 int do_vorr_open(const char *fusepath, FFInfo *ffi)
 {
@@ -120,10 +122,12 @@ int do_vorr_open(const char *fusepath, FFInfo *ffi)
     if (ffi->sindex == VDIFUSE_TOPDIR_PARAMS) {
         if (vdifuse_debug>0) fprintf(vdflog,
             "No fuse path for %s\n", fusepath);
-        return(-ENOENT);
+        return(-ENOENT);    /* do_vorr_open: no path */
     }
     gettimeofday(&(ffi->topen), 0);
     ffi->totrb = 0UL;
+    ffi->flags = O_RDONLY;  /* unclear if this is respected */
+    ffi->errors = VDIFUSE_FFIERROR_NONE;
     vs = current_cache_start() + ffi->sindex;
     switch (vs->stype) {
     case VDIFUSE_STYPE_VDIF: ffi->fh = open_flat_seq(vs, ffi); break;
@@ -133,16 +137,18 @@ int do_vorr_open(const char *fusepath, FFInfo *ffi)
     if (ffi->fh != vorrfd) {
         if (vdifuse_debug>0) fprintf(vdflog,
             "Storing data for open %s at ffi[%d]\n", fusepath, ffi->fh);
+        vdifuse_trace(VDT("Open[%d] %s\n"), ffi->fh, fusepath);
+        vdifuse_flush_trace();
         FFIcache[ffi->fh] = *ffi;
         return(0);
     }
-    return(-ENOENT);
+    return(-ENOENT);    /* do_vorr_open: invalid path */
 }
 
 /*
  * For a global diagnostic
  */
-static void report_access(FFInfo *ffi)
+static void report_access(const FFInfo *ffi, const char *path)
 {
     struct timeval now;
     double dt;
@@ -155,6 +161,9 @@ static void report_access(FFInfo *ffi)
     if (vdifuse_debug>1) fprintf(vdflog,
         "Clearing stored data for %s at fh %d\n",
             (current_cache_start() + ffi->sindex)->fuse, ffi->fh);
+    vdifuse_trace(VDT("Clos[%d] %s, %lu B in %.3f s, %.3f MB/s\n"),
+        ffi->fh, path, ffi->totrb, dt, 1e-06 * (double)ffi->totrb / dt);
+    vdifuse_flush_trace();
 }
 
 /*
@@ -162,6 +171,7 @@ static void report_access(FFInfo *ffi)
  */
 int do_vorr_release(const char *fusepath, FFInfo *ffi)
 {
+    FFInfo *ffp;
     if (ffi->fh == vorrfd) return(fprintf(stderr, "illegal fuse release\n"));
     if (ffi->fh == realfd) {
         if (vdifuse_debug>0) fprintf(vdflog,
@@ -169,14 +179,15 @@ int do_vorr_release(const char *fusepath, FFInfo *ffi)
         ffi->fh = vorrfd;
         return(0);
     }
-    switch(FFIcache[ffi->fh].stype) {
-    case VDIFUSE_STYPE_VDIF: release_flat_seq(&FFIcache[ffi->fh]); break;
-    case VDIFUSE_STYPE_SGV2: release_sgv2_seq(&FFIcache[ffi->fh]); break;
-    default:                                              return(-EBADF);
+    ffp = &FFIcache[ffi->fh];
+    switch(ffp->stype) {
+    case VDIFUSE_STYPE_VDIF: release_flat_seq(ffp); break;
+    case VDIFUSE_STYPE_SGV2: release_sgv2_seq(ffp); break;
+    default:                               return(-EBADF); /* bad file type */
     }
-    report_access(&FFIcache[ffi->fh]);
-    /* nuke it just to be safe for next time */
-    memset(&FFIcache[ffi->fh], 0, sizeof(FFInfo));
+    report_access(ffp, fusepath);
+    /* nuke it and destroy caller reference to be really safe */
+    memset(ffp, 0, sizeof(FFInfo));
     ffi->fh = vorrfd;
     return(0);
 }
@@ -215,12 +226,13 @@ static int read_realpath(const char *fusepath, char *buf, FFInfo *ffi)
 static int do_vorr_read(const char *fpath, char *buf, FFInfo *ffi)
 {
     static unsigned long cnt = 0;
-    static uint64_t bogus = 0xEEEEEEEEEEEEEEEEUL;
+    static long max_read = 0;
     int res;
     FFInfo *ffp;
-    if (ffi->fh == vorrfd) return(fprintf(stderr, "illegal fuse read\n"));
+    if (ffi->fh == vorrfd) return(-EBADF);  /* should not happen */
     if (ffi->fh == realfd) return(read_realpath(fpath, buf, ffi));
     ffp = &FFIcache[ffi->fh];
+    if (ffp->errors) return(-ESPIPE);   /* read denied */
     ffp->offset = ffi->offset;
     ffp->size = ffi->size;
     memset(buf, 0xE, ffp->size);
@@ -229,23 +241,31 @@ static int do_vorr_read(const char *fpath, char *buf, FFInfo *ffi)
     case VDIFUSE_STYPE_SGV2: res = read_sgv2_seq(buf, ffp); break;
     default:                 res = -ENOENT;                 break;
     }
-    if (res == -EIO) {
-        fprintf(stderr, ">>>Read EIO\n");
-        exit(1);
+    /* empirically 32*4096 = 131072 is the kernel max_read on current Mark6 */
+    if (res > 0) ffp->totrb += res;
+    if (max_read == 0) max_read = 32 * sysconf(_SC_PAGESIZE);
+    if ((ffp->size != res) || (res != max_read))
+        vdifuse_trace(VDT("Read[%d] %lu:%lu %d, %lu %lu\n"),
+            ffp->fh, ffp->offset, ffp->size, res, cnt, ffp->totrb);
+    if (res < 0) {
+        char *fmt = ">>>Read FAULT, sys error: %d (%x)\n";
+        /* prevent further access */
+        ffp->errors |= VDIFUSE_FFIERROR_READ;
+        fprintf(stderr, fmt, res, ffp->errors);
+        fprintf(vdflog, fmt, res, ffp->errors);
+        vdifuse_flush_trace();
     }
-    if (res < 0) fprintf(stderr, ">>>Read FAULT\n");
-    if (vdifuse_debug>2 && res < ffi->size) fprintf(vdflog,
-        ">>>Read %d < %d\n", res, ffi->size);
-    if (*(uint64_t*)buf == bogus) fprintf(stderr,
-        ">>>Read bogus at %lu:%lu\n", ffi->offset, ffi->size);
+    if (vdifuse_debug>2 && res < ffp->size) fprintf(vdflog,
+        ">>>Read %d < %d\n", res, ffp->size);
     if (vdifuse_debug>3) fprintf(vdflog,
-        ">>>Read[%lu] %d into buffer from %d\n", cnt, res, ffi->fh);
+        ">>>Read[%lu] %d into buffer from %d\n", cnt, res, ffp->fh);
     cnt++;
     return(res);
 }
 
 /*
  * Put mutexes on all of these.
+ * ffi is a temporary structure for passing fh and flags.
  */
 #include <pthread.h>
 
@@ -254,7 +274,7 @@ int vorr_open(const char *fusepath, FFInfo *ffi)
     static pthread_mutex_t vdifuse_mutex = PTHREAD_MUTEX_INITIALIZER;
     int res;
     pthread_mutex_lock(&vdifuse_mutex);
-    do_vorr_open(fusepath, ffi);
+    res = do_vorr_open(fusepath, ffi);
     pthread_mutex_unlock(&vdifuse_mutex);
     return(res);
 }
@@ -274,7 +294,7 @@ int vorr_release(const char *fusepath, FFInfo *ffi)
     static pthread_mutex_t vdifuse_mutex = PTHREAD_MUTEX_INITIALIZER;
     int res;
     pthread_mutex_lock(&vdifuse_mutex);
-    do_vorr_release(fusepath, ffi);
+    res = do_vorr_release(fusepath, ffi);
     pthread_mutex_unlock(&vdifuse_mutex);
     return(res);
 }

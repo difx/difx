@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: sg_advice.c 3746 2016-02-09 23:12:13Z gbc $
  * 
  * Code to boost performance on reads to sg files
  *
@@ -14,7 +14,16 @@
  *   touching disk blocks (in a separate thread)
  *   setting affinity to the disk controller(s)
  *
- *   page size is portably available vi sysconf.
+ *   page size is portably available via sysconf.
+ *   kernel seems to prefer 32*page for its reads
+ *
+ *   40000000L for SG_ADVICE_BLOCKS and the default SG_ADVICE_MADV_WILLNEED
+ *   was empirically determined (on Mark6-4045):
+ *     903.848 MB/s net with  30000000L
+ *     925.885 MB/s net with  40000000L
+ *     880.110 MB/s net with  50000000L
+ *   based on cat <300GBfile>  > /dev/null
+ *   mileage varies depending on file corruption and other (unknown) factors.
  */
 
 #include <fcntl.h>
@@ -38,7 +47,7 @@ int sg_advice_disable = 0;
 #define SG_ADVICE_MAXIMUM           SG_ADVICE_SPAWN_READTHREAD
 
 #define SG_ADVICE_DEFAULT           SG_ADVICE_MADV_WILLNEED
-#define SG_ADVICE_BLOCKS            20000000L
+#define SG_ADVICE_BLOCKS            40000000L
 
 static int  advice_type = SG_ADVICE_DISABLE;
 static long pagesize = 0L;
@@ -96,11 +105,13 @@ void sg_advice_term(int mmfd)
 /*
  * A method to get the kernel to preload pages we expect
  * to access in the near future in order to boost performance
- * by avoiding page faults
+ * by avoiding page faults.  Pkt points to the beginning (dir>0)
+ * or end (dir<0) of the section within the fragment mmap that
+ * we expect to be using for the stripe member being moved.
  */
 void sg_advice(SGInfo *sgi, void *pkt, int dir)
 {
-    void *addr;
+    void *addr, *drop;
     size_t len = blockage;
 
     if (pagesize == 0L) sg_advice_init(sgi->verbose);   /* once */
@@ -114,6 +125,11 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
     /* expressing an interest in (page-aligned) addr to addr + length */
     addr = (void*)((unsigned long)addr & addrmask);
 
+    if (dir > 0) drop = addr - len;
+    else         drop = addr;
+    if (drop < sgi->smi.start) drop = 0;
+    if (drop + len >= sgi->smi.eomem) drop = 0;
+
     /*
      * Take an appropriate action based on advice type
      * Errors are treated as fatal to the method.
@@ -124,6 +140,7 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
         else return;
         break;
     case SG_ADVICE_MADV_WILLNEED:
+        if (drop) (void)madvise(drop, len, MADV_DONTNEED);
         if (madvise(addr, len, MADV_WILLNEED)) perror("madvise:need");
         else return;
         break;

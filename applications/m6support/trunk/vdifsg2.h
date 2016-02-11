@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.h 2262 2014-06-26 20:27:01Z gbc $
+ * $Id: vdifsg2.h 3740 2016-02-08 16:48:58Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -21,17 +21,20 @@
  * the stripe contains as many (numb) as there are members of the
  * sequence (ffi->numb), but if a member ends early, the "zero"
  * will be advanced and the working stripe will contain one or
- * more fewer members.  Likewise, if there is a gap, we may have
- * a stripe containing only fewer with a gap at "sgap".
+ * more fewer members.  Likewise, if there is a gap (because the
+ * next block is in the same member as the stripe), we may have
+ * a stripe containing fewer valid members with a gap at "sgap".
  *
  * The read byte offset (ffi->offset) should then lie within the
  * "zero" element of the stripe and proceed through the packets of
  * that block up to "sgap".  The major support functions include:
  *
  * member_show(sfp, ith)     diagnostic on ith member (fragment)
- * member_move(sfp, blk)     move this member to a new block
+ * member_show(sfp, ith)     tracing variant (one-liner)
+ * member_move(sfp,blk,dir)  move this member to a new block
  * member_init(sfp)          initialize one member (fragment)
  * 
+ * stripe_trace(sdp, l, a)   tracing variant (multiline version) of
  * stripe_show(sdp, l, a)    diagnostic on the stripe
  * stripe_comp(a, b)         comparison function for sorting
  * stripe_sort(sdp)          sort the members of the sequence
@@ -39,7 +42,8 @@
  * stripe_zero(sdp)          find the new stripe "zero"
  * stripe_dgap(sdp)          adjust the stripe to remove gaps
  * stripe_boff(sdp)          compute the byte offset in sieqence
- * stripe_init(sdp, .)       initializes the stripe at start
+ * stripe_init(sdp, f)       initializes the stripe at start
+ * stripe_vern(sdp, b)       vernier bw walk into the bytes needed
  *
  * stripe_find(sdp)          used when "offset" is outside stripe
  * stripe_walk(sdp, dir)     used when stripe shifts incrementally
@@ -52,6 +56,7 @@
  *
  * "zero" is managed in the walking/finding
  * "sgap" is managed in the degapping
+ * A move will never move past the last block or the first one.
  *
  * Note that packets may be smaller than their read_size, and
  * there are headers in the file, so certain calculations must
@@ -59,16 +64,18 @@
  * read() bytes are within the virtual file (i.e. just packets).
  *
  * Errors are tracked on a per-member basis.
- * Frame count is limited to 16777216 so times can be easily
- * handled as seconds + 1e8*frames; we assume a common epoch.
- * Because of int->double in %.9f we'll see 9..1 in the last digit.
  *
- * TODO: check signature, and pkts/block consistency and if
- *       necessary, extrapolate to the edges of the block.
+ * Frame count is limited to 16777216 so times can be easily handled
+ * as seconds + 1e-8*frames (PKTDT); we assume a common epoch, since
+ * it is illegal for this to change during an observation.
+ * (Note that some noise is introduced by this math.)  A pseudo-time
+ * is generated in packet_time() which steps over invalid frames at
+ * either end of the block.
  */
 
-#define PKTDT 1e-8
-#define packet_time(pkt) \
+#define PKTDT_INV 100000000
+#define PKTDT     1e-8
+#define PACKET_TIME(pkt) \
     ((pkt)->w1.secs_inre + (PKTDT)*(pkt)->w2.df_num_insec)
 
 /* for the per-fragment error indicators */
@@ -78,7 +85,21 @@
 #define SGV2_ERR_ACCESS     0x0004U
 #define SGV2_ERR_TIME_F     0x0010U
 #define SGV2_ERR_TIME_B     0x0020U
-/* TODO: more errors... */
+
+/* for the stripe diagnostic counters */
+#define SGV2_DIAG_BREAD     0
+#define SGV2_DIAG_TRACE     1
+#define SGV2_DIAG_SHOWN     2
+#define SGV2_DIAG_VERN      3
+#define SGV2_DIAG_WALK      4
+#define SGV2_DIAG_FIND      5
+#define SGV2_DIAG_CHECK     6
+#define SGV2_DIAG_READ      7
+#define SGV2_DIAG_RDFW      8
+#define SGV2_DIAG_RDBW      9
+#define SGV2_DIAG_DOIT      10
+#define SGV2_DIAG_SPARE     11
+#define SGV2_DIAG_COUNT     (SGV2_DIAG_SPARE + 1)
 
 /* per-fragment lookup data: ffi->sfrag[], created by calloc */
 typedef struct sgv2_private_sfrag {
@@ -87,6 +108,7 @@ typedef struct sgv2_private_sfrag {
     uint32_t    err;        /* mask of access errors */
     double      first;      /* first packet time in member */
     double      final;      /* final packet time in member */
+    off_t       mcnt;       /* total move count for this fragment */
     /* about the current block */
     uint32_t    *addr;      /* first packet of the block */
     int         nblk;       /* number of packets in block */
@@ -111,6 +133,9 @@ typedef struct sgv2_private_sdata {
     VDIFUSEntry *vs;        /* pointer to seq entry */
     uint32_t    fcmx;       /* maximum frame count seen */
     int         msbs;       /* minimum short block size */
+    int         page;       /* kernel page size */
+    off_t       scnt;       /* total move count for stripe */
+    off_t       diag[SGV2_DIAG_COUNT];
     /* about the read */
     off_t       roff;       /* requested read offset */
     size_t      size;       /* last requested read size */

@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.c 3022 2015-04-15 18:20:49Z gbc $
+ * $Id: vdifuse.c 3670 2016-01-26 18:25:14Z gbc $
  *
  * Fuse for vdif files for use with Mark6 or other
  * applications where vdif files are scattered around.
@@ -202,29 +202,30 @@ static int vdifuse_flush(const char *fusepath, struct fuse_file_info *fi)
  * unlink and rmdir would remove/invalidate cache entries
  * rename would allow rename within a directory
  * (moving to another directory would be harder).
- * TODO: manipulate cache entries to satisfy these needs.
+ * TODO: manipulate cache entries to support unlink, rmdir, rename
  */
 static int vdifuse_unlink(const char *path)
 {
     if (vdifuse_debug>4) fprintf(vdflog, "vdifuse_unlink(%s)\n", path);
     fprintf(stderr, "Unlink not allowed on %s.\n", path);
-    return(-EPERM);
+    return(-EPERM); /* vdifuse_unlink not supported */
 }
 static int vdifuse_rmdir(const char *path)
 {
     if (vdifuse_debug>4) fprintf(vdflog, "vdifuse_rmdir(%s)\n", path);
     fprintf(stderr, "Rmdir not allowed on %s.\n", path);
-    return(-EPERM);
+    return(-EPERM); /* vdifuse_rmdir not supported */
 }
 static int vdifuse_rename(const char *from, const char *to)
 {
     if (vdifuse_debug>4) fprintf(vdflog, "vdifuse_rename(%s)\n", from);
     fprintf(stderr, "Rename of %s to %s not allowed.\n", from, to);
-    return(-EPERM);
+    return(-EPERM); /* vdifuse_rename not supported */
 }
 
 /*
  * Supported/stubbed filesystem operations
+ * A full list might be found in /usr/include/fuse/fuse.h
  */
 static struct fuse_operations vdifuse_oper = {
     .getattr = vdifuse_getattr,
@@ -271,6 +272,7 @@ int main(int argc, char *argv[])
         if (rv<0) rv = -rv;
         if (vdifuse_debug>4) fprintf(vdflog, "fuse_main...finished.\n");
     }
+    vdifuse_rmtrace(rv);
     return(rv);
 }
 

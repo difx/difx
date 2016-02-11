@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsup.c 3143 2015-06-22 14:31:24Z gbc $
+ * $Id: vdifsup.c 3736 2016-02-07 21:03:03Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -25,6 +25,7 @@
  * but that the indices in the cache should be stable.
  */
 static VDIFUSEpars clvpo = { .creation.tv_sec = 1 };
+static char *filelistprefix = ".";
 
 #define VDIFUSE_CACHE_CHUNK 8
 static char *vd_cache_file = NULL;
@@ -56,8 +57,8 @@ static int accepted_as_frag(VDIFUSEntry *vc)
         if ((cfe = create_fragment_vfuse(vc, vd_num_entries, vp, rigor))) {// ||
             /* then we not able to accept this as a fragment */
             vc->etype = VDIFUSE_ENTRY_INVALID;
-	    if (vdifuse_debug>2) fprintf(vdflog,
-		"    but failed [create:%d]\n", cfe);
+            if (vdifuse_debug>2) fprintf(vdflog,
+                "    but failed [create:%d]\n", cfe);
             if (vdifuse_debug>0) fprintf(vdflog,
                 "Problematic file %s [%d]\n", vc->path, cfe);
         } else {
@@ -203,7 +204,7 @@ static int handle_bogey(unsigned char type, char *dir, char *parent)
  *   ignore certain things
  *   if a file: test it for vdif
  *   if a dir: recurse into it
- * TODO: we assume here that we have enough stack space.
+ * We assume here that we have enough stack space (which seems to be true).
  */
 static int find_fragments(char *dir)
 {
@@ -411,7 +412,6 @@ static int update_other_entries(struct stat *mp)
 /*
  * Allocate memory for the working cache.
  * This version just callocs a starter and (later) writes it out.
- * TODO: A later version could be more sophisticated with mmap.
  */
 static int create_cache(char *cache)
 {
@@ -494,19 +494,19 @@ int vdifuse_create_metadata(char *cache, int ndirs, char **dirs)
 /*
  *  stat buf usage for fragments:
  *  (normal usage except for + items)
- *+ dev_t     st_dev;     // prefix_bytes (to first packet)
- *+ ino_t     st_ino;     // pkts_per_sec
- *  mode_t    st_mode;    // protection
- *  nlink_t   st_nlink;   // number of hard links
- *  uid_t     st_uid;     // user ID of owner
- *  gid_t     st_gid;     // group ID of owner
- *+ dev_t     st_rdev;    // offset_bytes (VDIF hdr in packet)
- *  off_t     st_size;    // total size, in bytes
- *+ blksize_t st_blksize; // packet size
- *+ blkcnt_t  st_blocks;  // number of packets
- *+ time_t    st_mtime;   // data start time
- *+ time_t    st_ctime;   // data end time (inc. last packet)
- *+ time_t    st_atime;   // total scan duration
+ * + dev_t     st_dev;     // prefix_bytes (to first packet)
+ * + ino_t     st_ino;     // pkts_per_sec
+ *   mode_t    st_mode;    // protection
+ *   nlink_t   st_nlink;   // number of hard links
+ *   uid_t     st_uid;     // user ID of owner
+ *   gid_t     st_gid;     // group ID of owner
+ * + dev_t     st_rdev;    // offset_bytes (VDIF hdr in packet)
+ *   off_t     st_size;    // total size, in bytes
+ * + blksize_t st_blksize; // packet size
+ * + blkcnt_t  st_blocks;  // number of packets
+ * + time_t    st_mtime;   // data start time
+ * + time_t    st_ctime;   // data end time (inc. last packet)
+ * + time_t    st_atime;   // total scan duration
  */
 int describe_fragment(VDIFUSEntry *vp)
 {   
@@ -528,12 +528,49 @@ int describe_fragment(VDIFUSEntry *vp)
     return(0);
 }
 
+static void cascade_time(struct tm *tm)
+{
+    int din = (tm->tm_year / 4) ? 365 : 366;    /* broken for 2000 */
+    if (tm->tm_sec == 60) { tm->tm_sec = 0; tm->tm_min ++; }
+    if (tm->tm_min == 60) { tm->tm_min = 0; tm->tm_hour ++; }
+    if (tm->tm_hour == 24) { tm->tm_hour = 0; tm->tm_yday ++; }
+    if (tm->tm_yday == din) { tm->tm_yday = 0 ; tm->tm_year ++; }
+}
+
+int report_sequence(VDIFUSEntry *vp)
+{
+    struct tm start;
+    struct tm stop;
+    /* round out to nearest second for this */
+    gmtime_r(&vp->u.vfuse.st_mtime, &start);
+    if (vp->u.vfuse.st_mtim.tv_nsec > VDIFUSE_ONE_SEC_NS/2) start.tm_sec ++;
+    cascade_time(&start);
+    gmtime_r(&vp->u.vfuse.st_ctime, &stop);
+    if (vp->u.vfuse.st_ctim.tv_nsec > VDIFUSE_ONE_SEC_NS/2) stop.tm_sec ++;
+    cascade_time(&stop);
+    fprintf(vdflog,
+        "%s%-38s %04dy%03dd%02dh%02dm%02ds %04dy%03dd%02dh%02dm%02ds\n",
+        filelistprefix, vp->fuse,
+        start.tm_year + 1900, start.tm_yday + 1,
+        start.tm_hour, start.tm_min, start.tm_sec,
+        stop.tm_year + 1900, stop.tm_yday + 1,
+        stop.tm_hour, stop.tm_min, stop.tm_sec);
+    return(0);
+}
+
 int describe_sequence(VDIFUSEntry *vp)
 {
     if (vdifuse_debug>1) fprintf(vdflog,
         "[%04d]Seq %s anc [%d] %u links %lluB\n",
         vp->index, vp->fuse, vp->cindex,
         vp->u.vfuse.st_nlink, vp->u.vfuse.st_size);
+    if (vdifuse_debug>2) fprintf(vdflog,
+        "  pktsize=%u pkts=%u %lu.%09llu %lu.%09llu %lu.%09llu\n", 
+        vp->u.vfuse.st_blksize, vp->u.vfuse.st_blocks,
+        vp->u.vfuse.st_mtime, vp->u.vfuse.st_mtim.tv_nsec,
+        vp->u.vfuse.st_ctime, vp->u.vfuse.st_ctim.tv_nsec,
+        vp->u.vfuse.st_atime, vp->u.vfuse.st_atim.tv_nsec
+        );
     return(0);
 }
 int describe_directory(VDIFUSEntry *vp)
@@ -707,6 +744,22 @@ static int report_on_cache(void)
     return(0);
 }
 
+/*
+ * A slightly different reporting function
+ */
+static int filelist_from_cache(void)
+{
+    long ee;
+    VDIFUSEntry *vp;
+    for (ee = 0, vp = vd_cache; ee < vd_num_entries; ee++, vp++) {
+        /* we only care about this one */
+        if ((vp->etype == VDIFUSE_ENTRY_SEQUENCE) &&
+            report_sequence(vp)) return(2);
+    }
+    fflush(vdflog);
+    return(0);
+}
+
 static int check_topdirs(void)
 {
     char *x;
@@ -720,8 +773,7 @@ static int check_topdirs(void)
 }
 
 /*
- * At the moment, nothing has been released, so we have no obligation
- * for supporting old versions.  So we check and die we have to.
+ * At the moment, no backward compatibility is provided.
  * TODO: update memory to current version and perhaps continue?
  */
 static int check_cache_version(void)
@@ -754,6 +806,22 @@ int vdifuse_report_metadata(char *cache, struct stat *sb)
         "Incompatible cache '%s' -- cannot continue.\n", cache));
     /* at this point the cache is in memory */
     if (vd_num_entries && vd_cache) return(report_on_cache());
+    return (fprintf(stderr, "Cache wasn't loaded properly\n"));
+}
+
+/*
+ * A variant of the previous, which generates filelists suitable
+ * for use as filelists in v2d files.  It is relatively terse.
+ */
+int vdifuse_report_filelist(char *cache, struct stat *sb)
+{
+    int err;
+    if ((err = load_cache(cache))) return(fprintf(stderr,
+        "Unable to open cache '%s' (%d)\n", cache, err));
+    if (check_cache_version()) return(fprintf(stderr,
+        "Incompatible cache '%s' -- cannot continue.\n", cache));
+    /* at this point the cache is in memory */
+    if (vd_num_entries && vd_cache) return(filelist_from_cache());
     return (fprintf(stderr, "Cache wasn't loaded properly\n"));
 }
 
@@ -816,7 +884,7 @@ void vdifuse_topdir(int which, struct stat *stbuf)
 
 /*
  * Support for attributes; these return 0 if the path is found.
- * TODO: this lookup isn't terribly efficient
+ * This lookup isn't terribly efficient, but computers are fast
  */
 int vdifuse_fragment(const char *path, struct stat *stbuf)
 {
@@ -965,7 +1033,7 @@ int get_vdifuse_subdir(int ii, char **name, struct stat **stbuf)
 static int vdifuse_issues(void)
 {
     fprintf(vdflog, "Single-threaded VDIF is expected.\n");
-    fprintf(vdflog, "Multi-threaded VDIF is considered an error, today.\n");
+    fprintf(vdflog, "Multi-threaded VDIF is not currently supported.\n");
     fprintf(vdflog, "A single data rate is expected, i.e. -xrate=pkts/sec.\n");
     fprintf(vdflog, "The packet rate (packets/sec) MUST be supplied\n");
     fprintf(vdflog, "This implementation is not yet optimally efficient.\n");
@@ -1019,6 +1087,12 @@ static int vdifuse_options_help(void)
         vdifuse_protect ? "(protect)" : "(delete)");
     fprintf(vdflog, "  protect       protects existing cache %s\n",
         vdifuse_protect ? "(protect)" : "(delete)");
+    fprintf(vdflog, "  reuse         coopts a mount point currently in use\n",
+        vdifuse_reuse ? "(reuse)" : "(respect)");
+    fprintf(vdflog, "  respect       respects a mount point already in use\n",
+        vdifuse_reuse ? "(reuse)" : "(respect)");
+
+    fprintf(vdflog, "  list=<str>    # filelist prefix (.) for -m option\n");
 
     fprintf(vdflog, "  prefix=<int>  # of bytes (%u) before 1st packet\n",
         clvpo.prefix_bytes);
@@ -1111,6 +1185,19 @@ int vdifuse_options(char *arg)
         vdifuse_protect = 1;
         if (vdifuse_debug>0) fprintf(vdflog,
             "Protecting any pre-existing cache\n");
+    } else if (!strncmp(arg, "reuse", 5)) {
+        vdifuse_reuse = 1;
+        if (vdifuse_debug>0) fprintf(vdflog,
+            "Fusermount will be invoked if the mount is in use\n");
+    } else if (!strncmp(arg, "respect", 7)) {
+        vdifuse_reuse = 0;
+        if (vdifuse_debug>0) fprintf(vdflog,
+            "Mounts will be respected; fusermount will not be invoked\n");
+
+    } else if (!strncmp(arg, "list=", 5)) {
+        filelistprefix = arg+5;
+        if (vdifuse_debug>0) fprintf(vdflog,
+            "Using %s as path prefix in file list\n", filelistprefix);
 
     } else if (!strncmp(arg, "prefix=", 7)) {
         clvpo.prefix_bytes = atoi(arg + 7);
@@ -1218,9 +1305,7 @@ int vdifuse_options(char *arg)
             fprintf(stderr, "%s had no useful include patterns\n", arg+9);
         }
 
-    /*
-     * TODO: Revise these once we have everything working.
-     */
+    /* other quick options might be useful here */
     } else if (!strncmp(arg, "files", 5)) {
         if (vdifuse_debug>0) fprintf(vdflog,
             "Development setup for general file usage.\n");

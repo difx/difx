@@ -1,5 +1,5 @@
 /*
- * $Id: vdiflat.c 2204 2014-06-18 20:24:56Z gbc $
+ * $Id: vdiflat.c 3677 2016-01-27 16:08:38Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -20,6 +20,13 @@
  * total_pkts * pkt_size of that fragment.
  * nlink is the total count of fragments, and we check
  * it and a few other things for consistency.
+ *
+ * FIXME: update remaining vp->u.vfuse entries
+ * + blksize_t st_blksize; // packet size
+ * + blkcnt_t  st_blocks;  // number of packets
+ * + time_t    st_mtime;   // data start time
+ * + time_t    st_ctime;   // data end time (inc. last packet)
+ * + time_t    st_atime;   // total scan duration
  */
 int finalize_vdif_sequence(VDIFUSEntry *vp)
 {
@@ -79,7 +86,7 @@ void release_flat_seq(FFInfo *ffi)
 }
 int read_flat_seq(char *buf, FFInfo *ffi)
 {
-    return(-ENOENT);
+    return(-ENOENT);    /* stub */
 }
 
 /*

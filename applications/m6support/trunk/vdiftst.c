@@ -1,5 +1,5 @@
 /*
- * $Id: vdiftst.c 3143 2015-06-22 14:31:24Z gbc $
+ * $Id: vdiftst.c 3657 2016-01-23 19:09:10Z gbc $
  *
  * This file provides support for the fuse interface.
  * This file contains methods to label a file as valid VDIF.
@@ -90,7 +90,7 @@ int vdif_rigor_by_magic(char *path, VDIFUSEpars *pars)
 }
 
 /*
- * Insist on a minimum file size.  TODO: make the min adjustable
+ * Insist on a minimum file size.
  */
 int vdif_rigor_by_minsize(char *path, VDIFUSEpars *pars)
 {
@@ -115,7 +115,7 @@ int vdif_rigor_by_regex(char *path, VDIFUSEpars *pars)
 }
 
 /*
- * TODO: any other tests?
+ * Other tests could be added here.
  */
 
 static void notice_maxfrcounter(VDIFHeader *vh)
@@ -151,7 +151,8 @@ static int headers_differ(VDIFHeader *v0, VDIFHeader *v1, int between)
         } else {
                                                     return(12);
         }
-    } else { // TODO: -- code this case if needed
+    } else {
+        /* TODO: -- code this case if needed */
                                                     return(0 /* 13 */);
     }
     return(0);
@@ -426,7 +427,7 @@ static int analyze_fragment_sgv2(const char *path, struct stat *vfuse,
     /* see if we can improve on the packet rate estimate */
     pkt_rate = find_the_damn_rate_sgv2(fp, read_len, v0, vf,
         head_off, tail_off + read_len, pars->pkts_per_sec);
-        // TODO: pars->est_pkt_rate    ^^^^^^^^^^^^^^^^^^  later
+        /* TODO: pars->est_pkt_rate    ^^^^^^^^^^^^^^^^^^  later */
     if (pars->pkts_per_sec > 0 && pkt_rate > pars->pkts_per_sec)
         return(400 + fprintf(vdflog, "Corrupt pkt rate %u\n", pkt_rate));
 
@@ -444,7 +445,7 @@ static int analyze_fragment_sgv2(const char *path, struct stat *vfuse,
  * Based on the rigor value, select the analyzer to complete the analysis.
  * if there are no issues in doing so, set the stype of the fragment
  *
- * TODO: allow per-file prefix and offset adjustments; requires
+ * We could allow per-file prefix and offset adjustments; this requires
  *   the function calls here would need to be adjusted
  *   and additional storage in the cache entry as well
  * this would be needed if the fragments weren't broken on packet edges.
