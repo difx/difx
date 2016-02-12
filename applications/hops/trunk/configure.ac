@@ -104,6 +104,7 @@ have_devel=false
 AC_SUBST(DEVLDIR)
 AC_SUBST(PROGDIR)
 AC_SUBST(IFFYDIR)
+AC_SUBST(M4PYDIR)
 AM_CONDITIONAL(HAVE_DEVEL, $have_devel)
 
 # autoscan suggested list of checks follows

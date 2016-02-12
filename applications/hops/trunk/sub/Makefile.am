@@ -4,7 +4,7 @@
 
 if HAVE_DEVEL
 if HAVE_PYTHON
-SUBDIRS = . afio dfio util vex mk4py
+SUBDIRS = . afio dfio util vex @M4PYDIR@
 else
 SUBDIRS = . afio dfio util vex
 endif
