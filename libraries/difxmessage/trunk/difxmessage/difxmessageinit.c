@@ -116,7 +116,7 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 		// Is it unicast?
 
 		struct in_addr addr;
-		int status = inet_aton(difxMessageGroup, addr);
+		int status = inet_aton(difxMessageGroup, &addr);
 		if(status==0) {
 		  fprintf(stderr, "Error: difxMessageInit. DIFX_MESSAGE_GROUP %s invalid\n", difxMessageGroup);
 		  difxMessageInUse = 0;
@@ -126,8 +126,10 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 		if (ntohl(addr.s_addr)>>28!=14) { 
 		  difxMessageUnicast = 1;
 		  if (difxMessageMpiProcessId==0) 
-		    printf("Warning: Unicast difxMessage in use. Some functionallity may be reduced\n");
-		}
+		    printf("Warning: Unicast (%s -> %08X) difxMessage in use. Some functionallity may be reduced\n", difxMessageGroup, ntohl(addr.s_addr));
+		} else {
+                    printf("Info: Multicast (%s -> %08X) difxMessage in use.\n", difxMessageGroup, ntohl(addr.s_addr));
+                }
 
 	}
 	else
