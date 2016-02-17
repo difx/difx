@@ -1529,6 +1529,13 @@ LBAMode::LBAMode(Configuration * conf, int confindex, int dsindex, int recordedb
   int count = 0;
   int numtimeshifts = (sizeof(u16)*bytesperblockdenominator)/bytesperblocknumerator;
 
+  // CJP 18-Feb
+  // The following line might be needed in some corner cases. I found it in some
+  // uncommited test code. I cannot remember why I added it. I have not activated it as
+  // it obviously is not normally needed. Leaving it here to maybe help future debugging
+
+  //if (numtimeshifts==0) numtimeshifts = 1;
+
   //build the lookup table - NOTE ASSUMPTION THAT THE BYTE ORDER IS **LITTLE-ENDIAN**!!!
   for(u16 i=0;i<MAX_U16;i++)
   {
@@ -1563,7 +1570,7 @@ LBAMode::LBAMode(Configuration * conf, int confindex, int dsindex, int recordedb
     }
   }
 
-  //get the last values, i = 1111111111111111
+  // Get the last values, i = 1111111111111111
   for (int i=0;i<samplesperlookup;i++)
   {
     lookup[count + i] = unpackvalues[3]; //every sample is 11 = 3
