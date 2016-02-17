@@ -34,8 +34,7 @@ c LOCAL VARIABLES
 
 c BEGIN
 
-	open (unit=1, file=filename, status='old', 
-	1			ERR=950 )
+	open (unit=1, file=filename, status='old', ERR=950 )
 
 	n = 0
 	do while (.true.)
@@ -96,8 +95,8 @@ c	nstars = n
 
  960	continue
 	write( message, 
-	1	'( '' TOO MANY sources ( Max. '', I4, '' ) in '', A )',
-	1			ERR=961 ) MAX_SOURCES, filename
+     1	'( '' TOO MANY sources ( Max. '', I4, '' ) in '', A )',
+     1			ERR=961 ) MAX_SOURCES, filename
 
 c	message = ' TOO MANY sources ( Max. 100 ) in ' // filename
 

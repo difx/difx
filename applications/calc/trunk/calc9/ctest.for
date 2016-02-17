@@ -92,17 +92,15 @@ c BEGIN
 c BEGIN
 
 	print 9153, src16
-9153	format( ' Print SOURCE name or Q to STOP [', 
-	1			A, '] : ', $ )
+9153    format( ' Print SOURCE name or Q to STOP [', A, '] : ', $ )
 	read 900, g_string
-900	format( A )
+900     format( A )
 	if( g_string(1:1) .eq. 'q' .or. g_string(1:1) .eq. 'Q' ) stop
 	if( g_string(1:1) .ne. ' ' ) src16 = g_string
 
 	do i = 1, 6
 		print 7153, i, c8sit(i)
-7153	format( ' Print STATION ', I1, ' name [', 
-	1			A, '] : ', $ )
+7153	format( ' Print STATION ', I1, ' name [', A, '] : ', $ )
 		read 900, g_string
 		if( g_string(1:1) .ne. ' ' ) c8sit(i) = g_string
 	end do
@@ -194,7 +192,7 @@ c      print *, ' BEGIN LOOP '
 
 	do k = 1, 6
             call v_refcalc( C8SIT(k), src16, UTCTAG, UTCSEC, 
-	1		delay(k), drate(k), uvw, duvw )
+     1		            delay(k), drate(k), uvw, duvw )
             uvwdat(k*3-2) = uvw(1)
             uvwdat(k*3-1) = uvw(2)
             uvwdat(k*3-0) = uvw(3)

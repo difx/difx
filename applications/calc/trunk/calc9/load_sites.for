@@ -22,8 +22,7 @@ c	data site_file /'cor$db:stations.tab'/
 
 *--------------------------------------
 
-	open ( unit=1, file=site_file, status='old', 
-	1			ERR=930 )
+	open ( unit=1, file=site_file, status='old', ERR=930 )
 	 
 	n = 0
 	do while ( .TRUE. )
@@ -49,7 +48,7 @@ c	data site_file /'cor$db:stations.tab'/
 	  inx = index (str, '$')
 	  if( inx .le. 0 ) then
 		message = ' FORMAT ERROR - missing $ for SITENAME in  ' 
-	1						// site_file
+     1						// site_file
 		close (1)
 		load_sites = 1
 		return
@@ -87,8 +86,8 @@ c	data site_file /'cor$db:stations.tab'/
 
 940	continue
 	write( message, 
-	1	'( '' TOO MANY SITES (Max. '', I3, '') in '', A )'
-	1					) Max_Stat, site_file
+     1	'( '' TOO MANY SITES (Max. '', I3, '') in '', A )'
+     1					) Max_Stat, site_file
 	close (1)
 	load_sites = 1
 	return
