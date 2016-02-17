@@ -1024,7 +1024,7 @@ use Astro::Vex qw( make_field );
     sample_rate
     s2_recording_mode
     record_transport_type
-    chan_def                Not sure
+    chan_def                Array of Astro::Vex::Chandef (from $FREQ block)
 
 =head2 Missing
 
