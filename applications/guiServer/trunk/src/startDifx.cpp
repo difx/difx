@@ -155,9 +155,10 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	char command[MAX_COMMAND_SIZE];
 	char message[DIFX_MESSAGE_LENGTH];
 	snprintf( command, MAX_COMMAND_SIZE, 
-	          "%s checkmpifxcorr -i %s", 
+	          "%s checkmpifxcorr %s", 
               _difxSetupPath,
               S->inputFilename );
+
     ExecuteSystem* executor = new ExecuteSystem( command );
     bool errorDetected = false;
     if ( executor->pid() > -1 ) {
@@ -191,7 +192,7 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
     else {
         jobMonitor->sendPacket( RUN_DIFX_CONFIG_PASSED, NULL, 0 );
     }
-    
+
     //  And possibly bail out on this process here, dependent on what the user wants.
     if ( S->function == DIFX_START_FUNCTION_CONFIG_ONLY || 
         ( errorDetected &&  S->function == DIFX_START_FUNCTION_BAIL_ON_CONFIG_FAIL ) ) {
