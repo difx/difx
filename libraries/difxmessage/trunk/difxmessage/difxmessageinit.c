@@ -127,10 +127,7 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 		  difxMessageUnicast = 1;
 		  if (difxMessageMpiProcessId==0) 
 		    printf("Warning: Unicast (%s -> %08X) difxMessage in use. Some functionallity may be reduced\n", difxMessageGroup, ntohl(addr.s_addr));
-		} else {
-                    printf("Info: Multicast (%s -> %08X) difxMessage in use.\n", difxMessageGroup, ntohl(addr.s_addr));
-                }
-
+		} 
 	}
 	else
 	{
