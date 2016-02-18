@@ -400,6 +400,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	int docomplex;
 	int fftmode=0;
 	struct hd_info hinfo;
+	char *tmp = 0;
 
 	count =0 ;
 	total = unpacked = 0;
@@ -489,7 +490,6 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 			uplow[i] = (ifid[i]=='U')? 1 : -1;
 		}
 
-		char *tmp = 0;
 		int nif=ms->nchan; // nif is introduced so that we can have blank IFs or short reads
 		if(strlen(ifid) < nif)
 		{
