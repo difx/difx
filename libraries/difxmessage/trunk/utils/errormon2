@@ -217,8 +217,8 @@ def run():
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 768000)
 	s.bind(('', port))
-	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
 	if (multicast):
+		mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
 		s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 	#s.settimeout(dt)
 
