@@ -19,6 +19,8 @@ Version 2.5
 * checkmpifxcorr: can operate on multiple input files
 * now require dirlist library for native Mark5 playback
 * Mark5 playback can now be based on new directory file format as documented in dirlist/doc/newdir.tex
+* Added support for unicast difxmessages. This (in current implementation) probably disables mpifxcorr control via difxmessages but outgoing messages work OK). The command thread used to receive DIFX messages is not started if DIFX_MESSAGE_GROUP is not set. Unicast will not work if multiple processes are run on the same node/computer.
+* Change to shutdown procedure which may reduce occurence of "DIFX hanging" bug
 
 Version 2.4
 ~~~~~~~~~~~
