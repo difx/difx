@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.c 3638 2016-01-11 17:10:07Z gbc $
+ * $Id: sg_access.c 3775 2016-02-15 15:24:44Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -266,7 +266,7 @@ static void sg_first_packet_common(SGInfo *sgi, off_t foff, off_t *rwdsp)
     /* this may have been found by valid_first_signature() */
     if (sgi->vdif_signature.word) {
         vdsp = &sgi->vdif_signature;
-        if (sgi->verbose>2) fprintf(sgalog, "signature: %lu\n", vdsp->word);
+        if (sgi->verbose>2) fprintf(sgalog, "signature: %lX\n", vdsp->word);
     }
 
     /* vhp0 might point at a packet, vhp1 might point at the next */
@@ -293,15 +293,21 @@ static void sg_first_packet_common(SGInfo *sgi, off_t foff, off_t *rwdsp)
         return;
     }
     *rwdsp = rwords;
-    
+
     /* yes, we are pointed at two packets */
     sgi->pkt_size = ( ((VDIFHeader *)vhp0)->w3.df_len ) * 8;
     sgi->pkt_offset = poff;
-    sgi->first_secs = ((VDIFHeader *)vhp0)->w1.secs_inre;
-    sgi->first_frame = ((VDIFHeader *)vhp0)->w2.df_num_insec;
-    sgi->ref_epoch = ((VDIFHeader *)vhp0)->w2.ref_epoch;
-    update_fr_cnt_max_fr_frame(sgi->first_frame, sgi->frame_cnt_max);
     sgi->vdif_signature.word = vds0.word;
+
+    /* mark first time as invalid and return to it later */
+    if (((VDIFHeader *)vhp0)->w1.invalid) {
+        sgi->ref_epoch = sgi->first_secs = sgi->first_frame = 0;
+    } else {
+        sgi->ref_epoch = ((VDIFHeader *)vhp0)->w2.ref_epoch;
+        sgi->first_secs = ((VDIFHeader *)vhp0)->w1.secs_inre;
+        sgi->first_frame = ((VDIFHeader *)vhp0)->w2.df_num_insec;
+        update_fr_cnt_max_fr_frame(sgi->first_frame, sgi->frame_cnt_max);
+    }
 }
 
 /*
@@ -401,6 +407,9 @@ static void flat_first_packet(SGInfo *sgi)
  * Capture timestamp on final packet.
  * Check the offset of the VDIF packet in the read packet.
  * This is common code that works assuming the file ends with packets.
+ *
+ * Note that sg_get_vsig() may have lied about the signature, so if the
+ * end packet is invalid, we will want to try harder to get final time.
  */
 static void sg_final_packet(SGInfo *sgi)
 {
@@ -409,9 +418,9 @@ static void sg_final_packet(SGInfo *sgi)
 
     vhp0 = (uint32_t *)(sgi->smi.eomem - 2 * sgi->read_size + sgi->pkt_offset);
     vhp1 = (uint32_t *)(sgi->smi.eomem - 1 * sgi->read_size + sgi->pkt_offset);
-    vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
+    vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-1,
         "fnp0:", &sgi->vdif_signature);
-    vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
+    vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-1,
         "fnp1:", &sgi->vdif_signature);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         sgi->sg_version = SG_VERSION_SIG_FINAL_FAIL;
@@ -420,10 +429,15 @@ static void sg_final_packet(SGInfo *sgi)
         return;
     }
 
-    /* yes, we are pointed at two packets */
-    sgi->final_secs = ((VDIFHeader *)vhp1)->w1.secs_inre;
-    sgi->final_frame = ((VDIFHeader *)vhp1)->w2.df_num_insec;
-    update_fr_cnt_max_fr_frame(sgi->final_frame, sgi->frame_cnt_max);
+    /* mark final time as invalid and return to it later */
+    if (((VDIFHeader *)vhp1)->w1.invalid) {
+        sgi->final_secs = sgi->final_frame = 0;
+    } else {
+        /* yes, we are pointed at a valid final packet */
+        sgi->final_secs = ((VDIFHeader *)vhp1)->w1.secs_inre;
+        sgi->final_frame = ((VDIFHeader *)vhp1)->w2.df_num_insec;
+        update_fr_cnt_max_fr_frame(sgi->final_frame, sgi->frame_cnt_max);
+    }
 }
 
 /*
@@ -836,6 +850,79 @@ static void flat_final_update(SGInfo *sgi)
 }
 
 /*
+ * If we didn't find perfectly valid packets at the extremes,
+ * these routines use the (now available) sg_pkt_by_num() method
+ * to locate the packets and get their times.  There is an attempt
+ * to extrapolate to the extremes of the files for the invalid
+ * packets that are probably more right than wrong.
+ */
+void sg_first_time_check(SGInfo *sgi)
+{
+    int cnt = 0, nl, first_secs = 0, first_frame = 0;
+    VDIFHeader *vx;
+    uint32_t *endp;
+    if (sgi->sg_version != SG_VERSION_OK_2 &&
+        sgi->sg_version != SG_VERSION_FLAT) return;
+    if (sgi->verbose>2) fprintf(sgalog, "First time %u@%u+%u\n",
+        sgi->ref_epoch, sgi->first_secs, sgi->first_frame);
+    if (sgi->ref_epoch != 0 ||
+        sgi->first_secs != 0 ||
+        sgi->first_frame != 0) return;
+    do {
+        vx = (VDIFHeader *)sg_pkt_by_num(sgi, cnt, &nl, &endp);
+        if (!vx->w1.invalid) {
+            sgi->ref_epoch = vx->w2.ref_epoch;
+            first_secs = vx->w1.secs_inre;
+            first_frame = vx->w2.df_num_insec - cnt;
+            update_fr_cnt_max_fr_frame(vx->w2.df_num_insec,sgi->frame_cnt_max);
+            if (first_frame < 0) {
+                first_secs --;
+                first_frame += (sgi->frame_cnt_max + 1);
+            }
+            sgi->first_secs = first_secs;
+            sgi->first_frame = first_frame;
+            if (sgi->verbose>2) fprintf(sgalog, "First time %u@%u+%u\n",
+                sgi->ref_epoch, sgi->first_secs, sgi->first_frame);
+            return;
+        }
+    } while (++cnt < 1200);
+    if (sgi->verbose>1) fprintf(sgalog,
+        "Unable to find first valid packet time\n");
+}
+void sg_final_time_check(SGInfo *sgi)
+{
+    int cnt = 1, nl, final_secs = 0, final_frame = 0;
+    VDIFHeader *vx;
+    uint32_t *endp;
+    if (sgi->sg_version != SG_VERSION_OK_2 &&
+        sgi->sg_version != SG_VERSION_FLAT) return;
+    if (sgi->verbose>2) fprintf(sgalog, "Final time %u@%u+%u\n",
+        sgi->ref_epoch, sgi->final_secs, sgi->final_frame);
+    if (sgi->final_secs != 0 ||
+        sgi->final_frame != 0) return;
+    do {
+        vx = (VDIFHeader *)sg_pkt_by_num(sgi,
+            sgi->total_pkts - cnt, &nl, &endp);
+        if (!vx->w1.invalid) {
+            final_secs = vx->w1.secs_inre;
+            final_frame = vx->w2.df_num_insec + cnt;
+            update_fr_cnt_max_fr_frame(vx->w2.df_num_insec,sgi->frame_cnt_max);
+            if (final_frame > sgi->frame_cnt_max) {
+                final_frame -= (sgi->frame_cnt_max + 1);
+                final_secs ++;
+            }
+            sgi->final_secs = final_secs;
+            sgi->final_frame = final_frame;
+            if (sgi->verbose>2) fprintf(sgalog, "Final time %u@%u+%u\n",
+                sgi->ref_epoch, sgi->final_secs, sgi->final_frame);
+            return;
+        }
+    } while (++cnt < 1200);
+    if (sgi->verbose>1) fprintf(sgalog,
+        "Unable to find final valid packet time\n");
+}
+
+/*
  * Provide a string representation of the errors we might find
  */
 char *sg_error_str(int err)
@@ -902,6 +989,7 @@ char *sg_error_str(int err)
 void sg_info(const char *file, SGInfo *sgi)
 {
     int verbcopy = sgi->verbose;
+    int fcmxcopy = sgi->frame_cnt_max;
     SGMMInfo smicopy = sgi->smi;
 
     if (sgi->name) free(sgi->name);
@@ -912,6 +1000,10 @@ void sg_info(const char *file, SGInfo *sgi)
     sgi->sg_version = SG_VERSION_NOT;
     sgi->name = malloc(strlen(file)+4);
     strcpy(sgi->name, file);
+
+    /* if the caller has supplied a plausible frame count max, use it */
+    if (fcmxcopy > 1 && fcmxcopy < SG_FR_CNT_MAX)
+        sgi->frame_cnt_max = fcmxcopy;
 
     sg_file_header_tag_ok(sgi);
     if (sgi->sg_version == SG_VERSION_OK_2) {
@@ -927,6 +1019,8 @@ void sg_info(const char *file, SGInfo *sgi)
             flat_final_update(sgi);
         }
     }
+    sg_first_time_check(sgi);
+    sg_final_time_check(sgi);
 }
 
 SGMMInfo *sg_open(const char *file, SGInfo *sgi)
@@ -1297,7 +1391,7 @@ int sg_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end, int *nv)
     if (nl < 0) return(-nl);
     if (!sgi || (sgi->smi.start == 0)) return(nl);
     while (nl-- > 0) {
-        vds.word = sg_get_vsig(pkt, sgi->smi.start, sgi->verbose-2,
+        vds.word = sg_get_vsig(pkt, sgi->smi.start, sgi->verbose-3,
             "pchk:", &sgi->vdif_signature);
         if ((pkt >= end) || vds.word != (sgi->vdif_signature.word)) nbad ++;
         update_fr_cnt_max_fr_ptr32(pkt, sgi->frame_cnt_max);

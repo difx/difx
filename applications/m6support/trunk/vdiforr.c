@@ -1,5 +1,5 @@
 /*
- * $Id: vdiforr.c 3742 2016-02-08 19:11:34Z gbc $
+ * $Id: vdiforr.c 3776 2016-02-15 17:05:43Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -112,10 +112,13 @@ static uint32_t fusepath_to_index(const char *fusepath)
 int do_vorr_open(const char *fusepath, FFInfo *ffi)
 {
     VDIFUSEntry *vs;
+    vdifuse_trace(VDT("Opening %s\n"), fusepath);
+    vdifuse_flush_trace();
     if(fusepath_to_realpath(fusepath)) {
         ffi->fh = realfd;
         if (vdifuse_debug>0) fprintf(vdflog,
             "Realpath open %s at %d\n", fusepath, ffi->fh);
+        vdifuse_trace(VDT("Open[%d] %s\n"), ffi->fh, fusepath);
         return(0);
     }
     ffi->sindex = fusepath_to_index(fusepath);
@@ -142,6 +145,7 @@ int do_vorr_open(const char *fusepath, FFInfo *ffi)
         FFIcache[ffi->fh] = *ffi;
         return(0);
     }
+    vdifuse_flush_trace();
     return(-ENOENT);    /* do_vorr_open: invalid path */
 }
 

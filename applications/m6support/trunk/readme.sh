@@ -31,7 +31,7 @@
 # (the libraries to link to, the fuse-devel to compile).
 
 # untar:
-# tar zxf m6support-0.15.tar.gz
+# tar zxf m6support-0.16.tar.gz
 # cd m6support-0.15
 
 [ $# -eq 0 ] && {

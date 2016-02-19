@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.c 3670 2016-01-26 18:25:14Z gbc $
+ * $Id: vdifuse.c 3775 2016-02-15 15:24:44Z gbc $
  *
  * Fuse for vdif files for use with Mark6 or other
  * applications where vdif files are scattered around.
@@ -208,18 +208,21 @@ static int vdifuse_unlink(const char *path)
 {
     if (vdifuse_debug>4) fprintf(vdflog, "vdifuse_unlink(%s)\n", path);
     fprintf(stderr, "Unlink not allowed on %s.\n", path);
+    vdifuse_trace(VDT("Unlink not allowed on %s.\n"), path);
     return(-EPERM); /* vdifuse_unlink not supported */
 }
 static int vdifuse_rmdir(const char *path)
 {
     if (vdifuse_debug>4) fprintf(vdflog, "vdifuse_rmdir(%s)\n", path);
     fprintf(stderr, "Rmdir not allowed on %s.\n", path);
+    vdifuse_trace(VDT("Rmdir not allowed on %s.\n"), path);
     return(-EPERM); /* vdifuse_rmdir not supported */
 }
 static int vdifuse_rename(const char *from, const char *to)
 {
     if (vdifuse_debug>4) fprintf(vdflog, "vdifuse_rename(%s)\n", from);
     fprintf(stderr, "Rename of %s to %s not allowed.\n", from, to);
+    vdifuse_trace(VDT("Rename of %s to %s not allowed.\n"), from, to);
     return(-EPERM); /* vdifuse_rename not supported */
 }
 

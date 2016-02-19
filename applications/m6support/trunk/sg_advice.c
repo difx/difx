@@ -1,5 +1,5 @@
 /*
- * $Id: sg_advice.c 3746 2016-02-09 23:12:13Z gbc $
+ * $Id: sg_advice.c 3775 2016-02-15 15:24:44Z gbc $
  * 
  * Code to boost performance on reads to sg files
  *
@@ -24,6 +24,8 @@
  *     880.110 MB/s net with  50000000L
  *   based on cat <300GBfile>  > /dev/null
  *   mileage varies depending on file corruption and other (unknown) factors.
+ * 
+ * TODO: consider implementing the thread-based strategies
  */
 
 #include <fcntl.h>
@@ -99,7 +101,7 @@ void sg_advice_term(int mmfd)
     if (advice_type != SG_ADVICE_SPAWN_READAHEAD &&
         advice_type != SG_ADVICE_SPAWN_READTHREAD) return;
 
-    /* FIXME: code to terminate mmfd */
+    /* TODO: code to terminate mmfd */
 }
 
 /*
@@ -150,10 +152,10 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
         else return;
         break;
     case SG_ADVICE_SPAWN_READAHEAD:
-        /* FIXME: talk to the right hand */
+        /* TODO: talk to the right hand */
         break;
     case SG_ADVICE_SPAWN_READTHREAD:
-        /* FIXME: talk to the left hand */
+        /* TODO: talk to the left hand */
         break;
     default:
         break;

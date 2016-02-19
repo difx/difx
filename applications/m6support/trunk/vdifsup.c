@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsup.c 3736 2016-02-07 21:03:03Z gbc $
+ * $Id: vdifsup.c 3775 2016-02-15 15:24:44Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -39,18 +39,12 @@ static int vd_cache_modified = 0;
  */
 static int accepted_as_frag(VDIFUSEntry *vc)
 {
-    int rigor = 0, cfe = 0;
+    int rigor, cfe;
     VDIFUSEpars *vp = &vd_cache[0].u.vpars;
 
     if (vdifuse_debug>1) fprintf(vdflog, "  Considering %s\n", vc->path);
-    rigor |= vdif_rigor_by_nocheck(vc->path, vp);
-    rigor |= vdif_rigor_by_suffix(vc->path, vp);
-    rigor |= vdif_rigor_by_ename(vc->path, vp);
-    rigor |= vdif_rigor_by_magic(vc->path, vp);
-    rigor |= vdif_rigor_by_minsize(vc->path, vp);
-    rigor |= vdif_rigor_by_regex(vc->path, vp);
-    if (vdifuse_debug>3) fprintf(vdflog,
-        "    passed tests " VDIFUSE_RIGOR_PRINTF "\n", rigor);
+    /* see if the file is acceptable as a fragment */
+    rigor = vdif_rigor_frag(vc->path, vp);
 
     /* if it actually passed the tests that matter */
     if ((rigor & vp->how_rigorous) == vp->how_rigorous) {
@@ -773,8 +767,8 @@ static int check_topdirs(void)
 }
 
 /*
- * At the moment, no backward compatibility is provided.
- * TODO: update memory to current version and perhaps continue?
+ * Backward compatibility on the cache is difficult, and it is
+ * safer to just require the user to regenerate it.
  */
 static int check_cache_version(void)
 {
@@ -783,6 +777,7 @@ static int check_cache_version(void)
     fprintf(stderr, "File version %f != code version %f (%e)\n",
         vd_cache[0].u.vpars.vdifuse_vers, (float)VDIFUSE_VERSION,
         vd_cache[0].u.vpars.vdifuse_vers - (float)VDIFUSE_VERSION);
+    fprintf(stderr, "You need to regenerate the file cache (-c)\n");
     return(1);
 }
 /*
@@ -1034,11 +1029,10 @@ static int vdifuse_issues(void)
 {
     fprintf(vdflog, "Single-threaded VDIF is expected.\n");
     fprintf(vdflog, "Multi-threaded VDIF is not currently supported.\n");
-    fprintf(vdflog, "A single data rate is expected, i.e. -xrate=pkts/sec.\n");
-    fprintf(vdflog, "The packet rate (packets/sec) MUST be supplied\n");
-    fprintf(vdflog, "This implementation is not yet optimally efficient.\n");
-    fprintf(vdflog, "No allowance for missing packets is (yet) made,\n");
-    fprintf(vdflog, "  so seriously corrupt data is likely to be tossed.\n");
+    fprintf(vdflog, "A single data rate is expected and must be\n");
+    fprintf(vdflog, "  supplied for good results: i.e. -xrate=pkts/sec.\n");
+    fprintf(vdflog, "Many cases of data corruption are handled, but\n");
+    fprintf(vdflog, "  seriously corrupt data is likely to be tossed.\n");
     fprintf(vdflog, "\n");
     return(1);
 }
@@ -1064,6 +1058,28 @@ static int vdifuse_examples(void)
     fprintf(vdflog, "\n");
 }
 
+static int vdifuse_env(void)
+{
+    fprintf(vdflog, "For Mark6 scatter-gather (sg) files, two\n");
+    fprintf(vdflog, "environment variables may be used to adjust\n");
+    fprintf(vdflog, "the performance:\n");
+    fprintf(vdflog, "\n");
+    fprintf(vdflog, "  SG_ACCESS_BLOCKS\n");
+    fprintf(vdflog, "    suggests a memory management block size.  The\n");
+    fprintf(vdflog, "    default is 40000000 which has been found optimal\n");
+    fprintf(vdflog, "    for some Mark6's used in testing.\n");
+    fprintf(vdflog, "  SG_ACCESS_ADVICE\n");
+    fprintf(vdflog, "    an integer suggesting the memory management\n");
+    fprintf(vdflog, "    advice strategy:\n");
+    fprintf(vdflog, "    0   disabled\n");
+    fprintf(vdflog, "    1   madvise 'sequential'\n");
+    fprintf(vdflog, "    2   madvise 'will need'\n");
+    fprintf(vdflog, "    3   fadvise 'will need'\n");
+//  fprintf(vdflog, "    Two additional methods (4 & 5) that are even\n");
+//  fprintf(vdflog, "    more aggressive have not been implemented.\n");
+    fprintf(vdflog, "\n");
+}
+
 /*
  * Additional support options, supplied in key=value form.
  * Nonzero return indicates an error.
@@ -1075,6 +1091,7 @@ static int vdifuse_options_help(void)
     fprintf(vdflog, "  help          provides this help\n");
     fprintf(vdflog, "  issues        provides some additional info\n");
     fprintf(vdflog, "  examples      provides some examples\n");
+    fprintf(vdflog, "  env           help on environment variables\n");
 
     fprintf(vdflog, "\n");
     fprintf(vdflog, "Options that may be set to affect cache creation:\n");
@@ -1172,6 +1189,8 @@ int vdifuse_options(char *arg)
         return(vdifuse_issues());
     } else if (!strncmp(arg, "examples", 8)) {
         return(vdifuse_examples());
+    } else if (!strncmp(arg, "env", 3)) {
+        return(vdifuse_env());
 
     } else if (!strncmp(arg, "debug=", 6)) {
         vdifuse_debug = atoi(arg + 6);

@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.h 3476 2015-10-03 19:25:56Z gbc $
+ * $Id: sg_access.h 3775 2016-02-15 15:24:44Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -72,6 +72,7 @@ typedef struct sg_info {
 #define SG_VERSION_MAGIC    0xfeed6666
 #define SG_MAX_VDIF_BYTES   32000
 #define SG_MIN_VDIF_BYTES   64
+#define SG_FR_CNT_MAX       16777216
 
 /* positive values >2 for sg_version are scatter-gather versions */
 #define SG_VERSION_OK_2             2
@@ -115,6 +116,13 @@ extern void sg_info(const char *file, SGInfo *sgi);
 extern SGMMInfo *sg_open(const char *file, SGInfo *sgi);
 extern SGMMInfo *sg_reopen(SGInfo *sgi);
 extern void sg_close(SGInfo *sgi);
+
+/*
+ * Allows updates to first and final with revised knowledge of
+ * maximum frame count seen (i.e. packet rate - 1)
+ */
+extern void sg_first_time_check(SGInfo *sgi);
+extern void sg_final_time_check(SGInfo *sgi);
 
 /*
  * Random access methods to the packets in the file.

@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.h 3746 2016-02-09 23:12:13Z gbc $
+ * $Id: vdifuse.h 3754 2016-02-13 17:41:17Z gbc $
  *
  * This file provides support for the fuse interface
  */
@@ -226,27 +226,17 @@ void describe_cache_entry(VDIFUSEntry *vp);
 /* perform any closeout operations */
 extern int vdifuse_finish(void);
 
-/* consider everything valid */
-#define VDIFUSE_RIGOR_NOCHECK   0x000001
-extern int vdif_rigor_by_nocheck(char *path, VDIFUSEpars *pars);
-/* test the end of the name only */
-#define VDIFUSE_RIGOR_SUFFIX    0x000010
-extern int vdif_rigor_by_suffix(char *path, VDIFUSEpars *pars);
-/* look for <exp>_<sc>_<scan><anything>.vdif */
-#define VDIFUSE_RIGOR_ENAME     0x000100
-extern int vdif_rigor_by_ename(char *path, VDIFUSEpars *pars);
-/* look in the file for magic number */
-#define VDIFUSE_RIGOR_MAGIC     0x001000
-extern int vdif_rigor_by_magic(char *path, VDIFUSEpars *pars);
-/* stat the file for min size */
-#define VDIFUSE_RIGOR_MINSIZE   0x010000
-extern int vdif_rigor_by_minsize(char *path, VDIFUSEpars *pars);
-/* regex exclude/include used */
-#define VDIFUSE_RIGOR_REGEX     0x100000
-extern int vdif_rigor_by_regex(char *path, VDIFUSEpars *pars);
+/* fragment survey evaluations */
+#define VDIFUSE_RIGOR_NOCHECK   0x000001 /* consider everything valid */
+#define VDIFUSE_RIGOR_SUFFIX    0x000010 /* <whateveritmightbe>.vdif */
+#define VDIFUSE_RIGOR_ENAME     0x000100 /* <exp>_<sc>_<scan><ignore>.vdif */
+#define VDIFUSE_RIGOR_MAGIC     0x001000 /* magic number in file (sg2) */
+#define VDIFUSE_RIGOR_MINSIZE   0x010000 /* stat the file for min size */
+#define VDIFUSE_RIGOR_REGEX     0x100000 /* regex exclude/include used */
 /* for printing what we have */
 #define VDIFUSE_RIGOR_HPRINTF    "%06x"
 #define VDIFUSE_RIGOR_PRINTF    "[%06x]"
+extern int vdif_rigor_frag(char *path, VDIFUSEpars *pars);
 
 /* populate vfuse entry for a valid file */
 extern int create_fragment_vfuse(VDIFUSEntry *vc, int index,

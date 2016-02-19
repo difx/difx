@@ -1,5 +1,5 @@
 /*
- * $Id: vdifseq.c 3675 2016-01-26 22:19:07Z gbc $
+ * $Id: vdifseq.c 3775 2016-02-15 15:24:44Z gbc $
  *
  * This file does the work of building sequences.
  */
@@ -11,8 +11,11 @@
 
 #include "vdifuse.h"
 
+/*
+ * tdestroy() is marked as supplied by _GNU_SOURCE,
+ * but __USE_GNU is maybe needed as well.
+ */
 #define _GNU_SOURCE
-// FIXME also needed for tdestroy?
 #define __USE_GNU
 #include <search.h>
 
@@ -64,7 +67,6 @@ static void thier_free(void *nodep)
  */
 static VDIFUSEntry *find_seq_parent(char *path)
 {
-    // FIXME: Unused // static dirname[VDIFUSE_MAX_PATH];
     static THIERnode tmp;
     char *basename;
     THIERnode **hp;
@@ -72,7 +74,6 @@ static VDIFUSEntry *find_seq_parent(char *path)
 
     basename = strrchr(strcpy(tmp.path, path), '/');
     if (vdifuse_debug>3) fprintf(vdflog, " (tfind)child: %s\n", tmp.path);
-    // FIXME: null return ok?
     if (!basename) return((VDIFUSEntry *)0);
     *basename++ = 0;
 
@@ -177,6 +178,8 @@ static void add_to_parent_dir(VDIFUSEntry *vc)
 
 /*
  * Create the subdir cache entry for this sequence node
+ *
+ * Failures within add_to_parent_dir() will result in an orphaned cache item.
  */
 static void thier_sdir(const void *nodep, const VISIT which, const int depth)
 {

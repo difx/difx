@@ -1,13 +1,12 @@
 /*
- * $Id: vdiftst.c 3657 2016-01-23 19:09:10Z gbc $
+ * $Id: vdiftst.c 3775 2016-02-15 15:24:44Z gbc $
  *
  * This file provides support for the fuse interface.
  * This file contains methods to label a file as valid VDIF.
  * They return 1 if the file is accepted at the level of rigor.
  *
  * TODO: this version requires first/other offsets to be same for all frags
- * TODO: start using sg_access methods
- * TODO: use sg_* methods
+ * TODO: make better use of sg_* methods
  * TODO: cope gracefully with initially unknown rate
  */
 
@@ -34,7 +33,7 @@ static uint32_t maxfrcounter_seen;
 /*
  * This accepts anything.
  */
-int vdif_rigor_by_nocheck(char *path, VDIFUSEpars *pars)
+static int vdif_rigor_by_nocheck(char *path, VDIFUSEpars *pars)
 {
     (void)path;
     (void)pars;
@@ -44,7 +43,7 @@ int vdif_rigor_by_nocheck(char *path, VDIFUSEpars *pars)
 /*
  * This is relatively trivial...just looks at the suffix.
  */
-int vdif_rigor_by_suffix(char *path, VDIFUSEpars *pars)
+static int vdif_rigor_by_suffix(char *path, VDIFUSEpars *pars)
 {
     int len;
     if (pars->how_rigorous & VDIFUSE_RIGOR_SUFFIX == 0)
@@ -57,7 +56,7 @@ int vdif_rigor_by_suffix(char *path, VDIFUSEpars *pars)
 /*
  * This requires <exp>_<sc>_<scan-name>[...don't care...].vdif
  */
-int vdif_rigor_by_ename(char *path, VDIFUSEpars *pars)
+static int vdif_rigor_by_ename(char *path, VDIFUSEpars *pars)
 {
     int len, usc;
     char *us;
@@ -75,7 +74,7 @@ int vdif_rigor_by_ename(char *path, VDIFUSEpars *pars)
 /*
  * This looks into the file for the (SGv2) magic number
  */
-int vdif_rigor_by_magic(char *path, VDIFUSEpars *pars)
+static int vdif_rigor_by_magic(char *path, VDIFUSEpars *pars)
 {
     uint32_t words[6];
     FILE *fp;
@@ -92,7 +91,7 @@ int vdif_rigor_by_magic(char *path, VDIFUSEpars *pars)
 /*
  * Insist on a minimum file size.
  */
-int vdif_rigor_by_minsize(char *path, VDIFUSEpars *pars)
+static int vdif_rigor_by_minsize(char *path, VDIFUSEpars *pars)
 {
     struct stat sb;
     if (pars->how_rigorous & VDIFUSE_RIGOR_MINSIZE == 0)
@@ -107,7 +106,7 @@ int vdif_rigor_by_minsize(char *path, VDIFUSEpars *pars)
  * Check the file against any regex patterns supplied
  * The real work is in vdifrex.c
  */
-int vdif_rigor_by_regex(char *path, VDIFUSEpars *pars)
+static int vdif_rigor_by_regex(char *path, VDIFUSEpars *pars)
 {
     if (pars->how_rigorous & VDIFUSE_RIGOR_REGEX == 0)
         return(VDIFUSE_RIGOR_NOCHECK);
@@ -115,8 +114,21 @@ int vdif_rigor_by_regex(char *path, VDIFUSEpars *pars)
 }
 
 /*
- * Other tests could be added here.
+ * Other tests could be added here, culminating with the test director.
  */
+int vdif_rigor_frag(char *path, VDIFUSEpars *pars)
+{
+    int rigor = 0;
+    rigor |= vdif_rigor_by_nocheck(path, pars);
+    rigor |= vdif_rigor_by_suffix(path, pars);
+    rigor |= vdif_rigor_by_ename(path, pars);
+    rigor |= vdif_rigor_by_magic(path, pars);
+    rigor |= vdif_rigor_by_minsize(path, pars);
+    rigor |= vdif_rigor_by_regex(path, pars);
+    if (vdifuse_debug>3) fprintf(vdflog,
+        "    passed tests " VDIFUSE_RIGOR_PRINTF "\n", rigor);
+    return(rigor);
+}
 
 static void notice_maxfrcounter(VDIFHeader *vh)
 {
@@ -437,6 +449,147 @@ static int analyze_fragment_sgv2(const char *path, struct stat *vfuse,
 }
 
 /*
+ * Support routines for analyze_fragment_sgv2_harder() follows in an
+ * optimistic effort to make this more readable.  All return nonzero
+ * if there are insurmountable issues.
+ */
+static int basic_checks_sgv2_harder(FILE *fp, VDIFUSEpars *pars,
+    size_t *header_pkt_len, size_t *block_size)
+{
+    static uint32_t words[10];
+    /* same tests as previously, so use simple error code returns */
+    if (7 != fread(words, 4, 7, fp)) return(2);
+    if (words[0] != 0xfeed6666) return(3);
+    if (words[1] != 0x2) return(4);
+    *block_size = words[2];
+    if (*block_size > pars->writeblocker) return(5);
+    if (words[3] != 0x0) return(6);     /* marked as VDIF */
+    *header_pkt_len = words[4];
+    if ((*header_pkt_len < 32) || (*header_pkt_len > (BUF_SIZ-32))) return(7);
+    return(0);
+}
+
+/*
+ * Extrapolate over invalid packets to generate a pseudo first
+ * or final packet.  The first routine sets the pkt and read lengths.
+ * We've already read the file header and the first block, so we
+ * are positioned at the first packet.  8k packets are about 1200
+ * per Mark6 block, and fill is typically < 1000, so if we haven't
+ * found a good packet by a cnt of 1200, we might as well bail.
+ */
+static VDIFHeader *first_sgv2_harder(FILE *fp, size_t offset,
+    size_t pkt_rate, size_t read_len, size_t *pkt_len)
+{
+    static VDIFHeader v0;
+    static char pkt[BUF_SIZ];
+    int nb, cnt = 0;
+    size_t chklen;
+    do {
+        v0.w1.invalid = 1;
+        if ((nb = fread(pkt, read_len, 1, fp)) < 1) break;
+        v0 = *(VDIFHeader *)(pkt + offset);
+        if (!v0.w1.invalid) {
+            *pkt_len = 8 * v0.w3.df_len;
+            chklen = *pkt_len + offset;
+            if (chklen == read_len) break;  /* we have a valid packet */
+        }
+        cnt ++;
+    } while (cnt < 1200);
+    if (nb < 1) { perror("first_sgv2_harder:read"); return(0); }
+    if (v0.w1.invalid) return(0);           /* no valid packets */
+    notice_maxfrcounter(&v0);
+    if (cnt > 0) {                          /* extrapolated first */
+        nb = v0.w2.df_num_insec - cnt;
+        if (nb < 0) {
+            v0.w1.secs_inre --;
+            v0.w2.df_num_insec = nb + pkt_rate;
+        }
+    }
+    return(&v0);
+}
+static VDIFHeader *final_sgv2_harder(FILE *fp, size_t offset,
+    size_t pkt_rate, off_t end, size_t read_len, size_t pkt_len)
+{
+    static VDIFHeader vf;
+    static char pkt[BUF_SIZ];
+    size_t tail_off, chklen;
+    int nb, cnt = 1;
+    do {
+        tail_off = end - cnt * read_len;
+        vf.w1.invalid = 1;
+        if (fseeko(fp, tail_off, SEEK_SET)) {
+            perror("final_sgv2_harder:fseek");
+            break;
+        }
+        if ((nb = fread(pkt, read_len, 1, fp)) < 1) break;
+        vf = *(VDIFHeader *)(pkt + offset);
+        if (!vf.w1.invalid) {
+            chklen = 8 * vf.w3.df_len + offset;
+            if (chklen == read_len) break;  /* we have a valid packet */
+        }
+        cnt ++;
+    } while (cnt < 1200);
+    if (nb < 1) { perror("final_sgv2_harder:read"); return(0); }
+    if (vf.w1.invalid) return(0);           /* no valid packets */
+    notice_maxfrcounter(&vf);
+    if (cnt > 0) {                          /* extrapolated final */
+        nb = vf.w2.df_num_insec + cnt;
+        if (nb >= pkt_rate) {
+            vf.w1.secs_inre ++;
+            vf.w2.df_num_insec -= pkt_rate;
+        }
+    }
+    return(&vf);
+}
+
+/*
+ * Try harder, which means we're willing to read more bytes and to
+ * step around invalid packets.
+ */
+static int analyze_fragment_sgv2_harder(const char *path, struct stat *vfuse,
+    VDIFUSEpars *pars, int failcode)
+{
+    int err;
+    size_t block_size, nblks, runt;
+    size_t offset = pars->offset_bytes;
+    size_t pkt_rate, pkt_len, read_len, num_pkts;
+    FILE *fp = fopen(path, "r");
+    VDIFHeader *v0, *vf;
+
+    if (!fp) return(fprintf(vdflog,"%s: ",path),perror("fopen"),1);
+    /* get the file and block headers and some checks */
+    err = basic_checks_sgv2_harder(fp, pars, &read_len, &block_size);
+    if (err) err *= 1000;
+
+    /* get an initial header, and the length */
+    if (!err) v0 = first_sgv2_harder(fp, offset, pkt_rate,
+        read_len, &pkt_len);
+    if (!v0) err += 10000;
+    
+    /* estimate the number of packets */
+    nblks = (vfuse->st_size - 5) / block_size;
+    runt = (vfuse->st_size - 5) - nblks * block_size;
+    num_pkts = block_size / read_len;   /* pkts/block */
+    num_pkts *= nblks;                  /* total pkts */
+    if (runt) num_pkts += (runt - 8) / read_len;
+    
+    /* get a final header */
+    if (!err) vf = final_sgv2_harder(fp, offset, pkt_rate, 
+        vfuse->st_size, read_len, pkt_len);
+    if (!vf) err += 20000;
+
+    /* TODO: call find_the_damn_rate_sgv2() when it isn't a no-op */
+    pkt_rate = pars->pkts_per_sec;
+
+    if ((vdifuse_debug>0) && (failcode && !err)) fprintf(vdflog,
+        "Problematic file %s [%d -> %d] saved\n", path, failcode, err);
+    fclose(fp);
+    if (err) return(err);
+    update_vfuse(vfuse, v0, vf, 0, offset, read_len, pkt_rate, num_pkts);
+    return(0);
+}
+
+/*
  * Analyze the fragment and put what we find in the vfuse area
  * which already contains the results of a stat call on the file.
  * Note that st_size still retains the size of the frag in bytes.
@@ -453,9 +606,17 @@ static int analyze_fragment_sgv2(const char *path, struct stat *vfuse,
 static int analyze_fragment(const char *path, struct stat *vfuse,
     VDIFUSEpars *pars, int rigor, int *stype)
 {
-    int rv;
+    int rv, rvh = 0;
     if (rigor & VDIFUSE_RIGOR_MAGIC) {
         rv = analyze_fragment_sgv2(path, vfuse, pars);
+        if (rv) rvh = analyze_fragment_sgv2_harder(path, vfuse, pars, rv);
+        if (rvh) rv += rvh;
+        else rv = rvh;
+        /*
+         * Note that the next calls are to attach_sgv2_anc() so
+         * if we make arrangements to update the fuse entry for the
+         * fragment, we can simplify the work here.
+         */
         *stype = (rv) ? VDIFUSE_STYPE_NULL : VDIFUSE_STYPE_SGV2;
     } else {
         rv = analyze_fragment_vdif(path, vfuse, pars);

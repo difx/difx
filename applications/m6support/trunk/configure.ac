@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT([m6support], [0.15], [gbc@haystack.mit.edu])
+AC_INIT([m6support], [0.16], [gbc@haystack.mit.edu])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([vdifuse.h])
 AC_CONFIG_HEADERS([config.h])
