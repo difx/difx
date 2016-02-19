@@ -2463,53 +2463,6 @@ int CorrParams::checkSetupValidity()
 			}
 			c->FFTSpecRes = c->outputSpecRes;
 		}
-
-		if(c->xmacLength == 0)
-		{
-		  std::cout << "DEBUG: Setting xmacLength" << std::endl;
-		  std::cout << "      minInputChans=" << c->minInputChans() << std::endl;
-			if(c->minInputChans() > 0)
-			{
-				if(c->minInputChans() > 128)
-				{
-					const int trialXmacLength[] = {512, 400, 256, 250, 128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
-
-					for(int i = 0; ; ++i)
-					{
-					  std::cout << "DEBUG: Try " << trialXmacLength[i] << std::endl;
-						if(c->minInputChans() % trialXmacLength[i] == 0)
-						{
-						  std::cout << "       Using it" << std::endl;
-							c->xmacLength = trialXmacLength[i];
-							break;
-						}
-					}
-				}
-				else
-				{
-					c->xmacLength = c->minInputChans();
-				}
-			}
-		}
-		if(c->strideLength == 0)
-		{
-			if(c->minInputChans() > 0)
-			{
-				const int trialStrideLength[] = {128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
-				int goal;
-
-				goal = static_cast<int>(sqrt(static_cast<double>(c->minInputChans())) + 0.5);
-
-				for(int i = 0; ; ++i)
-				{
-					if(c->minInputChans() % trialStrideLength[i] == 0 && trialStrideLength[i] <= goal)
-					{
-						c->strideLength = trialStrideLength[i];
-						break;
-					}
-				}
-			}
-		}
 	}
 
 	// check that all setups are sensible
