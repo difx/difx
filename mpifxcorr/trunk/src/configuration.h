@@ -97,8 +97,8 @@ public:
   inline int getNumBufferedFFTs(int configindex) const { return configs[configindex].numbufferedffts; }
   inline int getThreadResultLength(int configindex) const { return configs[configindex].threadresultlength; }
   inline int getCoreResultLength(int configindex) const { return configs[configindex].coreresultlength; }
-  inline int getMaxThreadResultLength() const { return maxthreadresultlength; }
-  inline int getMaxCoreResultLength() const { return maxcoreresultlength; }
+  inline long long getMaxThreadResultLength() const { return maxthreadresultlength; }
+  inline long long getMaxCoreResultLength() const { return maxcoreresultlength; }
   inline int getMaxNumBufferedFFTs() const { return maxnumbufferedffts; }
   inline int getNumXmacStrides(int configindex, int freqindex) const { return configs[configindex].numxmacstrides[freqindex]; }
   inline int getCompleteStrideLength(int configindex, int freqindex) const { return configs[configindex].completestridelength[freqindex]; }
@@ -953,7 +953,9 @@ private:
   int numdatastreams, numbaselines, numcoreconfs;
   int executeseconds, startmjd, startseconds, startns;
   double restartseconds;
-  int maxnumchannels, maxnumpulsarbins, maxthreadresultlength, maxcoreresultlength, maxnumbufferedffts, mtu;
+  int maxnumchannels, maxnumpulsarbins;
+  long long maxthreadresultlength, maxcoreresultlength;
+  int maxnumbufferedffts, mtu;
   int stadumpchannels, ltadumpchannels;
   int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength;
   long long estimatedbytes;

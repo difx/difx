@@ -136,7 +136,7 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   processthreads = new pthread_t[numprocessthreads];
   processconds = new pthread_cond_t[numprocessthreads];
   processthreadinitialised = new bool[numprocessthreads];
-  threadbytes = new int[numprocessthreads];
+  threadbytes = new long long[numprocessthreads];
   for(int i=0;i<numprocessthreads;i++)
   {
     pthread_cond_init(&processconds[i], NULL);

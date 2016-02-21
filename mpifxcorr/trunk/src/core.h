@@ -249,9 +249,11 @@ private:
   MPI_Request * datarequests;
   MPI_Request * controlrequests;
   MPI_Status * msgstatuses;
-  int numdatastreams, numbaselines, databytes, controllength, numreceived, numcomplete, currentconfigindex, numprocessthreads, maxthreadresultlength, maxcoreresultlength, startmjd, startseconds;
+  int numdatastreams, numbaselines, databytes, controllength, numreceived, numcomplete, currentconfigindex, numprocessthreads, maxthreadresultlength;
+  long long maxcoreresultlength;
+  int startmjd, startseconds;
   long long estimatedbytes;
-  int * threadbytes;
+  long long * threadbytes;
   int * datastreamids;
   processslot * procslots;
   pthread_t * processthreads;
