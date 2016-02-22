@@ -73,7 +73,8 @@ Options:
    --makeflags='flags' Add 'flags' to each direct call of the make program,
                    (so you can do make -j 4 to speed up compilation)
 
-   --noipp         Don't try and install ipp package config file
+   --noipp         Don't try and install ipp package config file, and
+                   also disable IPP acceleration of mpifxcorr
 
    --ipp           Force installation of ipp package config file
                    (default doesn't overwrite existing)
@@ -766,6 +767,8 @@ if components["mpifxcorr"]:
     else:
         configstring = cfp + "/configure CXX=" + mpicxx
         configstring += " --prefix=" + difxroot
+        if doipp<0:
+            configstring += ' --disable-ipp '
         if components["rpfits"]:
             configstring += ' --with-rpfits '
         if cache != 'none':
