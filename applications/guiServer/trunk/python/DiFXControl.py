@@ -1,3 +1,23 @@
+#\if DOXYGEN_IGNORE ############################################################
+#                                                                              #
+#   Copyright (C) 2016 by John Spitzak                                         #
+#                                                                              #
+#   This program is free software; you can redistribute it and/or modify       #
+#   it under the terms of the GNU General Public License as published by       #
+#   the Free Software Foundation; either version 3 of the License, or          #
+#   (at your option) any later version.                                        #
+#                                                                              #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#   GNU General Public License for more details.                               #
+#                                                                              #
+#   You should have received a copy of the GNU General Public License          #
+#   along with this program; if not, write to the                              #
+#   Free Software Foundation, Inc.,                                            #
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.                  #
+#                                                                              #
+#\endif ########################################################################
 ## @namespace DiFXControl
 #  some detail
 #
@@ -621,7 +641,10 @@ class Client:
 		try:
 			del self.channelCallbacks[channelNum]
 		except KeyError:
-			print "no such channel key: " + str( channelNum )
+			#  Making this error silent allows us to redundantly close channels
+			#  "just to make sure" they are closed.
+			#print "no such channel key: " + str( channelNum )
+			pass
 		
 	#<!------------------------------------------------------------------------>
 	##  Add a new callback for regular packet data.
@@ -1381,36 +1404,43 @@ class Client:
 #<!---======================================================================--->
 class XMLMessage:
 	def __init__( self, data ):
+		self.parseOK = True
 		#  Send the data to the parser and collect the top-level node (there is
 		#  only one).
-		self.pdat = xml.dom.minidom.parseString( data )
-		self.header = None
-		self.body = None
-		self.fromNode = None
-		self.mpiProcessId = None
-		self.identifier = None
-		# \var this is important
-		self.typeStr = None
-		self.seqNumber = None
-		if len( self.pdat.childNodes ) > 0:
-			self.top = self.pdat.firstChild
-			if len( self.top.childNodes ) > 1:
-				#  Header information is constant among all DiFX messages.
-				self.header = self.top.firstChild
-				self.body = self.top.lastChild
-				#  Get the known items from the header.
-				for itm in self.header.childNodes:
-					if itm.nodeName.lower() == "from" and itm.firstChild != None:
-						self.fromNode = itm.firstChild.data
-					elif itm.nodeName.lower() == "mpiprocessid" and itm.firstChild != None:
-						self.mpiProcessId = itm.firstChild.data
-					elif itm.nodeName.lower() == "identifier" and itm.firstChild != None:
-						self.identifier = itm.firstChild.data
-					elif itm.nodeName.lower() == "type" and itm.firstChild != None:
-						self.typeStr = itm.firstChild.data
-				for itm in self.body.childNodes:
-					if itm.nodeName == "seqNumber" and itm.firstChild != None:
-						self.seqNumber = itm.firstChild.data
+		try:
+			self.pdat = xml.dom.minidom.parseString( data )
+			self.header = None
+			self.body = None
+			self.fromNode = None
+			self.mpiProcessId = None
+			self.identifier = None
+			# \var this is important
+			self.typeStr = None
+			self.seqNumber = None
+			if len( self.pdat.childNodes ) > 0:
+				self.top = self.pdat.firstChild
+				if len( self.top.childNodes ) > 1:
+					#  Header information is constant among all DiFX messages.
+					self.header = self.top.firstChild
+					self.body = self.top.lastChild
+					#  Get the known items from the header.
+					for itm in self.header.childNodes:
+						if itm.nodeName.lower() == "from" and itm.firstChild != None:
+							self.fromNode = itm.firstChild.data
+						elif itm.nodeName.lower() == "mpiprocessid" and itm.firstChild != None:
+							self.mpiProcessId = itm.firstChild.data
+						elif itm.nodeName.lower() == "identifier" and itm.firstChild != None:
+							self.identifier = itm.firstChild.data
+						elif itm.nodeName.lower() == "type" and itm.firstChild != None:
+							self.typeStr = itm.firstChild.data
+					for itm in self.body.childNodes:
+						if itm.nodeName == "seqNumber" and itm.firstChild != None:
+							self.seqNumber = itm.firstChild.data
+		except:
+			#  This is to accommodate the occasional broken message.  Not a graceful
+			#  way of doing this obviously.
+			self.parseOK = False
+			pass
 
 #===============================================================================
 #  The following are classes for each of the (known) DiFX message types.  The
@@ -2325,6 +2355,11 @@ class DifxMark5Copy( XMLMessage ):
 def parseXML( data ):
 	#  Create a generic message type to extract the header information.
 	xmlDat = XMLMessage( data )
+	if not xmlDat.parseOK:
+		#  If the parse didn't work, set the type string to None so calling
+		#  functions know not to use it.
+		xmlDat.typeStr = None
+		return xmlDat
 	#  Create an instance that matches the message type.
 	if xmlDat.typeStr == "DifxLoadMessage":
 		return DifxLoadMessage( data )

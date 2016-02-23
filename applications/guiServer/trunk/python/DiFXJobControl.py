@@ -1,9 +1,28 @@
+#\if DOXYGEN_IGNORE ############################################################
+#                                                                              #
+#   Copyright (C) 2016 by John Spitzak                                         #
+#                                                                              #
+#   This program is free software; you can redistribute it and/or modify       #
+#   it under the terms of the GNU General Public License as published by       #
+#   the Free Software Foundation; either version 3 of the License, or          #
+#   (at your option) any later version.                                        #
+#                                                                              #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#   GNU General Public License for more details.                               #
+#                                                                              #
+#   You should have received a copy of the GNU General Public License          #
+#   along with this program; if not, write to the                              #
+#   Free Software Foundation, Inc.,                                            #
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.                  #
+#                                                                              #
+#\endif ########################################################################
 import time
 import socket
 import DiFXControl
-
 #<!---======================================================================--->
-## Class used to start and stop jobs
+## \brief Class used to start and stop jobs
 #
 #  This class provides a list of functions that can be used to start and stop
 #  DiFX jobs, as well as control their run environment to some degree.  
@@ -59,7 +78,10 @@ import DiFXControl
 #
 #  <h3>Start a Job</h3>
 #
-#  A job is started with the start() method.  This is called with a "wait to finish"
+#  A job is started through an instance of the JobRunner Class, which you generate
+#  with the newJob() method.  The use of a unique instance of the JobRunner class
+#  allows multiple jobs to be tracked simultaneously.  Once you have the JobRunner
+#  instance, the job can be started with its start() method.  This is called with a "wait to finish"
 #  boolean value that will tell the method whether to return immediately or to wait
 #  until a job is complete (the default value is True).  In this example the "wait time"
 #  is made very long to avoid having the start() method time out while the job is
@@ -68,7 +90,8 @@ import DiFXControl
 #  \code{.py}
 #  #  Make the wait time huge to avoid a timeout while the job is starting
 #  difx.waitTime( 300.0 )
-#  difx.start()
+#  thisJob = difx.newJob()
+#  thisJob.start()
 #  \endcode
 #
 #  DiFX jobs don't provide a lot of direct feedback while they are running, but
@@ -93,7 +116,8 @@ import DiFXControl
 #  difx.errorCallback( errorCallback )
 #
 #  #  Start the job
-#  difx.start()
+#  thisJob = difx.newJob()
+#  thisJob.start()
 #  \endcode
 #
 #  A slightly more complex but possibly more useful approach would be to collect
@@ -183,8 +207,9 @@ class Client( DiFXControl.Client ):
 		self._forceJobStart = True
 		self._restartSeconds = 0.0
 		self._runWithMonitor = False
+		self._stopOnConfigFail = True
+		self._configOnly = False
 		self._setMachinesDefCallback = None
-		self._setStartCallback = None
 		self.callbackExclusive = False
 		self.amplitudeCB = None
 		self.phaseCB = None
@@ -192,6 +217,7 @@ class Client( DiFXControl.Client ):
 		self.meanAmplitudeCB = None
 		self.meanPhaseCB = None
 		self.meanLagCB = None
+		self.jobFinalMessage = None
 			
 	#<!------------------------------------------------------------------------>
 	## Create the .machines and .threads files associated with a job.
@@ -600,280 +626,449 @@ class Client( DiFXControl.Client ):
 				self.message( "Running mpirun tests on all processing nodes." )
 	
 	#<!------------------------------------------------------------------------>
-	## Determine whether a job should be started even if output exists from a prior run.
+	## Set up a new JobRunner class.
 	#
-	#  @param newVal True/False determines whether to "force" a job start.
+	#  @return The new class instance.
 	#
-	#  If output exists from a previous run of a DiFX job (it will be in a in a 
-	#  <code>\<JOBNAME\>.difx</code> directory), <i>guiServer</i> will not start
-	#  unless the job unless it is "forced".  If forced, the old output will
-	#  first be deleted.  By default this setting is True.
+	#  The JobRunner class is used to run a single job.  It is passed the
+	#  DiFXJobControl.Client class instance to gain access to its settings.
 	#
+	#  Creating a class instance allows multiple jobs to be run by the
+	#  DiFXJobControl.Client class simultaneously.
 	#<!------------------------------------------------------------------------>
-	def forceJobStart( self, newVal ):
-		self._forceJobStart = newVal
-		
+	def newJob( self ):
+		return self.JobRunner( self )
+
 	#<!------------------------------------------------------------------------>
-	## Set the time to advance into a job before restarting it.
+	## \brief Class used to run a job.
 	#
-	#  @param startSeconds The restart time from the start of the job.  0.0 is the
-	#                      default.
+	#  This class is used to start a job and monitor it while it is running.
+	#  It depends on an instance of the DiFXJobControl.Client class for many of the
+	#  settings it needs.
 	#
-	#  DiFX allows a job to be started at a specified time after the job's actual
-	#  start.  This method lets you set that time (measured in seconds).  By
-	#  default the value is 0.0 (start at the beginning).
+	#  <h3>Why A New Class?</h3>
 	#
+	#  There are a couple of justifications for requiring a new class type to run
+	#  jobs.  For one, the use of this class allows a single instance of the DiFXJobControl.Client class
+	#  to start more than one job at a time.  Each DiFXJobControl.Client.JobRunner class
+	#  instance will give some (limited) control and feedback from the running job.  Any number of instances
+	#  can co-exist without the control/feedback interacting becoming confused.
+	#
+	#  In addition, JobRunner is relatively light-weight compared to a DiFXJobControl.Client
+	#  instance, and does not require a new network connection as DiFXJobControl.Client
+	#  does.
+	#
+	#  <h3>Creating an Instance</h3>
+	#
+	#  An instance of the class is created using the DiFXJobControl.Client.newJob()
+	#  method.  Alternatively it can be created independently.  In either case,
+	#  all job-related settings from DiFXJobControl.Client are copied so they will
+	#  not change for the job even if they are altered in the DiFXJobControl.Client
+	#  instance.
+	#
+	#  <h3>Running A Job</h3>
+	#
+	#  A job is not started until a call to the DiFXJobControl.Client.JobRunner.start()
+	#  method.  
+	#
+	#  <h3>How To Find Out If A Job Is Done</h3>
+	#
+	#  <h3>Cleaning Up</h3>
+	#
+	#  When a job is started an independent "virtual communications channel" is
+	#  created to uniquely route control and data transfer associated with the
+	#  job between the client and <i>guiServer</i>.  A small amount of overhead
+	#  is associated with this structure on both the client and server side.  
+	#  When a job is complete and it is no longer needed, the channel should be
+	#  closed using the DiFXJobControl.Client.JobRunner.closeChannel() method.
+	#  
 	#<!------------------------------------------------------------------------>
-	def restartSeconds( self, startSeconds ):
-		self._restartSeconds = startSeconds
-		
-	#<!------------------------------------------------------------------------>
-	## Determine whether a job should be run with the "monitor" on.
-	#
-	#  @param newVal True/False determines whether to run with the monitor.
-	#
-	#  The monitor is a function of the core DiFX processing that allows real
-	#  time data to be extracted from a running job.  In the past it has been
-	#  (occasionally) problematic, but such problems appear to be fixed so by
-	#  default this setting is True.  If you are having job start issues you
-	#  may wish to try turning the monitor off (the monitor is only required
-	#  if you are employing the monitor() method).
-	#
-	#<!------------------------------------------------------------------------>
-	def runWithMonitor( self, newVal ):
-		self._runWithMonitor = newVal
-		
-	#<!------------------------------------------------------------------------>
-	## Send a command to start a job to the server.
-	#
-	#  @param waitToFinish True/False determines whether this function will
-	#                      return immediately or wait for the job
-	#                      to be complete on the server.
-	#
-	#  Composes and sends an XML message that triggers the start of a job.  The
-	#  startCallback() method is used as a callback for job activities.  Either
-	#  wait for the job to finish or return immediately after starting it based
-	#  on the value of waitToFinish.
-	#
-	#<!------------------------------------------------------------------------>
-	def start( self, waitToFinish = True ):
-		#  Open a new channel for this operation.
-		self.jobComplete = False
-		self.packetData = None
-		self.channel = self._client.newChannel( self.startCallback )
-		packetData = "		<input>" + self._inputFile + "</input>\n"
-		#  The manager, datastream, and processor nodes are not used by the start process
-		#  on guiServer.  However, they are checked, so we need to include something for
-		#  them.  If we have legitimate values, we use those, but if we don't we can get
-		#  away with "None".
-		if self._headNode != None:
-			packetData += "		<manager node=\"" + self._headNode + "\"/>\n"
-		else:
-			packetData += "		<manager node=\"None\"/>\n"
-		if len( self._dataSources ) > 0:
-			packetData += "		<datastream nodes=\""
-			for node in self._dataSources:
-				packetData += node + " "
-			packetData += "\"/>\n"
-		else:
-			packetData += "		<datastream nodes=\"None\"/>\n"
-		if len( self._processors ) > 0:
-			for node in self._processors:
-				packetData += "		<process nodes=\"" + str( node[0] ) + "\" threads=\"" + str( node[1] ) + "\"/>\n"
-		else:
-			packetData += "		<process nodes=\"None\" threads=\"None\"/>\n"
-		packetData += "		<difxVersion>" + str( self.versionPreference ) + "</difxVersion>\n"
-		if self._forceJobStart:
-			packetData += "		<force>1</force>\n"
-		else:
-			packetData += "		<force>0</force>\n"
-		packetData += "		<restartSeconds>" + str( self._restartSeconds ) + "</restartSeconds>\n"
-		if self._runWithMonitor:
-			packetData += "		<function>RUN_MONITOR</function>\n"
-		else:
-			packetData += "		<function>USNO</function>\n"
-		packetData += "		<port>" + str( self.channel ) + "</port>\n"
-		self._client.sendCommandPacket( "DifxStart", packetData )
-		#  Now we wait for the responses to pile in, unless we've been
-		#  instructed to bail out.
-		if waitToFinish:
+	class JobRunner:
+		def __init__( self, jobControl ):
+			self.jobControl = jobControl
+			self._client = jobControl._client
+			self._forceJobStart = True
+			self._restartSeconds = 0.0
+			self._runWithMonitor = False
+			self._stopOnConfigFail = True
+			self._configOnly = False
+			self._setStartCallback = None
 			self.wait = self._client._waitTime
-			while self.wait > 0.0 and not self.jobComplete:
-				try:
-					time.sleep( 0.01 )
-				except KeyboardInterrupt:
-					self.jobComplete = True			
-				self.wait -= 0.01
-				if self.wait == 0.0:
-					print "timeout!"
-					self._client.doTimeoutCallback()
-			self._client.closeChannel( self.channel )
-			return
-		else:
-			return
-			
-	#<!------------------------------------------------------------------------>
-	## Set your own callback for responses to start activities.
-	#
-	#  @param callbackFunction User-defined function that takes an integer an
-	#                          a string as arguments.
-	#  @param exclusive True/False determines whether this function will
-	#                   be called exclusively, or if the internal response
-	#                   to packets will be employed as well.  False by default.
-	#
-	#  Set a user-defined function to serve as a callback to <i>guiServer</i>
-	#  packets that are sent as a job runs.  The function must accept an integer "packet ID" as its first
-	#  argument and a string "packet data" as its second.  This can be the only
-	#  response to packet data if "exclusive" is True, otherwise the internal
-	#  packet handling (which consists mostly of sending status messages) will
-	#  be employed as well.
-	#
-	#  Portions of the startCallback() method can provide a model for writing your own
-	#  callback.  The table below lists the packet IDs as defined in the
-	#  DiFXJobControl.Client class, their integer values, and their associated
-	#  packet data (an empty data entry means there is no associated data).
-	#
-	#  <table>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_TERMINATED                   <td>100<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_ENDED_GRACEFULLY             <td>101<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_STARTED                      <td>102<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS      <td>103<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_PARAMETER_CHECK_SUCCESS          <td>104<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_NO_HEADNODE              <td>105<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_NO_DATASOURCES           <td>106<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_NO_PROCESSORS            <td>107<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED   <td>108<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND      <td>109<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG  <td>110<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_OUTPUT_EXISTS            <td>111<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DELETING_PREVIOUS_OUTPUT         <td>112<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_STARTING_DIFX                    <td>113<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MESSAGE                     <td>114<td>Message text
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_WARNING                     <td>115<td>Warning text
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_ERROR                       <td>116<td>Error text
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_COMPLETE                    <td>117<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DATA_FILE_SIZE                   <td>118<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_FAILED                       <td>119<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_ENDED_WITH_ERRORS            <td>120<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE   <td>121<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN   <td>122<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED   <td>123<td>
-	#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG     <td>124<td>
-	#  </table>
-	#
-	#<!------------------------------------------------------------------------>
-	def setStartCallback( self, callbackFunction, exclusive = False ):
-		self._setStartCallback = callbackFunction
-		self.exclusiveCallback = exclusive
-				
-	RUN_DIFX_JOB_TERMINATED                   = 100
-	RUN_DIFX_JOB_ENDED_GRACEFULLY             = 101
-	RUN_DIFX_JOB_STARTED                      = 102
-	RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS      = 103
-	RUN_DIFX_PARAMETER_CHECK_SUCCESS          = 104
-	RUN_DIFX_FAILURE_NO_HEADNODE              = 105
-	RUN_DIFX_FAILURE_NO_DATASOURCES           = 106
-	RUN_DIFX_FAILURE_NO_PROCESSORS            = 107
-	RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED   = 108
-	RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND      = 109
-	RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG  = 110
-	RUN_DIFX_FAILURE_OUTPUT_EXISTS            = 111
-	RUN_DIFX_DELETING_PREVIOUS_OUTPUT         = 112
-	RUN_DIFX_STARTING_DIFX                    = 113
-	RUN_DIFX_DIFX_MESSAGE                     = 114
-	RUN_DIFX_DIFX_WARNING                     = 115
-	RUN_DIFX_DIFX_ERROR                       = 116
-	RUN_DIFX_DIFX_COMPLETE                    = 117
-	RUN_DIFX_DATA_FILE_SIZE                   = 118
-	RUN_DIFX_JOB_FAILED                       = 119
-	RUN_DIFX_JOB_ENDED_WITH_ERRORS            = 120
-	RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE   = 121
-	RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN   = 122
-	RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED   = 123
-	RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG     = 124
+			self.jobComplete = False
+			self.message = self.jobControl.message
+			self.warning = self.jobControl.warning
+			self.error = self.jobControl.error
+			self.inputFile = self.jobControl._inputFile
+			self.headNode = self.jobControl._headNode
+			self.dataSources = self.jobControl._dataSources
+			self.processors = self.jobControl._processors
+			self.versionPreference = self.jobControl.versionPreference
 	
-	#<!------------------------------------------------------------------------>
-	## Callback function for a "DifxStart" command response.
-	#
-	#  @param data Data transmitted by the server
-	#
-	#  This function is called when data are received over the socket "channel"
-	#  opened for the job start procedure.  The data are fed to the
-	#  DiFXControl.Client.packetProtocol() method to parse out a "packet ID"
-	#  that matches one of the "RUN_DIFX" values (above), and data associated
-	#  with it.  The packet may not be complete at this time - the 
-	#  DiFXControl.Client.packetProtocol() method deals with that.
-	#<!------------------------------------------------------------------------>
-	def startCallback( self, data ):
-		#  Reset the wait time.
-		self.wait = self._client._waitTime
-		#  The data from this callback can consist of one of three components
-		#  as part of the server packet protocol - these are an ID, a data length,
-		#  and data itself.  The packetProtocol function gets this for us.
-		self.packetData = self._client.packetProtocol( data, self.packetData )
-		if self.packetData[3]: #  Indicates whether packet is complete
-			#  If the user has set their own callback, use it.  We send the packet
-			#  ID and packet data (a string) as arguments.
-			if self._setStartCallback != None:
-				self._setStartCallback( self.packetData[0], self.packetData[2] )
-				if self.exclusiveCallback:
-					return
-			#  Figure out what this message is from the packet ID
-			packetId = self.packetData[0]
-			if packetId == self.RUN_DIFX_JOB_TERMINATED:
-				self.warning( "Job terminated" )
-				self.jobComplete = True
-			elif packetId == self.RUN_DIFX_JOB_ENDED_GRACEFULLY:
-				self.message( "Job ended gracefully" )
-				self.jobComplete = True
-			elif packetId == self.RUN_DIFX_JOB_STARTED:
-				pass
-			elif packetId == self.RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS:
-				self.message( "Start parameter check" )
-			elif packetId == self.RUN_DIFX_PARAMETER_CHECK_SUCCESS:
-				self.message( "Parameter check was successful" )
-			elif packetId == self.RUN_DIFX_FAILURE_NO_HEADNODE:
-				self.error( "Start failed - no headnode specified" )
-			elif packetId == self.RUN_DIFX_FAILURE_NO_DATASOURCES:
-				self.error( "Start failed - no data sources specified" )
-			elif packetId == self.RUN_DIFX_FAILURE_NO_PROCESSORS:
-				self.error( "Start failed - no processing nodes  specified" )
-			elif packetId == self.RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED:
-				self.error( "Start failed - no input file specified" )
-			elif packetId == self.RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND:
-				self.error( "Start failed - input file was not found" )
-			elif packetId == self.RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG:
-				self.error( "Start failed - input file name was too long" )	
-			elif packetId == self.RUN_DIFX_FAILURE_OUTPUT_EXISTS:
-				self.error( "Start failed - output directory exists" )
-			elif packetId == self.RUN_DIFX_DELETING_PREVIOUS_OUTPUT:
-				self.warning( "Deleting existing output directory" )
-			elif packetId == self.RUN_DIFX_STARTING_DIFX:
-				self.message( "Starting DiFX" )
-			elif packetId == self.RUN_DIFX_DIFX_MESSAGE:
-				self.message( self.packetData[2] )
-			elif packetId == self.RUN_DIFX_DIFX_WARNING:
-				self.warning( self.packetData[2] )
-			elif packetId == self.RUN_DIFX_DIFX_ERROR:
-				self.error( self.packetData[2] )
-			elif packetId == self.RUN_DIFX_DIFX_COMPLETE:
-				self.message( "Job complete" )
-			elif packetId == self.RUN_DIFX_DATA_FILE_SIZE:
-				pass
-			elif packetId == self.RUN_DIFX_JOB_FAILED:
-				self.error( "Job failed" )
-				self.jobComplete = True
-			elif packetId == self.RUN_DIFX_JOB_ENDED_WITH_ERRORS:
-				self.warning( "Job ended with errors" )
-				self.jobComplete = True
-			elif packetId == self.RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE:
-				pass
-			elif packetId == self.RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN:
-				pass
-			elif packetId == self.RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED:
-				pass
-			elif packetId == self.RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG:
-				self.error( "Start failed - input file did not pass configuation test." )
+		#<!------------------------------------------------------------------------>
+		## Determine whether a job should be started even if output exists from a prior run.
+		#
+		#  @param newVal True/False determines whether to "force" a job start.
+		#
+		#  If output exists from a previous run of a DiFX job (it will be in a in a 
+		#  <code>\<JOBNAME\>.difx</code> directory), <i>guiServer</i> will not start
+		#  unless the job unless it is "forced".  If forced, the old output will
+		#  first be deleted.  By default this setting is True.
+		#
+		#<!------------------------------------------------------------------------>
+		def forceJobStart( self, newVal ):
+			self._forceJobStart = newVal
+
+		#<!------------------------------------------------------------------------>
+		## Set the time to advance into a job before restarting it.
+		#
+		#  @param startSeconds The restart time from the start of the job.  0.0 is the
+		#                      default.
+		#
+		#  DiFX allows a job to be started at a specified time after the job's actual
+		#  start.  This method lets you set that time (measured in seconds).  By
+		#  default the value is 0.0 (start at the beginning).
+		#
+		#<!------------------------------------------------------------------------>
+		def restartSeconds( self, startSeconds ):
+			self._restartSeconds = startSeconds
+
+		#<!------------------------------------------------------------------------>
+		## Determine whether a job should be run with the "monitor" on.
+		#
+		#  @param newVal True/False determines whether to run with the monitor.
+		#
+		#  The monitor is a function of the core DiFX processing that allows real
+		#  time data to be extracted from a running job.  In the past it has been
+		#  (occasionally) problematic, but such problems appear to be fixed so by
+		#  default this setting is True.  If you are having job start issues you
+		#  may wish to try turning the monitor off (the monitor is only required
+		#  if you are employing the monitor() method).
+		#
+		#<!------------------------------------------------------------------------>
+		def runWithMonitor( self, newVal ):
+			self._runWithMonitor = newVal
+
+		#<!------------------------------------------------------------------------>
+		## Determine whether a job should run only the configuration test.
+		#
+		#  @param newVal True/False determines whether to stop on a failed test.
+		#
+		#  The "configuration test" is performed on the .input file to determine
+		#  if a job can be run successfully.  If this option is set ONLY the test
+		#  will be run - the job will not be run whether the test passes or fails.
+		#
+		#<!------------------------------------------------------------------------>
+		def configOnly( self, newVal ):
+			self._configOnly = newVal
+
+		#<!------------------------------------------------------------------------>
+		## Determine whether a job should stop if the configuration test fails.
+		#
+		#  @param newVal True/False determines whether to stop on a failed test.
+		#
+		#  Before a job is run a "configuration test" is performed on the .input
+		#  file.  The test will determine whether the job can be run successfully
+		#  (with a few exceptions).  If the test fails and this option is set to
+		#  True (the default), no effort will be made to actually run the job.
+		#
+		#<!------------------------------------------------------------------------>
+		def stopOnConfigFail( self, newVal ):
+			self._stopOnConfigFail = newVal
+
+		#<!------------------------------------------------------------------------>
+		## Send a command to start a job to the server.
+		#
+		#  @param waitToFinish True/False determines whether this function will
+		#                      return immediately or wait for the job
+		#                      to be complete on the server.
+		#
+		#  Composes and sends an XML message that triggers the start of a job.  Either
+		#  wait for the job to finish or return immediately after starting it based
+		#  on the value of waitToFinish.
+		#
+		#<!------------------------------------------------------------------------>
+		def start( self, waitToFinish = True ):
+			#  Open a new channel for this operation.
+			self.jobComplete = False
+			self.jobFinalMessage = None
+			self.packetData = None
+			self.channel = self._client.newChannel( self.startCallback )
+			packetData = "		<input>" + self.inputFile + "</input>\n"
+			#  The manager, datastream, and processor nodes are not used by the start process
+			#  on guiServer.  However, they are checked, so we need to include something for
+			#  them.  If we have legitimate values, we use those, but if we don't we can get
+			#  away with "None".
+			if self.headNode != None:
+				packetData += "		<manager node=\"" + self.headNode + "\"/>\n"
+			else:
+				packetData += "		<manager node=\"None\"/>\n"
+			if len( self.dataSources ) > 0:
+				packetData += "		<datastream nodes=\""
+				for node in self.dataSources:
+					packetData += node + " "
+				packetData += "\"/>\n"
+			else:
+				packetData += "		<datastream nodes=\"None\"/>\n"
+			if len( self.processors ) > 0:
+				for node in self.processors:
+					packetData += "		<process nodes=\"" + str( node[0] ) + "\" threads=\"" + str( node[1] ) + "\"/>\n"
+			else:
+				packetData += "		<process nodes=\"None\" threads=\"None\"/>\n"
+			packetData += "		<difxVersion>" + str( self.versionPreference ) + "</difxVersion>\n"
+			if self._forceJobStart:
+				packetData += "		<force>1</force>\n"
+			else:
+				packetData += "		<force>0</force>\n"
+			packetData += "		<restartSeconds>" + str( self._restartSeconds ) + "</restartSeconds>\n"
+			if self._runWithMonitor:
+				packetData += "		<function>RUN_MONITOR</function>\n"
+			elif self._configOnly:
+				packetData += "     <function>CONFIG_ONLY</function>"
+			elif self._stopOnConfigFail:
+				packetData += "     <function>BAIL_ON_CONFIG_FAIL</function>"
+			else:
+				packetData += "		<function>USNO</function>\n"
+			packetData += "		<port>" + str( self.channel ) + "</port>\n"
+			self._client.sendCommandPacket( "DifxStart", packetData )
+			#  Now we wait for the responses to pile in, unless we've been
+			#  instructed to bail out.
+			if waitToFinish:
+				self.wait = self._client._waitTime
+				while self.wait > 0.0 and not self.jobComplete:
+					try:
+						time.sleep( 0.01 )
+					except KeyboardInterrupt:
+						self.jobComplete = True			
+					self.wait -= 0.01
+					if self.wait == 0.0:
+						print "timeout!"
+						self._client.doTimeoutCallback()
+				self._client.closeChannel( self.channel )
+				return
+			else:
+				return
+
+		#<!------------------------------------------------------------------------>
+		## Clean up the channel connection associated with this job.
+		#
+		#<!------------------------------------------------------------------------>
+		def closeChannel( self ):
+			self._client.closeChannel( self.channel )
+			
+		#<!------------------------------------------------------------------------>
+		## Set your own callback for responses to start activities.
+		#
+		#  @param callbackFunction User-defined function that takes an integer an
+		#                          a string as arguments.
+		#  @param exclusive True/False determines whether this function will
+		#                   be called exclusively, or if the internal response
+		#                   to packets will be employed as well.  False by default.
+		#
+		#  Set a user-defined function to serve as a callback to <i>guiServer</i>
+		#  packets that are sent as a job runs.  The function must accept an integer "packet ID" as its first
+		#  argument and a string "packet data" as its second.  This can be the only
+		#  response to packet data if "exclusive" is True, otherwise the internal
+		#  packet handling (which consists mostly of sending status messages) will
+		#  be employed as well.
+		#
+		#  Portions of the JobRunner.startCallback() method can provide a model for writing your own
+		#  callback.  The table below lists the packet IDs as defined in the
+		#  DiFXJobControl.Client class, their integer values, and their associated
+		#  packet data (an empty data entry means there is no associated data).
+		#
+		#  If you are going to use your own callback function, it makes sense to set
+		#  it before you start a job so you don't miss anything.
+		#
+		#  <table>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_TERMINATED                   <td>100<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_ENDED_GRACEFULLY             <td>101<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_STARTED                      <td>102<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS      <td>103<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_PARAMETER_CHECK_SUCCESS          <td>104<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_NO_HEADNODE              <td>105<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_NO_DATASOURCES           <td>106<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_NO_PROCESSORS            <td>107<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED   <td>108<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND      <td>109<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG  <td>110<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_OUTPUT_EXISTS            <td>111<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DELETING_PREVIOUS_OUTPUT         <td>112<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_STARTING_DIFX                    <td>113<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MESSAGE                     <td>114<td>Message text
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_WARNING                     <td>115<td>Warning text
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_ERROR                       <td>116<td>Error text
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_COMPLETE                    <td>117<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DATA_FILE_SIZE                   <td>118<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_FAILED                       <td>119<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_JOB_ENDED_WITH_ERRORS            <td>120<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE   <td>121<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN   <td>122<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED   <td>123<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG     <td>124<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_CONFIG_PASSED                    <td>125<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_CONFIG_COMMAND_NOT_FOUND         <td>126<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_RUN_CONFIG_CHECK                 <td>127<td>
+		#  <tr><td>DiFXJobControl.Client.RUN_DIFX_STOPPED_AFTER_CONFIG             <td>128<td>
+		#  </table>
+		#
+		#<!------------------------------------------------------------------------>
+		def setStartCallback( self, callbackFunction, exclusive = False ):
+			self._setStartCallback = callbackFunction
+			self.exclusiveCallback = exclusive
+
+		RUN_DIFX_JOB_TERMINATED                   = 100
+		RUN_DIFX_JOB_ENDED_GRACEFULLY             = 101
+		RUN_DIFX_JOB_STARTED                      = 102
+		RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS      = 103
+		RUN_DIFX_PARAMETER_CHECK_SUCCESS          = 104
+		RUN_DIFX_FAILURE_NO_HEADNODE              = 105
+		RUN_DIFX_FAILURE_NO_DATASOURCES           = 106
+		RUN_DIFX_FAILURE_NO_PROCESSORS            = 107
+		RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED   = 108
+		RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND      = 109
+		RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG  = 110
+		RUN_DIFX_FAILURE_OUTPUT_EXISTS            = 111
+		RUN_DIFX_DELETING_PREVIOUS_OUTPUT         = 112
+		RUN_DIFX_STARTING_DIFX                    = 113
+		RUN_DIFX_DIFX_MESSAGE                     = 114
+		RUN_DIFX_DIFX_WARNING                     = 115
+		RUN_DIFX_DIFX_ERROR                       = 116
+		RUN_DIFX_DIFX_COMPLETE                    = 117
+		RUN_DIFX_DATA_FILE_SIZE                   = 118
+		RUN_DIFX_JOB_FAILED                       = 119
+		RUN_DIFX_JOB_ENDED_WITH_ERRORS            = 120
+		RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE   = 121
+		RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN   = 122
+		RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED   = 123
+		RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG     = 124
+		RUN_DIFX_CONFIG_PASSED                    = 125
+		RUN_DIFX_CONFIG_COMMAND_NOT_FOUND         = 126
+		RUN_DIFX_RUN_CONFIG_CHECK                 = 127
+		RUN_DIFX_STOPPED_AFTER_CONFIG             = 128
+		RUN_DIFX_NOT_RESPONDING                   = 129
+
+		#<!------------------------------------------------------------------------>
+		## Callback function for a "DifxStart" command response.
+		#
+		#  @param data Data transmitted by the server
+		#
+		#  This function is called when data are received over the socket "channel"
+		#  opened for the job start procedure.  The data are fed to the
+		#  DiFXControl.Client.packetProtocol() method to parse out a "packet ID"
+		#  that matches one of the "RUN_DIFX" values (above), and data associated
+		#  with it.  The packet may not be complete at this time - the 
+		#  DiFXControl.Client.packetProtocol() method deals with that.
+		#<!------------------------------------------------------------------------>
+		def startCallback( self, data ):
+			#  Reset the wait time.
+			self.wait = self._client._waitTime
+			#  The data from this callback can consist of one of three components
+			#  as part of the server packet protocol - these are an ID, a data length,
+			#  and data itself.  The packetProtocol function gets this for us.
+			self.packetData = self._client.packetProtocol( data, self.packetData )
+			if self.packetData[3]: #  Indicates whether packet is complete
+				#  If the user has set their own callback, use it.  We send the packet
+				#  ID and packet data (a string) as arguments.
+				if self._setStartCallback != None:
+					self._setStartCallback( self.packetData[0], self.packetData[2] )
+					if self.exclusiveCallback:
+						return
+				#  Figure out what this message is from the packet ID
+				packetId = self.packetData[0]
+				if packetId == self.RUN_DIFX_JOB_TERMINATED:
+					self.warning( "Job terminated" )
+					self.jobFinalMessage = packetId
+					self.jobComplete = True
+				elif packetId == self.RUN_DIFX_JOB_ENDED_GRACEFULLY:
+					self.message( "Job ended gracefully" )
+					self.jobFinalMessage = packetId
+					self.jobComplete = True
+				elif packetId == self.RUN_DIFX_JOB_STARTED:
+					self.jobFinalMessage = packetId
+					pass
+				elif packetId == self.RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS:
+					self.message( "Start parameter check" )
+				elif packetId == self.RUN_DIFX_PARAMETER_CHECK_SUCCESS:
+					self.message( "Parameter check was successful" )
+				elif packetId == self.RUN_DIFX_FAILURE_NO_HEADNODE:
+					self.error( "Start failed - no headnode specified" )
+				elif packetId == self.RUN_DIFX_FAILURE_NO_DATASOURCES:
+					self.error( "Start failed - no data sources specified" )
+				elif packetId == self.RUN_DIFX_FAILURE_NO_PROCESSORS:
+					self.error( "Start failed - no processing nodes  specified" )
+				elif packetId == self.RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED:
+					self.error( "Start failed - no input file specified" )
+				elif packetId == self.RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND:
+					self.error( "Start failed - input file was not found" )
+				elif packetId == self.RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG:
+					self.error( "Start failed - input file name was too long" )	
+				elif packetId == self.RUN_DIFX_FAILURE_OUTPUT_EXISTS:
+					self.error( "Start failed - output directory exists" )
+				elif packetId == self.RUN_DIFX_DELETING_PREVIOUS_OUTPUT:
+					self.warning( "Deleting existing output directory" )
+				elif packetId == self.RUN_DIFX_STARTING_DIFX:
+					self.message( "Starting DiFX" )
+				elif packetId == self.RUN_DIFX_DIFX_MESSAGE:
+					self.message( self.packetData[2] )
+				elif packetId == self.RUN_DIFX_DIFX_WARNING:
+					self.warning( self.packetData[2] )
+				elif packetId == self.RUN_DIFX_DIFX_ERROR:
+					self.error( self.packetData[2] )
+				elif packetId == self.RUN_DIFX_DIFX_COMPLETE:
+					self.message( "Job complete" )
+				elif packetId == self.RUN_DIFX_DATA_FILE_SIZE:
+					pass
+				elif packetId == self.RUN_DIFX_JOB_FAILED:
+					self.error( "Job failed" )
+					self.jobFinalMessage = packetId
+					self.jobComplete = True
+				elif packetId == self.RUN_DIFX_JOB_ENDED_WITH_ERRORS:
+					self.warning( "Job ended with errors" )
+					self.jobFinalMessage = packetId
+					self.jobComplete = True
+				elif packetId == self.RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE:
+					pass
+				elif packetId == self.RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN:
+					pass
+				elif packetId == self.RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED:
+					pass
+				elif packetId == self.RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG:
+					self.error( "Start failed - input file did not pass configuation test." )
+					self.jobFinalMessage = packetId
+				elif packetId == self.RUN_DIFX_CONFIG_PASSED:
+					self.message( "Configuration test passed." )
+					self.jobFinalMessage = packetId
+				elif packetId == self.RUN_DIFX_CONFIG_COMMAND_NOT_FOUND:
+					self.error( "Configuration command was not found." )
+				elif packetId == self.RUN_DIFX_RUN_CONFIG_CHECK:
+					self.message( "Running configuration check." )
+				elif packetId == self.RUN_DIFX_STOPPED_AFTER_CONFIG:
+					self.jobComplete = True
+
+		#<!------------------------------------------------------------------------>
+		## Get the "final" state of a job.
+		#
+		#  Return the last message type received from a "complete" job.  The message
+		#  will be one of:
+		#  <ul>
+		#     <li>self.RUN_DIFX_JOB_FAILED
+		#     <li>self.RUN_DIFX_JOB_ENDED_WITH_ERRORS
+		#  </ul>
+		#  These all mean exactly what they sound like they mean.
+		#<!------------------------------------------------------------------------>
+		def finalMessage( self ):
+			return self.jobFinalMessage
+
+		#<!------------------------------------------------------------------------>
+		## Set the "final" message of a job.
+		#
+		#  @param newMessage The new message.
+		#
+		#  Change the "final" message of a job.  The message may be over written
+		#  by subsequent actualy messages.
+		#<!------------------------------------------------------------------------>
+		def setFinalMessage( self, newMessage ):
+			self.jobFinalMessage = newMessage
 
 	#<!------------------------------------------------------------------------>
 	## Attempt to stop a running job.
@@ -900,51 +1095,51 @@ class Client( DiFXControl.Client ):
 		packetData = "		<input>" + inputFile + "</input>\n"
 		self.sendCommandPacket( "DifxStop", packetData )
 		return
-	
-	MESSAGE                            = 100
- 	WARNING                            = 101
- 	ERROR                              = 102
- 	INPUT_FILE_PATH                    = 103
- 	CLOSE_CONNECTION                   = 104
- 	NUM_BASELINES                      = 105
- 	NUM_FREQUENCIES                    = 106
- 	BASELINE                           = 107
- 	FREQUENCY                          = 108
- 	NUM_SCANS                          = 109
- 	SCAN                               = 110
- 	TELESCOPE_1                        = 111
- 	TELESCOPE_2                        = 112
- 	BEGIN_CORRELATION_PRODUCTS         = 113
- 	NUM_PHASE_CENTERS                  = 114
- 	PHASE_CENTER                       = 115
- 	NUM_PULSAR_BINS                    = 116
- 	PULSAR_BIN                         = 117
- 	NUM_POL_PRODUCTS                   = 118
- 	POL_PRODUCT                        = 119
- 	NEW_PRODUCT                        = 120
- 	AUTOCORRELATION                    = 121
- 	PRODUCT_REQUEST                    = 122
- 	START_PRODUCT_REQUESTS             = 123
- 	END_PRODUCT_REQUESTS               = 124
- 	VISIBILITY_DATA                    = 125
- 	AMPLITUDE_DATA                     = 126
- 	PHASE_DATA                         = 127
- 	LAG_DATA                           = 128
- 	END_VISIBILITY_BLOCK               = 129
- 	JOB_NAME                           = 130
- 	OBS_CODE                           = 131
- 	SCAN_IDENTIFIER                    = 132
- 	SCAN_START_TIME                    = 133
- 	SCAN_END_TIME                      = 134
- 	SOURCE                             = 135
- 	SOURCE_RA                          = 136
- 	SOURCE_DEC                         = 137
- 	VISIBILITY_SCAN                    = 138
- 	FFT_SIZE                           = 139
- 	MEAN_AMPLITUDE_DATA                = 140
- 	MEAN_PHASE_DATA                    = 141
- 	MEAN_LAG_DATA                      = 142
- 	END_CORRELATION_PRODUCTS           = 143
+
+		MESSAGE                            = 100
+		WARNING                            = 101
+		ERROR                              = 102
+		INPUT_FILE_PATH                    = 103
+		CLOSE_CONNECTION                   = 104
+		NUM_BASELINES                      = 105
+		NUM_FREQUENCIES                    = 106
+		BASELINE                           = 107
+		FREQUENCY                          = 108
+		NUM_SCANS                          = 109
+		SCAN                               = 110
+		TELESCOPE_1                        = 111
+		TELESCOPE_2                        = 112
+		BEGIN_CORRELATION_PRODUCTS         = 113
+		NUM_PHASE_CENTERS                  = 114
+		PHASE_CENTER                       = 115
+		NUM_PULSAR_BINS                    = 116
+		PULSAR_BIN                         = 117
+		NUM_POL_PRODUCTS                   = 118
+		POL_PRODUCT                        = 119
+		NEW_PRODUCT                        = 120
+		AUTOCORRELATION                    = 121
+		PRODUCT_REQUEST                    = 122
+		START_PRODUCT_REQUESTS             = 123
+		END_PRODUCT_REQUESTS               = 124
+		VISIBILITY_DATA                    = 125
+		AMPLITUDE_DATA                     = 126
+		PHASE_DATA                         = 127
+		LAG_DATA                           = 128
+		END_VISIBILITY_BLOCK               = 129
+		JOB_NAME                           = 130
+		OBS_CODE                           = 131
+		SCAN_IDENTIFIER                    = 132
+		SCAN_START_TIME                    = 133
+		SCAN_END_TIME                      = 134
+		SOURCE                             = 135
+		SOURCE_RA                          = 136
+		SOURCE_DEC                         = 137
+		VISIBILITY_SCAN                    = 138
+		FFT_SIZE                           = 139
+		MEAN_AMPLITUDE_DATA                = 140
+		MEAN_PHASE_DATA                    = 141
+		MEAN_LAG_DATA                      = 142
+		END_CORRELATION_PRODUCTS           = 143
 
 	#<!------------------------------------------------------------------------>
 	## Send a command to start the real time monitor

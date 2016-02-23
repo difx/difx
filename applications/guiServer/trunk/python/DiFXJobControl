@@ -13,7 +13,8 @@
 #  <i>DiFXJobControl</i> allows you to specify the head node, data source nodes,
 #  processors, and threads used to run the job (if you specify one, you must specify
 #  them all!).  Left to its own devices it will attempt to use <code>.machines</code>
-#  and <code>.threads</code> files, if they exist.
+#  and <code>.threads</code> files, if they exist.  No check will be made that the
+#  content of these files is valid.
 #
 #  This program is meant to show how to use the DiFXJobControl.Client class to
 #  run a job.  However it is by no means a complete test of that class or its
@@ -22,6 +23,7 @@
 #  <a name=DIFXJOBCONTROL_ARGS><h3>Command Line Arguments</h3></a>
 #
 #  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-c, --config_only</b></pre>            <td>Run only the configuration test, not the actual job.
 #  <tr><td><pre><b>-d, --datasource <i>NODE</i></b></pre> <td>Add <i>NODE</i> to the list of data sources used to process the job.
 #                                                          If data sources are included head node, processors and threads must
 #                                                          be specified as well.  This argument can be used multiple times.
@@ -62,6 +64,7 @@ import DiFXJobControl
 import DiFXControl
 
 difx = None
+configOnly = False
 
 def messageCallback( argstr ):
 	print str( argstr )
@@ -161,6 +164,9 @@ try:
 			print ""
 			print "Options can include:"
 			print ""
+			print "   --config_only"
+			print "   -c         Run only the configuration test, not the job itself."
+			print ""
 			print "   --datasource NODE"
 			print "   -d NODE    Add a data source node to the list of such sources."
 			print ""
@@ -200,6 +206,9 @@ try:
 			print "              This applies only to the \"start()\" method call."
 			print ""
 			exit( 0 )
+		elif sys.argv[i] in [ "-c", "--config_only" ]:
+			configOnly = True
+			i = i + 1
 		elif sys.argv[i] in [ "-d", "--datasource" ]:
 			dataSources.append( sys.argv[i+1] )
 			i = i + 1
@@ -288,6 +297,8 @@ if headNode != None:
 	difx.testProcessors( True )
 	#  But this is certainly necessary
 	difx.defineMachines()
+elif configOnly:
+	pass
 else:
 	#  Make sure threads and machines files exist.
 	if difx.ls( inputFile.replace( ".input", ".machines" ) ) == None:
@@ -342,7 +353,10 @@ if waitTime != None:
 	difx.waitTime( waitTime )
 else:
 	difx.waitTime( 300.0 )
-difx.start()
+newJob = difx.newJob()
+if configOnly:
+	newJob.configOnly( True )
+newJob.start()
 if realtime:
 	difx.stopMonitor()
 	time.sleep( 4 )

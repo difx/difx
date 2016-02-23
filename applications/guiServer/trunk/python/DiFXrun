@@ -1,4 +1,24 @@
 #!/usr/bin/env python
+#\if DOXYGEN_IGNORE ############################################################
+#                                                                              #
+#   Copyright (C) 2016 by John Spitzak                                         #
+#                                                                              #
+#   This program is free software; you can redistribute it and/or modify       #
+#   it under the terms of the GNU General Public License as published by       #
+#   the Free Software Foundation; either version 3 of the License, or          #
+#   (at your option) any later version.                                        #
+#                                                                              #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#   GNU General Public License for more details.                               #
+#                                                                              #
+#   You should have received a copy of the GNU General Public License          #
+#   along with this program; if not, write to the                              #
+#   Free Software Foundation, Inc.,                                            #
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.                  #
+#                                                                              #
+#\endif ########################################################################
 ################################################################################
 #\defgroup difxrun DiFXrun
 #
@@ -7,26 +27,38 @@
 #  Usage:  <b><code>DiFXrun [options] [.input path list]</code></b>
 #
 #  <i>DiFXrun</i> runs a list of DiFX jobs, specified by <code>.input</code> file paths, on a DiFX cluster.  
-#  It tries to distribute the jobs on the cluster in a reasonable way such that the cluster will not
+#  By default it tries to distribute the jobs on the cluster in a reasonable way such that the cluster will not
 #  be overwhelmed, or it will do so based on
 #  user command-line settings (reasonable or otherwise).  There are three basic
 #  "modes" of operation:
 #
-#  In its <b>default mode</b>, <i>DiFXrun</i> is a kind of primitive scheduler.  It attempts to assign
+#  <h3>Scheduler Mode (Default)</h3>
+#
+#  By default <i>DiFXrun</i> runs a primitive scheduler.  It attempts to assign
 #  a number of processor nodes to each job (by default this number is 2 - it can
 #  be set with the "-p" command-line option) before running them.  It will continue to do this
 #  until it runs out of jobs (in which case it is done), or until it runs out of processors.
 #  When the latter happens <i>DiFXrun</i> will wait to start any remaining jobs until sufficient
 #  allocated resources are freed as previous jobs complete.
 #
-#  In <b>sequential mode</b> (use command-line option "-s"), <i>DiFXrun</i> will run only one job at a time
-#  until all are done.  All processing nodes will be used on each job unless 
-#  otherwise requested.
+#  <center>![DiFXrun running a series of jobs in scheduler mode (6 processors used for each).](DiFXrun_default.png)</center>
 #
-#  If the "-a" command line option is used (for <b>all mode</b>), <i>DiFXrun</i> will simultaneously run
+#  <h3>Sequential Mode</h3>
+#
+#  In sequential mode (selected by the command-line option "-s"), <i>DiFXrun</i> will run only one job at a time
+#  until all are done.  Two processing nodes will be used on each job unless
+#  otherwise requested using the "-p" option.
+#
+#  <center>![DiFXrun running a series of jobs in sequential mode (6 processors used for each).](DiFXrun_sequential.png)</center>
+#
+#  <h3>"All" Mode</h3>
+#
+#  If the "-a" command line option is used (for "all" mode), <i>DiFXrun</i> will simultaneously run
 #  all jobs listed using all available processors.  This works okay and might be the fastest way to run a limited list
 #  of jobs but breaks down rapidly as the list gets long.  Remember, if you use this option you are starting
 #  all listed jobs <i>at the same time</i>.  
+#
+#  <center>![DiFXrun running a series of jobs simultaneously in \"all\" mode (all processors employed).](DiFXrun_all.png)</center>
 #
 #  In all cases <i>DiFXrun</i> applies all available processor threads to each job
 #  being run on a processor (the number of threads comes from the number of "cores" of each
@@ -44,8 +76,29 @@
 #  match the regular expression but do not exist).
 #
 #  To detect processors, <i>DiFXrun</i> depends on <i>mk5daemon</i> being run on each.
-#  If <i>mk5daemon</i> is missing on a precessor, <i>DiFXrun</i> will simply never see
+#  If <i>mk5daemon</i> is missing on a processor, <i>DiFXrun</i> will simply never see
 #  it, and will be unable to utilize it.
+#
+#  <h3>Feedback</h3>
+#
+#  For each job it runs, <i>DiFXrun</i> provides a text-based "progress bar", as well as a
+#  status and completion percentage.  In addition, a node-usage map shows which processors
+#  a job is currently using (the "*" character), which processors it used (the "O" character),
+#  and which processors it did not touch (the "." character).  The nodes in the node-usage
+#  map are sorted by name, but nodes are chosen for processing in the order messages are
+#  received from them, so the nodes used for a job will often be scattered about the map.
+#
+#  All of these displays are updated when new job-related information is received.
+#
+#  <h4>If A Job Stops Responding</h4>
+#
+#  There are myriad (and sometimes unknown) reasons why a DiFX job might stop or stop
+#  sending feedback.  To avoid having <i>DiFXrun</i> hang forever on a job that will
+#  never report completion, failure, or whatever hung state it is in, a timeout scheme
+#  is implemented.  When a job has been silent for a timeout interval (you can set the
+#  interval using the -t argument, by default it is 300 seconds), its state will be
+#  reported as "Not Responding" and an effort will be made to shut the job, or whatever
+#  is left of the job down on the server (using aggressive kill signals).
 #
 #  <h3>What If I Want To Share the Correlator?</h3>
 #
@@ -64,6 +117,9 @@
 #  <tr><td><pre><b>-a, --all</b></pre>                     <td>Run the entire list of .input files using all available
 #                                                          processors, rather than trying to balance or distribute
 #                                                          processing.
+#  <tr><td><pre><b>-c, --config_only</b></pre>             <td>Run the configuration test on each job ONLY.  The job will
+#                                                          not actually be run.  The test results (pass/fail) will be
+#                                                          displayed.
 #  <tr><td><pre><b>-d, --datasource <i>NODE</i></b></pre>  <td>Use <i>NODE</i> as a data sources.  This is needed if mark5 modules
 #                                                          are employed or if only specific processor nodes have access to data
 #                                                          files.  This option must be used once for each data source.  Data sources
@@ -71,8 +127,9 @@
 #  <tr><td><pre><b>-D, --difx <i>VERSION</i></b></pre>     <td>Run using a specific DiFX version.  If not specified
 #                                                          the value of the DIFX_VERSION environment variable will
 #                                                          be used.  Failing that, "DIFX-DEVEL" will be used.
-#  <tr><td><pre><b>-e, --eliminate <i>NODE</i></b></pre>   <td>Eliminate node names matching the regular expression NODE"
-#                                                          from the list of nodes that will be used for processing.
+#  <tr><td><pre><b>-e, --eliminate <i>NODE</i></b></pre>   <td>Eliminate node names matching the regular expression NODE
+#                                                          from the list of nodes that will be used for processing.  This
+#                                                          argument can be used multiple times to include multiple regular expressions.
 #  <tr><td><pre><b>-g, --generate</b></pre>                <td>Use whatever existing .machines and .threads files exist
 #                                                          for each job.  If no such files exist, new ones will be
 #                                                          created (this option is actually "don't generate" but that was too clumsy).
@@ -89,18 +146,23 @@
 #  <tr><td><pre><b>-s, --sequential</b></pre>              <td>Run jobs sequentially instead of simultaneously (which is the
 #                                                          default).  All processors will be employed unless <pre>-p</pre> specifies
 #                                                          a number.
+#  <tr><td><pre><b>-t, --timeout <i>SEC</i></b></pre>      <td>Use SEC seconds as the timeout value for each job.  This is the
+#                                                          amount of time <i>DiFXrun</i> will wait before it gives up on a
+#                                                          "silent" (i.e. no messages received from) job and declares it
+#                                                          non-responsive.  Default value is 300.0.
 #  </table
 #
 ################################################################################
 program = 'DiFXrun'
 version = '0.1'
 author  = 'John Spitzak'
-verdate = '20151120'
+verdate = '20160210'
 
 import sys
 import time
 import os
 import re
+import threading
 import DiFXJobControl
 import DiFXControl
 
@@ -108,10 +170,13 @@ difx = None
 jobs = {}
 processorsList = {}
 mark5List = {}
-eliminateNodes = None
+eliminateNodes = []
 runAll = False
 sequential = False
 showProcessorUsage = True
+configOnly = False
+connectionFailure = False
+responder = None
 
 def messageCallback( argstr ):
 	print str( argstr )
@@ -121,6 +186,17 @@ def warningCallback( argstr ):
 	
 def errorCallback( argstr ):
 	print "ERROR: " + str( argstr )
+
+#===============================================================================
+#  Function to eliminate nodes using the "eliminateNodes" list of regular
+#  expressions.  Takes a string - if the string matches any of the regular
+#  expressions, return False.  Otherwise return True.
+#===============================================================================
+def keepThisNode( nodeName ):
+	for exp in eliminateNodes:
+		if exp.match( nodeName ):
+			return False
+	return True
 	
 #===============================================================================
 #  Class used to respond to callbacks.
@@ -148,13 +224,17 @@ class Responder:
 				except:
 					#  Make sure it doesn't match the regular expression for nodes we should
 					#  ignore
-					if eliminateNodes == None or eliminateNodes.match( xmlDat.fromNode ) == None:
+					if keepThisNode( xmlDat.fromNode ):
 						#  We are guessing at the number of cores here.  Later it will (hopefully)
 						#  be fixed.
-						processorsList[xmlDat.fromNode] = ( 8, None )
+						processorsList[xmlDat.fromNode] = ( 8, [], [] )
 			#  Look for the identifier (job name) in our list of job names.
 			if xmlDat.identifier != None:
-				jobData = jobs[xmlDat.identifier]
+				try:
+					jobData = jobs[xmlDat.identifier]
+				except:
+					#  This happens when an identifier we didn't start shows up
+					jobData = None
 				if jobData != None:
 					#  Compute a progress value.  The data for this might not be there, so we
 					#  have some default situations.
@@ -170,8 +250,13 @@ class Responder:
 							#  Remove this job from the processors list so we know we aren't working
 							#  on it anymore.
 							for proc in processorsList.keys():
-								if processorsList[proc][1] == xmlDat.identifier:
-									processorsList[proc] = ( processorsList[proc][0], None )
+								try:
+									index = processorsList[proc][1].index( xmlDat.identifier )
+									processorsList[proc][1].remove( xmlDat.identifier )
+									processorsList[proc][2].append( xmlDat.identifier )
+									processorsList[proc] = ( processorsList[proc][0], processorsList[proc][1], processorsList[proc][2] )
+								except:
+									pass
 						elif xmlDat.state == "Ending":
 							#  Ending state is annoying - use the job's known progress
 							pass
@@ -188,7 +273,7 @@ class Responder:
 			try:
 				proc = processorsList[xmlDat.fromNode]
 				#  Update the number of cores
-				processorsList[xmlDat.fromNode] = ( xmlDat.nCore, proc[1] )
+				processorsList[xmlDat.fromNode] = ( xmlDat.nCore, proc[1], proc[2] )
 			except:
 				#  Make sure this isn't identified as a mark5
 				try:
@@ -196,8 +281,8 @@ class Responder:
 				except:
 					#  Make sure it doesn't match the regular expression for nodes we should
 					#  ignore
-					if eliminateNodes == None or eliminateNodes.match( xmlDat.fromNode ) == None:
-						processorsList[xmlDat.fromNode] = ( xmlDat.nCore, None )
+					if keepThisNode( xmlDat.fromNode ):
+						processorsList[xmlDat.fromNode] = ( xmlDat.nCore, [], [] )
 		elif xmlDat.typeStr == "Mark5StatusMessage":
 			#  Identifies this node as a mark5, so add it to our list if it is not there
 			#  already.  At the moment we are only using this to avoid identifying these
@@ -218,6 +303,9 @@ class Responder:
 	#  Clear the screen and redraw the current state of all jobs.
 	#---------------------------------------------------------------------------	
 	def updateDisplay( self ):
+#		poop = True
+#		if poop:
+#			return
 		#  We do nothing until we have some initial data (otherwise we'd just clear
 		#  the screen).
 		if len( jobs.keys() ) > 0:
@@ -246,7 +334,7 @@ class Responder:
 					newStr += " "
 				if prog < 10:
 					newStr += " "
-				if jobs[job][0] != "not started":
+				if jobs[job][0] != "not started" and not configOnly:
 					newStr += str( prog ) + "%  ["
 					shortStr = ""
 					if prog > 100:
@@ -261,13 +349,93 @@ class Responder:
 					newStr += shortStr + "]"
 					if showProcessorUsage:
 						newStr += "  ["
-						for proc in processorsList.keys():
-							if processorsList[proc][1] == job:
+						for proc in sorted( processorsList.keys() ):
+							try:
+								index = processorsList[proc][1].index( job )
 								newStr += "*"
-							else:
-								newStr += "."
+							except:
+								try:
+									index = processorsList[proc][2].index( job )
+									newStr += "O"
+								except:
+									newStr += "."
 						newStr += "]"
 				print newStr
+
+#===============================================================================
+#  Get the final status of this job and cause the job display to reflect it.
+#===============================================================================
+def produceFinalStatus( thisJob, jobName, failure ):
+	if thisJob == None and jobName == None:
+		#  A call with "None" occurs when there is a connection problem.  Close
+		#  all of the open jobs "as is" so the program will terminate.
+		for job in jobs.keys():
+			print str( jobs[job] )
+			if not jobs[job][2]:
+				jobs[job] = ( "Broken Socket", jobs[job][1], True )
+		return
+	elif failure:
+		jobs[jobName] = ( "Not Responding", jobs[jobName][1], True )
+		difx.stop( thisJob.inputFile )
+	elif jobs[jobName][2]:
+		pass
+	else:
+		if thisJob.finalMessage() == thisJob.RUN_DIFX_JOB_ENDED_GRACEFULLY:
+			jobs[jobName] = ( "Done", 100.0, True )
+		elif thisJob.finalMessage() == thisJob.RUN_DIFX_JOB_ENDED_WITH_ERRORS:
+			jobs[jobName] = ( "Ran w/Errors", 100.0, True )
+		elif thisJob.finalMessage() == thisJob.RUN_DIFX_JOB_FAILED:
+			jobs[jobName] = ( "Failed", jobs[jobName][1], True )
+		elif thisJob.finalMessage() == thisJob.RUN_DIFX_JOB_TERMINATED:
+			jobs[jobName] = ( "Terminated", jobs[jobName][1], True )
+		elif thisJob.finalMessage() == thisJob.RUN_DIFX_FAILURE_INPUTFILE_BAD_CONFIG:
+			jobs[jobName] = ( "Config Failed", jobs[jobName][1], True )
+		elif thisJob.finalMessage() == thisJob.RUN_DIFX_CONFIG_PASSED:
+			jobs[jobName] = ( "Config Passed", jobs[jobName][1], True )
+		elif thisJob.finalMessage() == thisJob.RUN_DIFX_NOT_RESPONDING:
+			jobs[jobName] = ( "Not Responding", jobs[jobName][1], True )
+			difx.stop( thisJob.inputFile )
+	if responder != None:
+		responder.updateDisplay()
+
+#===============================================================================
+#  Thread to monitor a running job and figure out when it terminates.
+#===============================================================================
+class JobEndMonitor( threading.Thread ):
+	def __init__( self, thisJob, jobName ):
+		threading.Thread.__init__( self )
+		self.jobName = jobName
+		self.thisJob = thisJob
+
+	def run( self ):
+		self.quitNow = False
+		self.failure = False
+		while not self.thisJob.jobComplete and not self.quitNow:
+			try:
+				time.sleep( 0.1 )
+			except KeyboardInterrupt:
+				self.quitNow = True
+			self.thisJob.wait = self.thisJob.wait - 0.1
+			if self.thisJob.wait < 0.0:
+				self.thisJob.setFinalMessage( thisJob.RUN_DIFX_NOT_RESPONDING )
+				self.failure = True
+				self.quitNow = True
+		produceFinalStatus( self.thisJob, self.jobName, self.failure )
+		self.thisJob.closeChannel()	
+
+def messageCallback( argstr ):
+	print "MESSAGE:", argstr
+
+def warningCallback( argstr ):
+	print "WARNING:", argstr
+
+def errorCallback( argstr ):
+	print "ERROR:", argstr
+	
+def failureCallback( arg ):
+	connectionFailure = True
+	produceFinalStatus( None, None, False )
+	print "GET OUT OF HERE NOW!!!"
 
 #===============================================================================
 #  MAIN
@@ -276,11 +444,14 @@ host = None
 port = None
 dataSources = []
 processors = 2
+maxProcessors = None
+maxProcessorsAll = False
 usedAsDataSources = 2
 headNode = None
 inputFiles = None
 bail = False
 generate = True
+timeout = 300.0
 
 #  Locate a "default" DiFX Version from environment variables.  User may change this
 #  with command line arguments.
@@ -309,6 +480,11 @@ try:
 			print "              processors, rather than trying to balance or distribute"
 			print "              processing."
 			print ""
+			print "   --config_only"
+			print "   -c         Run the configuration test on each job ONLY.  The job will"
+			print "              not actually be run.  The test results (pass/fail) will be"
+			print "              displayed."
+			print ""
 			print "   --datasource NODE"
 			print "   -d NODE    Add a data source node to the list of such sources."
 			print ""
@@ -336,9 +512,13 @@ try:
 			print "   --manager NODE"
 			print "   -m NODE    Use NODE as the \"head node\" (or \"manager\" node)"
 			print ""
-			print "   --processors NUM"
+			print "   --processors NUM[,MAX]"
 			print "   -p NUM     Use NUM processors for working on each job.  By default"
-			print "              two will be used."
+			print "              two will be used.  If MAX is included, NUM will become"
+			print "              the minimum number of processors to be used and MAX will"
+			print "              become the maximum used (and the desired number to use,"
+			print "              depending on availability).  If MAX is the character \"#\""
+			print "              then all available processors will be the maximum."
 			print ""
 			print "   --port PORT"
 			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
@@ -351,7 +531,10 @@ try:
 			exit( 0 )
 		elif sys.argv[i] in [ "-a", "--all" ]:
 			runAll = True
-			showProcessorUsage = False
+			#showProcessorUsage = False
+			i = i + 1
+		elif sys.argv[i] in [ "-c", "--config_only" ]:
+			configOnly = True
 			i = i + 1
 		elif sys.argv[i] in [ "-g", "--generate" ]:
 			generate = False
@@ -360,10 +543,19 @@ try:
 			dataSources.append( sys.argv[i+1] )
 			i = i + 2
 		elif sys.argv[i] in [ "-e", "--eliminate" ]:
-			eliminateNodes = re.compile( sys.argv[i+1] )
+			eliminateNodes.append( re.compile( sys.argv[i+1] ) )
 			i = i + 2
 		elif sys.argv[i] in [ "-p", "--processors" ]:
-			processors = int( sys.argv[i+1] )
+			#  See if the string argument contains a comma, indicating two numbers.
+			try:
+				cpt = sys.argv[i+1].find( "," )
+				processors = int( sys.argv[i+1][:cpt])
+				if sys.argv[i+1][cpt+1:] == "#":
+					maxProcessorsAll = True
+				else:
+					maxProcessors = int( sys.argv[i+1][cpt+1:])
+			except:
+				processors = int( sys.argv[i+1] )
 			i = i + 2
 		elif sys.argv[i] in [ "-H", "--hostname" ]:
 			host = sys.argv[i+1]
@@ -379,8 +571,11 @@ try:
 			i = i + 2
 		elif sys.argv[i] in [ "-s", "--sequential" ]:
 			sequential = True
-			showProcessorUsage = False
+			#showProcessorUsage = False
 			i = i + 1
+		elif sys.argv[i] in [ "-t", "--timeout" ]:
+			timeout = int( sys.argv[i+1] )
+			i = i + 2
 		else:
 			#  The final argument is assumed to be the .input file list
 			inputFiles = sys.argv[i]
@@ -405,6 +600,13 @@ difx = DiFXJobControl.Client()
 difx.connect()
 difx.monitor()
 difx.version( DiFXVersion )
+difx.addFailCallback( failureCallback )
+if not difx.socketOK:
+	difx.close()
+	exit( 0 )
+#difx.messageCallback( messageCallback )
+#difx.warningCallback( warningCallback )
+#difx.errorCallback( errorCallback )
 #  Identify the node running the server - this will become the head node unless
 #  the user has selected otherwise.
 if len( difx.serverEnvironment ):
@@ -412,7 +614,8 @@ if len( difx.serverEnvironment ):
 		if key.upper() == "HOSTNAME":
 			#  Put this machine in our list of processors with a guess as to the number
 			#  of cores.  This number should be fixed later with DifxLoadMessages.
-			processorsList[difx.serverEnvironment[key]] = ( 8, None )
+			if keepThisNode( difx.serverEnvironment[key] ):
+				processorsList[difx.serverEnvironment[key]] = ( 8, [], [] )
 			#  Make it the head node unless the user has specified one.
 			if headNode == None:
 				headNode = difx.serverEnvironment[key]
@@ -425,7 +628,7 @@ difx.messageSelection( ( "DifxStatusMessage", "Mark5StatusMessage", "DifxLoadMes
 responder = Responder()
 difx.addRelayCallback( responder.difxRelayCallback )
 difx.relayPackets()
-difx.waitTime( 300.0 )
+difx.waitTime( timeout )
 
 #  Get a list of all .input files that match the user request.
 print "Locating .input files..."
@@ -445,96 +648,132 @@ for inputFile in lsList:
 keepGoing = True
 explained = False
 strlength = 0
-while keepGoing and len( processorsList.keys() ) < processors:
-	if not explained:
-		newstr = "Waiting for at least " + str( processors ) + " processors to be available.....currently "
-		strlength = len( newstr )
-		explained = True
-	sys.stdout.write( newstr + str( len( processorsList.keys() ) ) + "\r" )
-	try:
-		time.sleep( .1 )
-	except KeyboardInterrupt:
-		keepGoing = False
-if explained:
-	if keepGoing:
-		print newstr + str( len( processorsList.keys() ) )
-	else:
-		print "\nKeyboard Interrupt!"
-		difx.close()
-		exit( 0 )
+if not configOnly:
+	while keepGoing and len( processorsList.keys() ) < processors:
+		if not explained:
+			newstr = "Waiting for at least " + str( processors ) + " processors to be available.....currently "
+			strlength = len( newstr )
+			explained = True
+		sys.stdout.write( newstr + str( len( processorsList.keys() ) ) + "\r" )
+		try:
+			time.sleep( .1 )
+		except KeyboardInterrupt:
+			keepGoing = False
+	if explained:
+		if keepGoing:
+			print newstr + str( len( processorsList.keys() ) )
+		else:
+			print "\nKeyboard Interrupt!"
+			difx.close()
+			exit( 0 )
 
 #  This is where we actually run things.
 for inputFile in lsList:
-	difx.inputFile( inputFile )
-	#  Find the job name
-	jobName = inputFile[inputFile.rfind( "/" ) + 1:inputFile.rfind( "." )]
-	jobs[jobName] = ( "Initializing", 0.0, False )
-	#  See if we need to generate .machines and .threads files because they are missing.
-	if not difx.getMachines():
-		generate = True
-	#  Assign machines and threads based on our instructions.
-	if generate:
-		difx.setHeadNode( headNode )
-		difx.clearDataSources()
-		difx.clearProcessors()
-	if runAll:
-		#  Make the first processors data sources unless we have only
-		#  one...in which case use that.
-		count = 0
-		for proc in processorsList.keys():
-			if count < usedAsDataSources:
-				difx.addDataSource( proc )
-			count += 1
-		#  Make every machine a processor.
-		for proc in processorsList.keys():
-			difx.addProcessor( proc, processorsList[proc][0] )
-		difx.defineMachines()
-		difx.start( False )
-	elif sequential:
-		#  Allocated the requested number of data sources.
-		count = 0
-		for proc in processorsList.keys():
-			if count < usedAsDataSources:
-				difx.addDataSource( proc )
-			count += 1
-		#  Make every machine a processor.
-		for proc in processorsList.keys():
-			difx.addProcessor( proc, processorsList[proc][0] )
-		difx.defineMachines()
-		difx.start( True )
-	else:
-		notStarted = True
-		while notStarted:
-			#  Make sure sufficient processors are idle (not working on another job)
-			#  before we schedule them here.
+	if not connectionFailure:
+		difx.inputFile( inputFile )
+		#  Find the job name
+		jobName = inputFile[inputFile.rfind( "/" ) + 1:inputFile.rfind( "." )]
+		jobs[jobName] = ( "Initializing", 0.0, False )
+		#  See if we need to generate .machines and .threads files because they are missing.
+		if not difx.getMachines():
+			generate = True
+		#  Assign machines and threads based on our instructions.
+		if generate:
+			difx.setHeadNode( headNode )
+			difx.clearDataSources()
+			difx.clearProcessors()
+		if runAll:
+			#  Make the first processors data sources unless we have only
+			#  one...in which case use that.
 			count = 0
-			goodList = []
 			for proc in processorsList.keys():
-				if processorsList[proc][1] == None:
-					count += 1
-					goodList.append( proc )
-			#  Only continue if we have sufficient free processors.
-			if count >= usedAsDataSources and count >= processors:
-				count = 0
-				for proc in goodList:
-					if count < usedAsDataSources:
-						difx.addDataSource( proc )
-					count += 1
-				count = 0
-				for proc in goodList:
-					if count < processors:
-						difx.addProcessor( proc, processorsList[proc][0] )
-						processorsList[proc] = ( processorsList[proc][0], jobName )
-					count += 1
-				difx.defineMachines()
-				difx.start( False )
-				notStarted = False
+				if count < usedAsDataSources:
+					difx.addDataSource( proc )
+				count += 1
+			#  Make every machine a processor.
+			for proc in processorsList.keys():
+				difx.addProcessor( proc, processorsList[proc][0] )
+				processorsList[proc][1].append( jobName )
+				processorsList[proc] = ( processorsList[proc][0], processorsList[proc][1], processorsList[proc][2] )
+			difx.defineMachines()
+			thisJob = difx.newJob()
+			if configOnly:
+				thisJob.configOnly( True )
+			mon = JobEndMonitor( thisJob, jobName )
+			mon.start()
+			thisJob.start( False )
+		elif sequential:
+			#  Allocated the requested number of data sources.
+			count = 0
+			for proc in processorsList.keys():
+				if count < usedAsDataSources:
+					difx.addDataSource( proc )
+				count += 1
+			#  Make every machine a processor until we reach the number specified by the user.
+			count = 0
+			if maxProcessors != None:
+				desiredProcessors = maxProcessors
+			elif maxProcessorsAll:
+				desiredProcessors = len( processorsList.keys() )
 			else:
-				try:
-					time.sleep( 1 )
-				except KeyboardInterrupt:
-					difx.close()
-					exit( 0 )
+				desiredProcessors = processors
+			for proc in processorsList.keys():
+				if count < desiredProcessors:
+					difx.addProcessor( proc, processorsList[proc][0] )
+					processorsList[proc][1].append( jobName )
+					processorsList[proc] = ( processorsList[proc][0], processorsList[proc][1], processorsList[proc][2] )
+					count += 1
+			difx.defineMachines()
+			thisJob = difx.newJob()
+			if configOnly:
+				thisJob.configOnly( True )
+			thisJob.start( True )
+			#  Wait a second to allow any job-related messages to come through.
+			time.sleep( 1 )
+			produceFinalStatus( thisJob, jobName, False )
+		else:
+			notStarted = True
+			while notStarted and not connectionFailure:
+				#  Make sure sufficient processors are idle (not working on another job)
+				#  before we schedule them here.
+				count = 0
+				goodList = []
+				for proc in processorsList.keys():
+					if len( processorsList[proc][1] ) == 0:
+						count += 1
+						goodList.append( proc )
+				#  Only continue if we have sufficient free processors.
+				if count >= usedAsDataSources and count >= processors:
+					count = 0
+					for proc in goodList:
+						if count < usedAsDataSources:
+							difx.addDataSource( proc )
+						count += 1
+					count = 0
+					if maxProcessors != None:
+						desiredProcessors = maxProcessors
+					else:
+						desiredProcessors = processors
+					for proc in goodList:
+						if count < desiredProcessors:
+							difx.addProcessor( proc, processorsList[proc][0] )
+							processorsList[proc][1].append( jobName )
+							processorsList[proc] = ( processorsList[proc][0], processorsList[proc][1], processorsList[proc][2] )
+						count += 1
+					difx.defineMachines()
+					thisJob = difx.newJob()
+					if configOnly:
+						thisJob.configOnly( True )
+					mon = JobEndMonitor( thisJob, jobName )
+					mon.start()
+					thisJob.start( False )
+					notStarted = False
+				else:
+					try:
+						time.sleep( 1 )
+					except KeyboardInterrupt:
+						difx.close()
+						exit( 0 )
 
 #  Hang out until all jobs are complete.
 keepGoing = True
