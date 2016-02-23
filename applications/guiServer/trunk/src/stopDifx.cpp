@@ -164,9 +164,6 @@ void ServerSideConnection::stopDifx( DifxMessageGeneric* G ) {
         
     }
 
-    difxMessageSendDifxStatus2( jobName, DIFX_STATE_TERMINATED, "" );
-
-#ifdef NOT_NECESSARY
     //  For good measure try to kill things locally.  This may or may not work to kill
     //  off a running job completely (money on "not").  But it will at least stop the thing
     //  if mpirun isn't working for some reason.
@@ -197,7 +194,8 @@ void ServerSideConnection::stopDifx( DifxMessageGeneric* G ) {
         }
     }
     delete executor;   
-#endif 
+
+    difxMessageSendDifxStatus2( jobName, DIFX_STATE_TERMINATED, "" );
 
 }
 
