@@ -1,13 +1,18 @@
 /***************************************************************************
- *   Copyright (C) 2006-2015 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2016 by Adam Deller and Walter Brisken             *
  *                                                                         *
- *   This program is free for non-commercial use: see the license file     *
- *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
- *   details.                                                              *
+ *   This program is free software: you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation, either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
  *                                                                         *
  *   This program is distributed in the hope that it will be useful,       *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                  *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
@@ -27,12 +32,12 @@
 #include "datastream.h"
 
 /**
-@class VDIFDataStream 
-@brief Datastream which can handle Mk5 formatted data
+@class Mark5BDataStream 
+@brief Datastream which can handle Mk5B formatted data
 
 This class manages a stream of data from a disk or memory, coarsely aligning it with the geocentre and sending segments of 
-data to Core nodes for processing as directed by the FxManager.  Mk5Datastream overrides the LBA-style defaults and
-implements appropriate functionality for Mk5 formatted data
+data to Core nodes for processing as directed by the FxManager.  Mark5BDatastream overrides the LBA-style defaults and
+implements appropriate functionality for Mark5B formatted data.
 
 @author Adam Deller
 */

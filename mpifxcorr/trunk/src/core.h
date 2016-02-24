@@ -1,13 +1,18 @@
 /***************************************************************************
- *   Copyright (C) 2006 by Adam Deller                                     *
+ *   Copyright (C) 2006-2016 by Adam Deller                                *
  *                                                                         *
- *   This program is free for non-commercial use: see the license file     *
- *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
- *   details.                                                              *
+ *   This program is free software: you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation, either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
  *                                                                         *
  *   This program is distributed in the hope that it will be useful,       *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                  *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
@@ -35,7 +40,7 @@
 
 This class provides the framework for doing the actual correlation, accepting baseband data from all telescopes, using Mode objects
 to do the station-based processing and then performing the cross-multiplication and accumulation.  The accumulated visibilities
-are then sent back to the FxManager.  An allocatable number of processing 
+are then sent back to the FxManager.  An allocatable number of processing threads time-division multiplex the work. 
 
 @author Adam Deller
 */
