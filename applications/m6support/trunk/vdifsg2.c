@@ -1,10 +1,12 @@
 /*
- * $Id: vdifsg2.c 3789 2016-02-17 21:15:23Z gbc $
+ * $Id: vdifsg2.c 3815 2016-02-25 18:04:37Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
  *
  * This file provides glue to the sg_access library.
+ *
+ * FIXME:  blck numbers should be off_t throughout.
  */
 
 #include <errno.h>
@@ -212,7 +214,7 @@ static void update_duration(struct stat *vfuse, uint32_t pps, int epoch)
     vfuse->st_atime = vfuse->st_ctime - vfuse->st_mtime;
     vfuse->st_atim.tv_nsec = vfuse->st_ctim.tv_nsec - vfuse->st_mtim.tv_nsec;
     vfuse->st_atim.tv_nsec += VDIFUSE_ONE_SEC_NS / pps; /* final frame */
-    while (vfuse->st_atim.tv_nsec >= (long int)(VDIFUSE_ONE_SEC_NS)) {
+    while (vfuse->st_atim.tv_nsec >= VDIFUSE_ONE_SEC_NS) {
         vfuse->st_atim.tv_nsec -= VDIFUSE_ONE_SEC_NS;
         vfuse->st_atime ++;
     }
@@ -240,13 +242,12 @@ int finalize_sgv2_sequence(VDIFUSEntry *vp)
 {
     int vdcne = current_cache_entries();
     VDIFUSEntry *vdccs = current_cache_start(), *vsanc, *vfrag, *vfanc;
-    SGInfo *sgi = NULL;
+    SGInfo *sgi = 0;
     nlink_t nlink = 0;
     int errs = 0, ccount = 0, psize = 0, epoch = -1;
-    uint32_t pkts_per_sec = vdccs->u.vpars.pkts_per_sec;
 
     if (vp->u.vfuse.st_size != 0) {
-        fprintf(stderr, "Seq entry %d already has size %u\n",
+        fprintf(stderr, "Seq entry %d already has size %lu\n",
             vp->index, vp->u.vfuse.st_size);
         errs ++;
     }
@@ -259,7 +260,7 @@ int finalize_sgv2_sequence(VDIFUSEntry *vp)
         errs ++;
     }
     if (vp->u.vfuse.st_blocks != 0) {
-        fprintf(stderr, "Seq entry %d already has packets %u\n",
+        fprintf(stderr, "Seq entry %d already has packets %lu\n",
             vp->index, vp->u.vfuse.st_blocks);
         errs ++;
     }
@@ -292,7 +293,7 @@ int finalize_sgv2_sequence(VDIFUSEntry *vp)
 
     if (nlink != vp->u.vfuse.st_nlink) {
         fprintf(stderr,
-            "Missing seq entries (%u != %u; %u >= %u; %u != %u)\n",
+            "Missing seq entries (%lu != %lu; %u >= %u; %u != %u)\n",
             nlink, vp->u.vfuse.st_nlink, vsanc->cindex, vdcne,
             psize, sgi->pkt_size);
         errs ++;
@@ -313,7 +314,7 @@ static void member_show(SGV2sfrag *sfn, int ith)
 {
     if (vdifuse_debug>5) fprintf(vdflog, "member_show(%s)\n", sfn->sgi->name);
     fprintf(vdflog,
-        "  [%d]%04x@%d %u/%u b/%luB i/%luB [0x%lx] a/%luB [%luB]\n"
+        "  [%d]%04x@%d %lu/%u b/%luB i/%luB [0x%lx] a/%luB [%luB]\n"
         "    %.8lf < %.8lf < %.8lf < %.8lf\n",
         ith, sfn->err, sfn->sgi->smi.mmfd,
         sfn->cblk, sfn->sgi->sg_total_blks,
@@ -354,7 +355,7 @@ static void member_move(SGV2sfrag *sfp, off_t blk, int dir)
         "member_move(%s) %s\n", sfp->sgi->name, dir>0 ? "fw" : "bw");
     if (blk < 0 || blk >= sfp->sgi->sg_total_blks) {
         sfp->err |= SGV2_ERR_BLKERR;
-        vdifuse_trace(VDT("member_move %lu(<0 or >%lu)\n"),
+        vdifuse_trace(VDT("member_move %lu(<0 or >=%lu)\n"),
             blk, sfp->sgi->sg_total_blks);
         return;
     }
@@ -413,7 +414,7 @@ static int member_init(SGV2sfrag *sfp, int pgfcmx)
         msbs = sfp->sgi->sg_se_pkts;
     member_move(sfp, 0, 1);         /* start at the beginning */
     if (vdifuse_debug>1) fprintf(vdflog,
-        "member_init %d#%d %.8f..%.8f %u pps msbs %d\n",
+        "member_init %d#%ld %.8f..%.8f %u pps msbs %d\n",
             sfp->sgi->smi.mmfd, sfp->cblk, sfp->first, sfp->final,
             sfp->sgi->frame_cnt_max, msbs);
     return(msbs);
@@ -450,9 +451,9 @@ static void stripe_bread(SGV2sdata *sdp)
         sdp->zero, sdp->sgap - 1, sdp->sgap, sdp->numb,
         sdp->bybs, sdp->byis, sdp->byas, sdp->bygt);
     for (ss = 0; ss < sdp->numb; ss++) {
-        if (ss == sdp->zero)      sep = '|';
-        else if (ss==sdp->sgap-1) sep = '%';
-        else                      sep = ',';
+        if (ss == sdp->zero)    sep = '|';
+        else if (ss==sdp->sgap) sep = '%';
+        else                    sep = ',';
         snprintf(tmp, sizeof(tmp), "%02d%c%02d:%lu(%.8f)",
             ss, sep, sdp->stripe[ss].sfrag->sgi->smi.mmfd,
             sdp->stripe[ss].sfrag->cblk,
@@ -474,7 +475,7 @@ static void stripe_bread(SGV2sdata *sdp)
  */
 static void stripe_trace(SGV2sdata *sdp, char *where, int adj)
 {
-    int ss, tre = 3, two = 0, one = 0, zer = 0;
+    int ss;
     int z = sdp->zero, n = sdp->sgap-1, m = (z==0?0:z-1);
     off_t fragsum = 0;
     sdp->diag[SGV2_DIAG_TRACE] ++;
@@ -512,8 +513,11 @@ static void stripe_trace(SGV2sdata *sdp, char *where, int adj)
         member_move(&tmp, sdp->stripe[ss].sfrag->cblk - 1, -1);
         member_trace(&tmp, t0, 'A' + ss);
         member_trace(sdp->stripe[ss].sfrag, t0, '0' + ss);
-        member_move(&tmp, sdp->stripe[ss].sfrag->cblk + 1,  1);
-        member_trace(&tmp, t0, 'a' + ss);
+        if (sdp->stripe[ss].sfrag->cblk + 1 <
+            sdp->stripe[ss].sfrag->sgi->sg_total_blks) {
+            member_move(&tmp, sdp->stripe[ss].sfrag->cblk + 1,  1);
+            member_trace(&tmp, t0, 'a' + ss);
+        }
         fragsum += sdp->stripe[ss].sfrag->byib;
     }
 }
@@ -586,7 +590,6 @@ static int stripe_comp(const void *sa, const void *sb)
 static void stripe_sort(SGV2sdata *sdp)
 {
     SBlock *sbp = sdp->stripe;
-    int ii;
     if (vdifuse_debug>5) fprintf(vdflog, "stripe_sort(%s)\n", sdp->vs->fuse);
     qsort(sbp, sdp->numb, sizeof(SBlock), stripe_comp);
 }
@@ -651,7 +654,6 @@ static int stripe_schk(SGV2sdata *sdp)
 static int stripe_zero(SGV2sdata *sdp)
 {
     int ii;
-    SGV2sfrag *ith, *jth;
     sdp->sgap = sdp->numb;  /* set stripe gap */
     for (ii = 0; ii < sdp->numb; ii++)
         if (sdp->stripe[ii].reads == 0) break;
@@ -709,13 +711,13 @@ static int successor_closes_gap(SGV2sdata *sdp, double ptbe, int jj)
     for (ii = sdp->zero; ii < jj; ii++) {
         /* peek at ith's successor */
         SGV2sfrag tmp = *(sdp->stripe[ii].sfrag);
-        if (tmp.cblk < tmp.sgi->sg_total_blks) {
+        if (tmp.cblk < tmp.sgi->sg_total_blks - 1) {
             member_move(&tmp, tmp.cblk + 1, 1);
             dt = tmp.pten - ptbe;
             if (dt < 0.0) {
                 /* found an earlier block */
                 if (vdifuse_debug>3) fprintf(vdflog,
-                    "successor_closes_gap() with gap(%+.8lf = %.8lf - %.8lf)\n",
+                    "successor_closes_gap() w/ gap(%+.8lf = %.8lf - %.8lf)\n",
                     dt, tmp.pten, ptbe);
                 return(1);
             }
@@ -824,6 +826,7 @@ static void stripe_boff(SGV2sdata *sdp)
     sdp->bybs = 0;
     sdp->byis = 0;
     sdp->byas = 0;
+    /* account for bytes before the stripe */
     for (ii = 0; ii < sdp->zero && ii < sdp->numb; ii++) {
         ith = sdp->stripe[ii].sfrag;
         sdp->bybs += ith->bybb;
@@ -833,21 +836,27 @@ static void stripe_boff(SGV2sdata *sdp)
             vdifuse_trace(VDT("Error on %d < \"zero\"\n"), ii);
         }
     }
+    /* account for bytes within the stripe */
     for ( ; ii < sdp->sgap && ii < sdp->numb; ii++) {
         ith = sdp->stripe[ii].sfrag;
         sdp->bybs += ith->bybb;
         sdp->byis += ith->byib;
         sdp->byas += ith->byab;
     }
-    for ( ; ii < sdp->numb && ii < sdp->numb; ii++) {
+    /* account for bytes before or after the stripe */
+    for ( ; ii < sdp->numb; ii++) {
         ith = sdp->stripe[ii].sfrag;
         sdp->bybs += ith->bybb;
         sdp->byas += ith->byib + ith->byab;
     }
+    /* calculate bytes of grand total -- should be sequence size */
     sdp->bygt = sdp->bybs + sdp->byis + sdp->byas;
     if (vdifuse_debug>3) fprintf(vdflog,
-        "  stripe_boff: %lu+%lu+%lu = %lu B\n",
-        sdp->bybs, sdp->byis, sdp->byas, sdp->bygt);
+        "  stripe_boff: %lu+%lu+%lu = %lu B (%lu B)\n",
+        sdp->bybs, sdp->byis, sdp->byas, sdp->bygt, sdp->vs->u.vfuse.st_size);
+    if (sdp->bygt != sdp->vs->u.vfuse.st_size)
+        vdifuse_trace(VDT("Inconsistent sizing: %lu != %lu\n"),
+            sdp->bygt, sdp->vs->u.vfuse.st_size);
 }
 
 /*
@@ -862,7 +871,6 @@ static void stripe_boff(SGV2sdata *sdp)
  */
 static int stripe_init(SGV2sdata *sdp, uint32_t fcmx)
 {
-    int ii;
     if (vdifuse_debug>5) fprintf(vdflog, "stripe_init(%s)\n", sdp->vs->fuse);
     if (vdifuse_debug>3) fprintf(vdflog,
         "   init min sh block size %d (%.8lf) fcmx %u\n",
@@ -986,7 +994,7 @@ static int stripe_walk(SGV2sdata *sdp, int dir)
         return(1);
     } else if (dir > 0) {
         edge = sdp->stripe[sdp->sgap - 1].sfrag->pten;
-        // bydg = sdp->bybs + sdp->byis;
+        /* bydg would be sdp->bybs + sdp->byis; but it is unused for dir > 0 */
     } else if (dir < 0) {
         edge = sdp->stripe[sdp->zero].sfrag->ptbe;
         bydg = sdp->bybs;
@@ -1041,8 +1049,7 @@ static int stripe_walk(SGV2sdata *sdp, int dir)
     if (vdifuse_debug>2) stripe_show(sdp, "walkend", 0);
     part2 = secs_since(&now);
 
-    // give control to stripe_vern for eventually quitting
-    // while ((dir < 0) && (vcnt++ < 5*sdp->numb))
+    /* give control to stripe_vern for eventually quitting */
     while (dir < 0) if (stripe_vern(sdp, bydg)) break;
 
     if (vdifuse_debug>1) fprintf(vdflog,
@@ -1052,19 +1059,112 @@ static int stripe_walk(SGV2sdata *sdp, int dir)
 }
 
 /*
+ * Place a stripe at an absolute position determined by a set of
+ * block numbers.  This is a stripped-down version of stripe_walk()
+ * since we don't have as much thinking to do about block positions.
+ */
+static void stripe_spot(SGV2sdata *sdp, off_t cblks[])
+{
+    int ii, dir;
+    struct timeval now;
+    double part1, part2;
+    off_t oblks = 0, nblks = 0;
+    (void)secs_since(&now);
+    for (ii = 0; ii < sdp->numb; ii++) {
+        dir = (cblks[ii] >= sdp->stripe[ii].sfrag->cblk) ? 1 : -1;
+        oblks += sdp->stripe[ii].sfrag->cblk;
+        nblks += cblks[ii];
+        member_move(sdp->stripe[ii].sfrag, cblks[ii], dir);
+        sdp->stripe[ii].reads = 0;
+    }
+    part2 = secs_since(&now);
+    stripe_sort(sdp);
+    stripe_dgap(sdp);
+    stripe_boff(sdp);
+    part2 = secs_since(&now);
+    vdifuse_trace(VDT("stripe_spot took (%f+%f) %f <%lu> -> <%lu>\n"),
+        part1, part2, part1 + part2, oblks/sdp->numb, nblks/sdp->numb);
+    ii = stripe_schk(sdp);
+    if (ii) {
+        fprintf(vdflog, "stripe_spot fail %d\n", ii);
+        vdifuse_trace(VDT("stripe_spot fail %d\n"), ii);
+    }
+}
+
+/*
  * Make a large change in the stripe position, either to later blocks
  * (dir>1) or earlier (dir<-1) ones.  We can use stripe_walk() to
  * reposition the fragments, but need to do a bit more work to see if
  * we have found the appropriate part of the file.
  *
- * TODO: Should probably use a binary search strategy.
+ * Should probably use a binary search strategy, but a one-shot plan
+ * might work:  assume a uniform distribution, and compute new blocks
+ * based on that.  Then:
+ * a) move each member to this offset using stripe_spot
+ * b) walk members +/- until before < read-range < after
+ * which happens naturally once we return to caller!
+ *
+ * Returns nonzero if it has adjusted the stripe and not succeeded.
+ * Returns zero if it did nothing or succeeded.
  */
 static int stripe_find(SGV2sdata *sdp, int dir)
 {
+    off_t nblks[VDIFUSE_MAX_SEQI];
+    int ii;
+    double ffrac;
+    SGInfo *sgi;
     sdp->diag[SGV2_DIAG_FIND] ++;
     if (vdifuse_debug>5) fprintf(vdflog, "stripe_find(%s)\n", sdp->vs->fuse);
-    fprintf(vdflog, "Not able to provide random access yet\n"); // FIXME
-    return(1);
+    ffrac = (double)(sdp->roff + sdp->size/2) / (double)sdp->bygt;
+    vdifuse_trace(VDT("stripe_find to %lf within fragments\n"), ffrac);
+    for (ii = 0; ii < sdp->numb; ii++) {
+        sgi = sdp->stripe[ii].sfrag->sgi;
+        nblks[ii] = rint((double)sgi->sg_total_blks * ffrac);
+        /* just to be safe: keep it legal */
+        if (nblks[ii] >= sgi->sg_total_blks)
+            nblks[ii] = sgi->sg_total_blks - 1;
+        else if (nblks[ii] <= 0) nblks[ii] = 0;
+    }
+    stripe_spot(sdp, nblks);
+    return(0);
+}
+
+/*
+ * Consider a large shift of the stripe position via stripe_find().
+ * The distance is to the middle of the read request.
+ *
+ * Prior to the jump, we save position so that on failure of stripe_find()
+ * we are in a position to restore it (and in fact do so).
+ */
+static int stripe_jump(SGV2sdata *sdp)
+{
+    off_t cblks[VDIFUSE_MAX_SEQI];
+    int dir = 0, ii;
+    off_t distance = 0;
+    if (sdp->roff + sdp->size < sdp->bybs) {                /* before */
+        dir = -1;
+        distance = sdp->bybs - (sdp->roff + sdp->size) - sdp->size/2;
+    } else if (sdp->roff > sdp->bybs + sdp->byis) {         /* after */
+        dir = 1;
+        distance = sdp->roff - (sdp->bybs + sdp->byis) + sdp->size/2;
+    }
+    if (dir && (distance > STRIPE_JUMP_TRIGGER)) {
+        /* save stripe position in case of stripe_find() failure */
+        stripe_bread(sdp);
+        for (ii = 0; ii < sdp->numb; ii++)
+            cblks[ii] = sdp->stripe[ii].sfrag->cblk;
+        vdifuse_trace(VDT("stripe_jump %s: %lu>trigger %lu\n"),
+            (dir > 0) ? "forward" : "backward", distance, STRIPE_JUMP_TRIGGER);
+        vdifuse_flush_trace();
+        ii = stripe_find(sdp, dir);
+        if (ii) stripe_spot(sdp, cblks);
+        stripe_bread(sdp);
+        vdifuse_trace(VDT("stripe covers %lu..%lu (result %d)\n"),
+            sdp->bybs, sdp->bybs + sdp->byis, ii);
+        vdifuse_flush_bread();
+        return(1);
+    }
+    return(0);
 }
 
 /*
@@ -1073,20 +1173,20 @@ static int stripe_find(SGV2sdata *sdp, int dir)
  * For distant requests, we go hunt for it.
  *
  * Return values: 0 = no change, 1 = ok change, -1 = death.
- *
- * TODO: when stripe_find() is reliable, we can use it on large offsets.
  */
 static int stripe_chck(SGV2sdata *sdp)
 {
-    int rv = -1;
+    int rv = -1, sj = 0;
     off_t distance, newdist;
-    static struct timeval entry, tdone;
     struct timeval now;
     double psecs, fsecs;
-    (void)secs_since(&now);
 
     sdp->diag[SGV2_DIAG_CHECK] ++;
     if (vdifuse_debug>5) fprintf(vdflog, "stripe_chck(%s)\n", sdp->vs->fuse);
+#if STRIPE_JUMP_ENABLED
+    sj = stripe_jump(sdp);
+#endif /* STRIPE_JUMP_ENABLED */
+    (void)secs_since(&now);
 
     distance = sdp->bybs - (sdp->roff + sdp->size);
     /* sdp->roff + sdp->size <= sdp->bybs */
@@ -1135,6 +1235,8 @@ static int stripe_chck(SGV2sdata *sdp)
             sdp->roff, sdp->bybs + sdp->byis,
             sdp->roff + sdp->size, sdp->bybs);
         rv = 0;
+        if (sj) vdifuse_trace(VDT("Req in stripe: %lu<%lu..%lu<%lu\n"),
+            sdp->bybs, sdp->roff, sdp->roff+sdp->size, sdp->bybs+sdp->byis);
     } else {
       if (vdifuse_debug>1) fprintf(vdflog,
             "  Req. start %lu > %lu is after stripe end, OR\n"
@@ -1193,7 +1295,7 @@ static int stripe_anal(SGV2sdata *sdp)
  * We leave sdp->roff and sdp->size alone to reflect what should
  * be in the buffer and return the number of bytes transferred.
  *
- * TODO: handle pkt offset > 0 case: the memcpy turns into a loop.
+ * TODO: handle pkt offset > 0 case: memcpy -> a loop over packets
  */
 static ssize_t stripe_read(SGV2sdata *sdp, char *buf, char *lab)
 {
@@ -1419,7 +1521,7 @@ int open_sgv2_seq(VDIFUSEntry *vs, FFInfo *ffi)
     sdp = (SGV2sdata *)(ffi->sdata = calloc(1, sizeof(SGV2sdata)));
     if (!ffi->sdata) return(perror("open_sgv2_seq:calloc(sdata)"),vorrfd);
     if (vdifuse_debug>3) fprintf(vdflog,
-        "sdp at %p:%u\n", sdp, sizeof(SGV2sdata));
+        "sdp at %p:%lu\n", sdp, sizeof(SGV2sdata));
     sdp->vs = vs;
     sdp->numb = ffi->numb;
     sdp->bygt = vs->u.vfuse.st_size;
@@ -1431,7 +1533,7 @@ int open_sgv2_seq(VDIFUSEntry *vs, FFInfo *ffi)
     sfp = (SGV2sfrag *)(ffi->sfrag = calloc(ffi->numb, sizeof(SGV2sfrag)));
     if (!ffi->sfrag) return(perror("open_sgv2_seq:calloc(sfrag)"),vorrfd);
     if (vdifuse_debug>3) fprintf(vdflog,
-        "sfp at %p:%u\n", sfp, ffi->numb * sizeof(SGV2sdata));
+        "sfp at %p:%lu\n", sfp, ffi->numb * sizeof(SGV2sdata));
 
     for (num = 0; num < ffi->numb; num++, sfp++) {
         if (ccount == VDIFUSE_MAX_SEQI) {
@@ -1512,11 +1614,9 @@ static void show_sgv2_state(FFInfo *ffi, int start, int adj)
 {
     static unsigned long cnt = 0;
     SGV2sdata *sdp = (SGV2sdata*)ffi->sdata;
-    SGV2sfrag *sfp = (SGV2sfrag*)ffi->sfrag;
-    int index, nn;
     if (start) {
         if (vdifuse_debug>4) fprintf(vdflog,
-            ">>>READ[%lu] %d at offset %lu\n",
+            ">>>READ[%lu] %lu at offset %lu\n",
             cnt++, sdp->size, sdp->roff);
         if (vdifuse_debug>5) fprintf(vdflog,
             "   read_sgv2_seq(%s)\n", sdp->vs->fuse);

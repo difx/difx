@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.h 3759 2016-02-13 19:39:51Z gbc $
+ * $Id: vdifsg2.h 3807 2016-02-22 18:03:13Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -45,7 +45,10 @@
  * stripe_init(sdp, f)       initializes the stripe at start
  * stripe_vern(sdp, b)       vernier bw walk into the bytes needed
  *
- * stripe_find(sdp)          used when "offset" is outside stripe
+ * stripe_spot(sdp, c)       place a stripe at a set of positions
+ * stripe_find(sdp, dir)     used when "offset" is outside stripe
+ * stripe_jump(sdp)          used to trigger large stripe movement
+ *
  * stripe_walk(sdp, dir)     used when stripe shifts incrementally
  * stripe_chck(sdp)          used to decide strategy on stripe access
  * stripe_anal(sdp)          double-check preceding check
@@ -101,6 +104,9 @@
 #define SGV2_DIAG_DOIT      10
 #define SGV2_DIAG_SPARE     11
 #define SGV2_DIAG_COUNT     (SGV2_DIAG_SPARE + 1)
+
+#define STRIPE_JUMP_ENABLED 0
+#define STRIPE_JUMP_TRIGGER 0x0FFFFFFF
 
 /* per-fragment lookup data: ffi->sfrag[], created by calloc */
 typedef struct sgv2_private_sfrag {

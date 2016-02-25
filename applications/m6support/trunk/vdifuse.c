@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.c 3775 2016-02-15 15:24:44Z gbc $
+ * $Id: vdifuse.c 3815 2016-02-25 18:04:37Z gbc $
  *
  * Fuse for vdif files for use with Mark6 or other
  * applications where vdif files are scattered around.

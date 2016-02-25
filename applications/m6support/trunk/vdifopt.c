@@ -1,5 +1,5 @@
 /*
- * $Id: vdifopt.c 3746 2016-02-09 23:12:13Z gbc $
+ * $Id: vdifopt.c 3815 2016-02-25 18:04:37Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we do the command-line processing to drive the support for fuse.
@@ -286,7 +286,7 @@ static int vdifuse_implement(void)
     if (!vdifuse_create && stat(vdifuse_cache, &sb)) return(fprintf(stderr,
         "VDIFuse metadata cache %s is missing.\n", vdifuse_cache));
     if (!vdifuse_create && (sb.st_size < sizeof(VDIFUSEntry)))
-        return(fprintf(stderr, "Cache is too small (%u)\n", sb.st_size));
+        return(fprintf(stderr, "Cache is too small (%lu)\n", sb.st_size));
 
     if (vdifuse_create && !stat(vdifuse_cache, &sb)) {
         if (!vdifuse_protect) unlink(vdifuse_cache);

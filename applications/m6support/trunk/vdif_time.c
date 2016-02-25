@@ -134,7 +134,7 @@ TimeSpec iso_str2TS(char *t)
 {
     TimeSpec ts;
     struct tm tm;
-    int num, cc, ix = 0;
+    int num, ix = 0;
     double ns = 0;
     if (time_TZ_not_UTC) set_the_tz();
     num = sscanf(t, "%4d-%2d-%2dT%2d:%2d:%2d%n",

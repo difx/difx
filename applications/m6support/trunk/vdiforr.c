@@ -1,12 +1,12 @@
 /*
- * $Id: vdiforr.c 3776 2016-02-15 17:05:43Z gbc $
+ * $Id: vdiforr.c 3817 2016-02-25 18:56:12Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
  * This file support open, read and release operations.
  */
 
-#define _XOPEN_SOURCE 500
+//#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -39,7 +39,7 @@ int vorr_init(void)
 {
     long open_max = sysconf(_SC_OPEN_MAX);
     if (open_max < 0) return(fprintf(stderr, "OPEN_MAX not available\n"));
-    if (vdifuse_debug>3) fprintf(vdflog, "OPEN_MAX = %d\n", open_max);
+    if (vdifuse_debug>3) fprintf(vdflog, "OPEN_MAX = %ld\n", open_max);
     FFIcache = (FFInfo *)calloc(open_max, sizeof(FFInfo));
     if (!FFIcache) return(perror("vorr_init"),2);
     realfd = fileno(vdflog);
@@ -118,7 +118,7 @@ int do_vorr_open(const char *fusepath, FFInfo *ffi)
     if(fusepath_to_realpath(fusepath)) {
         ffi->fh = realfd;
         if (vdifuse_debug>0) fprintf(vdflog,
-            "Realpath open %s at %d\n", fusepath, ffi->fh);
+            "Realpath open %s at %lu\n", fusepath, ffi->fh);
         vdifuse_trace(VDT("Open[%d] %s\n"), ffi->fh, fusepath);
         return(0);
     }
@@ -140,7 +140,7 @@ int do_vorr_open(const char *fusepath, FFInfo *ffi)
     }
     if (ffi->fh != vorrfd) {
         if (vdifuse_debug>0) fprintf(vdflog,
-            "Storing data for open %s at ffi[%d]\n", fusepath, ffi->fh);
+            "Storing data for open %s at ffi[%ld]\n", fusepath, ffi->fh);
         vdifuse_trace(VDT("Open[%d] %s\n"), ffi->fh, fusepath);
         vdifuse_flush_trace();
         FFIcache[ffi->fh] = *ffi;
@@ -164,7 +164,7 @@ static void report_access(const FFInfo *ffi, const char *path)
         "Accessed %lu bytes in %.3f s, rate = %.f MB/s\n",
             ffi->totrb, dt, 1e-06 * (double)ffi->totrb / dt);
     if (vdifuse_debug>1) fprintf(vdflog,
-        "Clearing stored data for %s at fh %d\n",
+        "Clearing stored data for %s at fh %lu\n",
             (current_cache_start() + ffi->sindex)->fuse, ffi->fh);
     vdifuse_trace(VDT("Clos[%d] %s, %lu B in %.3f s, %.3f MB/s\n"),
         ffi->fh, path, ffi->totrb, dt, 1e-06 * (double)ffi->totrb / dt);
@@ -180,7 +180,7 @@ int do_vorr_release(const char *fusepath, FFInfo *ffi)
     if (ffi->fh == vorrfd) return(fprintf(stderr, "illegal fuse release\n"));
     if (ffi->fh == realfd) {
         if (vdifuse_debug>0) fprintf(vdflog,
-            "Realpath close %s at %d\n", fusepath, ffi->fh);
+            "Realpath close %s at %lu\n", fusepath, ffi->fh);
         ffi->fh = vorrfd;
         return(0);
     }
@@ -261,9 +261,9 @@ static int do_vorr_read(const char *fpath, char *buf, FFInfo *ffi)
         vdifuse_flush_trace();
     }
     if (vdifuse_debug>2 && res < ffp->size) fprintf(vdflog,
-        ">>>Read %d < %d\n", res, ffp->size);
+        ">>>Read %d < %lu\n", res, ffp->size);
     if (vdifuse_debug>3) fprintf(vdflog,
-        ">>>Read[%lu] %d into buffer from %d\n", cnt, res, ffp->fh);
+        ">>>Read[%lu] %d into buffer from %lu\n", cnt, res, ffp->fh);
     cnt++;
     return(res);
 }

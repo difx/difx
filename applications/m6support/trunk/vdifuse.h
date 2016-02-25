@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.h 3754 2016-02-13 17:41:17Z gbc $
+ * $Id: vdifuse.h 3815 2016-02-25 18:04:37Z gbc $
  *
  * This file provides support for the fuse interface
  */
@@ -21,7 +21,7 @@
 
 #define VDIFUSE_MAX_PATH 256
 #define VDIFUSE_SEARCH_MAX 9999
-#define VDIFUSE_ONE_SEC_NS (uint64_t)1000000000LL
+#define VDIFUSE_ONE_SEC_NS (int64_t)1000000000
 #define VDIFUSE_MAX_HIER 5
 #define VDIFUSE_MIN_FILE_SIZE 60000
 /* need 8x4, for sg2; 48 for SGInfo to fit, and this rounds out to 1024 */

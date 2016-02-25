@@ -4,19 +4,24 @@
 
 SUBDIRS = .
 
+AM_CPPFLAGS = -Wall
+
 EXTRA_DIST = readme.sh gpl-3.0.txt
 
 if WITH_FUSE
 if HAVE_FUSE
-vdifuse =vdifuse
+vdifuse = vdifuse
 vdifuse_h = vdifuse.h vdifsg2.h
+prepone = prep-one-scan.sh
 else
 vdifuse =
 vdifuse_h =
+prepone =
 endif
 else
 vdifuse =
 vdifuse_h =
+prepone = 
 endif
 
 dist_noinst_HEADERS = vdif.h vdif_epochs.h vdif_time_util.h \
@@ -50,6 +55,7 @@ vdifuse_CFLAGS = $(FUSE_CFLAGS)
 vdifuse_LDADD = $(FUSE_LIBS)
 
 bin_PROGRAMS = scan_check vdif_time $(vdifuse)
+dist_bin_SCRIPTS = $(prepone)
 
 CLEANFILES = 
 DISTCLEANFILES = depcomp install-sh test-driver missing compile

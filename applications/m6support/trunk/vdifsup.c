@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsup.c 3775 2016-02-15 15:24:44Z gbc $
+ * $Id: vdifsup.c 3815 2016-02-25 18:04:37Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -507,9 +507,9 @@ int describe_fragment(VDIFUSEntry *vp)
     if (vdifuse_debug>1) fprintf(vdflog,
         "[%04d]Frg %s\n", vp->index, vp->path);
     if (vdifuse_debug>2) fprintf(vdflog,
-        "  (index=%u vsig=%016llX)\n"
-        "  (size=%llu pktsize=%d pkts=%d prefix=%u offset=%u rate=%u)\n"
-        "  (from=%u.%09llu to=%u.%09llu dur=%u.%09llu)\n"
+        "  (index=%u vsig=%016lX)\n"
+        "  (size=%lu pktsize=%ld pkts=%ld prefix=%lu offset=%lu rate=%lu)\n"
+        "  (from=%lu.%09lu to=%lu.%09lu dur=%lu.%09lu)\n"
         "  (hier %s)\n  (frag %s)\n",
         vp->index, vp->vsig,
         vp->u.vfuse.st_size, vp->u.vfuse.st_blksize, vp->u.vfuse.st_blocks,
@@ -555,11 +555,11 @@ int report_sequence(VDIFUSEntry *vp)
 int describe_sequence(VDIFUSEntry *vp)
 {
     if (vdifuse_debug>1) fprintf(vdflog,
-        "[%04d]Seq %s anc [%d] %u links %lluB\n",
+        "[%04d]Seq %s anc [%d] %lu links %luB\n",
         vp->index, vp->fuse, vp->cindex,
         vp->u.vfuse.st_nlink, vp->u.vfuse.st_size);
     if (vdifuse_debug>2) fprintf(vdflog,
-        "  pktsize=%u pkts=%u %lu.%09llu %lu.%09llu %lu.%09llu\n", 
+        "  pktsize=%lu pkts=%lu %lu.%09lu %lu.%09lu %lu.%09lu\n", 
         vp->u.vfuse.st_blksize, vp->u.vfuse.st_blocks,
         vp->u.vfuse.st_mtime, vp->u.vfuse.st_mtim.tv_nsec,
         vp->u.vfuse.st_ctime, vp->u.vfuse.st_ctim.tv_nsec,
@@ -577,10 +577,10 @@ int describe_directory(VDIFUSEntry *vp)
 int describe_struct(void)
 {
     fprintf(vdflog,
-        "Size: The cache consists of entries of size %d including\n"
-        "Size: a union of size %d ( vfuse=%d vpars=%d vseqi=%d voids=%d),\n"
+        "Size: The cache consists of entries of size %ld including a\n"
+        "Size: union of size %ld (vfuse=%ld vpars=%ld vseqi=%ld voids=%ld),\n"
         "Size: paths of no more than %d bytes and sgv2 data (size=%d)\n"
-        "Size: 6*4 + 8 + %d + 3*%d = %d\n",
+        "Size: 6*4 + 8 + %ld + 3*%d = %ld\n",
         sizeof(VDIFUSEntry), sizeof(union vdifuse_union),
         sizeof(struct stat), sizeof(VDIFUSEpars),
         sizeof(uint32_t)*VDIFUSE_MAX_SEQI,
@@ -588,6 +588,7 @@ int describe_struct(void)
         VDIFUSE_MAX_PATH, sg_info_size(),
         sizeof(union vdifuse_union), VDIFUSE_MAX_PATH,
         6*4 + 8 + sizeof(union vdifuse_union) + 3*VDIFUSE_MAX_PATH);
+    return(0);
 }
 
 int describe_params(VDIFUSEntry *vp)
@@ -726,7 +727,7 @@ static int report_on_cache(void)
         default:
         case VDIFUSE_ENTRY_INVALID:
             invalids++;
-            fprintf(vdflog, "Entry %d (%s) marked invalid\n", ee, vp->path);
+            fprintf(vdflog, "Entry %ld (%s) marked invalid\n", ee, vp->path);
             break;
         }
     }
@@ -793,7 +794,7 @@ int vdifuse_report_metadata(char *cache, struct stat *sb)
     if (vdifuse_debug>0) fprintf(vdflog,
         "Reporting Meta Data cache '%s' for use with fuse.\n", cache);
     if (vdifuse_debug>0) fprintf(vdflog,
-        "This cache contains %d entries of size %d\n",
+        "This cache contains %ld entries of size %ld\n",
             sb->st_size / sizeof(VDIFUSEntry), sizeof(VDIFUSEntry));
     if ((err = load_cache(cache))) return(fprintf(stderr,
         "Unable to open cache '%s' (%d)\n", cache, err));
@@ -845,7 +846,7 @@ int vdifuse_access_metadata(char *cache, struct stat *sb, struct stat *mp)
     if (vdifuse_debug>0) fprintf(vdflog,
         "Accessing Meta Data cache for fuse in %s\n", cache);
     if (vdifuse_debug>0) fprintf(vdflog,
-        "Cache contains %d entries of size %d\n",
+        "Cache contains %ld entries of size %ld\n",
             sb->st_size / sizeof(VDIFUSEntry), sizeof(VDIFUSEntry));
     if ((err = load_cache(cache))) return(fprintf(stderr,
         "Unable to open cache %s (%d)\n", cache, err));
@@ -1056,6 +1057,7 @@ static int vdifuse_examples(void)
     fprintf(vdflog, "For a subset of scans, -xinclpatt=<RE> can be used\n");
     fprintf(vdflog, "to restrict attention to the scans of interest.\n");
     fprintf(vdflog, "\n");
+    return(0);
 }
 
 static int vdifuse_env(void)
@@ -1078,6 +1080,7 @@ static int vdifuse_env(void)
 //  fprintf(vdflog, "    Two additional methods (4 & 5) that are even\n");
 //  fprintf(vdflog, "    more aggressive have not been implemented.\n");
     fprintf(vdflog, "\n");
+    return(0);
 }
 
 /*
@@ -1104,9 +1107,9 @@ static int vdifuse_options_help(void)
         vdifuse_protect ? "(protect)" : "(delete)");
     fprintf(vdflog, "  protect       protects existing cache %s\n",
         vdifuse_protect ? "(protect)" : "(delete)");
-    fprintf(vdflog, "  reuse         coopts a mount point currently in use\n",
+    fprintf(vdflog, "  reuse         coopts a mount point in use (%s)\n",
         vdifuse_reuse ? "(reuse)" : "(respect)");
-    fprintf(vdflog, "  respect       respects a mount point already in use\n",
+    fprintf(vdflog, "  respect       respects a mount point in use (%s)\n",
         vdifuse_reuse ? "(reuse)" : "(respect)");
 
     fprintf(vdflog, "  list=<str>    # filelist prefix (.) for -m option\n");

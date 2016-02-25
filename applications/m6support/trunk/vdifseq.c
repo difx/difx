@@ -1,5 +1,5 @@
 /*
- * $Id: vdifseq.c 3775 2016-02-15 15:24:44Z gbc $
+ * $Id: vdifseq.c 3815 2016-02-25 18:04:37Z gbc $
  *
  * This file does the work of building sequences.
  */
@@ -148,7 +148,8 @@ static VDIFUSEntry *check_continuation(VDIFUSEntry *vx, int stype)
 static void add_to_parent_dir(VDIFUSEntry *vc)
 {
     VDIFUSEntry *vp, *vx;
-    uint32_t vp_index, vx_index, vc_index = vc->index;
+    uint32_t vp_index, vc_index = vc->index;
+    //uint32_t vx_index;
     if (!(vp = find_seq_parent(vc->hier))) {
         fprintf(vdflog, "No parent for %s\n", vc->hier);
         twalk_thier_errors ++;
@@ -156,12 +157,12 @@ static void add_to_parent_dir(VDIFUSEntry *vc)
     }
     vp_index = vp->index;
     if (!(vx = check_continuation(vp, VDIFUSE_STYPE_SDIR))) {
-        vc = current_cache_start() + vc_index;
+        // vc = current_cache_start() + vc_index;
         fprintf(vdflog, "No room in parent for %s\n", vc->hier);
         twalk_thier_errors ++;
         return;
     }
-    vx_index = vx->index;
+    //vx_index = vx->index;
 
     vc = current_cache_start() + vc_index;
     vp = current_cache_start() + vp_index;
@@ -260,7 +261,7 @@ static int tfrag_comp(const void *p1, const void *p2)
 }
 static void tfrag_dump(const void *nodep, const VISIT which, const int depth)
 {
-    char *path, *what;
+    char *what;
     TFRAGnode *vf;
     int print = 0;
     switch (which) {
@@ -441,8 +442,8 @@ static int fragment_in_fragtree(VDIFUSEntry *vc)
     if (!leaf) { perror("tsearch-frag"); return(2); }
     if (vdifuse_debug>5) describe_fragment(vc);
     if (vdifuse_debug>4) fprintf(vdflog,
-        "    Leaf %p %016llX %p\n"
-        "    Node %p %016llX %llu.%09llu..%llu.%09llu\n"
+        "    Leaf %p %016lX %p\n"
+        "    Node %p %016lX %lu.%09lu..%lu.%09lu\n"
         "    Path '%s'\n"
         "    Hier '%s'\n",
         leaf, (*leaf)->vsig, (current_cache_start() + node->fvdei),
@@ -474,7 +475,6 @@ static THIERnode *dir_hier_add(char *part, int depth)
 {
     static THIERnode tmp;
     THIERnode **leaf, *node;
-    char *vdif;
     if (!part && (depth<0)) { /* finish up */
         leaf = tfind(&tmp, &thier_root, &thier_comp);
         if (!leaf) return(fprintf(vdflog,
@@ -519,7 +519,6 @@ static int fragment_in_hierarchy(VDIFUSEntry *vc, uint32_t limit)
 {
     int depth = 0;
     char *copy = malloc(strlen(vc->path)+3), *part, *slash;
-    void *frag;
     THIERnode *hn;
     if (!copy) { perror("malloc"); return(1); }
     slash = strrchr(vc->path, '/');

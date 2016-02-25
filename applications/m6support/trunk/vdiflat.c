@@ -1,5 +1,5 @@
 /*
- * $Id: vdiflat.c 3677 2016-01-27 16:08:38Z gbc $
+ * $Id: vdiflat.c 3815 2016-02-25 18:04:37Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -36,7 +36,7 @@ int finalize_vdif_sequence(VDIFUSEntry *vp)
     int errs = 0, ccount = 0;
 
     if (vp->u.vfuse.st_size != 0) {
-        fprintf(stderr, "Seq entry %d already has size %u\n",
+        fprintf(stderr, "Seq entry %d already has size %lu\n",
             vp->index, vp->u.vfuse.st_size);
         errs ++;
     }
@@ -62,7 +62,7 @@ int finalize_vdif_sequence(VDIFUSEntry *vp)
     }
 
     if (nlink != vp->u.vfuse.st_nlink) {
-        fprintf(stderr, "Missing seq entries (%u != %u; %u >= %u)\n",
+        fprintf(stderr, "Missing seq entries (%lu != %lu; %u >= %u)\n",
             nlink, vp->u.vfuse.st_nlink, vsanc->cindex, vdcne);
         errs ++;
     }

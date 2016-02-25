@@ -74,8 +74,6 @@ PKG_CHECK_MODULES(FUSE, fuse, [hasfuse=true], [hasfuse=false])
 AM_CONDITIONAL(HAVE_FUSE, $hasfuse && $with_fuse)
 
 AC_CONFIG_FILES([Makefile])
-CFLAGS="$CFLAGS -Wall"
-
 
 ##AM_COND_IF([WITH_FUSE],
 ##    [AC_SUBST(CONFIG_OPS,--enable-fuse)],

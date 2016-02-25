@@ -1,5 +1,5 @@
 /*
- * $Id: vdifrex.c 2510 2014-09-22 21:15:04Z gbc $
+ * $Id: vdifrex.c 3815 2016-02-25 18:04:37Z gbc $
  *
  * This file provides support for the fuse interface.
  * This file provides support for regex(7) matching of paths for
@@ -80,7 +80,7 @@ static int regcommon(char *patt, RexPatt **rxpp)
     rxcr = regcomp(rxp->preg, rxp->regex, REG_EXTENDED|REG_NOSUB|REG_NEWLINE);
     if (rxcr) {
         nerr = regerror(rxcr, rxp->preg, errbuf, sizeof(errbuf));
-        fprintf(vdflog, "regexclude: %s\n", errbuf);
+        fprintf(vdflog, "regexclude: %s [%d]\n", errbuf, nerr);
         return(4);
     }
     regcnt++;
