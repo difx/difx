@@ -212,7 +212,7 @@ static void update_duration(struct stat *vfuse, uint32_t pps, int epoch)
     vfuse->st_atime = vfuse->st_ctime - vfuse->st_mtime;
     vfuse->st_atim.tv_nsec = vfuse->st_ctim.tv_nsec - vfuse->st_mtim.tv_nsec;
     vfuse->st_atim.tv_nsec += VDIFUSE_ONE_SEC_NS / pps; /* final frame */
-    while (vfuse->st_atim.tv_nsec >= VDIFUSE_ONE_SEC_NS) {
+    while (vfuse->st_atim.tv_nsec >= (long int)(VDIFUSE_ONE_SEC_NS)) {
         vfuse->st_atim.tv_nsec -= VDIFUSE_ONE_SEC_NS;
         vfuse->st_atime ++;
     }
@@ -236,7 +236,7 @@ static void update_duration(struct stat *vfuse, uint32_t pps, int epoch)
  * st_atime (total scan duration) were populated with the
  * cache creation time, originally.
  */
-int 	finalize_sgv2_sequence(VDIFUSEntry *vp)
+int finalize_sgv2_sequence(VDIFUSEntry *vp)
 {
     int vdcne = current_cache_entries();
     VDIFUSEntry *vdccs = current_cache_start(), *vsanc, *vfrag, *vfanc;
