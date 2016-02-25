@@ -236,11 +236,11 @@ static void update_duration(struct stat *vfuse, uint32_t pps, int epoch)
  * st_atime (total scan duration) were populated with the
  * cache creation time, originally.
  */
-int finalize_sgv2_sequence(VDIFUSEntry *vp)
+int 	finalize_sgv2_sequence(VDIFUSEntry *vp)
 {
     int vdcne = current_cache_entries();
     VDIFUSEntry *vdccs = current_cache_start(), *vsanc, *vfrag, *vfanc;
-    SGInfo *sgi;
+    SGInfo *sgi = NULL;
     nlink_t nlink = 0;
     int errs = 0, ccount = 0, psize = 0, epoch = -1;
     uint32_t pkts_per_sec = vdccs->u.vpars.pkts_per_sec;
@@ -974,7 +974,7 @@ static int stripe_walk(SGV2sdata *sdp, int dir)
     double edge, ptbe, part1, part2;
     SGV2sfrag *ith;
     struct timeval now;
-    off_t bydg;
+    off_t bydg = 0;
     (void)secs_since(&now);
     sdp->diag[SGV2_DIAG_WALK] ++;
     if (vdifuse_debug>5) fprintf(vdflog, "stripe_walk(%s)\n", sdp->vs->fuse);
