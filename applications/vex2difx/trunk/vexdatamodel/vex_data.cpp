@@ -304,7 +304,7 @@ void VexData::reduceScans(int minSubarraySize, const Interval &timerange)
 
 		Interval antennaTimeRange = adjustTimeRange(antStart, antStop, minSubarraySize);
 
-		if(!antennaTimeRange.isCausal() || it->overlap(antennaTimeRange) <= 0.5/86400.0)
+		if(!antennaTimeRange.isCausal() || it->overlap(antennaTimeRange) <= 0.05/86400.0)
 		{
 			it = scans.erase(it);
 			continue;
