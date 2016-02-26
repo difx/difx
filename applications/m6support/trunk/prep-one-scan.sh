@@ -47,14 +47,14 @@ cd $home
 expr=$1
 rate=${2-'125000'}
 save=${3-'true'}
-trace=${4-'true'}
+trace=${4-'false'}
 # this prevents agressive, out-of-order kernel-readaheads
 #opts='-o sync_read -o allow_other'
 # this is more agressive, and we think it might work, now.
 opts='-o async_read -o allow_other'
 [ $# -gt 4 ] && shift 4 && opts="$opts $@"
 
-$trace && trop='-vt' || trop=''
+$trace && trop='-vt' || trop='-t'
 
 for m in $sm
 do

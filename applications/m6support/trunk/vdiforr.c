@@ -1,18 +1,22 @@
 /*
- * $Id: vdiforr.c 3817 2016-02-25 18:56:12Z gbc $
+ * $Id: vdiforr.c 3822 2016-02-26 15:22:01Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
  * This file support open, read and release operations.
  */
 
-//#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
+
+/* for pread() on some configurations */
+#define _XOPEN_SOURCE 500
 #include <unistd.h>
+/* just to be sure */
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 #include "vdifuse.h"
 

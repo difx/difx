@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.c 3815 2016-02-25 18:04:37Z gbc $
+ * $Id: vdifsg2.c 3822 2016-02-26 15:22:01Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -761,7 +761,30 @@ static int successor_closes_gap(SGV2sdata *sdp, double ptbe, int jj)
  *
  * Once we have completed this step, the true byte offset in the file
  * can be reliably computed, assuming no corruption of the data....
+ *
+ * TODO: optimize stripe_spot/stripe_dgap/stripe_sqze.
+ *  In the normal walk-by-one approach, the stripe is likely to stay
+ *  close in time, so the stripe_dgap() approach should work.  With
+ *  larger jumps [stripe_spot()] there could be a spread of times,
+ *  and stripe_dgap() does not work some of the time.  stripe_sqze()
+ *  makes a pass to squeeze the strip to be blocks just after the zero
+ *  block.  It might be more optimal to use the middle block and move
+ *  some forward and others backwards.
  */
+static void stripe_sqze(SGV2sdata *sdp)
+{
+    int jj, ii;
+    SGV2sfrag *ith;
+    if (vdifuse_debug>5) fprintf(vdflog, "stripe_sqze(%s)\n", sdp->vs->fuse);
+    jj = stripe_zero(sdp) + 1;  /* and also set stripe zero */
+    ith = sdp->stripe[ii = sdp->zero].sfrag;
+    while (jj < sdp->numb) {
+        SGV2sfrag *jth = sdp->stripe[jj].sfrag;
+        (void)predecessors_leave_gap(jj, jth, ith->pten, sdp->msbs*PKTDT);
+        jj++;
+    }
+    stripe_sort(sdp);
+}
 static void stripe_dgap(SGV2sdata *sdp)
 {
     int jj, ii;
@@ -1077,8 +1100,9 @@ static void stripe_spot(SGV2sdata *sdp, off_t cblks[])
         member_move(sdp->stripe[ii].sfrag, cblks[ii], dir);
         sdp->stripe[ii].reads = 0;
     }
-    part2 = secs_since(&now);
+    part1 = secs_since(&now);
     stripe_sort(sdp);
+    stripe_sqze(sdp);
     stripe_dgap(sdp);
     stripe_boff(sdp);
     part2 = secs_since(&now);

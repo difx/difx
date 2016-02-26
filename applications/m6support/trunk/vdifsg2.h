@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.h 3807 2016-02-22 18:03:13Z gbc $
+ * $Id: vdifsg2.h 3822 2016-02-26 15:22:01Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -105,8 +105,9 @@
 #define SGV2_DIAG_SPARE     11
 #define SGV2_DIAG_COUNT     (SGV2_DIAG_SPARE + 1)
 
-#define STRIPE_JUMP_ENABLED 0
-#define STRIPE_JUMP_TRIGGER 0x0FFFFFFF
+/* for 16-disk 10MB blocks, this is about 16 walks */
+#define STRIPE_JUMP_ENABLED 1
+#define STRIPE_JUMP_TRIGGER 262144000
 
 /* per-fragment lookup data: ffi->sfrag[], created by calloc */
 typedef struct sgv2_private_sfrag {
