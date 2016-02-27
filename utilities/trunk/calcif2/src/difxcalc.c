@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -149,7 +149,7 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	{
 		fprintf(stderr,
 		    "Selected EOPs don't bracket the observation:\n"
-		    "%d < %lg || %d > %lg\n",
+		    "%e < %lg || %e > %lg\n",
 		    request->EOP_time[MAX_EOPS-1], D->mjdStart,
 		    request->EOP_time[0], D->mjdStop);
 		return -3;
