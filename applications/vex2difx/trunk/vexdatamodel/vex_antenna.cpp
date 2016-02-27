@@ -52,66 +52,6 @@ double VexAntenna::getVexClocks(double mjd, double *coeffs) const
 	return epoch;
 }
 
-bool VexAntenna::hasData(const Interval &timerange) const
-{
-	bool rv = false;
-
-	switch(dataSource)
-	{
-	case DataSourceNone:
-		rv = false;
-		break;
-	case DataSourceNetwork:
-		rv = true;
-		break;
-	case DataSourceFake:
-		rv = true;
-		break;
-	case DataSourceFile:
-	case DataSourceMark6:
-		for(std::vector<VexBasebandData>::const_iterator it = files.begin(); it != files.end(); ++it)
-		{
-			if(it->overlap(timerange) > 0.0)
-			{
-				rv = true;
-				break;
-			}
-		}
-		break;
-	case DataSourceModule:
-		for(std::vector<VexBasebandData>::const_iterator it = vsns.begin(); it != vsns.end(); ++it)
-		{
-			if(it->overlap(timerange) > 0.0)
-			{
-				rv = true;
-				break;
-			}
-		}
-		break;
-	case NumDataSources:
-		// Should never come up.  print error?
-		break;
-	}
-
-	return rv;
-}
-
-int VexAntenna::nDatastreamWithData(const Interval &timerange) const
-{
-	int n = 0;
- 
-	if(dataSource == DataSourceFile || dataSource == DataSourceMark6)
-	{
-		return nRepresentedDatastreams(files);
-	}
-	else if(dataSource == DataSourceModule)
-	{
-		return nRepresentedDatastreams(vsns);
-	}
-
-	return n;
-}
-
 void VexAntenna::removeBasebandData(int streamId)
 {
 	removeBasebandDataByStreamId(vsns, streamId);
@@ -206,7 +146,7 @@ std::ostream& operator << (std::ostream &os, const VexAntenna &x)
 	{
 		os << "  " << *it << std::endl;
 	}
-	// FIXME: print dataSource, files, vsns, ports here
+	// FIXME: print files, vsns, ports here ADDENDUM: really these structures should move to VexStream
 
 	return os;
 }

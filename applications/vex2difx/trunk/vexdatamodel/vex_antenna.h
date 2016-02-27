@@ -42,11 +42,10 @@
 class VexAntenna
 {
 public:
-	VexAntenna() : x(0.0), y(0.0), z(0.0), dx(0.0), dy(0.0), dz(0.0), posEpoch(0.0), axisOffset(0.0), tcalFrequency(0), dataSource(DataSourceNone) {}
+	VexAntenna() : x(0.0), y(0.0), z(0.0), dx(0.0), dy(0.0), dz(0.0), posEpoch(0.0), axisOffset(0.0), tcalFrequency(0) {}
 
 	double getVexClocks(double mjd, double * coeffs) const;
 	bool hasData(const Interval &timerange) const;
-	int nDatastreamWithData(const Interval &timerange) const;
 	void removeBasebandData(int streamId);
 	bool hasVSNs() const { return !vsns.empty(); }
 
@@ -61,9 +60,7 @@ public:
 	std::vector<VexClock> clocks;
 	int tcalFrequency;	// Hz
 
-	enum DataSource dataSource;
-
-	// actual baesband data is associated with the antenna
+	// actual baseband data is associated with the antenna 
 	std::vector<VexBasebandData> vsns;	// indexed by vsn number
 	std::vector<VexBasebandData> files;	// indexed by file number
 	std::vector<VexNetworkData> ports;	// indexed by stream number

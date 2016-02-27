@@ -40,6 +40,9 @@ Version 2.5.0
 * Allow xmacLength = 0 -> mpifxcorr chooses a pretty good value for you
 * Don't allow changing from or to VDIF format with the .v2d file since channel order is defined differently for these two types.
 * Stations defaulting to use of Canonical VDIF threads changed to VLBA antennas, VLA, and GBT only (Arecibo and Effelsberg removed).  Can be changed through environment variable CANONICAL_VDIF_USERS
+* Move dataSource into VexStream object.  Not as simple as it seemed...
+  - Allow "source=none" to be set for up to n-1 streams of an antenna
+  - If all datastreams of an antenna have no data, better to exclude through the global antennas list.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

@@ -44,9 +44,7 @@ void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> 
 		{
 			if(find(jobAntennas.begin(), jobAntennas.end(), a->first) == jobAntennas.end())
 			{
-				const VexAntenna *A = V.getAntenna(a->first);
-
-				if(A->hasData(*S))
+				if(V.hasData(a->first, *S))	// a->first is antenna name
 				{
 					jobAntennas.push_back(a->first);
 				}
@@ -162,7 +160,7 @@ int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const
 			exit(EXIT_FAILURE);
 		}
 
-		if(ant->dataSource != DataSourceModule)
+		if(V.getDataSource(antId, 0) != DataSourceModule) // FIXME: This line assumes all datastreams behave the same.  solution: need datastream-based flags
 		{
 			// Aha! not module based so unflag JOB_FLAG_RECORD
 			flagMask[antId] &= ~JobFlag::JOB_FLAG_RECORD;

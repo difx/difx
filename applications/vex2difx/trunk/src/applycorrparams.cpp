@@ -155,65 +155,6 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 		}
 	}
 
-	// Data and data source
-	for(unsigned int a = 0; a < V->nAntenna(); ++a)
-	{
-		const VexAntenna *A = V->getAntenna(a);
-		if(!A)
-		{
-			std::cerr << "Developer error: applyCorrParams: Antenna " << a << " cannot be gotten" << std::endl;
-
-			exit(EXIT_FAILURE);
-		}
-
-		const AntennaSetup *as = params.getAntennaSetup(A->name);
-		if(!as)
-		{
-			// No antenna setup here, so continue...
-			continue;
-		}
-
-		int nDatastreamSetup = as->datastreamSetups.size();
-		if(nDatastreamSetup <= 0)
-		{
-			// nothing provided
-			continue;
-		}
-
-		for(int i = 0; i < nDatastreamSetup; ++i)
-		{
-			// Here just directly copy updated values from v2d into existing structure
-			const DatastreamSetup &dss = as->datastreamSetups[i];
-			
-			switch(dss.dataSource)
-			{
-			case DataSourceFile:
-				V->setFiles(a, i, dss.basebandFiles);
-				break;
-			case DataSourceModule:
-				V->setModule(a, i, dss.vsn);
-				break;
-			case DataSourceNetwork:
-				V->setNetworkParameters(a, i, dss.networkPort, dss.windowSize);
-				break;
-			case DataSourceFake:
-				V->setFake(a);
-				break;
-			case DataSourceMark6:
-				V->setFiles(a, i, dss.basebandFiles);
-				V->setMark6(a);
-				break;
-			default:
-				break;
-			}
-
-			if(dss.dataSampling != NumSamplingTypes)
-			{
-				V->setSampling(A->name, i, dss.dataSampling);
-			}
-		}
-	}
-
 	// MODES / SETUPS / formats
 
 	for(unsigned int m = 0; m < V->nMode(); ++m)
@@ -308,6 +249,74 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 	// For modes where record channels were not explicitly assigned, use ordering by channel name
 	V->generateRecordChans();
 
+	// Data and data source
+	for(unsigned int a = 0; a < V->nAntenna(); ++a)
+	{
+		const VexAntenna *A = V->getAntenna(a);
+		if(!A)
+		{
+			std::cerr << "Developer error: applyCorrParams: Antenna " << a << " cannot be gotten" << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		const AntennaSetup *as = params.getAntennaSetup(A->name);
+		if(!as)
+		{
+			// No antenna setup here, so continue...
+			continue;
+		}
+
+		int nDatastreamSetup = as->datastreamSetups.size();
+		if(nDatastreamSetup <= 0)
+		{
+			// nothing provided
+			continue;
+		}
+
+		for(int i = 0; i < nDatastreamSetup; ++i)
+		{
+			// Here just directly copy updated values from v2d into existing structure
+			const DatastreamSetup &dss = as->datastreamSetups[i];
+
+			switch(dss.dataSource)
+			{
+			case DataSourceNone:
+				V->setNoDatastream(a, i);
+				break;
+			case DataSourceFile:
+				V->setFiles(a, i, dss.basebandFiles);
+				break;
+			case DataSourceModule:
+				V->setModule(a, i, dss.vsn);
+				break;
+			case DataSourceNetwork:
+				V->setNetworkParameters(a, i, dss.networkPort, dss.windowSize);
+				break;
+			case DataSourceFake:
+				V->setFake(a, i);
+				break;
+			case DataSourceMark6:
+				V->setMark6Files(a, i, dss.basebandFiles);
+				break;
+			case DataSourceUnspecified:
+				if(!A->vsns.empty())
+				{
+					V->setDataSource(a, i, DataSourceModule);
+				}
+				break;
+			case NumDataSources:
+				std::cerr << "Developer error: mergeCorrParams: DataSource=NumDataSources encountered." << std::endl;
+				exit(EXIT_FAILURE);
+			}
+
+			if(dss.dataSampling != NumSamplingTypes)
+			{
+				V->setSampling(A->name, i, dss.dataSampling);
+			}
+		}
+	}
+
 	// Tones
 	for(unsigned int a = 0; a < V->nAntenna(); ++a)
 	{
@@ -350,7 +359,6 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 		{
 			V->selectTones(A->name, as->toneSelection, as->toneGuardMHz);
 		}
-		
 	}
 
 	// Override clocks and other antenna parameters
@@ -399,6 +407,9 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 			V->setAntennaAxisOffset(A->name, as->axisOffset);
 		}
 	}
+
+	// remove any datastreams with no data source
+	V->removeStreamsWithNoDataSource();
 
 	return 0;
 }

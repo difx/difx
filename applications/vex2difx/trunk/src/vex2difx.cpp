@@ -56,7 +56,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20160126");
+const string verdate("20160226");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -261,6 +261,8 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, const CorrP
 	return A;
 }
 
+// NOTE: FIXME: before this gets called, all datasource=NONE datastreams should be stripped.
+
 static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, const CorrParams *P, int nSet, DifxAntenna *difxAntennas, const Shelves &shelves)
 {
 	DifxDatastream *datastreams;
@@ -311,10 +313,10 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, const
 				const VexStream &stream = setup.streams[d];
 
 				dd->antennaId = antennaId;
-				dd->dataSource = ant->dataSource;
+				dd->dataSource = stream.dataSource;
 				dd->tSys = 0.0;
 				dd->dataSampling = stream.dataSampling;
-				switch(ant->dataSource)
+				switch(dd->dataSource)
 				{
 				case DataSourceNetwork:
 					dd->windowSize = ant->ports[d].windowSize;
@@ -384,7 +386,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, const
 				case DataSourceFake:
 					break;
 				default:
-					std::cerr << "Developer error: got into job creation with antenna " << *a << " having unsupported data source " << ant->dataSource << std::endl;
+					std::cerr << "Developer error: got into job creation with antenna " << *a << " datastream num " << d << " having unsupported data source " << dataSourceNames[dd->dataSource] << std::endl;
 
 					exit(EXIT_FAILURE);
 				}
@@ -1153,21 +1155,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 
 	// get worst case datastream count
-	nDatastream = 0;
-	for(int antennaId = 0; antennaId < D->nAntenna; ++antennaId)
-	{
-		const AntennaSetup *antennaSetup = P->getAntennaSetup(D->antenna[antennaId].name);
-
-		if(antennaSetup)
-		{
-			nDatastream += antennaSetup->datastreamSetups.size();
-		}
-		else
-		{
-			++nDatastream;
-		}
-	}
-
+	nDatastream = mode->nStream();
 	configName = S->modeDefName + string("_") + corrSetupName;
 
 	configs.push_back(pair<string,string>(S->modeDefName, corrSetupName));
@@ -1337,7 +1325,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 
 			exit(EXIT_FAILURE);
 		}
-		cout << "Changing nDataSegments from " << D->nDataSegments << " to " << (D->dataBufferFactor/f) << " in order to keep data send sizes below 2.14 seconds" << endl;
+		cout << "Note: changing nDataSegments from " << D->nDataSegments << " to " << (D->dataBufferFactor/f) << " in order to keep data send sizes below 2.14 seconds" << endl;
 		D->nDataSegments = D->dataBufferFactor/f;
 		msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
 		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
@@ -1402,6 +1390,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	config->nAntenna = D->nAntenna;
 	config->nDatastream = nDatastream;
 	config->nBaseline = nDatastream*(nDatastream-1)/2;	// this is a worst case (but typical) scenario; may shrink later.
+								// FIXME: it seems the shrinking causes seg faults.  
 
 	//if guardNS was not set explicitly, change it to the right amount to allow for
 	//adjustment to get to an integer NS + geometric rate slippage (assumes Earth-based antenna)
@@ -2405,7 +2394,7 @@ static void usage(int argc, char **argv)
 	cout << endl;
 	cout << "Usage:  " << argv[0] << " [<options>] <v2d file>" << endl;
 	cout << endl;
-	cout << "  options can include:" << endl;
+	cout << "  <options> can include:" << endl;
 	cout << "     -h" << endl;
 	cout << "     --help        display this information and quit." << endl;
 	cout << endl;
@@ -2424,7 +2413,17 @@ static void usage(int argc, char **argv)
 	cout << "     -s" << endl;
 	cout << "     --strict      treat some warnings as errors and quit [default]." << endl;
 	cout << endl;
-	cout << "  the v2d file is the vex2difx configuration file to process." << endl;
+	cout << "  <v2d file> is the vex2difx configuration file to process." << endl;
+	cout << endl;
+	cout << "When running " << program << " you will likely see some output to the screen." << endl;
+	cout << "Some messages may be important.  Most messages are categorized" << endl;
+	cout << "with one of three qualifiers:" << endl;
+	cout << "  * Note    This may be normal but usually indicates " << program << " is changing" << endl;
+	cout << "            something automatically and that may not be what you want." << endl;
+	cout << "  * Warning This is something that does not prevent " << program << " from running" << endl;
+	cout << "            but has a high likelihood of doing something different than" << endl;
+	cout << "            you intend." << endl;
+	cout << "  * Error   " << program << " could not complete due to this problem." << endl;
 	cout << endl;
 	cout << "See http://cira.ivec.org/dokuwiki/doku.php/difx/vex2difx for more information" << endl;
 	cout << endl;
@@ -2692,7 +2691,7 @@ int main(int argc, char **argv)
 
 	if(!canonicalVDIFUsers.empty())
 	{
-		cout << "Note: Canonical VDIF threads were assumed for the following antennas:";
+		cout << "Note: canonical VDIF threads were assumed for the following antennas:";
 
 		for(set<string>::const_iterator it = canonicalVDIFUsers.begin(); it != canonicalVDIFUsers.end(); ++it)
 		{

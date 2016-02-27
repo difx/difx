@@ -88,20 +88,25 @@ public:
 	void addBreakEvents(std::list<Event> &events, const std::vector<double> &breaks) const;
 	void addLeapSecondEvents(std::list<Event> &events) const;
 	void generateEvents(std::list<Event> &events) const;
+	void setNoDatastream(unsigned int antId, unsigned int streamId);
 	void setFiles(unsigned int antId, unsigned int streamId, const std::vector<VexBasebandData> &files);
+	void setMark6Files(unsigned int antId, unsigned int streamId, const std::vector<VexBasebandData> &files);
 	void setModule(unsigned int antId, unsigned int streamId, const std::string &vsn);
 	void setNetworkParameters(unsigned int antId, unsigned int streamId, const std::string &networkPort, int windowSize);
-	void setFake(unsigned int antId);
-	void setMark6(unsigned int antId);
+	void setFake(unsigned int antId, unsigned int streamId);
 	void setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling);
 	void setCanonicalVDIF(const std::string &modeName, const std::string &antName);
 	void cloneStreams(const std::string &modeName, const std::string &antName, int copies);
+	void removeStreamsWithNoDataSource();
 	VexStream::DataFormat getFormat(const std::string &modeName, const std::string &antName, int dsId) const;
 	bool setFormat(const std::string &modeName, const std::string &antName, int dsId, const std::string &formatName);
 	void setStreamBands(const std::string &modeName, const std::string &antName, int dsId, int nBand, int startBand);
 	double getEarliestScanStart() const;
 	double getLatestScanStop() const;
 	void generateRecordChans();
+	void setDataSource(unsigned int antId, unsigned int streamId, enum DataSource dataSource);
+	enum DataSource getDataSource(unsigned int antId, unsigned int streamId) const;
+	bool hasData(const std::string &antName, const VexScan &scan) const;
 
 	double obsStart() const { return exper.mjdStart; }
 	double obsStop() const { return exper.mjdStop; }

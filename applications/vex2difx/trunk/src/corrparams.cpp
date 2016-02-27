@@ -698,7 +698,7 @@ DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name)
 {
 	networkPort = "0";
 	windowSize = 0;
-	dataSource = DataSourceNone;
+	dataSource = DataSourceUnspecified;
 	dataSampling = NumSamplingTypes;	// flag that no sampling is is identified here
 	startBand = -1;
 	nBand = 0;				// Zero implies all.
@@ -745,7 +745,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "file" || key == "files")
 	{
-		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
+		if(dataSource != DataSourceFile && dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
@@ -755,7 +755,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "mark6file" || key == "mark6files")
 	{
-		if(dataSource != DataSourceMark6 && dataSource != DataSourceNone)
+		if(dataSource != DataSourceMark6 && dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceMark6] << std::endl;
 			++nWarn;
@@ -765,7 +765,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "filelist")
 	{
-		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
+		if(dataSource != DataSourceFile && dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
@@ -775,7 +775,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "mark6filelist")
 	{
-		if(dataSource != DataSourceMark6 && dataSource != DataSourceNone)
+		if(dataSource != DataSourceMark6 && dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceMark6] << std::endl;
 			++nWarn;
@@ -785,7 +785,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "networkPort")
 	{
-		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
+		if(dataSource != DataSourceNetwork && dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
@@ -795,7 +795,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "windowSize")
 	{
-		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
+		if(dataSource != DataSourceNetwork && dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
@@ -805,7 +805,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "UDP_MTU")
 	{
-		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
+		if(dataSource != DataSourceNetwork && dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
@@ -820,7 +820,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 		{
 			std::cerr << "Warning: datastream " << difxName << " has multiple vsns assigned to it.  Only using the last one = " << value << " and discarding " << basebandFiles[0].filename << std::endl;
 		}
-		else if(dataSource != DataSourceNone)
+		else if(dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: datastream " << difxName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
@@ -828,8 +828,30 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 		dataSource = DataSourceModule;
 		vsn = value;
 	}
+	else if(key == "source")
+	{
+		enum DataSource ds;
+
+		ds = stringToDataSource(value.c_str());
+		if(ds == NumDataSources)
+		{
+			std::cerr << "Error: datastream " << difxName << " unsupported value of source (" << value << ") provided." << std::endl;
+			++nWarn;
+		}
+		else
+		{
+			dataSource = ds;
+		}
+	}
 	else if(key == "fake")
 	{
+		static int noteCount = 0;
+
+		if(noteCount == 0)
+		{
+			std::cout << "Note: the fake keyword in the DATASTREAM section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
+		}
+		++noteCount;
 		dataSource = DataSourceFake;
 		basebandFiles.clear();
 		basebandFiles.push_back(VexBasebandData(value, 0));
@@ -870,11 +892,11 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 {
 	nBand = dss->nBand;	// there is no way for the defaultDatastreamSetup to have this set
 
-	if(dataSource == DataSourceNone)
+	if(dataSource == DataSourceUnspecified || dss->dataSource == DataSourceNone)
 	{
 		dataSource = dss->dataSource;
 	}
-	else if(dataSource != dss->dataSource && dss->dataSource != DataSourceNone)
+	else if(dataSource != dss->dataSource && dss->dataSource != DataSourceUnspecified)
 	{
 		std::cerr << "Error: conflicting data sources: " << dataSourceNames[dataSource] << " != " << dataSourceNames[dss->dataSource] << std::endl;
 
@@ -1208,7 +1230,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "file" || key == "files")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
@@ -1218,7 +1240,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "mark6file" || key == "mark6files")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceMark6 && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceMark6 && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceMark6] << std::endl;
 			++nWarn;
@@ -1228,7 +1250,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "filelist")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
@@ -1238,7 +1260,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "mark6filelist")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceMark6 && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceMark6 && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceMark6] << std::endl;
 			++nWarn;
@@ -1248,7 +1270,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "networkPort")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceNetwork && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceNetwork && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
@@ -1258,7 +1280,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "windowSize")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceNetwork && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceNetwork && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
@@ -1268,7 +1290,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "UDP_MTU")
 	{
-		if(defaultDatastreamSetup.dataSource != DataSourceNetwork && defaultDatastreamSetup.dataSource != DataSourceNone)
+		if(defaultDatastreamSetup.dataSource != DataSourceNetwork && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
@@ -1283,7 +1305,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 		{
 			std::cerr << "Warning: antenna " << vexName << " has multiple vsns assigned to it.  Only using the last one = " << value << " and discarding " << defaultDatastreamSetup.basebandFiles[0].filename << std::endl;
 		}
-		else if(defaultDatastreamSetup.dataSource != DataSourceNone)
+		else if(defaultDatastreamSetup.dataSource != DataSourceUnspecified)
 		{
 			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
@@ -1291,8 +1313,31 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 		defaultDatastreamSetup.dataSource = DataSourceModule;
 		defaultDatastreamSetup.vsn = value;
 	}
+	else if(key == "source")
+	{
+		enum DataSource ds;
+
+		ds = stringToDataSource(value.c_str());
+		if(ds == NumDataSources)
+		{
+			std::cerr << "Error: antenna " << vexName << " unsupported value of source (" << value << ") provided." << std::endl;
+			++nWarn;
+		}
+		else
+		{
+			defaultDatastreamSetup.dataSource = ds;
+		}
+	}
 	else if(key == "fake")
 	{
+		static int noteCount = 0;
+
+		if(noteCount == 0)
+		{
+			std::cout << "Note: the fake keyword in the ANTENNA section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
+		}
+		++noteCount;
+			
 		defaultDatastreamSetup.dataSource = DataSourceFake;
 	}
 	else if(key == "phaseCalInt")

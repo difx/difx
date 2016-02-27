@@ -59,7 +59,7 @@ public:
 
 	static char DataFormatNames[NumDataFormats+1][16];
 
-	VexStream() : sampRate(0.0), nBit(0), nRecordChan(0), VDIFFrameSize(0), singleThread(false), dataSampling(SamplingReal) {}
+	VexStream() : sampRate(0.0), nBit(0), nRecordChan(0), VDIFFrameSize(0), singleThread(false), dataSampling(SamplingReal), dataSource(DataSourceUnspecified) {}
 	double dataRateMbps() const { return sampRate*nBit*nRecordChan/1000000.0; }
 	static enum DataFormat stringToDataFormat(const std::string &str);
 	static bool isSingleThreadVDIF(const std::string &str);
@@ -84,6 +84,7 @@ public:
 	std::vector<int> threads;	// ordered list of threads for VDIF
 	enum DataFormat format;
 	enum SamplingType dataSampling;	// Real or Complex
+	enum DataSource dataSource;
 
 private:
 	static bool Init();		// called to initialize the regexes below

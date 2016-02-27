@@ -344,15 +344,7 @@ unsigned int VexData::nAntennasWithRecordedData(const VexScan &scan) const
 
 	for(std::map<std::string,Interval>::const_iterator it = scan.stations.begin(); it != scan.stations.end(); ++it)
 	{
-		const VexAntenna *A = getAntenna(it->first);
-
-if(A == 0)
-{
-std::cerr << "VexData::nAntennasWithRecordedData : getAntenna( " << it->first << " ) returned null" << std::endl;
-continue;
-}
-
-		if(A->hasData(scan) && scan.getRecordEnable(it->first))
+		if(hasData(it->first, scan) && scan.getRecordEnable(it->first))
 		{
 			++nAnt;
 		}
@@ -650,7 +642,6 @@ void VexData::addVSN(const std::string &antName, unsigned int datastreamId, cons
 		if(it->name == antName)
 		{
 			it->vsns.push_back(VexBasebandData(vsn, datastreamId, timeRange));
-			it->dataSource = DataSourceModule;
 		}
 	}
 }
@@ -800,14 +791,19 @@ void VexData::addScanEvents(std::list<Event> &events) const
 
 void VexData::addVSNEvents(std::list<Event> &events) const
 {
-	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	for(unsigned int antId = 0; antId < antennas.size(); ++antId)
 	{
-		if(it->dataSource == DataSourceModule)
+		const VexAntenna *A = getAntenna(antId);
+
+		for(std::vector<VexBasebandData>::const_iterator vit = A->vsns.begin(); vit != A->vsns.end(); ++vit)
 		{
-			for(std::vector<VexBasebandData>::const_iterator vit = it->vsns.begin(); vit != it->vsns.end(); ++vit)
+			if(vit->streamId >= 0)
 			{
-				addEvent(events, vit->mjdStart, Event::RECORD_START, it->defName);
-				addEvent(events, vit->mjdStop,  Event::RECORD_STOP,  it->defName);
+				if(getDataSource(antId, vit->streamId) == DataSourceModule)
+				{
+					addEvent(events, vit->mjdStart, Event::RECORD_START, A->defName);
+					addEvent(events, vit->mjdStop,  Event::RECORD_STOP,  A->defName);
+				}
 			}
 		}
 	}
@@ -837,6 +833,11 @@ void VexData::generateEvents(std::list<Event> &events) const
 	events.sort();
 }
 
+void VexData::setNoDatastream(unsigned int antId, unsigned int streamId)
+{
+	setDataSource(antId, streamId, DataSourceNone);
+}
+
 void VexData::setFiles(unsigned int antId, unsigned int streamId, const std::vector<VexBasebandData> &files)
 {
 	antennas[antId].removeBasebandData(streamId);
@@ -844,17 +845,25 @@ void VexData::setFiles(unsigned int antId, unsigned int streamId, const std::vec
 	{
 		antennas[antId].files.push_back(VexBasebandData(it->filename, streamId, *it));
 	}
-	if(antennas[antId].dataSource != DataSourceMark6)	// Both Mark6 and File data source use the same file list
-	{
-		antennas[antId].dataSource = DataSourceFile;
-	}
+	setDataSource(antId, streamId, DataSourceFile);
 }
 
+void VexData::setMark6Files(unsigned int antId, unsigned int streamId, const std::vector<VexBasebandData> &files)
+{
+	antennas[antId].removeBasebandData(streamId);
+	for(std::vector<VexBasebandData>::const_iterator it = files.begin(); it != files.end(); ++it)
+	{
+		antennas[antId].files.push_back(VexBasebandData(it->filename, streamId, *it));
+	}
+	setDataSource(antId, streamId, DataSourceMark6);
+}
+
+// Module == Mark5
 void VexData::setModule(unsigned int antId, unsigned int streamId, const std::string &vsn)
 {
 	antennas[antId].removeBasebandData(streamId);
 	antennas[antId].vsns.push_back(VexBasebandData(vsn, streamId));
-	antennas[antId].dataSource = DataSourceModule;
+	setDataSource(antId, streamId, DataSourceModule);
 }
 
 void VexData::setNetworkParameters(unsigned int antId, unsigned int streamId, const std::string &networkPort, int windowSize)
@@ -865,17 +874,12 @@ void VexData::setNetworkParameters(unsigned int antId, unsigned int streamId, co
 	}
 	antennas[antId].ports[streamId].networkPort = networkPort;
 	antennas[antId].ports[streamId].windowSize = windowSize;
-	antennas[antId].dataSource = DataSourceNetwork;
+	setDataSource(antId, streamId, DataSourceNetwork);
 }
 
-void VexData::setFake(unsigned int antId)
+void VexData::setFake(unsigned int antId, unsigned int streamId)
 {
-	antennas[antId].dataSource = DataSourceFake;
-}
-
-void VexData::setMark6(unsigned int antId)
-{
-	antennas[antId].dataSource = DataSourceMark6;
+	setDataSource(antId, streamId, DataSourceFake);
 }
 
 void VexData::setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling)
@@ -970,6 +974,107 @@ void VexData::cloneStreams(const std::string &modeName, const std::string &antNa
 
 		exit(EXIT_FAILURE);
 	}
+}
+
+void VexData::removeStreamsWithNoDataSource()
+{
+	std::vector<VexMode>::iterator mit;
+
+	for(mit = modes.begin(); mit != modes.end(); ++mit)
+	{
+		std::map<std::string,VexSetup>::iterator sit;
+
+		for(sit = mit->setups.begin(); sit != mit->setups.end(); ++sit)
+		{
+			int n;
+
+			n = 0;
+			std::vector<VexStream>::iterator it = sit->second.streams.begin();
+			while(it != sit->second.streams.end())
+			{
+				if(it->dataSource == DataSourceNone)
+				{
+					++n;
+					it = sit->second.streams.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+
+			if(n > 0)
+			{
+				std::cout << "Note: removed " << n << " datastreams from antenna " << sit->first << " because of no data source." << std::endl;
+			}
+		}
+	}
+}
+
+void VexData::setDataSource(unsigned int antId, unsigned int streamId, enum DataSource dataSource)
+{
+	std::vector<VexMode>::iterator mit;
+
+	if(antId >= antennas.size())
+	{
+		std::cerr << "Developer error: VexData::setDataSource: antId = " << antId << " where size of antennas[] is " << antennas.size() << std::endl;
+		
+		exit(EXIT_FAILURE);
+	}
+
+	for(mit = modes.begin(); mit != modes.end(); ++mit)
+	{
+		std::map<std::string,VexSetup>::iterator it = mit->setups.find(antennas[antId].name);
+
+		if(it == mit->setups.end())
+		{
+			continue;
+		}
+		if(streamId >= it->second.streams.size())
+		{
+			std::cerr << "Developer error: VexData::setDataSource: antId = " << antId << " streamId = " << streamId << " where number of streams is " << it->second.streams.size() << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		it->second.streams[streamId].dataSource = dataSource;
+	}
+}
+
+enum DataSource VexData::getDataSource(unsigned int antId, unsigned int streamId) const
+{
+	std::vector<VexMode>::const_iterator mit;
+
+	if(antId >= antennas.size())
+	{
+		std::cerr << "Developer error: VexData::getDataSource: antId = " << antId << " where size of antennas[] is " << antennas.size() << std::endl;
+		
+		exit(EXIT_FAILURE);
+	}
+
+	for(mit = modes.begin(); mit != modes.end(); ++mit)
+	{
+		std::map<std::string,VexSetup>::const_iterator it = mit->setups.find(antennas[antId].name);
+
+		if(it == mit->setups.end())
+		{
+			continue;
+		}
+		if(streamId >= it->second.streams.size())
+		{
+			std::cerr << "Developer error: VexData::getDataSource: antId = " << antId << " streamId = " << streamId << " where number of streams is " << it->second.streams.size() << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		if(it->second.streams[streamId].dataSource != DataSourceUnspecified)
+		{
+			return it->second.streams[streamId].dataSource;
+		}
+
+	}
+
+	return DataSourceUnspecified;
 }
 
 VexStream::DataFormat VexData::getFormat(const std::string &modeName, const std::string &antName, int dsId) const
@@ -1095,6 +1200,69 @@ double VexData::getLatestScanStop() const
 	}
 
 	return stop;
+}
+
+bool VexData::hasData(const std::string &antName, const VexScan &scan) const
+{
+	bool hd = false;
+	const VexAntenna *A = getAntenna(antName);
+	if(!A)
+	{
+		std::cerr << "Developer error: VexData::hasData: cannot find antenna " << antName << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+	const VexMode *M = getModeByDefName(scan.modeDefName);
+	if(!M)
+	{
+		std::cerr << "Developer error: VexData::hasData:: cannot find mode " << scan.modeDefName << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+	std::map<std::string,VexSetup>::const_iterator s = M->setups.find(antName);
+	if(s != M->setups.end())
+	{
+		for(unsigned int d = 0; d < s->second.streams.size(); ++d)
+		{
+			switch(s->second.streams[d].dataSource)
+			{
+			case DataSourceFile:
+			case DataSourceMark6:
+				for(std::vector<VexBasebandData>::const_iterator it = A->files.begin(); it != A->files.end(); ++it)
+				{
+					if(it->overlap(scan) > 0.0)
+					{
+						hd = true;
+						break;
+					}
+				}
+				break;
+			case DataSourceModule:
+				for(std::vector<VexBasebandData>::const_iterator it = A->vsns.begin(); it != A->vsns.end(); ++it)
+				{
+					if(it->overlap(scan) > 0.0)
+					{
+						hd = true;
+						break;
+					}
+				}
+				break;
+			case DataSourceNetwork:
+			case DataSourceFake:
+				hd = true;
+				break;
+			default:
+				break;
+			}
+
+			if(hd)
+			{
+				break;
+			}
+		}
+	}
+
+	return hd;
 }
 
 std::ostream& operator << (std::ostream &os, const VexData &x)
