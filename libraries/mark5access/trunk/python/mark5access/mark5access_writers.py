@@ -31,24 +31,18 @@ class VDIFEncapsulator:
 	def open(self, filename, format='VDIF_8192-1024-1-32', complex=False, station='XX'):
 
 		self.__init__()
-		# print self.hdr
 
 		## Parse the mark5access-like format string
 		fmt = re.split('[\_|-]+', format)
 		(self.payloadbytes,Rmbps,nch,nbit) = [int(x) for x in fmt[1:]]
 
 		## Check the data rate
-
 		self.fps = ((Rmbps*1e6/8) / self.payloadbytes)
-		if not(int(self.fps) == self.fps):
-			print ('*** Warning: VDIF %f Mbps output rate with %u-byte payload is a non-integer %e frames/sec!' % (Rmbps,self.payloadbytes,self.fps))
-			while not(int(self.fps) == self.fps):
-				self.payloadbytes -= 1
-				self.fps = ((Rmbps*1e6/8) / self.payloadbytes)
-			print ('*** Reduced to %u-byte payload.' % (self.payloadbytes))
+		while (int(self.fps) != self.fps) or ((self.payloadbytes % 8) != 0):
+			self.payloadbytes += 1
+			self.fps = ((Rmbps*1e6/8) / self.payloadbytes)
 
-		# Create format description
-
+		## Create format description
 		if not(complex):
 			self.fmt = 'VDIF_%u-%u-%u-%u' % (self.payloadbytes,Rmbps,nch,nbit)
 		else:
