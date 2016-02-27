@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,6 +44,7 @@ const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH] =
 	"NETWORK",
 	"FAKE",
 	"MARK6",
+	"UNSPECIFIED",	/* should be second to last entry */
 	"ERROR"		/* takes place of NumDataSources */
 };
 
@@ -60,11 +61,18 @@ enum DataSource stringToDataSource(const char *str)
 {
 	enum DataSource type;
 
-	for(type = 0; type < NumDataSources; ++type)
+	if(strcasecmp(str, "MARK5") == 0)
 	{
-		if(strcasecmp(str, dataSourceNames[type]) == 0)
+		type = DataSourceModule;
+	}
+	else
+	{
+		for(type = 0; type < NumDataSources; ++type)
 		{
-			break;
+			if(strcasecmp(str, dataSourceNames[type]) == 0)
+			{
+				break;
+			}
 		}
 	}
 
@@ -89,8 +97,13 @@ enum SamplingType stringToSamplingType(const char *str)
 DifxDatastream *newDifxDatastreamArray(int nDatastream)
 {
 	DifxDatastream *dd;
+	int s;
 
 	dd = (DifxDatastream *)calloc(nDatastream, sizeof(DifxDatastream));
+	for(s = 0; s < nDatastream; ++s)
+	{
+		dd[s].dataSource = DataSourceUnspecified;
+	}
 
 	return dd;
 }

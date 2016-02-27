@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -115,6 +115,7 @@ enum DataSource
 	DataSourceNetwork,
 	DataSourceFake,
 	DataSourceMark6,
+	DataSourceUnspecified,	/* must remain as second last entry */
 	NumDataSources		/* must remain as last entry */
 };
 
