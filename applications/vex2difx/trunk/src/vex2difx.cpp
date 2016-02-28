@@ -2768,7 +2768,7 @@ int main(int argc, char **argv)
 
 				if(nRecChan < 0)
 				{
-					cerr << "Error: Cannot use multiple datastreams in cases where number of record channels varies with mode." << endl;
+					cerr << "Error: Cannot use multiple explicit datastreams in cases where number of record channels varies with mode." << endl;
 					++nError;
 				}
 

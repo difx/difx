@@ -378,6 +378,19 @@ void VexMode::generateRecordChans()
 	}
 }
 
+int VexMode::nRecordChan(const std::string &antName) const
+{
+	std::map<std::string,VexSetup>::const_iterator it = setups.find(antName);
+	if(it != setups.end())
+	{
+		return it->second.nRecordChan();
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 std::ostream& operator << (std::ostream &os, const VexMode &x)
 {
 	unsigned int nSubband = x.subbands.size();

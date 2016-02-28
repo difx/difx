@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken                             *
+ *   Copyright (C) 2009-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -782,6 +782,13 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 		}
 		dataSource = DataSourceMark6;
 		loadBasebandFilelist(value, basebandFiles);
+	}
+	else if(key == "recorder")
+	{
+		int recorderId;
+
+		ss >> recorderId;
+		recorderIds.insert(recorderId);
 	}
 	else if(key == "networkPort")
 	{

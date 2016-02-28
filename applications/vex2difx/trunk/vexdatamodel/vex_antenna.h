@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken & Adam Deller                    *
+ *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,6 +39,8 @@
 #include "vex_basebanddata.h"
 #include "vex_networkdata.h"
 
+bool isVLBA(const std::string &antName);
+
 class VexAntenna
 {
 public:
@@ -48,6 +50,7 @@ public:
 	bool hasData(const Interval &timerange) const;
 	void removeBasebandData(int streamId);
 	bool hasVSNs() const { return !vsns.empty(); }
+	bool isVLBA() const { return ::isVLBA(defName); }
 
 	std::string name;
 	std::string defName;	// Sometimes names get changed
@@ -65,8 +68,6 @@ public:
 	std::vector<VexBasebandData> files;	// indexed by file number
 	std::vector<VexNetworkData> ports;	// indexed by stream number
 };
-
-bool isVLBA(const std::string &antName);
 
 bool usesCanonicalVDIF(const std::string &antName);
 

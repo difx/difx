@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken                             *
+ *   Copyright (C) 2009-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -447,65 +447,6 @@ static int getAntennas(VexData *V, Vex *v)
 				}
 			}
 		}
-
-#if 0
-// FIXME: antennaSetup needs function that indicates whether datasource has been established
-		if(!antennaSetup || antennaSetup->getDataSource() == DataSourceNone)
-		{
-			if(params.fakeDatasource)
-			{
-				A->dataSource = DataSourceFake;
-			}
-			else
-			{
-				for(void *c = get_station_lowl(stn, T_VSN, B_TAPELOG_OBS, v); c; c = get_station_lowl_next())
-				{
-					char *value;
-					char *units;
-					int name;
-					int link;
-					double t1 = 0.0, t2 = 0.0;
-
-					vex_field(T_VSN, c, 2, &link, &name, &value, &units);
-					if(!value)
-					{
-						std::cerr << "VSN absent for antenna " << stn << std::endl;
-						break;
-					}
-					std::string vsn(value);
-					fixOhs(vsn);
-
-					vex_field(T_VSN, c, 3, &link, &name, &value, &units);
-					if(value)
-					{
-						t1 = vexDate(value);
-					}
-					vex_field(T_VSN, c, 4, &link, &name, &value, &units);
-					if(value)
-					{
-						t2 = vexDate(value);
-					}
-
-					if(t1 == 0.0 || t2 == 0.0)
-					{
-						std::cerr << "VSN " << vsn << "doesn't have proper time range" << std::endl;
-						break;
-					}
-
-					Interval vsnTimeRange(t1+0.001/86400.0, t2);
-
-					if(!vsnTimeRange.isCausal())
-					{
-						std::cerr << "Error: Record stop (" << t2 << ") precedes record start (" << t1 << ") for antenna " << stn << ", module " << vsn << " ." << std::endl;
-					}
-					else
-					{
-						V->addVSN(antName, vsn, vsnTimeRange);
-					}
-				}
-			}
-		}
-#endif
 	}
 
 	return nWarn;
@@ -1233,6 +1174,7 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 	for(Llist *lowls = find_lowl(((Def *)((Lowl *)defs->ptr)->item)->refs, T_VSN); lowls; lowls = lowls->next)
 	{
 		Vsn *p;
+		int drive;
 
 		if(((Lowl *)lowls->ptr)->statement != T_VSN)
 		{
@@ -1248,6 +1190,8 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 		std::string vsn(p->label);
 		fixOhs(vsn);
 
+		drive = atoi(p->drive->value);
+
 		Interval vsnTimeRange(vexDate(p->start)+0.001/86400.0, vexDate(p->stop));
 
 		if(!vsnTimeRange.isCausal())
@@ -1257,9 +1201,14 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 		}
 		else
 		{
-			// Note: always adding to datastream 0 at this time.
-			// with vex2 this will need to change
-			V->addVSN(antName, 0, vsn, vsnTimeRange);
+			if(vsn[0] == '/')
+			{
+				V->addFile(antName, drive, vsn, vsnTimeRange);
+			}
+			else
+			{
+				V->addVSN(antName, drive, vsn, vsnTimeRange);
+			}
 		}
 	}
 

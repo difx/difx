@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -158,9 +158,10 @@ public:
 	bool usesAntenna(const std::string &antennaName) const;
 	bool usesMode(const std::string &modeDefName) const;
 
-	void addVSN(const std::string &antName, unsigned int datastreamId, const std::string &vsn, const Interval &timeRange);
-	// If datastreamId < 0, remove data from all associated datastreams
-	void removeBasebandData(const std::string &antName, int datastreamId);
+	void addFile(const std::string &antName, int drive, const std::string &filename, const Interval &timeRange);
+	void addVSN(const std::string &antName, int drive, const std::string &vsn, const Interval &timeRange);
+	std::vector<VexBasebandData> *getVSNs(const std::string &antName);
+	void removeBasebandData(const std::string &antName, int datastreamId); // If datastreamId < 0, remove data from all associated datastreams
 
 	const VexExper *getExper() const { return &exper; }
 	void setExper(const std::string &name, const Interval &experTimeRange);

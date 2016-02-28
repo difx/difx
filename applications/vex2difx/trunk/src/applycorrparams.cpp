@@ -252,7 +252,9 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 	// Data and data source
 	for(unsigned int a = 0; a < V->nAntenna(); ++a)
 	{
+		unsigned int nAssigned;
 		const VexAntenna *A = V->getAntenna(a);
+		std::vector<VexBasebandData> *vsns;
 		if(!A)
 		{
 			std::cerr << "Developer error: applyCorrParams: Antenna " << a << " cannot be gotten" << std::endl;
@@ -266,8 +268,176 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 			// No antenna setup here, so continue...
 			continue;
 		}
-
 		int nDatastreamSetup = as->datastreamSetups.size();
+
+		vsns = V->getVSNs(A->name);
+		if(!vsns)
+		{
+			std::cerr << "Developer error: applyCorrParams: Antenna " << a << " gave null vsns vector" << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		if(!vsns->empty())
+		{
+			// first go through vex-provided data and see if a datastream should be associated with it based on VexDatastream::recorderIds
+
+			nAssigned = 0;
+			if(nDatastreamSetup > 0)
+			{
+				std::vector<VexBasebandData>::iterator vit;
+
+				for(vit = vsns->begin(); vit != vsns->end(); ++vit)
+				{
+					if(vit->streamId < 0 && vit->recorderId >= 0)
+					{
+						int nDSS;
+
+						nDSS = 0;
+						for(int i = 0; i < nDatastreamSetup; ++i)
+						{
+							const DatastreamSetup &dss = as->datastreamSetups[i];
+
+							if(dss.recorderIds.find(vit->recorderId) != dss.recorderIds.end())
+							{
+								vit->streamId = i;
+								if(nDSS == 0)
+								{
+									++nAssigned;
+								}
+								++nDSS;
+							}
+						}
+						if(nDSS > 1)
+						{
+							std::cerr << "Error: multiple DATASTREAMS for ANTENNA " << A->name << " claimed recorderId=" << vit->recorderId << std::endl;
+
+							++nError;
+						}
+					}
+				}
+			}
+
+			// next go through vex-provided data and assign recorderIds to streamIds in logical sequence
+			// if nDatastreamSetup == 0, then use the number of unique reduced recorderIds to set number of actual datastreams
+			if(nAssigned == 0)	// Only try this if no assignment via recorderId was attempted
+			{
+				std::set<int> reducedRecorderIds;	// actual recorderId integer-divided by antenna-specific divisor
+				int divisor, offset;
+				int n;
+				
+				if(A->isVLBA())
+				{
+					divisor = 2;	// VLBA reports each bank of a Mark5 as separate recorderId
+					offset = 1;	// VLBA recorderId starts at 1
+				}
+				else
+				{
+					divisor = 1;
+					offset = 0;
+				}
+
+				for(std::vector<VexBasebandData>::const_iterator vit = vsns->begin(); vit != vsns->end(); ++vit)
+				{
+					reducedRecorderIds.insert( (vit->recorderId - offset)/divisor );
+				}
+				n = 0;
+				for(std::set<int>::const_iterator rit = reducedRecorderIds.begin(); rit != reducedRecorderIds.end(); ++rit)
+				{
+					for(std::vector<VexBasebandData>::iterator vit = vsns->begin(); vit != vsns->end(); ++vit)
+					{
+						if( (vit->recorderId - offset)/divisor == *rit)
+						{
+							vit->streamId = n;
+						}
+					}
+
+					++n;
+				}
+				if(n > 1)
+				{
+					if(nDatastreamSetup > 1 && nDatastreamSetup != n)
+					{
+						std::cerr << "Error: mismatch between number of DATASTREAM setups and number of unique recorders for antenna " << A->name << std::endl;
+
+						++nError;
+					}
+
+					for(unsigned int m = 0; m < V->nMode(); ++m)
+					{
+						const VexMode *M = V->getMode(m);
+						int nRecChan;
+
+						if(!M)
+						{
+							std::cerr << "Developer error: applyCorrParams: Mode number " << m << " cannot be gotten even though nMode() reports " << V->nMode() << " inside stream assignment loop." << std::endl;
+
+							exit(EXIT_FAILURE);
+						}
+
+						nRecChan = M->nRecordChan(A->name);
+
+						if(nRecChan % n != 0)
+						{
+							std::cerr << "Error: number of frequency recorded bands " << nRecChan << " is not divisible by inferred number of data streams " << n << ", which is based on TAPELOG_OBS section of vex file, for mode " << M->defName << " ." << std::endl;
+
+							++nError;
+						}
+
+						std::map<std::string,VexSetup>::const_iterator it = M->setups.find(A->name);
+						if(it != M->setups.end())
+						{
+							V->cloneStreams(M->defName, it->first, n);
+
+							for(int ds = 0; ds < n; ++ds)
+							{
+								V->setStreamBands(M->defName, it->first, ds, nRecChan/n, nRecChan/n*ds);
+							}
+
+							// apply canonical VDIF mapping if appropriate and if needed
+							if(usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
+							{
+								V->setCanonicalVDIF(M->defName, it->first);
+								canonicalVDIFUsers.insert(it->first);
+							}
+						}
+					}
+				}
+			}
+			else if(nAssigned != vsns->size())
+			{
+				std::cerr << "Warning: one or more VSN(s) in the TAPELOG_OBS section were not assigned to a DATASTREAM for antenna " << A->name << std::endl;
+			}
+
+			// and then set the data source for each stream
+			for(std::vector<VexBasebandData>::const_iterator vit = vsns->begin(); vit != vsns->end(); ++vit)
+			{
+				if(vit->isMark5())
+				{
+					V->setDataSource(a, vit->streamId, DataSourceModule);
+				}
+				else if(vit->isMark6())
+				{
+					V->setDataSource(a, vit->streamId, DataSourceMark6);
+				}
+				else
+				{
+					if(A->name[0] == '/')
+					{
+						V->setDataSource(a, vit->streamId, DataSourceFile);
+					}
+					else
+					{
+						std::cerr << "Error: TAPELOG_OBS entry " << vit->filename << " for antenna " << A->name << " is of unrecognized form.  If it is actually a file, it must have a full path, starting with / ." << std::endl;
+						++nError;
+					}
+				}
+			}
+		}
+
+		// finally, if datastreamSetups are provided with baseband data, apply to the mix
+		// Note that the "recorder Id" in the VexBaseband structure does not get set for these insertions
+
 		if(nDatastreamSetup <= 0)
 		{
 			// nothing provided

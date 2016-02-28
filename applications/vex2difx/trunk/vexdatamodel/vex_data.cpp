@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -635,16 +635,40 @@ bool VexData::usesMode(const std::string &modeDefName) const
 	return false;
 }
 
-void VexData::addVSN(const std::string &antName, unsigned int datastreamId, const std::string &vsn, const Interval &timeRange)
+std::vector<VexBasebandData> *VexData::getVSNs(const std::string &antName)
 {
 	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
 		if(it->name == antName)
 		{
-			it->vsns.push_back(VexBasebandData(vsn, datastreamId, timeRange));
+			return &(it->vsns);
+		}
+	}
+
+	return 0;
+}
+
+void VexData::addVSN(const std::string &antName, int drive, const std::string &vsn, const Interval &timeRange)
+{
+	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->name == antName)
+		{
+			it->vsns.push_back(VexBasebandData(vsn, drive, timeRange));
 		}
 	}
 }
+void VexData::addFile(const std::string &antName, int drive, const std::string &filename, const Interval &timeRange)
+{
+	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->name == antName)
+		{
+			it->files.push_back(VexBasebandData(filename, drive, timeRange));
+		}
+	}
+}
+
 
 // removes all baseband data for a given antenna/datastream.  If datastreamId < 0, removes from all datastreams
 void VexData::removeBasebandData(const std::string &antName, int datastreamId)
@@ -900,9 +924,11 @@ void VexData::setCanonicalVDIF(const std::string &modeName, const std::string &a
 		std::map<std::string,VexSetup>::iterator it = M.setups.find(antName);
 		if(it != M.setups.end())
 		{
+			int tStart = 0;
+
 			for(std::vector<VexStream>::iterator sit = it->second.streams.begin(); sit != it->second.streams.end(); ++sit)
 			{
-				if(sit->format == VexStream::FormatVDIF && sit->nThread == 0)
+				if(sit->format == VexStream::FormatVDIF && sit->nThread != sit->nRecordChan)
 				{
 					sit->nBit = 2;
 					sit->nThread = sit->nRecordChan;
@@ -910,9 +936,10 @@ void VexData::setCanonicalVDIF(const std::string &modeName, const std::string &a
 					sit->threads.clear();
 					for(unsigned int c = 0; c < sit->nRecordChan; ++c)
 					{
-						sit->threads.push_back(c);
+						sit->threads.push_back(c + tStart);
 					}
 				}
+				tStart += sit->nRecordChan;
 			}
 		}
 		else

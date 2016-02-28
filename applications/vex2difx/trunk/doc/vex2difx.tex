@@ -381,6 +381,26 @@ The vex2 format will allow higher order clock models.
 
 
 
+\subsection{Specifying baseband data} \label{sec:data}
+
+Specifying data is actually fairly complicated in the case of multiple data streams but is easily described.
+The following description of which data is used and which data stream it gets assigned to is fully general.
+Each data stream has a data source parameter which is equal to one of the following:
+\begin{itemize}
+\item {\tt None}: No data is to be associated with this datastream.  Such datastreams never make their way into the {\tt .input} files.
+\item {\tt Fake}: Data will be generated internally.  The structure of the data should not be assumed to be of any particular form.
+\item {\tt Module} (or {\tt Mark5}): Data is on a Mark5 module.  The associated ``filename'' must be a legal Mark5 Volume Serial Number (VSN).
+\item {\tt Mark6}: Data is on a Mark6 module.  The name should either be a legal Mark6 Module Serial Number (MSN) or a filename corresponding to a recorded file.
+\item {\tt File}: Data is stored in one or more file(s) in the Unix filesystem.
+\item {\tt Network}: Enough network parameters must be defined to set up a socket to receive the relevant baseband data from an external source.
+\end{itemize}
+The data source can usually be left implicitly defined, but if it needs to be forced (such as in the case of fake data) it can be with the {\tt source} parameter in either the {\tt ANTENNA} section (if no explicit datastreams are defined) or in the {\tt DATASTREAM} section.
+
+There are three possilbe places to specify baseband data: The {\tt TAPELOG\_OBS} section of a {\tt .vex} file, or either the {\tt ANTENNA} or {\tt DATASTREAM} section of a {\tt .v2d} file.
+If one or more {\tt DATASTREAM} sections are defined for an antenna, data should not be specified in the corresponding {\tt ANTENNA} section.  
+Data specified in the {\tt .v2d} file will take precedence over data in the {\tt .vex} file.
+
+
 \subsection{Multiple datastreams} \label{sec:mds}
 
 A datastream in the DiFX context is a logical stream of data containing data from one or more baseband channels.
@@ -425,8 +445,21 @@ It is, however, discouraged to make use of this parameter unless absolutely nece
 It may be necessary to use multiple \vd files in complicated cases.
 
 Optionally each {\tt DATASTREAM} section can include a {\tt machine} parameter which can be used to assign a particular cluster node to host the {\tt mpifxcorr} datastream process.
+Note that when this parameter is used (and presumably the global {\tt machines} parameter is used as well to specify hosts of manager and core processes), {\tt genmachines} should not be run when preparing to start the job. 
+Instead, {\tt startdifx} can be used directly with the {\tt -n} option.
+The case where some machines are determined through these {\tt machine}({\tt s}) parameters is currently not supported but could be in the future.
 
 
+Multiple datastreams can be implicitly triggered through use of multiple recorders in use at a given station.
+This would be specified in the {\tt TAPELOG\_OBS} section of a {\tt .vex} file.
+In the event that both multiple recorders are specified here and there are multiple {\tt DATASTREAM}s for an antenna in the {\tt .v2d} file one can use the {\tt recorder} parameter of the {\tt DATASTREAM} section to explicitly associate a given recorder to a datastream.
+If no such explicit assignment is provided, the ``reduced recorder numbers'' (see below) for a given antenna are sorted numerically, each becoming mapped to a datastream in the correct order.
+
+The ``reduced recorder numbers'' is a function of the recorder number specified as the first parameter in a {\tt TAPELOG\_OBS} entry.
+For most antennas the ``reduced recorder numbers'' is just equal to that number.
+Such numbers for the VLBA are different for each bank of a Mark5C recorder, with odd number corresponding to Bank A and even numbers to Bank B.
+Since these are not unique recorders, the ``reduced recorder numbers'' is computed by subtracting 1 and dividing by 2.
+This is essentially a short-cut to prevent the need to explicitly use the {\tt recorder} parameter for every DATASTREAM of every antenna.
 
 \subsection{Earth orientation parameters}
 

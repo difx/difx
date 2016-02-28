@@ -28,6 +28,7 @@
  *==========================================================================*/
 
 #include <set>
+#include <cctype>
 #include "vex_basebanddata.h"
 
 // negative streamId implies remove all
@@ -63,9 +64,83 @@ int nRepresentedDatastreams(const std::vector<VexBasebandData> &data)
 	return streams.size();
 }
 
+bool VexBasebandData::isMark5() const
+{
+	std::size_t found;
+
+	if(filename.length() != 8)
+	{
+		return false;
+	}
+	found = filename.find("-");
+	if(found == std::string::npos)
+	{
+		found = filename.find("+");
+	}
+	if(found == std::string::npos)
+	{
+		return false;
+	}
+	if(found < 1 || found > 6)
+	{
+		return false;
+	}
+	for(unsigned int i = 0; i < found; ++i)
+	{
+		if(!isalpha(filename[i]))
+		{
+			return false;
+		}
+	}
+	for(unsigned int i = found+1; i < 8; ++i)
+	{
+		if(!isdigit(filename[i]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool VexBasebandData::isMark6() const
+{
+	std::size_t found;
+
+	if(filename.length() != 8)
+	{
+		return false;
+	}
+	found = filename.find("%");
+	if(found == std::string::npos)
+	{
+		return false;
+	}
+	if(found < 1 || found > 6)
+	{
+		return false;
+	}
+	for(unsigned int i = 0; i < found; ++i)
+	{
+		if(!isalpha(filename[i]))
+		{
+			return false;
+		}
+	}
+	for(unsigned int i = found+1; i < 8; ++i)
+	{
+		if(!isdigit(filename[i]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 std::ostream& operator << (std::ostream &os, const VexBasebandData &x)
 {
-	os << "Baseband(" << x.filename << ", streamId=" << x.streamId << ", " << (const Interval&)x << ")";
+	os << "Baseband(" << x.filename << ", recorderId=" << x.recorderId << ", streamId=" << x.streamId << ", " << (const Interval&)x << ")";
 
 	return os;
 }

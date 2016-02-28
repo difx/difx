@@ -43,6 +43,7 @@ Version 2.5.0
 * Move dataSource into VexStream object.  Not as simple as it seemed...
   - Allow "source=none" to be set for up to n-1 streams of an antenna
   - If all datastreams of an antenna have no data, better to exclude through the global antennas list.
+* Make use of recorder number in TAPELOG_OBS to automatically generate multiple datastreams for simple cases.
 
 Version 2.4.0
 ~~~~~~~~~~~~~
