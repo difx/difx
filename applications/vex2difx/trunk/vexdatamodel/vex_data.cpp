@@ -654,7 +654,7 @@ void VexData::addVSN(const std::string &antName, int drive, const std::string &v
 	{
 		if(it->name == antName)
 		{
-			it->vsns.push_back(VexBasebandData(vsn, drive, timeRange));
+			it->vsns.push_back(VexBasebandData(vsn, drive, -1, timeRange));
 		}
 	}
 }
@@ -664,7 +664,7 @@ void VexData::addFile(const std::string &antName, int drive, const std::string &
 	{
 		if(it->name == antName)
 		{
-			it->files.push_back(VexBasebandData(filename, drive, timeRange));
+			it->files.push_back(VexBasebandData(filename, drive, -1, timeRange));
 		}
 	}
 }
@@ -867,7 +867,7 @@ void VexData::setFiles(unsigned int antId, unsigned int streamId, const std::vec
 	antennas[antId].removeBasebandData(streamId);
 	for(std::vector<VexBasebandData>::const_iterator it = files.begin(); it != files.end(); ++it)
 	{
-		antennas[antId].files.push_back(VexBasebandData(it->filename, streamId, *it));
+		antennas[antId].files.push_back(VexBasebandData(it->filename, -1, streamId, *it));
 	}
 	setDataSource(antId, streamId, DataSourceFile);
 }
@@ -877,7 +877,7 @@ void VexData::setMark6Files(unsigned int antId, unsigned int streamId, const std
 	antennas[antId].removeBasebandData(streamId);
 	for(std::vector<VexBasebandData>::const_iterator it = files.begin(); it != files.end(); ++it)
 	{
-		antennas[antId].files.push_back(VexBasebandData(it->filename, streamId, *it));
+		antennas[antId].files.push_back(VexBasebandData(it->filename, -1, streamId, *it));
 	}
 	setDataSource(antId, streamId, DataSourceMark6);
 }
@@ -886,7 +886,7 @@ void VexData::setMark6Files(unsigned int antId, unsigned int streamId, const std
 void VexData::setModule(unsigned int antId, unsigned int streamId, const std::string &vsn)
 {
 	antennas[antId].removeBasebandData(streamId);
-	antennas[antId].vsns.push_back(VexBasebandData(vsn, streamId));
+	antennas[antId].vsns.push_back(VexBasebandData(vsn, -1, streamId));
 	setDataSource(antId, streamId, DataSourceModule);
 }
 

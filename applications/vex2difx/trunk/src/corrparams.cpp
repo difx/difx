@@ -95,12 +95,12 @@ int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandDat
 		}
 		else if(l == 1)
 		{
-			basebandFiles.push_back(VexBasebandData(tokens[0], 0));
+			basebandFiles.push_back(VexBasebandData(tokens[0], 0, -1));
 			++n;
 		}
 		else if(l == 3)
 		{
-			basebandFiles.push_back(VexBasebandData(tokens[0], 0,
+			basebandFiles.push_back(VexBasebandData(tokens[0], 0, -1,
 				parseTime(tokens[1]),
 				parseTime(tokens[2]) ));
 			++n;
@@ -751,7 +751,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		dataSource = DataSourceFile;
-		basebandFiles.push_back(VexBasebandData(value, 0));
+		basebandFiles.push_back(VexBasebandData(value, 0, -1));
 	}
 	else if(key == "mark6file" || key == "mark6files")
 	{
@@ -761,7 +761,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		dataSource = DataSourceMark6;
-		basebandFiles.push_back(VexBasebandData(value, 0));
+		basebandFiles.push_back(VexBasebandData(value, 0, -1));
 	}
 	else if(key == "filelist")
 	{
@@ -861,7 +861,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 		++noteCount;
 		dataSource = DataSourceFake;
 		basebandFiles.clear();
-		basebandFiles.push_back(VexBasebandData(value, 0));
+		basebandFiles.push_back(VexBasebandData(value, 0, -1));
 	}
 	else
 	{
@@ -1243,7 +1243,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		defaultDatastreamSetup.dataSource = DataSourceFile;
-		defaultDatastreamSetup.basebandFiles.push_back(VexBasebandData(value, 0));
+		defaultDatastreamSetup.basebandFiles.push_back(VexBasebandData(value, 0, -1));
 	}
 	else if(key == "mark6file" || key == "mark6files")
 	{
@@ -1253,7 +1253,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		defaultDatastreamSetup.dataSource = DataSourceMark6;
-		defaultDatastreamSetup.basebandFiles.push_back(VexBasebandData(value, 0));
+		defaultDatastreamSetup.basebandFiles.push_back(VexBasebandData(value, 0, -1));
 	}
 	else if(key == "filelist")
 	{
