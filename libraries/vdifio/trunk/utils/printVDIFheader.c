@@ -188,6 +188,7 @@ int main(int argc, char **argv)
 		int fr;
 
 		index = 0;
+		fr = 0;
 
   		readbytes = fread(buffer+leftover, 1, MaxFrameSize-leftover, input);
 		if(readbytes <= 0)

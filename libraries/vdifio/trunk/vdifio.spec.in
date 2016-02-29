@@ -49,6 +49,10 @@ make
 %{_bindir}/printVDIFheader
 %{_bindir}/searchVDIF
 %{_bindir}/peekVDIF
+%{_bindir}/mk6gather
+%{_bindir}/mk6ls
+%{_bindir}/mk6summary
+%{_bindir}/mk6vmux
 %{_bindir}/vdif2to8
 %{_bindir}/vmux
 %{_bindir}/vsum
