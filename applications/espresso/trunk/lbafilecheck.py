@@ -1,4 +1,23 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+#=======================================================================
+# Copyright (C) 2016 Cormac Reynolds
+#                                                                       
+# This program is free software; you can redistribute it and/or modify  
+# it under the terms of the GNU General Public License as published by  
+# the Free Software Foundation; either version 3 of the License, or     
+# (at your option) any later version.                                   
+#                                                                       
+# This program is distributed in the hope that it will be useful,       
+# but WITHOUT ANY WARRANTY; without even the implied warranty of        
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+# GNU General Public License for more details.                          
+#                                                                       
+# You should have received a copy of the GNU General Public License     
+# along with this program; if not, write to the                         
+# Free Software Foundation, Inc.,                                       
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             
+#=======================================================================
+
 # Simple wrapper for ls and chk_vlbi.py to create and check the data files for
 # the correlator
 # Cormac Reynolds: 2010 June 
@@ -23,7 +42,8 @@ def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns, exp
     #TEMPFILE = tempfile.NamedTemporaryFile()
     tempfilename = expname + '_' + telescope+'tempfilenamexxx.txt'
     TEMPFILE = open(tempfilename,'w')
-    command = "ssh " + machine + " 'ls " + filepattern + "'"
+    #command = " ".join(["ssh", machine, "ls", filepattern])
+    command = " ".join(["ls", filepattern])
     print command
     filelist, error1 = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     #filelist = pexpect.run(command)
@@ -50,7 +70,8 @@ def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns, exp
         print>>ERRORFILE, 'chk_vlbi.py not found in $PATH'
         ERRORFILE.close()
         raise Exception('chk_vlbi.py not found in $PATH')
-    command = "ssh " + machine + " '" + chk_vlbi + " " + os.getcwd() + os.sep + TEMPFILE.name + "'"
+    #command = "ssh " + machine + " '" + chk_vlbi + " " + os.getcwd() + os.sep + TEMPFILE.name + "'"
+    command = " ".join([chk_vlbi, os.getcwd() + os.sep + TEMPFILE.name])
     #filelist = pexpect.run(command)
     #print filelist
     filelist, error2 = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -116,13 +137,18 @@ def write_run(expname, np, options):
     # prototype for the runfile which we will fill later
     difx_runfile = os.environ.get('DIFX_RUNFILE')
     runfilename = "run"
+    RUNFILE = open(runfilename, 'w')
 
     if difx_runfile:
-        shutil.copy(difx_runfile, runfilename)
+        #shutil.copy(difx_runfile, runfilename)
+        for line in open(difx_runfile).readlines():
+            # update placeholders in prototype 
+            line = re.sub(r'{NODES}', str(np), line)
+            print>>RUNFILE, line,
+
     else:
         # in case no prototype run file, this basic run file will work for
         # many sites
-        RUNFILE = open(runfilename, 'w')
         print>>RUNFILE, "mpirun -np ", np, options, "-machinefile {JOBNAME}.machines $DIFXROOT/bin/mpifxcorr {JOBNAME}.input"
         RUNFILE.close()
     try:
@@ -168,6 +194,9 @@ parser.add_option( "--computehead", "-H",
 parser.add_option( "--no_rmaps_seq", "-M",
         action='store_true', dest="no_rmaps_seq", default=False,
         help="Do not pass the '--mca rmaps seq' instruction to mpirun (requires openmpi v1.4 or greater)" )
+parser.add_option( "--maxcompute", "-x",
+        type='int', dest="maxcompute", default=None,
+        help="Max. number of compute nodes to use" )
 
 (options, args) = parser.parse_args()
 
@@ -243,7 +272,8 @@ for line in sorted(telescopedirs):
     except:
         # clean up jobs if something goes awry
         kill_children(pids)
-        print "\n\nERROR: killing ssh processes due to error making file lists"
+        #print "\n\nERROR: killing ssh processes due to error making file lists"
+        print "\n\nERROR: killing processes due to error making file lists"
         print "ERROR: Check formatting of", args[0] + ":" 
         print line
         raise Exception("could not make file list")
@@ -263,6 +293,7 @@ except:
     raise Exception('You must set $DIFX_MACHINES. No machines file created')
 
 headmachine = os.uname()[1].lower()
+#headmachine = 'localhost'
 
 # nodes that are also used as head or datastream nodes should get fewer
 # threads, if they are requested to be used as compute nodes at all.
@@ -286,6 +317,10 @@ for host in sorted(hosts.keys()):
         # also only use nodes with more than 0 threads available.
         if hosts[host][0]:
             computemachines.append(host)
+
+# limit number of computemachines if required
+if options.maxcompute:
+    computemachines = computemachines[0:options.maxcompute]
 
 if not computemachines:
     raise Exception('You have no compute nodes left after the master node and datastream nodes have been allocated! Check your hosts in $CORR_HOSTS.')

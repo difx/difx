@@ -1,4 +1,23 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+#=======================================================================
+# Copyright (C) 2016 Cormac Reynolds
+#                                                                       
+# This program is free software; you can redistribute it and/or modify  
+# it under the terms of the GNU General Public License as published by  
+# the Free Software Foundation; either version 3 of the License, or     
+# (at your option) any later version.                                   
+#                                                                       
+# This program is distributed in the hope that it will be useful,       
+# but WITHOUT ANY WARRANTY; without even the implied warranty of        
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+# GNU General Public License for more details.                          
+#                                                                       
+# You should have received a copy of the GNU General Public License     
+# along with this program; if not, write to the                         
+# Free Software Foundation, Inc.,                                       
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             
+#=======================================================================
+
 # Simple program to show disk usage on the main CUPPA data storage areas
 # Cormac Reynolds: 2010 June 2
 import os, subprocess, sys, time, optparse
@@ -13,9 +32,11 @@ def remote_command(inputq, outputq):
             disk_query, machine, data_area  = inputq.get(block=False)
             command = str()
             if disk_query == 'du':
-                command = "ssh MACHINE 'du -c -B 1G DATA_AREA'"
+                #command = "ssh MACHINE 'du -c -B 1G DATA_AREA'"
+                command = "du -c -B 1G DATA_AREA"
             elif disk_query == 'df':
-                command = "ssh MACHINE 'df -P -B 1G DATA_AREA'"
+                #command = "ssh MACHINE 'df -P -B 1G DATA_AREA'"
+                command = "df -P -B 1G DATA_AREA"
 
             command = command.replace('MACHINE', machine)
             command = command.replace('DATA_AREA', data_area)

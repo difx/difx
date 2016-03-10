@@ -1,4 +1,23 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+#=======================================================================
+# Copyright (C) 2016 Cormac Reynolds
+#                                                                       
+# This program is free software; you can redistribute it and/or modify  
+# it under the terms of the GNU General Public License as published by  
+# the Free Software Foundation; either version 3 of the License, or     
+# (at your option) any later version.                                   
+#                                                                       
+# This program is distributed in the hope that it will be useful,       
+# but WITHOUT ANY WARRANTY; without even the implied warranty of        
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+# GNU General Public License for more details.                          
+#                                                                       
+# You should have received a copy of the GNU General Public License     
+# along with this program; if not, write to the                         
+# Free Software Foundation, Inc.,                                       
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             
+#=======================================================================
+
 # archive DiFX data files to the iVEC permanent data store. Tar the plethora of
 # small files before transfer. Transfer FITS and other user files unmodified.   
 # Cormac Reynolds: Dec 2014
@@ -22,10 +41,10 @@ def taritup(tardir, tarfile, infile, gzip=False):
     subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
 
 usage = '''%prog <path> <destination>
-will transfer <path> and all its subdirectories to <destination> on data.ivec.org using ashell.py. Most files are tarred before transfer, but special files and large files are transferred unmodified. Files are first tarred/copied to /data/corr/Archive/ before transfer.
+will transfer <path> and all its subdirectories to <destination> on data.ivec.org using ashell.py. Most files are tarred before transfer, but special files and large files are transferred unmodified. Files are first tarred/copied to $ARCHTMP before transfer.
 
 e.g.
-%prog /data/corr/corrdat/vt13b VLBI/Archive/Curtin/vt13/vt13b
+%prog $CORR_DATA/v252aw /projects/VLBI/Archive/Curtin/v252
 '''
 
 parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')

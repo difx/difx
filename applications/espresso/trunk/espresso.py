@@ -1,13 +1,32 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+#=======================================================================
+# Copyright (C) 2016 Cormac Reynolds
+#                                                                       
+# This program is free software; you can redistribute it and/or modify  
+# it under the terms of the GNU General Public License as published by  
+# the Free Software Foundation; either version 3 of the License, or     
+# (at your option) any later version.                                   
+#                                                                       
+# This program is distributed in the hope that it will be useful,       
+# but WITHOUT ANY WARRANTY; without even the implied warranty of        
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
+# GNU General Public License for more details.                          
+#                                                                       
+# You should have received a copy of the GNU General Public License     
+# along with this program; if not, write to the                         
+# Free Software Foundation, Inc.,                                       
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             
+#=======================================================================
+
 # take care of a few logistics before launching the correlator
 # Cormac Reynolds: June 2010
 
 import subprocess, optparse, re, shutil, os, sys, time, fileinput, pprint
-import espressolib, getpass
+import espressolib, getpass, socket
 
 def run_vex2difx(v2dfilename, vex2difx_options):
     # run vex2difx, and wait for completion
-    command = "vex2difx " + vex2difx_options + ' ' + v2dfilename
+    command = " ".join(["vex2difx", vex2difx_options, v2dfilename])
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
@@ -28,7 +47,7 @@ def run_calcif2(jobname, calcfilename):
         file = jobname + file
         if os.path.exists(file):
             os.remove(file)
-    command = 'calcif2 ' + calcfilename
+    command = " ".join(['calcif2', calcfilename])
     print command
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
@@ -62,13 +81,15 @@ def copy_jobcontrol(expname, jobname, indir, outdir, extension):
     else:
         sys.stderr.write(infile + ' not found!')
 
-def make_new_runfiles(jobname, expname):
+def make_new_runfiles(jobname, expname, jobtime, difx_message_port):
     # make copies of the prototype run and .thread files
     runfile = 'run_' + jobname
     shutil.copy('run', runfile)
     for line in fileinput.FileInput(runfile, inplace=1):
-        # update placeholders in prototype with actual jobname
+        # update placeholders in prototype 
         line = re.sub(r'{JOBNAME}', jobname, line)
+        line = re.sub(r'{TIME}', jobtime, line)
+        line = re.sub(r'{DIFX_MESSAGE_PORT}', difx_message_port, line)
         print line,
     fileinput.close()
     os.chmod(runfile, 0775)
@@ -118,14 +139,14 @@ def run_lbafilecheck(datafilename, stations, computehead, no_rmaps_seq):
         options += ' -H '
     if no_rmaps_seq:
         options += ' -M '
-    command = "lbafilecheck.py -F " + options + " -s " + stations + " " + datafilename
+    command = " ".join(["lbafilecheck.py -F", options, "-s", stations, datafilename])
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
 def fill_operator_log(logfile):
     # Fire up an editor for operator comments
     editor = os.environ.get('EDITOR', 'vim')
-    command = editor + ' ' + logfile
+    command = " ".join([editor, logfile])
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
 def plot_speedup(logfiles, outdir, expname):
@@ -135,9 +156,113 @@ def plot_speedup(logfiles, outdir, expname):
     plot_opt = ' '
     if len(logfiles) < 10:
         plot_opt = ' -l '
-    command = 'cd ' + outdir + '; plot_logtime.py ' + plot_opt + ' -o ' + speedup_plot + ' ' + speedup_files
+    command = " ".join(['cd', outdir, '; plot_logtime.py', plot_opt, '-o', speedup_plot, speedup_files])
     speedup = subprocess.Popen( command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     return speedup
+
+def run_interactive(corrjoblist, outdir):
+    '''Run jobs in an interactive enviroment'''
+    difxwatch = None
+    for jobname in sorted(corrjoblist.keys()):
+        if options.difxwatch:
+            print "starting difxwatch in the background"
+            difxwatch = subprocess.Popen(['difxwatch', '-i 600'])
+        else:
+            try:
+                command = ["pkill", "-2", "-f", "difxwatch"]
+                code = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            except:
+                pass
+
+        # start the correlator log
+        print "starting errormon2 in the background"
+        errormon2 = subprocess.Popen('errormon2')
+        #errormon2 = subprocess.Popen('errormon2 2>&1| grep ' + jobname, shell=True)
+
+        try:
+            runfile = jobname
+            runfile = './run_' + runfile
+            print "starting the correlator running", runfile
+            subprocess.check_call(runfile, shell=True, stdout=sys.stdout)
+        except subprocess.CalledProcessError:
+            # would probably prefer just a 'finally' here so everything falls
+            # over in case of failure, but if difxwatch kills the jobs we want
+            # to continue
+            pass
+        except:
+            # a ^C is likely to be the only thing that gets us here.
+            #raise
+            pass
+        finally:
+            # we're finished with the log...
+            os.kill(errormon2.pid, 9)
+            time.sleep(1)
+            logfilename = outdir + jobname + '.difxlog'
+            logfiles.append(jobname + '.difxlog')
+            logfile = open(logfilename, 'w')
+            print "\nfiltering the log file and copying to", logfile.name
+            #shutil.copy2('log', logfile)
+            for line in open("log"):
+                if jobname in line:
+                    print>>logfile, line,
+            logfile.close()
+
+
+
+def run_batch(corrjoblist, outdir):
+    '''Run jobs in a batch enviroment'''
+
+    # start the correlator log
+    print "starting errormon2 in the background"
+    errormon2 = subprocess.Popen('errormon2', env=espresso_env)
+    #errormon2 = subprocess.Popen('errormon2 2>&1| grep ' + jobname, shell=True)
+
+    for jobname in sorted(corrjoblist.keys()):
+        try:
+            runfile = jobname
+            runfile = 'sbatch ./run_' + runfile
+            print "starting the correlator running", runfile
+            subprocess.check_call(runfile, shell=True, stdout=sys.stdout, env=espresso_env)
+        except:
+            pass
+
+    while True:
+        try:
+            try:
+                #command = ['squeue', '-u', '$USER']
+                command = " ".join(['squeue', '-n ']) + ",".join(sorted(corrjoblist.keys()))
+                print command
+                subprocess.check_call( command, stdout=sys.stdout, shell=True)
+            except:
+                print command + 'failed!'
+                #pass
+                #raise Exception(command + 'failed!')
+                #raise
+
+            raw_input('Jobs submitted - hit ^C when all jobs have completed. Hit return to see list of running jobs.')
+        except KeyboardInterrupt:
+            for jobname in sorted(corrjoblist.keys()):
+                command = " ".join(["scancel", "-n", jobname] )
+                print command
+                subprocess.check_call( command, stdout=sys.stdout, shell=True)
+            break
+
+    for jobname in sorted(corrjoblist.keys()):
+        # we're finished with the logs..
+        os.kill(errormon2.pid, 9)
+        time.sleep(1)
+        logfilename = outdir + jobname + '.difxlog'
+        logfiles.append(jobname + '.difxlog')
+        logfile = open(logfilename, 'w')
+        print "\nfiltering the log file and copying to", logfile.name
+        #shutil.copy2('log', logfile)
+        for line in open("log"):
+            if jobname in line:
+                print>>logfile, line,
+        logfile.close()
+
+
+
 
 # Main program start.
 #parse the options
@@ -188,9 +313,19 @@ parser.add_option( "--no_rmaps_seq", "-M",
 parser.add_option( "--no_email", "-E",
         dest="noemail", action="store_true", default=False,
         help="Don't prompt for notification email"  )
-parser.add_option( "--no_difxwatch", "-D",
-        dest="nodifxwatch", action="store_true", default=False,
-        help="Don't run difxwatch"  )
+parser.add_option( "--difxwatch", "-d",
+        dest="difxwatch", action="store_true", default=False,
+        help="Run difxwatch"  )
+parser.add_option( "--interactive", "-i",
+        dest="interactive", action="store_true", default=False,
+        help="Run interactively, else assume slurm batch jobs"  )
+parser.add_option( "--jobtime", "-j",
+        type='str', dest="jobtime", default=None,
+        help='''Max. job time for batch jobs, 
+default for prod: 02:00:00
+default for clock: 00:10:00
+default for test: 00:10:00'''
+        )
 
 (options, args) = parser.parse_args()
 
@@ -200,6 +335,17 @@ if options.testjob and options.clockjob:
 if len(args) < 1 and not options.expt_all:
     parser.print_help()
     parser.error("Give job name(s)")
+
+# set max jobtime for batch jobs
+if options.jobtime:
+    jobtime = options.jobtime
+elif options.clockjob:
+    jobtime = '00:10:00'
+elif options.testjob:
+    jobtime = '00:10:00'
+else:
+    jobtime = '02:00:00'
+
 
 # get email and password so we can notify
 get_email = False
@@ -281,6 +427,23 @@ else:
 
 print "job list to correlate = ", pprint.pformat(corrjoblist), "\n";
 
+# set unique difx message ports so unicast can have parallel jobs
+# (determine this as late as possible to avoid conflicts with other jobs).
+difx_message_port = 50201
+if not options.interactive:
+    while True:
+        command = " ".join(["lsof", "-i", ":"+str(difx_message_port)])
+        lsof_out = subprocess.Popen( command, stdout=subprocess.PIPE, shell=True ).communicate()[0]
+        if lsof_out:
+            print "DIFX_MESSAGE_PORT", difx_message_port, "in use"
+            difx_message_port += 1
+        else:
+            print "DIFX_MESSAGE_PORT=", difx_message_port
+            espresso_env = os.environ.copy()
+            espresso_env['DIFX_MESSAGE_PORT'] = str(difx_message_port)
+            #os.environ['DIFX_MESSAGE_PORT'] = str(difx_message_port)
+            break
+
 # create the mpi files for each job
 for jobname in sorted(corrjoblist.keys()):
     # run lbafilecheck to get the new machines and .threads files
@@ -290,7 +453,7 @@ for jobname in sorted(corrjoblist.keys()):
     # duplicate the run and thread and machines files for the full number of
     # jobs
     print "\nduplicating the run file, machines file and .threads files for ", jobname, "\n"
-    make_new_runfiles(jobname, expname)
+    make_new_runfiles(jobname, expname, jobtime, str(difx_message_port))
 
 
 # get the paths of our input and output directories
@@ -362,52 +525,14 @@ if not options.nopause:
     raw_input('Press return to initiate the correlator job or ^C to quit ')
 
 logfiles = []
+
+
 # run each job
 try:
-    difxwatch = None
-    for jobname in sorted(corrjoblist.keys()):
-        if not options.nodifxwatch:
-            print "starting difxwatch in the background"
-            difxwatch = subprocess.Popen(['difxwatch', '-i 600'])
-        else:
-            try:
-                command = ["pkill", "-2", "-f", "difxwatch"]
-                code = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
-            except:
-                pass
-
-        # start the correlator log
-        print "starting errormon2 in the background"
-        errormon2 = subprocess.Popen('errormon2')
-        #errormon2 = subprocess.Popen('errormon2 2>&1| grep ' + jobname, shell=True)
-
-        try:
-            runfile = jobname
-            runfile = './run_' + runfile
-            print "starting the correlator running", runfile
-            subprocess.check_call(runfile, shell=True, stdout=sys.stdout)
-        except subprocess.CalledProcessError:
-            # would probably prefer just a 'finally' here so everything falls
-            # over in case of failure, but if difxwatch kills the jobs we want
-            # to continue
-            pass
-        except:
-            # a ^C is likely to be the only thing that gets us here.
-            #raise
-            pass
-        finally:
-            # we're finished with the log...
-            os.kill(errormon2.pid, 9)
-            time.sleep(1)
-            logfilename = outdir + jobname + '.difxlog'
-            logfiles.append(jobname + '.difxlog')
-            logfile = open(logfilename, 'w')
-            print "\nfiltering the log file and copying to", logfile.name
-            #shutil.copy2('log', logfile)
-            for line in open("log"):
-                if jobname in line:
-                    print>>logfile, line,
-            logfile.close()
+    if options.interactive:
+        run_interactive(corrjoblist, outdir)
+    else:
+        run_batch(corrjoblist, outdir)
 finally:
 
     ## kill the difxwatch process (kill -INT so it cleans itself up)
