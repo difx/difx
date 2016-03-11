@@ -653,7 +653,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 			config->doAutoCorr = 0;
 
 			// Instead, make autocorrlations from scratch
-			for(int a1 = 0; a1 < D->nAntenna-1; ++a1)
+			for(int a1 = 0; a1 < D->nAntenna; ++a1)
 			{
 				for(int configds1 = 0; configds1 < config->nDatastream; ++configds1)
 				{
@@ -1389,8 +1389,15 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	config->doAutoCorr = 1;
 	config->nAntenna = D->nAntenna;
 	config->nDatastream = nDatastream;
-	config->nBaseline = nDatastream*(nDatastream-1)/2;	// this is a worst case (but typical) scenario; may shrink later.
-								// FIXME: it seems the shrinking causes seg faults.  
+	if(P->v2dMode == V2D_MODE_PROFILE)
+	{
+		config->nBaseline = config->nDatastream;
+	}
+	else
+	{
+		config->nBaseline = nDatastream*(nDatastream-1)/2;	// this is a worst case (but typical) scenario; may shrink later.
+									// FIXME: it seems the shrinking causes seg faults.  
+	}
 
 	//if guardNS was not set explicitly, change it to the right amount to allow for
 	//adjustment to get to an integer NS + geometric rate slippage (assumes Earth-based antenna)
