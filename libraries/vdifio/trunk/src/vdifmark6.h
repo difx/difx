@@ -42,6 +42,10 @@ extern "C" {
 #include <pthread.h>
 #include "vdifio.h"
 
+#ifdef __APPLE__
+#include "pthreadbarrier.h"
+#endif
+
 #define MARK6_SYNC		0xfeed6666
 #define MAX_VDIF_MUX_SLOTS	64
 #define MARK6_BUFFER_SLOTS	10
