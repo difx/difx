@@ -1,10 +1,17 @@
+Version 1.1.7
+* fuseMk6 (now v1.11): fixed FUSE open() return value, error code instead of file descriptor,
+           now multiple files can be opened at the same time
+* fuseMk6: added initial estimate of scan size in bytes using file fragment sizes minus guessed headers
+* libmark6sg: protect file open/close internals via mutex
+* libmark6sg: tidied up slightly the prefetch code
+
 Version 1.1.6
 * mark6sg/*.h: allow inclusion from C++ files
 
 Version 1.1.5
 * libmark6sg: new mark6_sg_set_rootpattern() API function
-* fuseMk6: new command line option '-r <rootpattern>', for example
-*          -r /mnt/disks/[1-4]/[0-7]/data/
+* fuseMk6 (v1.10): new command line option '-r <rootpattern>',
+*          for example -r /mnt/disks/[1-4]/[0-7]/data/
 * support out-of-tree builds (TODO: use static linking to libjsmn)
 
 Version 1.1.0

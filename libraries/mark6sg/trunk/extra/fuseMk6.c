@@ -13,11 +13,12 @@
 
 #define MAX_DISKS       32  // maximum number of disks mounted under /mnt/disks/, same as the max. number of files per Mark6 SG scan
 #define USE_JSON_INFOS   1  // non-zero if JSON metadata infos should be used (these are: scan create time, approximate scan size in bytes)
+#define USE_FILESIZE_EST 1  // non-zero if total length of file fragments should be used as scan size in bytes
 
 void usage(void)
 {
 	printf("\n"
-		"Mark6 Scatter-Gather data interpretation layer   v1.10  Jan Wagner 24062015\n"
+		"Mark6 Scatter-Gather data interpretation layer   v1.11  Jan Wagner 15032016\n"
 		"\n"
 		"Usage: fuseMk6 [-v] [-r pattern] <mountpoint>\n"
 		"\n"
@@ -65,7 +66,7 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
 	rc = mark6_sg_open(path, O_RDONLY);
 	fi->fh = (uint64_t)rc;
 	if (rc < 0)
-		return -EACCES;
+		return -errno;
 
 #if 1	// During mark6_sg_open() the actual VLBI data length is calculated.
         // Even the Mark6 JSON metadata (if used) does not have the actual correct file size.
@@ -80,7 +81,7 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
 	}
 #endif
 
-	return fi->fh;
+	return 0;
 }
 
 static int fusem6_release(const char *path, struct fuse_file_info *fi)
@@ -96,8 +97,8 @@ static int fusem6_read(const char *path, char *buf, size_t size, off_t offset,
 
 	pthread_mutex_lock(&rdlock);
 	nrd = mark6_sg_pread(fi->fh, buf, size, offset);
-	if (nrd != size)
-		printf("pread()=%ld != req=%lu\n", nrd, size);
+	//if (nrd != size)
+	//	printf("pread()=%ld != req=%lu\n", nrd, size);
 	pthread_mutex_unlock(&rdlock);
 
 	return (nrd > 0) ? nrd : 0;
@@ -263,6 +264,35 @@ int main(int argc, char *argv[])
 			}
 		}
 		json_slist_ptr = json_slist_ptr->next;
+	}
+#endif
+
+#if (USE_FILESIZE_EST)
+	for (i=0; i<m_nscans; i++)
+	{
+		off_t totalsize = 0, nfragments;
+		char **filepathlist, **filenamelist;
+		int j;
+
+		nfragments = mark6_sg_filelist_from_name(m_scannamelist[i], &filepathlist, &filenamelist);
+
+		for (j=0; j<nfragments; j++)
+		{
+			struct stat st;
+			if (stat(filepathlist[j], &st) == 0)
+			{
+				// Rough guess of total payload size
+				totalsize += st.st_size * (9998760.0/(9998760.0 + 4.0)); // 4-byte SG Version 2 Block Header + default payload
+				totalsize -= 5*4; // SG File Header
+			}
+			free(filepathlist[j]);
+			free(filenamelist[j]);
+		}
+		if (NULL != filepathlist) { free(filepathlist); }
+		if (NULL != filenamelist) { free(filenamelist); }
+		if (totalsize < 0) { totalsize = 0; }
+
+		m_scanstatlist[i].st_size = totalsize;
 	}
 #endif
 

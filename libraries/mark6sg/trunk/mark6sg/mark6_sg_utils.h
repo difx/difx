@@ -46,7 +46,7 @@ extern "C" {
 // Debug level
 extern int m_m6sg_dbglevel;
 
-// Struct used by library to describe a group of files and their block content
+// Struct used by library to describe a group of files and their block content (types as in dplane.h)
 typedef struct m6sg_blockmeta_tt {
     int      file_id;        // index into the filename list (same list as passed to mark6_sg_blocklist())
     int32_t  blocknum;       // block number
