@@ -22,7 +22,7 @@
 # Cormac Reynolds: June 2010
 
 import subprocess, optparse, re, shutil, os, sys, time, fileinput, pprint
-import espressolib, getpass, socket
+import espressolib, getpass, psutil
 
 def run_vex2difx(v2dfilename, vex2difx_options):
     # run vex2difx, and wait for completion
@@ -347,10 +347,11 @@ else:
     jobtime = '02:00:00'
 
 
-# get email and password so we can notify
+# get email and password so we can notify. does not make sense for batch jobs.
 get_email = False
-if not options.noemail and not options.clockjob and not options.testjob:
-    get_email = True
+if options.interactive:
+    if not options.noemail and not options.clockjob and not options.testjob:
+        get_email = True
 user = str()
 emailserver = ()
 while get_email:
@@ -427,22 +428,24 @@ else:
 
 print "job list to correlate = ", pprint.pformat(corrjoblist), "\n";
 
-# set unique difx message ports so unicast can have parallel jobs
-# (determine this as late as possible to avoid conflicts with other jobs).
+# set unique difx message port so unicast environment can have parallel jobs.
 difx_message_port = 50201
-if not options.interactive:
-    while True:
-        command = " ".join(["lsof", "-i", ":"+str(difx_message_port)])
-        lsof_out = subprocess.Popen( command, stdout=subprocess.PIPE, shell=True ).communicate()[0]
-        if lsof_out:
-            print "DIFX_MESSAGE_PORT", difx_message_port, "in use"
-            difx_message_port += 1
-        else:
-            print "DIFX_MESSAGE_PORT=", difx_message_port
-            espresso_env = os.environ.copy()
-            espresso_env['DIFX_MESSAGE_PORT'] = str(difx_message_port)
-            #os.environ['DIFX_MESSAGE_PORT'] = str(difx_message_port)
-            break
+# get active connections 
+connections = psutil.net_connections()
+ports_used = []
+for connection in connections:
+    ports_used.append(connection[3][1])
+
+while True:
+    if difx_message_port in ports_used:
+        print "DIFX_MESSAGE_PORT", difx_message_port, "in use"
+        difx_message_port += 1
+    else:
+        print "DIFX_MESSAGE_PORT=", difx_message_port
+        espresso_env = os.environ.copy()
+        espresso_env['DIFX_MESSAGE_PORT'] = str(difx_message_port)
+        #os.environ['DIFX_MESSAGE_PORT'] = str(difx_message_port)
+        break
 
 # create the mpi files for each job
 for jobname in sorted(corrjoblist.keys()):
