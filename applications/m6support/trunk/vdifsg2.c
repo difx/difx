@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.c 3822 2016-02-26 15:22:01Z gbc $
+ * $Id: vdifsg2.c 3832 2016-03-17 19:22:31Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -214,11 +214,11 @@ static void update_duration(struct stat *vfuse, uint32_t pps, int epoch)
     vfuse->st_atime = vfuse->st_ctime - vfuse->st_mtime;
     vfuse->st_atim.tv_nsec = vfuse->st_ctim.tv_nsec - vfuse->st_mtim.tv_nsec;
     vfuse->st_atim.tv_nsec += VDIFUSE_ONE_SEC_NS / pps; /* final frame */
-    while (vfuse->st_atim.tv_nsec >= VDIFUSE_ONE_SEC_NS) {
+    if (vfuse->st_atim.tv_nsec >= VDIFUSE_ONE_SEC_NS) {
         vfuse->st_atim.tv_nsec -= VDIFUSE_ONE_SEC_NS;
         vfuse->st_atime ++;
     }
-    while (vfuse->st_atim.tv_nsec < 0) {
+    if (vfuse->st_atim.tv_nsec < 0) {
         vfuse->st_atim.tv_nsec += VDIFUSE_ONE_SEC_NS;
         vfuse->st_atime --;
     }
