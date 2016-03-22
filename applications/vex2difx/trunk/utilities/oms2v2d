@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2009-2013 by Walter Brisken                             *
+#   Copyright (C) 2009-2016 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -36,8 +36,8 @@ from os.path import isfile
 from os import umask
 
 program = 'oms2v2d'
-version = '1.2'
-verdate = '20130907'
+version = '1.3'
+verdate = '20160320'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -280,19 +280,15 @@ if not isfile(omsFile):
 	print 'oms2v2d: Input oms file %s not found.  Quitting.\n' % omsFile
 	exit(0)
 
-if isfile(prefix + '.skd') and isfile(prefix + '.vex'):
-	print 'Warning: Found both %s.skd and %s.vex .' % (prefix, prefix)
-	print 'Assuming %s.vex is the correct one!\n' % prefix
-
-if isfile(prefix + '.vex'):
+if isfile(prefix + '.vex.preobs'):
+	vexFile = prefix + '.vex.preobs'
+elif isfile(prefix + '.vex'):
 	if nrt:
 		vexFile = prefix + '.vex.preobs'
 	else:
 		vexFile = prefix + '.vex.obs'
-elif isfile(prefix + '.skd'):
-	vexFile = prefix + '.skd.obs'
 else:
-	print 'No vex file found here.  It should be called %s.vex or %s.skd.' % (prefix, prefix)
+	print 'No vex file found here.  It should be called %s.vex or %s.vex.preobs.' % (prefix, prefix)
 	if force:
 		if nrt:
 			vexFile = prefix + '.vex.preobs'
