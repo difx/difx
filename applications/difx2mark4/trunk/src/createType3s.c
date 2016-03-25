@@ -499,9 +499,10 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         }
 
                                     isb = (D->freq[jf].sideband == 'U') ? 1 : -1;
-                                    f_rel = isb * (freq - D->freq[jf].freq);
+                                    f_rel = freq - D->freq[jf].freq;
                                         // is it within the jfth frequency band?
-                                    if (f_rel > 0.0 && f_rel < D->freq[jf].bw)
+                                    if (isb > 0 && f_rel > 0.0 && f_rel < D->freq[jf].bw
+                                     || isb < 0 && f_rel < 0.0 && f_rel >-D->freq[jf].bw);
                                         // yes, insert phasor info into correct slot
                                         {
                                         // find matching freq channel
@@ -602,7 +603,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         memcpy (&t309.chan[ochan].acc[i][1], &norm_corr, 4);
 
                                         // tone freqs (in Hz) are spread through channel recs
-                                        t309.chan[i].freq = 1e6 * isb * f_rel;
+                                        t309.chan[i].freq = 1e6 * f_rel;
                                         break;
                                         }
                                     }
