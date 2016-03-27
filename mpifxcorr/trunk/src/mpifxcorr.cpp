@@ -47,6 +47,7 @@
 #include "vdiffake.h"
 #include "vdifmark5.h"
 #include "vdifmark6_datastream.h"
+#include "vdifsharedmemory.h"
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
 #include "string.h"
@@ -403,6 +404,8 @@ int main(int argc, char *argv[])
         stream = new VDIFMark6DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isVDIFMark5(datastreamnum)) {
         stream = new VDIFMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isVDIFSharedMemory(datastreamnum)) {
+        stream = new VDIFSharedMemoryDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isVDIFNetwork(datastreamnum)) {
         stream = new VDIFNetworkDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isVDIFFake(datastreamnum)) {

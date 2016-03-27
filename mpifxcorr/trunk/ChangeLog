@@ -22,6 +22,7 @@ Version 2.5
 * Added support for unicast difxmessages. This (in current implementation) probably disables mpifxcorr control via difxmessages but outgoing messages work OK). The command thread used to receive DIFX messages is not started if DIFX_MESSAGE_GROUP is not set. Unicast will not work if multiple processes are run on the same node/computer.
 * Change to shutdown procedure which may reduce occurence of "DIFX hanging" bug
 * Promote some ints to long longs; fixes reporting of core memory use when lots of memory is needed.
+* Experimental support for VDIF data served over Shared Memory
 
 Version 2.4
 ~~~~~~~~~~~

@@ -35,11 +35,11 @@
 #include <unistd.h>
 #include <vdifio.h>
 #include "config.h"
-#include "vdifnetwork.h"
+#include "vdifsharedmemory.h"
 #include "alert.h"
 
 
-VDIFNetworkDataStream::VDIFNetworkDataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments) :
+VDIFSharedMemoryDataStream::VDIFSharedMemoryDataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments) :
 	VDIFDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
 	int perr;
@@ -57,21 +57,24 @@ VDIFNetworkDataStream::VDIFNetworkDataStream(const Configuration * conf, int snu
 	// Note: the read buffer is allocated in vdiffile.cpp by VDIFDataStream::initialse()
 	// the above values override defaults for file-based VDIF
 
-	cinfo << startl << "VDIFNetworkDataStream::VDIFNetworkDataStream: Set readbuffersize to " << readbuffersize << endl;
+	cinfo << startl << "VDIFSharedMemoryDataStream::VDIFSharedMemoryDataStream: Set readbuffersize to " << readbuffersize << endl;
 	cinfo << startl << "mdb = " << conf->getMaxDataBytes(streamnum) << "  rbslots=" << readbufferslots << "  readbufferslotsize=" << readbufferslotsize << endl;
 
-	// set up network reader thread
-	networkthreadstop = false;
+	// set up shared memory reader thread
+	shmthreadstop = false;
+	shmbuffer = 0;
+	shmbufferslot = 0;
+	shmbufferframe = 0;
 	lockstart = lockend = lastslot = -2;
 	endindex = 0;
 
-	perr = pthread_barrier_init(&networkthreadbarrier, 0, 2);
-	networkthreadmutex = new pthread_mutex_t[readbufferslots];
+	perr = pthread_barrier_init(&shmthreadbarrier, 0, 2);
+	shmthreadmutex = new pthread_mutex_t[readbufferslots];
 	for(int m = 0; m < readbufferslots; ++m)
 	{
 		if(perr == 0)
 		{
-			perr = pthread_mutex_init(networkthreadmutex + m, 0);
+			perr = pthread_mutex_init(shmthreadmutex + m, 0);
 		}
 	}
 
@@ -80,154 +83,214 @@ VDIFNetworkDataStream::VDIFNetworkDataStream(const Configuration * conf, int snu
 		pthread_attr_t attr;
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-		perr = pthread_create(&networkthread, &attr, VDIFNetworkDataStream::launchnetworkthreadfunction, this);
+		perr = pthread_create(&shmthread, &attr, VDIFSharedMemoryDataStream::launchshmthreadfunction, this);
 		pthread_attr_destroy(&attr);
 	}
 
 	if(perr)
 	{
-		cfatal << startl << "Cannot create the network reader thread!" << endl;
+		cfatal << startl << "Cannot create the shared memory reader thread!" << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 }
 
-VDIFNetworkDataStream::~VDIFNetworkDataStream()
+VDIFSharedMemoryDataStream::~VDIFSharedMemoryDataStream()
 {
-	networkthreadstop = true;
+	shmthreadstop = true;
 
 	/* barriers come in pairs to allow the read thread to always get first lock */
-	pthread_barrier_wait(&networkthreadbarrier);
-	pthread_barrier_wait(&networkthreadbarrier);
+	pthread_barrier_wait(&shmthreadbarrier);
+	pthread_barrier_wait(&shmthreadbarrier);
 
-	pthread_join(networkthread, 0);
+	pthread_join(shmthread, 0);
 
 	for(int m = 0; m < readbufferslots; ++m)
 	{
-		pthread_mutex_destroy(networkthreadmutex + m);
+		pthread_mutex_destroy(shmthreadmutex + m);
 	}
-	delete [] networkthreadmutex;
-	pthread_barrier_destroy(&networkthreadbarrier);
+	delete [] shmthreadmutex;
+	pthread_barrier_destroy(&shmthreadbarrier);
+
+	if(shmbuffer)
+	{
+		detachSharedMemoryBuffer(shmbuffer);
+	}
 }
 
-int VDIFNetworkDataStream::readrawnetworkVDIF(int sock, char* ptr, int bytestoread, unsigned int* nread, int packetsize, int stripbytes)
+int VDIFSharedMemoryDataStream::setsharedmemorybuffersecond(int second)
 {
-	const int MaxPacketSize = 20000;
-	int length;
-	int goodbytes = packetsize - stripbytes;
-	char *ptr0 = ptr;
-	char *end = ptr + bytestoread - goodbytes;
-	char workbuffer[MaxPacketSize];
-	const vdif_header *vh;
-
-	vh = reinterpret_cast<const vdif_header *>(workbuffer + stripbytes);
-
-	if(packetsize > MaxPacketSize)
+	while(1)
 	{
-		cfatal << startl << "Error: readrawnetworkVDIF wants to read packets of size " << packetsize << " where MaxPacketSize=" << MaxPacketSize << endl;
-		MPI_Abort(MPI_COMM_WORLD, 1);
-	}
-
-	*nread = 0;
-
-	while(ptr <= end)
-	{
-		length = recvfrom(sock, workbuffer, MaxPacketSize, 0, 0, 0);
-		if(length <= 0)
+		int nearest = 86400;
+		int index;
+		
+		for(index = 0; index < shmbuffer->nSecond; ++index)
 		{
-			// timeout on read?
-			break;
-		}
-		else if(length == packetsize)
-		{
-			memcpy(ptr, workbuffer + stripbytes, goodbytes);
-			ptr += goodbytes;
-
-			if( (vh->frame == 0) && (vh->threadid == 0) && (vh->seconds % 10 == 0) )
+			if(shmbuffer->second[index] == second)
 			{
-				/* first frame of the 10 second interval.  Compare with local clock time for kicks */
-				struct timespec ck;
-				double deltat;		// [sec]
+				shmbufferslot = index;
+				shmbufferframe = shmbuffer->startFrame[index];
+				shmbuffersecond = second;
 
-#ifdef __MACH__                 // OS X does not have clock_gettime, use gettimeofday
-				struct timeval now;
-				int status;
-				status = gettimeofday(&now, NULL);
-				ck.tv_sec = now.tv_sec;
-				ck.tv_nsec = now.tv_usec*1000;
-#else
-				clock_gettime(CLOCK_REALTIME, &ck);
-#endif
-				deltat = (ck.tv_sec % 10) - (vh->seconds % 10);
-				deltat += ck.tv_nsec*1.0e-9;
-				if(deltat < -3.0)
+				cinfo << startl << "shared memory for second " << second << " found in slot " << index << endl;
+
+				return 0;
+			}
+			else
+			{
+				int near = second - shmbuffer->second[index];
+
+				if(near < 0)
 				{
-					deltat += 10.0;
+					near += 86400;
 				}
-				if(deltat > 5)
+				if(near < nearest && near > 0)
 				{
-					deltat -= 10.0;
+					nearest = near;
 				}
-				int p = cinfo.precision();
-				cinfo.precision(6);
-				cinfo << startl << "VDIF clock is " << deltat << " seconds behind system clock for antenna " << stationname << endl;
-				cinfo.precision(p);
 			}
 		}
-	}
 
-	if(nread)
+		// FIXME: handle case where we start just a bit late...  Need heuristics
+
+		if(nearest <= 30)
+		{
+			cwarn << startl << "shared memory for second " << second << " is " << nearest << " seconds away..." << index << endl;
+		}
+		else
+		{
+			cerror << startl << "shared memory for second " << second << " is " << nearest << " seconds away and I won't wait that long." << index << endl;
+
+			return -1;
+		}
+
+		usleep(500000);
+	}
+}
+
+void VDIFSharedMemoryDataStream::sharedmemorybuffercopy(char *dest, int copysize, unsigned int *bytescopied)
+{
+	int nextSlot;
+	int origsize = copysize;
+	bool end = false;
+	int64_t framesize = shmbuffer->packetSize*shmbuffer->nThread;
+	int64_t fps = shmbuffer->packetsPerSecond/shmbuffer->nThread;
+	int64_t size;
+	char *src;
+
+	nextSlot = (shmbufferslot + 1) % shmbuffer->nSecond;
+
+	while(copysize > shmbuffer->packetSize && !end)
 	{
-		*nread = ptr - ptr0;
+		int s;
+		int targetFrame;	// wait until this second slot's endFrame gets this high
+
+		if(shmbufferframe < shmbuffer->startFrame[shmbufferslot])
+		{
+			if(copysize != origsize && shmbufferframe + 3 < shmbuffer->startFrame[shmbufferslot])
+			{
+				// a significant interruption in data, so the data segments must be split
+
+				break;
+			}
+			shmbufferframe = shmbuffer->startFrame[shmbufferslot];
+		}
+
+		targetFrame = shmbufferframe + copysize/framesize;
+		if(targetFrame >= shmbuffer->packetsPerSecond/shmbuffer->nThread)
+		{
+			targetFrame = shmbuffer->packetsPerSecond/shmbuffer->nThread - 1;
+		}
+
+		// wait for current slot to be done (e.g. next slot to have newer data); microsleep 10ms up to 200 times
+		for(s = 0; s < 200; ++s)
+		{
+			if(shmbuffer->second[nextSlot] > shmbuffersecond)
+			{
+				break;
+			}
+			usleep(10000);
+		}
+		if(shmbuffer->endFrame[shmbufferslot] < targetFrame)
+		{
+			targetFrame = shmbuffer->endFrame[shmbufferslot];
+
+			end = true;
+		}
+		size = (targetFrame + 1 - shmbufferframe)*framesize;
+		src = shmbuffer->data + (fps*shmbufferslot + shmbufferframe)*framesize;
+		memcpy(dest, src, size);
+
+		if(shmbuffer->second[nextSlot] > shmbuffersecond && shmbuffer->endFrame[shmbufferslot] == targetFrame)
+		{
+			shmbufferslot = nextSlot;
+			nextSlot = (shmbufferslot + 1) % shmbuffer->nSecond;
+			shmbuffersecond = shmbuffer->second[shmbufferslot];
+			shmbufferframe = shmbuffer->startFrame[shmbufferslot];
+			if(shmbuffer->endFrame[shmbufferslot] + 2 < fps)
+			{
+				// a gap is identified, cause data segment to be split
+
+				end = true;
+			}
+		}
+		else if(targetFrame < shmbuffer->endFrame[shmbufferslot])
+		{
+			shmbufferframe = targetFrame + 1;
+
+			end = true;	// how could it not be: only way to stop short of second boundary legitimately is if request was short of that.
+		}
+		else
+		{
+			shmbufferslot = nextSlot;
+			shmbufferframe = 0;
+			dataremaining = false;
+			keepreading = false;
+
+			end = true;
+		}
+
+		dest += size;
+		copysize -= size;
 	}
 
-	return 1;
+	*bytescopied = origsize - copysize;
 }
 
 // this function implements the network reader.  It is continuously either filling data into a ring buffer or waiting for a mutex to clear.
-void VDIFNetworkDataStream::networkthreadfunction()
+void VDIFSharedMemoryDataStream::shmthreadfunction()
 {
 	int lockmod = readbufferslots-1;	// used to team up slots 0 and readbufferslots-1
 	int packetsize;				// for raw packets; reject all packets not this size
-	int stripbytes;				// for raw packets; strip this many bytes from beginning of RX packets
 
-	stripbytes = tcpwindowsizebytes/1024;
-	packetsize = config->getFrameBytes(0, streamnum) + stripbytes;
+	packetsize = config->getFrameBytes(0, streamnum);
 
-	cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize << endl;
+	cinfo << startl << " packetsize=" << packetsize << endl;
 
 	for(;;)
 	{
 		// No locks shall be set at this point
 
 		/* First barrier is before the locking of slot number 1 */
-		pthread_barrier_wait(&networkthreadbarrier);
+		pthread_barrier_wait(&shmthreadbarrier);
 
 		readbufferwriteslot = 1;	// always 
-		pthread_mutex_lock(networkthreadmutex + (readbufferwriteslot % lockmod));
-		if(networkthreadstop)
+		pthread_mutex_lock(shmthreadmutex + (readbufferwriteslot % lockmod));
+		if(shmthreadstop)
 		{
-			cverbose << startl << "networkthreadfunction: networkthreadstop -> this thread will end." << endl;
+			cverbose << startl << "shmthreadfunction: shmthreadstop -> this thread will end." << endl;
 		}
 		/* Second barrier is after the locking of slot number 1 */
-		pthread_barrier_wait(&networkthreadbarrier);
+		pthread_barrier_wait(&shmthreadbarrier);
 
-		while(!networkthreadstop)
+		while(!shmthreadstop)
 		{
 			unsigned int bytes;
 			bool endofscan = false;
 			int status;
 
-			// This is where the actual read from the network happens
-			if(ethernetdevice.empty())
-			{
-				// TCP or regular UDP
-				status = readnetwork(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes);
-			}
-			else
-			{
-				// Raw socket or trimmed UDP
-				status = readrawnetworkVDIF(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes, packetsize, stripbytes);
-			}
+			// This is where the actual read from the shared memory buffer happens
+			sharedmemorybuffercopy((char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes);
 
 			if(bytes == 0)
 			{
@@ -254,8 +317,8 @@ void VDIFNetworkDataStream::networkthreadfunction()
 					// Note: we always save slot 0 for wrap-around
 					readbufferwriteslot = 1;
 				}
-				pthread_mutex_lock(networkthreadmutex + (readbufferwriteslot % lockmod));
-				pthread_mutex_unlock(networkthreadmutex + (curslot % lockmod));
+				pthread_mutex_lock(shmthreadmutex + (readbufferwriteslot % lockmod));
+				pthread_mutex_unlock(shmthreadmutex + (curslot % lockmod));
 
 				if(!dataremaining)
 				{
@@ -280,8 +343,8 @@ void VDIFNetworkDataStream::networkthreadfunction()
 				break;
 			}
 		}
-		pthread_mutex_unlock(networkthreadmutex + (readbufferwriteslot % lockmod));
-		if(networkthreadstop)
+		pthread_mutex_unlock(shmthreadmutex + (readbufferwriteslot % lockmod));
+		if(shmthreadstop)
 		{
 			break;
 		}
@@ -290,16 +353,16 @@ void VDIFNetworkDataStream::networkthreadfunction()
 	} 
 }
 
-void *VDIFNetworkDataStream::launchnetworkthreadfunction(void *self)
+void *VDIFSharedMemoryDataStream::launchshmthreadfunction(void *self)
 {
-	VDIFNetworkDataStream *me = (VDIFNetworkDataStream *)self;
+	VDIFSharedMemoryDataStream *me = (VDIFSharedMemoryDataStream *)self;
 
-	me->networkthreadfunction();
+	me->shmthreadfunction();
 
 	return 0;
 }
 
-void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
+void VDIFSharedMemoryDataStream::initialiseFile(int configindex, int fileindex)
 {
 	int nrecordedbands, fanout;
 	Configuration::datasampling sampling;
@@ -308,6 +371,7 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 	int rv;
 	int doUpdate = 0;
 	int muxFlags;
+	int shmKey;
 
 	format = config->getDataFormat(configindex, streamnum);
 	sampling = config->getDSampling(configindex, streamnum);
@@ -347,7 +411,31 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
                 MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
-	cinfo << startl << "VDIFNetworkDataStream::initialiseFile format=" << formatname << endl;
+	cinfo << startl << "VDIFSharedMemoryDataStream::initialiseFile format=" << formatname << endl;
+
+	shmKey = atoi(datafilenames[configindex][fileindex].c_str());
+
+	shmbuffer = attachSharedMemoryBuffer(shmKey);
+
+	if(shmbuffer == 0)
+	{
+		cfatal << startl << "Cannot attach to shared memory buffer with key " << shmKey << endl;
+		
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+	else
+	{
+		cinfo << startl << "Attached to shared memory buffer with key " << shmKey << endl;
+	}
+
+	rv = setsharedmemorybuffersecond(corrstartseconds);
+	if(rv < 0)
+	{
+		cfatal << startl << "Quitting because shared memory is not in range" << endl;
+
+                MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
 
 	/* update all the configs to ensure that the nsincs and
 	 * headerbytes are correct
@@ -369,11 +457,11 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 
 	// cause network reading thread to go ahead and start filling buffers
 	// these barriers come in pairs...
-	pthread_barrier_wait(&networkthreadbarrier);
-	pthread_barrier_wait(&networkthreadbarrier);
+	pthread_barrier_wait(&shmthreadbarrier);
+	pthread_barrier_wait(&shmthreadbarrier);
 }
 
-int VDIFNetworkDataStream::dataRead(int buffersegment)
+int VDIFSharedMemoryDataStream::dataRead(int buffersegment)
 {
 	// Note: here readbytes is actually the length of the buffer segment, i.e., the amount of data wanted to be "read" by calling processes. 
 	// In this threaded approach the actual size of network reads (as implemented in the ring buffer writing thread) is generally larger.
@@ -395,7 +483,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		// first decoding of scan
 		muxindex = readbufferslotsize;	// start at beginning of slot 1 (second slot)
 		lockstart = lockend = 1;
-		pthread_mutex_lock(networkthreadmutex + (lockstart % lockmod));
+		pthread_mutex_lock(shmthreadmutex + (lockstart % lockmod));
 	}
 
 	n1 = muxindex / readbufferslotsize;
@@ -418,7 +506,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 	if(n2 > n1 && lockend != n2)
 	{
 		lockend = n2;
-		pthread_mutex_lock(networkthreadmutex + (lockend % lockmod));
+		pthread_mutex_lock(shmthreadmutex + (lockend % lockmod));
 	}
 	
 	if(lastslot == n2)
@@ -555,10 +643,10 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 	{
 		// end of useful data for this scan
 		dataremaining = false;
-		pthread_mutex_unlock(networkthreadmutex + (lockstart % lockmod));
+		pthread_mutex_unlock(shmthreadmutex + (lockstart % lockmod));
 		if(lockstart != lockend)
 		{
-			pthread_mutex_unlock(networkthreadmutex + (lockend % lockmod));
+			pthread_mutex_unlock(shmthreadmutex + (lockend % lockmod));
 		}
 		lockstart = lockend = -2;
 	}
@@ -570,12 +658,12 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		muxindex = readbufferslotsize;
 
 		// need to acquire lock for first slot
-		pthread_mutex_lock(networkthreadmutex + 1);
+		pthread_mutex_lock(shmthreadmutex + 1);
 
 		// unlock existing locks
 		while(lockstart < readbufferslots)
 		{
-			pthread_mutex_unlock(networkthreadmutex + (lockstart % lockmod));
+			pthread_mutex_unlock(shmthreadmutex + (lockstart % lockmod));
 			++lockstart;
 		}
 
@@ -591,7 +679,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		n3 = muxindex / readbufferslotsize;
 		while(lockstart < n3)
 		{
-			pthread_mutex_unlock(networkthreadmutex + (lockstart % lockmod));
+			pthread_mutex_unlock(shmthreadmutex + (lockstart % lockmod));
 			++lockstart;
 		}
 
@@ -617,7 +705,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 	return 0;
 }
 
-void VDIFNetworkDataStream::loopnetworkread()
+void VDIFSharedMemoryDataStream::loopnetworkread()
 {
 	int perr;
 	int numread = 0;
@@ -627,23 +715,6 @@ void VDIFNetworkDataStream::loopnetworkread()
 	if(perr != 0)
 	{
 		csevere << startl << "Error in initial readthread lock of outstandingsendlock!" << endl;
-	}
-
-	if(ethernetdevice.empty())
-	{
-		openstream(portnumber, tcpwindowsizebytes/1024);
-	}
-	else
-	{
-		int v;
-		
-		v = openrawstream(ethernetdevice.c_str());
-		if(v < 0)
-		{
-			cfatal << startl << "Cannot open raw socket.  Perhaps root permission is required." << endl;
-			
-			MPI_Abort(MPI_COMM_WORLD, 1);
-		}
 	}
 
 	initialiseFile(bufferinfo[0].configindex, 0);
@@ -717,7 +788,7 @@ cverbose << startl << "Out of inner read loop: keepreading=" << keepreading << "
 	}
 	if(lockstart >= 0)
 	{
-		pthread_mutex_unlock(networkthreadmutex + (lockstart % (readbufferslots - 1)));
+		pthread_mutex_unlock(shmthreadmutex + (lockstart % (readbufferslots - 1)));
 	}
 	if(numread > 0)
 	{

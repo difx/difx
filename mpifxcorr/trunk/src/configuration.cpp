@@ -1420,6 +1420,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].source = MK5MODULE;
     else if(line == "MARK6")
       datastreamtable[i].source = MK6MODULE;
+    else if(line == "SHAREDMEMORY")
+      datastreamtable[i].source = SHAREDMEMORYSTREAM;
     else if(line == "NETWORK")
       datastreamtable[i].source = NETWORKSTREAM;
     else if(line == "FAKE")
@@ -1427,7 +1429,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
     else
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Unknown data source " << line << " (case sensitive choices are FILE, MODULE, MARK6, NETWORK and FAKE)" << endl;
+        cfatal << startl << "Unknown data source " << line << " (case sensitive choices are FILE, MODULE, MARK6, NETWORK, SHAREDMEMORY and FAKE)" << endl;
       return false;
     }
 
