@@ -21,8 +21,8 @@
 # program to plot observation time versus correlator time from DiFX logs.
 
 import sys, os, re, optparse, datetime, time
-import scipy
-from scipy import interpolate
+#import scipy
+#from scipy import interpolate
 from math import *
 import matplotlib
 # Force matplotlib to not use any Xwindows backend if X display not available.

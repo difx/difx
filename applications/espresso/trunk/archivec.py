@@ -44,7 +44,7 @@ usage = '''%prog <path> <destination>
 will transfer <path> and all its subdirectories to <destination> on data.ivec.org using ashell.py. Most files are tarred before transfer, but special files and large files are transferred unmodified. Files are first tarred/copied to $ARCHTMP before transfer.
 
 e.g.
-%prog $CORR_DATA/v252aw /projects/VLBI/Archive/Curtin/v252
+%prog $CORR_DATA/v252aw /projects/VLBI/Archive/LBA/v252
 '''
 
 parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
