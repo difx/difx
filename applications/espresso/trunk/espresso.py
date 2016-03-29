@@ -208,36 +208,60 @@ def run_interactive(corrjoblist, outdir):
             logfile.close()
 
 
+def wait_for_file(filename):
+    while not os.path.exists(filename):
+        print "Waiting for", filename
+        time.sleep(1)
+        
+    print filename, "found!"
+
+
+
 
 def run_batch(corrjoblist, outdir):
     '''Run jobs in a batch enviroment'''
 
     # start the correlator log
+    errormon_log = "./log"
     print "starting errormon2 in the background"
+    try:
+        os.remove(errormon_log)
+        print "removed old", errormon_log
+    except:
+        pass
     errormon2 = subprocess.Popen('errormon2', env=espresso_env)
     #errormon2 = subprocess.Popen('errormon2 2>&1| grep ' + jobname, shell=True)
 
+    # make the log file have a unique name by *moving* the 'log' created by
+    # errormon2 to a file name derived from this passname.
+    # This log file will receive all log messages from jobs spawned by this
+    # espresso session. Will divide into separate jobs at end.
+    pass_logfilename = passname + '.difxlog'
+    try:
+        wait_for_file(errormon_log)
+        print "renaming log to", pass_logfilename
+        shutil.move('./log', pass_logfilename)
+    except:
+        print errormon_log, "not found! No difxlog will be produced"
+
+    # submit all the jobs to the batch scheduler
     for jobname in sorted(corrjoblist.keys()):
         try:
             runfile = jobname
             runfile = 'sbatch ./run_' + runfile
-            print "starting the correlator running", runfile
+            print "starting the correlator with:", runfile
             subprocess.check_call(runfile, shell=True, stdout=sys.stdout, env=espresso_env)
         except:
             pass
 
+    # Just wait until the jobs have completed. Operator hits ^C to progress.
+    # Enter will provide queue report.
+    queue_command = " ".join(['squeue', '-n ']) + ",".join(sorted(corrjoblist.keys()))
     while True:
         try:
-            try:
-                #command = ['squeue', '-u', '$USER']
-                command = " ".join(['squeue', '-n ']) + ",".join(sorted(corrjoblist.keys()))
-                print command
-                subprocess.check_call( command, stdout=sys.stdout, shell=True)
-            except:
-                print command + 'failed!'
-                #pass
-                #raise Exception(command + 'failed!')
-                #raise
+            #command = ['squeue', '-u', '$USER']
+            print queue_command
+            subprocess.check_call( queue_command, stdout=sys.stdout, shell=True)
 
             raw_input('Jobs submitted - hit ^C when all jobs have completed. Hit return to see list of running jobs.')
         except KeyboardInterrupt:
@@ -246,22 +270,45 @@ def run_batch(corrjoblist, outdir):
                 print command
                 subprocess.check_call( command, stdout=sys.stdout, shell=True)
             break
+        except:
+            print queue_command + 'failed!'
+            #pass
+            #raise Exception(command + 'failed!')
+            #raise
 
+    # tidy up log files for each job
     for jobname in sorted(corrjoblist.keys()):
         # we're finished with the logs..
         os.kill(errormon2.pid, 9)
-        time.sleep(1)
+        #time.sleep(1)
         logfilename = outdir + jobname + '.difxlog'
         logfiles.append(jobname + '.difxlog')
         logfile = open(logfilename, 'w')
         print "\nfiltering the log file and copying to", logfile.name
         #shutil.copy2('log', logfile)
-        for line in open("log"):
+        for line in open(pass_logfilename):
             if jobname in line:
                 print>>logfile, line,
         logfile.close()
 
+def set_difx_message_port(start_port=50201):
+    '''set unique difx message port so unicast environment can have parallel jobs.'''
+    difx_message_port = start_port
+    # get active connections 
+    connections = psutil.net_connections()
+    ports_used = []
+    for connection in connections:
+        ports_used.append(connection[3][1])
+    
+    while True:
+        if difx_message_port in ports_used:
+            print "DIFX_MESSAGE_PORT", difx_message_port, "in use"
+            difx_message_port += 1
+        else:
+            print "DIFX_MESSAGE_PORT=", difx_message_port
+            break
 
+    return difx_message_port
 
 
 # Main program start.
@@ -281,7 +328,7 @@ usage = '''%prog <jobname>
     
 <jobname> may be a space separated list.
 <jobname> may also include a python regular expression after the '_' in the job
-name to match multiple jobs. The job name up to the '_' must be given
+name to match multiple jobs. (The job name up to the '_' must be given
 explicitly)'''
 
 
@@ -346,6 +393,26 @@ elif options.testjob:
 else:
     jobtime = '02:00:00'
 
+# Determine the name of the correlator pass from the first jobname or the -a
+# switch
+if options.expt_all:
+    passname = options.expt_all
+else:
+    passname = re.match(r'(.*)_', args[0]).group(1)
+
+# a '-' is used to distinguish different correlator passes. If only one pass,
+# then the expname and passname are the same
+passid = str()
+expname = passname
+if '-' in passname:
+    expname, passid = expname.split('-')
+
+operator_log = passname + '_comment.txt'
+try:
+    raw_input('\nHit return, then enter an operator comment, minimally: PROD/CLOCK/TEST/FAIL')
+    fill_operator_log( operator_log )
+except:
+    print "Operator comment not saved!"
 
 # get email and password so we can notify. does not make sense for batch jobs.
 get_email = False
@@ -387,19 +454,6 @@ vex2difx_options = ''
 if options.clockjob or options.testjob:
     vex2difx_options = ' -f '
 
-# Determine the name of the correlator pass from the first jobname or the -a
-# switch
-if options.expt_all:
-    passname = options.expt_all
-else:
-    passname = re.match(r'(.*)_', args[0]).group(1)
-
-# a '-' is used to distinguish different correlator passes. If only one pass,
-# then the expname and passname are the same
-passid = str()
-expname = passname
-if '-' in passname:
-    expname, passid = expname.split('-')
 
 # run vex2difx. 
 v2dfilename = passname + '.v2d'
@@ -428,35 +482,6 @@ else:
 
 print "job list to correlate = ", pprint.pformat(corrjoblist), "\n";
 
-# set unique difx message port so unicast environment can have parallel jobs.
-difx_message_port = 50201
-# get active connections 
-connections = psutil.net_connections()
-ports_used = []
-for connection in connections:
-    ports_used.append(connection[3][1])
-
-while True:
-    if difx_message_port in ports_used:
-        print "DIFX_MESSAGE_PORT", difx_message_port, "in use"
-        difx_message_port += 1
-    else:
-        print "DIFX_MESSAGE_PORT=", difx_message_port
-        espresso_env = os.environ.copy()
-        espresso_env['DIFX_MESSAGE_PORT'] = str(difx_message_port)
-        #os.environ['DIFX_MESSAGE_PORT'] = str(difx_message_port)
-        break
-
-# create the mpi files for each job
-for jobname in sorted(corrjoblist.keys()):
-    # run lbafilecheck to get the new machines and .threads files
-    datafilename = expname + '.datafiles'
-    run_lbafilecheck(datafilename, corrjoblist[jobname], options.computehead, options.no_rmaps_seq)
-
-    # duplicate the run and thread and machines files for the full number of
-    # jobs
-    print "\nduplicating the run file, machines file and .threads files for ", jobname, "\n"
-    make_new_runfiles(jobname, expname, jobtime, str(difx_message_port))
 
 
 # get the paths of our input and output directories
@@ -508,6 +533,8 @@ for jobname in sorted(corrjoblist.keys()):
     copy_inputfilename = outdir + os.sep + inputfilename
     copy_calcfilename = outdir + os.sep + calcfilename
     change_path(copy_inputfilename, 'CALC FILENAME:', indir, './')
+    change_path(copy_inputfilename, 'CORE CONF FILENAME:', indir, './')
+    change_path(copy_inputfilename, 'OUTPUT FILENAME:', outdir, './')
     change_path(copy_calcfilename, 'IM FILENAME:', indir, './')
     change_path(copy_calcfilename, 'FLAG FILENAME:', indir, './')
 
@@ -526,6 +553,26 @@ for jobname in sorted(corrjoblist.keys()):
 
 if not options.nopause:
     raw_input('Press return to initiate the correlator job or ^C to quit ')
+
+
+# set the $DIFX_MESSAGE_PORT as late as possible in the processing to avoid clashes with other espresso invocations
+difx_message_port = set_difx_message_port(50201)
+espresso_env = os.environ.copy()
+espresso_env['DIFX_MESSAGE_PORT'] = str(difx_message_port)
+os.environ['DIFX_MESSAGE_PORT'] = str(difx_message_port)
+
+# create the mpi files for each job
+for jobname in sorted(corrjoblist.keys()):
+    # run lbafilecheck to get the new machines and .threads files
+    datafilename = expname + '.datafiles'
+    run_lbafilecheck(datafilename, corrjoblist[jobname], options.computehead, options.no_rmaps_seq)
+
+    # duplicate the run and thread and machines files for the full number of
+    # jobs
+    print "\nduplicating the run file, machines file and .threads files for ", jobname, "\n"
+    make_new_runfiles(jobname, expname, jobtime, str(difx_message_port))
+
+
 
 logfiles = []
 
@@ -562,8 +609,7 @@ finally:
             print "No notification email sent"
     
     # and enter an operator comment
-    raw_input('\nHit return, then enter an operator comment, minimally: PROD/CLOCK/TEST/FAIL')
-    operator_log = 'comment.txt'
+    raw_input('\nHit return, then update the operator comment, minimally: PROD/CLOCK/TEST/FAIL')
     fill_operator_log( operator_log )
     for jobname in corrjoblist.keys():
         operator_joblog = outdir + jobname + '.comment.txt'
