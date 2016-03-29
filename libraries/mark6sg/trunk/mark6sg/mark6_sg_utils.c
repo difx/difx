@@ -365,7 +365,7 @@ int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char
     *filepathlist = realloc(fplist, nadded*sizeof(char*));
     *filenamelist = realloc(fnlist, nadded*sizeof(char*));
 
-    return nfiles;
+    return nadded;
 }
 
 /**
