@@ -44,6 +44,9 @@ void usage(void)
 // Local
 //////////////////////////////////////////////////////////////////////////////////
 
+static gid_t m_gid = 1000;
+static uid_t m_uid = 1000;
+
 // Directory entries
 static char**       m_scannamelist;
 static struct stat* m_scanstatlist;
@@ -54,6 +57,17 @@ static m6sg_slistmeta_t* m_json_scanlist;
 //////////////////////////////////////////////////////////////////////////////////
 // FUSE Layer : reading of scatter-gather files via the "mark6sg" libary
 //////////////////////////////////////////////////////////////////////////////////
+
+static void *fusem6_init(struct fuse_conn_info *conn)
+{
+	struct fuse_context *ctx = fuse_get_context();
+	if (NULL != ctx)
+	{
+		m_gid = ctx->gid;
+		m_uid = ctx->uid;
+	}
+	return NULL;
+}
 
 static int fusem6_open(const char *path, struct fuse_file_info *fi)
 {
@@ -76,7 +90,8 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
 	{
 		if (strcmp(path+1, m_scannamelist[i]) == 0)
 		{
-			memcpy(&m_scanstatlist[i], &st, sizeof(struct stat));
+			m_scanstatlist[i].st_size = st.st_size;
+			m_scanstatlist[i].st_blksize = st.st_blksize;
 		}
 	}
 #endif
@@ -120,8 +135,8 @@ static int fusem6_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	struct stat dir_st;
 	dir_st.st_mode = 0555 | S_IFDIR;
-	dir_st.st_uid  = 1000;
-	dir_st.st_gid  = 1000;
+	dir_st.st_uid  = m_uid;
+	dir_st.st_gid  = m_gid;
 	dir_st.st_nlink = 2 + m_nscans;
 
 	/* No directories except root */
@@ -135,7 +150,10 @@ static int fusem6_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	filler(buf, "..", &dir_st, 0);
 	for (i=0; i<m_nscans; i++)
 	{
-		filler(buf, m_scannamelist[i], &m_scanstatlist[i], 0);
+		if (filler(buf, m_scannamelist[i], &m_scanstatlist[i], 0) != 0)
+		{
+			return -ENOMEM;
+		}
 	}
 	return 0;
 }
@@ -143,12 +161,13 @@ static int fusem6_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static int fusem6_getattr(const char *path, struct stat *stbuf)
 {
 	int i;
+	memset(stbuf, 0, sizeof(struct stat));
 
 	/* Root directory */
 	if (strcmp(path, "/") == 0) {
 		memset(stbuf, 0, sizeof(struct stat));
-		stbuf->st_uid   = 1000;
-		stbuf->st_gid   = 1000;
+		stbuf->st_uid   = m_uid;
+		stbuf->st_gid   = m_gid;
 		stbuf->st_ctime = time(NULL);
 		stbuf->st_mode  = S_IFDIR | 0555;
 		stbuf->st_nlink = 2 + m_nscans;
@@ -174,6 +193,7 @@ static int fusem6_getattr(const char *path, struct stat *stbuf)
 //////////////////////////////////////////////////////////////////////////////////
 
 static struct fuse_operations fusem6_oper = {
+	.init		= fusem6_init,
 	.open		= fusem6_open,
 	.release	= fusem6_release,
 	.read		= fusem6_read,
@@ -232,20 +252,21 @@ int main(int argc, char *argv[])
 		// Due to the above reasons for now we use fake file size and time...
 		time_t t0 = time(NULL);
 		m_scanstatlist[i].st_nlink = 1;
-		m_scanstatlist[i].st_uid   = 1000;
-		m_scanstatlist[i].st_gid   = 1000;
+		m_scanstatlist[i].st_uid   = m_uid;
+		m_scanstatlist[i].st_gid   = m_gid;
 		m_scanstatlist[i].st_atime = t0;
 		m_scanstatlist[i].st_mtime = t0;
 		m_scanstatlist[i].st_ctime = t0;
 		m_scanstatlist[i].st_mode  = 0444 | S_IFREG;
-		m_scanstatlist[i].st_size  = 1234;
+		m_scanstatlist[i].st_size  = 0;
 	}
 
         /* Augment the scan information using the Mark6 JSON metadata files */
 #if (USE_JSON_INFOS)
 	rc = mark6_sg_collect_metadata(&m_json_scanlist);
+	printf("Found %d scans, and %d entries in JSON\n", m_nscans, rc);
 	json_slist_ptr = m_json_scanlist;
-	for (i=0; i<rc; i++)
+	for (i=0; i<rc && json_slist_ptr!=NULL; i++)
 	{
 		int j;
 		for (j=0; j<m_nscans; j++)

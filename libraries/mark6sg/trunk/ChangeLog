@@ -2,6 +2,8 @@ Version 1.1.7
 * fuseMk6 (now v1.11): fixed FUSE open() return value, error code instead of file descriptor,
            now multiple files can be opened at the same time
 * fuseMk6: added initial estimate of scan size in bytes using file fragment sizes minus guessed headers
+* fuseMk6: file user and group ID now match account that started fuseMk6
+* libmark6sg: handle fragments where last block is only partially written out
 * libmark6sg: protect file open/close internals via mutex
 * libmark6sg: tidied up slightly the prefetch code
 

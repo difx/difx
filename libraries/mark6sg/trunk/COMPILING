@@ -2,6 +2,8 @@
 ## You may do the steps below manually or can also run this file with
 ##   . ./COMPILING
 
+# apt-get install libfuse-dev
+
 aclocal
 libtoolize --copy --force
 

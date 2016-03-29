@@ -206,6 +206,19 @@ static void* thread_extract_file_blocklist(void* v_args)
                 break;
         }
 
+        if ((ctx->blks[ctx->nblocks].file_offset + ctx->blks[ctx->nblocks].datalen) > st.st_size)
+        {
+            if (m_m6sg_dbglevel) { printf("File %2d ended with incomplete block!\n", ctx->fileidx); }
+            // TODO: what is the best strategy? currenlty rounding down towards a packet size -multiple
+            ctx->blks[ctx->nblocks].datalen = (st.st_size - ftell(f)) / ctx->blks[ctx->nblocks].packetsize;
+            ctx->blks[ctx->nblocks].datalen *= ctx->blks[ctx->nblocks].packetsize;
+            if (ctx->blks[ctx->nblocks].datalen > 0)
+            {
+                ctx->nblocks++;
+            }
+            break;
+        }
+
         // Seek to next block header
         fseek(f, ctx->blks[ctx->nblocks].datalen, SEEK_CUR);
         ctx->nblocks++;
@@ -289,7 +302,7 @@ int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char
     char*  searchpattern;
     char** fplist;
     char** fnlist;
-    int    rc, nfiles, i;
+    int    rc, nfiles, nadded = 0, i;
     glob_t g;
 
     *filepathlist = NULL;
@@ -325,22 +338,32 @@ int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char
 
     for (i=0; i<nfiles; i++)
     {
-        char* s   = strrchr(g.gl_pathv[i], '/');
-        fplist[i] = strdup(g.gl_pathv[i]);
+        char* s;
+        struct stat st;
+        stat(g.gl_pathv[i], &st);
+        if (!S_ISREG(st.st_mode))
+        {
+            if (m_m6sg_dbglevel > 1) { printf(" %2d : %s : directory skipped\n", i, g.gl_pathv[i]); }
+            continue;
+        }
+
+        s = strrchr(g.gl_pathv[i], '/');
         if (NULL != s)
         {
-            fnlist[i] = strdup(s+1);
+            fnlist[nadded] = strdup(s+1);
         }
         else
         {
-            fnlist[i] = strdup(g.gl_pathv[i]);
+            fnlist[nadded] = strdup(g.gl_pathv[i]);
         }
-        if (m_m6sg_dbglevel > 1) { printf(" %2d : %s : %s\n", i, fplist[i], fnlist[i]); }
+        fplist[nadded] = strdup(g.gl_pathv[i]);
+        if (m_m6sg_dbglevel > 1) { printf(" %2d : %s : %s\n", i, fplist[nadded], fnlist[nadded]); }
+        nadded++;
     }
 
     globfree(&g);
-    *filepathlist = fplist;
-    *filenamelist = fnlist;
+    *filepathlist = realloc(fplist, nadded*sizeof(char*));
+    *filenamelist = realloc(fnlist, nadded*sizeof(char*));
 
     return nfiles;
 }
@@ -469,6 +492,7 @@ size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_
     blks[0].virtual_offset = 0;
     for (i=1; i<nblocks; i++)
     {
+        assert(prevblk->datalen > 0);
         blks[i].virtual_offset = prevblk->virtual_offset + prevblk->datalen;
 
         if (blks[i].blocknum != (prevblk->blocknum + 1))
@@ -478,7 +502,7 @@ size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_
             // NOTE2: choosing here to hop over missing data to have gapless virtual offsets, but in principle, could allow gaps via
             //    blks[i].virtual_offset +=  ((off_t)gaplen)*prevblk.datalen;
             nmissing += gaplen;
-            if (m_m6sg_dbglevel > 0) { printf("Missing blocks %d < #blk < %d.\n", prevblk->blocknum+1, blks[i].blocknum-1); }
+            if (m_m6sg_dbglevel > 0) { printf("Missing blocks %d to %d.\n", prevblk->blocknum+1, blks[i].blocknum-1); }
         }
 
         prevblk = &blks[i];
