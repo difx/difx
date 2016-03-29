@@ -96,6 +96,11 @@ def check_file(infile):
     if not os.path.exists(infile):
         sys.stderr.write(infile +  " missing\n")
         outfile = '#' + outfile;
+    elif os.path.getsize(infile) == 0:
+        # 0 file size will cause difx to hang (at least for LBA format)
+        sys.stderr.write(infile +  " empty\n")
+        outfile = '#' + outfile;
+
     elif re.search(r'.lba$', infile):
         header = vsib_header(infile);
         if not (header and re.match(r'^TIME\s\d{8}:\d{6}',  header[0]) ):

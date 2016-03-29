@@ -45,7 +45,8 @@ def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns, exp
     #command = " ".join(["ssh", machine, "ls", filepattern])
     command = " ".join(["ls", filepattern])
     print command
-    filelist, error1 = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+    filelist, error1 = subprocess.Popen(command, shell=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     #filelist = pexpect.run(command)
     #filelist = filelist.split('\r\n')
     filelist = filelist.split('\n')
