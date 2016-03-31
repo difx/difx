@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <time.h>
+#include <string.h>
 
 #define UNIT_INT 0
 #define UNIT_SEC 1
