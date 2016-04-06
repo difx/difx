@@ -260,6 +260,25 @@ public class JobNode extends QueueBrowserNode {
         });
         _popup.add( deleteItem );
         _popup.add( new JSeparator() );
+        _runCalcOnJob = new ZMenuItem( "Run Calc on Job" );
+        _runCalcOnJob.setToolTipText( "Run, or re-run, the calc process on this job.  Calc is required before\n"
+                + "a job can be processed by DiFX.  The Calc process used is set in the\n"
+                + "Job Creation Settings section of the Settings menu." );
+        _runCalcOnJob.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( passNode() != null ) {
+                    if ( passNode().experimentNode() != null ) {
+                        if ( passNode().experimentNode().editor() != null ) {
+                            state().setText( "await .im file" );
+                            state().setBackground( Color.YELLOW );
+                            passNode().experimentNode().editor().runCalcOnly( passNode(), name() );
+                        }
+                    }
+                }
+            }
+        });
+        _runCalcOnJob.setEnabled( false );
+        _popup.add( _runCalcOnJob );
         _scheduleJobItem = new ZMenuItem( "Schedule to Run" );
         _scheduleJobItem.setToolTipText( "Schedule this job to the be run using the automated scheduler\n"
                 + "according to user settings that govern scheduled jobs." );
@@ -503,6 +522,7 @@ public class JobNode extends QueueBrowserNode {
         if ( _settings.queueBrowser().addJobToSchedule( this ) ) {
             _scheduleJobItem.setEnabled( false );
             _scheduleConfigTestItem.setEnabled( false );
+            _runCalcOnJob.setEnabled( false );
             state().setText( "Scheduled" );
             state().setBackground( Color.YELLOW );
             state().updateUI();
@@ -543,6 +563,7 @@ public class JobNode extends QueueBrowserNode {
             setState( "Unscheduled", Color.GRAY );
             _scheduleJobItem.setEnabled( true );
             _scheduleConfigTestItem.setEnabled( true );
+            _runCalcOnJob.setEnabled( true );
         }
     }
     
@@ -1379,6 +1400,7 @@ public class JobNode extends QueueBrowserNode {
         //  Now that we have an input file, enable controls associated with it.
         _scheduleJobItem.setEnabled( true );
         _scheduleConfigTestItem.setEnabled( true );
+        _runCalcOnJob.setEnabled( true );
         _stopJobItem.setEnabled( true );
         _monitorMenuItem.setEnabled( true );
         _liveMonitorMenuItem.setEnabled( true );
@@ -1740,6 +1762,7 @@ public class JobNode extends QueueBrowserNode {
 //    protected Integer _databaseJobId;
     
     protected ZMenuItem _scheduleJobItem;
+    protected ZMenuItem _runCalcOnJob;
     protected ZMenuItem _scheduleConfigTestItem;
     protected ZMenuItem _unscheduleJobItem;
     protected ZMenuItem _stopJobItem;

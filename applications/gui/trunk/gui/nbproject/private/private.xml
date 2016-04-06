@@ -111,6 +111,19 @@
     </editor-bookmarks>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="2">
         <file>
+            <url>src/edu/nrao/difx/difxview/ExperimentEditor.java</url>
+            <bookmark id="0">
+                <name/>
+                <line>634</line>
+                <key/>
+            </bookmark>
+            <bookmark id="0">
+                <name/>
+                <line>1292</line>
+                <key/>
+            </bookmark>
+        </file>
+        <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Queue.java</url>
             <bookmark id="0">
                 <name/>
@@ -127,30 +140,25 @@
             <url>src/edu/nrao/difx/difxview/JobEditorMonitor.java</url>
             <bookmark id="0">
                 <name/>
-                <line>936</line>
+                <line>964</line>
                 <key/>
             </bookmark>
             <bookmark id="1">
                 <name/>
-                <line>988</line>
+                <line>1016</line>
                 <key/>
             </bookmark>
             <bookmark id="2">
                 <name/>
-                <line>2565</line>
+                <line>2636</line>
                 <key/>
             </bookmark>
         </file>
         <file>
-            <url>src/edu/nrao/difx/difxview/ExperimentEditor.java</url>
+            <url>src/edu/nrao/vlba/difxcontroller/DiFXController.java</url>
             <bookmark id="0">
                 <name/>
-                <line>616</line>
-                <key/>
-            </bookmark>
-            <bookmark id="0">
-                <name/>
-                <line>1274</line>
+                <line>73</line>
                 <key/>
             </bookmark>
         </file>
@@ -174,14 +182,6 @@
             <bookmark id="0">
                 <name/>
                 <line>512</line>
-                <key/>
-            </bookmark>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxcontroller/DiFXController.java</url>
-            <bookmark id="0">
-                <name/>
-                <line>73</line>
                 <key/>
             </bookmark>
         </file>
@@ -217,17 +217,17 @@
             <url>src/edu/nrao/difx/difxview/SystemSettings.java</url>
             <bookmark id="0">
                 <name/>
-                <line>851</line>
+                <line>890</line>
                 <key/>
             </bookmark>
             <bookmark id="0">
                 <name/>
-                <line>2902</line>
+                <line>2946</line>
                 <key/>
             </bookmark>
             <bookmark id="0">
                 <name/>
-                <line>4900</line>
+                <line>4949</line>
                 <key/>
             </bookmark>
         </file>
@@ -243,7 +243,7 @@
             <url>src/edu/nrao/difx/difxview/ExperimentNode.java</url>
             <bookmark id="0">
                 <name/>
-                <line>188</line>
+                <line>206</line>
                 <key/>
             </bookmark>
         </file>
@@ -284,18 +284,18 @@
             </bookmark>
         </file>
         <file>
-            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
+            <url>src/edu/nrao/difx/difxview/JobNode.java</url>
             <bookmark id="0">
                 <name/>
-                <line>136</line>
+                <line>589</line>
                 <key/>
             </bookmark>
         </file>
         <file>
-            <url>src/edu/nrao/difx/difxview/JobNode.java</url>
+            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
             <bookmark id="0">
                 <name/>
-                <line>553</line>
+                <line>150</line>
                 <key/>
             </bookmark>
         </file>
@@ -316,27 +316,27 @@
             <url>src/edu/nrao/difx/difxview/QueueBrowserPanel.java</url>
             <bookmark id="0">
                 <name/>
-                <line>436</line>
+                <line>476</line>
                 <key/>
             </bookmark>
             <bookmark id="0">
                 <name/>
-                <line>1142</line>
+                <line>1182</line>
                 <key/>
             </bookmark>
             <bookmark id="0">
                 <name/>
-                <line>1186</line>
+                <line>1226</line>
                 <key/>
             </bookmark>
             <bookmark id="0">
                 <name/>
-                <line>1297</line>
+                <line>1337</line>
                 <key/>
             </bookmark>
             <bookmark id="0">
                 <name/>
-                <line>1605</line>
+                <line>1645</line>
                 <key/>
             </bookmark>
         </file>
@@ -433,10 +433,12 @@
     </editor-bookmarks>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/SystemSettings.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxutilities/ChannelServerSocket.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxutilities/GuiServerConnection.java</file>
-            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/LiveMonitorWindow.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/JobEditorMonitor.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxcontroller/DiFXMessageProcessor.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/JobNode.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/ExperimentEditor.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxutilities/DiFXCommand_vex2difx.java</file>
+            <file>file:/Users/johnspitzak/difx/trunk/gui/src/edu/nrao/difx/difxview/QueueBrowserPanel.java</file>
         </group>
     </open-files>
 </project-private>

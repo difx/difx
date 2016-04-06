@@ -3047,9 +3047,45 @@ public class ExperimentEditor extends JFrame {
         
     }
     
+    //--------------------------------------------------------------------------
+    //  Run only the calc process on the jobs specified by name (the name can
+    //  contain wildcard characters).
+    //--------------------------------------------------------------------------
+    public void runCalcOnly( PassNode passNode, String name ) {
+        ApplyThread app = new ApplyThread();
+        app.calcOnly( passNode, name );
+        app.start();
+    }
+    
+    //--------------------------------------------------------------------------
+    //  This thread can be used to create a completely new experiment, or simply
+    //  to run calc on an existing experiment.
+    //--------------------------------------------------------------------------
     protected class ApplyThread extends Thread {
         
+        protected boolean _calcOnly;
+        protected PassNode _passNode;
+        protected String _name;
+        
+        public void calcOnly( PassNode passNode, String name ) {
+            _calcOnly = true;
+            _passNode = passNode;
+            _name = name;
+        }
+        
         public void run() {
+            
+            if ( _calcOnly ) 
+                calcOnlyStart();
+            else
+                fullCreateStart();
+            
+        }
+        
+        //----------------------------------------------------------------------
+        //  Go through the complete creation of a new experiment.
+        //----------------------------------------------------------------------
+        protected void fullCreateStart() {
             
             boolean continueRun = true;
         
@@ -3299,6 +3335,7 @@ public class ExperimentEditor extends JFrame {
                     //_newPass.fullPath( directory() + "/" + passDir );
                     _newPass.fullPath( passDir );
                     _newPass.v2dFileName( v2dFileName() );
+                    _passNode = _newPass;
                     DiFXCommand_vex2difx v2d = new DiFXCommand_vex2difx( passDir, v2dFileName(), _settings, false );
                     v2d.addIncrementalListener( new ActionListener() {
                         public void actionPerformed( ActionEvent e ) {
@@ -3342,6 +3379,33 @@ public class ExperimentEditor extends JFrame {
             _okButton.setText( "Apply" );
             
         }
+        
+        //----------------------------------------------------------------------
+        //  Run the calc process on a job or set of jobs belonging to this
+        //  experiment and within a specific pass.
+        //----------------------------------------------------------------------
+        protected void calcOnlyStart() {
+            _passNode.stateLabel( "Running Calc", Color.yellow, true );
+            DiFXCommand_vex2difx v2d = new DiFXCommand_vex2difx( _passNode.fullPath(), _name, _settings, true );
+            v2d.addIncrementalListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    newFileCallback( e.getActionCommand() );
+                }
+            });
+            v2d.addEndListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    endCallback( e.getActionCommand() );
+                }
+            });
+            try {
+                v2d.send();
+                try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
+            } catch ( java.net.UnknownHostException e ) {
+                JOptionPane.showMessageDialog( _this, "Error - DiFX host \"" + _settings.difxControlAddress()
+                     + "\" unknown.",
+                        "Host Unknown", JOptionPane.ERROR_MESSAGE );
+            }
+        }
           
         /*
          * This function is called when the vex2difx process produces a new file
@@ -3373,7 +3437,7 @@ public class ExperimentEditor extends JFrame {
                 //  See if we've already created this job by searching existing jobs for the
                 //  "full name".
                 JobNode newJob = null;
-                for ( Iterator<BrowserNode> iter = _newPass.childrenIterator(); iter.hasNext(); ) {
+                for ( Iterator<BrowserNode> iter = _passNode.childrenIterator(); iter.hasNext(); ) {
                     JobNode thisJob = (JobNode)iter.next();
                     if ( fullName.contentEquals( thisJob.fullName() ) )
                         newJob = thisJob;
@@ -3383,15 +3447,15 @@ public class ExperimentEditor extends JFrame {
                     //  Create a node associated with this new job, then put it into
                     //  the appropriate pass so that it will appear in the queue browser.
                     _statusLabel.setText( "creating new job \"" + jobName + "\"" );
-                    _newPass.stateLabel( "creating new job \"" + jobName + "\"", Color.YELLOW, true );
+                    _passNode.stateLabel( "creating new job \"" + jobName + "\"", Color.YELLOW, true );
                     //BLATSystem.out.println( "creating new job \"" + jobName + "\"" );
                     newJob = new JobNode( jobName, _settings );
                     newJob.fullName( fullName );
                     //  Add the job to the existing pass.
-                    _newPass.addChild( newJob );
+                    _passNode.addChild( newJob );
                     //  BLAT
-                    _newPass.sortByName();
-                    newJob.passNode( _newPass );
+                    _passNode.sortByName();
+                    newJob.passNode( _passNode );
                     _settings.queueBrowser().addJob( newJob );
                     //  Add the new job to the database (if we are using it).
                     if ( db != null ) {
@@ -3439,13 +3503,16 @@ public class ExperimentEditor extends JFrame {
                 //  isn't, there is a problem (but we'll ignore it as stray .input files in
                 //  the directory that we did not create will create similarly-named .im files).
                 JobNode newJob = null;
-                for ( Iterator<BrowserNode> iter = _newPass.childrenIterator(); iter.hasNext(); ) {
+                for ( Iterator<BrowserNode> iter = _passNode.childrenIterator(); iter.hasNext(); ) {
                     JobNode thisJob = (JobNode)iter.next();
+                    //  Build the "full name" of this job if it doesn't exist yet.
+                    if ( thisJob.fullName() == null )
+                        thisJob.fullName( _passNode.fullPath() + "/" + thisJob.name() );
                     if ( fullName.contentEquals( thisJob.fullName() ) )
                         newJob = thisJob;
                 }
                 if ( newJob != null ) {
-                    _newPass.stateLabel( "adding .im file for \"" + jobName + "\"", Color.YELLOW, true );
+                    _passNode.stateLabel( "adding .im file for \"" + jobName + "\"", Color.YELLOW, true );
                     newJob.state().setText( "not started" );
                     newJob.state().setBackground( Color.LIGHT_GRAY );
                     //  No need for this - the job is brand new!
@@ -3453,7 +3520,10 @@ public class ExperimentEditor extends JFrame {
                 }
             }
             else {
-                _newPass.stateLabel( "Finalizing Job Creation", Color.yellow, true );
+                if ( _newPass != null )
+                    _newPass.stateLabel( "Finalizing Job Creation", Color.yellow, true );
+                else
+                    _passNode.stateLabel( "Calc Complete", Color.yellow, true );
             }
         }
 
@@ -3461,7 +3531,7 @@ public class ExperimentEditor extends JFrame {
          * This callback occurs when the vex2difx process is complete.
          */
         synchronized public void endCallback( String newFile ) {
-            _newPass.stateLabel( "", Color.yellow, false );
+            _passNode.stateLabel( "", Color.yellow, false );
             _statusLabel.setText( "vex2difx process completed!" );
         }
         

@@ -115,6 +115,25 @@ public class PassNode extends QueueBrowserContainerNode {
 //        _popup.add( copyItem );
 //        copyItem.setEnabled( false );
         _popup.add( new JSeparator() );
+        ZMenuItem runCalcButton = new ZMenuItem( "Run Calc on all Jobs" );
+        runCalcButton.setToolTipText( "Run the calc process on all jobs in this pass.  Calc must\n"
+                + "be run on a job before DiFX can process it." );
+        _this = this;
+        runCalcButton.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( experimentNode() != null ) {
+                    if ( experimentNode().editor() != null ) {
+                        for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
+                            JobNode thisJob = (JobNode)(iter.next());
+                            thisJob.state().setText( "await .im file" );
+                            thisJob.state().setBackground( Color.YELLOW );
+                        }
+                        experimentNode().editor().runCalcOnly( _this, "*" );
+                    }
+                }
+            }
+        });
+        _popup.add( runCalcButton );
         ZMenuItem removeButton = new ZMenuItem( "Remove Pass from Queue Browser" );
         removeButton.setToolTipText( "Remove this Pass (non-destructively) from the browser.\n"
                 + "All files and database entries will remain intact." );
@@ -498,5 +517,7 @@ public class PassNode extends QueueBrowserContainerNode {
     protected ActivityLogFile _logFile;
     protected String _fullPath;
     protected ColumnTextArea _stateLabel;
+    
+    protected PassNode _this;
 
 }

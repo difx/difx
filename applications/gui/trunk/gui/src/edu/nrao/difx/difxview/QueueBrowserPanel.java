@@ -2201,6 +2201,8 @@ public class QueueBrowserPanel extends TearOffPanel {
     //--------------------------------------------------------------------------
     public String getSimpleStatus( String inputFile ) {
         String ret = null;
+        if ( _simpleStatusMap == null )
+            return null;
         synchronized( _simpleStatusMap ) {
             ret = _simpleStatusMap.get( inputFile );
         }
@@ -2212,6 +2214,8 @@ public class QueueBrowserPanel extends TearOffPanel {
     //--------------------------------------------------------------------------
     public boolean haveSimpleStatus( String inputFile ) {
         boolean ret;
+        if ( _simpleStatusMap == null )
+            return false;
         synchronized( _simpleStatusMap ) {
             ret = _simpleStatusMap.containsKey( inputFile );
         }

@@ -38,6 +38,6 @@ public class VersionWindow extends JFrame {
     
     public static String version() { return _version; }
     
-    protected static String _version = "DEVEL r6967";
+    protected static String _version = "DEVEL r7283";
     
 }

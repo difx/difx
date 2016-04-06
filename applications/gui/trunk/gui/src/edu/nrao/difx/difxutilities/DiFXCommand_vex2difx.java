@@ -45,7 +45,7 @@ import javax.swing.event.EventListenerList;
  */
 public class DiFXCommand_vex2difx extends DiFXCommand {
     
-    public DiFXCommand_vex2difx( String passPath, String file, SystemSettings settings, boolean calcifOnly ) {
+    public DiFXCommand_vex2difx( String passPath, String file, SystemSettings settings, boolean calcOnly ) {
         super( settings );
         this.header().setType( "DifxVex2DifxRun" );
         DifxVex2DifxRun v2d = this.factory().createDifxVex2DifxRun();
@@ -54,10 +54,11 @@ public class DiFXCommand_vex2difx extends DiFXCommand {
         v2d.setDifxVersion( settings.difxVersion() );
         v2d.setPassPath( passPath );
         v2d.setFile( file );
-        if ( calcifOnly )
-            v2d.setCalcifOnly( 1 );
+        v2d.setCalcCommand( _settings.calcCommand() );
+        if ( calcOnly )
+            v2d.setCalcOnly( 1 );
         else
-            v2d.setCalcifOnly( 0 );
+            v2d.setCalcOnly( 0 );
         v2d.setAddress( _settings.guiServerConnection().myIPAddress() );
         _port = _settings.newDifxTransferPort( 0, 100, true, true );
         v2d.setPort( _port );

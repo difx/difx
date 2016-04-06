@@ -175,6 +175,7 @@
                 <xsd:element ref="inactivityError"/>
                 
                 <xsd:element ref="workingDirectory"/>
+                <xsd:element ref="calcCommand"/>
                 
                 <xsd:element ref="windowConfigMainX"/>
                 <xsd:element ref="windowConfigMainY"/>
@@ -481,6 +482,7 @@
     <xsd:element name="inactivityError" type="xsd:int"></xsd:element>
                 
     <xsd:element name="workingDirectory" type="xsd:string"></xsd:element>
+    <xsd:element name="calcCommand" type="xsd:string"></xsd:element>
     
     <xsd:element name="windowConfigMainX" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigMainY" type="xsd:int"></xsd:element>
@@ -914,7 +916,8 @@
             <xsd:element name="file" type="xsd:string"></xsd:element>
             <xsd:element name="address" type="xsd:string"></xsd:element>
             <xsd:element name="port" type="xsd:int"></xsd:element>
-            <xsd:element name="calcifOnly" type="xsd:int"></xsd:element>
+            <xsd:element name="calcCommand" type="xsd:string"></xsd:element>
+            <xsd:element name="calcOnly" type="xsd:int"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 

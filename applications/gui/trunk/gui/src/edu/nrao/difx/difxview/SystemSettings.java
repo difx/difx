@@ -775,6 +775,16 @@ public class SystemSettings extends JFrame {
             }
         } );
         jobCreationPanel.add( antennaDefaultsButton );
+        _calcCommand = new SaneTextField();
+        _calcCommand.setToolTipText( "Command used to run calc on .calc files." );
+        _calcCommand.setBounds( 575, 55, 300, 25 );
+        _calcCommand.setEditable( false );
+        _calcCommand.setBackground( this.getBackground() );
+        jobCreationPanel.add( _calcCommand );
+        JLabel calcCommandLabel = new JLabel( "Calc Command:" );
+        calcCommandLabel.setBounds( 420, 55, 150, 25 );
+        calcCommandLabel.setHorizontalAlignment( JLabel.RIGHT );
+        jobCreationPanel.add( calcCommandLabel );
         _eliminateCodeStationsCheck = new ZCheckBox( "Eliminate Stations With \"-1\" Code");
         _eliminateCodeStationsCheck.setBounds( 165, 85, 300, 25 );
         _eliminateCodeStationsCheck.setToolTipText( "Comment out station lines containing a \"-1\" code in the\n"
@@ -2221,6 +2231,7 @@ public class SystemSettings extends JFrame {
         _dbAutoUpdate.setSelected( false );
         _dbAutoUpdateInterval.intValue( 100 );
         _workingDirectory.setText( "/" );
+        _calcCommand.setText( "calcif2" );
         _eliminateCodeStationsCheck.setSelected( true );
         _exciseUnusedScansCheck.setSelected( false );
         _headNode.setText( _difxControlAddress.getText() );
@@ -2852,6 +2863,9 @@ public class SystemSettings extends JFrame {
     public String workingDirectory() { return _workingDirectory.getText(); }
     public void workingDirectory( String newVal ) { _workingDirectory.setText( newVal ); }
     
+    public String calcCommand() { return _calcCommand.getText(); }
+    public void calcCommand( String newVal ) { _calcCommand.setText( newVal ); }
+    
     public boolean eliminateCodeStationsCheck() { return _eliminateCodeStationsCheck.isSelected(); }
     public boolean exciseUnusedScansCheck() { return _exciseUnusedScansCheck.isSelected(); }
     
@@ -3171,6 +3185,8 @@ public class SystemSettings extends JFrame {
                 _dbAutoUpdateInterval.intValue( doiConfig.getDbAutoUpdateInterval() );
             if ( doiConfig.getWorkingDirectory() != null )
                 _workingDirectory.setText( doiConfig.getWorkingDirectory() );
+            if ( doiConfig.getCalcCommand() != null )
+                _calcCommand.setText( doiConfig.getCalcCommand() );
             _eliminateCodeStationsCheck.setSelected( !doiConfig.isEliminateCodeStationsCheck() );
             _exciseUnusedScansCheck.setSelected( doiConfig.isExciseUnusedScansCheck() );
             if ( doiConfig.getDifxHeadNode() != null )
@@ -3854,6 +3870,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setQueueShowPassScheduled( _queueBrowserSettings.showPassScheduled );
         
         doiConfig.setWorkingDirectory( _workingDirectory.getText() );
+        doiConfig.setCalcCommand( _calcCommand.getText() );
         doiConfig.setEliminateCodeStationsCheck( !_eliminateCodeStationsCheck.isSelected() );
         doiConfig.setExciseUnusedScansCheck( _exciseUnusedScansCheck.isSelected() );
         doiConfig.setDifxHeadNode( this.headNode() );
@@ -5013,6 +5030,7 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _eliminateCodeStationsCheck;
     protected ZCheckBox _exciseUnusedScansCheck;
     protected SaneTextField _headNode;
+    protected SaneTextField _calcCommand;
     
     //  EOP Settings items.
     protected SaneTextField _eopURL;

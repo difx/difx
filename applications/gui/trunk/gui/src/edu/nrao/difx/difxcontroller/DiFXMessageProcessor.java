@@ -851,8 +851,10 @@ public class DiFXMessageProcessor extends Thread
             _vex2DifxRunPanel.add( _vex2DifxPassPath );
             _vex2DifxUser = new TextField( "User: ", 150 );
             _vex2DifxRunPanel.add( _vex2DifxUser );
-            _vex2DifxCalcifOnly = new TextField( "Run Calcif Only: ", 150 );
-            _vex2DifxRunPanel.add( _vex2DifxCalcifOnly );
+            _vex2DifxCalcCommand = new TextField( "Calc Command: ", 150 );
+            _vex2DifxRunPanel.add( _vex2DifxCalcCommand );
+            _vex2DifxCalcOnly = new TextField( "Run Calc Only: ", 150 );
+            _vex2DifxRunPanel.add( _vex2DifxCalcOnly );
             _vex2DifxDifxVersion = new TextField( "DiFX Version: ", 150 );
             _vex2DifxRunPanel.add( _vex2DifxDifxVersion );
             _vex2DifxAddress = new TextField( "Address: ", 150 );
@@ -1085,7 +1087,7 @@ public class DiFXMessageProcessor extends Thread
                     _vex2DifxNode.setBounds( 0, 40, w2, 25 );
                     _vex2DifxPassPath.setBounds( 0, 70, w2, 25 );
                     _vex2DifxUser.setBounds( 0, 100, w2, 25 );
-                    _vex2DifxCalcifOnly.setBounds( w2, 10, w2, 25 );
+                    _vex2DifxCalcOnly.setBounds( w2, 10, w2, 25 );
                     _vex2DifxDifxVersion.setBounds( w2, 40, w2, 25 );
                     _vex2DifxAddress.setBounds( w2, 70, w2, 25 );
                     _vex2DifxPort.setBounds( w2, 100, w2, 25 );
@@ -1336,7 +1338,7 @@ public class DiFXMessageProcessor extends Thread
                     _vex2DifxNode.text( theMessage.difxMsg.getBody().getDifxVex2DifxRun().getNode() );
                     _vex2DifxPassPath.text( theMessage.difxMsg.getBody().getDifxVex2DifxRun().getPassPath() );
                     _vex2DifxUser.text( theMessage.difxMsg.getBody().getDifxVex2DifxRun().getUser() );
-                    _vex2DifxCalcifOnly.text( theMessage.difxMsg.getBody().getDifxVex2DifxRun().getCalcifOnly() + "" );
+                    _vex2DifxCalcOnly.text( theMessage.difxMsg.getBody().getDifxVex2DifxRun().getCalcOnly() + "" );
                     _vex2DifxDifxVersion.text( theMessage.difxMsg.getBody().getDifxVex2DifxRun().getDifxVersion() );
                     _vex2DifxAddress.text( theMessage.difxMsg.getBody().getDifxVex2DifxRun().getAddress() );
                     _vex2DifxPort.text( theMessage.difxMsg.getBody().getDifxVex2DifxRun().getPort() + "" );
@@ -1743,7 +1745,8 @@ public class DiFXMessageProcessor extends Thread
         protected TextField _vex2DifxNode;
         protected TextField _vex2DifxPassPath;
         protected TextField _vex2DifxUser;
-        protected TextField _vex2DifxCalcifOnly;
+        protected TextField _vex2DifxCalcCommand;
+        protected TextField _vex2DifxCalcOnly;
         protected TextField _vex2DifxDifxVersion;
         protected TextField _vex2DifxAddress;
         protected TextField _vex2DifxPort;
