@@ -443,7 +443,8 @@ typedef struct
 	char v2dFile[DIFX_MESSAGE_FILENAME_LENGTH];
 	char address[DIFX_MESSAGE_PARAM_LENGTH];
 	int port;
-	int calcifOnly;
+	char calcCommand[DIFX_MESSAGE_FILENAME_LENGTH];
+	int calcOnly;
 } DifxMessageVex2DifxRun;
 
 typedef struct

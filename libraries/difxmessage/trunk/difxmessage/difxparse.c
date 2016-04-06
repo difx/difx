@@ -994,9 +994,13 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						G->body.vex2DifxRun.port = atoi( s );
 					}
-					else if(strcmp(elem, "calcifOnly") == 0 )
+					else if(strcmp(elem, "calcCommand") == 0 )
 					{
-						G->body.vex2DifxRun.calcifOnly = atoi( s );
+						strncpy(G->body.vex2DifxRun.calcCommand, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "calcOnly") == 0 )
+					{
+						G->body.vex2DifxRun.calcOnly = atoi( s );
 					}
 					break;
 				case DIFX_MESSAGE_MK5CONTROL:
