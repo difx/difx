@@ -74,58 +74,85 @@ void ServerSideConnection::runVex2Difx( Vex2DifxInfo* vex2DifxInfo ) {
 
 	//  Open a client connection to the server that should be running for us on the
     //  host that requested this task (the GUI, presumably).  This connection is used
-    //  to communicate which .input files have been created.
+    //  to communicate process activities.
     guiClient = new GUIClient( vex2DifxInfo->ssc, S->address, S->port );
     guiClient->packetExchange();
-
-	//  This is where we actually run vex2difx - this creates the .input and .calc files.
-	//  It also creates some other things we don't care about (.flag files and a .joblist).
-	snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s vex2difx -f %s", 
-			  S->passPath,
-			  _difxSetupPath,
-			  S->v2dFile );
-	
-	diagnostic( WARNING, "Executing: %s", command );
-    executor = new ExecuteSystem( command );
-    while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
-        if ( ret == 1 )  { // stdout
-            if ( strlen( message ) )
-                diagnostic( INFORMATION, "vex2difx... %s", message );
-        }
-        else             // stderr
-            diagnostic( ERROR, "vex2difx... %s", message );
-    }
-    if ( executor->noErrors() )
-        diagnostic( WARNING, "vex2difx complete" );
-    else
-        diagnostic( ERROR, "vex2difx RETURNED ERRORS" );
-    delete executor;
     
-    //  List all of the .input files created.  These names are sent to the GUI (in full path
-    //  form).
-    struct dirent **inputList;
-    int n = scandir( S->passPath, &inputList, inputFilter, alphasort );
-    if ( n >= 0 ) {
-        for ( int i = 0; i < n; ++i ) {
-        	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
-        	snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", S->passPath, inputList[i]->d_name );
-        	struct stat buf;
-        	stat( fullPath, &buf );
-        	if ( (ulong)buf.st_mtime >= modTime ) {
-        	    //  Each file path is preceded by its string length.
-        	    int sz = htonl( strlen( fullPath ) );
-        	    guiClient->writer( &sz, sizeof( int ) );
-        	    guiClient->writer( fullPath, strlen( fullPath ) );
-        	}
+    //  If this is a strictly "calcOnly" request, the "v2dFile" name is actually a job
+    //  specification (an individual name, or a wildcard list) for which .cacl files should
+    //  already exist. Use "touch" to change the time stamp on the .calc files so the calc 
+    //  application (below) will be run on them.  In addition, delete any .im files so we
+    //  know when when the calc process is creating them anew.
+    if ( S->calcOnly ) {
+	    snprintf( command, MAX_COMMAND_SIZE, "cd %s; touch %s.calc", 
+			      S->passPath,
+			      S->v2dFile );
+	
+	    diagnostic( WARNING, "Executing: %s", command );
+        executor = new ExecuteSystem( command );
+        while ( executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {}
+        delete executor;
+	    snprintf( command, MAX_COMMAND_SIZE, "cd %s; rm -f %s.im", 
+			      S->passPath,
+			      S->v2dFile );
+	
+	    diagnostic( WARNING, "Executing: %s", command );
+        executor = new ExecuteSystem( command );
+        while ( executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {}
+        delete executor;
+    }
+    
+    else {
+	    //  This is where we actually run vex2difx - this creates the .input and .calc files.
+	    //  It also creates some other things we don't care about (.flag files and a .joblist).
+	    snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s vex2difx -f %s", 
+			      S->passPath,
+			      _difxSetupPath,
+			      S->v2dFile );
+	
+	    diagnostic( WARNING, "Executing: %s", command );
+        executor = new ExecuteSystem( command );
+        while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
+            if ( ret == 1 )  { // stdout
+                if ( strlen( message ) )
+                    diagnostic( INFORMATION, "vex2difx... %s", message );
+            }
+            else             // stderr
+                diagnostic( ERROR, "vex2difx... %s", message );
         }
-        free( inputList );
+        if ( executor->noErrors() )
+            diagnostic( WARNING, "vex2difx complete" );
+        else
+            diagnostic( ERROR, "vex2difx RETURNED ERRORS" );
+        delete executor;
+        
+        //  List all of the .input files created.  These names are sent to the GUI (in full path
+        //  form).
+        struct dirent **inputList;
+        int n = scandir( S->passPath, &inputList, inputFilter, alphasort );
+        if ( n >= 0 ) {
+            for ( int i = 0; i < n; ++i ) {
+            	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
+            	snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", S->passPath, inputList[i]->d_name );
+            	struct stat buf;
+            	stat( fullPath, &buf );
+            	if ( (ulong)buf.st_mtime >= modTime ) {
+            	    //  Each file path is preceded by its string length.
+            	    int sz = htonl( strlen( fullPath ) );
+            	    guiClient->writer( &sz, sizeof( int ) );
+            	    guiClient->writer( fullPath, strlen( fullPath ) );
+            	}
+            }
+            free( inputList );
+        }
     }
 
-    //  Run calcif2 on each .calc file that is new - i.e. that has a modification time matching
-    //  or after the "modTime" found at the start of this function. 
-    diagnostic( WARNING, "running calcif2 on all new .calc files" );
+    //  Run the calc application (user specified) on each .calc file that is new - i.e. 
+    //  that has a modification time matching or after the "modTime" found at the start
+    //  of this function. 
+    diagnostic( WARNING, "running %s on all new .calc files", S->calcCommand );
     struct dirent **calclist;
-    n = scandir( S->passPath, &calclist, calcFilter, alphasort );
+    int n = scandir( S->passPath, &calclist, calcFilter, alphasort );
     if ( n >= 0 ) {
         for ( int i = 0; i < n; ++i ) {
         	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
@@ -133,17 +160,18 @@ void ServerSideConnection::runVex2Difx( Vex2DifxInfo* vex2DifxInfo ) {
         	struct stat buf;
         	stat( fullPath, &buf );
         	if ( (ulong)buf.st_mtime >= modTime ) {
-	            snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s calcif2 -f %s", 
+	            snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s %s -f %s", 
 			              S->passPath,
 			              _difxSetupPath,
+			              S->calcCommand,
 			              calclist[i]->d_name );	
                 executor = new ExecuteSystem( command );
                 while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
                     if ( ret != 1 )  // stderr
-                        diagnostic( ERROR, "calcif2... %s", message );
+                        diagnostic( ERROR, "%s... %s", S->calcCommand, message );
                 }
                 if ( !executor->noErrors() )
-                    diagnostic( ERROR, "calcif2 RETURNED ERRORS" );
+                    diagnostic( ERROR, "%s RETURNED ERRORS", S->calcCommand );
                 delete executor;
                 //  See if we can stat the .im file that should have been just created.
                 int len = strlen( fullPath ) - 1;
@@ -161,18 +189,18 @@ void ServerSideConnection::runVex2Difx( Vex2DifxInfo* vex2DifxInfo ) {
                     }
                     else {
                         if ( buf.st_size <= 0 )
-                            diagnostic( ERROR, "calcif2 product %s is zero length\n", fullPath );
+                            diagnostic( ERROR, "%s product %s is zero length\n", S->calcCommand, fullPath );
                         else
-                            diagnostic( ERROR, "calcif2 product %s exists but looks old\n", fullPath );
+                            diagnostic( ERROR, "%s product %s exists but looks old\n", S->calcCommand, fullPath );
                     }
                 }
                 else
-                    diagnostic( ERROR, "calcif2 failed to create %s\n", fullPath );
+                    diagnostic( ERROR, "%s failed to create %s\n", S->calcCommand, fullPath );
         	}
         }
         free( calclist );
     }
-    diagnostic( WARNING, "calcif2 complete" );
+    diagnostic( WARNING, "%s complete", S->calcCommand );
 
     //  Sending a zero length tells the GUI that the list is finished.
     int zero = 0;
