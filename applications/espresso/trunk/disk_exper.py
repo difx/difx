@@ -25,6 +25,7 @@
 # Cormac Reynolds. Original progam: July 2010
 
 import sys, os, re
+import json
 
 try:
     exper = sys.argv[1]
@@ -38,23 +39,24 @@ will produce an input file for lbafilecheck.py for <experiment>, where
 if not os.path.isfile(disk_report_filename):
     raise Exception( disk_report_filename + " not found!" )
 
-disk_report = open(disk_report_filename).readlines()
-disk_report = [ disk_report[i].strip('\n') for i in range(len(disk_report)) ]
-disk_report = [ disk_report[i].strip() for i in range(len(disk_report)) ]
+disk_report = json.load(open(disk_report_filename))
 
 # parse the output file from disk_report.py
 stationfiles = dict()
-for line in disk_report:
-    if 'Disk report for' in line:
-        machine = line.split()[-1]
-    if re.search('/' + exper + '-\w*$', line):
-        directory = line.split()[-1]
-        station = line.split('-')[-1].lower()
-        if not station in stationfiles:
-            stationfiles[station] = dict()
-            stationfiles[station]['dir'] = []
-        stationfiles[station]['dir'].append(directory)
-        stationfiles[station]['machine'] = machine
+for machine in disk_report.keys():
+    for data_area in disk_report[machine].keys():
+        for line in disk_report[machine][data_area]['du']:
+            directory =  line[1]
+            #print directory
+            if re.search('/' + exper + '-\w*$', directory):
+                station = directory.split('-')[-1].lower()
+                if not station in stationfiles:
+                    stationfiles[station] = dict()
+                    stationfiles[station]['dir'] = []
+                stationfiles[station]['dir'].append(directory)
+                stationfiles[station]['machine'] = machine
+
+
 
 # and format the output file as expected by lbafilecheck.py
 outfile_name = exper + '.datafiles'

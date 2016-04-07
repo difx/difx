@@ -25,6 +25,7 @@ import espressolib
 import multiprocessing
 from multiprocessing import Process, Queue
 from Queue import Empty
+import json
 
 def remote_command(inputq, outputq):
     while True:
@@ -123,27 +124,21 @@ for disk_query in disk_queries:
         if not data_area in diskreport[machine].keys():
             diskreport[machine][data_area] = dict()
         if disk_query == 'du':
-            diskreport[machine][data_area]['du'] = (output.split('\n'))
+            #diskreport[machine][data_area]['du'] = (output.split('\n'))
+            diskreport[machine][data_area]['du'] = []
+            for directory in output.split('\n')[0:-1]:
+                du_output = directory.split()
+                du_output[0] = float(du_output[0])
+                diskreport[machine][data_area]['du'].append(du_output)
         elif disk_query == 'df':
-            diskreport[machine][data_area]['df'] = output
+            # just keep the disk name, size, used, avail and % columns
+            keep_index = [8,9,10,11,12]
+            df_output = [output.split()[i] for i in keep_index]
+            for i in [0,1,2]:
+                df_output[i] = float(df_output[i])
+            diskreport[machine][data_area]['df'] = df_output
 
-print "-" * 50
-print "Summary of disk availability at ", time.asctime(), "\n"
-for machine in sorted(diskreport):
-    print "*" * 5
-    print machine
-    for data_area in sorted(diskreport[machine]):
-        print data_area
-        print diskreport[machine][data_area]['df']
 
-for machine in sorted(diskreport):
-    print "-" * 50
-    print "Disk report for ", machine
-    for data_area in sorted(diskreport[machine]):
-        print "\nData area:", data_area
-        print diskreport[machine][data_area]['df']
-        diskreport[machine][data_area]['du'].sort(key=sizesort, reverse=True)
-        print "Disk usage by subdirectory (GB)"
-        for line in  diskreport[machine][data_area]['du']:
-            print line
 
+#JSONOUT = open ("disk.json", 'w')
+print json.dumps(diskreport, indent=4, sort_keys=True)
