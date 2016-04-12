@@ -100,7 +100,9 @@ def make_new_runfiles(jobname, expname, jobtime, difx_message_port):
     machinesfilename = jobname + '.machines'
     shutil.copy(expname + '.machines', machinesfilename)
 
-def parse_joblistfile(joblistfilename):
+
+
+def parse_joblistfile(joblistfilename, speedup=1.0):
     # get the full list of jobs from the joblist file
     # Return a dictionary. Keys are the job names. Values are the stations in
     # the job
@@ -109,25 +111,46 @@ def parse_joblistfile(joblistfilename):
     joblistfile.pop(0)
     joblist = dict()
     for line in joblistfile:
-        jobname = line.split()[0]
+        jobname, jobstart, jobend = line.split()[0:3]
+        joblist[jobname] = dict()
         stations = re.search(r'#\s+(.*)', line).group(1)
-        joblist[jobname] = stations
+        joblist[jobname]['stations'] = stations
+        
+        joblen = (float(jobend) - float(jobstart))/speedup
+        days,hours,minutes,seconds = espressolib.daysToDhms(joblen)
+        joblist[jobname]['joblen'] = "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds)
 
     return joblist
 
 def parse_v2dfile(v2dfilename):
-    '''extract the vex file name from the v2d file'''
+    '''extract file names from the v2d file'''
     v2dfile = open(v2dfilename).readlines()
     vexfilename = str()
+    binconfigfilename = None
     for line in v2dfile:
         # remove comments
         line = re.sub(r'#.*', '', line)
         vexmatch = re.search(r'vex\s*=\s*(\S*)', line)
         if vexmatch:
             vexfilename = vexmatch.group(1)
-            break
+        binconfigmatch = re.search(r'binConfig\s*=\s*(\S*)', line)
+        if binconfigmatch:
+            binconfigfilename = binconfigmatch.group(1)
 
-    return vexfilename
+    return vexfilename, binconfigfilename
+
+def parse_binconfig(binconfigfilename):
+    '''extract file names from the binconfig file'''
+    binconfigfile = open(binconfigfilename).readlines()
+    polycofilename = str()
+    for line in binconfigfile:
+        # remove comments
+        line = re.sub(r'@.*', '', line)
+        polycomatch = re.search(r'POLYCO FILE \d+\s*:\s*(\S*)', line)
+        if polycomatch:
+            polycofilename = polycomatch.group(1)
+
+    return polycofilename
 
 def run_lbafilecheck(datafilename, stations, computehead, no_rmaps_seq):
     # run lbafilecheck creating machines and .threads files for this job
@@ -368,10 +391,12 @@ parser.add_option( "--interactive", "-i",
         help="Run interactively, else assume slurm batch jobs"  )
 parser.add_option( "--jobtime", "-j",
         type='str', dest="jobtime", default=None,
-        help='''Max. job time for batch jobs, 
-default for prod: 02:00:00
-default for clock: 00:10:00
-default for test: 00:10:00'''
+        help="""Max. job time for batch jobs, default is runtime * speedup
+        format = hh:mm:ss"""
+        )
+parser.add_option( "--speedup", "-s",
+        type='float', dest="predicted_speedup", default=1.0,
+        help="""Predicted speedup factor to determine job run time"""
         )
 
 (options, args) = parser.parse_args()
@@ -384,14 +409,14 @@ if len(args) < 1 and not options.expt_all:
     parser.error("Give job name(s)")
 
 # set max jobtime for batch jobs
-if options.jobtime:
-    jobtime = options.jobtime
-elif options.clockjob:
-    jobtime = '00:10:00'
-elif options.testjob:
-    jobtime = '00:10:00'
-else:
-    jobtime = '02:00:00'
+#if options.jobtime:
+#    jobtime = options.jobtime
+#elif options.clockjob:
+#    jobtime = '00:10:00'
+#elif options.testjob:
+#    jobtime = '00:10:00'
+#else:
+#    jobtime = '02:00:00'
 
 # Determine the name of the correlator pass from the first jobname or the -a
 # switch
@@ -457,16 +482,21 @@ if options.clockjob or options.testjob:
 
 # run vex2difx. 
 v2dfilename = passname + '.v2d'
-vexfilename = parse_v2dfile(v2dfilename)
+vexfilename, binconfigfilename = parse_v2dfile(v2dfilename)
 if not vexfilename:
     raise Exception('Could not find VEX file in ' + v2dfilename)
+
+if binconfigfilename:
+    polycofilename = parse_binconfig(binconfigfilename)
+    if not polycofilename:
+        raise Exception('Could not find polycofile in ' + binconfigfilename)
 
 if not options.novex:
     run_vex2difx(v2dfilename, vex2difx_options)
 
 
 joblistfilename = passname + '.joblist'
-(fulljoblist) = parse_joblistfile(joblistfilename) 
+(fulljoblist) = parse_joblistfile(joblistfilename, options.predicted_speedup) 
 
 # figure out the list of jobs to run this time
 corrjoblist = dict()
@@ -535,6 +565,7 @@ for jobname in sorted(corrjoblist.keys()):
     change_path(copy_inputfilename, 'CALC FILENAME:', indir, './')
     change_path(copy_inputfilename, 'CORE CONF FILENAME:', indir, './')
     change_path(copy_inputfilename, 'OUTPUT FILENAME:', outdir, './')
+    change_path(copy_inputfilename, 'PULSAR CONFIG FILE:', indir, './')
     change_path(copy_calcfilename, 'IM FILENAME:', indir, './')
     change_path(copy_calcfilename, 'FLAG FILENAME:', indir, './')
 
@@ -547,9 +578,16 @@ for jobname in sorted(corrjoblist.keys()):
     print "copying the vex file", vexfilename, "to", outputvex, "\n"
     shutil.copy2(vexfilename, outputvex)
 
-    # and copy the .vex and .v2d unaltered for ease of reference in the output dir
-    shutil.copy2(vexfilename, outdir)
-    shutil.copy2(v2dfilename, outdir)
+# and copy the .vex and .v2d unaltered for ease of reference in the output dir
+print "copying the vex and v2d files", vexfilename, v2dfilename, "to", outdir, "\n"
+shutil.copy2(vexfilename, outdir)
+shutil.copy2(v2dfilename, outdir)
+# if pulsar binning, then get the binconfig and polyco too
+if binconfigfilename:
+    print "copying the binconfig and polyco files", binconfigfilename, \
+        polycofilename, "to", outdir, "\n"
+    shutil.copy2(binconfigfilename, outdir)
+    shutil.copy2(polycofilename, outdir)
 
 if not options.nopause:
     raw_input('Press return to initiate the correlator job or ^C to quit ')
@@ -565,11 +603,16 @@ os.environ['DIFX_MESSAGE_PORT'] = str(difx_message_port)
 for jobname in sorted(corrjoblist.keys()):
     # run lbafilecheck to get the new machines and .threads files
     datafilename = expname + '.datafiles'
-    run_lbafilecheck(datafilename, corrjoblist[jobname], options.computehead, options.no_rmaps_seq)
+    run_lbafilecheck(datafilename, corrjoblist[jobname]['stations'], options.computehead, options.no_rmaps_seq)
 
     # duplicate the run and thread and machines files for the full number of
     # jobs
     print "\nduplicating the run file, machines file and .threads files for ", jobname, "\n"
+    if options.jobtime:
+        jobtime = options.jobtime
+    else:
+        jobtime = corrjoblist[jobname]['joblen'] 
+
     make_new_runfiles(jobname, expname, jobtime, str(difx_message_port))
 
 

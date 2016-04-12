@@ -229,6 +229,17 @@ def convertdate(indate, outformat='mjd'):
         raise Exception("Output format not recognised, choose from: mjd, vex, iso or vlba")
 
     return outdate
+
+
+def daysToDhms (fracdays):
+    days = int(fracdays)
+    remainder = fracdays - days
+    hours = int(remainder * 24.)
+    remainder = remainder*24. - hours
+    minutes = int(remainder*60)
+    remainder = remainder*60 - minutes
+    seconds = int(remainder*60)
+    return [days, hours, minutes, seconds]
     
 #def email(user, passwd, message):
 #    '''Simple gmail notification message'''
