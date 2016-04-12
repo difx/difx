@@ -1,5 +1,5 @@
 /*
- * $Id: r2dbehdr.c 3008 2015-04-14 19:01:58Z gbc $
+ * $Id: r2dbehdr.c 3855 2016-04-11 19:24:41Z gbc $
  *
  * Support for R2DBE extended headers
  *   v0 was deployed for Mar2015 campaign
@@ -55,7 +55,7 @@ void r2dbev0_hdr_sum(FILE *fp)
         ext_hdr_work.filecnt, ext_hdr_work.pktcnt,
         ext_hdr_work.pol ? "X" : "Y");
     fprintf(fp,
-        "%05d:R2DBEv0 PPS - GPS %+.2lf ns (%ld)\n",
+        "%05d:R2DBEv0 PPS - GPS %+.2lf ns (%.2lf)\n",
         ext_hdr_work.filecnt,
         (double)ext_hdr_work.r2dbe_gps_pps[1] /
         divchk((double)ext_hdr_work.r2dbe_gps_pps[0]), 
