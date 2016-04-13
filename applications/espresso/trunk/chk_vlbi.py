@@ -145,6 +145,9 @@ def check_file(infile, m5format=None):
             stdout, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
             m5_output = stdout.split("\n")
             m5format = parse_m5findformats(m5_output)
+        if not m5format:
+            # assume we must have a VDIF file. 
+            m5format = 'VDIF_1000-64-1-2'
 
         # get the file start time with m5time
         command = " ".join([m5time, infile, m5format])
