@@ -33,6 +33,17 @@ def parseparam(param, line, delimiter='\S+'):
     value = re.search(param + delimiter, line).group(1)
     return value
 
+def end_of_paragraph(line):
+    # make sure not in quotes
+    find_sep = False
+    line = re.sub("'.*'", "", line)
+    line = re.sub('".*"', '', line)
+    if separator in line:
+        find_sep = True
+
+    return find_sep
+
+
 # program starts here
 
 #parse the options
@@ -63,12 +74,14 @@ stadb = open(stapath).readlines()
 padfound = False
 cache = str()
 for line in stadb:
+    # remove comments
     line = re.sub('!.*', '', line)
     cache += line.upper()
 
-    if separator in line:
+    if end_of_paragraph(line):
         paragraph = cache
         cache = str()
+        print paragraph
         pad =  parseparam('DBNAME', paragraph) 
 
         if pad_id.upper() in pad:
