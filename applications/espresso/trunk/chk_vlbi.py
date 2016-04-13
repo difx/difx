@@ -68,9 +68,22 @@ def vsib_header(filename):
 
     return header;
 
+def parse_m5findformats(m5_output):
+    '''Select the highest data rate format consistent with data'''
+    m5format = None
+    m5_output.reverse()
+    for line in m5_output:
+        if re.match('^OK:', line):
+            m5format = line.split()[3]
+            break
+
+    return m5format
+
 def m5_to_vextime(m5time):
     '''Convert from m5time (MJD = MJD/hh:mm:ss.ss) to vex time'''
     
+    if m5time is None:
+        return m5time
     m5time = m5time.split('=')[1]
     m5time = m5time.strip()
     # convert m5time to constitute parts, noting this match truncates the seconds (which vextime requires anyway)
@@ -90,16 +103,22 @@ def m5_to_vextime(m5time):
 
     return vextime
 
-def check_file(infile):
-    outfile = infile;
+def check_file(infile, m5format=None):
+    """ check each file, then return time range and format. Check for
+    Corrupt/missing files. """
+    
+    corrupt = False
+    starttime = None
+    endtime = None
     m5time = espressolib.which('m5time')
+    m5findformats = espressolib.which('m5findformats')
     if not os.path.exists(infile):
         sys.stderr.write(infile +  " missing\n")
-        outfile = '#' + outfile;
+        corrupt = True
     elif os.path.getsize(infile) == 0:
         # 0 file size will cause difx to hang (at least for LBA format)
         sys.stderr.write(infile +  " empty\n")
-        outfile = '#' + outfile;
+        corrupt = True
 
     elif re.search(r'.lba$', infile):
         header = vsib_header(infile);
@@ -108,76 +127,56 @@ def check_file(infile):
                 sys.stderr.write("header for " + infile + " is corrupt: " + header[0] + "\n\n");
             else:
                 sys.stderr.write("header for " + infile + " is corrupt or missing\n\n")
-            outfile = '#' + outfile;
+            corrupt = True
 
         starttime, endtime = lbafile_timerange(infile, header);
 
-        # the last file should always get in the input so we can be sure the
-        # D/STREAM is not empty (let's just hope it's not corrupt...). 
-        comment = '';
-        if (infile == filelist[len(filelist)-1]):
-            comment = '#';
-        outfile += " "  * 3 + comment + starttime + " " + endtime
-    #elif re.search(r'.vdif$', infile):
-    #    # arbitrary vdif format to get the time (not precise, but good enough).
-    #    vdif_format = 'VDIF_1000-64-1-2'
-    #    command = " ".join([m5time, infile, vdif_format])
 
-    elif m5time:
+    elif m5format or (m5time and m5findformats):
         # assume it is a mark5 or vdif file of some description. Details of
-        # the format are not important for extracting the start time. If we
-        # don't have m5time in our path we simply will not do this.
-        m5formats = ['Mark5B-512-16-2', 'VDIF_1000-64-1-2']
-        # for MkIV and VLBA must get a matching (but not necessarily correct)
-        # combination of fanout, number of bits and number channels. Check
-        # nbits=2 formats first as they are much more common. Assume even
-        # number channels. Datarate doesn't matter. I think this will match all
-        # possible formats (without actually trying them).
-        for nbits in [2,1]:
-            for fanout in [1,2,4]:
-                for nchan in [2,4,8,16]:
-                    m4format = 'MKIV1_{0}-1024-{1}-{2}'.format(str(fanout), str(nchan), str(nbits))
-                    m5formats.append(m4format)
-                    vlbaformat = 'VLBA1_{0}-1024-{1}-{2}'.format(str(fanout), str(nchan), str(nbits))
-                    m5formats.append(vlbaformat)
-        starttime_m5 = []
-        error = None
-        for m5format in m5formats:
-            command = " ".join([m5time, infile, m5format])
-            starttime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-            if starttime_m5:
-                #sys.stderr.write(m5format + '\n')
-                # we have the right format. Find the time of a sample near
-                # the end of the file (1 MB should be enough data)
-                lastsample = 1000000
-                if 'VDIF' in m5format:
-                    # our own little millennium bug
-                    endtime_m5 = 'MJD = 88069/00:00:00.00'
-                else:
-                    filesize = os.path.getsize(infile)
-                    command = " ".join([m5time, infile, m5format, str(filesize-lastsample)])
-                    try:
-                        endtime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-                    except:
-                        # old versions of m5time don't accept the byte offset
-                        endtime_m5 = 'MJD = 88069/00:00:00.00'
+        # the format are not very important for extracting the start time
+        # (YMMV). If we don't have m5time in our path we simply will not do
+        # this.
 
-                break
+        # use m5findformat to guess a format that is hopefully consistent with the
+        # data (good enough to decode the time)
+        if not m5format:
+            command = " ".join([m5findformats, infile])
+            stdout, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            m5_output = stdout.split("\n")
+            m5format = parse_m5findformats(m5_output)
 
-        if starttime_m5:
-            starttime = m5_to_vextime(starttime_m5);
-            endtime = m5_to_vextime(endtime_m5);
-            # the last file should always get in the input so we can be sure the
-            # D/STREAM is not empty (let's just hope it's not corrupt...). 
-            comment = '';
-            if (infile == filelist[len(filelist)-1]):
-                comment = '#';
-            outfile += " "  * 3 + comment + starttime + " " + endtime
+        # get the file start time with m5time
+        command = " ".join([m5time, infile, m5format])
+        starttime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        # the file end time is not always possible
+        if 'VDIF' in m5format:
+            endtime_m5 = None
         else:
-            sys.stderr.write("cannot decode time for " + infile + "\n\n")
-            outfile = '#' + outfile;
+            lastsample = 1000000
+            filesize = os.path.getsize(infile)
+            command = " ".join([m5time, infile, m5format, str(filesize-lastsample)])
+            try:
+                endtime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            except:
+                # old versions of m5time don't accept the byte offset
+                endtime_m5 = None
 
-    return outfile
+
+        try:
+            starttime = m5_to_vextime(starttime_m5)
+        except:
+            starttime = None
+            endtime = None
+            sys.stderr.write("cannot decode start time for " + infile + "\n\n")
+
+        if starttime:
+            try:
+                endtime = m5_to_vextime(endtime_m5);
+            except:
+                endtime = None
+
+    return infile, starttime, endtime, corrupt, m5format
 
 
 if __name__ == '__main__':
@@ -188,9 +187,47 @@ if __name__ == '__main__':
         filelist += open(filelistname).readlines()
         filelist = [line.rstrip() for line in filelist]
     
-    # check each file, then print it. Corrupt/missing files get a comment
-    # character prepended. File durations get appended for LBA and Mk5 files.
+    # check each file, then print it with its time range. Corrupt/missing files
+    # get a comment character prepended. m5format is important for getting m5
+    # and vdif times. Setting to None will make check_file() guess the format.
+    # Remember the value returned by first file and assume is good for
+    # remainder.
+    m5format = None
     for infile in filelist:
-        outfile = check_file(infile)
-        #outfilelist.append(outfile)
+        outfile = check_file(infile, m5format)
+        m5format = outfile[-1]
+        outfilelist.append(outfile)
+
+    # now go through the new filelist turning it into a list of strings.
+    # Prepend a comment character for corrupt files. Where the end time is not
+    # known, set it to the start time of the next file.
+    outfilelist.reverse()
+    previous_starttime = None
+    for idx, outfile in enumerate(outfilelist):
+        #sys.stderr.write(str(idx) + str(outfile))
+        filename, starttime, endtime, corrupt, m5format = outfile
+        if corrupt:
+            filename = "#" + filename
+            starttime = None
+            endtime = None
+        if starttime is None:
+            starttime = ""
+            endtime = ""
+        elif endtime is None:
+            if previous_starttime:
+                endtime = previous_starttime
+            else:
+                # put last file  to end way in the future, if actual end time
+                # not known
+                endtime = '2100y001d00h00m00s'
+        outfilelist[idx] = " ".join([filename, " ", starttime, endtime])
+        if starttime:
+            previous_starttime = starttime
+
+    # the last file should always get in the .input so we can be sure the
+    # D/STREAM is not empty. So comment out its timerange (and hope it's not
+    # corrupt...). 
+    outfilelist.reverse()
+    outfilelist[-1] = re.sub('(\s+)(\w)', r'\1#\2', outfilelist[-1], count=1)
+    for outfile in outfilelist:
         print outfile
