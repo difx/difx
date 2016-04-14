@@ -660,6 +660,21 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 					int ds1;
 
 					ds1 = config->datastreamId[configds1];
+
+					if(ds1 >= D->nDatastream)
+					{
+						std::cerr << "Developer error: populateBaselineTable pos 1: ds1=" << ds1 << " , nDatastream=" << D->nDatastream << std::endl;
+						std::cerr << "configds1=" << configds1 << " config->nDatastream=" << config->nDatastream << " a1=" << a1 << std::endl;
+						std::cerr << "All values of config->datastreamId[] array are:";
+						for(int y = 0; y < config->nDatastream; ++y)
+						{
+							std::cerr << " " << config->datastreamId[y];
+						}
+						std::cerr << std::endl;
+
+						exit(EXIT_FAILURE);
+					}
+
 					if(a1 != D->datastream[ds1].antennaId)
 					{
 						continue;
@@ -726,7 +741,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 						if(n1 < 0 || n1 > 2)
 						{
-							fprintf(stderr, "Developer error: n1 = %d for ds1 = %d a1=%d freqId=%d\n", n1, ds1, a1, freqId);
+							std::cerr << "Developer error: populateBaselineTable: n1=" << n1 << " for ds1=" << ds1 << " a1=" << a1 <<" freqId=" << freqId << std::endl;
 
 							exit(EXIT_FAILURE);
 						}
@@ -798,6 +813,22 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 						int ds1;
 
 						ds1 = config->datastreamId[configds1];
+
+						if(ds1 >= D->nDatastream)
+						{
+							std::cerr << "Developer error: populateBaselineTable pos 2: ds1=" << ds1 << " , nDatastream=" << D->nDatastream << std::endl;
+							std::cerr << "configds1=" << configds1 << " config->nDatastream=" << config->nDatastream << " a1=" << a1 << std::endl;
+
+							std::cerr << "All values of config->datastreamId[] array are:";
+							for(int y = 0; y < config->nDatastream; ++y)
+							{
+								std::cerr << " " << config->datastreamId[y];
+							}
+							std::cerr << std::endl;
+
+							exit(EXIT_FAILURE);
+						}
+
 						if(a1 != D->datastream[ds1].antennaId)
 						{
 							continue;
@@ -1782,8 +1813,10 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	{
 		const VexMode *mode;
 		DifxConfig *config;
+		int nConfigDatastream;
 
 		config = D->config + configId;
+		nConfigDatastream = 0;
 
 		mode = V->getModeByDefName(configs[configId].first);
 		if(mode == 0)
@@ -1846,8 +1879,6 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			snprintf(D->phasedarray[D->nPhasedArray].fileName, DIFXIO_FILENAME_LENGTH, "%s", corrSetup->phasedArrayConfigFile.c_str());
 			++D->nPhasedArray;
 		}
-
-		int d = 0;
 
 		// first iterate over all antennas, making sure all recorded bands are allocated
 		for(std::map<std::string,VexSetup>::const_iterator it = mode->setups.begin(); it != mode->setups.end(); ++it)
@@ -2040,9 +2071,9 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 							}
 						}
 					} // if antennaSetup
-					config->datastreamId[d] = D->nDatastream;
+					config->datastreamId[nConfigDatastream] = D->nDatastream;
 					++D->nDatastream;
-					++d;
+					++nConfigDatastream;
 				} // if valid format
 				startBand += stream.nRecordChan;
 			} // datastream loop
@@ -2075,9 +2106,9 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				cerr << "\nContinuing since --force was specified" << endl;
 			}
 		}
+		config->nDatastream = nConfigDatastream;
 	} // configId loop
 		
-
 	if(nPulsar != D->nPulsar)
 	{
 		cerr << "Error: nPulsar=" << nPulsar << " != D->nPulsar=" << D->nPulsar << endl;
