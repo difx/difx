@@ -81,7 +81,7 @@ def copy_jobcontrol(expname, jobname, indir, outdir, extension):
     else:
         sys.stderr.write(infile + ' not found!')
 
-def make_new_runfiles(jobname, expname, jobtime, difx_message_port):
+def make_new_runfiles(jobname, expname, jobtime, difx_message_port, ntasks_per_node=1):
     # make copies of the prototype run and .thread files
     runfile = 'run_' + jobname
     shutil.copy('run', runfile)
@@ -90,6 +90,7 @@ def make_new_runfiles(jobname, expname, jobtime, difx_message_port):
         line = re.sub(r'{JOBNAME}', jobname, line)
         line = re.sub(r'{TIME}', jobtime, line)
         line = re.sub(r'{DIFX_MESSAGE_PORT}', difx_message_port, line)
+        line = re.sub(r'{NTASKS-PER-NODE}', ntasks_per_node, line)
         print line,
     fileinput.close()
     os.chmod(runfile, 0775)
@@ -152,7 +153,7 @@ def parse_binconfig(binconfigfilename):
 
     return polycofilename
 
-def run_lbafilecheck(datafilename, stations, computehead, no_rmaps_seq):
+def run_lbafilecheck(datafilename, stations, computehead, no_rmaps_seq, interactive):
     # run lbafilecheck creating machines and .threads files for this job
     stations = stations.strip()
     stations = re.sub(r'\s+', ',', stations)
@@ -162,6 +163,8 @@ def run_lbafilecheck(datafilename, stations, computehead, no_rmaps_seq):
         options += ' -H '
     if no_rmaps_seq:
         options += ' -M '
+    if not interactive:
+        options += ' -n '
     command = " ".join(["lbafilecheck.py -F", options, "-s", stations, datafilename])
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
@@ -375,8 +378,8 @@ parser.add_option( "--alljobs", "-a",
         type='str', dest="expt_all", default=None,
         help='Correlate all jobs produced by vex2difx for the experiment specified (no other arguments required)')
 parser.add_option( "--computehead", "-H",
-        dest="computehead", action="store_true", default=False,
-        help='Use head and datastream nodes as compute nodes' )
+        dest="computehead", action="store_false", default=True,
+        help="Don't Use head and datastream nodes as compute nodes" )
 parser.add_option( "--no_rmaps_seq", "-M",
         dest="no_rmaps_seq", action="store_true", default=False,
         help="Don't Pass the '--mca rmaps seq' instruction to mpirun"  )
@@ -603,7 +606,7 @@ os.environ['DIFX_MESSAGE_PORT'] = str(difx_message_port)
 for jobname in sorted(corrjoblist.keys()):
     # run lbafilecheck to get the new machines and .threads files
     datafilename = expname + '.datafiles'
-    run_lbafilecheck(datafilename, corrjoblist[jobname]['stations'], options.computehead, options.no_rmaps_seq)
+    run_lbafilecheck(datafilename, corrjoblist[jobname]['stations'], options.computehead, options.no_rmaps_seq, options.interactive)
 
     # duplicate the run and thread and machines files for the full number of
     # jobs
@@ -613,7 +616,11 @@ for jobname in sorted(corrjoblist.keys()):
     else:
         jobtime = corrjoblist[jobname]['joblen'] 
 
-    make_new_runfiles(jobname, expname, jobtime, str(difx_message_port))
+    ntasks_per_node = 1
+    if (not options.interactive) and options.computehead:
+        ntasks_per_node = 2
+    make_new_runfiles(jobname, expname, jobtime, str(difx_message_port),
+            str(ntasks_per_node))
 
 
 

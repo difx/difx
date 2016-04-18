@@ -128,14 +128,14 @@ for disk_query in disk_queries:
             diskreport[machine][data_area]['du'] = []
             for directory in output.split('\n')[0:-1]:
                 du_output = directory.split()
-                du_output[0] = float(du_output[0])
+                du_output[0] = int(du_output[0])
                 diskreport[machine][data_area]['du'].append(du_output)
         elif disk_query == 'df':
             # just keep the disk name, size, used, avail and % columns
             keep_index = [8,9,10,11,12]
             df_output = [output.split()[i] for i in keep_index]
             for i in [0,1,2]:
-                df_output[i] = float(df_output[i])
+                df_output[i] = int(df_output[i])
             diskreport[machine][data_area]['df'] = df_output
 
 

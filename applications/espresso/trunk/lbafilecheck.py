@@ -133,7 +133,7 @@ def write_threads(expname, hosts, computemachines):
 
     THREADFILE.close()
 
-def write_run(expname, np, options):
+def write_run(expname, np, nthreads, options):
 
     # prototype for the runfile which we will fill later
     difx_runfile = os.environ.get('DIFX_RUNFILE')
@@ -145,6 +145,8 @@ def write_run(expname, np, options):
         for line in open(difx_runfile).readlines():
             # update placeholders in prototype 
             line = re.sub(r'{NODES}', str(np), line)
+            line = re.sub(r'{NTASKS}', str(np), line)
+            line = re.sub(r'{NTHREADS}', str(nthreads), line)
             print>>RUNFILE, line,
 
     else:
@@ -198,6 +200,12 @@ parser.add_option( "--no_rmaps_seq", "-M",
 parser.add_option( "--maxcompute", "-x",
         type='int', dest="maxcompute", default=None,
         help="Max. number of compute nodes to use" )
+parser.add_option( "--nfs_batch", "-n",
+        action='store_true', dest="nfs_batch", default=False,
+        help="This is a batch system where all machines can see the data areas" )
+#parser.add_option( "--nproc_per_node", "-p",
+#        type='int', dest="nproc_per_node", default=1,
+#        help="Target number of processes to run on each node" )
 
 (options, args) = parser.parse_args()
 
@@ -244,6 +252,7 @@ datamachines = []
 
 if not options.nofilelist:
     print "Wait for process to finish. Do not press ^C."
+
 # first create the filelists
 for line in sorted(telescopedirs):
     try:
@@ -279,7 +288,6 @@ for line in sorted(telescopedirs):
         print line
         raise Exception("could not make file list")
         
-
 # and wait for the filelist creation processes to finish
 #time.sleep(1)
 for pid in pids:
@@ -293,14 +301,35 @@ try:
 except:
     raise Exception('You must set $DIFX_MACHINES. No machines file created')
 
+
+if options.nfs_batch:
+    # this means all nodes can see the data areas and we will be using a batch
+    # script, so the machines listed in $DIFX_MACHINES as data areas are just
+    # placeholders. We'll give each of the entries in datamachines a unique
+    # name and add it to our list of nodes. That way we can have them be reused
+    # for compute nodes too.
+    nthreads = hosts[datamachines[0]][0]
+    data_area = hosts[datamachines[0]][1]
+    for i, machine in enumerate(datamachines):
+        datamachines[i] = datamachines[i] + str(i)
+        # delete the original placeholder name
+        hosts.pop(machine, None)
+
+    for machine in datamachines:
+        hosts[machine] = [nthreads, data_area]
+
+
+
 headmachine = os.uname()[1].lower()
 #headmachine = 'localhost'
 
 # nodes that are also used as head or datastream nodes should get fewer
-# threads, if they are requested to be used as compute nodes at all.
-for machine in datamachines + [headmachine]:
-    if hosts[machine][0] > 1:
-        hosts[machine][0] -= 1
+# threads, if they are requested to be used as compute nodes at all. Unless we
+# are in batch mode, in which case this will have been pre-compensated.
+if not options.nfs_batch:
+    for machine in datamachines + [headmachine]:
+        if hosts[machine][0] > 1:
+            hosts[machine][0] -= 1
 
 if len(hosts) == 0:
     raise Exception('Did not find any hosts in your $CORR_HOSTS file')
@@ -310,14 +339,29 @@ elif len(hosts) <= len(set(datamachines + [headmachine])):
 
 #print 'head=', headmachine 
 
+
 computemachines = []
+# keep count of the max threads of any machine
+maxthreads = 1
 for host in sorted(hosts.keys()):
     # usually avoid using head node and datastream nodes as compute nodes
     # (overridden with -H switch).
     if options.allcompute or (not host in [headmachine] + datamachines):
-        # also only use nodes with more than 0 threads available.
+        # use nodes with more than 0 threads available.
         if hosts[host][0]:
             computemachines.append(host)
+
+            if (options.nfs_batch and options.allcompute and (not host in
+                    [headmachine] + datamachines)):
+                # if in batch environment, then must have same number of
+                # processes on every node. So if we are reusing datastream
+                # nodes for compute, must add second compute process  to
+                # compute-only nodes, even though this is less efficient than a
+                # single process with double the number of threads.
+                computemachines.append(host)
+
+        if maxthreads < hosts[host][0]:
+            maxthreads = hosts[host][0]
 
 # limit number of computemachines if required
 if options.maxcompute:
@@ -333,7 +377,8 @@ write_threads(expname, hosts, computemachines)
 mpirun_options = ''
 if not options.no_rmaps_seq:
     mpirun_options = '--mca rmaps seq'
-write_run(expname, len(computemachines + datamachines) +1, mpirun_options)
+
+write_run(expname, len(computemachines + datamachines) +1, maxthreads, mpirun_options)
 
 
 if not options.nofilelist:
