@@ -1,0 +1,564 @@
+#!/usr/bin/env python
+#\if DOXYGEN_IGNORE ############################################################
+#                                                                              #
+#   Copyright (C) 2016 by John Spitzak                                         #
+#                                                                              #
+#   This program is free software; you can redistribute it and/or modify       #
+#   it under the terms of the GNU General Public License as published by       #
+#   the Free Software Foundation; either version 3 of the License, or          #
+#   (at your option) any later version.                                        #
+#                                                                              #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#   GNU General Public License for more details.                               #
+#                                                                              #
+#   You should have received a copy of the GNU General Public License          #
+#   along with this program; if not, write to the                              #
+#   Free Software Foundation, Inc.,                                            #
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.                  #
+#                                                                              #
+#\endif ########################################################################
+################################################################################
+#\defgroup difxnewExperiment DiFXnewExperiment
+#
+#\brief Create a new DiFX experiment on the DiFX server.
+#
+#  Usage:  <b><code>DiFXnewExperiment [options] directory</code></b>
+#
+#  <i>DiFXnewExperiment</i> creates a new DiFX experiment in a specified directory
+#  location on the DiFX server.  It will create jobs using <i>vex2difx</i>, then
+#  run the "calc" process on each job to prepare them to be run by DiFX.  Nominally
+#  it requires valid .v2d and .vex files as well as a path where the experiments will be created
+#  on the server, but behavior varies depending on what information you give it.
+#
+#  <i>DiFXnewExperiment</i> is meant to operate in a defined manner - jobs are expected
+#  to be created in the specified directory.  When run in the "nominal" mode, where
+#  a .vex, .v2d, and experiment path are created, it will alter the .v2d file content
+#  to assure that jobs are created in the defined path (the "vex" path in the .v2d
+#  file determines this).  The subsequent calc operations will then work.  If you
+#  "fool" it by using one of the modes below where the .v2d file is not altered, you
+#  can possibly get it to produce jobs elsewhere, but then the calc operation will
+#  not be performed.
+#
+#  <h4>Modes of Operation</h4>
+#
+#  <b>If you provide a directory, a .vex file path and a .v2d file path</b> (the 
+#  .vex file can be specified using either the "-vex" or "-svex" argument, the .v2d file is
+#  specified using either the "-v2d" or "-sv2d" argument, and the directory is the final
+#  argument), <i>DiFXnewExperiment</i> will create the directory (if necessary) and copy the
+#  .v2d file and .vex files into it.  The .v2d file will be altered to have the proper
+#  path to the new copy of the .vex file.  Jobs will be created in this new directory.
+#
+#  An example creating a new experiment using a .vex file and .v2d file on the DiFX server.
+#  The .vex file has three scans, each of which creates a job.  The specified directory
+#  ("/data1/correlator/newExp") is created and the .vex and .v2d files are copied to it.
+#  The .v2d file is altered to point to the new "local" .vex copy.  Then .input files are created
+#  by <i>vex2difx</i>, after which the calc process is run to create .im files:
+#\code{.py}
+#./DiFXnewExperiment --v2d /home/oper/April2016.v2d --vex /home/oper/April2016.vex /data1/correlator/newExp
+#Creating directory "/data1/correlator/newExp".
+#/data/correlator/newExp/April2016_01.input was created
+#/data/correlator/newExp/April2016_02.input was created
+#/data/correlator/newExp/April2016_03.input was created
+#/data/correlator/newExp/April2016_01.im was created
+#/data/correlator/newExp/April2016_02.im was created
+#/data/correlator/newExp/April2016_03.im was created
+#\endcode
+#
+#  The following command would operate in a similar way, except the .v2d file would come
+#  from a "local" (i.e. on the same machine as the client, not the DiFX server) file path
+#  (the .vex file MUST be on the DiFX server however):
+#\code{.py}
+#./DiFXnewExperiment --sv2d /home/local/April2016.v2d --vex /home/oper/April2016.vex /data1/correlator/newExp
+#...
+#\endcode
+#
+#  <b>If you provide only a .v2d file path and a directory</b> the directory will be created
+#  containing a copy of the .vex file specified in the .v2d, along with a new .v2d file that
+#  has the vex specification altered to point to the new copy.
+#
+#  In this example, the .vex file contained in the specified .v2d file copied to the new
+#  directory.  If the .vex specification in the .v2d is not a full path, which is likely,
+#  a full path will be created by appending the given path to the path of the .v2d file - this
+#  will only work if the .v2d file is remote (a local .v2d file must contain the full path to
+#  the .vex already):
+#\code{.py}
+#./DiFXnewExperiment --v2d /home/oper/April2016.v2d /data1/correlator/newExp
+#Creating directory "/data1/correlator/newExp".
+#Using "/home/oper/April2016.vex" as .vex file source.
+#/data/correlator/newExp/April2016_01.input was created
+#/data/correlator/newExp/April2016_02.input was created
+#/data/correlator/newExp/April2016_03.input was created
+#/data/correlator/newExp/April2016_01.im was created
+#/data/correlator/newExp/April2016_02.im was created
+#/data/correlator/newExp/April2016_03.im was created
+#\endcode
+#
+#  <b>If you provide only a .vex file and a directory</b> the directory will be created
+#  along with a newly-created .v2d file that has only the "vex" specification in it.  This will work
+#  fine if the .vex file contains all information required for <i>vex2difx</i> to work.
+#
+#  <b>If you provide a directory and a .v2d file name without path information</b>
+#  (using only the "--v2d" option for a remote .v2d file name - a local file name
+#  will not work), <i>DiFXnewExperiment</i> will assume the directory exists and already
+#  contains the .v2d file.
+#
+#  <b>If you provide a .v2d file path but no directory</b> <i>DiFXnewExperiment</i>
+#  will create jobs using the .v2d file in the directory given by the .v2d file's
+#  full path.
+#
+#  <b>If you provide only a directory</b> <i>DiFXnewExperiment</i> will search that
+#  directory for an existing .v2d file and use it to create jobs.
+#
+#  <b>If instead of a directory you provide a full path to a .v2d file</b> (not using
+#  the "--v2d" option) <i>DiFXnewExperiment</i> will use the .v2d file to create jobs
+#  (this is identical to using the --v2d option with no directory path).
+#
+#  <a name=DIFXRUN_ARGS><h3>Command Line Arguments</h3></a>
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-c, --calc <i>APP</i></b></pre>         <td>Run using the specified calc application.  By default
+#                                                          <i>calcif2</i> will be used.
+#  <tr><td><pre><b>-D, --difx <i>VERSION</i></b></pre>     <td>Run using a specific DiFX version.  If not specified
+#                                                          the value of the DIFX_VERSION environment variable will
+#                                                          be used.  Failing that, "DIFX-DEVEL" will be used.
+#  <tr><td><pre><b>-h, --help</b></pre>                    <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>    <td>Use <i>NAME</i> as the host of the  DiFX Server program.
+#                                                          Default is to use DIFX_CONTROL_HOST environment variable.
+#  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>        <td>Use <i>PORT</i> as the TCP port to communicated with the DiFX Server.
+#                                                          Default is to use DIFX_CONTROL_PORT environment variable.
+#  <tr><td><pre><b>--svex <i>FILE</i></b></pre>            <td>Use the LOCAL file as the "source" of the .vex data.  This file
+#                                                          will be copied to the experiment directory, which will be created.
+#                                                          This option is similar to the -vex option, but it allows you to use
+#                                                          a local file.  The full path to the local file should be given.
+#  <tr><td><pre><b>--sv2d <i>FILE</i></b></pre>            <td>Use the LOCAL file as the "source" of the .v2d data.  This file
+#                                                          will be copied to the experiment directory, which will be created.
+#                                                          This option is similar to the -v2d option, but it allows you to use
+#                                                          a local file.  The full path to the local file should be given.
+#  <tr><td><pre><b>-t, --timeout <i>SEC</i></b></pre>      <td>Use SEC seconds as the timeout value for each job.  This is the
+#                                                          amount of time <i>DiFXrun</i> will wait before it gives up on a
+#                                                          "silent" (i.e. no messages received from) job and declares it
+#                                                          non-responsive.  Default value is 300.0.
+#  <tr><td><pre><b>--vex <i>PATH</i></b></pre>             <td>Copy the .vex file given by PATH (the full path to it on the
+#                                                          DiFX server) to the experiment directory.
+#  <tr><td><pre><b>--v2d <i>PATH</i></b></pre>             <td>Copy the .v2d file given by PATH (the full path to it on the
+#                                                          DiFX server) to the experiment directory.
+#  </table
+#
+################################################################################
+program = 'DiFXexperiment'
+version = '0.1'
+author  = 'John Spitzak'
+verdate = '20160411'
+
+import sys
+import time
+import os
+import re
+import threading
+import DiFXvex2difx
+import DiFXControl
+
+def newFileCallback( newFile ):
+	print newFile + " was created"
+
+def processCompleteCallback():
+	print "vex2difx complete"
+
+#===============================================================================
+#  MAIN
+#===============================================================================
+host = None
+port = None
+timeout = 300.0
+DiFXVersion = None
+v2dLocal = None
+v2dPath = None
+createDir = False
+calcCommand = None
+passDir = None
+v2dFile = None
+copyRemote = None
+copyLocal = None
+locateV2d = False
+vexPath = None
+buildMissingV2d = False
+
+#  Locate a "default" DiFX Version from environment variables.  User may change this
+#  with command line arguments.
+try:
+	DiFXVersion = os.environ["DIFX_VERSION"]
+except:
+	DiFXVersion = "DIFX-DEVEL"
+
+try:
+	i = 1
+	otherArgs = []
+	argStr = None
+	pathStr = None
+	while i < len( sys.argv ):
+		#  Check against legal argument types.  Anything we don't recognize is assumed
+		#  to be an argument or a path.
+		if sys.argv[i] in [ "-h", "--help" ]:
+			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+			print "Create jobs on the DiFX software correlator using .v2d files."
+			print "Usage: %s [options] <directory>" % ( sys.argv[0] )
+			print ""
+			print "Options can include:"
+			print ""
+			print "   --calc APP"
+			print "   -c APP      Run the calc process using the given calc application.  If"
+			print "               not specified the default \"calcif2\" will be used."
+			print ""
+			print "   --difx VERSION"
+			print "   -D VERSION  Run using a specific DiFX version.  If not specified"
+			print "               the value of the DIFX_VERSION environment variable will"
+			print "               be used.  Failing that, \"DIFX-DEVEL\" will be used."
+			print ""
+			print "   --help"
+			print "   -h          Print this help information and quit."
+			print ""
+			print "   --hostname NAME"
+			print "   -H NAME     Use NAME as the host of the difxServer program."
+			print "               Default is to use DIFX_CONTROL_HOST environment variable."
+			print ""
+			print "   --port PORT"
+			print "   -P PORT     Use PORT as the TCP port to communicated with the difxServer."
+			print "               Default is to use DIFX_CONTROL_PORT environment variable."
+			print ""
+			print "   --sv2d FILE Use the LOCAL file as the \"source\" of the .v2d data.  This file"
+			print "               will be copied to the experiment directory, which will be created."
+			print "               This option is similar to the --v2d option, but it allows you to use"
+			print "               a local file.  The full path to the local file should be given."
+			print ""
+			print "   --vex PATH  Copy the .vex file given by PATH (the full path to it on the"
+			print "               DiFX server) to the directory."
+			print ""
+			print "   --v2d PATH  Copy the .v2d file given by PATH (the full path to it on the"
+			print "               DiFX server) to the directory.  Giving the full path to a .v2d file triggers"
+			print "               the creation of the directory."
+			print ""
+			exit( 0 )
+		elif sys.argv[i] in [ "-c", "--calc" ]:
+			calcCommand = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "-H", "--hostname" ]:
+			host = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "-D", "--difx" ]:
+			DiFXVersion = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "-P", "--port" ]:
+			port = int( sys.argv[i+1] )
+			i = i + 2
+		elif sys.argv[i] in [ "--sv2d" ]:
+			v2dLocal = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "-t", "--timeout" ]:
+			timeout = int( sys.argv[i+1] )
+			i = i + 2
+		elif sys.argv[i] in [ "--vex" ]:
+			vexPath = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "--v2d" ]:
+			v2dPath = sys.argv[i+1]
+			i = i + 2
+		else:
+			passDir = sys.argv[i]
+			i = i + 1
+	
+except RuntimeError:
+	print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
+	exit( 0 )
+
+#  If no directory was specified, but a .v2d path was, assume we are supposed
+#  to create jobs using the .v2d file.
+if passDir == None:
+	if v2dPath != None:
+		#  Extract the pass path and v2d file name out of the v2dPath.
+		try:
+			idx = v2dPath.rindex( "/" )
+			passDir = v2dPath[:idx]
+			v2dFile = v2dPath[idx + 1:]
+		except ValueError:
+			print "Improper path name in v2d path."
+			exit( 0 )
+	else:
+		print "No path for the experiment was provided."
+		exit( 0 )
+
+else:
+	#  See if the v2dPath specification begins with a "/" character.  This means
+	#  the directory should be created (if necessary) and the file at this path
+	#  copied to it.
+	if v2dPath != None and v2dPath[0] == '/':
+		copyRemote = v2dPath
+		try:
+			idx = v2dPath.rindex( "/" )
+			v2dFile = v2dPath[idx + 1:]
+		except ValueError:
+			print "Unable to extract .v2d file name from \"" + v2dPath + "\"."
+			exit( 0 )
+		createDir = True
+	#  There might also be a local file we want to use as the .v2d file.
+	elif v2dLocal != None and v2dLocal[0] == '/':
+		copyLocal = v2dLocal
+		try:
+			idx = v2dLocal.rindex( "/" )
+			v2dFile = v2dLocal[idx + 1:]
+		except ValueError:
+			print "Unable to extract .v2d file name from \"" + v2dLocal + "\"."
+			exit( 0 )
+		createDir = True
+	#  If the .v2d file specification does not have path information, it is assumed
+	#  to be in the directory, which is assumed to exist (we'll check all of this of
+	#  course!).
+	elif v2dPath != None:
+		v2dFile = v2dPath
+	else:
+		#  See if the passDir contains a .v2d file name already.
+		try:
+			idx = passDir.rindex( ".v2d" )
+			try:
+				inx = passDir.rindex( "/" )
+				if inx > idx or len( passDir ) - idx != 4:
+					print "Path \"" + passDir + "\" may contain a .v2d file but looks wrong."
+					exit( 0 )
+				else:
+					v2dFile = passDir[inx + 1:]
+					passDir = passDir[:inx]
+			except ValueError:
+				print "Path \"" + passDir + "\" may contain a .v2d file but looks wrong."
+				exit( 0 )
+		except ValueError:
+			#  Didn't find the .v2d file name, so we'll need to look in the directory
+			#  for it, if that directory exists.  If it DOESN'T, we'll create it and make
+			#  a new .v2d file containing only a .vex specification, if that was given.
+			buildMissingV2d = True
+			locateV2d = True
+
+#  Check the directory name.
+if passDir[0] != "/":
+	print "Experiment directory \"" + passDir + "\" must be a complete path."
+	exit( 0 )
+
+#  Start the vex2difx class, set the version, etc.
+print "Making client connection..."
+difx = DiFXvex2difx.Client()
+difx.connect()
+if not difx.socketOK:
+	difx.close()
+	exit( 0 )
+difx.monitor()
+difx.waitTime( timeout )
+difx.version( DiFXVersion )
+
+#  It is possible we need to build a new .v2d file.  We will only do this when the
+#  specified directory path does not exist and a .vex specification is supplied
+#  with no .v2d specification.
+if buildMissingV2d:
+	#  Do we have a .vex specification?
+	if vexPath != None:
+		#  Make sure the specified directory does not exist.  If it doesn't, cause
+		#  it to be created.
+		dirList = difx.ls( passDir )
+		if dirList == None:
+			createDir = True
+			locateV2d = False
+
+#  Create the specified directory if we are doing that - before we do so, make
+#  sure it doesn't exist already!.
+if createDir:
+	dirList = difx.ls( passDir )
+	if dirList == None:
+		#  Directory doesn't exist!
+		print "Creating directory \"" + passDir + "\"."
+		difx.mkdir( passDir )
+	else:
+		print "\"" + passDir + "\" exists."
+
+#  See that the pass directory exists.
+dirList = difx.ls( passDir, "-l -d" )
+if dirList == None:
+	#  Directory doesn't exist!
+	if createDir:
+		print "\"" + passDir + "\" does not exist - creating the directory must have failed."
+	else:
+		print "this is what we are doing"
+		print "\"" + passDir + "\" does not exist!"
+	difx.close()
+	exit( 0 )
+else:
+	#  Something was returned by the ls command, but we need to be sure it is a directory
+	#  and that we can write there.
+	lineData = dirList[0]
+	#  First character should be a "d" - or its not a directory!
+	if lineData[0] != "d":
+		print "\"" + passDir + "\" does not appear to be a directory."
+		difx.close()
+		exit( 0 )
+	#  Test of we can write something there
+	difx.sendFile( passDir + "/thisisatest", "this is a test" )
+	dirList = difx.ls( passDir + "/thisisatest" )
+	if dirList == None:
+		print "\"" + difx.serverUser + "\" does not appear to have write permission for \"" + passDir + "\"."
+		difx.close()
+		exit( 0 )
+	else:
+		difx.rm( passDir + "/thisisatest" )
+
+#  Locate a .v2d file in that directory if we need to do that.
+if locateV2d:
+	dirList = difx.ls( passDir + "/*.v2d" )
+	if dirList == None:
+		print "Directory \"" + passDir + "\" does not contain any .v2d files."
+		difx.close()
+		exit( 0 )
+	else:
+		try:
+			idx = dirList[0].rfind( "/" )
+			v2dFile = dirList[0][idx + 1:]
+			print "Using existing .v2d file \"" + v2dFile + "\" from directory \"" + passDir + "\"."
+		except:
+			print "Problem parsing a legal .v2d file from \"" + dirList[0] + "\"."
+			difx.close()
+			exit( 0 )
+
+#  Make a copy of a remote .v2d file if so specified.
+fileStr = None
+if copyRemote != None:
+	#  Make sure the remote file exists.
+	dirList = difx.ls( copyRemote )
+	if dirList == None:
+		print "No file \"" + copyRemote + "\" exists on the DiFX server."
+		difx.close()
+		exit( 0 )
+	#  Make sure we can read it (this also gives us the contents, which we use below).
+	fileStr = difx.getFile( copyRemote )
+	if fileStr == None or len( fileStr ) == 0:
+		print "File \"" + copyRemote + "\" cannot be read on the DiFX server."
+		difx.close()
+		exit( 0 )
+
+#  Or make a copy of a local .v2d file if so specified.
+elif copyLocal != None:
+	try:
+		f = open( copyLocal )
+	except IOError:
+		print ".v2d file \"" + copyLocal + "\" does not exist on the local machine."
+		difx.close()
+		exit( 0 )
+	fileStr = f.read()
+	if len( fileStr ) == 0:
+		print ".v2d file \"" + copyLocal + "\" has zero length."
+		difx.close()
+		exit( 0 )
+elif buildMissingV2d:
+	fileStr = "vex = " + vexPath
+	v2dFile = "auto.v2d"
+	print "Creating new .v2d file containing only .vex specification."
+
+#  Either a remote or local .v2d file need to be altered to show the proper .vex path and
+#  then copied to the new experiment directory.
+if copyRemote or copyLocal or buildMissingV2d:
+	#  Were we given a .vex specification?  If so, copy that file to the new directory.
+	#  If not, get the full path of the "vex" instruction from the .v2d content and
+	#  copy that.  In either case, the .v2d content must be altered to point to this
+	#  new .vex file.
+	if vexPath == None and not buildMissingV2d:
+		#  Locate the vexPath in the .v2d file.
+		v2dLines = fileStr.splitlines()
+		foundVexSpec = False
+		for line in v2dLines:
+			if not foundVexSpec and line.strip()[0:3] == "vex" and line.strip()[3:].strip()[0] == "=":
+				foundVexSpec = True
+				vexPath = line.strip()[3:].strip()[1:].strip()
+				#  See if this .vex path is "complete", in that it contains a full path.  We can only
+				#  guess at this - we assume it is complete if the first character is a slash.  If
+				#  not, use the path of the .v2d file as its path (the source of the .vex file
+				#  must be a complete path).
+				if vexPath[0] != "/":
+					#  Not a full path - add the path to the .v2d file.  We can only do this if it is a remote
+					#  file.
+					if copyRemote != None:
+						try:
+							idx = copyRemote.rfind( "/" )
+							vexPath = copyRemote[:idx] + "/" + vexPath
+						except ValueError:
+							print "Problem creating a complete path to .vex file \"" + vexPath + "\"."
+							difx.close()
+							exit( 0 )
+						print "Using \"" + vexPath + "\" as .vex file source."
+					else:
+						print ".v2d file contains incomplete path \"" + vexPath + "\" to .vex file."
+						difx.close()
+						exit( 0 )
+		if vexPath == None:
+			if copyRemote != None:
+				print "No .vex file specification in \"" + copyRemote + "\" - illegal .v2d file!"
+			else:
+				print "No .vex file specification in \"" + copyLocal + "\" - illegal .v2d file!"
+			difx.close()
+			exit( 0 )
+	#  Make sure the specified .vex exists.
+	vexContent = difx.getFile( vexPath )
+	if vexContent == None or len( vexContent ) == 0:
+		print "File \"" + vexPath + "\" cannot be read on the DiFX server."
+		difx.close()
+		exit( 0 )
+	#  Split the file name off of the full path - we'll use the same name in our new directory
+	vexFile = None
+	try:
+		idx = vexPath.rindex( "/" )
+		if idx < len( vexPath ) - 2:
+			difx.sendFile( passDir + "/" + vexPath[idx + 1:], vexContent )
+			vexFile = vexPath[idx + 1:]
+		else:
+			print "No valid .vex file name in \"" + vexPath + "\"."
+			difx.close()
+			exit( 0 )
+	except ValueError:
+		print "Unable to find .vex file name in \"" + vexPath + "\"."
+		difx.close()
+		exit( 0 )
+	#  Replace the name of the .vex file in the .v2d with our new file (no path)
+	#  so that all job creation will be local.
+	if vexFile == None:
+		#  This shouldn't be possible.
+		print "Unknown .vex file."
+		difx.close()
+		exit( 0 )
+	#  Split up the .v2d content and locate the .vex specification.
+	v2dLines = fileStr.splitlines()
+	foundVexSpec = False
+	counter = 0
+	for line in v2dLines:
+		if not foundVexSpec and line.strip()[0:3] == "vex" and line.strip()[3:].strip()[0] == "=":
+			foundVexSpec = True
+			v2dLines[counter] = "vex = " + vexFile + "\n"
+		counter = counter + 1
+	fileStr = "\n".join( v2dLines )
+	difx.sendFile( passDir + "/" + v2dFile, fileStr )
+
+#  Make sure the .v2d file now exists in the specified directory.
+dirList = difx.ls( passDir + "/" + v2dFile );
+if dirList == None:
+	print "\"" + passDir + "/" + v2dFile + "\" does not exist."
+	difx.close()
+	exit( 0 )
+
+#  Add callback functions for different results
+difx.newFileCallback( newFileCallback )
+difx.processCompleteCallback( processCompleteCallback )
+
+#  Set the calc command if the user has set it, otherwise go with the default
+if calcCommand != None:
+	difx.calcCommand( calcCommand )
+
+difx.v2dFile( v2dFile )
+difx.passPath( passDir )
+difx.runVex2Difx()
+
+difx.close()
+

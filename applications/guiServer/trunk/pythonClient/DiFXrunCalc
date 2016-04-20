@@ -1,0 +1,189 @@
+#!/usr/bin/env python
+#\if DOXYGEN_IGNORE ############################################################
+#                                                                              #
+#   Copyright (C) 2016 by John Spitzak                                         #
+#                                                                              #
+#   This program is free software; you can redistribute it and/or modify       #
+#   it under the terms of the GNU General Public License as published by       #
+#   the Free Software Foundation; either version 3 of the License, or          #
+#   (at your option) any later version.                                        #
+#                                                                              #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#   GNU General Public License for more details.                               #
+#                                                                              #
+#   You should have received a copy of the GNU General Public License          #
+#   along with this program; if not, write to the                              #
+#   Free Software Foundation, Inc.,                                            #
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.                  #
+#                                                                              #
+#\endif ########################################################################
+################################################################################
+#\defgroup difxruncalc DiFXrunCalc
+#
+#\brief Run the calc process on a job or group of jobs on the DiFX server.
+#
+#  Usage:  <b><code>DiFXrunCalc [options] directory</code></b>
+#
+#  <i>DiFXrunCalc</i> will run the "calc" process on a group of jobs in a single
+#  specified directory on the DiFX server.  The jobs must have .input and .calc
+#  files associated with them, and may or may not have .im files as well (the
+#  products of previous calc runs which will be over written).  By default all
+#  jobs in the directory will have calc run on them but a subset may be selected
+#  by specifying job names.  The calc process is <i>calcif2</i>, but an alternative
+#  can be used.
+#
+#  <a name=DIFXRUN_ARGS><h3>Command Line Arguments</h3></a>
+#
+#  <table border="0" cellspacing="25">
+#  <tr><td><pre><b>-c, --calc <i>APP</i></b></pre>         <td>Run the given calc application instead of the default
+#                                                          <i>calcif2</i>.
+#  <tr><td><pre><b>-D, --difx <i>VERSION</i></b></pre>     <td>Run using a specific DiFX version.  If not specified
+#                                                          the value of the DIFX_VERSION environment variable will
+#                                                          be used.  Failing that, "DIFX-DEVEL" will be used.
+#  <tr><td><pre><b>-h, --help</b></pre>                    <td>Print help information and quit.
+#  <tr><td><pre><b>-H, --hostname <i>NAME</i></b></pre>    <td>Use <i>NAME</i> as the host of the  DiFX Server program.
+#                                                          Default is to use DIFX_CONTROL_HOST environment variable.
+#  <tr><td><pre><b>-j, --jobs <i>JOBNAMES</i></b></pre>    <td>Run the given calc application on the specified job(s)
+#                                                          within the given directory.  This argument can contain
+#                                                          wildcard characters recognized by an <i>ls</i> command.
+#                                                          Job names do not contain any file extensions.
+#  <tr><td><pre><b>-P, --port <i>PORT</i></b></pre>        <td>Use <i>PORT</i> as the TCP port to communicated with the DiFX Server.
+#                                                          Default is to use DIFX_CONTROL_PORT environment variable.
+#  <tr><td><pre><b>-t, --timeout <i>SEC</i></b></pre>      <td>Use SEC seconds as the timeout value for each job.  This is the
+#                                                          amount of time <i>DiFXrun</i> will wait before it gives up on a
+#                                                          "silent" (i.e. no messages received from) job and declares it
+#                                                          non-responsive.  Default value is 300.0.
+#  </table
+#
+################################################################################
+program = 'DiFXrunCalc'
+version = '0.1'
+author  = 'John Spitzak'
+verdate = '20160411'
+
+import sys
+import time
+import os
+import re
+import threading
+import DiFXvex2difx
+import DiFXControl
+
+def newFileCallback( newFile ):
+	print newFile + " was created"
+
+def processCompleteCallback():
+	print "calc process complete"
+
+#===============================================================================
+#  MAIN
+#===============================================================================
+host = None
+port = None
+timeout = 300.0
+DiFXVersion = None
+calcApp = None
+passDir = None
+jobList = "*"
+
+#  Locate a "default" DiFX Version from environment variables.  User may change this
+#  with command line arguments.
+try:
+	DiFXVersion = os.environ["DIFX_VERSION"]
+except:
+	DiFXVersion = "DIFX-DEVEL"
+
+try:
+	i = 1
+	otherArgs = []
+	argStr = None
+	pathStr = None
+	while i < len( sys.argv ):
+		#  Check against legal argument types.  Anything we don't recognize is assumed
+		#  to be an argument or a path.
+		if sys.argv[i] in [ "-h", "--help" ]:
+			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+			print "Run calc on jobs in the specified directory on the DiFX software correlator."
+			print "Usage: %s [options] <directory>" % ( sys.argv[0] )
+			print ""
+			print "Options can include:"
+			print ""
+			print "   --calc APP"
+			print "   -c APP     Run the given APP as the calc application instead of the"
+			print "              default \"calcif2\"."
+			print ""
+			print "   --difx VERSION"
+			print "   -D VERSION Run using a specific DiFX version.  If not specified"
+			print "              the value of the DIFX_VERSION environment variable will"
+			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
+			print ""
+			print "   --help"
+			print "   -h         Print this help information and quit."
+			print ""
+			print "   --hostname NAME"
+			print "   -H NAME    Use NAME as the host of the difxServer program."
+			print "              Default is to use DIFX_CONTROL_HOST environment variable."
+			print ""
+			print "   --jobs JOBS"
+			print "   -j JOBS    Run calc on the specified jobs within the directory."
+			print "              Wildcard characters are permitted.  Job names do not"
+			print "              contain any file extensions."
+			print ""
+			print "   --port PORT"
+			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
+			print "              Default is to use DIFX_CONTROL_PORT environment variable."
+			print ""
+			exit( 0 )
+		elif sys.argv[i] in [ "-H", "--hostname" ]:
+			host = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "-c", "--calc" ]:
+			calcApp = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "-D", "--difx" ]:
+			DiFXVersion = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "-j", "--jobs" ]:
+			jobList = sys.argv[i+1]
+			i = i + 2
+		elif sys.argv[i] in [ "-P", "--port" ]:
+			port = int( sys.argv[i+1] )
+			i = i + 2
+		elif sys.argv[i] in [ "-t", "--timeout" ]:
+			timeout = int( sys.argv[i+1] )
+			i = i + 2
+		else:
+			passDir = sys.argv[i]
+			i = i + 1
+	
+except RuntimeError:
+	print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
+	exit( 0 )
+	
+#  Start the vex2difx class, set the version, etc.
+print "Making client connection..."
+difx = DiFXvex2difx.Client()
+difx.connect()
+if not difx.socketOK:
+	difx.close()
+	exit( 0 )
+difx.monitor()
+difx.version( DiFXVersion )
+difx.newFileCallback( newFileCallback )
+difx.processCompleteCallback( processCompleteCallback )
+difx.waitTime( timeout )
+
+difx.v2dFile( jobList )
+if calcApp != None:
+	difx.calcCommand( calcApp )
+difx.calcOnly( True )
+if passDir == None:
+	print "Please specify a directory path for this operation."
+else:
+	difx.passPath( passDir )
+	difx.runVex2Difx()
+
+difx.close()
+
