@@ -1,5 +1,5 @@
 /*
- * $Id: vdiforr.c 3822 2016-02-26 15:22:01Z gbc $
+ * $Id: vdiforr.c 3892 2016-04-17 20:01:45Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -19,6 +19,7 @@
 ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 #include "vdifuse.h"
+#include "vdifsig.h"
 
 /*
  * In order to maintain information across oper/read/release
@@ -105,6 +106,8 @@ static uint32_t fusepath_to_index(const char *fusepath)
  *   fh is the file handle
  *   flags are open flags
  *   size and offset are for read operations
+ *   cntxt is used to (try to) recover from bus errors on reads
+ *      to mmap'd data that is not available.
  *
  * For fragments, the fusepath has a corresponding realpath, so
  * we use pread to just provide the required bytes; there is no
@@ -232,10 +235,10 @@ static int read_realpath(const char *fusepath, char *buf, FFInfo *ffi)
 /*
  * Switch in to the sequence handlers.
  */
-static int do_vorr_read(const char *fpath, char *buf, FFInfo *ffi)
+int do_vorr_read(const char *fpath, char *buf, FFInfo *ffi)
 {
     static unsigned long cnt = 0;
-    static long max_read = 0;
+    static long max_read = 0, hlf_read = 0;
     int res;
     FFInfo *ffp;
     if (ffi->fh == vorrfd) return(-EBADF);  /* should not happen */
@@ -250,10 +253,13 @@ static int do_vorr_read(const char *fpath, char *buf, FFInfo *ffi)
     case VDIFUSE_STYPE_SGV2: res = read_sgv2_seq(buf, ffp); break;
     default:                 res = -ENOENT;                 break;
     }
+    /* not sure if we get here */
+    if (vdsig_trap_rv) vdifuse_trace(VDT("vdsig: WTF %d\n"), vdsig_trap_rv);
     /* empirically 32*4096 = 131072 is the kernel max_read on current Mark6 */
     if (res > 0) ffp->totrb += res;
     if (max_read == 0) max_read = 32 * sysconf(_SC_PAGESIZE);
-    if ((ffp->size != res) || (res != max_read))
+    if (hlf_read == 0) hlf_read = 16 * sysconf(_SC_PAGESIZE);
+    if (!( (ffp->size == res) || (res == max_read) || (res == hlf_read) ))
         vdifuse_trace(VDT("Read[%d] %lu:%lu %d, %lu %lu\n"),
             ffp->fh, ffp->offset, ffp->size, res, cnt, ffp->totrb);
     if (res < 0) {
@@ -278,12 +284,21 @@ static int do_vorr_read(const char *fpath, char *buf, FFInfo *ffi)
  */
 #include <pthread.h>
 
+/*
+ * The vdsig_*() routines trap SIGBUS for mmap errors on read to
+ * bad disk areas.  The volatile vdsig_trap_rv will be set to
+ * an error condition (for return), and we do not then call the
+ * work routines as we already did (see getcontext/setcontext).
+ */
+
 int vorr_open(const char *fusepath, FFInfo *ffi)
 {
     static pthread_mutex_t vdifuse_mutex = PTHREAD_MUTEX_INITIALIZER;
     int res;
     pthread_mutex_lock(&vdifuse_mutex);
-    res = do_vorr_open(fusepath, ffi);
+    vdsig_open_prep(ffi);
+    res = (vdsig_trap_rv) ? vdsig_trap_rv : do_vorr_open(fusepath, ffi);
+    vdsig_open_done(ffi, res);
     pthread_mutex_unlock(&vdifuse_mutex);
     return(res);
 }
@@ -293,7 +308,9 @@ int vorr_read(const char *fpath, char *buf, FFInfo *ffi)
     static pthread_mutex_t vdifuse_mutex = PTHREAD_MUTEX_INITIALIZER;
     int res;
     pthread_mutex_lock(&vdifuse_mutex);
-    res = do_vorr_read(fpath, buf, ffi);
+    vdsig_read_prep(&FFIcache[ffi->fh]);
+    res = (vdsig_trap_rv) ? vdsig_trap_rv : do_vorr_read(fpath, buf, ffi);
+    vdsig_read_done(&FFIcache[ffi->fh], res);
     pthread_mutex_unlock(&vdifuse_mutex);
     return(res);
 }
@@ -303,7 +320,9 @@ int vorr_release(const char *fusepath, FFInfo *ffi)
     static pthread_mutex_t vdifuse_mutex = PTHREAD_MUTEX_INITIALIZER;
     int res;
     pthread_mutex_lock(&vdifuse_mutex);
-    res = do_vorr_release(fusepath, ffi);
+    vdsig_release_prep(&FFIcache[ffi->fh]);
+    res = (vdsig_trap_rv) ? vdsig_trap_rv : do_vorr_release(fusepath, ffi);
+    vdsig_release_done(&FFIcache[ffi->fh], res);
     pthread_mutex_unlock(&vdifuse_mutex);
     return(res);
 }

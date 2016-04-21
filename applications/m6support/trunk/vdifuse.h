@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.h 3815 2016-02-25 18:04:37Z gbc $
+ * $Id: vdifuse.h 3894 2016-04-17 22:30:56Z gbc $
  *
  * This file provides support for the fuse interface
  */
@@ -98,6 +98,11 @@ typedef struct vdifuse_pars {
     uint32_t    writeblocker;       /* write blocking buf.size */
     uint32_t    pkts_per_sec;       /* nominal packet rate */
     float       dropfraction;       /* ## rate of dropped packets */
+    uint32_t    catchbuserrs;       /* activate bus error handler */
+    uint32_t    reserved_one;       /* reserved for future use */
+    uint32_t    reserved_two;       /* reserved for future use */
+    uint32_t    reserved_tre;       /* reserved for future use */
+    uint32_t    reserved_fur;       /* reserved for future use */
     /* topdir names for fragments and sequences */
     char        frag_top_dir[VDIFUSE_TOPDIR_SIZE];
     char        seqs_top_dir[VDIFUSE_TOPDIR_SIZE];
@@ -184,6 +189,7 @@ typedef struct ffi_info {
     int             errors; /* for support on errors */
     void            *sdata; /* private per-subtype state data */
     void            *sfrag; /* private per-subtype per-fragment data */
+    void            *cntxt; /* private per-file signal context data */
 } FFInfo;
 extern int vorrfd, realfd;  /* reserved fd in info cache */
 extern int vorr_init(void);

@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsup.c 3815 2016-02-25 18:04:37Z gbc $
+ * $Id: vdifsup.c 3898 2016-04-21 19:56:37Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -25,6 +25,15 @@
  * but that the indices in the cache should be stable.
  */
 static VDIFUSEpars clvpo = { .creation.tv_sec = 1 };
+//static VDIFUSEpars clvpo = {
+//    .noduplicates = 0,
+//    .how_rigorous = VDIFUSE_RIGOR_MAGIC | VDIFUSE_RIGOR_MINSIZE,
+//    .seqhierarchy = 3,
+//    .writeblocker = 10000000,
+//    .pkts_per_sec = 125000,
+//    .catchbuserrs = 1,
+//    .creation.tv_sec = 1
+//};
 static char *filelistprefix = ".";
 
 #define VDIFUSE_CACHE_CHUNK 8
@@ -277,6 +286,7 @@ static int create_params_entry(void)
     vd_cache[ee].u.vpars.prefix_bytes = clvpo.prefix_bytes;
     vd_cache[ee].u.vpars.offset_bytes = clvpo.offset_bytes;
     vd_cache[ee].u.vpars.searchwindow = clvpo.searchwindow;
+    vd_cache[ee].u.vpars.catchbuserrs = clvpo.catchbuserrs;
     vd_cache[ee].u.vpars.max_pkts_gap = clvpo.max_pkts_gap;
     vd_cache[ee].u.vpars.max_secs_gap = clvpo.max_secs_gap;
     vd_cache[ee].u.vpars.how_rigorous = clvpo.how_rigorous;
@@ -602,7 +612,8 @@ int describe_params(VDIFUSEntry *vp)
         vp->u.vpars.creation.tv_sec, vp->u.vpars.creation.tv_usec,
         ctime(&birth));
     if (vdifuse_debug>2) fprintf(vdflog, 
-        "  prefix_bytes=%u offset_bytes=%u searchwindow=%u\n"
+        "  prefix_bytes=%u offset_bytes=%u searchwindow=%u "
+          "bus_errors=%u\n"
         "  max_pkts_gap=%u max_secs_gap=%f "
             "how_rigorous=" VDIFUSE_RIGOR_PRINTF "\n"
         "  noduplicates=%u seqhierarchy=%u writeblocker=%u\n"
@@ -611,6 +622,7 @@ int describe_params(VDIFUSEntry *vp)
         vp->u.vpars.prefix_bytes,
         vp->u.vpars.offset_bytes,
         vp->u.vpars.searchwindow,
+        vp->u.vpars.catchbuserrs,
         vp->u.vpars.max_pkts_gap,
         vp->u.vpars.max_secs_gap,
         vp->u.vpars.how_rigorous,
@@ -951,6 +963,7 @@ int get_vdifuse_sequence(int ii, char **name, struct stat **stbuf)
         sdir = vseq->u.vseqi[sndx = 0];
     } else {                        /* pick up where we left off */
         if (++sndx == VDIFUSE_MAX_SEQI) {
+            if (vseq->cindex == 0) return(0);
             vseq = &vd_cache[vseq->cindex];
             sndx = 0;
         }
@@ -984,7 +997,7 @@ int get_sequence_subdir(const char *path)
         if (vd_cache[ii].etype != VDIFUSE_ENTRY_SEQUENCE &&
             vd_cache[ii].etype != VDIFUSE_ENTRY_DIRECTORY) continue;
         if (strcmp(path, vd_cache[ii].fuse)) continue;
-        if (vdifuse_debug>1) fprintf(vdflog, "Found %s at %d\n", path, ii);
+        if (vdifuse_debug>1) fprintf(vdflog, "Found %s entry %d\n", path, ii);
         return(ii);
     }
     return(0);
@@ -1002,6 +1015,7 @@ int get_vdifuse_subdir(int ii, char **name, struct stat **stbuf)
         sdir = vseq->u.vseqi[sndx = 0];
     } else {
         if (++sndx == VDIFUSE_MAX_SEQI) {   /* pick up where we left off */
+            if (vseq->cindex == 0) return(0);
             vseq = &vd_cache[vseq->cindex];
             sndx = 0;
         }
@@ -1120,6 +1134,8 @@ static int vdifuse_options_help(void)
         clvpo.offset_bytes);
     fprintf(vdflog, "! window=<int>  # of bytes (%u) slop on these\n",
         clvpo.searchwindow);
+    fprintf(vdflog, "  buserr=<int>  catch bus errors (%u)\n",
+        clvpo.catchbuserrs);
     fprintf(vdflog, "! gap=<int>     max # of packets between (%u) files\n",
         clvpo.max_pkts_gap);
     fprintf(vdflog, "! gaps=<float>  max # of seconds between (%g) files\n",
@@ -1233,6 +1249,10 @@ int vdifuse_options(char *arg)
         clvpo.searchwindow = atoi(arg + 7);
         if (vdifuse_debug>0) fprintf(vdflog,
             "Allowing %u bytes of slop in searches\n", clvpo.searchwindow);
+    } else if (!strncmp(arg, "buserr=", 7)) {
+        clvpo.catchbuserrs = atoi(arg + 7);
+        if (vdifuse_debug>0) fprintf(vdflog,
+            "Bus error trapping: %s\n", clvpo.catchbuserrs ? "On" : "Off");
     } else if (!strncmp(arg, "gaps=", 5)) {
         clvpo.max_secs_gap = atof(arg + 5);
         if (vdifuse_debug>0) fprintf(vdflog,
@@ -1332,13 +1352,15 @@ int vdifuse_options(char *arg)
         if (vdifuse_debug>0) fprintf(vdflog,
             "Development setup for general file usage.\n");
         clvpo.noduplicates = 1;
+        clvpo.writeblocker = 0;
         clvpo.how_rigorous = VDIFUSE_RIGOR_ENAME | VDIFUSE_RIGOR_MINSIZE;
-        clvpo.seqhierarchy = 3;
     } else if (!strncmp(arg, "m6sg", 4)) {
         if (vdifuse_debug>0) fprintf(vdflog,
-            "Development setup for Mark6 SG vers 2.\n");
-        vdifuse_protect = 0;
+            "Development setup Mark6 SG vers 2.\n");
+        vdifuse_protect = 1;
+        vdifuse_reuse = 1;
         clvpo.noduplicates = 0;
+        clvpo.catchbuserrs = 1;
         clvpo.how_rigorous = VDIFUSE_RIGOR_MAGIC | VDIFUSE_RIGOR_MINSIZE;
         clvpo.seqhierarchy = 3;
         clvpo.writeblocker = 10000000;
@@ -1347,8 +1369,8 @@ int vdifuse_options(char *arg)
         if (vdifuse_debug>0) fprintf(vdflog,
             "Development setup for Mark6 Raid.\n");
         clvpo.noduplicates = 1;
+        clvpo.writeblocker = 0;
         clvpo.how_rigorous = VDIFUSE_RIGOR_ENAME | VDIFUSE_RIGOR_MINSIZE;
-        clvpo.seqhierarchy = 3;
     } 
 
     return(0);

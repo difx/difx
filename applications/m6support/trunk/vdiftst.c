@@ -1,5 +1,5 @@
 /*
- * $Id: vdiftst.c 3815 2016-02-25 18:04:37Z gbc $
+ * $Id: vdiftst.c 3894 2016-04-17 22:30:56Z gbc $
  *
  * This file provides support for the fuse interface.
  * This file contains methods to label a file as valid VDIF.
@@ -580,6 +580,7 @@ static int analyze_fragment_sgv2_harder(const char *path, struct stat *vfuse,
     } else {
         /* totally screwed, this is just for reportage */
         err += 30000;
+        num_pkts = 0;
     }
     
     /* get a final header */

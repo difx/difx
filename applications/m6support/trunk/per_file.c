@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 3492 2015-10-05 19:37:21Z gbc $
+ * $Id: per_file.c 3893 2016-04-17 20:23:00Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -44,6 +44,8 @@ static struct checker_work {
     uint32_t    trial_seed;         /* random number seed */
     uint32_t    pkts_loops;         /* number of packets to hit */
     uint32_t    pkts_runs;          /* number of packets in a row */
+    uint32_t    pkts_seqstarter;    /* starting point for seq check */
+    uint32_t    pkts_seqoffset;     /* seq check current offset */
     uint32_t    stat_octets;        /* max number of samples/packet */
     uint32_t    stat_delta;         /* dump stats after so many pkts */
     uint32_t    station_mask;       /* bits of station to check */
@@ -138,9 +140,8 @@ static uint32_t *random_packet_sg(int *nlp, uint32_t **endp)
  */
 static uint32_t *sequence_packet_sg(int *nlp, uint32_t **endp)
 {
-    static off_t ww = 0;
-    uint32_t *pkt = sg_pkt_by_num(&work.sgi, ww, nlp, endp);
-    ww ++;
+    uint32_t *pkt = sg_pkt_by_num(&work.sgi, work.pkts_seqoffset, nlp, endp);
+    work.pkts_seqoffset ++;
     return(pkt);
 }
 
@@ -166,12 +167,11 @@ static uint32_t *random_packet_fl(int *nlp, uint32_t **endp)
 static uint32_t *sequence_packet_fl(int *nlp, uint32_t **endp)
 {
     void *pktp;
-    static off_t ww = 0;
-    pktp = work.sgi.smi.start + ww * (off_t)work.sgi.read_size;
+    pktp = work.sgi.smi.start + work.pkts_seqoffset * (off_t)work.sgi.read_size;
     *endp = work.sgi.smi.eomem;
     *nlp = (work.sgi.smi.eomem - pktp) / (off_t)work.sgi.read_size;
     pktp += work.sgi.pkt_offset;
-    ww ++;
+    work.pkts_seqoffset ++;
     return((uint32_t *)pktp);
 }
 
@@ -481,16 +481,17 @@ static void progress(int signum)
 {
     if (signum != SIGQUIT) return;
     fprintf(stdout,
-        "\n%05d:%s (%lu pass %lu fail %lu time %lu fill)/%lu\n",
+        "%05d:%s (%lu pass %lu fail %lu time %lu fill)/%lu\n",
         work.cur_numb, work.cur_file,
         work.pkts_passed, work.pkts_failed,
         work.pkts_timing, work.pkts_filled, work.pkts_tested);
 }
 static void all_done(int signum)
 {
-    if (signum != SIGALRM && signum != SIGINT) return;
+    if (signum != SIGALRM && signum != SIGINT && signum != SIGBUS) return;
     if (signum == SIGALRM) fprintf(stdout, "alarm: Timeout!\n");
     if (signum == SIGINT) fprintf(stdout, "signal: Interrupt!\n");
+    if (signum == SIGBUS) fprintf(stdout, "signal: bus error!\n");
 
     /* now perform the cleanup work from m6sc_per_file() */
     sg_close(&work.sgi);
@@ -504,20 +505,52 @@ static void all_done(int signum)
 }
 
 /*
+ * Handler for bus errors; see sigaction() man page for details.
+ * We have no use for the context pointer (ucontext_t *) at the
+ * moment; but it looks like one can in general save previous context
+ * and recover....
+ */
+static void buserror(int signum, siginfo_t *info, void *cptr)
+{
+    if (signum != SIGBUS) return;
+    fprintf(stderr, "signal: bus error at address %p, after %luB!\n",
+        info->si_addr, info->si_addr - work.sgi.smi.start);
+    switch(info->si_code) {
+    case BUS_ADRALN: fprintf(stderr,"Invalid address alignment.\n"); break;
+    case BUS_ADRERR: fprintf(stderr,"Nonexistent physical address.\n"); break;
+    case BUS_OBJERR: fprintf(stderr,"Object-specific hardware error.\n"); break;
+    default: fprintf(stderr,"No idea what happened here.\n"); break;
+    }
+
+    /* try to end gracefully */
+    all_done(signum);
+    exit(3);
+}
+
+/*
  * SIGQUIT is made available to the human for a progress report
  * SIGALRM is set to limit total processing time.
  *
  * Cannot set signals if python is in use (multi-threaded app),
- * but still need to compute and respect the time limits.
+ * but still need to compute and respect the time limits.  This
+ * is controlled by a global variable (ispy) which limits use of
+ * set_alarm_sig().  (If alarms were set under python usage, the
+ * main application would get clobbered.)
+ *
+ * For disk corruption, we also look for bus errors.
  */
 static int set_alarm_sig(int files)
 {
-    struct sigaction bail, chck;
+    struct sigaction bail, chck, berr;
     unsigned int alarm_secs;
 
     chck.sa_handler = progress;
     sigemptyset(&chck.sa_mask);
     chck.sa_flags = 0;
+
+    berr.sa_sigaction = buserror;
+    sigemptyset(&berr.sa_mask);
+    berr.sa_flags = SA_SIGINFO;
 
     work.total_process_secs = 0.0;
     if (work.alarm_secs > 0.0) {
@@ -537,6 +570,8 @@ static int set_alarm_sig(int files)
             return(perror("sigaction"),1);
     }
 
+    if (sigaction(SIGBUS, &berr, (struct sigaction*)0))
+        return(perror("sigaction"),1);
     if (sigaction(SIGQUIT, &chck, (struct sigaction*)0))
         return(perror("sigaction"),1);
     if (verb>1) fprintf(stdout,
@@ -571,6 +606,8 @@ static int help_chk_opt(void)
         work.pkts_loops);
     fprintf(stdout, "  runs=<int>       approx # packets/spot (%u)\n",
         work.pkts_runs);
+    fprintf(stdout, "  starter=<int>    start packets in (%u, sequential)\n",
+        work.pkts_seqstarter);
     fprintf(stdout, "  stats=<int>      # octets/packet to test (%u)\n",
         work.stat_octets);
     fprintf(stdout, "  sdelta=<int>     dump statistics after (%u) pkts\n",
@@ -589,6 +626,7 @@ static int help_chk_opt(void)
     fprintf(stdout, "the program will start at the beginning and run\n");
     fprintf(stdout, "through the number of packets specified by runs.\n");
     fprintf(stdout, "To do the whole file sequentially, set runs=0.\n");
+    fprintf(stdout, "To start in the middle, use starter\n");
     fprintf(stdout, "Use exthdr=help for help with those options.\n");
 
     fprintf(stdout, "The ofs= argument supplies an offset in the pkt\n");
@@ -637,6 +675,10 @@ int m6sc_set_chk_opt(const char *arg)
         work.pkts_runs = atoi(arg+5);
         if (verb>1) fprintf(stdout,
             "opt: Sequences of %u packets per loop\n", work.pkts_runs);
+    } else if (!strncmp(arg, "starter=", 8)) {
+        work.pkts_seqstarter = atoi(arg+8);
+        if (verb>1) fprintf(stdout,
+            "opt: Starting %u packets into file\n", work.pkts_seqstarter);
     } else if (!strncmp(arg, "stats=", 6)) {
         work.stat_octets = atoi(arg+6);
         if (work.stat_octets > SG_MAX_VDIF_BYTES/8)
@@ -692,6 +734,8 @@ char *m6sc_get_chk_opt(const char *arg)
         snprintf(answer, sizeof(answer), "%u", work.pkts_loops);
     } else if (!strncmp(arg, "runs", 4)) {
         snprintf(answer, sizeof(answer), "%u", work.pkts_runs);
+    } else if (!strncmp(arg, "starter", 7)) {
+        snprintf(answer, sizeof(answer), "%u", work.pkts_seqstarter);
     } else if (!strncmp(arg, "stats", 5)) {
         snprintf(answer, sizeof(answer), "%u", work.stat_octets);
     } else if (!strncmp(arg, "sdelta", 6)) {
@@ -738,6 +782,7 @@ int m6sc_per_file(const char *file, int files, int verbose)
 
     /* per-file initializations */
     work.cur_numb = n;
+    work.pkts_seqoffset = work.pkts_seqstarter;
     strcpy((work.cur_file = malloc(strlen(file) + 2)), file);
     work.pkts_timing = work.pkts_tested = 0;
     work.pkts_passed = work.pkts_failed = 0;

@@ -1,11 +1,12 @@
 /*
- * $Id: vdifopt.c 3815 2016-02-25 18:04:37Z gbc $
+ * $Id: vdifopt.c 3897 2016-04-21 19:06:31Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we do the command-line processing to drive the support for fuse.
  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -240,6 +241,17 @@ static void vdifuse_plans(int oargc, char **oargv, int nargc, char **nargv)
 }
 
 /*
+ * Unmount the mount point with fusermount
+ */
+static int unmount_mp(char *mp)
+{
+    char *fusermount = malloc(strlen(mp) + strlen("fusermount -u....."));
+    sprintf(fusermount, "fusermount -u %s", mp);
+    if (vdifuse_debug > 0) fprintf(stderr, "Invoking: %s\n", fusermount);
+    return(system(fusermount));
+}
+
+/*
  * Check to see if the requested mount point is already in use.
  * IF so, the vdifuse_reuse flag will determine what happens next.
  */
@@ -248,7 +260,6 @@ static int mount_in_use(char *mp)
     DIR *dp;
     struct dirent de, *dep;
     int cnt = 0;
-    char *fusermount;
     dp = opendir(mp);
     if (!dp) return(fprintf(stderr, "%s isn't usable\n", mp));
     while (1) {
@@ -267,11 +278,7 @@ static int mount_in_use(char *mp)
         "entries.  If you want to co-opt it for you use, unmount with:\n"
         "\n    fusermount -u %s\n",
         mp, cnt, mp));
-    fusermount = malloc(strlen(mp) + strlen("fusermount -u.."));
-    sprintf(fusermount, "fusermount -u %s", mp);
-    if (vdifuse_debug > 0) fprintf(stderr, "Invoking: %s\n", fusermount);
-    if (vdifuse_reuse != 0) return(system(fusermount));
-    return(fprintf(stderr, "Puzzling logic problem\n"));
+    return(unmount_mp(mp));
 }
 
 /*
@@ -305,6 +312,13 @@ static int vdifuse_implement(void)
     if (vdifuse_vdlist &&
         vdifuse_report_filelist(vdifuse_cache, &sb))
             return(fprintf(stderr, "Cache unusable for filelist\n"));
+
+    if (vdifuse_mount &&
+        (stat(vdifuse_mount, &mp) < 0) &&
+        errno == ENOTCONN) {
+        if (unmount_mp(vdifuse_mount))  /* recovery from broken mount */
+            return(fprintf(stderr, "Unable to Unmount via fusermount\n"));
+    }
 
     if (vdifuse_mount) {
         if (stat(vdifuse_mount, &mp))

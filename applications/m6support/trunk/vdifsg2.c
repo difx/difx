@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.c 3832 2016-03-17 19:22:31Z gbc $
+ * $Id: vdifsg2.c 3883 2016-04-16 16:29:05Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -1779,12 +1779,12 @@ static int do_read_sgv2_seq(char *buf, FFInfo *ffi)
 
 int read_sgv2_seq(char *buf, FFInfo *ffi)
 {
-    static pthread_mutex_t vdifsg2_mutex = PTHREAD_MUTEX_INITIALIZER;
+    // static pthread_mutex_t vdifsg2_mutex = PTHREAD_MUTEX_INITIALIZER;
     int rb;
-    pthread_mutex_lock(&vdifsg2_mutex);
+    // pthread_mutex_lock(&vdifsg2_mutex);
     rb = do_read_sgv2_seq(buf, ffi);
     if (rb != ffi->size) vdifuse_flush_bread();
-    pthread_mutex_unlock(&vdifsg2_mutex);
+    // pthread_mutex_unlock(&vdifsg2_mutex);
     return(rb);
 }
 
