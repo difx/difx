@@ -355,8 +355,6 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 }
 
 
-/* FIXME: the function below is broken w.r.t. multiple datastreams per antenna */
-
 /* Inputs:
  *   D         -- pointer to DifxInput structure
  *   configId  -- index for D->config (must be in [0 to D->nConfig-1])
@@ -411,7 +409,14 @@ int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 		/* now compare the absolute antennaIds */
 		if(antennaId == ds->antennaId)
 		{
-			break;
+			if(recBand < ds->nRecBand)
+			{
+				break;
+			}
+			else
+			{
+				recBand -= ds->nRecBand;
+			}
 		}
 	}
 
