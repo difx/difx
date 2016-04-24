@@ -44,6 +44,7 @@ const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH] =
 	"NETWORK",
 	"FAKE",
 	"MARK6",
+	"SHAREDMEMORY",
 	"UNSPECIFIED",	/* should be second to last entry */
 	"ERROR"		/* takes place of NumDataSources */
 };

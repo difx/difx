@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -3948,59 +3948,6 @@ int DifxInputGetMaxTones(const DifxInput *D)
 	}
 
 	return maxTones;
-}
-
-int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId)
-{
-	int s;
-
-	if(!D)
-	{
-		return -2;
-	}
-
-	if(jobId < 0 || jobId >= D->nJob)
-	{
-		return -3;
-	}
-
-	if(antId < 0 || antId >= D->nAntenna)
-	{
-		return -4;
-	}
-
-	/* This is a bit convoluted.  Loop over scans attempting to connect a configId to the jobId, ... */
-	for(s = 0; s < D->nScan; ++s)
-	{
-		int configId;
-		int d;
-
-		if(D->scan[s].jobId != jobId)
-		{
-			continue;
-		}
-		configId = D->scan[s].configId;
-		if(configId < 0 || configId >= D->nConfig)
-		{
-			continue;
-		}
-		for(d = 0; d < D->config[configId].nDatastream; d++)
-		{
-			int dsId;
-
-			dsId = D->config[configId].datastreamId[d];
-			if(dsId < 0 || dsId >= D->nDatastream)
-			{
-				continue;
-			}
-			if(D->datastream[dsId].antennaId == antId)
-			{
-				return dsId;
-			}
-		}
-	}
-
-	return -1;
 }
 
 int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int baselineFreq)

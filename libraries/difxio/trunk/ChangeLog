@@ -20,6 +20,7 @@
   - Some new capabilities commented out with  "#ifdef RA_MERGED .. #endif" constructs, awaiting changes in mpifxcorr
 * New utility: avgDiFX: program to average two .difx/DIFX... files and their parent filesets.
 * Make DataSourceNone a legitimate (non-default) source of data.  DataSourceUnspecified now takes the role of an uninitialized value.  
+* Remove ill-conceived functions: DifxInputGetDatastreamId, 
 
 3.4.0
 * Fix X/Y polarization issue

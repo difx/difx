@@ -354,6 +354,9 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 	return -1;
 }
 
+
+/* FIXME: the function below is broken w.r.t. multiple datastreams per antenna */
+
 /* Inputs:
  *   D         -- pointer to DifxInput structure
  *   configId  -- index for D->config (must be in [0 to D->nConfig-1])

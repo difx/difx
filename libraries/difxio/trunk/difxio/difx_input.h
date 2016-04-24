@@ -115,6 +115,7 @@ enum DataSource
 	DataSourceNetwork,
 	DataSourceFake,
 	DataSourceMark6,
+	DataSourceSharedMemory,
 	DataSourceUnspecified,	/* must remain as second last entry */
 	NumDataSources		/* must remain as last entry */
 };
@@ -939,7 +940,6 @@ int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInpu
 int DifxInputGetMaxTones(const DifxInput *D);
 int DifxInputGetMaxPhaseCentres(const DifxInput *D);
 int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int baselineFreq);
-int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
 int DifxInputSimFXCORR(DifxInput *D);
 int DifxInputGetPointingCentreSource(const DifxInput *D, int sourceId);
