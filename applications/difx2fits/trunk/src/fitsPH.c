@@ -578,6 +578,7 @@ static int parseDifxPulseCal(const char *line,
 {
 	const DifxFreq *df;
 	const DifxDatastream *dd;
+	const DifxConfig *dc;
 	int nt;		/* Max number of tones per band which equals number of tone records per rec band in the PCAL file */
 	int nRecBand, nIF, nRecTone;
 	double toneFreq[array_MAX_TONES];
@@ -751,7 +752,9 @@ static int parseDifxPulseCal(const char *line,
 		return -5;
 	}
 
-	dt = D->config[*configId].tInt/(86400.0*2.001);  
+	dc = D->config + *configId;
+
+	dt = dc->tInt/(86400.0*2.001);  
 	if(D->scan[*scanId].mjdStart > mjd-dt || D->scan[*scanId].mjdEnd < mjd+dt)
 	{
 		return -6;
@@ -766,10 +769,16 @@ static int parseDifxPulseCal(const char *line,
 	for(band = 0; band < dd->nRecBand; ++band)
 	{
 		int toneCount;
+		int localFqId;
 
 		toneCount = 0;
 
-		DifxConfigRecBand2FreqPol(D, *configId, dd->antennaId, band, &recFreq, &bandPol);
+		localFqId = dd->recBandFreqId[band];
+		recFreq = dd->recFreqId[localFqId];
+		bandPol = DifxConfigGetPolId(dc, dd->recBandPolName[band]);
+
+		df = D->freq + recFreq;
+
 		/* this pol/band combination is not used.  Read all of the dummies from PCAL file */
 		for(tone = 0; tone < nt; ++tone)	/* nt is taken from line header and is max number of tones */
 		{
@@ -793,8 +802,6 @@ static int parseDifxPulseCal(const char *line,
 				return -8;
 			}
 			line += p;
-
-			df = D->freq + recFreq;
 
 			/* set up pcal information for this recFreq (only up to nRecTones)*/
 			/* nRecTone is simply the number of tones that fall within the recorded band */
