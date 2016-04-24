@@ -34,7 +34,7 @@
 #include <fftw3.h>
 #include "fitsUV.h"
 
-#define MAX_SNIFFER_MEMORY 1000000000LL
+#define MAX_SNIFFER_MEMORY 2000000000LL
 
 struct _Sniffer;
 

@@ -718,10 +718,17 @@ static int parseDifxPulseCal(const char *line,
 		return -2;
 	}
 
-	currentDsId = D->job[jobId].datastreamIdRemap[originalDsId];
-	if(currentDsId < 0)
+	if(D->job[jobId].datastreamIdRemap)
 	{
-		return -9;
+		currentDsId = D->job[jobId].datastreamIdRemap[originalDsId];
+		if(currentDsId < 0)
+		{
+			return -9;
+		}
+	}
+	else
+	{
+		currentDsId = originalDsId;
 	}
 
 	dd = D->datastream + currentDsId;
@@ -1185,16 +1192,21 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			{
 				int mergedDsId;
 
-				mergedDsId = D->job[jobId].datastreamIdRemap[originalDsIds[d]];
+				if(D->job[jobId].datastreamIdRemap)
+				{
+					mergedDsId = D->job[jobId].datastreamIdRemap[originalDsIds[d]];
+				}
+				else
+				{
+					mergedDsId = originalDsIds[d];
+				}
 				if(mergedDsId >= 0)
 				{
 					int ct;
 
 					ct = countTones(&(D->datastream[mergedDsId]));
 					nt += ct;
-					startTones[d+1] = startTones[d] + ct;
-
-printf("StartTones: d=%d  ods=%d  st=%d\n", d, originalDsIds[d], startTones[d]);
+					startTones[d+1] = startTones[d] + ct*D->datastream[mergedDsId].nRecBand;
 				}
 				else
 				{
@@ -1274,7 +1286,14 @@ printf("StartTones: d=%d  ods=%d  st=%d\n", d, originalDsIds[d], startTones[d]);
 			{
 				int mergedDsId;
 
-				mergedDsId = D->job[jobId].datastreamIdRemap[originalDsIds[d]];
+				if(D->job[jobId].datastreamIdRemap)
+				{
+					mergedDsId = D->job[jobId].datastreamIdRemap[originalDsIds[d]];
+				}
+				else
+				{
+					mergedDsId = originalDsIds[d];
+				}
 				if(mergedDsId >= 0)
 				{
 					nDifxAntennaTones += countTones(&(D->datastream[mergedDsId]));
@@ -1432,7 +1451,14 @@ printf("StartTones: d=%d  ods=%d  st=%d\n", d, originalDsIds[d], startTones[d]);
 								continue;	/* to next line in file */
 							}
 
-							currentDsId = D->job[jobId].datastreamIdRemap[originalDsId];
+							if(D->job[jobId].datastreamIdRemap)
+							{
+								currentDsId = D->job[jobId].datastreamIdRemap[originalDsId];
+							}
+							else
+							{
+								currentDsId = originalDsId;
+							}
 
 							mjdRecord = time - refDay + (int)(D->mjdStart);
 
