@@ -1379,9 +1379,13 @@ bool Configuration::processDatastreamTable(ifstream * input)
     } else if(line == "VDIFL") {
       datastreamtable[i].format = VDIFL;
     } else if(line.substr(0,14) == "INTERLACEDVDIF") {
+      if(line.length()<15) {
+        cfatal << startl << "Data format " << line << " too short, expected thread information, see vex2difx documentation" << endl;
+        return false;
+      }
       datastreamtable[i].format = INTERLACEDVDIF;
       datastreamtable[i].ismuxed = true;
-      setDatastreamMuxInfo(i, line.substr(15));
+      setDatastreamMuxInfo(i, line.substr(15,string::npos));
     }
     else
     {
