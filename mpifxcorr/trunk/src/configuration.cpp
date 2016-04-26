@@ -214,8 +214,8 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
     {
       freq = freqtable[getBFreqIndex(i,0,0)];
       configs[i].minpostavfreqchannels = freq.numchannels/freq.channelstoaverage;
-      configs[i].frequsedbybaseline = new bool[freqtablelength];
-      configs[i].equivfrequsedbybaseline = new bool[freqtablelength];
+      configs[i].frequsedbybaseline = new bool[freqtablelength]();
+      configs[i].equivfrequsedbybaseline = new bool[freqtablelength]();
       for(int j=0;j<freqtablelength;j++) {
 	configs[i].frequsedbybaseline[j] = false;
 	configs[i].equivfrequsedbybaseline[j] = false;
@@ -926,7 +926,7 @@ bool Configuration::processBaselineTable(ifstream * input)
 
   getinputline(input, &line, "BASELINE ENTRIES");
   baselinetablelength = atoi(line.c_str());
-  baselinetable = new baselinedata[baselinetablelength];
+  baselinetable = new baselinedata[baselinetablelength]();
   estimatedbytes += baselinetablelength*sizeof(baselinedata);
   if(baselinetablelength < numbaselines)
   {
@@ -938,7 +938,7 @@ bool Configuration::processBaselineTable(ifstream * input)
   for(int i=0;i<baselinetablelength;i++)
   {
     //read in the info for this baseline
-    baselinetable[i].localfreqindices = new int[freqtablelength];
+    baselinetable[i].localfreqindices = new int[freqtablelength]();
     baselinetable[i].totalbands = 0;
     getinputline(input, &line, "D/STREAM A INDEX ", i);
     baselinetable[i].datastream1index = atoi(line.c_str());
@@ -946,25 +946,25 @@ bool Configuration::processBaselineTable(ifstream * input)
     baselinetable[i].datastream2index = atoi(line.c_str());
     getinputline(input, &line, "NUM FREQS ", i);
     baselinetable[i].numfreqs = atoi(line.c_str());
-    baselinetable[i].oddlsbfreqs = new int[baselinetable[i].numfreqs];
-    baselinetable[i].numpolproducts = new int[baselinetable[i].numfreqs];
-    baselinetable[i].datastream1bandindex = new int*[baselinetable[i].numfreqs];
-    baselinetable[i].datastream2bandindex = new int*[baselinetable[i].numfreqs];
-    baselinetable[i].datastream1recordbandindex = new int*[baselinetable[i].numfreqs];
-    baselinetable[i].datastream2recordbandindex = new int*[baselinetable[i].numfreqs];
-    baselinetable[i].freqtableindices = new int[baselinetable[i].numfreqs];
-    baselinetable[i].polpairs = new char**[baselinetable[i].numfreqs];
+    baselinetable[i].oddlsbfreqs = new int[baselinetable[i].numfreqs]();
+    baselinetable[i].numpolproducts = new int[baselinetable[i].numfreqs]();
+    baselinetable[i].datastream1bandindex = new int*[baselinetable[i].numfreqs]();
+    baselinetable[i].datastream2bandindex = new int*[baselinetable[i].numfreqs]();
+    baselinetable[i].datastream1recordbandindex = new int*[baselinetable[i].numfreqs]();
+    baselinetable[i].datastream2recordbandindex = new int*[baselinetable[i].numfreqs]();
+    baselinetable[i].freqtableindices = new int[baselinetable[i].numfreqs]();
+    baselinetable[i].polpairs = new char**[baselinetable[i].numfreqs]();
     for(int j=0;j<baselinetable[i].numfreqs;j++)
     {
       baselinetable[i].oddlsbfreqs[j] = 0;
       getinputline(input, &line, "POL PRODUCTS ", i);
       baselinetable[i].numpolproducts[j] = atoi(line.c_str());
-      baselinetable[i].datastream1bandindex[j] = new int[baselinetable[i].numpolproducts[j]];
-      baselinetable[i].datastream2bandindex[j] = new int[baselinetable[i].numpolproducts[j]];
-      baselinetable[i].datastream1recordbandindex[j] = new int[baselinetable[i].numpolproducts[j]];
-      baselinetable[i].datastream2recordbandindex[j] = new int[baselinetable[i].numpolproducts[j]];
+      baselinetable[i].datastream1bandindex[j] = new int[baselinetable[i].numpolproducts[j]]();
+      baselinetable[i].datastream2bandindex[j] = new int[baselinetable[i].numpolproducts[j]]();
+      baselinetable[i].datastream1recordbandindex[j] = new int[baselinetable[i].numpolproducts[j]]();
+      baselinetable[i].datastream2recordbandindex[j] = new int[baselinetable[i].numpolproducts[j]]();
       estimatedbytes += baselinetable[i].numpolproducts[j]*2*4;
-      baselinetable[i].polpairs[j] = new char*[baselinetable[i].numpolproducts[j]];
+      baselinetable[i].polpairs[j] = new char*[baselinetable[i].numpolproducts[j]]();
       for(int k=0;k<baselinetable[i].numpolproducts[j];k++)
       {
         baselinetable[i].totalbands++;
@@ -972,7 +972,7 @@ bool Configuration::processBaselineTable(ifstream * input)
         baselinetable[i].datastream1bandindex[j][k] = atoi(line.c_str());
         getinputline(input, &line, "D/STREAM B BAND ", k);
         baselinetable[i].datastream2bandindex[j][k] = atoi(line.c_str());
-        baselinetable[i].polpairs[j][k] = new char[3];
+        baselinetable[i].polpairs[j][k] = new char[3]();
         estimatedbytes += 3;
       }
       dsdata = datastreamtable[baselinetable[i].datastream1index];
@@ -1220,9 +1220,9 @@ bool Configuration::processConfig(ifstream * input)
   estimatedbytes += numconfigs*sizeof(configdata);
   for(int i=0;i<numconfigs;i++)
   {
-    configs[i].arraystridelen = new int[numdatastreams];
-    configs[i].datastreamindices = new int[numdatastreams];
-    configs[i].baselineindices = new int [numbaselines];
+    configs[i].arraystridelen = new int[numdatastreams]();
+    configs[i].datastreamindices = new int[numdatastreams]();
+    configs[i].baselineindices = new int [numbaselines]();
     getinputline(input, &(configs[i].name), "CONFIG NAME");
     getinputline(input, &line, "INT TIME (SEC)");
     configs[i].inttime = atof(line.c_str());
@@ -1309,7 +1309,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
   }
   //create the ordereddatastream array
   for(int i=0;i<numconfigs;i++)
-    configs[i].ordereddatastreamindices = new int[datastreamtablelength];
+    configs[i].ordereddatastreamindices = new int[datastreamtablelength]();
 
   //get the information on the length of the internal buffer for the datastreams
   getinputline(input, &line, "DATA BUFFER FACTOR");
@@ -1375,9 +1375,11 @@ bool Configuration::processDatastreamTable(ifstream * input)
     else if(line == "VDIF") {
       datastreamtable[i].format = VDIF;
       datastreamtable[i].nummuxthreads = 1;//In case 'vdifio' instead of 'mark5access' does decoding
-      datastreamtable[i].muxthreadmap = new int[1];
+      datastreamtable[i].muxthreadmap = new int[1]();
     } else if(line == "VDIFL") {
       datastreamtable[i].format = VDIFL;
+      datastreamtable[i].nummuxthreads = 1;//In case 'vdifio' instead of 'mark5access' does decoding
+      datastreamtable[i].muxthreadmap = new int[1]();
     } else if(line.substr(0,14) == "INTERLACEDVDIF") {
       if(line.length()<15) {
         cfatal << startl << "Data format " << line << " too short, expected thread information, see vex2difx documentation" << endl;
@@ -1475,12 +1477,12 @@ bool Configuration::processDatastreamTable(ifstream * input)
 
     getinputline(input, &line, "NUM RECORDED FREQS");
     datastreamtable[i].numrecordedfreqs = atoi(line.c_str());
-    datastreamtable[i].recordedfreqpols = new int[datastreamtable[i].numrecordedfreqs];
-    datastreamtable[i].recordedfreqtableindices = new int[datastreamtable[i].numrecordedfreqs];
-    datastreamtable[i].recordedfreqclockoffsets = new double[datastreamtable[i].numrecordedfreqs];
-    datastreamtable[i].recordedfreqclockoffsetsdelta = new double[datastreamtable[i].numrecordedfreqs];
-    datastreamtable[i].recordedfreqphaseoffset = new double[datastreamtable[i].numrecordedfreqs];
-    datastreamtable[i].recordedfreqlooffsets = new double[datastreamtable[i].numrecordedfreqs];
+    datastreamtable[i].recordedfreqpols = new int[datastreamtable[i].numrecordedfreqs]();
+    datastreamtable[i].recordedfreqtableindices = new int[datastreamtable[i].numrecordedfreqs]();
+    datastreamtable[i].recordedfreqclockoffsets = new double[datastreamtable[i].numrecordedfreqs]();
+    datastreamtable[i].recordedfreqclockoffsetsdelta = new double[datastreamtable[i].numrecordedfreqs]();
+    datastreamtable[i].recordedfreqphaseoffset = new double[datastreamtable[i].numrecordedfreqs]();
+    datastreamtable[i].recordedfreqlooffsets = new double[datastreamtable[i].numrecordedfreqs]();
     estimatedbytes += 8*datastreamtable[i].numrecordedfreqs*3;
     datastreamtable[i].numrecordedbands = 0;
     for(int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
@@ -1547,8 +1549,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
     else
       datastreamtable[i].bytespersampledenom = 1;
 
-    datastreamtable[i].recordedbandpols = new char[datastreamtable[i].numrecordedbands];
-    datastreamtable[i].recordedbandlocalfreqindices = new int[datastreamtable[i].numrecordedbands];
+    datastreamtable[i].recordedbandpols = new char[datastreamtable[i].numrecordedbands]();
+    datastreamtable[i].recordedbandlocalfreqindices = new int[datastreamtable[i].numrecordedbands]();
     estimatedbytes += datastreamtable[i].numrecordedbands*5;
     for(int j=0;j<datastreamtable[i].numrecordedbands;j++)
     {
@@ -1564,10 +1566,10 @@ bool Configuration::processDatastreamTable(ifstream * input)
     }
     getinputline(input, &line, "NUM ZOOM FREQS");
     datastreamtable[i].numzoomfreqs = atoi(line.c_str());
-    datastreamtable[i].zoomfreqtableindices = new int[datastreamtable[i].numzoomfreqs];
-    datastreamtable[i].zoomfreqpols = new int[datastreamtable[i].numzoomfreqs];
-    datastreamtable[i].zoomfreqparentdfreqindices = new int[datastreamtable[i].numzoomfreqs];
-    datastreamtable[i].zoomfreqchanneloffset = new int[datastreamtable[i].numzoomfreqs];
+    datastreamtable[i].zoomfreqtableindices = new int[datastreamtable[i].numzoomfreqs]();
+    datastreamtable[i].zoomfreqpols = new int[datastreamtable[i].numzoomfreqs]();
+    datastreamtable[i].zoomfreqparentdfreqindices = new int[datastreamtable[i].numzoomfreqs]();
+    datastreamtable[i].zoomfreqchanneloffset = new int[datastreamtable[i].numzoomfreqs]();
     estimatedbytes += datastreamtable[i].numzoomfreqs*16;
     datastreamtable[i].numzoombands = 0;
     for(int j=0;j<datastreamtable[i].numzoomfreqs;j++)
@@ -1599,8 +1601,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
         }
       }
     }
-    datastreamtable[i].zoombandpols = new char[datastreamtable[i].numzoombands];
-    datastreamtable[i].zoombandlocalfreqindices = new int[datastreamtable[i].numzoombands];
+    datastreamtable[i].zoombandpols = new char[datastreamtable[i].numzoombands]();
+    datastreamtable[i].zoombandlocalfreqindices = new int[datastreamtable[i].numzoombands]();
     estimatedbytes += 5*datastreamtable[i].numzoombands;
     for(int j=0;j<datastreamtable[i].numzoombands;j++)
     {
@@ -1616,9 +1618,9 @@ bool Configuration::processDatastreamTable(ifstream * input)
     }
     if(dsdata->phasecalintervalmhz > 0)
     {
-      dsdata->numrecordedfreqpcaltones = new int[dsdata->numrecordedfreqs];
-      dsdata->recordedfreqpcaltonefreqs = new int*[dsdata->numrecordedfreqs];
-      dsdata->recordedfreqpcaloffsetshz = new int[dsdata->numrecordedfreqs];
+      dsdata->numrecordedfreqpcaltones = new int[dsdata->numrecordedfreqs]();
+      dsdata->recordedfreqpcaltonefreqs = new int*[dsdata->numrecordedfreqs]();
+      dsdata->recordedfreqpcaloffsetshz = new int[dsdata->numrecordedfreqs]();
       dsdata->maxrecordedpcaltones = 0;
       estimatedbytes += sizeof(int)*(dsdata->numrecordedfreqs);
       for(int j=0;j<dsdata->numrecordedfreqs;j++)
@@ -1641,7 +1643,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
             dsdata->maxrecordedpcaltones = dsdata->numrecordedfreqpcaltones[j];
           if(datastreamtable[i].numrecordedfreqpcaltones[j] > 0)
           {
-            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]];
+            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]]();
             estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
             for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
               datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq - k*dsdata->phasecalintervalmhz;
@@ -1651,7 +1653,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
           else
           {
             datastreamtable[i].numrecordedfreqpcaltones[j] = 1;
-            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[1];
+            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[1]();
             datastreamtable[i].recordedfreqpcaltonefreqs[j][0] = 0;
 
             dsdata->recordedfreqpcaloffsetshz[j] = -1; /* A flag to indicate this is not real */
@@ -1671,7 +1673,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
             dsdata->maxrecordedpcaltones = dsdata->numrecordedfreqpcaltones[j];
           if(datastreamtable[i].numrecordedfreqpcaltones[j] > 0)
           {
-            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]];
+            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]]();
             estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
             for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
               datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq + k*dsdata->phasecalintervalmhz;
@@ -1681,7 +1683,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
           else
           {
             datastreamtable[i].numrecordedfreqpcaltones[j] = 1;
-            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[1];
+            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[1]();
             datastreamtable[i].recordedfreqpcaltonefreqs[j][0] = 0;
 
             dsdata->recordedfreqpcaloffsetshz[j] = -1; /* A flag to indicate this is not real */
@@ -1720,7 +1722,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
   {
     getinputline(&coreinput, &line, "NUMBER OF CORES");
     int maxlines = atoi(line.c_str());
-    numprocessthreads = new int[maxlines];
+    numprocessthreads = new int[maxlines]();
     getline(coreinput, line);
     for(int i=0;i<maxlines;i++)
     {
@@ -1913,7 +1915,7 @@ void Configuration::processTelescopeTable(ifstream * input)
     telescopetable[i].clockrefmjd = atof(line.c_str());
     getinputline(input, &line, "CLOCK POLY ORDER ", i);
     telescopetable[i].clockorder = atoi(line.c_str());
-    telescopetable[i].clockpoly = new double[telescopetable[i].clockorder+1];
+    telescopetable[i].clockpoly = new double[telescopetable[i].clockorder+1]();
     for(int j=0;j<telescopetable[i].clockorder+1;j++) {
       getinputline(input, &line, "CLOCK COEFF ", i);
       telescopetable[i].clockpoly[j] = atof(line.c_str());
@@ -1951,7 +1953,7 @@ bool Configuration::populateScanConfigList()
   Model::source * src;
   ruledata r;
 
-  scanconfigindices = new int[model->getNumScans()];
+  scanconfigindices = new int[model->getNumScans()]();
   estimatedbytes += 4*model->getNumScans();
   for(int i=0;i<model->getNumScans();i++) {
     scanconfigindices[i] = -1;
@@ -2129,10 +2131,10 @@ bool Configuration::populateResultLengths()
         binloop = configs[c].numbins;
 
       //work out the offsets for threadresult, and the total length too
-      configs[c].completestridelength = new int[freqtablelength];
-      configs[c].numxmacstrides = new int[freqtablelength];
-      configs[c].threadresultfreqoffset = new int[freqtablelength];
-      configs[c].threadresultbaselineoffset = new int*[freqtablelength];
+      configs[c].completestridelength = new int[freqtablelength]();
+      configs[c].numxmacstrides = new int[freqtablelength]();
+      configs[c].threadresultfreqoffset = new int[freqtablelength]();
+      configs[c].threadresultbaselineoffset = new int*[freqtablelength]();
       threadfindex = 0;
       for(int i=0;i<freqtablelength;i++)
       {
@@ -2141,7 +2143,7 @@ bool Configuration::populateResultLengths()
           configs[c].threadresultfreqoffset[i] = threadfindex;
           freqchans = freqtable[i].numchannels;
           configs[c].numxmacstrides[i] = freqtable[i].numchannels/xmacstridelen;
-          configs[c].threadresultbaselineoffset[i] = new int[numbaselines];
+          configs[c].threadresultbaselineoffset[i] = new int[numbaselines]();
           threadbindex = 0;
           for(int j=0;j<numbaselines;j++)
           {
@@ -2160,12 +2162,12 @@ bool Configuration::populateResultLengths()
       configs[c].threadresultlength = threadfindex;
 
       //work out the offsets for coreresult, and the total length too
-      configs[c].coreresultbaselineoffset = new int*[freqtablelength];
-      configs[c].coreresultbweightoffset  = new int*[freqtablelength];
+      configs[c].coreresultbaselineoffset = new int*[freqtablelength]();
+      configs[c].coreresultbweightoffset  = new int*[freqtablelength]();
       configs[c].coreresultbshiftdecorroffset = new int*[freqtablelength];
-      configs[c].coreresultautocorroffset = new int[numdatastreams];
-      configs[c].coreresultacweightoffset = new int[numdatastreams];
-      configs[c].coreresultpcaloffset     = new int[numdatastreams];
+      configs[c].coreresultautocorroffset = new int[numdatastreams]();
+      configs[c].coreresultacweightoffset = new int[numdatastreams]();
+      configs[c].coreresultpcaloffset     = new int[numdatastreams]();
       coreresultindex = 0;
       for(int i=0;i<freqtablelength;i++) //first the cross-correlations
       {
@@ -2173,7 +2175,7 @@ bool Configuration::populateResultLengths()
         {
           freqchans = freqtable[i].numchannels;
           chanstoaverage = freqtable[i].channelstoaverage;
-          configs[c].coreresultbaselineoffset[i] = new int[numbaselines];
+          configs[c].coreresultbaselineoffset[i] = new int[numbaselines]();
           for(int j=0;j<numbaselines;j++)
           {
             bldata = baselinetable[configs[c].baselineindices[j]];
@@ -2189,7 +2191,7 @@ bool Configuration::populateResultLengths()
       {
         if(configs[c].frequsedbybaseline[i])
         {
-          configs[c].coreresultbweightoffset[i] = new int[numbaselines];
+          configs[c].coreresultbweightoffset[i] = new int[numbaselines]();
           for(int j=0;j<numbaselines;j++)
           {
             bldata = baselinetable[configs[c].baselineindices[j]];
@@ -2208,7 +2210,7 @@ bool Configuration::populateResultLengths()
       {
         if(configs[c].frequsedbybaseline[i])
         {
-          configs[c].coreresultbshiftdecorroffset[i] = new int[numbaselines];
+          configs[c].coreresultbshiftdecorroffset[i] = new int[numbaselines]();
           for(int j=0;j<numbaselines;j++)
           {
             bldata = baselinetable[configs[c].baselineindices[j]];
@@ -2298,7 +2300,11 @@ void Configuration::setDatastreamMuxInfo(int datastreamindex, string muxinfo)
     at = muxinfo.find_first_of(":");
   }
   threadindices[datastreamtable[datastreamindex].nummuxthreads++] = atoi(muxinfo.substr(0,at).c_str());
-  datastreamtable[datastreamindex].muxthreadmap = new int[datastreamtable[datastreamindex].nummuxthreads];
+  if ((muxinfo.substr(0,at).length() < 1) && (datastreamtable[datastreamindex].nummuxthreads == 1)) {
+     cwarn << startl << "Possibly malformed datastream MUX info, found <=1 threads. Defaulting to 1 thread with ID 0" << endl;
+     threadindices[0] = 0;
+  }
+  datastreamtable[datastreamindex].muxthreadmap = new int[datastreamtable[datastreamindex].nummuxthreads]();
   for(int i=0;i<datastreamtable[datastreamindex].nummuxthreads;i++)
     datastreamtable[datastreamindex].muxthreadmap[i] = threadindices[i];
 }
@@ -2985,17 +2991,17 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
     configs[configindex].pacomplexoutput = false;
   getinputline(&phasedarrayinput, &line, "OUTPUT BITS");
   configs[configindex].pabits = atoi(line.c_str());
-  configs[configindex].paweights = new double*[freqtablelength];
-  configs[configindex].numpafreqpols = new int[freqtablelength];
-  configs[configindex].papols = new char*[freqtablelength];
+  configs[configindex].paweights = new double*[freqtablelength]();
+  configs[configindex].numpafreqpols = new int[freqtablelength]();
+  configs[configindex].papols = new char*[freqtablelength]();
   for(int i=0;i<freqtablelength;i++)
   {
     getinputline(&phasedarrayinput, &line, "NUM FREQ");
     configs[configindex].numpafreqpols[i] = atoi(line.c_str());
     if(configs[configindex].numpafreqpols[i] > 0)
     {
-      configs[configindex].paweights[i] = new double[numdatastreams];
-      configs[configindex].papols[i] = new char[configs[configindex].numpafreqpols[i]];
+      configs[configindex].paweights[i] = new double[numdatastreams]();
+      configs[configindex].papols[i] = new char[configs[configindex].numpafreqpols[i]]();
       for(int j=0;j<configs[configindex].numpafreqpols[i];j++)
       {
         getinputline(&phasedarrayinput, &line, "FREQ");
@@ -3041,7 +3047,7 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   getinputline(&pulsarinput, &line, "NUM POLYCO FILES");
   numpolycofiles = atoi(line.c_str());
   polycofilenames = new string[numpolycofiles];
-  numsubpolycos = new int[numpolycofiles];
+  numsubpolycos = new int[numpolycofiles]();
   configs[configindex].numpolycos = 0;
   for(int i=0;i<numpolycofiles;i++)
   {
@@ -3075,8 +3081,8 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   configs[configindex].numbins = atoi(line.c_str());
   if(configs[configindex].numbins > maxnumpulsarbins)
     maxnumpulsarbins = configs[configindex].numbins;
-  binphaseends = new double[configs[configindex].numbins];
-  binweights = new double[configs[configindex].numbins];
+  binphaseends = new double[configs[configindex].numbins]();
+  binweights = new double[configs[configindex].numbins]();
   getinputline(&pulsarinput, &line, "SCRUNCH OUTPUT");
   configs[configindex].scrunchoutput = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
   for(int i=0;i<configs[configindex].numbins;i++)
@@ -3088,7 +3094,7 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   }
 
   //create the polycos
-  configs[configindex].polycos = new Polyco*[configs[configindex].numpolycos];
+  configs[configindex].polycos = new Polyco*[configs[configindex].numpolycos]();
   polycocount = 0;
   for(int i=0;i<numpolycofiles;i++)
   {
@@ -3117,10 +3123,10 @@ bool Configuration::setPolycoFreqInfo(int configindex)
 {
   bool ok = true;
   datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];	/* FIXME: This value is never used */
-  double * frequencies = new double[freqtablelength];
-  double * bandwidths = new double[freqtablelength];
-  int * numchannels = new int[freqtablelength];
-  bool * used = new bool[freqtablelength];
+  double * frequencies = new double[freqtablelength]();
+  double * bandwidths = new double[freqtablelength]();
+  int * numchannels = new int[freqtablelength]();
+  bool * used = new bool[freqtablelength]();
   for(int i=0;i<freqtablelength;i++)
   {
     frequencies[i] = freqtable[i].bandedgefreq;
@@ -3167,7 +3173,7 @@ bool Configuration::updateClock(std::string clockstring)
     cerror << startl << "Tried to add a clock of too-high order! String was " << clockstring << ", leaving clocks unchanged" << endl;
     return false;
   }
-  poly = new double[count];
+  poly = new double[count]();
   for(int i=0;i<count;i++)
     poly[i] = deltaclock[i];
 
