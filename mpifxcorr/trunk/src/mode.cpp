@@ -421,6 +421,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
         csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones: " << extractor[i]->getLength() << " != " << conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex) << " ." << endl;
       pcalnbins[i] = extractor[i]->getNBins();
+      cverbose << "PCal extraction internally uses " << pcalnbins[i] << " spectral channels (" << (long)(1e3*recordedbandwidth/pcalnbins[i]) << " kHz/channel)" << endl;
     }
   }
 
