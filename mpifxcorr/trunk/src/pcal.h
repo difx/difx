@@ -176,6 +176,14 @@ class PCal {
       virtual uint64_t getFinalPCal(cf32* out) = 0;
 
       /**
+       * Specifies a minimum frequency resolution (spectral response around
+       * the PCal tone) that the extractors should try to meet. Currently assured
+       * for the PCalExtractorImplicitShift extractor type only.
+       * @param spectral resolution in hertz
+       */
+      static void setMinFrequencyResolution(double hz) { _min_freq_resolution_hz = hz; }
+
+      /**
        * Processes samples and accumulates the detected phase calibration tone vector.
        * Computation uses the slowest thinkable direct method. This function is
        * intended for testing and comparison only!
@@ -211,6 +219,8 @@ class PCal {
       long long _estimatedbytes;
 
       pcal_config_pimpl* _cfg;
+
+      static double _min_freq_resolution_hz;
 
    friend class PCalExtractorTrivial;
    friend class PCalExtractorShifting;
