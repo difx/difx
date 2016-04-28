@@ -30,6 +30,7 @@
 #include "core.h"
 #include "datastream.h"
 #include <dirent.h>
+#include <cerrno>
 #include <cmath>
 #include <set>
 #include <string>
@@ -127,6 +128,8 @@ void Visibility::initialisePcalFiles()
         pcaloutput << "# Telescope name = " << config->getDStationName(c, i) << endl;
 
         pcaloutput.close();
+        if(!pcaloutput)
+          csevere << startl << "Error trying to create " << pcalfilename << " : " << strerror(errno) << "!!" << endl;
         completedstations.insert(config->getDStationName(c, i));
       }
     }
@@ -669,6 +672,8 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
               output << l << " " << sqrt(results[atindex].re*results[atindex].re + results[atindex].im*results[atindex].im) << " " << atan2(results[atindex].im, results[atindex].re) << endl;
             }
             output.close();
+            if(!output)
+              csevere << startl << "Error trying to write more data to " << fname.str() << " : " << strerror(errno) << "!!" << endl;
             resultindex += freqchannels;
           }
         }
@@ -698,6 +703,8 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
               output << l << " " << sqrt(results[atindex].re*results[atindex].re + results[atindex].im*results[atindex].im) << " " << atan2(results[atindex].im, results[atindex].re) << endl;
             }
             output.close();
+            if(!output)
+              csevere << startl << "Error trying to write more autocorrelation data to " << fname.str() << " : " << strerror(errno) << "!!" << endl;
             resultindex += freqchannels;
           }
         }
@@ -811,6 +818,8 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
       output.open(filename, ios::app);
       output.write(&(todiskbuffer[filecount*(todiskbufferlength/numfiles)]), todiskmemptrs[filecount]-filecount*(todiskbufferlength/numfiles));
       output.close();
+      if(!output)
+         csevere << startl << "Error trying to write more data to " << filename << " : " << strerror(errno) << "!!" << endl;
       filecount++;
     }
   }
@@ -879,6 +888,8 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
     output.open(filename, ios::app);
     output.write(todiskbuffer, todiskmemptrs[0]);
     output.close();
+    if(!output)
+      csevere << startl << "Error trying to write more data to " << filename << " : " << strerror(errno) << "!!" << endl;
   }
 
 
@@ -975,6 +986,8 @@ The four columns are:
         pcaloutput.open(pcalfilename, ios::app);
         pcaloutput << pcalline << endl;
         pcaloutput.close();
+        if(!pcaloutput)
+          csevere << startl << "Error trying to write more PCAL data to " << pcalfilename << " : " << strerror(errno) << "!!" << endl;
       }
     }
   }
