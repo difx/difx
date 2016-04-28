@@ -412,6 +412,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 
       lsb = config->getDRecordedLowerSideband(configindex, datastreamindex, localfreqindex);
 
+      PCal::setMinFrequencyResolution(1e6);
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
                                       pcalOffset, 0, usecomplex, lsb);
@@ -421,7 +422,8 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
         csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones: " << extractor[i]->getLength() << " != " << conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex) << " ." << endl;
       pcalnbins[i] = extractor[i]->getNBins();
-      cverbose << "PCal extraction internally uses " << pcalnbins[i] << " spectral channels (" << (long)(1e3*recordedbandwidth/pcalnbins[i]) << " kHz/channel)" << endl;
+      if (pcalOffset>=0)
+        cverbose << startl << "PCal extractor internally uses " << pcalnbins[i] << " spectral channels (" << (long)(1e3*recordedbandwidth/pcalnbins[i]) << " kHz/channel)" << endl;
     }
   }
 
