@@ -270,19 +270,36 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, unsigned long long readpointer
 
 unsigned int calculateMark5Signature(SSHANDLE xlrDevice)
 {
-	unsigned int signature = 1;
+	const int LegacyScanDirectorySize = 81952;
+	unsigned int signature;
 	int len;
+
+	signature = 1;
 
 	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
 	if(len > 128)
 	{
-		char *dirData = new char[len];
+		unsigned char *dirData = new unsigned char[len];
+		const unsigned char *data;
+		int size;
 
 		WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, dirData) );
 
-		for(int j = 32; j < len/4; ++j)
+		if(len % 128 != 0)
 		{
-			unsigned int x = ((unsigned int *)dirData)[j] + 1;
+			len = LegacyScanDirectorySize;
+			size = len;
+			data = dirData;
+		}
+		else
+		{
+			size = len - 128;
+			data = dirData + 128;
+		}
+
+		for(int j = 0; j < size/4; ++j)
+		{
+			unsigned int x = ((unsigned int *)data)[j] + 1;
 			signature = signature ^ x;
 		}
 
