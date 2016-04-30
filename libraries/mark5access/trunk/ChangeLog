@@ -9,6 +9,7 @@ Verion 1.5.3
 * zerocorr: write results with %e to avoid scaling causing underflow results
 * more const correctness
 * functions added that mask bad values in channel-dependent manner from decoded VDIF streams if EDV4 is used.  Per-channel accounting of zero values is provided.
+* Fix some data rate and frame rate calculations in mark5bfile.h
 
 Version 1.5.2
 * Post DiFX-2.4

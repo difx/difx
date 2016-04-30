@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 Walter Brisken                                     *
+ *   Copyright (C) 2013-2016 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -73,7 +73,7 @@ static inline int mark5bfilesummarygetstartns(const struct mark5b_file_summary *
 
 static inline void mark5bfilesummarysettotalbandwidth(struct mark5b_file_summary *sum, int bandwidthMHz)
 {
-	sum->framesPerSecond = bandwidthMHz*50*sum->nBit;
+	sum->framesPerSecond = bandwidthMHz*25*sum->nBit;
 }
 
 static inline void mark5bfilesummarysetbits(struct mark5b_file_summary *sum, int nBit)
@@ -84,7 +84,7 @@ static inline void mark5bfilesummarysetbits(struct mark5b_file_summary *sum, int
 /* returns Mbps */
 static inline int mark5bfilesummarygetbitrate(const struct mark5b_file_summary *sum)
 {
-	return sum->framesPerSecond*sum->nBit/50;
+	return (sum->framesPerSecond*2)/25;
 }
 
 int determinemark5bframeoffset(const unsigned char *buffer, int bufferSize);
