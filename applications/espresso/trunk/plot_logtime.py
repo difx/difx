@@ -28,9 +28,9 @@ import matplotlib
 # Force matplotlib to not use any Xwindows backend if X display not available.
 # This doesn't work if there was an X forward but ssh is no longer listening -
 # can happen under screen. Deal with that later if initiating the plot fails.
-if not 'DISPLAY' in os.environ.keys():
-    sys.stderr.write('Warning: no display available\n')
-    matplotlib.use('Agg')
+if not "DISPLAY" in os.environ.keys():
+    sys.stderr.write("Warning: no display available\n")
+    matplotlib.use("Agg")
 from matplotlib import pyplot
 import numpy
 
@@ -38,39 +38,39 @@ import numpy
 def corrtime2secs(obstime_match):
     corrtime = obstime_match.groups()[0]
     corr_fracsec = int(obstime_match.groups()[1]) * 1e-3
-    corrdatetime = datetime.datetime.strptime(corrtime, '%Y-%m-%d %H:%M:%S')
+    corrdatetime = datetime.datetime.strptime(corrtime, "%Y-%m-%d %H:%M:%S")
     corr_secs = time.mktime(corrdatetime.timetuple()) + corr_fracsec
     return corr_secs
 
 
-usage = '''%prog [options] <difxlog> 
-extracts the observation and correlation times from the <difxlog> file and plots the correlation speedup factor'''
+usage = """%prog [options] <difxlog> 
+extracts the observation and correlation times from the <difxlog> file and plots the correlation speedup factor"""
 
-parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
+parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
 parser.add_option( "--output", "-o",
-        type='str', dest="outfile", default=False,
-        help='print to file' )
+        type="str", dest="outfile", default=False,
+        help="print to file" )
 parser.add_option( "--time", "-t",
         action="store_true", dest="plottime", default=False,
-        help='Plot elapsed correlation time instead of speedup factor' )
+        help="Plot elapsed correlation time instead of speedup factor" )
 parser.add_option( "--averaging_time", "-a",
         type=float, dest="avg", default=300,
-        help='Average the data for AVG seconds (300)' )
+        help="Average the data for AVG seconds (300)" )
 parser.add_option( "--speedup_poly", "-p",
         type=int, dest="poly_order", default=False,
-        help='Fit time data with poly of order p, before differentiating to find speedup factor' )
+        help="Fit time data with poly of order p, before differentiating to find speedup factor" )
 parser.add_option( "--removegap", "-r",
         action="store_true", dest="removegap", default=False,
-        help='Remove gaps in the observation time' )
+        help="Remove gaps in the observation time" )
 parser.add_option( "--verbose", "-v",
         action="store_true", dest="verbose", default=False,
-        help='Increase verbosity' )
+        help="Increase verbosity" )
 parser.add_option( "--labelfile", "-l",
         action="store_true", dest="labelfile", default=False,
-        help='Label plot with file start positions' )
+        help="Label plot with file start positions" )
 parser.add_option( "--grep", "-g",
         type=str, dest="grep", default=False,
-        help='Extract only lines containing GREP pattern' )
+        help="Extract only lines containing GREP pattern" )
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
@@ -79,9 +79,9 @@ if len(args) < 1:
 
 filenames = args
 
-title = 'Correlator Speedup ' #+ str(filenames)
+title = "Correlator Speedup " #+ str(filenames)
 if options.removegap:
-    title += ' (no gaps)'
+    title += " (no gaps)"
 
 try:
     pyplot.title(title)
@@ -89,25 +89,25 @@ except:
     # if setting the title fails, it probably means the default backend has
     # failed because the X session is no longer attached. So switch to a
     # backend that doesn't care (no interactive plots allowed).
-    matplotlib.rcParams['backend'] = 'Agg'
-    pyplot.switch_backend('Agg')
-    #print matplotlib.rcParams['backend']
-    sys.stderr.write('Warning: no display available - switching to non-interactive backend\n')
+    matplotlib.rcParams["backend"] = "Agg"
+    pyplot.switch_backend("Agg")
+    #print matplotlib.rcParams["backend"]
+    sys.stderr.write("Warning: no display available - switching to non-interactive backend\n")
     pyplot.title(title)
 
 header = " ".join(filenames)
 maxnames = 8
 if len(filenames) > maxnames:
-    header = ", ".join(filenames[0:maxnames-1]) + ' ... ' + str(filenames[-1])
-    header += ' (' + str(len(filenames)) + ' files)'
-pyplot.suptitle(header, fontsize='x-small')
+    header = ", ".join(filenames[0:maxnames-1]) + " ... " + str(filenames[-1])
+    header += " (" + str(len(filenames)) + " files)"
+pyplot.suptitle(header, fontsize="x-small")
 
 if options.plottime:
-    pyplot.xlabel('Correlation time/hours')
-    pyplot.ylabel('Observation time/hours')
+    pyplot.xlabel("Correlation time/hours")
+    pyplot.ylabel("Observation time/hours")
 else:
-    pyplot.xlabel('Observation time/hours')
-    pyplot.ylabel('Speedup factor')
+    pyplot.xlabel("Observation time/hours")
+    pyplot.ylabel("Speedup factor")
 
 # remove overall scaling from axis values
 no_offset = matplotlib.ticker.ScalarFormatter(useOffset=False)
@@ -117,32 +117,34 @@ pyplot.gca().yaxis.set_major_formatter(no_offset)
 correlation = numpy.array([0])
 observation = numpy.array([0])
 new_files = []
+starttime = None
 for filename in args:
     thisdatafile = open(filename).readlines()
 
     this_xdata = []
     this_ydata = []
 
-    nlines = 0
+    #nlines = 0
     for line in thisdatafile:
-        nlines += 1
+        #nlines += 1
         line = line.strip()
 
+
+        # match the correlator time and observation time in the log file
+        #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
+        obstime_match = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)", line)
+        if not obstime_match:
+            continue
+        if (options.grep != False) and not re.search(options.grep, line):
+            continue
+
         # get the time of the first line in the log file
-        if nlines == 1:
-            starttime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})', line)
+        if not starttime:
+            starttime_match = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})", line)
             starttime = corrtime2secs(starttime_match)
             this_xdata.append(starttime)
             # give this an observation time of -1 (first vis. is at time 0)
             this_ydata.append(-1)
-            continue
-
-        # match the correlator time and observation time in the log file
-        #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
-        obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)', line)
-        if not obstime_match:
-            continue
-        if (options.grep != False) and not re.search(options.grep, line):
             continue
 
         # convert correlator and observation time strings to seconds
@@ -165,7 +167,7 @@ for filename in args:
         nskip = int(options.avg//int_time)
     else:
         nskip = 1
-        sys.stderr.write(filename + "Warning: averaging time less than correlator integration time, resetting AVG to: " + str(int_time) + '\n')
+        sys.stderr.write(filename + "Warning: averaging time less than correlator integration time, resetting AVG to: " + str(int_time) + "\n")
 
     # make sure averaging time is not too long
     #nskip = int(min(nskip, len(this_ydata//2) ))
@@ -178,7 +180,7 @@ for filename in args:
     if options.removegap:
         orig_length = this_ydata[-1] - this_ydata[0]
         this_ydata = numpy.arange(0, len(this_ydata)*int_time, int_time)
-        print filename, ': removed', orig_length - this_ydata[-1], 'secs'
+        print filename, ": removed", orig_length - this_ydata[-1], "secs"
 
     # move array to origin (start time=int_time for first file and
     # continues to next file without a gap)
@@ -188,7 +190,7 @@ for filename in args:
     this_xdata = this_xdata - this_xdata[0] + offset_x
 
     if options.verbose:
-        print filename, 't_int:', int_time, 'n_int:', len(this_ydata), 'start:', this_ydata[0]
+        print filename, "t_int:", int_time, "n_int:", len(this_ydata), "start:", this_ydata[0]
 
     # only keep a fraction of the points (this also effectively smooths)
     this_ydata = [this_ydata[i] for i in range(nskip, len(this_ydata), nskip)]
@@ -206,30 +208,30 @@ for filename in args:
 observation /= 3600.
 correlation /= 3600.
 
-print 'Observation time:', (observation[-1] - observation[0]), 'hours'
-print 'Correlation time:', (correlation[-1] - correlation[0]), 'hours'
-print 'Speedup factor  :', observation[-1]/correlation[-1]
+print "Observation time:", (observation[-1] - observation[0]), "hours"
+print "Correlation time:", (correlation[-1] - correlation[0]), "hours"
+print "Speedup factor  :", observation[-1]/correlation[-1]
 
 speedup = []
 if options.plottime:
     # simply plot correlation time against observation time
-    pyplot.plot(correlation, observation, '.')
+    pyplot.plot(correlation, observation, ".")
 else:
     # plot the cumulative speedup and instantaneous speedup against
     # observation time
     speedup = observation/correlation
-    label1 = 'Integrated speedup {speedup:0.3f}'.format(speedup=speedup[-1])
+    label1 = "Integrated speedup {speedup:0.3f}".format(speedup=speedup[-1])
     pyplot.plot(observation, speedup, label=label1)
     speedup = numpy.diff(observation)/numpy.diff(correlation)
     xdata_diff = observation[1:]
-    pyplot.plot(xdata_diff, speedup, label='Instantaneous speedup')
+    pyplot.plot(xdata_diff, speedup, label="Instantaneous speedup")
     if options.poly_order:
         # slightly silly option to fit the data with a polynomial before
         # calculating speedup
         poly_fit = numpy.polyfit(correlation, observation, options.poly_order)
         ydata_poly = numpy.polyval(poly_fit, correlation)
         ydata_poly = numpy.diff(ydata_poly)/numpy.diff(correlation)
-        pyplot.plot(xdata_diff, ydata_poly, label='Smoothed Instantaneous speedup')
+        pyplot.plot(xdata_diff, ydata_poly, label="Smoothed Instantaneous speedup")
 
 #corrmax = correlation[-1]
 #obsmax = observation[-1]
@@ -244,13 +246,13 @@ if options.plottime:
     xmax = correlation[-1]
     ymin = observation[0]
     ymax = observation[-1]
-    pyplot.plot([0, ymax], [0, ymax], label='Real time')
+    pyplot.plot([0, ymax], [0, ymax], label="Real time")
 else:
     xmin = observation[0]
     xmax = observation[-1]
     ymin = min(min(speedup), 1)
     ymax = max(max(speedup), 1)
-    pyplot.plot([0, xmax], [1, 1], label='Real time')
+    pyplot.plot([0, xmax], [1, 1], label="Real time")
 
 deltax = xmax - xmin
 deltay = ymax - ymin
@@ -276,9 +278,9 @@ if options.labelfile:
         textpos = (pointpos[0], ytextpos)
         #textpos = (pointpos[0], 0.5*(ymin+ymax) + 0.45*deltay*textside)
         pyplot.annotate(filenames[ifile], pointpos, textpos,
-                arrowprops=dict(arrowstyle="->"), fontsize='x-small')
+                arrowprops=dict(arrowstyle="->"), fontsize="x-small")
 
-pyplot.legend(loc='best', prop={'size':'small'})
+pyplot.legend(loc="best", prop={"size":"small"})
 
 #pyplot.figtext(0,0, str(filenames), transform=pyplot.gca().transAxes)
 
