@@ -1,38 +1,43 @@
 #!/usr/bin/env python
-#=======================================================================
+# =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
-#                                                                       
-# This program is free software; you can redistribute it and/or modify  
-# it under the terms of the GNU General Public License as published by  
-# the Free Software Foundation; either version 3 of the License, or     
-# (at your option) any later version.                                   
-#                                                                       
-# This program is distributed in the hope that it will be useful,       
-# but WITHOUT ANY WARRANTY; without even the implied warranty of        
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
-# GNU General Public License for more details.                          
-#                                                                       
-# You should have received a copy of the GNU General Public License     
-# along with this program; if not, write to the                         
-# Free Software Foundation, Inc.,                                       
-# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             
-#=======================================================================
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+# =======================================================================
 
 # program to plot observation time versus correlator time from DiFX logs.
 
-import sys, os, re, optparse, datetime, time
+import sys
+import os
+import re
+import optparse
+import datetime
+import time
 #import scipy
 #from scipy import interpolate
 from math import *
 import matplotlib
+import numpy
 # Force matplotlib to not use any Xwindows backend if X display not available.
 # This doesn't work if there was an X forward but ssh is no longer listening -
 # can happen under screen. Deal with that later if initiating the plot fails.
-if not "DISPLAY" in os.environ.keys():
+if "DISPLAY" not in os.environ.keys():
     sys.stderr.write("Warning: no display available\n")
     matplotlib.use("Agg")
 from matplotlib import pyplot
-import numpy
 
 
 def corrtime2secs(obstime_match):
@@ -43,34 +48,43 @@ def corrtime2secs(obstime_match):
     return corr_secs
 
 
-usage = """%prog [options] <difxlog> 
-extracts the observation and correlation times from the <difxlog> file and plots the correlation speedup factor"""
+usage = """%prog [options] <difxlog>
+extracts the observation and correlation times from the <difxlog> file and
+plots the correlation speedup factor"""
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
-parser.add_option( "--output", "-o",
+parser.add_option(
+        "--output", "-o",
         type="str", dest="outfile", default=False,
-        help="print to file" )
-parser.add_option( "--time", "-t",
+        help="print to file")
+parser.add_option(
+        "--time", "-t",
         action="store_true", dest="plottime", default=False,
-        help="Plot elapsed correlation time instead of speedup factor" )
-parser.add_option( "--averaging_time", "-a",
+        help="Plot elapsed correlation time instead of speedup factor")
+parser.add_option(
+        "--averaging_time", "-a",
         type=float, dest="avg", default=300,
-        help="Average the data for AVG seconds (300)" )
-parser.add_option( "--speedup_poly", "-p",
+        help="Average the data for AVG seconds (300)")
+parser.add_option(
+        "--speedup_poly", "-p",
         type=int, dest="poly_order", default=False,
-        help="Fit time data with poly of order p, before differentiating to find speedup factor" )
-parser.add_option( "--removegap", "-r",
+        help="Fit time data with poly of order p, before differentiating to find speedup factor")
+parser.add_option(
+        "--removegap", "-r",
         action="store_true", dest="removegap", default=False,
-        help="Remove gaps in the observation time" )
-parser.add_option( "--verbose", "-v",
+        help="Remove gaps in the observation time")
+parser.add_option(
+        "--verbose", "-v",
         action="store_true", dest="verbose", default=False,
-        help="Increase verbosity" )
-parser.add_option( "--labelfile", "-l",
+        help="Increase verbosity")
+parser.add_option(
+        "--labelfile", "-l",
         action="store_true", dest="labelfile", default=False,
-        help="Label plot with file start positions" )
-parser.add_option( "--grep", "-g",
+        help="Label plot with file start positions")
+parser.add_option(
+        "--grep", "-g",
         type=str, dest="grep", default=False,
-        help="Extract only lines containing GREP pattern" )
+        help="Extract only lines containing GREP pattern")
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
@@ -79,7 +93,7 @@ if len(args) < 1:
 
 filenames = args
 
-title = "Correlator Speedup " #+ str(filenames)
+title = "Correlator Speedup "  #+ str(filenames)
 if options.removegap:
     title += " (no gaps)"
 
@@ -92,7 +106,8 @@ except:
     matplotlib.rcParams["backend"] = "Agg"
     pyplot.switch_backend("Agg")
     #print matplotlib.rcParams["backend"]
-    sys.stderr.write("Warning: no display available - switching to non-interactive backend\n")
+    sys.stderr.write(
+            "Warning: no display available - switching to non-interactive backend\n")
     pyplot.title(title)
 
 header = " ".join(filenames)
@@ -124,23 +139,22 @@ for filename in args:
     this_xdata = []
     this_ydata = []
 
-    #nlines = 0
     for line in thisdatafile:
-        #nlines += 1
         line = line.strip()
-
 
         # match the correlator time and observation time in the log file
         #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
-        obstime_match = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)", line)
+        obstime_match = re.search(
+                r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)", line)
         if not obstime_match:
             continue
-        if (options.grep != False) and not re.search(options.grep, line):
+        if (options.grep is not False) and not re.search(options.grep, line):
             continue
 
         # get the time of the first line in the log file
         if not starttime:
-            starttime_match = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})", line)
+            starttime_match = re.search(
+                    r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})", line)
             starttime = corrtime2secs(starttime_match)
             this_xdata.append(starttime)
             # give this an observation time of -1 (first vis. is at time 0)
@@ -160,14 +174,18 @@ for filename in args:
     this_xdata = numpy.array(this_xdata)
     this_ydata = numpy.array(this_ydata)
 
-    # find the integration time - typical spacing between observation times in the log
+    # find the integration time - typical spacing between observation times in
+    # the log
     int_time = numpy.median(numpy.diff(this_ydata))
     # nskip is fraction of the data points we will keep
     if int_time < options.avg:
         nskip = int(options.avg//int_time)
     else:
         nskip = 1
-        sys.stderr.write(filename + "Warning: averaging time less than correlator integration time, resetting AVG to: " + str(int_time) + "\n")
+        sys.stderr.write(
+                filename +
+                "Warning: averaging time less than correlator integration time, resetting AVG to: " +
+                str(int_time) + "\n")
 
     # make sure averaging time is not too long
     #nskip = int(min(nskip, len(this_ydata//2) ))
@@ -231,7 +249,8 @@ else:
         poly_fit = numpy.polyfit(correlation, observation, options.poly_order)
         ydata_poly = numpy.polyval(poly_fit, correlation)
         ydata_poly = numpy.diff(ydata_poly)/numpy.diff(correlation)
-        pyplot.plot(xdata_diff, ydata_poly, label="Smoothed Instantaneous speedup")
+        pyplot.plot(
+                xdata_diff, ydata_poly, label="Smoothed Instantaneous speedup")
 
 #corrmax = correlation[-1]
 #obsmax = observation[-1]
@@ -271,16 +290,18 @@ if options.labelfile:
         else:
             speedup = new_file[1]/new_file[0]
             pointpos = (new_file[1], speedup)
-        ytextoffset = (len(filenames)-ifile)*0.45*deltay*textside/(len(filenames))
+        ytextoffset = (
+                len(filenames)-ifile)*0.45*deltay*textside/(len(filenames))
         ytextpos = 0.5*(ymin+ymax) + ytextoffset
         if abs(ytextpos - pointpos[1]) < deltay*0.1:
             ytextpos = 0.5*(ymin+ymax) + ytextoffset*-1
         textpos = (pointpos[0], ytextpos)
         #textpos = (pointpos[0], 0.5*(ymin+ymax) + 0.45*deltay*textside)
-        pyplot.annotate(filenames[ifile], pointpos, textpos,
+        pyplot.annotate(
+                filenames[ifile], pointpos, textpos,
                 arrowprops=dict(arrowstyle="->"), fontsize="x-small")
 
-pyplot.legend(loc="best", prop={"size":"small"})
+pyplot.legend(loc="best", prop={"size": "small"})
 
 #pyplot.figtext(0,0, str(filenames), transform=pyplot.gca().transAxes)
 
@@ -289,5 +310,3 @@ if options.outfile:
 else:
     pyplot.show()
 pyplot.close()
-
-

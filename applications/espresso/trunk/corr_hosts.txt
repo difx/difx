@@ -1,6 +1,6 @@
-version = 2	# version number is an integer
+version = 1	# version number is an integer
 # node, enabled/disabled (2=head node), number compute threads, space separated list of urls for data
-# Later lines supercede earlier lines
+# Later lines supersede earlier lines
 cuppa01,       1, 7, file:///exports/xraid01/l_1/corr file:///exports/xraid01/r_1/corr  # comment follows a hash
 cuppa02,       1, 7, file:///exports/xraid02/l_1/corr file:///exports/xraid02/r_1/corr
 cuppa03,       1, 7, file:///exports/xraid03/l_1/corr file:///exports/xraid03/r_1/corr file:///arch/corr/bbdata/corr
@@ -8,11 +8,11 @@ cuppa04,       0, 7
 cuppa05,       1, 7, file:///exports/xraid05/l_1/corr file:///exports/xraid05/r_1/corr 
 cuppa06,       0, 7
 cuppa[07-15],  1, 7     # zero-padded integer ranges are allowed
-cuppa1[2-3],   0, 7     # disable cuppa12/13 - supercedes previous line in range.
+cuppa[12-13],  0, 7     # disable cuppa12/13 - supersedes previous line in range.
 cuppa16,       1, 7, file:///mnt/disk1/corr file:///mnt/disk2/corr
 cuppa17,       2, 7, file:///mnt/disk1/corr
 cuppa18,       1, 7, file:///mnt/disk1/corr
 cuppa19,       1, 7
 cuppa20,       0, 7
-cuppa2[1-4],   1, 0, file:///mnt/raid/corr
+cuppa[21-24],  1, 0, file:///mnt/raid/corr
 cuppa22,       0, 0, file:///mnt/raid/corr
