@@ -83,3 +83,4 @@ make
 %changelog
 20 Nov 2014 Jan Wagner <jwagner@kasi.re.kr>
 28 Jul 2014 Jan Wagner <jwagner@kasi.re.kr> added new function to API
+09 May 2015 Jan Wagner <jwagner@kasi.re.kr> simpler prefetch code, multiple files openable simultaneously

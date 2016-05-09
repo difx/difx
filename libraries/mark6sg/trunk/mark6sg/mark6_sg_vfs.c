@@ -44,15 +44,14 @@
 #include "mark6_sg_vfs.h"
 
 // Prefetch (via mmap() MAP_POPULATE-like threaded forced kernel page faults)
-#define USE_MAP_POPULATE_LIKE_PREFETCH 1  // 1 to enable, 0 to disable
-#define PREFETCH_NUM_BLOCKS_PER_FILE  16  // 16 is default; experiment to find nr giving best performance
+#define USE_MMAP_POPULATE_LIKE_PREFETCH 1  // 1 to enable, 0 to disable
+#define PREFETCH_NUM_BLOCKS_PER_FILE    4
 
 // Internal structs
 typedef struct touch_blocks_ctx_tt {
     pthread_t tid;
-    void*  vfd;
-    int    idx;
-    size_t startblk;
+    void*     vfd;
+    int       file_id;
 } touch_blocks_ctx_t;
 
 typedef struct m6sg_virt_filedescr {
@@ -70,8 +69,7 @@ typedef struct m6sg_virt_filedescr {
     size_t    nblocks;
     m6sg_blockmeta_t* blks;
     touch_blocks_ctx_t touch_ctxs[MARK6_SG_MAXFILES];
-    size_t             touchblock;
-    pthread_mutex_t    touch_lock;
+    volatile int       touch_terminate;
 } m6sg_virt_filedescr_t;
 
 typedef struct m6sg_virt_open_files {
@@ -83,8 +81,7 @@ static pthread_mutex_t vfs_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static m6sg_virt_open_files_t m6sg_open_files_list = { 0, NULL };
 
-static int touch_next_blocks(m6sg_virt_filedescr_t*, size_t);
-
+void* touch_next_blocks_thread(void* p_ctx);
 
 //////////////////////////////////////////////////////////////////////////////////////
 ////// Library Functions /////////////////////////////////////////////////////////////
@@ -152,7 +149,6 @@ int mark6_sg_open(const char *scanname, int flags)
     // Prepare file descriptor
     vfd = m6sg_open_files_list.fd_list[fd];
     memset((void*)vfd, 0, sizeof(m6sg_virt_filedescr_t));
-    pthread_mutex_init(&(vfd->touch_lock), NULL);
     vfd->valid = 1;
     pthread_mutex_unlock(&vfs_lock);
 
@@ -166,7 +162,7 @@ int mark6_sg_open(const char *scanname, int flags)
         return -1;
     }
 
-    for (i=0; i<(vfd->nfiles); i++)
+    for (i=0; i< vfd->nfiles; i++)
     {
         int flags;
 
@@ -194,11 +190,13 @@ int mark6_sg_open(const char *scanname, int flags)
 
         if (m_m6sg_dbglevel>1) { printf("mmap() ufd=%d file %2d to virtual addr %p\n", fd, i, vfd->fmmap[i]); }
 
-        flags = MADV_SEQUENTIAL;
+#if (USE_MMAP_POPULATE_LIKE_PREFETCH == 0)
+        flags = 0;
+        flags |= MADV_SEQUENTIAL;
         // flags |= MADV_WILLNEED; // very slow yet somewhat faster than MAP_POPULATE
         madvise(vfd->fmmap[i], vfd->fsize[i], flags);
-
         if (m_m6sg_dbglevel>1) { printf("madvise() file %2d\n", i); }
+#endif
 
     }
 
@@ -207,6 +205,17 @@ int mark6_sg_open(const char *scanname, int flags)
     {
         vfd->len = vfd->blks[vfd->nblocks-1].virtual_offset + vfd->blks[vfd->nblocks-1].datalen;
     }
+
+    // Trigger a preload of future mmap()'ed data in the background
+#if (USE_MMAP_POPULATE_LIKE_PREFETCH != 0)
+    vfd->touch_terminate = 0;
+    for (i=0; i < vfd->nfiles; i++)
+    {
+        vfd->touch_ctxs[i].vfd = vfd;
+        vfd->touch_ctxs[i].file_id = i;
+        pthread_create(&(vfd->touch_ctxs[i].tid), NULL, touch_next_blocks_thread, &(vfd->touch_ctxs[i]));
+    }
+#endif
 
     return fd;
 }
@@ -237,19 +246,14 @@ int mark6_sg_close(int fd)
         return -1;
     }
 
-#if (USE_MAP_POPULATE_LIKE_PREFETCH != 0)
+#if (USE_MMAP_POPULATE_LIKE_PREFETCH != 0)
+    vfd->touch_terminate = 1;
     for (i=0; i < vfd->nfiles; i++)
     {
-        pthread_mutex_lock(&(vfd->touch_lock));
-        if (vfd->touch_ctxs[i].tid != 0)
-        {
-            if (m_m6sg_dbglevel>1) { printf("join() on prefetch thread %d\n", i); }
-            pthread_join(vfd->touch_ctxs[i].tid, NULL);
-        }
-        pthread_mutex_unlock(&(vfd->touch_lock));
+        if (m_m6sg_dbglevel>1) { printf("join() on prefetch thread %d\n", i); }
+        pthread_join(vfd->touch_ctxs[i].tid, NULL);
     }
 #endif
-    pthread_mutex_destroy(&(vfd->touch_lock));
 
     for (i=0; i < vfd->nfiles; i++)
     {
@@ -381,14 +385,6 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
     // Remember current block nr (not exactly thread safe, but non-critical)
     vfd->rdblock = blk;
     vfd->rdoffset = rdoffset;
-
-    // Trigger a preload of future mmap()'ed data in the background
-#if (USE_MAP_POPULATE_LIKE_PREFETCH != 0)
-    if (blk >= vfd->touchblock)
-    {
-        touch_next_blocks(vfd, blk);
-    }
-#endif
 
     return nread;
 }
@@ -539,99 +535,65 @@ ssize_t mark6_sg_stripesize(int fd)
 
 void* touch_next_blocks_thread(void* p_ctx)
 {
-    size_t blk, off, off_inc = getpagesize(), off_stop, ntouched = 0;
+    size_t blk = 0, blk_prev = -1;
+    off_t  off, off_stop;
+    int    pagesz = getpagesize();
 
-    touch_blocks_ctx_t*    ctx_host = (touch_blocks_ctx_t*)p_ctx;
-    m6sg_virt_filedescr_t* vfd_host = (m6sg_virt_filedescr_t*)(ctx_host->vfd);
-    int fid = -1, my_id = ctx_host->idx;
+    touch_blocks_ctx_t*    ctx = (touch_blocks_ctx_t*)p_ctx;
+    m6sg_virt_filedescr_t* vfd = (m6sg_virt_filedescr_t*)(ctx->vfd);
 
-    touch_blocks_ctx_t*    ctx = NULL;
-    m6sg_virt_filedescr_t* vfd;
+    char* fdata = (char*)(vfd->fmmap[ctx->file_id]);
 
-    // Copy the descriptor since relevant counters (though not array contents) can change
-    vfd = malloc(sizeof(m6sg_virt_filedescr_t));
-    if (!vfd)
+    if (m_m6sg_dbglevel>2) { fprintf(stderr, "START thread for file %2d inc %d\n", ctx->file_id, pagesz); }
+
+    // Run until terminated
+    while (!vfd->touch_terminate)
     {
-        return NULL;
-    }
-    pthread_mutex_lock(&(vfd_host->touch_lock));
-    memcpy((void*)vfd, (void*)vfd_host, sizeof(m6sg_virt_filedescr_t));
-    pthread_mutex_unlock(&(vfd_host->touch_lock));
 
-    // Switch to own context
-    ctx = &(vfd->touch_ctxs[my_id]);
+        // Thread is dedicated to one file of the scatter-gather fileset,
+        // and touches a certain number of blocks that follow the current
+        // read position (FUSE virtual -> file offset) in the file.
 
-    // Find nearest read location
-    for (blk=ctx->startblk; blk<vfd->nblocks; blk++)
-    {
-        if (vfd->blks[blk].file_id == my_id) { break; }
-    }
+        for (blk = vfd->rdblock; blk < vfd->nblocks; blk++)
+        {
+            if ((vfd->blks[blk].file_id == ctx->file_id)) { break; }
+        }
+        if (blk >= vfd->nblocks)
+        {
+            usleep(1000);
+            continue;
+        }
+        assert(vfd->blks[blk].file_id == ctx->file_id);
 
-    // Touch the subsequent PREFETCH_NUM_BLOCKS_PER_FILE blocks page-wise
-    while ((blk < vfd->nblocks) && (ntouched < PREFETCH_NUM_BLOCKS_PER_FILE))
-    {
-        fid      = vfd->blks[blk].file_id;
+        // Check if current read position (block) has changed.
+        // Note: checking if blk falls inside already pre-fetched window is for
+        //       some reason slower than just re-reading almost all blocks
+        if (blk == blk_prev)
+        {
+            usleep(10);
+            continue;
+        }
+        blk_prev = blk;
+
+        // Do not care about block numbers; just touch the next blocks in current file
         off      = vfd->blks[blk].file_offset;
-        off_stop = off + vfd->blks[blk].datalen * 2;  // reading more than a block increases performance for some reason
-        char* p  = (char*)(vfd->fmmap[fid]);
-        while ((off < vfd->fsize[fid]) && (off < off_stop))
+        off     &= ~((off64_t)(pagesz - 1));
+        off_stop = off + vfd->blks[blk].datalen * PREFETCH_NUM_BLOCKS_PER_FILE;
+        off_stop = (off_stop > vfd->fsize[ctx->file_id]) ? vfd->fsize[ctx->file_id] : off_stop;
+        while (off < off_stop)
         {
             // Reference the data to cause page fault and a kernel
             // fetch of missing page from underlying mmap()'ed file.
             // Data is not actually used here. The pages cached by
             // kernel will however be available in future read() calls.
-            char dummy = p[off];
-            off += off_inc;
-            if (m_m6sg_dbglevel>10) { fprintf(stderr, "thread %2d file %2d dummy=%d\n", my_id, fid, (int)dummy); }
-
-            // Stop if another thread launched for this same file
-#if 0
-            if (ctx->tid != ctx_host->tid)
-            {
-                ntouched = PREFETCH_NUM_BLOCKS_PER_FILE;
-                break;
-            }
-#endif
+            char dummy = fdata[off];
+            off += pagesz;
+            if (m_m6sg_dbglevel>99) { printf("(printf to prevent optimizing away 'dummy') %c", dummy); }
         }
-        // Find next block in same file
-        do { blk++; } while ((blk < vfd->nblocks) && (vfd->blks[blk].file_id != my_id));
-        ntouched++;
-    }
-    free(vfd);
 
-    if (m_m6sg_dbglevel>4) { fprintf(stderr, "thread %2d file %2d inc %zu touched %zu from blk %zu (startblk %zu)\n", my_id, fid, off_inc, ntouched, blk, ctx->startblk); }
+    }
+
+    if (m_m6sg_dbglevel>2) { fprintf(stderr, "EXIT thread for file %2d\n", ctx->file_id); }
 
     return NULL;
-}
-
-/**
- * Start several threads to preload the next blocks into kernel page cache.
- * Simulates mmap(MAP_POPULATE) but does not load the entire files.
- */
-static int touch_next_blocks(m6sg_virt_filedescr_t* vfd, size_t startblk)
-{
-    int i;
-
-    // Start new prefetch
-    for (i=0; i<vfd->nfiles; i++)
-    {
-#if 0
-        if (vfd->touch_ctxs[i].tid != 0)
-        {
-            // Join previous thread; this can actually be skipped (to gain
-            // another ~200MB/s) on the condition that earlier-started
-            // threads always complete before later-started threads complete
-            pthread_join(vfd->touch_ctxs[i].tid, NULL);
-        }
-#endif
-        vfd->touch_ctxs[i].idx = i;
-        vfd->touch_ctxs[i].vfd = vfd;
-        vfd->touch_ctxs[i].startblk = startblk;
-        pthread_create(&(vfd->touch_ctxs[i].tid), NULL, touch_next_blocks_thread, &(vfd->touch_ctxs[i]));
-    }
-
-    // Memorize last block touched
-    vfd->touchblock += PREFETCH_NUM_BLOCKS_PER_FILE*vfd->nfiles;
-
-    return 0;
 }
