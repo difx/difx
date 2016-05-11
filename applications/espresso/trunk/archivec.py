@@ -50,7 +50,10 @@ def taritup(tardir, tarfile, infile, gzip=False):
             command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
 
 usage = """%prog <path> <destination>
-will transfer <path> and all its subdirectories to <destination> on data.ivec.org using ashell.py. Most files are tarred before transfer, but special files and large files are transferred unmodified. Files are first tarred/copied to $ARCHTMP before transfer.
+will transfer <path> and all its subdirectories to <destination> on
+data.pawsey.org.au using ashell.py. Most files are tarred before transfer, but
+special files and large files are transferred unmodified. Files are first
+tarred/copied to $ARCHTMP before transfer.
 
 e.g.
 %prog $CORR_DATA/v252aw /projects/VLBI/Archive/LBA/v252
@@ -60,7 +63,8 @@ parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
 parser.add_option(
         "--maxtarsize", "-m",
         type="float", dest="maxtarsize", default=1000,
-        help="files larger than MAXTARSIZE (MB) will be transferred untarred [default = %default]")
+        help="files larger than MAXTARSIZE (MB) will be transferred untarred"
+        " [default = %default]")
 parser.add_option(
         "--taroptions", "-t",
         type="str", dest="taroptions", default=" ",
@@ -91,12 +95,13 @@ if len(args) < 2:
 # to transfer unmodified (both tarred files and large files will be
 # transferred).
 
-#archdir = args[1]
 expname = os.path.normpath(args[0]).split("/")[-1]
 archdir = os.environ.get("ARCHTMP") + os.sep + expname + os.sep
 if not archdir:
-    print "$ARCHTMP not set - using /tmp instead. Setting $ARCHTMP to a directory on the same filesystem as the data is preferable"
     archdir = "/tmp/"
+    print (
+            "$ARCHTMP not set - using /tmp instead. Setting $ARCHTMP to a"
+            " directory on the same filesystem as the data is preferable")
 mark4file = str()
 os.chdir(args[0])
 tarlists = dict()
@@ -110,12 +115,16 @@ for filename in os.listdir(os.curdir):
     passname = expname
     if filename.startswith(expname+"-"):
         passname = re.sub("[_\.].*", "", filename)
+
+    targroup = passname
+
+    # option to tar each job independently (useful for v. large experiments)
     if options.onejob:
         if re.match(passname+"_\d", filename):
-            passname = re.match(passname+"_\d+", filename).group(0)
+            targroup = re.match(passname+"_\d+", filename).group(0)
 
-    if passname not in tarlists.keys():
-        tarlists[passname] = str()
+    if targroup not in tarlists.keys():
+        tarlists[targroup] = str()
 
     # deal with Mark4 output, clocks, test and old runs as special cases
     if re.search("^\d\d\d\d$", filename):
@@ -136,7 +145,7 @@ for filename in os.listdir(os.curdir):
 
     # certain file names never get tarred
     notar_ext = [
-            ".fits", ".rpf", ".uvfits", ".mark4", ".tar", expname+".v2d",
+            ".fits", ".rpf", ".uvfits", ".mark4", ".tar", passname+".v2d",
             expname+".vex", expname+".skd", "notes.txt"]
     fileWithPath = os.path.join(os.path.abspath(os.curdir), filename)
     notar = False
@@ -154,7 +163,7 @@ for filename in os.listdir(os.curdir):
         transfer.append(re.escape(fileWithPath))
     else:
         # add to list of files to be tarred
-        tarlists[passname] += " " + re.escape(filename)
+        tarlists[targroup] += " " + re.escape(filename)
 
 
 # create the output directory
@@ -164,15 +173,15 @@ subprocess.check_call(command, shell=True, stdout=sys.stdout)
 
 # tar up small files in this directory to Archive area, one correlator pass at
 # a time
-for passname in tarlists.keys():
-    if tarlists[passname]:
-        tarfile = passname + ".tar"
-        taritup(archdir, tarfile, tarlists[passname])
+for targroup in tarlists.keys():
+    if tarlists[targroup]:
+        tarfile = targroup + ".tar"
+        taritup(archdir, tarfile, tarlists[targroup])
 
 # transfer each of the large files in turn
 print "copying files"
 for srcfile in transfer:
-    command = " ".join(["cp -l", srcfile, archdir])
+    command = " ".join(["cp", "-l", srcfile, archdir])
     if options.verbose:
         print "\n" + command
     subprocess.check_call(command, shell=True, stdout=sys.stdout)
@@ -186,10 +195,9 @@ if mark4file:
     taritup(archdir, expname.upper()+".MARK4.tar.gz", mark4file, gzip=True)
 
 
-# now archive the lot to data.ivec.org
-#os.chdir(archdir)
-#command = " ".join(["ashell.py login + delegate 100"])
-#subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+# now archive the lot to data.pawsey.org.au
+# First try without a login, assuming we have delegation set up. If that fails,
+# try again with a login. Keep trying till we get a ^C
 login = ""
 while True:
     try:
@@ -205,8 +213,6 @@ while True:
     except:
         login = "login +"
         print "trying again"
-        #command = " ".join(['ashell.py "login + delegate 100"'])
-        #subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 
 if not options.keeparch:
     shutil.rmtree(archdir)
