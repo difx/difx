@@ -1,13 +1,16 @@
 #define FUSE_USE_VERSION 26
 
-#include <fuse.h>
-#include <stdio.h>
-#include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <fuse.h>
+#include <glob.h>
 #include <memory.h>
-#include <stdlib.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/inotify.h>
+#include <unistd.h>
 
 #include <mark6sg.h>
 
@@ -18,7 +21,7 @@
 void usage(void)
 {
 	printf("\n"
-		"Mark6 Scatter-Gather data interpretation layer   v1.11  Jan Wagner 15032016\n"
+		"Mark6 Scatter-Gather data interpretation layer   v1.12  Jan Wagner 15032016\n"
 		"\n"
 		"Usage: fuseMk6 [-v] [-r pattern] <mountpoint>\n"
 		"\n"
@@ -52,7 +55,9 @@ static char**       m_scannamelist;
 static struct stat* m_scanstatlist;
 static int          m_nscans;
 static m6sg_slistmeta_t* m_json_scanlist;
+static char*        m_root;
 
+static pthread_mutex_t dirlock = PTHREAD_MUTEX_INITIALIZER;
 
 //////////////////////////////////////////////////////////////////////////////////
 // FUSE Layer : reading of scatter-gather files via the "mark6sg" libary
@@ -86,6 +91,7 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
         // Even the Mark6 JSON metadata (if used) does not have the actual correct file size.
 	// We should thus update the FUSE file info here accordingly with the now known *true* data length.
 	rc = mark6_sg_fstat(fi->fh, &st);
+	pthread_mutex_lock(&dirlock);
 	for (i=0; i<m_nscans; i++)
 	{
 		if (strcmp(path+1, m_scannamelist[i]) == 0)
@@ -94,6 +100,7 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
 			m_scanstatlist[i].st_blksize = st.st_blksize;
 		}
 	}
+	pthread_mutex_unlock(&dirlock);
 #endif
 
 	return 0;
@@ -148,13 +155,17 @@ static int fusem6_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	/* Add directory entries */
 	filler(buf, ".",  &dir_st, 0);
 	filler(buf, "..", &dir_st, 0);
+	pthread_mutex_lock(&dirlock);
 	for (i=0; i<m_nscans; i++)
 	{
 		if (filler(buf, m_scannamelist[i], &m_scanstatlist[i], 0) != 0)
 		{
+			pthread_mutex_unlock(&dirlock);
 			return -ENOMEM;
 		}
 	}
+	pthread_mutex_unlock(&dirlock);
+
 	return 0;
 }
 
@@ -175,66 +186,31 @@ static int fusem6_getattr(const char *path, struct stat *stbuf)
 	}
 
 	/* Files in root directory */
+	pthread_mutex_lock(&dirlock);
 	for (i=0; i<m_nscans; i++)
 	{
 		if (strcmp(path+1, m_scannamelist[i]) == 0)
 		{
 			memcpy(stbuf, &m_scanstatlist[i], sizeof(struct stat));
+			pthread_mutex_unlock(&dirlock);
 			return 0;
 		}
 	}
+	pthread_mutex_unlock(&dirlock);
 
 	return -ENOENT;
 }
 
-
 //////////////////////////////////////////////////////////////////////////////////
-// FUSE Layer : entry point
+// FUSE Layer : scan list refresh helper
 //////////////////////////////////////////////////////////////////////////////////
 
-static struct fuse_operations fusem6_oper = {
-	.init		= fusem6_init,
-	.open		= fusem6_open,
-	.release	= fusem6_release,
-	.read		= fusem6_read,
-	.getattr	= fusem6_getattr,
-	.readdir	= fusem6_readdir
-};
-
-int main(int argc, char *argv[])
+void fusem6_make_scanlist(void)
 {
-	int rc = 0, verbosity = 0, i = 0;
-	int fuse_argc;
-	char** fuse_argv;
-	char* mountpoint = NULL;
+	int rc = 0, i = 0;
 	m6sg_slistmeta_t* json_slist_ptr;
 
-	/* Arguments */
-	mountpoint = argv[argc-1];
-	for (i=1; i<argc; i++)
-	{
-		if (strcmp(argv[i], "-v") == 0)
-		{
-			verbosity++;
-		}
-		else if ((strcmp(argv[i], "-r") == 0) && ((i+1) < argc))
-		{
-			mark6_sg_set_rootpattern(argv[i+1]);
-			i++;
-		}
-		else
-		{
-			break;
-		}
-	}
-	if (((argc-i) != 1) || (mountpoint[0] == '-'))
-	{
-		usage();
-		return -1;
-	}
-
-	/* Set library verbosity */
-	mark6_sg_verbositylevel(verbosity);
+	pthread_mutex_lock(&dirlock);
 
 	/* Get scan list from Mark6sg library */
 	m_nscans = mark6_sg_list_all_scans(&m_scannamelist);
@@ -245,7 +221,7 @@ int main(int argc, char *argv[])
 	for (i=0; i<m_nscans; i++)
 	{
 		// NOTE 1: file time stamps are not easily known without
-		// inspecting the JSON metadata files (those contain some kind of timestamp) 
+		// inspecting the JSON metadata files (those contain some kind of timestamp)
 		// NOTE 2: file size is not well known until opening all the files associated
 		// with the SG recording, although the JSON metadata has an estimate in GByte of
 		// the total file size (based on the assumption that no disks failed)
@@ -261,7 +237,7 @@ int main(int argc, char *argv[])
 		m_scanstatlist[i].st_size  = 0;
 	}
 
-        /* Augment the scan information using the Mark6 JSON metadata files */
+	/* Augment the scan information using the Mark6 JSON metadata files */
 #if (USE_JSON_INFOS)
 	rc = mark6_sg_collect_metadata(&m_json_scanlist);
 	printf("Found %d scans, and %d entries in JSON\n", m_nscans, rc);
@@ -316,6 +292,109 @@ int main(int argc, char *argv[])
 		m_scanstatlist[i].st_size = totalsize;
 	}
 #endif
+
+	pthread_mutex_unlock(&dirlock);
+
+	return;
+}
+
+void *fusem6_dir_watcher(void* thread_arg)
+{
+	char buf[1024*(sizeof(struct inotify_event) + 16)];
+	ssize_t nrd;
+	int fd, wd, rc, i;
+	glob_t g;
+
+	/* Use Linux inotify API to listen for changes in Mark6 directories */
+	fd = inotify_init();
+	rc = glob(m_root, GLOB_MARK|GLOB_BRACE|GLOB_ONLYDIR, NULL, &g);
+	if (rc != 0)
+	{
+		printf("fusem6_dir_watcher: glob failed, rc=%d\n", rc);
+		close(fd);
+		return NULL;
+	}
+
+	for (i = 0; i < g.gl_pathc; i++)
+	{
+		struct stat st;
+		stat(g.gl_pathv[i], &st);
+		if (S_ISDIR(st.st_mode))
+		{
+			wd = inotify_add_watch(fd, g.gl_pathv[i], IN_CLOSE_WRITE|IN_CREATE|IN_DELETE|IN_DELETE_SELF);
+		}
+	}
+	globfree(&g);
+
+	/* Receive inotify events and refresh our scan list */
+	while (1)
+	{
+		nrd = read(fd, buf, sizeof(buf));
+		if (nrd < 0)
+		{
+			close(fd);
+			return NULL;
+		}
+		printf("inotify: Mark6 files changed, refreshing the scan list\n", nrd);
+		fusem6_make_scanlist();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// FUSE Layer : entry point
+//////////////////////////////////////////////////////////////////////////////////
+
+static struct fuse_operations fusem6_oper = {
+	.init		= fusem6_init,
+	.open		= fusem6_open,
+	.release	= fusem6_release,
+	.read		= fusem6_read,
+	.getattr	= fusem6_getattr,
+	.readdir	= fusem6_readdir
+};
+
+int main(int argc, char *argv[])
+{
+	int rc = 0, verbosity = 0, i = 0;
+	int fuse_argc;
+	char** fuse_argv;
+	char* mountpoint = NULL;
+	pthread_t tid;
+
+	/* Arguments */
+	mountpoint = argv[argc-1];
+	m_root = MARK6_SG_ROOT_PATTERN;
+	for (i=1; i<argc; i++)
+	{
+		if (strcmp(argv[i], "-v") == 0)
+		{
+			verbosity++;
+		}
+		else if ((strcmp(argv[i], "-r") == 0) && ((i+1) < argc))
+		{
+			mark6_sg_set_rootpattern(argv[i+1]);
+			m_root = strdup(argv[i+1]);
+			i++;
+		}
+		else
+		{
+			break;
+		}
+	}
+	if (((argc-i) != 1) || (mountpoint[0] == '-'))
+	{
+		usage();
+		return -1;
+	}
+
+	/* Set library verbosity */
+	mark6_sg_verbositylevel(verbosity);
+
+	/* Get scan list from Mark6sg library and update it with JSON and file fragment data */
+	fusem6_make_scanlist();
+
+	/* Start a thread to refresh the scan list when files change */
+	pthread_create(&tid, NULL, fusem6_dir_watcher, NULL);
 
 	/* Start FUSE */
 	fuse_argc = 0;

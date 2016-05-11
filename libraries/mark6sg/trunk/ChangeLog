@@ -1,6 +1,7 @@
 Version 1.1.8
 * libmark6sg: simplified the prefetch method, average throughput
               now slightly better and a lot more consistent
+* fuseMk6: refresh the scanlist when recordings change
 
 Version 1.1.7
 * fuseMk6 (now v1.11): fixed FUSE open() return value, error code instead of file descriptor,
