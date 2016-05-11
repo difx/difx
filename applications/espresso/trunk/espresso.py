@@ -259,10 +259,18 @@ def run_interactive(corrjoblist, outdir):
             logfile = open(logfilename, "w")
             print "\nfiltering the log file and copying to", logfile.name
             #shutil.copy2('log', logfile)
-            for line in open("log"):
-                if jobname in line[58:73]:
-                    print>>logfile, line,
+            log_lines = filter_log("log", jobname)
+            for line in log_lines:
+                print>>logfile, line,
             logfile.close()
+
+
+def filter_log(infile, jobname):
+    filtered_file = []
+    for line in open(infile):
+        if re.search("\s"+jobname+"\s", line):
+            filtered_file.append(line)
+    return filtered_file
 
 
 def wait_for_file(filename):
@@ -321,7 +329,8 @@ def run_batch(corrjoblist, outdir):
             subprocess.check_call(queue_command, stdout=sys.stdout, shell=True)
 
             raw_input(
-                    "Jobs submitted - hit ^C when all jobs have completed. Hit return to see list of running jobs.")
+                    "Jobs submitted - hit ^C when all jobs have completed."
+                    + " Hit return to see list of running jobs.")
         except KeyboardInterrupt:
             for jobname in sorted(corrjoblist.keys()):
                 command = " ".join(["scancel", "-n", jobname])
@@ -344,9 +353,9 @@ def run_batch(corrjoblist, outdir):
         logfile = open(logfilename, "w")
         print "\nfiltering the log file and copying to", logfile.name
         #shutil.copy2("log", logfile)
-        for line in open(pass_logfilename):
-            if jobname in line[58:73]:
-                print>>logfile, line,
+        log_lines = filter_log(pass_logfilename, jobname)
+        for line in log_lines:
+            print>>logfile, line,
         logfile.close()
 
 
@@ -394,6 +403,10 @@ explicitly)"""
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
 parser.add_option(
+        "--force", "-f",
+        dest="force", action="store_true", default=False,
+        help="run vex2difx with -f switch")
+parser.add_option(
         "--clock", "-c",
         dest="clockjob", action="store_true", default=False,
         help="Store output in a clock subdirectory. Also passes -f to vex2difx")
@@ -411,11 +424,13 @@ parser.add_option(
 parser.add_option(
         "--nopause", "-p",
         dest="nopause", action="store_true", default=False,
-        help="Do not pause after running calc - proceed straight to correlation")
+        help="Do not pause after running calc - proceed straight to "
+        " correlation")
 parser.add_option(
         "--alljobs", "-a",
         type="str", dest="expt_all", default=None,
-        help="Correlate all jobs produced by vex2difx for the experiment specified (no other arguments required)")
+        help="Correlate all jobs produced by vex2difx for the experiment" 
+        " specified (no other arguments required)")
 parser.add_option(
         "--computehead", "-H",
         dest="computehead", action="store_false", default=True,
@@ -439,12 +454,12 @@ parser.add_option(
 parser.add_option(
         "--jobtime", "-j",
         type="str", dest="jobtime", default=None,
-        help="""Max. job time for batch jobs, default is runtime * speedup
-        format = hh:mm:ss""")
+        help="Max. job time for batch jobs, default is runtime * speedup"
+        " format = hh:mm:ss")
 parser.add_option(
         "--speedup", "-s",
         type="float", dest="predicted_speedup", default=1.0,
-        help="""Predicted speedup factor to determine job run time""")
+        help="Predicted speedup factor to determine job run time")
 
 (options, args) = parser.parse_args()
 
@@ -454,16 +469,6 @@ if options.testjob and options.clockjob:
 if len(args) < 1 and not options.expt_all:
     parser.print_help()
     parser.error("Give job name(s)")
-
-# set max jobtime for batch jobs
-#if options.jobtime:
-#    jobtime = options.jobtime
-#elif options.clockjob:
-#    jobtime = '00:10:00'
-#elif options.testjob:
-#    jobtime = '00:10:00'
-#else:
-#    jobtime = '02:00:00'
 
 # Determine the name of the correlator pass from the first jobname or the -a
 # switch
@@ -482,7 +487,8 @@ if "-" in passname:
 operator_log = passname + "_comment.txt"
 try:
     raw_input(
-            "\nHit return, then enter an operator comment, minimally: PROD/CLOCK/TEST/FAIL")
+            "\nHit return, then enter an operator comment, minimally:"
+            " PROD/CLOCK/TEST/FAIL")
     fill_operator_log(operator_log)
 except:
     print "Operator comment not saved!"
@@ -497,7 +503,8 @@ emailserver = ()
 while get_email:
     try:
         user = raw_input(
-                "Enter *gmail* address and password for notifications (or return to ignore):\n")
+                "Enter *gmail* address and password for notifications"
+                + " (or return to ignore):\n")
         if user:
             emailserver = espressolib.Email(user, getpass.getpass())
             emailserver.connect()
@@ -525,7 +532,7 @@ if not options.novex:
 
 
 vex2difx_options = ""
-if options.clockjob or options.testjob:
+if options.clockjob or options.testjob or options.force:
     vex2difx_options = " -f "
 
 
@@ -609,7 +616,8 @@ for jobname in sorted(corrjoblist.keys()):
     copy_models(jobname, indir, outdir)
 
     # change the path names in the copied .input and .calc to relative paths
-    print "changing absolute paths to relative paths in the copied .input and .calc files\n"
+    print ("changing absolute paths to relative paths in the copied .input and"
+            " .calc files\n")
     copy_inputfilename = outdir + os.sep + inputfilename
     copy_calcfilename = outdir + os.sep + calcfilename
     change_path(copy_inputfilename, "CALC FILENAME:", indir, "./")
@@ -642,7 +650,7 @@ if binconfigfilename:
     shutil.copy2(polycofilename, outdir)
 
 if not options.nopause:
-    raw_input("Press return to initiate the correlator job or ^C to quit ")
+    raw_input("Press return to initiate the correlator job or ^C to quit")
 
 
 # set the $DIFX_MESSAGE_PORT as late as possible in the processing to avoid
@@ -713,7 +721,8 @@ finally:
 
     # and enter an operator comment
     raw_input(
-            "\nHit return, then update the operator comment, minimally: PROD/CLOCK/TEST/FAIL")
+            "\nHit return, then update the operator comment, minimally:"
+            + " PROD/CLOCK/TEST/FAIL")
     fill_operator_log(operator_log)
     for jobname in corrjoblist.keys():
         operator_joblog = outdir + jobname + ".comment.txt"
