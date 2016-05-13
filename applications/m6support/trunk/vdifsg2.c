@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.c 3883 2016-04-16 16:29:05Z gbc $
+ * $Id: vdifsg2.c 3915 2016-05-13 17:47:20Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -391,6 +391,7 @@ static int member_init(SGV2sfrag *sfp, int pgfcmx)
 {
     VDIFHeader pkt;
     int msbs = sfp->sgi->sg_wr_pkts;
+    vdifuse_trace(VDT("init %s\n"), sfp->sgi->name);
     if (vdifuse_debug>5) fprintf(vdflog, "member_init(%s)\n", sfp->sgi->name);
     if (sfp->sgi->frame_cnt_max > pgfcmx &&
         pgfcmx > 1 && pgfcmx < SG_FR_CNT_MAX) {
@@ -417,6 +418,9 @@ static int member_init(SGV2sfrag *sfp, int pgfcmx)
         "member_init %d#%ld %.8f..%.8f %u pps msbs %d\n",
             sfp->sgi->smi.mmfd, sfp->cblk, sfp->first, sfp->final,
             sfp->sgi->frame_cnt_max, msbs);
+    vdifuse_trace(VDT("init %d#%ld %.8f..%.8f %u pps msbs %d\n"),
+        sfp->sgi->smi.mmfd, sfp->cblk, sfp->first, sfp->final,
+        sfp->sgi->frame_cnt_max, msbs);
     return(msbs);
 }
 
@@ -446,10 +450,10 @@ static void stripe_bread(SGV2sdata *sdp)
     sdp->scnt = scnt;
     buf[0] = 0;
     s0 = floor(sdp->stripe[0].sfrag->ptbe / 10.0) * 10.0;
-    vdifuse_bread(VDT("(0..%d,%d..%d,%d..%d): %lu[%lu]%lu (%lu) B\n"),
+    vdifuse_bread(VDT("(0..%d,%d..%d,%d..%d): %lu[%lu]%lu (%lu)B at %.2f...\n"),
         ((sdp->zero == 0) ? 0 : sdp->zero - 1),
         sdp->zero, sdp->sgap - 1, sdp->sgap, sdp->numb,
-        sdp->bybs, sdp->byis, sdp->byas, sdp->bygt);
+        sdp->bybs, sdp->byis, sdp->byas, sdp->bygt, s0);
     for (ss = 0; ss < sdp->numb; ss++) {
         if (ss == sdp->zero)    sep = '|';
         else if (ss==sdp->sgap) sep = '%';
@@ -1200,7 +1204,7 @@ static int stripe_jump(SGV2sdata *sdp)
  */
 static int stripe_chck(SGV2sdata *sdp)
 {
-    int rv = -1, sj = 0;
+    int rv = -1, sj = 0, strikes = 0;
     off_t distance, newdist;
     struct timeval now;
     double psecs, fsecs;
@@ -1222,14 +1226,16 @@ static int stripe_chck(SGV2sdata *sdp)
         newdist = sdp->bybs - (sdp->roff + sdp->size);
         if (newdist > distance) {
             if (vdifuse_debug>1) fprintf(vdflog,
-                "  Distance increased to %lu\n", newdist);
-            vdifuse_trace(VDT("stripe_chck A: %lu>%lu"), newdist, distance);
-            break;
+                "  Distance increased to %lu (%d)\n", newdist, strikes);
+            vdifuse_trace(VDT("stripe_chck A: %lu>%lu (%d)"),
+                newdist, distance, strikes);
+            if (++strikes > 5) break;
         }
         distance = newdist;
         rv = 1;
     }
     psecs = secs_since(&now);
+    strikes = 0;
 
     distance = sdp->roff - (sdp->bybs + sdp->byis);
     /* sdp->roff >= sdp->bybs + sdp->byis */
@@ -1241,9 +1247,10 @@ static int stripe_chck(SGV2sdata *sdp)
         newdist = sdp->roff - (sdp->bybs + sdp->byis);
         if (newdist > distance) {
             if (vdifuse_debug>1) fprintf(vdflog,
-                "  Distance increased to %lu\n", newdist);
-            vdifuse_trace(VDT("stripe_chck B: %lu>%lu"), newdist, distance);
-            break;
+                "  Distance increased to %lu (%d)\n", newdist, strikes);
+            vdifuse_trace(VDT("stripe_chck B: %lu>%lu (%d)\n"),
+                newdist, distance, strikes);
+            if (++strikes > 5) break;
         }
         distance = newdist;
         rv = 1;
@@ -1268,7 +1275,7 @@ static int stripe_chck(SGV2sdata *sdp)
             sdp->roff, sdp->bybs + sdp->byis,
             sdp->roff + sdp->size, sdp->bybs);
       vdifuse_trace(
-        VDT("stripe_chck rv %d, req %lu > %lu or req %lu > %lu\n"),
+        VDT("stripe_chck req %lu > %lu or req %lu > %lu, rv %d\n"),
         sdp->roff, sdp->bybs + sdp->byis,
         sdp->roff + sdp->size, sdp->bybs, rv);
     }
