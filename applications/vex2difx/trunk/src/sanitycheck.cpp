@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -57,6 +57,7 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 	std::list<std::string>::const_iterator l;
 
 	int nWarn = 0;
+	int nError = 0;
 
 	for(s = P->sourceSetups.begin(); s != P->sourceSetups.end(); ++s)
 	{
@@ -196,13 +197,43 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 			{
 				if(t->nBit == 0)
 				{
-					std::cerr << "Error: number of bits not defined for mode " << M->defName <<" antenna " << s->first << std::endl;
-
-					exit(EXIT_FAILURE);
-
+					std::cerr << "Error: number of bits not defined for mode " << M->defName << " antenna " << s->first << std::endl;
+					++nError;
+				}
+				if(t->format == VexStream::FormatVDIF)
+				{
+					if(t->dataFrameSize() <= 0)
+					{
+						if(P->useAntenna(s->first))
+						{
+							std::cerr << "Error: data frame size not set for VDIF mode " << M->defName << " antenna " << s->first << std::endl;
+							++nError;
+						}
+						else
+						{
+							std::cerr << "Note: data frame size not set for VDIF mode " << M->defName << " for unused antenna " << s->first << std::endl;
+						}
+					}
+					if(!t->singleThread && t->threads.empty())
+					{
+						if(P->useAntenna(s->first))
+						{
+							std::cerr << "Error: no threads specified for INTERLACEDVDIF mode " << M->defName << " antenna " << s->first << std::endl;
+							++nError;
+						}
+						else
+						{
+							std::cerr << "Note: no threads specified for INTERLACEDVDIF mode " << M->defName << " for unused antenna " << s->first << std::endl;
+						}
+					}
 				}
 			}
 		}
+	}
+
+	if(nError > 0)
+	{
+		exit(EXIT_FAILURE);
 	}
 
 	return nWarn;

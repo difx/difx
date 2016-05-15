@@ -296,6 +296,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		{
 			// Here we match the format name but get no additional information
 			format = static_cast<DataFormat>(df);
+			singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 			return true;
 		}
@@ -377,7 +378,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 			return false;
 		}
 		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
-		fanout = matchInt(formatName, match[2]);
+		VDIFFrameSize = matchInt(formatName, match[2]);
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 		return true;
@@ -435,16 +436,19 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		{
 			nBit = v;
 		}
+		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
 	else
 	{
+		// of form <fmt>
 		format = stringToDataFormat(formatName);
 		if(format == NumDataFormats)
 		{
 			return false;
 		}
+		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
@@ -584,7 +588,7 @@ std::ostream& operator << (std::ostream &os, const VexStream &x)
 		formatName << "Illegal(" << x.format << ")";
 	}
 
-	os << " [format=" << formatName.str() << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan << ", nThread=" << x.nThread << ", singleThread=" << x.singleThread << ", sampRate=" << x.sampRate;
+	os << " [format=" << formatName.str() << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan << ", dataFrameSize=" << x.dataFrameSize() << ", nThread=" << x.nThread << ", singleThread=" << x.singleThread << ", sampRate=" << x.sampRate;
 	if(!x.threads.empty())
 	{
 		for(std::vector<int>::const_iterator it = x.threads.begin(); it != x.threads.end(); ++it)

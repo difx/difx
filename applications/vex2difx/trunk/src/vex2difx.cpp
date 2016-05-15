@@ -2755,6 +2755,12 @@ int main(int argc, char **argv)
 	}
 	events.sort();
 
+	if(verbose > 1)
+	{
+		cout << *V << endl;
+		cout << *P << endl;
+	}
+
 	// set min and max bandwidths for each setup
 	for(unsigned int s = 0; s < V->nScan(); ++s)
 	{
@@ -2903,12 +2909,6 @@ int main(int argc, char **argv)
 			added->pointingCentre = PhaseCentre(src->ra, src->dec, src->sourceNames[0]);
 			P->addSourceSetup(*added);
 		}
-	}
-
-	if(verbose > 1)
-	{
-		cout << *V << endl;
-		cout << *P << endl;
 	}
 
 	if(verbose > 3)
