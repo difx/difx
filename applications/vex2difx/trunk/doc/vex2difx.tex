@@ -36,7 +36,7 @@
 Walter Brisken
 
 \vspace{10pt}
-{\em draft} 2015/11/25
+{\em draft} 2016/05/15
 \end{center}
 
 
@@ -61,6 +61,8 @@ Note that as of now the only version of the vex format that is supported is vex 
 This version of the standard itself is not fully capable of conveying many details of modern VLBI systems, including the VDIF format, some recording systems, and all eVLBI.
 The lack of unambiguous support by vex 1.5 means that \vexdifx had to adopt some conventions and make some assumptions.
 \vexdifx aims to warn the user when assumptions are being made.
+
+Some of this information can be found on the DiFX wiki at \url{http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx}.
 
 \section{Output files}
 
@@ -125,7 +127,8 @@ See Table~\ref{tab:vdifclass} for specifying variations of the {\tt VDIF} format
 \# & Syntax & Example & Notes \\
 \hline
 0 & {\em class} & {\tt MARK5B} & \\
-1 & {\em class}\fs{\em threads}\fs{\em size}\fs{\em bits} & {\tt VDIF/0:1:2:3/5032/2} & For VDIF formats only. \\
+1a & {\em class}\fs{\em threads}\fs{\em size}\fs{\em bits} & {\tt VDIF/0:1:2:3/5032/2} & In {\tt .v2d}; for VDIF formats only. \\
+1b & {\em class}\fs{\em threads}\fs{\em size}\fs{\em bits} & {\tt VDIF/0,1,2,3/5032/2} & In {\tt .vex}; for VDIF formats only. \\
 2 & {\em class}\fs{\em size}\fs{\em bits} & {\tt VDIF/5032/2} & For VDIF formats only. \\
 3 & {\em class} {\em size} & {\tt VDIF5032} & This syntax is discouraged. \\
 4 & {\em class}{\tt 1\_}{\em fanout} & {\tt VLBA1\_4} & For VLBA and Mark4 formats only. \\
@@ -238,6 +241,9 @@ The sources of thread information, listed in increasing priority, are:
 \item {\tt format} statement in a {\tt ANTENNA} section of the \vd file
 \item {\tt format} statement in a {\tt DATASTREAM} section of the \vd file
 \end{enumerate}
+{\em Important note:} The separator used for the list of threads depends on which file the format is contained within.
+For {\tt .vex} files the separator must be commas, and for the {\tt .v2d} files the separator must be colons.
+Swapping the two interferes with the lexical rules for each of the two file types.
 
 \subsubsection{Sample type}
 
