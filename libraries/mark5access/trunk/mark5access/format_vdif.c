@@ -4562,6 +4562,11 @@ void blank_vdif_EDV4(const void *packed, int offsetsamples, float **unpacked, in
 	int d, v;
 
 	V = (const vdif_edv4_header *)packed;
+	if ((V->eversion != 4) || (V->masklength < 1) || (V->masklength > 64))
+	{
+		// fprintf(m5stderr, "VDIF Warning: VDIF EDV4 blanker found EDV%d with masklength %d!\n", V->eversion, V->masklength);
+		return;
+	}
 	nChan = 1 << (V->nchan);
 	frameLength = V->framelength8 * 8;
 	sampPerFrame = (frameLength - 32)*8/(nChan*(V->nbits + 1));
@@ -4647,6 +4652,11 @@ void blank_vdif_EDV4_complex(const void *packed, int offsetsamples, mark5_float_
 	int d, v;
 
 	V = (const vdif_edv4_header *)packed;
+	if ((V->eversion != 4) || (V->masklength < 1) || (V->masklength > 64))
+	{
+		// fprintf(m5stderr, "VDIF Warning: VDIF EDV4 blanker found EDV%d with masklength %d!\n", V->eversion, V->masklength);
+		return;
+	}
 	nChan = 1 << (V->nchan);
 	frameLength = V->framelength8 * 8;
 	sampPerFrame = (frameLength - 32)*8/(nChan*(V->nbits + 1));
