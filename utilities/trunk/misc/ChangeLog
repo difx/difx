@@ -1,4 +1,9 @@
+Version 2.5
+-----------
+* update difxcopy
+
 Version 2.4
+-----------
 * Added filteredDifx2Fits.py 
 * Added m5fb_makeheader, to generate SIGPROC filterbank header
 * filterbankprep.py: Bugfixes and extensions

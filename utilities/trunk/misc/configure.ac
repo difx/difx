@@ -1,4 +1,4 @@
-AC_INIT([util_misc], [2.4] )
+AC_INIT([util_misc], [2.5] )
 
 
 AM_INIT_AUTOMAKE([foreign])
