@@ -23,7 +23,7 @@
 #include <limits.h>
 
 #define MAX_INPUT_FILES 4096
-#define MAX_VIS 4096
+#define MAX_VIS 8192
 #define MAX_STN 50
 #define MAX_FBANDS 20 
 #define EXP_CODE_LEN 4
