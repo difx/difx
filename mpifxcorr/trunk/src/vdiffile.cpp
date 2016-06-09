@@ -283,6 +283,7 @@ void VDIFDataStream::updateConfig(int segmentindex)
 
 void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 {
+	const int MaxSummaryLength = 256;
 	int nrecordedbands, fanout;
 	Configuration::datasampling sampling;
 	Configuration::dataformat format;
@@ -292,6 +293,7 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 
 	long long dataoffset = 0;
 	struct vdif_file_summary fileSummary;
+	char fileSummaryString[MaxSummaryLength];
 	int jumpseconds, currentdsseconds;
 
 	format = config->getDataFormat(configindex, streamnum);
@@ -375,8 +377,12 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 		return;
 	}
 
-	// If verbose...
+	// Put file information into log stream
 	vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nrecordedbands/nthreads));
+	snprintvdiffilesummary(fileSummaryString, MaxSummaryLength, &fileSummary);
+	cinfo << startl << fileSummaryString << endl;
+
+	// If verbose...
 	printvdiffilesummary(&fileSummary);
 
 	// Here set readseconds to time since beginning of job

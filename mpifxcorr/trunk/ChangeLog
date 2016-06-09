@@ -23,6 +23,7 @@ Version 2.5
 * Change to shutdown procedure which may reduce occurence of "DIFX hanging" bug
 * Promote some ints to long longs; fixes reporting of core memory use when lots of memory is needed.
 * Experimental support for VDIF data served over Shared Memory
+* For Mark5B and VDIF file-based correlation put file information into log stream
 
 Version 2.4
 ~~~~~~~~~~~

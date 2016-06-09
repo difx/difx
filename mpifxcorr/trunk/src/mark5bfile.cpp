@@ -278,6 +278,7 @@ void Mark5BDataStream::updateConfig(int segmentindex)
 
 void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 {
+	const int MaxSummaryLength = 256;
 	int nrecordedbands, fanout;
 	Configuration::datasampling sampling;
 	Configuration::dataformat format;
@@ -286,6 +287,7 @@ void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 
 	long long dataoffset = 0;
 	struct mark5b_file_summary fileSummary;
+	char fileSummaryString[MaxSummaryLength];
 	int jumpseconds, currentdsseconds;
 
 	format = config->getDataFormat(configindex, streamnum);
@@ -329,6 +331,10 @@ void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 	mark5bfilesummarysetbits(&fileSummary, nbits);
 	mark5bfilesummarysettotalbandwidth(&fileSummary, static_cast<int>(bw*nrecordedbands));
 	mark5bfilesummaryfixmjd(&fileSummary, config->getStartMJD());
+
+	// Put file information into log stream
+	snprintmark5bfilesummary(fileSummaryString, MaxSummaryLength, &fileSummary);
+	cinfo << startl << fileSummaryString << endl;
 
 	// If verbose...
 	printmark5bfilesummary(&fileSummary);
