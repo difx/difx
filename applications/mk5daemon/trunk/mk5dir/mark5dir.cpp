@@ -1718,8 +1718,15 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 		FILE *out;
 
 		out = fopen(binFilename, "w");
-		fwrite(dirData, dirLength, 1, out);
-		fclose(out);
+		if(!out)
+		{
+			fprintf(stderr, "Cannot open %s for write.  No binary directory will be created.\n", binFilename);
+		}
+		else
+		{
+			fwrite(dirData, dirLength, 1, out);
+			fclose(out);
+		}
 	}
 
 	free(dirData);

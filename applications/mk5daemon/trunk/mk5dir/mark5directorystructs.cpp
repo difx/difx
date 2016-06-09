@@ -81,6 +81,13 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 		info->nScan = dirSize / 128 - 1;
 		info->signature = calculateMark5DirSignature(dirData + 128, dirSize-128);
 
+		if(info->dirVersion == 0)
+		{
+			printf("Weird: version reported to be zero.  Changing to 1.\n");
+
+			info->dirVersion = 1;
+		}
+
 		/* now start the plausibility checking */
 		if(info->dirVersion == 1)
 		{
