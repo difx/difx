@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Adam Deller / Walter Brisken               *
+ *   Copyright (C) 2009-2016 by Adam Deller / Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -368,6 +368,8 @@ struct vdif_file_summary {
 void resetvdiffilesummary(struct vdif_file_summary *sum);
 
 void printvdiffilesummary(const struct vdif_file_summary *sum);
+
+void snprintvdiffilesummary(char *str, int maxLength, const struct vdif_file_summary *sum);
 
 static inline void vdiffilesummarysetsamplerate(struct vdif_file_summary *sum, int64_t sampRateHz) { sum->framesPerSecond = sampRateHz*sum->nBit/(8*(sum->frameSize-VDIF_HEADER_BYTES)); }
 

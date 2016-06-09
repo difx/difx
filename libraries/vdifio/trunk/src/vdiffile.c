@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2015 Walter Brisken                                *
+ *   Copyright (C) 2013-2016 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -78,6 +78,33 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 	printf("  end second = %d\n", sum->endSecond % 86400);
 	printf("  end frame = %d\n", sum->endFrame);
 	printf("  first frame offset = %d bytes\n", sum->firstFrameOffset);
+}
+
+void snprintvdiffilesummary(char *str, int maxLength, const struct vdif_file_summary *sum)
+{
+	int i, v;
+
+	if(sum->nThread < 1)
+	{
+		v = snprintf(str, maxLength, "VDIF file=%s size=%lld No Threads Found!", sum->fileName, sum->fileSize);
+	}
+	else
+	{
+		v = snprintf(str, maxLength, "VDIF file=%s size=%lld frameSize=%d frameRate=%d bits=%d startMJD=%d startSecond=%d startFrame=%d endSecond=%d endFrame=%d, offset=%d threads", sum->fileName, sum->fileSize, sum->frameSize, sum->framesPerSecond, sum->nBit, vdiffilesummarygetstartmjd(sum), sum->startSecond % 86400, sum->startFrame, sum->endSecond % 86400, sum->endFrame, sum->firstFrameOffset);
+
+		for(i = 0; i < sum->nThread; ++i)
+		{
+			maxLength -= v;
+
+			if(maxLength < 2)
+			{
+				break;
+			}
+			str += v;
+
+			v = snprintf(str, maxLength, "%c%d", (i == 0 ? '=' : ','), sum->threadIds[i]);
+		}
+	}
 }
 
 int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum)

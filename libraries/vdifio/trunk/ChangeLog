@@ -33,6 +33,8 @@ Version 1.1
 * Support for partial frame validity in multiplexed VDIF data (pending VDIF committee approval of EDV version 4 requested by WFB on 2015/10/09)
 * Support for fanout in multiplexing (needed by some DBBC3 modes), both in library in vmux (very lightly tested)
 * Some minor improvements to some utilities (improved help info, some parameter checking, ...)
+* New function: void snprintvdiffilesummary(char *str, int maxLength, const struct vdif_file_summary *sum)
+
 
 Version 1.0
 ~~~~~~~~~~~

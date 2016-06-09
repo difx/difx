@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,7 +40,7 @@ void summarize(const char *fileName)
 	int i;
 	Mark6BlockHeader_ver2 *h;
 	int s;
-	vdif_header *v1, *v2;
+	vdif_header *v1;
 
 	in = fopen(fileName, "r");
 	if(in == 0)
@@ -86,15 +86,20 @@ void summarize(const char *fileName)
 		}
 		for(j = 0; j < n; ++j)
 		{
+			vdif_header *v2;
+
 			v2 = (vdif_header *)(data + j*H.packet_size);
 			if(getVDIFFrameBytes(v2) == H.packet_size)
 			{
 				++nSize;
 			}
+			if(j == n-1) // print summary for last one
+			{
+				printf("%d %d %d/%d  %d:%05d:%d - %d:%05d:%d\n", i, h->blocknum, nSize, n,
+					getVDIFFrameEpochSecOffset(v1), getVDIFFrameNumber(v1), getVDIFThreadID(v1),
+					getVDIFFrameEpochSecOffset(v2), getVDIFFrameNumber(v2), getVDIFThreadID(v2));
+			}
 		}
-		printf("%d %d %d/%d  %d:%05d:%d - %d:%05d:%d\n", i, h->blocknum, nSize, n,
-			getVDIFFrameEpochSecOffset(v1), getVDIFFrameNumber(v1), getVDIFThreadID(v1),
-			getVDIFFrameEpochSecOffset(v2), getVDIFFrameNumber(v2), getVDIFThreadID(v2));
 	}
 
 	free(buffer);

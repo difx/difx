@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     }
     if(framebytes == expectedframebytes)
     {
-      printf("%12ld bytes since last good frame ", (int)(bytecount-lastbytecount));
+      printf("%12d bytes since last good frame ", (int)(bytecount-lastbytecount));
       lastbytecount = bytecount;
     }
     bytecount += byteshift;

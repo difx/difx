@@ -53,7 +53,7 @@ void generateData(float **data, int nframe, int sampesperframe, int nchan,
 
 int main (int argc, char * const argv[]) {
   char *filename, *framedata, msg[MAXSTR];
-  int i, n, frameperbuf, status, outfile, opt, tmp;
+  int i, frameperbuf, status, outfile, opt, tmp;
   uint64_t nframe;
   float **data, ftmp, stdDev, mean;
   ssize_t nr;
@@ -255,7 +255,7 @@ int main (int argc, char * const argv[]) {
   printf("writing %s\n", filename);
 
   while (nframe>0) {
-    printf("DEBUG: nframe=%llu\n", nframe);
+    printf("DEBUG: nframe=%llu\n", (long long unsigned int)nframe);
     
     generateData(data, frameperbuf, samplesperframe, nchan, iscomplex, bandwidth, tone,
 		 &mean, &stdDev);
