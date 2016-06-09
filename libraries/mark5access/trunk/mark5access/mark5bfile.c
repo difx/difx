@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2014 Walter Brisken                                *
+ *   Copyright (C) 2013-2016 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -74,6 +74,11 @@ void printmark5bfilesummary(const struct mark5b_file_summary *sum)
 	printf("  end second = %d\n", sum->endSecond);
 	printf("  end frame = %d\n", sum->endFrame);
 	printf("  first frame offset = %d bytes\n", sum->firstFrameOffset);
+}
+
+void snprintmark5bfilesummary(char *str, int maxLength, const struct mark5b_file_summary *sum)
+{
+	snprintf(str, maxLength, "Mark5B file=%s size=%lld frameRate=%d startMJD=%d startSecond=%d startFrame=%d endSecond=%d endFrame=%d offset=%d", sum->fileName, sum->fileSize, sum->framesPerSecond, sum->startDay, sum->startSecond, sum->startFrame, sum->endSecond, sum->endFrame, sum->firstFrameOffset);
 }
 
 int determinemark5bframeoffset(const unsigned char *buffer, int bufferSize)

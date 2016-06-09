@@ -56,6 +56,8 @@ void resetmark5bfilesummary(struct mark5b_file_summary *sum);
 
 void printmark5bfilesummary(const struct mark5b_file_summary *sum);
 
+void snprintmark5bfilesummary(char *str, int maxLength, const struct mark5b_file_summary *sum);
+
 static inline int mark5bfilesummarygetstartmjd(const struct mark5b_file_summary *sum)
 {
 	return sum->startDay;

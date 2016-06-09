@@ -46,8 +46,8 @@
 
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
-const char version[] = "1.3.1";
-const char verdate[] = "20120508";
+const char version[] = "1.3.2";
+const char verdate[] = "20150730";
 
 int die = 0;
 
@@ -79,7 +79,7 @@ static void usage(const char *pgm)
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
-	printf("  <nchan> is the number of channels to make per IF\n\n");
+	printf("  <nchan> is the number of spectral points to make per baseband channel\n\n");
 	printf("  <nint> is the number of FFT frames to spectrometize\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
@@ -87,7 +87,7 @@ static void usage(const char *pgm)
 	printf("The following options are supported\n\n");
 	printf("    -dbbc      Assume dBBC polarisation order (all Rcp then all Lcp)\n\n");
 	printf("    -nopol     Do not compute cross pol terms\n\n");
-	printf("    -double    Double sidebade (complex) data\n\n");
+	printf("    -double    Double sideband (complex) data\n\n");
 	printf("    -help      This list\n\n");
 }
 
@@ -115,7 +115,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 			break;
 		}
 
-		status = mark5_stream_decode_double_complex(ms, chunk , (double complex**)cdata);
+		status = mark5_stream_decode_double_complex(ms, chunk, (double complex**)cdata);
 		if(status < 0)
 		{
 			break;
@@ -172,33 +172,34 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 
 	// If Double sideband need to move stuff around
 
-	if (doublesideband) 
-	  {
-	    int i;
-	    double dtmp;
-	    fftw_complex ctmp;
-	    for(i = 0; i < ms->nchan; ++i)
-	      {
-		int c;
-		
-		for(c = 0; c < nchan/2; ++c)
-		  {
-		    dtmp = spec[i][c];
-		    spec[i][c] = spec[i][c+nchan/2];
-		    spec[i][c+nchan/2] = dtmp;
-		  }
-	      }
-	    for(i = 0; i < ms->nchan/2; ++i)
-	      {
-		int c;
-		for(c = 0; c < nchan/2; ++c)
-		  {
-		    ctmp = zx[i][c];
-		    zx[i][c] =  zx[i][c+nchan/2];
-		    zx[i][c+nchan/2] = ctmp;
-		  }
-	      }
-	  }
+	if(doublesideband) 
+	{
+		int i;
+		double dtmp;
+		fftw_complex ctmp;
+		for(i = 0; i < ms->nchan; ++i)
+		{
+			int c;
+
+			for(c = 0; c < nchan/2; ++c)
+			{
+				dtmp = spec[i][c];
+				spec[i][c] = spec[i][c+nchan/2];
+				spec[i][c+nchan/2] = dtmp;
+			}
+		}
+		for(i = 0; i < ms->nchan/2; ++i)
+		{
+			int c;
+
+			for(c = 0; c < nchan/2; ++c)
+			{
+				ctmp = zx[i][c];
+				zx[i][c] = zx[i][c+nchan/2];
+				zx[i][c+nchan/2] = ctmp;
+			}
+		}
+	}
 
 	return 0;
 }
@@ -264,15 +265,15 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 
 		if (polmode==VLBA) 
 		{
-		  for(i = 0; i < ms->nchan/2; ++i)
-		  {
-			int c;
-
-			for(c = 0; c < nchan; ++c)
+			for(i = 0; i < ms->nchan/2; ++i)
 			{
-				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
+				int c;
+
+				for(c = 0; c < nchan; ++c)
+				{
+					zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
+				}
 			}
-		  }
 		} 
 		else if (polmode==DBBC) 
 		{
@@ -336,9 +337,10 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	else
 	{
 		docomplex = 0;
-		if (doublesideband) {
-		  printf("Warning Double sideband supported only for complex sampled data\n");
-		  doublesideband = 0;
+		if(doublesideband)
+		{
+			printf("Warning Double sideband supported only for complex sampled data\n");
+			doublesideband = 0;
 		}
 		chunk = 2*nchan;
 	}
@@ -367,11 +369,11 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	if(docomplex)
 	{
-	  harvestComplexData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, doublesideband);
+		harvestComplexData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, doublesideband);
 	} 
 	else
 	{
-	  harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, polmode);
+		harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, polmode);
 	}
 
 	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
@@ -388,7 +390,10 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	f = ms->nchan*nchan/sum;
 	chanbw = ms->samprate/(2.0e6*nchan);
-	if (docomplex) chanbw *= 2;
+	if(docomplex)
+	{
+		chanbw *= 2;
+	}
 
 	for(c = 0; c < nchan; ++c)
 	{
@@ -438,35 +443,38 @@ int main(int argc, char **argv)
 #if USEGETOPT
 	int opt;
 	struct option options[] = {
-	  {"double", 0, 0, 'd'}, // Double sideband complex
-	  {"dbbc", 0, 0, 'B'},  // dBBC channel ordering
-	  {"nopol", 0, 0, 'P'}, // Don't compute the crosspol terms
-	  {"help", 0, 0, 'h'},
-	  {0, 0, 0, 0}
+		{"double", 0, 0, 'd'}, // Double sideband complex
+		{"dbbc", 0, 0, 'B'},  // dBBC channel ordering
+		{"nopol", 0, 0, 'P'}, // Don't compute the crosspol terms
+		{"help", 0, 0, 'h'},
+		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long_only(argc, argv, "hd", options, NULL)) != EOF)
-	  switch (opt) {
-	  case 'B': // DBBC Pol mode (all Rcp then all LCP)
-	    polmode = DBBC;
-	    printf("Assuming DBBC polarisation order\n");
-	    break;
-	    
-	  case 'P': // Don't compute cross pols
-	    polmode = NOPOL;
-	    printf("Not computing cross pol terms\n");
-	    break;
+	while((opt = getopt_long_only(argc, argv, "hd", options, NULL)) != EOF)
+	{
+		switch (opt) 
+		{
+		case 'B': // DBBC Pol mode (all Rcp then all LCP)
+			polmode = DBBC;
+			printf("Assuming DBBC polarisation order\n");
+			break;
 
-	  case 'd': // Double sideband
-	    doublesideband = 1;
-	    printf("Assuming double sideband data\n");
-	    break;
-	    
-	  case 'h': // help
-	    usage(argv[0]);
-	    return EXIT_SUCCESS;
-	    break;
-	  }
+		case 'P': // Don't compute cross pols
+			polmode = NOPOL;
+			printf("Not computing cross pol terms\n");
+			break;
+
+		case 'd': // Double sideband
+			doublesideband = 1;
+			printf("Assuming double sideband data\n");
+			break;
+
+		case 'h': // help
+			usage(argv[0]);
+			return EXIT_SUCCESS;
+			break;
+		}
+	}
 
 #else
 	int optind=1;
@@ -475,7 +483,7 @@ int main(int argc, char **argv)
 	oldsiginthand = signal(SIGINT, siginthand);
 
 
-	if (argc-optind == 1)
+	if(argc-optind == 1)
 	{
 		struct mark5_format *mf;
 		int bufferlen = 1<<11;
@@ -549,8 +557,7 @@ int main(int argc, char **argv)
 		offset=atoll(argv[optind+5]);
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, 
-		      polmode, doublesideband);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband);
 
 	return retval;
 }
