@@ -34,7 +34,9 @@ Version 1.1
 * Support for fanout in multiplexing (needed by some DBBC3 modes), both in library in vmux (very lightly tested)
 * Some minor improvements to some utilities (improved help info, some parameter checking, ...)
 * New function: void snprintvdiffilesummary(char *str, int maxLength, const struct vdif_file_summary *sum)
-
+* Update help info for some utilties : fix "Usage" lines.
+* vmux: all printf(...) -> fprintf(stderr, ...) so as to not interfere with stdout usage 
+* vmux: stop on SIGPIPE: useful for piped operations
 
 Version 1.0
 ~~~~~~~~~~~

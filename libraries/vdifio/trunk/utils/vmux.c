@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2015 by Walter Brisken                             *
+ *   Copyright (C) 2013-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,14 +30,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <vdifio.h>
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.7";
-const char verdate[] = "20151117";
+const char verdate[] = "20160610";
 
 const int defaultChunkSize = 2000000;
+
+int die = 0;
+
+void sigpipeHandler(int i)
+{
+	die = 1;
+}
 
 void usage(const char *pgm)
 {
@@ -100,8 +108,10 @@ int main(int argc, char **argv)
 	int fanoutFactor = 1;
 	const vdif_header *vh;
 	struct vdif_mux vm;
-	int flags = VDIF_MUX_FLAG_PROPAGATEVALIDITY;
+	int flags = VDIF_MUX_FLAG_PROPAGATEVALIDITY | VDIF_MUX_FLAG_RESPECTGRANULARITY;
 	int a;
+
+	signal(SIGPIPE, &sigpipeHandler);
 
 	if(argc <= 1)
 	{
@@ -159,7 +169,7 @@ int main(int argc, char **argv)
 			inFile = argv[a];
 			if(verbose > 2)
 			{
-				printf("Arg %d: Input file = %s\n", a, inFile);
+				fprintf(stderr, "Arg %d: Input file = %s\n", a, inFile);
 			}
 		}
 		else if(inputframesize == 0)
@@ -173,7 +183,7 @@ int main(int argc, char **argv)
 			}
 			if(verbose > 2)
 			{
-				printf("Arg %d: Input frame size = %d\n", a, inputframesize);
+				fprintf(stderr, "Arg %d: Input frame size = %d\n", a, inputframesize);
 			}
 		}
 		else if(framesPerSecond == 0)
@@ -187,7 +197,7 @@ int main(int argc, char **argv)
 			}
 			if(verbose > 2)
 			{
-				printf("Arg %d: Frames per second = %d\n", a, framesPerSecond);
+				fprintf(stderr, "Arg %d: Frames per second = %d\n", a, framesPerSecond);
 			}
 		}
 		else if(threadString == 0)
@@ -195,7 +205,7 @@ int main(int argc, char **argv)
 			threadString = argv[a];
 			if(verbose > 2)
 			{
-				printf("Arg %d: Thread string = %s\n", a, threadString);
+				fprintf(stderr, "Arg %d: Thread string = %s\n", a, threadString);
 			}
 		}
 		else if(outFile == 0)
@@ -203,7 +213,7 @@ int main(int argc, char **argv)
 			outFile = argv[a];
 			if(verbose > 2)
 			{
-				printf("Arg %d: Output file = %s\n", a, outFile);
+				fprintf(stderr, "Arg %d: Output file = %s\n", a, outFile);
 			}
 		}
 		else if(hasOffset == 0)
@@ -212,7 +222,7 @@ int main(int argc, char **argv)
 			offset = atoll(argv[a]);
 			if(verbose > 2)
 			{
-				printf("Arg %d: Offset = %Ld\n", a, (long long)offset);
+				fprintf(stderr, "Arg %d: Offset = %Ld\n", a, (long long)offset);
 			}
 		}
 		else if(hasChunkSize == 0)
@@ -224,7 +234,7 @@ int main(int argc, char **argv)
 			srcChunkSize -= srcChunkSize % 8;
 			if(verbose > 2)
 			{
-				printf("Arg %d: Chunk size = %d\n", a, destChunkSize);
+				fprintf(stderr, "Arg %d: Chunk size = %d\n", a, destChunkSize);
 			}
 		}
 		else
@@ -263,7 +273,7 @@ int main(int argc, char **argv)
 			{
 				if(threads[i] == threads[nThread])
 				{
-					printf("Error! threadId %d listed more than once!\n", threads[nThread]);
+					fprintf(stderr, "Error! threadId %d listed more than once!\n", threads[nThread]);
 
 					return EXIT_FAILURE;
 				}
@@ -349,13 +359,13 @@ int main(int argc, char **argv)
 	if(bitsPerSample <= 0)
 	{
 		bitsPerSample = getVDIFBitsPerSample(vh);
-		printf("Got %d bits per sample from the first frame header\n", bitsPerSample);
+		fprintf(stderr, "Got %d bits per sample from the first frame header\n", bitsPerSample);
 	}
 
 	if(getVDIFComplex(vh) != 0)
 	{
 		flags |= VDIF_MUX_FLAG_COMPLEX;
-		printf("Looks like complex sampled data.  Will take this into consideration.\n");
+		fprintf(stderr, "Looks like complex sampled data.  Will take this into consideration.\n");
 	}
 
 	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, bitsPerSample, nThread, threads, nSort, nGap, flags);
@@ -367,10 +377,10 @@ int main(int argc, char **argv)
 	}
 
 	nChanPerThread = getVDIFNumChannels(vh);
-	printf("Got %d chans per thread from the first frame header\n", nChanPerThread);
+	fprintf(stderr, "Got %d chans per thread from the first frame header\n", nChanPerThread);
 	if(nChanPerThread != 1)
 	{
-		printf("Setting nChanPerThread to %d based on first frame header\n", nChanPerThread);
+		fprintf(stderr, "Setting nChanPerThread to %d based on first frame header\n", nChanPerThread);
 		rv = setvdifmuxinputchannels(&vm, nChanPerThread);
 		if(rv < 0)
 		{
@@ -400,7 +410,7 @@ int main(int argc, char **argv)
 	
 	resetvdifmuxstatistics(&stats);
 	
-	for(;;)
+	while(!die)
 	{
 		int V;
 
@@ -457,7 +467,7 @@ int main(int argc, char **argv)
 			int nJump = (int)(stats.startFrameNumber - nextFrame);
 			int j;
 
-			printf("JUMP %d\n", nJump);
+			fprintf(stderr, "JUMP %d\n", nJump);
 
 			/* borrow one output frame of src memory... */
 			memcpy(src, dest, VDIF_HEADER_BYTES);

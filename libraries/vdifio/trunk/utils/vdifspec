@@ -2,8 +2,8 @@
 
 program = 'vdifspec'
 author  = 'Walter Brisken'
-version = '0.2'
-verdate = '20131206'
+version = '0.3'
+verdate = '20160610'
 
 from os import system
 from string import split
@@ -14,7 +14,7 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'A VDIF spectrometer for multi-thread VDIF data.  Uses vmux'
 	print 'and m5spec to do the heavy lifting.\n'
-	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile> [nbit] [<offset>]\n'
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile> [nbit] [<offset>]\n' % program
 	print '  <infile> is the name of the VDIF file\n'
 	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
 	print '  <data rate> is the stream data rate (Mbps)\n'
@@ -54,7 +54,7 @@ outputpayload = nc*(framesize-32)
 framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
 outputdatarate = outputpayload*framespersecond*8/1000000
 
-cmd = 'vmux %s %d %d %s - %d %d | m5spec - VDIF_%d-%d-%d-%d %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, nbit, outputpayload, outputdatarate, nc, nbit, nchan, nint, outfile) 
+cmd = 'vmux %s %d %d %s - %d | m5spec - VDIF_%d-%d-%d-%d %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nbit, nchan, nint, outfile) 
 
 print 'Executing: %s' % cmd
 system(cmd)

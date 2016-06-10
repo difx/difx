@@ -2,8 +2,8 @@
 
 program = 'vdifbstate'
 author  = 'Walter Brisken'
-version = '0.1'
-verdate = '20130406'
+version = '0.2'
+verdate = '20160610'
 
 from os import system
 from string import split
@@ -14,7 +14,7 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'A VDIF state counter for multi-thread VDIF data.  Uses vmux'
 	print 'and m5bstate to do the heavy lifting.\n'
-	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nframes> [<offset>]\n'
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nframes> [<offset>]\n' % program
 	print '  <infile> is the name of the VDIF file\n'
 	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
 	print '  <data rate> is the stream data rate (Mbps)\n'
