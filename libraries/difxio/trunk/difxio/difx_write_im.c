@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -29,13 +29,28 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "difxio/difx_write.h"
+
+static int isNanVector(const double *v, int len)
+{
+	int i;
+
+	for(i = 0; i < len; ++i)
+	{
+		if(isnan(v[i]))
+		{
+			return 1;
+		}
+	}
+
+	return 0;
+}
 
 int writeDifxIM(const DifxInput *D)
 {
 	FILE *out;
-	DifxScan *scan;
-	int a, s, p, i;
+	int s, p;
 	int refAnt, order;
 
 	if(!D)
@@ -86,6 +101,9 @@ int writeDifxIM(const DifxInput *D)
 
 	for(s = 0; s < D->nScan; ++s)
 	{
+		DifxScan *scan;
+		int i;
+		
 		scan = D->scan + s;
 
 		writeDifxLine1(out, "SCAN %d POINTING SRC", s, D->source[scan->pointingCentreSrc].name);
@@ -131,6 +149,8 @@ int writeDifxIM(const DifxInput *D)
 			writeDifxLineInt2(out, "SCAN %d POLY %d SEC", s, p, scan->im[refAnt][0][p].sec);
 			for(i = 0; i < scan->nPhaseCentres+1; ++i)
 			{
+				int a;
+
 				for(a = 0; a < scan->nAntenna; ++a)
 				{
 					if(scan->im[a] == 0)
@@ -142,12 +162,15 @@ int writeDifxIM(const DifxInput *D)
 					writeDifxLineArray2(out, "SRC %d ANT %d DRY (us)", i, a, scan->im[a][i][p].dry, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d WET (us)", i, a, scan->im[a][i][p].wet, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d AZ", i, a, scan->im[a][i][p].az, order+1);
-					if(scan->im[a][i][p].elcorr[0] != 0.0 || scan->im[a][i][p].elcorr[1] != 0.0)
+					if(!isNanVector(scan->im[a][i][p].elcorr, order+1) && (scan->im[a][i][p].elcorr[0] != 0.0 || scan->im[a][i][p].elcorr[1] != 0.0))
 					{
 						writeDifxLineArray2(out, "SRC %d ANT %d EL CORR", i, a, scan->im[a][i][p].elcorr, order+1);
 					}
-					writeDifxLineArray2(out, "SRC %d ANT %d EL GEOM", i, a, scan->im[a][i][p].elgeom, order+1);
-					if(scan->im[a][i][p].parangle[0] != 0.0 || scan->im[a][i][p].parangle[1] != 0.0)
+					if(!isNanVector(scan->im[a][i][p].elgeom, order+1) && (scan->im[a][i][p].elgeom[0] != 0.0 || scan->im[a][i][p].elgeom[1] != 0.0))
+					{
+						writeDifxLineArray2(out, "SRC %d ANT %d EL GEOM", i, a, scan->im[a][i][p].elgeom, order+1);
+					}
+					if(!isNanVector(scan->im[a][i][p].parangle, order+1) && (scan->im[a][i][p].parangle[0] != 0.0 || scan->im[a][i][p].parangle[1] != 0.0))
 					{
 						writeDifxLineArray2(out, "SRC %d ANT %d PAR ANGLE", i, a, scan->im[a][i][p].parangle, order+1);
 					}
