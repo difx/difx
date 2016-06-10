@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" ?>
+
+<casaxml xmlns="http://casa.nrao.edu/schema/psetTypes.html"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://casa.nrao.edu/schema/casa.xsd
+file:///opt/casa/code/xmlcasa/xml/casa.xsd">
+
+<task type="function" name="polconvert" category="analysis">
+
+  <shortdescription>\n\nVersion 1.2-r6\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+      
+       <description>\n\nVersion 1.2-r6\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</description>
+
+
+<input>
+
+    <param type="string" name="IDI" mustexist="true">
+      <description>Input FITS-IDI file with VLBI visibilities. It can \nalso be a direcotry containing SWIN files from DiFX.</description>
+      <value></value>
+    </param>
+
+    <param type="string" name="OUTPUTIDI" mustexist="false">
+      <description>Output FITS-IDI file (or SWIN directory). If equal \nto IDI, the file(s) will be overwritten</description>
+      <value></value>
+    </param>
+
+    <param type="string" name="DiFXinput" mustexist="false">
+      <description>If SWIN files are being converted, this must \nbe the *.input file used by DiFX.</description>
+      <value></value>
+    </param>
+
+
+    <param type="any" name="doIF" mustexist="false">
+      <description>List of IFs to convert. Default means all.</description>
+      <value>[]</value>
+    </param>
+
+
+    <param type="any" name="linAntIdx" mustexist="false">
+      <description>List of indices of the linear-polarization \nantennas in the IDI file</description>
+      <value>[1]</value>
+    </param>
+
+    <param type="any" name="Range" mustexist="false">
+      <description>Time range to convert (integer list; AIPS format). \nDefault means all data</description>
+      <value>[]</value>
+    </param>
+
+    <param type="string" name="ALMAant" mustexist="false">
+      <description>If ALMA has been used, this is the antenna table \nfrom the MS with the intra-ALMA visibilities.</description>
+      <value></value>
+    </param>
+
+    <param type="int" name="spw" mustexist="false">
+      <description>Spectral window in ALMAvis that contains the VLBI band.</description>
+      <value>0</value>
+    </param>
+
+    <param type="string" name="calAPP" mustexist="false">
+      <description>If ALMA has been used, this is the combined\nASDM_CALAPPPHASE table from the ASDM.\nThe list of measurement sets can also\nbe given (so the table is\nconcatenated from all of them).</description>
+      <value></value>
+    </param>
+
+
+    <param type="any" name="calAPPTime" mustexist="false">
+      <description>Time shift and time tolerance (in sec) for the \nCALAPPPHASE table obtained from the ASDM.</description>
+      <value>[0.,5.]</value>
+    </param>
+
+    <param type="any" name="gains" mustexist="false">
+      <description>Gain tables to pre-calibrate the linear-pol VLBI \nstations (one list of gains per linear-pol station).</description>
+      <value>[["NONE"]]</value>
+    </param>
+
+    <param type="any" name="dterms" mustexist="false">
+      <description>D-term tables to pre-calibrate the linear-pol VLBI \nstations (one table per linear-pol station).</description>
+      <value>["NONE"]</value>
+    </param>
+
+    <param type="bool" name="amp_norm" mustexist="false">
+      <description>If True, normalize the amplitude correction to the X-Y average, and save the scaling factor (vs time) in an external (ASCII) file. If False, apply the amplitude correction as is.</description>
+      <value>True</value>
+    </param>
+
+    <param type="any" name="XYadd" mustexist="false">
+      <description>Add manually a phase between X and Y before \nconversion (in deg.). One value per linear-pol station.</description>
+      <value>[0.0]</value>
+    </param>
+
+    <param type="any" name="swapXY" mustexist="false">
+      <description>Swap X-Y before conversion. One value per linear-pol \nVLBI station.</description>
+      <value>[False]</value>
+    </param>
+
+    <param type="any" name="swapRL" mustexist="false">
+      <description>Swap R-L of the OTHER antenna(s) when plotting\nthe fringes.</description>
+      <value>False</value>
+    </param>
+
+    <param type="bool" name="IDI_conjugated" mustexist="false">
+      <description>Assume a swap in the baseline defintion (i.e., conjugation) of the FITS-IDI file. This has NO effect on SWIN files and shall be set to True. </description>
+      <value>True</value>
+    </param>
+
+    <param type="any" name="plotIF" mustexist="false">
+      <description>IF index to plot. Default means to NOT plot.</description>
+      <value>-1</value>
+    </param>
+
+
+    <param type="any" name="plotRange" mustexist="false">
+      <description>Time range to plot (integer list; AIPS format). \nDefault means to NOT plot</description>
+      <value>[]</value>
+    </param>
+
+    <param type="any" name="plotAnt" mustexist="false">
+      <description>Index of the other antenna in the baseline\nto plot. Default means to NOT plot.</description>
+      <value>-1</value>
+    </param>
+
+    <param type="bool" name="doTest" mustexist="false">
+      <description>If true, only compute (and eventually plot), the data,\nbut leave OUTPUTIDI untouched.</description>
+      <value>True</value>
+    </param>
+
+
+
+
+</input>
+
+  <returns type="bool"/>
+
+  <example>
+
+For more information about the internals of PolConvert, please read:
+
+Marti-Vidal et al. 2016, Astronomy and Astrophysics, 587, 143 
+
+PROCEDURE:
+
+Given an FITS-IDI file with phased-ALMA observations, the user must first 
+calibrate completely (i.e., in full polarization) the corresponding ALMA 
+measurement set. It is important to create it using asis='CALAPPPHASE' in 
+the importasdm task. 
+
+If more than one asdm was created in the observations, the user must 
+concatenate all the CALAPPPHASE tables of each asdm, for PolConvert to 
+work properly. This can be done with the following commands (we assume 
+here that MSLIST is a python list with the names of the measurement sets 
+for each asdm):
+
+for i,myms in enumerate(MSLIST):
+  if i==0:
+    os.system('cp -rf %s/ASDM_CALAPPPHASE ./CALAPPPHASE.tab'%myms)
+  else:
+    tb.open('%s/ASDM_CALAPPPHASE'%myms)
+    tb.copyrows('./CALAPPPHASE.tab')
+    tb.close()
+
+These lines will create the table './CALAPPPHASE.tab', to be used by 
+PolConvert (i.e., the table specified in the 'calAPP' keyword).
+
+PolConvert can also do this for you, if you set calAPP = MSLIST. But
+check carefully the information that it will print, regarding the 
+time coverage of both the CALAPPPHASE table and the MSs.
+
+Let us assume that the calibration tables are named 'gain.tb' and 
+'bandpass.tb' (there can be many others, for delay, XY-phase, etc.) and 
+the D-term table is called 'dterms.tb'. Then, with this assumption:
+
+- If ALMA is the only station with linear receivers (let's say it is 
+station number 1 in the FITS-IDI file), the call to PolConvert should be 
+done with the following keyword values:
+
+- linAntIdx = [1]
+
+- Range = []    # i.e., all data will be converted
+
+- ALMAvis = 'TheALMAvisibilities.ms' 
+ 
+- spw = 0  # it may be a good idea to split first the science spw, 
+           # before concatenating and calibrating the ms
+
+- calAPP = './CALAPPPHASE.tab'
+
+- calAPPTime = [0., 5.0]   # The CALAPP entries sometime start and end
+                           # with time lags in between. The time tolerance
+                           # of 5 seconds should avoid problems related
+                           # to this.
+
+- gains = [['gain.tb','bandpass.tb']]
+- dterms = ['dterms.tb']
+
+- doTest = False # to actually APLY the changes, not only compute them!
+
+
+###################
+   
+     SPECIAL CASE 1:
+
+If there was a second antenna with linear-polarization receivers, 
+it can also be converted, but has to be listed after ALMA. Let us assume
+that this antenna has id=4 in the FITS-IDI file. Then:
+
+- linAntIdx = [1,4]   # i.e., ALMA plus the other linear-pol. station.
+
+- gains = [ ['gain.tb','bandpass.tb'] , ['NONE'] ]
+
+     # Notice that 'NONE' can be used to tell PolConvert not to apply
+     # any calibration.
+
+- dterms = [ 'dterms.dt' , 'NONE']
+
+
+###################
+   
+     SPECIAL CASE 2:
+
+If the user wants to check the conversion before applying it, PolConvert
+can plot the fringes for a given IF, baseline and time range. Let us 
+assume we want to plot the baseline to antenna 2 (i.e., baseline 1-2) in 
+the time range 0-07:30:00 to 0-07:31:00 (AIPS format). Then:
+
+- doTest = True  # i.e., do NOT write on the FITS-IDI file!
+
+- plotIF = 1  # i.e., first IF in FITS-IDI file.
+
+- plotRange = [0,7,30,0,0,7,31,0]
+
+- Range = [0,7,30,0,0,7,31,0]  # i.e., to not waste resources computing
+                               # things that we will not save nor plot.
+
+- plotAnt = 2  
+
+
+###################
+   
+     OTHER SPECIAL CASES (NOT FULLY TESTED):
+
+1.- If two antennas have linear-pol receivers (i.e., ALMA plus another one)
+and the second one was correlated with the pol. channels swapped, then:
+
+- swapXY = [False, True]
+
+If it was ALMA the antenna with swapped pol. channels, then:
+
+- swapXY = [True, False]
+
+
+
+2.- If the second antenna with linear-pol receivers had an offset of, say,
+65 degrees between X and Y, this offset can be corrected before conversion:
+
+- XYadd = [0.0, 65.]
+
+
+####################################
+####################################
+##### A TYPICAL DATA REDUCTION #####
+
+1.- Import all ASDMs into measurement sets. 
+    BEWARE THAT YOU SET asis='CalAppPhase'
+
+2.- Find out the spw that matches the VLBI frequency setup. Split it for
+    each measurement set.
+
+3.- Concatenate the splitted measurement sets. 
+
+4.- Concatenate the 'ASDM_CALAPPPHASE' tables of the measurement sets
+    into a new CALAPPPHASE TABLE (see help above).
+
+5.- Calibrate the concatenated measurement set (full-polarization 
+    calibration) using standard ALMA procedures.
+
+6.- Execute polconvert, feeding it with the calibration tables and 
+    the CALAPPPHASE table, in mode "doTest = True", and applying it
+    only to a short (say, 1-2 minutes) scan of a strong source 
+    (e.g., the phase calibrator). Select a given IF and antenna 
+    to plot (it's better to select a short VLBI baseline to ALMA).
+
+7.- The program will plot the fringes and print an estimate of the 
+    extra X/Y phase that should be added to ALMA. This number should 
+    be small, as long as the calibration is OK. If a large number 
+    is found, and you see large cross-hand polarizations, add this 
+    extra X-Y phase to polconvert, via the keyword "XYadd"
+
+8.- Re-execute polconvert in test mode. Check whether the conversion 
+    is satisfactory.
+
+9.- Once satisfied with the conversion of the selected calibrator scan, 
+    execute polconvert over the shole dataset with "doTest = False".
+
+10.- It may be a good idea to do extra sanity checks, like the 
+    possible dependence of XYadd with IF and/or its eventual time 
+    evolution. All these effects should have been properly corrected 
+    if the measurement set calibration was successful. Different 
+    XYadd phases can be added to different IFs by converting each IF
+    separately.
+
+
+# END OF POLCONVERT DOCUMENTATION
+#######################################
+
+
+</example>
+</task>
+
+</casaxml>
+
+

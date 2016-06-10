@@ -1,0 +1,46 @@
+STEPS TO INSTALL THE POLCONVERT PACKAGE:
+
+0.  Install required linux packages if not already present
+    (cfitsio is in the EPEL repo):
+
+    yum install python-devel
+    yum install cfitsio cfitsio-devel
+    yum install java
+
+1.- Compile the C++ module. Just run:
+
+    python setup.py build_ext --inplace
+    
+    After this step, the file "_PolConvert.so" should have 
+    been created.  You may need to manually edit setup.py
+    to provide include locations for, e.g. fitsio.h and
+    possibly a link directive for libcfitsio.
+
+2.- Copy all the files of this directory into a destination directory. 
+    The name of the destination directory could be, e.g.
+
+         /YourHomeDir/.casa/Nordic_Tools
+
+3.- Go to that directory and execute the "buildmytasks" command.
+
+4.- Edit the file "YourHomeDirectory/.casa/init.py" and add the line
+    (create it if it doesn not already exist):
+
+    execfile("YourHomeDirectory/.casa/Nordic_Tools/mytasks.py")
+
+5.- The task should now be available. Just start CASA and write:
+
+               tget polconvert
+
+    to load the task.
+ 
+6.- To restore to the distributed state:
+
+    rm -rf build _PolConvert.so *.pyc
+    rm -rf polconvert.py polconvert_cli.py mytasks.py
+
+Any feedback and bug report should be sent either to the ARC 
+Nordic Node (contact@nordic-alma.se) or to the source maintainer
+(ivan.marti-vidal@chalmers.se).
+
+

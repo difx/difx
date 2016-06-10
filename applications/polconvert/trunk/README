@@ -1,0 +1,3 @@
+PolConvert is implemented as a CASA task and may be installed
+as described in src/INSTALL.  The machinations at this level
+are to integrate it into a standard DiFX build process.
