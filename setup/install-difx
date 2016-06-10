@@ -15,7 +15,7 @@ Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
         [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
         [--withhops] [--withm6support] [--withguiserver] [--noinstall] \\
-        [--reconf] [--noconf] [--clean] \\
+        [--withpolconvert] [--reconf] [--noconf] [--clean] \\
         [--g77] [--extraflags='flags'] [--makeflags='flags'] \\
         [--noipp] [--ipp] [--nodoc] \\
         [--cache='name'] [--targ='...'] [--pristine] \\
@@ -54,6 +54,8 @@ Options:
    --withhops      Build HOPS (which requires pgplot)
 
    --withm6support Build Mark6 support (which requires FUSE)
+
+   --withpolconvert Build PolConvert (which requires CASA)
 
    --withpython    Build Python bindings for certain libraries (requires ctypes)
 
@@ -96,7 +98,7 @@ Options:
                     "calcif2", "difx2profile", "misc","vis2screen",
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
-                    "guiServer", "mk5daemon", "difx_monitor",]
+                    "polconvert", "guiServer", "mk5daemon", "difx_monitor",]
 
     """
     pass
@@ -112,7 +114,7 @@ try:
         ["force", "help", "verb",
          "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
-         "noinstall", "reconf", "noconf", "clean",
+         "withpolconvert", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", 
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
          "doonly=" ])
@@ -163,6 +165,7 @@ components = {"rpfits"        :False,
               "difxfilterbank":False,
               "hops"          :False,
               "m6support"     :False,
+              "polconvert"    :False,
               "guiServer"     :False,
               "mk5daemon"     :False,
               "difx_monitor"  :False,
@@ -183,6 +186,8 @@ def setNormalComponentsFalse():
 	components["difx2fits"] = False
 	components["vex2difx"] = False
 	components["difx2mark4"] = False
+	components["hops"] = False
+	components["polconvert"] = False
 	components["mpifxcorr"]= False
 	components["python"]= False
 def setOnlyComponents(only):
@@ -224,6 +229,8 @@ if len(opts) > 0:
             components["hops"] = True
         if o == "--withm6support":
             components["m6support"] = True
+        if o == "--withpolconvert":
+            components["polconvert"] = True
         if o == "--withguiserver":
             components["guiServer"] = True
         if o == "--withpython":
@@ -362,6 +369,8 @@ if components["hops"]:
     apptargets.append(["hops",       difx_version, True,False,True,False])
 if components["m6support"]:
     apptargets.append(["m6support",  difx_version, True,False,True,False])
+if components["polconvert"]:
+    apptargets.append(["polconvert", difx_version, True,False,True,False])
 if components["guiServer"]:
     apptargets.append(["guiServer",  difx_version, True,False,False,True])
 if components["mk5daemon"]:
