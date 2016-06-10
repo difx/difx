@@ -3,28 +3,36 @@
 # autoconf config file for building PolConvert within DiFX tree.
 #
 AC_PREREQ([2.69])
-AC_INIT([src/DataIO.h],[1.2],[Ivan Marti-Vidal <ivan.marti-vidal@chalmers.se>])
+AC_INIT([polconvert],[1.2],[Ivan Marti-Vidal <ivan.marti-vidal@chalmers.se>])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS([config.h])
 
-# the assumption here is that either CASA is already
-# in PATH or CASAPATH=casa-release-.../bin is defined
-# with the latter taking precedence.
-AC_PATH_PROG([CASACMD], [casa], [/bin/false], [PATH = ${CASAPATH}])
+# the assumption here is that either CASA is already in PATH or
+# else DIFXCASAPATH=casa-release-.../bin is defined (to be specific).
+# The latter taking precedence.
+AC_ARG_VAR([DIFXCASAPATH],[Path to CASA installation])
+AC_MSG_NOTICE([DIFXCASAPATH is $DIFXCASAPATH])
+AC_PATH_PROG([CASACMD], [casa], [/bin/false], [$DIFXCASAPATH])
 if [test x$CASACMD = /bin/false] ; then
     AC_PATH_PROG([CASACMD], [casa], [/bin/false])
     if [test x$CASACMD = /bin/false] ; then
         have_casa=false
         AC_MSG_NOTICE(casa was not found in path)
     else
-        AC_MSG_NOTICE([CASACMD is $CASACMD])
         have_casa=true
+        DIFXCASAPATH=`AS_DIRNAME([$CASACMD])`
+        AC_MSG_NOTICE([CASACMD is $CASACMD])
+        AC_MSG_NOTICE([DIFXCASAPATH is $DIFXCASAPATH])
     fi
     have_casa=false
     AC_MSG_NOTICE(casa was not found in path)
 else
+    # DIFXCASAPATH usefully defined
     have_casa=true
+    AC_MSG_NOTICE([CASACMD is $CASACMD])
+    AC_MSG_NOTICE([DIFXCASAPATH is $DIFXCASAPATH])
 fi
+#AC_SUBST(DIFXCASAPATH)
 AM_CONDITIONAL(HAVE_CASA, $have_casa)
 
 # Checks for programs.
@@ -41,6 +49,7 @@ fi
 AM_CONDITIONAL(HAVE_JAVA, $have_java)
 
 # Checks for header files.
+CPPFLAGS="$CPPFLAGS -I/usr/include/cfitsio -I/usr/include/python2.7"
 AC_CHECK_HEADERS([fitsio.h stdlib.h string.h Python.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -51,11 +60,11 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([sqrt])
 
 # PolConvert links with cfitsio
-AC_CHECK_LIB(cfitsio, fits_open_file, have_fits=true, have_fits=false)
+AC_CHECK_LIB(cfitsio, ffopen, have_fits=true, have_fits=false)
 AM_CONDITIONAL(HAVE_FITS, $have_fits)
 
 # no need for the surgical conditionals at this time
-if [test have_casa = true -a have_java = true -a have_fits = true] ; then
+if [test $have_casa = true -a $have_java = true -a $have_fits = true] ; then
     have_it_all=true
 else
     have_it_all=false
