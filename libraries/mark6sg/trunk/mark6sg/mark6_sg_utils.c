@@ -313,7 +313,6 @@ int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char
 
     snprintf(searchpattern, PATH_MAX-1,  "%s%s", mark6_sg_root_pattern, scanname);
     rc = glob(searchpattern, GLOB_MARK, globerr, &g);
-    free(searchpattern);
 
     if (rc != 0)
     {
@@ -323,8 +322,10 @@ int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char
             rc == GLOB_NOSPACE ? "no dynamic memory"   :
             "unknown problem")
         );
+        free(searchpattern);
         return 0;
     }
+    free(searchpattern);
 
     nfiles = g.gl_pathc;
     fplist = (char**)malloc(nfiles*sizeof(char*));
