@@ -23,6 +23,24 @@ CHECK_RESULTS = False # specifies whether to check results from subprocess() lau
 def list_MPT2SAS_disks():
 	list = []
 	context = pyudev.Context()
+	ctrl_ids = []
+
+	# Find controllers with disks (perhaps unpartitioned)
+	for dev in context.list_devices(subsystem='block', DEVTYPE='disk'):
+		pdev = dev.find_parent('pci')
+		if (pdev == None):
+			continue
+		if (pdev.driver == 'mpt2sas'):
+			# DEVPATH /sys/devices/pci0000:00/0000:00:02.0/0000:06:00.0/host0/port-0:0/end_device-0:0/target0:0:0/0:0:0:0/block/sdb
+			# Controllers may have target0:0:0, target1:0:0, target17:0:0, ... depending perhaps on PCIe slot (0, 1, 17, ...)
+			# Since target<n> numbers n are not known in advance we don't use <n>, but replace it with an index (0,1,2,...)
+			dp = dev['DEVPATH']
+			h = int(re.search('\/host([0-9]*)\/',dp).group(1))
+			if h not in ctrl_ids:
+				ctrl_ids.append(h)
+	ctrl_ids.sort()
+
+	# Now find partitions on disks behind controllers
 	for dev in context.list_devices(subsystem='block', DEVTYPE='partition'):
 		pdev = dev.find_parent('pci')
 		if (pdev.driver == 'mpt2sas'):
@@ -41,11 +59,13 @@ def list_MPT2SAS_disks():
 			#  - SAS targets  0-7 on controller 1 are in "module 3" in "slots 0-7"
 			#  - SAS targets 8-15 on controller 1 are in "module 4" in "slots 0-7"
 			dp = dev['DEVPATH']
+			m = ctrl_ids.index(h)
 			h = int(re.search('\/host([0-9]*)\/',dp).group(1))
 			t = re.search('\/target([0-9]*:[0-9]*:[0-9]*)\/',dp).group(1)
 			t = [int(x) for x in t.split(':')]
-			entry['mk6_module'] = (1 + t[-1]/8) + 2*h  # 1-based count
+			entry['mk6_module'] = (1 + t[-1]/8) + 2*m  # 1-based count
 			entry['mk6_slot']   = t[-1] % 8            # 0-based count
+			#print dp,h,m,t,dp[-1],entry['mk6_module'],entry['mk6_slot']
 			if dp[-1]=='1':
 				entry['mk6_mountpoint'] = MARK6_ROOT % (entry['mk6_module'],entry['mk6_slot'])
 			elif dp[-1]=='2':
