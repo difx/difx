@@ -44,7 +44,7 @@ public:
 	std::string modeDefName;
 	std::string sourceDefName;	
 	std::map<std::string,Interval> stations;
-	std::map<std::string,bool> recordEnable;	// This is true of the drive number is non-zero
+	std::map<std::string,bool> recordEnable;	// This is true if the drive number is non-zero
 	double size;					// [bytes] approx. correlated size
 	double mjdVex;					// The start time listed in the vex file
 

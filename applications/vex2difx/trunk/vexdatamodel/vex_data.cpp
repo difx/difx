@@ -34,7 +34,7 @@
 #include <cmath>
 #include <regex.h>
 #include "vex_data.h"
-#include "util.h"
+#include "vex_utility.h"
 
 
 int VexData::sanityCheck()

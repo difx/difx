@@ -50,7 +50,7 @@
 #include "vexload.h"
 #include "event.h"
 #include "interval.h"
-#include "util.h"
+#include "vex_utility.h"
 
 #endif
 

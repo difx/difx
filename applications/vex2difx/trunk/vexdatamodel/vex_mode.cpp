@@ -29,7 +29,7 @@
 
 #include <cstdlib>
 #include "vex_mode.h"
-#include "util.h"
+#include "vex_utility.h"
 
 int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 {

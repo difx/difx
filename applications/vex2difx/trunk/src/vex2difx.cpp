@@ -1887,7 +1887,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			const VexSetup &setup = it->second;
 			int startBand;
 			startBand = 0;
-			for(int ds = 0; ds < setup.nStream(); ++ds)
+			for(unsigned int ds = 0; ds < setup.nStream(); ++ds)
 			{
 				const VexStream &stream = setup.streams[ds];
 				// the zero below is just to provide a legal slot to do some prodding.  the loop below will properly populate all datastreams.
@@ -1912,7 +1912,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			const VexAntenna *antenna = V->getAntenna(antName);
 			antennaSetup = P->getAntennaSetup(antName);
 
-			for(int ds = 0; ds < setup.nStream(); ++ds)
+			for(unsigned int ds = 0; ds < setup.nStream(); ++ds)
 			{
 				const VexStream &stream = setup.streams[ds];
 				int v = setFormat(D, D->nDatastream, freqs, toneSets, mode, antName, startBand, setup, stream, corrSetup, P->v2dMode);

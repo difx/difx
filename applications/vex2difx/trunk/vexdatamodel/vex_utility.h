@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken                             *
+ *   Copyright (C) 2009-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,15 +20,15 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL$
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/vexdatamodel/util.h $
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
  *
  *==========================================================================*/
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#ifndef __VEX_UTILITY_H__
+#define __VEX_UTILITY_H__
 
 #include <algorithm>
 

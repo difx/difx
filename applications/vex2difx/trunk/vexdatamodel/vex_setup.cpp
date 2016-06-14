@@ -159,9 +159,9 @@ void VexSetup::selectTones(enum ToneSelection selection, double guardBandMHz)
 	}
 }
 
-int VexSetup::nRecordChan() const
+size_t VexSetup::nRecordChan() const
 {
-	int rc = 0;
+	size_t rc = 0;
 
 	for(std::vector<VexStream>::const_iterator it = streams.begin(); it != streams.end(); ++it)
 	{

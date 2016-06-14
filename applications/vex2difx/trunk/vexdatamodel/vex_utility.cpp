@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012-2015 by Walter Brisken                             *
+ *   Copyright (C) 2012-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,7 +31,7 @@
 #include <string>
 #include <cstdio>
 #include <cstdlib>
-#include "util.h"
+#include "vex_utility.h"
 
 /* Function to look through a file to make sure it is not DOS formatted */
 int checkCRLF(const char *filename)

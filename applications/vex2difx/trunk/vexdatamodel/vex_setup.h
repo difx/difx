@@ -53,7 +53,7 @@ public:
 	void selectTones(enum ToneSelection selection, double guardBandMHz);
 	bool usesFormat(enum VexStream::DataFormat format) const;
 	size_t nStream() const { return streams.size(); }
-	int nRecordChan() const;
+	size_t nRecordChan() const;
 	unsigned int getBits() const;
 	unsigned int getMinBits() const;
 	unsigned int getMaxBits() const;

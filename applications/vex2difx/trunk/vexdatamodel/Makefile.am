@@ -9,8 +9,6 @@ libvexdatamodel_la_SOURCES = \
 	event.h \
 	interval.cpp \
 	interval.h \
-	util.cpp \
-	util.h \
 	vex_antenna.cpp \
 	vex_antenna.h \
 	vex_basebanddata.cpp \
@@ -42,5 +40,7 @@ libvexdatamodel_la_SOURCES = \
 	vex_stream.cpp \
 	vex_stream.h \
 	vex_subband.cpp \
-	vex_subband.h
+	vex_subband.h \
+	vex_utility.cpp \
+	vex_utility.h
 

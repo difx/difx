@@ -32,7 +32,7 @@
 #include <regex.h>
 #include <sstream>
 #include "vex_stream.h"
-#include "util.h"
+#include "vex_utility.h"
 
 regex_t VexStream::matchType1;
 regex_t VexStream::matchType2;

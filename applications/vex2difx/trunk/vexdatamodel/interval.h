@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/interval.h $
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$

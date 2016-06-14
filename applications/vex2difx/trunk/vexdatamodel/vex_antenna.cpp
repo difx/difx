@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/vex_antenna.cpp $
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
@@ -31,7 +31,7 @@
 #include <cstring>
 #include <set>
 #include "vex_antenna.h"
-#include "util.h"
+#include "vex_utility.h"
 
 // get the clock epoch as a MJD value (with fractional component), negative 
 // means not found.  Also fills in the first two coeffs, returned in seconds

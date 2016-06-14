@@ -36,7 +36,7 @@
 #include <cstdio>
 #include <algorithm>
 #include <unistd.h>
-#include "util.h"
+#include "vex_utility.h"
 #include "vex_data.h"
 #include "../vex/vex.h"
 #include "../vex/vex_parse.h"
