@@ -115,14 +115,14 @@ public:
 	const std::string &getDirectory() const { return directory; }
 	void setDirectory(const std::string &dir) { directory = dir; }
 
-	unsigned int nSource() const { return sources.size(); }
+	size_t nSource() const { return sources.size(); }
 	int getSourceIdByDefName(const std::string &defName) const;
 	const VexSource *getSource(unsigned int num) const;
 	const VexSource *getSourceByDefName(const std::string &defName) const;
 	const VexSource *getSourceBySourceName(const std::string &name) const;
 	void setSourceCalCode(const std::string &name, char calCode);
 
-	unsigned int nScan() const { return scans.size(); }
+	size_t nScan() const { return scans.size(); }
 	const VexScan *getScan(unsigned int num) const;
 	const VexScan *getScanByDefName(const std::string &defName) const;
 	const VexScan *getScanByAntennaTime(const std::string &antName, double mjd) const;
@@ -132,7 +132,7 @@ public:
 	unsigned int nAntennasWithRecordedData(const VexScan &scan) const;
 	bool removeScan(const std::string name);	// Note: cannot pass name as reference!
 
-	unsigned int nAntenna() const { return antennas.size(); }
+	size_t nAntenna() const { return antennas.size(); }
 	int getAntennaIdByName(const std::string &antName) const;
 	int getAntennaIdByDefName(const std::string &antName) const;
 	const VexAntenna *getAntenna(unsigned int num) const;
@@ -144,13 +144,13 @@ public:
 	int getNumAntennaRecChans(const std::string &name) const;
 	bool removeAntenna(const std::string name);	// Note: cannot pass name as reference!
 
-	unsigned int nMode() const { return modes.size(); }
+	size_t nMode() const { return modes.size(); }
 	int getModeIdByDefName(const std::string &defName) const;
 	const VexMode *getMode(unsigned int num) const;
 	const VexMode *getModeByDefName(const std::string &defName) const;
 	unsigned int nRecordChan(const VexMode &mode, const std::string &antName) const;
 
-	unsigned int nEOP() const { return eops.size(); }
+	size_t nEOP() const { return eops.size(); }
 	void addEOP(const VexEOP &e);
 	const VexEOP *getEOP(unsigned int num) const;
 	const std::vector<VexEOP> &getEOPs() const { return eops; }

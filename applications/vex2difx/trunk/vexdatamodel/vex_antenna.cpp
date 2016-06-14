@@ -60,23 +60,17 @@ void VexAntenna::removeBasebandData(int streamId)
 
 bool isVLBA(const std::string &antName)
 {
-	if(strcasecmp(antName.c_str(), "Br") == 0 ||
-	   strcasecmp(antName.c_str(), "Fd") == 0 ||
-	   strcasecmp(antName.c_str(), "Hn") == 0 ||
-	   strcasecmp(antName.c_str(), "Kp") == 0 ||
-	   strcasecmp(antName.c_str(), "La") == 0 ||
-	   strcasecmp(antName.c_str(), "Mk") == 0 ||
-	   strcasecmp(antName.c_str(), "Nl") == 0 ||
-	   strcasecmp(antName.c_str(), "Ov") == 0 ||
-	   strcasecmp(antName.c_str(), "Pt") == 0 ||
-	   strcasecmp(antName.c_str(), "Sc") == 0)
+	const std::string VLBAantennas[] = {"BR", "FD", "HN", "KP", "LA", "MK", "NL", "OV", "PT", "SC", ""};       // terminate list with "" !
+
+	for(unsigned int i = 0; VLBAantennas[i] != ""; ++i)
 	{
-		return true;
+		if(strcasecmp(antName.c_str(), VLBAantennas[i].c_str()) == 0)
+		{
+			return true;
+		}
 	}
-	else
-	{
-		return false;
-	}
+
+	return false;
 }
 
 bool usesCanonicalVDIF(const std::string &antName)
