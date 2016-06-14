@@ -59,19 +59,22 @@ def list_MPT2SAS_disks():
 			#  - SAS targets  0-7 on controller 1 are in "module 3" in "slots 0-7"
 			#  - SAS targets 8-15 on controller 1 are in "module 4" in "slots 0-7"
 			dp = dev['DEVPATH']
-			m = ctrl_ids.index(h)
 			h = int(re.search('\/host([0-9]*)\/',dp).group(1))
+			m = ctrl_ids.index(h)
 			t = re.search('\/target([0-9]*:[0-9]*:[0-9]*)\/',dp).group(1)
 			t = [int(x) for x in t.split(':')]
+			if (t[-1] > 15):
+				# print ('Unexpected target nr %d not in range of 0-15!' % (t[-1]))
+				t[-1] = int(t[-1]) % 16
 			entry['mk6_module'] = (1 + t[-1]/8) + 2*m  # 1-based count
 			entry['mk6_slot']   = t[-1] % 8            # 0-based count
-			#print dp,h,m,t,dp[-1],entry['mk6_module'],entry['mk6_slot']
 			if dp[-1]=='1':
 				entry['mk6_mountpoint'] = MARK6_ROOT % (entry['mk6_module'],entry['mk6_slot'])
 			elif dp[-1]=='2':
 				entry['mk6_mountpoint'] = MARK6_META % (entry['mk6_module'],entry['mk6_slot'])
 			else:
 				entry['mk6_mountpoint'] = None
+			#print dp,h,m,t,dp[-1],entry['mk6_module'],entry['mk6_slot'],entry['mk6_mountpoint']
 			list.append(entry)
 	list = sorted(list, key=lambda k: k['mk6_mountpoint'])
 	return list
@@ -79,14 +82,14 @@ def list_MPT2SAS_disks():
 def mount(dev,dir):
 	print ('Mounting %s to %s' % (dev,dir))
 	p = []
-	p.append( subprocess.Popen(["sudo", "/bin/mount", dev, dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
-	p.append( subprocess.Popen(["sudo", "/bin/chmod", "755", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
-	p.append( subprocess.Popen(["sudo", "/bin/chown", "root:mark6", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
+	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/mount", dev, dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
+	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/chmod", "775", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
+	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/chown", "oper:mark6", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
 	return p
 
 def unmount(dir):
 	print ('Unmounting %s' % (dir))
-	p = subprocess.Popen(["sudo", "/bin/umount", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	p = subprocess.Popen(["/usr/bin/sudo", "/bin/umount", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	return [p]
 
 def mount_all():
