@@ -51,7 +51,7 @@ def parseOptions():
         metavar='STRING', default='',
         help='DiFX experiment name')
     parser.add_argument('-o', '--orig', dest='orig',
-        metavar='STRING', default='.orig',
+        metavar='STRING', default='orig',
         help='suffix to be appended to original names')
     parser.add_argument('-k', '--clobber', dest='clobber',
         default=False, action='store_true',
