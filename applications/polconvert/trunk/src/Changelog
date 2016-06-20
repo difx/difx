@@ -1,0 +1,9 @@
+v1.2-r7
+
+- Gain files in ANTAB format.
+- Proper handling (by interpolation) of flagged gains.
+
+
+TODO: 
+
+- Fitting of XY-phase with a simple delay model (per subband).
