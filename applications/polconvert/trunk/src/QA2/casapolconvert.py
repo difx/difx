@@ -195,18 +195,37 @@ if mystep in mysteps:
         fluxtable='%s.ampgains.cal.fluxscale'%label, reference=[flxcal])
     os.system('rm -rf %s.gains.plots'%label)
     os.system('mkdir %s.gains.plots'%label)
+    os.system('mkdir %s.gains.plots/PHASED'%label)
+    os.system('mkdir %s.gains.plots/CONTROL'%label)
+
+####
+# Figure out which antennas are ALWAYS phased:
+    tb.open(CALAPP)
+    nphant = tb.getcol('numPhasedAntennas')
+    phants = set(tb.getcell('phasedAntennas', rownr = 0))
+    for i in range(1,len(nphant)):
+      phants = phants.intersection(tb.getcell('phasedAntennas', rownr = i))
+    phants = list(phants)
+    tb.close()
+####
+
     for antnam in allants:
+        if antnam in phants:
+          dirname = '%s.gains.plots/PHASED'%label
+        else:
+          dirname = '%s.gains.plots/CONTROL'%label
+
         plotcal(caltable=label+'.phasegains.cal',xaxis='time',yaxis='phase',
             antenna=antnam, spw=spw, plotrange=[0,0,-180,180],
             iteration='spw',subplot=211,
-            figfile='%s.gains.plots/%s.PHASE.png'%(label,antnam))
+            figfile='%s/%s.PHASE.png'%(dirname,antnam))
         plotcal(caltable=label+'.ampgains.cal',xaxis='time',yaxis='amp',
             antenna=antnam, spw=spw, iteration='spw',subplot=211,
-            figfile='%s.gains.plots/%s.AMP.png'%(label,antnam))
+            figfile='%s/%s.AMP.png'%(dirname,antnam))
         plotcal(caltable=label+'.ampgains.cal.fluxscale',
             xaxis='time',yaxis='amp',
             antenna=antnam, spw=spw, iteration='spw',subplot=211,
-            figfile='%s.gains.plots/%s.FLUX.png'%(label,antnam))
+            figfile='%s/%s.FLUX.png'%(dirname,antnam))
     print '\n'
 
 #

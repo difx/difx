@@ -2,7 +2,7 @@
 # Makefile for PolConvert within DiFX tree
 #
 if HAVE_IT_ALL
-bin_SCRIPTS = prepolconvert.py
+bin_SCRIPTS = PP/prepolconvert.py
 
 pkgdata_DATA = _PolConvert.so \
 	runpolconvert.py task_polconvert.py polconvert.xml
