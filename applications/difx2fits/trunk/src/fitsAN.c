@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,7 +35,8 @@
 const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	/*  define the antenna characteristic FITS table columns */
-	char bandFormFloat[8];
+	char bandFormFloat1[8];
+	char bandFormFloat2[8];
 	struct fitsBinTableColumn columns[] =
 	{
 		{"TIME", "1D", "time of center of interval", "DAYS"},
@@ -46,11 +47,11 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 		{"FREQID", "1J", "frequency id number", 0},
 		{"NO_LEVELS", "1J", "number of digitizer levels", 0},
 		{"POLTYA", "1A", "feed A poln. code", 0},
-		{"POLAA", bandFormFloat, "feed A position angle", "DEGREES"},
-		{"POLCALA", bandFormFloat, "feed A poln. cal. parameter", 0},
+		{"POLAA", bandFormFloat1, "feed A position angle", "DEGREES"},
+		{"POLCALA", bandFormFloat2, "feed A poln. cal. parameter", 0},
 		{"POLTYB", "1A", "feed B poln. code", 0},
-		{"POLAB", bandFormFloat, "feed B position angle", "DEGREES"},
-		{"POLCALB", bandFormFloat, "feed B poln. cal. parameter", 0}
+		{"POLAB", bandFormFloat1, "feed B position angle", "DEGREES"},
+		{"POLCALB", bandFormFloat2, "feed B poln. cal. parameter", 0}
 	};
 
 	int nColumn;
@@ -71,6 +72,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	float polCalB[array_MAX_BANDS];
 	/* 1-based indices for FITS file */
 	int32_t arrayId1;
+	int noPCal;;
 
 	if(D == 0)
 	{
@@ -79,7 +81,9 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 
 	nColumn = NELEMENTS(columns);
 	nBand = D->nIF;
-	sprintf(bandFormFloat, "%1dE", nBand);
+	noPCal = 0;	/* we don't supply any calibration info */
+	sprintf(bandFormFloat1, "%1dE", nBand);
+	sprintf(bandFormFloat2, "%1dE", nBand*noPCal);
 
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
@@ -94,7 +98,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
-	fitsWriteInteger(out, "NOPCAL", 0, "");
+	fitsWriteInteger(out, "NOPCAL", noPCal, "");
 	fitsWriteString(out, "POLTYPE", "APPROX", "");
 	fitsWriteEnd(out);
 
@@ -159,10 +163,10 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 			FITS_WRITE_ITEM (nLevel, p_fitsbuf);
 			FITS_WRITE_ITEM (polTypeA, p_fitsbuf);
 			FITS_WRITE_ARRAY(polAA, p_fitsbuf, nBand);
-			FITS_WRITE_ARRAY(polCalA, p_fitsbuf, nBand);
+			FITS_WRITE_ARRAY(polCalA, p_fitsbuf, nBand*noPCal);
 			FITS_WRITE_ITEM (polTypeB, p_fitsbuf);
 			FITS_WRITE_ARRAY(polAB, p_fitsbuf, nBand);
-			FITS_WRITE_ARRAY(polCalB, p_fitsbuf, nBand);
+			FITS_WRITE_ARRAY(polCalB, p_fitsbuf, nBand*noPCal);
 
 			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "AN");
 
