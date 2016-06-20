@@ -44,7 +44,7 @@ Mark6DiskDevice::Mark6DiskDevice() {
 }
 
 /**
- * Copy construcor
+ * Copy constructor
  * @param device
  */
 Mark6DiskDevice::Mark6DiskDevice(const Mark6DiskDevice &device)
@@ -84,12 +84,11 @@ std::string Mark6DiskDevice::getName() const {
 }
 
 /**
- * Checks whether this is a vaid Mark6 disk device.
+ * Checks whether this is a valid Mark6 disk device.
  * @returns true if valid; false otherwise 
  */
 bool Mark6DiskDevice::isValid()
 {
-    
     if (diskId_m == -1)
         return(false);
     if (controllerId_m == -1)
@@ -161,7 +160,6 @@ void Mark6DiskDevice::addPartition(std::string partitionName)
      Mark6Partition partition;
      partition.deviceName = partitionName;
      partition.mountPath = "";
-     partition.linkPath = "";
      
      partitions_m.push_back(partition);
      
@@ -169,146 +167,42 @@ void Mark6DiskDevice::addPartition(std::string partitionName)
      sort(partitions_m.begin(), partitions_m.end(), Mark6Partition::sortByName);
 }
 
-/**
- * Removes the symbolic links to the mount locations of the disk device. 
- * * The following logic is applied:
- * - the first partition is assumed to contain the mark6 data. It is linked under linkPath/slot/disk
- * - the second partition is assumed to contain the meta data. It is linked under linkPath/.meta/slot/disk
- * where slot runs from 1-4, and disk runs from 0-7
- * @return EXIT_SUCCESS in case of success, EXIT_FAILURE otherwise
- */
-int Mark6DiskDevice::unlinkDisk()
-{     
-    int errorCount = 0;
-    
-    // loop over partitions
-    for (unsigned int i=0; i < partitions_m.size(); i++)
-    {
-        
-        struct stat file;
-        string linkPath = partitions_m[i].linkPath;
-        
-        //cout << "trying to unlink partition " << i << " on disk " << name_m << " " << linkPath << endl;
-        
-        // check if partition is linked
-        if (linkPath == "")
-            continue;
-        
-        // check that link exists
-        if (stat(linkPath.c_str(), &file) != 0)    
-        {
-            errorCount++;
-            continue;
-        }
-        // check if this is really a symbolic link    
-        lstat(linkPath.c_str(), &file);
-        if (!S_ISLNK(file.st_mode))
-        {
-            errorCount++;
-            continue;
-        }
-        
-        if( remove( linkPath.c_str() ) != 0 )
-        {
-            throw Mark6Exception("Cannot remove symbolic link: " + linkPath);
-        }
-        //cout << " removed symbolic link " << linkPath << endl;
-        partitions_m[i].linkPath = "";     
-    }
-    
-    if (errorCount == 0)
-        return(EXIT_SUCCESS);
-    else
-        return(EXIT_FAILURE);
-}
-
-/**
- * Creates symbolic links for all partitions on the disk device. The symbolic link is created under the given linkPath
- * and points to the mount point of the associated partition device. 
- * The following logic is applied:
- * - the first partition is assumed to contain the mark6 data. It is linked under linkPath/slot/disk
- * - the second partition is assumed to contain the meta data. It is linked under linkPath/.meta/slot/disk
- * where slot runs from 1-4, and disk runs from 0-7
- * @param[in] linkRootData the full path of the root directory under which the symbolic links for the data partitions are to be created
- * @param[in] linkRootMeta the full path of the root directory under which the symbolic links for the meta partitions are to be created
- * @param[in] slot the number of the module slot 
- * @return EXIT_SUCCESS in case of success, EXIT_FAILURE otherwise
- */
-int Mark6DiskDevice::linkDisk(std::string linkRootData, std::string linkRootMeta, int slot)
-{       
-    
-    
-    // loop over partitions
-    for (unsigned int i=0; i < partitions_m.size(); i++)
-    {
-        // check if partition is linked already
-        if (partitions_m[i].linkPath != "")
-            continue;
-        // check if partition has been mounted
-        if (partitions_m[i].mountPath == "")
-            return(EXIT_FAILURE);
-        // check if diskId is set
-        if (diskId_m == -1)
-            return(EXIT_FAILURE);
-        
-        // build link path
-        stringstream ss;
-        if (i == 0)
-            ss << linkRootData << "/" << slot+1 << "/" <<  getPosition();
-        else if (i ==1)
-            ss << linkRootMeta << "/" << slot+1 << "/" <<  getPosition();
-        
-        string linkPath = ss.str();
-        //cout << " creating symbolic link " <<  partitions_m[i].mountPath << " to " << linkPath << endl;
-        
-        if (symlink(partitions_m[i].mountPath.c_str(), linkPath.c_str()) != 0)
-        {
-            throw  Mark6Exception("Cannot create symbolic link: " + partitions_m[i].mountPath + " -> " +  linkPath);
-        }
-        
-        partitions_m[i].linkPath = linkPath;
-        
-    }
-   
-    return(EXIT_SUCCESS);
-}
 
 
-/**
- * Mounts both partitions of this disk device. The partitions will be mounted under the given mount path plus the device name.
- * e.g. partition /dev/sdb1 will mounted under /mnt/mark6/mnt/sdb1 
- * @param[in] mountPath the path uder which the partitions will be mounted
- * @throws Mark6MountException in case the device cannot be mounted
- * @returns 1 if both partitions were mounted successfully, 0 otherwise
- */
-int Mark6DiskDevice::mountDisk(string mountPath)
+
+int Mark6DiskDevice::mountPartition(int partitionNumber, string mountPath)
 {
+    struct stat file;
     string source = "";
-    string dest = "";
+    //string dest = "";
     
-    // verify that this disk has two partitions
-    if (partitions_m.size() != 2)
+    // verify that the partition number is valid
+    if (partitionNumber > partitions_m.size())
         return(0);
     
-    // mount both partitions
-    for (int i=0; i<2; i++)
+    // check that mount point exists
+    if (stat(mountPath.c_str(), &file) != 0)
     {
-        source = "/dev/" + partitions_m[i].deviceName;
-        dest =  mountPath + partitions_m[i].deviceName;
-        
-        int ret = mount(source.c_str(), dest.c_str(), fsType_m.c_str(), MS_MGC_VAL | MS_RDONLY , "");
-    
-        if (ret == -1)
-        {
-            isMounted_m = false;
-            throw Mark6MountException (string("Cannot mount  device " + source + " under " + dest));
-        }
-        
-        partitions_m[i].mountPath = dest;
+        throw Mark6MountException (string("Mount point " + mountPath + " does not exist." ));
     }
+    
+    
+    source = "/dev/" + partitions_m[partitionNumber].deviceName;
+
+    int ret = mount(source.c_str(), mountPath.c_str(), fsType_m.c_str(), MS_MGC_VAL | MS_RDONLY , "");
+
+    if (ret == -1)
+    {
+        partitions_m[partitionNumber].mountPath = "";
+        isMounted_m = false;
+        throw Mark6MountException (string("Cannot mount  device " + source + " under " + mountPath));
+    }
+
+    partitions_m[partitionNumber].mountPath = mountPath;
+    
    
     // now read metadata
-    meta_m.parse(dest);    
+    //HR meta_m.parse(dest);    
         
     isMounted_m = true;
     //mountPath_m = dest;
@@ -316,11 +210,70 @@ int Mark6DiskDevice::mountDisk(string mountPath)
     return(1);
 }
 
-void Mark6DiskDevice::unmountDisk(string mountPath)
+/**
+ * Mounts both partitions (data and metadata) of this disk device. The data partitions will be
+ * mounted under the given dataPath; the metadata partition under the metaPath. In case both
+ * partitions have been mounted successfully the meta data is read and isMounted() will return true.
+ * @param[in] dataPath the path under which the data partition will be mounted
+ * @param[in] metaPath the path under which the metadata partition will be mounted
+ * @throws Mark6MountException in case the device cannot be mounted
+ * @returns 1 if both partitions were mounted successfully, 0 otherwise
+ */
+int Mark6DiskDevice::mountDisk(string dataPath, string metaPath)
+{
+    struct stat file;
+    string source = "";
+    
+    //string dest = "";
+    
+    // verify that this disk has two partitions
+    if (partitions_m.size() != 2)
+        return(0);
+       
+    // mount both partitions
+    for (int i=0; i<2; i++)
+    {
+        source = "/dev/" + partitions_m[i].deviceName;
+        
+        stringstream  dest;
+        if (i == 0)
+            dest << dataPath << getSlot()+1 << "/" << getPosition();
+        else if (i==1)
+            dest << metaPath << getSlot()+1 << "/" <<  getPosition();
+        
+        //cout << "mount path = " << dest.str() <<endl;
+        
+        if (stat(dest.str().c_str(), &file) != 0)
+        {
+            throw Mark6MountException (string("Mount point " + dest.str() + " does not exist." ));
+        }
+        
+        int ret = mount(source.c_str(), dest.str().c_str(), fsType_m.c_str(), MS_MGC_VAL | MS_RDONLY , "");
+    
+        if (ret == -1)
+        {
+            isMounted_m = false;
+            throw Mark6MountException (string("Cannot mount  device " + source + " at " + dest.str()));
+        }
+        
+        partitions_m[i].mountPath = dest.str();
+    }
+   
+    // now read metadata
+    meta_m.parse(partitions_m[1].mountPath);    
+        
+    isMounted_m = true;
+    //mountPath_m = dest;
+    
+    return(1);
+}
+
+void Mark6DiskDevice::unmountDisk()
 {
     for (int i=0; i<2; i++)
     {
-        string dest =  mountPath + partitions_m[i].deviceName;
+        
+        string dest =  partitions_m[i].mountPath;
         
         int ret = umount2(dest.c_str(), MNT_FORCE);
     

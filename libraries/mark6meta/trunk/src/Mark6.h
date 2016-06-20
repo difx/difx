@@ -63,11 +63,13 @@ private:
 	std::vector<Mark6DiskDevice> mountedDevices_m;
 	std::vector<Mark6DiskDevice> removedDevices_m;
         std::vector<Mark6DiskDevice> newDevices_m;
-        std::string mountPath_m;
         Mark6Module modules_m[NUMSLOTS];
         std::string linkRootData_m;                 // default path for creating symbolic links to the mount points of the data partitions
         std::string linkRootMeta_m;                 // default path for creating symbolic links to the mount points of the meta partitions
+        std::string mountRootData_m;        //                
+        std::string mountRootMeta_m;    
         std::string slotIds_m[NUMSLOTS];
+        std::string diskIds_m[Mark6Module::MAXDISKS];
         
         void manageDeviceChange();
 	void validateMountDevices();
@@ -76,7 +78,7 @@ private:
 public:
         Mark6();
 	~Mark6();
-	void pollDevices();
+        void pollDevices();
 	void validateMountPoints();
 	void createMountPoint (std::string path);
         int addPartitionDevice(std::string partitionName);
@@ -85,9 +87,7 @@ public:
         void removeMountedDevice(Mark6DiskDevice device);
         int enumerateDevices();
         void cleanUp();
-        void createMountLinks();
         int getSlot(std::string eMSN);
-        int getFreeSlot();
         void sendStatusMessage();
         std::vector<Mark6DiskDevice> getMountedDevices() const {
             return mountedDevices_m;

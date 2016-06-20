@@ -28,7 +28,7 @@ public:
     {
         std::string deviceName;
         std::string mountPath;
-        std::string linkPath;
+        //std::string linkPath;
         // sort Mark6Partition by deviceName
         static bool sortByName(const Mark6Partition &lhs, const Mark6Partition &rhs) { return lhs.deviceName < rhs.deviceName; }
     };
@@ -43,10 +43,10 @@ public:
     void addPartition(std::string partitionName);
     std::vector<Mark6Partition> getPartitions() const;
     std::string getName() const;
-    int mountDisk(std::string mountPath);
-    void unmountDisk(std::string mountPath);
-    int linkDisk(std::string linkRootData, std::string linkRootMeta, int slot);
-    int unlinkDisk();
+    int mountDisk(std::string dataPath, std::string metaPath);
+    int mountPartition(int partitionNumber, std::string mountPath);
+    void unmountDisk();
+    
     bool isMounted();
     void setFsType(std::string fsType_m);
     std::string getFsType() const;

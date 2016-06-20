@@ -61,26 +61,22 @@ void Mark6Module::addDiskDevice(Mark6DiskDevice &device)
 
 /**
  * Removes the given device from the list of devices associated with the module.
- * If symbolic links were associated with partitions on this device they will be removed.
  * In case the removed device was the last one on the module the module is reset
  * to the initial state.
- * @param device the disk device to add to the module
+ * @param device the disk device to remove from the module
  */
 void Mark6Module::removeDiskDevice(Mark6DiskDevice &device)
 {    
     // loop over all devices
     for(int i = 0; i < MAXDISKS; i++)
     { 
-        // device hasn"t been set at this position
+        // device hasn't been set at this position
         if ( diskDevices_m.find(i) == diskDevices_m.end() ) 
             continue;
                 
         //find the device to be removed
         if( diskDevices_m[i].getName() == device.getName() )
-        {
-            // remove symbolic links maintained to this device
-            diskDevices_m[i].unlinkDisk();
-           
+        {           
             diskDevices_m.erase(i);
             break;
         }
