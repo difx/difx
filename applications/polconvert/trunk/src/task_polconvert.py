@@ -47,7 +47,7 @@
 #
 #
 
-__version__ = "1.2-r6"
+__version__ = "1.2-r7"
 date = 'JUN 2016'     
 
 
@@ -83,6 +83,7 @@ import time
 import struct as stk
 import numpy as np
 import pylab as pl
+import datetime as dt
 from taskinit import *
 ms = gentools(['ms'])[0]
 tb = gentools(['tb'])[0]
@@ -99,33 +100,109 @@ if __name__=='__main__':
 
 
 
-  datadir = '/data-sc05/gbc/polconvert/'
-  ALMAant = datadir+'CONCAT.ms/ANTENNA'
-  calAPP = datadir+'CALAPPPHASE.tab'
-  calAPPTime = [0.0,5.0]
-
-
-  gains = [[datadir+d for d in ['CONCAT.ms.bandpass.cal', 'CONCAT.ms.ampgains.cal.fluxscale', 'CONCAT.ms.phasegains.cal', 'CONCAT.ms.XY0amb']]]
-  plotIF             =  48
-  plotRange          =  [0,0,0,0,10,0,0,0]
-  plotAnt            =  3
-  doTest             =  True
-  dterms             =  ['NONE']
-  XYadd              =  [0.0]
-  swapXY             =  [False]
-  swapRL             =  False
-  IDI_conjugated     =  True
-  linAntIdx          =  [1]
-  Range              =  []
-  spw                =  1
-
-
-  IDI                =  "/data-sc05/gbc/alma-april-band6-0/e16b08_157.difx"
-  OUTPUTIDI          =  "/data-sc05/gbc/alma-april-band6-0/e16b08_157.difxsafe"
-  DiFXinput          =  "/data-sc05/gbc/alma-april-band6-0/e16b08_157.input"
-  doIF               =  [48] #[34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64]
+#  datadir = '/data-sc05/gbc/polconvert/'
+#  ALMAant = datadir+'CONCAT.ms/ANTENNA'
+#  calAPP = datadir+'CALAPPPHASE.tab'
+#  calAPPTime = [0.0,5.0]
 #
-  amp_norm = True
+#
+#  gains = [[datadir+d for d in ['CONCAT.ms.bandpass.cal', 'CONCAT.ms.ampgains.cal.fluxscale', 'CONCAT.ms.phasegains.cal', 'CONCAT.ms.XY0amb']]]
+#  plotIF             =  48
+#  plotRange          =  [0,0,0,0,10,0,0,0]
+#  plotAnt            =  3
+#  doTest             =  True
+#  dterms             =  ['NONE']
+#  XYadd              =  [0.0]
+#  swapXY             =  [False]
+#  swapRL             =  False
+#  IDI_conjugated     =  True
+#  linAntIdx          =  [1]
+#  Range              =  []
+#  spw                =  1
+
+
+#  IDI                =  "/data-sc05/gbc/alma-april-band6-0/e16b08_157.difx"
+#  OUTPUTIDI          =  "/data-sc05/gbc/alma-april-band6-0/e16b08_157.difxsafe"
+#  DiFXinput          =  "/data-sc05/gbc/alma-april-band6-0/e16b08_157.input"
+#  doIF               =  [48] #[34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64]
+#
+#  amp_norm = True
+
+
+
+  IDI                 = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/e16b08_215.difx' #  I
+                                        #   nput FITS-IDI file with VLBI
+                                        #   visibilities. It can  also be a
+                                        #   direcotry containing SWIN files from
+                                        #   DiFX.
+  OUTPUTIDI           = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/e16b08_215.difx' #  O
+                                        #   utput FITS-IDI file (or SWIN
+                                        #   directory). If equal  to IDI, the
+                                        #   file(s) will be overwritten
+  DiFXinput           = 'e16b08_215.input' #  If SWIN files are being converted,
+                                        #   this must  be the *.input file used
+                                        #   by DiFX.
+  doIF                = [34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64] #  L
+                                        #   ist of IFs to convert. Default means
+                                        #   all.
+  linAntIdx           =        [1]        #  List of indices of the linear-
+                                        #   polarization  antennas in the IDI
+                                        #   file
+  Range               =         []        #  Time range to convert (integer list;
+                                        #   AIPS format).  Default means all
+                                        #   data
+  ALMAant             = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/concat.ms.0.antenna.tab' #  I
+                                        #   f ALMA has been used, this is the
+                                        #   antenna table  from the MS with the
+                                        #   intra-ALMA visibilities.
+  spw                 =          0        #  Spectral window in ALMAvis that
+                                        #   contains the VLBI band.
+  calAPP              = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/concat.ms.0.calappphase.tab' #  I
+                                        #   f ALMA has been used, this is the
+                                        #   combined ASDM_CALAPPPHASE table from
+                                        #   the ASDM. The list of measurement
+                                        #   sets can also be given (so the table
+                                        #   is concatenated from all of them).
+  calAPPTime          = [0.0, 5.0]        #  Time shift and time tolerance (in
+                                        #   sec) for the  CALAPPPHASE table
+                                        #   obtained from the ASDM.
+  gains               = [['/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/concat.ms.0.ampgains.cal.fluxscale', '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/concat.ms.0.bandpass.cal', '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/concat.ms.0.phasegains.cal', '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/concat.ms.0.XY0amb-tcoff']] #  G
+                                        #   ain tables to pre-calibrate the
+                                        #   linear-pol VLBI  stations (one list
+                                        #   of gains per linear-pol station).
+  dterms              =   ['NONE']        #  D-term tables to pre-calibrate the
+                                        #   linear-pol VLBI  stations (one table
+                                        #   per linear-pol station).
+  amp_norm            =       True        #  If True, normalize the amplitude
+                                        #   correction to the X-Y average, and
+                                        #   save the scaling factor (vs time) in
+                                        #   an external (ASCII) file. If False,
+                                        #   apply the amplitude correction as
+                                        #   is.
+  XYadd               =      [0.0]        #  Add manually a phase between X and Y
+                                        #   before  conversion (in deg.). One
+                                        #   value per linear-pol station.
+  swapXY              =    [False]        #  Swap X-Y before conversion. One value
+                                        #   per linear-pol  VLBI station.
+  swapRL              =      False        #  Swap R-L of the OTHER antenna(s) when
+                                        #   plotting the fringes.
+  IDI_conjugated      =       True        #  Assume a swap in the baseline
+                                        #   defintion (i.e., conjugation) of the
+                                        #   FITS-IDI file. This has NO effect on
+                                        #   SWIN files and shall be set to True.
+  plotIF              =          1        #  IF index to plot. Default means to
+                                        #   NOT plot.
+  plotRange           = [0, 0, 0, 0, 10, 0, 0, 0] #  Time range to plot (integer
+                                        #   list; AIPS format).  Default means
+                                        #   to NOT plot
+  plotAnt             =          2        #  Index of the other antenna in the
+                                        #   baseline to plot. Default means to
+                                        #   NOT plot.
+  doTest              =       True        #  If true, only compute (and eventually
+                                        #   plot), the data, but leave OUTPUTIDI
+                                        #   untouched.
+
+
 #
 #
 #
@@ -555,7 +632,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     antrow = tb.getcol('ANTENNA1')[spmask]
     trow = tb.getcol('TIME')[spmask]
     flagrow = tb.getcol('FLAG')[:,:,spmask]
-    flags = np.logical_or(flagrow[0,:,:],flagrow[1,:,:])
+    flagsf = np.logical_or(flagrow[0,:,:],flagrow[1,:,:])
+    flagsd = np.logical_or(np.abs(data[0,:,:])==0.0,np.abs(data[1,:,:])==0.0)
+    flags = np.logical_or(flagsf,flagsd)
     tb.close()
     dtdata[i].append(np.zeros(nchan).astype(np.float64))
     dtdata[i][0][:] = dtfreqs
@@ -576,6 +655,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       dtdata[i][-1][3][:] = np.angle(dd1[:,antrow==ant])
       unwrap(dtdata[i][-1][3][:])
       dtdata[i][-1][4][:] = flags[:,antrow==ant]
+
    for j,gain in enumerate(gains[i]):
      gaindata[i].append([])
      if gain=="NONE":
@@ -612,7 +692,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       antrow = tb.getcol('ANTENNA1')[spmask]
       trow = tb.getcol('TIME')[spmask]
       flagrow = tb.getcol('FLAG')[:,:,spmask]
-      flags = np.logical_or(flagrow[0,:],flagrow[1,:])
+      flagsf = np.logical_or(flagrow[0,:],flagrow[1,:])
+      flagsd = np.logical_or(np.abs(data[0,:])==0.0,np.abs(data[1,:])==0.0)
+      flags = np.logical_or(flagsf,flagsd)
       tb.close()
       gaindata[i][j].append(np.zeros(nchan).astype(np.float64))
       gaindata[i][j][0][:] = gfreqs
@@ -692,7 +774,69 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 
 #  print OUTPUT
+  os.system('rm -rf POLCONVERT.FRINGE')
+  if amp_norm:
+    os.system('rm -rf POLCONVERT.GAINS')
+
+  printMsg("Going to CONVERT!")
+
   didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes, doTest, doConj, amp_norm, XYadd[0]*np.pi/180., metadata)
+
+
+
+# GENERATE ANTAB FILE(s):
+
+
+  if amp_norm:
+    printMsg('Generating ANTAB file(s).')
+    try:
+      gfile = open("POLCONVERT.GAINS")
+    except:
+      printErr("No gain file written!")
+
+    entries = [l.split() for l in gfile.readlines()]; gfile.close()
+    IFs = np.zeros(len(entries),dtype=np.int)
+    Data = np.zeros((len(entries),2))
+    AntIdx = np.zeros(len(entries),dtype=np.int)
+
+    for i,entry in enumerate(entries):
+      IFs[i] = int(entry[0])
+      AntIdx[i] = int(entry[1])
+      Data[i,:] = map(float,entry[2:])
+
+    Times = np.unique(Data[:,0])
+    Tsys = np.zeros((len(Times),len(doIF)+1))
+    Tsys[:,0] = Times
+
+    for j in linAntIdx:
+     for ii,i in enumerate(doIF):
+      mask = np.logical_and(IFs==i,AntIdx==j)
+      for datum in Data[mask]:
+        itime = np.where(Times==datum[0])[0]
+        Tsys[itime,ii+1] = datum[1]
+
+     outf = open("POLCONVERT_STATION%i.ANTAB"%j,"w")
+     print >> outf,"GAIN AA  ELEV DPFU=1.000   FREQ=10,100000"
+     print >> outf,"POLY=1.0000E+00"
+     print >> outf,"/"
+     print >> outf,"TSYS AA  FT=1.0  TIMEOFF=0"
+     print >> outf,"INDEX= "+', '.join(['\'L%i|R%i\''%(i,i) for i in doIF])
+     print >> outf,"/"
+     fmt0 = "%i %i:%2.2f  "
+     fmt1 = "%4.2f  "*len(doIF)
+     prevT = " "
+     for entry in Tsys:
+       MJD2000 = 51544
+       Tfr,Tin = np.modf(entry[0])
+       tobs = (dt.date(2000,1,1) + dt.timedelta(Tin-MJD2000)).timetuple().tm_yday
+       minute,hour = np.modf(Tfr*24.)
+       minute *= 60.
+       currT = fmt0%(tobs,hour,minute)
+       if currT != prevT:  # Limited time resolution in ANTAB
+         prevT = currT
+         print >> outf, currT + fmt1%tuple(entry[1:]**2.)
+     print >> outf, "/"
+     outf.close()
 
 
 
@@ -949,7 +1093,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
       pmsg = '\n\nNORM. FRINGE PEAKS: \n  RR: %.2e ; SNR: %.1f \n  LL: %.2e ; SNR: %.1f \n  RL: %.2e ; SNR: %.1f \n  LR: %.2e ; SNR: %.1f\n\n'%tuple(toprint)
 
+      pfile = open('FRINGE.PEAKS.dat','w' )
       printMsg(pmsg)
+      pfile.write(pmsg)
 
       NUM =  np.angle(FRRu[RMAXu[0]]*np.average(Kmat[2]))
       DEN =  np.angle(FLRu[RMAXu[2]]*np.average(Kmat[3]))
@@ -966,7 +1112,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
       printMsg(pmsg) 
 
-      pfile = open('FRINGE.PEAKS.dat','w' )
       pfile.write(pmsg)
       pfile.close()
 

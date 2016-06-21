@@ -506,7 +506,15 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
     plotFile = fopen("POLCONVERT.FRINGE","wb");
 
-    if(doNorm){gainsFile = fopen("POLCONVERT.GAINS","w");};
+    if(doNorm){ 
+//      for(ii=0; ii<nnu;ii++){
+//         sprintf(message,"POLCONVERT.GAINS.IF%i",ii);
+//         gainsFile[ii] = fopen(message,"w");
+//      };
+    gainsFile = fopen("POLCONVERT.GAINS","wb");
+
+    };
+
 
     int noI = -1;
     plIF -= 1; // IF number to zero-based.
@@ -809,7 +817,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
   if(doNorm){ // Norm. factor will be the geometrical average of gains.
     NormFac[0] = std::sqrt(NormFac[0]*NormFac[1])/((float) nchans[ii]);
-    fprintf(gainsFile, "%i  %.10e  %.5e\n",ii+1, currT/86400.,NormFac[0]);
+    fprintf(gainsFile, "%i  %i  %.10e  %.5e\n",ii+1, currAnt, currT/86400.,NormFac[0]);
     for(j=0; j<nchans[ii]; j++){
       Ktotal[currAntIdx][0][0][j] /= NormFac[0];
       Ktotal[currAntIdx][0][1][j] /= NormFac[0];

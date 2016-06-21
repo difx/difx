@@ -164,6 +164,29 @@ bool firstflag = false;
 
  auxI = -1; // If all channels are flagged, no interpolation is done.
 
+
+
+
+
+//////////////////////
+// DEBUGGING CODE
+//FILE *gainFile = fopen("GAINS.ASSESS.B4","ab");
+//fwrite(&Nchan,sizeof(int),1,gainFile);
+//   for (chan=0; chan<Nchan; chan++) {
+//       fwrite(&GainAmp[0][0][chan][0],sizeof(double),1,gainFile); 
+//       fwrite(&GainAmp[1][0][chan][0],sizeof(double),1,gainFile); 
+//       fwrite(&GainPhase[0][0][chan][0],sizeof(double),1,gainFile); 
+//       fwrite(&GainPhase[1][0][chan][0],sizeof(double),1,gainFile); 
+//       fwrite(&flags[0][chan*Ntimes[0]+0],sizeof(bool),1,gainFile);
+//   };
+//fclose(gainFile);
+//////////////////////
+
+
+
+
+
+
  if (Nchan>1) {
  for (ant=0; ant<Nants; ant++) {
   for (tidx=0; tidx<Ntimes[ant]; tidx++) {
@@ -222,16 +245,17 @@ bool firstflag = false;
      if (!firstflag && flags[ant][chan*Ntimes[ant]+index]){firstflag = true; auxI=chan-1;};  // REVISAR
      if (firstflag && !flags[ant][chan*Ntimes[ant]+index]){
           firstflag = false;
-          for (auxI2=auxI; auxI2<chan; auxI2++) {
+          for (auxI2=auxI+1; auxI2<chan; auxI2++) {
             frchan = ((double) (auxI2-auxI))/((double) (chan-auxI));
+       //     std::cout << frchan<<" "<<GainAmp[0][ant][chan][tidx]<<" "<<GainAmp[0][ant][auxI][tidx]<<"\n";
             GainAmp[0][ant][auxI2][tidx] = GainAmp[0][ant][chan][tidx]*frchan;
-            GainAmp[0][ant][auxI2][tidx] = GainAmp[0][ant][auxI][tidx]*(1.-frchan);
+            GainAmp[0][ant][auxI2][tidx] += GainAmp[0][ant][auxI][tidx]*(1.-frchan);
             GainAmp[1][ant][auxI2][tidx] = GainAmp[1][ant][chan][tidx]*frchan;
-            GainAmp[1][ant][auxI2][tidx] = GainAmp[1][ant][auxI][tidx]*(1.-frchan);
+            GainAmp[1][ant][auxI2][tidx] += GainAmp[1][ant][auxI][tidx]*(1.-frchan);
             GainPhase[0][ant][auxI2][tidx] = GainPhase[0][ant][chan][tidx]*frchan;
-            GainPhase[0][ant][auxI2][tidx] = GainPhase[0][ant][auxI][tidx]*(1.-frchan);
+            GainPhase[0][ant][auxI2][tidx] += GainPhase[0][ant][auxI][tidx]*(1.-frchan);
             GainPhase[1][ant][auxI2][tidx] = GainPhase[1][ant][chan][tidx]*frchan;
-            GainPhase[1][ant][auxI2][tidx] = GainPhase[1][ant][auxI][tidx]*(1.-frchan);
+            GainPhase[1][ant][auxI2][tidx] += GainPhase[1][ant][auxI][tidx]*(1.-frchan);
             flags[ant][auxI2*Ntimes[ant]+index] = false;            // REVISAR
 
           };
@@ -242,6 +266,21 @@ bool firstflag = false;
     };
  };
  };
+
+
+//////////////////////
+// DEBUGGING CODE
+//FILE *gainFile2 = fopen("GAINS.ASSESS","ab");
+//fwrite(&Nchan,sizeof(int),1,gainFile2);
+//   for (chan=0; chan<Nchan; chan++) {
+//       fwrite(&GainAmp[0][0][chan][0],sizeof(double),1,gainFile2); 
+//       fwrite(&GainAmp[1][0][chan][0],sizeof(double),1,gainFile2); 
+//       fwrite(&GainPhase[0][0][chan][0],sizeof(double),1,gainFile2); 
+//       fwrite(&GainPhase[1][0][chan][0],sizeof(double),1,gainFile2); 
+//       fwrite(&flags[0][chan*Ntimes[0]+0],sizeof(bool),1,gainFile2);
+//   };
+//fclose(gainFile2);
+//////////////////////
 
 
 return;
