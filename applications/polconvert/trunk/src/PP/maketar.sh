@@ -4,6 +4,7 @@
 #
 
 cfiles='
+    Changelog
     CalTable.cpp
     CalTable.h
     DataIO.cpp
@@ -20,14 +21,14 @@ cfiles='
     '
 
 scripts='
-    asdmpolconvert.py
-    casapolconvert.py
-    prepolconvert.py
-    maketar.sh
-    mytasks.py
+    QA2/asdmpolconvert.py
+    QA2/casapolconvert.py
+    QA2/xy-guess.py
+    PP/prepolconvert.py
+    PP/runpolconvert.py
+    PP/maketar.sh
     setup.py
     task_polconvert.py
-    xy-guess.py
     '
 
 built='
