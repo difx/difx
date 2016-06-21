@@ -9,7 +9,7 @@ PolConvertSources = \
 	DataIOSWIN.cpp DataIOSWIN.h \
 	Weighter.cpp Weighter.h \
 	_PolConvert.cpp polconvert.xml \
-	setup.py task_polconvert.py \
+	setup.py task_polconvert.py
 PostPolScripts = PP/prepolconvert.py PP/runpolconvert.py
 ScriptCopies = prepolconvert.py runpolconvert.py
 
