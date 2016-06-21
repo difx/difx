@@ -11,6 +11,7 @@ PolConvertSources = \
 	_PolConvert.cpp polconvert.xml \
 	setup.py task_polconvert.py \
 PostPolScripts = PP/prepolconvert.py PP/runpolconvert.py
+ScriptCopies = prepolconvert.py runpolconvert.py
 
 # BUILT_SOURCES doesn't help here.
 BuiltSources = $(PolConvertSources) $(PostPolScripts)
@@ -51,6 +52,7 @@ _PolConvert.so: copy.them
 clean-local:
 	rm -rf build _PolConvert.so *.pyc
 	rm -rf polconvert.py polconvert_cli.py mytasks.py
+	rm -f $(ScriptCopies)
 	-[ -f copy.them ] && rm -f $(PolConvertSources) && rm -f copy.them
 endif
 #
