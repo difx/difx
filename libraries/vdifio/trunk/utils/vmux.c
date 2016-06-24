@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(threadString == 0)
+	if(outFile == 0)
 	{
 		fprintf(stderr, "Incomplete command line.  Run with --help for usage information.\n");
 
