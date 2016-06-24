@@ -153,7 +153,7 @@ typedef struct vdif_edv3_header {	/* VLBA extensions: see http://www.vlbi.org/vd
    uint32_t nbits : 5;
    uint32_t iscomplex : 1;
 
-   uint32_t samprate : 23;	// in samprateunits
+   uint32_t samprate : 23;	// in samprateunits; note this is internal complex sample rate; double for real value output
    uint32_t samprateunits : 1;	// 0 = kHz, 1 = MHz
    uint32_t eversion : 8;	// set to 3
    

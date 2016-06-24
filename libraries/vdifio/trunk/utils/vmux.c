@@ -36,7 +36,7 @@
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.7";
-const char verdate[] = "20160610";
+const char verdate[] = "20160624";
 
 const int defaultChunkSize = 2000000;
 
@@ -243,6 +243,13 @@ int main(int argc, char **argv)
 
 			return EXIT_FAILURE;
 		}
+	}
+
+	if(threadString == 0)
+	{
+		fprintf(stderr, "Incomplete command line.  Run with --help for usage information.\n");
+
+		return EXIT_FAILURE;
 	}
 
 	for(n = nThread = 0; nThread < 32; ++nThread)

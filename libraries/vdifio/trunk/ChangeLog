@@ -37,6 +37,7 @@ Version 1.1
 * Update help info for some utilties : fix "Usage" lines.
 * vmux: all printf(...) -> fprintf(stderr, ...) so as to not interfere with stdout usage 
 * vmux: stop on SIGPIPE: useful for piped operations
+* vmux: don't segfault on incomplete command line
 
 Version 1.0
 ~~~~~~~~~~~
