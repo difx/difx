@@ -69,7 +69,8 @@ if (targetJD < 2444055.5):
 
 # fetch EOP data
 eop_url = "http://gemini.gsfc.nasa.gov/solve_save/usno_finals.erp"
-leapsec_url = "http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat"
+leapsec_url = (
+        "http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat")
 
 print >>sys.stderr, "Fetching EOP data..."
 eop_page = urllib.FancyURLopener().open(eop_url).readlines()
@@ -102,6 +103,8 @@ for line in eop_page:
         tai_utc = get_leapsec(leapsec_page, eop_fields[0])
         if not tai_utc:
             raise Exception("Leap seconds not found! Check your dates")
-        print "EOP %d { xPole=%f yPole=%f tai_utc=%d ut1_utc=%f }" % (eop_fields[0]-2400000.5,eop_fields[1]/10.,eop_fields[2]/10.,tai_utc,tai_utc+eop_fields[3]/1000000.)
+        print "EOP %d { xPole=%f yPole=%f tai_utc=%d ut1_utc=%f }" % (
+                eop_fields[0]-2400000.5, eop_fields[1]/10., eop_fields[2]/10.,
+                tai_utc, tai_utc+eop_fields[3]/1000000.)
 
 print >>sys.stderr, "Processed %d lines" % nlines

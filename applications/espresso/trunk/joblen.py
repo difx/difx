@@ -49,18 +49,17 @@ for jobfilename in jobfilenames:
         joblen = float(jobinfo[2]) - float(jobinfo[1])
         jobstations = float(jobinfo[3])
         jobsize = float(jobinfo[6])
+        station_list = " ".join(jobinfo[8:])
 
         pass_stations = (
-                jobstations*joblen + pass_stations*passlen)/(joblen+passlen)
+                (jobstations*joblen + pass_stations*passlen)/(joblen+passlen))
         passlen += joblen
         pass_size += jobsize
 
-        #print jobinfo[0], joblen*24., "hours"
-        print "%s: %s \t %0.3f %s \t %0.2f %s \t %d %s" % (
+        print "%s: %s \t %0.3f %s \t %0.2f %s \t %d %s %s" % (
                 jobinfo[0], jobstart, joblen*24., "hours", jobsize, "MB",
-                jobstations, "stations")
+                jobstations, "stations", station_list)
 
-    #print "Total:", passlen*24., "hours"
     print "%s: %0.3f %s \t %0.2f %s \t %0.1f %s" % (
             "Total", passlen*24., "hours", pass_size, "MB", pass_stations,
             "stations (avg)")
