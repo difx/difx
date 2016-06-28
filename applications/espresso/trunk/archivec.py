@@ -18,8 +18,9 @@
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # =======================================================================
 
-# archive DiFX data files to the iVEC permanent data store. Tar the plethora of
-# small files before transfer. Transfer FITS and other user files unmodified.
+# archive DiFX data files to the Pawsey permanent data store. Tar the plethora
+# of small files before transfer. Transfer FITS and other user files
+# unmodified.
 # Cormac Reynolds: Dec 2014
 
 import optparse
@@ -202,8 +203,8 @@ login = ""
 while True:
     try:
         command = " ".join(
-                ["ashell.py", '"', login, "cf", args[1], "+ put", archdir,
-                    '"'])
+                ["ashell.py", '"', login, "mkfolder", args[1], "+ cf", args[1],
+                    "+ put", archdir, '"'])
         print command
         subprocess.check_call(
                 command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
