@@ -19,11 +19,12 @@
 # =======================================================================
 
 # archive FITS files to ATOA.
-# Cormac Reynolds: Dec 2014
+# Cormac Reynolds: May 2016, first version
 
 import optparse
 import re
 import subprocess
+import os
 
 
 usage = """%prog <FITS_FILES>
@@ -46,8 +47,8 @@ fits_files = args
 
 
 # directories on Horus for ATOA import
-atoa_fits_dir = "horus.atnf.csiro.au:/data/ATOA_10/VLBI/"
-atoa_md5sum_dir = "horus.atnf.csiro.au:/data/ATOA_10/md5sum/"
+atoa_fits_dir = "horus.atnf.csiro.au:/data/ATOA_10/received/VLBI/"
+atoa_md5sum_dir = "horus.atnf.csiro.au:/data/ATOA_10/received/md5sum/"
 
 if options.username:
     atoa_fits_dir = options.username + "@" + atoa_fits_dir
@@ -56,6 +57,7 @@ if options.username:
 
 # format for ATOA is dd-mm-yy_hhmm.<projcode>.<whatever> where <projcode> is
 # the official scheduling code for the project and <whatever> is arbitrary.
+# The md5sum file must have the *same* name, but goes to a different directory.
 for fits_file in fits_files:
     header = open(fits_file).read(1000)
     date_obs = re.search("DATE-OBS=\s+'(\d{4}-\d{2}-\d{2})'", header).group(1)
@@ -63,17 +65,24 @@ for fits_file in fits_files:
     outfile = date_obs + "_0000." + fits_file
     md5sumfile = outfile + ".md5sum"
 
-    # generate an md5sum file
-    command = " ".join(["md5sum", fits_file, ">", outfile + ".md5sum"])
-    print command
-    subprocess.check_call(command, shell=True)
+    try:
+        # create a hard link to the FITS file with the ATOA name
+        os.link(fits_file, outfile)
 
-    # copy to FITS file to Horus, using the ATOA file name
-    command = ["scp", fits_file, atoa_fits_dir + outfile]
-    print command
-    subprocess.Popen(command).communicate()
+        # generate an md5sum file
+        command = " ".join(["md5sum", outfile, ">", md5sumfile])
+        subprocess.check_call(command, shell=True)
 
-    # copy to md5sum file to Horus, using the ATOA file name
-    command = ["scp", md5sumfile, atoa_md5sum_dir + outfile]
-    print command
-    subprocess.Popen(command).communicate()
+        # copy the FITS file to Horus, using the ATOA file name
+        command = ["scp", outfile, atoa_fits_dir]
+        subprocess.check_call(command)
+
+        # copy the md5sum file to Horus, using the ATOA file name
+        command = ["scp", md5sumfile, os.path.join(atoa_md5sum_dir, outfile)]
+        subprocess.check_call(command)
+    except:
+        raise
+    finally:
+        # clean up even if transfer failed.
+        os.remove(outfile)
+        os.remove(md5sumfile)
