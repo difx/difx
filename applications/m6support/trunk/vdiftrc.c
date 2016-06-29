@@ -1,5 +1,5 @@
 /*
- * $Id: vdiftrc.c 3746 2016-02-09 23:12:13Z gbc $
+ * $Id: vdiftrc.c 4008 2016-06-29 20:50:52Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we provide a timing trace capability.
@@ -22,6 +22,15 @@ static char bc_mess[NUM_BCS][MAX_BCS];
 
 static pthread_mutex_t bread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static void trace_timestamp(const struct timeval *tvp)
+{
+    struct tm *gm = gmtime(&tvp->tv_sec);
+    fprintf(vdftmp, "%7lu.%06lu %04d-%02d-%02dT%02d:%02d:%02d.%06ld\n",
+        tvp->tv_sec - born.tv_sec, tvp->tv_usec,
+        gm->tm_year + 1900, gm->tm_mon + 1, gm->tm_mday,
+        gm->tm_hour, gm->tm_min, gm->tm_sec, tvp->tv_usec);
+}
+
 /*
  * Start the trace (or not).
  */
@@ -32,6 +41,7 @@ void vdifuse_mktrace(char *cache, char *mount)
     snprintf(vdtmpname, sizeof(vdtmpname), "/tmp/vdifuse-trace.%d", getpid());
     vdftmp = fopen(vdtmpname, "w");
     if (vdifuse_debug) fprintf(vdflog, "Trace log to %s\n", vdtmpname);
+    trace_timestamp(&born);
     vdifuse_trace(VDT("Trace started, cache %s\n"), cache);
     if (!getcwd(cwd, sizeof(cwd))) sprintf(cwd, "Directory unknown");
     vdifuse_trace(VDT("Working in %s\n"), cwd);
@@ -55,16 +65,17 @@ void vdifuse_rmtrace(int rv)
  */
 void vdifuse_trace(char *fmt, ...)
 {
-    static int cnt = 0;
+    static int cnt = 0, clk = 0;
     va_list args;
     struct timeval tv;
     if (!vdftmp) return;
     if (gettimeofday(&tv, 0)) { perror("gettimeofday"); return; }
-    fprintf(vdftmp, "%5lu.%06lu ", tv.tv_sec - born.tv_sec, tv.tv_usec);
+    fprintf(vdftmp, "%7lu.%06lu ", tv.tv_sec - born.tv_sec, tv.tv_usec);
     va_start(args, fmt);
     vfprintf(vdftmp, fmt, args);
     va_end(args);
     if (++cnt == 20) { vdifuse_flush_trace(); cnt = 0; }
+    if (++clk == 100) { trace_timestamp(&tv); clk = 0; }
 }
 
 /*
@@ -91,7 +102,7 @@ void vdifuse_bread(char *fmt, ...)
     if (!vdftmp) return;
     if (gettimeofday(&tv, 0)) { perror("gettimeofday"); return; }
     pthread_mutex_lock(&bread_mutex);
-    snprintf(buf, MAX_BCS, "%5lu.%06lu %9d ",
+    snprintf(buf, MAX_BCS, "%7lu.%06lu %9d ",
         tv.tv_sec - born.tv_sec, tv.tv_usec, serial++);
     len = strlen(buf);
     va_start(args, fmt);

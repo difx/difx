@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.c 3915 2016-05-13 17:47:20Z gbc $
+ * $Id: vdifsg2.c 4005 2016-06-29 20:37:46Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -583,8 +583,9 @@ static int stripe_comp(const void *sa, const void *sb)
     if (a->sfrag->ptbe < b->sfrag->ptbe) return(-1);
     if (a->sfrag->ptbe > b->sfrag->ptbe) return( 1);
     /* we should never get to this case */
-    vdifuse_trace(VDT("stripe_comp %.8lf == %.8lf\n"),
-        a->sfrag->ptbe, b->sfrag->ptbe);
+    vdifuse_trace(VDT("stripe_comp %.8lf (fd %d) == %.8lf (fd %d)\n"),
+        a->sfrag->ptbe, a->sfrag->sgi->smi.mmfd,
+        b->sfrag->ptbe, b->sfrag->sgi->smi.mmfd);
     return(0);
 }
 
