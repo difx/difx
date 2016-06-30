@@ -21,7 +21,8 @@ the scan(s) of interest.  The packet rate is assumed 125000 pkts/sec
 unless specified in the second argument.  The 3rd argument (true|false)
 controls whether to re-use an existing cache (mod-??-expression).  A
 fourth argument (true|false) specifies whether a tracelog should be
-created (default is true, which places tracefiles into /tmp).
+retained.  (The default is false, which deletes the tracefiles written
+to /tmp after vdifuse exits.)
 
 Any additional arguments are passed directly to vdifuse, to do this
 you will need to specify the initial 4 arguments fully.  Use
