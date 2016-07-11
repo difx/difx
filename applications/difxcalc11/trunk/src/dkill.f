@@ -1,0 +1,69 @@
+      SUBROUTINE TERMINATE_CALC ( LNAME, I1, I2 )
+      IMPLICIT None
+!
+! 1.     TERMINATE_CALC
+!
+! 1.1    TERMINATE_CALC PROGRAM SPECIFICATION
+!
+! 1.1.1  TERMINATE_CALC IS THE UTILITY ROUTINE WHICH TERMINATES THE CALC
+!        PROGRAM IF A DATA BASE INTERFACE ERROR IS DETECTED IN THE PROGRAM.
+!
+! 1.2    TERMINATE_CALC PROGRAM INTERFACE
+!
+! 1.2.1  CALLING SEQUENCE -
+!
+!        INPUT VARIABLES:
+!          1. I1       -  THE NUMBER OF THE DATA BASE INTERFACE ERROR FLAG
+!                         WHICH CAUSED THE TERMINATE_CALC.
+!          2. I2       -  THE VALUE RETURNED BY THE DATA BASE ERROR RETURN
+!                         FLAG.
+!          3. LNAME(3) -  THE NAME OF THE SUBROUTINE IN WHICH THE PROGRAM
+!                         TERMINATED.
+!
+! 1.2.2 COMMON BLOCKS USED - CON
+!
+      INCLUDE 'ccon.i'
+!
+! 1.2.3  PROGRAM SPECIFICATIONS -
+!
+      INTEGER*2  LNAME(3),IPAR(5), I1, I2
+      CHARACTER*10 IPAR_C
+      EQUIVALENCE (IPAR,IPAR_C)
+!
+! 1.2.4  DATA BASE ACCESS -  NONE
+!
+! 1.2.5  EXTERNAL INPUT/OUTPUT -
+!               INPUT VARIABLES:  NONE
+!               OUTPUT VARIABLES: THE PROGRAM TERMINATION MESSAGE
+!
+! 1.2.6  SUBROUTINE INTERFACE -
+!              CALLER SUBROUTINES: ALL ROUTINES WITH DATA BASE INTERFACES.
+!              CALLED SUBROUTINES: NONE
+!
+! 1.2.7  CONSTANTS USED - NONE
+!
+! 1.2.8  PROGRAM VARIABLES -   NONE
+!
+! 1.2.9  PROGRAMMER - DALE MARKHAM  01/20/77
+!                     PETER DENATALE 07/18/77
+!                     BRUCE SCHUPLER 01/11/80
+!                     SAVITA GOEL    06/04/87 (CDS FOR A900)
+!                     Jim Ryan 90.01.26  QUIT_CALC implemented.
+!                     David Gordon 94.04.12 Edit termination message for Calc 8.
+!                     David Gordon 94.04.14 Change to Implicit none.
+!                     Jim Ryan Sept 2002 Integer*2/4 mods.
+!
+! 1.3    TERMINATE_CALC PROGRAM STRUCTURE
+!
+!    WRITE OUT THE MESSAGE WHICH INDICATES THE PROGRAM HAS BEEN TERMINATED.
+      WRITE( 6, 9000 ) LNAME, I1, I2
+ 9000 FORMAT (1X, "CALC has terminated in subroutine ", 3A2, &
+     &        ',', 'KERR(', I1, ') = ', I2, '.' )
+!
+!
+!   TERMINATE THE PROGRAM.
+!     IPAR_C = 'CALC Fail '
+!     CALL QUIT_CALC(IPAR)
+!
+      STOP
+      END

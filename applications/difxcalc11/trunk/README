@@ -1,0 +1,22 @@
+
+This is version 11 of Goddard CALC provided by David Gordon in
+July 2016.  This version contains implementations of the
+near field models of Sekido-Fukushima, Duev, and laser ranging
+and native DiFX interface.
+
+
+# To set up build files from a fresh SVN checkout (not needed for tar-ball)
+
+aclocal
+autoconf
+automake -a
+
+# To build:
+
+./configure --prefix=<prefix>
+make
+make install (optional)
+
+
+
+Here <prefix> is the install prefix used at configure time.
