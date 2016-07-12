@@ -290,6 +290,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 	nThread = 0;
 	singleThread = false;
 
+
 	for(int df = 0; df < NumDataFormats; ++df)
 	{
 		if(strcasecmp(formatName.c_str(), DataFormatNames[df]) == 0)
@@ -379,12 +380,16 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		}
 		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 		VDIFFrameSize = matchInt(formatName, match[2]);
+		// Mbps not captured
+		nRecordChan = matchInt(formatName, match[4]);
+		nBit = matchInt(formatName, match[5]);
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
 	else if(regexec(&matchType6, formatName.c_str(), 5, match, 0) == 0)
 	{
+
 		// of form <fmt>-<Mbps>-<nChan>-<bits>
 		format = stringToDataFormat(formatName.substr(0, match[1].rm_eo));
 		if(format == NumDataFormats)
