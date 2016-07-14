@@ -209,7 +209,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 
 	df_kHz = interval_MHz*1000;
 
-	if (abs(freq_kHz) >= abs(df_kHz))
+	if (abs(freq_kHz) >= llabs(df_kHz))
 	{
 		fprintf(stderr, "Error: tones offsets >= tone interval are not supported\n");
 
@@ -253,7 +253,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 		f0_kHz = -freq_kHz - bw_kHz;
 
 		/* don't allow a tone at 0 freq */
-		startTone = (abs(df_kHz) == abs(freq_kHz)) ? 1 : 0;
+		startTone = (llabs(df_kHz) == abs(freq_kHz)) ? 1 : 0;
 
 		for(nTone = 0; nTone < MaxTones; ++nTone)
 		{
@@ -263,7 +263,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 				break;
 			}
                         flsb = (startTone + nTone + 1)*df_kHz + freq_kHz;
-			chan = abs(flsb)*nChan/bw_kHz;
+			chan = llabs(flsb)*nChan/bw_kHz;
 			//fprintf(stderr, "Tone %2d with f=%5d in chan %d/%d=%.4f MHz\n", nTone, f, chan, nChan, chan*bw_MHz/nChan);
 			z = spectrum[chan];
 			toneFreq_MHz[nTone] = f/1000.0;
@@ -433,7 +433,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 		{
 			if(verbose >= -1)
 			{
-				printf("%Ld / %Ld samples unpacked\n", unpacked, total);
+				printf("%lld / %lld samples unpacked\n", unpacked, total);
 			}
 
 			/* normalize */
