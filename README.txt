@@ -12,8 +12,8 @@ this to your .bashrc or .cshrc files
 5) Run "./install-difx
 
 Thats it. DiFX should compile - if not, check out the troubleshooting
-area on http://cira.ivec.org/dokuwiki/doku.php/difx/index.
+area on http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/start
 
 #### TESTING ####################
 
-See http://cira.ivec.org/dokuwiki/doku.php/difx/benchmarks
+See http://www.atnf.csiro.au/dokuwiki/doku.php/difx/benchmarks
