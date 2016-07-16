@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2014 by Walter Brisken                             *
+ *   Copyright (C) 2007-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -556,8 +556,8 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
                   "<scanNumber>%d</scanNumber>"
                   "<scanName>%s</scanName>"
                   "<position>%lld</position>"
-                  "<playRate>%7.3f</playRate>"
-                  "<dataMJD>%13.7f</dataMJD>"
+                  "<playRate>%5.3f</playRate>"
+                  "<dataMJD>%9.7f</dataMJD>"
                 "</mark6Status>",
 
                 difxMessageInputFilenameTag,
@@ -672,8 +672,8 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 		  "<scanNumber>%d</scanNumber>"
 		  "<scanName>%s</scanName>"
 		  "<position>%lld</position>"
-		  "<playRate>%7.3f</playRate>"
-		  "<dataMJD>%13.7f</dataMJD>"
+		  "<playRate>%5.3f</playRate>"
+		  "<dataMJD>%9.7f</dataMJD>"
 		"</mark5Status>",
 
 		difxMessageInputFilenameTag,
@@ -1569,8 +1569,8 @@ int difxMessageSendDifxTransient(const DifxMessageTransient *transient)
 
 		"<difxTransient>"
 		  "<jobId>%s</jobId>"
-		  "<startMJD>%14.8f</startMJD>"
-		  "<stopMJD>%14.8f</stopMJD>"
+		  "<startMJD>%10.8f</startMJD>"
+		  "<stopMJD>%10.8f</stopMJD>"
 		  "<priority>%f</priority>"
 		  "<destDir>%s</destDir>"
 		  "<comment>%s</comment>"
@@ -1634,7 +1634,7 @@ int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nVal
 	size = snprintf(body, DIFX_MESSAGE_LENGTH,
 
 		"<difxSmart>"
-		  "<mjd>%12.6f</mjd>"
+		  "<mjd>%9.7f</mjd>"
 		  "<vsn>%s</vsn>"
 		  "<slot>%d</slot>"
 		  "%s"

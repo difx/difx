@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2014 by Walter Brisken                             *
+ *   Copyright (C) 2007-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -94,6 +94,7 @@ enum BinaryDataChannels
 };
 
 /* Note! Keep this in sync with Mk5StateStrings[][24] in difxmessage.c */
+/* Note: all new additions should go to the end of the list. */
 enum Mk5State
 {
 	MARK5_STATE_OPENING = 0,
@@ -127,6 +128,7 @@ enum Mk5State
 
 extern const char Mk5StateStrings[][24];
 
+/* Note: all new additions should go to the end of the list. */
 enum Mark6State
 {
 	MARK6_STATE_OPENING = 0,
@@ -161,6 +163,7 @@ enum Mark6State
 extern const char Mark6StateStrings[][24];
 
 /* Note! Keep this in sync with DifxStateStrings[][24] in difxmessage.c */
+/* Note: all new additions should go to the end of the list. */
 enum DifxState
 {
 	DIFX_STATE_SPAWNING = 0,/* Issued by mpirun wrapper */
