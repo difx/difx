@@ -144,7 +144,8 @@ char VexStream::DataFormatNames[NumDataFormats+1][16] =
 bool VexStream::isSingleThreadVDIF(const std::string &str)
 {
 	if(strcasecmp(str.c_str(), "VDIF") == 0 ||
-	   strcasecmp(str.c_str(), "VDIFL") == 0)
+	   strcasecmp(str.c_str(), "VDIFL") == 0 ||
+	   strcasecmp(str.c_str(), "VDIFC") == 0)
 	{
 		return true;
 	}
