@@ -845,8 +845,11 @@ static int getModes(VexData *V, Vex *v)
 					}
 					else
 					{
-						nBit = 2;
-						ch2tracks[chanName].mag.push_back(chanNum);
+					  if (stream.nBit==0)
+					    nBit=2;
+					  else
+					    nBit = stream.nBit;
+					  ch2tracks[chanName].mag.push_back(chanNum);
 					}
 				}
 			}
