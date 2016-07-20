@@ -7,6 +7,7 @@
 #include <string>
 #include <cmath>
 #include <ipps.h>
+#include <ippcore.h>
 
 static const float SIGMA_LIMIT = 4.0;
 
@@ -31,39 +32,21 @@ int main(int argc, char *argv[])
   Ipp32f* timedomain = ippsMalloc_32f(numchannels*2);
   Ipp32f stddev, minval, maxval, basicsnr, derivsnr, bestsnr;
   int minindex, maxindex, basicindex, bestindex, otherindex;
-  IppsFFTSpec_R_32f* fftspec;
   IppsDFTSpec_R_32f* dftspec;
   IppStatus status;
-
+  int sizeDFTSpec, sizeDFTInitBuf, wbufsize, i;
   string commentstring;
   ifstream input;
-  int isFFT;
-  int order = 0;
   int fftchannels = numchannels*2;
-
-  //Uses bitwise test to check if numchannels is power of 2
-  if(!(fftchannels & (fftchannels - 1)))
-  {
-    isFFT = true;
-    cout << "Power of 2 so using FFT" << endl;
-  }
-  else
-  {
-    isFFT = false;
-    cout << "NOT a power of 2 so using DFT" << endl;
-  }
-
-  if (isFFT) {
-    while(((fftchannels) >> order) > 1)
-      order++;
-    status = ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
-  } else {
-    ippsDFTInitAlloc_R_32f(&dftspec, fftchannels, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
-  }
-  if (status != ippStsNoErr) {
-    cerr << "Error in FFT initialisation!!!" << status << endl;
-    exit(1);
-  }
+  Ipp8u *dftInitBuf, *dftWorkBuf;
+  
+  // Initialize DFT  
+  ippsDFTGetSize_R_32f(fftchannels, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast,  &sizeDFTSpec, &sizeDFTInitBuf, &wbufsize);
+  dftspec = (IppsDFTSpec_R_32f*)ippsMalloc_8u(sizeDFTSpec);
+  dftInitBuf = ippsMalloc_8u(sizeDFTInitBuf);
+  dftWorkBuf = ippsMalloc_8u(wbufsize);
+  ippsDFTInit_R_32f(fftchannels, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast, dftspec, dftInitBuf);
+  if (dftInitBuf) ippFree(dftInitBuf);
 
   //work out if its a binary or ascii file
   int index = string(argv[1]).find_first_of('.');
@@ -116,13 +99,9 @@ int main(int argc, char *argv[])
 
   input.close();
 
-  
   ippsRealToCplx_32f(realcomponent, imagcomponent, complexfrequency, numchannels + 1);
   
-  if (isFFT) 
-    ippsFFTInv_CCSToR_32f((Ipp32f*)complexfrequency, timedomain, fftspec, 0);
-  else 
-    ippsDFTInv_CCSToR_32f((Ipp32f*)complexfrequency, timedomain, dftspec, 0);
+  ippsDFTInv_CCSToR_32f((Ipp32f*)complexfrequency, timedomain, dftspec, dftWorkBuf);
 
   //rearrange the lags into order
   for(int i=0;i<numchannels*2;i++)
