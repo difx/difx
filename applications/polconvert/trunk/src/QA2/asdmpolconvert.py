@@ -33,7 +33,7 @@ CALAPP = 'calappphase.tab'
 #          'uid___A002_Xb542b2_X5f2' ]
 
 try:
-    if not (band3 or band6):
+    if (band3 and band6) or not (band3 or band6):
         raise Exception, 'Exactly one of "band3" or "band6" must True'
     if not os.path.exists(asdmdir):
         raise Exception, 'No directory corresponding to "asdmdir"'

@@ -11,53 +11,97 @@ import shutil
 import tarfile
 
 #
+# If the arguments in this script are correct, you need only define
+#
+#   msname='unique'         # msname is the same as used in asdmpolconvert.py
+#   label='msname.d'        # label is version by this script
+#   band3=True or band3=False
+#   band6=True or band6=False
+#   mysteps = [step(s)]     # to perform range(8) for all
+#
+
+#
 # these are all arguments, starting with the products of asdmpolconvert.py
 #
-msname = 'concat.ms'
+# msname = 'concat.ms'
+# label = msname + '.0'
 CALAPP = 'calappphase.tab'
 ANTENNA = 'antenna.tab'
 
+try:
+    if type(msname) is not str:
+        raise Exception, 'You must define a string "msname"'
+    if (band3 and band6) or not (band3 or band6):
+        raise Exception, 'Exactly one of "band3" or "band6" must True'
+    if not os.path.exists('%s/ANTENNA'%msname):
+        raise Exception, '%s has no ANTENNA table'%msname
+except Exception, ex:
+    raise ex
+
 # to allow variant processing and keeping products separate
+# msname should correspond to the project and label appends a
+# version number in case of retries.
 try:
     if type(label) is not str or len(label) == 0:
         label = msname + '.0'
-except:
-    label = msname + '.0'
-print 'Generating PolConvert Products labelled as ' + label + '...'
-print 'Executing processing steps ' + ','.join(map(str, mysteps))
-#if label not in globals().keys(): label = msname + '.0'
-#print label
-#print locals().keys()
-#print globals().keys()
+except Exception, ex:
+    raise ex
 
-try:
-    if len(mysteps) == 0:
-        mysteps = range(8)
-except:
-    mysteps = range(8)
+#
+# field ids from listobs for the targets -- these are deducible from listobs
+#
+if band6: # Apr08 2016 commissioning observation
+    bpcal = '0'
+    flxcal = '1'
+    pzncal = '2'
+    phscal = '3'
+    science = '7'
+    # remaining sources (VLBI Calibrators)
+    vlbical = '4,5,6'
+    # any antenna in the center (plotants);
+    # probably should be the phasing reference
+    refant = 'DV18'
+    # the sum antenna is the one on pad APP01
+    sumant = 'DV03'
+    # all windows ( '0,1' ) for band 6
+    spw = '0,1'
+elif band3: # July10 2016 commissioning observation
+    bpcal = '0'
+    flxcal = '1'
+#
+# unclear what to do here with more than one polarization calibrator
+#   pzncal = '2,3'
+#or
+    pzncal = '2'
+    altpzncal = '3'
+#
+    phscal = '4'
+    science = '6'
+    # remaining sources (VLBI Calibrators)
+    vlbical = altpzncal + ',' + '5,7'
+    # any antenna in the center (plotants)
+    refant = 'DV18'
+    # the sum antenna is the one on pad APP01
+    sumant = 'DV03'
+    # only window '0' for band 3
+    spw = '0'
+else:
+    raise Exception, 'only band3 and band6 are supported'
 
-# field ids from listobs for the targets
-# deducible from listobs
-bpcal = '0'
-flxcal = '1'
-pzncal = '2'
-phscal = '3'
-vlbical = '4,5,6'
-science = '7'
-# any antenna in the center (plotants)
-refant = 'DV18'
-# all windows '0,1' for band 6 '0' for band 3
-spw = '0,1'
+#
+# other parameters that could be adjusted
+#
+
 # integration time for polconvert solutions
 intt = '4.032s'
 # standard for setjy()
 jystandard = 'Butler-JPL-Horizons 2012'
 
-# list of atenna, spw, timerange
-# at a minimum flag the sum antenna (pad APP01) as bad
-flags = [['DV03', '', '']]
+# list of [antenna, spw, timerange]
+# at a minimum you should flag the sum antenna
+flags = [[sumant, '', '']]
 
-# by amplitude
+# data can be clipped by amplitude
 # clip = [0.,0.012]
 clip = []
 
@@ -72,10 +116,21 @@ flxlst = ','.join(map(str, flxfer))
 # the code below this point should not need to be edited
 #
 
-# get names of all antennas
-tb.open(msname+'/ANTENNA')
-allants = tb.getcol('NAME')
-tb.close()
+try:
+    if len(mysteps) == 0:
+        mysteps = range(8)
+except:
+    mysteps = range(8)
+
+print 'Generating PolConvert Products labelled as "' + label + '" ...'
+print 'Executing processing steps ' + ','.join(map(str, mysteps))
+
+if 2 in mysteps or 3 in mysteps:
+    # get names of all antennas
+    print 'getting antenna list for steps 2 or 3'
+    tb.open(msname+'/ANTENNA')
+    allants = tb.getcol('NAME')
+    tb.close()
 
 # feedback for the user
 TODO = {0:'Save original flags',
@@ -270,7 +325,8 @@ if mystep in mysteps:
         refant=refant,
         smodel=[1,0,1,0], # starting model: I,Q,U,V, i.e. pure U
         gaintable=gainsvlbi, gainfield=gainfields)
-    print 'Copy the polarization report to the README file as from Step #4.'
+    print 'Copy the polarization report to the README file'
+    print 'and label it as being from from Step #4.'
     print '\n'
     os.system('rm -rf ' + label + '.XY-CrossPhase-tcon.png')
     plotcal(label+'.XY0amb-tcon','chan','phase', antenna=refant, poln='X',
