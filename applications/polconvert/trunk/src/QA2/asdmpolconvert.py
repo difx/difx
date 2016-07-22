@@ -45,9 +45,8 @@ try:
         raise Exception, ('%s exists...remove it or change names'%msname)
     if os.path.exists(CALAPP) and os.path.isdir(CALAPP):
         raise Exception, ('%s exists...remove it'%CALAPP)
-except:
-    Exception, ex:
-        raise ex
+except Exception, ex:
+    raise ex
 
 # Iterate over ASDMs and import to MS:
 for i,asd in enumerate(ASDM):
