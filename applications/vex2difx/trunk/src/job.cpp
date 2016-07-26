@@ -130,7 +130,7 @@ struct iless
 int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const char *fileName, unsigned int invalidMask) const
 {
 	std::vector<JobFlag> flags;
-	std::map<std::string,int,iless> antIds;
+	std::map<std::string,unsigned int,iless> antIds;
 	unsigned int nAnt = 0;
 	std::ofstream of;
 
@@ -149,21 +149,12 @@ int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const
 	std::vector<double> flagStart(nAnt, mjdStart);
 
 	// Except if not a Mark5 Module case, don't assume RECORD flag is on
-	for(unsigned int antId = 0; antId < nAnt; ++antId)
+	for(std::vector<std::string>::const_iterator a = jobAntennas.begin(); a != jobAntennas.end(); ++a)
 	{
-		const VexAntenna *ant = V.getAntenna(jobAntennas[antId]);
-
-		if(!ant)
-		{
-			std::cerr << "Developer error: generateFlagFile: antenna " << jobAntennas[antId] << " not found in antenna table." << std::endl;
-
-			exit(EXIT_FAILURE);
-		}
-
-		if(V.getDataSource(antId, 0) != DataSourceModule) // FIXME: This line assumes all datastreams behave the same.  solution: need datastream-based flags
+		if(V.getDataSource(*a, 0) != DataSourceModule) // FIXME: This line assumes all datastreams behave the same.  solution: need datastream-based flags
 		{
 			// Aha! not module based so unflag JOB_FLAG_RECORD
-			flagMask[antId] &= ~JobFlag::JOB_FLAG_RECORD;
+			flagMask[antIds[*a]] &= ~JobFlag::JOB_FLAG_RECORD;
 		}
 	}
 

@@ -1104,6 +1104,37 @@ enum DataSource VexData::getDataSource(unsigned int antId, unsigned int streamId
 	return DataSourceUnspecified;
 }
 
+enum DataSource VexData::getDataSource(const std::string &antName, unsigned int streamId) const
+{
+	std::vector<VexMode>::const_iterator mit;
+
+	for(mit = modes.begin(); mit != modes.end(); ++mit)
+	{
+		std::map<std::string,VexSetup>::const_iterator it = mit->setups.find(antName);
+
+		if(it == mit->setups.end())
+		{
+			continue;
+		}
+		if(streamId >= it->second.streams.size())
+		{
+			std::cerr << "Developer error: VexData::getDataSource: antName = " << antName << " streamId = " << streamId << " where number of streams is " << it->second.streams.size() << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		if(it->second.streams[streamId].dataSource != DataSourceUnspecified)
+		{
+			return it->second.streams[streamId].dataSource;
+		}
+
+	}
+
+	std::cerr << "Developer error: VexData::getDataSource: antName = " << antName << " is not contained in the data model" << std::endl;
+		
+	exit(EXIT_FAILURE);
+}
+
 VexStream::DataFormat VexData::getFormat(const std::string &modeName, const std::string &antName, int dsId) const
 {
 	int modeId = getModeIdByDefName(modeName);

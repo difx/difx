@@ -106,6 +106,7 @@ public:
 	void generateRecordChans();
 	void setDataSource(unsigned int antId, unsigned int streamId, enum DataSource dataSource);
 	enum DataSource getDataSource(unsigned int antId, unsigned int streamId) const;
+	enum DataSource getDataSource(const std::string &antName, unsigned int streamId) const;
 	bool hasData(const std::string &antName, const VexScan &scan) const;
 
 	double obsStart() const { return exper.mjdStart; }
