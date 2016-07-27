@@ -32,16 +32,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "config.h"
-/* #include <gsl/gsl_multifit.h> */
-#include "/usr/include/gsl/gsl_multifit.h"
+#include <gsl/gsl_multifit.h>
 #include "difxio.h"	/* only needed for MAX_MODEL_ORDER */
 #include "poly.h"
-
-/* #ifndef MAX_MODEL_ORDER                      */
-/* #define MAX_MODEL_ORDER 10 */
-#define MAX_MODEL_ORDER 6
-/* #endif                      */
 
 /* Implement a specific variant of Neville's algorithm for equally spaced
  * data.  The expansion is about x=0 and the input data points are 

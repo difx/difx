@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include "parsedifx.h"
 
-#define MAX_MODEL_ORDER			5
+#define MAX_MODEL_ORDER			6
 #define MAX_PHS_CENTRES			1000
 #define MAX_ABER_CORR_STRING_LENGTH	16
 #define MAX_DATA_SOURCE_NAME_LENGTH	16
