@@ -19,6 +19,8 @@ The code for these programs can be made available upon request.
 % TODO
 % add more hyperlinks (e.g., to vdifd, etc)
 % add mark5access python programs: m5selfcorr.py  m5spec.py  m5stat.py  m5subband.py  m5time.py  m5tone.py
+% add showcal
+% add difxcalc (11)
 
 
 
@@ -820,7 +822,7 @@ Note that exept for the {\tt listall} and {\tt prod} actions, the current workin
 
 % difxsniff -------------------------------------------------------------------
 
-\subsection{difxsniff {\small $\mathrm{(package: calcif2)}$}} \label{sec:difxsniff}
+\subsection{difxsniff {\small $\mathrm{(package: SniffPlots)}$}} \label{sec:difxsniff}
 
 Program {\tt difxsniff} is a reimplementation of the VLBA analysts' program {\tt sniff.pd} to be more appropriate for software correlation where the sniffer data is generated at the same time as the FITS files.
 It uses the same underlying set of plotting programs ({\tt plotwt}, {\tt plotbp}, and {\tt plotapd}) as {\tt sniff.pd} did.
@@ -1093,7 +1095,7 @@ Note: the input file for {\tt fakemultiVDIF} must have a single thread or unpred
 
 % genmachines -----------------------------------------------------------------
 
-\subsection{genmachines {\small $\mathrm{(package: calcif2)}$}} \label{sec:genmachines}
+\subsection{genmachines {\small $\mathrm{(package: mpifxcorr)}$}} \label{sec:genmachines}
 
 Program {\tt genmachines} uses the information in a {\tt .input} file and a file containing information about the members of the compute cluster (such as the file pointed to by {\tt \$DIFX\_MACHINES}) to produce a {\tt .machines} file (\S\ref{sec:machines}) needed by {\tt mpifxcorr}.
 Note that {\tt genmachines} is not intended to be run by hand anymore as {\tt startdifx} does this,
@@ -1201,7 +1203,7 @@ Default is the current working directory if none is provided.
 
 % jobdisks --------------------------------------------------------------------
 
-\subsection{jobdisks {\small $\mathrm{(package: calcif2)}$}} \label{sec:jobdisks}
+\subsection{jobdisks {\small $\mathrm{(package: mpifxcorr)}$}} \label{sec:jobdisks}
 
 Program {\tt jobdisks} looks through job files to see which modules (disks) are needed for correlation.
 It reads through {\tt .input} files, as used by {\tt mpifxcorr}, to get the needed information.
@@ -1242,7 +1244,7 @@ Known bugs:
 
 % joblist ---------------------------------------------------------------------
 
-\subsection{joblist {\small $\mathrm{(package: calcif2)}$}} \label{sec:joblist}
+\subsection{joblist {\small $\mathrm{(package: mpifxcorr)}$}} \label{sec:joblist}
 
 Program {\tt joblist} prints useful information about DiFX correlator jobs to {\em stdout}.
 Six columns of output are produced:
@@ -1283,7 +1285,7 @@ Multiple directories can be specified.
 
 % jobstatus -------------------------------------------------------------------
 
-\subsection{jobstatus {\small $\mathrm{(package: calcif2)}$}} \label{sec:jobstatus}
+\subsection{jobstatus {\small $\mathrm{(package: mpifxcorr)}$}} \label{sec:jobstatus}
 
 \noindent
 {\bf Warning: As of DiFX 2.0.1, this utility has not yet been updated to work with DiFX 2 output format.}
@@ -1339,7 +1341,7 @@ Known bugs:
 
 % listcpus --------------------------------------------------------------------
 
-\subsection{listcpus {\small $\mathrm{(package: calcif2)}$}} \label{sec:listcpus}
+\subsection{listcpus {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:listcpus}
 
 Python program {\tt listcpus} uses ssh to connect to each machine listed in a file (usually {\tt \$DIFX\_MACHINES}) and peaks at the list of CPUs on that machine and prints to stdout.
 Only the first column of this file is used and any content after a {\tt \#} is ignored.
@@ -2403,7 +2405,7 @@ The main purpose of this program is to evaluate the impact of using different po
 
 % startdifx -------------------------------------------------------------------
 
-\subsection{startdifx {\small $\mathrm{(package: calcif2)}$}} \label{sec:startdifx} 
+\subsection{startdifx {\small $\mathrm{(package: mpifxcorr)}$}} \label{sec:startdifx} 
 
 Starting {\tt mpifxcorr} generally requires a lengthy command.
 This inspired the creation of {\tt startdifx} which vastly simplifies use of the DiFX correlator.
@@ -3050,7 +3052,7 @@ Thus, when {\tt db2vex} is run some of these error messages may be seen.
 
 % vlog ------------------------------------------------------------------------
 
-\subsection{vlog {\small $\mathrm{(package: calcif2)}$}} \label{sec:vlog}
+\subsection{vlog {\small $\mathrm{(package: vex2difx)}$}} \label{sec:vlog}
 
 Program {\tt vlog} takes as input a calibration file ({\tt cal.vlba}, \S\ref{sec:cal}).
 This file is parsed to produce four files containing formatted arrays that are convenient for use in the construction of FITS tables:

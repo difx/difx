@@ -31,6 +31,7 @@ These are:
 This is accessed only by program {\tt calcif}.
 \item {\tt DIFX\_ARCHIVE\_ROOT} points to the base directory of the archive staging area.
 \item {\tt DIFX\_ARCHIVE\_USERNAME} specifies the username of the archiving process (NRAO use only).
+\item {\tt DIFX\_CALC\_PROGRAM} specifies the command used to evaluate the delay model.  By default this is currently {\tt calcif2}, however it is expected this will change to {\tt difxcalc} in the DiFX 2.6 release series.
 \item {\tt DIFX\_GROUP\_ID} the Unix group to use.  If set, umask is changed to 002 and all new files/directories become group writable.
 \item {\tt DIFX\_HEAD\_NODE} contains the name of the cluster head node.
 \item {\tt DIFX\_MACHINES} points to a file containing a list of cluster members and their capabilities.
