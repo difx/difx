@@ -21,5 +21,4 @@ CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${GSL_CFLAGS}"
 AC_OUTPUT([ \
 	Makefile \
 	src/Makefile \
-	utils/Makefile \
 ])
