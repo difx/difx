@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2015 by Walter Brisken and Helge Rottmann          *
+#   Copyright (C) 2008-2016 by Walter Brisken and Helge Rottmann          *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -31,7 +31,7 @@
 
 PROGRAM = 'startdifx'
 VERSION = '2.5.0'
-VERDATE = '20160112'
+VERDATE = '20160727'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -39,10 +39,10 @@ defaultport  = 50200
 defaultttl   = 3
 maxGenmachineFail = -1
 
-genmachines = 'genmachines -v'
-calcif      = 'calcif2'
-difx2fits   = 'difx2fits -v'
-mpiOptions  = '--mca mpi_yield_when_idle 1 --mca rmaps seq'
+genmachines              = 'genmachines -v'
+defaultDelayModelProgram = 'calcif2'
+difx2fits                = 'difx2fits -v'
+mpiOptions               = '--mca mpi_yield_when_idle 1 --mca rmaps seq'
 
 from sys import argv, exit, stdout
 from os import popen, getcwd, system, getenv, getpid, environ
@@ -58,6 +58,7 @@ import struct
 import signal
 import subprocess
 
+delayModelProgram = defaultDelayModelProgram
 
 verbose = 0
 
@@ -70,12 +71,12 @@ def getUsage():
 	usage +=  '<start delay> is an optional delay (seconds) to add to the job start time\n'
 	usage +=  '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
 	usage +=  '<joblist> is a joblist file as created by vex2difx (must have .joblist extension)\n'
-	usage +=  '\nEnvironment:\n'
-	usage +=  'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT '
-	usage +=  'can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
+	usage +=  '\nThis program responds to the following environment variables:\n'
+	usage +=  'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
 	usage +=  'DIFX_HEAD_NODE must name the correlation head node (only if using the -m option).\n'
 	usage +=  'DIFX_MPIRUNOPTIONS can be used to pass options to the mpirun command.\n'
-
+	usage +=  'DIFX_CALC_PROGRAM can be used to change the delay model program (default is %s)\n' % defaultDelayModelProgram
+ 
 	return(usage)
 
 class Parser:
@@ -543,7 +544,7 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 			for i in range(verbose):
 				calcOptions += "-v "
 
-			system('%s %s %s.calc' % (calcif, calcOptions, fileBase))
+			system('%s %s %s.calc' % (delayModelProgram, calcOptions, fileBase))
 	
 		else:
 			return 'Error: model not available for %s' % fileBase
@@ -593,7 +594,7 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 			for i in range(verbose):
 				calcOptions += "-v "
 
-			system('%s %s %s.calc' % (calcif, calcOptions, fileBase))
+			system('%s %s %s.calc' % (delayModelProgram, calcOptions, fileBase))
 		else:
 			return 'Error: model not available for %s' % fileBase
 	
@@ -690,7 +691,7 @@ optParser.add_option("-n", "--nomachines", dest="machinesPolicy", action="store_
 optParser.add_option("-M", "--machines-file", dest="machinesFile", action="store", type="string", help="start difx via DifxStartMessage")
 optParser.add_option("-m", "--message", dest="useStartMessage", action="store_true", help="start difx via DifxStartMessage")
 optParser.add_option("-f", "--force", dest="deletePolicy", action="store_const", const=1, help="force running even if output file exists")
-optParser.add_option("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not run calcif, even if needed")
+optParser.add_option("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not calculate delay model, even if needed")
 optParser.add_option("-D", "--difxdb", dest="difxdb", action="store_true", help="make use of difxdb to obtain module location")
 optParser.add_option("-F", "--fits", dest="makeFits", action="store_true", help="generate 1 fits file per job at end of each job")
 optParser.add_option("-v", "--verbose", dest="verbose", action="count", help="send more output to the screen  (use -v -v for extra info)")
@@ -767,6 +768,13 @@ for fileBase in fileBaseList:
 
 if nBad > 0:
 	exit(1)
+
+dcp = getenv("DIFX_CALC_PROGRAM")
+if dcp != None:
+	delayModelProgram = dcp
+	print 'Environment variable DIFX_CALC_PROGRAM was set, so'
+	print 'Using specified calc program: %s' % delayModelProgram
+	print ''
 
 for fileBase in fileBaseList:
 	a = rfind(fileBase, "/")

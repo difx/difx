@@ -1,6 +1,15 @@
+AM_CPPFLAGS = \
+	-I$(top_builddir)/src \
+	-I$(top_srcdir)/src
+
 bin_PROGRAMS = checkmpifxcorr dedisperse_difx mpispeed
 
-AM_CPPFLAGS = -I$(top_builddir)/src -I$(top_srcdir)/src
+dist_bin_SCRIPTS = \
+	genmachines.py \
+	jobdisks \
+	joblist \
+	jobstatus \
+	startdifx
 
 checkmpifxcorr_SOURCES = \
 	checkmpifxcorr.cpp

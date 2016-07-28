@@ -24,6 +24,7 @@ Version 2.5
 * Promote some ints to long longs; fixes reporting of core memory use when lots of memory is needed.
 * Experimental support for VDIF data served over Shared Memory
 * For Mark5B and VDIF file-based correlation put file information into log stream
+* Adopted startdifx, genmachines.py, joblist, jobstatus, and jobdisks scripts from calcif2 as new competing delay model, difxcalc11, is coming in...
 
 Version 2.4
 ~~~~~~~~~~~
