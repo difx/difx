@@ -1,6 +1,10 @@
 bin_PROGRAMS = difxcalc
 
-AM_FFLAGS = -ffree-form
+AM_CPPFLAGS = -I$(top_builddir)/src
+
+AM_FFLAGS = \
+	-ffree-form \
+	-I$(top_builddir)/src
 
 difxcalc_SOURCES = \
 	config.h \
