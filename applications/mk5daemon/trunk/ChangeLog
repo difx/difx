@@ -11,6 +11,7 @@ Version 2.5.0
 * Initial support for command line structure
 * mk5dir: can override (presumably incorrect) directory version number with --version1
 * mk5dir: no seg fault if cannot open output file
+* Adopt scripts listcpus and listmodules from calcif2 as this is a more natural home.
 
 Version 2.4.0
 ~~~~~~~~~~~~~
