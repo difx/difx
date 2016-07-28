@@ -15,4 +15,4 @@ dist_bin_SCRIPTS = \
 	difxspeed \
 	oms2v2d \
 	calc2xyz \
-	calc2sked
+	vlog
