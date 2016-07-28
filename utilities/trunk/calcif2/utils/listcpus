@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2011 by Walter Brisken                             *
+#   Copyright (C) 2008-2016 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -38,7 +38,7 @@ from glob import glob
 program = 'listcpus'
 author  = 'Walter Brisken'
 version = '0.1'
-verdate = '20080317'
+verdate = '20160727'
 
 mk5list = 'mk5list'
 
@@ -53,8 +53,8 @@ def usage():
 	print '          increase verbosity of output'
 	print '\n  -m <machinesfile> or --machines <machinesfile>'
 	print '          use <machinesfile> instead of $DIFX_MACHINES'
-	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
-	print 'is specifided.\n'
+	print '\nThis program responds to the following environment variables:\n'
+	print 'DIFX_MACHINES must point to the machines file if no <machinesfile> is specifided.\n'
 	exit(1)
 
 
