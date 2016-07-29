@@ -8,6 +8,7 @@ drivepolconvert.py -- a program to drive the polconvert process
 '''
 
 import argparse
+import datetime
 import os
 import re
 
@@ -75,11 +76,11 @@ def parseOptions():
         help='List of DiFX input job files')
     return parser.parse_args()
 
-def checkOptions(o):
+def tarballExtraction(o):
     '''
-    Check that options make sense, and other startup items.
+    Extract the tarball if it is supplied, and work out the label
+    if none was given.
     '''
-    # extract the tarball if supplied
     if o.qa2tar != '' and os.path.exists(o.qa2tar):
         cmd = 'tar zxf %s' % o.qa2tar
         if o.verb: print 'Extracting tarfile with: %s' % cmd
@@ -95,10 +96,14 @@ def checkOptions(o):
             o.label = '.'.join(parts[0:-2])
         else:
             raise Exception, 'Unable to create processing label'
+
+def calibrationChecks(o):
+    '''
+    Check that required files are present.
+    '''
     if o.label == '':
         raise Exception, 'A label (-l) is required to proceed'
     if o.verb: print 'Using label %s' % o.label
-    # check that required files are present
     exhibits = ['bandpass-zphs.cal', 'ampgains.cal.fluxscale',
                 'phasegains.cal', 'XY0amb-tcon', 'antenna.tab',
                 'calappphase.tab']
@@ -106,29 +111,71 @@ def checkOptions(o):
         d = o.label + '.' + e
         if not os.path.exists(d) or not os.path.isdir(d):
             raise Exception, 'Required director %s is missing' % d
+
+def inputRelatedChecks(o):
+    '''
+    Check things that will end up in the CASA input file.
+    '''
     expchk = set()
+    jobset = set()
     if len(o.nargs) < 1:
         raise Exception, 'No input files to work on...this is pointless'
     for j in o.nargs:
         if not os.path.exists(j):
             raise Exception, 'Input file %s is missing' % j
         expchk.add(j.split('_')[0])
+        jobtmp = j.split('_')[1]
+        jobset.add(jobtmp.split('.')[0])
     if len(expchk) > 1 or len(expchk) == 0:
         raise Exception, ('Only one experiment may be processed ' +
             'but %d are present: %s') % (len(expchk), ','.join(expchk))
     if o.exp == '': o.exp = expchk.pop()
     if o.verb: print 'Processing experiment %s' % o.exp
+    if len(jobset) < 1:
+        raise Exception, 'No job inputs to process (%d)' % len(jobset)
+    djobs = list(jobset)
+    djobs.sort()
+    o.djobs = str(map(str,djobs))
+    if o.verb: print 'Processing jobs "%s"' % o.djobs
+
+def runRelatedChecks(o):
+    '''
+    Check things that are required to run CASA.
+    '''
     if o.input == '':
         o.input = o.exp + '.pc-casa-input'
     if o.output == '':
         o.output = o.exp + '.pc-casa-output'
     if os.path.exists(o.input):
-        print 'Warning, input file %s will be destroyed' % o.input
+        os.rename(o.input, o.input + '.save')
+        print '(Warning, input file %s.save was destroyed.)' % o.input
     if os.path.exists(o.output):
-        print 'Warning, output file %s will be destroyed' % o.output
-    if o.verb: print 'Input/output files: %s/%s' % (o.input, o.output)
-    if not (o.band == '3' or o.band == '6Lo' or o.band == '6Hi'):
-        raise Exception, 'Observing band mis-specified, use -b 3|6Lo|6Hi'
+        os.rename(o.output, o.output + '.save')
+        print '(Warning, output file %s.save was destroyed.)' % o.output
+    if o.verb: print 'Input/output files are %s/%s' % (o.input, o.output)
+
+    if 'DIFXCASAPATH' in os.environ:
+        o.casa = '%s/casa' % os.environ['DIFXCASAPATH']
+    else:
+        o.casa = 'casa'
+    if o.verb: cmd = 'type %s'
+    else:      cmd = 'type %s 1>/dev/null 2>/dev/null'
+    if o.verb: print 'CASA executable is %s' % o.casa
+
+    if o.run:
+        if os.system(cmd % o.casa):
+            raise Exception, 'CASA does not appear to be in your path'
+
+def checkOptions(o):
+    '''
+    Check that all options make sense, and other startup items.
+    We do this prior to any real work, but after tarball extraction
+    if such was provided.  The subfunctions throw exceptions on issues.
+    '''
+    tarballExtraction(o)
+    calibrationChecks(o)
+    inputRelatedChecks(o)
+    runRelatedChecks(o)
 
 def runPrePolconvert(o):
     '''
@@ -136,9 +183,12 @@ def runPrePolconvert(o):
     '''
     cmd = 'prepolconvert.py'
     if o.verb: cmd += ' -v'
-    for i in o.nargs: cmd += ' ' + j
+    for ii in o.nargs: cmd += ' ' + ii
+    cmd += ' > prepol.log 2>&1'
+    if o.verb:
+        print 'Running ' + cmd
     if os.system(cmd):
-        raise Exception, 'Error while running prepolconvert'
+        raise Exception, 'Error while running prepolconvert, see prepol.log'
 
 def deduceZoomIndicies(o):
     '''
@@ -147,40 +197,67 @@ def deduceZoomIndicies(o):
     '''
     zoompatt = r'^ZOOM.FREQ.INDEX.\d+:\s*(\d+)'
     almapatt = r'^TELESCOPE NAME %d:\s*AA' % (o.ant-1)
+    freqpatt = r'^FREQ..MHZ..\d+:\s*(\d+)'
     if o.verb: print 'Alma search pattern: "' + str(almapatt) + '"'
     zfirst = set()
     zfinal = set()
+    mfqlst = set()
     almaline = ''
     for jobin in o.nargs:
         zfir = ''
         zfin = ''
+        cfrq = []
         ji = open(jobin, 'r')
         for line in ji.readlines():
             zoom = re.search(zoompatt, line)
             alma = re.search(almapatt, line)
+            freq = re.search(freqpatt, line)
             if almaline == '' and alma: almaline = line
-            if not zoom: continue
-            if zfir == '': zfir = zoom.group(1)
-            else:          zfin = zoom.group(1)
+            if freq: cfrq.append(freq.group(1))
+            if zoom:
+                if zfir == '': zfir = zoom.group(1)
+                else:          zfin = zoom.group(1)
         ji.close()
         if o.verb: print 'Zoom bands %s..%s from %s' % (zfir, zfin, jobin)
+        if len(cfrq) < 1:
+            raise Exception, 'Very odd, no frequencies in input file ' + jobin
+        cfrq.sort()
         zfirst.add(zfir)
         zfinal.add(zfin)
+        mfqlst.add(cfrq[len(cfrq)/2])
     if len(zfirst) != 1 or len(zfinal) != 1:
         raise Exception, ('Encountered ambiguities in zoom freq ranges: ' +
             'first is ' + str(zfirst) + ' and final is ' + str(zfinal))
-    o.zfirst = zfirst.pop()
-    o.zfinal = zfinal.pop()
-    if o.verb: print 'Zoom frequency indices %s..%s found in %s..%s' % (
+    o.zfirst = int(zfirst.pop())
+    o.zfinal = int(zfinal.pop())
+    if o.verb: print 'Zoom frequency indices %d..%d found in %s..%s' % (
         o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
     if almaline == '':
         raise Exception, 'Telescope Name 0 is not Alma (AA)'
     if o.verb: print 'Found ALMA Telescope line: ' + almaline.rstrip()
-    if o.run:
-        if o.verb: cmd = 'type casa'
-        else:      cmd = 'type casa 1>/dev/null 2>/dev/null'
-        if os.system(cmd):
-            raise Exception, 'CASA does not appear to be in your path'
+    # if the user supplied a band, check that it agrees
+    if len(mfqlst) > 1:
+        raise Exception, ('Input files have disparate frequency structures:\n'
+            '  Median frequencies: ' + str(mfqlst) + '\n'
+            '  and these must be processed separately')
+    medianfreq = float(mfqlst.pop())
+    if   medianfreq <  90000.0: medianband = '3'
+    elif medianfreq < 228100.0: medianband = '6Lo'
+    elif medianfreq < 230100.0: medianband = '6Hi'
+    if o.band == '':
+        o.band = medianband
+        print 'Working with band %s based on median freq (%f)' % (
+            o.band, medianfreq)
+    elif o.band == medianband:
+        if o.verb:
+            print ('Supplied band (%s) agrees with median freq. (%f, %s)' %
+                (o.band, medianfreq, medianband))
+    else:
+        raise Exception, ('User-supplied band (%s) disagrees with '
+            'input frequencies (%f, %s)' % (o.band, medianfreq, medianband))
+    # this should not be needed with the above
+    if not (o.band == '3' or o.band == '6Lo' or o.band == '6Hi'):
+        raise Exception, 'Observing band mis-specified, use -b 3|6Lo|6Hi'
 
 def createCasaInput(o):
     '''
@@ -189,30 +266,124 @@ def createCasaInput(o):
     '''
     if o.verb: print 'Creating CASA input file ' + o.input
     ci = open(o.input, 'w')
+    template='''    #!/usr/bin/python
+    # This file contains python commands that may either be fed
+    # directly to CASA as standard input, or else cut&pasted into
+    # the interactive CASA prompts (which you should do if you
+    # are having trouble or wish to see some of the plots).
     #
+    import os
+    #import sys
     #
+    # variables initialized from drivepolconvert.py:
     #
-    ci.write('quit')
+    label = '%s'
+    band%s = True
+    band%s = False
+    band%s = False
+    expName = '%s'
+    linAnt = [%s]
+    rpcpath = os.environ['DIFXROOT'] + '/share/polconvert/runpolconvert.py'
+    zfirst=%d
+    zfinal=%d
+    doIF = range(zfirst+1, zfinal+2)
+    # plotIF = doIF[len(doIF)/2]        # plot a middle channel
+    plotIF = -1
+    print 'using doIF value: ' + str(doIF)
+    #
+    # other variables that can be set in interactive mode
+    # here we set them not to make any interactive plots
+    #
+    plotAnt=-1                          # no plotting
+    # plotAnt=2                         # specifies antenna to plot
+    doTest=False
+    # timeRange = [0,0,0,0, 10,0,0,0]   # first 10 days
+    timeRange=[]
+
+    if not (band3 or band6Hi or band6Lo):
+        print 'Pilot error, only one of band3, band6Hi or band6Lo may be true'
+        quit()
+
+    if band3:
+        band = 'band3'
+        XYadd=[0.0]
+
+    if band6Lo:
+        band = 'band6Lo'
+        XYadd=[0.0]
+
+    if band6Hi:
+        band = 'band6Hi'
+        XYadd=[180.0]
+
+    %s XYadd = [%f]
+    print 'using %%s with XYadd %%s' %% (band, str(XYadd))
+
+    djobs = %s
+    print 'djobs contains these jobs: ' + str(djobs)
+
+    #
+    # actually do the work:
+    print 'executing "execfile(rpcpath)" with rcpath:'
+    print rpcpath
+    execfile(rpcpath)
+    quit()
+    '''
+    # transfer script parameters to the input script
+    if o.band == '3':
+        bandnot = '6Lo'
+        bandaid = '6Hi'
+    elif o.band == '6Lo':
+        bandnot = '3'
+        bandaid = '6Hi'
+    elif o.band == '6Hi':
+        bandnot = '3'
+        bandaid = '6Lo'
+    else:
+        raise Exception, 'Programmer error, illegal case'
+
+    if o.xyadd != '':
+        userXY = ''
+        XYvalu = float(o.xyadd)
+    else:
+        userXY = '#'
+        XYvalu = 0.0
+
+    script = template % (o.label, o.band, bandnot, bandaid, o.exp,
+        o.ant, o.zfirst, o.zfinal, userXY, XYvalu, o.djobs)
+
+    for line in script.split('\n'):
+        ci.write(line[4:] + '\n')
     ci.close()
 
 def executeCasa(o):
     '''
     This function pipes input to CASA and collects output
     '''
+    misc = [ 'polconvert.last', 'POLCONVERT_STATION1.ANTAB',
+             'POLCONVERT.FRINGE', 'POLCONVERT.GAINS', 'PolConvert.log' ]
     cmd1 = 'rm -f %s' % (o.output)
-    cmd2 = 'casa --nologger < %s > %s 2>&1' % (o.input, o.output)
+    cmd2 = '%s --nologger < %s > %s 2>&1' % (o.casa, o.input, o.output)
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
-    cmd4 = 'mv casapy-*.log ipython-*.log casa-logs'
+    cmd4 = 'mv prepol*.log casapy-*.log ipython-*.log casa-logs'
+    cmd5 = 'mv %s %s casa-logs' % (o.input, o.output)
+    cmd6 = ''
+    for m in misc:
+        cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
     if o.run:
         if o.verb: print 'Follow CASA run with: tail -n +1 -f ' + o.output
+        casanow = 'casa-logs.' + datetime.datetime.now().isoformat()[:-7]
         if os.system(cmd1 + ' ; ' + cmd2):
             raise Exception, 'CASA execution "failed"'
         if o.verb:
             print 'Success!  See %s for output' % o.output
-        if os.system(cmd3 + ' ; ' + cmd4):
+        if os.system(cmd3 + ' ; ' + cmd4 + ' ; ' + cmd5):
             raise Exception, 'Problem collecting CASA logs'
+        elif os.system(cmd6):
+            raise Exception, 'Problem collecting misc trash'
         elif o.verb:
-            print 'Swept CASA logs to casa-logs'
+            print 'Swept CASA logs to ' + casanow
+        os.rename('casa-logs', casanow)
     else:
         print 'You can run casa manually with input from ' + o.input
         print 'Or just do: '
@@ -220,6 +391,9 @@ def executeCasa(o):
         print '    ' + cmd2
         print '    ' + cmd3
         print '    ' + cmd4
+        print '    ' + cmd5
+        print '    ' + cmd6
+        print '     mv casa-logs ' + casanow
 
 #
 # enter here to do the work
