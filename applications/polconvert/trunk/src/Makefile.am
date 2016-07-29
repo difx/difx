@@ -16,7 +16,7 @@ ScriptCopies = prepolconvert.py runpolconvert.py
 # BUILT_SOURCES doesn't help here.
 BuiltSources = $(PolConvertSources) $(PostPolScripts)
 
-bin_SCRIPTS = PP/prepolconvert.py
+bin_SCRIPTS = PP/prepolconvert.py PP/drivepolconvert.py
 pkgdata_DATA = _PolConvert.so \
 	PP/runpolconvert.py task_polconvert.py polconvert.xml
 
