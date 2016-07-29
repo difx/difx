@@ -34,13 +34,13 @@ else
     AC_MSG_NOTICE([DIFXCASAPATH is $DIFXCASAPATH])
 fi
 # additional test for buildmytasks in case user has cheated on CASA
-if [test x$CASACMD = x/bin/true -a ! x$DIFXCASAPATH = x] ; then
+if [test $have_casa = true] ; then
     AC_PATH_PROG([BUILDMYTASKS], [buildmytasks], [/bin/false], [$DIFXCASAPATH])
     if [test x$BUILDMYTASKS = x/bin/false] ; then
 	have_casa=false
 	AC_MSG_NOTICE(buildmytasks was not found in path, case 3)
     else
-	AC_MSG_NOTICE(BUILDMYTASKS is [$$BUILDMYTASKS])
+	AC_MSG_NOTICE([BUILDMYTASKS is $BUILDMYTASKS])
     fi
 fi
 #AC_SUBST(DIFXCASAPATH)
