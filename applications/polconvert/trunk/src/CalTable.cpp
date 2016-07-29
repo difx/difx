@@ -199,7 +199,7 @@ bool firstflag = false;
     };
 
     if (allflagged){
-      sprintf(message,"\nWARNING: ALMA ANTENNA #%i HAS ALL CHANNELS FLAGGED AT TIME #%i\n",ant,tidx);
+      sprintf(message,"\nWARNING: ALMA ANTENNA #%i HAS ALL CHANNELS FLAGGED AT TIME #%li\n",ant,tidx);
       fprintf(logFile,message);
       sprintf(message,"SETTING ITS GAIN TO ONE. CHECK RESULTS CAREFULLY!\n\n");
       fprintf(logFile,message);

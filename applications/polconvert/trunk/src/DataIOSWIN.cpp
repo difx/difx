@@ -223,14 +223,14 @@ void DataIOSWIN::readHeader(bool doTest) {
 // Bits per percentage:
   bperp = filesizes[auxI]/100; if(bperp==0){bperp=1;};
 
-  sprintf(message,"\n\nReading file %i of %i (size %i MB)\n",auxI+1,nfiles,filesizes[auxI]/(1024*1024));
+  sprintf(message,"\n\nReading file %i of %i (size %li MB)\n",auxI+1,nfiles,filesizes[auxI]/(1024*1024));
   fprintf(logFile,message); std::cout<<message; fflush(logFile);
 
   cp = 0;
 
   while(!olddifx[auxI].eof()) {
 
-   if(loc/bperp > cp){cp += 1; printf("\r  %i%% DONE",cp);fflush(stdout);};
+   if(loc/bperp > cp){cp += 1; printf("\r  %li%% DONE",cp);fflush(stdout);};
 
    olddifx[auxI].seekg(loc,olddifx[auxI].beg);
    olddifx[auxI].read(reinterpret_cast<char*>(&basel), sizeof(int));
@@ -520,7 +520,7 @@ bool DataIOSWIN::setCurrentMixedVis() {
 
 //char *message;
 long rec;
-int i, fnum;
+int i, fnum = 0;
 
 // Write:
 

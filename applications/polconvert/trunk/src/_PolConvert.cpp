@@ -53,6 +53,7 @@
 
 
 #include <Python.h>
+// compiler warning that we use a deprecated NumPy API
 #include <numpy/arrayobject.h>
 #include <stdio.h>  
 #include <sys/types.h>
@@ -105,7 +106,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 {
 
 
-  static const std::complex<float> oneOverSqrt2 = 0.7071067811;
+  //static const std::complex<float> oneOverSqrt2 = 0.7071067811;
   static const std::complex<float> Im = (std::complex<float>) std::polar(1.0,1.570796326);  
 
     long i,j,k,auxI;
@@ -140,7 +141,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     int SWINnIF = (int) PyList_Size(metadata)-1 ;
     isSWIN = SWINnIF > 0;
 
-    int nSWINFiles;
+    int nSWINFiles = 0; // compiler warning
     std::string* SWINFiles, outputfits;
 
     if (isSWIN) {
@@ -154,6 +155,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
        fflush(logFile);
     } else {
+      SWINFiles = new std::string[nSWINFiles];  // compiler warning
       outputfits = PyString_AsString(IDI);
       sprintf(message,"\nOUTPUT FITS-IDI FILE:  %s \n\n",outputfits.c_str());
       fprintf(logFile,message); std::cout<<message; fflush(logFile);
@@ -163,8 +165,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
 // If SWIN, read the frequency channels from the metadata: 
-   int *SWINnchan;
-   double **SWINFreqs, jd0;
+   int *SWINnchan = 0;  // compiler warning
+   double **SWINFreqs = 0, jd0 = 0.0;   // compiler warning
 
    if (isSWIN) {
      SWINFreqs = new double*[SWINnIF];
@@ -483,7 +485,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
   bool allflagged, auxB ;
 
-  sprintf(message,"\n Will modify %i visibilities (lin-lin counted twice).\n\n",DifXData->getMixedNvis());
+  sprintf(message,"\n Will modify %li visibilities (lin-lin counted twice).\n\n",DifXData->getMixedNvis());
   fprintf(logFile,message); std::cout<<message; fflush(logFile);
 
 

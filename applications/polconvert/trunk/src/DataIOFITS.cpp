@@ -264,7 +264,7 @@ void DataIOFITS::readInput(std::string inputfile) {
   int a1, a2;
   fits_get_num_rows(fptr, &Nvis, &status);
 
-  sprintf(message,"There are  %i visibilities.\n",Nvis);
+  sprintf(message,"There are  %li visibilities.\n",Nvis);
   fprintf(logFile,message); std::cout<<message; fflush(logFile);
 
 
@@ -331,7 +331,7 @@ void DataIOFITS::readInput(std::string inputfile) {
   };
 
     if (il % 1024 == 0) {
-      printf("\r Checking vis. #%i of #%i",il,Nvis);
+      printf("\r Checking vis. #%li of #%li",il,Nvis);
       fflush(stdout); 
     };
 
@@ -447,8 +447,10 @@ void DataIOFITS::openOutFile(std::string outputfile, bool Overwrite) {
      success=false; return;
    };
 
-   fits_movnam_hdu(ofile, BINARY_TBL, "UV_DATA",1, &status);
-   fits_get_colnum(ofile, CASEINSEN, "FLUX", &Flux, &status);
+   char uv_data[] = "UV_DATA";   // compiler warning
+   char flux[] = "FLUX"; // compiler warning
+   fits_movnam_hdu(ofile, BINARY_TBL, uv_data,1, &status);
+   fits_get_colnum(ofile, CASEINSEN, flux, &Flux, &status);
    if (status){
      sprintf(message,"\n\nPROBLEM ACCESSING VISIBILITY DATA IN NEW FILE!  ERR: %i\n\n",status);
      fprintf(logFile,message); std::cout<<message; fflush(logFile);
