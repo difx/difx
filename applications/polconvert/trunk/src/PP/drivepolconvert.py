@@ -365,28 +365,41 @@ def executeCasa(o):
     cmd1 = 'rm -f %s' % (o.output)
     cmd2 = '%s --nologger < %s > %s 2>&1' % (o.casa, o.input, o.output)
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
-    cmd4 = 'mv prepol*.log casapy-*.log ipython-*.log casa-logs'
+    if o.prep: cmd4 = 'mv prepol*.log '
+    else:      cmd4 = 'mv '
+    cmd4 += ' casapy-*.log ipython-*.log casa-logs'
     cmd5 = 'mv %s %s casa-logs' % (o.input, o.output)
     cmd6 = ''
+    casanow = o.exp + '-casa-logs.' + datetime.datetime.now().isoformat()[:-7]
     for m in misc:
         cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
     if o.run:
         if o.verb: print 'Follow CASA run with: tail -n +1 -f ' + o.output
-        casanow = 'casa-logs.' + datetime.datetime.now().isoformat()[:-7]
+        if o.verb: print '  Note, ^C will not stop CASA (or polconvert).'
         if os.system(cmd1 + ' ; ' + cmd2):
             raise Exception, 'CASA execution "failed"'
         if o.verb:
             print 'Success!  See %s for output' % o.output
+        logerr = False
+        mscerr = False
         if os.system(cmd3 + ' ; ' + cmd4 + ' ; ' + cmd5):
-            raise Exception, 'Problem collecting CASA logs'
+            logerr = True
         elif os.system(cmd6):
-            raise Exception, 'Problem collecting misc trash'
+            mscerr = True
         elif o.verb:
             print 'Swept CASA logs to ' + casanow
+        if logerr: print '  There was a problem collecting CASA logs'
+        if mscerr: print '  There was a problem collecting misc trash'
+        jl = open('casa-logs/%s.joblist'%o.exp, 'w')
+        o.nargs.sort()
+        for jb in o.nargs: jl.write(jb + '\n')
+        jl.close()
         os.rename('casa-logs', casanow)
+        print 'Completed job list is in %s/%s.joblist' % (casanow,o.exp)
     else:
+        print ''
         print 'You can run casa manually with input from ' + o.input
-        print 'Or just do: '
+        print 'Or just do what this script would do now, viz: '
         print '    ' + cmd1
         print '    ' + cmd2
         print '    ' + cmd3
@@ -394,6 +407,7 @@ def executeCasa(o):
         print '    ' + cmd5
         print '    ' + cmd6
         print '     mv casa-logs ' + casanow
+        print ''
 
 #
 # enter here to do the work
