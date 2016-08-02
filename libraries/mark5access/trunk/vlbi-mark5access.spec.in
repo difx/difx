@@ -1,5 +1,5 @@
 Summary: Library for decoding VLBI baseband formats: Mark4, VLBA and Mark5B
-Name: mark5access
+Name: vlbi-mark5access
 Version: @version@
 Release: 1
 License: GPL3
@@ -8,7 +8,7 @@ BuildRoot: /var/tmp/mark5access-@version@-buildroot
 Requires: gcc >= 4.1.0
 Requires: fftw3 >= 3.2.0
 Prefix: /usr
-Source: mark5access-@version@.tar.gz
+Source: vlbi-mark5access-@version@.tar.gz
 
 %define debug_package %{nil}
 
@@ -59,6 +59,9 @@ make
 %{_includedir}/mark5access/mark5bfix.h
 
 %changelog
+* Tue Aug 02 2016 Walter Brisken <wbrisken@nrao.edu>
+- Change RPM name to vlbi-mark5access.*.rpm
+
 * Tue Jul 19 2011 Walter Brisken <wbrisken@nrao.edu>
 - Add some new utilities
 

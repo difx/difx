@@ -11,10 +11,10 @@ SUBDIRS = \
 
 EXTRA_DIST = \
 	TODO \
-	mark5access.spec.in
+	vlbi-mark5access.spec.in
 
-dist-hook: mark5access.spec
-	cp mark5access.spec $(distdir)
+dist-hook: vlbi-mark5access.spec
+	cp vlbi-mark5access.spec $(distdir)
 
 library_includedir = $(includedir)
 library_include_HEADERS = mark5access.h
