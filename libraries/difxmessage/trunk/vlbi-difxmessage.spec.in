@@ -1,11 +1,11 @@
 Summary: DiFX library for sending and receiving multicast messages
-Name: difxmessage
+Name: vlbi-difxmessage
 Version: @version@
 Release: 1
 License: GPL3
 Group: VLBI
-BuildRoot: /var/tmp/difxmessage-@version@-buildroot
-Requires: gcc >= 4.1.0, expat
+BuildRoot: /var/tmp/vlbi-difxmessage-@version@-buildroot
+BuildRequires: gcc >= 4.1.0, expat
 Requires: expat
 Prefix: /usr
 Source: difxmessage-@version@.tar.gz
@@ -64,6 +64,9 @@ make
 %{_bindir}/testdifxmessagedrivestats
 
 %changelog
+* Tue Aug 02 2016 Walter Brisken <wbrisken@nrao.edu>
+- Change name of .rpm to vlbi-difxmessage.*.rpm
+
 * Mon Apr 30 2012 Walter Brisken <wbrisken@nrao.edu>
 - Some updates prior to DiFX 2.1
 

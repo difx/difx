@@ -1,4 +1,4 @@
-specfile = difxmessage.spec
+specfile = vlbi-difxmessage.spec
 
 SUBDIRS = \
 	difxmessage \
@@ -6,7 +6,7 @@ SUBDIRS = \
 	utils
 
 EXTRA_DIST = \
-	difxmessage.spec.in
+	vlbi-difxmessage.spec.in
 
 dist-hook: $(specfile)
 	cp $(specfile) $(distdir)

@@ -54,8 +54,8 @@ LIBS=${EXPAT_LIBS}
 AC_OUTPUT([
 	Makefile \
 	difxmessage.pc \
-	difxmessage.spec \
 	mark5ipc.pc \
+	vlbi-difxmessage.spec \
 	difxmessage/Makefile \
 	mark5ipc/Makefile \
 	utils/Makefile
