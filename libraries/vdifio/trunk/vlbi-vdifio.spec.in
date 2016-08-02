@@ -1,10 +1,10 @@
 Summary: Library and utilities to work with VDIF data
-Name: vdifio
+Name: vlbi-vdifio
 Version: @version@
 Release: 1
 License: GPL3
 Group: VLBI
-BuildRoot: /var/tmp/vdifio-@version@-buildroot
+BuildRoot: /var/tmp/vlbi-vdifio-@version@-buildroot
 Requires: gcc >= 4.1.0
 Prefix: /usr
 Source: vdifio-@version@.tar.gz
@@ -65,5 +65,8 @@ make
 
 
 %changelog
+* Tue Aug 02 2016 Walter Brisken <wbrisken@nrao.edu>
+- Change rpm name to vlbi-vdifio.*.rpm
+
 * Sun Mar 13 2011 Walter Brisken <wbrisken@nrao.edu>
 - First rpm version

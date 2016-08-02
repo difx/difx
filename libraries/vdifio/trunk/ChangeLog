@@ -38,6 +38,7 @@ Version 1.1
 * vmux: all printf(...) -> fprintf(stderr, ...) so as to not interfere with stdout usage 
 * vmux: stop on SIGPIPE: useful for piped operations
 * vmux: don't segfault on incomplete command line
+* Change name of .rpm file that is made to vlbi-vdifio.*.rpm
 
 Version 1.0
 ~~~~~~~~~~~

@@ -10,10 +10,10 @@ SUBDIRS = \
 	$(PYTHON_OPT)
 
 EXTRA_DIST = \
-	vdifio.spec.in
+	vlbi-vdifio.spec.in
 
-dist-hook: vdifio.spec
-	cp vdifio.spec $(distdir)
+dist-hook: vlbi-vdifio.spec
+	cp vlbi-vdifio.spec $(distdir)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = vdifio.pc

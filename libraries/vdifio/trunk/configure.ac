@@ -64,7 +64,7 @@ AC_SUBST(version)
 
 AC_OUTPUT([ \
 	Makefile \
-	vdifio.spec \
+	vlbi-vdifio.spec \
 	src/Makefile \
 	utils/Makefile \
 	python/Makefile \
