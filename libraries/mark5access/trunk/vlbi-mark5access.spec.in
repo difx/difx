@@ -4,11 +4,11 @@ Version: @version@
 Release: 1
 License: GPL3
 Group: VLBI
-BuildRoot: /var/tmp/mark5access-@version@-buildroot
-Requires: gcc >= 4.1.0
+BuildRoot: /var/tmp/vlbi-mark5access-@version@-buildroot
+BuildRequires: gcc >= 4.1.0
 Requires: fftw3 >= 3.2.0
 Prefix: /usr
-Source: vlbi-mark5access-@version@.tar.gz
+Source: mark5access-@version@.tar.gz
 
 %define debug_package %{nil}
 
