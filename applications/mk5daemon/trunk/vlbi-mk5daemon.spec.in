@@ -1,10 +1,10 @@
 Summary: Mark5 utilities for the DiFX suite
-Name: mk5daemon
+Name: vlbi-mk5daemon
 Version: @version@
 Release: 1
 License: GPL3
 Group: VLBI
-BuildRoot: /var/tmp/mk5daemon-@version@-buildroot
+BuildRoot: /var/tmp/vlbi-mk5daemon-@version@-buildroot
 Requires: streamstor >= 9.0
 Requires: difxmessage >= 2.4.0
 Requires: mark5access >= 1.5
@@ -53,6 +53,9 @@ chmod a+x /sbin/halt
 %{_bindir}/vsn
 
 %changelog
+* Tue Aug 02 2016 Walter Brisken <wbrisken@nrao.edu>
+- Change rpm name to vlbi-mk5daemon.*.rpm
+
 * Fri Jun 15 2011 Walter Brisken <wbrisken@nrao.edu>
 - Non-root-building capability
 

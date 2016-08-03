@@ -1,8 +1,8 @@
 EXTRA_DIST = \
-	mk5daemon.spec.in
+	vlbi-mk5daemon.spec.in
 
-dist-hook: mk5daemon.spec
-	cp mk5daemon.spec $(distdir)
+dist-hook: vlbi-mk5daemon.spec
+	cp vlbi-mk5daemon.spec $(distdir)
 
 SUBDIRS = \
 	src \

@@ -12,6 +12,8 @@ Version 2.5.0
 * mk5dir: can override (presumably incorrect) directory version number with --version1
 * mk5dir: no seg fault if cannot open output file
 * Adopt scripts listcpus and listmodules from calcif2 as this is a more natural home.
+* mk5erase: new option to overwrite module partition.  Might be useful for firmware upgrades.
+* Change .rpm filename to vlbi-mk5daemon.*.rpm
 
 Version 2.4.0
 ~~~~~~~~~~~~~

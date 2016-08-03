@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2014 by Walter Brisken                             *
+ *   Copyright (C) 2010-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -100,6 +100,8 @@ static void usage(const char *pgm)
 	printf("  -q             Be less verbose\n\n");
 	printf("  --condition\n");
 	printf("  -c             Do full conditioning, not just erasing\n\n");
+	printf("  --overwrite-partition\n");
+	printf("  -o             Overwrite the drive partition\n\n");
 	printf("  --readonly\n");
 	printf("  -r             Perform read-only conditioning mode\n\n");
 	printf("  --writeonly\n");
@@ -157,9 +159,9 @@ int getModuleLabel(SSHANDLE xlrDevice, int bank, char label[XLR_LABEL_LENGTH+1])
 	return 0;
 }
 
-int erase(SSHANDLE xlrDevice)
+int erase(SSHANDLE xlrDevice, SS_OWMODE options)
 {
-	WATCHDOGTEST( XLRErase(xlrDevice, SS_OVERWRITE_NONE) );
+	WATCHDOGTEST( XLRErase(xlrDevice, options) );
 
 	return 0;
 }
@@ -561,7 +563,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	return 0;
 }
 	
-int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersion, int getData)
+int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersion, int getData, int overwritePartition)
 {
 	SSHANDLE xlrDevice;
 	S_DEVSTATUS devStatus;
@@ -576,6 +578,17 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	DifxMessageMk5Status mk5status;
 	char message[DIFX_MESSAGE_LENGTH];
 	int bank;
+	SS_OWMODE overwriteMode;
+
+	if(overwritePartition)
+	{
+		overwriteMode = SS_OVERWRITE_PARTITION;
+		printf("Note: Partition is being overwritten.  This module may not work with older SDK versions anymore...\n");
+	}
+	else
+	{
+		overwriteMode = SS_OVERWRITE_NONE;
+	}
 
 	memset((char *)(&mk5status), 0, sizeof(mk5status));
 
@@ -712,7 +725,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	}
 
 	/* Module gets erased first, regardless of conditioning... */
-	v = erase(xlrDevice);
+	v = erase(xlrDevice, overwriteMode);
 	if(v < 0)
 	{
 		/* Something bad happened.  Bail! */
@@ -769,6 +782,7 @@ int main(int argc, char **argv)
 	int verbose = 0;
 	int force = 0;
 	int getData = 0;
+	int overwritePartition = 0;
 	char vsn[10] = "";
 	char resp[12] = " ";
 	char *rv;
@@ -842,6 +856,11 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--getdata") == 0)
 		{
 			getData = 1;
+		}
+		else if(strcmp(argv[a], "-o") == 0 ||
+			strcmp(argv[a], "--overwrite-partition") == 0)
+		{
+			overwritePartition = 1;
 		}
 		else if(strcmp(argv[a], "--wait-forever") == 0)
 		{
@@ -956,7 +975,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = mk5erase(vsn, mode, verbose, dirVersion, getData);
+		v = mk5erase(vsn, mode, verbose, dirVersion, getData, overwritePartition);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)
