@@ -5,9 +5,9 @@ Release: 1
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/vlbi-mk5daemon-@version@-buildroot
-Requires: streamstor >= 9.0
-Requires: difxmessage >= 2.4.0
-Requires: mark5access >= 1.5
+Requires: vlbi-streamstor >= 9.0
+Requires: vlbi-difxmessage >= 2.4.0
+Requires: vlbi-mark5access >= 1.5
 Requires: expat
 Prefix: /usr
 Source: mk5daemon-@version@.tar.gz
@@ -36,6 +36,8 @@ chmod a+x /sbin/halt
 %{_bindir}/checkdir
 %{_bindir}/fileto5c
 %{_bindir}/killjob
+%{_bindir}/listcpus
+%{_bindir}/listmodules
 %{_bindir}/mk5daemon
 %{_bindir}/mk5cat
 %{_bindir}/mk5control
