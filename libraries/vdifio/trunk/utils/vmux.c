@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 			offset = atoll(argv[a]);
 			if(verbose > 2)
 			{
-				fprintf(stderr, "Arg %d: Offset = %Ld\n", a, (long long)offset);
+				fprintf(stderr, "Arg %d: Offset = %lld\n", a, (long long)offset);
 			}
 		}
 		else if(hasChunkSize == 0)

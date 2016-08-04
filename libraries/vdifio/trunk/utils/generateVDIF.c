@@ -199,7 +199,8 @@ int main (int argc, char * const argv[]) {
     nframe = frameperbuf;
   } else {
     nframe = duration*framespersec;
-    nframe = (nframe/frameperbuf)*frameperbuf;
+    nframe = ((int)floor((float)nframe/(float)frameperbuf+0.5))*frameperbuf;
+    if (nframe==0) nframe = frameperbuf;
   }
   printf("DEBUG: Total frame = %lld\n", (long long)nframe);
 
