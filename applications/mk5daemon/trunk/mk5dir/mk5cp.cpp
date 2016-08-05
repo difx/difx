@@ -1447,7 +1447,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 		if(endTime > startTime)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were copied in %lld seconds, for a copy data rate of %f Mbps\n", (nGoodBytes + nReplacedBytes), (long long)(endTime-startTime), 8.0e-6*((nGoodBytes + nReplacedBytes)/(endTime-startTime)));
+			snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were copied in %lld seconds, copy rate was %3.1f Mbps\n", (nGoodBytes + nReplacedBytes), (long long)(endTime-startTime), 8.0e-6*((nGoodBytes + nReplacedBytes)/(endTime-startTime)));
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			fprintf(stderr, "%s\n", message);
 			if(nGood > 1 && nReplacedBytes > 0)
@@ -1627,7 +1627,7 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 
 		if(endTime > startTime)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were copied in %lld seconds, for a copy data rate of %f Mbps\n", (nGoodBytes + nReplacedBytes), (long long)(endTime-startTime), 8.0e-6*((nGoodBytes + nReplacedBytes)/(endTime-startTime)));
+			snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were copied in %lld seconds, copy rate was %3.1f Mbps\n", (nGoodBytes + nReplacedBytes), (long long)(endTime-startTime), 8.0e-6*((nGoodBytes + nReplacedBytes)/(endTime-startTime)));
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			fprintf(stderr, "%s\n", message);
 			if(nGood > 1 && nReplacedBytes > 0)
