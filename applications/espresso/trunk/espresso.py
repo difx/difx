@@ -68,7 +68,7 @@ def run_calcif2(jobname, calcfilename):
 def backup_oldrun(jobname, outdir, backupdir):
     # back up previous correlator job to subdirectory
     if os.path.exists(outdir):
-        print "\nwill move old jobs to", backupdir, "\n"
+        print "will move old jobs to", backupdir
         dirlist = os.listdir(outdir)
         for file in dirlist:
             if jobname in file and not re.match("\.", file):
@@ -135,6 +135,8 @@ def parse_joblistfile(joblistfilename, speedup=1.0):
         joblist[jobname]["stations"] = stations
 
         joblen = (float(jobend) - float(jobstart))/speedup
+        # add 10 minutes for startup
+        joblen += 10./(24*60)
         days, hours, minutes, seconds = espressolib.daysToDhms(joblen)
         joblist[jobname]["joblen"] = (
                 "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds))
@@ -325,6 +327,11 @@ def run_batch(corrjoblist, outdir):
     while True:
         try:
             #command = ['squeue', '-u', '$USER']
+            try:
+                # remind us what the job is for
+                print open(operator_log).read()
+            except:
+                pass
             print queue_command
             subprocess.check_call(queue_command, stdout=sys.stdout, shell=True)
 
@@ -421,6 +428,10 @@ parser.add_option(
         "--novex", "-n",
         dest="novex", action="store_true", default=False,
         help="Do not re-run vex2difx")
+#parser.add_option(
+#        "--nofilelist", "-F",
+#        dest="nofilelist", action="store_true", default=False,
+#        help="Do not re-generate filelists (with lbafilecheck)")
 parser.add_option(
         "--nopause", "-p",
         dest="nopause", action="store_true", default=False,
@@ -446,7 +457,7 @@ parser.add_option(
 parser.add_option(
         "--difxwatch", "-d",
         dest="difxwatch", action="store_true", default=False,
-        help="Run difxwatch")
+        help="Run difxwatch (only valid for interactive jobs)")
 parser.add_option(
         "--interactive", "-i",
         dest="interactive", action="store_true", default=False,
@@ -454,12 +465,13 @@ parser.add_option(
 parser.add_option(
         "--jobtime", "-j",
         type="str", dest="jobtime", default=None,
-        help="Max. job time for batch jobs, default is runtime * speedup"
-        " format = hh:mm:ss")
+        help="Max. job time for batch jobs."
+        " Default is joblength * speedup + 10 mins."
+        " Format = hh:mm:ss")
 parser.add_option(
         "--speedup", "-s",
         type="float", dest="predicted_speedup", default=1.0,
-        help="Predicted speedup factor to determine job run time")
+        help="Predicted speedup factor to determine job run time. Default=%default")
 
 (options, args) = parser.parse_args()
 
@@ -535,6 +547,13 @@ vex2difx_options = ""
 if options.clockjob or options.testjob or options.force:
     vex2difx_options = " -f "
 
+#if not options.nofilelist:
+#    # re-generate file lists before full production runs, just in case
+#    if (not (options.clockjob or options.testjob)) and options.alljobs:
+#        datafilename = expname + ".datafiles"
+#        command = " ".join(["lbafilecheck.py", datafilename])
+#        print command
+#        subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
 # run vex2difx.
 v2dfilename = passname + ".v2d"
@@ -601,7 +620,7 @@ for jobname in sorted(corrjoblist.keys()):
     # fix the output filename to point at the cuppa data disk
     if not options.novex:
         print "\nrenaming the 'OUTPUT FILENAME' in", inputfilename, "from", \
-                indir, "to", outdir, "\n"
+                indir, "to", outdir
         change_path(inputfilename, 'OUTPUT FILENAME:', indir, outdir)
 
     # run calcif2
@@ -612,12 +631,12 @@ for jobname in sorted(corrjoblist.keys()):
     backup_oldrun(jobname, outdir, backupdir)
 
     # copy the model files to the output directory
-    print "copying the model files", jobname + ".*", "to", outdir, "\n"
+    print "copying the model files", jobname + ".*", "to", outdir
     copy_models(jobname, indir, outdir)
 
     # change the path names in the copied .input and .calc to relative paths
     print ("changing absolute paths to relative paths in the copied .input and"
-            " .calc files\n")
+            " .calc files")
     copy_inputfilename = outdir + os.sep + inputfilename
     copy_calcfilename = outdir + os.sep + calcfilename
     change_path(copy_inputfilename, "CALC FILENAME:", indir, "./")
@@ -629,12 +648,12 @@ for jobname in sorted(corrjoblist.keys()):
 
     # copy job control files to output directory, and rename
     print "copying the job control files", passname + ".[joblist|v2d]", "to", \
-            outdir, "\n"
+            outdir
     copy_jobcontrol(passname, jobname, indir, outdir, ".joblist")
     copy_jobcontrol(passname, jobname, indir, outdir, ".v2d")
 
     outputvex = outdir + jobname + ".vex"
-    print "copying the vex file", vexfilename, "to", outputvex, "\n"
+    print "copying the vex file", vexfilename, "to", outputvex
     shutil.copy2(vexfilename, outputvex)
 
 # and copy the .vex and .v2d unaltered for ease of reference in the output dir
