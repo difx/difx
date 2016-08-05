@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -184,6 +184,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn);
 int countZeros(const streamstordatatype *data, int len);
 
 void countReplaced(const streamstordatatype *data, int len, long long *wGood, long long *wBad);
+void countReplaced2(const streamstordatatype *data, int len, long long *wGood, long long *wBad);
 
 int countbits(unsigned long int v);
 int upround2(int value);

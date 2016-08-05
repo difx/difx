@@ -14,6 +14,7 @@ Version 2.5.0
 * Adopt scripts listcpus and listmodules from calcif2 as this is a more natural home.
 * mk5erase: new option to overwrite module partition.  Might be useful for firmware upgrades.
 * Change .rpm filename to vlbi-mk5daemon.*.rpm
+* mk5cp: report average data rate and total bytes copied.  Use replaced byte counter with lower false detection rate.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

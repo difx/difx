@@ -21,7 +21,7 @@ PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.4.0 mark5ipc < 7])
 PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.5.0])
 PKG_CHECK_MODULES(MARK6META, [mark6meta >= 0.1], [hasmark6meta=true] [AC_DEFINE(HAS_MARK6META, 1)], [hasmark6meta=false])
 
-AH_TEMPLATE(HAS_MARK6META, ["true if mark6meta library has been found"])
+AH_TEMPLATE(HAS_MARK6META, [True if mark6meta library has been found])
 
 streamstor_enabled=true
 PKG_CHECK_EXISTS([streamstor >= 8.0],

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2014 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -116,8 +116,8 @@ int countZeros(const streamstordatatype *data, int len)
 	return nZero;
 }
 
-void countReplaced(const streamstordatatype *data, int len, 
-	long long *wGood, long long *wBad)
+/* len is number of 32-bit words */
+void countReplaced(const streamstordatatype *data, int len, long long *wGood, long long *wBad)
 {
 	int i;
 	int nBad=0;
@@ -125,6 +125,35 @@ void countReplaced(const streamstordatatype *data, int len,
 	for(i = 0; i < len; ++i)
 	{
 		if(data[i] == MARK5_FILL_PATTERN)
+		{
+			++nBad;
+		}
+	}
+
+	*wGood += (len-nBad);
+	*wBad += nBad;
+}
+
+/* len is number of 32-bit words */
+/* same as above, but look at 2 words together for near zero false detection rate */
+void countReplaced2(const streamstordatatype *data, int len, long long *wGood, long long *wBad)
+{
+	int i;
+	int nBad=0;
+	uint64_t pattern = (MARK5_FILL_PATTERN << 32) | MARK5_FILL_PATTERN;	/* two copies of fill pattern */
+	const uint64_t *d = (const uint64_t *)data;
+
+	for(i = 0; i < len/2; ++i)
+	{
+		if(d[i] == pattern)
+		{
+			nBad += 2;
+		}
+	}
+
+	if(len % 2 == 1)	/* separately check the odd-ball if exists */
+	{
+		if(data[len-1] == MARK5_FILL_PATTERN)
 		{
 			++nBad;
 		}
@@ -1508,8 +1537,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 				scan.format = -SCAN_FORMAT_ERROR_ZEROS;
 			}
 
-			countReplaced(bufferStart, bufferLength/4, &wGood, &wBad);
-			countReplaced(bufferStop, bufferLength/4, &wGood, &wBad);
+			countReplaced2(bufferStart, bufferLength/4, &wGood, &wBad);
+			countReplaced2(bufferStop, bufferLength/4, &wGood, &wBad);
 
 			if(die)
 			{

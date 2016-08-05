@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2013 by Walter Brisken                             *
+ *   Copyright (C) 2007-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,8 +46,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.13";
-const char verdate[] = "20130930";
+const char version[] = "0.14";
+const char verdate[] = "20160805";
 
 const int defaultChunkSize = 50000000;
 
@@ -79,7 +79,6 @@ int usage(const char *pgm)
 {
 	int v;
 	int cat = 0;
-
 
 	v = strlen(pgm);
 	if(v >= 6 && strcmp(pgm+v-6, "mk5cat") == 0)
@@ -415,7 +414,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 			return -1;
 		}
 
-		countReplaced(data, len/4, &wGood, &wBad);
+		countReplaced2(data, len/4, &wGood, &wBad);
 
 		v = fwrite(((char *)data)+skip, 1, len-skip, out)+skip;
 
@@ -867,7 +866,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 			return -1;
 		}
 
-		countReplaced(data, len/4, &wGood, &wBad);
+		countReplaced2(data, len/4, &wGood, &wBad);
 
 		if(i == 0)
 		{
@@ -1026,6 +1025,8 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 	const char *mk5dirpath;
 	int v;
 	int b, s, nGood, nBad;
+	long long nGoodBytes = 0, nReplacedBytes = 0;
+	time_t startTime, endTime;
 	int bank = -1;
 	float replacedFrac;
 	int bail = 0;
@@ -1044,6 +1045,8 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+
+	startTime = time(0);
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
 	if(v < 0)
@@ -1100,6 +1103,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
 
+	oldsiginthand = signal(SIGTERM, siginthand);
 	oldsiginthand = signal(SIGINT, siginthand);
 
 	if(strlen(vsn) != 8)
@@ -1232,7 +1236,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					continue;
 				}
 				snprintf(outName, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s_%d", module.label.c_str(), scanList, nGood+nBad);
-				v = copyByteRange(xlrDevice, outPath, outName, scanIndex, byteStart, byteStop, &mk5status, chunkSize);
+				v = copyByteRange(xlrDevice, outPath, outName, scanIndex, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
 				if(v == 0)
 				{
 					++nGood;
@@ -1265,7 +1269,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			}
 
 			snprintf(outName, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s", module.label.c_str(), scanList);
-			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize);
+			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
 
 			if(v == 0)
 			{
@@ -1332,11 +1336,11 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 						int scanIndex = i-1;
 						if(fix5b)
 						{
-							v = copyScanFix5B(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+							v = copyScanFix5B(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
 						}
 						else
 						{
-							v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+							v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
 						}
 						if(v == 0)
 						{
@@ -1386,11 +1390,11 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					int scanIndex = i;
 					if(fix5b)
 					{
-						v = copyScanFix5B(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+						v = copyScanFix5B(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
 					}
 					else
 					{
-						v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+						v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
 					}
 					if(v == 0) 
 					{
@@ -1425,6 +1429,21 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			snprintf(message, DIFX_MESSAGE_LENGTH, "No scans match with code %s on module %8s", scanList, module.label.c_str());
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			fprintf(stderr, "%s\n", message);
+		}
+
+		endTime = time(0);
+
+		if(endTime > startTime)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were copied in %lld seconds, for a copy data rate of %f Mbps\n", (nGoodBytes + nReplacedBytes), (long long)(endTime-startTime), 8.0e-6*((nGoodBytes + nReplacedBytes)/(endTime-startTime));
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			fprintf(stderr, "%s\n", message);
+			if(nGood > 1 && nReplacedBytes > 0)
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were replaced by Mark5 fill pattern\n", nReplacedBytes);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+				fprintf(stderr, "%s\n", message);
+			}
 		}
 
 		reportDriveStats(xlrDevice, vsn);
