@@ -273,7 +273,7 @@ static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, cha
 	return 0;
 }
 
-int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, int scanNum, long long byteStart, long long byteStop, DifxMessageMk5Status *mk5status, int chunkSize)
+int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, int scanNum, long long byteStart, long long byteStop, DifxMessageMk5Status *mk5status, int chunkSize, long long *nGoodBytes, long long *nReplacedBytes)
 {
 	FILE *out;
 	long long readptr;
@@ -488,6 +488,9 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 		fprintf(stderr, "Warning: %s\n", message);
 	}
 
+	*nGoodBytes += 4*wGood;
+	*nReplacedBytes += 4*wBad;
+
 	mk5status->scanNumber = 0;
 	mk5status->rate = 0.0;
 	mk5status->position = byteStop;
@@ -503,7 +506,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	}
 }
 
-int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status, int chunkSize)
+int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status, int chunkSize, long long *nGoodBytes, long long *nReplacedBytes)
 {
 	FILE *out;
 	int destSize;
@@ -513,6 +516,7 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int 
 	streamstordatatype *data;
 	unsigned char *fixed;
 	int a, b, v;
+	long long wGood=0, wBad=0;
 	char filename[DIFX_MESSAGE_FILENAME_LENGTH];
 	struct timeval t0, t1, t2;
 	double dt;
@@ -646,6 +650,8 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int 
 			return -1;
 		}
 
+		countReplaced2(data, len/4, &wGood, &wBad);
+
 		v = mark5bfix(fixed, destSize, (unsigned char *)data, len + leftover, scan->framespersecond, startFrame, &stats);
 		if(v < 0)
 		{
@@ -728,6 +734,9 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int 
 	fprintmark5bfixstatistics(stderr, &stats);
 	fprintf(stderr, "\n");
 
+	*nGoodBytes += 4*wGood;
+	*nReplacedBytes += 4*wBad;
+
 	mk5status->scanNumber = 0;
 	mk5status->rate = 0.0;
 	mk5status->position = scan->start + scan->length;
@@ -743,7 +752,7 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int 
 	}
 }
 
-int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status, int chunkSize)
+int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status, int chunkSize, long long *nGoodBytes, long long *nReplacedBytes)
 {
 	FILE *out;
 	long long readptr;
@@ -946,6 +955,9 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 		fprintf(stderr, "Warning: %s\n", message);
 	}
+
+	*nGoodBytes += 4*wGood;
+	*nReplacedBytes += 4*wBad;
 
 	mk5status->scanNumber = 0;
 	mk5status->rate = 0.0;
@@ -1435,7 +1447,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 		if(endTime > startTime)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were copied in %lld seconds, for a copy data rate of %f Mbps\n", (nGoodBytes + nReplacedBytes), (long long)(endTime-startTime), 8.0e-6*((nGoodBytes + nReplacedBytes)/(endTime-startTime));
+			snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were copied in %lld seconds, for a copy data rate of %f Mbps\n", (nGoodBytes + nReplacedBytes), (long long)(endTime-startTime), 8.0e-6*((nGoodBytes + nReplacedBytes)/(endTime-startTime)));
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			fprintf(stderr, "%s\n", message);
 			if(nGood > 1 && nReplacedBytes > 0)
@@ -1475,8 +1487,9 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 	int bank = -1;
 	int bail = 0;
 	long long byteStart, byteStop;
+	long long nGoodBytes = 0, nReplacedBytes = 0;
 	char outName[DIFX_MESSAGE_FILENAME_LENGTH];
-
+	time_t startTime, endTime;
 	char message[DIFX_MESSAGE_LENGTH];
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
@@ -1485,6 +1498,8 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 	memset(&mk5status, 0, sizeof(mk5status));
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
+
+	startTime = time(0);
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
 	if(v < 0)
@@ -1567,7 +1582,7 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 		if(parseByteRange(&byteStart, &byteStop, scanList))
 		{
 			snprintf(outName, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s", vsn, scanList);
-			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize);
+			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
 
 			if(v == 0)
 			{
@@ -1606,6 +1621,21 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 			snprintf(message, DIFX_MESSAGE_LENGTH, "%d scans NOT copied from module %8s to %s", nBad, vsn, outPath);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			fprintf(stderr, "%s\n", message);
+		}
+
+		endTime = time(0);
+
+		if(endTime > startTime)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were copied in %lld seconds, for a copy data rate of %f Mbps\n", (nGoodBytes + nReplacedBytes), (long long)(endTime-startTime), 8.0e-6*((nGoodBytes + nReplacedBytes)/(endTime-startTime)));
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			fprintf(stderr, "%s\n", message);
+			if(nGood > 1 && nReplacedBytes > 0)
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "A total of %lld bytes were replaced by Mark5 fill pattern\n", nReplacedBytes);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+				fprintf(stderr, "%s\n", message);
+			}
 		}
 
 		reportDriveStats(xlrDevice, vsn);
