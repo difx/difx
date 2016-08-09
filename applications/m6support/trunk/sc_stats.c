@@ -1,10 +1,12 @@
 /*
- * $Id: sc_stats.c 3495 2015-10-05 19:42:26Z gbc $
+ * $Id: sc_stats.c 4021 2016-06-30 21:30:04Z gbc $
  *
  * Statistics checker for scan check
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "sc_stats.h"
 
 /*
@@ -13,7 +15,8 @@
  */
 char *stats_repstr(BSInfo *bsi, char *label)
 {
-    static char buf[1024];
+    static char buf[2048];
+    static char msk[1024];
     char *lab = label ? label : "";
     if (!bsi->bcounts) snprintf(buf, sizeof(buf),
         "%s%lu samples\n", lab, bsi->bcounts);
@@ -24,18 +27,22 @@ char *stats_repstr(BSInfo *bsi, char *label)
         lab, bsi->bcounts, bsi->bpkts,
         lab, bsi->bstates[0], bsi->bstates[1],
              bsi->bstates[2], bsi->bstates[3],
-        lab, (double)bsi->bstates[0] / (double)bsi->bcounts,
-             (double)bsi->bstates[1] / (double)bsi->bcounts,
-             (double)bsi->bstates[2] / (double)bsi->bcounts,
-             (double)bsi->bstates[3] / (double)bsi->bcounts);
+        lab, 100.0*(double)bsi->bstates[0] / (double)bsi->bcounts,
+             100.0*(double)bsi->bstates[1] / (double)bsi->bcounts,
+             100.0*(double)bsi->bstates[2] / (double)bsi->bcounts,
+             100.0*(double)bsi->bstates[3] / (double)bsi->bcounts);
     else if (bsi->bits_sample == 1) snprintf(buf, sizeof(buf),
         "%s%lu samples [00 01] %lu pkts\n"
         "%s%13lu %13lu\n"
         "%s %12f%% %12f%%\n",
         lab, bsi->bcounts, bsi->bpkts,
         lab, bsi->bstates[0], bsi->bstates[1],
-        lab, (double)bsi->bstates[0] / (double)bsi->bcounts,
-             (double)bsi->bstates[1] / (double)bsi->bcounts);
+        lab, 100.0*(double)bsi->bstates[0] / (double)bsi->bcounts,
+             100.0*(double)bsi->bstates[1] / (double)bsi->bcounts);
+    if (bsi->channel_mask) snprintf(msk, sizeof(msk),
+        "%s channel mask = %04X (%d)\n",
+        lab, bsi->channel_mask, bsi->channel_bits);
+    strcat(buf, msk);
     return(buf);
 }
 void stats_report(BSInfo *bsi, char *label)
@@ -46,27 +53,48 @@ void stats_report(BSInfo *bsi, char *label)
 /* Accumulator(s) of statistics on the packet data starting with optr */
 void stats_check_2bits(BSInfo *bsi, uint64_t *optr)
 {
-    int ii, ss;
+    int ii, ss, ch;
     uint64_t val;
     for (ii = 0; ii < bsi->packet_octets; ii++)
-        for (val = *optr++, ss = 0; ss < 32; ss++, val >>= 2)
-            bsi->bstates[val & 0x3] ++;
-    bsi->bcounts += 32 * bsi->packet_octets;
+        for (val = *optr++, ss = 0, ch = 1; ss < 32; ss++, val >>= 2, ch <<= 1)
+            if (bsi->channel_bits == 0 || bsi->channel_mask & ch)
+                bsi->bstates[val & 0x3] ++;
+    bsi->bcounts += ((bsi->channel_bits == 0) ? 32 : bsi->channel_bits) *
+        bsi->packet_octets;
 }
 void stats_check_1bit(BSInfo *bsi, uint64_t *optr)
 {
-    int ii, ss;
+    int ii, ss, ch;
     uint64_t val;
     for (ii = 0; ii < bsi->packet_octets; ii++)
-        for (val = *optr++, ss = 0; ss < 64; ss++, val >>= 1)
-            bsi->bstates[val & 0x1] ++;
-    bsi->bcounts += 32 * bsi->packet_octets;
+        for (val = *optr++, ss = 0, ch = 1; ss < 64; ss++, val >>= 1, ch <<= 1)
+            if (bsi->channel_bits == 0 || bsi->channel_mask & ch)
+                bsi->bstates[val & 0x1] ++;
+    bsi->bcounts += ((bsi->channel_bits == 0) ? 32 : bsi->channel_bits) *
+        bsi->packet_octets;
 }
 void stats_check(BSInfo *bsi, uint64_t *optr)
 {
     bsi->bpkts ++;
     if (2 == bsi->bits_sample) return(stats_check_2bits(bsi, optr));
     if (1 == bsi->bits_sample) return(stats_check_1bit(bsi, optr));
+}
+
+/*
+ * Provide a method to set the channel mask via a comma-separated list.
+ */
+void stats_chmask(BSInfo *bsi, char *csv)
+{
+    char *x = malloc(strlen(csv) + 3);
+    char *s = strtok(strcpy(x, csv), ",");
+    bsi->channel_mask = 0;
+    bsi->channel_bits = 0;
+    while (s) {
+        bsi->channel_mask |= 1 << atoi(s);
+        bsi->channel_bits ++;
+        s = strtok(0, ",");
+    }
+    free(x);
 }
 
 /*

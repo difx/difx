@@ -1,5 +1,5 @@
 /*
- * $Id: sc_stats.h 3490 2015-10-05 19:24:31Z gbc $
+ * $Id: sc_stats.h 4018 2016-06-30 21:01:35Z gbc $
  *
  * Statistics checker for scan check
  */
@@ -18,6 +18,8 @@ typedef struct bstats_info {
     uint64_t    bstates[4];     /* 00 01 10 11 counters */
     uint32_t    packet_octets;  /* octets in the packet */
     uint32_t    bits_sample;    /* bits per sample, normally 2 */
+    uint32_t    channel_mask;   /* restriction on channels */
+    uint32_t    channel_bits;   /* count of such channels */
 } BSInfo;
 
 /*
@@ -26,6 +28,7 @@ typedef struct bstats_info {
  */
 extern void stats_report(BSInfo *bsi, char *label);
 extern char *stats_repstr(BSInfo *bsi, char *label);
+extern void stats_chmask(BSInfo *bsi, char *csv);
 
 /* Accumulator of statistics on the packet data starting with optr */
 extern void stats_check_2bits(BSInfo *bsi, uint64_t *optr);

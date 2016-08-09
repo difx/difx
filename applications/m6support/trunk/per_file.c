@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 3893 2016-04-17 20:23:00Z gbc $
+ * $Id: per_file.c 4066 2016-08-04 15:42:03Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -46,10 +46,12 @@ static struct checker_work {
     uint32_t    pkts_runs;          /* number of packets in a row */
     uint32_t    pkts_seqstarter;    /* starting point for seq check */
     uint32_t    pkts_seqoffset;     /* seq check current offset */
+    char        stat_chans[256];    /* csv list of channels */
     uint32_t    stat_octets;        /* max number of samples/packet */
     uint32_t    stat_delta;         /* dump stats after so many pkts */
     uint32_t    station_mask;       /* bits of station to check */
     uint32_t    extend_hchk;        /* check the extended header */
+    uint32_t    flist_only;         /* only generate an flist entry */
 
     /* evolving */
     char        *cur_file;          /* name of the current file */
@@ -263,6 +265,25 @@ static void check_sequence(Random_Picker *rp)
         }
         if (time_to_bail()) break;
     }
+}
+
+/*
+ * Provide a one-liner for DiFX.
+ */
+static void flist_report(void)
+{
+    static char first[200], final[200];
+    uint32_t ftime;
+    ftime = work.sgi.first_secs;
+    if (work.sgi.frame_cnt_max>0)
+        ftime += rint(work.sgi.first_frame/work.sgi.frame_cnt_max);
+    strncpy(first, sg_vextime(work.sgi.ref_epoch, ftime), sizeof(first));
+    ftime = work.sgi.final_secs;
+    if (work.sgi.frame_cnt_max>0)
+        ftime += rint(work.sgi.final_frame/work.sgi.frame_cnt_max);
+    strncpy(final, sg_vextime(work.sgi.ref_epoch, ftime), sizeof(final));
+    fprintf(stdout, "%s    %s %s\n", work.cur_file, first, final);
+    fflush(stdout);
 }
 
 /*
@@ -500,7 +521,8 @@ static void all_done(int signum)
     work.total_process_secs += work.file_process_secs;
     work.avail_process_secs -= work.file_process_secs;
 
-    summary_report();
+    if (work.flist_only) flist_report();
+    else                 summary_report();
     exit(0);
 }
 
@@ -608,6 +630,8 @@ static int help_chk_opt(void)
         work.pkts_runs);
     fprintf(stdout, "  starter=<int>    start packets in (%u, sequential)\n",
         work.pkts_seqstarter);
+    fprintf(stdout, "  chans=<csv>      list of channels for stats (\"\")\n",
+        work.stat_chans);
     fprintf(stdout, "  stats=<int>      # octets/packet to test (%u)\n",
         work.stat_octets);
     fprintf(stdout, "  sdelta=<int>     dump statistics after (%u) pkts\n",
@@ -617,6 +641,8 @@ static int help_chk_opt(void)
     fprintf(stdout, "  exthdr=<str>     examine extended headers (%s)\n",
         work.extend_hchk ? "inactive" : "activated");
     fprintf(stdout, "  ofs=<int>:<int>  user supplied offset and size\n");
+    fprintf(stdout, "  flist=<int>      only generate flist if !0 (%u)\n",
+        work.flist_only);
     /* ispy is not settable from command line */
     fprintf(stdout, "\n");
     fprintf(stdout, "Generally speaking, you can increase the amount\n");
@@ -679,6 +705,11 @@ int m6sc_set_chk_opt(const char *arg)
         work.pkts_seqstarter = atoi(arg+8);
         if (verb>1) fprintf(stdout,
             "opt: Starting %u packets into file\n", work.pkts_seqstarter);
+    } else if (!strncmp(arg, "chans=", 6)) {
+        strncpy(work.stat_chans, arg+6, sizeof(work.stat_chans));
+        if (verb>1) fprintf(stdout,
+            "opt: Statistics on channels %s\n", work.stat_chans);
+        //stats_chmask(&work.bsi, work.stat_chans);
     } else if (!strncmp(arg, "stats=", 6)) {
         work.stat_octets = atoi(arg+6);
         if (work.stat_octets > SG_MAX_VDIF_BYTES/8)
@@ -709,6 +740,11 @@ int m6sc_set_chk_opt(const char *arg)
         sg_set_user_poff_and_size(arg+4);
         if (verb>1) fprintf(stdout,
             "opt: Set packet offset and size using %s\n", arg+4);
+    } else if (!strncmp(arg, "flist=", 6)) {
+        work.flist_only = atoi(arg+6);
+        if (verb>1) fprintf(stdout, work.flist_only
+            ? "opt: only generating flist entry"
+            : "opt: providing normal summary");
     } else {
         fprintf(stderr, "Unknown option %s\n", arg);
         return(1);
@@ -743,7 +779,7 @@ char *m6sc_get_chk_opt(const char *arg)
     } else if (!strncmp(arg, "smask", 5)) {
         snprintf(answer, sizeof(answer), "%u", work.station_mask);
     } else {
-        /* exthdr not supported in python */
+        /* exthdr and many other things not supported in python */
         return(NULL);
     }
     return(answer);
@@ -799,6 +835,7 @@ int m6sc_per_file(const char *file, int files, int verbose)
 
     (void)sg_open(file, &work.sgi);
 
+    stats_chmask(&work.bsi, work.stat_chans);
     work.bsi.packet_octets = work.sgi.vdif_signature.bits.df_len - 4;
     if (work.bsi.packet_octets > work.stat_octets)
         work.bsi.packet_octets = work.stat_octets;
@@ -829,7 +866,8 @@ int m6sc_per_file(const char *file, int files, int verbose)
     work.total_process_secs += work.file_process_secs;
     work.avail_process_secs -= work.file_process_secs;
 
-    summary_report();
+    if (work.flist_only) flist_report();
+    else                 summary_report();
     free(work.cur_file);
     work.cur_file = 0;
     n++;
