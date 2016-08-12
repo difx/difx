@@ -239,7 +239,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 # Auxiliary function: unwrap phases for time interpolation
   def unwrap(phases):
-
     for i in range(len(phases)-1):
       if phases[i+1]-phases[i] > np.pi:
         phases[i+1,:] -= 2.*np.pi
@@ -260,11 +259,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
        tb.copyrows('./CALAPPPHASE.tab')
        tb.close()
 
-    tb.open(asd+'/ASDM_CALAPPPHASE')
+    printMsg('Opening '+asd+'/ASDM_CALAPPPHASE')
+    success = tb.open(asd+'/ASDM_CALAPPPHASE')
+    if not success:
+       printError("problem reading %s"%asd+'/ASDM_CALAPPPHASE')
     time0 = tb.getcol('startValidTime')
     time1 = tb.getcol('endValidTime')
     tb.close()
-    tb.open(asd)
+    printMsg('Opening '+asd)
+    success = tb.open(asd)
+    if not success:
+       printError("problem reading %s"%asd)
     mstime = tb.getcol('TIME')
     tb.close()
     if len(time0)==0:
@@ -453,6 +458,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
   if isPhased:
 
 
+   printMsg('Opening '+calAPP)
    success = tb.open(calAPP)
    if not success:
     printError('ERROR: INVALID calAPP TABLE!')
@@ -472,6 +478,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
    except:
     printError('ERROR: INVALID calAPP TABLE!')
 
+   printMsg('Opening '+ALMAant)
    success = tb.open(ALMAant)
    if not success:
     printError('ERROR: NO VALID ANTENNA TABLE FOUND!')
@@ -579,6 +586,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     os.system('rm -rf %s'%OUTPUTIDI)
     os.system('cp -rf %s %s'%(IDI,OUTPUTIDI))
   elif not os.path.exists(OUTPUTIDI):
+    printMsg("Duplicating %s to %s"%(IDI,OUTPUTIDI))
     os.system('cp -rf %s %s'%(IDI,OUTPUTIDI))
      
 #######
@@ -608,6 +616,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
    gaindata.append([])
    kind.append([])
    dtdata.append([])
+   printMsg('Considering Dterms for ant %d'%i)
    if dterms[i]=="NONE":
      nchan = 1
      ntime = 1
@@ -620,13 +629,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
        dtdata[i][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        dtdata[i][-1].append(np.zeros((nchan,ntime)).astype(np.bool))
    else:
+    printMsg('Opening '+dterms[i]+'/SPECTRAL_WINDOW')
     success = tb.open(dterms[i]+'/SPECTRAL_WINDOW')
     if not success:
-      printError("ERROR READING TABLE %s"%dterms[i])
+      printError("ERROR READING TABLE %s"%dterms[i]+'/SPECTRAL_WINDOW')
     dtfreqs = tb.getcol('CHAN_FREQ')[:,int(spw)]
     nchan = len(dtfreqs)
     tb.close()
-    tb.open(dterms[i])
+    printMsg('Opening '+dterms[i])
+    success = tb.open(dterms[i])
+    if not success:
+      printError("ERROR READING TABLE %s"%dterms[i])
     spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
     data = tb.getcol('CPARAM')[:,:,spmask]
     antrow = tb.getcol('ANTENNA1')[spmask]
@@ -656,6 +669,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       unwrap(dtdata[i][-1][3][:])
       dtdata[i][-1][4][:] = flags[:,antrow==ant]
 
+   printMsg('Reading gains for %d'%i)
    for j,gain in enumerate(gains[i]):
      gaindata[i].append([])
      if gain=="NONE":
@@ -675,13 +689,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
        gaindata[i][j][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        gaindata[i][j][-1].append(np.zeros((nchan,ntime)).astype(np.bool))
      else:
-      tb.open(gain+'/SPECTRAL_WINDOW')
+      printMsg('Opening '+gain+'/SPECTRAL_WINDOW')
+      success = tb.open(gain+'/SPECTRAL_WINDOW')
       if not success:
-        printError("ERROR READING TABLE %s"%gain)
+        printError("ERROR READING TABLE %s"%gain+'/SPECTRAL_WINDOW')
       gfreqs = tb.getcol('CHAN_FREQ')[:,int(spw)]
       nchan = len(gfreqs)
       tb.close()
-      tb.open(gain)
+      printMsg('Opening '+gain)
+      success = tb.open(gain)
+      if not success:
+        printError("ERROR READING TABLE %s"%gain)
       spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
       if 'CPARAM' in tb.colnames():
         data = tb.getcol('CPARAM')[:,:,spmask]
@@ -699,6 +717,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       gaindata[i][j].append(np.zeros(nchan).astype(np.float64))
       gaindata[i][j][0][:] = gfreqs
       for ant in range(NSUM[i]):
+        printMsg('Gathering gain data for [%d][%d] for ant %d'%(i,j,ant))
         gaindata[i][j].append([])
         dd0 = data[0,:,:]
         dd1 = data[1,:,:]
@@ -711,6 +730,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
         gaindata[i][j][-1].append(np.zeros(dims).astype(np.bool))
         gaindata[i][j][-1][0][:] = trow[antrow==ant]
         gaindata[i][j][-1][1][:] = np.abs(dd0[:,antrow==ant])
+        # not sure why these two cases have the same code
         if j==0:
           gaindata[i][j][-1][2][:] = np.angle(dd0[:,antrow==ant])
         else:
@@ -723,7 +743,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 
 # COMPUTE TIME RANGES:
-
+  printMsg('Computing ranges and other preparations')
   if len(plotRange)==0:
     plRan = np.array([0.,0.])
     plotFringe = False
@@ -785,7 +805,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 
 # GENERATE ANTAB FILE(s):
-
+  printMsg("Post PolConvert processing")
 
   if amp_norm:
     printMsg('Generating ANTAB file(s).')
