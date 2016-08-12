@@ -162,44 +162,46 @@ def check_file(infile, m5format=None):
 
         # use m5findformat to guess a format that is hopefully consistent with
         # the data (good enough to decode the time)
-        if not m5format:
+        if '.vdif' in infile.lower():
+            # assume we must have a VDIF file.
+            m5format = "VDIF_1000-64-1-2"
+        elif not m5format:
             command = " ".join([m5findformats, infile])
             stdout, error = subprocess.Popen(
                     command, shell=True, stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE).communicate()
             m5_output = stdout.split("\n")
             m5format = parse_m5findformats(m5_output)
-        if not m5format:
-            # assume we must have a VDIF file.
-            m5format = "VDIF_1000-64-1-2"
 
-        # get the file start time with m5time
-        command = " ".join([m5time, infile, m5format])
-        starttime_m5, error = subprocess.Popen(
-                command, shell=True, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE).communicate()
-        # the file end time is not always possible
-        if "VDIF" in m5format:
-            endtime_m5 = None
-        else:
-            lastsample = 1000000
-            filesize = os.path.getsize(infile)
-            command = " ".join(
-                    [m5time, infile, m5format, str(filesize-lastsample)])
-            try:
-                endtime_m5, error = subprocess.Popen(
-                        command, shell=True, stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE).communicate()
-            except:
-                # old versions of m5time don't accept the byte offset
+        if m5format:
+            # get the file start time with m5time
+            command = " ".join([m5time, infile, m5format])
+            starttime_m5, error = subprocess.Popen(
+                    command, shell=True, stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE).communicate()
+            # the file end time is not always possible
+            if "VDIF" in m5format:
                 endtime_m5 = None
+            else:
+                lastsample = 1000000
+                filesize = os.path.getsize(infile)
+                command = " ".join(
+                        [m5time, infile, m5format, str(filesize-lastsample)])
+                try:
+                    endtime_m5, error = subprocess.Popen(
+                            command, shell=True, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE).communicate()
+                except:
+                    # old versions of m5time don't accept the byte offset
+                    endtime_m5 = None
 
         try:
             starttime = m5_to_vextime(starttime_m5)
         except:
             starttime = None
             endtime = None
-            sys.stderr.write("cannot decode start time for " + infile + "\n\n")
+            sys.stderr.write(
+                    "cannot decode start time for " + infile + "\n\n")
 
         if starttime:
             try:
@@ -209,6 +211,7 @@ def check_file(infile, m5format=None):
         else:
             # we know nothing about this format, abandon this file
             corrupt = True
+            m5format = None
 
     return infile, starttime, endtime, corrupt, m5format
 
@@ -229,6 +232,7 @@ if __name__ == "__main__":
     m5format = None
     for infile in filelist:
         outfile = check_file(infile, m5format)
+        # m5format will be None if file was corrupt.
         m5format = outfile[-1]
         outfilelist.append(outfile)
 
@@ -256,12 +260,21 @@ if __name__ == "__main__":
                 endtime = "2100y001d00h00m00s"
         outfilelist[idx] = " ".join([filename, " ", starttime, endtime])
         if starttime:
+            if previous_starttime:
+                if starttime < previous_starttime:
+                    sys.stderr.write(
+                            "files not in time order for", filelistname)
             previous_starttime = starttime
 
-    # the last file should always get in the .input so we can be sure the
-    # D/STREAM is not empty. So comment out its timerange (and hope it's not
-    # corrupt...).
+    # the last good file should always get in the .input so we can be sure the
+    # D/STREAM is not empty. So comment out its timerange.
+    for i in range(len(outfilelist)):
+        if "#" not in outfilelist[i]: 
+            outfilelist[i] = re.sub(
+                    "(\s+)(\w)", r"\1#\2", outfilelist[i], count=1)
+            break
+
     outfilelist.reverse()
-    outfilelist[-1] = re.sub("(\s+)(\w)", r"\1#\2", outfilelist[-1], count=1)
+
     for outfile in outfilelist:
         print outfile
