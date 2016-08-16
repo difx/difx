@@ -18,6 +18,7 @@ bin_PROGRAMS = \
 mk5daemon_SOURCES = \
 	difx.cpp \
 	loadmon.cpp \
+	swapmon.cpp \
 	logger.cpp \
 	logger.h \
 	monitor.cpp \
@@ -31,6 +32,8 @@ mk5daemon_SOURCES = \
 	options.h \
 	proc.cpp \
 	proc.h \
+	swap.cpp \
+	swap.h \
 	mk5daemon.cpp \
 	mk5daemon.h \
 	$(streamstor_sources)

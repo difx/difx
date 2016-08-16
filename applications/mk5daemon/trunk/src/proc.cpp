@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -54,7 +54,6 @@ int procGetCoresFromCpuInfo(int *nCore)
         char *c;
         int val;
 
-
         in = popen("cat /proc/cpuinfo | grep siblings | uniq", "r");
         if(!in)
         {
@@ -91,10 +90,11 @@ int procGetCores(int *nCore)
 
         // test if file exists
         testExist.open("/sys/devices/system/cpu/cpu0/topology/core_siblings_list");
-        if (!testExist.is_open())
-      		 return -2;
+        if(!testExist.is_open())
+	{
+		return -2;
+	}
         
-	
 	pin = popen("cat /sys/devices/system/cpu/cpu*/topology/core_siblings_list | sort | uniq", "r");
 	if(!pin)
 	{

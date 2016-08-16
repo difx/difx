@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -365,6 +365,7 @@ Mk5Daemon *newMk5Daemon(Options options)
 	D->log = newLogger(options.logPath);
 	D->process = PROCESS_NONE;
 	D->loadMonInterval = 10;	/* seconds */
+	D->swapMonInterval = 30;	/* seconds */
 	D->macList = new std::map<MAC,bool>;
 	D->errors = new std::list<std::string>;
 	if (procGetCores(&D->load.nCore) == -2)
@@ -993,9 +994,7 @@ bool Mk5Daemon_addrMatches(const Mk5Daemon *D, const char *addrString)
  **/
 int parseCmd (int argc, char **argv, Options &options)
 {
-	int i;
-
-	if(argc > 1) for(i = 1; i < argc; ++i)
+	for(int i = 1; i < argc; ++i)
 	{
 		if(strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--headnode") == 0)
 		{
@@ -1084,7 +1083,6 @@ int main(int argc, char **argv)
     time_t t, lastTime;
     char message[DIFX_MESSAGE_LENGTH];
     char str[16];
-    int i;
     const char *p, *u;
     double mjd;
     fd_set socks;
@@ -1092,16 +1090,15 @@ int main(int argc, char **argv)
     int readSocks;
     int highSock;
     int v;
+    int halfSwapMonInterval;
+    int halfLoadMonInterval;
 
-   
 #ifdef HAVE_XLRAPI_H
     time_t firstTime;
-    int halfInterval;
     int ok = 0;	/* FIXME: combine with D->ready? */
     int justStarted = 1;
     int recordFD;
     int isMk5 = 1;
-
 
     if(XLRDeviceFind() < 1)
     {
@@ -1110,7 +1107,6 @@ int main(int argc, char **argv)
 #else
     int isMk5 = 0;
 #endif
-
     	
     try
     {
@@ -1209,9 +1205,11 @@ int main(int argc, char **argv)
 
 	lastTime = time(0);
 
+	halfSwapMonInterval = D->swapMonInterval/2 + 3;
+	halfLoadMonInterval = D->loadMonInterval/2;
+
 #ifdef HAVE_XLRAPI_H
 	firstTime = lastTime;
-	halfInterval = D->loadMonInterval/2;
 
 	v = initWatchdog();
 	if(v < 0)
@@ -1226,14 +1224,13 @@ int main(int argc, char **argv)
 			setWatchdogStream(stdout);
 		}
 	}
-        
-
 #endif
 
 	ofstream out("my_log");
 	clog.rdbuf(out.rdbuf());
         if(options.isMk6)
         {
+
 #ifdef HAS_MARK6META
 		clog << "test" << endl;
 		D->mark6 = new Mark6();
@@ -1272,9 +1269,31 @@ int main(int argc, char **argv)
 
 				Mk5Daemon_loadMon(D, mjd);
 			}
+
+			// check every 30 seconds
+			if( (t % D->swapMonInterval) == halfSwapMonInterval)
+			{
+				Mk5Daemon_swapMon(D, mjd);
+			}
+
+#ifdef HAS_MARK6META
+			// check every 5 seconds
+			if( (t % D->loadMonInterval) == halfLoadMonInterval)
+			{
+                                // check for new modules on a mark6
+                                if(options.isMk6)
+                                {
+clog << "pre poll" << endl;
+                                    D->mark6->pollDevices();
+                                    D->mark6->sendStatusMessage();
+                                }
+                                    //D->mark6.pollDevices();
+			}
+#endif
+
 #ifdef HAVE_XLRAPI_H
 			// check every 5 seconds
-			else if( (t % D->loadMonInterval) == halfInterval)
+			if( (t % D->loadMonInterval) == halfLoadMonInterval)
 			{
 				if(D->skipGetModule)
 				{
@@ -1284,18 +1303,8 @@ int main(int argc, char **argv)
 				{
 					Mk5Daemon_getModules(D);
 				}
-
-#ifdef HAS_MARK6META
-                                // check for new modules on a mark6
-                                if(options.isMk6)
-                                {
-clog << "pre poll" << endl;
-                                    D->mark6->pollDevices();
-                                    D->mark6->sendStatusMessage();
-                                }
-                                    //D->mark6.pollDevices();
-#endif
 			}
+
 			// determine streamstor version for mk5s once at startup
 			if(t - firstTime > 15 && D->isMk5 && isMk5)
 			{

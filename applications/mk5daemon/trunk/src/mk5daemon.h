@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -146,6 +146,7 @@ typedef struct
 	pthread_mutex_t processLock;
 	int processDone;
 	int loadMonInterval;		/* seconds */
+	int swapMonInterval;		/* seconds */
 	int dieNow;
 	int activeBank;
 	char vsns[N_BANK][10];
@@ -225,6 +226,7 @@ typedef struct
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
+int Mk5Daemon_swapMon(Mk5Daemon *D, double mjd);
 int logStreamstorVersions(Mk5Daemon *D);
 int Mk5Daemon_startMonitor(Mk5Daemon *D);
 void Mk5Daemon_stopMonitor(Mk5Daemon *D);
