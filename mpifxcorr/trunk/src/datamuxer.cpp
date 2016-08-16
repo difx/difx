@@ -77,7 +77,6 @@ void DataMuxer::resetcounters()
   readcount = 0;
   muxcount  = 0;
   deinterlacecount = 0;
-  estimatedbytes = 0;
   skipframes = 0;
   lastskipframes = 0;
 }

@@ -129,6 +129,7 @@ void Mk5DataStream::initialise()
     if(config->getDataFormat(0, streamnum) == Configuration::INTERLACEDVDIF) {
       nframes = config->getDNumMuxThreads(0, streamnum) * readbytes / ((framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(0, streamnum) + VDIF_HEADER_BYTES);
       datamuxer = new VDIFMuxer(config, streamnum, mpiid, config->getDNumMuxThreads(0, streamnum), framebytes, nframes, config->getFramesPerSecond(0, streamnum)/config->getDNumMuxThreads(0, streamnum), config->getDNumBits(0, streamnum), config->getDMuxThreadMap(0, streamnum));
+      estimatedbytes += datamuxer->getEstimatedBytes();
     }
     else
       cfatal << startl << "Requested a muxed datastream but format has no muxed equivalent!" << endl;
