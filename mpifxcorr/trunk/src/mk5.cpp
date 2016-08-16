@@ -78,6 +78,8 @@ void Mk5DataStream::initialise()
   int framebytes = config->getFrameBytes(0, streamnum);
   int nframes = readbytes / framebytes;
 
+  estimatedbytes += bufferbytes/numdatasegments; // this accounts for the potential allocation to tempbuf in the event of a data jump
+
   syncteststream = 0;
   udp_offset = 0;
   if (!readfromfile && !tcp) {
