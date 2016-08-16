@@ -81,6 +81,8 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 	readbufferleftover = 0;
 	readbuffer = 0;	// to be allocated via initialize();
 
+	estimatedbytes += readbuffersize;
+
 	// Don't bother to do another read iteration just to salvage this many bytes at the end of a file/scan
 	minleftoverdata = 20000;
 

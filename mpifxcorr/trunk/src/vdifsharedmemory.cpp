@@ -50,12 +50,16 @@ VDIFSharedMemoryDataStream::VDIFSharedMemoryDataStream(const Configuration * con
 
 	jobEndMJD = conf->getStartMJD() + (conf->getStartSeconds() + conf->getExecuteSeconds() + 1)/86400.0;
 
+	estimatedbytes -= readbuffersize;	// uncount the buffer size calculated by VDIFDataStream()
+
 	readbufferslots = 8;
 	readbufferslotsize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*21LL/10LL;
 	readbufferslotsize -= (readbufferslotsize % config->getFrameBytes(0, streamnum)); // make it a multiple of frame size
 	readbuffersize = readbufferslots * readbufferslotsize;
 	// Note: the read buffer is allocated in vdiffile.cpp by VDIFDataStream::initialse()
 	// the above values override defaults for file-based VDIF
+
+	estimatedbytes += readbuffersize;	// add back the buffer size calculated here.
 
 	cinfo << startl << "VDIFSharedMemoryDataStream::VDIFSharedMemoryDataStream: Set readbuffersize to " << readbuffersize << endl;
 	cinfo << startl << "mdb = " << conf->getMaxDataBytes(streamnum) << "  rbslots=" << readbufferslots << "  readbufferslotsize=" << readbufferslotsize << endl;

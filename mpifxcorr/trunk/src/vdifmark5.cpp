@@ -69,12 +69,16 @@ VDIFMark5DataStream::VDIFMark5DataStream(const Configuration * conf, int snum, i
 	nReads = 0;
 	jobEndMJD = conf->getStartMJD() + (conf->getStartSeconds() + conf->getExecuteSeconds() + 1)/86400.0;
 
+	estimatedbytes -= readbuffersize;	// uncount the buffer size calculated by VDIFDataStream()
+
 	readbufferslots = 8;
 	readbufferslotsize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*21LL/10LL;
 	readbufferslotsize -= (readbufferslotsize % 8); // make it a multiple of 8 bytes
 	readbuffersize = readbufferslots * readbufferslotsize;
 	// Note: the read buffer is allocated in vdiffile.cpp by VDIFDataStream::initialse()
 	// the above values override defaults for file-based VDIF
+
+	estimatedbytes += readbuffersize;	// add back the buffer size calculated here.
 
 
 #if HAVE_MARK5IPC
