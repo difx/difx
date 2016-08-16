@@ -221,6 +221,10 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   if(framesin % framegranularity != 0)
   {
     framesin -= (framesin % framegranularity);
+    if(framesin < 0)
+    {
+      framesin += framegranularity;
+    }
   }
 
   // Note here a time is needed, so we only count payloadbytes
@@ -351,6 +355,10 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 
   offset = syncteststream->frameoffset;
   framegranularity = syncteststream->framegranularity;
+
+
+  cverbose << startl << "Format name = " << formatname << " and framegranularity = " << framegranularity << endl;
+
 
   bytespersecond = syncteststream->framebytes/syncteststream->framens * 1e9;
 

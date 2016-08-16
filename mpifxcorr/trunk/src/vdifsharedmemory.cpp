@@ -168,7 +168,7 @@ int VDIFSharedMemoryDataStream::setsharedmemorybuffersecond(int second)
 	}
 }
 
-void VDIFSharedMemoryDataStream::sharedmemorybuffercopy(char *dest, int copysize, unsigned int *bytescopied)
+int VDIFSharedMemoryDataStream::sharedmemorybuffercopy(char *base, size_t offset, int copysize, unsigned int *bytescopied)
 {
 	int nextSlot;
 	int origsize = copysize;
@@ -177,6 +177,9 @@ void VDIFSharedMemoryDataStream::sharedmemorybuffercopy(char *dest, int copysize
 	int64_t fps = shmbuffer->packetsPerSecond/shmbuffer->nThread;
 	int64_t size;
 	char *src;
+	char *dest;
+
+	dest = base + offset;
 
 	nextSlot = (shmbufferslot + 1) % shmbuffer->nSecond;
 
@@ -196,7 +199,7 @@ void VDIFSharedMemoryDataStream::sharedmemorybuffercopy(char *dest, int copysize
 			shmbufferframe = shmbuffer->startFrame[shmbufferslot];
 		}
 
-		targetFrame = shmbufferframe + copysize/framesize;
+		targetFrame = shmbufferframe + copysize/framesize - 1;
 		if(targetFrame >= shmbuffer->packetsPerSecond/shmbuffer->nThread)
 		{
 			targetFrame = shmbuffer->packetsPerSecond/shmbuffer->nThread - 1;
@@ -215,14 +218,19 @@ void VDIFSharedMemoryDataStream::sharedmemorybuffercopy(char *dest, int copysize
 		{
 			targetFrame = shmbuffer->endFrame[shmbufferslot];
 
+			cinfo << startl << "Changed targetFrame to " << targetFrame << endl;
+
 			end = true;
 		}
 		size = (targetFrame + 1 - shmbufferframe)*framesize;
 		src = shmbuffer->data + (fps*shmbufferslot + shmbufferframe)*framesize;
 		memcpy(dest, src, size);
+		cverbose << startl << "MEMCPY: dOffset = " << offset << " sOffset = " << ((fps*shmbufferslot + shmbufferframe)*framesize) << "  size = " << size << endl;
+		usleep(10000);
 
 		if(shmbuffer->second[nextSlot] > shmbuffersecond && shmbuffer->endFrame[shmbufferslot] == targetFrame)
 		{
+			cverbose << startl << "Advancing SHM slot from " << shmbufferslot << " to " << nextSlot << endl;
 			shmbufferslot = nextSlot;
 			nextSlot = (shmbufferslot + 1) % shmbuffer->nSecond;
 			shmbuffersecond = shmbuffer->second[shmbufferslot];
@@ -255,17 +263,14 @@ void VDIFSharedMemoryDataStream::sharedmemorybuffercopy(char *dest, int copysize
 	}
 
 	*bytescopied = origsize - copysize;
+
+	return 1;
 }
 
-// this function implements the network reader.  It is continuously either filling data into a ring buffer or waiting for a mutex to clear.
+// this function implements the shared memory copier.  It is continuously either filling data into a ring buffer or waiting for a mutex to clear.
 void VDIFSharedMemoryDataStream::shmthreadfunction()
 {
 	int lockmod = readbufferslots-1;	// used to team up slots 0 and readbufferslots-1
-	int packetsize;				// for raw packets; reject all packets not this size
-
-	packetsize = config->getFrameBytes(0, streamnum);
-
-	cinfo << startl << " packetsize=" << packetsize << endl;
 
 	for(;;)
 	{
@@ -290,7 +295,7 @@ void VDIFSharedMemoryDataStream::shmthreadfunction()
 			int status;
 
 			// This is where the actual read from the shared memory buffer happens
-			sharedmemorybuffercopy((char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes);
+			status = sharedmemorybuffercopy((char *)(readbuffer), readbufferwriteslot*readbufferslotsize, readbufferslotsize, &bytes);
 
 			if(bytes == 0)
 			{
@@ -403,6 +408,33 @@ void VDIFSharedMemoryDataStream::initialiseFile(int configindex, int fileindex)
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
+	if(nrecordedbands > nthreads)
+	{
+		int nBandPerThread = nrecordedbands/nthreads;
+
+		cinfo << startl << "Note: " << nBandPerThread << " recoded channels (bands) reside on each thread.  Support for this is new.  Congratulations for being bold and trying this out!  Warranty void in the 193 UN recognized nations." << endl;
+		
+		if(nBandPerThread * nthreads != nrecordedbands)
+		{
+			cerror << startl << "Error: " << nrecordedbands << " recorded channels (bands) were recorded but they are divided unequally across " << nthreads << " threads.  This is not allowed.  Things will probably get very bad soon..." << endl;
+		}
+		setvdifmuxinputchannels(&vm, nBandPerThread);
+	}
+	else if(nrecordedbands < nthreads)
+	{
+		/* must be a fanout mode (DBBC3 probably) */
+		int nThreadPerBand = nthreads/nrecordedbands;
+
+		cinfo << startl << "Note: " << nThreadPerBand << " threads are used to store each channel (band; e.g., this is a VDIF fanout mode).  Support for this is new.  Congratulations for experimenting with plausible code.  Warranty void on weekdays and select weekends." << endl;
+
+		if(nThreadPerBand * nrecordedbands != nthreads)
+		{
+			cerror << startl << "Error: " << nthreads << " threads were recorded but they are divided unequally across " << nrecordedbands << " record channels (bands).  This is not allowed.  Things are about to go from bad to worse.  Hold onto your HAT..." << endl;
+		}
+		setvdifmuxfanoutfactor(&vm, nThreadPerBand);
+	}
+
+	/* Note: the following fanout concept is an explicit one and is not relevant to VDIF in any way */
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout != 1)
         {
@@ -472,6 +504,17 @@ int VDIFSharedMemoryDataStream::dataRead(int buffersegment)
 	unsigned int muxend, bytesvisible;
 	int lockmod = readbufferslots - 1;
 	int muxReturn;
+	int muxBits;
+
+	if(samplingtype == Configuration::COMPLEX)
+	{
+		// muxing complex data is exactly the same as muxing real data, except the number of bits per sample needs to be doubled so we keep real and imaginary parts together
+		muxBits = 2*nbits;
+	}
+	else
+	{
+		muxBits = nbits;
+	}
 
 	if(lockstart < -1)
 	{
@@ -543,27 +586,6 @@ int VDIFSharedMemoryDataStream::dataRead(int buffersegment)
 		cwarn << startl << "vdifmux returned " << muxReturn << endl;
 	}
 
-	if(vstats.startFrameNumber % vm.frameGranularity != 0)
-	{
-		/* This should never happen.  Maybe this test gets removed some day */
-		csevere << startl << "Input startFrameNumber was " << startOutputFrameNumber << " and Output startFrameNumber was " << vstats.startFrameNumber << " flags=" << vm.flags << " frameGranularity=" << vm.frameGranularity << " trying again." << endl;
-
-		muxindex += vm.frameGranularity*vm.inputFrameSize;
-		bytesvisible -= vm.frameGranularity*vm.inputFrameSize;
-		muxReturn = vdifmux(destination, readbytes, readbuffer+muxindex, bytesvisible, &vm, startOutputFrameNumber, &vstats);
-	}
-
-	if(0)
-	{
-		static int C = 0;
-
-		if(C % 400 == 0)
-		{
-			cinfo << startl << "C=" << C << " VDIF multiplexing statistics: nValidFrame=" << vstats.nValidFrame << " nInvalidFrame=" << vstats.nInvalidFrame << " nDiscardedFrame=" << vstats.nDiscardedFrame << " nWrongThread=" << vstats.nWrongThread << " nSkippedByte=" << vstats.nSkippedByte << " nFillByte=" << vstats.nFillByte << " nDuplicateFrame=" << vstats.nDuplicateFrame << " bytesProcessed=" << vstats.bytesProcessed << " nGoodFrame=" << vstats.nGoodFrame << " nCall=" << vstats.nCall << " destUsed=" << vstats.destUsed << " srcUsed=" << vstats.srcUsed << endl;
-		}
-		++C;
-	}
-
 	bufferinfo[buffersegment].validbytes = vstats.destUsed;
 	bufferinfo[buffersegment].readto = true;
 	consumedbytes += vstats.srcUsed;
@@ -601,7 +623,6 @@ int VDIFSharedMemoryDataStream::dataRead(int buffersegment)
 			{
 				static int nGapWarn = 0;
 				int nSkip;
-
 
 				++nGapWarn;
 				if( (nGapWarn & (nGapWarn - 1)) == 0 || nGapWarn <= 10)
@@ -696,6 +717,7 @@ int VDIFSharedMemoryDataStream::dataRead(int buffersegment)
 
 			int newstart = muxindex % readbufferslotsize;
 			memmove(readbuffer + newstart, readbuffer + muxindex, readbuffersize-muxindex);
+		cverbose << startl << "Did buffer memmove " << (readbuffersize-muxindex) << " bytes " << endl;
 			muxindex = newstart;
 
 			lockend = 0;
@@ -705,7 +727,7 @@ int VDIFSharedMemoryDataStream::dataRead(int buffersegment)
 	return 0;
 }
 
-void VDIFSharedMemoryDataStream::loopnetworkread()
+void VDIFSharedMemoryDataStream::loopfileread()
 {
 	int perr;
 	int numread = 0;
@@ -775,10 +797,6 @@ void VDIFSharedMemoryDataStream::loopnetworkread()
 			numread++;
 		}
 cverbose << startl << "Out of inner read loop: keepreading=" << keepreading << " dataremaining=" << dataremaining << endl;
-		if(keepreading)
-		{
-			openfile(bufferinfo[0].configindex, 0);
-		}
 		if(!keepreading)
 		{
 			bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = config->getExecuteSeconds();
@@ -798,8 +816,6 @@ cverbose << startl << "Out of inner read loop: keepreading=" << keepreading << "
 			csevere << startl << "Error (" << perr << ") in readthread unlock of buffer section!" << lastvalidsegment << endl;
 		}
 	}
-
-	closestream();
 
 	//unlock the outstanding send lock
 	perr = pthread_mutex_unlock(&outstandingsendlock);

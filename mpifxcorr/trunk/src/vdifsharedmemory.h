@@ -52,9 +52,9 @@ protected:
 	virtual int dataRead(int buffersegment);
 	static void *launchshmthreadfunction(void *self);
 	void shmthreadfunction();
-	virtual void loopnetworkread();
+	virtual void loopfileread();
 	int setsharedmemorybuffersecond(int second);
-	void sharedmemorybuffercopy(char * dest, int copysize, unsigned int *bytescopied);
+	int sharedmemorybuffercopy(char *base, size_t offset, int copysize, unsigned int *bytescopied);
 
 private:
 	int readbufferslots;
