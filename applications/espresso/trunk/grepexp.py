@@ -36,9 +36,10 @@ datasum = 0
 for machine in disk_report.keys():
     print "Disk report for", machine
     for data_area in disk_report[machine].keys():
-        for directory in disk_report[machine][data_area]["du"]:
+        for directory in sorted(
+                disk_report[machine][data_area]["du"], key=lambda dir: dir[1]):
             if expname in directory[1]:
-                print directory[0], "\t", directory[1]
+                print directory[0], "GB\t", directory[1]
                 datasum += int(directory[0])
 
-print "total=", datasum, "GB"
+print datasum, "GB", "\ttotal"

@@ -261,9 +261,9 @@ if __name__ == "__main__":
         outfilelist[idx] = " ".join([filename, " ", starttime, endtime])
         if starttime:
             if previous_starttime:
-                if starttime < previous_starttime:
+                if starttime > previous_starttime:
                     sys.stderr.write(
-                            "files not in time order for", filelistname)
+                            "files not in time order for " + filelistname)
             previous_starttime = starttime
 
     # the last good file should always get in the .input so we can be sure the

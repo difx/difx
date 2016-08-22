@@ -107,7 +107,8 @@ except:
     pyplot.switch_backend("Agg")
     #print matplotlib.rcParams["backend"]
     sys.stderr.write(
-            "Warning: no display available - switching to non-interactive backend\n")
+            "Warning: no display available - switching to non-interactive"
+            " backend\n")
     pyplot.title(title)
 
 header = " ".join(filenames)
@@ -134,6 +135,7 @@ observation = numpy.array([0])
 new_files = []
 starttime = None
 for filename in args:
+    print "Processing:", filename
     thisdatafile = open(filename).readlines()
 
     this_xdata = []
@@ -173,6 +175,11 @@ for filename in args:
 
     this_xdata = numpy.array(this_xdata)
     this_ydata = numpy.array(this_ydata)
+
+    # if empty file go to next
+    if len(this_xdata) < 1:
+        print "Warning:", filename, "has no data"
+        continue
 
     # find the integration time - typical spacing between observation times in
     # the log

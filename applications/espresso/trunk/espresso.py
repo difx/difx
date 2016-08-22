@@ -136,7 +136,7 @@ def parse_joblistfile(joblistfilename, speedup=1.0):
 
         joblen = (float(jobend) - float(jobstart))/speedup
         # add 10 minutes for startup
-        joblen += 10./(24*60)
+        joblen += 10./(24.*60.)
         days, hours, minutes, seconds = espressolib.daysToDhms(joblen)
         joblist[jobname]["joblen"] = (
                 "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds))
