@@ -51,7 +51,7 @@ public:
 		FormatMark4,
 		FormatKVN5B,
 		FormatLBASTD,
-		FormatLBAVSOP,
+		FormatLBAVSOP,		// implied if S2_data_source = VLBA
 		FormatS2,
 
 		NumDataFormats		// must be last line in list; also serves as error code

@@ -45,6 +45,7 @@ Version 2.5.0
   - If all datastreams of an antenna have no data, better to exclude through the global antennas list.
 * Make use of recorder number in TAPELOG_OBS to automatically generate multiple datastreams for simple cases.
 * Move vlog from calcif2; this script is nearly obsolete but still might have some value beyond the time that calcif2 lasts.
+* LBA modes: S2_data_source = VLBA -> LBAVSOP mode
 
 Version 2.4.0
 ~~~~~~~~~~~~~

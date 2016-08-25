@@ -653,7 +653,7 @@ static int getModes(VexData *V, Vex *v)
 		{
 			int link, name;
 			char *value, *units;
-			void *p, *p2;
+			void *p, *q, *p2;
 			const std::string &antName = V->getAntenna(a)->defName;
 			std::map<std::string,std::vector<unsigned int> > pcalMap;
 			std::map<std::string,char> bbc2pol;
@@ -663,10 +663,8 @@ static int getModes(VexData *V, Vex *v)
 			// p2 will hold pointers to the special comments attached to if_def; max of 4
 			void *p2array[MAX_IF];
 			int p2count;
-
 			int nBit = 1;
 			int nTrack = 0;
-
 
 			bbc2pol.clear();
 			bbc2ifName.clear();
@@ -801,117 +799,58 @@ static int getModes(VexData *V, Vex *v)
 			}
 
 			// Get datastream assignments and formats
-
 			p = get_all_lowl(antName.c_str(), modeDefName, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
+			q = get_all_lowl(antName.c_str(), modeDefName, T_S2_RECORDING_MODE, B_TRACKS, v);
+
 			if(p)
 			{
 				vex_field(T_TRACK_FRAME_FORMAT, p, 1, &link, &name, &value, &units);
 				stream.parseFormatString(value);
-			}
-			else
-			{
-				std::cerr << "Note: Unable to determine data format for antenna " << antName << " based on vex file.  Will rely on other information." << std::endl;
 
-				stream.format = VexStream::FormatNone;
-			}
-
-			for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
-			{
-				std::string chanName;
-				bool sign;
-				int dasNum;
-				
-				vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
-				chanName = value;
-				vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
-				sign = (value[0] == 's');
-				vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
-				sscanf(value, "%d", &dasNum);
-
-				for(int k = 5; k < 9; ++k)
+				if(q)
 				{
-					int chanNum;
-					
-					if(vex_field(T_FANOUT_DEF, p, k, &link, &name, &value, &units) < 0)
-					{
-						break;
-					}
-					++nTrack;
-					sscanf(value, "%d", &chanNum);
-					chanNum += 32*(dasNum-1);
-					if(sign)
-					{
-						ch2tracks[chanName].sign.push_back(chanNum);
-					}
-					else
-					{
-					  if (stream.nBit==0)
-					    nBit=2;
-					  else
-					    nBit = stream.nBit;
-					  ch2tracks[chanName].mag.push_back(chanNum);
-					}
+					std::cout << "Warning: both track_frame_format and s2_recording_mode provided for mode " << modeDefName << ". The s2_recording_mode and s2_data_source fields will be ignored." << std::endl;
+
+					++nWarn;
 				}
 			}
-			if(!ch2tracks.empty())
+			else if(q)
 			{
-				int fanout;
-
-				fanout = nTrack/ch2tracks.size()/nBit;
-				if(stream.formatHasFanout())
-				{
-					stream.setFanout(fanout);
-				}
-
-				// FIXME: what to do if nBit and nRecordChan already set but they disagree?
-
-				stream.nRecordChan = ch2tracks.size();
-				stream.nBit = nBit;
-			}
-			if(stream.isLBAFormat())
-			{
-				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
-				{
-					std::string chanName;
-					bool sign;
-					int dasNum;
-
-					vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
-					chanName = value;
-					vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
-					sign = (value[0] == 's');
-					vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
-					sscanf(value, "%d", &dasNum);
-
-					int chanNum;
-
-					if(vex_field(T_FANOUT_DEF, p, 5, &link, &name, &value, &units) < 0)
-					{
-						break;
-					}
-					sscanf(value, "%d", &chanNum);
-					chanNum += 32*(dasNum-1);
-					if(sign)
-					{
-						ch2tracks[chanName].sign.push_back(chanNum);
-					}
-					else
-					{
-						nBit = 2;
-						ch2tracks[chanName].mag.push_back(chanNum);
-					}
-				}
-				stream.nRecordChan = ch2tracks.size();
-				stream.nBit = nBit;
-			}
-
-			// Is it an S2 mode?
-			p = get_all_lowl(antName.c_str(), modeDefName, T_S2_RECORDING_MODE, B_TRACKS, v);
-			if(p)
-			{
-				vex_field(T_S2_RECORDING_MODE, p, 1, &link, &name, &value, &units);
+				vex_field(T_S2_RECORDING_MODE, q, 1, &link, &name, &value, &units);
 				std::string s2mode(value);
-				if(s2mode != "none")
+				if(s2mode == "none")
+				{
+					// Note: current practice (via Cormac Reynolds, 15 Aug 2016) suggests two LBA modes
+					// that set S2_recording_mode = none :
+					//   S2_data_source = VLBA or S2_data_source = LBAVSOP  --> format = VexStream::FormatLBAVSOP
+					//   S2_data_source = LBASTD                            --> format = VexStream::FormatLBASTD
+
+					q = get_all_lowl(antName.c_str(), modeDefName, T_S2_DATA_SOURCE, B_TRACKS, v);
+					if(!q)
+					{
+						std::cerr << "Error: S2 mode is 'none' but no S2 Data Source is provided" << std::endl;
+
+						exit(EXIT_FAILURE);
+					}
+					vex_field(T_S2_DATA_SOURCE, q, 1, &link, &name, &value, &units);
+					std::string s2datasource(value);
+
+					if(s2datasource == "VLBA" || s2datasource == "LBAVSOP")
+					{
+						stream.format = VexStream::FormatLBAVSOP;
+					}
+					else if(s2datasource == "LBASTD")
+					{
+						stream.format = VexStream::FormatLBASTD;
+					}
+					else
+					{
+						std::cerr << "Error: unknown data mode: s2_recording_mode = none and s2_data_source = " << s2datasource << " for antenna " << antName << ".  S2_data_source should be one of VLBA, LBAVSOP or LBASTD in this case." << std::endl;
+
+						exit(EXIT_FAILURE);
+					}
+				}
+				else
 				{
 					if(stream.format == VexStream::FormatNone)
 					{
@@ -931,7 +870,7 @@ static int getModes(VexData *V, Vex *v)
 					std::string tracks = s2mode.substr(f+1, g-f-1);
 					std::string bits = s2mode.substr(g+1);
 
-					// Weird.  Why the first two lines below whent they will just be overwritten?  -WFB
+					// Weird.  Why the first two lines below when they will just be overwritten?  -WFB
 					stream.nBit = atoi(bits.c_str());
 					stream.nRecordChan = atoi(tracks.c_str())/stream.nBit; // should equal bbc2pol.size();
 					if(ch2tracks.empty())
@@ -947,6 +886,113 @@ static int getModes(VexData *V, Vex *v)
 					}
 				} 
 			}
+			else
+			{
+				std::cerr << "Note: Unable to determine data format for antenna " << antName << " based on vex file.  Will rely on other information.  If this is VDIF, that will fail." << std::endl;
+
+				stream.format = VexStream::FormatNone;
+			}
+
+			if(stream.format != VexStream::FormatS2)
+			{
+				if(stream.isLBAFormat())
+				{
+					for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
+					{
+						std::string chanName;
+						bool sign;
+						int dasNum;
+
+						vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
+						chanName = value;
+						vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
+						sign = (value[0] == 's');
+						vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
+						sscanf(value, "%d", &dasNum);
+
+						int chanNum;
+
+						if(vex_field(T_FANOUT_DEF, p, 5, &link, &name, &value, &units) < 0)
+						{
+							break;
+						}
+						sscanf(value, "%d", &chanNum);
+						chanNum += 32*(dasNum-1);
+						if(sign)
+						{
+							ch2tracks[chanName].sign.push_back(chanNum);
+						}
+						else
+						{
+							nBit = 2;
+							ch2tracks[chanName].mag.push_back(chanNum);
+						}
+					}
+					stream.nRecordChan = ch2tracks.size();
+					stream.nBit = nBit;
+				}
+				else
+				{
+					for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
+					{
+						std::string chanName;
+						bool sign;
+						int dasNum;
+						
+						vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
+						chanName = value;
+						vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
+						sign = (value[0] == 's');
+						vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
+						sscanf(value, "%d", &dasNum);
+
+						for(int k = 5; k < 9; ++k)
+						{
+							int chanNum;
+							
+							if(vex_field(T_FANOUT_DEF, p, k, &link, &name, &value, &units) < 0)
+							{
+								break;
+							}
+							++nTrack;
+							sscanf(value, "%d", &chanNum);
+							chanNum += 32*(dasNum-1);
+							if(sign)
+							{
+								ch2tracks[chanName].sign.push_back(chanNum);
+							}
+							else
+							{
+								if(stream.nBit==0)
+								{
+									nBit=2;
+								}
+								else
+								{
+									nBit = stream.nBit;
+									ch2tracks[chanName].mag.push_back(chanNum);
+								}
+							}
+						}
+					}
+					if(!ch2tracks.empty())
+					{
+						int fanout;
+
+						fanout = nTrack/ch2tracks.size()/nBit;
+						if(stream.formatHasFanout())
+						{
+							stream.setFanout(fanout);
+						}
+
+						// FIXME: what to do if nBit and nRecordChan already set but they disagree?
+
+						stream.nRecordChan = ch2tracks.size();
+						stream.nBit = nBit;
+					}
+				}
+			}
+
 
 			if(stream.format == VexStream::FormatMark5B || stream.format == VexStream::FormatKVN5B)
 			{
