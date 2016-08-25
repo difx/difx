@@ -71,6 +71,12 @@ def parseOptions():
         default='', metavar='STRING',
         help='user supplied XY angle adjustment or empty for defaults, '
         'normally 180.0 or 0.0')
+    parser.add_argument('-q', '--qa2', dest='qa2',
+        default='v1', metavar='STRING',
+        help='table naming scheme for the QA2 tables; there should be ' +
+            'six tables for antennas, appphase, bandpass, ampgains, ' +
+            'phasegains and xy phase.  Options are "v0", "v1" or a ' +
+            'comma-sep list in an environment variable QA2TABLES')
     # list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files')
@@ -104,11 +110,20 @@ def calibrationChecks(o):
     if o.label == '':
         raise Exception, 'A label (-l) is required to proceed'
     if o.verb: print 'Using label %s' % o.label
-    exhibits = ['bandpass-zphs.cal', 'ampgains.cal.fluxscale',
-                'phasegains.cal', 'XY0amb-tcon', 'antenna.tab',
-                'calappphase.tab']
-    for e in exhibits:
-        d = o.label + '.' + e
+    if o.qa2 == 'v0':   # original 1mm names
+        o.qal = ['antenna.tab','calappphase.tab', 'bandpass-zphs.cal',
+               'ampgains.cal.fluxscale', 'phasegains.cal', 'XY0amb-tcon']
+    elif o.qa2 == 'v1': # revised 3mm names
+        o.qal = ['ANTENNA', 'calappphase', 'bandpass-zphs',
+               'flux_inf', 'phase_int.APP', 'XY0.APP' ]
+    else:               # supply via environment variable
+        o.qal = os.environ['QA2TABLES'].split(',')
+    if len(o.qal) < 6:
+        raise Exception, '6 QA2 tables are required, see --qa2 option'
+    keys = ['a', 'c', 'b', 'g', 'p', 'x']
+    o.qa2_dict = dict(zip(keys,o.qal))
+    for key in o.qa2_dict:
+        d = ('%s.' + o.qa2_dict[key]) % o.label
         if not os.path.exists(d) or not os.path.isdir(d):
             raise Exception, 'Required director %s is missing' % d
 
@@ -273,7 +288,6 @@ def createCasaInput(o):
     # are having trouble or wish to see some of the plots).
     #
     import os
-    #import sys
     #
     # variables initialized from drivepolconvert.py:
     #
@@ -290,6 +304,12 @@ def createCasaInput(o):
     # plotIF = doIF[len(doIF)/2]        # plot a middle channel
     plotIF = -1
     print 'using doIF value: ' + str(doIF)
+    #
+    # calibration tables
+    #
+    # --qa2 = %s
+    # qal = %s
+    qa2 = %s
     #
     # other variables that can be set in interactive mode
     # here we set them not to make any interactive plots
@@ -350,7 +370,8 @@ def createCasaInput(o):
         XYvalu = 0.0
 
     script = template % (o.label, o.band, bandnot, bandaid, o.exp,
-        o.ant, o.zfirst, o.zfinal, userXY, XYvalu, o.djobs)
+        o.ant, o.zfirst, o.zfinal, o.qa2, o.qal, o.qa2_dict,
+        userXY, XYvalu, o.djobs)
 
     for line in script.split('\n'):
         ci.write(line[4:] + '\n')

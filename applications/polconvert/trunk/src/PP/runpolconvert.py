@@ -8,23 +8,35 @@ import datetime
 import os
 import shutil
 
-# Things that we are provided from the QA2 processing
+# Begin by verifying everthing that should be defined at this point.
+# If we can't print something, that's probably enough for a test.
+
+# Things that we are expecting to be provided from the QA2 processing
+# We use a dictionary to allow name changes (which happened in development).
 try:
-    antpath = '%s.antenna.tab'%label
-    CALAPP = '%s.calappphase.tab'%label
-    bandpass = '%s.bandpass-zphs.cal'%label
-    ampgains = '%s.ampgains.cal.fluxscale'%label
-    phsgains = '%s.phasegains.cal'%label
-    xyrelphs = '%s.XY0amb-tcon'%label
-    for f in [antpath, CALAPP, bandpass, ampgains, phsgains, xyrelphs]:
+    aantpath = ('%s.'+qa2['a'])%label # '%s.antenna.tab'%label
+    calapphs = ('%s.'+qa2['c'])%label # '%s.calappphase.tab'%label
+    bandpass = ('%s.'+qa2['b'])%label # '%s.bandpass-zphs.cal'%label
+    ampgains = ('%s.'+qa2['g'])%label # '%s.ampgains.cal.fluxscale'%label
+    phsgains = ('%s.'+qa2['p'])%label # '%s.phasegains.cal'%label
+    xyrelphs = ('%s.'+qa2['x'])%label # '%s.XY0amb-tcon'%label
+    calgains = [aantpath, calapphs, bandpass, ampgains, phsgains, xyrelphs]
+    for f in calgains:
         if not os.path.exists(f):
             raise Exception, ('Required calibration %s is missing'%f)
+        print 'using ' + f
 except Exception, ex:
     raise ex
 
-# these should probably be defined:
-#  expName linAnt doIF plotIF timeRange XYadd
-# FIXME
+# Things defined in, e.g. drivepolconvert.py
+try:
+    print "Experiment %s with linear pol antenna index %s\non IFs %s" % (
+        expName, str(linAnt), str(doIF))
+    if plotIF > 0:
+        print "Plotting IF %d on days %d .. %d)" % (
+            plotIF, timeRange[0], timeRange[4])
+except Exception, ex:
+    raise ex
 
 # one of of these should be True, the others False
 try:
@@ -32,6 +44,9 @@ try:
         raise Exception, 'One of band3 or band6Lo or band6Hi must be True'
     if (band3 and band6Lo) or (band3 and band6Hi) or (band6Lo and band6Hi):
         raise Exception, 'Only one of band3 or band6Lo or band6Hi may be True'
+    if band3: print 'Band 3 operation'
+    if band6Lo: print 'Band 6 (Lo/SPW 0) operation'
+    if band6Hi: print 'Band 6 (Hi/SPW 1) operation'
 except Exception, ex:
     raise ex
 
@@ -46,9 +61,10 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     DiFXinput='', DiFXoutput='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
     XYadd=[0.0], linAnt=[1], plotAnt=-1):
-    gains=['%s.bandpass-zphs.cal'%label,
-        '%s.ampgains.cal.fluxscale'%label, '%s.phasegains.cal'%label,
-        '%s.XY0amb-tcon'%label]
+    #gains=['%s.bandpass-zphs.cal'%label,
+    #    '%s.ampgains.cal.fluxscale'%label, '%s.phasegains.cal'%label,
+    #    '%s.XY0amb-tcon'%label]
+    gains = calgains[2:]
     Range = [] # do the entire scan
     calAPPTime = [0.0, 8.0] # half-a scan of tolerance
 
@@ -74,8 +90,8 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     # actually run PolConvert setting everything.
     try:
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
-            linAntIdx=[1], Range=Range, ALMAant=antpath,
-            spw=spw, calAPP=CALAPP, calAPPTime=calAPPTime,
+            linAntIdx=[1], Range=Range, ALMAant=aantpath,
+            spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
             gains=[gains], dterms=['NONE'], amp_norm=True,
             XYadd=XYadd, swapXY=[False], IDI_conjugated=True,
             plotIF=plotIF, doIF=doIF, plotRange=timeRange,
@@ -85,9 +101,6 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         shutil.rmtree(DiFXoutput)
         os.rename(DiFXsave, DiFXoutput)
         raise ex
-
-    # clean up for retry on problems at this point:
-    # FIXME
 
     # save the plots in a subdir
     pcprods = [ 'PolConvert.log', 'Fringe.plot%d.png'%plotAnt,

@@ -285,6 +285,7 @@ if(mystep in thesteps):
       tb.open(asd+'.ms.split/ASDM_CALAPPPHASE')
       tb.copyrows('./%s.calappphase'%UID)
       tb.close()
+  os.rename('./%s.calappphase'%UID, '%s.concatenated.ms.calappphase'%UID)
 
   concat(vis=['%s.ms.split'%asd for asd in ASDMs],
          concatvis='%s.concatenated.ms'%UID,
@@ -303,7 +304,7 @@ if sum([sti>4 for sti in thesteps])>0:
   from collections import Counter
 
   # Figure out the (most used) APS-TelCal reference antenna:
-  tb.open('%s.calappphase'%UID)
+  tb.open('%s.concatenated.ms.calappphase'%UID)
 
   rfants = Counter(tb.getcol('refAntennaIndex'))
   REFANTidx = rfants.most_common()[0][0]
@@ -1268,7 +1269,7 @@ if(mystep in thesteps):
   import tarfile
   import glob
   deliverables = [
-    '%s.calappphase'%UID,
+    '%s.concatenated.ms.calappphase'%UID,
     '%s.concatenated.ms.ANTENNA'%UID,
     '%s.concatenated.ms.bandpass'%UID, 
     '%s.concatenated.ms.bandpass-zphs'%UID,
@@ -1283,10 +1284,16 @@ if(mystep in thesteps):
     '%s.concatenated.ms.Df0'%UID,
     '%s.concatenated.ms.Df0gen'%UID]
 
-  deliverables += glob.glob("*.png")
-  deliverables += glob.glob("*.txt")
-  deliverables += glob.glob("*.plots")
-  deliverables += glob.glob("*.py")
+  #deliverables += glob.glob("*.png")
+  #deliverables += glob.glob("*.txt")
+  #deliverables += glob.glob("*.plots")
+  #deliverables += glob.glob("*.py")
+  # this is perhaps a bit cleaner for the correlator
+  os.system('mkdir %s.concatenated.ms.artifacts'%UID)
+  for a in (glob.glob("*.png") + glob.glob("*.txt") +
+            glob.glob("*.plots") + glob.glob("*.py")):
+    os.rename(a, '%s.concatenated.ms.artifacts/%s'%(UID,a))
+  deliverables += '%s.concatenated.ms.artifacts'%UID
 
   if os.path.exists('%s.APP_DELIVERABLES.tgz'%UID): 
     os.unlink('%s.APP_DELIVERABLES.tgz'%UID)
