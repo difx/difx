@@ -3,6 +3,10 @@ v1.2-r7
 - Gain files in ANTAB format.
 - Proper handling (by interpolation) of flagged gains.
 
+v1.2-r8
+
+- changes for cleaner compilation
+- adjustments to task_polconvert.py for shape variations in cal tables
 
 TODO: 
 
