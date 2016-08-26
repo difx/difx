@@ -26,11 +26,12 @@ ASDMs = [ 'uid___A002_Xb542b2_X1a4',
 UID = 'uid___A002_Xb542b2'
 
 
-# The four science spws, for each ASDM:
-SPWs = ['17,19,21,23',
-        '17,19,21,23',
-        '9,11,13,15',
-        '9,11,13,15']
+# The four science spws for each ASDM. An empty list will make
+# the script find them automatically:
+SPWs = [] #'17,19,21,23',
+       # '17,19,21,23',
+       # '9,11,13,15',
+       # '9,11,13,15']
 
 
 
@@ -84,7 +85,7 @@ checkJumps = True
 # Write here the list of "jumping channels" for each spw:
 
 # APP CROSS-PHASE JUMPS:
-XYJUMPS_APP = [[], # SPW0
+XYJUMPS_APP = [[31,61,122,153,213], # SPW0
                [], # SPW1 
                [], # SPW2
                []] # SPW3
@@ -152,6 +153,7 @@ if (thesteps==[]):
 
 import re
 import os
+import shutil
 import numpy as np
 import pylab as pl
 
@@ -269,6 +271,23 @@ if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
   print 'Step ', mystep, step_title[mystep]
 
+
+  if len(SPWs)==0:
+    print '\n\nWill try to find science SPWs automatically\n'
+    for i,asd in enumerate(ASDMs):
+      tb.open('%s.ms/SPECTRAL_WINDOW'%asd)
+      spnames = tb.getcol('NAME')
+      tb.close()
+      tb.open('%s.ms/DATA_DESCRIPTION'%asd)
+      poltypes = tb.getcol('POLARIZATION_ID')
+      tb.close()
+      SPWs.append(','.join([str(i) for i in range(len(poltypes)) if poltypes[i]==2 and 'FULL_RES' in spnames[i]]))
+    print '\n\n Found SPWs: ',SPWs 
+
+  if os.path.exists('./%s.calappphase'%UID):
+    os.system('rm -rf ./%s.calappphase ./%s.concatenated.ms.calappphase'%(UID,UID))
+
+
   for i,asd in enumerate(ASDMs):
     os.system('rm -rf %s.ms.split'%asd) 
     os.system('rm -rf %s.ms.split.flagversions'%asd) 
@@ -287,11 +306,18 @@ if(mystep in thesteps):
       tb.close()
   os.rename('./%s.calappphase'%UID, '%s.concatenated.ms.calappphase'%UID)
 
+  if os.path.exists('%s.concatenated.ms'%UID):
+    os.system('rm -rf %s.concatenated.ms'%UID)
+
   concat(vis=['%s.ms.split'%asd for asd in ASDMs],
          concatvis='%s.concatenated.ms'%UID,
          timesort = True,
          copypointing = False)
 
+  if os.path.exists('%s.concatenated.ms.listobs'%UID): 
+    os.system('rm -rf %s.concatenated.ms.listobs'%UID)
+  listobs(vis = '%s.concatenated.ms'%UID,
+    listfile = '%s.concatenated.ms.listobs'%UID)
 
 
 
@@ -303,30 +329,39 @@ if sum([sti>4 for sti in thesteps])>0:
 
   from collections import Counter
 
-  # Figure out the (most used) APS-TelCal reference antenna:
-  tb.open('%s.concatenated.ms.calappphase'%UID)
-
-  rfants = Counter(tb.getcol('refAntennaIndex'))
-  REFANTidx = rfants.most_common()[0][0]
-
-  # Figure out which antennas are ALWAYS phased:
-  nphant = tb.getcol('numPhasedAntennas')
-  phants = set(tb.getcell('phasedAntennas', rownr = 0))
-  for i in range(1,len(nphant)):
-    phants = phants.intersection(tb.getcell('phasedAntennas', rownr = i))
-  phants = list(phants)
-
-  tb.close()
-
   # Get list of all antennas:
   tb.open('%s.concatenated.ms/ANTENNA'%UID)
   allants = tb.getcol('NAME')
   tb.close()
 
+  # Figure out the (most used) APS-TelCal reference antenna:
+  tb.open('%s.concatenated.ms.calappphase'%UID)
+
+  nphant = tb.getcol('numPhasedAntennas')
+  appref = tb.getcol('refAntennaIndex')
+  phants = set(tb.getcell('phasedAntennas', rownr = 0))
+  almaref = []
+
+
+  # Figure out which antennas are ALWAYS phased:
+  nphant = tb.getcol('numPhasedAntennas')
+  phants = set(tb.getcell('phasedAntennas', rownr = 0))
+  for i in range(len(nphant)):
+    aux = tb.getcell('phasedAntennas', rownr = i)
+    phants = phants.intersection(aux)
+    almaref.append(aux[appref[i]])
+
+  phants = list(phants)
+
+  tb.close()
+
+
   # if REFANT is not set, assign it to the APP refant:
   if len(REFANT)==0:
-    REFANT = allants[REFANTidx]
+    REFANT = Counter(almaref).most_common()[0][0]
   print "Will use %s as Reference Antenna."%REFANT
+
+
 
   # Build a list of observing modes including APP / ALMA mode:
   tb.open('%s.concatenated.ms/STATE'%UID)
@@ -373,7 +408,7 @@ if(mystep in thesteps):
   listobs(vis = '%s.concatenated.ms'%UID,
     listfile = '%s.concatenated.ms.listobs'%UID)
     
-  if not os.path.exists('%s.concatenated.ms.flagversions/Original.flags'%UID):
+  if not os.path.exists('%s.concatenated.ms.flagversions/flags.Original'%UID):
     flagmanager(vis = '%s.concatenated.ms'%UID,
       mode = 'save',
       versionname = 'Original')
@@ -408,7 +443,7 @@ if(mystep in thesteps):
 
 
   # Once all bad data are flagged, we save the flags:
-  if os.path.exists('%s.concatenated.ms.flagversions/BeforeCalibration.flags'%UID):
+  if os.path.exists('%s.concatenated.ms.flagversions/flags.BeforeCalibration'%UID):
     flagmanager(vis='%s.concatenated.ms'%UID, 
       mode = 'delete', versionname='BeforeCalibration')
 
@@ -448,7 +483,7 @@ if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
   print 'Step ', mystep, step_title[mystep]
 
-  if os.path.exists('%s.concatenated.ms.flagversions/BeforeBandpassCalibration.flags'%UID):
+  if os.path.exists('%s.concatenated.ms.flagversions/flags.BeforeBandpassCalibration'%UID):
     flagmanager(vis='%s.concatenated.ms'%UID, 
       mode = 'delete', versionname='BeforeBandpassCalibration')
 
@@ -494,7 +529,7 @@ if(mystep in thesteps):
     field = BandPassCal,
     scan = ALMAscans,
     solint = 'inf',
-    combine = 'scan',
+    combine = 'obs,scan',
     refant = REFANT,
     solnorm = True,
     bandtype = 'B',
@@ -521,7 +556,7 @@ mystep = 10
 if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
   print 'Step ', mystep, step_title[mystep]
-  if os.path.exists('%s.concatenated.ms.flagversions/BeforeGainCalibration.flags'%UID):
+  if os.path.exists('%s.concatenated.ms.flagversions/flags.BeforeGainCalibration'%UID):
     flagmanager(vis='%s.concatenated.ms'%UID, 
       mode = 'delete', versionname='BeforeGainCalibration')
 
@@ -665,7 +700,7 @@ mystep = 12
 if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
   print 'Step ', mystep, step_title[mystep]
-  if os.path.exists('%s.concatenated.ms.flagversions/BeforePolCal.flags'%UID):
+  if os.path.exists('%s.concatenated.ms.flagversions/flags.BeforePolCal'%UID):
     flagmanager(vis='%s.concatenated.ms'%UID, 
       mode = 'delete', versionname='BeforePolCal')
 
@@ -952,7 +987,7 @@ if(mystep in thesteps):
      iteration='spw',figfile='%s.XY-CrossPhase.ALMA.png'%UID)
 
   if checkJumps:
-    raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW')
+    raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW (Ctrl+D TO ABORT)')
 
   plotcal('%s.concatenated.ms.XY0amb.APP'%UID,'freq','phase',
      antenna='0', poln='X', subplot=121)
@@ -967,7 +1002,7 @@ if(mystep in thesteps):
 
 
   if checkJumps:
-    raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW')
+    raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW (Ctrl+D TO ABORT)')
 
 
 
@@ -1098,7 +1133,7 @@ mystep = 14
 if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
   print 'Step ', mystep, step_title[mystep]
-  if os.path.exists('%s.concatenated.ms.flagversions/BeforeApplycal.flags'%UID):
+  if os.path.exists('%s.concatenated.ms.flagversions/flags.BeforeApplycal'%UID):
     flagmanager(vis='%s.concatenated.ms'%UID, 
       mode = 'delete', versionname='BeforeApplycal')
 
@@ -1244,7 +1279,7 @@ mystep = 16
 if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
   print 'Step ', mystep, step_title[mystep]
-  if os.path.exists('%s.concatenated.ms.flagversions/AfterApplycal.flags'%UID):
+  if os.path.exists('%s.concatenated.ms.flagversions/flags.AfterApplycal'%UID):
     flagmanager(vis='%s.concatenated.ms'%UID, 
       mode = 'delete', versionname='AfterApplycal')
 
@@ -1284,16 +1319,17 @@ if(mystep in thesteps):
     '%s.concatenated.ms.Df0'%UID,
     '%s.concatenated.ms.Df0gen'%UID]
 
-  #deliverables += glob.glob("*.png")
-  #deliverables += glob.glob("*.txt")
-  #deliverables += glob.glob("*.plots")
-  #deliverables += glob.glob("*.py")
-  # this is perhaps a bit cleaner for the correlator
+  if os.path.exists('%s.concatenated.ms.artifacts'%UID):
+    shutil.rmtree('%s.concatenated.ms.artifacts'%UID)
   os.system('mkdir %s.concatenated.ms.artifacts'%UID)
-  for a in (glob.glob("*.png") + glob.glob("*.txt") +
+  for a in (glob.glob("*.png") +glob.glob("*.listobs") + glob.glob("*.txt") +
             glob.glob("*.plots") + glob.glob("*.py")):
-    os.rename(a, '%s.concatenated.ms.artifacts/%s'%(UID,a))
-  deliverables += '%s.concatenated.ms.artifacts'%UID
+    if os.path.isfile(a):
+      shutil.copy(a, '%s.concatenated.ms.artifacts/%s'%(UID,a))
+    else:
+      shutil.copytree(a, '%s.concatenated.ms.artifacts/%s'%(UID,a))
+
+  deliverables += ['%s.concatenated.ms.artifacts'%UID]
 
   if os.path.exists('%s.APP_DELIVERABLES.tgz'%UID): 
     os.unlink('%s.APP_DELIVERABLES.tgz'%UID)

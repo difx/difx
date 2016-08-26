@@ -146,7 +146,7 @@ fillGaps();
 // Is this a bandpass gain or a time gain?
 bool CalTable::isBandpass() {
 
-  return Nchan==1;
+  return Nchan>1;
 
 };
 
