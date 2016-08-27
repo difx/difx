@@ -16,6 +16,7 @@ Version 2.5.0
 * Change .rpm filename to vlbi-mk5daemon.*.rpm
 * mk5cp: report average data rate and total bytes copied.  Use replaced byte counter with lower false detection rate.
 * Periodically (every 30 sec) look at OS swap usage and emit alert if in use
+* mk5putdir: if binary dump file cannot be created, don't seg fault; instead tell user.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Walter Brisken                                  *
+ *   Copyright (C) 2013-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -347,8 +347,15 @@ int readScanLog(const char *filename, char **dirData, int *dirDataLength, const 
 		FILE *out;
 
 		out = fopen(dumpFile, "w");
-		fwrite(*dirData, *dirDataLength, 1, out);
-		fclose(out);
+		if(!out)
+		{
+			fprintf(stderr, "Error opening %s for write.  The original directory in binary format was to be written to that file.\n", dumpFile);
+		}
+		else
+		{
+			fwrite(*dirData, *dirDataLength, 1, out);
+			fclose(out);
+		}
 	}
 
 	return 0;
