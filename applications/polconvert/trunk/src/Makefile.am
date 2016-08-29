@@ -10,15 +10,16 @@ PolConvertSources = \
 	Weighter.cpp Weighter.h \
 	_PolConvert.cpp polconvert.xml \
 	setup.py task_polconvert.py
-PostPolScripts = PP/prepolconvert.py PP/runpolconvert.py
-ScriptCopies = prepolconvert.py runpolconvert.py
+PostPolScripts = PP/prepolconvert.py PP/runpolconvert.py PP/README.POLCONVERT
+ScriptCopies = prepolconvert.py runpolconvert.py README.POLCONVERT 
 
 # BUILT_SOURCES doesn't help here.
 BuiltSources = $(PolConvertSources) $(PostPolScripts)
 
 bin_SCRIPTS = PP/prepolconvert.py PP/drivepolconvert.py
 pkgdata_DATA = _PolConvert.so \
-	PP/runpolconvert.py task_polconvert.py polconvert.xml
+	PP/runpolconvert.py task_polconvert.py polconvert.xml \
+	PP/README.POLCONVERT
 
 # need to get the install first, then the local data install task
 install-data-am: install-pkgdataDATA install-data-local
@@ -48,7 +49,7 @@ _PolConvert.so: copy.them
 	export PATH=${PATH}${PATH_SEPARATOR}@DIFXCASAPATH@ ;\
 	python setup.py build_ext --inplace
 
-# use INSTALL to distinguish build and source dirs
+# use copy.them to distinguish build and source dirs
 clean-local:
 	rm -rf build _PolConvert.so *.pyc
 	rm -rf polconvert.py polconvert_cli.py mytasks.py

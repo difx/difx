@@ -1,0 +1,53 @@
+# YOU SHOULD RUN POLCONVERT WITHIN CASA WITH THE FOLLOWING PARAMETERS
+# AND SUITABLE EDITS.
+
+tget(polconvert)
+
+IDI = '' # DIRECTORY WITH SWIN FILES (OR PATH TO FITS-IDI FILE)
+OUTPUTIDI = '' # OUTPUT SWIN DIRECTORY (OR FITS-IDI FILE)
+DiFXinput = '' # PATH TO AN *.input FILE, IF SWIN FILES ARE BEING CONVERTED
+doIF = [] # LIST OF IFs TO PROCESS (EMPTY MEANS ALL)
+
+
+################################################################
+# SET THESE PARAMETERS FOR A DIAGNOSTIC PLOT OF THE CONVERSION #
+################################################################
+
+plotIF = -1   # SUBBAND (IF) TO PLOT. SET IT TO MAKE A PLOT!
+plotRange = [] # INTEGER LIST (AIPS TIMERANGE FORMAT).
+               # E.G. ALL DATA WOULD BE: [0,0,0,0,10,0,0,0]
+               # SET IT TO MAKE A PLOT!
+plotAnt = -1  # THE OTHER ANTENNA IN THE BASELINE TO PLOT. SET IT!
+doTest = True  # JUST PLOT (GOOD IDEA FOR THE FIRST RUN!).
+
+################################################################
+
+
+linAntIdx = [1] # ASSUMES ALMA IS FIRST ANTENNA
+Range = [] # TIME RANGE TO CONVERT (INTEGER LIST; AIPS FORMAT).
+           # LEAVE EMPTY TO CONVERT ALL DATA.
+
+ALMAant = 'uid___A002_Xb542b2.concatenated.ms.ANTENNA'
+calAPP = 'uid___A002_Xb542b2.concatenated.ms.calappphase'
+
+spw = -1
+calAPPTime = [0.0,8.0]
+
+gains = [['uid___A002_Xb542b2.concatenated.ms.bandpass-zphs',
+          'uid___A002_Xb542b2.concatenated.ms.flux_inf',
+          'uid___A002_Xb542b2.concatenated.ms.phase_int.APP',
+          'uid___A002_Xb542b2.concatenated.ms.XY0.APP']]
+
+dterms = ['uid___A002_Xb542b2.concatenated.ms.Df0']
+
+amp_norm = True  # DON'T APPLY AMPLITUDE CORRECTION.
+                 # BUILD AN ANTAB FILE INSTEAD.
+XYadd = [0.0] # CHANGE TO 180. IF R <-> L
+swapXY = False # UNLIKELY TO CHANGE
+swapRL = False # THIS IS FOR THE OTHER ANTENNA *IN THE PLOT*.
+               # I.E., THIS DOESN'T CHANGE THE DATA
+IDI_conjugated = True # JUST IF CONVERTING A FITS-IDI FILE.
+
+go polconvert
+
+

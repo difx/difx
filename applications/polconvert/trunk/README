@@ -13,3 +13,6 @@ except:
     print 'unable to load $DIFXROOT/share/polconvert/mytasks.py'
 
 (or similar).  Create .casa/init.py if it does not exist.
+You can then run polconvert directly from within CASA following
+the sample input commands provided in (src/PP/)README.POLCONVERT
+which should be installed in DIFX_ROOT/share/polconvert.

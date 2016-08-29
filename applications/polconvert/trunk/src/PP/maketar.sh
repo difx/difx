@@ -30,6 +30,7 @@ scripts='
     PP/prepolconvert.py
     PP/runpolconvert.py
     PP/maketar.sh
+    PP/README.POLCONVERT
     setup.py
     task_polconvert.py
     '

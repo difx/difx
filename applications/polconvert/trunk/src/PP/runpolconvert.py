@@ -17,10 +17,12 @@ try:
     aantpath = ('%s.'+qa2['a'])%label # '%s.antenna.tab'%label
     calapphs = ('%s.'+qa2['c'])%label # '%s.calappphase.tab'%label
     bandpass = ('%s.'+qa2['b'])%label # '%s.bandpass-zphs.cal'%label
+    dtermcal = ('%s.'+qa2['d'])%label # '%s.Df0'%label
     ampgains = ('%s.'+qa2['g'])%label # '%s.ampgains.cal.fluxscale'%label
     phsgains = ('%s.'+qa2['p'])%label # '%s.phasegains.cal'%label
     xyrelphs = ('%s.'+qa2['x'])%label # '%s.XY0amb-tcon'%label
-    calgains = [aantpath, calapphs, bandpass, ampgains, phsgains, xyrelphs]
+    calgains = [aantpath, calapphs, dtermcal,
+                bandpass, ampgains, phsgains, xyrelphs]
     for f in calgains:
         if not os.path.exists(f):
             raise Exception, ('Required calibration %s is missing'%f)
@@ -64,7 +66,8 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     #gains=['%s.bandpass-zphs.cal'%label,
     #    '%s.ampgains.cal.fluxscale'%label, '%s.phasegains.cal'%label,
     #    '%s.XY0amb-tcon'%label]
-    gains = calgains[2:]
+    gains = calgains[3:]
+    dterm = calgains[2]
     Range = [] # do the entire scan
     calAPPTime = [0.0, 8.0] # half-a scan of tolerance
 
@@ -92,7 +95,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
             linAntIdx=[1], Range=Range, ALMAant=aantpath,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
-            gains=[gains], dterms=['NONE'], amp_norm=True,
+            gains=[gains], dterms=[dterm], amp_norm=True,
             XYadd=XYadd, swapXY=[False], IDI_conjugated=True,
             plotIF=plotIF, doIF=doIF, plotRange=timeRange,
             plotAnt=plotAnt, doTest=doTest)

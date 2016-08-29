@@ -8,6 +8,11 @@ v1.2-r8
 - changes for cleaner compilation
 - adjustments to task_polconvert.py for shape variations in cal tables
 
+v1.2-r9
+
+- Corrected bug in CalTable.
+- Automatic selection of spw (if spw is set to <0 ).
+
 TODO: 
 
 - Fitting of XY-phase with a simple delay model (per subband).

@@ -47,7 +47,7 @@
 #
 #
 
-__version__ = "1.2-r8"
+__version__ = "1.2-r9"
 date = 'AUG 2016'     
 
 
@@ -106,15 +106,15 @@ if __name__=='__main__':
                                         #   file(s) will be overwritten
   DiFXinput           = './bm452c_135.input' #  If SWIN files are being converted, this must  be the *.input
                                         #   file used by DiFX.
-  doIF                =       [37]        #  List of IFs to convert. Default means all.
+  doIF                =       [36,37,38]        #  List of IFs to convert. Default means all.
   linAntIdx           =        [1]        #  List of indices of the linear-polarization  antennas in the IDI
                                         #   file
   Range               =         []        #  Time range to convert (integer list; AIPS format).  Default means
                                         #   all data
   ALMAant             = 'uid___A002_Xb542b2.concatenated.ms.ANTENNA' #  If ALMA has been used, this is the
                                         #   antenna table  from the MS with the intra-ALMA visibilities.
-  spw                 =          2        #  Spectral window in ALMAvis that contains the VLBI band.
-  calAPP              = 'uid___A002_Xb542b2.calappphase' #  If ALMA has been used, this is the combined
+  spw                 =         -1        #  Spectral window in ALMAvis that contains the VLBI band.
+  calAPP              = 'uid___A002_Xb542b2.concatenated.ms.calappphase' #  If ALMA has been used, this is the combined
                                         #   ASDM_CALAPPPHASE table from the ASDM. The list of measurement
                                         #   sets can also be given (so the table is concatenated from all of
                                         #   them).
@@ -197,11 +197,11 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       if i==0:
        os.system('cp -rf %s/ASDM_CALAPPPHASE ./CALAPPPHASE.tab'%asd)
       else:
-       tb.open(asd+'/ASDM_CALAPPPHASE')
+       tb.open(os.path.join(asd,'ASDM_CALAPPPHASE'))
        tb.copyrows('./CALAPPPHASE.tab')
        tb.close()
 
-    tb.open(asd+'/ASDM_CALAPPPHASE')
+    tb.open(os.path.join(asd,'ASDM_CALAPPPHASE'))
     time0 = tb.getcol('startValidTime')
     time1 = tb.getcol('endValidTime')
     tb.close()
@@ -488,7 +488,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     FrInfo = {'FREQ (MHZ)':[0. for i in Nr], 'BW (MHZ)':[0. for i in Nr], 
               'SIDEBAND':['U' for i in Nr], 'NUM CHANNELS':[1 for i in Nr],
               'CHANS TO AVG':[1 for i in Nr], 'OVERSAMPLE FAC.':[1 for i in Nr], 
-              'DECIMATION FAC.':[1 for i in Nr]}
+              'DECIMATION FAC.':[1 for i in Nr], 'SIGN' :[1 for i in Nr]}
 
 # READ METADATA FOR ALL FREQUENCIES:
     for entry in FrInfo.keys():
@@ -505,11 +505,54 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       nchan = FrInfo['NUM CHANNELS'][nu]
       chav = FrInfo['CHANS TO AVG'][nu]
       sb = {True: 1.0 , False: -1.0}[FrInfo['SIDEBAND'][nu] == 'U']
+      FrInfo['SIGN'][nu] = float(sb)
       freqs = (nu0 + sb*np.linspace(0.,1.,nchan/chav,endpoint=False)*bw)*1.e6
       metadata.append(freqs)
 #####
 
-   # print FrInfo 
+
+  else:
+# READ FREQUENCY INFO TO HELP SELECTING THE SPW AUTOMATICALLY:
+    import pyfits as pf
+    fitsf = pf.open(IDI)
+    nu0 = fitsf['FREQUENCY'].header['REF_FREQ']
+    bw = fitsf['FREQUENCY'].header['CHAN_BW']
+    nch = fitsf['FREQUENCY'].header['NO_CHAN']*fitsf['FREQUENCY'].header['NO_BAND']
+    Nr = 1
+    FrInfo = {'FREQ (MHZ)':[nu0/1.e6], 'BW (MHZ)':[bw*nch/1.e6], 'SIGN':[1.0]}
+    fitsf.close()
+
+
+#######################
+##### GET SPECTRAL WINDOW AUTOMATICALLY:
+  if spw < 0: 
+    from collections import Counter
+    tb.open(os.path.join(gains[0][0],'SPECTRAL_WINDOW'))
+    calfreqs = tb.getcol('CHAN_FREQ')[0,:]/1.e6
+    nchansp = np.shape(tb.getcol('CHAN_FREQ'))[0]
+    calfreqs2 = calfreqs + tb.getcol('CHAN_WIDTH')[0,:]*nchansp/1.e6
+    tb.close()
+    nurange = [[np.min([calfreqs[i],calfreqs2[i]]),np.max([calfreqs[i],calfreqs2[i]])] for i in range(len(calfreqs))]
+    spwsel = [-1 for nu in doIF]
+    for nui,nu in enumerate(doIF):
+      for spwi in range(len(calfreqs)):
+        nu0 = FrInfo['FREQ (MHZ)'][nu]
+        nu1 = FrInfo['FREQ (MHZ)'][nu] + FrInfo['BW (MHZ)'][nu]*FrInfo['SIGN'][nu]
+        nus = [np.min([nu0,nu1]),np.max([nu0,nu1])]
+        if nus[0] >= nurange[spwi][0] and nus[1] <= nurange[spwi][1]:
+          spwsel[nui] = spwi
+    for i in spwsel:
+       if i < 0:
+         printError("There is no spw that covers all the IF frequencies!") 
+    spwsel = list(set(spwsel))
+    if len(spwsel)>1:
+       printError("There is more than one possible spw for some IFs!") 
+
+    spw = spwsel[0]
+    print 'Selected spw: ',spw
+########################
+
+
 
 
 #######
@@ -561,7 +604,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
        dtdata[i][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        dtdata[i][-1].append(np.zeros((nchan,ntime)).astype(np.bool))
    else:
-    success = tb.open(dterms[i]+'/SPECTRAL_WINDOW')
+    success = tb.open(os.path.join(dterms[i],'SPECTRAL_WINDOW'))
     if not success:
       printError("ERROR READING TABLE %s"%dterms[i])
     dtfreqs = tb.getcol('CHAN_FREQ')[:,int(spw)]
@@ -616,7 +659,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
        gaindata[i][j][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        gaindata[i][j][-1].append(np.zeros((nchan,ntime)).astype(np.bool))
      else:
-      tb.open(gain+'/SPECTRAL_WINDOW')
+      tb.open(os.path.join(gain,'SPECTRAL_WINDOW'))
       if not success:
         printError("ERROR READING TABLE %s"%gain)
       gfreqs = tb.getcol('CHAN_FREQ')[:,int(spw)]

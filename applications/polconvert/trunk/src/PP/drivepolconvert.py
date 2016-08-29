@@ -72,11 +72,14 @@ def parseOptions():
         help='user supplied XY angle adjustment or empty for defaults, '
         'normally 180.0 or 0.0')
     parser.add_argument('-q', '--qa2', dest='qa2',
-        default='v1', metavar='STRING',
+        default='v2', metavar='STRING',
         help='table naming scheme for the QA2 tables; there should be ' +
             'six tables for antennas, appphase, bandpass, ampgains, ' +
-            'phasegains and xy phase.  Options are "v0", "v1" or a ' +
+            'phasegains and xy phase.  Options are "v0", "v1", "v2", or a ' +
             'comma-sep list in an environment variable QA2TABLES')
+    parser.add_argument('-d', '--noDterm', dest='nodt',
+        default=False, action='store_true',
+        help='disable use of Dterm calibration tables')
     # list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files')
@@ -111,21 +114,29 @@ def calibrationChecks(o):
         raise Exception, 'A label (-l) is required to proceed'
     if o.verb: print 'Using label %s' % o.label
     if o.qa2 == 'v0':   # original 1mm names
-        o.qal = ['antenna.tab','calappphase.tab', 'bandpass-zphs.cal',
+        o.qal = ['antenna.tab','calappphase.tab', 'NONE', 'bandpass-zphs.cal',
                'ampgains.cal.fluxscale', 'phasegains.cal', 'XY0amb-tcon']
     elif o.qa2 == 'v1': # revised 3mm names
-        o.qal = ['ANTENNA', 'calappphase', 'bandpass-zphs',
+        o.qal = ['ANTENNA', 'calappphase', 'NONE', 'bandpass-zphs',
+               'flux_inf', 'phase_int.APP', 'XY0.APP' ]
+    elif o.qa2 == 'v2': # revised 3mm names with Dterms (default)
+        o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
     else:               # supply via environment variable
         o.qal = os.environ['QA2TABLES'].split(',')
-    if len(o.qal) < 6:
-        raise Exception, '6 QA2 tables are required, see --qa2 option'
-    keys = ['a', 'c', 'b', 'g', 'p', 'x']
+    if len(o.qal) < 7:
+        raise Exception, '7 QA2 tables are required, see --qa2 option'
+    keys = ['a', 'c', 'd', 'b', 'g', 'p', 'x']
     o.qa2_dict = dict(zip(keys,o.qal))
+    if o.nodt:
+        o.qa2_dict['d'] = 'NONE'
     for key in o.qa2_dict:
         d = ('%s.' + o.qa2_dict[key]) % o.label
         if not os.path.exists(d) or not os.path.isdir(d):
-            raise Exception, 'Required director %s is missing' % d
+            if key == 'd' and d == 'NONE':
+                pass    # Dterms are optional
+            else:
+                raise Exception, 'Required director %s is missing' % d
 
 def inputRelatedChecks(o):
     '''
