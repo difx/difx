@@ -102,7 +102,7 @@ int main(int argc, char * const argv[]) {
   int complex=0;  /* Use complex sampling, if VDIF */
   float rate = 0; /* Limit read/write to this data rate - UDP only*/
   float updatetime = 1; /* 1 second update by default */
-  float filetime = 1; /* 1 second "files" */
+  float filetime = 10; /* 1 second "files" */
   double duration = 60; /* 1min by default */
   char filebase[MAXSTR+1]; /* Base name for output file */
   char hostname[MAXSTR+1] = ""; /* Host name to send data to */
@@ -483,8 +483,8 @@ int main(int argc, char * const argv[]) {
         exit(1);
       }
     
-      mjdsec = lround(mjd*24*60*60);
-      setVDIFEpoch(&vdif_headers[i],mjdsec/(24*60*60));
+      mjdsec = llround(mjd*24*60*60);
+      setVDIFEpoch(&vdif_headers[i],lround(floor(mjd)));
       setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
       if (status!=VDIF_NOERROR) {
         fprintf(stderr, "Error setting VDIF file (%d)\n", status);
@@ -667,11 +667,12 @@ int main(int argc, char * const argv[]) {
       next_mark5bheader(&mk5_header);
 
     } else if (mode==VDIF) {
-      mjd = getVDIFFrameDMJD(&vdif_headers[currentthread], framepersec);
-      nextVDIFHeader(&vdif_headers[currentthread], framepersec);
       currentthread++;
-      if(currentthread == numthread)
+      if (currentthread == numthread) {
         currentthread = 0;
+	nextVDIFHeader(&vdif_headers[currentthread], framepersec);
+	mjd = getVDIFFrameDMJD(&vdif_headers[currentthread], framepersec);
+      }
 
     } else {
       mjd += filetime;
