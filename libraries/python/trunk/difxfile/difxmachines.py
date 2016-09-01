@@ -234,8 +234,12 @@ class DifxMachines(object):
 				nodeNames.append(result.group(1))	
 
 			for nodeName in nodeNames:
-				node = Node()
-				node.name = nodeName
+				# check if node exists already
+				if self.nodes.has_key(nodeName):
+					node = self.nodes[nodeName]
+				else:
+					node = Node()
+					node.name = nodeName
 				node.threads = int(result.group(3).strip())
 
 				fileUrls = []
