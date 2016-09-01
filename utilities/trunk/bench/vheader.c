@@ -335,13 +335,23 @@ int writeheader(vhead *header, int file, char **buf) {
 	  header->recordersubversion);
   ADDLINE();
 
-  sprintf(line, "ANTENNAID %c%c\n", header->antennaid[0], header->antennaid[1]);
+  if (header->antennaid[0] !=' ' ||  header->antennaid[1] != ' ') 
+    sprintf(line, "ANTENNAID %c%c\n", header->antennaid[0], header->antennaid[1]);
+  else 
+    strcpy(line, "ANTENNAID xx\n");
+  
   ADDLINE();
 
-  sprintf(line, "ANTENNANAME %s\n", header->antennaname);
+  if (strlen(header->antennaname)==0)
+    strcpy(line, "ANTENNANAME null\n");
+  else
+    sprintf(line, "ANTENNANAME %s\n", header->antennaname);
   ADDLINE();
 
-  sprintf(line, "EXPERIMENTID %s\n", header->experimentid);
+  if (strlen(header->experimentid)==0)
+    strcpy(line, "EXPERIMENTID null\n");
+  else
+    sprintf(line, "EXPERIMENTID %s\n", header->experimentid);
   ADDLINE();
 
   sprintf(line, "NUMBITS %d\n", header->numbits);
@@ -556,6 +566,7 @@ int readheader(vhead *header, int file, char *buf) {
 
     if (value==0 || strlen(value)==0) {
       fprintf(stderr, "No value for %s\n", keystr);
+      fclose(filestream);
       return(NOVALUE);
     }
 
@@ -579,6 +590,7 @@ int readheader(vhead *header, int file, char *buf) {
 		      &header->antennaid[1]);
       if (status!=2) {
 	fprintf(stderr, "Error interpreting %s %s\n", keystr, value);
+	fclose(filestream);
 	return(BADVALUE);
       }
 
@@ -668,7 +680,6 @@ int readprofile(vhead *header, const char *profilename) {
 		      &header->antennaid[1]);
       if (status!=2) {
 	fprintf(stderr, "Error interpreting %s %s\n", keystr, value);
-	fclose(file);
 	return(BADVALUE);
       }
 
@@ -707,4 +718,45 @@ int readprofile(vhead *header, const char *profilename) {
   fclose(file);
 
   return(NOERROR);
+}
+
+double tm2mjd(struct tm date) {
+  int y, c;
+  double dayfrac;
+
+  if (date.tm_mon < 2) {
+    y = date.tm_mon+1900-1;
+  } else {
+    y = date.tm_year+1900;
+  }
+
+  c = y/100;
+  y = y-c*100;
+
+  dayfrac = ((date.tm_hour*60.0+date.tm_min)*60.0+date.tm_sec)
+    /(60.0*60.0*24.0);
+
+  return(cal2mjd(date.tm_mday, date.tm_mon+1, date.tm_year+1900)
+	 +dayfrac);
+}
+
+double cal2mjd(int day, int month, int year) {
+  int m, y, c, x1, x2, x3;
+
+  if (month <= 2) {
+    m = month+9;
+    y = year-1;
+  } else {
+    m = month-3;
+    y = year;
+  }
+
+  c = y/100;
+  y = y-c*100;
+
+  x1 = 146097*c/4;
+  x2 = 1461*y/4;
+  x3 = (153*m+2)/5;
+
+  return(x1+x2+x3+day-678882);
 }

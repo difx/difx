@@ -85,6 +85,7 @@ void destroyheader(vhead *header);
 int settime(vhead *header, struct tm *date);
 int settimestr(vhead *header, char *date);
 int setfiletime(vhead *header, struct tm *date);
+int setfiletimestr(vhead *header, char *date);
 int setantennaid(vhead *header, const char* antennaid);
 int setantennaname(vhead *header, const char* name);
 int setexperimentid(vhead *header, const char* exper);
@@ -109,3 +110,5 @@ int getfiletime(vhead *header, struct tm *date);
 int getfiletimestr(vhead *header, char *date);
 
 char* enum2str(int val, enumstr *enumarray);
+double tm2mjd(struct tm date);
+double cal2mjd(int day, int month, int year);
