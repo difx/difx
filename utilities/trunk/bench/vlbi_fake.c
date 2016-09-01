@@ -71,12 +71,12 @@ typedef enum {LBADR, MARK5B, VDIF} datamode;
 int main(int argc, char * const argv[]) {
   unsigned short fnamesize;
   ssize_t ntowrite;
-  int i, status, opt, tmp, sock, thisday, thismonth, thisyear, bwrote;
+  int i, status, opt, tmp, sock, thisday, thismonth, thisyear;
   int seconds, hour, min, sec, bufsize, datarate, currentthread, framepersec;
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
   long *lbuf;
-  uint64_t mjdsec;
+  uint64_t mjdsec, bwrote;
   double thismjd, finishmjd, ut, t0, t1, t2, dtmp;
   float speed, ftmp;
   unsigned long long filesize, networksize, nwritten, totalsize;
@@ -129,7 +129,7 @@ int main(int argc, char * const argv[]) {
     {"host", 1, 0, 'H'},
     {"update", 1, 0, 'u'},
     {"window", 1, 0, 'w'},
-    {"blocksize", 1, 0, 'b'},
+    {"blocksize", 1, 0, 'S'},
     {"framesize", 1, 0, 'F'},
     {"filetime", 1, 0, 'f'},
     {"udp", 1, 0, 'U'},
@@ -137,6 +137,7 @@ int main(int argc, char * const argv[]) {
     {"sleep", 1, 0, 's'},
     {"usleep", 1, 0, 's'},
     {"nchan", 1, 0, 'n'},
+    {"bits", 1, 0, 'b'},
     {"nthread", 1, 0, 'T'},
     {"mark5b", 0, 0, 'B'},
     {"mk5b", 0, 0, 'B'},
@@ -158,13 +159,13 @@ int main(int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "r:n:DVvd:mhH:f:", 
+    opt = getopt_long_only(argc, argv, "r:n:DVvd:mhH:f:b:", 
 			   options, NULL);
     if (opt==EOF) break;
 
     switch (opt) {
       
-    case 'b':
+    case 'S':
       status = sscanf(optarg, "%f", &ftmp);
       if (status!=1)
 	fprintf(stderr, "Bad blocksize option %s\n", optarg);
@@ -248,6 +249,15 @@ int main(int argc, char * const argv[]) {
 	fprintf(stderr, "Bad nchan option %s\n", optarg);
       else {
 	numchan = tmp;
+      }
+      break;
+
+    case 'b':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1)
+	fprintf(stderr, "Bad bits option %s\n", optarg);
+      else {
+	bits = tmp;
       }
       break;
 
@@ -351,8 +361,9 @@ int main(int argc, char * const argv[]) {
       printf("  -p/-port <PORT>       Port number for transfer\n");
       printf("  -d/duration <DUR>     Time in (transferred) seconds to run (60)\n");
       printf("  -bandwidth <BANWIDTH> Channel bandwidth in MHz (16)\n");
-      printf("  -framesize <FRAMESIZE>(Data) frame size for VDIF data (bits)\n");
-      printf("  -n/-nchan <N>         Number of 2 bit channels to assume in stream\n");
+      printf("  -framesize <FRAMESIZE>(Data) frame size for VDIF data (bytes)\n");
+      printf("  -n/-nchan <N>         Number of channels to assume in stream\n");
+      printf("  -b/-bits <N>          Number of bits/channel\n");
       printf("  -day <DAY>            Day of month of start time (now)\n");
       printf("  -month <MONTH>        Month of start time (now)\n");
       printf("  -dayno <DAYNO>        Day of year of start time (now)\n");
@@ -365,7 +376,7 @@ int main(int argc, char * const argv[]) {
       printf("  -sleep <USEC>         Sleep (usec) between udp packets\n");
       printf("  -u/-update <SEC>      Number of seconds to average timing statistics\n");
       printf("  -w/-window <SIZE>     TCP window size (kB)\n");
-      printf("  -b/blocksize <SIZE>   Blocksize to write, kB (1 MB default)\n");
+      printf("  -S/blocksize <SIZE>   Blocksize to write, kB (1 MB default)\n");
       printf("  -f/filesize <SIZE>    Size in sec for files (1)\n");
       printf("  -nthread <NUM>        Number of threads (VDIF only)\n");
       printf("  -complex              Complex samples (VDIF only)\n");
@@ -654,7 +665,7 @@ int main(int argc, char * const argv[]) {
 
     if (t2-t1>updatetime) {
 
-      speed = bwrote/(t2-t1)/1e6*8;
+      speed = bwrote/(t2-t1)/1.e6*8;
       printf("%6.1f Mbps/s %.1f sec  %5.1f MB\n", speed, t2-t1, bwrote/1e6);
 
       t1 = t2;
