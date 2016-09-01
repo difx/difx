@@ -667,7 +667,7 @@ int main(int argc, char * const argv[]) {
       next_mark5bheader(&mk5_header);
 
     } else if (mode==VDIF) {
-      mjd = getVDIFDMJD(&vdif_headers[currentthread], framepersec);
+      mjd = getVDIFFrameDMJD(&vdif_headers[currentthread], framepersec);
       nextVDIFHeader(&vdif_headers[currentthread], framepersec);
       currentthread++;
       if(currentthread == numthread)
@@ -691,7 +691,7 @@ int main(int argc, char * const argv[]) {
   printf("\n  Rate = %.2f Mbps/s (%.1f sec)\n\n", speed, t2-t0);
 
   if (udp.enabled) 
-    printf("   Sent %Lu packets\n", (unsigned long long)udp.sequence);
+    printf("   Sent %llu packets\n", (unsigned long long)udp.sequence);
 
 
   return(0);
@@ -917,7 +917,7 @@ void throttle_rate (double firsttime, float rate,
   } else {
     twait *= -1;
     //if ((-twait>1) & (abs(twait-*tbehind)>0.1)) { 
-    if ((abs(twait-*tbehind)>1)) { 
+    if ((fabs(twait-*tbehind)>1)) { 
       /* More than a second difference */ 
       *tbehind = twait;
       printf(" Dropping behind %.1f seconds\n", twait);
@@ -926,27 +926,6 @@ void throttle_rate (double firsttime, float rate,
   return;
 }
   
-double cal2mjd(int day, int month, int year) {
-  int m, y, c, x1, x2, x3;
-
-  if (month <= 2) {
-    m = month+9;
-    y = year-1;
-  } else {
-    m = month-3;
-    y = year;
-  }
-
-  c = y/100;
-  y = y-c*100;
-
-  x1 = 146097*c/4;
-  x2 = 1461*y/4;
-  x3 = (153*m+2)/5;
-
-  return(x1+x2+x3+day-678882);
-}
-
 void mjd2cal(double mjd, int *day, int *month, int *year, double *ut) {
   int jd, temp1, temp2;
 
@@ -969,26 +948,6 @@ void mjd2cal(double mjd, int *day, int *month, int *year, double *ut) {
   *year = temp1/1461-4712;
   *month =((temp2/306+2)%12)+1;
   *day = (temp2%306)/10+1;
-}
-
-double tm2mjd(struct tm date) {
-  int m, y, c;
-  double dayfrac;
-
-  if (date.tm_mon < 2) {
-    m = date.tm_mon+10;
-    y = date.tm_mon+1900-1;
-  } else {
-    m = date.tm_mon-2;
-    y = date.tm_year+1900;
-  }
-
-  c = y/100;
-  y = y-c*100;
-
-  dayfrac = ((date.tm_hour*60.0+date.tm_min)*60.0+date.tm_sec)/(60.0*60.0*24.0);
-
-  return(cal2mjd(date.tm_mday, date.tm_mon+1, date.tm_year+1900)+dayfrac);
 }
 
 double currentmjd () {

@@ -500,7 +500,7 @@ int readline(FILE *file, char **buf, char *line) {
 
 #define GETINT(x) \
    header->x = strtol(value, &endptr, 10);\
-   if (!endptr[0]==0) {  \
+   if (!(endptr[0]==0)) {		  \
      if (endptr==value) { \
        fprintf(stderr, "Error interpreting %s %s\n", keystr, value); \
        return(BADVALUE); \
@@ -511,7 +511,7 @@ int readline(FILE *file, char **buf, char *line) {
 
 #define GETFLOAT(x) \
    header->x = (float)strtod(value, &endptr);\
-   if (!endptr[0]==0) {  \
+   if (!(endptr[0]==0)) {		     \
      if (endptr==value) { \
        fprintf(stderr, "Error interpreting %s %s\n", keystr, value); \
        return(BADVALUE); \
