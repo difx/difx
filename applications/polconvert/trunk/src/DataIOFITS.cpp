@@ -112,7 +112,7 @@ void DataIOFITS::finish(){
    fits_close_file(ofile, &status);
  //  char *message;
    if (status){sprintf(message,"\n\nPROBLEM CLOSING FILE!  ERR: %i\n\n",status);
-     fprintf(logFile,message); std::cout<<message; fflush(logFile);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
    };
 };
 
@@ -151,7 +151,7 @@ void DataIOFITS::readInput(std::string inputfile) {
    fits_open_file(&fptr, inputfile.c_str(), READONLY, &status);
    if (status){
      sprintf(message,"\n\nPROBLEM OPENING FILE!  ERR: %i\n\n",status);
-     fprintf(logFile,message); std::cout<<message; fflush(logFile);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
      success=false; return;
    };
 
@@ -160,7 +160,7 @@ void DataIOFITS::readInput(std::string inputfile) {
    fits_movnam_hdu(fptr, BINARY_TBL, ANTENNA,1, &status);
    if (status){
      sprintf(message,"\n\nPROBLEM READING BINARY TABLE (ANTENNA)!  ERR: %i\n\n",status);
-     fprintf(logFile,message); std::cout<<message; fflush(logFile);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
      success=false; return;
    };
@@ -171,7 +171,7 @@ void DataIOFITS::readInput(std::string inputfile) {
    fits_movnam_hdu(fptr, BINARY_TBL, FREQUENCY,1, &status);
    if (status){
      sprintf(message,"\n\nPROBLEM READING BINARY TABLE (FREQUENCY)!  ERR: %i\n\n",status);
-     fprintf(logFile,message); std::cout<<message; fflush(logFile);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
      success=false;return;
    };
@@ -180,7 +180,7 @@ void DataIOFITS::readInput(std::string inputfile) {
    fits_get_num_rows(fptr, &lNIF, &status);
    if (status){
      sprintf(message,"\n\nPROBLEM READING NUMBER OF IFs!  ERR: %i\n\n",status);
-     fprintf(logFile,message); std::cout<<message; fflush(logFile);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
      success=false;return;
    };
@@ -192,7 +192,7 @@ void DataIOFITS::readInput(std::string inputfile) {
    fits_read_key(fptr, TDOUBLE, REFPIXL, &refpix, card, &status);
    if (status){
      sprintf(message,"\n\nPROBLEM READING FREQUENCY METADATA I!  ERR: %i\n\n",status);
-    fprintf(logFile,message); std::cout<<message; fflush(logFile);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
     success=false;return;
    };
@@ -205,7 +205,7 @@ void DataIOFITS::readInput(std::string inputfile) {
    fits_get_colnum(fptr, CASEINSEN, SIDEBAND, &isb, &status);
    if (status){
     sprintf(message,"\n\nPROBLEM READING FREQUENCY METADATA II!  ERR: %i\n\n",status);
-    fprintf(logFile,message); std::cout<<message; fflush(logFile);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
     success=false;return;
    };
@@ -225,7 +225,7 @@ void DataIOFITS::readInput(std::string inputfile) {
 
      if (status){
        sprintf(message,"\n\nPROBLEM READING FREQUENCY INFO!  ERR: %i\n\n",status);
-       fprintf(logFile,message); std::cout<<message; fflush(logFile);
+       fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
        success=false;return;
      };
@@ -254,7 +254,7 @@ void DataIOFITS::readInput(std::string inputfile) {
 
 
   sprintf(message,"\n Searching for visibilities with mixed (or linear) polarization.\n\n");
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 
   fits_movnam_hdu(fptr, BINARY_TBL, UVDATA,1, &status);
@@ -265,7 +265,7 @@ void DataIOFITS::readInput(std::string inputfile) {
   fits_get_num_rows(fptr, &Nvis, &status);
 
   sprintf(message,"There are  %li visibilities.\n",Nvis);
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 
 // ALLOCATE MEMORY FOR MIXED-POL. METADATA:
@@ -293,7 +293,7 @@ void DataIOFITS::readInput(std::string inputfile) {
 
   if (status){
     sprintf(message,"\n\nPROBLEM READING NUMBERS OF COLUMNS!  ERR: %i\n\n",status);
-    fprintf(logFile,message); std::cout<<message; fflush(logFile);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
     success=false;return;
   };
@@ -306,7 +306,7 @@ void DataIOFITS::readInput(std::string inputfile) {
   NLinVis = 0;
 
   sprintf(message,"Checking the baseline of each visibility.\n"); //,Nvis);
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 
   double currT;
@@ -325,7 +325,7 @@ void DataIOFITS::readInput(std::string inputfile) {
   fits_read_col(fptr, TDOUBLE, ll, il+1, 1, 1, NULL, &Times[il], &auxI, &status);
   if (status){
     sprintf(message,"\n\nPROBLEM READING METADATA!  ERR: %i\n\n",status);
-    fprintf(logFile,message); std::cout<<message; fflush(logFile);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
     success=false;return;
   };
@@ -376,7 +376,7 @@ day0 = Dates[0];
 fits_close_file(fptr, &status);
 if (status){
    sprintf(message,"\n\nPROBLEM CLOSING FILE!  ERR: %i\n\n",status);
-   fprintf(logFile,message); std::cout<<message; fflush(logFile);
+   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
    success=false;return;
 };
@@ -399,7 +399,7 @@ bool DataIOFITS::setCurrentIF(int i){
 
   if (i>=Nfreqs){
     sprintf(message,"\nERROR! IF %i CANNOT BE FOUND!\n",i+1); 
-    fprintf(logFile,message); std::cout<<message; fflush(logFile);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
     success=false; return success;
   };
@@ -442,7 +442,7 @@ void DataIOFITS::openOutFile(std::string outputfile, bool Overwrite) {
    fits_open_file(&ofile, outputfile.c_str(), READWRITE, &status);
    if (status){
      sprintf(message,"\n\nPROBLEM OPENING NEW FILE!  ERR: %i\n\n",status);
-     fprintf(logFile,message); std::cout<<message; fflush(logFile);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
      success=false; return;
    };
@@ -453,7 +453,7 @@ void DataIOFITS::openOutFile(std::string outputfile, bool Overwrite) {
    fits_get_colnum(ofile, CASEINSEN, flux, &Flux, &status);
    if (status){
      sprintf(message,"\n\nPROBLEM ACCESSING VISIBILITY DATA IN NEW FILE!  ERR: %i\n\n",status);
-     fprintf(logFile,message); std::cout<<message; fflush(logFile);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
      success=false; return;
    };
@@ -523,7 +523,7 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 
   if (status){
     sprintf(message,"\n\nPROBLEM ACCESSING VISIBILITY DATA!  ERR: %i\n\n",status);
-    fprintf(logFile,message); std::cout<<message; fflush(logFile);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
     success=false; return false;
   };
@@ -553,7 +553,7 @@ bool DataIOFITS::setCurrentMixedVis() {
 
    if (status){
      sprintf(message,"\n\nPROBLEM WRITING VISIBILITY DATA!  ERR: %i\n\n",status);
-     fprintf(logFile,message); std::cout<<message; fflush(logFile);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
      success=false;
    };

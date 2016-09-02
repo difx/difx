@@ -95,7 +95,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
             linAntIdx=[1], Range=Range, ALMAant=aantpath,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
-            gains=[gains], dterms=[dterm], amp_norm=True,
+            gains=[gains], interpolation=[], dterms=[dterm], amp_norm=True,
             XYadd=XYadd, swapXY=[False], IDI_conjugated=True,
             plotIF=plotIF, doIF=doIF, plotRange=timeRange,
             plotAnt=plotAnt, doTest=doTest)

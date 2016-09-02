@@ -47,8 +47,8 @@
 #
 #
 
-__version__ = "1.2-r9"
-date = 'AUG 2016'     
+__version__ = "1.2-r10"
+date = 'SEP 2016'     
 
 
 ################
@@ -98,51 +98,40 @@ tb = gentools(['tb'])[0]
 
 if __name__=='__main__':
 
-
-
-  IDI                 = './bm452c_135.save' #  Input FITS-IDI file with VLBI visibilities. It can  also be a
-                                        #   direcotry containing SWIN files from DiFX.
-  OUTPUTIDI           = './bm452c_135.difx' #  Output FITS-IDI file (or SWIN directory). If equal  to IDI, the
-                                        #   file(s) will be overwritten
-  DiFXinput           = './bm452c_135.input' #  If SWIN files are being converted, this must  be the *.input
-                                        #   file used by DiFX.
-  doIF                =       [36,37,38]        #  List of IFs to convert. Default means all.
-  linAntIdx           =        [1]        #  List of indices of the linear-polarization  antennas in the IDI
-                                        #   file
-  Range               =         []        #  Time range to convert (integer list; AIPS format).  Default means
-                                        #   all data
-  ALMAant             = 'uid___A002_Xb542b2.concatenated.ms.ANTENNA' #  If ALMA has been used, this is the
-                                        #   antenna table  from the MS with the intra-ALMA visibilities.
-  spw                 =         -1        #  Spectral window in ALMAvis that contains the VLBI band.
-  calAPP              = 'uid___A002_Xb542b2.concatenated.ms.calappphase' #  If ALMA has been used, this is the combined
-                                        #   ASDM_CALAPPPHASE table from the ASDM. The list of measurement
-                                        #   sets can also be given (so the table is concatenated from all of
+  IDI                 = './bm452c_135.save' #  Input FITS-IDI file with VLBI visibilities. It can  also be a direcotry containing SWIN files from
+                                        #   DiFX.
+  OUTPUTIDI           = './bm452c_135.save' #  Output FITS-IDI file (or SWIN directory). If equal  to IDI, the file(s) will be overwritten
+  DiFXinput           = './bm452c_135.input' #  If SWIN files are being converted, this must  be the *.input file used by DiFX.
+  doIF                = [34,35,36,37] #  List of IFs to convert. Default means all.
+  linAntIdx           =        [1]        #  List of indices of the linear-polarization  antennas in the IDI file
+  Range               =         []        #  Time range to convert (integer list; AIPS format).  Default means all data
+  ALMAant             = 'uid___A002_Xb542b2.concatenated.ms.ANTENNA' #  If ALMA has been used, this is the antenna table  from the MS with the intra-
+                                        #   ALMA visibilities.
+  spw                 =         -1        #  Spectral window in ALMAvis that contains the VLBI band. If negative, the program will derive it
+                                        #   automatically.
+  calAPP              = 'uid___A002_Xb542b2.concatenated.ms.calappphase' #  If ALMA has been used, this is the combined ASDM_CALAPPPHASE table from
+                                        #   the ASDM. The list of measurement sets can also be given (so the table is concatenated from all of
                                         #   them).
-  calAPPTime          = [0.0, 8.0]        #  Time shift and time tolerance (in sec) for the  CALAPPPHASE table
-                                        #   obtained from the ASDM.
-  gains               = [['uid___A002_Xb542b2.concatenated.ms.bandpass-zphs', 'uid___A002_Xb542b2.concatenated.ms.flux_inf', 'uid___A002_Xb542b2.concatenated.ms.phase_int.APP', 'uid___A002_Xb542b2.concatenated.ms.XY0.APP']] #  G
-                                        #   ain tables to pre-calibrate the linear-pol VLBI  stations (one
-                                        #   list of gains per linear-pol station).
-  dterms              =   ['uid___A002_Xb542b2.concatenated.ms.Df0']        #  D-term tables to pre-calibrate the linear-pol VLBI  stations (one
-                                        #   table per linear-pol station).
-  amp_norm            =       True        #  If True, normalize the amplitude correction to the X-Y average,
-                                        #   and save the scaling factor (vs time) in an external (ASCII)
-                                        #   file. If False, apply the amplitude correction as is.
-  XYadd               =      [0.0]        #  Add manually a phase between X and Y before  conversion (in
-                                        #   deg.). One value per linear-pol station.
-  swapXY              =    [False]        #  Swap X-Y before conversion. One value per linear-pol  VLBI
-                                        #   station.
+  calAPPTime          = [0.0, 8.0]        #  Time shift and time tolerance (in sec) for the  CALAPPPHASE table obtained from the ASDM.
+  gains               = [['uid___A002_Xb542b2.concatenated.ms.bandpass-zphs', 'uid___A002_Xb542b2.concatenated.ms.flux_inf', 'uid___A002_Xb542b2.concatenated.ms.phase_int.APP', 'uid___A002_Xb542b2.concatenated.ms.XY0.APP.FLAG']] #  G
+                                          #   ain tables to pre-calibrate the linear-pol VLBI  stations (one list of gains per linear-pol station).
+  interpolation       = [['linear', 'self', 'linear', 'linear']] #  Kind of interpolation for the gains It can be 'linear' or 'self'. Default is
+                                        #   'linear'.
+  dterms              = ['uid___A002_Xb542b2.concatenated.ms.Df0'] #  D-term tables to pre-calibrate the linear-pol VLBI  stations (one table per
+                                        #   linear-pol station).
+  amp_norm            =       True        #  If True, normalize the amplitude correction to the X-Y average, and save the scaling factor (vs time) in
+                                        #   an external (ASCII) file. If False, apply the amplitude correction as is.
+  XYadd               =      [0.0]        #  Add manually a phase between X and Y before  conversion (in deg.). One value per linear-pol station.
+  swapXY              =    [False]        #  Swap X-Y before conversion. One value per linear-pol  VLBI station.
   swapRL              =      False        #  Swap R-L of the OTHER antenna(s) when plotting the fringes.
-  IDI_conjugated      =       True        #  Assume a swap in the baseline defintion (i.e., conjugation) of
-                                        #   the FITS-IDI file. This has NO effect on SWIN files and shall be
-                                        #   set to True.
-  plotIF              =         37        #  IF index to plot. Default means to NOT plot.
-  plotRange           = [0, 0, 0, 0, 1, 0, 0, 0] #  Time range to plot (integer list; AIPS format).  Default
-                                        #   means to NOT plot
-  plotAnt             =          2        #  Index of the other antenna in the baseline to plot. Default means
-                                        #   to NOT plot.
-  doTest              =       True        #  If true, only compute (and eventually plot), the data, but leave
-                                        #   OUTPUTIDI untouched.
+  IDI_conjugated      =       True        #  Assume a swap in the baseline defintion (i.e., conjugation) of the FITS-IDI file. This has NO effect on
+                                          #   SWIN files and shall be set to True.
+  plotIF              =         []        #  IF index(es) to plot. Default means to NOT plot.  An empty list, [], means to plot ALL IFs  being
+                                          #   converted (but do not forget to  set plotRange and plotAnt!).
+  plotRange           = [0, 0, 0, 0, 1, 0, 0, 0] #  Time range to plot (integer list; AIPS format).  Default means to NOT plot
+  plotAnt             =          4        #  Index of the other antenna in the baseline to plot. Default means to NOT plot.
+  doTest              =       True        #  If true, only compute (and eventually plot), the data, but leave OUTPUTIDI untouched.
+  npix                =         50        #  Number of pixels for the fringe plots.
 
 #
 #
@@ -158,7 +147,7 @@ if __name__=='__main__':
 # COMMENT OUT THIS LINE WHEN DEBUGGING
 # YOU SHALL THEN RUN THIS FILE WITH "execfile(...)"
 
-def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, gains, dterms, amp_norm, XYadd, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,doTest):
+def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, gains, interpolation, dterms, amp_norm, XYadd, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,doTest,npix):
 
 ############################################
 
@@ -308,18 +297,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
   if type(OUTPUTIDI) is not str:
     printError("ERROR! OUTPUTIDI should be a string!")
 
-  if type(plotIF) is not int:
-    printError("ERROR! plotIF should be an integer!")
-
-  try:
-    plotIF = int(plotIF)
-  except:
-    printError("ERROR! plotAnt should be an integer!")
+  if type(plotIF) is int:
+    plotIF = [plotIF]
+  for pli in plotIF:
+    if type(pli) is not int:
+      printError("ERROR! plotIF should be an integer or a list of integers!")
 
   try:
     plotAnt = int(plotAnt)
   except:
     printError("ERROR! plotAnt should be an integer!")
+
 
   try:
     spw = int(spw)
@@ -331,6 +319,28 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
   if len(gains)!= nALMA or len(dterms)!= nALMA:
     printError("Invalid format for gains and/or dterms!\n Should be lists as large as the number of linear-polarization VLBI stations!")
   
+
+# Sanity check for interpolation:
+  if type(interpolation) is not list:
+    printError("Interpolation must be a list of lists!")
+
+  if len(interpolation)==0:
+    interpolation = [[] for i in range(nALMA)]
+
+  if len(interpolation)!= nALMA:
+    printError("Wrong length for interpolation!")
+
+  for i,intype in enumerate(interpolation):
+    if type(intype) is not list:
+      printError("Interpolation must be a list of lists!")
+    if len(intype)==0:
+      interpolation[i] = ['linear' for g in gains[i]]
+    for ints in intype:
+      if ints not in ['linear','self']:
+        printError("Only \'linear\' and \'self\' interpolations are supported!")
+
+
+# Sanity check for gains and dterms:
   for g in gains:
     if type(g) is not list:
       printError("Invalid format for gains!\n Each element should be a list with the names of the gain tables for the ith linear-pol. VLBI station") 
@@ -508,8 +518,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       FrInfo['SIGN'][nu] = float(sb)
       freqs = (nu0 + sb*np.linspace(0.,1.,nchan/chav,endpoint=False)*bw)*1.e6
       metadata.append(freqs)
-#####
 
+    if len(doIF)==0:
+     doIF = list(Nr)
+
+#####
+ 
 
   else:
 # READ FREQUENCY INFO TO HELP SELECTING THE SPW AUTOMATICALLY:
@@ -520,7 +534,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     nch = fitsf['FREQUENCY'].header['NO_CHAN']*fitsf['FREQUENCY'].header['NO_BAND']
     Nr = 1
     FrInfo = {'FREQ (MHZ)':[nu0/1.e6], 'BW (MHZ)':[bw*nch/1.e6], 'SIGN':[1.0]}
+
+    if len(doIF)==0:
+     doIF = range(fitsf['FREQUENCY'].header['NO_BAND'])
+
     fitsf.close()
+
 
 
 #######################
@@ -588,7 +607,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 # READ CALIBRATION TABLES:
   gaindata = []
   dtdata = []
+  isLinear = []
   for i in range(nALMA):
+   isLinear.append(np.zeros(len(gains[i]),dtype=np.bool))
    gaindata.append([])
    kind.append([])
    dtdata.append([])
@@ -642,6 +663,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
    for j,gain in enumerate(gains[i]):
      gaindata[i].append([])
+     isLinear[i][j] = interpolation[i][j]=='linear'
      if gain=="NONE":
       nchan = 1
       ntime = 1
@@ -717,6 +739,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
         gaindata[i][j][-1][5][:] = flags[:,antrow==ant]
 
 
+
 # COMPUTE TIME RANGES:
 
   if len(plotRange)==0:
@@ -737,6 +760,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
    except:
     printError("Bad time range format for Range!")
 
+
+  if plotFringe and len(plotIF)==0:
+    plotIF = list(map(int,doIF))
 
 # CALL POLCONVERT. THE LENGTH OF THE "metadata" LIST WILL TELL
 # POLCONVERT WHETHER THIS IS A FITS-IDI OR A SWIN DATASET:
@@ -769,13 +795,19 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 
 #  print OUTPUT
-  os.system('rm -rf POLCONVERT.FRINGE')
   if amp_norm:
     os.system('rm -rf POLCONVERT.GAINS')
 
+  if len(plotIF)>0:
+    os.system('rm -rf CONVERSION.MATRIX; mkdir CONVERSION.MATRIX')
+    os.system('rm -rf FRINGE.PEAKS; mkdir FRINGE.PEAKS')
+    os.system('rm -rf FRINGE.PLOTS; mkdir FRINGE.PLOTS')
+    os.system('rm -rf POLCONVERT.FRINGE; mkdir POLCONVERT.FRINGE')
+
+
   printMsg("Going to CONVERT!")
 
-  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes, doTest, doConj, amp_norm, XYadd[0]*np.pi/180., metadata)
+  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes, doTest, doConj, amp_norm, XYadd[0]*np.pi/180., metadata, isLinear)
 
 
 
@@ -846,11 +878,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
   if plotFringe and didit==0:
 
+   fig = pl.figure(figsize=(12,6))
+   fig2 = pl.figure()
+   fringeAmps = []
+   fringeAmpsMix = []
+   for pli in plotIF:
+
     print '\n\n'
-    printMsg("Plotting selected fringe")
+    printMsg("Plotting selected fringe for IF #%i"%pli)
 
 
-    frfile = open("POLCONVERT.FRINGE","rb")
+    frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli,"rb")
     alldats = frfile.read(4)
     nchPlot = stk.unpack("i",alldats[:4])[0]
     dtype = np.dtype([("JDT",np.float64),
@@ -875,7 +913,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
     if nchPlot > 0 and len(fringe)>0:
 
-      fig = pl.figure(figsize=(12,6))
 
 
       rchan = int(len(fringe[:]["A00"])/float(nchPlot))
@@ -893,13 +930,13 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 
 # Zoom for the image plots:
-      ToZoom = min(rchan,nchPlot)
+      ToZoom = min(rchan,nchPlot,npix)
 
-      Ch0 = nchPlot/2 - ToZoom/2
-      Ch1 = nchPlot/2 + ToZoom/2
+      t0 = nchPlot/2 - ToZoom/2
+      t1 = nchPlot/2 + ToZoom/2
 
-      t0 = len(fringe)/nchPlot/2 - ToZoom/2
-      t1 = len(fringe)/nchPlot/2 + ToZoom/2
+      Ch0 = len(fringe)/nchPlot/2 - ToZoom/2
+      Ch1 = len(fringe)/nchPlot/2 + ToZoom/2
 
 # Fringes in delay-rate space:
       FRRu = np.fft.fftshift(np.fft.fft2(uncal[0]))
@@ -926,6 +963,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 # Peaks to scale plots:
       RMAXu = [np.unravel_index(np.argmax(ar),np.shape(ar)) for ar in [RRu,RLu,LRu,LLu]]
       MAXu = max([RRu[RMAXu[0]],RLu[RMAXu[1]],LRu[RMAXu[2]],LLu[RMAXu[3]]])
+      MAXmix = [np.max(RRu),np.max(RLu),np.max(LRu),np.max(LLu)]
       MAXl = [np.max(RR),np.max(RL),np.max(LR),np.max(LL)]
       MAX = max(MAXl)
 
@@ -945,138 +983,139 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 
       sub0 = fig.add_subplot(241)
-      sub0.imshow(np.abs(RRu),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
+      sub0.imshow(np.abs(RRu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
       pl.title('XR mixed')
       pl.setp(sub0.get_xticklabels(),visible=False)
       pl.setp(sub0.get_yticklabels(),visible=False)
 
       sub = fig.add_subplot(242,sharex=sub0,sharey=sub0)
-      sub.imshow(np.abs(RLu),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
+      sub.imshow(np.abs(RLu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
       pl.title('XL mixed')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
       sub = fig.add_subplot(243,sharex=sub0,sharey=sub0)
-      sub.imshow(abRR,vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
+      sub.imshow(abRR[Ch0:Ch1,t0:t1],vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
       pl.title('RR cal')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
       sub = fig.add_subplot(244,sharex=sub0,sharey=sub0)
-      sub.imshow(abRL,vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
+      sub.imshow(abRL[Ch0:Ch1,t0:t1],vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
       pl.title('RL cal')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
 
       sub = fig.add_subplot(245,sharex=sub0,sharey=sub0)
-      sub.imshow(np.abs(LRu),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
+      sub.imshow(np.abs(LRu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
       pl.title('YR mixed')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
       sub = fig.add_subplot(246,sharex=sub0,sharey=sub0)
-      sub.imshow(np.abs(LLu),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
+      sub.imshow(np.abs(LLu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
       pl.title('YL mixed')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
       sub = fig.add_subplot(247,sharex=sub0,sharey=sub0)
-      sub.imshow(abLR,vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
+      sub.imshow(abLR[Ch0:Ch1,t0:t1],vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
       pl.title('LR cal')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
       sub = fig.add_subplot(248,sharex=sub0,sharey=sub0)
-      sub.imshow(abLL,vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
+      sub.imshow(abLL[Ch0:Ch1,t0:t1],vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
       pl.title('LL cal')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      sub0.set_xlim((Ch0,Ch1))
-      sub0.set_ylim((t0,t1))
+   #   sub0.set_xlim((Ch0,Ch1))
+   #   sub0.set_ylim((t0,t1))
 
-      pl.suptitle('DELAY-RATE FRINGE FOR IF %i (BASELINE TO ANT #%i) FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i'%tuple([plotIF,plotAnt]+plotRange))
-      pl.savefig('Fringe.plot%i.png'%plotAnt)
+      fig.suptitle('DELAY-RATE FRINGE FOR IF %i (BASELINE TO ANT #%i) FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i'%tuple([pli,plotAnt]+plotRange))
+      fig.savefig('FRINGE.PLOTS/Fringe.plot.ANT%i.IF%i.png'%(plotAnt,pli))
 
 
 
 # Plot calibration matrix:
 
-      fig = pl.figure()
 
 
       ratt = float(np.shape(Kmat[0])[1])/float(np.shape(Kmat[0])[0])
 
+      fig2.clf()
 
-      fig.subplots_adjust(right=0.8)
-      cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+      fig2.subplots_adjust(right=0.8)
+      cbar_ax = fig2.add_axes([0.85, 0.15, 0.05, 0.7])
 
-      sub = fig.add_subplot(221)
-      im = sub.imshow(np.abs(Kmat[0]),vmin=MINK,vmax=MAXK,interpolation='nearest',aspect=ratt)
+      sub = fig2.add_subplot(221)
+      im = sub.imshow(np.abs(Kmat[0]),vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
       pl.title(r'$K_{XR}$')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      sub = fig.add_subplot(222)
-      sub.imshow(np.abs(Kmat[1]),vmin=MINK,vmax=MAXK,interpolation='nearest',aspect=ratt)
+      sub = fig2.add_subplot(222)
+      sub.imshow(np.abs(Kmat[1]),vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
       pl.title(r'$K_{XL}$')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      sub = fig.add_subplot(223)
-      sub.imshow(np.abs(Kmat[2]),vmin=MINK,vmax=MAXK,interpolation='nearest',aspect=ratt)
+      sub = fig2.add_subplot(223)
+      sub.imshow(np.abs(Kmat[2]),vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
       pl.title(r'$K_{YR}$')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      sub = fig.add_subplot(224)
-      sub.imshow(np.abs(Kmat[3]),vmin=MINK,vmax=MAXK,interpolation='nearest',aspect=ratt)
+      sub = fig2.add_subplot(224)
+      sub.imshow(np.abs(Kmat[3]),vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
       pl.title(r'$K_{YL}$')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      cbar = fig.colorbar(im, cax=cbar_ax)
+      cbar = fig2.colorbar(im, cax=cbar_ax)
       cbar.set_label("Amplitude (Norm)")
-      pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([plotIF]+plotRange))
+      pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
 
-      pl.savefig('Kmatrix_AMP.png')
+      pl.savefig('CONVERSION.MATRIX/Kmatrix_AMP_IF%i.png'%pli)
 
-      fig.clf()
+      fig2.clf()
 
-      fig.subplots_adjust(right=0.8)
-      cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+      fig2.subplots_adjust(right=0.8)
+      cbar_ax = fig2.add_axes([0.85, 0.15, 0.05, 0.7])
 
-      sub = fig.add_subplot(221)
+      sub = fig2.add_subplot(221)
       im = sub.imshow(180./np.pi*np.angle(Kmat[0]),vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
       pl.title(r'$K_{XR}$')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      sub = fig.add_subplot(222)
+      sub = fig2.add_subplot(222)
       sub.imshow(180./np.pi*np.angle(Kmat[1]),vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
       pl.title(r'$K_{XL}$')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      sub = fig.add_subplot(223)
+      sub = fig2.add_subplot(223)
       sub.imshow(180./np.pi*np.angle(Kmat[2]),vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
       pl.title(r'$K_{YR}$')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      sub = fig.add_subplot(224)
+      sub = fig2.add_subplot(224)
       sub.imshow(180./np.pi*np.angle(Kmat[3]),vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
       pl.title(r'$K_{YL}$')
       pl.setp(sub.get_xticklabels(),visible=False)
       pl.setp(sub.get_yticklabels(),visible=False)
 
-      cbar = fig.colorbar(im, cax=cbar_ax)
+      cbar = fig2.colorbar(im, cax=cbar_ax)
       cbar.set_label("Phase (deg.)")
-      pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([plotIF]+plotRange))
+      pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
 
-      pl.savefig('Kmatrix_PHAS.png')
+      pl.savefig('CONVERSION.MATRIX/Kmatrix_PHAS_IF%i.png'%pli)
  
+
 
 # Estimate the Dynamic range:
       DLL = np.max(abLL)/np.std(np.sort(abLL.flatten())[:-nchPlot])
@@ -1084,11 +1123,20 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       DRL = np.max(abRL)/np.std(np.sort(abRL.flatten())[:-nchPlot])
       DLR = np.max(abLR)/np.std(np.sort(abLR.flatten())[:-nchPlot])
 
-      toprint = [MAXl[0]/MAX,DRR,MAXl[3]/MAX,DLL,MAXl[1]/MAX,DRL,MAXl[2]/MAX,DLR]
+      DLLu = np.max(LLu)/np.std(np.sort(LLu.flatten())[:-nchPlot])
+      DRRu = np.max(RRu)/np.std(np.sort(RRu.flatten())[:-nchPlot])
+      DRLu = np.max(RLu)/np.std(np.sort(RLu.flatten())[:-nchPlot])
+      DLRu = np.max(LRu)/np.std(np.sort(LRu.flatten())[:-nchPlot])
 
-      pmsg = '\n\nNORM. FRINGE PEAKS: \n  RR: %.2e ; SNR: %.1f \n  LL: %.2e ; SNR: %.1f \n  RL: %.2e ; SNR: %.1f \n  LR: %.2e ; SNR: %.1f\n\n'%tuple(toprint)
 
-      pfile = open('FRINGE.PEAKS.dat','w' )
+      toprint = [pli,MAXl[0]/MAX,DRR,MAXl[3]/MAX,DLL,MAXl[1]/MAX,DRL,MAXl[2]/MAX,DLR,MAX/len(fringe)]
+      fringeAmps.append([pli,MAXl[0],MAXl[0]/DRR,MAXl[3],MAXl[3]/DLL,MAXl[1],MAXl[1]/DRL,MAXl[2],MAXl[2]/DLR])
+      fringeAmpsMix.append([pli,MAXmix[0],MAXmix[0]/DRRu,MAXmix[3],MAXmix[3]/DLLu,MAXmix[1],MAXmix[1]/DRLu,MAXmix[2],MAXmix[2]/DLRu])
+
+
+      pmsg = '\n\n\nFOR IF #%i. NORM. FRINGE PEAKS: \n  RR: %.2e ; SNR: %.1f \n  LL: %.2e ; SNR: %.1f \n  RL: %.2e ; SNR: %.1f \n  LR: %.2e ; SNR: %.1f\n\n AMPLITUDE: %.2e\n\n\n'%tuple(toprint)
+
+      pfile = open('FRINGE.PEAKS/FRINGE.PEAKS%i.dat'%pli,'w' )
       printMsg(pmsg)
       pfile.write(pmsg)
 
@@ -1097,7 +1145,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       optph = (180./np.pi*((NUM-DEN)-np.pi))%360.
       if optph > 180.:
         optph -= 360.
-      pmsg = '\nFor RL: optimum X/Y phase is %.1f deg.'%(optph)
+      pmsg = '\n\nFor RL: optimum X/Y phase is %.1f deg.'%(optph)
       NUM =  np.angle(FRLu[RMAXu[1]]*np.average(Kmat[0]))
       DEN =  np.angle(FLLu[RMAXu[3]]*np.average(Kmat[1]))
       optph = (180./np.pi*((NUM-DEN)-np.pi))%360.
@@ -1111,10 +1159,57 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       pfile.close()
 
 
+
     else:
 
       printMsg('NO DATA TO PLOT!') 
 
+# PLOT ALL IFs:
+   try:
+  # if True:
+    fig.clf()
+    pl.figure(fig.number)
+    fig.subplots_adjust(left=0.1,right=0.95,bottom=0.15,top=0.95)
+    sub = fig.add_subplot(121)
+    # CIRCULAR-CIRCULAR FRINGE AMPLITUDES (MUST NORMALIZE FROM FFT):
+    CONVAMP = np.array(fringeAmps)
+    CONVAMP[:,1:] *= 1.e3/len(fringe)
+    # MIXED FRINGE APLITUDES (MUST NORMALIZE FROM FFT):
+    MIXAMP = np.array(fringeAmpsMix)
+    MIXAMP[:,1:] *= 1.e3/len(fringe)
+
+
+    sub.plot(MIXAMP[:,0],MIXAMP[:,1],'sr',label='XR',markersize=15)
+    sub.plot(MIXAMP[:,0],MIXAMP[:,3],'dg',label='YL',markersize=15)
+    sub.plot(MIXAMP[:,0],MIXAMP[:,5],'+r',label='XL',markersize=15)
+    sub.plot(MIXAMP[:,0],MIXAMP[:,7],'+g',label='YR',markersize=15)
+    pl.legend(numpoints=1)
+
+    sub.errorbar(MIXAMP[:,0],MIXAMP[:,1],MIXAMP[:,2],linestyle='None',fmt='k')
+    sub.errorbar(MIXAMP[:,0],MIXAMP[:,3],MIXAMP[:,4],linestyle='None',fmt='k')
+    sub.errorbar(MIXAMP[:,0],MIXAMP[:,5],MIXAMP[:,6],linestyle='None',fmt='k')
+    sub.errorbar(MIXAMP[:,0],MIXAMP[:,7],MIXAMP[:,8],linestyle='None',fmt='k')
+
+    pl.xlabel('IF NUMBER')
+    pl.ylabel(r'AMP (CORR. $\times 10^3$)')
+    sub2 = fig.add_subplot(122,sharex=sub,sharey=sub)
+    sub2.plot(CONVAMP[:,0],CONVAMP[:,1],'sr',label='RR',markersize=15)
+    sub2.plot(CONVAMP[:,0],CONVAMP[:,3],'dg',label='LL',markersize=15)
+    sub2.plot(CONVAMP[:,0],CONVAMP[:,5],'+r',label='RL',markersize=15)
+    sub2.plot(CONVAMP[:,0],CONVAMP[:,7],'+g',label='LR',markersize=15)
+    pl.legend(numpoints=1)
+
+    sub2.errorbar(CONVAMP[:,0],CONVAMP[:,1],CONVAMP[:,2],linestyle='None',fmt='k')
+    sub2.errorbar(CONVAMP[:,0],CONVAMP[:,3],CONVAMP[:,4],linestyle='None',fmt='k')
+    sub2.errorbar(CONVAMP[:,0],CONVAMP[:,5],CONVAMP[:,6],linestyle='None',fmt='k')
+    sub2.errorbar(CONVAMP[:,0],CONVAMP[:,7],CONVAMP[:,8],linestyle='None',fmt='k')
+    pl.setp(sub2.get_yticklabels(),visible=False)
+    pl.xlabel('IF NUMBER')
+    dChan = max(plotIF)-min(plotIF) + 1
+    pl.xlim((min(plotIF)-dChan*0.2,max(plotIF)+0.4*dChan))
+    fig.savefig('FRINGE.PLOTS/ALL_IFs.png')
+   except:
+    print 'There was an error in the IF plotting!'
 
   printMsg('Please, check the PolConvert.log file for special messages.')
 

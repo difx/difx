@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 CalTable::~CalTable() {};
 
 
-CalTable::CalTable(int kind, double **R1,double **P1,double **R2,double **P2, double *freqs, double **times, int Na, long *Nt, long Nc, bool **flag, FILE *logF)
+CalTable::CalTable(int kind, double **R1,double **P1,double **R2,double **P2, double *freqs, double **times, int Na, long *Nt, long Nc, bool **flag, bool islinear, FILE *logF)
 {
 
 
@@ -44,6 +44,8 @@ CalTable::CalTable(int kind, double **R1,double **P1,double **R2,double **P2, do
       Nants = Na;
 
       logFile = logF ;
+
+      isLinear = islinear;      
 
       firstTime = new bool[Nants];
 
@@ -200,9 +202,9 @@ bool firstflag = false;
 
     if (allflagged){
       sprintf(message,"\nWARNING: ALMA ANTENNA #%i HAS ALL CHANNELS FLAGGED AT TIME #%li\n",ant,tidx);
-      fprintf(logFile,message);
+      fprintf(logFile,"%s",message);
       sprintf(message,"SETTING ITS GAIN TO ONE. CHECK RESULTS CAREFULLY!\n\n");
-      fprintf(logFile,message);
+      fprintf(logFile,"%s",message);
       fflush(logFile);
       for (chan=0; chan<Nchan; chan ++) {
          GainAmp[0][ant][chan][tidx] = 1.0;
@@ -456,7 +458,11 @@ bool CalTable::setInterpolationTime(double itime) {
         ti0 = i;
         auxD = Time[iant][i];
         auxD2 = Time[iant][i+1];
-        Kt = (1.0 - (itime - auxD)/(auxD2-auxD));
+        if (isLinear){
+          Kt = (1.0 - (itime - auxD)/(auxD2-auxD));
+        } else {
+          Kt = 1.0;
+        };
         break;    
       };
     };

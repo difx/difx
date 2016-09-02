@@ -163,7 +163,7 @@ bool DataIOSWIN::setCurrentIF(int i){
 
   if (i>=Nfreqs){success=false; 
       sprintf(message,"\nERROR! IF %i CANNOT BE FOUND!\n",i+1); 
-      fprintf(logFile,message); std::cout<<message; fflush(logFile);
+      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
       success=false; return success;
   };
@@ -209,10 +209,10 @@ void DataIOSWIN::readHeader(bool doTest) {
 
 //Assume binary index (i.e., DiFX version >= 2.0):
   sprintf(message,"\nThere are %i IFs.",Nfreqs);
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
   sprintf(message,"\n\n Searching for visibilities with mixed (or linear) polarization.\n\n");
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
   long bperp, cp;
 
@@ -224,7 +224,7 @@ void DataIOSWIN::readHeader(bool doTest) {
   bperp = filesizes[auxI]/100; if(bperp==0){bperp=1;};
 
   sprintf(message,"\n\nReading file %i of %i (size %li MB)\n",auxI+1,nfiles,filesizes[auxI]/(1024*1024));
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
   cp = 0;
 
@@ -333,7 +333,7 @@ void DataIOSWIN::readHeader(bool doTest) {
 day0 += 2400000.5 ;
 
 if (nrec==0) {sprintf(message,"\n NO VALID DATA FOUND!"); 
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 success = false;};
 
@@ -404,7 +404,7 @@ else if (idx <4) {
 
  sprintf(message,"WARNING: Missing: Baseline: %08x - Time: %f sec: ",
     basel,time - Records[0].Time); 
- fprintf(logFile,message); fflush(logFile); // std::cout<<message;
+ fprintf(logFile,"%s",message); fflush(logFile); // std::cout<<message;
 
 // sprintf(message, "Products found: ");
 // fprintf(logFile,message); fflush(logFile);// std::cout<<message;
@@ -412,11 +412,11 @@ else if (idx <4) {
 
  for (rec=0; rec<idx; rec++) {
    sprintf(message,"%c%c ",Records[indices[rec]].Pol[0],Records[indices[rec]].Pol[1]);
-   fprintf(logFile,message); fflush(logFile);// std::cout<<message;
+   fprintf(logFile,"%s",message); fflush(logFile);// std::cout<<message;
    fflush(logFile);
 //  Records[indices[rec]].notUsed = false;
  };
- fprintf(logFile,"\n");
+ fprintf(logFile,"%s","\n");
  fflush(logFile);
 
  if(idx==2){indices[2] = -1; indices[3] = -1; break;};

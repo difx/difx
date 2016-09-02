@@ -1,5 +1,6 @@
 # ALMA Phasing Project (APP) QA2 Data Reduction Script
-# Version 1.0 - I. Marti-Vidal (August 25, 2016)
+# Version 1.0 - I. Marti-Vidal (EU-ARC, Nordic) 
+# August 25, 2016
 
 
 
@@ -15,15 +16,16 @@ CASAVER = '4.6.0'
 
 #########################
 # Give list of ASDMs:
-asdmdir='/mnt/bure_1/arcshared/APP_B3/CALIBRATION' # Root directory of ASDMs
-ASDMs = [ 'uid___A002_Xb542b2_X1a4', 
-         'uid___A002_Xb542b2_X395',  
-         'uid___A002_Xb542b2_X459',  
-         'uid___A002_Xb542b2_X5f2' ]  
+asdmdir='/mnt/bure_1/arcshared/APP_B6/CALIBRATION' # Root directory of ASDMs
+ASDMs = [ 'uid___A002_Xb187bd_X2d5', 
+         'uid___A002_Xb187bd_X4fe',  
+         'uid___A002_Xb187bd_X733',  
+         'uid___A002_Xb187bd_X863' ]  
+ 
 #########################
 
 # Unique identification label for the products:
-UID = 'uid___A002_Xb542b2'
+UID = 'uid___A002_Xb187bd'
 
 
 # The four science spws for each ASDM. An empty list will make
@@ -46,10 +48,10 @@ REFANT = ""
 
 #############################
 # Absolute flux calibrator:
-FluxCal = "J0423-0120"
+FluxCal = "Titan"
 
 # Is the flux calibrator a Solar System Object?
-IsPlanet = False  
+IsPlanet = True  
 
 
 # If a Solar-System Object is used:
@@ -59,18 +61,27 @@ JyStandard = 'Butler-JPL-Horizons 2012'
 # If a quasar is used, instead, 
 # set the flux density and spectral index, 
 # as taken from the getALMAflux() function:
-QuasarFlux = 0.914
-QuasarSpix = -0.775
+QuasarFlux = 1.0
+QuasarSpix = 1.0
 QuasarRefFreq = '100GHz'
 #############################
 
-BandPassCal = '0' # Name, or index, of the BP calibrator
-PolCal = '2' # Name, or index, of the Polarization calibrator
-GainCal = '4' # Name, or index, of the gain calibrator
-VLBICal = '3,5,7,8' # Name, or index, of all the other calibrators
-Target = '6' # Name, or index, of main target.
+
+# Calibrators and targets. If empty strings are given for 
+# any of these entries, the script will find the sources
+# automatically:
+
+BandPassCal = ''   #  '0' # Index of the BP calibrator
+PolCal = ''    # '1' # Index of the Polarization calibrator
+GainCal = ''   # '3' # Index of the gain calibrator
+VLBICal = ''   # '4,5,6' # Index of all the other calibrators
+Target = ''    # '7' # Index of main target(s).
 
 
+
+# Stop the script when plotting the D-terms and XY-phase plots,
+# to allow the user to flag bad channels manually:
+checkChanns = True
 
 #######################################
 #####################
@@ -85,10 +96,10 @@ checkJumps = True
 # Write here the list of "jumping channels" for each spw:
 
 # APP CROSS-PHASE JUMPS:
-XYJUMPS_APP = [[31,61,122,153,213], # SPW0
-               [], # SPW1 
+XYJUMPS_APP = [[], # SPW0
+               [196], # SPW1 
                [], # SPW2
-               []] # SPW3
+               [175]] # SPW3
 
 # ALMA-MODE CROSS-PHASE JUMPS:
 XYJUMPS_ALMA = [[], # SPW0
@@ -359,7 +370,10 @@ if sum([sti>4 for sti in thesteps])>0:
   # if REFANT is not set, assign it to the APP refant:
   if len(REFANT)==0:
     REFANT = Counter(almaref).most_common()[0][0]
-  print "Will use %s as Reference Antenna."%REFANT
+  message = '\n\n\n######################################\n' 
+  message += "Will use %s as Reference Antenna.\n\n"%REFANT
+  casalog.post(message)
+  print message
 
 
 
@@ -367,11 +381,25 @@ if sum([sti>4 for sti in thesteps])>0:
   tb.open('%s.concatenated.ms/STATE'%UID)
   modes = tb.getcol('OBS_MODE')
 
+
   APPMode = [i for i in range(len(modes)) 
     if 'APPPHASE_ACTIVE' in modes[i]]
 
   ALMAMode = [i for i in range(len(modes)) 
     if 'APPPHASE_ACTIVE' not in modes[i]]
+
+
+  gainmode = [i for i in range(len(modes))
+    if 'CALIBRATE_PHASE' in modes[i]]
+
+  bandpassmode = [i for i in range(len(modes))
+    if 'CALIBRATE_BANDPASS' in modes[i]]
+
+  targetmode = [i for i in range(len(modes))
+    if 'OBSERVE_TARGET' in modes[i]]
+
+  polcalmode = [i for i in range(len(modes))
+    if 'CALIBRATE_POLARIZATION' in modes[i]]
 
   tb.close()
 
@@ -379,6 +407,8 @@ if sum([sti>4 for sti in thesteps])>0:
   tb.open('%s.concatenated.ms'%UID)
   states = tb.getcol('STATE_ID')
   scans = tb.getcol('SCAN_NUMBER')
+  fields = tb.getcol('FIELD_ID')
+
   vset = set()
   for w in APPMode: 
     vset = vset.union(set(scans[np.where(states == w)]))
@@ -391,6 +421,38 @@ if sum([sti>4 for sti in thesteps])>0:
     vset = vset.union(set(scans[np.where(states == w)]))
   ALMAscans = ','.join(map(str,list(vset)))
 
+
+
+# Find calibrators automatically, if not given in header:
+
+if len(BandPassCal) == 0:
+  BandPassCal = str(fields[np.where(states==bandpassmode[0])[0][0]])
+
+if len(PolCal) == 0:
+  PolCal = str(fields[np.where(states==polcalmode[0])[0][0]])
+
+if len(GainCal) == 0:
+  GainCal = str(fields[np.where(states==gainmode[0])[0][0]])
+
+if len(Target) == 0:
+  Target = ','.join(map(str,list(set(fields[np.where(states==targetmode[0])[0]]))))
+
+if len(VLBICal) == 0:
+  Others = set(map(int,','.join([BandPassCal,PolCal,GainCal,Target]).split(',')))
+  All = set(fields)
+  VLBICal = ','.join(map(str,All.difference(Others)))
+
+message = '\n\nSELECTED SOURCES AND INTENTS:\n\n'
+message += 'BANDPASS: %s\n'%BandPassCal
+message += 'POLARIZATION: %s\n'%PolCal
+message += 'GAIN: %s\n'%GainCal
+message += 'TARGET(S): %s\n'%Target
+message += 'OTHER VLBI CALIBS.: %s\n'%VLBICal
+message += 'ABSOLUTE FLUX TAKEN FROM: %s\n\n'%FluxCal
+message += '######################################\n\n\n' 
+
+print message
+casalog.post(message)
 
 #################################################
 
@@ -975,6 +1037,8 @@ if(mystep in thesteps):
   print f.read()
   f.close()
 
+
+# ALMA XY-PHASE:
   plotcal('%s.concatenated.ms.XY0amb.ALMA'%UID,'freq','phase',
      antenna='0', poln='X', subplot=121)
 
@@ -982,13 +1046,25 @@ if(mystep in thesteps):
      antenna='0',poln='X',subplot=122,
      figfile='%s.XY0_Amb-NoAmb.ALMA.png'%UID)
 
+  if checkJumps:
+    plotcal('%s.concatenated.ms.XY0.ALMA'%UID,'chan','phase',
+      antenna='0',poln='X',subplot=221,
+      iteration='spw',figfile='%s.XY-CrossPhase.ALMA.png'%UID)
+    raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW (Ctrl+D TO ABORT)')
+
+  if checkChanns:
+    plotcal('%s.concatenated.ms.XY0.ALMA'%UID,'chan','phase',
+      antenna='',poln='X',subplot=221,
+      iteration='spw',figfile='%s.XY-CrossPhase.ALMA.png'%UID)
+    raw_input('PLEASE, CHECK FOR POSSIBLE BAD CHANNELS (Ctrl+D TO ABORT)')
+
+
   plotcal('%s.concatenated.ms.XY0.ALMA'%UID,'chan','phase',
      antenna='0',poln='X',subplot=221,
      iteration='spw',figfile='%s.XY-CrossPhase.ALMA.png'%UID)
 
-  if checkJumps:
-    raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW (Ctrl+D TO ABORT)')
 
+# APP XY-PHASE:
   plotcal('%s.concatenated.ms.XY0amb.APP'%UID,'freq','phase',
      antenna='0', poln='X', subplot=121)
 
@@ -996,13 +1072,24 @@ if(mystep in thesteps):
      antenna='0',poln='X',subplot=122,
      figfile='%s.XY0_Amb-NoAmb.APP.png'%UID)
 
+
+  if checkJumps:
+    plotcal('%s.concatenated.ms.XY0.APP'%UID,'chan','phase',
+       antenna='0',poln='X',subplot=221,
+       iteration='spw',figfile='%s.XY-CrossPhase.APP_NOFLAG.png'%UID)
+    raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW (Ctrl+D TO ABORT)')
+
+  if checkChanns:
+    plotcal('%s.concatenated.ms.XY0.APP'%UID,'chan','phase',
+      antenna='',poln='X',subplot=221,
+      iteration='spw',figfile='%s.XY-CrossPhase.APP.png'%UID)
+    raw_input('PLEASE, CHECK FOR POSSIBLE BAD CHANNELS (Ctrl+D TO ABORT)')
+
+
   plotcal('%s.concatenated.ms.XY0.APP'%UID,'chan','phase',
      antenna='0',poln='X',subplot=221,
      iteration='spw',figfile='%s.XY-CrossPhase.APP.png'%UID)
 
-
-  if checkJumps:
-    raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW (Ctrl+D TO ABORT)')
 
 
 
@@ -1113,11 +1200,19 @@ if(mystep in thesteps):
 
 
 # Save D-term plots for all antennas:
+  if checkChanns:
+    plotcal('%s.concatenated.ms.Df0'%UID,'chan','amp', spw='',
+       iteration='spw',subplot=221,figfile='%s.Df0.plot.AMP_NOFLAG.png'%UID)
+
+    raw_input('PLEASE, CHECK FOR POSSIBLE BAD CHANNELS (Ctrl+D TO ABORT)')
+
   plotcal('%s.concatenated.ms.Df0'%UID,'chan','real', spw='',
        iteration='spw',subplot=221,figfile='%s.Df0.plot.REAL.png'%UID)
 
   plotcal('%s.concatenated.ms.Df0'%UID,'chan','imag', spw='',
        iteration='spw',subplot=221,figfile='%s.Df0.plot.IMAG.png'%UID)
+
+
 
 
 # Allow applying solutions to the parallel hands too:
@@ -1301,9 +1396,50 @@ if(mystep in thesteps):
     os.system('rm -rf %s.concatenated.ms.ANTENNA'%UID)
   os .system('cp -r %s.concatenated.ms/ANTENNA %s.concatenated.ms.ANTENNA'%(UID,UID))
 
+  README =  '# YOU SHOULD RUN POLCONVERT WITH THE FOLLOWING PARAMETERS:\n'
+  README += '\ntget(polconvert)\n\n'
+  README += 'IDI = \'\' # DIRECTORY WITH SWIN FILES (OR PATH TO FITS-IDI FILE)\n'
+  README += 'OUTPUTIDI = \'\' # OUTPUT SWIN DIRECTORY (OR FITS-IDI FILE)\n'
+  README += 'DiFXinput = \'\' # PATH TO AN *.input FILE, IF SWIN FILES ARE BEING CONVERTED\n'
+  README += 'doIF = [] # LIST OF IFs TO PROCESS (EMPTY MEANS ALL)\n\n\n'
+  README += '################################################################\n'
+  README += '# SET THESE PARAMETERS FOR A DIAGNOSTIC PLOT OF THE CONVERSION #\n'
+  README += '################################################################\n\n'
+  README += 'plotIF = -1   # IF TO PLOT. SET IT TO MAKE A PLOT!\n'
+  README += 'plotRange = [] # INTEGER LIST (AIPS TIMERANGE FORMAT).\n'
+  README += '               # SET IT TO MAKE A PLOT!\n'
+  README += 'plotAnt = -1  # THE OTHER ANTENNA IN THE BASELINE TO PLOT. SET IT!\n'
+  README += 'doTest = True  # JUST PLOT (GOOD IDEA FOR THE FIRST RUN!).\n\n'
+  README += '################################################################\n\n\n'
+  README += 'linAntIdx = [1] # ASSUMES ALMA IS FIRST ANTENNA\n'
+  README += 'Range = [] # TIME RANGE TO CONVERT (INTEGER LIST; AIPS FORMAT).\n'
+  README += '           # LEAVE EMPTY TO CONVERT ALL DATA.\n\n'
+  README += 'ALMAant = \'%s.concatenated.ms.ANTENNA\'\n'%UID
+  README += 'calAPP = \'%s.concatenated.ms.calappphase\'\n\n'%UID
+  README += 'spw = -1\n'
+  README += 'calAPPTime = [0.0,8.0]\n\n'
+  README += 'gains = [[\'%s.concatenated.ms.bandpass-zphs\',\n'%UID
+  README += '          \'%s.concatenated.ms.flux_inf\',\n'%UID
+  README += '          \'%s.concatenated.ms.phase_int.APP\',\n'%UID
+  README += '          \'%s.concatenated.ms.XY0.APP\']]\n\n'%UID
+  README += 'dterms = [\'%s.concatenated.ms.Df0\']\n\n'%UID
+  README += 'amp_norm = True  # DON\'T APPLY AMPLITUDE CORRECTION.\n' 
+  README += '                 # BUILD AN ANTAB FILE INSTEAD.\n'
+  README += 'XYadd = [0.0] # CHANGE TO 180. IF R <-> L\n'
+  README += 'swapXY = False # UNLIKELY TO CHANGE\n'
+  README += 'swapRL = False # THIS IS FOR THE OTHER ANTENNA *IN THE PLOT*.\n'
+  README += '               # I.E., THIS DOESN\'T CHANGE THE DATA\n'
+  README += 'IDI_conjugated = True # JUST IF CONVERTING A FITS-IDI FILE.\n\n'
+  README += 'go polconvert\n\n'
+
+  rfile = open('README.POLCONVERT','w')
+  print >> rfile, README
+  rfile.close()
+
   import tarfile
   import glob
   deliverables = [
+    'README.POLCONVERT',
     '%s.concatenated.ms.calappphase'%UID,
     '%s.concatenated.ms.ANTENNA'%UID,
     '%s.concatenated.ms.bandpass'%UID, 

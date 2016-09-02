@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
    its gains in frequency and time. */
 class CalTable {
   public:
-     CalTable(int kind, double **R1,double **I1,double **R2,double **I2, double *freqs, double **times, int Na, long *Nt, long Nc, bool **flag, FILE *logF);
+     CalTable(int kind, double **R1,double **I1,double **R2,double **I2, double *freqs, double **times, int Na, long *Nt, long Nc, bool **flag, bool islinear, FILE *logF);
      ~CalTable();
      int getNant();
      long getNchan();
@@ -93,7 +93,7 @@ class CalTable {
      long MSChan;
      double *preKt;
      long *pret0, *pret1;
-     bool isDelay, gainChanged;
+     bool isDelay, gainChanged, isLinear;
      double deltaNu0, deltaNu;
      std::complex<float>** bufferGain[2];
 };

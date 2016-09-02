@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.2-r9\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.2-r10\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.2-r9\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.2-r10\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -73,6 +73,12 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <value>[["NONE"]]</value>
     </param>
 
+    <param type="any" name="interpolation" mustexist="false">
+      <description>Kind of interpolation for the gains\nIt can be \'linear\' or \'self\'.\nDefault is \'linear\'.</description>
+      <value>[[]]</value>
+    </param>
+
+
     <param type="any" name="dterms" mustexist="false">
       <description>D-term tables to pre-calibrate the linear-pol VLBI \nstations (one table per linear-pol station).</description>
       <value>["NONE"]</value>
@@ -104,7 +110,7 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
     </param>
 
     <param type="any" name="plotIF" mustexist="false">
-      <description>IF index to plot. Default means to NOT plot.</description>
+      <description>IF index(es) to plot. Default means to NOT plot. \nAn empty list, [], means to plot ALL IFs \nbeing converted (but do not forget to \nset plotRange and plotAnt!).</description>
       <value>-1</value>
     </param>
 
@@ -124,6 +130,10 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <value>True</value>
     </param>
 
+    <param type="int" name="npix" mustexist="false">
+      <description>Number of pixels for the fringe plots.</description>
+      <value>50</value>
+    </param>
 
 
 

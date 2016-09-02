@@ -13,6 +13,14 @@ v1.2-r9
 - Corrected bug in CalTable.
 - Automatic selection of spw (if spw is set to <0 ).
 
+v1.2-r10
+
+- Several IFs can be plotted at once.
+- Added plot of amplitude vs. IF number.
+- Added "self" interpolation (useful for amplitude solutions).
+- Plots and diagnostic files are now saved in directories.
+
+
 TODO: 
 
 - Fitting of XY-phase with a simple delay model (per subband).

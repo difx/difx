@@ -114,12 +114,12 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
     PyObject *ngain, *nsum, *gains, *ikind, *dterms, *plotRange, *IDI, *antnum, *tempPy, *ret; 
     PyObject *allphants, *nphtimes, *phanttimes, *Range, *SWAP, *doIF, *metadata, *refAnts;
-    PyObject *asdmTimes; 
-    int nALMA, plIF, plAnt, nPhase, doTest, doConj, doNorm;
+    PyObject *asdmTimes, *plIF, *isLinearObj; 
+    int nALMA, plAnt, nPhase, doTest, doConj, doNorm;
     double XYadd;
     bool isSWIN; 
 
-    if (!PyArg_ParseTuple(args, "iiiiOOOOOOOOOOOOOOOOiiidO",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doConj, &doNorm, &XYadd, &metadata)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
+    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOiiidOO",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doConj, &doNorm, &XYadd, &metadata, &isLinearObj)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
 
 
 
@@ -151,14 +151,14 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
          SWINFiles[ii] = PyString_AsString(PyList_GetItem(IDI,ii));
        }; 
        sprintf(message,"\nCONVERTING %i SWIN (DiFX) FILES\n\n",nSWINFiles);
-       fprintf(logFile,message); std::cout<<message; fflush(logFile);
+       fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
        fflush(logFile);
     } else {
       SWINFiles = new std::string[nSWINFiles];  // compiler warning
       outputfits = PyString_AsString(IDI);
       sprintf(message,"\nOUTPUT FITS-IDI FILE:  %s \n\n",outputfits.c_str());
-      fprintf(logFile,message); std::cout<<message; fflush(logFile);
+      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
       fflush(logFile);
     };
@@ -181,7 +181,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
 // Do we just test?
-    if (doTest) {sprintf(message,"\n Will only compute, but not update the output file(s)\n");fprintf(logFile,message); std::cout<<message; fflush(logFile);
+    if (doTest) {sprintf(message,"\n Will only compute, but not update the output file(s)\n");fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 };
 
 
@@ -224,6 +224,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 //////////////////////////////////////////////
 // ALLOCATE MEMORY
     int **kind = new int*[nALMA];
+    bool **isLinear = new bool*[nALMA];
     int *ngainTabs = new int[nALMA];
     int *almanums = new int[nALMA];
     int *nsumArr = new int[nALMA];
@@ -250,12 +251,13 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     bool *XYSWAP = new bool[nALMA];
 
     for (i=0;i<nALMA;i++){
+      isLinear[i] = (bool *)PyArray_DATA(PyList_GetItem(isLinearObj,i));
       XYSWAP[i] = (bool)PyInt_AsLong(PyList_GetItem(SWAP,i));
       ngainTabs[i] = (int)PyInt_AsLong(PyList_GetItem(ngain,i));
       kind[i] = new int[ngainTabs[i]];
       nsumArr[i] = (int)PyInt_AsLong(PyList_GetItem(nsum,i));
       almanums[i] = (int)PyInt_AsLong(PyList_GetItem(antnum,i));
-      if(XYSWAP[i]){sprintf(message,"\nWill swap X/Y channels for antenna #%i.\n",almanums[i]);fprintf(logFile,message); std::cout<<message; fflush(logFile);
+      if(XYSWAP[i]){sprintf(message,"\nWill swap X/Y channels for antenna #%i.\n",almanums[i]);fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 };
       ntimeArr[i] = new long*[ngainTabs[i]];
       nchanArr[i] = new long[ngainTabs[i]];
@@ -328,10 +330,9 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // CREATE CALIBRATION INSTANCES:   
    for (i=0; i<nALMA; i++){
      allgains[i] = new CalTable*[ngainTabs[i]];
-     alldterms[i] = new CalTable(2,dtermsArrR1[i],dtermsArrI1[i],dtermsArrR2[i],dtermsArrI2[i],dtfreqsArr[i],dttimesArr[i],nsumArr[i],ndttimeArr[i], nchanDt[i],dtflag[i],logFile);
+     alldterms[i] = new CalTable(2,dtermsArrR1[i],dtermsArrI1[i],dtermsArrR2[i],dtermsArrI2[i],dtfreqsArr[i],dttimesArr[i],nsumArr[i],ndttimeArr[i], nchanDt[i],dtflag[i],true,logFile);
      for (j=0; j<ngainTabs[i];j++){
-       allgains[i][j] = new CalTable(kind[i][j],gainsArrR1[i][j],gainsArrI1[i][j],gainsArrR2[i][j],gainsArrI2[i][j],freqsArr[i][j],timesArr[i][j],nsumArr[i],ntimeArr[i][j], nchanArr[i][j],gainflag[i][j],logFile);
-
+       allgains[i][j] = new CalTable(kind[i][j],gainsArrR1[i][j],gainsArrI1[i][j],gainsArrR2[i][j],gainsArrI2[i][j],freqsArr[i][j],timesArr[i][j],nsumArr[i],ntimeArr[i][j], nchanArr[i][j],gainflag[i][j],isLinear[i][j],logFile);
 //////////////////////////////////////////////
 
 
@@ -355,32 +356,39 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
      if (isSWIN) {
        sprintf(message,"\n\n Opening and preparing SWIN files.\n");
-       fprintf(logFile,message); std::cout<<message; fflush(logFile);
+       fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
        DifXData = new DataIOSWIN(nSWINFiles, SWINFiles, nALMA, almanums, doRange, SWINnIF, SWINnchan, SWINFreqs, OverWrite, doTest, jd0,logFile);
      } else {
        sprintf(message,"\n\n Opening FITS-IDI file and reading header.\n");
-       fprintf(logFile,message); std::cout<<message; fflush(logFile);
+       fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
        DifXData = new DataIOFITS(outputfits, nALMA, almanums, doRange, OverWrite, doConj,logFile);
      };
 
      if(!DifXData->succeed()){
           sprintf(message,"\nERROR WITH DATA FILE(S)!\n");
-          fprintf(logFile,message); std::cout<<message; fflush(logFile);
+          fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
           return ret;
      };
 
 
    sprintf(message,"\n\nFirst observing Julian day: %11.2f\n",DifXData->getDay0());
-   fprintf(logFile,message); std::cout<<message; fflush(logFile);
+   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 
 
 // How many IFs do we convert?
     int nIFconv = (int) PyList_Size(doIF) ;
     bool doAll = false;
+
+// How many IFs do we plot?
+    int nIFplot = (int) PyList_Size(plIF) ;
+    int IFs2Plot[nIFplot];
+    for (ii=0; ii<nIFplot; ii++) {
+      IFs2Plot[ii] = (int)PyInt_AsLong(PyList_GetItem(plIF,ii)) - 1;
+    };
 
 // If no IF list was given, convert all of them:
     if (nIFconv==0){nIFconv = DifXData->getNfreqs(); doAll=true;};
@@ -406,7 +414,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
    };
 
   sprintf(message,"\n The VLBI IFs have a maximum of %i channels\n",maxnchan);
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 
 /////////////////////////////////
@@ -486,7 +494,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   bool allflagged, auxB ;
 
   sprintf(message,"\n Will modify %li visibilities (lin-lin counted twice).\n\n",DifXData->getMixedNvis());
-  fprintf(logFile,message); std::cout<<message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 
 
@@ -503,10 +511,21 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
 
-    FILE *plotFile;
+    FILE *plotFile[nIFplot];
     FILE *gainsFile;
 
-    plotFile = fopen("POLCONVERT.FRINGE","wb");
+// Prepare plotting files:
+    int noI = -1;
+    for (ii=0; ii<nIFplot; ii++){
+      sprintf(message,"POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i",IFs2Plot[ii]+1);
+      plotFile[ii] = fopen(message,"wb");
+      if (IFs2Plot[ii]>=0 && IFs2Plot[ii]<nnu){
+         fwrite(&nchans[IFs2Plot[ii]],sizeof(int),1,plotFile[ii]);
+      } else {
+         fwrite(&noI,sizeof(int),1,plotFile[ii]);
+      };
+    };
+ 
 
     if(doNorm){ 
 //      for(ii=0; ii<nnu;ii++){
@@ -518,10 +537,10 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     };
 
 
-    int noI = -1;
-    plIF -= 1; // IF number to zero-based.
+ //   int noI = -1;
+ //   plIF -= 1; // IF number to zero-based.
 
-    if (plIF>=0 && plIF < nnu){fwrite(&nchans[plIF],sizeof(int),1,plotFile);}else{fwrite(&noI,sizeof(int),1,plotFile);};
+ //   if (plIF>=0 && plIF < nnu){fwrite(&nchans[plIF],sizeof(int),1,plotFile);}else{fwrite(&noI,sizeof(int),1,plotFile);};
 
 
 
@@ -536,14 +555,20 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
     ii = IFs2Conv[im] - 1;
 
+    bool plotIF = false;
+    int IFplot = 0;
+    for (ij=0; ij<nIFplot; ij++){
+      if (IFs2Plot[ij]==ii){plotIF=true;IFplot=ij; break;};
+    };
+
     if (ii >= nnu) {
       sprintf(message,"ERROR! DATA DO NOT HAVE IF #%i !!\n",ii);  
-      fprintf(logFile,message); std::cout<<message; fflush(logFile);
+      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
     return ret;};
 
     sprintf(message,"\nDoing subband %i of %i\n",ii+1,nnu);
-    fprintf(logFile,message); 
+    fprintf(logFile,"%s",message); 
     fflush(logFile);
     printf("\rDoing subband %i of %i   ",ii+1,nnu);
     fflush(stdout);
@@ -589,11 +614,11 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      };
      if (notinlist){
       sprintf(message,"ERROR: Found linear-pol data for antenna number %i.\n",currAnt);
-      fprintf(logFile,message); std::cout<<message; fflush(logFile);
+      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 
       sprintf(message,"This antenna is not in the list of linear-pol antennas!\n");
-      fprintf(logFile,message);  std::cout<<message; fflush(logFile);
+      fprintf(logFile,"%s",message);  std::cout<<message; fflush(logFile);
 
       DifXData->finish(); return ret;
      };
@@ -626,7 +651,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        int min = (int) ((dayFrac*24. - ((double) hour))*60.);
        int sec = (int) ((dayFrac*24. - ((double) hour) - ((double) min)/60.)*3600.);
        sprintf(message,"WARNING: NO VALID ALMA ANTENNAS ON %i-%i:%i:%i ?!?!\n WILL CONVERT ON THIS TIME *WITHOUT* CALIBRATION\n",day,hour,min,sec);
-       fprintf(logFile,message); fflush(logFile);
+       fprintf(logFile,"%s",message); fflush(logFile);
 
        lastTFailed = currT ;
      };
@@ -664,7 +689,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
          gainRatio *= gainXY[0]/gainXY[1]; 
        } else {
           sprintf(message,"ERROR with ALMA Ref. Ant. in gain table!\n");
-          fprintf(logFile,message); fflush(logFile);
+          fprintf(logFile,"%s",message); fflush(logFile);
 
           DifXData->finish(); return ret;
        };
@@ -724,8 +749,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
         for (j=0; j<nchans[ii]; j++) {
          gainXY[0] = 1.0 ; 
          gainXY[1] = 1.0 ;
-         Kfrozen[currAntIdx][0][1][ij][j] = gainXY[0]*AnDt[currAntIdx][ij][1][j];
-         Kfrozen[currAntIdx][1][0][ij][j] = gainXY[1]*AnDt[currAntIdx][ij][0][j];
+         Kfrozen[currAntIdx][0][1][ij][j] = gainXY[0]*AnDt[currAntIdx][ij][0][j];
+         Kfrozen[currAntIdx][1][0][ij][j] = gainXY[1]*AnDt[currAntIdx][ij][1][j];
          Kfrozen[currAntIdx][0][0][ij][j] = gainXY[0];
          Kfrozen[currAntIdx][1][1][ij][j] = gainXY[1];
         };
@@ -793,8 +818,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        Kinv[1][1] = 1.0; 
       } else {
        Kinv[0][0] = Ktotal[currAntIdx][1][1][j]/DetInv;
-       Kinv[0][1] = -Ktotal[currAntIdx][0][1][j]/DetInv;
-       Kinv[1][0] = -Ktotal[currAntIdx][1][0][j]/DetInv;
+       Kinv[0][1] = -Ktotal[currAntIdx][1][0][j]/DetInv;
+       Kinv[1][0] = -Ktotal[currAntIdx][0][1][j]/DetInv;
        Kinv[1][1] = Ktotal[currAntIdx][0][0][j]/DetInv;
       };
 
@@ -838,10 +863,10 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // Calibrate and convert to circular:
 
 // Shall we write in plot file?
-     auxB = (currT>=plRange[0] && currT<=plRange[1] && ii == plIF && plAnt == otherAnt);
+     auxB = (currT>=plRange[0] && currT<=plRange[1] && plotIF && plAnt == otherAnt);
 
 // Convert:
-     DifXData->applyMatrix(Ktotal[currAntIdx],XYSWAP[currAntIdx],auxB,plotFile);
+     DifXData->applyMatrix(Ktotal[currAntIdx],XYSWAP[currAntIdx],auxB,plotFile[IFplot]);
 
 // Write:
      if (!doTest){DifXData->setCurrentMixedVis();};
@@ -861,8 +886,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 ////////////////////////////////////
 
 
-
-   fclose(plotFile);
+   for (ij=0;ij<nIFplot;ij++){fclose(plotFile[ij]);};
    if(doNorm){fclose(gainsFile);};
 
 // Close data file(s):
@@ -871,7 +895,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // END OF PROGRAM.
   std::cout << "\n";
   sprintf(message,"\nDONE WITH POLCONVERT!\n");
-  fprintf(logFile,message); std::cout << message; fflush(logFile);
+  fprintf(logFile,"%s",message); std::cout << message; fflush(logFile);
 
   fclose(logFile);
 // finished with no errors:
