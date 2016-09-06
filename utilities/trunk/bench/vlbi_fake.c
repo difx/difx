@@ -47,6 +47,7 @@ typedef struct udp {
   int enabled;
   int size;
   int extra;
+  int vtp;
   u_int64_t sequence;
   double usleep;
   double lastsleep;
@@ -114,6 +115,7 @@ int main(int argc, char * const argv[]) {
   udp.usleep = 0;  
   udp.lastsleep = 0;
   udp.extra = 0;
+  udp.vtp = 1; // Added 64bit sequece number to UDP data
 
   struct option options[] = {
     {"duration", 1, 0, 'd'},
@@ -141,7 +143,8 @@ int main(int argc, char * const argv[]) {
     {"nthread", 1, 0, 'T'},
     {"mark5b", 0, 0, 'B'},
     {"mk5b", 0, 0, 'B'},
-    {"vdif", 0, 0, 'V'},
+    {"vdif", 0, 0, 'v'},
+    {"novtp", 0, 0, 'V'},
     {"complex", 0, 0, 'c'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
@@ -347,10 +350,14 @@ int main(int argc, char * const argv[]) {
       mode = MARK5B;
       break;
 
-    case 'V':
+    case 'v':
       mode = VDIF;
       break;
 
+    case 'V':
+      udp.vtp = 0;
+      break;
+      
     case 'c':
       complex = 1;
       break;
@@ -801,26 +808,31 @@ int netsend(int sock, char *buf, size_t len, udp *udp) {
     struct msghdr msg;
     struct iovec  iovect[2];
     ssize_t nsent, ntosend;
-  
-    msg.msg_name       = &udp->dest;
-    msg.msg_namelen    = sizeof(udp->dest);
-    msg.msg_iov        = &iovect[0];
-    msg.msg_iovlen     = 2;
-    msg.msg_control    = 0;
-    msg.msg_controllen = 0;
-    msg.msg_flags      = 0;
-  
-    ntosend = sizeof(long long) + udp->size;
 
-    iovect[0].iov_base = &udp->sequence;
-    iovect[0].iov_len  = sizeof(long long);
-    iovect[1].iov_len  = udp->size;
-  
+    if (udp->vtp) {
+      msg.msg_name       = &udp->dest;
+      msg.msg_namelen    = sizeof(udp->dest);
+      msg.msg_iov        = &iovect[0];
+      msg.msg_iovlen     = 2;
+      msg.msg_control    = 0;
+      msg.msg_controllen = 0;
+      msg.msg_flags      = 0;
+      ntosend = sizeof(long long) + udp->size;
+
+      iovect[0].iov_base = &udp->sequence;
+      iovect[0].iov_len  = sizeof(long long);
+      iovect[1].iov_len  = udp->size;
+    } else
+      ntosend = udp->size;
+
     ptr = buf;
     while (ptr+udp->size<=buf+len) {
-      iovect[1].iov_base = ptr;
-
-      nsent = sendmsg(sock, &msg, MSG_EOR);    
+      if (udp->vtp) {
+	iovect[1].iov_base = ptr;
+	nsent = sendmsg(sock, &msg, MSG_EOR);
+      } else {
+	nsent = send(sock, ptr, udp->size, MSG_EOR);
+      }
       if (nsent==-1) {
 	sprintf(str, "Sending %d byte UDP packet: ", (int)ntosend);
 	perror(str);
