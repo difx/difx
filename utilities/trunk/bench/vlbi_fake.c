@@ -831,7 +831,7 @@ int netsend(int sock, char *buf, size_t len, udp *udp) {
 	iovect[1].iov_base = ptr;
 	nsent = sendmsg(sock, &msg, MSG_EOR);
       } else {
-	nsent = send(sock, ptr, udp->size, MSG_EOR);
+	nsent = sendto(sock, ptr, udp->size, MSG_EOR, (struct sockaddr*)&udp->dest, sizeof(udp->dest));
       }
       if (nsent==-1) {
 	sprintf(str, "Sending %d byte UDP packet: ", (int)ntosend);
