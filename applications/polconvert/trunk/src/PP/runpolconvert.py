@@ -105,11 +105,12 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         os.rename(DiFXsave, DiFXoutput)
         raise ex
 
-    # save the plots in a subdir
+    # save the plots and other developer artifacts in a subdir
     pcprods = [ 'PolConvert.log', 'Fringe.plot%d.png'%plotAnt,
                 'Kmatrix_AMP.png', 'Kmatrix_PHAS.png',
                 'FRINGE.PEAKS.dat', 'POLCONVERT.FRINGE', 'POLCONVERT.GAINS',
-                'POLCONVERT_STATION1.ANTAB' ]
+                'POLCONVERT_STATION1.ANTAB', 'CONVERSION.MATRIX',
+                'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
     if savename != '':
         now = datetime.datetime.now()
         outdir = now.strftime(savename + '.polconvert-%Y-%m-%dT%H:%M:%S')

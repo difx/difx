@@ -345,7 +345,7 @@ def createCasaInput(o):
 
     if band6Hi:
         band = 'band6Hi'
-        XYadd=[180.0]
+        XYadd=[0.0]
 
     %s XYadd = [%f]
     print 'using %%s with XYadd %%s' %% (band, str(XYadd))
@@ -390,10 +390,13 @@ def createCasaInput(o):
 
 def executeCasa(o):
     '''
-    This function pipes input to CASA and collects output
+    This function pipes input to CASA and collects output.  The
+    various developer debugging files (if present) are swept into
+    the casa-logs directory (which is subsequently timestamped).
     '''
     misc = [ 'polconvert.last', 'POLCONVERT_STATION1.ANTAB',
-             'POLCONVERT.FRINGE', 'POLCONVERT.GAINS', 'PolConvert.log' ]
+             'POLCONVERT.FRINGE', 'POLCONVERT.GAINS', 'PolConvert.log',
+             'CONVERSION.MATRIX', 'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
     cmd1 = 'rm -f %s' % (o.output)
     cmd2 = '%s --nologger < %s > %s 2>&1' % (o.casa, o.input, o.output)
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
