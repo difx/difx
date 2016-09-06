@@ -314,7 +314,7 @@ int main(int argc, char * const argv[]) {
       if (status!=1)
 	fprintf(stderr, "Bad usleep option %s\n", optarg);
       else 
-	udp.usleep = dtmp;
+	udp.usleep = dtmp/1e6;
       break;
 
     case 'r':
@@ -411,7 +411,6 @@ int main(int argc, char * const argv[]) {
     exit(1);
   }
 
-  ut = 0;
   if (strlen(timestr)>0) {
     status = sscanf(timestr, "%d:%d:%d", &hour, &min, &sec);
     if (status!=3) {
@@ -495,12 +494,12 @@ int main(int argc, char * const argv[]) {
       }
     
       mjdsec = llround(mjd*24*60*60);
-      setVDIFEpoch(&vdif_headers[i],lround(floor(mjd)));
+      setVDIFEpochMJD(&vdif_headers[i],lround(floor(mjd)));
       setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
       if (status!=VDIF_NOERROR) {
         fprintf(stderr, "Error setting VDIF file (%d)\n", status);
         exit(1);
-      }
+      }      
     }
     
   } else if (mode==LBADR) {
@@ -754,34 +753,39 @@ int setup_net(char *hostname, int port, int window_size, udp *udp, int *sock) {
       perror("Failed to allocate socket");
       return(1);
     }
+  }
 
-    if (window_size>0) {
-      status = setsockopt(*sock, SOL_SOCKET, SO_SNDBUF,
-			  (char *) &window_size, sizeof(window_size));
-      if (status!=0) {
-	close(*sock);
-	perror("Setting socket options");
-	return(1);
-      }
-      status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF,
-			  (char *) &window_size, sizeof(window_size));
-      if (status!=0) {
-	close(*sock);
-	perror("Setting socket options");
-	return(1);
-      }
-
-      /* Check what the window size actually was set to */
-      winlen = sizeof(window_size);
-      status = getsockopt(*sock, SOL_SOCKET, SO_SNDBUF,
-			  (char *) &window_size, &winlen);
-      if (status!=0) {
-	close(*sock);
-	perror("Getting socket options");
-	return(1);
-      }
-      printf("Sending TCP buffersize set to %d Kbytes\n", window_size/1024);
+  if (window_size>0) {
+    status = setsockopt(*sock, SOL_SOCKET, SO_SNDBUF,
+			(char *) &window_size, sizeof(window_size));
+    if (status!=0) {
+      close(*sock);
+      perror("Setting socket options");
+      return(1);
     }
+    /*
+    status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF,
+			  (char *) &window_size, sizeof(window_size));
+      if (status!=0) {
+	close(*sock);
+	perror("Setting socket options");
+	return(1);
+      }
+    */
+
+    /* Check what the window size actually was set to */
+    winlen = sizeof(window_size);
+    status = getsockopt(*sock, SOL_SOCKET, SO_SNDBUF,
+			(char *) &window_size, &winlen);
+    if (status!=0) {
+      close(*sock);
+      perror("Getting socket options");
+      return(1);
+    }
+    printf("Sending socket buffersize set to %d Kbytes\n", window_size/1024);
+  }
+
+  if (!udp->enabled) {
     status = connect(*sock, (struct sockaddr *) &server, sizeof(server));
     if (status!=0) {
       perror("Failed to connect to server");
