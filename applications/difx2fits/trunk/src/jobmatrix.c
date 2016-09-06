@@ -70,14 +70,18 @@ JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, double deltaT)
 	return jm;
 }
 
+/**
+ * Writes the .jobmatrix file
+ **/
 void writeJobMatrix(const JobMatrix *jm)
 {
 	int *jobList;
+	int *activeJobs;
 	FILE *out;
 	int nJob;
 	char label[DIFXIO_FILENAME_LENGTH];
 	char outname[DIFXIO_FILENAME_LENGTH];
-	int a, t, j, v;
+	int a, t, j, v, i;
 	char name[4];
 	char timeStr[40];
 	char lastday[10] = "";
@@ -97,7 +101,12 @@ void writeJobMatrix(const JobMatrix *jm)
 
 	nJob = jm->D->nJob;
 	jobList = (int *)calloc(nJob, sizeof(int));
-	
+	activeJobs = (int *)calloc(jm->nAntenna, sizeof(int));
+
+	//set jobList array to 0
+	for (i=0; i< nJob; i++)
+		jobList[i] = 0;
+
 	out = fopen(outname, "w");
 	if(!out)
 	{
@@ -108,6 +117,7 @@ void writeJobMatrix(const JobMatrix *jm)
 		return;
 	}
 
+	// write header line
 	for(a = 0; a < jm->nAntenna; ++a)
 	{
 		strncpy(name, jm->D->antenna[a].name, 2);
@@ -119,6 +129,9 @@ void writeJobMatrix(const JobMatrix *jm)
 	j = 0;
 	for(t = 0; t < jm->nTime; ++t)
 	{
+		
+		int numActiveJobs = 0;
+		activeJobs = (int *)calloc(jm->nAntenna, sizeof(int));	// jobIds in the active time slice
 		for(a = 0; a < jm->nAntenna; ++a)
 		{
 			if(jm->matrix[t][a] < 0)
@@ -127,8 +140,11 @@ void writeJobMatrix(const JobMatrix *jm)
 			}
 			else if(jm->matrix[t][a] < jm->D->nJob)
 			{
-				jobList[jm->matrix[t][a]] = 1;
+				if (jobList[jm->matrix[t][a]] == 0)
+					jobList[jm->matrix[t][a]] = 1;
 				fprintf(out, "%c  ", 'A' + (jm->matrix[t][a]%26));
+				j = jm->matrix[t][a];
+				activeJobs[numActiveJobs++] = j;
 			}
 			else
 			{
@@ -149,11 +165,25 @@ void writeJobMatrix(const JobMatrix *jm)
 			fprintf(out, "  %s", timeStr);
 		}
 
-		if(j < nJob && jobList[j])
+
+		// output scan label entry only on scan change
+		if(numActiveJobs > 0)
 		{
-			generateDifxJobFileBase(jm->D->job + j, label);
-			fprintf(out, "   %c = %s", 'A'+(j%26), label);
-			++j;
+			int lastJob = -1;
+			qsort(activeJobs, numActiveJobs, sizeof(int), cmpfunc); 
+			for (i = 0; i < numActiveJobs; i++)
+			{
+				int job = activeJobs[i];
+				if ((job != lastJob) && (jobList[job] == 1))
+				{
+					generateDifxJobFileBase(jm->D->job + job, label);
+					fprintf(out, "   %c = %s", 'A'+(job%26), label);
+					jobList[job] = 2;
+				}
+				lastJob = job;
+				
+			}
+			//++j;
 		}
 
 		fprintf(out, "\n");
@@ -161,6 +191,11 @@ void writeJobMatrix(const JobMatrix *jm)
 
 	fclose(out);
 	free(jobList);
+}
+
+int cmpfunc (const void * a, const void * b)
+{
+   return ( *(int*)a - *(int*)b );
 }
 
 void deleteJobMatrix(JobMatrix *jm)
@@ -189,7 +224,7 @@ int feedJobMatrix(JobMatrix *jm, const struct UVrow *data, int jobId)
 	int a, t;
 	double mjd;
 
-	if(!jm)
+ 	if(!jm)
 	{
 		return -1;
 	}

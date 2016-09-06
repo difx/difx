@@ -44,5 +44,6 @@ void writeJobMatrix(const JobMatrix *jm);
 void deleteJobMatrix(JobMatrix *jm);
 
 int feedJobMatrix(JobMatrix *jm, const struct UVrow *data, int jobId);
+int cmpfunc (const void * a, const void * b);
 
 #endif
