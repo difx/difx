@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken                             *
+ *   Copyright (C) 2009-2016 by Walter Brisken and Helge Rottmann          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -68,6 +68,11 @@ JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, double deltaT)
 	jm->D = D;
 
 	return jm;
+}
+
+int cmpfunc (const void * a, const void * b)
+{
+	return ( *(int*)a - *(int*)b );
 }
 
 /**
@@ -191,11 +196,6 @@ void writeJobMatrix(const JobMatrix *jm)
 
 	fclose(out);
 	free(jobList);
-}
-
-int cmpfunc (const void * a, const void * b)
-{
-   return ( *(int*)a - *(int*)b );
 }
 
 void deleteJobMatrix(JobMatrix *jm)
