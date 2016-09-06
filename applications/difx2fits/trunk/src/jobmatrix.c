@@ -70,7 +70,7 @@ JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, double deltaT)
 	return jm;
 }
 
-int cmpfunc (const void * a, const void * b)
+static int cmpfunc (const void * a, const void * b)
 {
 	return ( *(int*)a - *(int*)b );
 }
