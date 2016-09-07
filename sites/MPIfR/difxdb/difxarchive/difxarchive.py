@@ -109,6 +109,7 @@ def readConfig():
 def getTransferFileCount(source, destination, options=""):
 
    
+	
     cmd = 'rsync -az --stats --dry-run %s %s %s' % ( options, source, destination) 
     proc = subprocess.Popen(cmd,
                                        shell=True,
@@ -254,6 +255,7 @@ if __name__ == "__main__":
     parser.add_option("-f", "--force", dest="force" ,action="store_true", default=False, help="Delete files without further confirmation ")
     parser.add_option("-d", "--dry-run", dest="dryRun" ,action="store_true", default=False, help="Simulate archival. Don't rsync files, don't update database. ")
     parser.add_option("-D", "--db-only", dest="dbOnly" ,action="store_true", default=False, help="Update database only, don't copy files (use with care!) ")
+    parser.add_option("-k", "--keep", dest="keep" ,action="store_true", default=False, help="Keep files on local disk after archiving.")
     # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
     (options, args) = parser.parse_args()   
      
@@ -294,12 +296,8 @@ if __name__ == "__main__":
     if isExperimentArchived(session, code):
         print "Experiment has been archived already."
         confirmAction()
-        
-        
-        
     
     if not options.dbOnly:
-        
         # check that path exists
         if not isdir(path):
             exitOnError("Directory %s does not exist" % (path))
@@ -348,7 +346,7 @@ if __name__ == "__main__":
 
 
         if not options.dryRun:
-            if not options.dbOnly:
+            if not options.dbOnly and not options.keep:
                 # delete files
                 print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
                 confirmAction()
@@ -364,9 +362,6 @@ if __name__ == "__main__":
             session.commit()
             session.flush()
             session.close()
-            
-            
-
 
     except Exception as e:
         exitOnError(e)
