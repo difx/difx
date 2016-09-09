@@ -91,6 +91,7 @@ def addExperiment(session, code, types=[], analyst=None, statuscode=0):
     '''
     
     if (experimentExists(session, code)):
+	raise Exception("Experiment with code %s already exists" % (code))
         return
 
     expTypes = []
