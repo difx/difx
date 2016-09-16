@@ -102,27 +102,27 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
 
             fr = vr->freq_index;
                                     // identify polarization for reference antenna
-                for (polref=0; polref<4; polref++)
-                    if (vr->pols[REF] == polchar[polref])
-                        break;
+            for (polref=0; polref<4; polref++)
+                if (vr->pols[REF] == polchar[polref])
+                    break;
 
-                if (pol == 4)
-                    {
-                    printf ("unknown ref stn polarization type %c, skipping normalization\n",
-                            vr->pols[REF]);
-                    continue;
-                    }
+            if (polref == 4)
+                {
+                printf ("unknown ref stn polarization type %c, skipping normalization\n",
+                        vr->pols[REF]);
+                continue;
+                }
                                     // identify polarization for remote antenna
-                for (polrem=0; polrem<4; polrem++)
-                    if (vr->pols[REM] == polchar[polrem])
-                        break;
+            for (polrem=0; polrem<4; polrem++)
+                if (vr->pols[REM] == polchar[polrem])
+                    break;
 
-                if (pol == 4)
-                    {
-                    printf ("unknown rem stn polarization type %c, skipping normalization\n",
-                            vr->pols[REM]);
-                    continue;
-                    }
+            if (polrem == 4)
+                {
+                printf ("unknown rem stn polarization type %c, skipping normalization\n",
+                        vr->pols[REM]);
+                continue;
+                }
 
                                     // ensure that there is no 0-divide
             if (pant[aref][fr][polref] == 0.0 || pant[arem][fr][polrem] == 0.0)
