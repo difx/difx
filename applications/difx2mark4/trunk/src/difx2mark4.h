@@ -126,6 +126,7 @@ struct fblock_tag
 #include "type_309.h"
 
 
+                                    // function prototypes 
                                     // conv2date.c
 void conv2date (double, struct date *);
                                     // createRoot.c
@@ -141,7 +142,8 @@ int createType3s (DifxInput *, struct fblock_tag *, int, int, int, char *, char 
                                     // get_vis.c
 int get_vis (char *, struct CommandLineOptions *, int, int, vis_record **, int *, char *);
                                     // normalize.c
-void normalize (struct CommandLineOptions *, vis_record *, int, int, int);
+void normalize (struct CommandLineOptions *, vis_record *, int, int, int, 
+                struct fblock_tag *);
                                     // root_id.c
 char *root_id(int, int, int, int, int);
                                     // single_code.c

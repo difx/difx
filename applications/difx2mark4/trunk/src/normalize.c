@@ -15,7 +15,8 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                 vis_record *vrec,                 // pointer to start of vis. buffer
                 int nvrtot,                       // total # of vis. records in buffer
                 int nvis,                         // number of visibility points in record
-                int vrsize)                       // size of each vis record (bytes)
+                int vrsize,                       // size of each vis record (bytes)
+                struct fblock_tag *pfb)           // ptr to filled-in fblock table
     {
     int i,
         n,
@@ -25,10 +26,13 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         arem,
         ant,
         fr,
+        fr_remap,
         pol,
         polref,
         polrem,
-        n_aczero = 0;               // number of 0 autocorrelations
+        n_aczero = 0,               // number of 0 autocorrelations
+        pmap[64][4],                // lowest freq index of matching channels, by [freq][pol]
+        nf;
 
     double t,                       // time of current records
            factor,
@@ -40,6 +44,44 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
 
     vis_record *vr;                 // convenience pointer
     enum indices {REF, REM};
+    
+                                    // create pmap array
+    for (fr=0; fr<64; fr++)         // first initialize pmap array to an identity map
+        for (pol=0; pol<4; pol++)
+            pmap[fr][pol] = fr;
+
+                                    // now make a pass through the fblock, finding the lowest
+                                    // freq index for pairs of antennas, and overwriting those
+                                    // in the pmap
+    nf = -1;
+    while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
+        {
+        if (pfb[nf].stn[0].pol      == pfb[nf].stn[1].pol     
+         && pfb[nf].stn[0].find     != pfb[nf].stn[1].find)
+            {
+                                    // found matching channels with different freq id's
+                                    // convert polarization to an index
+            for (pol=0; pol<4; pol++)
+                if (pfb[nf].stn[0].pol == polchar[pol])
+                    break;
+
+            if (pol == 4)
+                {
+                printf ("unknown polarization type %c, skipping normalization\n", pfb[nf].stn[0].pol);
+                continue;
+                }
+
+            if (pfb[nf].stn[0].find < pfb[nf].stn[1].find)
+                                    // ref index lower, use it for remote antenna
+                pmap[pfb[nf].stn[1].find][pol] = pfb[nf].stn[0].find;
+                 
+            else
+                                    // rem index lower, use it for reference antenna
+                pmap[pfb[nf].stn[0].find][pol] = pfb[nf].stn[1].find;
+                 
+            }
+        }
+
                                     // initialize for looping 
     nbeg = 0;
                                     // loop over all records in buffer
@@ -72,7 +114,6 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                                     // only want powers from autocorrelations with same pol
             if (aref == arem && vr->pols[REF] == vr->pols[REM])
                 {
-                fr = vr->freq_index;
                                     // convert polarization to an index
                 for (pol=0; pol<4; pol++)
                     if (vr->pols[REF] == polchar[pol])
@@ -84,11 +125,14 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                             vr->pols[REF]);
                     continue;
                     }
+                fr = pmap[vr->freq_index][pol];
                                     // find average power across the band and save its sqrt
                 sum = 0.0;
                 for (i=0; i<nvis; i++)
                     sum += vr->comp[i].real;
                 pant[aref][fr][pol] = sqrt (sum / nvis);
+                // printf("n %d aref %d fr %d pol %d pant %f\n",
+                //         n,aref,fr,pol,pant[aref][fr][pol]);
                 }
             }
                                     // go through all records for current time again
@@ -100,7 +144,6 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
             aref = vr->baseline / 256 - 1; 
             arem = vr->baseline % 256 - 1;
 
-            fr = vr->freq_index;
                                     // identify polarization for reference antenna
             for (polref=0; polref<4; polref++)
                 if (vr->pols[REF] == polchar[polref])
@@ -123,18 +166,19 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                         vr->pols[REM]);
                 continue;
                 }
+            fr_remap = pmap[vr->freq_index][polrem];
 
                                     // ensure that there is no 0-divide
-            if (pant[aref][fr][polref] == 0.0 || pant[arem][fr][polrem] == 0.0)
+            if (pant[aref][fr_remap][polref] == 0.0 || pant[arem][fr_remap][polrem] == 0.0)
                 {
                 factor = 1.0;
                 n_aczero++;
+                printf("zdiv n %d aref arem %d %d fr_remap %d pols %d%d\n",
+                        n,aref,arem,fr_remap,polref,polrem);
                 }
             else
-                factor = 1.0 / (pant[aref][fr][polref] * pant[arem][fr][polrem]);
-            // printf("n %d factor %f pant[%d][%d][%d] %f pant[%d][%d][%d] %f\n",
-            //        n,factor,aref,fr,polref,pant[aref][fr][polref],
-            //        arem,fr,polrem,pant[arem][fr][polrem]);
+                factor = 1.0 / (pant[aref][fr_remap][polref] * pant[arem][fr_remap][polrem]);
+
             for (i=0; i<nvis; i++)
                 {
                 vr->comp[i].real *= factor;
