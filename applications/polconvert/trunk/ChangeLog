@@ -1,11 +1,10 @@
 Version 1.2
 ~~~~~~~~~~~
-Release 6 from June 9,  2016 contains basic ALMA support.
-Release 7 from June 20, 2016 with changes:
-    - Saves the peak fringe values and SNRs in the FRINGE.PEAKS.dat
-    - Saves the amplitude gains in ANTAB format for AIPS (new output file
-      "POLCONVERT*.ANTAB")
-    - The gain interpolation is repaired. Now, we can flag the bad XY phases.
-    - On difx trunk with both inplace and out-of-tree build working.
+Release  6 from June  9, 2016
+Release  7 from June 20, 2016
+Release  8 from June 20, 2016
+Release  9 from  Aug 25, 2016
+Release 10 from  Sep  2, 2016
+Release 11 from  Sep  8, 2016
 
 See src/Changelog for further information.

@@ -44,3 +44,7 @@ Nordic Node (contact@nordic-alma.se) or to the source maintainer
 (ivan.marti-vidal@chalmers.se).
 
 
+P.S: The QA2 directory contains scripts for the proper calibration
+of the ALMA measurement sets. Specifically, the script 
+"scriptForCalibrationAPP.py" shall be run for generating the 
+calibration tables to apply PolConvert.

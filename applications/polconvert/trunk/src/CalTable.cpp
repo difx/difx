@@ -50,6 +50,7 @@ CalTable::CalTable(int kind, double **R1,double **P1,double **R2,double **P2, do
       firstTime = new bool[Nants];
 
       isDelay = kind==1;
+      isDterm = kind==2;
       gainChanged = true;
 
       Ntimes = new long[Nants];
@@ -203,12 +204,17 @@ bool firstflag = false;
     if (allflagged){
       sprintf(message,"\nWARNING: ALMA ANTENNA #%i HAS ALL CHANNELS FLAGGED AT TIME #%li\n",ant,tidx);
       fprintf(logFile,"%s",message);
-      sprintf(message,"SETTING ITS GAIN TO ONE. CHECK RESULTS CAREFULLY!\n\n");
+      sprintf(message,"SETTING ITS GAIN TO DUMMY. CHECK RESULTS CAREFULLY!\n\n");
       fprintf(logFile,"%s",message);
       fflush(logFile);
       for (chan=0; chan<Nchan; chan ++) {
-         GainAmp[0][ant][chan][tidx] = 1.0;
-         GainAmp[1][ant][chan][tidx] = 1.0;
+         if(isDterm){
+           GainAmp[0][ant][chan][tidx] = 0.0;
+           GainAmp[1][ant][chan][tidx] = 0.0;
+         } else {
+           GainAmp[0][ant][chan][tidx] = 1.0;
+           GainAmp[1][ant][chan][tidx] = 1.0;
+         };
          GainPhase[0][ant][chan][tidx] = 0.0;
          GainPhase[1][ant][chan][tidx] = 0.0;
          flags[ant][chan*Ntimes[ant]+index] = false;

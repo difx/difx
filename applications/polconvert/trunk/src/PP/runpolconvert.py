@@ -30,6 +30,16 @@ try:
 except Exception, ex:
     raise ex
 
+# require constXYadd to be set to allow disabling table
+try:
+    if type(constXYadd) == bool:
+        if constXYadd: print 'Disabling XY phase table'
+        else:          print 'Using XY phase table ' + xyrelphs
+    else:
+        raise Exception, 'constXYadd must be set True or False'
+except Exception, ex:
+    raise ex
+
 # Things defined in, e.g. drivepolconvert.py
 try:
     print "Experiment %s with linear pol antenna index %s\non IFs %s" % (
@@ -62,14 +72,18 @@ except Exception, ex:
 def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     DiFXinput='', DiFXoutput='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
-    XYadd=[0.0], linAnt=[1], plotAnt=-1):
-    #gains=['%s.bandpass-zphs.cal'%label,
-    #    '%s.ampgains.cal.fluxscale'%label, '%s.phasegains.cal'%label,
-    #    '%s.XY0amb-tcon'%label]
+    XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1):
+    # based on common drivepolconvert inputs above
     gains = calgains[3:]
+    interpolation = ['linear', 'self', 'linear', 'linear']
     dterm = calgains[2]
     Range = [] # do the entire scan
     calAPPTime = [0.0, 8.0] # half-a scan of tolerance
+
+    # allow XY phase table to be dropped if it is noisy
+    if constXYadd:
+        gains = gains[0:3]
+        interpolation = interpolation[0:3]
 
     if band3:
         spw=0
@@ -95,8 +109,9 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
             linAntIdx=[1], Range=Range, ALMAant=aantpath,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
-            gains=[gains], interpolation=[], dterms=[dterm], amp_norm=True,
-            XYadd=XYadd, swapXY=[False], IDI_conjugated=True,
+            gains=[gains], interpolation=[interpolation],
+            dterms=[dterm], amp_norm=True,
+            XYadd=XYadd, XYratio=XYratio, swapXY=[False], IDI_conjugated=True,
             plotIF=plotIF, doIF=doIF, plotRange=timeRange,
             plotAnt=plotAnt, doTest=doTest)
     except Exception, ex:
@@ -127,7 +142,8 @@ for job in djobs:
     SAVE = ('%s/%s_%s.save' % (DiFXout,expName,job))
 
     runPolConvert(label, band3=band3, band6Lo=band6Lo, band6Hi=band6Hi,
-        DiFXinput=DiFXinput, DiFXoutput=SWIN, DiFXsave=SAVE, XYadd=XYadd,
+        DiFXinput=DiFXinput, DiFXoutput=SWIN, DiFXsave=SAVE,
+        XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=plotAnt)
 

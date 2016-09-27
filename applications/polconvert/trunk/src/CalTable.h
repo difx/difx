@@ -93,7 +93,7 @@ class CalTable {
      long MSChan;
      double *preKt;
      long *pret0, *pret1;
-     bool isDelay, gainChanged, isLinear;
+     bool isDelay, gainChanged, isLinear, isDterm;
      double deltaNu0, deltaNu;
      std::complex<float>** bufferGain[2];
 };

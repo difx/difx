@@ -818,9 +818,10 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        Kinv[1][1] = 1.0; 
       } else {
        Kinv[0][0] = Ktotal[currAntIdx][1][1][j]/DetInv;
-       Kinv[0][1] = -Ktotal[currAntIdx][1][0][j]/DetInv;
-       Kinv[1][0] = -Ktotal[currAntIdx][0][1][j]/DetInv;
        Kinv[1][1] = Ktotal[currAntIdx][0][0][j]/DetInv;
+// BEWARE THAT THIS MUST BE IN ACCORDANCE TO THE DEFINITION OF Dx AND Dy!!!
+       Kinv[0][1] = -Ktotal[currAntIdx][0][1][j]/DetInv;
+       Kinv[1][0] = -Ktotal[currAntIdx][1][0][j]/DetInv;
       };
 
        if(doNorm){ 

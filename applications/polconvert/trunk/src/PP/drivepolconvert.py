@@ -75,7 +75,8 @@ def parseOptions():
         default='v2', metavar='STRING',
         help='table naming scheme for the QA2 tables; there should be ' +
             'six tables for antennas, appphase, bandpass, ampgains, ' +
-            'phasegains and xy phase.  Options are "v0", "v1", "v2", or a ' +
+            'phasegains and xy phase.  Options are "v0", "v1", "v2", '
+            '"v3" or a ' +
             'comma-sep list in an environment variable QA2TABLES')
     parser.add_argument('-d', '--noDterm', dest='nodt',
         default=False, action='store_true',
@@ -113,6 +114,7 @@ def calibrationChecks(o):
     if o.label == '':
         raise Exception, 'A label (-l) is required to proceed'
     if o.verb: print 'Using label %s' % o.label
+    o.constXYadd = 'False'
     if o.qa2 == 'v0':   # original 1mm names
         o.qal = ['antenna.tab','calappphase.tab', 'NONE', 'bandpass-zphs.cal',
                'ampgains.cal.fluxscale', 'phasegains.cal', 'XY0amb-tcon']
@@ -120,6 +122,10 @@ def calibrationChecks(o):
         o.qal = ['ANTENNA', 'calappphase', 'NONE', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
     elif o.qa2 == 'v2': # revised 3mm names with Dterms (default)
+        o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
+               'flux_inf', 'phase_int.APP', 'XY0.APP' ]
+    elif o.qa2 == 'v3': # revised 3mm names with Dterms (default)
+        o.constXYadd = 'True'
         o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
     else:               # supply via environment variable
@@ -347,7 +353,9 @@ def createCasaInput(o):
         band = 'band6Hi'
         XYadd=[0.0]
 
-    %s XYadd = [%f]
+    constXYadd = %s
+    %sXYadd = [%f]
+    XYratio = [1.0]
     print 'using %%s with XYadd %%s' %% (band, str(XYadd))
 
     djobs = %s
@@ -382,7 +390,7 @@ def createCasaInput(o):
 
     script = template % (o.label, o.band, bandnot, bandaid, o.exp,
         o.ant, o.zfirst, o.zfinal, o.qa2, o.qal, o.qa2_dict,
-        userXY, XYvalu, o.djobs)
+        o.constXYadd, userXY, XYvalu, o.djobs)
 
     for line in script.split('\n'):
         ci.write(line[4:] + '\n')
@@ -407,10 +415,12 @@ def executeCasa(o):
     cmd6 = ''
     casanow = o.exp + '-casa-logs.' + datetime.datetime.now().isoformat()[:-7]
     for m in misc:
-        cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
+        if os.path.exists(m):
+            cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
     if o.run:
-        if o.verb: print 'Follow CASA run with: tail -n +1 -f ' + o.output
-        if o.verb: print '  Note, ^C will not stop CASA (or polconvert).'
+        if o.verb: print 'Note, ^C will not stop CASA (or polconvert).'
+        if o.verb: print 'Follow CASA run with:\n  tail -n +1 -f %s\n' % (
+            o.output)
         if os.system(cmd1 + ' ; ' + cmd2):
             raise Exception, 'CASA execution "failed"'
         if o.verb:
@@ -431,6 +441,8 @@ def executeCasa(o):
         jl.close()
         os.rename('casa-logs', casanow)
         print 'Completed job list is in %s/%s.joblist' % (casanow,o.exp)
+        if o.verb: print 'Review CASA run with:\n  tail -n +1 %s/%s\n' % (
+            casanow, o.output)
     else:
         print ''
         print 'You can run casa manually with input from ' + o.input

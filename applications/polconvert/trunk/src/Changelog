@@ -20,6 +20,9 @@ v1.2-r10
 - Added "self" interpolation (useful for amplitude solutions).
 - Plots and diagnostic files are now saved in directories.
 
+v1.2-r11
+- Added XYratio
+- Added ability to drop XY phase solution
 
 TODO: 
 

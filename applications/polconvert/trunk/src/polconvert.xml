@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.2-r10\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.2-r11\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.2-r10\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.2-r11\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -93,6 +93,12 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <description>Add manually a phase between X and Y before \nconversion (in deg.). One value per linear-pol station.</description>
       <value>[0.0]</value>
     </param>
+
+    <param type="any" name="XYratio" mustexist="false">
+      <description>Add manually an amplitude ratio between X and Y before \nconversion (R=X/Y). One value per linear-pol station.</description>
+      <value>[1.0]</value>
+    </param>
+
 
     <param type="any" name="swapXY" mustexist="false">
       <description>Swap X-Y before conversion. One value per linear-pol \nVLBI station.</description>
