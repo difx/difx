@@ -124,7 +124,7 @@ def calibrationChecks(o):
     elif o.qa2 == 'v2': # revised 3mm names with Dterms (default)
         o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
-    elif o.qa2 == 'v3': # revised 3mm names with Dterms (default)
+    elif o.qa2 == 'v3': # revised 3mm names with Dterms, constant XYadd
         o.constXYadd = 'True'
         o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
