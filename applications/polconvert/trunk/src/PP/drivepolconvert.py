@@ -81,7 +81,12 @@ def parseOptions():
     parser.add_argument('-d', '--noDterm', dest='nodt',
         default=False, action='store_true',
         help='disable use of Dterm calibration tables')
-    # list of input files
+    parser.add_argument('-s', '--spw', dest='spw',
+        default=4, metavar='INT', type=int,
+        help='Index of SPW for PolConvert to use: 0,1,2,3 for the ' +
+            'four basebands, -1 for PolConvert to select, or 4 to use ' +
+            'the band3, band6Lo or band6Hi assignments.')
+    # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files')
     return parser.parse_args()
@@ -353,6 +358,7 @@ def createCasaInput(o):
         band = 'band6Hi'
         XYadd=[0.0]
 
+    spwToUse = %d
     constXYadd = %s
     %sXYadd = [%f]
     XYratio = [1.0]
@@ -390,7 +396,7 @@ def createCasaInput(o):
 
     script = template % (o.label, o.band, bandnot, bandaid, o.exp,
         o.ant, o.zfirst, o.zfinal, o.qa2, o.qal, o.qa2_dict,
-        o.constXYadd, userXY, XYvalu, o.djobs)
+        o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
 
     for line in script.split('\n'):
         ci.write(line[4:] + '\n')

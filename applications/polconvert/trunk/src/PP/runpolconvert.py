@@ -87,12 +87,20 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
 
     if band3:
         spw=0
+        bnd='Band 3'
     elif band6Lo:
-        spw=0
+        spw=2
+        bnd='Band 6 Lo'
     elif band6Hi:
-        spw=1
+        spw=3
+        bnd='Band 6 Hi'
     else:
         raise Exception, 'No band selected for PolConvert to work with'
+    try:
+        if spwToUse != 4: spw = spwToUse
+    except:
+        print 'spwToUse was not defined'
+    print 'PolConvert will use Spectral Window %d for %s' % (spw, bnd)
 
     if not os.path.exists(DiFXinput):
         raise Exception, 'No DiFX input %s'%DiFXinput
