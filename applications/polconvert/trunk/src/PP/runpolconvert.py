@@ -45,8 +45,8 @@ try:
     print "Experiment %s with linear pol antenna index %s\non IFs %s" % (
         expName, str(linAnt), str(doIF))
     if plotIF > 0:
-        print "Plotting IF %d on days %d .. %d)" % (
-            plotIF, timeRange[0], timeRange[4])
+        print "Plotting IF %s on days %d .. %d)" % (
+            str(plotIF), timeRange[0], timeRange[4])
 except Exception, ex:
     raise ex
 

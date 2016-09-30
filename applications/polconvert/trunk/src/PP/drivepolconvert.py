@@ -21,16 +21,20 @@ def parseOptions():
     more likely use case, piped into CASA for the desired work.
     '''
     des = parseOptions.__doc__
-    epi =  'In the typical use case, a number of similar jobs '
-    epi += 'would be processed first with prepolconvert.py, then with '
-    epi += 'drivepolconvert.py, and then difx2mark4 or difx2fits. '
-    epi += 'If you want to see some of the plots, edit the output '
-    epi += 'file and run it manually.  In normal usage, you need '
-    epi += 'to supply only the list of jobs and the QA2 tarball or label.'
+    epi =  'In the typical use case, you would first unpack the QA2 tarball '
+    epi += 'and then process some number of similar jobs '
+    epi += 'first with prepolconvert.py, then with '
+    epi += 'drivepolconvert.py, and finally difx2mark4 and/or difx2fits. '
+    epi += 'If you want to adjust the CASA invocation beyond what the '
+    epi += 'script provides, edit the output file and '
+    epi += 'then run it manually using the instructions provided. '
+    epi += 'In normal usage, you only need '
+    epi += 'to supply the list of jobs and the label.'
+    epi += 'The plotting of per-IF fringes is controlled with the -f option.'
     use = '%(prog)s [options] [input_file [...]]\n'
     use += '  Version $Id$'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
-    # options
+    # essential options
     parser.add_argument('-v', '--verbose', dest='verb',
         default=False, action='store_true',
         help='be chatty about the work')
@@ -40,18 +44,17 @@ def parseOptions():
     parser.add_argument('-r', '--run', dest='run',
         default=False, action='store_true',
         help='execute CASA with the generated input')
+    parser.add_argument('-l', '--label', dest='label',
+        default='', metavar='STRING',
+        help='prefix to the QA2 polconvert calibration directories. '
+        'The exact names despend on the QA2 version (see -q option).')
+    # optional, developmental or convenience arguments
     parser.add_argument('-i', '--input', dest='input',
         default='', metavar='FILE',
         help='name of input file that will be created for CASA.')
     parser.add_argument('-o', '--output', dest='output',
         default='', metavar='FILE',
         help='name of output file to collect CASA output chatter.')
-    parser.add_argument('-l', '--label', dest='label',
-        default='', metavar='STRING',
-        help='prefix to the QA2 polconvert calibration directories. '
-        'Normally we expect the directories *.bandpass-zphs.cal, '
-        '*.ampgains.cal.fluxscale, *.phasegains.cal, *.XY0amb-tcon, '
-        '*.antenna.tab, and *.calappphase.tab to be present.')
     parser.add_argument('-t', '--qa2tar', dest='qa2tar',
         default='', metavar='TARFILE',
         help='tarfile with QA2 results.  If supplied, the results are'
@@ -86,6 +89,18 @@ def parseOptions():
         help='Index of SPW for PolConvert to use: 0,1,2,3 for the ' +
             'four basebands, -1 for PolConvert to select, or 4 to use ' +
             'the band3, band6Lo or band6Hi assignments.')
+    # plotting arguments
+    parser.add_argument('-f', '--fringe', dest='fringe',
+        default=4, metavar='INT', type=int,
+        help='Activate plotting diagnostics during conversion with the ' +
+            'number of IFs (channels) to produce fringe diagnostics on. ' +
+            'The default is 4.  Sensible values are 1 (a middle channel), ' +
+            'N for that many channels spread through the IF range, '
+            'or 0 for off.')
+    parser.add_argument('-m', '--remote', dest='remote',
+        default=2, metavar='INT', type=int,
+        help='Index of remote antenna on baseline to converted antenna. ' +
+            'The default is 2 (the next antenna in the list).')
     # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files')
@@ -296,6 +311,31 @@ def deduceZoomIndicies(o):
     if not (o.band == '3' or o.band == '6Lo' or o.band == '6Hi'):
         raise Exception, 'Observing band mis-specified, use -b 3|6Lo|6Hi'
 
+def plotPrep(o):
+    '''
+    This function sets a few things related to plotting.
+    '''
+    if o.fringe > o.zfinal+1-o.zfirst:
+        o.fringe = o.zfinal+1-o.zfirst
+        print 'Revising number of fringed channels to %d' % o.fringe
+    if o.fringe == 0:
+        o.doPlot = ['#','','#','#']
+        o.remote = -1
+        o.flist = ''
+    elif o.fringe == 1:
+        o.doPlot = ''
+        o.doPlot = ['','#','','#']
+        o.flist = ''
+    else:
+        o.doPlot = ['','#','#','']
+        o.flist = '0'
+        for ii in range(1,o.fringe):
+            o.flist += ',(%d*len(doIF)/%d)' % (ii, o.fringe)
+    if o.remote == o.ant:
+        o.remote == o.ant + 1
+        print 'Shifting baseline from %d-%d to %d-%d' % (
+            o.ant, o.remote - 1, o.ant, o.remote)
+
 def createCasaInput(o):
     '''
     This function creates a file of python commands that can be piped
@@ -310,6 +350,8 @@ def createCasaInput(o):
     # are having trouble or wish to see some of the plots).
     #
     import os
+    %simport pylab as pl
+    %spl.ioff()
     #
     # variables initialized from drivepolconvert.py:
     #
@@ -323,8 +365,9 @@ def createCasaInput(o):
     zfirst=%d
     zfinal=%d
     doIF = range(zfirst+1, zfinal+2)
-    # plotIF = doIF[len(doIF)/2]        # plot a middle channel
-    plotIF = -1
+    %splotIF = -1                       # plot no channels
+    %splotIF = doIF[len(doIF)/2]        # plot the middle channel
+    %splotIF = [doIF[i] for i in [%s]]  # plot a set of channels
     print 'using doIF value: ' + str(doIF)
     #
     # calibration tables
@@ -336,11 +379,12 @@ def createCasaInput(o):
     # other variables that can be set in interactive mode
     # here we set them not to make any interactive plots
     #
-    plotAnt=-1                          # no plotting
-    # plotAnt=2                         # specifies antenna to plot
+    # plotAnt=-1                        # no plotting
+    # plotAnt=2                         # specifies antenna 2 to plot
+    plotAnt=%d
     doTest=False
-    # timeRange = [0,0,0,0, 10,0,0,0]   # first 10 days
-    timeRange=[]
+    # timeRange=[]                      # don't care
+    %stimeRange = [0,0,0,0, 14,0,0,0]   # first 10 days
 
     if not (band3 or band6Hi or band6Lo):
         print 'Pilot error, only one of band3, band6Hi or band6Lo may be true'
@@ -394,8 +438,12 @@ def createCasaInput(o):
         userXY = '#'
         XYvalu = 0.0
 
-    script = template % (o.label, o.band, bandnot, bandaid, o.exp,
-        o.ant, o.zfirst, o.zfinal, o.qa2, o.qal, o.qa2_dict,
+    script = template % (o.doPlot[0], o.doPlot[0],
+        o.label, o.band, bandnot, bandaid, o.exp,
+        o.ant, o.zfirst, o.zfinal,
+        o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
+        o.qa2, o.qal, o.qa2_dict,
+        o.remote, o.doPlot[0],
         o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
 
     for line in script.split('\n'):
@@ -454,12 +502,13 @@ def executeCasa(o):
         print 'You can run casa manually with input from ' + o.input
         print 'Or just do what this script would do now, viz: '
         print '    ' + cmd1
-        print '    ' + cmd2
+        print '    ' + cmd2 + ' &'
+        print '    tail -n +1 -f ' + o.output
         print '    ' + cmd3
         print '    ' + cmd4
         print '    ' + cmd5
         print '    ' + cmd6
-        print '     mv casa-logs ' + casanow
+        print '    mv casa-logs ' + casanow
         print ''
 
 #
@@ -471,6 +520,7 @@ if __name__ == '__main__':
     if o.prep:
         runPrePolconvert(o)
     deduceZoomIndicies(o)
+    plotPrep(o)
     createCasaInput(o)
     executeCasa(o)
 

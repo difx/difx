@@ -97,7 +97,7 @@ def do_save(o, src, dst):
     return src
 
 def do_input(o, src, dst):
-    'editing input %s\n    to output %s   to fix pols and paths'
+    'editing input %s\n    to output %s\n    to fix pols (X/Y->L/R) and paths'
     src = do_save(o, src, dst)
     if o.verb: print do_input.__doc__ % (src,dst)
     inp = open(src, 'r')
@@ -114,7 +114,7 @@ def do_input(o, src, dst):
     out.close()
 
 def do_pathfix(o, src, dst):
-    'editing input %s\n    to output %s  to fix paths'
+    'editing input %s\n    to output %s\n    to relocate paths'
     src = do_save(o, src, dst)
     if o.verb: print do_pathfix.__doc__ % (src,dst)
     inp = open(src, 'r')
@@ -127,7 +127,7 @@ def do_pathfix(o, src, dst):
     out.close()
 
 def do_copy(o, src, dst):
-    'copying %s  %s\n    to output %s'
+    'copying %s  %s\n    to output %s\n    which is used unmodified'
     src = do_save(o, src, dst)
     if os.path.isfile(src):
         if o.verb: print do_copy.__doc__ % ('file', src, dst)
@@ -143,6 +143,8 @@ if __name__ == '__main__':
     o = parseOptions()
     checkOptions(o)
     for jobin in o.nargs:
+        if o.verb: print 'Copying files for job ' + jobin
+        else:      print jobin
         try:
             job,suf = jobin.split('.')
         except:
