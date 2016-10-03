@@ -1,0 +1,6 @@
+station=SMA    ; id=Sp ; site_position=-5464555.493 m : -2492927.989 m : 2150797.176 m
+station=ALMA   ; id=Al ; site_position=2225039.530 m : -5441197.629 m : -2479303.360 m
+station=SMTO   ; id=St ; site_position=-1828796.200 m : -5054406.800 m : 3427865.200 m
+station=CARMA  ; id=Cm ; site_position=-2397378.568 m : -4482048.670 m : 3843513.202 m
+station=IRAM30 ; id=Im ; site_position=5088967.900 m : -301681.600 m : 3825015.800 m
+station=SC-VLBA; id=Sc ; site_position=2607848.603 m : -5488069.582 m : 1932739.671 m

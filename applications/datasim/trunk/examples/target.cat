@@ -1,0 +1,6 @@
+source_name=M87     ; IAU_name=1230+123; ra=12h30m49.4233000s ; dec=12d23'28.043000"; ref_coord_frame=J2000
+source_name=Sgra    ; IAU_name=1745-290; ra=17h45m40.0410000s ; dec=-29d00'28.120000"; ref_coord_frame=J2000
+source_name=3C84    ; IAU_name=0319+414; ra=03h19m48.1601000s ; dec=41d30'42.103000"; ref_coord_frame=J2000
+source_name=3C279   ; IAU_name=1256-057; ra=12h56m11.1665000s ; dec=-05d47'21.524000"; ref_coord_frame=J2000
+source_name=NRAO530 ; IAU_name=1733-130; ra=17h33m02.7057840s ; dec=-13d04'49.548190"; ref_coord_frame=J2000
+source_name=NCP     ; IAU_name=1733-130; ra=00h00m00.0000000s ; dec=89d59'59.000000"; ref_coord_frame=J2000

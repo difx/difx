@@ -1,0 +1,20 @@
+#!/bin/bash
+# This is the input file for the modified anoise program. This file
+# allows the user to select a target source, antennas to use, and
+# observing start time and end time.
+# The sources that can be selected for simulation include Sgr A*, M87,3C279, 3C84, NRAO530
+# The stations that can be used are GLT, SMA, , SMTO, CARMA, and Iram 30-m
+# The start/end time of the observation should be set in the format of2012y075d05h58m00
+# Note that to select the time appropriately, it may be better tofirst use SCHED
+# to check whether the selected source is above the horizon duringobservation for all
+# selected stations.
+# FREQ_OBS is the observing frequency of the first band at the left edge
+
+SOURCE=M87
+STATION="SMA, CARMA, SMTO"
+BAND="32.0x1, 32.0x1, 32.0x1"
+GAP="0.0, 0.0, 0.0"
+SHIFT="0.0, 0.0, 0.0"
+START_TIME=2012y075d05h58m00s
+END_TIME=2012y075d05h58m04s
+FREQ_OBS=230000.00
