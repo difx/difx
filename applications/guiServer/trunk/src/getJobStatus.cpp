@@ -94,7 +94,7 @@ void ServerSideConnection::getJobStatusThread( GetJobStatusInfo* getJobStatusInf
 	if ( pp == NULL ) {
 	    monitor->sendPacket( GET_JOB_STATUS_FORK_FAILED, NULL, 0 );
 	    delete monitor;
-	    keepGoing = false;
+	    return;
 	}
 	while ( keepGoing && fgets( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, pp ) != NULL ) {
 

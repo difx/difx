@@ -76,7 +76,15 @@ void ServerSideConnection::runVex2Difx( Vex2DifxInfo* vex2DifxInfo ) {
     //  host that requested this task (the GUI, presumably).  This connection is used
     //  to communicate process activities.
     guiClient = new GUIClient( vex2DifxInfo->ssc, S->address, S->port );
-    guiClient->packetExchange();
+    
+    //  If the connection was made properly, send acknowledgement.  If not, we need to bail out now.
+    if ( guiClient->okay() )
+    	guiClient->packetExchange();
+    else {
+        diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to run vex2difx" );
+        delete guiClient;
+	    return;
+    }
     
     //  If this is a strictly "calcOnly" request, the "v2dFile" name is actually a job
     //  specification (an individual name, or a wildcard list) for which .cacl files should

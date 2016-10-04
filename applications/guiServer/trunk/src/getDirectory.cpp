@@ -89,6 +89,7 @@ void ServerSideConnection::getDirectoryThread( GetDirectoryInfo* info ) {
     }
     else {
         info->ssc->diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to start job" );
+        delete gc;
         return;
     }
     
@@ -136,7 +137,7 @@ void ServerSideConnection::getDirectoryThread( GetDirectoryInfo* info ) {
     }
 
     //  Generate a new directory if that was requested.
-    if ( S->generateNew ) {
+    if ( noErrors && S->generateNew ) {
         gc->sendPacket( GENERATE_DIRECTORY_STARTED, NULL, 0 );
         snprintf( command, MAX_COMMAND_SIZE, 
             "%s -host %s %s mk5dir -n -f %s",

@@ -215,145 +215,144 @@ void ServerSideConnection::runMachinesDefinition( MachinesDefinitionInfo* machin
         processThreads.push_back( S->nThread[i] );
     }
         
-        //  Find the "working directory" - where the .input file resides and .threads and .machines
-        //  files will be put.  This is also where data are written when the job is eventually run.
-	    strcpy( workingDir, S->inputFilename );
-        l = strlen( workingDir );
-        for( int i = l-1; i > 0; i-- ) {
-            if( workingDir[i] == '/') {
-        		workingDir[i] = 0;
-        		break;
-        	}
-        }
+    //  Find the "working directory" - where the .input file resides and .threads and .machines
+    //  files will be put.  This is also where data are written when the job is eventually run.
+    strcpy( workingDir, S->inputFilename );
+    l = strlen( workingDir );
+    for( int i = l-1; i > 0; i-- ) {
+        if( workingDir[i] == '/') {
+    		workingDir[i] = 0;
+    		break;
+    	}
+    }
 
-        //  Option to run a different version of mpirun.
-	    if( S->mpiWrapper[0] )
-	        mpiWrapper = S->mpiWrapper;
-	    else
-		    mpiWrapper = "mpirun";
+    //  Option to run a different version of mpirun.
+    if( S->mpiWrapper[0] )
+        mpiWrapper = S->mpiWrapper;
+    else
+	    mpiWrapper = "mpirun";
 
-        //  Test mpirun on each processor and data source.  We do this by creating an empty
-        //  file with the machines name in the "working" directory using mpirun on each machine.
-        //  This should test both write permission for the host and ssh permission required by
-        //  mpirun (which is more likely to be a problem).  Maybe these tests can get more 
-        //  elaborate - test processing time, etc, if we get adventurous.
-        std::list<std::string>::iterator i;
-        std::list<int>::iterator j = processThreads.begin();
-        if ( S->testProcessors ) {
-            monitor->sendPacket( MACHINE_DEF_RUNNING_MPIRUN_TESTS, NULL, 0 );
-            for ( i = processNodes.begin(); i != processNodes.end(); ) {
-                snprintf( nodename, MAX_COMMAND_SIZE, "%s", i->c_str() );
-                //  Create a test file name.
-                snprintf( testPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/test_%s", workingDir, nodename );
-                //  Execute an mpirun command to create a new file using each processor.
-                snprintf( command, MAX_COMMAND_SIZE, "%s -host %s %s touch %s &", 
-                    mpiWrapper,
-                    nodename,
-                    _difxSetupPath,
-                    testPath );
-                int ret = system( command );
-                //  We give the remote system a generous one second to complete this task.
-                sleep( 1 );
-                //  Now, try to delete the test file.  If it exists, the delete should return
-                //  without an error.  If there IS an error, our assumption is that the mpirun did not
-                //  work the way we expected.
-                ret = unlink( testPath );
-                if ( ret == -1 ) {
-        	        monitor->sendPacket( MACHINE_DEF_FAILURE_MPIRUN, nodename, 
-        	            strlen( nodename ) );
-        	        //  Eliminate this node if we are supposed to be doing so...
-        	        if ( S->testProcessors ) {
-        	            i = processNodes.erase( i );
-        	            j = processThreads.erase( j );
-        	        }
-        	        else {
-        	            ++i;
-        	            ++j;
-        	        }
-                }
-                else {
-        	        monitor->sendPacket( MACHINE_DEF_SUCCESS_MPIRUN, nodename, 
-        	            strlen( nodename ) );
-        	        ++i;
-        	        ++j;
-                }
-            }
-        }
-        
-        //  Enough checking - write the machines file.
-        out = fopen( machinesFilename, "w" );
-        if ( !out ) {
-	        diagnostic( ERROR, "Cannot open machines file \"%s\" for writing", machinesFilename );
-	        monitor->sendPacket( MACHINE_DEF_FAILURE_OPEN_MACHINES_FILE, strerror( errno ), 
-	            strlen( strerror( errno ) ) );
-            monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
-            delete monitor;
-        }
-        //  The "head" or "manager" node is always first.
-        fprintf(out, "%s\n", S->headNode);
-        //  Then the data source machines.
-        for( int i = 0; i < S->nDatastream; ++i )
-	        fprintf( out, "%s\n", S->datastreamNode[i] );
-        //  Finally, the processing machines.  Only include those which include at least
-        //  one processing thread - for the head node this must be an "extra" thread.
-        j = processThreads.begin();
-        for ( i = processNodes.begin(); i != processNodes.end(); ++i ) {
-            if ( !strcmp( i->c_str(), S->headNode ) ) {
-                if ( *j > 1 )
-                    fprintf( out, "%s\n", i->c_str() );
+    //  Test mpirun on each processor and data source.  We do this by creating an empty
+    //  file with the machines name in the "working" directory using mpirun on each machine.
+    //  This should test both write permission for the host and ssh permission required by
+    //  mpirun (which is more likely to be a problem).  Maybe these tests can get more 
+    //  elaborate - test processing time, etc, if we get adventurous.
+    std::list<std::string>::iterator i;
+    std::list<int>::iterator j = processThreads.begin();
+    if ( S->testProcessors ) {
+        monitor->sendPacket( MACHINE_DEF_RUNNING_MPIRUN_TESTS, NULL, 0 );
+        for ( i = processNodes.begin(); i != processNodes.end(); ) {
+            snprintf( nodename, MAX_COMMAND_SIZE, "%s", i->c_str() );
+            //  Create a test file name.
+            snprintf( testPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/test_%s", workingDir, nodename );
+            //  Execute an mpirun command to create a new file using each processor.
+            snprintf( command, MAX_COMMAND_SIZE, "%s -host %s %s touch %s &", 
+                mpiWrapper,
+                nodename,
+                _difxSetupPath,
+                testPath );
+            int ret = system( command );
+            //  We give the remote system a generous one second to complete this task.
+            sleep( 1 );
+            //  Now, try to delete the test file.  If it exists, the delete should return
+            //  without an error.  If there IS an error, our assumption is that the mpirun did not
+            //  work the way we expected.
+            ret = unlink( testPath );
+            if ( ret == -1 ) {
+    	        monitor->sendPacket( MACHINE_DEF_FAILURE_MPIRUN, nodename, 
+    	            strlen( nodename ) );
+    	        //  Eliminate this node if we are supposed to be doing so...
+    	        if ( S->testProcessors ) {
+    	            i = processNodes.erase( i );
+    	            j = processThreads.erase( j );
+    	        }
+    	        else {
+    	            ++i;
+    	            ++j;
+    	        }
             }
             else {
-                if ( *j > 0 )
-	                fprintf( out, "%s\n", i->c_str() );
-	        }
-            ++j;
-        }
-        fclose( out );
-        monitor->sendPacket( MACHINE_DEF_MACHINES_FILE_CREATED, NULL, 0 );
-
-        //  Write the threads file.
-        out = fopen( threadsFilename, "w" );
-        if( !out ) {
-            diagnostic( ERROR, "Cannot open threads file \"%s\" for writing", threadsFilename );
-	        snprintf( message, DIFX_MESSAGE_LENGTH, "%s - %s", threadsFilename, strerror( errno ) );
-	        monitor->sendPacket( MACHINE_DEF_FAILURE_OPEN_THREADS_FILE, strerror( errno ), 
-	            strlen( strerror( errno ) ) );
-            monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
-            delete monitor;
-        }
-        fprintf(out, "NUMBER OF CORES:    %d\n", (int)processNodes.size() );
-        //  Tally the total number of processing threads - make sure there is at
-        //  least one!
-        int threadCount = 0;
-        j = processThreads.begin();
-        for ( i = processNodes.begin(); i != processNodes.end(); ++i ) {
-            //  The head node reserves one thread for its management duties.
-            if ( !strcmp( i->c_str(), S->headNode ) ) {
-                if ( *j > 1 ) {
-                    fprintf( out, "%d\n", *j - 1 );
-                    threadCount += *j - 1;
-                }
+    	        monitor->sendPacket( MACHINE_DEF_SUCCESS_MPIRUN, nodename, 
+    	            strlen( nodename ) );
+    	        ++i;
+    	        ++j;
             }
-	        else {
-                if ( *j > 0 ) {
-                    fprintf( out, "%d\n", *j );
-                    threadCount += *j;
-                }
-	        }
-	        ++j;
         }
-        fclose(out);
+    }
         
-        //  A zero thread count is probably indicative of a problem.
-        if ( threadCount < 1 )
-            monitor->sendPacket( MACHINE_DEF_LOW_THREAD_COUNT, NULL, 0 );
-            
-        monitor->sendPacket( MACHINE_DEF_THREADS_FILE_CREATED, NULL, 0 );
-	
-        //  Healthy process end...
-        monitor->sendPacket( MACHINE_DEF_TASK_ENDED_GRACEFULLY, NULL, 0 );
+    //  Enough checking - write the machines file.
+    out = fopen( machinesFilename, "w" );
+    if ( !out ) {
+        diagnostic( ERROR, "Cannot open machines file \"%s\" for writing", machinesFilename );
+        monitor->sendPacket( MACHINE_DEF_FAILURE_OPEN_MACHINES_FILE, strerror( errno ), 
+            strlen( strerror( errno ) ) );
+        monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
         delete monitor;
-//        delete guiSocket;
+    }
+    //  The "head" or "manager" node is always first.
+    fprintf(out, "%s\n", S->headNode);
+    //  Then the data source machines.
+    for( int i = 0; i < S->nDatastream; ++i )
+        fprintf( out, "%s\n", S->datastreamNode[i] );
+    //  Finally, the processing machines.  Only include those which include at least
+    //  one processing thread - for the head node this must be an "extra" thread.
+    j = processThreads.begin();
+    for ( i = processNodes.begin(); i != processNodes.end(); ++i ) {
+        if ( !strcmp( i->c_str(), S->headNode ) ) {
+            if ( *j > 1 )
+                fprintf( out, "%s\n", i->c_str() );
+        }
+        else {
+            if ( *j > 0 )
+                fprintf( out, "%s\n", i->c_str() );
+        }
+        ++j;
+    }
+    fclose( out );
+    monitor->sendPacket( MACHINE_DEF_MACHINES_FILE_CREATED, NULL, 0 );
+
+    //  Write the threads file.
+    out = fopen( threadsFilename, "w" );
+    if( !out ) {
+        diagnostic( ERROR, "Cannot open threads file \"%s\" for writing", threadsFilename );
+        snprintf( message, DIFX_MESSAGE_LENGTH, "%s - %s", threadsFilename, strerror( errno ) );
+        monitor->sendPacket( MACHINE_DEF_FAILURE_OPEN_THREADS_FILE, strerror( errno ), 
+            strlen( strerror( errno ) ) );
+        monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
+        delete monitor;
+    }
+    fprintf(out, "NUMBER OF CORES:    %d\n", (int)processNodes.size() );
+    //  Tally the total number of processing threads - make sure there is at
+    //  least one!
+    int threadCount = 0;
+    j = processThreads.begin();
+    for ( i = processNodes.begin(); i != processNodes.end(); ++i ) {
+        //  The head node reserves one thread for its management duties.
+        if ( !strcmp( i->c_str(), S->headNode ) ) {
+            if ( *j > 1 ) {
+                fprintf( out, "%d\n", *j - 1 );
+                threadCount += *j - 1;
+            }
+        }
+        else {
+            if ( *j > 0 ) {
+                fprintf( out, "%d\n", *j );
+                threadCount += *j;
+            }
+        }
+        ++j;
+    }
+    fclose(out);
+    
+    //  A zero thread count is probably indicative of a problem.
+    if ( threadCount < 1 )
+        monitor->sendPacket( MACHINE_DEF_LOW_THREAD_COUNT, NULL, 0 );
+        
+    monitor->sendPacket( MACHINE_DEF_THREADS_FILE_CREATED, NULL, 0 );
+
+    //  Healthy process end...
+    monitor->sendPacket( MACHINE_DEF_TASK_ENDED_GRACEFULLY, NULL, 0 );
+    delete monitor;
 		
 }
 

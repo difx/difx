@@ -84,6 +84,7 @@ void ServerSideConnection::mark5ControlThread( Mark5ControlInfo* info ) {
     }
     else {
         info->ssc->diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to execute mk5control command \"%s\"", S->command );
+        delete gc;
         return;
     }
 

@@ -84,6 +84,7 @@ void ServerSideConnection::mark5CopyThread( Mark5CopyInfo* info ) {
     }
     else {
         info->ssc->diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to start job" );
+        delete gc;
         return;
     }
     

@@ -257,42 +257,42 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
       		system( command );
   		}
     	
-    	    //  Open a client connection to the server that should be running for us on the
-    	    //  remote host.
-            GUIClient* gc = new GUIClient( this, S->address, S->port );
-      	    
-      	    //  Assuming the socket connection was successful, write the file contents to the server.
-      	    if ( gc->okay() ) {
-            	//snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
-            	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
-            	//  Send the total size first.
-            	int n = htonl( filesize );            	
-            	gc->writer( &n, sizeof( int ) );
-            	if ( filesize > 0 ) {
-            	    //  Then break the file up into "blocks" for sending.
-            	    short blockSize = 1024;
-            	    char blockData[blockSize];
-		            const int tmpFileSize = 100;
-            	    char tmpFile[tmpFileSize];
-            	    snprintf( tmpFile, tmpFileSize, "/tmp/filetransfer_%d", S->port );
-            	    int fd = open( tmpFile, O_RDONLY );
-            	    while ( filesize > 0 ) {
-            	        short readsize = read( fd, blockData, blockSize );
-            	        gc->writer( blockData, readsize );
-            	        filesize -= readsize;
-            	    }
-            	    close( fd );
-            	}
-      	    }
-      	    else {
-            	snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
-            	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
-      	    }
-    
-            //  Clean up our litter.
-    		//snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
-            system( command );
-      		delete gc;
+	    //  Open a client connection to the server that should be running for us on the
+	    //  remote host.
+        GUIClient* gc = new GUIClient( this, S->address, S->port );
+  	    
+  	    //  Assuming the socket connection was successful, write the file contents to the server.
+  	    if ( gc->okay() ) {
+        	//snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+        	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+        	//  Send the total size first.
+        	int n = htonl( filesize );            	
+        	gc->writer( &n, sizeof( int ) );
+        	if ( filesize > 0 ) {
+        	    //  Then break the file up into "blocks" for sending.
+        	    short blockSize = 1024;
+        	    char blockData[blockSize];
+	            const int tmpFileSize = 100;
+        	    char tmpFile[tmpFileSize];
+        	    snprintf( tmpFile, tmpFileSize, "/tmp/filetransfer_%d", S->port );
+        	    int fd = open( tmpFile, O_RDONLY );
+        	    while ( filesize > 0 ) {
+        	        short readsize = read( fd, blockData, blockSize );
+        	        gc->writer( blockData, readsize );
+        	        filesize -= readsize;
+        	    }
+        	    close( fd );
+        	}
+  	    }
+  	    else {
+        	snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
+        	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+  	    }
+
+        //  Clean up our litter.
+		//snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
+        system( command );
+  		delete gc;
       		    	
 	}
 		

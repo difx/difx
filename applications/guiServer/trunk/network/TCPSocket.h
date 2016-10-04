@@ -185,6 +185,8 @@ namespace network {
             int soFar = 0;
             int ret;
             fd_set wfds;
+            if ( !_connected )
+               return -1;
             pthread_mutex_lock( &_writeMutex );
             while ( soFar < nBytes ) {
 
