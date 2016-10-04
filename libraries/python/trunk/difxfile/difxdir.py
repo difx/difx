@@ -102,7 +102,7 @@ class DifxDir(object):
                     #scan.scanName = fields[11]
                     
                     # try to separate the scan name into experiment stationcode and scanname
-                    nameSplit = fields[11].split("_")
+                    nameSplit = fields[11].strip('_').split("_")
                     if (len(nameSplit) == 3):
                         scan.expName = upper(nameSplit[0])
                         scan.stationCode = upper(nameSplit[1])
@@ -113,6 +113,7 @@ class DifxDir(object):
                         scan.scanName = nameSplit[2] + "_" + nameSplit[3]
                     else:
                         self.parseErrors += 1
+			print nameSplit
                    
                   
                     if (scan.expName != ""):
