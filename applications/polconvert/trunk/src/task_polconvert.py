@@ -666,6 +666,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 #######################
 ##### GET SPECTRAL WINDOW AUTOMATICALLY:
   if spw < 0:
+    printMsg("Deducing SPW...\n")
  
     from collections import Counter
 
@@ -678,6 +679,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
         break
       tb.close()
 
+    if BPidx >= 0:
+      printMsg("Using BP table %d\n" % BPidx)
+
     if BPidx == -1:
       printError("I cannot guess the right spw if there are no BP-like tables!") 
       
@@ -688,6 +692,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     tb.close()
     nurange = [[np.min([calfreqs[i],calfreqs2[i]]),np.max([calfreqs[i],calfreqs2[i]])] for i in range(len(calfreqs))]
     spwsel = [-1 for nu in doIF]
+    # the following loop needs protection
     for nui,nu in enumerate(doIF):
       for spwi in range(len(calfreqs)):
         nu0 = FrInfo['FREQ (MHZ)'][nu]
@@ -703,7 +708,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
        printError("There is more than one possible spw for some IFs!") 
 
     spw = spwsel[0]
-    print 'Selected spw: ',spw
+    printMsg('Selected spw: %d' % spw)
 ########################
 
 
@@ -1353,7 +1358,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     sub.plot(MIXAMP[:,0],MIXAMP[:,1],'sr',label='XR',markersize=15)
     sub.plot(MIXAMP[:,0],MIXAMP[:,3],'dg',label='YL',markersize=15)
     sub.plot(MIXAMP[:,0],MIXAMP[:,5],'+r',label='XL',markersize=15)
-    sub.plot(MIXAMP[:,0],MIXAMP[:,7],'+g',label='YR',markersize=15)
+    sub.plot(MIXAMP[:,0],MIXAMP[:,7],'xg',label='YR',markersize=15)
     pl.legend(numpoints=1)
 
     sub.errorbar(MIXAMP[:,0],MIXAMP[:,1],MIXAMP[:,2],linestyle='None',fmt='k')
@@ -1367,7 +1372,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     sub2.plot(CONVAMP[:,0],CONVAMP[:,1],'sr',label='RR',markersize=15)
     sub2.plot(CONVAMP[:,0],CONVAMP[:,3],'dg',label='LL',markersize=15)
     sub2.plot(CONVAMP[:,0],CONVAMP[:,5],'+r',label='RL',markersize=15)
-    sub2.plot(CONVAMP[:,0],CONVAMP[:,7],'+g',label='LR',markersize=15)
+    sub2.plot(CONVAMP[:,0],CONVAMP[:,7],'xg',label='LR',markersize=15)
     pl.legend(numpoints=1)
 
     sub2.errorbar(CONVAMP[:,0],CONVAMP[:,1],CONVAMP[:,2],linestyle='None',fmt='k')

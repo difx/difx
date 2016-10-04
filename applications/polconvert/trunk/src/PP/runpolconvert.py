@@ -45,7 +45,7 @@ try:
     print "Experiment %s with linear pol antenna index %s\non IFs %s" % (
         expName, str(linAnt), str(doIF))
     if plotIF > 0:
-        print "Plotting IF %s on days %d .. %d)" % (
+        print "Plotting IF %s on days %d .. %d" % (
             str(plotIF), timeRange[0], timeRange[4])
 except Exception, ex:
     raise ex
@@ -57,8 +57,8 @@ try:
     if (band3 and band6Lo) or (band3 and band6Hi) or (band6Lo and band6Hi):
         raise Exception, 'Only one of band3 or band6Lo or band6Hi may be True'
     if band3: print 'Band 3 operation'
-    if band6Lo: print 'Band 6 (Lo/SPW 0) operation'
-    if band6Hi: print 'Band 6 (Hi/SPW 1) operation'
+    if band6Lo: print 'Band 6 Lo operation'
+    if band6Hi: print 'Band 6 Hi operation'
 except Exception, ex:
     raise ex
 
@@ -77,7 +77,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     gains = calgains[3:]
     interpolation = ['linear', 'self', 'linear', 'linear']
     dterm = calgains[2]
-    Range = [] # do the entire scan
+    Range = []              # do the entire scan
     calAPPTime = [0.0, 8.0] # half-a scan of tolerance
 
     # allow XY phase table to be dropped if it is noisy
