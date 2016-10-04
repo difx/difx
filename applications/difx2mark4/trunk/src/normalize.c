@@ -31,13 +31,13 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         polref,
         polrem,
         n_aczero = 0,               // number of 0 autocorrelations
-        pmap[64][4],                // lowest freq index of matching channels, by [freq][pol]
+        pmap[MAX_DFRQ][4],          // lowest freq index of matching channels, by [freq][pol]
         nf;
 
     double t,                       // time of current records
            factor,
            sum,
-           pant[256][64][4];        // sqrt of power per antenna avg over channels
+           pant[256][MAX_DFRQ][4];  // sqrt of power per antenna avg over channels
                                     // indexed by [ant][freq][pol]
                                     // pol index mapping:
     char polchar[4] = {'L', 'R', 'X', 'Y'};
@@ -46,7 +46,7 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
     enum indices {REF, REM};
     
                                     // create pmap array
-    for (fr=0; fr<64; fr++)         // first initialize pmap array to an identity map
+    for (fr=0; fr<MAX_DFRQ; fr++)   // first initialize pmap array to an identity map
         for (pol=0; pol<4; pol++)
             pmap[fr][pol] = fr;
 
@@ -89,7 +89,7 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         {
                                     // initialize pant array
         for (ant=0; ant<256; ant++)
-            for (fr=0; fr<64; fr++)
+            for (fr=0; fr<MAX_DFRQ; fr++)
                 for (pol=0; pol<4; pol++)
                     pant[ant][fr][pol] = 0.0;
                                     // save time for this step
