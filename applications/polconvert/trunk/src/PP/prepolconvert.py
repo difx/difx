@@ -34,9 +34,9 @@ def parseOptions():
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     # options
     parser.add_argument('-l', '--suffices', dest='suffices',
-        metavar='LIST', default='input,calc,flag,im,difx',
+        metavar='LIST', default='input,calc,flag,im,difx,save',
         help='comma-separated list of file/dir suffices' +
-             'to process, default is "input,calc,flag,im,difx"')
+             'to process, default is "input,calc,flag,im,difx,save"')
     parser.add_argument('-s', '--srcdir', dest='srcdir',
         metavar='DIR', default='.',
         help='source directory with DiFX output (.)')
@@ -157,6 +157,7 @@ if __name__ == '__main__':
             if suf == 'flag':  do_copy(o, src, dst)
             if suf == 'im':    do_pathfix(o, src, dst)
             if suf == 'difx':  do_copy(o, src, dst)
+            if suf == 'save':  do_save(o, src, dst)
 
 #
 # eof
