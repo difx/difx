@@ -47,7 +47,7 @@
 void usage(void)
 {
     printf("\n"
-           "Mark6 SG library utility  m6sg_gather v1.0.0   Jan Wagner 20141121\n"
+           "Mark6 SG library utility  m6sg_gather v1.0.1   Jan Wagner 20141121\n"
            "\n"
            "Copies a single VLBI scan into a file by gathering together all the\n"
            "piecewise files from several disks associated with scatter-gather\n"
@@ -91,6 +91,10 @@ int main(int argc, char** argv)
 
 
     /* Command line arguments */
+    if (getenv("MARK6_ROOT") != NULL)
+    {
+        mark6_sg_set_rootpattern(getenv("MARK6_ROOT"));
+    }
     if (argc != 2 && argc != 3)
     {
         usage();

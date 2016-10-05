@@ -9,14 +9,17 @@
 #include <unistd.h>
 #include <time.h>
 
+static char* m_root = MARK6_SG_ROOT_PATTERN;
+
 void usage()
 {
 	printf("\nmk6copy [-s] <Mark6 scan name> <destination>\n\n"
 		"Copies the Mark6 scatter-gather data of a given scan via the\n"
 		"libmark6sg library (not FUSE) into a single output file. A scan\n"
 		"name of test.vdif for example collects the scatter-gather file\n"
-		"fragments '/mnt/disks/[1-2]/[0-7]/test.vdif'.\n\n"
-		"Specify -s to show copy progress.\n\n"
+		"fragments '%s/test.vdif'.\n\n"
+		"Specify -s to show copy progress.\n\n",
+		m_root
 	);
 }
 
@@ -40,6 +43,11 @@ int main(int argc, char** argv)
 	struct timespec t0_wr, t1_wr;
 
 	/* Arguments */
+	if (getenv("MARK6_ROOT") != NULL)
+	{
+		m_root = strdup(getenv("MARK6_ROOT"));
+		mark6_sg_set_rootpattern(m_root);
+	}
 	while ((optarg < argc) && (argv[optarg][0] == '-'))
 	{
 		if (strcmp(argv[optarg], "-s") == 0)

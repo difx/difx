@@ -1,3 +1,6 @@
+Version 1.1.9
+* fuseMk6, mk6copy, m6sg_gather: use MARK6_ROOT env var if available
+
 Version 1.1.8
 * libmark6sg: simplified the prefetch method, average throughput
               now slightly better and a lot more consistent

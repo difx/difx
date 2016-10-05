@@ -18,10 +18,26 @@
 #define USE_JSON_INFOS   1  // non-zero if JSON metadata infos should be used (these are: scan create time, approximate scan size in bytes)
 #define USE_FILESIZE_EST 1  // non-zero if total length of file fragments should be used as scan size in bytes
 
+//////////////////////////////////////////////////////////////////////////////////
+// Local
+//////////////////////////////////////////////////////////////////////////////////
+
+static gid_t m_gid = 1000;
+static uid_t m_uid = 1000;
+
+// Directory entries
+static char**       m_scannamelist;
+static struct stat* m_scanstatlist;
+static int          m_nscans;
+static m6sg_slistmeta_t* m_json_scanlist;
+static char*        m_root;
+
+static pthread_mutex_t dirlock = PTHREAD_MUTEX_INITIALIZER;
+
 void usage(void)
 {
 	printf("\n"
-		"Mark6 Scatter-Gather data interpretation layer   v1.12  Jan Wagner 15032016\n"
+		"Mark6 Scatter-Gather data interpretation layer   v1.13  Jan Wagner 15032016\n"
 		"\n"
 		"Usage: fuseMk6 [-v] [-r pattern] <mountpoint>\n"
 		"\n"
@@ -38,26 +54,9 @@ void usage(void)
                 "   -v    verbose mode (puts fuseMk6 into 'foreground' mode),\n"
                 "         repeat to increase verbosity\n"
                 "   -r    set root pattern (default is %s)\n\n",
-		MARK6_SG_ROOT_PATTERN
+                m_root
 	);
 }
-
-
-//////////////////////////////////////////////////////////////////////////////////
-// Local
-//////////////////////////////////////////////////////////////////////////////////
-
-static gid_t m_gid = 1000;
-static uid_t m_uid = 1000;
-
-// Directory entries
-static char**       m_scannamelist;
-static struct stat* m_scanstatlist;
-static int          m_nscans;
-static m6sg_slistmeta_t* m_json_scanlist;
-static char*        m_root;
-
-static pthread_mutex_t dirlock = PTHREAD_MUTEX_INITIALIZER;
 
 //////////////////////////////////////////////////////////////////////////////////
 // FUSE Layer : reading of scatter-gather files via the "mark6sg" libary
@@ -335,7 +334,7 @@ void *fusem6_dir_watcher(void* thread_arg)
 			close(fd);
 			return NULL;
 		}
-		printf("inotify: Mark6 files changed, refreshing the scan list\n", nrd);
+		printf("inotify: Mark6 files changed, refreshing the scan list\n");
 		fusem6_make_scanlist();
 	}
 }
@@ -363,7 +362,11 @@ int main(int argc, char *argv[])
 
 	/* Arguments */
 	mountpoint = argv[argc-1];
-	m_root = MARK6_SG_ROOT_PATTERN;
+	if (getenv("MARK6_ROOT") != NULL)
+	{
+		m_root = strdup(getenv("MARK6_ROOT"));
+		mark6_sg_set_rootpattern(m_root);
+	}
 	for (i=1; i<argc; i++)
 	{
 		if (strcmp(argv[i], "-v") == 0)
@@ -372,8 +375,8 @@ int main(int argc, char *argv[])
 		}
 		else if ((strcmp(argv[i], "-r") == 0) && ((i+1) < argc))
 		{
-			mark6_sg_set_rootpattern(argv[i+1]);
 			m_root = strdup(argv[i+1]);
+			mark6_sg_set_rootpattern(m_root);
 			i++;
 		}
 		else
