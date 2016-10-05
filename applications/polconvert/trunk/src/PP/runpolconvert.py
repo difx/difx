@@ -124,7 +124,8 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
             plotAnt=plotAnt, doTest=doTest)
     except Exception, ex:
         print 'Polconvert Exception'
-        shutil.rmtree(DiFXoutput)
+        if (os.path.exists(DiFXoutput)):
+            shutil.rmtree(DiFXoutput)
         os.rename(DiFXsave, DiFXoutput)
         raise ex
 
@@ -141,6 +142,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         for art in pcprods:
             if os.path.exists(art):
                 os.rename(art, outdir + '/' + art)
+        print savename + ' results moved to ' + outdir
 
 for job in djobs:
     # DiFX output dir and input files:

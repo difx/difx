@@ -78,7 +78,7 @@ if not goodclib:
    goodclib=False
 #############
 
-import os,sys,shutil
+import os,sys,shutil,re
 import time
 import struct as stk
 import numpy as np
@@ -258,6 +258,14 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 ############################################
 
+# Auxiliary function: derive job label from DiFXinput
+  def jobLabel(inputname):
+    label = inputname
+    try:
+      label = re.sub('.input','', os.path.basename(label))
+    except:
+      pass
+    return label
 
 # Auxiliary function: print error and raise exception:
   def printError(msg):
@@ -1251,8 +1259,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
       cbar = fig2.colorbar(im, cax=cbar_ax)
       cbar.set_label("Amplitude (Norm)")
-      pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
 
+      pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
       pl.savefig('CONVERSION.MATRIX/Kmatrix_AMP_IF%i.png'%pli)
 
       fig2.clf()
@@ -1286,8 +1294,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
       cbar = fig2.colorbar(im, cax=cbar_ax)
       cbar.set_label("Phase (deg.)")
-      pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
 
+      pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
       pl.savefig('CONVERSION.MATRIX/Kmatrix_PHAS_IF%i.png'%pli)
  
 
@@ -1383,6 +1391,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     pl.xlabel('IF NUMBER')
     dChan = max(plotIF)-min(plotIF) + 1
     pl.xlim((min(plotIF)-dChan*0.2,max(plotIF)+0.4*dChan))
+
+    fig.suptitle(jobLabel(DiFXinput))
     fig.savefig('FRINGE.PLOTS/ALL_IFs.png')
 
     fig3 = pl.figure()
@@ -1396,6 +1406,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     pl.ylim((0.,2.))
     pl.xlim((min(CONVAMP[:,0])-1,max(CONVAMP[:,0])+1))
 
+    fig.suptitle(jobLabel(DiFXinput))
     fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS.png')
 
    except:
