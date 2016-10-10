@@ -52,7 +52,7 @@ __lastAuthor__="$Author$"
 
 # minimum database schema version required by this program
 minSchemaMajor = 1
-minSchemaMinor = 2
+minSchemaMinor = 4
 
 
 class GenericWindow(object):
@@ -148,6 +148,7 @@ class MainWindow(GenericWindow):
         Label(frmDetail, text="type: ").grid(row=11,column=0, sticky=W)
         Label(frmDetail, text="analyst: ").grid(row=12,column=0, sticky=W)
         Label(frmDetail, text="released by: ").grid(row=13,column=0, sticky=W)
+        Label(frmDetail, text="email on module arrival: ").grid(row=14,column=0, sticky=W)
         Label(frmDetail, text="date archived: ").grid(row=15,column=0, sticky=W)
         Label(frmDetail, text="archived by: ").grid(row=20,column=0, sticky=W)
         Label(frmDetail, text = "comments: ").grid(row=25, column=0, sticky=W) 
@@ -157,6 +158,8 @@ class MainWindow(GenericWindow):
         self.cboType= Listbox(frmDetail, selectmode=MULTIPLE, height=4, selectforeground="white", selectbackground="dodger blue", fg="grey" )
         self.cboUser = OptionMenu(frmDetail, self.cboUserVar,  *self.users, command=self.onExpDetailChange)
         self.cboReleasedBy = OptionMenu(frmDetail, self.cboReleasedByVar,  *self.users, command=self.onExpDetailChange)
+        self.txtNotify = Entry(frmDetail, text = "")
+        self.txtNumber = Entry(frmDetail, text = "")
         self.txtDateArchived = Entry(frmDetail, text = "")
         self.txtArchivedBy = Entry(frmDetail, text = "")
         self.txtComment = Text(frmDetail, height=3, width=25)
@@ -181,6 +184,7 @@ class MainWindow(GenericWindow):
         self.cboType.grid(row=11, column=1, sticky=E+W)
         self.cboUser.grid(row=12, column=1, sticky=E+W)
         self.cboReleasedBy.grid(row=13, column=1, sticky=E+W)
+	self.txtNotify.grid(row=14, column=1, sticky=E+W)
         self.txtDateArchived.grid(row=15, column=1, sticky=E+W)
         self.txtArchivedBy.grid(row=20, column=1, sticky=E+W)
         self.txtComment.grid(row=25, column=1, sticky=E+W)
@@ -188,6 +192,7 @@ class MainWindow(GenericWindow):
         self.btnDelete.grid(row=110, column=0, columnspan=2, sticky=E+W)
         
         # bind events
+        self.txtNotify.bind("<KeyRelease>", self.onExpDetailChange)
         self.txtNumber.bind("<KeyRelease>", self.onExpDetailChange)
         self.txtComment.bind("<KeyRelease>", self.onExpDetailChange)
         self.cboType.bind('<ButtonRelease-1>', self.onExpDetailChange)
@@ -215,6 +220,7 @@ class MainWindow(GenericWindow):
         for type in selectedExperiment.types:
 		origTypes.append(type.type)
         
+        self.expEdit += self.setChangeColor(self.txtNotify, self.txtNotify.get(), selectedExperiment.emailnotification)
         self.expEdit += self.setChangeColor(self.txtNumber, self.txtNumber.get(), str(selectedExperiment.number).zfill(4))
         self.expEdit += self.setChangeColor(self.cboStatus, self.cboStatusVar.get(), selectedExperiment.status.experimentstatus)
         
@@ -320,6 +326,7 @@ class MainWindow(GenericWindow):
         
         
         self.txtCode["state"] = NORMAL
+        self.txtNotify["state"] = NORMAL
         self.txtNumber["state"] = NORMAL
         self.txtDateArchived["state"] = NORMAL
         self.cboReleasedBy["state"] = NORMAL
@@ -328,6 +335,7 @@ class MainWindow(GenericWindow):
         
         
         self.txtCode.delete(0,END)
+        self.txtNotify.delete(0,END)
         self.txtNumber.delete(0,END)
         self.txtDateArchived.delete(0,END)
         self.txtArchivedBy.delete(0,END)     
@@ -341,6 +349,7 @@ class MainWindow(GenericWindow):
             self.cboType["state"] = DISABLED
             self.cboReleasedBy["state"] = DISABLED
             self.txtCode["state"] = DISABLED
+            self.txtNotify["state"] = DISABLED
             self.txtNumber["state"] = DISABLED
             self.txtArchivedBy["state"] = DISABLED
             self.txtComment["state"] = DISABLED
@@ -387,6 +396,7 @@ class MainWindow(GenericWindow):
                 self.cboReleasedByVar.set("")         
             
             self.txtCode.insert(0, exp.code)
+            self.txtNotify.insert(0, none2String(exp.emailnotification))
             self.txtNumber.insert(0, "%04d" % none2String(exp.number))
             self.txtDateArchived.insert(0, none2String(exp.dateArchived))
             self.txtArchivedBy.insert(0, none2String(exp.archivedBy))
@@ -459,6 +469,15 @@ class MainWindow(GenericWindow):
         exp.comment = strip(self.txtComment.get(1.0, END))
         exp.types = types
         exp.user = user
+        
+        # replace white spaces by comma in email recipient list
+        reclist = ""
+        recipients = self.txtNotify.get().split()
+        for recipient in recipients:
+            reclist += recipient + ","
+        
+        exp.emailnotification = reclist[:-1]
+       
         
         self.selectedExperimentId = exp.id
         
