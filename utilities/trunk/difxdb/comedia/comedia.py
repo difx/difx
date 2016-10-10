@@ -1734,7 +1734,49 @@ class ScanModulesWindow(GenericWindow):
             self.show()
             
         session.close()
-            
+ 
+    def notifyModuleArrival(self, vsn, exp, recipients):
+        '''
+        Sends an email notification that a module for a given experiment has arrived. Notification
+        has to enabled in the options and an email adress has to be associated with the experiment
+        '''
+        
+        if len(recipients) == 0:
+            return
+        
+        if self.config.get('Comedia', 'enableEmailNotification') == 0:
+            return
+        
+	import smtplib
+        from email.mime.text import MIMEText
+
+        server = self.config.get('Comedia', 'smtpServer')
+	sender = self.config.get('Comedia', 'smtpFrom')
+	receiver = self.config.get('Comedia', 'smtpTo')
+        
+        text = "A module has arrived (VSN = %s)  that contains data from experiment %s.\n\n" % (vsn, exp)
+        text += "Data for experiment %s is also stored on following modules:\n" % (exp)
+        # look up all modules that contain data from the given experiment 
+        session = dbConn.session()
+        experiment = getExperimentByCode(session, exp)
+        
+        for module in experiment.modules:
+            text += "VSN = %s station = %s \n" % (module.vsn, module.stationCode)
+        
+
+	msg = MIMEText(text)
+
+        msg['Subject'] = '[comedia] module for experiment %s has arrived' % (exp)
+        msg['From'] = sender
+        msg['To'] = recipients
+
+        # Send the message 
+        s = smtplib.SMTP(server)
+        s.sendmail(sender, recipients.split(","), msg.as_string())
+        s.quit()
+        
+        session.close()
+        
     def notifyAddExperiment(self, vsn, addedExps):
         '''
         Sends an email notification that unknown experiments have been found on the  module
@@ -1802,6 +1844,10 @@ class ScanModulesWindow(GenericWindow):
                         # check if state is unknown
                         if getExperimentStatusCode(session, expCode) == 0:
                             unknownExps.append(expCode)
+                        # check if email notification was requested
+                        recipients = getNotificationEmails(session, expCode)
+                        if  recipients != "":
+                            self.notifyModuleArrival(checkModule.vsn, expCode, recipients)
                         
                         
                     exp = getExperimentByCode(session, expCode)
@@ -1815,6 +1861,7 @@ class ScanModulesWindow(GenericWindow):
 		#send email notofication about added experiments
 		if len(unknownExps) > 0:
 			self.notifyAddExperiment(checkModule.vsn, unknownExps)
+                
                 
                 continue
             # action was 'remind again'
