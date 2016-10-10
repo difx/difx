@@ -113,7 +113,6 @@ class DifxDir(object):
                         scan.scanName = nameSplit[2] + "_" + nameSplit[3]
                     else:
                         self.parseErrors += 1
-			print nameSplit
                    
                   
                     if (scan.expName != ""):
