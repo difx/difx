@@ -237,3 +237,17 @@ def isExperimentArchived(session, code):
     except:
         raise Exception ("Unknown experiment %s" % code)
     
+def getNotificationEmails(session, code):
+    '''
+    Obtains the list of email notification adresses that have been assigned to the experiment
+    '''
+    try:
+        experiment = session.query(model.Experiment).filter_by(code=code).one()
+        
+        if (experiment.emailnotification is None):
+            return("")
+        else:
+            return (experiment.emailnotification)
+        
+    except:
+        raise Exception ("Unknown experiment %s" % code)
