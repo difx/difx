@@ -475,7 +475,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		const VexChannel *ch = &setup.channels[i + startBand];
 		if(ch->subbandId < 0 || ch->subbandId >= static_cast<int>(mode->subbands.size()))
 		{
-			cerr << "Error: setFormat: index to subband=" << ch->subbandId << " is out of range" << endl;
+			cerr << "Error: setFormat: index to subband=" << ch->subbandId << " is out of range.  antName=" << antName << " mode=" << mode->defName << endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -489,7 +489,11 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			r -= startBand;
 			if(r < 0 || r >= D->datastream[dsId].nRecBand)
 			{
-				cerr << "Error: setFormat: index to record channel=" << r << " is out of range" << endl;
+				cerr << "Error: setFormat: index to record channel=" << r << " is out of range.  antName=" << antName << " mode=" << mode->defName << endl;
+				cerr << "nRecBand = " << D->datastream[dsId].nRecBand << endl;
+				cerr << "startBand = " << startBand << endl;
+				cerr << "subband = " << mode->subbands[ch->subbandId] << endl;
+				cerr << "nRecordChan = " << nRecordChan << "  i = " << i << endl;
 
 				exit(EXIT_FAILURE);
 			}
