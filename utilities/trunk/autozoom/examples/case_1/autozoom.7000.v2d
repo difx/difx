@@ -1,0 +1,40 @@
+vex = autozoom.vex.obs
+mjdStart = 56001.248611111
+mjdStop  = 56001.248657407
+antennas = Cm,Sp,St
+startSeries = 7000
+dataBufferFactor = 16
+visBufferLength = 80
+nDataSegments = 8
+
+SETUP default
+{
+   tInt = 0.8
+   # subintNS = 32000000
+   guardNS = 2000
+   FFTSpecRes = 0.00390625
+   specRes = 0.50
+   xmacLength = 1
+   strideLength = 1
+}
+
+ANTENNA Cm
+{
+   file = Cm.vdif
+   format = VDIF/8224/2
+   phaseCalInt = 0
+}
+
+ANTENNA Sp
+{
+   file = Sp.vdif
+   format = VDIF/8224/2
+   phaseCalInt = 0
+}
+
+ANTENNA St
+{
+   file = St.vdif
+   format = VDIF/8224/2
+   phaseCalInt = 0
+}

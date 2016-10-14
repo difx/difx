@@ -1,0 +1,76 @@
+Introduction
+============
+
+The vex module is a bare-bones parser for VEX that is written
+completely in Python.  It parses the VEX file and returns it as
+hierarchy of dictionary-like structures.  The module does not validate
+the VEX; in particular it doesn't check if block names and parameter
+names are actually defined by the VEX standard.
+
+Requirements
+============
+
+This module uses PLY (Python Lex-Yacc), and should work with Python
+2.2 or greater.  It is strongly recommended to use PLY version 3.4 or
+greater, as earlier versions have not been tested.
+
+How to use
+==========
+
+The vex module contains a standard Python Distutils setup script.
+Please refer to the relevant Python documentation for installation
+instructions.  After installation, just include the vex module to use
+it:
+
+    >>> import vex
+
+The vex.parse() function is used to parse VEX and operates on strings.
+To parse a VEX file you will need to read in the file first:
+
+    >>> fp = open("n08c1.vex")
+    >>> v = vex.parse(fp.read())
+
+You now have a dictionary-like data structure that can be used to look
+up VEX elements.  For example:
+
+    >>> exper = v['GLOBAL']['EXPER']
+    N08C1
+
+returns the $EXPER reference in the $GLOBAL block as a string.
+A more complicated example
+
+    >>> for site in v['SITE']:
+    ...     print site, v['SITE'][site]['site_position']
+
+will print the position of each antenna in the experiment:
+
+    EFLSBERG ['4033947.3239 m', '486990.7130 m', '4900430.9078 m']
+    NOTO ['4934562.9211 m', '1321201.4642 m', '3806484.6311 m']
+    URUMQI ['228310.3736 m', '4631922.7507 m', '4367063.9997 m']
+    HART ['5085442.7711 m', '2668263.7044 m', '-2768696.8538 m']
+
+In some cases VEX uses the same variable or parameter name multiple
+times in the same context.  Take for example the following $MODE
+block:
+
+    $MODE;
+    *
+    def NME.6CM;
+         ref $PROCEDURES = Mode_01;
+         ref $FREQ = 4974.49MHz8x8MHz:Ef:Ur:Hh;
+         ref $FREQ = 4974.49MHz8x8MHz#02:Nt;
+    ...
+    enddef;
+
+Using the standard Python dictionary syntax:
+
+    >>> v['MODE']['NME.6CM']['FREQ']
+    ['4974.49MHz8x8MHz', 'Ef', 'Ur', 'Hh']
+
+will only return the first $FREQ reference.  To get them all, you need
+to use the getall() method:
+
+    >>> v['MODE']['NME.6CM'].getall('FREQ')
+    [['4974.49MHz8x8MHz', 'Ef', 'Ur', 'Hh'], ['4974.49MHz8x8MHz#02', 'Nt']
+
+That's all!

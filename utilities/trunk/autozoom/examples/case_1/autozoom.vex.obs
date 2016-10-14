@@ -1,0 +1,229 @@
+VEX_rev = 1.5;
+$GLOBAL;
+    ref $EXPER = AVzoom;
+    ref $EOP = EOP001;
+*-----------------------   end $GLOBAL             ----------------------*
+$EXPER;
+  def AVzoom;
+    exper_name = autozoom;
+    exper_num = 7000;
+    exper_description = AVzoom;
+    PI_name = GBC;
+    target_correlator = DiFX;
+  enddef;
+*-----------------------   end $EXPER              ----------------------*
+*----------------------- begin $MODE               ----------------------*
+$MODE;
+  def MINE;
+    * station Cm
+    ref $FREQ = VDIF_8224_2-FREQ_Cm:Cm;
+    ref $BBC = VDIF_8224_2-BBC:Cm;
+    ref $IF = VDIF_8224_2-IF:Cm;
+    * station Sp
+    ref $FREQ = VDIF_8224_2-FREQ_Sp:Sp;
+    ref $BBC = VDIF_8224_2-BBC:Sp;
+    ref $IF = VDIF_8224_2-IF:Sp;
+    * station St
+    ref $FREQ = VDIF_8224_2-FREQ_St:St;
+    ref $BBC = VDIF_8224_2-BBC:St;
+    ref $IF = VDIF_8224_2-IF:St;
+  enddef;
+*-----------------------   end $MODE               ----------------------*
+*----------------------- begin $EOP                ----------------------*
+$EOP;
+ def EOP001;
+* TAI-UTC = 34 sec;
+  TAI-UTC = 35 sec;
+  A1-TAI = 0.0 sec;
+  eop_ref_epoch = 2012y075d00h00m;
+  * min of 5 are required, apparently
+  num_eop_points = 5;
+  eop_interval = 24 hr;
+  ut1-utc  = 0.0 sec  : 0.0 sec  : 0.0 sec  : 0.0 sec  : 0.0 sec  ;
+  x_wobble = 0.0 asec : 0.0 asec : 0.0 asec : 0.0 asec : 0.0 asec ;
+  y_wobble = 0.0 asec : 0.0 asec : 0.0 asec : 0.0 asec : 0.0 asec ;
+ enddef;
+*-----------------------   end $EOP                ----------------------*
+*----------------------- begin $CLOCK              ----------------------*
+$CLOCK;
+  def Cm; clock_early = 2012y075d00h00m : 0 usec: 2012y075d00h00m : 0; enddef;
+  def Sp; clock_early = 2012y075d00h00m : 0 usec: 2012y075d00h00m : 0; enddef;
+  def St; clock_early = 2012y075d00h00m : 0 usec: 2012y075d00h00m : 0; enddef;
+*-----------------------   end $CLOCK             ----------------------*
+*----------------------- begin $STATION            ----------------------*
+$STATION;
+  def Cm;
+    ref $SITE = CARMA;
+    ref $ANTENNA = CARMA;
+    ref $CLOCK = CARMA;
+    ref $DAS = FakeDAS;
+  enddef;
+  def Sp;
+    ref $SITE = SMA;
+    ref $ANTENNA = SMA;
+    ref $CLOCK = SMA;
+    ref $DAS = FakeDAS;
+  enddef;
+  def St;
+    ref $SITE = SMTO;
+    ref $ANTENNA = SMTO;
+    ref $CLOCK = SMTO;
+    ref $DAS = FakeDAS;
+  enddef;
+*-----------------------   end $STATION            ----------------------*
+*----------------------- begin $ANTENNA            ----------------------*
+$ANTENNA;
+  def CARMA;
+    antenna_diam =  10.00 m;
+    axis_type = az : el;
+    axis_offset = 0 m;
+    pointing_sector = &n : az : 0 deg : 360 deg : el : 0 deg : 90 deg;
+  enddef;
+  def SMA;
+    antenna_diam =  10.00 m;
+    axis_type = az : el;
+    axis_offset = 0 m;
+    pointing_sector = &n : az : 0 deg : 360 deg : el : 0 deg : 90 deg;
+  enddef;
+  def SMTO;
+    antenna_diam =  10.00 m;
+    axis_type = az : el;
+    axis_offset = 0 m;
+    pointing_sector = &n : az : 0 deg : 360 deg : el : 0 deg : 90 deg;
+  enddef;
+*-----------------------   end $ANTENNA            ----------------------*
+*----------------------- begin $DAS                ----------------------*
+$DAS;
+  def FakeDAS;
+*   record_transport_type = VDIF;
+  enddef;
+*-----------------------   end $DAS                ----------------------*
+*----------------------- begin $BBC                ----------------------*
+$BBC;
+    def VDIF_8224_2-BBC;
+			* vanilla_bbc
+		BBC_assign = &BBC01 : 01 : &IF_XR;
+    enddef;
+*-----------------------   end $BBC                ----------------------*
+*----------------------- begin $FREQ               ----------------------*
+$FREQ;
+    def VDIF_8224_2-FREQ_Cm;
+      *
+	chan_def = &B : 230000.0 MHz: U : 64.0 MHz : &Ch01 : &BBC01 : &cp;  
+	chan_def = &B : 230064.0 MHz: U : 64.0 MHz : &Ch02 : &BBC01 : &cp;  
+	chan_def = &B : 230128.0 MHz: U : 64.0 MHz : &Ch03 : &BBC01 : &cp;  
+	chan_def = &B : 230192.0 MHz: U : 64.0 MHz : &Ch04 : &BBC01 : &cp;  
+	chan_def = &B : 230256.0 MHz: U : 64.0 MHz : &Ch05 : &BBC01 : &cp;  
+	chan_def = &B : 230320.0 MHz: U : 64.0 MHz : &Ch06 : &BBC01 : &cp;  
+	chan_def = &B : 230384.0 MHz: U : 64.0 MHz : &Ch07 : &BBC01 : &cp;  
+	chan_def = &B : 230448.0 MHz: U : 64.0 MHz : &Ch08 : &BBC01 : &cp;  
+	chan_def = &B : 230512.0 MHz: U : 64.0 MHz : &Ch09 : &BBC01 : &cp;  
+	chan_def = &B : 230576.0 MHz: U : 64.0 MHz : &Ch10 : &BBC01 : &cp;  
+	chan_def = &B : 230640.0 MHz: U : 64.0 MHz : &Ch11 : &BBC01 : &cp;  
+	chan_def = &B : 230704.0 MHz: U : 64.0 MHz : &Ch12 : &BBC01 : &cp;  
+	chan_def = &B : 230768.0 MHz: U : 64.0 MHz : &Ch13 : &BBC01 : &cp;  
+	chan_def = &B : 230832.0 MHz: U : 64.0 MHz : &Ch14 : &BBC01 : &cp;  
+	chan_def = &B : 230896.0 MHz: U : 64.0 MHz : &Ch15 : &BBC01 : &cp;  
+	chan_def = &B : 230960.0 MHz: U : 64.0 MHz : &Ch16 : &BBC01 : &cp;  
+	chan_def = &B : 231024.0 MHz: U : 64.0 MHz : &Ch17 : &BBC01 : &cp;  
+	chan_def = &B : 231088.0 MHz: U : 64.0 MHz : &Ch18 : &BBC01 : &cp;  
+	chan_def = &B : 231152.0 MHz: U : 64.0 MHz : &Ch19 : &BBC01 : &cp;  
+	chan_def = &B : 231216.0 MHz: U : 64.0 MHz : &Ch20 : &BBC01 : &cp;  
+	chan_def = &B : 231280.0 MHz: U : 64.0 MHz : &Ch21 : &BBC01 : &cp;  
+	chan_def = &B : 231344.0 MHz: U : 64.0 MHz : &Ch22 : &BBC01 : &cp;  
+	chan_def = &B : 231408.0 MHz: U : 64.0 MHz : &Ch23 : &BBC01 : &cp;  
+	chan_def = &B : 231472.0 MHz: U : 64.0 MHz : &Ch24 : &BBC01 : &cp;  
+	chan_def = &B : 231536.0 MHz: U : 64.0 MHz : &Ch25 : &BBC01 : &cp;  
+	chan_def = &B : 231600.0 MHz: U : 64.0 MHz : &Ch26 : &BBC01 : &cp;  
+	chan_def = &B : 231664.0 MHz: U : 64.0 MHz : &Ch27 : &BBC01 : &cp;  
+	chan_def = &B : 231728.0 MHz: U : 64.0 MHz : &Ch28 : &BBC01 : &cp;  
+	chan_def = &B : 231792.0 MHz: U : 64.0 MHz : &Ch29 : &BBC01 : &cp;  
+	chan_def = &B : 231856.0 MHz: U : 64.0 MHz : &Ch30 : &BBC01 : &cp;  
+	chan_def = &B : 231920.0 MHz: U : 64.0 MHz : &Ch31 : &BBC01 : &cp;  
+	chan_def = &B : 231984.0 MHz: U : 64.0 MHz : &Ch32 : &BBC01 : &cp;  
+	sample_rate = 128.0 Ms/sec;
+    enddef;
+    def VDIF_8224_2-FREQ_Sp;
+      *
+	chan_def = &B : 230000.0 MHz: U : 128.0 MHz : &Ch01 : &BBC01 : &cp;  
+	chan_def = &B : 230128.0 MHz: U : 128.0 MHz : &Ch02 : &BBC01 : &cp;  
+	chan_def = &B : 230256.0 MHz: U : 128.0 MHz : &Ch03 : &BBC01 : &cp;  
+	chan_def = &B : 230384.0 MHz: U : 128.0 MHz : &Ch04 : &BBC01 : &cp;  
+	chan_def = &B : 230512.0 MHz: U : 128.0 MHz : &Ch05 : &BBC01 : &cp;  
+	chan_def = &B : 230640.0 MHz: U : 128.0 MHz : &Ch06 : &BBC01 : &cp;  
+	chan_def = &B : 230768.0 MHz: U : 128.0 MHz : &Ch07 : &BBC01 : &cp;  
+	chan_def = &B : 230896.0 MHz: U : 128.0 MHz : &Ch08 : &BBC01 : &cp;  
+	chan_def = &B : 231024.0 MHz: U : 128.0 MHz : &Ch09 : &BBC01 : &cp;  
+	chan_def = &B : 231152.0 MHz: U : 128.0 MHz : &Ch10 : &BBC01 : &cp;  
+	chan_def = &B : 231280.0 MHz: U : 128.0 MHz : &Ch11 : &BBC01 : &cp;  
+	chan_def = &B : 231408.0 MHz: U : 128.0 MHz : &Ch12 : &BBC01 : &cp;  
+	chan_def = &B : 231536.0 MHz: U : 128.0 MHz : &Ch13 : &BBC01 : &cp;  
+	chan_def = &B : 231664.0 MHz: U : 128.0 MHz : &Ch14 : &BBC01 : &cp;  
+	chan_def = &B : 231792.0 MHz: U : 128.0 MHz : &Ch15 : &BBC01 : &cp;  
+	chan_def = &B : 231920.0 MHz: U : 128.0 MHz : &Ch16 : &BBC01 : &cp;  
+	sample_rate = 256.0 Ms/sec;
+    enddef;
+    def VDIF_8224_2-FREQ_St;
+      *
+	chan_def = &B : 230000.0 MHz: U : 2048.0 MHz : &Ch01 : &BBC01 : &cp;  
+	sample_rate = 4096.0 Ms/sec;
+    enddef;
+*-----------------------   end $FREQ               ----------------------*
+*----------------------- begin $IF                 ----------------------*
+$IF;
+    def VDIF_8224_2-IF;
+			* vanilla_if
+		if_def = &IF_XR : XX : R : 230000.0 MHz : U : 0 MHz : 0 Hz;
+    enddef;
+*-----------------------   end $IF                 ----------------------*
+*-----------------------   begin $SCHED            ----------------------*
+$SCHED;
+* 2010y001d20h58m21.3503s 2010y001d20h58m25.3501s
+* i have no idea what the format of station is...
+  scan 075-0558;
+    start = 2012y075d05h58m00s;
+    mode = MINE;
+    * hopefully one of these is visible
+    source = M87;
+    * real time or 20, whichever is greater, no idea why.
+    station = Cm : 0 sec : 20 sec : 0 ft : 1A : &n : 1;
+    * real time or 20, whichever is greater, no idea why.
+    station = Sp : 0 sec : 20 sec : 0 ft : 1A : &n : 1;
+    * real time or 20, whichever is greater, no idea why.
+    station = St : 0 sec : 20 sec : 0 ft : 1A : &n : 1;
+  endscan;
+*-----------------------   end $SCHED              ----------------------*
+*----------------------- begin $SITES              ----------------------*
+$SITE;
+* Westford antenna location
+  def CARMA;
+    site_type = fixed;
+    site_name = CARMA;
+    site_ID = Cm;
+    site_position =  -2397378.568 m : -4482048.670 m : 3843513.202 m;
+  enddef;
+  def SMA;
+    site_type = fixed;
+    site_name = SMA;
+    site_ID = Sp;
+    site_position =  -5464555.493 m : -2492927.989 m : 2150797.176 m;
+  enddef;
+  def SMTO;
+    site_type = fixed;
+    site_name = SMTO;
+    site_ID = St;
+    site_position =  -1828796.200 m : -5054406.800 m : 3427865.200 m;
+  enddef;
+*-----------------------   end $SITES              ----------------------*
+*----------------------- begin $SOURCE             ----------------------*
+$SOURCE;
+* totally bogus source always visible at Westford
+  def M87;
+    source_type = galaxy;
+    source_name = M87;
+    IAU_name = 1230+123;
+    dec = 12d23'28.043000";
+    ra = 12h30m49.4233000s ;
+    ref_coord_frame = J2000;
+  enddef;
+*-----------------------   end $SOURCE             ----------------------*

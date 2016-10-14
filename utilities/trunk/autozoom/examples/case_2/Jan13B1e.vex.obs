@@ -1,0 +1,243 @@
+VEX_rev = 1.5;
+$GLOBAL;
+    ref $EXPER = ALMAtest;
+    ref $EOP = EOP009;
+*-----------------------   end $GLOBAL             ----------------------*
+$EXPER;
+  def ALMAtest;
+    exper_name = Jan13B1e;
+    exper_num = 1111;
+    exper_description = ALMAtest;
+    PI_name = GBC;
+    target_correlator = DiFX;
+  enddef;
+*-----------------------   end $EXPER              ----------------------*
+*----------------------- begin $MODE               ----------------------*
+$MODE;
+  def MINE;
+    * station Ax
+    ref $FREQ = VDIF_8032_2-FREQ:Ax;
+    ref $BBC = VDIF_8032_2-BBC:Ax;
+    ref $IF = VDIF_8032_2-IF:Ax;
+    * station By
+    ref $FREQ = VDIF_8032_2-FREQ:By;
+    ref $BBC = VDIF_8032_2-BBC:By;
+    ref $IF = VDIF_8032_2-IF:By;
+    * station Rx
+    ref $FREQ = VDIF_8224_2-FREQ:Rx;
+    ref $BBC = VDIF_8224_2-BBC:Rx;
+    ref $IF = VDIF_8224_2-IF:Rx;
+  enddef;
+*-----------------------   end $MODE               ----------------------*
+*----------------------- begin $EOP                ----------------------*
+$EOP;
+ def EOP001;
+* TAI-UTC = 34 sec;
+  TAI-UTC = 35 sec;
+  A1-TAI = 0.0 sec;
+  eop_ref_epoch = 2015y013d00h00m;
+  * min of 5 are required, apparently
+  num_eop_points = 5;
+  eop_interval = 24 hr;
+  ut1-utc  = 0.0 sec  : 0.0 sec  : 0.0 sec  : 0.0 sec  : 0.0 sec  ;
+  x_wobble = 0.0 asec : 0.0 asec : 0.0 asec : 0.0 asec : 0.0 asec ;
+  y_wobble = 0.0 asec : 0.0 asec : 0.0 asec : 0.0 asec : 0.0 asec ;
+ enddef;
+ 
+ def EOP009;
+  TAI-UTC = 35 sec;
+  A1-TAI = 0 sec;
+  eop_ref_epoch = 2015y009d;
+  num_eop_points = 6;
+  eop_interval = 24 hr;
+  * I E R S Predictions from 15 January 2015 ser7
+  * 15  1  9  57031        57032         57033         57034         57035         57036
+  *
+  * 2457031.5  0.2459  2.8605 -35466010 0.0008 0.0008     11.  .000  .000  .000
+  * 2457032.5  0.2353  2.8674 -35467064 0.0008 0.0008     13.  .000  .000  .000
+  * 2457033.5  0.2255  2.8778 -35468189 0.0009 0.0009     12.  .000  .000  .000
+  * 2457034.5  0.2154  2.8882 -35469297 0.0009 0.0009     13.  .000  .000  .000
+  * 2457035.5  0.2037  2.8984 -35470401 0.0009 0.0009     12.  .000  .000  .000
+  * 2457036.5  0.1893  2.9094 -35471539 0.0009 0.0009     10.  .000  .000  .000
+  *
+  ut1-utc  = -0.466009 sec:-0.467063 sec:-0.468188 sec:-0.469295 sec:-0.470401 sec:-0.471539 sec;
+  x_wobble =  0.02466 asec: 0.02358 asec: 0.02258 asec: 0.02156 asec: 0.02040 asec: 0.01895 asec;
+  y_wobble =  0.28602 asec: 0.28673 asec: 0.28773 asec: 0.28877 asec: 0.28980 asec: 0.29090 asec;
+ enddef;
+ def EOP087;
+  * usno_finals.erp: File was created on 2015.04.13-04:30:08
+  * 2457109.5  0.1106  3.9214 -35569533 0.0008 0.0008     18.  .000  .000  .000
+  * 2457110.5  0.1148  3.9318 -35570931 0.0009 0.0009     16.  .000  .000  .000
+  * 2457111.5  0.1203  3.9414 -35572308 0.0009 0.0009     10.  .000  .000  .000
+  * 2457112.5  0.1266  3.9523 -35573680 0.0009 0.0009     14.  .000  .000  .000
+  * 2457113.5  0.1386  3.9645 -35575068 0.0009 0.0009     16.  .000  .000  .000
+  TAI-UTC= 35 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2015y87d;
+  num_eop_points=5;
+  eop_interval=24 hr;
+  ut1-utc  = -0.569533 sec:-0.570931 sec:-0.572308 sec:-0.573680 sec:-0.575068 sec;
+  x_wobble = 0.011060 asec:0.011480 asec:0.012030 asec:0.012660 asec:0.013860 asec;
+  y_wobble = 0.392140 asec:0.393180 asec:0.394140 asec:0.395230 asec:0.396450 asec;
+ enddef;
+
+*-----------------------   end $EOP                ----------------------*
+*----------------------- begin $CLOCK              ----------------------*
+$CLOCK;
+  def Ax; clock_early = 2015y013d00h00m : 2107.6380 usec: 2015y013d00h00m : 0; enddef;
+  def By; clock_early = 2015y013d00h00m : 2107.6380 usec: 2015y013d00h00m : 0; enddef;
+  def Rx; clock_early = 2015y013d00h00m : -0.101 usec: 2015y013d00h00m : 2.6729e-12; enddef;
+*-----------------------   end $CLOCK             ----------------------*
+*----------------------- begin $STATION            ----------------------*
+$STATION;
+  def Ax;
+    ref $SITE = Ax;
+    ref $ANTENNA = FakeAnt;
+    ref $CLOCK = Ax;
+    ref $DAS = FakeDAS;
+  enddef;
+  def By;
+    ref $SITE = By;
+    ref $ANTENNA = FakeAnt;
+    ref $CLOCK = By;
+    ref $DAS = FakeDAS;
+  enddef;
+  def Rx;
+    ref $SITE = Rx;
+    ref $ANTENNA = FakeAnt;
+    ref $CLOCK = Rx;
+    ref $DAS = FakeDAS;
+  enddef;
+*-----------------------   end $STATION            ----------------------*
+*----------------------- begin $ANTENNA            ----------------------*
+$ANTENNA;
+  def FakeAnt;
+    antenna_diam =  12.00 m;
+    axis_type = az : el;
+    axis_offset = 0 m;
+    pointing_sector = &n : az : 0 deg : 360 deg : el : 0 deg : 90 deg;
+  enddef;
+*-----------------------   end $ANTENNA            ----------------------*
+*----------------------- begin $DAS                ----------------------*
+$DAS;
+  def FakeDAS;
+*   record_transport_type = VDIF;
+  enddef;
+*-----------------------   end $DAS                ----------------------*
+*----------------------- begin $BBC                ----------------------*
+$BBC;
+    def VDIF_8032_2-BBC;
+      * vanilla_bbc
+      BBC_assign = &BBC01 : 01 : &IF_XR;
+    enddef;
+    def VDIF_8224_2-BBC;
+      * vanilla_bbc
+      BBC_assign = &BBC01 : 01 : &IF_XR;
+    enddef;
+*-----------------------   end $BBC                ----------------------*
+*----------------------- begin $FREQ               ----------------------*
+$FREQ;
+    def VDIF_8032_2-FREQ;
+      * ALMA requested 214989500000.0 Hz
+      chan_def = &B : 215928.953125 MHz : L : 62.5 MHz : &Ch01 : &BBC01 : &cp;
+      chan_def = &B : 215870.359375 MHz : L : 62.5 MHz : &Ch02 : &BBC01 : &cp;
+      chan_def = &B : 215811.765625 MHz : L : 62.5 MHz : &Ch03 : &BBC01 : &cp;
+      chan_def = &B : 215753.171875 MHz : L : 62.5 MHz : &Ch04 : &BBC01 : &cp;
+      chan_def = &B : 215694.578125 MHz : L : 62.5 MHz : &Ch05 : &BBC01 : &cp;
+      chan_def = &B : 215635.984375 MHz : L : 62.5 MHz : &Ch06 : &BBC01 : &cp;
+      chan_def = &B : 215577.390625 MHz : L : 62.5 MHz : &Ch07 : &BBC01 : &cp;
+      chan_def = &B : 215518.796875 MHz : L : 62.5 MHz : &Ch08 : &BBC01 : &cp;
+      chan_def = &B : 215460.203125 MHz : L : 62.5 MHz : &Ch09 : &BBC01 : &cp;
+      chan_def = &B : 215401.609375 MHz : L : 62.5 MHz : &Ch10 : &BBC01 : &cp;
+      chan_def = &B : 215343.015625 MHz : L : 62.5 MHz : &Ch11 : &BBC01 : &cp;
+      chan_def = &B : 215284.421875 MHz : L : 62.5 MHz : &Ch12 : &BBC01 : &cp;
+      chan_def = &B : 215225.828125 MHz : L : 62.5 MHz : &Ch13 : &BBC01 : &cp;
+      chan_def = &B : 215167.234375 MHz : L : 62.5 MHz : &Ch14 : &BBC01 : &cp;
+      chan_def = &B : 215108.640625 MHz : L : 62.5 MHz : &Ch15 : &BBC01 : &cp;
+      chan_def = &B : 215050.046875 MHz : L : 62.5 MHz : &Ch16 : &BBC01 : &cp;
+      chan_def = &B : 214991.453125 MHz : L : 62.5 MHz : &Ch17 : &BBC01 : &cp;
+      chan_def = &B : 214932.859375 MHz : L : 62.5 MHz : &Ch18 : &BBC01 : &cp;
+      chan_def = &B : 214874.265625 MHz : L : 62.5 MHz : &Ch19 : &BBC01 : &cp;
+      chan_def = &B : 214815.671875 MHz : L : 62.5 MHz : &Ch20 : &BBC01 : &cp;
+      chan_def = &B : 214757.078125 MHz : L : 62.5 MHz : &Ch21 : &BBC01 : &cp;
+      chan_def = &B : 214698.484375 MHz : L : 62.5 MHz : &Ch22 : &BBC01 : &cp;
+      chan_def = &B : 214639.890625 MHz : L : 62.5 MHz : &Ch23 : &BBC01 : &cp;
+      chan_def = &B : 214581.296875 MHz : L : 62.5 MHz : &Ch24 : &BBC01 : &cp;
+      chan_def = &B : 214522.703125 MHz : L : 62.5 MHz : &Ch25 : &BBC01 : &cp;
+      chan_def = &B : 214464.109375 MHz : L : 62.5 MHz : &Ch26 : &BBC01 : &cp;
+      chan_def = &B : 214405.515625 MHz : L : 62.5 MHz : &Ch27 : &BBC01 : &cp;
+      chan_def = &B : 214346.921875 MHz : L : 62.5 MHz : &Ch28 : &BBC01 : &cp;
+      chan_def = &B : 214288.328125 MHz : L : 62.5 MHz : &Ch29 : &BBC01 : &cp;
+      chan_def = &B : 214229.734375 MHz : L : 62.5 MHz : &Ch30 : &BBC01 : &cp;
+      chan_def = &B : 214171.140625 MHz : L : 62.5 MHz : &Ch31 : &BBC01 : &cp;
+      chan_def = &B : 214112.546875 MHz : L : 62.5 MHz : &Ch32 : &BBC01 : &cp;
+      sample_rate = 125.0 Ms/sec;
+    enddef;
+    def VDIF_8224_2-FREQ;
+      * ALMA requested 214989500000.0 Hz
+      chan_def = &B: 214052.0 MHz: U: 2048 MHz: &CH01 : &BBC01 : &cp;
+      sample_rate = 4096.0 Ms/sec;
+    enddef;
+*-----------------------   end $FREQ               ----------------------*
+*----------------------- begin $IF                 ----------------------*
+$IF;
+    def VDIF_8032_2-IF;
+      * vanilla_if
+      if_def = &IF_XR : XX : R : 214989.50 MHz : L : 0 MHz : 0 Hz;
+    enddef;
+    def VDIF_8224_2-IF;
+      * vanilla_if
+      if_def = &IF_XR : XX : R : 214989.50 MHz : L : 0 MHz : 0 Hz;
+    enddef;
+*-----------------------   end $IF                 ----------------------*
+*-----------------------   begin $SCHED            ----------------------*
+$SCHED;
+* 2010y001d20h58m21.3503s 2010y001d20h58m25.3501s
+* i have no idea what the format of station is...
+  scan 013-0630;
+    start = 2015y013d06h30m00s;
+    mode = MINE;
+    * hopefully one of these is visible
+    source = 0522-364;
+    * real time or 20, whichever is greater, no idea why.
+    station = Ax : 0 sec : 20 sec : 0 ft : 1A : &n : 1;
+    * real time or 20, whichever is greater, no idea why.
+    station = By : 0 sec : 20 sec : 0 ft : 1A : &n : 1;
+    * real time or 20, whichever is greater, no idea why.
+    station = Rx : 0 sec : 20 sec : 0 ft : 1A : &n : 1;
+  endscan;
+*-----------------------   end $SCHED              ----------------------*
+*----------------------- begin $SITES              ----------------------*
+$SITE;
+* ALMA pad position(s) A002
+  def Ax;
+    site_type = fixed;
+    site_name = Ax;
+    site_ID = Ax;
+    site_position =  2225061.873100 m : -5440061.953400 m : -2481682.083800 m;
+  enddef;
+  def By;
+    site_type = fixed;
+    site_name = By;
+    site_ID = By;
+    site_position =  2225061.873100 m : -5440061.953400 m : -2481682.083800 m;
+  enddef;
+  def Rx;
+    site_type = fixed;
+    site_name = Rx;
+    site_ID = Rx;
+    site_position =  2225039.529700 m : -5441197.629200 m : -2479303.359700 m;
+  enddef;
+*-----------------------   end $SITES              ----------------------*
+*----------------------- begin $SOURCE             ----------------------*
+$SOURCE;
+* totally bogus source always visible at Westford
+  def 0522-364;
+    source_type = star;
+    source_name = 0522-364;
+    IAU_name = 0522-364;
+    ra = 05h22m57.9846s;
+    dec = -36d27'30.851";
+    ref_coord_frame = J2000;
+  enddef;
+*-----------------------   end $SOURCE             ----------------------*

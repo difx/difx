@@ -1,0 +1,145 @@
+        vex = Jan13B1e.vex.obs
+        mjdStart = 57035.2708333333
+        mjdStop  = 57035.2743055556
+        antennas = Ax,By,Rx
+        startSeries = 1111
+        dataBufferFactor = 16
+        visBufferLength = 40
+        nDataSegments = 8
+
+        SETUP default
+        {
+            tInt = 0.32
+            subintNS = 32000000
+            FFTSpecRes = 0.003125
+            specRes = 0.10
+            xmacLength = 1
+            strideLength = 1
+            guardNS = 2000
+        }
+
+        ANTENNA Ax
+        {
+          # dm = rc17
+          file = /data-sc02/gbc/alma-data/Q1X/sequences/ORkV/Aa/No5891.vdif
+          format = VDIF/8032/2
+          phaseCalInt = 0
+          
+                addZoomFreq = freq@215872.103125/bw@51.2/noparent@true
+                addZoomFreq = freq@215813.509375/bw@51.2/noparent@true
+                addZoomFreq = freq@215754.915625/bw@51.2/noparent@true
+                addZoomFreq = freq@215696.321875/bw@51.2/noparent@true
+                addZoomFreq = freq@215637.728125/bw@51.2/noparent@true
+                addZoomFreq = freq@215579.134375/bw@51.2/noparent@true
+                addZoomFreq = freq@215520.540625/bw@51.2/noparent@true
+                addZoomFreq = freq@215461.946875/bw@51.2/noparent@true
+                addZoomFreq = freq@215403.353125/bw@51.2/noparent@true
+                addZoomFreq = freq@215344.759375/bw@51.2/noparent@true
+                addZoomFreq = freq@215286.165625/bw@51.2/noparent@true
+                addZoomFreq = freq@215227.571875/bw@51.2/noparent@true
+                addZoomFreq = freq@215168.978125/bw@51.2/noparent@true
+                addZoomFreq = freq@215110.384375/bw@51.2/noparent@true
+                addZoomFreq = freq@215051.790625/bw@51.2/noparent@true
+                addZoomFreq = freq@214993.196875/bw@51.2/noparent@true
+                addZoomFreq = freq@214934.603125/bw@51.2/noparent@true
+                addZoomFreq = freq@214876.009375/bw@51.2/noparent@true
+                addZoomFreq = freq@214817.415625/bw@51.2/noparent@true
+                addZoomFreq = freq@214758.821875/bw@51.2/noparent@true
+                addZoomFreq = freq@214700.228125/bw@51.2/noparent@true
+                addZoomFreq = freq@214641.634375/bw@51.2/noparent@true
+                addZoomFreq = freq@214583.040625/bw@51.2/noparent@true
+                addZoomFreq = freq@214524.446875/bw@51.2/noparent@true
+                addZoomFreq = freq@214465.853125/bw@51.2/noparent@true
+                addZoomFreq = freq@214407.259375/bw@51.2/noparent@true
+                addZoomFreq = freq@214348.665625/bw@51.2/noparent@true
+                addZoomFreq = freq@214290.071875/bw@51.2/noparent@true
+                addZoomFreq = freq@214231.478125/bw@51.2/noparent@true
+                addZoomFreq = freq@214172.884375/bw@51.2/noparent@true
+                addZoomFreq = freq@214114.290625/bw@51.2/noparent@true
+                addZoomFreq = freq@214055.696875/bw@51.2/noparent@true
+        }
+
+        ANTENNA By
+        {
+          # dm = rc17
+          file = /data-sc02/gbc/alma-data/Q1Y/sequences/ORkV/Aa/No5891.vdif
+          format = VDIF/8032/2
+          phaseCalInt = 0
+          
+                addZoomFreq = freq@215872.103125/bw@51.2/noparent@true
+                addZoomFreq = freq@215813.509375/bw@51.2/noparent@true
+                addZoomFreq = freq@215754.915625/bw@51.2/noparent@true
+                addZoomFreq = freq@215696.321875/bw@51.2/noparent@true
+                addZoomFreq = freq@215637.728125/bw@51.2/noparent@true
+                addZoomFreq = freq@215579.134375/bw@51.2/noparent@true
+                addZoomFreq = freq@215520.540625/bw@51.2/noparent@true
+                addZoomFreq = freq@215461.946875/bw@51.2/noparent@true
+                addZoomFreq = freq@215403.353125/bw@51.2/noparent@true
+                addZoomFreq = freq@215344.759375/bw@51.2/noparent@true
+                addZoomFreq = freq@215286.165625/bw@51.2/noparent@true
+                addZoomFreq = freq@215227.571875/bw@51.2/noparent@true
+                addZoomFreq = freq@215168.978125/bw@51.2/noparent@true
+                addZoomFreq = freq@215110.384375/bw@51.2/noparent@true
+                addZoomFreq = freq@215051.790625/bw@51.2/noparent@true
+                addZoomFreq = freq@214993.196875/bw@51.2/noparent@true
+                addZoomFreq = freq@214934.603125/bw@51.2/noparent@true
+                addZoomFreq = freq@214876.009375/bw@51.2/noparent@true
+                addZoomFreq = freq@214817.415625/bw@51.2/noparent@true
+                addZoomFreq = freq@214758.821875/bw@51.2/noparent@true
+                addZoomFreq = freq@214700.228125/bw@51.2/noparent@true
+                addZoomFreq = freq@214641.634375/bw@51.2/noparent@true
+                addZoomFreq = freq@214583.040625/bw@51.2/noparent@true
+                addZoomFreq = freq@214524.446875/bw@51.2/noparent@true
+                addZoomFreq = freq@214465.853125/bw@51.2/noparent@true
+                addZoomFreq = freq@214407.259375/bw@51.2/noparent@true
+                addZoomFreq = freq@214348.665625/bw@51.2/noparent@true
+                addZoomFreq = freq@214290.071875/bw@51.2/noparent@true
+                addZoomFreq = freq@214231.478125/bw@51.2/noparent@true
+                addZoomFreq = freq@214172.884375/bw@51.2/noparent@true
+                addZoomFreq = freq@214114.290625/bw@51.2/noparent@true
+                addZoomFreq = freq@214055.696875/bw@51.2/noparent@true
+        }
+
+        ANTENNA Rx
+        {
+          # dm = rc18
+          file = /data-sc02/gbc/alma-data/R2X/sequences/t15013/AR/013-0630.vdif
+          format = VDIF/8224/2
+          phaseCalInt = 0
+          
+                addZoomFreq = freq@215872.103125/bw@51.2/noparent@true
+                addZoomFreq = freq@215813.509375/bw@51.2/noparent@true
+                addZoomFreq = freq@215754.915625/bw@51.2/noparent@true
+                addZoomFreq = freq@215696.321875/bw@51.2/noparent@true
+                addZoomFreq = freq@215637.728125/bw@51.2/noparent@true
+                addZoomFreq = freq@215579.134375/bw@51.2/noparent@true
+                addZoomFreq = freq@215520.540625/bw@51.2/noparent@true
+                addZoomFreq = freq@215461.946875/bw@51.2/noparent@true
+                addZoomFreq = freq@215403.353125/bw@51.2/noparent@true
+                addZoomFreq = freq@215344.759375/bw@51.2/noparent@true
+                addZoomFreq = freq@215286.165625/bw@51.2/noparent@true
+                addZoomFreq = freq@215227.571875/bw@51.2/noparent@true
+                addZoomFreq = freq@215168.978125/bw@51.2/noparent@true
+                addZoomFreq = freq@215110.384375/bw@51.2/noparent@true
+                addZoomFreq = freq@215051.790625/bw@51.2/noparent@true
+                addZoomFreq = freq@214993.196875/bw@51.2/noparent@true
+                addZoomFreq = freq@214934.603125/bw@51.2/noparent@true
+                addZoomFreq = freq@214876.009375/bw@51.2/noparent@true
+                addZoomFreq = freq@214817.415625/bw@51.2/noparent@true
+                addZoomFreq = freq@214758.821875/bw@51.2/noparent@true
+                addZoomFreq = freq@214700.228125/bw@51.2/noparent@true
+                addZoomFreq = freq@214641.634375/bw@51.2/noparent@true
+                addZoomFreq = freq@214583.040625/bw@51.2/noparent@true
+                addZoomFreq = freq@214524.446875/bw@51.2/noparent@true
+                addZoomFreq = freq@214465.853125/bw@51.2/noparent@true
+                addZoomFreq = freq@214407.259375/bw@51.2/noparent@true
+                addZoomFreq = freq@214348.665625/bw@51.2/noparent@true
+                addZoomFreq = freq@214290.071875/bw@51.2/noparent@true
+                addZoomFreq = freq@214231.478125/bw@51.2/noparent@true
+                addZoomFreq = freq@214172.884375/bw@51.2/noparent@true
+                addZoomFreq = freq@214114.290625/bw@51.2/noparent@true
+                addZoomFreq = freq@214055.696875/bw@51.2/noparent@true
+        }
+# 
+#     VDIF_8032_2
+#     VDIF_8224_2

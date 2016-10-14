@@ -1,0 +1,47 @@
+        vex = Jan13B1e.vex.obs
+        mjdStart = 57035.2708333333
+        mjdStop  = 57035.2743055556
+        antennas = Ax,By,Rx
+        startSeries = 1111
+        dataBufferFactor = 16
+        visBufferLength = 40
+        nDataSegments = 8
+
+        SETUP default
+        {
+            tInt = 0.32
+            subintNS = 32000000
+            FFTSpecRes = 0.003125
+            specRes = 0.10
+            xmacLength = 1
+            strideLength = 1
+            guardNS = 2000
+        }
+
+        ANTENNA Ax
+        {
+          # dm = rc17
+          file = /data-sc02/gbc/alma-data/Q1X/sequences/ORkV/Aa/No5891.vdif
+          format = VDIF/8032/2
+          phaseCalInt = 0
+          
+        }
+
+        ANTENNA By
+        {
+          # dm = rc17
+          file = /data-sc02/gbc/alma-data/Q1Y/sequences/ORkV/Aa/No5891.vdif
+          format = VDIF/8032/2
+          phaseCalInt = 0
+        }
+
+        ANTENNA Rx
+        {
+          # dm = rc18
+          file = /data-sc02/gbc/alma-data/R2X/sequences/t15013/AR/013-0630.vdif
+          format = VDIF/8224/2
+          phaseCalInt = 0
+        }
+# 
+#     VDIF_8032_2
+#     VDIF_8224_2
