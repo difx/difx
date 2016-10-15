@@ -73,8 +73,8 @@ public:
 
 	//methods
 	void initialise(double ra, double dec, std::string name);
-	bool isGeosync() const { return (X != 0.0 || Y != 0.0 || Z != 0.0); };
-	bool isSpacecraft() const { return (isGeosync() || !ephemFile.empty()); };
+	bool isFixedSource() const { return (X != 0.0 || Y != 0.0 || Z != 0.0); };
+	bool isSpacecraft() const { return (!ephemFile.empty()); };
 
 	//variables
 	double ra;	//radians
@@ -339,6 +339,7 @@ public:
 	int parseWarnings;
 	std::string vexFile;
 	std::string threadsFile;
+	std::string delayModel;	// if set, add parameter to .calc file instructing calcif2 to choose the model program to run
 	unsigned int minSubarraySize;
 	double maxGap;		// days
 	bool singleScan;

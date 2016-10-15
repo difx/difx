@@ -1746,6 +1746,10 @@ int CorrParams::setkv(const std::string &key, const std::string &value)
 		ss >> maxGap;
 		maxGap /= 86400.0;	// convert to seconds from days
 	}
+	else if(key == "delayModel")
+	{
+		delayModel = value;
+	}
 	else if(key == "singleScan")
 	{
 		singleScan = parseBoolean(value);

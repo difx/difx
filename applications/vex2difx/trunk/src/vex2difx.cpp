@@ -125,6 +125,7 @@ static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const 
 	job->activeDatastreams = nAntenna;
 	job->activeBaselines = nAntenna*(nAntenna-1)/2;
 	job->dutyCycle = J.dutyCycle;
+	snprintf(job->delayModel, DIFXIO_FILENAME_LENGTH, "%s", P->delayModel.c_str());
 
 	// The following line defines the format of the job filenames
 
@@ -2208,10 +2209,8 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 					exit(EXIT_FAILURE);
 				}
 			}
-			else if(phaseCentre->isGeosync())
+			else if(phaseCentre->isFixedSource())
 			{
-				/* Note: these calculations are extremely naive and don't yield a model good for VLBI correlation */
-
 				v = computeDifxSpacecraftEphemerisFromXYZ(ds, mjd0, deltaT/86400.0, nPoint, 
 					phaseCentre->X, phaseCentre->Y, phaseCentre->Z,
 					phaseCentre->naifFile.c_str(),
@@ -2225,7 +2224,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			}
 			else
 			{
-				cerr << "Developer error: not bsp or geosync spacecraft type." << endl;
+				cerr << "Developer error: unknown source type; don't know how to compute state vectors." << endl;
 
 				exit(EXIT_FAILURE);
 			}
