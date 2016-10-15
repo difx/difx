@@ -58,7 +58,6 @@ typedef struct
 	char calcServer[DIFXIO_NAME_LENGTH];
 	int calcProgram;
 	int calcVersion;
-	int useSekido;
 	int nFile;
 	int polyOrder;
 	int polyInterval;	/* (sec) */
@@ -112,8 +111,6 @@ static void usage()
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --fit\n");
 	fprintf(stderr, "  -F                      Fit oversampled polynomials\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "  --sekido                Use Sekido near-field model\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --override-version      Ignore difx versions\n");
 	fprintf(stderr, "\n");
@@ -214,10 +211,6 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			else if(strcmp(argv[i], "--override-version") == 0)
 			{
 				opts->overrideVersion = 1;
-			}
-			else if(strcmp(argv[i], "--sekido") == 0)
-			{
-				opts->useSekido = 1;
 			}
 			else if(i+1 < argc)
 			{
@@ -488,226 +481,6 @@ static void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
 	fclose(in);
 }
 
-static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParams *p)
-{
-	DifxInput *D;
-	FILE *in;
-	char fn[DIFXIO_FILENAME_LENGTH];
-	int v;
-	const char *difxVersion;
-
-	difxVersion = getenv("DIFX_VERSION");
-
-	v = snprintf(fn, DIFXIO_FILENAME_LENGTH, "%s.calc", prefix);
-	if(v >= DIFXIO_FILENAME_LENGTH)
-	{
-		fprintf(stderr, "Error: filename %s.calc is too long (max %d chars)\n", prefix, DIFXIO_FILENAME_LENGTH-1);
-	}
-	in = fopen(fn, "r");
-	if(!in)
-	{
-		fprintf(stderr, "File %s not found or cannot be opened.  Quitting.\n", fn);
-
-		return -1;
-	}
-	else
-	{
-		fclose(in);
-	}
-
-	D = loadDifxCalc(prefix);
-
-	if(D == 0)
-	{
-		fprintf(stderr, "Error: loadDifxCalc(\"%s\") returned 0\n", prefix);
-
-		return -1;
-	}
-
-	D = updateDifxInput(D);
-	if(D == 0)
-	{
-		fprintf(stderr, "Error: updateDifxInput(\"%s\") returned 0\n", prefix);
-
-		return -1;
-	}
-
-	if(opts->useSekido)
-	{
-		const char calcProgram[] = "calc_sekido";
-		const int MaxCommandLength = 1024;
-		char command[MaxCommandLength];
-		char paramsPath[DIFXIO_FILENAME_LENGTH];
-		int a, s, v;
-		const char *str;
-
-		str = getenv("CALCPARAMS");
-		if(str)
-		{
-			v = snprintf(paramsPath, DIFXIO_FILENAME_LENGTH, "%s", str);
-		}
-		else
-		{
-			str = getenv("DIFXROOT");
-			if(str == 0)
-			{
-				fprintf(stderr, "Error: CALCPARAMS or DIFXROOT env var must be set\n");
-
-				exit(EXIT_FAILURE);
-			}
-			v = snprintf(paramsPath, DIFXIO_FILENAME_LENGTH, "%s/share/calc_sekido", str);
-		}
-		if(v >= DIFXIO_FILENAME_LENGTH)
-		{
-			fprintf(stderr, "Error: paramsPath string too short (%d < %d)\n", DIFXIO_FILENAME_LENGTH, v);
-
-			exit(EXIT_FAILURE);
-		}
-
-		v = snprintf(command, MaxCommandLength, "%s/blokq.dat", paramsPath);
-		if(v >= MaxCommandLength)
-		{
-			fprintf(stderr, "Error: command string too short (%d < %d) generating BLOKQ envvar\n", MaxCommandLength, v);
-
-			exit(EXIT_FAILURE);
-		}
-		if(opts->verbose > 0)
-		{
-			printf("Setting environment variable BLOKQ = %s\n", command);
-		}
-		setenv("BLOKQ", command, 1);
-
-
-		/* 1. generate .skd file and .xyz files as needed */
-		v = snprintf(command, MaxCommandLength, "calc2skd %s %s", (opts->force ? "--force" : ""), prefix);
-		if(v >= MaxCommandLength)
-		{
-			fprintf(stderr, "Error: command string too short (%d < %d) generating calc2skd command\n", MaxCommandLength, v);
-
-			exit(EXIT_FAILURE);
-		}
-		if(opts->verbose > 0)
-		{
-			printf("Executing: %s\n", command);
-		}
-		system(command);
-
-		/* 2. run calc_skd for each antenna / source */
-		for(s = 0; s < D->nSource; ++s)
-		{
-			char letter = 'A';
-			char srcName[10];
-
-			sprintf(srcName, "SRC%05d", s);
-			for(a = 0; a < D->nAntenna; ++a)
-			{
-				if(D->source[s].spacecraftId >= 0)
-				{
-					v = snprintf(command, MaxCommandLength, "%s %s.%s.skd %s.%s.%s.delay -baseid G%c -finit %s.%s.xyz %s -calcon %s/decont2.input -extf %s/extfile.eop -prtb -atmout", calcProgram, prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, prefix, D->source[s].name, srcName, paramsPath, paramsPath);
-				}
-				else
-				{
-					v = snprintf(command, MaxCommandLength, "%s %s.%s.skd %s.%s.%s.delay -baseid G%c -skd_src %s --calcon %s/decont2.input -extf %s/extfile.eop -prtb -atmout", calcProgram, prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, srcName, paramsPath, paramsPath);
-				}
-
-				if(v >= MaxCommandLength)
-				{
-					fprintf(stderr, "Error: command string too short (%d < %d) generating calc_skd command\n", MaxCommandLength, v);
-
-					exit(EXIT_FAILURE);
-				}
-				if(opts->verbose < 2 && v < MaxCommandLength - 20)
-				{
-					strcat(command, " > /dev/null 2>&1");
-				}
-
-				if(opts->verbose > 0)
-				{
-					printf("Executing: %s\n", command);
-				}
-				system(command);
-
-				++letter;
-				if(letter == 'G')	/* avoid Geocenter code */
-				{
-					++letter;
-				}
-			}
-		}
-	}
-
-	if(opts->force == 0 && skipFile(D->job->calcFile, D->job->imFile))
-	{
-		printf("Skipping %s due to file ages.\n", prefix);
-		deleteDifxInput(D);
-
-		return 0;
-	}
-	
-	if(difxVersion && D->job->difxVersion[0])
-	{
-		if(strncmp(difxVersion, D->job->difxVersion, DIFXIO_VERSION_LENGTH-1))
-		{
-			printf("Attempting to run calcif2 from version %s on a job make for version %s\n", difxVersion, D->job->difxVersion);
-			if(opts->overrideVersion)
-			{
-				fprintf(stderr, "Continuing because of --override-version\n");
-			}
-			else
-			{
-				fprintf(stderr, "calcif2 won't run on mismatched version without --override-version.\n");
-				deleteDifxInput(D);
-
-				return -1;
-			}
-		}
-	}
-	else if(!D->job->difxVersion[0])
-	{
-		printf("Warning: calcif2: working on unversioned job\n");
-	}
-
-	/* we know opts->calcServer is no more than DIFXIO_NAME_LENGTH-1 chars long */
-	strcpy(D->job->calcServer, opts->calcServer);
-	D->job->calcProgram = opts->calcProgram;
-	D->job->calcVersion = opts->calcVersion;
-
-	if(opts->verbose > 1)
-	{
-		printDifxInput(D);
-	}
-
-	v = difxCalcInit(D, p);
-	if(v < 0)
-	{
-		deleteDifxInput(D);
-		fprintf(stderr, "Error: calcif2: difxCalcInit returned %d\n", v);
-
-		return -1;
-	}
-	v = difxCalc(D, p, prefix, opts->verbose);
-	if(v < 0)
-	{
-		deleteDifxInput(D);
-		fprintf(stderr, "Error: calcif2: difxCalc returned %d\n", v);
-
-		return -1;
-	}
-	if(opts->verbose > 0)
-	{
-		printf("About to write IM file\n");
-	}
-	tweakDelays(D, "calcif2.delay", opts->verbose);
-	writeDifxIM(D);
-	if(opts->verbose > 0)
-	{
-		printf("Wrote IM file\n");
-	}
-	deleteDifxInput(D);
-
-	return 0;
-}
-
 void deleteCalcParams(CalcParams *p)
 {
 	if(p->clnt)
@@ -753,9 +526,164 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 	return p;
 }
 
+static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParams **p)
+{
+	DifxInput *D;
+	FILE *in;
+	char fn[DIFXIO_FILENAME_LENGTH];
+	int v;
+	const char *difxVersion;
+
+	difxVersion = getenv("DIFX_VERSION");
+
+	v = snprintf(fn, DIFXIO_FILENAME_LENGTH, "%s.calc", prefix);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "Error: filename %s.calc is too long (max %d chars)\n", prefix, DIFXIO_FILENAME_LENGTH-1);
+	}
+	in = fopen(fn, "r");
+	if(!in)
+	{
+		fprintf(stderr, "File %s not found or cannot be opened.  Quitting.\n", fn);
+
+		return -1;
+	}
+	else
+	{
+		fclose(in);
+	}
+
+	D = loadDifxCalc(prefix);
+
+	if(D == 0)
+	{
+		fprintf(stderr, "Error: loadDifxCalc(\"%s\") returned 0\n", prefix);
+
+		return -1;
+	}
+
+	D = updateDifxInput(D);
+	if(D == 0)
+	{
+		fprintf(stderr, "Error: updateDifxInput(\"%s\") returned 0\n", prefix);
+
+		return -1;
+	}
+
+	if(opts->force == 0 && skipFile(D->job->calcFile, D->job->imFile))
+	{
+		printf("Skipping %s due to file ages.\n", prefix);
+		deleteDifxInput(D);
+
+		return 0;
+	}
+	
+	if(difxVersion && D->job->difxVersion[0])
+	{
+		if(strncmp(difxVersion, D->job->difxVersion, DIFXIO_VERSION_LENGTH-1))
+		{
+			printf("Attempting to run calcif2 from version %s on a job make for version %s\n", difxVersion, D->job->difxVersion);
+			if(opts->overrideVersion)
+			{
+				fprintf(stderr, "Continuing because of --override-version\n");
+			}
+			else
+			{
+				fprintf(stderr, "calcif2 won't run on mismatched version without --override-version.\n");
+				deleteDifxInput(D);
+
+				return -1;
+			}
+		}
+	}
+	else if(!D->job->difxVersion[0])
+	{
+		printf("Warning: calcif2: working on unversioned job\n");
+	}
+
+	if(strlen(D->job->delayModel) > 0)
+	{
+		/* use specified delay model program rather than the calcserver */
+		
+		const int MaxCommandLength = 1024;
+		char cmd[MaxCommandLength];
+
+		if(opts->verbose > 1)
+		{
+			printDifxInput(D);
+		}
+
+		snprintf(cmd, MaxCommandLength, "%s %s.calc", D->job->delayModel, prefix);
+		if(opts->verbose > 0)
+		{
+			printf("Executing the following: %s\n", cmd);
+		}
+		system(cmd);
+		if(opts->verbose > 0)
+		{
+			printf("Done.\n");
+		}
+	}
+	else
+	{
+		/* we know opts->calcServer is no more than DIFXIO_NAME_LENGTH-1 chars long */
+		strcpy(D->job->calcServer, opts->calcServer);
+		D->job->calcProgram = opts->calcProgram;
+		D->job->calcVersion = opts->calcVersion;
+
+		if(*p == 0)
+		{
+			/* make calcserver client */
+
+			*p = newCalcParams(opts);
+			if(*p == 0)
+			{
+				fprintf(stderr, "Error: Cannot initialize CalcParams\n");
+
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		if(opts->verbose > 1)
+		{
+			printDifxInput(D);
+		}
+
+		v = difxCalcInit(D, *p);
+		if(v < 0)
+		{
+			deleteDifxInput(D);
+			fprintf(stderr, "Error: calcif2: difxCalcInit returned %d\n", v);
+
+			return -1;
+		}
+		v = difxCalc(D, *p, prefix, opts->verbose);
+		if(v < 0)
+		{
+			deleteDifxInput(D);
+			fprintf(stderr, "Error: calcif2: difxCalc returned %d\n", v);
+
+			return -1;
+		}
+		if(opts->verbose > 0)
+		{
+			printf("About to write IM file\n");
+		}
+		tweakDelays(D, "calcif2.delay", opts->verbose);
+		writeDifxIM(D);
+		if(opts->verbose > 0)
+		{
+			printf("Wrote IM file\n");
+		}
+	}
+	deleteDifxInput(D);
+
+	return 0;
+}
+
 int run(const CommandLineOptions *opts)
 {
-	CalcParams *p;
+	CalcParams *p = 0;
 	int i, l;
 
 	if(getenv("DIFX_GROUP_ID"))
@@ -768,14 +696,6 @@ int run(const CommandLineOptions *opts)
 		return EXIT_FAILURE;
 	}
 		
-	p = newCalcParams(opts);
-	if(!p)
-	{
-		fprintf(stderr, "Error: Cannot initialize CalcParams\n");
-
-		return EXIT_FAILURE;
-	}
-
 	for(i = 0; i < opts->nFile; ++i)
 	{
 		l = strlen(opts->files[i]);
@@ -794,9 +714,12 @@ int run(const CommandLineOptions *opts)
 		{
 			printf("%s processing file %d/%d = %s\n", program, i+1, opts->nFile, opts->files[i]);
 		}
-		runfile(opts->files[i], opts, p);
+		runfile(opts->files[i], opts, &p);
 	}
-	deleteCalcParams(p);
+	if(p)
+	{
+		deleteCalcParams(p);
+	}
 
 	return EXIT_SUCCESS;
 }

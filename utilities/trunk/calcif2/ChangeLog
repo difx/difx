@@ -5,6 +5,8 @@ Version 2.5.0
 * move difxsniff to SniffTools
 * remove example that is no longer valid
 * move some useful and quasi-useful scripts into more appropriate source trees
+* respect new DELAY MODEL parameter of the .calc file: use to run non-standard delay model program
+* remove non-functional Sekido model code
 
 Version 2.3.0
 * vlog: split ANTAB file into antenna-specific files
