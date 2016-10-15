@@ -22,6 +22,7 @@
 * Make DataSourceNone a legitimate (non-default) source of data.  DataSourceUnspecified now takes the role of an uninitialized value.  
 * Remove ill-conceived function: DifxInputGetDatastreamId
 * Fixed function DifxConfigRecBand2FreqPol to be compatible with multiple data streams
+* Add parameter to track delay model program to use (stored in .calc file)
 
 3.4.0
 * Fix X/Y polarization issue

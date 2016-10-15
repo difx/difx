@@ -586,6 +586,8 @@ typedef struct
 	char threadsFile[DIFXIO_FILENAME_LENGTH];
 	char outputFile[DIFXIO_FILENAME_LENGTH];
 
+	char delayModel[DIFXIO_FILENAME_LENGTH];  /* program to use to calculate delays */
+
 	/* Remappings.  These are null arrays unless some renumbering from original values occurred */
 	int *jobIdRemap;	/* confusingly, not the same jobId as that in this structure, but rather index to DifxJob */
 	int *freqIdRemap;

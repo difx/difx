@@ -1922,6 +1922,11 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		D->job->dutyCycle = atof(DifxParametersvalue(cp, row));
 	}
+	row = DifxParametersfind(cp, 0, "DELAY MODEL");
+	if(row >= 0)
+	{
+		snprintf(D->job->delayModel, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+	}
 	row = DifxParametersfind(cp, 0, "JOB START TIME");
 	if(row >= 0)
 	{

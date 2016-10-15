@@ -90,6 +90,10 @@ int writeDifxCalc(const DifxInput *D)
 	{
 		writeDifxLine(out, "DIFX LABEL", D->job->difxLabel);
 	}
+	if(strlen(D->job->delayModel) > 0)
+	{
+		writeDifxLine(out, "DELAY MODEL", D->job->delayModel);
+	}
 	writeDifxLineInt(out, "SUBJOB ID", D->job->subjobId);
 	writeDifxLineInt(out, "SUBARRAY ID", D->job->subarrayId);
 	if(D->job->vexFile[0] != 0)
