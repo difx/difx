@@ -50,5 +50,6 @@ CXXFLAGS="${CFLAGS}"
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 scripts/Makefile])
+                 scripts/Makefile
+		 examples/Makefile])
 AC_OUTPUT
