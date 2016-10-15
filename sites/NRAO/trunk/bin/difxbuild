@@ -13,15 +13,14 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.51'
-verdate = '20151216'
+version = '0.55'
+verdate = '20161015'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 openmpiVersion = '1.10'
 pgplotVersion = '5.2'
-pngVersion = '1.2.50'
 schedVersion = '11.4'
 schedUpdate = ''
 skedVersion = '2013jan23'
@@ -534,35 +533,56 @@ component_mpifxcorr_trunk = \
 component_difx2fits_trunk = \
 [ \
 	'difx2fits', \
-	'https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk' ,\
+	'https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk', \
 	['aclocal', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_difx2mark4_trunk = \
 [ \
 	'difx2mark4', \
-	'https://svn.atnf.csiro.au/difx/applications/difx2mark4/trunk' ,\
+	'https://svn.atnf.csiro.au/difx/applications/difx2mark4/trunk', \
 	['aclocal', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_vex2difx_trunk = \
 [ \
 	'vex2difx', \
-	'https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk' ,\
+	'https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk', \
 	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_mk5daemon_trunk = \
 [ \
 	'mk5daemon', \
-	'https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk' ,\
+	'https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk', \
 	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_difxcalc11_trunk = \
+[ \
+	'difxcalc11', \
+	'https://svn.atnf.csiro.au/difx/applications/difxcalc11/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_autozoom_trunk = \
+[ \
+	'autozoom', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/autozoom', \
+	['nodef'] \
+]
+
+component_datasim_trunk = \
+[ \
+	'datasim', \
+	'https://svn.atnf.csiro.au/difx/applications/datasim/trunk', \
+	['nodef', 'aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_calcif2_trunk = \
 [ \
 	'calcif2', \
-	'https://svn.atnf.csiro.au/difx/utilities/trunk/calcif2' ,\
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/calcif2', \
 	['aclocal', 'autoconf', 'autoheader', 'automake'] \
 ]
 
@@ -571,6 +591,13 @@ component_calcserver_trunk = \
 	'calcserver', \
 	'https://svn.atnf.csiro.au/difx/applications/calcserver/trunk', \
 	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_polconvert_trunk = \
+[ \
+	'polconvert', \
+	'https://svn.atnf.csiro.au/difx/applications/polconvert/trunk', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_guiserver_trunk = \
@@ -692,8 +719,12 @@ components['DIFX-DEVEL'] = \
 	component_difx2mark4_trunk, \
 	component_vex2difx_trunk, \
 	component_mk5daemon_trunk, \
+	component_difxcalc11_trunk, \
+	component_datasim_trunk, \
+	component_autozoom_trunk, \
 	component_calcif2_trunk, \
 	component_calcserver_trunk, \
+	component_polconvert_trunk, \
 	component_guiserver_trunk, \
 	#component_gui_trunk, \
 	component_rcwlib_trunk, \
@@ -1926,6 +1957,12 @@ def fromtar(origComps, params, args, verbose, pretend):
 			print 'No matching .tar.gz files found in %s for %s' % (distDir, comp[0])
 
 
+def debian(origComps, params, args, verbose, pretend):
+	debComponents = 'libexpat1-dev autoconf automake pkg-config libtool-bin subversion g++ gfortran libx11-dev libgsl2 libgsl-dev libfftw3-bin libfftw-dev libudev-dev bison flex'
+	print 'Using apt to install some things.  Your sudo password may be needed.'
+	cmd = 'sudo apt-get install %s' % debComponents
+	execute(cmd, verbose, pretend)
+
 def svnstatus(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
@@ -2511,7 +2548,7 @@ def sched(origComps, params, args, verbose, pretend):
 		"-e 's/#ARCHSED/ARCH = LINUX/' " + \
 		"-e 's/#FCSED/FC = gfortran -Wall -fimplicit-none -fno-backslash/' " + \
 		"-e 's/#XLDSED/XLD = -L\\${DIFX_ARCH_ROOT}\\/lib -L\\/usr\\/lib -lX11/' " + \
-		"-e 's/#LDPGPLOTSED/LDPGPLOT = -L\\${DIFX_ARCH_ROOT}\\/lib -L\\/usr\\/lib -lpgplot -lpng12/' " + \
+		"-e 's/#LDPGPLOTSED/LDPGPLOT = -L\\${DIFX_ARCH_ROOT}\\/lib -L\\/usr\\/lib -lpgplot/' " + \
 		"-e 's/#JPL_SRCS_SED/JPL_SRCS = \\$(wildcard Jpl\\/*.f)/' " + \
 		"-e 's/#SAT_SRCS_SED/SAT_SRCS = \\$(wildcard Sat\\/*.f)/' " + \
 		"-e 's/#SATLDSED/SATLD = \\${DIFX_ARCH_ROOT}\\/lib\\/spicelib_gfortran.a \\${DIFX_ARCH_ROOT}\\/lib\\/support_gfortran.a -lm/'"
@@ -2613,32 +2650,6 @@ def psycopg(origComps, params, args, verbose, pretend):
 	execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
 
 
-def png(origComps, params, args, verbose, pretend):
-	arch = platform.machine()
-	pngSrcFile = 'libpng-%s.tar.gz' % pngVersion
-	pngUrl = 'http://download.sourceforge.net/libpng/%s' % pngSrcFile
-	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
-	tarDir = difxBase + 'tar/'
-	# get file
-	ftpFile(pngUrl, tarDir, pngSrcFile, args, verbose, pretend)
-	if not isdir(archSrcDir):
-		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
-	
-	pngSrcDir = '%s/libpng-%s' % (archSrcDir, pngVersion)
-	if isdir(pngSrcDir):
-		print 'Stopping because %s exists' % pngSrcDir
-		return
-	
-	chdir(archSrcDir)
-	execute('tar zxvf %s/%s' % (tarDir, pngSrcFile), verbose, pretend)
-	chdir(pngSrcDir)
-	execute('./configure --prefix=%s' % archDir, verbose, pretend)
-	execute('make -j %d' % numMakeCpus, verbose, pretend)
-	execute('make install', verbose, pretend)
-
-
 def libevent(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	libeventSrcFile = 'libevent-%s-stable.tar.gz' % libeventVersion
@@ -2720,11 +2731,6 @@ def pgplot(origComps, params, args, verbose, pretend):
 	archDir = difxBase + arch
 	archSrcDir = difxBase + arch + '/src/'
 	
-	haslibpng12 = ('-lpng12' in popen('pkg-config --libs libpng').readline())
-	if not haslibpng12:
-		print 'libpng12 not found.  Installing...'
-		png(origComps, params, [], verbose, pretend)
-
 	opsys = lower(platform.system())
 	srcFile = 'pgplot%s.tar.gz' % pgplotVersion
 	pgplotUrl = 'ftp://ftp.astro.caltech.edu/pub/pgplot/%s' % srcFile
@@ -2745,8 +2751,8 @@ def pgplot(origComps, params, args, verbose, pretend):
 	# make drivers file
 	o = open('drivers.list', 'w')
 	o.write('  NUDRIV 0 /NULL      Null device (no output)                           Std F77\n')
-	o.write('  PNDRIV 1 /PNG       Portable Network Graphics file                    C\n')
-	o.write('  PNDRIV 2 /TPNG      Portable Network Graphics file - transparent background C\n')
+	#o.write('  PNDRIV 1 /PNG       Portable Network Graphics file                    C\n')
+	#o.write('  PNDRIV 2 /TPNG      Portable Network Graphics file - transparent background C\n')
 	o.write('  PSDRIV 1 /PS        PostScript printers, monochrome, landscape        Std F77\n')
 	o.write('  PSDRIV 2 /VPS       Postscript printers, monochrome, portrait         Std F77\n')
 	o.write('  PSDRIV 3 /CPS       PostScript printers, color, landscape             Std F77\n')
@@ -2780,7 +2786,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['cxOracle', 'psycopg', 'pgplot', 'png', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd']
+	packages = ['cxOracle', 'psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd']
 	if len(args) < 1:
 		print 'The "extra" option allows installation of optional software.\n'
 		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
@@ -2811,8 +2817,6 @@ def extra(origComps, params, args, verbose, pretend):
 		pgplot(origComps, params, [], verbose, pretend)
 	if 'gpstk' in args:
 		gpstk(origComps, params, [], verbose, pretend)
-	if 'png' in args:
-		png(origComps, params, [], verbose, pretend)
 	if 'expat' in args:
 		expat(origComps, params, [], verbose, pretend)
 	if 'libmicrohttpd' in args:
@@ -3112,6 +3116,15 @@ command_fromtar = \
 	fromtar \
 ]
 
+command_debian = \
+[ \
+	'debian', \
+	'Install Debian/Ubuntu/Kubuntu/XUbuntu/... prereqs', \
+	[], \
+	[], \
+	debian \
+]
+
 commands = \
 [ \
 	command_list, \
@@ -3131,6 +3144,7 @@ commands = \
 	command_update, \
 	command_dist, \
 	command_fromtar, \
+	command_debian, \
 #	command_remove, \
 ]
 
