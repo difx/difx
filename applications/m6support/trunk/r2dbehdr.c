@@ -1,5 +1,5 @@
 /*
- * $Id: r2dbehdr.c 3855 2016-04-11 19:24:41Z gbc $
+ * $Id: r2dbehdr.c 4124 2016-09-08 15:48:37Z gbc $
  *
  * Support for R2DBE extended headers
  *   v0 was deployed for Mar2015 campaign
@@ -21,6 +21,10 @@ void r2dbev0_hdr_chk(const int id, const uint32_t status, const uint32_t frame)
     int32_t offset = status;
 
     datum = (double)offset * 3.90625;   /* ns */
+    ext_hdr_work.last_datum = datum;
+    ext_hdr_work.last_frame = frame;
+    ext_hdr_work.last_valid = 1;
+
     ext_hdr_work.r2dbe_gps_pps[0] += 1.0;
     ext_hdr_work.r2dbe_gps_pps[1] += datum;
 
@@ -29,7 +33,7 @@ void r2dbev0_hdr_chk(const int id, const uint32_t status, const uint32_t frame)
     dev = fabs(datum - ave);
     if (dev > ext_hdr_work.r2dbe_gps_pps[2])
         ext_hdr_work.r2dbe_gps_pps[2] = dev;
-    if (ext_hdr_work.verb>1) fprintf(ext_hdr_work.fp,
+    if (ext_hdr_work.verb>2) fprintf(ext_hdr_work.fp,
         EXT_HDR_STAMP " PPS - GPS %+.2f ns <%+.2lf> +/- %.2lf\n",
         ext_hdr_work.secsre, frame, datum, ave, dev);
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: exthdr.h 3008 2015-04-14 19:01:58Z gbc $
+ * $Id: exthdr.h 4129 2016-09-08 20:30:16Z gbc $
  *
  * Support for extended headers
  */
@@ -17,6 +17,11 @@ extern struct ext_hdr_work {
     uint32_t type;      /* of ver2 ext header */
     uint32_t filecnt;   /* number of files examined */
     long int mask;      /* things to ignore */
+    int jump;           /* how to report time */
+    /* used by search */
+    double last_datum;  /* last pps read */
+    uint32_t last_frame;/* and frame */
+    uint32_t last_valid;/* and validity */
     /* per file */
     uint32_t pktcnt;
     uint32_t secsre;    /* secs of ref epoch */
@@ -58,6 +63,60 @@ extern void r2dbev0_hdr_help(void);
 extern void r2dbev0_hdr_chk(const int id, const uint32_t status,
     const uint32_t frame);
 extern void r2dbev0_hdr_sum(FILE *fp);
+
+/*
+ * Datum for a pair of packets with a GPS PPS gap between them
+ * bigger and lesser refer to offsets within the file.
+ */
+typedef struct srch_stack {
+    uint32_t    lesser;
+    double      ldatum;
+    uint32_t    bigger;
+    double      bdatum;
+    uint32_t    *pktptr;
+} SrchStack;
+
+/*
+ * At this offset of the sequence, the GPS PPS measurement.
+ */
+typedef struct srch_data {
+    int64_t     offset;
+    double      zdatum;
+    uint32_t    count;
+} SrchData;
+
+/*
+ * Everything for the search.
+ */
+#define EXT_SS_BEGIN    0
+#define EXT_SS_FIRST    1
+#define EXT_SS_FINAL    2
+#define EXT_SS_SEARCH   3
+#define EXT_SS_FINISH   4
+#define EXT_SS_SORTED   5
+#define SRCH_ALLOC      1000
+typedef struct srch_state {
+    int         where;              /* 0 at startup */
+    double      maxgap;             /* work.pps_search */
+    double      last_datum;         /* last datum in history */
+    uint32_t    *last_pktptr;       /* last pkt pointer */
+    char        lab[64];            /* for output */
+    uint32_t    srch_first;         /* starter offset */
+    uint32_t    srch_final;         /* final offset */
+    uint32_t    srch_next;          /* next value of pkts_seqoffset */
+    uint32_t    srch_midway;        /* direction of invalid stepping */
+
+    uint32_t    srch_s_read;        /* read  point into stack */
+    uint32_t    srch_swrite;        /* write point into stack */
+    uint32_t    srch_salloc;        /* size of allocation */
+    SrchStack   *srch_stack;        /* stack of search pairs */
+    uint32_t    srch_halloc;         /* size of allocation */
+    uint32_t    srch_hwrite;        /* write point into history */
+    SrchData    *srch_history;      /* binary search history */
+} SrchState;
+
+extern int extended_hdr_search(uint32_t *pkt, SrchState *wss);
+extern void extended_report(char *lab, SrchState *wss);
 
 /*
  * eof

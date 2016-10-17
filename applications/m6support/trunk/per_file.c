@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 4066 2016-08-04 15:42:03Z gbc $
+ * $Id: per_file.c 4123 2016-09-08 13:34:59Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -52,6 +52,7 @@ static struct checker_work {
     uint32_t    station_mask;       /* bits of station to check */
     uint32_t    extend_hchk;        /* check the extended header */
     uint32_t    flist_only;         /* only generate an flist entry */
+    uint32_t    pps_search;         /* looking for pps jumps */
 
     /* evolving */
     char        *cur_file;          /* name of the current file */
@@ -66,11 +67,15 @@ static struct checker_work {
     double      file_start_secs;    /* time current file started */
     double      file_process_secs;  /* current file consumption */
     double      total_process_secs; /* total time consumed */
+#if EXTEND_HCHK
+    SrchState   srch_state;         /* complete search state */
+#endif /* EXTEND_HCHK */
 
     /* delta stats */
     BSInfo      bdel, blst;         /* used by stat_delta */
     off_t       np0, np1;           /* packet offsets */
 } work = {
+    /* initialize the non-zero values */
     .alarm_secs = 60.0,             /* a minute per file is alot */
     .trial_seed = 17,               /* doesn't really matter */
     .pkts_loops = 5,                /* briefest of touches */
@@ -97,6 +102,10 @@ typedef uint32_t *(Random_Picker)(int *nlp, uint32_t **endp);
 /*
  * Developer error: epic fail.
  */
+static uint32_t *search_packet_er(int *nlp, uint32_t **endp)
+{
+    return(NULL32P);
+}
 static uint32_t *random_packet_er(int *nlp, uint32_t **endp)
 {
     return(NULL32P);
@@ -146,6 +155,14 @@ static uint32_t *sequence_packet_sg(int *nlp, uint32_t **endp)
     work.pkts_seqoffset ++;
     return(pkt);
 }
+/*
+ * Pick a packet in support of a binary search.
+ */
+static uint32_t *search_packet_sg(int *nlp, uint32_t **endp)
+{
+    work.pkts_seqoffset = work.srch_state.srch_next;
+    return(sequence_packet_sg(nlp, endp));
+}
 
 /*
  * Pick a packet at random by packet number.  To pick by
@@ -176,12 +193,23 @@ static uint32_t *sequence_packet_fl(int *nlp, uint32_t **endp)
     work.pkts_seqoffset ++;
     return((uint32_t *)pktp);
 }
+/*
+ * Pick a packet in support of a binary search.
+ */
+static uint32_t *search_packet_fl(int *nlp, uint32_t **endp)
+{
+    work.pkts_seqoffset = work.srch_state.srch_next;
+    return(sequence_packet_fl(nlp, endp));
+}
 
 /*
  * For reporting purposes
  */
 static char *picker_name(Random_Picker *picker)
 {
+    if (picker == search_packet_sg) return("schsg"); else
+    if (picker == search_packet_fl) return("schfl"); else
+    if (picker == search_packet_er) return("scher"); else
     if (picker == random_packet_sg) return("rndsg"); else
     if (picker == random_packet_fl) return("rndfl"); else
     if (picker == random_packet_er) return("rnder"); else
@@ -237,6 +265,8 @@ static void check_sequence(Random_Picker *rp)
     int tt, nl, num_check, fails, fills;
     uint32_t *pkt, *end, *pkt0 = 0;
     num_check = (work.pkts_runs == 0) ? work.sgi.total_pkts : work.pkts_runs;
+    if (work.pkts_seqoffset + num_check > work.sgi.total_pkts)
+        num_check = work.sgi.total_pkts - work.pkts_seqoffset - 1;
     for (tt = 0; tt < num_check; tt++) {
         pkt = (*rp)(&nl, &end);
         if (pkt0 == 0) pkt0 = pkt;
@@ -268,6 +298,60 @@ static void check_sequence(Random_Picker *rp)
 }
 
 /*
+ * Drive a (binary) search for gaps exceeding the limit specified.
+ * We carry along the same checking baggage, and in addition, track
+ * the GPS PPS value in the search history.
+ */
+static void check_search(Random_Picker *rp)
+{
+#if EXTEND_HCHK
+    int tt, nl, num_check, fails, fills, bail = 0;
+    uint32_t *pkt, *end, *pkt0 = 0;
+    num_check = (work.pkts_runs == 0) ? work.sgi.total_pkts : work.pkts_runs;
+    if (work.pkts_seqoffset + num_check > work.sgi.total_pkts)
+        num_check = work.sgi.total_pkts - work.pkts_seqoffset - 1;
+    work.srch_state.srch_first = work.pkts_seqoffset;
+    work.srch_state.srch_next  = work.pkts_seqoffset;
+    work.srch_state.srch_final = work.pkts_seqoffset + num_check - 1;
+    work.srch_state.maxgap = work.pps_search;
+    for (tt = 0; tt < num_check; tt++) {
+        /* generates new packet based on work.pkts_seqoffset */
+        pkt = (*rp)(&nl, &end);
+        if (pkt0 == 0) pkt0 = pkt;
+        if (!pkt) {
+            work.pkts_failed ++;
+            work.pkts_tested ++;
+            continue;
+        }
+        work.pkts_tested += 1;
+        fails = sg_pkt_check(&work.sgi, pkt, 1, end, &fills);
+        work.pkts_filled += fills;
+        work.pkts_failed += fails ? 1 : 0;
+        work.pkts_passed += fails ? 0 : 1;
+        if (fails == 0)
+            work.pkts_timing += sg_pkt_times(&work.sgi, pkt, 2, end);
+        if (fails == 0 && work.stat_octets > 0)
+            stats_check(&work.bsi, (uint64_t*)(pkt));
+
+        if (work.extend_hchk)
+            bail = extended_hdr_search(pkt, &work.srch_state);
+
+        if (work.stat_delta &&
+            ((tt % work.stat_delta) == (work.stat_delta - 1))) {
+                stats_delta(&work.bsi, &work.blst, &work.bdel,
+                pkt0, work.stat_delta, work.cur_numb, work.sgi.smi.start);
+            pkt0 = pkt;
+        }
+        if (time_to_bail() || bail) break;
+    }
+#else /* EXTEND_HCHK */
+    fprintf(stderr, "Sorry, required extended header methods\n"
+        "were not compiled into this executable scan_check.\n");
+    exit(1);
+#endif /* EXTEND_HCHK */
+}
+
+/*
  * Provide a one-liner for DiFX.
  */
 static void flist_report(void)
@@ -288,6 +372,7 @@ static void flist_report(void)
 
 /*
  * Provide a summary report
+    else if (work.pps_search > 0) search_report();
  */
 static void summary_report(void)
 {
@@ -307,10 +392,10 @@ static void summary_report(void)
     if (verb>0) stats_report(&work.bsi, lab);
 #if EXTEND_HCHK
     if (work.extend_hchk) extended_hdr_sum(work.extend_hchk);
+    if (work.pps_search > 0) extended_report(lab, &work.srch_state);
 #endif /* EXTEND_HCHK */
     fflush(stdout);
 }
-
 
 /*
  * Declare the start of a new group
@@ -521,8 +606,8 @@ static void all_done(int signum)
     work.total_process_secs += work.file_process_secs;
     work.avail_process_secs -= work.file_process_secs;
 
-    if (work.flist_only) flist_report();
-    else                 summary_report();
+    if (work.flist_only)          flist_report();
+    else                          summary_report();
     exit(0);
 }
 
@@ -643,6 +728,8 @@ static int help_chk_opt(void)
     fprintf(stdout, "  ofs=<int>:<int>  user supplied offset and size\n");
     fprintf(stdout, "  flist=<int>      only generate flist if !0 (%u)\n",
         work.flist_only);
+    fprintf(stdout, "  mxppsdel=<ns>    search for jumps > this (%u)\n",
+        work.pps_search);
     /* ispy is not settable from command line */
     fprintf(stdout, "\n");
     fprintf(stdout, "Generally speaking, you can increase the amount\n");
@@ -652,13 +739,16 @@ static int help_chk_opt(void)
     fprintf(stdout, "the program will start at the beginning and run\n");
     fprintf(stdout, "through the number of packets specified by runs.\n");
     fprintf(stdout, "To do the whole file sequentially, set runs=0.\n");
-    fprintf(stdout, "To start in the middle, use starter\n");
+    fprintf(stdout, "To start in the middle, use starter.\n");
     fprintf(stdout, "Use exthdr=help for help with those options.\n");
-
     fprintf(stdout, "The ofs= argument supplies an offset in the pkt\n");
     fprintf(stdout, "read size where the VDIF packet is found together\n");
     fprintf(stdout, "with that read size.  This is used to \"try harder\n");
     fprintf(stdout, "to find a valid packet if there are invalid packets\n");
+    fprintf(stdout, "If a GPS PPS is available in the extended header,\n");
+    fprintf(stdout, "you can use the mxppsdel to search for gaps which\n");
+    fprintf(stdout, "exceed the value supplied.  This assumes you have\n");
+    fprintf(stdout, "used the exthdr option to configure the GPS PPS.\n");
     return(1);
 }
 
@@ -745,6 +835,10 @@ int m6sc_set_chk_opt(const char *arg)
         if (verb>1) fprintf(stdout, work.flist_only
             ? "opt: only generating flist entry"
             : "opt: providing normal summary");
+    } else if (!strncmp(arg, "mxppsdel=", 9)) {
+        work.pps_search = atoi(arg+9);
+        if (verb>1) fprintf(stdout,
+            "opt: Searching for PPS jumps > %u\n", work.pps_search);
     } else {
         fprintf(stderr, "Unknown option %s\n", arg);
         return(1);
@@ -841,7 +935,15 @@ int m6sc_per_file(const char *file, int files, int verbose)
         work.bsi.packet_octets = work.stat_octets;
     work.bsi.bits_sample = work.sgi.vdif_signature.bits.bps + 1;
 
-    if (work.pkts_loops > 0) {
+    if (work.pps_search > 0) {
+        switch (work.sgi.sg_version) {
+        case SG_VERSION_OK_2: picker = search_packet_sg; break;
+        case SG_VERSION_FLAT: picker = search_packet_fl; break;
+        default:              picker = search_packet_er; break;
+        }
+        work.pickername = picker_name(picker);
+        check_search(picker);
+    } else if (work.pkts_loops > 0) {
         switch (work.sgi.sg_version) {
         case SG_VERSION_OK_2: picker = random_packet_sg; break;
         case SG_VERSION_FLAT: picker = random_packet_fl; break;
@@ -866,11 +968,12 @@ int m6sc_per_file(const char *file, int files, int verbose)
     work.total_process_secs += work.file_process_secs;
     work.avail_process_secs -= work.file_process_secs;
 
-    if (work.flist_only) flist_report();
-    else                 summary_report();
+    if (work.flist_only)          flist_report();
+    else                          summary_report();
     free(work.cur_file);
     work.cur_file = 0;
     n++;
+
     return( work.pkts_failed ? 1 : 0);
 }
 

@@ -40,7 +40,7 @@ typedef struct vdif_hdr {
         uint32_t PICstatus;
     } w6;
     uint64_t edh_psn;
-} VDIFHeader;
+} __attribute__((__may_alias__)) VDIFHeader;
 
 /* for sync'ing on streams, define a signature */
 typedef union vdif_signature_union {

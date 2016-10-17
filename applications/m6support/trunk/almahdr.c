@@ -1,5 +1,5 @@
 /*
- * $Id: almahdr.c 3008 2015-04-14 19:01:58Z gbc $
+ * $Id: almahdr.c 4126 2016-09-08 16:24:32Z gbc $
  *
  * Support for ALMA extended headers
  */
@@ -44,10 +44,10 @@ static void alma_fpgatemp(const uint32_t frame, uint32_t datum)
 {
     uint32_t bits = (datum&0xFFC0)>>6;
     double tdegc = (((double)bits) * 503.975/1024.0) - 273.15;
-    if (ext_hdr_work.verb>2) fprintf(ext_hdr_work.fp,
+    if (ext_hdr_work.verb>3) fprintf(ext_hdr_work.fp,
         EXT_HDR_STAMP " FPGA Temp = %.2f C (0x%08X -> 0x%X)\n",
         ext_hdr_work.secsre, frame, tdegc, datum, bits);
-    else if (ext_hdr_work.verb>1) fprintf(ext_hdr_work.fp,
+    else if (ext_hdr_work.verb>2) fprintf(ext_hdr_work.fp,
         EXT_HDR_STAMP " FPGA Temp = %.2f C\n",
         ext_hdr_work.secsre, frame, tdegc);
     ext_hdr_work.fpga_degc = tdegc;
@@ -66,7 +66,7 @@ static void alma_offset(const uint32_t frame,
     ave = (double)pps[1] / (double)pps[0];
     dev = (uint64_t)fabs(offset - ave);
     if (dev > pps[2]) pps[2] = dev;
-    if (ext_hdr_work.verb>1) fprintf(ext_hdr_work.fp,
+    if (ext_hdr_work.verb>2) fprintf(ext_hdr_work.fp,
         EXT_HDR_STAMP " %s %lu <%.2f> +/- %lu\n",
         ext_hdr_work.secsre, frame, lab, offset, ave, dev);
 }
@@ -79,6 +79,7 @@ void alma_hdr_chk(const int id, const uint32_t status, const uint32_t frame)
     static uint32_t last_status;
     uint32_t datum = status & 0x0FFFFFFF;
     ext_hdr_work.id = id;
+    ext_hdr_work.last_valid = 0;
     switch (frame & 0x7) {
     case 0x0:   /* status */
         if (0 == (ext_hdr_work.mask & 0x01)) {
@@ -91,6 +92,11 @@ void alma_hdr_chk(const int id, const uint32_t status, const uint32_t frame)
         }
         break;
     case 0x1:   /* GPS 1PPS offset from PIC 1PPS */
+        ext_hdr_work.last_datum = (double)datum * 8; /* to ns */
+        if (ext_hdr_work.last_datum  >  500000000.0)
+            ext_hdr_work.last_datum -= 1000000000.0;
+        ext_hdr_work.last_frame = frame;
+        ext_hdr_work.last_valid = 1;
         if (0 == (ext_hdr_work.mask & 0x02))
             alma_offset(frame, "GPS", ext_hdr_work.gps_pic_pps, datum);
         break;
@@ -107,17 +113,17 @@ void alma_hdr_chk(const int id, const uint32_t status, const uint32_t frame)
             alma_fpgatemp(frame, datum);
         break;
     case 0x5:   /* not implemented, s.b. 0x00000005 */
-        if (0 == (ext_hdr_work.mask & 0x20))
+        if (0 == (ext_hdr_work.mask & 0x20) && ext_hdr_work.verb>3)
             fprintf(ext_hdr_work.fp,
                 EXT_HDR_STAMP "0x5\n", ext_hdr_work.secsre, frame);
         break;
     case 0x6:   /* not implemented, s.b. 0x00000006 */
-        if (0 == (ext_hdr_work.mask & 0x40))
+        if (0 == (ext_hdr_work.mask & 0x40) && ext_hdr_work.verb>3)
             fprintf(ext_hdr_work.fp,
                 EXT_HDR_STAMP "0x6\n", ext_hdr_work.secsre, frame);
         break;
     case 0x7:   /* not implemented, s.b. 0x00000007 */
-        if (0 == (ext_hdr_work.mask & 0x80))
+        if (0 == (ext_hdr_work.mask & 0x80) && ext_hdr_work.verb>3)
             fprintf(ext_hdr_work.fp,
                 EXT_HDR_STAMP "0x7\n", ext_hdr_work.secsre, frame);
         break;

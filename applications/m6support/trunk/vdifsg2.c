@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.c 4017 2016-06-30 18:36:03Z gbc $
+ * $Id: vdifsg2.c 4128 2016-09-08 19:52:53Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -117,7 +117,7 @@ static int pkt_time_chk(SGV2sfrag *sfp)
     pkterr = round(dt) - (npkts - 1);
     if (pkterr == 0) return(0);
     if (pkterr > npkts/2 || -pkterr > npkts/2) rv = 1;
-    vdifuse_trace(VDT("times: dt=%.0f on %d is %d rv=%d [fd:%d blk:%ld]\\n"),
+    vdifuse_trace(VDT("times: dt=%.0f on %d is %d rv=%d [fd:%d blk:%ld]\n"),
         dt, npkts, pkterr, rv, sfp->sgi->smi.mmfd, sfp->cblk);
     rv = 0; // FIXME: may want to enable this protection
     return(rv);
