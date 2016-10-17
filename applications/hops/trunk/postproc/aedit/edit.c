@@ -32,10 +32,7 @@
 #define QUICK 0
 #define SLOW 1
 
-int
-edit (data, arg1, arg2)
-esum *data;
-char *arg1, *arg2;
+int edit (esum *data, char *arg1, char *arg2)
     {
     extern struct inputs inp;
     extern struct plot_info pdata[];

@@ -17,12 +17,9 @@
 #include <string.h>
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-update_fqex (datum, summ, type)
-void *datum;
-struct datasumm *summ;
-int type;
+int update_fqex (void *datum, struct datasumm *summ, int type)
     {
     int i, j, k, l, fqindex, time_tag, expt_no, btqlen;
     char c, freq_code, quality, btq[5], source[32];
@@ -111,7 +108,7 @@ int type;
     if (time_tag > fqptr->end) fqptr->end = time_tag;
                                         /* Check stations */
     i = 0;
-    while ((c = btq[i++]) != NULL)
+    while ((c = btq[i++]) != 0)
         if (strchr (fqptr->stations, c) == NULL) 
             {
             l = strlen (fqptr->stations);
@@ -121,7 +118,7 @@ int type;
                                         /* Check btqs, stored as series of null */
                                         /* terminated strings */
     for (i=0; i<fqptr->nbtq; i++)
-        if (strcmp (fqptr->btq + i*btqlen, btq) == NULL) break;
+        if (strcmp (fqptr->btq + i*btqlen, btq) == 0) break;
     if(i == fqptr->nbtq)
         {
         btqptr = fqptr->btq + fqptr->nbtq*btqlen;
@@ -174,7 +171,7 @@ int type;
     if(time_tag > sptr->end) sptr->end = time_tag;
                                         /* Check stations */
     i = 0;
-    while ((c = btq[i++]) != NULL)
+    while ((c = btq[i++]) != 0)
         if (strchr (sptr->stations, c) == NULL) 
             {
             l = strlen (sptr->stations);
@@ -184,7 +181,7 @@ int type;
                                         /* Check btqs, stored as series of null */
                                         /* terminated strings */
     for (i=0; i<sptr->nbtq; i++)
-        if (strcmp (sptr->btq + i*btqlen, btq) == NULL) break;
+        if (strcmp (sptr->btq + i*btqlen, btq) == 0) break;
     if(i < sptr->nbtq)
         {
         btqptr = sptr->btq + sptr->nbtq*btqlen;

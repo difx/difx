@@ -20,29 +20,28 @@
 #include <string.h>
 #include <complex.h>
 
-int
-precorrect (ovex, param, pass)
+int precorrect (ovex, pass)
 struct scan_struct *ovex;
-struct type_param *param;
 struct type_pass *pass;
     {
-    int i, j, k, stn, n, fr, ntones, nin, mask;
+    int i, j, k, stn, n, fr, ntones, nin, mask, chind;
     double delay_offset, rate_offset, pcfreq_hz,
            pcphas[2][2],            // indexed by [stn][pol]
            pcfreq[2];
     extern struct type_status status;
+    extern struct type_param param;
     extern int do_accounting;
     static double conrad = 0.01745329252;
 
                                     /* copy over ref. frequency */
-    param->ref_freq = (pass->control.ref_freq == NULLFLOAT)?
+    param.ref_freq = (pass->control.ref_freq == NULLFLOAT)?
                      pass->pass_data[0].frequency :
                      pass->control.ref_freq;
                                          
-    param->cor_limit = 16000.0;     /* Initialize large number threshold */
-    param->use_sample_cnts = pass->control.use_samples;
+    param.cor_limit = 16000.0;     /* Initialize large number threshold */
+    param.use_sample_cnts = pass->control.use_samples;
                                     // get interpolation method for this pass
-    param->interpol = pass->control.interpolator;
+    param.interpol = pass->control.interpolator;
                                     // calculate offsets of windows due to position offsets
                             
     // delay_offset = (pass->control.ra_offset  * rbase->t2600.u_obsfreq
@@ -54,52 +53,53 @@ struct type_pass *pass;
     delay_offset = 0.0;             // for now, just force 0 offset  rjc 99.8.13
     rate_offset = 0.0;
     
-    param->ion_pts = pass->control.ion_npts;
-    param->mbd_anchor = pass->control.mbd_anchor;
+    param.ion_pts = pass->control.ion_npts;
+    param.mbd_anchor = pass->control.mbd_anchor;
 
     for (i=0; i<2; i++)             // Copy windows into working area
         {
-        param->win_sb[i] = pass->control.sb_window[i] + delay_offset;
-        param->win_mb[i] = pass->control.mb_window[i] + delay_offset;
-        param->win_dr[i] = pass->control.dr_window[i] + rate_offset;
-        param->passband[i] = pass->control.passband[i];
+        param.win_sb[i] = pass->control.sb_window[i] + delay_offset;
+        param.win_mb[i] = pass->control.mb_window[i] + delay_offset;
+        param.win_dr[i] = pass->control.dr_window[i] + rate_offset;
+        param.passband[i] = pass->control.passband[i];
                                     // ionosphere window is about differential a priori
                                     // collapses if only 1 pt (i.e. no search)
-        param->win_ion[i] = (param->ion_pts > 1) ?
+        param.win_ion[i] = (param.ion_pts > 1) ?
             pass->control.ion_window[i] : 0.0;
-        param->win_ion[i] += (pass->control.ionosphere.rem == NULLFLOAT) ? 
+        param.win_ion[i] += (pass->control.ionosphere.rem == NULLFLOAT) ? 
                            0.0 : pass->control.ionosphere.rem;
-        param->win_ion[i] -= (pass->control.ionosphere.ref == NULLFLOAT) ? 
+        param.win_ion[i] -= (pass->control.ionosphere.ref == NULLFLOAT) ? 
                            0.0 : pass->control.ionosphere.ref;
         }
 
-    param->pc_mode[0] = pass->control.pc_mode.ref;
-    param->pc_mode[1] = pass->control.pc_mode.rem;
-    param->pc_period[0] = pass->control.pc_period.ref;
-    param->pc_period[1] = pass->control.pc_period.rem;
+    param.pc_mode[0] = pass->control.pc_mode.ref;
+    param.pc_mode[1] = pass->control.pc_mode.rem;
+    param.pc_period[0] = pass->control.pc_period.ref;
+    param.pc_period[1] = pass->control.pc_period.rem;
    
     status.lsb_phoff[0] = pass->control.lsb_offset.ref * conrad;
     status.lsb_phoff[1] = pass->control.lsb_offset.rem * conrad;
 
-    param->dc_block = pass->control.dc_block;
-    param->weak_channel = pass->control.weak_channel;
-    param->pc_amp_hcode = pass->control.pc_amp_hcode;
-    param->fmatch_bw_pct = pass->control.fmatch_bw_pct;
+    param.dc_block = pass->control.dc_block;
+    param.weak_channel = pass->control.weak_channel;
+    param.pc_amp_hcode = pass->control.pc_amp_hcode;
+    param.fmatch_bw_pct = pass->control.fmatch_bw_pct;
                                     // Copy phase cal offsets; identify desired pcal tone freqs
     for (stn=0; stn<2; stn++)
         {
-        n = param->ov_bline[stn];
-        param->pcal_spacing[stn] = ovex->st[n].channels[0].pcal_spacing;
+        n = param.ov_bline[stn];
+        param.pcal_spacing[stn] = ovex->st[n].channels[0].pcal_spacing;
         
         for (fr = 0; fr < pass->nfreq; fr++)  
             {
             j = fcode(pass->pass_data[fr].freq_code);
+            chind = pass->pass_data[fr].ch_idx;
 
                                     // copy delay calib. values into status array
             status.delay_offs[fr][stn] = (stn) ? pass->control.delay_offs[j].rem 
                                                : pass->control.delay_offs[j].ref;
 
-            if (param->pc_mode[stn] != MULTITONE)
+            if (param.pc_mode[stn] != MULTITONE)
                 {                   // single tone used in this frequency band, process it
                                     // find corresponding freq index in control structure
                 if (stn == 0)
@@ -127,25 +127,25 @@ struct type_pass *pass;
                     {               // must compute frequency for this tone
                                     // assume for now that all ovex channels the same spacing
                     pcfreq_hz = fmod (pass->pass_data[fr].frequency * 1e6
-                                    - ovex->st[n].channels[0].pcal_base_freq,
-                                      ovex->st[n].channels[0].pcal_spacing);
+                                    - ovex->st[n].channels[chind].pcal_base_freq,
+                                      ovex->st[n].channels[chind].pcal_spacing);
 
                                     // pcfreq_hz is positive distance from next lower line
                     if (pcfreq_hz < 0.0)
-                        pcfreq_hz += ovex->st[n].channels[0].pcal_spacing;
+                        pcfreq_hz += ovex->st[n].channels[chind].pcal_spacing;
 
                                     // nearest freq rail depends on sideband
-                    if (ovex->st[n].channels[0].net_sideband == 'U')
+                    if (ovex->st[n].channels[chind].net_sideband == 'U')
                         {               // distance to next line is complement
-                        pcfreq_hz = ovex->st[n].channels[0].pcal_spacing - pcfreq_hz;
+                        pcfreq_hz = ovex->st[n].channels[chind].pcal_spacing - pcfreq_hz;
                                     // now set freq to tone # within band (1 relative)
-                        pcfreq_hz += (pcfreq[stn] - 1) * ovex->st[n].channels[0].pcal_spacing;
+                        pcfreq_hz += (pcfreq[stn] - 1) * ovex->st[n].channels[chind].pcal_spacing;
                         }
                     else            // set up tone frequency for net LSB
                         {           // lsb implemented using negative frequencies
                                     // now set freq to tone # within band (1 relative)
                         pcfreq_hz = - pcfreq_hz 
-                                    + (pcfreq[stn] + 1) * ovex->st[n].channels[0].pcal_spacing;
+                                    + (pcfreq[stn] + 1) * ovex->st[n].channels[chind].pcal_spacing;
                         }
                     msg ("fcode %c freq %lf tone request %lf pc_freqhz %lf", 0,
                           pass->pass_data[fr].freq_code, pass->pass_data[fr].frequency, 
@@ -167,7 +167,7 @@ struct type_pass *pass;
                     {
                     k = 0;
                     pcfreq_hz = pass->pass_data[fr].pc_freqs[stn][k];
-                    if (param->pc_mode[stn] != MANUAL)
+                    if (param.pc_mode[stn] != MANUAL)
                         msg ("stn %d pcal tone of %g Hz unavailable for channel %c",
                          1, stn, pcfreq_hz, pass->pass_data[fr].freq_code);
                     }
@@ -188,22 +188,22 @@ struct type_pass *pass;
 
                                     // assume for now that all ovex channels the same spacing
                 pcfreq_hz = fmod (pass->pass_data[fr].frequency * 1e6
-                                - ovex->st[n].channels[0].pcal_base_freq,
-                                  ovex->st[n].channels[0].pcal_spacing);
+                                - ovex->st[n].channels[chind].pcal_base_freq,
+                                  ovex->st[n].channels[chind].pcal_spacing);
 
                                     // pcfreq_hz is positive distance from next lower line
                 if (pcfreq_hz <= 0.0)
-                    pcfreq_hz += ovex->st[n].channels[0].pcal_spacing;
+                    pcfreq_hz += ovex->st[n].channels[chind].pcal_spacing;
                                     // nearest freq rail depends on sideband
-                if (ovex->st[n].channels[0].net_sideband == 'U')
+                if (ovex->st[n].channels[chind].net_sideband == 'U')
                                     // for USB, distance to next line is complement
-                    pcfreq_hz = ovex->st[n].channels[0].pcal_spacing - pcfreq_hz;
+                    pcfreq_hz = ovex->st[n].channels[chind].pcal_spacing - pcfreq_hz;
                                     // set up tone frequency for net LSB
                 else                // lsb implemented using negative frequencies
                     pcfreq_hz = - pcfreq_hz;
                                     // calculate the number of tones in the band
-                ntones = ((ovex->st[n].channels[0].bandwidth - fabs (pcfreq_hz))
-                        / (ovex->st[n].channels[0].pcal_spacing)) + 1;
+                ntones = ((ovex->st[n].channels[chind].bandwidth - fabs (pcfreq_hz))
+                        / (ovex->st[n].channels[chind].pcal_spacing)) + 1;
                                     // condition result
                 ntones = (ntones > MAX_PCF) ? MAX_PCF : ntones;
                                     // go through list of all tones that are inband,
@@ -223,14 +223,14 @@ struct type_pass *pass;
                         pass->pcinband[stn][fr][nin] = k;
                         msg ("adding pcinband[%d][%d][%d] %d pcfreq_hz %lf sb %c", 
                               0,stn, fr, nin, pass->pcinband[stn][fr][nin], 
-                              pcfreq_hz, ovex->st[n].channels[0].net_sideband);
+                              pcfreq_hz, ovex->st[n].channels[chind].net_sideband);
                         nin++;
                         }
                                     // move on to next tone in the band
-                    if (ovex->st[n].channels[0].net_sideband == 'U')
-                        pcfreq_hz += ovex->st[n].channels[0].pcal_spacing;
+                    if (ovex->st[n].channels[chind].net_sideband == 'U')
+                        pcfreq_hz += ovex->st[n].channels[chind].pcal_spacing;
                     else
-                        pcfreq_hz -= ovex->st[n].channels[0].pcal_spacing;
+                        pcfreq_hz -= ovex->st[n].channels[chind].pcal_spacing;
                     mask >>= 1;     // access next bit (i.e. tone) in mask
                     }
                                     // set rest of indices to -1 (unused)
@@ -244,16 +244,16 @@ struct type_pass *pass;
         }                           // end of stn loop
 
                                     // copy in ad hoc phase model
-    param->ah_phase  = pass->control.adhoc_phase;
-    param->ah_tref   = pass->control.adhoc_tref;
-    param->ah_period = pass->control.adhoc_period;
-    param->ah_amp    = pass->control.adhoc_amp * conrad;
+    param.ah_phase  = pass->control.adhoc_phase;
+    param.ah_tref   = pass->control.adhoc_tref;
+    param.ah_period = pass->control.adhoc_period;
+    param.ah_amp    = pass->control.adhoc_amp * conrad;
     for (i=0; i<6; i++)
-        param->ah_poly[i] = pass->control.adhoc_poly[i] * conrad;
+        param.ah_poly[i] = pass->control.adhoc_poly[i] * conrad;
     for (i=0; i<2; i++)
         {
-        strcpy (param->ah_file[i], pass->control.adhoc_file[i]);
-        strcpy (param->ah_file_chans[i], pass->control.adhoc_file_chans[i]);
+        strcpy (param.ah_file[i], pass->control.adhoc_file[i]);
+        strcpy (param.ah_file_chans[i], pass->control.adhoc_file_chans[i]);
         }
 
     if (do_accounting) account ("PreCorrect data");

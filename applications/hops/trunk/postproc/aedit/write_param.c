@@ -24,11 +24,9 @@
 #include <time.h>
 #include "aedata.h"
 #include "usearray.h"
+#include "aedit.h"
 
-int
-write_param (data, filename, precision)
-esum *data;
-char *filename, *precision;
+int write_param (esum *data, char *filename, char *precision)
     {
     struct stat statbuf;
     char param_buf[500], buf[50];

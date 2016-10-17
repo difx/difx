@@ -11,15 +11,14 @@
 /* Created 11 April 1989 by CJL                                         */
 /* return false if scan names are different  rjc  2009.8.28             */
 /************************************************************************/
+#include <string.h>
 #include "aedata.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int
-dup_check (fdata,i,j)
-fringearray *fdata;
-int i, j;
+int dup_check (fringearray *fdata, int i, int j)
     {
     fringesum *datum1, *datum2;
     char revbase[3];

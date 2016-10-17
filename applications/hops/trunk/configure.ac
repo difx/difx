@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.11, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.12, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])
@@ -491,6 +491,7 @@ if [ $have_hops = "true" ] ; then
 	correlator/CorAsc2/Makefile
 	data/Makefile
 	data/ff_testdata/Makefile
+	data/ae_testdata/Makefile
 	postproc/Makefile
 	postproc/adump/Makefile
 	postproc/aedit/Makefile

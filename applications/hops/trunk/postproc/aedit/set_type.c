@@ -18,9 +18,7 @@
 #include <ctype.h>
 #include "aedit.h"
 
-int
-set_type(arg1,arg2,remarg)
-char *arg1, *arg2, *remarg;
+int set_type(char *arg1, char *arg2, char *remarg)
     {
     extern struct inputs inp;
     char outbuf[11], buf[150];

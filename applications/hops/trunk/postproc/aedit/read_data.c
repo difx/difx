@@ -25,16 +25,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <ctype.h>
+#include "mk4_afio.h"
 #include "aedata.h"
 #include "aedit.h"
 
 #define QUICK 0
 #define SLOW 1
 
-int
-read_data (data, filename)
-char *filename;
-esum *data;
+int read_data (esum *data, char *filename)
     {
     extern struct inputs inp;
     extern int rscan, cscan, fscan, tscan, qscan;
@@ -70,7 +69,7 @@ esum *data;
     for (i=0; i<5; i++) nadded[i] = 0;
     while(fgets(line,511,fp) != NULL) 
 	{
-	if (line[0] == '*') continue;		/* Ignore comment lines */
+	if (afile_comment(line)) continue;	/* Ignore comment lines */
 
 						/* What type of line is this? */
 	if (isdigit (line[0])) sscanf (line, "%*d %*s %d", &type);

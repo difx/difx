@@ -15,9 +15,7 @@
 #include <ctype.h>
 #include "aedit.h"
 
-int
-set_fraction(arg1,arg2,remarg)
-char *arg1, *arg2, *remarg;
+int set_fraction(char *arg1, char *arg2, char *remarg)
 {
 	extern struct inputs inp;
 	char buf[150], suffix[100];

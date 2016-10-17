@@ -25,10 +25,8 @@
 
 int force_closure;
 
-int
-execute (data, command)
-struct com *command;
-esum *data;             /* This indirection needed because dynamic memory */
+int execute (esum *data, struct com *command)
+                        /* This indirection needed because dynamic memory */
 {                       /* allocation in read_data changes array address */
         extern struct inputs inp;
         extern int fscan, batch, output_version;

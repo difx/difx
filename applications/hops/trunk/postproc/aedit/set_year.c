@@ -17,14 +17,12 @@
 #include <stdio.h>
 #include <string.h>
 #include "aedata.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int
-set_year (fdata, arg1)
-fringearray *fdata;
-char *arg1;
+int set_year (fringearray *fdata, char *arg1)
 {
     extern int fscan, up_to_date;
     int year, badyear, day, hour, min, sec, i, n;

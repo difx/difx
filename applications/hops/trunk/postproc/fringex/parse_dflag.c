@@ -13,13 +13,10 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include "fringex.h"
 
-int
-parse_dflag (arg, mode, loops)
-char *arg;
-int *mode;
-struct loops *loops;
+int parse_dflag (char *arg, int *mode, struct loops *loops)
     {
     int i, ndel, nrate;
     double delstep, ratestep, highdel, lowdel, highrate, lowrate;
@@ -115,3 +112,7 @@ struct loops *loops;
 
     return (0);
     }
+
+/*
+ * eof
+ */

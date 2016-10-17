@@ -19,11 +19,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include "summary.h"
+#include "aedit.h"
 
-int
-alloc_btq (btq, allocated, type)
-char **btq;
-int *allocated, type;
+int alloc_btq (char **btq, int *allocated, int type)
     {
     int size;
 					/* Free it if already allocated */

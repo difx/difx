@@ -15,9 +15,7 @@
 #include "aedit.h"
 #include "usearray.h"
 
-int
-set_prange (arg1,arg2,remarg)
-char *arg1, *arg2, *remarg;
+int set_prange (char *arg1, char *arg2, char *remarg)
     {
     char buf[150], dummy[100];
     int pnum, limits, bad, n, greater, less_than;

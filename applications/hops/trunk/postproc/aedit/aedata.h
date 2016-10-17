@@ -1,5 +1,8 @@
 #include "adata.h"
 
+#ifndef AEDATA_H
+#define AEDATA_H
+
 #define SAVE 1
 #define RESTORE 2
 #define RESTORE_NOFLAG 3
@@ -58,3 +61,5 @@ typedef struct {
 	trianglearray		*tdata;
 	quadarray		*qdata;
 } esum;
+
+#endif /* AEDATA_H */

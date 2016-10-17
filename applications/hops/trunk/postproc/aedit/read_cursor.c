@@ -15,10 +15,9 @@
 /************************************************************************/
 #include "cpgplot.h"
 #include <stdio.h>
+#include "aedit.h"
 
-int
-read_cursor(x, y)
-float *x, *y;
+int read_cursor(float *x, float *y)
     {
     extern int plot_open;
     char c;

@@ -12,13 +12,12 @@
 /*									*/
 /************************************************************************/
 #include "pstruct.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-void
-clear_pstruct (ps)
-struct plot_info *ps;
+void clear_pstruct (struct plot_info *ps)
     {
     int i;
 

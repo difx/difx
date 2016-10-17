@@ -16,11 +16,11 @@
 #include "aedata.h"
 #include "summary.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include "aedit.h"
 
-int
-calc_close (data)
-esum *data;
+int calc_close (esum *data)
     {
     int i, j, k, index, ret, save_sstat[10];
     short *save_sort, *save_last;

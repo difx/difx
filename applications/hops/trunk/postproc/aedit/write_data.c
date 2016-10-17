@@ -20,15 +20,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include "mk4_afio.h"
 #include "aedata.h"
 #include "aedit.h"
 #include "summary.h"
 #include "sort.h"
 
-int
-write_data (data, filename)
-esum *data;
-char *filename;
+int write_data (esum *data, char *filename)
     {
     extern struct inputs inp;
     extern int fflag, cflag, rflag, fscan, cscan, rscan, output_version;

@@ -23,21 +23,19 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "usearray.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int
-get_param_list (user_param, maxfreq, args)
-struct usearray *user_param;
-int maxfreq;
-char *args;
+int get_param_list (struct usearray *user_param, int maxfreq, char *args)
     {
     struct udat *p, *p1, *p2;
-    char buf[256], string1[40], string2[40], idstr[10], *str, *strtok();
+    char buf[256], string1[40], string2[40], idstr[10], *str, *eol;
     int i, j, nparms, param_id, nelement, try_again, ask, split_at;
     extern struct udat parameter_list[];
     extern char progname[];
@@ -49,7 +47,7 @@ char *args;
                                         /* Tell the user what to do */
     if (ask)
         {
-        msg ("Below is a list of available user-defined parameters that");
+        msg ("Below is a list of available user-defined parameters that", 2);
         msg ("can be extracted from the fringe files.  Please indicate", 2);
         msg ("which ones you want with a space-delimited list of parameter", 2);
         msg ("index numbers.  The total number of parameters allowed is", 2);
@@ -106,7 +104,9 @@ char *args;
         if (ask)
             {
             printf ("%s: Response: ", progname);
-            gets (buf);
+            if (!fgets (buf, sizeof(buf), stdin)) exit(0);
+	    eol = strrchr(buf, '\n');
+	    if (eol) *eol = 0;		/* Drop newline */
             }
         else strcpy (buf, args);
                                         /* Will exit loop unless foulup */

@@ -10,8 +10,7 @@
 #include "aedit.h"
 #include "pstruct.h"
 
-int
-init_inputs()
+int init_inputs(void)
     {
     extern struct inputs inp;
 

@@ -11,14 +11,13 @@
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include "mk4_afio.h"
 #include "aedata.h"
 #include "flags.h"
 #include "psplot.h"
+#include "aedit.h"
 
-void 
-pstag_process (psarray, data)
-struct ps_array *psarray;
-esum *data;
+void pstag_process (struct ps_array *psarray, esum *data)
     {
     char filename[512], line[256], *s;
     int scan, base, i, zap, nedit, band, nband;
@@ -42,8 +41,9 @@ esum *data;
     msg ("hit <return> to do nothing with them", 2);
     printf ("\n\nresponse: ");
 
-    gets (line);
-    if ((i = strlen (line)) == 0) return;
+    if (!fgets (line, sizeof(line), stdin)) return;
+    if ((i = strlen (line)) < 0) return;
+    if (line[i-1] == '\n') line[i-1] = 0;
     if (strncmp (line, "zap", 3) == 0) zap = TRUE;
     else
         {
@@ -70,6 +70,7 @@ esum *data;
                 if (cell->data_index[band] < 0) continue;
                 if (cell->flag[band] == 0) continue;
                 if (zap) fdata[cell->data_index[band]].flag |= ZAPPED;
+#warning "LOOK AT THIS CAREFULLY"
                 else if (write_fsumm (fdata+cell->data_index[band], fp) != 0)
                     {
                     msg ("Problem writing out tagged records", 2);

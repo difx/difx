@@ -18,11 +18,9 @@
 #include <string.h>
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-summ_root (rdata, mode)
-rootarray *rdata;
-int mode;
+int summ_root (rootarray *rdata, int mode)
     {
     extern struct datasumm rsumm;
     extern int rscan, rflag;

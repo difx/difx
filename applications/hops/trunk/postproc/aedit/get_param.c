@@ -20,10 +20,7 @@
 #include "aedit.h"
 #include "param_list.h"
 
-int
-get_param (data, arg1, arg2, remarg)
-esum *data;
-char *arg1, *arg2, *remarg;
+int get_param (esum *data, char *arg1, char *arg2, char *remarg)
     {
     int i, n, maxfreq;
     char args[256];

@@ -1191,6 +1191,7 @@ int main (int argc, char *argv[])
                 {           /* Assume version 01 */
                 (void) printf (" totphase_ref = %.2e ", flip_float(t208_1->totphase_ref));
                 (void) printf (" resphase = %.2e \n", flip_float(t208_1->resphase));
+                (void) printf (" tec_error = %.2e \n", flip_float(t208_1->tec_error));
                 }
             continue;
             }           /* End of if type 208 */

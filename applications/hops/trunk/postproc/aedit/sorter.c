@@ -35,15 +35,12 @@
 #include <ctype.h>
 #include "aedata.h"
 #include "sort.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int
-sorter (dptr, arg1, type)
-char *dptr;
-char *arg1;
-int type;
+int sorter (void *dptr, char *arg1, int type)
     {
     extern int rscan, cscan, fscan, tscan, qscan;
     extern int fsortstat[], csortstat[], rsortstat[], tsortstat[], qsortstat[];
@@ -100,6 +97,10 @@ int type;
 	}
 
     n = strlen(arg1);			/* Convert to lower case */
+    if (n >= 50)
+	{
+	msg ("Sort key %d is too long.  Programmer error", 3, n);
+	}
     for (i=0; i<n; i++) 
 	{
 	c = arg1[i];

@@ -16,15 +16,13 @@
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "aedit.h"
 
-parse_cmdline (argc, argv, xwindow, run_fname, batch_string, filelist)
-int argc;
-char **argv;
-int *xwindow, *filelist;
-char *run_fname, *batch_string;
+int parse_cmdline (int argc, char **argv, int *xwindow, char *run_fname,
+    char *batch_string, int *filelist)
     {
     char c;
     extern char *optarg;

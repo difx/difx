@@ -3,6 +3,8 @@
 
 #include "adata.h"
 
+extern void set_afile_com_char(int star);
+extern int  afile_comment(char *line);
 extern int  afile_header(int version, int type, FILE *fp);
 extern void aline_id(char *line, int *version, int *type);
 extern void clear_csumm(corelsum *dsumm);

@@ -16,9 +16,7 @@
 #include <ctype.h>
 #include "aedit.h"
 
-int
-set_triangles (arg1, arg2, remarg)
-char *arg1, *arg2, *remarg;
+int set_triangles (char *arg1, char *arg2, char *remarg)
     {
     extern struct inputs inp;
     char outbuf[250], buf[250];

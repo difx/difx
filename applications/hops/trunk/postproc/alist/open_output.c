@@ -18,17 +18,18 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include "mk4_afio.h"
+#include "mk4_util.h"
 
 FILE *
-open_output (outfile)
-char *outfile;
+open_output (char *outfile)
     {
     struct stat statbuf;
     time_t now;
     static FILE *fp;
     extern int output_version;
-					/* Open output file.  If the "outfile" string */
-					/* is empty, write to stdout */
+					/* Open output file.  If the outfile */
+					/* string is empty, write to stdout */
     if (strlen (outfile) == 0)
         {
         fp = stdout;
@@ -37,7 +38,8 @@ char *outfile;
     else if(stat (outfile, &statbuf) == 0)
         {
         if(statbuf.st_size != 0) 
-            if(! confirm("File exists and contains data.  Proceed?")) return(NULL);
+            if(! confirm("File exists and contains data.  Proceed?"))
+                return(NULL);
         }
     else if(errno != ENOENT)
         {

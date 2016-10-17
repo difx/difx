@@ -19,13 +19,9 @@
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
-#include "general.h"
 #include "fringex.h"
-#include "fstruct.h"
-#include "vex.h"
 
-int read_binaries (fstruct *file,
-                   struct fxparam *fxp)
+int read_binaries (fstruct *file, struct fxparam *fxp)
     {
     int i, j, lastslash, fourfit;
     float minlo, maxlo, freq;
@@ -33,8 +29,8 @@ int read_binaries (fstruct *file,
     static struct mk4_sdata sdata[2];
     static struct vex root;
     struct datec date;
-    char rootname[256], fringename[256], directory[256], 
-         stnfile_name[256], source[9], rootcode[7];
+    static char rootname[256], fringename[256], directory[256], 
+        stnfile_name[256], source[40], rootcode[7];
                                         /* Get relevant strings */
     strcpy (fringename, file->name);
     strcpy (rootcode, file->rootcode);
@@ -64,14 +60,15 @@ int read_binaries (fstruct *file,
     directory[lastslash+1] = '\0';
                                         /* Get source name and convert . to _ */
                                         /* Also trim trailing blanks */
-                                        // note that 32 char source trimmed to 8 chars
-    strncpy (source, fringe.t201->source, 8);
-    source[8] = '\0';
-    for (i=0; i<8; i++)
+    strncpy (source, fringe.t201->source, sizeof(source));
+    source[39] = '\0';
+    for (i=0; i<strlen(source); i++)
         {
         if (source[i] == '.') source[i] = '_';
-        if (source[i] == ' ') source[i] = '\0';
+        if (source[i] == ' ') source[i] = '_';
         }
+    while (i-- > 1)
+        if (source[i] == '_') source[i] = 0;
                                         /* Concatenate for full root name */
                                         /* and read in the root file if not */
                                         /* already in memory.  Point to current */
@@ -113,7 +110,8 @@ int read_binaries (fstruct *file,
                                         /* Fill in parts of the A-file struct */
                                         /* which are segment-invariant */
                                         /* Borrowed heavily from alist code */
-    if (fill_aline (&fringe, &root, fringename, &(fxp->adata)) != 0)
+    if (fill_aline (&fringe, &root, fringename,
+                    &(fxp->adata), fxp->version) != 0)
         {
         msg ("Problem with input file '%s'", 2, fringename);
         return (1);
@@ -160,3 +158,7 @@ int read_binaries (fstruct *file,
 
     return (0);
     }
+
+/*
+ * eof
+ */

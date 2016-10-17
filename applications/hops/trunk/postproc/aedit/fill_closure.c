@@ -23,13 +23,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "mk4_afio.h"
+#include "mk4_dfio.h"
 
-int
-fill_closure (tptr, triangle, indices, fdata)
-trianglearray *tptr;
-char triangle[4];
-int indices[3];
-fringearray *fdata;
+int fill_closure (trianglearray *tptr, char triangle[4], int indices[3], fringearray *fdata)
     {
     double sign, cphase, crate, csbd, cmbd, snr[3], epochdiff;
     double triple_amp, temp1, temp2, denom, s1sq, s2sq, s3sq;

@@ -14,9 +14,7 @@
 #include <math.h>
 #include "fringex.h"
 
-double
-set_reffreq (fxp)
-struct fxparam *fxp;
+double set_reffreq (struct fxparam *fxp)
     {
     double freq, freqsum, freqmean, freqdiff;
     int ch, closest, nfreq;
@@ -60,3 +58,7 @@ struct fxparam *fxp;
 
     return (freq);
     }
+
+/*
+ * eof
+ */

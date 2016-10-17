@@ -21,19 +21,19 @@
 #include "aedata.h"
 #include <stdio.h>
 #include <string.h>
+#include "aedit.h"
 
-int
-fill_tdata (nfe, data, dptr)
-int nfe, *dptr;
-esum *data;
+int fill_tdata (int nfe, esum *data, int *dptr)
     {
     int i, j, k, index, snum, nt, inbreak, outbreak, nstat, maxtri;
     int indices[3], n, expt_no, cspace, time_tag, tindex;
-    char freq_code, sname[9];
+    char freq_code, sname[32];
     struct frqexp *fqptr;
     fringearray *fdata;
-    struct { int index; char baseline[3]; } blist[MAXBASE];
-    struct { int present; char triangle[4]; } trilist[MAXCLOSE];
+    struct ibaselist blist[MAXBASE];
+    struct ptrilist trilist[MAXCLOSE];
+    //struct { int index; char baseline[3]; } blist[MAXBASE];
+    //struct { int present; char triangle[4]; } trilist[MAXCLOSE];
     extern struct datasumm fsumm;
     extern int fscan, tscan;
 					/* Identify starting point & initialize */

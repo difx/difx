@@ -13,14 +13,12 @@
 /************************************************************************/
 #include <stdlib.h>
 #include "aedata.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int
-save (data, mode)
-esum *data;
-int mode;
+int save (esum *data, int mode)
     {
     extern int rscan, cscan, fscan, tscan, qscan;
     extern int rsortstat[], csortstat[], fsortstat[],
@@ -113,7 +111,7 @@ int mode;
 					/* is an error */
 	if (! saved)
 	    {
-	    msg ("Error in save() ... no information to restore!");
+	    msg ("Error in save() ... no information to restore!", 2);
 	    return (-1);
 	    }
 					/* Cannot restore unless arrays are same */

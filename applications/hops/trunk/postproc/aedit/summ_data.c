@@ -18,11 +18,9 @@
 #include <stdio.h>
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-summ_data (data, mode)
-esum *data;
-int mode;
+int summ_data (esum *data, int mode)
     {
     extern struct datasumm rsumm, csumm, fsumm, tsumm, qsumm;
     extern int rscan, cscan, fscan, tscan, qscan, up_to_date;

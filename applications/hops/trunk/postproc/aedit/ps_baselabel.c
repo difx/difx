@@ -11,10 +11,9 @@
 /************************************************************************/
 #include "cpgplot.h"
 #include "psplot.h"
+#include "aedit.h"
 
-void
-ps_baselabel (psarray)
-struct ps_array *psarray;
+void ps_baselabel (struct ps_array *psarray)
     {
     int basepage, nvertpage, bno, boffset, base;
     float bsep, xpos, ypos, xmin, xmax, ymin, ymax;

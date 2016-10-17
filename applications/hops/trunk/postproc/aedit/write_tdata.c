@@ -14,14 +14,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include "mk4_afio.h"
 #include "aedata.h"
 #include "aedit.h"
 #include "summary.h"
 
-int
-write_tdata (data, filename)
-esum *data;
-char *filename;
+int write_tdata (esum *data, char *filename)
     {
     extern struct inputs inp;
     extern int tflag, tscan, output_version;

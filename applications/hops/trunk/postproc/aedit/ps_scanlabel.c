@@ -13,10 +13,9 @@
 #include <stdio.h>
 #include "cpgplot.h"
 #include "psplot.h"
+#include "aedit.h"
 
-void
-ps_scanlabel (psarray)
-struct ps_array *psarray;
+void ps_scanlabel (struct ps_array *psarray)
     {
     int scanpage, nvertpage, sno, soffset, scan;
     int year, day, hour, minute, second;

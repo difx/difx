@@ -14,9 +14,7 @@
 #include "aedata.h"
 #include "pstruct.h"
 
-int
-zoom (data)
-esum *data;
+int zoom (esum *data)
     {
     extern struct inputs inp;
     extern struct plot_info pdata[];

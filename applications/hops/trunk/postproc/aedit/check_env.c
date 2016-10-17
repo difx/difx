@@ -18,8 +18,7 @@
 					/* throughout program */
 char ahelpdir[200];
 
-void
-check_env()
+void check_env(void)
     {					/* Default value */
     static char *helpdef = "/usr/local/lib/ahelp";
     char *dummy;

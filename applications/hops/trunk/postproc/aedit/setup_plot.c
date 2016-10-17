@@ -28,11 +28,7 @@
 #include "pstruct.h"
 #include "summary.h"
 
-int
-setup_plot (pd, nplot, fqex)
-struct plot_info *pd;
-int nplot;
-struct frqexp fqex;
+int setup_plot (struct plot_info *pd, int nplot, struct frqexp fqex)
     {
     extern struct inputs inp;
     int i, year, day, hour, min, sec, tdiff;

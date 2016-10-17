@@ -13,13 +13,12 @@
 
 #include <stdio.h>
 #include "summary.h"
+#include "aedit.h"
 
-int
-pr_source(src)
-srcsum *src;
+int pr_source(srcsum *src)
     {
     int i, year, day, hour, min, sec, type, ret;
-    char qclist[18], buf[150];
+    char qclist[28], buf[150];
 
     if(src->count == 0) 
         {

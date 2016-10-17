@@ -13,9 +13,9 @@
 
 #include <stdio.h>
 #include "summary.h"
+#include "aedit.h"
 
-int
-pr_rsumm()
+int pr_rsumm(void)
 {
         extern struct datasumm rsumm, fsumm;
         extern int rscan, rflag;

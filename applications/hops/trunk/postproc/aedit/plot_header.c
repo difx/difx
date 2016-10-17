@@ -15,11 +15,9 @@
 #include <stdio.h>
 #include "cpgplot.h"
 #include "summary.h"
+#include "aedit.h"
 
-void
-plot_header (fqex, sptr)
-struct frqexp fqex;
-srcsum *sptr;
+void plot_header (struct frqexp fqex, srcsum *sptr)
     {
     char buf[100], *dummy = "";
 

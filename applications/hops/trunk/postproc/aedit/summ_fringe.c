@@ -18,11 +18,9 @@
 #include <string.h>
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-summ_fringe (data, mode)
-esum *data;
-int mode;
+int summ_fringe (esum *data, int mode)
     {
     extern struct datasumm fsumm;
     extern int fscan, fflag, tscan;
@@ -93,7 +91,7 @@ int mode;
             add_station (datum->baseline[1], fsumm.stations);
                                         /* Check baselines */
         for (j=0; j<fsumm.nbtq; j++)
-            if (strcmp (datum->baseline, fsumm.btq + 3*j) == NULL) break;
+            if (strcmp (datum->baseline, fsumm.btq + 3*j) == 0) break;
         if (j == fsumm.nbtq)
             {
             strcpy (fsumm.btq + 3*fsumm.nbtq, datum->baseline);

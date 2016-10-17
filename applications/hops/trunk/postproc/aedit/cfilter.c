@@ -29,10 +29,7 @@
 #define QUICK 0
 #define SLOW 1
 
-int
-cfilter (cdatum, mode)
-corelarray *cdatum;
-int mode;
+int cfilter (corelarray *cdatum, int mode)
     {
     extern struct inputs inp;
     extern int fcheck[12], nfilt;

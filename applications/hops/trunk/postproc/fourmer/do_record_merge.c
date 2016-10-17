@@ -54,12 +54,12 @@ int do_record_merge(char *fileAName, char *fileBName,
     int i = -1,
         j = -1,
         k = -1,
-        n = 0, new_idx,
+        n = 0, new_idx, maxAidx, lasti,
         rc,
-        nindex_A_save,
         ap = 0,
         na_ind,                     // number of A indices actually present
-        nb_ind;                     // number of B indices actually present
+        nb_ind,                     // number of B indices actually present
+        nc_ind;                     // number of C indices actually present
     
     int index_map[NUM_CH_MAP][2];    // for index reassignment
                                      // [...][0] old #  [...][1] new #
@@ -69,7 +69,7 @@ int do_record_merge(char *fileAName, char *fileBName,
          fileFullName[MAX_FPATH],
          temp[MAX_FPATH],
          temp2[MAX_FPATH],
-         *pchar,
+         *pchar, *rslash,
          fullname[MAX_FPATH];
          
     msg("beginning do_record_merge, MAX_CHAN == %d", 0, MAX_CHAN);
@@ -86,7 +86,7 @@ int do_record_merge(char *fileAName, char *fileBName,
         msg("[%d] foundA: %s\ttype: %d", 1, k, fsA->name, fsA->type);
         if (fsA->type == 1)
             {
-                                    // initialize index_map
+                            // initialize index_map
             for (n = 0; n < NUM_CH_MAP; n++)
                 index_map[n][1] = index_map[n][0] = -1;
             i = j = -1;
@@ -135,46 +135,61 @@ int do_record_merge(char *fileAName, char *fileBName,
                 continue;
                 }
 
-            msg("----> index_map[0]=%x, index_map[MAX]=%x, A,B nindex=%d,%d",
-                0, index_map[0], index_map[NUM_CH_MAP-1],
-                cdataA.t100->nindex, cdataB.t100->nindex);
-
-            if (cdataA.t100->nindex + cdataB.t100->nindex > NUM_CH_MAP)
-                {
-                fprintf(stderr, "Too many indices to remap\n");
-                return(1);
-                }
+            msg("----> index_map[0]=%x, index_map[MAX-1=%d]=%x,"
+                " A,B nindex=%d,%d A,B index_space=%d,%d",
+                0, index_map[0], NUM_CH_MAP-1, index_map[NUM_CH_MAP-1],
+                cdataA.t100->nindex, cdataB.t100->nindex,
+                cdataA.index_space, cdataB.index_space);
 
                             // initialize index_map with A's indices
             na_ind = -1;
-            for (i = 0; i < cdataA.t100->nindex; i++)
+            maxAidx = -1;
+            for (i = 0; i < cdataA.index_space; i++)
                 {
                 idxa = cdataA.index + i;
                 if ((t101a = idxa->t101) == NULL) 
                     continue;
+                lasti = i;
                 msg("encountered A index %d", 0, t101a->index);
                 na_ind++;
-                index_map[na_ind][0] = index_map[i][1] = t101a->index;
+                msg ("A %d [%d] index %hd primary %hd ref %s rem %s", 0,
+                        i, na_ind, idxa->t101->index, idxa->t101->primary,
+                        idxa->t101->ref_chan_id, idxa->t101->rem_chan_id);
+                index_map[na_ind][0] = index_map[na_ind][1] = t101a->index;
+                if (t101a->index > maxAidx)
+                    maxAidx = t101a->index;
                 }
             na_ind++;       // na_ind is now total# of A indices mapped
 
                             // if indices collide, make B's unique
             nb_ind = -1;
-            for (j = 0; j < cdataB.t100->nindex; j++)
+            for (j = 0; j < cdataB.index_space; j++)
                 {
                 idxb = cdataB.index + j;
                 if ((t101b = idxb->t101) == NULL)
                     continue;
                 msg("encountered B index %d", 0, t101b->index);
                 nb_ind++;
+                msg ("B %d [%d] index %hd primary %hd ref %s rem %s", 0,
+                        j, nb_ind, idxb->t101->index, idxb->t101->primary,
+                        idxb->t101->ref_chan_id, idxb->t101->rem_chan_id);
                 new_idx = index_map[na_ind+nb_ind][0] = t101b->index;
+                new_idx += IDX_INC * (1 + maxAidx / IDX_INC);
                 for (n = 0; n < NUM_CH_MAP; n++)
                     while (new_idx == index_map[n][1])
                         new_idx += IDX_INC;
                 index_map[na_ind+nb_ind][1] = new_idx;
                 }
             nb_ind++;       // nb_ind is now total# of B indices mapped
-        
+
+            msg("needed %d + %d < %d allowed", 0, na_ind, nb_ind, NUM_CH_MAP);
+            if (na_ind + nb_ind > NUM_CH_MAP)
+                {
+                fprintf(stderr, "Too many indices (%d>%d) to remap\n",
+                    na_ind + nb_ind, NUM_CH_MAP);
+                return(1);
+                }
+                
                             // debug info
             for (n = 0; n < NUM_CH_MAP; n++)
                 if (index_map[n][0] != -1)
@@ -182,26 +197,27 @@ int do_record_merge(char *fileAName, char *fileBName,
                         n, index_map[n][0], index_map[n][1]);
     
                             // rewrite actual indices in the data structure
-            for (j = 0; j < cdataB.t100->nindex; j++)
+            for (j = 0; j < cdataB.index_space; j++)
                 {
                 idxb = cdataB.index + j;
                 if ((t101 = idxb->t101) == NULL) 
                     continue;
-                for (n = i; n < NUM_CH_MAP; n++)
+                for (n = lasti+1; n < NUM_CH_MAP; n++)
                     if (t101->index == index_map[n][0])
                         {
-                        msg("i=%d: changed %d to %d",
-                            0, j, t101->index, index_map[n][1]);
+                        char *did = (index_map[n][0] == index_map[n][1])
+                                  ? "(remains)" : "(changed)";
+                        msg("i=%d: %s %d to %d",
+                            0, j, did, t101->index, index_map[n][1]);
                         t101->index = index_map[n][1];
                         }
                 }
                             // rewrite indices in the t120s as well
-            for (j = 0; j < cdataB.t100->nindex; j++)
+            for (j = 0; j < cdataB.index_space; j++)
                 {
                 idxb = cdataB.index + j;
                 if (idxb->t101 == NULL) 
                     {
-                    msg ("likely program error, investigate!!", 2);
                     continue;
                     }
                 if ((t120 = idxb->t120) == NULL) 
@@ -210,27 +226,29 @@ int do_record_merge(char *fileAName, char *fileBName,
                 for (ap = 0; ap < idxb->ap_space; ap++)
                     {
                     if (t120[ap] == NULL) continue;
-            
-                    for (n = i; n < NUM_CH_MAP; n++)
+                    for (n = lasti+1; n < NUM_CH_MAP; n++)
                         if (t120[ap]->index == index_map[n][0])
                             t120[ap]->index = index_map[n][1];
                     }
                 }
 
+            msg("remap done", 0);
 
                             // copy A's data into C
             memcpy(&cdataC, &cdataA, sizeof (struct mk4_corel));
+            // cdataC.index now refers to cdataA.index,
+            // cdataC.t100 now refers to cdataA.t100, &c.
     
-                            // save len of A before clobbering it by C version
-            nindex_A_save = cdataA.t100->nindex;
                             // C is the sum of A and B for records and indices
             cdataC.t100->ndrec = cdataA.t100->ndrec + cdataB.t100->ndrec;
-            cdataC.t100->nindex = cdataA.t100->nindex + cdataB.t100->nindex;
+            cdataC.t100->nindex = na_ind + nb_ind;
 
             msg ("new ndrec: %d = %d + %d", 0, cdataC.t100->ndrec,
                 cdataC.t100->ndrec - cdataB.t100->ndrec, cdataB.t100->ndrec);
             msg ("new nindex: %d = %d + %d", 0, cdataC.t100->nindex,
-                cdataC.t100->nindex - cdataB.t100->nindex, cdataB.t100->nindex);
+                na_ind, nb_ind);
+            msg ("old nindex:       %d + %d", 0,
+                na_ind, cdataB.t100->nindex);
 
                             // adjust index space to new number of index items
             while (cdataC.t100->nindex > cdataC.index_space)
@@ -240,30 +258,39 @@ int do_record_merge(char *fileAName, char *fileBName,
                     realloc ((void *)cdataA.index, 
                         cdataC.index_space * sizeof (struct index_tag));
                 }
-
-                            // point C copy to (possibly) enlarged index array 
+                            // point C copy to enlarged, possibly relocated
+                            // index array 
             cdataC.index = cdataA.index;
+
             msg ("old index_space %d new index_space %d", 0, 
                     cdataA.index_space, cdataC.index_space);
             
                             // copy B's data onto end of C and adjust markers
-            memcpy((void *) (cdataC.index + nindex_A_save
-                            ),//* sizeof (struct index_tag)),
+            memcpy((void *) (cdataC.index + na_ind),
                     cdataB.index,
-                    cdataB.t100->nindex * sizeof (struct index_tag));
-    
-            for (i=0; i< cdataC.t100->nindex; i++)
+                    nb_ind * sizeof (struct index_tag));
+                            // invalidate the extra space
+            for (i=na_ind+nb_ind; i < cdataC.index_space; i++)
+                memset(cdataC.index + i, 0, sizeof(struct index_tag));
+
+            nc_ind = -1;
+            for (i=0; i< cdataC.index_space; i++)
                 {
                 idxc = cdataC.index + i;
                 if (idxc->t101 == NULL) 
                     continue;
-                relabel_chan_ids(idxc->t101, i < nindex_A_save);
-                msg ("i %d index %hd primary %hd ref %s rem %s", 0,
-                        i, idxc->t101->index, idxc->t101->primary,
-                           idxc->t101->ref_chan_id, idxc->t101->rem_chan_id);
+                nc_ind++;
+                relabel_chan_ids(idxc->t101, i < na_ind);
+                msg ("i %d [%d] index %hd primary %hd ref %s rem %s", 0,
+                        i, nc_ind, idxc->t101->index, idxc->t101->primary,
+                        idxc->t101->ref_chan_id, idxc->t101->rem_chan_id);
                 }
+            nc_ind++;
+            msg("check: new nindex %d = sum nindex used %d", 0,
+                nc_ind, cdataC.t100->nindex);
+
                             // initialize unused index space to null
-            for (i=cdataC.t100->nindex; i<cdataC.index_space; i++)
+            for (i=nc_ind; i<cdataC.index_space; i++)
                 {
                 idxc = cdataC.index + i;
                 idxc->t101 = NULL;
@@ -272,7 +299,11 @@ int do_record_merge(char *fileAName, char *fileBName,
 
             pchar = strrchr (rootfile, '/');
             msg ("new rootname = %s", 1, pchar+1);
-            strcpy(cdataC.t100->rootname, pchar);
+                            // copy full path if possible
+            rslash = strrchr (cdataC.t100->rootname, '/');
+            if (rslash) strcpy(rslash, pchar);
+            else strcpy(cdataC.t100->rootname, pchar);
+            msg ("full rootname = %s", 1, cdataC.t100->rootname);
     
             strncpy(cdataC.id->name + strlen(cdataC.id->name) - 6, rcode, 6);
     
@@ -284,7 +315,7 @@ int do_record_merge(char *fileAName, char *fileBName,
                 print_cdata_cmp(fsA->name, fsB->name, &cdataA, &cdataB);
 
             msg("Overwriting t120 rootcodes", 1);
-            for (i = 0; i < cdataC.t100->nindex; i++)
+            for (i = 0; i < cdataC.index_space; i++)
                 {
                 idxc = cdataC.index + i;
                 if (idxc->t101 == NULL) 
@@ -300,24 +331,22 @@ int do_record_merge(char *fileAName, char *fileBName,
                     }
                 }
             rc = write_mk4corel (&cdataC, temp2);
-            msg ("write_mk4corel() returned %d\n", 1, rc);
-                                    // data written, now clean up memory arrays
+            msg ("write_mk4corel() returned %d total bytes\n", 1, rc);
+                            // data written, now clean up memory arrays
             clear_mk4corel (&cdataA);
             cdataA.index = NULL;
-                                    // don't try to free A's former memory
+                            // don't try to free A's former memory
             cdataB.nalloc = 0; 
             cdataB.index_space = 0; 
             cdataB.index = NULL;
-
             clear_mk4corel (&cdataB);
-                                    // don't try to free A's former memory
+
             cdataC.nalloc = 0; 
             cdataC.index_space = 0; 
             cdataC.index = NULL;
-
             clear_mk4corel (&cdataC);
             }
-        }                           // bottom of type 1 file while loop
+        }                   // bottom of type 1 file while loop
 
     msg("Finished with type 1 (corel) files, on to type 3 (station) files", 1);
 

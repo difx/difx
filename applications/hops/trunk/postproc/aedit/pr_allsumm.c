@@ -13,9 +13,9 @@
 
 #include <stdio.h>
 #include "summary.h"
+#include "aedit.h"
 
-int
-pr_allsumm()
+int pr_allsumm(void)
     {
     extern struct datasumm rsumm, csumm, fsumm, tsumm, qsumm;
     extern int rscan, cscan, fscan, tscan, qscan;

@@ -56,3 +56,6 @@ void model (double epoch,           // i: epoch of evaluation in units of secs s
     *bl_phase = 3.6e8 * fxp->reffreq * (delay[1] - delay[0]);
     }
 
+/*
+ * eof
+ */

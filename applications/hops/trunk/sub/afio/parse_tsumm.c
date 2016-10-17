@@ -41,6 +41,9 @@ char *triformat4 = "%*d %hd %d %d %d-%2d%2d%2d %hd %s %c%c %d %s %s %hd,%hd,%hd\
 char *triformat5 = "%*d %hd %d %s %d %d-%2d%2d%2d %hd %s %c%c %d %s %s %hd,%hd,%hd\
  %hd,%hd,%hd %hd %hd %c %c %d %f %f %f %s %f %f %f %f %f,%f,%f %f,%f,%f %2hd%2hd %lf %hd";
 
+char *triformat6 = "%*d %hd %d %s %d %d-%2d%2d%2d %hd %s %c%c %d %s %s %hd,%hd,%hd\
+ %hd,%hd,%hd %hd %hd %c %c %d %f %f %f %s %f %f %f %f %f,%f,%f %f,%f,%f %2hd%2hd %lf %hd";
+
 int
 parse_tsumm(char *line, trianglesum *file)
     {
@@ -266,7 +269,7 @@ parse_tsumm(char *line, trianglesum *file)
             break;
 
         case 5:
-                                                /* Version 5, Mk4 only, Sep 99 on */
+                                        /* Version 5, Mk4 only, Sep 99 on */
             n = sscanf(line, triformat5,
                 &(file->expt_no), 
                 &type, 
@@ -335,14 +338,86 @@ parse_tsumm(char *line, trianglesum *file)
                 strcpy (file->root_id[1], file->root_id[0]);
             if (strlen (file->root_id[2]) != 6)
                 strcpy (file->root_id[2], file->root_id[1]);
+            break;
 
+        case 6:
+                                        /* Version 6, EHT era */
+            n = sscanf(line, triformat5,
+                &(file->expt_no), 
+                &type, 
+                file->scan_id,
+                &syear, &sday, &shour, &smin, &ssec, 
+                &(file->scan_offset), 
+                file->source,
+                &(file->freq_code),
+                &(file->mode),
+                &(file->lags),
+                file->triangle,
+                roots,
+                &(file->extent_no[0]), 
+                &(file->extent_no[1]),
+                &(file->extent_no[2]),
+                &(file->length[0]), 
+                &(file->length[1]),
+                &(file->length[2]),
+                &file->duration,
+                &file->offset,
+                &(file->scan_quality),
+                &(file->data_quality),
+                &(file->esdesp), 
+                &(file->bis_amp), 
+                &(file->bis_snr), 
+                &(file->bis_phas), 
+                file->datatype,
+                &(file->csbdelay), 
+                &(file->cmbdelay), 
+                &(file->ambiguity),
+                &(file->cdelay_rate),
+                &(file->elevation[0]),
+                &(file->elevation[1]),
+                &(file->elevation[2]),
+                &(file->azimuth[0]),
+                &(file->azimuth[1]),
+                &(file->azimuth[2]),
+                &(file->epoch[0]), 
+                &(file->epoch[1]), 
+                &(file->ref_freq),
+                &(file->cotime)); 
+                                        /* Check that the caller got it right */
+            if (type != 3)
+                {
+                msg ("parse_tsumm passed line of wrong type '%d'", 2, type);
+                return (-1);
+                }
+                                        /* Not even enough to id files */
+            if (n < 18) return(-1);
+                                        /* Didn't get everything */
+            if (n < 44) incomplete = TRUE;
+                                        /* Extract the root codes */
+            ptr = strtok (roots, ",");
+            if (ptr != NULL) strcpy (file->root_id[0], ptr);
+            ptr = strtok (NULL, ",");
+            if (ptr != NULL) strcpy (file->root_id[1], ptr);
+            ptr = strtok (NULL, ",");
+            if (ptr != NULL) strcpy (file->root_id[2], ptr);
+            if (strlen (file->root_id[0]) != 6)
+                {
+                msg ("Corrupt root code(s) in parse_tsumm()", 2);
+                return (-1);
+                }
+                                        /* Copy last rootcode if blank */
+            if (strlen (file->root_id[1]) != 6)
+                strcpy (file->root_id[1], file->root_id[0]);
+            if (strlen (file->root_id[2]) != 6)
+                strcpy (file->root_id[2], file->root_id[1]);
             break;
 
         default:
-            msg ("Unsupported triangle A-file format version number '%d'", 2, version);
+            msg ("Unsupported triangle A-file format version number '%d'",
+                2, version);
             return (-1);
         }
-                                        /* This field independent of version # */
+                                        /* This is independent of version # */
     if (syear < 70) syear += 2000;
     file->time_tag = time_to_int (syear, sday, shour, smin, ssec);
 

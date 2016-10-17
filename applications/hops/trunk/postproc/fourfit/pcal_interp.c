@@ -266,7 +266,11 @@ int pcal_interp (struct mk4_sdata *sd1,
                                     // and match SU phase by shifting 180 degrees
                         pc_real[n] = u * param->samp_period / (-128.0 * t309->acc_period);
                         pc_imag[n] = v * param->samp_period / (-128.0 * t309->acc_period);
-                        time[n] = t309->rot / 32e6 + 0.5 * t309->acc_period;
+                                    // difx gives time for centroid of pcal interval
+                        if (param->corr_type == DIFX)
+                            time[n] = t309->rot / 32e6;
+                        else
+                            time[n] = t309->rot / 32e6 + 0.5 * t309->acc_period;
                         }
                     else
                         {

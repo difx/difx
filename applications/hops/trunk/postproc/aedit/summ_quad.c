@@ -19,11 +19,9 @@
 #include <string.h>
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-summ_quad (qdata, mode)
-quadarray *qdata;
-int mode;
+int summ_quad (quadarray *qdata, int mode)
     {
     extern struct datasumm qsumm;
     extern int qscan, qflag;
@@ -60,7 +58,7 @@ int mode;
 	    }
 					/* Check baselines */
 	for (j=0; j<qsumm.nbtq; j++)
-	    if (strcmp (datum->quad, qsumm.btq + 5*j) == NULL) break;
+	    if (strcmp (datum->quad, qsumm.btq + 5*j) == 0) break;
 	if (j == qsumm.nbtq)
 	    {
 	    strcpy (qsumm.btq + 5*qsumm.nbtq, datum->quad);

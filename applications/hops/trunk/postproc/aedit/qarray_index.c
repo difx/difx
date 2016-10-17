@@ -19,10 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "aedata.h"
+#include "aedit.h"
 
-int
-qarray_index (data)
-esum *data;
+int qarray_index (esum *data)
     {
     extern int qscan, qspace;
 

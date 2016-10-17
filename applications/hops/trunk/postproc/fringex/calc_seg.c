@@ -19,18 +19,13 @@
 #include <math.h>
 #include "fringex.h"
 
-int calc_seg (struct fxparam *fxp, 
-              int seg)
+int calc_seg (struct fxparam *fxp, int seg)
     {
-// gbc removed unused variables:
-//  int syear, sday, shour, smin, ssec;
-//  double freq, freqmean, time trav, lo2hiph, gha, dec, daccel, drate, dly;
     int offset, time_tag, scan_time;
     double freq_ratio, avsec, epoch, epochoff,
            amp, tamp, pdum, tphase, rphase, tephase, bl_phase;
     struct mk4_fringe *fr;
 
-//  double dms_to_deg();
                                         /* Convenience pointers */
     fr = fxp->fringe;
 
@@ -166,8 +161,10 @@ int calc_seg (struct fxparam *fxp,
     //                 +rb->t2600.u_obsfreq_rate *  epochoff / (pi*1e09));
     // fxp->adata.v = (fxp->reffreq * 648.0) * (rb->t2600.v_obsfreq  / (pi*1e06)
     //                 +rb->t2600.v_obsfreq_rate *  epochoff / (pi*1e09));
-    fxp->adata.u = 0.0;
-    fxp->adata.v = 0.0;
+    // fxp->adata.u = 0.0;
+    // fxp->adata.v = 0.0;
+
+    /* fxp->adata.u and fxp->adata.v were loaded from the fringe file */
 
     if (fxp->nsecs != 9999) 
         fxp->adata.duration = (int)fxp->nsecs;
@@ -186,3 +183,6 @@ int calc_seg (struct fxparam *fxp,
 
     }
 
+/*
+ * eof
+ */

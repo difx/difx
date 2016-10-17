@@ -20,14 +20,12 @@
 #include "aedata.h"
 #include "flags.h"
 #include "summary.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int
-edit_close (data, mode, fedit, tedit)
-esum *data;
-int mode, *tedit, *fedit;
+int edit_close (esum *data, int mode, int *fedit, int *tedit)
     {
     extern int fscan, fflag, tscan, tflag;
     extern int fsortstat[10], tsortstat[10];

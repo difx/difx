@@ -11,7 +11,7 @@ use Getopt::Std;        # for standard option processing
 # the data in some new location.
 #
 my %opts;
-my $VERSION='$Id: hops_data_links.pl.in 576 2012-01-03 21:57:50Z gbc $'."\n";
+my $VERSION='$Id: hops_data_links.pl.in 1397 2016-08-04 19:45:28Z gbc $'."\n";
 my $USAGE="Usage: $0 [options]
 
 where the options are
@@ -21,6 +21,7 @@ where the options are
     -d <dir>    destination data directory
     -s <dir>    source data directory
     -f          link only the root and fringe files
+    -c          link only the root and correlation files
 
 The alist file (-a) defaults to \"alist.out\"; and the source (-s) and
 destination (-d) directories should not be the same.  These may be given
@@ -39,6 +40,8 @@ In any case the script creates a directory hierarchy starting with
 the experiment number in the destination directory with symbolic links
 to files of the same name in the source data directory heirarchy.
 
+The -f flag is useful for follow-up processing on the fringe files;
+the -c flag is useful for to start over with fringe fitting.
 ";
 if ( $#ARGV < 0 || $ARGV[0] eq "--help" ) { print "$USAGE"; exit(0); }
 if ( $ARGV[0] eq "--version" ) { print "$VERSION" . "\n"; exit(0); }
@@ -47,15 +50,17 @@ $opts{'s'} = '.';
 $opts{'d'} = '.';
 $opts{'l'} = './ln_temp.sh';
 $opts{'f'} = 0;
-getopts('a:fl:s:d:', \%opts);
+$opts{'c'} = 0;
+getopts('a:cfl:s:d:', \%opts);
 
 # parse arguments
-my ($alist, $linkr, $src, $dst, $filt);
+my ($alist, $linkr, $src, $dst, $filt, $corr);
 $alist=$opts{'a'};          # alist file name
 $linkr=$opts{'l'};          # linker script
 $src=$opts{'s'};            # source directory
 $dst=$opts{'d'};            # dest directory
-$filt=$opts{'f'};           # filter alist
+$filt=$opts{'f'};           # filter alist for fringe
+$corr=$opts{'c'};           # filter alist for corr
 
 my ($ref, $rem, $exp, $bnd, $num, $dir, $dat, @aline, %did);
 
@@ -91,11 +96,12 @@ print FILOUT "#  -a $alist \\\n";
 print FILOUT "#  -s $src \\\n";
 print FILOUT "#  -d $dst \\\n";
 print FILOUT "#  -f \\\n" if ($filt);
+print FILOUT "#  -c \\\n" if ($corr);
 print FILOUT "#  -l $linkr\n";
 print FILOUT "#\n";
 print FILOUT "skip0=0\n";
 print FILOUT "skip1=$filt\n";
-print FILOUT "skip2=0\n";
+print FILOUT "skip2=$corr\n";
 print FILOUT "skip3=$filt\n";
 print FILOUT "#\n";
 

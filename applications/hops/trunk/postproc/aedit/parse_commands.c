@@ -20,11 +20,7 @@
 #include <stdio.h>
 #include "aedit.h"
 
-int
-parse_commands (line,commands,n)
-struct com commands[10];
-char *line;
-int *n;
+int parse_commands (char *line, struct com *commands, int *n)
 {
 	char *field[10];
 	char *string, *strtok();

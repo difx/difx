@@ -37,15 +37,8 @@
 #define NOSPLIT 0
 #define SPLIT 1
 
-int
-get_plot_data (data, pd, fqex, sptr, plot_id, pp, symbol)
-esum *data;
-struct plot_info *pd;
-srcsum *sptr;
-struct frqexp fqex;
-char *plot_id;
-struct plot_points *pp;
-int symbol[3];
+int get_plot_data (esum *data, struct plot_info *pd, struct frqexp fqex,
+    srcsum *sptr, char *plot_id, struct plot_points *pp, int symbol[3])
     {
     extern struct inputs inp;
     extern struct plot_info pdata[];

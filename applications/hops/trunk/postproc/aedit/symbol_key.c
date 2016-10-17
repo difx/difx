@@ -16,10 +16,9 @@
 #include "cpgplot.h"
 #include "summary.h"
 #include "pstruct.h"
+#include "aedit.h"
 
-void
-symbol_key (fqex)
-struct frqexp *fqex;
+void symbol_key (struct frqexp *fqex)
     {
     extern int symlist[NSYMBOL];
     char symbol;

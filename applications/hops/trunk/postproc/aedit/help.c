@@ -9,12 +9,14 @@
 /* Created March 31 1989 by CJL                                                 */
 /*                                                                              */
 /********************************************************************************/
-#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <sys/types.h>
+#include "aedit.h"
 
 
 char *help_files[] = {
@@ -79,8 +81,8 @@ char *help_files[] = {
     "end"                       /* Terminates help list */
 };
 
-help(string)
-char *string;                   /* string is just the command name */
+void help(char *string)
+                                /* string is just the command name */
 {                               /* without arguments */
         extern char ahelpdir[];
         int n, i, match, nmatch;

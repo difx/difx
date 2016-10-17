@@ -220,7 +220,7 @@ char **argv;
             totpass += npass;
             for (k=0; k<npass; k++)
                 {
-                fs_ret = fringe_search (&root, &param, pass + k);
+                fs_ret = fringe_search (&root, pass + k);
                 if (fs_ret < 0) break;
                 ret += fs_ret;
                 }

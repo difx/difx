@@ -24,11 +24,8 @@
 #include "pstruct.h"
 #include "usearray.h"
 
-void
-datum_value (index, aux, toffset, refrem, fdatum, value, errh, errl)
-int index, aux, toffset, refrem;
-fringearray *fdatum;
-float *value, *errh, *errl;
+void datum_value (int index, int aux, int toffset, int refrem,
+    fringearray *fdatum, float *value, float *errh, float *errl)
     {
     extern struct inputs inp;
     extern struct usearray user_param;

@@ -19,16 +19,14 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include "aedata.h"
 #include "aedit.h"
 
-int
-run_com_file (data, filename)
-char *filename;
-esum *data;
+int run_com_file (esum *data, char *filename)
     {
     extern int batch, rundepth;
     FILE *fp;

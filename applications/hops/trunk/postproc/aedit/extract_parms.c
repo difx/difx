@@ -15,15 +15,14 @@
 /* deleted mk3 code                        2010.6.8  rjc                */
 /************************************************************************/
 #include <stdio.h>
+#include "mk4_dfio.h"
 #include "mk4_data.h"
 #include "aedata.h"
 #include "summary.h"
 #include "usearray.h"
+#include "aedit.h"
 
-int
-extract_parms (data, user_param)
-esum *data;
-struct usearray *user_param;
+int extract_parms (esum *data, struct usearray *user_param)
     {
     int i, nbadname, nbadread, nbadfill, fringe_needed, id, mk4;
     char *fname, *fringename(), fullname[256];

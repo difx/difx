@@ -23,14 +23,11 @@
 #include <string.h>
 #include <math.h>
 #include "psplot.h"
+#include "aedit.h"
 
-int
-locate_pscurs (x, y, psarray, cell)
-float *x, *y;
-struct ps_array *psarray;
-struct psplot_cell **cell;
+int locate_pscurs (float *x, float *y, struct ps_array *psarray, struct psplot_cell **cell)
     {
-    int xint, yint, nvertpage, basepage, scanpage, scan, baseline, ret;
+    int xint, yint, nvertpage, basepage, scanpage, scan, baseline, ret=0;
     int dataindex, nbands, band;
     double xcoord, ycoord, rel_x, rel_y, xrem, yrem;
 

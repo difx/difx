@@ -21,10 +21,7 @@
 #include "pstruct.h"
 #include "close_flags.h"
 
-int
-plot_quality (fdatum, tdatum)
-fringesum *fdatum;
-trianglesum *tdatum;
+int plot_quality (fringesum *fdatum, trianglesum *tdatum)
     {
     extern struct inputs inp;
     static char *badqf = "ABCEFG";

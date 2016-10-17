@@ -10,11 +10,11 @@
 /*									*/
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include "summary.h"
+#include "aedit.h"
 
-void
-clear_fqex (fqex)
-struct frqexp *fqex;
+void clear_fqex (struct frqexp *fqex)
     {
     int i;
 

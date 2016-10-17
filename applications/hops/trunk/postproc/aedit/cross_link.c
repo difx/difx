@@ -12,11 +12,11 @@
 /*									*/
 /************************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include "aedata.h"
+#include "aedit.h"
 
-int
-cross_link (data)
-esum *data;
+int cross_link (esum *data)
     {
     extern int rscan, cscan, fscan;
     fringearray *fdata;

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1140 2015-06-01 20:58:40Z rjc $
+# $Id: Makefile.am 1338 2016-05-27 15:07:22Z rjc $
 #
 
 SUBDIRS = .
@@ -31,7 +31,7 @@ fourfit_sources = \
 		  set_pointers.c pcal_interp.c fill_param.c \
 		  skip_data.c clear_pass.c generate_cblock.c \
 		  apply_filter.c precorrect.c search.c \
-		  postcorrect.c read_control_file.c \
+		  ion_search.c read_control_file.c \
 		  init_tokens.c lex.c create_fsm.c parser.c \
 		  make_flist.c nullify_cblock.c clear_freq_corel.c \
 		  default_cblock.c criteria_match.c \
@@ -40,7 +40,7 @@ fourfit_sources = \
 		  delay_rate.c fft1.c update.c interp.c \
 		  create_fname.c parabola.c vrot.c \
 		  get_bfstring.c skip_index.c \
-		  clear_plotdata.c calc_rms.c fill_fringe_info.c \
+		  calc_rms.c fill_fringe_info.c \
 		  display_fplot.c plot_complex.c \
 		  plot_graph.c grid.c put_char_at.c \
 		  sprint_char_arr.c fill_200.c fill_201.c \

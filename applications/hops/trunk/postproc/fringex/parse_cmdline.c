@@ -22,15 +22,11 @@
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
-#include "fstruct.h"
+#include <unistd.h>
 #include "fringex.h"
 
-parse_cmdline (argc, argv, files, fxp, loops)
-int argc;
-char **argv;
-fstruct **files;
-struct fxparam *fxp;
-struct loops *loops;
+int parse_cmdline (int argc, char **argv,
+                   fstruct **files, struct fxparam *fxp, struct loops *loops)
     {
     int err, dflag, iflag, rflag;
     double raoff, decoff, freq;
@@ -47,8 +43,9 @@ struct loops *loops;
     err = FALSE;
     dflag = iflag = rflag = FALSE;
     fxp->account = FALSE;
+    fxp->version = 0;
                                         /* Interpret command line flags */
-    while ((c = getopt (argc, argv, "abcd:f:i:m:nop:qr:")) != -1) 
+    while ((c = getopt (argc, argv, "abcd:f:i:m:nop:qr:v:")) != -1) 
         {
         switch (c) 
             {
@@ -119,6 +116,10 @@ struct loops *loops;
                 rflag = TRUE;
                 break;
 
+            case 'v':
+                fxp->version = atoi(optarg);
+                break;
+
             case '?':
                 err = TRUE;
                 break;
@@ -146,18 +147,16 @@ struct loops *loops;
         msg ("multiple segment lengths in one go", 3);
         err = TRUE;
         }
-                                        /* Check for sensible -i mode */
+
     if (! rflag)
         {
+                                        /* Check for sensible -i mode */
         if ((fxp->mode & SEARCH) || (fxp->mode & NOLOSS))
             {
             msg ("You must use the -r flag when using '-i %s'", 3, iarg);
             err = TRUE;
             }
-        }
                                         /* Check for sensible -d mode */
-    if (! rflag)
-        {
         if (fxp->mode & SRCHPOS)
             {
             msg ("You must use the -r flag when using '-d %s'", 3, rdarg);
@@ -168,7 +167,8 @@ struct loops *loops;
                                         /* as well as filenames in some modes */
     else
         {
-        if (filelist (rarg, fxp->mode, files) != 0)
+        msg ("Getting files from %s", 1, rarg);
+        if (filelist (rarg, fxp->mode, files, &fxp->version) != 0)
             {
             msg ("Error interpreting A-file list of target data", 2);
             err = TRUE;
@@ -193,3 +193,7 @@ struct loops *loops;
 
     return (0);
     }
+
+/*
+ * eof
+ */

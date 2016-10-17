@@ -19,9 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "aedata.h"
+#include "aedit.h"
 
-int
-tarray_index (esum *data)
+int tarray_index (esum *data)
     {
     extern int tscan, tspace;
 

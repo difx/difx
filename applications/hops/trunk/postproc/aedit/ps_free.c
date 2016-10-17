@@ -11,11 +11,10 @@
 /* Created 18 February 1993 by CJL					*/
 /*									*/
 /************************************************************************/
+#include <stdlib.h>
 #include "psplot.h"
 
-void
-ps_free (psarray)
-struct ps_array *psarray;
+void ps_free (struct ps_array *psarray)
     {
     int i;
 

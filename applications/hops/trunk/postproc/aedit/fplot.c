@@ -13,13 +13,12 @@
 #include <stdio.h>
 #include "aedit.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "aedata.h"
 #include "pstruct.h"
 
 
-int
-fplot (data)
-esum *data;
+int fplot (esum *data)
     {
     extern struct inputs inp;
     extern struct plot_info pdata[];

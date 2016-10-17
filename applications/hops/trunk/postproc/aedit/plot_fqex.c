@@ -20,6 +20,7 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "cpgplot.h"
 #include "aedata.h"
@@ -34,10 +35,7 @@ int symlist[NSYMBOL] = {4,5,6,7,11,12,13,14,16,17,18};
 
 struct plot_info pdata[30];
 
-int
-plot_fqex (data, fqex)
-esum *data;
-struct frqexp fqex;
+int plot_fqex (esum *data, struct frqexp fqex)
     {
     extern struct inputs inp;
     extern int interactive, up_to_date, fflag, tflag, qflag;
@@ -46,7 +44,7 @@ struct frqexp fqex;
     int i, j, nloop, ret, nplot, onscreen, plots_per_page, tdiff, day, npoint;
     int np, pno, sno;
     char bas[3], trilist[MAXCLOSE*4], *tri, quadlist[MAXCLOSE*5], *quad;
-    char plot_id[5], buf[256];
+    char plot_id[5], buf[256], *eol;
     int symbol[3];
 
     ret = 0;
@@ -99,7 +97,9 @@ struct frqexp fqex;
                 while(TRUE)
                     {
                     printf ("\007Continue with next page (y/n) or edit points (e)? "); 
-                    gets (buf);
+                    if (!fgets (buf, sizeof(buf), stdin)) exit(0);
+		    eol = strrchr(buf, '\n');
+		    if (eol) *eol = 0;	/* Drop newline */
                     if(buf[0] == 'Y' || buf[0] == 'y') 
                         {
                         ret = 0;

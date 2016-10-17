@@ -18,11 +18,9 @@
 #include <string.h>
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-summ_corel (cdata, mode)
-corelarray *cdata;
-int mode;
+int summ_corel (corelarray *cdata, int mode)
     {
     extern struct datasumm csumm;
     extern int cscan, cflag;
@@ -62,7 +60,7 @@ int mode;
                 add_station (datum->baseline[1], csumm.stations);
                                         /* Check baselines */
         for (j=0; j<csumm.nbtq; j++)
-            if (strcmp (datum->baseline, csumm.btq + 3*j) == NULL) break;
+            if (strcmp (datum->baseline, csumm.btq + 3*j) == 0) break;
         if (j == csumm.nbtq)
             {
             strcpy (csumm.btq + 3*csumm.nbtq, datum->baseline);

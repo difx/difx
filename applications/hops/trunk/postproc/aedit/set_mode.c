@@ -17,9 +17,7 @@
 #include <ctype.h>
 #include "aedit.h"
 
-int
-set_mode(arg1)
-char *arg1;
+int set_mode(char *arg1)
 {
 	extern struct inputs inp;
 	int i, n;

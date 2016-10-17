@@ -16,11 +16,9 @@
 #include <string.h>
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-pr_summary (data, arg)
-esum *data;
-char *arg;
+int pr_summary (esum *data, char *arg)
     {
     extern int dotype;
     int type, ret;

@@ -16,10 +16,9 @@
 #include <stdio.h>
 #include "aedata.h"
 #include "usearray.h"
+#include "aedit.h"
 
-int
-param_list (data)
-esum *data;
+int param_list (esum *data)
     {
     int i, npflag, npunflag;
     extern struct usearray user_param;

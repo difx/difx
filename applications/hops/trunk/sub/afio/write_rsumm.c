@@ -34,7 +34,10 @@ char *rformat_v3 = "3 %s 0 %2d %3d         %4d %2d%03d%c%02d%02d %2d %03d-%02d%0
 char *rformat_v4 = "4 %s 0 %2d %3d         %4d %2d%03d%c%02d%02d%02d %2d %03d-%02d%02d%02d\
  %-8s %s\n";
 
-char *rformat_v5 = "4 %s 0 %3d         %4d %s %2d%03d-%02d%02d%02d %4d %03d-%02d%02d%02d\
+char *rformat_v5 = "5 %s 0 %3d         %4d %s %2d%03d-%02d%02d%02d %4d %03d-%02d%02d%02d\
+ %-8s %s\n";
+
+char *rformat_v6 = "6 %s 0 %3d         %4d %s %2d%03d-%02d%02d%02d %4d %03d-%02d%02d%02d\
  %-8s %s\n";
 
 int
@@ -126,8 +129,21 @@ write_rsumm(rootsum *data, FILE *fp)
                 data->stations);
             break;
 
+        case 6:
+            sprintf (buf, rformat_v6,
+                data->root_id,
+                data->size,
+                data->expt_no,
+                data->scan_id,
+                pyear, pday, phour, pmin, psec,
+                syear, sday, shour, smin, ssec,
+                data->source,
+                data->stations);
+            break;
+
         default:
-            msg ("Unsupported version number in write_rsumm() (%d)", 2, data->version);
+            msg ("Unsupported version number in write_rsumm() (%d)",
+                2, data->version);
             return (-1);
         }
 

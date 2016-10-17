@@ -1,12 +1,12 @@
 #
-# $Id: Makefile.am 436 2011-08-29 14:05:02Z rjc $
+# $Id: Makefile.am 1393 2016-08-03 21:35:13Z gbc $
 #
 
 SUBDIRS = .
 
 AM_CPPFLAGS = @HOPS_INC@
 
-noinst_HEADERS = aedata.h aedit.h close_flags.h flags.h \
+noinst_HEADERS = aedata.h aedit.h aedit_proto.h close_flags.h flags.h \
 		 param_list.h psplot.h pstruct.h sizelimits.h \
 		 sort.h summary.h tempo.h usearray.h
 

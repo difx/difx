@@ -12,22 +12,25 @@
 #define BINARYMODE 0x20
 #define SRCHPOS    0x40
 
-#define PI 3.141592654
+//#define PI 3.141592654
+#define PI M_PI
 
-#include "mk4_data.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "adata.h"
+#include "fstruct.h"
+#include "general.h"
+#include "mk4_afio.h"
+#include "mk4_data.h"
+#include "mk4_dfio.h"
+#include "mk4_util.h"
+#include "mk4_vex.h"
 
-#if BIGGER
-// should become MAX_CHAN_PP from mk4_sizes.h ?
-#define NFX_SB_64   64	    /* type 205 */
-#define NFX_SB_32   32	    /* type 203 */
-//#define NFX_FCHAN   16
-#define NFX_FCHAN   64
-#else /* BIGGER */
-#define NFX_SB_64   16
-#define NFX_SB_32   16
-#define NFX_FCHAN   16
-#endif /* BIGGER */
+#define NFX_FCHAN MAXFREQ
+#define NFX_SB_64 64                /* type 205->ffit_chan */
+#define NFX_SB_32 8*MAXFREQ         /* type 203->channels */
 
 struct fxparam
     {
@@ -41,6 +44,7 @@ struct fxparam
     double      userfreq;
     double      nsecs;
     int         account;
+    int         version;
                                         /* Calculated parameters */
     double      fchan[NFX_FCHAN];
     double      ffit_reffreq;
@@ -89,5 +93,21 @@ struct loops
 
 extern int msglev;
 
+extern void accum_segs (struct fxparam *);
+extern int calc_seg (struct fxparam *, int );
+extern void clear_loops (struct loops *);
+extern void clear_fxp (struct fxparam *, int );
+extern int filelist (char *, int , fstruct **, int *);
+extern int fill_aline (struct mk4_fringe *, struct vex *,
+                       char *, fringesum *, int);
 extern void model (double, struct fxparam *, double *);
+extern int parse_dflag (char *, int *, struct loops *);
+extern int parse_iflag (char *, int *, struct loops *);
+extern int parse_cmdline (int, char **,
+                          fstruct **, struct fxparam *, struct loops *);
+extern int read_binaries (fstruct *, struct fxparam *);
+extern int set_loops (struct fxparam *, struct loops *);
 
+/*
+ * eof
+ */

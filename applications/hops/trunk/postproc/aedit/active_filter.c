@@ -23,8 +23,7 @@
 
 int fcheck[17], nfilt;
 
-int
-active_filter()
+int active_filter(void)
     {
     extern struct inputs inp;
 

@@ -11,10 +11,9 @@
 /*                                                                      */
 /************************************************************************/
 #include "adata.h"
+#include "aedit.h"
 
-char
-mk3_qf (/* datum) */
-fringesum *datum)
+char mk3_qf (fringesum *datum)
     {
     char qf;
 

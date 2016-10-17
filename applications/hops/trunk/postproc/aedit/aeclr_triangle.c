@@ -13,9 +13,7 @@
 /************************************************************************/
 #include "aedata.h"
 
-void
-aeclr_triangle (tdatum)
-trianglearray *tdatum;
+void aeclr_triangle (trianglearray *tdatum)
     {
     int i;
 

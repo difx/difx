@@ -26,13 +26,8 @@
 #include "pstruct.h"
 #include "summary.h"
 
-void
-get_plot_datum (plot_id, data, sptr, ptr, n, toffset, pt)
-char *plot_id;
-esum *data;
-srcsum *sptr;
-int ptr, n, toffset;
-struct plot_ptqual *pt;
+void get_plot_datum (char *plot_id, esum *data, srcsum *sptr,
+    int ptr, int n, int toffset, struct plot_ptqual *pt)
     {
     extern struct inputs inp;
     float *value, *errl, *errh;

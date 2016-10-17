@@ -15,10 +15,9 @@
 #include <string.h>
 #include "cpgplot.h"
 #include "psplot.h"
+#include "aedit.h"
 
-int
-setup_psplot (psarray)
-struct ps_array *psarray;
+int setup_psplot (struct ps_array *psarray)
     {
     int i, clow, chigh, length, nbands;
     float xmin, xmax, ymin, ymax;

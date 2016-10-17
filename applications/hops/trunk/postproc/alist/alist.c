@@ -23,17 +23,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "mk4_data.h"
 #include "fstruct.h"
-#include "adata.h"
+#include "mk4_afio.h"
+#include "mk4_dfio.h"
+#include "mk4_util.h"
 
 char progname[6] = "alist";
 int msglev = 2;
 int output_version = CURRENT_VERSION;
 
-main (argc, argv)
-int argc;
-char *argv[];
+extern int parse_cmdline (int argc, char **argv,
+    fstruct **files, char *outfile);
+extern int summarize_mk4fringe(struct mk4_fringe *fr, fringesum *fsumm);
+extern FILE *open_output (char *outfile);
+
+int main (int argc, char *argv[])
     {
     int i, ret, root_ok, nroot, ncorel, nfringe, opened, index;
     int root_done, fringe_done;
@@ -89,14 +93,14 @@ char *argv[];
         if (files[index].type == 0)
             {
             root_ok = root_done = FALSE;
-            msg ("Mk4 type-0 file summaries unsupported as yet", 2);
+            msg ("Mk4 type-0 file summaries unsupported as yet", 1);
             i++;
             continue;
             }
 
         else if (files[index].type == 1)
             {
-            msg ("Mk4 type-1 file summaries unsupported as yet", 2);
+            msg ("Mk4 type-1 file summaries unsupported as yet", 1);
             i++;
             continue;
             }
@@ -113,13 +117,13 @@ char *argv[];
             if (! fringe_done) { i++; continue; }
 
             else if (write_fsumm (&fsumm, fp) != 0)
-                msg ("Failure writing summary line for fringe file %s", 2, fname);
+                msg ("Failure writing fringe file summary on %s", 2, fname);
             else nfringe++;
             }
                                         /* Ignore Mk4 file types 3 and 4 */
         else if (files[index].type > 4)
             {
-            msg ("Error in sort_names, bad file type, abort.");
+            msg ("Error in sort_names, bad file type, abort.", 2);
             exit(1);
             }
 
@@ -131,8 +135,8 @@ char *argv[];
     if (i > 0)
         {
         msg ("Successfully wrote %d A-file lines to file %s", 2, i, outfile);
-        msg ("comprised of %d root lines, %d corel lines and %d fringe lines", 2,
-                                        nroot, ncorel, nfringe);
+        msg ("comprised of %d root lines, %d corel lines and %d fringe lines",
+            2, nroot, ncorel, nfringe);
         }
     else msg ("No lines written!  '%s' contains only a header", 2, outfile);
 

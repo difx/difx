@@ -20,12 +20,10 @@
 #include <string.h>
 #include "aedata.h"
 #include "flags.h"
+#include "aedit.h"
 
-void
-station_reduce (fdata, station, source, expt, freq)
-fringearray *fdata;
-char station, *source, freq;
-int expt;
+void station_reduce (fringearray *fdata, char station, char *source,
+    int expt, char freq)
     {
     extern int fscan;
     int i, index, last_time, maxfreq;

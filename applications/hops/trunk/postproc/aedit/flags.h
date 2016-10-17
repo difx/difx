@@ -13,7 +13,7 @@
 #define BADTRNGL     (1<<8)
 #define BADQUAD      (1<<9)
 #define BADEXPT      (1<<10)
-#define BADFREQ      (1<<11)
+#define BADFREQA     (1<<11)
 #define BADTYPE      (1<<12)
 #define BADSOURCE    (1<<13)
 #define BADLENGTH    (1<<14)

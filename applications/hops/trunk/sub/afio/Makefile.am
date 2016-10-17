@@ -1,8 +1,10 @@
 #
-# $Id: Makefile.am 265 2011-05-20 15:39:47Z gbc $
+# $Id: Makefile.am 1373 2016-07-21 20:16:22Z gbc $
 #
 
 SUBDIRS = .
+
+TESTS = check_sizes
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
@@ -16,6 +18,9 @@ libafio_a_SOURCES = clear_rsumm.c clear_csumm.c clear_fsumm.c \
 		    clear_tsumm.c write_tsumm.c parse_tsumm.c \
 		    rootname.c corelname.c fringename.c \
 		    get_unique_name.c aline_id.c afile_header.c
+
+check_PROGRAMS = check_sizes
+check_sizes_SOURCES = check_sizes.c
 
 #
 # eof

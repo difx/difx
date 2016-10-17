@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_fringex.sh 931 2014-02-23 15:12:21Z gbc $
+# $Id: chk_fringex.sh 1402 2016-08-05 12:31:22Z gbc $
 #
 # canonical test suite for fringex
 #
@@ -40,7 +40,8 @@ $verb && echo lines is $lines
 scans=`grep endofscan fringex.avg | wc -l`
 $verb && echo scans is $scans
 
-[ "$lines" -eq 447 -a "$scans" -eq 21 ]
+# smaller number is without aline header, larger is with.
+[ "$lines" -ge 447 -a "$lines" -le 450 -a "$scans" -eq 21 ]
 
 #
 # eof

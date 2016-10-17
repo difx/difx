@@ -191,6 +191,8 @@ char header53[] =
 
 /* prototyping a version 6 */
 
+char afile_com_char = '*';
+
 /************************************************************************/
 /************************    Version 6    *******************************/
 /************************************************************************/
@@ -207,27 +209,88 @@ char header61[] =
  DUR LAG DRVS FQ CLERR   CLDIFF  STATUS\n";
 
 /************************************************************************/
-
+/* aligned to write_fsumm.c:fformat_v6 */
 char header62[] =
-"* ROOT   T F# DUR  LEN  OFF  EXP# *************SCANID*************\
- PROCDATE     YEAR TIME*TAG OFF   SOURCE   BS Q\
- FM#C PL LAGS   AMP    SNR  PH   SNR   TYP  SBDLY  MBDLY    AMB   \
- DRATE  ELEVATION AZIMUTH      U       V    ESDESP\
- EPCH REF_FREQ TPHAS  TOTDRATE   TOTMBDELAY  TOTSBDMMBD COHTIMES\n\
-*            (    sec    )                                          \
-                  (deg)     (usec) (usec)  (usec)  (ps/s)   (deg)    \
-   (deg)    (megalambda)          (mmss) (MHz)   (deg)  (usec/sec) \
-  (usec)      (usec) (sec) *** NOT ALIGNED ***\n";
+"%c col2 cl3 c4 cl5 cl6 cl7 col8     col9 \
+         col10 cl11      col12 \
+c13                            col14 15 16 \
+c17 18 col19 \
+        col20         col21       col22       col23 24 \
+       col25        col26       col27 \
+      col28 col29 \
+col30  col31  col32   col33   col34  col35 \
+cl36      col37      col38       col39         \
+col40    col41    col42    col43      col44      col45         col46\n\
+%c ROOT   T F# DUR LEN OFF EXP# SCANNAME PROCESSINGDATE YEAR DOY-HHMMSS \
+OFF                       SOURCENAME BS QE\
+ F#C PL #LAGS \
+          AMP           SNR       PHASE        PSNR TY   \
+     SBDLY        MBDLY         AMB     \
+  DRATE ELref ELrem  AZref  AZrem       U       V ESDESP\
+ EPCH   REF_FREQ   TOTPHASE    TOTDRATE   \
+ TOTMBDELAY  TSBD-MBD SRCH-COH LOSS-COH         RA       DECL RESIDUALDELAY\n\
+%c base64 2  . (s) (s) (s)    .        .              .    .          . \
+  .                                .  . ..\
+   .  .     . \
+      (x10^4)             .       (deg)           . ..   \
+    (usec)       (usec)      (usec)     \
+ (ps/s) (deg) (deg)  (deg)  (deg)  (mega  lambda)      .\
+ (ms)      (MHz)      (deg)  (usec/sec)   \
+     (usec)    (usec)    (sec)    (sec)       (hr)      (deg)        (usec)\n";
 
 /************************************************************************/
 
-char header63[] =
-"* EXP# T *************SCANID*************\
- YEAR TIME*TAG OFF   SOURCE   FM LAGS TRI ROOTCODES\
- EXTENTS LENGTHS        DUR OFF Q1Q2 ESDESP AMP         SNR  CPHS     CSBD\
-   CMBD     AMBIG     CRATE   ELEVATIONS  AZIMUTHS      EPOCH  REFFREQ\n";
+char header63[] = "\
+%c col2 3     col4 col5       col6 cl7                             col8\
+ c9 cl10 c11                col12\
+       col13          col14\
+ c16 c17 18 19  col20\
+      col21    col22    col23 24   col25\
+    col26     col27     col28\
+          col29       col30 col31      col32   col33\n\
+%c EXP# T SCANNAME YEAR PROCESSING OFF                           SOURCE\
+ FM LAGS TRI RTCODE,RTCODE,RTCODE\
+     EXTENTS        LENGTHS\
+ DUR OFF Q1 Q2 ESDESP\
+        AMP      SNR     CPHS DT    CSBD\
+     CMBD     AMBIG     CRATE\
+     ELEVATIONS    AZIMUTHS EPOCH    REFFREQ  COTIME\n\
+%c    . .        .    .          .   .                                .\
+  .    .   .                    .\
+         (i)         (secs)\
+ (s) (s)  .  .      .\
+          .        .        .  .       .\
+        .         .         .\
+              .           .     .          .     (s)\n";
 
+/*
+ * Allow arbitrary comment character (version 6 and later)
+ */
+void set_afile_com_char(int star)
+    {
+    afile_com_char = star;
+    }
 
+/*
+ * Identifier of comment lines for general use.
+ * If it is a comment, return the comment character.
+ */
+int
+afile_comment(char *line)
+    {
+    switch(line[0])
+        {
+        case '*': return('*'); break;   /* a traditional comment */
+        case '#': return('#'); break;   /* modern practice comment */
+        default: if (*line == afile_com_char) return(1); /* user-defined */
+                 break;
+        }
+    return(0);  /* not a comment */
+    }
+
+/*
+ * Writes the 3-line header of the requested version and type
+ */
 int
 afile_header(int version, int type, FILE* fp)
     {
@@ -236,7 +299,8 @@ afile_header(int version, int type, FILE* fp)
     extern char progname[];
 					/* Start with a time-stamp */
     now = time (NULL);
-    fprintf(fp,"* This file processed by %s, %s", progname, ctime (&now));
+    fprintf(fp,"%c This file processed by %s, %s",
+        afile_com_char, progname, ctime (&now));
 
 					/* switch to appropriate header */
     vertype = version*10 + type;
@@ -332,10 +396,12 @@ afile_header(int version, int type, FILE* fp)
 	    ret = fprintf (fp, header61);
 	    break;
 	case 62:
-	    ret = fprintf (fp, header62);
+	    ret = fprintf (fp, header62,
+                afile_com_char, afile_com_char, afile_com_char);
 	    break;
 	case 63:
-	    ret = fprintf (fp, header63);
+	    ret = fprintf (fp, header63,
+                afile_com_char, afile_com_char, afile_com_char);
 	    break;
 	case 64:
 	    break;

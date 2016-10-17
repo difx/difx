@@ -1,10 +1,11 @@
 /*
- * $Id: fourmer.h 1197 2015-09-10 12:38:41Z gbc $
+ * $Id: fourmer.h 1342 2016-05-31 14:01:08Z gbc $
  *
  * support for fourmer
  */
 
 #include "mk4_data.h"
+#include "mk4_util.h"
 
 #define MAX_LINES   4096        // max lines in an input file
 #define MAX_CHARS   512         // max chars in a line

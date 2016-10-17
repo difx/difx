@@ -82,6 +82,8 @@ struct type_208 *t208)
     t208->mbd_error = (status->nion == 0) ?
         (float)(1.0 / (2.0 * M_PI * status->freq_spread * status->snr)) :
         1e-3 * status->ion_sigmas[0];
+        msg ("mbd sigma w/ no ionosphere %f with ion %f ps", 1, 
+            (double)(1e6 / (2.0 * M_PI * status->freq_spread * status->snr)), 1e3 * status->ion_sigmas[0]);
                                         /* get proper weighting for sbd error estimate */
     status->sbavg = 0.0;
     for (fr = 0; fr < pass->nfreq; fr++)

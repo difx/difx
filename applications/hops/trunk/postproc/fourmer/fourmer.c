@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 				// which field to sort by
     const int sortField[5] =     {0, 2, 6, 0, 5    };
     
-    if (getcwd (pwd, MAX_FPATH) == (long)NULL)
+    if (getcwd (pwd, MAX_FPATH) == NULL)
         {
         msg ("error getting current working directory", 2);
         return (1);
@@ -370,7 +370,7 @@ static char *make_outname(char *rootA, char *pwd, char *rootC)
 	else if (errno != ENOENT)
 	    {
 	    perror("stat: make_outname");
-	    msg("Some permission problem with %s", rootC);
+	    msg("Some permission problem with %s", -1, rootC);
 	    return(0);
 	    }
 	}

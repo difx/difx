@@ -30,10 +30,7 @@
 #define QUICK 0
 #define SLOW 1
 
-int
-ffilter (fdatum, mode)
-fringearray *fdatum;
-int mode;
+int ffilter (fringearray *fdatum, int mode)
 {
     extern struct inputs inp;
     extern int fcheck[12], nfilt;
@@ -67,7 +64,7 @@ int mode;
                 break;
             case F_FREQUENCY:
                 if (strchr (inp.frequencies, datum->freq_code) == NULL)
-                                ret |= BADFREQ;
+                                ret |= BADFREQA;
                 break;
             case F_POLARIZATION:
                 if (! smatch (inp.polarizations, datum->polarization)) ret |= BADPOL;

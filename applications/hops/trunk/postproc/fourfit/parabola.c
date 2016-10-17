@@ -33,7 +33,7 @@ double y[3],
     {
     int i,
         rc;
-    double x, range, dwin(), c_mag();
+    double x, range, dwin();
 
     range = fabs (upper - lower);
 

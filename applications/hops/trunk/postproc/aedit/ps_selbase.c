@@ -13,11 +13,9 @@
 /************************************************************************/
 #include "cpgplot.h"
 #include "psplot.h"
+#include "aedit.h"
 
-void
-ps_selbase (baseline, psarray)
-int baseline;
-struct ps_array *psarray;
+void ps_selbase (int baseline, struct ps_array *psarray)
     {
     int i, bno, sno, scanpage, setflag, band;
     float xpos, ypos;

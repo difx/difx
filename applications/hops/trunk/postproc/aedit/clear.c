@@ -13,6 +13,7 @@
 /*									*/
 /************************************************************************/
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 #include "cpgplot.h"
@@ -20,9 +21,7 @@
 #include "aedata.h"
 #include "pstruct.h"
 
-clear (data, string)
-char *string;
-esum *data;
+int clear (esum *data, char *string)
     {
     extern int fscan, fflag, fspace, plot_open, up_to_date;
     extern int cscan, cflag, cspace;

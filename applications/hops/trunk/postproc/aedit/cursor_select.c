@@ -33,11 +33,7 @@
 #include "pstruct.h"
 #include "flags.h"
 
-int
-cursor_select (data, npoint, option)
-esum *data;
-int *npoint;
-int option;
+int cursor_select (esum *data, int *npoint, int option)
     {
     extern struct plot_info pdata[];
     extern struct inputs inp;

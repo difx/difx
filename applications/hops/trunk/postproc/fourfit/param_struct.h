@@ -134,6 +134,9 @@ struct type_status
     int         win_sb[2];              /* Single band search indices */
     int         win_dr[2];              /* Delay rate search indices */
     int         win_mb[2];              /* Multi band search indices */
+    int         win_sb_save[2];         /* Saved single band search indices */
+    int         win_dr_save[2];         /* Saved delay rate search indices */
+    int         win_mb_save[2];         /* Saved multi band search indices */
     int         pts_searched;           /* Number of points searched */
     complex     fringe[MAXFREQ+1];      /* Fringe phase & amp for each freq */
     double      sbdbox[MAXFREQ+1];      /* Single band delay box for each freq */
@@ -173,4 +176,8 @@ struct type_status
     double      dtec[MAX_ION_PTS][2];   // differential TEC pairs [index#][TEC:amplitude]
     double      ion_sigmas[3];          // std dev of tau (ns), phi0 (rot), dTEC (TECU)
     int         nion;                   // number of points in the dtec array
+    int         loopion;                // index for ionospheric search loop (0 if none)
+    int         sb_indx;                // index of max when searching over sb delay
+    int         mb_indx;                // index of max when searching over mb delay
+    int         dr_indx;                // index of max when searching over delay rate
     };

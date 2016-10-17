@@ -16,9 +16,7 @@
 #include <ctype.h>
 #include "aedit.h"
 
-int
-set_device (string)
-char *string;
+int set_device (char *string)
     {
     extern struct inputs inp;
     char c, *filename;

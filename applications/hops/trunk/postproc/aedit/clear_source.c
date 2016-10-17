@@ -13,11 +13,11 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include "summary.h"
+#include "aedit.h"
 
-void
-clear_source (sptr)
-srcsum *sptr;
+void clear_source (srcsum *sptr)
     {
     int i;
 

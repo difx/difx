@@ -1,13 +1,13 @@
-/********************************************************************************/
-/*                                                                              */
-/* This routine prints the contents of the "inp" structure on the screen when   */
-/* in ascii terminal mode.  These inputs determine the behaviour of the "action"*/
-/* commands, such as "plot", "read", "edit", and the like.                      */
-/*                                                                              */
-/* Created March 30 1989 by CJL                                                 */
-/* Added options to print out only parts of inputs, April 19 1990, CJL          */
-/*                                                                              */
-/********************************************************************************/
+/*****************************************************************************/
+/*                                                                           */
+/* This routine prints the contents of the "inp" structure on the screen     */
+/* when in ascii terminal mode.  These inputs determine the behaviour        */
+/* of the "action" commands, such as "plot", "read", "edit", and the like.   */
+/*                                                                           */
+/* Created March 30 1989 by CJL                                              */
+/* Added options to print out only parts of inputs, April 19 1990, CJL       */
+/*                                                                           */
+/*****************************************************************************/
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -19,8 +19,7 @@
 #define FILTER 2
 #define PLOT 3
 
-pr_inputs(string)
-char *string;
+int pr_inputs(char *string)
     {
     extern struct inputs inp;
     int syear,sday,shour,smin,ssec,fyear,fday,fhour,fmin,fsec;
@@ -39,7 +38,7 @@ char *string;
     if(strncmp(string,"all",n) == 0) option = ALL;
     else if(strncmp(string,"filter",n) == 0) option = FILTER;
     else if(strncmp(string,"plot",n) == 0) option = PLOT;
-    else 
+    else
         {
         msg("Unrecognized inputs option (all, filter, or plot)",2);
         return(-1);
@@ -55,7 +54,7 @@ char *string;
         msg ("", 2);
         msg ("", 2);
         msg ("DATA FILTER PARAMETERS", 2);
-        msg ("----------------------");
+        msg ("----------------------", 2);
 
         if(inp.begin != 0 && inp.end != 0) 
             {
@@ -100,7 +99,7 @@ char *string;
         if(strlen(inp.qcodes) > 0) msg ("Qcodes:        %s", 2,inp.qcodes);
         else msg ("Qcodes:        No restriction specified", 2);
 
-        if(strcmp(inp.type, "0,1,2,3,4") != NULL) msg ("Type:          %s", 2, inp.type);
+        if(strcmp(inp.type, "0,1,2,3,4") != 0) msg ("Type:          %s", 2, inp.type);
         else msg ("Type:          No restriction specified", 2);
 
         if(inp.snr[0] > 0.0) msg ("Snrmin:        %5.4g", 2,inp.snr[0]);

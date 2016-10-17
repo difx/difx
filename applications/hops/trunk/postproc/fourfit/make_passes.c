@@ -32,11 +32,11 @@ int *npass;
     {
     char fgroups[10], baseline[3], source[32], group;            
     struct freq_corel *fc;
-    int i, j, k, sb, nsub, start_offset, stop_offset, nindices, usb, lsb, f, ngpt, n;
+    int i, j, k, sb, nsub, start_offset, stop_offset, nindices, usb, lsb, f, ngpt, n, m;
     int scantime,f_c_index, pol, sbpol, ng, nsbind;     
     int polprod_present[4];
                                         // table of last polarizations (for summing, etc.)
-    int lptab[16] = {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3};
+    int lptab[16] = {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3};
     double pstart, cstart, cstop;
     static int pass_alloc = FALSE;
     struct type_pass *p;
@@ -166,7 +166,7 @@ int *npass;
                                         /* Fill in cblock for this pass... */
                                         /* first have to fill in subgroup info */
         fc->fgroup = gptab[i].fgr;
-        if (generate_cblock (ovex, param, p) != 0)
+        if (generate_cblock (ovex, p) != 0)
             {
             msg ("Failure generating cblock, skipping pass",2);
             continue;
@@ -231,6 +231,19 @@ int *npass;
             fc->freq_code = corel[j].freq_code;
             f_c_index = fcode(corel[j].freq_code);   
             fc->frequency = corel[j].frequency;
+            fc->ch_idx = -1;            // link to original ovex channel #
+            for (m=0; m<MAX_CHAN; m++)
+                if (fabs(1e6*fc->frequency 
+                         - (ovex->st+param->ov_bline[0])->channels[m].sky_frequency) < 1e-3
+                    && (fc->ch_idx < 0 || 
+                        (ovex->st+param->ov_bline[0])->channels[m].net_sideband == 'U'))
+
+                    fc->ch_idx = m;
+            if (fc->ch_idx < 0)
+                {
+                fc->ch_idx = 0;
+                msg ("couldn't find frequency %c, pcal may be wrong",2,fc->freq_code);
+                }
                                         // loop over ref & rem stations
             for (n=0; n<2; n++)  
                 {

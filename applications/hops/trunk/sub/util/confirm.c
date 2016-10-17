@@ -24,6 +24,7 @@ int
 confirm (char *string)
     {
     char buf[100];
+    int max = 10;
     extern char progname[];		/* *progname no good here */
     static int interactive = TRUE;
 
@@ -41,11 +42,17 @@ confirm (char *string)
     if (! interactive) return (TRUE);
 
     printf("%s: %s (y/n) : ", progname, string);
-    while(TRUE) 
+    while(max-- > 0) 
 	{
-	fgets (buf, 99, stdin);
+	if (!fgets (buf, 99, stdin)) break;
 	if(buf[0] == 'Y' || buf[0] == 'y') return(TRUE);
 	else if(buf[0] == 'N' || buf[0] == 'n') return(FALSE);
 	else printf("Answer 'y' or 'n' : ");
 	}
+					/* EOF or incompetant user */
+    return(FALSE);
     }
+
+/*
+ * eof
+ */

@@ -14,12 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "psplot.h"
+#include "aedit.h"
 
-void
-write_pshdr (fp, psarray, len)
-FILE *fp;
-struct ps_array *psarray;
-int len;
+void write_pshdr (FILE *fp, struct ps_array *psarray, int len)
     {
     int i;
     char outline[2000];

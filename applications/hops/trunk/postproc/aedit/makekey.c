@@ -24,19 +24,17 @@
 #include "aedata.h"
 #include "summary.h"
 #include "sort.h"
+#include "aedit.h"
 
 #define qflist "FDCBA0E123456789 "
 
-int
-makekey (dptr, key, type)
-char *dptr;
-int key, type;
+int makekey (void *dptr, int key, int type)
     {
     extern int fscan, cscan, rscan, tscan, qscan,  data_version;
     extern struct datasumm fsumm, csumm, rsumm, tsumm, qsumm;
     struct source_info sinfo[MAXSRC];
     int i, j, n, npts, value, keyval;
-    char quality, dummy[10], id[7];
+    char quality, dummy[40], id[7];
     rootarray *rdata;
     corelarray *cdata;
     fringearray *fdata;

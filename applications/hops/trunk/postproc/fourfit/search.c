@@ -28,7 +28,7 @@ int search (struct type_pass *pass)
     extern struct type_param param;
     extern struct type_status status;
     extern struct type_plot plot;
-    double global_max, amp, c_phase(), c_mag();
+    double global_max, amp;
     static double max_amp[2*MAXLAG];
     extern int do_accounting;
 
@@ -106,7 +106,7 @@ int search (struct type_pass *pass)
                                         /* have some! */
     if (status.total_ap == 0)
         {
-        msg ("No valid data", 2);
+        msg ("No valid data for this pass.", 2);
         return (-1);
         }
     status.epoch_off_cent = -(status.epoch_off_cent / status.total_ap + 0.5)
@@ -135,7 +135,7 @@ int search (struct type_pass *pass)
                                         /* in the next loop, so we need to initialize */
                                         /* the arrays here, rather than later on */
                                         /* in make_plotdata() */
-    clear_plotdata();
+    memset (&plot, 0, sizeof (plot));
                                         // set up for later fft's
     fftplan = fftw_plan_dft_1d (status.grid_points, data, data, FFTW_FORWARD, FFTW_MEASURE);
 
@@ -273,8 +273,6 @@ int search (struct type_pass *pass)
     msg ("finished fringe search ", 1);
     if (do_accounting) account ("Grid search");
 
-    interp (pass);      /* Call interp() to interpolate more precise results */
-    if (do_accounting) account ("Interpolate fringes");
     fftw_free (data);   // clean up the malloc'ed data array
     return (0);         /* This return should be modified to give some indication */
                         /* of whether the search was successful.                  */

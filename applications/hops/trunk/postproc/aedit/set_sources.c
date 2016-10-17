@@ -17,9 +17,7 @@
 #include <ctype.h>
 #include "aedit.h"
 
-int
-set_sources(arg1,arg2,remarg)
-char *arg1, *arg2, *remarg;
+int set_sources(char *arg1, char *arg2, char *remarg)
     {
     extern struct inputs inp;
     char outbuf[500], buf[500];

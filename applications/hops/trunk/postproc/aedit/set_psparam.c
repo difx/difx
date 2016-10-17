@@ -13,10 +13,9 @@
 /************************************************************************/
 #include <math.h>
 #include "psplot.h"
+#include "aedit.h"
 
-int
-set_psparam (psarray)
-struct ps_array *psarray;
+int set_psparam (struct ps_array *psarray)
     {
     int nvertpage, nhorizpage, base_page, scan_page;
     double fbase_page, fscan_page, vsep, hsep, sepmin;

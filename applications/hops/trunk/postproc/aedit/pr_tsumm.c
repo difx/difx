@@ -13,9 +13,9 @@
 
 #include <stdio.h>
 #include "summary.h"
+#include "aedit.h"
 
-int
-pr_tsumm()
+int pr_tsumm(void)
 {
         extern struct datasumm tsumm;
         extern int tscan, tflag;

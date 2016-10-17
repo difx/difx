@@ -57,15 +57,13 @@ struct usearray user_param;
 char progname[6] = "aedit";
 int msglev = 1;
 
-main (argc, argv)
-int argc;
-char *argv[];
+int main (int argc, char *argv[])
     {
     extern char *optarg;
     extern int optind;
     esum data;
     int file, runfile, c, i, j, n, len, execute(), filelist, ret;
-    char run_fname[100], line[257];
+    char run_fname[100], line[257], *eol;
     struct com commands[10];    /* Structure contains parsed command info */
 
     environment();                      /* Set up directories according to env't */
@@ -150,9 +148,16 @@ char *argv[];
         if (dotype >= 0) printf("aedit %d> ", dotype);
         else printf("aedit> ");
                                         /* Read user input and check it */
-        gets(line);
+        if (!fgets(line, sizeof(line), stdin)) exit(0);
+	eol = strrchr(line, '\n');
+	if (eol) *eol = 0;		/* Drop newline */
+
                                         /* Shell escape */
-        if(line[0] == '!') system(&line[1]);
+        if(line[0] == '!')
+	    {
+	    i = system(&line[1]);
+	    if (i) msg("Warning, return value %d from last command",2,i);
+	    }
         else 
             {
             parse_commands(line,commands,&n);

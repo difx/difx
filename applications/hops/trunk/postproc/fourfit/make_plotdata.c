@@ -273,7 +273,7 @@ int make_plotdata(struct type_pass *pass)
     status.snr = status.delres_max * param.inv_sigma 
             * sqrt((double)status.total_ap_frac * eff_npol)
                        / (1.0E4 * status.amp_corr_fact);
-    msg ("SNR %le", 0, status.snr);
+    msg ("SNR %8.2f", 1, status.snr);
 
                                         /* Probability of false detection */
     status.prob_false = 1.0 - (pow (1.0 - exp(-status.snr * status.snr / 2.0),

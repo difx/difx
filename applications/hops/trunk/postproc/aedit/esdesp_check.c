@@ -12,11 +12,9 @@
 /* Created 26 February 1992 by CJL					*/
 /*									*/
 /************************************************************************/
+#include "aedit.h"
 
-
-int
-esdesp_check (esdesp)
-int esdesp;
+int esdesp_check (int esdesp)
     {
     int referr, remerr, refslip, remslip, disc, frac;
     int esqual;

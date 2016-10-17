@@ -30,15 +30,10 @@
 #include "aedata.h"
 #include "flags.h"
 #include "psplot.h"
+#include "aedit.h"
 
-void
-ps_proc_datum (data, psarray, x, y, cell, key, do_fplot)
-esum *data;
-struct ps_array *psarray;
-float x, y;
-struct psplot_cell *cell;
-char key;
-int do_fplot;
+void ps_proc_datum (esum *data, struct ps_array *psarray,
+    float x, float y, struct psplot_cell *cell, char key, int do_fplot)
     {
     int year, day, hour, minute, second, band, infoyear;
     float xtag, ytag, sepmin, xmin, xmax, ymin, ymax;

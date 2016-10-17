@@ -19,9 +19,7 @@
 #include "aedit.h"
 #include "pstruct.h"
 
-int
-axis (y_axis, x_axis)
-char *y_axis, *x_axis;
+int axis (char *y_axis, char *x_axis)
     {
     char y_ax_name[30], x_ax_name[30], y_ax_units[20], x_ax_units[20];
     int i, y_ax_index, x_ax_index, x_plotby, y_plotby, plotby, raw_plotby;

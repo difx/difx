@@ -1,3 +1,5 @@
+#ifndef PSTRUCT_H
+#define PSTRUCT_H
 					/* Various plotting mode definitions */
 #define Y_SINGLE 	1
 #define Y_MULTIPLE	2
@@ -109,3 +111,4 @@ struct plot_points
     struct plot_ptqual	bad;		/* Contains info for bad points */
     };
 
+#endif /* PSTRUCT_H */

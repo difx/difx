@@ -29,10 +29,7 @@
 #define QUICK 0
 #define SLOW 1
 
-int
-qfilter (qdatum, mode)
-quadarray *qdatum;
-int mode;
+int qfilter (quadarray *qdatum, int mode)
 {
     extern struct inputs inp;
     extern int fcheck[12], nfilt;
@@ -61,7 +58,7 @@ int mode;
 		break;
 	    case F_FREQUENCY:
 		if (strchr (inp.frequencies, datum->freq_code) == NULL)
-				ret |= BADFREQ;
+				ret |= BADFREQA;
 		break;
 	    case F_EXPERIMENT:
 		if (inp.experiment != datum->expt_no) ret |= BADEXPT;

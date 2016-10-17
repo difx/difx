@@ -21,6 +21,7 @@
 /*									*/
 /************************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include "cpgplot.h"
 #include "aedata.h"
 #include "aedit.h"
@@ -32,10 +33,7 @@
 
 int interactive = FALSE;
 
-int
-plot (data, y_axis, x_axis)
-esum *data;
-char *y_axis, *x_axis;
+int plot (esum *data, char *y_axis, char *x_axis)
     {
     extern struct inputs inp;
     extern struct datasumm fsumm, tsumm, qsumm;

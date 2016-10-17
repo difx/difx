@@ -16,11 +16,9 @@
 #include "cpgplot.h"
 #include "aedata.h"
 #include "psplot.h"
+#include "aedit.h"
 
-int
-run_pscursor (psarray, data)
-struct ps_array *psarray;
-esum *data;
+int run_pscursor (struct ps_array *psarray, esum *data)
     {
     int poskey;
     float x, y;

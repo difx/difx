@@ -17,8 +17,7 @@
 #include "cpgplot.h"
 #include "aedit.h"
 
-int
-auto_hardcopy()
+int auto_hardcopy(void)
     {
     extern struct inputs inp;
     extern int plot_open;

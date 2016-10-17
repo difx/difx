@@ -16,19 +16,18 @@
 #include <string.h>
 #include <math.h>
 #include "mk4_data.h"
-#include "adata.h"
+#include "mk4_afio.h"
+#include "mk4_util.h"
 
 int
-summarize_mk4fringe (/* fr, fsumm) */
-struct mk4_fringe *fr,
-fringesum *fsumm)
+summarize_mk4fringe (struct mk4_fringe *fr, fringesum *fsumm)
     {
     int i, j, basenum, lastslash, p_extent, lastchan, sb, nparents, frac;
     int pcal1, pcal2, pcal3, pcal4, filetype, polerr, chan;
     int btable_index, duration, fullepoch, rem, isec, nchans;
     char fname[40], buf[7], c, baseline[3], refpol, rempol;
     struct date tempdate;
-    extern int output_version, dofrnge, dofourfit;
+    extern int output_version;
                                         /* Initialize output record */
     clear_fsumm (fsumm);
     fsumm->version = output_version;
@@ -53,7 +52,7 @@ fringesum *fsumm)
     strcpy (fname, fr->id->name);
     i = 0;                              /* then cross-check file contents for */
     lastslash = 0;                      /* consistency */
-    while ((c = fname[i++]) != NULL)
+    while ((c = fname[i++]) != 0)
         if (c == '/') lastslash = i;
     if (sscanf (fname+lastslash, "%2s.%c.%hd.%6s", baseline, 
                 &(fsumm->freq_code), &(fsumm->extent_no), fsumm->root_id) != 4)
@@ -170,6 +169,11 @@ fringesum *fsumm)
                                         /* Convert to megalambda */
     fsumm->u = fr->t202->u * 0.2062648;
     fsumm->v = fr->t202->v * 0.2062648;
+
+    sexigesimal2hrdeg(&fr->t201->coord, &fsumm->ra_hrs, &fsumm->dec_deg);
+
+    fsumm->resid_delay = fsumm->mbdelay + fsumm->ambiguity *
+        floor((fsumm->sbdelay - fsumm->mbdelay) / fsumm->ambiguity + 0.5);
 
     return (0);
     }

@@ -49,3 +49,9 @@ struct inputs {
         char    device[30];
         int     dev_auto;
 };
+
+struct ibaselist { int index; char baseline[3]; };
+struct ptrilist { int present; char triangle[4]; };
+
+#include "aedit_proto.h"
+#include "mk4_util.h"

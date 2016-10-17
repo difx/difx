@@ -31,16 +31,14 @@
 #include "aedata.h"
 #include "flags.h"
 #include "summary.h"
+#include "aedit.h"
 
 #define FALSE 0
 #define TRUE 1
 
 #define qflist "FDCBAGH0E123456789 "
 
-int
-dup_flag (data, option)
-esum *data;
-int option;
+int dup_flag (esum *data, int option)
     {
     extern int fscan;
     extern int fsortstat[10];

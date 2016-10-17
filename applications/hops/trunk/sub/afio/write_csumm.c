@@ -38,7 +38,10 @@ char *cformat_v3 = "3 %s 1 %2d %3d         %4d %2d%03d%c%02d%02d %2d %03d-%02d%0
 char *cformat_v4 = "4 %s 1 %2d %3d         %4d %2d%03d%c%02d%02d%02d %2d %03d-%02d%02d%02d\
  %-8s %s%c %4d %4d %d %d %-2s %7.2f %7.2f %06o\n";
 
-char *cformat_v5 = "4 %s 1 %3d         %4d %s %2d%03d-%02d%02d%02d %4d %03d-%02d%02d%02d\
+char *cformat_v5 = "5 %s 1 %3d         %4d %s %2d%03d-%02d%02d%02d %4d %03d-%02d%02d%02d\
+ %-8s %s%c %4d %4d %d %d %-2s %7.2f %7.2f %06o\n";
+
+char *cformat_v6 = "6 %s 1 %3d         %4d %s %2d%03d-%02d%02d%02d %4d %03d-%02d%02d%02d\
  %-8s %s%c %4d %4d %d %d %-2s %7.2f %7.2f %06o\n";
 
 int
@@ -190,8 +193,31 @@ write_csumm(corelsum *data, FILE *fp)
                 data->status);
             break;
 
+        case 6:
+                                        /* Version 6, EHT era */
+            sprintf (buf, cformat_v4,
+                data->root_id,
+                data->size,
+                data->expt_no,
+                data->scan_id,
+                pyear, pday, phour, pmin, psec,
+                syear, sday, shour, smin, ssec,
+                data->source,
+                data->baseline,
+                data->quality,
+                data->sduration,
+                data->lags,
+                data->refdrive,
+                data->remdrive,
+                data->freqs,
+                data->refclock_err,
+                data->clock_diff,
+                data->status);
+            break;
+
         default:
-            msg ("Unsupported version number in write_csumm() (%d)", 2, data->version);
+            msg ("Unsupported version number in write_csumm() (%d)",
+                2, data->version);
             return (-1);
         }
 

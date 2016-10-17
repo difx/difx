@@ -14,13 +14,12 @@
 /************************************************************************/
 #include <stdio.h>
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "aedata.h"
 #include "psplot.h"
+#include "aedit.h"
 
-int
-ps_fplot (psarray, fdatum)
-struct ps_array *psarray;
-fringesum *fdatum;
+int ps_fplot (struct ps_array *psarray, fringesum *fdatum)
     {
     static struct mk4_fringe fringe4;
     int index, ret;

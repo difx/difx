@@ -14,9 +14,7 @@
 #include <stdio.h>
 #include "aedata.h"
 
-void
-aeclr_fringe (fdatum)
-fringearray *fdatum;
+void aeclr_fringe (fringearray *fdatum)
     {
     fdatum->order = 0;
     fdatum->lastorder = 0;

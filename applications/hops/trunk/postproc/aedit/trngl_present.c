@@ -22,12 +22,10 @@
 #define TRUE 1
 #define FALSE 0
 
-int
-trngl_present (triangle, blist, n, indices)
-char triangle[4];
-int n;
-int indices[3];
-struct { int index; char baseline[3]; } *blist;
+#include "aedit.h"
+
+int trngl_present (char triangle[4], struct ibaselist *blist,
+    int n, int indices[3])
     {
     char base1[3], base2[3], base3[3];
     int i;

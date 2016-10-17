@@ -17,11 +17,9 @@
 #include "psplot.h"
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-get_ps_indices4 (data, psarray)
-esum *data;
-struct ps_array *psarray;
+int get_ps_indices4 (esum *data, struct ps_array *psarray)
     {
     int i, j, found, nbaselines, nscans;
     int base, scan, nbands, band;

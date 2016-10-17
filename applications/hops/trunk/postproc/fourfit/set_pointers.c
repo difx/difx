@@ -66,7 +66,7 @@ struct freq_corel *corel)
         if ((t101 = idx->t101) == NULL) continue;
                                         /* Get chan array numbers from ids */
         st1ch = st2ch = -1;             /* first, initialize to catch non-detections */
-        for (ch=0; ch<MAXFREQ; ch++)
+        for (ch=0; ch<MAX_CHAN; ch++)
             {
             refch = stn1->channels + ch;
             remch = stn2->channels + ch;

@@ -17,6 +17,9 @@ double max_val;
     double dr_max, mbd_max, mbd_max_pre_dr_adjust;
     extern struct type_status status;
     extern struct type_param param;
+    status.mb_indx = mbd_cell;
+    status.sb_indx = lag;
+    status.dr_indx = drate_cell;
 
     dr_max = drate_cell - (status.drsp_size/ 2.0);
     dr_max /= (status.drsp_size * param.ref_freq * param.acc_period);

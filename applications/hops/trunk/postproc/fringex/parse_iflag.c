@@ -14,13 +14,10 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include "fringex.h"
 
-int
-parse_iflag (arg, mode, loops)
-char *arg;
-int *mode;
-struct loops *loops;
+int parse_iflag (char *arg, int *mode, struct loops *loops)
     {
     char tlist[256];
     int i, n, nsecs, times[15];
@@ -74,3 +71,7 @@ struct loops *loops;
 
     return (0);
     }
+
+/*
+ * eof
+ */

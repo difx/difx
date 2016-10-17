@@ -66,7 +66,7 @@ struct type_203 *t203)
         strncpy (t203->channels[ch].rem_chan_id, t101->rem_chan_id, 8);
                                         /* Find the channel name in root */
         chfound = 0;
-        for (rootch=0; rootch<MAXFREQ; rootch++)
+        for (rootch=0; rootch<MAX_CHAN; rootch++)
             {
             if (strncmp (t203->channels[ch].ref_chan_id, 
                         refst->channels[rootch].chan_name, 8) == 0)

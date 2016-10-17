@@ -30,6 +30,8 @@
 #include "param_struct.h"
 #include "pass_struct.h"
 
+#define signum(a) (a>=0 ? 1.0 : -1.0)
+
 void norm_fx (struct type_pass *pass, 
               int fr, 
               int ap)
@@ -43,13 +45,13 @@ void norm_fx (struct type_pass *pass,
     static complex xp_spec[4*MAXLAG];
     static complex xcor[4*MAXLAG], S[4*MAXLAG], xlag[4*MAXLAG];
     complex z;
-    double c_mag ();
     double factor, mean;
-    double diff_delay, deltaf, polcof, polcof_sum, phase_shift;
+    double diff_delay, deltaf, polcof, polcof_sum, phase_shift, dpar;
     int freq_no,
         ibegin,
         sindex,
         pol,
+        pols,                       // bit-mapped pols to be processed in this pass
         usb_present, lsb_present,
         usb_bypol[4],lsb_bypol[4], 
         lastpol[2];                 // last pol index with data present, by sideband
@@ -64,9 +66,13 @@ void norm_fx (struct type_pass *pass,
         {
         pol = pass->pol;            // single pol being done per pass
         ips = pol;
+        pols = 1 << pol;
         }
     else                            // linear combination of polarizations
+        {
         ips = 0;
+        pols = param.pol;
+        }
         
                                     // do fft plan only iff nlags changes
     if (param.nlags != nlags)
@@ -76,16 +82,18 @@ void norm_fx (struct type_pass *pass,
         }
     freq_no = fcode(pass->pass_data[fr].freq_code);
 
-                                        /* Point to current frequency */
+                                    /* Point to current frequency */
     fdata = pass->pass_data + fr;
-                                        /* Convenience pointer */
+                                    /* Convenience pointer */
     datum = fdata->data + ap;
+                                    // differenced parallactic angle
+    dpar = param.par_angle[1] - param.par_angle[0];
                                         /* Initialize */
     for (i = 0; i < nlags*4; i++)
         S[i] = 0.0;
         
     datum->sband = 0;
-                                        /* -1.0 means no data, not zero weight */
+                                    /* -1.0 means no data, not zero weight */
     datum->usbfrac = -1.0;
     datum->lsbfrac = -1.0;
 
@@ -98,8 +106,10 @@ void norm_fx (struct type_pass *pass,
                                     // check sidebands for each pol. for data
     for (ip=ips; ip<pass->pol+1; ip++)
         {
-        usb_bypol[ip] = ((datum->flag & (USB_FLAG << 2*ip)) != 0);
-        lsb_bypol[ip] = ((datum->flag & (LSB_FLAG << 2*ip)) != 0);
+        usb_bypol[ip] = ((datum->flag & (USB_FLAG << 2*ip)) != 0)
+                     && ((pols & (1 << ip)) != 0);
+        lsb_bypol[ip] = ((datum->flag & (LSB_FLAG << 2*ip)) != 0)
+                     && ((pols & (1 << ip)) != 0);
         pass->pprods_present[ip] |= usb_bypol[ip] || lsb_bypol[ip];
 
         if (usb_bypol[ip])
@@ -111,7 +121,7 @@ void norm_fx (struct type_pass *pass,
         lsb_present |= lsb_bypol[ip];
         }
     datum->sband = usb_present - lsb_present;
-                                        /*  sideband # -->  0=upper , 1= lower */
+                                    /*  sideband # -->  0=upper , 1= lower */
     for (sb = 0; sb < 2; sb++) 
       {
       for (i = 0; i < nlags*4; i++) // clear xcor & xp_spec for pol sum into them
@@ -128,31 +138,31 @@ void norm_fx (struct type_pass *pass,
         if (sb == 0 & usb_bypol[ip] == 0
          || sb == 1 & lsb_bypol[ip] == 0)
             continue;
-                                        /* Pluck out the requested polarization */
+                                    // Pluck out the requested polarization
         switch (pol)
             {
             case POL_LL: t120 = datum->apdata_ll[sb];
-                         polcof = (param.pol == POL_IXY) ?
-                             cos (param.par_angle[1] - param.par_angle[0]) :
-                             1.0;
+                         polcof = (pass->npols > 1) ?
+                             cos (dpar) :
+                             signum (cos (dpar));
                          break;
             case POL_RR: t120 = datum->apdata_rr[sb];
-                         polcof = (param.pol == POL_IXY) ?
-                             cos (param.par_angle[1] - param.par_angle[0]) :
-                             1.0;
+                         polcof = (pass->npols > 1) ?
+                             cos (dpar) :
+                             signum (cos (dpar));
                          break;
             case POL_LR: t120 = datum->apdata_lr[sb];
-                         polcof = (param.pol == POL_IXY) ?
-                             sin (param.par_angle[1] - param.par_angle[0]) :
-                             1.0;
+                         polcof = (pass->npols > 1) ?
+                             sin (-dpar) :
+                             signum (sin (-dpar));
                          break;
             case POL_RL: t120 = datum->apdata_rl[sb];
-                         polcof = (param.pol == POL_IXY) ?
-                            -sin (param.par_angle[1] - param.par_angle[0]) :
-                             1.0;
+                         polcof = (pass->npols > 1) ?
+                             sin (dpar) :
+                             signum (sin (dpar));
                          break;
             }
-        polcof_sum += polcof;
+        polcof_sum += fabs (polcof);
                                     // sanity test
         if (t120 -> type != SPECTRAL)
             {

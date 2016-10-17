@@ -21,18 +21,17 @@
 /************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include "fstruct.h"
+#include "mk4_afio.h"
+#include "mk4_util.h"
 
-int dofrnge, dofourfit;
-
-parse_cmdline (argc, argv, files, outfile)
-int argc;
-char **argv;
-fstruct **files;
-char *outfile;
+int
+parse_cmdline (int argc, char **argv, fstruct **files, char *outfile)
     {
     char c;
     struct stat file_status;
@@ -40,18 +39,13 @@ char *outfile;
     extern int optind, output_version, msglev;
 					/* Default output filename */
     sprintf (outfile, "alist.out");
-					/* Default no restrictions on origin */
-    dofrnge = dofourfit = FALSE;
 					/* Interpret command line flags */
-    while((c=getopt(argc,argv,"f:o:m:v:")) != -1) 
+    while((c=getopt(argc,argv,"f:o:m:v:c:")) != -1) 
 	{
 	switch(c) 
 	    {
 	    case 'f':
-		if (dofourfit || dofrnge) break;
-		if (optarg[0] == 'f') dofourfit = TRUE;
-		else if (optarg[0] == 'r') dofrnge = TRUE;
-		else msg ("Bad -f flag, ignored", 2);
+                msg ("Truly obsolete -f flag is ignored", 2);
 		break;
 
 	    case 'o':
@@ -61,6 +55,10 @@ char *outfile;
 	    case 'm':
 		msglev = atoi(optarg);
 		break;
+
+            case 'c':
+                set_afile_com_char(*optarg);
+                break;
 
 	    case 'v':
 		if (sscanf (optarg, "%d", &output_version) != 1)
@@ -79,7 +77,7 @@ char *outfile;
 
     if (get_filelist (argc-optind, argv+optind, -1, files) != 0)
 	{
-	msg ("Error extracting list of files to process from command line args", 2);
+	msg ("Error extracting files to process from command line args", 2);
 	return (1);
 	}
 

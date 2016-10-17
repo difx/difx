@@ -13,9 +13,7 @@
 /************************************************************************/
 #include "aedata.h"
 
-void
-aeclr_quad (qdatum)
-quadarray *qdatum;
+void aeclr_quad (quadarray *qdatum)
     {
     int i;
 

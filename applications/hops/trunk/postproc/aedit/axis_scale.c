@@ -14,10 +14,7 @@
 #include <math.h>
 #include "pstruct.h"
 
-void
-axis_scale (index, min, max, win1, win2)
-int index;
-float min, max, *win1, *win2;
+void axis_scale (int index, float min, float max, float *win1, float *win2)
     {
     float diff;
 					/* Basic range plus 10% either end */

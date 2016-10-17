@@ -17,7 +17,6 @@
 /* Modified to work with Mk4 files                2007.10.2   rjc       */
 /*                                                                      */
 /************************************************************************/
-#include <stdio.h>
 #include <math.h>
 #include "fringex.h"
 
@@ -145,3 +144,7 @@ void accum_segs (struct fxparam *fxp)
             }                           /* End ap loop */
         }                               /* End type-212 record loop */
     }
+
+/*
+ * eof
+ */

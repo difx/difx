@@ -16,15 +16,15 @@
 /*									*/
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "usearray.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int
-allocate_parms (user_param)
-struct usearray *user_param;
+int allocate_parms (struct usearray *user_param)
     {
     int i, j;
     static int first = TRUE;

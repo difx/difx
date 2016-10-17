@@ -1,3 +1,6 @@
+#ifndef SUMMARY_H
+#define SUMMARY_H
+
 #define TRUE 1
 #define FALSE 0
 
@@ -70,3 +73,5 @@ struct datasumm {
         struct frqexp           fqex[MAXBANDS * MAXEXPTS];
         int                     nfqex;
 };
+
+#endif /* SUMMARY_H */

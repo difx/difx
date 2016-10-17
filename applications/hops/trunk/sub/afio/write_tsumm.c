@@ -34,10 +34,18 @@ char *tformat_v5 = "%1d %4d 3 %s %4d %03d-%02d%02d%02d %3d %-8s %c%c %4d %s %-20
  %3d %3d %c %c %06d %9.2f %7.2f %5.1f %2s %6.3f %8.5f %6.4f %7.3f %-14s %-11s\
  %02d%02d %8.2f %3d\n";
 
+char *tformat_v6 = "%1d %4d 3 %8s %4d %03d-%02d%02d%02d %3d %32s\
+ %c%c %4d %3s %20s %11s %14s\
+ %3d %3d  %c  %c %06d\
+ %10.3f %8.3f %+8.3f %2s %7.4f\
+ %8.5f %6.4f %9.5f %14s %11s\
+  %02d%02d %10.3f %7d\n";
+
 int
 write_tsumm(trianglesum *data, FILE *fp)
     {
-    char buf[256], roots[21], extents[30], lengths[30], elevations[30], azimuths[30];
+    static char buf[512], roots[21], extents[30], lengths[30];
+    static char elevations[30], azimuths[30];
     int syear, sday, shour, smin, ssec;
 
                                         /* Decode time tag */
@@ -202,8 +210,48 @@ write_tsumm(trianglesum *data, FILE *fp)
                 data->cotime);
             break;
 
+                                        /* Version 6 */
+        case 6:
+                                        /* Construct complete line */
+            if (syear < 50) syear += 2000;  /* y2k */
+            sprintf (buf, tformat_v6,
+                data->version,
+                data->expt_no,
+                data->scan_id,
+                syear, sday, shour, smin, ssec,
+                data->scan_offset,
+                data->source,
+                data->freq_code,
+                data->mode,
+                data->lags,
+                data->triangle,
+                roots,
+                extents,
+                lengths,
+                data->duration,
+                data->offset,
+                data->scan_quality,
+                data->data_quality,
+                data->esdesp,
+                data->bis_amp,
+                data->bis_snr,
+                data->bis_phas,
+                data->datatype,
+                data->csbdelay,
+                data->cmbdelay,
+                data->ambiguity,
+                data->cdelay_rate,
+                elevations,
+                azimuths,
+                data->epoch[0],
+                data->epoch[1],
+                data->ref_freq,
+                data->cotime);
+            break;
+
         default:
-            msg ("Unsupported version number in write_tsumm() (%d)", 2, data->version);
+            msg ("Unsupported version number in write_tsumm() (%d)",
+                2, data->version);
             return (-1);
         }
                                         /* Write it out */

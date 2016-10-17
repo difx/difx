@@ -15,10 +15,9 @@
 /************************************************************************/
 #include "cpgplot.h"
 #include "psplot.h"
+#include "aedit.h"
 
-int
-display_psdata (psarray)
-struct ps_array *psarray;
+int display_psdata (struct ps_array *psarray)
     {
     int nvertpage, basepage, scanpage, boffset, soffset, bno, sno;
     int base, scan, band;

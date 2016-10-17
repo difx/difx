@@ -14,10 +14,9 @@
 /************************************************************************/
 #define FALSE 0
 #define TRUE 1
+#include "aedit.h"
 
-int
-ps_inside (x, y, xmin, xmax, ymin, ymax)
-float x, y, xmin, xmax, ymin, ymax;
+int ps_inside (float x, float y, float xmin, float xmax, float ymin, float ymax)
     {
     if ((x < xmin) || (x > xmax)) return (FALSE);
     if ((y < ymin) || (y > ymax)) return (FALSE);

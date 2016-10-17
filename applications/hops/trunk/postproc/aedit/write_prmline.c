@@ -17,12 +17,9 @@
 #include <string.h>
 #include "aedata.h"
 #include "usearray.h"
+#include "aedit.h"
 
-int
-write_prmline (fdata, ndigits, fp)
-fringearray *fdata;
-int ndigits;
-FILE *fp;
+int write_prmline (fringearray *fdata, int ndigits, FILE *fp)
     {
     char filename[40], buf[2000], vbuf[50], format[10];
     int i, syear, sday, shour, smin, ssec;

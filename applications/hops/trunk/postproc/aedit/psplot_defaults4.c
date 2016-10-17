@@ -18,10 +18,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "psplot.h"
+#include "aedit.h"
 
-int
-psplot_defaults4 (psarray)
-struct ps_array *psarray;
+int psplot_defaults4 (struct ps_array *psarray)
     {
     int i, j, k, m, base, nst, code, found, band, nbf, nbands;
     char stn1, stn2;

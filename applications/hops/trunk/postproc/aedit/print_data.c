@@ -12,10 +12,9 @@
 
 #include <stdio.h>
 #include "aedata.h"
+#include "aedit.h"
 
-int
-print_data (fdata)
-fringearray *fdata;
+int print_data (fringearray *fdata)
 {
         int year, day, hour, min, sec;
         fringesum *datum;

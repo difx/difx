@@ -21,11 +21,8 @@
 #include "mk4_data.h"
 #include "usearray.h"
 
-int
-fill4_parms (fringe4, data, user_param)
-struct mk4_fringe *fringe4;
-fringesum *data;
-struct usearray *user_param;
+int fill4_parms (struct mk4_fringe *fringe4,
+    fringesum *data, struct usearray *user_param)
     {
     double value;
     int i, day, index, channels, error, temp, utc_int, chan;

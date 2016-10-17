@@ -13,9 +13,7 @@
 /************************************************************************/
 #include "aedata.h"
 
-void
-aeclr_corel (cdatum)
-corelarray *cdatum;
+void aeclr_corel (corelarray *cdatum)
     {
     cdatum->order = 0;
     cdatum->lastorder = 0;

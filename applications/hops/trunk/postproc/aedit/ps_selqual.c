@@ -14,11 +14,9 @@
 /************************************************************************/
 #include "cpgplot.h"
 #include "psplot.h"
+#include "aedit.h"
 
-void
-ps_selqual (colour, psarray)
-int colour;
-struct ps_array *psarray;
+void ps_selqual (int colour, struct ps_array *psarray)
     {
     int i, j, bno, sno, scanpage, basepage, setflag, band;
     float xpos, ypos;

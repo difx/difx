@@ -38,6 +38,9 @@ char *cpformat4 = "%*d %s %d %hd %hd %hd %2d%3d%c%2d%2d%2d %d %d-%2d%2d%2d %s %2
 char *cpformat5 = "%*d %s %d %hd %hd %s %2d%3d-%2d%2d%2d %d %d-%2d%2d%2d %s %2s%c \
 %hd %d %hd %hd %2s %f %f %o";
 
+char *cpformat6 = "%*d %s %d %hd %hd %s %2d%3d-%2d%2d%2d %d %d-%2d%2d%2d %s %2s%c \
+%hd %d %hd %hd %2s %f %f %o";
+
 int
 parse_csumm(char *line, corelsum *file)
     {
@@ -204,7 +207,38 @@ parse_csumm(char *line, corelsum *file)
                 }
                                         /* Not even enough to id file */
             if (n < 17) return (-1);
+            if (n < 26) incomplete = TRUE;
+            break;
 
+        case 6:
+                                        /* Version 6, EHT era */
+            n = sscanf (line, cpformat5,
+                file->root_id,
+                &type,
+                &(file->size),
+                &(file->expt_no),
+                file->scan_id,
+                &pyear, &pday, &phour, &pmin, &psec,
+                &syear, &sday, &shour, &smin, &ssec,
+                file->source,
+                file->baseline,
+                &(file->quality),
+                &(file->sduration),
+                &(file->lags),
+                &(file->refdrive),
+                &(file->remdrive),
+                file->freqs,
+                &(file->refclock_err),
+                &(file->clock_diff),
+                &(file->status));
+                                        /* Check that the caller got it right */
+            if (type != 1)
+                {
+                msg ("parse_csumm passed line of wrong type '%d'", 2, type);
+                return (-1);
+                }
+                                        /* Not even enough to id file */
+            if (n < 17) return (-1);
             if (n < 26) incomplete = TRUE;
             break;
 
@@ -212,7 +246,7 @@ parse_csumm(char *line, corelsum *file)
             msg ("Unsupported A-file format version number '%d'", 2, version);
             return (-1);
         }
-                                        /* These fields independent of version # */
+                                        /* fields independent of version # */
     if (syear < 70) syear += 2000;
     if (pyear < 70) pyear += 2000;
     file->time_tag = time_to_int (syear, sday, shour, smin, ssec);

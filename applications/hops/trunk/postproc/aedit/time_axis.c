@@ -17,10 +17,7 @@
 #include "pstruct.h"
 #include "summary.h"
 
-void
-time_axis (pd, fqex)
-struct plot_info *pd;
-struct frqexp fqex;
+void time_axis (struct plot_info *pd, struct frqexp fqex)
     {
     extern struct inputs inp;
     int tdiff, tmax, tmin, days;

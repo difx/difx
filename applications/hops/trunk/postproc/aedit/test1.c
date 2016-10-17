@@ -11,16 +11,15 @@
 /*									*/
 /************************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include "aedata.h"
 #include "flags.h"
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-void
-test1 (data, arg1, arg2, remarg)
-esum *data;
-char *arg1, *arg2, *remarg;
+void test1 (esum *data, char *arg1, char *arg2, char *remarg)
     {
     fringearray *fdata;
     extern int fscan, fflag;

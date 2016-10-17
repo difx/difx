@@ -1,3 +1,6 @@
+#ifndef PSPLOT_H
+#define PSPLOT_H
+
 #define TRUE 1
 #define FALSE 0
 
@@ -136,3 +139,5 @@ struct ps_count
     char band;
     int nqual[22];
     };
+
+#endif /* PSPLOT_H */

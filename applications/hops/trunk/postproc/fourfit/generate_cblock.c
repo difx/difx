@@ -18,12 +18,11 @@
 
 
 
-int
-generate_cblock (ovex, param, pass)
+int generate_cblock (ovex, pass)
 struct scan_struct *ovex;
-struct type_param *param;
 struct type_pass *pass;
     {
+    extern struct type_param param;
     extern struct c_block *cb_head;
 
     int time;
@@ -31,13 +30,13 @@ struct type_pass *pass;
     struct c_block *cb_ptr;
 
                                         /* extract parameters of current pass */
-    memcpy (base, param->baseline, 2);
+    memcpy (base, param.baseline, 2);
     memcpy (sour,"                                ",32);
     memcpy (sour, ovex->src.source_name, strlen(ovex->src.source_name));
 
     group = pass->pass_data[0].fgroup;
 
-    time = param->start_nom;
+    time = param.start_nom;
 
 
     nullify_cblock (&(pass->control));      /* create pass control block */

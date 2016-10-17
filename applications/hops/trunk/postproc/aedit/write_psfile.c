@@ -14,17 +14,15 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <time.h>
 #include "psplot.h"
+#include "aedit.h"
 
-int
-write_psfile (psarray, filename, mode)
-struct ps_array *psarray;
-char *filename;
-int mode;
+int write_psfile (struct ps_array *psarray, char *filename, int mode)
     {
     int i, bnd, scn, bsl, nlines, x, y, nbase, nbands, nscan;
     int max, ndig, total, year, day, hour, minute, second;

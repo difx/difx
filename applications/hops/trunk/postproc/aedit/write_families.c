@@ -12,14 +12,12 @@
 /*									*/
 /************************************************************************/
 #include <stdio.h>
+#include "mk4_afio.h"
 #include "aedit.h"
 #include "aedata.h"
 #include "sort.h"
 
-int
-write_families (data, fp)
-esum *data;
-FILE *fp;
+int write_families (esum *data, FILE *fp)
     {
     extern struct inputs inp;
     extern int fscan, cscan, rscan, output_version;

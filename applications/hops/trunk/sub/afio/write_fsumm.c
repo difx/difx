@@ -66,10 +66,14 @@ char *fformat_v5 = "%1d %s 2 %2d %3d %3d %3d %4d %s %02d%03d-%02d%02d%02d %4d\
  %6.4f %8.3f %4.1f %4.1f %5.1f %5.1f %7.4g %7.4g %06d %02d%02d %8.2f %5.1f %11.8f\
  %13.6f %5.3f %3d %3d\n";
 
-char *fformat_v6 = "%1d %s 2 %2d %3d %3d %3d %4d %s %02d%03d-%02d%02d%02d %4d\
- %03d-%02d%02d%02d %3d %-8s %s %c%c %c%02d %2s %4d %6.2f %#5.4g %5.1f %#5.4g %2s %9.6f %9.6f\
- %6.4f %8.3f %4.1f %4.1f %5.1f %5.1f %7.4g %7.4g %06d %02d%02d %8.2f %5.1f %11.8f\
- %13.6f %5.3f %3d %3d\n";
+char *fformat_v6 = "%1d %s 2 %2d %3d %3d %3d %4d %8s %04d%03d-%02d%02d%02d\
+ %4d %03d-%02d%02d%02d %3d %32s %2s %c%c\
+ %c%02d %2s %5d\
+ %#13.8g %#13.8g %11.6f %#11.6g %2s\
+ %+12.9f %+12.9f %11.9f\
+ %+11.6f %5.2f %5.2f %6.2f %6.2f %7.4g %7.4g %06d\
+ %02d%02d %9.3f %10.6f %11.8f\
+ %13.6f %+9.6f %8d %8d %+10.6f %+10.6f %+13.10f\n";
 
 int
 write_fsumm(fringesum *data, FILE *fp)
@@ -417,8 +421,8 @@ write_fsumm(fringesum *data, FILE *fp)
                 data->offset,
                 data->expt_no,
                 data->scan_id,
-                pyear, pday, phour, pmin, psec,
-                syear, sday, shour, smin, ssec,
+                2000+pyear, pday, phour, pmin, psec,
+                2000+syear, sday, shour, smin, ssec,
                 data->scan_offset,
                 data->source,
                 data->baseline,
@@ -452,7 +456,11 @@ write_fsumm(fringesum *data, FILE *fp)
                 data->total_mbdelay,
                 data->total_sbresid,
                 data->srch_cotime,
-                data->noloss_cotime);
+                data->noloss_cotime,
+                data->ra_hrs,
+                data->dec_deg,
+                data->resid_delay
+                );
             break;
 
         default:

@@ -14,10 +14,9 @@
 /************************************************************************/
 #include <stdlib.h>
 #include "summary.h"
+#include "aedit.h"
 
-void
-init_summ (summ, type)
-struct datasumm *summ;
+void init_summ (struct datasumm *summ, int type)
     {
     int i;
     

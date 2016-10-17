@@ -15,9 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void
-add_station (station, slist)
-char station, *slist;
+void add_station (char station, char *slist)
     {
     int i, l;
 					/* Station already present */

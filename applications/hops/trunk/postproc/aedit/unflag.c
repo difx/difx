@@ -20,14 +20,12 @@
 #include <ctype.h>
 #include "aedata.h"
 #include "flags.h"
+#include "aedit.h"
 
 #define FALSE 0
 #define TRUE 1
 
-int
-unflag (data, arg1)
-char *arg1;
-esum *data;
+int unflag (esum *data, char *arg1)
     {
     extern struct inputs inp;
     extern int fscan, fflag, up_to_date, rmdup;
@@ -64,7 +62,7 @@ esum *data;
     else if(strncmp(arg1,"triangles",n) == 0)           mask = ~(BADTRNGL);
     else if(strncmp(arg1,"quads",n) == 0)               mask = ~(BADQUAD);
     else if(strncmp(arg1,"experiment",n) == 0)          mask = ~(BADEXPT);
-    else if(strncmp(arg1,"frequencies",n) == 0)         mask = ~(BADFREQ);
+    else if(strncmp(arg1,"frequencies",n) == 0)         mask = ~(BADFREQA);
     else if(strncmp(arg1,"polarizations",n) == 0)       mask = ~(BADPOL);
     else if(strncmp(arg1,"sources",n) == 0)             mask = ~(BADSOURCE);
     else if(strncmp(arg1,"length",n) == 0)              mask = ~(BADLENGTH);

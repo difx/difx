@@ -6,8 +6,7 @@
 #include "pass_struct.h"
 #include <stdio.h>
 
-freq_spacing (pass)
-struct type_pass *pass;
+void freq_spacing (struct type_pass *pass)
     {
     double frq,min_freq,min_space,avg_freq,spacing,index,space,fabs(),sqrt();
     int fr,i,j,div,grid_pts,spacing_ok;

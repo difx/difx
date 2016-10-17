@@ -5,7 +5,7 @@ COMMAND NAME:  fringex
 
 SYNOPSIS:  Segments and rotates output of fourfit
 
-SYNTAX: fringex [-abcoq] [-i iarg] [-f freq] [-d rdarg]
+SYNTAX: fringex [-abcoqv] [-i iarg] [-f freq] [-d rdarg]
 		[-p ra,dec] [r afile] data file list
 	where all option flags are optional, and the data file
 	list is mandatory in the absence of the -r flag
@@ -24,6 +24,7 @@ SYNTAX: fringex [-abcoq] [-i iarg] [-f freq] [-d rdarg]
 	-d specifies rate/delay value(s) to be used (see detailed
 	   description
 	-r afile specifies a data list in A-file format
+        -v allows one to specify an output version different from the input
         
 OPTION FLAGS: 	-a
 			Switches on the standard HOPS execution time

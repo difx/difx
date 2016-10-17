@@ -15,9 +15,7 @@
 #include <string.h>
 #include "aedit.h"
 
-int
-set_timerange (arg1, arg2)
-char *arg1, *arg2;
+int set_timerange (char *arg1, char *arg2)
     {
     extern struct inputs inp;
     int syear, sday, shour, smin, ssec;

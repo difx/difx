@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "aedit.h"
 
 /********************************************************************************/
 /* Main structure defining command numbers **************************************/
@@ -97,9 +98,7 @@ struct
     "unrecognized", -1
     };
 
-int
-command_id(string)
-char *string;                   /* string is just the command name */
+int command_id(char *string)    /* string is command name */
     {                           /* without arguments */
     int n, i, j, index[20];
     char c;
@@ -130,7 +129,7 @@ char *string;                   /* string is just the command name */
     else if(j == 1) return(commands[index[0]].comno);   /* Unique match */
     else 
         {                                                       /* Ambiguous */
-        msg("Ambiguous command. Could be:");
+        msg("Ambiguous command. Could be:", 2);
         for(i=0;i<j;i++)
             msg("       %s",2,commands[index[i]].comname);
         return(99);

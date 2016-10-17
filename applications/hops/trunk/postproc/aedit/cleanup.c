@@ -11,9 +11,9 @@
 /*									*/
 /************************************************************************/
 #include "cpgplot.h"
+#include "aedit.h"
 
-int
-cleanup()
+int cleanup(void)
 {
 	extern int plot_open, psplot_open;
 

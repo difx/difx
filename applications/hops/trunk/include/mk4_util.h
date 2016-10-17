@@ -40,6 +40,8 @@ extern int    report_times (struct time_account *, int, struct tms *, int,
                             double);
 extern int    root_belong (char *, char *);
 extern char   *root_id (int, int, int, int, int);
+extern void   sexigesimal2hrdeg(const struct sky_coord *c,
+                                float *ra, float *dec);
 extern int    sort_names (fstruct *, int);
 extern void   short_reverse (short *);
 extern void   unsig_reverse (unsigned short *);

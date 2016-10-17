@@ -16,12 +16,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "summary.h"
+#include "aedit.h"
 
-int
-update_sinfo (sinfo, source, nsrc)
-struct source_info *sinfo;
-char *source;
-int nsrc;
+int update_sinfo (struct source_info *sinfo, char *source, int nsrc)
     {
     int i, n, cmp, ret;
 

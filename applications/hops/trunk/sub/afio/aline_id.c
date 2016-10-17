@@ -34,7 +34,7 @@ void aline_id (char *line, int *version, int *type)
 					/* Very old formats */
     if (typ >= 50) typ -= 50;
 					/* Check range of values */
-    if ((ver < 1) || (ver > CURRENT_VERSION)) typ = -1;
+    if ((ver < 1) || (ver > AFILEMX_VERSION)) typ = -1;
     if ((typ < 0) || (typ > 4)) typ = -1;
 
     *version = ver;

@@ -29,10 +29,7 @@
 #define QUICK 0
 #define SLOW 1
 
-int
-tfilter (tdatum, mode)
-trianglearray *tdatum;
-int mode;
+int tfilter (trianglearray *tdatum, int mode)
     {
     extern struct inputs inp;
     extern int fcheck[12], nfilt;
@@ -61,7 +58,7 @@ int mode;
                 break;
             case F_FREQUENCY:
                 if (strchr (inp.frequencies, datum->freq_code) == NULL)
-                                ret |= BADFREQ;
+                                ret |= BADFREQA;
                 break;
             case F_EXPERIMENT:
                 if (inp.experiment != datum->expt_no) ret |= BADEXPT;

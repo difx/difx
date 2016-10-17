@@ -15,13 +15,12 @@
 /****************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include "aedit.h"
 
 #define TRUE 1
 #define FALSE 0
 
-int
-smatch(s1, s2)
-char *s1, *s2;
+int smatch(char *s1, char *s2)
     {
     int l1, l2, i, pre, post;
 

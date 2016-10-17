@@ -21,10 +21,10 @@
 #include "aedata.h"
 #include "vex.h"
 #include "summary.h"
+#include "aedit.h"
+#include "mk4_vex.h"
 
-int
-psplot4 (data)
-esum *data;
+int psplot4 (esum *data)
     {
     int i, s, j, nst, ch, ret, len, expno;
     char fg, st_id, vexname[128];
@@ -43,11 +43,11 @@ esum *data;
     sprintf (vexname, "%s/%04d/%04d.ovex", datadir, expno, expno);
     if (stat (vexname, &statbuf) != 0)
 	    {
-        msg ("Could not find file '%s'", 3, vexname);
-        printf ("Enter full pathname of ovex file: ");
-        fgets (vexname, 128, stdin);
-        len = strlen (vexname);
-        if (vexname[len-1] == '\n') vexname[len-1] = '\0';
+	    msg ("Could not find file '%s'", 3, vexname);
+	    printf ("Enter full pathname of ovex file: ");
+	    if (fgets (vexname, 128, stdin)) return(1);
+	    len = strlen (vexname);
+	    if (vexname[len-1] == '\n') vexname[len-1] = '\0';
 	    }
     if (parse_vexfile (vexname) != 0)
         {

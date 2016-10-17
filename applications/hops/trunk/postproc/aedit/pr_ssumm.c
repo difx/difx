@@ -12,11 +12,11 @@
 /************************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "summary.h"
+#include "aedit.h"
 
-int
-pr_ssumm(arg)
-char *arg;
+int pr_ssumm(char *arg)
     {
     extern struct datasumm fsumm;
     extern int fscan;

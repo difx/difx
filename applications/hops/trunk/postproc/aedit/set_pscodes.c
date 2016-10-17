@@ -15,11 +15,9 @@
 #include <string.h>
 #include "psplot.h"
 #include "aedata.h"
+#include "aedit.h"
 
-int
-set_pscodes (data, psarray)
-esum *data;
-struct ps_array *psarray;
+int set_pscodes (esum *data, struct ps_array *psarray)
     {
     int i, j, k, q, dindex, ncodes, nbadqcodes, nbands;
     struct psplot_baseline *base;

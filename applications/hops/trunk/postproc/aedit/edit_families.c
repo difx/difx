@@ -16,11 +16,9 @@
 #include <stdio.h>
 #include "aedata.h"
 #include "flags.h"
+#include "aedit.h"
 
-void
-edit_families (data, mode, nedit1, nedit2)
-esum *data;
-int mode, *nedit1, *nedit2;
+void edit_families (esum *data, int mode, int *nedit1, int *nedit2)
     {
     extern int fscan, fflag, cscan, cflag, rscan, rflag;
     fringearray *fdata;

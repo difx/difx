@@ -13,9 +13,9 @@
 
 #include <stdio.h>
 #include "summary.h"
+#include "aedit.h"
 
-int
-pr_csumm()
+int pr_csumm(void)
 {
         extern struct datasumm csumm;
         extern int cscan, cflag;

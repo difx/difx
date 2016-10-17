@@ -6,7 +6,7 @@
 #define MAXSTBAND 16                    /* Max stations allowed in 1 band */
 #define MAXEXPTS 40                     /* Max number of experiments allowed */
 #define MAXSRC 500                      /* Max number of sources allowed */
-#define MAXVERSION 5                    /* Highest A-format version # supported */
+#define MAXVERSION 6                    /* Highest A-format version # supported */
 
 
 #define MAXBASE ((MAXSTEXP * (MAXSTEXP - 1)) / 2)       /* Baseline limit */

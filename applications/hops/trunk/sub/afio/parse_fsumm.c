@@ -47,9 +47,14 @@ char *fpformat5 = "%*d %s %d %hd %hd %hd %hd %hd %s %2d%3d-%2d%2d%2d %d %d-%2d%2
 %2s %c%c %c%hd %2s %d %f %f %f %f %s %f %f %f %f %f %f %f %f %f %f %d %2hd%2hd %lf %f %lf %lf \
 %f %hd %hd";
 
-char *fpformat6 = "%*d %s %d %hd %hd %hd %hd %hd %s %2d%3d-%2d%2d%2d %d %d-%2d%2d%2d %hd %s \
-%2s %c%c %c%hd %2s %d %f %f %f %f %s %f %f %f %f %f %f %f %f %f %f %d %2hd%2hd %lf %f %lf %lf \
-%f %hd %hd";
+char *fpformat6 = "%*d %s %d %hd %hd %hd %hd %hd %s %4d%3d-%2d%2d%2d\
+ %d %d-%2d%2d%2d %hd %s %2s %c%c\
+ %c%hd %2s %d\
+ %f %f %f %f %s\
+ %f %f %f\
+ %f %f %f %f %f %f %f %d\
+ %2hd%2hd %lf %f %lf\
+ %lf %f %hd %hd %f %f %f";
 
 int
 parse_fsumm(char *line, fringesum *file)
@@ -447,7 +452,10 @@ parse_fsumm(char *line, fringesum *file)
                 &(file->total_mbdelay), 
                 &(file->total_sbresid), 
                 &(file->srch_cotime), 
-                &(file->noloss_cotime)); 
+                &(file->noloss_cotime),
+                &(file->ra_hrs),
+                &(file->dec_deg),
+                &(file->resid_delay)); 
                                         /* Check that the caller got it right */
             if (type != 2)
                 {

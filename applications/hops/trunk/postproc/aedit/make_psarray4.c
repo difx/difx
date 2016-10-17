@@ -14,10 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "psplot.h"
+#include "aedit.h"
 
-int
-make_psarray4 (psarray)
-struct ps_array *psarray;
+int make_psarray4 (struct ps_array *psarray)
     {
     int i, j, k, base, nscans, nstats, nbaselines;
     static int first = TRUE;

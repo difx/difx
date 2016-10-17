@@ -22,12 +22,11 @@
 #include <ctype.h>
 #include "aedit.h"
 
-int
-set_qcodes(arg1, arg2, remarg)
-char *arg1, *arg2, *remarg;
+int set_qcodes(char *arg1, char *arg2, char *remarg)
 {
         extern struct inputs inp;
-        int i, j, k, n, not, lq, p1, p2, first, last;
+        int i, j, k, n, not, lq, first, last;
+	char *p1, *p2;
         char c, qlist[20], buf[50], *string, *strtok(), allargs[200], allq[20];
 
         sprintf(allq,"ABCDEFGH0123456789");

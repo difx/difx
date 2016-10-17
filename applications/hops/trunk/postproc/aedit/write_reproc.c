@@ -21,11 +21,10 @@
 #include "summary.h"
 #include "adata.h"
 #include "psplot.h"
+#include "aedit.h"
+#include "mk4_afio.h"
 
-int
-write_reproc (psarray, filename)
-struct ps_array *psarray;
-char *filename;
+int write_reproc (struct ps_array *psarray, char *filename)
     {
     fringesum fdatum;
     int bnd, scn, bsl, nbase, nbands, nscan;

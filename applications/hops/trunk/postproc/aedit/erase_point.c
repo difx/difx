@@ -17,11 +17,10 @@
 /*									*/
 /************************************************************************/
 #include "cpgplot.h"
+#include "aedit.h"
 
-void
-erase_point (x, y, xh, xl, yh, yl, symbol)
-float x, y, xh, xl, yh, yl;
-int symbol;
+void erase_point (float x, float y, float xh, float xl,
+                  float yh, float yl, int symbol)
     {
     int clow, chigh, colour, flagged;
     float charsize, dumx, dumy, errl, errh;

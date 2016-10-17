@@ -82,4 +82,7 @@ clear_fsumm(fringesum *dsumm)
     dsumm->scan_id[0] = '\0';
     strcpy (dsumm->polarization, "??");
     dsumm->errcode = '?';
+    dsumm->ra_hrs = 0.0;
+    dsumm->dec_deg = 0.0;
+    dsumm->resid_delay = 0.0;
     }

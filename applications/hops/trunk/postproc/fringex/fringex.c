@@ -20,8 +20,7 @@
 char progname[8] = "fringex";
 int msglev = 1;
 
-main (int argc,
-      char **argv)
+int main (int argc, char **argv)
     {
     int i, j, nfiles, ln, nnsecs, rt, nrates, dl, ndelays, nw, vers;
     int tt_save, so_save;
@@ -44,6 +43,8 @@ main (int argc,
                                         /* Count # of files requested */
     nfiles = 0;
     while (files[nfiles].order >= 0) nfiles++;
+    msg ("Processing %d files", 0, nfiles);
+    (void)afile_header(fxp.version, 2, stdout);
                                         /* Do one fringe file at a time */
     for (i=0; i<nfiles; i++)
         {
@@ -133,3 +134,7 @@ main (int argc,
 
     exit (0);
     }
+
+/*
+ * eof
+ */

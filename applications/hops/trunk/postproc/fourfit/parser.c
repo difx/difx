@@ -576,7 +576,7 @@ int parser ()
                            cb_ptr -> sampler_delay[nv][LXH].rem = fval;
                        else 
                            {
-                           cb_ptr -> sampler_delay[nv][LXH].ref = 0.0;
+                           cb_ptr -> sampler_delay[nv][LXH].ref = fval;
                            cb_ptr -> sampler_delay[nv][LXH].rem = fval;
                            }
                        }

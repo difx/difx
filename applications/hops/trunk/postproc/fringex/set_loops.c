@@ -18,10 +18,7 @@
 #include <stdio.h>
 #include "fringex.h"
 
-int
-set_loops (fxp, loops)
-struct fxparam *fxp;
-struct loops *loops;
+int set_loops (struct fxparam *fxp, struct loops *loops)
     {
     int nap, i, j, nat_nrates, nat_ndelays;
     double time, ratebeam, raterange, ratestep;
@@ -146,3 +143,7 @@ struct loops *loops;
 
     return (0);
     }
+
+/*
+ * eof
+ */

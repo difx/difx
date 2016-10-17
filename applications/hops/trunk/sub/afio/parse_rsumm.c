@@ -33,6 +33,8 @@ char *rpformat4 = "%*d %s %d %hd %hd %hd %2d%3d%c%2d%2d%2d %d %d-%2d%2d%2d %s %s
 
 char *rpformat5 = "%*d %s %d %hd %hd %s %2d%3d-%2d%2d%2d %d %d-%2d%2d%2d %s %s";
 
+char *rpformat6 = "%*d %s %d %hd %hd %s %2d%3d-%2d%2d%2d %d %d-%2d%2d%2d %s %s";
+
 int
 parse_rsumm(char *line, rootsum *file)
     {
@@ -162,7 +164,29 @@ parse_rsumm(char *line, rootsum *file)
                 }
                                         /* Not even enough to id file */
             if(n < 16) return(-1);
+            if (n < 17) incomplete = TRUE;
+            break;
 
+        case 6:
+                                        /* Version 6, EHT era */
+            n = sscanf (line, rpformat5,
+                file->root_id,
+                &type,
+                &(file->size),
+                &(file->expt_no),
+                file->scan_id,
+                &pyear, &pday, &phour, &pmin, &psec,
+                &syear, &sday, &shour, &smin, &ssec,
+                file->source,
+                file->stations);
+                                        /* Check that the caller got it right */
+            if (type != 0)
+                {
+                msg ("parse_rsumm passed line of wrong type '%d'", 2, type);
+                return (-1);
+                }
+                                        /* Not even enough to id file */
+            if(n < 16) return(-1);
             if (n < 17) incomplete = TRUE;
             break;
 
@@ -170,7 +194,7 @@ parse_rsumm(char *line, rootsum *file)
             msg ("Unsupported A-file format version number '%d'", 2, version);
             return (-1);
         }
-                                        /* These fields independent of version # */
+                                        /* fields independent of version # */
     if (syear < 70) syear += 2000;
     if (pyear < 70) pyear += 2000;
     file->time_tag = time_to_int (syear, sday, shour, smin, ssec);

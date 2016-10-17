@@ -11,10 +11,9 @@
 /************************************************************************/
 #include "cpgplot.h"
 #include "psplot.h"
+#include "aedit.h"
 
-void
-cleanup_psplot (psarray)
-struct ps_array *psarray;
+void cleanup_psplot (struct ps_array *psarray)
     {
     extern int psplot_open;
 

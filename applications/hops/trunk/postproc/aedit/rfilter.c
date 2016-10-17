@@ -29,10 +29,7 @@
 #define QUICK 0
 #define SLOW 1
 
-int
-rfilter (rdatum, mode)
-rootarray *rdatum;
-int mode;
+int rfilter (rootarray *rdatum, int mode)
     {
     extern struct inputs inp;
     extern int fcheck[12], nfilt;

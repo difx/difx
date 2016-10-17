@@ -20,13 +20,12 @@
 struct type_filter filter;
 struct type_statistics statistics;
 
-int
-apply_filter (param, pass)
-struct type_param *param;
+int apply_filter (pass)
 struct type_pass *pass;
     {
     struct type_120 *record;
     struct data_corel *datum;
+    extern struct type_param param;
     float xperror, yperror, frq_x_perr[8], frq_y_perr[8], tot_x_perr, tot_y_perr;
     int totbits, pcalbits, totacc, flagbit;
     int pol, sbpol, frq, ap, sb, mk3a;
@@ -129,8 +128,8 @@ struct type_pass *pass;
                         }
                                         /* trap for any flag bit set; should use
                                          * a parameter to mask the bits  rjc 2000.6.28 */
-                    param -> error_mask = E_MISSED_AP_MIDS;
-                    if (record->status & param->error_mask)
+                    param.error_mask = E_MISSED_AP_MIDS;
+                    if (record->status & param.error_mask)
                         {
                         datum->flag &= ~flagbit;
                         filter.emasked++;

@@ -16,12 +16,9 @@
 #include <stdio.h>
 #include "cpgplot.h"
 #include "pstruct.h"
+#include "aedit.h"
 
-void
-plot_points (pd, pp, symbol)
-struct plot_info *pd;
-struct plot_points *pp;
-int symbol[3];
+void plot_points (struct plot_info *pd, struct plot_points *pp, int symbol[3])
     {
     struct plot_ptqual *pt;
                                         /* Green for good */

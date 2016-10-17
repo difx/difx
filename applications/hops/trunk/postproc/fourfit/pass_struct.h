@@ -58,6 +58,7 @@ struct freq_corel
         char freq_code;         /* Fourfit frequency identifier (a..zA..Z$%) */
         double frequency;       /* sky frequency (MHz) */
         char fgroup;
+        int  ch_idx;            // index into channels array in ovex for this freq
         char ch_usb_lcp[2][8];  /* VEX channel ids by station */
         char ch_usb_rcp[2][8];
         char ch_lsb_lcp[2][8];

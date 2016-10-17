@@ -23,12 +23,10 @@
 #include "vex.h"
 #include "psplot.h"
 #include "summary.h"
+#include "aedit.h"
+#include "mk4_vex.h"
 
-int
-psfile4 (data, fname, mode)
-esum *data;
-char *fname;
-int mode;
+int psfile4 (esum *data, char *fname, int mode)
     {
     int i, s, j, ch, len, ret, nst, expno;
     char vexname[128], stnlist[32], global_fglist[10], scan_fglist[10];
@@ -72,11 +70,11 @@ int mode;
     sprintf (vexname, "/correlator/data/%04d/%04d.ovex", expno, expno);
     if (stat (vexname, &statbuf) != 0)
 	    {
-        msg ("Could not find file '%s'", 3, vexname);
-        printf ("Enter full pathname of ovex file: ");
-        fgets (vexname, 128, stdin);
-        len = strlen (vexname);
-        if (vexname[len-1] == '\n') vexname[len-1] = '\0';
+	    msg ("Could not find file '%s'", 3, vexname);
+	    printf ("Enter full pathname of ovex file: ");
+	    if (!fgets (vexname, 128, stdin)) return(1);
+	    len = strlen (vexname);
+	    if (vexname[len-1] == '\n') vexname[len-1] = '\0';
 	    }
     if (parse_vexfile (vexname) != 0)
         {

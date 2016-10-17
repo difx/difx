@@ -18,15 +18,10 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "mk4_afio.h"
 #include "fringex.h"
-#include "fstruct.h"
 
 int
-filelist (afile_name, mode, files)
-char *afile_name;
-int mode;
-fstruct **files;
+filelist (char *afile_name, int mode, fstruct **files, int *versp)
     {
     int version, type, nfalloc, nfiles;
     int nbadtype, nbadline, nbadname, badcoh, nbadcoh;
@@ -60,6 +55,8 @@ fstruct **files;
 					/* Check that this is a type 2 line */
 	aline_id (line, &version, &type);
 	if (type != 2) continue;
+
+        if (*versp == 0) *versp = version;  /* pick up alist version */
 
 	if (parse_fsumm (line, &fdata) != 0)
 	    {
@@ -138,3 +135,7 @@ fstruct **files;
     fclose (fp);
     return (0);
     }
+
+/*
+ * eof
+ */

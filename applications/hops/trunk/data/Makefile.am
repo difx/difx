@@ -1,8 +1,8 @@
 #
-# $Id: Makefile.am 265 2011-05-20 15:39:47Z gbc $
+# $Id: Makefile.am 1381 2016-07-27 14:00:52Z gbc $
 #
 
-SUBDIRS = ff_testdata
+SUBDIRS = ff_testdata ae_testdata
 
 #
 # eof

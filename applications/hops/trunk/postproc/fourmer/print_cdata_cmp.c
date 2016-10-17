@@ -1,10 +1,11 @@
 /*
- * $Id: print_cdata_cmp.c 254 2011-05-17 17:51:30Z gbc $
+ * $Id: print_cdata_cmp.c 1343 2016-05-31 17:05:23Z gbc $
  *
  * A verbose diagnostic, if needed
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "fourmer.h"
 
@@ -63,7 +64,7 @@ void print_cdata_cmp(char *AName, char *BName,
 
     printf("\nComparing t101 records...\n");
 
-    for (i = 0; i < cdataAp->t100->nindex; i++)
+    for (i = 0; i < cdataAp->index_space; i++)
 	{
 	idxa = cdataAp->index + i;
 	idxb = cdataBp->index + i;
@@ -74,17 +75,17 @@ void print_cdata_cmp(char *AName, char *BName,
 	    printf("  Discrepancy in t101[%d].record_id\n", i);
 	if (strncmp(t101a->version_no, t101b->version_no, 2))
 	    printf("  Discrepancy in t101[%d].version_no\n", i);
-	if (strncmp(t101a->ref_chan_id, t101b->ref_chan_id, 8))
-	    printf("  Discrepancy in t101[%d].ref_chan_id\n", i);
-	if (strncmp(t101a->rem_chan_id, t101b->rem_chan_id, 8))
-	    printf("  Discrepancy in t101[%d].rem_chan_id\n", i);
+//	if (strncmp(t101a->ref_chan_id, t101b->ref_chan_id, 8))
+//	    printf("  Discrepancy in t101[%d].ref_chan_id\n", i);
+//	if (strncmp(t101a->rem_chan_id, t101b->rem_chan_id, 8))
+//	    printf("  Discrepancy in t101[%d].rem_chan_id\n", i);
 
 	if (t101a->status != t101b->status)
 	    printf("  Discrepancy in t101[%d].status\n", i);
 	if (t101a->nblocks != t101b->nblocks)
 	    printf("  Discrepancy in t101[%d].nblocks\n", i);
-	if (t101a->index != t101b->index)
-	    printf("  Discrepancy in t101[%d].index\n", i);
+//	if (t101a->index != t101b->index)
+//	    printf("  Discrepancy in t101[%d].index\n", i);
 	if (t101a->primary != t101b->primary)
 	    printf("  Discrepancy in t101[%d].primary\n", i);
 	if (t101a->corr_board != t101b->corr_board)

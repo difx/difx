@@ -19,11 +19,9 @@
 #include <string.h>
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-summ_triangle (tdata, mode)
-trianglearray *tdata;
-int mode;
+int summ_triangle (trianglearray *tdata, int mode)
     {
     extern struct datasumm tsumm;
     extern int tscan, tflag;

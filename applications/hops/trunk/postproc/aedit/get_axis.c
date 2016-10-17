@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include "pstruct.h"
 #include "usearray.h"
+#include "aedit.h"
 
 struct
     {
@@ -60,10 +61,7 @@ struct
 	NO_AXIS, ALL_PLOT, NULL, NULL
 	};
 
-int
-get_axis (string, ax_name, ax_index, ax_units, aux, plotby)
-char *string,  *ax_name, *ax_units;
-int *ax_index, *aux, *plotby;
+int get_axis (char *string, char *ax_name, int *ax_index, char *ax_units, int *aux, int *plotby)
     {
     int n, len, i, j, match, array_index, param_no, pindex;
     int ref_phase, rem_phase, ref_diff, rem_diff, ref_amp, rem_amp;

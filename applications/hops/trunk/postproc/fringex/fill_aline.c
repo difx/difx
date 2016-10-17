@@ -19,23 +19,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "mk4_data.h"
-#include "adata.h"
-#include "vex.h"
 #include "fringex.h"
 
-int fill_aline (struct mk4_fringe *fringe,
-                struct vex *root,
-                char *fname,
-                fringesum *fsumm)
+int fill_aline (struct mk4_fringe *fringe, struct vex *root, char *fname,
+                fringesum *fsumm, int version)
     {
-    int i, j, lastslash, p_extent, lastchan, sb;
+    int i, j, lastslash, p_extent, lastchan, sb, polerr, chan;
     int pcal1, pcal2, pcal3, pcal4, filetype;
-    char buf[7], c, baseline[3];
-    extern int output_version, dofrnge, dofourfit;
+    char buf[7], c, baseline[3], refpol, rempol;
                                         /* Initialize output record */
     clear_fsumm (fsumm);
-    fsumm->version = CURRENT_VERSION;
+    fsumm->version = (version<1 || version>AFILEMX_VERSION)
+                   ? CURRENT_VERSION : version;
                                         /* Get experiment number, scan name/id */
                                         /* the scan time, and the recording mode */
     fsumm->expt_no = fringe->t200->expt_no;
@@ -99,18 +94,38 @@ int fill_aline (struct mk4_fringe *fringe,
                                    (int)fringe->t200->fourfit_date.hour,
                                    (int)fringe->t200->fourfit_date.minute,
                                    (int)fringe->t200->fourfit_date.second);
-    strncpy (fsumm->source, fringe->t201->source, 8);
-    fsumm->source[8] = '\0';
+    strncpy (fsumm->source, fringe->t201->source, sizeof(fringe->t201->source));
+    fsumm->source[sizeof(fsumm->source)-1] = '\0';
     fsumm->quality = fringe->t208->quality;
     fsumm->errcode = fringe->t208->errcode;
-    fsumm->polarization[0] = fringe->t203->channels[0].refpol;
-    fsumm->polarization[1] = fringe->t203->channels[0].rempol;
-    fsumm->polarization[2] = '\0';
+    // incorrect
+    //fsumm->polarization[0] = fringe->t203->channels[0].refpol;
+    //fsumm->polarization[1] = fringe->t203->channels[0].rempol;
                                     // Count frequencies from type 205
     for (i=0; i<NFX_SB_64; i++) 
         if (fringe->t205->ffit_chan[i].ffit_chan_id == ' ')
             break;
     fsumm->no_freq = i;
+
+    // cf alist:summarize_mk4fringe.c
+    refpol = rempol = ' ';
+    polerr = FALSE;
+    for (i=0; i<fsumm->no_freq; i++)
+        {
+        if (fringe->t205->ffit_chan[i].ffit_chan_id == ' ') continue;
+        for (j=0; j<4; j++)
+            {
+            chan = fringe->t205->ffit_chan[i].channels[j];
+            if (chan < 0) continue;
+            if (refpol == ' ') refpol = fringe->t203->channels[chan].refpol;
+            else if (refpol != fringe->t203->channels[chan].refpol) polerr = TRUE;
+            if (rempol == ' ') rempol = fringe->t203->channels[chan].rempol;
+            else if (rempol != fringe->t203->channels[chan].rempol) polerr = TRUE;
+            }
+        }
+    fsumm->polarization[0] = polerr ? '?' : refpol;
+    fsumm->polarization[1] = polerr ? '?' : rempol;
+    fsumm->polarization[2] = '\0';
 
     fsumm->lags = fringe->t202->nlags;
 
@@ -134,6 +149,17 @@ int fill_aline (struct mk4_fringe *fringe,
     fsumm->rem_elev = fringe->t202->rem_elev;
     fsumm->ref_az   = fringe->t202->ref_az;
     fsumm->rem_az   = fringe->t202->rem_az;
+    /* t202->u,v are fr/asec; 0.2062648 = 1e-6/(2pi/360/60/60) */
+    fsumm->u = fringe->t202->u * 0.2062648;
+    fsumm->v = fringe->t202->v * 0.2062648;
+
+    sexigesimal2hrdeg(&fringe->t201->coord, &fsumm->ra_hrs, &fsumm->dec_deg);
+    fsumm->resid_delay = fsumm->mbdelay + fsumm->ambiguity *
+        floor((fsumm->sbdelay - fsumm->mbdelay) / fsumm->ambiguity + 0.5);
 
     return (0);
     }
+
+/*
+ * eof
+ */

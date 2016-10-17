@@ -2,6 +2,7 @@
 #define ADATA_H
 
 #define CURRENT_VERSION 5
+#define AFILEMX_VERSION 6
 
 typedef struct {
         short                   version;        /* Disk format version number */
@@ -23,7 +24,7 @@ typedef struct {
         char                    scan_id[32];    /* From VEX, not necessarily scantime */
 } rootsum;
 
-/* The total length of this structure in bytes is 63 */
+/* The total length of this structure in bytes is 120 */
 
 
 
@@ -63,7 +64,7 @@ typedef struct {
         char                    scan_id[32];    /* From VEX, not necessarily scantime */
 } corelsum;
 
-/* The total length of this structure in bytes is 76 */
+/* The total length of this structure in bytes is 140 */
 
 
 typedef struct {
@@ -132,9 +133,16 @@ typedef struct {
         char                    polarization[3]; /* RR, LL, RL or LR */
         char                    errcode;        /* for Mk3-style letter codes */
 
+                                        /* Added for version 6 */
+
+        float                   ra_hrs;         /* derived from sky_coord */
+        float                   dec_deg;        /* derived from sky_coord */
+
+        float                   resid_delay;    /* N*AMB + MBD to match SBD */
+
 } fringesum;
 
-/* The total length of this structure in bytes is 180 */
+/* The total length of this structure in bytes is 280 */
 
 
 typedef struct {
@@ -180,7 +188,7 @@ typedef struct {
         char                    scan_id[32];    /* From VEX, not necessarily scantime */
 } trianglesum;
 
-/* The total length of this structure in bytes is 136 */
+/* The total length of this structure in bytes is 208 */
 
 
 
@@ -219,6 +227,6 @@ typedef struct {
         char                    scan_id[32];    /* From VEX, not necessarily scantime */
 } quadsum;
 
-/* The total length of this structure in bytes is 150 */
+/* The total length of this structure in bytes is 216 */
 
 #endif

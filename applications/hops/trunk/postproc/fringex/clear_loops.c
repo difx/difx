@@ -11,9 +11,7 @@
 /************************************************************************/
 #include "fringex.h"
 
-void
-clear_loops (loops)
-struct loops *loops;
+void clear_loops (struct loops *loops)
     {
     int i;
 
@@ -24,3 +22,7 @@ struct loops *loops;
     loops->ndelays = 1;
     for (i=0; i<MAXDELAYS; i++) loops->delays[i] = 0.0;
     }
+
+/*
+ * eof
+ */

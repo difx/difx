@@ -13,9 +13,7 @@
 /************************************************************************/
 #include "aedata.h"
 
-void
-aeclr_root (rdatum)
-rootarray *rdatum;
+void aeclr_root (rootarray *rdatum)
     {
     rdatum->order = 0;
     rdatum->lastorder = 0;

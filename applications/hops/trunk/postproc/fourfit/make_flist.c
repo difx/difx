@@ -52,7 +52,7 @@ struct freqlist *fl)
                                         /* which are distinct, and */
                                         /* present at both stations */
     nf = 0;
-    for (ch1=0; ch1<MAXFREQ; ch1++)
+    for (ch1=0; ch1<MAX_CHAN; ch1++)
         {
         st1ch = stn1->channels + ch1;
         freq = st1ch->sky_frequency;
@@ -63,7 +63,7 @@ struct freqlist *fl)
                 break;
         if (i == nf)
             {
-            for (ch2=0; ch2<MAXFREQ; ch2++)
+            for (ch2=0; ch2<MAX_CHAN; ch2++)
                 {
                 st2ch = stn2->channels + ch2;
                                         /* Criterion is freq diff as fraction of bandwidth */
@@ -71,7 +71,7 @@ struct freqlist *fl)
                 if (fdiff/bw < param.fmatch_bw_pct/100.0)
                     break;
                 }
-            if (ch2 < MAXFREQ)
+            if (ch2 < MAX_CHAN)
                 {
                 freqs[nf] = freq;
                 nf++;
@@ -103,7 +103,7 @@ struct freqlist *fl)
                                         /* There should be 0 or 1 of each */
     for (i=0; i<nf; i++)
         {
-        for (ch=0; ch<MAXFREQ; ch++)
+        for (ch=0; ch<MAX_CHAN; ch++)
             {
                                         /* Locate frequency entry */
             chnl = stn1->channels + ch;
@@ -129,7 +129,7 @@ struct freqlist *fl)
             fl[i].ref_chnos[index] = ch;
             }
                                         /* Repeat for remote station */
-        for (ch=0; ch<MAXFREQ; ch++)
+        for (ch=0; ch<MAX_CHAN; ch++)
             {
             chnl = stn2->channels + ch;
             freq = chnl->sky_frequency / 1e6;

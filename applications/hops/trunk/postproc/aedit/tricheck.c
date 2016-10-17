@@ -15,11 +15,9 @@
 /************************************************************************/
 #include <string.h>
 #include "aedata.h"
+#include "aedit.h"
 
-int
-tricheck (datum, triangle)
-trianglesum *datum;
-char *triangle;
+int tricheck (trianglesum *datum, char *triangle)
     {
     char pos[4], root_id[3][7];
     int length[3], extent_no[3], i, j;

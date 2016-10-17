@@ -11,10 +11,9 @@
 /************************************************************************/
 #include <stdio.h>
 #include "summary.h"
+#include "aedit.h"
 
-void
-clear_summ (summ)
-struct datasumm *summ;
+void clear_summ (struct datasumm *summ)
     {
     int i;
     

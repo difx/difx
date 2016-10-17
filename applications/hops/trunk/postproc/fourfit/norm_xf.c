@@ -49,7 +49,6 @@ void norm_xf (struct type_pass *pass,
     static complex xp_spec[4*MAXLAG];
     static complex xcor[4*MAXLAG], S[4*MAXLAG], xlag[4*MAXLAG];
     complex z;
-    double c_mag ();
     float  fraction, count_frac;
     unsigned short bitshift;
     double theta, shift, dd, norm_const, fb_fact, fb_amp_ratio();

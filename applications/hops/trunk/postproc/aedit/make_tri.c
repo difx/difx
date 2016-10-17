@@ -14,13 +14,12 @@
 /*									*/
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "summary.h"
+#include "aedit.h"
 
-char *
-make_tri (stations, ntri)
-char *stations;
-int *ntri;
+char *make_tri (char *stations, int *ntri)
     {
     int nstat, i, j, k, nt;
     char *trilist;
@@ -89,9 +88,7 @@ int *ntri;
     
     
     
-int
-newbase (baselist, triangle)
-char *baselist, *triangle;
+int newbase (char *baselist, char *triangle)
     {
     char base1[3], base2[3], base3[3], *base;
     int nbase, ret, match1, match2, match3;

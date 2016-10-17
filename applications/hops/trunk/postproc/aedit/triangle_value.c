@@ -17,12 +17,10 @@
 /************************************************************************/
 #include "aedata.h"
 #include "pstruct.h"
+#include "aedit.h"
 
-void
-triangle_value (index, ta, toffset, value, errh, errl)
-int index, toffset;
-trianglearray *ta;
-float *value, *errh, *errl;
+void triangle_value (int index, trianglearray *ta, int toffset,
+    float *value, float *errh, float *errl)
     {
     float error;
 

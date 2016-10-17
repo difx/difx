@@ -13,10 +13,7 @@
 #include <stdio.h>
 #include "fringex.h"
 
-void
-clear_fxp (fxp, mode)
-struct fxparam *fxp;
-int mode;
+void clear_fxp (struct fxparam *fxp, int mode)
     {
     int i;
 
@@ -69,3 +66,7 @@ int mode;
         }
 
     }
+
+/*
+ * eof
+ */

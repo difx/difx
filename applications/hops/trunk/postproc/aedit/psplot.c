@@ -18,10 +18,9 @@
 #include "psplot.h"
 #include "aedata.h"
 #include "summary.h"
+#include "aedit.h"
 
-int
-psplot (data)
-esum *data;
+int psplot (esum *data)
     {
     int ret;
     char expno[5];

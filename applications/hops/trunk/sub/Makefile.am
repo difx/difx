@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1288 2016-01-14 13:42:47Z gbc $
+# $Id: Makefile.am 1304 2016-02-12 13:43:45Z gbc $
 #
 
 if HAVE_DEVEL
