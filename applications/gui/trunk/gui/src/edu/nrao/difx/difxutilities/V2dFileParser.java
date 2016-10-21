@@ -189,6 +189,11 @@ public class V2dFileParser {
                             antenna.file = new Vector<String>();
                         antenna.file.add( newParam.value );
                     }
+                    else if ( newParam.name.contentEquals( "datastreams" ) ) {
+                        if ( antenna.datastreams == null )
+                            antenna.datastreams = new Vector<String>();
+                        antenna.datastreams.add( newParam.value );
+                    }
                     else if ( newParam.name.contentEquals( "filelist" ) ) {
                         if ( antenna.filelist == null )
                             antenna.filelist = newParam.value;
@@ -205,6 +210,8 @@ public class V2dFileParser {
                         antenna.deltaClock = Double.parseDouble( newParam.value );
                     else if ( newParam.name.contentEquals( "fake" ) )
                         antenna.fake = Boolean.parseBoolean( newParam.value );
+                    else if ( newParam.name.contentEquals( "machine" ) )
+                        antenna.machine = newParam.value;
                 }
                 else if ( _sectionType == SETUP_SECTION ) {
                     SetupSection setup = (SetupSection)_currentSection;
@@ -231,6 +238,36 @@ public class V2dFileParser {
                         rule.scan = newParam.value;
                     else if ( newParam.name.contentEquals( "setup" ) )
                         rule.setup = newParam.value;
+                }
+                else if ( _sectionType == DATASTREAM_SECTION ) {
+                    DatastreamSection datastream = (DatastreamSection)_currentSection;
+                    if ( newParam.name.contentEquals( "format" ) )
+                        datastream.format = newParam.value;
+                    if ( newParam.name.contentEquals( "sampling" ) )
+                        datastream.sampling = newParam.value;
+                    else if ( newParam.name.contentEquals( "vsn" ) )
+                        datastream.vsn = newParam.value;
+                    else if ( newParam.name.contentEquals( "file" ) ) {
+                        if ( datastream.file == null )
+                            datastream.file = new Vector<String>();
+                        datastream.file.add( newParam.value );
+                    }
+                    else if ( newParam.name.contentEquals( "filelist" ) ) {
+                        if ( datastream.filelist == null )
+                            datastream.filelist = newParam.value;
+                    }
+                    else if ( newParam.name.contentEquals( "networkPort" ) )
+                        datastream.networkPort = Integer.parseInt( newParam.value );
+                    else if ( newParam.name.contentEquals( "windowSize" ) )
+                        datastream.windowSize = Integer.parseInt( newParam.value );
+                    else if ( newParam.name.contentEquals( "UDP_MTU" ) )
+                        datastream.UDP_MTU = Integer.parseInt( newParam.value );
+                    else if ( newParam.name.contentEquals( "fake" ) )
+                        datastream.fake = Boolean.parseBoolean( newParam.value );
+                    else if ( newParam.name.contentEquals( "nBand" ) )
+                        datastream.nBand = Integer.parseInt( newParam.value );
+                    else if ( newParam.name.contentEquals( "machine" ) )
+                        datastream.machine = newParam.value;
                 }
             }
             else if ( sectionStart < sectionEnd ) {
@@ -263,6 +300,10 @@ public class V2dFileParser {
                 else if ( sectionType.equalsIgnoreCase( "SOURCE" ) ) {
                     _sectionType = SOURCE_SECTION;
                     _currentSection = new SourceSection();
+                }
+                else if ( sectionType.equalsIgnoreCase( "DATASTREAM" ) ) {
+                    _sectionType = DATASTREAM_SECTION;
+                    _currentSection = new DatastreamSection();
                 }
                 else {
                     _sectionType = GENERIC_SECTION;
@@ -428,6 +469,16 @@ public class V2dFileParser {
                         for ( Iterator<String> iter2 = antenna.file.iterator(); iter2.hasNext(); )
                             str += "    file = " + iter2.next() + "\n";
                     }
+                    else if ( antenna.datastreams != null ) {
+                        str += "    datastreams = ";
+                        boolean addComma = false;
+                        for ( Iterator<String> iter2 = antenna.datastreams.iterator(); iter2.hasNext(); ) {
+                            if ( addComma )
+                                str += ", ";
+                            str += iter2.next();
+                            addComma = true;
+                        }
+                    }
                     if ( antenna.networkPort != null )
                         str += "    networkPort = " + antenna.networkPort + "\n";
                     if ( antenna.X != null )
@@ -440,6 +491,33 @@ public class V2dFileParser {
                         str += "    deltaClock = " + antenna.deltaClock + "\n";
                     if ( antenna.fake != null )
                         str += "    fake = " + antenna.fake + "\n";
+                }
+                else if ( section.type == DATASTREAM_SECTION ) {
+                    DatastreamSection datastream = (DatastreamSection)section;
+                    if ( datastream.format != null )
+                        str += "    format = " + datastream.format + "\n";
+                    if ( datastream.sampling != null )
+                        str += "    sampling = " + datastream.sampling + "\n";
+                    if ( datastream.filelist != null )
+                        str += "    filelist = " + datastream.filelist + "\n";
+                    else if ( datastream.file != null ) {
+                        for ( Iterator<String> iter2 = datastream.file.iterator(); iter2.hasNext(); )
+                            str += "    file = " + iter2.next() + "\n";
+                    }
+                    if ( datastream.networkPort != null )
+                        str += "    networkPort = " + datastream.networkPort + "\n";
+                    if ( datastream.windowSize != null )
+                        str += "    windowSize = " + datastream.windowSize + "\n";
+                    if ( datastream.UDP_MTU != null )
+                        str += "    UDP_MTU = " + datastream.UDP_MTU + "\n";
+                    if ( datastream.vsn != null )
+                        str += "    vsn = " + datastream.vsn + "\n";
+                    if ( datastream.fake != null )
+                        str += "    fake = " + datastream.fake + "\n";
+                    if ( datastream.nBand != null )
+                        str += "    nBand = " + datastream.nBand + "\n";
+                    if ( datastream.machine != null )
+                        str += "    machine = " + datastream.machine + "\n";
                 }
                 else if ( section.type == SOURCE_SECTION ) {
                 }
@@ -683,6 +761,18 @@ public class V2dFileParser {
         else
             return antennaSection( name ).file;
     }
+    public void antennaDatastream( String name, String newVal ) {
+        AntennaSection section = findAntenna( name );
+        if ( section.datastreams == null )
+            section.datastreams = new Vector<String>();
+        section.datastreams.add( newVal );
+    }
+    public Vector<String> antennaDatastreams( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).datastreams;
+    }
     public void antennaNetworkPort( String name, Integer newVal ) {
         findAntenna( name ).networkPort = newVal;
     }
@@ -737,6 +827,15 @@ public class V2dFileParser {
         else
             return antennaSection( name ).deltaClock;
     }
+    public void antennaMachine( String name, String newVal ) {
+        findAntenna( name ).machine = newVal;
+    }
+    public String antennaMachine( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).machine;
+    }
     public void antennaParameter( String name, String param, String value ) {
         //  Add a generic parameter.
         AntennaSection section = findAntenna( name );
@@ -748,6 +847,204 @@ public class V2dFileParser {
         section.parameters.add( newParam );
     }
 
+    ///////
+    
+    /*
+     * Add a new datastream.  This creates a "section" associated with it which can later
+     * be located using the datastream name.  The section is only created if it does not
+     * already exist.
+     */
+    public void datastream( String name ) {
+        DatastreamSection section = datastreamSection( name );
+        if ( section == null ) {
+            section = new DatastreamSection();
+            section.name = name;
+            section.type = DATASTREAM_SECTION;
+            section.typeString = "DATASTREAM";
+            if ( _sections == null )
+                _sections = new Vector<GenericSection>();
+            _sections.add( section );
+        }
+    }
+    
+    /*
+     * Return a vector of all datastream names.
+     */
+    public Vector<String> datastreamList() {
+        Vector<String> vec = new Vector<String>();
+        for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
+            GenericSection section = iter.next();
+            if ( section.type == DATASTREAM_SECTION )
+                vec.add( section.name );
+        }
+        return vec;
+    }
+    
+    /*
+     * Delete a datastream by name.
+     */
+    public void removeDatastream( String name ) {
+        if ( _sections == null )
+            return;
+        for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
+            GenericSection section = iter.next();
+            if ( section.type == DATASTREAM_SECTION && section.name.contentEquals( name ) )
+                iter.remove();
+        }
+    }
+    
+    /*
+     * Locate a datastream section by name.
+     */
+    public DatastreamSection datastreamSection( String name ) {
+        if ( _sections == null )
+            return null;
+        for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
+            GenericSection section = iter.next();
+            if ( section.type == DATASTREAM_SECTION && section.name.contentEquals( name ) )
+                return (DatastreamSection)section;
+        }
+        return null;
+    }
+    
+    /*
+     * This function sort of does what both of the above functions do - it will
+     * return a datastream section based on its name, creating a new one if it
+     * doesn't exist.
+     */
+    protected DatastreamSection findDatastream( String name ) {
+        DatastreamSection section = datastreamSection( name );
+        if ( section == null ) {
+            section = new DatastreamSection();
+            section.name = name;
+            section.type = DATASTREAM_SECTION;
+            section.typeString = "DATASTREAM";
+            if ( _sections == null )
+                _sections = new Vector<GenericSection>();
+            _sections.add( section );
+        }
+        return section;
+    }
+    
+    /*
+     * These functions add specific items to datastreams based on their names.
+     */
+    public void datastreamFormat( String name, String newVal ) {
+        findDatastream( name ).format = newVal;
+    }
+    public String datastreamFormat( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).format;
+    }
+    public void datastreamSampling( String name, String newVal ) {
+        findDatastream( name ).sampling = newVal;
+    }
+    public String datastreamSampling( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).sampling;
+    }
+    public void datastreamFile( String name, String newVal ) {
+        //  Files are slightly messier because we keep a list of them.
+        DatastreamSection section = findDatastream( name );
+        if ( section.file == null )
+            section.file = new Vector<String>();
+        section.file.add( newVal );
+    }
+    public Vector<String> datastreamFile( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).file;
+    }
+    public void datastreamFileList( String name, String newVal ) {
+        findDatastream( name ).filelist = newVal;
+    }
+    public String datastreamFileList( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).filelist;
+    }
+    public void datastreamNetworkPort( String name, Integer newVal ) {
+        findDatastream( name ).networkPort = newVal;
+    }
+    public Integer datastreamNetworkPort( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).networkPort;
+    }
+    public void datastreamWindowSize( String name, Integer newVal ) {
+        findDatastream( name ).windowSize = newVal;
+    }
+    public Integer datastreamWindowSize( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).windowSize;
+    }
+    public void datastreamUDP_MTU( String name, Integer newVal ) {
+        findDatastream( name ).UDP_MTU = newVal;
+    }
+    public Integer datastreamUDP_MTU( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).UDP_MTU;
+    }
+    public void datastreamVsn( String name, String newVal ) {
+        findDatastream( name ).vsn = newVal;
+    }
+    public String datastreamVsn( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).vsn;
+    }
+    public void datastreamFake( String name, Boolean newVal ) {
+        findDatastream( name ).fake = newVal;
+    }
+    public Boolean datastreamFake( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).fake;
+    }
+    public void datastreamNBand( String name, Integer newVal ) {
+        findDatastream( name ).nBand = newVal;
+    }
+    public Integer datastreamNBand( String name ) {
+        if ( datastreamSection( name ) == null )
+            return null;
+        else
+            return datastreamSection( name ).nBand;
+    }
+    public void datastreamMachine( String name, String newVal ) {
+        findDatastream( name ).machine = newVal;
+    }
+    public String datastreamMachine( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).machine;
+    }
+    public void datastreamParameter( String name, String param, String value ) {
+        //  Add a generic parameter.
+        DatastreamSection section = findDatastream( name );
+        if ( section.parameters == null )
+            section.parameters = new Vector<GenericParameter>();
+        GenericParameter newParam = new GenericParameter();
+        newParam.name = param;
+        newParam.value = value;
+        section.parameters.add( newParam );
+    }
+
+    
+    ///////
     /*
      * Add a new setup section.
      */
@@ -1034,6 +1331,7 @@ public class V2dFileParser {
     static final int SETUP_SECTION            = 4;
     static final int EOP_SECTION              = 5;
     static final int RULE_SECTION             = 6;
+    static final int DATASTREAM_SECTION       = 7;
     
     protected int _sectionType;
     
@@ -1087,6 +1385,8 @@ public class V2dFileParser {
         public Double Y;
         public Double Z;
         public Double deltaClock;
+        public Vector<String> datastreams;
+        public String machine;
     }
     class SetupSection extends GenericSection {
         public Double tInt;
@@ -1101,6 +1401,20 @@ public class V2dFileParser {
     class RuleSection extends GenericSection {
         public String scan;
         public String setup;
+    }
+    
+    class DatastreamSection extends GenericSection {
+        public String format;
+        public String sampling;
+        public Vector<String> file;
+        public String filelist;
+        public Integer networkPort;
+        public Integer windowSize;
+        public Integer UDP_MTU;
+        public String vsn;
+        public Boolean fake;
+        public Integer nBand;
+        public String machine;
     }
 
     protected Vector<GenericSection> _sections;

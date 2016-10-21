@@ -84,8 +84,8 @@ public class StationPanel extends IndexedPanel {
         this.darkTitleBar( false );
         this.drawFrame( false );
         this.resizeOnTopBar( true );
-        _useCheck = new JCheckBox( "" );
-        _useCheck.setBounds( 100, 2, 18, 16 );
+        _useCheck = new JCheckBox( "Use This Station" );
+        _useCheck.setBounds( 100, 2, 118, 16 );
         _useCheck.setSelected( true );
         _useCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent evt ) {
@@ -105,6 +105,24 @@ public class StationPanel extends IndexedPanel {
             }
         } );
         this.add( _useCheck );
+        //  The "Add Stream" button allows an antenna to have more than one data stream
+        //  as its data source.  Each antenna must have at least one.
+        ZButton addStream = new ZButton( "Add Stream" );
+        addStream.setBounds( 230, 2, 130, 16 );
+        addStream.setToolTipText( "Add a new stream to the data sources for this antenna.\n"
+                + "Use this only if you have multiple data streams." );
+        addStream.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent evt ) {
+                //  This adds a new stream to current list of streams.
+                DataStreamPanel newDataStream = new DataStreamPanel( _settings );
+                _contentPane.addNode( newDataStream );
+                _dataStreams.add( newDataStream );
+                renumberDataStreams();
+                dispatchChangeCallback();
+            }
+        } );
+        this.add( addStream );
+        
         _contentPane = new NodeBrowserScrollPane( false );
         _contentPane.setLevel( 2 );
         _contentPane.drawFrame( false );
@@ -113,7 +131,8 @@ public class StationPanel extends IndexedPanel {
         
         //  The data source panel lets the user specify where data for this station
         //  come from.
-        _dataSourcePanel = new IndexedPanel( "Data Source: not set" );
+        //######################################################################
+        _dataSourcePanel = new IndexedPanel( "Data Stream 1: not set" );
         _dataSourcePanel.closedHeight( 20 );
         _dataSourcePanel.open( false );
         _dataSourcePanel.drawFrame( false );
@@ -186,7 +205,7 @@ public class StationPanel extends IndexedPanel {
         //  This little bit causes a typed-in item to be treated as a module name.
         _vsnList.getEditor().addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _dataSourcePanel.name( "Data Source: " + (String)_vsnList.getEditor().getItem() );
+                _dataSourcePanel.name( "Data Stream 1: " + (String)_vsnList.getEditor().getItem() );
                 //  If not already in the list of VSNs, add this name.
                 if ( !_settings.dataSourceInList( (String)_vsnList.getEditor().getItem(), "VSN" ) ) {
                     if ( ((String)_vsnList.getEditor().getItem()).length() > 0 )
@@ -199,7 +218,7 @@ public class StationPanel extends IndexedPanel {
         _vsnList.setBackground( Color.WHITE );
         _vsnList.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _dataSourcePanel.name( "Data Source: " + (String)_vsnList.getSelectedItem() );
+                _dataSourcePanel.name( "Data Stream 1: " + (String)_vsnList.getSelectedItem() );
                 getDirectory();
                 dispatchChangeCallback();
             }
@@ -210,7 +229,7 @@ public class StationPanel extends IndexedPanel {
         _dirListLocation.setToolTipText( "Location on the Mark5 of the file containing a directory listing for this module." );
 //        _dirListLocation.addActionListener( new ActionListener() {
 //            public void actionPerformed( ActionEvent e ) {
-//                _dataSourcePanel.name( "Data Source: " + (String)_vsnList.getSelectedItem() );
+//                _dataSourcePanel.name( "Data Stream 1: " + (String)_vsnList.getSelectedItem() );
 //                _settings.defaultNames().dirListLocation = _dirListLocation.getText();
 //            }
 //        });
@@ -331,7 +350,16 @@ public class StationPanel extends IndexedPanel {
         fakeLabel.setHorizontalAlignment( JLabel.RIGHT );
         _dataSourcePanel.add( fakeLabel );
         setEnabledItems( null );
+
+        //######################################################################
         
+        //  Add a data source to the panel.  Each antenna needs at least this one.
+        DataStreamPanel newDataStream = new DataStreamPanel( _settings );
+        _contentPane.addNode( newDataStream );
+        _dataStreams = new ArrayList<DataStreamPanel>();
+        _dataStreams.add( newDataStream );
+        renumberDataStreams();
+
         //  Set defaults for the data source if those are available in the setting menu.
         String antennaSource = _settings.antennaDefaultSource( station.name );
         if ( antennaSource != null ) {
@@ -494,6 +522,48 @@ public class StationPanel extends IndexedPanel {
         _settingsPanel.add( deltaClockLabel );
         
     }
+    
+    //--------------------------------------------------------------------------
+    //!  Change the numbers in the labels for each data stream to reflect
+    //!  their position in the list of data streams.  This function should be
+    //!  called whenever data streams are added or deleted.
+    //--------------------------------------------------------------------------
+    protected void renumberDataStreams() {
+        int num = 1;
+        for ( Iterator<DataStreamPanel> iter = _dataStreams.iterator(); iter.hasNext(); ) {
+            DataStreamPanel panel = iter.next();
+            panel.streamNum( num );
+            if ( _dataStreams.size() == 1 )
+                panel.allowDelete( false );
+            else
+                panel.allowDelete( true );
+            ++num;
+        }
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Remove a data stream panel from the list (and from the display).
+    //--------------------------------------------------------------------------
+    public void removeDataStream( DataStreamPanel killPanel ) {
+        boolean foundIt = false;
+        for ( Iterator<DataStreamPanel> iter = _dataStreams.iterator(); iter.hasNext() && !foundIt; ) {
+            DataStreamPanel panel = iter.next();
+            if ( panel == killPanel ) {
+                foundIt = true;
+                _dataStreams.remove( killPanel );
+                _contentPane.removeNode( killPanel );
+            }
+        }
+        renumberDataStreams();
+        dispatchChangeCallback();
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Return the data stream list.
+    //--------------------------------------------------------------------------
+    public ArrayList<DataStreamPanel> dataStreams() {
+        return _dataStreams;
+    }
 
     /*
      * This function is used to make things visible/enabled/etc as
@@ -518,16 +588,16 @@ public class StationPanel extends IndexedPanel {
             _vsnCheck.setSelected( true );
             _vsnList.setEnabled( true );
             _dirListLocation.setEnabled( true );
-            _dataSourcePanel.name( "Data Source: " + (String)_vsnList.getSelectedItem() );
+            _dataSourcePanel.name( "Data Stream 1: " + (String)_vsnList.getSelectedItem() );
         }
         else if ( selector == _fileCheck ) {
             _fileCheck.setSelected( true );
             //  Show the selection of the file list if there are any items in it.
             Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator();
             if ( iter.hasNext() )
-                _dataSourcePanel.name( "Data Source: files " + _fileFilter.getText().trim() + "*" );
+                _dataSourcePanel.name( "Data Stream 1: files " + _fileFilter.getText().trim() + "*" );
             else
-                _dataSourcePanel.name( "Data Source: unspecified files" );
+                _dataSourcePanel.name( "Data Stream 1: unspecified files" );
             _fileFilter.setEnabled( true );
             _fileListCheck.setEnabled( true );
             _generateFileList.setEnabled( true );
@@ -536,14 +606,14 @@ public class StationPanel extends IndexedPanel {
         }
         else if ( selector == _eVLBICheck ) {
             _eVLBICheck.setSelected( true );
-            _dataSourcePanel.name( "Data Source: network (port " + networkPort() + ")" );
+            _dataSourcePanel.name( "Data Stream 1: network (port " + networkPort() + ")" );
         }
         else if ( selector == _fakeCheck ) {
             _fakeCheck.setSelected( true );
-            _dataSourcePanel.name( "Data Source: fake" );
+            _dataSourcePanel.name( "Data Stream 1: fake" );
         }
         else {
-            _dataSourcePanel.name( "Data Source: not set" );
+            _dataSourcePanel.name( "Data Stream 1: not set" );
         }
         this.updateUI();
     }
@@ -676,6 +746,8 @@ public class StationPanel extends IndexedPanel {
         _generateFileList.setBounds( w - 275, 150, 150, 25 );
         _fileList.setBounds( 230, 185, w - 255, 120 );
         _dirListLocation.setBounds( 480, 60, w - 505, 25 );
+        for ( Iterator<DataStreamPanel> iter = _dataStreams.iterator(); iter.hasNext(); )
+            iter.next().newWidth( w );
         _contentPane.setBounds( 0, 20, w - 2, _contentPane.dataHeight() );
     }
 
@@ -717,10 +789,10 @@ public class StationPanel extends IndexedPanel {
                     _fileFilter.setText( commonString );
                     _fileFilter.setCaretPosition( commonString.length() );
                     if ( newList.size() > 1 ) {
-                        _dataSourcePanel.name( "Data Source: files " + _fileFilter.getText().trim() + "*" );
+                        _dataSourcePanel.name( "Data Stream 1: files " + _fileFilter.getText().trim() + "*" );
                     }
                     else
-                        _dataSourcePanel.name( "Data Source: files " + _fileFilter.getText().trim() );
+                        _dataSourcePanel.name( "Data Stream 1: files " + _fileFilter.getText().trim() );
                 }
                 dispatchChangeCallback();
             }
@@ -1347,7 +1419,7 @@ public class StationPanel extends IndexedPanel {
                 popupMonitor.success( "Complete!", "FileList \"" + _fileFilter.getText() + "\" Created.", 
                         processedCount + " of " + _listOfFiles.size() + " files processed." );
                 _fileListCheck.setSelected( true );
-                _dataSourcePanel.name( "Data Source: files " + _fileFilter.getText().trim() );
+                _dataSourcePanel.name( "Data Stream 1: files " + _fileFilter.getText().trim() );
                 dispatchChangeCallback();
             }
         }
@@ -1355,6 +1427,424 @@ public class StationPanel extends IndexedPanel {
         protected int _port;
         
     }
+    
+//##############################################################################
+    
+    //--------------------------------------------------------------------------
+    //  The DataStreamPanel describes the source and type of data for a single
+    //  data stream (a station/antenna can have more than one).  It lets the user 
+    //  specify where data for the stream come from, what format they take, and
+    //  whether a specific machine should be used as the data stream source.
+    //--------------------------------------------------------------------------
+    protected class DataStreamPanel extends IndexedPanel {
+        
+        public DataStreamPanel( SystemSettings settings ) {
+            super( "" );
+            _settings = settings;
+            _streamSource = "not set";
+            closedHeight( 20 );
+            open( false );
+            drawFrame( false );
+            resizeOnTopBar( true );
+            _this = this;
+            
+            _deleteStream = new ZButton( "Delete Stream" );
+            _deleteStream.setToolTipText( "Remove this stream.  All settings associated with it will be lost.\n"
+                    + "If there is only one data stream it cannot be removed." );
+            _deleteStream.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    removeDataStream( _this );
+                }
+            } );
+            _deleteStream.setEnabled( false );
+            add( _deleteStream );
+        
+            //  COMPONENTS...
+
+            //  The data format applies to all data source types.
+            _dataFormat = new SaneTextField();
+            _dataFormat.setText( "N/A" );
+            _dataFormat.setToolTipText( "Format specified by the .vex file for this station." );
+            _dataFormat.setEditable( false );
+            _dataFormat.setBackground( this.getBackground() );
+            _dataFormat.setBounds( 200, 30, 180, 25 );
+            add( _dataFormat );
+            
+            //  As does the "source" machine.  Checkbox to determine if it is used.
+            _useSourceNode = new ZCheckBox( "" );
+            _useSourceNode.setBounds( 390, 30, 25, 25 );
+            _useSourceNode.setSelected( false );
+            _useSourceNode.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    if ( _useSourceNode.isSelected() )
+                        _sourceNodeChoice.setEnabled( true );
+                    else
+                        _sourceNodeChoice.setEnabled( false );
+                }
+            } );
+            _useSourceNode.setToolTipText( "Check to use a specific node as the source for these data." );
+            add( _useSourceNode );
+            
+            //  Source machine name.  This is the label for it.
+            JLabel dataNodeLabel = new JLabel( "Machine:" );
+            dataNodeLabel.setBounds( 415, 30, 60, 25 );
+            dataNodeLabel.setHorizontalAlignment( JLabel.RIGHT );
+            add( dataNodeLabel );
+            
+            //  A pull-down menu containing all available machines.  This is where the
+            //  name of the source machine can be chosen.
+            _sourceNodeChoice = new JComboBox<String>();
+            _sourceNodeChoice.addPopupMenuListener( new PopupMenuListener() {
+                public void popupMenuWillBecomeVisible( PopupMenuEvent e ) {
+                    String currentItem = (String)_sourceNodeChoice.getSelectedItem();
+                    _sourceNodeChoice.removeAllItems();
+                    for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor()._clusterNodes.childrenIterator(); iter.hasNext(); )
+                        _sourceNodeChoice.addItem( iter.next().name() );
+                    for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor()._mk5Modules.childrenIterator(); iter.hasNext(); )
+                        _sourceNodeChoice.addItem( iter.next().name() );
+                    _sourceNodeChoice.setSelectedItem( currentItem );
+                }
+                public void popupMenuCanceled( PopupMenuEvent e ) {}
+                public void popupMenuWillBecomeInvisible( PopupMenuEvent e ) {}
+            });
+            _sourceNodeChoice.setEnabled( false );
+            add( _sourceNodeChoice );
+
+            //  Now the different data formats that are possible for a stream.
+            //  This is just a label.
+            JLabel dataFormatLabel = new JLabel( "Data Format: " );
+            dataFormatLabel.setBounds( 100, 30, 95, 25 );
+            dataFormatLabel.setHorizontalAlignment( JLabel.RIGHT );
+            add( dataFormatLabel );
+            
+            //  Module source.  This is the checkbox to pick it.
+            _vsnCheck = new ZCheckBox( "" );
+            _vsnCheck.setBounds( 200, 60, 25, 25 );
+            _vsnCheck.setSelected( false );
+            _vsnCheck.addActionListener( new ActionListener() {
+               public void actionPerformed( ActionEvent evt ) {
+                   setEnabledItems( _vsnCheck );
+                   dispatchChangeCallback();
+               }
+            } );
+            add( _vsnCheck );
+            
+            //  Label for module source.
+            JLabel vsnLabel = new JLabel( "Module: " );
+            vsnLabel.setBounds( 100, 60, 95, 25 );
+            vsnLabel.setHorizontalAlignment( JLabel.RIGHT );
+            add( vsnLabel );
+
+            //  This is where you choose the module (by VSN).
+            _vsnList = new JComboBox<String>();
+            _vsnList.setBounds( 230, 60, 150, 25 );
+            _vsnList.setToolTipText( "VSN of module containing data for this antenna." );
+            _vsnList.setEditable( true );
+            //  This little bit causes a typed-in item to be treated as a module name.
+            _vsnList.getEditor().addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    name( "Data Stream 1: " + (String)_vsnList.getEditor().getItem() );
+                    //  If not already in the list of VSNs, add this name.
+                    if ( !_settings.dataSourceInList( (String)_vsnList.getEditor().getItem(), "VSN" ) ) {
+                        if ( ((String)_vsnList.getEditor().getItem()).length() > 0 )
+                            _settings.addDataSource( (String)_vsnList.getEditor().getItem(), "VSN", "hardware" );
+                    }
+
+                    //dispatchChangeCallback();
+                }
+            });
+            _vsnList.setBackground( Color.WHITE );
+            _vsnList.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    name( "Data Stream 1: " + (String)_vsnList.getSelectedItem() );
+                    getDirectory();
+                    dispatchChangeCallback();
+                }
+            });
+            _vsnList.setEnabled( true );
+            Iterator<SystemSettings.DataSource> iter = _settings.listDataSources( "VSN" ).iterator();
+            for ( ; iter.hasNext(); )
+                _vsnList.addItem( iter.next().name );
+            add( _vsnList );
+            
+            //  Label for the directory listing for a chosen module.
+            JLabel dirListLabel = new JLabel( "Directory:" );
+            dirListLabel.setBounds( 390, 60, 85, 25 );
+            dirListLabel.setHorizontalAlignment( JLabel.RIGHT );
+            add( dirListLabel );
+
+            //  Location of a directory listing for a chosen module.
+            _dirListLocation = new SaneTextField();
+            _dirListLocation.setToolTipText( "Location on the Mark5 of the file containing a directory listing for this module." );
+    //        _dirListLocation.addActionListener( new ActionListener() {
+    //            public void actionPerformed( ActionEvent e ) {
+    //                _dataSourcePanel.name( "Data Stream 1: " + (String)_vsnList.getSelectedItem() );
+    //                _settings.defaultNames().dirListLocation = _dirListLocation.getText();
+    //            }
+    //        });
+    //        _dirListLocation.setText( _settings.defaultNames().dirListLocation );
+            _dirListLocation.setEditable( false );
+            _dirListLocation.setText( "" );
+    //        _dirListLocation.addActionListener( new ActionListener() {
+    //            public void actionPerformed( ActionEvent e ) {
+    //                dispatchChangeCallback();
+    //            }
+    //        });
+            add( _dirListLocation );
+
+            //  File data source.  Checkbox first.
+            _fileCheck = new ZCheckBox( "" );
+            _fileCheck.setBounds( 200, 150, 25, 25 );
+            _fileCheck.setSelected( false );
+            _fileCheck.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    setEnabledItems( _fileCheck );
+                    dispatchChangeCallback();
+                }
+            } );
+            add( _fileCheck );
+
+            //  Label for the file source choice.
+            JLabel fileLabel = new JLabel( "Files: " );
+            fileLabel.setBounds( 100, 150, 95, 25 );
+            fileLabel.setHorizontalAlignment( JLabel.RIGHT );
+            add( fileLabel );
+            
+            //  The file filter field represents lists of files that will be employed
+            //  using wildcards.
+            JLabel fileFilterLabel = new JLabel( "Filter:" );
+            fileFilterLabel.setHorizontalAlignment( JLabel.RIGHT );
+            fileFilterLabel.setBounds( 195, 150, 80, 25 );
+            add( fileFilterLabel );
+            _fileFilter = new SaneTextField();
+            _fileFilter.setEnabled( false );
+            _fileFilter.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    fileFilterCallback();
+                }
+            } );
+            _fileFilter.addTabListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    fileFilterCallback();
+                }
+            } );
+            add( _fileFilter ); 
+            
+            //  Check box used to indicate the specified file (in the file filter)
+            //  contains a "file list".
+            _fileListCheck = new ZCheckBox( "File List" );
+            _fileListCheck.setToolTipText( "Check here if the (single) named file contains a \"file list\"\n"
+                    + "of data files and their start and stop times.  This will considerably\n"
+                    + "speed up processing for large data sets with many jobs." );
+            _fileListCheck.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    dispatchChangeCallback();
+                }
+            } );
+            add( _fileListCheck );
+
+            //  Button that will cause a file list to be generated from the listed data files.  This occurs remotely
+            //  on the DiFX server.
+            _generateFileList = new ZButton( "Generate FileList" );
+            _generateFileList.setToolTipText( "Attempt to generate a file list from the data files listed.\n"
+                    + "Results will be put in the file name in the \"Filter\" field.\n"
+                    + "This process may or may not work, depending on the file\n"
+                    + "format." );
+            _generateFileList.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    generateFileList();
+                }
+            } );
+            add( _generateFileList );
+            
+            //  This is a list of the files decribed by the file filter (not to be confused
+            //  with a file list generated by the "Generate FileList" button above).
+            _fileList = new NodeBrowserScrollPane();
+            _fileList.setBackground( Color.WHITE );
+            add( _fileList );
+            
+            //  Network, or eVLBI data source.  This is "live" data over the network.
+            //  Not currently implemented.
+            JLabel eVLBILabel = new JLabel( "Network: " );
+            eVLBILabel.setBounds( 100, 90, 95, 25 );
+            eVLBILabel.setHorizontalAlignment( JLabel.RIGHT );
+            add( eVLBILabel );
+            _eVLBICheck = new ZCheckBox( "" );
+            _eVLBICheck.setBounds( 200, 90, 25, 25 );
+            _eVLBICheck.setSelected( false );
+            _eVLBICheck.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    setEnabledItems( _eVLBICheck );
+                    dispatchChangeCallback();
+                }
+            } );
+            add( _eVLBICheck );
+            
+            //  This is the port to watch for network data.
+            _eVLBIPort = new NumberBox();
+            _eVLBIPort.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    setEnabledItems( _eVLBICheck );
+                    dispatchChangeCallback();
+                }
+            } );
+            _eVLBIPort.setToolTipText( "The port number used for network transfer of this station's data." );
+            _eVLBIPort.setBounds( 230, 90, 150, 25 );
+            _eVLBIPort.precision( 0 );
+            _eVLBIPort.intValue( 5000 );
+            _eVLBIPort.minimum( 0 );
+            add( _eVLBIPort );
+            
+            //  Fake data source.
+            _fakeCheck = new ZCheckBox( "" );
+            _fakeCheck.setBounds( 200, 120, 25, 25 );
+            _fakeCheck.setToolTipText( "Generate fake (uncorrelated) data for this station.\n"
+                    + "This can be used to test data flow and processing times." );
+            _fakeCheck.setSelected( false );
+            _fakeCheck.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    setEnabledItems( _fakeCheck );
+                    dispatchChangeCallback();
+                }
+            } );
+            add( _fakeCheck );
+            JLabel fakeLabel = new JLabel( "Fake: " );
+            fakeLabel.setBounds( 100, 120, 95, 25 );
+            fakeLabel.setHorizontalAlignment( JLabel.RIGHT );
+            add( fakeLabel );
+
+            //  Initialize which data source controls are enabled
+            setEnabledItems( null );
+
+        }
+        
+        //----------------------------------------------------------------------
+        //  This function is used to make things visible/enabled/etc as
+        //  fits each data source choice.  The selected data source check box is
+        //  used to determine which was selected.
+        //----------------------------------------------------------------------
+        protected void setEnabledItems( JCheckBox selector ) {
+            //  Turn everything off first...
+            _vsnCheck.setSelected( false );
+            _fileCheck.setSelected( false );
+            _eVLBICheck.setSelected( false );
+            _fakeCheck.setSelected( false );
+            _vsnList.setEnabled( false );
+            _dirListLocation.setEnabled( false );
+            _fileFilter.setEnabled( false );
+            _fileListCheck.setEnabled( false );
+            _generateFileList.setEnabled( false );
+            _fileList.setVisible( false );
+            staticHeight( 165 );
+            //  Then turn appropriate stuff back on.
+            if ( selector == _vsnCheck ) {
+                _vsnCheck.setSelected( true );
+                _vsnList.setEnabled( true );
+                _dirListLocation.setEnabled( true );
+                streamSource( (String)_vsnList.getSelectedItem() );
+            }
+            else if ( selector == _fileCheck ) {
+                _fileCheck.setSelected( true );
+                //  Show the selection of the file list if there are any items in it.
+                Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator();
+                if ( iter.hasNext() )
+                    streamSource( "files " + _fileFilter.getText().trim() + "*" );
+                else
+                    streamSource( "unspecified files" );
+                _fileFilter.setEnabled( true );
+                _fileListCheck.setEnabled( true );
+                _generateFileList.setEnabled( true );
+                _fileList.setVisible( true );
+                staticHeight( 295 );
+            }
+            else if ( selector == _eVLBICheck ) {
+                _eVLBICheck.setSelected( true );
+                streamSource( "network (port " + networkPort() + ")" );
+            }
+            else if ( selector == _fakeCheck ) {
+                _fakeCheck.setSelected( true );
+                streamSource( "fake" );
+            }
+            else {
+                streamSource( "not set" );
+            }
+            this.updateUI();
+        }
+    
+        //----------------------------------------------------------------------
+        //  Called when the width of this panel is changed.  Components are
+        //  adjusted as appropriate to the new width.
+        //----------------------------------------------------------------------
+        public void newWidth( int w ) {
+            _sourceNodeChoice.setBounds( 480, 30, w - 505, 25 );
+            _fileFilter.setBounds( 280, 150, w - 560, 25 );
+            _fileListCheck.setBounds( w - 105, 150, 100, 25 );
+            _generateFileList.setBounds( w - 275, 150, 150, 25 );
+            _fileList.setBounds( 230, 185, w - 255, 120 );
+            _dirListLocation.setBounds( 480, 60, w - 505, 25 );
+            _deleteStream.setBounds( w - 175, 2, 150, 18 );
+            _contentPane.setBounds( 0, 20, w - 2, _contentPane.dataHeight() );
+        }
+        
+        //----------------------------------------------------------------------
+        //  Activate/deactivate the "delete" key.  The delete key should not
+        //  be available to a data stream if it is the only one - each antenna
+        //  needs at least one.
+        //----------------------------------------------------------------------
+        public void allowDelete( boolean val ) {
+            _deleteStream.setEnabled( val );
+        }
+        
+        //----------------------------------------------------------------------
+        //  Set the "number" of this data stream.  The number is used in the
+        //  label, but not for much else.
+        //----------------------------------------------------------------------
+        public void streamNum( int val ) {
+            _streamNum = val;
+            redrawName();
+        }
+        
+        //----------------------------------------------------------------------
+        //  Set the stream source in the label.
+        //----------------------------------------------------------------------
+        public void streamSource( String val ) {
+            _streamSource = val;
+            redrawName();
+        }
+        
+        //----------------------------------------------------------------------
+        //  Set the label in the title bar of this stream to reflect its number
+        //  and source information as we currently know it.
+        //----------------------------------------------------------------------
+        protected void redrawName() {
+            name( "Data Stream " + _streamNum + ": " + _streamSource );
+        }
+
+        protected int _streamNum;
+        protected String _streamSource;
+        protected SystemSettings _settings;
+        
+        SaneTextField _dataFormat;
+        ZCheckBox _useSourceNode;
+        JComboBox<String> _sourceNodeChoice;
+        ZCheckBox _vsnCheck;
+        JComboBox<String> _vsnList;
+        SaneTextField _dirListLocation;
+        ZCheckBox _fileCheck;
+        SaneTextField _fileFilter;
+        ZCheckBox _fileListCheck;
+        ZButton _generateFileList;
+        NodeBrowserScrollPane _fileList;
+        ZCheckBox _eVLBICheck;
+        NumberBox _eVLBIPort;
+        ZCheckBox _fakeCheck;
+        ZButton _deleteStream;
+        DataStreamPanel _this;
+        
+    }
+    
+    
+//##############################################################################    
     
     protected JCheckBox _useCheck;
     protected JCheckBox _vsnCheck;
@@ -1378,6 +1868,7 @@ public class StationPanel extends IndexedPanel {
     protected SystemSettings _settings;
     
     protected NodeBrowserScrollPane _contentPane;
+    protected ArrayList<DataStreamPanel> _dataStreams;
     protected IndexedPanel _dataSourcePanel;
     protected IndexedPanel _antennaPanel;
     protected IndexedPanel _sitePanel;

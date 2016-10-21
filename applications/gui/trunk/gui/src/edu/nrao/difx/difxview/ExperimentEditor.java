@@ -2699,6 +2699,18 @@ public class ExperimentEditor extends JFrame {
      * This redraws all of the menus and forms a new .v2d file.
      */
     public void vexDataChange() {
+        if ( _antennaList != null ) {
+            System.out.println( "vexDataChange() in the ExperiementEditor knows there are....\n" );
+            synchronized ( _antennaList ) {
+                if ( !_antennaList.useList().isEmpty() ) {
+                    for ( Iterator<StationPanel> kter = _antennaList.useList().iterator(); kter.hasNext(); ) {
+                        StationPanel antenna = kter.next();
+                        System.out.println( antenna.dataStreams().size() + " data streams for antenna " + antenna.name() + " \n" );
+                    }
+                }
+            }
+        }
+
         //  This causes changes to be shown in the scan/station timeline.
         if ( _scanStationTimeline != null )
             _scanStationTimeline.redraw();
