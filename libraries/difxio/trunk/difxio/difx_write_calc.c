@@ -80,6 +80,10 @@ int writeDifxCalc(const DifxInput *D)
 		writeDifxLineDouble(out, "JOB START TIME", "%13.7f", roundSeconds(D->job->jobStart));
 		writeDifxLineDouble(out, "JOB STOP TIME", "%13.7f", roundSeconds(D->job->jobStop));
 	}
+	if(strlen(D->job->delayModel) > 0)
+	{
+		writeDifxLine(out, "DELAY MODEL", D->job->delayModel);
+	}
 	if(D->job->dutyCycle > 0.0)
 	{
 		writeDifxLineDouble(out, "DUTY CYCLE", "%5.3f", D->job->dutyCycle);
@@ -89,10 +93,6 @@ int writeDifxCalc(const DifxInput *D)
 	if(strlen(D->job->difxLabel) > 0)
 	{
 		writeDifxLine(out, "DIFX LABEL", D->job->difxLabel);
-	}
-	if(strlen(D->job->delayModel) > 0)
-	{
-		writeDifxLine(out, "DELAY MODEL", D->job->delayModel);
 	}
 	writeDifxLineInt(out, "SUBJOB ID", D->job->subjobId);
 	writeDifxLineInt(out, "SUBARRAY ID", D->job->subarrayId);
