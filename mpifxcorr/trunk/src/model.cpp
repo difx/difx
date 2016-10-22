@@ -370,13 +370,21 @@ bool Model::readInfoData(ifstream * input)
   config->getinputline(input, &line, "JOB ID");
   config->getinputline(input, &line, "JOB START TIME");
   config->getinputline(input, &line, "JOB STOP TIME");
-  config->getinputline(input, &line, "DUTY CYCLE");
+  config->getinputkeyval(input, &key, &line);
+  if(key.find("DELAY MODEL") != string::npos) { //look for the DELAY MODEL line, skip it if present
+    config->getinputline(input, &line, "DUTY CYCLE");
+  }
+  else {
+    if(key.find("DUTY CYCLE") == string::npos) {
+      cerror << startl << "Went looking for DUTY CYCLE (or maybe DELAY MODEL), but got " << key << endl;
+    }
+  }
   config->getinputline(input, &line, "OBSCODE");
   config->setObsCode(line);
   config->getinputline(input, &line, "DIFX VERSION");
   cinfo << startl << "DIFX VERSION = " << line << endl;
   config->getinputkeyval(input, &key, &line);
-  if(key.find("DIFX LABEL") != string::npos) { //look for the VEX line, skip it if present
+  if(key.find("DIFX LABEL") != string::npos) { //look for the DIFX LABEL line, skip it if present
     cinfo << startl << "DIFX LABEL = " << line << endl;
     config->getinputline(input, &line, "SUBJOB ID");
   }

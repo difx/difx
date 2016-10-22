@@ -26,6 +26,7 @@ Version 2.5
 * For Mark5B and VDIF file-based correlation put file information into log stream
 * Adopted startdifx, genmachines.py, joblist, jobstatus, and jobdisks scripts from calcif2 as new competing delay model, difxcalc11, is coming in...
 * Improve accuracy of estimated memory usage (estimatedbytes) in VDIF datastreams
+* Peaceably ignore the new DELAY MODEL parameter of the .calc file
 
 Version 2.4
 ~~~~~~~~~~~
