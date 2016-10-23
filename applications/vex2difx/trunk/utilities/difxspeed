@@ -9,8 +9,8 @@ from time import sleep
 from math import sqrt
 
 program = 'difxspeed'
-version = '0.3'
-verdate = '20150526'
+version = '0.4'
+verdate = '20161023'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 inputFileExtension = '.difxspeed'
@@ -116,7 +116,7 @@ def getncore(config, cluster):
 
 def runtest(fd, config, cluster, filebase, verbose, run):
 
-	setupParams = ['tInt', 'fftSpecRes', 'specRes', 'strideLength', 'xmacLength', 'numBufferedFFTs']
+	setupParams = ['tInt', 'fftSpecRes', 'specRes', 'strideLength', 'xmacLength', 'numBufferedFFTs', 'subintNS']
 	antennaParams = ['toneSelection']
 	dontWriteParams = ['nAnt']
 	writeparams(fd, config)
@@ -286,7 +286,7 @@ def testenviron():
 	bad = 0
 	for e in requiredEnviron:
 		if not e in environ.keys():
-			print 'Required environment variable %s not set'
+			print 'Required environment variable %s not set' % e
 			bad += 1
 
 	if bad > 0:
