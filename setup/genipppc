@@ -124,7 +124,7 @@ def genipppc(path, ippversion):
                 out.write('Cflags: -I${base}/include\n')
 
 
-	elif major == 7 or major == 8 or major == 9:
+	elif major == 7 or major == 8 or major == 9 or major == 2017:
         
 		if platform == "darwin":
 			out.write('Libs: -Wl,-rpath,${base}/ipp/lib -L${base}/ipp/lib -lipps -lippvm -lippcore\n')
@@ -133,7 +133,10 @@ def genipppc(path, ippversion):
 				libdir = 'ia32'
 			else:
 				libdir = 'intel64'
-			out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -L${base}/compiler/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir,libdir,libdir,libdir,libdir))
+			out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -L${base}/compiler/lib/%s -lipps -lippvm -lippcore\n' % (libdir,libdir,libdir,libdir,libdir))
+			if major < 2000:
+				out.write(" -liomp5")
+			 out.write("\n")
 
 		if major == 7:
 			out.write('Cflags: -I${base}/ipp/include\n')
