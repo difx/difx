@@ -203,6 +203,19 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         this.updateUI();
     }
     
+    //--------------------------------------------------------------------------
+    //  Remove a specific child node.
+    //--------------------------------------------------------------------------
+    public void removeNode( BrowserNode newNode ) {
+        browserPane.removeChild( newNode );
+        Dimension d = getSize();
+        browserPane.measureDataBounds();
+        _scrollBar.setValues( -_yOffset, d.height, 0, browserPane.dataHeight() );
+        testScrollBar( d.height );
+        dispatchResizeEvent();
+        this.updateUI();
+    }
+    
     /*
      * Return the height of the browser pane.
      */
