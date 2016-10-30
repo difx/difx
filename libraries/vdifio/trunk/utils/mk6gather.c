@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "vdifmark6.h"
 
 int main(int argc, char **argv)
@@ -39,9 +40,10 @@ int main(int argc, char **argv)
 	FILE *out;
 	int i;
 
-	if(argc != 2)
+	if(argc != 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
 	{
-		printf("Must provide template for files\n");
+		printf("Usage: %s <fileset template>\n\n", argv[0]);
+		printf("fileset template is a glob expression selecting all Mark 6 files.\n\n");
 
 		exit(EXIT_FAILURE);
 	}
