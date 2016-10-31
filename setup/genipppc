@@ -136,7 +136,7 @@ def genipppc(path, ippversion):
 			out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -L${base}/compiler/lib/%s -lipps -lippvm -lippcore\n' % (libdir,libdir,libdir,libdir,libdir))
 			if major < 2000:
 				out.write(" -liomp5")
-			 out.write("\n")
+			out.write("\n")
 
 		if major == 7:
 			out.write('Cflags: -I${base}/ipp/include\n')
