@@ -197,7 +197,8 @@
 
 #define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A11(src, sin, cos, length)
 
-#define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen)
+//#define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)         ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen)
+#define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           genericSplitScaled_16s32f(src, dest, numchannels, chanlen)
 
 #define vectorSquare_f32_I(srcdest, length)                                 ippsSqr_32f_I(srcdest, length)
 #define vectorSquare_f64_I(srcdest, length)                                 ippsSqr_64f_I(srcdest, length)
@@ -216,6 +217,8 @@
 #define vectorZero_s16(dest, length)                                        ippsZero_16s(dest, length)
 #define vectorZero_s32(dest, length)                                        genericZero_32s(dest, length)
 
+
+
 #define vectorMax_f32(src, dest, length)                                    ippsMax_32f(src, dest, length)
 #define vectorMin_f32(src, dest, length)                                    ippsMin_32f(src, dest, length)
 #define vectorMove_cf32(src, dest, length)                                  ippsMove_32fc(src, dest, length)
@@ -229,27 +232,136 @@
 #define vectorGetStatusString(code)                                         ippGetStatusString(code)
 
 // FFT Functions
+#define IPP9
 
-#define vectorInitFFTR_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_R_32f(fftspec, order, flag, hint)
+#ifdef IPP9
+inline vecStatus vectorInitFFTR_f32(vecFFTSpecR_f32 **fftspec, int order, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **fftworkbuf) {
+  // Alloc FFT buffers
+  int sizeFFTSpec, sizeFFTInitBuf;
+  u8 *fftInitBuf, *fftSpecBuf;
+  
+  ippsFFTGetSize_R_32f(order, flag, hint,  &sizeFFTSpec, &sizeFFTInitBuf, wbufsize);
+  fftSpecBuf = ippsMalloc_8u(sizeFFTSpec);
+  fftInitBuf = ippsMalloc_8u(sizeFFTInitBuf);
+  *fftworkbuf = ippsMalloc_8u(*wbufsize);
+
+  // Initialize FFT
+  ippsFFTInit_R_32f(fftspec, order, flag, hint, fftSpecBuf, fftInitBuf);
+  if (fftInitBuf) ippFree(fftInitBuf);
+  return vecNoErr;
+} 
 #define vectorInitFFTC_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_C_32f(fftspec, order, flag, hint)
-#define vectorInitFFTC_cf32(fftspec, order, flag, hint)                     ippsFFTInitAlloc_C_32fc(fftspec, order, flag, hint)
-//#define vectorInitFFT_f32(fftspec, order, flag, hint)                       ippsDFTInitAlloc_R_32f(fftspec, order, flag, hint)
-#define vectorInitDFTC_cf32(fftspec, order, flag, hint)                     ippsDFTInitAlloc_C_32fc(fftspec, order, flag, hint)
-#define vectorInitDFTR_f32(fftspec, order, flag, hint)                     ippsDFTInitAlloc_R_32f(fftspec, order, flag, hint)
-#define vectorInitFFT_s16(fftspec, order, flag, hint)                       ippsFFTInitAlloc_R_16s(fftspec, order, flag, hint)
-#define vectorGetFFTBufSizeR_f32(fftspec, buffersize)                       ippsFFTGetBufSize_R_32f(fftspec, buffersize)
-#define vectorGetFFTBufSizeC_f32(fftspec, buffersize)                       ippsFFTGetBufSize_C_32f(fftspec, buffersize)
-#define vectorGetFFTBufSizeC_cf32(fftspec, buffersize)                      ippsFFTGetBufSize_C_32fc(fftspec, buffersize)
-//#define vectorGetFFTBufSize_f32(fftspec, buffersize)                        ippsDFTGetBufSize_R_32f(fftspec, buffersize)
-#define vectorGetDFTBufSizeC_cf32(fftspec, buffersize)                      ippsDFTGetBufSize_C_32fc(fftspec, buffersize)
-#define vectorGetDFTBufSizeR_f32(fftspec, buffersize)                      ippsDFTGetBufSize_R_32f(fftspec, buffersize)
-#define vectorGetFFTBufSize_s16(fftspec, buffersize)                        ippsFFTGetBufSize_R_16s(fftspec, buffersize)
+
+inline vecStatus vectorInitFFTC_cf32(vecFFTSpecC_cf32 **fftspec, int order, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **fftworkbuf) {
+  // Alloc FFT buffers
+  int sizeFFTSpec, sizeFFTInitBuf;
+  u8 *fftInitBuf, *fftSpecBuf;
+  
+  ippsFFTGetSize_C_32fc(order, flag, hint,  &sizeFFTSpec, &sizeFFTInitBuf, wbufsize);
+  fftSpecBuf = ippsMalloc_8u(sizeFFTSpec);
+  fftInitBuf = ippsMalloc_8u(sizeFFTInitBuf);
+  *fftworkbuf = ippsMalloc_8u(*wbufsize);
+
+  // Initialize FFT
+  ippsFFTInit_C_32fc(fftspec, order, flag, hint, fftSpecBuf, fftInitBuf);
+  if (fftInitBuf) ippFree(fftInitBuf);
+  return vecNoErr;
+} 
+
+inline vecStatus vectorInitDFTC_cf32(vecDFTSpecC_cf32 **dftspec, int length, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **dftworkbuf) {
+  // Alloc DFT buffers
+  int sizeDFTSpec, sizeDFTInitBuf;
+  u8 *dftInitBuf;
+  
+  ippsDFTGetSize_C_32fc(length, flag, hint,  &sizeDFTSpec, &sizeDFTInitBuf, wbufsize);
+  *dftspec = (IppsDFTSpec_C_32fc*)ippsMalloc_8u(sizeDFTSpec);
+  dftInitBuf = ippsMalloc_8u(sizeDFTInitBuf);
+  *dftworkbuf = ippsMalloc_8u(*wbufsize);
+
+  // Initialize DFT 
+  ippsDFTInit_C_32fc(length, flag, hint, *dftspec, dftInitBuf);
+  if (dftInitBuf) ippFree(dftInitBuf);
+  return vecNoErr;
+}
+
+inline vecStatus vectorInitDFTR_f32(vecDFTSpecR_f32 **dftspec, int length, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **dftworkbuf) {
+  // Alloc DFT buffers
+  int sizeDFTSpec, sizeDFTInitBuf;
+  u8 *dftInitBuf;
+  
+  ippsDFTGetSize_R_32f(length, flag, hint,  &sizeDFTSpec, &sizeDFTInitBuf, wbufsize);
+  *dftspec = (IppsDFTSpec_R_32f*)ippsMalloc_8u(sizeDFTSpec);
+  dftInitBuf = ippsMalloc_8u(sizeDFTInitBuf);
+  *dftworkbuf = ippsMalloc_8u(*wbufsize);
+
+  // Initialize DFT  
+  ippsDFTInit_R_32f(length, flag, hint, *dftspec, dftInitBuf);
+  if (dftInitBuf) ippFree(dftInitBuf);
+  return vecNoErr;
+}
+
+#define vectorFreeFFTR_f32(fftspec)                                        ippFree(fftspec)
+#define vectorFreeFFTC_f32(fftspec)                                        ippFree(fftspec)
+#define vectorFreeFFTC_cf32(fftspec)                                       ippFree(fftspec)
+#define vectorFreeDFTC_cf32(fftspec)                                       ippFree(fftspec)
+#define vectorFreeDFTR_f32(fftspec)                                        ippFree(fftspec)
+#define vectorFreeDFTC_f32(fftspec)                                        ippFree(fftspec)
+
+#else
+
+inline vecStatus vectorInitFFTR_f32(vecFFTSpecR_f32 **fftspec, int order, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **fftworkbuf) {
+  vecStatus status = ippsFFTInitAlloc_R_32f(fftspec, order, flag, hint);
+  if (status != vecNoErr) return(status);
+
+  status = ippsFFTGetBufSize_R_32f(*fftspec, wbufsize);
+  if (status != vecNoErr) return(status);
+  
+  *fftworkbuf = ippsMalloc_8u(*wbufsize);
+  return vecNoErr;
+}
+
+inline vecStatus vectorInitFFTC_cf32(vecFFTSpecC_cf32 **fftspec, int order, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **fftworkbuf) {
+  vecStatus status = ippsFFTInitAlloc_C_32fc(fftspec, order, flag, hint);
+  if (status != vecNoErr) return(status);
+
+  status = ippsFFTGetBufSize_C_32fc(*fftspec, wbufsize);
+  if (status != vecNoErr) return(status);  
+  *fftworkbuf = ippsMalloc_8u(*wbufsize);
+  return vecNoErr;
+}
+
+inline vecStatus vectorInitDFTC_cf32(vecDFTSpecC_cf32 **dftspec, int length, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **dftworkbuf) {
+  vecStatus status = ippsDFTInitAlloc_C_32fc(dftspec, length, flag, hint);
+  if (status != vecNoErr) return(status);
+
+  status = ippsDFTGetBufSize_C_32fc(*dftspec, wbufsize);
+  if (status != vecNoErr) return(status);
+  
+  *dftworkbuf = ippsMalloc_8u(*wbufsize);
+  return vecNoErr;
+}
+
+inline vecStatus vectorInitDFTR_f32(vecDFTSpecR_f32 **dftspec, int length, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **dftworkbuf) {
+  vecStatus status = ippsDFTInitAlloc_R_32f(dftspec, length, flag, hint);
+  if (status != vecNoErr) return(status);
+
+  status = ippsDFTGetBufSize_R_32f(*dftspec, wbufsize);
+  if (status != vecNoErr) return(status);
+  
+  *dftworkbuf = ippsMalloc_8u(*wbufsize);
+  return vecNoErr;
+}
+
 #define vectorFreeFFTR_f32(fftspec)                                         ippsFFTFree_R_32f(fftspec)
 #define vectorFreeFFTC_f32(fftspec)                                         ippsFFTFree_C_32f(fftspec)
 #define vectorFreeFFTC_cf32(fftspec)                                        ippsFFTFree_C_32fc(fftspec)
 #define vectorFreeDFTC_cf32(fftspec)                                        ippsDFTFree_C_32fc(fftspec)
 #define vectorFreeDFTR_f32(fftspec)                                        ippsDFTFree_R_32f(fftspec)
 #define vectorFreeDFTC_f32(fftspec)                                        ippsDFTFree_R_32f(fftspec)
+
+
+#endif
+
 #define vectorFFT_RtoC_f32(src, dest, fftspec, fftbuffer)                   ippsFFTFwd_RToCCS_32f(src, dest, fftspec, fftbuffer)
 #define vectorFFT_CtoC_f32(srcre, srcim, destre, destim, fftspec, fftbuff)  ippsFFTFwd_CToC_32f(srcre, srcim, destre, destim, fftspec, fftbuff)
 #define vectorFFT_CtoC_cf32(src, dest, fftspec, fftbuff)                    ippsFFTFwd_CToC_32fc(src, dest, fftspec, fftbuff)
@@ -309,10 +421,10 @@
 #define MAX_U32                  MAX_U16 // ((1<<32) - 1)
 #define TWO_PI                   6.283185307179586476925286766559
 #define vecHintAlg               int
-#define vecFFT_NoReNorm          NULL // FFTW is always no renomalise
-#define vecFFT_ReNorm            NULL // FFTW is always no renomalise
-#define vecAlgHintFast           NULL // FFTW is always Fast
-#define vecAlgHintAccurate       NULL
+#define vecFFT_NoReNorm          0 // FFTW is always no renomalise
+#define vecFFT_ReNorm            0 // FFTW is always no renomalise
+#define vecAlgHintFast           0 // FFTW is always Fast
+#define vecAlgHintAccurate       0
 
 //vector allocation and deletion routines
 #define vectorAlloc_u8(length)   new u8[length]
@@ -410,10 +522,7 @@ inline vecStatus genericZero_32s(s32 * dest, int length)
 { for(int i=0;i<length;i++) dest[i] = 0; return vecNoErr; } // memset(dest,0,length*sizeof(dest[0]))
 inline vecStatus genericZero_32f(f32 * dest, int length)
 { for(int i=0;i<length;i++) dest[i] = 0; return vecNoErr; }
-inline vecStatus genericZero_32fc(cf32 * dest, int length)
-{ memset((void *) dest, 0, length*sizeof(dest[0])); return vecNoErr; } 
-//{ for(int i=0;i<length;i++) { dest[i].re = 0; dest[i].im = 0; } return vecNoErr; }
-
+inline vecStatus genericZero_32fc(cf32 * dest, int length) { memset((void *) dest, 0, length*sizeof(dest[0])); return vecNoErr; } 
 inline vecStatus genericZero_64fc(cf64 * dest, int length)
 {for(int i=0;i<length;i++) { dest[i].re = 0; dest[i].im = 0; } return vecNoErr;}
 inline vecStatus genericZero_16s(s16 * dest, int length)
@@ -629,13 +738,6 @@ inline vecStatus genericSinCos_32f(const f32 *src, f32 *sin, f32 *cos, int lengt
   return vecNoErr; }
 
 /* #define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen) */
-inline vecStatus genericSplitScaled_16s32f(const s16 *src, f32 **dest, int numchannels, int chanlen)
-{ s16 max=0; s16 min=0; for(int n=0;n<numchannels*chanlen;n++) {max = (max>src[n])? max:src[n]; min = (min<src[n])? min:src[n];}
-  f32 scale; scale = 2.0/(max-min); 
-  for(int n=0;n<chanlen;n++) for(int m=0;m<numchannels;m++) {
-      if (max==min) dest[m][n]=0; 
-      else dest[m][n] = -1.0+scale*(src[n*numchannels+m]-min);
-    } return vecNoErr; }
 
 /* #define vectorSquare_f32_I(srcdest, length)                                 ippsSqr_32f_I(srcdest, length) */
 inline vecStatus genericSqr_32f_I(f32 *srcdest, int length)
@@ -675,29 +777,59 @@ inline vecStatus genericSum_32f(const f32 *src, int length, f32 *sum)
 // inline vecStatus genericNULLFIRGen(f64 freq, f64 *taps, int length, vecStatus window, vecStatus normalise) {return vecNoErr;} 
 
 // FFTs
-inline vecStatus genericInitFFTR_f32(GenFFTPtrRf32 **fftspec, int order, int flag, vecHintAlg hint) 
-{ fftspec[0] = (GenFFTPtrRf32 *) malloc(sizeof(GenFFTPtrRf32)); 
-  fftspec[0]->len = 1<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
+
+// FFTW plan creation is not thread safe. Use a global mutex to make this safe
+
+#include <pthread.h>
+extern pthread_mutex_t FFTinitMutex;
+
+inline vecStatus genericInitDFTR_f32(GenFFTPtrRf32 **fftspec, int length, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
+  fftspec[0] = (GenFFTPtrRf32 *) malloc(sizeof(GenFFTPtrRf32)); 
+  fftspec[0]->len = length;
+  fftspec[0]->len2 = 1;
+  fftspec[0]->len3 = 1;
   fftspec[0]->in = (f32 *) fftwf_malloc(fftspec[0]->len*sizeof(f32)); 
   fftspec[0]->out = (cf32 *) fftwf_malloc((fftspec[0]->len/2+1)*sizeof(cf32)); 
-  fftspec[0]->p = fftwf_plan_dft_r2c_1d(fftspec[0]->len,fftspec[0]->in, (fftwf_complex *) fftspec[0]->out, FFTW_ESTIMATE); 
-  return vecNoErr;} // Always FORWARD
+  pthread_mutex_lock(&FFTinitMutex);
+  fftspec[0]->p = fftwf_plan_dft_r2c_1d(fftspec[0]->len,fftspec[0]->in, (fftwf_complex *) fftspec[0]->out, FFTW_ESTIMATE);
+  pthread_mutex_unlock(&FFTinitMutex);
+  return vecNoErr;
+} // Always FORWARD
 
-inline vecStatus genericInitFFTCR_f32(GenFFTPtrCRf32 **fftspec, int order, int flag, vecHintAlg hint) 
-{ fftspec[0] = (GenFFTPtrCRf32 *) malloc(sizeof(GenFFTPtrCRf32)); 
-  fftspec[0]->len = 1<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
+inline vecStatus genericInitDFTCR_f32(GenFFTPtrCRf32 **fftspec, int length, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
+  fftspec[0] = (GenFFTPtrCRf32 *) malloc(sizeof(GenFFTPtrCRf32)); 
+  fftspec[0]->len = length;
+  fftspec[0]->len2 = 1;
+  fftspec[0]->len3 = 1;
   fftspec[0]->out = (f32 *) fftwf_malloc(fftspec[0]->len*sizeof(f32)); 
   fftspec[0]->in = (cf32 *) fftwf_malloc((fftspec[0]->len/2+1)*sizeof(cf32)); 
+  pthread_mutex_lock(&FFTinitMutex);
   fftspec[0]->p = fftwf_plan_dft_c2r_1d(fftspec[0]->len,(fftwf_complex *) fftspec[0]->in, fftspec[0]->out, FFTW_ESTIMATE); 
-  return vecNoErr;} // Always BACKWARDS
+  pthread_mutex_unlock(&FFTinitMutex);
+  return vecNoErr;
+} // Always BACKWARDS
 
-inline vecStatus genericInitFFTC_cf32(GenFFTPtrCfc32 **fftspec, int order, int flag, vecHintAlg hint)
-{ fftspec[0] = (GenFFTPtrCfc32 *) malloc(sizeof(GenFFTPtrCfc32)); 
-  fftspec[0]->len = 1<<order;fftspec[0]->len2 = 1;fftspec[0]->len3 = 1;
+inline vecStatus genericInitDFTC_cf32(GenFFTPtrCfc32 **fftspec, int length, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
+  fftspec[0] = (GenFFTPtrCfc32 *) malloc(sizeof(GenFFTPtrCfc32)); 
+  fftspec[0]->len = length;
+  fftspec[0]->len2 = 1;
+  fftspec[0]->len3 = 1;
   fftspec[0]->in = (cf32 *) fftwf_malloc(fftspec[0]->len*sizeof(cf32));
   fftspec[0]->out = (cf32 *) fftwf_malloc(fftspec[0]->len*sizeof(cf32));
-  fftspec[0]->p = fftwf_plan_dft_1d(fftspec[0]->len,(fftwf_complex *) fftspec[0]->in,(fftwf_complex *) fftspec[0]->out, FFTW_FORWARD, FFTW_ESTIMATE); 
-  return vecNoErr;} // Always FORWARD
+  pthread_mutex_lock(&FFTinitMutex);
+  fftspec[0]->p = fftwf_plan_dft_1d(fftspec[0]->len,(fftwf_complex *) fftspec[0]->in,(fftwf_complex *) fftspec[0]->out, FFTW_FORWARD, FFTW_ESTIMATE);
+  pthread_mutex_unlock(&FFTinitMutex);
+  *wbufsize = 0;
+  *fftworkbuf = 0;
+  return vecNoErr;
+} // Always FORWARD
+
+inline vecStatus genericInitFFTC_cf32(GenFFTPtrCfc32 **fftspec, int order, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
+  return genericInitDFTC_cf32(fftspec, 1<<order, flag, hint, wbufsize, fftworkbuf);
+}  
+inline vecStatus genericInitFFTR_f32(GenFFTPtrRf32 **fftspec, int order, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
+  return genericInitDFTR_f32(fftspec, 1<<order, flag, hint, wbufsize, fftworkbuf);
+}  
 
 inline vecStatus generic2DInitFFTC_32fc(GenFFTPtrCfc32 **fftspec, int orderx, int ordery, int flag, vecHintAlg hint)
 { int ox=2<<orderx; int oy=2<<ordery; 
@@ -705,7 +837,9 @@ inline vecStatus generic2DInitFFTC_32fc(GenFFTPtrCfc32 **fftspec, int orderx, in
   fftspec[0]->len = ox; fftspec[0]->len2 = oy; fftspec[0]->len3 = 1;
   fftspec[0]->in = (cf32 *) fftwf_malloc(fftspec[0]->len*sizeof(cf32));
   fftspec[0]->out = (cf32 *) fftwf_malloc(fftspec[0]->len*sizeof(cf32));
+  pthread_mutex_lock(&FFTinitMutex);
   fftspec[0]->p = fftwf_plan_dft_2d(ox,oy,(fftwf_complex *) fftspec[0]->in,(fftwf_complex *) fftspec[0]->out, FFTW_FORWARD, FFTW_ESTIMATE); 
+  pthread_mutex_unlock(&FFTinitMutex);
   return vecNoErr;} // Always FORWARD
 
 inline vecStatus genericMove_32fc(cf32 *src,cf32 *dest, int len) 
@@ -827,34 +961,37 @@ inline vecStatus genericMaxIndx_32f(f32 *src, int len, f32 *max, int *imax)
 #define vectorGetStatusString(code)                                         "Error in Generic Functions"
 
 // FFT Calls
+#define vectorInitFFTR_f32(fftspec, order, flag, hint, wbufsize, fftworkbuf)    genericInitFFTR_f32(fftspec, order, flag, hint, wbufsize, fftworkbuf)
+#define vectorInitFFTCR_f32(fftspec, order, flag, hint, wbufsize, fftworkbuf)   genericInitFFTCR_f32(fftspec, order, flag, hint, wbufsize, fftworkbuf)
+#define vectorInitFFTC_cf32(fftspec, order, flag, hint, wbufsize, fftworkbuf)   genericInitFFTC_cf32(fftspec, order, flag, hint, wbufsize, fftworkbuf)
+#define vectorInitDFTC_cf32(fftspec, length, flag, hint, wbufsize, dftworkbuf)   genericInitDFTC_cf32(fftspec, length, flag, hint, wbufsize, dftworkbuf)
+#define vectorInitDFTR_f32(fftspec, length, flag, hint, wbufsize, dftworkbuf)    genericInitDFTR_f32(fftspec, length, flag, hint, wbufsize, dftworkbuf)
+#define vectorInitDFTCR_f32(fftspec, length, flag, hint, wbufsize, dftworkbuf)   genericInitDFTCR_f32(fftspec, length, flag, hint, wbufsize, dftworkbuf)
 
-#define vectorInitFFTR_f32(fftspec, order, flag, hint)    genericInitFFTR_f32(fftspec, order, flag, hint)
-#define vectorInitFFTCR_f32(fftspec, order, flag, hint)   genericInitFFTCR_f32(fftspec, order, flag, hint)
-#define vectorInitFFTC_cf32(fftspec, order, flag, hint)   genericInitFFTC_cf32(fftspec, order, flag, hint)
-#define vectorInitDFTC_cf32(fftspec, order, flag, hint)   vectorInitFFTC_cf32(fftspec, order, flag, hint)
-#define vectorInitDFTR_f32(fftspec, order, flag, hint)    vectorInitFFTR_f32(fftspec, order, flag, hint)
-#define vectorInitDFTCR_f32(fftspec, order, flag, hint)   vectorInitFFTCR_f32(fftspec, order, flag, hint)
-// I believe it is NEVER USED?
-/* #define vectorInitFFTC_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_C_32f(fftspec, order, flag, hint) */
-/* //#define vectorInitFFT_f32(fftspec, order, flag, hint)                       ippsDFTInitAlloc_R_32f(fftspec, order, flag, hint) */
-/* #define vectorInitFFT_s16(fftspec, order, flag, hint)                       ippsFFTInitAlloc_R_16s(fftspec, order, flag, hint) */
-
-
-inline vecStatus genGetFFTBufSizeR_f32(GenFFTPtrRf32* fftspec, int *buffersize)  { buffersize[0] = fftspec->len; return vecNoErr; }
-inline vecStatus genGetFFTBufSizeC_cf32(GenFFTPtrCfc32* fftspec, int *buffersize)  { buffersize[0] = fftspec->len; return vecNoErr; }
-
-#define vectorGetFFTBufSizeR_f32(fftspec, buffersize)  genGetFFTBufSizeR_f32(fftspec, buffersize)
-#define vectorGetFFTBufSizeC_cf32(fftspec, buffersize) genGetFFTBufSizeC_cf32(fftspec, buffersize)
-#define vectorGetDFTBufSizeC_cf32(fftspec, buffersize) genGetFFTBufSizeC_cf32(fftspec, buffersize)
-#define vectorGetDFTBufSizeR_f32(fftspec, buffersize)  genGetFFTBufSizeR_f32(fftspec, buffersize)
-// I believe it is NEVER USED?
-/* #define vectorGetFFTBufSizeC_f32(fftspec, buffersize)                       ippsFFTGetBufSize_C_32f(fftspec, buffersize) */
-/* //#define vectorGetFFTBufSize_f32(fftspec, buffersize)                        ippsDFTGetBufSize_R_32f(fftspec, buffersize) */
-/* #define vectorGetFFTBufSize_s16(fftspec, buffersize)                        ippsFFTGetBufSize_R_16s(fftspec, buffersize) */
-
-inline vecStatus genFreeFFTR_f32(GenFFTPtrRf32* fftspec) { fftwf_free(fftspec->in);fftwf_free(fftspec->out);fftwf_destroy_plan(fftspec->p);free(fftspec);return vecNoErr; }
-inline vecStatus genFreeFFTC_cf32(GenFFTPtrCfc32* fftspec) { fftwf_free(fftspec->in);fftwf_free(fftspec->out);fftwf_destroy_plan(fftspec->p);free(fftspec);return vecNoErr; }
-inline vecStatus genFreeFFTCR_f32(GenFFTPtrCRf32* fftspec) { fftwf_free(fftspec->in);fftwf_free(fftspec->out);fftwf_destroy_plan(fftspec->p);free(fftspec);return vecNoErr; }
+inline vecStatus genFreeFFTR_f32(GenFFTPtrRf32* fftspec) { 
+  fftwf_free(fftspec->in);
+  fftwf_free(fftspec->out);
+  pthread_mutex_lock(&FFTinitMutex);
+  fftwf_destroy_plan(fftspec->p);
+  pthread_mutex_unlock(&FFTinitMutex);
+  free(fftspec);return vecNoErr; 
+}
+inline vecStatus genFreeFFTC_cf32(GenFFTPtrCfc32* fftspec) { 
+  fftwf_free(fftspec->in);fftwf_free(fftspec->out);
+  pthread_mutex_lock(&FFTinitMutex);
+  fftwf_destroy_plan(fftspec->p);
+  pthread_mutex_unlock(&FFTinitMutex);
+  free(fftspec);
+  return vecNoErr; }
+inline vecStatus genFreeFFTCR_f32(GenFFTPtrCRf32* fftspec) {
+  fftwf_free(fftspec->in);
+  fftwf_free(fftspec->out);
+  pthread_mutex_lock(&FFTinitMutex);
+  fftwf_destroy_plan(fftspec->p);
+  pthread_mutex_unlock(&FFTinitMutex);
+  free(fftspec);
+  return vecNoErr; 
+}
 
 #define vectorFreeFFTR_f32(fftspec)    genFreeFFTR_f32(fftspec)
 #define vectorFreeFFTC_cf32(fftspec)   genFreeFFTC_cf32(fftspec)
@@ -911,6 +1048,15 @@ inline vecStatus gen2DFFT_CtoC_32fc(const cf32 *src, int sstp, cf32 *dest, int d
 #define vectorFFTInv_CCSToR_32f(src, dest,fftspec,buff)    vectorFFT_CtoR_f32(src, dest,fftspec,buff)
 
 #endif /* Generic Architecture */
+
+inline vecStatus genericSplitScaled_16s32f(const s16 *src, f32 **dest, int numchannels, int chanlen)
+{ s16 max=0; s16 min=0; for(int n=0;n<numchannels*chanlen;n++) {max = (max>src[n])? max:src[n]; min = (min<src[n])? min:src[n];}
+  f32 scale; scale = 2.0/(max-min); 
+  for(int n=0;n<chanlen;n++) for(int m=0;m<numchannels;m++) {
+      if (max==min) dest[m][n]=0; 
+      else dest[m][n] = -1.0+scale*(src[n*numchannels+m]-min);
+    } return vecNoErr; }
+
 
 #endif /* Defined architecture header */
 // vim: shiftwidth=2:softtabstop=2:expandtab

@@ -265,13 +265,32 @@ bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32
 
     int wbufsize = 0;
     vecDFTSpecC_cf32* dftspec;
-    s = vectorInitDFTC_cf32(&dftspec, Nbins, vecFFT_NoReNorm, vecAlgHintAccurate);
+    //s = vectorInitDFTC_cf32(&dftspec, Nbins, vecFFT_NoReNorm, vecAlgHintAccurate);
+    //if (s != vecNoErr) 
+    //    csevere << startl <<"Error in DFTInitAlloc in PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl;
+    //    s = vectorGetDFTBufSizeC_cf32(dftspec, &wbufsize);
+    //if (s != vecNoErr)
+    //    csevere << startl << "Error in DFTGetBufSize in PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl;
+    //u8* dftworkbuf = vectorAlloc_u8(wbufsize);
+
+    // Alloc DFT buffers
+    //int sizeDFTSpec, sizeDFTInitBuf;
+    //Ipp8u *dftInitBuf, *dftworkbuf;
+    //ippsDFTGetSize_C_32fc(Nbins, IPP_FFT_NODIV_BY_ANY, ippAlgHintAccurate, 
+    //			  &sizeDFTSpec, &sizeDFTInitBuf, &wbufsize);
+    //dftspec = (IppsDFTSpec_C_32fc*)ippsMalloc_8u(sizeDFTSpec);
+    //dftInitBuf = ippsMalloc_8u(sizeDFTInitBuf);
+    //dftworkbuf = ippsMalloc_8u(wbufsize);
+
+    // Initialize DFT
+
+    //ippsDFTInit_C_32fc(Nbins, IPP_FFT_NODIV_BY_ANY, ippAlgHintAccurate, dftspec, dftInitBuf);
+    //if (dftInitBuf) ippFree(dftInitBuf);
+
+    u8* dftworkbuf;
+    s = vectorInitDFTC_cf32(&dftspec, Nbins, vecFFT_NoReNorm, vecAlgHintAccurate, &wbufsize, &dftworkbuf);
     if (s != vecNoErr)
-        csevere << startl <<"Error in DFTInitAlloc in PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl;
-    s = vectorGetDFTBufSizeC_cf32(dftspec, &wbufsize);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTGetBufSize in PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl;
-    u8* dftworkbuf = vectorAlloc_u8(wbufsize);
+      csevere << startl <<"Error in DFTInitAlloc in PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl;
 
     cf32 dftout[Nbins];
     s = vectorDFT_CtoC_cf32(pcalout, dftout, dftspec, dftworkbuf);
@@ -290,10 +309,8 @@ bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32
         }
     }
 
-    s = vectorFreeDFTC_cf32(dftspec);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTFree PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl;
-    vectorFree(dftworkbuf);
+    vectorFree(dftspec);
+    if (dftworkbuf) vectorFree(dftworkbuf);
     return true;
 }
 
@@ -320,13 +337,9 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, double pcal_spac
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;
-    s = vectorInitDFTC_cf32(&(_cfg->dftspec), _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate);
+    s = vectorInitDFTC_cf32(&_cfg->dftspec, _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate, &wbufsize, &_cfg->dftworkbuf);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTInitAlloc in PCalExtractorTrivial::PCalExtractorTrivial " << vectorGetStatusString(s) << endl;
-    s = vectorGetDFTBufSizeC_cf32(_cfg->dftspec, &wbufsize);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTGetBufSize PCalExtractorTrivial::PCalExtractorTrivial " << vectorGetStatusString(s) << endl;
-    _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
     _estimatedbytes += wbufsize;
 
     /* Allocate twice the amount strictly necessary */
@@ -345,9 +358,7 @@ PCalExtractorTrivial::~PCalExtractorTrivial()
     vecStatus s;
     vectorFree(_cfg->pcal_complex);
     vectorFree(_cfg->pcal_real);
-    s = vectorFreeDFTC_cf32(_cfg->dftspec);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTFree in PCalExtractorTrivial::~PCalExtractorTrivial " << vectorGetStatusString(s) << endl;
+    vectorFreeDFTC_cf32(_cfg->dftspec);
     vectorFree(_cfg->dftworkbuf);
     vectorFree(_cfg->dft_out);
     delete _cfg;
@@ -489,15 +500,11 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
     /* Prep for FFT/DFT */
     int wbufsize = 0;
     vecStatus s;
-    s = vectorInitDFTC_cf32(&(_cfg->dftspec), _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate);
+    s = vectorInitDFTC_cf32(&_cfg->dftspec, _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate, &wbufsize, &_cfg->dftworkbuf);
     if (s != vecNoErr)
         csevere << startl 
 		<< "Error in DFTInitAlloc in PCalExtractorShifting::PCalExtractorShifting.  _N_bins="
 		<< _N_bins << " error " << vectorGetStatusString(s) << endl;
-    s = vectorGetDFTBufSizeC_cf32(_cfg->dftspec, &wbufsize);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTGetBufSize in PCalExtractorShifting::PCalExtractorShifting " << vectorGetStatusString(s) << endl;
-    _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
     _estimatedbytes += wbufsize;
 
     /* Allocate twice the amount strictly necessary */
@@ -529,9 +536,7 @@ PCalExtractorShifting::~PCalExtractorShifting()
     vectorFree(_cfg->pcal_real);
     vectorFree(_cfg->rotator);
     vectorFree(_cfg->rotated);
-    s = vectorFreeDFTC_cf32(_cfg->dftspec);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTFree in PCalExtractorShifting::~PCalExtractorShifting " << vectorGetStatusString(s) << endl;
+    vectorFreeDFTC_cf32(_cfg->dftspec);
     vectorFree(_cfg->dftworkbuf);
     vectorFree(_cfg->dft_out);
     delete _cfg;
@@ -713,16 +718,11 @@ PCalExtractorComplex::PCalExtractorComplex(double bandwidth_hz,
     // prep for FFT/DFT
     int wbufsize = 0;
     vecStatus s;
-    s = vectorInitDFTC_cf32(&(_cfg->dftspec), _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate);
+    s = vectorInitDFTC_cf32(&_cfg->dftspec, _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate, &wbufsize, &_cfg->dftworkbuf);
     if (s != vecNoErr)
         csevere << startl
 		<< "Error in DFTInitAlloc in PCalExtractorComplex::PCalExtractorComplex.  _N_bins="
 		<< _N_bins << " error " << vectorGetStatusString(s) << endl;
-    s = vectorGetDFTBufSizeC_cf32(_cfg->dftspec, &wbufsize);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTGetBufSize in PCalExtractorComplex::PCalExtractorComplex "
-                << vectorGetStatusString(s) << endl;
-    _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
     _estimatedbytes += wbufsize;
 
     // Allocate twice the amount strictly necessary
@@ -758,7 +758,7 @@ PCalExtractorComplex::~PCalExtractorComplex()
     vectorFree(_cfg->pcal_real);
     vectorFree(_cfg->rotator);
     vectorFree(_cfg->rotated);
-    s = vectorFreeDFTC_cf32(_cfg->dftspec);
+    vectorFreeDFTC_cf32(_cfg->dftspec);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTFree in PCalExtractorComplex::~PCalExtractorComplex "
                 << vectorGetStatusString(s) << endl;
@@ -933,14 +933,10 @@ int pcal_offset_hz, const size_t sampleoffset)
     /* Prep for FFT/DFT */
     int wbufsize = 0;
     vecStatus s;
-    s = vectorInitDFTC_cf32(&(_cfg->dftspec), _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate);
+    s = vectorInitDFTC_cf32(&_cfg->dftspec, _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate, &wbufsize,  &_cfg->dftworkbuf);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTInitAlloc in PCalExtractorImplicitShift::PCalExtractorImplicitShift.  _N_bins="
                 << _N_bins << " Error " << vectorGetStatusString(s) << endl;
-    s = vectorGetDFTBufSizeC_cf32(_cfg->dftspec, &wbufsize);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTGetBufSize in PCalExtractorImplicitShift::PCalExtractorImplicitShift " << vectorGetStatusString(s) << endl;
-    _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
     _estimatedbytes += wbufsize;
 
     /* Allocate twice the amount strictly necessary */
@@ -960,7 +956,7 @@ PCalExtractorImplicitShift::~PCalExtractorImplicitShift()
     vecStatus s;
     vectorFree(_cfg->pcal_complex);
     vectorFree(_cfg->pcal_real);
-    s = vectorFreeDFTC_cf32(_cfg->dftspec);
+    vectorFreeDFTC_cf32(_cfg->dftspec);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTFree in PCalExtractorImplicitShift::~PCalExtractorImplicitShift " << vectorGetStatusString(s) << endl;
     vectorFree(_cfg->dftworkbuf);

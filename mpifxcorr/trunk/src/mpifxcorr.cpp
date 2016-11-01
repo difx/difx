@@ -440,6 +440,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
   MPI_Finalize();
+
   if (isDifxMessageInUse()) {
     if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
     //sleep(1); // Give threads a chance to quit
