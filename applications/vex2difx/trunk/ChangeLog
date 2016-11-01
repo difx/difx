@@ -47,6 +47,7 @@ Version 2.5.0
 * Move vlog from calcif2; this script is nearly obsolete but still might have some value beyond the time that calcif2 lasts.
 * LBA modes: S2_data_source = VLBA -> LBAVSOP mode
 * new global parameter delayModel -> .calc file DELAY MODEL parameter
+* Move to use of dirlist library for parsing file listings.  This allows both old-style and new-style file lists to be used.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

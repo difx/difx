@@ -41,6 +41,9 @@
 #include <unistd.h>
 #include <difxio.h>
 #include <vexdatamodel.h>
+#include <dirlist/dirlist.h>
+#include <dirlist/old_dirlist.h>
+#include <dirlist/old_filelist.h>
 
 #include "timeutils.h"
 #include "corrparams.h"
@@ -52,68 +55,76 @@ const double PhaseCentre::DEFAULT_DEC = -999.9;
 
 int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandData> &basebandFiles)
 {
-	const int MaxLineLength=1024;
-	std::ifstream is;
-	int n=0;
-	char s[MaxLineLength];
-	std::vector<std::string> tokens;
+	DirList D;
+	std::stringstream error;
+	std::string prefix;
+	int v;
+	int n = 0;
 
-	is.open(fileName.c_str());
-
-	if(is.fail())
+	try
 	{
-		std::cerr << "Error: cannot open " << fileName << std::endl;
-
-		exit(EXIT_FAILURE);
+		D.load(fileName.c_str());
 	}
-
-	for(unsigned int line = 1; ; ++line)
+	catch(DirListException &e)
 	{
-		is.getline(s, MaxLineLength);
-		if(is.eof())
+		if(e.getType() == DirListException::TypeCantOpen)
 		{
-			break;
-		}
+			std::cerr << "Error: cannot open filelist file: " << fileName << std::endl;
 
-		for(int i = 0; s[i]; ++i)
+			exit(EXIT_FAILURE);
+		}
+		else if(e.getType() == DirListException::TypeWrongIdentifier)
 		{
-			if(s[i] == '#')
+			// here the file exists but was not in the dirlist format...
+
+			error.clear();
+			v = loadOldFileList(D, fileName.c_str(), error);
+			if(v != 0)	// this file is not an old-style file list
 			{
-				s[i] = 0;
+				error.clear();
+				v = loadOldDirList(D, fileName.c_str(), error);
 			}
-		}
 
-		tokens.clear();
+			if(v != 0)
+			{
+				std::cerr << "Error: cannot get filelist data from " << fileName << ".  The file is not in a recognized format."  << std::endl;
 
-		split(std::string(s), tokens);
-
-		int l = tokens.size();
-
-		if(l == 0)
-		{
-			continue;
-		}
-		else if(l == 1)
-		{
-			basebandFiles.push_back(VexBasebandData(tokens[0], 0, -1));
-			++n;
-		}
-		else if(l == 3)
-		{
-			basebandFiles.push_back(VexBasebandData(tokens[0], 0, -1,
-				parseTime(tokens[1]),
-				parseTime(tokens[2]) ));
-			++n;
+				exit(EXIT_FAILURE);
+			}
 		}
 		else
 		{
-			std::cerr << "Error: line " << line << " of file " << fileName << " is badly formatted" << std::endl;
+			std::cerr << "Error: cannot get filelist data from " << fileName << ".  Error might be related to: " << error.str() << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	//sort(basebandFiles.begin(), basebandFiles.end(), sortStartMjdDescendingFunc);
+	const DirListParameter *param;
+	param = D.getConstParameter("pathPrefix");
+	if(param)
+	{
+		prefix = param->getValue();
+	}
+
+	for(unsigned int i = 0; i < D.nScan(); ++i)
+	{
+		const DirListDatum *datum;
+		std::stringstream fullName;
+
+		fullName.clear();
+
+		datum = D.getScan(i);
+		
+		if(datum)
+		{
+			fullName << prefix << datum->getName();
+
+			basebandFiles.push_back(VexBasebandData(fullName.str(), 0, -1, datum->getFullMjdStart(), datum->getFullMjdEnd()));
+
+			++n;
+		}
+	}
 
 	return n;
 }
