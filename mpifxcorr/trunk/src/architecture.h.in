@@ -232,7 +232,6 @@
 #define vectorGetStatusString(code)                                         ippGetStatusString(code)
 
 // FFT Functions
-#define IPP9
 
 #ifdef IPP9
 inline vecStatus vectorInitFFTR_f32(vecFFTSpecR_f32 **fftspec, int order, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **fftworkbuf) {
