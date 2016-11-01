@@ -41,7 +41,7 @@ int convert(const char *inputFile, const char *outputFile)
 	}
 	if(v != 0)
 	{
-		fprintf(stderr, "\nInput file is unrecognizable and wasn't parse.\n\n");
+		fprintf(stderr, "\nInput file is unrecognizable and wasn't parsed.\n\n");
 		
 		return EXIT_FAILURE;
 	}

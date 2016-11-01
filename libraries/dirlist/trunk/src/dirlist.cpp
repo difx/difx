@@ -52,7 +52,7 @@ void DirList::load(const char *fileName)
 	in = fopen(fileName, "r");
 	if(!in)
 	{
-		throw DirListException("DirList::load(): Cannot open file.");
+		throw DirListException("DirList::load(): Cannot open file.", DirListException::TypeCantOpen);
 	}
 
 	v = fgetsNoCR(line, MaxLineLength, in);
@@ -60,7 +60,7 @@ void DirList::load(const char *fileName)
 	{
 		fclose(in);
 
-		throw DirListException("DirList::load(): Wrong identifier line.");
+		throw DirListException("DirList::load(): Wrong identifier line.", DirListException::TypeWrongIdentifier);
 	}
 
 	for(int lineNum = 2; !feof(in); ++lineNum)
@@ -81,8 +81,11 @@ void DirList::load(const char *fileName)
 		if(tokens.size() < 3)
 		{
 			fclose(in);
+			std::stringstream msg;
 
-			throw DirListException("DirList::load(): Data line with 1 or 2 tokens.  Line = ", lineNum);
+			msg << "DirList::load(): Data line with 1 or 2 tokens.  Line = " << lineNum;
+
+			throw DirListException(msg.str(), DirListException::TypeParseError);
 		}
 
 		if(tokens[1] == "=")	// It is a parameter
@@ -92,8 +95,11 @@ void DirList::load(const char *fileName)
 			if(hasData)
 			{
 				fclose(in);
+				std::stringstream msg;
 
-				throw DirListException("DirList::load(): Parameter line found after data.  Line = ", lineNum);
+				msg << "DirList::load(): Parameter line found after data.  Line = " << lineNum;
+
+				throw DirListException(msg.str(), DirListException::TypeParseError);
 			}
 
 			P = new DirListParameter();
@@ -103,7 +109,11 @@ void DirList::load(const char *fileName)
 				fclose(in);
 				delete P;
 
-				throw DirListException("DirList::load(): Unparsable parameter line.  Line = ", lineNum);
+				std::stringstream msg;
+
+				msg << "DirList::load(): Unparsable parameter line.  Line = " << lineNum;
+
+				throw DirListException(msg.str(), DirListException::TypeParseError);
 			}
 			P->setComment(comment);
 			addParameter(P);
@@ -118,7 +128,7 @@ void DirList::load(const char *fileName)
 				classParameter = getParameter("class");
 				if(!classParameter)
 				{
-					throw DirListException("DirList::load(): class parameter was not set.");
+					throw DirListException("DirList::load(): class parameter was not set.", DirListException::TypeParseError);
 				}
 			}
 

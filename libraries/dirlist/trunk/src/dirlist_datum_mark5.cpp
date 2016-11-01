@@ -43,7 +43,11 @@ bool DirListDatumMark5::setFromTokens(const std::vector<std::string> &tokens)
 {
 	if(tokens.size() < 13)
 	{
-		throw DirListException("DirListDatumMark5::setFromTokens(): too few tokens provided (13 needed); num provided was ", tokens.size());
+		std::stringstream msg;
+
+		msg << "DirListDatumMark5::setFromTokens(): too few tokens provided (13 needed); num provided was " << tokens.size();
+
+		throw DirListException(msg.str(), DirListException::TypeParseError);
 	}
 	DirListDatum::setFromTokens(tokens);
 	start = atoll(tokens[4].c_str());

@@ -54,7 +54,10 @@ bool DirListDatum::setFromTokens(const std::vector<std::string> &tokens)
 {
 	if(tokens.size() < 4)
 	{
-		throw DirListException("DirListDatum::setFromTokens(): wrong number of tokens.  Should be 4.  Was ", tokens.size());
+		std::stringstream msg;
+
+		msg << "DirListDatum::setFromTokens(): wrong number of tokens.  Should be 4.  Was " << tokens.size();
+		throw DirListException(msg.str(), DirListException::TypeParseError);
 	}
 	setName(tokens[0]);
 	setMjdStart(atoi(tokens[1].c_str()));

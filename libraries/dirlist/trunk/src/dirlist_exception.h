@@ -7,13 +7,23 @@
 class DirListException : public std::exception
 {
 public:
-	DirListException(std::string msg) : err_msg(msg) {}
-	DirListException(std::string msg, int id) { std::stringstream ss;  ss << msg << id;  msg = ss.str(); }
+	enum Type
+	{
+		TypeNone,
+		TypeCantOpen,
+		TypeWrongIdentifier,
+		TypeParseError
+	};
+
+	DirListException(std::string msg) : err_msg(msg), type(TypeNone) {}
+	DirListException(std::string msg, Type t) : err_msg(msg), type(t) {}
 	~DirListException() throw() {}
 	virtual const char *what() const throw() { return err_msg.c_str(); }
+	Type getType() const { return type; }
 
 private:
 	std::string err_msg;
+	Type type;
 };
 
 #endif
