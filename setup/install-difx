@@ -13,9 +13,9 @@ Build and Install DiFX
 
 Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
-        [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
+        [--mk5daemon] [--withmonitor] [--perl] [--withfb] \\
         [--withhops] [--withm6support] [--withguiserver] [--noinstall] \\
-        [--withpolconvert] [--reconf] [--noconf] [--clean] \\
+        [--withpolconvert] [--reconf] [--withdatasim] [--noconf] [--clean] \\
         [--g77] [--extraflags='flags'] [--makeflags='flags'] \\
         [--noipp] [--ipp] [--nodoc] \\
         [--cache='name'] [--targ='...'] [--pristine] \\
@@ -41,11 +41,9 @@ Options:
 
    --mk5daemon     Install mk5daemon (not installed by default)
 
-   --withmonitor   Try to build the difx_monitor application (requires pgplot)
-
-   --rpfits        Build rpfits
-
    --perl          Install some non-standard perl utilities (deprecated)
+
+   --withmonitor   Try to build the difx_monitor application (requires pgplot)
 
    --withfb        Build filterbank (which requires pgplot)
 
@@ -58,6 +56,8 @@ Options:
    --withpolconvert Build PolConvert (which requires CASA)
 
    --withpython    Build Python bindings for certain libraries (requires ctypes)
+
+   --withdatasim   Build the datasim application (requires gsl)
 
    --noinstall     Don't install, only build.
 
@@ -93,7 +93,7 @@ Options:
 
    --doonly='...'  Will only build the components specified in the list ...,
                    where ... is a comma-separated list of sub-packages in
-                   ["rpfits", "perl",
+                   ["perl",
                     "difxio", "difxmessage", "mark5access", "vdifio",
                     "calcif2", "difx2profile", "misc","vis2screen",
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
@@ -112,7 +112,7 @@ Options:
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
-         "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
+         "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
          "withpolconvert", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", 
@@ -146,8 +146,7 @@ dodoc = True
 dopybindings = False
 doipp = 0
 orgcwd = os.getcwd()
-components = {"rpfits"        :False,
-              "perl"          :False,
+components = {"perl"          :False,
               "difxio"        :True,
               "difxmessage"   :True,
               "dirlist"       :True,
@@ -169,6 +168,7 @@ components = {"rpfits"        :False,
               "guiServer"     :False,
               "mk5daemon"     :False,
               "difx_monitor"  :False,
+              "datasim"       :False,
               "python"        :True,
 }
 def setNormalComponentsFalse():
@@ -219,8 +219,8 @@ if len(opts) > 0:
             components["mk5daemon"] = True
         if o == "--withmonitor":
             components["difx_monitor"] = True
-        if o == "--rpfits":
-            components["rpfits"] = True
+        if o == "--withdatasim":
+            components["datasim"] = True
         if o == "--perl":
             components["perl"] = True
         if o == "--withfb":
@@ -377,6 +377,8 @@ if components["mk5daemon"]:
     apptargets.append(["mk5daemon",  difx_version, True,False,True,False])
 if components["difx_monitor"]:
     apptargets.append(["difx_monitor", difx_version, True,False,False,True])
+if components["datasim"]:
+    apptargets.append(["datasim", difx_version, True,True,True,False])
 
 # a navigation aid
 def os_chdir(dir):
@@ -536,17 +538,6 @@ if doclean:
         os_chdir("libraries/vex/"+difx_version+"/vexlib")
         run(MAKEcommand + "clean")
         os_chdir(topdir)
-    if components["rpfits"]:
-        print "**** Cleaning rpfits"
-        if platform == "darwin":
-            os_chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
-        else:
-            if difxbits == "32":
-                os_chdir("libraries/rpfits/"+difx_version+"/linux/")
-            else:
-                os_chdir("libraries/rpfits/"+difx_version+"/linux64/")
-        run(MAKEcommand + "clean")
-        os_chdir(topdir)
 
     os_chdir("libraries")
     thisdir = os.getcwd()
@@ -699,25 +690,6 @@ if components["perl"]:
         run(MAKEcommand + "install")
         os.chdir(topdir)
 
-if components["rpfits"]:
-    print
-    print "************************************"
-    print "Building rpfits"
-    print
-    if platform == "darwin":
-        os_chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
-    else:
-        if difxbits == "32":
-            os_chdir("libraries/rpfits/"+difx_version+"/linux/")
-        else:
-            os_chdir("libraries/rpfits/"+difx_version+"/linux64/")
-    run(MAKEcommand)
-    if not noinstall:
-        run("mv -f librpfits.a " + libdir)
-    os_chdir(topdir)
-    if not noinstall:
-        run("cp -f libraries/rpfits/"+difx_version+"/code/RPFITS.h " + incdir)
-
 ##### Make standard (autotool'd) libraries ###############
 os_chdir("libraries")
 thisdir = os.getcwd()
@@ -778,8 +750,6 @@ if components["mpifxcorr"]:
         configstring += " --prefix=" + difxroot
         if doipp<0:
             configstring += ' --disable-ipp '
-        if components["rpfits"]:
-            configstring += ' --with-rpfits '
         if cache != 'none':
             configstring += cache + "-CXX"
         run(configstring)
