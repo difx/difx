@@ -4,8 +4,8 @@ import getopt
 import re
 
 # Set this to true if compiling within a master_tags checkout
-master_tag = True
-#master_tag = False
+#master_tag = True
+master_tag = False
 
 def main():
     """
@@ -13,11 +13,13 @@ Build and Install DiFX
 
 Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
-        [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
-        [--withhops] [--withguiserver] [--noinstall] \\
-        [--reconf] [--noconf] [--clean] \\
-        [--g77] [--noipp] [--ipp] [--nodoc] \\
-        [--cache='name'] [--targ='...'] [--pristine]
+        [--mk5daemon] [--withmonitor] [--perl] [--withfb] \\
+        [--withhops] [--withm6support] [--withguiserver] [--noinstall] \\
+        [--withpolconvert] [--reconf] [--withdatasim] [--noconf] [--clean] \\
+        [--g77] [--extraflags='flags'] [--makeflags='flags'] \\
+        [--noipp] [--ipp] [--nodoc] \\
+        [--cache='name'] [--targ='...'] [--pristine] \\
+        [--doonly='...']
 
 Builds and installs mpifxcorr and associated tools.  If invoked from the
 setup directory, the build will be within the source directory heirarchy,
@@ -39,17 +41,23 @@ Options:
 
    --mk5daemon     Install mk5daemon (not installed by default)
 
-   --withmonitor   Try to build the difx_monitor application (requires pgplot)
-
-   --rpfits        Build rpfits
-
    --perl          Install some non-standard perl utilities (deprecated)
+
+   --withmonitor   Try to build the difx_monitor application (requires pgplot)
 
    --withfb        Build filterbank (which requires pgplot)
 
+   --withguiserver Build guiServer
+
    --withhops      Build HOPS (which requires pgplot)
 
-   --withguiserver Build guiServer
+   --withm6support Build Mark6 support (which requires FUSE)
+
+   --withpolconvert Build PolConvert (which requires CASA)
+
+   --withpython    Build Python bindings for certain libraries (requires ctypes)
+
+   --withdatasim   Build the datasim application (requires gsl)
 
    --noinstall     Don't install, only build.
 
@@ -61,7 +69,14 @@ Options:
 
    --g77           Use g77, rather than gfortran
 
-   --noipp         Don't try and install ipp package config file
+   --extraflags='flags' Add 'flags' to each of the CFLAGS, CXXFLAGS, and
+                   FFLAGS environment variables
+
+   --makeflags='flags' Add 'flags' to each direct call of the make program,
+                   (so you can do make -j 4 to speed up compilation)
+
+   --noipp         Don't try and install ipp package config file, and
+                   also disable IPP acceleration of mpifxcorr
 
    --ipp           Force installation of ipp package config file
                    (default doesn't overwrite existing)
@@ -76,6 +91,15 @@ Options:
    --pristine      Removes auto-built sources from source directories
                    (and implies --clean)
 
+   --doonly='...'  Will only build the components specified in the list ...,
+                   where ... is a comma-separated list of sub-packages in
+                   ["perl",
+                    "difxio", "difxmessage", "mark5access", "vdifio",
+                    "calcif2", "difx2profile", "misc","vis2screen",
+                    "calcserver", "difx2fits", "vex2difx", "difx2mark4",
+                    "mpifxcorr", "difxfilterbank", "hops", "m6support",
+                    "polconvert", "guiServer", "mk5daemon", "difx_monitor",]
+
     """
     pass
 
@@ -88,10 +112,12 @@ Options:
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
-        "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
-        "withhops", "withguiserver",
-        "noinstall", "reconf", "noconf", "clean",
-        "g77", "noipp", "ipp", "cache=", "targ=", "pristine" ])
+         "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
+         "withhops", "withm6support", "withguiserver", "withpython",
+         "withpolconvert", "noinstall", "reconf", "noconf", "clean",
+         "g77", "extraflags=", "makeflags=", 
+         "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
+         "doonly=" ])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -106,24 +132,78 @@ if not 0 <= len(args) <= 0:
 force = False
 reconf = False
 noinstall = False
-mk5d = False
 gfortran = True
-rpfits = False
-perl = False
+extraflags = None
+MAKEcommand = "make "
 doclean = False
-domonitor = False
 target = 'all'
 verb = False
 cache = 'none'
 errors = []
 noconf = False
 pristine = False
-dofb = False
-dohops = False
-doguiserver = False
 dodoc = True
+dopybindings = False
 doipp = 0
 orgcwd = os.getcwd()
+components = {"perl"          :False,
+              "difxio"        :True,
+              "difxmessage"   :True,
+              "dirlist"       :True,
+              "mark5access"   :True,
+              "vdifio"        :True,
+              "calcif2"       :True,
+              "difx2profile"  :True,
+              "misc"          :True,
+              "vis2screen"    :True,
+              "calcserver"    :True,
+              "difx2fits"     :True,
+              "vex2difx"      :True,
+              "difx2mark4"    :True,
+              "mpifxcorr"     :True,
+              "difxfilterbank":False,
+              "hops"          :False,
+              "m6support"     :False,
+              "polconvert"    :False,
+              "guiServer"     :False,
+              "mk5daemon"     :False,
+              "difx_monitor"  :False,
+              "datasim"       :False,
+              "python"        :True,
+}
+def setNormalComponentsFalse():
+	global components
+	components["difxio"] = False
+	components["difxmessage"] = False
+	components["dirlist"] = False
+	components["mark5access"] = False
+	components["vdifio"] = False
+	components["calcif2"] = False
+	components["difx2profile"] = False
+	components["misc"] = False
+	components["vis2screen"] = False
+	components["calcserver"] = False
+	components["difx2fits"] = False
+	components["vex2difx"] = False
+	components["difx2mark4"] = False
+	components["hops"] = False
+	components["polconvert"] = False
+	components["mpifxcorr"]= False
+	components["python"]= False
+def setOnlyComponents(only):
+	global components
+	setNormalComponentsFalse()
+	array = only.strip().split(',')
+	if(len(array)==0):
+		raise RuntimeError, "Could not find components to build in only argument '%s'"%only
+	for a in array:
+		c = a.strip()
+		if(c in components):
+			components[c] = True
+			if(c == "python"):
+				dopybindings = True
+		else:
+			raise RuntimeError, "Unrecognized only component '%s'"%(a)
 
 # read options
 if len(opts) > 0:
@@ -136,19 +216,25 @@ if len(opts) > 0:
         if o in ("-v", "--verb"):
             verb = True
         if o == "--mk5daemon":
-            mk5d = True
+            components["mk5daemon"] = True
         if o == "--withmonitor":
-            domonitor = True
-        if o == "--rpfits":
-            rpfits = True
+            components["difx_monitor"] = True
+        if o == "--withdatasim":
+            components["datasim"] = True
         if o == "--perl":
-            perl = True
+            components["perl"] = True
         if o == "--withfb":
-            dofb = True
+            components["difxfilterbank"] = True
         if o == "--withhops":
-            dohops = True
+            components["hops"] = True
+        if o == "--withm6support":
+            components["m6support"] = True
+        if o == "--withpolconvert":
+            components["polconvert"] = True
         if o == "--withguiserver":
-            doguiserver = True
+            components["guiServer"] = True
+        if o == "--withpython":
+            dopybindings = True
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -159,9 +245,13 @@ if len(opts) > 0:
         if o == "--clean":
             doclean = True
         if o == "--nodoc":
-            dodoc = "False"
+            dodoc = False
         if o == "--g77":
             gfortran = False
+        if o == "--extraflags":
+            extraflags = a
+        if o == "--makeflags":
+            MAKEcommand += a + ' '
         if o == "--ipp":
             doipp = 1
         if o == "--noipp":
@@ -175,6 +265,8 @@ if len(opts) > 0:
             pristine = True
             doclean = True
             force = True
+        if o == "--doonly":
+	        setOnlyComponents(a)
 
 ###### Get all relevant environment variables ###########
 print "************************************"
@@ -198,9 +290,21 @@ pgplotdir = os.environ.get('PGPLOTDIR')
 difxbits = os.environ.get('DIFXBITS')
 platform = sys.platform
 
+if(extraflags is not None):
+    ###### Get all relevant environment variables ###########
+    print "************************************"
+    print "Setting environmental variables"
+    print
+    for ftype in ["CFLAGS", "CXXFLAGS", "FFLAGS"]:
+        thisflags = extraflags
+        if(ftype in os.environ):
+            thisflags = os.environ[ftype] + ' ' + extraflags
+        os.environ[ftype] = thisflags
+
+
 ##### Check that appropriate setup has been done ########
 if not master_tag:
-    if os.environ.get('DIFX_VERSION') == "":
+    if os.environ.get('DIFX_VERSION') == None:
         print "You must have already source'd setup.bash/setup.csh!"
         print "DIFX_VERSION was undefined - aborting compilation"
         raise RuntimeError
@@ -226,31 +330,55 @@ if gfortran:
 ###### Targets ####################################################
 # auto_compile(doreconf, dolibtoolize, doautoheader, ..., dompicxx)
 
-libtargets = [["difxio",     difx_version, True,True,True,False],
-              ["difxmessage",difx_version, True,True,True,False],
-              ["mark5access",difx_version, True,True,True,False],
-              ["vdifio",     difx_version, True,True,True,False]]
+libtargets = []
+if components["difxio"]:
+	libtargets.append(["difxio",     difx_version, True,True,True,False])
+if components["difxmessage"]:
+	libtargets.append(["difxmessage",difx_version, True,True,True,False])
+if components["dirlist"]:
+	libtargets.append(["dirlist",    difx_version, True,True,True,False])
+if components["mark5access"]:
+	libtargets.append(["mark5access",difx_version, True,True,True,False])
+if components["python"]:
+	libtargets.append(["python",     difx_version, True,True,False,False])
+if components["vdifio"]:
+	libtargets.append(["vdifio",     difx_version, True,True,True,False])
 
-utiltargets = [["pulsar/difx2profile", difx_version, True,False,True,True],
-	           ["misc",      difx_version, True,False,False,False],
-               ["vis2screen",difx_version, True,False,False,True]]
+utiltargets = []
+if components["calcif2"]:
+	utiltargets.append(["calcif2",   difx_version, True,False,True,False])
+if components["difx2profile"]:
+	utiltargets.append(["pulsar/difx2profile", difx_version, True,False,True,True])
+if components["misc"]:
+	utiltargets.append(["misc",      difx_version, True,False,False,False])
+if components["vis2screen"]:
+	utiltargets.append(["vis2screen",difx_version, True,False,False,True])
 
-apptargets = [["calcserver", difx_version, True,True,False,False],
-              ["calcif2",   difx_version, True,False,True,False], 
-              ["difx2fits",  difx_version, True,False,True,False],
-              ["vex2difx",   difx_version, True,True,True,False],
-              ["difx2mark4", difx_version, True,True,True,False]]
-
-if dofb:
+apptargets = []
+if components["calcserver"]:
+	apptargets.append(["calcserver", difx_version, True,True,False,False])
+if components["difx2fits"]:
+	apptargets.append(["difx2fits",  difx_version, True,False,True,False])
+if components["vex2difx"]:
+	apptargets.append(["vex2difx",   difx_version, True,True,True,False])
+if components["difx2mark4"]:
+	apptargets.append(["difx2mark4", difx_version, True,True,True,False])
+if components["difxfilterbank"]:
     apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
-if dohops:
-    apptargets.append(["hops", difx_version, True,False,True,False])
-if doguiserver:
-    apptargets.append(["guiServer", difx_version, True,False,False,True])
-if mk5d:
-    apptargets.append(["mk5daemon", difx_version, True,False,True,False])
-if domonitor:
+if components["hops"]:
+    apptargets.append(["hops",       difx_version, True,False,True,False])
+if components["m6support"]:
+    apptargets.append(["m6support",  difx_version, True,False,True,False])
+if components["polconvert"]:
+    apptargets.append(["polconvert", difx_version, True,False,True,False])
+if components["guiServer"]:
+    apptargets.append(["guiServer",  difx_version, True,False,False,True])
+if components["mk5daemon"]:
+    apptargets.append(["mk5daemon",  difx_version, True,False,True,False])
+if components["difx_monitor"]:
     apptargets.append(["difx_monitor", difx_version, True,False,False,True])
+if components["datasim"]:
+    apptargets.append(["datasim", difx_version, True,True,True,False])
 
 # a navigation aid
 def os_chdir(dir):
@@ -368,12 +496,25 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
             if cache != 'none':
                 configstring += "-CXX"
             configstring += " CXX=" + mpicxx
+        if dopybindings and check_configureAC_has(cfp+"/configure.ac", "enable-python"):
+            configstring += " --enable-python "
+        if dopybindings and check_configureAC_has(cfp+"/configure.ac", "with-python"):
+            configstring += " --with-python "
         run(configstring)
 
-    run("make " + target)
+    run(MAKEcommand + target)
     if not noinstall:
-        run("make install")
+        run(MAKEcommand + "install")
     os_chdir(thisdir)
+
+def check_configureAC_has(cfpath, key):
+    try:
+        for line in open(cfpath,'r'):
+            if key in line:
+                return True
+    except:
+        print "Warning: could not check %s for %s\n."
+    return False
 
 ###### Subroutine to set up documentation area ##########
 def make_doc_area(basedocdir):
@@ -392,21 +533,10 @@ autojunk += ' install-sh ltmain.sh Makefile.in missing'
 # autojunk += ' COPYING INSTALL'
 
 if doclean:
-    if perl:
+    if components["perl"]:
         print "**** Cleaning vexlib"
         os_chdir("libraries/vex/"+difx_version+"/vexlib")
-        run("make clean")
-        os_chdir(topdir)
-    if rpfits:
-        print "**** Cleaning rpfits"
-        if platform == "darwin":
-            os_chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
-        else:
-            if difxbits == "32":
-                os_chdir("libraries/rpfits/"+difx_version+"/linux/")
-            else:
-                os_chdir("libraries/rpfits/"+difx_version+"/linux64/")
-        run("make clean")
+        run(MAKEcommand + "clean")
         os_chdir(topdir)
 
     os_chdir("libraries")
@@ -417,7 +547,7 @@ if doclean:
             print
             print "**** Cleaning "+targetdir
             os_chdir(targetdir)
-            run("make -k clean distclean")
+            run(MAKEcommand + "-k clean distclean")
             if pristine:
                 run("rm -rf " + autojunk)
         else:
@@ -435,7 +565,7 @@ if doclean:
             print
             print "**** Cleaning "+targetdir
             os_chdir(targetdir)
-            run("make -k clean distclean")
+            run(MAKEcommand + "-k clean distclean")
             if pristine:
                 run("rm -rf " + autojunk)
         else:
@@ -456,7 +586,7 @@ if doclean:
             print
             print "**** Cleaning "+targetdir
             os_chdir(targetdir)
-            run("make -k clean distclean")
+            run(MAKEcommand + "-k clean distclean")
             if pristine:
                 run("rm -rf " + autojunk)
         else:
@@ -470,7 +600,7 @@ if doclean:
         print
         print "**** Cleaning "+targetdir
         os_chdir(targetdir)
-        run("make -k clean distclean") 
+        run(MAKEcommand + "-k clean distclean") 
         if pristine:
             run("rm -rf " + autojunk)
         else:
@@ -511,29 +641,31 @@ if not noinstall:
             print
         else:
             print "Creating "+pkgdir+"ipp.pc"
+            os_chdir(pkgdir)
             run(startdir+"/genipppc "+ipproot)
-            run("mv ipp.pc "+pkgdir)
+            os_chdir(topdir)
+            #run("mv ipp.pc "+pkgdir)
             print
 
 ##### Compile non-standard libraries ####################
-if perl:
+if components["perl"]:
     print
     print "************************************"
     print "Building vex"
     print
     os_chdir("libraries/vex/"+difx_version+"/vexlib")
     if platform == "darwin":
-        run("make -f Makefile.osx")
+        run(MAKEcommand + "-f Makefile.osx")
     else:
-        run("make")
+        run(MAKEcommand)
     if not noinstall:
         run("mv -f libvex." + SHAREDPOSTFIX + " " + libdir)
         run("mv -f libvex.a " + libdir)
     os_chdir("../vexperl")
     run("perl Makefile.PL PREFIX=" + difxroot)
-    run("make")
+    run(MAKEcommand)
     if not noinstall:
-        run("make install")
+        run(MAKEcommand + "install")
     os_chdir(topdir)
 
     print
@@ -542,9 +674,9 @@ if perl:
     print
     os_chdir("libraries/perl/"+difx_version+"/Astro")
     run("perl Makefile.PL PREFIX="+difxroot)
-    run("make")
+    run(MAKEcommand)
     if not noinstall:
-        run("make install")
+        run(MAKEcommand + "install")
         os_chdir(topdir)
 
     print
@@ -553,29 +685,10 @@ if perl:
     print
     os.chdir("libraries/perl/"+difx_version+"/DIFX-Input")
     run("perl Makefile.PL PREFIX="+difxroot)
-    run("make")
+    run(MAKEcommand)
     if not noinstall:
-        run("make install")
+        run(MAKEcommand + "install")
         os.chdir(topdir)
-
-if rpfits:
-    print
-    print "************************************"
-    print "Building rpfits"
-    print
-    if platform == "darwin":
-        os_chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
-    else:
-        if difxbits == "32":
-            os_chdir("libraries/rpfits/"+difx_version+"/linux/")
-        else:
-            os_chdir("libraries/rpfits/"+difx_version+"/linux64/")
-    run("make")
-    if not noinstall:
-        run("mv -f librpfits.a " + libdir)
-    os_chdir(topdir)
-    if not noinstall:
-        run("cp -f libraries/rpfits/"+difx_version+"/code/RPFITS.h " + incdir)
 
 ##### Make standard (autotool'd) libraries ###############
 os_chdir("libraries")
@@ -598,52 +711,53 @@ for libtarget in libtargets:
     os_chdir(thisdir)
 os_chdir(topdir)
 
-##### Make mpifxcorr #####################################
-print
-print "************************************"
-print "Making mpifxcorr"
-print
+if components["mpifxcorr"]:
+    ##### Make mpifxcorr #####################################
+    print
+    print "************************************"
+    print "Making mpifxcorr"
+    print
 
-os_chdir("mpifxcorr/" + difx_version)
-thisdir = os.getcwd()
+    os_chdir("mpifxcorr/" + difx_version)
+    thisdir = os.getcwd()
 
-if noconf and os.path.exists('configure'):
-    print "Reusing mpifxcorr configuration"
-else:
-    print "Reconfiguring mpifxcorr"
-    run("aclocal")
-    run("autoconf")
-    run("autoheader")
-    run("automake -acf")
-    # the files added are all present, but that need not always be true....
+    if noconf and os.path.exists('configure'):
+        print "Reusing mpifxcorr configuration"
+    else:
+        print "Reconfiguring mpifxcorr"
+        run("aclocal")
+        run("autoconf")
+        run("autoheader")
+        run("automake -acf")
+        # the files added are all present, but that need not always be true....
 
-if inbdir:
-    cfp = thisdir
-    blp = cfp.replace(topdir, blddir)
-    blp = blp.replace(repldir, blddir)
-    if not os.path.exists(blp):
-        os.makedirs(blp)
-        if verb:
-            print "++> " + blp + " was created"
-    os_chdir(blp)
-else:
-    cfp = '.'
+    if inbdir:
+        cfp = thisdir
+        blp = cfp.replace(topdir, blddir)
+        blp = blp.replace(repldir, blddir)
+        if not os.path.exists(blp):
+            os.makedirs(blp)
+            if verb:
+                print "++> " + blp + " was created"
+        os_chdir(blp)
+    else:
+        cfp = '.'
 
-if noconf and os.path.exists('config.status'):
-    print "Re-using existing mpifxcorr configuration"
-else:
-    configstring = cfp + "/configure CXX=" + mpicxx
-    configstring += " --prefix=" + difxroot
-    if rpfits:
-        configstring += ' --with-rpfits '
-    if cache != 'none':
-        configstring += cache + "-CXX"
-    run(configstring)
+    if noconf and os.path.exists('config.status'):
+        print "Re-using existing mpifxcorr configuration"
+    else:
+        configstring = cfp + "/configure CXX=" + mpicxx
+        configstring += " --prefix=" + difxroot
+        if doipp<0:
+            configstring += ' --disable-ipp '
+        if cache != 'none':
+            configstring += cache + "-CXX"
+        run(configstring)
 
-run("make " + target)
-if not noinstall:
-    run("make install")
-os_chdir(topdir)
+    run(MAKEcommand + target)
+    if not noinstall:
+        run(MAKEcommand + "install")
+    os_chdir(topdir)
 
 ##### Make standard (autotool'd) applications ############
 os_chdir("applications")
@@ -690,13 +804,14 @@ for utiltarget in utiltargets:
 os_chdir(topdir)
 
 ##### Make documentation #################################
-basedocdir = difxroot + '/doc/'
-make_doc_area(basedocdir)
-os.chdir("mpifxcorr/" + difx_version)
-if os.system("which doxygen") != 0:
-    print "No doxygen installed - skipping mpifxcorr documentation"
-else:
-    os.system("doxygen Doxyfile")
+if(dodoc):
+    basedocdir = difxroot + '/doc/'
+    make_doc_area(basedocdir)
+    os.chdir("mpifxcorr/" + difx_version)
+    if os.system("which doxygen") != 0:
+        print "No doxygen installed - skipping mpifxcorr documentation"
+    else:
+        os.system("doxygen Doxyfile")
 
 ##### Check for errors and list if present ###############
 if (force and not errors == []):
