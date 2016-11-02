@@ -188,10 +188,12 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan, int *nScanTot)
 
         if(D)
             {
+            DifxMergeOptions mergeOptions;
+            resetDifxMergeOptions(&mergeOptions);
+            mergeOptions.verbose = opts->verbose;
             D1 = D;
 
-            if(!areDifxInputsMergable(D1, D2) ||
-               !areDifxInputsCompatible(D1, D2, FreqMergeModeStrict))
+            if(!areDifxInputsCompatible(D1, D2, &mergeOptions))
                 {
                 deleteDifxInput(D2);
                 continue;
@@ -201,7 +203,7 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan, int *nScanTot)
                 printf ("Merging %s\n", opts->baseFile[i]);
                 }
 
-            D = mergeDifxInputs(D1, D2, opts->verbose);
+            D = mergeDifxInputs(D1, D2, &mergeOptions);
 
             deleteDifxInput(D1);
             deleteDifxInput(D2);
