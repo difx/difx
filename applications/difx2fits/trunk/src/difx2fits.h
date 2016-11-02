@@ -72,6 +72,7 @@ struct CommandLineOptions
 	char *historyFile;	/* if set, dump contents to FITS history */
 	enum EOPMergeMode eopMergeMode;
 	enum FreqMergeMode freqMergeMode;
+	DifxMergeOptions mergeOptions;
 };
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,

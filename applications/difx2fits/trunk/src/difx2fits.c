@@ -131,7 +131,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --union\n");
 	fprintf(stderr, "  -u                  Form union of frequency setups\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --merge-eop		Merge different sets of EOPs [experimental]\n");
+	fprintf(stderr, "  --merge-eop         Merge different sets of EOPs [experimental]\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
@@ -162,8 +162,6 @@ struct CommandLineOptions *newCommandLineOptions()
         opts->skipExtraAutocorrs = 0;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
-	opts->eopMergeMode = EOPMergeModeStrict;
-	opts->freqMergeMode = FreqMergeModeStrict;
 
 	return opts;
 }
@@ -260,13 +258,18 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			}
 			else if(strcmp(argv[i], "--merge-eop") == 0 )
 			{
-				opts->eopMergeMode = EOPMergeModeRelaxed;
+				opts->mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
 				fprintf(stderr, "\nWarning: using mode that merges all EOPs.  This is experimental at this time and in most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
+			}
+			else if(strcmp(argv[i], "--drop-eop") == 0 )
+			{
+				opts->mergeOptions.eopMergeMode = EOPMergeModeLoose;
+				fprintf(stderr, "\nWarning: using mode that drops all EOPs, allowing merging of files including incompatible EOP values.\n\n");
 			}
 			else if(strcmp(argv[i], "--union") == 0 ||
 			        strcmp(argv[i], "-u") == 0)
 			{
-				opts->freqMergeMode = FreqMergeModeUnion;
+				opts->mergeOptions.freqMergeMode = FreqMergeModeUnion;
 				fprintf(stderr, "\nWarning: using mode that merges all frequency setups that are encountered into one master frequency setup.  This is experimental at this time and in most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
 			}
 			else if(strcmp(argv[i], "--zero") == 0 ||
@@ -485,6 +488,8 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			opts->baseFile[i][l-5] = 0;
 		}
 	}
+
+	opts->mergeOptions.verbose = opts->verbose;
 
 	return opts;
 }
@@ -885,31 +890,6 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 			Dset[i]->startChan = (Dset[i]->freq[0].nChan*opts->startChan) + 0.5;
 		}
 	}
-	if(opts->eopMergeMode == EOPMergeModeUnspecified)
-	{
-		if(nEOPDays(Dset, opts->nBaseFile) > DIFXIO_MAX_EOP_PER_FITS)
-		{
-			/* here only allow merging if EOP sets match exactly */
-			eopMergeMode = EOPMergeModeStrict;
-		}
-		else
-		{
-			/* here allow non-contradictory EOP sets to be merged as long as common days have identical values */
-			eopMergeMode = EOPMergeModeRelaxed;
-		}
-	}
-	else
-	{
-		eopMergeMode = opts->eopMergeMode;
-	}
-
-	for(i = 0; i < opts->nBaseFile; ++i)
-	{
-		if(Dset[i]->eopMergeMode == EOPMergeModeUnspecified)
-		{
-			Dset[i]->eopMergeMode = eopMergeMode;
-		}
-	}
 
 	return Dset;
 }
@@ -971,8 +951,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 			D1 = D;
 
-			if(!areDifxInputsMergable(D1, D2) ||
-			   !areDifxInputsCompatible(D1, D2, opts->freqMergeMode))
+			if(!areDifxInputsCompatible(D1, D2, &opts->mergeOptions))
 			{
 				continue;
 			}
@@ -981,7 +960,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 				printf("Merging %s\n", opts->baseFile[i]);
 			}
 
-			D = mergeDifxInputs(D1, D2, opts->verbose);
+			D = mergeDifxInputs(D1, D2, &opts->mergeOptions);
 
 			if(D->nEOP < D1->nEOP || D->nEOP < D2->nEOP)
 			{
