@@ -744,6 +744,7 @@ cverbose << startl << "Out of inner read loop: keepreading=" << keepreading << "
 	cverbose << startl << "Readthread is exiting; dataremaining=" << dataremaining << ", keepreading=" << keepreading << endl;
 }
 
+/* Pthread barriers are optional and not defined on OSX. This adds the functionality */
 #ifdef __APPLE__
 int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
 {
