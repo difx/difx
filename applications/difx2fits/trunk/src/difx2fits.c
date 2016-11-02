@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -128,6 +128,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  -T           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSniffInterval);
 	fprintf(stderr, "\n");
 #endif
+	fprintf(stderr, "  --union\n");
+	fprintf(stderr, "  -u                  Form union of frequency setups\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
 	fprintf(stderr, "\n");
@@ -158,6 +161,7 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
 	opts->eopMergeMode = EOPMergeModeUnspecified;
+	opts->freqMergeMode = FreqMergeModeStrict;
 
 	return opts;
 }
@@ -251,6 +255,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			        strcmp(argv[i], "-v") == 0)
 			{
 				++opts->verbose;
+			}
+			else if(strcmp(argv[i], "--union") == 0 ||
+			        strcmp(argv[i], "-u") == 0)
+			{
+				opts->freqMergeMode = FreqMergeModeUnion;
+				fprintf(stderr, "\nWarning: using mode that merges all frequency setups that are encountered into one master frequency setup.  This is experimental at this time and in most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
 			}
 			else if(strcmp(argv[i], "--zero") == 0 ||
 				strcmp(argv[i], "-0") == 0)
@@ -955,7 +965,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 			D1 = D;
 
 			if(!areDifxInputsMergable(D1, D2) ||
-			   !areDifxInputsCompatible(D1, D2))
+			   !areDifxInputsCompatible(D1, D2, opts->freqMergeMode))
 			{
 				continue;
 			}

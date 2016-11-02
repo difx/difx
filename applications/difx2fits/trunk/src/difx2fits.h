@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -71,6 +71,7 @@ struct CommandLineOptions
 	char *primaryBand;	/* for VLITE */
 	char *historyFile;	/* if set, dump contents to FITS history */
 	enum EOPMergeMode eopMergeMode;
+	enum FreqMergeMode freqMergeMode;
 };
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
