@@ -117,8 +117,10 @@ int main(int argc, char **argv)
 {
 	DifxInput *D = 0;
 	int a, s;
-	int mergable, compatible;
 	int item = ItemDelay;
+	DifxMergeOptions mergeOptions;
+
+	mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
 	
 	for(a = 1; a < argc; ++a)
 	{
@@ -161,10 +163,6 @@ int main(int argc, char **argv)
 		else if(D == 0)
 		{
 			D = loadDifxInput(argv[a]);
-			if(D)
-			{
-				D->eopMergeMode = EOPMergeModeRelaxed;
-			}
 		}
 		else
 		{
@@ -174,10 +172,7 @@ int main(int argc, char **argv)
 			D2 = loadDifxInput(argv[a]);
 			if(D2)
 			{
-				D2->eopMergeMode = EOPMergeModeRelaxed;
-				mergable = areDifxInputsMergable(D1, D2);
-				compatible = areDifxInputsCompatible(D1, D2, FreqMergeModeStrict);
-				if(mergable && compatible)
+				if(areDifxInputsCompatible(D1, D2, &mergeOptions))
 				{
 					D = mergeDifxInputs(D1, D2, 0);
 					deleteDifxInput(D1);
@@ -185,7 +180,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					fprintf(stderr, "cannot merge job %s: mergable=%d compatible=%d\n", argv[a], mergable, compatible);
+					fprintf(stderr, "cannot merge job %s\n", argv[a]);
 					deleteDifxInput(D1);
 					deleteDifxInput(D2);
 					D = 0;

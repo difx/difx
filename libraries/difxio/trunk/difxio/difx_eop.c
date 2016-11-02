@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,9 +35,9 @@
 
 const char eopMergeModeNames[][MAX_EOP_MERGE_MODE_STRING_LENGTH] =
 {
-	"unspecified",
 	"strict",
 	"relaxed",
+	"loose",
 	"illegal"
 };
 
@@ -140,14 +140,14 @@ int isSameDifxEOP(const DifxEOP *de1, const DifxEOP *de2)
 
 /* Note this function returns the number of merged EOP entries on the call 
  * stack : nde */
-DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde)
+DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde, const DifxMergeOptions *mergeOptions)
 {
 	DifxEOP *de;
 	int mjdMin=-1, mjdMax=-1;
 	int i, i1=0, i2=0;
 	int src;
 
-	if(nde1 == 0 && nde2 == 0)
+	if(mergeOptions->eopMergeMode == EOPMergeModeLoose && nde1 == 0 && nde2 == 0)
 	{
 		*nde = 0;
 
@@ -268,36 +268,31 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, in
 	return de;
 }
 
-int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, enum EOPMergeMode eopMergeMode)
+int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, const DifxMergeOptions *mergeOptions)
 {
 	DifxEOP *de;
 	int nde;
 
+	if(mergeOptions->eopMergeMode == EOPMergeModeLoose)
+	{
+		return 1;
+	}
+
 	/* test mergability by actually trying.  Then delete the outcome if it is good. */
-	de = mergeDifxEOPArrays(de1, nde1, de2, nde2, &nde);
+	de = mergeDifxEOPArrays(de1, nde1, de2, nde2, &nde, mergeOptions);
 	if(!de)
 	{
-		printf ("merging fails\n");
 		/* merging fails! */
 		return 0;
 	}
 
 	deleteDifxEOPArray(de);
 
-	if(eopMergeMode == EOPMergeModeRelaxed)
+	if(mergeOptions->eopMergeMode == EOPMergeModeRelaxed)
 	{
 		return 1;
-	/*	if(nde <= DIFXIO_MAX_EOP_PER_FITS)
-		{
-			return 1;
-		}
-		else
-		{
-			return 0;
-		}
-*/
 	}
-	else if(eopMergeMode == EOPMergeModeStrict)
+	else if(mergeOptions->eopMergeMode == EOPMergeModeStrict)
 	{
 		if(nde == nde1 && nde == nde2)
 		{

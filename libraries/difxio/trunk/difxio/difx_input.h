@@ -43,6 +43,7 @@
 #define MAX_SAMPLING_NAME_LENGTH		16
 #define MAX_TONE_SELECTION_STRING_LENGTH	12
 #define MAX_EOP_MERGE_MODE_STRING_LENGTH	16
+#define MAX_FREQ_MERGE_MODE_STRING_LENGTH	16
 #define MAX_PHASED_ARRAY_TYPE_STRING_LENGTH	16
 #define MAX_PHASED_ARRAY_FORMAT_STRING_LENGTH	16
 #define MAX_TAPER_FUNCTION_STRING_LENGTH	16
@@ -67,8 +68,6 @@
 #define DIFXIO_POL_RL			(DIFXIO_POL_R | DIFXIO_POL_L)
 #define DIFXIO_POL_XY			(DIFXIO_POL_X | DIFXIO_POL_Y)
 
-#define DIFXIO_MAX_EOP_PER_FITS		6
-
 #define DIFXIO_DEFAULT_POLY_ORDER	5
 #define DIFXIO_DEFAULT_POLY_INTERVAL	120
 #define DIFXIO_DEFAULT_ABER_CORR_TYPE	AberCorrExact
@@ -77,8 +76,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
 
 /* Notes about antenna numbering
  *
@@ -154,10 +151,10 @@ enum AntennaMountType
 /* keep this current with antennaSiteTypeNames in difx_antenna.c */
 enum AntennaSiteType
 {
-    AntennaSiteFixed = 0,
-    AntennaSiteEarth_Orbiting = 1,
-    AntennaSiteOther = 2,
-    NumAntennaSiteTypes     /* must remain as last entry */
+	AntennaSiteFixed = 0,
+	AntennaSiteEarth_Orbiting = 1,
+	AntennaSiteOther = 2,
+	NumAntennaSiteTypes		/* must remain as last entry */
 };
 
 extern const char antennaSiteTypeNames[][MAX_ANTENNA_SITE_NAME_LENGTH];
@@ -192,9 +189,9 @@ extern const char toneSelectionNames[][MAX_TONE_SELECTION_STRING_LENGTH];
 /* keep this current with eopMergeModeNames[] in difx_eop.c */
 enum EOPMergeMode
 {
-	EOPMergeModeUnspecified = 0,
-	EOPMergeModeStrict,		/* here only allow merging if EOP sets match exactly */
+	EOPMergeModeStrict = 0,		/* here only allow merging if EOP sets match exactly */
 	EOPMergeModeRelaxed,		/* here allow non-contradictory EOP sets to be merged as long as common days have identical values */
+	EOPMergeModeLoose,		/* allow any EOPs.  Won't write EOPs in output data sets though */
 
 	NumEOPMergeModes		/* must remain as last entry */
 };
@@ -238,6 +235,8 @@ extern const char taperFunctionNames[][MAX_TAPER_FUNCTION_STRING_LENGTH];
 
 
 /* FIXME: in future version, handle Frequency, EOP, ... MergeModes in more consistant manner, perhaps as a new structure rather than individual enums */
+
+/* keep this current with freqMergeModeNames in difx_freq.c */
 enum FreqMergeMode
 {
 	FreqMergeModeStrict = 0,		/* only allow exactly identical frequency setups to be merged */
@@ -245,6 +244,18 @@ enum FreqMergeMode
 
 	NumFreqMergeModes			/* must remain as last entry */
 };
+
+extern const char freqMergeModeNames[][MAX_FREQ_MERGE_MODE_STRING_LENGTH];
+
+
+/* structure containing options that affect the ability to merge, or the merge itself, of different filesets */
+typedef struct
+{
+	int verbose;
+	enum EOPMergeMode eopMergeMode;
+	enum FreqMergeMode freqMergeMode;
+} DifxMergeOptions;
+
 
 
 /* Straight from DiFX frequency table */
@@ -637,7 +648,6 @@ typedef struct
 	int dataBufferFactor;
         int nDataSegments;
         enum OutputFormatType outputFormat;
-	enum EOPMergeMode eopMergeMode;
 
 	int nCore;		/* from the .threads file, or zero if no file */
 	int *nThread;		/* [coreId]: how many threads to use on each core */
@@ -671,6 +681,7 @@ void generateDifxJobFileBase(DifxJob *dj, char *fileBase);
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1, const DifxJob *dj2, int ndj2, int *jobIdRemap, int *antennaIdRemap, int *ndj);
 
 /* DifxFreq functions */
+enum FreqMergeMode stringToFreqMergeMode(const char *str);
 DifxFreq *newDifxFreqArray(int nFreq);
 void DifxFreqAllocTones(DifxFreq *df, int nTone);
 void deleteDifxFreqInternals(DifxFreq *df);
@@ -875,8 +886,8 @@ void printDifxEOPSummary(const DifxEOP *de);
 void fprintDifxEOPSummary(FILE *fp, const DifxEOP *de);
 void copyDifxEOP(DifxEOP *dest, const DifxEOP *src);
 int isSameDifxEOP(const DifxEOP *de1, const DifxEOP *de2);
-DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde);
-int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, enum EOPMergeMode eopMergeMode);
+DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde, const DifxMergeOptions *mergeOptions);
+int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, const DifxMergeOptions *mergeOptions);
 int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de);
 
 /* DifxSpacecraft functions */
@@ -924,6 +935,7 @@ void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src, cons
 DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, int ndf1, const DifxAntennaFlag *df2, int ndf2, const int *antennaIdRemap, int *ndf);
 
 /* DifxInput functions */
+void resetDifxMergeOptions(DifxMergeOptions *mergeOptions);
 enum ToneSelection stringToToneSelection(const char *str);
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
@@ -934,12 +946,10 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D);
 void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds);
 DifxInput *loadDifxInput(const char *filePrefix);
 DifxInput *loadDifxCalc(const char *filePrefix);
-//DifxInput *deriveSourceTable(DifxInput *D);
 DifxInput *allocateSourceTable(DifxInput *D, int length);
 DifxInput *updateDifxInput(DifxInput *D);
-int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
-int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, enum FreqMergeMode freqMergeMode);
-DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose);
+int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions);
+DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions);
 int isAntennaFlagged(const DifxJob *J, double mjd, int antennaId);
 int DifxInputGetPointingSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd, int antennaId);

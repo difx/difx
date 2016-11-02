@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2016 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,6 +32,28 @@
 #include <string.h>
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
+
+const char freqMergeModeNames[][MAX_FREQ_MERGE_MODE_STRING_LENGTH] =
+{
+	"strict",
+	"union",
+	"illegal"
+};
+
+enum FreqMergeMode stringToFreqMergeMode(const char *str)
+{
+	enum FreqMergeMode f;
+
+	for(f = 0; f < NumFreqMergeModes; ++f)
+	{
+		if(strcasecmp(str, freqMergeModeNames[f]) == 0)
+		{
+			break;
+		}
+	}
+
+	return f;
+}
 
 
 DifxFreq *newDifxFreqArray(int nFreq)

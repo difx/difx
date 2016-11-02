@@ -154,8 +154,6 @@ int main(int argc, char **argv)
 	int header= 1;
 	double distance, pangle; 
 	int i, l;
-	int verbose = 0;
-	int mergable, compatible;
 	int nJob = 0;
 
 	char *baseFile[MAX_INPUT_FILES];
@@ -164,8 +162,11 @@ int main(int argc, char **argv)
 	int doalldifx = 0;
 	glob_t globBuffer;
 
+	DifxMergeOptions mergeOptions;
 	
-	tInc= DefaultTInc;
+	resetDifxMergeOptions(&mergeOptions);
+
+	tInc = DefaultTInc;
 
 	for(i = 1; i < argc; ++i)
 	{
@@ -174,7 +175,7 @@ int main(int argc, char **argv)
 			if(strcmp(argv[i], "-v") == 0 ||
 			   strcmp(argv[i], "--verbose") == 0)
 			{
-				++verbose;
+				++mergeOptions.verbose;
 				continue;
 			}
 			else if(strcmp(argv[i], "-h") == 0 ||
@@ -287,7 +288,7 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		if(verbose > 1)
+		if(mergeOptions.verbose > 1)
 		{
 			printf("Loading %s\n", baseFile[i]);
 		}
@@ -300,7 +301,7 @@ int main(int argc, char **argv)
 		}
 		if(DifxInputGetMaxPhaseCentres(D2) <= phaseCentre)
 		{
-			if(verbose > 0)
+			if(mergeOptions.verbose > 0)
 			{
 				printf("Skipping %s because it doesn't contain phase centre %d\n", baseFile[i], phaseCentre);
 			}
@@ -318,19 +319,18 @@ int main(int argc, char **argv)
 		{
 			D1 = D;
 
-			if(!areDifxInputsMergable(D1, D2) ||
-			   !areDifxInputsCompatible(D1, D2, FreqMergeModeStrict))
+			if(!areDifxInputsCompatible(D1, D2, &mergeOptions))
 			{
 				deleteDifxInput(D2);
 
 				continue;
 			}
-			else if(verbose > 1)
+			else if(mergeOptions.verbose > 1)
 			{
 				printf("Merging %s\n", baseFile[i]);
 			}
 
-			D = mergeDifxInputs(D1, D2, verbose);
+			D = mergeDifxInputs(D1, D2, &mergeOptions);
 
 			deleteDifxInput(D1);
 			deleteDifxInput(D2);

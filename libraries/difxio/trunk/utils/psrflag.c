@@ -394,10 +394,11 @@ int main(int argc, char **argv)
 	DifxInput *D = 0;
 	double threshold = 0.02;
 	int a;
-	int verbose = 0;
-	int mergable, compatible;
 	int nJob = 0;
 	int pulsarId;
+	DifxMergeOptions mergeOptions;
+
+	resetDifxMergeOptions(&mergeOptions);
 	
 	for(a = 1; a < argc; ++a)
 	{
@@ -406,7 +407,7 @@ int main(int argc, char **argv)
 			if(strcmp(argv[a], "-v") == 0 ||
 			   strcmp(argv[a], "--verbose") == 0)
 			{
-				++verbose;
+				++mergeOptions.verbose;
 				continue;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
@@ -449,17 +450,15 @@ int main(int argc, char **argv)
 			D2 = loadDifxInput(argv[a]);
 			if(D2)
 			{
-				mergable = areDifxInputsMergable(D1, D2);
-				compatible = areDifxInputsCompatible(D1, D2, FreqMergeModeStrict);
-				if(mergable && compatible)
+				if(areDifxInputsCompatible(D1, D2, &mergeOptions))
 				{
-					D = mergeDifxInputs(D1, D2, verbose);
+					D = mergeDifxInputs(D1, D2, &mergeOptions);
 					deleteDifxInput(D1);
 					deleteDifxInput(D2);
 				}
 				else
 				{
-					printf("cannot merge job %s: mergable=%d compatible=%d\n", argv[a], mergable, compatible);
+					printf("cannot merge job %s\n", argv[a]);
 					deleteDifxInput(D1);
 					deleteDifxInput(D2);
 					D = 0;

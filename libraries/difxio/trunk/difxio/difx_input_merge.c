@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,10 +33,20 @@
 #include "difxio/difx_input.h"
 
 
-#warning "FIXME: add condition structure"
-int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
+/* This function determines if two DifxInput are not mergable
+ * because difxio does not currently support it, but could
+ * in the future */
+int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions)
 {
-#warning "FIXME: startChan, nInChan and nOutChan are probably vestigial; clean them up?"
+	static const DifxMergeOptions defaultMergeOptions;	/* initialized to zeros */
+	int f;
+	int a1;
+
+	if(mergeOptions == 0)
+	{
+		mergeOptions = &defaultMergeOptions;
+	}
+
 	if(D1->specAvg != D2->specAvg ||
 	   strncmp(D1->job->difxVersion, D2->job->difxVersion, DIFXIO_VERSION_LENGTH) ||
 	   strncmp(D1->job->difxLabel, D2->job->difxLabel, DIFXIO_VERSION_LENGTH))
@@ -44,20 +54,7 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 		return 0;
 	}
 
-#warning "FIXME: check that D2 has no remappings as those would become lost"
-	
-	return 1;
-}
-
-/* This function determines if two DifxInput are not mergable
- * because difxio does not currently support it, but could
- * in the future */
-int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, enum FreqMergeMode freqMergeMode)
-{
-	int f;
-	int a1;
-
-	switch(freqMergeMode)
+	switch(mergeOptions->freqMergeMode)
 	{
 	case FreqMergeModeStrict:
 		if(D1->nFreq != D2->nFreq)
@@ -79,11 +76,11 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, enum FreqM
 
 	default:
 		/* should never happen */
-		fprintf(stderr, "Developer error: Unsupported Frequency Merge Mode %d\n", (int)freqMergeMode);
+		fprintf(stderr, "Developer error: Unsupported Frequency Merge Mode %d\n", (int)(mergeOptions->freqMergeMode));
 		exit(0);
 	}
 
-	if(D1->eopMergeMode != D2->eopMergeMode || areDifxEOPsCompatible(D1->eop, D1->nEOP, D2->eop, D2->nEOP, D1->eopMergeMode) == 0)
+	if(areDifxEOPsCompatible(D1->eop, D1->nEOP, D2->eop, D2->nEOP, mergeOptions) == 0)
 	{
 		return 0;
 	}
@@ -107,8 +104,9 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, enum FreqM
 	return 1;
 }
 
-DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose)
+DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions)
 {
+	static const DifxMergeOptions defaultMergeOptions;	/* initialized to zeros */
 	DifxInput *D;
 	DifxJob *job;
 	int *jobIdRemap;
@@ -120,6 +118,11 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose
 	int *configIdRemap;
 	int *sourceIdRemap;
 	int *spacecraftIdRemap;
+
+	if(mergeOptions == 0)
+	{
+		mergeOptions = &defaultMergeOptions;
+	}
 
 	if(!D1 || !D2)
 	{
@@ -218,8 +221,6 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose
 		&(D->nConfig));
 
         /* merge DifxSource table */
-	//printf("About to merge two source arrays (vals %p, %p)", D1->source, D2->source);
-	//printf("With numbers of sources %d, %d\n", D2->nSource, D2->nSource);
 	D->source = mergeDifxSourceArrays(D1->source, D1->nSource,
 		D2->source, D2->nSource, sourceIdRemap, &(D->nSource));
 
@@ -229,9 +230,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose
 		&(D->nScan));
 
 	/* merge DifxEOP table */
-	D->eopMergeMode = D1->eopMergeMode;
-	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
-		&(D->nEOP));
+	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP, &(D->nEOP), mergeOptions);
 	
 	/* merge DifxSpacecraft table */
 	D->spacecraft = mergeDifxSpacecraft(D1->spacecraft, D1->nSpacecraft,

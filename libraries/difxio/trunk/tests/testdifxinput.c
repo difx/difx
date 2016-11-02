@@ -34,8 +34,8 @@
 
 const char program[] = "testdifxinput";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "1.1";
-const char verdate[] = "20130508";
+const char version[] = "1.2";
+const char verdate[] = "20161102";
 
 void usage()
 {
@@ -46,8 +46,8 @@ void usage()
 	printf("-v         be a bit more verbose\n\n");
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
-	printf("--mergeall\n");
-	printf("-m         merge even incompatible frequency setups\n\n");
+	printf("--union\n");
+	printf("-u         merge even incompatible frequency setups\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 }
 
@@ -56,9 +56,11 @@ int main(int argc, char **argv)
 	DifxInput *D = 0;
 	int a;
 	int verbose = 0;
-	int mergable, compatible;
 	int nJob = 0;
-	enum FreqMergeMode mergeMode = FreqMergeModeStrict;
+	DifxMergeOptions mergeOptions;
+
+	resetDifxMergeOptions(&mergeOptions);
+	mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
 	
 	for(a = 1; a < argc; ++a)
 	{
@@ -77,10 +79,10 @@ int main(int argc, char **argv)
 
 				exit(EXIT_SUCCESS);
 			}
-			else if(strcmp(argv[a], "-m") == 0 ||
-			   strcmp(argv[a], "--mergeall") == 0)
+			else if(strcmp(argv[a], "-u") == 0 ||
+			   strcmp(argv[a], "--union") == 0)
 			{
-				mergeMode = FreqMergeModeUnion;
+				mergeOptions.freqMergeMode = FreqMergeModeUnion;
 			}
 			else
 			{
@@ -92,10 +94,6 @@ int main(int argc, char **argv)
 		else if(D == 0)
 		{
 			D = loadDifxInput(argv[a]);
-			if(D)
-			{
-				D->eopMergeMode = EOPMergeModeRelaxed;
-			}
 		}
 		else
 		{
@@ -105,18 +103,15 @@ int main(int argc, char **argv)
 			D2 = loadDifxInput(argv[a]);
 			if(D2)
 			{
-				D2->eopMergeMode = EOPMergeModeRelaxed;
-				mergable = areDifxInputsMergable(D1, D2);
-				compatible = areDifxInputsCompatible(D1, D2, mergeMode);
-				if(mergable && compatible)
+				if(areDifxInputsCompatible(D1, D2, &mergeOptions))
 				{
-					D = mergeDifxInputs(D1, D2, verbose);
+					D = mergeDifxInputs(D1, D2, &mergeOptions);
 					deleteDifxInput(D1);
 					deleteDifxInput(D2);
 				}
 				else
 				{
-					printf("cannot merge job %s: mergable=%d compatible=%d\n", argv[a], mergable, compatible);
+					printf("cannot merge job %s\n", argv[a]);
 					deleteDifxInput(D1);
 					deleteDifxInput(D2);
 					D = 0;

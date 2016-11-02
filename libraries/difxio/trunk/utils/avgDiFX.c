@@ -307,7 +307,6 @@ AverageInput *openAverageInput(const char *filename)
 		
 		return 0;
 	}
-	A->D->eopMergeMode = EOPMergeModeRelaxed;
 
 	A->nChan = A->D->freq->nChan;
 	A->data = (float *)malloc(A->nChan*2*sizeof(float));
@@ -445,7 +444,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if(!areDifxInputsCompatible(A1->D, A2->D, FreqMergeModeStrict))
+	if(!areDifxInputsCompatible(A1->D, A2->D, 0))
 	{
 		fprintf(stderr, "Input files are not compatible\n");
 

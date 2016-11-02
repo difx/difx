@@ -69,7 +69,6 @@ DifxInput *newDifxInput()
 	D = (DifxInput *)calloc(1, sizeof(DifxInput));
 	D->specAvg = 1;
 	D->visBufferLength = 32;
-	D->eopMergeMode = EOPMergeModeUnspecified;
 
 	return D;
 }
@@ -179,7 +178,6 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 		fprintDifxScan(fp, D->scan + i);
 	}
 
-	fprintf(fp, "  EOP merge mode = %d = %s\n", D->eopMergeMode, eopMergeModeNames[D->eopMergeMode]);
 	fprintf(fp, "  nEOP = %d\n", D->nEOP);
 	if(D->eop) 
 	{
@@ -4150,4 +4148,9 @@ const DifxSource *DifxInputGetSource(const DifxInput *D, const char *sourceName)
 	{
 		return 0;
 	}
+}
+
+void resetDifxMergeOptions(DifxMergeOptions *mergeOptions)
+{
+	memset(mergeOptions, 0, sizeof(DifxMergeOptions));
 }
