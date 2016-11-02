@@ -147,13 +147,6 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, in
 	int i, i1=0, i2=0;
 	int src;
 
-	if(mergeOptions->eopMergeMode == EOPMergeModeLoose && nde1 == 0 && nde2 == 0)
-	{
-		*nde = 0;
-
-		return 0;
-	}
-
 	/* First determine how many output eop rows.  It cannot be more than
 	 * the sum of lengths of the two lists, but is likely shorter.  It
 	 * also cannot be longer than mjdMax - mjdMin + 1 */
@@ -272,6 +265,11 @@ int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int 
 {
 	DifxEOP *de;
 	int nde;
+
+	if(nde1 == 0 && nde2 == 0)
+	{
+		return 1;
+	}
 
 	if(mergeOptions->eopMergeMode == EOPMergeModeLoose)
 	{
