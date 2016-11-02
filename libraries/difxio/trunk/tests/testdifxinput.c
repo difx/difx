@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,6 +46,8 @@ void usage()
 	printf("-v         be a bit more verbose\n\n");
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
+	printf("--mergeall\n");
+	printf("-m         merge even incompatible frequency setups\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 }
 
@@ -56,6 +58,7 @@ int main(int argc, char **argv)
 	int verbose = 0;
 	int mergable, compatible;
 	int nJob = 0;
+	enum FreqMergeMode mergeMode = FreqMergeModeStrict;
 	
 	for(a = 1; a < argc; ++a)
 	{
@@ -73,6 +76,11 @@ int main(int argc, char **argv)
 				usage();
 
 				exit(EXIT_SUCCESS);
+			}
+			else if(strcmp(argv[a], "-m") == 0 ||
+			   strcmp(argv[a], "--mergeall") == 0)
+			{
+				mergeMode = FreqMergeModeUnion;
 			}
 			else
 			{
@@ -99,7 +107,7 @@ int main(int argc, char **argv)
 			{
 				D2->eopMergeMode = EOPMergeModeRelaxed;
 				mergable = areDifxInputsMergable(D1, D2);
-				compatible = areDifxInputsCompatible(D1, D2);
+				compatible = areDifxInputsCompatible(D1, D2, mergeMode);
 				if(mergable && compatible)
 				{
 					D = mergeDifxInputs(D1, D2, verbose);

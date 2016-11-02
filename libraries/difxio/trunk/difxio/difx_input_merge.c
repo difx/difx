@@ -52,22 +52,35 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 /* This function determines if two DifxInput are not mergable
  * because difxio does not currently support it, but could
  * in the future */
-int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
+int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, enum FreqMergeMode freqMergeMode)
 {
 	int f;
 	int a1;
 
-	if(D1->nFreq != D2->nFreq)
+	switch(freqMergeMode)
 	{
-		return 0;
-	}
-
-	for(f = 0; f < D1->nFreq; ++f)
-	{
-		if(isSameDifxFreq(D1->freq + f, D2->freq + f) == 0)
+	case FreqMergeModeStrict:
+		if(D1->nFreq != D2->nFreq)
 		{
 			return 0;
 		}
+
+		for(f = 0; f < D1->nFreq; ++f)
+		{
+			if(isSameDifxFreq(D1->freq + f, D2->freq + f) == 0)
+			{
+				return 0;
+			}
+		}
+		break;
+	case FreqMergeModeUnion:
+		/* nothing to check here */
+		break;
+
+	default:
+		/* should never happen */
+		fprintf(stderr, "Developer error: Unsupported Frequency Merge Mode %d\n", (int)freqMergeMode);
+		exit(0);
 	}
 
 	if(D1->eopMergeMode != D2->eopMergeMode || areDifxEOPsCompatible(D1->eop, D1->nEOP, D2->eop, D2->nEOP, D1->eopMergeMode) == 0)

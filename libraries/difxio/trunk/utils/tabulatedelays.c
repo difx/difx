@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2016 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 			{
 				D2->eopMergeMode = EOPMergeModeRelaxed;
 				mergable = areDifxInputsMergable(D1, D2);
-				compatible = areDifxInputsCompatible(D1, D2);
+				compatible = areDifxInputsCompatible(D1, D2, FreqMergeModeStrict);
 				if(mergable && compatible)
 				{
 					D = mergeDifxInputs(D1, D2, 0);

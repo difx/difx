@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2016 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -445,7 +445,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if(!areDifxInputsCompatible(A1->D, A2->D))
+	if(!areDifxInputsCompatible(A1->D, A2->D, FreqMergeModeStrict))
 	{
 		fprintf(stderr, "Input files are not compatible\n");
 

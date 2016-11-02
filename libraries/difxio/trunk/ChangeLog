@@ -23,6 +23,7 @@
 * Remove ill-conceived function: DifxInputGetDatastreamId
 * Fixed function DifxConfigRecBand2FreqPol to be compatible with multiple data streams
 * Add parameter to track delay model program to use (stored in .calc file)
+* New API-breaking addition: enum FreqMergeMode added to areDifxInputsCompatible
 
 3.4.0
 * Fix X/Y polarization issue

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by John Morgan                                     *
+ *   Copyright (C) 2012-2016 by John Morgan & Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
 			D1 = D;
 
 			if(!areDifxInputsMergable(D1, D2) ||
-			   !areDifxInputsCompatible(D1, D2))
+			   !areDifxInputsCompatible(D1, D2, FreqMergeModeStrict))
 			{
 				deleteDifxInput(D2);
 

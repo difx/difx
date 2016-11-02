@@ -237,6 +237,16 @@ enum TaperFunction
 extern const char taperFunctionNames[][MAX_TAPER_FUNCTION_STRING_LENGTH];
 
 
+/* FIXME: in future version, handle Frequency, EOP, ... MergeModes in more consistant manner, perhaps as a new structure rather than individual enums */
+enum FreqMergeMode
+{
+	FreqMergeModeStrict = 0,		/* only allow exactly identical frequency setups to be merged */
+	FreqMergeModeUnion,			/* output frequency setup is union of all input frequency setups */
+
+	NumFreqMergeModes			/* must remain as last entry */
+};
+
+
 /* Straight from DiFX frequency table */
 typedef struct
 {
@@ -928,7 +938,7 @@ DifxInput *loadDifxCalc(const char *filePrefix);
 DifxInput *allocateSourceTable(DifxInput *D, int length);
 DifxInput *updateDifxInput(DifxInput *D);
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
-int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2);
+int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, enum FreqMergeMode freqMergeMode);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose);
 int isAntennaFlagged(const DifxJob *J, double mjd, int antennaId);
 int DifxInputGetPointingSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
