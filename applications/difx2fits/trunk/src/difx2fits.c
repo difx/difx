@@ -131,6 +131,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --union\n");
 	fprintf(stderr, "  -u                  Form union of frequency setups\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --merge-eop		Merge different sets of EOPs [experimental]\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
 	fprintf(stderr, "\n");
@@ -160,7 +162,7 @@ struct CommandLineOptions *newCommandLineOptions()
         opts->skipExtraAutocorrs = 0;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
-	opts->eopMergeMode = EOPMergeModeUnspecified;
+	opts->eopMergeMode = EOPMergeModeStrict;
 	opts->freqMergeMode = FreqMergeModeStrict;
 
 	return opts;
@@ -255,6 +257,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			        strcmp(argv[i], "-v") == 0)
 			{
 				++opts->verbose;
+			}
+			else if(strcmp(argv[i], "--merge-eop") == 0 )
+			{
+				opts->eopMergeMode = EOPMergeModeRelaxed;
+				fprintf(stderr, "\nWarning: using mode that merges all EOPs.  This is experimental at this time and in most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
 			}
 			else if(strcmp(argv[i], "--union") == 0 ||
 			        strcmp(argv[i], "-u") == 0)
