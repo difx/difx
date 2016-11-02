@@ -191,7 +191,7 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan, int *nScanTot)
             D1 = D;
 
             if(!areDifxInputsMergable(D1, D2) ||
-               !areDifxInputsCompatible(D1, D2))
+               !areDifxInputsCompatible(D1, D2, FreqMergeModeStrict))
                 {
                 deleteDifxInput(D2);
                 continue;
