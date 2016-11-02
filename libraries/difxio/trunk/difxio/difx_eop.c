@@ -277,6 +277,7 @@ int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int 
 	de = mergeDifxEOPArrays(de1, nde1, de2, nde2, &nde);
 	if(!de)
 	{
+		printf ("merging fails\n");
 		/* merging fails! */
 		return 0;
 	}
@@ -285,7 +286,8 @@ int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int 
 
 	if(eopMergeMode == EOPMergeModeRelaxed)
 	{
-		if(nde <= DIFXIO_MAX_EOP_PER_FITS)
+		return 1;
+	/*	if(nde <= DIFXIO_MAX_EOP_PER_FITS)
 		{
 			return 1;
 		}
@@ -293,6 +295,7 @@ int areDifxEOPsCompatible(const DifxEOP *de1, int nde1, const DifxEOP *de2, int 
 		{
 			return 0;
 		}
+*/
 	}
 	else if(eopMergeMode == EOPMergeModeStrict)
 	{
