@@ -21,6 +21,7 @@ export ENUM=7000
 target=$SOURCE
 scanStart=$START_TIME
 scanStop=$END_TIME
+fftres=$FFTRES
 #echo $target
 #echo $STATION
 
@@ -133,24 +134,24 @@ echo $mjdStop
 export scanName=''
 export force='--force'
 
-[ -n "$FFTRES"    ] || export FFTRES=0.00390625
+[ -n "$FFTRES"    ] || export FFTRES=$fftres
 [ -n "$SPECRES"   ] || export SPECRES=0.50
 [ -n "$NINT"      ] || export NINT=0.8
 [ -n "$SUBINT"    ] || export SUBINT=32000000
 
 comment="
-# Variables:
- mjdStart=$mjdStart
+  # Variables:
+  mjdStart=$mjdStart
   mjdStop=$mjdStop
-scanStart=$scanStart
- scanStop=$scanStop
- scanName=$scanName
-   target=$target
-   FFTRES=$FFTRES
+  scanStart=$scanStart
+  scanStop=$scanStop
+  scanName=$scanName
+  target=$target
+  FFTRES=$FFTRES
   SPECRES=$SPECRES
-     NINT=$NINT
-   SUBINT=$SUBINT
-    force=$force
+  NINT=$NINT
+  SUBINT=$SUBINT
+  force=$force
 "
 # echo "$comment"
 # $verb && echo "# St_info: $st_info"
@@ -222,13 +223,16 @@ echo ${formats[@]}
 echo '' ; echo '%%% manufacturing vex input' ; echo ''
 cat > $job.v2d <<-EOF
 vex = $exper.vex.obs
-mjdStart = $mjdStart
-mjdStop  = $mjdStop
+#mjdStart = $mjdStart
+#mjdStop  = $mjdStop
+mjdStart = $START_TIME
+mjdStop = $END_TIME
 antennas = $stlist
 startSeries = $num
 dataBufferFactor = ${DBFAC-16}
 visBufferLength = ${VBLEN-80}
 nDataSegments = ${NDSEG-8}
+minLength = 0.5
 
 SETUP default
 {
