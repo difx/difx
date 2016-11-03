@@ -17,7 +17,10 @@ applications/espresso		https://svn.atnf.csiro.au/difx/applications/espresso/trun
 applications/guiServer		https://svn.atnf.csiro.au/difx/applications/guiServer/trunk
 applications/hops		https://svn.atnf.csiro.au/difx/applications/hops/trunk
 applications/mk5daemon		https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk
+applications/m6support		https://svn.atnf.csiro.au/difx/applications/m6support/trunk
 applications/vex2difx		https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk
+applications/polconvert		https://svn.atnf.csiro.au/difx/applications/polconvert/trunk
+applications/datasim		https://svn.atnf.csiro.au/difx/applications/datasim/trunk
 utilities/bench			https://svn.atnf.csiro.au/difx/utilities/trunk/bench
 utilities/difx2profile		https://svn.atnf.csiro.au/difx/utilities/trunk/pulsar/difx2profile
 utilities/difxdb		https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb
