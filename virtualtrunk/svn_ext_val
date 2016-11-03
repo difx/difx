@@ -1,3 +1,4 @@
+genipppc			https://svn.atnf.csiro.au/difx/setup/genipppc
 mpifxcorr			https://svn.atnf.csiro.au/difx/mpifxcorr/trunk
 libraries/difxio		https://svn.atnf.csiro.au/difx/libraries/difxio/trunk
 libraries/difxmessage		https://svn.atnf.csiro.au/difx/libraries/difxmessage/trunk
