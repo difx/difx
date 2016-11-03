@@ -1,0 +1,59 @@
+
+vex=v521c.vex
+
+maxLength = 86400
+maxGap = 86400
+maxSize = 100000
+mjdStart=57690.797222222
+mjdStop=57690.797233796
+minLength=0.0001
+startSeries = 0
+threadsFile = threads
+outputFormat = ASCII
+tweakIntTime = True
+#maxReadSize = 400000000
+
+SETUP default
+{
+  tInt = 1.000
+  guardNS = 2000
+  nChan=2048
+}
+antennas = At, Ho, Mp, Pa
+
+ANTENNA AT {
+  phaseCalInt = 0
+  clockOffset = -43
+#CLOCK RATE (us/s):  0
+  file=/home/vlbi/fringe/October2016/v521c/20161029-190800/At.data
+  format = LBAVSOP
+}
+
+ANTENNA HO {
+  phaseCalInt = 0
+  clockOffset = -10
+#CLOCK RATE (us/s):  0
+  file=/home/vlbi/fringe/October2016/v521c/20161029-190800/Ho.data
+  format = LBAVSOP
+}
+
+ANTENNA MP {
+  phaseCalInt = 0
+  clockOffset = -1.23000001907349
+#CLOCK RATE (us/s):  0
+  file=/home/vlbi/fringe/October2016/v521c/20161029-190800/Mp.data
+  format = LBAVSOP
+}
+
+ANTENNA PA {
+  phaseCalInt = 0
+  clockOffset = -0.699999988079071
+#CLOCK RATE (us/s):  0
+  file=/home/vlbi/fringe/October2016/v521c/20161029-190800/Pa.data
+  format = LBAVSOP
+}
+EOP 57689 { xPole=0.195450 yPole=0.286740 tai_utc=36 ut1_utc=-0.318091 }
+EOP 57690 { xPole=0.193740 yPole=0.285230 tai_utc=36 ut1_utc=-0.319611 }
+EOP 57691 { xPole=0.192150 yPole=0.283780 tai_utc=36 ut1_utc=-0.321102 }
+EOP 57692 { xPole=0.190640 yPole=0.282440 tai_utc=36 ut1_utc=-0.322508 }
+EOP 57693 { xPole=0.189170 yPole=0.281200 tai_utc=36 ut1_utc=-0.323800 }

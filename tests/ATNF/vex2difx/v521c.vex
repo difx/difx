@@ -1,0 +1,3480 @@
+VEX_rev = 1.5;
+*    SCHED vers: Version 11.3 update 1.  April 14, 2014
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  11.3  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = v521c;
+*                                                      +------------+
+*                         PI revision number:          |    1.0000  |
+*                                                      +------------+
+*    mode:       LBA, 22 GHz continuum. 2X16 MHz band, dual pol
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def v521c;
+     exper_name = v521c;
+     exper_description = "K-band Reference Sources-2";
+     PI_name = "Aletha de Witt";
+     PI_email = alet@hartrao.ac.za;
+*    address:   Hartebeesthoek Radio Astronomy Observatory
+*               Farm 502 JQ, Hartebeesthoek, Broederstroom Road
+*               Krugersdorp District, Gauteng, South Africa
+*                
+*    phone:     +27 12 301 3222
+*    during obs:+27 12 301 3100
+*    fax:        
+*
+*    year, doy: 2016, 303
+*    date     : Sat 29 Oct 2016
+*    MJD      : 57690
+     exper_nominal_start=2016y303d19h00m00s;
+     exper_nominal_stop=2016y304d20h58m10s;
+*
+     target_correlator = LBA;
+*
+*    integr_time    :     1.000 s
+*    number_channels:    32
+*    number_antenna :  6
+*    cross_polarize : Yes
+*    weight_func    : UNIFORM
+*    distrib_medium : DAT
+*    distrib_format : FITS
+*    source_pos_cat : STANDARD
+*    distribute_to  : 
+*                     Cormac
+*                     Curtin University
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def lba1cm-2p-2IF;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 22300.00MHz4x16MHz:Pa:At:Mp:Ho:Cd;
+     ref $FREQ = 22300.00MHz4x16MHz#02:Hh;
+     ref $IF = LO@19000MHzDPolNoTone:Pa:At:Mp:Ho;
+     ref $IF = LO@20000MHzDPolNoTone:Cd;
+     ref $IF = LO@22080MHzDPolNoTone:Hh;
+     ref $BBC = 4BBCs:Pa:At:Mp:Ho:Cd;
+     ref $BBC = 4BBCs#02:Hh;
+     ref $TRACKS = LBA_.4Ch2bit1to1:Pa:At:Mp:Ho:Cd;
+     ref $TRACKS = MARK5B.4Ch2bit1to1:Hh;
+     ref $HEAD_POS = LBAVoid:Pa:At:Mp:Ho:Cd;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Pa:At:Mp:Ho:Cd:Hh;
+     ref $PASS_ORDER = LBADummy:Pa:At:Mp:Ho:Cd;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect:Pa:At:Mp:Ho:Cd:Hh;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Pa;
+     ref $SITE = PARKES;
+     ref $ANTENNA = PARKES;
+     ref $DAS = 1LBA+NONE<LBADR;
+enddef;
+*
+def At;
+     ref $SITE = ATCA;
+     ref $ANTENNA = ATCA;
+     ref $DAS = 1LBA+NONE<LBADR;
+enddef;
+*
+def Mp;
+     ref $SITE = MOPRA;
+     ref $ANTENNA = MOPRA;
+     ref $DAS = 1LBA+NONE<LBADR;
+enddef;
+*
+def Ho;
+     ref $SITE = HOBART;
+     ref $ANTENNA = HOBART;
+     ref $DAS = 1LBA+NONE<LBADR;
+enddef;
+*
+def Cd;
+     ref $SITE = CEDUNA;
+     ref $ANTENNA = CEDUNA;
+     ref $DAS = 1LBA+NONE<LBADR;
+enddef;
+*
+def Hh;
+     ref $SITE = HART;
+     ref $ANTENNA = HART;
+     ref $DAS = 2DBBC+NONE<;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def PARKES;
+     site_type = fixed;
+     site_name = PARKES;
+     site_ID = Pa;
+*    elev=  414.68 long=-148:15:48. lat=-32:59:54.2
+*     site_position =-4554232.31220 m: 2816758.88550 m:-3454035.25610 m; * Replaced by fixpos.pl
+     site_position =-4554232.016 m:2816758.966 m:-3454035.854 m;
+     site_velocity = -0.033210   m/yr: -0.003330   m/yr:  0.048940  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2008y001d;
+     site_position_epoch =   54466;
+enddef;
+*
+def ATCA;
+     site_type = fixed;
+     site_name = ATCA;
+     site_ID = At;
+*    elev=  252.02 long=-149:33:53. lat=-30:18:46.4
+*     site_position =-4751639.85972 m: 2791700.35670 m:-3200491.11339 m; * Replaced by fixpos.pl
+     site_position =-4751639.377 m:2791700.351 m:-3200491.7 m;
+     site_velocity = -0.030990   m/yr: -0.004580   m/yr:  0.042030  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+enddef;
+*
+def MOPRA;
+     site_type = fixed;
+     site_name = MOPRA;
+     site_ID = Mp;
+*    elev=  867.32 long=-149:05:58. lat=-31:16:04.1
+*     site_position =-4682769.05850 m: 2802619.04217 m:-3291759.33837 m; * Replaced by fixpos.pl
+     site_position =-4682768.63 m:2802619.06 m:-3291759.9 m;
+     site_velocity = -0.037040   m/yr: -0.009020   m/yr:  0.045020  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y051d;
+     site_position_epoch =   50499;
+enddef;
+*
+def HOBART;
+     site_type = fixed;
+     site_name = HOBART;
+     site_ID = Ho;
+*    elev=   65.09 long=-147:26:25. lat=-42:48:12.9
+*     site_position =-3950237.16050 m: 2522347.64680 m:-4311562.08680 m; * Replaced by fixpos.pl
+     site_position =-3950236.737 m:2522347.56 m:-4311562.539 m;
+     site_velocity = -0.038730   m/yr:  0.008440   m/yr:  0.040910  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2008y001d;
+     site_position_epoch =   54466;
+enddef;
+*
+def CEDUNA;
+     site_type = fixed;
+     site_name = CEDUNA;
+     site_ID = Cd;
+*    elev=  164.62 long=-133:48:35. lat=-31:52:03.7
+*     site_position =-3753442.74570 m: 3912709.75300 m:-3348067.60950 m; * Replaced by fixpos.pl
+     site_position =-3753443 m:3912710.35 m:-3348068.6 m;
+     site_velocity = -0.041730   m/yr:  0.002670   m/yr:  0.049900  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+enddef;
+*
+def HART;
+     site_type = fixed;
+     site_name = HART;
+     site_ID = Hh;
+*    elev= 1415.71 long=-027:41:07. lat=-25:53:23.1
+     site_position = 5085442.77120 m: 2668263.70380 m:-2768696.82940 m;
+     site_velocity = -0.001100   m/yr:  0.019500   m/yr:  0.016210  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2008y001d;
+     site_position_epoch =   54466;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def PARKES;
+     axis_type = az : el;
+     antenna_motion = el :  12.0 deg/min :  2 sec;  *    0.017 deg/sec/sec
+     antenna_motion = az :  22.0 deg/min :  2 sec;  *    0.033 deg/sec/sec
+     axis_offset =   -0.02500 m;
+enddef;
+*
+def ATCA;
+     axis_type = az : el;
+     antenna_motion = el :  20.0 deg/min :  3 sec;  *    0.222 deg/sec/sec
+     antenna_motion = az :  40.0 deg/min :  3 sec;  *    0.222 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def MOPRA;
+     axis_type = az : el;
+     antenna_motion = el :  19.0 deg/min :  3 sec;  *    0.222 deg/sec/sec
+     antenna_motion = az :  38.0 deg/min :  3 sec;  *    0.222 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def HOBART;
+     axis_type = x : yew;
+     antenna_motion = x :  40.0 deg/min :  2 sec;  *    0.028 deg/sec/sec
+     antenna_motion = y :  40.0 deg/min :  2 sec;  *    0.028 deg/sec/sec
+     axis_offset =    8.19400 m;
+enddef;
+*
+def CEDUNA;
+     axis_type = az : el;
+     antenna_motion = el :  40.0 deg/min :  2 sec;  *    0.028 deg/sec/sec
+     antenna_motion = az :  40.0 deg/min :  2 sec;  *    0.028 deg/sec/sec
+     axis_offset =    0.00240 m;
+enddef;
+*
+def HART;
+     axis_type = ha : dec;
+     antenna_motion = dec :  30.0 deg/min : 20 sec;  *    0.071 deg/sec/sec
+     antenna_motion = ha :  30.0 deg/min : 20 sec;  *    0.071 deg/sec/sec
+     axis_offset =    6.69200 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 1LBA+NONE<LBADR;
+     record_transport_type = S2;
+     electronics_rack_type = LBA;
+     number_drives = 1;
+     headstack = 1 :            : 0 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*
+def 2DBBC+NONE<;
+     record_transport_type = Mark5B;
+     electronics_rack_type = DBBC;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def 0010-401;
+     source_name = 0010-401;
+*    this source had calibrator code: V
+*    alternate source name: J0012-3954
+*    rfc_2012b Petrov, 2012, unpublished 121 observations
+     ra = 00h12m59.9098380s; dec = -39d54'26.053780"; ref_coord_frame = J2000;
+*    ra = 00h10m29.0154270s; dec = -40d11'07.109722"; ref_coord_frame = B1950;
+*    ra = 00h13m50.9867741s; dec = -39d48'55.456829"; ref_coord_frame = Date;
+enddef;
+*
+def 0021-686;
+     source_name = 0021-686;
+*    this source had calibrator code: V
+*    alternate source name: J0024-6820
+*    rfc_2012b Petrov, 2012, unpublished 22 observations
+     ra = 00h24m06.7220080s; dec = -68d20'54.585680"; ref_coord_frame = J2000;
+*    ra = 00h21m49.9107033s; dec = -68d37'32.013716"; ref_coord_frame = B1950;
+*    ra = 00h24m53.5399675s; dec = -68d15'30.970228"; ref_coord_frame = Date;
+enddef;
+*
+def 0152-513;
+     source_name = 0152-513;
+*    this source had calibrator code: V
+*    alternate source name: J0154-5107
+*    rfc_2012b Petrov, 2012, unpublished 24 observations
+     ra = 01h54m19.6949660s; dec = -51d07'51.733440"; ref_coord_frame = J2000;
+*    ra = 01h52m25.4656769s; dec = -51d22'33.996221"; ref_coord_frame = B1950;
+*    ra = 01h54m59.1518886s; dec = -51d03'01.496091"; ref_coord_frame = Date;
+enddef;
+*
+def 0208-512;
+     source_name = 0208-512;
+*    this source had calibrator code: V
+*    alternate source name: J0210-5101
+*    alternate source name: J0210-51
+*    GSFC 2011B astro solution      6783 Observations
+     ra = 02h10m46.2004270s; dec = -51d01'01.891780"; ref_coord_frame = J2000;
+*    ra = 02h08m56.9471755s; dec = -51d15'07.679004"; ref_coord_frame = B1950;
+*    ra = 02h11m24.0635766s; dec = -50d56'23.318858"; ref_coord_frame = Date;
+enddef;
+*
+def 0221-540;
+     source_name = 0221-540;
+*    this source had calibrator code: V
+*    alternate source name: J0223-5347
+*    rfc_2012b Petrov, 2012, unpublished 26 observations
+     ra = 02h23m30.8746070s; dec = -53d47'39.904750"; ref_coord_frame = J2000;
+*    ra = 02h21m50.5631963s; dec = -54d01'14.299961"; ref_coord_frame = B1950;
+*    ra = 02h24m05.8829430s; dec = -53d43'11.637172"; ref_coord_frame = Date;
+enddef;
+*
+def 0252-549;
+     source_name = 0252-549;
+*    this source had calibrator code: V
+*    alternate source name: J0253-5441
+*    alternate source name: J0253-54
+*    rfc_2012b Petrov, 2012, unpublished 150 observations
+     ra = 02h53m29.1804080s; dec = -54d41'51.435810"; ref_coord_frame = J2000;
+*    ra = 02h52m00.2490843s; dec = -54d54'02.379412"; ref_coord_frame = B1950;
+*    ra = 02h54m00.5225353s; dec = -54d37'49.892607"; ref_coord_frame = Date;
+enddef;
+*
+def 0332-403;
+     source_name = 0332-403;
+*    this source had calibrator code: V
+*    alternate source name: J0334-4008
+*    alternate source name: J0334-40
+*    rfc_2012b Petrov, 2012, unpublished 3910 observations
+     ra = 03h34m13.6544890s; dec = -40d08'25.397960"; ref_coord_frame = J2000;
+*    ra = 03h32m25.2315930s; dec = -40d18'24.050739"; ref_coord_frame = B1950;
+*    ra = 03h34m51.1898611s; dec = -40d05'06.138149"; ref_coord_frame = Date;
+enddef;
+*
+def 0427-502;
+     source_name = 0427-502;
+*    this source had calibrator code: V
+*    alternate source name: J0428-5005
+*    rfc_2012b Petrov, 2012, unpublished 33 observations
+     ra = 04h28m42.6320420s; dec = -50d05'34.294010"; ref_coord_frame = J2000;
+*    ra = 04h27m22.5759877s; dec = -50d12'05.853342"; ref_coord_frame = B1950;
+*    ra = 04h29m10.9047823s; dec = -50d03'21.759394"; ref_coord_frame = Date;
+enddef;
+*
+def 0430-332;
+     source_name = 0430-332;
+*    this source had calibrator code: V
+*    alternate source name: J0432-3309
+*    rfc_2012b Petrov, 2012, unpublished 50 observations
+     ra = 04h32m44.5643000s; dec = -33d09'11.932410"; ref_coord_frame = J2000;
+*    ra = 04h30m51.3510107s; dec = -33d15'28.280785"; ref_coord_frame = B1950;
+*    ra = 04h33m23.5634893s; dec = -33d07'05.553431"; ref_coord_frame = Date;
+enddef;
+*
+def 0438-436;
+     source_name = 0438-436;
+*    this source had calibrator code: V
+*    alternate source name: J0440-4333
+*    alternate source name: J0440-43
+*    GSFC 2011B astro solution       347 Observations
+     ra = 04h40m17.1799760s; dec = -43d33'08.604310"; ref_coord_frame = J2000;
+*    ra = 04h38m43.1791413s; dec = -43d38'53.541782"; ref_coord_frame = B1950;
+*    ra = 04h40m49.9179455s; dec = -43d31'11.559219"; ref_coord_frame = Date;
+enddef;
+*
+def 0507-611;
+     source_name = 0507-611;
+*    this source had calibrator code: V
+*    alternate source name: J0507-6104
+*    rfc_2012b Petrov, 2012, unpublished 26 observations
+     ra = 05h07m54.6708080s; dec = -61d04'43.115180"; ref_coord_frame = J2000;
+*    ra = 05h07m18.8743366s; dec = -61d08'30.336793"; ref_coord_frame = B1950;
+*    ra = 05h08m08.5975795s; dec = -61d03'22.771251"; ref_coord_frame = Date;
+enddef;
+*
+def 0521-365;
+     source_name = 0521-365;
+*    this source had calibrator code: V
+*    alternate source name: J0522-3627
+*    alternate source name: J0522-36
+*    rfc_2012b Petrov, 2012, unpublished 967 observations
+     ra = 05h22m57.9846460s; dec = -36d27'30.851140"; ref_coord_frame = J2000;
+*    ra = 05h21m12.9740928s; dec = -36d30'15.954543"; ref_coord_frame = B1950;
+*    ra = 05h23m34.1735239s; dec = -36d26'33.049315"; ref_coord_frame = Date;
+enddef;
+*
+def 0534-611;
+     source_name = 0534-611;
+*    this source had calibrator code: V
+*    alternate source name: J0534-6106
+*    alternate source name: J0534-61
+*    rfc_2012b Petrov, 2012, unpublished 107 observations
+     ra = 05h34m35.7724980s; dec = -61d06'07.073060"; ref_coord_frame = J2000;
+*    ra = 05h34m02.4044618s; dec = -61d07'59.243765"; ref_coord_frame = B1950;
+*    ra = 05h34m48.7810734s; dec = -61d05'23.698214"; ref_coord_frame = Date;
+enddef;
+*
+def 0607-605;
+     source_name = 0607-605;
+*    this source had calibrator code: V
+*    alternate source name: J0607-6031
+*    rfc_2012b Petrov, 2012, unpublished 33 observations
+     ra = 06h07m55.0867050s; dec = -60d31'51.991980"; ref_coord_frame = J2000;
+*    ra = 06h07m19.5137607s; dec = -60d31'18.736170"; ref_coord_frame = B1950;
+*    ra = 06h08m08.6243390s; dec = -60d31'55.524162"; ref_coord_frame = Date;
+enddef;
+*
+def 0629-418;
+     source_name = 0629-418;
+*    this source had calibrator code: V
+*    alternate source name: J0631-4154
+*    alternate source name: J0631-41
+*    rfc_2012b Petrov, 2012, unpublished 272 observations
+     ra = 06h31m11.9980390s; dec = -41d54'26.946630"; ref_coord_frame = J2000;
+*    ra = 06h29m37.6576110s; dec = -41d52'14.386530"; ref_coord_frame = B1950;
+*    ra = 06h31m44.4620270s; dec = -41d55'05.159961"; ref_coord_frame = Date;
+enddef;
+*
+def 0646-306;
+     source_name = 0646-306;
+*    this source had calibrator code: V
+*    alternate source name: J0648-3044
+*    alternate source name: J0648-30
+*    rfc_2012b Petrov, 2012, unpublished 897 observations
+     ra = 06h48m14.0964570s; dec = -30d44'19.659760"; ref_coord_frame = J2000;
+*    ra = 06h46m19.2006970s; dec = -30d40'54.421151"; ref_coord_frame = B1950;
+*    ra = 06h48m53.1913653s; dec = -30d45'23.776056"; ref_coord_frame = Date;
+enddef;
+*
+def 0743-673;
+     source_name = 0743-673;
+*    this source had calibrator code: V
+*    alternate source name: J0743-6726
+*    alternate source name: J0743-67
+*    rfc_2012b Petrov, 2012, unpublished 132 observations
+     ra = 07h43m31.6116400s; dec = -67d26'25.546380"; ref_coord_frame = J2000;
+*    ra = 07h43m22.1839047s; dec = -67d19'08.338068"; ref_coord_frame = B1950;
+*    ra = 07h43m36.0199195s; dec = -67d28'39.042141"; ref_coord_frame = Date;
+enddef;
+*
+def 0843-547;
+     source_name = 0843-547;
+*    this source had calibrator code: V
+*    alternate source name: J0845-5458
+*    rfc_2012b Petrov, 2012, unpublished 30 observations
+     ra = 08h45m02.4823100s; dec = -54d58'08.544440"; ref_coord_frame = J2000;
+*    ra = 08h43m40.3369530s; dec = -54d47'09.787639"; ref_coord_frame = B1950;
+*    ra = 08h45m30.3393591s; dec = -55d01'35.761459"; ref_coord_frame = Date;
+enddef;
+*
+def 0844-652;
+     source_name = 0844-652;
+*    this source had calibrator code: V
+*    alternate source name: J0845-6527
+*    rfc_2012b Petrov, 2012, unpublished 30 observations
+     ra = 08h45m11.3348480s; dec = -65d27'23.164350"; ref_coord_frame = J2000;
+*    ra = 08h44m27.2248657s; dec = -65d16'22.854507"; ref_coord_frame = B1950;
+*    ra = 08h45m26.6670773s; dec = -65d30'49.684026"; ref_coord_frame = Date;
+enddef;
+*
+def 0918-534;
+     source_name = 0918-534;
+*    this source had calibrator code: V
+*    alternate source name: J0919-5340
+*    rfc_2012b Petrov, 2012, unpublished 24 observations
+     ra = 09h19m44.0392910s; dec = -53d40'06.446260"; ref_coord_frame = J2000;
+*    ra = 09h18m08.7915024s; dec = -53d27'21.602175"; ref_coord_frame = B1950;
+*    ra = 09h20m16.0199949s; dec = -53d44'08.475486"; ref_coord_frame = Date;
+enddef;
+*
+def 0944-469;
+     source_name = 0944-469;
+*    this source had calibrator code: V
+*    alternate source name: J0946-4707
+*    rfc_2012b Petrov, 2012, unpublished 26 observations
+     ra = 09h46m51.3358090s; dec = -47d07'59.234980"; ref_coord_frame = J2000;
+*    ra = 09h44m57.1855967s; dec = -46d54'03.646044"; ref_coord_frame = B1950;
+*    ra = 09h47m29.3989744s; dec = -47d12'25.290186"; ref_coord_frame = Date;
+enddef;
+*
+def 1005-333;
+     source_name = 1005-333;
+*    this source had calibrator code: V
+*    alternate source name: J1007-3333
+*    rfc_2012b Petrov, 2012, unpublished 42 observations
+     ra = 10h07m31.3874230s; dec = -33d33'06.715700"; ref_coord_frame = J2000;
+*    ra = 10h05m18.6126059s; dec = -33d18'25.038284"; ref_coord_frame = B1950;
+*    ra = 10h08m15.4490824s; dec = -33d37'50.195454"; ref_coord_frame = Date;
+enddef;
+*
+def 1022-665;
+     source_name = 1022-665;
+*    this source had calibrator code: V
+*    alternate source name: J1023-6646
+*    rfc_2012b Petrov, 2012, unpublished 171 observations
+     ra = 10h23m43.5332000s; dec = -66d46'48.717760"; ref_coord_frame = J2000;
+*    ra = 10h22m13.3888531s; dec = -66d31'34.814033"; ref_coord_frame = B1950;
+*    ra = 10h24m13.3869102s; dec = -66d51'38.675957"; ref_coord_frame = Date;
+enddef;
+*
+def 1049-534;
+     source_name = 1049-534;
+*    this source had calibrator code: V
+*    alternate source name: J1051-5344
+*    rfc_2012b Petrov, 2012, unpublished 39 observations
+     ra = 10h51m09.0998890s; dec = -53d44'46.542440"; ref_coord_frame = J2000;
+*    ra = 10h49m02.5791269s; dec = -53d28'50.442192"; ref_coord_frame = B1950;
+*    ra = 10h51m50.9481513s; dec = -53d49'51.266051"; ref_coord_frame = Date;
+enddef;
+*
+def 1129-558;
+     source_name = 1129-558;
+*    this source had calibrator code: V
+*    alternate source name: J1132-5606
+*    rfc_2012b Petrov, 2012, unpublished 30 observations
+     ra = 11h32m16.4142690s; dec = -56d06'44.731390"; ref_coord_frame = J2000;
+*    ra = 11h29m55.1087077s; dec = -55d50'10.308347"; ref_coord_frame = B1950;
+*    ra = 11h33m02.9628108s; dec = -56d12'02.037277"; ref_coord_frame = Date;
+enddef;
+*
+def 1143-696;
+     source_name = 1143-696;
+*    this source had calibrator code: V
+*    alternate source name: J1145-6954
+*    rfc_2012b Petrov, 2012, unpublished 108 observations
+     ra = 11h45m53.6241510s; dec = -69d54'01.797910"; ref_coord_frame = J2000;
+*    ra = 11h43m31.9541819s; dec = -69d37'21.596831"; ref_coord_frame = B1950;
+*    ra = 11h46m40.0223562s; dec = -69d59'20.989792"; ref_coord_frame = Date;
+enddef;
+*
+def 1245-454;
+     source_name = 1245-454;
+*    this source had calibrator code: V
+*    alternate source name: J1248-4559
+*    alternate source name: 1245-457
+*    rfc_2012b Petrov, 2012, unpublished 71 observations
+     ra = 12h48m28.4951470s; dec = -45d59'47.180000"; ref_coord_frame = J2000;
+*    ra = 12h45m40.6874496s; dec = -45d43'25.891750"; ref_coord_frame = B1950;
+*    ra = 12h49m23.5679372s; dec = -46d05'00.874565"; ref_coord_frame = Date;
+enddef;
+*
+def 1249-673;
+     source_name = 1249-673;
+*    this source had calibrator code: V
+*    alternate source name: J1252-6737
+*    rfc_2012b Petrov, 2012, unpublished 22 observations
+     ra = 12h52m43.2107730s; dec = -67d37'38.744660"; ref_coord_frame = J2000;
+*    ra = 12h49m33.7654311s; dec = -67d21'21.155661"; ref_coord_frame = B1950;
+*    ra = 12h53m45.2348717s; dec = -67d42'51.373679"; ref_coord_frame = Date;
+enddef;
+*
+def 1306-395;
+     source_name = 1306-395;
+*    this source had calibrator code: V
+*    alternate source name: J1309-3948
+*    rfc_2012b Petrov, 2012, unpublished 55 observations
+     ra = 13h09m48.4883030s; dec = -39d48'33.085660"; ref_coord_frame = J2000;
+*    ra = 13h06m58.4269184s; dec = -39d32'35.049626"; ref_coord_frame = B1950;
+*    ra = 13h10m44.2480435s; dec = -39d53'39.321667"; ref_coord_frame = Date;
+enddef;
+*
+def 1319-652;
+     source_name = 1319-652;
+*    this source had calibrator code: V
+*    alternate source name: J1322-6532
+*    rfc_2012b Petrov, 2012, unpublished 21 observations
+     ra = 13h22m53.8878770s; dec = -65d32'19.887390"; ref_coord_frame = J2000;
+*    ra = 13h19m29.4722382s; dec = -65d16'39.695278"; ref_coord_frame = B1950;
+*    ra = 13h24m00.8117072s; dec = -65d37'20.587174"; ref_coord_frame = Date;
+enddef;
+*
+def 1424-418;
+     source_name = 1424-418;
+*    this source had calibrator code: V
+*    alternate source name: J1427-4206
+*    alternate source name: J1427-42
+*    rfc_2012b Petrov, 2012, unpublished 12944 observations
+     ra = 14h27m56.2975610s; dec = -42d06'19.437720"; ref_coord_frame = J2000;
+*    ra = 14h24m46.6703118s; dec = -41d52'54.613569"; ref_coord_frame = B1950;
+*    ra = 14h28m58.3806271s; dec = -42d10'35.316500"; ref_coord_frame = Date;
+enddef;
+*
+def 1509-564;
+     source_name = 1509-564;
+*    this source had calibrator code: V
+*    alternate source name: J1512-5640
+*    rfc_2012b Petrov, 2012, unpublished 29 observations
+     ra = 15h12m55.8195760s; dec = -56d40'30.641590"; ref_coord_frame = J2000;
+*    ra = 15h09m07.0755143s; dec = -56d29'16.702726"; ref_coord_frame = B1950;
+*    ra = 15h14m10.6699445s; dec = -56d44'05.034326"; ref_coord_frame = Date;
+enddef;
+*
+def 1556-580;
+     source_name = 1556-580;
+*    this source had calibrator code: V
+*    alternate source name: J1600-5811
+*    rfc_2012b Petrov, 2012, unpublished 23 observations
+     ra = 16h00m12.3772170s; dec = -58d11'02.964910"; ref_coord_frame = J2000;
+*    ra = 15h56m06.0133390s; dec = -58d02'34.739904"; ref_coord_frame = B1950;
+*    ra = 16h01m32.9683340s; dec = -58d13'43.908509"; ref_coord_frame = Date;
+enddef;
+*
+def 1600-445;
+     source_name = 1600-445;
+*    this source had calibrator code: V
+*    alternate source name: J1604-4441
+*    alternate source name: J1604-44
+*    rfc_2012b Petrov, 2012, unpublished 51 observations
+     ra = 16h04m31.0207270s; dec = -44d41'31.973280"; ref_coord_frame = J2000;
+*    ra = 16h00m59.7350249s; dec = -44d33'21.243056"; ref_coord_frame = B1950;
+*    ra = 16h05m40.1901439s; dec = -44d44'05.524818"; ref_coord_frame = Date;
+enddef;
+*
+def 1604-333;
+     source_name = 1604-333;
+*    this source had calibrator code: V
+*    alternate source name: J1607-3331
+*    alternate source name: J1607-33
+*    rfc_2012b Petrov, 2012, unpublished 609 observations
+     ra = 16h07m34.7623390s; dec = -33d31'08.913460"; ref_coord_frame = J2000;
+*    ra = 16h04m22.1870356s; dec = -33d23'10.541910"; ref_coord_frame = B1950;
+*    ra = 16h08m37.7995166s; dec = -33d33'36.802460"; ref_coord_frame = Date;
+enddef;
+*
+def 1619-680;
+     source_name = 1619-680;
+*    this source had calibrator code: V
+*    alternate source name: J1624-6809
+*    alternate source name: J1624-68
+*    rfc_2012b Petrov, 2012, unpublished 190 observations
+     ra = 16h24m18.4370050s; dec = -68d09'12.496640"; ref_coord_frame = J2000;
+*    ra = 16h19m13.4971704s; dec = -68d02'15.806081"; ref_coord_frame = B1950;
+*    ra = 16h25m58.0486925s; dec = -68d11'24.772696"; ref_coord_frame = Date;
+enddef;
+*
+def 1714-336;
+     source_name = 1714-336;
+*    this source had calibrator code: V
+*    alternate source name: J1717-3342
+*    GSFC 2011B astro solution        14 Observations
+     ra = 17h17m36.0293360s; dec = -33d42'08.827450"; ref_coord_frame = J2000;
+*    ra = 17h14m18.5430117s; dec = -33d38'57.368312"; ref_coord_frame = B1950;
+*    ra = 17h18m40.7746378s; dec = -33d43'02.685283"; ref_coord_frame = Date;
+enddef;
+*
+def 1743-548;
+     source_name = 1743-548;
+*    this source had calibrator code: V
+*    alternate source name: J1747-5450
+*    rfc_2012b Petrov, 2012, unpublished 26 observations
+     ra = 17h47m24.4357480s; dec = -54d50'21.576030"; ref_coord_frame = J2000;
+*    ra = 17h43m16.0117124s; dec = -54d49'17.446813"; ref_coord_frame = B1950;
+*    ra = 17h48m45.7898015s; dec = -54d50'38.443562"; ref_coord_frame = Date;
+enddef;
+*
+def 1810-700;
+     source_name = 1810-700;
+*    this source had calibrator code: V
+*    alternate source name: J1815-7001
+*    rfc_2012b Petrov, 2012, unpublished 29 observations
+     ra = 18h15m51.7996150s; dec = -70d01'38.641480"; ref_coord_frame = J2000;
+*    ra = 18h10m14.3566522s; dec = -70d02'35.643516"; ref_coord_frame = B1950;
+*    ra = 18h17m41.8463391s; dec = -70d01'18.452370"; ref_coord_frame = Date;
+enddef;
+*
+def 1827-481;
+     source_name = 1827-481;
+*    this source had calibrator code: V
+*    alternate source name: J1831-4805
+*    rfc_2012b Petrov, 2012, unpublished 32 observations
+     ra = 18h31m41.4564860s; dec = -48d05'21.007660"; ref_coord_frame = J2000;
+*    ra = 18h27m53.8070182s; dec = -48d07'30.919796"; ref_coord_frame = B1950;
+*    ra = 18h32m56.1737153s; dec = -48d04'33.675799"; ref_coord_frame = Date;
+enddef;
+*
+def 1933-400;
+     source_name = 1933-400;
+*    this source had calibrator code: V
+*    alternate source name: J1937-3958
+*    alternate source name: J1937-39
+*    rfc_2012b Petrov, 2012, unpublished 426 observations
+     ra = 19h37m16.2173580s; dec = -39d58'01.553180"; ref_coord_frame = J2000;
+*    ra = 19h33m51.1240527s; dec = -40d04'47.473070"; ref_coord_frame = B1950;
+*    ra = 19h38m23.8211502s; dec = -39d55'42.604768"; ref_coord_frame = Date;
+enddef;
+*
+def 1953-325;
+     source_name = 1953-325;
+*    this source had calibrator code: V
+*    alternate source name: J1956-3225
+*    alternate source name: J1956-32
+*    rfc_2012b Petrov, 2012, unpublished 71 observations
+     ra = 19h56m59.4552780s; dec = -32d25'46.007590"; ref_coord_frame = J2000;
+*    ra = 19h53m48.3895411s; dec = -32d33'49.628965"; ref_coord_frame = B1950;
+*    ra = 19h58m02.5888273s; dec = -32d22'59.500120"; ref_coord_frame = Date;
+enddef;
+*
+def 1959-639;
+     source_name = 1959-639;
+*    this source had calibrator code: V
+*    alternate source name: J2004-6347
+*    rfc_2012b Petrov, 2012, unpublished 29 observations
+     ra = 20h04m29.4783040s; dec = -63d47'23.307550"; ref_coord_frame = J2000;
+*    ra = 19h59m58.4345756s; dec = -63d55'52.921076"; ref_coord_frame = B1950;
+*    ra = 20h05m58.3328659s; dec = -63d44'36.912730"; ref_coord_frame = Date;
+enddef;
+*
+def 2031-662;
+     source_name = 2031-662;
+*    this source had calibrator code: V
+*    alternate source name: J2035-6602
+*    rfc_2012b Petrov, 2012, unpublished 27 observations
+     ra = 20h35m51.5217640s; dec = -66d02'07.534340"; ref_coord_frame = J2000;
+*    ra = 20h31m19.4284956s; dec = -66d12'30.134591"; ref_coord_frame = B1950;
+*    ra = 20h37m20.7606314s; dec = -65d58'45.229809"; ref_coord_frame = Date;
+enddef;
+*
+def 2112-556;
+     source_name = 2112-556;
+*    this source had calibrator code: V
+*    alternate source name: J2116-5527
+*    rfc_2012b Petrov, 2012, unpublished 85 observations
+     ra = 21h16m29.8161090s; dec = -55d27'20.444560"; ref_coord_frame = J2000;
+*    ra = 21h12m51.6782353s; dec = -55d39'53.149398"; ref_coord_frame = B1950;
+*    ra = 21h17m41.9237921s; dec = -55d23'13.891657"; ref_coord_frame = Date;
+enddef;
+*
+def 2200-617;
+     source_name = 2200-617;
+*    this source had calibrator code: V
+*    alternate source name: J2203-6130
+*    rfc_2012b Petrov, 2012, unpublished 21 observations
+     ra = 22h03m59.6367310s; dec = -61d30'22.010680"; ref_coord_frame = J2000;
+*    ra = 22h00m25.0229259s; dec = -61d44'54.906027"; ref_coord_frame = B1950;
+*    ra = 22h05m10.7572298s; dec = -61d25'38.180027"; ref_coord_frame = Date;
+enddef;
+*
+def 2244-372;
+     source_name = 2244-372;
+*    this source had calibrator code: V
+*    alternate source name: J2247-3657
+*    rfc_2012b Petrov, 2012, unpublished 362 observations
+     ra = 22h47m03.9173280s; dec = -36d57'46.304100"; ref_coord_frame = J2000;
+*    ra = 22h44m14.0349712s; dec = -37d13'36.362968"; ref_coord_frame = B1950;
+*    ra = 22h48m00.8529234s; dec = -36d52'30.853982"; ref_coord_frame = Date;
+enddef;
+*
+def 2326-502;
+     source_name = 2326-502;
+*    this source had calibrator code: V
+*    alternate source name: J2329-4955
+*    rfc_2012b Petrov, 2012, unpublished 37 observations
+     ra = 23h29m20.8819310s; dec = -49d55'40.655230"; ref_coord_frame = J2000;
+*    ra = 23h26m35.9889153s; dec = -50d12'13.283194"; ref_coord_frame = B1950;
+*    ra = 23h30m16.3296895s; dec = -49d50'15.130685"; ref_coord_frame = Date;
+enddef;
+*
+def 2344-514;
+     source_name = 2344-514;
+*    this source had calibrator code: V
+*    alternate source name: J2347-5110
+*    rfc_2012b Petrov, 2012, unpublished 86 observations
+     ra = 23h47m19.8640910s; dec = -51d10'36.065500"; ref_coord_frame = J2000;
+*    ra = 23h44m40.9981439s; dec = -51d27'16.604897"; ref_coord_frame = B1950;
+*    ra = 23h48m13.4297549s; dec = -51d05'08.251490"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 22300.00MHz4x16MHz;
+* mode =  1    stations =Pa:At:Mp:Ho:Cd
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 22300.00 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 22300.00 MHz : U :  16.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = : 22316.00 MHz : U :  16.00 MHz : &CH03 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 22316.00 MHz : U :  16.00 MHz : &CH04 : &BBC02 : &NoCal; *Lcp
+enddef;
+*
+def 22300.00MHz4x16MHz#02;
+* mode =  1    stations =Hh
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 22300.00 MHz : U :  16.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 22300.00 MHz : U :  16.00 MHz : &CH02 : &BBC05 : &NoCal; *Lcp
+     chan_def = : 22316.00 MHz : U :  16.00 MHz : &CH03 : &BBC02 : &NoCal; *Rcp
+     chan_def = : 22316.00 MHz : U :  16.00 MHz : &CH04 : &BBC06 : &NoCal; *Lcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@19000MHzDPolNoTone;
+* mode =  1    stations =Pa:At:Mp:Ho
+     if_def = &IF_2N : 2N : R : 19000.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+     if_def = &IF_1N : 1N : L : 19000.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+enddef;
+*
+def LO@20000MHzDPolNoTone;
+* mode =  1    stations =Cd
+     if_def = &IF_2N : 2N : R : 20000.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+     if_def = &IF_1N : 1N : L : 20000.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+enddef;
+*
+def LO@22080MHzDPolNoTone;
+* mode =  1    stations =Hh
+     if_def = &IF_A1 : A1 : R : 22080.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+     if_def = &IF_B1 : B1 : L : 22080.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 4BBCs;
+* mode =  1    stations =Pa:At:Mp:Ho:Cd
+     BBC_assign = &BBC01 :  1 : &IF_2N;
+     BBC_assign = &BBC02 :  2 : &IF_1N;
+enddef;
+*
+def 4BBCs#02;
+* mode =  1    stations =Hh
+     BBC_assign = &BBC01 :  1 : &IF_A1;
+     BBC_assign = &BBC05 :  5 : &IF_B1;
+     BBC_assign = &BBC02 :  2 : &IF_A1;
+     BBC_assign = &BBC06 :  6 : &IF_B1;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def NoDetect;
+* mode =  1    stations =Pa:At:Mp:Ho:Cd:Hh
+     phase_cal_detect = &NoCal;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def LBA_.4Ch2bit1to1;
+* mode =  1    stations =Pa:At:Mp:Ho:Cd
+*    format = LBA, and fan-out = 1
+*    mode requires  32.00Mb/s/tr; stations using disks
+     S2_data_source = VLBA;
+     S2_recording_mode = none;
+     fanout_def =   : &CH01 : sign : 1:  0;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+     fanout_def =   : &CH02 : sign : 1:  4;
+     fanout_def =   : &CH02 :  mag : 1:  5;
+     fanout_def =   : &CH03 : sign : 1:  2;
+     fanout_def =   : &CH03 :  mag : 1:  3;
+     fanout_def =   : &CH04 : sign : 1:  6;
+     fanout_def =   : &CH04 :  mag : 1:  7;
+enddef;
+*
+def MARK5B.4Ch2bit1to1;
+* mode =  1    stations =Hh
+*    firmware_type = DBBC_DDC;
+*    format = MARK5B, and fan-out = 1
+*    mode requires  32.00Mb/s/tr; stations using disks
+     track_frame_format = MARK5B;
+     fanout_def =   : &CH01 : sign : 1:  2;
+     fanout_def =   : &CH01 :  mag : 1:  3;
+     fanout_def =   : &CH02 : sign : 1:  6;
+     fanout_def =   : &CH02 :  mag : 1:  7;
+     fanout_def =   : &CH03 : sign : 1:  4;
+     fanout_def =   : &CH03 :  mag : 1:  5;
+     fanout_def =   : &CH04 : sign : 1:  8;
+     fanout_def =   : &CH04 :  mag : 1:  9;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def LBAVoid;
+* mode =  1    stations =Pa:At:Mp:Ho:Cd
+*     Head positions irrelevant for Disk: empty def
+enddef;
+def DiskVoid;
+* mode =  1    stations =Hh
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def LBADummy;
+* mode =  1    stations =Pa:At:Mp:Ho:Cd
+* LBA masquerading as S2 needs a dummy value
+     S2_group_order = 0;
+enddef;
+*
+def DiskVoid;
+* mode =  1    stations =Hh
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Pa:At:Mp:Ho:Cd:Hh
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment v521c   
+* K-band Reference Sources-2                                              
+scan No0001;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h00m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+     data_transfer=Pa: disk2file: v521c_pa_No0001.m5a:  169 sec:  170 sec: ;
+     data_transfer=At: disk2file: v521c_at_No0001.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0001.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0001.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0001.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0001.m5a:  169 sec:  170 sec: ;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:    0 sec:  180 sec:    0.000 GB:   0 :       : 1;
+     station=At:    0 sec:  180 sec:    0.000 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:    0.000 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:    0.000 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:    0.000 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:    0.000 GB:   :       : 1;
+endscan;
+scan No0002;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h04m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+     data_transfer=Pa: disk2file: v521c_pa_No0002.m5a:  169 sec:  170 sec: ;
+     data_transfer=At: disk2file: v521c_at_No0002.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0002.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0002.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0002.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0002.m5a:  169 sec:  170 sec: ;
+     station=Pa:    0 sec:  180 sec:    5.760 GB:   0 :       : 1;
+     station=At:    0 sec:  180 sec:    5.760 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:    5.760 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:    5.760 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:    5.760 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:    5.769 GB:   :       : 1;
+endscan;
+scan No0003;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h08m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0003.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0003.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0003.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0003.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0003.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   11.520 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   11.520 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   11.520 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   11.520 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   11.538 GB:   :       : 1;
+endscan;
+scan No0004;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h12m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0004.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0004.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0004.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0004.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0004.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   17.280 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   17.280 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   17.280 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   17.280 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   17.308 GB:   :       : 1;
+endscan;
+scan No0005;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h16m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0005.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0005.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0005.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0005.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0005.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   23.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   23.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   23.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   23.040 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   23.077 GB:   :       : 1;
+endscan;
+scan No0006;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h20m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0006.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0006.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0006.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0006.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0006.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   28.800 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   28.800 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   28.800 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   28.800 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   28.846 GB:   :       : 1;
+endscan;
+scan No0007;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h24m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0007.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0007.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0007.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0007.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0007.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   34.560 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   34.560 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   34.560 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   34.560 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   34.615 GB:   :       : 1;
+endscan;
+scan No0008;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h28m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0008.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0008.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0008.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0008.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0008.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   40.320 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   40.320 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   40.320 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   40.320 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   40.385 GB:   :       : 1;
+endscan;
+scan No0009;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h32m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0009.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0009.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0009.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0009.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0009.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   46.080 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   46.080 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   46.080 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   46.080 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   46.154 GB:   :       : 1;
+endscan;
+scan No0010;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h36m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0010.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0010.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0010.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0010.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0010.m5a:  169 sec:  170 sec: ;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  180 sec:   51.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   51.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   51.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   51.840 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   51.923 GB:   :       : 1;
+endscan;
+scan No0011;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h40m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0011.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0011.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0011.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0011.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0011.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   57.600 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   57.600 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   57.600 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   57.600 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   57.692 GB:   :       : 1;
+endscan;
+scan No0012;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h44m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0012.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0012.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0012.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0012.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0012.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   63.360 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   63.360 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   63.360 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   63.360 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   63.461 GB:   :       : 1;
+endscan;
+scan No0013;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h48m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0013.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0013.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0013.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0013.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0013.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   69.120 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   69.120 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   69.120 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   69.120 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   69.231 GB:   :       : 1;
+endscan;
+scan No0014;
+* intent = "FIND_FRINGE"
+     start=2016y303d19h52m00s; mode=lba1cm-2p-2IF; source=0208-512;
+* ftp scan
+
+     data_transfer=At: disk2file: v521c_at_No0014.m5a:  169 sec:  170 sec: ;
+     data_transfer=Mp: disk2file: v521c_mp_No0014.m5a:  169 sec:  170 sec: ;
+     data_transfer=Ho: disk2file: v521c_ho_No0014.m5a:  169 sec:  170 sec: ;
+     data_transfer=Cd: disk2file: v521c_cd_No0014.m5a:  169 sec:  170 sec: ;
+     data_transfer=Hh: disk2file: v521c_hh_No0014.m5a:  169 sec:  170 sec: ;
+     station=At:    0 sec:  180 sec:   74.880 GB:   0 :       : 1;
+     station=Mp:    0 sec:  180 sec:   74.880 GB:   0 :       : 1;
+     station=Ho:    0 sec:  180 sec:   74.880 GB:   0 :       : 1;
+     station=Cd:    0 sec:  180 sec:   74.880 GB:   0 :       : 1;
+     station=Hh:    0 sec:  180 sec:   75.000 GB:   :       : 1;
+endscan;
+scan No0015;
+* intent = "OBSERVE_TARGET"
+     start=2016y303d20h00m00s; mode=lba1cm-2p-2IF; source=0607-605;
+     station=Pa:    0 sec:  300 sec:   11.520 GB:   0 :       : 1;
+     station=At:  225 sec:  300 sec:   80.640 GB:   0 :       : 1;
+     station=Mp:  252 sec:  300 sec:   80.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:   80.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:   80.640 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:   80.769 GB:   :       : 1;
+endscan;
+scan No0016;
+* intent = "OBSERVE_TARGET"
+     start=2016y303d20h06m47s; mode=lba1cm-2p-2IF; source=0152-513;
+     station=At:    0 sec:  300 sec:   90.240 GB:   0 :       : 1;
+     station=Mp:    6 sec:  300 sec:   90.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:   90.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:   90.240 GB:   0 :       : 1;
+     station=Hh:   48 sec:  300 sec:   90.384 GB:   :       : 1;
+endscan;
+scan No0017;
+* intent = "OBSERVE_TARGET"
+     start=2016y303d20h12m59s; mode=lba1cm-2p-2IF; source=0430-332;
+     station=Pa:    0 sec:  300 sec:   21.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:   99.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:   99.840 GB:   0 :       : 1;
+     station=Ho:   21 sec:  300 sec:   99.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:   99.840 GB:   0 :       : 1;
+     station=Hh:   34 sec:  300 sec:  100.000 GB:   :       : 1;
+endscan;
+scan No0018;
+* intent = "OBSERVE_TARGET"
+     start=2016y303d20h19m18s; mode=lba1cm-2p-2IF; source=0629-418;
+     station=Pa:   53 sec:  300 sec:   30.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  109.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  109.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  109.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  109.440 GB:   0 :       : 1;
+     station=Hh:    6 sec:  300 sec:  109.615 GB:   :       : 1;
+endscan;
+scan No0019;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y303d20h25m12s; mode=lba1cm-2p-2IF; source=0521-365;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:   29 sec:  300 sec:   40.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  119.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  119.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  119.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  119.040 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec:  119.230 GB:   :       : 1;
+endscan;
+scan No0020;
+* intent = "OBSERVE TARGET"
+     start=2016y303d20h31m19s; mode=lba1cm-2p-2IF; source=0332-403;
+     station=At:    0 sec:  300 sec:  128.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  128.640 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec:  128.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  128.640 GB:   0 :       : 1;
+     station=Hh:   15 sec:  300 sec:  128.846 GB:   :       : 1;
+endscan;
+scan No0021;
+* intent = "OBSERVE TARGET"
+     start=2016y303d20h37m04s; mode=lba1cm-2p-2IF; source=0438-436;
+     station=Pa:    0 sec:  300 sec:   49.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  138.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  138.240 GB:   0 :       : 1;
+     station=Ho:    2 sec:  300 sec:  138.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  138.240 GB:   0 :       : 1;
+     station=Hh:   15 sec:  300 sec:  138.461 GB:   :       : 1;
+endscan;
+scan No0022;
+* intent = "OBSERVE TARGET"
+     start=2016y303d20h43m05s; mode=lba1cm-2p-2IF; source=0221-540;
+     station=At:    0 sec:  300 sec:  147.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  147.840 GB:   0 :       : 1;
+     station=Ho:   11 sec:  300 sec:  147.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  147.840 GB:   0 :       : 1;
+     station=Hh:   34 sec:  300 sec:  148.077 GB:   :       : 1;
+endscan;
+scan No0023;
+* intent = "OBSERVE TARGET"
+     start=2016y303d20h49m03s; mode=lba1cm-2p-2IF; source=0427-502;
+     station=Pa:    0 sec:  300 sec:   59.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  157.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  157.440 GB:   0 :       : 1;
+     station=Ho:    4 sec:  300 sec:  157.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  157.440 GB:   0 :       : 1;
+     station=Hh:   32 sec:  300 sec:  157.692 GB:   :       : 1;
+endscan;
+scan No0024;
+* intent = "FIND_FRINGE"
+     start=2016y303d20h54m49s; mode=lba1cm-2p-2IF; source=0252-549;
+     station=At:    0 sec:  300 sec:  167.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  167.040 GB:   0 :       : 1;
+     station=Ho:    7 sec:  300 sec:  167.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  167.040 GB:   0 :       : 1;
+     station=Hh:   28 sec:  300 sec:  167.307 GB:   :       : 1;
+endscan;
+scan No0025;
+* intent = "OBSERVE TARGET"
+     start=2016y303d21h00m45s; mode=lba1cm-2p-2IF; source=0021-686;
+     station=At:    0 sec:  300 sec:  176.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  176.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  176.640 GB:   0 :       : 1;
+     station=Cd:    3 sec:  300 sec:  176.640 GB:   0 :       : 1;
+     station=Hh:   47 sec:  300 sec:  176.923 GB:   :       : 1;
+endscan;
+scan No0026;
+* intent = "OBSERVE TARGET"
+     start=2016y303d21h07m10s; mode=lba1cm-2p-2IF; source=0534-611;
+     station=Pa:    0 sec:  300 sec:   69.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  186.240 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec:  186.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  186.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  186.240 GB:   0 :       : 1;
+     station=Hh:   96 sec:  300 sec:  186.538 GB:   :       : 1;
+endscan;
+scan No0027;
+* intent = "OBSERVE TARGET"
+     start=2016y303d21h12m33s; mode=lba1cm-2p-2IF; source=0507-611;
+     station=Pa:    7 sec:  300 sec:   78.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  195.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  195.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  195.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  195.840 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec:  196.153 GB:   :       : 1;
+endscan;
+scan No0028;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y303d21h19m01s; mode=lba1cm-2p-2IF; source=0646-306;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:   50 sec:  300 sec:   88.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  205.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  205.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  205.440 GB:   0 :       : 1;
+     station=Cd:   15 sec:  300 sec:  205.440 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  205.769 GB:   :       : 1;
+endscan;
+scan No0029;
+* intent = "OBSERVE TARGET"
+     start=2016y303d21h25m50s; mode=lba1cm-2p-2IF; source=0332-403;
+     station=At:    0 sec:  300 sec:  215.040 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec:  215.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  215.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  215.040 GB:   0 :       : 1;
+     station=Hh:   16 sec:  300 sec:  215.384 GB:   :       : 1;
+endscan;
+scan No0030;
+* intent = "OBSERVE TARGET"
+     start=2016y303d21h31m34s; mode=lba1cm-2p-2IF; source=0430-332;
+     station=At:    0 sec:  300 sec:  224.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  224.640 GB:   0 :       : 1;
+     station=Ho:   12 sec:  300 sec:  224.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  224.640 GB:   0 :       : 1;
+     station=Hh:   12 sec:  300 sec:  224.999 GB:   :       : 1;
+endscan;
+scan No0031;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y303d21h37m15s; mode=lba1cm-2p-2IF; source=0521-365;
+     station=Pa:    0 sec:  300 sec:   97.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  234.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  234.240 GB:   0 :       : 1;
+     station=Ho:    4 sec:  300 sec:  234.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  234.240 GB:   0 :       : 1;
+     station=Hh:   11 sec:  300 sec:  234.615 GB:   :       : 1;
+endscan;
+scan No0032;
+* intent = "FIND_FRINGE"
+     start=2016y303d21h43m25s; mode=lba1cm-2p-2IF; source=0252-549;
+     station=At:    0 sec:  300 sec:  243.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  243.840 GB:   0 :       : 1;
+     station=Ho:   11 sec:  300 sec:  243.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  243.840 GB:   0 :       : 1;
+     station=Hh:   33 sec:  300 sec:  244.230 GB:   :       : 1;
+endscan;
+scan No0033;
+* intent = "OBSERVE TARGET"
+     start=2016y303d21h49m18s; mode=lba1cm-2p-2IF; source=0438-436;
+     station=At:    0 sec:  300 sec:  253.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  253.440 GB:   0 :       : 1;
+     station=Ho:    4 sec:  300 sec:  253.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  253.440 GB:   0 :       : 1;
+     station=Hh:   27 sec:  300 sec:  253.845 GB:   :       : 1;
+endscan;
+scan No0034;
+* intent = "OBSERVE TARGET"
+     start=2016y303d21h54m50s; mode=lba1cm-2p-2IF; source=0427-502;
+     station=At:    0 sec:  300 sec:  263.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  263.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  263.040 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec:  263.040 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec:  263.461 GB:   :       : 1;
+endscan;
+scan No0035;
+* intent = "OBSERVE TARGET"
+     start=2016y303d22h00m52s; mode=lba1cm-2p-2IF; source=0629-418;
+     station=Pa:    0 sec:  300 sec:  107.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  272.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  272.640 GB:   0 :       : 1;
+     station=Ho:    7 sec:  300 sec:  272.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  272.640 GB:   0 :       : 1;
+     station=Hh:   25 sec:  300 sec:  273.076 GB:   :       : 1;
+endscan;
+scan No0036;
+* intent = "OBSERVE TARGET"
+     start=2016y303d22h07m12s; mode=lba1cm-2p-2IF; source=0430-332;
+     station=At:    0 sec:  300 sec:  282.240 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec:  282.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  282.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  282.240 GB:   0 :       : 1;
+     station=Hh:    7 sec:  300 sec:  282.692 GB:   :       : 1;
+endscan;
+scan No0037;
+* intent = "OBSERVE TARGET"
+     start=2016y303d22h13m26s; mode=lba1cm-2p-2IF; source=0607-605;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:    0 sec:  300 sec:  117.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  291.840 GB:   0 :       : 1;
+     station=Mp:    1 sec:  300 sec:  291.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  291.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  291.840 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec:  292.307 GB:   :       : 1;
+endscan;
+scan No0038;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y303d22h19m53s; mode=lba1cm-2p-2IF; source=0646-306;
+     station=Pa:   34 sec:  300 sec:  126.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  301.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  301.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  301.440 GB:   0 :       : 1;
+     station=Cd:    7 sec:  300 sec:  301.440 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  301.922 GB:   :       : 1;
+endscan;
+scan No0039;
+* intent = "OBSERVE TARGET"
+     start=2016y303d22h26m20s; mode=lba1cm-2p-2IF; source=0534-611;
+     station=Pa:   35 sec:  300 sec:  136.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  311.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  311.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  311.040 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec:  311.040 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  311.538 GB:   :       : 1;
+endscan;
+scan No0040;
+* intent = "OBSERVE TARGET"
+     start=2016y303d22h32m13s; mode=lba1cm-2p-2IF; source=0438-436;
+     station=At:    0 sec:  300 sec:  320.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  320.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  320.640 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec:  320.640 GB:   0 :       : 1;
+     station=Hh:    9 sec:  300 sec:  321.153 GB:   :       : 1;
+endscan;
+scan No0041;
+* intent = "OBSERVE TARGET"
+     start=2016y303d22h38m05s; mode=lba1cm-2p-2IF; source=0507-611;
+     station=At:    0 sec:  300 sec:  330.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  330.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  330.240 GB:   0 :       : 1;
+     station=Cd:    3 sec:  300 sec:  330.240 GB:   0 :       : 1;
+     station=Hh:   10 sec:  300 sec:  330.768 GB:   :       : 1;
+endscan;
+scan No0042;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y303d22h44m08s; mode=lba1cm-2p-2IF; source=0521-365;
+     station=At:    0 sec:  300 sec:  339.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  339.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  339.840 GB:   0 :       : 1;
+     station=Cd:    7 sec:  300 sec:  339.840 GB:   0 :       : 1;
+     station=Hh:   14 sec:  300 sec:  340.384 GB:   :       : 1;
+endscan;
+scan No0043;
+* intent = "OBSERVE TARGET"
+     start=2016y303d22h49m55s; mode=lba1cm-2p-2IF; source=0427-502;
+     station=At:    0 sec:  300 sec:  349.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  349.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  349.440 GB:   0 :       : 1;
+     station=Cd:    6 sec:  300 sec:  349.440 GB:   0 :       : 1;
+     station=Hh:    7 sec:  300 sec:  349.999 GB:   :       : 1;
+endscan;
+scan No0044;
+* intent = "OBSERVE TARGET"
+     start=2016y303d22h56m18s; mode=lba1cm-2p-2IF; source=0743-673;
+     station=Pa:    0 sec:  300 sec:  145.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  359.040 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec:  359.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  359.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  359.040 GB:   0 :       : 1;
+     station=Hh:   40 sec:  300 sec:  359.614 GB:   :       : 1;
+endscan;
+scan No0045;
+* intent = "OBSERVE TARGET"
+     start=2016y303d23h02m37s; mode=lba1cm-2p-2IF; source=0629-418;
+     station=Pa:   22 sec:  300 sec:  155.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  368.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  368.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  368.640 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec:  368.640 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  369.230 GB:   :       : 1;
+endscan;
+scan No0046;
+* intent = "OBSERVE TARGET"
+     start=2016y303d23h08m27s; mode=lba1cm-2p-2IF; source=0521-365;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec:  378.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  378.240 GB:   0 :       : 1;
+     station=Ho:    5 sec:  300 sec:  378.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  378.240 GB:   0 :       : 1;
+     station=Hh:   12 sec:  300 sec:  378.845 GB:   :       : 1;
+endscan;
+scan No0047;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y303d23h14m15s; mode=lba1cm-2p-2IF; source=0646-306;
+     station=At:    0 sec:  300 sec:  387.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  387.840 GB:   0 :       : 1;
+     station=Ho:   25 sec:  300 sec:  387.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  387.840 GB:   0 :       : 1;
+     station=Hh:   21 sec:  300 sec:  388.460 GB:   :       : 1;
+endscan;
+scan No0048;
+* intent = "OBSERVE TARGET"
+     start=2016y303d23h20m20s; mode=lba1cm-2p-2IF; source=0607-605;
+     station=Pa:    0 sec:  300 sec:  165.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  397.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  397.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  397.440 GB:   0 :       : 1;
+     station=Cd:   19 sec:  300 sec:  397.440 GB:   0 :       : 1;
+     station=Hh:   21 sec:  300 sec:  398.076 GB:   :       : 1;
+endscan;
+scan No0049;
+* intent = "OBSERVE TARGET"
+     start=2016y303d23h25m46s; mode=lba1cm-2p-2IF; source=0534-611;
+     station=At:    0 sec:  300 sec:  407.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  407.040 GB:   0 :       : 1;
+     station=Ho:    2 sec:  300 sec:  407.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  407.040 GB:   0 :       : 1;
+     station=Hh:   18 sec:  300 sec:  407.691 GB:   :       : 1;
+endscan;
+scan No0050;
+* intent = "OBSERVE TARGET"
+     start=2016y303d23h31m10s; mode=lba1cm-2p-2IF; source=0507-611;
+     station=At:    0 sec:  300 sec:  416.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  416.640 GB:   0 :       : 1;
+     station=Ho:    2 sec:  300 sec:  416.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  416.640 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec:  417.307 GB:   :       : 1;
+endscan;
+scan No0051;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y303d23h37m35s; mode=lba1cm-2p-2IF; source=0843-547;
+     station=Pa:    0 sec:  300 sec:  174.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  426.240 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec:  426.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  426.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  426.240 GB:   0 :       : 1;
+     station=Hh:   49 sec:  300 sec:  426.922 GB:   :       : 1;
+endscan;
+scan No0052;
+* intent = "OBSERVE TARGET"
+     start=2016y303d23h43m23s; mode=lba1cm-2p-2IF; source=0844-652;
+     station=Pa:    6 sec:  300 sec:  184.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  435.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  435.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  435.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  435.840 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  436.537 GB:   :       : 1;
+endscan;
+scan No0053;
+* intent = "OBSERVE TARGET"
+     start=2016y303d23h49m47s; mode=lba1cm-2p-2IF; source=0646-306;
+     station=At:    0 sec:  300 sec:  445.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  445.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  445.440 GB:   0 :       : 1;
+     station=Cd:   14 sec:  300 sec:  445.440 GB:   0 :       : 1;
+     station=Hh:   12 sec:  300 sec:  446.153 GB:   :       : 1;
+endscan;
+scan No0054;
+* intent = "OBSERVE TARGET"
+     start=2016y303d23h55m28s; mode=lba1cm-2p-2IF; source=0629-418;
+     station=At:    0 sec:  300 sec:  455.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  455.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  455.040 GB:   0 :       : 1;
+     station=Cd:    6 sec:  300 sec:  455.040 GB:   0 :       : 1;
+     station=Hh:    9 sec:  300 sec:  455.768 GB:   :       : 1;
+endscan;
+scan No0055;
+* intent = "OBSERVE TARGET"
+     start=2016y304d00h01m59s; mode=lba1cm-2p-2IF; source=0918-534;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:    0 sec:  300 sec:  193.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  464.640 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec:  464.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  464.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  464.640 GB:   0 :       : 1;
+     station=Hh:   20 sec:  300 sec:  465.383 GB:   :       : 1;
+endscan;
+scan No0056;
+* intent = "OBSERVE TARGET"
+     start=2016y304d00h07m53s; mode=lba1cm-2p-2IF; source=0743-673;
+     station=Pa:   27 sec:  300 sec:  203.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  474.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  474.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  474.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  474.240 GB:   0 :       : 1;
+     station=Hh:   21 sec:  300 sec:  474.999 GB:   :       : 1;
+endscan;
+scan No0057;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d00h14m16s; mode=lba1cm-2p-2IF; source=0646-306;
+     station=At:    0 sec:  300 sec:  483.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  483.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  483.840 GB:   0 :       : 1;
+     station=Cd:    9 sec:  300 sec:  483.840 GB:   0 :       : 1;
+     station=Hh:   18 sec:  300 sec:  484.614 GB:   :       : 1;
+endscan;
+scan No0058;
+* intent = "OBSERVE TARGET"
+     start=2016y304d00h20m31s; mode=lba1cm-2p-2IF; source=0507-611;
+     station=At:    0 sec:  300 sec:  493.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  493.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  493.440 GB:   0 :       : 1;
+     station=Cd:    7 sec:  300 sec:  493.440 GB:   0 :       : 1;
+     station=Hh:   12 sec:  300 sec:  494.229 GB:   :       : 1;
+endscan;
+scan No0059;
+* intent = "OBSERVE TARGET"
+     start=2016y304d00h26m30s; mode=lba1cm-2p-2IF; source=0629-418;
+     station=At:    0 sec:  300 sec:  503.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  503.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  503.040 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec:  503.040 GB:   0 :       : 1;
+     station=Hh:    9 sec:  300 sec:  503.845 GB:   :       : 1;
+endscan;
+scan No0060;
+* intent = "OBSERVE TARGET"
+     start=2016y304d00h33m18s; mode=lba1cm-2p-2IF; source=0944-469;
+     station=Pa:    0 sec:  300 sec:  213.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  512.640 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec:  512.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  512.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  512.640 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec:  513.460 GB:   :       : 1;
+endscan;
+scan No0061;
+* intent = "OBSERVE TARGET"
+     start=2016y304d00h39m58s; mode=lba1cm-2p-2IF; source=0534-611;
+     station=At:    0 sec:  300 sec:  522.240 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec:  522.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  522.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  522.240 GB:   0 :       : 1;
+     station=Hh:   54 sec:  300 sec:  523.075 GB:   :       : 1;
+endscan;
+scan No0062;
+* intent = "OBSERVE TARGET"
+     start=2016y304d00h45m23s; mode=lba1cm-2p-2IF; source=0607-605;
+     station=At:    0 sec:  300 sec:  531.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  531.840 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec:  531.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  531.840 GB:   0 :       : 1;
+     station=Hh:   19 sec:  300 sec:  532.691 GB:   :       : 1;
+endscan;
+scan No0063;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d00h51m25s; mode=lba1cm-2p-2IF; source=0843-547;
+     station=Pa:    0 sec:  300 sec:  222.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  541.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  541.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  541.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  541.440 GB:   0 :       : 1;
+     station=Hh:   43 sec:  300 sec:  542.306 GB:   :       : 1;
+endscan;
+scan No0064;
+* intent = "OBSERVE TARGET"
+     start=2016y304d00h57m37s; mode=lba1cm-2p-2IF; source=1005-333;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:   29 sec:  300 sec:  232.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  551.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  551.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  551.040 GB:   0 :       : 1;
+     station=Cd:    6 sec:  300 sec:  551.040 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  551.922 GB:   :       : 1;
+endscan;
+scan No0065;
+* intent = "OBSERVE TARGET"
+     start=2016y304d01h04m08s; mode=lba1cm-2p-2IF; source=0844-652;
+     station=Pa:   45 sec:  300 sec:  241.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  560.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  560.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  560.640 GB:   0 :       : 1;
+     station=Cd:    8 sec:  300 sec:  560.640 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  561.537 GB:   :       : 1;
+endscan;
+scan No0066;
+* intent = "OBSERVE TARGET"
+     start=2016y304d01h09m56s; mode=lba1cm-2p-2IF; source=0918-534;
+     station=Pa:    6 sec:  300 sec:  251.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  570.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  570.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  570.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  570.240 GB:   0 :       : 1;
+     station=Hh:    2 sec:  300 sec:  571.152 GB:   :       : 1;
+endscan;
+scan No0067;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d01h15m55s; mode=lba1cm-2p-2IF; source=1022-665;
+     station=Pa:    7 sec:  300 sec:  261.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  579.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  579.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  579.840 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec:  579.840 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  580.768 GB:   :       : 1;
+endscan;
+scan No0068;
+* intent = "OBSERVE TARGET"
+     start=2016y304d01h22m23s; mode=lba1cm-2p-2IF; source=0607-605;
+     station=At:    0 sec:  300 sec:  589.440 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec:  589.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  589.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  589.440 GB:   0 :       : 1;
+     station=Hh:   68 sec:  300 sec:  590.383 GB:   :       : 1;
+endscan;
+scan No0069;
+* intent = "OBSERVE TARGET"
+     start=2016y304d01h28m45s; mode=lba1cm-2p-2IF; source=0944-469;
+     station=Pa:    0 sec:  300 sec:  270.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  599.040 GB:   0 :       : 1;
+     station=Mp:    1 sec:  300 sec:  599.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  599.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  599.040 GB:   0 :       : 1;
+     station=Hh:   53 sec:  300 sec:  599.998 GB:   :       : 1;
+endscan;
+scan No0070;
+* intent = "OBSERVE TARGET"
+     start=2016y304d01h34m48s; mode=lba1cm-2p-2IF; source=0743-673;
+     station=At:    0 sec:  300 sec:  608.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  608.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  608.640 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec:  608.640 GB:   0 :       : 1;
+     station=Hh:   27 sec:  300 sec:  609.614 GB:   :       : 1;
+endscan;
+scan No0071;
+* intent = "OBSERVE TARGET"
+     start=2016y304d01h41m13s; mode=lba1cm-2p-2IF; source=1005-333;
+     station=Pa:    0 sec:  300 sec:  280.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  618.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  618.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  618.240 GB:   0 :       : 1;
+     station=Cd:   13 sec:  300 sec:  618.240 GB:   0 :       : 1;
+     station=Hh:   13 sec:  300 sec:  619.229 GB:   :       : 1;
+endscan;
+scan No0072;
+* intent = "OBSERVE TARGET"
+     start=2016y304d01h47m21s; mode=lba1cm-2p-2IF; source=1049-534;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:   20 sec:  300 sec:  289.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  627.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  627.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  627.840 GB:   0 :       : 1;
+     station=Cd:   12 sec:  300 sec:  627.840 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  628.844 GB:   :       : 1;
+endscan;
+scan No0073;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d01h53m20s; mode=lba1cm-2p-2IF; source=0843-547;
+     station=At:    0 sec:  300 sec:  637.440 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec:  637.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  637.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  637.440 GB:   0 :       : 1;
+     station=Hh:   31 sec:  300 sec:  638.460 GB:   :       : 1;
+endscan;
+scan No0074;
+* intent = "OBSERVE TARGET"
+     start=2016y304d01h58m49s; mode=lba1cm-2p-2IF; source=0918-534;
+     station=Pa:    0 sec:  300 sec:  299.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  647.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  647.040 GB:   0 :       : 1;
+     station=Ho:    3 sec:  300 sec:  647.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  647.040 GB:   0 :       : 1;
+     station=Hh:   16 sec:  300 sec:  648.075 GB:   :       : 1;
+endscan;
+scan No0075;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h04m52s; mode=lba1cm-2p-2IF; source=1129-558;
+     station=Pa:   43 sec:  300 sec:  309.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  656.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  656.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  656.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  656.640 GB:   0 :       : 1;
+     station=Hh:   30 sec:  300 sec:  657.690 GB:   :       : 1;
+endscan;
+scan No0076;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h10m58s; mode=lba1cm-2p-2IF; source=0844-652;
+     station=At:    0 sec:  300 sec:  666.240 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec:  666.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  666.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  666.240 GB:   0 :       : 1;
+     station=Hh:   45 sec:  300 sec:  667.306 GB:   :       : 1;
+endscan;
+scan No0077;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h16m48s; mode=lba1cm-2p-2IF; source=0944-469;
+     station=Pa:    0 sec:  300 sec:  318.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  675.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  675.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  675.840 GB:   0 :       : 1;
+     station=Cd:   11 sec:  300 sec:  675.840 GB:   0 :       : 1;
+     station=Hh:   13 sec:  300 sec:  676.921 GB:   :       : 1;
+endscan;
+scan No0078;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h22m43s; mode=lba1cm-2p-2IF; source=1005-333;
+     station=Pa:    4 sec:  300 sec:  328.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  685.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  685.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  685.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  685.440 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  686.536 GB:   :       : 1;
+endscan;
+scan No0079;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d02h28m50s; mode=lba1cm-2p-2IF; source=1049-534;
+     station=Pa:    8 sec:  300 sec:  337.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  695.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  695.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  695.040 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec:  695.040 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec:  696.152 GB:   :       : 1;
+endscan;
+scan No0080;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h34m41s; mode=lba1cm-2p-2IF; source=1022-665;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:    8 sec:  300 sec:  347.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  704.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  704.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  704.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  704.640 GB:   0 :       : 1;
+     station=Hh:    2 sec:  300 sec:  705.767 GB:   :       : 1;
+endscan;
+scan No0081;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h40m29s; mode=lba1cm-2p-2IF; source=0843-547;
+     station=At:    0 sec:  300 sec:  714.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  714.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  714.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  714.240 GB:   0 :       : 1;
+     station=Hh:   29 sec:  300 sec:  715.383 GB:   :       : 1;
+endscan;
+scan No0082;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h46m36s; mode=lba1cm-2p-2IF; source=1143-696;
+     station=Pa:    0 sec:  300 sec:  357.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  723.840 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec:  723.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  723.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  723.840 GB:   0 :       : 1;
+     station=Hh:   50 sec:  300 sec:  724.998 GB:   :       : 1;
+endscan;
+scan No0083;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h52m44s; mode=lba1cm-2p-2IF; source=0743-673;
+     station=At:    0 sec:  300 sec:  733.440 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec:  733.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  733.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  733.440 GB:   0 :       : 1;
+     station=Hh:   81 sec:  300 sec:  734.613 GB:   :       : 1;
+endscan;
+scan No0084;
+* intent = "OBSERVE TARGET"
+     start=2016y304d02h58m34s; mode=lba1cm-2p-2IF; source=0918-534;
+     station=At:    0 sec:  300 sec:  743.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  743.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  743.040 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec:  743.040 GB:   0 :       : 1;
+     station=Hh:   25 sec:  300 sec:  744.229 GB:   :       : 1;
+endscan;
+scan No0085;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h04m28s; mode=lba1cm-2p-2IF; source=1005-333;
+     station=At:    0 sec:  300 sec:  752.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  752.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  752.640 GB:   0 :       : 1;
+     station=Cd:   10 sec:  300 sec:  752.640 GB:   0 :       : 1;
+     station=Hh:   13 sec:  300 sec:  753.844 GB:   :       : 1;
+endscan;
+scan No0086;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h10m13s; mode=lba1cm-2p-2IF; source=0944-469;
+     station=At:    0 sec:  300 sec:  762.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  762.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  762.240 GB:   0 :       : 1;
+     station=Cd:    7 sec:  300 sec:  762.240 GB:   0 :       : 1;
+     station=Hh:    9 sec:  300 sec:  763.459 GB:   :       : 1;
+endscan;
+scan No0087;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d03h16m10s; mode=lba1cm-2p-2IF; source=1129-558;
+     station=Pa:    0 sec:  300 sec:  366.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  771.840 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec:  771.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  771.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  771.840 GB:   0 :       : 1;
+     station=Hh:   23 sec:  300 sec:  773.075 GB:   :       : 1;
+endscan;
+scan No0088;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h22m03s; mode=lba1cm-2p-2IF; source=1245-454;
+     station=Pa:   22 sec:  300 sec:  376.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  781.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  781.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  781.440 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  781.440 GB:   0 :       : 1;
+     station=Hh:   12 sec:  300 sec:  782.690 GB:   :       : 1;
+endscan;
+scan No0089;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h28m53s; mode=lba1cm-2p-2IF; source=0843-547;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec:  791.040 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec:  791.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  791.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  791.040 GB:   0 :       : 1;
+     station=Hh:   39 sec:  300 sec:  792.305 GB:   :       : 1;
+endscan;
+scan No0090;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h34m33s; mode=lba1cm-2p-2IF; source=0844-652;
+     station=At:    0 sec:  300 sec:  800.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  800.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  800.640 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec:  800.640 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec:  801.921 GB:   :       : 1;
+endscan;
+scan No0091;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h40m49s; mode=lba1cm-2p-2IF; source=1005-333;
+     station=At:    0 sec:  300 sec:  810.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  810.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  810.240 GB:   0 :       : 1;
+     station=Cd:    8 sec:  300 sec:  810.240 GB:   0 :       : 1;
+     station=Hh:   15 sec:  300 sec:  811.536 GB:   :       : 1;
+endscan;
+scan No0092;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h46m46s; mode=lba1cm-2p-2IF; source=1049-534;
+     station=Pa:    0 sec:  300 sec:  385.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  819.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  819.839 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  819.839 GB:   0 :       : 1;
+     station=Cd:    1 sec:  300 sec:  819.839 GB:   0 :       : 1;
+     station=Hh:   10 sec:  300 sec:  821.151 GB:   :       : 1;
+endscan;
+scan No0093;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h53m02s; mode=lba1cm-2p-2IF; source=1306-395;
+     station=Pa:   42 sec:  300 sec:  395.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  829.439 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  829.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  829.439 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  829.439 GB:   0 :       : 1;
+     station=Hh:   20 sec:  300 sec:  830.767 GB:   :       : 1;
+endscan;
+scan No0094;
+* intent = "OBSERVE TARGET"
+     start=2016y304d03h59m49s; mode=lba1cm-2p-2IF; source=0918-534;
+     station=At:    0 sec:  300 sec:  839.039 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec:  839.039 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  839.039 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  839.039 GB:   0 :       : 1;
+     station=Hh:   37 sec:  300 sec:  840.382 GB:   :       : 1;
+endscan;
+scan No0095;
+* intent = "OBSERVE TARGET"
+     start=2016y304d04h05m23s; mode=lba1cm-2p-2IF; source=0944-469;
+     station=At:    0 sec:  300 sec:  848.639 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  848.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  848.639 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec:  848.639 GB:   0 :       : 1;
+     station=Hh:    6 sec:  300 sec:  849.998 GB:   :       : 1;
+endscan;
+scan No0096;
+* intent = "OBSERVE TARGET"
+     start=2016y304d04h11m28s; mode=lba1cm-2p-2IF; source=0743-673;
+     station=At:    0 sec:  300 sec:  858.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  858.239 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  858.239 GB:   0 :       : 1;
+     station=Cd:    3 sec:  300 sec:  858.239 GB:   0 :       : 1;
+     station=Hh:   25 sec:  300 sec:  859.613 GB:   :       : 1;
+endscan;
+scan No0097;
+* intent = "OBSERVE TARGET"
+     start=2016y304d04h17m51s; mode=lba1cm-2p-2IF; source=1249-673;
+     station=Pa:    0 sec:  300 sec:  405.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  867.839 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec:  867.839 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  867.839 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  867.839 GB:   0 :       : 1;
+     station=Hh:   98 sec:  300 sec:  869.228 GB:   :       : 1;
+endscan;
+scan No0098;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d04h23m39s; mode=lba1cm-2p-2IF; source=1022-665;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec:  877.439 GB:   0 :       : 1;
+     station=Mp:    2 sec:  300 sec:  877.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  877.439 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  877.439 GB:   0 :       : 1;
+     station=Hh:   55 sec:  300 sec:  878.844 GB:   :       : 1;
+endscan;
+scan No0099;
+* intent = "OBSERVE TARGET"
+     start=2016y304d04h29m36s; mode=lba1cm-2p-2IF; source=1319-652;
+     station=Pa:    0 sec:  300 sec:  414.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  887.039 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec:  887.039 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  887.039 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  887.039 GB:   0 :       : 1;
+     station=Hh:   59 sec:  300 sec:  888.459 GB:   :       : 1;
+endscan;
+scan No0100;
+* intent = "OBSERVE TARGET"
+     start=2016y304d04h35m18s; mode=lba1cm-2p-2IF; source=1143-696;
+     station=Pa:   21 sec:  300 sec:  424.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  896.639 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  896.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  896.639 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  896.639 GB:   0 :       : 1;
+     station=Hh:   35 sec:  300 sec:  898.074 GB:   :       : 1;
+endscan;
+scan No0101;
+* intent = "OBSERVE TARGET"
+     start=2016y304d04h41m31s; mode=lba1cm-2p-2IF; source=1245-454;
+     station=Pa:   24 sec:  300 sec:  433.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  906.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  906.239 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  906.239 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  906.239 GB:   0 :       : 1;
+     station=Hh:    2 sec:  300 sec:  907.690 GB:   :       : 1;
+endscan;
+scan No0102;
+* intent = "OBSERVE TARGET"
+     start=2016y304d04h47m46s; mode=lba1cm-2p-2IF; source=0844-652;
+     station=At:    0 sec:  300 sec:  915.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  915.839 GB:   0 :       : 1;
+     station=Ho:    6 sec:  300 sec:  915.839 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  915.839 GB:   0 :       : 1;
+     station=Hh:   75 sec:  300 sec:  917.305 GB:   :       : 1;
+endscan;
+scan No0103;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d04h53m38s; mode=lba1cm-2p-2IF; source=1129-558;
+     station=At:    0 sec:  300 sec:  925.439 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  925.439 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec:  925.439 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  925.439 GB:   0 :       : 1;
+     station=Hh:   58 sec:  300 sec:  926.920 GB:   :       : 1;
+endscan;
+scan No0104;
+* intent = "OBSERVE TARGET"
+     start=2016y304d04h59m39s; mode=lba1cm-2p-2IF; source=1306-395;
+     station=Pa:    0 sec:  300 sec:  443.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  935.039 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  935.039 GB:   0 :       : 1;
+     station=Ho:    4 sec:  300 sec:  935.039 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  935.039 GB:   0 :       : 1;
+     station=Hh:   14 sec:  300 sec:  936.536 GB:   :       : 1;
+endscan;
+scan No0105;
+* intent = "OBSERVE TARGET"
+     start=2016y304d05h05m40s; mode=lba1cm-2p-2IF; source=1049-534;
+     station=At:    0 sec:  300 sec:  944.639 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  944.639 GB:   0 :       : 1;
+     station=Ho:   16 sec:  300 sec:  944.639 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  944.639 GB:   0 :       : 1;
+     station=Hh:   36 sec:  300 sec:  946.151 GB:   :       : 1;
+endscan;
+scan No0106;
+* intent = "FIND_FRINGE"
+     start=2016y304d05h12m21s; mode=lba1cm-2p-2IF; source=1424-418;
+     station=Pa:    0 sec:  300 sec:  453.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  954.239 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec:  954.239 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  954.239 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  954.239 GB:   0 :       : 1;
+     station=Hh:   34 sec:  300 sec:  955.766 GB:   :       : 1;
+endscan;
+scan No0107;
+* intent = "OBSERVE TARGET"
+     start=2016y304d05h18m38s; mode=lba1cm-2p-2IF; source=1249-673;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:   32 sec:  300 sec:  462.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  963.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  963.839 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  963.839 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  963.839 GB:   0 :       : 1;
+     station=Hh:    1 sec:  300 sec:  965.382 GB:   :       : 1;
+endscan;
+scan No0108;
+* intent = "OBSERVE TARGET"
+     start=2016y304d05h24m47s; mode=lba1cm-2p-2IF; source=1245-454;
+     station=Pa:   14 sec:  300 sec:  472.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec:  973.439 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  973.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  973.439 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  973.439 GB:   0 :       : 1;
+     station=Hh:    1 sec:  300 sec:  974.997 GB:   :       : 1;
+endscan;
+scan No0109;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d05h30m38s; mode=lba1cm-2p-2IF; source=1049-534;
+     station=At:    0 sec:  300 sec:  983.039 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  983.039 GB:   0 :       : 1;
+     station=Ho:   11 sec:  300 sec:  983.039 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec:  983.039 GB:   0 :       : 1;
+     station=Hh:   35 sec:  300 sec:  984.613 GB:   :       : 1;
+endscan;
+scan No0110;
+* intent = "OBSERVE TARGET"
+     start=2016y304d05h36m24s; mode=lba1cm-2p-2IF; source=1022-665;
+     station=At:    0 sec:  300 sec:  992.639 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec:  992.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec:  992.639 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec:  992.639 GB:   0 :       : 1;
+     station=Hh:    7 sec:  300 sec:  994.228 GB:   :       : 1;
+endscan;
+scan No0111;
+* intent = "OBSERVE TARGET"
+     start=2016y304d05h42m32s; mode=lba1cm-2p-2IF; source=1306-395;
+     station=Pa:    0 sec:  300 sec:  481.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1002.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1002.239 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1002.239 GB:   0 :       : 1;
+     station=Cd:   14 sec:  300 sec: 1002.239 GB:   0 :       : 1;
+     station=Hh:   41 sec:  300 sec: 1003.843 GB:   :       : 1;
+endscan;
+scan No0112;
+* intent = "OBSERVE TARGET"
+     start=2016y304d05h48m33s; mode=lba1cm-2p-2IF; source=1129-558;
+     station=At:    0 sec:  300 sec: 1011.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1011.839 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1011.839 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1011.839 GB:   0 :       : 1;
+     station=Hh:   15 sec:  300 sec: 1013.459 GB:   :       : 1;
+endscan;
+scan No0113;
+* intent = "OBSERVE TARGET"
+     start=2016y304d05h54m24s; mode=lba1cm-2p-2IF; source=1319-652;
+     station=Pa:    0 sec:  300 sec:  491.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1021.439 GB:   0 :       : 1;
+     station=Mp:    2 sec:  300 sec: 1021.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1021.439 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1021.439 GB:   0 :       : 1;
+     station=Hh:   32 sec:  300 sec: 1023.074 GB:   :       : 1;
+endscan;
+scan No0114;
+* intent = "OBSERVE TARGET"
+     start=2016y304d06h00m15s; mode=lba1cm-2p-2IF; source=1509-564;
+     station=Pa:   31 sec:  300 sec:  501.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1031.039 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1031.039 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1031.039 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1031.039 GB:   0 :       : 1;
+     station=Hh:   30 sec:  300 sec: 1032.689 GB:   :       : 1;
+endscan;
+scan No0115;
+* intent = "OBSERVE TARGET"
+     start=2016y304d06h06m26s; mode=lba1cm-2p-2IF; source=1143-696;
+     station=At:    0 sec:  300 sec: 1040.639 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 1040.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1040.639 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1040.639 GB:   0 :       : 1;
+     station=Hh:   61 sec:  300 sec: 1042.305 GB:   :       : 1;
+endscan;
+scan No0116;
+* intent = "FIND_FRINGE"
+     start=2016y304d06h12m39s; mode=lba1cm-2p-2IF; source=1424-418;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:    0 sec:  300 sec:  510.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1050.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1050.239 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1050.239 GB:   0 :       : 1;
+     station=Cd:    9 sec:  300 sec: 1050.239 GB:   0 :       : 1;
+     station=Hh:   34 sec:  300 sec: 1051.920 GB:   :       : 1;
+endscan;
+scan No0117;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d06h18m53s; mode=lba1cm-2p-2IF; source=1129-558;
+     station=At:    0 sec:  300 sec: 1059.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1059.839 GB:   0 :       : 1;
+     station=Ho:    9 sec:  300 sec: 1059.839 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1059.839 GB:   0 :       : 1;
+     station=Hh:   42 sec:  300 sec: 1061.535 GB:   :       : 1;
+endscan;
+scan No0118;
+* intent = "OBSERVE TARGET"
+     start=2016y304d06h24m37s; mode=lba1cm-2p-2IF; source=1245-454;
+     station=At:    0 sec:  300 sec: 1069.439 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1069.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1069.439 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec: 1069.439 GB:   0 :       : 1;
+     station=Hh:   21 sec:  300 sec: 1071.151 GB:   :       : 1;
+endscan;
+scan No0119;
+* intent = "OBSERVE TARGET"
+     start=2016y304d06h30m09s; mode=lba1cm-2p-2IF; source=1306-395;
+     station=At:    0 sec:  300 sec: 1079.039 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1079.039 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1079.039 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1079.039 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec: 1080.766 GB:   :       : 1;
+endscan;
+scan No0120;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d06h36m23s; mode=lba1cm-2p-2IF; source=1022-665;
+     station=At:    0 sec:  300 sec: 1088.639 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1088.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1088.639 GB:   0 :       : 1;
+     station=Cd:    8 sec:  300 sec: 1088.639 GB:   0 :       : 1;
+     station=Hh:   36 sec:  300 sec: 1090.381 GB:   :       : 1;
+endscan;
+scan No0121;
+* intent = "OBSERVE TARGET"
+     start=2016y304d06h42m10s; mode=lba1cm-2p-2IF; source=1249-673;
+     station=At:    0 sec:  300 sec: 1098.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1098.239 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec: 1098.239 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1098.239 GB:   0 :       : 1;
+     station=Hh:   55 sec:  300 sec: 1099.997 GB:   :       : 1;
+endscan;
+scan No0122;
+* intent = "OBSERVE TARGET"
+     start=2016y304d06h48m48s; mode=lba1cm-2p-2IF; source=1604-333;
+     station=Pa:    0 sec:  300 sec:  520.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1107.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1107.839 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1107.839 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1107.839 GB:   0 :       : 1;
+     station=Hh:   26 sec:  300 sec: 1109.612 GB:   :       : 1;
+endscan;
+scan No0123;
+* intent = "OBSERVE TARGET"
+     start=2016y304d06h55m33s; mode=lba1cm-2p-2IF; source=1245-454;
+     station=At:    0 sec:  300 sec: 1117.439 GB:   0 :       : 1;
+     station=Mp:    2 sec:  300 sec: 1117.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1117.439 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1117.439 GB:   0 :       : 1;
+     station=Hh:   22 sec:  300 sec: 1119.228 GB:   :       : 1;
+endscan;
+scan No0124;
+* intent = "OBSERVE TARGET"
+     start=2016y304d07h01m06s; mode=lba1cm-2p-2IF; source=1306-395;
+     station=At:    0 sec:  300 sec: 1127.039 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1127.039 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1127.039 GB:   0 :       : 1;
+     station=Cd:    3 sec:  300 sec: 1127.039 GB:   0 :       : 1;
+     station=Hh:    6 sec:  300 sec: 1128.843 GB:   :       : 1;
+endscan;
+scan No0125;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d07h07m46s; mode=lba1cm-2p-2IF; source=1600-445;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:    0 sec:  300 sec:  529.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1136.639 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec: 1136.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1136.639 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1136.639 GB:   0 :       : 1;
+     station=Hh:   14 sec:  300 sec: 1138.458 GB:   :       : 1;
+endscan;
+scan No0126;
+* intent = "OBSERVE TARGET"
+     start=2016y304d07h13m40s; mode=lba1cm-2p-2IF; source=1556-580;
+     station=Pa:   12 sec:  300 sec:  539.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1146.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1146.239 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1146.239 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1146.239 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1148.074 GB:   :       : 1;
+endscan;
+scan No0127;
+* intent = "FIND_FRINGE"
+     start=2016y304d07h19m38s; mode=lba1cm-2p-2IF; source=1424-418;
+     station=At:    0 sec:  300 sec: 1155.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1155.839 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1155.839 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1155.839 GB:   0 :       : 1;
+     station=Hh:   16 sec:  300 sec: 1157.689 GB:   :       : 1;
+endscan;
+scan No0128;
+* intent = "OBSERVE TARGET"
+     start=2016y304d07h25m38s; mode=lba1cm-2p-2IF; source=1319-652;
+     station=At:    0 sec:  300 sec: 1165.439 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1165.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1165.439 GB:   0 :       : 1;
+     station=Cd:   11 sec:  300 sec: 1165.439 GB:   0 :       : 1;
+     station=Hh:   14 sec:  300 sec: 1167.304 GB:   :       : 1;
+endscan;
+scan No0129;
+* intent = "OBSERVE TARGET"
+     start=2016y304d07h31m23s; mode=lba1cm-2p-2IF; source=1509-564;
+     station=Pa:    0 sec:  300 sec:  549.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1175.039 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1175.039 GB:   0 :       : 1;
+     station=Ho:    5 sec:  300 sec: 1175.039 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1175.039 GB:   0 :       : 1;
+     station=Hh:   36 sec:  300 sec: 1176.920 GB:   :       : 1;
+endscan;
+scan No0130;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d07h37m18s; mode=lba1cm-2p-2IF; source=1619-680;
+     station=Pa:    2 sec:  300 sec:  558.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1184.639 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1184.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1184.639 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1184.639 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec: 1186.535 GB:   :       : 1;
+endscan;
+scan No0131;
+* intent = "OBSERVE TARGET"
+     start=2016y304d07h43m54s; mode=lba1cm-2p-2IF; source=1604-333;
+     station=Pa:   44 sec:  300 sec:  568.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1194.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1194.239 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1194.239 GB:   0 :       : 1;
+     station=Cd:   10 sec:  300 sec: 1194.239 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1196.150 GB:   :       : 1;
+endscan;
+scan No0132;
+* intent = "OBSERVE TARGET"
+     start=2016y304d07h50m32s; mode=lba1cm-2p-2IF; source=1143-696;
+     station=At:    0 sec:  300 sec: 1203.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1203.839 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1203.839 GB:   0 :       : 1;
+     station=Cd:    9 sec:  300 sec: 1203.839 GB:   0 :       : 1;
+     station=Hh:   61 sec:  300 sec: 1205.766 GB:   :       : 1;
+endscan;
+scan No0133;
+* intent = "FIND_FRINGE"
+     start=2016y304d07h56m47s; mode=lba1cm-2p-2IF; source=1424-418;
+     station=At:    0 sec:  300 sec: 1213.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1213.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1213.438 GB:   0 :       : 1;
+     station=Cd:    7 sec:  300 sec: 1213.438 GB:   0 :       : 1;
+     station=Hh:   33 sec:  300 sec: 1215.381 GB:   :       : 1;
+endscan;
+scan No0134;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d08h02m46s; mode=lba1cm-2p-2IF; source=1600-445;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:    0 sec:  300 sec:  577.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1223.038 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1223.038 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1223.038 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1223.038 GB:   0 :       : 1;
+     station=Hh:   16 sec:  300 sec: 1224.996 GB:   :       : 1;
+endscan;
+scan No0135;
+* intent = "OBSERVE TARGET"
+     start=2016y304d08h08m46s; mode=lba1cm-2p-2IF; source=1714-336;
+     station=Pa:   10 sec:  300 sec:  587.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1232.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1232.638 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1232.638 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1232.638 GB:   0 :       : 1;
+     station=Hh:    3 sec:  300 sec: 1234.612 GB:   :       : 1;
+endscan;
+scan No0136;
+* intent = "OBSERVE TARGET"
+     start=2016y304d08h15m02s; mode=lba1cm-2p-2IF; source=1556-580;
+     station=Pa:   34 sec:  300 sec:  597.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1242.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1242.238 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1242.238 GB:   0 :       : 1;
+     station=Cd:    8 sec:  300 sec: 1242.238 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1244.227 GB:   :       : 1;
+endscan;
+scan No0137;
+* intent = "FIND_FRINGE"
+     start=2016y304d08h21m03s; mode=lba1cm-2p-2IF; source=1424-418;
+     station=At:    0 sec:  300 sec: 1251.838 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 1251.838 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1251.838 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1251.838 GB:   0 :       : 1;
+     station=Hh:   13 sec:  300 sec: 1253.843 GB:   :       : 1;
+endscan;
+scan No0138;
+* intent = "OBSERVE TARGET"
+     start=2016y304d08h27m11s; mode=lba1cm-2p-2IF; source=1249-673;
+     station=At:    0 sec:  300 sec: 1261.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1261.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1261.438 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1261.438 GB:   0 :       : 1;
+     station=Hh:   10 sec:  300 sec: 1263.458 GB:   :       : 1;
+endscan;
+scan No0139;
+* intent = "OBSERVE TARGET"
+     start=2016y304d08h32m59s; mode=lba1cm-2p-2IF; source=1509-564;
+     station=At:    0 sec:  300 sec: 1271.038 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1271.038 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1271.038 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec: 1271.038 GB:   0 :       : 1;
+     station=Hh:   49 sec:  300 sec: 1273.073 GB:   :       : 1;
+endscan;
+scan No0140;
+* intent = "OBSERVE TARGET"
+     start=2016y304d08h38m44s; mode=lba1cm-2p-2IF; source=1319-652;
+     station=At:    0 sec:  300 sec: 1280.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1280.638 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1280.638 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 1280.638 GB:   0 :       : 1;
+     station=Hh:   38 sec:  300 sec: 1282.689 GB:   :       : 1;
+endscan;
+scan No0141;
+* intent = "OBSERVE TARGET"
+     start=2016y304d08h44m58s; mode=lba1cm-2p-2IF; source=1604-333;
+     station=At:    0 sec:  300 sec: 1290.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1290.238 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1290.238 GB:   0 :       : 1;
+     station=Cd:   18 sec:  300 sec: 1290.238 GB:   0 :       : 1;
+     station=Hh:   34 sec:  300 sec: 1292.304 GB:   :       : 1;
+endscan;
+scan No0142;
+* intent = "OBSERVE TARGET"
+     start=2016y304d08h51m06s; mode=lba1cm-2p-2IF; source=1743-548;
+     station=Pa:    0 sec:  300 sec:  606.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1299.838 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1299.838 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1299.838 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1299.838 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec: 1301.919 GB:   :       : 1;
+endscan;
+scan No0143;
+* intent = "OBSERVE TARGET"
+     start=2016y304d08h57m43s; mode=lba1cm-2p-2IF; source=1143-696;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec: 1309.438 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec: 1309.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1309.438 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1309.438 GB:   0 :       : 1;
+     station=Hh:  113 sec:  300 sec: 1311.535 GB:   :       : 1;
+endscan;
+scan No0144;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d09h03m59s; mode=lba1cm-2p-2IF; source=1600-445;
+     station=At:    0 sec:  300 sec: 1319.038 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1319.038 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1319.038 GB:   0 :       : 1;
+     station=Cd:   10 sec:  300 sec: 1319.038 GB:   0 :       : 1;
+     station=Hh:   79 sec:  300 sec: 1321.150 GB:   :       : 1;
+endscan;
+scan No0145;
+* intent = "OBSERVE TARGET"
+     start=2016y304d09h09m53s; mode=lba1cm-2p-2IF; source=1714-336;
+     station=Pa:    0 sec:  300 sec:  616.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1328.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1328.638 GB:   0 :       : 1;
+     station=Ho:   11 sec:  300 sec: 1328.638 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1328.638 GB:   0 :       : 1;
+     station=Hh:   10 sec:  300 sec: 1330.765 GB:   :       : 1;
+endscan;
+scan No0146;
+* intent = "OBSERVE TARGET"
+     start=2016y304d09h15m41s; mode=lba1cm-2p-2IF; source=1604-333;
+     station=At:    0 sec:  300 sec: 1338.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1338.238 GB:   0 :       : 1;
+     station=Ho:   11 sec:  300 sec: 1338.238 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1338.238 GB:   0 :       : 1;
+     station=Hh:   14 sec:  300 sec: 1340.381 GB:   :       : 1;
+endscan;
+scan No0147;
+* intent = "OBSERVE TARGET"
+     start=2016y304d09h22m07s; mode=lba1cm-2p-2IF; source=1249-673;
+     station=At:    0 sec:  300 sec: 1347.838 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1347.838 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1347.838 GB:   0 :       : 1;
+     station=Cd:   11 sec:  300 sec: 1347.838 GB:   0 :       : 1;
+     station=Hh:   39 sec:  300 sec: 1349.996 GB:   :       : 1;
+endscan;
+scan No0148;
+* intent = "OBSERVE TARGET"
+     start=2016y304d09h27m31s; mode=lba1cm-2p-2IF; source=1319-652;
+     station=At:    0 sec:  300 sec: 1357.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1357.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1357.438 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1357.438 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec: 1359.611 GB:   :       : 1;
+endscan;
+scan No0149;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d09h33m25s; mode=lba1cm-2p-2IF; source=1619-680;
+     station=Pa:    0 sec:  300 sec:  625.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1367.038 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 1367.038 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1367.038 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1367.038 GB:   0 :       : 1;
+     station=Hh:   63 sec:  300 sec: 1369.227 GB:   :       : 1;
+endscan;
+scan No0150;
+* intent = "OBSERVE TARGET"
+     start=2016y304d09h39m06s; mode=lba1cm-2p-2IF; source=1509-564;
+     station=At:    0 sec:  300 sec: 1376.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1376.638 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1376.638 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 1376.638 GB:   0 :       : 1;
+     station=Hh:   22 sec:  300 sec: 1378.842 GB:   :       : 1;
+endscan;
+scan No0151;
+* intent = "OBSERVE TARGET"
+     start=2016y304d09h45m09s; mode=lba1cm-2p-2IF; source=1604-333;
+     station=At:    0 sec:  300 sec: 1386.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1386.238 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1386.238 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1386.238 GB:   0 :       : 1;
+     station=Hh:   11 sec:  300 sec: 1388.458 GB:   :       : 1;
+endscan;
+scan No0152;
+* intent = "OBSERVE TARGET"
+     start=2016y304d09h50m51s; mode=lba1cm-2p-2IF; source=1600-445;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec: 1395.838 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1395.838 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1395.838 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 1395.838 GB:   0 :       : 1;
+     station=Hh:    7 sec:  300 sec: 1398.073 GB:   :       : 1;
+endscan;
+scan No0153;
+* intent = "OBSERVE TARGET"
+     start=2016y304d09h56m37s; mode=lba1cm-2p-2IF; source=1556-580;
+     station=At:    0 sec:  300 sec: 1405.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1405.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1405.438 GB:   0 :       : 1;
+     station=Cd:    3 sec:  300 sec: 1405.438 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec: 1407.688 GB:   :       : 1;
+endscan;
+scan No0154;
+* intent = "OBSERVE TARGET"
+     start=2016y304d10h02m44s; mode=lba1cm-2p-2IF; source=1827-481;
+     station=Pa:    0 sec:  300 sec:  635.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1415.038 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1415.038 GB:   0 :       : 1;
+     station=Ho:    3 sec:  300 sec: 1415.038 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1415.038 GB:   0 :       : 1;
+     station=Hh:   36 sec:  300 sec: 1417.304 GB:   :       : 1;
+endscan;
+scan No0155;
+* intent = "OBSERVE TARGET"
+     start=2016y304d10h09m06s; mode=lba1cm-2p-2IF; source=1509-564;
+     station=At:    0 sec:  300 sec: 1424.638 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec: 1424.638 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1424.638 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1424.638 GB:   0 :       : 1;
+     station=Hh:   45 sec:  300 sec: 1426.919 GB:   :       : 1;
+endscan;
+scan No0156;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d10h14m53s; mode=lba1cm-2p-2IF; source=1600-445;
+     station=At:    0 sec:  300 sec: 1434.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1434.238 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1434.238 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 1434.238 GB:   0 :       : 1;
+     station=Hh:    6 sec:  300 sec: 1436.534 GB:   :       : 1;
+endscan;
+scan No0157;
+* intent = "OBSERVE TARGET"
+     start=2016y304d10h20m45s; mode=lba1cm-2p-2IF; source=1714-336;
+     station=At:    0 sec:  300 sec: 1443.838 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1443.838 GB:   0 :       : 1;
+     station=Ho:    7 sec:  300 sec: 1443.838 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1443.838 GB:   0 :       : 1;
+     station=Hh:   11 sec:  300 sec: 1446.150 GB:   :       : 1;
+endscan;
+scan No0158;
+* intent = "OBSERVE TARGET"
+     start=2016y304d10h27m06s; mode=lba1cm-2p-2IF; source=1810-700;
+     station=Pa:    0 sec:  300 sec:  645.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1453.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1453.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1453.438 GB:   0 :       : 1;
+     station=Cd:   13 sec:  300 sec: 1453.438 GB:   0 :       : 1;
+     station=Hh:   18 sec:  300 sec: 1455.765 GB:   :       : 1;
+endscan;
+scan No0159;
+* intent = "OBSERVE TARGET"
+     start=2016y304d10h33m03s; mode=lba1cm-2p-2IF; source=1743-548;
+     station=Pa:    6 sec:  300 sec:  654.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1463.038 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1463.038 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1463.038 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1463.038 GB:   0 :       : 1;
+     station=Hh:    1 sec:  300 sec: 1465.380 GB:   :       : 1;
+endscan;
+scan No0160;
+* intent = "OBSERVE TARGET"
+     start=2016y304d10h38m50s; mode=lba1cm-2p-2IF; source=1556-580;
+     station=At:    0 sec:  300 sec: 1472.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1472.638 GB:   0 :       : 1;
+     station=Ho:    5 sec:  300 sec: 1472.638 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1472.638 GB:   0 :       : 1;
+     station=Hh:   34 sec:  300 sec: 1474.996 GB:   :       : 1;
+endscan;
+scan No0161;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d10h44m55s; mode=lba1cm-2p-2IF; source=1714-336;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec: 1482.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1482.238 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1482.238 GB:   0 :       : 1;
+     station=Cd:    7 sec:  300 sec: 1482.238 GB:   0 :       : 1;
+     station=Hh:   11 sec:  300 sec: 1484.611 GB:   :       : 1;
+endscan;
+scan No0162;
+* intent = "OBSERVE TARGET"
+     start=2016y304d10h50m53s; mode=lba1cm-2p-2IF; source=1827-481;
+     station=Pa:    0 sec:  300 sec:  664.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1491.838 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 1491.838 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1491.838 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1491.838 GB:   0 :       : 1;
+     station=Hh:    6 sec:  300 sec: 1494.226 GB:   :       : 1;
+endscan;
+scan No0163;
+* intent = "OBSERVE TARGET"
+     start=2016y304d10h56m46s; mode=lba1cm-2p-2IF; source=1933-400;
+     station=Pa:    9 sec:  300 sec:  673.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1501.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1501.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1501.438 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1501.438 GB:   0 :       : 1;
+     station=Hh:    6 sec:  300 sec: 1503.842 GB:   :       : 1;
+endscan;
+scan No0164;
+* intent = "OBSERVE TARGET"
+     start=2016y304d11h03m16s; mode=lba1cm-2p-2IF; source=1556-580;
+     station=At:    0 sec:  300 sec: 1511.038 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1511.038 GB:   0 :       : 1;
+     station=Ho:    5 sec:  300 sec: 1511.038 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1511.038 GB:   0 :       : 1;
+     station=Hh:   47 sec:  300 sec: 1513.457 GB:   :       : 1;
+endscan;
+scan No0165;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d11h08m52s; mode=lba1cm-2p-2IF; source=1619-680;
+     station=At:    0 sec:  300 sec: 1520.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1520.638 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1520.638 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 1520.638 GB:   0 :       : 1;
+     station=Hh:   11 sec:  300 sec: 1523.073 GB:   :       : 1;
+endscan;
+scan No0166;
+* intent = "OBSERVE TARGET"
+     start=2016y304d11h15m31s; mode=lba1cm-2p-2IF; source=1953-325;
+     station=Pa:    0 sec:  300 sec:  683.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1530.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1530.238 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1530.238 GB:   0 :       : 1;
+     station=Cd:    6 sec:  300 sec: 1530.238 GB:   0 :       : 1;
+     station=Hh:   33 sec:  300 sec: 1532.688 GB:   :       : 1;
+endscan;
+scan No0167;
+* intent = "OBSERVE TARGET"
+     start=2016y304d11h21m50s; mode=lba1cm-2p-2IF; source=1743-548;
+     station=At:    0 sec:  300 sec: 1539.838 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1539.838 GB:   0 :       : 1;
+     station=Ho:    8 sec:  300 sec: 1539.838 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1539.838 GB:   0 :       : 1;
+     station=Hh:   13 sec:  300 sec: 1542.303 GB:   :       : 1;
+endscan;
+scan No0168;
+* intent = "OBSERVE TARGET"
+     start=2016y304d11h27m39s; mode=lba1cm-2p-2IF; source=1810-700;
+     station=Pa:    0 sec:  300 sec:  693.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1549.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1549.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1549.438 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec: 1549.438 GB:   0 :       : 1;
+     station=Hh:    8 sec:  300 sec: 1551.919 GB:   :       : 1;
+endscan;
+scan No0169;
+* intent = "OBSERVE TARGET"
+     start=2016y304d11h33m24s; mode=lba1cm-2p-2IF; source=1959-639;
+     station=Pa:   22 sec:  300 sec:  702.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1559.038 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1559.038 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1559.038 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1559.038 GB:   0 :       : 1;
+     station=Hh:   36 sec:  300 sec: 1561.534 GB:   :       : 1;
+endscan;
+scan No0170;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d11h39m38s; mode=lba1cm-2p-2IF; source=1933-400;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:   22 sec:  300 sec:  712.320 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1568.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1568.638 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1568.638 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1568.638 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1571.149 GB:   :       : 1;
+endscan;
+scan No0171;
+* intent = "OBSERVE TARGET"
+     start=2016y304d11h45m23s; mode=lba1cm-2p-2IF; source=1827-481;
+     station=At:    0 sec:  300 sec: 1578.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1578.238 GB:   0 :       : 1;
+     station=Ho:   10 sec:  300 sec: 1578.238 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1578.238 GB:   0 :       : 1;
+     station=Hh:   15 sec:  300 sec: 1580.765 GB:   :       : 1;
+endscan;
+scan No0172;
+* intent = "OBSERVE TARGET"
+     start=2016y304d11h51m26s; mode=lba1cm-2p-2IF; source=1953-325;
+     station=Pa:    0 sec:  300 sec:  721.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1587.838 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1587.838 GB:   0 :       : 1;
+     station=Ho:    8 sec:  300 sec: 1587.838 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1587.838 GB:   0 :       : 1;
+     station=Hh:    6 sec:  300 sec: 1590.380 GB:   :       : 1;
+endscan;
+scan No0173;
+* intent = "OBSERVE TARGET"
+     start=2016y304d11h58m00s; mode=lba1cm-2p-2IF; source=2031-662;
+     station=Pa:   36 sec:  300 sec:  731.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1597.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1597.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1597.438 GB:   0 :       : 1;
+     station=Cd:    7 sec:  300 sec: 1597.438 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1599.995 GB:   :       : 1;
+endscan;
+scan No0174;
+* intent = "OBSERVE TARGET"
+     start=2016y304d12h04m10s; mode=lba1cm-2p-2IF; source=1743-548;
+     station=At:    0 sec:  300 sec: 1607.037 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 1607.037 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1607.037 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1607.037 GB:   0 :       : 1;
+     station=Hh:   42 sec:  300 sec: 1609.611 GB:   :       : 1;
+endscan;
+scan No0175;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d12h10m00s; mode=lba1cm-2p-2IF; source=1619-680;
+     station=At:    0 sec:  300 sec: 1616.637 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1616.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1616.637 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 1616.637 GB:   0 :       : 1;
+     station=Hh:   19 sec:  300 sec: 1619.226 GB:   :       : 1;
+endscan;
+scan No0176;
+* intent = "OBSERVE TARGET"
+     start=2016y304d12h16m02s; mode=lba1cm-2p-2IF; source=1827-481;
+     station=At:    0 sec:  300 sec: 1626.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1626.237 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1626.237 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 1626.237 GB:   0 :       : 1;
+     station=Hh:   28 sec:  300 sec: 1628.841 GB:   :       : 1;
+endscan;
+scan No0177;
+* intent = "OBSERVE TARGET"
+     start=2016y304d12h22m24s; mode=lba1cm-2p-2IF; source=2112-556;
+     station=Pa:    0 sec:  300 sec:  741.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1635.837 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec: 1635.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1635.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1635.837 GB:   0 :       : 1;
+     station=Hh:   27 sec:  300 sec: 1638.457 GB:   :       : 1;
+endscan;
+scan No0178;
+* intent = "OBSERVE TARGET"
+     start=2016y304d12h28m55s; mode=lba1cm-2p-2IF; source=1743-548;
+     station=At:    0 sec:  300 sec: 1645.437 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec: 1645.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1645.437 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1645.437 GB:   0 :       : 1;
+     station=Hh:   41 sec:  300 sec: 1648.072 GB:   :       : 1;
+endscan;
+scan No0179;
+* intent = "OBSERVE TARGET"
+     start=2016y304d12h34m55s; mode=lba1cm-2p-2IF; source=1933-400;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec: 1655.037 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1655.037 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec: 1655.037 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1655.037 GB:   0 :       : 1;
+     station=Hh:   22 sec:  300 sec: 1657.688 GB:   :       : 1;
+endscan;
+scan No0180;
+* intent = "OBSERVE TARGET"
+     start=2016y304d12h40m34s; mode=lba1cm-2p-2IF; source=1953-325;
+     station=At:    0 sec:  300 sec: 1664.637 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1664.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1664.637 GB:   0 :       : 1;
+     station=Cd:    1 sec:  300 sec: 1664.637 GB:   0 :       : 1;
+     station=Hh:    3 sec:  300 sec: 1667.303 GB:   :       : 1;
+endscan;
+scan No0181;
+* intent = "OBSERVE TARGET"
+     start=2016y304d12h46m35s; mode=lba1cm-2p-2IF; source=1827-481;
+     station=At:    0 sec:  300 sec: 1674.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1674.237 GB:   0 :       : 1;
+     station=Ho:    5 sec:  300 sec: 1674.237 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1674.237 GB:   0 :       : 1;
+     station=Hh:    9 sec:  300 sec: 1676.918 GB:   :       : 1;
+endscan;
+scan No0182;
+* intent = "OBSERVE TARGET"
+     start=2016y304d12h52m31s; mode=lba1cm-2p-2IF; source=1959-639;
+     station=Pa:    0 sec:  300 sec:  750.720 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1683.837 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 1683.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1683.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1683.837 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec: 1686.534 GB:   :       : 1;
+endscan;
+scan No0183;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d12h58m28s; mode=lba1cm-2p-2IF; source=1619-680;
+     station=At:    0 sec:  300 sec: 1693.437 GB:   0 :       : 1;
+     station=Mp:    1 sec:  300 sec: 1693.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1693.437 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1693.437 GB:   0 :       : 1;
+     station=Hh:   81 sec:  300 sec: 1696.149 GB:   :       : 1;
+endscan;
+scan No0184;
+* intent = "OBSERVE TARGET"
+     start=2016y304d13h04m47s; mode=lba1cm-2p-2IF; source=1933-400;
+     station=At:    0 sec:  300 sec: 1703.037 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1703.037 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1703.037 GB:   0 :       : 1;
+     station=Cd:    7 sec:  300 sec: 1703.037 GB:   0 :       : 1;
+     station=Hh:   44 sec:  300 sec: 1705.764 GB:   :       : 1;
+endscan;
+scan No0185;
+* intent = "OBSERVE TARGET"
+     start=2016y304d13h10m22s; mode=lba1cm-2p-2IF; source=1953-325;
+     station=At:    0 sec:  300 sec: 1712.637 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1712.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1712.637 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec: 1712.637 GB:   0 :       : 1;
+     station=Hh:    7 sec:  300 sec: 1715.380 GB:   :       : 1;
+endscan;
+scan No0186;
+* intent = "OBSERVE TARGET"
+     start=2016y304d13h16m46s; mode=lba1cm-2p-2IF; source=1810-700;
+     station=At:    0 sec:  300 sec: 1722.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1722.237 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1722.237 GB:   0 :       : 1;
+     station=Cd:   11 sec:  300 sec: 1722.237 GB:   0 :       : 1;
+     station=Hh:   18 sec:  300 sec: 1724.995 GB:   :       : 1;
+endscan;
+scan No0187;
+* intent = "OBSERVE TARGET"
+     start=2016y304d13h23m17s; mode=lba1cm-2p-2IF; source=2344-514;
+     station=Pa:    0 sec:  300 sec:  760.320 GB:   0 :       : 1;
+     station=At:   27 sec:  300 sec: 1731.837 GB:   0 :       : 1;
+     station=Mp:   33 sec:  300 sec: 1731.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1731.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1731.837 GB:   0 :       : 1;
+endscan;
+scan No0188;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d13h29m43s; mode=lba1cm-2p-2IF; source=1933-400;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:   48 sec:  300 sec: 1741.437 GB:   0 :       : 1;
+     station=Mp:   55 sec:  300 sec: 1741.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1741.437 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1741.437 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1734.610 GB:   :       : 1;
+endscan;
+scan No0189;
+* intent = "OBSERVE TARGET"
+     start=2016y304d13h35m48s; mode=lba1cm-2p-2IF; source=2031-662;
+     station=Pa:    0 sec:  300 sec:  769.920 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1751.037 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1751.037 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1751.037 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec: 1751.037 GB:   0 :       : 1;
+     station=Hh:   14 sec:  300 sec: 1744.226 GB:   :       : 1;
+endscan;
+scan No0190;
+* intent = "OBSERVE TARGET"
+     start=2016y304d13h41m31s; mode=lba1cm-2p-2IF; source=2200-617;
+     station=Pa:   18 sec:  300 sec:  779.520 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1760.637 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1760.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1760.637 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1760.637 GB:   0 :       : 1;
+     station=Hh:   28 sec:  300 sec: 1753.841 GB:   :       : 1;
+endscan;
+scan No0191;
+* intent = "OBSERVE TARGET"
+     start=2016y304d13h47m11s; mode=lba1cm-2p-2IF; source=2112-556;
+     station=Pa:    6 sec:  300 sec:  789.120 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1770.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1770.237 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1770.237 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1770.237 GB:   0 :       : 1;
+     station=Hh:   11 sec:  300 sec: 1763.456 GB:   :       : 1;
+endscan;
+scan No0192;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d13h53m20s; mode=lba1cm-2p-2IF; source=2244-372;
+     station=Pa:   18 sec:  300 sec:  798.719 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1779.837 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1779.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1779.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1779.837 GB:   0 :       : 1;
+     station=Hh:    3 sec:  300 sec: 1773.072 GB:   :       : 1;
+endscan;
+scan No0193;
+* intent = "OBSERVE TARGET"
+     start=2016y304d13h59m45s; mode=lba1cm-2p-2IF; source=1959-639;
+     station=At:    0 sec:  300 sec: 1789.437 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1789.437 GB:   0 :       : 1;
+     station=Ho:    2 sec:  300 sec: 1789.437 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1789.437 GB:   0 :       : 1;
+     station=Hh:   24 sec:  300 sec: 1782.687 GB:   :       : 1;
+endscan;
+scan No0194;
+* intent = "OBSERVE TARGET"
+     start=2016y304d14h05m31s; mode=lba1cm-2p-2IF; source=2200-617;
+     station=Pa:    0 sec:  300 sec:  808.319 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1799.037 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1799.037 GB:   0 :       : 1;
+     station=Ho:    3 sec:  300 sec: 1799.037 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1799.037 GB:   0 :       : 1;
+     station=Hh:   40 sec:  300 sec: 1792.302 GB:   :       : 1;
+endscan;
+scan No0195;
+* intent = "OBSERVE TARGET"
+     start=2016y304d14h11m32s; mode=lba1cm-2p-2IF; source=1810-700;
+     station=At:    0 sec:  300 sec: 1808.637 GB:   0 :       : 1;
+     station=Mp:    2 sec:  300 sec: 1808.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1808.637 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1808.637 GB:   0 :       : 1;
+     station=Hh:   81 sec:  300 sec: 1801.918 GB:   :       : 1;
+endscan;
+scan No0196;
+* intent = "OBSERVE TARGET"
+     start=2016y304d14h17m26s; mode=lba1cm-2p-2IF; source=2112-556;
+     station=Pa:    0 sec:  300 sec:  817.919 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1818.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1818.237 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1818.237 GB:   0 :       : 1;
+     station=Cd:    6 sec:  300 sec: 1818.237 GB:   0 :       : 1;
+     station=Hh:   63 sec:  300 sec: 1811.533 GB:   :       : 1;
+endscan;
+scan No0197;
+* intent = "FIND_FRINGE"
+     start=2016y304d14h23m31s; mode=lba1cm-2p-2IF; source=2326-502;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:   41 sec:  300 sec:  827.519 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1827.837 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1827.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1827.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1827.837 GB:   0 :       : 1;
+     station=Hh:   27 sec:  300 sec: 1821.149 GB:   :       : 1;
+endscan;
+scan No0198;
+* intent = "OBSERVE TARGET"
+     start=2016y304d14h29m42s; mode=lba1cm-2p-2IF; source=2031-662;
+     station=At:    0 sec:  300 sec: 1837.437 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1837.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1837.437 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1837.437 GB:   0 :       : 1;
+     station=Hh:   44 sec:  300 sec: 1830.764 GB:   :       : 1;
+endscan;
+scan No0199;
+* intent = "OBSERVE TARGET"
+     start=2016y304d14h35m58s; mode=lba1cm-2p-2IF; source=2244-372;
+     station=Pa:    0 sec:  300 sec:  837.119 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1847.037 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1847.037 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1847.037 GB:   0 :       : 1;
+     station=Cd:   11 sec:  300 sec: 1847.037 GB:   0 :       : 1;
+     station=Hh:   16 sec:  300 sec: 1840.379 GB:   :       : 1;
+endscan;
+scan No0200;
+* intent = "OBSERVE TARGET"
+     start=2016y304d14h42m19s; mode=lba1cm-2p-2IF; source=1959-639;
+     station=At:    0 sec:  300 sec: 1856.637 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1856.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1856.637 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 1856.637 GB:   0 :       : 1;
+     station=Hh:   27 sec:  300 sec: 1849.995 GB:   :       : 1;
+endscan;
+scan No0201;
+* intent = "OBSERVE TARGET"
+     start=2016y304d14h48m58s; mode=lba1cm-2p-2IF; source=0010-401;
+     station=Pa:    0 sec:  300 sec:  846.719 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1866.237 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec: 1866.237 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1866.237 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1866.237 GB:   0 :       : 1;
+     station=Hh:   51 sec:  300 sec: 1859.610 GB:   :       : 1;
+endscan;
+scan No0202;
+* intent = "FIND_FRINGE"
+     start=2016y304d14h54m47s; mode=lba1cm-2p-2IF; source=2326-502;
+     station=Pa:    6 sec:  300 sec:  856.319 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1875.837 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1875.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1875.837 GB:   0 :       : 1;
+     station=Cd:    1 sec:  300 sec: 1875.837 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1869.225 GB:   :       : 1;
+endscan;
+scan No0203;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d15h00m40s; mode=lba1cm-2p-2IF; source=2244-372;
+     station=Pa:   12 sec:  300 sec:  865.919 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1885.437 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1885.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1885.437 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 1885.437 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1878.841 GB:   :       : 1;
+endscan;
+scan No0204;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h07m10s; mode=lba1cm-2p-2IF; source=0021-686;
+     station=Pa:   35 sec:  300 sec:  875.519 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1895.037 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1895.037 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1895.037 GB:   0 :       : 1;
+     station=Cd:   10 sec:  300 sec: 1895.037 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 1888.456 GB:   :       : 1;
+endscan;
+scan No0205;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h13m19s; mode=lba1cm-2p-2IF; source=2112-556;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec: 1904.637 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 1904.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1904.637 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1904.637 GB:   0 :       : 1;
+     station=Hh:   52 sec:  300 sec: 1898.071 GB:   :       : 1;
+endscan;
+scan No0206;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h18m53s; mode=lba1cm-2p-2IF; source=2200-617;
+     station=At:    0 sec:  300 sec: 1914.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1914.237 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec: 1914.237 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1914.237 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec: 1907.687 GB:   :       : 1;
+endscan;
+scan No0207;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h24m46s; mode=lba1cm-2p-2IF; source=1810-700;
+     station=At:    0 sec:  300 sec: 1923.837 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1923.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1923.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1923.837 GB:   0 :       : 1;
+     station=Hh:   88 sec:  300 sec: 1917.302 GB:   :       : 1;
+endscan;
+scan No0208;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h31m08s; mode=lba1cm-2p-2IF; source=2344-514;
+     station=Pa:    0 sec:  300 sec:  885.119 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1933.437 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 1933.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1933.437 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1933.437 GB:   0 :       : 1;
+     station=Hh:  109 sec:  300 sec: 1926.917 GB:   :       : 1;
+endscan;
+scan No0209;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h37m24s; mode=lba1cm-2p-2IF; source=1959-639;
+     station=At:    0 sec:  300 sec: 1943.037 GB:   0 :       : 1;
+     station=Mp:    2 sec:  300 sec: 1943.037 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1943.037 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1943.037 GB:   0 :       : 1;
+     station=Hh:   63 sec:  300 sec: 1936.533 GB:   :       : 1;
+endscan;
+scan No0210;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h42m49s; mode=lba1cm-2p-2IF; source=2031-662;
+     station=At:    0 sec:  300 sec: 1952.637 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1952.637 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec: 1952.637 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1952.637 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec: 1946.148 GB:   :       : 1;
+endscan;
+scan No0211;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h49m13s; mode=lba1cm-2p-2IF; source=0010-401;
+     station=Pa:    0 sec:  300 sec:  894.719 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1962.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1962.237 GB:   0 :       : 1;
+     station=Ho:    4 sec:  300 sec: 1962.237 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1962.237 GB:   0 :       : 1;
+     station=Hh:   51 sec:  300 sec: 1955.764 GB:   :       : 1;
+endscan;
+scan No0212;
+* intent = "OBSERVE TARGET"
+     start=2016y304d15h55m29s; mode=lba1cm-2p-2IF; source=2112-556;
+     station=At:    0 sec:  300 sec: 1971.837 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1971.837 GB:   0 :       : 1;
+     station=Ho:   11 sec:  300 sec: 1971.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1971.837 GB:   0 :       : 1;
+     station=Hh:   40 sec:  300 sec: 1965.379 GB:   :       : 1;
+endscan;
+scan No0213;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d16h01m25s; mode=lba1cm-2p-2IF; source=2244-372;
+     station=At:    0 sec:  300 sec: 1981.437 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1981.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1981.437 GB:   0 :       : 1;
+     station=Cd:    8 sec:  300 sec: 1981.437 GB:   0 :       : 1;
+     station=Hh:   16 sec:  300 sec: 1974.994 GB:   :       : 1;
+endscan;
+scan No0214;
+* intent = "FIND_FRINGE"
+     start=2016y304d16h07m12s; mode=lba1cm-2p-2IF; source=2326-502;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:    0 sec:  300 sec:  904.319 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 1991.036 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 1991.036 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 1991.036 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 1991.036 GB:   0 :       : 1;
+     station=Hh:    6 sec:  300 sec: 1984.610 GB:   :       : 1;
+endscan;
+scan No0215;
+* intent = "OBSERVE TARGET"
+     start=2016y304d16h13m37s; mode=lba1cm-2p-2IF; source=0221-540;
+     station=Pa:   57 sec:  300 sec:  913.919 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2000.636 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2000.636 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2000.636 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2000.636 GB:   0 :       : 1;
+     station=Hh:   27 sec:  300 sec: 1994.225 GB:   :       : 1;
+endscan;
+scan No0216;
+* intent = "OBSERVE TARGET"
+     start=2016y304d16h20m23s; mode=lba1cm-2p-2IF; source=2200-617;
+     station=At:    0 sec:  300 sec: 2010.236 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec: 2010.236 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2010.236 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2010.236 GB:   0 :       : 1;
+     station=Hh:   52 sec:  300 sec: 2003.840 GB:   :       : 1;
+endscan;
+scan No0217;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d16h26m27s; mode=lba1cm-2p-2IF; source=2244-372;
+     station=At:    0 sec:  300 sec: 2019.836 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2019.836 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2019.836 GB:   0 :       : 1;
+     station=Cd:    5 sec:  300 sec: 2019.836 GB:   0 :       : 1;
+     station=Hh:   12 sec:  300 sec: 2013.456 GB:   :       : 1;
+endscan;
+scan No0218;
+* intent = "OBSERVE TARGET"
+     start=2016y304d16h32m43s; mode=lba1cm-2p-2IF; source=2031-662;
+     station=At:    0 sec:  300 sec: 2029.436 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2029.436 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2029.436 GB:   0 :       : 1;
+     station=Cd:    6 sec:  300 sec: 2029.436 GB:   0 :       : 1;
+     station=Hh:   16 sec:  300 sec: 2023.071 GB:   :       : 1;
+endscan;
+scan No0219;
+* intent = "OBSERVE TARGET"
+     start=2016y304d16h38m44s; mode=lba1cm-2p-2IF; source=2344-514;
+     station=Pa:    0 sec:  300 sec:  923.519 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2039.036 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2039.036 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2039.036 GB:   0 :       : 1;
+     station=Cd:    1 sec:  300 sec: 2039.036 GB:   0 :       : 1;
+     station=Hh:   61 sec:  300 sec: 2032.686 GB:   :       : 1;
+endscan;
+scan No0220;
+* intent = "OBSERVE TARGET"
+     start=2016y304d16h44m25s; mode=lba1cm-2p-2IF; source=0010-401;
+     station=Pa:   11 sec:  300 sec:  933.119 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2048.636 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2048.636 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2048.636 GB:   0 :       : 1;
+     station=Cd:    8 sec:  300 sec: 2048.636 GB:   0 :       : 1;
+     station=Hh:    9 sec:  300 sec: 2042.302 GB:   :       : 1;
+endscan;
+scan No0221;
+* intent = "OBSERVE TARGET"
+     start=2016y304d16h50m47s; mode=lba1cm-2p-2IF; source=0021-686;
+     station=Pa:   22 sec:  300 sec:  942.719 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2058.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2058.237 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2058.237 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2058.237 GB:   0 :       : 1;
+     station=Hh:    2 sec:  300 sec: 2051.917 GB:   :       : 1;
+endscan;
+scan No0222;
+* intent = "OBSERVE TARGET"
+     start=2016y304d16h56m44s; mode=lba1cm-2p-2IF; source=0152-513;
+     station=Pa:   17 sec:  300 sec:  952.319 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2067.837 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2067.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2067.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2067.837 GB:   0 :       : 1;
+     station=Hh:   15 sec:  300 sec: 2061.533 GB:   :       : 1;
+endscan;
+scan No0223;
+* intent = "FIND_FRINGE"
+     start=2016y304d17h02m57s; mode=lba1cm-2p-2IF; source=2326-502;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec: 2077.437 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec: 2077.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2077.437 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2077.437 GB:   0 :       : 1;
+     station=Hh:   27 sec:  300 sec: 2071.148 GB:   :       : 1;
+endscan;
+scan No0224;
+* intent = "OBSERVE TARGET"
+     start=2016y304d17h08m41s; mode=lba1cm-2p-2IF; source=0010-401;
+     station=At:    0 sec:  300 sec: 2087.037 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2087.037 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2087.037 GB:   0 :       : 1;
+     station=Cd:    3 sec:  300 sec: 2087.037 GB:   0 :       : 1;
+     station=Hh:    5 sec:  300 sec: 2080.764 GB:   :       : 1;
+endscan;
+scan No0225;
+* intent = "OBSERVE TARGET"
+     start=2016y304d17h14m42s; mode=lba1cm-2p-2IF; source=2200-617;
+     station=At:    0 sec:  300 sec: 2096.637 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2096.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2096.637 GB:   0 :       : 1;
+     station=Cd:   10 sec:  300 sec: 2096.637 GB:   0 :       : 1;
+     station=Hh:   31 sec:  300 sec: 2090.379 GB:   :       : 1;
+endscan;
+scan No0226;
+* intent = "OBSERVE TARGET"
+     start=2016y304d17h20m28s; mode=lba1cm-2p-2IF; source=2344-514;
+     station=At:    0 sec:  300 sec: 2106.237 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2106.237 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2106.237 GB:   0 :       : 1;
+     station=Cd:    4 sec:  300 sec: 2106.237 GB:   0 :       : 1;
+     station=Hh:   32 sec:  300 sec: 2099.995 GB:   :       : 1;
+endscan;
+scan No0227;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d17h26m55s; mode=lba1cm-2p-2IF; source=0252-549;
+     station=Pa:    0 sec:  300 sec:  961.919 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2115.837 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec: 2115.837 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2115.837 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2115.837 GB:   0 :       : 1;
+     station=Hh:   32 sec:  300 sec: 2109.610 GB:   :       : 1;
+endscan;
+scan No0228;
+* intent = "OBSERVE TARGET"
+     start=2016y304d17h32m24s; mode=lba1cm-2p-2IF; source=0221-540;
+     station=Pa:    6 sec:  300 sec:  971.519 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2125.437 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2125.437 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2125.437 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2125.437 GB:   0 :       : 1;
+     station=Hh:   14 sec:  300 sec: 2119.226 GB:   :       : 1;
+endscan;
+scan No0229;
+* intent = "FIND_FRINGE"
+     start=2016y304d17h38m49s; mode=lba1cm-2p-2IF; source=2326-502;
+     station=At:    0 sec:  300 sec: 2135.037 GB:   0 :       : 1;
+     station=Mp:    4 sec:  300 sec: 2135.037 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2135.037 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2135.037 GB:   0 :       : 1;
+     station=Hh:   30 sec:  300 sec: 2128.841 GB:   :       : 1;
+endscan;
+scan No0230;
+* intent = "OBSERVE TARGET"
+     start=2016y304d17h45m00s; mode=lba1cm-2p-2IF; source=0152-513;
+     station=Pa:    0 sec:  300 sec:  981.119 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2144.637 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 2144.637 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2144.637 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2144.637 GB:   0 :       : 1;
+     station=Hh:   28 sec:  300 sec: 2138.457 GB:   :       : 1;
+endscan;
+scan No0231;
+* intent = "OBSERVE TARGET"
+     start=2016y304d17h51m05s; mode=lba1cm-2p-2IF; source=0010-401;
+     station=At:    0 sec:  300 sec: 2154.238 GB:   0 :       : 1;
+     station=Mp:    3 sec:  300 sec: 2154.238 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2154.238 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2154.238 GB:   0 :       : 1;
+     station=Hh:   13 sec:  300 sec: 2148.072 GB:   :       : 1;
+endscan;
+scan No0232;
+* intent = "OBSERVE TARGET"
+     start=2016y304d17h57m13s; mode=lba1cm-2p-2IF; source=0021-686;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec: 2163.838 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2163.838 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2163.838 GB:   0 :       : 1;
+     station=Cd:    6 sec:  300 sec: 2163.838 GB:   0 :       : 1;
+     station=Hh:   15 sec:  300 sec: 2157.688 GB:   :       : 1;
+endscan;
+scan No0233;
+* intent = "OBSERVE TARGET"
+     start=2016y304d18h03m04s; mode=lba1cm-2p-2IF; source=2344-514;
+     station=At:    0 sec:  300 sec: 2173.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2173.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2173.438 GB:   0 :       : 1;
+     station=Cd:    3 sec:  300 sec: 2173.438 GB:   0 :       : 1;
+     station=Hh:   11 sec:  300 sec: 2167.303 GB:   :       : 1;
+endscan;
+scan No0234;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d18h09m53s; mode=lba1cm-2p-2IF; source=0332-403;
+     station=Pa:    0 sec:  300 sec:  990.719 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2183.038 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec: 2183.038 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2183.038 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2183.038 GB:   0 :       : 1;
+     station=Hh:   30 sec:  300 sec: 2176.918 GB:   :       : 1;
+endscan;
+scan No0235;
+* intent = "OBSERVE TARGET"
+     start=2016y304d18h15m47s; mode=lba1cm-2p-2IF; source=0427-502;
+     station=Pa:   13 sec:  300 sec: 1000.319 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2192.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2192.638 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2192.638 GB:   0 :       : 1;
+     station=Cd:   17 sec:  300 sec: 2192.638 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 2186.534 GB:   :       : 1;
+endscan;
+scan No0236;
+* intent = "OBSERVE TARGET"
+     start=2016y304d18h21m27s; mode=lba1cm-2p-2IF; source=0438-436;
+     station=Pa:    5 sec:  300 sec: 1009.919 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2202.238 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2202.238 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2202.238 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 2202.238 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 2196.149 GB:   :       : 1;
+endscan;
+scan No0237;
+* intent = "FIND_FRINGE"
+     start=2016y304d18h27m32s; mode=lba1cm-2p-2IF; source=0252-549;
+     station=Pa:   44 sec:  300 sec: 1019.519 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2211.838 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2211.838 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2211.838 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2211.838 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec: 2205.765 GB:   :       : 1;
+endscan;
+scan No0238;
+* intent = "OBSERVE TARGET"
+     start=2016y304d18h32m58s; mode=lba1cm-2p-2IF; source=0221-540;
+     station=Pa:   10 sec:  300 sec: 1029.119 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2221.438 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2221.438 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2221.438 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2221.438 GB:   0 :       : 1;
+     station=Hh:   16 sec:  300 sec: 2215.380 GB:   :       : 1;
+endscan;
+scan No0239;
+* intent = "OBSERVE TARGET"
+     start=2016y304d18h38m26s; mode=lba1cm-2p-2IF; source=0152-513;
+     station=Pa:   11 sec:  300 sec: 1038.719 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2231.038 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2231.038 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2231.038 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2231.038 GB:   0 :       : 1;
+     station=Hh:   14 sec:  300 sec: 2224.996 GB:   :       : 1;
+endscan;
+scan No0240;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d18h44m31s; mode=lba1cm-2p-2IF; source=0332-403;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:   22 sec:  300 sec: 1048.319 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2240.638 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2240.638 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2240.638 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2240.638 GB:   0 :       : 1;
+     station=Hh:   12 sec:  300 sec: 2234.611 GB:   :       : 1;
+endscan;
+scan No0241;
+* intent = "OBSERVE TARGET"
+     start=2016y304d18h50m19s; mode=lba1cm-2p-2IF; source=0430-332;
+     station=Pa:   16 sec:  300 sec: 1057.919 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2250.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2250.239 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2250.239 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2250.239 GB:   0 :       : 1;
+     station=Hh:    7 sec:  300 sec: 2244.227 GB:   :       : 1;
+endscan;
+scan No0242;
+* intent = "OBSERVE TARGET"
+     start=2016y304d18h56m42s; mode=lba1cm-2p-2IF; source=0507-611;
+     station=Pa:   65 sec:  300 sec: 1067.519 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2259.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2259.839 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2259.839 GB:   0 :       : 1;
+     station=Cd:   34 sec:  300 sec: 2259.839 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 2253.842 GB:   :       : 1;
+endscan;
+scan No0243;
+* intent = "OBSERVE TARGET"
+     start=2016y304d19h03m14s; mode=lba1cm-2p-2IF; source=0021-686;
+     station=At:    0 sec:  300 sec: 2269.439 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec: 2269.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2269.439 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2269.439 GB:   0 :       : 1;
+     station=Hh:   78 sec:  300 sec: 2263.458 GB:   :       : 1;
+endscan;
+scan No0244;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d19h10m15s; mode=lba1cm-2p-2IF; source=0521-365;
+     station=Pa:    0 sec:  300 sec: 1077.119 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2279.039 GB:   0 :       : 1;
+     station=Mp:    5 sec:  300 sec: 2279.039 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2279.039 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2279.039 GB:   0 :       : 1;
+     station=Hh:   55 sec:  300 sec: 2273.073 GB:   :       : 1;
+endscan;
+scan No0245;
+* intent = "FIND_FRINGE"
+     start=2016y304d19h16m40s; mode=lba1cm-2p-2IF; source=0252-549;
+     station=Pa:   54 sec:  300 sec: 1086.719 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2288.639 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2288.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2288.639 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2288.639 GB:   0 :       : 1;
+     station=Hh:   17 sec:  300 sec: 2282.689 GB:   :       : 1;
+endscan;
+scan No0246;
+* intent = "OBSERVE TARGET"
+     start=2016y304d19h22m07s; mode=lba1cm-2p-2IF; source=0221-540;
+     station=At:    0 sec:  300 sec: 2298.239 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2298.239 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec: 2298.239 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2298.239 GB:   0 :       : 1;
+     station=Hh:   15 sec:  300 sec: 2292.304 GB:   :       : 1;
+endscan;
+scan No0247;
+* intent = "OBSERVE TARGET"
+     start=2016y304d19h27m35s; mode=lba1cm-2p-2IF; source=0152-513;
+     station=At:    0 sec:  300 sec: 2307.839 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2307.839 GB:   0 :       : 1;
+     station=Ho:    1 sec:  300 sec: 2307.839 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2307.839 GB:   0 :       : 1;
+     station=Hh:   13 sec:  300 sec: 2301.920 GB:   :       : 1;
+endscan;
+scan No0248;
+* intent = "OBSERVE TARGET"
+     start=2016y304d19h35m03s; mode=lba1cm-2p-2IF; source=1245-454;
+     station=Pa:    0 sec:  300 sec: 1096.319 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2317.439 GB:   0 :       : 1;
+     station=Mp:    9 sec:  300 sec: 2317.439 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2317.439 GB:   0 :       : 1;
+     station=Cd:  273 sec:  300 sec: 2317.439 GB:   0 :       : 1;
+endscan;
+scan No0249;
+* intent = "OBSERVE TARGET"
+     start=2016y304d19h42m09s; mode=lba1cm-2p-2IF; source=0607-605;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Pa:  109 sec:  300 sec: 1105.919 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2327.039 GB:   0 :       : 1;
+     station=Mp:    6 sec:  300 sec: 2327.039 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2327.039 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2327.039 GB:   0 :       : 1;
+endscan;
+scan No0250;
+* intent = "OBSERVE TARGET"
+     start=2016y304d19h49m24s; mode=lba1cm-2p-2IF; source=1306-395;
+     station=Pa:  119 sec:  300 sec: 1115.519 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2336.639 GB:   0 :       : 1;
+     station=Mp:    8 sec:  300 sec: 2336.639 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2336.639 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2336.639 GB:   0 :       : 1;
+endscan;
+scan No0251;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d19h58m19s; mode=lba1cm-2p-2IF; source=0646-306;
+     station=Pa:  187 sec:  300 sec: 1125.119 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2346.240 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2346.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2346.240 GB:   0 :       : 1;
+     station=Cd:   17 sec:  300 sec: 2346.240 GB:   0 :       : 1;
+endscan;
+scan No0252;
+* intent = "OBSERVE TARGET"
+     start=2016y304d20h05m21s; mode=lba1cm-2p-2IF; source=0152-513;
+     station=At:   32 sec:  300 sec: 2355.840 GB:   0 :       : 1;
+     station=Mp:   38 sec:  300 sec: 2355.840 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2355.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2355.840 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 2311.535 GB:   :       : 1;
+endscan;
+scan No0253;
+* intent = "OBSERVE TARGET"
+     start=2016y304d20h13m18s; mode=lba1cm-2p-2IF; source=1005-333;
+     station=Pa:    0 sec:  300 sec: 1134.719 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2365.440 GB:   0 :       : 1;
+     station=Mp:   13 sec:  300 sec: 2365.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2365.440 GB:   0 :       : 1;
+     station=Cd:   31 sec:  300 sec: 2365.440 GB:   0 :       : 1;
+endscan;
+scan No0254;
+* intent = "AUTOPHASE_DETERMINE"
+     start=2016y304d20h22m12s; mode=lba1cm-2p-2IF; source=0521-365;
+     station=Pa:  194 sec:  300 sec: 1144.319 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2375.040 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2375.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2375.040 GB:   0 :       : 1;
+     station=Cd:   14 sec:  300 sec: 2375.040 GB:   0 :       : 1;
+     station=Hh:    0 sec:  300 sec: 2321.151 GB:   :       : 1;
+endscan;
+scan No0255;
+* intent = "OBSERVE TARGET"
+     start=2016y304d20h28m03s; mode=lba1cm-2p-2IF; source=0629-418;
+     station=Pa:   29 sec:  300 sec: 1153.919 GB:   0 :       : 1;
+     station=At:    0 sec:  300 sec: 2384.640 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2384.640 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2384.640 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2384.640 GB:   0 :       : 1;
+     station=Hh:   10 sec:  300 sec: 2330.766 GB:   :       : 1;
+endscan;
+scan No0256;
+* intent = "OBSERVE TARGET"
+     start=2016y304d20h34m51s; mode=lba1cm-2p-2IF; source=0152-513;
+     station=At:   28 sec:  300 sec: 2394.240 GB:   0 :       : 1;
+     station=Mp:   35 sec:  300 sec: 2394.240 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2394.240 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2394.240 GB:   0 :       : 1;
+     station=Hh:   58 sec:  300 sec: 2340.382 GB:   :       : 1;
+endscan;
+scan No0257;
+* intent = "OBSERVE TARGET"
+     start=2016y304d20h40m20s; mode=lba1cm-2p-2IF; source=0221-540;
+     station=At:    0 sec:  300 sec: 2403.840 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2403.840 GB:   0 :       : 1;
+     station=Ho:    3 sec:  300 sec: 2403.840 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2403.840 GB:   0 :       : 1;
+     station=Hh:   12 sec:  300 sec: 2349.997 GB:   :       : 1;
+endscan;
+scan No0258;
+* intent = "OBSERVE TARGET"
+     start=2016y304d20h46m15s; mode=lba1cm-2p-2IF; source=0021-686;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=At:    0 sec:  300 sec: 2413.440 GB:   0 :       : 1;
+     station=Mp:    0 sec:  300 sec: 2413.440 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2413.440 GB:   0 :       : 1;
+     station=Cd:    2 sec:  300 sec: 2413.440 GB:   0 :       : 1;
+     station=Hh:   32 sec:  300 sec: 2359.613 GB:   :       : 1;
+endscan;
+scan No0259;
+* intent = "OBSERVE TARGET"
+     start=2016y304d20h53m10s; mode=lba1cm-2p-2IF; source=0944-469;
+     station=Pa:    0 sec:  300 sec: 1163.519 GB:   0 :       : 1;
+     station=At:   67 sec:  300 sec: 2423.040 GB:   0 :       : 1;
+     station=Mp:   75 sec:  300 sec: 2423.040 GB:   0 :       : 1;
+     station=Ho:    0 sec:  300 sec: 2423.040 GB:   0 :       : 1;
+     station=Cd:    0 sec:  300 sec: 2423.040 GB:   0 :       : 1;
+endscan;
