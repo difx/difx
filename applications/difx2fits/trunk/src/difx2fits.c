@@ -131,7 +131,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --union\n");
 	fprintf(stderr, "  -u                  Form union of frequency setups\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --merge-eop         Merge different sets of EOPs [experimental]\n");
+	fprintf(stderr, "  --eop-merge-mode    Set the mode for merging differerent EOPs. Legal modes are strict (default), drop, relaxed.\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
@@ -256,16 +256,6 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				++opts->verbose;
 			}
-			else if(strcmp(argv[i], "--merge-eop") == 0 )
-			{
-				opts->mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
-				fprintf(stderr, "\nWarning: using mode that merges all EOPs.  This is experimental at this time and in most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
-			}
-			else if(strcmp(argv[i], "--drop-eop") == 0 )
-			{
-				opts->mergeOptions.eopMergeMode = EOPMergeModeLoose;
-				fprintf(stderr, "\nWarning: using mode that drops all EOPs, allowing merging of files including incompatible EOP values.\n\n");
-			}
 			else if(strcmp(argv[i], "--union") == 0 ||
 			        strcmp(argv[i], "-u") == 0)
 			{
@@ -346,6 +336,29 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					++i;
 					opts->DifxTsysAvgSeconds = atof(argv[i]);
 				}
+				else if(strcmp(argv[i], "--eop-merge-mode") == 0)
+				{
+					++i;
+					printf ("%s\n", argv[i]);
+					if (strcmp(argv[i], "strict") == 0)
+						opts->mergeOptions.eopMergeMode = EOPMergeModeStrict;
+					else if (strcmp(argv[i], "drop") == 0)
+					{
+						opts->mergeOptions.eopMergeMode = EOPMergeModeLoose;
+						fprintf(stderr, "\nWarning: using mode that drops all EOPs, allowing merging of files including incompatible EOP values.\n\n");
+					}
+					else if (strcmp(argv[i], "relaxed") == 0)
+						opts->mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
+					else
+					{
+						fprintf(stderr, "Illegal EOP merge mode: %s\n", argv[i]);
+						fprintf(stderr, "Legal values are: drop relaxed strict\n");
+							
+						deleteCommandLineOptions(opts);
+						return 0;
+					}
+					
+				}
 				else if(strcmp(argv[i], "--difx-pcal-interval") == 0)
 				{
 					++i;
@@ -372,6 +385,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				else if(strcmp(argv[i], "--primary-band") == 0)
 				{
 					++i;
+
 					opts->primaryBand = strdup(argv[i]);
 				}
 				else if(strcmp(argv[i], "--history") == 0 ||
