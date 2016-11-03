@@ -1336,7 +1336,7 @@ C
 C BACK TO RADIANS FROM ARC SECONDS
       sbend=(sbend/3600.0d0)*CONVD
 C      WRITE(6,9959) SBEND                                               DEBUG
- 9959  FORMAT(" SBEND (RADIANS) ",D20.10)                                DEBUG
+ 9959  FORMAT(" SBEND (RADIANS) ",D20.10)
       return
       end 
 C
