@@ -339,7 +339,6 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				else if(strcmp(argv[i], "--eop-merge-mode") == 0)
 				{
 					++i;
-					printf ("%s\n", argv[i]);
 					if (strcmp(argv[i], "strict") == 0)
 						opts->mergeOptions.eopMergeMode = EOPMergeModeStrict;
 					else if (strcmp(argv[i], "drop") == 0)
