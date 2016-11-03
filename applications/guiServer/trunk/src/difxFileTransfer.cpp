@@ -179,7 +179,11 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
                     		snprintf( command, MAX_COMMAND_SIZE, "cp /tmp/filetransfer_%d %s", 
                     				 S->port,
                     				 S->destination );
-                      		system( command );
+                      		int ret = system( command );
+                        	if ( ret < 0 ) {
+                        	    snprintf( message, DIFX_MESSAGE_LENGTH, "Failed to execute command \"%s\" - transfer FAILED", command );
+                        	    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+                        	}
                   		}
      	                //  Otherwise, we can't read it.
     	                else
@@ -193,7 +197,11 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
 
       		//  Then clean up our litter.
     		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
-            system( command );
+            int ret = system( command );
+        	if ( ret < 0 ) {
+        	    snprintf( message, DIFX_MESSAGE_LENGTH, "Failed to execute command \"%s\" - transfer FAILED", command );
+        	    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+        	}
             delete gc;
       		
 	}
@@ -250,11 +258,19 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
     	//  Use the DiFX user to copy the requested file to a temporary location (if there is anything to copy, that is...).
     	if ( filesize > 0 ) {
     		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
-            system( command );
+            int ret = system( command );
+        	if ( ret < 0 ) {
+        	    snprintf( message, DIFX_MESSAGE_LENGTH, "Failed to execute command \"%s\" - transfer FAILED", command );
+        	    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+        	}
     		snprintf( command, MAX_COMMAND_SIZE, "cp %s /tmp/filetransfer_%d", 
     				 S->origin,
     				 S->port );
-      		system( command );
+      		ret = system( command );
+        	if ( ret < 0 ) {
+        	    snprintf( message, DIFX_MESSAGE_LENGTH, "Failed to execute command \"%s\" - transfer FAILED", command );
+        	    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+        	}
   		}
     	
 	    //  Open a client connection to the server that should be running for us on the
@@ -291,7 +307,11 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
 
         //  Clean up our litter.
 		//snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
-        system( command );
+        int ret = system( command );
+    	if ( ret < 0 ) {
+    	    snprintf( message, DIFX_MESSAGE_LENGTH, "Failed to execute command \"%s\" - transfer FAILED", command );
+    	    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+    	}
   		delete gc;
       		    	
 	}

@@ -84,9 +84,6 @@ void* connectionMonitor( void* arg ) {
 int main( int argc, char **argv, char **envp ) {
 
     char difxBase[DIFX_MESSAGE_LENGTH];
-    char command[guiServer::ServerSideConnection::MAX_COMMAND_SIZE];
-    char message[DIFX_MESSAGE_LENGTH];
-    const char* user;
 
     //  Configurables, with some sensible defaults.
     int serverPort = 50200;            //  Port for TCP connections
@@ -134,7 +131,7 @@ int main( int argc, char **argv, char **envp ) {
             //  Try to interpret the final argument as the server port number
             bool allNum = true;
             char* newNum = argv[i];
-            for ( int j = 0; j < strlen( newNum ); ++j ) {
+            for ( unsigned int j = 0; j < strlen( newNum ); ++j ) {
                 if ( !isdigit( newNum[j] ) )
                     allNum = false;
             }

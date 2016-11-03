@@ -83,7 +83,7 @@ namespace guiServer {
             }
         }
         
-        ~GUIClient() {
+        virtual ~GUIClient() {
             closer();
         }
 
@@ -102,7 +102,7 @@ namespace guiServer {
                 }
                 memcpy( _buff, &_swapPort, len );
                 memcpy( (char*)_buff + sizeof( int ), data, n );
-                int ret = _ssc->sendPacket( ServerSideConnection::CHANNEL_DATA, (char*)_buff, len );
+                _ssc->sendPacket( ServerSideConnection::CHANNEL_DATA, (char*)_buff, len );
                 return len;
             }
             else {

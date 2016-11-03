@@ -20,7 +20,7 @@
 #                                                                              #
 #\endif ########################################################################
 #################################################################################
-#\defgroup difxversion DiFXVersion
+#\defgroup difxcorrelatorreport correlatorReport
 #
 #\brief Create a "correlator report" for an R4.
 #

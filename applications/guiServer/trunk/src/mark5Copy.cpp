@@ -62,7 +62,6 @@ void ServerSideConnection::mark5CopyThread( Mark5CopyInfo* info ) {
 
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
-    char creationDate[DIFX_MESSAGE_FILENAME_LENGTH];
     const char* mpiWrapper;
 	const DifxMessageMark5Copy *S = &(info->mark5Copy);
     
@@ -70,8 +69,6 @@ void ServerSideConnection::mark5CopyThread( Mark5CopyInfo* info ) {
     static const int MARK5COPY_COMPLETED                 = 302;
     static const int MARK5COPY_FAILED                    = 304;
     static const int MPIRUN_ERROR                        = 305;
-    static const int NO_ENVIRONMENT_VARIABLE             = 306;
-    static const int DIRECTORY_NOT_FOUND                 = 308;
     static const int MARK5COPY_INFO                      = 312;
     static const int MARK5COPY_ERRORS                    = 314;
 	

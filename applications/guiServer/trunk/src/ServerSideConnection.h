@@ -123,15 +123,16 @@ namespace guiServer {
         
         ~ServerSideConnection() {
             if ( _monitorSocket != NULL ) {
+                _monitorSocketOn = false;
                 _monitorSocket->closeFd();
                 delete _monitorSocket;
+                _monitorSocket = NULL;
             }
             if ( _commandSocket != NULL ) {
                 _commandSocket->closeFd();
                 delete _commandSocket;
+                _commandSocket = NULL;
             }
-            _monitorSocket = NULL;
-            _commandSocket = NULL;
         }
         
         //---------------------------------------------------------------------
@@ -141,11 +142,15 @@ namespace guiServer {
         void startMulticastMonitor() {
             //  Shut down the existing monitor if there is one.
             if ( _monitorSocket != NULL ) {
+                _monitorSocketOn = false;
                 _monitorSocket->closeFd();
                 sleep( 1 );  //  this seems a bit long!
+                delete _monitorSocket;
+                _monitorSocket = NULL;
             }
             _monitorSocket = new network::UDPSocket( network::UDPSocket::RECEIVE, _multicastGroup, _multicastPort );
             _monitorSocket->ignoreOwn( false );
+            _monitorSocketOn = true;
             //  Start the thread that reads the multicast messages.
             pthread_create( &_monitorId, NULL, staticDifxMonitor, this );      
         }
@@ -169,14 +174,16 @@ namespace guiServer {
             //char hostName[512];
             char message[MAX_MESSAGE_LENGTH + 1];
             //char hostIP[512];
-            while ( _monitorSocket != NULL && _monitorSocket->fd() != -1 ) {
+            while ( _monitorSocketOn && _monitorSocket != NULL ) {
                 int ret = _monitorSocket->reader( message, MAX_MESSAGE_LENGTH );
                 if ( ret == -1 ) {
                     fprintf( stderr, "closing monitor socket due to receive error\n" );
+                    _monitorSocketOn = false;
+                    _monitorSocket->closeFd();
                     delete _monitorSocket;
                     _monitorSocket = NULL;
                 }
-                else if ( ret > 0 && ret <= ((int)(sizeof( DifxMessageGeneric ))) ) {
+                else if ( _monitorSocketOn && ret > 0 && ret <= ((int)(sizeof( DifxMessageGeneric ))) ) {
                     message[ret] = 0;
                     //  Decide what to do with this message.
                     DifxMessageGeneric G;
@@ -1212,6 +1219,7 @@ namespace guiServer {
     
         network::UDPSocket* _monitorSocket;
         network::UDPSocket* _commandSocket;
+        bool _monitorSocketOn;
         pthread_t _monitorId;
         pthread_t _runId;
         bool _relayDifxMulticasts;

@@ -41,9 +41,6 @@ using namespace guiServer;
 //!  are then provided to the GUI client.
 //-----------------------------------------------------------------------------	
 void ServerSideConnection::runDifxMonitor( DifxMonitorInfo* monitorInfo ) {
-	char message[DIFX_MESSAGE_LENGTH];
-    Configuration* config;
-    bool allIsWell = true;
     DifxMonitorExchange* exchange = NULL;
     
     //  Start a server on the connection port and await a connection from the GUI.  

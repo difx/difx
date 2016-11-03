@@ -146,7 +146,9 @@ void ServerSideConnection::stopDifx( DifxMessageGeneric* G ) {
                                 diagnostic( WARNING, "killing PID %d on %s", pid, machineName );
                                 snprintf( command, MAX_COMMAND_SIZE, 
                                     "%s -host %s /bin/kill -9 %d", mpiWrapper, machineName, pid );
-                                system( command );
+                                int ret = system( command );
+                                if ( ret < 0 )
+                                    diagnostic( ERROR, "failed to execute command \"%s\"", command );
                             }
                         }
                     }

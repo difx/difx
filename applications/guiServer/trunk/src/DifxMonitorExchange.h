@@ -100,7 +100,7 @@ namespace guiServer {
             pthread_create( &_receiveId, NULL, staticReceiveThread, this );
         }
         
-        ~DifxMonitorExchange() {
+        virtual ~DifxMonitorExchange() {
             _receiveActive = false;
         }
         
@@ -123,7 +123,7 @@ namespace guiServer {
             while ( _receiveActive ) {
                 int packetId = 0;
                 int nBytes;
-                char* data;
+                char* data = NULL;
                 if ( _guiClient->getPacket( packetId, data, nBytes ) == -1 ) {
                     //  connection failure
                     _receiveActive = false;
@@ -223,7 +223,9 @@ namespace guiServer {
                 snprintf( monCommand, ServerSideConnection::MAX_COMMAND_SIZE,
                      "%s monitor_server %d &> /dev/null &", _monitorInfo->ssc->difxSetupPath(), monitorServerPort );
                 _guiClient->formatPacket( WARNING, "monitor_server needs to be started - executing: %s\n", monCommand );
-                system( monCommand );
+                int ret = system( monCommand );
+                if ( ret < 0 )
+                    _guiClient->formatPacket( ERROR, "monitor_server had trouble starting - real time monitoring will not work" );
                 //  Delay a bit to allow the monitor_server to start up.
                 sleep( 1 );
             }
@@ -510,9 +512,7 @@ namespace guiServer {
             int nReturn;
             int buffSize = 0;
             int newBuffSize;
-            char* buff;
-            int iVis = 0;
-            int nProducts = _productList.size();
+            char* buff = NULL;
             int procChannels = 0;
             double delay = 0.0;
             double snr = 0.0;

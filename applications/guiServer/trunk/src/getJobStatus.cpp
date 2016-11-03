@@ -135,6 +135,7 @@ void ServerSideConnection::getJobStatusThread( GetJobStatusInfo* getJobStatusInf
                                 source[i] = logLine[pos+i];
                                 ++i;
                             }
+                            source[i] = source[0];  //  does nothing useful - put here to get rid of compiler warning
                             source[i] = 0;
                             pos += i;
                             //  Find what kind of log entry this is - it follows the date, time, and source.

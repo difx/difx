@@ -73,7 +73,7 @@ namespace guiServer {
         //!  will be NULL terminated.
         //--------------------------------------------------------------------
         int nextOutput( char* buffer, int maxLen ) {
-            int fds;
+            int fds = 0;
             while ( _outOpen || _errOpen ) {
                 FD_ZERO( &_rfds );
                 if ( _outOpen ) {
@@ -148,7 +148,7 @@ namespace guiServer {
     
         int _pipe[3];
         int _pid;
-        char* _commandList[4];
+        const char* _commandList[4];
         bool _outOpen;
         bool _errOpen;
         fd_set _rfds;
@@ -209,11 +209,17 @@ namespace guiServer {
 		        close(out[0]);
 		        close(err[0]);
 		        close(0);
-		        dup(in[0]);
+		        int ret = dup(in[0]);
+		        if ( ret == -1 )
+		            perror( "GuiServer::ExecuteSystem.popenRWE()" );
 		        close(1);
-		        dup(out[1]);
+		        ret = dup(out[1]);
+		        if ( ret == -1 )
+		            perror( "GuiServer::ExecuteSystem.popenRWE()" );
 		        close(2);
-		        dup(err[1]);
+		        ret = dup(err[1]);
+		        if ( ret == -1 )
+		            perror( "GuiServer::ExecuteSystem.popenRWE()" );
 
 		        execvp(exe, (char**)argv);
 		        exit(1);
@@ -237,11 +243,11 @@ namespace guiServer {
 
         int pcloseRWE(int pid, int *rwepipe)
         {
-	        int rc, status;
+	        int status;
 	        close(rwepipe[0]);
 	        close(rwepipe[1]);
 	        close(rwepipe[2]);
-	        rc = waitpid(pid, &status, 0);
+	        waitpid(pid, &status, 0);
 	        return status;
         }
         

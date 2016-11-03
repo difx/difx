@@ -40,6 +40,8 @@ namespace network {
             pthread_mutex_init( &_readMutex, NULL );
             pthread_mutex_init( &_writeMutex, NULL );
         }
+        
+        virtual ~GenericSocket() {}
 
         //  Reader and writer functions both return the number of bytes
         //  successfully transfered, -1 on a failure, or 0 on a timeout

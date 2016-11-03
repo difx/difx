@@ -53,7 +53,6 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <network/GenericSocket.h>
-//#include <difxmessage.h>
 
 namespace network {
 
@@ -76,6 +75,7 @@ namespace network {
         //----------------------------------------------------------------------------
         UDPSocket( UDPSocketType mode, char *IPaddress, int port )  {
             _fd = 0;
+            _keepReading = false;
             int on = 1;
 
             _ignoreOwn = true;
@@ -145,6 +145,9 @@ namespace network {
 
             }
 
+            //  Used by the reader...
+            _keepReading = true;
+            
             //  only for MULTICAST
             if ( mode == MULTICAST ) {
                 unsigned char ttl = 3;    // time-to-live.  Max hops before discard 
@@ -163,7 +166,7 @@ namespace network {
             getHostAddress();
         }
         
-        ~UDPSocket() {
+        virtual ~UDPSocket() {
             close( _fd );
         }
 
@@ -207,41 +210,40 @@ namespace network {
             fd_set rfds;
             struct timeval tv;
 
-        //    do  {
-                //  Wait until we get some data as long as the socket is good.  The timeout
-                //  on the select is half the length of the pause in "closeFd()" (which makes
-                //  _fd = -1) so we should escape a call here without a problem.
-                while ( _fd > -1 ) {
-            	    FD_ZERO( &rfds );
-                    FD_SET( _fd, &rfds );
-                    tv.tv_sec = 1;
-                    tv.tv_usec = 1000;
-                    int rtn = select( _fd + 1, &rfds, NULL, NULL, NULL );//&tv );
-                    if ( rtn > 0 && FD_ISSET(_fd, &rfds) ) {
-                        //  Socket has some data to read.
-                        charcount = recvfrom( _fd, message, messagelength, 0,
-                                              (sockaddr *)&fromaddr, (socklen_t *)&fromaddrlength );
-                        if ( charcount < 0 )  {
-                            //  Bail out on errors that are not timeouts.  Presumably with the select
-                            //  we should not worry about timeouts but this code shouldn't hurt us.
-                            if ( errno != EWOULDBLOCK ) {
-                                perror( "multicast recvfrom()" );
-                                return( -1 );
-                            }
+            //  Wait until we get some data as long as the socket is good.  The timeout
+            //  on the select is a fraction of the length of the pause in "closeFd()" (which makes
+            //  _fd = -1) so we should escape a call here without a problem.
+            while ( _keepReading && _fd > -1 ) {
+        	    FD_ZERO( &rfds );
+                FD_SET( _fd, &rfds );
+                tv.tv_sec = 0;
+                tv.tv_usec = 100;
+                int rtn = select( _fd + 1, &rfds, NULL, NULL, &tv );//NULL );//&tv );
+                if ( _keepReading && rtn > 0 && FD_ISSET(_fd, &rfds) ) {
+                    //  Socket has some data to read.
+                    charcount = recvfrom( _fd, message, messagelength, 0,
+                                          (sockaddr *)&fromaddr, (socklen_t *)&fromaddrlength );
+                    if ( charcount < 0 )  {
+                        //  Bail out on errors that are not timeouts.  Presumably with the select
+                        //  we should not worry about timeouts but this code shouldn't hurt us.
+                        if ( errno != EWOULDBLOCK ) {
+                            perror( "multicast recvfrom()" );
+                            return( -1 );
                         }
-                        else
-                            break;
-            	    }
-            	    else if ( rtn < 0 ) {
-            	        perror( "multicast select()" );
-            	        return( -1 );
-            	    }
-                }
-                //  If a file close operation was detected don't try to return a message.
-                if ( _fd < 0 )
-                    charcount = 0;
-
-      //      } while ( _ignoreOwn && (fromaddr.sin_addr.s_addr == hostaddr.sin_addr.s_addr) );
+                        //  If its just a timeout, return 0
+                        charcount = 0;
+                    }
+                    else
+                        break;
+        	    }
+        	    else if ( rtn < 0 ) {
+        	        perror( "multicast select()" );
+        	        return( -1 );
+        	    }
+            }
+            //  If a file close operation was detected don't try to return a message.
+            if ( _fd < 0 || !_keepReading )
+                charcount = 0;
 
             _ipValid = true;
             message[charcount] = 0;
@@ -269,9 +271,13 @@ namespace network {
         
         int fd() { return _fd; }
         void closeFd() {
-            _fd = -1;
-            usleep( 200000 );
+            _keepReading = false;
+            //  Delay to assure that any read operation is complete.  For whatever reason,
+            //  a mutex lock was NOT as good here, which implies something I don't understand
+            //  is going on.
+            usleep( 200 );
             close( _fd );
+            _fd = -1;
         }
 
     protected :
@@ -279,6 +285,7 @@ namespace network {
         int _fd;
         bool _ipValid;
         bool _ignoreOwn;
+        bool _keepReading;
 
         //----------------------------------------------------------------------------
         //!  Get the present host address.  This is used internally.

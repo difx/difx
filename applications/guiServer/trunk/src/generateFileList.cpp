@@ -433,7 +433,7 @@ struct mark5_stream* ServerSideConnection::openmk5(const char *filename, const c
 			}
                         break;
                 }
-                fprintf(stderr, "File offset %ld: decoded suspect sample rate %d, trying new offset\n", *offset, ms->samprate);
+                fprintf(stderr, "File offset %ld: decoded suspect sample rate %ld, trying new offset\n", *offset, ms->samprate);
                 delete_mark5_stream(ms);
                 (*offset) += 43500;
 	}

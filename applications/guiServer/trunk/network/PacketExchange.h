@@ -50,7 +50,7 @@ namespace network {
             pthread_mutex_init( &_sendPacketMutex, NULL );
         }
         
-        ~PacketExchange() {
+        virtual ~PacketExchange() {
 //            writeLock();
 //            writeUnlock();
 //            pthread_mutex_destroy( &_sendPacketMutex );

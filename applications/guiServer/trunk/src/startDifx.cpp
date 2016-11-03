@@ -99,7 +99,6 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	char restartOption[RestartOptionLength];
 	char monitorOption[DIFX_MESSAGE_FILENAME_LENGTH];
 	char inLine[MAX_COMMAND_SIZE];
-	const char *jobName;
 	const DifxMessageStart *S;
 	bool outputExists = false;
 	const char *mpiOptions;
@@ -254,12 +253,6 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 		if( filebase[i] == '.' ) {
 			filebase[i] = 0;
 			break;
-		}
-	}
-	jobName = filebase;
-	for( int i = 0; filebase[i]; ++i ) {
-		if( filebase[i] == '/' ) {
-			jobName = filebase + i + 1;
 		}
 	}
 
@@ -419,7 +412,10 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
     //  Delete data directories if "force" is in effect.
     if ( startInfo->force ) {
 	    startInfo->jobMonitor->sendPacket( RUN_DIFX_DELETING_PREVIOUS_OUTPUT, NULL, 0 );
-        system( startInfo->removeCommand );
+        int ret = system( startInfo->removeCommand );
+    	if ( ret < 0 ) {
+    	    diagnostic( ERROR, "Failed to execute command \"%s\" - transfer FAILED", startInfo->removeCommand );
+    	}
     }
     
     //  Run the DiFX process!
