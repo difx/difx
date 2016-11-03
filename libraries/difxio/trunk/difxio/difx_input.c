@@ -580,7 +580,12 @@ static int generateAipsIFs(DifxInput *D, int configId)
 	}
 
 	/* Then actually build it */
-	dc->IF = newDifxIFArray(dc->nIF);
+#warning "FIXME: The size adjustment were put in in conjunction with IF merging (union option). Not fully understood.
+	int size = D->nFreq;
+	if (dc->nIF > size)
+		size = dc->nIF;
+
+	dc->IF = newDifxIFArray(size);
 	dc->nIF = 0;	/* zero and recount */
 	for(fqId = 0; fqId < D->nFreq; ++fqId)
 	{
