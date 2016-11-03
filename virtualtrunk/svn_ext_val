@@ -31,3 +31,4 @@ sites/NRAO/SniffPlots		https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/SniffPlot
 sites/NRAO/difxdb		https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/difxdb
 sites/NRAO/rcwlib		https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/rcwlib
 sites/MPIfR			https://svn.atnf.csiro.au/difx/sites/MPIfR
+tests                           https://svn.atnf.csiro.au/difx/tests
