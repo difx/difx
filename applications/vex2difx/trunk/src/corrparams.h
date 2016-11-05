@@ -248,11 +248,8 @@ public:
 
 	std::string corrSetupName;
 
-	bool explicitXmacLength;// Whether the xmacLength parameter was explicitly set
-	bool explicitStrideLength;// Whether the strideLength parameter was explicitly set
 	bool explicitFFTSpecRes;// Whether .v2d set the resolution of FFTs
 	bool explicitOutputSpecRes; // Whether .v2d set the output resolution
-	bool explicitGuardNS;	// Whether the guardNS parameter was explicitly set
 	double tInt;		// integration time
 	bool doPolar;		// false for no cross pol, true for full pol
 	bool doAuto;		// write autocorrelations

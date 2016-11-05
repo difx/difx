@@ -142,14 +142,11 @@ CorrSetup::CorrSetup(const std::string &name) : corrSetupName(name)
 	fringeRotOrder = 1;
 	strideLength = 0;
 	xmacLength = 0;
-	explicitXmacLength = false;
-	explicitStrideLength = false;
 	explicitFFTSpecRes = false;
 	explicitOutputSpecRes = false;
-	explicitGuardNS = false;
 	numBufferedFFTs = 10;
 	subintNS = 0;
-	guardNS = 1000;
+	guardNS = 0;
 	maxNSBetweenUVShifts = 2000000000;
 	maxNSBetweenACAvg = 0;		// zero means set to default in vex2difx.cpp
 	minRecordedBandwidth = 0.0;
@@ -224,7 +221,6 @@ int CorrSetup::setkv(const std::string &key, const std::string &value)
 	else if(key == "guardNS")
 	{
 		ss >> guardNS;
-		explicitGuardNS = true;
 	}
 	else if(key == "maxNSBetweenUVShifts")
 	{
@@ -245,12 +241,10 @@ int CorrSetup::setkv(const std::string &key, const std::string &value)
 	else if(key == "strideLength")
 	{
 		ss >> strideLength;
-		explicitStrideLength = true;
 	}
 	else if(key == "xmacLength")
 	{
 		ss >> xmacLength;
-		explicitXmacLength = true;
 	}
 	else if(key == "numBufferedFFTs")
 	{

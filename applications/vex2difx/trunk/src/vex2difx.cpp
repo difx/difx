@@ -1435,9 +1435,10 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 									// FIXME: it seems the shrinking causes seg faults.  
 	}
 
-	//if guardNS was not set explicitly, change it to the right amount to allow for
+	//if guardNS was set to negative value, change it to the right amount to allow for
 	//adjustment to get to an integer NS + geometric rate slippage (assumes Earth-based antenna)
-	if(!corrSetup->explicitGuardNS)
+	//Note: if not set explicitly, zero will be passed to mpifxcorr where it will do the calculation
+	if(config->guardNS < 0)
 	{
 		config->guardNS = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), config->subintNS, mode->getMinBits(), mode->getMinSubbands());
 	}
@@ -2085,16 +2086,9 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		} // antenna loop
 		if(corrSetup->xmacLength > minChans)
 		{
-			if(corrSetup->explicitXmacLength)
-			{
-				cerr << "Error: xmacLength set explicitly to " << corrSetup->xmacLength << ", but minChans (from a zoom freq) was " << minChans << endl;
+			cerr << "Error: xmacLength set explicitly to " << corrSetup->xmacLength << ", but minChans (from a zoom freq) was " << minChans << endl;
 				
-				exit(EXIT_FAILURE);
-			}
-			else
-			{
-				config->xmacLength = minChans;
-			}
+			exit(EXIT_FAILURE);
 		}
 		worstcaseguardns = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), config->subintNS, mode->getMinBits(), mode->getMinSubbands());
 		if(config->guardNS < worstcaseguardns && config->guardNS > 0)

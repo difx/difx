@@ -35,9 +35,9 @@ Version 2.5.0
   - Error : A problem with input data that cannot be ignored.
   - Developer error : A case where the program detected internal self inconsistency.  This implies a bug in the code.
 * Support mark6 media
-* Allow guardNS = 0 --> mpifxcorr choses the smallest reasonable value
-* Allow strideLength = 0 --> mpifxcorr chooses a pretty good value for you (per datastream)
-* Allow xmacLength = 0 -> mpifxcorr chooses a pretty good value for you
+* Allow guardNS = 0 (default) --> mpifxcorr choses the smallest reasonable value
+* Allow strideLength = 0 (default) --> mpifxcorr chooses a pretty good value for you (per datastream)
+* Allow xmacLength = 0 (default) -> mpifxcorr chooses a pretty good value for you
 * Don't allow changing from or to VDIF format with the .v2d file since channel order is defined differently for these two types.
 * Stations defaulting to use of Canonical VDIF threads changed to VLBA antennas, VLA, and GBT only (Arecibo and Effelsberg removed).  Can be changed through environment variable CANONICAL_VDIF_USERS
 * Move dataSource into VexStream object.  Not as simple as it seemed...
