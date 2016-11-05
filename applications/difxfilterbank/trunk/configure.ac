@@ -1,9 +1,6 @@
-AC_INIT(src/difxfilterbank.cpp)
+AC_INIT([difxfilterbank], [0.6])
 
-PACKAGE=difxfilterbank
-VERSION=0.6
-
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
+AM_INIT_AUTOMAKE([foreign])
 
 DIFXMESSAGE_REQUIRED_VERSION=2.2.0
 DIFXMESSAGE_MAX_VERSION=7
