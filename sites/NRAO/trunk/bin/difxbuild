@@ -13,8 +13,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.55'
-verdate = '20161015'
+version = '0.57'
+verdate = '20161107'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -576,7 +576,7 @@ component_datasim_trunk = \
 [ \
 	'datasim', \
 	'https://svn.atnf.csiro.au/difx/applications/datasim/trunk', \
-	['nodef', 'aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_calcif2_trunk = \
@@ -1958,7 +1958,7 @@ def fromtar(origComps, params, args, verbose, pretend):
 
 
 def debian(origComps, params, args, verbose, pretend):
-	debComponents = 'libexpat1-dev autoconf automake pkg-config libtool-bin subversion g++ gfortran libx11-dev libgsl2 libgsl-dev libfftw3-bin libfftw-dev libudev-dev bison flex'
+	debComponents = 'libexpat1-dev autoconf automake pkg-config libtool-bin subversion g++ gfortran libx11-dev libgsl2 libgsl-dev libfftw3-bin libfftw-dev libudev-dev bison flex openssh-server'
 	print 'Using apt to install some things.  Your sudo password may be needed.'
 	cmd = 'sudo apt-get install %s' % debComponents
 	execute(cmd, verbose, pretend)
@@ -2103,7 +2103,7 @@ def build(origComps, params, args, verbose, pretend):
 			chdir(srcDir+comp[0])
 			if(getcwd() == srcDir+comp[0]):
 				# likely an svn dir
-				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Revision:"` >> %s' % (comp[0], bldLog), verbose, pretend)
 			else:
 				# maybe a versioned component
 				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
@@ -2173,11 +2173,14 @@ def makedist(origComps, params, args, verbose, pretend):
 				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
 				execute(cmd, verbose, pretend)
 			
-			v = execute('make dist', verbose, pretend)
+			cmd = 'make dist'
+			if environ['DIFX_VERSION'] == 'DIFX-DEVEL':
+				svnrev = popen('svn info %s/%s | grep "Revision:"' % (srcDir, comp[0])).readline().strip().split()[-1]
+				cmd += ' distdir=%s-r%s' % (comp[0], svnrev)
+			v = execute(cmd, verbose, pretend)
 			if v != 0:
 				print '\n*** Error packaging %s ***\n' % comp[0]
 				return 
-			execute('rm -f %s/%s*.tar.gz' % (distDir, comp[0]), verbose, pretend)
 			execute('mv -f *.tar.gz %s' % distDir, verbose, pretend)
 			chdir(srcDir+comp[0])
 			
@@ -2244,7 +2247,8 @@ def dist(origComps, params, args, verbose, pretend):
 		if isdir(buildPath):
 			chdir(buildPath)
 			execute('rm -f *.tar.gz', verbose, pretend)
-			v = execute('make dist', verbose, pretend)
+			cmd = 'make dist'
+			v = execute(cmd, verbose, pretend)
 			if v != 0:
 				print '\n*** make dist error for %s ***\n' % comp[0]
 				return
