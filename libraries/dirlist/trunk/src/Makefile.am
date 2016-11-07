@@ -15,6 +15,7 @@ cpp_sources = \
 	dirlist_parameter.cpp \
 	dirlist_datum.cpp \
 	dirlist_datum_mark5.cpp \
+	dirlist_datum_mark6.cpp \
 	dirlist.cpp \
 	old_dirlist.cpp \
 	old_filelist.cpp \

@@ -6,11 +6,12 @@
 #include <dirlist.h>
 #include <old_dirlist.h>
 #include <old_filelist.h>
+#include <dirlist_datum_mark6.h>
 
 const char program[] = "2dirlist";
-const char version[] = "0.1";
+const char version[] = "0.2";
 const char author[] = "Walter Brisken <wbrisken@nrao.edu>";
-const char verdate[] = "2015 Dec 25";
+const char verdate[] = "2016 Nov 07";
 
 int usage(const char *pgm)
 {
@@ -33,17 +34,46 @@ int convert(const char *inputFile, const char *outputFile)
 	int v;
 
 	error.clear();
+	std::cout << "Trying to interpret as an old style Mark5 dirlist..." << std::endl;
 	v = loadOldDirList(D, inputFile, error);
 	if(v != 0)
 	{
+		std::cout << "That did not work.  Reason was:" << std::endl;
+		std::cout << "  " << error.str() << std::endl;		
+
 		error.clear();
+		std::cout << "Trying to interpret as a simple file list..." << std::endl;
 		v = loadOldFileList(D, inputFile, error);
+	}
+	else
+	{
+		std::cout << "Success!" << std::endl;
 	}
 	if(v != 0)
 	{
-		fprintf(stderr, "\nInput file is unrecognizable and wasn't parsed.\n\n");
+		std::cout << "That did not work.  Reason was:" << std::endl;
+		std::cout << "  " << error.str() << std::endl;		
+
+		error.clear();
+		std::cout << "Trying to interpret as a Mark6 (C-Plane) scan list..." << std::endl;
+		v = loadMark6SList(D, inputFile, error);
+	}
+	else
+	{
+		std::cout << "Success!" << std::endl;
+	}
+	if(v != 0)
+	{
+		std::cout << "That did not work.  Reason was:" << std::endl;
+		std::cout << "  " << error.str() << std::endl;		
+
+		std::cerr << "File conversion failed." << std::endl;
 		
 		return EXIT_FAILURE;
+	}
+	else
+	{
+		std::cout << "Success!" << std::endl;
 	}
 
 	D.setParameter("producedByProgram", program);

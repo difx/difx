@@ -24,8 +24,8 @@ public:
 	virtual bool setFromTokens(const std::vector<std::string> &tokens);
 
 private:
-	long long start;
-	long long length;
+	long long start;	/* start pointer on disk */
+	long long length;	/* number of bytes */
 	int intSec;		/* integer second portion of timestamp of first frame */
 	int frameNumInSecond;	/* frame number since last 1 second tick */
 	int framesPerSecond;	/* number of frames per second (always integer) */
