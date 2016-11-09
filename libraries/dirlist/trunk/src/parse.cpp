@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cstdio>
+#include <cstdlib>
 #include "parse.h"
 
 // FIXME: handle exceptions in this file
@@ -178,4 +180,52 @@ std::string unquoteString(const std::string &str)
 	{
 		return str;
 	}
+}
+
+// Turns a string into MJD 
+// The following formats are allowd:
+// 1. decimal mjd:  55345.113521
+// 2. ISO 8601 dateTtime strings:  2009-03-08T12:34:56.121
+// 3. VLBA-like time:   2009MAR08-12:34:56.121
+// 4. vex time: 2009y245d08h12m24s"
+double parseTime(const std::string &timeStr, std::stringstream &error)
+{
+	const double MJD_UNIX0=40587.0; // MJD at beginning of unix time
+	const int TimeLength=54;
+	double mjd;
+	char str[TimeLength];
+	char *p;
+	int n;
+	struct tm tm;
+	char dummy;
+
+	snprintf(str, TimeLength, "%s", timeStr.c_str());
+
+	// Test for ISO 8601
+	p = strptime(str, "%FT%T", &tm);
+	if(!p)
+	{
+		//Test for VLBA-like
+		p = strptime(str, "%Y%b%d-%T", &tm);
+	}
+	if(!p)
+	{
+		//Test for Vex
+		p = strptime(str, "%Yy%jd%Hh%Mm%Ss", &tm);
+	}
+	if(p)
+	{
+		return mktime(&tm)/86400.0 + MJD_UNIX0;
+	}
+
+	n = sscanf(str, "%lf%c", &mjd, &dummy);
+	if(n == 1)
+	{
+		// Must be straight MJD value
+		return mjd;
+	}
+
+	error << "Time parse error";
+
+	return 0.0;
 }

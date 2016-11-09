@@ -28,11 +28,27 @@ int loadOldFileList(DirList &D, const char *fileName, std::stringstream &error)
 		DirListDatum*DD;
 		char *v;
 		bool ok;
+		char dummy[257];
 
 		v = fgetsNoCR(line, MaxLineLength, in);
 		if(!v)
 		{
 			break;
+		}
+
+		for(int i = 0; line[i]; ++i)
+		{
+			if(line[i] == '#')
+			{
+				line[i] = 0;
+				break;
+			}
+		}
+
+		// check for line containing at least 3 items.  skip if not true
+		if(sscanf(line, "%256s%256s%256s", dummy, dummy, dummy) != 3)
+		{
+			continue;
 		}
 
 		DD = new DirListDatum;

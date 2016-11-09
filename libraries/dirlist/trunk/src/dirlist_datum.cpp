@@ -5,17 +5,37 @@
 #include <vector>
 #include "dirlist_exception.h"
 #include "dirlist_datum.h"
+#include "parse.h"
 
 // Parses a line from, e.g., output of vsum
 bool DirListDatum::setFromOldFileListString(const char *str)
 {
 	const int MaxFileNameLength = 256;
 	char scanName[MaxFileNameLength];
+	char mjd1str[60], mjd2str[60];
 	double mjd1, mjd2;
 	int n, p;
+	std::stringstream error;
 
-	n = sscanf(str, "%s%lf%lf%n", scanName, &mjd1, &mjd2, &p);
-	if(n != 3 || mjd2 <= mjd1 || mjd1 < 10000.0 || mjd1 > 1000000.0)
+	n = sscanf(str, "%s%s%s%n", scanName, mjd1str, mjd2str, &p);
+	if(n == 1)
+	{
+		mjd1 = mjd2 = 0.0;
+	}
+	else if(n == 3)
+	{
+		mjd1 = parseTime(mjd1str, error);
+		mjd2 = parseTime(mjd2str, error);
+	}
+	else
+	{
+		return false;
+	}
+	if(!error.str().empty())
+	{
+		return false;
+	}
+	if(mjd2 <= mjd1 || mjd1 < 10000.0 || mjd1 > 1000000.0)
 	{
 		return false;
 	}
