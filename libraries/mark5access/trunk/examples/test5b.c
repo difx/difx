@@ -10,6 +10,8 @@ int main(int argc, char **argv)
 	FILE *in;
 	int i, v;
 	int frameNum, lastFrameNum = 1000000000;
+	int framesPerSecond = 0;
+	int second, lastSecond;
 
 	if(argc > 1)
 	{
@@ -23,7 +25,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		printf("Usage: %s <filename> [<offset>]\n", argv[0]);
+		printf("Usage: %s <filename> [<offset> [<framespersecond>] ]\n", argv[0]);
 
 		return EXIT_FAILURE;
 	}
@@ -42,6 +44,11 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(argc > 3)
+	{
+		framesPerSecond = atoi(argv[3]);
+	}
+
 	for(i = 0; ; i++)
 	{
 		v = fread(frame, FRAMESIZE, 1, in);
@@ -51,16 +58,38 @@ int main(int argc, char **argv)
 		}
 
 		frameNum = frame[4]+256L*(frame[5] & 0x7F);
+		second = (frame[10] & 0x0f)*10000 + (frame[9] >> 4)*1000 + (frame[9] & 0x0f)*100 + (frame[8] >> 4)*10 + (frame[8] & 0x0f);
 
 		printf("%02X%02X%02X%02X %c %5d  ", frame[3], frame[2], frame[1], frame[0], (frame[5] & 0x80 ? '*' : ' '), frameNum);
 		printf("%02X%02X%02X%02X %02X%02X%02X%02X", frame[11], frame[10], frame[9], frame[8], frame[15], frame[14], frame[13], frame[12]);
-		if(frameNum > lastFrameNum && frameNum != lastFrameNum+1)
+		if(framesPerSecond == 0)
 		{
-			printf("  skipped %d frames", frameNum-lastFrameNum-1);
+			if(frameNum > lastFrameNum && frameNum != lastFrameNum+1)
+			{
+				printf("  skipped %d frames", frameNum-lastFrameNum-1);
+			}
+		}
+		else
+		{
+			if(frameNum >= framesPerSecond)
+			{
+				printf("  frame number too high");
+			}
+			if(lastFrameNum < 1000000000)
+			{
+				int deltaFrame;
+				
+				deltaFrame = framesPerSecond*(second - lastSecond) + frameNum-lastFrameNum;
+				if(deltaFrame != 1)
+				{
+					printf("  skipped %d frames", deltaFrame);
+				}
+			}
 		}
 		printf("\n");
 
 		lastFrameNum = frameNum;
+		lastSecond = second;
 	}
 	fclose(in);
 

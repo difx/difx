@@ -12,6 +12,7 @@ Verion 1.5.3
 * Fix some data rate and frame rate calculations in mark5bfile.h
 * New function: void snprintmark5bfilesummary(char *str, int maxLength, const struct mark5b_file_summary *sum)
 * Change RPM name to vlbi-mark5access.*.rpm
+* New option in test5b: can supply frames per second and then the true number of skipped frames can be evaluated.
 
 Version 1.5.2
 * Post DiFX-2.4
