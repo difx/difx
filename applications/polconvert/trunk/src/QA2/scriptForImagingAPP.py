@@ -6,7 +6,7 @@ import re
 
 
 # FORCE THIS CASA VERSION:
-CASAVER = '4.6.0'
+CASAVER = '4.7.0'
 
 
 VIS = 'uid___A002_Xb187bd.calibrated.ALMA.ms'

@@ -7,7 +7,7 @@ for producing PolConvert-related products:
 These scripts are developmental and have been retained
 for reference, but should not be used.
 
-    asdmpolconvert.py
-    casapolconvert.py
-    xy-guess.py
+    oldies/asdmpolconvert.py
+    oldies/casapolconvert.py
+    oldies/xy-guess.py
 
