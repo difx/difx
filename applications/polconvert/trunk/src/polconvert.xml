@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.2-r11\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.2-r13\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.2-r11\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.2-r13\n\nConverts VLBI visibilities from mixed-polarization basis (i.e.,\nlinear-to-circular) into circular basis. Works with single VLBI stations \nas well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -74,8 +74,8 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
     </param>
 
     <param type="any" name="interpolation" mustexist="false">
-      <description>Kind of interpolation for the gains\nIt can be \'linear\' or \'self\'.\nDefault is \'linear\'.</description>
-      <value>[[]]</value>
+      <description> Interpolation type to use (one per calibration table). Tells whether to apply linear or nearest interpolation. Default is to use linear for all tables.</description>
+      <value>[]</value>
     </param>
 
 

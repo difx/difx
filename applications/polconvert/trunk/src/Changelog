@@ -24,6 +24,12 @@ v1.2-r11
 - Added XYratio
 - Added ability to drop XY phase solution
 
+v1.2-r12
+- Plots are generated in off-line mode.
+
+v1.2-r13
+- Modified for CASA 4.7
+
 TODO: 
 
 - Fitting of XY-phase with a simple delay model (per subband).

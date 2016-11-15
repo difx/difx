@@ -7,22 +7,43 @@
 import datetime
 import os
 import shutil
+import re
 
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.
 
+# Between v3 and v4 concatenated -> concatenated | calibrated
+# if concatenated.ms is already in label, we'll assume v3 or earlier
+# else use newer names here.
+print '\nRunning PolConvert Wrapper with label ' + label
+v4tables = None
+lm = re.match('(.*)\.concatenated.ms', label)
+if lm:
+    conlabel = lm.group(1) + '.concatenated.ms'
+    callabel = lm.group(1) + '.concatenated.ms'
+    v4tables = False
+else:
+    conlabel = label + '.concatenated.ms'
+    callabel = label + '.calibrated.ms'
+    v4tables = True
+
 # Things that we are expecting to be provided from the QA2 processing
 # We use a dictionary to allow name changes (which happened in development).
 try:
-    aantpath = ('%s.'+qa2['a'])%label # '%s.antenna.tab'%label
-    calapphs = ('%s.'+qa2['c'])%label # '%s.calappphase.tab'%label
-    bandpass = ('%s.'+qa2['b'])%label # '%s.bandpass-zphs.cal'%label
-    dtermcal = ('%s.'+qa2['d'])%label # '%s.Df0'%label
-    ampgains = ('%s.'+qa2['g'])%label # '%s.ampgains.cal.fluxscale'%label
-    phsgains = ('%s.'+qa2['p'])%label # '%s.phasegains.cal'%label
-    xyrelphs = ('%s.'+qa2['x'])%label # '%s.XY0amb-tcon'%label
-    calgains = [aantpath, calapphs, dtermcal,
-                bandpass, ampgains, phsgains, xyrelphs]
+    aantpath = ('%s.'+qa2['a'])%conlabel # ANTENNA
+    calapphs = ('%s.'+qa2['c'])%conlabel # calappphase
+    dtermcal = ('%s.'+qa2['d'])%callabel # Df0
+    bandpass = ('%s.'+qa2['b'])%conlabel # bandpass-zphs
+    ampgains = ('%s.'+qa2['g'])%conlabel # flux_inf.APP
+    phsgains = ('%s.'+qa2['p'])%conlabel # phase_int.APP
+    xyrelphs = ('%s.'+qa2['x'])%callabel # XY0.APP or XY0.ALMA
+    gxyampli = ('%s.'+qa2['y'])%callabel # Gxyamp.APP or Gxyamp.ALMA
+    if v4tables:
+        calgains = [aantpath, calapphs, dtermcal,
+                    bandpass, ampgains, phsgains, xyrelphs, gxyampli]
+    else:
+        calgains = [aantpath, calapphs, dtermcal,
+                    bandpass, ampgains, phsgains, xyrelphs]
     for f in calgains:
         if not os.path.exists(f):
             raise Exception, ('Required calibration %s is missing'%f)
@@ -75,7 +96,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1):
     # based on common drivepolconvert inputs above
     gains = calgains[3:]
-    interpolation = ['linear', 'self', 'linear', 'linear']
+    interpolation = ['linear', 'nearest', 'linear', 'linear']
     dterm = calgains[2]
     Range = []              # do the entire scan
     calAPPTime = [0.0, 8.0] # half-a scan of tolerance
@@ -84,6 +105,12 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     if constXYadd:
         gains = gains[0:3]
         interpolation = interpolation[0:3]
+
+    # cover for optional tables
+    while len(interpolation) < len(gains):
+        interpolation.append('linear')
+    print 'gains', len(gains), gains
+    print 'interpolation', len(interpolation), interpolation
 
     if band3:
         spw=0
@@ -100,7 +127,8 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         if spwToUse != 4: spw = spwToUse
     except:
         print 'spwToUse was not defined'
-    print 'PolConvert will use Spectral Window %d for %s' % (spw, bnd)
+    print 'PolConvert will use Spectral Window %d for %s on %s' % (
+        spw, bnd, label)
 
     if not os.path.exists(DiFXinput):
         raise Exception, 'No DiFX input %s'%DiFXinput
@@ -137,7 +165,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
                 'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
     if savename != '':
         now = datetime.datetime.now()
-        outdir = now.strftime(savename + '.polconvert-%Y-%m-%dT%H:%M:%S')
+        outdir = now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
         os.mkdir(outdir)
         for art in pcprods:
             if os.path.exists(art):

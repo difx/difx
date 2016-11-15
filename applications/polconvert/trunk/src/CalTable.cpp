@@ -576,6 +576,11 @@ void CalTable::applyInterpolation(int iant, int mode, std::complex<float> *gain[
          auxD = TWOPI*(((double)i + 0.5)*deltaNu+deltaNu0);
          bufferGain[0][iant][i] = (std::complex<float>) std::polar(1.0,auxF0*auxD);
          bufferGain[1][iant][i] = (std::complex<float>) std::polar(1.0,auxF1*auxD);
+       } else if (isDterm) {
+         bufferGain[0][iant][i].real(auxF0);
+         bufferGain[0][iant][i].imag(auxF2);
+         bufferGain[1][iant][i].real(auxF1);
+         bufferGain[1][iant][i].imag(auxF3);
        } else {
          bufferGain[0][iant][i] = (std::complex<float>) std::polar(auxF0,auxF2);
          bufferGain[1][iant][i] = (std::complex<float>) std::polar(auxF1,auxF3);

@@ -47,8 +47,8 @@
 #
 #
 
-__version__ = "1.2-r11"
-date = 'SEP 2016'     
+__version__ = "1.2-r13"
+date = 'NOV 2016'     
 
 
 ################
@@ -98,92 +98,96 @@ tb = gentools(['tb'])[0]
 
 if __name__=='__main__':
 
+ Band6 = True
+
+ if Band6:
 
 # BAND 6:
 
-#  IDI                 = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/e16b08_215.save' #  I
+  IDI                 = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/e16b08_215.save' #  I
                                         #   nput FITS-IDI file with VLBI
                                         #   visibilities. It can  also be a
                                         #   direcotry containing SWIN files from
                                         #   DiFX.
-#  OUTPUTIDI           = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/e16b08_215.save' #  O
+  OUTPUTIDI           = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/e16b08_215.save' #  O
                                         #   utput FITS-IDI file (or SWIN
                                         #   directory). If equal  to IDI, the
                                         #   file(s) will be overwritten
-#  DiFXinput           = 'e16b08_215.input' #  If SWIN files are being converted,
+  DiFXinput           = 'e16b08_215.input' #  If SWIN files are being converted,
                                         #   this must  be the *.input file used
                                         #   by DiFX.
-#  doIF                = [35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62] #  L
+  doIF                = [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62] #  L
                                         #   ist of IFs to convert. Default means
                                         #   all.
-#  linAntIdx           =        [1]        #  List of indices of the linear-
+  linAntIdx           =        [1]        #  List of indices of the linear-
                                         #   polarization  antennas in the IDI
                                         #   file
-#  Range               =         []        #  Time range to convert (integer list;
+  Range               =         []        #  Time range to convert (integer list;
                                         #   AIPS format).  Default means all
                                         #   data
-#  ALMAant             = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/concat.ms.0.antenna.tab' #  I
+  ALMAant             = 'uid___A002_Xb187bd.concatenated.ms.ANTENNA' #  I
                                         #   f ALMA has been used, this is the
                                         #   antenna table  from the MS with the
                                         #   intra-ALMA visibilities.
-#  spw                 =          -1        #  Spectral window in ALMAvis that
+  spw                 =          -1        #  Spectral window in ALMAvis that
                                         #   contains the VLBI band. If negative,
                                         #   the program will derive it
                                         #   automatically.
-#  calAPP              = '/home/marti/WORKAREA/ARC/ARC_TOOLS/PolConvert/TEST_DATA/B6_2016/DATA.memmap/concat.ms.0.calappphase.tab' #  I
+  calAPP              = 'uid___A002_Xb187bd.concatenated.ms.calappphase' #  I
                                         #   f ALMA has been used, this is the
                                         #   combined ASDM_CALAPPPHASE table from
                                         #   the ASDM. The list of measurement
                                         #   sets can also be given (so the table
                                         #   is concatenated from all of them).
-#  calAPPTime          = [0.0, 5.0]        #  Time shift and time tolerance (in
+  calAPPTime          = [0.0, 8.0]        #  Time shift and time tolerance (in
                                         #   sec) for the  CALAPPPHASE table
                                         #   obtained from the ASDM.
-#  gains               = [['uid___A002_Xb187bd.concatenated.ms.bandpass-zphs', 'uid___A002_Xb187bd.concatenated.ms.flux_inf', 'uid___A002_Xb187bd.concatenated.ms.phase_int.APP', 'uid___A002_Xb187bd.concatenated.ms.XY0.APP']] #  G
+  gains               = [['uid___A002_Xb187bd.concatenated.ms.bandpass-zphs', 'uid___A002_Xb187bd.concatenated.ms.flux_inf.APP', 'uid___A002_Xb187bd.concatenated.ms.phase_int.APP', 'uid___A002_Xb187bd.calibrated.ms.XY0.APP', 'uid___A002_Xb187bd.calibrated.ms.Gxyamp.APP']] #  G
                                         #   ain tables to pre-calibrate the
                                         #   linear-pol VLBI  stations (one list
                                         #   of gains per linear-pol station).
-#  interpolation       = [['linear', 'self','linear', 'linear']] #  Kind of interpolation
+  interpolation       = [] #  Kind of interpolation
                                         #   for the gains It can be 'linear' or
-                                        #   'self'. Default is 'linear'.
-#  dterms              = ['uid___A002_Xb187bd.concatenated.ms.Df0'] #  D-term
+                                        #   'nearest'. Default is 'linear'.
+  dterms              = ['uid___A002_Xb187bd.calibrated.ms.Df0.APP'] #  D-term
                                         #   tables to pre-calibrate the linear-
                                         #   pol VLBI  stations (one table per
                                         #   linear-pol station).
-#  amp_norm            =       True        #  If True, normalize the amplitude
+  amp_norm            =       True        #  If True, normalize the amplitude
                                         #   correction to the X-Y average, and
                                         #   save the scaling factor (vs time) in
                                         #   an external (ASCII) file. If False,
                                         #   apply the amplitude correction as
                                         #   is.
-#  XYadd               =        [0]        #  Add manually a phase between X and Y
+  XYadd               =        [0]        #  Add manually a phase between X and Y
                                         #   before  conversion (in deg.). One
                                         #   value per linear-pol station.
-#  swapXY              =    [False]        #  Swap X-Y before conversion. One value
+  swapXY              =    [False]        #  Swap X-Y before conversion. One value
                                         #   per linear-pol  VLBI station.
-#  swapRL              =      False        #  Swap R-L of the OTHER antenna(s) when
-#                                        #   plotting the fringes.
-#  IDI_conjugated      =       True        #  Assume a swap in the baseline
+  swapRL              =      False        #  Swap R-L of the OTHER antenna(s) when
+                                        #   plotting the fringes.
+  IDI_conjugated      =       True        #  Assume a swap in the baseline
                                         #   defintion (i.e., conjugation) of the
                                         #   FITS-IDI file. This has NO effect on
                                         #   SWIN files and shall be set to True.
-#  plotIF              =         []        #  IF index(es) to plot. Default means
+  plotIF              =         []        #  IF index(es) to plot. Default means
                                         #   to NOT plot.  An empty list, [],
                                         #   means to plot ALL IFs  being
                                         #   converted (but do not forget to  set
                                         #   plotRange and plotAnt!).
-#  plotRange           = [0, 0, 0, 0, 10, 0, 0, 0] #  Time range to plot (integer
+  plotRange           = [0, 10, 11, 0, 0, 10, 14, 0] #  Time range to plot (integer
                                         #   list; AIPS format).  Default means
                                         #   to NOT plot
-#  plotAnt             =          2        #  Index of the other antenna in the
+  plotAnt             =          2        #  Index of the other antenna in the
                                         #   baseline to plot. Default means to
                                         #   NOT plot.
-#  doTest              =       True        #  If true, only compute (and eventually
+  doTest              =       True        #  If true, only compute (and eventually
                                         #   plot), the data, but leave OUTPUTIDI
                                         #   untouched.
-#  npix                =         50        #  Number of pixels for the fringe
+  npix                =         50        #  Number of pixels for the fringe
                                         #   plots.
 
+ else:
 
 # BAND 3:
 
@@ -199,7 +203,7 @@ if __name__=='__main__':
                                         #   all data
   ALMAant             = 'uid___A002_Xb542b2.concatenated.ms.ANTENNA' #  If ALMA has been used, this is the
                                         #   antenna table  from the MS with the intra-ALMA visibilities.
-  spw                 =          0        #  Spectral window in ALMAvis that contains the VLBI band. If negative,
+  spw                 =          -1        #  Spectral window in ALMAvis that contains the VLBI band. If negative,
                                         #   the program will derive it automatically.
   calAPP              = 'uid___A002_Xb542b2.concatenated.ms.calappphase' #  If ALMA has been used, this is the
                                         #   combined ASDM_CALAPPPHASE table from the ASDM. The list of
@@ -207,12 +211,13 @@ if __name__=='__main__':
                                         #   from all of them).
   calAPPTime          = [0.0, 8.0]        #  Time shift and time tolerance (in sec) for the  CALAPPPHASE table
                                         #   obtained from the ASDM.
-  gains               = [['uid___A002_Xb542b2.concatenated.ms.bandpass-zphs', 'uid___A002_Xb542b2.concatenated.ms.flux_inf', 'uid___A002_Xb542b2.concatenated.ms.phase_int.APP', 'uid___A002_Xb542b2.concatenated.ms.XY0.APP.FLAG.2']] #  G
+ # gains               = [['uid___A002_Xb542b2.concatenated.ms.bandpass-zphs' 
+  gains = [['uid___A002_Xb542b2.concatenated.ms.flux_inf', 'uid___A002_Xb542b2.concatenated.ms.phase_int.APP', 'uid___A002_Xb542b2.calibrated.ms.XY0.APP']] #  G
                                         #   ain tables to pre-calibrate the linear-pol VLBI  stations (one list
                                         #   of gains per linear-pol station).
-  interpolation       = [['linear', 'self', 'linear', 'linear']] #  Kind of interpolation for the gains It can be
-                                        #   'linear' or 'self'. Default is 'linear'.
-  dterms              = ['uid___A002_Xb542b2.concatenated.ms.Df0'] #  D-term tables to pre-calibrate the linear-
+  interpolation       = [] #  Kind of interpolation for the gains It can be
+                                        #   'linear' or 'nearest'. Default is 'linear'.
+  dterms              = ['uid___A002_Xb542b2.calibrated.ms.Df0.APP'] #  D-term tables to pre-calibrate the linear-
                                         #   pol VLBI  stations (one table per linear-pol station).
   amp_norm            =       True        #  If True, normalize the amplitude correction to the X-Y average, and
                                         #   save the scaling factor (vs time) in an external (ASCII) file. If
@@ -234,7 +239,7 @@ if __name__=='__main__':
   doTest              =       True        #  If true, only compute (and eventually plot), the data, but leave
                                         #   OUTPUTIDI untouched.
   npix                =         50        #  Number of pixels for the fringe plots.
-  XYratio = 1.0
+  XYratio = [1.0]
 
 
 
@@ -255,7 +260,7 @@ if __name__=='__main__':
 # YOU SHALL THEN RUN THIS FILE WITH "execfile(...)"
 
 def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, gains, interpolation, dterms, amp_norm, XYadd, XYratio, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,doTest,npix):
-
+#if True:
 ############################################
 
 # Auxiliary function: derive job label from DiFXinput
@@ -283,14 +288,36 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 
 # Auxiliary function: unwrap phases for time interpolation
-  def unwrap(phases):
-    if len(np.shape(phases))==1:
+  def unwrap(phases, check=False):
+
+    dims = np.shape(phases)
+ #   print dims
+    if dims[1]==0:  # Bandpass type
      for i in range(len(phases)-1):
       if phases[i+1]-phases[i] > np.pi:
         phases[i+1,:] -= 2.*np.pi
-      elif phases[i+1]-phases[i] < np.pi:
+      elif phases[i+1]-phases[i] < -np.pi:
         phases[i+1,:] += 2.*np.pi
+     if check:
+       pl.figure()
+       pl.plot(180./np.pi*phases)
+       pl.show()
+       raw_input('CHECK')
 
+
+    elif dims[0]>1:  # Bandpass-gain type
+ #    pl.plot(phases[:,0])
+     for j in range(dims[1]):
+      for i in range(dims[0]-1):
+       if phases[i+1,j]-phases[i,j] > np.pi:
+        phases[i+1:,j] -= 2.*np.pi
+       elif phases[i+1,j]-phases[i,j] < -np.pi:
+        phases[i+1:,j] += 2.*np.pi
+     if check:
+       pl.figure()
+       pl.plot(180./np.pi*phases[:,0])
+       pl.show()
+       raw_input('CHECK')
 
 # Auxiliary function: prepare the CALAPPPHASE, from a set of MSs:
   def makeCalAPP(mslist):
@@ -450,12 +477,13 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       printError("Interpolation must be a list of lists!")
     if len(intype)==0:
       interpolation[i] = ['linear' for g in gains[i]]
+      intype = interpolation[i]
     if len(intype) != len(gains[i]):
       printError("Interpolation must have the same dimensions as gains!")
     for ints in intype:
-      if ints not in ['linear','self']:
-        printError("Only \'linear\' and \'self\' interpolations are supported!")
-
+      if ints not in ['linear','nearest']:
+        printMsg("integration type " + ints + " requested.")
+        printError("Only \'linear\' and \'nearest\' interpolations are supported!")
 
 # Sanity check for gains and dterms:
   for g in gains:
@@ -700,23 +728,34 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     tb.close()
     nurange = [[np.min([calfreqs[i],calfreqs2[i]]),np.max([calfreqs[i],calfreqs2[i]])] for i in range(len(calfreqs))]
     spwsel = [-1 for nu in doIF]
-    # the following loop needs protection
+    slop = 5.0 # MHz
     for nui,nu in enumerate(doIF):
       for spwi in range(len(calfreqs)):
-        nu0 = FrInfo['FREQ (MHZ)'][nu]
-        nu1 = FrInfo['FREQ (MHZ)'][nu] + FrInfo['BW (MHZ)'][nu]*FrInfo['SIGN'][nu]
+        nu0 = FrInfo['FREQ (MHZ)'][nu-1]
+        nu1 = FrInfo['FREQ (MHZ)'][nu-1] + FrInfo['BW (MHZ)'][nu-1]*FrInfo['SIGN'][nu-1]
         nus = [np.min([nu0,nu1]),np.max([nu0,nu1])]
-        if nus[0] >= nurange[spwi][0] and nus[1] <= nurange[spwi][1]:
+        print nu, ':', nurange[spwi][0], '<', nus[0], nus[1], '<', nurange[spwi][1],
+        if (nurange[spwi][0] - slop) < nus[0] and nus[1] < (nurange[spwi][1] + slop):
           spwsel[nui] = spwi
-    for i in spwsel:
-       if i < 0:
-         printError("There is no spw that covers all the IF frequencies!") 
+          print ' pass'
+        else:
+          print ' fail'
+    errmsg = []
+    isErr = False
+    for i,spws in enumerate(spwsel):
+       if spws < 0:
+         isErr = True
+         errmsg += [str(doIF[i])]
+
+    if isErr:
+         printError("There is no spw that covers all the IF frequencies!\n" +
+            "Problematic IFs are:  %s"%(','.join(errmsg)))
     spwsel = list(set(spwsel))
     if len(spwsel)>1:
-       printError("There is more than one possible spw for some IFs!") 
+       printError("There is more than one possible spw for some IFs!")
 
     spw = spwsel[0]
-    printMsg('Selected spw: %d' % spw)
+    printMsg('Selected spw: %d\n' % spw)
 ########################
 
 
@@ -779,10 +818,14 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     dtfreqs = tb.getcol('CHAN_FREQ')[:,int(spw)]
     nchan = len(dtfreqs)
     tb.close()
+    success = tb.open(os.path.join(dterms[i],'ANTENNA'))
+    tabants = tb.getcol('NAME')
+    tb.close()
+    print 'Reading ',dterms[i]
     tb.open(dterms[i])
     spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
     data = tb.getcol('CPARAM')[:,:,spmask]
-    antrow = tb.getcol('ANTENNA1')[spmask]
+    antrow = np.array([allants.index(tabants[ai]) for ai in tb.getcol('ANTENNA1')[spmask]])
     trow = tb.getcol('TIME')[spmask]
     flagrow = tb.getcol('FLAG')[:,:,spmask]
     flagsf = np.logical_or(flagrow[0,:,:],flagrow[1,:,:])
@@ -801,16 +844,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       dtdata[i][-1].append(np.zeros(dims).astype(np.float64))
       dtdata[i][-1].append(np.zeros(dims).astype(np.float64))
       dtdata[i][-1].append(np.zeros(dims).astype(np.bool))
-      dtdata[i][-1][0][:] = np.abs(dd0[:,antrow==ant])
-      dtdata[i][-1][1][:] = np.angle(dd0[:,antrow==ant])
-      unwrap(dtdata[i][-1][1][:])
-      dtdata[i][-1][2][:] = np.abs(dd1[:,antrow==ant])
-      dtdata[i][-1][3][:] = np.angle(dd1[:,antrow==ant])
-      unwrap(dtdata[i][-1][3][:])
+      dtdata[i][-1][0][:] = (dd0[:,antrow==ant]).real
+      dtdata[i][-1][1][:] = (dd0[:,antrow==ant]).imag
+ #     unwrap(dtdata[i][-1][1][:])
+      dtdata[i][-1][2][:] = (dd1[:,antrow==ant]).real
+      dtdata[i][-1][3][:] = (dd1[:,antrow==ant]).imag
+ #     unwrap(dtdata[i][-1][3][:])
       dtdata[i][-1][4][:] = flags[:,antrow==ant]
 
    for j,gain in enumerate(gains[i]):
      gaindata[i].append([])
+     print 'Reading ',gain
      isLinear[i][j] = interpolation[i][j]=='linear'
      if gain=="NONE":
       nchan = 1
@@ -826,13 +870,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
        gaindata[i][j][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        gaindata[i][j][-1].append(np.zeros((nchan,ntime)).astype(np.bool))
      else:
-      tb.open(os.path.join(gain,'SPECTRAL_WINDOW'))
+      sucess = tb.open(os.path.join(gain,'SPECTRAL_WINDOW'))
       if not success:
         printError("ERROR READING TABLE %s"%gain)
       gfreqs = tb.getcol('CHAN_FREQ')[:,int(spw)]
       nchan = len(gfreqs)
       tb.close()
+      tb.open(os.path.join(gain,'ANTENNA'))
+      tabants = tb.getcol('NAME')
+      tb.close()
       tb.open(gain)
+   #   print gain
       spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
       trowns = tb.getcol('TIME')[spmask]
       tsort = np.argsort(trowns)
@@ -843,8 +891,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       else:
         data = (tb.getcol('FPARAM')[:,:,spmask])[:,:,tsort]
         kind[-1].append(1)
-
-      antrow = (tb.getcol('ANTENNA1')[spmask])[tsort]
+      antrow = np.array([allants.index(tabants[ai]) for ai in tb.getcol('ANTENNA1')[spmask]])[tsort]
       flagrow = (tb.getcol('FLAG')[:,:,spmask])[:,:,tsort]
       if np.shape(data)[0] == 2:  # A DUAL-POL GAIN (i.e., mode 'G')
         flagsf = np.logical_or(flagrow[0,:],flagrow[1,:])
@@ -865,6 +912,11 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
           dd0 = data[0,:,:]
           dd1 = data[0,:,:]
         dims = np.shape(dd0[:,antrow==ant])
+        isFlagged=False
+        if dims[1]==0:
+          dims = (dims[0],1)
+          isFlagged=True
+          ant=refants[0]
         gaindata[i][j][-1].append(np.zeros(np.shape(trow[antrow==ant])).astype(np.float64))
         gaindata[i][j][-1].append(np.zeros(dims).astype(np.float64))
         gaindata[i][j][-1].append(np.zeros(dims).astype(np.float64))
@@ -877,13 +929,15 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
         else:
           gaindata[i][j][-1][1][:] = np.abs(dd0[:,antrow==ant])
         gaindata[i][j][-1][2][:] = np.angle(dd0[:,antrow==ant])
-        unwrap(gaindata[i][j][-1][2])
+        unwrap(gaindata[i][j][-1][2]) #, check=ant<3)
         gaindata[i][j][-1][3][:] = np.abs(dd1[:,antrow==ant])
         gaindata[i][j][-1][4][:] = np.angle(dd1[:,antrow==ant])
-        unwrap(gaindata[i][j][-1][4])
+        unwrap(gaindata[i][j][-1][4]) #, check=ant<3)
         gaindata[i][j][-1][5][:] = flags[:,antrow==ant]
 
-
+   #     if 'Gxyamp' in gain:
+   #       print 'X for %i: '%ant,gaindata[i][j][-1][1] 
+   #       print 'Y for %i: '%ant,gaindata[i][j][-1][3]
 # COMPUTE TIME RANGES:
 
   if len(plotRange)==0:
@@ -949,10 +1003,11 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     os.system('rm -rf POLCONVERT.FRINGE; mkdir POLCONVERT.FRINGE')
 
 
-  printMsg("Going to CONVERT!")
+  printMsg("\n###\n### Going to PolConvert\n###")
 
   didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes, doTest, doConj, amp_norm, XYadd[0]*np.pi/180., metadata, isLinear)
 
+  printMsg("\n###\n### Done with PolConvert (status %d).\n###" % (didit))
 
 
 # GENERATE ANTAB FILE(s):
@@ -1187,8 +1242,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
 # Plot calibration matrix:
 
-
-
       ratt = float(np.shape(Kmat[0])[1])/float(np.shape(Kmat[0])[0])
 
       fig2.clf()
@@ -1196,9 +1249,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
       pmsg = '\n\nMAXIMUM DEVIATION OF HYBRID-MATRIX AMPLITUDE:\n' 
       Pmat = [np.abs(ki) for ki in Kmat]
       pmsg += 'XR-XR -> 0.0%%\n'
-      pmsg += 'XR-XL -> %.1f%%\n'%(100.*np.max(np.abs(Pmat[0]-Pmat[1])/Pmat[0]))
-      pmsg += 'XR-YR -> %.1f%%\n'%(100.*np.max(np.abs(Pmat[0]-Pmat[2])/Pmat[0]))
-      pmsg += 'XR-YL -> %.1f%%\n'%(100.*np.max(np.abs(Pmat[0]-Pmat[2])/Pmat[0]))
+      P1 = np.unravel_index(np.argmax(np.abs(Pmat[0]-Pmat[1])/Pmat[0]),np.shape(Pmat[0]))
+      P2 = np.unravel_index(np.argmax(np.abs(Pmat[0]-Pmat[2])/Pmat[0]),np.shape(Pmat[0]))
+      P3 = np.unravel_index(np.argmax(np.abs(Pmat[0]-Pmat[3])/Pmat[0]),np.shape(Pmat[0]))
+      pmsg += 'XR-XL -> %.1f%%\n'%(100.*((Pmat[0]-Pmat[1])/Pmat[0])[P1])
+      pmsg += 'XR-YR -> %.1f%%\n'%(100.*((Pmat[0]-Pmat[2])/Pmat[0])[P2])
+      pmsg += 'XR-YL -> %.1f%%\n'%(100.*((Pmat[0]-Pmat[3])/Pmat[0])[P3])
 
       printMsg(pmsg)
 
@@ -1259,8 +1315,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
       cbar = fig2.colorbar(im, cax=cbar_ax)
       cbar.set_label("Amplitude (Norm)")
-
       pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
+
       pl.savefig('CONVERSION.MATRIX/Kmatrix_AMP_IF%i.png'%pli)
 
       fig2.clf()
@@ -1294,8 +1350,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
 
       cbar = fig2.colorbar(im, cax=cbar_ax)
       cbar.set_label("Phase (deg.)")
-
       pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
+
       pl.savefig('CONVERSION.MATRIX/Kmatrix_PHAS_IF%i.png'%pli)
  
 
@@ -1400,13 +1456,14 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
     sub1.plot(CONVAMP[:,0],CONVAMP[:,-1],'sk')
     RatioError = CONVAMP[:,-1]*np.sqrt((CONVAMP[:,2]/CONVAMP[:,1])**2.+(CONVAMP[:,4]/CONVAMP[:,3])**2.+(CONVAMP[:,6]/CONVAMP[:,5])**2.+(CONVAMP[:,8]/CONVAMP[:,7])**2.)
     sub1.errorbar(CONVAMP[:,0],CONVAMP[:,-1],RatioError,linestyle='None',fmt='k')
+    sub1.plot([min(CONVAMP[:,0])-1, max(CONVAMP[:,0])+1], [1, 1], 'r')
 
     pl.xlabel('IF NUMBER')
     pl.ylabel('NORM. RL/LR')
-    pl.ylim((0.,2.))
+#   pl.ylim((0.,2.))
     pl.xlim((min(CONVAMP[:,0])-1,max(CONVAMP[:,0])+1))
 
-    fig.suptitle(jobLabel(DiFXinput))
+    fig3.suptitle(jobLabel(DiFXinput))
     fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS.png')
 
    except:

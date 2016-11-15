@@ -55,10 +55,10 @@ def parseOptions():
     parser.add_argument('-o', '--output', dest='output',
         default='', metavar='FILE',
         help='name of output file to collect CASA output chatter.')
-    parser.add_argument('-t', '--qa2tar', dest='qa2tar',
-        default='', metavar='TARFILE',
-        help='tarfile with QA2 results.  If supplied, the results are'
-        'extracted and the -l label argument is updated appropriately')
+#   parser.add_argument('-t', '--qa2tar', dest='qa2tar',
+#       default='', metavar='TARFILE',
+#       help='tarfile with QA2 results.  If supplied, the results are'
+#       'extracted and the -l label argument is updated appropriately')
     parser.add_argument('-e', '--exp', dest='exp',
         default='', metavar='STRING',
         help='VEX experiment name, prefix of job input files; it will '
@@ -75,17 +75,20 @@ def parseOptions():
         help='user supplied XY angle adjustment or empty for defaults, '
         'normally 180.0 or 0.0')
     parser.add_argument('-q', '--qa2', dest='qa2',
-        default='v2', metavar='STRING',
+        default='v4', metavar='STRING',
         help='table naming scheme for the QA2 tables; there should be ' +
             'six tables for antennas, appphase, bandpass, ampgains, ' +
             'phasegains and xy phase.  Options are "v0", "v1", "v2", '
-            '"v3" or a ' +
-            'comma-sep list in an environment variable QA2TABLES')
+            '"v3, v4 or v5" or a ' +
+            'comma-sep list in an environment variable QA2TABLES.  In '
+            'versions prior to v4, ".concatenated.ms" was part of the '
+            'label.  For v4 and subsequent the label is just the '
+            'uid name (and perhaps an embedded version string).')
     parser.add_argument('-d', '--noDterm', dest='nodt',
         default=False, action='store_true',
         help='disable use of Dterm calibration tables')
     parser.add_argument('-s', '--spw', dest='spw',
-        default=4, metavar='INT', type=int,
+        default=-1, metavar='INT', type=int,
         help='Index of SPW for PolConvert to use: 0,1,2,3 for the ' +
             'four basebands, -1 for PolConvert to select, or 4 to use ' +
             'the band3, band6Lo or band6Hi assignments.')
@@ -106,26 +109,26 @@ def parseOptions():
         help='List of DiFX input job files')
     return parser.parse_args()
 
-def tarballExtraction(o):
-    '''
-    Extract the tarball if it is supplied, and work out the label
-    if none was given.
-    '''
-    if o.qa2tar != '' and os.path.exists(o.qa2tar):
-        cmd = 'tar zxf %s' % o.qa2tar
-        if o.verb: print 'Extracting tarfile with: %s' % cmd
-        if os.system(cmd):
-            raise Exception, 'Unable to untar %s' % o.qa2tar
-        parts = o.qa2tar.split('.')
-        # work out the label from the tarball name
-        if o.label != '':
-            pass
-        elif parts[-1] == 'tgz':
-            o.label = '.'.join(parts[0:-1])
-        elif parts[-1] == 'gz' and parts[-2] == 'tar':
-            o.label = '.'.join(parts[0:-2])
-        else:
-            raise Exception, 'Unable to create processing label'
+#def tarballExtraction(o):
+#   '''
+#   Extract the tarball if it is supplied, and work out the label
+#   if none was given.
+#   '''
+#   if o.qa2tar != '' and os.path.exists(o.qa2tar):
+#       cmd = 'tar zxf %s' % o.qa2tar
+#       if o.verb: print 'Extracting tarfile with: %s' % cmd
+#       if os.system(cmd):
+#           raise Exception, 'Unable to untar %s' % o.qa2tar
+#       parts = o.qa2tar.split('.')
+#       # work out the label from the tarball name
+#       if o.label != '':
+#           pass
+#       elif parts[-1] == 'tgz':
+#           o.label = '.'.join(parts[0:-1])
+#       elif parts[-1] == 'gz' and parts[-2] == 'tar':
+#           o.label = '.'.join(parts[0:-2])
+#       else:
+#           raise Exception, 'Unable to create processing label'
 
 def calibrationChecks(o):
     '''
@@ -135,6 +138,8 @@ def calibrationChecks(o):
         raise Exception, 'A label (-l) is required to proceed'
     if o.verb: print 'Using label %s' % o.label
     o.constXYadd = 'False'
+    o.conlabel = o.label
+    o.callabel = o.label
     if o.qa2 == 'v0':   # original 1mm names
         o.qal = ['antenna.tab','calappphase.tab', 'NONE', 'bandpass-zphs.cal',
                'ampgains.cal.fluxscale', 'phasegains.cal', 'XY0amb-tcon']
@@ -148,21 +153,38 @@ def calibrationChecks(o):
         o.constXYadd = 'True'
         o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
+    elif o.qa2 == 'v4': # v3 also with Gxyamp and concatenated/calibrated
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
+               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
+        o.conlabel = o.label + '.concatenated.ms'
+        o.callabel = o.label + '.calibrated.ms'
+    elif o.qa2 == 'v5': # v3 also with Gxyamp and concatenated/calibrated
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
+               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
+        o.conlabel = o.label + '.concatenated.ms'
+        o.callabel = o.label + '.calibrated.ms'
     else:               # supply via environment variable
         o.qal = os.environ['QA2TABLES'].split(',')
     if len(o.qal) < 7:
-        raise Exception, '7 QA2 tables are required, see --qa2 option'
-    keys = ['a', 'c', 'd', 'b', 'g', 'p', 'x']
+        raise Exception, 'at least 7 QA2 tables are required, see --qa2 option'
+    keys = ['a', 'c', 'd', 'b', 'g', 'p', 'x', 'y']
     o.qa2_dict = dict(zip(keys,o.qal))
     if o.nodt:
+        print 'nodt option is', o.nodt
         o.qa2_dict['d'] = 'NONE'
     for key in o.qa2_dict:
-        d = ('%s.' + o.qa2_dict[key]) % o.label
+        d = 'programmer-error'
+        if key in ['a', 'c', 'b', 'g', 'p']:
+            d = ('%s.' + o.qa2_dict[key]) % o.conlabel
+        if key in ['d', 'x', 'y']:
+            d = ('%s.' + o.qa2_dict[key]) % o.callabel
         if not os.path.exists(d) or not os.path.isdir(d):
             if key == 'd' and d == 'NONE':
-                pass    # Dterms are optional
+                if o.verb: print 'Skipping D Terms as requested'
             else:
-                raise Exception, 'Required director %s is missing' % d
+                raise Exception, 'Required directory %s is missing' % d
+        elif o.verb:
+            print 'Calibration table %s is present' % d
 
 def inputRelatedChecks(o):
     '''
@@ -224,7 +246,7 @@ def checkOptions(o):
     We do this prior to any real work, but after tarball extraction
     if such was provided.  The subfunctions throw exceptions on issues.
     '''
-    tarballExtraction(o)
+#   tarballExtraction(o)
     calibrationChecks(o)
     inputRelatedChecks(o)
     runRelatedChecks(o)
