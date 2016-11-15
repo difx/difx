@@ -21,11 +21,8 @@ cfiles='
     '
 
 scripts='
-    QA2/asdmpolconvert.py
-    QA2/casapolconvert.py
     QA2/scriptForCalibrationAPP.py
     QA2/scriptForImagingAPP.py
-    QA2/xy-guess.py
     PP/drivepolconvert.py
     PP/prepolconvert.py
     PP/runpolconvert.py
