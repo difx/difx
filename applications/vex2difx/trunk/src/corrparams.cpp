@@ -52,6 +52,83 @@
 const double PhaseCentre::DEFAULT_RA  = -999.9;
 const double PhaseCentre::DEFAULT_DEC = -999.9;
 
+int loadBasebandFilelistOld(const std::string &fileName, std::vector<VexBasebandData> &basebandFiles)
+{
+	static bool first = true;
+	const int MaxLineLength=1024;
+	std::ifstream is;
+	int n=0;
+	char s[MaxLineLength];
+	std::vector<std::string> tokens;
+
+	is.open(fileName.c_str());
+
+	if(is.fail())
+	{
+		std::cerr << "Error: cannot open " << fileName << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+
+	for(unsigned int line = 1; ; ++line)
+	{
+		is.getline(s, MaxLineLength);
+		if(is.eof())
+		{
+			break;
+		}
+
+		for(int i = 0; s[i]; ++i)
+		{
+			if(s[i] == '#')
+			{
+				s[i] = 0;
+			}
+		}
+
+		tokens.clear();
+
+		split(std::string(s), tokens);
+
+		int l = tokens.size();
+
+		if(l == 0)
+		{
+			continue;
+		}
+		else if(l == 1)
+		{
+			basebandFiles.push_back(VexBasebandData(tokens[0], 0, -1));
+			++n;
+		}
+		else if(l == 3)
+		{
+			basebandFiles.push_back(VexBasebandData(tokens[0], 0, -1,
+				parseTime(tokens[1]),
+				parseTime(tokens[2]) ));
+			++n;
+		}
+		else
+		{
+			std::cerr << "Error: line " << line << " of file " << fileName << " is badly formatted" << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if(n > 0)
+	{
+		std::cout << "Warning: Filelist file " << fileName << " was a listing with no start/stop times." << std::endl;
+		if(first)
+		{
+			first = false;
+
+			std::cout << "Note: Future versions of vex2difx may stop allowing file lists without start/stop times.  Filelists for VDIF and Mark5B files with start/stop times can be generated with \"vsum -s\" and \"m5bsum -s\" respectively.  These times allow vex2difx to properly assign data to jobs and is especially important in cases where multiple jobs are generated per project." << std::endl;
+		}
+	}
+
+	return n;
+}
 
 int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandData> &basebandFiles)
 {
@@ -124,6 +201,11 @@ int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandDat
 
 			++n;
 		}
+	}
+
+	if(n == 0)
+	{
+		n = loadBasebandFilelistOld(fileName, basebandFiles);
 	}
 
 	return n;

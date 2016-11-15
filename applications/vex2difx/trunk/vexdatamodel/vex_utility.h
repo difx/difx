@@ -44,7 +44,7 @@ int fvex_ra(char **field, double *ra);
 int fvex_dec(char **field, double *dec);
 }
 
-int checkCRLF(const char *filename);
+int checkCRLF(const char *fileName, bool verbose=true);
 
 //FIXME: add DOYtoMJD from vexload also to timeutils?
 

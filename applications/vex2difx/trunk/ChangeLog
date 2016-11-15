@@ -48,6 +48,7 @@ Version 2.5.0
 * LBA modes: S2_data_source = VLBA -> LBAVSOP mode
 * new global parameter delayModel -> .calc file DELAY MODEL parameter
 * Move to use of dirlist library for parsing file listings.  This allows both old-style and new-style file lists to be used.
+* It is now deprecated (but still legal) to supply file lists without start/stop times associated with each file. This capability may vanish at some point.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

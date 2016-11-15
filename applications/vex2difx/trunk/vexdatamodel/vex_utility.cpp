@@ -28,13 +28,14 @@
  *==========================================================================*/
 
 #include <set>
+#include <iostream>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
 #include "vex_utility.h"
 
 /* Function to look through a file to make sure it is not DOS formatted */
-int checkCRLF(const char *filename)
+int checkCRLF(const char *fileName, bool verbose)
 {
 	static std::set<std::string> processedFiles;
 	const int bufferSize = 1024;
@@ -43,15 +44,18 @@ int checkCRLF(const char *filename)
 	char buffer[bufferSize];
 	int n;
 
-	if(processedFiles.find(filename) == processedFiles.end())
+	if(processedFiles.find(fileName) == processedFiles.end())
 	{
-		printf("Checking: %s\n", filename);
-		processedFiles.insert(filename);
+		if(verbose)
+		{
+			std::cout << "Checking " << fileName << " for proper line termination" << std::endl;
+		}
+		processedFiles.insert(fileName);
 
-		in = fopen(filename, "rb");
+		in = fopen(fileName, "rb");
 		if(!in)
 		{
-			fprintf(stderr, "Error: cannot open %s\n", filename);
+			std::cerr << "Error: cannot open " << fileName << std::endl;
 
 			return -1;
 		}
@@ -68,7 +72,7 @@ int checkCRLF(const char *filename)
 			{
 				if(buffer[i] == cr)
 				{
-					fprintf(stderr, "Error: %s appears to be in DOS format.  Please run dos2unix or equivalent and try again.\n", filename);
+					std::cerr << "Error: " << fileName << " appears to be in DOS format.  Please run dos2unix or equivalent and try again." << std::endl;
 
 					fclose(in);
 
@@ -163,7 +167,7 @@ char swapPolarizationCode(char pol)
 	case 'Y':
 		return 'X';
 	default:
-		fprintf(stderr, "Error: unknown polarization: %c\n", pol);
+		std::cerr << "Error: unknown polarization: " << pol << std::endl;
 
 		exit(EXIT_FAILURE);
 	}

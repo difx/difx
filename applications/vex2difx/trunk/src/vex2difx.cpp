@@ -1847,7 +1847,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		{
 			int ok;
 
-			ok = checkCRLF(corrSetup->binConfigFile.c_str());
+			ok = checkCRLF(corrSetup->binConfigFile.c_str(), (verbose > 1));
 			if(ok < 0)
 			{
 				cerr << "The pulsar bin config file " << corrSetup->binConfigFile << " has problems.  Exiting." << endl;
@@ -1869,7 +1869,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 
 			for(int p = 0; p < D->pulsar[D->nPulsar-1].nPolyco; ++p)
 			{
-				ok = checkCRLF(D->pulsar[D->nPulsar-1].polyco[p].fileName);
+				ok = checkCRLF(D->pulsar[D->nPulsar-1].polyco[p].fileName, (verbose > 1));
 				if(ok < 0)
 				{
 					cerr << "The pulsar polyco file " << D->pulsar[D->nPulsar-1].polyco[p].fileName << " has problems.  Exiting." << endl;
@@ -2669,7 +2669,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	ok = checkCRLF(v2dFile.c_str());
+	ok = checkCRLF(v2dFile.c_str(), (verbose > 1));
 	if(ok < 0)
 	{
 		cerr << "The .v2d file has problems.  Exiting." << endl;
@@ -2685,7 +2685,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	ok = checkCRLF(P->vexFile.c_str());
+	ok = checkCRLF(P->vexFile.c_str(), (verbose > 1));
 	if(ok < 0)
 	{
 		cerr << "The vex file has problems.  Exiting." << endl;
