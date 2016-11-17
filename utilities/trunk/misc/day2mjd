@@ -1,0 +1,96 @@
+#!/bin/env python
+
+from sys import argv, exit
+from string import split, strip
+from time import ctime
+
+ddic = {}
+ddic['Jan'] = '01'
+ddic['Feb'] = '02'
+ddic['Mar'] = '03'
+ddic['Apr'] = '04'
+ddic['May'] = '05'
+ddic['Jun'] = '06'
+ddic['Jul'] = '07'
+ddic['Aug'] = '08'
+ddic['Sep'] = '09'
+ddic['Oct'] = '10'
+ddic['Nov'] = '11'
+ddic['Dec'] = '12'
+
+# Based on John Ball's DAZE.F
+
+def mjd(year, doy):
+	NYR = int(year)
+	NYRD = int(doy)
+	# L2 IS -1 IF LEAP YEAR, -2 IF NOT. 
+	L2 = NYR/4-(NYR+7)/4-NYR/100+(NYR+99)/100+NYR/400-(NYR+399)/400
+	MO = (12*NYRD+356+(NYRD+322)/367*(6-12*L2))/367
+	NDA = NYRD-(367*MO-362)/12-(MO+9)/12*L2
+	NYR1 = NYR-1
+	MJD = NYRD-678576+365*NYR1+NYR1/4-NYR1/100+NYR1/400
+	return MJD, MO, NDA
+
+def doy(year, mo, day):
+	NYR = int(year)
+	L2 = NYR/4-(NYR+7)/4-NYR/100+(NYR+99)/100+NYR/400-(NYR+399)/400
+	monstart1 = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+	monstart2 = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
+	if L2 == -1:
+		return day + monstart2[mo-1]
+	else:
+		return day + monstart1[mo-1]
+
+def parsetime(ts):
+	parts = split(ts, ':')
+	factor = 1.0/24.0
+	t = 0.0
+	for p in parts:
+		t = t + factor*float(p)
+		factor = factor/60.0
+	return t
+
+def parseday(ds):
+	parts = split(ds, '/')
+	if len(parts) == 1:
+		year = float(parts[0])
+		NYR = int(year)
+		fy = year - NYR
+		L2 = NYR/4-(NYR+7)/4-NYR/100+(NYR+99)/100+NYR/400-(NYR+399)/400
+		if L2 == -1:
+			return NYR, int(fy*366.0)+1
+		else:
+			return NYR, int(fy*365.0)+1
+	elif len(parts) == 2:
+		return int(parts[0]), int(parts[1])
+	elif len(parts) == 3:
+		return int(parts[0]), doy(int(parts[0]), int(parts[1]), int(parts[2]))
+	else:
+		exit(0)
+
+if len(argv) < 2:
+	print 'Usage(0) : %s  --> return help info and todays mjd' % argv[0]
+	print 'Usage(1) : %s year/month/day [hour[:min[:sec]]]' % argv[0]
+	print 'Usage(2) : %s year/d.o.y. [hour[:min[:sec]]]' % argv[0]
+	print '\nMJD now is given by:'
+	
+if len(argv) < 2:
+	s = split(strip(ctime()))
+	ts = s[3]
+	day = s[4]+'/'+ddic[s[1]]+'/'+s[2]
+elif len(argv) < 3:
+	ts = '00:00:00'
+	day = argv[1]
+else:
+	ts = argv[2]
+	day = argv[1]
+
+time = parsetime(ts)
+year, doy = parseday(day)
+
+imjd, mo, da = mjd(year, doy)
+
+mjd = float(imjd) + time
+jd = mjd + 2400000.5
+
+print '%d/%d/%d [%d] %s -> MJD %f  JD %f' % (year, mo, da, doy, ts, mjd, jd)

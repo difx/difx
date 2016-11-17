@@ -1,4 +1,21 @@
-dist_bin_SCRIPTS = dir2filelist.pl geteop.pl pcList.pl fslog2difx.pl sec2time.pl difxcopy startcorr.pl time.pl time2sec.pl update_eop vex2setup.pl filterDifx2Fits.py vdifheader.pl addMark5b.pl filelist2human.pl
+dist_bin_SCRIPTS = \
+	addMark5b.pl \
+	day2mjd \
+	difxcopy \
+	dir2filelist.pl \
+	filelist2human.pl \
+	filterDifx2Fits.py \
+	fslog2difx.pl \
+	geteop.pl \
+	mjd2day \
+	pcList.pl \
+	sec2time.pl \
+	startcorr.pl \
+	time.pl \
+	time2sec.pl \
+	update_eop \
+	vdifheader.pl \
+	vex2setup.pl 
 
 bin_PROGRAMS = m5fb_makeheader
 
