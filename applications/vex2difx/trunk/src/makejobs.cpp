@@ -163,7 +163,7 @@ static void genJobs(std::vector<Job> &Js, const JobGroup &JG, const VexData *V, 
 		{
 			scanRange.mjdStart = e->mjd;
 		}
-		if(e->eventType == Event::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd > scanRange.mjdStop))
+		if(e->eventType == Event::SCAN_STOP && (scanRange.mjdStop < 1.0 || e->mjd > scanRange.mjdStop))
 		{
 			scanRange.mjdStop = e->mjd;
 		}
