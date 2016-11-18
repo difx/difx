@@ -1,5 +1,5 @@
 /*
- * $Id: exthdr.h 4129 2016-09-08 20:30:16Z gbc $
+ * $Id: exthdr.h 4135 2016-09-09 21:07:15Z gbc $
  *
  * Support for extended headers
  */
@@ -73,7 +73,7 @@ typedef struct srch_stack {
     double      ldatum;
     uint32_t    bigger;
     double      bdatum;
-    uint32_t    *pktptr;
+    uint32_t    pkt[2];
 } SrchStack;
 
 /*
@@ -99,7 +99,7 @@ typedef struct srch_state {
     int         where;              /* 0 at startup */
     double      maxgap;             /* work.pps_search */
     double      last_datum;         /* last datum in history */
-    uint32_t    *last_pktptr;       /* last pkt pointer */
+    uint32_t    last_pkt[2];        /* last packet times */
     char        lab[64];            /* for output */
     uint32_t    srch_first;         /* starter offset */
     uint32_t    srch_final;         /* final offset */

@@ -1,5 +1,5 @@
 /*
- * $Id: exthdr.c 4132 2016-09-08 21:08:55Z gbc $
+ * $Id: exthdr.c 4169 2016-11-18 21:55:19Z gbc $
  *
  * Support for extended headers
  */
@@ -11,7 +11,6 @@
 
 #include "exthdr.h"
 #include "sg_access.h"
-#include "vdif.h"
 
 /* quasi-common work area */
 struct ext_hdr_work ext_hdr_work;
@@ -64,7 +63,8 @@ int extended_hdr_opt(const char *opt)
             "Ext hdr clock jumps now %s\n",
                 ext_hdr_work.jump ? "vex time" : "pkt offset");
     } else {
-        fprintf(stdout, "What is %s\n", opt);
+	if (strlen(opt) > 0)
+	    fprintf(stdout, "What is %s\n", opt);
     }
     next = strchr(opt, ',');
     if (next) return(extended_hdr_opt(next + 1));
@@ -89,7 +89,8 @@ void extended_hdr_verb(const int verbose, const char *filename)
         ext_hdr_work.filecnt, filename,
         ext_hdr_work.filecnt, ext_hdr_work.jump ? "vex time" : "pkt offset",
         ext_hdr_work.filecnt, ext_hdr_work.mask);
-    fprintf(stdout,  "Ext hdr jumps now %d\n", ext_hdr_work.jump);
+    if (ext_hdr_work.verb > 1) fprintf(stdout,
+        "Ext hdr jumps now %d\n", ext_hdr_work.jump);
 }
 
 /*
@@ -223,7 +224,7 @@ static void update_ehs_his(SrchState *wss)
 /*
  * Save the data and push the stack pointer
  */
-static void append_ehs_stk(SrchState *wss, uint32_t *pktptr,
+static void append_ehs_stk(SrchState *wss, uint32_t pkt0, uint32_t pkt1,
     uint32_t lesser, double ldatum,
     uint32_t bigger, double bdatum)
 {
@@ -233,7 +234,8 @@ static void append_ehs_stk(SrchState *wss, uint32_t *pktptr,
     wss->srch_stack[wss->srch_swrite].ldatum = ldatum;
     wss->srch_stack[wss->srch_swrite].bigger = bigger;
     wss->srch_stack[wss->srch_swrite].bdatum = bdatum;
-    wss->srch_stack[wss->srch_swrite].pktptr = pktptr;
+    wss->srch_stack[wss->srch_swrite].pkt[0] = pkt0;
+    wss->srch_stack[wss->srch_swrite].pkt[1] = pkt1;
     if (++ wss->srch_swrite >= wss->srch_salloc) ehs_more(wss, 1);
 }
 
@@ -286,7 +288,8 @@ static uint32_t resolve_ehs_stk(SrchState *wss)
             if (ext_hdr_work.verb>2) fprintf(stdout, "2 Lower same, narrow\n");
             wss->srch_stack[wss->srch_s_read].lesser = wss->srch_next;
             wss->srch_stack[wss->srch_s_read].ldatum = wss->last_datum;
-            wss->srch_stack[wss->srch_s_read].pktptr = wss->last_pktptr;
+            wss->srch_stack[wss->srch_s_read].pkt[0] = wss->last_pkt[0];
+            wss->srch_stack[wss->srch_s_read].pkt[1] = wss->last_pkt[1];
         } else {                        /* narrow as it gets */
             if (ext_hdr_work.verb>2) fprintf(stdout, "2 Lower same, done\n");
             wss->srch_s_read ++;
@@ -296,7 +299,8 @@ static uint32_t resolve_ehs_stk(SrchState *wss)
             if (ext_hdr_work.verb>2) fprintf(stdout, "2 Upper same, narrow\n");
             wss->srch_stack[wss->srch_s_read].bigger = wss->srch_next;
             wss->srch_stack[wss->srch_s_read].bdatum = wss->last_datum;
-            wss->srch_stack[wss->srch_s_read].pktptr = wss->last_pktptr;
+            wss->srch_stack[wss->srch_s_read].pkt[0] = wss->last_pkt[0];
+            wss->srch_stack[wss->srch_s_read].pkt[1] = wss->last_pkt[1];
         } else {                        /* narrow as it gets */
             if (ext_hdr_work.verb>2) fprintf(stdout, "2 Upper same, done\n");
             wss->srch_s_read ++;
@@ -305,7 +309,8 @@ static uint32_t resolve_ehs_stk(SrchState *wss)
         if (ext_hdr_work.verb>2) fprintf(stdout, "Else\n");
         /* look into bigger later */
         append_ehs_stk(wss,
-            wss->last_pktptr, wss->srch_next, wss->last_datum,
+            wss->last_pkt[0], wss->last_pkt[1],
+            wss->srch_next, wss->last_datum,
             wss->srch_stack[wss->srch_s_read].bigger,
             wss->srch_stack[wss->srch_s_read].bdatum);
         wss->srch_stack[wss->srch_s_read].bigger = wss->srch_next;
@@ -345,7 +350,7 @@ static int ehs_final(SrchState *wss)
         return(0);
     }
     update_ehs_his(wss);
-    append_ehs_stk(wss, wss->last_pktptr,
+    append_ehs_stk(wss, wss->last_pkt[0], wss->last_pkt[1],
         wss->srch_first, wss->srch_history[0].zdatum,
         wss->srch_final, wss->srch_history[1].zdatum);
     wss->srch_midway = wss->srch_next = next_from_ehs_stack(wss);
@@ -444,8 +449,10 @@ int extended_hdr_search(uint32_t *pkt, SrchState *wss)
 {
     int bail;
     if (ext_hdr_work.verb>2) fprintf(stdout,
-        "Search entry: %d @ %u\n", wss->where, wss->srch_next);
-    wss->last_pktptr = pkt;
+        "Search entry: %d @ %u %08X %08X\n",
+            wss->where, wss->srch_next, pkt[0], pkt[1]);
+    wss->last_pkt[0] = pkt[0];
+    wss->last_pkt[1] = pkt[1];
     extended_hdr_chk(pkt);  /* wss->last_datum computed */
     switch (wss->where) {
     case EXT_SS_BEGIN:      bail = ehs_begin(wss);    /* fall through */
@@ -469,8 +476,8 @@ int extended_hdr_search(uint32_t *pkt, SrchState *wss)
 static char *srch_vextime(uint32_t *pkt)
 {
     static char vt[80] = "i-really-dunno";
-    VDIFHeader *vh = (VDIFHeader *)pkt;
-//  strncpy(vt, sg_vextime(vh->w2.ref_epoch, vh->w1.secs_inre), sizeof(vt));
+    char *vx = sg_vextime((pkt[1] & 0x3F000000) >> 24, pkt[0] & 0x3FFFFFFF);
+    strncpy(vt, vx, sizeof(vt));
     return(vt);
 }
 
@@ -498,11 +505,12 @@ void extended_report(char *lab, SrchState *wss)
         wss->lab, wss->srch_swrite);
     for (ii = 0; ii < wss->srch_swrite; ii++) {
         if (ext_hdr_work.jump) fprintf(stdout,
-            "%s:jump after %s by %.3lf\n",
+            "%s:jump after %s, %u s.r.e by %.3lf ns\n",
             wss->lab,
-            srch_vextime(wss->srch_stack[ii].pktptr),
+            srch_vextime(wss->srch_stack[ii].pkt),
+            wss->srch_stack[ii].pkt[0] & 0x3FFFFFFF,
             (wss->srch_stack[ii].bdatum - wss->srch_stack[ii].ldatum));
-        fprintf(stdout,
+        else fprintf(stdout,
             "%s:gap jump at %10u -> %-10u ( %.3lf -> %.3lf ~ %.3lf ns)\n",
             wss->lab,
             wss->srch_stack[ii].lesser,
