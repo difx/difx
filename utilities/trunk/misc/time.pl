@@ -11,7 +11,7 @@ my $month = undef;
 my $year = undef;
 my $mjd = undef;
 
-my $ut;
+my $ut=0;
 
 GetOptions('year=i'=>\$year, 'dayno=i'=>\$dayno, 'month=i'=>\$month,
 	   'day=i'=>\$day, 'mjd=f'=>\$mjd);
@@ -41,5 +41,11 @@ exit(0) if (! defined $mjd);
 $dayno = cal2dayno($day, $month, $year);
 exit(0) if (! defined $dayno);
 
-printf("%02d/%02d/%04d  doy %d\n", $day, $month, $year, $dayno);
+if ($ut!=0) {
+  $ut = turn2str($ut,'H',0);
+} else {
+  $ut = "";
+}
+
+printf("%02d/%02d/%04d  doy %d $ut\n", $day, $month, $year, $dayno);
 printf("  MJD %d\n", $mjd);
