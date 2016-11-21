@@ -1046,7 +1046,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, doIF, linAntIdx, Range, ALMAant, spw, 
      print >> outf,"POLY=1.0000E+00"
      print >> outf,"/"
      print >> outf,"TSYS AA  FT=1.0  TIMEOFF=0"
-     print >> outf,"INDEX= "+', '.join(['\'L%i|R%i\''%(i,i) for i in doIF])
+     print >> outf,"INDEX= "+', '.join(['\'L%i|R%i\''%(i+1,i+1) for i in range(len(doIF))])
      print >> outf,"/"
      fmt0 = "%i %i:%2.2f  "
      fmt1 = "%4.2f  "*len(doIF)
