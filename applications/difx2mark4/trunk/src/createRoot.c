@@ -338,6 +338,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                                 redstr = *((D->job[jobId]).datastreamIdRemap + dstr);
                             else
                                 redstr = dstr;
+                            if (redstr < 0) continue;       // not assigned this job
                             pdds = D->datastream + redstr;
                             antbits[pdds->antennaId] = pdds->quantBits;
                             }
@@ -361,6 +362,10 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                                     {
                                     strcat (trax2b, antnam);
                                     trax2b_used = TRUE;
+                                    }
+                                else
+                                    {
+                                    printf ("        Warning, no quant bits for %s\n", antnam);
                                     }
                                 }
                         fprintf (fout, "    ref $BBC = bbcs;\n");
