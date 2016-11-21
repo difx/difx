@@ -66,6 +66,7 @@ struct c_block                     /* Elemental control block structure */
    double dec_offset;              /*    "   DEC    "     "   "      "     " */
    int ion_npts;                   // # of pts in ionosphere coarse search
    int  time_span[2];              /* acceptance window start and stop (s BOY) */
+   short ion_smooth;               // iff true, use smoothed, interpolated TEC grid pts
    short switched_mode;            /* defines switching cycle start epoch */
    short switched_period;          /* switching cycle period (s) */
    short use_samples;              /* iff true, use sample counts to normalize */
@@ -82,7 +83,8 @@ struct c_block                     /* Elemental control block structure */
    double passband[2];             /* passband for spectral filtering (MHz) */
    double t_cohere;                /* coherence time (s) for co-adding fringe rates */
    struct dstats ionosphere;       // a priori ionospheres (TEC units = 1e16 el/m^2)
-   struct dstats delay_offs[MAXFREQ];// additive delay offset(ns) by channel
+   struct dstats delay_offs[MAXFREQ];// additive delay offset(ns) by channel  ##DELAY_OFFS##
+   struct dstats delay_offs_pol[MAXFREQ][2];// additive delay offset(ns) by channel and pol
    int nsamplers;                  // number of sampler strings
    char *psamplers[MAX_SAMP];      // pointer to each sampler string (or NULL)
    char sampler_codes[256];        // contains all sampler strings

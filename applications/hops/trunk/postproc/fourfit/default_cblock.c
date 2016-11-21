@@ -72,6 +72,7 @@ struct c_block *cb_ptr;
     cb_ptr -> pc_amp_hcode  = 0.005;
     cb_ptr -> fmatch_bw_pct = 25.0;
     cb_ptr -> mbd_anchor    = MODEL;
+    cb_ptr -> ion_smooth    = FALSE;
 
     for (i=0; i<2; i++)                              // clear ref and rem values
         {
@@ -104,8 +105,12 @@ struct c_block *cb_ptr;
         cb_ptr -> pc_tonemask[i].rem = 0;
         cb_ptr -> gates[i].on_delay = 0;            /* default gate always on */
         cb_ptr -> gates[i].duration = 32767;
-        cb_ptr -> delay_offs[i].ref = 0.0;
-        cb_ptr -> delay_offs[i].rem = 0.0;
+        cb_ptr -> delay_offs[i].ref = 0.0;   // ##DELAY_OFFS##
+        cb_ptr -> delay_offs[i].rem = 0.0;   // ##DELAY_OFFS##
+        cb_ptr -> delay_offs_pol[i][0].ref = 0.0;
+        cb_ptr -> delay_offs_pol[i][1].ref = 0.0;
+        cb_ptr -> delay_offs_pol[i][0].rem = 0.0;
+        cb_ptr -> delay_offs_pol[i][1].rem = 0.0;
         }
 
     return(0);

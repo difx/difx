@@ -127,6 +127,11 @@ struct token_struct
 #define SAMPLER_DELAY_R_ 97
 #define SAMPLER_DELAY_X_ 98
 #define SAMPLER_DELAY_Y_ 99
+#define ION_SMOOTH_      100
+#define DELAY_OFFS_L_    101
+#define DELAY_OFFS_R_    102
+#define DELAY_OFFS_X_    103
+#define DELAY_OFFS_Y_    104
 
 
         /* Definitions of token categories */

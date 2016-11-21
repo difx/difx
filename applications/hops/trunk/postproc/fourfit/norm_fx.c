@@ -205,9 +205,13 @@ void norm_fx (struct type_pass *pass,
                                     && param.pc_mode[1] == MULTITONE)      
             diff_delay = +1e9 * (datum->rem_sdata.mt_delay[stnpol[1][pol]]
                                - datum->ref_sdata.mt_delay[stnpol[0][pol]]);
+                                    // ##DELAY_OFFS## otherwise assume user has
+                                    // used delay_offs or delay_offs_? but not both.
         else
-            diff_delay = pass->control.delay_offs[freq_no].rem 
-                       - pass->control.delay_offs[freq_no].ref;
+            diff_delay = pass->control.delay_offs_pol[freq_no][stnpol[1][pol]].rem
+                       + pass->control.delay_offs[freq_no].rem  // ##DELAY_OFFS##
+                       - pass->control.delay_offs[freq_no].ref  // ##DELAY_OFFS##
+                       - pass->control.delay_offs_pol[freq_no][stnpol[0][pol]].ref;
         msg ("ap %d fr %d pol %d diff_delay %f", -2, ap, fr, pol, diff_delay);
 
                                     // loop over spectral points

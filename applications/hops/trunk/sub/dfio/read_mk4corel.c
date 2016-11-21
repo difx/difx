@@ -13,9 +13,27 @@
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "mk4_data.h"
 #include "mk4_dfio.h"
 #include "mk4_util.h"
+
+#define REQUIRE_POWER_TWO 1
+#if REQUIRE_POWER_TWO
+/* The number of lags is required to be a power of two */
+#warning "The number of lags is restricted only by size."
+static int is_power_two_required(void) { return(0); }
+#else /* REQUIRE_POWER_TWO */
+/* Transitional code to allow use in testing. */
+static int
+is_power_two_required(void)
+    {
+        char *ev = getenv("HOPS_REQUIRE_POWER_OF_TWO");
+        if (!ev) return(1);
+        return(atoi(ev));
+    }
+#warning "The number of lags is controlled by HOPS_REQUIRE_POWER_OF_TWO."
+#endif /* REQUIRE_POWER_TWO */
 
 int
 read_mk4corel (char *filename,
@@ -23,6 +41,7 @@ read_mk4corel (char *filename,
     {
     int i, n, idx, ap, totbytes, type, bytes, size, rec_id, version;
     int lags, blocks, idx_list[MAXIND], nidx, index_val;
+    int require_power_two = is_power_two_required();
     void *alloc_ptr;
     char *ptr;
     struct type_101 *temp101;
@@ -87,15 +106,27 @@ read_mk4corel (char *filename,
                 corel->t100 = (struct type_100 *)addr_100 (version, ptr, &size);
                 if (corel->t100 != (struct type_100 *)ptr) alloc_ptr = corel->t100;
                 lags = MAXLAG;
-                while (lags >= 8)
+                if (require_power_two)  /* original, trusted implementation */
                     {
-                    if (corel->t100->nlags == lags) break;
-                    lags /= 2;
+                    while (lags >= 8)
+                        {
+                        if (corel->t100->nlags == lags) break;
+                        lags /= 2;
+                        }
+                    if (lags < 8)
+                        {
+                        msg ("Invalid number of lags, %d", 2, corel->t100->nlags);
+                        return (1);
+                        }
                     }
-                if (lags < 8)
+                else                    /* new era: arbitrary number of lags allowed */
                     {
-                    msg ("Invalid number of lags, %d", 2, corel->t100->nlags);
-                    return (1);
+                    if (lags < corel->t100->nlags)
+                        {
+                        msg ("Too many lags, %d", 2, corel->t100->nlags);
+                        return (1);
+                        }
+                    lags = corel->t100->nlags;
                     }
                 blocks = corel->t100->nblocks;
                 break;
@@ -165,7 +196,8 @@ read_mk4corel (char *filename,
                 if (temp120->nlags != lags)
                     if (lags > 0)
                         {
-                        msg ("Inconsistent type 120 record in corel file", 2);
+                        msg ("Inconsistent type 120 record in corel file %d != %d", 2,
+                            temp120->nlags, lags);
                         return (-1);
                         }
                                         /* Expand arrays if necessary */

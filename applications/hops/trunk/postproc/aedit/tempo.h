@@ -52,7 +52,8 @@
 
 #define AX_PARAMETER	600		/* parameter number in aux input variable */
 
-#define MAXPLT 2000			/* Max # of points in single plot, */
+/* was 2000, boosted to 20000 Nov 11, 2016 */
+#define MAXPLT 20000			/* Max # of points in single plot, */
 					/* applies separately to the 3 qualities */
 					/* of plotted points */
 #define NSYMBOL 11

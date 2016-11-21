@@ -81,14 +81,23 @@ struct type_pass *pass;
             sbptr += 2*param.nlags;
             }
                                         // perform ionospheric search
-    if (ion_search (pass))
-            {
-            char *pols[] = { "LL", "RR", "LR", "RL" };
-            char *zpol = (pass->pol < 0 || pass->pol > 3) ? "??" : pols[pass->pol];
-            msg ("Error return from ion_search on %c%c group %c pol %s", 2,
-                  param.baseline[0], param.baseline[1], pass->pass_data[0].fgroup, zpol);
-            return (1);
-            }
+    if (param.ion_smooth)
+        {                               // fine search using smoothed coarse points
+        if (ion_search_smooth (pass))
+                {
+                msg ("Error return from ion_search_smooth", 2);
+                return (-1);
+                }
+        }
+    else                                // 3-tiered non-smoothed ion search
+        {
+        if (ion_search (pass))
+                {
+                msg ("Error return from ion_search", 2);
+                return (-1);
+                }
+        }
+
                                         /* Write the fringe file to disk, with */
                                         /* or without traditional fringe plot */
                                         /* attached, depending on control info */

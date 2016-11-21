@@ -84,6 +84,7 @@ struct type_pass *pass;
     param.weak_channel = pass->control.weak_channel;
     param.pc_amp_hcode = pass->control.pc_amp_hcode;
     param.fmatch_bw_pct = pass->control.fmatch_bw_pct;
+    param.ion_smooth = pass->control.ion_smooth;
                                     // Copy phase cal offsets; identify desired pcal tone freqs
     for (stn=0; stn<2; stn++)
         {

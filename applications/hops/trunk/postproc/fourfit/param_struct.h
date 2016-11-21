@@ -64,6 +64,7 @@ struct type_param
     double      pcal_spacing[2];        // pcal tone spacing (Hz) for ref & rem
     double      ion_diff;               // differential ionosphere (rem-ref in TEC units)
     int         ion_pts;                // number of pts in ionosphere coarse search
+    short       ion_smooth;             // iff true, use smoothed coarse pts for fine search
     double      par_angle[2];           // parallactic angle (rad) for ref & rem
     double      weak_channel;           // G code threshhold for single-chan-amp / coherent-sum-amp
     double      pc_amp_hcode;           // H code iff any pc amplitude less than this
@@ -172,7 +173,8 @@ struct type_status
     double      rate_dec_width;
     double      sbd_ra_width;
     double      sbd_dec_width;
-    double      delay_offs[MAXFREQ][2]; // delay offsets (ns) by channel and station
+    double      delay_offs[MAXFREQ][2]; // delay offsets (ns) by channel and station ##DELAY_OFFS##
+    double      delay_offs_pol[MAXFREQ][2][2]; // delay offsets (ns) by channel and station and pol
     double      dtec[MAX_ION_PTS][2];   // differential TEC pairs [index#][TEC:amplitude]
     double      ion_sigmas[3];          // std dev of tau (ns), phi0 (rot), dTEC (TECU)
     int         nion;                   // number of points in the dtec array

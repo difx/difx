@@ -26,11 +26,12 @@ on what you're changing.
   8. parser.c
     appropriate fsm changes
 
-* 9. precorrect.c
-    changes prior to fringe search
+* 9. create_fsm.c
+    if your change also requires changes the fsm
 
-* 10. create_fsm.c
-    if your change changes the fsm
+* 10. implementation:
+    precorrect.c -- if changes prior to fringe search
+    ...
 
   11. ../../help/fourfit.doc
     document what the new parameter does

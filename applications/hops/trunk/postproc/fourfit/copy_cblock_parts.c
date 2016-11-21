@@ -134,6 +134,9 @@ struct c_block *f,*t;               // f (from) is source pointer
     if (f->mbd_anchor != NULLINT)
         t->mbd_anchor = f->mbd_anchor;
 
+    if (f->ion_smooth != NULLINT)
+        t->ion_smooth = f->ion_smooth;
+
     if (f->nsamplers != NULLINT)
         {
         t->nsamplers = f->nsamplers;
@@ -229,11 +232,20 @@ struct c_block *f,*t;               // f (from) is source pointer
             if (f->gates[i].duration != NULLINT)
                 t->gates[i].duration = f->gates[i].duration;
 
-            if (f->delay_offs[i].ref != NULLFLOAT)
-                t->delay_offs[i].ref = f->delay_offs[i].ref;
+            if (f->delay_offs[i].ref != NULLFLOAT)              // ##DELAY_OFFS##
+                t->delay_offs[i].ref = f->delay_offs[i].ref;    // ##DELAY_OFFS##
 
-            if (f->delay_offs[i].rem != NULLFLOAT)
-                t->delay_offs[i].rem = f->delay_offs[i].rem;
+            if (f->delay_offs[i].rem != NULLFLOAT)              // ##DELAY_OFFS##
+                t->delay_offs[i].rem = f->delay_offs[i].rem;    // ##DELAY_OFFS##
+
+            for (j=0; j<2; j++)     // copy delays for both polarizations
+                {
+                if (f->delay_offs_pol[i][j].ref != NULLFLOAT)
+                    t->delay_offs_pol[i][j].ref = f->delay_offs_pol[i][j].ref;
+
+                if (f->delay_offs_pol[i][j].rem != NULLFLOAT)
+                    t->delay_offs_pol[i][j].rem = f->delay_offs_pol[i][j].rem;
+                }
             }
         }
 

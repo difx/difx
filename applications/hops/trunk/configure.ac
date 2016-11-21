@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.12, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.13, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])

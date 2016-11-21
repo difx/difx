@@ -263,6 +263,8 @@ int parser ()
                        cb_ptr -> fmatch_bw_pct = float_values[tval];
                    else if (toknum == MBD_ANCHOR_)
                        cb_ptr -> mbd_anchor = tval;
+                   else if (toknum == ION_SMOOTH_)
+                       cb_ptr -> ion_smooth = tval;
                break;
 
 
@@ -525,6 +527,7 @@ int parser ()
                            cb_ptr -> passband[nv] = float_values[tval];
                        }
 
+// ##DELAY_OFFS##  for next clause
                    else if (toknum == DELAY_OFFS_) // is this a channel delay offset?
                        {
                        i = fcode(parsed_codes[nv]);
@@ -538,7 +541,6 @@ int parser ()
                            fval = tval;
                        else
                            fval = float_values[tval];
-
                                                    /* delays normally get stored
                                                       for only one station, and
                                                       into correct freq slot.
@@ -553,6 +555,57 @@ int parser ()
                            {
                            cb_ptr -> delay_offs[i].ref = 0.0;
                            cb_ptr -> delay_offs[i].rem = fval;
+                           // Consider making this illegal to avoid pilot error.
+                           }
+                       }
+
+                   else if (toknum == DELAY_OFFS_L_ || toknum == DELAY_OFFS_X_) 
+                       {
+                       i = fcode(parsed_codes[nv]);
+                       if (i<0 || i>MAXFREQ-1)
+                           {
+                           msg ("Invalid delay offset frequency code",2);
+                           return (-1);
+                           }
+                                         /* get phases from appropriate place */
+                       if (tokens[ntok].category == INTEGER)
+                           fval = tval;
+                       else
+                           fval = float_values[tval];
+                                         /* unclear what should happen if specified on a baseline */
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> delay_offs_pol[i][LXH].ref = fval;
+                       else if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> delay_offs_pol[i][LXH].rem = fval;
+                       else
+                           {
+                           msg ("Must specify delay_offs_? on a station, not a baseline",2);
+                           return (-1);
+                           }
+                       }
+
+                   else if (toknum == DELAY_OFFS_R_ || toknum == DELAY_OFFS_Y_) 
+                       {
+                       i = fcode(parsed_codes[nv]);
+                       if (i<0 || i>MAXFREQ-1)
+                           {
+                           msg ("Invalid delay offset frequency code",2);
+                           return (-1);
+                           }
+                                         /* get phases from appropriate place */
+                       if (tokens[ntok].category == INTEGER)
+                           fval = tval;
+                       else
+                           fval = float_values[tval];
+                                         /* unclear what should happen if specified on a baseline */
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> delay_offs_pol[i][RYV].ref = fval;
+                       else if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> delay_offs_pol[i][RYV].rem = fval;
+                       else
+                           {
+                           msg ("Can only specify delay_offs_? on a station, not a baseline",2);
+                           return (-1);
                            }
                        }
 

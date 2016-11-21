@@ -1,7 +1,8 @@
 #ifndef usearray_done			/* Allow multiple includes */
 #define usearray_done
 
-#define MAX_PARMS 64
+/* 64 wasn't enough, Nov 18, 2016 */
+#define MAX_PARMS 256
 					/* Extractable parameters */
 #define         REF_PCAL_AMP    1
 #define         REF_PCAL_PHASE  2

@@ -308,6 +308,10 @@ ACTION KEYWORDS         VALUES
    dc_block           `true' or `false' (default: false)
    dec_offset         float
    delay_offs         n char string, followed by n floats
+   delay_offs_l       n char string, followed by n floats
+   delay_offs_r       n char string, followed by n floats
+   delay_offs_x       n char string, followed by n floats
+   delay_offs_y       n char string, followed by n floats
    dr_win             2 floats
    fmatch_bw_pct      float
    freqs              n chars
@@ -495,6 +499,10 @@ KEYWORD SEMANTICS
    t_cohere  coherence time used in fringe fit (default is infinite)
    delay_offs delay offsets (ns) to be applied to each of the listed freq
              channels. This correction is made prefit, similar to pcal.
+   delay_offs_l same as above, but restricted to LCP.
+   delay_offs_r same as above, but restricted to RCP.
+   delay_offs_x same as above, but restricted to X linear pol.
+   delay_offs_y same as above, but restricted to Y linear pol.
    samplers  the number of samplers, followed by the freq channel 
              identifiers of channels that share a common sampler are
              grouped together in strings. In multitone mode only, the

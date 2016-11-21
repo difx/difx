@@ -64,6 +64,7 @@ struct c_block *cb_ptr;
     cb_ptr -> pc_amp_hcode    = NULLFLOAT;
     cb_ptr -> fmatch_bw_pct   = NULLFLOAT;
     cb_ptr -> mbd_anchor      = NULLINT;
+    cb_ptr -> ion_smooth      = NULLINT;  
 
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = NULLFLOAT;
@@ -115,8 +116,12 @@ struct c_block *cb_ptr;
         cb_ptr -> gates[i].on_delay = NULLINT;
         cb_ptr -> gates[i].duration = NULLINT;
 
-        cb_ptr -> delay_offs[i].ref = NULLFLOAT;
-        cb_ptr -> delay_offs[i].rem = NULLFLOAT;
+        cb_ptr -> delay_offs[i].ref = NULLFLOAT;    // ##DELAY_OFFS##
+        cb_ptr -> delay_offs[i].rem = NULLFLOAT;    // ##DELAY_OFFS##
+        cb_ptr -> delay_offs_pol[i][0].ref = NULLFLOAT;
+        cb_ptr -> delay_offs_pol[i][1].ref = NULLFLOAT;
+        cb_ptr -> delay_offs_pol[i][0].rem = NULLFLOAT;
+        cb_ptr -> delay_offs_pol[i][1].rem = NULLFLOAT;
         }
 
     for (i=0; i<2*MAXFREQ; i++)
