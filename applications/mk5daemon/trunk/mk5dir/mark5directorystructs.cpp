@@ -27,10 +27,14 @@ int calculateMark5DirSignature(const unsigned char *data, int size)
 
 	if(size > 0)
 	{
+		printf("Samples1: %d %x %x %x %x %x %x %x %x %x %x\n", size, data[0], data[size-1], data[1], data[2], data[20], data[55], data[77], data[777], data[9999], data[10000]);
+
 		for(int j = 0; j < size/4; ++j)
 		{
 			unsigned int x = ((unsigned int *)data)[j] + 1;
 			signature = signature ^ x;
+
+		//	printf("%u -> %u\n", x, signature);
 		}
 
 		/* prevent a zero signature */

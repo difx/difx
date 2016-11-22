@@ -49,6 +49,52 @@ const char version[] = "0.6";
 const char verdate[] = "20120713";
 
 
+int calculateMark5Signature2(SSHANDLE xlrDevice)
+{
+	const int LegacyScanDirectorySize = 81952;
+	int signature;
+	int len;
+
+	signature = 1;
+
+	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
+	if(len > 128)
+	{
+		unsigned char *dirData = new unsigned char[len];
+		const unsigned char *data;
+		int size;
+
+		WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, dirData) );
+
+		if(len % 128 != 0)
+		{
+			len = LegacyScanDirectorySize;
+			size = len;
+			data = dirData;
+		}
+		else
+		{
+			size = len - 128;
+			data = dirData + 128;
+		}
+
+		for(int j = 0; j < size/4; ++j)
+		{
+			unsigned int x = ((unsigned int *)data)[j] + 1;
+			signature = signature ^ x;
+		}
+
+		/* prevent a zero signature */
+		if(signature == 0)
+		{
+			signature = 0x55555555;
+		}
+
+		delete[] dirData;
+	}
+
+	return signature;
+}
 
 enum WriteProtectAction
 {
