@@ -433,6 +433,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		{
 			return false;
 		}
+		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 		int v = matchInt(formatName, match[2]);
 		if(v > 32 && isVDIFFormat())
 		{
