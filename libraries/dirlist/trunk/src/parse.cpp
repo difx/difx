@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include "parse.h"
 
 // FIXME: handle exceptions in this file
