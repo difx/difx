@@ -199,6 +199,7 @@ double parseTime(const std::string &timeStr, std::stringstream &error)
 	struct tm tm;
 	char dummy;
 
+	memset(&tm, 0, sizeof(struct tm));
 	snprintf(str, TimeLength, "%s", timeStr.c_str());
 
 	// Test for ISO 8601
