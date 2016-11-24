@@ -79,7 +79,7 @@ void vdifzipper(Configuration* config, int configindex, float durus, size_t verb
     chvpbytes = (framebytes - VDIF_HEADER_BYTES) / numrecordedbands + VDIF_HEADER_BYTES;
     numsampsperframe = (chvpbytes - VDIF_HEADER_BYTES) * BITSPERBYTE / BITS;
 
-    ifstream chfile[numrecordedbands];
+    ifstream *chfile = new ifstream[numrecordedbands];
 
     // retrieve bandwidth information and number of frames per second of each antenna
     bw = config->getDRecordedBandwidth(configindex, i, 0);
@@ -205,6 +205,9 @@ void vdifzipper(Configuration* config, int configindex, float durus, size_t verb
     {
       cout << "Freed memory allocated for input and output vdif buffers" << endl;
     }
+
+    delete [] chfile;
+
   } 
 }
 
