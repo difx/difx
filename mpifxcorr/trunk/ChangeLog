@@ -27,6 +27,7 @@ Version 2.5
 * Adopted startdifx, genmachines.py, joblist, jobstatus, and jobdisks scripts from calcif2 as new competing delay model, difxcalc11, is coming in...
 * Improve accuracy of estimated memory usage (estimatedbytes) in VDIF datastreams
 * Peaceably ignore the new DELAY MODEL parameter of the .calc file
+* Calculate Mark5 module signature more consistently; the "NeoLegacy" formats used wrong number of bytes in the calculation
 
 Version 2.4
 ~~~~~~~~~~~
