@@ -95,6 +95,7 @@
 #define MAX_S32                  IPP_MAX_32S
 #define MAX_U32                  IPP_MAX_32U
 #define MAX_S16                  IPP_MAX_16S
+#define MIN_S16                  IPP_MIN_16S
 #define MAX_U16                  IPP_MAX_16U
 #define TWO_PI                   IPP_2PI
 #define vecFFT_NoReNorm          IPP_FFT_NODIV_BY_ANY
@@ -415,6 +416,7 @@ inline vecStatus vectorInitDFTR_f32(vecDFTSpecR_f32 **dftspec, int length, int f
 #define vecNoErr                 0
 #define vecTrue                  1
 #define MAX_S16                  ((1<<15) - 1)
+#define MIN_S16                  (-(1<<15))
 #define MAX_U16                  ((1<<16) - 1)
 #define MAX_S32                  MAX_S16 // ((1<<31) - 1)
 #define MAX_U32                  MAX_U16 // ((1<<32) - 1)
@@ -1049,24 +1051,11 @@ inline vecStatus gen2DFFT_CtoC_32fc(const cf32 *src, int sstp, cf32 *dest, int d
 #endif /* Generic Architecture */
 
 inline vecStatus genericSplitScaled_16s32f(const s16 *src, f32 **dest, int numchannels, int chanlen) {
-  s16 max=src[0]; s16 min=max;
-  for (int n=1;n<numchannels*chanlen;n++) {
-    if (src[n]>max)
-      max = src[n];
-    else if (src[n]<min)
-      min = src[n];
-  }
-  if (max==min) {
-    for (int n=0;n<chanlen;n++)
-      for (int m=0;m<numchannels;m++) 
-	dest[m][n] = 0;
-  } else {
-    f32 scale = 2.0/(max-min); 
-    for (int n=0;n<chanlen;n++)
-      for (int m=0;m<numchannels;m++) {
-	dest[m][n] = -1.0+scale*(src[n*numchannels+m]-min);
-      }
-  }
+  f32 scale = 2.0/((f32)MAX_S16-(f32)MIN_S16); 
+  for (int n=0;n<chanlen;n++)
+    for (int m=0;m<numchannels;m++) {
+      dest[m][n] = -1.0+scale*((f32)src[n*numchannels+m]-(f32)MIN_S16);
+    }
   return vecNoErr;      
 }
 
