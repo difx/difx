@@ -1048,14 +1048,27 @@ inline vecStatus gen2DFFT_CtoC_32fc(const cf32 *src, int sstp, cf32 *dest, int d
 
 #endif /* Generic Architecture */
 
-inline vecStatus genericSplitScaled_16s32f(const s16 *src, f32 **dest, int numchannels, int chanlen)
-{ s16 max=0; s16 min=0; for(int n=0;n<numchannels*chanlen;n++) {max = (max>src[n])? max:src[n]; min = (min<src[n])? min:src[n];}
-  f32 scale; scale = 2.0/(max-min); 
-  for(int n=0;n<chanlen;n++) for(int m=0;m<numchannels;m++) {
-      if (max==min) dest[m][n]=0; 
-      else dest[m][n] = -1.0+scale*(src[n*numchannels+m]-min);
-    } return vecNoErr; }
-
+inline vecStatus genericSplitScaled_16s32f(const s16 *src, f32 **dest, int numchannels, int chanlen) {
+  s16 max=src[0]; s16 min=max;
+  for (int n=1;n<numchannels*chanlen;n++) {
+    if (src[n]>max)
+      max = src[n];
+    else if (src[n]<min)
+      min = src[n];
+  }
+  if (max==min) {
+    for (int n=0;n<chanlen;n++)
+      for (int m=0;m<numchannels;m++) 
+	dest[m][n] = 0;
+  } else {
+    f32 scale = 2.0/(max-min); 
+    for (int n=0;n<chanlen;n++)
+      for (int m=0;m<numchannels;m++) {
+	dest[m][n] = -1.0+scale*(src[n*numchannels+m]-min);
+      }
+  }
+  return vecNoErr;      
+}
 
 #endif /* Defined architecture header */
 // vim: shiftwidth=2:softtabstop=2:expandtab
