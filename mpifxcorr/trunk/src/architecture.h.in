@@ -198,8 +198,11 @@
 
 #define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A11(src, sin, cos, length)
 
-//#define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)         ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen)
+#ifdef IPP9
 #define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           genericSplitScaled_16s32f(src, dest, numchannels, chanlen)
+#else
+#define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen)
+#endif
 
 #define vectorSquare_f32_I(srcdest, length)                                 ippsSqr_32f_I(srcdest, length)
 #define vectorSquare_f64_I(srcdest, length)                                 ippsSqr_64f_I(srcdest, length)
