@@ -240,6 +240,7 @@ static inline void setVDIFFrameEpochSecOffset(vdif_header *header, int seconds) 
 static inline void setVDIFFrameNumber(vdif_header *header, int framenumber) { header->frame = framenumber; }
 static inline void setVDIFFrameInvalid(vdif_header *header, unsigned int invalid) { header->invalid = invalid; }
 static inline void setVDIFBitsPerSample(vdif_header *header, int nbits) { header->nbits = nbits-1; }
+static inline void setVDIFComplex(vdif_header *header, int complex) { header->iscomplex = (complex>0); }
 int setVDIFFrameBytes(vdif_header *header, int bytes);
 int setVDIFFrameSecond(vdif_header *header, int seconds);
 int setVDIFNumChannels(vdif_header *header, int numchannels);
