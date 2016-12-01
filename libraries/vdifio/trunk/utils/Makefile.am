@@ -111,6 +111,8 @@ vdifChanSelect_SOURCES = \
 generateVDIF_SOURCES = \
 	generateVDIF.c
 
+generateVDIF_LDADD = $(IPP_LIBS) $(LDADD)
+
 vmux_SOURCES = \
 	vmux.c
 
