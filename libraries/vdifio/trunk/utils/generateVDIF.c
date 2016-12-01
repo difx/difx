@@ -19,6 +19,8 @@
 
 #endif
 
+#define USEIPP
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -32,6 +34,23 @@
 #include <getopt.h>
 #include <vdifio.h>
 
+#ifdef USEIPP
+#include <ippcore.h>
+#include <ipps.h>
+
+#define DEFAULTTAP 64
+
+IppsRandGaussState_32f *pRandGaussState;
+Ipp32f *scratch;
+Ipp32f phase;
+Ipp32f *dly;
+Ipp8u *buf;
+IppsFIRSpec_32f *pSpec;
+#endif
+
+#define SEED 48573
+
+
 double currentmjd();
 void mjd2cal(double mjd, int *day, int *month, int *year, double *ut);
 float gaussrand();
@@ -41,8 +60,8 @@ int pack2bitNchan(float **in, int nchan, int off, char *out, float mean, float s
 void dayno2cal (int dayno, int year, int *day, int *month);
 double cal2mjd(int day, int month, int year);
 double tm2mjd(struct tm date);
-void generateData(float **data, int nframe, int sampesperframe, int nchan,
-		  int iscomplex, int bandwidth, float tone, float *mean, float *stdDev);
+void generateData(float **data, int nframe, int sampesperframe, int nchan, int iscomplex, int bandwidth,
+		   float tone, float *mean, float *stdDev);
 
 #define MAXSTR        255
 #define BUFSIZE        32  // MB
@@ -62,6 +81,7 @@ int main (int argc, char * const argv[]) {
   int nbits = 2;
   int bandwidth = 64;
   int nchan = 1;
+  int ntap = DEFAULTTAP;
   int framesize = 8000;
   int iscomplex = 0;
   int year = -1;
@@ -69,7 +89,7 @@ int main (int argc, char * const argv[]) {
   int day = -1;
   int dayno = -1;
   double mjd = -1;
-  float tone = 6;  // MHz
+  float tone = 10;  // MHz
   float duration = 0; // Seconds
 
   struct option options[] = {
@@ -84,6 +104,7 @@ int main (int argc, char * const argv[]) {
     {"duration", 1, 0, 't'},
     {"tone", 1, 0, 'T'},
     {"nchan", 1, 0, 'n'},
+    {"ntap", 1, 0, 'x'},
     {"nthread", 1, 0, 'N'},
     {"complex", 0, 0, 'c'},
     {"help", 0, 0, 'h'},
@@ -94,7 +115,7 @@ int main (int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "b:d:m:M:y:t:n:c:T:h", options, NULL);
+    opt = getopt_long_only(argc, argv, "xb:d:m:M:y:t:n:c:T:h", options, NULL);
     if (opt==EOF) break;
     
 #define CASEINT(ch,var)                                     \
@@ -124,6 +145,7 @@ int main (int argc, char * const argv[]) {
       CASEINT('M', mjd);
       CASEINT('y', year);
       CASEINT('n', nchan);
+      CASEINT('x', ntap);
       CASEINT('F', framesize);
       CASEFLOAT('t', duration);
       CASEFLOAT('T', tone);
@@ -157,6 +179,8 @@ int main (int argc, char * const argv[]) {
     filename = strdup(argv[optind]);
   }
 
+  
+  
   int cfact = 1;
   if (iscomplex) cfact = 2;
 
@@ -183,17 +207,13 @@ int main (int argc, char * const argv[]) {
   int samplesperframe = framesize*8/completesample;
   int framespersec = bytespersec/framesize;
 
-  printf("DEBUG: %d  %d\n", samplesperframe, framespersec);
-
   // Initialize memory
   data = malloc(nchan*sizeof(float*));
   if (data==NULL) {
     perror("Memory allocation problem\n");
     exit(1);
   }
-
   frameperbuf = BUFSIZE*1024*1024/nchan/framesize;
-  printf("DEBUG: frameperbuf=%d\n", frameperbuf);
 
   if (duration==0) { // Just create BUFSIZE bytes
     nframe = frameperbuf;
@@ -202,9 +222,57 @@ int main (int argc, char * const argv[]) {
     nframe = ((int)floor((float)nframe/(float)frameperbuf+0.5))*frameperbuf;
     if (nframe==0) nframe = frameperbuf;
   }
-  printf("DEBUG: Total frame = %lld\n", (long long)nframe);
+
+#ifdef USEIPP
+  int pRandGaussStateSize;
+  ippsRandGaussGetSize_32f(&pRandGaussStateSize);
+  pRandGaussState = (IppsRandGaussState_32f *)ippsMalloc_8u(pRandGaussStateSize);
+  ippsRandGaussInit_32f(pRandGaussState, 0.0, 1.0, SEED);
+  scratch = ippsMalloc_32f(nframe*samplesperframe);
+  if (scratch==NULL) {
+    fprintf(stderr, "Error allocating memory\n");
+    exit(1);
+  }
+  phase = 0;
+  int specSize;
+  int bufsize;
+
+  Ipp64f *taps64 = ippsMalloc_64f(ntap);
+  Ipp32f *taps = ippsMalloc_32f(ntap);
+  status = ippsFIRGenGetBufferSize(ntap, &bufsize);
+  if (status != ippStsNoErr) {
+    fprintf(stderr, "Error calling ippsFIRGenGetBufferSize (%s)\n", ippGetStatusString(status));
+    exit(1);
+  }
+  buf = ippsMalloc_8u(bufsize);
+  status = ippsFIRGenBandpass_64f(0.02, 0.48, taps64, ntap, ippWinHamming, ippTrue, buf);
+  if (status != ippStsNoErr) {
+    fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
+    exit(1);
+  }
+  ippsFree(buf);
+  ippsConvert_64f32f(taps64, taps, ntap);
+  ippsFree(taps64);
+
+  status = ippsFIRSRGetSize (ntap, ipp32f, &specSize, &bufsize);
+  if (status != ippStsNoErr) {
+    fprintf(stderr, "Error Getting filter initialisation sizes (%s)\n", ippGetStatusString(status));
+    exit(1);
+  }
+  pSpec = (IppsFIRSpec_32f*)ippsMalloc_8u(specSize);
+  status = ippsFIRSRInit_32f(taps, ntap, ippAlgAuto, pSpec);
+  if (status != ippStsNoErr) {
+    fprintf(stderr, "Error Initialising filter (%s)\n", ippGetStatusString(status));
+    exit(1);
+  }
+  buf = ippsMalloc_8u(bufsize);
+
+  dly = ippsMalloc_32f(ntap-1);
+  ippsZero_32f(dly, ntap-1);
+#endif
 
   for (i=0;i<nchan;i++) {
+    //x[i] = 0;
     status = posix_memalign((void**)&data[i], 8, nframe*samplesperframe*sizeof(float)*cfact);
     if (status) {
       perror("Trying to allocate memory");
@@ -219,9 +287,6 @@ int main (int argc, char * const argv[]) {
   }
   memset(framedata, 'Z', framesize);
 
-  // THIS NEEDS TO MOVE TO MAIN LOOP
-  // END OF MOVE LOOP
-  
   double thismjd = currentmjd();
   int thisday, thismonth, thisyear;
   double ut;
@@ -256,10 +321,7 @@ int main (int argc, char * const argv[]) {
   printf("writing %s\n", filename);
 
   while (nframe>0) {
-    printf("DEBUG: nframe=%llu\n", (long long unsigned int)nframe);
-    
-    generateData(data, frameperbuf, samplesperframe, nchan, iscomplex, bandwidth, tone,
-		 &mean, &stdDev);
+    generateData(data, frameperbuf, samplesperframe, nchan, iscomplex, bandwidth, tone, &mean, &stdDev);
 
     for (i=0; i<frameperbuf; i++) {
 
@@ -513,18 +575,55 @@ double tm2mjd(struct tm date) {
   return(cal2mjd(date.tm_mday, date.tm_mon+1, date.tm_year+1900)+dayfrac);
 }
 
+#ifdef USEIPP
+
+void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
+		  int iscomplex, int bandwidth, float tone, float *mean, float *stdDev) {
+  int i, n, nsamp;
+  float s;
+  Ipp32f thismean, thisStdDev;
+  IppStatus status;
+
+  *mean = 0;
+  *stdDev = 0;
+  nsamp = nframe*samplesperframe;
+  
+  status = ippsTone_32f(scratch, nsamp, 0.05, tone/(bandwidth*2), &phase, ippAlgHintFast);
+  if (status!=ippStsNoErr) {
+    fprintf(stderr, "Error generating tone (%s)\n", ippGetStatusString(status));
+    exit(1);
+  }
+
+  for (n=0; n<nchan; n++) {
+    status = ippsRandGauss_32f(data[n], nsamp, pRandGaussState);
+    status = ippsAdd_32f_I(scratch, data[n], nsamp);
+
+    ippsFIRSR_32f(data[n], data[n], nsamp,  pSpec,  dly, dly,  buf);
+
+    status = ippsMeanStdDev_32f(data[n], nsamp, &thismean, &thisStdDev, ippAlgHintFast);
+    *mean += thismean;
+    *stdDev += thisStdDev;
+  }
+  *mean /= nchan;
+  *stdDev /= nchan;
+}
+
+
+
+#else 
 void generateData(float **data, int nframe, int samplesperframe, int nchan,
 		  int iscomplex, int bandwidth, float tone, float *mean, float *stdDev) {
   int i, n;
   float s;
 
   for (i=0; i<nframe*samplesperframe; i++) {
-    s = sin(tone/bandwidth*i*M_PI)*0.1; // There will be a phase jump from buffer to buffer
+    s = sin(tone/bandwidth*i*M_PI)*0.05; // There may be a phase jump from buffer to buffer
     for (n=0; n<nchan; n++) {
       data[n][i] = gaussrand()+s;
     }
   }
 
+  
   // Calculate RMS to allow thresholding
   *mean = 0;
   *stdDev = 0;
@@ -537,3 +636,4 @@ void generateData(float **data, int nframe, int samplesperframe, int nchan,
   *mean /= nchan;
   *stdDev /= nchan;
 }
+#endif
