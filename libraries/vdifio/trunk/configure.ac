@@ -1,4 +1,4 @@
-AC_INIT([VDIFIO], [1.1], [difxusers at googlegroups.com])
+AC_INIT([VDIFIO], [1.1], [difxusers <at> nrao.edu])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
@@ -56,6 +56,26 @@ if test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes"; then
         fi
 fi
 AM_CONDITIONAL([ENABLE_PYTHON_CTYPES], [test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes" -a -n "$GOT_PYTHON_CTYPES"])
+
+
+dnl **********************************************************
+dnl **** Set path for Intel Performance Primitive library ****
+dnl **********************************************************
+
+ipp_enabled=1
+AC_ARG_ENABLE(ipp, [AS_HELP_STRING([--disable-ipp],[disables IPP acceleration])])
+if test "x$enable_ipp" = xno; then
+        ipp_enabled=0
+fi
+PKG_CHECK_MODULES(IPP, ipp, [AC_DEFINE([HAVE_IPP], 1, [1=has IPP])], ipp_enabled=0)
+AC_SUBST(ipp_enabled)
+dnl **********************************************************
+
+if test ${ipp_enabled} = 1; then
+        FFT_LIBS="${IPP_LIBS} ${LIBS}"
+        CFLAGS="${CFLAGS} ${IPP_CFLAGS}"
+fi
+
 
 # Prepare output files
 
