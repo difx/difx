@@ -15,7 +15,8 @@ dist_bin_SCRIPTS = \
 	time2sec.pl \
 	update_eop \
 	vdifheader.pl \
-	vex2setup.pl 
+	vex2setup.pl \
+	mk5bheader.pl 
 
 bin_PROGRAMS = m5fb_makeheader
 
