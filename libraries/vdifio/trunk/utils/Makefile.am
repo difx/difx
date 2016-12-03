@@ -24,11 +24,12 @@ bin_PROGRAMS = \
 	vdifChanSelect \
 	vmux \
 	vsum \
-	generateVDIF \
 	mk6gather \
 	mk6ls \
 	mk6summary \
 	mk6vmux
+
+check_PROGRAMS = generateVDIF
 
 noinst_PROGRAMS = \
 	testcornerturners
