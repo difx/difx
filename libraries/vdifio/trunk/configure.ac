@@ -59,7 +59,7 @@ AM_CONDITIONAL([ENABLE_PYTHON_CTYPES], [test -n "$PYTHON" -a "x$REQUESTED_PYTHON
 
 AC_ARG_WITH([generateVDIF],
     AS_HELP_STRING([--with-generateVDIF], [Enable generate VDIF]))
-if test "x${with_generateVDIF}" != "xno"; then
+if test "x${with_generateVDIF}" == "xyes"; then
     AM_CONDITIONAL([WITH_GENERATEVDIF], [true])
 else
     AM_CONDITIONAL([WITH_GENERATEVDIF], [false])
