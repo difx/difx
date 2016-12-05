@@ -57,6 +57,13 @@ if test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes"; then
 fi
 AM_CONDITIONAL([ENABLE_PYTHON_CTYPES], [test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes" -a -n "$GOT_PYTHON_CTYPES"])
 
+AC_ARG_WITH([generateVDIF],
+    AS_HELP_STRING([--with-generateVDIF], [Enable generate VDIF]))
+if test "x${with_generateVDIF}" != "xno"; then
+    AM_CONDITIONAL([WITH_GENERATEVDIF], [true])
+else
+    AM_CONDITIONAL([WITH_GENERATEVDIF], [false])
+fi
 
 dnl **********************************************************
 dnl **** Set path for Intel Performance Primitive library ****
