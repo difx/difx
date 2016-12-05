@@ -29,7 +29,11 @@ bin_PROGRAMS = \
 	mk6summary \
 	mk6vmux
 
-check_PROGRAMS = generateVDIF
+#check_PROGRAMS = generateVDIF
+
+if WITH_GENERATEVDIF
+  bin_PROGRAMS += generateVDIF
+endif
 
 noinst_PROGRAMS = \
 	testcornerturners
