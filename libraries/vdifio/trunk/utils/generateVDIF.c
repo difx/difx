@@ -64,7 +64,7 @@ void generateData(float **data, int nframe, int sampesperframe, int nchan, int i
 		   float tone, float *mean, float *stdDev);
 
 #define MAXSTR        255
-#define BUFSIZE        32  // MB
+#define BUFSIZE       256  // MB
 #define MAXPOS          3
 #define SMALLPOS        2
 #define SMALLNEG        1
@@ -156,14 +156,18 @@ int main (int argc, char * const argv[]) {
  
       case 'h':
 	printf("Usage: generateVDIF [options]\n");
-	printf("  -bandwidth <BANWIDTH> Channel bandwidth in MHz (64)\n");
-	printf("  -n/-nchan <N>         Number of  channels in stream\n");
-	printf("  -day <DAY>            Day of month of start time (now)\n");
-	printf("  -month <MONTH>        Month of start time (now)\n");
-	printf("  -dayno <DAYNO>        Day of year of start time (now)\n");
-	printf("  -year <YEAR>          Year of start time (now)\n");
-	printf("  -time <HH:MM:SS>      Year of start time (now)\n");
-	printf("  -mjd <MJD>            MJD of start time\n");
+	printf("  -bandwidth <BANWIDTH>     Channel bandwidth in MHz (64)\n");
+	printf("  -n/-nchan <N>             Number of  channels in stream\n");
+	printf("  -F/-framesize <FRAMESIZE> VDIF framesize\n");
+	printf("  -t/-duration <DURATION>   Length of output, in seconds\n");
+	printf("  -T/-tone <TONE>           Frequency (MHz) of tone to insert\n");
+	printf("  -ntap <TAPS>              Number of taps for FIR filter to create band shape\n");
+	printf("  -day <DAY>                Day of month of start time (now)\n");
+	printf("  -month <MONTH>            Month of start time (now)\n");
+	printf("  -dayno <DAYNO>            Day of year of start time (now)\n");
+	printf("  -year <YEAR>              Year of start time (now)\n");
+	printf("  -time <HH:MM:SS>          Year of start time (now)\n");
+	printf("  -mjd <MJD>                MJD of start time\n");
 	return(1);
 	break;
       
@@ -179,8 +183,6 @@ int main (int argc, char * const argv[]) {
     filename = strdup(argv[optind]);
   }
 
-  
-  
   int cfact = 1;
   if (iscomplex) cfact = 2;
 
@@ -213,7 +215,9 @@ int main (int argc, char * const argv[]) {
     perror("Memory allocation problem\n");
     exit(1);
   }
-  frameperbuf = BUFSIZE*1024*1024/nchan/framesize;
+  frameperbuf = BUFSIZE*1024*1024/(samplesperframe*sizeof(float)*(nchan+1));
+  printf("DEBUG: frameperbuf=%d\n", frameperbuf);
+  printf("DEBUG: sampleperframe=%d\n", samplesperframe);
 
   if (duration==0) { // Just create BUFSIZE bytes
     nframe = frameperbuf;
@@ -227,12 +231,15 @@ int main (int argc, char * const argv[]) {
   int pRandGaussStateSize;
   ippsRandGaussGetSize_32f(&pRandGaussStateSize);
   pRandGaussState = (IppsRandGaussState_32f *)ippsMalloc_8u(pRandGaussStateSize);
+  printf("Allocated %d bytes\n", pRandGaussStateSize);
   ippsRandGaussInit_32f(pRandGaussState, 0.0, 1.0, SEED);
-  scratch = ippsMalloc_32f(nframe*samplesperframe);
+  scratch = ippsMalloc_32f(frameperbuf*samplesperframe);
   if (scratch==NULL) {
     fprintf(stderr, "Error allocating memory\n");
     exit(1);
   }
+  printf("Allocated %d Mbytes for scratch\n", frameperbuf*samplesperframe*sizeof(Ipp32f)/1000/1000);
+
   phase = 0;
   int specSize;
   int bufsize;
@@ -245,6 +252,7 @@ int main (int argc, char * const argv[]) {
     exit(1);
   }
   buf = ippsMalloc_8u(bufsize);
+  printf("Allocated %d bytes for FIR\n", bufsize);
   status = ippsFIRGenBandpass_64f(0.02, 0.48, taps64, ntap, ippWinHamming, ippTrue, buf);
   if (status != ippStsNoErr) {
     fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
@@ -272,12 +280,13 @@ int main (int argc, char * const argv[]) {
 #endif
 
   for (i=0;i<nchan;i++) {
-    //x[i] = 0;
-    status = posix_memalign((void**)&data[i], 8, nframe*samplesperframe*sizeof(float)*cfact);
+    status = posix_memalign((void**)&data[i], 8, frameperbuf*samplesperframe*sizeof(float)*cfact);
     if (status) {
       perror("Trying to allocate memory");
       exit(EXIT_FAILURE);
     }
+    printf("Allocated %d Mbytes for orig data\n", frameperbuf*samplesperframe*sizeof(float)*cfact/1000/1000);
+
   }
 
   status = posix_memalign((void**)&framedata, 8, framesize);
@@ -286,6 +295,7 @@ int main (int argc, char * const argv[]) {
     exit(EXIT_FAILURE);
   }
   memset(framedata, 'Z', framesize);
+  printf("Allocated %d bytes for VDIF frame\n", framesize);
 
   double thismjd = currentmjd();
   int thisday, thismonth, thisyear;
