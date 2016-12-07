@@ -238,7 +238,7 @@ int main (int argc, char * const argv[]) {
     fprintf(stderr, "Error allocating memory\n");
     exit(1);
   }
-  printf("Allocated %d Mbytes for scratch\n", frameperbuf*samplesperframe*sizeof(Ipp32f)/1000/1000);
+  printf("Allocated %lu Mbytes for scratch\n", frameperbuf*samplesperframe*sizeof(Ipp32f)/1000/1000);
 
   phase = 0;
   int specSize;
@@ -285,7 +285,7 @@ int main (int argc, char * const argv[]) {
       perror("Trying to allocate memory");
       exit(EXIT_FAILURE);
     }
-    printf("Allocated %d Mbytes for orig data\n", frameperbuf*samplesperframe*sizeof(float)*cfact/1000/1000);
+    printf("Allocated %lu Mbytes for orig data\n", frameperbuf*samplesperframe*sizeof(float)*cfact/1000/1000);
 
   }
 

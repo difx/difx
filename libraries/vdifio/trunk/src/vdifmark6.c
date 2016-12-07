@@ -149,7 +149,7 @@ static void *mark6Reader(void *arg)
 
 	do
 	{
-		int v;
+		size_t v;
 
 		pthread_barrier_wait(&m6f->readBarrier);
 
@@ -224,6 +224,7 @@ static void *mark6Seeker(void *arg)
 	int targetBlock;
 	int slotIndex;
 	int i;
+	size_t v;
 
 	/*   1. wait for any ongoing reads to complete */
 	pthread_barrier_wait(&S->m6f->readBarrier);
@@ -252,8 +253,9 @@ static void *mark6Seeker(void *arg)
 			int deltaBlock;
 
 			fseeko(S->m6f->in, pos, SEEK_SET);
-			fread(&block, sizeof(int32_t), 1, S->m6f->in);
-
+			v = fread(&block, sizeof(int32_t), 1, S->m6f->in);
+			/* CJP Should check size of v */
+			
 			deltaBlock = block - targetBlock;
 
 			/* if it is within 4 blocks of the target and positioned earlier than that, then call it good enough */
@@ -327,6 +329,7 @@ int openMark6File(Mark6File *m6f, const char *filename)
 	Mark6Header header;
 	pthread_attr_t attr;
 	int slotIndex;
+	size_t v;
 
 	stat(filename, &m6f->stat);
 	m6f->in = fopen(filename, "r");
@@ -337,7 +340,13 @@ int openMark6File(Mark6File *m6f, const char *filename)
 		return -1;
 	}
 	m6f->fileName = strdup(filename);
-	fread(&header, sizeof(header), 1, m6f->in);
+	v = fread(&header, sizeof(header), 1, m6f->in);
+	if (v!=1)
+	{
+		deallocateMark6File(m6f);
+
+		return -2;
+	}
 	m6f->version = header.version;
 	m6f->blockHeaderSize = mark6BlockHeaderSize(header.version);
 	if(m6f->blockHeaderSize <= 0)

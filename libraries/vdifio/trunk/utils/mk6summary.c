@@ -41,6 +41,7 @@ void summarize(const char *fileName)
 	Mark6BlockHeader_ver2 *h;
 	int s;
 	vdif_header *v1;
+	size_t v;
 
 	in = fopen(fileName, "r");
 	if(in == 0)
@@ -50,7 +51,11 @@ void summarize(const char *fileName)
 		return;
 	}
 
-	fread(&H, sizeof(H), 1, in);
+	v = fread(&H, sizeof(H), 1, in); // CJP Never closed?
+	if (v<1) {
+	  fprintf(stderr, "Error reading mark6 header for %s\n", fileName);
+	  return;
+	}
 
 	printf("File: %s\n", fileName);
 	printMark6Header(&H);
@@ -69,7 +74,7 @@ void summarize(const char *fileName)
 
 	for(i = 0; ; ++i)
 	{
-		int v, j, n;
+		int j, n;
 		int nSize;
 
 		nSize = 0;
@@ -82,7 +87,7 @@ void summarize(const char *fileName)
 		v = fread(buffer+s, 1, h->wb_size-s, in);
 		if(v < s)
 		{
-			printf("Early EOF: only %d bytes read.  %d bytes expected.\n", v, h->wb_size-s);
+			printf("Early EOF: only %lu bytes read.  %d bytes expected.\n", v, h->wb_size-s);
 		}
 		for(j = 0; j < n; ++j)
 		{
@@ -102,6 +107,7 @@ void summarize(const char *fileName)
 		}
 	}
 
+	fclose(in);
 	free(buffer);
 }
 

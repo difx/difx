@@ -84,8 +84,15 @@ void summarizeFile(const char *fileName, int shortSum, int isMark6)
 		if(fileName[0] != '/' && isMark6 == 0)
 		{
 			char path[MaxFilenameLength];
-			getcwd(path, MaxFilenameLength);
-			snprintf(fullFileName, MaxFilenameLength, "%s/%s", path, fileName);
+			if (getcwd(path, MaxFilenameLength)==NULL)
+			{
+			  // CJP Maybe wrong behaviour or warning needed
+			  snprintf(fullFileName, MaxFilenameLength, "%s", fileName);
+			}
+			else
+			{
+			  snprintf(fullFileName, MaxFilenameLength, "%s/%s", path, fileName);
+			}
 		}
 		else
 		{
