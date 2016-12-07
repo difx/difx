@@ -481,7 +481,10 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       iss.clear(); //in case we hit the end of the line
 
       //grab all the coefficients
-      coefficients = new double[numcoefficients];
+      if(s > 0)
+      {
+        coefficients = new double[numcoefficients];
+      }
       for(int i=0;i<numcoefficients;i++)
       {
         if(i%3 == 0) {
