@@ -46,6 +46,18 @@ Ipp32f phase;
 Ipp32f *dly;
 Ipp8u *buf;
 IppsFIRSpec_32f *pSpec;
+#else
+typedef unsigned char  Ipp8u;
+typedef unsigned short Ipp16u;
+typedef unsigned int   Ipp32u;
+typedef signed char    Ipp8s;
+typedef signed short   Ipp16s;
+typedef signed int     Ipp32s;
+typedef float          Ipp32f;
+typedef __INT64        Ipp64s;
+typedef __UINT64       Ipp64u;
+typedef double         Ipp64f;
+typedef Ipp16s         Ipp16f;
 #endif
 
 #define SEED 48573
@@ -57,6 +69,7 @@ float gaussrand();
 int MeanStdDev(const float *src, int length, float *mean, float *StdDev);
 int pack2bit1chan(float **in, int off, char *out, float mean, float stddev, int len);
 int pack2bitNchan(float **in, int nchan, int off, char *out, float mean, float stddev, int len);
+int pack8bitNchan(float **in, int nchan, int off, char *out, float mean, float stddev, int len);
 void dayno2cal (int dayno, int year, int *day, int *month);
 double cal2mjd(int day, int month, int year);
 double tm2mjd(struct tm date);
@@ -105,7 +118,7 @@ int main (int argc, char * const argv[]) {
     {"tone", 1, 0, 'T'},
     {"nchan", 1, 0, 'n'},
     {"ntap", 1, 0, 'x'},
-    {"nthread", 1, 0, 'N'},
+    {"nbits", 1, 0, 'N'},
     {"complex", 0, 0, 'c'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
@@ -145,6 +158,7 @@ int main (int argc, char * const argv[]) {
       CASEINT('M', mjd);
       CASEINT('y', year);
       CASEINT('n', nchan);
+      CASEINT('N', nbits);
       CASEINT('x', ntap);
       CASEINT('F', framesize);
       CASEFLOAT('t', duration);
@@ -157,7 +171,8 @@ int main (int argc, char * const argv[]) {
       case 'h':
 	printf("Usage: generateVDIF [options]\n");
 	printf("  -bandwidth <BANWIDTH>     Channel bandwidth in MHz (64)\n");
-	printf("  -n/-nchan <N>             Number of  channels in stream\n");
+	printf("  -n/-nchan <N>             Number of channels in stream\n");
+	printf("  -N/-nbits <N>             Number of bits/sample (default 2)\n");
 	printf("  -F/-framesize <FRAMESIZE> VDIF framesize\n");
 	printf("  -t/-duration <DURATION>   Length of output, in seconds\n");
 	printf("  -T/-tone <TONE>           Frequency (MHz) of tone to insert\n");
@@ -216,8 +231,6 @@ int main (int argc, char * const argv[]) {
     exit(1);
   }
   frameperbuf = BUFSIZE*1024*1024/(samplesperframe*sizeof(float)*(nchan+1));
-  printf("DEBUG: frameperbuf=%d\n", frameperbuf);
-  printf("DEBUG: sampleperframe=%d\n", samplesperframe);
 
   if (duration==0) { // Just create BUFSIZE bytes
     nframe = frameperbuf;
@@ -231,15 +244,12 @@ int main (int argc, char * const argv[]) {
   int pRandGaussStateSize;
   ippsRandGaussGetSize_32f(&pRandGaussStateSize);
   pRandGaussState = (IppsRandGaussState_32f *)ippsMalloc_8u(pRandGaussStateSize);
-  printf("Allocated %d bytes\n", pRandGaussStateSize);
   ippsRandGaussInit_32f(pRandGaussState, 0.0, 1.0, SEED);
   scratch = ippsMalloc_32f(frameperbuf*samplesperframe);
   if (scratch==NULL) {
     fprintf(stderr, "Error allocating memory\n");
     exit(1);
   }
-  printf("Allocated %lu Mbytes for scratch\n", frameperbuf*samplesperframe*sizeof(Ipp32f)/1000/1000);
-
   phase = 0;
   int specSize;
   int bufsize;
@@ -252,7 +262,6 @@ int main (int argc, char * const argv[]) {
     exit(1);
   }
   buf = ippsMalloc_8u(bufsize);
-  printf("Allocated %d bytes for FIR\n", bufsize);
   status = ippsFIRGenBandpass_64f(0.02, 0.48, taps64, ntap, ippWinHamming, ippTrue, buf);
   if (status != ippStsNoErr) {
     fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
@@ -285,7 +294,6 @@ int main (int argc, char * const argv[]) {
       perror("Trying to allocate memory");
       exit(EXIT_FAILURE);
     }
-    printf("Allocated %lu Mbytes for orig data\n", frameperbuf*samplesperframe*sizeof(float)*cfact/1000/1000);
 
   }
 
@@ -295,7 +303,6 @@ int main (int argc, char * const argv[]) {
     exit(EXIT_FAILURE);
   }
   memset(framedata, 'Z', framesize);
-  printf("Allocated %d bytes for VDIF frame\n", framesize);
 
   double thismjd = currentmjd();
   int thisday, thismonth, thisyear;
@@ -332,7 +339,7 @@ int main (int argc, char * const argv[]) {
 
   while (nframe>0) {
     generateData(data, frameperbuf, samplesperframe, nchan, iscomplex, bandwidth, tone, &mean, &stdDev);
-
+    
     for (i=0; i<frameperbuf; i++) {
 
       if (nbits==2) {
@@ -343,6 +350,8 @@ int main (int argc, char * const argv[]) {
 	  status = pack2bitNchan(data, nchan, i*samplesperframe, framedata,  mean, stdDev, samplesperframe);
 	  if (status) exit(1);
 	}
+      } else if (nbits==8) {
+	status = pack8bitNchan(data, nchan, i*samplesperframe, framedata,  mean, stdDev, samplesperframe);
       } else {
 	printf("Unsupported number of bits\n");
 	exit(1);
@@ -404,6 +413,8 @@ double currentmjd () {
   struct tm *tim;
   struct timeval currenttime;
 
+  setenv("TZ", "", 1); /* Force mktime to return gmt not local time */
+  tzset();
   gettimeofday(&currenttime, NULL);
 
   tim = localtime(&currenttime.tv_sec);
@@ -445,7 +456,7 @@ int MeanStdDev(const float *src, int length, float *mean, float *StdDev) {
   return 0; 
 }
 
-#define F2BIT(f,j) {					\
+#define F2BIT(f,j) {						\
   if(f >= maxposThresh)  /* large positive */		\
     ch[j] = MAXPOS;					\
   else if(f <= maxnegThresh) /* large negative */	\
@@ -488,7 +499,7 @@ int pack2bit1chan(float **in, int off, char *out, float mean, float stddev, int 
 }
 
 int pack2bitNchan(float **in, int nchan, int off, char *out, float mean, float stddev, int len) {
-  // Should check 32bit "off" offset is enough bits
+  // Should check 31bit "off" offset is enough bits
   int i, j, n, k, ch[4];
   float maxposThresh, maxnegThresh;
   
@@ -511,6 +522,34 @@ int pack2bitNchan(float **in, int nchan, int off, char *out, float mean, float s
 	j++;
 	k = 0;
       }
+    }
+  }
+  return 0;
+}
+
+Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
+  x *= scale;
+  if (x>127) // Clip
+    x = 127;
+  else if (x<-127)
+    x = -127;
+  return lrintf(x-0.5);
+}
+
+
+int pack8bitNchan(float **in, int nchan, int off, char *out, float mean, float stddev, int len) {
+  // Should check 31bit "off" offset is enough bits
+  int i, j, n, k;
+
+  float scale = 10/stddev;
+
+  j = 0;
+  k = 0;
+  for (i=off;i<len+off;i++) {
+    for (n=0; n<nchan; n++) {
+      out[j] = scaleclip(in[n][i], scale);
+      out[j] ^= 0x80;
+      j++;
     }
   }
   return 0;
