@@ -2038,7 +2038,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			row = DifxParametersfind1(cp, row, "SOURCE %d PM DEC (ARCSEC/YR)", i);
 			D->source[i].pmDec = atoi(DifxParametersvalue(cp, row));
 			row = DifxParametersfind1(cp, row, "SOURCE %d PARALLAX (ARCSEC)", i);
-                        D->source[i].pmDec = atoi(DifxParametersvalue(cp, row));
+                        D->source[i].parallax = atoi(DifxParametersvalue(cp, row));
 			row = DifxParametersfind1(cp, row, "SOURCE %d PM EPOCH (MJD)", i);
                         D->source[i].pmEpoch = atoi(DifxParametersvalue(cp, row));
 		}
