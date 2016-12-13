@@ -270,13 +270,7 @@ int main (int argc, char * const argv[]) {
     fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
     exit(1);
   }
-  ippsFree(buf);
   ippsConvert_64f32f(taps64, taps, ntap);
-  for (i=0; i<ntap; i++) {
-    tapsC[i].re = taps64[i];
-    tapsC[i].im = 0;
-  }
-  ippsFree(taps64);
 
   // Real FIR filter
   status = ippsFIRSRGetSize (ntap, ipp32f, &specSize, &bufsize);
@@ -291,6 +285,20 @@ int main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  status = ippsFIRGenHighpass_64f(0.02, taps64, ntap, ippWinHamming, ippTrue, buf);
+  if (status != ippStsNoErr) {
+    fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
+    exit(1);
+  }
+  ippsFree(buf);
+  for (i=0; i<ntap; i++) {
+    tapsC[i].re = taps64[i];
+    tapsC[i].im = 0;
+  }
+  ippsFree(taps64);
+
+
+  
   // Complex FIR Filter
   status = ippsFIRSRGetSize (ntap, ipp32fc, &specSize, &bufsize2);
   if (status != ippStsNoErr) {
@@ -664,7 +672,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
   nsamp = nframe*samplesperframe;
 
   if (iscomplex) {
-    status = ippsTone_32fc((Ipp32fc*)scratch, nsamp, 0.05, tone/bandwidth, &phase, ippAlgHintFast);
+    status = ippsTone_32fc((Ipp32fc*)scratch, nsamp, 0.1, tone/bandwidth, &phase, ippAlgHintFast);
   } else {
     status = ippsTone_32f(scratch, nsamp, 0.05, tone/(bandwidth*2), &phase, ippAlgHintFast);
   }
@@ -678,7 +686,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
     status = ippsAdd_32f_I(scratch, data[n], nsamp);
 
     if (iscomplex) {
-      //ippsFIRSR_32fc((Ipp32fc*)data[n], (Ipp32fc*)data[n], nsamp/2, pcSpec, (Ipp32fc*)dly, (Ipp32fc*)dly,  buf);
+      ippsFIRSR_32fc((Ipp32fc*)data[n], (Ipp32fc*)data[n], nsamp, pcSpec, (Ipp32fc*)dly, (Ipp32fc*)dly,  buf);
     } else {
       ippsFIRSR_32f(data[n], data[n], nsamp, pSpec, dly, dly, buf);
     }
