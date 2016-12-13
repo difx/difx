@@ -46,6 +46,7 @@ Ipp32f phase;
 Ipp32f *dly;
 Ipp8u *buf;
 IppsFIRSpec_32f *pSpec;
+IppsFIRSpec_32fc *pcSpec;
 #else
 typedef unsigned char  Ipp8u;
 typedef unsigned short Ipp16u;
@@ -221,7 +222,7 @@ int main (int argc, char * const argv[]) {
     }
   }
   printf("Using framesize=%d\n", framesize);
-  int samplesperframe = framesize*8/completesample;
+  int samplesperframe = framesize*8/completesample*cfact; // Treat Re/Im of complex as seperate samples
   int framespersec = bytespersec/framesize;
 
   // Initialize memory
@@ -252,10 +253,11 @@ int main (int argc, char * const argv[]) {
   }
   phase = 0;
   int specSize;
-  int bufsize;
+  int bufsize, bufsize2;
 
   Ipp64f *taps64 = ippsMalloc_64f(ntap);
   Ipp32f *taps = ippsMalloc_32f(ntap);
+  Ipp32fc *tapsC = ippsMalloc_32fc(ntap);
   status = ippsFIRGenGetBufferSize(ntap, &bufsize);
   if (status != ippStsNoErr) {
     fprintf(stderr, "Error calling ippsFIRGenGetBufferSize (%s)\n", ippGetStatusString(status));
@@ -269,8 +271,13 @@ int main (int argc, char * const argv[]) {
   }
   ippsFree(buf);
   ippsConvert_64f32f(taps64, taps, ntap);
+  for (i=0; i<ntap; i++) {
+    tapsC[i].re = taps64[i];
+    tapsC[i].im = 0;
+  }
   ippsFree(taps64);
 
+  // Real FIR filter
   status = ippsFIRSRGetSize (ntap, ipp32f, &specSize, &bufsize);
   if (status != ippStsNoErr) {
     fprintf(stderr, "Error Getting filter initialisation sizes (%s)\n", ippGetStatusString(status));
@@ -282,10 +289,24 @@ int main (int argc, char * const argv[]) {
     fprintf(stderr, "Error Initialising filter (%s)\n", ippGetStatusString(status));
     exit(1);
   }
-  buf = ippsMalloc_8u(bufsize);
 
-  dly = ippsMalloc_32f(ntap-1);
-  ippsZero_32f(dly, ntap-1);
+  // Complex FIR Filter
+  status = ippsFIRSRGetSize (ntap/2, ipp32fc, &specSize, &bufsize2);
+  if (status != ippStsNoErr) {
+    fprintf(stderr, "Error Getting filter initialisation sizes (%s)\n", ippGetStatusString(status));
+    exit(1);
+  }
+  pcSpec = (IppsFIRSpec_32fc*)ippsMalloc_8u(specSize);
+  status = ippsFIRSRInit_32fc(tapsC, ntap, ippAlgAuto, pcSpec);
+  if (status != ippStsNoErr) {
+    fprintf(stderr, "Error Initialising filter (%s)\n", ippGetStatusString(status));
+    exit(1);
+  }
+
+  if (bufsize2 > bufsize) bufsize = bufsize2;
+  buf = ippsMalloc_8u(bufsize);
+  dly = ippsMalloc_32f((ntap-1)*2); // *2 for complex - larger than necessary for real case
+  ippsZero_32f(dly, (ntap-1)*2);
 #endif
 
   for (i=0;i<nchan;i++) {
@@ -294,7 +315,6 @@ int main (int argc, char * const argv[]) {
       perror("Trying to allocate memory");
       exit(EXIT_FAILURE);
     }
-
   }
 
   status = posix_memalign((void**)&framedata, 8, framesize);
@@ -636,8 +656,12 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
   *mean = 0;
   *stdDev = 0;
   nsamp = nframe*samplesperframe;
-  
-  status = ippsTone_32f(scratch, nsamp, 0.05, tone/(bandwidth*2), &phase, ippAlgHintFast);
+
+  if (iscomplex) {
+    status = ippsTone_32fc((Ipp32fc*)scratch, nsamp/2, 0.05, tone/bandwidth, &phase, ippAlgHintFast);
+  } else {
+    status = ippsTone_32f(scratch, nsamp, 0.05, tone/(bandwidth*2), &phase, ippAlgHintFast);
+  }
   if (status!=ippStsNoErr) {
     fprintf(stderr, "Error generating tone (%s)\n", ippGetStatusString(status));
     exit(1);
@@ -647,7 +671,11 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
     status = ippsRandGauss_32f(data[n], nsamp, pRandGaussState);
     status = ippsAdd_32f_I(scratch, data[n], nsamp);
 
-    ippsFIRSR_32f(data[n], data[n], nsamp,  pSpec,  dly, dly,  buf);
+    if (iscomplex) {
+      //ippsFIRSR_32fc((Ipp32fc*)data[n], (Ipp32fc*)data[n], nsamp/2, pcSpec, (Ipp32fc*)dly, (Ipp32fc*)dly,  buf);
+    } else {
+      ippsFIRSR_32f(data[n], data[n], nsamp/2, pSpec, dly, dly, buf);
+    }
 
     status = ippsMeanStdDev_32f(data[n], nsamp, &thismean, &thisStdDev, ippAlgHintFast);
     *mean += thismean;
