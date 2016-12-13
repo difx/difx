@@ -68,9 +68,9 @@ double currentmjd();
 void mjd2cal(double mjd, int *day, int *month, int *year, double *ut);
 float gaussrand();
 int MeanStdDev(const float *src, int length, float *mean, float *StdDev);
-int pack2bit1chan(float **in, int off, char *out, float mean, float stddev, int len);
-int pack2bitNchan(float **in, int nchan, int off, char *out, float mean, float stddev, int len);
-int pack8bitNchan(float **in, int nchan, int off, char *out, float mean, float stddev, int len);
+int pack2bit1chan(Ipp32f **in, int off, Ipp8u *out, float mean, float stddev, int len);
+int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
+int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
 void dayno2cal (int dayno, int year, int *day, int *month);
 double cal2mjd(int day, int month, int year);
 double tm2mjd(struct tm date);
@@ -311,7 +311,7 @@ int main (int argc, char * const argv[]) {
 #endif
 
   for (i=0;i<nchan;i++) {
-    data[i] = ippsMalloc_32f(frameperbuf*samplesperframe);
+    data[i] = ippsMalloc_32f(frameperbuf*samplesperframe*cfact);
     if (data[i]==NULL) {
       perror("Trying to allocate memory");
       exit(EXIT_FAILURE);
@@ -490,7 +490,7 @@ int MeanStdDev(const float *src, int length, float *mean, float *StdDev) {
 }
 
 
-int pack2bit1chan(float **in, int off, char *out, float mean, float stddev, int len) {
+int pack2bit1chan(Ipp32f **in, int off, Ipp8u *out, float mean, float stddev, int len) {
   int i, j, ch[4];
   float maxposThresh, maxnegThresh, *f;
   
@@ -520,7 +520,7 @@ int pack2bit1chan(float **in, int off, char *out, float mean, float stddev, int 
   return 0;
 }
 
-int pack2bitNchan(float **in, int nchan, int off, char *out, float mean, float stddev, int len) {
+int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len) {
   // Should check 31bit "off" offset is enough bits
   int i, j, n, k, ch[4];
   float maxposThresh, maxnegThresh;
@@ -559,7 +559,7 @@ Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
 }
 
 
-int pack8bitNchan(float **in, int nchan, int off, char *out, float mean, float stddev, int len) {
+int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len) {
   // Should check 31bit "off" offset is enough bits
   int i, j, n, k;
 
