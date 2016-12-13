@@ -85,12 +85,13 @@ void generateData(float **data, int nframe, int sampesperframe, int nchan, int i
 #define MAXNEG          0
 
 int main (int argc, char * const argv[]) {
-  char *filename, *framedata, msg[MAXSTR];
+  char *filename, msg[MAXSTR];
   int i, frameperbuf, status, outfile, opt, tmp;
   uint64_t nframe;
   float **data, ftmp, stdDev, mean;
   ssize_t nr;
   vdif_header header;
+  Ipp8u *framedata;
 
   int nbits = 2;
   int bandwidth = 64;
@@ -226,7 +227,7 @@ int main (int argc, char * const argv[]) {
   int framespersec = bytespersec/framesize;
 
   // Initialize memory
-  data = malloc(nchan*sizeof(float*));
+  data = (Ipp32f**)malloc(nchan*sizeof(Ipp32f*));
   if (data==NULL) {
     perror("Memory allocation problem\n");
     exit(1);
@@ -291,7 +292,7 @@ int main (int argc, char * const argv[]) {
   }
 
   // Complex FIR Filter
-  status = ippsFIRSRGetSize (ntap/2, ipp32fc, &specSize, &bufsize2);
+  status = ippsFIRSRGetSize (ntap, ipp32fc, &specSize, &bufsize2);
   if (status != ippStsNoErr) {
     fprintf(stderr, "Error Getting filter initialisation sizes (%s)\n", ippGetStatusString(status));
     exit(1);
@@ -310,19 +311,19 @@ int main (int argc, char * const argv[]) {
 #endif
 
   for (i=0;i<nchan;i++) {
-    status = posix_memalign((void**)&data[i], 8, frameperbuf*samplesperframe*sizeof(float)*cfact);
-    if (status) {
+    data[i] = ippsMalloc_32f(frameperbuf*samplesperframe);
+    if (data[i]==NULL) {
       perror("Trying to allocate memory");
       exit(EXIT_FAILURE);
     }
   }
 
-  status = posix_memalign((void**)&framedata, 8, framesize);
-  if (status) {
+  framedata = ippsMalloc_8u(framesize);
+  if (framedata==NULL) {
     perror("Trying to allocate memory");
     exit(EXIT_FAILURE);
   }
-  memset(framedata, 'Z', framesize);
+  ippsSet_8u('Z', framedata, framesize);
 
   double thismjd = currentmjd();
   int thisday, thismonth, thisyear;
