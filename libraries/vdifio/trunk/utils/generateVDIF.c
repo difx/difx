@@ -222,7 +222,7 @@ int main (int argc, char * const argv[]) {
     }
   }
   printf("Using framesize=%d\n", framesize);
-  int samplesperframe = framesize*8/completesample*cfact; // Treat Re/Im of complex as seperate samples
+  int samplesperframe = framesize*8/completesample; // Treat Re/Im of complex as seperate samples
   int framespersec = bytespersec/framesize;
 
   // Initialize memory
@@ -231,7 +231,7 @@ int main (int argc, char * const argv[]) {
     perror("Memory allocation problem\n");
     exit(1);
   }
-  frameperbuf = BUFSIZE*1024*1024/(samplesperframe*sizeof(float)*(nchan+1));
+  frameperbuf = BUFSIZE*1024*1024/(samplesperframe*sizeof(float)*cfact*(nchan+1));
 
   if (duration==0) { // Just create BUFSIZE bytes
     nframe = frameperbuf;
@@ -246,7 +246,7 @@ int main (int argc, char * const argv[]) {
   ippsRandGaussGetSize_32f(&pRandGaussStateSize);
   pRandGaussState = (IppsRandGaussState_32f *)ippsMalloc_8u(pRandGaussStateSize);
   ippsRandGaussInit_32f(pRandGaussState, 0.0, 1.0, SEED);
-  scratch = ippsMalloc_32f(frameperbuf*samplesperframe);
+  scratch = ippsMalloc_32f(frameperbuf*samplesperframe*cfact);
   if (scratch==NULL) {
     fprintf(stderr, "Error allocating memory\n");
     exit(1);
@@ -364,14 +364,14 @@ int main (int argc, char * const argv[]) {
 
       if (nbits==2) {
 	if (nchan==1) {
-	  status = pack2bit1chan(data, i*samplesperframe, framedata,  mean, stdDev, samplesperframe);
+	  status = pack2bit1chan(data, i*samplesperframe*cfact, framedata,  mean, stdDev, samplesperframe*cfact);
 	  if (status) exit(1);
 	} else {
-	  status = pack2bitNchan(data, nchan, i*samplesperframe, framedata,  mean, stdDev, samplesperframe);
+	  status = pack2bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean, stdDev, samplesperframe*cfact);
 	  if (status) exit(1);
 	}
       } else if (nbits==8) {
-	status = pack8bitNchan(data, nchan, i*samplesperframe, framedata,  mean, stdDev, samplesperframe);
+	status = pack8bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean, stdDev, samplesperframe*cfact);
       } else {
 	printf("Unsupported number of bits\n");
 	exit(1);
@@ -380,6 +380,7 @@ int main (int argc, char * const argv[]) {
       nr = write(outfile, &header, VDIF_HEADER_BYTES);
       if (nr == -1) {
 	sprintf(msg, "Writing to %s:", filename);
+       
 	perror(msg);
 	exit(1);
       } else if (nr != VDIF_HEADER_BYTES) {
@@ -648,17 +649,21 @@ double tm2mjd(struct tm date) {
 
 void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
 		  int iscomplex, int bandwidth, float tone, float *mean, float *stdDev) {
-  int i, n, nsamp;
+  int i, n, nsamp, cfact;
   float s;
   Ipp32f thismean, thisStdDev;
   IppStatus status;
-
+  if (iscomplex)
+    cfact = 2;
+  else
+    cfact = 1;
+  
   *mean = 0;
   *stdDev = 0;
   nsamp = nframe*samplesperframe;
 
   if (iscomplex) {
-    status = ippsTone_32fc((Ipp32fc*)scratch, nsamp/2, 0.05, tone/bandwidth, &phase, ippAlgHintFast);
+    status = ippsTone_32fc((Ipp32fc*)scratch, nsamp, 0.05, tone/bandwidth, &phase, ippAlgHintFast);
   } else {
     status = ippsTone_32f(scratch, nsamp, 0.05, tone/(bandwidth*2), &phase, ippAlgHintFast);
   }
@@ -668,16 +673,16 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
   }
 
   for (n=0; n<nchan; n++) {
-    status = ippsRandGauss_32f(data[n], nsamp, pRandGaussState);
+    status = ippsRandGauss_32f(data[n], nsamp*cfact, pRandGaussState);
     status = ippsAdd_32f_I(scratch, data[n], nsamp);
 
     if (iscomplex) {
       //ippsFIRSR_32fc((Ipp32fc*)data[n], (Ipp32fc*)data[n], nsamp/2, pcSpec, (Ipp32fc*)dly, (Ipp32fc*)dly,  buf);
     } else {
-      ippsFIRSR_32f(data[n], data[n], nsamp/2, pSpec, dly, dly, buf);
+      ippsFIRSR_32f(data[n], data[n], nsamp, pSpec, dly, dly, buf);
     }
 
-    status = ippsMeanStdDev_32f(data[n], nsamp, &thismean, &thisStdDev, ippAlgHintFast);
+    status = ippsMeanStdDev_32f(data[n], nsamp*cfact, &thismean, &thisStdDev, ippAlgHintFast);
     *mean += thismean;
     *stdDev += thisStdDev;
   }
