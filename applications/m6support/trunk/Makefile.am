@@ -26,9 +26,7 @@ endif
 
 dist_noinst_HEADERS = vdif.h vdif_epochs.h vdif_time_util.h \
 	sg_access.h sc_stats.h exthdr.h m6scmodule.h $(vdifuse_h)
-
 test_scripts = hammer.sh hammerplot.sh
-dist_bin_SCRIPTS = $(test_scripts)
 
 check_PROGRAMS =
 TESTS = 
@@ -55,7 +53,7 @@ vdifuse_CFLAGS = $(FUSE_CFLAGS)
 vdifuse_LDADD = $(FUSE_LIBS)
 
 bin_PROGRAMS = scan_check vdif_time $(vdifuse)
-dist_bin_SCRIPTS = $(prepone)
+dist_bin_SCRIPTS = $(prepone) $(test_scripts)
 
 CLEANFILES = 
 DISTCLEANFILES = depcomp install-sh test-driver missing compile

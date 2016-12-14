@@ -14,7 +14,8 @@ This script populates mount points for one scan in \$home
 and it assumes a pair of module subgroups (12 and 34) with data
 to be found in /mnt/disks/\$s/?/\$data, where \$s is taken from
 an environment variable \$sm (defaults to '12 34') and \$data
-defaults to 'data'.
+defaults to 'data'.  If you've copied the data elsewhere set
+\$mount as a replacement for '/mnt/disks'.
 
 Here the expression is some character sequence (RE) that matches
 the scan(s) of interest.  The packet rate is assumed 125000 pkts/sec
@@ -33,6 +34,7 @@ for more information about that.  To recap on the environment variables:
     home    where to work (\$HOME/difx/data)
     sm      the list of sub-module groups ('12 34')
     data    an alternate scatter-gather dir name ('data')
+    mount   alternate mount points ('/mnt/disks')
 
 A filelist for use with vex2difx is generated in <something>.flist.
 "
@@ -45,6 +47,7 @@ cd $home
 
 [ -z "$sm"   ] && sm='12 34'
 [ -z "$data" ] && data='data'
+[ -z "$mount" ] && mount='/mnt/disks'
 expr=$1
 rate=${2-'125000'}
 save=${3-'true'}
@@ -77,9 +80,9 @@ do
     } || {
         echo creating mod-$m-$expr
         echo vdifuse $trop -a mod-$m-$expr -xm6sg -xrate=$rate \\ && echo \
-            -xinclpatt=$expr $opts ./mnt$m /mnt/disks/[$m]/?/$data
+            -xinclpatt=$expr $opts ./mnt$m $mount/[$m]/?/$data
         eval vdifuse $trop -a mod-$m-$expr -xm6sg -xrate=$rate \
-            -xinclpatt=$expr $opts ./mnt$m /mnt/disks/[$m]/?/$data
+            -xinclpatt=$expr $opts ./mnt$m $mount/[$m]/?/$data
         # make filelist
         echo \
         vdifuse -m mod-$m-$expr -xlist=$home/mnt$m \> mod-$m-$expr.flist
