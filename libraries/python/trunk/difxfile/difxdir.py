@@ -27,9 +27,47 @@
 __author__="Helge Rottmann"
 
 import os
+import math
 import os.path
 from collections import deque
 from string import upper
+from datetime import datetime, timedelta
+
+
+def mjd_to_date(mjd):
+    jd = float(mjd) + 0.5 + 2400000.5
+    
+    F, I = math.modf(jd)
+    I = int(I)
+    
+    A = math.trunc((I - 1867216.25)/36524.25)
+    
+    if I > 2299160:
+        B = I + 1 + A - math.trunc(A / 4.)
+    else:
+        B = I
+        
+    C = B + 1524
+    
+    D = math.trunc((C - 122.1) / 365.25)
+    
+    E = math.trunc(365.25 * D)
+    
+    G = math.trunc((C - E) / 30.6001)
+    
+    day = C - E + F - math.trunc(30.6001 * G)
+    
+    if G < 13.5:
+        month = G - 1
+    else:
+        month = G - 13
+        
+    if month > 2.5:
+        year = D - 4716
+    else:
+        year = D - 4715
+        
+    return year, month, day
 
 def buildDirFilename(dirPath, vsn):
     
@@ -46,6 +84,9 @@ class DifxDir(object):
         self.stationCode = ""
         self.scans = deque()
         self.experiments = deque()
+        self.expStart = {}
+        self.expStop = {}
+	self.expEnd = {}
         self.fileDate = 0.0
         self.parseErrors = 0
         
@@ -113,12 +154,26 @@ class DifxDir(object):
                         scan.scanName = nameSplit[2] + "_" + nameSplit[3]
                     else:
                         self.parseErrors += 1
-                   
+
+		    # construct datetime from MJD and seconds within a day
+		    y,M,d = mjd_to_date(scan.startMJD)
+                    m, s = divmod(int(scan.startSec), 60)
+                    h, m = divmod(m, 60)
+                    date = datetime(int(y),int(M),int(d),h,m,s)
+       #             print date
                   
                     if (scan.expName != ""):
+			# new experiment found
                         if (scan.expName not in self.experiments):
                             self.experiments.append(scan.expName)
-                    
+			    self.expStart[scan.expName] = date
+			    self.expStop[scan.expName] = date
+			else:
+			    if date < self.expStart[scan.expName]:
+				self.expStart[scan.expName] = date
+			    elif date > self.expStop[scan.expName]:
+				self.expStop[scan.expName] = date + timedelta(0,float(scan.scanDuration))
+			    
                     if (len(scan.stationCode) == 2) and (len(self.stationCode) == 0):
                         self.stationCode = scan.stationCode
     
@@ -172,6 +227,24 @@ class DifxDir(object):
         '''
         return(self.experiments)
     
+    def getExperimentStartDatetime(self, expCode):
+	''' Returns the datetime of the first scan of the given experiment
+	found in the module .dir listing.
+	'''
+	if expCode in self.expStart:
+		return(self.expStart[expCode])
+	else:
+		return(None)
+
+    def getExperimentStopDatetime(self, expCode):
+	''' Returns the datetime (including the scan duration) of the last scan of the given experiment
+	found in the module .dir listing.
+	'''
+	if expCode in self.expStop:
+		return(self.expStop[expCode])
+	else:
+		return(None)
+
     def getParseErrorCount(self):
         '''
         Returns the number of lines in the module directory that
