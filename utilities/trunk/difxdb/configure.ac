@@ -14,4 +14,6 @@ AC_OUTPUT([ \
 	getmodules/Makefile \
 	getexplist/Makefile \
 	difxdbModule/Makefile \
+	difxdbTapelog/Makefile \
+	difxdbInventory/Makefile \
 ])
