@@ -91,34 +91,40 @@ if __name__ == "__main__":
 		sys.exit
 
 	sum = 0
-	count = 1
+	count = 0
+	station = 0
         lastStationCode = ""
 	if (experiment is not None):
                 sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
-		print "$ TAPELOG_OBS;"
+		print "$TAPELOG_OBS;"
 		
 		for module in sortedModules:
 			if module.stationCode != lastStationCode:
+				if station != 0:
+					print "enddef;"
+					
 				print "def " + module.stationCode + ";"
+
 				lastStationCode = module.stationCode
-				count = 1
+				count = 0
+				station += 1
 
 			dirFile = DifxDir(os.getenv("MARK5_DIR_PATH"), module.vsn)
 			if not dirFile.getExperimentStartDatetime(upper(expCode)):
 				start = "UNKNOWN"
 			else:
-				start = dirFile.getExperimentStartDatetime(upper(expCode)).strftime("%Yy%jy%Hh%Mm%Ss")
+				start = dirFile.getExperimentStartDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
 			if not dirFile.getExperimentStopDatetime(upper(expCode)) is not None:
 				stop = "UNKNOWN"
 			else:
-				stop = dirFile.getExperimentStopDatetime(upper(expCode)).strftime("%Yy%jy%Hh%Mm%Ss")
+				stop = dirFile.getExperimentStopDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
 			
 			print "VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop)
 			count += 1
 
 
-		#print "--------------------------------------------"
-		#print "Total capacity: ", sum, "GB", " on", count , "modules"
+		if station > 0:
+			print "enddef;"
         
     
     except Exception as e:
