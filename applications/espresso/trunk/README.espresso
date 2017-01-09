@@ -7,10 +7,10 @@ To set up you need to carry out a few steps.
 contain a list of all your cluster nodes. Indicate the areas where baseband
 data may be stored on those nodes.
 
-2) Ensure the following two environment variables are set. $CORR_HOSTS should
-point to the corr_hosts.txt file and $CORR_DATA should point to the data area
-where you want the correlator output data to end up. Add these to your .bashrc
-or similar:
+2) Ensure the following two environment variables are set. $DIFX_MACHINES
+should point to your version of the corr_hosts.txt file and $CORR_DATA should
+point to the data area where you want the correlator output data to end up. Add
+these to your .bashrc or similar:
 
 export DIFX_MACHINES=/home/corr/corr_hosts.txt
 export CORR_DATA=/data/corr/corrdat/
@@ -21,17 +21,17 @@ export CORR_DATA=/data/corr/corrdat/
 this will simply copy the python scripts to your DiFX installation's bin
 directory.
 
-4) The system will force you to enter a comment after every correlation run. By
-default it will open vim to let you enter the comment. If you prefer to use
-another editor then set the $EDITOR environment variable.
+4) The system will force you to enter a comment before and after every
+correlation run. By default it will open vim to let you enter the comment. If
+you prefer to use another editor then set the $EDITOR environment variable.
 
 ---------------------------------------------------------------
 
 Part of espresso's job is to find and sort the baseband data on your cluster.
 To enable this you must bear a couple of things in mind.
 
-1) The root of the data storage areas is defined in the $CORR_HOSTS file. Any
-baseband data should be stored in a subdirectory of one of the data areas
+1) The root of the data storage areas is defined in the $DIFX_MACHINES file.
+Any baseband data should be stored in a subdirectory of one of the data areas
 defined there.
 
 2) When loading the baseband data, data from each telescope should be stored in
@@ -56,4 +56,4 @@ for reasonable naming conventions, but you should ensure that it is so.
 For more information on the full suite of scripts, see the documentation on the DiFX wiki: http://cira.ivec.org/dokuwiki/doku.php/difx/documentation
 
 Bugs and feature requests should be sent to Cormac Reynolds
-(c.reynolds@curtin.edu.au) or submitted to the DiFX 'trac' bug tracking tool.
+(cormac.reynolds@csiro.au) or submitted to the DiFX 'trac' bug tracking tool.
