@@ -1896,6 +1896,11 @@ def svnupdate(origComps, params, args, verbose, pretend):
 	else:
 		svnRev = ''
 
+	if environ.has_key('SVN_USER'):
+		user = '--username %s' % environ['SVN_USER']
+	else:
+		user = ''
+	
 	for comp in comps:
 		path = srcDir + comp[0] + '/'
 		if verbose > 0:
@@ -1905,7 +1910,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 
 			if url == 'https://svn.atnf.csiro.au/difx/applications/gui/trunk/guiServer':
 				chdir(srcDir + '/' + comp[0])
-				cmd = 'svn switch %s' % comp[1]
+				cmd = 'svn switch %s %s' % (user, comp[1])
 				execute(cmd, verbose, pretend)
 
 			else:
@@ -1914,7 +1919,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 					badRepositories.append('%s %s' % (comp[0], path))
 		else:
 			chdir(srcDir)
-			cmd = 'svn co %s %s %s' % (svnRev, comp[1], comp[0])
+			cmd = 'svn co %s %s %s %s' % (svnRev, user, comp[1], comp[0])
 			execute(cmd, verbose, pretend)
 	
 	if len(badRepositories) > 0:
@@ -1924,7 +1929,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 		print 'Please remove these directories and try again taking care to preserve any local changes you may have made'
 	elif updatePaths != '':
 		chdir(srcDir)
-		cmd = 'svn update %s %s' %(svnRev, updatePaths)
+		cmd = 'svn update %s %s %s' % (svnRev, user, updatePaths)
 		execute(cmd, verbose, pretend)
 
 def fromtar(origComps, params, args, verbose, pretend):
