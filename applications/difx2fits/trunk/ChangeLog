@@ -11,6 +11,7 @@ Version 3.5.0
 * Lynn Matthews reported a problem with AN tables when performing VBGLU.  Problem was found to be populating POLCALA and POLCALB arrays witn NOPCAL=0, causing confusion in AIPS.  Fixed.
 * Fix jobmatrix output when subneting and/or given difx files not in time order
 * Adding support for taking union of frequency setups; depends on incomplete implementation in difxio
+* Don't raise a warning for a normal case where the sniffer buffer can be breached by one element.  Just ignore it and move on.
 
 Version 3.4.0
 * Add command line option --primary-band.  This causes a keyword to be added to the output FITS file.  Intended for VLITE.

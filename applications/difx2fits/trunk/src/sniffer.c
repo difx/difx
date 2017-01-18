@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -75,7 +75,7 @@ struct _Sniffer
 	int *fitsSourceId2SourceId;
 };
 
-void resetAccumulator(Accumulator *A)
+static void resetAccumulator(Accumulator *A)
 {
 	int i, t;
 
@@ -95,7 +95,7 @@ void resetAccumulator(Accumulator *A)
 	A->mjdCount = 0;
 }
 
-Accumulator *newAccumulatorArray(Sniffer *S, int n)
+static Accumulator *newAccumulatorArray(Sniffer *S, int n)
 {
 	Accumulator *A;
 	int a;
@@ -134,7 +134,7 @@ Accumulator *newAccumulatorArray(Sniffer *S, int n)
 	return A;
 }
 
-void deleteAccumulatorArray(Accumulator *A, int n)
+static void deleteAccumulatorArray(Accumulator *A, int n)
 {
 	int a;
 
@@ -466,7 +466,7 @@ void deleteSniffer(Sniffer *S)
 	}
 }
 
-double peakup(double peak[3], int i, int n, double w)
+static double peakup(double peak[3], int i, int n, double w)
 {
 	double d, f;
 
@@ -962,9 +962,16 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 
 	index = (mjd - A->mjdStart)/(S->deltaT/86400.0);
 
-	if(index < 0 || index >= A->nTime)
+	if(index < 0 || index > A->nTime)
 	{
-		fprintf(stderr, "Developer Error: Sniffer: bad time slot for mjd=%14.6f index=%d (max index expected=%d).  Don't worry!  This is not a critical problem and should not have any impact on correctness or completeness of data, but should be reported.\n", mjd, index, A->nTime-1);
+		fprintf(stderr, "Developer Error: Sniffer: bad time slot for mjd=%14.6f index=%d (max index expected=%d).  This is not a critical problem and should not have any impact on correctness or completeness of data, but should be reported.\n", mjd, index, A->nTime-1);
+
+		return -2;
+	}
+
+	if(index == A->nTime)
+	{
+		/* This is a rare case where the number of intervals containing data is greater than expected by one.  Not serious.  Don't raise a stink, just move on... */
 
 		return -1;
 	}
