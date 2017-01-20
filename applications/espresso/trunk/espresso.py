@@ -121,9 +121,9 @@ def make_new_runfiles(
 
 
 def parse_joblistfile(joblistfilename, speedup=1.0):
-    # get the full list of jobs from the joblist file
-    # Return a dictionary. Keys are the job names. Values are the stations in
-    # the job
+    # get the full list of jobs from the joblist file Return a dictionary. Keys
+    # are the job names. For each jobname record a list of stations under key
+    # 'stations' and a list of job length under key 'joblen'
     joblistfile = open(joblistfilename).readlines()
 
     joblistfile.pop(0)
@@ -177,18 +177,21 @@ def parse_binconfig(binconfigfilename):
 
 
 def run_lbafilecheck(
-        datafilename, stations, computehead, no_rmaps_seq, interactive):
+        datafilename, stations, computehead, no_rmaps_seq, interactive, 
+        ntasks_per_node):
     # run lbafilecheck creating machines and .threads files for this job
     stations = stations.strip()
     stations = re.sub(r"\s+", ",", stations)
     stations = "'" + stations + "'"
-    options = ""
+    #options = ""
+    options = " ".join(["--ntasks_per_node", str(ntasks_per_node)])
     if computehead:
-        options += " -H "
+        options = " ".join([options, "-H"])
     if no_rmaps_seq:
-        options += " -M "
+        options = " ".join([options,"-M"])
     if not interactive:
-        options += " -n "
+        options = " ".join([options, "-n"])
+
     command = " ".join(
             ["lbafilecheck.py -F", options, "-s", stations, datafilename])
     print command
@@ -283,8 +286,50 @@ def wait_for_file(filename):
     print filename, "found!"
 
 
+def check_batch():
+    """Determine batch commands to use based on environment"""
+    if espressolib.which("sbatch"):
+        batch_launch = "sbatch"
+        batch_q = "squeue -n"
+        batch_cancel = "scancel -n"
+        batch_sep = ","
+    elif espressolib.which("qstat"):
+        batch_launch = "qsub"
+        batch_q = "qstat"
+        batch_cancel = "canceljob"
+        batch_sep = " "
+    else:
+        raise Exception("No sbatch or qsub found in path!")
+
+    return batch_launch, batch_q, batch_cancel, batch_sep
+
+
+def get_jobids(jobnames, batchenv):
+    """PBS commands only take job ids, not job names. Must translate. Slurm
+    commands can use the job names, so no translation required"""
+
+    jobids = []
+    if batchenv == "sbatch":
+        jobids = jobnames
+    elif batchenv == "qsub":
+        for jobname in jobnames:
+            command = "qselect -N {0}".format(jobname)
+            jobid = subprocess.Popen(
+                    command, stdout=subprocess.PIPE,
+                    shell=True).communicate()[0]
+            jobid = jobid.strip()
+            jobids.append(jobid)
+    
+    return jobids
+
+
 def run_batch(corrjoblist, outdir):
     """Run jobs in a batch enviroment"""
+
+    # get the batch commands for the slurm or pbs
+    batch_launch, batch_q, batch_cancel, batch_sep = check_batch()
+
+    jobids = get_jobids(sorted(corrjoblist.keys()), batch_launch)
 
     # start the correlator log
     errormon_log = "./log"
@@ -312,8 +357,7 @@ def run_batch(corrjoblist, outdir):
     # submit all the jobs to the batch scheduler
     for jobname in sorted(corrjoblist.keys()):
         try:
-            runfile = jobname
-            runfile = "sbatch ./run_" + runfile
+            runfile = "{0} ./run_{1}".format(batch_launch, jobname)
             print "starting the correlator with:", runfile
             subprocess.check_call(
                     runfile, shell=True, stdout=sys.stdout, env=espresso_env)
@@ -322,8 +366,7 @@ def run_batch(corrjoblist, outdir):
 
     # Just wait until the jobs have completed. Operator hits ^C to progress.
     # Enter will provide queue report.
-    queue_command = (
-            " ".join(["squeue", "-n "]) + ",".join(sorted(corrjoblist.keys())))
+    queue_command = " ".join([batch_q, batch_sep.join(jobids)])
     while True:
         try:
             #command = ['squeue', '-u', '$USER']
@@ -337,10 +380,10 @@ def run_batch(corrjoblist, outdir):
 
             raw_input(
                     "Jobs submitted - hit ^C when all jobs have completed."
-                    + " Hit return to see list of running jobs.")
+                    " Hit return to see list of running jobs.")
         except KeyboardInterrupt:
-            for jobname in sorted(corrjoblist.keys()):
-                command = " ".join(["scancel", "-n", jobname])
+            for jobname in jobids:
+                command = " ".join([batch_cancel, jobname])
                 print command
                 subprocess.check_call(command, stdout=sys.stdout, shell=True)
             break
@@ -443,7 +486,7 @@ parser.add_option(
         help="Correlate all jobs produced by vex2difx for the experiment" 
         " specified (no other arguments required)")
 parser.add_option(
-        "--computehead", "-H",
+        "--nocomputehead", "-H",
         dest="computehead", action="store_false", default=True,
         help="Don't Use head and datastream nodes as compute nodes")
 parser.add_option(
@@ -461,7 +504,7 @@ parser.add_option(
 parser.add_option(
         "--interactive", "-i",
         dest="interactive", action="store_true", default=False,
-        help="Run interactively, else assume slurm batch jobs")
+        help="Run interactively, else assume slurm/pbs batch jobs")
 parser.add_option(
         "--jobtime", "-j",
         type="str", dest="jobtime", default=None,
@@ -471,7 +514,13 @@ parser.add_option(
 parser.add_option(
         "--speedup", "-s",
         type="float", dest="predicted_speedup", default=1.0,
-        help="Predicted speedup factor to determine job run time. Default=%default")
+        help="Predicted speedup factor to determine job run time."
+        " Default=%default")
+parser.add_option(
+        "--ntasks_per_node",
+        type="int", dest="ntasks_per_node", default=None,
+        help="Number of MPI processes per node. This is for testing purposes" 
+        " on batch systems only!")
 
 (options, args) = parser.parse_args()
 
@@ -481,6 +530,10 @@ if options.testjob and options.clockjob:
 if len(args) < 1 and not options.expt_all:
     parser.print_help()
     parser.error("Give job name(s)")
+
+# multiple tasks per node only makes sense with computehead=true
+if options.ntasks_per_node > 1:
+    options.computehead = True
 
 # Determine the name of the correlator pass from the first jobname or the -a
 # switch
@@ -682,23 +735,28 @@ os.environ["DIFX_MESSAGE_PORT"] = str(difx_message_port)
 # create the mpi files for each job
 for jobname in sorted(corrjoblist.keys()):
     # run lbafilecheck to get the new machines and .threads files
+
+    ntasks_per_node = 1
+    if options.ntasks_per_node:
+        ntasks_per_node = options.ntasks_per_node
+    elif (not options.interactive) and options.computehead:
+        ntasks_per_node = 2
+
     datafilename = expname + ".datafiles"
     run_lbafilecheck(
             datafilename, corrjoblist[jobname]["stations"],
-            options.computehead, options.no_rmaps_seq, options.interactive)
+            options.computehead, options.no_rmaps_seq, options.interactive,
+            ntasks_per_node)
 
     # duplicate the run and thread and machines files for the full number of
     # jobs
-    print "\nduplicating the run file, machines file and .threads files for ", \
+    print "duplicating the run file, machines file and .threads files for ", \
             jobname, "\n"
     if options.jobtime:
         jobtime = options.jobtime
     else:
         jobtime = corrjoblist[jobname]["joblen"]
 
-    ntasks_per_node = 1
-    if (not options.interactive) and options.computehead:
-        ntasks_per_node = 2
     make_new_runfiles(
             jobname, expname, jobtime, str(difx_message_port),
             str(ntasks_per_node))
