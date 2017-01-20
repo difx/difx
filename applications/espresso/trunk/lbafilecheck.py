@@ -76,20 +76,18 @@ def makefilelists(
     outfilename = expname + "_" + telescope + ".filelist"
     OUTFILE = open(outfilename, "w")
     chk_vlbi = espressolib.which("chk_vlbi.py")
-    #chk_vlbi = '/nfs/apps/corr/DiFX-trunk/applications/espresso/trunk/chk_vlbi.py'
     if not chk_vlbi:
         ERRORFILE = espressolib.openlock("file_errors.txt")
         print>>ERRORFILE, "chk_vlbi.py not found in $PATH"
         ERRORFILE.close()
         raise Exception("chk_vlbi.py not found in $PATH")
-    #command = "ssh " + machine + " '" + chk_vlbi + " " + os.getcwd() + os.sep + TEMPFILE.name + "'"
+    #command = " ".join(
+    #       ["ssh", machine, chk_vlbi, os.getcwd() + os.sep + TEMPFILE.name])
     command = " ".join([chk_vlbi, os.getcwd() + os.sep + TEMPFILE.name])
-    #filelist = pexpect.run(command)
     #print filelist
     filelist, error2 = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE).communicate()
-    #filelist = filelist.split("\r\n")
     filelist = filelist.split("\n")
     filelist.pop()
     nbad = 0
@@ -217,7 +215,8 @@ parser.add_option(
 parser.add_option(
         "--no_rmaps_seq", "-M",
         action="store_true", dest="no_rmaps_seq", default=False,
-        help="Do not pass the '--mca rmaps seq' instruction to mpirun (requires openmpi v1.4 or greater)")
+        help="Do not pass the '--mca rmaps seq' instruction to mpirun"
+        " (requires openmpi v1.4 or greater)")
 parser.add_option(
         "--maxcompute", "-x",
         type="int", dest="maxcompute", default=None,
@@ -225,7 +224,14 @@ parser.add_option(
 parser.add_option(
         "--nfs_batch", "-n",
         action="store_true", dest="nfs_batch", default=False,
-        help="This is a batch system where all machines can see the data areas")
+        help="This is a batch system where all machines can see the"
+        " data areas")
+parser.add_option(
+        "--ntasks_per_node",
+        type="int", dest="ntasks_per_node", default=1,
+        help="Number of MPI processes per node."
+        " This is for testing purposes only!")
+
 #parser.add_option( "--nproc_per_node", "-p",
 #        type='int', dest="nproc_per_node", default=1,
 #        help="Target number of processes to run on each node" )
@@ -328,11 +334,10 @@ except:
 
 
 if options.nfs_batch:
-    # this means all nodes can see the data areas and we will be using a batch
-    # script, so the machines listed in $DIFX_MACHINES as data areas are just
-    # placeholders. We'll give each of the entries in datamachines a unique
-    # name and add it to our list of nodes. That way we can have them be reused
-    # for compute nodes too.
+    # this means all nodes can see the data areas and we will be using a
+    # batch script, so the machines listed in $DIFX_MACHINES as data areas
+    # are just placeholders. We'll give each of the entries in datamachines a
+    # unique name and add it to our list of available nodes.
     nthreads = hosts[datamachines[0]][0]
     data_area = hosts[datamachines[0]][1]
     for i, machine in enumerate(datamachines):
@@ -375,18 +380,20 @@ for host in sorted(hosts.keys()):
         if hosts[host][0]:
             computemachines.append(host)
 
-            if (
-                    options.nfs_batch and options.allcompute and (host not in
-                    [headmachine] + datamachines)):
+            if (options.nfs_batch and options.allcompute):
                 # if in batch environment, then must have same number of
-                # processes on every node. So if we are reusing datastream
-                # nodes for compute, must add second compute process  to
-                # compute-only nodes, even though this is less efficient than a
-                # single process with double the number of threads.
-                computemachines.append(host)
+                # processes on every node, so add compute processes as
+                # required. 
+                ncompute_process = options.ntasks_per_node - 1
+                if(host in [headmachine] + datamachines):
+                    ncompute_process -= 1
+                for node in range(ncompute_process):
+                    computemachines.append(host)
+                hosts[host][0] //= options.ntasks_per_node
 
-        if maxthreads < hosts[host][0]:
-            maxthreads = hosts[host][0]
+    if maxthreads < hosts[host][0]:
+        maxthreads = hosts[host][0]
+
 
 # limit number of computemachines if required
 if options.maxcompute:

@@ -122,7 +122,7 @@ def m5_to_vextime(m5time):
     return vextime
 
 
-def check_file(infile, m5format=None):
+def check_file(infile):
     """ check each file, then return time range and format. Check for
     Corrupt/missing files. """
 
@@ -130,10 +130,14 @@ def check_file(infile, m5format=None):
     starttime = None
     endtime = None
     m5time = espressolib.which("m5time")
+    m5bsum = espressolib.which("m5bsum")
+    vsum = espressolib.which("vsum")
     m5findformats = espressolib.which("m5findformats")
+
     if not os.path.exists(infile):
         sys.stderr.write(infile + " missing\n")
         corrupt = True
+
     elif os.path.getsize(infile) == 0:
         # 0 file size will cause difx to hang (at least for LBA format)
         sys.stderr.write(infile + " empty\n")
@@ -154,96 +158,101 @@ def check_file(infile, m5format=None):
 
         starttime, endtime = lbafile_timerange(infile, header)
 
-    elif m5format or (m5time and m5findformats):
+    elif (m5bsum and m5time and vsum and m5findformats):
         # assume it is a mark5 or vdif file of some description. Details of
         # the format are not very important for extracting the start time
-        # (YMMV). If we don't have m5time in our path we simply will not do
-        # this.
+        # (YMMV). If we don't have m5bsum and m5time in our path we simply will
+        # not do this.
 
-        # use m5findformat to guess a format that is hopefully consistent with
-        # the data (good enough to decode the time)
+        summary_program = m5bsum
+
         if '.vdif' in infile.lower():
             # assume we must have a VDIF file.
-            m5format = "VDIF_1000-64-1-2"
-        elif not m5format:
-            command = " ".join([m5findformats, infile])
-            stdout, error = subprocess.Popen(
-                    command, shell=True, stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE).communicate()
-            m5_output = stdout.split("\n")
-            m5format = parse_m5findformats(m5_output)
 
-        if m5format:
-            # get the file start time with m5time
-            command = " ".join([m5time, infile, m5format])
-            starttime_m5, error = subprocess.Popen(
-                    command, shell=True, stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE).communicate()
-            # the file end time is not always possible
-            if "VDIF" in m5format:
-                endtime_m5 = None
-            else:
-                lastsample = 1000000
-                filesize = os.path.getsize(infile)
-                command = " ".join(
-                        [m5time, infile, m5format, str(filesize-lastsample)])
-                try:
-                    endtime_m5, error = subprocess.Popen(
-                            command, shell=True, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE).communicate()
-                except:
-                    # old versions of m5time don't accept the byte offset
-                    endtime_m5 = None
+            summary_program = vsum
+            #m5format = "VDIF_1000-64-1-2"
+            ## get the file start time with m5time
+            #command = " ".join([m5time, infile, m5format])
+            #starttime_m5, error = subprocess.Popen(
+            #        command, shell=True, stdout=subprocess.PIPE,
+            #        stderr=subprocess.PIPE).communicate()
+            #try:
+            #    starttime = m5_to_vextime(starttime_m5)
+            #except:
+            #    starttime = None
+            #    endtime = None
+            #    sys.stderr.write(
+            #            "cannot decode start time for " + infile + "\n\n")
+            #endtime = None
 
         try:
-            starttime = m5_to_vextime(starttime_m5)
+            # get the start/stop time with m5bsum/vsum
+            command = " ".join([summary_program, "-s", infile])
+            error = str()
+            m5bsum_out, error = subprocess.Popen( 
+                    command, shell=True, stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE).communicate()
+            starttime_m5, endtime_m5 = m5bsum_out.split()[1:3]
+            starttime = espressolib.convertdate(float(starttime_m5), "vex")
+            endtime = espressolib.convertdate(float(endtime_m5), "vex")
+            #print starttime, endtime
         except:
-            starttime = None
-            endtime = None
-            sys.stderr.write(
-                    "cannot decode start time for " + infile + "\n\n")
-
-        if starttime:
             try:
+                sys.stderr.write(infile)
+                command = " ".join([m5findformats, infile])
+                stdout, error = subprocess.Popen( command, shell=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE).communicate()
+                sys.stderr.write(error)
+                m5_output = stdout.split("\n")
+                m5format = parse_m5findformats(m5_output)
+                command = " ".join([m5time, infile, m5format])
+                starttime_m5, error = subprocess.Popen( command, shell=True,
+                        stderr=subprocess.PIPE).communicate()
+                sys.stderr.write(error)
+
+                lastsample = 1000000
+                filesize = os.path.getsize(infile)
+                command = " ".join([m5time, infile, m5format,
+                    str(filesize-lastsample)])
+                endtime_m5, error = subprocess.Popen(
+                        command, shell=True, stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE).communicate()
+                sys.stderr.write(error)
+
+                starttime = m5_to_vextime(starttime_m5)
                 endtime = m5_to_vextime(endtime_m5)
+
             except:
+                # couldn't decode time. 
+                sys.stderr.write(
+                        "cannot decode time for " + infile + "\n\n")
+                sys.stderr.write(error)
+
+                starttime = None
                 endtime = None
-        else:
+
+
+        if not starttime:
             # we know nothing about this format, abandon this file
             corrupt = True
-            m5format = None
 
-    return infile, starttime, endtime, corrupt, m5format
+    return infile, starttime, endtime, corrupt
 
 
-if __name__ == "__main__":
-    # read the list of files
-    filelist = []
-    outfilelist = []
-    for filelistname in sys.argv[1:]:
-        filelist += open(filelistname).readlines()
-        filelist = [line.rstrip() for line in filelist]
+def fix_filelist(outfilelist):
+    """turn a check_files list into a list of strings suitable for printing.
+    """
 
-    # check each file, then print it with its time range. Corrupt/missing files
-    # get a comment character prepended. m5format is important for getting m5
-    # and vdif times. Setting to None will make check_file() guess the format.
-    # Remember the value returned by first file and assume is good for
-    # remainder.
-    m5format = None
-    for infile in filelist:
-        outfile = check_file(infile, m5format)
-        # m5format will be None if file was corrupt.
-        m5format = outfile[-1]
-        outfilelist.append(outfile)
-
-    # now go through the new filelist turning it into a list of strings.
     # Prepend a comment character for corrupt files. Where the end time is not
     # known, set it to the start time of the next file.
+
+    # do in reverse for convenience
     outfilelist.reverse()
     previous_starttime = None
     for idx, outfile in enumerate(outfilelist):
         #sys.stderr.write(str(idx) + str(outfile))
-        filename, starttime, endtime, corrupt, m5format = outfile
+        filename, starttime, endtime, corrupt = outfile
         if corrupt:
             filename = "#" + filename
             starttime = None
@@ -275,6 +284,26 @@ if __name__ == "__main__":
             break
 
     outfilelist.reverse()
+
+    return outfilelist
+
+
+if __name__ == "__main__":
+    # read the list of files
+    filelist = []
+    outfilelist = []
+    for filelistname in sys.argv[1:]:
+        filelist += open(filelistname).readlines()
+        filelist = [line.rstrip() for line in filelist]
+
+    # check each file, then print it with its time range. 
+
+    for infile in filelist:
+        outfile = check_file(infile)
+        outfilelist.append(outfile)
+
+    # fix up the list for printing
+    outfilelist = fix_filelist(outfilelist)
 
     for outfile in outfilelist:
         print outfile
