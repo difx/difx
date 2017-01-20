@@ -156,7 +156,10 @@ def check_file(infile):
                         "header for " + infile + " is corrupt or missing\n\n")
             corrupt = True
 
-        starttime, endtime = lbafile_timerange(infile, header)
+        try:
+            starttime, endtime = lbafile_timerange(infile, header)
+        except:
+            corrupt = True
 
     elif (m5bsum and m5time and vsum and m5findformats):
         # assume it is a mark5 or vdif file of some description. Details of
@@ -288,6 +291,13 @@ def fix_filelist(outfilelist):
     return outfilelist
 
 
+def timesort(filelist):
+    """sort a list of files in order of start time"""
+
+    filelist = sorted(filelist, key=lambda x: x[1])
+    return filelist
+
+
 if __name__ == "__main__":
     # read the list of files
     filelist = []
@@ -301,6 +311,8 @@ if __name__ == "__main__":
     for infile in filelist:
         outfile = check_file(infile)
         outfilelist.append(outfile)
+
+    outfilelist = timesort(outfilelist)
 
     # fix up the list for printing
     outfilelist = fix_filelist(outfilelist)
