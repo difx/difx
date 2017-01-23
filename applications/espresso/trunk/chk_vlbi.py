@@ -201,18 +201,20 @@ def check_file(infile):
             #print starttime, endtime
         except:
             try:
-                sys.stderr.write(infile)
+                # must be a mark5a then.
+                #sys.stderr.write(infile)
                 command = " ".join([m5findformats, infile])
-                stdout, error = subprocess.Popen( command, shell=True,
+                stdout, error = subprocess.Popen(command, shell=True,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE).communicate()
-                sys.stderr.write(error)
+                #sys.stderr.write(error)
                 m5_output = stdout.split("\n")
                 m5format = parse_m5findformats(m5_output)
                 command = " ".join([m5time, infile, m5format])
-                starttime_m5, error = subprocess.Popen( command, shell=True,
+                starttime_m5, error = subprocess.Popen(command, shell=True,
+                        stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE).communicate()
-                sys.stderr.write(error)
+                #sys.stderr.write(error)
 
                 lastsample = 1000000
                 filesize = os.path.getsize(infile)
@@ -221,15 +223,14 @@ def check_file(infile):
                 endtime_m5, error = subprocess.Popen(
                         command, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE).communicate()
-                sys.stderr.write(error)
+                #sys.stderr.write(error)
 
                 starttime = m5_to_vextime(starttime_m5)
                 endtime = m5_to_vextime(endtime_m5)
 
             except:
                 # couldn't decode time. 
-                sys.stderr.write(
-                        "cannot decode time for " + infile + "\n\n")
+                sys.stderr.write("cannot decode time for " + infile + "\n\n")
                 sys.stderr.write(error)
 
                 starttime = None
