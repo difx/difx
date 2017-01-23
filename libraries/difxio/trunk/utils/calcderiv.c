@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,9 +38,9 @@
 #define C_LIGHT	299792458.0
 
 const char program[] = "calcderiv";
-const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const int version = 1;	/* for this program, must be an integer */
-const char verdate[] = "20150115";
+const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
+const int version = 2;	/* for this program, must be an integer */
+const char verdate[] = "20170122";
 
 void usage()
 {
@@ -51,6 +51,10 @@ void usage()
 	printf("-v         be a bit more verbose\n\n");
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
+	printf("--deltaLM=<deltaLM>\n");
+	printf("           compute numeric angular derivatives using interval of <deltaLM> radians\n");
+	printf("--deltaXYZ=<deltaXYZ>\n");
+	printf("           compute numeric linear derivatives using interval of <deltaXYZ> meters\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 }
 
@@ -489,6 +493,18 @@ int main(int argc, char **argv)
 				usage();
 
 				exit(EXIT_SUCCESS);
+			}
+			else if(strncmp(argv[a], "--deltaXYZ=", 11) == 0)
+			{
+				deltaXYZ = atof(argv[a]+11);
+				fprintf(stderr, "Using deltaXYZ = %f meters per command line\n", deltaXYZ);
+				continue;
+			}
+			else if(strncmp(argv[a], "--deltaLM=", 10) == 0)
+			{
+				deltaLM = atof(argv[a]+10);
+				fprintf(stderr, "Using deltaLM = %f radians per command line\n", deltaLM);
+				continue;
 			}
 			else
 			{

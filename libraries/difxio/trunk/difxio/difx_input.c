@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -538,9 +538,10 @@ static int generateAipsIFs(DifxInput *D, int configId)
 	if(dc->polMask & DIFXIO_POL_ERROR || dc->polMask == 0)
 	{
 		fprintf(stderr, "Error: generateAipsIFs: polMask = 0x%03x is unsupported!\n", dc->polMask);
+
 		return -1;
 	}
-    else if ((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY))
+	else if ((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY))
 	{
 		fprintf(stderr, "Warning: generateAipsIFs: polMask = 0x%03x is unsupported!\n", dc->polMask);
 	}
@@ -580,7 +581,7 @@ static int generateAipsIFs(DifxInput *D, int configId)
 	}
 
 	/* Then actually build it */
-#warning "FIXME: The size adjustment were put in in conjunction with IF merging (union option). Not fully understood.
+#warning "FIXME: The size adjustment were put in in conjunction with IF merging (union option). Not fully understood."
 	int size = D->nFreq;
 	if (dc->nIF > size)
 		size = dc->nIF;
@@ -1561,7 +1562,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D, const DifxParameters
 				return 0;
 			}
 			DifxBaselineAllocPolProds(D->baseline + b, f, atoi(DifxParametersvalue(ip, r)));
-			for(p = 0; p < D->baseline[b].nPolProd[f]; p++)
+			for(p = 0; p < D->baseline[b].nPolProd[f]; ++p)
 			{
 				r = DifxParametersfind1(ip, r+1, "D/STREAM A BAND %d", p);
 				if(r < 0)
@@ -1833,8 +1834,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		"SPACECRAFT %d NAME",
 		"SPACECRAFT %d ROWS"
 	};
-	const int N_SPACECRAFT_ROWS = 
-		sizeof(spacecraftKeys)/sizeof(spacecraftKeys[0]);
+	const int N_SPACECRAFT_ROWS = sizeof(spacecraftKeys)/sizeof(spacecraftKeys[0]);
 	
 	int rows[20];
 	int i, row, N, r, v;
@@ -2145,7 +2145,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 
 			return 0;
 		}
-		for(j = 0; j < D->scan[i].nPhaseCentres; j++)
+		for(j = 0; j < D->scan[i].nPhaseCentres; ++j)
 		{
 			row = DifxParametersfind2(cp, row, "SCAN %d PHS CTR %d", i, j);
 			if(row < 0)
@@ -2158,17 +2158,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			D->scan[i].orgjobPhsCentreSrcs[j] = D->scan[i].phsCentreSrcs[j];
                 }
 		D->scan[i].configId = -1;
-		for(r = 0; r < D->nRule; r++)
+		for(r = 0; r < D->nRule; ++r)
 		{
 			int applies = 0;
 			int src;
 
 			for(src = 0; src < D->scan[i].nPhaseCentres; ++src)
 			{
-				//printf("Checking if rule %d applies to scan %d, phase centre %d\n", r, i, src);
-				//printf("The phase centre src index is %d\n", D->scan[i].phsCentreSrcs[src]);
-				//printf("And its name is %s\n", D->source[D->scan[i].phsCentreSrcs[src]].name);
-				//printf("Rule sourceName is %s\n", D->rule[r].sourceName);
 				if(ruleAppliesToScanSource(&(D->rule[r]), &(D->scan[i]), &(D->source[D->scan[i].phsCentreSrcs[src]])) != 0)
 				{
 					applies = 1;
@@ -2182,7 +2178,6 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			{
 				int c;
 
-				//printf("Yes, it does apply!\n");
 				for(c = 0; c < D->nConfig; ++c)
 				{
 					if(strcmp(D->rule[r].configName, D->config[c].name) == 0)
@@ -2200,8 +2195,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				}
 				if(applies > 0)
 				{
-					fprintf(stderr, "Couldn't find the config (%s) that is supposed to match rule %d\n", 
-						D->rule[r].configName, r);
+					fprintf(stderr, "Couldn't find the config (%s) that is supposed to match rule %d\n", D->rule[r].configName, r);
 				}
 			}
 		}
