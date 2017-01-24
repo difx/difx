@@ -313,11 +313,14 @@ def get_jobids(jobnames, batchenv):
         jobids = jobnames
     elif batchenv == "qsub":
         for jobname in jobnames:
-            command = "qselect -N {0}".format(jobname)
-            jobid = subprocess.Popen(
-                    command, stdout=subprocess.PIPE,
-                    shell=True).communicate()[0]
-            jobid = jobid.strip()
+            jobid = None
+            while not jobid:
+                # try repeatedly in case slow to report
+                command = "qselect -N {0}".format(jobname)
+                jobid = subprocess.Popen(
+                        command, stdout=subprocess.PIPE,
+                        shell=True).communicate()[0]
+                jobid = jobid.strip()
             jobids.append(jobid)
     
     return jobids
