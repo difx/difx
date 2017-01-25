@@ -332,8 +332,6 @@ def run_batch(corrjoblist, outdir):
     # get the batch commands for the slurm or pbs
     batch_launch, batch_q, batch_cancel, batch_sep = check_batch()
 
-    jobids = get_jobids(sorted(corrjoblist.keys()), batch_launch)
-
     # start the correlator log
     errormon_log = "./log"
     print "starting errormon2 in the background"
@@ -369,6 +367,7 @@ def run_batch(corrjoblist, outdir):
 
     # Just wait until the jobs have completed. Operator hits ^C to progress.
     # Enter will provide queue report.
+    jobids = get_jobids(sorted(corrjoblist.keys()), batch_launch)
     queue_command = " ".join([batch_q, batch_sep.join(jobids)])
     while True:
         try:
