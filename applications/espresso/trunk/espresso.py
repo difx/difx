@@ -390,7 +390,11 @@ def run_batch(corrjoblist, outdir):
                 subprocess.check_call(command, stdout=sys.stdout, shell=True)
             break
         except:
-            print queue_command + "failed!"
+            # qstat (PBS) on an empty queue will throw an error which we catch
+            # here.
+            print "jobs " + " ".join([jobids]) + " complete"
+            break
+            #print queue_command + "failed!"
             #pass
             #raise Exception(command + 'failed!')
             #raise
