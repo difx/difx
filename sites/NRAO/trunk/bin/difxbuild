@@ -2793,9 +2793,41 @@ def pgplot(origComps, params, args, verbose, pretend):
 		execute('rm -f %s/%s' % (linkDir, f), verbose, pretend)
 		execute('cp %s/%s %s/%s' % (pgplotDir, f, linkDir, f), verbose, pretend)
 
+def fuseMk5(origComps, params, args, verbose, pretend):
+        v = execute('rpm -q streamstor', verbose, pretend)
+	if v != 0:
+		print '\nStopping because streamstor package is not installed.\n'
+		return
+
+	arch = platform.machine()
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	chdir(archSrcDir)
+	# get the code
+	execute('cvs -d:pserver:anonymous:@fusemk5a.cvs.sourceforge.net:/cvsroot/fusemk5a login', verbose, pretend)
+	execute('cvs -z3 -d:pserver:anonymous@fusemk5a.cvs.sourceforge.net:/cvsroot/fusemk5a co -P fuseMk5A', verbose, pretend)
+
+	fm5Dir = archSrcDir + 'fuseMk5A'
+	if not isdir(fm5Dir):
+		print 'Stopping because fuseMk5 code must not have downloaded correctly.'
+		return
+        chdir(fm5Dir)
+        # modify makefile
+	execute('mv Makefile Makefile.orig', verbose, pretend)
+	fixSdkDir = "-e 's/^SDK_DIR.*/SDK_DIR = \\/usr/'"
+	fixLdSdk = "-e 's/^LD_SDK.*/LD_SDK = -lssapi `locate libwdapi`/'"
+	fixLdpaths = "-e 's/^LDPATHS.*/LDPATHS = -L. -L\\/usr\\/lib64\\/ -pthread/'"
+	execute('sed %s %s %s <Makefile.orig >Makefile' % (fixSdkDir, fixLdSdk, fixLdpaths), verbose, pretend)
+	# make and install
+	execute('make', verbose, pretend)
+	execute('cp %s/fuseMk5 %s/bin' % (fm5Dir, archDir), verbose, pretend)
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['cxOracle', 'psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd']
+	packages = ['cxOracle', 'psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd', 'fuseMk5']
 	if len(args) < 1:
 		print 'The "extra" option allows installation of optional software.\n'
 		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
@@ -2842,6 +2874,8 @@ def extra(origComps, params, args, verbose, pretend):
 		psycopg(origComps, params, [], verbose, pretend)
 	if 'pyx' in args:
 		pyx(origComps, params, [], verbose, pretend)
+	if 'fuseMk5' in args:
+		fuseMk5(origComps, params, [], verbose, pretend)
 
 
 def newestOMPI(data, version):
