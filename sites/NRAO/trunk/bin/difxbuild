@@ -2794,7 +2794,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 		execute('cp %s/%s %s/%s' % (pgplotDir, f, linkDir, f), verbose, pretend)
 
 def fuseMk5(origComps, params, args, verbose, pretend):
-        v = execute('rpm -q streamstor', verbose, pretend)
+	v = execute('pkg-config --libs streamstor', verbose, pretend)
 	if v != 0:
 		print '\nStopping because streamstor package is not installed.\n'
 		return
@@ -2815,8 +2815,8 @@ def fuseMk5(origComps, params, args, verbose, pretend):
 	if not isdir(fm5Dir):
 		print 'Stopping because fuseMk5 code must not have downloaded correctly.'
 		return
-        chdir(fm5Dir)
-        # modify makefile
+	chdir(fm5Dir)
+	# modify makefile
 	execute('mv Makefile Makefile.orig', verbose, pretend)
 	fixSdkDir = "-e 's/^SDK_DIR.*/SDK_DIR = \\/usr/'"
 	fixLdSdk = "-e 's/^LD_SDK.*/LD_SDK = -lssapi `locate libwdapi`/'"
