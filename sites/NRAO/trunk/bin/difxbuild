@@ -13,9 +13,9 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.57'
-verdate = '20161107'
-author = 'Walter Brisken <wbrisken@nrao.edu>'
+version = '0.58'
+verdate = '20170127'
+author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
