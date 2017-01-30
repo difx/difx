@@ -58,11 +58,18 @@ else
 }
 
 
-# Leap second 30.Jun 2012, 30.Jun 2015
-if ($jdate > 2457203.5)
+# Leap seconds
+# # 1. Jan 2017
+if ($jdate >= 2457754.5)
+{
+        $TAIUTC = 37;
+}
+# 30. Jun 2015
+elsif ($jdate > 2457203.5)
 {
         $TAIUTC = 36;
 }
+# 30. Jun 2012
 elsif ($jdate > 2456109.5) 
 {
 	$TAIUTC = 35;
