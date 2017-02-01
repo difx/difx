@@ -6,7 +6,10 @@ fftw_programs = \
 	m5pcal \
 	m5spec \
 	m5fb \
+	m5subband \
 	zerocorr
+m5subband_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
+m5subband_LDADD = $(FFTW3_LIBS) $(LDADD)
 m5spec_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5spec_LDADD = $(FFTW3_LIBS) $(LDADD)
 m5fb_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
@@ -78,6 +81,9 @@ test_mark5_stream_SOURCES = \
 
 test_unpacker_SOURCES = \
 	test_unpacker.c
+
+m5subband_SOURCES = \
+	m5subband.c
 
 zerocorr_SOURCES = \
 	zerocorr.c
