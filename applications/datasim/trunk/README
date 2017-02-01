@@ -28,9 +28,14 @@ Usage:
 1. source DiFX setup.bash file
 2. source HOPS hops.bash file
 3. 'datasim --help' shows a list of possible options 
-4. generate v2d and VEX file: './genv2dvex.sh exp_dir input'
+4. generate v2d and VEX file: './genv2dvex.sh expDir datasim.inp',
+   see for example datasim.inp.template for example settings
 5. in the directory of the generated v2d and VEX file, 
-   create simulated .vdif data:
-   'datasim -f 100 -s 1000,2000,3000 -d 12345 datasim_7004.input'
-   where -f is the source flux density, -s is a list of antenna SEFDs,
+   proceed to generate DiFX .input and .calc-->.im files
+   'cd expDir-7000'
+   'vex2difx expDir.7000.v2d'
+   'calcif2 expDir_7000.calc'
+6. in the same directory proceed to create simulated .vdif data:
+   'datasim -f 100 -s 1000,2000,3000 -d 12345 expDir_7004.input'
+    where -f is the source flux density, -s is a list of antenna SEFDs,
    -d is the random number seed
