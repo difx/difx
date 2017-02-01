@@ -32,6 +32,7 @@ import mil.navy.usno.widgetlib.ComplexToolTip;
 import mil.navy.usno.widgetlib.ZCheckBox;
 import mil.navy.usno.widgetlib.ZButton;
 import mil.navy.usno.widgetlib.Power2NumberBox;
+import mil.navy.usno.widgetlib.PopupMonitor;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 import edu.nrao.difx.difxutilities.DiFXCommand_sendFile;
@@ -451,7 +452,11 @@ public class ExperimentEditor extends JFrame {
         findVexPanel.add( _vexBrowseButton );
         _goButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
+                _statusLabel.setText( "Processing .vex data..." );
+                _statusLabel.updateUI();
                 getVexFromSource();
+                _statusLabel.setText( "Ready!" );
+                _statusLabel.updateUI();
             }
         });
         findVexPanel.add( _goButton );
@@ -472,7 +477,7 @@ public class ExperimentEditor extends JFrame {
         _parseEditorContent.setBounds( 20, 30, 140, 25 );
         _parseEditorContent.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                parseNewVexFile();
+                parseNewVexFile( true );
             }
         });
         editorPanel.add( _parseEditorContent );
@@ -1391,7 +1396,7 @@ public class ExperimentEditor extends JFrame {
                 _settings.defaultNames().vexFileSource = _fromHostLocation.getText();
                 _editor.text( fileGet.inString() );
                 _editor.top();
-                parseNewVexFile();
+                parseNewVexFile( true );
             }
             else {
                 JOptionPane.showMessageDialog( (Frame)comp, fileGet.error(), ".vex File Read Error", JOptionPane.WARNING_MESSAGE );
@@ -1409,7 +1414,7 @@ public class ExperimentEditor extends JFrame {
                 while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
                     _editor.addText( new String( buffer ).substring( 0, bytesRead ) );
                 }
-                parseNewVexFile();
+                parseNewVexFile( true );
             } catch ( MalformedURLException e ) {
                 JOptionPane.showMessageDialog( _this, "Malformed URL: \"http://" + _viaHttpLocation.getText() + "\"",
                         "Bad URL",
@@ -1432,7 +1437,7 @@ public class ExperimentEditor extends JFrame {
                 while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
                     _editor.addText( new String( buffer ).substring( 0, bytesRead ) );
                 }
-                parseNewVexFile();
+                parseNewVexFile( true );
             } catch ( MalformedURLException e ) {
                 JOptionPane.showMessageDialog( _this, "Malformed URL: \"ftp://" + _viaFtpLocation.getText() + "\"",
                         "Bad URL",
@@ -1453,7 +1458,7 @@ public class ExperimentEditor extends JFrame {
                 while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
                     _editor.addText( new String( buffer ).substring( 0, bytesRead ) );
                 }
-                parseNewVexFile();
+                parseNewVexFile( true );
             } catch ( FileNotFoundException e ) {
                 JOptionPane.showMessageDialog( _this, "Local File \"" + _localFileLocation.getText() + "\" was not found.",
                         "File Not Found",
@@ -1587,7 +1592,7 @@ public class ExperimentEditor extends JFrame {
                     _editor.text( getFile.inString() );
                     //  This should initialize all of the settings properly...we hope.
                     //  Specific .v2d file settings will then change them.
-                    parseNewVexFile();
+                    parseNewVexFile( false );
                 }  
             }
         }
@@ -1647,6 +1652,11 @@ public class ExperimentEditor extends JFrame {
                             Vector<String> fileList = _v2dFileParser.antennaFile( antenna.name() );
                             for ( Iterator<String> iter1 = fileList.iterator(); iter1.hasNext(); )
                                 antenna.useFile( iter1.next() );
+                        }
+                        else if ( _v2dFileParser.antennaFileList( antenna.name() ) != null ) {
+                            antenna.useFile( _v2dFileParser.antennaFileList( antenna.name() ) );
+                            antenna.fileListName( _v2dFileParser.antennaFileList( antenna.name() ) );
+                            antenna.useFileList( true );
                         }
                         else if ( _v2dFileParser.antennaNetworkPort( antenna.name() ) != null ) {
                             antenna.useEVLBI( true );
@@ -2027,356 +2037,374 @@ public class ExperimentEditor extends JFrame {
         
     }
     
-    /*
-     * Read the current vex file, which is stored in the editor, and parse out items
-     * that we can use in the .v2d file.
-     */
-    public void parseNewVexFile() {
-        VexFileParser vexData = new VexFileParser();
-        vexData.data( _editor.text(), _settings.eliminateCodeStationsCheck() );
-        _vexData = vexData;
-//        //  See if the .vex file is making use of multiple format types.  
-//        if ( _vexData.usedModes().size() > 1 )
-//            JOptionPane.showMessageDialog( _this, "Scan data in this .vex file require mulitple modes.\n"
-//                    + "The GUI may or may not handle this situation well.", "Multiple Modes", JOptionPane.WARNING_MESSAGE );            
-        _scanStationTimeline.vexData( vexData );
-        if ( _eopLock == null )
-            _eopLock = new Object();
-        synchronized ( _eopLock ) {
-            _eopMinTime = null;
-            _eopMaxTime = null;
-        }
-        //  The GUI is assuming here that only one bandwidth exists.
-        _bandwidth = vexData.bandwidth();
-        //  Build a grid out of the scans found
-        _scanGrid.clearButtons();
-        _timeLimits.clearButtons();
-        if ( vexData.scanList() != null ) {
-            for ( Iterator iter = vexData.scanList().iterator(); iter.hasNext(); ) {
-                VexFileParser.Scan scan = (VexFileParser.Scan)iter.next();
-                String tooltip = scan.name + "\n" + scan.source + "\n" +
-                        scan.start.get( Calendar.YEAR ) + "-" + scan.start.get( Calendar.DAY_OF_YEAR ) + " (" +
-                        scan.start.get( Calendar.MONTH ) + "/" + scan.start.get( Calendar.DAY_OF_MONTH ) + ")  " +
-                        String.format( "%02d", scan.start.get( Calendar.HOUR_OF_DAY ) ) + ":" +
-                        String.format( "%02d", scan.start.get( Calendar.MINUTE ) ) + ":" + 
-                        String.format( "%02d", scan.start.get( Calendar.SECOND ) ) + "\n";
-                for ( Iterator jter = scan.station.iterator(); jter.hasNext(); ) {
-                    VexFileParser.ScanStation station = (VexFileParser.ScanStation)jter.next();
-                    tooltip += station.wholeString + "\n";
-                    //  Find the start and end time of this observation.
-                    Calendar startTime = scan.start;
-                    startTime.add( Calendar.SECOND, station.delay );
-                    Calendar endTime = scan.start;
-                    endTime.add( Calendar.SECOND, station.delay + station.duration );
-                    //  Check these against the minimum and maximum times for the whole set of scans
-                    //  described by this .vex file.
-                    synchronized ( _eopLock ) {
-                        if ( _eopMinTime == null ) {
-                            _eopMinTime = startTime;
-                            _eopMaxTime = endTime;
-                        }
-                        else {
-                            if ( startTime.before( _eopMinTime ) ) {
+    protected boolean _getDefaultSources;
+    //--------------------------------------------------------------------------
+    //  bRead the current vex file, which is stored in the editor, and parse out items
+    //  that we can use in the .v2d file.  The boolean argument determines whether
+    //  default source locations are generated - this is a time consuming process
+    //  and shouldn't be done if it isn't necessary (say, if you were going to
+    //  replace the source locations anyway).
+    //--------------------------------------------------------------------------
+    public void parseNewVexFile( boolean getDefaultSources ) {
+        _getDefaultSources = getDefaultSources;
+        Thread runit = new Thread() {            
+            public void run() {
+            VexFileParser vexData = new VexFileParser();
+            vexData.data( _editor.text(), _settings.eliminateCodeStationsCheck() );
+            _vexData = vexData;
+    //        //  See if the .vex file is making use of multiple format types.  
+    //        if ( _vexData.usedModes().size() > 1 )
+    //            JOptionPane.showMessageDialog( _this, "Scan data in this .vex file require mulitple modes.\n"
+    //                    + "The GUI may or may not handle this situation well.", "Multiple Modes", JOptionPane.WARNING_MESSAGE );            
+            _scanStationTimeline.vexData( vexData );
+            if ( _eopLock == null )
+                _eopLock = new Object();
+            synchronized ( _eopLock ) {
+                _eopMinTime = null;
+                _eopMaxTime = null;
+            }
+            //  The GUI is assuming here that only one bandwidth exists.
+            _bandwidth = vexData.bandwidth();
+            //  Build a grid out of the scans found
+            _scanGrid.clearButtons();
+            _timeLimits.clearButtons();
+            if ( vexData.scanList() != null ) {
+                for ( Iterator iter = vexData.scanList().iterator(); iter.hasNext(); ) {
+                    VexFileParser.Scan scan = (VexFileParser.Scan)iter.next();
+                    String tooltip = scan.name + "\n" + scan.source + "\n" +
+                            scan.start.get( Calendar.YEAR ) + "-" + scan.start.get( Calendar.DAY_OF_YEAR ) + " (" +
+                            scan.start.get( Calendar.MONTH ) + "/" + scan.start.get( Calendar.DAY_OF_MONTH ) + ")  " +
+                            String.format( "%02d", scan.start.get( Calendar.HOUR_OF_DAY ) ) + ":" +
+                            String.format( "%02d", scan.start.get( Calendar.MINUTE ) ) + ":" + 
+                            String.format( "%02d", scan.start.get( Calendar.SECOND ) ) + "\n";
+                    for ( Iterator jter = scan.station.iterator(); jter.hasNext(); ) {
+                        VexFileParser.ScanStation station = (VexFileParser.ScanStation)jter.next();
+                        tooltip += station.wholeString + "\n";
+                        //  Find the start and end time of this observation.
+                        Calendar startTime = scan.start;
+                        startTime.add( Calendar.SECOND, station.delay );
+                        Calendar endTime = scan.start;
+                        endTime.add( Calendar.SECOND, station.delay + station.duration );
+                        //  Check these against the minimum and maximum times for the whole set of scans
+                        //  described by this .vex file.
+                        synchronized ( _eopLock ) {
+                            if ( _eopMinTime == null ) {
                                 _eopMinTime = startTime;
-                            }
-                            if ( endTime.after( _eopMaxTime ) ) {
                                 _eopMaxTime = endTime;
                             }
+                            else {
+                                if ( startTime.before( _eopMinTime ) ) {
+                                    _eopMinTime = startTime;
+                                }
+                                if ( endTime.after( _eopMaxTime ) ) {
+                                    _eopMaxTime = endTime;
+                                }
+                            }
                         }
                     }
+                    //  Add a new button to the grid, then attach the associated data to it so they
+                    //  can be consulted later.
+                    ButtonGrid.GridButton newButton = _scanGrid.addButton( scan.name, tooltip, true );
+                    newButton.data( scan );
+                    _timeLimits.addButton( newButton, scan );
                 }
-                //  Add a new button to the grid, then attach the associated data to it so they
-                //  can be consulted later.
-                ButtonGrid.GridButton newButton = _scanGrid.addButton( scan.name, tooltip, true );
-                newButton.data( scan );
-                _timeLimits.addButton( newButton, scan );
             }
-        }
-        //  Set the limits on the time limit panel.  We expand this a few percent beyond the
-        //  actual limits to make sure everything is contained in the original timeline.
-        synchronized ( _eopLock ) {
-            int adj = (int)( ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 50 );
-            _eopMinTime.add( Calendar.MILLISECOND, -adj );
-            _eopMaxTime.add( Calendar.MILLISECOND, adj );
-            _timeLimits.limits( _eopMinTime, _eopMaxTime );
-            _scanStationTimeline.limits( _eopMinTime, _eopMaxTime );
-        }
-        //  Add panels of information about each antenna.  First we clear the existing
-        //  lists of antennas (these might have been formed the last time the .vex file
-        //  was parsed).
-        _antennaPane.clear();
-        if ( _antennaList != null ) {
-            synchronized ( _antennaList ) {
-                _antennaList.clear();
+            //  Set the limits on the time limit panel.  We expand this a few percent beyond the
+            //  actual limits to make sure everything is contained in the original timeline.
+            synchronized ( _eopLock ) {
+                int adj = (int)( ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 50 );
+                _eopMinTime.add( Calendar.MILLISECOND, -adj );
+                _eopMaxTime.add( Calendar.MILLISECOND, adj );
+                _timeLimits.limits( _eopMinTime, _eopMaxTime );
+                _scanStationTimeline.limits( _eopMinTime, _eopMaxTime );
             }
-        }
-        if ( vexData.stationList() != null ) {
-            for ( Iterator<VexFileParser.Station> iter = vexData.stationList().iterator(); iter.hasNext(); ) {
-                VexFileParser.Station station = iter.next();
-                //  Make a new panel to hold this station.
-                if ( _antennaList == null )
-                    _antennaList = new AntennaList();
-                StationPanel panel = new StationPanel( station, _settings );
-                panel.vexData( _vexData );
-                panel.addChangeListener( new ActionListener() {
-                    public void actionPerformed( ActionEvent evt ) {
-                        vexDataChange();
-                    }
-                } );
-                _antennaPane.addNode( panel );
+            //  Add panels of information about each antenna.  First we clear the existing
+            //  lists of antennas (these might have been formed the last time the .vex file
+            //  was parsed).
+            _antennaPane.clear();
+            if ( _antennaList != null ) {
                 synchronized ( _antennaList ) {
-                    _antennaList.add( panel );
-                }
-                //  Add the appropriate site information for this station.
-                for ( Iterator<VexFileParser.Site> jter = vexData.siteList().iterator(); jter.hasNext(); ) {
-                    VexFileParser.Site site = jter.next();
-                    if ( site.name.equalsIgnoreCase( station.site ) )
-                        panel.addSiteInformation( site );
-                }
-                //  Same for antenna information.
-                for ( Iterator<VexFileParser.Antenna> jter = vexData.antennaList().iterator(); jter.hasNext(); ) {
-                    VexFileParser.Antenna antenna = jter.next();
-                    if ( antenna.name.equalsIgnoreCase( station.antenna ) )
-                        panel.addAntennaInformation( antenna );
+                    _antennaList.clear();
                 }
             }
-        }
-        //  Add panels of information about each source.
-        _sourcePane.clear();
-        if ( _sourcePanelList != null ) {
-            synchronized( _sourcePanelList ) {
-                _sourcePanelList.clear();
-            }
-        }
-        if ( vexData.sourceList() != null ) {
-            //  First add a kind of "header" panel that includes select and deselect
-            //  buttons.
-            IndexedPanel sourceButtonPanel = new IndexedPanel( "" );
-            sourceButtonPanel.closedHeight( 35 );
-            sourceButtonPanel.openHeight( 35 );
-            sourceButtonPanel.open( true );
-            sourceButtonPanel.darkTitleBar( false );
-            sourceButtonPanel.drawFrame( false );
-            sourceButtonPanel.resizeOnTopBar( false );
-            sourceButtonPanel.alwaysOpen( true );
-            sourceButtonPanel.noArrow( true );
-            JButton selectAllSources = new JButton( "Select All" );
-            selectAllSources.setBounds( 10, 5, 110, 25 );
-            selectAllSources.addActionListener( new ActionListener() {
-                public void actionPerformed( ActionEvent e ) {
-                    selectAllSources( true );
-                }
-            });
-            sourceButtonPanel.add( selectAllSources );
-            JButton deselectAllSources = new JButton( "Deselect All" );
-            deselectAllSources.setBounds( 125, 5, 110, 25 );
-            deselectAllSources.addActionListener( new ActionListener() {
-                public void actionPerformed( ActionEvent e ) {
-                    selectAllSources( false );
-                }
-            });
-            sourceButtonPanel.add( deselectAllSources );
-            //  For each antenna ("station") add a header to this panel.  These will define
-            //  the grid showing which source were observed with which stations.  These
-            //  are NOT user-changeable items.
-            int xOffset = 300;
-            for ( Iterator<VexFileParser.Station> iter = vexData.stationList().iterator(); iter.hasNext(); ) {
-                VexFileParser.Station station = iter.next();
-                JLabel thisLabel = new JLabel( station.name );
-                thisLabel.setHorizontalAlignment( JLabel.CENTER );
-                thisLabel.setBounds( xOffset, 5, 75, 25 );
-                xOffset += 80;
-                sourceButtonPanel.add( thisLabel );
-            }
-            _sourcePane.addNode( sourceButtonPanel );
-            //  Now add the individual sources to the source panel.
-            for ( Iterator<VexFileParser.Source> iter = vexData.sourceList().iterator(); iter.hasNext(); ) {
-                VexFileParser.Source source = iter.next();
-                //  Make sure this source is used in one of the scans!  If not, we
-                //  ignore it, as the user should have no interest in it.
-                boolean keepSource = false;
-                ArrayList<VexFileParser.ScanStation> stationsUsed = null;
-                for ( Iterator<VexFileParser.Scan> jter = vexData.scanList().iterator(); jter.hasNext() && !keepSource; ) {
-                    VexFileParser.Scan scan = jter.next();
-                    if ( scan.source.equalsIgnoreCase( source.name ) ) {
-                        keepSource = true;
-                        stationsUsed = scan.station;
-                    }
-                }
-                if ( keepSource ) {
-                    if ( _sourcePanelList == null )
-                        _sourcePanelList = new ArrayList<SourcePanel>();
-                    SourcePanel panel = new SourcePanel( source, _vexData, _settings );
-                    synchronized( _sourcePanelList ) {
-                        _sourcePanelList.add( panel );
-                    }
+            if ( vexData.stationList() != null ) {
+                for ( Iterator<VexFileParser.Station> iter = vexData.stationList().iterator(); iter.hasNext(); ) {
+                    VexFileParser.Station station = iter.next();
+                    //  Make a new panel to hold this station.
+                    if ( _antennaList == null )
+                        _antennaList = new AntennaList();
+                    StationPanel panel = new StationPanel( station, _name.getText(), _settings );
+                    if ( _getDefaultSources )
+                        panel.defaultDataSources();
+                    panel.vexData( _vexData );
                     panel.addChangeListener( new ActionListener() {
                         public void actionPerformed( ActionEvent evt ) {
                             vexDataChange();
                         }
                     } );
-                    _sourcePane.addNode( panel );
+                    _antennaPane.addNode( panel );
+                    synchronized ( _antennaList ) {
+                        _antennaList.add( panel );
+                    }
+                    //  Add the appropriate site information for this station.
+                    for ( Iterator<VexFileParser.Site> jter = vexData.siteList().iterator(); jter.hasNext(); ) {
+                        VexFileParser.Site site = jter.next();
+                        if ( site.name.equalsIgnoreCase( station.site ) )
+                            panel.addSiteInformation( site );
+                    }
+                    //  Same for antenna information.
+                    for ( Iterator<VexFileParser.Antenna> jter = vexData.antennaList().iterator(); jter.hasNext(); ) {
+                        VexFileParser.Antenna antenna = jter.next();
+                        if ( antenna.name.equalsIgnoreCase( station.antenna ) )
+                            panel.addAntennaInformation( antenna );
+                    }
                 }
             }
-        }
-        //  Add panels containing EOP data from the .vex file and a location for EOP
-        //  data from sources specified in the Settings area.
-        _eopPane.clear();
-        if ( _vexEOPPane != null )
-            _vexEOPPane.clear();
-        if ( _newEOPPane != null )
-            _newEOPPane.clear();
-        _vexEOPUseCheck = null;
-        _newEOPUseCheck = null;
-        if ( vexData.eopList() != null ) {
-            //  This sets up the "container" panel for a list of EOP data from the .vex file.
-            IndexedPanel vexEOPPanel = new IndexedPanel( "From .vex File" );
-            vexEOPPanel.open( false );
-            vexEOPPanel.closedHeight( 20 );
-            vexEOPPanel.darkTitleBar( false );
-            vexEOPPanel.drawFrame( false );
-            _vexEOPUseCheck = new JCheckBox( "" );
-            _vexEOPUseCheck.setBounds( 250, 2, 18, 16 );
-            _vexEOPUseCheck.setSelected( true );
-            _vexEOPUseCheck.setToolTipText( "Use the EOP data from the .vex file." );
-            _vexEOPUseCheck.addActionListener( new ActionListener() {
-                public void actionPerformed( ActionEvent evt ) {
-                    selectEOPSource( _vexEOPUseCheck );
-                }
-            } );
-            vexEOPPanel.add( _vexEOPUseCheck );
-            vexEOPPanel.resizeOnTopBar( true );
-            _eopPane.addNode( vexEOPPanel );
-            _vexEOPPane = new NodeBrowserScrollPane( false );
-            _vexEOPPane.drawFrame( false );
-            _vexEOPPane.setLevel( 2 );
-            _vexEOPPane.respondToResizeEvents( true );
-            vexEOPPanel.addScrollPane( _vexEOPPane );
-            boolean doHeader = true;
-            //  Then add an IndexedPanel item for each EOP data item.
-            for ( Iterator<VexFileParser.EOP> iter = vexData.eopList().iterator(); iter.hasNext(); ) {
-                VexFileParser.EOP eop = iter.next();
-                //  Put in a header line explaining what these things are (but only
-                //  if we are on the first line).
-                if ( doHeader ) {
-                    doHeader = false;
-                    IndexedPanel eopHeaderPanel = new IndexedPanel( "" );
-                    eopHeaderPanel.openHeight( 20 );
-                    eopHeaderPanel.closedHeight( 20 );
-                    eopHeaderPanel.setLevel( 3 );
-                    eopHeaderPanel.alwaysOpen( true );
-                    eopHeaderPanel.noArrow( true );
-                    eopHeaderPanel.drawFrame( false );
-                    _vexEOPPane.addNode( eopHeaderPanel );
-                    JLabel mjd = new JLabel( "MJD" );
-                    mjd.setBounds( 90, 2, 120, 16 );
-                    eopHeaderPanel.add( mjd );
-                    JLabel tai = new JLabel( "TAI-UTC" );
-                    tai.setToolTipText( "Leap second count" );
-                    tai.setBounds( 230, 2, 100, 16 );
-                    eopHeaderPanel.add( tai );
-                    JLabel ut1 = new JLabel( "UT1-UTC" );
-                    ut1.setToolTipText( "Earth rotation phase" );
-                    ut1.setBounds( 350, 2, 100, 16 );
-                    eopHeaderPanel.add( ut1 );
-                    JLabel xp = new JLabel( "X Pole" );
-                    xp.setToolTipText( "X component of spin axis offset" );
-                    xp.setBounds( 470, 2, 100, 16 );
-                    eopHeaderPanel.add( xp );
-                    JLabel yp = new JLabel( "Y Pole" );
-                    yp.setToolTipText( "Y component of spin axis offset" );
-                    yp.setBounds( 590, 2, 100, 16 );
-                    eopHeaderPanel.add( yp );
-                }
-                //  Add data and labels.  None of these can be changed, however a bunch
-                //  of them have to be converted to the units that DiFX uses.
-                //  Generate a reference date for this entry...
-                JulianCalendar theDate = new JulianCalendar();
-                theDate.clear();
-                theDate.set( Calendar.YEAR, Integer.parseInt( eop.eop_ref_epoch.trim().substring( 0, 4 ) ) );
-                theDate.set( Calendar.DAY_OF_YEAR, Integer.parseInt( eop.eop_ref_epoch.trim().substring( 5, eop.eop_ref_epoch.trim().indexOf( 'd' ) ) ) );
-                //  Find the number of points in this set.  Accomodate the possibility
-                //  that it is not specified.
-                Integer numPts = eop.num_eop_points;
-                if ( numPts == null )
-                    numPts = 1;
-                //  Loop through the total number of points, creating a new line for each.
-                for ( int i = 0; i < numPts; ++i ) {
-                    IndexedPanel eopPanel = new IndexedPanel( "" );
-                    eopPanel.openHeight( 20 );
-                    eopPanel.closedHeight( 20 );
-                    eopPanel.setLevel( 3 );
-                    eopPanel.alwaysOpen( true );
-                    eopPanel.noArrow( true );
-                    eopPanel.drawFrame( false );
-                    _vexEOPPane.addNode( eopPanel );
-                    //  Use the modified Julian Day for this date.
-                    JLabel mjd = new JLabel( (int)(theDate.mjd()) + 
-                            " (" + theDate.get( Calendar.YEAR ) + "/" + theDate.get( Calendar.DAY_OF_YEAR ) + ")" );
-                    mjd.setBounds( 90, 2, 120, 16 );
-                    eopPanel.add( mjd );
-                    //  Add the date interval between points for the next point (there may not be one).
-                    theDate.add( Calendar.HOUR, Integer.parseInt( eop.eop_interval.trim().substring( 0, eop.eop_interval.trim().indexOf( ' ' ) ) ) );
-                    JLabel tai = new JLabel( eop.tai_utc.trim().substring( 0, eop.tai_utc.trim().indexOf( ' ' ) ) + " sec" );
-                    tai.setBounds( 230, 2, 100, 16 );
-                    eopPanel.add( tai );
-                    JLabel ut1 = new JLabel( eop.ut1_utc.get(i).trim().substring( 0, eop.ut1_utc.get(i).trim().indexOf( ' ' ) ) + " sec" );
-                    ut1.setBounds( 350, 2, 100, 16 );
-                    eopPanel.add( ut1 );
-                    JLabel xp = new JLabel( eop.x_wobble.get(i).trim().substring( 0, eop.x_wobble.get(i).trim().indexOf( ' ' ) ) + " asec" );
-                    xp.setBounds( 470, 2, 100, 16 );
-                    eopPanel.add( xp );
-                    JLabel yp = new JLabel( eop.y_wobble.get(i).trim().substring( 0, eop.y_wobble.get(i).trim().indexOf( ' ' ) ) + " asec" );
-                    yp.setBounds( 590, 2, 100, 16 );
-                    eopPanel.add( yp );
+            //  Add panels of information about each source.
+            _sourcePane.clear();
+            if ( _sourcePanelList != null ) {
+                synchronized( _sourcePanelList ) {
+                    _sourcePanelList.clear();
                 }
             }
-        }
-        //  Generate EOP data from the EOP source (if available).  To do this, we first
-        //  need to find the date of these observations (I'm using the midpoint of the
-        //  observations, but it probably doesn't matter too much).
-        JulianCalendar midTime = new JulianCalendar();
-        synchronized ( _eopLock ) {
-            if ( _eopMinTime != null && _eopMaxTime != null )
-                midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
-        }
-        _newEOP = _settings.eopData( midTime.julian() - 2.5, midTime.julian() + 2.5 );
-        if ( _newEOP != null && _newEOP.size() > 0 ) {
-            IndexedPanel newEOPPanel = new IndexedPanel( "Updated From Source" );
-            newEOPPanel.open( false );
-            newEOPPanel.closedHeight( 20 );
-            newEOPPanel.darkTitleBar( false );
-            newEOPPanel.drawFrame( false );
-            _newEOPUseCheck = new JCheckBox( "" );
-            _newEOPUseCheck.setBounds( 250, 2, 18, 16 );
-            if ( _vexEOPUseCheck != null )
-                _vexEOPUseCheck.setSelected( false );
-            _newEOPUseCheck.setSelected( true );
-            _newEOPUseCheck.setToolTipText( "Use updated EOP data from source." );
-            _newEOPUseCheck.addActionListener( new ActionListener() {
-                public void actionPerformed( ActionEvent evt ) {
-                    selectEOPSource( _newEOPUseCheck );
+            if ( vexData.sourceList() != null ) {
+                //  First add a kind of "header" panel that includes select and deselect
+                //  buttons.
+                IndexedPanel sourceButtonPanel = new IndexedPanel( "" );
+                sourceButtonPanel.closedHeight( 35 );
+                sourceButtonPanel.openHeight( 35 );
+                sourceButtonPanel.open( true );
+                sourceButtonPanel.darkTitleBar( false );
+                sourceButtonPanel.drawFrame( false );
+                sourceButtonPanel.resizeOnTopBar( false );
+                sourceButtonPanel.alwaysOpen( true );
+                sourceButtonPanel.noArrow( true );
+                JButton selectAllSources = new JButton( "Select All" );
+                selectAllSources.setBounds( 10, 5, 110, 25 );
+                selectAllSources.addActionListener( new ActionListener() {
+                    public void actionPerformed( ActionEvent e ) {
+                        selectAllSources( true );
+                    }
+                });
+                sourceButtonPanel.add( selectAllSources );
+                JButton deselectAllSources = new JButton( "Deselect All" );
+                deselectAllSources.setBounds( 125, 5, 110, 25 );
+                deselectAllSources.addActionListener( new ActionListener() {
+                    public void actionPerformed( ActionEvent e ) {
+                        selectAllSources( false );
+                    }
+                });
+                sourceButtonPanel.add( deselectAllSources );
+                //  For each antenna ("station") add a header to this panel.  These will define
+                //  the grid showing which source were observed with which stations.  These
+                //  are NOT user-changeable items.
+                int xOffset = 300;
+                for ( Iterator<VexFileParser.Station> iter = vexData.stationList().iterator(); iter.hasNext(); ) {
+                    VexFileParser.Station station = iter.next();
+                    JLabel thisLabel = new JLabel( station.name );
+                    thisLabel.setHorizontalAlignment( JLabel.CENTER );
+                    thisLabel.setBounds( xOffset, 5, 75, 25 );
+                    xOffset += 80;
+                    sourceButtonPanel.add( thisLabel );
                 }
-            } );
-            newEOPPanel.add( _newEOPUseCheck );
-            newEOPPanel.resizeOnTopBar( true );
-            _eopPane.addNode( newEOPPanel );
-            _newEOPPane = new NodeBrowserScrollPane( false );
-            _newEOPPane.drawFrame( false );
-            _newEOPPane.setLevel( 2 );
-            _newEOPPane.respondToResizeEvents( true );
-            newEOPPanel.addScrollPane( _newEOPPane );
-            replaceRemoteEOPData();
-        }
-        vexDataChange();
-        //  Add a "listener" to pick up changes in the EOP data.  These will cause
-        //  the EOP table to be rebuilt.
-        _settings.eopChangeListener( new ActionListener() {
-            public void actionPerformed( ActionEvent evt ) {
+                _sourcePane.addNode( sourceButtonPanel );
+                //  Now add the individual sources to the source panel.
+                for ( Iterator<VexFileParser.Source> iter = vexData.sourceList().iterator(); iter.hasNext(); ) {
+                    VexFileParser.Source source = iter.next();
+                    //  Make sure this source is used in one of the scans!  If not, we
+                    //  ignore it, as the user should have no interest in it.
+                    boolean keepSource = false;
+                    ArrayList<VexFileParser.ScanStation> stationsUsed = null;
+                    for ( Iterator<VexFileParser.Scan> jter = vexData.scanList().iterator(); jter.hasNext() && !keepSource; ) {
+                        VexFileParser.Scan scan = jter.next();
+                        if ( scan.source.equalsIgnoreCase( source.name ) ) {
+                            keepSource = true;
+                            stationsUsed = scan.station;
+                        }
+                    }
+                    if ( keepSource ) {
+                        if ( _sourcePanelList == null )
+                            _sourcePanelList = new ArrayList<SourcePanel>();
+                        SourcePanel panel = new SourcePanel( source, _vexData, _settings );
+                        synchronized( _sourcePanelList ) {
+                            _sourcePanelList.add( panel );
+                        }
+                        panel.addChangeListener( new ActionListener() {
+                            public void actionPerformed( ActionEvent evt ) {
+                                vexDataChange();
+                            }
+                        } );
+                        _sourcePane.addNode( panel );
+                    }
+                }
+            }
+            //  Add panels containing EOP data from the .vex file and a location for EOP
+            //  data from sources specified in the Settings area.
+            _eopPane.clear();
+            if ( _vexEOPPane != null )
+                _vexEOPPane.clear();
+            if ( _newEOPPane != null )
+                _newEOPPane.clear();
+            _vexEOPUseCheck = null;
+            _newEOPUseCheck = null;
+            if ( vexData.eopList() != null ) {
+                //  This sets up the "container" panel for a list of EOP data from the .vex file.
+                IndexedPanel vexEOPPanel = new IndexedPanel( "From .vex File" );
+                vexEOPPanel.open( false );
+                vexEOPPanel.closedHeight( 20 );
+                vexEOPPanel.darkTitleBar( false );
+                vexEOPPanel.drawFrame( false );
+                _vexEOPUseCheck = new JCheckBox( "" );
+                _vexEOPUseCheck.setBounds( 250, 2, 18, 16 );
+                _vexEOPUseCheck.setSelected( true );
+                _vexEOPUseCheck.setToolTipText( "Use the EOP data from the .vex file." );
+                _vexEOPUseCheck.addActionListener( new ActionListener() {
+                    public void actionPerformed( ActionEvent evt ) {
+                        selectEOPSource( _vexEOPUseCheck );
+                    }
+                } );
+                vexEOPPanel.add( _vexEOPUseCheck );
+                vexEOPPanel.resizeOnTopBar( true );
+                _eopPane.addNode( vexEOPPanel );
+                _vexEOPPane = new NodeBrowserScrollPane( false );
+                _vexEOPPane.drawFrame( false );
+                _vexEOPPane.setLevel( 2 );
+                _vexEOPPane.respondToResizeEvents( true );
+                vexEOPPanel.addScrollPane( _vexEOPPane );
+                boolean doHeader = true;
+                //  Then add an IndexedPanel item for each EOP data item.
+                for ( Iterator<VexFileParser.EOP> iter = vexData.eopList().iterator(); iter.hasNext(); ) {
+                    VexFileParser.EOP eop = iter.next();
+                    //  Put in a header line explaining what these things are (but only
+                    //  if we are on the first line).
+                    if ( doHeader ) {
+                        doHeader = false;
+                        IndexedPanel eopHeaderPanel = new IndexedPanel( "" );
+                        eopHeaderPanel.openHeight( 20 );
+                        eopHeaderPanel.closedHeight( 20 );
+                        eopHeaderPanel.setLevel( 3 );
+                        eopHeaderPanel.alwaysOpen( true );
+                        eopHeaderPanel.noArrow( true );
+                        eopHeaderPanel.drawFrame( false );
+                        _vexEOPPane.addNode( eopHeaderPanel );
+                        JLabel mjd = new JLabel( "MJD" );
+                        mjd.setBounds( 90, 2, 120, 16 );
+                        eopHeaderPanel.add( mjd );
+                        JLabel tai = new JLabel( "TAI-UTC" );
+                        tai.setToolTipText( "Leap second count" );
+                        tai.setBounds( 230, 2, 100, 16 );
+                        eopHeaderPanel.add( tai );
+                        JLabel ut1 = new JLabel( "UT1-UTC" );
+                        ut1.setToolTipText( "Earth rotation phase" );
+                        ut1.setBounds( 350, 2, 100, 16 );
+                        eopHeaderPanel.add( ut1 );
+                        JLabel xp = new JLabel( "X Pole" );
+                        xp.setToolTipText( "X component of spin axis offset" );
+                        xp.setBounds( 470, 2, 100, 16 );
+                        eopHeaderPanel.add( xp );
+                        JLabel yp = new JLabel( "Y Pole" );
+                        yp.setToolTipText( "Y component of spin axis offset" );
+                        yp.setBounds( 590, 2, 100, 16 );
+                        eopHeaderPanel.add( yp );
+                    }
+                    //  Add data and labels.  None of these can be changed, however a bunch
+                    //  of them have to be converted to the units that DiFX uses.
+                    //  Generate a reference date for this entry...
+                    JulianCalendar theDate = new JulianCalendar();
+                    theDate.clear();
+                    theDate.set( Calendar.YEAR, Integer.parseInt( eop.eop_ref_epoch.trim().substring( 0, 4 ) ) );
+                    theDate.set( Calendar.DAY_OF_YEAR, Integer.parseInt( eop.eop_ref_epoch.trim().substring( 5, eop.eop_ref_epoch.trim().indexOf( 'd' ) ) ) );
+                    //  Find the number of points in this set.  Accomodate the possibility
+                    //  that it is not specified.
+                    Integer numPts = eop.num_eop_points;
+                    if ( numPts == null )
+                        numPts = 1;
+                    //  Loop through the total number of points, creating a new line for each.
+                    for ( int i = 0; i < numPts; ++i ) {
+                        IndexedPanel eopPanel = new IndexedPanel( "" );
+                        eopPanel.openHeight( 20 );
+                        eopPanel.closedHeight( 20 );
+                        eopPanel.setLevel( 3 );
+                        eopPanel.alwaysOpen( true );
+                        eopPanel.noArrow( true );
+                        eopPanel.drawFrame( false );
+                        _vexEOPPane.addNode( eopPanel );
+                        //  Use the modified Julian Day for this date.
+                        JLabel mjd = new JLabel( (int)(theDate.mjd()) + 
+                                " (" + theDate.get( Calendar.YEAR ) + "/" + theDate.get( Calendar.DAY_OF_YEAR ) + ")" );
+                        mjd.setBounds( 90, 2, 120, 16 );
+                        eopPanel.add( mjd );
+                        //  Add the date interval between points for the next point (there may not be one).
+                        theDate.add( Calendar.HOUR, Integer.parseInt( eop.eop_interval.trim().substring( 0, eop.eop_interval.trim().indexOf( ' ' ) ) ) );
+                        JLabel tai = new JLabel( eop.tai_utc.trim().substring( 0, eop.tai_utc.trim().indexOf( ' ' ) ) + " sec" );
+                        tai.setBounds( 230, 2, 100, 16 );
+                        eopPanel.add( tai );
+                        JLabel ut1 = new JLabel( eop.ut1_utc.get(i).trim().substring( 0, eop.ut1_utc.get(i).trim().indexOf( ' ' ) ) + " sec" );
+                        ut1.setBounds( 350, 2, 100, 16 );
+                        eopPanel.add( ut1 );
+                        JLabel xp = new JLabel( eop.x_wobble.get(i).trim().substring( 0, eop.x_wobble.get(i).trim().indexOf( ' ' ) ) + " asec" );
+                        xp.setBounds( 470, 2, 100, 16 );
+                        eopPanel.add( xp );
+                        JLabel yp = new JLabel( eop.y_wobble.get(i).trim().substring( 0, eop.y_wobble.get(i).trim().indexOf( ' ' ) ) + " asec" );
+                        yp.setBounds( 590, 2, 100, 16 );
+                        eopPanel.add( yp );
+                    }
+                }
+            }
+            //  Generate EOP data from the EOP source (if available).  To do this, we first
+            //  need to find the date of these observations (I'm using the midpoint of the
+            //  observations, but it probably doesn't matter too much).
+            JulianCalendar midTime = new JulianCalendar();
+            synchronized ( _eopLock ) {
+                if ( _eopMinTime != null && _eopMaxTime != null )
+                    midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
+            }
+            _newEOP = _settings.eopData( midTime.julian() - 2.5, midTime.julian() + 2.5 );
+            if ( _newEOP != null && _newEOP.size() > 0 ) {
+                IndexedPanel newEOPPanel = new IndexedPanel( "Updated From Source" );
+                newEOPPanel.open( false );
+                newEOPPanel.closedHeight( 20 );
+                newEOPPanel.darkTitleBar( false );
+                newEOPPanel.drawFrame( false );
+                _newEOPUseCheck = new JCheckBox( "" );
+                _newEOPUseCheck.setBounds( 250, 2, 18, 16 );
+                if ( _vexEOPUseCheck != null )
+                    _vexEOPUseCheck.setSelected( false );
+                _newEOPUseCheck.setSelected( true );
+                _newEOPUseCheck.setToolTipText( "Use updated EOP data from source." );
+                _newEOPUseCheck.addActionListener( new ActionListener() {
+                    public void actionPerformed( ActionEvent evt ) {
+                        selectEOPSource( _newEOPUseCheck );
+                    }
+                } );
+                newEOPPanel.add( _newEOPUseCheck );
+                newEOPPanel.resizeOnTopBar( true );
+                _eopPane.addNode( newEOPPanel );
+                _newEOPPane = new NodeBrowserScrollPane( false );
+                _newEOPPane.drawFrame( false );
+                _newEOPPane.setLevel( 2 );
+                _newEOPPane.respondToResizeEvents( true );
+                newEOPPanel.addScrollPane( _newEOPPane );
                 replaceRemoteEOPData();
-                produceV2dFile();
             }
-        } );
+            vexDataChange();
+            //  Add a "listener" to pick up changes in the EOP data.  These will cause
+            //  the EOP table to be rebuilt.
+            _settings.eopChangeListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    replaceRemoteEOPData();
+                    produceV2dFile();
+                }
+            } );
+            }
+        };
+        //  We only parse the vex data within a thread if we are locating default
+        //  data sources (as that process can be time consuming).  If we aren't doing
+        //  that there are some good reasons NOT to run it as a thread.
+        if ( _getDefaultSources )
+            runit.start();
+        else
+            runit.run();
     }
     
     /*
@@ -2700,12 +2728,12 @@ public class ExperimentEditor extends JFrame {
      */
     public void vexDataChange() {
         if ( _antennaList != null ) {
-            System.out.println( "vexDataChange() in the ExperiementEditor knows there are....\n" );
+//            System.out.println( "vexDataChange() in the ExperiementEditor knows there are....\n" );
             synchronized ( _antennaList ) {
                 if ( !_antennaList.useList().isEmpty() ) {
                     for ( Iterator<StationPanel> kter = _antennaList.useList().iterator(); kter.hasNext(); ) {
                         StationPanel antenna = kter.next();
-                        System.out.println( antenna.dataStreams().size() + " data streams for antenna " + antenna.name() + " \n" );
+//                        System.out.println( antenna.dataStreams().size() + " data streams for antenna " + antenna.name() + " \n" );
                     }
                 }
             }

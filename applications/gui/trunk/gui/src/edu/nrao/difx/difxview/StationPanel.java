@@ -74,8 +74,9 @@ import javax.swing.event.EventListenerList;
 
 public class StationPanel extends IndexedPanel {
 
-    public StationPanel( VexFileParser.Station station, SystemSettings settings ) {
+    public StationPanel( VexFileParser.Station station, String experiment, SystemSettings settings ) {
         super( station.name );
+        _experiment = experiment;
         _settings = settings;
         _this = this;
         _changeListeners = new EventListenerList();
@@ -111,16 +112,16 @@ public class StationPanel extends IndexedPanel {
         addStream.setBounds( 230, 2, 130, 16 );
         addStream.setToolTipText( "Add a new stream to the data sources for this antenna.\n"
                 + "Use this only if you have multiple data streams." );
-        addStream.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent evt ) {
-                //  This adds a new stream to current list of streams.
-                DataStreamPanel newDataStream = new DataStreamPanel( _settings );
-                _contentPane.addNode( newDataStream );
-                _dataStreams.add( newDataStream );
-                renumberDataStreams();
-                dispatchChangeCallback();
-            }
-        } );
+//        addStream.addActionListener( new ActionListener() {
+//            public void actionPerformed( ActionEvent evt ) {
+//                //  This adds a new stream to current list of streams.
+//                DataStreamPanel newDataStream = new DataStreamPanel( _settings );
+//                _contentPane.addNode( newDataStream );
+//                _dataStreams.add( newDataStream );
+//                renumberDataStreams();
+//                dispatchChangeCallback();
+//            }
+//        } );
         this.add( addStream );
         
         _contentPane = new NodeBrowserScrollPane( false );
@@ -354,50 +355,51 @@ public class StationPanel extends IndexedPanel {
         //######################################################################
         
         //  Add a data source to the panel.  Each antenna needs at least this one.
-        DataStreamPanel newDataStream = new DataStreamPanel( _settings );
-        _contentPane.addNode( newDataStream );
+//        DataStreamPanel newDataStream = new DataStreamPanel( _settings );
+//        _contentPane.addNode( newDataStream );
         _dataStreams = new ArrayList<DataStreamPanel>();
-        _dataStreams.add( newDataStream );
-        renumberDataStreams();
+//        _dataStreams.add( newDataStream );
+//        renumberDataStreams();
 
-        //  Set defaults for the data source if those are available in the setting menu.
-        String antennaSource = _settings.antennaDefaultSource( station.name );
-        if ( antennaSource != null ) {
-            _vsnCheck.setSelected( false );
-            _fileCheck.setSelected( false );
-            _eVLBICheck.setSelected( false );
-            _fakeCheck.setSelected( false );
-            if ( antennaSource.contentEquals( "Files" ) ) {
-                _fileCheck.setSelected( true );
-                setEnabledItems( _fileCheck );
-                String antennaDataPath = _settings.antennaDefaultDataPath( station.name );
-                if ( antennaDataPath != null ) {
-                    _fileFilter.setText( antennaDataPath );
-                    fileFilterCallback();
-                }
-                Boolean antennaFileList = _settings.antennaDefaultFileList( station.name );
-                if ( antennaFileList != null )
-                    _fileListCheck.setSelected( antennaFileList );
-            }
-            else if ( antennaSource.contentEquals( "Network" ) ) {
-                _eVLBICheck.setSelected( true );
-                setEnabledItems( _eVLBICheck );
-            }
-            else if ( antennaSource.contentEquals( "Fake" ) ) {
-                _fakeCheck.setSelected( true );
-                setEnabledItems( _fakeCheck );
-            }
-            else if ( antennaSource.contentEquals( "Module" ) ) {
-                _vsnCheck.setSelected( true );
-                setEnabledItems( _vsnCheck );
-                String antennaDataPath = _settings.antennaDefaultDataPath( station.name );
-                if ( antennaDataPath != null )
-                    _vsnList.setSelectedItem( antennaDataPath );
-            }
-            else
-                _vsnCheck.setSelected( true );
-        }
-
+//        //  Set defaults for the data source if those are available in the setting menu.
+//        System.out.println( "creating a new station panel for " + station.name );
+//        String antennaSource = _settings.antennaDefaultSource( station.name );
+//        if ( antennaSource != null ) {
+//            _vsnCheck.setSelected( false );
+//            _fileCheck.setSelected( false );
+//            _eVLBICheck.setSelected( false );
+//            _fakeCheck.setSelected( false );
+//            if ( antennaSource.contentEquals( "Files" ) ) {
+//                _fileCheck.setSelected( true );
+//                setEnabledItems( _fileCheck );
+//                String antennaDataPath = _settings.antennaDefaultDataPath( station.name, _experiment );
+//                if ( antennaDataPath != null ) {
+//                    _fileFilter.setText( antennaDataPath );
+//                    fileFilterCallback();
+//                }
+//                Boolean antennaFileList = _settings.antennaDefaultFileList( station.name );
+//                if ( antennaFileList != null )
+//                    _fileListCheck.setSelected( antennaFileList );
+//            }
+//            else if ( antennaSource.contentEquals( "Network" ) ) {
+//                _eVLBICheck.setSelected( true );
+//                setEnabledItems( _eVLBICheck );
+//            }
+//            else if ( antennaSource.contentEquals( "Fake" ) ) {
+//                _fakeCheck.setSelected( true );
+//                setEnabledItems( _fakeCheck );
+//            }
+//            else if ( antennaSource.contentEquals( "Module" ) ) {
+//                _vsnCheck.setSelected( true );
+//                setEnabledItems( _vsnCheck );
+//                String antennaDataPath = _settings.antennaDefaultDataPath( station.name, _experiment );
+//                if ( antennaDataPath != null )
+//                    _vsnList.setSelectedItem( antennaDataPath );
+//            }
+//            else
+//                _vsnCheck.setSelected( true );
+//        }
+//
         
         //  The antenna panel contains information about the antenna - mount, offsets,
         //  size, etc.  This is filled in by a function call.
@@ -563,6 +565,51 @@ public class StationPanel extends IndexedPanel {
     //--------------------------------------------------------------------------
     public ArrayList<DataStreamPanel> dataStreams() {
         return _dataStreams;
+    }
+
+    //--------------------------------------------------------------------------
+    //!  Check the settings for user-specified default data sources.  This can
+    //!  be a time-consuming process (as ultimately the data sources may be listed
+    //!  over TCP by guiServer).
+    //--------------------------------------------------------------------------
+    public void defaultDataSources() {
+        //  Set defaults for the data source if those are available in the setting menu.
+        String antennaSource = _settings.antennaDefaultSource( name() );
+        if ( antennaSource != null ) {
+            _vsnCheck.setSelected( false );
+            _fileCheck.setSelected( false );
+            _eVLBICheck.setSelected( false );
+            _fakeCheck.setSelected( false );
+            if ( antennaSource.contentEquals( "Files" ) ) {
+                _fileCheck.setSelected( true );
+                setEnabledItems( _fileCheck );
+                String antennaDataPath = _settings.antennaDefaultDataPath( name(), _experiment );
+                if ( antennaDataPath != null ) {
+                    _fileFilter.setText( antennaDataPath );
+                    fileFilterCallback();
+                }
+                Boolean antennaFileList = _settings.antennaDefaultFileList( name() );
+                if ( antennaFileList != null )
+                    _fileListCheck.setSelected( antennaFileList );
+            }
+            else if ( antennaSource.contentEquals( "Network" ) ) {
+                _eVLBICheck.setSelected( true );
+                setEnabledItems( _eVLBICheck );
+            }
+            else if ( antennaSource.contentEquals( "Fake" ) ) {
+                _fakeCheck.setSelected( true );
+                setEnabledItems( _fakeCheck );
+            }
+            else if ( antennaSource.contentEquals( "Module" ) ) {
+                _vsnCheck.setSelected( true );
+                setEnabledItems( _vsnCheck );
+                String antennaDataPath = _settings.antennaDefaultDataPath( name(), _experiment );
+                if ( antennaDataPath != null )
+                    _vsnList.setSelectedItem( antennaDataPath );
+            }
+            else
+                _vsnCheck.setSelected( true );
+        }        
     }
 
     /*
@@ -865,8 +912,16 @@ public class StationPanel extends IndexedPanel {
     }
 
     public boolean useFileList() { return _fileListCheck.isSelected(); }
+    public void useFileList( boolean newVal ) { 
+        _fileListCheck.setSelected( newVal );
+        _fileCheck.setEnabled( true );
+        setEnabledItems( _fileCheck );
+    }
     
     public String fileListName() { return _fileFilter.getText(); }
+    public void fileListName( String newVal ) { 
+        _fileFilter.setText( newVal );
+    }
 
     /*
      * Return a list of all filenames listed in the file list.  Only those
@@ -1864,7 +1919,7 @@ public class StationPanel extends IndexedPanel {
     protected SaneTextField _dirListLocation;
     protected ArrayList<String> _listOfFiles;
 
-    
+    protected String _experiment;
     protected SystemSettings _settings;
     
     protected NodeBrowserScrollPane _contentPane;

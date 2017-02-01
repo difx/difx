@@ -742,6 +742,12 @@ public class V2dFileParser {
     public void antennaFileList( String name, String newVal ) {
         findAntenna( name ).filelist = newVal;
     }
+    public String antennaFileList( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).filelist;
+    }
     public String antennaVsn( String name ) {
         if ( antennaSection( name ) == null )
             return null;

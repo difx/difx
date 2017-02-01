@@ -112,6 +112,7 @@ import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import edu.nrao.difx.difxutilities.GuiServerConnection;
 import edu.nrao.difx.difxutilities.TabCompletedTextField;
 import edu.nrao.difx.difxcontroller.DiFXMessageProcessor;
+import edu.nrao.difx.difxutilities.DiFXCommand_ls;
 
 import java.sql.ResultSet;
 import javax.swing.SwingConstants;
@@ -4278,7 +4279,7 @@ public class SystemSettings extends JFrame {
                 antennaDefault.setAntennaName( panel.antennaName() );
                 antennaDefault.setFilelist( panel.filelist() );
                 antennaDefault.setSource( panel.source() );
-                antennaDefault.setDataPath( panel.dataPath() );
+                antennaDefault.setDataPath( panel.dataPath( null, null ) );
                 doiConfig.getAntennaDefault().add( antennaDefault );
             }
         }
@@ -6129,9 +6130,47 @@ public class SystemSettings extends JFrame {
                 else
                     return "";
             }
-            public String dataPath() {
-                if ( dataPath.getText() != null )
-                    return dataPath.getText();
+            //  Find the data path which can contain some wild card values that are replaced
+            //  in the output with the antenna and experiment.
+            int counter;
+            public String dataPath( String antenna, String experiment ) {
+                if ( dataPath.getText() != null ) {
+                    String thisPath = (String)dataPath.getText();
+                    //  Bounce out of here if the two input strings are null.  This happens
+                    //  when saving the setting to XML.
+                    if ( antenna == null && experiment == null )
+                        return thisPath;
+                    //  Replace any instance of the experiment wild card with the experiment name.
+                    if ( experiment != null && experiment.length() > 0 )
+                        thisPath = thisPath.replace( "$EXP", experiment );
+                    //  Does the string contain an antenna wild card?
+                    if ( thisPath.contains( "$ANT" ) ) {
+                        //  Replace the wild card with the antenna value. 
+                        String testPath = thisPath.replace( "$ANT", antenna );
+                        //  Now see if anything matching this path exists.
+                        try {
+//                            System.out.println( "trying " + testPath );
+                            if ( DiFXCommand_ls.fileExists( 5, testPath, _settings ) == DiFXCommand_ls.FILE_DOESNT_EXIST ) {
+                                //  Try changing the case of the antenna...
+                                if ( antenna.toLowerCase() != antenna ) {
+                                    testPath = thisPath.replace( "$ANT", antenna.toLowerCase() );
+//                                    System.out.println( "   okay, try " + testPath );
+                                    if ( DiFXCommand_ls.fileExists( 5, testPath, _settings ) == DiFXCommand_ls.FILE_EXISTS )
+                                        return testPath;
+                                    testPath = thisPath.replace( "$ANT", antenna.toUpperCase() );
+//                                    System.out.println( "   maybe " + testPath );
+                                    if ( DiFXCommand_ls.fileExists( 5, testPath, _settings ) == DiFXCommand_ls.FILE_EXISTS )
+                                        return testPath;                                
+                                }
+                            }
+                            else
+                                return testPath;
+                        } catch ( java.net.UnknownHostException e ) {
+                            return testPath;
+                        }
+                    }                        
+                    return thisPath;
+                }
                 else
                     return "";
             }
@@ -6157,11 +6196,23 @@ public class SystemSettings extends JFrame {
          */
         public PanelItem panelItem( String antennaName ) {
             if ( _panels != null ) {
+                //  First look for any item that exactly matches the antenna/station name
+                //  (case is ignored).
                 for ( Iterator<PanelItem> iter = _panels.iterator(); iter.hasNext(); ) {
                     PanelItem thisPanel = iter.next();
                     String thisText = (String)thisPanel.antennaName.getText();
                     if ( thisText != null && thisText.length() > 0 ) {
-                        if ( thisText.contentEquals( antennaName ) )
+                        if ( thisText.compareToIgnoreCase( antennaName ) == 0 )
+                            return thisPanel;
+                    }
+                }
+                //  Failing that, see if there is an item that matches the wildcard
+                //  value "$ANT".  This applies to any antenna.
+                for ( Iterator<PanelItem> iter = _panels.iterator(); iter.hasNext(); ) {
+                    PanelItem thisPanel = iter.next();
+                    String thisText = (String)thisPanel.antennaName.getText();
+                    if ( thisText != null && thisText.length() > 0 ) {
+                        if ( thisText.contentEquals( "$ANT" ) )
                             return thisPanel;
                     }
                 }
@@ -6196,12 +6247,12 @@ public class SystemSettings extends JFrame {
             return panel.source();
     }
     
-    public String antennaDefaultDataPath( String name ) {
+    public String antennaDefaultDataPath( String name, String experiment ) {
         AntennaDefaultsDisplay.PanelItem panel = _antennaDefaultsDisplay.panelItem( name );
         if ( panel == null )
             return null;
         else
-            return panel.dataPath();
+            return panel.dataPath( name, experiment );
     }
     
     protected AntennaDefaultsDisplay _antennaDefaultsDisplay;

@@ -326,6 +326,7 @@ public class ExperimentNode extends QueueBrowserContainerNode {
     public void propertiesAction() {
         if ( _editor == null ) {
             Point pt = this.getLocationOnScreen();
+            System.out.println( "generate the editor here\n" );
             _editor = new ExperimentEditor( pt.x + 25, pt.y + 25, _settings );
             _editor.number( this.number() );
             _editor.name( this.name() );
