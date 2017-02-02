@@ -9,7 +9,7 @@ fftw_programs = \
 	m5subband \
 	zerocorr
 m5subband_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
-m5subband_LDADD = $(FFTW3_LIBS) $(LDADD)
+m5subband_LDADD = $(FFTW3_LIBS) $(LDADD) -lfftw3f
 m5spec_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5spec_LDADD = $(FFTW3_LIBS) $(LDADD)
 m5fb_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
