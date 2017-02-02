@@ -27,11 +27,11 @@
 //
 //============================================================================
 
-// Test:
-// m5subband s14db02c_KVNYS_No0006.short.vdif VDIF_10000-2048-1-2 tmp.vdif 1 1 124.0 128.0
+// Useful thoughs at http://www.katjaas.nl/FFTwindow/FFTwindow&filtering.html
 
 #define OUTPUT_BITS 2         // desired quantization in output VDIF file, options are 2, 8, or 32 (2-bit VDIF encoding, 8-bit linear encoding, or 32-bit float)
-#define DEFAULT_IDFT_LEN 256  // length of inverse DFT (default: 32)
+#define DEFAULT_IDFT_LEN 128  // default number of points to place accross extractable narrowband signal
+#define USE_C2C_IDFT     0    // 1 to use complex-to-complex inverse DFT, 0 to use complex-to-real inverse DFT (faster, less tested)
 #define REPORT_INTERVAL 10000
 
 #include "../mark5access/mark5_stream.h"
@@ -55,8 +55,8 @@
 
 const char program[] = "m5subband";
 const char author[]  = "Jan Wagner";
-const char version[] = "1.1.6";
-const char verdate[] = "20170201";
+const char version[] = "1.1.7";
+const char verdate[] = "20170202";
 
 static uint32_t m_VDIF_refep_MJDs[] =
 {
@@ -104,6 +104,7 @@ typedef struct FilterConfig_tt {
 	int discard_incomplete_on_close;
 	float start_MHz;
 	float stop_MHz;
+	int npoints; // points to place accross the start_MHz--stop_MHz range
 	enum WindowFunction winfunc;
 } FilterConfig_t;
 
@@ -147,15 +148,18 @@ static void usage()
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A Mark5 time domain filter. Extracts a narrow subband from a wideband recording.\n\n");
-	printf("Can use VLBA, Mark3/4, and Mark5B formats using the\nmark5access library.\n\n");
-	printf("Usage : m5subband [--refmjd=<n>] [--wf=Hann|cos|box] [--trunc] [--no-leading|--leading]\n");
-	printf("            [--no-tailing|--tailing] <infile> <dataformat> <outfile>\n");
-	printf("            <if_nr> <qf> <f0> <f1> [<offset>]\n\n");
+	printf("Can use VLBA, Mark3/4, and Mark5B formats using the mark5access library.\n\n");
+	printf("Usage : m5subband [--refmjd=<n>] [--wf=Hann|cos|box] [--npts=<n>] [--trunc]\n");
+	printf("                  [--no-leading|--leading] [--no-tailing|--tailing]\n");
+	printf("                  <infile> <dataformat> <outfile> <if_nr> <qf> <f0> <f1> [<offset>]\n\n");
+	printf("Optional parameters:\n\n");
 	printf("  --refmjd=<n> resolve ambiguity of 3-digit MJD of Mark5B (default: 57000)\n");
 	printf("  --wf=<n> choose pre- and post-filtering window function (default: cos)\n");
+	printf("  --npts=<n> to choose number of DFT points across extractable subband (default: %d)\n", DEFAULT_IDFT_LEN);
 	printf("  --trunc to discard incomplete frame when output file is closed, zero-pad otherwise\n");
 	printf("  --[no-]leading to discard/keep leading part of filter response, valid for qf>1\n");
 	printf("  --[no-]tailing to discard/keep tailing part of filter response, valid for qf>1\n\n");
+	printf("Arguments:\n\n");
 	printf("  <infile> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
@@ -168,7 +172,6 @@ static void usage()
 	printf("  <f0> is the low edge (in MHz) of the subband to filter out\n\n");
 	printf("  <f1> is the high edge (in MHz) of the subband to filter out\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
-	printf("\n");
 }
 
 /** Return next power of 2 from n */
@@ -212,7 +215,7 @@ float stddev(const float* v, const size_t N)
  * Finally applies the weights in vector 'w' to 'out' to produce a weighted 'wout' vector.
  */
 __attribute__((optimize("unroll-loops")))
-int windowed_mk5_read(struct mark5_stream *ms, const int Ldft, float **raw, const int if_nr, const int factor, float *out, const fftwf_real *w, fftwf_real *wout)
+int windowed_mk5_read(struct mark5_stream *ms, const int Ldft, float **raw, const int if_nr, const int factor, float *out, const fftwf_real *w, fftwf_real *wout, const enum WindowFunction wtype)
 {
 	const int_fast32_t nunroll = 8;
 	int_fast32_t n, k;
@@ -239,6 +242,11 @@ int windowed_mk5_read(struct mark5_stream *ms, const int Ldft, float **raw, cons
 	}
 
 	// Window the data
+	if (wtype == Boxcar)
+	{
+		memcpy(wout, out, Ldft*sizeof(float));
+		return rc;
+	}
 	for (n = 0; (n + nunroll) < Ldft; n += nunroll)
 	{
 		for (k = 0; k < nunroll; k++)
@@ -330,11 +338,47 @@ void requantize_into_vdif(VDIFEncapsulator_t* vdif, const float* in, float sigma
 #endif
 }
 
+__attribute__((optimize("unroll-loops")))
+void window_and_accumulate_c2r(fftwf_real* out, const fftwf_complex* in, const int Lidft, const fftwf_real phasor_re, const fftwf_real* w)
+{
+	const int_fast32_t nunroll = 8;
+	int_fast32_t n, k;
+	for (n = 0; (n + nunroll) < Lidft; n += nunroll)
+	{
+		for (k = 0; k < nunroll; k++)
+		{
+			out[n+k] += phasor_re * creal(in[n+k]) * w[n+k];
+		}
+	}
+	for ( ; n < Lidft; n++)
+	{
+		out[n] += phasor_re * creal(in[n]) * w[n];
+	}
+}
+
+__attribute__((optimize("unroll-loops")))
+void window_and_accumulate_r2r(fftwf_real* out, const fftwf_real* in, const int Lidft, const fftwf_real phasor_re, const fftwf_real* w)
+{
+	const int_fast32_t nunroll = 8;
+	int_fast32_t n, k;
+	for (n = 0; (n + nunroll) < Lidft; n += nunroll)
+	{
+		for (k = 0; k < nunroll; k++)
+		{
+			out[n+k] += phasor_re * in[n+k] * w[n+k];
+		}
+	}
+	for ( ; n < Lidft; n++)
+	{
+		out[n] += phasor_re * in[n] * w[n];
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Window Functions
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-/** Generate a Hann window (double application pre-FFT then post-IFT produces Hann-squared) */
+/** Generate a Hann window (double application pre-FFT then post-IDFT produces Hann-squared) */
 void generate_window_Hann(fftwf_real *wf, int L)
 {
 	int i;
@@ -345,7 +389,7 @@ void generate_window_Hann(fftwf_real *wf, int L)
 	}
 }
 
-/** Generate a cosine window (double application pre-FFT then post-IFT produces cosine-squared) */
+/** Generate a cosine window (double application pre-FFT then post-IDFT produces cosine-squared) */
 void generate_window_cosine(fftwf_real *wf, int L)
 {
 	int i;
@@ -356,7 +400,7 @@ void generate_window_cosine(fftwf_real *wf, int L)
 	}
 }
 
-/** Generate a boxcar window (double application pre-FFT then post-IFT produces unity) */
+/** Generate a boxcar window (double application pre-FFT then post-IDFT produces unity) */
 void generate_window_boxcar(fftwf_real *wf, int L)
 {
 	int i;
@@ -377,6 +421,7 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	const int factor = cfg->factor;
 	float start_MHz = cfg->start_MHz;
 	float stop_MHz = cfg->stop_MHz;
+	char fmtstring[64];
 
 	float bw_in_MHz, bw_out_MHz, df;
 	float r, rfrac, rot_f_re;
@@ -385,7 +430,7 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	int i, rc;
 
 	size_t niter = 0, nidft = 0, ntailing = 0;
-	struct timeval t1, t2;
+	struct timeval t1, t2, tstart, tstop;
 
 	VDIFEncapsulator_t vdif;
 	const int nbit_out = OUTPUT_BITS;
@@ -398,6 +443,7 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	fftwf_complex *dft_out, *idft_in, *idft_out;
 	fftwf_plan plan_fwd;
 	fftwf_plan plan_inv;
+	fftwf_plan plan_inv_c2r;
 	float sigma = 0.0f;
 	char *out_converter_tmp;
 
@@ -412,7 +458,7 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	bw_out_MHz = abs(stop_MHz - start_MHz);
 
 	// Determine transform sizes: fix IDFT length, pad it, then adjust DFT length
-	Lcopy = DEFAULT_IDFT_LEN;                 // #bins to copy from DFT complex out into IDFT input
+	Lcopy = cfg->npoints;                     // #bins to copy from DFT complex out into IDFT input
 	//Lidft = next_pow2(2*(Lcopy-Lcopy%2));   // zero-pad Lcopy such that time-domain output data will be somewhat oversampled
 	Lidft = next_even(2*(Lcopy-Lcopy%2));     // zero-pad Lcopy that time-domain output data will be closer to critically sampled
 	Ldft  = 2.0*bw_in_MHz/(bw_out_MHz/Lcopy); // #bins total in large DFT
@@ -454,8 +500,8 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	out_converter_tmp = malloc(sizeof(char)*2*Lidft);
 	dft_in = fftwf_malloc(sizeof(fftwf_real)*Ldft);
 	dft_out = fftwf_malloc(sizeof(fftwf_complex)*(Ldft/2+1));
-	idft_in = fftwf_malloc(sizeof(fftwf_complex)*Lidft);
-	idft_out = fftwf_malloc(sizeof(fftwf_complex)*Lidft);
+	idft_in = fftwf_malloc(sizeof(fftwf_complex)*Lidft+8);
+	idft_out = fftwf_malloc(sizeof(fftwf_complex)*Lidft+8);
 	out_td = fftwf_malloc(sizeof(fftwf_real)*2*Lidft);
 	memset(dft_in, 0x00, sizeof(fftwf_real)*Lidft);
 	memset(dft_out, 0x00, sizeof(fftwf_complex)*(Lidft/2+1));
@@ -465,6 +511,7 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	// Prepare (I)DFT
 	plan_fwd = fftwf_plan_dft_r2c_1d(Ldft, dft_in, dft_out, FFTW_MEASURE);
 	plan_inv = fftwf_plan_dft_1d(Lidft, idft_in, idft_out, FFTW_BACKWARD, FFTW_MEASURE);
+	plan_inv_c2r = fftwf_plan_dft_c2r_1d(Lidft, idft_in, (fftwf_real*)idft_out, FFTW_MEASURE);
 
 	// Window functions
 	wf_analysis = fftwf_malloc(sizeof(fftwf_real)*Ldft);
@@ -509,14 +556,20 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	vdifencap_updateheader(&vdif);
 
 	// Report
+	snprintf(fmtstring, sizeof(fmtstring)-1, "VDIF_%zu-%.0f-1-%d", vdif.payloadbytes, 2*bw_out_MHz*nbit_out, nbit_out);
+	fmtstring[sizeof(fmtstring)-1] = '\0';
 	printf("%-14s : first integer second (MJD %d sec %d) found after %zd samples.\n", "Input file", mjd, sec, niter);
-	printf("%-14s : VDIF_%zu-%.0f-1-%d with %.1f frames/s at %.3f Mbps\n", "Output format",
-		vdif.payloadbytes, 2*bw_out_MHz*nbit_out, nbit_out, vdif.fps, 2*bw_out_MHz*nbit_out
-	);
+	printf("%-14s : %s with %.1f frames/s at %.3f Mbps\n", "Output format", fmtstring, vdif.fps, 2*bw_out_MHz*nbit_out);
 	printf("%-14s : MJD %.3f is VDIF reference epoch %d\n", "Output time", mjd + sec/86400.0, vdif.refepoch);
-	printf("%-14s : %d-pt DFT, take %d bins (%d...%d), %d-pt IDFT, %s window, %.1f deg phase/IDFT\n", "Configuration",
+	#if USE_C2C_IDFT
+	printf("%-14s : %d-pt r2c DFT, take %d bins (%d...%d), %d-pt c2c IDFT, %s window, %.1f deg phase/IDFT\n", "Configuration",
 		Ldft, Lcopy, start_bin, stop_bin, Lidft, WindowFunctionNames[cfg->winfunc], 360.0*rfrac
 	);
+	#else
+	printf("%-14s : %d-pt r2c DFT, take %d bins (%d...%d), %d-pt c2r IDFT, %s window, %.1f deg phase/IDFT\n", "Configuration",
+		Ldft, Lcopy, start_bin, stop_bin, Lcopy, WindowFunctionNames[cfg->winfunc], 360.0*rfrac
+	);
+	#endif
 	printf("%-14s : start at effective %.3f MHz, stop at %.3f MHz, qf=%d\n", "Extraction", start_MHz, stop_MHz, factor);
 	printf("%-14s : keep leading=%d, keep tailing=%d, keep incomplete last frame=%d\n", "Options",
 		!cfg->no_lead, !cfg->no_tail, !cfg->discard_incomplete_on_close
@@ -525,10 +578,11 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	// Process raw input data
 	niter = 0;
 	gettimeofday(&t1, NULL);
+	tstart = t1;
 	while (!die)
 	{
 		// Append new data to 'in_raw' and window the entire Ldft-long sample vector into 'dft_in'
-		rc = windowed_mk5_read(ms, Ldft, raw, if_nr, factor, in_raw, wf_analysis, dft_in);
+		rc = windowed_mk5_read(ms, Ldft, raw, if_nr, factor, in_raw, wf_analysis, dft_in, cfg->winfunc);
 		if (rc < 0)
 		{
 			ntailing++;
@@ -539,61 +593,33 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 			}
 		}
 
-		// Transform (r2c: 'Ldft' values in, 'Ldft/2+1' values out)
-		fftwf_execute_dft_r2c(plan_fwd, dft_in, dft_out);
+		// Transform r2c Ldft reals from 'dft_in' into Ldft/2+1 complex in 'dft_out'
+		fftwf_execute(plan_fwd);
 
 		// Copy desired bin range into input of zero-padded IDFT
 		memcpy(idft_in, dft_out + start_bin, sizeof(fftwf_complex) * Lcopy);
-		idft_in[0] = creal(idft_in[0]);
-		idft_in[Lcopy-1] = creal(idft_in[Lcopy-1]);
-
-#if DEBUG
-		if (1)
-		{
-			FILE *f = fopen("dft.out", "w");
-			int jj;
-			for (jj = 0; jj < Ldft/2+1; jj++) {
-				fprintf(f, "%d %.3f\n", jj, cabs(dft_out[jj]));
-			}
-			fclose(f);
-		}
-		if (1)
-		{
-			FILE *f = fopen("idft.in", "w");
-			int jj;
-			for (jj = 0; jj < Lcopy; jj++) {
-				fprintf(f, "%d %.3f\n", jj, cabs(idft_in[jj]));
-			}
-			fclose(f);
-		}
-		if (niter > 4*factor) { return -1; } // quit after filtering has settled
-#endif
+		idft_in[0] = creal(idft_in[0]);             // DC point 0
+		idft_in[Lcopy-1] = creal(idft_in[Lcopy-1]); // pre-Nyquist point N/2
+		//idft_in[Lcopy] = creal(idft_in[Lcopy]);   // Nyquist N/2+1 point
 
 		// Weight of current output
 		rot_f_re = cos(2.0*M_PI*rfrac*((double)nidft)); // TODO: could use periodicity on w to improve numerical precision at large #nidft
 		//printf(" i=%zd r=%.3f\n   ", nidft, rot_f_re);
 		nidft++;
 
-		// Inverse transform
-		fftwf_execute_dft(plan_inv, idft_in, idft_out);
+		// Inverse transform idft_in --> idft_out
+		#if USE_C2C_IDFT
+		fftwf_execute(plan_inv);     // Lidft complex to Lidft complex
+		#else
+		fftwf_execute(plan_inv_c2r); // Lidft/2+1 complex to Lidft reals
+		#endif
 
 		// Window and add
-		if (1)
-		{
-			const int_fast32_t nunroll = 8;
-			int_fast32_t n, k;
-			for (n = 0; (n + nunroll) < Lidft; n += nunroll)
-			{
-				for (k = 0; k < nunroll; k++)
-				{
-					out_td[n+k] += rot_f_re * creal(idft_out[n+k]) * wf_resynthesis[n+k];
-				}
-			}
-			for ( ; n < Lidft; n++)
-			{
-				out_td[n] += rot_f_re * creal(idft_out[n]) * wf_resynthesis[n];
-			}
-		}
+		#if USE_C2C_IDFT
+		window_and_accumulate_c2r(out_td, idft_out, Lidft, rot_f_re, wf_resynthesis);
+		#else
+		window_and_accumulate_r2r(out_td, (fftwf_real*)idft_out, Lidft, rot_f_re, wf_resynthesis);
+		#endif
 
 		// Calculate standard deviation once filter has settled
 		if (nidft < 4*factor)
@@ -636,6 +662,14 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	}
 
 	vdifencap_close(&vdif, cfg->discard_incomplete_on_close);
+
+	gettimeofday(&tstop, NULL);
+	if (1)
+	{
+		double dt = (tstop.tv_sec - tstart.tv_sec) + 1e-6*(tstop.tv_usec - tstart.tv_usec);
+		printf("Finished in %.1f seconds, total throughput %.2f Ms/s.\n", dt, 1e-6*nidft*(Ldft/dt)/factor);
+		printf("Use format %s to decode the output VDIF file.\n", fmtstring);
+	}
 
 	return 0;
 }
@@ -799,6 +833,7 @@ int main(int argc, char **argv)
 	int retval;
 
 	FilterConfig_t fcfg;
+	fcfg.npoints = DEFAULT_IDFT_LEN;
 	fcfg.winfunc = Cosine;
 	fcfg.no_lead = 1;
 	fcfg.no_tail = 1;
@@ -829,6 +864,10 @@ int main(int argc, char **argv)
 			{
 				printf("Warning: unknown --wf argument '%s'\n", argv[1]+5);
 			}
+		}
+		else if (strncmp(argv[1], "--npts=", 7) == 0)
+		{
+			fcfg.npoints = atoi(argv[1]+7);
 		}
 		else if (strncmp(argv[1], "--trunc", 7) == 0)
 		{
@@ -917,6 +956,11 @@ int main(int argc, char **argv)
 	if ((fcfg.factor < 0) || (fcfg.factor > 16))
 	{
 		fcfg.factor = 1;
+	}
+	if ((fcfg.npoints < 16) || (fcfg.npoints & 1))
+	{
+		printf("Error: number of points accross narrowband signal must be even and >=16\n");
+		return EXIT_FAILURE;
 	}
 
 	fdout = open(outfile, O_CREAT|O_TRUNC|O_WRONLY, S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH);
