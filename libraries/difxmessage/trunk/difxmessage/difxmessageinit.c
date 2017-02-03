@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2014 by Walter Brisken                             *
+ *   Copyright (C) 2007-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "../difxmessage.h"
 #include "difxmessageinternal.h"
