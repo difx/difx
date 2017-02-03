@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -72,7 +72,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	float polCalB[array_MAX_BANDS];
 	/* 1-based indices for FITS file */
 	int32_t arrayId1;
-	int noPCal;;
+	int noPCal;
 
 	if(D == 0)
 	{

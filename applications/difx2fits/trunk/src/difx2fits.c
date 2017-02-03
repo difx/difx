@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -818,6 +818,9 @@ static void deleteDifxInputSet(DifxInput **Dset, int n)
 	}
 }
 
+#if 0
+/* No used anymore.  If needed in the future, probably best to implement in difxio/difx_eop.c */
+
 /* return number of days, inclusive, spanned by a number n of provided DifxInput structures */
 static int nEOPDays(DifxInput **Dset, int n)
 {
@@ -852,11 +855,11 @@ static int nEOPDays(DifxInput **Dset, int n)
 
 	return maxDay - minDay + 1;
 }
+#endif
 
 static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 {
 	DifxInput **Dset;
-	enum EOPMergeMode eopMergeMode;
 	int i;
 
 	Dset = (DifxInput **)calloc(opts->nBaseFile, sizeof(DifxInput *));
