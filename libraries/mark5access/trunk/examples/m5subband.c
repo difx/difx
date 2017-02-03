@@ -29,14 +29,24 @@
 
 // Useful thoughs at http://www.katjaas.nl/FFTwindow/FFTwindow&filtering.html
 
-#define OUTPUT_BITS 2         // desired quantization in output VDIF file, options are 2, 8, or 32 (2-bit VDIF encoding, 8-bit linear encoding, or 32-bit float)
-#define DEFAULT_IDFT_LEN 128  // default number of points to place accross extractable narrowband signal
-#define USE_C2C_IDFT     0    // 1 to use complex-to-complex inverse DFT, 0 to use complex-to-real inverse DFT (faster, less tested)
-#define REPORT_INTERVAL 10000
+#define OUTPUT_BITS 2             // desired quantization in output VDIF file, options are 2, 8, or 32 (2-bit VDIF encoding, 8-bit linear encoding, or 32-bit float)
+#define DEFAULT_IDFT_LEN 128      // default number of points to place accross extractable narrowband signal
+#define STDDEV_MIN_SAMPLES 8192   // minimum number of output time domain samples to use in determining 'sigma' for 2-bit re-quantization
+#define USE_C2C_IDFT     0        // 1 to use complex-to-complex inverse DFT, 0 to use complex-to-real inverse DFT (faster, less tested)
+#define FFTW_FLAGS  FFTW_ESTIMATE // FFTW_ESTIMATE or FFTW_MEASURE or FFTW_PATIENT
+
+#ifdef __GNUC__
+	#define RESTRICT __restrict__
+#else
+	#define RESTRICT
+#endif
+
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#define _FILE_OFFSET_BITS 64
 
 #include "../mark5access/mark5_stream.h"
 
-#define _FILE_OFFSET_BITS 64
 #include <assert.h>
 #include <fcntl.h>
 #include <math.h>
@@ -52,11 +62,12 @@
 
 #include <complex.h>
 #include <fftw3.h>
+typedef float fftw_real;
 
 const char program[] = "m5subband";
 const char author[]  = "Jan Wagner";
-const char version[] = "1.1.7";
-const char verdate[] = "20170202";
+const char version[] = "1.1.8";
+const char verdate[] = "20170203";
 
 static uint32_t m_VDIF_refep_MJDs[] =
 {
@@ -77,9 +88,6 @@ static uint32_t m_VDIF_refep_MJDs[] =
     65789, 65970, 66154, 66336, 66520, 66701, 66885, 67066, 67250, 67431, 67615, 67797, 67981,
     68162, 68346, 68527, 68711, 68892, 69076, 69258, 69442, 69623, 69807, 69988
 };
-
-typedef double fftw_real;
-typedef float fftwf_real;
 
 enum WindowFunction { Cosine=0, Hann=1, Boxcar=2 };
 static const char* WindowFunctionNames[3] = { "cosine", "Hann", "boxcar" };
@@ -115,9 +123,9 @@ int vdifencap_copyheader(const char* fn, VDIFEncapsulator_t* t);
 int vdifencap_write(VDIFEncapsulator_t* t, const char* data, size_t len);
 int vdifencap_MJDsec_to_RefEpSec(const uint32_t MJD, const uint32_t sec_of_day, uint32_t *ref_epoch, uint32_t* sec_of_epoch);
 
-void generate_window_Hann(fftwf_real *wf, int L);
-void generate_window_cosine(fftwf_real *wf, int L);
-void generate_window_boxcar(fftwf_real *wf, int L);
+void generate_window_Hann(fftw_real *wf, int L);
+void generate_window_cosine(fftw_real *wf, int L);
+void generate_window_boxcar(fftw_real *wf, int L);
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Signals (Ctrl-C)
@@ -187,6 +195,18 @@ int next_even(int n)
 	return n + n%2;
 }
 
+/** Return 1 if number is a power of 2 */
+int is_pow2(int n)
+{
+	return ((n & (n - 1)) == 0);
+}
+
+/** Return 1 if floating point nr is an integer */
+int is_integer(float n)
+{
+	return (ceilf(n) == n);
+}
+
 /** Calculate standard deviation of data */
 float stddev(const float* v, const size_t N)
 {
@@ -214,8 +234,12 @@ float stddev(const float* v, const size_t N)
  * factor 4 : 25% new data (retain recent 3*Ldft/4 samples and append Ldft/4 new samples).
  * Finally applies the weights in vector 'w' to 'out' to produce a weighted 'wout' vector.
  */
+#ifdef __GNUC__
 __attribute__((optimize("unroll-loops")))
-int windowed_mk5_read(struct mark5_stream *ms, const int Ldft, float **raw, const int if_nr, const int factor, float *out, const fftwf_real *w, fftwf_real *wout, const enum WindowFunction wtype)
+#endif
+int windowed_mk5_read(struct mark5_stream *ms, const int Ldft, float **raw,
+    const int if_nr, const int factor, float * RESTRICT out, const fftw_real * RESTRICT w, fftw_real * RESTRICT wout,
+    const enum WindowFunction wtype)
 {
 	const int_fast32_t nunroll = 8;
 	int_fast32_t n, k;
@@ -266,14 +290,14 @@ int windowed_mk5_read(struct mark5_stream *ms, const int Ldft, float **raw, cons
  * The intended use is for having 'nsamp == Lidft/factor' samples in 'in',
  * to write the most recent fully completed time domain data.
  */
-void requantize_into_vdif(VDIFEncapsulator_t* vdif, const float* in, float sigma, unsigned char* tmp, int nsamp)
+void requantize_into_vdif(VDIFEncapsulator_t* vdif, const float * RESTRICT in, float sigma, unsigned char * RESTRICT tmp, const int nsamp)
 {
 	int_fast32_t n;
 
 	// Store 32-bit / 8-bit / 2-bit
 #if OUTPUT_BITS==32
-	if (vdifencap_write(vdif, (const char*)in, nsamp*sizeof(fftwf_real)) < 0) // VDIF format
-	//if (write(fdout, out_td, Lidft*sizeof(fftwf_real)) < 0) // headerless format
+	if (vdifencap_write(vdif, (const char*)in, nsamp*sizeof(fftw_real)) < 0) // VDIF format
+	//if (write(fdout, out_td, Lidft*sizeof(fftw_real)) < 0) // headerless format
 	{
 		perror("write");
 	}
@@ -284,14 +308,13 @@ void requantize_into_vdif(VDIFEncapsulator_t* vdif, const float* in, float sigma
 		tmp[n] = in[n] * scale;
 	}
 	if (vdifencap_write(vdif, (const char*)tmp, nsamp*sizeof(char)) < 0) // VDIF format
-	//if (write(fdout, out_td, Lidft*sizeof(fftwf_real)) < 0) // headerless format
+	//if (write(fdout, out_td, Lidft*sizeof(fftw_real)) < 0) // headerless format
 	{
 		perror("write");
 	}
 #elif OUTPUT_BITS==2
 	// See https://science.nrao.edu/facilities/vlba/publications/memos/sci/index/sci09memo.pdf
-	//sigma *= 0.9816;
-	sigma /= 1.17;
+	sigma *= 0.9816;
 	assert((nsamp % 4) == 0);
 	for (n = 0; n < nsamp; n += 4)
 	{
@@ -338,8 +361,11 @@ void requantize_into_vdif(VDIFEncapsulator_t* vdif, const float* in, float sigma
 #endif
 }
 
+#ifdef __GNUC__
 __attribute__((optimize("unroll-loops")))
-void window_and_accumulate_c2r(fftwf_real* out, const fftwf_complex* in, const int Lidft, const fftwf_real phasor_re, const fftwf_real* w)
+#endif
+void window_and_accumulate_c2r(fftw_real * RESTRICT out, const fftwf_complex * RESTRICT in,
+    const int Lidft, const fftw_real phasor_re, const fftw_real * RESTRICT w)
 {
 	const int_fast32_t nunroll = 8;
 	int_fast32_t n, k;
@@ -356,8 +382,11 @@ void window_and_accumulate_c2r(fftwf_real* out, const fftwf_complex* in, const i
 	}
 }
 
+#ifdef __GNUC__
 __attribute__((optimize("unroll-loops")))
-void window_and_accumulate_r2r(fftwf_real* out, const fftwf_real* in, const int Lidft, const fftwf_real phasor_re, const fftwf_real* w)
+#endif
+void window_and_accumulate_r2r(fftw_real * RESTRICT out, const fftw_real * RESTRICT in,
+    const int Lidft, const fftw_real phasor_re, const fftw_real * RESTRICT w)
 {
 	const int_fast32_t nunroll = 8;
 	int_fast32_t n, k;
@@ -379,7 +408,7 @@ void window_and_accumulate_r2r(fftwf_real* out, const fftwf_real* in, const int 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Generate a Hann window (double application pre-FFT then post-IDFT produces Hann-squared) */
-void generate_window_Hann(fftwf_real *wf, int L)
+void generate_window_Hann(fftw_real *wf, int L)
 {
 	int i;
 	for (i = 0; i < L; i++)
@@ -390,7 +419,7 @@ void generate_window_Hann(fftwf_real *wf, int L)
 }
 
 /** Generate a cosine window (double application pre-FFT then post-IDFT produces cosine-squared) */
-void generate_window_cosine(fftwf_real *wf, int L)
+void generate_window_cosine(fftw_real *wf, int L)
 {
 	int i;
 	for (i = 0; i < L; i++)
@@ -401,7 +430,7 @@ void generate_window_cosine(fftwf_real *wf, int L)
 }
 
 /** Generate a boxcar window (double application pre-FFT then post-IDFT produces unity) */
-void generate_window_boxcar(fftwf_real *wf, int L)
+void generate_window_boxcar(fftw_real *wf, int L)
 {
 	int i;
 	for (i = 0; i < L; i++)
@@ -414,7 +443,6 @@ void generate_window_boxcar(fftwf_real *wf, int L)
 // Filtering Function
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-__attribute__((optimize("unroll-loops")))
 int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout, const FilterConfig_t* cfg)
 {
 	const int if_nr = cfg->if_nr;
@@ -423,13 +451,13 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	float stop_MHz = cfg->stop_MHz;
 	char fmtstring[64];
 
-	float bw_in_MHz, bw_out_MHz, df;
+	float bw_in_MHz, bw_out_MHz, df_MHz, R_Mbps;
 	float r, rfrac, rot_f_re;
 	int start_bin, stop_bin;
 	int Ldft, Lcopy, Lidft;
 	int i, rc;
 
-	size_t niter = 0, nidft = 0, ntailing = 0;
+	size_t niter = 0, nidft = 0, ntailing = 0, report_interval;
 	struct timeval t1, t2, tstart, tstop;
 
 	VDIFEncapsulator_t vdif;
@@ -438,13 +466,16 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	double nsec;
 
 	float **raw;
-	fftwf_real *wf_analysis, *wf_resynthesis;
-	fftwf_real *in_raw, *dft_in, *out_td;
+	fftw_real *wf_analysis, *wf_resynthesis;
+	fftw_real *in_raw, *dft_in, *out_td;
 	fftwf_complex *dft_out, *idft_in, *idft_out;
 	fftwf_plan plan_fwd;
 	fftwf_plan plan_inv;
 	fftwf_plan plan_inv_c2r;
-	float sigma = 0.0f;
+	fftw_real *sigma_data;
+	int sigma_nsamples = 0, min_sigma_nsamples;
+	float sigma = 1.0f;
+
 	char *out_converter_tmp;
 
 	if ((factor < 1) || (factor > 16))
@@ -454,8 +485,8 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	}
 
 	// Bandwidths
-	bw_in_MHz = (int)(ms->samprate * 0.5e-6);
-	bw_out_MHz = abs(stop_MHz - start_MHz);
+	bw_in_MHz = floorf(ms->samprate * 0.5e-6);
+	bw_out_MHz = fabsf(stop_MHz - start_MHz);
 
 	// Determine transform sizes: fix IDFT length, pad it, then adjust DFT length
 	Lcopy = cfg->npoints;                     // #bins to copy from DFT complex out into IDFT input
@@ -465,12 +496,19 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 
         // Determine DFT output region to extract (bins) and find actual MHz range
         // note: 'Ldft'-point r2c FFT produces spectrum in first 'Ldft/2+1' complex output bins
-	df = 2.0*bw_in_MHz / Ldft;
-	start_bin  = (int)(start_MHz / df);
+	df_MHz     = 2.0*bw_in_MHz / Ldft;
+	start_bin  = (int)(start_MHz / df_MHz);
         stop_bin   = start_bin + Lcopy;
-	start_MHz  = start_bin*df;
-	stop_MHz   = stop_bin*df;
-	bw_out_MHz = fabs(stop_MHz - start_MHz);
+	start_MHz  = start_bin*df_MHz;
+	stop_MHz   = stop_bin*df_MHz;
+	bw_out_MHz = fabsf(stop_MHz - start_MHz);
+	R_Mbps     = 2*bw_out_MHz*nbit_out;
+	min_sigma_nsamples = MAX(8*Lidft*factor, STDDEV_MIN_SAMPLES);
+	if (!is_integer(R_Mbps) || !is_pow2(R_Mbps))
+	{
+		printf("Error: output bandwidth (%.3f MHz) gives non-2^n rate (%.3f Mbps), not supported by DiFX!\n", bw_out_MHz, R_Mbps);
+		return -1;
+	}
 
 	// Make sure DFT and IDFT lengths suitable for data overlapping
 	assert( factor * (int)(Ldft/factor) == Ldft /* catch rounding errors */ );
@@ -498,24 +536,21 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	}
 	in_raw = malloc(sizeof(float)*Ldft);
 	out_converter_tmp = malloc(sizeof(char)*2*Lidft);
-	dft_in = fftwf_malloc(sizeof(fftwf_real)*Ldft);
+	dft_in = fftwf_malloc(sizeof(fftw_real)*Ldft);
 	dft_out = fftwf_malloc(sizeof(fftwf_complex)*(Ldft/2+1));
 	idft_in = fftwf_malloc(sizeof(fftwf_complex)*Lidft+8);
 	idft_out = fftwf_malloc(sizeof(fftwf_complex)*Lidft+8);
-	out_td = fftwf_malloc(sizeof(fftwf_real)*2*Lidft);
-	memset(dft_in, 0x00, sizeof(fftwf_real)*Lidft);
+	out_td = fftwf_malloc(sizeof(fftw_real)*2*Lidft);
+	sigma_data = fftwf_malloc(sizeof(fftw_real)*min_sigma_nsamples);
+	memset(dft_in, 0x00, sizeof(fftw_real)*Lidft);
 	memset(dft_out, 0x00, sizeof(fftwf_complex)*(Lidft/2+1));
-	memset(out_td, 0x00, sizeof(fftwf_real)*2*Lidft);
+	memset(out_td, 0x00, sizeof(fftw_real)*2*Lidft);
+	memset(sigma_data, 0x00, sizeof(fftw_real)*min_sigma_nsamples);
 	// TODO: use fftw_plan_many_dft for a notable speed improvement?
 
-	// Prepare (I)DFT
-	plan_fwd = fftwf_plan_dft_r2c_1d(Ldft, dft_in, dft_out, FFTW_MEASURE);
-	plan_inv = fftwf_plan_dft_1d(Lidft, idft_in, idft_out, FFTW_BACKWARD, FFTW_MEASURE);
-	plan_inv_c2r = fftwf_plan_dft_c2r_1d(Lidft, idft_in, (fftwf_real*)idft_out, FFTW_MEASURE);
-
 	// Window functions
-	wf_analysis = fftwf_malloc(sizeof(fftwf_real)*Ldft);
-	wf_resynthesis = fftwf_malloc(sizeof(fftwf_real)*Lidft);
+	wf_analysis = fftwf_malloc(sizeof(fftw_real)*Ldft);
+	wf_resynthesis = fftwf_malloc(sizeof(fftw_real)*Lidft);
 	switch (cfg->winfunc)
 	{
 		case Cosine:
@@ -550,16 +585,19 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	}
 
 	// Create output file and set correct time
-	vdifencap_open(&vdif, 2*bw_out_MHz*nbit_out);
+	vdifencap_open(&vdif, R_Mbps);
 	vdif.fd = fdout;
 	vdifencap_MJDsec_to_RefEpSec(mjd, sec, &vdif.refepoch, &vdif.framesec);
 	vdifencap_updateheader(&vdif);
 
-	// Report
-	snprintf(fmtstring, sizeof(fmtstring)-1, "VDIF_%zu-%.0f-1-%d", vdif.payloadbytes, 2*bw_out_MHz*nbit_out, nbit_out);
+	// Reporting
+	report_interval = (0.050 * (2*bw_in_MHz*1e6) * factor) / Ldft;
+	report_interval = MAX(report_interval, 100);
+printf("report_interval = %d\n", report_interval);
+	snprintf(fmtstring, sizeof(fmtstring)-1, "VDIF_%zu-%.0f-1-%d", vdif.payloadbytes, R_Mbps, nbit_out);
 	fmtstring[sizeof(fmtstring)-1] = '\0';
 	printf("%-14s : first integer second (MJD %d sec %d) found after %zd samples.\n", "Input file", mjd, sec, niter);
-	printf("%-14s : %s with %.1f frames/s at %.3f Mbps\n", "Output format", fmtstring, vdif.fps, 2*bw_out_MHz*nbit_out);
+	printf("%-14s : %s with %.1f frames/s at %.3f Mbps\n", "Output format", fmtstring, vdif.fps, R_Mbps);
 	printf("%-14s : MJD %.3f is VDIF reference epoch %d\n", "Output time", mjd + sec/86400.0, vdif.refepoch);
 	#if USE_C2C_IDFT
 	printf("%-14s : %d-pt r2c DFT, take %d bins (%d...%d), %d-pt c2c IDFT, %s window, %.1f deg phase/IDFT\n", "Configuration",
@@ -574,11 +612,22 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	printf("%-14s : keep leading=%d, keep tailing=%d, keep incomplete last frame=%d\n", "Options",
 		!cfg->no_lead, !cfg->no_tail, !cfg->discard_incomplete_on_close
 	);
+	printf("%-14s : FFTSpecRes=%.6e format=%s\n", "DiFX v2d", df_MHz, fmtstring);
+
+	// Prepare (I)DFT plans
+	printf("Preparing FFTW plans...\n");
+	plan_fwd = fftwf_plan_dft_r2c_1d(Ldft, dft_in, dft_out, FFTW_FLAGS);
+	#if USE_C2C_IDFT
+	plan_inv = fftwf_plan_dft_1d(Lidft, idft_in, idft_out, FFTW_BACKWARD, FFTW_FLAGS);
+	#else
+	plan_inv_c2r = fftwf_plan_dft_c2r_1d(Lidft, idft_in, (fftw_real*)idft_out, FFTW_FLAGS);
+	#endif
 
 	// Process raw input data
 	niter = 0;
 	gettimeofday(&t1, NULL);
 	tstart = t1;
+	printf("Filtering...\n");
 	while (!die)
 	{
 		// Append new data to 'in_raw' and window the entire Ldft-long sample vector into 'dft_in'
@@ -597,10 +646,11 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 		fftwf_execute(plan_fwd);
 
 		// Copy desired bin range into input of zero-padded IDFT
-		memcpy(idft_in, dft_out + start_bin, sizeof(fftwf_complex) * Lcopy);
-		idft_in[0] = creal(idft_in[0]);             // DC point 0
-		idft_in[Lcopy-1] = creal(idft_in[Lcopy-1]); // pre-Nyquist point N/2
-		//idft_in[Lcopy] = creal(idft_in[Lcopy]);   // Nyquist N/2+1 point
+		memcpy(idft_in, dft_out + start_bin, sizeof(fftwf_complex) * (Lcopy + 1));
+
+		// What to do with DC idft_in[0] and Nyquist idft_in[Lcopy] points?
+		//idft_in[0] = creal(idft_in[0]); idft_in = creal(idft_in[Lcopy]); // retain the information
+		idft_in[0] = 0; idft_in[Lcopy] = 0; // erase the information
 
 		// Weight of current output
 		rot_f_re = cos(2.0*M_PI*rfrac*((double)nidft)); // TODO: could use periodicity on w to improve numerical precision at large #nidft
@@ -609,7 +659,7 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 
 		// Inverse transform idft_in --> idft_out
 		#if USE_C2C_IDFT
-		fftwf_execute(plan_inv);     // Lidft complex to Lidft complex
+		fftwf_execute(plan_inv);     // Lidft complex (with zero-padding past Ldft/2+1) to Lidft complex
 		#else
 		fftwf_execute(plan_inv_c2r); // Lidft/2+1 complex to Lidft reals
 		#endif
@@ -618,14 +668,20 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 		#if USE_C2C_IDFT
 		window_and_accumulate_c2r(out_td, idft_out, Lidft, rot_f_re, wf_resynthesis);
 		#else
-		window_and_accumulate_r2r(out_td, (fftwf_real*)idft_out, Lidft, rot_f_re, wf_resynthesis);
+		window_and_accumulate_r2r(out_td, (fftw_real*)idft_out, Lidft, rot_f_re, wf_resynthesis);
 		#endif
 
-		// Calculate standard deviation once filter has settled
-		if (nidft < 4*factor)
+		// Calculate standard deviation
+		if ((sigma_nsamples < min_sigma_nsamples) && (!cfg->no_lead || (cfg->no_lead && (nidft >= factor))))
 		{
-			sigma = stddev(out_td, Lidft/factor);
-			printf("Quantization uses stddev = %f\n", sigma);
+			int nappend = MIN(min_sigma_nsamples-sigma_nsamples, Lidft/factor);
+			memcpy(sigma_data + sigma_nsamples, out_td, sizeof(fftw_real) * nappend);
+			sigma_nsamples += nappend;
+			sigma = stddev(sigma_data, sigma_nsamples);
+			if (sigma_nsamples >= min_sigma_nsamples)
+			{
+				printf("%-14s : %d-bit, stddev=%.2f from %d samples\n", "Quantizer", sigma, nbit_out, sigma_nsamples);
+			}
 		}
 
 		// Store completed samples as 32/8/2-bit
@@ -649,13 +705,13 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 
 		// Status reports
 		niter++;
-		if ((niter % REPORT_INTERVAL) == 0)
+		if ((niter % report_interval) == 0)
 		{
 			double dt;
 			mark5_stream_get_sample_time(ms, &mjd, &sec, &nsec);
 			gettimeofday(&t2, NULL);
 			dt = (t2.tv_sec - t1.tv_sec) + 1e-6*(t2.tv_usec - t1.tv_usec);
-			printf("niter %zd : data %dd %.4fs : CPU %.2f Ms/s\n", niter, mjd, nsec*1e-9+sec, 1e-6*REPORT_INTERVAL*(Ldft/dt)/factor);
+			printf("input at %dd %.4fs : CPU %.2f Ms/s\n", mjd, nsec*1e-9+sec, 1e-6*report_interval*(Ldft/dt)/factor);
 			t1 = t2;
 		}
 
@@ -905,8 +961,8 @@ int main(int argc, char **argv)
 	outfile = argv[3];
 	fcfg.if_nr = atoi(argv[4]) - 1;
 	fcfg.factor = atoi(argv[5]);
-	fcfg.start_MHz = atoi(argv[6]);
-	fcfg.stop_MHz = atoi(argv[7]);
+	fcfg.start_MHz = atof(argv[6]);
+	fcfg.stop_MHz = atof(argv[7]);
 
 	// Optional args
 	if (argc > 8)
