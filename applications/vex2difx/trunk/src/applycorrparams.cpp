@@ -469,6 +469,9 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 			case DataSourceMark6:
 				V->setMark6Files(a, i, dss.basebandFiles);
 				break;
+			case DataSourceSharedMemory:
+#warning FIXME: Put code in here for shared memory casse
+				break;
 			case DataSourceUnspecified:
 				if(!A->vsns.empty())
 				{
