@@ -30,7 +30,7 @@ import argparse
 import os.path
 import re
 
-__version__ = "1.0"
+__version__ = "1.1"
 __author__ = "Helge Rottmann (MPIfR) <rottmann@mpifr.de>"
 
 content = []
@@ -184,7 +184,7 @@ def printFreq():
 	count = 0
 	for i in range(index["FREQ"]["start"],index["FREQ"]["stop"]+1):
 
-		match = re.match("chan_def\s*=\s*:(\d+\.\d+)\s+(.*)", content[i])
+		match = re.match("chan_def\s*=\s*:{0,1}\s*(\d+\.\d+)\s+(.*)", content[i])
 		if match:
 			freq = float(match.group(1))
 			selFreq = 0.0
