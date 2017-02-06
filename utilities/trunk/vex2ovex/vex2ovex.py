@@ -1,8 +1,37 @@
 #!/usr/bin/env python 
+# coding: latin-1
+
+#===========================================================================
+# Copyright (C) 2016  Max-Planck-Institut für Radioastronomie, Bonn, Germany
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
 import sys
 import argparse
 import os.path
 import re
+
+__version__ = "1.0"
+__author__ = "Helge Rottmann (MPIfR) <rottmann@mpifr.de>"
 
 content = []
 index = []
@@ -155,7 +184,7 @@ def printFreq():
 	count = 0
 	for i in range(index["FREQ"]["start"],index["FREQ"]["stop"]+1):
 
-		match = re.match("chan_def\s*=\s*:{0,1}\s*(\d+\.\d+)\s+(.*)", content[i])
+		match = re.match("chan_def\s*=\s*:(\d+\.\d+)\s+(.*)", content[i])
 		if match:
 			freq = float(match.group(1))
 			selFreq = 0.0
@@ -348,12 +377,13 @@ if __name__ == "__main__":
 	epilog += "The mapping file should list in the first column the one letter code and in the second column the two letter code. it must contain all two letter codes found in the vex file"
 
 	parser = argparse.ArgumentParser(description=description, epilog=epilog)
-	parser.add_argument('vexfile', metavar='vex-file', type=argparse.FileType('r'),
+	parser.add_argument('vexfile', metavar='vexfile', type=argparse.FileType('r'),
                     help='the vex file to be converted to ovex')
-	parser.add_argument('ovexfile', metavar='ovex-file',
+	parser.add_argument('ovexfile', metavar='ovexfile',
                     help='the name of the output ovex file')
 	parser.add_argument('-c', "--codes" , type=argparse.FileType('r'), dest="codes",
                     help='the name of the file containing the mappings of one letter to two letter station codes. For format of the mapping file see below.')
+	parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
 	args = parser.parse_args()
 
