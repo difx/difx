@@ -45,14 +45,6 @@ for telescope AT (ATCA) in experiment v289b.
 
 ----------------------------------------------------------------
 
-Caveats.
-
-Espresso assumes that sorting your baseband data alphanumerically by file name
-will result in a file list that is ordered by time. This is usually the case
-for reasonable naming conventions, but you should ensure that it is so.
-
-----------------------------------------------------------------
-
 For more information on the full suite of scripts, see the documentation on the DiFX wiki: http://cira.ivec.org/dokuwiki/doku.php/difx/documentation
 
 Bugs and feature requests should be sent to Cormac Reynolds
