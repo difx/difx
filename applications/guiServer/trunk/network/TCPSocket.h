@@ -185,32 +185,37 @@ namespace network {
             int soFar = 0;
             int ret;
             fd_set wfds;
-            if ( !_connected )
-               return -1;
-            pthread_mutex_lock( &_writeMutex );
-            while ( soFar < nBytes ) {
+            struct timeval* localTimeout;
+            struct timeval localTimeoutStruct;
 
+            pthread_mutex_lock( &_writeMutex );
+            while ( soFar < nBytes && _connected ) {
+                //  A timeout will keep us from hanging here if the socket breaks.
+                localTimeout = &localTimeoutStruct;
+                localTimeout->tv_sec = 0;
+                localTimeout->tv_usec = 10000;
                 FD_ZERO( &wfds );
                 FD_SET( _fd, &wfds );
-                ret = select( _fd + 1, NULL, &wfds, NULL, _timeout );
+                ret = select( _fd + 1, NULL, &wfds, NULL, localTimeout );
                 if ( ret == -1 ) {  //  broken socket
-                    return -1;
+                    _connected = false;
                 }
-                if ( ret == 0 ) {  // timeout occurred
-                    return 0;
+                if ( ret != 0 ) {  // select didn't timeout - there are real data
+                    ret = write( _fd, (void*)( buff + soFar ), nBytes - soFar );
+                    if ( ret == -1  ) {  //  broken socket
+                        _connected = false;
+                    }
+                    else
+                        soFar += ret;
                 }
-
-                ret = write( _fd, (void*)( buff + soFar ), nBytes - soFar );
-                if ( ret == -1 || ret == 0 ) {  //  broken socket
-                    return -1;
-                }
-
-                soFar += ret;
-
             }
 
             pthread_mutex_unlock( &_writeMutex );
-            return soFar;
+
+            if ( _connected )
+                return soFar;
+            else
+                return -1;
         }
         
         //----------------------------------------------------------------------------

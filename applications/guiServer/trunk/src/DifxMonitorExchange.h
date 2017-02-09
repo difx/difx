@@ -93,7 +93,7 @@ namespace guiServer {
         DifxMonitorExchange( GUIClient* guiClient, ServerSideConnection::DifxMonitorInfo* monitorInfo ) {
             _keepGoing = true;
             _visConnectionOperating = false;
-            _monitorInfo = monitorInfo;
+            _ssc = monitorInfo->ssc;
             _receiveActive = false;
             _guiClient = guiClient;
             _guiClient->packetExchange(); 
@@ -221,7 +221,7 @@ namespace guiServer {
             //  Start the monitor_server if we have not found it.
             if ( !found ) {
                 snprintf( monCommand, ServerSideConnection::MAX_COMMAND_SIZE,
-                     "%s monitor_server %d &> /dev/null &", _monitorInfo->ssc->difxSetupPath(), monitorServerPort );
+                     "%s monitor_server %d &> /dev/null &", _ssc->difxSetupPath(), monitorServerPort );
                 _guiClient->formatPacket( WARNING, "monitor_server needs to be started - executing: %s\n", monCommand );
                 int ret = system( monCommand );
                 if ( ret < 0 )
@@ -885,7 +885,7 @@ namespace guiServer {
         int _fftSize;
         pthread_attr_t _monitorAttr;
         pthread_t _monitorId;
-        ServerSideConnection::DifxMonitorInfo* _monitorInfo;
+        ServerSideConnection* _ssc;
         Configuration* _config;
         class Product {
         public:

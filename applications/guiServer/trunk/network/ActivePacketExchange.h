@@ -45,7 +45,7 @@ namespace network {
         ~ActivePacketExchange() {
             _receiveActive = false;
         }
-        
+
         //---------------------------------------------------------------------
         //!  Static start function for the receive thread.
         //---------------------------------------------------------------------
@@ -74,7 +74,7 @@ namespace network {
                     newPacket( packetId, data, nBytes );
                     //  Free the space allocated to this incoming message.  This
                     //  means the newPacket function must copy it if necessary.
-                    delete [] data;
+//                    delete [] data;
                 }
             }
         }

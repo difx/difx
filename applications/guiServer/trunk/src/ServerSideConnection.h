@@ -800,6 +800,9 @@ namespace guiServer {
         static void* staticRunDifxThread( void* a ) {
             DifxStartInfo* startInfo = (DifxStartInfo*)a;
             startInfo->ssc->runDifxThread( startInfo );
+            startInfo->ssc = NULL;
+            startInfo->logFile = NULL;
+            delete startInfo;
             return NULL;
         }
         
@@ -819,6 +822,7 @@ namespace guiServer {
         static void* staticRunDifxMonitor( void* a ) {
             DifxMonitorInfo* monitorInfo = (DifxMonitorInfo*)a;
             monitorInfo->ssc->runDifxMonitor( monitorInfo );
+            monitorInfo->ssc = NULL;
             delete monitorInfo;
             return NULL;
         }
@@ -837,9 +841,10 @@ namespace guiServer {
         //!  Static function called to start the DiFX monitor thread.
         //-----------------------------------------------------------------------------	
         static void* staticRunMachinesDefinition( void* a ) {
-            MachinesDefinitionInfo* machinesDefintionInfo = (MachinesDefinitionInfo*)a;
-            machinesDefintionInfo->ssc->runMachinesDefinition( machinesDefintionInfo );
-            delete machinesDefintionInfo;
+            MachinesDefinitionInfo* machinesDefinitionInfo = (MachinesDefinitionInfo*)a;
+            machinesDefinitionInfo->ssc->runMachinesDefinition( machinesDefinitionInfo );
+            machinesDefinitionInfo->ssc = NULL;
+            delete machinesDefinitionInfo;
             return NULL;
         }
         
@@ -859,6 +864,7 @@ namespace guiServer {
         static void* staticRunVex2Difx( void* a ) {
             Vex2DifxInfo* vex2DifxInfo = (Vex2DifxInfo*)a;
             vex2DifxInfo->ssc->runVex2Difx( vex2DifxInfo );
+	        vex2DifxInfo->ssc = NULL;
             delete vex2DifxInfo;
             return NULL;
         }
@@ -933,6 +939,7 @@ namespace guiServer {
         static void* staticRunFileOperation( void* a ) {
             DifxFileOperation* fileOperation = (DifxFileOperation*)a;
             fileOperation->ssc->runFileOperation( fileOperation );
+            fileOperation->ssc = NULL;
             delete fileOperation;
             return NULL;
         }
@@ -953,6 +960,7 @@ namespace guiServer {
         static void* staticRunFileTransfer( void* a ) {
             DifxFileTransfer* fileTransfer = (DifxFileTransfer*)a;
             fileTransfer->ssc->runFileTransfer( fileTransfer );
+            fileTransfer->ssc = NULL;
             delete fileTransfer;
             return NULL;
         }
@@ -973,6 +981,7 @@ namespace guiServer {
         static void* staticGetDirectoryThread( void* a ) {
             GetDirectoryInfo* info = (GetDirectoryInfo*)a;
             info->ssc->getDirectoryThread( info );
+            info->ssc = NULL;
             delete info;
             return NULL;
         }
@@ -994,6 +1003,7 @@ namespace guiServer {
         static void* staticMark5CopyThread( void* a ) {
             Mark5CopyInfo* info = (Mark5CopyInfo*)a;
             info->ssc->mark5CopyThread( info );
+            info->ssc = NULL;
             delete info;
             return NULL;
         }
@@ -1013,6 +1023,7 @@ namespace guiServer {
         static void* staticMark5ControlThread( void* a ) {
             Mark5ControlInfo* info = (Mark5ControlInfo*)a;
             info->ssc->mark5ControlThread( info );
+            info->ssc = NULL;
             delete info;
             return NULL;
         }
@@ -1059,6 +1070,7 @@ namespace guiServer {
         static void* staticGetJobStatus( void* a ) {
             GetJobStatusInfo* info = (GetJobStatusInfo*)a;
             info->ssc->getJobStatusThread( info );
+            info->ssc = NULL;
             delete info;
             return NULL;
         }
@@ -1128,6 +1140,7 @@ namespace guiServer {
         static void* staticGenerateFileList( void* a ) {
             GenerateFileListInfo* generateFileListInfo = (GenerateFileListInfo*)a;
             generateFileListInfo->ssc->generateFileList( generateFileListInfo );
+            generateFileListInfo->ssc = NULL;
             delete [] generateFileListInfo->file;
             delete generateFileListInfo;
             return NULL;

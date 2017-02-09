@@ -48,11 +48,14 @@ namespace network {
         PacketExchange( GenericSocket* sock ) {
             _sock = sock;
             pthread_mutex_init( &_sendPacketMutex, NULL );
+            pthread_mutex_init( &_getPacketMutex, NULL );
         }
         
         virtual ~PacketExchange() {
-//            writeLock();
-//            writeUnlock();
+            writeLock();
+            readLock();
+            writeUnlock();
+            readUnlock();
 //            pthread_mutex_destroy( &_sendPacketMutex );
         }
 
@@ -268,16 +271,21 @@ namespace network {
         //!  calling program to delete it.
         //----------------------------------------------------------------------------
         int getPacket( int& packetId, char*& data, int& nBytes ) {
+            readLock();
             int swapped;
 
             //  Get the id.
-            if ( _sock->reader( (char*)&swapped, sizeof( int ) ) == -1 )
+            if ( _sock->reader( (char*)&swapped, sizeof( int ) ) == -1 ) {
+                readUnlock();
                 return -1;
+            }
             packetId = ntohl( swapped );
 
             //  Then the number of bytes.
-            if ( _sock->reader( (char*)&swapped, sizeof( int ) ) == -1 )
+            if ( _sock->reader( (char*)&swapped, sizeof( int ) ) == -1 ) {
+                readUnlock();
                 return -1;
+            }
             nBytes = ntohl( swapped );
 
             //  Allocate the space for the data, then get it.
@@ -285,6 +293,7 @@ namespace network {
             int ret = _sock->reader( data, nBytes );
             if ( ret >= 0 )
                 data[ret] = 0;
+            readUnlock();
             return( ret );
         }
 
@@ -324,12 +333,15 @@ namespace network {
         
         void writeLock() { pthread_mutex_lock( &_sendPacketMutex ); }
         void writeUnlock() { pthread_mutex_unlock( &_sendPacketMutex ); }
+        void readLock() { pthread_mutex_lock( &_getPacketMutex ); }
+        void readUnlock() { pthread_mutex_unlock( &_getPacketMutex ); }
 
 
     protected:
 
         GenericSocket* _sock;
         pthread_mutex_t _sendPacketMutex;
+        pthread_mutex_t _getPacketMutex;
 
     };
 

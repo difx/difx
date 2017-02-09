@@ -145,7 +145,7 @@ void ServerSideConnection::runFileOperation( DifxFileOperation* fileOperation ) 
         //snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
         //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 
-		snprintf( pCommand, MAX_COMMAND_SIZE, "ls %s %s", S->arg, S->path );
+        snprintf( pCommand, MAX_COMMAND_SIZE, "ls %s %s", S->arg, S->path );
 		//snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", pCommand);
 		//difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
@@ -171,7 +171,7 @@ void ServerSideConnection::runFileOperation( DifxFileOperation* fileOperation ) 
         snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
       	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
     }
- 
+
     delete gc;
 
 }

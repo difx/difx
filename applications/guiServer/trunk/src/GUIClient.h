@@ -135,8 +135,10 @@ namespace guiServer {
         //!  Set this client connection to use a "PacketExchange".
         //---------------------------------------------------------------------
         void packetExchange() {
-            if ( _channelData )
+            if ( _channelData ) {
                 pthread_mutex_init( &_sendPacketMutex, NULL );
+                pthread_mutex_init( &_getPacketMutex, NULL );
+            }
             else
                 _packetExchange = new network::PacketExchange( _client );
         }
@@ -149,6 +151,8 @@ namespace guiServer {
         //---------------------------------------------------------------------
         int sendPacket( const int packetId, const char* data, const int nBytes ) {
             if ( _channelData ) {
+                if ( !okay() )
+                    return -1;
                 writeLock();
                 int swapped = htonl( packetId );
                 int ret = writer( (char*)&swapped, sizeof( int ) );
@@ -244,6 +248,8 @@ namespace guiServer {
         //----------------------------------------------------------------------------
         int composePacket( const int packetId, const int nBytes ) {
             int swapped;
+            if ( !okay() )
+                return -1;
 
             //  Lock writing on the socket.
             writeLock();
@@ -267,6 +273,8 @@ namespace guiServer {
         //!  byte order for transmission.
         //----------------------------------------------------------------------------
         int composeInt( const int* data, int n = 1 ) {
+            if ( !okay() )
+                return -1;
             int* swapped = new int[n];
             for ( int i = 0; i < n; ++i )
                 swapped[i] = htonl( data[i] );
@@ -281,6 +289,8 @@ namespace guiServer {
         //!  byte order for transmission.
         //----------------------------------------------------------------------------
         int composeFloat( const float* data, int n = 1 ) {
+            if ( !okay() )
+                return -1;
             int* swapped = new int[n];
             for ( int i = 0; i < n; ++i )
                 swapped[i] = htonl( data[i] );
@@ -295,6 +305,8 @@ namespace guiServer {
         //!  byte order for transmission.
         //----------------------------------------------------------------------------
         int composeDouble( const double* data, int n = 1 ) {
+            if ( !okay() )
+                return -1;
             double* swapped = new double[n];
             for ( int i = 0; i < n; ++i ) {
                 swapped[i] = htond( data[i] );
@@ -308,6 +320,8 @@ namespace guiServer {
         //!  Send character data as part of a composed packet.  No byte swapping here.
         //----------------------------------------------------------------------------
         int composeChar( char* data, int n = 1 ) {
+            if ( !okay() )
+                return -1;
             int ret = writer( data, n );
             return ret;
         }
@@ -319,6 +333,8 @@ namespace guiServer {
         //!  more flexible and useful by expanding the precision option.
         //----------------------------------------------------------------------------
         void composeStringDouble( const double* data, int n = 1 ) {
+            if ( !okay() )
+                return;
             char buffer[15];
             for ( int i = 0; i < n; ++i ) {
                 snprintf( buffer, 15, "%14.6e", data[i] );
@@ -341,20 +357,28 @@ namespace guiServer {
         //---------------------------------------------------------------------
         int getPacket( int& packetId, char*& data, int& nBytes ) {
             if ( _channelData ) {
+                if ( !okay() )
+                    return -1;
+                readLock();
                 int swapped;
                 //  Get the id.
-                if ( reader( (char*)&swapped, sizeof( int ) ) == -1 )
+                if ( reader( (char*)&swapped, sizeof( int ) ) == -1 ) {
+                    readUnlock();
                     return -1;
+                }
                 packetId = ntohl( swapped );
                 //  Then the number of bytes.
-                if ( reader( (char*)&swapped, sizeof( int ) ) == -1 )
+                if ( reader( (char*)&swapped, sizeof( int ) ) == -1 ) {
+                    readUnlock();
                     return -1;
+                }
                 nBytes = ntohl( swapped );
                 //  Allocate the space for the data, then get it.
                 data = new char[ nBytes + 1 ];
                 int ret = reader( data, nBytes );
                 if ( ret >= 0 )
                     data[ret] = 0;
+                readUnlock();
                 return( ret );
             }
             else if ( _packetExchange != NULL )
@@ -376,13 +400,21 @@ namespace guiServer {
 
         void writeLock() { pthread_mutex_lock( &_sendPacketMutex ); }
         void writeUnlock() { pthread_mutex_unlock( &_sendPacketMutex ); }
+        void readLock() { pthread_mutex_lock( &_getPacketMutex ); }
+        void readUnlock() { pthread_mutex_unlock( &_getPacketMutex ); }
         
     protected:
     
         void closer() {
             if ( _channelData ) {
-                free( _buff );
+                writeLock();
+                readLock();
+                _ret = -1;
                 _ssc->purgeChannelData( _port );
+                free( _buff );
+                _buff = NULL;
+                writeUnlock();
+                readUnlock();
             }
             else {
                 if ( _packetExchange != NULL )
@@ -404,6 +436,7 @@ namespace guiServer {
         int _buffSize;
         network::PacketExchange* _packetExchange;
         pthread_mutex_t _sendPacketMutex;
+        pthread_mutex_t _getPacketMutex;
         network::TCPClient* _client;
     };
 

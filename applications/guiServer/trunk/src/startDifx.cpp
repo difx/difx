@@ -505,6 +505,7 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
     
     //  Torch the client connection.
     delete startInfo->jobMonitor;
+    startInfo->jobMonitor = NULL;
 
 }
 

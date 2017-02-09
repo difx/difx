@@ -63,7 +63,7 @@ namespace network {
 
         }
         
-        virtual ~TCPClient() {}
+        //virtual ~TCPClient() {}
 
         //----------------------------------------------------------------------------
         //  Wait for the connection to be made.  This call will hang until a server
