@@ -37,6 +37,7 @@ __lastAuthor__="$Author$"
 
 minSchemaMajor = 1
 minSchemaMinor = 1
+krbDomain = "MPIFR-BONN.MPG.DE"
 
 def getUsage():
     
@@ -69,7 +70,7 @@ def getTicket(user):
     password = getpass.getpass("Enter password for user %s:" % (user))
     
     kinit = '/usr/bin/kinit'
-    kinit_args = [ kinit, '%s' % (user) ]
+    kinit_args = [ kinit, '%s@%s' % (user,krbDomain) ]
     kinit = Popen(kinit_args, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     kinit.stdin.write('%s\n' % password)
     kinit.wait()
