@@ -24,6 +24,7 @@
 * Fixed function DifxConfigRecBand2FreqPol to be compatible with multiple data streams
 * Add parameter to track delay model program to use (stored in .calc file)
 * API-breaking changes for merging and checking compatibility; leaves much more room for expansion in the future
+* Removal of flawed function DifxConfigCalculateDoPolar
 
 3.4.0
 * Fix X/Y polarization issue
