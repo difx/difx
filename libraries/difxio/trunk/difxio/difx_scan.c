@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -108,7 +108,7 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 		fprintf(fp, "    Original job phase centre %d source index = %d\n", i, ds->orgjobPhsCentreSrcs[i]);
 	}
 	fprintf(fp, "    nPoly    = %d\n", ds->nPoly);
-	fprintf(fp, "    nAntenna %d\n", ds->nAntenna);
+	fprintf(fp, "    nAntenna = %d\n", ds->nAntenna);
 	fprintf(fp, "    jobId    = %d\n", ds->jobId);
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
 

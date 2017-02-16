@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,17 +36,17 @@
 DifxConfig *newDifxConfigArray(int nConfig)
 {
 	DifxConfig *dc;
-	int c;
+	int configId;
 
 	dc = (DifxConfig *)calloc(nConfig, sizeof(DifxConfig));
-	for(c = 0; c < nConfig; c++)
+	for(configId = 0; configId < nConfig; configId++)
 	{
-		dc[c].doPolar = -1;
-		dc[c].pulsarId = -1;
-		dc[c].strideLength = 16;
-		dc[c].xmacLength = 32;
-		dc[c].numBufferedFFTs = 1;
-		dc[c].fringeRotOrder = 1;
+		dc[configId].doPolar = -1;
+		dc[configId].pulsarId = -1;
+		dc[configId].strideLength = 16;
+		dc[configId].xmacLength = 32;
+		dc[configId].numBufferedFFTs = 1;
+		dc[configId].fringeRotOrder = 1;
 	}
 	
 	return dc;
@@ -54,7 +54,7 @@ DifxConfig *newDifxConfigArray(int nConfig)
 
 void DifxConfigAllocDatastreamIds(DifxConfig *dc, int nDatastream, int start)
 {
-	int i;
+	int configDatastreamId;
 
 	if(dc->datastreamId)
 	{
@@ -62,16 +62,16 @@ void DifxConfigAllocDatastreamIds(DifxConfig *dc, int nDatastream, int start)
 	}
 	dc->datastreamId = (int *)malloc((nDatastream+1)*sizeof(int));
 	dc->datastreamId[nDatastream] = -1;
-	for(i = 0; i < nDatastream; i++)
+	for(configDatastreamId = 0; configDatastreamId < nDatastream; configDatastreamId++)
 	{
-		dc->datastreamId[i] = i + start;
+		dc->datastreamId[configDatastreamId] = configDatastreamId + start;
 	}
 	dc->nDatastream = nDatastream;
 }
 
 void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 {
-	int i;
+	int configBaselineId;
 
 	if(dc->baselineId)
 	{
@@ -79,9 +79,9 @@ void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 	}
 	dc->baselineId = (int *)malloc((nBaseline+1)*sizeof(int));
 	dc->baselineId[nBaseline] = -1;
-	for(i = 0; i < nBaseline; i++)
+	for(configBaselineId = 0; configBaselineId < nBaseline; configBaselineId++)
 	{
-		dc->baselineId[i] = i + start;
+		dc->baselineId[configBaselineId] = configBaselineId + start;
 	}
 	dc->nBaseline = nBaseline;
 }
@@ -122,13 +122,13 @@ void deleteDifxConfigInternals(DifxConfig *dc)
 
 void deleteDifxConfigArray(DifxConfig *dc, int nConfig)
 {
-	int c;
+	int configId;
 
 	if(dc)
 	{
-		for(c = 0; c < nConfig; c++)
+		for(configId = 0; configId < nConfig; ++configId)
 		{
-			deleteDifxConfigInternals(dc + c);
+			deleteDifxConfigInternals(dc + configId);
 		}
 		free(dc);
 	}
@@ -305,42 +305,6 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2)
 	return 1;
 }
 
-int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db)
-{
-	int b, f, blId;
-	int doPolar = 0;
-	DifxBaseline *bl;
-	static int first = 1;
-
-	if(first)
-	{
-		printf("\nWARNING: DifxConfigCalculateDoPolar is being called.  This function is fundamentally flawed.  DifxInputCalculateDoPolar should be used instead.  Please report this!\n\n");
-		first = 0;
-	}
-
-	for(b = 0; b < dc->nBaseline; b++)
-	{
-		blId = dc->baselineId[b];
-		if(blId < 0)
-		{
-			break;
-		}
-
-		bl = db + blId;
-		for(f = 0; f < bl->nFreq; f++)
-		{
-			if(bl->nPolProd[f] > 2)
-			{
-				doPolar = 1;
-			}
-		}
-	}
-
-	dc->doPolar = doPolar;
-
-	return dc->doPolar;
-}
-
 int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 {
 	if(dc->pol[0] == polName)
@@ -351,6 +315,7 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 	{
 		return 1;
 	}
+
 	return -1;
 }
 
@@ -371,19 +336,19 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName)
  *   0         -- success
  *   <0        -- some error occurred
  */
-int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
-	int antennaId, int recBand, int *freqId, int *polId)
+int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId, int antennaId, int recBand, int *freqId, int *polId)
 {
 	DifxConfig *dc;
 	DifxDatastream *ds = 0;
-	int datastreamId;
-	int d;
+	int configDatastreamId;	/* the datastream index in the config */
+	int dsId;		/* the global datastream index (do D->datastream) */
 	int localFqId;
 	
 	if(recBand < 0 || antennaId < 0)
 	{
 		*freqId = -1;
 		*polId = -1;
+		
 		return 0;
 	}
 	
@@ -397,15 +362,15 @@ int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 	}
 
 	dc = D->config + configId;
-	for(datastreamId = 0; datastreamId < dc->nDatastream; datastreamId++)
+	for(configDatastreamId = 0; configDatastreamId < dc->nDatastream; ++configDatastreamId)
 	{
 		/* get index to D->datastream from local ds index */
-		d = dc->datastreamId[datastreamId];
-		if(d < 0 || d >= D->nDatastream)
+		dsId = dc->datastreamId[configDatastreamId];
+		if(dsId < 0 || dsId >= D->nDatastream)
 		{
 			continue;
 		}
-		ds = D->datastream + d;
+		ds = D->datastream + dsId;
 		/* now compare the absolute antennaIds */
 		if(antennaId == ds->antennaId)
 		{
@@ -420,7 +385,7 @@ int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 		}
 	}
 
-	if(datastreamId >= dc->nDatastream || ds == 0)
+	if(configDatastreamId >= dc->nDatastream || ds == 0)
 	{
 		return -4;
 	}
@@ -434,6 +399,7 @@ int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 	if(localFqId < 0 || localFqId >= ds->nRecFreq)
 	{
 		fprintf(stderr, "DifxConfigRecBand2FreqPol: localFqId=%d is out of range (nFreq=%d)\n", localFqId, ds->nRecFreq);
+
 		return -5;
 	}
 
@@ -443,9 +409,7 @@ int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 	return 0;
 }
 
-void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
-	const int *baselineIdRemap, const int *datastreamIdRemap, 
-	const int *pulsarIdRemap)
+void copyDifxConfig(DifxConfig *dest, const DifxConfig *src, const int *baselineIdRemap, const int *datastreamIdRemap, const int *pulsarIdRemap)
 {
 	int i, n, a;
 
@@ -461,8 +425,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 			}
 			else if(datastreamIdRemap) 
 			{
-				dest->ant2dsId[a] = 
-					datastreamIdRemap[src->ant2dsId[a]];
+				dest->ant2dsId[a] = datastreamIdRemap[src->ant2dsId[a]];
 			}
 			else
 			{
@@ -506,8 +469,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 	{
 		for(i = 0; i < n; i++)
 		{
-			dest->baselineId[i] = 
-				baselineIdRemap[src->baselineId[i]];
+			dest->baselineId[i] = baselineIdRemap[src->baselineId[i]];
 		}
 	}
 	else
@@ -571,7 +533,7 @@ int simplifyDifxConfigs(DifxInput *D)
 			break;
 		}
 
-		for(c1 = 0; c1 < c; c1++)
+		for(c1 = 0; c1 < c; ++c1)
 		{
 			if(isSameDifxConfig(D->config+c, D->config+c1))
 			{
@@ -580,12 +542,12 @@ int simplifyDifxConfigs(DifxInput *D)
 		}
 		if(c == c1)
 		{
-			c++;
+			++c;
 		}
 		else
 		{
 			/* 1. renumber this and all higher references to configs */
-			for(s = 0; s < D->nScan; s++)
+			for(s = 0; s < D->nScan; ++s)
 			{
 				c0 = D->scan[s].configId;
 				if(c0 == c)
@@ -594,13 +556,13 @@ int simplifyDifxConfigs(DifxInput *D)
 				}
 				else if(c0 > c)
 				{
-					c0--;
+					--c0;
 				}
 				D->scan[s].configId = c0;
 			}
 
 			/* 2. Change all rules referring to this config to refer to identical config */
-			for(r=0;r<D->nRule;r++)
+			for(r = 0; r < D->nRule; ++r)
 			{
 				dr = D->rule + r;
 				dc = D->config + c;
@@ -612,13 +574,13 @@ int simplifyDifxConfigs(DifxInput *D)
 			}
 
 			/* 3. reduce number of configs */
-			D->nConfig--;
+			--D->nConfig;
 
 			/* 4. delete this config and bump up higher ones */
 			deleteDifxConfigInternals(D->config+c);
-			for(c1 = c; c1 < D->nConfig; c1++)
+			for(c1 = c; c1 < D->nConfig; ++c1)
 			{
-				moveDifxConfig(D->config+c1, D->config+c1+1);
+				moveDifxConfig(D->config + c1, D->config + c1 + 1);
 			}
 		}
 	}
@@ -626,61 +588,55 @@ int simplifyDifxConfigs(DifxInput *D)
 	return n0 - D->nConfig;
 }
 
-DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
-	const DifxConfig *dc2, int ndc2, int *configIdRemap,
-	const int *baselineIdRemap, const int *datastreamIdRemap,
-	const int *pulsarIdRemap, int *ndc)
+DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1, const DifxConfig *dc2, int ndc2, int *configIdRemap,
+	const int *baselineIdRemap, const int *datastreamIdRemap, const int *pulsarIdRemap, int *ndc)
 {
-	int i, j;
+	int c;
 	DifxConfig *dc;
 
 	*ndc = ndc1;
 
-	for(j = 0; j < ndc2; j++)
+	for(c = 0; c < ndc2; c++)
 	{
-		configIdRemap[j] = *ndc;
+		configIdRemap[c] = *ndc;
 		(*ndc)++;
 	}
 
 	dc = newDifxConfigArray(*ndc);
 	
-	/* copy df1 */
-	for(i = 0; i < ndc1; i++)
+	/* copy dc1 */
+	for(c = 0; c < ndc1; c++)
 	{
-		copyDifxConfig(dc + i, dc1 + i, 0, 0, 0);
+		copyDifxConfig(dc + c, dc1 + c, 0, 0, 0);
 	}
 
-	/* copy df2 */
-	for(j = 0; j < ndc2; j++)
+	/* copy dc2 */
+	for(c = 0; c < ndc2; c++)
 	{
-		if(configIdRemap[j] >= ndc1)
+		if(configIdRemap[c] >= ndc1)
 		{
-			copyDifxConfig(dc + configIdRemap[j], dc2 + j,
-				baselineIdRemap, datastreamIdRemap, 
-				pulsarIdRemap);
+			copyDifxConfig(dc + configIdRemap[c], dc2 + c, baselineIdRemap, datastreamIdRemap, pulsarIdRemap);
 		}
 	}
 
 	return dc;
 }
 
-int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar,
-	const DifxPhasedArray *phasedarray)
+int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar, const DifxPhasedArray *phasedarray)
 {
-	int i, j;
+	int configId, dsId, blId;
 	int n;
 	const DifxConfig *config;
 
 	writeDifxLineInt(out, "NUM CONFIGURATIONS", nConfig);
 	n = 1;
 
-	for(i = 0; i < nConfig; i++)
+	for(configId = 0; configId < nConfig; ++configId)
 	{
-		config = dc + i;
+		config = dc + configId;
 
 		writeDifxLine(out, "CONFIG NAME", config->name);
-		writeDifxLineDouble(out, "INT TIME (SEC)", "%8.6f",
-			config->tInt);
+		writeDifxLineDouble(out, "INT TIME (SEC)", "%8.6f", config->tInt);
 		writeDifxLineInt(out, "SUBINT NANOSECONDS", config->subintNS);
 		writeDifxLineInt(out, "GUARD NANOSECONDS", config->guardNS);
 		writeDifxLineInt(out, "FRINGE ROTN ORDER", config->fringeRotOrder);
@@ -688,14 +644,17 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const Dif
 		writeDifxLineInt(out, "XMAC STRIDE LENGTH", config->xmacLength);
 		writeDifxLineInt(out, "NUM BUFFERED FFTS", config->numBufferedFFTs);
 		if(config->doAutoCorr)
+		{
 			writeDifxLine(out, "WRITE AUTOCORRS", "TRUE");
+		}
 		else
+		{
 			writeDifxLine(out, "WRITE AUTOCORRS", "FALSE");
+		}
 		if(config->pulsarId >= 0 && pulsar)
 		{
 			writeDifxLine(out, "PULSAR BINNING", "TRUE");
-			writeDifxLine(out, "PULSAR CONFIG FILE", 
-				pulsar[config->pulsarId].fileName);
+			writeDifxLine(out, "PULSAR CONFIG FILE", pulsar[config->pulsarId].fileName);
 		}
 		else
 		{
@@ -704,22 +663,19 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const Dif
 		if(config->phasedArrayId >= 0 && phasedarray)
 		{
 			writeDifxLine(out, "PHASED ARRAY", "TRUE");
-			writeDifxLine(out, "PHASED ARRAY CONNFIG FILE", 
-				phasedarray[config->phasedArrayId].fileName);
+			writeDifxLine(out, "PHASED ARRAY CONNFIG FILE", phasedarray[config->phasedArrayId].fileName);
 		}
 		else
 		{
 			writeDifxLine(out, "PHASED ARRAY", "FALSE");
 		}
-		for(j = 0; j < config->nDatastream; j++)
+		for(dsId = 0; dsId < config->nDatastream; ++dsId)
 		{
-			writeDifxLineInt1(out, "DATASTREAM %d INDEX", j,
-				config->datastreamId[j]);
+			writeDifxLineInt1(out, "DATASTREAM %d INDEX", dsId, config->datastreamId[dsId]);
 		}
-		for(j = 0; j < config->nBaseline; j++)
+		for(blId = 0; blId < config->nBaseline; ++blId)
 		{
-			writeDifxLineInt1(out, "BASELINE %d INDEX", j,
-				config->baselineId[j]);
+			writeDifxLineInt1(out, "BASELINE %d INDEX", blId, config->baselineId[blId]);
 		}
 
 		n += (10 + config->nDatastream + config->nBaseline);

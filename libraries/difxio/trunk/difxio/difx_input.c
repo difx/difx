@@ -880,7 +880,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		"PHASED ARRAY"
 	};
 	const int N_CONFIG_ROWS = sizeof(configKeys)/sizeof(configKeys[0]);
-	int c, r;
+	int configId, r;
 	int rows[N_CONFIG_ROWS];
 
 	if(!D || !ip)
@@ -898,18 +898,17 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 	D->nConfig  = atoi(DifxParametersvalue(ip, r));
 	D->config   = newDifxConfigArray(D->nConfig);
 	rows[N_CONFIG_ROWS-1] = 0;	/* initialize start */
-	for(c = 0; c < D->nConfig; ++c)
+	for(configId = 0; configId < D->nConfig; ++configId)
 	{
 		DifxConfig *dc;
 		int N;
-		int a, b;
+		int blId, dsId;	/* baseline and datastream Ids within config */
 
-		dc = D->config + c;
+		dc = D->config + configId;
 		N = DifxParametersbatchfind(ip, rows[N_CONFIG_ROWS-1], configKeys, N_CONFIG_ROWS, rows);
 		if(N < N_CONFIG_ROWS)
 		{
-			fprintf(stderr, "parseDifxInputConfigurations: N < N_CONFIG_ROWS %d "
-				"< %d\n", N, N_CONFIG_ROWS);
+			fprintf(stderr, "parseDifxInputConfigurations: N < N_CONFIG_ROWS %d " "< %d\n", N, N_CONFIG_ROWS);
 
 			return 0;
 		}
@@ -963,46 +962,44 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		/* initialize datastream index array */
 		dc->datastreamId = (int *)malloc(sizeof(int)*(dc->nDatastream + 1));
 		
-		/* here "a" is "datastream # within conf", not "antenna" */
-		for(a = 0; a <= D->nDatastream; a++)
+		/* here "dsId" is "datastream # within conf" */
+		for(dsId = 0; dsId <= D->nDatastream; ++dsId)
 		{
-			dc->datastreamId[a] = -1;
+			dc->datastreamId[dsId] = -1;
 		}
 
 		/* populate datastream index array */
-		/* here "a" is "datastream # within conf", not "antenna" */
-		for(a = 0; a < dc->nDatastream; a++)
+		/* here "dsId" is "datastream # within conf" */
+		for(dsId = 0; dsId < dc->nDatastream; ++dsId)
 		{
-
-			r = DifxParametersfind1(ip, r+1, "DATASTREAM %d INDEX", a);
+			r = DifxParametersfind1(ip, r+1, "DATASTREAM %d INDEX", dsId);
 			if(r < 0)
 			{
-				fprintf(stderr, "DATASTREAM %d INDEX not found\n", a);
+				fprintf(stderr, "DATASTREAM %d INDEX not found\n", dsId);
 
 				return 0;
 			}
-			dc->datastreamId[a] = atoi(DifxParametersvalue(ip, r));
+			dc->datastreamId[dsId] = atoi(DifxParametersvalue(ip, r));
 		}
 
 		/* initialize baseline index array; -1 terminated */
-		dc->baselineId = (int *)malloc(sizeof(int)* (dc->nBaseline+1));
-		for(b = 0; b <= dc->nBaseline; ++b)
+		dc->baselineId = (int *)malloc(sizeof(int)*(dc->nBaseline+1));
+		for(blId = 0; blId <= dc->nBaseline; ++blId)
 		{
-			dc->baselineId[b] = -1;
+			dc->baselineId[blId] = -1;
 		}
 
 		/* populate baseline index array */
-		for(b = 0; b < dc->nBaseline; ++b)
+		for(blId = 0; blId < dc->nBaseline; ++blId)
 		{
-			r = DifxParametersfind1(ip, r+1, 
-				"BASELINE %d INDEX", b);
+			r = DifxParametersfind1(ip, r+1, "BASELINE %d INDEX", blId);
 			if(r < 0)
 			{
-				fprintf(stderr, "BASELINE %d INDEX not found\n", b);
+				fprintf(stderr, "BASELINE %d INDEX not found\n", blId);
 
 				return 0;
 			}
-			dc->baselineId[b] = atoi(DifxParametersvalue(ip, r));
+			dc->baselineId[blId] = atoi(DifxParametersvalue(ip, r));
 		}
 	}
 
