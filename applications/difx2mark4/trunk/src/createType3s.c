@@ -562,7 +562,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // change tones to usb if this corr is a mixed usb x lsb case
                                         if (pfb[nf].stn[k].sideband != D->freq[jf].sideband)
                                             {
-                                            f_rel = D->freq[jf].bw - f_rel;
+                                            f_rel = D->freq[jf].bw + f_rel;
                                             isb = 1;
                                             }
                                         // find out which tone slot this goes in
