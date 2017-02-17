@@ -406,26 +406,40 @@ int main(int argc, char *argv[])
       int datastreamnum = myID - fxcorr::FIRSTTELESCOPEID;
       if(config->isVDIFFile(datastreamnum)) {
         stream = new VDIFDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        cverbose << startl << "Opening VDIFDataStream" << endl;
       } else if(config->isVDIFMark6(datastreamnum)) {
         stream = new VDIFMark6DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        cverbose << startl << "Opening VDIFMark6DataStream" << endl;
       } else if(config->isVDIFMark5(datastreamnum)) {
         stream = new VDIFMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        cverbose << startl << "Opening VDIFMark5DataStream" << endl;
       } else if(config->isVDIFSharedMemory(datastreamnum)) {
         stream = new VDIFSharedMemoryDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        cverbose << startl << "Opening VDIFSharedMemoryDataStream" << endl;
       } else if(config->isVDIFNetwork(datastreamnum)) {
         stream = new VDIFNetworkDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        cverbose << startl << "Opening VDIFNetworkDataStream" << endl;
       } else if(config->isVDIFFake(datastreamnum)) {
         stream = new VDIFFakeDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        cverbose << startl << "Opening VDIFFakeDataStream" << endl;
       } else if(config->isMark5BFile(datastreamnum)) {
         stream = new Mark5BDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+          cverbose << startl << "Opening Mark5BDataStream" << endl;
       } else if(config->isMark5BMark5(datastreamnum)) {
         stream = new Mark5BMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        cverbose << startl << "Opening Mark5BMark5DataStream" << endl;
       } else if(config->isMkV(datastreamnum)) {
         stream = new Mk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-      } else if(config->isNativeMkV(datastreamnum))
+        cverbose << startl << "Opening Mk5DataStream" << endl;
+      } else if(config->isNativeMkV(datastreamnum)){
         stream = new NativeMk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-      else
+          cverbose << startl << "Opening NativeMk5DataStream" << endl;
+      }
+      else {
         stream = new DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+    cverbose << startl << "Opening generic DataStream" << endl;
+    }
+
       stream->initialise();
       MPI_Barrier(world);
       cinfo << startl << "Estimated memory usage by Datastream: " << stream->getEstimatedBytes()/1048576.0 << " MB" << endl;
