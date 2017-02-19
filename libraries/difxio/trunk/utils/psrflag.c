@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2016 by Walter Brisken                             *
+ *   Copyright (C) 2014-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -250,6 +250,9 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 			double flagOn[16];	// mjd onset of fringy flag; 0 for not set
 			int k, ii;
 			int mjd, sec;
+			int maxnIF;
+
+			maxnIF = 0;
 
 			for(k = 0; k < 16; ++k)
 			{
@@ -264,10 +267,17 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 			for(scanId = 0; scanId < D->nScan; ++scanId)
 			{
 				int pc;	/* phase center */
-				DifxScan *scan;
+				const DifxScan *scan;
+				const DifxFreqSet *dfs;
 
 				scan = D->scan + scanId;
 				dc = D->config + scan->configId;
+				dfs = D->freqSet + dc->freqSetId;
+
+				if(dfs->nIF > maxnIF)
+				{
+					maxnIF = dfs->nIF;
+				}
 
 				if(strcmp(pulsarName, D->source[scan->phsCentreSrcs[scan->nPhaseCentres-1]].name) != 0)
 				{
@@ -295,14 +305,14 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 
 					fprintf(out, "%14.7f %d  %f %f  %f", mjd+sec/86400.0, scanId, R1, R2, f);
 					
-					for(ii = 0; ii < dc->nIF; ++ii)
+					for(ii = 0; ii < dfs->nIF; ++ii)
 					{
 						const int nSpecPts = 100;
 						int l;
 						double spbw;
-						fq = dc->IF[ii].freq;
-						spbw = dc->IF[ii].bw/nSpecPts;
-						if(dc->IF[ii].sideband == 'L')
+						fq = dfs->IF[ii].freq;
+						spbw = dfs->IF[ii].bw/nSpecPts;
+						if(dfs->IF[ii].sideband == 'L')
 						{
 							spbw = -spbw;
 						}
@@ -364,7 +374,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 				}
 			}
 			//close off any open flags
-			for(ii = 0; ii < dc->nIF; ++ii)
+			for(ii = 0; ii < maxnIF; ++ii)
 			{
 				if(flagOn[ii] > 1.0)
 				{
@@ -489,7 +499,7 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	D = updateDifxInput(D);
+	D = updateDifxInput(D, 0);
 	if(!D)
 	{
 		fprintf(stderr, "Update failed: D == 0.  Quitting\n");

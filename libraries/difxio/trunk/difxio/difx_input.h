@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2017 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -319,6 +319,22 @@ typedef struct
 	int quantBits;		/* Bits to re-quantise to */
 } DifxPhasedArray;
 
+/* Each of these corresponds to an FITS FQ table */
+typedef struct
+{
+	/* Note 1: the index of this structure within the DifxInput structure is the FITS FreqId minus 1 */
+	/* Note 2: maybe someday this full structure and some additional info should be put into a
+	           FITS control structure and fully moved into difx2fits to improve purity of difxio */
+
+	int nIF;		/* number of FITS IFs to create */
+	DifxIF *IF;		/* FITS IF definitions */
+	int nFreq;		/* length of D->freq[] and freqId2IF[] */
+	int *freqId2IF;		/* map from freq table [0 to nFreq] index to IF [0 to nIF-1] or -1 */
+				/* a value of -1 indicates this Freq is not used */
+				/* this array should be nFreq+1 in length */
+				/* freqId2IF[nFreq] = -2 is the list terminator */
+} DifxFreqSet;
+
 /* From DiFX config table, with additional derived information */
 typedef struct
 {
@@ -346,14 +362,9 @@ typedef struct
 	int *baselineId;	/* baseline table indicies for this config */
 				/* -1 terminated [bl # < nBaseline] */
 	
-	/* FIXME: Really these don't belong in here.  Someday (DiFX-3?) move these out. */
-	int nIF;		/* number of FITS IFs to create */
-	DifxIF *IF;		/* FITS IF definitions */
-	int fitsFreqId;		/* 0-based number -- unique FITS IF[] index NOT AN INDEX TO DifxFreq[]! */
-	int *freqId2IF;		/* map from freq table [0 to nFreq] index to IF [0 to nIF-1] or -1 */
-				/* a value of -1 indicates this Freq is not used */
-	int *freqIdUsed;	/* Is the Freq table index used by this config? */
+	int freqSetId;		/* 0-based number -- unique FITS/AIPS IF index to the DifxInput freqSet array */
 
+/* This is obsolete, I think.  Equivalent functionality from job->antennaRemap */
 	int *ant2dsId;		/* map from .input file antenna# to internal
 				 * DifxDatastream Id. [0..nAntenna-1]
 				 * this should be used only in conjunction
@@ -447,9 +458,9 @@ typedef struct
 	char calCode[DIFXIO_CALCODE_LENGTH];	/* usually only 1 char long */
 	int qual;		/* source qualifier */
 	int spacecraftId;	/* -1 if not spacecraft */
-	int numFitsSourceIds;	/* Should be equal to the number of configs */
+	int numFitsSourceIds;	/* Should be equal to the number of frequency sets */
 				/* FITS source IDs are filled in in deriveFitsSourceIds */
-	int *fitsSourceIds;	/* 0-based FITS source id */
+	int *fitsSourceIds;	/* 0-based FITS source id, indexed by frequency set id  */
 	double pmRA;		/* arcsec/year */
 	double pmDec; 		/* arcsec/year */
 	double parallax;	/* arcsec */
@@ -652,12 +663,13 @@ typedef struct
 	int nCore;		/* from the .threads file, or zero if no file */
 	int *nThread;		/* [coreId]: how many threads to use on each core */
 
-	int nAntenna, nConfig, nRule, nFreq, nScan, nSource, nEOP, nFlag;
+	int nAntenna, nConfig, nRule, nFreq, nFreqSet, nScan, nSource, nEOP, nFlag;
 	int nDatastream, nBaseline, nSpacecraft, nPulsar, nPhasedArray, nJob;
 	DifxJob		*job;
 	DifxConfig	*config;
 	DifxRule        *rule;
 	DifxFreq	*freq;
+	DifxFreqSet	*freqSet;
 	DifxAntenna	*antenna;
 	DifxScan	*scan;		/* assumed in time order */
 	DifxSource	*source;
@@ -693,9 +705,21 @@ int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2);
 int isDifxIFInsideDifxFreq(const DifxIF *di, const DifxFreq *df);
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src);
 int simplifyDifxFreqs(DifxInput *D);
-DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
-	const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf);
+DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf);
 int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df);
+
+/* DifxFreqSet functions */
+DifxFreqSet *newDifxFreqSetArray(int nFreqSet);
+void allocateDifxFreqSetFreqMap(DifxFreqSet *dfs, int nFreq);
+void deleteDifxFreqSetInternals(DifxFreqSet *dfs);
+void deleteDifxFreqSetArray(DifxFreqSet *dfs, int nFreqSet);
+void fprintDifxFreqSet(FILE *fp, const DifxFreqSet *dfs);
+void printDifxFreqSet(const DifxFreqSet *dfs);
+void fprintDifxFreqSetSummary(FILE *fp, const DifxFreqSet *dfs);
+void printDifxFreqSetSummary(const DifxFreqSet *dfs);
+int isSameDifxFreqSet(const DifxFreqSet *dfs1, const DifxFreqSet *dfs2);
+int isDifxFreqSetSX(const DifxFreqSet *dfs);
+void copyDifxFreqSet(DifxFreqSet *dest, const DifxFreqSet *src);
 
 /* DifxAntenna functions */
 enum AntennaMountType stringToMountType(const char *str);
@@ -729,10 +753,8 @@ void deleteDifxDatastreamInternals(DifxDatastream *dd);
 void deleteDifxDatastreamArray(DifxDatastream *dd, int nDatastream);
 void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd);
 void printDifxDatastream(const DifxDatastream *dd);
-int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
-	const int *freqIdRemap, const int *antennaIdRemap);
-void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
-	const int *freqIdRemap, const int *antennaIdRemap);
+int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2, const int *freqIdRemap, const int *antennaIdRemap);
+void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const int *freqIdRemap, const int *antennaIdRemap);
 void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src);
 int simplifyDifxDatastreams(DifxInput *D);
 DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
@@ -924,6 +946,9 @@ void fprintDifxIF(FILE *fp, const DifxIF *di);
 void printDifxIFSummary(const DifxIF *di);
 void fprintDifxIFSummary(FILE *fp, const DifxIF *di);
 int isSameDifxIF(const DifxIF *di1, const DifxIF *di2);
+int isSameFreqDifxIF(const DifxIF *di1, const DifxIF *di2);
+int mergeDifxIF(DifxIF *dest, const DifxIF *src);
+void copyDifxIF(DifxIF *dest, const DifxIF *src);
 
 /* DifxAntennaFlag functions */
 DifxAntennaFlag *newDifxAntennaFlagArray(int nFlag);
@@ -946,7 +971,7 @@ void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds);
 DifxInput *loadDifxInput(const char *filePrefix);
 DifxInput *loadDifxCalc(const char *filePrefix);
 DifxInput *allocateSourceTable(DifxInput *D, int length);
-DifxInput *updateDifxInput(DifxInput *D);
+DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions);
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions);
 int isAntennaFlagged(const DifxJob *J, double mjd, int antennaId);

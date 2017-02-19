@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2014 by Walter Brisken                             *
+ *   Copyright (C) 2009-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	D = updateDifxInput(D);
+	D = updateDifxInput(D, 0);
 	if(!D)
 	{
 		fprintf(stderr, "update failed: D == 0.  quitting\n");

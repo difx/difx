@@ -23,8 +23,11 @@
 * Remove ill-conceived function: DifxInputGetDatastreamId
 * Fixed function DifxConfigRecBand2FreqPol to be compatible with multiple data streams
 * Add parameter to track delay model program to use (stored in .calc file)
-* API-breaking changes for merging and checking compatibility; leaves much more room for expansion in the future
-* Removal of flawed function DifxConfigCalculateDoPolar
+* API-breaking changes:
+  - merging and checking compatibility: leaves much more room for expansion in the future
+  - Removal of flawed function DifxConfigCalculateDoPolar
+  - Separation of "FITS IF" information from DifxConfig into DifxFreqSet
+    - This to allow for "Union mode merging", desired for GMVA, RadioAstron
 
 3.4.0
 * Fix X/Y polarization issue

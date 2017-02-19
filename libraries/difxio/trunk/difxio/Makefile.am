@@ -11,6 +11,7 @@ c_sources = \
 	difx_input_merge.c \
 	difx_job.c \
 	difx_freq.c \
+	difx_freqset.c \
 	difx_antenna.c \
 	difx_datastream.c \
 	difx_baseline.c \

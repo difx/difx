@@ -64,6 +64,27 @@ int isSameDifxIF(const DifxIF *di1, const DifxIF *di2)
 	return 1;
 }
 
+int isSameFreqDifxIF(const DifxIF *di1, const DifxIF *di2)
+{
+	if(di1 == 0 && di2 == 0)
+	{
+		return 1;
+	}
+	else if(di1 == 0 || di2 == 0)
+	{
+		return 0;
+	}
+
+	if(di1->freq != di2->freq ||
+	   di1->bw != di2->bw ||
+	   di1->sideband != di2->sideband)
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
 DifxIF *newDifxIFArray(int nIF)
 {
 	DifxIF *di;
@@ -149,4 +170,74 @@ void fprintDifxIFSummary(FILE *fp, const DifxIF *di)
 void printDifxIFSummary(const DifxIF *di)
 {
 	fprintDifxIFSummary(stdout, di);
+}
+
+/* @brief given two DifxIF structures, merge polarization content of src into dest
+ * @return 1 on success, 0 on failure
+ */
+int mergeDifxIF(DifxIF *dest, const DifxIF *src)
+{
+	if(!isSameFreqDifxIF(dest, src))
+	{
+		return 0;
+	}
+	/* cases:
+	   R,R and L,L and RL,RL and RL,R and RL,L : do nothing
+	   R,RL and L,RL : copy src to dest
+	   R,L : add L pol
+	   L,R : replace L with R, add L
+	 */
+
+	if(dest->nPol == 2 || src->nPol == 0)
+	{
+		return 1;
+	}
+	if(src->nPol == 2 || dest->nPol == 0)
+	{
+		copyDifxIF(dest, src);
+
+		return 1;
+	}
+	if(src->nPol == 1)
+	{
+		if(dest->nPol == 0 || src->pol[0] == dest->pol[0])
+		{
+			return 1;
+		}
+		else	/* must be that "src" has the other polarization */
+		{
+			dest->nPol = 2;
+			dest->pol[1] = src->pol[0];
+
+			if(dest->pol[0] == 'L' && dest->pol[1] == 'R')
+			{
+				dest->pol[0] = 'R';
+				dest->pol[1] = 'L';
+			}
+			if(dest->pol[0] == 'Y' && dest->pol[1] == 'X')
+			{
+				dest->pol[0] = 'X';
+				dest->pol[1] = 'Y';
+			}
+			
+			return 1;
+		}
+	}
+	if(dest->nPol == 1)
+	{
+		if(src->nPol == 0)
+		{
+			copyDifxIF(dest, src);
+
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+/* @brief copy src int dest */
+void copyDifxIF(DifxIF *dest, const DifxIF *src)
+{
+	memcpy(dest, src, sizeof(DifxIF));
 }

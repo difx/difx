@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2017 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -81,6 +81,7 @@ void deleteDifxInput(DifxInput *D)
 		deleteDifxDatastreamArray(D->datastream, D->nDatastream);
 		deleteDifxBaselineArray(D->baseline, D->nBaseline);
 		deleteDifxFreqArray(D->freq, D->nFreq);
+		deleteDifxFreqSetArray(D->freqSet, D->nFreqSet);
 		deleteDifxAntennaArray(D->antenna, D->nAntenna);
 		deleteDifxScanArray(D->scan, D->nScan);
 		deleteDifxSourceArray(D->source, D->nSource);
@@ -158,6 +159,12 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 	for(i = 0; i < D->nFreq; ++i)
 	{
 		fprintDifxFreq(fp, D->freq + i);
+	}
+
+	fprintf(fp, "  nFreqSet = %d\n", D->nFreqSet);
+	for(i = 0; i < D->nFreqSet; ++i)
+	{
+		fprintDifxFreqSet(fp, D->freqSet + i);
 	}
 
 	fprintf(fp, "  nAntenna = %d\n", D->nAntenna);
@@ -247,6 +254,12 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
 	for(i = 0; i < D->nConfig; ++i)
 	{
 		fprintDifxConfigSummary(fp, D->config + i);
+	}
+
+	fprintf(fp, "  nFreqSet = %d\n", D->nFreqSet);
+	for(i = 0; i < D->nFreqSet; ++i)
+	{
+		fprintDifxFreqSet(fp, D->freqSet + i);
 	}
 
 	fprintf(fp, "  nAntenna = %d\n", D->nAntenna);
@@ -383,258 +396,250 @@ int polMaskValue(char polName)
 	}
 }
 
-/* This function populates four array fields (and their
- * scalar-valued companions) in a DifxConfig object:
- *   freqId2IF[]
- *   freqIdUsed[]
- *   IF[]
- *   pol[]
+/* This function populates the DifxFreqSet array
+ * @param D DifxInput object
+ * @return -1 in case of error, 0 otherwise
  */
-static int generateAipsIFs(DifxInput *D, int configId)
+static int generateFreqSets(DifxInput *D)
 {
-	DifxConfig *dc;
-	int bl, f;
-	int fqId;
+	int configId;
+	int *freqIsUsed;
 
-	if(configId < 0)
+	freqIsUsed = (int *)calloc(D->nFreq+1, sizeof(int));
+	freqIsUsed[D->nFreq] = -1;
+
+	if(D->nFreqSet > 0)
 	{
-		fprintf(stderr, "Warning: generateAipsIFs: configId = %d\n", configId);
-
-		return 0;
+		deleteDifxFreqSetArray(D->freqSet, D->nFreqSet);
 	}
 
-	dc = D->config + configId;
+	D->freqSet = newDifxFreqSetArray(D->nConfig);
+	D->nFreqSet = D->nConfig;
 
-
-	/* Prepare some arrays */
-	if(dc->freqIdUsed)
+	for(configId = 0; configId < D->nConfig; ++configId)
 	{
-		free(dc->freqIdUsed);
-	}
-	dc->freqIdUsed = (int *)calloc(D->nFreq+1, sizeof(int));
-	dc->freqIdUsed[D->nFreq] = -1;
+		DifxConfig *dc;
+		DifxFreqSet *dfs;
+		int bl, f;
+		int fqId;
 
-	if(dc->IF)
-	{
-		deleteDifxIFArray(dc->IF);
-		dc->IF = 0;
-	}
-	D->nIF = 0;
+		dc = D->config + configId;
+		dfs = D->freqSet + configId;
 
-	if(dc->freqId2IF)
-	{
-		free(dc->freqId2IF);
-	}
-	dc->freqId2IF = (int *)malloc((D->nFreq+2)*sizeof(int));
-	for(f = 0; f < D->nFreq; ++f)
-	{
-		dc->freqId2IF[f] = -1;
-	}
-	dc->freqId2IF[D->nFreq] = -2;	/* special list terminator */
+		dc->freqSetId = configId;
 
-	dc->polMask = 0;
-	dc->nPol = 0;
-	dc->pol[0] = dc->pol[1] = ' ';
-
-
-	/* Look for used D->freq[] entries and polarization entries */
-	for(bl = 0; bl < dc->nBaseline; ++bl)
-	{
-		int blId;
-		DifxBaseline *db;
-
-		blId = dc->baselineId[bl];
-		if(blId < 0)
+		/* Prepare some arrays */
+		for(f = 0; f < D->nFreq; ++f)
 		{
-			continue;
+			freqIsUsed[f] = 0;
 		}
-		db = D->baseline + blId;
 
-		/* f here refers to the baseline frequency list */
-		for(f = 0; f < db->nFreq; ++f)
+		allocateDifxFreqSetFreqMap(dfs, D->nFreq);
+
+		dc->polMask = 0;
+		dc->nPol = 0;
+		dc->pol[0] = dc->pol[1] = ' ';
+
+
+		/* Look for used D->freq[] entries and polarization entries */
+		for(bl = 0; bl < dc->nBaseline; ++bl)
 		{
-			int p;
+			int blId;
+			DifxBaseline *db;
 
-			if(db->nPolProd[f] < 0)
+			blId = dc->baselineId[bl];
+			if(blId < 0)
 			{
 				continue;
 			}
-			for(p = 0; p < db->nPolProd[f]; ++p)
+			db = D->baseline + blId;
+
+			/* f here refers to the baseline frequency list */
+			for(f = 0; f < db->nFreq; ++f)
 			{
-				DifxDatastream *ds;
-				int dsId;
-				int band;
-				int localFqId;
-				int polValue;
-				char polName;
+				int p;
 
-				dsId = db->dsA;
-				ds = D->datastream + dsId;
-				band = db->bandA[f][p];
-				if(band < 0 || band >= ds->nRecBand + ds->nZoomBand)
+				if(db->nPolProd[f] < 0)
 				{
-					fprintf(stderr, "Error: generateAipsIFs: bandA=%d out of range: baselineId=%d nRecBandA=%d nZoomBandA=%d\n", band, bl, ds->nRecBand, ds->nZoomBand);
-					
-					exit(EXIT_FAILURE);
+					continue;
 				}
-				if(band < ds->nRecBand)	/* this is a rec band */
+				for(p = 0; p < db->nPolProd[f]; ++p)
 				{
-					localFqId = ds->recBandFreqId[band];
-					polName = ds->recBandPolName[band];
-					fqId = ds->recFreqId[localFqId];
-				}
-				else /* this is a zoom band */
-				{
-					int zb;
+					DifxDatastream *ds;
+					int dsId;
+					int band;
+					int localFqId;
+					int polValue;
+					char polName;
 
-					zb = band - ds->nRecBand;
-					localFqId = ds->zoomBandFreqId[zb];
-					polName = ds->zoomBandPolName[zb];
-					fqId = ds->zoomFreqId[localFqId];
-				}
-				++dc->freqIdUsed[fqId];
-				polValue = polMaskValue(polName);
-				if(polValue == DIFXIO_POL_ERROR)
-				{
-					fprintf(stderr, "bad pol name: <%c> for baselineId=%d f=%d fqId=%d localFqIf=%d polId=%d bandA=%d\n", polName, bl, f, fqId, localFqId, p, band);
-				}
-				dc->polMask |= polValue;
+					dsId = db->dsA;
+					ds = D->datastream + dsId;
+					band = db->bandA[f][p];
+					if(band < 0 || band >= ds->nRecBand + ds->nZoomBand)
+					{
+						fprintf(stderr, "Error: generateFreqSets: bandA=%d out of range: baselineId=%d nRecBandA=%d nZoomBandA=%d\n", band, bl, ds->nRecBand, ds->nZoomBand);
+						
+						exit(EXIT_FAILURE);
+					}
+					if(band < ds->nRecBand)	/* this is a rec band */
+					{
+						localFqId = ds->recBandFreqId[band];
+						polName = ds->recBandPolName[band];
+						fqId = ds->recFreqId[localFqId];
+					}
+					else /* this is a zoom band */
+					{
+						int zb;
 
-				dsId = db->dsB;
-				ds = D->datastream + dsId;
-				band = db->bandB[f][p];
-				if(band < 0 || band >= ds->nRecBand + ds->nZoomBand)
-				{
-					fprintf(stderr, "Error: generateAipsIFs: bandB=%d out of range: baselineId=%d nRecBandB=%d nZoomBandB=%d\n", band, bl, ds->nRecBand, ds->nZoomBand);
-					
-					exit(EXIT_FAILURE);
-				}
-				if(band < ds->nRecBand)	/* this is a rec band */
-				{
-					localFqId = ds->recBandFreqId[band];
-					polName = ds->recBandPolName[band];
-					fqId = ds->recFreqId[localFqId];
-				}
-				else /* this is a zoom band */
-				{
-					int zb;
+						zb = band - ds->nRecBand;
+						localFqId = ds->zoomBandFreqId[zb];
+						polName = ds->zoomBandPolName[zb];
+						fqId = ds->zoomFreqId[localFqId];
+					}
+					++freqIsUsed[fqId];
+					polValue = polMaskValue(polName);
+					if(polValue == DIFXIO_POL_ERROR)
+					{
+						fprintf(stderr, "bad pol name: <%c> for baselineId=%d f=%d fqId=%d localFqIf=%d polId=%d bandA=%d\n", polName, bl, f, fqId, localFqId, p, band);
+					}
+					dc->polMask |= polValue;
 
-					zb = band - ds->nRecBand;
-					localFqId = ds->zoomBandFreqId[zb];
-					polName = ds->zoomBandPolName[zb];
-					fqId = ds->zoomFreqId[localFqId];
+					dsId = db->dsB;
+					ds = D->datastream + dsId;
+					band = db->bandB[f][p];
+					if(band < 0 || band >= ds->nRecBand + ds->nZoomBand)
+					{
+						fprintf(stderr, "Error: generateFreqSets: bandB=%d out of range: baselineId=%d nRecBandB=%d nZoomBandB=%d\n", band, bl, ds->nRecBand, ds->nZoomBand);
+						
+						exit(EXIT_FAILURE);
+					}
+					if(band < ds->nRecBand)	/* this is a rec band */
+					{
+						localFqId = ds->recBandFreqId[band];
+						polName = ds->recBandPolName[band];
+						fqId = ds->recFreqId[localFqId];
+					}
+					else /* this is a zoom band */
+					{
+						int zb;
+
+						zb = band - ds->nRecBand;
+						localFqId = ds->zoomBandFreqId[zb];
+						polName = ds->zoomBandPolName[zb];
+						fqId = ds->zoomFreqId[localFqId];
+					}
+					++freqIsUsed[fqId];
+					polValue = polMaskValue(polName);
+					if(polValue == DIFXIO_POL_ERROR)
+					{
+						fprintf(stderr, "bad pol name: <%c> for baselineId=%d f=%d fqId=%d localFqIf=%d polId=%d bandB=%d\n", polName, bl, f, fqId, localFqId, p, band);
+					}
+					dc->polMask |= polValue;
 				}
-				++dc->freqIdUsed[fqId];
-				polValue = polMaskValue(polName);
-				if(polValue == DIFXIO_POL_ERROR)
-				{
-					fprintf(stderr, "bad pol name: <%c> for baselineId=%d f=%d fqId=%d localFqIf=%d polId=%d bandB=%d\n", polName, bl, f, fqId, localFqId, p, band);
-				}
-				dc->polMask |= polValue;
 			}
 		}
-	}
 
-	if(dc->polMask & DIFXIO_POL_ERROR || dc->polMask == 0)
-	{
-		fprintf(stderr, "Error: generateAipsIFs: polMask = 0x%03x is unsupported!\n", dc->polMask);
-
-		return -1;
-	}
-	else if ((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY))
-	{
-		fprintf(stderr, "Warning: generateAipsIFs: polMask = 0x%03x is unsupported!\n", dc->polMask);
-	}
-
-	/* populate polarization matrix for this configuration */
-	if(dc->polMask & DIFXIO_POL_R)
-	{
-		dc->pol[dc->nPol] = 'R';
-		++dc->nPol;
-	}
-	if(dc->polMask & DIFXIO_POL_L)
-	{
-		dc->pol[dc->nPol] = 'L';
-		++dc->nPol;
-	}
-	if(dc->polMask & DIFXIO_POL_X)
-	{
-		dc->pol[dc->nPol] = 'X';
-		++dc->nPol;
-	}
-	if(dc->polMask & DIFXIO_POL_Y)
-	{
-		dc->pol[dc->nPol] = 'Y';
-		++dc->nPol;
-	}
-
-	/* Actually construct the IF array */
-
-	/* First count IFs and make map to freqId */
-	/* This could be an overestimate if multiple frequencies map to one IF, as could happen if two otherwise identical FreqIds have different pulse cal extractions */
-	for(fqId = 0; fqId < D->nFreq; ++fqId)
-	{
-		if(dc->freqIdUsed[fqId] > 0)
+		if(dc->polMask & DIFXIO_POL_ERROR || dc->polMask == 0)
 		{
-			++dc->nIF;
+			fprintf(stderr, "Error: generateFreqSets: polMask = 0x%03x is unsupported!\n", dc->polMask);
+
+			return -1;
 		}
-	}
-
-	/* Then actually build it */
-#warning "FIXME: The size adjustment were put in in conjunction with IF merging (union option). Not fully understood."
-	int size = D->nFreq;
-	if (dc->nIF > size)
-		size = dc->nIF;
-
-	dc->IF = newDifxIFArray(size);
-	dc->nIF = 0;	/* zero and recount */
-	for(fqId = 0; fqId < D->nFreq; ++fqId)
-	{
-		int i;
-
-		if(dc->freqIdUsed[fqId] <= 0)
+		else if((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY))
 		{
-			continue;
+			fprintf(stderr, "Warning: generateFreqSets: polMask = 0x%03x is unsupported!\n", dc->polMask);
 		}
-		for(i = 0; i < dc->nIF; ++i)
+
+		/* populate polarization matrix for this configuration */
+		if(dc->polMask & DIFXIO_POL_R)
 		{
-			if(D->freq[fqId].bw == dc->IF[i].bw && (
-				(D->freq[fqId].sideband == 'U' && D->freq[fqId].freq == dc->IF[i].freq) ||
-				(D->freq[fqId].sideband == 'L' && D->freq[fqId].freq == dc->IF[i].freq + dc->IF[i].bw) ))
+			dc->pol[dc->nPol] = 'R';
+			++dc->nPol;
+		}
+		if(dc->polMask & DIFXIO_POL_L)
+		{
+			dc->pol[dc->nPol] = 'L';
+			++dc->nPol;
+		}
+		if(dc->polMask & DIFXIO_POL_X)
+		{
+			dc->pol[dc->nPol] = 'X';
+			++dc->nPol;
+		}
+		if(dc->polMask & DIFXIO_POL_Y)
+		{
+			dc->pol[dc->nPol] = 'Y';
+			++dc->nPol;
+		}
+
+		/* Actually construct the IF array */
+
+		/* First count IFs and make map to freqId */
+		/* This could be an overestimate if multiple frequencies map to one IF, as could happen if two otherwise identical FreqIds have different pulse cal extractions */
+		for(fqId = 0; fqId < D->nFreq; ++fqId)
+		{
+			if(freqIsUsed[fqId] > 0)
 			{
-				break;
+				++dfs->nIF;
 			}
 		}
-		if(i < dc->nIF)
+
+		/* Then actually build it */
+		dfs->IF = newDifxIFArray(dfs->nIF);
+		dfs->nIF = 0;	/* zero and recount */
+		for(fqId = 0; fqId < D->nFreq; ++fqId)
 		{
-			dc->freqId2IF[fqId] = i;
-		}
-		else
-		{
-			dc->freqId2IF[fqId] = i;
-			/* Be nice to downstream code and make _everything_ USB */
-			if(D->freq[fqId].sideband == 'L')
+			int i;
+
+			if(freqIsUsed[fqId] <= 0)
 			{
-				dc->IF[i].freq = D->freq[fqId].freq - D->freq[fqId].bw;
+				continue;
+			}
+			for(i = 0; i < dfs->nIF; ++i)
+			{
+				if(D->freq[fqId].bw == dfs->IF[i].bw && (
+					(D->freq[fqId].sideband == 'U' && D->freq[fqId].freq == dfs->IF[i].freq) ||
+					(D->freq[fqId].sideband == 'L' && D->freq[fqId].freq == dfs->IF[i].freq + dfs->IF[i].bw) ))
+				{
+					break;
+				}
+			}
+			if(i < dfs->nIF)
+			{
+				dfs->freqId2IF[fqId] = i;
 			}
 			else
 			{
-				dc->IF[i].freq = D->freq[fqId].freq;
-			}
-			dc->IF[i].sideband  = 'U';
-			dc->IF[i].bw        = D->freq[fqId].bw;
-			dc->IF[i].nPol      = dc->nPol;
-			dc->IF[i].pol[0]    = dc->pol[0];
-			dc->IF[i].pol[1]    = dc->pol[1];
-			strncpy(dc->IF[i].rxName, D->freq[fqId].rxName, DIFXIO_RX_NAME_LENGTH);
-			dc->IF[i].rxName[DIFXIO_RX_NAME_LENGTH-1] = 0;
+				dfs->freqId2IF[fqId] = i;
+				/* Be nice to downstream code and make _everything_ USB */
+				if(D->freq[fqId].sideband == 'L')
+				{
+					dfs->IF[i].freq = D->freq[fqId].freq - D->freq[fqId].bw;
+				}
+				else
+				{
+					dfs->IF[i].freq = D->freq[fqId].freq;
+				}
+				dfs->IF[i].sideband = 'U';
+				dfs->IF[i].bw       = D->freq[fqId].bw;
+				dfs->IF[i].nPol     = dc->nPol;
+				dfs->IF[i].pol[0]   = dc->pol[0];
+				dfs->IF[i].pol[1]   = dc->pol[1];
+				strncpy(dfs->IF[i].rxName, D->freq[fqId].rxName, DIFXIO_RX_NAME_LENGTH);
+				dfs->IF[i].rxName[DIFXIO_RX_NAME_LENGTH-1] = 0;
 
-			++dc->nIF;
+				++dfs->nIF;
+			}
 		}
+
+		/* Set reference frequency to the bottom edge of the first frequency */
+		D->refFreq = dfs->IF[0].freq;
 	}
 
+	free(freqIsUsed);
+
 	/* Set reference frequency to the bottom edge of the first frequency */
-	D->refFreq = dc->IF[0].freq;
+	D->refFreq = D->freqSet[0].IF[0].freq;
 
 	return 0;
 }
@@ -1728,7 +1733,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 	{
 		int v;
 
-		v = generateAipsIFs(D, c);
+		v = generateFreqSets(D);
 		if(v < 0)
 		{
 			fprintf(stderr, "Fatal error processing configId %d\n", c);
@@ -2862,9 +2867,10 @@ DifxInput *allocateSourceTable(DifxInput *D, int length)
 /* FIXME: variable names here are confusing at best */
 static DifxInput *deriveFitsSourceIds(DifxInput *D)
 {
-	int i, n=0;
+	int nFitsSource = 0;
+	int i;
 	int *fs;
-	int *fc;
+	int *ffs;
 
 	if(!D)
 	{
@@ -2878,28 +2884,28 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 		return 0;
 	}
 
-	fs = (int *)calloc(D->nSource*D->nConfig, sizeof(int));
-	fc = (int *)calloc(D->nSource*D->nConfig, sizeof(int));
+	/* temporary arrays to keep track of unique sources */
+	fs = (int *)calloc(D->nSource*D->nFreqSet, sizeof(int));
+	ffs = (int *)calloc(D->nSource*D->nFreqSet, sizeof(int));
 
 	for(i = 0; i < D->nSource; ++i)
 	{
-		int configId;
+		int freqSetId;
 
-		D->source[i].numFitsSourceIds = D->nConfig;
-		D->source[i].fitsSourceIds = (int*)malloc(D->nConfig * sizeof(int));
-		for(configId = 0; configId < D->nConfig; ++configId)
+		D->source[i].numFitsSourceIds = D->nFreqSet;
+		D->source[i].fitsSourceIds = (int*)malloc(D->nFreqSet * sizeof(int));
+		for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 		{
-			int a, j, l;
+			int a, j;
 			int match = -1;
 			
-			for(a = 0; a < n; ++a)
+			for(a = 0; a < nFitsSource; ++a)
 			{
 				j = fs[a];
-				l = fc[a];
 				if(D->source[i].ra         == D->source[j].ra  &&
 				   D->source[i].dec        == D->source[j].dec &&
 				   D->source[i].qual       == D->source[j].qual &&
-				   D->config[configId].fitsFreqId == D->config[l].fitsFreqId &&
+				   freqSetId               == ffs[a] &&
 				   strcmp(D->source[i].calCode, D->source[j].calCode) == 0 &&
 				   strcmp(D->source[i].name, D->source[j].name) == 0)
 				{
@@ -2909,14 +2915,14 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 			}
 			if(match < 0)
 			{
-				D->source[i].fitsSourceIds[configId] = n;
-				fs[n] = i;
-				fc[n] = configId;
-				++n;
+				D->source[i].fitsSourceIds[freqSetId] = nFitsSource;
+				fs[nFitsSource] = i;
+				ffs[nFitsSource] = freqSetId;
+				++nFitsSource;
 			}
 			else
 			{
-				D->source[i].fitsSourceIds[configId] = match;
+				D->source[i].fitsSourceIds[freqSetId] = match;
 			}
 		}
 		if(D->nSpacecraft > 0)
@@ -2935,7 +2941,7 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 	}
 
 	free(fs);
-	free(fc);
+	free(ffs);
 	
 	return D;
 }
@@ -2977,7 +2983,7 @@ int DifxInputCalculateDoPolar(DifxInput *D, int configId)
 
 	dc = D->config + configId;
 
-	for(b = 0; b < dc->nBaseline; b++)
+	for(b = 0; b < dc->nBaseline; ++b)
 	{
 		blId = dc->baselineId[b];
 		if(blId < 0)
@@ -2986,7 +2992,7 @@ int DifxInputCalculateDoPolar(DifxInput *D, int configId)
 		}
 
 		bl = D->baseline + blId;
-		for(f = 0; f < bl->nFreq; f++)
+		for(f = 0; f < bl->nFreq; ++f)
 		{
 			int pp;
 
@@ -3016,6 +3022,7 @@ static void setGlobalValues(DifxInput *D)
 {
 	int jobId;
 	int configId;
+	int freqSetId;
 	int hasR = 0;
 	int hasL = 0;
 	int hasX = 0;
@@ -3053,19 +3060,13 @@ static void setGlobalValues(DifxInput *D)
 
 	for(configId = 0; configId < D->nConfig; ++configId)
 	{
-		DifxConfig *dc;
+		const DifxConfig *dc;
 		int doPolar;
-		int i;
-		int nIF, qb;
+		int qb;
 		
 		dc = D->config + configId;
 
-		nIF = dc->nIF;
-		qb  = dc->quantBits;
-		if(D->nIF < nIF)
-		{
-			D->nIF = nIF;
-		}
+		qb = dc->quantBits;
 		if(D->quantBits < 0)
 		{
 			D->quantBits = qb;
@@ -3079,17 +3080,31 @@ static void setGlobalValues(DifxInput *D)
 		{
 			D->doPolar = doPolar;
 		}
+	}
+	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
+	{
+		const DifxFreqSet *dfs;
+		int nIF, i;
+
+		dfs = D->freqSet + freqSetId;
+
+		nIF = dfs->nIF;
+		if(D->nIF < nIF)
+		{
+			D->nIF = nIF;
+		}
+
 		for(i = 0; i < nIF; ++i)
 		{
 			double bw;
 			int p, nPol;
 			char pol[2];
 
-			nPol   = dc->IF[i].nPol;
-			bw     = dc->IF[i].bw;
-			pol[0] = dc->IF[i].pol[0];
-			pol[1] = dc->IF[i].pol[1];
-			if(doPolar)
+			nPol   = dfs->IF[i].nPol;
+			bw     = dfs->IF[i].bw;
+			pol[0] = dfs->IF[i].pol[0];
+			pol[1] = dfs->IF[i].pol[1];
+			if(D->doPolar)
 			{
 				nPol *= 2;
 			}
@@ -3169,97 +3184,197 @@ static void setGlobalValues(DifxInput *D)
 	}
 }
 
-static int sameFQ(const DifxConfig *C1, const DifxConfig *C2)
+/* returns zero on success, otherwise count of errors encountered */
+static int mergeDifxInputFreqSetsStrict(DifxInput *D)
 {
-	int i;
-	
-	if(C1->nIF != C2->nIF)
-	{
-		return 0;
-	}
+	int freqSetId;
+	DifxFreqSet *newdfs;	/* the new Frequency Set */
+	int n = 0;		/* number of new freq sets */
 
-	for(i = 0; i < C1->nIF; ++i)
-	{
-		int p;
+	newdfs = newDifxFreqSetArray(D->nFreqSet);
 
-		if(C1->IF[i].freq != C2->IF[i].freq)
+	/* loop over original FreqSets */
+	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
+	{
+		int newFreqSetId;
+		int configId;
+
+		for(newFreqSetId = 0; newFreqSetId < n; ++newFreqSetId)
 		{
-			return 0;
-		}
-		if(C1->IF[i].bw != C2->IF[i].bw)
-		{
-			return 0;
-		}
-		if(C1->IF[i].sideband != C2->IF[i].sideband)
-		{
-			return 0;
-		}
-		if(C1->IF[i].nPol != C2->IF[i].nPol)
-		{
-			return 0;
-		}
-		for(p = 0; p < C1->IF[i].nPol; ++p)
-		{
-			if(C1->IF[i].pol[p] != C2->IF[i].pol[p])
+			if(isSameDifxFreqSet(newdfs + newFreqSetId, D->freqSet + freqSetId))
 			{
-				return 0;
+				int configId;
+
+				/* match -- no need to make new entry, but need to rewire any configs that reference this one */
+				break;
+			}
+		}
+		if(newFreqSetId == n)	/* no match */
+		{
+			allocateDifxFreqSetFreqMap(newdfs + n, D->nFreq);
+			copyDifxFreqSet(newdfs + n, D->freqSet + freqSetId);
+			++n;
+		}
+
+		/* rewire the mapping from configs to FreqSets */
+		for(configId = 0; configId < D->nConfig; ++configId)
+		{
+			if(D->config[configId].freqSetId == freqSetId)
+			{
+				D->config[configId].freqSetId = newFreqSetId;
 			}
 		}
 	}
 
-	return 1;
+	/* Remove exisitng frequency setups and put the new ones in place */
+	deleteDifxFreqSetArray(D->freqSet, D->nFreqSet);
+	D->freqSet = newdfs;
+
+	printf("mergeDifxInputFreqSetsStrict: went from %d to %d freq sets\n", D->nFreqSet, n);
+
+	D->nFreqSet = n;
+
+	return 0;
 }
 
-static int calcFreqIds(DifxInput *D)
+/* returns zero on success, otherwise count of errors encountered */
+static int mergeDifxInputFreqSetsUnion(DifxInput *D)
 {
+	int freqSetId;
 	int configId;
-	int nFQ = 0;
+	int maxIF;
+	DifxFreqSet *newdfs;	/* the new Frequency Set */
+	int f, i;
+	int nError = 0;
 
-	if(!D)
+	/* Count worst case number of IFs needed */
+	maxIF = 0;
+	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 	{
-		return 0;
+		maxIF += D->freqSet[freqSetId].nIF;
 	}
+	newdfs = newDifxFreqSetArray(1);
+	newdfs->IF = newDifxIFArray(maxIF);
+	allocateDifxFreqSetFreqMap(newdfs, D->nFreq);
 
-	if(D->nConfig < 1)
+	/* Now start populating the IFs */
+	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 	{
-		return 0;
-	}
-	
-	D->config[0].fitsFreqId = nFQ;
-	++nFQ;
-	
-	if(D->nConfig < 2)
-	{
-		return 1;
-	}
+		DifxFreqSet *dfs;
 
-	for(configId = 1; configId < D->nConfig; ++configId)
-	{
-		int configId2;
-
-		D->config[configId].fitsFreqId = -1;
-		for(configId2 = 0; configId2 < configId; ++configId2)
+		dfs = D->freqSet + freqSetId;
+		for(i = 0; i < dfs->nIF; ++i)
 		{
-			if(sameFQ(&(D->config[configId]), &(D->config[configId2])))
+			int ni;
+
+			/* look for frequency match */
+			for(ni = 0; ni < newdfs->nIF; ++ni)
 			{
-				D->config[configId].fitsFreqId = D->config[configId2].fitsFreqId;
-				configId2 = configId; /* terminate inner loop */
+				if(isSameFreqDifxIF(dfs->IF + i, newdfs->IF + ni))
+				{
+					int ok;
+
+					ok = mergeDifxIF(newdfs->IF + ni, dfs->IF + i);
+					if(!ok)
+					{
+						fprintf(stderr, "Developer error: mergeDifxInputFreqSetsUnion: mergeDifxIF() failed with error code %d for freqSetId=%d i=%d ni=%d\n", ok, freqSetId, i, ni);
+						++nError;
+					}
+					break;
+				}
 			}
-		}
-		if(D->config[configId].fitsFreqId == -1)
-		{
-			D->config[configId].fitsFreqId = nFQ;
-			++nFQ;
+			if(ni == newdfs->nIF)	/* no match found */
+			{
+				copyDifxIF(newdfs->IF + newdfs->nIF, dfs->IF + i);
+				++newdfs->nIF;
+			}
+			
+			/* Note: ni still is the relevant index for newdfs->IF ... */
+			/* now set freqId2IF for this freqSet/IF */
+			for(f = 0; f < D->nFreq; ++f)
+			{
+				if(dfs->freqId2IF[f] == i)
+				{
+					if(newdfs->freqId2IF[f] >= 0)
+					{
+						/* shouldn't ever be */
+						fprintf(stderr, "Developer error: mergeDifxInputFreqSetsUnion: newdfs->freqId2IF[%d] was already set to %d when ni=%d i=%d and freqSetId=%d\n", f, newdfs->freqId2IF[f], ni, i, freqSetId);
+						++nError;
+					}
+
+					newdfs->freqId2IF[f] = ni;
+				}
+			}
+
 		}
 	}
 
-	return nFQ;
+	/* Remove exisitng frequency setups and put the new one in place */
+	deleteDifxFreqSetArray(D->freqSet, D->nFreqSet);
+	D->freqSet = newdfs;
+
+	printf("mergeDifxInputFreqSetsUnion: went from %d to 1 freq sets\n", D->nFreqSet);
+	
+	D->nFreqSet = 1;
+
+	/* Make all configs point to the one output */
+	for(configId = 0; configId < D->nConfig; ++configId)
+	{
+		D->config[configId].freqSetId = 0;
+	}
+
+	return nError;
 }
 
-DifxInput *updateDifxInput(DifxInput *D)
+static int mergeDifxInputFreqSets(DifxInput *D, const DifxMergeOptions *mergeOptions)
 {
+	static const DifxMergeOptions defaultMergeOptions;      /* initialized to zeros */
+	int nError;
+
+	if(mergeOptions == 0)
+	{
+		mergeOptions = &defaultMergeOptions;
+	}
+
+	switch(mergeOptions->freqMergeMode)
+	{
+	case FreqMergeModeStrict:
+		/* Here only merge frequency sets that are equivalent */
+		nError = mergeDifxInputFreqSetsStrict(D);
+		break;
+	case FreqMergeModeUnion:
+		/* Here merge all freq sets into one big one */
+		nError = mergeDifxInputFreqSetsUnion(D);
+		break;
+	default: /* should never happen */
+		fprintf(stderr, "Developer error: mergeDifxInputFreqSets: freqMergeMode=%d not supported\n", mergeOptions->freqMergeMode);
+		exit(0);
+	}
+
+	return nError;
+}
+
+DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions)
+{
+	static const DifxMergeOptions defaultMergeOptions;      /* initialized to zeros */
+	int nError;
+
+printf("Update DifxInput\n");
+
+	if(mergeOptions == 0)
+	{
+		mergeOptions = &defaultMergeOptions;
+	}
+
 	D = deriveDifxInputValues(D);
-	calcFreqIds(D);
+	nError = mergeDifxInputFreqSets(D, mergeOptions);
+	if(nError > 0)
+	{
+		fprintf(stderr, "Merging Frequency Setups failed.  Destroying DifxInput.\n");
+		deleteDifxInput(D);
+		
+		return 0;
+	}
 	D = deriveFitsSourceIds(D);
 	setGlobalValues(D);
 	setOrbitingAntennas(D);
@@ -3273,7 +3388,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	DifxInput *D, *DSave;
 	char inputFile[DIFXIO_FILENAME_LENGTH];
 	const char *calcFile;
-	int c, r, v, l;
+	int r, v, l;
 
 	l = strlen(filePrefix);
 	if(strcmp(filePrefix + l - 6, ".input") == 0)
@@ -3352,12 +3467,17 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	deleteDifxParameters(cp);
 	deleteDifxParameters(mp);
 
-	/* read in flags, if any */
-	populateFlags(D);
-
-	for(c = 0; D && (c < D->nConfig); c++)
+	if(D)
 	{
-		DifxConfigMapAntennas(D->config + c, D->datastream);
+		int configId;
+
+		/* read in flags, if any */
+		populateFlags(D);
+
+		for(configId = 0; configId < D->nConfig; ++configId)
+		{
+			DifxConfigMapAntennas(D->config + configId, D->datastream);
+		}
 	}
 	
 	return D;
@@ -3369,7 +3489,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	DifxInput *D, *DSave;
 	char inputFile[DIFXIO_FILENAME_LENGTH];
 	const char *calcFile;
-	int configId, r;
+	int r;
 	int l;
 
 	l = strlen(filePrefix);
@@ -3447,9 +3567,14 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	deleteDifxParameters(ip);
 	deleteDifxParameters(cp);
 
-	for(configId = 0; configId < D->nConfig; ++configId)
+	if(D)
 	{
-		DifxConfigMapAntennas(D->config + configId, D->datastream);
+		int configId;
+
+		for(configId = 0; configId < D->nConfig; ++configId)
+		{
+			DifxConfigMapAntennas(D->config + configId, D->datastream);
+		}
 	}
 	
 	return D;
@@ -3655,7 +3780,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	}
 
 	/* look for no-sort condition and leave successfully if no sort done */
-	for(antennaId = 0; antennaId < D->nAntenna; antennaId++)
+	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{
 		old2new[D->antenna[antennaId].origId] = antennaId;
 		if(D->antenna[antennaId].origId != antennaId)
@@ -3706,7 +3831,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	}
 
 	/* 3. The model tables for each scan */
-	for(scanId = 0; scanId < D->nScan; scanId++)
+	for(scanId = 0; scanId < D->nScan; ++scanId)
 	{
 		/* correct the polynomial model table */
 		if(D->scan[scanId].im)
@@ -3714,7 +3839,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 			DifxPolyModel ***p2;
 			
 			p2 = (DifxPolyModel ***)calloc(D->nAntenna*(D->scan[scanId].nPhaseCentres+1), sizeof(DifxPolyModel *));
-			for(antennaId = 0; antennaId < D->scan[scanId].nAntenna; antennaId++)
+			for(antennaId = 0; antennaId < D->scan[scanId].nAntenna; ++antennaId)
 			{
 				if(D->scan[scanId].im[antennaId])
 				{
@@ -3742,7 +3867,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 			DifxPolyModelLMExtension ***p2;
 
 			p2 = (DifxPolyModelLMExtension ***)calloc(D->nAntenna*(D->scan[scanId].nPhaseCentres+1), sizeof(DifxPolyModelLMExtension **));
-			for(antennaId = 0; antennaId < D->scan[scanId].nAntenna; antennaId++)
+			for(antennaId = 0; antennaId < D->scan[scanId].nAntenna; ++antennaId)
 			{
 				if(D->scan[scanId].imLM[antennaId])
 				{
@@ -3770,7 +3895,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 			DifxPolyModelXYZExtension ***p2;
 
 			p2 = (DifxPolyModelXYZExtension ***)calloc(D->nAntenna*(D->scan[scanId].nPhaseCentres+1), sizeof(DifxPolyModelXYZExtension **));
-			for(antennaId = 0; antennaId < D->scan[scanId].nAntenna; antennaId++)
+			for(antennaId = 0; antennaId < D->scan[scanId].nAntenna; ++antennaId)
 			{
 				if(D->scan[scanId].imXYZ[antennaId])
 				{
@@ -3922,7 +4047,7 @@ int DifxInputGetMaxTones(const DifxInput *D)
 	int d;
 	int maxTones = 0;
 
-	for(d = 0; d < D->nDatastream; d++)
+	for(d = 0; d < D->nDatastream; ++d)
 	{
 		int f;
 
@@ -3930,7 +4055,7 @@ int DifxInputGetMaxTones(const DifxInput *D)
 		{
 			continue;
 		}
-		for(f = 0; f < D->datastream[d].nRecFreq; f++)
+		for(f = 0; f < D->datastream[d].nRecFreq; ++f)
 		{
 			int fd;
 

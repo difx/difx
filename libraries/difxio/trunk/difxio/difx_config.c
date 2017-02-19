@@ -88,11 +88,6 @@ void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 
 void deleteDifxConfigInternals(DifxConfig *dc)
 {
-	if(dc->IF)
-	{
-		free(dc->IF);
-		dc->IF = 0;
-	}
 	if(dc->datastreamId)
 	{
 		free(dc->datastreamId);
@@ -103,20 +98,10 @@ void deleteDifxConfigInternals(DifxConfig *dc)
 		free(dc->baselineId);
 		dc->baselineId = 0;
 	}
-	if(dc->freqId2IF)
-	{
-		free(dc->freqId2IF);
-		dc->freqId2IF = 0;
-	}
 	if(dc->ant2dsId)
 	{
 		free(dc->ant2dsId);
 		dc->ant2dsId = 0;
-	}
-	if(dc->freqIdUsed)
-	{
-		free(dc->freqIdUsed);
-		dc->freqIdUsed = 0;
 	}
 }
 
@@ -166,40 +151,14 @@ void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 		fprintf(fp, " %d", dc->baselineId[i]);
 	}
 	fprintf(fp, "\n");
-	if(dc->freqId2IF)
-	{
-		fprintf(fp, "    frequency to IF map =");
-		for(i = 0; dc->freqId2IF[i] >= -1; i++)
-		{
-			fprintf(fp, " %d", dc->freqId2IF[i]);
-		}
-		fprintf(fp, "\n");
-	}
-	if(dc->freqIdUsed)
-	{
-		fprintf(fp, "    frequency usage =");
-		for(i = 0; dc->freqIdUsed[i] >= 0; i++)
-		{
-			fprintf(fp, " %d", dc->freqIdUsed[i]);
-		}
-		fprintf(fp, "\n");
-	}
 	if(dc->ant2dsId)
 	{
 		fprintf(fp, "    ant2dsId[%d] =", dc->nAntenna);
-		for(i = 0; i < dc->nAntenna; i++)
+		for(i = 0; i < dc->nAntenna; ++i)
 		{
 			fprintf(fp, " %d", dc->ant2dsId[i]);
 		}
 		fprintf(fp, "\n");
-	}
-	fprintf(fp, "    nIF = %d\n", dc->nIF);
-	if(dc->nIF > 0)
-	{
-		for(i = 0; i < dc->nIF; i++)
-		{
-			fprintDifxIF(fp, dc->IF+i);
-		}
 	}
 }
 
@@ -210,8 +169,6 @@ void printDifxConfig(const DifxConfig *dc)
 
 void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc)
 {
-	int i;
-
 	if(!dc)
 	{
 		return;
@@ -224,13 +181,7 @@ void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc)
 	}
 	fprintf(fp, "    doPolar = %d\n", dc->doPolar);
 	fprintf(fp, "    quantization bits = %d\n", dc->quantBits);
-	if(dc->nIF > 0)
-	{
-		for(i = 0; i < dc->nIF; i++)
-		{
-			fprintDifxIFSummary(fp, dc->IF+i);
-		}
-	}
+	fprintf(fp, "    freqSetId = %d\n", dc->freqSetId);
 }
 
 void printDifxConfigSummary(const DifxConfig *dc)
@@ -256,14 +207,12 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2)
 	   dc1->quantBits != dc2->quantBits ||
 	   dc1->nAntenna != dc2->nAntenna ||
 	   dc1->nDatastream != dc2->nDatastream ||
-	   dc1->nBaseline != dc2->nBaseline ||
-	   dc1->nIF != dc2->nIF ||
-	   dc1->fitsFreqId != dc2->fitsFreqId)
+	   dc1->nBaseline != dc2->nBaseline)
 	{
 		return 0;
 	}
 
-	for(i = 0; i < dc1->nPol; i++)
+	for(i = 0; i < dc1->nPol; ++i)
 	{
 		if(dc1->pol[i] != dc2->pol[i])
 		{
@@ -271,7 +220,7 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2)
 		}
 	}
 
-	for(i = 0; i < dc1->nDatastream; i++)
+	for(i = 0; i < dc1->nDatastream; ++i)
 	{
 		if(dc1->datastreamId[i] != dc2->datastreamId[i])
 		{
@@ -279,27 +228,12 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2)
 		}
 	}
 
-	for(i = 0; i < dc1->nBaseline; i++)
+	for(i = 0; i < dc1->nBaseline; ++i)
 	{
 		if(dc1->baselineId[i] != dc2->baselineId[i])
 		{
 			return 0;
 		}
-	}
-
-	if(dc1->IF && dc2->IF) 
-	{
-		for(i = 0; i < dc1->nIF; i++)
-		{
-			if(!isSameDifxIF(dc1->IF + i, dc2->IF + i))
-			{
-				return 0;
-			}
-		}
-	}
-	else if(dc1->IF || dc2->IF)
-	{
-		return 0;
 	}
 
 	return 1;
@@ -487,8 +421,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src, const int *baseline
 	{
 		for(i = 0; i < n; i++)
 		{
-			dest->datastreamId[i] = 
-				datastreamIdRemap[src->datastreamId[i]];
+			dest->datastreamId[i] = datastreamIdRemap[src->datastreamId[i]];
 		}
 	}
 	else
@@ -507,9 +440,6 @@ void moveDifxConfig(DifxConfig *dest, DifxConfig *src)
 	/* unlink some pointers to prevent double freeing */
 	src->datastreamId = 0;
 	src->baselineId = 0;
-	src->IF = 0;
-	src->freqId2IF = 0;
-	src->freqIdUsed = 0;
 	src->ant2dsId = 0;
 }
 

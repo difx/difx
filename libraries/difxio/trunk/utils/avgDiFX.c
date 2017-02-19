@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2016 by Walter Brisken                                  *
+ *   Copyright (C) 2017 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -298,7 +298,7 @@ AverageInput *openAverageInput(const char *filename)
 
 		return 0;
 	}
-	A->D = updateDifxInput(A->D);
+	A->D = updateDifxInput(A->D, 0);
 	if(!A->D)
 	{
 		fprintf(stderr, "Update failed for DiFX fileset %s.  Quitting\n", filename);

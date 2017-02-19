@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -520,7 +520,7 @@ int simplifyDifxFreqs(DifxInput *D)
 	}
 }
 
-/* merge two DifxFreq tables into an new one.  freqIdRemap will contain the
+/* @brief merge two DifxFreq tables into an new one.  freqIdRemap will contain the
  * mapping from df2's old freq entries to that of the merged set
  */
 DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf)

@@ -120,7 +120,7 @@ int computeLMDerivatives(DifxInput *D, double deltaLM, const char *calcProgram, 
 			
 			return -1;
 		}
-		DD[i] = updateDifxInput(DD[i]);
+		DD[i] = updateDifxInput(DD[i], 0);
 		if(!DD[i])
 		{
 			fprintf(stderr, "Update failed for fileset %s number %d\n", D->job->inputFile, i);
@@ -266,7 +266,7 @@ int computeXYZDerivatives(DifxInput *D, double deltaXYZ, const char *calcProgram
 			
 			return -1;
 		}
-		DD[i] = updateDifxInput(DD[i]);
+		DD[i] = updateDifxInput(DD[i], 0);
 		if(!DD[i])
 		{
 			fprintf(stderr, "Update failed for fileset %s number %d\n", D->job->inputFile, i);
@@ -386,7 +386,7 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 		
 		return -1;
 	}
-	D = updateDifxInput(D);
+	D = updateDifxInput(D, 0);
 	if(!D)
 	{
 		fprintf(stderr, "Update failed for fileset named %s: D == 0.  Quitting\n", fileBase);
