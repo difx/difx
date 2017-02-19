@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2408,7 +2408,6 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	if(D->nBaseline > 0 || P->minSubarraySize == 1)
 	{
 		// clean up and return that job was created
-		D->config->IF = 0;
 		deleteDifxInput(D);
 
 		return 1;
