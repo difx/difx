@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -292,7 +292,7 @@ static double *getDifxScaleFactor(const DifxInput *D, double s)
 DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre, double scaleFactor)
 {
 	DifxVis *dv;
-	int configId;
+	int freqSetId;
 	int v;
 	int polMask = 0;
 
@@ -334,7 +334,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 	dv->nComplex = 2;	/* for now don't write weights */
 	dv->first = 1;
 	
-	for(configId = 0; configId < D->nConfig; ++configId)
+	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 	{
 		int i;
 
@@ -346,9 +346,9 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 		{
 			int p;
 
-			for(p = 0; p < D->config[configId].IF[i].nPol; ++p)
+			for(p = 0; p < D->freqSet[freqSetId].IF[i].nPol; ++p)
 			{
-				polMask |= polMaskValue(D->config[configId].IF[i].pol[p]);
+				polMask |= polMaskValue(D->freqSet[freqSetId].IF[i].pol[p]);
 			}
 		}
 	}
@@ -526,6 +526,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	int freqId;
 	int configId;
 	const DifxConfig *config;
+	const DifxFreqSet *dfs;
 	const DifxScan *scan;
 	const DifxPolyModel *im1, *im2;
 	int terms1, terms2;
@@ -604,6 +605,12 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 		return HEADER_READ_ERROR;
 	}
 
+	/* adjust freqId through remapping if needed */
+	if(dv->D->job[dv->jobId].freqIdRemap)
+	{
+		freqId = dv->D->job[dv->jobId].freqIdRemap[freqId];
+	}
+
 	/* if chan weights are written the data volume is 3/2 as large */
 	/* for now, force nFloat = 2 (one weight for entire vis record) */
 	nFloat = 2;
@@ -665,6 +672,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	}
 
 	config = dv->D->config + configId;
+	dfs = dv->D->freqSet + config->freqSetId;
 
 	/* see if it is still the same scan at the edges of integration */
 	dt2 = config->tInt/(86400.0*2.0001);  
@@ -684,7 +692,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 		dv->flagTransition = 0;
 	}
 
-	if(config->freqIdUsed[freqId] <= 0)
+	if(dfs->freqId2IF[freqId] < 0)
 	{
 		if(verbose > 2)
 		{
@@ -726,13 +734,13 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 		printf("        MJD=%11.5f jobId=%d scanId=%d dv->scanId=%d Source=%s  FITS SourceId=%d\n", 
 			mjd+utc, dv->jobId, scanId, dv->scanId, 
 			dv->D->source[scan->phsCentreSrcs[dv->phaseCentre]].name, 
-			dv->D->source[scan->phsCentreSrcs[dv->phaseCentre]].fitsSourceIds[configId]+1);
+			dv->D->source[scan->phsCentreSrcs[dv->phaseCentre]].fitsSourceIds[config->freqSetId]+1);
 	}
 
 	dv->scanId   = scanId;
 	dv->sourceId = scan->phsCentreSrcs[dv->phaseCentre];
-	dv->freqId   = config->fitsFreqId;
-	dv->bandId   = config->freqId2IF[freqId];
+	dv->freqId   = config->freqSetId;
+	dv->bandId   = dfs->freqId2IF[freqId];
 	dv->polId    = getPolProdId(dv, polPair);
 
 	/* freqId should correspond to the freqId table for the actual sideband produced in the 
@@ -826,9 +834,9 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 		DifxVisCollectRandomParams(dv);
 	}
 
-	if(dv->bandId < 0 || dv->bandId >= dv->nFreq)
+	if(dv->bandId < 0 || dv->bandId >= dv->D->freqSet[dv->freqId].nIF)
 	{
-		fprintf(stderr, "Baseline %d: Parameter problem: bandId should be in [0, %d), was %d\n", dv->baseline, dv->nFreq, dv->bandId);
+		fprintf(stderr, "Baseline %d: Parameter problem: bandId should be in [0, %d), was %d\n", dv->baseline, dv->D->freqSet[dv->freqId].nIF, dv->bandId);
 		
 		return BAND_ID_ERROR;
 	}
@@ -887,6 +895,9 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 int DifxVisCollectRandomParams(const DifxVis *dv)
 {
 	const double cLight=2.99792458e8;	/* speed of light in m/s */
+	int freqSetId;
+
+	freqSetId = dv->D->config[dv->configId].freqSetId;
 	
 	dv->record->U		= dv->U/cLight;
 	dv->record->V		= dv->V/cLight;
@@ -898,7 +909,7 @@ int DifxVisCollectRandomParams(const DifxVis *dv)
 	/* reminder: antennaIds, sourceId, freqId are 1-based in FITS */
 	dv->record->baseline	= dv->baseline;
 	dv->record->filter	= 0;
-	dv->record->sourceId1	= dv->D->source[dv->sourceId].fitsSourceIds[dv->configId] + 1;
+	dv->record->sourceId1	= dv->D->source[dv->sourceId].fitsSourceIds[freqSetId] + 1;
 	dv->record->freqId1	= dv->freqId + 1;
 	dv->record->intTime	= dv->tInt;
 

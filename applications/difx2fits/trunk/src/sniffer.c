@@ -206,13 +206,13 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	m = 1;
 	for(i = 0; i < D->nSource; ++i)
 	{
-		int j;
+		int freqSetId;
 
-		for(j = 0; j<D->nConfig; ++j)
+		for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 		{
-			if(D->source[i].fitsSourceIds[j] > m)
+			if(D->source[i].fitsSourceIds[freqSetId] > m)
 			{
-				m = D->source[i].fitsSourceIds[j];
+				m = D->source[i].fitsSourceIds[freqSetId];
 			}
 		}
 	}
@@ -223,13 +223,13 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	}
 	for(i = 0; i < D->nSource; ++i)
 	{
-		int j;
+		int freqSetId;
 
-		for(j = 0; j<D->nConfig; ++j)
+		for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 		{
-			if(D->source[i].fitsSourceIds[j] >= 0)
+			if(D->source[i].fitsSourceIds[freqSetId] >= 0)
 			{
-				S->fitsSourceId2SourceId[D->source[i].fitsSourceIds[j]] = i;
+				S->fitsSourceId2SourceId[D->source[i].fitsSourceIds[freqSetId]] = i;
 			}
 		}
 	}
@@ -260,8 +260,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	S->memoryNeed = (long long)(S->nTime)*S->nChan*S->nIF*S->nPol*S->nAntenna*S->nAntenna*sizeof(fftw_complex);
 	if(S->memoryNeed > MAX_SNIFFER_MEMORY)
 	{
-		fprintf(stderr, "    ** DISABLING SNIFFER AS THE MEMORY REQUIREMENTS ARE EXCESSIVE (%lldMB > %lldMB) **\n",
-			S->memoryNeed/1000000, MAX_SNIFFER_MEMORY/1000000);
+		fprintf(stderr, "    ** DISABLING SNIFFER AS THE MEMORY REQUIREMENTS ARE EXCESSIVE (%lldMB > %lldMB) **\n", S->memoryNeed/1000000, MAX_SNIFFER_MEMORY/1000000);
 		deleteSniffer(S);
 
 		return 0;
@@ -378,18 +377,8 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	S->fft_nx = S->fftOversample*S->nChan;
 	S->fft_ny = S->fftOversample*S->nTime;
 	S->fftbuffer = (fftw_complex*)fftw_malloc(S->fft_nx*S->fft_ny*sizeof(fftw_complex));
-	S->plan1 = fftw_plan_many_dft(1, &(S->fft_ny), S->fft_nx,
-		S->fftbuffer, 0,
-		S->fft_nx, 1,
-		S->fftbuffer, 0,
-		S->fft_nx, 1,
-		FFTW_FORWARD, FFTW_MEASURE);
-	S->plan2 = fftw_plan_many_dft(1, &(S->fft_nx), S->fft_ny,
-		S->fftbuffer, 0,
-		1, S->fft_nx,
-		S->fftbuffer, 0,
-		1, S->fft_nx,
-		FFTW_FORWARD, FFTW_MEASURE);
+	S->plan1 = fftw_plan_many_dft(1, &(S->fft_ny), S->fft_nx, S->fftbuffer, 0, S->fft_nx, 1, S->fftbuffer, 0, S->fft_nx, 1, FFTW_FORWARD, FFTW_MEASURE);
+	S->plan2 = fftw_plan_many_dft(1, &(S->fft_nx), S->fft_ny, S->fftbuffer, 0, 1, S->fft_nx, S->fftbuffer, 0, 1, S->fft_nx, FFTW_FORWARD, FFTW_MEASURE);
 
 	return S;
 }
@@ -501,6 +490,7 @@ static int dump(Sniffer *S, Accumulator *A)
 	char startStr[32], stopStr[32];
 	FILE *fp;
 	const DifxConfig *config;
+	const DifxFreqSet *dfs;
 	const DifxIF *IF;
 	char pol, side;
 	double freq;
@@ -516,6 +506,7 @@ static int dump(Sniffer *S, Accumulator *A)
 	mjd = A->mjdSum / A->mjdCount;
 
 	config = S->D->config + S->configId;
+	dfs = S->D->freqSet + config->freqSetId;
 
 	a1 = A->a1;
 	a2 = A->a2;
@@ -552,7 +543,7 @@ static int dump(Sniffer *S, Accumulator *A)
 		fprintf(fp, "source: %s bandw: %6.3f MHz\n", S->D->source[A->sourceId].name, S->bw);
 		for(i = 0; i < S->nIF; ++i)
 		{
-			IF = config->IF + i;
+			IF = dfs->IF + i;
 			freq = IF->freq/1000.0;	/* freq in GHz */
 			side = IF->sideband;
 			for(p = 0; p < S->nPol; ++p)
@@ -892,6 +883,8 @@ static int add(Accumulator *A, int bbc, int index, float weight, const float *da
 int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 {
 	const struct UVrow *data;
+	const DifxConfig *dc;
+	const DifxFreqSet *dfs;
 	double mjd;
 	Accumulator *A;
 	int a1, a2;
@@ -937,11 +930,13 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 	{
 		return 0;
 	}
+	dc = S->D->config + configId;
+	dfs = S->D->freqSet + dc->freqSetId;
 
 	if(configId != S->configId)
 	{
-		S->nIF = S->D->config[configId].nIF;
-		S->nPol = S->D->config[configId].nPol;
+		S->nIF = dfs->nIF;
+		S->nPol = dc->nPol;
 		S->configId = configId;
 	}
 
@@ -983,7 +978,6 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 		int isLSB;
 		int p;
 		
-		//isLSB = (S->D->config[configId].IF[i].sideband == 'L');
 		isLSB = dv->sideband == 'L';
 
 		for(p = 0; p < S->nPol; ++p)

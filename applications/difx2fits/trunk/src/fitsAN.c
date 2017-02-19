@@ -61,7 +61,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	double start, stop;
 	char *p_fitsbuf;
 	int bandId;
-	int configId;
+	int freqSetId;
 	double time;
 	float timeInt;
 	char polTypeA;
@@ -118,16 +118,12 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 		polCalB[bandId] = 0.0;
 	}
 
-	for(configId = 0; configId < D->nConfig; ++configId)
+	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 	{
 		int antennaId;
 		int32_t freqId1 = 0;
 		
-		if(D->config[configId].fitsFreqId < freqId1)
-		{
-			continue;	/* already got this freqid */
-		}
-		freqId1 = D->config[configId].fitsFreqId + 1; /* FITS fqId starts at 1 */
+		freqId1 = freqSetId + 1; /* FITS fqId starts at 1 */
 		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
 			const int maxDatastreams = 8;

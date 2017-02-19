@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -166,6 +166,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 		const DifxScan *scan;
 		const DifxJob *job;
 		const DifxConfig *config;
+		const DifxFreqSet *dfs;
 		int configId, jobId;
 		int32_t sourceId1, freqId1;
 		
@@ -183,8 +184,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 		}
 
 		config = D->config + configId;
-		freqId1 = config->fitsFreqId + 1;
-		sourceId1 = D->source[scan->phsCentreSrcs[phaseCentre]].fitsSourceIds[configId] + 1;
+		dfs = D->freqSet + config->freqSetId;
+		freqId1 = config->freqSetId + 1;
+		sourceId1 = D->source[scan->phsCentreSrcs[phaseCentre]].fitsSourceIds[config->freqSetId] + 1;
 
 		if(scan->im)
 		{
@@ -266,7 +268,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 
 				for(i = 0; i < nBand; ++i)
 				{
-					freq = config->IF[i].freq*1.0e6;
+					freq = dfs->IF[i].freq*1.0e6;
 					for(k = 0; k < array_N_POLY; ++k)
 					{
 						ppoly[i][k] = gpoly[k]*freq;

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -140,6 +140,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 	{
 		const int MaxLineLength=1000;
 		const DifxConfig *dc;
+		const DifxFreqSet *dfs;
 		char *rv;
 		char antName[DIFXIO_NAME_LENGTH];
 		char line[MaxLineLength+1];
@@ -237,6 +238,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 			FL->baselineId1[0] = antennaId + 1;
 
 			dc = D->config + configId;
+			dfs = D->freqSet + dc->freqSetId;
 
 			/* convert the recorder channel number into FITS
 			 * useful values: the IF index (bandId) and the
@@ -252,7 +254,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 			/* Then cycle through all IFs to see if that IF is flagged or not */
 			for(i = 0; i < D->nIF; ++i)
 			{
-				if(recBand < 0 || isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
+				if(recBand < 0 || isDifxIFInsideDifxFreq(dfs->IF + i, D->freq + freqId))
 				{
 					FL->bandMask[i] = 1;
 				}
@@ -403,20 +405,22 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	for(i = 0; i < D->nIF; ++i)
 	{
 		const DifxConfig *dc;
+		const DifxFreqSet *dfs;
 
 		dc = D->config + configId;
-			
-		if(dc->IF[i].nPol < dc->nPol)	/* Aha, a pol is missing.  Flag it */
+		dfs = D->freqSet + dc->freqSetId;
+
+		if(dfs->IF[i].nPol < dc->nPol)	/* Aha, a pol is missing.  Flag it */
 		{
 			int antennaId;
 
 			FL.bandMask[i] = 1;
 			
-			if(dc->IF[i].nPol > 0 && dc->IF[i].pol[0] == dc->pol[0])
+			if(dfs->IF[i].nPol > 0 && dfs->IF[i].pol[0] == dc->pol[0])
 			{
 				FL.polId = 1;
 			}
-			else if(dc->IF[i].nPol > 0 && dc->IF[i].pol[0] == dc->pol[1])
+			else if(dfs->IF[i].nPol > 0 && dfs->IF[i].pol[0] == dc->pol[1])
 			{
 				FL.polId = 0;
 			}

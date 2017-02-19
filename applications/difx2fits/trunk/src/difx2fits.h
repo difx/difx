@@ -70,8 +70,6 @@ struct CommandLineOptions
 	double jobMatrixDeltaT; /* seconds */
 	char *primaryBand;	/* for VLITE */
 	char *historyFile;	/* if set, dump contents to FITS history */
-	enum EOPMergeMode eopMergeMode;
-	enum FreqMergeMode freqMergeMode;
 	DifxMergeOptions mergeOptions;
 };
 
@@ -88,7 +86,8 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsFR(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
+	const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre);

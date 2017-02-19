@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -129,10 +129,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
 	fitsWriteInteger(out, "FFT_TWID", 1, "Version of FFT twiddle table used");
 	fitsWriteString(out, "TAPER_FN", taperFunctionNames[D->job->taperFunction], "");
-	fitsWriteFloat(out, "DELTAT", polyDuration/86400.0, "");
+	fitsWriteFloat(out, "DELTAT", polyDuration/86400.0, "DAYS");
 	fitsWriteInteger(out, "TABREV", 1, "");
-#warning "populate the new keyword below"
-	//fitsWriteDouble(out, "DELTAT", , "DAYS");
 	
 	fitsWriteEnd(out);
 
@@ -163,8 +161,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 			continue;
 		}
 		config = D->config + configId;
-		freqId1 = config->fitsFreqId + 1;
-		sourceId1 = D->source[scan->phsCentreSrcs[phaseCentre]].fitsSourceIds[configId] + 1;
+		freqId1 = config->freqSetId + 1;
+		sourceId1 = D->source[scan->phsCentreSrcs[phaseCentre]].fitsSourceIds[config->freqSetId] + 1;
 
 		if(scan->im)
 		{

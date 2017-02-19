@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -557,30 +557,6 @@ int loadGainCurves(const DifxInput *D, GainRow *G)
 	return nRow;
 }
 
-static int isSX(const DifxConfig *config, int nBand)
-{
-	int i;
-	int hasS = 0;
-	int hasX = 0;
-
-	for(i = 0; i < nBand; ++i)
-	{
-		double freq;
-
-		freq = config->IF[i].freq;	/* MHz */
-		if(freq > 2.0 && freq < 3.8)
-		{
-			hasS = 1;
-		}
-		if(freq > 7.5 && freq < 10.5)
-		{
-			hasX = 1;
-		}
-	}
-
-	return (hasS & hasX);
-}
-
 const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	GainRow *G;
@@ -616,7 +592,8 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	int nColumn;
 	int nRowBytes;
 	char *fitsbuf, *p_fitsbuf;
-	int c, r, a, i, j, p, nBand, nPol;
+	int antId;
+	int r, i, j, p, nBand, nPol;
 	const char *antName;
 	float xVal[array_MAX_BANDS];
 	float yVal[MAXTAB*array_MAX_BANDS];
@@ -632,7 +609,6 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	int messages = 0;
 	/* 1-based indices for FITS file */
 	int32_t antId1, freqId1, arrayId1;
-	const DifxConfig *config;
 
 	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
 	 * wants, namely 0xFFFFFFFF */
@@ -712,30 +688,29 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	arrayId1 = 1;
 	mjd = 0.5*(D->mjdStart + D->mjdStop);
 
-	for(a = 0; a < D->nAntenna; ++a)
+	for(antId = 0; antId < D->nAntenna; ++antId)
 	{
+		int freqSetId;
+
 		freqId1 = 0;
-		antName = D->antenna[a].name;
-		antId1 = a + 1;
+		antName = D->antenna[antId].name;
+		antId1 = antId + 1;
 		bad = 0;
 
-		for(c = 0; c < D->nConfig; ++c)
+		for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 		{
+			const DifxFreqSet *dfs;
 			int sxFlag;
 
-			config = D->config + c;
+			dfs = D->freqSet + freqSetId;
 
-			if(config->fitsFreqId < freqId1)
-			{
-				continue;	/* this freqId1 done already */
-			}
-			freqId1 = config->fitsFreqId + 1;
+			freqId1 = freqSetId + 1;
 			
-			sxFlag = isSX(config, nBand);
+			sxFlag = isDifxFreqSetSX(dfs);
 			
-			for(i = 0; i < nBand; ++i)
+			for(i = 0; i < dfs->nIF; ++i)
 			{
-				freq = config->IF[i].freq;	/* MHz */
+				freq = dfs->IF[i].freq;	/* MHz */
 				r = getGainRow(G, nRow, antName, freq, mjd, sxFlag);
 				if(r < 0)
 				{

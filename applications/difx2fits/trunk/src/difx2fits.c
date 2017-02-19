@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -661,7 +661,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 
 	printf("  FR -- frequency           ");
 	fflush(stdout);
-	D = DifxInput2FitsFR(D, &keys, out);
+	D = DifxInput2FitsFR(D, &keys, out, opts);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
@@ -1020,7 +1020,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 		printDifxInput(D);
 	}
 
-	D = updateDifxInput(D);
+	D = updateDifxInput(D, &opts->mergeOptions);
 
 	if(!D)
 	{

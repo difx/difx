@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -120,10 +120,6 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	int nBand, nPoly;
 	float *onPhase, *offPhase;
 	double *poly;
-	int configId, scanId;
-	const DifxPulsar *dp;
-	const DifxPolyco *pc;
-	const DifxConfig *config;
 	int32_t gateId1;
 	int32_t sourceId1;
 	int32_t freqId1;
@@ -206,9 +202,15 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	}
 	gateId1 = 0;
 
-	for(psr = 0; psr < D->nPulsar; psr++)
+	for(psr = 0; psr < D->nPulsar; ++psr)
 	{
-		for(scanId = 0; scanId < D->nScan; scanId++)
+		const DifxPulsar *dp;
+		const DifxPolyco *pc;
+		const DifxConfig *config;
+		const DifxFreqSet *dfs;
+		int configId, freqSetId, scanId;
+
+		for(scanId = 0; scanId < D->nScan; ++scanId)
 		{
 			configId = D->scan[scanId].configId;
 			config = D->config + configId;
@@ -219,27 +221,28 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		}
 		if(scanId >= D->nScan)
 		{
-			fprintf(stderr, "PulsarId %d not linked to any scans!\n",
-				 psr);
+			fprintf(stderr, "PulsarId %d not linked to any scans!\n", psr);
 			continue;
 		}
 		dp = D->pulsar + psr;
+		freqSetId = config->freqSetId;
+		dfs = D->freqSet + freqSetId;
 
 		v = getGateWindow(dp, opts->pulsarBin, &phaseOpen, &phaseClose);
 		if(v < 0)
 		{
 			continue;
 		}
-		if(dp->nBin > 1) for(i = 0; i < nBand; i++)
+		if(dp->nBin > 1) for(i = 0; i < nBand; ++i)
 		{
 			onPhase[i]  = phaseOpen;
 			offPhase[i] = phaseClose;
 		}
 
-		for(p = 0; p < dp->nPolyco; p++)
+		for(p = 0; p < dp->nPolyco; ++p)
 		{
 			sourceId1 = D->scan[scanId].pointingCentreSrc+1;
-			freqId1 = config->fitsFreqId+1;
+			freqId1 = freqSetId + 1;
 			gateId1++;
 			pc = dp->polyco + p;
 

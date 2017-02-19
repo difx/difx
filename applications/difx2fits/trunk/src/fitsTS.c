@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -267,13 +267,15 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 	int i, p, r, v;
 	int freqId, polId;
 	const DifxConfig *dc;
+	const DifxFreqSet *dfs;
 	double freq, tCal;
 
 	dc = D->config + configId;
+	dfs = D->freqSet + dc->freqSetId;
 
 	for(i = 0; i < D->nIF; ++i)
 	{
-		for(p = 0; p < dc->IF[i].nPol; ++p)
+		for(p = 0; p < dfs->IF[i].nPol; ++p)
 		{
 			/* search for a compatible record band.  This should allow zoom bands to work. */
 			for(r = 0; r < nRecBand; ++r)
@@ -287,30 +289,29 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 			
 				if(polId < 0 || freqId < 0 || freqId >= D->nFreq)
 				{
-					fprintf(stderr, "Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n", 
-						freqId, polId, r);
+					fprintf(stderr, "Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n", freqId, polId, r);
 
 					exit(EXIT_FAILURE);
 				}
 
-				if(polId == p && isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
+				if(polId == p && isDifxIFInsideDifxFreq(dfs->IF + i, D->freq + freqId))
 				{
 					break;
 				}
 			}
 			if(r < nRecBand) /* match found */
 			{
-				freq = dc->IF[i].freq;
-				if(dc->IF[i].sideband == 'L')
+				freq = dfs->IF[i].freq;
+				if(dfs->IF[i].sideband == 'L')
 				{
-					freq -= dc->IF[i].bw*0.5;
+					freq -= dfs->IF[i].bw*0.5;
 				}
 				else
 				{
-					freq += dc->IF[i].bw*0.5;
+					freq += dfs->IF[i].bw*0.5;
 				}
 				/* Note: could do better by considering full band Tsys variations */
-				tCal = getDifxTcal(T, D->mjdStart, D->antenna[antId].name, dc->IF[i].rxName, D->config[configId].pol[polId], freq);
+				tCal = getDifxTcal(T, D->mjdStart, D->antenna[antId].name, dfs->IF[i].rxName, dc->pol[polId], freq);
 				if(tCal > 0.0)
 				{
 					double ts;
@@ -508,8 +509,7 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 		}
 		else if(scanId >= 0 && n != nRecBand)	/* bail if the wrong number of measurements were found */
 		{
-			fprintf(stderr, "Developer error: getDifxTsys: antId=%d origDsId=%d scanId=%d n=%d nRecBand=%d mjd1=%12.6f mjd2=%12.6f\n",
-				antId, origDsId, scanId, n, nRecBand, mjd1, mjd2);
+			fprintf(stderr, "Developer error: getDifxTsys: antId=%d origDsId=%d scanId=%d n=%d nRecBand=%d mjd1=%12.6f mjd2=%12.6f\n", antId, origDsId, scanId, n, nRecBand, mjd1, mjd2);
 
 			exit(EXIT_FAILURE);
 		}
@@ -520,6 +520,7 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 
 			if(nAccum > 0 && currentScanId >= 0 && currentConfigId >= 0 && phaseCentre < scan->nPhaseCentres && scan->phsCentreSrcs[phaseCentre] >= 0)
 			{
+				int freqSetId;
 				char *p_fitsbuf;
 				
 				// write Tsys row to file
@@ -529,10 +530,11 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 				sourceId = scan->phsCentreSrcs[phaseCentre];
 
 				/* 1-based values for FITS */
-				sourceId1 = D->source[sourceId].fitsSourceIds[currentConfigId] + 1;
+				freqSetId = D->config[currentConfigId].freqSetId;
+				sourceId1 = D->source[sourceId].fitsSourceIds[freqSetId] + 1;
 				antId1 = antId + 1;
 				arrayId1 = 1;
-				freqId1 = D->config[currentConfigId].fitsFreqId + 1;
+				freqId1 = freqSetId + 1;
 
 				nanify(tSys);
 				populateDifxTSys(tSys, D, currentConfigId, antId, average, nRecBand, T);
@@ -606,12 +608,14 @@ static int populateTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, int c
 	int i, p, r, v;
 	int freqId, polId;
 	const DifxConfig *dc;
+	const DifxFreqSet *dfs;
 
 	dc = D->config + configId;
+	dfs = D->freqSet + dc->freqSetId;
 
 	for(i = 0; i < D->nIF; ++i)
 	{
-		for(p = 0; p < dc->IF[i].nPol; ++p)
+		for(p = 0; p < dfs->IF[i].nPol; ++p)
 		{
 			/* search for a compatible record band.  This should allow zoom bands to work. */
 			for(r = 0; r < nRecBand; ++r)
@@ -625,13 +629,12 @@ static int populateTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, int c
 			
 				if(polId < 0 || freqId < 0 || freqId >= D->nFreq)
 				{
-					fprintf(stderr, "Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n", 
-						freqId, polId, r);
+					fprintf(stderr, "Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n", freqId, polId, r);
 
 					exit(EXIT_FAILURE);
 				}
 
-				if(polId == p && isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
+				if(polId == p && isDifxIFInsideDifxFreq(dfs->IF + i, D->freq + freqId))
 				{
 					break;
 				}
@@ -651,7 +654,7 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 	const int MaxLineLength=1000;
 	FILE *in;
 	int32_t freqId1, arrayId1, sourceId1, antId1;
-	int configId, sourceId, scanId;
+	int configId, freqSetId, sourceId, scanId;
 	char antName[DIFXIO_NAME_LENGTH];
 	float tSysRecBand[2*array_MAX_BANDS];
 	float tSys[2][array_MAX_BANDS];
@@ -757,14 +760,15 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 			}
 
 			configId = scan->configId;
-			freqId1 = D->config[configId].fitsFreqId + 1;
+			freqSetId = D->config[configId].freqSetId;
+			freqId1 = freqSetId + 1;
 			
 			nanify(tSys);
 			populateTSys(tSys, D, configId, antId, tSysRecBand, nRecBand);
 
 			/* 1-based values for FITS */
 			antId1 = antId + 1;
-			sourceId1 = D->source[sourceId].fitsSourceIds[configId] + 1;
+			sourceId1 = D->source[sourceId].fitsSourceIds[freqSetId] + 1;
 		
 			if(nRec == 0)
 			{

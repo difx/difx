@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,7 +33,8 @@
 #include "difx2fits.h"
 
 const DifxInput *DifxInput2FitsFR(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
+	const struct CommandLineOptions *opts)
 {
 	char bandFormDouble[8];
 	char bandFormFloat[8];
@@ -57,11 +58,11 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	float bandBW[array_MAX_BANDS];
 	int32_t netSide[array_MAX_BANDS];
 	int32_t bbChan[array_MAX_BANDS];
-	int configId;
+	int freqSetId;
 	int nBand;
 	int i;
 	int32_t freqId1;	/* 1-based index for FITS file */
-	const DifxConfig *config;
+	const DifxFreqSet *dfs;
 	const DifxIF *IF;
 
 	if(D == 0)
@@ -95,20 +96,15 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 
 	freqId1 = 0;
 
-	for(configId = 0; configId < D->nConfig; ++configId)
+	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 	{
-		config = D->config + configId;
+		dfs = D->freqSet + freqSetId;
 
-		/* only write one row per unique frequency ID */
-		if(config->fitsFreqId < freqId1)
-		{
-			continue;
-		}
-		freqId1 = config->fitsFreqId + 1;
+		freqId1 = freqSetId + 1;
 
 		for(i = 0; i < nBand; ++i)
 		{
-			IF = config->IF + i;
+			IF = dfs->IF + i;
 			bandFreq[i] = (IF->freq - D->refFreq)*1.0e6;
 			chanBW[i] = (IF->bw*D->specAvg/D->nOutChan)*1.0e6;
 			bandBW[i] = chanBW[i]*D->nOutChan;
@@ -116,7 +112,10 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 			bbChan[i] = 0;	/* vistigial */
 			/* correct for skipping some channels */
 			bandFreq[i] += netSide[i]*IF->bw*D->startChan*1.0e6/(double)(D->nInChan);
-			//printf("Writing IF with freq %f, chanBW %f, bandBW %f\n", bandFreq[i], chanBW[i], bandBW[i]);
+			if(opts->verbose > 2)
+			{
+				printf("Writing IF with freq %f, chanBW %f, bandBW %f\n", bandFreq[i], chanBW[i], bandBW[i]);
+			}
 		}
 		
 		/* pointer to the buffer for FITS records */

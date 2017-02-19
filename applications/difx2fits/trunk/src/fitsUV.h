@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -65,7 +65,7 @@ typedef struct
 	int configId;
 	int sourceId;
 	int scanId;
-	int freqId;			/* DiFX configId or FITS freqId */
+	int freqId;			/* DiFX FreqSetId or FITS freqId */
 	int bandId;			/* FITS IF index, 0-based */
 	int polId;			/* FITS polarization index, 0-based */
 	int nPol, nFreq;

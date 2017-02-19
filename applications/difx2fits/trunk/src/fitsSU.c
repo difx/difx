@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -87,7 +87,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 	char velType[8];
 	char velDef[8];
 	int *fitsSource;
-	int *fitsConfig;
+	int *fitsFreqSet;
 	int i, nFitsSource;
 	int sourceId;
 
@@ -136,20 +136,20 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 		return 0;
 	}
 	
-	fitsSource = (int *)malloc(D->nSource*D->nConfig*sizeof(int));
-	fitsConfig = (int *)malloc(D->nSource*D->nConfig*sizeof(int));
-	for(sourceId = 0; sourceId < D->nSource*D->nConfig; ++sourceId)
+	fitsSource = (int *)malloc(D->nSource*D->nFreqSet*sizeof(int));
+	fitsFreqSet = (int *)malloc(D->nSource*D->nFreqSet*sizeof(int));
+	for(sourceId = 0; sourceId < D->nSource*D->nFreqSet; ++sourceId)
 	{
 		fitsSource[sourceId] = -1;
 	}
 	nFitsSource = -1;
 	for(sourceId = 0; sourceId < D->nSource; ++sourceId)
 	{
-		int configId;
+		int freqSetId;
 
-		for(configId = 0; configId < D->nConfig; ++configId)
+		for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 		{
-			i = D->source[sourceId].fitsSourceIds[configId];
+			i = D->source[sourceId].fitsSourceIds[freqSetId];
 			if(i < 0)
 			{
 				continue;
@@ -157,7 +157,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 			if(fitsSource[i] < 0)
 			{
 				fitsSource[i] = sourceId;
-				fitsConfig[i] = configId;
+				fitsFreqSet[i] = freqSetId;
 				if(i > nFitsSource)
 				{
 					nFitsSource = i;
@@ -169,9 +169,8 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 
 	for(i = 0; i < nFitsSource; ++i)
 	{
-		int configId;
+		int freqSetId;
 		const DifxSource *source;
-		const DifxConfig *config;
 		double muRA;			/* proper motion */
 		double muDec;
 		float parallax;
@@ -188,19 +187,17 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 		sourceId = fitsSource[i];
 		if(sourceId < 0)
 		{
-			fprintf(stderr, "Error: sourceId = -1\n");
+			fprintf(stderr, "Developer error: sourceId = -1\n");
 			continue;
 		}
 
 		source = D->source + sourceId;
-		configId = fitsConfig[i];
-		if(configId < 0 || configId >= D->nConfig)
+		freqSetId = fitsFreqSet[i];
+		if(freqSetId < 0 || freqSetId >= D->nFreqSet)
 		{
-			fprintf(stderr, "Error: configId out of range = %d\n", configId);
+			fprintf(stderr, "Developer error: freqSetId out of range = %d; nFreqSet = %d\n", freqSetId, D->nFreqSet);
 			continue;
 		}
-		config = D->config + configId;
-
 		
 		/* Note: if any of these 4 nubmers are changed, expect AIPS to not handle these correctly */
 		muRA = 0.0;
@@ -226,7 +223,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 			RAObs = RAEpoch;
 			decObs = decEpoch;
 		}
-		freqId1 = config->fitsFreqId + 1;  /* FITS 1-based */
+		freqId1 = freqSetId + 1;  /* FITS 1-based */
 		strcpypad(sourceName, source->name, 16);
 
 		p_fitsbuf = fitsbuf;
@@ -268,7 +265,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 
 	free(fitsbuf);
 	free(fitsSource);
-	free(fitsConfig);
+	free(fitsFreqSet);
 
 	return D;
 }	

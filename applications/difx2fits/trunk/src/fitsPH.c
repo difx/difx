@@ -54,9 +54,10 @@ const double DefaultDifxCableCalExtrapolate = 2.0; /* The timerange a cable cal 
  */
 int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId, int configId, int recBand, int maxCount)
 {
-	DifxConfig *dc;
-	DifxDatastream *dd = 0;
-	DifxFreq *df;
+	const DifxConfig *dc;
+	const DifxFreqSet *dfs;
+	const DifxDatastream *dd = 0;
+	const DifxFreq *df;
 	int n = 0;
 	int i, d, p;
 	int dsId, localFreqId;
@@ -72,6 +73,7 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
 	}
 
 	dc = D->config + configId;
+	dfs = D->freqSet + dc->freqSetId;
 
 	for(d = 0; d < dc->nDatastream; ++d)
 	{
@@ -117,13 +119,13 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
 	localFreqId = dd->recBandFreqId[recBand];
 	df = D->freq + dd->recFreqId[localFreqId];
 
-	for(i = 0; i < dc->nIF; ++i)
+	for(i = 0; i < dfs->nIF; ++i)
 	{
-		if(isDifxIFInsideDifxFreq(dc->IF + i, df))
+		if(isDifxIFInsideDifxFreq(dfs->IF + i, df))
 		{
-			for(p = 0; p < dc->IF[i].nPol; ++p)
+			for(p = 0; p < dfs->IF[i].nPol; ++p)
 			{
-				if(dc->IF[i].pol[p] == polName)
+				if(dfs->IF[i].pol[p] == polName)
 				{
 					if(n < maxCount)
 					{
@@ -146,8 +148,9 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
  */
 int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configId, int recFreq, int polId, int maxCount)
 {
-	DifxConfig *dc;
-	DifxFreq *df;
+	const DifxConfig *dc;
+	const DifxFreqSet *dfs;
+	const DifxFreq *df;
 	int n = 0;
 	int i, p;
 	char polName;
@@ -162,6 +165,7 @@ int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configI
 	}
 
 	dc = D->config + configId;
+	dfs = D->freqSet + dc->freqSetId;
 
 	if(polId >= dc->nPol)
 	{
@@ -177,13 +181,13 @@ int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configI
 
 	df = D->freq + recFreq;
 
-	for(i = 0; i < dc->nIF; ++i)
+	for(i = 0; i < dfs->nIF; ++i)
 	{
-		if(isDifxIFInsideDifxFreq(dc->IF + i, df))
+		if(isDifxIFInsideDifxFreq(dfs->IF + i, df))
 		{
-			for(p = 0; p < dc->IF[i].nPol; ++p)
+			for(p = 0; p < dfs->IF[i].nPol; ++p)
 			{
-				if(dc->IF[i].pol[p] == polName)
+				if(dfs->IF[i].pol[p] == polName)
 				{
 					if(n < maxCount)
 					{
@@ -262,7 +266,7 @@ static int getNTone(const char *filename, const char *antenna, double t1, double
 	return maxnTone;
 }
 
-inline int isUndefinedVLBA(double v)
+int isUndefinedVLBA(double v)
 {
 	/* 999 is a VLBA magic number meaning "not available" */
 	return (v > 999.89 && v < 999.91);
@@ -1268,6 +1272,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			int curDifxFile = 0;
 			double mjdLast = 0.0;
 			int nDifxAntennaTones;
+			int freqSetId;
 			int originalDsIds[maxDatastreams];
 			int originalDsId = -1, currentDsId = -1;
 			int nds;	// number of datastreams for this antenna for this job
@@ -1625,10 +1630,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						cableCalOut = cableCal;
 					}
 
-					freqId1 = D->config[configId].fitsFreqId + 1;
+					freqSetId = D->config[configId].freqSetId;
+					freqId1 = freqSetId + 1;
 					if(sourceId >= 0)
 					{
-						sourceId1 = D->source[sourceId].fitsSourceIds[configId] + 1;
+						sourceId1 = D->source[sourceId].fitsSourceIds[freqSetId] + 1;
 					}
 					else
 					{
