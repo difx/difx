@@ -529,7 +529,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1, const DifxCon
 	for(c = 0; c < ndc2; ++c)
 	{
 		configIdRemap[c] = *ndc;
-		(*ndc)++;
+		++(*ndc);
 	}
 
 	dc = newDifxConfigArray(*ndc);

@@ -28,6 +28,7 @@
   - Removal of flawed function DifxConfigCalculateDoPolar
   - Separation of "FITS IF" information from DifxConfig into DifxFreqSet
     - This to allow for "Union mode merging", desired for GMVA, RadioAstron
+* new utility mvdifxhere: changes the internal paths of .calc and .input files to the current working directory.  Does not actually move the files.
 
 3.4.0
 * Fix X/Y polarization issue
