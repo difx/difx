@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -61,15 +61,15 @@ void DifxInputAllocThreads(DifxInput *D, int nCore)
 
 void DifxInputSetThreads(DifxInput *D, int nThread)
 {
-	int i;
-
 	if(!D)
 	{
 		return;
 	}
 	if(D->nCore > 0 && D->nThread)
 	{
-		for(i = 0; i < D->nCore; i++)
+		int i;
+
+		for(i = 0; i < D->nCore; ++i)
 		{
 			D->nThread[i] = nThread;
 		}
@@ -82,7 +82,7 @@ int DifxInputLoadThreads(DifxInput *D)
 	FILE *in;
 	char line[MaxLineLen+1];
 	char *rv;
-	int n, nCore, i;
+	int nCore, i, n;
 
 	if (!D)
 	{
@@ -132,7 +132,7 @@ int DifxInputLoadThreads(DifxInput *D)
 
 	DifxInputAllocThreads(D, nCore);
 	
-	for(i = 0; i < nCore; i++)
+	for(i = 0; i < nCore; ++i)
 	{
 		rv = fgets(line, MaxLineLen, in);
 		if(!rv)
@@ -171,8 +171,8 @@ int DifxInputWriteThreads(const DifxInput *D)
 
 	if(D->nJob != 1)
 	{
-		fprintf(stderr, "writeDifxThreads: nJob = %d (not 1)\n", 
-			D->nJob);
+		fprintf(stderr, "writeDifxThreads: nJob = %d (not 1)\n", D->nJob);
+
 		return -1;
 	}
 
@@ -195,7 +195,7 @@ int DifxInputWriteThreads(const DifxInput *D)
 	}
 
 	fprintf(out, "NUMBER OF CORES:    %d\n", D->nCore);
-	for(i = 0; i < D->nCore; i++)
+	for(i = 0; i < D->nCore; ++i)
 	{
 		fprintf(out, "%d\n", D->nThread[i]);
 	}

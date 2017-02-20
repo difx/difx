@@ -125,7 +125,7 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 	{
 		int t;
 
-		for(t = 0; t < df->nTone; t++)
+		for(t = 0; t < df->nTone; ++t)
 		{
 			if(t > 0)
 			{

@@ -39,7 +39,7 @@ DifxConfig *newDifxConfigArray(int nConfig)
 	int configId;
 
 	dc = (DifxConfig *)calloc(nConfig, sizeof(DifxConfig));
-	for(configId = 0; configId < nConfig; configId++)
+	for(configId = 0; configId < nConfig; ++configId)
 	{
 		dc[configId].doPolar = -1;
 		dc[configId].pulsarId = -1;
@@ -62,7 +62,7 @@ void DifxConfigAllocDatastreamIds(DifxConfig *dc, int nDatastream, int start)
 	}
 	dc->datastreamId = (int *)malloc((nDatastream+1)*sizeof(int));
 	dc->datastreamId[nDatastream] = -1;
-	for(configDatastreamId = 0; configDatastreamId < nDatastream; configDatastreamId++)
+	for(configDatastreamId = 0; configDatastreamId < nDatastream; ++configDatastreamId)
 	{
 		dc->datastreamId[configDatastreamId] = configDatastreamId + start;
 	}
@@ -79,7 +79,7 @@ void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 	}
 	dc->baselineId = (int *)malloc((nBaseline+1)*sizeof(int));
 	dc->baselineId[nBaseline] = -1;
-	for(configBaselineId = 0; configBaselineId < nBaseline; configBaselineId++)
+	for(configBaselineId = 0; configBaselineId < nBaseline; ++configBaselineId)
 	{
 		dc->baselineId[configBaselineId] = configBaselineId + start;
 	}
@@ -140,13 +140,13 @@ void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 	fprintf(fp, "    doPolar = %d\n", dc->doPolar);
 	fprintf(fp, "    quantization bits = %d\n", dc->quantBits);
 	fprintf(fp, "    datastream ids [%d] =", dc->nDatastream);
-	for(i = 0; i < dc->nDatastream; i++)
+	for(i = 0; i < dc->nDatastream; ++i)
 	{
 		fprintf(fp, " %d", dc->datastreamId[i]);
 	}
 	fprintf(fp, "\n");
 	fprintf(fp, "    baseline ids [%d] =", dc->nBaseline);
-	for(i = 0; i < dc->nBaseline; i++)
+	for(i = 0; i < dc->nBaseline; ++i)
 	{
 		fprintf(fp, " %d", dc->baselineId[i]);
 	}
@@ -351,7 +351,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src, const int *baseline
 	if(src->ant2dsId)
 	{
 		dest->ant2dsId = (int *)malloc((src->nAntenna+1)*sizeof(int));
-		for(a = 0; a < src->nAntenna; a++)
+		for(a = 0; a < src->nAntenna; ++a)
 		{
 			if(src->ant2dsId[a] < 0)
 			{
@@ -386,7 +386,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src, const int *baseline
 		dest->pulsarId = src->pulsarId;
 	}
 	dest->nPol = src->nPol;
-	for(i = 0; i < dest->nPol; i++)
+	for(i = 0; i < dest->nPol; ++i)
 	{
 		dest->pol[i] = src->pol[i];
 	}
@@ -401,14 +401,14 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src, const int *baseline
 	dest->baselineId[n] = -1;
 	if(baselineIdRemap)
 	{
-		for(i = 0; i < n; i++)
+		for(i = 0; i < n; ++i)
 		{
 			dest->baselineId[i] = baselineIdRemap[src->baselineId[i]];
 		}
 	}
 	else
 	{
-		for(i = 0; i < n; i++)
+		for(i = 0; i < n; ++i)
 		{
 			dest->baselineId[i] = src->baselineId[i];
 		}
@@ -419,14 +419,14 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src, const int *baseline
 	dest->datastreamId[n] = -1;
 	if(datastreamIdRemap)
 	{
-		for(i = 0; i < n; i++)
+		for(i = 0; i < n; ++i)
 		{
 			dest->datastreamId[i] = datastreamIdRemap[src->datastreamId[i]];
 		}
 	}
 	else
 	{
-		for(i = 0; i < n; i++)
+		for(i = 0; i < n; ++i)
 		{
 			dest->datastreamId[i] = src->datastreamId[i];
 		}
@@ -526,7 +526,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1, const DifxCon
 
 	*ndc = ndc1;
 
-	for(c = 0; c < ndc2; c++)
+	for(c = 0; c < ndc2; ++c)
 	{
 		configIdRemap[c] = *ndc;
 		(*ndc)++;
@@ -535,13 +535,13 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1, const DifxCon
 	dc = newDifxConfigArray(*ndc);
 	
 	/* copy dc1 */
-	for(c = 0; c < ndc1; c++)
+	for(c = 0; c < ndc1; ++c)
 	{
 		copyDifxConfig(dc + c, dc1 + c, 0, 0, 0);
 	}
 
 	/* copy dc2 */
-	for(c = 0; c < ndc2; c++)
+	for(c = 0; c < ndc2; ++c)
 	{
 		if(configIdRemap[c] >= ndc1)
 		{
@@ -554,15 +554,17 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1, const DifxCon
 
 int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar, const DifxPhasedArray *phasedarray)
 {
-	int configId, dsId, blId;
-	int n;
-	const DifxConfig *config;
+	int configId;
+	int n = 0;
 
 	writeDifxLineInt(out, "NUM CONFIGURATIONS", nConfig);
-	n = 1;
+	++n;
 
 	for(configId = 0; configId < nConfig; ++configId)
 	{
+		const DifxConfig *config;
+		int dsId, blId;
+
 		config = dc + configId;
 
 		writeDifxLine(out, "CONFIG NAME", config->name);

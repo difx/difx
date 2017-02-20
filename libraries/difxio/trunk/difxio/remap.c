@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,7 +33,6 @@
 
 void fprintRemap(FILE *out, const char *name, const int *Remap)
 {
-	int i;
 	fprintf(out, "  %s Remap =", name);
 	if(Remap == 0 || Remap[0] < 0)
 	{
@@ -41,7 +40,9 @@ void fprintRemap(FILE *out, const char *name, const int *Remap)
 	}
 	else
 	{
-		for(i = 0; Remap[i] >= 0; i++)
+		int i;
+
+		for(i = 0; Remap[i] >= 0; ++i)
 		{
 			fprintf(out, " %d", Remap[i]);
 		}
@@ -83,10 +84,10 @@ int *dupRemap(const int *Remap)
 	}
 
 	/* count size of Remap */
-	for(n = 0; Remap[n] >= 0; n++) {}
+	for(n = 0; Remap[n] >= 0; ++n) {}
 
 	r2 = newRemap(n);
-	for(i = 0; i < n; i++)
+	for(i = 0; i < n; ++i)
 	{
 		r2[i] = Remap[i];
 	}
@@ -100,7 +101,7 @@ int sizeofRemap(const int *Remap)
 
 	if(Remap)
 	{
-		for(n = 0; Remap[n] >= 0; n++) {}
+		for(n = 0; Remap[n] >= 0; ++n) {}
 	}
 	else
 	{
@@ -122,7 +123,7 @@ int reverseRemap(const int *Remap, int y)      /* find index corresponding to y 
 	}
 	else
 	{
-		for(i = 0; Remap[i] >= 0; i++)
+		for(i = 0; Remap[i] >= 0; ++i)
 		{
 			if(Remap[i] == y)
 			{

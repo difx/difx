@@ -679,8 +679,7 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D, const DifxParameters *
 	/* Initialize some of the structures */
 	
 	D->job->duration = atoi(DifxParametersvalue(ip, rows[2]));
-	D->job->mjdStart = atoi(DifxParametersvalue(ip, rows[3])) +
-		      atof(DifxParametersvalue(ip, rows[4]))/86400.0;
+	D->job->mjdStart = atoi(DifxParametersvalue(ip, rows[3])) + atof(DifxParametersvalue(ip, rows[4]))/86400.0;
 	if(atof(DifxParametersvalue(ip, rows[4])) != atoi(DifxParametersvalue(ip, rows[4])))
 	{
 		D->fracSecondStartTime = 1;

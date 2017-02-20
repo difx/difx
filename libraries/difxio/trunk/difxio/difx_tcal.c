@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2013 by Walter Brisken                             *
+ *   Copyright (C) 2011-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -644,7 +644,7 @@ static int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *recei
 			return -4;
 		}
 
-		for(lineNum = 1;; lineNum++)
+		for(lineNum = 1;; ++lineNum)
 		{
 			const int MaxVLBATcalLineLength = 100;
 			char line[MaxVLBATcalLineLength];

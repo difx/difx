@@ -38,16 +38,12 @@ DifxFreqSet *newDifxFreqSetArray(int nFreqSet)
 
 	dfs = (DifxFreqSet *)calloc(nFreqSet, sizeof(DifxFreqSet));
 
-printf("New DifxFreqSetArray %p of size %d\n", dfs, nFreqSet);
-
 	return dfs;
 }
 
 void allocateDifxFreqSetFreqMap(DifxFreqSet *dfs, int nFreq)
 {
 	int f;
-
-printf("alloc %p -> %d\n", dfs, nFreq);
 
 	dfs->nFreq = nFreq;
 	dfs->freqId2IF = (int *)malloc((nFreq+1)*sizeof(int));
@@ -89,12 +85,12 @@ void deleteDifxFreqSetArray(DifxFreqSet *dfs, int nFreqSet)
 
 void fprintDifxFreqSet(FILE *fp, const DifxFreqSet *dfs)
 {
-	int i;
-
 	fprintf(fp, "  Difx Freq Set : %p\n", dfs);
 
 	if(dfs->freqId2IF)
 	{
+		int i;
+
 		fprintf(fp, "    frequency to IF map =");
 		for(i = 0; i < dfs->nFreq; ++i)
 		{
@@ -105,7 +101,9 @@ void fprintDifxFreqSet(FILE *fp, const DifxFreqSet *dfs)
 	fprintf(fp, "    nIF = %d\n", dfs->nIF);
 	if(dfs->nIF > 0)
 	{
-		for(i = 0; i < dfs->nIF; i++)
+		int i;
+
+		for(i = 0; i < dfs->nIF; ++i)
 		{
 			fprintDifxIF(fp, dfs->IF + i);
 		}
@@ -119,12 +117,12 @@ void printDifxFreqSet(const DifxFreqSet *dfs)
 
 void fprintDifxFreqSetSummary(FILE *fp, const DifxFreqSet *dfs)
 {
-	int i;
-
 	fprintf(fp, "  Difx Freq Set : %p\n", dfs);
 
 	if(dfs->nIF > 0)
 	{
+		int i;
+
 		for(i = 0; i < dfs->nIF; ++i)
 		{
 			fprintDifxIFSummary(fp, dfs->IF + i);
@@ -140,14 +138,14 @@ void printDifxFreqSetSummary(const DifxFreqSet *dfs)
 /* does not compare the fitsFreqId value */
 int isSameDifxFreqSet(const DifxFreqSet *dfs1, const DifxFreqSet *dfs2)
 {
-	int i;
-
 	if(dfs1->nIF != dfs2->nIF)
 	{
 		return 0;
 	}
 	if(dfs1->IF && dfs2->IF)
 	{
+		int i;
+
 		for(i = 0; i < dfs1->nIF; ++i)
 		{
 			if(!isSameDifxIF(dfs1->IF + i, dfs2->IF + i))

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -151,7 +151,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, in
 	 * the sum of lengths of the two lists, but is likely shorter.  It
 	 * also cannot be longer than mjdMax - mjdMin + 1 */
 
-	if(nde1 > 0) for(i = 0; i < nde1; i++)
+	if(nde1 > 0) for(i = 0; i < nde1; ++i)
 	{
 		if(de1[i].mjd < mjdMin || mjdMin == -1)
 		{
@@ -162,7 +162,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, in
 			mjdMax = de1[i].mjd;
 		}
 	}
-	if(nde2 > 0) for(i = 0; i < nde2; i++)
+	if(nde2 > 0) for(i = 0; i < nde2; ++i)
 	{
 		if(de2[i].mjd < mjdMin || mjdMin == -1)
 		{
@@ -311,7 +311,7 @@ int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de)
 	int i = 0;
 
 	writeDifxLineInt(out, "NUM EOPS", nEOP);
-	for(i = 0; i < nEOP; i++)
+	for(i = 0; i < nEOP; ++i)
 	{
 		writeDifxLineInt1(out, "EOP %d TIME (mjd)", i, de[i].mjd);
 		writeDifxLineInt1(out, "EOP %d TAI_UTC (sec)", i, de[i].tai_utc);

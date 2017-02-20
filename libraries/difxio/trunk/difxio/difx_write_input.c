@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2014 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -131,7 +131,7 @@ static int writeDatastreamTable(FILE *out, const DifxInput *D)
 	writeDifxLineInt(out, "DATASTREAM ENTRIES", D->nDatastream);
 	writeDifxLineInt(out, "DATA BUFFER FACTOR", D->dataBufferFactor);
 	writeDifxLineInt(out, "NUM DATA SEGMENTS", D->nDataSegments);
-	for(i = 0; i < D->nDatastream; i++)
+	for(i = 0; i < D->nDatastream; ++i)
 	{
 		writeDifxDatastream(out, D->datastream+i);
 	}
@@ -151,13 +151,14 @@ static int writeBaselineTable(FILE *out, const DifxInput *D)
 
 static int writeNetworkTable(FILE *out, const DifxInput *D)
 {
-        const DifxDatastream *ds;
         int i;
 
         /* first determine if we need such a table */
-        for(i = 0; i < D->nDatastream; i++)
+        for(i = 0; i < D->nDatastream; ++i)
         {
-                ds = D->datastream + i;
+        	const DifxDatastream *ds;
+                
+		ds = D->datastream + i;
 		if(ds->dataSource == DataSourceNetwork)
 		{
 			break;
@@ -171,8 +172,10 @@ static int writeNetworkTable(FILE *out, const DifxInput *D)
 
         fprintf(out, "# NETWORK TABLE ####!\n");
 
-        for(i = 0; i < D->nDatastream; i++)
+        for(i = 0; i < D->nDatastream; ++i)
         {
+        	const DifxDatastream *ds;
+                
                 ds = D->datastream + i;
 		if(ds->networkPort[0])
 		{
@@ -192,24 +195,27 @@ static int writeNetworkTable(FILE *out, const DifxInput *D)
 
 static int writeDataTable(FILE *out, const DifxInput *D)
 {
-	int i, j;
-	const DifxDatastream *ds;
+	int i;
 
 	fprintf(out, "# DATA TABLE #######!\n");
 
-	for(i = 0; i < D->nDatastream; i++)
+	for(i = 0; i < D->nDatastream; ++i)
 	{
+		const DifxDatastream *ds;
+		
 		ds = D->datastream + i;
 
 		if(ds->nFile > 0)
 		{
+			int j;
+
 			if(ds->file == 0)
 			{
 				fprintf(stderr, "Error: difxio:writeDataTable ds->file = 0\n");
 				return -1;
 			}
 			writeDifxLineInt1(out, "D/STREAM %d FILES", i, ds->nFile);
-			for(j = 0; j < ds->nFile; j++)
+			for(j = 0; j < ds->nFile; ++j)
 			{
 				if(ds->file[j])
 				{
