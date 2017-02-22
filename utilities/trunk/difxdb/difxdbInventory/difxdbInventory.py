@@ -44,8 +44,8 @@ __lastAuthor__="$Author: HelgeRottmann $"
 def usage():
     usage = ""
     usage += "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
-    usage += "A program to list all modules associated with an experiment\n"
-    usage += "Usage: %s <experiment_code>\n\n"  % __prog__
+    usage += "A program to list the contents all library slots.\n"
+    usage += "Usage: %s \n\n"  % __prog__
     usage += "NOTE: %s requires the DIFXROOT environment to be defined." % __prog__
     usage += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."
     usage += "If the configuration is not found a sample one will be created for you."
@@ -106,17 +106,6 @@ if __name__ == "__main__":
 
     
 
-	if (experiment is not None):
-                sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
-		for module in sortedModules:
-			print module.vsn, module.slot.location, module.stationCode, module.capacity
-			count += 1
-			sum += module.capacity
-
-		print "--------------------------------------------"
-		print "Total capacity: ", sum, "GB", " on", count , "modules"
-        
-    
     except Exception as e:
        
         sys.exit(e)
