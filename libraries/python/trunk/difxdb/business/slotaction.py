@@ -56,3 +56,11 @@ def getEmptySlots(session):
     result =  session.query(model.Slot).order_by(model.Slot.location).filter_by(isActive = 1).order_by(model.Slot.location).filter(model.Slot.moduleID == None)
     
     return(result)
+
+def getAllSlots(session):   
+    '''
+    Returns all slots
+    '''
+    
+    result =  session.query(model.Slot).order_by(model.Slot.location).filter_by(isActive = 1)
+    return(result)
