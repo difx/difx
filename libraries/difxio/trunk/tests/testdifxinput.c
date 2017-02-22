@@ -34,8 +34,8 @@
 
 const char program[] = "testdifxinput";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "1.2";
-const char verdate[] = "20161102";
+const char version[] = "1.3";
+const char verdate[] = "20170222";
 
 void usage()
 {
@@ -48,6 +48,12 @@ void usage()
 	printf("-h         print help information and quit\n\n");
 	printf("--union\n");
 	printf("-u         merge even incompatible frequency setups\n\n");
+	printf("--eop-strict\n");
+	printf("           don't allow merging of jobs with different EOP days\n\n");
+	printf("--eop-loose\n");
+	printf("           drop EOPs to prevent incompatibility\n\n");
+	printf("--eop-relaxed\n");
+	printf("           allow different EOPs per file as long as they re consistent (default)\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 }
 
@@ -83,6 +89,24 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--union") == 0)
 			{
 				mergeOptions.freqMergeMode = FreqMergeModeUnion;
+
+				continue;
+			}
+			else if(strcmp(argv[a], "--eop-strict") == 0)
+			{
+				mergeOptions.eopMergeMode = EOPMergeModeStrict;
+
+				continue;
+			}
+			else if(strcmp(argv[a], "--eop-loose") == 0)
+			{
+				mergeOptions.eopMergeMode = EOPMergeModeLoose;
+
+				continue;
+			}
+			else if(strcmp(argv[a], "--eop-relaxed") == 0)
+			{
+				mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
 			}
 			else
 			{
@@ -142,7 +166,7 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	D = updateDifxInput(D, 0);
+	D = updateDifxInput(D, &mergeOptions);
 	if(!D)
 	{
 		fprintf(stderr, "Update failed: D == 0.  Quitting\n");
