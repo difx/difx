@@ -3296,9 +3296,12 @@ static int mergeDifxInputFreqSetsUnion(DifxInput *D)
 				{
 					if(newdfs->freqId2IF[f] >= 0)
 					{
-						/* shouldn't ever be */
-						fprintf(stderr, "Developer error: mergeDifxInputFreqSetsUnion: newdfs->freqId2IF[%d] was already set to %d when ni=%d i=%d and freqSetId=%d\n", f, newdfs->freqId2IF[f], ni, i, freqSetId);
-						++nError;
+						if(newdfs->freqId2IF[f] != ni)
+						{
+							/* shouldn't ever be */
+							fprintf(stderr, "Developer error: mergeDifxInputFreqSetsUnion: newdfs->freqId2IF[%d] was already set to %d when ni=%d i=%d and freqSetId=%d\n", f, newdfs->freqId2IF[f], ni, i, freqSetId);
+							++nError;
+						}
 					}
 
 					newdfs->freqId2IF[f] = ni;
