@@ -55,10 +55,11 @@ def printUsage():
 if __name__ == "__main__":
     
     
-    if (len(sys.argv) != 2):
+    if (len(sys.argv) < 2):
         printUsage()
     
-    expCode = sys.argv[1]
+    expCodes = sys.argv[1:]
+
     try:
         if (os.getenv("DIFXROOT") == None):
             sys.exit("Error: DIFXROOT environment must be defined.")
@@ -81,28 +82,33 @@ if __name__ == "__main__":
         dbConn = Schema(connection)
         session = dbConn.session()
         
-	try:
-		experiment = getExperimentByCode(session, expCode)
-	except:
-		raise Exception("Unknown experiment")
-		sys.exit
+	for expCode in expCodes:
+		expCode = upper(expCode)
+		try:
+			experiment = getExperimentByCode(session, expCode)
+		except:
+			raise Exception("Unknown experiment")
+			sys.exit
 
-	sum = 0
-	count = 0
-	if (experiment is not None):
-                sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
-		for module in sortedModules:
-			print module.vsn, module.slot.location, module.stationCode, module.capacity
-			count += 1
-			sum += module.capacity
+		sum = 0
+		count = 0
+		if (experiment is not None):
+			print "------------------"
+			print "%s" % expCode
+			print "------------------"
+			sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
+			for module in sortedModules:
+				print module.vsn, module.slot.location, module.stationCode, module.capacity
+				count += 1
+				sum += module.capacity
 
-		print "--------------------------------------------"
-		print "Total capacity: ", sum, "GB", " on", count , "modules"
-        
-    
+			print "--------------------------------------------"
+			print "Total capacity: ", sum, "GB", " on", count , "modules"
+			print "\n\n"
+		
+	    
     except Exception as e:
-       
-        sys.exit(e)
-    
-   
-    
+	sys.exit(e)
+	    
+	   
+	    
