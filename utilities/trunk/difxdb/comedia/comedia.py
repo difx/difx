@@ -53,6 +53,7 @@ from sqlalchemy import *
 from Tkinter import *
 import Tkconstants, tkFileDialog
 from tkinter.multilistbox import *
+from functools import partial
 
 # minimum database schema version required by comedia
 minSchemaMajor = 1
@@ -78,6 +79,7 @@ class MainWindow(GenericWindow):
         self.checkinDlg = CheckinWindow(self, rootWidget)  
         self.checkoutDlg = CheckoutWindow(self, rootWidget)  
         self.changeSlotDlg = ChangeSlotWindow(self, rootWidget)  
+        self.printVSNLabelDlg= PrintVSNLabelWindow(self,rootWidget)
         self.labelOptionsDlg= LabelOptionsWindow(self,rootWidget)
         self.databaseOptionsDlg= DatabaseOptionsWindow(self,rootWidget)
         self.notificationOptionsDlg= NotificationOptionsWindow(self,rootWidget)
@@ -128,7 +130,13 @@ class MainWindow(GenericWindow):
         optionmenu.add_command(label="Database options", command=self.showDatabaseOptions)
         optionmenu.add_command(label="Notification options", command=self.showNotificationOptions)
 
+        toolsmenu = Menu(menubar, tearoff=0)
+        toolsmenu.add_command(label="Print VSN label", command=self.showPrintVSNDialog)
+        
+        menubar.add_command(label="Exit", command=root.quit)
+        menubar.add_cascade(label="Tools", menu=toolsmenu)
         menubar.add_cascade(label="Options", menu=optionmenu)
+        
 
         self.rootWidget.config(menu=menubar)
         
@@ -284,29 +292,37 @@ class MainWindow(GenericWindow):
         return
             
         
-    def printVSNLabel(self):
+    def printVSNLabel(self, label=""):
         
-        if (self.selectedSlotIndex < 0):
-            return
+        if label == "":
+            if (self.selectedSlotIndex < 0):
+                return
+
+            session = dbConn.session()
+            slot = model.Slot()
+            slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
         
-        session = dbConn.session()
-        slot = model.Slot()
-        slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+            if (slot is not None):
+                 vsnString = "%s/%s/%s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate)
+                 
+            session.close()
+            
+        else:
+            vsnString = label
+            
+            
+        os.system('rm -f /tmp/comedia_vsn.png')
+            
+            
+        options = dict(font_size=62, dpi=300, text_distance=0, quiet_zone=1, module_height=10) 
+            
+        ean = barcode.get_barcode('code39', vsnString, writer=MyImageWriter())
+        ean.save('/tmp/comedia_vsn', options )
+            
+        os.system( self.config.get("Comedia", "printCommand") + ' -o ppi=300 /tmp/comedia_vsn.png')
+        os.system('rm -f /tmp/comedia_vsn.png')
         
-        if (slot is not None):
-            
-            os.system('rm -f /tmp/comedia_vsn.png')
-            vsnString = "%s/%s/%s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate)
-            
-            options = dict(font_size=62, dpi=300, text_distance=0, quiet_zone=1, module_height=10) 
-            
-            ean = barcode.get_barcode('code39', vsnString, writer=MyImageWriter())
-            ean.save('/tmp/comedia_vsn', options )
-            
-            os.system( self.config.get("Comedia", "printCommand") + ' -o ppi=300 /tmp/comedia_vsn.png')
-            os.system('rm -f /tmp/comedia_vsn.png')
         
-        session.close()
     
     def printLibraryLabel(self, slotName=None):
         
@@ -862,6 +878,14 @@ class MainWindow(GenericWindow):
         '''
         
         self.checkinDlg.show()
+        
+    def showPrintVSNDialog(self):
+        '''
+        Displays the print VSN label dialog
+        '''
+             
+        self.printVSNLabelDlg.config = self.config
+        self.printVSNLabelDlg.show()
         
     def showLabelOptions(self):
         '''
@@ -1922,6 +1946,55 @@ class ScanModulesWindow(GenericWindow):
             self.parseErrors = 0
             
             self.action.set(0)
+
+class PrintVSNLabelWindow(GenericWindow):
+    
+    def __init__(self, parent, rootWidget=None):
+        
+        # call super class constructor
+        super( PrintVSNLabelWindow, self ).__init__(parent, rootWidget)
+        
+    def show(self):
+        
+        # create modal dialog
+        self.dlg = Toplevel(self.rootWidget, takefocus=True)
+        self.dlg.title("Print VSN label")
+        self.dlg.transient(self.rootWidget)
+        self.dlg.state("normal")
+        
+        self.dlg.grab_set()
+        
+        self._setupWidgets()
+        
+    def _setupWidgets(self):
+              
+        Label(self.dlg, text="VSN").grid(row=0, sticky=W)
+        
+        self.txtVSN = Entry(self.dlg)
+       
+        Button(self.dlg, text="Print", command=self.printVSNLabel).grid(row=10, column=0, sticky=E+W)
+        Button(self.dlg, text="Cancel", command=self.dlg.destroy).grid(row=10, column=1, sticky=E+W) 
+        
+        self.txtVSN.grid(row=0, column=1,sticky=E+W)
+        
+    def printVSNLabel(self):
+        
+        
+        vsnString = self.txtVSN.get()
+            
+            
+        os.system('rm -f /tmp/comedia_vsn.png')
+            
+            
+        options = dict(font_size=62, dpi=300, text_distance=0, quiet_zone=1, module_height=10) 
+            
+        ean = barcode.get_barcode('code39', vsnString, writer=MyImageWriter())
+        ean.save('/tmp/comedia_vsn', options )
+            
+        os.system( self.config.get("Comedia", "printCommand") + ' -o ppi=300 /tmp/comedia_vsn.png')
+        os.system('rm -f /tmp/comedia_vsn.png')
+        
+        self.dlg.destroy()
         
     
 class LabelOptionsWindow(GenericWindow):
