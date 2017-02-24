@@ -691,6 +691,7 @@ void fprintDifxJob(FILE *fp, const DifxJob *dj);
 void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap);
 void generateDifxJobFileBase(DifxJob *dj, char *fileBase);
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1, const DifxJob *dj2, int ndj2, int *jobIdRemap, int *antennaIdRemap, int *ndj);
+void DifxJobQuashTrivialRemaps(DifxJob *dj);
 
 /* DifxFreq functions */
 enum FreqMergeMode stringToFreqMergeMode(const char *str);
@@ -1009,6 +1010,7 @@ void deleteRemap(int *Remap);
 int *dupRemap(const int *Remap);
 int sizeofRemap(const int *Remap);
 int reverseRemap(const int *Remap, int y);	/* find index corresponding to y */
+int isRemapTrivial(const int *Remap);		/* return 1 if Remap[i] = i for all i */
 
 #ifdef __cplusplus
 }

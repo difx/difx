@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2015 by Walter Brisken                             *
+ *   Copyright (C) 2007-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -277,5 +277,54 @@ void generateDifxJobFileBase(DifxJob *dj, char *fileBase)
 	if(p > 0)
 	{
 		fileBase[p] = 0;
+	}
+}
+
+void DifxJobQuashTrivialRemaps(DifxJob *dj)
+{
+	if(isRemapTrivial(dj->jobIdRemap))
+	{
+		deleteRemap(dj->jobIdRemap);
+		dj->jobIdRemap = 0;
+	}
+	if(isRemapTrivial(dj->freqIdRemap))
+	{
+		deleteRemap(dj->freqIdRemap);
+		dj->freqIdRemap = 0;
+	}
+	if(isRemapTrivial(dj->antennaIdRemap))
+	{
+		deleteRemap(dj->antennaIdRemap);
+		dj->antennaIdRemap = 0;
+	}
+	if(isRemapTrivial(dj->datastreamIdRemap))
+	{
+		deleteRemap(dj->datastreamIdRemap);
+		dj->datastreamIdRemap = 0;
+	}
+	if(isRemapTrivial(dj->baselineIdRemap))
+	{
+		deleteRemap(dj->baselineIdRemap);
+		dj->baselineIdRemap = 0;
+	}
+	if(isRemapTrivial(dj->pulsarIdRemap))
+	{
+		deleteRemap(dj->pulsarIdRemap);
+		dj->pulsarIdRemap = 0;
+	}
+	if(isRemapTrivial(dj->configIdRemap))
+	{
+		deleteRemap(dj->configIdRemap);
+		dj->configIdRemap = 0;
+	}
+	if(isRemapTrivial(dj->sourceIdRemap))
+	{
+		deleteRemap(dj->sourceIdRemap);
+		dj->sourceIdRemap = 0;
+	}
+	if(isRemapTrivial(dj->spacecraftIdRemap))
+	{
+		deleteRemap(dj->spacecraftIdRemap);
+		dj->spacecraftIdRemap = 0;
 	}
 }

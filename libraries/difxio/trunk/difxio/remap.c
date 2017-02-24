@@ -134,3 +134,28 @@ int reverseRemap(const int *Remap, int y)      /* find index corresponding to y 
 
 	return -1;
 }
+
+/* return 1 if Remap[x] = x for all x 
+   return 0 otherwise (even if Remap is null)
+ */
+int isRemapTrivial(const int *Remap)
+{
+	if(Remap)
+	{
+		int n;
+
+		for(n = 0; Remap[n] >= 0; ++n)
+		{
+			if(n != Remap[n])
+			{
+				return 0;
+			}
+		}
+
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}

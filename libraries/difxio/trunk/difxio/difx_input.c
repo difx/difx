@@ -3360,8 +3360,7 @@ DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions)
 {
 	static const DifxMergeOptions defaultMergeOptions;      /* initialized to zeros */
 	int nError;
-
-printf("Update DifxInput\n");
+	int jobId;
 
 	if(mergeOptions == 0)
 	{
@@ -3380,6 +3379,12 @@ printf("Update DifxInput\n");
 	D = deriveFitsSourceIds(D);
 	setGlobalValues(D);
 	setOrbitingAntennas(D);
+
+	/* Get rid of remap tables that do nothing; this is cosmetic only */
+	for(jobId = 0; jobId < D->nJob; ++jobId)
+	{
+		DifxJobQuashTrivialRemaps(D->job + jobId);
+	}
 	
 	return D;
 }
@@ -4159,41 +4164,58 @@ int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int ant
 	return n;
 }
 
+/* Here "Original" means indexes within the job rather than remapped indices */
 int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount)
 {
 	int n;
-	int m = 0;
-	int i;
+	int *antennaDsIds;
+	int nds = 0;
 
 	if(D->nJob <= jobId)
 	{
 		return -2;
 	}
 
-	n = DifxInputGetDatastreamIdsByAntennaId(dsIds, D, antennaId, maxCount);
+	/* get all datastreams associated with the particular antenna */
+	antennaDsIds = (int *)calloc(maxCount, sizeof(int));
+	n = DifxInputGetDatastreamIdsByAntennaId(antennaDsIds, D, antennaId, maxCount);
 
-	if(n <= 0 || D->job[jobId].datastreamIdRemap == 0)
+	if(n > 0)
 	{
-		return n;
-	}
-
-	/* There may be fewer datastreans here */
-	for(i = 0; i < n; ++i)
-	{
-		int j;
-
-		for(j = 0; D->job[jobId].datastreamIdRemap[j] >= 0; ++j)
+		int i;
+		
+		/* now capture those that are included in this particular job */
+		for(i = 0; i < D->job[jobId].activeDatastreams; ++i)
 		{
-			if(D->job[jobId].datastreamIdRemap[j] == dsIds[i])
+			int dsId;
+			int j;
+
+			if(D->job[jobId].datastreamIdRemap)
 			{
-				dsIds[m] = j;
-				++m;
-				break;
+				dsId = D->job[jobId].datastreamIdRemap[i];
+			}
+			else
+			{
+				dsId = i;
+			}
+
+			if(dsId >= 0)
+			{
+				for(j = 0; j < n; ++j)
+				{
+					if(antennaDsIds[j] == dsId && nds < maxCount)
+					{
+						dsIds[nds] = i;	/* set to the un-remapped datastream id */
+						++nds;
+					}
+				}
 			}
 		}
 	}
 
-	return m;
+	free(antennaDsIds);
+
+	return nds;
 }
 
 int DifxInputGetMaxPhaseCentres(const DifxInput *D)
