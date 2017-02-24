@@ -51,6 +51,7 @@ from collections import deque
 
 from sqlalchemy import *
 from Tkinter import *
+import Tkconstants, tkFileDialog
 from tkinter.multilistbox import *
 
 # minimum database schema version required by comedia
@@ -160,6 +161,7 @@ class MainWindow(GenericWindow):
 	columns = tuple(colList)
         self.grdSlot = MultiListbox(self.frmMain, 16, *columns)
         self.grdSlot.bindEvent("<ButtonRelease-1>", self.selectSlotEvent)
+        self.btnExportList = Button (self.frmMain, text="Export list", command=self.saveModuleList)
         self.btnNewModule = Button (self.frmMain, text="Check-in module", command=self.showCheckinWindow)
           
         
@@ -220,6 +222,7 @@ class MainWindow(GenericWindow):
         
         # arrange objects on frmMain
         self.grdSlot.grid(row=10, column=0, sticky=N+S+E+W)
+        self.btnExportList.grid(row=19, columnspan=2, sticky=E+W+S, pady=5, padx=5)
         self.btnNewModule.grid(row=20, columnspan=2, sticky=E+W+S, pady=5, padx=5)        
         
         # arrage objects on frmStatus
@@ -256,6 +259,31 @@ class MainWindow(GenericWindow):
         self.lblReceivedContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
         self.txtComment.bind("<KeyRelease>", self.editModuleDetailsEvent)
     
+    def saveModuleList(self):
+        """Saves the current selection in a file"""
+
+        # define options for opening or saving a file
+        self.file_opt = options = {}
+        options['defaultextension'] = '.txt'
+        options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
+        #options['initialdir'] = 'C:\\'
+        options['initialfile'] = 'comedia.txt'
+        options['parent'] = root
+        options['title'] = 'Save module list as'
+        file  = tkFileDialog.asksaveasfile(**self.file_opt)
+        
+        
+        if file:
+            
+            for line in self.grdSlot.get(0,END):
+                for token in line:
+                    file.write (token + " ")
+                file.write ("\n")
+            file.close()
+        
+        return
+            
+        
     def printVSNLabel(self):
         
         if (self.selectedSlotIndex < 0):
