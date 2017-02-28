@@ -35,7 +35,7 @@ bool DirListDatum::setFromOldFileListString(const char *str)
 	{
 		return false;
 	}
-	if(mjd2 <= mjd1 || mjd1 < 10000.0 || mjd1 > 1000000.0)
+	if(mjd2 < mjd1 || mjd1 < 10000.0 || mjd1 > 1000000.0)
 	{
 		return false;
 	}
