@@ -2,6 +2,7 @@ Version 2.5
 -----------
 * new scripts added
 * update difxcopy
+* adapted pcList.pl to fix in difx2fits jobmatrix output
 
 Version 2.4
 -----------

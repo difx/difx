@@ -41,7 +41,8 @@ my  $help           = 0;
 my  $mode           = "";
 my  $exclude	    = "";
 my  $skipEmpty	    = 0;
-my  $calcSummary    = "";
+#my  $calcSummary    = "";
+my  $calcSummary2    = "";
 my  @excludeStations    = ();
 my  $i		    =   0;
 my  @Anzahl_Stationen	=   ();
@@ -52,6 +53,7 @@ my  @MatrixStationen	=   ();
 my  @joblist	=   ();  
 #my  $baseName = "";
 my  @baseNames = ();
+my  @scanNames = ();
 my  %vexStationSum = ();
 my  %stationSum = ();
 my  $maxScanName = 0;
@@ -104,14 +106,25 @@ sub main
 	@excludeStations = split (/,/, uc($exclude));
 
 	@baseNames = &getBaseName();
+	@scanNames = &getScanNames();
+
+	#print "found scannames: @scanNames \n";
 
 	my $base = "";
+	my $scan = "";
 	
-	foreach  $base (@baseNames)
+	foreach  $scan (@scanNames)
 	{
-		$calcSummary .= `grep IDENTIFIER: $base*.calc`;
+	#	print "scan $scan \n";
+		$calcSummary2 .= `grep -H IDENTIFIER: $scan.calc`;
 	}
+	#foreach  $base (@baseNames)
+	#{
+	#	$calcSummary .= `grep IDENTIFIER: $base*.calc`;
+	#}
 
+	#print "$calcSummary\n";
+	#print "$calcSummary2\n";
 	&getStationsFromVex();
 	&parseVex();
 	&compare();
@@ -196,7 +209,19 @@ sub parseVex
 
 			# lookup scan name in the *calc file in order to determine the input filename
 			my $str = "(.*)\\.calc:.*IDENTIFIER:\\s+$scanName";
-			if ($calcSummary =~ /$str/)
+			
+			#print $calcSummary2;
+			#my @matches = $calcSummary =~ /$str/;
+			#my $matchCount = @matches;
+#
+#			if ($matchCount > 1)
+#			{
+#				print "$scanName found in multiple *.calc files\n";
+#				exit;
+#
+#			}
+			#if ($calcSummary =~ /$str/)
+			if ($calcSummary2 =~ /$str/)
 			{
 				$vexScans[$scanCount]{"DIFXFILE"} = $1;
 			}
@@ -322,7 +347,7 @@ sub compare
 	print "\n";
 
 	# loop over all vex scans
-	for $i ( 0 .. $#vexScans -1 )
+	for $i ( 0 .. $#vexScans  )
 	{
 
 		# check if this scan has the selected mode, skip otherwise
@@ -470,6 +495,36 @@ sub jobmatrixTime2Seconds
 	$seconds = timegm($_[5], $_[4],$_[3], $_[2], $month, $_[0]);
 
 	return($seconds);
+}
+
+sub getScanNames
+{
+ my $line = "";
+        my @temp = ();
+	my @tok = ();
+
+        foreach $line (@joblist)
+        {
+        	chomp($line);                                
+		if  ($line  =~  /\d{1,2}h\d{1,2}m\d{1,2}\.\d{2}s\s+([A-Z]\s+=\s+.+_.+)/)
+                {
+			# now parse the scan defintion
+			@tok = split (/ /, $1);
+			for (my $i = 0; $i <= $#tok; $i++)
+			{
+				if (length($tok[$i]) < 3)
+				{
+					next;
+				}
+				push ( @temp,  $tok[$i]);
+			}
+                }
+	}
+
+	my %hash = map { $_ => 1 } @temp;
+	my @unique = keys %hash;
+	return(@unique);
+
 }
 
 ######################
