@@ -333,7 +333,7 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 				}
 				else
 				{
-					divisor = 1;
+					divisor = 100;	// For now, don't try to use TAPELOG_OBS section to define datastreams
 					offset = 0;
 				}
 
