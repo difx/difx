@@ -50,6 +50,8 @@ chmod a+x /sbin/halt
 %{_bindir}/mk5test
 %{_bindir}/record5c
 %{_bindir}/recover
+%{_bindir}/startfusemk5
+%{_bindir}/stopfusemk5
 %{_bindir}/sukill
 %{_bindir}/testmod
 %{_bindir}/vsn
