@@ -39,8 +39,12 @@ extern "C" {
 
 int lockMark5(int wait);	/* max wait time in seconds, or -1 to imply wait forever */
 int unlockMark5();
+int lockFuse();
+int unlockFuse();
 int getMark5LockPID();
 int getMark5LockValue();
+int getFuseLockPID();
+int getFuseLockValue();
 int deleteMark5Lock();
 int getMark5LockSemaphoreID();
 

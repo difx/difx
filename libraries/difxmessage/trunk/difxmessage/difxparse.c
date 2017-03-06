@@ -1063,6 +1063,12 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						G->body.smart.moduleSlot = atoi(s);
 					}
+				case DIFX_MESSAGE_VSIS:
+					if(strcmp(elem, "vsis") == 0)
+					{
+						strncpy(G->body.vsis.vsis, s, DIFX_MESSAGE_LENGTH-1);
+					}
+					break;
 				default:
 					break;
 				}
@@ -1312,6 +1318,9 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		{
 			printf("      SMART id = %d  value = %lld\n", G->body.smart.id[i], G->body.smart.value[i]);
 		}
+		break;
+	case DIFX_MESSAGE_VSIS:
+		printf("    vsis = %s\n", G->body.vsis.vsis);
 		break;
 	default:
 		break;

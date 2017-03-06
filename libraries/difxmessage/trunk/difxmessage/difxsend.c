@@ -1667,3 +1667,38 @@ int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nVal
 	return difxMessageSend2(message, size);
 }
 
+int difxMessageSendVsis(const char *state, const char *to)
+{
+	char body[DIFX_MESSAGE_LENGTH];
+	char message[DIFX_MESSAGE_LENGTH];
+	int size;
+
+	if(difxMessagePort < 0)
+	{
+		return -1;
+	}
+
+	size = snprintf(body, DIFX_MESSAGE_LENGTH, "<vsis>%s</vsis>", state);
+
+	if(size >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendVsis: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+
+		return -1;
+	}
+
+	size = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageToXMLFormat, to,
+		DifxMessageTypeStrings[DIFX_MESSAGE_VSIS],
+		difxMessageSequenceNumber++, body);
+
+	if(size >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendVsis: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+
+		return -1;
+	}
+
+	return difxMessageSend2(message, size);
+}
+

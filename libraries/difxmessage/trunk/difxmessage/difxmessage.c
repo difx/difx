@@ -92,7 +92,8 @@ const char Mk5StateStrings[][24] =
 	"TestRead",
 	"Booting",
 	"Recording",
-	"CopyTo"
+	"CopyTo",
+	"FuseMk5"
 };
 
 /* Note! Keep this in sync with enum DifxStatus in difxmessage.h */
@@ -138,6 +139,7 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxGetDirectory",
 	"DifxMk5Control",
 	"DifxMark5Copy",
+	"DifxVsis",
 };
 
 /* Note! Keep this in sync with enum DifxDiagnosticType in difxmessage.h */

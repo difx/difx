@@ -39,6 +39,14 @@
 
 int semid = 0;
 
+/***************************************************************************
+ * initSemaphore()
+ *
+ * Description: creates a set of two semaphores. First semaphore is for
+ * standard locking and unlocking of mark5 unit. Second semaphore is for
+ * locking during fuse usage.
+ *
+ ***************************************************************************/
 static int initSemaphore()
 {
 	key_t key;
@@ -46,7 +54,7 @@ static int initSemaphore()
 	//key = ftok(KEY_FILENAME, KEY_ID);
 	key = KEY_ID;
 
-	semid = semget(key, 1, IPC_CREAT | 0666);
+	semid = semget(key, 2, IPC_CREAT | 0666);
 
 	if(semid == -1)
 	{
@@ -58,10 +66,22 @@ static int initSemaphore()
 	return 0;
 }
 
+/***************************************************************************
+ * lockMark5()
+ * 
+ * Argument: int wait - wait time in seconds, 0 no wait, -1 wait forever
+ * Return: int - 0 successful lock, -1 semaphore already locked
+ *
+ * Description: checks both semaphores, will generate error if fuse lock is
+ * in use, will lock first semaphore if possible
+ *
+ ***************************************************************************/
 int lockMark5(int wait)
 {
 	struct sembuf sops[2];
 	int v;
+	int firstLockVal;
+	int fuseLockVal;
 	int i = 0;
 
 	if(semid == 0)
@@ -69,6 +89,25 @@ int lockMark5(int wait)
 		initSemaphore();
 	}
 
+	// check if locked for fuse use
+	fuseLockVal = semctl(semid, 1, GETVAL);
+	if(fuseLockVal > 0)
+	{
+		firstLockVal = semctl(semid, 0, GETVAL);
+		if(firstLockVal > 0)
+		{
+			fprintf(stderr, "Mark5 unit locked for fuse use by PID %d\n", getFuseLockPID());
+		}
+		else
+		{
+			fprintf(stderr, "!!! Fuse lock is locked. Standard lock is not locked.\n");
+			fprintf(stderr, "This condition should not exist!\n");
+			fprintf(stderr, "Fuse lock held by PID %d\n", getFuseLockPID());
+		}
+		return -1;
+	}
+
+	// do standard locking
 	sops[0].sem_num = 0;
 	sops[0].sem_op = 0;
 	sops[0].sem_flg = SEM_UNDO;
@@ -99,16 +138,99 @@ int lockMark5(int wait)
 	return v;
 }
 
-int unlockMark5()
+/***************************************************************************
+ * lockFuse()
+ * 
+ * Return: int - 0 successful lock, -1 already locked or out of sync
+ *
+ * Description: checks both semaphores, will generate error if semaphores
+ * are out of sync, will lock both semaphores if possible, semaphore values
+ * will persist after program exits
+ *
+ ***************************************************************************/
+int lockFuse()
 {
-	struct sembuf sops[1];
+	struct sembuf sops[2];
 	int v;
+	int firstLockVal;
+	int fuseLockVal;
 
 	if(semid == 0)
 	{
 		initSemaphore();
 	}
 
+	// check lock state
+	firstLockVal = semctl(semid, 0, GETVAL);
+	if(firstLockVal > 0)
+	{
+		// locked, let calling method check lock PIDs
+		return -1;
+	}
+	fuseLockVal = semctl(semid, 1, GETVAL);
+	if(fuseLockVal > 0)
+	{
+		// locks out of sync
+		fprintf(stderr, "!!! Fuse lock is locked. Standard lock is not locked.\n");
+		fprintf(stderr, "This condition should not exist!\n");
+		fprintf(stderr, "Fuse lock held by PID %d\n", getFuseLockPID());
+		return -1;
+	}
+
+	sops[0].sem_num = 0; // standard sempahore
+	sops[0].sem_op = 1;  // increment value to locked
+	sops[0].sem_flg = 0; // persist after program exit
+	sops[1].sem_num = 1; // fuse semaphore
+	sops[1].sem_op = 1;  // increment value to locked
+	sops[1].sem_flg = 0; // persist after program exit
+
+	// update the semaphores
+	v = semop(semid, sops, 2);
+
+	return v;
+}
+
+/***************************************************************************
+ * unlockMark5()
+ * 
+ * Return: int - 0 successful unlock, -1 unable to unlock
+ *
+ * Description: checks both semaphores, will generate error if fuse lock is
+ * in use, will unlock first semaphore if possible
+ *
+ ***************************************************************************/
+int unlockMark5()
+{
+	struct sembuf sops[1];
+	int v;
+	int firstLockVal;
+	int fuseLockVal;
+
+	if(semid == 0)
+	{
+		initSemaphore();
+	}
+
+	// check if locked for fuse use
+	fuseLockVal = semctl(semid, 1, GETVAL);
+	if(fuseLockVal > 0)
+	{
+		firstLockVal = semctl(semid, 0, GETVAL);
+		if(firstLockVal > 0)
+		{
+			fprintf(stderr, "Mark5 unit locked for fuse use by PID %d\n", getFuseLockPID());
+			fprintf(stderr, "Mark5 unit must be unlocked by stopfuse application.\n");
+		}
+		else
+		{
+			fprintf(stderr, "!!! Fuse lock is locked. Standard lock is not locked.\n");
+			fprintf(stderr, "This condition should not exist!\n");
+			fprintf(stderr, "Fuse lock held by PID %d\n", getFuseLockPID());
+		}
+		return -1;
+	}
+
+	// do standard unlocking
 	sops[0].sem_num = 0;
 	sops[0].sem_op = -1;
 	sops[0].sem_flg = SEM_UNDO | IPC_NOWAIT;
@@ -118,6 +240,67 @@ int unlockMark5()
 	return v;
 }
 
+/***************************************************************************
+ * unlockFuse()
+ * 
+ * Return: int - 0 successful unlock, -1 unsuccessful or out of sync
+ *
+ * Description: checks both semaphores, will generate error if semaphores
+ * are out of sync, will unlock both semaphores if possible, semaphore values
+ * will persist after program exits
+ *
+ ***************************************************************************/
+int unlockFuse()
+{
+	struct sembuf sops[2];
+	int v;
+	int firstLockVal;
+	int fuseLockVal;
+
+	if(semid == 0)
+	{
+		initSemaphore();
+	}
+
+	// check lock state
+	firstLockVal = semctl(semid, 0, GETVAL);
+	fuseLockVal = semctl(semid, 1, GETVAL);
+	if(firstLockVal == 0 && fuseLockVal > 0)
+	{
+		// locks out of sync
+		fprintf(stderr, "!!! Fuse lock is locked. Standard lock is not locked.\n");
+		fprintf(stderr, "This condition should not exist!\n");
+		fprintf(stderr, "Fuse lock held by PID %d\n", getFuseLockPID());
+		return -1;
+	}
+	if(firstLockVal > 0 && fuseLockVal == 0)
+	{
+		// only standard lock set
+		fprintf(stderr, "!!! Only standard lock is locked.\n");
+		fprintf(stderr, "Check if PID holding lock still has finish!\n");
+		fprintf(stderr, "Standard lock held by PID %d\n", getMark5LockPID());
+		return -1;
+	}
+
+	sops[0].sem_num = 1; // fuse sempahore
+	sops[0].sem_op = -1; // decrement value to unlocked
+	sops[0].sem_flg = IPC_NOWAIT; // persist after program exit, but don't wait if unlocked
+	sops[1].sem_num = 0; // first semaphore
+	sops[1].sem_op = -1; // decrement value to unlocked
+	sops[1].sem_flg = IPC_NOWAIT; // persist after program exit, but don't wait if unlocked
+
+	// update the semaphores
+	v = semop(semid, sops, 2);
+
+	return v;
+}
+
+/***************************************************************************
+ * getMark5LockPid()
+ * 
+ * Return: int - value of PID holding lock on the standard lock semaphore
+ *
+ ***************************************************************************/
 int getMark5LockPID()
 {
 	int pid;
@@ -132,6 +315,32 @@ int getMark5LockPID()
 	return pid;
 }
 
+/***************************************************************************
+ * getFuseLockPid()
+ * 
+ * Return: int - value of PID holding lock on the fuse lock semaphore
+ *
+ ***************************************************************************/
+int getFuseLockPID()
+{
+	int pid;
+
+	if(semid == 0)
+	{
+		initSemaphore();
+	}
+
+	pid = semctl(semid, 1, GETPID);
+
+	return pid;
+}
+
+/***************************************************************************
+ * getMark5LockValue()
+ * 
+ * Return: int - value of standard semaphore
+ *
+ ***************************************************************************/
 int getMark5LockValue()
 {
 	int pid;
@@ -144,6 +353,26 @@ int getMark5LockValue()
 	pid = semctl(semid, 0, GETVAL);
 
 	return pid;
+}
+
+/***************************************************************************
+ * getFuseLockValue()
+ * 
+ * Return: int - value of second semaphore, the fuse lock semaphore
+ *
+ ***************************************************************************/
+int getFuseLockValue()
+{
+	int val;
+
+	if(semid == 0)
+	{
+		initSemaphore();
+	}
+
+	val = semctl(semid, 1, GETVAL);
+
+	return val;
 }
 
 int deleteMark5Lock()
