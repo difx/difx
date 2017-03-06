@@ -559,6 +559,27 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 			Mk5Daemon_sendSmartData(D);
 		}
 	}
+	else if(strcasecmp(cmd, "startfuseMk5A") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startfuseMk5(D, "A");
+		}
+	}
+	else if(strcasecmp(cmd, "startfuseMk5B") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startfuseMk5(D, "B");
+		}
+	}
+	else if(strcasecmp(cmd, "stopfuseMk5") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_stopfuseMk5(D);
+		}
+	}
 #endif
 	else if(strncmp(cmd, "mount", 5) == 0 && strlen(cmd) > 5)
 	{

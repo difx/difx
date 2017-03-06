@@ -426,3 +426,36 @@ void Mk5Daemon_stopVSIS(Mk5Daemon *D)
 	}
 }
 
+void controlVSIS(Mk5Daemon *D, const DifxMessageGeneric *G)
+{
+	const char *cmd;
+	char message[DIFX_MESSAGE_LENGTH];
+
+	/* only care if the message came from another process on same node */
+	if(strcmp(D->hostName, G->from) != 0)
+	{
+		return;
+	}
+	
+	cmd = G->body.vsis.vsis;
+
+	snprintf(message, DIFX_MESSAGE_LENGTH,
+		"vsis instruction: from=%s identifier=%s instruction=%s\n", 
+		G->from, G->identifier, cmd);
+	Logger_logData(D->log, message);
+
+	if(strcasecmp(cmd, "stop") == 0)
+	{
+		Mk5Daemon_stopVSIS(D);
+	}
+	else if(strcasecmp(cmd, "start") == 0)
+	{
+		Mk5Daemon_startVSIS(D);
+	}
+	else
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "vsis instruction=%s not recognized!\n", cmd);
+		Logger_logData(D->log, message);
+	}
+}
+

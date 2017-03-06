@@ -50,6 +50,7 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include "mk5daemon.h"
 #include "../config.h"
 #include "logger.h"
@@ -884,6 +885,9 @@ void handleDifxMessage(Mk5Daemon *D, int noSu)
 			case DIFX_MESSAGE_VEX2DIFXRUN:
 				Mk5Daemon_vex2DifxRun(D, &G);
 				break;
+			case DIFX_MESSAGE_VSIS:
+				controlVSIS(D, &G);
+				break;
 			default:
 				break;
 			}
@@ -1092,6 +1096,8 @@ int main(int argc, char **argv)
     int v;
     int halfSwapMonInterval;
     int halfLoadMonInterval;
+    int pid;
+    int status;
 
 #ifdef HAVE_XLRAPI_H
     time_t firstTime;
@@ -1107,14 +1113,9 @@ int main(int argc, char **argv)
 #else
     int isMk5 = 0;
 #endif
-    	
+
     try
     {
-       
-
-	// Prevent any zombies
-	signal(SIGCHLD, SIG_IGN);
-
 	p = getenv("DIFX_LOG_PATH");
 	if(p)
 	{
@@ -1168,7 +1169,14 @@ int main(int argc, char **argv)
 
 	if(!options.isEmbedded)
 	{
-		if(fork())
+		pid = fork();
+		if(pid < 0)
+		{
+			fprintf(stderr, "!!! %s ver. %s spawn failure !!!\n", program, version);
+
+			return EXIT_FAILURE;
+		}
+		if(pid > 0)
 		{
 			printf("*** %s ver. %s spawned ***\n", program, version);
 
@@ -1179,11 +1187,6 @@ int main(int argc, char **argv)
 	{
 		printf("*** %s ver. %s starting ***\n", program, version);
 	}
-
-	/* the next line is so that later calls to fork() don't end up with defunct
-	 * children.  see http://www.ecst.csuchico.edu/~beej/guide/ipc/fork.html
-	 */
-	signal(SIGCLD, SIG_IGN);
 
 	umask(02);
 
@@ -1268,6 +1271,9 @@ int main(int argc, char **argv)
 				}
 
 				Mk5Daemon_loadMon(D, mjd);
+
+				// also, every 10 seconds, look for and clean up any defunct children
+				waitpid(-1, &status, WNOHANG);
 			}
 
 			// check every 30 seconds

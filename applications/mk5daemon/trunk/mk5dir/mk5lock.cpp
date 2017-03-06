@@ -39,10 +39,19 @@ static void usage(const char *cmd)
 	printf("A utility to manage the IPC semaphore locking access to Mark5\n\n");
 	printf("Usage: %s [options]\n\n", cmd);
 	printf("Options can include:\n\n");
-	printf("  -l   Lock the unit\n\n");
-	printf("  -u   Unlock the unit\n\n");
-	printf("  -5   Lock the unit for 5 seconds\n\n");
-	printf("  -h   Print this useful help information\n\n");
+	printf("  -l    Lock the unit\n\n");
+	printf("  -u    Unlock the unit\n\n");
+	printf("  -5    Lock the unit for 5 seconds\n\n");
+	printf("  -lf   Lock the unit for fuse\n\n");
+	printf("  -uf   Unlock the unit from fuse\n\n");
+	printf("  -p    Print the status of the locks\n\n");
+	printf("  -h    Print this useful help information\n\n");
+}
+
+void printLockInfo()
+{
+	printf("standard lock value %d last update pid %d\n", getMark5LockValue(), getMark5LockPID());
+	printf("    fuse lock value %d last update pid %d\n", getFuseLockValue(), getFuseLockPID());
 }
 
 int main(int argc, char **argv)
@@ -70,6 +79,18 @@ int main(int argc, char **argv)
 	{
 		unlockMark5();
 	}
+	else if(strcmp(action, "-lf") == 0)
+	{
+		v = lockFuse();
+		if(v < 0)
+		{
+			printf("Sorry, unit is locked by process ID %d\n", getFuseLockPID());
+		}
+	}
+	else if(strcmp(action, "-uf") == 0)
+	{
+		unlockFuse();
+	}
 	else if(strcmp(action, "-5") == 0)
 	{
 		v = lockMark5(MARK5_LOCK_DONT_WAIT);
@@ -81,6 +102,10 @@ int main(int argc, char **argv)
 		sleep(5);
 		
 		unlockMark5();
+	}
+	else if(strcmp(action, "-p") == 0)
+	{
+		printLockInfo();
 	}
 	else
 	{

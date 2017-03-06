@@ -89,6 +89,7 @@ enum ProcessType
 	PROCESS_MK5COPY,
 	PROCESS_SSERASE,
 	PROCESS_CONDITION,
+	PROCESS_FUSEMK5,
 	PROCESS_UNKNOWN
 };
 
@@ -268,6 +269,8 @@ int Mk5Daemon_error(Mk5Daemon *D, unsigned int *xlrError , char *msg);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_sendSmartData(Mk5Daemon *D);
+void Mk5Daemon_startfuseMk5(Mk5Daemon *D, const char *bank);
+void Mk5Daemon_stopfuseMk5(Mk5Daemon *D);
 
 void clearMk5Smart(Mk5Daemon *D, int bank);
 void clearMk5DirInfo(Mk5Daemon *D, int bank);
@@ -287,5 +290,6 @@ void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G);
 void handleMark6Status(Mk5Daemon *D, const DifxMessageGeneric *G);
 void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G);
 void handleDriveStats(Mk5Daemon *D, const DifxMessageGeneric *G);
+void controlVSIS(Mk5Daemon *D, const DifxMessageGeneric *G);
 
 #endif

@@ -39,6 +39,8 @@ def usage(pgm):
 	print '  getver -- tell machine to report its version info'
 	print '  mountXX -- mount /dev/sdXX /mnt/usb'
 	print '  umount -- umount /mnt/usb\n'
+	print '  startfuseMk5A, startfuseMk5B -- start a fuse mount of module in A or B on /mnt/diskpack'
+	print '  stopfuseMk5 -- stop fuse mount on /mnt/diskpack'
 	print '<machines> is a list of cluster members to receive the message;'
 	print '  the format is as follows:'
 	print '    general: the explicit computer hostname, or "all" for all'

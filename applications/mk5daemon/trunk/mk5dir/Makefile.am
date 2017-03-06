@@ -12,7 +12,9 @@ bin_PROGRAMS = \
 	record5c \
 	recover \
 	testmod \
-	vsn
+	vsn \
+	startfusemk5 \
+	stopfusemk5
 else
 bin_PROGRAMS = 
 endif
@@ -56,6 +58,11 @@ testmod_LDADD = \
 vsn_LDADD = \
 	${M5ACCESS_LIBS}
 
+startfusemk5_LDADD = \
+	${M5ACCESS_LIBS}
+
+stopfusemk5_LDADD = \
+	${M5ACCESS_LIBS}
 
 mk5cat_SOURCES = \
 	watchdog.cpp \
@@ -156,3 +163,10 @@ vsn_SOURCES = \
 	nraobaddrives.cpp \
 	nraobaddrives.h \
 	vsn.cpp
+
+startfusemk5_SOURCES = \
+	startfusemk5.cpp
+
+stopfusemk5_SOURCES = \
+	stopfusemk5.cpp
+
