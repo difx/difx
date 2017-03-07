@@ -17,6 +17,11 @@ Version 2.5.0
 * mk5cp: report average data rate and total bytes copied.  Use replaced byte counter with lower false detection rate.
 * Periodically (every 30 sec) look at OS swap usage and emit alert if in use
 * mk5putdir: if binary dump file cannot be created, don't seg fault; instead tell user.
+* mk5daemon: add message handling for starting and stopping fuseMk5
+* mk5lock: added support for fuseMk5 locks
+* mk5control: added new commands to start and stop fuseMk5
+* startfusemk5: new utility to start fuseMk5
+* stopfuseMk5: new utility to stop fuseMk5
 
 Version 2.4.0
 ~~~~~~~~~~~~~
