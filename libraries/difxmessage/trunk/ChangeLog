@@ -9,6 +9,8 @@ Version 2.5.0
 	- add options to set multicast group/port
 	- color coded output in case of errors
 * Change name of .rpm to vlbi-difxmessage.*.rpm
+* Added new messaging to start and stop fuseMk5
+* Added new lock to mark5ipc for fuseMk5
 
 Version 2.4.0
 ~~~~~~~~~~~~~
