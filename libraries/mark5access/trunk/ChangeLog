@@ -14,6 +14,7 @@ Verion 1.5.3
 * New function: void snprintmark5bfilesummary(char *str, int maxLength, const struct mark5b_file_summary *sum)
 * Change RPM name to vlbi-mark5access.*.rpm
 * New option in test5b: can supply frames per second and then the true number of skipped frames can be evaluated.
+* fixmark5b: don't seg fault if can't open files
 
 Version 1.5.2
 * Post DiFX-2.4

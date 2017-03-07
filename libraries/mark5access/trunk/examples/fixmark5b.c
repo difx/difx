@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Walter Brisken                                  *
+ *   Copyright (C) 2013-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -58,12 +58,16 @@ int main(int argc, char **argv)
 	if(!in)
 	{
 		printf("Error: cannot open %s\n", argv[1]);
+
+		return 0;
 	}
 
 	out = fopen(argv[4], "w");
 	if(!out)
 	{
 		printf("Error: cannot open %s\n", argv[4]);
+
+		return 0;
 	}
 
 	if(argc > 5)
