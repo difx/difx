@@ -101,6 +101,7 @@ int main(int argc, char **argv)
 
 		printf("\n");
 		printmark5bfixstatistics(&stats);
+		fflush(stdout);
 
 		v = fwrite(dest, 1, stats.destUsed, out);
 
