@@ -38,6 +38,7 @@
 #define KEY_ID		94539
 
 int semid = 0;
+int nsems = 0;
 
 /***************************************************************************
  * initSemaphore()
@@ -58,9 +59,22 @@ static int initSemaphore()
 
 	if(semid == -1)
 	{
-		perror("semget failed!");
-		semid = 0;
-		return -1;
+		semid = semget(key, 1, IPC_CREAT | 0666);
+
+		if(semid == -1)
+		{
+			perror("semget failed!");
+			semid = 0;
+			return -1;
+		}
+		else
+		{
+			nsems = 1;
+		}
+	}
+	else
+	{
+		nsems = 2;
 	}
 
 	return 0;
@@ -84,27 +98,30 @@ int lockMark5(int wait)
 	int fuseLockVal;
 	int i = 0;
 
-	if(semid == 0)
+	if((semid == 0) && (initSemaphore() == -1))
 	{
-		initSemaphore();
+		return -1;
 	}
 
 	// check if locked for fuse use
-	fuseLockVal = semctl(semid, 1, GETVAL);
-	if(fuseLockVal > 0)
+	if(nsems == 2)
 	{
-		firstLockVal = semctl(semid, 0, GETVAL);
-		if(firstLockVal > 0)
+		fuseLockVal = semctl(semid, 1, GETVAL);
+		if(fuseLockVal > 0)
 		{
-			fprintf(stderr, "Mark5 unit locked for fuse use by PID %d\n", getFuseLockPID());
+			firstLockVal = semctl(semid, 0, GETVAL);
+			if(firstLockVal > 0)
+			{
+				fprintf(stderr, "Mark5 unit locked for fuse use by PID %d\n", getFuseLockPID());
+			}
+			else
+			{
+				fprintf(stderr, "!!! Fuse lock is locked. Standard lock is not locked.\n");
+				fprintf(stderr, "This condition should not exist!\n");
+				fprintf(stderr, "Fuse lock held by PID %d\n", getFuseLockPID());
+			}
+			return -1;
 		}
-		else
-		{
-			fprintf(stderr, "!!! Fuse lock is locked. Standard lock is not locked.\n");
-			fprintf(stderr, "This condition should not exist!\n");
-			fprintf(stderr, "Fuse lock held by PID %d\n", getFuseLockPID());
-		}
-		return -1;
 	}
 
 	// do standard locking
@@ -155,9 +172,14 @@ int lockFuse()
 	int firstLockVal;
 	int fuseLockVal;
 
-	if(semid == 0)
+	if((semid == 0) && (initSemaphore() == -1))
 	{
-		initSemaphore();
+		return -1;
+	}
+	if(nsems < 2)
+	{
+		fprintf(stderr, "Semaphore set does not have fuse semaphore. semid %d\n", semid);
+		return -1;
 	}
 
 	// check lock state
@@ -206,28 +228,31 @@ int unlockMark5()
 	int firstLockVal;
 	int fuseLockVal;
 
-	if(semid == 0)
+	if((semid == 0) && (initSemaphore() == -1))
 	{
-		initSemaphore();
+		return -1;
 	}
 
 	// check if locked for fuse use
-	fuseLockVal = semctl(semid, 1, GETVAL);
-	if(fuseLockVal > 0)
+	if(nsems == 2)
 	{
-		firstLockVal = semctl(semid, 0, GETVAL);
-		if(firstLockVal > 0)
+		fuseLockVal = semctl(semid, 1, GETVAL);
+		if(fuseLockVal > 0)
 		{
-			fprintf(stderr, "Mark5 unit locked for fuse use by PID %d\n", getFuseLockPID());
-			fprintf(stderr, "Mark5 unit must be unlocked by stopfuse application.\n");
+			firstLockVal = semctl(semid, 0, GETVAL);
+			if(firstLockVal > 0)
+			{
+				fprintf(stderr, "Mark5 unit locked for fuse use by PID %d\n", getFuseLockPID());
+				fprintf(stderr, "Mark5 unit must be unlocked by stopfuse application.\n");
+			}
+			else
+			{
+				fprintf(stderr, "!!! Fuse lock is locked. Standard lock is not locked.\n");
+				fprintf(stderr, "This condition should not exist!\n");
+				fprintf(stderr, "Fuse lock held by PID %d\n", getFuseLockPID());
+			}
+			return -1;
 		}
-		else
-		{
-			fprintf(stderr, "!!! Fuse lock is locked. Standard lock is not locked.\n");
-			fprintf(stderr, "This condition should not exist!\n");
-			fprintf(stderr, "Fuse lock held by PID %d\n", getFuseLockPID());
-		}
-		return -1;
 	}
 
 	// do standard unlocking
@@ -257,9 +282,14 @@ int unlockFuse()
 	int firstLockVal;
 	int fuseLockVal;
 
-	if(semid == 0)
+	if((semid == 0) && (initSemaphore() == -1))
 	{
-		initSemaphore();
+		return -1;
+	}
+	if(nsems < 2)
+	{
+		fprintf(stderr, "Semaphore set does not have fuse semaphore. semid %d\n", semid);
+		return -1;
 	}
 
 	// check lock state
@@ -305,9 +335,9 @@ int getMark5LockPID()
 {
 	int pid;
 
-	if(semid == 0)
+	if((semid == 0) && (initSemaphore() == -1))
 	{
-		initSemaphore();
+		return -1;
 	}
 
 	pid = semctl(semid, 0, GETPID);
@@ -325,9 +355,14 @@ int getFuseLockPID()
 {
 	int pid;
 
-	if(semid == 0)
+	if((semid == 0) && (initSemaphore() == -1))
 	{
-		initSemaphore();
+		return -1;
+	}
+	if(nsems < 2)
+	{
+		fprintf(stderr, "Semaphore set does not have fuse semaphore. semid %d\n", semid);
+		return -1;
 	}
 
 	pid = semctl(semid, 1, GETPID);
@@ -345,9 +380,9 @@ int getMark5LockValue()
 {
 	int pid;
 
-	if(semid == 0)
+	if((semid == 0) && (initSemaphore() == -1))
 	{
-		initSemaphore();
+		return -1;
 	}
 
 	pid = semctl(semid, 0, GETVAL);
@@ -365,9 +400,14 @@ int getFuseLockValue()
 {
 	int val;
 
-	if(semid == 0)
+	if((semid == 0) && (initSemaphore() == -1))
 	{
-		initSemaphore();
+		return -1;
+	}
+	if(nsems < 2)
+	{
+		fprintf(stderr, "Semaphore set does not have fuse semaphore. semid %d\n", semid);
+		return -1;
 	}
 
 	val = semctl(semid, 1, GETVAL);
