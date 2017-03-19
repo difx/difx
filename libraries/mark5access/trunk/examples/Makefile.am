@@ -7,7 +7,7 @@ fftw_programs = \
 	m5spec \
 	m5fb \
 	m5subband \
-	zerocorr
+	zerocorr 
 m5subband_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5subband_LDADD = $(FFTW3_LIBS) $(LDADD) -lfftw3f
 m5spec_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
@@ -21,6 +21,8 @@ zerocorr_LDADD = $(FFTW3_LIBS) $(LDADD)
 else
 fftw_programs = 
 endif
+
+dist_bin_SCRIPTS = zerocorr_makeconfig.py
 
 bin_PROGRAMS = \
 	directory2filelist \
@@ -87,3 +89,7 @@ m5subband_SOURCES = \
 
 zerocorr_SOURCES = \
 	zerocorr.c
+
+
+install-exec-hook:
+	mv $(DESTDIR)$(bindir)/zerocorr_makeconfig.py $(DESTDIR)$(bindir)/zerocorr_makeconfig
