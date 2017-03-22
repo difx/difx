@@ -234,7 +234,7 @@ float stddev(const float* v, const size_t N)
  * factor 4 : 25% new data (retain recent 3*Ldft/4 samples and append Ldft/4 new samples).
  * Finally applies the weights in vector 'w' to 'out' to produce a weighted 'wout' vector.
  */
-#ifdef __GNUC__
+#if defined __GNUC__ && !defined __clang__
 __attribute__((optimize("unroll-loops")))
 #endif
 int windowed_mk5_read(struct mark5_stream *ms, const int Ldft, float **raw,
@@ -361,7 +361,7 @@ void requantize_into_vdif(VDIFEncapsulator_t* vdif, const float * RESTRICT in, f
 #endif
 }
 
-#ifdef __GNUC__
+#if defined __GNUC__ && !defined __clang__
 __attribute__((optimize("unroll-loops")))
 #endif
 void window_and_accumulate_c2r(fftw_real * RESTRICT out, const fftwf_complex * RESTRICT in,
@@ -382,7 +382,7 @@ void window_and_accumulate_c2r(fftw_real * RESTRICT out, const fftwf_complex * R
 	}
 }
 
-#ifdef __GNUC__
+#if defined __GNUC__ && !defined __clang__
 __attribute__((optimize("unroll-loops")))
 #endif
 void window_and_accumulate_r2r(fftw_real * RESTRICT out, const fftw_real * RESTRICT in,
@@ -455,9 +455,9 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	float r, rfrac, rot_f_re;
 	int start_bin, stop_bin;
 	int Ldft, Lcopy, Lidft;
-	int i, rc;
+	int i, rc, report_interval;
 
-	size_t niter = 0, nidft = 0, ntailing = 0, report_interval;
+	size_t niter = 0, nidft = 0, ntailing = 0;
 	struct timeval t1, t2, tstart, tstop;
 
 	VDIFEncapsulator_t vdif;
@@ -593,7 +593,7 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	// Reporting
 	report_interval = (0.050 * (2*bw_in_MHz*1e6) * factor) / Ldft;
 	report_interval = MAX(report_interval, 100);
-printf("report_interval = %d\n", report_interval);
+	printf("report_interval = %d\n", report_interval);
 	snprintf(fmtstring, sizeof(fmtstring)-1, "VDIF_%zu-%.0f-1-%d", vdif.payloadbytes, R_Mbps, nbit_out);
 	fmtstring[sizeof(fmtstring)-1] = '\0';
 	printf("%-14s : first integer second (MJD %d sec %d) found after %zd samples.\n", "Input file", mjd, sec, niter);
@@ -680,7 +680,7 @@ printf("report_interval = %d\n", report_interval);
 			sigma = stddev(sigma_data, sigma_nsamples);
 			if (sigma_nsamples >= min_sigma_nsamples)
 			{
-				printf("%-14s : %d-bit, stddev=%.2f from %d samples\n", "Quantizer", sigma, nbit_out, sigma_nsamples);
+				printf("%-14s : %d-bit, stddev=%.2f from %d samples\n", "Quantizer", nbit_out, sigma, sigma_nsamples);
 			}
 		}
 
