@@ -425,11 +425,12 @@ void process_8bit_realdata(struct mark5_stream *ms, int nframes) {
 
 
 double std_dev2(double a[], int n) {
+    int i;
     if(n == 0)
         return 0.0;
     double sum = 0;
     double sq_sum = 0;
-    for(int i = 0; i < n; ++i) {
+    for(i = 0; i < n; ++i) {
        sum += a[i];
        sq_sum += a[i] * a[i];
     }
