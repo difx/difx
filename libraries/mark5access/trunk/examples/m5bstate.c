@@ -336,6 +336,108 @@ void process_complexdata(struct mark5_stream *ms, int nframes, int nstates) {
   free(bstate);
 }
 
+void process_8bit_realdata(struct mark5_stream *ms, int nframes) {
+  int i, j, k, status;
+  long long total, unpacked;
+  double x;
+  
+  int chunk = ms->framesamples;
+  int nif = ms->nchan;
+
+  double **data = (double **)malloc(nif*sizeof(double *));
+  double *sum = malloc(nif*sizeof(double));
+  double *sumsqr = malloc(nif*sizeof(double));
+
+  total = unpacked = 0;
+
+  for(i = 0; i < nif; i++)
+  {
+    data[i] = (double *)malloc((chunk+2)*sizeof(double)); 
+  }
+
+  /* initialize stats variable to zeroes*/
+  for(i = 0; i < nif; i++)
+  {
+      sum[i] = 0;
+      sumsqr[i] = 0;
+  }
+	  
+	  
+  for(j = 0; j < nframes; j++)
+  {
+    if(die)
+    {
+      break;
+    }
+	      
+    status = mark5_stream_decode_double(ms, chunk, data);
+	      
+    if(status < 0)
+    {
+      break;
+    }
+    else
+    {
+      total += chunk;
+      unpacked += status;
+    }
+	      
+    if (ms->consecutivefails > 5)
+    {
+      break;
+    }
+	      
+	      
+    for (i = 0; i < nif; i++) 
+    {
+      double thissum=0, thissumsqr=0;
+      for(k = 0; k < chunk; k++)
+      {
+	thissum += data[i][k];
+	thissumsqr += data[i][k]*data[i][k];
+      }
+      sum[i] += thissum;
+      sumsqr[i] += thissumsqr;
+    }
+  }
+
+  fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
+
+  /* header of the output bstate table based on Haystack bstate output*/
+
+  printf("\nCh    RMS   Mean\n");
+	  
+  for(i = 0; i < nif; i++)
+  {
+    double mean = sum[i]/total;
+    double stddev = sqrt(sumsqr[i]/total - mean*mean);
+    printf("%2d  %.3f  %.4f\n", i, stddev, mean);
+  }
+	  
+  for(i = 0; i < nif; i++)
+  {
+    free(data[i]);
+  }
+  free(data);
+  free(sum);
+  free(sumsqr);
+}
+
+
+double std_dev2(double a[], int n) {
+    if(n == 0)
+        return 0.0;
+    double sum = 0;
+    double sq_sum = 0;
+    for(int i = 0; i < n; ++i) {
+       sum += a[i];
+       sq_sum += a[i] * a[i];
+    }
+    double mean = sum / n;
+    double variance = sq_sum / n - mean * mean;
+    return sqrt(variance);
+}
+
 
 int bstate(const char *filename, const char *formatname, int nframes,
 	   long long offset)
@@ -379,25 +481,36 @@ int bstate(const char *filename, const char *formatname, int nframes,
 
 
         /* bstate 2nd dim. is either 2 for the 1bit: ++ -- or 4 for the 2 bits ++ + - -- */
-        if(ms->nbit == 1) 
-        {
-                nstates = 2;
-        }
-        else if(ms->nbit == 2)
-        {
-                nstates = 4;
-        }
-        else 
-        {
-                printf("Error: unsupported bit sampling %d, must be either 1 or 2\n", ms->nbit);
+	if (ms->nbit == 8)
+	{
+	  if (docomplex) {
+	    printf("Error: Do not support 8bit complex yet!\n");
+	    return 0;
+	  }
+	  process_8bit_realdata(ms, nframes);
+	}
+	else
+	{
+	  if(ms->nbit == 1) 
+	  {
+	    nstates = 2;
+	  }
+	  else if(ms->nbit == 2)
+	  {
+	    nstates = 4;
+	  }
+	  else 
+	  {
+	    printf("Error: unsupported bit sampling %d, must be either 1 or 2\n", ms->nbit);
 
-                return 0;
-        }
+	    return 0;
+	  }
 
-	if (docomplex) {
-	  process_complexdata(ms, nframes, nstates);
-	} else {
-	  process_realdata(ms, nframes, nstates);
+	  if (docomplex) {
+	    process_complexdata(ms, nframes, nstates);
+	  } else {
+	    process_realdata(ms, nframes, nstates);
+	  }
 	}
 
 	delete_mark5_stream(ms);
