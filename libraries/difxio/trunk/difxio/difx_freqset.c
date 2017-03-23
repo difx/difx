@@ -154,7 +154,7 @@ int isSameDifxFreqSet(const DifxFreqSet *dfs1, const DifxFreqSet *dfs2)
 			}
 		}
 	}
-	if(dfs1->IF || dfs2->IF)
+	else if(dfs1->IF || dfs2->IF)
 	{
 		return 0;
 	}
