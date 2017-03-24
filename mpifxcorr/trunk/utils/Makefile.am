@@ -5,7 +5,7 @@ AM_CPPFLAGS = \
 bin_PROGRAMS = checkmpifxcorr dedisperse_difx mpispeed
 
 dist_bin_SCRIPTS = \
-	genmachines.py \
+	genmachines \
 	jobdisks \
 	joblist \
 	jobstatus \
