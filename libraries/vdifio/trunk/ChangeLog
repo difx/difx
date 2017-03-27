@@ -39,6 +39,7 @@ Version 1.1
 * vmux: stop on SIGPIPE: useful for piped operations
 * vmux: don't segfault on incomplete command line
 * Change name of .rpm file that is made to vlbi-vdifio.*.rpm
+* vmux: some better default tuning parameters and move from signal() to sigaction()
 
 Version 1.0
 ~~~~~~~~~~~

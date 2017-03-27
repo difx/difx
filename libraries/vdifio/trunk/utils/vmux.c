@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2016 by Walter Brisken                             *
+ *   Copyright (C) 2013-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,15 +35,31 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.7";
-const char verdate[] = "20160624";
+const char version[] = "0.8";
+const char verdate[] = "20170326";
 
-const int defaultChunkSize = 2000000;
+const int defaultChunkSize = 10000000;
+
+const double srcRatio = 2.0;
 
 int die = 0;
 
 void sigpipeHandler(int i)
 {
+	die = 1;
+}
+
+void sigtermHandler(int i)
+{
+	fprintf(stderr, "vmux: terminating early due to TERM signal\n");
+
+	die = 1;
+}
+
+void sigintHandler(int i)
+{
+	fprintf(stderr, "vmux: terminating early due to INT signal\n");
+
 	die = 1;
 }
 
@@ -79,21 +95,44 @@ void usage(const char *pgm)
 	fprintf(stderr, "Note: as of version 0.5 this program supports multi-channel multi-thread input data\n\n");
 }
 
+void setSignals()
+{
+	struct sigaction sigPipe;
+	struct sigaction sigTerm;
+	struct sigaction sigInt;
+
+	sigPipe.sa_handler = sigpipeHandler;
+	sigemptyset(&sigPipe.sa_mask);
+	sigPipe.sa_flags = 0;
+	sigaction(SIGPIPE, &sigPipe, 0);
+
+	sigTerm.sa_handler = sigtermHandler;
+	sigemptyset(&sigTerm.sa_mask);
+	sigTerm.sa_flags = 0;
+	sigaction(SIGTERM, &sigTerm, 0);
+	
+	sigInt.sa_handler  = sigintHandler;
+	sigemptyset(&sigInt.sa_mask);
+	sigInt.sa_flags = 0;
+	sigaction(SIGINT, &sigInt, 0);
+}
+
 int main(int argc, char **argv)
 {
+	const int MaxThreads=128;
 	unsigned char *src;
 	unsigned char *dest;
 	FILE *in, *out;
 	int verbose = 1;
 	int n, rv;
-	int threads[32];
+	int threads[MaxThreads];
 	int nThread;
 	int inputframesize = 0;
 	int nGap = 100;
 	int nSort = 20;
 	struct vdif_mux_statistics stats;
 	int leftover;
-	int srcChunkSize = defaultChunkSize*5/4;
+	int srcChunkSize = (int)(defaultChunkSize*srcRatio);
 	int destChunkSize = defaultChunkSize;
 	int hasChunkSize = 0;
 	int framesPerSecond = 0;
@@ -110,8 +149,6 @@ int main(int argc, char **argv)
 	struct vdif_mux vm;
 	int flags = VDIF_MUX_FLAG_PROPAGATEVALIDITY | VDIF_MUX_FLAG_RESPECTGRANULARITY;
 	int a;
-
-	signal(SIGPIPE, &sigpipeHandler);
 
 	if(argc <= 1)
 	{
@@ -229,7 +266,7 @@ int main(int argc, char **argv)
 		{
 			hasChunkSize = 1;
 			destChunkSize = atoi(argv[a]);
-			srcChunkSize = destChunkSize*5/4;
+			srcChunkSize = destChunkSize*srcRatio;
 			destChunkSize -= destChunkSize % 8;
 			srcChunkSize -= srcChunkSize % 8;
 			if(verbose > 2)
@@ -252,7 +289,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	for(n = nThread = 0; nThread < 32; ++nThread)
+	for(n = nThread = 0; nThread < MaxThreads; ++nThread)
 	{
 		int c, p, i;
 		if(threadString[n] == ',')
@@ -350,6 +387,8 @@ int main(int argc, char **argv)
 
 	src = (unsigned char *)malloc(srcChunkSize);
 	dest = (unsigned char *)malloc(destChunkSize);
+
+	setSignals();
 
 	/* read just enough of the stream to peek at a frame header */
 	n = fread(src, 1, VDIF_HEADER_BYTES, in);
