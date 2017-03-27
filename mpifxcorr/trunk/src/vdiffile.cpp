@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2017 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -74,9 +74,9 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 	// Make read buffer a bit bigger than a data segment size so extra bytes can be filtered out 
 	// The excess should be limited to avoid large memory moves of extra data
 	// But the amount of excess should be large enough to encompass all reasonable amounts of interloper data
-	// Here we choose 1/10 extra as a compromise.  Might be worth a revisit in the future.
+	// Here we give 20% overhead plus 8 MB, just to be on the safe side...
 
-	readbuffersize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*11LL/10LL;
+	readbuffersize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*5LL/4LL+8000000LL;
 	readbuffersize -= (readbuffersize % 8); // make it a multiple of 8 bytes
 	readbufferleftover = 0;
 	readbuffer = 0;	// to be allocated via initialize();
