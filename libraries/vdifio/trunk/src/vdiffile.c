@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2016 Walter Brisken                                *
+ *   Copyright (C) 2013-2017 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -121,6 +121,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 	FILE *in;
 	char hasThread[VDIF_MAX_THREAD_ID + 1];
 	struct vdif_header *vh0;	/* pointer to the prototype header */
+	int hasEDV3 = 0;		/* no VLBA headers found yet */
 
 	/* Initialize things */
 
@@ -233,6 +234,23 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 			else if(s == sum->endSecond && f > sum->endFrame)
 			{
 				sum->endFrame = f;
+			}
+
+			if(vh->eversion == 3 && hasEDV3 == 0)
+			{
+				const vdif_edv3_header *edv3 = (const vdif_edv3_header *)vh0;
+				long long int sampRate;
+				int dataSize = frameSize - (vh->legacymode ? 16 : 32);
+
+				hasEDV3 = 1;
+
+				sampRate = edv3->samprate * 1000 * 2;	/* factor of 2 because header sample rate is complex */
+				if(edv3->samprateunits == 1)
+				{
+					sampRate *= 1000;
+				}
+
+				sum->framesPerSecond = sampRate*sum->nBit/(8LL*dataSize);
 			}
 
 			i += frameSize;
