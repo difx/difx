@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2015 by Walter Brisken, Adam Deller                *
+ *   Copyright (C) 2014-2017 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,18 +35,19 @@
 #include "vdifmark6.h"
 
 const char program[] = "printVDIFheader";
-const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.4";
-const char verdate[] = "20151122";
+const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
+const char version[] = "0.5";
+const char verdate[] = "20170328";
 
 static void usage()
 {
 	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
 	fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
-	fprintf(stderr, "\nUsage: %s <VDIF input file> [<framesize> [<prtlev>] ]\n", program);
+	fprintf(stderr, "\nUsage: %s <VDIF input file> [<framesize> [<prtlev> [<offset>] ] ]\n", program);
 	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read (- for stdin)\n");
 	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA, 8224 for R2DBE)\n");
-	fprintf(stderr, "\n<prtlev> is output type: hex short long\n\n");
+	fprintf(stderr, "\n<prtlev> is output type: hex short long\n");
+	fprintf(stderr, "\n<offset> is a number of bytes to skip at start of file\n\n");
 	fprintf(stderr, "In normal operation this program searches for valid VDIF frames.\n");
 	fprintf(stderr, "The heuristics used to identify valid frames are somewhat weak as\n");
 	fprintf(stderr, "VDIF has no formal sync word.  Some data can fool this program.\n\n");
@@ -78,7 +79,7 @@ int main(int argc, char **argv)
 	int mk6BlockHeaderSize = 0;
 	int framesPerMark6Block = 0;
 
-	if(argc < 2 || argc > 4)
+	if(argc < 2 || argc > 5)
 	{
 		usage();
 
@@ -158,6 +159,14 @@ int main(int argc, char **argv)
 			
 			exit(EXIT_FAILURE);
 		}
+	}
+	if(argc > 4)
+	{
+		long int jumpBytes;
+
+		jumpBytes = atol(argv[4]);
+		fprintf(stderr, "Jumping %ld bytes into file\n", jumpBytes);
+		fseek(input, jumpBytes, SEEK_SET);
 	}
 
 	if(framesize <= 0)
