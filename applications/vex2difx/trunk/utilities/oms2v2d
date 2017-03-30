@@ -182,7 +182,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, verbose):
 	out.write('antennas = %s\n\n' % stnString)
 
 	if nrt or filebased:
-		machineString = 'swc000, swc001, swc002, swc003'
+		machineString = 'swc000, swc001, swc002, swc003, swc004'
 		out.write('machines = %s\n' % machineString);
 		out.write('nCore = 4\n')
 		out.write('nThread = 8\n\n')
