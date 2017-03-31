@@ -2773,7 +2773,8 @@ def pgplot(origComps, params, args, verbose, pretend):
 	execute('%s/pgplot/makemake %s/pgplot %s g77_gcc' % (archSrcDir, archSrcDir, opsys), verbose, pretend)
 	# modify makefile : remove bogus png.h req, optionally change g77 to gfortran, ...
 	execute('mv makefile makefile.orig', verbose, pretend)
-	fixpng = "-e 's/pndriv.o : .\\/png.h .\\/pngconf.h .\\/zlib.h .\\/zconf.h/pndriv.o :/' -e 's/^XINCL=/XINCL=-I..\\/include /' -e 's/^LIBS=/LIBS=-L..\\/lib /'"
+	# fixpng = "-e 's/pndriv.o : .\\/png.h .\\/pngconf.h .\\/zlib.h .\\/zconf.h/pndriv.o :/' -e 's/^XINCL=/XINCL=-I..\\/include /' -e 's/^LIBS=/LIBS=-L..\\/lib /'"
+	fixpng = ''
 	if len(popen('which gfortran').readlines()) > 0:
 		fixg77 = "-e 's/=g77/=gfortran/' -e 's/-u -Wall -fPIC -O/-ffixed-form -ffixed-line-length-none -u -Wall -fPIC -O/'"
 	else:
