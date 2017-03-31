@@ -339,7 +339,6 @@ void process_complexdata(struct mark5_stream *ms, int nframes, int nstates) {
 void process_8bit_realdata(struct mark5_stream *ms, int nframes) {
   int i, j, k, status;
   long long total, unpacked;
-  double x;
   
   int chunk = ms->framesamples;
   int nif = ms->nchan;

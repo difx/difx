@@ -470,8 +470,11 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	fftw_real *in_raw, *dft_in, *out_td;
 	fftwf_complex *dft_out, *idft_in, *idft_out;
 	fftwf_plan plan_fwd;
+#if USE_C2C_IDFT
 	fftwf_plan plan_inv;
+#else
 	fftwf_plan plan_inv_c2r;
+#endif
 	fftw_real *sigma_data;
 	int sigma_nsamples = 0, min_sigma_nsamples;
 	float sigma = 1.0f;
