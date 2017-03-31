@@ -1,11 +1,11 @@
 Summary: Library and utilities to work with VDIF data
 Name: vlbi-vdifio
 Version: @version@
-Release: 1
+Release: 2
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/vlbi-vdifio-@version@-buildroot
-Requires: gcc >= 4.1.0
+BuildRequires: gcc >= 4.1.0
 Prefix: /usr
 Source: vdifio-@version@.tar.gz
 
@@ -43,7 +43,6 @@ make
 %{_bindir}/extractSingleVDIFThread
 %{_bindir}/extractVDIFThreads
 %{_bindir}/filterVDIF
-%{_bindir}/generateVDIF
 %{_bindir}/countVDIFPackets
 %{_bindir}/printVDIF
 %{_bindir}/printVDIFheader

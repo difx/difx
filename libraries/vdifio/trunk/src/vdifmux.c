@@ -405,7 +405,11 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int nPartialOutput = 0;
 	int nWrongThread = 0;
 	int seconds, frameNum;
-	vdif_header outputHeader;
+	union
+	{
+		vdif_header generic;
+		vdif_edv4_header edv4;
+	} outputHeader;
 	int epoch = -1;
 	int highestSortedDestIndex = -1;
 	int vhUnset = 1;
@@ -516,13 +520,11 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			{
 				/* FIXME: handle heirarchical multiplexing */
 
-				vdif_edv4_header *edv4 = (vdif_edv4_header *)(&outputHeader);
-
-				edv4->dummy = 0;
-				edv4->masklength = vm->nThread/vm->fanoutFactor;
-				edv4->eversion = 4;
-				edv4->syncword = 0xACABFEED;
-				edv4->validitymask = 0;
+				outputHeader.edv4.dummy = 0;
+				outputHeader.edv4.masklength = vm->nThread/vm->fanoutFactor;
+				outputHeader.edv4.eversion = 4;
+				outputHeader.edv4.syncword = 0xACABFEED;
+				outputHeader.edv4.validitymask = 0;
 			}
 			else
 			{
@@ -530,11 +532,11 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			}
 
 			/* use this first good frame to generate the prototype VDIF header for the output */
-			setVDIFNumChannels(&outputHeader, vm->nOutputChan);
-			setVDIFThreadID(&outputHeader, 0);
-			setVDIFFrameBytes(&outputHeader, vm->outputFrameSize);
-			setVDIFFrameInvalid(&outputHeader, 0);
-			epoch = getVDIFEpoch(&outputHeader);
+			setVDIFNumChannels(&outputHeader.generic, vm->nOutputChan);
+			setVDIFThreadID(&outputHeader.generic, 0);
+			setVDIFFrameBytes(&outputHeader.generic, vm->outputFrameSize);
+			setVDIFFrameInvalid(&outputHeader.generic, 0);
+			epoch = getVDIFEpoch(&outputHeader.generic);
 
 			vhUnset = 0;
 		}

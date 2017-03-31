@@ -1,4 +1,4 @@
-AC_INIT([VDIFIO], [1.1], [difxusers <at> nrao.edu])
+AC_INIT([VDIFIO], [1.1], [difx-developers@nrao.edu])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
