@@ -3202,8 +3202,6 @@ static int mergeDifxInputFreqSetsStrict(DifxInput *D)
 		{
 			if(isSameDifxFreqSet(newdfs + newFreqSetId, D->freqSet + freqSetId))
 			{
-				int configId;
-
 				/* match -- no need to make new entry, but need to rewire any configs that reference this one */
 				break;
 			}
