@@ -42,9 +42,6 @@
 #define DEBUG(x) 
 
 void kill_signal (int);
-int setup_net(int isserver, char *hostname, int port, int window_size, 
-	      int *sock);
-int netsend(int sock, char *buf, size_t len);
 double tim(void);
 int encodeShift(int *channels, int bits, int *shift);
 
@@ -71,26 +68,22 @@ static void usage()
 }
 
 int main (int argc, char * const argv[]) {
-  int framesize, nfile, infile, outfile, rate, opt, frameperbuf, nframe, i;
-  int nread, status, nwrote, tmp, nchan, bits, isComplex, legacy, headersize, datasize;
-  int nextract, first, sock, bufsize, odatasize, oframesize, obufsize, oheadersize;
+  int framesize=0, nfile, infile, outfile, rate, opt, frameperbuf, nframe, i;
+  int nread, status, nwrote, tmp, nchan=0, bits, isComplex=0, legacy=0, headersize=0, datasize=0;
+  int nextract=0, first, sock, bufsize=0, odatasize=0, oframesize=0, obufsize, oheadersize=0;
   float ftmp;
-  double t0, t1;
+  double t0;
   char outname[MAXSTR+1] = "";
   char outdir[MAXSTR+1] = "";
-  char tmpstr[MAXSTR+1] = "";
 
-  char *buf, *obuf, *pin, *pout, *slashptr, msg[MAXSTR+50];
-  double startmjd, mjd;
-  struct tm time;
+  char *buf, *obuf=0, *pin, *pout, *slashptr, msg[MAXSTR+50];
   vdif_header *header;
-  unsigned long long filesize, totalframe, totalsent;
+  unsigned long long totalsent;
   
   int offset = 0;
   int outlegacy = 0;
   int concat = 0;
   int net = 0;
-  char postfix[MAXSTR+1] = ".m5b";
   int server = 0;
   int port = 52100;     /* TCP port to use */
   int window_size = -1;	
@@ -512,142 +505,7 @@ void kill_signal (int sig) {
 
 
 
-int setup_net(int isserver, char *hostname, int port, int window_size, 
-	      int *sock) {
-  int ssock, status;
-  unsigned long ip_addr;
-  socklen_t client_len, winlen;
-  struct hostent     *hostptr;
-  struct sockaddr_in server, client;    /* Socket address */
 
-  *sock = 0;
-
-  memset((char *) &server, 0, sizeof(server));
-  server.sin_family = AF_INET;
-  server.sin_port = htons((unsigned short)port); /* Which port number to use */
-
-  /* Create the initial socket */
-  ssock = socket(AF_INET,SOCK_STREAM,0); 
-  if (ssock==-1) {
-    perror("Error creating socket");
-    return(1);
-  }
-
-  if (window_size>0) {
-    status = setsockopt(ssock, SOL_SOCKET, SO_SNDBUF,
-			(char *) &window_size, sizeof(window_size));
-    if (status!=0) {
-      perror("Error setting socket send buffer");
-      close(ssock);
-      return(1);
-    } 
-
-    status = setsockopt(ssock, SOL_SOCKET, SO_RCVBUF,
-			(char *) &window_size, sizeof(window_size));
-    
-    if (status!=0) {
-      perror("Error setting socket receive buffer");
-      close(ssock);
-      return(1);
-    }
-
-    /* Check what the window size actually was set to */
-    winlen = sizeof(window_size);
-    status = getsockopt(ssock, SOL_SOCKET, SO_SNDBUF,
-			(char *) &window_size, &winlen);
-    if (status!=0) {
-      close(ssock);
-      perror("Getting socket options");
-      return(1);
-    }
-    printf("Sending buffersize set to %d Kbytes\n", window_size/1024);
-    
-  }
-
-  if (isserver) {
-
-    /* Initialise server's address */
-    server.sin_addr.s_addr = htonl(INADDR_ANY); /* Anyone can connect */
-  
-    status = bind(ssock, (struct sockaddr *)&server, sizeof(server));
-    if (status!=0) {
-      perror("Error binding socket");
-      close(ssock);
-      return(1);
-    } 
-  
-    /* We are willing to receive conections, using the maximum
-       back log of 1 */
-    status = listen(ssock,1);
-    if (status!=0) {
-      perror("Error binding socket");
-      close(ssock);
-      return(1);
-    }
-
-    printf("Waiting for connection\n");
-
-    /* Accept connection */
-    client_len = sizeof(client);
-    *sock = accept(ssock, (struct sockaddr *)&client, &client_len);
-    if (*sock==-1) {
-      perror("Error connecting to client");
-      close(ssock);
-      return(1);
-    }
-      
-    printf("Got a connection from %s\n",inet_ntoa(client.sin_addr));
-
-  } else {  // Acting as client
-
-    hostptr = gethostbyname(hostname);
-    if (hostptr==NULL) {
-      fprintf(stderr,"Failed to look up hostname %s\n", hostname);
-      close(ssock);
-      return(1);
-    }
-  
-    memcpy(&ip_addr, (char *)hostptr->h_addr, sizeof(ip_addr));
-    server.sin_addr.s_addr = ip_addr;
-  
-    printf("Connecting to %s\n",inet_ntoa(server.sin_addr));
-
-    status = connect(ssock, (struct sockaddr *) &server, sizeof(server));
-    if (status!=0) {
-      perror("Failed to connect to server");
-      close(ssock);
-      return(1);
-    }
-    *sock = ssock;
-  }
-
-  return(0);
-}
-
-int netsend(int sock, char *buf, size_t len) {
-  char *ptr;
-  int ntowrite, nwrote;
-  
-  ptr = buf;
-  ntowrite = len;
-
-  while (ntowrite>0) {
-    nwrote = send(sock, ptr, ntowrite, 0);
-    if (nwrote==-1) {
-      if (errno == EINTR) continue;
-      perror("Error writing to network");
-
-      return(1);
-    } else if (nwrote==0) {
-      printf("Warning: Did not write any bytes!\n");
-      return(1);
-    } else {
-      ntowrite -= nwrote;
-      ptr += nwrote;
-    }
-  }
-  return(0);
-}
 
 double tim(void) {
   struct timeval tv;
