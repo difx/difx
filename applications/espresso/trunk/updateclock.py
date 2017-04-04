@@ -47,7 +47,7 @@ def updateclock(
     newclockoffset = clockoffset + offset_adjust + \
         (newclockepoch-clockepoch)*clockrate*(24.*60.*60.)
     newclockrate = clockrate + rate_adjust
-    return str(newclockoffset), str(newclockrate)
+    return newclockoffset, newclockrate
 
 
 # program starts here
@@ -219,9 +219,9 @@ for line in v2dfile:
         cachecomment = (
                 "# clocks updated on " +
                 time.strftime("%Y-%m-%d %H:%M:%S (%z)"))
-        offsetline = "  clockOffset = " + newclockoffset
-        rateline = "  clockRate = " + newclockrate
-        epochline = "  clockEpoch = " + str(newclockepoch)
+        offsetline = "  clockOffset = {0:0.3f}".format(newclockoffset)
+        rateline = "  clockRate = {0:0.3E}".format(newclockrate)
+        epochline = "  clockEpoch = {0:0.3f}".format(newclockepoch)
 
         cache.insert(-1, cachecomment)
         cache.insert(-1, offsetline)
