@@ -234,8 +234,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         {
         printf ("              sb p 1st a id  z pc bs  freq    bw   ch_id\n");
         for (n=0; n<nprod; n++)     // debug - print out fblock table
-            printf ("    fblock[%03d] %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n"
-                     "                %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n",
+            printf ("   fblock[%03d] %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n"
+                     "               %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n",
                   n, pfb[n].stn[0].sideband, pfb[n].stn[0].pol, pfb[n].stn[0].first_time,
                   pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].zoom, 
                   pfb[n].stn[0].pcal_int, pfb[n].stn[0].bs, pfb[n].stn[0].freq,

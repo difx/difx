@@ -4,6 +4,7 @@
 //  first created from createType1s                  rjc  2012.5.8
 //  broke out put_t101 into a routine, fixed ac's    rjc  2013.9.12
 //  added Van Vleck scale factor calculation         rjc  2015.10.2
+//  added cross auto correlations (e.g. XY, YX)      rjc  2017.4.7
 
 #include <stdio.h>
 #include <string.h>
@@ -42,9 +43,12 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                int scanId)
     {
     int n,
+        m,
         k,
+        is,
         ref,
         rem;
+    char xpol_string[6];
                                     // factors are sqrt (Van Vleck correction) for 1b, 2b case
                                     // quantization correction factor is pi/2 for
                                     // 1x1 bit, or ~1.13 for 2x2 bit (see TMS, p.300)
@@ -130,50 +134,83 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                                     // construct and write type 100 record
     memcpy (t100.baseline, blines+2*nb, 2);
     t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
-    if (a1 == a2)                   // for now, there are no XY autocorrelations
-        t100.nindex /= 2;
     write_t100 (&t100, fout[nb]);
 
-                                    // loop through whole fblock table
-    n = -1;
-    while (pfb[++n].stn[0].ant >= 0)// check for end-of-table marker
+    if (a1 != a2)                   // cross-correlation
         {
+                                    // loop through whole fblock table
+        n = -1;
+        while (pfb[++n].stn[0].ant >= 0) // check for end-of-table marker
+            {
                                     // make sure baseline matches
                                     // and determine reference and remote antennas
-        ref = -1;
-        rem = -1;
-        if (a1 != a2)               // cross-correlation
-            {
-            for (k=0; k<2; k++)
+            ref = -1;
+            rem = -1;
                 {
-                if (a1 == pfb[n].stn[k].ant)
-                    ref = k;
-                if (a2 == pfb[n].stn[k].ant)
-                    rem = k;
-                }
-            if (ref >= 0 && rem >= 0)
-                {
-                put_t101 (&t101, fout[nb], pfb[n].stn[0].find,
-                          pfb[n].stn[0].chan_id, pfb[n].stn[1].chan_id);
-                scale_factor[nb] = SCALE * factor[pfb[n].stn[0].bs - 1]
-                                         * factor[pfb[n].stn[1].bs - 1];
+                for (k=0; k<2; k++)
+                    {
+                    if (a1 == pfb[n].stn[k].ant)
+                        ref = k;
+                    if (a2 == pfb[n].stn[k].ant)
+                        rem = k;
+                    }
+                if (ref >= 0 && rem >= 0)
+                    {
+                    put_t101 (&t101, fout[nb], pfb[n].stn[0].find,
+                              pfb[n].stn[0].chan_id, pfb[n].stn[1].chan_id);
+                    scale_factor[nb] = SCALE * factor[pfb[n].stn[0].bs - 1]
+                                             * factor[pfb[n].stn[1].bs - 1];
+                    }
                 }
             }
+        }
 
-        else                        // auto-correlations
-            {                       // ref station
-            if (a1 == pfb[n].stn[0].ant && pfb[n].stn[0].first_time)
+    else                            // auto-correlation
+        {
+                                    // loop through whole fblock table
+        n = -1;
+        while (pfb[++n].stn[0].ant >= 0) // check for end-of-table marker
+            {
+            for (is=0; is<2; is++)  // loop over reference and remote station
                 {
-                put_t101 (&t101, fout[nb], pfb[n].stn[0].find,
-                          pfb[n].stn[0].chan_id, pfb[n].stn[0].chan_id);
-                scale_factor[nb] = SCALE;
-                }
-                                    // rem station
-            if (a1 == pfb[n].stn[1].ant && pfb[n].stn[1].first_time)
-                {
-                put_t101 (&t101, fout[nb], pfb[n].stn[1].find,
-                          pfb[n].stn[1].chan_id, pfb[n].stn[1].chan_id);
-                scale_factor[nb] = SCALE;
+                                    // first time antenna match?
+                if (a1 == pfb[n].stn[is].ant && pfb[n].stn[is].first_time)
+                    {
+                    put_t101 (&t101, fout[nb], pfb[n].stn[is].find,
+                              pfb[n].stn[is].chan_id, pfb[n].stn[is].chan_id);
+                    scale_factor[nb] = SCALE;
+                                    // form cross-pol chan_id string 
+                    strcpy (xpol_string, pfb[n].stn[is].chan_id);
+                    switch (xpol_string[4])
+                        {
+                        case 'X': 
+                             xpol_string[4] = 'Y';
+                             break;
+                        case 'Y': 
+                             xpol_string[4] = 'X';
+                             break;
+                        case 'L': 
+                             xpol_string[4] = 'R';
+                             break;
+                        case 'R': 
+                             xpol_string[4] = 'L';
+                             break;
+                        default:
+                             fprintf (stderr, "uh oh! unknown polarization <%s> in fblock table\n",
+                                     xpol_string[4]);
+                        }
+                                    // if opposite chan_id present, create a
+                                    // type 101 for that as well
+                                    // examine fblock table for xpol entry
+                    m = -1;
+                    while (pfb[++m].stn[0].ant >= 0)
+                        if (strcmp (pfb[m].stn[1-is].chan_id, xpol_string) == 0
+                         && pfb[m].stn[1-is].first_time)
+                            {
+                            put_t101 (&t101, fout[nb], pfb[n].stn[is].find,
+                                      pfb[n].stn[is].chan_id, xpol_string);
+                            }
+                    }
                 }
             }
         }
