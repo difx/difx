@@ -199,13 +199,17 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                              fprintf (stderr, "uh oh! unknown polarization <%s> in fblock table\n",
                                      xpol_string[4]);
                         }
-                                    // if opposite chan_id present, create a
+                                    // if opposite chan_id present for ant, create a
                                     // type 101 for that as well
                                     // examine fblock table for xpol entry
                     m = -1;
                     while (pfb[++m].stn[0].ant >= 0)
-                        if (strcmp (pfb[m].stn[1-is].chan_id, xpol_string) == 0
-                         && pfb[m].stn[1-is].first_time)
+                        if ((strcmp (pfb[m].stn[0].chan_id, xpol_string) == 0
+                          && pfb[m].stn[0].ant == a1
+                          && pfb[m].stn[0].first_time)
+                         || (strcmp (pfb[m].stn[1].chan_id, xpol_string) == 0
+                          && pfb[m].stn[1].ant == a1
+                          && pfb[m].stn[1].first_time))
                             {
                             put_t101 (&t101, fout[nb], pfb[n].stn[is].find,
                                       pfb[n].stn[is].chan_id, xpol_string);
