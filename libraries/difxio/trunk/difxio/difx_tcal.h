@@ -45,11 +45,12 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <limits.h>
 
 #define MAX_DIFX_TCAL_ANTENNA_LENGTH	8
 #define MAX_DIFX_TCAL_RECEIVER_LENGTH	8
 #define MAX_DIFX_TCAL_TYPE_LENGTH	16
-#define DIFX_TCAL_FILENAME_LENGTH	256
+#define DIFX_TCAL_FILENAME_LENGTH	PATH_MAX
 
 /* Note! Keep this in sync with difxTcalTypeString in difx_tcal.c */
 enum DifxTcalType

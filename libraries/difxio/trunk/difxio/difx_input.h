@@ -31,6 +31,7 @@
 #define __DIFX_INPUT_H__
 
 #include <stdio.h>
+#include <limits.h>
 #include "parsedifx.h"
 #include "difx_radioastron.h"
 
@@ -48,12 +49,12 @@
 #define MAX_PHASED_ARRAY_FORMAT_STRING_LENGTH	16
 #define MAX_TAPER_FUNCTION_STRING_LENGTH	16
 
-#define DIFXIO_FILENAME_LENGTH		256
+#define DIFXIO_FILENAME_LENGTH		PATH_MAX
 #define DIFXIO_NAME_LENGTH		32
 #define DIFXIO_FORMAT_LENGTH		128
 #define DIFXIO_CALCODE_LENGTH		4
 #define DIFXIO_VERSION_LENGTH		64
-#define DIFXIO_HOSTNAME_LENGTH		32
+#define DIFXIO_HOSTNAME_LENGTH		256
 #define DIFXIO_OBSCODE_LENGTH		8
 #define DIFXIO_SESSION_LENGTH		8
 #define DIFXIO_SHELF_LENGTH		8

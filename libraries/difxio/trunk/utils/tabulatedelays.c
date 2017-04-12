@@ -47,7 +47,7 @@ void usage()
 	printf("--az       print azimuth [deg], rate [deg/s] instead of delay, rate\n\n");
 	printf("--el       print elevation [deg], rate [deg/s] instead of delay, rate\n\n");
 	printf("--dry      print dry atmosphere delay [us]\n\n");
-	printf("--wet      print dry atmosphere delay [us]\n\n");
+	printf("--wet      print wet atmosphere delay [us]\n\n");
 	printf("--uvw      print antenna u,v,w [m] instead of delay,date\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 	printf("All normal program output goes to stdout.\n\n");
