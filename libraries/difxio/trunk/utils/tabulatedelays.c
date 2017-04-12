@@ -34,8 +34,8 @@
 
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20150622";
+const char version[] = "0.2";
+const char verdate[] = "20170412";
 
 void usage()
 {
@@ -121,6 +121,7 @@ int main(int argc, char **argv)
 	DifxMergeOptions mergeOptions;
 
 	mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
+	mergeOptions.freqMergeMode = FreqMergeModeUnion;
 	
 	for(a = 1; a < argc; ++a)
 	{
