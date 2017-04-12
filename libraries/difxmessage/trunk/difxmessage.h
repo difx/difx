@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2016 by Walter Brisken                             *
+ *   Copyright (C) 2007-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,6 +31,7 @@
 #define __DIFX_MESSAGE_H__
 
 #include <stdio.h>
+#include <limits.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +40,7 @@ extern "C" {
 #define DIFX_MESSAGE_IDENTIFIER_LENGTH	32
 #define DIFX_MESSAGE_PARAM_LENGTH	32
 #define DIFX_MESSAGE_VERSION_LENGTH	32
-#define DIFX_MESSAGE_FILENAME_LENGTH	128
+#define DIFX_MESSAGE_FILENAME_LENGTH	PATH_MAX
 #define DIFX_MESSAGE_COMMENT_LENGTH	512
 #define DIFX_MESSAGE_MAX_TARGETS	128
 #define DIFX_MESSAGE_LENGTH		1500
