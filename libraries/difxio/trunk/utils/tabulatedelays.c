@@ -120,6 +120,7 @@ int main(int argc, char **argv)
 	int item = ItemDelay;
 	DifxMergeOptions mergeOptions;
 
+	resetDifxMergeOptions(&mergeOptions);
 	mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
 	mergeOptions.freqMergeMode = FreqMergeModeUnion;
 	

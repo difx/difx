@@ -60,6 +60,7 @@ int main(int argc, char **argv)
 	const char *residualDelayFile = 0;
 	FILE *in;
 
+	resetDifxMergeOptions(&mergeOptions);
 	mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
 	mergeOptions.freqMergeMode = FreqMergeModeUnion;
 	
