@@ -38,12 +38,13 @@
  * in the future */
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions)
 {
-	static const DifxMergeOptions defaultMergeOptions;	/* initialized to zeros */
+	DifxMergeOptions defaultMergeOptions;
 	int f;
 	int a1;
 
 	if(mergeOptions == 0)
 	{
+		resetDifxMergeOptions(&defaultMergeOptions);
 		mergeOptions = &defaultMergeOptions;
 	}
 
@@ -106,7 +107,7 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions)
 {
-	static const DifxMergeOptions defaultMergeOptions;	/* initialized to zeros */
+	DifxMergeOptions defaultMergeOptions;
 	DifxInput *D;
 	DifxJob *job;
 	int *jobIdRemap;
@@ -121,6 +122,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 
 	if(mergeOptions == 0)
 	{
+		resetDifxMergeOptions(&defaultMergeOptions);
 		mergeOptions = &defaultMergeOptions;
 	}
 
