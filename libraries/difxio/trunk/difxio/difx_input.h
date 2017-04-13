@@ -877,6 +877,8 @@ DifxPolyModelXYZExtension ***newDifxPolyModelXYZExtensionArray(int nAntenna, int
 DifxPolyModelXYZExtension *dupDifxPolyModelXYZExtensionColumn(const DifxPolyModelXYZExtension *src, int nPoly);
 void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, int nAntenna, int nSrcs);
 
+int evaluateDifxInputDelayRate(long double *delay, long double *rate, const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId);
+
 /* DifxScan functions */
 DifxScan *newDifxScanArray(int nScan);
 void deleteDifxScanInternals(DifxScan *ds);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -226,4 +226,115 @@ void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, int
 		}
 		free(xyze);
 	}
+}
+
+/* Use Cramer's rule to evaluate polynomial */
+static long double evaluatePoly(const double *p, int n, double x)
+{
+	long double y;
+	int i;
+
+	if(n == 1)
+	{
+		return p[0];
+	}
+
+	y = p[n-1];
+
+	for(i = n-2; i >= 0; --i)
+	{
+		y = x*y + p[i];
+	}
+
+	return y;
+}
+
+static long double evaluatePolyDeriv(const double *p, int n, double x)
+{
+	long double y;
+	int i;
+
+	if(n == 1)
+	{
+		return 0;
+	}
+
+	if(n == 2)
+	{
+		return p[1];
+	}
+
+	y = (n-1)*p[n-1];
+
+	for(i = n-2; i >= 1; --i)
+	{
+		y = x*y + i*p[i];
+	}
+
+	return y;
+}
+
+/* outputs delay in us and rate in us/s */
+/* set sourceId = -1 to not select on source */
+/* return value = 0 on success, < 0 on error */
+int evaluateDifxInputDelayRate(long double *delay, long double *rate, const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId)
+{
+	int scanId;
+	double mjd;
+
+	mjd = intmjd + sec/86400.0;	/* low precision time for finding scan */
+
+	for(scanId = 0; scanId < D->nScan; ++scanId)
+	{
+		const DifxScan *scan;
+		int p;	/* polynomial index in scan */
+
+		scan = D->scan + scanId;
+
+		if(scan->mjdStart > mjd || scan->mjdEnd < mjd)
+		{
+			continue;
+		}
+
+		if(sourceId >= 0 && sourceId != scan->pointingCentreSrc)
+		{
+			continue;
+		}
+
+		if(antennaId >= scan->nAntenna || scan->im[antennaId] == 0)
+		{
+			continue;
+		}
+
+		for(p = 0; p < scan->nPoly; ++p)
+		{
+			const DifxPolyModel *P;
+			double mjdStart, mjdEnd;
+			double deltaT;
+
+			P = scan->im[antennaId][0] + p;
+			mjdStart = P->mjd + P->sec/86400.0;
+			mjdEnd = mjdStart + P->validDuration/86400.0;
+
+			if(mjd < mjdStart || mjd > mjdEnd)
+			{
+				continue;
+			}
+
+			deltaT = 86400*(intmjd - P->mjd) + (sec - P->sec);
+
+			if(delay)
+			{
+				*delay = evaluatePoly(P->delay, P->order+1, deltaT);
+			}
+			if(*rate)
+			{
+				*rate = evaluatePolyDeriv(P->delay, P->order+1, deltaT);
+			}
+
+			return 0;
+		}
+	}
+
+	return -1;
 }

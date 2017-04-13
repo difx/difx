@@ -33,7 +33,7 @@
 #include "difx_input.h"
 
 const char program[] = "tabulatedelays";
-const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
+const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
 const char version[] = "0.2";
 const char verdate[] = "20170412";
 

@@ -18,6 +18,7 @@ bin_PROGRAMS = \
 	$(gsl_progs) \
 	avgDiFX \
 	calcderiv \
+	computetotals \
 	difxcalculator \
 	tabulatedelays
 
@@ -29,6 +30,9 @@ avgDiFX_SOURCES = \
 
 calcderiv_SOURCES = \
 	calcderiv.c
+
+computetotals_SOURCES = \
+	computetotals.c
 
 difxcalculator_SOURCES = \
 	difxcalculator.c
