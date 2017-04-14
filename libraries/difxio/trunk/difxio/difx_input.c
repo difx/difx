@@ -3226,9 +3226,6 @@ static int mergeDifxInputFreqSetsStrict(DifxInput *D)
 	/* Remove exisitng frequency setups and put the new ones in place */
 	deleteDifxFreqSetArray(D->freqSet, D->nFreqSet);
 	D->freqSet = newdfs;
-
-	printf("mergeDifxInputFreqSetsStrict: went from %d to %d freq sets\n", D->nFreqSet, n);
-
 	D->nFreqSet = n;
 
 	return 0;
@@ -3312,9 +3309,6 @@ static int mergeDifxInputFreqSetsUnion(DifxInput *D)
 	/* Remove exisitng frequency setups and put the new one in place */
 	deleteDifxFreqSetArray(D->freqSet, D->nFreqSet);
 	D->freqSet = newdfs;
-
-	printf("mergeDifxInputFreqSetsUnion: went from %d to 1 freq sets\n", D->nFreqSet);
-	
 	D->nFreqSet = 1;
 
 	/* Make all configs point to the one output */
