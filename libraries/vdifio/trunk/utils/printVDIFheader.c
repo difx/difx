@@ -37,7 +37,7 @@
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
 const char version[] = "0.5";
-const char verdate[] = "20170328";
+const char verdate[] = "20170418";
 
 static void usage()
 {
@@ -46,7 +46,7 @@ static void usage()
 	fprintf(stderr, "\nUsage: %s <VDIF input file> [<framesize> [<prtlev> [<offset>] ] ]\n", program);
 	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read (- for stdin)\n");
 	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA, 8224 for R2DBE)\n");
-	fprintf(stderr, "\n<prtlev> is output type: hex short long\n");
+	fprintf(stderr, "\n<prtlev> is output type: none hex short long\n");
 	fprintf(stderr, "\n<offset> is a number of bytes to skip at start of file\n\n");
 	fprintf(stderr, "In normal operation this program searches for valid VDIF frames.\n");
 	fprintf(stderr, "The heuristics used to identify valid frames are somewhat weak as\n");
@@ -78,6 +78,10 @@ int main(int argc, char **argv)
 	int mk6PacketSize = 0;
 	int mk6BlockHeaderSize = 0;
 	int framesPerMark6Block = 0;
+	int printHeader = 1;		/* if 1, print normal output, otherwise just errors */
+	int lastSecond = -1;
+	int nFrame = 0;
+
 
 	if(argc < 2 || argc > 5)
 	{
@@ -152,6 +156,10 @@ int main(int argc, char **argv)
 		{
 			lev = VDIFHeaderPrintLevelLong;
 			force = 1;
+		}
+		else if(strcmp(argv[3], "none") == 0)
+		{
+			printHeader = 0;	// just print errors
 		}
 		else
 		{
@@ -294,20 +302,38 @@ int main(int argc, char **argv)
 				}
 			}
 
-			if(lev == VDIFHeaderPrintLevelShort && framesread % 24 == 0)
+			if(lastSecond != header->seconds)
 			{
-				printf("FrameNum ");
-				printVDIFHeader(header, VDIFHeaderPrintLevelColumns);
+				if(lastSecond >= 0)
+				{
+					printf("Second %d had %d frames\n", lastSecond, nFrame);
+				}
+				else
+				{
+					printf("First second = %d\n", header->seconds);
+				}
+				nFrame = 0;
+				lastSecond = header->seconds;
 			}
-			if(lev == VDIFHeaderPrintLevelLong)
+			++nFrame;
+
+			if(printHeader)
 			{
-				printf("Frame %lld ", framesread);
+				if(lev == VDIFHeaderPrintLevelShort && framesread % 24 == 0)
+				{
+					printf("FrameNum ");
+					printVDIFHeader(header, VDIFHeaderPrintLevelColumns);
+				}
+				if(lev == VDIFHeaderPrintLevelLong)
+				{
+					printf("Frame %lld ", framesread);
+				}
+				else
+				{
+					printf("%8lld ", framesread);
+				}
+				printVDIFHeader(header, lev);
 			}
-			else
-			{
-				printf("%8lld ", framesread);
-			}
-			printVDIFHeader(header, lev);
 			
 			index += framesize;
 			++framesread;
