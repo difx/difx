@@ -1,0 +1,13 @@
+
+aclocal 
+libtoolize --copy --force
+autoconf
+autoheader
+automake -a -c
+
+./configure 
+
+make
+# (su root?)
+make install
+
