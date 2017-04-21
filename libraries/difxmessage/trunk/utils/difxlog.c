@@ -160,6 +160,7 @@ int main(int argc, char **argv)
 
 		from[0] = 0;
 		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
+		time(&t);
 		if(l <= 0)
 		{
 			struct timespec ts;
@@ -173,7 +174,6 @@ int main(int argc, char **argv)
 		message[l] = 0;
 		difxMessageParse(&G, message);
 
-		time(&t);
 		strcpy(timestr, ctime(&t));
 		timestr[strlen(timestr)-1] = 0;
 
