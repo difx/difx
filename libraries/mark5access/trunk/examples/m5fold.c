@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2017 by Walter Brisken and Chris Phillips          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,23 +37,21 @@
 
 const char program[] = "m5fold";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.5";
-const char verdate[] = "20130320";
+const char version[] = "1.6";
+const char verdate[] = "20170422";
 
 const int ChunkSize = 10000;
 
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
 	printf("\nBeing killed.  Partial results will be saved.\n\n");
 	die = 1;
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 static void usage(const char *pgm)
@@ -61,12 +59,10 @@ static void usage(const char *pgm)
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 power folder.  Can use VLBA, Mark3/4, Mark5B and VDIF "
-		"formats using the\nmark5access library.\n\n");
+	printf("A Mark5 power folder.  Can use VLBA, Mark3/4, Mark5B and VDIF " "formats using the\nmark5access library.\n\n");
 	printf("Usage: %s <infile> <dataformat> <nbin> <nint> <freq> <outfile> [<offset>]\n\n", program);
 	printf("  <infile> is the name of the input file\n\n");
-	printf("  <dataformat> should be of the form: "
-		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
+	printf("  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
@@ -86,12 +82,10 @@ static void usage(const char *pgm)
 	printf("Note: This program is useless on 1-bit quantized data\n\n");
 }
 
-static int fold(const char *filename, const char *formatname, int nbin, int nint,
-	double freq, const char *outfile, long long offset)
+static int fold(const char *filename, const char *formatname, int nbin, int nint, double freq, const char *outfile, long long offset)
 {
 	struct mark5_stream *ms;
-	double **data=0, **bins=0;
-	double complex **cdata=0;
+	double **bins=0;
 	int **weight;
 	int c, i, j, k, status;
 	int nif, bin;
@@ -135,11 +129,11 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 
 	mark5_stream_print(ms);
 
-	if (ms->complex_decode != 0) 
-	  {
-	    printf("Complex decode\n");
-	    docomplex = 1;
-	  }
+	if(ms->complex_decode != 0) 
+	{
+		printf("Complex decode\n");
+		docomplex = 1;
+	}
 
 	sampnum = (long long)((double)ms->ns*(double)ms->samprate*1.0e-9 + 0.5);
 
@@ -156,136 +150,151 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 
 	nif = ms->nchan;
 
-	if (!docomplex) 
-	  {
-	    data = (double **)malloc(nif*sizeof(double *));
-	    bins = (double **)malloc(nif*sizeof(double *));
-	    weight = (int **)malloc(nif*sizeof(int *));
-	    for(i = 0; i < nif; i++)
-	      {
-		data[i] = (double *)malloc(ChunkSize*sizeof(double));
+	bins = (double **)malloc(nif*sizeof(double *));
+	weight = (int **)malloc(nif*sizeof(int *));
+	for(i = 0; i < nif; ++i)
+	{
 		bins[i] = (double *)calloc(nbin, sizeof(double));
 		weight[i] = (int *)calloc(nbin, sizeof(int));
-	      }
-	    
-	    if(ms->ns < 0 || ms->ns > 1000000000)
-	      {
-		fflush(stdout);
-		fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensable: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
-		
-		sampnum = 0;
-	      }
-	    
-	    for(j = 0; j < nint; j++)
-	      {
-		if(die)
-		  {
-		    break;
-		  }
-		
-		status = mark5_stream_decode_double(ms, ChunkSize, data);
-		
-		if(status < 0)
-		  {
-		    break;
-		  }
-		else
-		  {
-		    total += ChunkSize;
-		    unpacked += status;
-		  }
-		
-		if(ms->consecutivefails > 5)
-		  {
-		    printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
-			
-		    break;
-		  }
+	}
 
-		for(k = 0; k < ChunkSize; k++)
-		  {
-		    if(data[0][k] != 0.0)
-		      {
-			bin = ((long long)(sampnum*R)) % nbin;
-			for(i = 0; i < nif; i++)
-			  {
-			    bins[i][bin] += data[i][k]*data[i][k];
-			    weight[i][bin]++;
-			  }
-		      }
-		    sampnum++;
-		  }
-	      }
-	  } 
+	if(!docomplex) 
+	{
+		double **data;
+
+		data = (double **)malloc(nif*sizeof(double *));
+		for(i = 0; i < nif; ++i)
+		{
+			data[i] = (double *)malloc(ChunkSize*sizeof(double));
+		}
+
+		if(ms->ns < 0 || ms->ns > 1000000000)
+		{
+			fflush(stdout);
+			fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensable: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
+
+			sampnum = 0;
+		}
+
+		for(j = 0; j < nint; ++j)
+		{
+			if(die)
+			{
+				break;
+			}
+
+			status = mark5_stream_decode_double(ms, ChunkSize, data);
+		
+			if(status < 0)
+			{
+				break;
+			}
+			else
+			{
+				total += ChunkSize;
+				unpacked += status;
+			}
+
+			if(ms->consecutivefails > 5)
+			{
+				printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
+
+				break;
+			}
+
+			for(k = 0; k < ChunkSize; ++k)
+			{
+				if(data[0][k] != 0.0)
+				{
+					bin = ((long long)(sampnum*R)) % nbin;
+					for(i = 0; i < nif; ++i)
+					{
+						bins[i][bin] += data[i][k]*data[i][k];
+						++weight[i][bin];
+					}
+				}
+				++sampnum;
+			}
+		}
+
+		for(i = 0; i < nif; ++i)
+		{
+			free(data[i]);
+		}
+		free(data);
+	} 
 	else 
-	  {
-	    cdata = (complex double **)malloc(nif*sizeof(double complex*));
-	    bins = (double **)malloc(nif*sizeof(double *));
-	    weight = (int **)malloc(nif*sizeof(double *));
-	    for(i = 0; i < nif; i++)
-	      {
-		cdata[i] = (complex double *)malloc(ChunkSize*sizeof(complex double));
-		bins[i] = (double *)calloc(nbin, sizeof(double));
-		weight[i] = (int *)calloc(nbin, sizeof(int));
-	      }
-	    
-	    if(ms->ns < 0 || ms->ns > 1000000000)
-	      {
-		fflush(stdout);
-		fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensable: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
+	{
+		double complex **cdata=0;
 		
-		sampnum = 0;
-	      }
-	    
-	    for(j = 0; j < nint; j++)
-	      {
-		if(die)
-		  {
-		    break;
-		  }
-		
-		status = mark5_stream_decode_double_complex(ms, ChunkSize, cdata);
-		
-		if(status < 0)
-		  {
-		    break;
-		  }
-		else
-		  {
-		    total += ChunkSize;
-		    unpacked += status;
-		  }
-		
-		if(ms->consecutivefails > 5)
-		  {
-		    printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
-			
-		    break;
-		  }
+		cdata = (complex double **)malloc(nif*sizeof(double complex*));
+		for(i = 0; i < nif; ++i)
+		{
+			cdata[i] = (complex double *)malloc(ChunkSize*sizeof(complex double));
+		}
 
-		for(k = 0; k < ChunkSize; k++)
-		  {
-		    if(cdata[0][k] != 0.0)
-		      {
-			bin = ((long long)(sampnum*R)) % nbin;
-			for(i = 0; i < nif; i++)
-			  {
-			    bins[i][bin] += creal(cdata[i][k])*creal(cdata[i][k]) +
-			                   cimag(cdata[i][k])*cimag(cdata[i][k]);
-			    weight[i][bin]++;
-			  }
-		      }
-		    sampnum++;
-		  }
-	      }
-	  }
+		if(ms->ns < 0 || ms->ns > 1000000000)
+		{
+			fflush(stdout);
+			fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensable: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
+
+			sampnum = 0;
+		}
+
+		for(j = 0; j < nint; ++j)
+		{
+			if(die)
+			{
+				break;
+			}
+
+			status = mark5_stream_decode_double_complex(ms, ChunkSize, cdata);
+
+			if(status < 0)
+			{
+				break;
+			}
+			else
+			{
+				total += ChunkSize;
+				unpacked += status;
+			}
+
+			if(ms->consecutivefails > 5)
+			{
+				printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
+
+				break;
+			}
+
+			for(k = 0; k < ChunkSize; ++k)
+			{
+				if(cdata[0][k] != 0.0)
+				{
+					bin = ((long long)(sampnum*R)) % nbin;
+					for(i = 0; i < nif; ++i)
+					{
+						bins[i][bin] += cdata[i][k]*~cdata[i][k];
+						++weight[i][bin];
+					}
+				}
+				++sampnum;
+			}
+		}
+
+		for(i = 0; i < nif; ++i)
+		{
+			free(cdata[i]);
+		}
+		free(cdata);
+	}
 
 	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
 
 	/* normalize */
-	for(k = 0; k < nbin; k++)
+	for(k = 0; k < nbin; ++k)
 	{
-		for(i = 0; i < nif; i++)
+		for(i = 0; i < nif; ++i)
 		{
 			if(weight[i][k]) 
 			{
@@ -298,19 +307,19 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 	/* convert the mean quantized voltage squared to nominal power */
 	if(docorrection)
 	{
-		for(k = 0; k < nbin; k++)
+		for(k = 0; k < nbin; ++k)
 		{
-			for(i = 0; i < nif; i++)
+			for(i = 0; i < nif; ++i)
 			{
 				bins[i][k] = correct_2bit_power(bins[i][k]);
 			}
 		}
 	}
 
-	for(c = 0; c < nbin; c++)
+	for(c = 0; c < nbin; ++c)
 	{
 		fprintf(out, "%11.9f ", c/(freq*nbin));
-		for(i = 0; i < nif; i++)
+		for(i = 0; i < nif; ++i)
 		{
 			fprintf(out, " %f", bins[i][c]);
 		}
@@ -319,19 +328,11 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 
 	fclose(out);
 
-	for(i = 0; i < nif; i++)
+	for(i = 0; i < nif; ++i)
 	{
-	  if (docomplex)
-		free(cdata[i]);
-	  else
-		free(data[i]);
-	  free(bins[i]);
-	  free(weight[i]);
+		free(bins[i]);
+		free(weight[i]);
 	}
-	if (docomplex)
-	  free(cdata);
-	else
-	  free(data);
 	free(bins);
 	free(weight);
 
@@ -346,6 +347,7 @@ int main(int argc, char **argv)
 	int nbin, nint;
 	double freq;
 	int retval;
+	struct sigaction new_sigint_action;
 
 	if(argc < 6)
 	{
@@ -354,7 +356,11 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset (&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, 0, &old_sigint_action);
+	sigaction(SIGINT, &new_sigint_action, 0);
 
 	nbin = atol(argv[3]);
 	nint = atol(argv[4]);
