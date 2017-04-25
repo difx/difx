@@ -66,3 +66,6 @@ class ExperimentType(object):
 
 class User(object):
     pass
+
+class ExportFile(object):
+	pass
