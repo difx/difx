@@ -10,7 +10,7 @@ Version 2.5.0
 * Split vex2difx.cpp into smaller pieces (in progress)
 * If baseband data files are provided via file lists and some jobs have
   missing data, exlude antennas as necessary and write a "nodata" file
-* Allow phase cal interval of 200 MHz (KVN) without warning since exraction works
+* Allow phase cal interval of 200 MHz (KVN) without warning since extraction works
 * Fix guardNS calculation (finally!)...
   - Needed to consider bits per sample and number of baseband channels
   - Swiftly moving sources and/or antennas could still trigger this problem
@@ -23,8 +23,6 @@ Version 2.5.0
   - Load vex file without reference to the CorrParams structure (.v2d file)
   - Data (files, modules, network info) are tied to a VexAntenna structure
   - Multiple data streams (VexStream objects) are referenced from setups
-  - Some incomplete migrations remain:
-    - eventually job construction should not directly reference CorrParams structure.
 * Don't export the vex library anymore.  It causes some trouble
 * Some other configure.ac / Makefile.am cleanups
 * If EXPER section is missing or incomplete, let user know and if forced, make assumptions.
