@@ -357,10 +357,9 @@ int main(int argc, char **argv)
 	}
 
 	new_sigint_action.sa_handler = siginthand;
-	sigemptyset (&new_sigint_action.sa_mask);
+	sigemptyset(&new_sigint_action.sa_mask);
 	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, 0, &old_sigint_action);
-	sigaction(SIGINT, &new_sigint_action, 0);
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	nbin = atol(argv[3]);
 	nint = atol(argv[4]);
