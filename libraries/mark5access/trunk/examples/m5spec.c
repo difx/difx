@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Chris Phillips            *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Chris Phillips            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,23 +46,21 @@
 
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
-const char version[] = "1.3.2";
-const char verdate[] = "20150730";
+const char version[] = "1.4";
+const char verdate[] = "20170426";
 
-int die = 0;
+volatile int die = 0;
 
 typedef enum {VLBA=1, DBBC, NOPOL} polmodetype;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
 	printf("\nBeing killed.  Partial results will be saved.\n\n");
 	die = 1;
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 static void usage(const char *pgm)
@@ -442,6 +440,7 @@ int main(int argc, char **argv)
 	int doublesideband = 0;
 #if USEGETOPT
 	int opt;
+	struct sigaction new_sigint_action;
 	struct option options[] = {
 		{"double", 0, 0, 'd'}, // Double sideband complex
 		{"dbbc", 0, 0, 'B'},  // dBBC channel ordering
@@ -479,9 +478,6 @@ int main(int argc, char **argv)
 #else
 	int optind=1;
 #endif
-
-	oldsiginthand = signal(SIGINT, siginthand);
-
 
 	if(argc-optind == 1)
 	{
@@ -554,8 +550,13 @@ int main(int argc, char **argv)
 
 	if(argc-optind > 5)
 	{
-		offset=atoll(argv[optind+5]);
+		offset = atoll(argv[optind+5]);
 	}
+
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband);
 

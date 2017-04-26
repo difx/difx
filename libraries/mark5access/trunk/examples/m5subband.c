@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Chris Phillips            *
+ *   Copyright (C) 2008-2017 by Walter Brisken, Jan Wagner & Chris Phillips *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -66,8 +66,8 @@ typedef float fftw_real;
 
 const char program[] = "m5subband";
 const char author[]  = "Jan Wagner";
-const char version[] = "1.1.8";
-const char verdate[] = "20170203";
+const char version[] = "1.2";
+const char verdate[] = "20170426";
 
 static uint32_t m_VDIF_refep_MJDs[] =
 {
@@ -131,18 +131,16 @@ void generate_window_boxcar(fftw_real *wf, int L);
 // Signals (Ctrl-C)
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
 	printf("\nBeing killed.  Partial results will be saved.\n\n");
 	die = 1;
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 
@@ -890,6 +888,7 @@ int main(int argc, char **argv)
 	char *infile, *format, *outfile;
 	int refmjd = 57000;
 	int retval;
+	struct sigaction new_sigint_action;
 
 	FilterConfig_t fcfg;
 	fcfg.npoints = DEFAULT_IDFT_LEN;
@@ -973,8 +972,6 @@ int main(int argc, char **argv)
 		offset = atoll(argv[8]);
 	}
 
-	oldsiginthand = signal(SIGINT, siginthand);
-
 	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(infile, offset),
 		new_mark5_format_generic_from_string(format) );
@@ -1023,6 +1020,11 @@ int main(int argc, char **argv)
 	}
 
 	fdout = open(outfile, O_CREAT|O_TRUNC|O_WRONLY, S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH);
+
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	retval = filterRealData(infile, ms, fdout, &fcfg);
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011,2013 by Walter Brisken, Chris Phillips        *
+ *   Copyright (C) 2010-2017 by Walter Brisken, Chris Phillips             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,22 +38,20 @@
 
 const char program[] = "m5timeseries";
 const char author[]  = "Chris Phillips";
-const char version[] = "0.1";
-const char verdate[] = "20130320";
+const char version[] = "0.2";
+const char verdate[] = "20170426";
 
 const int ChunkSize = 10000;
 
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j) {
   printf("\nBeing killed.  Partial results will be saved.\n\n");
   die = 1;
 
-  signal(SIGINT, oldsiginthand);
+  sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 static void usage(const char *pgm) {
@@ -260,13 +258,12 @@ int main(int argc, char **argv) {
   long long offset = 0;
   double time, tint;
   int retval;
+  struct sigaction new_sigint_action;
 
   if(argc < 6){
     usage(argv[0]);
     return EXIT_FAILURE;
   }
-
-  oldsiginthand = signal(SIGINT, siginthand);
 
   tint = atof(argv[3]);
   time = atof(argv[4]);
@@ -279,6 +276,11 @@ int main(int argc, char **argv) {
   if(argc > 6)	{
     offset = atoll(argv[6]);
   }
+
+  new_sigint_action.sa_handler = siginthand;
+  sigemptyset(&new_sigint_action.sa_mask);
+  new_sigint_action.sa_flags = 0;
+  sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
   retval = timeaverage(argv[1], argv[2], tint, time, argv[5], offset);
 

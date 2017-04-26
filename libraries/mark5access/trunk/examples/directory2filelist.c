@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2016 by Helge Rottmann                             *
+ *   Copyright (C) 2011-2017 by Helge Rottmann                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -53,18 +53,16 @@ const int MJD_UNIX0 = 40587;	// MJD at beginning of unix time
 
 static int64_t eofReadLength = (80000+40000);
 
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
 	fprintf(stderr, "\nBeing killed.\n\n");
 	die = 1;
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 int usage(const char *pgm, int defaultMJD)
@@ -294,8 +292,7 @@ int main(int argc, char **argv)
 	char *dir;
 	char *fmt;
 	int defaultMJD;
-
-	oldsiginthand = signal(SIGINT, siginthand);
+	struct sigaction new_sigint_action;
 
 	defaultMJD = time(0)/86400 + MJD_UNIX0;
 
@@ -308,6 +305,11 @@ int main(int argc, char **argv)
 	
 		return EXIT_FAILURE;
 	}
+
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	dir = argv[1];
 	fmt = argv[2];

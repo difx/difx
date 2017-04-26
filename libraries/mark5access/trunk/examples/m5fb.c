@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken & Chris Phillips & Richard Dodson *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Chris Phillips & Richard Dodson *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,25 +47,23 @@
 const char program[] = "m5fb";
 const char author[]  = "Richard Dodson";
 //  Copied extensively from m5spec by Walter Brisken & Chris Phillips
-const char version[] = "1.1";
-const char verdate[] = "20150521";
+const char version[] = "1.2";
+const char verdate[] = "20170426";
 
-int die = 0;
+volatile int die = 0;
+
+struct sigaction old_sigint_action;
 
 typedef enum {VLBA=1, DBBC, NOPOL} polmodetype;
 
 struct hd_info { int nchan; int nint; float freq; float max; float min; float mean; int nbit; char polid[16]; char *source;} ;
-
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
 
 void siginthand(int j)
 {
 	printf("\nBeing killed.  Partial results will be saved.\n\n");
 	die = 1;
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 static void usage(const char *pgm)
@@ -624,6 +622,7 @@ int main(int argc, char **argv)
 	char *ifid="ULULULULULULULUL",*polid="LLLLLLLLLLLLLLLL",*tmp; // 16 IFs swapping Upper Lower, All LHC
 #if USEGETOPT
 	int opt;
+	struct sigaction new_sigint_action;
 	struct option options[] = {
 		{"dbbc", 0, 0, 'B'},
 		{"nopol", 0, 0, 'P'},
@@ -679,9 +678,6 @@ int main(int argc, char **argv)
 #else
 	int optind=1;
 #endif
-
-	oldsiginthand = signal(SIGINT, siginthand);
-
 
 	if((argc-optind) == 1)
 	{
@@ -785,6 +781,11 @@ int main(int argc, char **argv)
 	{
 		offset=atoll(argv[optind+5]);
 	}
+
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	retval = spec(
 		argv[optind], argv[optind+1], (1-fftmode*2)*nchan, nint,

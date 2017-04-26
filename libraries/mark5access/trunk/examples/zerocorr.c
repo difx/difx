@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2015 by Walter Brisken                             *
+ *   Copyright (C) 2010-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,19 +39,21 @@
 
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20150814";
+const char version[] = "0.4";
+const char verdate[] = "20170426";
 
 const int MaxLineLen = 256;
 
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
-	printf("\nBeing killed\n");
+	printf("\nBeing killed.  Partial results will be saved.\n");
 	die = 1;
+
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 
@@ -99,7 +101,7 @@ void stripEOL(char *str)
 	int i;
 	int lastGood = 0;
 
-	for(i = 0; str[i]; i++)
+	for(i = 0; str[i]; ++i)
 	{
 		if(str[i] == '#')
 		{
@@ -125,7 +127,7 @@ DataStream *newDataStream(FILE *in)
 
 	ds = (DataStream *)calloc(1, sizeof(DataStream));
 
-	for(i = 0; i < NItem; i++)
+	for(i = 0; i < NItem; ++i)
 	{
 		v = fgets(buffer[i], MaxLineLen, in);
 		if(!v)
@@ -178,7 +180,7 @@ DataStream *newDataStream(FILE *in)
 	mark5_stream_print(ds->ms);
 
 	ds->data = (double **)calloc(ds->ms->nchan, sizeof(double *));
-	for(i = 0; i < ds->ms->nchan; i++)
+	for(i = 0; i < ds->ms->nchan; ++i)
 	{
 		ds->data[i] = (double *)calloc(ds->fftSize+2, sizeof(double));
 	}
@@ -201,7 +203,7 @@ void deleteDataStream(DataStream *ds)
 		{
 			if(ds->data)
 			{
-				for(i = 0; i < ds->ms->nchan; i++)
+				for(i = 0; i < ds->ms->nchan; ++i)
 				{
 					if(ds->data[i])
 					{
@@ -261,14 +263,14 @@ int feedDataStream(DataStream *ds)
 
 	if(ds->nChan > 0)
 	{
-		for(i = 0; i < ds->nChan; i++)
+		for(i = 0; i < ds->nChan; ++i)
 		{
 			ds->spec[i] = ds->zdata[ds->startChan+i]*scale;
 		}
 	}
 	else
 	{
-		for(i = 0; i < -ds->nChan; i++)
+		for(i = 0; i < -ds->nChan; ++i)
 		{
 			/* FIXME : I think this conjugation is needed! -WFB 20100806 */
 			ds->spec[i] = ~ds->zdata[ds->startChan-i]*scale;
@@ -330,7 +332,7 @@ Baseline *newBaseline(const char *confFile)
 		printf("\n\n*** WARNING *** Data stream times do not match ***\n\n");
 	}
 	
-	for(i = 0; i < NItem; i++)
+	for(i = 0; i < NItem; ++i)
 	{
 		v = fgets(buffer[i], MaxLineLen, in);
 		if(!v)
@@ -348,8 +350,7 @@ Baseline *newBaseline(const char *confFile)
 
 	if(abs(B->ds1->nChan) != abs(B->ds2->nChan))
 	{
-		fprintf(stderr, "Number of channels per datastream must match (%d %d)\n",
-			B->ds1->nChan, B->ds2->nChan);
+		fprintf(stderr, "Number of channels per datastream must match (%d %d)\n", B->ds1->nChan, B->ds2->nChan);
 
 		deleteBaseline(B);
 
@@ -534,7 +535,7 @@ static void report_datastream(DataStream *ds, int xf)
 	int ll;
 
 	printf("Stream %s\n", ds->ms->streamname);
-	for(ll=0; ll < ds->nChan; ll++)
+	for(ll = 0; ll < ds->nChan; ++ll)
 	{
 		printf("%+4.1f%c", ds->data[ds->subBand][ll], ll%16==15 ? '\n' : ' ');
 	}
@@ -543,12 +544,12 @@ static void report_datastream(DataStream *ds, int xf)
 		return;
 	}
 	printf("RealXF %s\n", ds->ms->streamname);
-	for(ll=0; ll < ds->fftSize/2 + 1; ll++)
+	for(ll = 0; ll <= ds->fftSize/2; ++ll)
 	{
 		printf( "%+4.1f%c", creal(ds->zdata[ll]), ll%8==7 ? '\n' : ' ');
 	}
 	printf("ImagXF %s\n", ds->ms->streamname);
-	for(ll=0; ll < ds->fftSize/2 + 1; ll++)
+	for(ll = 0; ll < ds->fftSize/2 + 1; ++ll)
 	{
 		printf( "%+4.1f%c", cimag(ds->zdata[ll]), ll%8==7 ? '\n' : ' ');
 	}
@@ -563,10 +564,8 @@ static int zerocorr(const char *confFile, int verbose)
 {
 	Baseline *B;
 	int n, j, v, index;
-	sighandler_t oldsiginthand;
 	double x, y, window, scale;
-
-	oldsiginthand = signal(SIGINT, siginthand);
+	struct sigaction new_sigint_action;
 
 	B = newBaseline(confFile);
 	if(!B)
@@ -579,7 +578,12 @@ static int zerocorr(const char *confFile, int verbose)
 		printBaseline(B);
 	}
 
-	for(n = 0; n < B->nFFT; n++)
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
+
+	for(n = 0; n < B->nFFT; ++n)
 	{
 		if(verbose > 1 && n % 100 == 0)
 		{
@@ -599,7 +603,7 @@ static int zerocorr(const char *confFile, int verbose)
 		if(verbose > 2 && n % 1000 == 0)
 			report_baseline_data(B, verbose > 3);
 
-		for(j = 0; j < B->nChan; j++)
+		for(j = 0; j < B->nChan; ++j)
 		{
 			B->visibility[j] += B->ds1->spec[j]*~B->ds2->spec[j];
 			B->ac1[j] += creal(B->ds1->spec[j]*~B->ds1->spec[j]);
@@ -624,7 +628,7 @@ static int zerocorr(const char *confFile, int verbose)
 
 		scale = 1.0/(n);
 
-		for(j = 0; j < B->nChan; j++)
+		for(j = 0; j < B->nChan; ++j)
 		{
 			x = creal(B->visibility[j])*scale;
 			y = cimag(B->visibility[j])*scale;
@@ -635,7 +639,7 @@ static int zerocorr(const char *confFile, int verbose)
 
 		scale = 1.0/(n);
 
-		for(j = -B->nChan/2+1; j < B->nChan/2; j++)
+		for(j = -B->nChan/2+1; j < B->nChan/2; ++j)
 		{
 			index = j >= 0 ? j : j+B->nChan;
 			window = (B->nChan/2 - abs(j))/(float)(B->nChan/2);
@@ -647,7 +651,7 @@ static int zerocorr(const char *confFile, int verbose)
 
 	deleteBaseline(B);
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 
 	return EXIT_SUCCESS;
 }
@@ -666,7 +670,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
@@ -678,7 +682,7 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-v") == 0 ||
 		   strcmp(argv[a], "--verbose") == 0)
 		{
-			verbose++;
+			++verbose;
 		}
 		else if(confFile == 0)
 		{

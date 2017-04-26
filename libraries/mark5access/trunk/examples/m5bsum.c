@@ -109,9 +109,9 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					if ( refmjd )
+					if(refmjd)
 					{
-					    mark5bfilesummaryfixmjd(&sum, refmjd);
+						mark5bfilesummaryfixmjd(&sum, refmjd);
 					}
 					else if(fixday)
 					{

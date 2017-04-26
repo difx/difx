@@ -23,18 +23,16 @@ const char author[]  = "Alessandra Bertarini";
 const char version[] = "1.3";
 const char verdate[] = "2015 May 21";
 
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
 	printf("\nBeing killed.  Partial results will be saved.\n\n");
 	die = 1;
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 int usage(const char *pgm)
@@ -522,8 +520,12 @@ int main(int argc, char **argv)
 {
 	long long offset = 0;
 	int nframes;
+	struct sigaction new_sigint_action;
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	if(argc == 2)
 	{

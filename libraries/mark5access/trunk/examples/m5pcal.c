@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2015 by Walter Brisken                             *
+ *   Copyright (C) 2010-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,8 +41,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.8";
-const char verdate[] = "20150611";
+const char version[] = "0.9";
+const char verdate[] = "20170426";
 
 int ChunkSize = 0;
 const int MaxTones = 4096;
@@ -53,18 +53,16 @@ const int MaxFreqs = 64;
        __typeof__ (b) _b = (b); \
      _a > _b ? _a : _b; })
 
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
 	printf("\nBeing killed.  Partial results will be saved.\n\n");
 	die = 1;
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 static void usage(const char *pgm)
@@ -592,8 +590,7 @@ int main(int argc, char **argv)
 	double edge_MHz = -1;
 	double v;
 	int retval;
-
-	oldsiginthand = signal(SIGINT, siginthand);
+	struct sigaction new_sigint_action;
 
 	for(i = 1; i < argc; ++i)
 	{
@@ -704,10 +701,8 @@ int main(int argc, char **argv)
 		{
 			fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n", argv[i]);
 
-
 			return EXIT_FAILURE;
 		}
-
 	}
 
 	if(!outFile || nFreq == 0)
@@ -716,6 +711,11 @@ int main(int argc, char **argv)
 
 		return EXIT_FAILURE;
 	}
+
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	retval = pcal(inFile, format, nInt, nFreq, freq_kHz, interval_MHz, outFile, offset, edge_MHz, verbose, nDelay);
 

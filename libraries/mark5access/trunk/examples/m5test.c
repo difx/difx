@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2013 by Walter Brisken                             *
+ *   Copyright (C) 2007-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,32 +27,32 @@
 //
 //============================================================================
 
-#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include "../mark5access/mark5_stream.h"
+#include "config.h"
 
 const char program[] = "m5test";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.2";
-const char verdate[] = "2012 Nov 16";
+const char version[] = "1.3";
+const char verdate[] = "20170426";
 
 const int ChunkSize = 10000;
 
-int die = 0;
+volatile int die = 0;
 
 typedef void (*sighandler_t)(int);
 
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
 	printf("\nBeing killed.\n\n");
 	die = 1;
 
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 int usage(const char *pgm)
@@ -195,8 +195,7 @@ int main(int argc, char **argv)
 	long long offset = 0;
 	int report_interval = 0;
 	int r;
-
-	oldsiginthand = signal(SIGINT, siginthand);
+	struct sigaction new_sigint_action;
 
 	if(argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0))
 	{
@@ -259,6 +258,11 @@ int main(int argc, char **argv)
 	{
 		report_interval=atoi(argv[4]);
 	}
+
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	verify(argv[1], argv[2], offset, report_interval);
 

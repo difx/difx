@@ -1,16 +1,12 @@
 - Test Mark4 8, 16, 64 track modes
 - Test all Mark5B modes
 - Test seeking
-- Add Mark5CB sync word
 - Implement validate
 - Make test suite
 
 * Implement more decoders
   x Mark4
   x Mark5B
-  ? Mark5CB -- compatibility mode
-    - still need sync word
-  - Mark5C
 * Documenation
   x For developers
   x For users

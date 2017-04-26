@@ -356,11 +356,6 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	new_sigint_action.sa_handler = siginthand;
-	sigemptyset(&new_sigint_action.sa_mask);
-	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
-
 	nbin = atol(argv[3]);
 	nint = atol(argv[4]);
 	freq = atof(argv[5]);
@@ -375,6 +370,11 @@ int main(int argc, char **argv)
 	{
 		offset = atoll(argv[7]);
 	}
+
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	retval = fold(argv[1], argv[2], nbin, nint, freq, argv[6], offset);
 
