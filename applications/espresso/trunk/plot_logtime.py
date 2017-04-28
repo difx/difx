@@ -233,9 +233,11 @@ for filename in args:
 observation /= 3600.
 correlation /= 3600.
 
-print "Observation time:", (observation[-1] - observation[0]), "hours"
-print "Correlation time:", (correlation[-1] - correlation[0]), "hours"
-print "Speedup factor  :", observation[-1]/correlation[-1]
+print "Observation time: {0:0.3f} hours".format(
+        (observation[-1] - observation[0]))
+print "Correlation time: {0:0.3f} hours".format(
+        (correlation[-1] - correlation[0]))
+print "Speedup factor  : {0:0.3f} hours".format(observation[-1]/correlation[-1])
 
 speedup = []
 if options.plottime:
@@ -244,9 +246,9 @@ if options.plottime:
 else:
     # plot the cumulative speedup and instantaneous speedup against
     # observation time
-    speedup = observation/correlation
+    speedup = observation[1:]/correlation[1:]
     label1 = "Integrated speedup {speedup:0.3f}".format(speedup=speedup[-1])
-    pyplot.plot(observation, speedup, label=label1)
+    pyplot.plot(observation[1:], speedup, label=label1)
     speedup = numpy.diff(observation)/numpy.diff(correlation)
     xdata_diff = observation[1:]
     pyplot.plot(xdata_diff, speedup, label="Instantaneous speedup")
