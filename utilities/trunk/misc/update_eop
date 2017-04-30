@@ -1,5 +1,7 @@
 #!/bin/csh
 
-wget -N ftp://hpiers.obspm.fr/iers/bul/bulc/UTC-TAI.history -O .UTC-TAI
-wget http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/usno_finals.erp -O .eops
-
+#wget -N ftp://hpiers.obspm.fr/iers/bul/bulc/UTC-TAI.history -O .UTC-TAI
+\rm -f usno_finals.erp
+wget http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/usno_finals.erp && \mv -f usno_finals.erp .eops
+rm -f ut1ls.dat
+wget http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat && \mv -f ut1ls.dat .ut1ls
