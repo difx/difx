@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,7 +42,7 @@ class Job : public Interval
 public:
 	Job() : Interval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1), dutyCycle(1.0), dataSize(0.0) {}
 
-	void assignAntennas(const VexData &V, std::list<std::pair<int,std::string> > &removedAntennas);
+	void assignAntennas(const VexData &V, std::list<std::pair<int,std::string> > &removedAntennas, bool sortAntennas=true);
 	bool hasScan(const std::string &scanName) const;
 	int generateFlagFile(const VexData &V, const std::list<Event> events, const char *fileName, unsigned int invalidMask=0xFFFFFFFF) const;
 

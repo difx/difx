@@ -347,6 +347,7 @@ public:
 	bool padScans;
 	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
 	bool tweakIntTime;	// nadger the integration time to make values nice
+	bool sortAntennas;	// generally a good idea (defaults to true). Sorts alphabetically.
 	int nCore;
 	int nThread;
 	double maxLength;	// [days]

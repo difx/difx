@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <map>
+#include <algorithm>
 #include "jobgroup.h"
 #include "makejobs.h"
 #include "mediachange.h"
@@ -359,7 +360,30 @@ void makeJobs(std::vector<Job>& J, const VexData *V, const CorrParams *P, std::l
 		addEvent(events, j->mjdStop,  Event::JOB_STOP,  name.str());
 
 		// finds antennas that are active during at least a subset of the jobs scans and have media
-		j->assignAntennas(*V, removedAntennas);
+		j->assignAntennas(*V, removedAntennas, P->sortAntennas);
+
+		if(!P->sortAntennas)
+		{
+			if(P->antennaList.empty())
+			{
+				std::cerr << "Note: antennas will be sorted alphabetically even though sortAntennas=False was provided.  To prevent this, an explicit antenna list needs to be provided." << std::endl;
+			}
+			else
+			{
+				std::vector<std::string> orig;
+
+				orig = j->jobAntennas;
+				j->jobAntennas.clear();
+
+				for(std::list<std::string>::const_iterator it = P->antennaList.begin(); it != P->antennaList.end(); ++it)
+				{
+					if(std::find(orig.begin(), orig.end(), *it) != orig.end())
+					{
+						j->jobAntennas.push_back(*it);
+					}
+				}
+			}
+		}
 		
 		// If fewer than minSubarray antennas remain, then mark the job as bad and exclude writing it later.
 		if(j->jobAntennas.size() < P->minSubarraySize)

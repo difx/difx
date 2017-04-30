@@ -48,6 +48,7 @@ Version 2.5.0
 * Move to use of dirlist library for parsing file listings.  This allows both old-style and new-style file lists to be used.
 * It is now deprecated (but still legal) to supply file lists without start/stop times associated with each file. This capability may vanish at some point.
 * Fix long standing issue w.r.t. (Mark5) media change detection: media change would never split a job.
+* Option sortAntennas in .v2d file (default=true) now allows prevention of sorting (set sortAntennas=false).  Use of this feature requires an antenna list to be provided in the .v2d file.
 
 Version 2.4.0
 ~~~~~~~~~~~~~

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,7 +33,7 @@
 #include "job.h"
 #include "jobflag.h"
 
-void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> > &removedAntennas)
+void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> > &removedAntennas, bool sortAntennas)
 {
 	jobAntennas.clear();
 
@@ -55,7 +55,10 @@ void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> 
 			}
 		}
 	}
-	sort(jobAntennas.begin(), jobAntennas.end());
+	if(sortAntennas)
+	{
+		sort(jobAntennas.begin(), jobAntennas.end());
+	}
 }
 
 double Job::calcOps(const VexData *V, int fftSize, bool doPolar) const

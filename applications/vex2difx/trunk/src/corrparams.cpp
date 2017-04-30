@@ -1766,6 +1766,7 @@ void CorrParams::defaults()
 	nCore = 0;
 	nThread = 0;
 	tweakIntTime = false;
+	sortAntennas = true;
 }
 
 void pathify(std::string &filename)
@@ -1944,6 +1945,10 @@ int CorrParams::setkv(const std::string &key, const std::string &value)
 	else if(key == "tweakIntTime")
 	{
 		tweakIntTime = parseBoolean(value);
+	}
+	else if(key == "sortAntennas")
+	{
+		sortAntennas = parseBoolean(value);
 	}
 	else if(key == "antennas")
 	{
@@ -2658,6 +2663,12 @@ int CorrParams::sanityCheck()
 	if(minSubarraySize > antennaList.size() && !antennaList.empty())
 	{
 		std::cerr << "Warning: the antenna list has fewer than minSubarray antennas.  No jobs will be made." << std::endl;
+		++nWarn;
+	}
+
+	if(antennaList.empty() && !sortAntennas)
+	{
+		std::cerr << "Warning: sortAntennas=False requires an antennaList to be provided." << std::endl;
 		++nWarn;
 	}
 
