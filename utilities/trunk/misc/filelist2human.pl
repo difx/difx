@@ -4,6 +4,8 @@ use strict;
 
 use Astro::Time;
 
+$Astro::Time::StrZero = 2;
+
 my $day = undef;
 my $dayno = undef;
 my $month = undef;
