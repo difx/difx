@@ -19,6 +19,7 @@
 #define XS_CONVENTION
 
 #define NOVIS -9999                 // indicates no visibility records in RAM
+#define MAX_CH 256                  // max # of channels
 
 
 int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
@@ -71,7 +72,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                       *vrec;
     
     double scale_factor[NUMFILS],   // scaling factor includes Van Vleck and fourfit SCALE
-           sb_factor[64],           // +1 | -1 for USB | LSB by channel
+           sb_factor[MAX_CH],       // +1 | -1 for USB | LSB by channel
            rscaled,
            iscaled,
            epsilon = 1e-9;          // 1 nano-day offset to ensure floating pt compares OK
@@ -100,6 +101,14 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
 
                                     // initialize memory as necessary
                                     // compensate for LSB fringe rotator direction
+    if (D->nFreq > MAX_CH)
+        {
+        fprintf (stderr, 
+                "fatal error: # frequencies (%d) exceeds array dimension (%d)\n",
+                D->nFreq, MAX_CH);
+        return (-1);
+        }
+
     for (i=0; i<D->nFreq; i++)
         sb_factor[i] = ((D->freq+i)->sideband == 'U') ? 1.0 : -1.0;
 
