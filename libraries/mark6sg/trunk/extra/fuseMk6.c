@@ -405,6 +405,7 @@ int main(int argc, char *argv[])
 	fuse_argv[fuse_argc++] = argv[0];
 	fuse_argv[fuse_argc++] = "-oallow_other";
 	fuse_argv[fuse_argc++] = "-odirect_io";
+	fuse_argv[fuse_argc++] = "-oattr_timeout=0";
         if (verbosity > 0)
         {
 		fuse_argv[fuse_argc++] = "-f";     // foreground mode to show libmark6sg printouts
