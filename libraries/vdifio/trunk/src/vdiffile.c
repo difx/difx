@@ -130,6 +130,13 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 	memset(hasThread, 0, sizeof(hasThread));
 	sum->startSecond = 1<<30;
 
+	in = fopen(fileName, "r");
+	if(!in)
+	{
+		return -2;
+	}
+
+	// note: do stat() after open() (not before) as filesize may be updated during open()
 	rv = stat(fileName, &st);
 	if(rv < 0)
 	{
@@ -138,11 +145,6 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 
 	sum->fileSize = st.st_size;
 
-	in = fopen(fileName, "r");
-	if(!in)
-	{
-		return -2;
-	}
 
 	if(sum->fileSize < 2*bufferSize)
 	{
