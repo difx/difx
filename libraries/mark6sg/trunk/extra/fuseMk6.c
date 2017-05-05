@@ -30,7 +30,7 @@ static char**       m_scannamelist;
 static struct stat* m_scanstatlist;
 static int          m_nscans;
 static m6sg_slistmeta_t* m_json_scanlist;
-static char*        m_root;
+static const char*  m_root;
 
 static pthread_mutex_t dirlock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -39,7 +39,7 @@ void usage(void)
 	printf("\n"
 		"Mark6 Scatter-Gather data interpretation layer   v1.13  Jan Wagner 15032016\n"
 		"\n"
-		"Usage: fuseMk6 [-v] [-r pattern] <mountpoint>\n"
+		"Usage: fuseMk6 [-v] [-r \"pattern\"] <mountpoint>\n"
 		"\n"
 		"Presents Mark6 scatter-gather mode (SG) recordings as single files.\n"
 		"The SG disks are assumed to be already mounted (/mnt/disks/[1-4]/[0-7]/)\n"
@@ -53,8 +53,8 @@ void usage(void)
                 "Options:\n"
                 "   -v    verbose mode (puts fuseMk6 into 'foreground' mode),\n"
                 "         repeat to increase verbosity\n"
-                "   -r    set root pattern (default is %s)\n\n",
-                m_root
+                "   -r    set root pattern (default: \"%s\")\n\n",
+                MARK6_SG_ROOT_PATTERN
 	);
 }
 
@@ -384,6 +384,8 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+	m_root = mark6_sg_get_rootpattern();
+
 	if (((argc-i) != 1) || (mountpoint[0] == '-'))
 	{
 		usage();
@@ -395,6 +397,11 @@ int main(int argc, char *argv[])
 
 	/* Get scan list from Mark6sg library and update it with JSON and file fragment data */
 	fusem6_make_scanlist();
+	if (m_nscans <= 0)
+	{
+		printf("No scans found. Exiting.\n");
+		return -1;
+	}
 
 	/* Start a thread to refresh the scan list when files change */
 	pthread_create(&tid, NULL, fusem6_dir_watcher, NULL);

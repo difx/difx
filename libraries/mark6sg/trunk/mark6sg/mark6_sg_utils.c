@@ -257,7 +257,7 @@ int mark6_sg_verbositylevel(int level)
  */
 static int globerr(const char *path, int eerrno)
 {
-    fprintf(stderr, "Mark6 SG file list assembly: %s: %s\n", path, strerror(eerrno));
+    fprintf(stderr, "Mark6 SG file list assembly: glob() error: %s: %s\n", path, strerror(eerrno));
     return 0; // 0 to allow glob() to continue despite errors on single files
 }
 
@@ -274,6 +274,11 @@ int mark6_sg_list_all_scans(char*** uniquenamelist)
     int nfiles, nuniques, i;
 
     nfiles   = mark6_sg_filelist_from_name("*", &filepathlist, &filenamelist);
+    if (nfiles <= 0)
+    {
+        return 0;
+    }
+
     nuniques = mark6_sg_filelist_uniques(nfiles, (const char**)filenamelist, uniquenamelist);
 
     for (i=0; i<nfiles; i++)
@@ -311,7 +316,7 @@ int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char
     searchpattern = (char*)malloc(PATH_MAX);
     if (NULL == searchpattern) { return -1; }
 
-    snprintf(searchpattern, PATH_MAX-1,  "%s%s", mark6_sg_root_pattern, scanname);
+    snprintf(searchpattern, PATH_MAX-1,  "%s/%s", mark6_sg_root_pattern, scanname);
     rc = glob(searchpattern, GLOB_MARK, globerr, &g);
 
     if (rc != 0)
@@ -765,4 +770,12 @@ char* mark6_sg_set_rootpattern(const char* new_sg_root_pattern)
         return mark6_sg_root_pattern;
     }
     return NULL;
+}
+
+/**
+ * Return the currently specified Mark6 data root pattern
+ */
+const char* mark6_sg_get_rootpattern()
+{
+    return mark6_sg_root_pattern;
 }

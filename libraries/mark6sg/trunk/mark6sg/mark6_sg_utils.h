@@ -73,6 +73,7 @@ extern size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blo
 extern int mark6_sg_verbositylevel(int);
 extern int mark6_sg_collect_metadata(m6sg_slistmeta_t**);
 extern char* mark6_sg_set_rootpattern(const char* new_sg_root_pattern);
+extern const char* mark6_sg_get_rootpattern();
 
 #ifdef __cplusplus
 }
