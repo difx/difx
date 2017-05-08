@@ -41,6 +41,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <jsmn.h> // Jasmine/JSMN C parser library for JSON
 
@@ -109,15 +110,51 @@ typedef struct blklist_thread_ctx_tt {
     size_t            nblocks;
 } blklist_thread_ctx_t;
 
+static size_t mark6_sg_blocklist_load_existing(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
+static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
 
 /**
  * Helper for qsort() to allow sorting a scatter-gather block list.
  */
 int m6sg_block_comparefunc(const void* a, const void* b)
 {
-   m6sg_blockmeta_t* A = (m6sg_blockmeta_t*)a;
-   m6sg_blockmeta_t* B = (m6sg_blockmeta_t*)b;
-   return (A->blocknum - B->blocknum);
+    m6sg_blockmeta_t* A = (m6sg_blockmeta_t*)a;
+    m6sg_blockmeta_t* B = (m6sg_blockmeta_t*)b;
+    return (A->blocknum - B->blocknum);
+}
+
+/**
+ * String hash, djb2 by Dan Bernstein
+ */
+static unsigned long hash_djb2(const unsigned char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+    while ((c = *str++) != '\0')
+    {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash;
+}
+
+/**
+ * Filename for a cached blocklist for a given fileset i.e. a given scan.
+ */
+char* sg_blocklist_cachefilename(int nfiles, const char** filenamelist)
+{
+    char* fn = malloc(1024);
+    if (fn)
+    {
+        unsigned long hash = 0;
+        int i;
+        for (i=0; i<nfiles; i++)
+        {
+            unsigned long h = hash_djb2((const unsigned char*)filenamelist[i]);
+            hash = ((hash << 5) + hash) + h;
+        }
+        snprintf(fn, 1023, "/tmp/mark6_fuse_autocache_%08lX", hash);
+    }
+    return fn;
 }
 
 /**
@@ -429,14 +466,67 @@ int mark6_sg_filelist_uniques(int nfiles, const char** filenamelist, char*** uni
  */
 size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist)
 {
+    size_t nblk;
+    nblk = mark6_sg_blocklist_load_existing(nfiles, filenamelist, blocklist);
+    if (nblk == 0)
+    {
+        nblk = mark6_sg_blocklist_rebuild(nfiles, filenamelist, blocklist);
+    }
+    return nblk;
+}
+
+/** Load blocklist for a given fileset from an existing file if possible; blocklist file determined internally */
+static size_t mark6_sg_blocklist_load_existing(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist)
+{
+    uint64_t nblks = 0;
+    size_t nrd;
+    FILE *cf;
+    char *cachefilename;
+
+    // Check existence of per-scan cache file
+    cachefilename = sg_blocklist_cachefilename(nfiles, filenamelist);
+    if (!cachefilename)
+    {
+        return 0;
+    }
+    cf = fopen(cachefilename, "rb");
+    if (cf == NULL)
+    {
+        free(cachefilename);
+        return 0;
+    }
+
+    // Check nr of blocks in cache
+    nrd = fread(&nblks, sizeof(nblks), 1, cf);
+    if ((nrd < 1) || (nblks < 1))
+    {
+        fclose(cf);
+        free(cachefilename);
+        return 0;
+    }
+
+    // Read the cache
+    *blocklist = malloc(nblks*sizeof(m6sg_blockmeta_t));
+    memset(*blocklist, 0x00, nblks*sizeof(m6sg_blockmeta_t));
+    fread(*blocklist, sizeof(m6sg_blockmeta_t), nblks, cf);
+    if (m_m6sg_dbglevel > 1) { printf("mark6_sg_blocklist_load_existing: %u blocks in %s\n", (unsigned int)nblks, cachefilename); }
+    fclose(cf);
+    free(cachefilename);
+
+    return nblks;
+}
+
+/** Construct a blocklist for a given fileset; also stores a blocklist file for later use */
+static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist)
+{
     blklist_thread_ctx_t** ctxs;
     pthread_t* tids;
 
     struct timeval tv_start;
-
     m6sg_blockmeta_t* blks = NULL;
     m6sg_blockmeta_t* prevblk = NULL;
     size_t nblocks = 0, ncopied = 0, nmissing = 0;
+    char *cachefilename;
     size_t i;
 
     gettimeofday(&tv_start, NULL);
@@ -532,6 +622,25 @@ size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_
     if (nmissing > 0)
     {
         fprintf(stderr, "Scan is missing %zu blocks of data, possibly due to a missing scatter-gather file.\n", nmissing);
+    }
+
+    // Store the blocklist into a cache file
+    cachefilename = sg_blocklist_cachefilename(nfiles, filenamelist);
+    if (cachefilename)
+    {
+        int fdtmp;
+        char tmpname[] = "/tmp/fileXXXXXX";
+        uint64_t nblks64 = nblocks;
+
+        fdtmp = mkstemp(tmpname);
+        write(fdtmp, &nblks64, sizeof(nblks64));
+        write(fdtmp, blks, sizeof(m6sg_blockmeta_t)*nblocks);
+        close(fdtmp);
+        rename(tmpname, cachefilename);
+
+        if (m_m6sg_dbglevel) { printf("mark6_sg_blocklist_rebuild: cached %zu metadata blocks in %s\n", nblocks, cachefilename); }
+
+        free(cachefilename);
     }
 
     *blocklist = blks;
