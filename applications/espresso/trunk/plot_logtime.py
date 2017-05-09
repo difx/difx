@@ -237,7 +237,7 @@ print "Observation time: {0:0.3f} hours".format(
         (observation[-1] - observation[0]))
 print "Correlation time: {0:0.3f} hours".format(
         (correlation[-1] - correlation[0]))
-print "Speedup factor  : {0:0.3f} hours".format(observation[-1]/correlation[-1])
+print "Speedup factor  : {0:0.3f}".format(observation[-1]/correlation[-1])
 
 speedup = []
 if options.plottime:
