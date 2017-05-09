@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.h 3894 2016-04-17 22:30:56Z gbc $
+ * $Id: vdifuse.h 4248 2017-02-28 22:37:57Z gbc $
  *
  * This file provides support for the fuse interface
  */
@@ -99,7 +99,7 @@ typedef struct vdifuse_pars {
     uint32_t    pkts_per_sec;       /* nominal packet rate */
     float       dropfraction;       /* ## rate of dropped packets */
     uint32_t    catchbuserrs;       /* activate bus error handler */
-    uint32_t    reserved_one;       /* reserved for future use */
+    uint32_t    station_mask;       /* for sg_signature() use */
     uint32_t    reserved_two;       /* reserved for future use */
     uint32_t    reserved_tre;       /* reserved for future use */
     uint32_t    reserved_fur;       /* reserved for future use */

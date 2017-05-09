@@ -48,6 +48,7 @@ cd $home
 [ -z "$sm"   ] && sm='12 34'
 [ -z "$data" ] && data='data'
 [ -z "$mount" ] && mount='/mnt/disks'
+[ -n "$vdops" ] || vdops=''
 expr=$1
 rate=${2-'125000'}
 save=${3-'true'}
@@ -55,7 +56,7 @@ trace=${4-'false'}
 # this prevents agressive, out-of-order kernel-readaheads
 #opts='-o sync_read -o allow_other'
 # this is more agressive, and we think it might work, now.
-opts='-o async_read -o allow_other'
+opts='-o async_read -o allow_other '$vdops
 [ $# -gt 4 ] && shift 4 && opts="$opts $@"
 
 $trace && trop='-vt' || trop='-t'

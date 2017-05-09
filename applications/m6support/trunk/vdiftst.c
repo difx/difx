@@ -1,5 +1,5 @@
 /*
- * $Id: vdiftst.c 3894 2016-04-17 22:30:56Z gbc $
+ * $Id: vdiftst.c 4248 2017-02-28 22:37:57Z gbc $
  *
  * This file provides support for the fuse interface.
  * This file contains methods to label a file as valid VDIF.
@@ -139,6 +139,10 @@ static void notice_maxfrcounter(VDIFHeader *vh)
 /*
  * Compare two headers; between is the number of intervening packets.
  * (We assume a difference of much less than one second here.)
+ *
+ * TODO:
+ *  stationID could be masked with params.station_mask
+ *  threadID is a completely different problem
  */
 static int headers_differ(VDIFHeader *v0, VDIFHeader *v1, int between)
 {
@@ -149,7 +153,7 @@ static int headers_differ(VDIFHeader *v0, VDIFHeader *v1, int between)
     if (v0->w3.ver          != v1->w3.ver         ) return(4);
     if (v0->w3.df_len       != v1->w3.df_len      ) return(5);
     if (v0->w3.num_channels != v1->w3.num_channels) return(6);
-    if (v0->w4.stationID    != v1->w4.stationID   ) return(7);
+//  if (v0->w4.stationID    != v1->w4.stationID   ) return(7);
 //  if (v0->w4.threadID     != v1->w4.threadID    ) return(8);
     if (v0->w4.bps          != v1->w4.bps         ) return(9);
     if (between == 0) {

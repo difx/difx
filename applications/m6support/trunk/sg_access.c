@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.c 3775 2016-02-15 15:24:44Z gbc $
+ * $Id: sg_access.c 4284 2017-05-01 14:06:55Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -163,6 +163,10 @@ static int mm_uchk(SGMMInfo *smi, off_t st_size, int verb)
 /*
  * Open the file, memory map it and fill in some initial information
  * Before we start, we clear out stale information, in case of failure.
+ *
+ * flags was originally MAP_SHARED, but MAP_POPULATE|MAP_NORESERVE
+ * were added in an attempt to increase throughput.  MAP_POPULATE
+ * proceeds to load the whole thing at open.  Not good.
  */
 static int mm_init(const char *file, SGMMInfo *smi, int verb)
 {
@@ -176,7 +180,7 @@ static int mm_init(const char *file, SGMMInfo *smi, int verb)
     if (smi->mmfd < 0)
         return(perror("mm_init:open"),2);
     smi->start = mmap(0, smi->size = mm_stb.st_size, 
-        PROT_READ, MAP_SHARED, smi->mmfd, 0);
+        PROT_READ, MAP_SHARED|MAP_NORESERVE, smi->mmfd, 0);
     if (smi->start == MAP_FAILED) {
         perror("mm_init:mmap");
         close(smi->mmfd);

@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 4123 2016-09-08 13:34:59Z gbc $
+ * $Id: per_file.c 4193 2017-01-03 21:07:02Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -160,7 +160,9 @@ static uint32_t *sequence_packet_sg(int *nlp, uint32_t **endp)
  */
 static uint32_t *search_packet_sg(int *nlp, uint32_t **endp)
 {
+#if EXTEND_HCHK
     work.pkts_seqoffset = work.srch_state.srch_next;
+#endif /* EXTEND_HCHK */
     return(sequence_packet_sg(nlp, endp));
 }
 
@@ -198,7 +200,9 @@ static uint32_t *sequence_packet_fl(int *nlp, uint32_t **endp)
  */
 static uint32_t *search_packet_fl(int *nlp, uint32_t **endp)
 {
+#if EXTEND_HCHK
     work.pkts_seqoffset = work.srch_state.srch_next;
+#endif /* EXTEND_HCHK */
     return(sequence_packet_fl(nlp, endp));
 }
 
@@ -715,8 +719,8 @@ static int help_chk_opt(void)
         work.pkts_runs);
     fprintf(stdout, "  starter=<int>    start packets in (%u, sequential)\n",
         work.pkts_seqstarter);
-    fprintf(stdout, "  chans=<csv>      list of channels for stats (\"\")\n",
-        work.stat_chans);
+    fprintf(stdout, "  chans=<csv>      list of channels for stats (\"\")\n"
+        /*work.stat_chans*/);
     fprintf(stdout, "  stats=<int>      # octets/packet to test (%u)\n",
         work.stat_octets);
     fprintf(stdout, "  sdelta=<int>     dump statistics after (%u) pkts\n",

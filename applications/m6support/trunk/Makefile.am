@@ -26,7 +26,7 @@ endif
 
 dist_noinst_HEADERS = vdif.h vdif_epochs.h vdif_time_util.h \
 	sg_access.h sc_stats.h exthdr.h m6scmodule.h $(vdifuse_h)
-test_scripts = hammer.sh hammerplot.sh
+test_scripts = hammer.sh hammerplot.sh fillerfrac.sh
 
 check_PROGRAMS =
 TESTS = 
@@ -40,7 +40,8 @@ vdif_time_SOURCES   = vdif_time_main.c vdif_time.c
 if WITH_FUSE
 if HAVE_FUSE
 vdsrc = vdifuse.c vdifopt.c vdifsup.c vdiftst.c vdifseq.c vdiftrc.c vdifsig.c \
-	vdiforr.c vdifsg2.c sg_access.c sg_advice.c vdiflat.c vdifrex.c
+	vdiforr.c vdifsg2.c sg_access.c sg_advice.c sg_spwrda.c \
+	vdiflat.c vdifrex.c
 dist_vdifuse_SOURCES = $(vdsrc)
 else
 dist_vdifuse_SOURCES =

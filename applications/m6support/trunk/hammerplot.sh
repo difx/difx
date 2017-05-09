@@ -22,7 +22,9 @@ rm -f $data $gnu $png
 for l
 do
     mods=''
-    hm=`IFS=-; set -- $l; echo $1-$2-$3`
+    #hm=`IFS=-; set -- $l; echo $1-$2-$3`
+    hm=`IFS=-; set -- $l; echo "${@: -4:1}-${@: -3:1}-${@: -2:1}"`
+    hm=`expr $l : '\(.*\)-hammer-.*'`
     out=$hm-`date +%Y%m%d`.png
     echo Host-Module: $hm ' -> ' $out
 

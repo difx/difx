@@ -1,5 +1,5 @@
 /*
- * $Id: sg_advice.c 3794 2016-02-20 20:52:47Z gbc $
+ * $Id: sg_advice.c 4287 2017-05-01 17:10:37Z gbc $
  * 
  * Code to boost performance on reads to sg files
  *
@@ -80,6 +80,8 @@ static void sg_advice_init(int verbose)
         /* no action here */
         break;
     case SG_ADVICE_SPAWN_READAHEAD:
+        /* initialize for threads */
+        break;
     case SG_ADVICE_SPAWN_READTHREAD:
         /* initialize for threads */
         break;
@@ -125,7 +127,7 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
     addr = (void*)((unsigned long)addr & addrmask);
 
     if (dir > 0) drop = addr - len;
-    else         drop = addr;
+    else         drop = addr + len;
     if (drop < sgi->smi.start) drop = 0;
     if (drop + len >= sgi->smi.eomem) drop = 0;
 
@@ -149,8 +151,9 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
         else return;
         break;
     case SG_ADVICE_SPAWN_READAHEAD:
-        /* code might go here */
-        break;
+        spawn_readahead_thread(sgi->smi.mmfd,
+            (off_t)(addr - sgi->smi.start), len, sgi->smi.size);
+        return;
     case SG_ADVICE_SPAWN_READTHREAD:
         /* code might go here */
         break;

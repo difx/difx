@@ -1,5 +1,5 @@
 /*
- * $Id: sc_stats.c 4021 2016-06-30 21:30:04Z gbc $
+ * $Id: sc_stats.c 4193 2017-01-03 21:07:02Z gbc $
  *
  * Statistics checker for scan check
  */
@@ -116,7 +116,7 @@ void stats_delta(BSInfo *bsi, BSInfo *lst, BSInfo *del,
     del->packet_octets = bsi->packet_octets;
     del->bits_sample = bsi->bits_sample;
     rep = stats_repstr(del, lab);
-    fprintf(stdout, "%s delta at pkt %08X(%u) for %d\n%s",
+    fprintf(stdout, "%s delta at pkt %08lX(%lu) for %d\n%s",
         lab, ((void*)pkt - start), ((void*)pkt - start), count, rep);
     *lst = *bsi;    /* for next time */
 }

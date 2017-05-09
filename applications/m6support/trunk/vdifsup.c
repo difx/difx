@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsup.c 3898 2016-04-21 19:56:37Z gbc $
+ * $Id: vdifsup.c 4248 2017-02-28 22:37:57Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -14,6 +14,7 @@
 #include <time.h>
 
 #include "vdifuse.h"
+#include "sg_access.h"
 
 /*
  * Internal parameters that are preserved in the cache.
@@ -24,16 +25,10 @@
  * with realloc, so cache pointers should be considered dynamic,
  * but that the indices in the cache should be stable.
  */
-static VDIFUSEpars clvpo = { .creation.tv_sec = 1 };
-//static VDIFUSEpars clvpo = {
-//    .noduplicates = 0,
-//    .how_rigorous = VDIFUSE_RIGOR_MAGIC | VDIFUSE_RIGOR_MINSIZE,
-//    .seqhierarchy = 3,
-//    .writeblocker = 10000000,
-//    .pkts_per_sec = 125000,
-//    .catchbuserrs = 1,
-//    .creation.tv_sec = 1
-//};
+static VDIFUSEpars clvpo = {
+    .creation.tv_sec = 1,
+    .station_mask = SG_STATION_MASK
+};
 static char *filelistprefix = ".";
 
 #define VDIFUSE_CACHE_CHUNK 8
@@ -285,16 +280,18 @@ static int create_params_entry(void)
     vd_cache[ee].u.vpars.vdifuse_vers = VDIFUSE_VERSION;
     vd_cache[ee].u.vpars.prefix_bytes = clvpo.prefix_bytes;
     vd_cache[ee].u.vpars.offset_bytes = clvpo.offset_bytes;
-    vd_cache[ee].u.vpars.searchwindow = clvpo.searchwindow;
+    vd_cache[ee].u.vpars.searchwindow = clvpo.searchwindow; // nyi
     vd_cache[ee].u.vpars.catchbuserrs = clvpo.catchbuserrs;
-    vd_cache[ee].u.vpars.max_pkts_gap = clvpo.max_pkts_gap;
-    vd_cache[ee].u.vpars.max_secs_gap = clvpo.max_secs_gap;
+    vd_cache[ee].u.vpars.max_pkts_gap = clvpo.max_pkts_gap; // nyi
+    vd_cache[ee].u.vpars.max_secs_gap = clvpo.max_secs_gap; // nyi
     vd_cache[ee].u.vpars.how_rigorous = clvpo.how_rigorous;
     vd_cache[ee].u.vpars.noduplicates = clvpo.noduplicates;
     vd_cache[ee].u.vpars.seqhierarchy = clvpo.seqhierarchy;
     vd_cache[ee].u.vpars.writeblocker = clvpo.writeblocker;
     vd_cache[ee].u.vpars.pkts_per_sec = clvpo.pkts_per_sec;
-    vd_cache[ee].u.vpars.dropfraction = clvpo.dropfraction;
+    vd_cache[ee].u.vpars.dropfraction = clvpo.dropfraction; // nyi
+    vd_cache[ee].u.vpars.station_mask = clvpo.station_mask;
+    sg_set_station_id_mask(clvpo.station_mask & SG_STATION_MASK);
 
     /* topdir names for fragments and sequences */
     if (clvpo.frag_top_dir[0] != '/')
@@ -457,6 +454,7 @@ static int load_cache(char *cache)
     strcpy(sequences_topdir, vd_cache[ee].u.vpars.seqs_top_dir);
     fragments_topdir_len = strlen(fragments_topdir);
     sequences_topdir_len = strlen(sequences_topdir);
+    sg_set_station_id_mask(vd_cache[ee].u.vpars.station_mask & SG_STATION_MASK);
 
     return(fclose(fp));
 }
@@ -612,8 +610,8 @@ int describe_params(VDIFUSEntry *vp)
         vp->u.vpars.creation.tv_sec, vp->u.vpars.creation.tv_usec,
         ctime(&birth));
     if (vdifuse_debug>2) fprintf(vdflog, 
-        "  prefix_bytes=%u offset_bytes=%u searchwindow=%u "
-          "bus_errors=%u\n"
+        "  prefix_bytes=%u offset_bytes=%u searchwindow=%u\n"
+        "  bus_errors=%u station_mask=%x\n"
         "  max_pkts_gap=%u max_secs_gap=%f "
             "how_rigorous=" VDIFUSE_RIGOR_PRINTF "\n"
         "  noduplicates=%u seqhierarchy=%u writeblocker=%u\n"
@@ -621,16 +619,17 @@ int describe_params(VDIFUSEntry *vp)
         "  est_pkt_rate=%u frag_top_dir=%s seqs_top_dir=%s\n" ,
         vp->u.vpars.prefix_bytes,
         vp->u.vpars.offset_bytes,
-        vp->u.vpars.searchwindow,
+        vp->u.vpars.searchwindow,   // nyi
         vp->u.vpars.catchbuserrs,
-        vp->u.vpars.max_pkts_gap,
-        vp->u.vpars.max_secs_gap,
+        vp->u.vpars.station_mask,
+        vp->u.vpars.max_pkts_gap,   // nyi
+        vp->u.vpars.max_secs_gap,   // nyi
         vp->u.vpars.how_rigorous,
         vp->u.vpars.noduplicates,
         vp->u.vpars.seqhierarchy,
         vp->u.vpars.writeblocker,
         vp->u.vpars.pkts_per_sec,
-        vp->u.vpars.dropfraction,
+        vp->u.vpars.dropfraction,   // nyi
         vp->u.vpars.maxfrcounter,
         vp->u.vpars.est_pkt_rate,
         vp->u.vpars.frag_top_dir,
@@ -1133,13 +1132,13 @@ static int vdifuse_options_help(void)
     fprintf(vdflog, "  offset=<int>  # of bytes (%u) before header\n",
         clvpo.offset_bytes);
     fprintf(vdflog, "! window=<int>  # of bytes (%u) slop on these\n",
-        clvpo.searchwindow);
+        clvpo.searchwindow);    // nyi
     fprintf(vdflog, "  buserr=<int>  catch bus errors (%u)\n",
         clvpo.catchbuserrs);
     fprintf(vdflog, "! gap=<int>     max # of packets between (%u) files\n",
-        clvpo.max_pkts_gap);
+        clvpo.max_pkts_gap);    // nyi
     fprintf(vdflog, "! gaps=<float>  max # of seconds between (%g) files\n",
-        clvpo.max_secs_gap);
+        clvpo.max_secs_gap);    // nyi
     fprintf(vdflog, "* rigor=<int>   methods to examine files (%u)\n",
         clvpo.how_rigorous);
     fprintf(vdflog, "  uniq=<int>    asserts that filenames are unique (%u)\n",
@@ -1151,11 +1150,13 @@ static int vdifuse_options_help(void)
     fprintf(vdflog, "  rate=<int>    of packets/sec (%u) in files\n",
         clvpo.pkts_per_sec);
     fprintf(vdflog, "! drop=<float>  fraction of dropped packets (%g)\n",
-        clvpo.dropfraction);
-    fprintf(vdflog, "! frag=<string> top-dir name for fragments (%s)\n",
+        clvpo.dropfraction);    // nyi
+    fprintf(vdflog, "  frag=<string> top-dir name for fragments (%s)\n",
         clvpo.frag_top_dir);
-    fprintf(vdflog, "! seqs=<string> top-dir name for sequences (%s)\n",
+    fprintf(vdflog, "  seqs=<string> top-dir name for sequences (%s)\n",
         clvpo.seqs_top_dir);
+    fprintf(vdflog, "  smask=<float> station mask for sg files (%x)\n",
+        clvpo.station_mask);
     regexhelp(vdflog);
 
     fprintf(vdflog, "\n");
@@ -1245,7 +1246,7 @@ int vdifuse_options(char *arg)
         clvpo.offset_bytes = atoi(arg + 7);
         if (vdifuse_debug>0) fprintf(vdflog,
             "Assuming %u bytes prior each header\n", clvpo.offset_bytes);
-    } else if (!strncmp(arg, "window=", 7)) {
+    } else if (!strncmp(arg, "window=", 7)) {   // nyi
         clvpo.searchwindow = atoi(arg + 7);
         if (vdifuse_debug>0) fprintf(vdflog,
             "Allowing %u bytes of slop in searches\n", clvpo.searchwindow);
@@ -1253,11 +1254,11 @@ int vdifuse_options(char *arg)
         clvpo.catchbuserrs = atoi(arg + 7);
         if (vdifuse_debug>0) fprintf(vdflog,
             "Bus error trapping: %s\n", clvpo.catchbuserrs ? "On" : "Off");
-    } else if (!strncmp(arg, "gaps=", 5)) {
+    } else if (!strncmp(arg, "gaps=", 5)) { // nyi
         clvpo.max_secs_gap = atof(arg + 5);
         if (vdifuse_debug>0) fprintf(vdflog,
             "At most %g seconds between fragments\n", clvpo.max_secs_gap);
-    } else if (!strncmp(arg, "gap=", 4)) {
+    } else if (!strncmp(arg, "gap=", 4)) {  // nyi
         clvpo.max_pkts_gap = atoi(arg + 4);
         if (vdifuse_debug>0) fprintf(vdflog,
             "At most %u packets between fragments\n", clvpo.max_pkts_gap);
@@ -1285,10 +1286,14 @@ int vdifuse_options(char *arg)
         clvpo.pkts_per_sec = atoi(arg + 5);
         if (vdifuse_debug>0) fprintf(vdflog,
             "Assuming %u packets per second\n", clvpo.pkts_per_sec);
-    } else if (!strncmp(arg, "drop=", 5)) {
+    } else if (!strncmp(arg, "drop=", 5)) { // nyi
         clvpo.dropfraction = atof(arg + 5);
         if (vdifuse_debug>0) fprintf(vdflog,
             "Assuming packets-dropped/total is %g\n", clvpo.dropfraction);
+    } else if (!strncmp(arg, "smask=", 6)) {
+        clvpo.station_mask = atoi(arg + 6);
+        if (vdifuse_debug>0) fprintf(vdflog,
+            "Masking sg signatures with %4X\n", clvpo.station_mask);
 
     } else if (!strncmp(arg, "frag=", 5)) {
         if (arg[5] == '/' && strlen(arg+5) < VDIFUSE_TOPDIR_SIZE) {
