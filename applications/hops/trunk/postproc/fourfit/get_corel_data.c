@@ -30,11 +30,7 @@
 #include "fstruct.h"
 
 int
-get_corel_data (fs, ovex, filename, cdata)
-fstruct *fs;
-struct scan_struct *ovex;
-char *filename;
-struct mk4_corel *cdata;
+get_corel_data (fstruct* fs, struct scan_struct* ovex, char* filename, struct mk4_corel* cdata)
     {
     int scantime;
     char corelname[256], scandir[256];

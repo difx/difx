@@ -12,8 +12,7 @@
 #include "pass_struct.h"
 
 void
-clear_pass (pass)
-struct type_pass *pass;
+clear_pass (struct type_pass *pass)
     {
     int i;
 

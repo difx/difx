@@ -9,11 +9,11 @@
 #include "control.h"
 #include "mk4_sizes.h"
 
+// f (from) is source pointer
+// t (to)   is destination pointer
 
 int
-copy_cblock_parts (f,t)
-struct c_block *f,*t;               // f (from) is source pointer
-                                    // t (to)   is destination pointer
+copy_cblock_parts ( struct c_block* f, struct c_block* t)
     {
     int i,j;
 
@@ -137,6 +137,9 @@ struct c_block *f,*t;               // f (from) is source pointer
     if (f->ion_smooth != NULLINT)
         t->ion_smooth = f->ion_smooth;
 
+    if (f->est_pc_manual != NULLINT)
+        t->est_pc_manual = f->est_pc_manual;
+
     if (f->nsamplers != NULLINT)
         {
         t->nsamplers = f->nsamplers;
@@ -189,8 +192,25 @@ struct c_block *f,*t;               // f (from) is source pointer
 
         if (f->adhoc_file_chans[i][0] != 0)
             strcpy (t->adhoc_file_chans[i], f->adhoc_file_chans[i]);
+        
+        if (f->pc_phase_offset[i].rem != NULLFLOAT)
+            t->pc_phase_offset[i].rem = f->pc_phase_offset[i].rem;
+            
+        if (f->pc_phase_offset[i].ref != NULLFLOAT)
+            t->pc_phase_offset[i].ref = f->pc_phase_offset[i].ref;
         }
 
+    if (f->gen_cf_record != NULLINT)
+        t->gen_cf_record = f->gen_cf_record;
+    if (f->nnotches != NULLINT)
+        t->nnotches = f->nnotches;
+    for (i=0; i<MAXFREQ; i++)
+        {
+        if (f->notches[i][0] != NULLFLOAT)
+            t->notches[i][0] = f->notches[i][0];
+        if (f->notches[i][1] != NULLFLOAT)
+            t->notches[i][1] = f->notches[i][1];
+        }
 
     if (f->index[0] != NULLINT)     // this needs work (deprecated)
         for (i=0; i<32; i++)

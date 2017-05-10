@@ -10,15 +10,9 @@
 #include <stdio.h>
 
 void 
-plot_graph(matrix, x, y, width, height, 
-		scale_x, scale_y, winstart, winstop,
-			points, numpoints, ch, altch,segment_flag) 
-char **matrix;
-int x, y, width, height, numpoints, winstart, winstop,segment_flag;
-double *points;
-double scale_x, scale_y;
-char ch, altch;
-
+plot_graph(char** matrix, int x, int y, int width, int height, 
+		double scale_x, double scale_y, int winstart, int winstop,
+			double* points, int numpoints, char ch, char altch, int segment_flag) 
     {
     int index,seg,pts;
     double seg_len,z;

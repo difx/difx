@@ -19,7 +19,7 @@
 
 
 int
-fill_fringe_info (/* root, pass, filename) */
+fill_fringe_info (
 struct vex *root,
 struct type_pass *pass,
 char *filename)
@@ -152,4 +152,3 @@ char *filename)
 
     return (0);
     }   
-

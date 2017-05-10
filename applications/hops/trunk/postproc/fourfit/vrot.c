@@ -29,10 +29,7 @@
 #include "pass_struct.h"
 
 
-complex vrot (ap, dr, mbd, fr, sb, pass)
-int ap, fr, sb;
-double dr, mbd;
-struct type_pass *pass;
+complex vrot (int ap, double dr, double mbd, int fr, int sb, struct type_pass* pass)
     {
     double theta;
     extern struct type_param param;

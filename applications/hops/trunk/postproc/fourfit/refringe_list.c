@@ -31,10 +31,7 @@
 #define NB_ALLOC    (5*NF_ALLOC)
 
 int
-refringe_list (afile_name, files, base_sgrp)
-char *afile_name;
-fstruct **files;
-bsgstruct **base_sgrp;
+refringe_list (char* afile_name, fstruct** files, bsgstruct**  base_sgrp)
     {
     static char source[32], exp_scan[20], rname[256], line[512];
     int ret, i, fc, version, type, nfalloc, nballoc, nroot, nbsg;

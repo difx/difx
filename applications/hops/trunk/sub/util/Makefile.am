@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1366 2016-07-20 20:07:44Z gbc $
+# $Id: Makefile.am 1699 2017-05-02 16:39:30Z gbc $
 #
 
 SUBDIRS = .
@@ -25,7 +25,7 @@ libmk4util_a_SOURCES = check_name.c datec_to_datef.c extract_filenames.c  \
 # the original test program
 check_PROGRAMS = test_root_id
 
-test_root_id_SOURCES = test.c
+test_root_id_SOURCES = root_id_test.c
 test_root_id_LDADD = -L. -lmk4util
 
 #

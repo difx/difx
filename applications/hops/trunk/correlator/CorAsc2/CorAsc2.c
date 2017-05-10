@@ -1,21 +1,21 @@
-/* CorAsc2.c 
+/* CorAsc2.c
  *
  * $Id$
  *
- * Call me CorAsc2.  I read correlator data files from stdin and 
- * debug print more-or-less everything therein.  See also CorAsc.c. 
- * Typical usage: 
- *     CorAsc2  xxx  <  $TMP/cortest  |  more 
- * where xxx is the record type to be debug printed, and $TMP/cortest 
+ * Call me CorAsc2.  I read correlator data files from stdin and
+ * debug print more-or-less everything therein.  See also CorAsc.c.
+ * Typical usage:
+ *     CorAsc2  xxx  <  $TMP/cortest  |  more
+ * where xxx is the record type to be debug printed, and $TMP/cortest
  * is an example of a correlator data file.  Replace xxx with any
- * one of:  000, 100, 101, 120, 130, 131, 141, 142, 143, 144, 150, 
- * 200, 201, 202, 203, 204, 205, 206, 207, 208, 210, 212, 220, 221, 230, 
- * 300, 301, 302, 303, 304, 306, 307, 308, 309, or TDB. 
- * Revised:  I can now print multiple file types, that is I accept 
- * multiple xxx on the command line, and I count and print the number 
- * of each record type that I read. 
- * I am a rough unsophisticated test program. 
- * Revised:  2002 June 5, JAB 
+ * one of:  000, 100, 101, 120, 130, 131, 141, 142, 143, 144, 150,
+ * 200, 201, 202, 203, 204, 205, 206, 207, 208, 210, 212, 220, 221, 230,
+ * 300, 301, 302, 303, 304, 306, 307, 308, 309, or TDB.
+ * Revised:  I can now print multiple file types, that is I accept
+ * multiple xxx on the command line, and I count and print the number
+ * of each record type that I read.
+ * I am a rough unsophisticated test program.
+ * Revised:  2002 June 5, JAB
  * revise to support both big and little Endian architectures
  *                                       tac  2009.1.7   */
 #include <stdio.h>
@@ -41,6 +41,7 @@
 #include "type_212.h"
 #include "type_220.h"
 #include "type_221.h"
+#include "type_222.h"
 #include "type_230.h"
 #include "type_300.h"
 #include "type_301.h"
@@ -82,17 +83,18 @@ int main (int argc, char *argv[])
     static char *rnames[] = {   /* Names of each record type */
     "000", "100", "101", "120", "130", "131", "141", "142", "143", "144",
     "150", "200", "201", "202", "203", "204", "205", "206", "207", "208",
-    "210", "212", "220", "221", "230",
+    "210", "212", "220", "221", "222", "230",
     "300", "301", "302", "303", "304", "306", "307", "308", "309"
     };
                                     // change NNAMES to match above array
-    #define NNAMES 34
+    #define NNAMES 35
     int countt[NNAMES];                 /* Count number of times each record was found */
-    
+
     char flip = *byte;
- 
+
     int i, j, k, len, n, nt;
     int nbuff, nlags, nap, tread, tlast;
+    int t222_sspad, t222_cfpad;
     double a_sin, a_cos, a_amp, a_ph, b_sin, b_cos, b_amp, b_ph, tval;
     char line[80];          /* Scratch */
     T1_RecHdr *t1 = (T1_RecHdr *) buff;
@@ -125,6 +127,7 @@ int main (int argc, char *argv[])
     /* type_205_v1 */
     struct type_206_v0 *t206_0 = (struct type_206_v0 *) buff;
     struct type_206_v1 *t206_1 = (struct type_206_v1 *) buff;
+    struct type_206_v2 *t206_2 = (struct type_206_v2 *) buff;
     /* !!! type_206_v2 */
     struct sidebands *pr_0[] = { t206_0->accepted,
     t206_0->reason1, t206_0->reason2, t206_0->reason3, t206_0->reason4,
@@ -134,8 +137,13 @@ int main (int argc, char *argv[])
     t206_1->reason1, t206_1->reason2, t206_1->reason3, t206_1->reason4,
     t206_1->reason5, t206_1->reason6, t206_1->reason7, t206_1->reason8
     };
+    struct sidebands *pr_2[] = { t206_2->accepted,
+    t206_2->reason1, t206_2->reason2, t206_2->reason3, t206_2->reason4,
+    t206_2->reason5, t206_2->reason6, t206_2->reason7, t206_2->reason8
+    };
     struct type_207_v0 *t207_0 = (struct type_207_v0 *) buff;
     struct type_207_v1 *t207_1 = (struct type_207_v1 *) buff;
+    struct type_207_v2 *t207_2 = (struct type_207_v2 *) buff;
     /* !!! type_207_v2 */
     struct sbandf *psbf_0[] = {
     t207_0->ref_pcamp, t207_0->rem_pcamp,
@@ -148,12 +156,24 @@ int main (int argc, char *argv[])
     t207_1->ref_pcoffset, t207_1->rem_pcoffset,
     t207_1->ref_pcfreq, t207_1->rem_pcfreq
     };
+    struct sbandf *psbf_2[] = {
+    t207_2->ref_pcamp, t207_2->rem_pcamp,
+    t207_2->ref_pcphase, t207_2->rem_pcphase,
+    t207_2->ref_pcoffset, t207_2->rem_pcoffset,
+    t207_2->ref_pcfreq, t207_2->rem_pcfreq
+    };
     char *pcname_0[] = {
     "ref_pcamp[]", "rem_pcamp[]",
     "ref_pcphase[]", "rem_pcphase[]",
     "ref_pcfreq[]", "rem_pcfreq[]"
     };
     char *pcname_1[] = {
+    "ref_pcamp[]", "rem_pcamp[]",
+    "ref_pcphase[]", "rem_pcphase[]",
+    "ref_pcoffset[]", "rem_pcoffset[]",
+    "ref_pcfreq[]", "rem_pcfreq[]"
+    };
+    char *pcname_2[] = {
     "ref_pcamp[]", "rem_pcamp[]",
     "ref_pcphase[]", "rem_pcphase[]",
     "ref_pcoffset[]", "rem_pcoffset[]",
@@ -168,6 +188,7 @@ int main (int argc, char *argv[])
     struct type_212_v1 *t212_1 = (struct type_212_v1 *) buff;
     struct type_220 *t220 = (struct type_220 *) buff;   /* ?? */
     struct type_221 *t221 = (struct type_221 *) buff;
+    struct type_222 *t222 = (struct type_222 *) buff;
     struct type_230 *t230 = (struct type_230 *) buff;
     struct type_300 *t300 = (struct type_300 *) buff;
     struct type_301 *t301 = (struct type_301 *) buff;
@@ -437,60 +458,93 @@ int main (int argc, char *argv[])
                 nbuff += 8 - nbuff % 8; /* Yes */
             countt[23]++;       /* Increment record count */
             }
+        /* ** Type-222 record? ** */
+        else if (strncmp (t1->recId, "222", 3) == 0)
+            {
+            /* Special case variable-length record */
+            t222_sspad = ( ( flip_int(t222->setstring_length) + 7 ) & ~7) + 8;
+            t222_cfpad = ( ( flip_int(t222->cf_length) + 7 ) & ~7) + 8;
+
+            if (msglev < 1)     /* Debuggery? */
+            {
+                (void) fprintf (stderr,
+                    "%s%s cf_length = %d at %dB\n",
+                    me,DBGMSG,flip_int(t222->cf_length),tlast);
+                (void) fprintf (stderr,
+                    "%s%s cf_pad = %d at %dB\n",
+                    me,DBGMSG,t222_cfpad,tlast);
+                (void) fprintf (stderr,
+                    "%s%s set_string_length = %d at %dB\n",
+                    me,DBGMSG,flip_int(t222->setstring_length),tlast);
+                (void) fprintf (stderr,
+                    "%s%s set_string_pad = %d at %dB\n",
+                    me,DBGMSG,t222_sspad,tlast);
+                (void) fprintf (stderr,
+                    "%s%s cf_hash = %u at %dB\n",
+                    me,DBGMSG,flip_int(t222->control_hash),tlast);
+                (void) fprintf (stderr,
+                    "%s%s set_string_hash = %u at %dB\n",
+                    me,DBGMSG,flip_int(t222->setstring_hash),tlast);
+            }
+            nbuff = sizeof(struct type_222) + t222_sspad + t222_cfpad - k; 
+            // if (flip_short(t222->padded) && nbuff % 8 > 0)  /* Pad to 8 bytes? */
+            //     nbuff += 8 - nbuff % 8; /* Yes */
+            countt[24]++;       /* Increment record count */
+            }
         /* ** Type-230 record? ** */
         else if (strncmp (t1->recId, "230", 3) == 0)
             {
             /* Special case variable-length record */
             nbuff = sizeof (struct type_230) + (flip_short(t230->nspec_pts) - 1) * sizeof (complex) - k;
-            countt[24]++;       /* Increment record count */
+            countt[25]++;       /* Increment record count */
             }
         /* ** Type-300 record? ** */
         else if (strncmp (t1->recId, "300", 3) == 0)
             {
             nbuff = sizeof (struct type_300) - k;
-            countt[25]++;       /* Increment record count */
+            countt[26]++;       /* Increment record count */
             }
         /* ** Type-301 record? ** */
         else if (strncmp (t1->recId, "301", 3) == 0)
             {
             nbuff = sizeof (struct type_301) - k;
-            countt[26]++;       /* Increment record count */
+            countt[27]++;       /* Increment record count */
             }
         /* ** Type-302 record? ** */
         else if (strncmp (t1->recId, "302", 3) == 0)
             {
             nbuff = sizeof (struct type_302) - k;
-            countt[27]++;       /* Increment record count */
+            countt[28]++;       /* Increment record count */
             }
         /* ** Type-303 record? ** */
         else if (strncmp (t1->recId, "303", 3) == 0)
             {
             nbuff = sizeof (struct type_303) - k;
-            countt[28]++;       /* Increment record count */
+            countt[29]++;       /* Increment record count */
             }
         /* ** Type-304 record? ** */
         else if (strncmp (t1->recId, "304", 3) == 0)
             {
             nbuff = sizeof (struct type_304) - k;
-            countt[29]++;       /* Increment record count */
+            countt[30]++;       /* Increment record count */
             }
         /* ** Type-306 record? ** */
         else if (strncmp (t1->recId, "306", 3) == 0)
             {
             nbuff = sizeof (struct type_306) - k;
-            countt[30]++;       /* Increment record count */
+            countt[31]++;       /* Increment record count */
             }
         /* ** Type-307 record? ** */
         else if (strncmp (t1->recId, "307", 3) == 0)
             {
             nbuff = sizeof (struct type_307) - k;
-            countt[31]++;       /* Increment record count */
+            countt[32]++;       /* Increment record count */
             }
         /* ** Type-308 record? ** */
         else if (strncmp (t1->recId, "308", 3) == 0)
             {
             nbuff = sizeof (struct type_308) - k;
-            countt[32]++;       /* Increment record count */
+            countt[33]++;       /* Increment record count */
             }
         /* ** Type-309 record? ** */
         else if (strncmp (t1->recId, "309", 3) == 0)
@@ -498,7 +552,7 @@ int main (int argc, char *argv[])
             nbuff = (strncmp (t309->version_no, "00", 2) == 0)
                   ? sizeof (struct type_309_v0) - k
                   : sizeof (struct type_309_v1) - k;
-            countt[33]++;       /* Increment record count */
+            countt[34]++;       /* Increment record count */
             }
         /* ** tapeDB record? ** */
         else if (strncasecmp (t1->recId, "TDB", 3) == 0)
@@ -532,7 +586,7 @@ int main (int argc, char *argv[])
         tread += k;
         if (msglev < 1)     /* Debuggery? */
             (void) fprintf (stderr,
-                "%s%s Read record type %.3s at %dB\n",  
+                "%s%s Read record type %.3s at %dB\n",
                 me, DBGMSG, t1->recId, tlast);
         /* *** Here we have a complete record; should we print it? *** */
         for (i = 1; i < argc; i++)  /* Each command-line argument */
@@ -664,7 +718,7 @@ int main (int argc, char *argv[])
                        flip_int(pag->coscor[j]), flip_int(pag->coscor[j]));
                 else if (t120->type == SPECTRAL)
                     {
-                    (void) printf (" real %9.6f  imag %9.6f\n", 
+                    (void) printf (" real %9.6f  imag %9.6f\n",
                                flip_float (psp[j].re), flip_float (psp[j].im));
                     }
                 }           /* End of for j lags */
@@ -925,8 +979,8 @@ int main (int argc, char *argv[])
                 (void) printf (" remsb = %c ", pchs[i].remsb);
                 (void) printf (" refpol = %c ", pchs[i].refpol);
                 (void) printf (" rempol = %c \n", pchs[i].rempol);
-                (void) printf ("   ref_freq = %.5e ", flip_double(pchs[i].ref_freq));
-                (void) printf (" rem_freq = %.5e \n", flip_double(pchs[i].rem_freq));
+                (void) printf ("   ref_freq = %.12e ", flip_double(pchs[i].ref_freq));
+                (void) printf (" rem_freq = %.12e \n", flip_double(pchs[i].rem_freq));
                 (void) printf ("   ref_chan_id = %.8s ", pchs[i].ref_chan_id);
                 (void) printf (" rem_chan_id = %.8s \n", pchs[i].rem_chan_id);
                 }
@@ -1035,8 +1089,8 @@ int main (int argc, char *argv[])
                 (void) printf (" mbdsize = %d ", flip_short(t206_0->mbdsize));
                 (void) printf (" sbdsize = %d \n", flip_short(t206_0->sbdsize));
                 }
-            else
-                {           /* Assume version 01 */
+                else if (strncmp (t1->recVer, "01", 2) == 0)
+                {           /* version 01 */
                 (void) printf (" start = %d %03d %02d%02d%05.2f ",
                        flip_short(t206_1->start.year), flip_short(t206_1->start.day),
                        flip_short(t206_1->start.hour), flip_short(t206_1->start.minute),
@@ -1081,6 +1135,52 @@ int main (int argc, char *argv[])
                 (void) printf (" mbdsize = %d ", flip_short(t206_1->mbdsize));
                 (void) printf (" sbdsize = %d \n", flip_short(t206_1->sbdsize));
                 }
+                else
+                {           /* Assume version 02 */
+                (void) printf (" start = %d %03d %02d%02d%05.2f ",
+                       flip_short(t206_2->start.year), flip_short(t206_2->start.day),
+                       flip_short(t206_2->start.hour), flip_short(t206_2->start.minute),
+                       flip_float(t206_2->start.second));
+                (void) printf (" first_ap = %d ", flip_short(t206_2->first_ap));
+                (void) printf (" last_ap = %d \n", flip_short(t206_2->last_ap));
+                (void) printf (" accepted[] = ");
+                for (i = 0; i < 64; i++)
+                    {       /* Each accepted[] */
+                    if (i % 4 == 0) /* New line? */
+                        (void) printf (" \n "); /* Yes */
+                    (void) printf (" lsb = %d usb = %d ",
+                               flip_short(pr_2[0][i].lsb), flip_short(pr_2[0][i].usb));
+                    }
+                (void) printf (" \n");
+                (void) printf (" weights[] = ");
+                for (i = 0; i < 64; i++)
+                    {       /* Each weights[] */
+                    if (i % 4 == 0) /* New line? */
+                        (void) printf (" \n "); /* Yes */
+                    (void) printf (" lsb = %.2e usb = %.2e ",
+                               flip_double(t206_2->weights[i].lsb),
+                               flip_double(t206_2->weights[i].usb));
+                    }
+                (void) printf (" \n");
+                (void) printf (" intg_time = %.1f ", flip_float(t206_2->intg_time));
+                (void) printf (" accept_ratio = %.1f ", flip_float(t206_2->accept_ratio));
+                (void) printf (" discard = %.1f \n", flip_float(t206_2->discard));
+                for (j = 1; j < 9; j++)
+                    {       /* Each reason number */
+                    (void) printf (" reason%d[] = ", j);
+                    for (i = 0; i < 64; i++)
+                        {       /* Each reasonj[] */
+                        if (i % 4 == 0) /* New line? */
+                            (void) printf (" \n "); /* Yes */
+                        (void) printf (" lsb = %d usb = %d ",
+                               flip_short(pr_2[j][i].lsb), flip_short(pr_2[j][i].usb));
+                        }
+                    (void) printf (" \n");
+                    }
+                (void) printf (" ratesize = %d ", flip_short(t206_2->ratesize));
+                (void) printf (" mbdsize = %d ", flip_short(t206_2->mbdsize));
+                (void) printf (" sbdsize = %d \n", flip_short(t206_2->sbdsize));
+                }
             continue;
             }           /* End of if type 206 */
         /* * Type-207 record? * */
@@ -1120,8 +1220,8 @@ int main (int argc, char *argv[])
                     (void) printf (" %.2f ", flip_float(t207_0->rem_errate[i]));
                     }
                 }
-            else
-                {           /* Assume version 01 */
+            else if(strncmp (t1->recVer, "01", 2) == 0)
+                {           /* version 01 */
                 (void) printf (" pcal_mode = %d \n", flip_int(t207_1->pcal_mode));
                 for (j = 0; j < 8; j++)
                     {       /* Each pcname_1[] */
@@ -1153,6 +1253,40 @@ int main (int argc, char *argv[])
                     (void) printf (" %.2f ", flip_float(t207_1->rem_errate[i]));
                     }
                 }
+            else
+                {           /* Assume version 02 */
+                (void) printf (" pcal_mode = %d \n", flip_int(t207_2->pcal_mode));
+                for (j = 0; j < 8; j++)
+                    {       /* Each pcname_1[] */
+                    (void) printf (" %s = ", pcname_2[j]);
+                    for (i = 0; i < 64; i++)
+                        {       /* Each pcname_1[j][] */
+                        if (i % 2 == 0) /* New line? */
+                            (void) printf (" \n "); /* Yes */
+                        (void) printf (" lsb = %.2e usb = %.2e ",
+                               flip_float(psbf_2[j][i].lsb), flip_float(psbf_2[j][i].usb));
+                        }
+                    (void) printf (" \n");
+                    }
+                (void) printf (" ref_pcrate = %.2e ", flip_float(t207_2->ref_pcrate));
+                (void) printf (" rem_pcrate = %.2e \n", flip_float(t207_2->rem_pcrate));
+                (void) printf (" ref_errate[] = ");
+                for (i = 0; i < 64; i++)
+                    {       /* Each ref_errate[] */
+                    if (i > 0 && i % 8 == 0)    /* New line? */
+                        (void) printf (" \n "); /* Yes */
+                    (void) printf (" %.2f ", flip_float(t207_2->ref_errate[i]));
+                    }
+                (void) printf (" \n");
+                (void) printf (" rem_errate[] = ");
+                for (i = 0; i < 64; i++)
+                    {       /* Each rem_errate[] */
+                    if (i > 0 && i % 8 == 0)    /* New line? */
+                        (void) printf (" \n "); /* Yes */
+                    (void) printf (" %.2f ", flip_float(t207_2->rem_errate[i]));
+                    }
+                }
+
             (void) printf (" \n");
             continue;
             }           /* End of if type 207 */
@@ -1239,6 +1373,20 @@ int main (int argc, char *argv[])
             {           /* Type 221? */
             /* Postscript plot */
             (void) printf (" ps_length = %d \n", flip_int(t221->ps_length));
+            continue;
+            }           /* End of if type 221 */
+        /* * Type-222 record? * */
+        if (strncmp (t1->recId, "222", 3) == 0)
+            {           /* Type 222? */
+            /* control file record */
+            (void) printf (" set_string_length = %d \n", flip_int(t222->setstring_length));
+            (void) printf (" cf_length = %d \n", flip_int(t222->cf_length));
+            (void) printf (" set_string_hash = %u \n", flip_int(t222->setstring_hash));
+            (void) printf (" control_hash = %u \n", flip_int(t222->control_hash));
+            t222_sspad = ( ( flip_int(t222->setstring_length) + 7 ) & ~7) + 8;
+            t222_cfpad = ( ( flip_int(t222->cf_length) + 7 ) & ~7) + 8;            
+            (void) printf (" set_string contents = %s \n", t222->control_contents);
+            (void) printf (" control_file contents = %s \n", &(t222->control_contents[t222_sspad]) );
             continue;
             }           /* End of if type 221 */
         /* * Type-230 record? * */
@@ -1419,7 +1567,7 @@ int main (int argc, char *argv[])
                         (void) printf ("             ");
                     }
                 }
-            /* Now for something extra special:  Calculate "cooked" values. 
+            /* Now for something extra special:  Calculate "cooked" values.
              * But since we do not read svex, we use default coefficients. */
             (void) printf ("Cooked phase cals (for 2x4) from this type 307: \n");
             for (i = 0; i < 16; i++)
@@ -1475,7 +1623,7 @@ int main (int argc, char *argv[])
                 }
             continue;
             }           /* End of if type 308 */
-        // Type-309 record? 
+        // Type-309 record?
         if (strncmp (t1->recId, "309", 3) == 0)
             if (strncmp (t309->version_no, "00", 2) == 0)
                 {                   // Mk5B phase cal - version 00
@@ -1493,7 +1641,7 @@ int main (int argc, char *argv[])
                 printf ("tone freqs (Hz):");
                 for (i = 0; i < nt; i++)
                     {
-                    if (i % 4 == 0) 
+                    if (i % 4 == 0)
                         printf ("\n");
                     tval = flip_double(t309_v0->chan[i].freq);
                     if (fabs(tval) < 1e9)
@@ -1535,7 +1683,7 @@ int main (int argc, char *argv[])
                 printf ("tone freqs (Hz):");
                 for (i = 0; i < nt; i++)
                     {
-                    if (i % 4 == 0) 
+                    if (i % 4 == 0)
                         printf ("\n");
                     tval = flip_double(t309->chan[i].freq);
                     if (fabs(tval) < 1e9)
@@ -1646,9 +1794,9 @@ int t2s (           /* Convert a time to a printable string */
     /* This is NOT the same as t2s() in CJL's library */
     double arg,     /* The time in seconds to be converted (assumed +) */
     char *ps)
-    {               /* Pointer to a string for the answer.  This 
-                     * string will be 13 bytes long (including \0) and 
-                     * must be dimensioned large enough in the calling 
+    {               /* Pointer to a string for the answer.  This
+                     * string will be 13 bytes long (including \0) and
+                     * must be dimensioned large enough in the calling
                      * program. */
       /* (t2s() is a simplified version of d2s() from, for example, Sho.c) */
     double argp;            /* For seconds roundoff */
@@ -1693,7 +1841,7 @@ short r_short_reverse (short i)
     temp = *p1;
     *p1  = *p2;
     *p2  = temp;
-        
+
     return i;
     }
 
@@ -1706,7 +1854,7 @@ unsigned short r_unsig_reverse (unsigned short i)
     temp = *p1;
     *p1  = *p2;
     *p2  = temp;
-        
+
     return i;
     }
 
@@ -1714,7 +1862,7 @@ unsigned short r_unsig_reverse (unsigned short i)
 int r_int_reverse (int j)
     {
     char *p = (char *)&j, temp;     /* p points to the first byte of j */
-  
+
     temp = p[0];
     p[0] = p[3];
     p[3] = temp;
@@ -1722,7 +1870,7 @@ int r_int_reverse (int j)
     temp = p[1];
     p[1] = p[2];
     p[2] = temp;
-        
+
     return j;
     }
 
@@ -1730,23 +1878,23 @@ int r_int_reverse (int j)
 long r_long_reverse (long j)
     {
     char *p = (char *)&j, temp;     /* p points to the first byte of j */
-  
+
     temp = p[0];
     p[0] = p[7];
     p[7] = temp;
-  
+
     temp = p[1];
     p[1] = p[6];
     p[6] = temp;
-  
+
     temp = p[2];
     p[2] = p[5];
     p[5] = temp;
-  
+
     temp = p[3];
     p[3] = p[4];
     p[4] = temp;
-        
+
     return j;
     }
 
@@ -1754,7 +1902,7 @@ long r_long_reverse (long j)
 float r_float_reverse (float j)
     {
     char *p = (char *)&j, temp;     /* p points to the first byte of j */
-  
+
     temp = p[0];
     p[0] = p[3];
     p[3] = temp;
@@ -1762,7 +1910,7 @@ float r_float_reverse (float j)
     temp = p[1];
     p[1] = p[2];
     p[2] = temp;
-        
+
     return j;
     }
 
@@ -1770,23 +1918,23 @@ float r_float_reverse (float j)
 double r_double_reverse (double j)
     {
     char *p = (char *)&j, temp;     /* p points to the first byte of j */
-  
+
     temp = p[0];
     p[0] = p[7];
     p[7] = temp;
-  
+
     temp = p[1];
     p[1] = p[6];
     p[6] = temp;
-  
+
     temp = p[2];
     p[2] = p[5];
     p[5] = temp;
-  
+
     temp = p[3];
     p[3] = p[4];
     p[4] = temp;
-        
+
     return j;
     }
 

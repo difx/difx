@@ -17,15 +17,9 @@
 #include <complex.h>
 
 void 
-plot_complex (matrix, x, y, width, height, 
-                scale_x, scale_y, winstart, winstop,
-                        points, weights, numpoints, ch, altch,segment,amp_phase_flag) 
-char **matrix;
-int x, y, width, height, numpoints, winstart, winstop,segment;
-complex *points;
-double scale_x, scale_y, *weights;
-char ch, altch;
-
+plot_complex (char** matrix, int x, int y, int width, int height, 
+                double scale_x, double scale_y, int winstart, int winstop,
+                        complex* points, double* weights, int numpoints, char ch, char altch, int segment, int amp_phase_flag) 
     {
     int index, seg, nlsb, nusb, start, stop;
     char symbol;

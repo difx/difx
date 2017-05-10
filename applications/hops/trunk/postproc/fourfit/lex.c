@@ -21,11 +21,8 @@ static char fchars[64] =
      'G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V',
      'W','X','Y','Z','0','1','2','3','4','5','6','7','8','9','$','%'};
 
-
-int lex (input_string)
-
-char *input_string;    /* string contains conditioned input from control file */
-
+ /* string contains conditioned input from control file */
+int lex (char* input_string)
     {
     extern struct token_struct *tokens;  /* output structure of token symbols
                                             and values */

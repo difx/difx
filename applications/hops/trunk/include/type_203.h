@@ -6,10 +6,21 @@
                                         /* defined to be same as app struct */
 #define type_203_v1 type_203
 
+
+/* Note: 12/16/16
+The element 'sample_rate' in the ch_struct below is not currently used
+in the HOPS code. However, it is calculated and filled in the function fill_203.c.
+This function does the calculation with double precision but then casts the result
+to a short, leading to an overflow error. To fix this properly would require 
+changing the data type of 'sample_rate' to a double. This would require re-padding
+this type for alignment though, so, since sample_rate isn't actually used anywhere,
+for the time being the type_203 will be left as is.
+*/
+
 struct ch_struct
     {
     short               index;                  /* Index from type-1 file (t101) */
-    short               sample_rate;            /* Kilosamples/sec */
+    unsigned short int  sample_rate;            // Ksamp/sec (has max of 65.536 MSamp/s)
     char                refsb;                  /* Ref ant sideband (U/L) */
     char                remsb;                  /* Rem ant sideband (U/L) */
     char                refpol;                 /* Ref ant polarization (R/L) */

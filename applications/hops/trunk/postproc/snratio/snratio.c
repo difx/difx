@@ -600,8 +600,7 @@ main(int argc, char *argv[])
     return(0);
 } 
 
-void addsec(ydt)
-char ydt[];
+void addsec(char ydt[])
 {
   char inp[4];
   int dt[4],id,in,i,n;

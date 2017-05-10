@@ -86,7 +86,7 @@ struct mk4_corel
 
 struct mk4_fringe
     {
-    void *allocated[MAXFREQ + 15];
+    void *allocated[MAXFREQ + 16];
     int nalloc;
     char *file_image;
     struct type_000 *id;
@@ -105,6 +105,7 @@ struct mk4_fringe
     struct type_212 *t212[MAXFREQ];
     struct type_220 *t220;
     struct type_221 *t221;
+    struct type_222 *t222;
     int n230;
     struct type_230 *t230[MAXFREQ * MAXAP];
     };

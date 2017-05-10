@@ -3,10 +3,7 @@
 
 
 char *
-sprint_char_arr(array, n)
-char *array;
-int n;
-
+sprint_char_arr( char* array, int n)
     {
     static char result[256];
 

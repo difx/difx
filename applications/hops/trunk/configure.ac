@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.13, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.14, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])
@@ -158,7 +158,7 @@ AC_SUBST(GS_COPYPAGE_OK)
 # PERL/Python might be in nonstandard locations
 AC_PATH_PROGS(PERL, perl, /bin/false)
 #AC_PATH_PROGS(PYTHON, python, /bin/false)
-AM_PATH_PYTHON([2.5],,[:])
+AM_PATH_PYTHON([2.4],,[:])
 if [test "$PYTHON" != : -a "$pythondir" != ""] ; then
     have_python=true
 else
@@ -409,12 +409,12 @@ AC_GBC_NOTICE([%%% have_png is $have_png ($need_png)])
 AM_CONDITIONAL(HAVE_PNG, [test x$have_png = xtrue -o x$need_png = xoptional])
 AC_SUBST(PNG_LIB)
 
-# 
+#
 # HOPS-specific Makefile substitutions
 # The _LIB variables are to be listed on _LDADD lines
 # The _DEP variables are to be given to _DEPENDENCIES
 # The AC_GBC_LIBDEP([name],[dir],[lib]) macro computes 2 substitutions for name
-# 
+#
 HOPS_INC=['-I$(top_srcdir)/include']
 AC_SUBST(HOPS_INC)
 AC_GBC_LIBDEP(AFIO,sub/afio,afio)
@@ -487,6 +487,7 @@ if [ $have_hops = "true" ] ; then
 	help/Makefile
 	include/Makefile
 	scripts/Makefile
+	scripts/phorc/Makefile
 	correlator/Makefile
 	correlator/CorAsc2/Makefile
 	data/Makefile
@@ -519,6 +520,21 @@ if [ $have_hops = "true" ] ; then
 	[scripts/fourphase],
 	[chmod +x scripts/fourphase]
     )
+    AC_CONFIG_FILES(
+        [scripts/fourphase_mod],
+        [chmod +x scripts/fourphase_mod]
+    )
+    AC_CONFIG_FILES(
+        [scripts/ffres2pcp],
+        [chmod +x scripts/ffres2pcp]
+    )
+    AC_CONFIG_FILES(
+        [scripts/est_manual_phases.py],
+        [chmod +x scripts/est_manual_phases.py]
+    )
+    if [ $have_python = "true" ] ; then
+        AC_CONFIG_FILES( [data/ff_testdata/hopstestsuite.py])
+    fi
 fi
 
 ### option disabled

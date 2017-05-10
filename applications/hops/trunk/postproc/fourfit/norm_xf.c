@@ -381,7 +381,8 @@ void norm_xf (struct type_pass *pass,
           continue;
 
                                     /* apply spectral filter as needed */
-      apply_passband (sb, fdata, xp_spec, nlags*2);
+      apply_passband (sb, ap, fdata, xp_spec, nlags*2, datum);
+      apply_notches (sb, ap, fdata, xp_spec, nlags*2, datum);
 
                                     /* Put sidebands together.  For each sb,
                                        the Xpower array, which is the FFT across

@@ -38,7 +38,7 @@ write_record (char *record,
     struct type_205 *t205; struct type_206 *t206;
     struct type_207 *t207; struct type_208 *t208; struct type_210 *t210;
     struct type_212 *t212; struct type_230 *t230;
-    struct type_220 *t220; struct type_221 *t221;
+    struct type_220 *t220; struct type_221 *t221; struct type_222 *t222;
     struct type_300 *t300; struct type_301 *t301;
     struct type_302 *t302; struct type_303 *t303;
     struct type_304 *t304; struct type_305 *t305;
@@ -130,6 +130,10 @@ write_record (char *record,
             t221 = (struct type_221 *)record;
             *bytes = copy_221 (t221, &overlay, &alloc_overlay);
             break;
+        case 222:
+            t222 = (struct type_222 *)record;
+            *bytes = copy_222 (t222, &overlay, &alloc_overlay);
+            break;
         case 230:
             t230 = (struct type_230 *)record;
             *bytes = copy_230 (t230, &overlay);
@@ -195,4 +199,3 @@ write_record (char *record,
     return (0);
         
     }
-

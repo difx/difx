@@ -27,7 +27,7 @@ void msg (char *string,
     if (level >= msglev)
         {
         va_start (args, level);
-        fprintf (stderr, "%s: ", progname);
+        if (*progname) fprintf (stderr, "%s: ", progname);
         vfprintf (stderr, string, args);
         putc ('\n', stderr);
         va_end (args);

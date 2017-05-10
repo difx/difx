@@ -101,4 +101,13 @@ Getting HOPS running via MacPorts.
         PNG12_LIB=/opt/local/lib/libpng12.dylib \
         CPPFLAGS=-I/opt/local/include
 
+    More recently for Lindy...
+
+    cd build
+    ../trunk/configure \
+        LDFLAGS=-L/usr/X11/lib \
+        PNG12_LIB=/opt/local/lib/libpng.dylib \
+        CPPFLAGS=-I/opt/local/include \
+        FFLAGS=-c --enable-devel
+
 eof

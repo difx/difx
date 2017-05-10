@@ -23,12 +23,12 @@
 #include "control.h"
 
 int
-make_passes (ovex, corel, param, pass, npass)
-struct scan_struct *ovex;
-struct freq_corel *corel;
-struct type_param *param;
-struct type_pass **pass;
-int *npass;
+make_passes (
+struct scan_struct *ovex,
+struct freq_corel *corel,
+struct type_param *param,
+struct type_pass **pass,
+int *npass)
     {
     char fgroups[10], baseline[3], source[32], group;            
     struct freq_corel *fc;
@@ -231,26 +231,28 @@ int *npass;
             fc->freq_code = corel[j].freq_code;
             f_c_index = fcode(corel[j].freq_code);   
             fc->frequency = corel[j].frequency;
-            fc->ch_idx = -1;            // link to original ovex channel #
-            for (m=0; m<MAX_CHAN; m++)
-                if (fabs(1e6*fc->frequency 
-                         - (ovex->st+param->ov_bline[0])->channels[m].sky_frequency) < 1e-3
-                    && (fc->ch_idx < 0 || 
-                        (ovex->st+param->ov_bline[0])->channels[m].net_sideband == 'U'))
-
-                    fc->ch_idx = m;
-            if (fc->ch_idx < 0)
-                {
-                fc->ch_idx = 0;
-                msg ("couldn't find frequency %c, pcal may be wrong",2,fc->freq_code);
-                }
                                         // loop over ref & rem stations
             for (n=0; n<2; n++)  
                 {
+                fc->ch_idx[n] = -1;     // link to original ovex channel #
+                for (m=0; m<MAX_CHAN; m++)
+                    if (fabs(1e6*fc->frequency 
+                             - (ovex->st+param->ov_bline[n])->channels[m].sky_frequency) < 1e-3
+                        && (fc->ch_idx[n] < 0 || 
+                            (ovex->st+param->ov_bline[n])->channels[m].net_sideband == 'U'))
+
+                        fc->ch_idx[n] = m;
+                if (fc->ch_idx[n] < 0)
+                    {
+                    fc->ch_idx[n] = 0;
+                    msg ("couldn't find frequency %c, pcal may be wrong",2,fc->freq_code);
+                    }
+
                 strncpy (fc->ch_usb_lcp[n], corel[j].ch_usb_lcp[n], 8);
                 strncpy (fc->ch_usb_rcp[n], corel[j].ch_usb_rcp[n], 8);
                 strncpy (fc->ch_lsb_lcp[n], corel[j].ch_lsb_lcp[n], 8);
                 strncpy (fc->ch_lsb_rcp[n], corel[j].ch_lsb_rcp[n], 8);
+
                 for (k=0; k<16; k++)
                     {
                     fc->trk_lcp[n][k] = corel[j].trk_lcp[n][k];

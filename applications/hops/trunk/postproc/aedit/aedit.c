@@ -63,7 +63,7 @@ int main (int argc, char *argv[])
     extern int optind;
     esum data;
     int file, runfile, c, i, j, n, len, execute(), filelist, ret;
-    char run_fname[100], line[257], *eol;
+    char run_fname[512], line[512], *eol;
     struct com commands[10];    /* Structure contains parsed command info */
 
     environment();                      /* Set up directories according to env't */

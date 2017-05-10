@@ -19,12 +19,12 @@
 #include "param_struct.h"
 
 int 
-organize_data (cdata, ovex, ivex, sdata, corel)
-struct mk4_corel *cdata;
-struct scan_struct *ovex;
-struct ivex_struct *ivex;
-struct mk4_sdata *sdata;
-struct freq_corel *corel;
+organize_data (
+struct mk4_corel *cdata,
+struct scan_struct *ovex,
+struct ivex_struct *ivex,
+struct mk4_sdata *sdata,
+struct freq_corel *corel)
     {
     extern struct type_param param;
     extern int do_accounting;

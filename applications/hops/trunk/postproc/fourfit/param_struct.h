@@ -1,3 +1,5 @@
+#ifndef PARAM_STRUCT_H__
+#define PARAM_STRUCT_H__
                                         /*  Definitions of major parameter structures */
 #define MAXINDEX 256
 #define MAX_ION_PTS 100
@@ -56,6 +58,9 @@ struct type_param
     short       use_sample_cnts;        /* iff true, use sample counts to normalize */
     short       dc_block;               // iff true, zero out DC subchannel in spectrum
     double      passband[2];            /* passband for spectral filtering (MHz) */
+    int         gen_cf_record;          /* whether to generate cf record */
+    int         nnotches;               /* alternative to passband */
+    double      notches[MAXFREQ][2];    /* alternative to passband */
     double      speedup;                /* ration of playback speed to record speed */
     int         first_plot;             // number of first chan to plot, when overridden
     int         nplot_chans;            // number of plot channels when overridden
@@ -69,6 +74,9 @@ struct type_param
     double      weak_channel;           // G code threshhold for single-chan-amp / coherent-sum-amp
     double      pc_amp_hcode;           // H code iff any pc amplitude less than this
     double      fmatch_bw_pct;          // fractional bw % used for frequency matching
+    char*       control_file_buff;      // stripped but unparsed contents of control file
+    char*       set_string_buff;        // stripped but unparsed contents of set commands
+    int         est_pc_manual;          // estimate pc manual values
     };
 
 #define WIN_EDGE_SBD   0x01             /* masks for status.interp_err */
@@ -183,3 +191,5 @@ struct type_status
     int         mb_indx;                // index of max when searching over mb delay
     int         dr_indx;                // index of max when searching over delay rate
     };
+    
+#endif

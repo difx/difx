@@ -15,6 +15,7 @@
 #include "type_212.h"
 #include "type_220.h"
 #include "type_221.h"
+#include "type_222.h"
 #include "type_230.h"
 #include "type_300.h"
 #include "type_301.h"

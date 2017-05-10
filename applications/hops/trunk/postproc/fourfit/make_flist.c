@@ -31,7 +31,7 @@
 #define TRUE 1
 
 int
-make_flist (/*stn1, stn2, fl)*/
+make_flist (
 struct station_struct *stn1,
 struct station_struct *stn2,
 struct freqlist *fl)

@@ -1,13 +1,14 @@
 #
-# $Id: Makefile.am 1152 2015-07-01 16:00:44Z gbc $
+# $Id: Makefile.am 1727 2017-05-10 14:56:21Z barrettj $
 #
 
-SUBDIRS = .
+SUBDIRS = phorc
 
 helpdir = $(pkgdatadir)/vhelp
 
 dist_bin_SCRIPTS =  vhelp env_check vhelper.sh pplot_print \
-		    hops_data_links.pl vhelp.sh fourphase
+		    hops_data_links.pl vhelp.sh fourphase fourphase_mod \
+		    ffres2pcp est_manual_phases.py
 dist_help_DATA   =  vhelp1.awk vhelp2.awk
 
 orig_scripts = vhelp.dist

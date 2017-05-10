@@ -5,9 +5,9 @@
 
 struct com {
         char    cmnd[50];
-        char    arg1[50];
-        char    arg2[50];
-        char    remarg[100];
+        char    arg1[256];
+        char    arg2[256];
+        char    remarg[512];
         short   narg;
 };
 

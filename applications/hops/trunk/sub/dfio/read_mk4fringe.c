@@ -37,6 +37,7 @@ read_mk4fringe (char *filename,
     struct type_210 *addr_210 (short, void *, int *);
     struct type_212 *addr_212 (short, void *, int *);
     struct type_221 *addr_221 (short, void *, int *);
+    struct type_222 *addr_222 (short, void *, int *);
     struct type_230 *addr_230 (short, void *, int *);
                                         /* Standard Mk4 file open call */
     if (open_datafile (filename, &type, &fp) != 0)
@@ -77,7 +78,7 @@ read_mk4fringe (char *filename,
         msg ("fringe record has %d fields with id %d version %d", 0, n, rec_id, version);
         if (n != 2)
             {
-            msg ("Unrecognized record type in fringe file, '%c%c%c%c%c'", 
+            msg ("Unrecognized record type in fringe file, '%c%c%c%c%c'",
                 2, *ptr, *(ptr+1), *(ptr+2), *(ptr+3), *(ptr+4));
             break;
             }
@@ -166,6 +167,13 @@ read_mk4fringe (char *filename,
                 msg ("type 221 record size = %d", 0, size);
                 if (fringe->t221 != (struct type_221 *)ptr) alloc_ptr = fringe->t221;
                 msg ("Type 221 record address = %X", -2, fringe->t221);
+                break;
+
+            case 222:
+                fringe->t222 = (struct type_222 *)addr_222 (version, ptr, &size);
+                msg ("type 222 record size = %d", 0, size);
+                if (fringe->t222 != (struct type_222 *)ptr) alloc_ptr = fringe->t222;
+                msg ("Type 222 record address = %X", -2, fringe->t222);
                 break;
 
             case 230:

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1338 2016-05-27 15:07:22Z rjc $
+# $Id: Makefile.am 1711 2017-05-06 19:14:37Z gbc $
 #
 
 SUBDIRS = .
@@ -45,14 +45,16 @@ fourfit_sources = \
 		  plot_graph.c grid.c put_char_at.c \
 		  sprint_char_arr.c fill_200.c fill_201.c \
 		  fill_202.c fill_203.c fill_204.c fill_205.c \
-		  fill_206.c fill_207.c fill_208.c fill_210.c \
+		  fill_206.c fill_207.c fill_208.c fill_210.c fill_222.c \
 		  compute_qf.c compute_model.c make_postplot.c \
 		  ap_mean.c linterp.c rotate_pcal.c \
 		  fill_212.c fill_230.c stcount_interp.c \
-		  calc_normalization.c apply_passband.c max555.c \
-		  interp555.c pcalibrate.c sampler_delays.c \
+		  calc_normalization.c apply_passband.c apply_notches.c \
+		  max555.c interp555.c pcalibrate.c sampler_delays.c \
 		  norm_xf.c norm_fx.c make_plotdata.c output.c read_sdata.c \
-		  diff_file_phase.c generate_graphs.c generate_text.c
+		  diff_file_phase.c generate_graphs.c generate_text.c \
+		  create_lockfile.c wait_for_write_lock.c \
+		  fourfit_signal_handler.c est_pc_manual.c
 fourfit_SOURCES = $(fourfit_sources)
 
 fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \

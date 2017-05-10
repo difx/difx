@@ -32,7 +32,7 @@
 #include "mk4_sizes.h"
 
 int 
-set_pointers (/*stn1, stn2, cdata, param, corel)*/
+set_pointers (
 struct station_struct *stn1,
 struct station_struct *stn2,
 struct mk4_corel *cdata,

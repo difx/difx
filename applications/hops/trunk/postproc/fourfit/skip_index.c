@@ -12,9 +12,7 @@
 #define TRUE 1
 
 
-int skip_index (ind, cblock)
-int ind;
-struct c_block *cblock;
+int skip_index (int ind, struct c_block* cblock)
    {
    int skip_it,i;
 

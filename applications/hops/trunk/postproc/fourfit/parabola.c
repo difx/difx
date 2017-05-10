@@ -22,14 +22,7 @@
 *******************************************************************************/
 #include <math.h>
 
-int parabola (y, lower, upper, x_max, amp_max, q)
-
-double y[3],
-       lower,
-       upper,
-       *x_max,
-       *amp_max,
-       q[3];
+int parabola (double y[3], double lower, double upper, double* x_max, double* amp_max, double q[3])
     {
     int i,
         rc;

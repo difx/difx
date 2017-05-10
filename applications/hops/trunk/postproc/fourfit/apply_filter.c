@@ -20,8 +20,7 @@
 struct type_filter filter;
 struct type_statistics statistics;
 
-int apply_filter (pass)
-struct type_pass *pass;
+int apply_filter (struct type_pass *pass)
     {
     struct type_120 *record;
     struct data_corel *datum;

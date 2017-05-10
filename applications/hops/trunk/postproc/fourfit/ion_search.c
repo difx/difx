@@ -186,11 +186,14 @@ int ion_search (struct type_pass *pass)
             param.ion_diff = bottom + ionloop * step;
 
                                         // do 3-D grid search using FFT's
-            if (search(pass) != 0)
+            rc = search(pass);
+            if (rc < 0)
                 {
                 msg ("Error fringe searching", 2);
-                return (1);
+                return (-1);
                 }
+            else if (rc > 0)
+                return (rc);
 
                                         // restore original window values for interpolation
             for (i=0; i<2; i++)
@@ -265,7 +268,7 @@ int ion_search_smooth (struct type_pass *pass)
     double smoothed_values[4*MAX_ION_PTS];
     int parabola (double *, double, double, double *, double *, double *);
     void sort_tecs (void);
-    void smoother (double *, double *, double, int *);
+    void smoother (double *, double *, double *, int *);
 
 
                                         // prepare for ionospheric search
@@ -304,9 +307,14 @@ int ion_search_smooth (struct type_pass *pass)
                     {
                     status.dtec[nip][0] = bottom + k * step;
                     status.dtec[nip++][1] = values[k];
+                    msg("smoother input %d %f", -2, k, values[k]);
                     }
                                         // then smooth and interpolate coarse points
-                smoother (values, smoothed_values, step, &ilmax);
+                smoother (values, smoothed_values, &step, &ilmax);
+                for (k=0; k<ilmax; k++)
+                    {
+                    msg("smoother output %d %f", -2, k, smoothed_values[k]);
+                    }
                                         // find maximum from smoothed coarse search
                 valmax = -1.0;
                 for (k=0; k<ilmax; k++)
@@ -380,11 +388,14 @@ int ion_search_smooth (struct type_pass *pass)
             param.ion_diff = bottom + ionloop * step;
 
                                         // do 3-D grid search using FFT's
-            if (search(pass) != 0)
+            rc = search(pass);
+            if (rc < 0)
                 {
                 msg ("Error fringe searching", 2);
-                return (1);
+                return (-1);
                 }
+            else if (rc > 0)
+                return (rc);
 
                                         // restore original window values for interpolation
             for (i=0; i<2; i++)
@@ -454,7 +465,7 @@ void sort_tecs (void)
 
 void smoother (double *f,           // input data array with arbitrary positive length
                double *g,           // output data array with fourfold interpolation
-               double delta_f,      // grid spacing of f in TEC units
+               double *tec_step,    // grid spacing of f in TEC units
                int *npts)           // pointer to length of input array - modified!
     {
     int i,
@@ -464,28 +475,26 @@ void smoother (double *f,           // input data array with arbitrary positive 
         nf,                         // # of input pts
         ng,                         // # of output pts
         ns;                         // # of smoothing curve pts
-    static int generated = FALSE;
     double gwork[4*MAX_ION_PTS],
            shape[4*MAX_ION_PTS],
            ssum;
     
-    if (!generated)
-        {
                                     // generate a smoothing curve. The shape of the idealized
                                     // curve for correlation as a function of TEC is dependent
                                     // on frequency distribution, but for a wide range of
                                     // reasonable 3-10 GHz distributions it has a half-width
                                     // of about 3 TEC units. Thus we use half a cosine curve,
                                     // having approximately that half power width.
-        ns = 9 / delta_f;
-        ns |= 1;                    // make it odd, and ensure it isn't too large
-        if (ns >= 4 * MAX_ION_PTS)
-            ns = 4 * MAX_ION_PTS - 1;
-        msg ("calculated # smoothing pts %d", 2, ns);
-        for (n=0; n<ns; n++)
-            shape[n] = cos (M_PI * (n - ns / 2) / ns);
-        generated = TRUE;
+    ns = 36 / *tec_step;
+    ns |= 1;                        // make it odd, and ensure it isn't too large
+    if (ns >= 4 * MAX_ION_PTS)
+        ns = 4 * MAX_ION_PTS - 1;
+    for (n=0; n<ns; n++)
+        {
+        shape[n] = cos (M_PI * (n - ns / 2) / ns);
+        msg ("shape %d %f", -2, n, shape[n]);
         }
+    *tec_step /= 4;                 // reduced step size for interpolation
 
     nf = *npts;
     ng = 4 * nf - 3;
@@ -502,21 +511,22 @@ void smoother (double *f,           // input data array with arbitrary positive 
 
     for (j=0; j<ng; j++)            // convolution loop
         {
-        kbeg = (ns + 3) / 2 - j;    // calculate part of shape function to convolve with
+        kbeg = (ns - 1) / 2 - j;    // calculate part of shape function to convolve with
         if (kbeg < 0)
             kbeg = 0;
-        kend = ng + (ns + 1) / 2 - j;
+        kend = ng + (ns - 1) / 2 - j;
         if (kend > ns)
             kend = ns;
 
         ssum = 0;
         for (k=kbeg; k<kend; k++)
             {
-            g[j] += g[j+k-(ns+1)/2] * shape[k];
+            g[j] += gwork[j+k-(ns-1)/2] * shape[k];
                                     // sum used shape for normalization
-            if (g[j+k-(ns+1)/2] != 0)
+            if (gwork[j+k-(ns-1)/2] != 0)
                 ssum = ssum + shape[k];
             }
-        g[j] /= ssum;
+        if (ssum != 0)
+            g[j] /= ssum;
         }
     }

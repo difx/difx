@@ -17,7 +17,7 @@
 #include "vex.h"
 
 int
-fill_205 (/* root, pass, param, t203, t205) */
+fill_205 (
 struct scan_struct *root,
 struct type_pass *pass,
 struct type_param *param,
@@ -108,4 +108,3 @@ struct type_205 *t205)
 
     return (0);
     }
-

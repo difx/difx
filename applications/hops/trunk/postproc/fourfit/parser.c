@@ -19,7 +19,7 @@
 #define LXH 0
 #define RYV 1
 
-int parser ()
+int parser (void)
    {
    extern struct token_struct *tokens;   /* input struct of tokens & values   */
    extern double *float_values;          /* array of actual fl. pt. values    */
@@ -236,6 +236,22 @@ int parser ()
                        if (cb_ptr -> baseline[1] == WILDCARD)
                            cb_ptr -> pc_delay_r.ref = 1e-9 * float_values[tval];
                        }
+                   else if (toknum == PC_PHASE_OFFSET_L_
+                         || toknum == PC_PHASE_OFFSET_X_)
+                       {
+                       if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> pc_phase_offset[LXH].rem = float_values[tval];
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> pc_phase_offset[LXH].ref = float_values[tval];
+                       }
+                   else if (toknum == PC_PHASE_OFFSET_R_
+                         || toknum == PC_PHASE_OFFSET_Y_)
+                       {
+                       if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> pc_phase_offset[RYV].rem = float_values[tval];
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> pc_phase_offset[RYV].ref = float_values[tval];
+                       }
                    else if (toknum == DC_BLOCK_)
                        cb_ptr -> dc_block = tval;
                    else if (toknum == SAMPLERS_)
@@ -249,6 +265,8 @@ int parser ()
                        ns = 0;           // next string encountered will be 0th
                        psc = cb_ptr -> sampler_codes;  // point to beg of array
                        }
+                   else if (toknum == GEN_CF_RECORD_)
+                       cb_ptr -> gen_cf_record = tval;
                    else if (toknum == OPTIMIZE_CLOSURE_)
                        cb_ptr -> optimize_closure = tval;
                    else if (toknum == ION_NPTS_)
@@ -265,6 +283,8 @@ int parser ()
                        cb_ptr -> mbd_anchor = tval;
                    else if (toknum == ION_SMOOTH_)
                        cb_ptr -> ion_smooth = tval;
+                   else if (toknum == EST_PC_MANUAL_)
+                       cb_ptr -> est_pc_manual = tval;
                break;
 
 
@@ -512,6 +532,22 @@ int parser ()
                            fval = float_values[tval];
 
                        cb_ptr -> adhoc_poly[nv] = fval;
+                       }
+
+                   else if (toknum == NOTCHES_)
+                       {
+                       if (nv > MAXFREQ*2)
+                           {
+                           msg ("Only %d notches allowed",2,MAXFREQ);
+                           return (-1);
+                           }
+                       if (tokens[ntok].category == INTEGER)
+                           fval = tval;
+                       else
+                           fval = float_values[tval];
+
+                       cb_ptr -> notches[nv / 2][nv % 2] = fval;
+                       cb_ptr -> nnotches = (1 + nv) / 2;
                        }
 
                    else if (toknum == PASSBAND_)
@@ -904,9 +940,7 @@ int parser ()
 *    section are returned in *cb_start and *cb_end.        rjc  92.2.19        *
 *******************************************************************************/
 
-int append_cblocks (cb_start, cb_end, num)
-int num;
-struct c_block **cb_start,**cb_end;
+int append_cblocks (struct c_block **cb_start, struct c_block **cb_end, int num)
    {
    int i;
    struct c_block *cb_ptr;
@@ -942,10 +976,7 @@ struct c_block **cb_start,**cb_end;
 *       94.1.13  rjc  initial code                                             *
 *******************************************************************************/
 
-parsing_error (state_num, ntok)
-
-int state_num,
-    ntok;
+parsing_error (int state_num, int ntok)
    {
    extern struct token_struct *tokens;   /* input struct of tokens & values   */
    extern char *token_string[];
@@ -973,7 +1004,7 @@ int state_num,
    state[MAY_HAVE_TO]       = "MAY_HAVE_TO";  
    state[NEED_2ND_SCAN]     = "NEED_2ND_SCAN";  
 
-   msg ("Parser semantic error on line %d of control file:",2,tokens[ntok].line);
+   msg ("Parser semantic error, line %d of control file:",2,tokens[ntok].line);
    msg ("In state %s, encountered illegal token %s", 2,
          state[state_num], token_string[tokens[ntok].symbol]);
    }

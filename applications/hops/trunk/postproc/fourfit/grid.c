@@ -18,13 +18,20 @@
 #endif
 
 void 
-grid(matrix, pos_x, pos_y, width, height, xscale, yscale, 
-					winstart, winstop, x, y, ch, altch)
-char **matrix;
-int pos_x, pos_y, x, winstart, winstop;
-double xscale, yscale;
-double y;
-char ch, altch;
+grid(
+  char** matrix,
+  int pos_x,
+  int pos_y,
+  int width,
+  int height,
+  double winstart,
+  double winstop,
+  double xscale, 
+  double yscale,
+  double x,
+  double y,
+  char ch, 
+  char altch)
     {
 	
     int tempx, tempy;

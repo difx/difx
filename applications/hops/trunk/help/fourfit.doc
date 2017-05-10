@@ -1,5 +1,5 @@
 Documentation for the program "fourfit"
--- last update 2015.12.7
+-- last update 2017.2.1
 ---------------------------------------
 
 COMMAND NAME:   fourfit
@@ -85,10 +85,13 @@ OPTION FLAGS:
 
         -m value
             This flag controls the verbosity of the program via
-            the integer argument "value", which ranges from 3
+            the integer argument "value", which typically ranges from 3
             (virtually silent except for major errors) to -3 
             (incredibly verbose, of use only to the authors of 
-            the program).  The default is 2.
+            the program).  The default is 2. An additional mode can
+            be toggled on when m=4. This mode prints nothing except
+            the name of the generated fringe file, which can be useful
+            when calling fourfit from other scripts.
 
         -n number of channels
             When channels are overridden (see also the -f flag)
@@ -320,18 +323,26 @@ ACTION KEYWORDS         VALUES
    interpolator       'iterate' or 'simul' (default: iterate)
    ionosphere         float
    ion_npts           int
+   ion_smooth         'true' or 'false' (default: false)
    ion_win            2 floats
    lsb_offset         float
    mb_win             2 floats
    mbd_anchor         'sbd' or 'model' (default: model)
    optimize_closure   'true' or 'false' (default: false)
+   gen_cf_record      'true' or 'false' (default: false)
+   est_pc_manual      int
    passband           2 floats
+   notches            2n floats
    period             int
    pc_amp_hcode       float
    pc_delay_l         float
    pc_delay_r         float
    pc_delay_x         float
    pc_delay_y         float
+   pc_phase_offset_l  float
+   pc_phase_offset_r  float
+   pc_phase_offset_x  float
+   pc_phase_offset_y  float
    pc_phases          n char string, followed by n floats
    pc_phases_l        n char string, followed by n floats
    pc_phases_r        n char string, followed by n floats
@@ -406,6 +417,12 @@ KEYWORD SEMANTICS
                  lower bound is greater than the upper bound, the range
                  wraps around -- allowing a band in the middle to be
                  excluded.
+   notches       up to 64 non-overlapping lower/upper bounds pairs (in MHz)
+                 to exclude from the spectral passband.  (Passband may be
+                 applied prior to removal of these notches.)  Note that the
+                 amplitude modification calculus isn't sufficiently
+                 sophisticated to detect overlaps of passband and notches,
+                 so be sure to keep your surgeries disjoint.
    dc_block      if set to true, zero out lowest cross-power spectral
                  channel; useful for suppressing DC bias
 
@@ -426,6 +443,7 @@ KEYWORD SEMANTICS
                  (semi-) ambiguity.
    dr_win        delay_rate search window bounds, in us/s 
    ion_npts      number of evaluation points in ionospheric coarse search
+   ion_smooth    if true, use alternative search on smoothed TEC grid points
    ion_win       ionospheric coarse search window in TEC units
    ra_offset     apply right asc.offset (asec) to re-center search windows
    dec_offset      "   declination  "   (asec) "      "        "      "
@@ -477,6 +495,10 @@ KEYWORD SEMANTICS
              separately for the two polarization senses.
    pc_delay_x
    pc_delay_y synonyms for pc_delay_l and pc_delay_r (see)
+   pc_phase_offset_x
+   pc_phase_offset_y a single additive phase given in degrees, which is
+             applied to the pcal phase of every channel associated with a given
+             polarization (also pc_phase_offset_l and pc_phase_offset_r)
    lsb_offset additive phase in degrees, for the LSB relative to the USB;
              often necessary when correlating VLBA data against Mk 3
    ref_freq  specifies a frequency in MHz at which the phase delay
@@ -532,6 +554,17 @@ KEYWORD SEMANTICS
    pc_amp_hcode  generate an H code iff any pcal amps less than this (0.005 default)
    weak_channel  the ratio of single_channel_amp to coherent_sum_amp 
                  below which a G code is assigned to the scan (0.5 default)
+   gen_cf_record if true, saves the full control file in the fringe record
+   est_pc_manual if nonzero, estimates manual pc_phase_? and delay_offs_?
+                 values. A value >0/<0 estimates ref/rem station values.
+                 The magnitude is a mask of bits indicating what and how
+                 to make estimates.  0x01 phase, 0x02 median channel sbd,
+                 0x04 average sbd channel, 0x08 use total sbd value,
+                 0x10 use original per-channel sbd delay, 0x20 activates
+                 heuristics to discard outliers and 0x40 reports phase
+                 measurement as a pc_phase_offset_? value.  Calculations
+                 are made with channels in the -f and -n range (inclusive).
+                 Conflicting commanding on delay options does nothing.
 
 SPECIAL KEYWORD VALUES
    ?         wild card character
@@ -570,5 +603,3 @@ GENERAL GUIDELINES
    8) If multiple if-blocks match a particular passes' choice of baseline,
       f_group, source, and scan criteria, then the later values assigned
       to each parameter overwrite the earlier ones.
-
-

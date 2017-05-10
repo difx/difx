@@ -196,7 +196,7 @@ addr_206 (short version,
         cp_float (t206->intg_time, t206_v2->intg_time);
         cp_float (t206->accept_ratio, t206_v2->accept_ratio);
         cp_float (t206->discard, t206_v2->discard);
-        for (i=0; i<16; i++)
+        for (i=0; i<64; i++)
             {
             cp_short (t206->reason1[i].lsb, t206_v2->reason1[i].lsb);
             cp_short (t206->reason1[i].usb, t206_v2->reason1[i].usb);
@@ -221,10 +221,10 @@ addr_206 (short version,
 
         return (t206);
         }
-    else 
+    else
         {
         msg ("Unrecognized type 206 record version number %d", 2, version);
-        if (malloced) 
+        if (malloced)
             {
             free (t206);
             msg ("Freed memory block %d", -1, t206);

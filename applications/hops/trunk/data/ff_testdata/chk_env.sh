@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_env.sh 992 2014-09-03 20:33:07Z gbc $
+# $Id: chk_env.sh 1465 2016-12-15 15:13:23Z barrettj $
 #
 # environment setup -- HOPS_SETUP is not set or false
 # This script is really only needed for distcheck where
@@ -48,6 +48,7 @@ umask 0002
     export LD_LIBRARY_PATH LD_LIBRARY_PATH=$PGPLOT_DIR:$LD_LIBRARY_PATH
     export DEF_CONTROL=/dev/null
     export TEXT=`pwd`
+    export HOPS_PYTEST_SETUP_NEEDED='true'
     $verb &&
 	echo made links in `pwd` &&
 	echo TEXT is $TEXT &&

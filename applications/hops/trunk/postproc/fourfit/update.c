@@ -9,10 +9,7 @@
 #include "param_struct.h"
 #include "pass_struct.h"
 
-update (pass, mbd_cell, max_val, lag, drate_cell, flag)
-struct type_pass *pass;
-int mbd_cell, lag, drate_cell, flag;
-double max_val;
+update (struct type_pass* pass, int mbd_cell, double max_val, int lag, int drate_cell, int flag)
     {
     double dr_max, mbd_max, mbd_max_pre_dr_adjust;
     extern struct type_status status;

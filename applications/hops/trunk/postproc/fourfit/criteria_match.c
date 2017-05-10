@@ -13,11 +13,7 @@
 #include "control.h"
 
 int
-criteria_match (cb_ptr,base,sour,group,time)
-struct c_block *cb_ptr;
-char base[2],sour[31],group;
-int time;
-
+criteria_match (struct c_block* cb_ptr, char base[2], char sour[31], char group, int time)
     {
     int i,match[4],all_match;
 

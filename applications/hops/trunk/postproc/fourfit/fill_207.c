@@ -19,7 +19,7 @@
 #define DEGRAD 180.0/M_PI
 
 int
-fill_207 (/* pass, status, param, t207) */
+fill_207 (
 struct type_pass *pass,
 struct type_status *status,
 struct type_param *param,
@@ -94,4 +94,3 @@ struct type_207 *t207)
 
     return (0);
     }
-

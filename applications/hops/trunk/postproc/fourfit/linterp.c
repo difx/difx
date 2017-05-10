@@ -16,7 +16,7 @@
 /************************************************************************/
 
 int
-linterp (/* coord1, value1, coord2, value2, coord, value) */
+linterp (
 double coord1,
 double value1,
 double coord2,

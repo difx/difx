@@ -23,9 +23,7 @@ char progname[6] = "adump";
 int msglev = 1;
 
 int
-main (argc, argv)
-int argc;
-char *argv[];
+main (int argc, char* argv[])
     {
     int version, type, ret, header, filetype, nskip, first_type;
     char line[512], outline[512];

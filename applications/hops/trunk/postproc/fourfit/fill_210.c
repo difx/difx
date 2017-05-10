@@ -20,7 +20,7 @@
 #define pi 3.141592654
 
 int
-fill_210 (/* pass, status, t210) */
+fill_210 (
 struct type_pass *pass,
 struct type_status *status,
 struct type_210 *t210)
@@ -37,4 +37,3 @@ struct type_210 *t210)
 
     return (0);
     }
-

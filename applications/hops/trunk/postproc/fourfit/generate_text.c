@@ -557,6 +557,11 @@ void generate_text (struct scan_struct *root,
             psright (0.04, ypos, buf);
             }
         ypos -= spacing;
+
+        /* prevent junk chan/track ids from being written out to 
+	the postscript file in the case of a combined polarization fit */
+        if(polstr[0] != 'I') 
+        {
                                         /* Channel ids, reference station */
         if (polstr[0] == 'L' || polstr[0] == 'X')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_lcp[0],
@@ -669,6 +674,7 @@ void generate_text (struct scan_struct *root,
                                     // helpful printout of manual phase cal adjustments,
                                     // to allow zeroing out phase and mbd residuals for
                                     // combining multiple bands    rjc 2010.1.5
+	}  /* end of if(polstr[0] != 'I') */ 
         if (msglev < 2)
             {
             fprintf (stderr, "%6.1f ", fmod(carg (status.fringe[i]) * 180.0 / pi

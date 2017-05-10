@@ -19,7 +19,7 @@
 #include "mk4_sizes.h"
 
 int
-fill_203 (/* root, param, t203) */
+fill_203 (
 struct scan_struct *root,
 struct type_param *param,
 struct type_203 *t203)

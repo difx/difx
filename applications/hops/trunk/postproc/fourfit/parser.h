@@ -20,8 +20,6 @@ struct token_struct
    };
 
 
-#define MAX_TOKENS   105   /* Increase if many more tokens added */
-#define MAX_STATES    20   /*     "    "   "    "   states   "   */
 
 
         /* Definitions for tokens which represent the 
@@ -132,6 +130,14 @@ struct token_struct
 #define DELAY_OFFS_R_    102
 #define DELAY_OFFS_X_    103
 #define DELAY_OFFS_Y_    104
+#define PC_PHASE_OFFSET_L_ 105
+#define PC_PHASE_OFFSET_R_ 106
+#define PC_PHASE_OFFSET_X_ 107
+#define PC_PHASE_OFFSET_Y_ 108
+#define NOTCHES_           109
+#define GEN_CF_RECORD_     110
+#define EST_PC_MANUAL_     111
+#define MAX_TOKENS         112   /* Increase to equal or exceed # tokens */
 
 
         /* Definitions of token categories */
@@ -192,7 +198,7 @@ struct token_struct
 #define NEED_VECTOR_STRING  20
 #define NEED_VS_NUMBER      21
 #define NEED_STRING         22
-
+#define MAX_STATES          25   /* Increase to equal or exceed # states */
 
         /* Definitions of FSM actions */
 
@@ -215,3 +221,4 @@ struct token_struct
 #define CLEAR_FREQS         17
 #define SAVE_2ND_SCAN       18
 #define INSERT_STRING       19
+#define SAVE_CSV_LIST       20

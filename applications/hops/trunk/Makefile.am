@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1085 2015-03-16 17:00:04Z gbc $
+# $Id: Makefile.am 1723 2017-05-09 17:47:20Z gbc $
 #
 
 #
@@ -84,7 +84,8 @@ SUBDIRS = . $(HOPSDIRS) \
 	  $(HOPSDATA) \
 	  $(OMPIDIRS)
 
-EXTRA_DIST = README.txt Fink.txt MacPorts.txt svnrev.txt Copyright configure_ac
+EXTRA_DIST = README.txt Fink.txt MacPorts.txt svnrev.txt Copyright \
+	apt-packages.txt configure_ac ChangeLog.txt capture-log.py
 DIST_SUBDIRS = $(SUBDIRS)
 
 # m4/*.m4 macros scanned by aclocal
@@ -131,11 +132,20 @@ $(TARVERS).tar.gz:
 	@[ -f $(TARVERS).tar.gz ] || \
 	    echo You need to make one of tardist or tarcheck && exit 1
 
-# for revision tracking in distributions
+# for revision tracking in distributions (provided we have a .svn dir)
 svnrev.txt:
-	[ -d $(srcdir)/.svn ] && \
+	-[ -d $(srcdir)/.svn ] && \
 	    svn info $(srcdir) | grep Revision | cut -d' ' -f2 > svnrev.txt ||\
 	    echo 0 > svnrev.txt
+
+# for generating a Changelog (provided we have a .svn dir)
+# we commit it only if it has changed.
+ChangeLog.txt: svnrev.txt $(srcdir)/capture-log.py
+	-[ -d $(srcdir)/.svn ] && \
+	    python $(srcdir)/capture-log.py $(srcdir) > ChangeLog.tmp && \
+	    { cmp -s $(srcdir)/ChangeLog.txt ChangeLog.tmp || \
+	      ( mv ChangeLog.tmp $(srcdir)/ChangeLog.txt && \
+	        svn commit -m'updated for changes' $(srcdir)/ChangeLog.txt ); }
 
 reversion:
 	cd $(srcdir) && svn update

@@ -23,6 +23,7 @@
 #include "type_212.h"
 #include "type_220.h"
 #include "type_221.h"
+#include "type_222.h"
 #include "type_230.h"
 #include "type_300.h"
 #include "type_301.h"
@@ -47,7 +48,7 @@ extern struct type_200 * addr_200 (short, void *, int *);
 extern struct type_201 * addr_201 (short, void *, int *);
 extern struct type_202 * addr_202 (short, void *, int *);
 extern struct type_203 * addr_203 (short, void *, int *);
-extern struct type_204 * addr_204 (short, void *, int *); 
+extern struct type_204 * addr_204 (short, void *, int *);
 extern struct type_205 * addr_205 (short, void *, int *);
 extern struct type_206 * addr_206 (short, void *, int *);
 extern struct type_207 * addr_207 (short, void *, int *);
@@ -56,6 +57,7 @@ extern struct type_210 * addr_210 (short, void *, int *);
 extern struct type_212 * addr_212 (short, void *, int *);
 extern struct type_220 * addr_220 (short, void *, int *);
 extern struct type_221 * addr_221 (short, void *, int *);
+extern struct type_222 * addr_222 (short, void *, int *);
 extern struct type_230 * addr_230 (short, void *, int *);
 extern struct type_300 * addr_300 (short, void *, int *);
 extern struct type_301 * addr_301 (short, void *, int *);
@@ -86,6 +88,7 @@ extern void clear_210 (struct type_210 *);
 extern void clear_212 (struct type_212 *);
 extern void clear_220 (struct type_220 *);
 extern void clear_221 (struct type_221 *);
+extern void clear_222 (struct type_222 *);
 extern void clear_230 (struct type_230 *);
 extern void clear_300 (struct type_300 *);
 extern void clear_301 (struct type_301 *);
@@ -116,6 +119,7 @@ extern int copy_210 (struct type_210 *, char **);
 extern int copy_212 (struct type_212 *, char **);
 extern int copy_220 (struct type_220 *, char **);
 extern int copy_221 (struct type_221 *, char **, int*);
+extern int copy_222 (struct type_222 *, char **, int*);
 extern int copy_230 (struct type_230 *, char **);
 extern int copy_300 (struct type_300 *, char **);
 extern int copy_301 (struct type_301 *, char **);
@@ -129,7 +133,7 @@ extern int copy_308 (struct type_308 *, char **);
 extern int copy_309 (struct type_309 *, char **);
 
 /*----------------------------------------------------------------------------*/
-extern int  alloc_t120_array (int, int, struct index_tag *);   
+extern int  alloc_t120_array (int, int, struct index_tag *);
 extern void clear_coord (struct sky_coord *);
 extern void clear_mk4corel (struct mk4_corel *);
 extern void clear_mk4fringe (struct mk4_fringe *);

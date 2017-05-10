@@ -50,6 +50,7 @@ struct c_block                     /* Elemental control block structure */
    struct istats pc_mode;          /* phase cal modes */
    struct istats pc_period;        // phase cal integration period (in ap's)
    struct dstats pc_freq[MAXFREQ]; /* phase cal freqs (KHz) by channel */
+   struct dstats pc_phase_offset[2];// manual phase offset applied to all channels, by pol 
    struct dstats pc_phase[MAXFREQ][2];/* phase cal phases by channel and pol 
                                              for manual or additive pcal */
    struct istats pc_tonemask[MAXFREQ];// tone exclusion mask by channel in multitone
@@ -81,6 +82,9 @@ struct c_block                     /* Elemental control block structure */
    char adhoc_file[2][256];        // file names if station(s) is in pc_mode file
    char adhoc_file_chans[2][128];  // channel codes [a..zA..Z$%] for pc file phase fields
    double passband[2];             /* passband for spectral filtering (MHz) */
+   int gen_cf_record;              /* whether to general control file record */
+   int nnotches;                   /* alternative to passband */
+   double notches[MAXFREQ][2];     /* alternative to passband */
    double t_cohere;                /* coherence time (s) for co-adding fringe rates */
    struct dstats ionosphere;       // a priori ionospheres (TEC units = 1e16 el/m^2)
    struct dstats delay_offs[MAXFREQ];// additive delay offset(ns) by channel  ##DELAY_OFFS##
@@ -90,6 +94,7 @@ struct c_block                     /* Elemental control block structure */
    char sampler_codes[256];        // contains all sampler strings
    struct dstats sampler_delay[MAX_SAMP][2]; // additive delay per sampler (s), in sampler
                                    // order, for each of 2 polarizations (L/R = X/Y)
+   int est_pc_manual;              // provide estimates of manual pc phases
    int interpolator;               // interpolation method
    int mbd_anchor;                 // mbd ambiguity choice: model or sbd
    struct dstats station_delay;    // station delay pc inject->digitizer (s)

@@ -18,9 +18,9 @@
 
 
 
-int generate_cblock (ovex, pass)
-struct scan_struct *ovex;
-struct type_pass *pass;
+int generate_cblock (
+struct scan_struct *ovex,
+struct type_pass *pass )
     {
     extern struct type_param param;
     extern struct c_block *cb_head;

@@ -20,11 +20,9 @@
 #include "pass_struct.h"
 #include "param_struct.h"
 
-int fringe_search (root, pass)
-struct vex *root;
-struct type_pass *pass;
+int fringe_search ( struct vex* root, struct type_pass* pass)
     {
-    int fr, ap, size, oret; 
+    int fr, ap, size, oret, rc; 
 
     struct data_corel *datum;
     complex *sbarray, *sbptr;
@@ -41,20 +39,20 @@ struct type_pass *pass;
     if (generate_cblock (root->ovex, pass) != 0)     
         {
         msg ("Error generating pass block",2);
-        return (1);
+        return (-1);
         }
                                         /* Currently does default filtering */
     if (apply_filter (pass) != 0)
         {
         msg ("Error filtering data", 2);
-        return (1);
+        return (-1);
         }
                                         /* Load in parameters needed for the */
                                         /* fringe search; do all precorrections */
     if (precorrect(root->ovex, pass) != 0)
         {
         msg ("Error precorrecting data", 2);
-        return (1);
+        return (-1);
         }
                                         /* Allocate memory for SBD functions */
                                         /* Should allocate only for unflagged */
@@ -83,19 +81,25 @@ struct type_pass *pass;
                                         // perform ionospheric search
     if (param.ion_smooth)
         {                               // fine search using smoothed coarse points
-        if (ion_search_smooth (pass))
-                {
-                msg ("Error return from ion_search_smooth", 2);
-                return (-1);
-                }
+        rc = ion_search_smooth (pass);
+        if (rc < 0)
+            {
+            msg ("Error return from ion_search_smooth", 2);
+            return (-1);
+            }
+        else if (rc > 0)                // non-fatal condition
+            return (rc);
         }
     else                                // 3-tiered non-smoothed ion search
         {
-        if (ion_search (pass))
-                {
-                msg ("Error return from ion_search", 2);
-                return (-1);
-                }
+        rc = ion_search (pass);
+        if (rc < 0)
+            {
+            msg ("Error return from ion_search", 2);
+            return (-1);
+            }
+        else if (rc > 0)                // non-fatal condition
+            return (rc);
         }
 
                                         /* Write the fringe file to disk, with */
@@ -107,7 +111,7 @@ struct type_pass *pass;
     if (oret > 0)
         {
         msg ("Error writing results", 2);
-        return (1);
+        return (-1);
         }
     else if (oret < 0) return (-1);
                                         /* Free allocated memory */

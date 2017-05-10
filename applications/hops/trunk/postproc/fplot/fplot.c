@@ -26,9 +26,7 @@
 char progname[6] = "fplot";
 int msglev = 2;
 
-main (argc, argv)
-int argc;
-char *argv[];
+main (int argc, char* argv[])
     {
     int i, display, ret, mk4, size, quit, prompt;
     char c, cmd[128], pmt[128], *file_name;

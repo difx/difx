@@ -13,8 +13,7 @@
 #include <stdio.h>
 #include <math.h>
 
-search_windows(pass)
-struct type_pass *pass;
+search_windows(struct type_pass* pass)
     {
     extern struct type_param param;
     extern struct type_status status;

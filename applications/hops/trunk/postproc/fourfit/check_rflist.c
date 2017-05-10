@@ -26,10 +26,7 @@
 #include "refringe.h"
 
 char *
-check_rflist (baseline, files_index, base_sgrp)
-char *baseline;
-int files_index;
-bsgstruct *base_sgrp;
+check_rflist ( char* baseline, int files_index, bsgstruct* base_sgrp)
     {
     int sgl_index, i, len;
     static char sglist[5];
@@ -59,4 +56,3 @@ bsgstruct *base_sgrp;
     if (strlen (sglist) == 0) return (NULL);
     else return (sglist);
     }
-

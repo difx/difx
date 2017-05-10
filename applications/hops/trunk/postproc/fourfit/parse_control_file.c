@@ -9,10 +9,15 @@
 *******************************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "control.h"
 #include "parser.h"
 #include "mk4_data.h"
 #include "pass_struct.h"
+#include "param_struct.h"
+
+#define IS_CONTROL_FILE 1
+#define IS_SET_STRING 2
 
 char *token_string[MAX_TOKENS];           /* global storage for token strings */
 int token_cat[MAX_TOKENS];                /*    "      "     "   " categories */
@@ -24,19 +29,37 @@ struct fsm_table_entry *fsm_base;
 int *line_end;
 
 int
-parse_control_file (control_file_name)
-char *control_file_name;
-
+parse_control_file (char* control_file_name)
     {
     int n;
+    int flag = 0;
     char *input_string;
     
+    //static char arrays to store the stipped down control strings
+    static char* control_file_string;
+    static char* set_string;
+    extern struct type_param param;
+    
                                                    /* read input control file */ 
-    if (read_control_file (control_file_name,&input_string) != 0) 
+    if (read_control_file (control_file_name,&input_string, &flag) != 0) 
         {
         msg ("Error opening control file %s", 2, control_file_name);
         return (-1);
         }
+        
+    //these strings are malloced here so we can can save them to the type_222 
+    //record later, they will be freed at the end of fourfit main 4/7/17 JPB
+    if(flag == IS_CONTROL_FILE)
+        {
+        param.control_file_buff = (char*) malloc( strlen(input_string) + 1 );
+        strcpy(param.control_file_buff, input_string);
+        }
+    else if(flag == IS_SET_STRING)
+        {
+        param.set_string_buff = (char*) malloc( strlen(input_string) + 1 );
+        strcpy(param.set_string_buff, input_string);
+        }
+        
                                                   /* perform lexical analysis */
     init_tokens ();                               /* first set up token array */
 
@@ -54,7 +77,10 @@ char *control_file_name;
         return (-1);
         }
 
-    free (input_string);                         /* free up temporary storage */
+
+
+                                                  /* free up temporary storage */
+    free (input_string);
     free (fsm_base);
     free (tokens);
     free (float_values);

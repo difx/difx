@@ -106,8 +106,9 @@ int search (struct type_pass *pass)
                                         /* have some! */
     if (status.total_ap == 0)
         {
-        msg ("No valid data for this pass.", 2);
-        return (-1);
+        msg ("Warning: No valid data for this pass for pol %d", 2, pass->pol);
+        fftw_free (data);   // clean up the malloc'ed data array
+        return (1);
         }
     status.epoch_off_cent = -(status.epoch_off_cent / status.total_ap + 0.5)
                 * param.acc_period - param.frt_offset;

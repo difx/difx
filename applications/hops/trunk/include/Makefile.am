@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 436 2011-08-29 14:05:02Z rjc $
+# $Id: Makefile.am 1695 2017-05-02 01:25:23Z barrettj $
 #
 
 SUBDIRS = .
@@ -14,11 +14,12 @@ hops_headers =  account.h adata.h cvex.h data.h evex.h \
 		type_000.h type_100.h type_101.h type_110.h type_120.h \
 		type_200.h type_201.h type_202.h type_203.h type_204.h \
 		type_205.h type_206.h type_207.h type_208.h \
-		type_210.h type_212.h type_220.h type_221.h type_230.h \
+		type_210.h type_212.h type_220.h type_221.h type_222.h type_230.h \
 		type_300.h type_301.h type_302.h \
 		type_303.h type_304.h type_305.h type_306.h \
 		type_307.h type_308.h type_309.h \
-		type_comp.h vex.h
+		type_comp.h vex.h afile_structure.h \
+		fourfit_signal_handler.h write_lock_mechanism.h
 
 # slightly problematic (but needed)
 # cpgplot.h should be included from the local PGPLOT distribution

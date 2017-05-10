@@ -20,7 +20,7 @@
 #include "param_struct.h"
 
 int
-fill_208 (/* pass, param, status, t202, t208) */
+fill_208 (
 struct type_pass *pass,
 struct type_param *param,
 struct type_status *status,
@@ -32,6 +32,8 @@ struct type_208 *t208)
     struct mk4_sdata *refsd, *remsd;
     double adelay, arate, aaccel, temp, adelay_ref, arate_ref;
     double apphase_ref, ref_stn_delay, ambig;
+    double delta_mbd;               // change in mbd to get into desired ambiguity
+    double delta_f;                 // difference between ref freq and nearest freq grid pt
     char qcode, errcode, tqcode[6];
 
     clear_208 (t208);
@@ -62,7 +64,10 @@ struct type_208 *t208)
                                         // anchor total mbd to sbd if desired
     ambig = 1.0 / status->freq_space;
     if (param->mbd_anchor == SBD)
-        t208->tot_mbd += ambig * floor ((t208->tot_sbd - t208->tot_mbd) / ambig + 0.5);
+        {
+        delta_mbd = ambig * floor ((t208->tot_sbd - t208->tot_mbd) / ambig + 0.5);
+        t208->tot_mbd += delta_mbd;
+        }
 
     t208->tot_rate = t208->arate + status->corr_dr_max;
                                         /* ref. stn. time-tagged observables are
@@ -105,7 +110,6 @@ struct type_208 *t208)
     status->apphase = fmod (param->ref_freq * t208->adelay * 360.0, 360.0);
     t208->totphase = fmod (status->apphase + status->coh_avg_phase
                         * (180.0/M_PI) , 360.0);
-    msg ("residual phase %f", 1, status->coh_avg_phase * (180.0/M_PI));
                                         /* Ref stn frame apriori delay usec */
     adelay_ref *= 1.0e6;
                                         /* ref_stn_delay in sec, rate in usec/sec */
@@ -114,6 +118,16 @@ struct type_208 *t208)
     t208->totphase_ref = fmod (apphase_ref + status->coh_avg_phase
                         * (180.0/M_PI) , 360.0);
     t208->resphase = fmod (status->coh_avg_phase * (180.0/M_PI), 360.0);
+                                    // adjust phases for mbd ambiguity
+    if (param->mbd_anchor == SBD)
+        {
+        delta_f = fmod (param->ref_freq - pass->pass_data[0].frequency, status->freq_space);
+        msg ("delta_mbd %g delta_f %g", 1, delta_mbd, delta_f);
+        t208->totphase += 360.0 * delta_mbd * delta_f;
+        t208->resphase += 360.0 * delta_mbd * delta_f;
+        }
+
+    msg ("residual phase %f", 1, t208->resphase);
 
     t208->tec_error = (status->nion) ? status->ion_sigmas[2] : 0.0;
 

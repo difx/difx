@@ -20,11 +20,7 @@
 #define BOUNDS_ERROR		0
 
 void 
-put_char_at ( matrix, x, y, c )
-char **matrix;
-int x, y;
-char c;
-	
+put_char_at (char** matrix, int x, int y, char c )
     {
     int lower_bound = 0 ;
 

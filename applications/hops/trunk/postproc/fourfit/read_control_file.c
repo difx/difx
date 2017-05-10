@@ -15,6 +15,8 @@
 *                   the control_file_name.                                     *
 *                                                              rjc  92.12.17   *
 *                   Added memory file hidden in c_f_n feature  rjc  94.1.26    *
+*                   Added flag argument to distinguish between file and in     *
+*                   and in memory control string reads         jpb  17.4.7     *
 *******************************************************************************/
 
 #include <stdio.h>
@@ -30,12 +32,10 @@
 #define append(cc) buffer = (char *)realloc (buffer,++num_chars);  \
                             buffer[num_chars - 1] = cc      
 
+#define IS_CONTROL_FILE 1
+#define IS_SET_STRING 2
 
-int read_control_file (control_file_name, input_string)
-
-char *control_file_name,
-     **input_string;
-
+int read_control_file (char* control_file_name, char** input_string, int* flag)
    {
    int state,
        num_chars,
@@ -55,6 +55,7 @@ char *control_file_name,
 
    if (memcmp (control_file_name, "if ", 3))   /* special memory file option? */
       {
+      *flag = IS_CONTROL_FILE;
       n = -1;                                  /* no, signify input from file */
       fp = fopen (control_file_name, "r");               /* open control file */
       if (fp == NULL)
@@ -63,6 +64,7 @@ char *control_file_name,
       }
    else
       {
+      *flag = IS_SET_STRING;
       n = 0;                                 /* yes, point to first character */
       c = control_file_name[n++];                              /* and read it */
       }

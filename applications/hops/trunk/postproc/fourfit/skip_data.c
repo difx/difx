@@ -24,9 +24,7 @@
 #define TRUE 1
 #define FALSE 0
 
-int skip_data (scantime, baseline, source,group)
-int scantime;
-char *baseline,*source,group;
+int skip_data (int scantime, char* baseline, char* source, char group)
    {
    extern struct c_block *cb_head;
    struct c_block *cb_ptr;
@@ -58,4 +56,3 @@ char *baseline,*source,group;
    
    return (skipit);
    }
-

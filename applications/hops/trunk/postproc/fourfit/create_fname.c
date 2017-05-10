@@ -23,10 +23,7 @@
 #include "pass_struct.h"
 
 int
-create_fname (root, pass, fname)
-struct scan_struct *root;
-struct type_pass *pass;
-char fname[];
+create_fname (struct scan_struct *root, struct type_pass *pass, char fname[])
     {
     static char buf[256], buf2[256];
     char *directory, *rname, *strrchr(), *strtok(), *scan, *rootcode;

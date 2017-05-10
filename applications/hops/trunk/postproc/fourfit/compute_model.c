@@ -30,8 +30,7 @@
 #include "param_struct.h"
 
 int
-compute_model (/*param, sdata, t202, delay, rate, accel, delay_ref, rate_ref,
-                                                        ref_stn_delay) */
+compute_model (
 struct type_param *param,
 struct mk4_sdata *sdata,
 struct type_202 *t202,

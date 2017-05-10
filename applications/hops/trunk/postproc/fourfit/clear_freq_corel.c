@@ -14,8 +14,7 @@
 #include "pass_struct.h"
 
 void
-clear_freq_corel (corel)
-struct freq_corel *corel;
+clear_freq_corel (struct freq_corel *corel)
     {
     int i, j;
 

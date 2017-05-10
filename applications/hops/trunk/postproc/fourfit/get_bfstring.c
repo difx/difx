@@ -21,8 +21,8 @@
 #define TRUE 1
 
 char *
-get_bfstring (barg)
-char *barg;
+get_bfstring (char* barg)
+
     {
     int i, fgroup, fcount, bcount;
     char c, fgval, baseline[5], bstring[30], fstring[30];

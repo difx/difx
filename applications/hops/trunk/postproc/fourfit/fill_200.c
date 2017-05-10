@@ -23,7 +23,7 @@
 
 
 int
-fill_200 (/* root, param, t200) */
+fill_200 (
 struct scan_struct *root,
 struct type_param *param,
 struct type_200 *t200)

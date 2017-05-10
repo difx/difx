@@ -18,7 +18,7 @@
 #include "filter.h"
 
 int
-fill_206 (/* root, pass, param, status, t206) */
+fill_206 (
 struct scan_struct *root,
 struct type_pass *pass,
 struct type_param *param,
@@ -68,4 +68,3 @@ struct type_206 *t206)
 
     return (0);
     }
-

@@ -14,8 +14,7 @@
 #define TRUE 1
 
 int
-default_cblock (cb_ptr)
-struct c_block *cb_ptr;
+default_cblock (struct c_block *cb_ptr)
 
     {
     int i;
@@ -51,6 +50,13 @@ struct c_block *cb_ptr;
     cb_ptr -> use_samples   = FALSE;
     cb_ptr -> passband[0]   = 0.0;
     cb_ptr -> passband[1]   = 1.0E6;                     /* wide open (1 THz) */
+
+    cb_ptr -> gen_cf_record = FALSE;
+    cb_ptr -> nnotches = 0;
+    for (i=0; i<MAXFREQ; i++)
+        cb_ptr -> notches[i][0] = 0.0;
+        cb_ptr -> notches[i][1] = 1.0E6;
+
     cb_ptr -> t_cohere      = -1.0;
     cb_ptr -> ionosphere.ref= 0.0;
     cb_ptr -> ionosphere.rem= 0.0;
@@ -73,11 +79,14 @@ struct c_block *cb_ptr;
     cb_ptr -> fmatch_bw_pct = 25.0;
     cb_ptr -> mbd_anchor    = MODEL;
     cb_ptr -> ion_smooth    = FALSE;
+    cb_ptr -> est_pc_manual = FALSE;
 
     for (i=0; i<2; i++)                              // clear ref and rem values
         {
         cb_ptr -> adhoc_file[i][0] = 0;
         cb_ptr -> adhoc_file_chans[i][0] = 0;
+        cb_ptr -> pc_phase_offset[i].ref = 0;
+        cb_ptr -> pc_phase_offset[i].rem = 0;
         }
                       
     for (i=0; i<6; i++)

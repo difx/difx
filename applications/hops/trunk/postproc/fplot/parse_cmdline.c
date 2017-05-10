@@ -24,12 +24,7 @@
 #include "fstruct.h"
 #include "fplot.h"
 
-parse_cmdline (argc, argv, files, display, file_name)
-int argc;
-char **argv;
-fstruct **files;
-int *display;
-char **file_name;
+parse_cmdline (int argc, char** argv, fstruct** files, int* display, char** file_name)
     {
     int err;
     char c;

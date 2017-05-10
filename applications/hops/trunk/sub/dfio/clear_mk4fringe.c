@@ -42,6 +42,7 @@ clear_mk4fringe (struct mk4_fringe *fringe)
     fringe->t210 = NULL;
     fringe->t220 = NULL;
     fringe->t221 = NULL;
+    fringe->t222 = NULL;
     fringe->n212 = 0;
     fringe->n230 = 0;
     }

@@ -21,7 +21,7 @@
 
 
 int
-compute_qf (/* pass, param, status, qcode, errcode, tape_qcode) */
+compute_qf (
 struct type_pass *pass,
 struct type_param *param,
 struct type_status *status,
@@ -112,8 +112,16 @@ char *tape_qcode)
         *errcode = 'G';
                                         /* H-code means 1 or more pcals < .01 */
                                         /* when in normal pcal mode */
-    else if ((low_pcal[0] && (param->pc_mode[0] == NORMAL))
-                        || (low_pcal[1] && (param->pc_mode[1] == NORMAL)))
+                                        /* When in multione mode, this means */
+                                        /* that the coherent avarage pcal amp */
+                                        /* is below the threshold. However, it*/
+                                        /* is still possible for individual tones */
+                                        /* to be below the threhold, and not have */
+                                        /* and H code flagged */
+    else if ( (low_pcal[0] && 
+              (param->pc_mode[0] == NORMAL || param->pc_mode[0] == MULTITONE))||  
+              (low_pcal[1] && 
+              (param->pc_mode[1] == NORMAL || param->pc_mode[1] == MULTITONE)) )
         *errcode = 'H';
                                         /* Numeric quality codes */
                                         /* quality factor starts at 9, and falls */
@@ -196,4 +204,3 @@ char *tape_qcode)
 /*     fract = 10.0 * intg_time / dur; */
 /*     if (fract == 10.0) fract = 9.9; */
 /*     t4300->tape_qcode[5] = '0' + (int)(floor (fract)); */
-

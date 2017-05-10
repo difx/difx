@@ -33,7 +33,7 @@ void sort_time (double *, double *, double *, double *, double *, int);
 
 
 int
-stcount_interp (/* sd1, sd2, param, corel) */
+stcount_interp (
 struct mk4_sdata *sd1,
 struct mk4_sdata *sd2,
 struct type_param *param,

@@ -15,9 +15,7 @@
 #define TRUE 1
 
 int
-nullify_cblock (cb_ptr)
-struct c_block *cb_ptr;
-
+nullify_cblock (struct c_block *cb_ptr)
     {
     int i;
 
@@ -65,6 +63,7 @@ struct c_block *cb_ptr;
     cb_ptr -> fmatch_bw_pct   = NULLFLOAT;
     cb_ptr -> mbd_anchor      = NULLINT;
     cb_ptr -> ion_smooth      = NULLINT;  
+    cb_ptr -> est_pc_manual   = NULLINT;  
 
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = NULLFLOAT;
@@ -90,7 +89,15 @@ struct c_block *cb_ptr;
         cb_ptr -> ion_window[i]          = NULLFLOAT;
         cb_ptr -> adhoc_file[i][0]       = 0; 
         cb_ptr -> adhoc_file_chans[i][0] = 0; 
+        cb_ptr -> pc_phase_offset[i].ref = NULLFLOAT;
+        cb_ptr -> pc_phase_offset[i].rem = NULLFLOAT;
         }
+
+    cb_ptr -> gen_cf_record = NULLINT;
+    cb_ptr -> nnotches = NULLINT;
+    for (i=0; i<MAXFREQ; i++)
+        cb_ptr -> notches[i][0] = 
+        cb_ptr -> notches[i][1] = NULLFLOAT;
 
     for (i=0; i<4; i++)
         cb_ptr -> knot[i] = FALSE;

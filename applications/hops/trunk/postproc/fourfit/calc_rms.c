@@ -15,8 +15,7 @@
 #include "pass_struct.h"
 
 void
-calc_rms (pass)
-struct type_pass *pass;
+calc_rms (struct type_pass *pass)
     {
     complex vsum, vsumf, refpc, rempc, pcal, wght_phsr;
     double true_nseg, apwt, wt, totwt, totap, c;

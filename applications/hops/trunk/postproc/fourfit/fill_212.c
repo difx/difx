@@ -16,7 +16,7 @@
 #include "pass_struct.h"
 
 int
-fill_212 (/* pass, status, param, fr, t212) */
+fill_212 (
 struct type_pass *pass,
 struct type_status *status,
 struct type_param *param,

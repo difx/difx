@@ -162,7 +162,7 @@ copy_206 (struct type_206 *t206,
         cp_float (t206_v2->start.second, t206->start.second);
         cp_short (t206_v2->first_ap, t206->first_ap);
         cp_short (t206_v2->last_ap, t206->last_ap);
-        for (i=0; i<16; i++)
+        for (i=0; i<64; i++)
             {
             cp_short (t206_v2->accepted[i].lsb, t206->accepted[i].lsb);
             cp_short (t206_v2->accepted[i].usb, t206->accepted[i].usb);
@@ -172,7 +172,7 @@ copy_206 (struct type_206 *t206,
         cp_float (t206_v2->intg_time, t206->intg_time);
         cp_float (t206_v2->accept_ratio, t206->accept_ratio);
         cp_float (t206_v2->discard, t206->discard);
-        for (i=0; i<16; i++)
+        for (i=0; i<64; i++)
             {
             cp_short (t206_v2->reason1[i].lsb, t206->reason1[i].lsb);
             cp_short (t206_v2->reason1[i].usb, t206->reason1[i].usb);

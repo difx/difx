@@ -24,9 +24,7 @@
 #include "pass_struct.h"
 
 int
-gate_off (pass, frq, ap)
-struct type_pass *pass;
-int frq, ap;
+gate_off (struct type_pass* pass, int frq, int ap)
     {
     int freq_no, mode;
     int period, start_gate, end_gate, duration, acc_period, ap_start, ap_stop;

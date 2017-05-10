@@ -18,7 +18,7 @@
 #include "param_struct.h"
 
 int
-fill_202 (/* root, param, t202) */
+fill_202 (
 struct vex *root,
 struct type_param *param,
 struct type_202 *t202)
@@ -137,4 +137,3 @@ struct type_202 *t202)
         }
     return (0);
     }
-

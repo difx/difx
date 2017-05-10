@@ -18,7 +18,7 @@
 #include "mk4_data.h"
 
 int
-fill_204 (/* t204) */
+fill_204 (
 struct type_204 *t204)
     {
     extern char control_filename[], *control_string, version_no[];
@@ -61,4 +61,3 @@ struct type_204 *t204)
 
     return (0);
     }
-

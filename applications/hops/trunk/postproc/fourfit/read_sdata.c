@@ -18,7 +18,7 @@
 #include "mk4_dfio.h"
 
 int
-read_sdata (/*fset, sdata) */
+read_sdata (
 struct fileset *fset,
 struct mk4_sdata *sdata)
     {

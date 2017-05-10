@@ -21,8 +21,7 @@
 #define FALSE 0
 
 int 
-display_fplot (fringe)
-struct mk4_fringe *fringe;
+display_fplot (struct mk4_fringe *fringe)
     {
     FILE *fp, *fopen();
     char c;

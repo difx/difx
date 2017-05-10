@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1199 2015-09-11 15:32:46Z gbc $
+# $Id: Makefile.am 1699 2017-05-02 16:39:30Z gbc $
 #
 
 SUBDIRS = .
@@ -26,7 +26,8 @@ libdfio_a_SOURCES = init_000.c addr_100.c copy_100.c clear_100.c \
 		    clear_208.c addr_210.c copy_210.c clear_210.c \
 		    addr_212.c copy_212.c clear_212.c addr_220.c \
 		    copy_220.c clear_220.c addr_221.c copy_221.c \
-		    clear_221.c addr_230.c copy_230.c clear_230.c \
+		    clear_221.c addr_222.c copy_222.c clear_222.c \
+		    addr_230.c copy_230.c clear_230.c \
 		    addr_300.c copy_300.c clear_300.c addr_301.c \
 		    copy_301.c clear_301.c addr_302.c copy_302.c \
 		    clear_302.c addr_303.c copy_303.c clear_303.c \
@@ -45,7 +46,7 @@ libdfio_a_SOURCES = init_000.c addr_100.c copy_100.c clear_100.c \
 # the original test programs
 check_PROGRAMS = test_mk4fringe test_compress
 
-test_mk4fringe_SOURCES = test.c
+test_mk4fringe_SOURCES = mk4fringe_test.c
 test_mk4fringe_LDADD = -L. -ldfio @AFIO_LIB@ @UTIL_LIB@
 
 test_compress_SOURCES = test_compress.c compress.c

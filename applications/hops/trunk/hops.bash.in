@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id: hops.bash.in 1287 2016-01-14 13:35:03Z gbc $
+# $Id: hops.bash.in 1727 2017-05-10 14:56:21Z barrettj $
 #
 # Version @VERSION@
 #
@@ -80,6 +80,7 @@ esac
     Info=`echo $INFOPATH | sed -e "s+@infodir@[:]*++g"`
     Libp=`echo $LD_LIBRARY_PATH | sed -e "s+@libdir@/hops[:]*++g"`
     Pyp=`echo $PYTHONPATH | sed -e "s+@pkgpythondir@[:]*++g"`
+    Pyp=`echo $Pyp | sed -e "s+${pythondir}[:]*++g"`
     export PATH=$Path
     export INFOPATH=$Info
     export LD_LIBRARY_PATH=$Libp
@@ -137,7 +138,7 @@ hops_pythondir=$pythondir
 
     [ -z "$PYTHONPATH" ] && PYTHONPATH=@pkgpythondir@ ||
         PYTHONPATH=@pkgpythondir@:$PYTHONPATH
-    export PYTHONPATH
+    export PYTHONPATH=$pythondir:$PYTHONPATH
 
     # program documentation
     export HOPS_DOCS=@datadir@/hops

@@ -86,6 +86,11 @@ write_mk4fringe (struct mk4_fringe *fringe,
     totbytes += bytes;
     if (write_record ((char*)fringe->t221, fp, &bytes) < 0) quit;
     totbytes += bytes;
+    if(fringe->t222 != NULL)
+        {
+        if (write_record ((char*)fringe->t222, fp, &bytes) < 0) quit;
+        totbytes += bytes;
+        }
     for (i=0; i<fringe->n212; i++)
         {
         if (write_record ((char*)fringe->t212[i], fp, &bytes) < 0) quit;

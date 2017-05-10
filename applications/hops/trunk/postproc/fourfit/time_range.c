@@ -18,11 +18,7 @@
 #include "param_struct.h"
 
 int 
-time_range (ovex, stn1, stn2, cdata, param)
-struct scan_struct *ovex;
-struct station_struct *stn1, *stn2;
-struct mk4_corel *cdata;
-struct type_param *param;
+time_range (struct scan_struct* ovex, struct station_struct* stn1, struct station_struct* stn2, struct mk4_corel* cdata, struct type_param* param)
     {
     char st1, st2;
     double scan_start_ref, start_ref, startoff, sstart, sstop;

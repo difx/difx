@@ -20,14 +20,17 @@
 #include <string.h>
 #include <complex.h>
 
-int precorrect (ovex, pass)
-struct scan_struct *ovex;
-struct type_pass *pass;
+extern void   account (char *);
+extern void   msg (char *, int, ...);
+extern int fcode(char c);
+
+int precorrect (struct scan_struct* ovex, struct type_pass* pass)
     {
     int i, j, k, stn, n, fr, ntones, nin, mask, chind;
     double delay_offset, rate_offset, pcfreq_hz,
            pcphas[2][2],            // indexed by [stn][pol]
-           pcfreq[2];
+           pcfreq[2],
+           static_pc_off;
     extern struct type_status status;
     extern struct type_param param;
     extern int do_accounting;
@@ -55,6 +58,7 @@ struct type_pass *pass;
     
     param.ion_pts = pass->control.ion_npts;
     param.mbd_anchor = pass->control.mbd_anchor;
+    param.est_pc_manual = pass->control.est_pc_manual;
 
     for (i=0; i<2; i++)             // Copy windows into working area
         {
@@ -71,6 +75,14 @@ struct type_pass *pass;
         param.win_ion[i] -= (pass->control.ionosphere.ref == NULLFLOAT) ? 
                            0.0 : pass->control.ionosphere.ref;
         }
+    param.nnotches = pass->control.nnotches;
+    for (j=0; j<pass->control.nnotches; j++)
+        {
+        param.notches[j][0] = pass->control.notches[j][0];
+        param.notches[j][1] = pass->control.notches[j][1];
+        }
+    param.gen_cf_record = pass->control.gen_cf_record;
+    if (param.gen_cf_record) msg("CF Record will be generated",1);
 
     param.pc_mode[0] = pass->control.pc_mode.ref;
     param.pc_mode[1] = pass->control.pc_mode.rem;
@@ -94,7 +106,7 @@ struct type_pass *pass;
         for (fr = 0; fr < pass->nfreq; fr++)  
             {
             j = fcode(pass->pass_data[fr].freq_code);
-            chind = pass->pass_data[fr].ch_idx;
+            chind = pass->pass_data[fr].ch_idx[stn];
 
                                     // copy delay calib. values into status array
             status.delay_offs[fr][stn] = (stn) ? pass->control.delay_offs[j].rem 
@@ -117,8 +129,14 @@ struct type_pass *pass;
                     }
                    
                 for (i=0; i<2; i++)
-                    status.pc_offset[fr][stn][i] = (pcphas[stn][i] != NULLFLOAT) ? pcphas[stn][i] 
-                                                                                 : 0.0;
+                    {
+                    status.pc_offset[fr][stn][i] = (pcphas[stn][i] != NULLFLOAT) ? pcphas[stn][i] : 0.0;
+                                    //add the static (constant across all channels) phase offset for each pol
+                    static_pc_off = (stn == 0)
+                                  ? pass->control.pc_phase_offset[i].ref
+                                  : pass->control.pc_phase_offset[i].rem;
+                    status.pc_offset[fr][stn][i] += (static_pc_off != NULLFLOAT) ? static_pc_off : 0.0;
+                    }
 
                                     // expand tone #'s into frequencies, if necessary
                 if (fabs (pcfreq[stn]) > 64)
@@ -153,9 +171,6 @@ struct type_pass *pass;
                           pcfreq[stn], pcfreq_hz);
                     }
 
-
-
-                        
                 for (k=0; k<MAX_PCF; k++)
                     if (fabs (pcfreq_hz - pass->pass_data[fr].pc_freqs[stn][k]) < 1e-6)
                         break;
@@ -176,7 +191,7 @@ struct type_pass *pass;
                 pass->pcinband[stn][fr][k] = k;
                 msg ("stn %d using pcal tone #%d of %lf Hz for freq %d code %c",
                      0, stn, k, pcfreq_hz, fr, pass->pass_data[fr].freq_code);
-                }                   // end of fr loop
+                }                   // end of non-multitone mode case
             else
                 {                   // process all tones in multitone mode
                 for (i=0; i<2; i++)
@@ -184,8 +199,17 @@ struct type_pass *pass;
                                                 : pass->control.pc_phase[j][i].rem;
                                     // apply a priori phase offset to each pol
                 for (i=0; i<2; i++)
+                {
                     status.pc_offset[fr][stn][i] = (pcphas[stn][i] != NULLFLOAT) ? pcphas[stn][i] 
                                                                                  : 0.0;
+                                    //add the static (constant across all channels) phase offset for each pol
+                    static_pc_off = (stn == 0)
+                                  ? pass->control.pc_phase_offset[i].ref 
+                                  : pass->control.pc_phase_offset[i].rem;
+                                                      
+                    status.pc_offset[fr][stn][i] += (static_pc_off != NULLFLOAT) ? static_pc_off 
+                                                                                 : 0.0;
+                }
 
                                     // assume for now that all ovex channels the same spacing
                 pcfreq_hz = fmod (pass->pass_data[fr].frequency * 1e6
@@ -240,8 +264,8 @@ struct type_pass *pass;
                                     // save maximum number of tones in any channel
                 if (nin > pass->npctones)
                     pass->npctones = nin;
-                }
-            }
+                }                   // end of multitone case
+            }                       // end of fr loop
         }                           // end of stn loop
 
                                     // copy in ad hoc phase model

@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 #include "vex.h"                        /* Needed for the VEX root file format */
 #include "mk4_data.h"                   /* Definitions of Mk4 data structures */
@@ -36,6 +37,8 @@
 #include "fstruct.h"                    /* For handling file specifiers on cmd line */
 #include "refringe.h"                   /* Specific to -r option */
 #include "fileset.h"
+#include "write_lock_mechanism.h"
+#include "fourfit_signal_handler.h"
 
 struct type_param param;                
 struct type_status status;              /* External structure declarations */
@@ -56,6 +59,9 @@ int refringe = FALSE;
 int ap_per_seg = 0;
 int reftime_offset = 0;
 
+//global variables provided for signal handler clean up of lock files
+lockfile_data_struct global_lockfile_data;
+
 //char progname[] = "fourfit";            /* extern variables for messages */
 char progname[] = FF_PROGNAME;		// fourfit or fearfit from Makefile
 int msglev = 2;
@@ -71,9 +77,7 @@ char version_no[] = FF_VER_NO;		// PACKAGE_VERSION from Makefile
 #define FALSE 0
 #define TRUE 1
 
-main (argc, argv)
-int argc;
-char **argv;
+main (int argc, char** argv)
     {
     struct vex root;
     struct freq_corel corel[MAXFREQ];
@@ -86,6 +90,20 @@ char **argv;
     fstruct *files, *fs;
     struct fileset fset;
     bsgstruct *base_sgrp;
+    
+    //init lockfile data struct
+    clear_global_lockfile_data();
+
+                                        /* set up signal action */
+    struct sigaction handler_action;
+    handler_action.sa_handler = &fourfit_signal_handler;
+    handler_action.sa_flags = SA_RESTART;
+    sigfillset(&handler_action.sa_mask);
+                                              /* register the signal handler */
+    fourfit_register_signal_handler(&handler_action);
+
+
+
                                         /* Start accounting */
     account ("!BEGIN");
                                         /* Get standard environment settings */
@@ -253,6 +271,10 @@ char **argv;
                                         /* Complete accounting and exit */
     if (do_accounting) account ("Report results");
     if (do_accounting) account ("!REPORT");
+    
+    //free up control buffers
+    free(param.control_file_buff);
+    free(param.set_string_buff);
 
     exit(ret);
     }

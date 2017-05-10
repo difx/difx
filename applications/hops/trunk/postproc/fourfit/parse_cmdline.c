@@ -29,13 +29,15 @@
 #define FALSE 0
 #define TRUE 1
 
+//bumping control_filename and afile_name buffers up to 512 chars
+//since 100 chars seems a little restrictive, jpb 12/20/16
 char display_name[1024];
-char control_filename[100];
+char control_filename[512];
 char *control_string;
-char afile_name[100];
+char afile_name[512];
 int displayopt = FALSE;
 
-parse_cmdline (/* argc, argv, files, base_sgrp, param) */
+parse_cmdline (
 int argc,
 char **argv,
 fstruct **files,
@@ -97,7 +99,8 @@ struct type_param *param)
                     msg ("Invalid -m flag argument '%s'", 2, optarg);
                     msg ("Message level remains at %d", 2, msglev);
                     }
-                if (msglev > 3) msglev = 3;
+                 //1/27/17 jpb, updated for include '4' as a special parameter which only prints the name of the generated fringe file
+                if (msglev > 4) msglev = 4;
                 if (msglev < -3) msglev = -3;
                 break;
 
@@ -215,6 +218,15 @@ struct type_param *param)
             msg ("Constructed string was '%s'", 3, control_string);
             return (1);
             }
+        }
+        else
+        {
+            //no set string was passed but we still need to make note of this in
+            //the type_222 record, so allocate a small chunk to store an empty
+            //string
+            param->set_string_buff = (char*) malloc(2);
+            param->set_string_buff[0] = ' ';
+            param->set_string_buff[1] = '\0';
         }
                                         /* Make list of roots to process */
                                         /* If refringe mode, also attach list */

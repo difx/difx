@@ -32,6 +32,10 @@
 
 #define signum(a) (a>=0 ? 1.0 : -1.0)
 
+#define CIRC_MODE 0
+#define LIN_MODE 1
+#define MIXED_MODE 2
+
 void norm_fx (struct type_pass *pass, 
               int fr, 
               int ap)
@@ -61,6 +65,13 @@ void norm_fx (struct type_pass *pass,
 
     extern struct type_param param;
     extern struct type_status status;
+
+    //determine if the ref and rem stations are using circular or linear
+    //feeds, or it is some combination
+    int station_pol_mode = CIRC_MODE;
+    if( pass->linpol[0] == 0 && pass->linpol[1] == 0){station_pol_mode = CIRC_MODE;}
+    if( pass->linpol[0] == 1 && pass->linpol[1] == 1){station_pol_mode = LIN_MODE;}
+    if( pass->linpol[0] != pass->linpol[1] ){station_pol_mode = MIXED_MODE;}
 
     if (pass->npols == 1)
         {
@@ -142,24 +153,52 @@ void norm_fx (struct type_pass *pass,
         switch (pol)
             {
             case POL_LL: t120 = datum->apdata_ll[sb];
+            if(station_pol_mode == LIN_MODE)  //TODO: check if this correction should also be applied in mixed-mode case
+            {
                          polcof = (pass->npols > 1) ?
                              cos (dpar) :
                              signum (cos (dpar));
+            }
+            else
+            {
+                polcof = 1;
+            }
                          break;
             case POL_RR: t120 = datum->apdata_rr[sb];
+            if(station_pol_mode == LIN_MODE)
+            {
                          polcof = (pass->npols > 1) ?
                              cos (dpar) :
                              signum (cos (dpar));
+            }
+            else
+            {
+                polcof = 1;
+            }
                          break;
             case POL_LR: t120 = datum->apdata_lr[sb];
+            if(station_pol_mode == LIN_MODE)
+            {
                          polcof = (pass->npols > 1) ?
                              sin (-dpar) :
                              signum (sin (-dpar));
+            }
+            else
+            {
+                polcof = 1;
+            }
                          break;
             case POL_RL: t120 = datum->apdata_rl[sb];
+            if(station_pol_mode == LIN_MODE)
+            {
                          polcof = (pass->npols > 1) ?
                              sin (dpar) :
                              signum (sin (dpar));
+            }
+            else
+            {
+                polcof = 1;
+            }
                          break;
             }
         polcof_sum += fabs (polcof);
@@ -256,7 +295,8 @@ void norm_fx (struct type_pass *pass,
           continue;
 
                                     /* apply spectral filter as needed */
-      apply_passband (sb, fdata, xp_spec, nlags*2);
+      apply_passband (sb, ap, fdata, xp_spec, nlags*2, datum);
+      apply_notches (sb, ap, fdata, xp_spec, nlags*2, datum);
 
                                     /* Put sidebands together.  For each sb,
                                        the Xpower array, which is the FFT across
