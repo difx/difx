@@ -166,6 +166,11 @@ else
 fi
 AM_CONDITIONAL([HAVE_PYTHON], [$have_python])
 
+if [ $have_python = "true" ] ; then
+    AC_PYTHON_MODULE_CHECK(setuptools)
+#    AM_COND_IF([HAVE_PYTHON_MODULE_setuptools], AC_MSG_NOTICE([found python setuptools]), AC_MSG_NOTICE([missing python setuptools]))
+fi
+
 # Checks for libraries.
 AC_CHECK_LIB(m, floorl)
 

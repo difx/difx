@@ -15,6 +15,8 @@ SRC_FILES = src/phorc/__init__.py \
 
 EXTRA_DIST = $(SRC_FILES) setup.py
 
+if HAVE_PYTHON_MODULE_setuptools
+
 all-local:
 	(mkdir -p ./build)
 	(rsync $(srcdir)/ -a .)
@@ -37,31 +39,7 @@ uninstall-local:
 	cat $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_files.txt | xargs rm -rf
 	rm -rf $(DESTDIR)$(pythondir)/$(PKG_NAME)
 	
-	
-
-# all-local:
-# 	(rsync $(srcdir)/ -a .) 
-# 	(cd $(srcdir); $(PYTHON) setup.py egg_info \
-# 		--egg-base $(shell readlink -f $(builddir))/build \
-# 		--verbose)
-# 	(cd $(srcdir); $(PYTHON) setup.py build \
-# 		--build-base $(shell readlink -f $(builddir))/build \
-# 		--verbose)
-# 
-# install-exec-local:
-# 	(cd $(srcdir); $(PYTHON) setup.py egg_info \
-# 		--egg-base $(shell readlink -f $(builddir))/build \
-# 		--verbose)
-# 	$(PYTHON) $(srcdir)/setup.py install \
-# 		--prefix $(DESTDIR)$(prefix) \
-# 		--single-version-externally-managed \
-# 		--record $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_files.txt \
-# 		--verbose
-# 
-# uninstall-local:
-# 	cat $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_files.txt | xargs rm -rf
-# 	rm -rf $(DESTDIR)$(pythondir)/$(PKG_NAME)
-
+endif	
 
 #
 # eof
