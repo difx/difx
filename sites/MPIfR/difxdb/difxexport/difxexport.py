@@ -38,9 +38,9 @@ exportName = "EXPORT"
 def description():
 	desc = "A program to export the correlation data products (e.g. FITS files) to the FTP server for download by the PIs. "
 	desc += "The export path contains a randomly generated name (default 10 characters). "
-	desc += "For all exported files md5 checksums are calculated and are stored in the database together with the file names and export paths.\n "
+	desc += "For all exported files partial md5 checksums are calculated and are stored in the database together with the file names and export paths.\n "
 	desc += "The files to be exported are expected to be located in subdirectories underneath a directory named EXPORT."
-	desc += "When re-running the program on an experiment all previously exported files get ermoved from the FTP server and the database references will be deleted! "
+	desc += "When re-running the program on an experiment all previously exported files will be removed from the FTP server and the database references will be deleted! "
 	return desc
 
 def getTransferFileCount(source, destination, options=""):
@@ -67,6 +67,24 @@ def getTransferFileCount(source, destination, options=""):
     
     return(totalCount, fileCount)
 
+def partialChecksum(filePath):
+    
+   cmd = 'head -c 1000000 %s | md5sum' % ( filePath)
+   output = ""
+   checksum = ""
+
+   proc = subprocess.Popen(cmd,
+                                       shell=True,
+                                       stdin=subprocess.PIPE,
+                                       stdout=subprocess.PIPE,
+                                       )
+   while True:
+	output = proc.stdout.readline()
+        if not output:
+            break
+	checksum = output.split(" ")[0]
+   return checksum
+
 def syncDir(srcPath, destPath, fileCount, dryRun):
     '''
     sync source to dest using rsync
@@ -84,7 +102,7 @@ def syncDir(srcPath, destPath, fileCount, dryRun):
                                        stdout=subprocess.PIPE,
                                        )
     
-    while True and not dryRun:
+    while True:
         output = proc.stdout.readline()
 
         if not output:
@@ -155,15 +173,10 @@ def deleteExportFiles(session, expCode):
     # delete files
     for file in experiment.exportFiles:
         filePath = file.exportPath + "/" + file.filename
-        #print "Processing: ", filePath
              
         if file.exportPath not in delDirs:
             delDirs.append(file.exportPath)
     
-        root = file.exportPath[:file.exportPath.rfind("/")]
-        if root not in rootDirs:
-            rootDirs.append(root)
-            
         if os.path.isfile(filePath):
             try:
                 os.remove(filePath)
@@ -181,15 +194,6 @@ def deleteExportFiles(session, expCode):
             session.close()
             sys.exit("Cannot delete directory: %s. Aborting!" % dir)
     
-    #delete root directories
-    for dir in rootDirs:
-        try:
-            if os.path.isdir(dir):
-                os.rmdir(dir)
-        except:
-            session.close()
-            sys.exit("Cannot delete directory: %s. Aborting!" % dir)
-        
     experiment.exportFiles = []
     session.flush()
     session.commit()
@@ -208,7 +212,6 @@ def exitOnError(exception):
 #######################
 parser = argparse.ArgumentParser(prog='PROG',description=description())
 
-parser.add_argument("-d", "--dry-run", dest='dryRun', action='store_true', default= False, help="Do a dry run. No files will be exported.")
 parser.add_argument('exp', help='The experiment code')
 parser.add_argument('expDir', help='The full path to the experiment directory.')
 
@@ -270,49 +273,58 @@ if len(files) != 0:
     print "When proceeding all files will be deleted and will be replaced by the contents of %s\n\n" % args.rootDir
     confirmAction()
     
+
     deleteExportFiles(session, args.exp)
     
 exportFiles = []
+
 for dir in dirs:
-    srcDir = args.rootDir + "/" + dir
-    exportDir = ftpPath + "/" + args.exp + "_" + randomString()
+    srcDir = args.rootDir + "/" + dir + "/"
+    exportDir = ftpPath + "/" + args.exp + "_" + dir + "_" + randomString()
            
-    if not args.dryRun:
-         # create directory on FTP server
-        if not os.path.exists(exportDir):
+    #if not args.dryRun:
+    # create directory on FTP server
+    if not os.path.exists(exportDir):
                 try:
                         os.makedirs(exportDir)
                 except:
                         sys.exit("Cannot create directory: %s\n" % exportDir)
                         
+
+
     # rsync files 
     while True:
-        total, fileCount = getTransferFileCount(srcDir, exportDir)
+    	total, fileCount = getTransferFileCount(srcDir, exportDir)
 
-        if (fileCount == 0):
+     	if (fileCount == 0):
             break
 
         # copy files to the archive server
-        syncDir(srcDir, exportDir, total, args.dryRun )
+        syncDir(srcDir, exportDir, total, False)
 
-        if args.dryRun:
-            break
-    # update database
-    for file in os.listdir(srcDir):
-        if os.path.isfile(srcDir + "/" + file):
-            exportFile = ExportFile()
-            exportFile.experimentID = experiment.id
-            exportFile.filename = file
-            exportFile.exportPath = exportDir + "/" + dir
-            exportFile.checksum = hashlib.md5(open(srcDir+"/"+file, "rb").read()).hexdigest() 
-            #experiment.exportFiles.extend(exportFile)
-            exportFiles.append(exportFile)
-            
+    exportPath = exportDir 
+    # loop over all files in the export dir
+    for file in os.listdir(exportPath):
+	# calculate md5 checksum of first 100MB
+	filePath = exportDir + "/" + file
+	checksum = partialChecksum(filePath)
+
+    	# update database
+        exportFile = ExportFile()
+        exportFile.experimentID = experiment.id
+        exportFile.filename = file
+        exportFile.exportPath = exportPath
+        exportFile.checksum = checksum
+        exportFiles.append(exportFile)
+
 experiment.exportFiles = exportFiles
-                                 
 session.commit()
 session.flush()
 session.close()
+
+# verify that database update is complete
+
+
     
 
     
