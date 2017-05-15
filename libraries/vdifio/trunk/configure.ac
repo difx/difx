@@ -83,6 +83,13 @@ if test ${ipp_enabled} = 1; then
         CFLAGS="${CFLAGS} ${IPP_CFLAGS}"
 fi
 
+# Add codif support to a handful of the utilities
+PKG_CHECK_MODULES(CODIFIO, codifio, [HAVE_CODIFIO=1],  [HAVE_CODIFIO=0])
+AM_CONDITIONAL([USE_CODIFIO], [test "$HAVE_CODIFIO" -eq 1])
+AS_IF([test "$HAVE_CODIFIO" -eq 1], [AC_DEFINE([USE_CODIFIO], [1], [Define if using codifio.])])
+if test ${HAVE_CODIFIO} = 1; then
+      	CFLAGS="${CFLAGS} ${CODIFIO_CFLAGS}"
+fi
 
 # Prepare output files
 
