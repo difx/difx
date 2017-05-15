@@ -31,7 +31,7 @@
 #define __CODIFIO_H__
 
 #ifdef __cplusplus
-//extern "C" {
+extern "C" {
 #endif
 
 #include <stdint.h>
