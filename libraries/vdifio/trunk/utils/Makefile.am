@@ -29,8 +29,6 @@ bin_PROGRAMS = \
 	mk6summary \
 	mk6vmux
 
-#check_PROGRAMS = generateVDIF
-
 if WITH_GENERATEVDIF
   bin_PROGRAMS += generateVDIF
 endif
@@ -116,7 +114,11 @@ vdifChanSelect_SOURCES = \
 generateVDIF_SOURCES = \
 	generateVDIF.c
 
-generateVDIF_LDADD = $(IPP_LIBS) $(LDADD)
+if USE_CODIFIO
+  generateVDIF_LDADD = $(IPP_LIBS) $(LDADD) $(CODIFIO_LIBS)
+else
+  generateVDIF_LDADD = $(IPP_LIBS) $(LDADD)
+endif
 
 vmux_SOURCES = \
 	vmux.c
