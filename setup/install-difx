@@ -151,6 +151,7 @@ components = {"perl"          :False,
               "difxmessage"   :True,
               "dirlist"       :True,
               "mark5access"   :True,
+              "codifio"       :True,
               "vdifio"        :True,
               "calcif2"       :True,
               "difx2profile"  :True,
@@ -177,6 +178,7 @@ def setNormalComponentsFalse():
 	components["difxmessage"] = False
 	components["dirlist"] = False
 	components["mark5access"] = False
+	components["codifio"] = False
 	components["vdifio"] = False
 	components["calcif2"] = False
 	components["difx2profile"] = False
@@ -341,6 +343,8 @@ if components["mark5access"]:
 	libtargets.append(["mark5access",difx_version, True,True,True,False])
 if components["python"]:
 	libtargets.append(["python",     difx_version, True,True,False,False])
+if components["codifio"]:
+	libtargets.append(["codifio",    difx_version, True,True,True,False])
 if components["vdifio"]:
 	libtargets.append(["vdifio",     difx_version, True,True,True,False])
 
