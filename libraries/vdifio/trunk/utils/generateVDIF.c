@@ -34,6 +34,12 @@
 #include <getopt.h>
 #include <vdifio.h>
 
+#include "config.h"
+#if USE_CODIFIO
+#include <codifio.h>
+#endif
+
+
 #ifdef USEIPP
 #include <ippcore.h>
 #include <ipps.h>
@@ -85,12 +91,15 @@ void generateData(float **data, int nframe, int sampesperframe, int nchan, int i
 #define MAXNEG          0
 
 int main (int argc, char * const argv[]) {
-  char *filename, msg[MAXSTR];
-  int i, frameperbuf, status, outfile, opt, tmp;
+  char *filename, msg[MAXSTR], *header;
+  int i, frameperbuf, status, outfile, opt, tmp, headerBytes=0;
   uint64_t nframe;
   float **data, ftmp, stdDev, mean;
   ssize_t nr;
-  vdif_header header;
+  vdif_header vheader;
+#if USE_CODIFIO
+  codif_header cheader;
+#endif
   Ipp8u *framedata;
 
   int nbits = 2;
@@ -99,6 +108,7 @@ int main (int argc, char * const argv[]) {
   int ntap = DEFAULTTAP;
   int framesize = 8000;
   int iscomplex = 0;
+  int usecodif = 0;
   int year = -1;
   int month = -1;
   int day = -1;
@@ -106,6 +116,7 @@ int main (int argc, char * const argv[]) {
   double mjd = -1;
   float tone = 10;  // MHz
   float duration = 0; // Seconds
+  char *timestr = NULL;
 
   struct option options[] = {
     {"bandwidth", 1, 0, 'b'},
@@ -116,12 +127,15 @@ int main (int argc, char * const argv[]) {
     {"year", 1, 0, 'y'},
     {"time", 1, 0, 't'},
     {"framesize", 1, 0, 'F'},
-    {"duration", 1, 0, 't'},
+    {"duration", 1, 0, 'l'},
     {"tone", 1, 0, 'T'},
     {"nchan", 1, 0, 'n'},
     {"ntap", 1, 0, 'x'},
     {"nbits", 1, 0, 'N'},
     {"complex", 0, 0, 'c'},
+#ifdef USEIPP
+    {"codifio", 0, 0, 'C'},
+#endif
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -130,7 +144,7 @@ int main (int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "xb:d:m:M:y:t:n:c:T:h", options, NULL);
+    opt = getopt_long_only(argc, argv, "xb:d:m:M:y:t:n:c:T:hF:", options, NULL);
     if (opt==EOF) break;
     
 #define CASEINT(ch,var)                                     \
@@ -163,13 +177,21 @@ int main (int argc, char * const argv[]) {
       CASEINT('N', nbits);
       CASEINT('x', ntap);
       CASEINT('F', framesize);
-      CASEFLOAT('t', duration);
+      CASEFLOAT('l', duration);
       CASEFLOAT('T', tone);
 
-      case 'c':
+      case 't':
+	timestr = strdup(optarg);
+	break;
+
+    case 'c':
 	iscomplex = 1;
 	break;
- 
+#if USE_CODIFIO
+    case 'C':
+	usecodif = 1;
+	break;
+#endif
       case 'h':
 	printf("Usage: generateVDIF [options]\n");
 	printf("  -bandwidth <BANWIDTH>     Channel bandwidth in MHz (64)\n");
@@ -193,13 +215,18 @@ int main (int argc, char * const argv[]) {
       break;
     }
   }
+
   
   if (argc==optind) {
-    filename = strdup("Test.vdif");
+    if (usecodif) {
+      filename = strdup("Test.cdf");
+    } else {
+      filename = strdup("Test.vdif");
+    }
   } else {
     filename = strdup(argv[optind]);
   }
-
+  
   int cfact = 1;
   if (iscomplex) cfact = 2;
 
@@ -342,22 +369,60 @@ int main (int argc, char * const argv[]) {
   if (day==-1) day = thisday;
   if (month==-1) month = thismonth;
   if (dayno!=-1) dayno2cal(dayno, year, &day, &month);
+
+  if (timestr!=NULL) {
+    int hour, min, sec;
+    status = sscanf(timestr, "%2d:%2d:%2d", &hour, &min, &sec);
+    if (status==0) {
+      fprintf(stderr, "Warning: Could not parse %s (%d)\n", timestr, status);
+    } else {
+      ut = ((sec/60.0+min)/60.0+hour)/24.0;
+    }
+  }
+
   mjd = cal2mjd(day, month, year)+ut;
 
-  status = createVDIFHeader(&header, framesize, 0, nbits, nchan, iscomplex, "Tt");
-  if (status!=VDIF_NOERROR) {
-    printf("Error creating VDIF header. Aborting\n");
-    exit(1);
+  if (usecodif) {
+    int sampleblock = 8*8; // bits
+    while (sampleblock % completesample) sampleblock += 64;
+    sampleblock /= 64;
+    
+    header = (char*)&cheader;
+    headerBytes = CODIF_HEADER_BYTES;
+#if USE_CODIFIO
+    // Need to calculate a couple of these values
+    status = createCODIFHeader(&cheader, framesize, 0, 0, nbits, nchan, sampleblock, 1, samplerate, iscomplex, "Tt");
+    if (status!=CODIF_NOERROR) {
+      printf("Error creating CODIF header. Aborting\n");
+      exit(1);
+    }
+    // Whack some texture to the extended bytes
+    cheader.extended2 = 0xAAAAAAAA;
+    cheader.extended3 = 0xBBBBBBBB;  
+    cheader.extended4 = 0xCCCCCCCC;
+
+    setCODIFEpochMJD(&cheader, mjd);
+    setCODIFFrameMJDSec(&cheader, (uint64_t)floor(mjd*60*60*24));
+    setCODIFFrameNumber(&cheader,0);
+#endif
+  } else {
+    header = (char*)&vheader;
+    headerBytes = VDIF_HEADER_BYTES;
+    status = createVDIFHeader(&vheader, framesize, 0, nbits, nchan, iscomplex, "Tt");
+    if (status!=VDIF_NOERROR) {
+      printf("Error creating VDIF header. Aborting\n");
+      exit(1);
+    }
+    // Whack some texture to the extended bytes
+    vheader.extended2 = 0xAAAAAAAA;
+    vheader.extended3 = 0xBBBBBBBB;  
+    vheader.extended4 = 0xCCCCCCCC;
+
+    setVDIFEpochMJD(&vheader, mjd);
+    setVDIFFrameMJDSec(&vheader, (uint64_t)floor(mjd*60*60*24));
+    setVDIFFrameNumber(&vheader,0);
   }
-  // Whack some texture to the extended bytes
-  header.extended2 = 0xAAAAAAAA;
-  header.extended3 = 0xBBBBBBBB;  
-  header.extended4 = 0xCCCCCCCC;
-
-  setVDIFEpochMJD(&header, mjd);
-  setVDIFFrameMJDSec(&header, (uint64_t)floor(mjd*60*60*24));
-  setVDIFFrameNumber(&header,0);
-
+  
   outfile = open(filename, OPENWRITEOPTIONS, S_IRWXU|S_IRWXG|S_IRWXO); 
   if (outfile==-1) {
     sprintf(msg, "Failed to open output (%s)", filename);
@@ -386,13 +451,13 @@ int main (int argc, char * const argv[]) {
 	exit(1);
       }
     
-      nr = write(outfile, &header, VDIF_HEADER_BYTES);
+      nr = write(outfile, header, headerBytes);
       if (nr == -1) {
 	sprintf(msg, "Writing to %s:", filename);
        
 	perror(msg);
 	exit(1);
-      } else if (nr != VDIF_HEADER_BYTES) {
+      } else if (nr != headerBytes) {
 	printf("Error: Partial write to %s\n", filename);
 	exit(1);
       }
@@ -406,12 +471,21 @@ int main (int argc, char * const argv[]) {
 	printf("Error: Partial write to %s\n", filename);
 	exit(1);
       }
-      nextVDIFHeader(&header, framespersec);
+      if (usecodif) {
+#if USE_CODIFIO
+	nextCODIFHeader(&cheader, framespersec);
+#endif
+      } else {
+	nextVDIFHeader(&vheader, framespersec);
+      }
       nframe--;
     }
   }
-  
+
+  free(filename);
   close(outfile);
+  if (timestr!=NULL) free(timestr);
+  
   return(0);
 }
   
