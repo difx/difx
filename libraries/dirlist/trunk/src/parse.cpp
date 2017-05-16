@@ -214,8 +214,9 @@ double parseTime(const std::string &timeStr, std::stringstream &error)
 	{
 		//Test for Vex
 		p = strptime(str, "%Yy%jd%Hh%Mm%Ss", &tm);
-		#ifdef __APPLE__
+#ifdef __APPLE__
 		tm.tm_mday = tm.tm_yday+1; // mktime not guaranteed to pick up dayno
+		tm.tm_mon = 0;
 #endif
 	}
 	if(p)
