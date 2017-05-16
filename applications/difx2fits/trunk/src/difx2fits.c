@@ -563,7 +563,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			}
 			else if(D->freq[fqindex].nChan/D->freq[fqindex].specAvg != keys->no_chan)
 			{
-				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same number of output channels\n");
+				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same number of output channels: %d/%d != %d\n", D->freq[fqindex].nChan, D->freq[fqindex].specAvg, keys->no_chan);
 
 				exit(EXIT_FAILURE);
 			}
