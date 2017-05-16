@@ -45,7 +45,7 @@ for telescope AT (ATCA) in experiment v289b.
 
 ----------------------------------------------------------------
 
-For more information on the full suite of scripts, see the documentation on the DiFX wiki: http://cira.ivec.org/dokuwiki/doku.php/difx/documentation
+For more information on the full suite of scripts, see the documentation on the DiFX wiki: http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/espresso
 
 Bugs and feature requests should be sent to Cormac Reynolds
 (cormac.reynolds@csiro.au) or submitted to the DiFX 'trac' bug tracking tool.
