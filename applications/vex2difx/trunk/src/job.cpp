@@ -30,6 +30,7 @@
 #include <cstring>
 #include <fstream>
 #include <vexdatamodel.h>
+#include <algorithm>
 #include "job.h"
 #include "jobflag.h"
 
