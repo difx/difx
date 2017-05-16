@@ -13,8 +13,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.58'
-verdate = '20170127'
+version = '0.59'
+verdate = '20170516'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -1350,7 +1350,7 @@ components['DIFX-2.4'] = \
 	component_calcif2_2_4, \
 	component_calcserver_2_4, \
 	component_rcwlib_2_4, \
-	component_sniff_2_3, \
+	component_sniff_2_4, \
 	component_nraodifxdb_2_4, \
 	component_hops_2_4, \
 	component_guiserver_2_4, \
@@ -1360,6 +1360,218 @@ components['DIFX-2.4'] = \
 	component_difxdb_2_4, \
 	component_difxfilterbank_2_4, \
 	component_difxmonitor_2_4, \
+	component_vlite_trunk, \
+]
+
+component_difxio_2_5 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_5 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_dirlist_2_5 = \
+[ \
+	'dirlist', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/dirlist', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core' ] \
+]
+
+component_mark5access_2_5 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_5 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_python_2_5 = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/python', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_mpifxcorr_2_5 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_5 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_5 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_5 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_5 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_5 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_5 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_difxcalc11_2_5 = \
+[ \
+	'difxcalc11', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difxcalc11', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake', 'core'] \
+]
+
+component_datasim_2_5 = \
+[ \
+	'datasim', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/datasim', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_rcwlib_2_5 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_5 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_nraodifxdb_2_5 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.aoc.nrao.edu/repos/VLBA/nraodifxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_5 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/hops', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_guiserver_2_5 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
+component_misc_utils_2_5 = \
+[ \
+	'misc_utils', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_2_5 = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_2_5 = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_2_5 = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxmonitor_2_5 = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difx_monitor', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difxfilterbank_2_5 = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difxfilterbank', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+components['DIFX-2.5'] = \
+[ \
+	component_difxio_2_5, \
+	component_difxmessage_2_5, \
+	component_dirlist_2_5, \
+	component_mark5access_2_5, \
+	component_vdifio_2_5, \
+	component_python_2_5, \
+	component_mpifxcorr_2_5, \
+	component_difx2fits_2_5, \
+	component_difx2mark4_2_5, \
+	component_vex2difx_2_5, \
+	component_mk5daemon_2_5, \
+	component_calcif2_2_5, \
+	component_calcserver_2_5, \
+	component_difxcalc11_2_5, \
+	component_datasim_2_5, \
+	component_rcwlib_2_5, \
+	component_sniff_2_5, \
+	component_nraodifxdb_2_5, \
+	component_hops_2_5, \
+	component_guiserver_2_5, \
+	component_misc_utils_2_5, \
+	component_vis2screen_2_5, \
+	component_difx2profile_2_5, \
+	component_difxdb_2_5, \
+	component_difxfilterbank_2_5, \
+	component_difxmonitor_2_5, \
 	component_vlite_trunk, \
 ]
 
