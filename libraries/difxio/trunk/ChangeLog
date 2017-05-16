@@ -30,6 +30,7 @@
     - This to allow for "Union mode merging", desired for GMVA, RadioAstron
 * new utility mvdifxhere: changes the internal paths of .calc and .input files to the current working directory.  Does not actually move the files.
 * new utility computetotals (not yet tested): compute total delay given input filesets and table of residual delays
+* Version for DiFX-2.5, May 16, 2017
 
 3.4.0
 * Fix X/Y polarization issue
