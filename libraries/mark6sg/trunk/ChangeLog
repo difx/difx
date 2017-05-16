@@ -1,6 +1,7 @@
 Version 1.2.0
 * libmark6sg: added automatic caching of scatter-gather block list metadata (/tmp/mark6_fuse_autocache_<hash>)
               at the first access to a scan its cache is built and it is re-used during any later accesses
+* Version for DiFX-2.5, May 16, 2017
 
 Version 1.1.9
 * fuseMk6, mk6copy, m6sg_gather: use MARK6_ROOT env var if available
