@@ -44,12 +44,15 @@ void usage()
 	printf("options can include:\n");
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
-	printf("<residualdelayfile> is the base name of file produced by convertdelay.\n\n");
+	printf("<residualdelayfile> is the base name of the residual delay.\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 	printf("All normal program output goes to stdout.\n\n");
 	printf("This program reads through one or more difx datasets and\n");
 	printf("evaluates delay polynomials in the .im files at times in the\n");
 	printf("residualdelafile and adds the model.\n\n");
+	printf("The residuals file should be a text file with N+1 columns of numbers:\n");
+	printf("Column 1 should be the MJD (including fraction) of the residual\n");
+	printf("Cols 2 to N+1 should be redidual for each antenna\n\n");
 }
 
 int main(int argc, char **argv)
@@ -150,8 +153,8 @@ int main(int argc, char **argv)
 	printf("# 1. mjd [day]\n");
 	for(a = 0; a < D->nAntenna; ++a)
 	{
-		printf("# %d. Antenna %d (%s) model delay [us]\n", 3+3*a, a, D->antenna[a].name);
-		printf("# %d. Antenna %d (%s) residual delay [us]\n", 3+3*a, a, D->antenna[a].name);
+		printf("# %d. Antenna %d (%s) model delay [us]\n", 1+3*a, a, D->antenna[a].name);
+		printf("# %d. Antenna %d (%s) residual delay [us]\n", 2+3*a, a, D->antenna[a].name);
 		printf("# %d. Antenna %d (%s) total delay [us]\n", 3+3*a, a, D->antenna[a].name);
 	}
 
@@ -187,7 +190,7 @@ int main(int argc, char **argv)
 			resid + 10, resid + 11, resid + 12, resid + 13, resid + 14,
 			resid + 15, resid + 16, resid + 17, resid + 18, resid + 19);
 
-		mjdResid = atoll(mjdResidStr);
+		sscanf(mjdResidStr, "%Lf", &mjdResid);
 
 		intMjd = mjdResid;
 		sec = (mjdResid - intMjd)*86400.0L;
@@ -198,19 +201,23 @@ int main(int argc, char **argv)
 		}
 
 		printf("%s", mjdResidStr);
-
 		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
-			int ok;
+			int err;
 
-			ok = evaluateDifxInputDelayRate(&delay, 0, D, intMjd, sec, antennaId, 0);
-			if(ok)
+			err = evaluateDifxInputDelayRate(&delay, 0, D, intMjd, sec, antennaId, 0);
+			if(err == 0)
 			{
 				printf(" %15.10Lf", delay);
 				printf(" %15.10Lf", resid[antennaId]*1000000.0);
 				printf(" %15.10Lf", delay + resid[antennaId]*1000000.0);
 			}
+			else
+			{
+				printf("  0 0 %d", err);
+			}
 		}
+		printf("\n");
 	}
 
 	fclose(in);

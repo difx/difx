@@ -327,7 +327,7 @@ int evaluateDifxInputDelayRate(long double *delay, long double *rate, const Difx
 			{
 				*delay = evaluatePoly(P->delay, P->order+1, deltaT);
 			}
-			if(*rate)
+			if(rate)
 			{
 				*rate = evaluatePolyDeriv(P->delay, P->order+1, deltaT);
 			}
