@@ -1398,6 +1398,20 @@ component_vdifio_2_5 = \
 	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
 ]
 
+component_mark6meta_2_5 = \
+[ \
+	'mark6meta', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/mark6meta', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6sg_2_5 = \
+[ \
+	'mark6sg', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/mark6sg', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
 component_python_2_5 = \
 [ \
 	'python', \
@@ -1464,7 +1478,7 @@ component_datasim_2_5 = \
 [ \
 	'datasim', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/datasim', \
-	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_rcwlib_2_5 = \
@@ -1551,6 +1565,8 @@ components['DIFX-2.5'] = \
 	component_dirlist_2_5, \
 	component_mark5access_2_5, \
 	component_vdifio_2_5, \
+	component_mark6meta_2_5, \
+	component_mark6sg_2_5, \
 	component_python_2_5, \
 	component_mpifxcorr_2_5, \
 	component_difx2fits_2_5, \
