@@ -7,6 +7,7 @@ Version 2.5.0
 * move some useful and quasi-useful scripts into more appropriate source trees
 * respect new DELAY MODEL parameter of the .calc file: use to run non-standard delay model program
 * remove non-functional Sekido model code
+* Version for DiFX-2.5, May 16, 2017
 
 Version 2.3.0
 * vlog: split ANTAB file into antenna-specific files
