@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 				deltaFrame = framesPerSecond*(second - lastSecond) + frameNum-lastFrameNum;
 				if(deltaFrame != 1)
 				{
-					printf("  skipped %d frames", deltaFrame);
+					printf("  skipped %d frames", deltaFrame - 1);
 				}
 			}
 		}
