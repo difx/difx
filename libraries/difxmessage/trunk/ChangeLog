@@ -11,6 +11,7 @@ Version 2.5.0
 * Change name of .rpm to vlbi-difxmessage.*.rpm
 * Added new messaging to start and stop fuseMk5
 * Added new lock to mark5ipc for fuseMk5
+* Version for DiFX-2.5, May 16, 2017
 
 Version 2.4.0
 ~~~~~~~~~~~~~
