@@ -29,6 +29,7 @@ Version 2.5
 * Peaceably ignore the new DELAY MODEL parameter of the .calc file
 * Calculate Mark5 module signature more consistently; the "NeoLegacy" formats used wrong number of bytes in the calculation
 * Change genmachines.py back to genmachines
+* Version for DiFX-2.5, May 16, 2017
 
 Version 2.4
 ~~~~~~~~~~~
