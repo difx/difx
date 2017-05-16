@@ -16,6 +16,7 @@ Verion 1.5.3
 * New option in test5b: can supply frames per second and then the true number of skipped frames can be evaluated.
 * fixmark5b: don't seg fault if can't open files
 * Many utilities: change from use of signal() to sigaction(), which is supposed to be more reliable.
+* Version for DiFX-2.5, May 16, 2017
 
 Version 1.5.2
 * Post DiFX-2.4
