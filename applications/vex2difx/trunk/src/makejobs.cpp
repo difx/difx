@@ -105,12 +105,16 @@ static void genJobGroups(std::vector<JobGroup> &JGs, const VexData *V, const Cor
 			if(P->overlap(*scan2) <= 0.0)
 			{
 				++it;
+
 				continue;
 			}
 
 #warning "FIXME: verify modes are compatible"
-			if(areCorrSetupsCompatible(corrSetup1, corrSetup2, P) &&
-			   areScansCompatible(scan1, scan2, P))
+			// Note: here we are forcing any change in correlator setup to cause new job, even if setups are compatible. 
+			// Revisit this in the future after DiFX 2.5 release.  Original, more general, test is below:
+			//    if(areCorrSetupsCompatible(corrSetup1, corrSetup2, P) && areScansCompatible(scan1, scan2, P))
+			
+			if(corrSetup1 == corrSetup2 && areScansCompatible(scan1, scan2, P))
 			{
 				JG.logicalOr(*scan2);	// expand jobGroup time to include this scan
 				JG.scans.push_back(*it);
