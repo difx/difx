@@ -280,12 +280,13 @@ def fix_filelist(outfilelist):
             previous_starttime = starttime
 
     # the last good file should always get in the .input so we can be sure the
-    # D/STREAM is not empty. So comment out its timerange.
-    for i in range(len(outfilelist)):
-        if "#" not in outfilelist[i]: 
-            outfilelist[i] = re.sub(
-                    "(\s+)(\w)", r"\1#\2", outfilelist[i], count=1)
-            break
+    # D/STREAM is not empty. So comment out its timerange. Not desired for
+    # DiFX-2.5 and later
+    #for i in range(len(outfilelist)):
+    #    if "#" not in outfilelist[i]: 
+    #        outfilelist[i] = re.sub(
+    #                "(\s+)(\w)", r"\1#\2", outfilelist[i], count=1)
+    #        break
 
     outfilelist.reverse()
 
