@@ -18,6 +18,7 @@ import random
 import argparse
 import subprocess
 import re
+import time
 import hashlib
 from difxdb.model.dbConnection import Schema, Connection
 from difxdb.model.model import ExportFile
@@ -34,6 +35,10 @@ __lastAuthor__="$Author$"
 
 ftpPath = "/ftp/correlator"
 exportName = "EXPORT"
+
+# minimum database schema version required by program
+minSchemaMajor = 1
+minSchemaMinor = 5
 
 def description():
 	desc = "A program to export the correlation data products (e.g. FITS files) to the FTP server for download by the PIs. "
@@ -245,6 +250,12 @@ try:
     session = dbConn.session()
 except Exception as e:
     exitOnError(e)
+
+if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
+	major, minor = getCurrentSchemaVersionNumber(session)
+        print "Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
+        sys.exit(1)
+
     
 # check that experiment exists
 if not experimentExists(session, args.exp):
@@ -254,10 +265,11 @@ if not experimentExists(session, args.exp):
 # loop over subdirectories
 dirs = next(os.walk(args.rootDir))[1]
 if dirs == []:
-	sys.exit("%s subdirectory must contain at least one subdirectory\n" % exportName)	
+	sys.exit("%s directory must contain at least one subdirectory\n" % exportName)	
 
 # check if export files already exist for this experiment
 experiment = getExperimentByCode(session, args.exp)
+expId = experiment.id
 files = getExportFiles(session, args.exp)
 
 if len(files) != 0:
@@ -278,19 +290,27 @@ if len(files) != 0:
     
 exportFiles = []
 
+session.close()
+
+
+# loop over all source directories
 for dir in dirs:
+    srcFiles = {}
+    dstFiles = {}
     srcDir = args.rootDir + "/" + dir + "/"
     exportDir = ftpPath + "/" + args.exp + "_" + dir + "_" + randomString()
            
-    #if not args.dryRun:
+    # loop over src files and determine checksum
+    for file in  os.listdir(srcDir):
+	print "Processing: ", srcDir+file
+	srcFiles[file] = partialChecksum(srcDir+file)
+
     # create directory on FTP server
     if not os.path.exists(exportDir):
                 try:
                         os.makedirs(exportDir)
                 except:
                         sys.exit("Cannot create directory: %s\n" % exportDir)
-                        
-
 
     # rsync files 
     while True:
@@ -302,37 +322,57 @@ for dir in dirs:
         # copy files to the archive server
         syncDir(srcDir, exportDir, total, False)
 
+    # pause for a while to allow flushing of rsync 
+    time.sleep(5)
+
     exportPath = exportDir 
-    # loop over all files in the export dir
+    # loop over all files in the export dir and determine checksums
     for file in os.listdir(exportPath):
 	# calculate md5 checksum of first 100MB
 	filePath = exportDir + "/" + file
-	checksum = partialChecksum(filePath)
+	dstFiles[file]= partialChecksum(filePath)
 
-    	# update database
-        exportFile = ExportFile()
-        exportFile.experimentID = experiment.id
-        exportFile.filename = file
+    # verify src against dst
+    print "Verfifying export to: %s" % exportDir
+    for file in srcFiles:
+	if not dstFiles.has_key(file):
+		print "Source file: %s is missing in the export location: %s" % (file, exportPath)
+		# TODO REMOVE exported files
+		sys.exit(1)
+	else:
+		if srcFiles[file] != dstFiles[file]:
+			print "Checksums differ for file %s" % file
+			sys.exit(1)
+		print "OK file: %s\t\t src-checksum: %s dst-checksum: %s" % (file, srcFiles[file], dstFiles[file])
+		# remove item from dstFiles
+		del dstFiles[file]
+
+    extra = 0
+    for file in dstFiles:
+	print "Export location contains a file not found at the src directory: %s" % (file)
+	extra += 1
+    
+    if extra > 0:
+	sys.exit(1)
+
+    # update database
+
+    for file in srcFiles:
+	print "updating database with file %s" % file
+	exportFile = ExportFile()
+   	exportFile.experimentID = expId
+    	exportFile.filename = file
         exportFile.exportPath = exportPath
-        exportFile.checksum = checksum
+        exportFile.checksum = srcFiles[file]
         exportFiles.append(exportFile)
 
+session = dbConn.session()
+
+experiment = getExperimentByCode(session, args.exp)
 experiment.exportFiles = exportFiles
 session.commit()
 session.flush()
 session.close()
 
-# verify that database update is complete
-
-
-    
-
-    
-
-    
-    
-    
-		
-
-
+print "Done"
 
