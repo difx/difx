@@ -250,4 +250,19 @@ def getNotificationEmails(session, code):
             return (experiment.emailnotification)
         
     except:
+        raise Exception ("Unknown experiment %s" % code)    
+
+def getExportFiles(session, code):
+    '''
+    Obtains the list of export files assigned to the given experiment
+    '''
+    try:
+        experiment = session.query(model.Experiment).filter_by(code=code).one()
+        
+        if (experiment.exportFiles is None):
+            return []
+        else:
+            return (experiment.exportFiles)
+        
+    except:
         raise Exception ("Unknown experiment %s" % code)
