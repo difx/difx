@@ -355,13 +355,14 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 	for stream in datastreams:
             if stream.type == "FILE":
                 # check if path for this datastream matches storage area defined in the cluster definition file
-                # strip off last directory for matching
-                #path = stream.path[:rfind(stream.path, "/")]
                         
                 matchCount = 0
                 matchNode = ""
                 for node in difxmachines.getStorageNodes():
                     for url in node.fileUrls:
+			# remove trailing /
+			if url.endswith("/"):
+				url = url[:-1]
                         if stream.path.startswith(url):
                             matchCount += 1
                             matchNode = node.name
