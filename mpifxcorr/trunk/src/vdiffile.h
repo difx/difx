@@ -109,6 +109,7 @@ protected:
   const int *threads;
 
   Configuration::datasampling samplingtype;
+  Configuration::filechecklevel filecheck;
 };
 
 #endif

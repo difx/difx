@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller                                *
+ *   Copyright (C) 2006-2017 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -3339,4 +3339,29 @@ void Configuration::mjd2ymd(int mjd, int & year, int & month, int & day) const
   month = (m + 2)%12 + 1;
   day = d + 1;
 }
+
+Configuration::filechecklevel Configuration::getFileCheckLevel()
+{
+  const char *v;
+
+  v = getenv("DIFX_FILE_CHECK_LEVEL");
+  if(v == 0)
+  {
+    return Configuration::FILECHECKSEEK;  // default
+  }
+  else if(strcmp(v, "NONE") == 0)
+  {
+    return Configuration::FILECHECKNONE;
+  }
+  else if(strcmp(v, "SEEK") == 0)
+  {
+    return Configuration::FILECHECKSEEK;
+  }
+  else
+  {
+    return Configuration::FILECHECKUNKNOWN;
+  }
+}
+
+
 // vim: shiftwidth=2:softtabstop=2:expandtab

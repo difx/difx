@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller                                *
+ *   Copyright (C) 2006-2017 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -69,6 +69,9 @@ public:
   /// Supported types of recorded data sampling types
   enum datasampling {REAL, COMPLEX};
   enum complextype {SINGLE, DOUBLE};
+
+  /// For certain FILE data types (e.g., VDIF), can influence peeking / seeking on open
+  enum filechecklevel {FILECHECKNONE, FILECHECKSEEK, FILECHECKUNKNOWN};
 
   /// Constant for the TCP window size for monitoring
   static int MONITOR_TCP_WINDOWBYTES;
@@ -647,6 +650,8 @@ public:
   * @param destination The buffer to store the Fortran-style string
   */
   void makeFortranString(string line, int length, char * destination) const;
+
+  static filechecklevel getFileCheckLevel();
 
 private:
   ///types of sections that can occur within an input file

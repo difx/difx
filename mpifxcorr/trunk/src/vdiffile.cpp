@@ -92,6 +92,12 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 	invalidtime = 0;
 
 	samplingtype = Configuration::REAL;
+	filecheck = Configuration::getFileCheckLevel();
+	if(filecheck == Configuration::FILECHECKUNKNOWN)
+	{
+		cwarn << startl << "env var DIFX_FILE_CHECK_LEVEL was set to " << getenv("DIFX_FILE_CHECK_LEVEL") << " which is not a legal value.  Assuming NONE." << endl;
+		filecheck = Configuration::FILECHECKNONE;
+	}
 }
 
 VDIFDataStream::~VDIFDataStream()
@@ -369,63 +375,70 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 
 	// Here we need to open the file, read the start time, jump if necessary, and if past end of file, dataremaining = false.  Then set readseconds...
 
-	// First we get a description of the contents of the purported VDIF file and exit if it looks like not VDIF at all
-	rv = summarizevdiffile(&fileSummary, datafilenames[configindex][fileindex].c_str(), inputframebytes);
-	if(rv < 0)
+	if(filecheck == Configuration::FILECHECKSEEK)
 	{
-		cwarn << startl << "VDIFDataStream::initialiseFile: summary of file " << datafilenames[configindex][fileindex] << " resulted in error code " << rv << ".  This does not look like valid VDIF data." << endl;
-		dataremaining = false;
-
-		return;
-	}
-
-	// Put file information into log stream
-	vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nrecordedbands/nthreads));
-	snprintvdiffilesummary(fileSummaryString, MaxSummaryLength, &fileSummary);
-	cinfo << startl << fileSummaryString << endl;
-
-	// If verbose...
-	printvdiffilesummary(&fileSummary);
-
-	// Here set readseconds to time since beginning of job
-	readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;
-	readnanoseconds = vdiffilesummarygetstartns(&fileSummary);
-	currentdsseconds = activesec + model->getScanStartSec(activescan, config->getStartMJD(), config->getStartSeconds());
-
-	if(currentdsseconds > readseconds+1)
-	{
-		jumpseconds = currentdsseconds - readseconds;
-		if(activens < readnanoseconds)
+		// First we get a description of the contents of the purported VDIF file and exit if it looks like not VDIF at all
+		rv = summarizevdiffile(&fileSummary, datafilenames[configindex][fileindex].c_str(), inputframebytes);
+		if(rv < 0)
 		{
-			jumpseconds--;
-		}
-
-		// set byte offset to the requested time
-
-		int n, d;	// numerator and demoninator of frame/payload size ratio
-		n = fileSummary.frameSize;
-		d = fileSummary.frameSize - 32;
-
-		dataoffset = static_cast<long long>(jumpseconds*vdiffilesummarygetbytespersecond(&fileSummary)/d*n + 0.5);
-
-		readseconds += jumpseconds;
-	}
-
-	// Now set readseconds to time since beginning of scan
-	readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
-	
-	// Advance into file if requested
-	if(fileSummary.firstFrameOffset + dataoffset > 0)
-	{
-		cverbose << startl << "About to seek to byte " << fileSummary.firstFrameOffset << " plus jump " << dataoffset << " to get to the first wanted frame" << endl;
-
-		input.seekg(fileSummary.firstFrameOffset + dataoffset, ios_base::beg);
-		if(input.peek() == EOF)
-		{
-			cinfo << startl << "File " << datafilenames[configindex][fileindex] << " ended before the currently desired time" << endl;
+			cwarn << startl << "VDIFDataStream::initialiseFile: summary of file " << datafilenames[configindex][fileindex] << " resulted in error code " << rv << ".  This does not look like valid VDIF data." << endl;
 			dataremaining = false;
-			input.clear();
+
+			return;
 		}
+
+		// Put file information into log stream
+		vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nrecordedbands/nthreads));
+		snprintvdiffilesummary(fileSummaryString, MaxSummaryLength, &fileSummary);
+		cinfo << startl << fileSummaryString << endl;
+
+		// If verbose...
+		printvdiffilesummary(&fileSummary);
+
+		// Here set readseconds to time since beginning of job
+		readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;
+		readnanoseconds = vdiffilesummarygetstartns(&fileSummary);
+		currentdsseconds = activesec + model->getScanStartSec(activescan, config->getStartMJD(), config->getStartSeconds());
+
+		if(currentdsseconds > readseconds+1)
+		{
+			jumpseconds = currentdsseconds - readseconds;
+			if(activens < readnanoseconds)
+			{
+				jumpseconds--;
+			}
+
+			// set byte offset to the requested time
+
+			int n, d;	// numerator and demoninator of frame/payload size ratio
+			n = fileSummary.frameSize;
+			d = fileSummary.frameSize - 32;
+
+			dataoffset = static_cast<long long>(jumpseconds*vdiffilesummarygetbytespersecond(&fileSummary)/d*n + 0.5);
+
+			readseconds += jumpseconds;
+		}
+
+		// Now set readseconds to time since beginning of scan
+		readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+		
+		// Advance into file if requested
+		if(fileSummary.firstFrameOffset + dataoffset > 0)
+		{
+			cverbose << startl << "About to seek to byte " << fileSummary.firstFrameOffset << " plus jump " << dataoffset << " to get to the first wanted frame" << endl;
+
+			input.seekg(fileSummary.firstFrameOffset + dataoffset, ios_base::beg);
+			if(input.peek() == EOF)
+			{
+				cinfo << startl << "File " << datafilenames[configindex][fileindex] << " ended before the currently desired time" << endl;
+				dataremaining = false;
+				input.clear();
+			}
+		}
+	}
+	else
+	{
+		cverbose << startl << "Not doing peek/seek on file due to setting of DIFX_FILE_CHECK_LEVEL env var." << endl;
 	}
 }
 
