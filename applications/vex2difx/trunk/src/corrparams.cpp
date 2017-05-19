@@ -2709,10 +2709,6 @@ bool antennaMatch(const std::string &a1, const std::string &a2)
 	{
 		return true;
 	}
-	if(a1.find(a2) != std::string::npos)
-	{
-		return true;
-	}
 
 	return false;
 }
