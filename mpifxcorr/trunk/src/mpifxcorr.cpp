@@ -283,6 +283,7 @@ int main(int argc, char *argv[])
   //setup difxmessage
   generateIdentifier(argv[1], difxMessageID);
   difxMessageInit(myID, difxMessageID);
+  difxMessageSetInputFilename(argv[1]);
   if(myID == 0)
   {
     if(isDifxMessageInUse())
