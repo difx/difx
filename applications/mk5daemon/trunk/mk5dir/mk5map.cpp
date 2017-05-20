@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Walter Brisken                                  *
+ *   Copyright (C) 2013-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,8 +47,8 @@
 
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20130930";
+const char version[] = "0.3";
+const char verdate[] = "20170520";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
@@ -65,11 +65,9 @@ enum DMS_Mode
 
 
 int verbose = 1;
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 static void usage(const char *pgm)
 {
@@ -102,9 +100,10 @@ void siginthand(int j)
 {
 	if(verbose)
 	{
-		printf("Being killed\n");
+		fprintf(stderr, "Being killed\n");
 	}
 	die = 1;
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 class Datum
@@ -135,7 +134,7 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 	unsigned int a, b;
 	struct mark5_format *mf;
 	int n;
-	int nz;
+	unsigned int nz;
 
 	byte = -1;
 
@@ -156,7 +155,7 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 	nz = countZeros(buffer, BufferLength/sizeof(streamstordatatype));
 	if(nz > BufferLength/sizeof(streamstordatatype)/2)
 	{
-		printf("Read from %Ld led to %d zero records out of %d records\n", pos, (long long)nz, BufferLength/sizeof(streamstordatatype));
+		printf("Read from %Ld led to %u zero records out of %lu records\n", (long long)pos, nz, BufferLength/sizeof(streamstordatatype));
 	}
 
 	mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, BufferLength));
@@ -224,7 +223,7 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 
 void Datum::print() const
 {
-	printf("%14Ld  %5d %5d %5d/%5d  %d %d %d  %d\n", byte, mjd, sec, frame, framespersecond, framebytes, format, tracks, frameoffset);
+	printf("%14Ld  %5d %5d %5d/%5d  %d %d %d  %d\n", (long long)byte, mjd, sec, frame, framespersecond, framebytes, format, tracks, frameoffset);
 	fflush(stdout);
 }
 
@@ -315,6 +314,7 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	FILE *out;
 	int64_t lastnewpos;
 	double r;
+	struct sigaction new_sigint_action;
 
 	dRate = rate * fraction;	
 
@@ -396,7 +396,10 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	// The action starts here
 
@@ -519,17 +522,17 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 				{
 					if(fabs(r - rate) <= dRate)
 					{
-						printf("Removing point at %Ld because it is in the middle of a good period\n", d2->byte);
+						printf("Removing point at %Ld because it is in the middle of a good period\n", (long long)(d2->byte));
 					}
 					else
 					{
-						printf("Removing point at %Ld because it is in the middle of a bad period\n", d2->byte);
+						printf("Removing point at %Ld because it is in the middle of a bad period\n", (long long)(d2->byte));
 					}
 					printf("Rates were %10.0f  (%10.0f %10.0f)  [%10.0f]\n", r, r1, r2, rate);
 					printf("Data were (%d %d  %Ld) (%d %d %Ld) (%d %d %Ld)\n\n",
-						d1->sec, d1->ns, d1->byte,
-						d2->sec, d2->ns, d2->byte,
-						d3->sec, d3->ns, d3->byte);
+						d1->sec, d1->ns, (long long)(d1->byte),
+						d2->sec, d2->ns, (long long)(d2->byte),
+						d3->sec, d3->ns, (long long)(d3->byte));
 				}
 				data.erase(d2);
 			}
@@ -537,12 +540,12 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 			{
 				if(verbose > 2)
 				{
-					printf("Keeping point at %Ld\n", d2->byte);
+					printf("Keeping point at %Ld\n", (long long)(d2->byte));
 					printf("Rates were %10.0f  (%10.0f %10.0f)  [%10.0f]\n", r, r1, r2, rate);
 					printf("Data were (%d %d  %Ld) (%d %d %Ld) (%d %d %Ld)\n\n",
-						d1->sec, d1->ns, d1->byte,
-						d2->sec, d2->ns, d2->byte,
-						d3->sec, d3->ns, d3->byte);
+						d1->sec, d1->ns, (long long)(d1->byte),
+						d2->sec, d2->ns, (long long)(d2->byte),
+						d3->sec, d3->ns, (long long)(d3->byte));
 				}
 				break;
 			}
@@ -601,11 +604,11 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	
 	if(out)
 	{
-		fprintf(out, "%s %d %c %u 1 NORMAL Synth\n", vsn, data.size()/2, 'A' + bank, signature);
+		fprintf(out, "%s %u %c %u 1 NORMAL Synth\n", vsn, (unsigned int)(data.size()/2), 'A' + bank, signature);
 	}
 	if(verbose > -1 || !out)
 	{
-		printf("%s %d %c %u 1 NORMAL Synth\n", vsn, data.size()/2, 'A' + bank, signature);
+		printf("%s %u %c %u 1 NORMAL Synth\n", vsn, (unsigned int)(data.size()/2), 'A' + bank, signature);
 	}
 	for(std::list<Datum>::const_iterator d1 = data.begin(); d1 != data.end(); ++d1)
 	{

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012-2013 by Walter Brisken                             *
+ *   Copyright (C) 2012-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -59,7 +59,7 @@
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.5";
-const char verdate[] = "20130826";
+const char verdate[] = "20170520";
 
 const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
 const unsigned int defaultPacketSize = 0;	/* 0x80000000 (+ 5008 for Mark5B) */
@@ -76,9 +76,9 @@ const int MaxLabelLength = 40;
 const int Mark5BFrameSize = 10016;
 const UINT32 Mark5BSyncWord = 0xABADDEED;
 
-typedef void (*sighandler_t)(int);
-sighandler_t oldsiginthand;
-int die = 0;
+struct sigaction old_sigint_action;
+
+volatile int die = 0;
 
 #define MAC_FLTR_CTRL		0x02
   /* 0x01 : set: PSN mode 0: serial number checking disabled */
@@ -151,7 +151,7 @@ static void usage(const char *pgm)
 void siginthand(int j)
 {
 	die = 2;
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 long long int parseMAC(const char *str)
@@ -997,6 +997,7 @@ int main(int argc, char **argv)
 	char label[MaxLabelLength] = "";
 	int statsRange[XLR_MAXBINS];
 	std::list<unsigned long long int> macList;
+	struct sigaction new_sigint_action;
 
 	memset((char *)(&mk5status), 0, sizeof(mk5status));
 
@@ -1194,7 +1195,10 @@ int main(int argc, char **argv)
 
 	v = lockMark5(3);
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	if(v < 0)
 	{

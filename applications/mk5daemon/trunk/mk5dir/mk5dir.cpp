@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,8 +42,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.14";
-const char verdate[] = "20160115";
+const char version[] = "0.15";
+const char verdate[] = "20170520";
 
 enum DMS_Mode
 {
@@ -54,12 +54,10 @@ enum DMS_Mode
 };
 
 int verbose = 0;
-int die = 0;
+volatile int die = 0;
 SSHANDLE xlrDevice;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
@@ -68,6 +66,8 @@ void siginthand(int j)
 		printf("Being killed\n");
 	}
 	die = 1;
+
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 
@@ -308,6 +308,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	char modules[modulesLength] = "";
 	int mv = 0;
 	int v;
+	struct sigaction new_sigint_action;
 
 	memset(&mk5status, 0, sizeof(mk5status));
 
@@ -350,7 +351,10 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	if(strcmp(vsn, "AB") == 0)
 	{

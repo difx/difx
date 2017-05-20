@@ -22,6 +22,8 @@ Version 2.5.0
 * mk5control: added new commands to start and stop fuseMk5
 * startfusemk5: new utility to start fuseMk5
 * stopfuseMk5: new utility to stop fuseMk5
+* Use sigaction for signal handling
+* Better handling of interruption in mk5cp
 * Version for DiFX-2.5, May 16, 2017
 
 Version 2.4.0

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -87,10 +87,10 @@ const int defaultMACFilterControl = 1;
 // For Mark5 module performance
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 
-int *signalDie = 0;
-typedef void (*sighandler_t)(int);
-sighandler_t oldsigintHandler;
-sighandler_t oldsigtermHandler;
+volatile int *signalDie = 0;
+
+struct sigaction old_sigint_action;
+struct sigaction old_sigterm_action;
 
 
 const char recordStateStrings[][10] =
@@ -632,8 +632,16 @@ void sigintHandler(int j)
 	{
 		*signalDie = 1;
 	}
-	signal(SIGINT, oldsigintHandler);
-	signal(SIGTERM, oldsigtermHandler);
+	sigaction(SIGINT, &old_sigint_action, 0);
+}
+
+void sigtermHandler(int j)
+{
+	if(signalDie)
+	{
+		*signalDie = 1;
+	}
+	sigaction(SIGTERM, &old_sigint_action, 0);
 }
 
 void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage)
@@ -1098,6 +1106,8 @@ int main(int argc, char **argv)
     int halfLoadMonInterval;
     int pid;
     int status;
+    struct sigaction new_sigint_action;
+    struct sigaction new_sigterm_action;
 
 #ifdef HAVE_XLRAPI_H
     time_t firstTime;
@@ -1203,8 +1213,16 @@ int main(int argc, char **argv)
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Number of CPU cores found = %d\n", D->load.nCore);
 	Logger_logData(D->log, message);
 
-	oldsigintHandler = signal(SIGINT, sigintHandler);
-	oldsigtermHandler = signal(SIGTERM, sigintHandler);
+
+	new_sigint_action.sa_handler = sigintHandler;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
+	
+	new_sigterm_action.sa_handler = sigtermHandler;
+	sigemptyset(&new_sigterm_action.sa_mask);
+	new_sigterm_action.sa_flags = 0;
+	sigaction(SIGTERM, &new_sigterm_action, &old_sigterm_action);
 
 	lastTime = time(0);
 

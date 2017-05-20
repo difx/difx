@@ -148,7 +148,7 @@ typedef struct
 	int processDone;
 	int loadMonInterval;		/* seconds */
 	int swapMonInterval;		/* seconds */
-	int dieNow;
+	volatile int dieNow;
 	int activeBank;
 	char vsns[N_BANK][10];
 	char hostName[MK5DAEMON_HOSTNAME_LENGTH];

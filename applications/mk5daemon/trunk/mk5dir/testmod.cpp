@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2013 by Walter Brisken                             *
+ *   Copyright (C) 2010-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,8 +44,8 @@
 
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.5";
-const char verdate[] = "20120930";
+const char version[] = "0.6";
+const char verdate[] = "20170520";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -56,15 +56,15 @@ const int statsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800
 #define MODE_WRITE	0x02
 #define MODE_REOPEN	0x04
 
-int die = 0;
-typedef void (*sighandler_t)(int);
-sighandler_t oldsiginthand;
+volatile int die = 0;
+
+struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
 	fprintf(stderr, "<Being killed>");
 	die = 1;
-	signal(SIGINT, oldsiginthand);
+	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 static void usage(const char *pgm)
@@ -859,6 +859,7 @@ int main(int argc, char **argv)
 	char *dirFile = 0;
 	long long ptr = 0;
 	int retval = EXIT_SUCCESS;
+	struct sigaction new_sigint_action;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -974,7 +975,10 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
 	setWatchdogVerbosity(verbose);
 

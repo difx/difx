@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2016 by Walter Brisken                             *
+ *   Copyright (C) 2007-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,17 +46,16 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.14";
-const char verdate[] = "20160805";
+const char version[] = "0.15";
+const char verdate[] = "20170520";
 
 const int defaultChunkSize = 50000000;
 
 int verbose = 0;
-int die = 0;
+volatile int die = 0;
 
-typedef void (*sighandler_t)(int);
-
-sighandler_t oldsiginthand;
+struct sigaction old_sigint_action;
+struct sigaction old_sigterm_action;
 
 const int MaxCommandLength = 400;
 
@@ -70,9 +69,22 @@ void siginthand(int j)
 {
 	if(verbose)
 	{
-		fprintf(stderr, "Being killed\n");
+		fprintf(stderr, "Being killed (INT).  Partial output will be preserved.\n");
 	}
 	die = 1;
+
+	sigaction(SIGINT, &old_sigint_action, 0);
+}
+
+void sigtermhand(int j)
+{
+	if(verbose)
+	{
+		fprintf(stderr, "Being killed (TERM).  Partial output will be preserved.\n");
+	}
+	die = 1;
+
+	sigaction(SIGTERM, &old_sigterm_action, 0);
 }
 
 int usage(const char *pgm)
@@ -290,6 +302,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	int skip = 0;
 	char scpLogin[DIFX_MESSAGE_FILENAME_LENGTH];
 	char scpDest[DIFX_MESSAGE_FILENAME_LENGTH];
+	int nReread = 0;
 
 	parsescp(scpLogin, scpDest, outPath);
 
@@ -382,10 +395,6 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 			
 			break;
 		}
-		if(verbose)
-		{
-			fprintf(stderr, "%Ld = %Ld/%Ld\n", readptr, readptr-byteStart, byteStop-byteStart);
-		}
 		snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "[%Ld%%]", 100*(readptr-byteStart)/(byteStop-byteStart));
 		mk5status->position = readptr;
 		mk5status->rate = rate;
@@ -398,6 +407,10 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 			}
 			len = togo;
 		}
+		if(verbose)
+		{
+			fprintf(stderr, "%Ld = %Ld/%Ld %Ld %d\n", readptr, readptr-byteStart, byteStop-byteStart, togo, len);
+		}
 
 		a = readptr >> 32;
 		b = readptr % (1LL<<32);
@@ -405,13 +418,22 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
 		if(xlrRC != XLR_SUCCESS)
 		{
-			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
-			if(out != stdout)
-			{
-				fclose(out);
-			}
 
-			return -1;
+			fprintf(stderr, "Read error: position=%Ld trying one more time:\n", readptr);
+			sleep(2);
+			++nReread;
+			WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
+
+			if(xlrRC != XLR_SUCCESS)
+			{
+				fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
+				if(out != stdout)
+				{
+					fclose(out);
+				}
+
+				return -1;
+			}
 		}
 
 		countReplaced2(data, len/4, &wGood, &wBad);
@@ -486,6 +508,12 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	{
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 		fprintf(stderr, "Warning: %s\n", message);
+	}
+	if(nReread > 0)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "%d rereads were done.", nReread);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+		fprintf(stderr, "Note: %s\n", message);
 	}
 
 	*nGoodBytes += 4*wGood;
@@ -618,10 +646,6 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int 
 			
 			break;
 		}
-		if(verbose)
-		{
-			fprintf(stderr, "%Ld = %Ld/%Ld\n", readptr, readptr-scan->start, scan->length);
-		}
 		snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%Ld%%]", scan->name.c_str(), 100*(readptr-scan->start)/scan->length);
 		mk5status->position = readptr;
 		mk5status->rate = rate;
@@ -633,6 +657,10 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int 
 		else
 		{
 			len = chunkSize-leftover;
+		}
+		if(verbose)
+		{
+			fprintf(stderr, "%Ld = %Ld/%Ld %Ld %d\n", readptr, readptr-scan->start, scan->length, togo, len);
 		}
 
 		a = readptr >> 32;
@@ -847,10 +875,6 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 			
 			break;
 		}
-		if(verbose)
-		{
-			fprintf(stderr, "%Ld = %Ld/%Ld\n", readptr, readptr-scan->start, scan->length);
-		}
 		snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%Ld%%]", scan->name.c_str(), 100*(readptr-scan->start)/scan->length);
 		mk5status->position = readptr;
 		mk5status->rate = rate;
@@ -858,6 +882,10 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 		if(togo < chunkSize)
 		{
 			len = togo;
+		}
+		if(verbose)
+		{
+			fprintf(stderr, "%Ld = %Ld/%Ld %Ld %d\n", readptr, readptr-scan->start, scan->length, togo, len);
 		}
 
 		a = readptr >> 32;
@@ -1052,6 +1080,8 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
 	DifxMessageMk5Status mk5status;
+	struct sigaction new_sigint_action;
+	struct sigaction new_sigterm_action;
 
 	memset(&mk5status, 0, sizeof(mk5status));
 
@@ -1115,8 +1145,15 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
 
-	oldsiginthand = signal(SIGTERM, siginthand);
-	oldsiginthand = signal(SIGINT, siginthand);
+	new_sigint_action.sa_handler = siginthand;
+	sigemptyset(&new_sigint_action.sa_mask);
+	new_sigint_action.sa_flags = 0;
+	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
+
+	new_sigterm_action.sa_handler = sigtermhand;
+	sigemptyset(&new_sigterm_action.sa_mask);
+	new_sigterm_action.sa_flags = 0;
+	sigaction(SIGTERM, &new_sigterm_action, &old_sigterm_action);
 
 	if(strlen(vsn) != 8)
 	{
@@ -1240,7 +1277,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 				return -1;
 			}
 
-			for(int scanIndex = 0; scanIndex < module.nScans(); ++scanIndex)
+			for(int scanIndex = 0; scanIndex < module.nScans() && !die; ++scanIndex)
 			{
 				scan = &module.scans[scanIndex];
 				if(!getByteRange(scan, &byteStart, &byteStop, mjdStart, mjdStop))
@@ -1337,12 +1374,8 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 			if(a >= 0 && b >= a && b < 1000000)
 			{
-				for(int i = a; i <= b; ++i)
+				for(int i = a; i <= b && !die; ++i)
 				{
-					if(die)
-					{
-						break;
-					}
 					if(i > 0 && i <= module.nScans())
 					{
 						int scanIndex = i-1;
@@ -1395,11 +1428,12 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		{
 			int l = strlen(scanList);
 			// FIXME: use iterator
-			for(int i = 0; i < module.nScans(); ++i)
+			for(int i = 0; i < module.nScans() && !die; ++i)
 			{
 				if(strncasecmp(module.scans[i].name.c_str(), scanList, l) == 0)
 				{
 					int scanIndex = i;
+
 					if(fix5b)
 					{
 						v = copyScanFix5B(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
