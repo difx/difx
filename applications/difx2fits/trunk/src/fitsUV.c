@@ -1198,7 +1198,14 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		}
 		else
 		{
-			printf("  Cross-correlation files:\n");
+			if (opts->profileMode == 1)
+			{
+				printf("  Pulsar auto-correlation files\n");	
+			}
+			else
+			{
+				printf("  Cross-correlation files:\n");
+			}
 		}
 	}
 	else
@@ -1221,7 +1228,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 
 			return 0;
 		}
-		if(opts->pulsarBin > 0 || opts->phaseCentre > 0)
+		if((opts->pulsarBin > 0 || opts->phaseCentre > 0) && opts->profileMode == 0)
 		{
 			dvs[jobId]->keepAC = 0;	/* Really a no-op since these data don't come with ACs */
 		}

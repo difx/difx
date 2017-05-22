@@ -109,7 +109,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  -k                  Keep antenna order\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --ac-always\n");
-	fprintf(stderr, "  -a                  Always write autocorrelations\n");
+	fprintf(stderr, "  -a                  Write standard autocorrelations into every output file\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --profilemode       Don't discard autocorrelations for pulsar bins other than bin 0\n");
 	fprintf(stderr, "\n");
         fprintf(stderr, "  --skip-extra-autocorrs\n");
 	fprintf(stderr, "                      Ignore e.g. LL autocorrs in a job with only RR cross-corrs\n");
@@ -307,6 +309,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				opts->alwaysWriteAutocorr = 1;
 			}
+			else if(strcmp(argv[i], "--profilemode") == 0)
+			{
+				opts->profileMode = 1;
+			}
 			else if(strcmp(argv[i], "--override-version") == 0)
 			{
 				opts->overrideVersion = 1;
@@ -441,6 +447,13 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				++opts->nBaseFile;
 			}
 		}
+	}
+
+	if(opts->profileMode >0 && opts->alwaysWriteAutocorr > 0)
+	{
+		printf("Error: Setting profilemode at the same time as ac-always is not allowed\n");
+		printf("If this is a pulsar profile mode correlation, then you don't want ac-always\n");
+		printf("If this is not a pulsar profile mode correlation, don't use --profilemode\n");
 	}
 
 	if((opts->nBaseFile >  0 && opts->doalldifx >  0) ||
