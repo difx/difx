@@ -454,6 +454,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 		printf("Error: Setting profilemode at the same time as ac-always is not allowed\n");
 		printf("If this is a pulsar profile mode correlation, then you don't want ac-always\n");
 		printf("If this is not a pulsar profile mode correlation, don't use --profilemode\n");
+
+		deleteCommandLineOptions(opts);
+
+		return 0;
 	}
 
 	if((opts->nBaseFile >  0 && opts->doalldifx >  0) ||
