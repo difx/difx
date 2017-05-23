@@ -1345,11 +1345,18 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 		fprintf(stderr, "The directory size was %d\n", dirLength);
 		fprintf(stderr, "The best guess about the directory content is printed below:\n");
 		fprintMark5DirectoryInfo(stderr, &dirInfo);
-		fprintf(stderr, "The binary directory was dumped to %s\n", dumpFile);
 
 		out = fopen(dumpFile, "w");
-		fwrite(dirData, 1, dirLength, out);
-		fclose(out);
+		if(!out)
+		{
+			fprintf(stderr, "Tried to dump directory to %s, but could not open for write.\n", dumpFile);
+		}
+		else
+		{
+			fwrite(dirData, 1, dirLength, out);
+			fclose(out);
+			fprintf(stderr, "The binary directory was dumped to %s\n", dumpFile);
+		}
 
 		free(dirData);
 
