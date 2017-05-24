@@ -58,6 +58,8 @@ def usage(prog):
 	print '             Bypass check for complete set of correlated\n'
 	print '  --cwd'
 	print '             Look for files in the current working directory\n'
+	print '  --profilemode'
+	print '             Pass the profilemode switch to difx2fits pulsar autocorrelations\n'
 	exit(0)
 
 def testgainfiles():
@@ -298,6 +300,8 @@ class JobList:
 			for s in range(self.nsrcfiles):
 				initcmd = 'difx2fits -B %d --phasecentre %d %%s ' % (b,s)
 				cmd = initcmd % options
+				if profilemode:
+					cmd += '--profilemode '
 				for j in self.jobs:
 					cmd += ('../%s ' % j.name)
 				if verbose:
@@ -500,6 +504,7 @@ allowPartial = False
 verbose = False
 sniff = True
 usecwd = False
+profilemode = False
 
 opts = ''
 args = []
@@ -510,6 +515,8 @@ for a in argv[1:]:
 			opts = opts + ' ' + '--override-version'
 		elif a == '--allow-partial':
 			allowPartial = True
+		elif a == '--profilemode':
+			profilemode = True
 		elif a == '--cwd':
 			usecwd = True
 		elif a in ('-h', '--help'):
