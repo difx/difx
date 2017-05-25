@@ -765,6 +765,7 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 int writeDifxDatastream(FILE *out, const DifxDatastream *dd);
 int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *recBands);
 int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *zoomBands);
+int getDifxDatastreamBandFreqId(const DifxDatastream *dd, int band);
 char getDifxDatastreamBandPol(const DifxDatastream *dd, int band);
 
 /* DifxBaseline functions */
