@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <vexdatamodel.h>
 
 const std::string program("vexpeek");
@@ -57,6 +58,7 @@ void usage(const char *pgm)
 	std::cout << "  -v or --verbose : print entire vextables structure of vexfile" << std::endl;
 	std::cout << "  -f or --format : add data format to output" << std::endl;
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
+	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
 	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
 	std::cout << std::endl;
 }
@@ -163,6 +165,38 @@ void antennaSummary(const VexData *V, int doFormat, int doUsage)
 	std::cout.precision(p);
 }
 
+void scanList(const VexData *V)
+{
+	std::vector<std::string> allStations;
+	for(unsigned int s = 0; s < V->nScan(); ++s)
+	{
+		const VexScan *scan = V->getScan(s);
+		std::cout << std::left << std::setw(8) << scan->defName << " ";
+		std::cout << std::left << std::setw(10) << scan->sourceDefName << " ";
+		std::cout << std::left << std::setw(10) << scan->modeDefName << "   ";
+
+		std::vector<std::string> currStations;
+		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		{
+			currStations.push_back(it->first);
+			if (std::find(allStations.begin(), allStations.end(), it->first) == allStations.end())
+			{
+				allStations.push_back(it->first);
+			}
+		}
+		for (std::vector<std::string>::iterator it = allStations.begin(); it != allStations.end(); ++it)
+		{
+			std::string ant = "--";
+			if (std::find(currStations.begin(), currStations.end(), *it) != currStations.end())
+			{
+				ant = *it;
+			}
+			std::cout << std::setw(3) << ant << " ";
+		}
+		std::cout << std::endl;
+	}
+}
+
 void bandList(const VexData *V)
 {
 	int nMode = V->nMode();
@@ -233,6 +267,7 @@ int main(int argc, char **argv)
 	int nWarn = 0;
 	int verbose = 0;
 	int doBandList = 0;
+	int doScanList = 0;
 	int doFormat = 0;
 	int doUsage = 0;
 	int a;
@@ -249,6 +284,11 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--bands") == 0)
 		{
 			++doBandList;
+		}
+		else if(strcmp(argv[a], "-s") == 0 ||
+		        strcmp(argv[a], "--scans") == 0)
+		{
+			++doScanList;
 		}
 		else if(strcmp(argv[a], "-f") == 0 ||
 		        strcmp(argv[a], "--format") == 0)
@@ -305,6 +345,10 @@ int main(int argc, char **argv)
 	if(doBandList)
 	{
 		bandList(V);
+	}
+	else if(doScanList)
+	{
+		scanList(V);
 	}
 	else if(verbose)
 	{
