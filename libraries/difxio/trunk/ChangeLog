@@ -1,6 +1,7 @@
 3.6.0
 * Post DiFX 2.5
 * Remove unneeded source file
+* New functions: evaluateDifxInputUVW, getDifxDatastreamBandPol, getDifxDatastreamBandFreqIdAndPol
 
 3.5.0
 * Post DiFX 2.4

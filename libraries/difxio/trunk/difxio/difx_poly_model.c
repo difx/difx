@@ -338,3 +338,63 @@ int evaluateDifxInputDelayRate(long double *delay, long double *rate, const Difx
 
 	return -1;
 }
+
+/* outputs UVW coords in meters */
+/* set sourceId = -1 to not select on source */
+/* return value = 0 on success, < 0 on error */
+int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId)
+{
+	int scanId;
+	double mjd;
+
+	mjd = intmjd + sec/86400.0;	/* low precision time for finding scan */
+
+	for(scanId = 0; scanId < D->nScan; ++scanId)
+	{
+		const DifxScan *scan;
+		int p;	/* polynomial index in scan */
+
+		scan = D->scan + scanId;
+
+		if(scan->mjdStart > mjd || scan->mjdEnd < mjd)
+		{
+			continue;
+		}
+
+		if(sourceId >= 0 && sourceId != scan->pointingCentreSrc)
+		{
+			continue;
+		}
+
+		if(antennaId >= scan->nAntenna || scan->im[antennaId] == 0)
+		{
+			continue;
+		}
+
+		for(p = 0; p < scan->nPoly; ++p)
+		{
+			const DifxPolyModel *P;
+			double mjdStart, mjdEnd;
+			double deltaT;
+
+			P = scan->im[antennaId][0] + p;
+			mjdStart = P->mjd + P->sec/86400.0;
+			mjdEnd = mjdStart + P->validDuration/86400.0;
+
+			if(mjd < mjdStart || mjd > mjdEnd)
+			{
+				continue;
+			}
+
+			deltaT = 86400*(intmjd - P->mjd) + (sec - P->sec);
+
+			uvw[0] = evaluatePoly(P->u, P->order+1, deltaT);
+			uvw[0] = evaluatePoly(P->v, P->order+1, deltaT);
+			uvw[0] = evaluatePoly(P->w, P->order+1, deltaT);
+
+			return 0;
+		}
+	}
+
+	return -1;
+}

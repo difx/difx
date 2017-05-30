@@ -1079,3 +1079,27 @@ char getDifxDatastreamBandPol(const DifxDatastream *dd, int band)
 	}
 	return ' ';
 }
+
+int getDifxDatastreamBandFreqIdAndPol(int *freqId, char *pol, const DifxDatastream *dd, int band)
+{
+	if(band < 0)
+	{
+		return -1;
+	}
+	if(band < dd->nRecBand)
+	{
+		*freqId = dd->recBandFreqId[band];
+		*pol = dd->recBandPolName[band];
+
+		return 0;
+	}
+	if(band < dd->nRecBand + dd->nZoomBand)
+	{
+		*freqId = dd->zoomBandFreqId[band-dd->nRecBand];
+		*pol = dd->zoomBandPolName[band-dd->nRecBand];
+
+		return 0;
+	}
+
+	return -1;
+}

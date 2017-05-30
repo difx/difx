@@ -767,6 +767,7 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *zoomBands);
 int getDifxDatastreamBandFreqId(const DifxDatastream *dd, int band);
 char getDifxDatastreamBandPol(const DifxDatastream *dd, int band);
+int getDifxDatastreamBandFreqIdAndPol(int *freqId, char *pol, const DifxDatastream *dd, int band);
 
 /* DifxBaseline functions */
 DifxBaseline *newDifxBaselineArray(int nBaseline);
@@ -879,6 +880,7 @@ DifxPolyModelXYZExtension *dupDifxPolyModelXYZExtensionColumn(const DifxPolyMode
 void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, int nAntenna, int nSrcs);
 
 int evaluateDifxInputDelayRate(long double *delay, long double *rate, const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId);
+int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId);
 
 /* DifxScan functions */
 DifxScan *newDifxScanArray(int nScan);
