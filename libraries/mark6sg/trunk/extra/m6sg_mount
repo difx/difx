@@ -26,7 +26,7 @@ def list_MPT2SAS_disks():
 	ctrl_ids = []
 
 	# Find controllers with disks (perhaps unpartitioned)
-	for dev in context.list_devices(subsystem='block', DEVTYPE='disk'):
+	for dev in context.list_devices(subsystem='scsi'):
 		pdev = dev.find_parent('pci')
 		if (pdev == None):
 			continue
@@ -35,10 +35,10 @@ def list_MPT2SAS_disks():
 			# Controllers may have target0:0:0, target1:0:0, target17:0:0, ... depending perhaps on PCIe slot (0, 1, 17, ...)
 			# Since target<n> numbers n are not known in advance we don't use <n>, but replace it with an index (0,1,2,...)
 			dp = dev['DEVPATH']
-			h = int(re.search('\/host([0-9]*)\/',dp).group(1))
+			h = int(re.search('\/host([0-9]*)',dp).group(1))
 			if h not in ctrl_ids:
 				ctrl_ids.append(h)
-	ctrl_ids.sort()
+	#ctrl_ids.sort() # sort by 'host<n>'? this may not reflect PCI bus order though!
 
 	# Now find partitions on disks behind controllers
 	for dev in context.list_devices(subsystem='block', DEVTYPE='partition'):
