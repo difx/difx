@@ -46,7 +46,7 @@ void allocateDifxFreqSetFreqMap(DifxFreqSet *dfs, int nFreq)
 	int f;
 
 	dfs->nFreq = nFreq;
-	dfs->freqId2IF = (int *)malloc((nFreq+1)*sizeof(int));
+	dfs->freqId2IF = (int *)calloc(nFreq+1, sizeof(int));
 
 	for(f = 0; f < nFreq; ++f)
 	{

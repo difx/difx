@@ -60,7 +60,7 @@ DifxFreq *newDifxFreqArray(int nFreq)
 {
 	DifxFreq *df;
 
-	df = (DifxFreq *)calloc(nFreq, sizeof(DifxFreq));
+	df = (DifxFreq *)calloc(nFreq+1, sizeof(DifxFreq));
 
 	return df;
 }
@@ -80,7 +80,7 @@ void DifxFreqAllocTones(DifxFreq *df, int nTone)
 
 	if(nTone > 0)
 	{
-		df->tone = (int *)calloc(nTone, sizeof(int) );
+		df->tone = (int *)calloc(nTone+1, sizeof(int) );
 		df->nTone = nTone;
 	}
 	else
@@ -273,13 +273,13 @@ int reorderDifxFreqs(DifxInput *D)
 
 	n = D->nFreq;
 
-	newOrder = (int *)malloc(n*sizeof(int));
+	newOrder = (int *)calloc(n+1, sizeof(int));
 	for(i = 0; i < n; ++i)
 	{
 		newOrder[i] = -1;	/* not yet determined */
 	}
 
-	lessThan = (char **)malloc(n*sizeof(char *));
+	lessThan = (char **)calloc(n+1, sizeof(char *));
 	for(i = 0; i < n; ++i)
 	{
 		lessThan[i] = (char *)calloc(n, sizeof(char));	/* zero is false */

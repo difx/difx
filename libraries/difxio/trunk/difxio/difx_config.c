@@ -60,7 +60,7 @@ void DifxConfigAllocDatastreamIds(DifxConfig *dc, int nDatastream, int start)
 	{
 		free(dc->datastreamId);
 	}
-	dc->datastreamId = (int *)malloc((nDatastream+1)*sizeof(int));
+	dc->datastreamId = (int *)calloc(nDatastream+1, sizeof(int));
 	dc->datastreamId[nDatastream] = -1;
 	for(configDatastreamId = 0; configDatastreamId < nDatastream; ++configDatastreamId)
 	{
@@ -77,7 +77,7 @@ void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 	{
 		free(dc->baselineId);
 	}
-	dc->baselineId = (int *)malloc((nBaseline+1)*sizeof(int));
+	dc->baselineId = (int *)calloc(nBaseline+1, sizeof(int));
 	dc->baselineId[nBaseline] = -1;
 	for(configBaselineId = 0; configBaselineId < nBaseline; ++configBaselineId)
 	{
@@ -350,7 +350,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src, const int *baseline
 	dest->nAntenna = src->nAntenna;
 	if(src->ant2dsId)
 	{
-		dest->ant2dsId = (int *)malloc((src->nAntenna+1)*sizeof(int));
+		dest->ant2dsId = (int *)calloc(src->nAntenna+1, sizeof(int));
 		for(a = 0; a < src->nAntenna; ++a)
 		{
 			if(src->ant2dsId[a] < 0)

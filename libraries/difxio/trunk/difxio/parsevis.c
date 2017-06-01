@@ -36,7 +36,7 @@ DifxVisRecord *newDifxVisRecord(const char *filename, int nchan)
 {
 	DifxVisRecord *vis;
 
-	vis = (DifxVisRecord *)malloc(sizeof(DifxVisRecord));
+	vis = (DifxVisRecord *)calloc(1, sizeof(DifxVisRecord));
 	if(vis == 0)
 	{
 		fprintf(stderr, "newDifxVisRecord : malloc error\n");
@@ -44,7 +44,7 @@ DifxVisRecord *newDifxVisRecord(const char *filename, int nchan)
 		return 0;
 	}
 
-	vis->visdata = (cplx32f*)malloc(nchan*sizeof(cplx32f));
+	vis->visdata = (cplx32f*)calloc(nchan, sizeof(cplx32f));
 	if(vis->visdata == 0)
 	{
 		fprintf(stderr, "newDifxVisRecord : malloc error\n");

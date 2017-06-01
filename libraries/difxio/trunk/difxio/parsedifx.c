@@ -66,7 +66,7 @@ void growDifxParameters(DifxParameters *dp)
 
 	alloc_rows = dp->alloc_rows;
 
-	newrows = (DifxRow *)malloc(2*alloc_rows*sizeof(DifxRow));
+	newrows = (DifxRow *)calloc(2*alloc_rows, sizeof(DifxRow));
 	for(i = 0; i < alloc_rows; ++i)
 	{
 		copyrow(newrows + i, dp->rows + i);
@@ -145,7 +145,7 @@ static void parserow(DifxRow *row)
 		return;
 	}
 
-	row->key = (char *)malloc(lastprintable+2);
+	row->key = (char *)calloc(lastprintable+2, 1);
 	snprintf(row->key, lastprintable+2, "%s", line);
 	
 	if(colon < 0)
@@ -169,7 +169,7 @@ static void parserow(DifxRow *row)
 
 	if(firstprintable >= 0)
 	{
-		row->value = (char *)malloc(lastprintable-firstprintable+2);
+		row->value = (char *)calloc(lastprintable-firstprintable+2, 1);
 		snprintf(row->value, lastprintable-firstprintable+2, "%s", line+firstprintable);
 	}
 	else
@@ -535,7 +535,7 @@ int DifxStringArrayadd(DifxStringArray *sa, const char *str, int max)
 	{
 		sa->nAlloc = 16;
 		sa->n = 0;
-		sa->str = (char **)malloc(sa->nAlloc*sizeof(char *));
+		sa->str = (char **)calloc(sa->nAlloc, sizeof(char *));
 	}
 	else if(sa->nAlloc <= sa->n)
 	{

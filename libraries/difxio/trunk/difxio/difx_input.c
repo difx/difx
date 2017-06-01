@@ -112,7 +112,7 @@ void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds)
 	}
 
 	dc->nAntenna = maxa+1;
-	dc->ant2dsId = (int *)malloc((maxa+2)*sizeof(int));
+	dc->ant2dsId = (int *)calloc((maxa+2), sizeof(int));
 	for(a = 0; a < maxa; ++a)
 	{
 		dc->ant2dsId[a] = -1;
@@ -333,7 +333,7 @@ static int *deriveAntennaMap(const DifxInput *D, DifxParameters *p, int *nTelesc
 		fprintf(stderr, "deriveAntennaMap: NUM TELESCOPES too small: \n%d < %d\n", nTel, D->nAntenna);
 	}
 
-	antennaMap = (int *)malloc(nTel* sizeof(int));
+	antennaMap = (int *)calloc(nTel, sizeof(int));
 
 	for(t = 0; t < nTel; ++t)
 	{
@@ -964,7 +964,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		dc->doPolar = -1;	/* to be calculated later */
 
 		/* initialize datastream index array */
-		dc->datastreamId = (int *)malloc(sizeof(int)*(dc->nDatastream + 1));
+		dc->datastreamId = (int *)calloc(dc->nDatastream+1, sizeof(int));
 		
 		/* here "dsId" is "datastream # within conf" */
 		for(dsId = 0; dsId <= D->nDatastream; ++dsId)
@@ -987,7 +987,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		}
 
 		/* initialize baseline index array; -1 terminated */
-		dc->baselineId = (int *)malloc(sizeof(int)*(dc->nBaseline+1));
+		dc->baselineId = (int *)calloc(dc->nBaseline+1, sizeof(int));
 		for(blId = 0; blId <= dc->nBaseline; ++blId)
 		{
 			dc->baselineId[blId] = -1;
@@ -2892,7 +2892,7 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 		int freqSetId;
 
 		D->source[i].numFitsSourceIds = D->nFreqSet;
-		D->source[i].fitsSourceIds = (int*)malloc(D->nFreqSet * sizeof(int));
+		D->source[i].fitsSourceIds = (int*)calloc(D->nFreqSet, sizeof(int));
 		for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 		{
 			int a, j;
