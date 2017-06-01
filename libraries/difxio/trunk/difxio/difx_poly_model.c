@@ -389,8 +389,8 @@ int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double s
 			deltaT = 86400*(intmjd - P->mjd) + (sec - P->sec);
 
 			uvw[0] = evaluatePoly(P->u, P->order+1, deltaT);
-			uvw[0] = evaluatePoly(P->v, P->order+1, deltaT);
-			uvw[0] = evaluatePoly(P->w, P->order+1, deltaT);
+			uvw[1] = evaluatePoly(P->v, P->order+1, deltaT);
+			uvw[2] = evaluatePoly(P->w, P->order+1, deltaT);
 
 			return 0;
 		}
