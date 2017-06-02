@@ -1,31 +1,68 @@
 # ALMA Phasing Project (APP) QA2 Data Reduction Script
-# Version 1.0 - I. Marti-Vidal (August 25, 2016)
+# Version 1.3 - I. Marti-Vidal (June 1, 2017)
 
 
 
 
 ########################################
-# DEFINITIONS TO RUN THE SCRIPT
+# HEADER KEYWORDS TO RUN THE SCRIPT
 #
 #
 
 
-# FORCE THIS CASA VERSION:
-CASAVER = ['4.6.0','4.7.0']
+# FORCE THIS CASA VERSION(S):
+CASAVER = ['4.7.0','4.7.1','4.7.2']
 
 #########################
 # Give list of ASDMs:
-asdmdir='/mnt/bure_1/arcshared/APP_B6/CALIBRATION' # Root directory of ASDMs
-ASDMs = [ 'uid___A002_Xb187bd_X2d5', 
-         'uid___A002_Xb187bd_X4fe',  
-         'uid___A002_Xb187bd_X733',  
-         'uid___A002_Xb187bd_X863' ]  
+asdmdir='/c3se/users/mivan/Hebbe/QA2/EHT-GMVA/Proj2016.1.01154.V_M87/calibration' # Root directory of ASDMs
+
+
+
+ASDMs =[  'uid___A002_Xbebcb7_Xa7b',
+  'uid___A002_Xbebcb7_Xb48',
+  'uid___A002_Xbebcb7_Xcab',
+  'uid___A002_Xbebcb7_Xf01',
+  'uid___A002_Xbec3cb_X1084',
+  'uid___A002_Xbec3cb_X666',
+  'uid___A002_Xbec3cb_X921',
+  'uid___A002_Xbec3cb_Xaa8',
+  'uid___A002_Xbec3cb_Xcaa',
+  'uid___A002_Xbec3cb_Xe97',
+  'uid___A002_Xbeef47_X627',
+  'uid___A002_Xbeef47_X827',
+  'uid___A002_Xbeef47_Xa05',
+  'uid___A002_Xbeef47_Xbe7']
+
+#ASDMs = [ 'uid___A002_Xb187bd_X2d5', 
+#         'uid___A002_Xb187bd_X4fe',  
+#         'uid___A002_Xb187bd_X733',  
+#         'uid___A002_Xb187bd_X863' ]  
+
  
 #########################
 
 # Unique identification label for the products:
-UID = 'uid___A002_Xb187bd'
+#UID = 'uid___A002_Xbebcb7'
+UID = 'uid___TEST'
 
+
+
+# Whether to use System temperatures:
+Use_Tsys = False
+
+
+# Whether to use APP scans to calibrate X/Y amplitude 
+# for pol. calibrator:
+Use_APP_for_Gpol = True
+
+
+# Plot tables?
+doPlot = True
+
+
+# Highest allowed inter-antenna Gpol dispersion:
+BadGpol = 0.03
 
 # The four science spws for each ASDM. An empty list will make
 # the script find them automatically:
@@ -47,10 +84,10 @@ REFANT = ""
 
 #############################
 # Absolute flux calibrator (Name or id). Must be a string:
-FluxCal = "Titan"
+FluxCal = "3C279"
 
 # Is the flux calibrator a Solar System Object?
-IsPlanet = True  
+IsPlanet = False  
 
 
 # If a Solar-System Object is used:
@@ -60,18 +97,27 @@ JyStandard = 'Butler-JPL-Horizons 2012'
 # If a quasar is used, instead, 
 # set the flux density and spectral index, 
 # as taken from the getALMAflux() function:
-QuasarFlux = 1.0
-QuasarSpix = 1.0
-QuasarRefFreq = '100GHz'
+
+# aU.getALMAFlux(sourcename='3C279',frequency='214GHz',date='2017-04-05')
+
+QuasarFlux = 8.615
+QuasarSpix = -0.53
+QuasarRefFreq = '214GHz'
 #############################
 
-# All these FIELD IDs must be strings:
-BandPassCal = '' # Field Id of the BP calibrator
-PolCal = '' # Field id of the Polarization calibrator
-GainCal = '' # Field id of the gain calibrator
-VLBICal = [] # Field ids of all the other calibrators
+# All these FIELD IDs must be strings. Empty
+# strings ask the script to find them automatically:
+BandPassCal = '0' # Field Id of the BP calibrator
+PolCal = '4' # Field id of the Polarization calibrator
+GainCal = '0' # Field id of the gain calibrator
+VLBICal = ['2','3'] # Field ids of all the other calibrators
              # It must be a list of strings.
-Target = '' # Field id of main target.
+Target = '1' # Field id of main target.
+
+VLBIfluxCal = ''  # If flux calibrator was not used in VLBI
+                  # set this to one of the VLBICal sources
+                  # Default means to take the polarization
+                  # calibrator one with
 
 # 
 
@@ -106,8 +152,13 @@ XYJUMPS_ALMA = [[], # SPW0
 
 
 #
-# END OF DEFINITIONS
+# END OF HEADER KEYWORDS
 ######################################################
+
+
+
+
+
 
 
 
@@ -117,9 +168,9 @@ XYJUMPS_ALMA = [[], # SPW0
 thesteps = []
 step_title = {0: 'Import of the ASDMs',
               1: 'Fix of SYSCAL table times',
-              2: 'Listobs and split ALMA-calibration scans (for ordinary QA2)',
+              2: 'Listobs, get Tsys, and split ALMA-calibration scans (for ordinary QA2)',
               3: 'A priori flagging',
-              4: 'Split out science SPWs, concatenate, and build CALAPP table',
+              4: 'Apply Tsys, split out science SPWs, concatenate, and build CALAPP table',
               5: 'Listobs and save original flags',
               6: 'Initial flagging',
               7: 'Putting a model for the flux calibrator(s)',
@@ -136,6 +187,9 @@ step_title = {0: 'Import of the ASDMs',
               18: 'Save flags after applycal',
               19: 'Tar up APP deliverables'}
 
+if not Use_Tsys:
+  step_title[2] = 'Listobs and split ALMA-calibration scans (for ordinary QA2)'
+  step_title[4] = 'Split out science SPWs, concatenate, and build CALAPP table'
 
 
 if 'applyonly' not in globals(): applyonly = False
@@ -145,7 +199,7 @@ try:
 except:
   print 'global variable mysteps not set.'
 if (thesteps==[]):
-  thesteps = range(0,len(step_title))
+  thesteps = list(step_title.keys())   #range(0,len(step_title))
   print 'Executing all steps: ', thesteps
 
 # The Python variable 'mysteps' will control which steps
@@ -208,11 +262,13 @@ if(mystep in thesteps):
 
 
 
-# listobs and split ALMA-cal scans
+# listobs, get Tsys, and split ALMA-cal scans
 mystep = 2
 if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
   print 'Step ', mystep, step_title[mystep]
+
+  from recipes.almahelpers import tsysspwmap
 
   os.system('rm -rf %s.ALMA_CALIB_DATA'%UID)
   os.system('mkdir %s.ALMA_CALIB_DATA'%UID)
@@ -220,10 +276,19 @@ if(mystep in thesteps):
   os.system('rm -rf %s.APP_CALIB_DATA'%UID)
   os.system('mkdir %s.APP_CALIB_DATA'%UID)
 
+  tsysmap = []
+
   for i,asd in enumerate(ASDMs):
     os.system('rm -rf %s.ms.listobs'%asd)
     listobs(vis = '%s.ms'%asd,
       listfile = '%s.ms.listobs'%asd)
+
+    if Use_Tsys:
+      os.system('rm -rf %s.ms.tsys'%asd) 
+      gencal(vis = '%s.ms'%asd,
+        caltable = '%s.ms.tsys'%asd,
+        caltype = 'tsys')
+      tsysmap.append(tsysspwmap(vis = '%s.ms'%asd, tsystable = '%s.ms.tsys'%asd, tsysChanTol = 1))
 
     tb.open('%s.ms/STATE'%asd)
     modes = tb.getcol('OBS_MODE')
@@ -272,11 +337,34 @@ if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
   print 'Step ', mystep, step_title[mystep]
 
+  for i,asd in enumerate(ASDMs):
+
+    flagdata(vis = '%s.ms'%asd,
+      mode = 'manual',
+      spw = '',
+      autocorr = T,
+      flagbackup = F)
+  
+    flagdata(vis = '%s.ms'%asd,
+      mode = 'manual',
+      intent = '*POINTING*,*SIDEBAND_RATIO*,*ATMOSPHERE*',
+      flagbackup = F)
+  
+    flagcmd(vis = '%s.ms'%asd,
+      inpmode = 'table',
+      useapplied = True,
+      action = 'plot')
+  
+    flagcmd(vis = '%s.ms'%asd,
+      inpmode = 'table',
+      useapplied = True,
+      action = 'apply')
+  
 
 
 
 
-# Split out science SPWs, concatenate, and build CALAPP table
+# Apply Tsys, split out science SPWs, concatenate, and build CALAPP table
 mystep = 4
 if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
@@ -291,8 +379,35 @@ if(mystep in thesteps):
       tb.open('%s.ms/DATA_DESCRIPTION'%asd)
       poltypes = tb.getcol('POLARIZATION_ID')
       tb.close()
-      SPWs.append(','.join([str(i) for i in range(len(poltypes)) if poltypes[i]==2 and 'FULL_RES' in spnames[i]]))
+      tb.open('%s.ms/POLARIZATION'%asd)
+      fpcol = np.where(tb.getcol('NUM_CORR')==4)[0]
+      tb.close()
+      SPWs.append(','.join([str(i) for i in range(len(poltypes)) if poltypes[i]==fpcol and 'FULL_RES' in spnames[i]]))
     print '\n\n Found SPWs: ',SPWs 
+
+ #   raw_input("HOLD")
+
+# Apply Tsys:
+  if Use_Tsys:
+    for i,asd in enumerate(ASDMs):
+      applycal(vis = '%s.ms'%asd,
+        field = '',
+        spw = SPWs[i],
+        gaintable = ['%s.ms.tsys'%asd],
+        interp = 'linear,linear',
+        spwmap = [tsysmap[i]],
+        calwt = T,
+        flagbackup = F)
+    splitCol = 'corrected'
+  else:
+    splitCol = 'data'
+
+
+
+
+
+################
+# Prepare CALAPP Table:
 
   if os.path.exists('./%s.calappphase'%UID):
     os.system('rm -rf ./%s.calappphase ./%s.concatenated.ms.calappphase'%(UID,UID))
@@ -301,11 +416,17 @@ if(mystep in thesteps):
   for i,asd in enumerate(ASDMs):
     os.system('rm -rf %s.ms.split'%asd) 
     os.system('rm -rf %s.ms.split.flagversions'%asd) 
+    print 'Splitting column %s of %s (spw: %s)'%(splitCol,asd,SPWs[i])
     split(vis = '%s.ms'%asd,
       outputvis = '%s.ms.split'%asd,
-      datacolumn = 'data',
+      datacolumn = splitCol,
       spw = SPWs[i],
       keepflags = T)
+
+    os.system('rm -rf %s.ms.split.listobs'%asd) 
+    listobs(vis = '%s.ms.split'%asd,
+      listfile = '%s.ms.split.listobs'%asd)
+
 
     # Collecting data from CALAPPPHASE into one single table
     if i==0:
@@ -323,14 +444,56 @@ if(mystep in thesteps):
          timesort = True,
          copypointing = False)
 
-#  os.system('rm -rf %s.concatenated.ms.calappphase'%UID)
-
   os.rename('./%s.calappphase'%UID, '%s.concatenated.ms.calappphase'%UID)
 
-#  if os.path.exists('%s.concatenated.ms.listobs'%UID): 
-#    os.system('rm -rf %s.concatenated.ms.listobs'%UID)
+################
+
+
+
   listobs(vis = '%s.concatenated.ms'%UID,
     listfile = '%s.concatenated.ms.listobs'%UID)
+
+
+
+
+################
+# Build Tsys table for PolConvert:
+
+  if Use_Tsys:
+
+# First, change spw ids to the right (i.e., post-split) values:
+    for i,asd in enumerate(ASDMs):
+      tb.open('%s.ms.tsys'%asd,nomodify=False)
+      spwi = tb.getcol('SPECTRAL_WINDOW_ID')
+      for j, spi in enumerate(SPWs[i].split(',')):
+        spwi[spwi==tsysmap[i][int(spi)]] = j
+      tb.putcol('SPECTRAL_WINDOW_ID',spwi)
+      tb.close()
+
+# Concatenate all the Tsys (PolConvert will later sort the entries in time):
+    if os.path.exists('./%s.concatenated.ms.tsys'%UID):
+      os.system('rm -rf ./%s.concatenated.ms.tsys'%UID)
+
+    os.system('cp -rf %s.ms.tsys ./%s.concatenated.ms.tsys'%(ASDMs[0],UID))
+    for asd in ASDMs[1:]:
+      tb.open(asd+'.ms.tsys')
+      tb.copyrows('./%s.concatenated.ms.tsys'%UID)
+      tb.close()
+
+# Plot Tsys:
+    aU.plotbandpass(caltable='./%s.concatenated.ms.tsys'%UID, overlay='time', 
+      xaxis='freq', yaxis='amp', subplot=22, buildpdf=False, interactive=False,
+      showatm=True,pwv='auto',chanrange='5~123',showfdm=True, 
+      field='', figfile='%s.concatenated.ms.tsys.overlayTime/%s.tsys'%(UID,UID)) 
+ 
+
+################
+
+
+
+
+
+
 
 
 #################################################
@@ -351,6 +514,9 @@ if sum([sti>4 for sti in thesteps])>0:
 
   nphant = tb.getcol('numPhasedAntennas')
   appref = tb.getcol('refAntennaIndex')
+  allrefs = list(set(appref))
+  if len(allrefs)>1:
+    print "WARNING: THERE WAS MORE THAN ONE REFANT BY TELCAL: ",allrefs
   phants = set(tb.getcell('phasedAntennas', rownr = 0))
   almaref = []
 
@@ -416,12 +582,16 @@ if sum([sti>4 for sti in thesteps])>0:
   APPscans = ','.join(map(str,list(vset)))
   tb.close()
 
+
+  tb.open('%s.concatenated.ms/FIELD'%UID) 
+  FieldNames = tb.getcol('NAME')
+  tb.close()
+
   try:
     FluxCalID = str(int(FluxCal))
   except:
-    tb.open('%s.concatenated.ms/FIELD'%UID)
-    FluxCalID = str(np.where(tb.getcol('NAME')==FluxCal)[0][0])
-    tb.close()
+    tb.open('%s.concatenated.ms/FIELD'%UID) 
+    FluxCalID = str(np.where(FieldNames==FluxCal)[0][0])
 
 
 
@@ -435,34 +605,42 @@ if sum([sti>4 for sti in thesteps])>0:
 
 # Find calibrators automatically, if not given in header:
 
-if len(BandPassCal) == 0:
-  BandPassCal = str(fields[np.where(states==bandpassmode[0])[0][0]])
+  if len(BandPassCal) == 0:
+    BandPassCal = str(fields[np.where(states==bandpassmode[0])[0][0]])
 
-if len(PolCal) == 0:
-  PolCal = str(fields[np.where(states==polcalmode[0])[0][0]])
+  if len(PolCal) == 0:
+    PolCal = str(fields[np.where(states==polcalmode[0])[0][0]])
 
-if len(GainCal) == 0:
-  GainCal = str(fields[np.where(states==gainmode[0])[0][0]])
+  PolCalName = str(FieldNames[int(PolCal)])
 
-if len(Target) == 0:
-  Target = ','.join(map(str,list(set(fields[np.where(states==targetmode[0])[0]]))))
+  if len(VLBIfluxCal)==0:
+    VLBIfluxCalName = PolCalName
+  else:
+    VLBIfluxCalName = str(FieldNames[int(VLBIfluxCal)])
 
-if len(VLBICal) == 0:
-  Others = set(map(int,','.join([BandPassCal,PolCal,GainCal,Target,FluxCalID]).split(',')))
-  All = set(fields)
-  VLBICal = map(str,All.difference(Others))
+  if len(GainCal) == 0:
+    GainCal = str(fields[np.where(states==gainmode[0])[0][0]])
+    GainCalName = str(FieldNames[int(GainCal)])
+  if len(Target) == 0:
+    Target = ','.join(map(str,list(set(fields[np.where(states==targetmode[0])[0]]))))
 
-message = '\n\nSELECTED SOURCES AND INTENTS:\n\n'
-message += 'BANDPASS: %s\n'%BandPassCal
-message += 'POLARIZATION: %s\n'%PolCal
-message += 'GAIN: %s\n'%GainCal
-message += 'TARGET(S): %s\n'%Target
-message += 'OTHER VLBI CALIBS.: %s\n'%VLBICal
-message += 'ABSOLUTE FLUX TAKEN FROM: %s\n\n'%FluxCal
-message += '######################################\n\n\n' 
+  if len(VLBICal) == 0:
+    Others = set(map(int,','.join([BandPassCal,PolCal,GainCal,Target,FluxCalID]).split(',')))
+    All = set(fields)
+    VLBICal = map(str,All.difference(Others))
 
-print message
-casalog.post(message)
+  message = 'SELECTED SOURCES AND INTENTS:\n\n'
+  message += 'BANDPASS: %s\n'%BandPassCal
+  message += 'POLARIZATION: %s\n'%PolCal
+  message += 'GAIN: %s\n'%GainCal
+  message += 'TARGET(S): %s\n'%Target
+  message += 'OTHER VLBI CALIBS.: %s\n'%VLBICal
+  message += 'ABSOLUTE FLUX TAKEN FROM: %s\n'%FluxCal
+  message += 'VLBI FLUXES WILL BE BOOTSTRAPPED FROM: %s\n\n'%VLBIfluxCalName
+  message += '######################################\n\n\n' 
+
+  print message
+  casalog.post(message)
 
 #################################################
 
@@ -653,7 +831,7 @@ if(mystep in thesteps):
   # List of unique source ids:
   fields = ','.join(list(set(fields.split(','))))
 
-  clearcal(vis = '%s.concatenated.ms'%UID,field=fields)
+  clearcal(vis = '%s.concatenated.ms'%UID,field=fields,addmodel=True)
 
 
 # Calibrate ALMA scans (phase):
@@ -683,6 +861,36 @@ if(mystep in thesteps):
     gaintable = '%s.concatenated.ms.bandpass-zphs'%UID)
 
 
+#######################################
+# Re-reference phases to REFANT:
+  casalog.post('Re-referencing all phases to the REFANT','INFO')
+  tb.open('%s.concatenated.ms/ANTENNA'%UID)
+  REFANT_IDX = int(np.where(tb.getcol('NAME')==REFANT)[0][0])
+ 
+
+  for gaintable in ['%s.concatenated.ms.phase_int.APP'%UID,'%s.concatenated.ms.phase_int'%UID]:
+    tb.open(gaintable,nomodify=False)
+    timearr = tb.getcol('TIME')
+    calant = tb.getcol('ANTENNA2')
+    solant = tb.getcol('ANTENNA1')
+    ifsol = tb.getcol('SPECTRAL_WINDOW_ID')
+    allifs = list(set(ifsol))
+    alltimes = list(set(timearr))
+    gains = tb.getcol('CPARAM')
+    for ti in alltimes:
+      is2 = (timearr==ti)  #*(calant==REFANT_IDX)
+      is22 = is2*(solant==REFANT_IDX)
+      for IFi in allifs:
+        isifref = is22*(ifsol==IFi)
+        isifcal = is2*(ifsol==IFi)
+        if np.sum(isifref)>0:
+          gains[:,:,isifcal] /= gains[:,:,isifref]
+    tb.putcol('CPARAM',gains)
+    tb.close()
+#######################################
+
+
+
 # Calibrate ALMA scans (amp):
   os.system('rm -rf %s.concatenated.ms.ampli_inf'%UID)
   gaincal(vis = '%s.concatenated.ms'%UID,
@@ -698,10 +906,17 @@ if(mystep in thesteps):
     gaintable = ['%s.concatenated.ms.bandpass'%UID,'%s.concatenated.ms.phase_int'%UID])
 
 
+################################
+# CASA CRASHED WHEN TRYING TO APPEND THESE TO THE
+# PREVIOUS TABLE (???). HENCE, WE HAVE TO CREATE A NEW
+# TABLE FOR THE APP AMPLITUDE GAINS.
+
 # Calibrate APP scans (amp):
   os.system('rm -rf %s.concatenated.ms.ampli_inf.APP'%UID)
   gaincal(vis = '%s.concatenated.ms'%UID,
     caltable = '%s.concatenated.ms.ampli_inf.APP'%UID,
+#    caltable = '%s.concatenated.ms.ampli_inf'%UID,
+#    append = True,
     field = '',
     scan = APPscans,
     solint = 'inf',
@@ -711,22 +926,8 @@ if(mystep in thesteps):
     calmode = 'a',
     gainfield = [BandPassCal,''],
     gaintable = ['%s.concatenated.ms.bandpass-zphs'%UID,'%s.concatenated.ms.phase_int.APP'%UID])
+################################
 
-
-# Calibrate APP scans (amp) (append):
-#  os.system('rm -rf %s.concatenated.ms.ampli_inf'%UID)
-#  gaincal(vis = '%s.concatenated.ms'%UID,
-#    caltable = '%s.concatenated.ms.ampli_inf'%UID,
-#    field = '',
-#    scan = APPscans,
-#    solint = 'inf',
-#    combine = '',
-#    refant = REFANT,
-#    gaintype = 'T',
-#    append = T,
-#    calmode = 'a',
-#    gainfield = [BandPassCal,''],
-#    gaintable = ['%s.concatenated.ms.bandpass-zphs'%UID,'%s.concatenated.ms.phase_int.APP'%UID])
 
 
 
@@ -739,27 +940,53 @@ if(mystep in thesteps):
   fluxscaleDict = fluxscale(vis = '%s.concatenated.ms'%UID,
     caltable = '%s.concatenated.ms.ampli_inf'%UID,
     fluxtable = '%s.concatenated.ms.flux_inf'%UID,
-    transfer = '', # list(set(VLBICal + [BandPassCal,GainCal,Target])),
+    transfer = '',
     reference = FluxCal) 
 
-  casalog.setlogfile(mylogfile)
 
+
+
+##################################################################
+#############################
+# THE FLUX CALIBRATOR USED BY ALMA MIGHT NOT BE OBSERVED IN APP MODE.
+# WE NEED TO BROADCAST THE FLUX FROM THE GAIN CALIBRATOR INTO THE 
+# APP AMPLITUDE TABLE. ONCE THE CASA CRASH PROBLEM ABOVE IS SOLVED,
+# THESE LINES CAN BE COMMENTED OUT.
+#############################
 
 # Scale the APP-only amplitude gains: 
-  os.system('rm -rf %s.concatenated.ms.flux_inf.APP'%UID) 
-  os.system('cp -r  %s.concatenated.ms.ampli_inf.APP %s.concatenated.ms.flux_inf.APP'%(UID,UID))
-  tb.open('%s.concatenated.ms.flux_inf.APP'%UID,nomodify=False)
 
+  os.system('rm -rf %s.concatenated.ms.flux_inf.APP Aux.tab'%UID) 
+  os.system('cp -r  %s.concatenated.ms.ampli_inf.APP Aux.tab'%UID)
+
+
+# Will use a VLBI calibrator (the polcal is the default) as secondary flux-density calibrator:
+
+  tb.open('Aux.tab',nomodify=False)
   tspwids = tb.getcol('SPECTRAL_WINDOW_ID')
   tfields = tb.getcol('FIELD_ID')
   tgains = tb.getcol('CPARAM')
   for entr in range(len(tspwids)):
-   if str(tfields[entr]) in fluxscaleDict.keys():
-    flux = fluxscaleDict[str(tfields[entr])][str(tspwids[entr])]['fluxd'][0]
+   if str(tfields[entr]) == VLBIfluxCal:
+    flux = fluxscaleDict[GainCal][str(tspwids[entr])]['fluxd'][0]
     tgains[:,:,entr] /= np.sqrt(flux)
 
   tb.putcol('CPARAM',tgains)
   tb.close()
+
+  fluxscaleDict = fluxscale(vis = '%s.concatenated.ms'%UID,
+    caltable = 'Aux.tab',
+    fluxtable = '%s.concatenated.ms.flux_inf.APP'%UID,
+    transfer = '',
+    reference = str(VLBIfluxCalName)) 
+
+  casalog.setlogfile(mylogfile)
+
+  os.system('rm -rf Aux.tab')
+
+##################################################################
+
+
 
 
 
@@ -776,7 +1003,8 @@ if(mystep in thesteps):
     os.system('mkdir %s.concatenated.ms.GAINS.plots/PHASED'%UID)
     os.system('mkdir %s.concatenated.ms.GAINS.plots/CONTROL'%UID)
 
-    for antnam in allants:
+    if doPlot:
+     for antnam in allants:
 
       if antnam in phants:
         dirname = '%s.concatenated.ms.GAINS.plots/PHASED'%UID
@@ -928,7 +1156,7 @@ if(mystep in thesteps):
 
 
 
-# Split calibrated data:
+# Split calibrated data (without the control antennas):
 mystep = 13
 if(mystep in thesteps):
   casalog.post('Step '+str(mystep)+' '+step_title[mystep],'INFO')
@@ -937,18 +1165,9 @@ if(mystep in thesteps):
   os.system('rm -rf %s.calibrated.ms*'%UID)
   split(vis = '%s.concatenated.ms'%UID,
     datacolumn='corrected',
- #   scan = ALMAscans,
     keepflags = False,
     antenna=','.join(phants)+'&',
     outputvis = '%s.calibrated.ms'%UID)
-
-#  os.system('rm -rf %s.calibrated.APP.ms*'%UID)
-#  split(vis = '%s.concatenated.ms'%UID,
-#    datacolumn='corrected',
-#    scan = APPscans,
-#    keepflags = False,
-#    antenna=','.join(phants)+'&',
-#    outputvis = '%s.calibrated.APP.ms'%UID)
 
 
 
@@ -964,15 +1183,6 @@ if(mystep in thesteps):
   flagmanager(vis = '%s.calibrated.ms'%UID,
     mode = 'save',
     versionname = 'BeforePolCal')
-
-#  if os.path.exists('%s.calibrated.APP.ms.flagversions/flags.BeforePolCal'%UID):
-#    flagmanager(vis='%s.calibrated.APP.ms'%UID, 
-#      mode = 'delete', versionname='BeforePolCal')
-
-#  flagmanager(vis = '%s.calibrated.APP.ms'%UID,
-#    mode = 'save',
-#    versionname = 'BeforePolCal')
-
 
 
 
@@ -990,9 +1200,6 @@ if(mystep in thesteps):
     mode = 'restore',
     versionname = 'BeforePolCal')
 
-#  flagmanager(vis = '%s.calibrated.APP.ms'%UID,
-#    mode = 'restore',
-#    versionname = 'BeforePolCal')
 
   import recipes.almahelpers as ah
   import recipes.almapolhelpers as aph
@@ -1003,9 +1210,6 @@ if(mystep in thesteps):
     mode = 'shadow',
     flagbackup = F)
 
-#  flagdata(vis = '%s.calibrated.APP.ms'%UID,
-#    mode = 'shadow',
-#    flagbackup = F)
 
 # FLAG first seconds of scans:
   flagdata(vis='%s.calibrated.ms'%UID,
@@ -1016,11 +1220,6 @@ if(mystep in thesteps):
     flagbackup=F)
 
 
-# FLAG CONTROL ANTENNAS:
-#  flagdata(vis='%s.concatenated.ms'%UID,
-#    mode='manual',
-#    antenna = ','.join(controls),
-#    flagbackup=F)
 
 
 ###########################
@@ -1054,41 +1253,40 @@ if(mystep in thesteps):
 
 # ALMA Calibration data:
   os.system('rm -rf %s.calibrated.ms.Gpol1*'%UID)
-  gaincal(vis = '%s.calibrated.ms'%UID,
-    caltable = '%s.calibrated.ms.Gpol1'%UID,
-    field = PolCal,
- #   scan = ALMAscans,
- #   antenna=','.join(phants),    
-    solint = 'inf',
-    combine = '',
-    gaintype = 'G',
-    calmode = 'a',
-    refant = REFANT)
+  if Use_APP_for_Gpol:
+    gaincal(vis = '%s.calibrated.ms'%UID,
+      caltable = '%s.calibrated.ms.Gpol1'%UID,
+      field = PolCal,
+      solint = 'inf',
+      combine = '',
+      gaintype = 'G',
+      calmode = 'a',
+      refant = REFANT)
+  else:
+    gaincal(vis = '%s.calibrated.ms'%UID,
+      caltable = '%s.calibrated.ms.Gpol1'%UID,
+      field = PolCal,
+      scan = ALMAscans,
+      solint = 'inf',
+      combine = '',
+      gaintype = 'G',
+      calmode = 'a',
+      refant = REFANT)
 
-# APP data:
-#  os.system('rm -rf %s.calibrated.APP.ms.Gpol1*'%UID)
-#  gaincal(vis = '%s.calibrated.APP.ms'%UID,
-#    caltable = '%s.calibrated.APP.ms.Gpol1'%UID,
-#    field = PolCal,
-#    scan = APPscans,
-##    antenna=','.join(phants),   
-#    solint = '%is'%scandur,
-#    combine = 'scan,obs',
-#    gaintype = 'G',
-#    calmode = 'a',
-#    refant = REFANT)
 
 
 # Pre-scaling Gpol solutions:
+# (i.e., we multiply the gain of each antenna by its time average)
 
   os.system('rm -rf TEMP.Gpol1')
-
   os.system('cp -r %s.calibrated.ms.Gpol1 TEMP.Gpol1'%UID)
 
   tb.open('TEMP.Gpol1',nomodify = False)
   ants = tb.getcol('ANTENNA1')
   amps = tb.getcol('CPARAM')
   spwids = tb.getcol('SPECTRAL_WINDOW_ID')
+  scannum = tb.getcol('SCAN_NUMBER')
+  flagstat = tb.getcol('FLAG')
 
   AntMax = np.max(ants)+1
   spwMax = np.max(spwids)+1
@@ -1105,24 +1303,34 @@ if(mystep in thesteps):
   #     print 'ANT ',ant,' SPW ',spw,' : ',avrat
        RatiosALMA[ant,spw] = avrat.real
 
+  amprms = []
+  scilist = list(set(scannum))
+  for sci in scilist:
+    rows = np.where(scannum==sci)
+    amprms.append(np.std(1.-np.abs(amps[1,:,rows])/np.abs(amps[0,:,rows])))
+
+
+  for scii,sci in enumerate(scilist):
+    if amprms[scii] > BadGpol:
+      rows = np.where(scannum==sci)
+      flagstat[0,0,rows] = True
+      flagstat[1,0,rows] = True
+
+  tb.putcol('FLAG',flagstat)
   tb.putcol('CPARAM',amps)
   tb.close()
 
 
 
+  if doPlot:
+    os.system('rm -rf %s.calibrated.ms.Gpol1.png'%UID)
+    plotcal('%s.calibrated.ms.Gpol1'%UID,'scan','amp',field='',poln='/',subplot=111, figfile='%s.calibrated.ms.Gpol1.png'%UID)
 
-  os.system('rm -rf %s.calibrated.ms.Gpol1.png'%UID)
-  plotcal('%s.calibrated.ms.Gpol1'%UID,'scan','amp',field='',poln='/',subplot=111, figfile='%s.calibrated.ms.Gpol1.png'%UID)
-
-  os.system('rm -rf TEMP.Gpol1.png')
-  plotcal('TEMP.Gpol1','scan','amp',field='',poln='/',subplot=111, figfile='TEMP.Gpol1.png')
-
-
-
-#  os.system('rm -rf %s.concatenated.ms.Gpol1.APP.png'%UID)
-#  plotcal('%s.concatenated.ms.Gpol1.APP'%UID,'scan','amp',field='',poln='/',subplot=111, figfile='%s.concatenated.ms.Gpol1.APP.png'%UID)
+    os.system('rm -rf TEMP.Gpol1.png')
+    plotcal('TEMP.Gpol1','scan','amp',field='',poln='/',subplot=111, figfile='TEMP.Gpol1.png')
 
 
+#  raw_input("HOLD")
 
 ##########
 # Save QU output in external file:
@@ -1133,17 +1341,7 @@ if(mystep in thesteps):
   sys.stdout = f
 
 # Rough estimate of QU:
-#  print 'FROM ALMA CALIB. SCANS:'
-#  qu = aph.qufromgain('%s.calibrated.ALMA.ms.Gpol1'%UID)
-#  print 'FROM APP. SCANS:'
-#  qu2 = aph.qufromgain('%s.calibrated.APP.ms.Gpol1'%UID)
-
-
-#  print 'FROM ALMA CALIB. SCANS:'
   qu = aph.qufromgain('TEMP.Gpol1')
-#  print 'FROM APP. SCANS:'
-#  qu2 = aph.qufromgain('TEMP.APP.Gpol1')
-
 
   sys.stdout = orig_stdout
   f.close()
@@ -1176,7 +1374,10 @@ if(mystep in thesteps):
   bestratio = ratios[bestscidx]
   print 'Scan with highest expected X-Y signal: ', bestscan
 
+
   tb.close()
+
+
 #####################################################
 #
 #
@@ -1309,40 +1510,40 @@ if(mystep in thesteps):
   print f.read()
   f.close()
 
-  plotcal('%s.calibrated.ms.XY0amb.ALMA'%UID,'freq','phase',
+  if doPlot:
+   plotcal('%s.calibrated.ms.XY0amb.ALMA'%UID,'freq','phase',
      antenna='0', poln='X', subplot=121,plotrange=[0,0,-180,180])
 
-  plotcal('%s.calibrated.ms.XY0.ALMA'%UID,'freq','phase',
+   plotcal('%s.calibrated.ms.XY0.ALMA'%UID,'freq','phase',
      antenna='0',poln='X',subplot=122,plotrange=[0,0,-180,180],
      figfile='%s.XY0_Amb-NoAmb.ALMA.png'%UID)
 
-  plotcal('%s.calibrated.ms.XY0.ALMA'%UID,'chan','phase',
+   plotcal('%s.calibrated.ms.XY0.ALMA'%UID,'chan','phase',
      antenna='0',poln='X',subplot=221,plotrange=[0,0,-180,180],
      iteration='spw',figfile='%s.XY-CrossPhase.ALMA.png'%UID)
 
-  if checkJumps:
+   if checkJumps:
     raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW (Ctrl+D TO ABORT)')
 
-  plotcal('%s.calibrated.ms.XY0amb.APP'%UID,'freq','phase',plotrange=[0,0,-180,180],
+   plotcal('%s.calibrated.ms.XY0amb.APP'%UID,'freq','phase',plotrange=[0,0,-180,180],
      antenna='0', poln='X', subplot=121)
 
-  plotcal('%s.calibrated.ms.XY0.APP'%UID,'freq','phase',
+   plotcal('%s.calibrated.ms.XY0.APP'%UID,'freq','phase',
      antenna='0',poln='X',subplot=122,plotrange=[0,0,-180,180],
      figfile='%s.XY0_Amb-NoAmb.APP.png'%UID)
 
-  plotcal('%s.calibrated.ms.XY0.APP'%UID,'chan','phase',
+   plotcal('%s.calibrated.ms.XY0.APP'%UID,'chan','phase',
      antenna='0',poln='X',subplot=221,plotrange=[0,0,-180,180],
      iteration='spw',figfile='%s.XY-CrossPhase.APP.png'%UID)
 
 
-  if checkJumps:
+   if checkJumps:
     raw_input('PLEASE, CHECK FOR POSSIBLE 180 DEG. JUMPS IN EACH SPW (Ctrl+D TO ABORT)')
 
 
 
 ## Re-calibrate polarization calibrator (with right pol. model): 
   os.system('rm -rf %s.calibrated.ms.Gpol2*'%UID) 
-#  os.system('rm -rf %s.calibrated.ms.Gpol2*'%UID) 
 
 
 # ALMA Calibration data:
@@ -1350,7 +1551,6 @@ if(mystep in thesteps):
     caltable = '%s.calibrated.ms.Gpol2.ALMA'%UID,
     scan = ALMAscans,
     field = PolCal,
- #   antenna = ','.join(phants),
     solint = 'inf',
     combine = '',
     calmode = 'a',
@@ -1364,7 +1564,6 @@ if(mystep in thesteps):
   gaincal(vis = '%s.calibrated.ms'%UID,
     caltable = '%s.calibrated.ms.Gpol2.APP'%UID,
     scan = APPscans,
- #   antenna = ','.join(phants),
     field = PolCal,
     solint = '%is'%scandur,
     combine = 'scan,obs',
@@ -1395,20 +1594,14 @@ if(mystep in thesteps):
 ##########
 
 
- # plotcal('%s.calibrated.ms.Gpol2.ALMA'%UID,'chan','amp',
- #    antenna='0',poln='X',subplot=221,
- #    iteration='spw',figfile='%s.XY-AmpRatio.ALMA.png'%UID)
-
-  os.system('rm -rf %s.calibrated.ms.Gpol2.ALMA.png'%UID)
-  plotcal('%s.calibrated.ms.Gpol2.ALMA'%UID,'scan','amp',field='',poln='/',subplot=111, figfile='%s.calibrated.ms.Gpol2.ALMA.png'%UID)
+  if doPlot:
+   os.system('rm -rf %s.calibrated.ms.Gpol2.ALMA.png'%UID)
+   plotcal('%s.calibrated.ms.Gpol2.ALMA'%UID,'scan','amp',field='',poln='/',subplot=111, figfile='%s.calibrated.ms.Gpol2.ALMA.png'%UID)
 
 
-#  plotcal('%s.calibrated.APP.ms.Gpol2'%UID,'chan','amp',
-#     antenna='0',poln='X',subplot=221,
-#     iteration='spw',figfile='%s.XY-AmpRatio.APP.png'%UID)
 
-  os.system('rm -rf %s.calibrated.ms.Gpol2.APP.png'%UID)
-  plotcal('%s.calibrated.ms.Gpol2.APP'%UID,'scan','amp',field='',poln='/',subplot=111, figfile='%s.calibrated.ms.Gpol2.APP.png'%UID)
+   os.system('rm -rf %s.calibrated.ms.Gpol2.APP.png'%UID)
+   plotcal('%s.calibrated.ms.Gpol2.APP'%UID,'scan','amp',field='',poln='/',subplot=111, figfile='%s.calibrated.ms.Gpol2.APP.png'%UID)
 
 
 
@@ -1425,34 +1618,32 @@ if(mystep in thesteps):
     ratio = np.sqrt(np.average(np.power(np.abs(gains[0,filt])/np.abs(gains[1,filt])-1.0,2.)))
     ratios2[si] = ratio
 
+  if doPlot:
+   os.system('rm -rf %s.GainRatiosPol.png'%UID)
+   pl.ioff()
+   fig = pl.gcf()
+   pl.clf() #pl.figure()
+   sub = fig.add_subplot(111)
+   sub.plot(scanlist, ratios, 'or', label = 'No Polcal')
+   sub.plot(scanlist2, ratios2, 'ob', label = 'Polcal')
+   sub.plot([scanlist[bestscidx]], [ratios[bestscidx]], 'xk', label = 'Best Pol. Scan')
+   sub.set_xlabel('Scan Number')
+   sub.set_ylabel('Gain Ratio RMS')
+   pl.legend(numpoints=1)
+   pl.savefig('%s.GainRatiosPol.png'%UID)
+   pl.clf()
 
-  os.system('rm -rf %s.GainRatiosPol.png'%UID)
-  pl.ioff()
-  fig = pl.gcf()
-  pl.clf() #pl.figure()
-  sub = fig.add_subplot(111)
-  sub.plot(scanlist, ratios, 'or', label = 'No Polcal')
-  sub.plot(scanlist2, ratios2, 'ob', label = 'Polcal')
-  sub.plot([scanlist[bestscidx]], [ratios[bestscidx]], 'xk', label = 'Best Pol. Scan')
-  sub.set_xlabel('Scan Number')
-  sub.set_ylabel('Gain Ratio RMS')
-  pl.legend(numpoints=1)
-  pl.savefig('%s.GainRatiosPol.png'%UID)
-  pl.clf()
-
-  pl.ion()
+   pl.ion()
 
 
 # Calibrate D-terms:
 
-#  S = [1.0, -0.1316784955561161, 0.10077263787388802, 0.0]
 
 # ALMA:
   os.system('rm -rf %s.calibrated.ms.Df0*'%UID) 
   polcal(vis='%s.calibrated.ms'%UID,
     caltable='%s.calibrated.ms.Df0.ALMA'%UID, 
     field= PolCal,
- #   antenna = ','.join(phants),
     scan = ALMAscans, 
     solint='inf',
     combine='obs,scan',
@@ -1464,20 +1655,35 @@ if(mystep in thesteps):
       '%s.calibrated.ms.XY0.ALMA'%UID])
 
 ## ALMA:
-#  os.system('rm -rf %s.calibrated.APP.ms.Df0*'%UID) 
-  polcal(vis='%s.calibrated.ms'%UID,
-    caltable='%s.calibrated.ms.Df0.APP'%UID, 
-    field= PolCal,
- #   antenna = ','.join(phants),
-    scan = APPscans, 
-    solint='inf',
-    combine='obs,scan',
-    preavg=scandur,
-    poltype='Dflls',
-    refant='', #solve absolute D-term
-    smodel=S,
-    gaintable=['%s.calibrated.ms.Gpol2.APP'%UID,
-      '%s.calibrated.ms.XY0.APP'%UID])
+#  os.system('rm -rf %s.calibrated.APP.ms.Df0*'%UID)
+  if Use_APP_for_Gpol:
+    polcal(vis='%s.calibrated.ms'%UID,
+      caltable='%s.calibrated.ms.Df0.APP'%UID, 
+      field= PolCal,
+      scan = APPscans, 
+      solint='inf',
+      combine='obs,scan',
+      preavg=scandur,
+      poltype='Dflls',
+      refant='', #solve absolute D-term
+      smodel=S,
+      gaintable=['%s.calibrated.ms.Gpol2.APP'%UID,
+        '%s.calibrated.ms.XY0.APP'%UID])
+  else:
+    polcal(vis='%s.calibrated.ms'%UID,
+      caltable='%s.calibrated.ms.Df0.APP'%UID, 
+      field= PolCal,
+      scan = APPscans, 
+      solint='inf',
+      combine='obs,scan',
+      preavg=scandur,
+      poltype='Dflls',
+      refant='', #solve absolute D-term
+      smodel=S,
+      gaintable=['%s.calibrated.ms.Gpol2.ALMA'%UID,
+        '%s.calibrated.ms.XY0.APP'%UID])
+
+
 #
 # Allow applying solutions to the parallel hands too:
   aph.Dgen(dtab='%s.calibrated.ms.Df0.ALMA'%UID,
@@ -1493,7 +1699,6 @@ if(mystep in thesteps):
         caltable='%s.calibrated.ms.Gxyamp.ALMA'%UID, 
         field=PolCal,
         scan = ALMAscans, 
- #       antenna = ','.join(phants),
         spw = '',
         solint='inf',
         combine='scan,obs',
@@ -1512,7 +1717,6 @@ if(mystep in thesteps):
         caltable='%s.calibrated.ms.Gxyamp.APP'%UID, 
         field=PolCal,
         scan = APPscans, 
-  #      antenna = ','.join(phants),
         spw = '',
         solint='inf',
         combine='scan,obs',
@@ -1526,32 +1730,33 @@ if(mystep in thesteps):
         parang=T)
 
 
-  plotcal('%s.calibrated.ms.Gxyamp.ALMA'%UID, 'antenna','amp', spw='',
+  if doPlot:
+   plotcal('%s.calibrated.ms.Gxyamp.ALMA'%UID, 'antenna','amp', spw='',
         iteration='spw',subplot=221,
         figfile='%s.calibrated.ms.Gxyamp.ALMA.png'%UID)
-  plotcal('%s.calibrated.ms.Gxyamp.ALMA'%UID, 'antenna','amp', spw='',poln='/',
+   plotcal('%s.calibrated.ms.Gxyamp.ALMA'%UID, 'antenna','amp', spw='',poln='/',
         iteration='spw',subplot=221,
         figfile='%s.calibrated.ms.GxyampRatio.ALMA.png'%UID)
 
-  plotcal('%s.calibrated.ms.Gxyamp.APP'%UID, 'antenna','amp', spw='',
+   plotcal('%s.calibrated.ms.Gxyamp.APP'%UID, 'antenna','amp', spw='',
         iteration='spw',subplot=221,
         figfile='%s.calibrated.ms.Gxyamp.APP.png'%UID)
-  plotcal('%s.calibrated.ms.Gxyamp.APP'%UID, 'antenna','amp', spw='',poln='/',
+   plotcal('%s.calibrated.ms.Gxyamp.APP'%UID, 'antenna','amp', spw='',poln='/',
         iteration='spw',subplot=221,
         figfile='%s.calibrated.ms.GxyampRatio.APP.png'%UID)
 
 # Save D-term plots for all antennas:
-  plotcal('%s.calibrated.ms.Df0.ALMA'%UID,'chan','real', spw='',
+   plotcal('%s.calibrated.ms.Df0.ALMA'%UID,'chan','real', spw='',
        iteration='spw',subplot=221,figfile='%s.Df0.plot.REAL.ALMA.png'%UID)
 
-  plotcal('%s.calibrated.ms.Df0.ALMA'%UID,'chan','imag', spw='',
+   plotcal('%s.calibrated.ms.Df0.ALMA'%UID,'chan','imag', spw='',
        iteration='spw',subplot=221,figfile='%s.Df0.plot.IMAG.ALMA.png'%UID)
 
 
-  plotcal('%s.calibrated.ms.Df0.APP'%UID,'chan','real', spw='',
+   plotcal('%s.calibrated.ms.Df0.APP'%UID,'chan','real', spw='',
        iteration='spw',subplot=221,figfile='%s.Df0.plot.REAL.APP.png'%UID)
 
-  plotcal('%s.calibrated.ms.Df0.APP'%UID,'chan','imag', spw='',
+   plotcal('%s.calibrated.ms.Df0.APP'%UID,'chan','imag', spw='',
        iteration='spw',subplot=221,figfile='%s.Df0.plot.IMAG.APP.png'%UID)
 
 
@@ -1571,14 +1776,6 @@ if(mystep in thesteps):
     mode = 'save',
     versionname = 'BeforeApplycal')
 
-#  if os.path.exists('%s.calibrated.APP.ms.flagversions/flags.BeforeApplycal'%UID):
-#    flagmanager(vis='%s.calibrated.APP.ms'%UID, 
-#      mode = 'delete', versionname='BeforeApplycal')
-
-#  flagmanager(vis = '%s.calibrated.APP.ms'%UID,
-#    mode = 'save',
-#    versionname = 'BeforeApplycal')
-
 
 
 
@@ -1593,22 +1790,6 @@ if(mystep in thesteps):
     mode = 'restore',
     versionname = 'BeforeApplycal')
 
-#  flagmanager(vis = '%s.calibrated.APP.ms'%UID,
-#    mode = 'restore',
-#    versionname = 'BeforeApplycal')
-
-# BANDPASS (ALMA):
-#  applycal(vis = '%s.calibrated.ALMA.ms'%UID,
-#    field = BandPassCal,
-#    gaintable = ['%s.calibrated.ms.XY0.ALMA'%UID,
-#      '%s.calibrated.ALMA.ms.Gxyamp'%UID,
-#      '%s.calibrated.ALMA.ms.Df0gen'%UID],
-#    gainfield = [PolCal, PolCal, PolCal],
-#    interp = ['linear','nearest','linear'],
-#    scan = ALMAscans,
-#    calwt = [F,T,F],
-#    parang = T,
-#    flagbackup = F)
 
 # POL. CALIBRATOR WITH NO D-TERMS (FOR CHECKING):
   applycal(vis = '%s.calibrated.ms'%UID,
@@ -1622,22 +1803,34 @@ if(mystep in thesteps):
     parang = T,
     flagbackup = F)
 
-  applycal(vis = '%s.calibrated.ms'%UID,
-    field = PolCal,
-    gaintable = ['%s.calibrated.ms.Gpol2.APP'%UID,
-      '%s.calibrated.ms.XY0.APP'%UID],
-    gainfield = [PolCal,PolCal,'',''],
-    interp = ['nearest','linear'],
-    scan = APPscans,
-    calwt = [T,F],
-    parang = T,
-    flagbackup = F)
+  if Use_APP_for_Gpol:
+    applycal(vis = '%s.calibrated.ms'%UID,
+      field = PolCal,
+      gaintable = ['%s.calibrated.ms.Gpol2.APP'%UID,
+        '%s.calibrated.ms.XY0.APP'%UID],
+      gainfield = [PolCal,PolCal,'',''],
+      interp = ['nearest','linear'],
+      scan = APPscans,
+      calwt = [T,F],
+      parang = T,
+      flagbackup = F)
+  else:
+    applycal(vis = '%s.calibrated.ms'%UID,
+      field = PolCal,
+      gaintable = ['%s.calibrated.ms.Gpol2.ALMA'%UID,
+        '%s.calibrated.ms.XY0.APP'%UID],
+      gainfield = [PolCal,PolCal,'',''],
+      interp = ['nearest','linear'],
+      scan = APPscans,
+      calwt = [T,F],
+      parang = T,
+      flagbackup = F)
+
 
   os.system('rm -rf %s.calibrated.PolCal.NoDterms.ms'%UID)
   split(vis = '%s.calibrated.ms'%UID,
     field = PolCal,
     datacolumn='corrected',
- #   scan = ALMAscans,
     outputvis = '%s.calibrated.PolCal.NoDterms.ms'%UID)
 
 
@@ -1656,17 +1849,30 @@ if(mystep in thesteps):
 
 
 # POL. CALIBRATOR (APP):
-  applycal(vis = '%s.calibrated.ms'%UID,
-    field = PolCal,
-    gaintable = ['%s.calibrated.ms.Gpol2.APP'%UID,
-      '%s.calibrated.ms.XY0.APP'%UID,
-      '%s.calibrated.ms.Df0gen.APP'%UID],
-    gainfield = [PolCal,PolCal,PolCal],
-    interp = ['nearest','linear','linear'],
-    scan = APPscans,
-    calwt = [T,F,F],
-    parang = T,
-    flagbackup = F)
+  if Use_APP_for_Gpol:
+    applycal(vis = '%s.calibrated.ms'%UID,
+      field = PolCal,
+      gaintable = ['%s.calibrated.ms.Gpol2.APP'%UID,
+        '%s.calibrated.ms.XY0.APP'%UID,
+        '%s.calibrated.ms.Df0gen.APP'%UID],
+      gainfield = [PolCal,PolCal,PolCal],
+      interp = ['nearest','linear','linear'],
+      scan = APPscans,
+      calwt = [T,F,F],
+      parang = T,
+      flagbackup = F)
+  else:
+    applycal(vis = '%s.calibrated.ms'%UID,
+      field = PolCal,
+      gaintable = ['%s.calibrated.ms.Gpol2.ALMA'%UID,
+        '%s.calibrated.ms.XY0.APP'%UID,
+        '%s.calibrated.ms.Df0gen.APP'%UID],
+      gainfield = [PolCal,PolCal,PolCal],
+      interp = ['nearest','linear','linear'],
+      scan = APPscans,
+      calwt = [T,F,F],
+      parang = T,
+      flagbackup = F)
 
 
 # OTHER SOURCES (ALMA):
@@ -1684,19 +1890,30 @@ if(mystep in thesteps):
 
 
 # OTHER SOURCES (APP):
-  applycal(vis = '%s.calibrated.ms'%UID,
-    field = ','.join([GainCal,Target]+VLBICal),
-    gaintable = ['%s.calibrated.ms.XY0.APP'%UID,
-      '%s.calibrated.ms.Gxyamp.APP'%UID,
-      '%s.calibrated.ms.Df0gen.APP'%UID],
-    gainfield = [PolCal,PolCal,PolCal],
-    interp = ['linear','nearest','linear'],
-    scan = APPscans,
-    calwt = [F,T,F],
-    parang = T,
-    flagbackup = F)
-
-
+  if Use_APP_for_Gpol:
+    applycal(vis = '%s.calibrated.ms'%UID,
+      field = ','.join([GainCal,Target]+VLBICal),
+      gaintable = ['%s.calibrated.ms.XY0.APP'%UID,
+        '%s.calibrated.ms.Gxyamp.APP'%UID,
+        '%s.calibrated.ms.Df0gen.APP'%UID],
+      gainfield = [PolCal,PolCal,PolCal],
+      interp = ['linear','nearest','linear'],
+      scan = APPscans,
+      calwt = [F,T,F],
+      parang = T,
+      flagbackup = F)
+  else:
+    applycal(vis = '%s.calibrated.ms'%UID,
+      field = ','.join([GainCal,Target]+VLBICal),
+      gaintable = ['%s.calibrated.ms.XY0.APP'%UID,
+        '%s.calibrated.ms.Gxyamp.ALMA'%UID,
+        '%s.calibrated.ms.Df0gen.APP'%UID],
+      gainfield = [PolCal,PolCal,PolCal],
+      interp = ['linear','nearest','linear'],
+      scan = APPscans,
+      calwt = [F,T,F],
+      parang = T,
+      flagbackup = F)
 
 
 # SPLIT ALMA AND APP SEPARATELY:
@@ -1731,13 +1948,6 @@ if(mystep in thesteps):
     mode = 'save',
     versionname = 'AfterApplycal')
 
-#  if os.path.exists('%s.calibrated.APP.ms.flagversions/flags.AfterApplycal'%UID):
-#    flagmanager(vis='%s.calibrated.APP.ms'%UID, 
-#      mode = 'delete', versionname='AfterApplycal')
-
-#  flagmanager(vis = '%s.calibrated.APP.ms'%UID,
-#    mode = 'save',
-#    versionname = 'AfterApplycal')
 
 
 
@@ -1775,11 +1985,13 @@ if(mystep in thesteps):
   README += 'spw = -1\n'
   README += 'calAPPTime = [0.0,8.0]\n\n'
   README += 'gains = [[\'%s.concatenated.ms.bandpass-zphs\',\n'%UID
+  if Use_Tsys:
+    README += '          \'%s.concatenated.ms.tsys\',\n'%UID
   README += '          \'%s.concatenated.ms.flux_inf.APP\',\n'%UID
   README += '          \'%s.concatenated.ms.phase_int.APP\',\n'%UID
   README += '          \'%s.calibrated.ms.XY0.APP\',\n'%UID
-  README += '          \'%s.calibrated.ms.Gxyamp.APP\']]  # Check if \'calibrated.ms.Gxyamp.ALMA\' gives better results. \n\n'%UID
-  README += 'dterms = [\'%s.calibrated.ms.Df0.APP\']  # Check if \'calibrated.ms.Df0.ALMA\' gives better results. \n\n'%UID
+  README += '          \'%s.calibrated.ms.Gxyamp.ALMA\']]  # Check if \'calibrated.ms.Gxyamp.APP\' gives better results. \n\n'%UID
+  README += 'dterms = [\'%s.calibrated.ms.Df0.ALMA\']  # Check if \'calibrated.ms.Df0.APP\' gives better results. \n\n'%UID
   README += 'amp_norm = True  # DON\'T APPLY AMPLITUDE CORRECTION.\n' 
   README += '                 # BUILD AN ANTAB FILE INSTEAD.\n'
   README += 'XYadd = [0.0] # CHANGE TO 180. IF R <-> L\n'
@@ -1816,6 +2028,10 @@ if(mystep in thesteps):
     '%s.calibrated.ms.Df0gen.APP'%UID,
     '%s.calibrated.ms.Df0.ALMA'%UID,
     '%s.calibrated.ms.Df0gen.ALMA'%UID]
+
+  if Use_Tsys:
+    deliverables.append('%s.concatenated.ms.tsys'%UID)
+
 
   if os.path.exists('%s.APP.artifacts'%UID):
     shutil.rmtree('%s.APP.artifacts'%UID)
