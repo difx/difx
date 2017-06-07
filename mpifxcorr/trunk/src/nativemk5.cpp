@@ -1153,7 +1153,7 @@ void NativeMk5DataStream::loopfileread()
       if (perr == ETIMEDOUT)
       {
           cinfo << startl << "NativeMk5DataStream readthread " << mpiid << " still waiting to lock buffer section " << lastvalidsegment << endl;
-          sendMark5Status(MARK5_STATE_PLAY,  0, 0.0, 0.0);
+          (void)difxMessageSendMark5Status(&mk5status);
           continue;
       }
       if(perr != 0)
