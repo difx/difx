@@ -30,6 +30,9 @@
 #include <ctype.h>
 #include <cmath>
 #include <sys/time.h>
+#include <time.h>
+#include <errno.h>
+#include <pthread.h>
 #include <mpi.h>
 #include <unistd.h>
 #include <vdifio.h>
@@ -1143,8 +1146,16 @@ void NativeMk5DataStream::loopfileread()
     {
       lastvalidsegment = (lastvalidsegment + 1)%numdatasegments;
       
-      //lock the next section
-      perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
+      //lock the next section, without freezing Mark5 Status Messages if locking in due time fails
+      struct timespec abs_timeout = {0};
+      abs_timeout.tv_sec = 5;
+      perr = pthread_mutex_timedlock(&(bufferlock[lastvalidsegment]), &abs_timeout);
+      if (perr == ETIMEDOUT)
+      {
+          cinfo << startl << "NativeMk5DataStream readthread " << mpiid << " still waiting to lock buffer section " << lastvalidsegment << endl;
+          sendMark5Status(MARK5_STATE_PLAY,  0, 0.0, 0.0);
+          continue;
+      }
       if(perr != 0)
         csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
 
