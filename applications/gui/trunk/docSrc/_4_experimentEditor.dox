@@ -1,0 +1,745 @@
+/**
+
+\page experimentEditor Experiment Editor Window
+
+\brief Detailed description of the items contained in the Experiment Editor, and what they do.
+
+\tableofcontents
+
+The Experiment Editor allows you to create a new DiFX experiment (or
+"session"), optionally containing a pass and/or a list of
+jobs.  It also allows an existing experiment to be edited and
+new passes and job sets to be created.  All directory
+structures and files associated with the experiment are created on
+the DiFX host, as well as in the DiFX database (if it is being
+used), and the experiment, pass(es), and job(s) are listed on the
+Queue Browser on the GUI from where DiFX can be run.
+
+As a user you control the specifics of a DiFX job using two files -
+the <code>\".vex\"</code> file, which describes your observations, and the <code>\".v2d\"</code>
+file, which (loosely) describes how you wish DiFX to process those
+observations (these definitions with apologies to the DiFX creators
+who defined these files and can certainly better - and perhaps
+differently - describe what they do).  The Experiment Editor
+needs to be provided with a <code>.vex</code> file - one was presumably made
+available with your observations.  Almost all of what the
+Experiment Editor does involves creating a detailed <code>.v2d</code> file. 
+The <code>.v2d</code> file is then used by the <i>vex2difx</i>
+application to produce an <code>\".input\"</code> file or files - which in turn can be used
+to run DiFX.  There are associated files and directory
+structures that are created as well, and some other details are seen
+to, but the point to take away is that until you hit the "Apply"
+button on the Experiment Editor you are using it to define a <code>.v2d</code>
+file and run <i>vex2difx</i> on it.
+
+Alternatively, specified as an outline, the steps to creating a new
+DiFX experiment with the Experiment Editor involve:
+<ol>
+  <li>Specify where your experiment will go and what it will be
+	called.
+  <li>Get a <code>.vex</code> file.
+  <li>Detail all of the stuff that goes into the <code>.v2d</code> file.
+  <li>Hit "Apply" to generate the specified directory and dump the
+	<code>.vex</code> and <code>.v2d</code> file in it, then run <i>vex2difx</i>
+	to create DiFX jobs.
+</ol>
+
+The DiFX documentation provides a detailed explanation of <i>vex2difx</i> and
+the parameters that go into the <code>.v2d</code> file
+<a href="http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx">here</a>.
+
+The Experiment Editor is launched either to create a new experiment
+(by picking "New" from the Queue Browser) in which case its title is
+"Create New Experiment", or to edit an existing experiment (by
+right-clicking on the experiment name in the Queue Browser and
+choosing "Edit Properties") in which case its title is "Edit
+Experiment Properties".  While the controls are identical,
+applying changes to an existing experiment has slightly different
+effects than those applied to a new experiment, as described below.
+
+\section general Some General Information
+
+<p>The Experiment Editor controls are organized in 
+\ref hierarchicalIndexedPanels "hierarchical indexed panels",
+with a small number of "top level" panels
+that can be opened or closed based on whether you are interested
+in them or not.  The "Identification Data" panel at the top
+of the Editor and the "Apply/Cancel" panel at the bottom are
+"permanent" - they cannot be closed.
+
+Many of the settings in the Experiment Editor are "remembered" if
+you run it a subsequent time (and even between sessions of running
+the GUI).  This is done to ease repetitive tasks, making the
+assumption that any time you run the Experiment Editor, a very
+good guess for the way you wish to run it is somewhat similar to
+the way you last ran it.  For the most part this should save
+you time, however it bears watching here and there.  If you
+change a setting that you never touch and don't even fully
+understand the consequences of just for fun, it may very well
+<i>stay</i> changed until you actively undo it.
+
+Nothing happens to the DiFX host, the database, or your
+experiments until you hit the "Apply" button, so don't worry about
+playing with the controls (bearing in mind the caveat in the
+previous paragraph).  You can always "Cancel" and start again
+if you get in a position you can't figure out how to back out of.
+
+\section idetificationData Identification Data
+
+The experiment name, ID, directory, and some other items are used
+to uniquely identify an experiment and to access it in the
+database.  Some of these items are not changed after the
+experiment is created, others can be but generally aren't, and
+some are meant to be changed.  They are contained in the top
+section of Experiment Editor.
+
+\image html experimentEditor_IdentificationData.png
+
+\anchor experimentName
+<h6>Experiment Name</h6>
+
+The experiment name is the name which appears in the Queue
+Browser.  When an experiment is initially created, a default
+name will be generated - a combination of the word "Experiment"
+and the Database ID number.  It can be changed to reflect
+something that better describes the experiment to the user. 
+Due to restrictions imposed by the database, a 20 character limit
+is placed on the name length.  Changes to the name are
+propagated to the "Directory" and ".vex File" parameters, unless
+those items have been previously changed (you have to hit return
+to make changes to the Experiment Name do this).
+
+\anchor experimentNumber
+<h6>Number</h6>
+
+The number is contained in the database, and I'm not sure what it
+is.  I'll get back to you on this one.  This is <i>not</i> the database ID.
+
+\anchor experimentStatus
+<h6>Status</h6>
+
+The status describes the current state of the experiment.  No doubt this will be
+used by the GUI in the future, but for the moment it is simply
+something the user can set for their own tracking purposes. 
+If the database is being used the options permitted by the
+database are given for status.  If no database is being used
+the status currently doesn't work and can't be changed, but
+ultimately a way of allowing the user to specify their own status
+strings will be implemented.
+      
+\anchor experimentInDatabase
+<h6>In Database</h6>
+    
+This check box will determine whether the experiment is put in the
+database (for experiments that are already created, it will
+indicate whether they exist in the database).  If the
+database is not being used, this item should remain
+unchecked.  An experiment that was not, for whatever reason,
+originally created with this item checked can later be put in the
+database by checking it.
+
+\anchor experimentDatabaseID
+<h6>Database ID</h6>
+
+This is the unique ID generated by the database to track the
+experiment.  When an experiment is initially created, a
+"guess" for this number is generated (usually it is a pretty good
+guess).  Later if the experiment is edited the number will
+accurately reflect the ID used by the database.  If the
+database is not being used, the original guess is retained. 
+This number cannot be changed by the user.
+
+\anchor experimentCreated
+<h6>Created</h6>
+
+This field contains the creation time and date for the
+experiment.  When a new experiment is created, the field will
+show the local time of the GUI host at the moment the Experiment
+Editor was opened.  Once the experiment is put in the
+database, this time will change (hopefully not much) to reflect
+the actual creation time on the database host.  This is not a
+user-settable item.
+      
+\anchor experimentWorkingDirectory
+<h6>Experiment Working Directory</h6>
+    
+This is the "working directory" on the DiFX host under which all
+files and sub-directories associated with an experiment
+reside.  It should be an absolute (not relative) path name -
+starting with a "/".  When an experiment is created, this
+directory is created on the DiFX host (if necessary).  If
+this parameter is later changed, it will cause the directory to be
+moved on the DiFX host.  For either of these operations to
+occur, the DiFX user must have write permission to do them on the
+DiFX host.  When the Experiment Editor is initially opened to create a new
+experiment, this field will be filled with a default Working Directory, to 
+which the experiment name will be appended (unless you change the Experiment Working Directory
+by hand).  The default Working Directory can be changed in the Settings menu
+\ref workingDirectory "Working Directory" field.
+      
+\anchor experimentVexFile
+<h6>.vex File</h6>
+    
+This is the name of the <code>.vex</code>
+file that will be stored (if creating a new experiment) or is
+already stored (if editing an experiment) under the Working
+Directory.  A session of the Experiment Editor may work with
+only one <code>.vex</code> file
+at a time, however any number of <code>.vex</code> files may be associated with an
+experiment.  The data stored in the <code>.vex</code> file is obtained
+using the "Get .vex File Content" as described in the next
+section.
+
+If you already have a <code>.vex</code>
+file associated with an experiment and wish to create a new one,
+enter a new name in this field and obtain new content using "Get
+.vex File Content".  If you have several <code>.vex</code> files associated
+with an experiment and wish to use a previous one, the <b>Previous Files</b> button can be
+used to load it.
+
+\section getVexFile Getting .vex File Content
+
+<p>An experiment is associated with at least one <code>.vex</code> file - in most cases
+only one (although the GUI is designed such that more can be added - this is however
+an untested feature).  The <code>.vex</code> file contains a
+complete description of an observing session, including times,
+frequencies, antennas used, sources observed, and scans collected
+(as well as other things).  The GUI uses the <code>.vex</code> file to provide the
+user with the options that may be applied to tailor DiFX
+processing of the observations.
+
+\image html experimentEditor_GetVexFile.png
+
+If you are creating a new experiment, you need a <code>.vex</code> file before you can
+go anywhere.  Any set of observations should have an
+associated <code>.vex</code> file
+supplied with them (or provide some way of producing a
+file).  The "Get .vex File Content" of the Experiment Editor
+provides you with a number of ways of obtaining <code>.vex</code> file data,
+including:
+
+<ol>
+	<li>Grabbing a file from a location on the DiFX Host.
+	<li>Obtaining a file via HTTP.
+	<li>Obtaining a file via FTP.
+	<li>Using a file on the GUI Host.
+</ol>
+
+An option also exists to get a <code>.vex</code> file from another experiment, but
+this has not yet been implemented and may well disappear in the future.
+
+The process for each of these options is similar - click the checkbox associated with
+the method you like, fill in the field with a complete path or URL, and click "Go".
+
+Note that when you pick a <code>.vex</code> file in this interface (when you hit
+"Go"), you are obtaining a copy of the <i>content</i>
+of the source you specify - the source file itself is <i>not</i> used for your
+experiment and will remain unchanged.  The content is stored in the file location
+specified in the <code>.vex</code> file
+field in the Identification Data section (see \ref experimentVexFile "above") when the
+\ref experimentEditorApply "Apply" button is hit.
+    
+\section vexFileEditor .vex File Editor
+
+Once you have obtained .vex data from some source, the data are
+displayed in the ".vex File Editor" panel.  This panel provides a
+(rather rudimentary) text editor that can be used to edit the .vex
+data by hand.  The final edited text is used in the .vex file
+assigned to your created experiment, a copy of which is put in your working
+directory.
+
+\image html experimentEditor_VexEditor.png
+
+The content should be edited with some caution, bearing in mind that <i>no effort is made to check edits for
+sanity</i>.  Any changes are propagated verbatim to the
+<code>.vex</code> file stored on
+the DiFX host, which is then used to produce <code>.input</code> files that are
+read by DiFX when it runs.  Typographic or logic errors in
+the <code>.vex</code> content can
+produce any number of obscure and opaque errors.  Don't mess
+around with the <code>.vex</code>
+file content unless you are confident you know what you are doing!
+
+Changes are applied only when the <b>Parse Content</b> button is pushed.  When the
+content are parsed, it is like loading an entirely new <code>.vex</code> file - subsequent
+menus will be altered to reflect it.  So if you've put a lot of work into other settings
+within the Experiment Editor, be warned that they may be lost.
+
+\section correlationParameters Correlation Tuning Parameters
+
+The Correlation Parameters section is something of a catch-all
+for items that don't fit neatly in any other sections.  Most
+of these parameters end up in the "Setup" section of the <code>.v2d</code>
+file.
+
+\image html experimentEditor_correlationParams.png
+
+The Correlation Tuning Parameters section includes values that
+can be changed to adjust the quality of the correlation results,
+and/or the total time processing takes.  Adjustments to many of these
+values is something of an art in itself, and the details of what things
+do and what their "best" values should be is not covered here (some talks
+at DiFX Users Meetings have covered the subject - slides can be
+viewed here).
+
+Each item has an associated "apply" check box.  If this box
+is not checked, no instructions regarding the item will be put in the
+<code>.v2d</code> file and <i>vex2difx</i> will be allowed to pick its own defaults.  
+Unless you know what you are doing, don't check the apply box - let <i>vex2difx</i>
+pick the values! The GUI has default values for all items but
+they are not based on anything - they are essentially
+placeholders.  The default values that are picked by <i>vex2difx</i>
+are far better.
+    
+\section experimentStations Stations
+
+The Stations section lists all of the antennas that were involved in the observations
+described by the <code>.vex</code> file.
+
+\image html experimentEditor_stations.png
+
+Each station has an associated check box that can be used to remove it entirely from
+the observations (thus eliminating scans where the removal all baselines) - see 
+\ref eliminationStationsInStations "here" for more detail.  Each line is also a title
+bar for a list of sub-sections that alter parameters related to their assoicated station.
+Click the title bar to open this list, and the title bar of each sub-section to open
+it.  The following figure shows open sub-sections for the HT (Hartwell 15m) station:
+
+\image html experimentEditor_stationSubmenus.png
+
+\subsection experimentStationsDataStream Data Stream
+
+The Data Stream section is by far the most useful of the sections under each station, and
+the one part of the Experiment Editor you will almost always need to interact with.  Data
+are required for the station to be used in correlations, and Data Stream tells  DiFX where the 
+data can be found.
+
+Within the window you are provided four possible sources for the stations data:
+
+<ul>
+	<li><b>Module</b> data is stored on a Mark5 module.  A field allows you to specify
+	the module you wish to use by name.  A pull-down menu provides all of the module
+	names that are currently "mounted" and thus detected by \ref runMk5daemon "mk5daemom".
+	<br>
+	
+	<li><b>Network</b> data is ultimately meant to allow a live network data stream
+	to be used.  Currently this capability does not exist at USNO, so the feature remains
+	incomplete (as it is impossible to test).
+	<br>
+	
+	<li><b>Fake</b> data tells DiFX to manufacture noise on the fly when the correlation
+	is being run.  There will be no coherent results, but the DiFX correlation will run.
+	These data can be used to test some aspects of DiFX processing (such as how long it
+	takes).
+	<br>
+	
+	<li><b>Files</b> data is stored in files on an accesible file system.  You must specify
+	a file or group of files (using complete paths) using the <b>Filter</b> field.  Files
+	that match the path will be listed, along with check boxes so you can choose them
+	individually.  The Filter field provides tab completion.  The specified paths should be
+	as they would be seen on the node running <i>guiServer</i>, not (necessarily) where the
+	GUI is being run.
+	
+	You can also specify that the path you have chosen is a <b>File List</b> - a list of the
+	data start and stop times associated with a list of data files.  A File List can greatly
+	speed up your correlation, particularly if you have many data files, because without
+	it DiFX will plod through all listed files until it finds data with the correct time
+	stamp.  You can create a File List for all chosen data files using
+	the <b>Generate FileList</b> button.
+</ul>
+
+You must choose a source for your data stream.
+
+\subsection experimentStationsAntenna Antenna
+
+This section is currently not used.
+
+\subsection experimentStationsSite Site
+
+The Site section defines the physical location of the antenna, numbers that are initially
+obtained from the <code>.vex</code> file.  Unless you know what you are doing you shouldn't
+mess with these numbers (the <b>Reset</b> button will return them to the <code>.vex</code>
+numbers if you change them accidentally).
+
+\subsection experimentStationsSettings Settings
+
+The Settings section is a catch-all for other items related to stations.  These should
+be self-explanatory.  In general, default values are fine for these things.
+
+\section experimentScanStationTimeline Scan/Station Timeline
+
+The Scan/Station Timeline provides a schematic of the entire experiment described
+in the specified <code>.vex</code> file.  It shows all scans in the experiment, which
+antennas were used for each, and what the duration of each antenna's observations
+were.
+
+\image html experimentEditor_scanStationTimeline.png
+
+The Timeline is a versatile tool, although for large experiments with many scans it can get a little
+crowded with information.  Some of the things you can do:
+<ul>
+	<li><b>Zoom in and out centered on a particular time</b> by pointing the mouse at a time
+	and using the mousewheel.  The time range displayed will be reduced by zooming in, centered
+	on the time your mouse is pointed at.  This can make details on the display much easier to
+	read.
+	<li><b>Pan through the timeline</b> by dragging the header with the time stamps.  You can
+	drag elsewhere on the diagram, but because mouse clicks do other things you may wish to
+	avoid this.  Dragging the timeline has a "momentum" feature to it, which is useful once
+	you get accustomed to it.
+	<li><b>Examine individual scans</b> by hovering over them.  This will give you a pop-up
+	window showing detailed information about the scan and the antennas used in its observations.
+	<li><b>Remove/restore antennas from/to individual scans</b> by clicking on the bars representing
+	the antenna observations.  The bars will change from "filled" to "transparent" to reflect
+	these changes.
+	<li><b>Stop and start observations by individual antennas.</b>  You can remove an antenna
+	from the experiment by dragging a "stop" sign to a point on the timeline.  The antenna will
+	be removed from scans that occur after the stop sign.  You can then restart the antenna
+	by dragging a "go" sign on to the timeline - the antenna will then be included in subsequent
+	scans.  As many pairs of stop and go signs may be included as you like.
+	You can't stop or start an antenna in the middle of a scan - an antenna's observations will
+	either be part of a scan in total, or they will be removed completely.  The GUI will handle
+	this - you can drop the stops and starts within scans and they will be removed or added
+	completely as appropriate.
+</ul>
+
+\section experimentSources Sources
+
+The Sources window shows the observations described in the <code>.vex</code> file outlined
+by source name (as opposed to scan, which is the norm throughout the rest of the Experiment
+Editor.
+
+\image html experimentEditor_source.png
+    
+All source included in the <code>.vex</code> file are listed using their names.
+Boxes show which sources have been observed with which stations.
+are show with the stations used to observe them.  Sources can be selected and
+deselected, and stations can be selectively used or eliminated from sources.
+
+<ul>
+  <li>Hover over the name of a source to produce a tooltip that
+    includes information about the source as well as the names of
+    the scans
+    used to observe it and the stations used for each of those scans
+    (stations marked in red have been eliminated).
+  <li>Hover over the boxes to produce a tooltip that includes which
+    scans use the associated station on the associated source. 
+    A scan that appears in red text has been eliminated - either explicitly
+    or because it lacks sufficient stations to form a baseline.
+  <li>Use check boxes to add or eliminate a source.  When a
+    source is removed, all scans associated with it are eliminated from the
+    final experiment.  When a source is added, all scans associated
+    with it are put into the final experiment (assuming they have sufficient
+    stations to form a baseline).  These changes will be reflected in the
+    \ref experimentScanSelection "Scan Selection" window.
+  <li>Click on the boxes to add or eliminate a station from the
+    observations of a given source.  Scans will be added or
+    eliminated from the final experiment based on whether changes give them
+    enough stations to form a baseline.
+</ul>
+
+The Sources section was developed originally with the idea that astronomical observers
+would be interested in sources (unlike in geodesy where their identities are uninteresting).
+
+\section experimentScanSelection Scan Selection
+
+The Scan Selection window allows you to select which scans within your experiment you wish
+to produce jobs for.
+
+\image html experimentEditor_scanSelection.png
+
+\subsection selectingScans The Many Ways to Select Scans and Stations
+
+When new .vex data are selected, the GUI begins with the assumption
+that all observations described in the data will be included in the new
+experiment.  There are a number of ways of adjusting which of the
+scans that make up the observations are ultimately used, and which stations are used in which
+scans, most of which are part of the \ref experimentEditor "Experiment Editor".  
+Scan and station selection changes must be reflected in the <code>.v2d</code> and <code>.vex</code> files that
+are created as part of the new experiment, so selections are part of the
+experiment creation process.  The \ref experimentScanSelection "Scan Selection"
+section of the Experiment Editor can be used at any time to view the scans that will be
+included in the experiment when it is created as well as which stations are used for
+each.
+
+\image html experimentEditor_scanSelection.png
+
+Some of the scan and station selection controls can work at
+cross-purposes - effectively they provide more than one way to cause
+a scan or a station to be used.  When a conflict occurs, the GUI
+will give the most recent command precedence (if, for instance, a
+command is given that a scan be included in the final experiment
+when a previous command eliminated the scan, the GUI will include the
+scan).
+
+<h6>Eliminating Stations in the "Source" <code>.vex</code> Data</h6>
+
+Stations can be eliminated from individual scans by putting a "-1" in the
+"code" column within the appropriate "scan" section in the "source" <code>.vex</code>
+data.  When the GUI encounters the "-1", it will remove the
+station from the scan.  This duplicates hardware correlator
+behavior.  Starting with the <code>.vex</code> file snippet below, the
+final <code>.vex</code> file will not include the station "Bd" because of the "-1" in
+the final column.
+  
+\code
+scan 128-1703;
+	start = 2014y128d17h03m34s;
+	mode = GEOSX8N.8F;
+	source = 1846+322;
+	station = Bd :    0 sec :     20 sec :     0 ft : 1A : &amp;n : -1; 
+	station = Ho :    0 sec :     20 sec :     0 ft : 1A : &amp;n : 1;
+	station = Kk :    0 sec :     20 sec :     0 ft : 1A : &amp;cw : 1;
+	station = Ny :    0 sec :     20 sec :     0 ft : 1A : &amp;ccw : 1;
+	station = Ts :    0 sec :     20 sec :     0 ft : 1A : &amp;cw : 1;
+endscan;
+\endcode
+
+For changes of this type to be recognized, the <code>.vex</code> file must be 
+parsed by the \ref experimentEditor "Experiment Editor".  You edit the <code>.vex</code> file
+in the \ref vexFileEditor ".vex File Editor" or you can use your favorite text editor.
+
+If you do not want the GUI to pay attention to the "-1" code in this
+way, un-check the \ref eliminateStations "Eliminate Stations With \"-1\" Code" box in the Settings menu.
+
+\anchor eliminatingStationsInStations
+<h6>Eliminating Stations in the "Stations" Section</h6>
+
+The Experiment Editor \ref experimentStations "Stations" section is primarily set up to change parameters
+related to each antenna involved in an experiment, and to select
+the data sources associated with them (see above).  However it
+also includes a check box that can be used to completely remove each
+station from the experiment. Any scans that no longer have enough stations
+to form a baseline (i.e. less than two) will be eliminated.
+
+\image html experimentEditor_stationsRemoval.png
+
+<h6>Changes With the "Scan/Station Timeline\"</h6>
+
+<p>The Experiment Editor \ref experimentScanStationTimeline "Scan/Station Timeline" section
+provides a visual map of all scans and the stations used in them in a timeline.  It allows
+the selection/deselection of individual stations within scans or the
+inclusion of data from different stations based on time.  A detailed description
+of what can be done is \ref experimentScanStationTimeline "here".
+
+<h6>Selecting by Source Using the "Sources"
+  Editor<br>
+</h5>
+<p>The "Sources" section shows all sources and the stations used to
+  observe them.&nbsp; It allows sources to be selected and
+  deselected,
+  and stations to be selectively used or eliminated from sources.<br>
+  <b>IMAGE<br>
+  </b></p>
+<ul>
+  <li>All sources included in the .vex file are listed.&nbsp; Boxes
+    show which sources are observed with which stations.</li>
+  <li>Hover over the name of a source to produce a tooltip that
+    includes information about the source as well as the names of
+    the scans
+    used to observe it and the stations used for each of those scans
+    (stations marked in red have been eliminated).</li>
+  <li>Hover over the boxes to produce a tooltip that includes which
+    scans use the associated station on the associated source.&nbsp;
+    A scan
+    that appears in red text has been eliminated - either explicitly
+    or
+    because it lacks sufficient stations to form a baseline.<br>
+  </li>
+  <li>Use check boxes to add or eliminate a source.&nbsp; When a
+    source
+    is removed, all scans associated with it are eliminated from the
+    final
+    experiment.&nbsp; When a source is added, all scans associated
+    with it
+    are put into the final experiment (assuming they have sufficient
+    stations to form a baseline).</li>
+  <li>Click on the boxes to add or eliminate a station from the
+    observations of a given source.&nbsp; Scans will be added or
+    eliminated
+    from the final experiment based on whether changes give them
+    enough
+    stations to form a baseline.<br>
+  </li>
+</ul>
+<p>The Sources section is something of a work in progress, and
+  not something anyone uses at the USNO, so it is a little confused
+  at
+  this point as to what it wants to be.&nbsp; It was developed
+  originally
+  with the idea that astronomical observers would be interested in
+  sources (in geodesy they are uninteresting).&nbsp; Suggestions are
+  welcome.</p>
+<h5>&nbsp;&nbsp;&nbsp; Selecting Specific Scans With the "Scan
+  Selection" Editor<br>
+</h5>
+<p>At any time in the scan/station selection process, the "Scan
+  Selection" editor will show which scans will be included in the
+  final
+  experiment (included scans are green, scans not included are
+  gray).&nbsp; It allows the user to make selections on a
+  scan-by-scan
+  basis by clicking on individual scans, or by turning all scans on
+  or
+  off using the "Select All" and "Clear All" buttons.<br>
+  <b>IMAGE OF SCAN SELECTION PANEL WITH LABELS HERE<br>
+  </b>The Scan Selection Editor includes a "Time Limits" plot that
+  shows
+  all scans from the original .vex file as a time sequence (again,
+  scans
+  in green are included, those in gray are not included).&nbsp; The
+  mouse
+  wheel can be used to "zoom in" on different time limits, and the
+  red
+  and blue triangles can be grabbed and dragged to limit the final
+  experiment in time.&nbsp; This widget is somewhat redundant with
+  the
+  Scan/Station Timeline Editor, but it may be useful to someone.<br>
+</p>
+
+\section experimentEOPData EOP Data
+
+\image html experimentEditor_eop.png
+
+Earth Orientation Parameter (EOP) data are necessary for a
+correlation process to run (they are required by <i>calcif2</i>).  The Experiment
+Editor provides EOP data, when available, from two different
+sources:
+
+<ol>
+  <li>The <kbd>.vex</kbd> file
+	may contain EOP data.  Often these data are a "projection"
+	into the future, as they are produced when observations occur
+	(and before actual EOP measurements are made).  They are
+	usually reasonably accurate.</li>
+  <li>EOP data is obtained from a URL, as specified in the Settings
+	window \ref settingsEOPSettings "EOP Settings" section.  If the URL is set up correctly, and the connection
+	to the internet is good, these data should always be
+	available.  They will be at least as accurate as the
+	"projected" data that may already exist in the <code>.vex</code> file, and in fact
+	may represent actual measurements and thus be better (they most
+	likely will never be worse).  The GUI updates these data
+	when it is started and roughly every hour thereafter.</li>
+</ol>
+
+Data from either source can be selected using the check boxes next
+to the title bar for each source.  Of the two sources, the
+updated EOP data are probably preferred (the Experiment Editor will
+pick them automatically when available), however there are
+imaginable circumstances where data from the <code>.vex</code> file may
+be preferred.  For instance, it should be noted that because
+they are constantly updated the "Updated From Source" EOP
+measurements will <i>not</i> produce identical DiFX results for
+multiple runs on the same data.  As stated before, changes will
+be small, and probably for the better, but they will not exactly
+match.  If for some reason you need to eliminate changing EOP
+data as a source of changes in calculated results, use the <code>.vex</code>
+file EOP.
+
+Your choice of EOP source (either <code>.vex</code> file or external
+URL) and the availability of EOP data will cause a number of
+things to happen when you eventually hit the \ref experimentApplyingChanges "Apply" button.  
+The following is a list of actions taken
+by the GUI based on what it can do, and what it is told to do
+(note that the GUI will not allow you to choose a source for which
+data are unavailable):
+   
+<ul>
+	<li><b>You choose the <code>.vex</code> file as the
+		EOP source:</b> No EOP data will be installed in the <code>.v2d</code> file, and the
+		<code>.vex</code> file will be copied to the DiFX host as is, with its EOP data intact.
+	<li><b>EOP data are available <i>ONLY</i> from the <code>.vex</code> file:</b> Same as above.
+	<li><b>You choose the external URL as the EOP source:</b> The EOP data in the <code>.vex</code>
+		file is edited out before the file is copied to the DiFX host (this is the
+		only instance where any changes are made to <code>.vex</code> files, but this
+		action is necessary because combining EOP data from multiple
+		sources is messy and dangerous).  The EOP data from the
+		external URL are put into the <code>.v2d</code> file.
+	<li><b>EOP data are available <i>ONLY</i> from the external URL:</b> The <code>.vex</code>
+		file is copied unchanged.  The EOP data from the external
+		URL are put into the <code>.v2d</code> file.
+	<li><b>No EOP data available from either <code>.vex</code> or
+		external URL:</b>  Because a correlation won't run
+		without EOP data, this is a "fail" condition.  An error
+		pop-up will be produced and no further "apply" actions will be
+		taken.
+</ul>
+
+\section experimentNamesEtc Names, Etc.
+
+\image html experimentEditor_names.png
+
+The Names section can be used to change the way <i>vex2difx</i> will name the input
+files it creates (an <code>.input</code> file is created for each
+"job").  By default, the <i>vex2difx</i>
+naming scheme is to use the "base" name of the vex file (e.g. <code>\"foo\"</code>
+for the file <code>\"foo.vex\"</code>) with an appended integer followed
+by <code>\".input\"</code>.  For the first input file created the
+appended integer will be 1; the integer will increment for
+subsequent input files.  For instance, if the <code>\"foo.vex\"</code>
+file is used to create three jobs, their input files will be
+called:
+<pre>
+foo_1.input
+foo_2.input
+foo_3.input
+</pre>
+
+If for some reason you don't like the default scheme, the Names
+section can give you some control over the names of the files that
+will be created.  Two input fields allow you to specify the base name of each
+<code>.input</code> file (replacing  the <code>\"foo\"</code> used in the above example) and the starting
+integer appended to the base name.
+
+In practice, these settings are rarely used.
+    
+\section experimentFineV2dFile Final v2d File
+
+The <code>.v2d</code> file is the "configuration" file used by <i>vex2difx</i> to implement user
+adjustments when using the <code>.vex</code> file content to create one or more
+<code>.input</code> files. Most of the controls in the Experiment Editor
+are used to make changes to this file.
+
+\image html experimentEditor_finalV2d.png
+
+The Final .v2d File section shows the content the <code>.v2d</code> file that will
+be created in your working directory (when you hit \ref experimentApplyingChanges "Apply").
+This content is continually updated as you make changes using
+other controls.  If you feel confident you know what you are
+doing you can edit the content by hand - the text field is a primitive text editor - however any changes you
+make to other controls (any of those <i>above</i> the Final .v2d File section in the Experiment Editor GUI that is)
+will cause the <code>.v2d</code> content to be recreated and will erase your
+changes. If you need to change something by hand, do it
+last.
+
+Any editing changes you make are immediate - there is no "save" button.  The 
+\ref experimentApplyingChanges "Apply" process
+copies the content of this editor, whatever it is, for the <code>.v2d</code> file that is created in your
+\ref experimentWorkingDirectory "experiment working directory".
+
+\section experimentApplyingChanges Applying Your Changes
+
+    <h5><span style="font-weight: bold;">Creating a New Pass (or not!)</span></h5>
+    <h5><span style="font-weight: bold;">Combine Scans in One Job</span></h5>
+    <p> The GUI can create jobs out of the specified scans in one of two
+      ways, either as a series of individual scans with one job per
+      scan, or a single job containing all scans.&nbsp; Those who know <span
+        style="font-style: italic;">vex2difx</span> well will recognize
+      this as a slight change from what it does.&nbsp; <span
+        style="font-style: italic;">Vex2difx</span> can be set to create
+      single-scan jobs, but otherwise it arranges scans in one or more
+      jobs based on the "maxGap" parameter - breaking into new jobs only
+      when the gap between two correlations exceeds this value.&nbsp; In
+      fact, the GUI essentially cheats by setting the "maxGap" parameter
+      to something huge so scans are never broken into more than one
+      job.<br>
+    </p>
+    <h3>Status Bar<br>
+    </h3>
+    <h3>What is the GUI Doing?</h3>
+    <p>When you hit the "Apply" button, the GUI "creates" jobs on the
+      DiFX Host that can then be run.&nbsp; But what exactly is going
+      on?&nbsp; Following is a step-by-step description of the
+      operations performed.<br>
+
+    
+*/

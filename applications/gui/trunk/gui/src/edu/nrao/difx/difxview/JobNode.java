@@ -62,9 +62,12 @@ import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxAlert;
 import edu.nrao.difx.xmllib.difxmessage.DifxStatus;
 import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
+import edu.nrao.difx.difxutilities.V2dFileParser;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import javax.swing.JOptionPane;
+
+import java.lang.Integer;
 
 public class JobNode extends QueueBrowserNode {
     
@@ -97,6 +100,11 @@ public class JobNode extends QueueBrowserNode {
         _networkActivity.alertTime( 0 );
         showNetworkActivity( true );
         this.add( _networkActivity );
+        _source = new ColumnTextArea();
+        _source.justify( ColumnTextArea.CENTER );
+        _source.setText( "unknown" );
+        _source.setToolTipText( "Source name for this job, if known." );
+        this.add( _source );
         _state = new ColumnTextArea();
         _state.justify( ColumnTextArea.CENTER );
         _state.setText( "not started" );
@@ -331,10 +339,14 @@ public class JobNode extends QueueBrowserNode {
         _xOff += 14;
         _label.setBounds( _xOff, 0, _widthName, _ySize );
         _xOff += _widthName;
-        _state.setBounds( _xOff + 1, 1, _widthState - 2, 18 );
-        _xOff += _widthState;
-        _progress.setBounds( _xOff + 1, 1, _widthProgressBar - 2, 18 );
-        _xOff += _widthProgressBar;
+        if ( _source.isVisible() )
+            setTextArea( _source, _widthSource );
+        if ( _state.isVisible() )
+            setTextArea( _state, _widthState );
+        if ( _progress.isVisible() ) {
+            _progress.setBounds( _xOff + 1, 1, _widthProgressBar - 2, 18 );
+            _xOff += _widthProgressBar;
+        }
         if ( _showWeights && _weightsBuilt ) {
             //  The weights are a bit complicated...
             if ( _weights.length > 0 ) {
@@ -1195,6 +1207,20 @@ public class JobNode extends QueueBrowserNode {
         }
     }
     
+    //--------------------------------------------------------------------------
+    //  Find and set the source for this job.  This only really works if the
+    //  job has a single source - more than one source and the source will just
+    //  be set to "multiple".  We can maybe get cute about that??
+    //--------------------------------------------------------------------------
+    void setSource( ExperimentEditor editor ) {
+        if ( editor != null ) {
+            //  Extract the number assigned to this job by DiFX from its name.
+            Integer num = new Integer( name().substring( name().lastIndexOf( "_" ) + 1 ) );
+            String newSource = editor.sourceOfJob( num );
+            source( newSource );
+        }
+    }
+    
     /*
      * This function is used to generate antenna/weight display areas.
      */
@@ -1241,7 +1267,12 @@ public class JobNode extends QueueBrowserNode {
 //        }
         _weightsBuilt = true;
     }
-    
+
+    public void source( String newVal ) { 
+        _source.setText( newVal );
+        _source.updateUI();
+    }
+    public String source() { return _source.getText(); }
     public void experiment( String newVal ) { _experiment.setText( newVal ); }
     public String experiment() { return _experiment.getText(); }
     public void pass( String newVal ) { _pass.setText( newVal ); }
@@ -1505,6 +1536,7 @@ public class JobNode extends QueueBrowserNode {
     
     public void showNetworkActivity( boolean newVal ) { _networkActivity.setVisible( newVal ); }
     public void showName( boolean newVal ) { _label.setVisible( newVal ); }
+    public void showSource( boolean newVal ) { _source.setVisible( newVal ); }
     public void showProgressBar( boolean newVal ) { _progress.setVisible( newVal ); }
     public void showState( boolean newVal ) { _state.setVisible( newVal ); }
     public void showExperiment( boolean newVal ) { _experiment.setVisible( newVal ); }
@@ -1538,6 +1570,7 @@ public class JobNode extends QueueBrowserNode {
     }
     
     public void widthName( int newVal ) { _widthName = newVal; }
+    public void widthSource( int newVal ) { _widthSource = newVal; }
     public void widthProgressBar( int newVal ) { _widthProgressBar = newVal; }
     public void widthState( int newVal ) { _widthState = newVal; }
     public void widthExperiment( int newVal ) { _widthExperiment = newVal; }
@@ -1683,6 +1716,8 @@ public class JobNode extends QueueBrowserNode {
     protected JobEditorMonitor _editorMonitor;
     protected int _xOff;
     protected int _widthName;
+    protected ColumnTextArea _source;
+    protected int _widthSource;
     protected JProgressBar _progress;
     protected int _widthProgressBar;
     protected ActivityMonitorLight _networkActivity;

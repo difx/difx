@@ -79,7 +79,9 @@ public class DiFXUI extends JFrame implements WindowListener {
 
     public DiFXUI( String settingsFile ) {
         
-        setUIFont( new javax.swing.plaf.FontUIResource( "Sans", Font.PLAIN, 12 ) );
+        //  Set a font size that fits in all buttons.  Linux and Mac have different interpretations of
+        //  the "sans serif" font family, but both seem to fit.
+        setUIFont( new javax.swing.plaf.FontUIResource( new java.awt.Font( "SansSerif", Font.PLAIN, 11 ) ) );
         //  This goofiness makes the text on progress bars black.
         UIManager.put( "ProgressBar.selectionForeground", Color.DARK_GRAY );
         UIManager.put( "ProgressBar.selectionBackground", Color.DARK_GRAY );

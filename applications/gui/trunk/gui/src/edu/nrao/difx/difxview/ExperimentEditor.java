@@ -1747,6 +1747,79 @@ public class ExperimentEditor extends JFrame {
         }
     }
     
+    ArrayList<ArrayList<String>> _scansInJobs;
+    //--------------------------------------------------------------------------
+    //  Create a list of all jobs and what scans they contain for this experiment.
+    //  Doing so requires a valid .vex and .v2d file.
+    //--------------------------------------------------------------------------
+    public void findScansInJobs() {
+        VexFileParser vexFile = vexFileParser();
+        V2dFileParser v2dFile = v2dFileParser();
+        //  Carry on if we have access to the .v2d and .vex data.
+        if ( vexFile != null && v2dFile != null ) {
+            int startSeries = v2dFile.startSeries();
+            Vector<String> scanList = v2dFile.scanList();
+            _scansInJobs = new ArrayList<ArrayList<String>>();
+            ArrayList<String> currentJob = new ArrayList<String>();
+            _scansInJobs.add( currentJob );
+            for ( Iterator<String> iter = scanList.iterator(); iter.hasNext(); ) {
+                String item = iter.next();
+                //  Each string is either a single scan name or a "*, which indicates
+                //  ALL scan names.
+                if ( item.contentEquals( "*" ) ) {
+                    //  Get every scan in the list.
+                    for ( Iterator<VexFileParser.Scan> iter1 = vexFile.scanList().iterator(); iter1.hasNext(); ) {
+                        currentJob.add( iter1.next().source );
+                        if ( v2dFile.singleScan() == null || v2dFile.singleScan() ) {
+                            currentJob = new ArrayList<String>();
+                            _scansInJobs.add( currentJob );
+                        }
+                    }
+                }
+                //  Otherwise is should just be a single scan.
+                else {
+                    currentJob.add( item );
+                    if ( !v2dFile.singleScan() ) {
+                        currentJob = new ArrayList<String>();
+                        _scansInJobs.add( currentJob );
+                    }
+                }
+            }
+        }
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Return a string containing the source of a given scan number.  If there
+    //  are multiple sources, translate this to "multiple".  If we don't know
+    //  what sources correspond to what jobs (for whatever reason) return
+    //  "unknown".
+    //--------------------------------------------------------------------------
+    public String sourceOfJob( int num ) {
+        ArrayList<String> sourceList = sourcesOfJob( num );
+        if ( sourceList == null )
+            return "unknown";
+        if ( sourceList.size() == 0 )
+            return "Unknown";
+        if ( sourceList.size() > 1 )
+            return "multiple";
+        return sourceList.get( 0 );
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Return an array list containing all sources contained in a job.
+    //--------------------------------------------------------------------------
+    public ArrayList<String> sourcesOfJob( int num ) {
+        if ( _scansInJobs == null )
+            return null;
+        int offset = 1;
+        if ( v2dFileParser() != null && v2dFileParser().startSeries() != null )
+            offset = v2dFileParser().startSeries();
+        int index = num - offset;
+        if ( index >= _scansInJobs.size() )
+            return null;
+        return _scansInJobs.get( index );
+    }
+    
     /*
      * This class is used to display information about a source.  It is an IndexedPanel
      * with a few controls.  May need to be put in its own file (like StationPanel) if
@@ -2039,7 +2112,7 @@ public class ExperimentEditor extends JFrame {
     
     protected boolean _getDefaultSources;
     //--------------------------------------------------------------------------
-    //  bRead the current vex file, which is stored in the editor, and parse out items
+    //  Read the current vex file, which is stored in the editor, and parse out items
     //  that we can use in the .v2d file.  The boolean argument determines whether
     //  default source locations are generated - this is a time consuming process
     //  and shouldn't be done if it isn't necessary (say, if you were going to
@@ -3142,6 +3215,7 @@ public class ExperimentEditor extends JFrame {
             //  Create a new v2d file parser.  This is added to each job as it is
             //  created.
             _v2dFileParser = new V2dFileParser( _v2dEditor.text() );
+            findScansInJobs();
             
             //  Create a "file read queue" which buffers requests for file transfers
             //  to/from the guiServer such that not too many occur simultaneously.
@@ -3529,6 +3603,8 @@ public class ExperimentEditor extends JFrame {
                     newJob.state().setBackground( Color.YELLOW );
                     //  Apply the input file data to the job.
                     newJob.inputFile( newFile.trim(), false );
+                    //  Set the source for the job.  This involves looking at the .vex and .v2d data.
+                    newJob.setSource( _this );
                     //_fileReadQueue.queueRead( newJob, newFile.trim() );
                     //  Add the input file path to the database if we are using it.
                     if ( db != null ) {

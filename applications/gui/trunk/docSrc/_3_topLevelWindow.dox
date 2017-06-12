@@ -1,0 +1,670 @@
+/**
+
+\page topLevelWindow GUI Main Window
+
+\brief Detailed description of the items contained in the GUI top-level window, and what they do.
+
+\tableofcontents
+<h1>GUI Main Window</h1>
+
+<ul>
+  <li>\ref topLevelQueueBrowser "Queue Browser"
+  <li>\ref topLevelHardwareMonitor "Hardware Monitor"
+  <li>\ref topLevelMessageWindow "Message Window"
+</ul>
+
+\image html topLevel_mainWindow.png
+
+The DiFX GUI main window is the only window visible when the GUI
+is first launched.  It contains three components that
+provide top-level information about the DiFX correlator
+hardware, correlation jobs, and current correlation activities.<br>
+<ol>
+  <li>The Queue Browser shows a list of correlation jobs and
+	their run status.
+  <li>The Hardware Monitor shows the status of the processing
+	nodes and Mark 5 units in the correlator.
+  <li>The Message Window displays messages produced by DiFX
+	software.
+</ol>
+
+The dividers between the three components of the main window can
+be moved around to allocate different fractions of the window
+real estate to each (these changes, as well as changes in the
+overall window size, will be remembered by the GUI settings file
+between sessions).  In addition both the Queue Browser and
+the Hardware Monitor have "tear-off" buttons that allow them to
+become separate windows (they can also be re-attached using the
+same buttons).
+
+\section topLevelQueueBrowser Queue Browser
+
+The Queue Browser displays information about DiFX jobs - jobs that
+are processed by DiFX and jobs that the GUI user has specific
+interest in.  Controls can be launched from jobs listed in the
+Queue Browser to start and stop DiFX processing of them, edit their
+properties, monitor their progress, or simply learn detailed
+information about them.  The browser provides tools to allow
+you to create, delete, edit, and move experiments, passes and jobs.
+
+<ul>
+  <li>\ref topLevelTheBrowser "The Browser Part: Experiment/Pass/Jobs List"
+  <li>\ref topLevelJobsOutsideQueue "Jobs Outside Queue"
+  <li><a href="#Adding_Jobs_to_the_Queue_Browser:_the">Adding Jobs
+	  to the Queue: The Experiment Button</a></li>
+  <li><a href="#The_Select_Button">Select Button</a></li>
+  <li><a href="#Show_Button">Show Button</a></li>
+  <li><a href="#GuiServer_Connection_Monitor"><i>GuiServer</i>
+	  Connection Monitor</a></li>
+  <li><a href="#Running_Jobs_With_the_Scheduler">Running Jobs With
+	  the Scheduler<br>
+	</a></li>
+</ul>
+
+    <div align="center"><img alt=""
+        src="images/mainWindow/queueBrowser.png" height="509"
+        width="800"><br>
+    </div>
+
+\subsection topLevelTheBrowser The Browser Part: Experiment/Pass/Jobs List
+
+    The Queue Browser organizes DiFX activities in a hierarchy of
+    "experiments", "passes", and "jobs", an organization that is
+    mirrored in the directory structure on the DiFX host.&nbsp; At the
+    highest level the Queue Browser contains a list of experiments, each
+    of which can contain any number of passes, within which are a number
+    of jobs. &nbsp; From the bottom up, each job exists in one and only
+    one pass, and each pass exists in one and only one experiment.&nbsp;
+    <br>
+    <br>
+    <img alt="" src="images/how_to_run_things/queueBrowser1.png"
+      height="384" width="1029"><br>
+    <br>
+    <span style="font-weight: bold;"></span>
+    <h6><br>
+    </h6>
+    <blockquote></blockquote>
+    <h5>Experiments</h5>
+    An "experiment" is based on a single set of observations as
+    contained in a single <span style="font-family: Courier
+      New,Courier,monospace;">.vex</span> file.&nbsp; It has a set of
+    defined data sources (modules, files, or active e-transfers), and a
+    working directory location associated with it where all associated
+    files and sub-directories reside.&nbsp; It contains one or more
+    passes.
+    <h5>Passes</h5>
+    A "pass" contains a subset of the "scans" or "jobs" in an
+    experiment, along with a <span style="font-family: Courier
+      New,Courier,monospace;">.v2d</span> file containing the parameters
+    that make the pass unique within the experiment.&nbsp; The <span
+      style="font-family: Courier New,Courier,monospace;">.v2d</span>
+    file is created by the GUI based on the settings in a series of menu
+    options and fields.&nbsp; &nbsp; Each pass has a sub-directory
+    associated with it under the directory of its parent experiment
+    containing the <span style="font-family: Courier
+      New,Courier,monospace;">.v2d</span> file, the <span
+      style="font-family: Courier New,Courier,monospace;">.input</span>
+    files associated with each job in the pass, and any results
+    generated.
+    <h5>Jobs</h5>
+    Each job can be used to run a single DiFX correlation process.&nbsp;
+    A job has an <span style="font-family: Courier
+      New,Courier,monospace;">.input</span> file associated with it,
+    contained in the sub-directory of its parent pass.&nbsp; All of the
+    jobs in a pass are generated from the <span style="font-family:
+      Courier New,Courier,monospace;">.v2d</span> and <span
+      style="font-family: Courier New,Courier,monospace;">.vex</span>
+    files using <span style="font-style: italic;">vex2difx</span>,
+    which produces the <span style="font-family: Courier
+      New,Courier,monospace;">.input</span> files.&nbsp; Jobs can be run
+    individually, or in groups.<br>
+    <br>
+    "Experiment" and "Pass" listings in the browser can be "closed" to
+    reduce clutter (click on the little arrow).&nbsp; <br>
+    <br>
+    Each menu item - Experiment, Pass, or Job, has a control menu
+    associated with it - these menus can be generated by right-clicking
+    on the line containing the item.&nbsp; Details on each follow:<br>
+    <blockquote>
+      <h5>Experiment Menu</h5>
+      <div align="left"><img alt=""
+          src="images/mainWindow/experimentMenu.png" height="179"
+          width="800"></div>
+      <ul>
+        <li><b>Select All Jobs/Unselect All Jobs</b>: can be used to add
+          or subtract all jobs in the experiment from the selection
+          scheme, which is described <a href="#The_Select_Button">here</a>.</li>
+        <li><b>Edit Properties</b>: This is probably the most useful
+          item in this menu.&nbsp; It will bring up the <a
+            href="experimentEditor_content.html">Experiment Editor</a>
+          for this experiment, pre-filled with values appropriate for
+          this experiment.&nbsp; It can be used to generate a new pass
+          with new jobs.&nbsp;</li>
+        <li><b>Delete Selected Jobs</b>: This will delete any jobs
+          within the experiment that have been "selected".</li>
+        <li><b>Delete Experiment</b>: The second most useful item.&nbsp;
+          The experiment will be hunted down and removed wherever it
+          exists - on disk on the DiFX Host, in the database if that is
+          being used.&nbsp; There will be no more experiment.&nbsp; Use
+          with care.<br>
+        </li>
+      </ul>
+      <h5>Pass Menu</h5>
+      <img alt="" src="images/mainWindow/passMenu.png" height="179"
+        width="800">
+      <ul>
+        <li><b>Select All Jobs/Unselect All Jobs</b>: can be used to add
+          or subtract all jobs in the pass from the selection scheme,
+          which is described <a
+href="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/main_window_content.html#The_Select_Button">here</a>.</li>
+        <li><b>Rename</b>: This option simply changes the name of the
+          pass.&nbsp; Apparently at some point in the GUI development
+          process this ability was felt to be important enough to merit
+          a button.</li>
+        <li><b>Set Type</b>: Another historical button.&nbsp; This
+          changes the "type" of the pass, which has no effect on
+          processing.</li>
+        <li><b>Delete Selected Jobs</b>: This will delete any jobs
+          within the pass that have been "selected".</li>
+        <li><b>Delete Pass</b>: This removes the pass from the browser
+          and deletes any directories and files associated with it on
+          the DiFX host.<br>
+        </li>
+      </ul>
+      <h5>Job Menu</h5>
+      <img alt="" src="images/mainWindow/jobMenu.png" height="179"
+        width="800">
+      <ul>
+        <li><b>Controls for [Experiment Name]</b>: Launch the Job
+          Control Window for this experiment.&nbsp; This window can be
+          used to control the start parameters of the job, start and
+          stop it, and monitor it.&nbsp; Described in detail <a
+            href="Job_Control_content.html">here</a>.<br>
+        </li>
+        <li><b>Real-time Job Monitor</b>: Launch a Real-time Monitor
+          Window for this job.&nbsp; The real-time monitor is described
+          <a href="realtime_monitor_content.html">here</a>.</li>
+        <li><b>Toggle Selection</b>: Select the job if it is not
+          selected, un-select it if it is selected.&nbsp; Selections are
+          described <a href="#The_Select_Button">here</a>.<br>
+        </li>
+        <li><b>Delete</b>: Completely delete the job and all of its
+          associated files.&nbsp; This process cannot be reversed.<br>
+        </li>
+        <li><b>Start</b>: Start the job using existing settings (this is
+          equivalent to opening the Job Control Window and just hitting
+          "Start" without changing anything).<br>
+        </li>
+        <li><b>Stop</b>: Attempt to stop a running job.&nbsp; Sometimes
+          this works, sometimes it doesn't.<br>
+        </li>
+      </ul>
+    </blockquote>
+    <h5>Job Information</h5>
+    <p>While the "Experiment" and "Pass" lines in the browser contain
+      little more than the names assigned to them, the "Job" line
+      contains detailed information about each job.&nbsp; The Job
+      information is organized in columns that can be manipulated using
+      the column header at the top of the browser field.&nbsp; Columns
+      can be resized by clicking and dragging the boundaries between
+      them, removed using the small "delete" buttons that appear when
+      the mouse hovers over them, or information columns can be added
+      using the header menu.&nbsp; To generate the header menu, right
+      click on the header line or push the arrow button on the left side
+      of the header line:<br>
+    </p>
+    <div align="center"><img alt="" src="images/mainWindow/qb_menu.png"
+        height="616" width="800"><br>
+    </div>
+    <br>
+    Many of the possible fields simply reflect information that is part
+    of messages supplied by DiFX - they will only be updated when the
+    job is running and many of them are not used.&nbsp; Among the more
+    interesting/useful items are:<br>
+    <blockquote>
+      <h6>Network Activity</h6>
+      <p>Network Activity is in the form of a small "light" box that
+        flashes green when any messages associated with the job are
+        received.<br>
+      </p>
+      <h6>Job Name</h6>
+      <p>This is the name given the job when it was created.&nbsp; The
+        name is usually automatically generated by <i>vex2difx</i>.&nbsp;
+
+        Names are unfortunately sometimes redundant - two passes in the
+        same experiment may repeat the same names.&nbsp; To make matters
+        more inconvenient, messages from DiFX are associated with a job
+        using the name, so occasionally the GUI may attribute a message
+        from one job to another.&nbsp; <br>
+      </p>
+      <h6>State</h6>
+      <p>This is the current state of the job - whether it has been run,
+        whether it had errors when it was run, whether it is still
+        running, etc.&nbsp; The GUI makes some effort to make the state
+        something sensible, with background colors that are appropriate.<br>
+      </p>
+      <h6>Progress</h6>
+      <p>If a job is running, the progress bar will show how far along
+        it is.&nbsp; Progress is computed based on the time stamp of the
+        visibility currently being processed compared to the start and
+        stop time stamps of the job.&nbsp; Whether this is completely
+        accurate is open to debate.<br>
+      </p>
+      <h6>Weights</h6>
+      <p>Weights show the relative weights of each antenna involved in a
+        job as it is processing.&nbsp; Weights can be displayed as
+        numbers or as time-series plots.&nbsp; <br>
+      </p>
+      <h6>Correlation Time</h6>
+      <p>This is the approximate "wall clock" time that a job required
+        to correlate.&nbsp; It is updated whenever a message for a job
+        is received from DiFX and is calculated from the time the job
+        was started.<br>
+      </p>
+      <h6>Input File</h6>
+      <p>The input file field contains the full path to the input file
+        on the DiFX host, and is the only unique way to identify a
+        job.&nbsp; This field is filled by the GUI and is not contained
+        in the messages from DiFX (which is unfortunately because it
+        could be used to uniquely identify the job associated with
+        them).<br>
+      </p>
+    </blockquote>
+    <blockquote> </blockquote>
+\subsubsection addingJobsToQueueBrowser Adding Jobs to the Queue Browser: the Experiment Button
+
+There are a number of ways to add a job to the Queue
+      Browser.  At a very basic level, the only thing required to
+      add a job is the location of a DiFX <code>.input</code> file. 
+      The GUI uses the full path of the <code>.input</code> file to
+      uniquely identify a job (since it is, unlike the job "name",
+      guaranteed to be unique), and the contents of the <code>.input</code>
+      file to fully describe the job.  The Experiment Button on the
+      Queue Browser provides the following ways to obtain and <code>.input</code>
+      file, and thus add a job to the visible queue:
+
+      <div align="center"><img alt=""
+        src="images/mainWindow/newExperimentMenu.png" height="134"
+        width="800"><br>
+    </div>
+    
+\anchor topLevelCreateNewJobs 
+<h6>Create New: Create A Job From Scratch</h6>
+
+A completely new job or list of jobs can be added to the queue
+based on a .vex file and a few user settings.  The "Create
+New..." button will launch the \ref experimentEditor "Experiment Editor",
+which will lead the user through the process of creating new
+experiments, passes, and jobs.  See the \ref experimentEditor "Experiment Editor"
+documentation for more details.
+
+\anchor topLevelLocateJobs
+<h6>Locate on Disk: Find Existing Experiments on the DiFX Host</h6>
+    <blockquote>
+      <p>The Queue Browser has the ability to locate previously-created
+        experiments on disk (via the head node) and adding them to the
+        queue.&nbsp; It does this by locating <tt>.input</tt> files,
+        one of which should exist for each existing job on disk.&nbsp;
+        Assuming an <tt>.input</tt> file is intact and properly
+        formatted the GUI can extract all information about its
+        associated job, edit that information, and run the job.&nbsp; <br>
+      </p>
+      <p>The Queue Browser panel provides a tool for locating <tt>.input</tt>
+        files on disk using the "Locate on Disk..." option under the
+        "Experiments" menu:<br>
+      </p>
+      <p align="center"><img alt=""
+          src="images/mainWindow/locateOnDisk.png" height="365"
+          width="800"><br>
+      </p>
+      <p>The "Experiment Location" tool provides a field for defining
+        the directory path of <tt>.input </tt>files (the field accepts
+        standard "ls" wildcard rules).&nbsp; Each .input file is assumed
+        to represent a job.&nbsp; Options are provided for defining the
+        names of experiments and passes associated with the found
+        jobs.&nbsp; A preview of all jobs that meet the defined criteria
+        is given - hitting "Apply" will put these jobs in the Queue
+        Browser experiment queue.&nbsp; A detailed description of each
+        field/option/button is below:<br>
+      </p>
+      <blockquote> </blockquote>
+      <blockquote>
+        <h6>Locate .input Files Matching...</h6>
+        <p>This field allows you to specify the directory path for a
+          "search" for the <tt>.input</tt> files you are interested
+          in.&nbsp; The field supports tab-completion, and allows "ls"
+          style wildcards.&nbsp; When you hit "enter" in this field a
+          search will be made on the DiFX host for any files that
+          match.&nbsp; These files are then displayed with their
+          corresponding experiment and pass structure in the "Preview"
+          area.&nbsp; Note that <tt>.input</tt> files always end with
+          ".input".<br>
+        </p>
+        <h6>Experiment Name(s)</h6>
+        <p>The Experiment Name determines the name that will appear on
+          the Queue Browser.&nbsp; By default this is based on the
+          directory path on the DiFX Host.<br>
+        </p>
+        <blockquote>
+          <h6>Based on Path</h6>
+          <p>Select this option to keep the name of the experiment
+            directory.<br>
+          </p>
+          <h6>Specified Name</h6>
+          Select this option to specify your own name (which you do in
+          the accompanying text field).&nbsp; Changing the name only
+          changes the Queue Browser - it will not change the directory
+          name on the DiFX host.<br>
+        </blockquote>
+        <h6>Pass Name(s):</h6>
+        <p>Similar to the Experiment Name settings, the name of the pass
+          that appears on the Queue Browser can be changed.<br>
+        </p>
+        <blockquote>
+          <h6>Based on Path</h6>
+          <p>The default - use the directory path for the pass on the
+            DiFX host as the name.<br>
+          </p>
+          <h6>None</h6>
+          <p>This option is used if there isn't a separate pass
+            directory.&nbsp; Behavior is a little weird if there is
+            one.&nbsp; Needs to be fixed.<br>
+          </p>
+          <h6>Specified Name</h6>
+          Specify your own pass name.<br>
+        </blockquote>
+      </blockquote>
+      <blockquote>
+        <h6>Preview</h6>
+        <p>The Preview window shows the (approximate)
+          experiment/pass/job structure that will be added to the Queue
+          Browser when the "Apply" button is clicked.&nbsp; Individual
+          items can be selected or de-selected from it by clicking on
+          the colored symbols at the extreme left of each line - only
+          selected items will be added to the Queue Browser.<br>
+        </p>
+        <h6>Update Now</h6>
+        <p>This button will perform a new search on the DiFX host based
+          on your search criteria and display the results in the Preview
+          field.&nbsp; Hitting enter when changing text fields does the
+          same thing, so this button is redundant.<br>
+        </p>
+      </blockquote>
+      <blockquote>
+        <blockquote> </blockquote>
+        <h6>Auto Update</h6>
+        <p>Not implemented yet.<br>
+        </p>
+        <p>This option will trigger a periodic search of the disk for
+          new jobs using the rules specified in the window.&nbsp; Any
+          changes to the list of experiments and jobs that meet the
+          search criteria will be reflected in the Queue Browser - jobs
+          that are deleted will be removed, new jobs that are created
+          will appear, etc.&nbsp; <i>This is only necessary if you want
+            to see changes made by other people (i.e. other instances of
+            the GUI) in real time </i>- the Queue Browser will show any
+          changes you make without this option being chosen.&nbsp;
+          Unless you expect remote changes to be made and wish to see
+          them you should probably not pick this option as the searches
+          are resource-consuming.</p>
+        <h6>Apply</h6>
+        <p>The Apply button will instruct the GUI to download the
+          information for the selected experiments/passes/jobs in the
+          Preview window and add them to the Queue Browser.&nbsp; The
+          jobs can then be correlated.<br>
+        </p>
+        <p> </p>
+      </blockquote>
+    </blockquote>
+    <blockquote>
+    
+\anchor topLevelLocatedWithDatabase
+<h6>Locate in Database: Obtain a Job From the Database</h6>
+
+If you are using the DiFX data base structure, previously stored jobs can be
+downloaded based on their names, properties, or completion
+state.
+
+Note: it has been a long time since any maintenance of the
+GUI/Database interaction has been done, and it may not work all
+that well.
+        
+\subsubsection topLevelMonitoringOtherJobs Monitoring a Job Running Elsewhere
+
+All jobs that are running (i.e. being processed by DiFX) while the
+GUI is active produce multicast diagnostic messages detailing
+their progress.  The GUI (assuming it is set correctly to
+monitor multicast traffic) will collect, interpret, and display
+the content of these messages in the Queue Browser.  If the
+job generating the messages is known (already listed in the Queue
+Browser), the content of these messages will adjust the appropriate job entry in
+the Queue Browser display.  If the job is <i>not</i> known a
+new entry will be created.  New entries of this sort will
+lack complete detail because their associated <code>.input</code>
+file will not be known (its identity is not contained in the
+multicast messages).  Jobs of this type appear under the
+heading "Jobs Not In Queue".
+
+\image html topLevel_jobsOutsideQueue.png
+      
+The GUI will only be able to
+monitor these "outside jobs", not stop or start them (this makes some sense
+as any job listed this way was started elsewhere, so presumably
+belongs to someone else).  Because the GUI does not know the identity of the
+<code>.input</code> files associated with them, complete detail on the jobs
+will be lacking, and editing capabilities will be non-existent.  
+
+    <h4><a name="The_Select_Button"></a>Select Button</h4>
+    <p>The Select scheme is one of those ideas that seemingly had
+      promise once, but is now little used.&nbsp; It has not yet been
+      abandoned, partially because it might one day become useful, but
+      mostly because it is harmless and what little it does do works
+      fine.<br>
+    </p>
+    <p>A job is considered "selected" if the little star character on
+      the extreme left of the job line in the browser is colored.&nbsp;
+      Any job can be selected or un-selected by clicking on this
+      character.&nbsp; Jobs can also be selected or un-selected en-masse
+      using menu options.&nbsp; The Select Button was meant to provide a
+      number of things that could be done to all of the jobs that were
+      currently selected, however about all you can do right now is
+      delete them (which works).&nbsp; You can also select and un-select
+      them all.<br>
+    </p>
+    <h4><a name="Show_Button"></a>Show Button</h4>
+    <p>Probably even less functional than the Select Button, the Show
+      Button was meant to allow the user to choose what types of jobs to
+      display.&nbsp; In particular, it was meant to allow jobs to be
+      displayed by "state" - i.e. whether they had been run, completed,
+      archived or whatever.&nbsp; This is probably a good idea,
+      ultimately, but is not yet implemented.&nbsp; The options under
+      the Show Button do nothing at all.<br>
+    </p>
+    
+\section guiServerConnectionMonitor GuiServer Connection Monitor
+
+The <i>guiServer</i> Connection Monitor provides the status of
+the current connection to the <i>guiServer</i> - if it is green
+all is well, if it is red then the connection is broken.  It
+was placed in a prominent location on the Queue Browser because
+this browser serves as the "front page" of the GUI, not because it
+had anything to do with the rest of the contents.
+
+The guiServer Connection Monitor has a fairly advanced "tooltip"
+that lets you know more about the current connection.  Hover
+over the monitor to generate it.<br>
+
+\image html widgets_complexTooltip.png
+    
+    <div align="left">
+      <h4><a name="Running_Jobs_With_the_Scheduler"></a>Running Jobs
+        With the Scheduler</h4>
+\anchor topLevelSkippingMissingStations
+<h5>Skipping Missing Stations</h5>
+
+      <p>In large experiments with many stations and many jobs, it is
+        not uncommon for a station to "drop out" of observations for
+        which it is scheduled for any number of reasons.&nbsp; While not
+        ideal, for a multi-station job this situation should not be a
+        deal breaker, as long as enough stations remain to form at least
+        one baseline.&nbsp; The Job Control Monitor offers the user the
+        ability to <a
+          href="Job_Control_content.html#Removing_Stations_From_a_Job">remove
+          stations from an experiment by hand</a> (whether they are
+        missing or not!).&nbsp; Depending on the value of the "<a
+          href="settings_content.html#Try_To_Skip_Missing_Stations">Try
+          To Skip Missing Stations</a>" setting in the Setting Window,
+        the scheduler can be made to do this automatically.&nbsp; <br>
+      </p>
+      <p>While the scheduler will skip missing stations automatically
+        and with apparent ease, the process is not simple.&nbsp; It
+        involves creating a new, job-specific .v2d file, running
+        vex2difx, and producing a duplicate list of output files.&nbsp;
+        The details of this process are outlined <a
+          href="Job_Control_content.html#What_Is_The_GUI_Doing_Rebuild">here</a>.<br>
+      </p>
+    </div>
+    <p align="center"> </p>
+    <h2><a name="Hardware_Monitor"></a>Hardware Monitor</h2>
+    <p align="left">The Hardware Monitor shows all of the nodes in the
+      DiFX correlator that are running <i>mk5daemon</i> to periodically
+      broadcast, via UDP multicast messages, their current state (this
+      is done using "Difx Load" messages from all nodes and "Mark5
+      Status" messages from Mark5's).&nbsp; The UDP broadcast messages
+      are captured by <i>guiServer</i> and then relayed to the GUI
+      using the GUI/<i>guiServer</i> TCP connection.&nbsp; Each node
+      detected via these messages is listed on its own line in the
+      Hardware Monitor (the GUI identifies the nodes by their host
+      name...if the name changes for some reason a new line will appear
+      in the Hardware Browser).&nbsp; The GUI tries to determine whether
+      a message comes from a Mark5 or a regular processing node based
+      either on the message type ("Mark5 Status" messages are assumed to
+      be from Mark5's), or based on a list of name specifications that
+      the user sets in the GUI Settings ("<a
+        href="settings_content.html#Identify_Mark5_Unit_Names_by_Pattern">Identify
+
+        Mark5 Unit Names by Pattern</a>").&nbsp; Any node that is not
+      identified as a Mark5 is assumed to be processing node.</p>
+    <p align="left">Each node, processor or Mark5, has three fields that
+      are always displayed, a "selection" icon, an activity light, and
+      the node's name.&nbsp; The selection icon is used to perform
+      functions on more than one node at a time as described <a
+        href="#Functions_Performed_on_Selected">below</a>.&nbsp; The
+      node name is generated by <i>guiServer</i> based on what it
+      thinks is the source of the message - this name may or may not
+      match what the platform you are running the GUI on uses (it is
+      critical that these names be correct from <i>guiServer's</i>
+      point of view as they are used when instructing <i>guiServer</i>
+      to perform functions on specific nodes).&nbsp; A node's activity
+      light will blink green when a <i>mk5deamon</i> message is
+      received for it.&nbsp; If no messages are received for a node for
+      a period of time the light will turn yellow, then after another
+      period of time it will turn red, indicating a possible problem
+      with the node.&nbsp; These periods of time are essentially
+      arbitrary and may need to be adjusted to the peculiarities of your
+      own installation.&nbsp; See <a
+        href="settings_content.html#Inactivity_WarningError_Settings">Inactivity
+        Warning/Error Settings</a>. </p>
+    <img alt="" src="images/mainWindow/hardwareMonitor.png" height="632"
+      width="1074"><br>
+    <p><br>
+    </p>
+    <img alt="" src="images/mainWindow/hw_procMenu.png" height="485"
+      width="500"><br>
+    <br>
+    <br>
+    <img alt="" src="images/mainWindow/hw_oneProc.png" height="485"
+      width="500"><br>
+    <br>
+    <img alt="" src="images/mainWindow/hw_mkmenu.png" height="494"
+      width="500"><br>
+    <h4><a name="Functions_Performed_on_Selected"></a>Functions
+      Performed on "Selected" Hardware<br>
+    </h4>
+    <br>
+    <img alt="" src="images/mainWindow/hw_onemkmenu.png" height="330"
+      width="1058"><br>
+    <h4>Working With Mark5 Data</h4>
+    Mark5 nodes are used to read (and otherwise manipulate) Mark5 data
+    packs.&nbsp; When data packs are installed on a Mark5 node, their
+    "VSN" identifiers will appear in the GUI under the "Bank" in which
+    they are installed (A or B).&nbsp; For each populated bank the user
+    can examine "S.M.A.R.T." (Self-Monitoring, Analysis and Reporting
+    Technology) information, which provide indications of the
+    reliability and overall health of the data drive, and the scan
+    "directory" of the data module contents, which is used by DiFX when
+    reading data from the drive.&nbsp; There are two ways of getting at
+    these data.&nbsp; The pop-up "control" menu for the Mark5 will
+    contain an entry for each populated bank that leads to a submenu:<br>
+    <br>
+    <img alt="" src="images/mainWindow/hw_onemkmenu2.png" height="331"
+      width="1060"><br>
+    <br>
+    In addition, left-clicking on the VSN name will produce the same
+    sub-menu:<br>
+    <br>
+    <img alt="" src="images/mainWindow/hw_onemkmenu3.png" height="317"
+      width="1056"><br>
+    <h4>S.M.A.R.T Display</h4>
+    <p>The S.M.A.R.T. Display can be used to examine the S.M.A.R.T.
+      information available for the hard drives that make up a Mark5
+      module.&nbsp; These data are generated by a request to the
+      appropriate Mark5 node via a <i>mk5control</i> command (new data
+      can be generated at any time using the "Refresh" button).&nbsp;
+      For each S.M.A.R.T. parameter the display shows an ID, name, and
+      values for each "slot" containing a component hard drive, as well
+      as an indication of whether higher or lower values are
+      "better".&nbsp; Values that are considered troublesome are
+      highlighted in red (the "troublesome" thresholds are hard-coded,
+      but may ultimately be added to the Settings).&nbsp; A good
+      description of S.M.A.R.T. parameters is contained in the relevant
+      <a href="http://en.wikipedia.org/wiki/S.M.A.R.T."><i>Wikipedia</i>
+        entry</a>.<br>
+    </p>
+    <img alt="" src="images/mainWindow/smart.png" height="318"
+      width="935"><br>
+    <h4>Module Directory</h4>
+    <p>The Module Directory display shows detailed information about the
+      scans contained on a module.&nbsp; These data are stored in a
+      "directory" file, accessible to the Mark5 node, in a path set by
+      the MARK5_DIR_PATH environment variable (ideally this variable
+      should be identical for all nodes in a DiFX cluster, but the
+      Module Directory actively queries the Mark5 node to see what <i>it</i>
+      thinks it is).&nbsp; This directory file may or may not exist - if
+      it is missing it will be quite obvious, as no data will be
+      displayed in the Module Directory.<br>
+    </p>
+    <img alt="" src="images/mainWindow/directoryDisplay.png"
+      height="643" width="1054"><br>
+    <br>
+    The Module Directory buttons can be used to do a number of things:<br>
+    <br>
+    <b>Refresh Directory</b> will cause the existing directory (if there
+    is one) to be read and displayed.&nbsp; When the Module Directory
+    window is first opened this is done automatically.<br>
+    <br>
+    <b>Generate Directory</b> will cause the Mark5 node to survey the
+    module and produce an entirely new directory.&nbsp; This needs to be
+    done if the directory is missing, as without it DiFX can do nothing
+    with Mark5 module data.&nbsp; The process takes a while - the Module
+    Directory display will update progress on a fairly regular basis.<br>
+    <br>
+    <b>Create File</b> is used to copy scan data from the Mark5 module
+    to disk.&nbsp; The scans that you wish to copy should be selected
+    first (by clicking on them - shift/click can be used to select
+    regions).&nbsp; You will be prompted for a destination directory -
+    the Mark5 node must have write access to this area.&nbsp; Each scan
+    is put in its own file.&nbsp; This can be a very slow process if
+    many scans are copied, but useful progress information is provided.<br>
+    <br>
+    <b>Remove Entries</b> provides a rudimentary editing capability for
+    the directory.&nbsp; Under some circumstances Mark5 module
+    directories can contain "false" scan entries that make them unusable
+    by DiFX.&nbsp; This button will remove all selected entries from the
+    directory.&nbsp; Any erroneous removals can be "repaired" by
+    generating the original directory again and starting over.<br>
+    <h2><a name="Message_Window"></a>Message Window</h2>
+    <p>blah blah blah<br>
+
+*/
+

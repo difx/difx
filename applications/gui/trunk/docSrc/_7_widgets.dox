@@ -1,0 +1,133 @@
+/**
+
+\page widgets Standard Widgets and How They Behave
+
+\brief Description of the widgets specifically created for the DiFX GUI
+
+\tableofcontents
+
+
+The DiFX GUI uses a number of purpose-built widgets to accomplish
+things that the Java Swing toolkit (which was inadvisedly chosen as
+the base for the GUI) did not include.  These widgets are used
+throughout the GUI.  While they were developed with the idea
+that their operation would be intuitive, this may not always be the
+case.  For this reason they are described in some detail here.
+
+\section hierarchicalIndexedPanels Hierarchical Indexed Panels
+
+Several of the windows that make up the GUI (most notably the 
+\ref experimentEditor "Experiment Editor" and 
+\ref jobControlWindow "Job Control Window", but there are
+others) are organized in a browser form, with a small number of
+"top level" panels that can be opened or closed based on whether
+you are interested in them or not (some of these panels also
+contain their own, similar browser structures).  To open or
+close a panel, click on the "title" bar at the top of the
+panel.  If you open many panels you can often expand in size
+beyond the window limits, in which case the scroll bar on the
+right may be used to navigate up and down (the mouse wheel tries
+to do the same thing, as well as dragging the screen up and down
+with the mouse, although sometimes the panels trap these events
+for other purposes - the scroll bar will <i>always</i> work).  Arrows, as well as panel
+appearance will let you know whether they are "open" or
+"closed".  Mixed in with the opening/closing panels are
+"permanent" panels that cannot be closed.  Permanent panels
+do not have an obvious title bar and have no arrow icon.  The
+example below (part of the Experiment Editor) shows open, closed,
+and permanent panels.  The open panel "Sources" contains a
+series of closed panels.  The bottom-most panel is
+"permanent".
+
+\image html experimentEditor_exp.png
+
+\section smartTextFields "Smart" Text Fields
+
+The DiFX GUI has a number of "Text Field" widgets that allow the
+user to enter text (file paths, string settings, etc.).
+Except in a few cases, the settings you enter <b><i>do not</i></b> take
+effect until you hit the "enter" key.  To indicate that a
+setting has been "changed" but not "committed" by hitting the
+enter key, the text fields will turn yellow once the text inside
+them is changed in any way.  Hitting enter will both cause
+their content to be used and the yellow color to disappear.
+
+\image html widgets_normalTextField.png
+
+<center><b>Unchanged Text Field</b></center>
+
+<br>
+
+\image html widgets_changedTextField.png
+
+<center><b>Changed (Uncommitted) Text Field</b></center>
+
+\subsection tabCompletion Tab Completion
+
+In locations where text fields are specifying paths on the DiFX
+host, tab completion is implemented.  Hitting the "tab" key
+will cause a remote "ls" operation on the DiFX host, the results
+of which will be used to extend the text field content as much as
+possible.  This should act exactly like familiar tab
+completion except there may be a perceptible delay involved if the
+connection to the DiFX host through <i>guiServer</i> is
+slow.  Tab completion does not work if you are not connected
+to the DiFX host through <i>guiServer</i>.
+
+\section numberBoxes Number Boxes
+
+Number boxes are Text Field widgets that are restricted to
+numbers. Their values can be changed either by typing (only
+numeric values are accepted), or by spinning the mouse over
+them.  They can contain floating point or integer-only values
+- single clicks will increment/decrement one of the digits (chosen
+by the developer - hopefully appropriately).
+    
+\section complexTooltips Complex Tooltips
+
+Tooltips are pop-up informational windows that appear when
+hovering over GUI widgets.  Standard Java tooltips are
+restricted to single lines of text that have no formatting
+capacity, limiting the information that they can convey.  The
+DiFX GUI has its own "Complex" tooltips that include multiple
+lines of text, different fonts, colors, and links to GUI
+documentation (they also have a better default background
+color).  While it could be argued that they occasionally try
+to do too much, we feel they are more useful.
+
+\image html widgets_javaTooltip.png
+
+<center><b>Java Tooltip</b></center>
+
+<br>
+
+\image html widgets_complexTooltip.png
+
+<center><b>Complex Tooltip</b></center>
+
+All Java-style tooltips throughout the GUI are gradually being
+replaced with Complex Tooltips.  This is an on-going process.
+
+\section messageWindows Message Windows
+
+The DiFX GUI provides a number of "message" windows that contain
+notifications from the GUI itself or from DiFX processes.
+Messages come in the typical three flavors:
+<ol>
+  <li><b>Information</b> messages that draw attention to activities
+    that may help monitor the progress of processing or have other
+    value, but which require no action on the part of the
+    user.  Information messages are rendered with white text.<br>
+  </li>
+  <li><b>Warning</b> messages indicate the detection of a possible
+    problem, but one that does not stop processing, or occasionally
+    draw attention to "major" processing steps (such as the
+    triggering of a DiFX process).  The are shown in yellow
+    text.</li>
+  <li><b>Error</b> messages usually indicate a fatal problem that
+    has, or is likely to stop processing.  They are colored
+    red.<br>
+  </li>
+</ol>
+
+*/

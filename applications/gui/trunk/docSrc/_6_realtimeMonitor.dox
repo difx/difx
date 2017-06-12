@@ -1,0 +1,403 @@
+/**
+
+\page realtimeMonitor Real Time Job Monitor
+
+\brief Somewhat experimental real time plotting for running DiFX jobs
+
+\tableofcontents
+
+The GUI provides a real-time monitoring capability that allows DiFX
+output to be viewed as a job is running.  Plots of amplitude,
+phase, and delay are generated, and at the moment I'm not certain
+what good they are.  But they're pretty anyway.  Good for
+demos to impress relatives or uninformed visitors.
+
+\image html realTimeMonitor_sample.png
+
+\section runningAJob Running a Job to Allow Real-Time Monitoring
+
+For real-time monitoring to work on a running job, it must be
+started with real-time monitoring enabled.  This is done by
+checking the "Run With Monitor" check box on the <a href="Job_Control_content.html">Run Controls</a> panel in the <a href="Job_Controls_content.html">Job Control Window</a>:<br>
+
+\image html realTimeMonitor_runWithMonitor.png
+
+Checking this setting does not start real-time
+monitoring, it only triggers the hooks that allow it.  In the
+background what it is doing is triggering <i>guiServer</i> to
+start <i>mpirun</i> with the "-M" option enabled (the details of
+this are described in the DiFX documentation <a href="http://cira.ivec.org/dokuwiki/doku.php/difx/difx_monitor">here</a>).&nbsp;
+This permits the <i>monitor_server</i> process to then be able to
+access the products of the running job.  The <i>monitor_server</i>
+process will also be started, if it is not already running.<
+
+By default this setting is checked.  It can safely be left
+checked even if you are not planning to run real-time monitoring
+with a DiFX job as it represents very little overhead.
+
+\section startingTheMonitor Starting the Monitor and Connecting to a Job
+
+The Job Monitor is controlled and monitor data are displayed
+through the Job Monitor Window.  Each instance of this window
+is assigned to a single job.  There are two ways to start the
+Job Monitor for a given job:
+
+<ol>
+  <li>Click the "Show Monitor" button on the Run Controls panel in
+    the <a href="Job_Control_content.html">Job Control Window</a>
+    (see the image above), or...</li>
+  <li>Right click on the specific job entry in the Queue Browser
+    then pick "Real-Time Job Monitor" from the pop-up menu:</li>
+</ol>
+
+\image html realTimeMonitor_queueBrowserPing.png
+
+The Job Monitor window is divided into four panels showing <a href="#Connection_Controls">Connection Controls</a>, <a href="#Messages">Messages</a> relating to the connection and
+data transfer, <a href="#Selecting_Data_Products">Data Controls</a>
+for choosing the data "products" that are to be monitored, and
+the real time <a href="#Plot_Controls">Plots</a>
+themselves.  The first three of these panels can be closed
+to yield more screen glass for the plots.  Each of these
+sections is described in detail below.
+
+\section connectionControls Connection Controls
+
+The Connection Controls panel displays the name of the system
+hosting <i>monitor_server</i>, the TCP port used by <i>guiServer</i>
+to communicate with it, a connection light showing the quality
+of the TCP connection to <i>monitor_server</i>, and a
+real-time display showing data received by the GUI.  The
+design of this panel is anticipating a more flexible <i>monitor_server</i>
+scheme - for the moment the controls do not function and the
+plot and connection light are not terribly useful (although
+you can seen data transfers on the plot, which has some
+value).
+
+\image html realTimeMonitor_connection.png
+
+\section messages Messages
+
+The Messages panel shows messages, most of which originate
+with <i>guiServer</i>, that are specific to the Real-Time
+Monitor.  Like all DiFX GUI message windows,
+informational messages are displayed in white text, warnings
+are yellow, and errors are red.  Standard message window
+controls for clearing items, displaying different message
+types, and limiting the buffer of messages are provided.
+
+\image html realTimeMonitor_messages2.png
+
+\anchor realTimeMonitorWarningTimeout 
+<h6><i>Warning: real-time monitor thread has timed out after ## seconds of inactivity</i></h6>
+
+The above message, which sounds rather alarming, is not
+something to be worried about <i>if</i> it occurs after a job
+has completed running.  This message originates in the
+monitoring thread that <i>guiServer</i> creates to watch for
+data output from each running job.  The nature of <i>monitor_server</i>
+(the process that collects data from DiFX and distributes
+it to monitors such as <i>guiServer</i>) does not in any
+obvious way allow the <i>guiServer</i> thread to know that a
+job is done.  To prevent the thread from running forever
+and consuming resources (an idle thread has little
+computational overhead, but the real-time monitor threads
+gobble memory that should be freed), the thread creates a
+timeout modeled on the rate at which it receives real-time
+data from <i>monitor_server</i>.  When the timeout is
+exceeded the thread assumes there are no more data and
+terminates itself, in the process producing this message.
+
+\section selectingDataProducts Data Controls: Selecting Data Products
+
+The Data Controls Panel allows you to select the "data products"
+you are interested in monitoring during processing.&nbsp; DiFX
+produces a large number of data products, one for each combination
+of possible auto- and cross-correlations, baselines, frequencies,
+polarizations, etc.&nbsp; The Data Controls Panel allows any
+number of these products to be selected for real-time
+monitoring.&nbsp; After parsing the <tt>.input</tt> file
+associated with a job, buttons that correspond to the product
+specifications for that job are provided:<br>
+
+\image html realTimeMonitorDataControls0.png
+
+In the above example, the telescopes "MK" and
+"PT" were used for the observation contained in the named <tt>.input</tt>
+file.&nbsp; There were 16 frequencies (channels, bands,
+whatever) observed.&nbsp; Further options for polarizations and
+additional items will be provided in the future (this is a work
+in progress).
+
+To select the products from one or more <b>baselines</b>, click
+on the "Telescope 1" and "Telescope 2" buttons for the antennas
+involved.&nbsp; For the given example, only the "MK-PT" baseline
+is possible.&nbsp; Note that the order of the telescopes is not
+important - as far as the Real-Time Monitor is concerned "MK-PT"
+is identical to "PT-MK".&nbsp; You can select either - the
+monitor will properly match your selection to what is actually
+specified in the <tt>.input</tt> file.
+
+You may also select <b>auto-correlations</b> for antennas by
+selecting the same antenna for both "Telescope 1" and "Telescope
+2". 
+
+<b>Frequencies</b> are chosen by selecting one or more frequency
+buttons.
+
+Once enough specifications have been selected to identify one or
+more data products, the "View" and "Apply" buttons will appear,
+along with the total number of products your specifications will
+produce:
+
+\image html realTimeMonitorDataControls1.png
+
+Note that every combination of your selected
+specifications will be among the data products the real-time
+monitor will display.  This may not be what you want - for
+instance, you may be interested in four frequencies for the
+MK-PT baseline, as pictured above, but also in the
+auto-correlation for "MK" at a different frequency.  If you
+were to select "MK" (in additon to "PT", which is already
+selected) for "Telescope 2", there would be eight combinations
+that worked (the four selected frequencies for the MK-PT
+baseline and for the MK auto-correlation).  If you then
+selected the frequency for the auto-correlation this would add
+another two combinations for a total of ten, five of which you
+weren't actually interested in.
+
+To clean up this mess, the Data Controls Panel provides a table
+with complete information about selected (or all) data products
+through the "View" button.  Check boxes in the left-most
+column can be used to add or eliminate individual
+products.  Note that the other selection buttons will not
+change to reflect selections through the check boxes, and any
+additional changes to the selection buttons will recreate the
+table (losing any changes to the check boxes that you may have
+made).
+
+\image html realTimeMonitorDataControls2.png
+
+Once you are satisfied with your product
+selections, click the "Apply" button.  This will transmit
+the product requests, via <i>guiServer</i>, to <i>monitor</i><i>_server</i>. 
+Once this is done, the Real-Time Monitor is committed to
+displaying the requested products.  <i>Selections </i><i>cannot
+be undone or changed</i><i>!</i>  Attempting to do so
+will produce unpredictable and probably unpleasant results.
+
+Once data products are selected, the Real-Time Monitor will plot
+them automatically as data become available.  However the
+Monitor does not start the DiFX job - that must be done
+elsewhere.
+
+\section plotControls Plots Panel
+
+When running a job, DiFX provides real-time data each time it
+completes processing of an accumulation period.  These data
+are plotted for each data product requested as they arrive. 
+Depending on what you request for display (see below), columns of
+plots may be drawn for each data product (channel) requested, with
+rows representing accumulation periods.  Summaries across
+channels (in a final column) and across accumulation periods (in a
+final row) may also appear.  To facilitate comparison among
+plots, all are drawn with the same data limits which are computed
+to accommodate the most extreme data points (which you may not
+even be drawing, depending on you selections).
+
+\subsection realTimePlotChangingDisplayedData Changing Displayed Data
+
+The pull-down menu under the "Show" button on the Plots Panel
+allows you to change the content of the plots drawn as well as
+which plots are drawn through a series of check boxes.  These
+settings do not alter the data collected - everything is collected
+at all times - so you can change what you are looking at to suit
+your needs at any time.
+
+\image html realTimeMonitor_showMenu.png
+
+The check boxes under the "Show" menu are described below:
+
+\anchor realTimeAllAccumulation
+<h6>All Accumulation Periods</h6>
+
+Selecting "All Accumulation Periods" will produce
+a row of plots for each accumulation period collected.  A
+column corresponding to each channel will be included. 
+Selecting this check box will turn off the "Latest Only" check
+box (see below) if it is on, but the two boxes are not quite
+"radio boxes" in that they can both be off (but they cannot both
+be on).
+    
+\anchor realTimeLatestOnly
+<h6>Latest Only</h6>
+
+This selection will draw a row of plots for only
+the latest accumulation period.  As new data arrive, the
+row will be replaced with new plots representing the new
+data.  This produces a far less busy screen of plots than
+with "All Accumulation Periods" selected.
+    
+\anchor realTimeTimeSummary
+<h6>Time Summary</h6>
+
+"Time Summary" plots produce a row that represents
+the mean of each channel's data over all accumulation periods
+collected.
+    
+\anchor realTimeChannelSummary
+<h6>Channel Summary</h6>
+
+"Channel Summary" plots produce a column
+containing the means of all of the channel data in each
+accumulation period.  If both "Channel Summary" and "Time
+Summary are selected a "cross summary" plot will also be
+created.
+    
+\anchor realTimePhase
+<h6>Phase</h6>
+
+Selecting "Phase" will produce scatter plots of
+the phase information derived from the visibility data. 
+There are 64 phase points in each plot.
+    
+\anchor realTimeAmplitudue
+<h6>Amplitude</h6>
+
+"Amplitude" will plot the amplitude of the
+visibility data.  There are 64 points in each plot.
+
+\anchor realTimeLag
+<h6>Lag</h6>
+
+"Lag" plots the FFT of the visibility data (128 points per plot).
+
+\anchor realTimeDelay
+<h6>Delay</h6>
+
+"Delay" computes a single value for delay but
+finding the peak (maximum absolute value) in the lag data and
+computing the offset from the data center using the bandwidth of
+the channel.  The delay is plotted as a single line
+(indicating the position of the peak channel) and the computed
+value.
+
+\subsection creatingPostscript Creating an Encapsulated PostScript File
+
+The "Save As..." button is used to create an Encapsulated
+PostScript file of the screen content which can be saved wherever
+the user wants using a popup (Java) file chooser.  The
+Encapsulated PostScript can be embedded in documents, saved for
+comparison, emailed, or printed.
+
+<img alt="" src="images/real_time_monitor/eps.png" height="437" width="700">
+
+The saved PostScript representation is (almost) identical to the
+screen (there are some font scaling differences and the background
+is a different color) as it exists at the time the "Save" button
+in the file chooser is pressed.  If a job is still running
+while you are selecting a file name, the screen could very well
+change as additional data arrive.  This may or may not be
+what you want.
+  
+\subsection Viewing Time History With the Mouse Wheel
+
+Both the "Time Summary" and "Latest" plots are actually the last
+in a saved history of plots collected from the start of the
+job.  You can view this history by spinning the mouse wheel
+over the Plot Panel while these plots are being displayed. 
+The "Latest" plot will step through the plots for all collected
+accumulation periods, while the "Time Summary" plot will show the
+data means as they stood after the collection of data for each
+accumulation period (you can watch the signal to noise ratio go up
+as you step later in time and the means are computed from more
+data).
+
+What good is this?  It might show you alarming things about
+your data, such as a delay value that is not consistent through
+time.  Or it may make outliers in the data more
+obvious.  Other than that, it looks kind of slick.
+
+\section whatRealtimeIsGoodFor What Real-Time Plots Can Tell You
+
+\section caveats Caveats and Warnings
+
+The real-time monitor is a somewhat experimental feature at this
+time.  Hopefully any problems it generates will have impacts
+limited to itself, but it may cause the GUI and <i>guiServer</i>
+to be less reliable than otherwise.  Which is to say, if it
+crashes things don't be completely shocked.
+
+The nature of <i>monitor_server</i> limits real-time monitoring
+to a single job at a time.  The GUI can easily run multiple
+jobs simultaneously, but doing so will completely confuse
+real-time monitoring (the reason for this is that data products
+are identified by <i>monitor_server</i> using only a single
+number, without identifying the .input file source or which job
+the number applies to - this may be fixed in the future) and may
+well cause <i>guiServer</i> to crash.  <b>You can avoid
+this problem</b> by running each DiFX job using a different head
+node - i.e. with a different instance of <i>guiServer</i>. 
+This capability has not been extensively tested.
+
+The production of real-time data can be computationally
+intensive.  Each "product" requested requires the <i>guiServer</i>
+host to run Fourier transforms on the fly as well as cause network
+traffic to transfer the data to the GUI.  There is no effort
+made to limit the number of products a user can request, nor has
+an obvious impact on performance been observed in testing, but it
+should be kept in mind that the GUI can be instructed to collect a
+very large number of products for most jobs.  Viewing these
+data in real time would probably not be illuminating (they would
+crowd the display with too many plots), but nothing will stop you
+from doing so.  Be sensible about this.
+  
+Because the Real-Time Monitor is useful only if you are looking at
+it (no data are preserved) and because it consumes computational
+resources on the <i>guiServer</i> host, closing the Real-Time
+Monitor window will cause data collection and transmission to stop.
+It cannot be restarted without restarting the job.
+
+It is not possible to change your mind about what data products you
+are interested in after an initial request has been made - you must
+allow a job to complete.  This limitation is an obvious target
+for future enhancements.
+
+The thread the <i>guiServer</i> runs to obtain data from <i>monitor_server</i>
+has no easy way of knowing when the data transfers are
+complete.  It has a timeout that terminates the thread after an
+interval based on previous data transfer behavior.  In testing
+so far this has worked quite cleanly.<br>
+
+\section realTimeProblemsAndQuestions Problems and Questions
+
+\subsection realTimeCanIStart Can I Start Real-Time Monitoring on a Job That is Already Running?
+
+Yes, as long as a job was started with the "Run With Monitor"
+check box selected (see \ref runningAJob "Running a Job to Allow Real-Time Monitoring"), <i>monitor_server</i>
+should have access to that job.  It should even be possible
+to monitor a job started by another user, assuming you have access
+to the .input file associated with it.
+
+\subsection realTimeWhatHappens What Happens if My Job Has More Than One Scan?
+
+At the moment the real-time monitor is designed to monitor the
+output of a single scan.  If a job has more than one scan,
+the monitor will essentially mash them together as if they were
+one.  It should work, but labels will likely be confusing
+and/or wrong, and summary plots will make little sense.  An
+extension of the current design to handle multiple scans
+gracefully is in the works.
+
+\section realTimeMonitorServer monitor_server
+
+If you wish to monitor running jobs through the GUI's real-time
+plotting capabilities, the DiFX application <i>monitor_server</i>
+needs to be running.  This program provides a TCP server at
+which real-time data from running DiFX processes can be
+obtained.  The absence of this process is not usually a
+problem - if you request the real-time plotting it should be
+started automatically.  However if you find that real-time
+plotting isn't working, this could be a cause.  Note that at this time real-time
+monitoring is best considered "experimental".
+
+*/

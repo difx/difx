@@ -290,6 +290,7 @@
     
                 <xsd:element ref="jobNetworkActivity" />
                 <xsd:element ref="jobName" />
+                <xsd:element ref="jobSource" />
                 <xsd:element ref="jobProgressBar" />
                 <xsd:element ref="jobState" />
                 <xsd:element ref="jobExperiment" />
@@ -592,6 +593,7 @@
     
     <xsd:element name="jobNetworkActivity" type="columnSpec"></xsd:element>
     <xsd:element name="jobName" type="columnSpec"></xsd:element>
+    <xsd:element name="jobSource" type="columnSpec"></xsd:element>
     <xsd:element name="jobProgressBar" type="columnSpec"></xsd:element>
     <xsd:element name="jobState" type="columnSpec"></xsd:element>
     <xsd:element name="jobExperiment" type="columnSpec"></xsd:element>
@@ -1005,6 +1007,7 @@
     <xsd:complexType name="doiJob">
         <xsd:sequence>
             <xsd:element name="jobName" type="xsd:string"></xsd:element>
+            <xsd:element name="jobSource" type="xsd:string"></xsd:element>
             <xsd:element name="jobPath" type="xsd:string"></xsd:element>
             <xsd:element name="projectName" type="xsd:string"></xsd:element>
             <xsd:element name="projectPath" type="xsd:string"></xsd:element>

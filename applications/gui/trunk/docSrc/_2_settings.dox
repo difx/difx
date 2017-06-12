@@ -1,0 +1,1611 @@
+/**
+\page settingsSection Settings Window
+
+\brief An overview of the options available in the Settings Window
+
+\tableofcontents
+
+The DiFX GUI has a fairly large number of configurable settings that
+can be used to tailor its appearance and functionality to a
+particular purpose.  All settings are saved to files when the
+GUI is shut down (or when the user requests it) to maintain
+consistency between sessions.  Some settings, such as window
+sizes, are "invisible" in that the way to change them is to actually
+do something, like change the size of a window.  Most, however,
+are collected in the System Settings Window where they are organized
+into sections based on their function:
+<ul>
+  <li>\ref settingsFile "Settings File" - controls the XML
+    files used to store settings between sessions.  Also lets you set the GUI
+    title.
+  <li>\ref difxControlConnection "DiFX Control Connection"- used to set up
+  the TCP connection between the GUI and <i>guiServer</i> (and DiFX).
+  <li>\ref difxMessageTraffic "DiFX Message Traffic" - controls which
+    messages are sent to/from DiFX.
+  <li>\ref jobCreationSettings "Job Creation Settings" - controls how
+    .vex files are used to create experiments.
+  <li>\ref jobProcessingSettings "Job Processing Settings" - used
+    to control how jobs are processed and how scheduled jobs are
+    run.
+  <li>\ref databaseConfiguration "Database Configuration" - governs the
+    use and configuration of a database for tracking
+    DiFX jobs.
+  <li>\ref settingsEOPSettings "EOP Settings" - controls where and
+    how EOP data are obtained.
+  <li>\ref documentationLocations "Documentation Locations" - used to
+    set the location of items available through the "Help"
+    menu button.
+</ul>
+
+\section settingsFile The Settings File
+
+When the GUI is started it attempts to read an XML file
+containing settings for all GUI parameters, window configurations,
+etc.  This file can either be specified as the first command
+line argument when starting the GUI or a default file will be used
+(the default file is "conf/guiSettings.xml" under the directory
+specified by the environment variable "DIFXROOT", or, failing
+that, the user's directory).  Failing to read either a
+specified file or the default file will cause internal default
+settings to be used which may or may not be attractive.  When
+the GUI is exited the default XML file is written to reflect the
+GUI's current state such that it can be started again in the
+future essentially unchanged from where it was left.
+Failures to read or write files will generate pop-up warnings, but
+won't terminate the GUI's operation.
+
+The Settings File section of the Settings Window can be used to
+pick a new XML file name for reading or writing.  This can be
+useful if you want to save a specific GUI state for later use or
+load a previously saved state: 
+
+\image html settings_SettingsFile.png
+
+\subsection settingsFileItems Settings File Components
+
+<ul>
+	<li>\ref settingsFileCurrent "Current"
+	<li>\ref settingsFileOpen "Open"
+	<li>\ref settingsFileSave "Save"
+	<li>\ref settingsFileSaveAs "Save As..."
+	<li>\ref settingsFileDefaults "Defaults"
+	<li>\ref settingsFileGUITitle "GUI Title"
+</ul>
+
+\anchor settingsFileCurrent
+<h6>Current</h6>
+
+This field shows the full path to the XML file that was most
+recently read, either a user-specified file or the
+default.  If this field is in red it indicates that the
+last read attempt failed for some reason and that whatever
+settings that existed previously are still in place.
+
+\anchor settingsFileOpen
+<h6>Open</h6>
+
+Open can be used to open an existing XML file that contains GUI
+settings.  A file browser will allow the file to be picked.  When the file
+is opened, the settings it contains will be applied.
+
+\anchor settingsFileSave
+<h6>Save</h6>
+
+Save causes the current GUI settings to be written to the XML
+path in the "Current" field.
+
+\anchor settingsFileSaveAs
+<h6>Save As...</h6>
+
+This button produces a file browser from which a path for the
+XML file can be picked.  The XML file is written using the
+current settings.
+
+\anchor settingsFileDefaults
+<h6>Defaults</h6>
+
+The Defaults button will restore the GUI to internal defaults
+(not the default XML file settings).
+
+\anchor settingsFileGUITitle
+<h6>GUI Title</h6>
+
+The GUI Title is a simple text string that can be used to
+uniquely identify a settings configuration. The title will
+be applied to the top-level GUI window.
+
+\section difxControlConnection DiFX Control Connection
+
+The DiFX Control Connection settings determine how the GUI
+communicates with and controls DiFX.  In normal operation the
+GUI makes a TCP connection with the <i>guiServer</i> process running on the DiFX "Host"
+node.  To complicate matters however, there are actually
+three ways the GUI and DiFX can interact (the latter two of these are essentially
+historical, although they are maintained in the event they might still be of use
+and because they don't currently break anything):
+<ol>
+  <li>The TCP connection between the GUI and <i>guiServer</i> is used for all
+    controls and data exchanges.  DiFX multicast message
+    traffic is collected by <i>guiServer</i>
+    and relayed over the TCP socket to the GUI (for more information
+    about message traffic, see the \ref difxMulticastMessages "DiFX
+    Multicast Messages" section below).  This
+    configuration must be used when the GUI is running outside the
+    DiFX LAN, such that the multicast messages cannot be received
+    directly.  It is far and away the most tested
+    configuration, and should be used if possible.
+  <li>The TCP connection between the GUI and <i>guiServer</i> is used for
+    controls and all data from <i>guiServer</i>
+    itself, however DiFX multicast messages are received directly
+    using a UDP socket.  Under some circumstances this could be
+    the preferred arrangement when the GUI is running on the DiFX
+    LAN where multicast messages are received as it reduces <i>guiServer</i>
+    network traffic and allows the GUI to monitor things even if <i>guiServer</i>
+    is for some reason lost.
+  <li>No connection is made to <i>guiServer</i>.  The GUI
+    receives DiFX multicast messages directly using a UDP socket,
+    essentially acting as a monitor of DiFX activity.  The GUI
+    can also issue some commands directly to DiFX using its own
+    multicast messages, but the command set available is limited and
+    in the long run this capability will not be supported.
+</ol>
+
+The DiFX Control Connection panel includes settings that will
+determine in which of the above modes your GUI will interact with
+DiFX, as well as port and version specifications.  Details
+about each control/display item are outlined below.
+
+\image html settings_DifxControlConnection.png
+
+\subsection difxControlConnectionComponents DiFX Control Connection Components
+
+<ul>
+  <li>\ref multicastCheckbox "Multicast/guiServer Check Boxes"
+  <li>\ref guiServerConnectionLight "guiServer Connection Light"
+  <li>\ref channelAllData "Channel All Data"
+  <li>\ref difxHost "DiFX Host"
+  <li>\ref controlPort "Control Port"
+  <li>\ref transferPort "Transfer Port and Max Open Ports"
+  <li>\ref monitorHost "Monitor Host and Port"
+  <li>\ref guiServerVersion "guiServer Version"
+  <li>\ref guiVersion "GUI Version"
+  <li>\ref hostEnvironmentVars "Host Environment Vars"
+  <li>\ref usernameSetting "Username"
+  <li>\ref difxBaseSetting "DiFX Base"
+  <li>\ref runWithDifxVersion "Run w/DiFX Version"
+  <li>\ref useDefaultStartScript "Use Default Start Script"
+  <li>\ref difxExecuteScript "DiFX Execute Script"
+  </li>
+</ul>
+
+\anchor multicastCheckbox
+<h6>Multicast/guiServer Check Boxes</h6>
+
+These check boxes determine how the GUI communicates with DiFX,
+either through direct multicast messaging (unsupported,
+incomplete, and unlikely to work very well) or via direct TCP
+connection to <i>guiServer</i> (preferred, obviously).  You
+will almost always want to use the <i>guiServer </i>option - the
+Multicast option exists for historical reasons and is maintained
+because it has some utility in testing.  By default the <i>guiServer</i>
+option is checked.
+
+\anchor guiServerConnectionLight
+<h6>guiServer Connection Light</h6>
+
+The guiServer Connection light gives an immediate indication
+whether a healthy TCP connection exists between the GUI and <i>guiServer</i>.
+A green light means a good connection.  Red means a broken
+connection.  A yellow light occurs when the GUI has some
+concern about the connection (these usually turn red quickly) or
+that a connection is in the process of being made (these usually
+turn green quickly).
+
+\anchor channelAllData
+<h6>Channel All Data</h6>
+
+The GUI/guiServer does not necessarily use a single socket for
+communication.  Many activities, including creating/running jobs, examining
+directory structures on the correlator, and even tab completion for many GUI
+text fields, require opening new sockets.  The port numbers for
+these sockets are all within a specific range, which you can control (see
+\ref transferPortAndMaxOpen "Transfer Port and Max Open Ports"), so in theory
+you could set up tunnels for all of them. Instead, the GUI allows you to "channel" 
+all of these exchanges through a single, tunnelled primary connection by checking
+this box.  The GUI and <i>guiServer</i>
+handle the organization of packets on either side of the connection
+so the change should be seamless, and all activities that normally
+require independent sockets should act normally.  This arrangement has
+reassuringly little impact on the performance of the single
+connection socket.
+
+\anchor difxHost
+<h6>DiFX Host</h6>
+
+This is the hostname of the node on which <i>guiServer</i> is
+running, or will run.  Changes to this field will trigger a
+reconnection attempt for the TCP link between the GUI and <i>guiServer</i>
+(the GUI will continue to try to make the connection until it
+works).  This name should be recognizable by the nameserver on
+the host where you are running the GUI (you can also use IP
+addresses in this field).
+
+\anchor controlPort
+<h6>Control Port</h6>
+
+This is the port for TCP control communications between the GUI and
+<i>guiServer</i>.  Its default value it is the same as the Port
+setting under Broadcast Network (50200), but this similarity is of
+no significance (and, in hindsight, is purposelessly
+confusing).  Changes to the control port will cause a new TCP
+connection attempt.  When you start <i>guiServer</i>, it
+reports the port number where it expects connections - that is what
+you should use here.<br>
+
+\anchor transferPort
+<h6>Transfer Port and Max Open Ports</h6>
+
+Note that <b>Transfer Port</b>  and <b>Max Open Ports</b> are ignored if
+\ref channelAllData "Channel All Data" is checked.
+
+The <b>Transfer Port</b>  and <b>Max Open Ports</b>
+determine the port numbers that will be used to transmit data from
+<i>guiServer</i> to the GUI.  The GUI often has cause to
+request sets of data from the <i>guiServer</i> - the contents of
+files, directory listings, etc. - that are then transmitted using
+quick TCP connections that are opened as necessary and closed when
+no longer needed.  Whenever such a request is made it is
+accompanied by a unique port number that is then used by <i>guiServer</i>
+for the data transfer.  The Transfer Port number specified
+here is a "base" number that is used to form the unique port
+numbers - port numbers increment from this base up to (Transfer
+Port + Max Open Ports), and then recycle at the Transfer Port
+number.  Locking mechanisms assure that port numbers aren't
+reused until they have been closed.
+
+The user probably doesn't need to worry about these numbers much,
+except to make sure there are no port restrictions that apply to
+the range defined, and that the range is big enough.  If file
+transfers appear to be slow (pop-up monitors of file transfers
+will let you know this) or to occasionally stall completely it is
+possible that increasing Max Open Ports will help you, although it
+is critical that Max Open Ports <i>not be changed when any ports
+are in use</i>.
+
+\anchor monitorHost
+<h6>Monitor Host and Port</h6>
+
+The Monitor Host and Port are used to specify the connection to
+the <i>difx_monitor</i> server.  This is a process that
+provides real-time data feedback that can be used to monitor a
+running job.  The documentation on the \ref realtimeMonitor "Real Time Job Monitor" has more
+detail about this.
+  
+\anchor guiServerVersion
+<h6>guiServer Version</h6>
+
+The "guiServer Version" is the version of the DiFX software that
+was used to build <i>guiServer</i>.  <i>GuiServer</i>
+depends on a number of DiFX header files and libraries (primarily
+for file parsing) when it builds so in a perfect world it would
+match the the
+\ref builtWithDifx "version of the GUI itself" to assure
+that they are compatible.  However this is not, in general,
+critical, as the file parsing libraries a fairly stable (and
+almost always backward compatible) between DiFX versions. 
+There is no need for the <i>guiServer</i> Version to match the 
+\ref runWithDifxVersion "DiFX version used to run correlator
+operations".
+
+This is not a field the user can change - it is reported by <i>guiServer</i>
+when a new TCP connection is made.
+  
+\anchor guiVersion
+<h6>GUI Version</h6>
+
+This field shows the version of the DiFX software that was used
+to build the GUI.  This field cannot be changed by the
+user.  It will be filled automatically when a TCP connection
+is made.
+  
+\anchor hostEnvironmentVars
+<h6>Host Environment Vars</h6>
+
+The "Host Environment Vars" button creates a display of DiFX Host
+environment variables as seen by <i>guiServer</i>:
+  
+<div align="center"><img alt=""
+    src="images/settings/EnvironmentVars.png" height="387"
+    width="687"></div>
+
+All environment variables regardless of their
+applicability can be displayed, or only those that apply to DiFX
+may be selected (at the moment this distinction is determined
+rather simplistically - by whether or not "DIFX" is the first four
+characters in the variable name, but this capability may be made
+more sophisticated in the future).  The settings of
+environment variables can be used to determine how several GUI
+options should be set.
+  
+\anchor usernameSetting
+<h6>Username</h6>
+
+This field shows the name of the user under which <i>guiServer</i>
+was started.  All DiFX processes that <i>guiServer</i> starts
+will also be run under this user (which means the username must have
+permission to do so on the host running <i>guiServer</i>). 
+This is not a user-settable field.
+
+\anchor difxBaseSetting
+<h6>DiFX Base</h6>
+
+The "DiFX Base" is a path on the DiFX host under which the DiFX
+software resides.  The DiFX Base is actually just one of the
+environment variables (see above) found on the DiFX host.
+Below this directory will be bin and source
+directories for each installed DiFX version.  The DiFX Base
+is reported when a connection is made to <i>guiServer</i> - the
+field is not user-settable.
+  
+\anchor runWithDifxVersion
+<h6>Run w/DiFX Version</h6>
+
+The GUI does a number of things, such as organizing jobs and
+creating/administering job data directories.  But primarily
+its purpose is to run DiFX, which it does for the most part by
+executing DiFX applications on the DiFX host through system level
+commands (equivalent to command line operations).  The "Run
+w/DiFX Version" setting can be used to instruct <i>guiServer</i>
+to use a specific version of the DiFX application.  A
+pull-down menu will provide all of the DiFX software versions
+installed on the DiFX host.
+  
+Note that this setting can be changed <i>at any time</i> during
+the process of running a job, such that you can run some DiFX
+applications using one version of DiFX, and others using
+another.  For instance, if you want to use the latest
+development version of the software to run <i>mpifxcorr</i>, but
+know that your data require <i>vex2difx</i> from version 2.1, <i>and</i>
+you know what you are doing, you can change this setting at
+different stages in the process accordingly.  All of which is not to
+say this is recommended behavior.
+  
+\anchor useDefaultStartScript
+<h6>Use Default Start Script</h6>
+
+Use the chosen DiFX Version name to produce a default value for
+the DiFX Execute Script by appending the version name to
+"rungeneric.".  This will cause the DiFX Execute Script to be
+over-written.
+  
+\anchor difxExecuteScript
+<h6>DiFX Execute Script</h6>
+
+The DiFX Execute Script is a script used by guiServer to execute all
+DiFX commands (both those run locally on the DiFX host and via <i>mpirun</i>
+on other nodes).  The execute script can be used to do any set
+up or environment variable definition that must take place for DiFX
+processes to run correctly.  For instance, if you are running <i>vex2difx</i>,
+which is run on the DiFX host, and you have the DiFX execute script
+defined as "rungeneric.DIFX_DEVEL", <i>guiServer</i> will execute
+the command:
+
+<pre>	rungeneric.DIFX_DEVEL vex2difx [args...]</pre>
+
+When running <i>mpifxcorr</i>, which uses <i>mpirun</i> to run on
+multiple nodes, <i>guiServer</i> will run the following:
+
+<pre>	mpirun [args...] rungeneric.DIFX_DEVEL mpifxcorr [more args...]</pre>
+
+In the former case the execute script is run on the DiFX host (where
+<i>guiServer</i> is being run) while in the latter case it is run on
+each of the nodes in the cluster accessible to <i>mpirun</i>. 
+In all cases, the node involved must be able to execute the named
+script.
+
+If you do nothing, <i>guiServer</i> will choose "rungeneric.[DiFX
+Version]" as a default name for the execute script (Walter Brisken's
+<i>difxbuild</i> procedure will automatically create this script for
+each DiFX version that it builds).  You can, however, put
+anything in this field that you want, including nothing at
+all.  The contents of the field is inserted as a string in the
+commands (examples just above) before they are executed.
+
+Note that because the script is run on each node you can actually
+have a different script on each node doing different things, as long
+as they all share the same name.
+
+\section difxMessageTraffic DiFX Message Traffic
+
+DiFX uses UDP multicast messages to periodically broadcast the
+status of individual nodes and the state of running jobs -
+information the user interface displays.  The messages
+originate (with some exceptions) from the <i>mk5daemon</i> process
+that should be running on each node in the DiFX cluster.  This
+same multicast system is used by the user interface (either through
+<i>guiServer</i> or directly) to communicate with <i>mk5daemon</i>
+and control the components of the software correlator.
+
+\image html settings_DifxMessageTraffic.png
+
+\subsection difxMessageTrafficComponents DiFX Message Traffic Components
+
+<ul>
+  <li>\ref messageRelayUsingGuiserverConnection "Relay Using guiServer Connection"
+  <li>\ref messageGroupAddress "Group Address"
+  <li>\ref messagePort "Port"
+  <li>\ref messageBufferSize "Buffer Size"
+  <li>\ref messageMonitorTimeout "Monitor Timeout"
+  <li>\ref messagePacketTrafficPlot "Packet Traffic Plot"
+  <li>\ref messageSuppressUnknown "Suppress \"Unknown Message\" Warnings"
+  <li>\ref messageViewDifxMessages "View DiFX Messages"
+  <li>\ref messageRequestAll "Request All/Selected Messages"
+  <li>\ref messageIdentifyMark5 "Identify Mark5 Unit Names by Pattern"
+  <li>\ref messageInactivityWarning "Inactivity Warning/Error"
+</ul>
+
+\anchor messageRelayUsingGuiserverConnection
+<h6>Relay Using <i>guiServer</i> Connection</h6>
+
+Being based on UDP, DiFX multicast messages will only work within a
+local area network.&nbsp; However, if you are connecting to the <span
+  style="font-style: italic;">guiServer</span> to control DiFX
+you&nbsp; should select this option to "relay" all multicast
+messages through the TCP connection between the user interface and <span
+  style="font-style: italic;">guiServer</span>.&nbsp; All messages
+on the DiFX subnet will then be collected by <span
+  style="font-style: italic;">guiServer</span> and retransmitted to
+the user interface where they are parsed and displayed exactly as if
+the user interface were on a LAN with the DiFX cluster.&nbsp; If
+this "relay" option is not selected only messages received directly
+via UDP will be collected - a capacity that is intact (for the time
+being) for historical and (possibly) diagnostic reasons.&nbsp; As
+the purely multicast operation of the GUI is archaic and running
+with <i>guiServer</i> is assumed, this setting should always be
+checked.
+
+\anchor messageGroupAddress
+<h6>Group Address</h6>
+
+This address is used to identify the UDP multicast "group" that <span
+  style="font-style: italic;">mk5daemon</span> is using.&nbsp; It
+should match the DIFX_MESSAGE_GROUP environment variable setting
+used when starting <span style="font-style: italic;">mk5daemon</span>
+on all processing and data source nodes (run <span
+  style="font-style: italic;">mk5daemon</span> with the "-h" option
+for details).&nbsp; At the moment the default value for this
+environment variable, and thus the setting you should probably use
+here, is "224.2.2.1".&nbsp; This setting has no impact if messages
+are being relayed from <i>guiServer</i>.
+
+\anchor messagePort
+<h6>Port</h6>
+
+The port is used for directly receiving UDP multicasts.&nbsp; This
+should match the value of the DIFX_MESSAGE_PORT environment variable
+in place when <span style="font-style: italic;">mk5daemon</span>
+was started on each node.&nbsp; At the moment the default value for
+the environment variable, and thus this field, is 50200.&nbsp; This
+setting has no impact if messages are being relayed from <i>guiServer</i>.
+
+\anchor messageBufferSize
+<h6>Buffer Size</h6>
+
+This is the maximum size of a broadcast message, in bytes.&nbsp;
+Probably this shouldn't be fiddled with too much - making it too
+small will cause UDP messages to be incompletely read.&nbsp; It is a
+block of memory that must be allocated for each incoming message, so
+it shouldn't be huge either.&nbsp; 1500 appears to be a perfectly
+safe value.
+
+\anchor messageMonitorTimeout
+<h6>Monitor Timeout (ms)</h6>
+
+The timeout is the number of milliseconds that the system will wait
+for an incoming broadcast message.&nbsp; It can be set to 0, which
+means "wait forever", although this might be unhealthy (killing the
+thread that reads messages will become difficult).&nbsp; Otherwise
+it does little more than govern the update rate of the Packet
+Traffic Plot (see below).
+
+\anchor messagePacketTrafficPlot
+<h6>Packet Traffic Plot</h6>
+
+The Packet Traffic Plot shows all received DiFX messages as they are
+read in real time, either via TCP from <i>guiServer</i> or UDP
+directly.&nbsp; If you are receiving messages (i.e. all of the above
+settings are set properly) the plot should show activity - there
+should be occasional spikes as messages come in (the height of the
+spikes is the size of messages relative to the Buffer Size).&nbsp;
+If, on the other hand, you get a "flat line", your settings are
+wrong, your connection to <i>guiServer</i> is bad, or possibly <span
+  style="font-style: italic;">mk5daemon</span> isn't running
+anywhere visible on the DiFX cluster network.
+
+\anchor messageSuppressUnknown
+<h6>Suppress "Unknown Message" Warnings</h6>
+
+This check box was put in place to avoid annoying error messages
+  during development and is largely obsolete.&nbsp; It will probably
+  be removed in the near future.<br>
+
+\anchor messageViewDifxMessages
+<h6>View DiFX Messages</h6>
+
+The "View DiFX Messages" button will bring up the "DiFX Message
+Traffic Monitor".  This window lists all (recognized) DiFX
+message types that are received by the GUI (either directly via
+UDP, or relayed from the <i>guiServer</i>), displays their "raw"
+XML code, and parses them according to their type.  A buffer
+of messages is stored.  Users can select the types of
+messages they wish to see, examine any message in the buffer, and
+change the buffer size.  Originally created for diagnostic
+purposes, this window provides a view into DiFX inter-process
+communication that may be useful, or at least amusing.
+  
+\image html settings_TrafficMonitor.png
+
+\anchor messageRequestAll
+<h6>Request All/Selected Messages</h6>
+    
+Using the "Request All" or "Request Selected" check boxes, <i>guiServer</i>
+can be instructed to relay all (default) or a selected subset of
+DiFX message traffic.  The selection of desired message
+types can be controlled through a pop-up checklist obtained
+using the "Selected Messages" button:
+
+\image html settings_SelectedMessages.png
+
+Selecting a subset of all message traffic may be
+useful if a TCP connection appears unable to handle it
+all.  It can also serve some diagnostic purposes.
+
+\anchor messageIdentifyMark5
+<h6>Identify Mark5 Unit Names by Pattern</h6>
+
+This check box and text field cause the GUI (primarily in the
+Hardware Monitor Window) to determine whether multicast messages
+are from Mark 5 Nodes or Processor Nodes based on machine
+names.  If the box is checked the machine name of the source
+of each message is compared to a list of comma-separated "regular
+expressions" contained in the text field.  If it matches any
+one of them, the message is assumed to be from a Mark 5 unit and
+is sorted accordingly.
+
+Regular expressions are extremely useful for pattern matching,
+but if you haven't used them before they can be less than 100%
+intuitive.  There are many online resources that explain them
+in excruciating detail.  The default value for patterns
+"mark5.*" matches the NRAO practice (duplicated at USNO) of naming
+all Mark 5 machines such that they start with the five characters
+"mark5", as in "mark5-101.foo.edu".
+
+\anchor messageInactivityWarning
+<h6>Inactivity Warning/Error Settings</h6>
+
+The Hardware Monitor Window lists all processors and Mark 5
+  Modules on the LAN that are broadcasting <i>mkdaemon</i>
+  messages.  Associated with each processor or module is an
+  "activity" light that turns green briefly whenever a new message
+  for that processor or module is received from <i>mk5daemon</i>
+  (these messages should be transmitted periodically if all is
+  working correctly).  To alert the user when a processor or
+  module has <i>not</i> been heard from in a while, the light will
+  turn yellow after the "Warning" number of seconds have elapsed
+  with no received message.  The light will turn red after the
+  "Error" number of seconds.
+
+These \ref numberBoxes "Number Box"
+settings let you change the number of seconds that elapse without
+messages before the lights change.  They should be adjusted
+to what works for your installation.
+
+\section jobCreationSettings Job Creation Settings
+
+Job Creation Settings govern how experiments, passes, and jobs
+are created using the \ref experimentEditor "Experiment Editor".  
+These are general settings that affect every experiment - the Experiment 
+Editor itself
+has many settings that can be applied to individual experiments
+when they are being created and also allows these general settings to be
+overridden.
+
+\image html settings_JobCreationSettings.png
+
+\subsection jobCreationSettingsComponents Job Creation Settings Componenents
+
+<ul>
+  <li>\ref workingDirectory "Working Directory"
+  <li>\ref antennaDefaults "Antenna Defaults"
+  <li>\ref eliminateStations "Eliminate Stations With \"-1\" Code"
+  <li>\ref exciseUnusedScans "Excise Unused Scans From .vex File
+</ul>
+
+\anchor workingDirectory <h6>Working Directory</h6>
+
+The working directory is the default path where a directory
+devoted to a new experiment will be created.  For instance,
+if the Working Directory is defined as:
+
+\code
+/home/difx/jobPath
+\endcode
+
+a new experiment with a user-assigned name (in this case the rather arbitrary "MyExperiment") will be
+created in:
+
+\code
+/home/difx/jobPath/MyExperiment
+\endcode
+
+This is just the default - the actual path can be changed to
+whatever the user wants in the Experiment Editor \ref experimentWorkingDirectory
+"Working Directory" field.
+
+\anchor antennaDefaults 
+<h6>Antenna Defaults</h6>
+
+The Antenna Defaults button shows the "Default Source Settings
+Based on Antenna" window which can be used to connect commonly
+used data source locations to particular antennas based on
+two-character code station names (these code names match those
+that appear in .vex files).  These specifications are applied
+to antennas that appear in the <a
+href="experimentEditor_content.html#Stations">Stations</a>
+section of the Experiment Editor and, if done properly, can
+eliminate tedious and error-prone user settings.
+
+\image html antennaDefaultsWindow.png
+
+The controls in the window are pretty straight-forward.  To
+add a new specification, click the "Add" button and edit the line
+that appears.  To remove a specification click the "X" button
+associated with it.  Only one specification for each antenna
+code should be used (if there are multiple specifications for an
+antenna the first one in the list will <i>probably</i> be used,
+but this is not guaranteed behavior).  The first field in a
+new specification should be filled in with the (upper case) two
+letter code for the antenna.  A pull-down list provides
+choices among data source types (files, module, or network). 
+A text field allows path or node name specification depending on
+data type (the former for "files" data, the latter for "module"
+data).  A check box indicates that a file path is a file
+list.  
+
+The Antenna Defaults will be applied to the \ref experimentStations "Stations" section of
+the Experiment Editor when a new .vex file is used.  They are
+not necessarily final settings - users can still change them.
+
+\anchor wildcardsWithFileDefaults 
+<h6>Use of Wildcards for File Data</h6>
+
+If the data type is "Files" and "FileList" is not
+checked, the path can include wildcards that are normally used as part of the
+"ls" command, such as "*" to match multiple file names.  
+
+If you store your data in predictable paths based on experiment name and/or antenna
+codes, there are two
+"variable" indicators specific to the Antenna Defaults Window that can make the
+antenna defaults specifications more useful.  The \$ANT variable
+can be used in place of an antenna code - this will indicate that a specification
+applies to all antennas.  The same \$ANT variable used in a file or file list specification
+will replace the variable with the antenna code in the path (both upper and lower case
+antenna codes will be matched).  Similarly, the \$EXP variable will be replaced
+by the \ref experimentName "experiment name" in the path.
+
+\anchor antennaDefaultsExamples 
+<h6>Examples Using The Antenna Defaults Window</h6>
+
+In the following example, specifications are provided for the "PT" and "MK" antennas.
+
+\image html antennaDefaultsExample1.png
+
+The data for the PT antenna are files, and are located on the DiFX server in the path:
+\code{.c}
+/home/oper/TestData/pt/*
+\endcode
+Note the use of the wildcard - this indicates that <i>all</i>
+files in the path will be included in the data sources.
+
+The data for MK are files as well, but are included in a \ref experimentFileLists "File List".
+A File List is a single file, so no wildcard is included.  Note the "FileList" box is
+checked.
+
+If source data exists in locations based on antenna code (not uncommon at USNO), the \$ANT
+variable can be used instead of explicitly defining the path.  In the following example the data source files for each antenna
+will be found under a common path within subdirectories named for the antenna code:
+
+\image html antennaDefaultsExample2.png
+
+Files for "PT" would be found in:
+
+\code
+/home/oper/TestData/pt/*
+\endcode
+
+Files for "MK" would be found in:
+
+\code
+/home/oper/TestData/mk/*
+\endcode
+
+Alternatively, file lists located in a common area could be used:
+
+\image html antennaDefaultsExample3.png
+
+This example would find file list files, located in the same directory, with the
+following paths (assuming our example antennas PT and MK again):
+
+\code
+/home/oper/TestData/FileList_pt
+/home/oper/TestData/FileList_mk
+\endcode
+
+Finally, the \$EXP variable allows your source data to be organized into paths that
+include the experiment name (another common USNO practice):
+
+\image html antennaDefaultsExample4.png
+
+In this example, the data for an experiment named "r4771", again using the antennas
+PT and MK, would be found in:
+
+\code
+/home/oper/TestData/r4771/pt/FileList
+/home/oper/TestData/r4771/mk/FileList
+\endcode
+
+\anchor eliminateStations 
+<h6>Eliminate Stations With "-1" Code</h6>
+
+This check box will cause the GUI to not use stations that have a
+"-1" in the "code" column associated with their scan section in
+the "source" .vex file.  The lines associated with unused
+scans are either deleted if \ref exciseScans "Excise Unused Scans from .vex File"
+is checked (see below), or are commented out if it is not
+checked.  
+
+\anchor eliminateStationsExamples 
+<h6>Examples</h6>
+
+The following lines from the \$SCHED section of a .vex file
+(note -1 in final column of station "Hb" line):
+
+\code
+scan 329-1830b;
+    start = 2014y329d18h30m00s;
+    mode = GEOSX-SX;source = 0537-441;
+    station = Hb :    0 sec :    60 sec :     0 ft : 1A : &ccw : -1;
+    station = Ke :    0 sec :    93 sec :     0 ft : 1A : &ccw : 1;
+    station = Ww :    0 sec :   122 sec :     0 ft : 1A : &ccw : 1;
+    station = Yg :    0 sec :   122 sec :     0 ft : 1A : &ccw : 1;
+endscan;
+\endcode 
+
+are replaced by this if \ref exciseScans "Excise Unused Scans from .vex File"
+is checked:
+
+\code
+scan 329-1830b;
+    start = 2014y329d18h30m00s;
+    mode = GEOSX-SX;source = 0537-441;
+    station = Ke :    0 sec :    93 sec :     0 ft : 1A : &ccw : 1;
+    station = Ww :    0 sec :   122 sec :     0 ft : 1A : &ccw : 1;
+    station = Yg :    0 sec :   122 sec :     0 ft : 1A : &ccw : 1;
+endscan;
+\endcode 
+
+or this if it is not checked:
+
+\code
+scan 329-1830b;
+    start = 2014y329d18h30m00s;
+    mode = GEOSX-SX;source = 0537-441;
+#    station = Hb :    0 sec :    60 sec :     0 ft : 1A : &ccw : -1;
+    station = Ke :    0 sec :    93 sec :     0 ft : 1A : &ccw : 1;
+    station = Ww :    0 sec :   122 sec :     0 ft : 1A : &ccw : 1;
+    station = Yg :    0 sec :   122 sec :     0 ft : 1A : &ccw : 1;
+endscan;
+\endcode 
+
+Doing this duplicates behavior found in hardware
+correlators.  Stations removed in this manner may be restored
+by hand using the \ref experimentScanStationTimeline "Scans/Station Timeline".  By
+default this box is checked - uncheck it if you don't want this
+behavior.
+
+\anchor exciseUnusedScans
+<h6>Excise Unused Scans from .vex File</h6>
+
+When creating a new experiment the user often eliminates scans
+contained in the original .vex file.  When this happens the
+.v2d file must create a list of all remaining scans. 
+Unfortunately there is a limit to the total number of characters
+that can be used to do this, and as experiments get larger and
+include more scans this limit is invariably encountered.  The
+.v2d file can also request "all" scans in the .vex file using very
+few characters.  As a kludge to get around the character
+limit, the unused scans are instead removed from the .vex file
+altogether and the "all" request is left in the .v2d file. 
+The .vex file without the scans is a copy, placed in the pass
+directory for the new experiment.  The original "source" .vex
+file is not altered.
+
+This setting will also remove stations from scans when they have
+been selectively eliminated (either using the "-1" code as
+described \ref eliminateStations "above" or by
+the user when creating an experiment).  When the "Excise"
+option is not selected, stations are commented out.
+
+The primary motivation for this option (long scan lines in the
+.v2d file) has been eliminated since its introduction, so by
+default it is "off".  The option has been left in place in
+the event it serves some other purpose.<br>
+
+\section jobProcessingSettings Job Processing Settings
+
+The Job Settings govern how individual jobs are run, both when
+started directly by the user and when automatically run by the
+scheduler.  When applied to a job that is started individually
+using the \ref jobControlWindow "Job Control Window"
+these settings are simply initial "suggestions" that can be changed
+by the user.  Scheduled jobs, however, will implement them as
+set.
+
+\image html settings_JobProcessingSettings.png
+
+\subsection jobProcessingSettingsComponents Job Processing Settings Components
+
+<ul>
+  <li>\ref processingHeadNode "Head Node"
+  <li>\ref processingUseHeadNode "Use Head Node in Processing"
+  <li>\ref dataSourceDefaults "Data Source Defaults"
+  <li>\ref stopJobWhenConfigFails "Stop Job When Configuration Test Fails"
+  <ul>
+    <li>\ref processingNodesPerDataSource "Unique Node per Data Source"
+    <li>\ref processingAssignBasedOnPath "Assign Based on Path"
+    <li>\ref processingShareDataNodesWithProcessing "Share Data Nodes With Processing"
+    <li>\ref processingShareDataNodesBetweenJobs "Share Data Nodes Between Jobs"
+    <li>\ref processingThreadsPerDataSource "Threads Per Data Source"
+    <li>\ref processingRestrictDataSources "Restrict Data Sources"
+  </ul>
+  <li>\ref processorDefaults "Processor Defaults"
+  <ul>
+	<li>\ref processingRunUsing "Run Using All/Specified Number of Nodes"
+	<li>\ref processingWithThreads "With All/Specified Number of Threads"
+	<li>\ref processingForEach "For Each Baseline/Job"
+	<li>\ref processingRestrictNodess "Restrict Nodes to List/Pattern"
+  </ul>
+  <li>\ref schedulerSettings "Scheduler Settings"
+  <ul>
+	<li>\ref runScheduledJobs "Run Scheduled Jobs Sequentially/Simultaneously"
+	<li>\ref resourceTimeLimit "Resource and Processing Time Limits"
+	<li>\ref tryToSkipMissing "Try To Skip Missing Stations"
+  </ul>
+  <li>\ref processingBestPractices "Best Practices?"
+</ul>
+
+\anchor processingHeadNode
+<h6>Head Node</h6>
+
+Every DiFX job has a "head node" that spawns mpi processes on itself and other nodes
+based on the content of <code>.machines</code> and <code>.threads</code> files
+and collates processed data into <code>.difx</code> output.
+Any available processor can be assigned to do this using the "Head Node" field.
+Confusingly, this documentation often refers to the processor running <i>guiServer</i>
+as the "head node", but here the meaning is different.
+
+\anchor processingUseHeadNode
+<h6>Use Head Node in Processing</h6>
+
+The "head node" is the processing node that distributes mpi run activities to other
+processors and collates the results when running a DiFX job.  If you have many processing
+nodes you may want to dedicate an entire node to these tasks.  It is convenient and
+tidy to make your head node the same node that it running <i>guiServer</i> but this
+is not required.
+
+\anchor stopJobWhenConfigFails
+<h6>Stop Job When Configuration Test Fails</h6>
+
+Before a job is actually run by DiFX, a "configuration test" is run.  This test the content
+of the .input and .calc files associated with the job to assure that it can run smoothly.  If
+this test fails, you may or may not want the job to run anyway.  If you want to run the job
+regardless of the results of the configuration test, uncheck this item.
+
+\subsection dataSourceDefaults Data Source Defaults
+
+\anchor processingNodesPerDataSource
+<h6>Unique Node per Data Source</h6>
+
+Pick this item if you want the GUI to assign unique nodes to each data source within a
+job.  Setting this item requires that you have at least as many processors/data sources
+as you have stations in your job, as each station will have its own data stream.
+
+\anchor processingAssignBasedOnPath
+<h6>Assign Based on Path</h6>
+
+Check this box to assign specific nodes as the data sources for different data paths.
+When data come from a path (as specified in the .input file), the path will be compared
+to a list of path/processor assignment pairs - if the path in the path/processor pair
+contains the data path in the .input file, the associated processor will be used as
+a data source.  The list of path/processor assignment pairs can be edited using
+the "Path Assignment" button, which brings up a small menu:
+
+\image html settings_pathAssignments.png
+
+This menu allows you to add any number of path/processor assignments.  The path you simply
+type in the left field - it allows tab-completion.  The right field provides a pull-down
+menu of all processors that are visible.  You can also type directly into this field
+if the processor you want is not visible (although it not being visible is probably something
+you need to worry about).
+
+This setting can be useful if, for instance, not all of your processors have access
+to every part of your data storage.  DiFX has no way of knowing this, and will assign
+processors to be data sources essentially at random.  Instead, you can force a particular
+processor that you know has access to the data to be used.
+
+\anchor processingShareDataNodesWithProcessing
+<h6>Share Data Nodes With Processing</h6>
+
+This setting allows the GUI to assign a node that is acting as a data source to run
+as a processor as well.  Tests at USNO have shown that setting a job to run this way does
+not adversely impact processing - which implies that acting as a data source is not
+taxing the processors much.  In fact, it may well slightly improve overall processing time,
+presumably because doing some amount of processing on a data source node means that some
+amount of data need not be gathered from source and then "hopped" to another processor - they
+are already where they need to be.
+
+\anchor processingShareDataNodesBetweenJobs
+<h6>Share Data Nodes Between Jobs</h6>
+
+This setting allows different jobs to use the same data source node when they are processing
+simultaneously.  If it is not set, the GUI will search for unique, unused nodes to use
+as data sources when starting each job, disregarding those that are already data sources.
+
+\anchor processingThreadsPerDataSource
+<h6>Threads Per Data Source</h6>
+
+This field allows you to set the number of threads that will be assigned to each data source.
+Doing so restricts the threads from use for processing (when you pick \ref processingWithThreads "All Threads"
+for processing).  
+
+\anchor processingRestrictDataSources
+<h6>Restrict Data Sources </h6>
+
+This setting can be used to restrict data sources to an assigned list of nodes.  Clicking the
+"Allowed Sources" button brings up a simple menu for editing the list of nodes:
+
+\image html settings_sourceAssignments.png
+
+The menu provides pull-down fields that have access to all visible nodes.  You may also
+type directly in these fields to assign names that for whatever reason are not visible to
+the GUI.
+
+\subsection processorDefaults Processor Defaults
+
+\anchor processingRunUsing
+<h6>Run Using All/Specified Number of Nodes</h6>
+
+Each DiFX job will be processed using one or more nodes in the DiFX cluster.  This
+checkbox choice allows you to force all processor "nodes" to be used for each job, or a selected
+number of them to be used.  If you select a specified number, the GUI trusts you to make
+sensible choices, for instance a number that does not exceed the total number of
+processors in your correlator cluster.  When used with the scheduler picking too many
+nodes can lead to \ref topLevelResourceWait "resource waits".
+
+\anchor processingWithThreads
+<h6>With All/Specified Number of Threads</h6>
+
+This setting determines how many threads within a processor are used for each job.
+You can devote all of the threads in each processor, or pick your own number of threads.
+It is easiest to use all threads, as this number is independent of the number that
+actually exist.
+
+The "Min" field sets a minimum number of threads that will be used when "All Threads"
+is chosen.  This must be a plausible number - set too high and the system will hange on
+\ref topLevelResourceWait "resource waits".
+
+\anchor processingForEach
+<h6>For Each Baseline/Job</h6>
+
+The GUI will apply the specifications of the \ref processingRunUsing "Run Using" :
+\ref processingWithThreads "With" "sentence" to either a complete DiFX job, or each
+baseline within a job.  The latter setting allows you to scale the resources to the
+complexity of a job (which roughly scales with the number of baselines).  If you apply
+the specifications to baselines, care should
+be taken to assure that the resources (processors and threads) exist to do so, as
+the whole job is run at once.  For instance, if you specify 10 processors to a job
+with 4 baselines, your job will require 40 processors to run at all.
+
+In practice this option is usually left on "Job".
+
+\anchor processingRestrictNodess
+<h6>Restrict Nodes to List/Pattern</h6>
+
+Within the confines of whatever other instructions you have in place to govern the number
+of processors assigned to each job, the GUI will allocate any processors that it sees
+(they must be running \ref runMk5daemon "mk5daemon" in order to be seen) to a DiFX job.
+
+You can use these settings to restrict your DiFX job processing to specific processors.
+This is useful when you are sharing a multi-processor correlator with other users or activities - it allows
+you to commit your work to a subset of the total processor inventory, leaving the
+remaining processors free for other uses.
+
+There are three ways in which you can restrict your processors:
+
+<ol>
+  <li>Define a <b>list</b> of processors by clicking the "List" checkbox.  The "Allowed List"
+  button will launch a clickable list of all processors visible to the GUI.
+  <li>Choose a <b>pattern</b> of processor names using a regular expression by clicking "Pattern".
+  Processors with names that match the pattern will be used.
+  <li><b>Do nothing</b> by leaving neither "List" nor "Pattern" clicked.  This will allow
+  all available processors to be used.
+</ol>
+
+These settings govern which processors are chosen by the scheduler, as well as the
+default processors chosen in the \ref jobControlMachinesList "Machines List" section of
+the Job Control menu.
+
+\subsection schedulerSettings Scheduler Settings
+
+Scheduler Settings govern the operation of the job scheduler. The
+job scheduler can be set to run a large number of jobs
+automatically. For details on scheduling jobs and monitoring the
+process of the scheduler, see <a
+  href="main_window_content.html#Running_Jobs_With_the_Scheduler">Running
+  Jobs With the Scheduler</a>.  Note that the scheduler also
+implements all of the other Job Processing Settings in setting up
+scheduled jobs - those settings here apply only to their actual
+running.
+
+\anchor runScheduledJobs
+<h6>Run Scheduled Jobs Sequentially/Simultaneously</h6>
+  
+When more than one job is scheduled (this is generally the case
+when using the scheduler), should each be run on its own, i.e.
+with the entire DiFX processing cluster to itself, of should more
+than one be run at a time?  If you choose "Sequentially" the
+scheduler will run each job on its own, started each subsequent
+job only after the previous one has completed.  If you choose
+"Simultaneously" any number of jobs may be run at the same
+time.  You must set a maximum number that can be run
+simultaneously.
+
+In testing at USNO it was determined that, for the most part,
+there is no advantage to running more than one job at a time, and
+there may be a slight penalty.  But it is not difficult to
+imagine that simultaneous processing may be advantageous under
+some circumstances and/or at different installations.
+
+\anchor resourceTimeLimit
+<h6>Resource and Processing Time Limits</h6>
+
+The scheduler can only plow through a long list of jobs if jobs
+themselves complete, especially if they are being run
+sequentially.  That being said, it is not unheard of for a
+job to hang up for any number of reasons.  The Resource
+Allocation Time Limit and Processing Time Limit specify a number
+of seconds the scheduler should wait, after not receiving any
+feedback (messages, data, whatever) from a job before "giving up"
+on the job and moving on in the schedule.  "Resource
+Allocation" applies to the set up of processors and data sources,
+and "Processing" applies to actual DiFX processing.  Any job
+that is abandoned is appropriately labeled in the Queue Browser.
+
+The Resource and Processing Time Limits are applied only if their
+associated check boxes are selected.
+
+\anchor tryToSkipMissing
+<h6>Try To Skip Missing Stations</h6>
+
+When this option is selected the scheduler will attempt to alter
+and reschedule jobs that fail due to non-existent data for one or
+more required stations.  It does this by rebuilding the job
+such that it no longer includes the missing station(s).
+Details are \ref topLevelSkippingMissingStations "here".
+
+<i>This option is historical - it was included to fix a problem with early
+versions of DiFX.  If you are not certain you need it, <b>do not</b>
+use it!</i>
+
+\subsection processingBestPractices Best Practices?
+
+The Job Processing Settings provide a good number of controls to fiddle with,
+all of which may have an impact on the time it takes to complete a scheduled job or list
+of jobs.  But what works best?  The simple answer is that it depends on your hardware
+configuration, and even if that is known it is fiendishly difficult to sort out
+with any certainty.  The best approach would be to run tests under carefully controlled
+conditions to emperically determine what works best at your own installation (or, at
+least to convince yourself that you are doing this).  Here are some of the conclusions
+derived from test results at USNO - your own results may vary.
+
+<h6><i>Don't Bother Changing the Head Node</i></h6>
+
+The tasks of the processing "head node" (spawning mpi jobs and collating results)
+are fairly light-weight.  Moving the head node around appears to have no impact, positive
+or negative, on processing speed.  There are imagineable circumstances where you 
+might want to force the head node to be a particular processor, but unless you have
+a need it makes most sense from an organizational point of view to leave the processing
+head node as the same node that is running <i>guiServer</i> (and, if you have enough
+processors, to <i>not</i> use the head node for any actual processing).
+
+<h6><i>Don't Try to Be Cute With the Threads - Use Them All</i></h6>
+
+The \ref processorDefaults "Processor Defaults" settings allow you to assign a number
+of threads to each job.  You might have a compelling reason to do this, such as 
+allowing the processor to do something else computationally intensive, but if not,
+don't bother messing around with the threads.  If you are using a processor, use all
+of its available threads.
+
+<h6><i>Running Jobs Simultaneously Doesn't Buy You Anything</i></h6>
+
+At least in USNO's experience, running more than one job at the same time does not
+help multiple jobs run faster.  If you are running a list of jobs, run them one after the other,
+and throw all of your resources at each job.  
+
+\section databaseConfiguration Database Configuration
+
+Database trouble?  See \ref troubleShootingDatabase "Trouble-shooting the Database Configuration"
+    
+The Database Configuration settings control the access the GUI has
+to the DiFX database.  The DiFX database contains settings and
+status for experiments, passes, and jobs that appear in the Queue
+Browser window.  The GUI remotely accesses the database using a
+network connection (the database can also be consulted on the
+command line by running a client program either remotely or on the
+DiFX database host).  Neither the GUI nor DiFX itself has any requirement that
+you use a database, and in fact at the current time the database capabilities
+have been unused for a while - it is likely that a lot of them don't work.
+
+\image html settings_DatabaseConfiguration.png
+
+\subsection databaseConfigurationComponents Database Configuration Components
+
+<ul>
+	<li>\ref databaseUseDatabase "Use Data Base"
+	<li>\ref databaseVersion "Version"
+	<li>\ref databaseHost "Host"
+	<li>\ref databaseUser "User"
+	<li>\ref databasePort "Port"
+	<li>\ref databasePassword "Password"
+	<li>\ref databaseDifxDatabase "DifX Database"
+	<li>\ref databaseManagementSystem "Management System"
+	<li>\ref databaseDriver "Driver"
+	<li>\ref databasePeriodicUpdate "Periodic Update"
+</ul>
+
+\anchor databaseUseDatabase
+<h6>Use Data Base</h6>
+
+This checkbox determines whether the GUI is using the database at
+all.  If checked, changes to experiments, passes, and jobs in
+the Queue Browser will be reflected in the database, and items in
+the database will appear in the Queue Browser.  If not,
+experiments, passes, and jobs will only appear in the Queue Browser
+if they are created by the same instance of the GUI - any
+information about them will be lost if the GUI is shut down and
+restarted.  Beyond this capability, the database is not
+required - the GUI will still be able to run DiFX without it.
+
+\anchor databaseVersion
+<h6>Version</h6>
+
+The version field is not currently in use, but may be used in the
+  future to coordinate the GUI with changes that may be made to the
+  database structure.  It is set to the most recent version of
+  the database that the GUI can properly parse (at the moment this
+  is the <i>only</i> version it
+  can parse).  Changing it will have no effect.
+  
+\anchor databaseHost
+<h6>Host</h6>
+
+The database Host is the hostname of the host that contains the DiFX
+database.  The named host should be accessible through normal
+network connections, and the hostname itself must be recognized by
+the name lookup scheme on the GUI machine.  The <a
+  href="#Database_Ping_Test">ping test</a> can be used to test the
+hostname.
+
+\anchor databaseUser
+<h6>User</h6>
+
+The user is the username for the DiFX database.  This is the
+name you would use when running the a database command line client
+on the DiFX host as in the following example (using a mySQL client):
+
+\code
+mysql -u USER
+\endcode
+
+It does not necessarily match the username you may use to log into
+the DiFX host.  The database must be set up to recognize this
+user, <i>including access to the database from the host where the DiFX GUI is running</i>.
+See <a href="#Database_Remote_Access">Problems with Database Remote
+  Access</a> in the trouble-shooting section for details.
+  
+\anchor databasePort
+<h6>Port</h6>
+
+The JDBC Port is the port over which remote communication with the
+database occurs.  The default port for most mySQL installations
+is 3306, so that is probably what you should be setting yours to (if
+you are using the mySQL database management system).  Consult
+the <code>/etc/services</code> file on the database host to find
+out which port is being used.
+
+\anchor databasePassword
+<h6>Password</h6>
+
+This is the password for the username in the database.  You would use 
+this password when prompted by the database command
+line client on the database host.  This password is set by the
+database administrator or by the user through the database
+client.  It is not necessarily the same password you would use
+to log into the database host.
+
+\anchor databaseDifxDatabase
+<h6>DifX Database</h6>
+
+The DifX Database is the name of the database.  At the time of
+this writing the rest of the DiFX software (difxqueue, etc) uses the
+database named "difxdb", so that is the default value for this
+field.  Unless you feel you know better, it probably shouldn't
+be changed.
+
+\anchor databaseManagementSystem
+<h6>Management System</h6>
+
+The database management system is the "application" used to
+administer and access the DiFX database for your location, such as
+mySQL, Postgresql, etc. (this is sometimes called the database
+"vendor").  The management system is set up by your database
+administrator when the DiFX database is initialized (this is all
+done using a management system-specific "schema", as described in
+the database documentation).  Management systems known to
+function with the GUI include mySQL and Postgresql.  If you
+change the management system you will also have to change the
+driver - see the table below for drivers that are known to work
+with each management system.
+
+\anchor databaseDriver
+<h6>Driver</h6>
+
+This is the "driver" used by Java to give the GUI access to the
+database.  The driver is specific to the database management
+system, and must be something Java has access to.  The GUI is
+delivered with drivers appropriate for a couple of popular (and
+free) management systems, as outlined in the table below.
+
+<table style="text-align: left; width: 814px; height: 91px;"
+  border="1" cellpadding="2" cellspacing="2">
+    <tr>
+      <td style="vertical-align: top;"><b>Management System</b>
+      <td style="vertical-align: top;"><b>Driver</b>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">mySQL
+      <td style="vertical-align: top;">com.mysql.jdbc.Driver
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">Postgresql
+      <td style="vertical-align: top;">org.postgresql.Driver
+    </tr>
+</table>
+
+If your database installation uses a different management system,
+you may wish to petition the GUI development group to include it.
+
+\anchor databasePeriodicUpdate
+<h6>Periodic Update</h6>
+
+This check box tells the Queue Browser to automatically check the
+database for changes after a given time interval, which you can
+set.  The usefulness of automatic checking is dependent on
+whether or not other users might be changing the database while you
+are running the GUI.  If your GUI instance is the only source
+of database changes it is essentially pointless as all changes you
+make will be recognized anyway.  If, on the other hand, other
+users are making changes, the automatic update will make them appear
+in real time (or reasonably close to it if you make your interval
+short).
+
+\subsection troubleShootingDatabase Trouble-shooting the Database Configuration
+
+A number of things can go wrong when trying to access the DiFX
+database remotely.  The Database Configuration panel contains a
+few tests that can be used to troubleshoot the database connection.
+
+\anchor databasePingTest
+<h6>Ping Test</h6>
+
+The Ping Test is run by hitting the "Ping Host" button.  It can
+be used to establish two things:
+
+<ol>
+  <li>Can the name for the DiFX host be resolved - i.e. does the
+    host name make any sense?
+  <li>Is the host reachable with the current network configuration -
+    i.e. is it out there?
+</ol>
+
+The Ping Test performs attempts six "pings" of the named host,
+reporting the results in the results panel.  A successful ping
+test will return statistics for each of the pings along with an
+overall statistical summary:
+
+<img style="width: 476px; height: 196px;" alt=""
+  src="images/settings/good_ping_test.gif">
+
+Ping Test failures will produce alarming red text in the results
+panel.  The reported failure should give you an idea what is
+wrong.  For instance, the following indicates that the given
+hostname cannot be resolved, either by your local host table or by
+your name server:
+
+<img style="width: 456px; height: 191px;" alt=""
+  src="images/settings/bad_hostname_ping_test.gif">
+  
+The following screen would indicate a bad network connection at the
+GUI machine:
+
+<img style="width: 465px; height: 189px;" alt=""
+  src="images/settings/bad_network_ping_test.gif">
+  
+Finally, the name may be resolved and the network may be good but
+the named host may not answer either because it is down or it is not
+properly connected to the network:
+
+<img style="width: 501px; height: 186px;" alt=""
+  src="images/settings/lost_host_ping_test.gif">
+
+\anchor databaseConnectionTest
+<h6>Database Connection Test</h6>
+
+The Database Connection Test makes a comprehensive test of the
+current database settings by trying to access the DiFX job queue and
+getting a list of all jobs out of it (this is exactly what the Queue
+Browser does to access the queue data).  It is run using the
+"Test Database" button.  When run, the test forms a URL out of
+host name and port number (this URL is reported in parenthesis in
+the results panel), then attempts to create a connection using the
+URL, the user, and the password.  If this is successful, the
+DiFX database is consulted to obtain a list of all queued
+jobs.  The Database Connection Test reports the number of jobs
+in the queue and exits.
+
+<img style="width: 646px; height: 188px;" alt=""
+  src="images/settings/good_database_test.gif">
+  
+\anchor databaseRemoteAccessProblems
+<h6>Problems with Database Remote Access</h6>
+
+The following is a list of some of the errors that might be produced
+by the Database Connection Test and what can be done about
+them.  Note that these errors may also be reported in the
+Message Window as the GUI tries to access the DiFX queue in the
+database.
+
+<h6><code><i>SQLException: Communications link failure The last packet sent successfully to the server was 0 milliseconds ago.<br>
+The driver has not received any packets from the server.</i></code></h6>
+
+This error indicates that the connection to the remote mySQL
+database failed.  Check that the DiFX host exits and in on the
+network (using the \ref databasePingTest "Ping Test").
+Then remote log into that host and see if the mySQL server is
+running:
+
+\code
+ps -ef | grep mysql
+\endcode
+
+Both <i>mysql_safe</i> and <i>mysqld</i> should be running. 
+The latter is the mySQL server, the former is used to start it
+when/if it shuts down.  In a proper installation of mySQL these
+programs should be running automatically after boot up.  If
+they ARE running, see if a mySQL client can be run (the path may be
+different):
+
+\code
+/usr/bin/mysql</pre>
+\endcode
+
+If it cannot be run, this may indicate an incorrect or incomplete
+mySQL installation.
+
+<h6><code><i>SQLException: Access denied for user 'difxw'@'10.1.2.45' (using password: YES)</i></code></h6>
+
+Access to the database can be denied for a number of reasons. 
+Check your user name and password (these need to be mySQL user name
+and password, not necessarily the user name and password you use to
+remotely log into the DiFX host).  If you can, run the mySQL
+client on the DiFX host as root from the command line (you will
+require the root password):
+
+\code
+/usr/bin/mysql -u root -p
+\endcode
+
+Then generate a list of all users and hosts recognized by mySQL:
+
+\code
+mysql> select user, host from mysql.user;
++------+---------------------+
+| user | host                |
++------+---------------------+
+| difx | 10.1.2.45           |
+| difx | 127.0.0.1           |
+| root | 127.0.0.1           |
+|      | localhost           |
+| difx | localhost           |
+| root | localhost           |
+|      | swc02.usno.navy.mil |
+| difx | swc02.usno.navy.mil |
+| root | swc02.usno.navy.mil |
++------+---------------------+
+9 rows in set (0.00 sec)
+\endcode
+
+In this list somewhere should be the user name you are using paired
+with the GUI host name.  Note that mySQL treats user/host pairs
+almost as separate users - you must designate both your user name
+and host as a "user".  To do this, the following command will
+both "create" the user/host pair and give it access to all databases
+(note that "grant" is a complex command used for many things - you
+should consult mySQL documentation before using this command with
+reckless abandon):
+
+\code
+mysql> grant all privileges on *.* to 'difx'@'new.host.name';
+Query OK, 0 rows affected (0.00 sec)
+\endcode
+
+You should then see the user/host pair in the user list:
+
+\code
+mysql> select user, host from mysql.user;
+
++------+---------------------+
+| user | host                |
++------+---------------------+
+| difx | 10.1.2.45           |
+| difx | 127.0.0.1           |
+| root | 127.0.0.1           |
+|      | localhost           |
+| difx | localhost           |
+| root | localhost           |
+| difx | new.host.name       |   <---------------- HERE!!!!
+|      | swc02.usno.navy.mil |
+| difx | swc02.usno.navy.mil |
+| root | swc02.usno.navy.mil |
++------+---------------------+
+10 rows in set (0.00 sec)
+\endcode
+
+The user/host pair needs its own password specification - even if
+your user name already had a password, this is not enough!  To
+specifiy the password for the new user/host pair (or to make sure
+your password is set properly on an existing user/host pair), do the
+following (replaced "PASSWORD" with your new password):
+
+\code
+mysql> set password for 'difx'@'new.host.name'=password( 'PASSWORD' );
+Query OK, 0 rows affected (0.00 sec)
+\endcode
+
+At this point we reach the limits of my personal mySQL knowledge.
+
+<h6><code><i>Database contains 0 jobs</i></code></h6>
+
+This is not an error, however you may encounter this message. 
+It simply means there are no jobs queued in the specified
+database.  If this is not what you expect (because, for
+instance, you've recently queued something), check the value in the
+"DiFX Database" field.  It should match your the name of the
+database where queuing is going on (which is probably "difxdb").
+
+\section settingsEOPSettings EOP Settings
+
+\image html settings_EopSettings.png
+
+\subsection eopSettingsComponents EOP Settings Components
+
+<ul>
+	<li>\ref eopSettingsURL "EOP URL"
+	<li>\ref eopSettingsLeapSeconds "Leap Seconds URL"
+	<li>\ref eopSettingsStaticValue "static value"
+	<li>\ref eopSettingsAutoUpdate "auto update"
+	<li>\ref eopSettingsUpdateNow "Update Now"
+</ul>
+
+\anchor eopSettingsURL
+<h6>EOP URL</h6>
+
+The EOP URL is the location of the "finals" EOP data file that is parsed to produce
+up-to-date EOP data.  This file can be located locally, or remotely.  It is read when
+the GUI is started, and at periodic intervals \ref eopSettingsAutoUpdate "if requested",
+and when the \ref eopSettingsUpdateNow "Update Now" button is pushed.
+The "View" button can be used to view the content of the most recently read file.
+If the view doesn't have anything in it, your EOP URL is pointed to a location that
+doesn't exist, is empty, or is for some reason inaccessible.
+
+\anchor eopSettingsLeapSeconds
+<h6>Leap Seconds URL</h6>
+
+The Leap Seconds URL is the location of the data file that contains the proper value
+for the leap second.  You can see the file content using the "View" button.  The file
+is consulted when the GUI is started, and at periodic intervals \ref eopSettingsAutoUpdate "if requested",
+and when the \ref eopSettingsUpdateNow "Update Now" button is pushed.  The extracted
+leap second value is used only if the associated check box is checked - otherwise the
+\ref eopSettingsStaticValue "static value" is used.
+
+\anchor eopSettingsStaticValue
+<h6>static value</h6>
+
+The static leap second value is used with the EOP data when the "static value" check box
+is checked.  There is a field in which you can put your own (integer) static value.
+
+\anchor eopSettingsAutoUpdate
+<h6>auto update</h6>
+
+Auto update, when checked, triggers the GUI to read the files indicated by the EOP and Leap Second URLs
+to extract the most up to date EOP and leap second information on a periodic basis with an
+interval given by the "every ___ seconds" field.  If not checked, this information is only
+gathered when the GUI is started, or when the "Update Now" button is pushed.
+
+\anchor eopSettingsUpdateNow
+<h6>Update Now</h6>
+
+Pushing the "Update Now" button causes the GUI to read and parse the files indicated by
+the \ref eopSettingsURL "EOP" and \ref eopSettingsLeapSeconds "Leap Second" URLs immediately.  Doing so will have no effect on any scheduled
+\ref eopSettingsAutoUpdate "auto update" activities.
+
+\section documentationLocations Documentation Locations
+
+Documentation Locations provide a list of URLs for different types of useful DiFX-related or
+GUI-related documentation.  As URLs, these locations can be local files, web-based, or
+whatever.
+
+\image html settings_DocumentationLocations.png
+
+\subsection documentationLocationsComponents Documentation Locations Components
+
+<ul>
+	<li>\ref settingsGUIDocs "GUI Docs"
+	<li>\ref settingsUsersGroup "Users Group"
+	<li>\ref settingsDifxWiki "DiFX Wiki"
+	<li>\ref settingsDifxSvn "DiFX SVN"
+</ul>
+
+\anchor settingsGUIDocs
+<h6>GUI Docs</h6>
+
+This is the location of the top-level of <i>this</i> documentation.  When you hit the "Help"
+key in the GUI top-level window, it will open a browser pointed to a file named
+"index.html" at this location.
+
+\anchor settingsUsersGroup
+<h6>Users Group</h6>
+
+The DiFX Users Group is a Google Group where DiFX users and developers can discuss
+DiFX-related topics.  It requires a user name and password to access.
+
+\anchor settingsDifxWiki
+<h6>DiFX Wiki</h6>
+
+The DiFX Wiki contains DiFX documentation, installation instructions, meeting
+information, and other DiFX-related items.  If you are starting with DiFX or trying
+to install it, this is the best place to begin.
+
+You don't need a login to access this location.
+
+\anchor settingsDifxSvn
+<h6>DiFX SVN</h6>
+
+The DiFX SVN setting points to the DiFX software repository, which contains all of
+the DiFX source code for the most current software version as well as the release
+history (to some extent - very old releases may not be readily available).  Currently
+this is using <a href="https://trac.edgewall.org">Trac</a> project management, and
+requires you to log in as a DiFX developer.
+
+
+*/

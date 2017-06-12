@@ -328,6 +328,37 @@ public class V2dFileParser {
         //System.out.println( "\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" );
         
     }
+    
+    //--------------------------------------------------------------------------
+    //  Generate a list of scans contained in this .v2d data.  There may legally
+    //  be repeats in here.  For the moment we are assuming (unsafely) that there
+    //  is only one scan entry.  This will be true for .v2d files the GUI has
+    //  created.
+    //--------------------------------------------------------------------------
+    public Vector<String> scanList() {
+        Vector<String> ret = null;
+        if ( _sections != null ) {
+            for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
+                GenericSection section = iter.next();
+                if ( section.type == RULE_SECTION ) {
+                    RuleSection rule = (RuleSection)section;
+                    if ( rule.scan != null ) {
+                        if ( ret == null )
+                            ret = new Vector<String>();
+                        String[] tmpList = rule.scan.split( "," );
+                        for ( int i = 0; i < tmpList.length; ++i )
+                            ret.add( tmpList[i] );
+                    }
+                }
+            }
+        }
+        //  No scan specifications mean all scans are used.
+        if ( ret == null ) {
+            ret = new Vector<String>();
+            ret.add( "*" );
+        }
+        return ret;
+    }
             
     /*
      * Produce a string with current settings that is valid .v2d file content.

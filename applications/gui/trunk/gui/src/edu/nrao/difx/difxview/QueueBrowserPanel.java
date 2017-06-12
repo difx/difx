@@ -1856,6 +1856,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                     monitor.setVisible( true );
                     for ( Iterator<BrowserNode> iter = _preview.browserTopNode().childrenIterator(); iter.hasNext() && _continueRetrieval; ) {
                         BrowserNode thisExperiment = iter.next();
+                        ExperimentNode currentExperiment = null;
                         if ( thisExperiment.selected() ) {
                             for ( Iterator<BrowserNode> iter2 = thisExperiment.childrenIterator(); iter2.hasNext() && _continueRetrieval; ) {
                                 BrowserNode thisPass = iter2.next();
@@ -1869,10 +1870,28 @@ public class QueueBrowserPanel extends TearOffPanel {
                                                     thisPass.name() + "/" + thisJob.name() + "\" (" +
                                                     count + "/" + _totalCount + ")" );
                                             monitor.progressBar.setValue( count );
-                                            addDefinedJob( thisExperiment.name(), thisPass.name(), thisJob.name(), 
+                                            currentExperiment = addDefinedJob( thisExperiment.name(), thisPass.name(), thisJob.name(), 
                                                     ((LocalJobNode)thisJob).inputFile(), ((LocalBrowserNode)thisExperiment).path() );
                                         }
                                     }
+                                }
+                            }
+                        }
+                        //  Now that we have collected all of the jobs, wait until the .v2d file has been read
+                        //  and use it to produce source names.
+                        int safecounter = 0;  //  I'm putting 10 second limit on this...
+                        while( ( currentExperiment.editor().v2dFileParser() == null || currentExperiment.editor().vexFileParser() == null )
+                                && safecounter < 10 ) {
+                            try { Thread.sleep( 1000 ); } catch( Exception e ) {}
+                            ++safecounter;
+                        }
+                        if ( currentExperiment.editor().v2dFileParser() != null && currentExperiment.editor().vexFileParser() != null ) {
+                            currentExperiment.editor().findScansInJobs();
+                            for ( Iterator<BrowserNode> iter2 = currentExperiment.childrenIterator(); iter2.hasNext(); ) {
+                                PassNode thisPass = (PassNode)iter2.next();
+                                for ( Iterator<BrowserNode> iter3 = thisPass.childrenIterator(); iter3.hasNext(); ) {
+                                    JobNode thisJob = (JobNode)iter3.next();
+                                    thisJob.setSource( currentExperiment.editor() );
                                 }
                             }
                         }
@@ -2368,7 +2387,7 @@ public class QueueBrowserPanel extends TearOffPanel {
      * job has an experiment and pass name along with the full path to an input file.
      * The input file can be parsed for complete job information.
      */
-    public void addDefinedJob( String experiment, String pass, String job, String inputFile,
+    public ExperimentNode addDefinedJob( String experiment, String pass, String job, String inputFile,
             String experimentPath ) {
 
         //  Locate the experiment in the current list...if it is there.
@@ -2522,8 +2541,10 @@ public class QueueBrowserPanel extends TearOffPanel {
             String v2dFileBase = inputFile.substring( 0, inputFile.lastIndexOf( '/' ) + 1 );
             editor.findOldV2dFile( v2dFileBase );
         }
+//        thisJob.setSource( thisExperiment.editor() );
         _browserPane.setBounds( _browserPane.getX(), _browserPane.getY(), _browserPane.getWidth(), _browserPane.getHeight() );
         _browserPane.updateUI();
+        return thisExperiment;
     }   
     
     public JobNodesHeader header() { return _header; }
