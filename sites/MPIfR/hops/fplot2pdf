@@ -1,0 +1,47 @@
+#/!bin/bash
+
+if [ $# -ne 2 ]; 
+then 
+	echo "Usage: fplot2pdf path station"
+	echo ""
+	echo "Creates and combines postscript files of all scans containing the given one-letter station code"
+	echo "If you want to process all stations specify: all"
+	exit 
+fi
+
+path=$1
+st=$2
+
+scan=$(basename $path)
+base=$(dirname $path)
+scan+="_$st"
+pdf="$scan.pdf"
+scan+=".ps"
+
+regex="(.)(.)\.[a-zA-Z]\.(.*)\."
+cd $path
+rm ../$scan
+for file in ??.*.*.*; do
+	if [[ $file =~ $regex ]]
+	then
+		bl1="${BASH_REMATCH[1]}"
+		bl2="${BASH_REMATCH[2]}"
+		num="${BASH_REMATCH[3]}"
+		if (( [ $st == "all" ] ) || ( [ $bl1 == $st ] || [ $bl2 == $st ] ))
+		then
+			echo "processing baseline: $bl1-$bl2"
+			out=$bl1
+			out+=$bl2
+			out+="_"
+			out+=$num
+			fplot -d ../$out.ps $file
+			cat ../$out.ps >> ../$scan
+			rm ../$out.ps
+			ps2pdf ../$scan ../$pdf
+		fi
+	fi
+done
+echo "Created: ./$base/$scan"
+echo "Created: ./$base/$pdf"
+
+

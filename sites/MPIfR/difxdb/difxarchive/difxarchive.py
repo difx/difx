@@ -19,6 +19,7 @@ import datetime
 import shutil
 import subprocess
 import getpass
+import glob
 from difxdb.business.versionhistoryaction import *
 from optparse import OptionParser
 from difxdb.difxdbconfig import DifxDbConfig
@@ -317,6 +318,10 @@ if __name__ == "__main__":
 
     try:
         if not options.dbOnly:
+	    # pack all HOPS subdirectories
+	    glog.glob(path+"/
+
+	
             # obtain kerberos ticket
             getTicket(user)
 
