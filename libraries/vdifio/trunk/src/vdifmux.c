@@ -398,7 +398,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int highestDestIndex = 0;
 	int maxDestIndex;
 	int maxSrcIndex;
-	int bytesProcessed = 0;			/* the program return value */
+	int bytesProcessed = -1;		/* the program return value */
 	int nEnd = 0;				/* number of frames processed after the end of the buffer first reached */
 	int nGoodOutput = 0;
 	int nBadOutput = 0;
@@ -566,7 +566,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		if(destIndex > maxDestIndex)
 		{
 			/* start the shut-down procedure */
-			if(bytesProcessed == 0)
+			if(bytesProcessed == -1)
 			{
 				bytesProcessed = i;
 			}
@@ -586,7 +586,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				if(nValidFrame > vm->nSort || startOutputFrameNumber >= 0)
 				{
 					/* if we are out of the probationary nSort period, start the shut-down procedure */
-					if(bytesProcessed == 0)
+					if(bytesProcessed == -1)
 					{
 						bytesProcessed = i;
 					}
@@ -634,6 +634,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				threadBuffers[chanId] = cur + VDIF_HEADER_BYTES;	/* store pointer to data for later corner turning */
 				
 				++nValidFrame;
+printf("Valid frame: destIndex=%d thread=%d framenum=%d\n", destIndex, threadId, getVDIFFrameNumber(vh));
 
 				if(destIndex > highestDestIndex)
 				{
@@ -700,7 +701,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		}
 	}
 
-	if(bytesProcessed == 0)
+	if(bytesProcessed == -1)
 	{
 		bytesProcessed = i;
 	}
@@ -851,6 +852,8 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		highestDestIndex = maxDestIndex;
 	}
+
+printf("highestDestIndex = %d maxDestIndex = %d i = %d  startFrameNumber = %Ld startOutputFrameNumber = %Ld\n", highestDestIndex, maxDestIndex, i, startFrameNumber, startOutputFrameNumber);
 
 	/* Stage 2: do the corner turning and header population */
 
