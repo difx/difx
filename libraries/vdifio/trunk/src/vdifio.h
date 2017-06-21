@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2016 by Adam Deller / Walter Brisken               *
+ *   Copyright (C) 2009-2017 by Adam Deller / Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -312,6 +312,7 @@ struct vdif_mux_statistics {
   long long bytesProcessed;		/* total bytes consumed from */
   long long nGoodFrame;			/* number of fully usable output frames */
   long long nPartialFrame;		/* number of partial frames produced (EDV4 only) */
+  long long nFillerFrame;		/* number of filler frames produced */
   int nCall;				/* how many calls to vdifmux since last reset */
 
   /* These remaining fields are set each time */

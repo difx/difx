@@ -35,10 +35,12 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.8";
-const char verdate[] = "20170326";
+const char version[] = "0.9";
+const char verdate[] = "20170621";
 
 const int defaultChunkSize = 10000000;
+const int defaultNGap = 100;
+const int defaultNSort = 5;
 
 const double srcRatio = 2.0;
 
@@ -92,7 +94,13 @@ void usage(const char *pgm)
 	fprintf(stderr, "  -e        Use of EDV4 (per-thread validity) in output [default]\n\n");
 	fprintf(stderr, "  --fanout <f>\n");
 	fprintf(stderr, "  -f <f>    Set fanout factor to <f> (used for some DBBC3 data) [default = 1]\n\n");
-	fprintf(stderr, "Note: as of version 0.5 this program supports multi-channel multi-thread input data\n\n");
+	fprintf(stderr, "  --gap <g>\n");
+	fprintf(stderr, "  -g <g>    Set the max gap in frames to <g> [default = %d]\n\n", defaultNGap);
+	fprintf(stderr, "  --sort <s>\n");
+	fprintf(stderr, "  -s <s>    Set the max sort horizon in frames to <s> [default = %d]\n\n", defaultNSort);
+	fprintf(stderr, "  --zero\n");
+	fprintf(stderr, "  -z        Set nGap and nSort to 0 (same as '-g 0 -s 0')\n\n");
+	fprintf(stderr, "Note: as of version 0.5 this program supports multi-channel multi-thread input data.\n\n");
 }
 
 void setSignals()
@@ -128,8 +136,8 @@ int main(int argc, char **argv)
 	int threads[MaxThreads];
 	int nThread;
 	int inputframesize = 0;
-	int nGap = 100;
-	int nSort = 20;
+	int nGap = defaultNGap;
+	int nSort = defaultNSort;
 	struct vdif_mux_statistics stats;
 	int leftover;
 	int srcChunkSize = (int)(defaultChunkSize*srcRatio);
@@ -175,6 +183,11 @@ int main(int argc, char **argv)
 			{
 				--verbose;
 			}
+			else if(strcmp(argv[a], "-z") == 0 || strcmp(argv[a], "--zero") == 0)
+			{
+				nGap = 0;
+				nSort = 0;
+			}
 			else if(strcmp(argv[a], "-n") == 0 || strcmp(argv[a], "--noEDV4") == 0)
 			{
 				flags &= ~VDIF_MUX_FLAG_PROPAGATEVALIDITY;
@@ -182,6 +195,28 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-e") == 0 || strcmp(argv[a], "--EDV4") == 0)
 			{
 				flags |= VDIF_MUX_FLAG_PROPAGATEVALIDITY;
+			}
+			else if(a < argc - 1 && (strcmp(argv[a], "-g") == 0 || strcmp(argv[a], "--gap") == 0))
+			{
+				++a;
+				nGap = atoi(argv[a]);
+				if(nGap < 0)
+				{
+					fprintf(stderr, "Error: gap must be positive integer or zero.  Was '%s'\n", argv[a]);
+
+					return EXIT_FAILURE;
+				}
+			}
+			else if(a < argc - 1 && (strcmp(argv[a], "-s") == 0 || strcmp(argv[a], "--sort") == 0))
+			{
+				++a;
+				nSort = atoi(argv[a]);
+				if(nSort < 0)
+				{
+					fprintf(stderr, "Error: sort must be positive integer or zero.  Was '%s'\n", argv[a]);
+
+					return EXIT_FAILURE;
+				}
 			}
 			else if(a < argc - 1 && (strcmp(argv[a], "-f") == 0 || strcmp(argv[a], "--fanout") == 0))
 			{
@@ -405,7 +440,6 @@ int main(int argc, char **argv)
 	if(bitsPerSample <= 0)
 	{
 		bitsPerSample = getVDIFBitsPerSample(vh);
-		fprintf(stderr, "Got %d bits per sample from the first frame header\n", bitsPerSample);
 	}
 
 	if(getVDIFComplex(vh) != 0)
@@ -423,7 +457,6 @@ int main(int argc, char **argv)
 	}
 
 	nChanPerThread = getVDIFNumChannels(vh);
-	fprintf(stderr, "Got %d chans per thread from the first frame header\n", nChanPerThread);
 	if(nChanPerThread != 1)
 	{
 		fprintf(stderr, "Setting nChanPerThread to %d based on first frame header\n", nChanPerThread);
@@ -465,6 +498,10 @@ int main(int argc, char **argv)
 		{
 			if(leftover < inputframesize)
 			{
+				if(verbose > 1)
+				{
+					fprintf(stderr, "Stopping because leftover=%d < inputframesize=%d\n", leftover, inputframesize);
+				}
 				break;
 			}
 			else
@@ -473,15 +510,16 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if(n < srcChunkSize-leftover)
-		{
-			nSort = -nSort;
-		}
 		V = vdifmux(dest, destChunkSize, src, n+leftover, &vm, nextFrame, &stats);
-
 		if(V < 0)
 		{
 			break;
+		}
+
+		if(n < srcChunkSize-leftover && V == 0)
+		{
+			/* causing end of cycle because no data left and no bytes processed */
+			nSort = -1;
 		}
 
 		if(verbose > 2 && out != stdout)

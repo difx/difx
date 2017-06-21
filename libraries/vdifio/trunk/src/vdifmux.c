@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2015 Walter Brisken                                *
+ *   Copyright (C) 2013-2017 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -371,7 +371,7 @@ void printvdifmux(const struct vdif_mux *vm)
  * Will stop when one of three conditions occurs:
  * 1. dest array size is exceeded
  * 2. src array is exhausted
- * 3. a gap longer than nGap frames is encountered
+ * 3. a gap longer than nGap frames is encountered.  nGap = 0 disables this check
  *
  * Returns:
  *  < 0 on error
@@ -453,14 +453,18 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	/* Stage 1: find good data and put in output array. */
 	for(i = 0; i <= N;)
 	{
-		const unsigned char *cur = src + i;
-		const vdif_header *vh = (const vdif_header *)cur;
+		const unsigned char *cur;
+		const vdif_header *vh;
 		int64_t frameNumber;
 		int destIndex;		/* frame index into destination array */
 		int chanId;
 
+		cur = src + i;
+		vh = (const vdif_header *)cur;
+
 		if( (vm->flags & VDIF_MUX_FLAG_ENABLEVALIDITY) && (getVDIFFrameInvalid(vh) > 0) )
 		{
+			/* invalid bit is set and respected */
 			i += vm->inputFrameSize;
 			++nInvalidFrame;
 
@@ -469,7 +473,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 		if(*((uint32_t *)(cur+vm->inputFrameSize-4)) == FILL_PATTERN)
 		{
-			/* Fill pattern at end of frame or invalid bit is set */
+			/* Fill pattern at end of frame */
 			i += vm->inputFrameSize;
 			nFill += vm->inputFrameSize;
 
@@ -487,6 +491,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		   getVDIFNumChannels(vh) != vm->inputChannelsPerThread ||
 		   getVDIFBitsPerSample(vh) != vm->bitsPerSample)
 		{
+			/* here assume mismatch of key parameters is due to not being synced to the stream */
 			i += 4;
 			nSkip += 4;
 
@@ -576,7 +581,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		{
 			uint64_t *p = (uint64_t *)(dest + vm->outputFrameSize*destIndex);
 			
-			if(destIndex > highestDestIndex + vm->nGap)
+			if(destIndex > highestDestIndex + vm->nGap && vm->nGap > 0)
 			{
 				if(nValidFrame > vm->nSort || startOutputFrameNumber >= 0)
 				{
@@ -636,7 +641,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				}
 				
 				/* Once we have nSort good frames, we know the earliest frame acceptable, so now scrunch forward... */
-				if(nValidFrame == vm->nSort && startOutputFrameNumber < 0)
+				if(nValidFrame == vm->nSort+1 && startOutputFrameNumber < 0)
 				{
 					int firstUsed;
 
@@ -842,7 +847,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 
 	/* If source did not dry up and dest got within nGap of filling, set highestDestIndex to produce (invalid) data through the end of the dest buffer for continuity */
-	if(i < N && highestDestIndex < maxDestIndex && highestDestIndex > maxDestIndex - vm->nGap)
+	if(i < N && highestDestIndex < maxDestIndex && (highestDestIndex > maxDestIndex - vm->nGap || vm->nGap == 0))
 	{
 		highestDestIndex = maxDestIndex;
 	}
@@ -971,6 +976,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		stats->bytesProcessed += bytesProcessed;
 		stats->nGoodFrame += nGoodOutput;
 		stats->nPartialFrame += nPartialOutput;
+		stats->nFillerFrame += nBadOutput;
 
 		stats->srcSize = srcSize;
 		stats->srcUsed = bytesProcessed;
@@ -1004,8 +1010,10 @@ void printvdifmuxstatistics(const struct vdif_mux_statistics *stats)
 		printf("  Number of skipped interloper bytes = %lld\n", stats->nSkippedByte);
 		printf("  Number of fill pattern bytes       = %lld\n", stats->nFillByte);
 		printf("  Total number of bytes processed    = %lld\n", stats->bytesProcessed);
+		printf("  Total number of bytes output       = %lld\n", stats->outputFrameSize*(stats->nGoodFrame+stats->nPartialFrame+stats->nFillerFrame));
 		printf("  Total number of good output frames = %lld\n", stats->nGoodFrame);
 		printf("  Total number of partial out frames = %lld\n", stats->nPartialFrame);
+		printf("  Total number of filler out frames  = %lld\n", stats->nFillerFrame);
 		printf("Properties of output data from recent call:\n");
 		printf("  Input frame size                   = %d\n", stats->inputFrameSize);
 		printf("  Output frame size                  = %d\n", stats->outputFrameSize);

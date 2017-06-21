@@ -1,3 +1,9 @@
+Version 1.2
+~~~~~~~~~~~
+* Post DiFX-2.5
+* Some improvements in multiplexing very sparse data
+* Options in vmux to change gap/sort tuning parameters
+
 Version 1.1
 ~~~~~~~~~~~
 * Post DiFX-2.4
