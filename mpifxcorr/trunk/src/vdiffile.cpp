@@ -313,10 +313,6 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 	bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
 	nGap = framespersecond/4;	// 1/4 second gap of data yields a mux break
-	if(nGap > 1024)
-	{
-		nGap = 1024;
-	}
 	startOutputFrameNumber = -1;
 
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
@@ -327,6 +323,7 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 	{
 		muxFlags |= VDIF_MUX_FLAG_COMPLEX;
 	}
+
 	rv = configurevdifmux(&vm, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, muxFlags);
 	if(rv < 0)
 	{
@@ -461,45 +458,62 @@ int VDIFDataStream::dataRead(int buffersegment)
 
 	destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
-	// Bytes to read
-	bytes = readbuffersize - readbufferleftover;
-
-	// if the file is exhausted, just multiplex any leftover data and return
 	if(input.eof())
 	{
-		// If there is some data left over, just demux that and send it out
-		if(readbufferleftover > minleftoverdata)
-		{
-			vdifmux(destination, readbytes, readbuffer, readbufferleftover, &vm, startOutputFrameNumber, &vstats);
-			readbufferleftover = 0;
-			bufferinfo[buffersegment].validbytes = vstats.destUsed;
+		bytes = 0;
+	}
+	else
+	{
+		// Bytes to read
+		bytes = readbuffersize - readbufferleftover;
+	}
 
-			startOutputFrameNumber = -1;
-		}
-		else
-		{
-			// Really, this should not happen based, but just in case...
-			bufferinfo[buffersegment].validbytes = 0;
-		}
+	// if the file is exhausted, just multiplex any leftover data and return
+	if(bytes > 0)
+	{
+		// execute the file read
+		input.clear();
+
+		input.read(reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytes);
+		bytes = input.gcount();
+
+		bytesvisible = readbufferleftover + bytes;
+	}
+	else
+	{
+		bytesvisible = readbufferleftover;
+	}
+
+	if(bytesvisible <= 0)
+	{
 		dataremaining = false;
+		bufferinfo[buffersegment].validbytes = 0;
+		readbufferleftover = 0;
+
+		cinfo << startl << "bytesvisible == 0.  Assuming end of file." << endl;
 
 		return 0;
 	}
 
-	// execute the file read
-	input.clear();
-
-	input.read(reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytes);
-	bytes = input.gcount();
-
-	bytesvisible = readbufferleftover + bytes;
-
 	// multiplex and corner turn the data
 	muxReturn = vdifmux(destination, readbytes, readbuffer, bytesvisible, &vm, startOutputFrameNumber, &vstats);
 
-	if(muxReturn < 0)
+	if(muxReturn <= 0)
 	{
-		cwarn << startl << "vdifmux returned " << muxReturn << endl;
+		dataremaining = false;
+		bufferinfo[buffersegment].validbytes = 0;
+		readbufferleftover = 0;
+
+		if(muxReturn < 0)
+		{
+			cwarn << startl << "vdifmux returned " << muxReturn << endl;
+		}
+		else
+		{
+			cinfo << startl << "vdifmux returned no data.  Assuming end of file." << endl;
+		}
+
+		return 0;
 	}
 
 	consumedbytes += bytes;
@@ -526,6 +540,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 
 		// look at difference in data frames consumed and produced and proceed accordingly
 		int deltaDataFrames = vstats.srcUsed/(nthreads*inputframebytes) - vstats.destUsed/(nthreads*(inputframebytes-VDIF_HEADER_BYTES) + VDIF_HEADER_BYTES);
+
 		if(deltaDataFrames == 0)
 		{
 			// We should be able to preset startOutputFrameNumber.  Warning: early use of this was frought with peril but things seem OK now.
@@ -674,8 +689,6 @@ void VDIFDataStream::loopfileread()
 	int perr;
 	int numread = 0;
 
-cverbose << startl << "Starting loopfileread()" << endl;
-
 	//lock the outstanding send lock
 	perr = pthread_mutex_lock(&outstandingsendlock);
 	if(perr != 0)
@@ -688,15 +701,12 @@ cverbose << startl << "Starting loopfileread()" << endl;
 	keepreading = true;
 	while(!dataremaining && keepreading)
 	{
-cverbose << startl << "opening file " << filesread[bufferinfo[0].configindex] << endl;
 		openfile(bufferinfo[0].configindex, filesread[bufferinfo[0].configindex]++);
 		if(!dataremaining)
 		{
 			input.close();
 		}
 	}
-
-cverbose << startl << "Opened first usable file" << endl;
 
 	if(keepreading)
 	{
@@ -723,8 +733,6 @@ cverbose << startl << "Opened first usable file" << endl;
 	{
 		diskToMemory(numread++);
 	}
-
-cverbose << startl << "Opened first usable file" << endl;
 
 	while(keepreading && (bufferinfo[lastvalidsegment].configindex < 0 || filesread[bufferinfo[lastvalidsegment].configindex] <= confignumfiles[bufferinfo[lastvalidsegment].configindex]))
 	{
