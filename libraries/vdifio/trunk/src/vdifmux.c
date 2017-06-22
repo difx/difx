@@ -634,7 +634,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				threadBuffers[chanId] = cur + VDIF_HEADER_BYTES;	/* store pointer to data for later corner turning */
 				
 				++nValidFrame;
-printf("Valid frame: destIndex=%d thread=%d framenum=%d\n", destIndex, threadId, getVDIFFrameNumber(vh));
 
 				if(destIndex > highestDestIndex)
 				{
@@ -852,8 +851,6 @@ printf("Valid frame: destIndex=%d thread=%d framenum=%d\n", destIndex, threadId,
 	{
 		highestDestIndex = maxDestIndex;
 	}
-
-printf("highestDestIndex = %d maxDestIndex = %d i = %d  startFrameNumber = %Ld startOutputFrameNumber = %Ld\n", highestDestIndex, maxDestIndex, i, startFrameNumber, startOutputFrameNumber);
 
 	/* Stage 2: do the corner turning and header population */
 
