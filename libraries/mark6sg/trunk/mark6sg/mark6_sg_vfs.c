@@ -618,7 +618,7 @@ ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
                     rc = pthread_cond_timedwait(&pool->any_inputarea_done, &vfd->lock, &abstimeout);
                     if (rc == ETIMEDOUT)
                     {
-                        printf(" DBG : writer timed out waiting for a free io area, trying again\n");
+                        if (m_m6sg_dbglevel>2) { printf("writer timed out waiting for a free io area, trying again\n"); }
                     }
                 }
                 pthread_mutex_unlock(&vfd->lock);
@@ -633,17 +633,17 @@ ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
                         pool->active_area = idx;
                         pthread_mutex_unlock(&vfd->lock);
                         idx = pool->active_area;
-                        printf(" DBG : writer switching to next free area %d\n", idx);
+                        if (m_m6sg_dbglevel>2) { printf("writer switching to next free area %d\n", idx); }
                         break;
                     }
                 }
-     
+
                 // Success?
                 if (pool->inputarea_writeout_complete[idx] == 1)
                 {
                      break;
                 }
-                printf(" DBG : writer switching missed free area, thought %d\n", idx);
+                if (m_m6sg_dbglevel>2) { printf("writer switching missed free area, thought %d\n", idx); }
             }
             assert(pool->inputarea_writeout_complete[idx] == 1);
             assert(pool->inputarea_newdata_pushed[idx] == 0);
@@ -671,7 +671,7 @@ ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
 
     struct mmsghdr *msgs;
     struct iovec *iovecs;
- 
+
     // Catch some error conditions
     if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
     {
@@ -721,7 +721,7 @@ ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
                     rc = pthread_cond_timedwait(&pool->any_inputarea_done, &vfd->lock, &abstimeout);
                     if (rc == ETIMEDOUT)
                     {
-                        printf(" DBG : writer timed out waiting for a free io area, trying again\n");
+                        if (m_m6sg_dbglevel>2) { printf("writer timed out waiting for a free io area, trying again\n"); }
                     }
                 }
                 pthread_mutex_unlock(&vfd->lock);
@@ -736,17 +736,17 @@ ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
                         pool->active_area = idx;
                         pthread_mutex_unlock(&vfd->lock);
                         idx = pool->active_area;
-                        printf(" DBG : writer switching to next free area %d\n", idx);
+                        if (m_m6sg_dbglevel>2) { printf("writer switching to next free area %d\n", idx); }
                         break;
                     }
                 }
-     
+
                 // Success?
                 if (pool->inputarea_writeout_complete[idx] == 1)
                 {
                      break;
                 }
-                printf(" DBG : writer switching missed free area, thought %d\n", idx);
+                if (m_m6sg_dbglevel>2) { printf("writer switching missed free area, thought %d\n", idx); }
             }
             assert(pool->inputarea_writeout_complete[idx] == 1);
             assert(pool->inputarea_newdata_pushed[idx] == 0);
@@ -1025,7 +1025,7 @@ void* writer_thread(void* p_ioctx)
             rc = pthread_cond_timedwait(&pool->inputarea_newdata_cond[id], &pool->inputarea_mutex[id], &abstimeout);
             if (rc == ETIMEDOUT)
             {
-                printf(" DBG : io %d timed out waiting for user data, trying again\n", id);
+                if (m_m6sg_dbglevel>2) { printf("io %d timed out waiting for user data, trying again\n", id); }
             }
         }
         blocklen = pool->inputarea_append_offset[id];
@@ -1076,7 +1076,7 @@ void* writer_thread(void* p_ioctx)
                 lseek(vfd->fds[n], 0, SEEK_SET);
                 write(vfd->fds[n], &m6hdr, sizeof(m6hdr));
             }
-            printf(" DBG : io %d with block#%zu found VDIF frame size %zu, and blocken %zd\n", id, (size_t)m6blk.blocknum, (size_t)m6hdr.packet_size, (size_t)m6blk.wb_size);
+            if (m_m6sg_dbglevel>2) { printf("io %d with block#%zu found VDIF frame size %zu, and blocken %zd\n", id, (size_t)m6blk.blocknum, (size_t)m6hdr.packet_size, (size_t)m6blk.wb_size); }
         }
 
         // Write block header
@@ -1096,7 +1096,7 @@ void* writer_thread(void* p_ioctx)
         pthread_mutex_lock(&vfd->lock);
         assert(pool->inputareas_busy_count > 0);
         pool->inputareas_busy_count--;
-        printf(" DBG : io %d with block#%zu done writing\n", id, (size_t)m6blk.blocknum);
+        if (m_m6sg_dbglevel>2) { printf("io %d with block#%zu done writing\n", id, (size_t)m6blk.blocknum); }
         pthread_mutex_unlock(&vfd->lock);
         pthread_cond_signal(&pool->any_inputarea_done);
     }
