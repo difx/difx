@@ -602,8 +602,9 @@ ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
             // Signal the area for a background write-out
             pthread_mutex_lock(&pool->inputarea_mutex[idx]);
             pool->inputarea_newdata_pushed[idx] = 1;
-            pthread_mutex_unlock(&pool->inputarea_mutex[idx]);
+            pool->inputarea_writeout_complete[idx] = 0;
             pthread_cond_signal(&pool->inputarea_newdata_cond[idx]);
+            pthread_mutex_unlock(&pool->inputarea_mutex[idx]);
 
             // Wait for an idle area
             while (1)
@@ -618,35 +619,34 @@ ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
                     rc = pthread_cond_timedwait(&pool->any_inputarea_done, &vfd->lock, &abstimeout);
                     if (rc == ETIMEDOUT)
                     {
-                        if (m_m6sg_dbglevel>2) { printf("writer timed out waiting for a free io area, trying again\n"); }
+                        if (m_m6sg_dbglevel>2) { printf("writer timed out waiting for any free io area, trying again\n"); }
                     }
                 }
                 pthread_mutex_unlock(&vfd->lock);
 
                 // Next, locate an idle area
-                for (n = 0; n < vfd->nfiles; n++)
+                for (n = 0; n <= vfd->nfiles; n++)
                 {
                     idx = (idx + 1) % vfd->nfiles;
+                    pthread_mutex_lock(&pool->inputarea_mutex[idx]);
                     if (pool->inputarea_writeout_complete[idx] == 1)
                     {
-                        pthread_mutex_lock(&vfd->lock);
                         pool->active_area = idx;
-                        pthread_mutex_unlock(&vfd->lock);
                         idx = pool->active_area;
                         if (m_m6sg_dbglevel>2) { printf("writer switching to next free area %d\n", idx); }
+                        pthread_mutex_unlock(&pool->inputarea_mutex[idx]);
                         break;
                     }
+                    pthread_mutex_unlock(&pool->inputarea_mutex[idx]);
                 }
 
                 // Success?
-                if (pool->inputarea_writeout_complete[idx] == 1)
+                if (n < vfd->nfiles)
                 {
-                     break;
+                    break;
                 }
                 if (m_m6sg_dbglevel>2) { printf("writer switching missed free area, thought %d\n", idx); }
             }
-            assert(pool->inputarea_writeout_complete[idx] == 1);
-            assert(pool->inputarea_newdata_pushed[idx] == 0);
         }
 
         // Append data
@@ -1033,7 +1033,10 @@ void* writer_thread(void* p_ioctx)
         pthread_mutex_unlock(&pool->inputarea_mutex[id]);
 
         // Quit, ignore too small blocks, etc
-        if (vfd->writers_terminate) break;
+        if (vfd->writers_terminate)
+        {
+            break;
+        }
         if (pool->inputarea_append_offset[id] <= 32)
         {
             pool->inputarea_writeout_complete[id] = 1;
@@ -1085,7 +1088,7 @@ void* writer_thread(void* p_ioctx)
         // Write data
         write(vfd->fds[id], area, blocklen);
 
-        // Done
+        // Mark the area as available for new data
         pthread_mutex_lock(&pool->inputarea_mutex[id]);
         pool->inputarea_append_offset[id] = 0;
         pool->inputarea_newdata_pushed[id] = 0;
@@ -1098,6 +1101,7 @@ void* writer_thread(void* p_ioctx)
         pool->inputareas_busy_count--;
         if (m_m6sg_dbglevel>2) { printf("io %d with block#%zu done writing\n", id, (size_t)m6blk.blocknum); }
         pthread_mutex_unlock(&vfd->lock);
+
         pthread_cond_signal(&pool->any_inputarea_done);
     }
 
