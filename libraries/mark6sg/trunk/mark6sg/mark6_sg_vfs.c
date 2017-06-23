@@ -26,12 +26,17 @@
 // $LastChangedDate$
 //
 //============================================================================
+#include "mark6_sg_vfs.h"
+#include "mark6_sg_utils.h"
+#include "mark6_sg_format.h"
+
 #define _GNU_SOURCE
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glob.h>
 #include <linux/limits.h>
+#include <malloc.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,23 +45,38 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#include "mark6_sg_vfs.h"
+#include <netinet/ip.h>
+#include <sys/socket.h>
 
 // Prefetch (via mmap() MAP_POPULATE-like threaded forced kernel page faults)
 #define USE_MMAP_POPULATE_LIKE_PREFETCH 1  // 1 to enable, 0 to disable
 #define PREFETCH_NUM_BLOCKS_PER_FILE    4
+#define WRITER_FRAMES_PER_BLOCK         5000
 
 // Internal structs
-typedef struct touch_blocks_ctx_tt {
+typedef struct io_thread_ctx_tt {
     pthread_t tid;
     void*     vfd;
     int       file_id;
-} touch_blocks_ctx_t;
+} io_thread_ctx_t;
+
+typedef struct writer_pool_tt {
+    int       active_area;
+    size_t    inputareasize;
+    char*     inputareas[MARK6_SG_MAXFILES];                  // char[framesize*WRITER_FRAMES_PER_BLOCK]
+    off_t     inputarea_append_offset[MARK6_SG_MAXFILES];     // 0..framesize*WRITER_FRAMES_PER_BLOCK-2
+    int       inputarea_writeout_complete[MARK6_SG_MAXFILES]; // [n]='1' if inputarea[n] is available for appending data
+    pthread_mutex_t inputarea_mutex[MARK6_SG_MAXFILES];
+    pthread_cond_t  inputarea_newdata_cond[MARK6_SG_MAXFILES];
+    int             inputarea_newdata_pushed[MARK6_SG_MAXFILES];
+    int             inputareas_busy_count;
+    pthread_cond_t  any_inputarea_done;
+} writer_pool_t;
 
 typedef struct m6sg_virt_filedescr {
     int       valid;
     int       eof;
+    int       mode;
     size_t    len;
     off_t     rdoffset;
     size_t    rdblock;
@@ -67,9 +87,14 @@ typedef struct m6sg_virt_filedescr {
     void*     fmmap[MARK6_SG_MAXFILES];
     off_t     fsize[MARK6_SG_MAXFILES];
     size_t    nblocks;
-    m6sg_blockmeta_t* blks;
-    touch_blocks_ctx_t touch_ctxs[MARK6_SG_MAXFILES];
+    size_t    framesize;
+    pthread_mutex_t    lock;
+    m6sg_blockmeta_t*  blks;
+    io_thread_ctx_t    touch_ctxs[MARK6_SG_MAXFILES];
     volatile int       touch_terminate;
+    io_thread_ctx_t    writer_ctxs[MARK6_SG_MAXFILES];
+    writer_pool_t      writer_pool;
+    volatile int       writers_terminate;
 } m6sg_virt_filedescr_t;
 
 typedef struct m6sg_virt_open_files {
@@ -81,7 +106,10 @@ static pthread_mutex_t vfs_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static m6sg_virt_open_files_t m6sg_open_files_list = { 0, NULL };
 
-void* touch_next_blocks_thread(void* p_ctx);
+static int vdif_packetsize_hint = 10000 + 32;
+
+static void* touch_next_blocks_thread(void* p_ioctx);
+static void* writer_thread(void* p_ioctx);
 
 //////////////////////////////////////////////////////////////////////////////////////
 ////// Library Functions /////////////////////////////////////////////////////////////
@@ -150,6 +178,8 @@ int mark6_sg_open(const char *scanname, int flags)
     vfd = m6sg_open_files_list.fd_list[fd];
     memset((void*)vfd, 0, sizeof(m6sg_virt_filedescr_t));
     vfd->valid = 1;
+    vfd->mode = O_RDONLY;
+    pthread_mutex_init(&vfd->lock, NULL);
     pthread_mutex_unlock(&vfs_lock);
 
     // Gather all metadata about the scan's files
@@ -162,7 +192,7 @@ int mark6_sg_open(const char *scanname, int flags)
         return -1;
     }
 
-    for (i=0; i< vfd->nfiles; i++)
+    for (i = 0; i< vfd->nfiles; i++)
     {
         int flags;
 
@@ -173,7 +203,7 @@ int mark6_sg_open(const char *scanname, int flags)
         if (vfd->fds[i] < 0)
         {
             perror(vfd->filepathlist[i]);
-            vfd->fmmap[i] = NULL; // segfault later
+            vfd->fmmap[i] = MAP_FAILED; // segfault later
             continue;
         }
 
@@ -209,7 +239,7 @@ int mark6_sg_open(const char *scanname, int flags)
     // Trigger a preload of future mmap()'ed data in the background
 #if (USE_MMAP_POPULATE_LIKE_PREFETCH != 0)
     vfd->touch_terminate = 0;
-    for (i=0; i < vfd->nfiles; i++)
+    for (i = 0; i < vfd->nfiles; i++)
     {
         vfd->touch_ctxs[i].vfd = vfd;
         vfd->touch_ctxs[i].file_id = i;
@@ -220,10 +250,132 @@ int mark6_sg_open(const char *scanname, int flags)
     return fd;
 }
 
+/**
+ * Create a scatter-gather file.
+ * Similar behaviour as 'man 2 creat', except that an
+ * error EEXIST is returned if the file already exists.
+ */
+int mark6_sg_creat(const char *scanname, mode_t ignored)
+{
+    const size_t default_framesize = vdif_packetsize_hint;
+    m6sg_virt_filedescr_t* vfd;
+    int fd, i;
+
+    // Ignore any prefixed path
+    if (strrchr(scanname, '/') != NULL)
+    {
+        scanname = strrchr(scanname, '/') + 1;
+    }
+
+    // Catch some error conditions
+    if ((NULL == scanname) || (strlen(scanname)<=2))
+    {
+        errno = EACCES;
+        return -1;
+    }
+
+    // Grab global lock
+    pthread_mutex_lock(&vfs_lock);
+
+    // Allocate memory for full set of 'fd's if not allocated yet
+    if (NULL == m6sg_open_files_list.fd_list)
+    {
+        m6sg_open_files_list.fd_list = (m6sg_virt_filedescr_t**) malloc(MARK6_SG_VFS_MAX_OPEN_FILES*sizeof(m6sg_virt_filedescr_t*));
+        for (fd=0; fd<MARK6_SG_VFS_MAX_OPEN_FILES; fd++)
+        {
+            m6sg_open_files_list.fd_list[fd] = (m6sg_virt_filedescr_t*) malloc(sizeof(m6sg_virt_filedescr_t));
+            memset(m6sg_open_files_list.fd_list[fd], 0x00, sizeof(m6sg_virt_filedescr_t));
+        }
+    }
+
+    // Find next free 'fd'
+    if (m6sg_open_files_list.nopen >= MARK6_SG_VFS_MAX_OPEN_FILES)
+    {
+        errno = ENOMEM;
+        pthread_mutex_unlock(&vfs_lock);
+        return -1;
+    }
+    for (fd=0; fd<MARK6_SG_VFS_MAX_OPEN_FILES; fd++)
+    {
+        if (m6sg_open_files_list.fd_list[fd]->valid == 0)
+        {
+            break;
+        }
+    }
+    assert(fd < MARK6_SG_VFS_MAX_OPEN_FILES);
+    m6sg_open_files_list.nopen++;
+
+    // Prepare file descriptor
+    vfd = m6sg_open_files_list.fd_list[fd];
+    memset((void*)vfd, 0, sizeof(m6sg_virt_filedescr_t));
+    vfd->valid     = 1;
+    vfd->mode      = O_WRONLY;
+    vfd->nblocks   = 0;
+    vfd->len       = 0;
+    vfd->framesize = default_framesize;
+    pthread_mutex_init(&vfd->lock, NULL);
+    pthread_mutex_unlock(&vfs_lock);
+
+    // Name of fragment files
+    vfd->nfiles = mark6_sg_filelist_for_new(scanname, &(vfd->filepathlist), &(vfd->filenamelist));
+    if (vfd->nfiles <= 0)
+    {
+        mark6_sg_close(fd);
+        errno = EEXIST; // TODO: if rootpattern matched no directories (then too nfiles=0!) return ENOENT
+        return -1;
+    }
+
+    // Prepare writer pool infos
+    vfd->writer_pool.inputareasize = vfd->framesize*WRITER_FRAMES_PER_BLOCK;
+    pthread_cond_init(&vfd->writer_pool.any_inputarea_done, NULL);
+
+    // Create fragment files
+    for (i = 0; i < vfd->nfiles; i++)
+    {
+        struct file_header_tag hdr;
+
+        // Defaults
+        vfd->fsize[i] = 0;
+        vfd->fmmap[i] = MAP_FAILED;
+
+        // Create
+        vfd->fds[i] = open(vfd->filepathlist[i], O_RDWR|O_LARGEFILE|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+        if (vfd->fds[i] < 0)
+        {
+            perror(vfd->filepathlist[i]);
+            continue;
+        }
+
+        // Prepare the input buffer and associated disk-writer for this file
+        vfd->writer_ctxs[i].vfd = vfd;
+        vfd->writer_ctxs[i].file_id = i;
+        vfd->writer_pool.inputareas[i] = memalign(getpagesize(), vfd->writer_pool.inputareasize);
+        vfd->writer_pool.inputarea_writeout_complete[i] = 1;
+        pthread_mutex_init(&vfd->writer_pool.inputarea_mutex[i], NULL);
+        pthread_cond_init(&vfd->writer_pool.inputarea_newdata_cond[i], NULL);
+        pthread_create(&vfd->writer_ctxs[i].tid, NULL, writer_thread, &(vfd->writer_ctxs[i]));
+
+        // Write primary header
+        hdr.sync_word     = MARK6_SG_SYNC_WORD;
+        hdr.packet_size   = vfd->framesize; // use default block_size and packet_size in file header, actual ones in each block's header
+        hdr.block_size    = vfd->framesize*WRITER_FRAMES_PER_BLOCK;
+        hdr.block_size   += sizeof(wb_header_tag_v2_t);
+        hdr.version       = 2;
+        hdr.packet_format = 0;  // 0:vdif, 1:mark5, 2:unknown
+        write(vfd->fds[i], &hdr, sizeof(hdr));
+
+    }
+
+    return fd;
+}
+
 
 /**
  * Close a scatter-gather file.
  * Similar behaviour as 'man 2 close'.
+ *
+ * In write mode any remaining data (written data that
+ * does not fill a complete Mark6 sg block) are discarded.
  */
 int mark6_sg_close(int fd)
 {
@@ -246,27 +398,48 @@ int mark6_sg_close(int fd)
         return -1;
     }
 
-#if (USE_MMAP_POPULATE_LIKE_PREFETCH != 0)
-    vfd->touch_terminate = 1;
-    for (i=0; i < vfd->nfiles; i++)
+    if (vfd->mode == O_RDONLY)
     {
-        if (m_m6sg_dbglevel>1) { printf("join() on prefetch thread %d\n", i); }
-        pthread_join(vfd->touch_ctxs[i].tid, NULL);
-    }
+#if (USE_MMAP_POPULATE_LIKE_PREFETCH != 0)
+        vfd->touch_terminate = 1;
+        for (i = 0; i < vfd->nfiles; i++)
+        {
+            if (m_m6sg_dbglevel>1) { printf("join() on prefetch thread %d\n", i); }
+            pthread_join(vfd->touch_ctxs[i].tid, NULL);
+        }
 #endif
+    } 
+    else if (vfd->mode == O_WRONLY)
+    {
+        vfd->writers_terminate = 1;
+        for (i = 0; i < vfd->nfiles; i++)
+        {
+            pthread_cond_signal(&vfd->writer_pool.inputarea_newdata_cond[i]);
+            pthread_join(vfd->writer_ctxs[i].tid, NULL);
+            if (vfd->writer_pool.inputareas[i] != NULL)
+            {
+                free(vfd->writer_pool.inputareas[i]);
+                vfd->writer_pool.inputareas[i] = NULL;
+            }
+            pthread_cond_destroy(&vfd->writer_pool.inputarea_newdata_cond[i]);
+            pthread_mutex_destroy(&vfd->writer_pool.inputarea_mutex[i]);
+        }
+        pthread_cond_destroy(&vfd->writer_pool.any_inputarea_done);
+    }
 
-    for (i=0; i < vfd->nfiles; i++)
+    for (i = 0; i < vfd->nfiles; i++)
     {
         free(vfd->filepathlist[i]);
         free(vfd->filenamelist[i]);
-        if (vfd->fmmap[i] != NULL)
+        if ((vfd->fmmap[i] != NULL) && (vfd->fmmap[i] != MAP_FAILED))
         {
             if (m_m6sg_dbglevel>1) { printf("munmap() ufd=%d file %2d virtual addr %p\n", fd, i, vfd->fmmap[i]); }
             munmap(vfd->fmmap[i], vfd->fsize[i]);
-            vfd->fmmap[i] = NULL;
+            vfd->fmmap[i] = MAP_FAILED;
         }
         close(vfd->fds[i]);
     }
+    pthread_mutex_destroy(&vfd->lock);
     free(vfd->filepathlist);
     free(vfd->filenamelist);
     free(vfd->blks);
@@ -296,7 +469,7 @@ ssize_t mark6_sg_read(int fd, void* buf, size_t count)
     }
 
     vfd = m6sg_open_files_list.fd_list[fd];
-    if (!vfd->valid)
+    if (!vfd->valid || (vfd->mode != O_RDONLY))
     {
         errno = EBADF;
         return -1;
@@ -333,7 +506,7 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
     }
 
     vfd = m6sg_open_files_list.fd_list[fd];
-    if (!vfd->valid)
+    if (!vfd->valid || (vfd->mode != O_RDONLY))
     {
         errno = EBADF;
         return -1;
@@ -387,6 +560,224 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
     vfd->rdoffset = rdoffset;
 
     return nread;
+}
+
+/**
+ * Write a piece of data to a scattered file set.
+ * Similar behaviour as 'man 2 write'.
+ */
+ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
+{
+    m6sg_virt_filedescr_t* vfd;
+    writer_pool_t* pool;
+    ssize_t nwr = 0;
+    int idx, rc, n;
+
+    // Catch some error conditions
+    if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    vfd = m6sg_open_files_list.fd_list[fd];
+    if (!vfd->valid || (vfd->mode != O_WRONLY))
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    pool = &vfd->writer_pool;
+
+    while (nwr < count)
+    {
+        // Try the current area first
+        idx = pool->active_area;
+        assert(pool->inputarea_writeout_complete[idx] == 1);
+        assert(pool->inputarea_newdata_pushed[idx] == 0);
+
+        // Detect if write-out is necessary
+        if ((pool->inputarea_append_offset[idx] + count) >= pool->inputareasize)
+        {
+            // Signal the area for a background write-out
+            pthread_mutex_lock(&pool->inputarea_mutex[idx]);
+            pool->inputarea_newdata_pushed[idx] = 1;
+            pthread_mutex_unlock(&pool->inputarea_mutex[idx]);
+            pthread_cond_signal(&pool->inputarea_newdata_cond[idx]);
+
+            // Wait for an idle area
+            while (1)
+            {
+                // First, wait if all are busy
+                pthread_mutex_lock(&vfd->lock);
+                while (pool->inputareas_busy_count >= vfd->nfiles)
+                {
+                    struct timespec abstimeout;
+                    clock_gettime(0, &abstimeout);
+                    abstimeout.tv_sec += 1;
+                    rc = pthread_cond_timedwait(&pool->any_inputarea_done, &vfd->lock, &abstimeout);
+                    if (rc == ETIMEDOUT)
+                    {
+                        printf(" DBG : writer timed out waiting for a free io area, trying again\n");
+                    }
+                }
+                pthread_mutex_unlock(&vfd->lock);
+
+                // Next, locate an idle area
+                for (n = 0; n < vfd->nfiles; n++)
+                {
+                    idx = (idx + 1) % vfd->nfiles;
+                    if (pool->inputarea_writeout_complete[idx] == 1)
+                    {
+                        pthread_mutex_lock(&vfd->lock);
+                        pool->active_area = idx;
+                        pthread_mutex_unlock(&vfd->lock);
+                        idx = pool->active_area;
+                        printf(" DBG : writer switching to next free area %d\n", idx);
+                        break;
+                    }
+                }
+     
+                // Success?
+                if (pool->inputarea_writeout_complete[idx] == 1)
+                {
+                     break;
+                }
+                printf(" DBG : writer switching missed free area, thought %d\n", idx);
+            }
+            assert(pool->inputarea_writeout_complete[idx] == 1);
+            assert(pool->inputarea_newdata_pushed[idx] == 0);
+        }
+
+        // Append data
+        memcpy(pool->inputareas[idx] + pool->inputarea_append_offset[idx], buf, count);
+        pool->inputarea_append_offset[idx] += count;
+        nwr += count;
+    }
+
+    return nwr;
+}
+
+/**
+ * Move data from a socket into a scattered fileset
+ */
+ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
+{
+    m6sg_virt_filedescr_t* vfd;
+    writer_pool_t* pool;
+    ssize_t nwr = 0, nread;
+    size_t  count = nitems * itemlen;
+    int idx, rc, n;
+
+    struct mmsghdr *msgs;
+    struct iovec *iovecs;
+ 
+    // Catch some error conditions
+    if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    vfd = m6sg_open_files_list.fd_list[fd];
+    if (!vfd->valid || (vfd->mode != O_WRONLY))
+    {
+        errno = EBADF;
+        return -1;
+    }
+
+    pool = &vfd->writer_pool;
+
+    msgs = (struct mmsghdr*)malloc(nitems * sizeof(struct mmsghdr));
+    iovecs = (struct iovec*)malloc(nitems * sizeof(struct iovec));
+    memset(msgs, 0, sizeof(nitems * sizeof(struct mmsghdr)));
+
+    while (nwr < count)
+    {
+        // Try the current area first
+        idx = pool->active_area;
+        assert(pool->inputarea_writeout_complete[idx] == 1);
+        assert(pool->inputarea_newdata_pushed[idx] == 0);
+
+        // Detect if write-out is necessary
+        if ((pool->inputarea_append_offset[idx] + count) >= pool->inputareasize)
+        {
+            // Signal the area for a background write-out
+            pthread_mutex_lock(&pool->inputarea_mutex[idx]);
+            pool->inputarea_newdata_pushed[idx] = 1;
+            pthread_mutex_unlock(&pool->inputarea_mutex[idx]);
+            pthread_cond_signal(&pool->inputarea_newdata_cond[idx]);
+
+            // Wait for an idle area
+            while (1)
+            {
+                // First, wait if all are busy
+                pthread_mutex_lock(&vfd->lock);
+                while (pool->inputareas_busy_count >= vfd->nfiles)
+                {
+                    struct timespec abstimeout;
+                    clock_gettime(0, &abstimeout);
+                    abstimeout.tv_sec += 1;
+                    rc = pthread_cond_timedwait(&pool->any_inputarea_done, &vfd->lock, &abstimeout);
+                    if (rc == ETIMEDOUT)
+                    {
+                        printf(" DBG : writer timed out waiting for a free io area, trying again\n");
+                    }
+                }
+                pthread_mutex_unlock(&vfd->lock);
+
+                // Next, locate an idle area
+                for (n = 0; n < vfd->nfiles; n++)
+                {
+                    idx = (idx + 1) % vfd->nfiles;
+                    if (pool->inputarea_writeout_complete[idx] == 1)
+                    {
+                        pthread_mutex_lock(&vfd->lock);
+                        pool->active_area = idx;
+                        pthread_mutex_unlock(&vfd->lock);
+                        idx = pool->active_area;
+                        printf(" DBG : writer switching to next free area %d\n", idx);
+                        break;
+                    }
+                }
+     
+                // Success?
+                if (pool->inputarea_writeout_complete[idx] == 1)
+                {
+                     break;
+                }
+                printf(" DBG : writer switching missed free area, thought %d\n", idx);
+            }
+            assert(pool->inputarea_writeout_complete[idx] == 1);
+            assert(pool->inputarea_newdata_pushed[idx] == 0);
+        }
+
+        // Determine where to append data
+        for (n = 0; n < nitems; n++) {
+            char *base = pool->inputareas[idx] + pool->inputarea_append_offset[idx];
+            iovecs[n].iov_base         = base + n*itemlen;
+            iovecs[n].iov_len          = itemlen;
+            msgs[n].msg_hdr.msg_iov    = &iovecs[n];
+            msgs[n].msg_hdr.msg_iovlen = 1;
+       }
+
+        // Append data via socket read
+        nread = recvmmsg(sd, msgs, nitems, MSG_WAITALL, NULL);
+        if (nread < 0) {
+            perror("recvmmsg");
+            free(msgs);
+            free(iovecs);
+            return 0;
+        }
+        pool->inputarea_append_offset[idx] += (nread*itemlen);
+        nwr += (nread*itemlen);
+        nitems -= nread;
+    }
+
+    free(msgs);
+    free(iovecs);
+
+    return nwr;
 }
 
 
@@ -501,6 +892,16 @@ int mark6_sg_packetsize(int fd)
 
 
 /**
+ * Set hint of packetsize for creat()
+ */
+int mark6_sg_packetsize_hint(int size_hint)
+{
+    vdif_packetsize_hint = size_hint;
+    return size_hint;
+}
+
+
+/**
  * Return the stripe size (without metadata length).
  */
 ssize_t mark6_sg_stripesize(int fd)
@@ -533,13 +934,13 @@ ssize_t mark6_sg_stripesize(int fd)
 ////// Local Functions ///////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
 
-void* touch_next_blocks_thread(void* p_ctx)
+void* touch_next_blocks_thread(void* p_ioctx)
 {
     size_t blk = 0, blk_prev = -1;
     off_t  off, off_stop;
     int    pagesz = getpagesize();
 
-    touch_blocks_ctx_t*    ctx = (touch_blocks_ctx_t*)p_ctx;
+    io_thread_ctx_t*       ctx = (io_thread_ctx_t*)p_ioctx;
     m6sg_virt_filedescr_t* vfd = (m6sg_virt_filedescr_t*)(ctx->vfd);
 
     char* fdata = (char*)(vfd->fmmap[ctx->file_id]);
@@ -597,3 +998,109 @@ void* touch_next_blocks_thread(void* p_ctx)
 
     return NULL;
 }
+
+void* writer_thread(void* p_ioctx)
+{
+    io_thread_ctx_t*       ctx = (io_thread_ctx_t*)p_ioctx;
+    m6sg_virt_filedescr_t* vfd = (m6sg_virt_filedescr_t*)(ctx->vfd);
+    writer_pool_t*         pool = &vfd->writer_pool;
+    const int id = ctx->file_id;
+
+    const unsigned char* area = (const unsigned char*)pool->inputareas[id];
+    int n;
+
+    while (!vfd->writers_terminate)
+    {
+        wb_header_tag_v2_t m6blk;
+        size_t blocklen;
+
+        // Wait for wakeup
+        pthread_mutex_lock(&pool->inputarea_mutex[id]);
+        while (!pool->inputarea_newdata_pushed[id] && !vfd->writers_terminate)
+        {
+            int rc;
+            struct timespec abstimeout;
+            clock_gettime(0, &abstimeout);
+            abstimeout.tv_sec += 1;
+            rc = pthread_cond_timedwait(&pool->inputarea_newdata_cond[id], &pool->inputarea_mutex[id], &abstimeout);
+            if (rc == ETIMEDOUT)
+            {
+                printf(" DBG : io %d timed out waiting for user data, trying again\n", id);
+            }
+        }
+        blocklen = pool->inputarea_append_offset[id];
+        pool->inputarea_writeout_complete[id] = vfd->writers_terminate; // not terminating --> write not complete
+        pthread_mutex_unlock(&pool->inputarea_mutex[id]);
+
+        // Quit, ignore too small blocks, etc
+        if (vfd->writers_terminate) break;
+        if (pool->inputarea_append_offset[id] <= 32)
+        {
+            pool->inputarea_writeout_complete[id] = 1;
+            continue;
+        }
+
+        // Increment global datablock# and currently busy files
+        pthread_mutex_lock(&vfd->lock);
+        m6blk.blocknum = vfd->nblocks;
+        m6blk.wb_size  = blocklen;
+        vfd->nblocks++;
+        // TODO: also update vfd->blks[] by appending a new block list entry?
+        pool->inputareas_busy_count++;
+        pthread_mutex_unlock(&vfd->lock);
+
+        // Determine VDIF frame size once
+        if (m6blk.blocknum == 0)
+        {
+            struct file_header_tag m6hdr;
+            size_t vdifsize;
+
+            // Get size from (presumed) VDIF header
+            vdifsize = ((size_t)area[8]) + (((size_t)area[9])<<8) + (((size_t)area[10])<<16); // VDIF spec: "in units of 8 bytes"
+            vdifsize = 8 * vdifsize;
+            assert(vdifsize <= vfd->framesize); // because buffer allocations are upto N*default_framesize only...
+
+            // Remember it
+            pthread_mutex_lock(&vfd->lock);
+            vfd->framesize = vdifsize;
+            pthread_mutex_unlock(&vfd->lock);
+
+            // Update metadata in scatter-gather files
+            for (n = 0; n < vfd->nfiles; n++)
+            {
+                // maybe not the tidiest method... alternative is delayed creat() to launch threads etc only after the first write
+                lseek(vfd->fds[n], 0, SEEK_SET);
+                read(vfd->fds[n], &m6hdr, sizeof(m6hdr));
+                m6hdr.packet_size = vfd->framesize;
+                m6hdr.block_size  = m6blk.wb_size;
+                lseek(vfd->fds[n], 0, SEEK_SET);
+                write(vfd->fds[n], &m6hdr, sizeof(m6hdr));
+            }
+            printf(" DBG : io %d with block#%zu found VDIF frame size %zu, and blocken %zd\n", id, (size_t)m6blk.blocknum, (size_t)m6hdr.packet_size, (size_t)m6blk.wb_size);
+        }
+
+        // Write block header
+        write(vfd->fds[id], &m6blk, sizeof(m6blk));
+
+        // Write data
+        write(vfd->fds[id], area, blocklen);
+
+        // Done
+        pthread_mutex_lock(&pool->inputarea_mutex[id]);
+        pool->inputarea_append_offset[id] = 0;
+        pool->inputarea_newdata_pushed[id] = 0;
+        pool->inputarea_writeout_complete[id] = 1;
+        pthread_mutex_unlock(&pool->inputarea_mutex[id]);
+
+        // Decrement the busy files count
+        pthread_mutex_lock(&vfd->lock);
+        assert(pool->inputareas_busy_count > 0);
+        pool->inputareas_busy_count--;
+        printf(" DBG : io %d with block#%zu done writing\n", id, (size_t)m6blk.blocknum);
+        pthread_mutex_unlock(&vfd->lock);
+        pthread_cond_signal(&pool->any_inputarea_done);
+    }
+
+    return NULL;
+}
+

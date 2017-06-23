@@ -27,6 +27,7 @@
 //
 //============================================================================
 #include "mark6_sg_utils.h"
+#include "mark6_sg_format.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -45,54 +46,8 @@
 
 #include <jsmn.h> // Jasmine/JSMN C parser library for JSON
 
-
 // Global library debug level
 int m_m6sg_dbglevel = 0;
-
-// Internal structs
-//
-// There is apparently no documentation on the Mark6 non-RAID recording format(?).
-// From Mark6 source code one can see that the several files associated with a
-// single scan all look like this:
-//
-//  [file header]
-//  [block a header] [block a data (~10MB)]
-//  [block b header] [block b data (~10MB)]
-//  [block c header] [block c data (~10MB)]
-//  ...
-//
-// Block numbers are increasing. They will have gaps (e.g, a=0, b=16, c=35, ...).
-// The 'missing' blocks (1,2,3..,15,17,18,..,34,...) of one file are found in one of
-// the other files. Blocks can have different data sizes.
-//
-// Because 10GbE recording in Mark6 software is not done Round-Robin across files,
-// the order of blocks between files is somewhat random.
-//
-// The below structures are adopted from the source code of the
-// Mark6 program 'd-plane' version 1.12:
-
-// File header - one per file
-struct file_header_tag
-{
-    uint32_t sync_word;         // MARK6_SG_SYNC_WORD
-    int32_t  version;           // defines format of file
-    int32_t  block_size;        // length of blocks including header (bytes)
-    int32_t  packet_format;     // format of data packets, enumerated below
-    int32_t  packet_size;       // length of packets (bytes)
-};
-
-// Write block header - version 2
-typedef struct wb_header_tag_v2
-{
-    int32_t blocknum;           // block number, starting at 0
-    int32_t wb_size;            // same as block_size, or occasionally shorter
-} wb_header_tag_v2_t;
-
-// Write block header - version 1
-typedef struct wb_header_tag_v1
-{
-    int32_t blocknum;           // block number, starting at 0
-} wb_header_tag_v1_t;
 
 // Base directory
 static char* mark6_sg_root_pattern = MARK6_SG_ROOT_PATTERN;
@@ -110,8 +65,9 @@ typedef struct blklist_thread_ctx_tt {
     size_t            nblocks;
 } blklist_thread_ctx_t;
 
-static size_t mark6_sg_blocklist_load_existing(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
+static size_t mark6_sg_blocklist_load(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
 static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
+static void   mark6_sg_blocklist_store(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist, size_t nblocks);
 
 /**
  * Helper for qsort() to allow sorting a scatter-gather block list.
@@ -186,7 +142,13 @@ static void* thread_extract_file_blocklist(void* v_args)
 
     // Read main header
     memset(&fhdr, 0, sizeof(fhdr));
-    fread(&fhdr, sizeof(fhdr), 1, f);
+    if (fread(&fhdr, sizeof(fhdr), 1, f) < 1)
+    {
+        fclose(f);
+        return NULL;
+    }
+
+    // Determine size of blockheaders
     switch (fhdr.version)
     {
         case 1:
@@ -200,7 +162,6 @@ static void* thread_extract_file_blocklist(void* v_args)
             fclose(f);
             return NULL;
     }
-
     if (m_m6sg_dbglevel > 1) { printf("thread_extract_file_blocklist: file %2d block size %d bytes, packet size %d bytes\n", ctx->fileidx, fhdr.block_size, fhdr.packet_size); }
 
     // Read all block headers
@@ -214,6 +175,13 @@ static void* thread_extract_file_blocklist(void* v_args)
             break;
         }
         if (m_m6sg_dbglevel > 1) { printf("File %2d block size %d has nr %d\n", ctx->fileidx, bhdr.wb_size, bhdr.blocknum); }
+
+        // Catch garbage
+        if (bhdr.wb_size == 0)
+        {
+            fclose(f);
+            break;
+        }
 
         // Append block infos to block list
         if (ctx->nblocks >= ctx->nallocated)
@@ -329,6 +297,98 @@ int mark6_sg_list_all_scans(char*** uniquenamelist)
     return nuniques;
 }
 
+
+/**
+ * Create a list of scattered files to be created in the future,
+ * derived from a name for a new (not yet existing) scan.
+ *
+ * The scan name is essentially a base file name. Paths to each
+ * existing Mark6 scatter-gather mount points are prependend
+ * to this base file name. The mount points are derived from
+ * the currently set search pattern (mark6_sg_set_rootpattern(),
+ * mark6_sg_get_rootpattern()). That search pattern dictates
+ * across which disks of which Mark6 disk module(s) the new
+ * files should be scattered across.
+ *
+ * Returns the number of (not yet existing) files and a file name list.
+ * If the given scan name already exists anywhere in the mount points
+ * an empty list is returned.
+ */
+int mark6_sg_filelist_for_new(const char* newscanname, char*** filepathlist, char*** filenamelist)
+{
+    glob_t g;
+    int rc, nfiles, nadded = 0, nexist = 0, i;
+    char** fplist;
+    char** fnlist;
+
+    rc = glob(mark6_sg_root_pattern, GLOB_MARK, globerr, &g);
+    if (rc != 0)
+    {
+        fprintf(stderr, "Mark6 SG file list creation for new scan : '%s': %s\n", mark6_sg_root_pattern,
+           (rc == GLOB_ABORTED ? "filesystem problem"  :
+            rc == GLOB_NOMATCH ? "no match of pattern" :
+            rc == GLOB_NOSPACE ? "no dynamic memory"   :
+            "unknown problem")
+        );
+        return 0;
+    }
+
+    nfiles = g.gl_pathc;
+    fplist = (char**)malloc(nfiles*sizeof(char*));
+    fnlist = (char**)malloc(nfiles*sizeof(char*));
+    if (NULL == fplist || NULL == fnlist)
+    {
+        fprintf(stderr, "Mark6 SG file list creation for new scan: error in alloc of output file list space.\n");
+        globfree(&g);
+        return 0;
+    }
+
+    for (i=0; i<nfiles; i++)
+    {
+        char* s;
+        struct stat st;
+        stat(g.gl_pathv[i], &st);
+        if (!S_ISDIR(st.st_mode))
+        {
+            if (m_m6sg_dbglevel > 1) { printf(" %s : %2d : skipped name %s while looking for base directories\n", __FUNCTION__, i, g.gl_pathv[i]); }
+            continue;
+        }
+
+        s = calloc(PATH_MAX-1, 1);
+        snprintf(s, PATH_MAX-2, "%s/%s", g.gl_pathv[i], newscanname);
+        if (stat(s, &st) == 0)
+        {
+            if (m_m6sg_dbglevel > 1) { printf(" %s : %2d : skipped file %s as it already exists\n", __FUNCTION__, i, s); }
+            free(s);
+            nexist++;
+            continue;
+        }
+
+        fnlist[nadded] = strdup(newscanname);
+        fplist[nadded] = strdup(s);
+        free(s);
+
+        if (m_m6sg_dbglevel > 1) { printf(" %s : %2d : added (%d, %s, %s) for a future creat()\n", __FUNCTION__, i, nadded, fplist[nadded], fnlist[nadded]); }
+        nadded++;
+    }
+
+    globfree(&g);
+    
+    if (nexist > 0)
+    {
+        free(fplist);
+        free(fnlist);
+        *filepathlist = NULL;
+        *filenamelist = NULL;
+        if (m_m6sg_dbglevel > 1) { printf(" %s : %d files named %s already exist, returning empty list to prevent overwrites\n", __FUNCTION__, nexist, newscanname); }
+        return 0;
+    }
+
+    *filepathlist = realloc(fplist, nadded*sizeof(char*));
+    *filenamelist = realloc(fnlist, nadded*sizeof(char*));
+
+    return nadded;
+}
 
 /**
  * Assemble a list of files associated with a given scan name.
@@ -467,16 +527,17 @@ int mark6_sg_filelist_uniques(int nfiles, const char** filenamelist, char*** uni
 size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist)
 {
     size_t nblk;
-    nblk = mark6_sg_blocklist_load_existing(nfiles, filenamelist, blocklist);
+    nblk = mark6_sg_blocklist_load(nfiles, filenamelist, blocklist);
     if (nblk == 0)
     {
         nblk = mark6_sg_blocklist_rebuild(nfiles, filenamelist, blocklist);
+        mark6_sg_blocklist_store(nfiles, filenamelist, blocklist, nblk);
     }
     return nblk;
 }
 
 /** Load blocklist for a given fileset from an existing file if possible; blocklist file determined internally */
-static size_t mark6_sg_blocklist_load_existing(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist)
+static size_t mark6_sg_blocklist_load(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist)
 {
     uint64_t nblks = 0;
     size_t nrd;
@@ -509,7 +570,7 @@ static size_t mark6_sg_blocklist_load_existing(int nfiles, const char** filename
     *blocklist = malloc(nblks*sizeof(m6sg_blockmeta_t));
     memset(*blocklist, 0x00, nblks*sizeof(m6sg_blockmeta_t));
     fread(*blocklist, sizeof(m6sg_blockmeta_t), nblks, cf);
-    if (m_m6sg_dbglevel > 1) { printf("mark6_sg_blocklist_load_existing: %u blocks in %s\n", (unsigned int)nblks, cachefilename); }
+    if (m_m6sg_dbglevel > 1) { printf("mark6_sg_blocklist_load: %u blocks in %s\n", (unsigned int)nblks, cachefilename); }
     fclose(cf);
     free(cachefilename);
 
@@ -526,7 +587,6 @@ static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, 
     m6sg_blockmeta_t* blks = NULL;
     m6sg_blockmeta_t* prevblk = NULL;
     size_t nblocks = 0, ncopied = 0, nmissing = 0;
-    char *cachefilename;
     size_t i;
 
     gettimeofday(&tv_start, NULL);
@@ -624,8 +684,14 @@ static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, 
         fprintf(stderr, "Scan is missing %zu blocks of data, possibly due to a missing scatter-gather file.\n", nmissing);
     }
 
-    // Store the blocklist into a cache file
-    cachefilename = sg_blocklist_cachefilename(nfiles, filenamelist);
+    *blocklist = blks;
+    return nblocks;
+}
+
+/** Store the blocklist into a cache file */
+void mark6_sg_blocklist_store(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist, size_t nblocks)
+{
+    char *cachefilename = sg_blocklist_cachefilename(nfiles, filenamelist);
     if (cachefilename)
     {
         int fdtmp;
@@ -634,7 +700,7 @@ static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, 
 
         fdtmp = mkstemp(tmpname);
         write(fdtmp, &nblks64, sizeof(nblks64));
-        write(fdtmp, blks, sizeof(m6sg_blockmeta_t)*nblocks);
+        write(fdtmp, *blocklist, sizeof(m6sg_blockmeta_t)*nblocks);
         close(fdtmp);
         rename(tmpname, cachefilename);
 
@@ -642,11 +708,7 @@ static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, 
 
         free(cachefilename);
     }
-
-    *blocklist = blks;
-    return nblocks;
 }
-
 
 /**
  * Read the context of all Mark6 SG metadata files, i.e., the 'slist' (JSON) and 'group' (flat text)

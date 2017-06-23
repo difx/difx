@@ -29,6 +29,7 @@
 #ifndef MARK6_SG_UTILS__H
 #define MARK6_SG_UTILS__H
 
+#define _GNU_SOURCE
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdint.h>
@@ -38,7 +39,6 @@ extern "C" {
 #endif
 
 // Defines
-#define MARK6_SG_SYNC_WORD          0xfeed6666
 #define MARK6_SG_MAXFILES           32
 #define MARK6_SG_ROOT_PATTERN       "/mnt/disks/[1-4]/[0-7]/"
 #define MARK6_SG_VFS_MAX_OPEN_FILES 8192
@@ -66,9 +66,10 @@ typedef struct m6sg_slistmeta_tt {
 } m6sg_slistmeta_t;
 
 // Library functions
-extern int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char*** filenamelist);
-extern int mark6_sg_filelist_uniques(int nfiles, const char** filenamelist, char*** uniquenamelist);
 extern int mark6_sg_list_all_scans(char*** uniquenamelist);
+extern int mark6_sg_filelist_uniques(int nfiles, const char** filenamelist, char*** uniquenamelist);
+extern int mark6_sg_filelist_from_name(const char* scanname, char*** filepathlist, char*** filenamelist);
+extern int mark6_sg_filelist_for_new(const char* newscanname, char*** filepathlist, char*** filenamelist);
 extern size_t mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t** blocklist);
 extern int mark6_sg_verbositylevel(int);
 extern int mark6_sg_collect_metadata(m6sg_slistmeta_t**);
@@ -79,4 +80,4 @@ extern const char* mark6_sg_get_rootpattern();
 }
 #endif
 
-#endif
+#endif // MARK6_SG_UTILS__H

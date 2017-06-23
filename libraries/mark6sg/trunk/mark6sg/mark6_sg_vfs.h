@@ -32,10 +32,9 @@
 // These VFS-like functions open and read Mark6 scatter-gather files,
 // and have the same interface as 'man 2 open', 'man 2 read', etc.
 
+#define _GNU_SOURCE
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include "mark6_sg_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,13 +42,17 @@ extern "C" {
 
 // Library functions
 extern int     mark6_sg_open (const char *scanname, int flags);
+extern int     mark6_sg_creat(const char *scanname, mode_t ignored);
 extern int     mark6_sg_close(int fd);
+extern ssize_t mark6_sg_write(int fd, const void* buf, size_t count);
 extern ssize_t mark6_sg_read (int fd, void* buf, size_t count);
 extern ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t offset);
 extern off_t   mark6_sg_lseek(int fd, off_t offset, int whence);
 extern int     mark6_sg_fstat(int fd, struct stat *buf);
+extern ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen);
 
 extern int     mark6_sg_packetsize(int fd);
+extern int     mark6_sg_packetsize_hint(int size_hint);
 extern ssize_t mark6_sg_stripesize(int fd);
 
 #ifdef __cplusplus

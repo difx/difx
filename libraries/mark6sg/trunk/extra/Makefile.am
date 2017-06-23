@@ -5,7 +5,7 @@ if USE_FUSE
 bin_PROGRAMS += fuseMk6
 endif
 
-dist_bin_SCRIPTS = m6sg_mount
+#dist_bin_SCRIPTS = m6sg_mount
 
 bin_SCRIPTS = m6sg_mount
 

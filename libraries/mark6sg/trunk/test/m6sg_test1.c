@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 
     for (i=0; i<nscans; i++)
     {
-        printf("Scan %3d/%d : %s\n", i, nscans, uniquenamelist[i]);
+        printf("Scan %3d/%d : %s\n", i+1, nscans, uniquenamelist[i]);
     }
 
     /* Choose a scan */

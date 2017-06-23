@@ -15,25 +15,32 @@ Static link:     LDLIBS=libmark6sg.a
 
 The VFS-like interface is
 
-  mark6_sg_open()
+  mark6_sg_open()     only read-only
+  mark6_sg_creat()    only write-only and exclusive
   mark6_sg_close()
   mark6_sg_lseek()
   mark6_sg_read()
+  mark6_sg_write()
   mark6_sg_fstat()
+
+Configuration functions are
+
+  mark6_sg_get_rootpattern()
+  mark6_sg_set_rootpattern()
 
 Convenience functions are
 
   mark6_sg_verbositylevel()
   mark6_sg_packetsize()
+  mark6_sg_packetsize_hint()
   mark6_sg_stripesize()
 
   mark6_sg_list_all_scans()
 
 To keep the implementation simple the functions are not thread-safe
-and the external use of mutexes may be required.
+and the external use of mutexes may be required if your program is threaded.
 
 The current interface is C only, not C++.
-
 
 -----------------------------------------------------------------------------
 
@@ -72,6 +79,44 @@ C: mark6_sg_fstat(fd, &st);
   scan data returned with read(). Usually Mark6 software is used to capture
   10 GbE network data streams that contain data in VDIF format.
 
+C: int fd = mark6_sg_creat(scanname, ignored_mode);
+
+  Creates a new scan i.e. new set of fragment files for the given scanname.
+
+  Utilizes the Mark6 scatter-gather disk root pattern (cf. mark6_sg_set_rootpattern())
+  to determine the paths of the fragment file to create.
+
+  If any fragment file(s) already exist for the given scan name, the function
+  returns an error i.e. the behaviour is like open(...,O_CREAT|O_TRUNC|O_EXCL).
+
+  The new scan is NOT added into Mark6 JSON metadata.
+
+C: ssize_t nwritten = mark6_sg_write(fd, (void*)srcbuf, (size_t)nbytes);
+
+  Writes a user specified buffer into the scan.
+
+  Internally the default maximum scatter-gather block size is 5000 frames
+  and a default assumed frame size of 10032 byte. Write size 'nbytes' must
+  not be larger than this.
+
+  During the write to disk of the very first scatter-gather block the
+  function will inspect the block once (VDIF frames assumed!) to determine
+  the actual frame size and to adjust the Mark6 headers accordingly.
+
+-----------------------------------------------------------------------------
+
+Summary of the configuration functions
+
+C: const char* rp = mark6_sg_get_rootpattern();
+
+  Returns the current internal search path for mount points,
+  the default is "/mnt/disks/[1-4]/[0-7]/"
+
+C: char* rp = mark6_sg_set_rootpattern(const char* new_sg_root_pattern);
+ 
+  Specifies a new root pattern. Takes effect on the next open(), creat(),
+  and mark6_sg_list_all_scans().
+
 -----------------------------------------------------------------------------
 
 Summary of the convenience functions
@@ -86,6 +131,11 @@ C: int packetsize = mark6_sg_packetsize(fd);
   Returns the packet size that the Mark6 software thought it was recording.
   Here 'fd' is the file descriptor of a scan opened with mark6_sg_open().
 
+C: int mark6_sg_packetsize_hint((size_t)nbyte);
+
+  Sets the default assumed packet size.
+  Use this prior to opening any new scan for writing.
+
 c: size_t stripesize = mark6_sg_stripesize(fd);
 
   Returns the stripe size ("block size"), not counting extra Mark6 metadata,
@@ -96,8 +146,9 @@ C: char** uniquenamelist;
 C: int nscans = mark6_sg_list_all_scans(&uniquenamelist);
 
   Allocates space in the string array 'uniquenamelist'
-  and adds all scans found under "/mnt/disks/[1-2]/[0-7]/*"
-  to this string array.
+  and adds all scans found under the currently set root pattern (default
+  is "/mnt/disks/[1-2]/[0-7]/*") to this string array.
+
   Scan names can be used in the call to "open()".
 
   The user application must free() the uniquenamelist[0..nscans-1]
