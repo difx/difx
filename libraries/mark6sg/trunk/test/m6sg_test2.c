@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <glob.h>
 #include <linux/limits.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -58,6 +59,13 @@ unsigned char singleframe_vdif[8224] = {
   0x00
 };
 
+volatile int ctrl_c = 0;
+
+void intHandler(int dummy) {
+    printf("Got Ctrl-C, exiting soon\n");
+    ctrl_c = 1;
+}
+
 int main(int argc, char** argv)
 {
     int    i, j, nfragments, fd;
@@ -67,12 +75,14 @@ int main(int argc, char** argv)
     double dT;
     ssize_t nwritten = 0;
 
+    signal(SIGINT, intHandler);
+
     /* Change verbosity */
-    mark6_sg_verbositylevel(3); // 0=none, 1=little, 2=debug, 3=more debug
+    mark6_sg_verbositylevel(0); // 0=none, 1=little, 2=debug, 3=more debug
 
     /* Set root to a single module */
     //mark6_sg_set_rootpattern("/mnt/disks/1/[0-7]/data/"); // actual module
-    mark6_sg_set_rootpattern("/mnt/disks/1/[0-7]/dummy/"); // actual module, but dummy loc
+    mark6_sg_set_rootpattern("/mnt/disks/[1-2]/[0-7]/dummy/"); // actual module, but dummy loc
     //mark6_sg_set_rootpattern("./[0-7]/data/"); // test location, assumed to have been created manually
 
     /* Generate list of scatter-gather files to create for a new scan */
@@ -105,7 +115,7 @@ int main(int argc, char** argv)
 
     /* Write some data */
     gettimeofday(&tv_start, NULL);
-    for (j = 0; j < 8*nfragments; j++)
+    for (j = 0; j < 640*nfragments && !ctrl_c; j++)
     {
         for (i = 0; i < 5000/*WRITER_FRAMES_PER_BLOCK*/; i++)
         {
