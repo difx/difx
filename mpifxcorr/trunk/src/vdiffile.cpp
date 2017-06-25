@@ -314,6 +314,7 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 
 	nGap = framespersecond/4;	// 1/4 second gap of data yields a mux break
 	startOutputFrameNumber = -1;
+	minleftoverdata = 4*inputframebytes;	// waste up to 4 input frames at end of read 
 
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
 	threads = config->getDMuxThreadMap(configindex, streamnum);
@@ -590,6 +591,10 @@ int VDIFDataStream::dataRead(int buffersegment)
 	}
 	if(readbufferleftover <= minleftoverdata && input.eof())
 	{
+		if(readbufferleftover > 0)
+		{
+			cwarn << startl << "Stopping decoding with " << readbufferleftover << " bytes remaining to be decoded.  minleftoverdata = " << minleftoverdata << endl;
+		}
 		readbufferleftover = 0;
 
 		// here we've in one call both read all the remaining data from a file and multiplexed it all without leftovers

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2016 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2017 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -379,11 +379,8 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
         bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
 	nGap = framespersecond/4;	// 1/4 second gap of data yields a mux break
-	if(nGap > 1024)
-	{
-		nGap = 1024;
-	}
 	startOutputFrameNumber = -1;
+	minleftoverdata = 4*inputframebytes;	// waste up to 4 input frames at end of read
 
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
 	threads = config->getDMuxThreadMap(configindex, streamnum);

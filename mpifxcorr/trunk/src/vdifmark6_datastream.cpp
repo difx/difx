@@ -134,11 +134,8 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
 	nGap = framespersecond/4;	// 1/4 second gap of data yields a mux break
-	if(nGap > 1024)
-	{
-		nGap = 1024;
-	}
 	startOutputFrameNumber = -1;
+	minleftoverdata = 4*inputframebytes;	// waste up to 4 input frames at end of read
 
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
 	threads = config->getDMuxThreadMap(configindex, streamnum);
