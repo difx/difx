@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller                                *
+ *   Copyright (C) 2006-2017 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -634,7 +634,7 @@ float Mode::unpack(int sampleoffset)
   return 1.0;
 }
 
-float Mode::process(int index, int subloopindex)  //frac sample error is in microseconds 
+void Mode::process(int index, int subloopindex)  //frac sample error is in microseconds 
 {
   double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fracwalltime, fftcentre, d0, d1, d2, fraclooffset;
   f32 phaserotationfloat, fracsampleerror;
@@ -667,7 +667,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
         csevere << startl << "Error trying to zero fftoutputs when data is bad!" << endl;
     }
     //cout << "Mode for DS " << datastreamindex << " is bailing out of index " << index << "/" << subloopindex << " which is scan " << currentscan << ", sec " << offsetseconds << ", ns " << offsetns << " because datalengthbytes is " << datalengthbytes << " and validflag was " << ((validflags[index/FLAGS_PER_INT] >> (index%FLAGS_PER_INT)) & 0x01) << endl;
-    return 0.0; //don't process crap data
+    return; //don't process crap data
   }
 
   fftcentre = index+0.5;
@@ -698,7 +698,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
       if(status != vecNoErr)
         csevere << startl << "Error trying to zero fftoutputs when data is bad!" << endl;
     }
-    return 0.0;
+    return;
   }
   if(nearestsample == -1)
   {
@@ -751,7 +751,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
       if(status != vecNoErr)
         csevere << startl << "Error trying to zero fftoutputs when data is bad!" << endl;
     }
-    return 0.0;
+    return;
   }
 
   nearestsampletime = nearestsample*sampletime;
@@ -1328,7 +1328,6 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
       }
     }
   }
-  return dataweight;
 }
 
 void Mode::averageFrequency()

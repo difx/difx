@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller                                *
+ *   Copyright (C) 2006-2017 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -106,9 +106,8 @@ Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int
   * Calculates fringe rotation and fractional sample correction arrays and FFTs, and autocorrelates
   * @param index The index of the FFT chunk to process
   * @param subloopindex The "subloop" index to put the output in
-  * @return Fraction of samples that were good for this FFT
   */
-  float process(int index, int subloopindex);
+  void process(int index, int subloopindex);
 
  /**
   * Sets the autocorrelation arrays to contain 0's

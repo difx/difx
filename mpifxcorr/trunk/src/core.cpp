@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller                                *
+ *   Copyright (C) 2006-2017 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -409,9 +409,6 @@ void Core::loopprocess(int threadid)
   scratchspace->threadcrosscorrs = vectorAlloc_cf32(maxthreadresultlength);
   scratchspace->baselineweight = new f32***[config->getFreqTableLength()];
   scratchspace->baselineshiftdecorr = new f32**[config->getFreqTableLength()];
-  scratchspace->dsweights = new f32*[numdatastreams];
-  for(int i=0;i<numdatastreams;i++)
-    scratchspace->dsweights[i] = new f32[config->getMaxNumBufferedFFTs()];
   if(scratchspace->threadcrosscorrs == NULL) {
     cfatal << startl << "Could not allocate thread cross corr space (tried to allocate " << maxthreadresultlength/(1024*1024) << " MB)!!! Aborting." << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
@@ -583,9 +580,6 @@ void Core::loopprocess(int threadid)
       delete [] scratchspace->pulsaraccumspace;
     }
   }
-  for(int i=0;i<numdatastreams;i++)
-    delete [] scratchspace->dsweights[i];
-  delete [] scratchspace->dsweights;
   vectorFree(scratchspace->threadcrosscorrs);
   vectorFree(scratchspace->chanfreqs);
   vectorFree(scratchspace->rotator);
@@ -812,7 +806,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
         i = fftloop*numBufferedFFTs + fftsubloop + startblock;
 	if(i >= startblock+numblocks)
 	  break; //may not have to fully complete last fftloop
-        scratchspace->dsweights[j][fftsubloop] = modes[j]->process(i, fftsubloop);
+        modes[j]->process(i, fftsubloop);
         numfftsprocessed++;
       }
     }

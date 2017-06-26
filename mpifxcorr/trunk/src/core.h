@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller                                *
+ *   Copyright (C) 2006-2017 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -120,7 +120,6 @@ private:
     cf32 * rotator;
     cf32 * channelsums;
     f32 * argument;
-    f32 ** dsweights;
     int shifterrorcount;
     DifxMessageSTARecord * starecordbuffer;
     bool dumpsta;
