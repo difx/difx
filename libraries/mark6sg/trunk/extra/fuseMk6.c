@@ -105,6 +105,47 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
+static int fusem6_create(const char *path, mode_t mode_ignored, struct fuse_file_info *fi)
+{
+	int rc, framesize;
+	struct stat st;
+	char *scanname, *s;
+
+        // Check that the scan does not exist
+	rc = mark6_sg_open(path, O_RDONLY);
+	if (rc >= 0) {
+		mark6_sg_close(rc);
+		return -EEXIST;
+	}
+
+	// Check if scan name contains frame size hint (e.g., "/path/name.vdif:8032")
+	scanname = strdup(path);
+	if ((s = strrchr(scanname, ':')) != NULL) {
+		framesize = atoi(s+1);
+		*s = '\0';
+		if ((framesize > 64) && (framesize < 16*1024*1024)) {
+			mark6_sg_packetsize_hint(framesize);
+		}
+		printf("fusem6_creat(): filename %s had trailing frame size hint for %d bytes\n", scanname, framesize);
+	}
+
+	// Create
+	rc = mark6_sg_creat(path, mode_ignored); // note: use 'path' instead of 'scanname' since 'dd' and others expect filename doesn't change during create()...
+	if (rc < 0) {
+		printf("fusem6_creat(): create of %s failed\n", path);
+		perror("mark6_sg_creat");
+		free(scanname);
+		return -errno;
+	}
+	free(scanname);
+
+	// Set infos
+	fi->fh = (uint64_t)rc;
+	fi->nonseekable = 1;
+
+	return 0;
+}
+
 static int fusem6_release(const char *path, struct fuse_file_info *fi)
 {
 	return mark6_sg_close(fi->fh);
@@ -123,6 +164,14 @@ static int fusem6_read(const char *path, char *buf, size_t size, off_t offset,
 	pthread_mutex_unlock(&rdlock);
 
 	return (nrd > 0) ? nrd : 0;
+}
+
+static int fusem6_write(const char *path, const char *buf, size_t size, off_t offset,
+		      struct fuse_file_info *fi)
+{
+	ssize_t nwr;
+	nwr = mark6_sg_write(fi->fh, buf, size);
+	return (nwr > 0) ? nwr : 0;
 }
 
 
@@ -346,8 +395,10 @@ void *fusem6_dir_watcher(void* thread_arg)
 static struct fuse_operations fusem6_oper = {
 	.init		= fusem6_init,
 	.open		= fusem6_open,
+	.create		= fusem6_create,
 	.release	= fusem6_release,
 	.read		= fusem6_read,
+	.write		= fusem6_write,
 	.getattr	= fusem6_getattr,
 	.readdir	= fusem6_readdir
 };

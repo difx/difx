@@ -1,5 +1,6 @@
 Version 2.0.0
 * libmark6sg: added creat(), write(), recvfile()
+* fuseMk6: added wrapping calls to creat() and write() for module write suppor
 
 Version 1.2.0
 * libmark6sg: added automatic caching of scatter-gather block list metadata (/tmp/mark6_fuse_autocache_<hash>)
