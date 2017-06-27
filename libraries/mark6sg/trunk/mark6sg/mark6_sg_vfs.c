@@ -342,8 +342,10 @@ int mark6_sg_creat(const char *scanname, mode_t ignored)
         vfd->fds[i] = open(vfd->filepathlist[i], O_RDWR|O_LARGEFILE|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
         if (vfd->fds[i] < 0)
         {
+            int e = errno;
             perror(vfd->filepathlist[i]);
-            continue;
+            return -e;
+            //continue;
         }
 
         // Prepare the input buffer and associated disk-writer for this file
