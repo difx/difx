@@ -416,7 +416,13 @@ int mark6_sg_close(int fd)
         vfd->writers_terminate = 1;
         for (i = 0; i < vfd->nfiles; i++)
         {
+            // Wake the thread up to write out any pending/partial blocks
+            pthread_mutex_lock(&vfd->writer_pool.inputarea_mutex[i]);
+            vfd->writer_pool.inputarea_newdata_pushed[i] = 1;
+            pthread_mutex_unlock(&vfd->writer_pool.inputarea_mutex[i]);
             pthread_cond_signal(&vfd->writer_pool.inputarea_newdata_cond[i]);
+
+            // Wait for that thread to die
             pthread_join(vfd->writer_ctxs[i].tid, NULL);
             if (vfd->writer_pool.inputareas[i] != NULL)
             {
@@ -605,8 +611,8 @@ ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
             pthread_mutex_lock(&pool->inputarea_mutex[idx]);
             pool->inputarea_newdata_pushed[idx] = 1;
             pool->inputarea_writeout_complete[idx] = 0;
-            pthread_cond_signal(&pool->inputarea_newdata_cond[idx]);
             pthread_mutex_unlock(&pool->inputarea_mutex[idx]);
+            pthread_cond_signal(&pool->inputarea_newdata_cond[idx]);
 
             // Wait for an idle area
             while (1)
@@ -707,6 +713,7 @@ ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
             // Signal the area for a background write-out
             pthread_mutex_lock(&pool->inputarea_mutex[idx]);
             pool->inputarea_newdata_pushed[idx] = 1;
+            pool->inputarea_writeout_complete[idx] = 0;
             pthread_mutex_unlock(&pool->inputarea_mutex[idx]);
             pthread_cond_signal(&pool->inputarea_newdata_cond[idx]);
 
@@ -1018,7 +1025,7 @@ void* writer_thread(void* p_ioctx)
 
         // Wait for wakeup
         pthread_mutex_lock(&pool->inputarea_mutex[id]);
-        while (!pool->inputarea_newdata_pushed[id] && !vfd->writers_terminate)
+        while (!pool->inputarea_newdata_pushed[id])
         {
             int rc;
             struct timespec abstimeout;
@@ -1031,14 +1038,10 @@ void* writer_thread(void* p_ioctx)
             }
         }
         blocklen = pool->inputarea_append_offset[id];
-        pool->inputarea_writeout_complete[id] = vfd->writers_terminate; // not terminating --> write not complete
+        pool->inputarea_writeout_complete[id] = 0;
         pthread_mutex_unlock(&pool->inputarea_mutex[id]);
 
-        // Quit, ignore too small blocks, etc
-        if (vfd->writers_terminate)
-        {
-            break;
-        }
+        // Ignore too small blocks
         if (pool->inputarea_append_offset[id] <= 32)
         {
             pool->inputarea_writeout_complete[id] = 1;
@@ -1049,6 +1052,7 @@ void* writer_thread(void* p_ioctx)
         pthread_mutex_lock(&vfd->lock);
         m6blk.blocknum = vfd->nblocks;
         m6blk.wb_size  = blocklen;
+        m6blk.wb_size += sizeof(m6blk);
         vfd->nblocks++;
         // TODO: also update vfd->blks[] by appending a new block list entry?
         pool->inputareas_busy_count++;
