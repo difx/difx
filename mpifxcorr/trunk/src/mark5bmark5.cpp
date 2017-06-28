@@ -142,10 +142,10 @@ Mark5BMark5DataStream::Mark5BMark5DataStream(const Configuration * conf, int snu
 
 Mark5BMark5DataStream::~Mark5BMark5DataStream()
 {
-	mark5threadstop = true;
 
 	/* barriers come in pairs to allow the read thread to always get first lock */
 	pthread_barrier_wait(&mark5threadbarrier);
+        mark5threadstop = true; // "signal" for exit while thread guaranteed to still be alive
 	pthread_barrier_wait(&mark5threadbarrier);
 
 	pthread_join(mark5thread, 0);

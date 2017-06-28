@@ -80,7 +80,7 @@ private:
 #endif
 	pthread_barrier_t mark5threadbarrier;
 	bool mark5xlrfail;
-	bool mark5threadstop;
+	volatile bool mark5threadstop;
 	int lockstart, lockend, lastslot;
 	unsigned int endindex, fixindex;
 	int readbufferwriteslot;
