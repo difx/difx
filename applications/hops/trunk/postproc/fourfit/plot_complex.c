@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <complex.h>
+#include "control.h"
 
 void 
 plot_complex (char** matrix, int x, int y, int width, int height, 
@@ -55,7 +56,7 @@ plot_complex (char** matrix, int x, int y, int width, int height,
                     data = cabs (segsum) / wtsum;
                     if (nlsb < nusb) symbol = '+';
                     else if (nusb < nlsb) symbol = '-';
-                    else symbol = '*';
+                    else symbol = COMCHAR;
                                         /* Override for all freqs */
                     if (ch == 'A') symbol = ch;
                     }

@@ -89,7 +89,7 @@ double diff_file_phase (struct type_pass *p, // ptr to current pass structure
                            msg ("read error on %s", 2,  p->control.adhoc_file[i]);
                            break;
                            }
-                        if (rc == '*')
+                        if (rc == COMCHAR)
                             in_comment = TRUE;
                         else if (rc == '\n')
                             in_comment = FALSE;

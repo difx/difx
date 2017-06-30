@@ -7,9 +7,7 @@
 *******************************************************************************/
 #include "parser.h"
 #include "general.h"
-#include "mk4_data.h"
 #include "mk4_sizes.h"
-//#include "pass_struct.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

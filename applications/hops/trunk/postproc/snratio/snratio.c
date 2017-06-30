@@ -62,9 +62,12 @@
 /*    mod 2015.3.2  rjc  fix behavior with new sked format    */
 /**************************************************************/
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> 
+
+#include "mk4_afio.h"
 
 /*  max baselines, sources and scans defined:   */
 /*  Note: actually baseline/freq, each scan has X baselines then S  */
@@ -96,7 +99,9 @@ struct {                          /* struct for bl means by source */
 void addsec();
 int parse_station_name (char *in_line, int nbl, char *ref, char *rem);
 
-main(int argc, char *argv[])
+char progname[8] = "snratio";
+
+int main(int argc, char *argv[])
 {
 
   FILE *fm, *fp2, *fp3, *fp, *fp_snr;
@@ -293,10 +298,10 @@ main(int argc, char *argv[])
 
     if (strncmp(line,"End",3) == 0) done = 1;
 
-/* Search for lines not starting with a '*' (=> comment lines), but
+/* Search for lines which are not comments, but
  * starting with an alphanumeric char */
 
-    if (line[0] != '*' && isalnum(line[0]) && !done) {   
+    if (!afile_comment(line) && isalnum(line[0]) && !done) {   
   
 /*  read each line of predicted snr's  */
 
@@ -371,7 +376,7 @@ main(int argc, char *argv[])
   ns = 0;      
 
   while (fgets(line,400,fp3) != NULL) {        /* read a line from alist */
-   if (line[0] == '*') continue;         /* ignore comment line    */
+   if (afile_comment(line)) continue;       /* ignore comment line */
     if (isalnum(line[0])) {                 /* ignore garbage line    */
 
 

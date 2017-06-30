@@ -53,7 +53,7 @@ void apply_lsb_notch(double lo, double hi,
     nibble = (nuked > 0) ? (double)nuked / (double)(npts / 4) : 0.0;
     if (nibble > 0.0 && nibble < datum->lsbfrac) datum->lsbfrac -= nibble;
     msg ("notch [%lf - %lf]: nibbed %lf by %lf down to %lf",
-        2, lo, hi, origfrac, nibble, datum->lsbfrac);
+        1, lo, hi, origfrac, nibble, datum->lsbfrac);
     }
 
 void apply_usb_notch(double lo, double hi,
@@ -94,7 +94,7 @@ void apply_usb_notch(double lo, double hi,
     nibble = (nuked > 0) ? (double)nuked / (double)(npts / 4) : 0.0;
     if (nibble > 0.0 && nibble < datum->usbfrac) datum->usbfrac -= nibble;
     msg ("notch [%lf - %lf]: nibbed %lf by %lf down to %lf",
-        2, lo, hi, origfrac, nibble, datum->usbfrac);
+        1, lo, hi, origfrac, nibble, datum->usbfrac);
     }
 
 
@@ -108,7 +108,7 @@ void apply_notches(int sb, int ap,
     double lo, hi;
 
     if (param.nnotches) msg ("Ap %d: applying %d notches to channel %lf",
-        2,ap,param.nnotches,fdata->frequency);
+        1,ap,param.nnotches,fdata->frequency);
     for (ii = 0; ii < param.nnotches; ii++)
         {
         lo = param.notches[ii][0];

@@ -28,7 +28,7 @@ def parseOptions():
     '''
     use = '%(prog)s [options]\n'
     use += '  Version '
-    use += '$Id: est_manual_phases.py.in 1729 2017-05-10 18:07:23Z gbc $'
+    use += '$Id: est_manual_phases.py.in 1765 2017-06-05 16:47:51Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     required = parser.add_argument_group('required options')
     flaggers = parser.add_argument_group('flag options')
@@ -362,14 +362,21 @@ def dumpOpts(o):
     print '  The default list of fourfit cf directives is:',
     print o.cf_default
     print '  Valid bits available in each -q list element are:'
-    print '    0x01 - solve for phases'
-    print '    0x02 - estimate delay from median value [*]'
-    print '    0x04 - estimate delay from average value [*]'
-    print '    0x08 - estimate delay from total SBD value'
-    print '    0x10 - use per-channel SBD values [*]'
-    print '    0x20 - discard outlier per-channel SBD values on [*]'
+    print '    0x01 -   1 - solve for phases'
+    print '    0x02 -   2 - estimate delay from median value [*]'
+    print '    0x04 -   4 - estimate delay from average value [*]'
+    print '    0x08 -   8 - estimate delay from total SBD value'
+    print '    0x10 -  16 - use per-channel SBD values [*]'
+    print '    0x20 -  32 - discard outlier per-channel SBD values on [*]'
+    print '    0x40 -  64 - calculate the phase offset between polarizations'
+    print '    0x80 - 128 - apply a phase bias'
     print ''
-    print '  This sequence of estimates is repeated to the -m limit.'
+    print '  This sequence of estimates [-q] is repeated to the -m limit.'
+    print '  The first station is assumed mixed pol (or that the target'
+    print '    is polarized; then its R,L phase & delays are calculated.'
+    print '  After that the second station R phase, and finally the'
+    print '    phase offset for the second station R phase.'
+    print '  Finally the first station is used to remaining phase and delays.'
     print ''
 
 # main entry point

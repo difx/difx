@@ -562,9 +562,11 @@ KEYWORD SEMANTICS
                  0x04 average sbd channel, 0x08 use total sbd value,
                  0x10 use original per-channel sbd delay, 0x20 activates
                  heuristics to discard outliers and 0x40 reports phase
-                 measurement as a pc_phase_offset_? value.  Calculations
-                 are made with channels in the -f and -n range (inclusive).
-                 Conflicting commanding on delay options does nothing.
+                 measurement as a pc_phase_offset_? value.  Finally, 0x80
+                 can be used to supply a phase bias via an environment
+                 variable (HOPS_EST_PC_BIAS).  Calculations are made with
+                 channels in the -f and -n range (inclusive).  Conflicting
+                 commanding on delay options results in no corrections.
 
 SPECIAL KEYWORD VALUES
    ?         wild card character

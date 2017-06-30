@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1461 2016-12-13 18:57:49Z barrettj $
+# $Id: Makefile.am 1763 2017-06-02 18:08:08Z gbc $
 #
 
 SUBDIRS =
@@ -84,6 +84,9 @@ EXP_3562 =  testdata/3562/cf3562_140-1817 \
 	    testdata/3562/3562-captured.tsumm \
 	    testdata/3562/3562-captured.fsumm
 
+AVERAGEFIX = testdata/average \
+	     testdata/average/080-low-2-subset.1sec \
+	     testdata/average/080-low-2-subset.averaged
 
 test_gs_device = nullpage
 
@@ -96,13 +99,15 @@ TESTS_ENVIRONMENT = \
 
 if HAVE_DEVEL
 TESTS = chk_ff_2836.sh chk_ff_2843.sh chk_ff_3372.sh chk_ff_3413.sh \
- 	chk_ff_3571.sh chk_baselines.sh chk_alist.sh chk_adump.sh \
-	chk_aedit.sh chk_fringex.sh chk_average.sh chk_cofit.sh chk_search.sh \
+	chk_ff_3571.sh chk_baselines.sh chk_alist.sh chk_adump.sh \
+	chk_aedit.sh chk_fringex.sh chk_average.sh \
+	chk_avefix.sh chk_cofit.sh chk_search.sh \
 	chk_fourmer.sh chk_frmrsrch.sh chk_hdlinks.sh
 if HAVE_PYTHON
 TESTS += run_testsuite.sh
 endif
-expdata = $(EXP_2836) $(EXP_2843) $(EXP_3365) $(EXP_3372) $(EXP_3413) $(EXP_3571) $(EXP_3562)
+expdata = $(EXP_2836) $(EXP_2843) $(EXP_3365) $(EXP_3372) $(EXP_3413) \
+	$(EXP_3571) $(EXP_3562) $(AVERAGEFIX)
 else
 TESTS = chk_ff_2843.sh chk_baselines.sh \
 	chk_alist.sh chk_adump.sh chk_aedit.sh chk_fringex.sh \
@@ -114,7 +119,8 @@ EXTRA_DIST = $(expdata)
 
 dist_check_SCRIPTS = chk_env.sh $(TESTS)
 
-CLEANFILES = *.ps *.oifhak aedit.in *.out *.alist *.cofit *.coavg cf* *.avg
+CLEANFILES = *.ps *.oifhak aedit.in *.out *.alist *.cofit *.coavg cf* *.avg \
+	     hopstestsuite.py
 
 clean-local:
 	rm -rf DD 2843 3365 path datadir

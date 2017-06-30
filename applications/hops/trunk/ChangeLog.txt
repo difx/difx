@@ -1,4 +1,572 @@
 ------------------------------------------------------------------------
+r1826 | gbc | 2017-06-29 16:35:37 -0400 (Thu, 29 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/apply_notches.c
+
+dropping versbosity a notch
+
+------------------------------------------------------------------------
+r1822 | gbc | 2017-06-28 17:29:27 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/Makefile.am
+   M /trunk/configure.ac
+
+added vex2xml
+
+------------------------------------------------------------------------
+r1820 | gbc | 2017-06-28 16:48:09 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/vex2xml/VEX2XML
+
+what a stupid piece of crap java is
+
+------------------------------------------------------------------------
+r1819 | gbc | 2017-06-28 15:58:50 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/vex2xml/Makefile.am
+   A /trunk/vex2xml/chk_v2v.sh
+   A /trunk/vex2xml/testcases
+   A /trunk/vex2xml/testcases/vex
+   A /trunk/vex2xml/testcases/vex/a25gl.vex
+   A /trunk/vex2xml/testcases/vex/b23gl.vex
+   A /trunk/vex2xml/testcases/vex/bm452c.vex
+   A /trunk/vex2xml/testcases/vex/c151a.vex
+   A /trunk/vex2xml/testcases/vex/c151b.vex
+   A /trunk/vex2xml/testcases/vex/c152a.vex
+   A /trunk/vex2xml/testcases/vex/c152b.vex
+   A /trunk/vex2xml/testcases/vex/c22gl.vex
+   A /trunk/vex2xml/testcases/vex/d21us.vex
+   A /trunk/vex2xml/testcases/vex/e16b08.vex
+   A /trunk/vex2xml/testcases/vex/g26us.vex
+   A /trunk/vex2xml/testcases/vex/gbc1.vex
+   A /trunk/vex2xml/testcases/vex/new27.vex
+   A /trunk/vex2xml/testcases/xml
+   A /trunk/vex2xml/testcases/xml/a25gl.xml
+   A /trunk/vex2xml/testcases/xml/b23gl.xml
+   A /trunk/vex2xml/testcases/xml/bm452c.xml
+   A /trunk/vex2xml/testcases/xml/c151a.xml
+   A /trunk/vex2xml/testcases/xml/c151b.xml
+   A /trunk/vex2xml/testcases/xml/c152a.xml
+   A /trunk/vex2xml/testcases/xml/c152b.xml
+   A /trunk/vex2xml/testcases/xml/c22gl.xml
+   A /trunk/vex2xml/testcases/xml/d21us.xml
+   A /trunk/vex2xml/testcases/xml/e16b08.xml
+   A /trunk/vex2xml/testcases/xml/g26us.xml
+   A /trunk/vex2xml/testcases/xml/gbc1.xml
+   A /trunk/vex2xml/testcases/xml/new27.xml
+
+added the test suite
+
+------------------------------------------------------------------------
+r1817 | barrettj | 2017-06-28 15:48:40 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   M /trunk
+
+modifying svn ignore properties again
+
+------------------------------------------------------------------------
+r1816 | barrettj | 2017-06-28 15:45:55 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   M /trunk
+
+modifying svn ignore properties
+
+------------------------------------------------------------------------
+r1815 | gbc | 2017-06-28 15:32:34 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/vex2xml/Makefile.am
+   M /trunk/vex2xml/VEX2XML
+   D /trunk/vex2xml/lib/antlr-3.5-complete.jar
+   M /trunk/vex2xml/src/manifest.txt
+
+got it to compile
+
+------------------------------------------------------------------------
+r1814 | barrettj | 2017-06-28 13:50:03 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/fill_222.c
+   M /trunk/postproc/fourfit/parse_control_file.c
+   M /trunk/postproc/fourfit/set_defaults.c
+
+fixing a bug I introduced into the type222 record output
+
+------------------------------------------------------------------------
+r1813 | gbc | 2017-06-28 13:40:12 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   A /trunk/vex2xml/Makefile.am
+   M /trunk/vex2xml/VEX2XML
+
+modified makefile and script from ALMA
+
+------------------------------------------------------------------------
+r1812 | gbc | 2017-06-28 11:57:20 -0400 (Wed, 28 Jun 2017) | 1 line
+Changed paths:
+   A /trunk/vex2xml
+   A /trunk/vex2xml/VEX2XML
+   A /trunk/vex2xml/doc
+   A /trunk/vex2xml/doc/Antlr-LICENSE-ver3.txt
+   A /trunk/vex2xml/doc/Apache-LICENSE-ver2.0.txt
+   A /trunk/vex2xml/doc/Release-Notes.txt
+   A /trunk/vex2xml/doc/VEX-visualGrammar.pdf
+   A /trunk/vex2xml/lib
+   A /trunk/vex2xml/lib/antlr-3.5-complete.jar
+   A /trunk/vex2xml/lib/antlr-3.5.2-complete.jar
+   A /trunk/vex2xml/lib/commons-cli-1.2.jar
+   A /trunk/vex2xml/src
+   A /trunk/vex2xml/src/VEX2XML.java
+   A /trunk/vex2xml/src/manifest.txt
+   A /trunk/vex2xml/src/vexGrammar.g
+
+all the stuff frmo ALMA
+
+------------------------------------------------------------------------
+r1806 | gbc | 2017-06-27 17:11:16 -0400 (Tue, 27 Jun 2017) | 1 line
+Changed paths:
+   A /trunk/app
+   A /trunk/app/Makefile.am
+   M /trunk/configure.ac
+   A /trunk/inc
+   A /trunk/inc/Makefile.am
+   A /trunk/lib
+   A /trunk/lib/Makefile.am
+   A /trunk/man
+   A /trunk/man/Makefile.am
+
+added 4 empty directories
+
+------------------------------------------------------------------------
+r1805 | barrettj | 2017-06-27 15:25:43 -0400 (Tue, 27 Jun 2017) | 1 line
+Changed paths:
+   M /trunk
+   D /trunk/.gitignore
+
+removing .gitignore
+
+------------------------------------------------------------------------
+r1802 | gbc | 2017-06-26 16:53:39 -0400 (Mon, 26 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/load_alist.c
+
+added some comments
+
+------------------------------------------------------------------------
+r1801 | gbc | 2017-06-26 14:10:45 -0400 (Mon, 26 Jun 2017) | 3 lines
+Changed paths:
+   M /trunk/postproc/aedit/get_ps_indices4.c
+   M /trunk/postproc/aedit/psfile4.c
+   M /trunk/postproc/aedit/psplot4.c
+   M /trunk/scripts/Makefile.am
+   A /trunk/scripts/hops_vex2ovex.py
+
+Borred Hegle vex2ovex.py and repaired it, perhaps.
+psplot and psfile now do something, perhaps not correctly.
+
+
+------------------------------------------------------------------------
+r1800 | gbc | 2017-06-26 11:23:05 -0400 (Mon, 26 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/sub/vex/text/pformat.txt
+
+added VDIF
+
+------------------------------------------------------------------------
+r1795 | barrettj | 2017-06-23 13:16:51 -0400 (Fri, 23 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/include/mk4_data.h
+   M /trunk/include/mk4_sizes.h
+   M /trunk/postproc/fourfit/criteria_match.c
+
+moving TRUE/FALSE define from mk4data.h to mk4sizes.h
+
+------------------------------------------------------------------------
+r1794 | barrettj | 2017-06-23 12:05:35 -0400 (Fri, 23 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/lex.c
+   M /trunk/postproc/fourfit/parse_control_file.c
+
+removing unused includes
+
+------------------------------------------------------------------------
+r1793 | barrettj | 2017-06-23 10:31:48 -0400 (Fri, 23 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/parse_cmdline.c
+   M /trunk/postproc/fourfit/parse_control_file.c
+   M /trunk/postproc/fourfit/set_defaults.c
+
+decoupling parse_control_file from the param_struct
+
+------------------------------------------------------------------------
+r1792 | barrettj | 2017-06-23 08:56:08 -0400 (Fri, 23 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/phorc/src/phorc/__init__.py
+   M /trunk/scripts/phorc/src/phorc/baseline_fringe_product_list.py
+   M /trunk/scripts/phorc/src/phorc/ffres2pcp_lib.py
+   A /trunk/scripts/phorc/src/phorc/mixedmode.py
+   M /trunk/scripts/phorc/src/phorc/processing.py
+   M /trunk/scripts/phorc/src/phorc/scripting.py
+
+Merge branch 'local/jpb-mixed-mode' into trunk
+
+------------------------------------------------------------------------
+r1790 | gbc | 2017-06-22 17:11:26 -0400 (Thu, 22 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/dsolv3.c
+
+fixed typos
+
+------------------------------------------------------------------------
+r1789 | gbc | 2017-06-22 11:38:31 -0400 (Thu, 22 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/netsolv.c
+   M /trunk/misc/plan/network.c
+   M /trunk/misc/plan/network.h
+
+added a minvals option
+
+------------------------------------------------------------------------
+r1787 | gbc | 2017-06-19 17:23:11 -0400 (Mon, 19 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/network.h
+
+added some things
+
+------------------------------------------------------------------------
+r1786 | gbc | 2017-06-19 17:22:56 -0400 (Mon, 19 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/netsolv.c
+
+added some things
+
+------------------------------------------------------------------------
+r1785 | gbc | 2017-06-19 17:21:52 -0400 (Mon, 19 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/brute.c
+   M /trunk/misc/plan/netsolv.c
+   M /trunk/misc/plan/network.c
+   M /trunk/misc/plan/network.h
+
+added some things
+
+------------------------------------------------------------------------
+r1783 | gbc | 2017-06-16 17:27:21 -0400 (Fri, 16 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/brute.c
+   M /trunk/misc/plan/dsolv.f
+   M /trunk/misc/plan/dsolv.out
+   M /trunk/misc/plan/dsolv2.f
+   M /trunk/misc/plan/dsolv2.out
+   M /trunk/misc/plan/dsolv3.c
+   M /trunk/misc/plan/dsolv3.out
+   M /trunk/misc/plan/netsolv.c
+   M /trunk/misc/plan/network.c
+   M /trunk/misc/plan/network.h
+   M /trunk/misc/plan/readme.txt
+
+this perhaps works
+
+------------------------------------------------------------------------
+r1782 | gbc | 2017-06-16 15:34:41 -0400 (Fri, 16 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/Makefile.am
+   A /trunk/misc/plan/brute.c
+   A /trunk/misc/plan/netsolv.c
+   A /trunk/misc/plan/network.c
+   A /trunk/misc/plan/network.h
+   M /trunk/postproc/snratio/Makefile.am
+
+proper dependency
+
+------------------------------------------------------------------------
+r1781 | gbc | 2017-06-16 15:17:12 -0400 (Fri, 16 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/postproc/snratio/Makefile.am
+
+added MK4IO for dependency
+
+------------------------------------------------------------------------
+r1779 | gbc | 2017-06-15 17:24:02 -0400 (Thu, 15 Jun 2017) | 2 lines
+Changed paths:
+   M /trunk/misc/plan/dsolv3.c
+
+fixed up a few thigns
+
+
+------------------------------------------------------------------------
+r1778 | gbc | 2017-06-15 17:13:13 -0400 (Thu, 15 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/dsolv3.c
+   M /trunk/misc/plan/dsolv3.h
+   M /trunk/misc/plan/dsolv3_main.c
+
+added quiet mode
+
+------------------------------------------------------------------------
+r1777 | gbc | 2017-06-15 17:06:58 -0400 (Thu, 15 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/dsolv3.c
+   M /trunk/misc/plan/dsolv3.h
+   M /trunk/misc/plan/dsolv3_main.c
+   M /trunk/misc/plan/load_alist.c
+
+some cleanup for 2017 and new data
+
+------------------------------------------------------------------------
+r1774 | gbc | 2017-06-06 12:15:26 -0400 (Tue, 06 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/cofit/covsrt.c
+   M /trunk/postproc/cofit/gaussj.c
+   M /trunk/postproc/cofit/pythag.c
+   M /trunk/postproc/cofit/svbksb.c
+   M /trunk/postproc/cofit/svdcmp.c
+   M /trunk/postproc/cofit/svdcmpp.c
+
+completed ansification of functions
+
+------------------------------------------------------------------------
+r1773 | gbc | 2017-06-06 12:04:24 -0400 (Tue, 06 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/cofit/fit_ampl.c
+   M /trunk/postproc/cofit/fit_snr.c
+   M /trunk/postproc/cofit/normalize_snr.c
+   M /trunk/postproc/cofit/parse_cmdline.c
+   M /trunk/postproc/cofit/read_data.c
+   M /trunk/postproc/cofit/sort_data.c
+   M /trunk/postproc/cofit/sorter.c
+
+more ansification
+
+------------------------------------------------------------------------
+r1772 | gbc | 2017-06-06 11:56:59 -0400 (Tue, 06 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/cofit/mrqcof.c
+
+last ansified mrq header
+
+------------------------------------------------------------------------
+r1771 | gbc | 2017-06-06 11:53:54 -0400 (Tue, 06 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/cofit/ampf.c
+   M /trunk/postproc/cofit/cofit.h
+   M /trunk/postproc/cofit/mrqcof.c
+   M /trunk/postproc/cofit/mrqfix.c
+
+this works, too
+
+------------------------------------------------------------------------
+r1770 | gbc | 2017-06-06 11:51:06 -0400 (Tue, 06 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/cofit/ampf.c
+   M /trunk/postproc/cofit/cofit.h
+   M /trunk/postproc/cofit/mrqcof.c
+   M /trunk/postproc/cofit/mrqfix.c
+
+have a consistent k&r ampf calling declaration
+
+------------------------------------------------------------------------
+r1769 | gbc | 2017-06-06 11:31:19 -0400 (Tue, 06 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_cofit.sh
+
+fixed for alist header
+
+------------------------------------------------------------------------
+r1767 | gbc | 2017-06-05 17:39:12 -0400 (Mon, 05 Jun 2017) | 5 lines
+Changed paths:
+   M /trunk/help/cofit.doc
+   M /trunk/postproc/cofit/ampf.c
+   M /trunk/postproc/cofit/clear_codata.c
+   M /trunk/postproc/cofit/cofit.c
+   M /trunk/postproc/cofit/cofit.h
+   M /trunk/postproc/cofit/fit_codata.c
+   M /trunk/postproc/cofit/fit_snr.c
+   M /trunk/postproc/cofit/mrqfix.c
+   M /trunk/postproc/cofit/normalize_snr.c
+   M /trunk/postproc/cofit/parse_cmdline.c
+   M /trunk/postproc/cofit/plot_codata.c
+   M /trunk/postproc/cofit/read_data.c
+   M /trunk/postproc/cofit/sort_data.c
+   M /trunk/postproc/cofit/svdcmpp.c
+   M /trunk/postproc/cofit/write_codata.c
+
+added -g CxR and allow multi-pol fits.  Cleaned up most
+of the K&R prototypes, but something's not quite right
+with the ampf function prototype....  This appears to
+work, but may not be fully correct.
+
+
+------------------------------------------------------------------------
+r1766 | gbc | 2017-06-05 16:02:44 -0400 (Mon, 05 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/help/cofit.doc
+   M /trunk/postproc/cofit/cofit.c
+   M /trunk/postproc/cofit/cofit.h
+   M /trunk/postproc/cofit/fit_ampl.c
+   M /trunk/postproc/cofit/fit_codata.c
+   M /trunk/postproc/cofit/parse_cmdline.c
+   M /trunk/postproc/cofit/plot_codata.c
+   M /trunk/postproc/cofit/write_codata.c
+
+added -s option and cleaned up some of the plotting and diagnositcs
+
+------------------------------------------------------------------------
+r1765 | gbc | 2017-06-05 12:47:51 -0400 (Mon, 05 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/est_pc_manual.c
+   M /trunk/scripts/est_manual_phases.py.in
+
+added the phase bias operation and cleaned up some help text
+
+------------------------------------------------------------------------
+r1763 | gbc | 2017-06-02 14:08:08 -0400 (Fri, 02 Jun 2017) | 7 lines
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   A /trunk/data/ff_testdata/chk_avefix.sh
+   M /trunk/data/ff_testdata/chk_average.sh
+   A /trunk/data/ff_testdata/testdata/average
+   A /trunk/data/ff_testdata/testdata/average/080-low-2-subset.1sec
+   A /trunk/data/ff_testdata/testdata/average/080-low-2-subset.averaged
+   M /trunk/postproc/adump/adump.c
+   M /trunk/postproc/adump/parse_cmdline.c
+   M /trunk/postproc/aedit/run_com_file.c
+   M /trunk/postproc/average/average.c
+   M /trunk/postproc/average/baseline_avg.c
+   M /trunk/postproc/average/read_data.c
+   M /trunk/postproc/bispec/bispec.c
+   M /trunk/postproc/calamp/calamp.c
+   M /trunk/postproc/cofit/read_data.c
+   M /trunk/postproc/coterp/read_data.c
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/diff_file_phase.c
+   M /trunk/postproc/fourfit/plot_complex.c
+   M /trunk/postproc/fourfit/read_control_file.c
+   M /trunk/postproc/fourfit/refringe_list.c
+   M /trunk/postproc/fringex/filelist.c
+   D /trunk/postproc/hfold/25septest.c
+   A /trunk/postproc/hfold/attic/25septest.c (from /trunk/postproc/hfold/25septest.c:1760)
+   A /trunk/postproc/hfold/attic/fold_22dec_1997.c (from /trunk/postproc/hfold/fold_22dec_1997.c:1760)
+   A /trunk/postproc/hfold/attic/fold_3dec98.c (from /trunk/postproc/hfold/fold_3dec98.c:1760)
+   A /trunk/postproc/hfold/attic/fold_caltech.c (from /trunk/postproc/hfold/fold_caltech.c:1760)
+   A /trunk/postproc/hfold/attic/nnewfold.c (from /trunk/postproc/hfold/nnewfold.c:1760)
+   A /trunk/postproc/hfold/attic/old.c (from /trunk/postproc/hfold/old.c:1760)
+   M /trunk/postproc/hfold/fold.c
+   D /trunk/postproc/hfold/fold_22dec_1997.c
+   D /trunk/postproc/hfold/fold_3dec98.c
+   D /trunk/postproc/hfold/fold_caltech.c
+   D /trunk/postproc/hfold/nnewfold.c
+   D /trunk/postproc/hfold/old.c
+   M /trunk/postproc/pratio/calc_vec_avg.c
+   M /trunk/postproc/pratio/pratio.c
+   M /trunk/postproc/pratio/reset_pol_field.c
+   M /trunk/postproc/pratio/set_pol_field.c
+   M /trunk/postproc/search/read_data.c
+   M /trunk/postproc/snratio/Makefile.am
+   M /trunk/postproc/snratio/snratio.c
+
+Fixed a typo in average, and added a check
+test for the sample the Lindy provided.
+
+In a fit of cleanup, implemented the 'comment' method
+from the afio library in all cases and added COMCHAR
+to fourfit as well for the control file.
+
+
+------------------------------------------------------------------------
+r1761 | gbc | 2017-06-01 17:09:58 -0400 (Thu, 01 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/help/average.doc
+   M /trunk/include/mk4_afio.h
+   M /trunk/postproc/average/baseline_avg.c
+   M /trunk/postproc/average/parse_cmdline.c
+   M /trunk/sub/afio/afile_header.c
+
+implemented the average fix
+
+------------------------------------------------------------------------
+r1760 | barrettj | 2017-06-01 14:58:00 -0400 (Thu, 01 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/phorc/src/phorc/__init__.py
+   M /trunk/scripts/phorc/src/phorc/ffres2pcp_lib.py
+   M /trunk/scripts/phorc/src/phorc/fringe_file_handle.py
+   M /trunk/scripts/phorc/src/phorc/processing.py
+   M /trunk/scripts/phorc/src/phorc/scripting.py
+
+Merge branch 'local/jpb-phorc-phases' into trunk
+
+------------------------------------------------------------------------
+r1757 | gbc | 2017-05-26 15:54:00 -0400 (Fri, 26 May 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/dsolv.f
+   M /trunk/misc/plan/dsolv2.f
+
+cleanup for fussy compilers
+
+------------------------------------------------------------------------
+r1748 | barrettj | 2017-05-23 08:45:03 -0400 (Tue, 23 May 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/phorc/src/phorc/__init__.py
+   M /trunk/scripts/phorc/src/phorc/ffres2pcp_lib.py
+   M /trunk/scripts/phorc/src/phorc/fringe_file_handle.py
+   M /trunk/scripts/phorc/src/phorc/scripting.py
+
+Merge branch 'local/jpb-phorc-phases' into trunk
+
+------------------------------------------------------------------------
+r1746 | barrettj | 2017-05-22 14:25:58 -0400 (Mon, 22 May 2017) | 1 line
+Changed paths:
+   D /trunk/scripts/phorc/Makefile.in
+
+deleting Makefile.in in phorc, since it should be regenerated locally using automake
+
+------------------------------------------------------------------------
+r1744 | barrettj | 2017-05-19 09:57:34 -0400 (Fri, 19 May 2017) | 1 line
+Changed paths:
+   A /trunk/scripts/phorc/Makefile.in
+
+adding missing Makefile.in for phorc
+
+------------------------------------------------------------------------
+r1742 | gbc | 2017-05-12 10:47:27 -0400 (Fri, 12 May 2017) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/cf_keywords.tex
+
+added est_pc_manual and gen_cf_record
+
+------------------------------------------------------------------------
+r1741 | rjc | 2017-05-12 09:59:16 -0400 (Fri, 12 May 2017) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/cf_keywords.tex
+
+add ion_smooth parameter to ff manual
+
+------------------------------------------------------------------------
+r1735 | gbc | 2017-05-11 12:06:57 -0400 (Thu, 11 May 2017) | 1 line
+Changed paths:
+   M /trunk/m4/python_module_check.m4
+
+safer place to leave it until understood
+
+------------------------------------------------------------------------
+r1733 | barrettj | 2017-05-11 10:46:07 -0400 (Thu, 11 May 2017) | 1 line
+Changed paths:
+   D /trunk/scripts/phorc/Makefile
+
+removing a makefile that snuck into the repo
+
+------------------------------------------------------------------------
+r1732 | barrettj | 2017-05-11 10:46:06 -0400 (Thu, 11 May 2017) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   A /trunk/m4/python_module_check.m4
+   A /trunk/scripts/phorc/Makefile
+   M /trunk/scripts/phorc/Makefile.am
+
+adding build checks for python module setuptools
+
+------------------------------------------------------------------------
 r1729 | gbc | 2017-05-10 14:07:23 -0400 (Wed, 10 May 2017) | 1 line
 Changed paths:
    M /trunk/scripts/est_manual_phases.py.in

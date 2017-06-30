@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.14, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.15, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])
@@ -87,6 +87,10 @@ AC_GBC_NOTICE([enable_checks is --$enable_checks--])
 BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%S"`
 AC_SUBST(BUILD_DATE)
 
+have_hopes=false
+### option disabled
+AC_SUBST(HPESDIR)
+AM_CONDITIONAL(HAVE_HOPES, $have_hopes)
 
 #
 # Control the core HOPS post-processing tools
@@ -170,6 +174,13 @@ if [ $have_python = "true" ] ; then
     AC_PYTHON_MODULE_CHECK(setuptools)
 #    AM_COND_IF([HAVE_PYTHON_MODULE_setuptools], AC_MSG_NOTICE([found python setuptools]), AC_MSG_NOTICE([missing python setuptools]))
 fi
+
+have_vex2xml=false
+have_javas=false
+### option disabled
+AC_SUBST(VXMLDIR)
+AM_CONDITIONAL([HAVE_JAVAS], [$have_javas])
+AM_CONDITIONAL(HAVE_VEX2XML, [$have_vex2xml])
 
 # Checks for libraries.
 AC_CHECK_LIB(m, floorl)
@@ -422,6 +433,7 @@ AC_SUBST(PNG_LIB)
 #
 HOPS_INC=['-I$(top_srcdir)/include']
 AC_SUBST(HOPS_INC)
+AC_GBC_LIBDEP(MK4IO,sub/mk4py,mk4io)
 AC_GBC_LIBDEP(AFIO,sub/afio,afio)
 AC_GBC_LIBDEP(DFIO,sub/dfio,dfio)
 AC_GBC_LIBDEP(UTIL,sub/util,mk4util)

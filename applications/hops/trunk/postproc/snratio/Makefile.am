@@ -10,8 +10,8 @@ bin_PROGRAMS = snratio
 
 snratio_SOURCES = snratio.c
 
-snratio_LDADD = 
-snratio_DEPENDENCIES = 
+snratio_LDADD = @AFIO_LIB@
+snratio_DEPENDENCIES = @AFIO_DEP@  @UTIL_DEP@
 
 #
 # eof

@@ -67,10 +67,11 @@ int psfile4 (esum *data, char *fname, int mode)
     expno = fsumm.experiments[0];
                                         /* Read in the vex file */
                                         /* associated with the data in memory */
-    sprintf (vexname, "/correlator/data/%04d/%04d.ovex", expno, expno);
+    sprintf (vexname, "%s/%04d/%04d.ovex", datadir, expno, expno);
     if (stat (vexname, &statbuf) != 0)
 	    {
 	    msg ("Could not find file '%s'", 3, vexname);
+            msg ("(You can make one from vex.obs with hops_vex2ovex.py)", 3);
 	    printf ("Enter full pathname of ovex file: ");
 	    if (!fgets (vexname, 128, stdin)) return(1);
 	    len = strlen (vexname);
@@ -162,6 +163,8 @@ int psfile4 (esum *data, char *fname, int mode)
                 }
             }
         }
+        printf ("(Ready to write %s)                            \n", fname);
+        fflush (stdout);
                                         /* Fill up the ps array with data */
 
                                         /* First, set up the array itself by */

@@ -219,8 +219,8 @@ class fringe_file_handle(object):
             self.set_string_hash = self.fringe_data.t222.contents.setstring_hash
 
     def load_file_data(self):
-        if os.path.isfile(filename):
-            self.fringe_data = mk4.mk4fringe(filename)
+        if os.path.isfile(self.filename):
+            self.fringe_data = mk4.mk4fringe(self.filename)
 
     def relase_file_data(self):
         mk4.clear_mk4fringe(self.fringe_data)
@@ -232,8 +232,23 @@ class residual_data(object):
     def __init__(self):
         self.is_valid = False
         self.filename = ""
+        self.scan_name = ""
         self.baseline = ""
         self.polprod = ""
         self.dtec = 0
+        self.snr = 0
         self.phase_residuals = []
+        self.phase_corrections = []
+        
+class pcphase_correction_data(object):
+    
+    def __init__(self):
+        self.snr = 0
+        self.dtec = 0
+        self.scan_name = ""
+        self.filename = ""
+        self.ref_station = ""
+        self.rem_station = ""
+        self.ref_station_pol = ""
+        self.rem_station_pol = ""
         self.phase_corrections = []

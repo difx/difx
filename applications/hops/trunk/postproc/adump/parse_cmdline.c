@@ -121,7 +121,7 @@ parse_cmdline (int argc,
 	while (fgets (line, 250, *fpin) != NULL)
 	    {
                                         /* Skip comment lines */
-	    if (line[0] == '*') continue;
+            if (afile_comment(line)) continue;
 	    aline_id (line, &version, &type);
 					/* Found valid line, rewind the file */
 	    if ((type == 2) || (type == 3))

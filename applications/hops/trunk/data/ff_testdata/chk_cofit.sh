@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_cofit.sh 330 2011-06-10 13:32:10Z gbc $
+# $Id: chk_cofit.sh 1769 2017-06-06 15:31:19Z gbc $
 #
 # canonical test suite for cofit
 #
@@ -30,7 +30,7 @@ cofit -d alist-aedit.ps/ps \
 set -- `wc -l alist-aedit.cofit alist-aedit-1.cofit alist-aedit-2.cofit`
 $verb && echo wc is $@
 
-[ "$1" -eq 3 -a "$3" -eq 56 -a "$5" -eq 5 ]
+[ "$1" -eq 6 -a "$3" -eq 59 -a "$5" -eq 5 ]
 
 #
 # eof

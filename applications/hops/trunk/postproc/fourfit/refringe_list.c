@@ -64,7 +64,7 @@ refringe_list (char* afile_name, fstruct** files, bsgstruct**  base_sgrp)
     fc = nbadline = nbadname = 0;
     while (fgets (line, 511, fp) != NULL)
         {
-        if (line[0] == '*') continue;
+        if (afile_comment(line)) continue;
                                         /* Check this is a type 2 line */
         aline_id (line, &version, &type);
         if (type != 2) continue;

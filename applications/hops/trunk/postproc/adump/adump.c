@@ -53,7 +53,7 @@ main (int argc, char* argv[])
     while (fgets (line, 512, fpin) != NULL)
 	{
 					/* Skip comment lines */
-	if (line[0] == '*') continue;
+        if (afile_comment(line)) continue;
 					/* What type of line is this? */
 					/* We are only interested in late-version */
 					/* type 2 or 3 lines in this release of adump */

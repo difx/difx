@@ -174,3 +174,69 @@ class scan_baseline_list(object):
             for x in self.baseline_list:
                 dtec_mdev.append(x.get_dtec_max_deviation())
             return min(dtec_mdev)
+
+
+class mixedmode_baseline_fringe_product_list(object):
+
+    #default values for init
+    def __init__(self):
+        self.root_id = ""
+        self.scan_name = ""
+        self.baseline = ""
+        self.associated_root_file = ""
+        self.control_filename = "" #eventually we should use hash of control file contents to differentiate
+        self.circular_station_is_reference = True #(if false, then pol prods are XR and YR)
+        self.rx_obj = None
+        self.ry_obj = None
+        self.mean_snr = 0;
+        self.min_snr = 0;
+        self.max_snr = 0;
+
+    def __eq__(self, other):
+        if (self.root_id == other.root_id) and (self.baseline == other.baseline) and (self.control_filename == other.control_filename):
+            return True
+        else:
+            return False
+
+    def __hash__(self):
+        return hash(self.root_id + self.baseline + self.control_filename)
+
+    def is_complete(self):
+        if self.rx_obj != None and self.ry_obj != None:
+            return True
+        else:
+            return False
+
+    def init_values(self):
+        #compute any internal data members after pol prod fringes are set
+        self.mean_snr = self.get_mean_snr()
+        self.min_snr = self.get_min_snr()
+        self.max_snr = self.get_max_snr()
+
+    def add_fringe_object(self, obj):
+        if obj.pol_product == "RX" or obj.pol_product == "XR":
+            self.rx_obj = obj
+            if self.associated_root_file == "":
+                self.associated_root_file = obj.associated_root_file
+            elif self.associated_root_file != obj.associated_root_file:
+                print "Non-matching root file detected in baseline_fringe_product_list!"
+            return
+        if obj.pol_product == "RY" or obj.pol_product == "YR":
+            self.ry_obj = obj
+            if self.associated_root_file == "":
+                self.associated_root_file = obj.associated_root_file
+            elif self.associated_root_file != obj.associated_root_file:
+                print "Non-matching root file detected in baseline_fringe_product_list!"
+            return
+            
+    def get_mean_snr(self):
+        snr_list = [self.rx_obj.snr, self.ry_obj.snr]
+        return np.mean(snr_list)
+
+    def get_min_snr(self):
+        snr_list = [self.rx_obj.snr, self.ry_obj.snr]
+        return min(snr_list)
+
+    def get_max_snr(self):
+        snr_list = [self.rx_obj.snr, self.ry_obj.snr]
+        return max(snr_list)

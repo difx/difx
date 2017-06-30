@@ -63,11 +63,12 @@ int get_ps_indices4 (esum *data, struct ps_array *psarray)
             }
         if (! found)
             {
-            msg ("Error in get_ps_indices4(), baseline %s not found", 2,
-                                                        datum->baseline);
+            /* this is only an error if everything was correlated */
+            msg ("baseline %s not found for scan %s", 0,
+                 datum->baseline, datum->scan_id);
             continue;
             }
-                                        /* Figure out which band this datum is */
+                                        /* Figure out band for this datum */
         fgroup = datum->freq_code;
         nbands = strlen (psarray->subgroups);
         for (j=0; j<nbands; j++)

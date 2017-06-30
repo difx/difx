@@ -1,7 +1,6 @@
 #ifndef control_done
 #define control_done
 
-#include "mk4_data.h"
 #include "mk4_sizes.h"
 
 #define MAX_SAMP 16
@@ -108,6 +107,7 @@ struct c_block                     /* Elemental control block structure */
           /* Defined values for various structure variables */
 
 #define WILDCARD  '?'              /* station, baseline, source, f_group */
+#define COMCHAR   '*'              /* comment character */
 
 #define KEEP      32767            /* x_crc, y_crc, x_slip_sync, y_slip_sync */
 #define DISCARD   1 

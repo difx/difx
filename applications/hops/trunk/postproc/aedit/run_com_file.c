@@ -67,7 +67,7 @@ int run_com_file (esum *data, char *filename)
 	if(line[n-1] == '\n') line[n-1] = '\0';
 						/* Allow shell escape */
 	if(line[0] == '!') system(&line[1]);
-	else if(line[0] != '*') 		/* Comment character */
+	else if(!afile_comment(line)) 		/* not a comment */
 	    {
 	    parse_commands(line,commands,&n);
 	    for(i=0;i<n;i++) 		/* Do all commands on line */

@@ -4,6 +4,7 @@
 #include "adata.h"
 
 extern void set_afile_com_char(int star);
+extern char get_afile_com_char(void);
 extern int  afile_comment(char *line);
 extern int  afile_header(int version, int type, FILE *fp);
 extern void aline_id(char *line, int *version, int *type);

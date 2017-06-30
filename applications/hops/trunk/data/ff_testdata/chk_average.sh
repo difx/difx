@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_average.sh 931 2014-02-23 15:12:21Z gbc $
+# $Id: chk_average.sh 1763 2017-06-02 18:08:08Z gbc $
 #
 # canonical test suite for average
 #
@@ -39,7 +39,7 @@ average -c -o alist-aedit.coavg 2>/dev/null 1>&2
 lines=`cat alist-aedit.coavg | wc -l`
 $verb && echo lines is $lines
 
-[ "$lines" -eq 24 ]
+[ "$lines" -eq 25 ]
 
 #
 # eof

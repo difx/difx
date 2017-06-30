@@ -174,7 +174,7 @@ struct type_param *param)
                                         /* Read main user control file */
     if (do_parse)
         {
-        if(parse_control_file (control_filename) != 0)
+        if(parse_control_file (control_filename, param->control_file_buff, param->set_string_buff) != 0)
             {
             msg ("Fatal error parsing control file '%s'", 3, control_filename);
             return (1);
@@ -212,7 +212,7 @@ struct type_param *param)
                                         /* Parse command line override information */
     if (strlen (control_string) > 3)
         {
-        if(parse_control_file (control_string) != 0)
+        if(parse_control_file (control_string, param->control_file_buff, param->set_string_buff) != 0)
             {
             msg ("Fatal error parsing -b option and/or 'set' parameters", 3);
             msg ("Constructed string was '%s'", 3, control_string);

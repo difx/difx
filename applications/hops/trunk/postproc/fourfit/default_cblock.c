@@ -7,7 +7,6 @@
 ***********************************************************************/
 
 #include "control.h"
-#include "mk4_data.h"
 #include "mk4_sizes.h"
 
 #define FALSE 0

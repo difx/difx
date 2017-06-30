@@ -44,12 +44,29 @@ struct type_param *param,
 struct type_222 **t222)
     {
     int setstr_len, cf_len, setstr_pad, cf_pad, full_size, i;
-    unsigned int setstr_hash, cf_hash;
+    unsigned int setstr_hash = 0;
+    unsigned int cf_hash = 0;
     
     //now allocate the necessary amount of memory
-    setstr_len = strlen(param->set_string_buff);
-    cf_len = strlen(param->control_file_buff);
-    
+    if(param->set_string_buff != NULL)
+        {
+        setstr_len = strlen(param->set_string_buff);
+        }
+    else
+        {
+        setstr_len = 0;
+        }
+
+    if(param->control_file_buff != NULL)
+        {
+        cf_len = strlen(param->control_file_buff);
+        }
+    else
+        {
+        cf_len = 0;
+        }
+
+    //find next largest multiple of 8 bytes
     setstr_pad = (( setstr_len + 7 ) & ~7) + 8;
     cf_pad = ( (cf_len + 7 ) & ~7) + 8;
     full_size = sizeof(struct type_222) + setstr_pad + cf_pad; 

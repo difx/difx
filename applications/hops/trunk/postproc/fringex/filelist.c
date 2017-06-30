@@ -51,7 +51,7 @@ filelist (char *afile_name, int mode, fstruct **files, int *versp)
     nfiles = nbadtype = nbadline = nbadname = nbadcoh = 0;
     while (fgets (line, 511, fp) != NULL)
 	{
-	if (line[0] == '*') continue;
+        if (afile_comment(line)) continue;
 					/* Check that this is a type 2 line */
 	aline_id (line, &version, &type);
 	if (type != 2) continue;

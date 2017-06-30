@@ -1,5 +1,5 @@
 *
-* $Id: pformat.txt 1160 2015-07-20 14:13:39Z rjc $
+* $Id: pformat.txt 1800 2017-06-26 15:23:05Z gbc $
 *
 * This is the vex parameter format definition file.  The format is 
 * field-based.  Comment lines begin with '*'.  All other lines must be
@@ -502,7 +502,7 @@ fanin_def          OVEX TRACKS 1.5 11
     OPT CHAR NONE   sign:mag
 *
 track_frame_format OVEX TRACKS 1.5 1
-    MAN CHAR NONE   Mark3A:Mark4:VLBA:Mark5B:MARK5B
+    MAN CHAR NONE   Mark3A:Mark4:VLBA:Mark5B:MARK5B:VDIF
 *
 data_modulation    OVEX TRACKS 1.5 1
     MAN CHAR NONE   on:off

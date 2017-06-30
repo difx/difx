@@ -5,7 +5,7 @@
 *                                                                              *
 *                   1) white space (CRs, LFs, tabs, multiple spaces) is        *
 *                      collapsed into a single space.                          *
-*                   2) comments (anything from a '*' through EOL) are stripped *
+*                   2) comments (COMCHAR through EOL) are stripped             *
 *                   3) parentheses are delimited by a single space             *
 *                                                                              *
 *                   If the control_file_name starts with the string "if ",     *
@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include "control.h"
                                              /* the 3 states of this tiny fsm */
 #define goodstuff 1
 #define white     2
@@ -81,7 +82,7 @@ int read_control_file (char* control_file_name, char** input_string, int* flag)
       switch (state)                      /* figure out which state we are in */
          {
          case goodstuff:                       /* in the midst of useful text */
-            if (c == '*')
+            if (c == COMCHAR)
                {
                state = comment;
                c = ' ';
@@ -101,7 +102,7 @@ int read_control_file (char* control_file_name, char** input_string, int* flag)
             break;
 
          case white:                                      /* into white space */
-            if (c == '*')
+            if (c == COMCHAR)
                {
                state = comment;
                c = 0;                                      /* reject comments */

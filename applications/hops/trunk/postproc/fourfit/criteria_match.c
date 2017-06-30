@@ -9,7 +9,6 @@
 ***********************************************************************/
 
 #include <stdio.h>
-#include "mk4_data.h"
 #include "control.h"
 
 int

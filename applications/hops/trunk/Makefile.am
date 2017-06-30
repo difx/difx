@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1723 2017-05-09 17:47:20Z gbc $
+# $Id: Makefile.am 1831 2017-06-30 17:28:16Z gbc $
 #
 
 #
@@ -66,7 +66,31 @@ TAR_HOPS = h
 DCF_HOPS = --disable-hops
 endif
 
-DISTCHECK_CONFIGURE_FLAGS = $(DCF_HOPS) $(DCF_DEVL) $(DCF_DIFX) $(DCF_MARK5)
+# this is for transitioning to a new world order
+if HAVE_HOPES
+HPESDIRS = @HPESDIR@
+TAR_HPES = hopes
+DCF_HPES = --enable-hopes
+else
+HPESDIRS =
+TAR_HPES =
+DCF_HPES = --disable-hopes
+endif
+#
+# this is for VEX2XML
+if HAVE_VEX2XML
+VXMLDIRS = @VXMLDIR@
+TAR_VXML = v
+DCF_VXML = --enable-vex2xml
+else
+VXMLDIRS =
+TAR_VXML =
+DCF_VXML = --disable-vex2xml
+endif
+
+DISTCHECK_CONFIGURE_FLAGS = \
+	$(DCF_HOPS) $(DCF_DEVL) $(DCF_DIFX) $(DCF_MARK5) \
+	$(DCF_HPES) $(DCF_VXML)
 
 
 # rev is -something
@@ -78,10 +102,12 @@ PKGVERS = $(PACKAGE)-@VERSION@
 READMEV = README-@VERSION@${vers}
 
 SUBDIRS = . $(HOPSDIRS) \
+	  $(HPESDIRS) \
 	  $(DIFXDIRS) \
 	  $(DEVLDIRS) \
 	  $(MARK5DIRS) \
 	  $(HOPSDATA) \
+	  $(VXMLDIRS) \
 	  $(OMPIDIRS)
 
 EXTRA_DIST = README.txt Fink.txt MacPorts.txt svnrev.txt Copyright \

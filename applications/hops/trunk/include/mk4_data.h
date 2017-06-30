@@ -60,11 +60,6 @@
 #define MAXSPLINES 64                   /* Spline polynomial intervals */
 #define MAXSTATPER 3600                 /* Statistics acc periods  */
 
-#ifndef FALSE
-#define FALSE 0
-#define TRUE 1
-#endif
-
 #include "mk4_records.h"
 
 

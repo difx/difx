@@ -268,7 +268,11 @@ char header63[] = "\
  */
 void set_afile_com_char(int star)
     {
-    afile_com_char = star;
+    afile_com_char = (char)star;
+    }
+char get_afile_com_char(void)
+    {
+    return((char)afile_com_char);
     }
 
 /*

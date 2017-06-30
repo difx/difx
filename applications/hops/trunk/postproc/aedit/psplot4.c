@@ -44,6 +44,7 @@ int psplot4 (esum *data)
     if (stat (vexname, &statbuf) != 0)
 	    {
 	    msg ("Could not find file '%s'", 3, vexname);
+            msg ("(You can make one from vex.obs with hops_vex2ovex.py)", 3);
 	    printf ("Enter full pathname of ovex file: ");
 	    if (fgets (vexname, 128, stdin)) return(1);
 	    len = strlen (vexname);
@@ -135,6 +136,7 @@ int psplot4 (esum *data)
                 }
             }
         }
+        printf ("\r"); fflush (stdout);
 
                                         /* Fill up the ps array with data */
 
