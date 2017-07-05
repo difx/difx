@@ -3117,9 +3117,9 @@ static void setGlobalValues(DifxInput *D)
 			}
 			else if(D->chanBW != bw)
 			{
+				fprintf(stderr, "Error: DifxInput setGlobalValues: detected unequal IF bandwidths (%f and %f MHz), not supported!\n", D->chanBW, bw);
 				D->chanBW = 0.0;
-
-				return; 
+				return;
 			}
 			if(nPol > 0)
 			{
