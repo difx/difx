@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,6 +42,29 @@ bool operator == (const VexSubband &s1, const VexSubband &s2)
 	{
 		return true;
 	}
+}
+
+bool hasDuplicates(const std::vector<VexSubband> &subbands)
+{
+	unsigned int n;
+
+	n = subbands.size();
+
+	if(n > 1)
+	{
+		for(unsigned i = 1; i < n; ++i)
+		{
+			for(unsigned j = 0; j < i; ++j)
+			{
+				if(subbands[i] == subbands[j])
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 std::ostream& operator << (std::ostream &os, const VexSubband &x)

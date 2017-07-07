@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,6 +31,7 @@
 #define __VEX_SUBBAND_H__
 
 #include <iostream>
+#include <vector>
 
 class VexSubband		// Mode-specific frequency details for all antennas
 {
@@ -42,6 +43,8 @@ public:
 	char sideBand;		// net side band of channel (U or L)
 	char pol;		// R or L
 };
+
+bool hasDuplicates(const std::vector<VexSubband> &subbands);
 
 bool operator == (const VexSubband &s1, const VexSubband &s2);
 

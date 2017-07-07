@@ -43,6 +43,7 @@ public:
 	char bandCode() const;
 	friend bool operator ==(const VexChannel &c1, const VexChannel &c2);
 	friend bool operator <(const VexChannel &c1, const VexChannel &c2);
+	friend bool sameTuning(const VexChannel &c1, const VexChannel &c2);
 
 	int recordChan;				// channel number on recorded media or threadnum on stream	(< 0 indicates non-recording)
 	int streamId;				// stream number

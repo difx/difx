@@ -191,6 +191,12 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 	for(unsigned int m = 0; m < V->nMode(); ++m)
 	{
 		const VexMode *M = V->getMode(m);
+		if(M->hasDuplicateBands())
+		{
+			std::cerr << "Warning: mode " << M->defName << " has duplicate bands (either recorded or zoom).  Behavior of the correlator is undefined in this case.  The .vex file might need modification to proceed." << std::endl;
+
+			++nWarn;
+		}
 		for(std::map<std::string,VexSetup>::const_iterator  s = M->setups.begin(); s != M->setups.end(); ++s)
 		{
 			for(std::vector<VexStream>::const_iterator t = s->second.streams.begin(); t != s->second.streams.end(); ++t)

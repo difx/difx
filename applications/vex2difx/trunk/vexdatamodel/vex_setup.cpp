@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -295,6 +295,33 @@ double VexSetup::getAverageSampleRate() const
 	}
 
 	return sr;
+}
+
+bool VexSetup::hasDuplicateSubbands() const
+{
+	unsigned int n;
+
+	n = channels.size();
+
+	if(n > 1)
+	{
+		for(unsigned int i = 1; i < n; ++i)
+		{
+			if(channels[i].subbandId < 0)
+			{
+				continue;
+			}
+			for(unsigned int j = 0; j < i; ++j)
+			{
+				if(channels[i].subbandId == channels[j].subbandId)
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 std::ostream& operator << (std::ostream &os, const VexSetup &x)

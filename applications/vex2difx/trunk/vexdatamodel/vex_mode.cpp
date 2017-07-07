@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -389,6 +389,24 @@ int VexMode::nRecordChan(const std::string &antName) const
 	{
 		return 0;
 	}
+}
+
+bool VexMode::hasDuplicateBands() const
+{
+	if(hasDuplicates(subbands) | hasDuplicates(zoombands))
+	{
+		return true;
+	}
+
+	for(std::map<std::string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+	{
+		if(it->second.hasDuplicateSubbands())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 std::ostream& operator << (std::ostream &os, const VexMode &x)

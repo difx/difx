@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -60,6 +60,7 @@ public:
 	double getLowestSampleRate() const;	/* samples per second */
 	double getHighestSampleRate() const;	/* samples per second */
 	double getAverageSampleRate() const;	/* samples per second */
+	bool hasDuplicateSubbands() const;
 
 	std::map<std::string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
 	std::vector<VexChannel> channels;
