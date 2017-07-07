@@ -530,6 +530,13 @@ component_mpifxcorr_trunk = \
 	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
 ]
 
+component_m6support_trunk = \
+[ \
+	'm6support', \
+	'https://svn.atnf.csiro.au/difx/applications/m6support/trunk', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
 component_difx2fits_trunk = \
 [ \
 	'difx2fits', \
@@ -715,6 +722,7 @@ components['DIFX-DEVEL'] = \
 	component_mark6meta_trunk, \
 	component_mark6sg_trunk, \
 	component_mpifxcorr_trunk, \
+	component_m6support_trunk, \
 	component_difx2fits_trunk, \
 	component_difx2mark4_trunk, \
 	component_vex2difx_trunk, \
@@ -1426,6 +1434,13 @@ component_mpifxcorr_2_5 = \
 	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
 ]
 
+component_m6support_2_5 = \
+[ \
+	'm6support', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/m6support' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
 component_difx2fits_2_5 = \
 [ \
 	'difx2fits', \
@@ -1499,7 +1514,7 @@ component_nraodifxdb_2_5 = \
 [ \
 	'nraodifxdb', \
 	'https://svn.aoc.nrao.edu/repos/VLBA/nraodifxdb', \
-	['aclocal', 'autoconf', 'automake'] \
+	['aclocal', 'autoconf', 'automake', 'nodef'] \
 ]
 
 component_hops_2_5 = \
@@ -1541,7 +1556,7 @@ component_difxdb_2_5 = \
 [ \
 	'difxdb', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/difxdb', \
-	['aclocal', 'autoconf', 'automake'] \
+	['aclocal', 'autoconf', 'automake', 'nodef'] \
 ]
 
 component_difxmonitor_2_5 = \
@@ -1569,6 +1584,7 @@ components['DIFX-2.5'] = \
 	component_mark6sg_2_5, \
 	component_python_2_5, \
 	component_mpifxcorr_2_5, \
+	component_m6support_2_5, \
 	component_difx2fits_2_5, \
 	component_difx2mark4_2_5, \
 	component_vex2difx_2_5, \
