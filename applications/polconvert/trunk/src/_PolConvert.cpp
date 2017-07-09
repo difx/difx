@@ -682,13 +682,13 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // Get the next visibility to correct:
      countNvis = 0;
 
+
    //  printf("LOOPING VIS\n");
 
      while(DifXData->getNextMixedVis(currT,currAnt, otherAnt, toconj)){
 
        countNvis += 1;
 
-   //    printf("\nVIS: %i",countNvis);
 
 
     //   if(countNvis%1024==0){printf("\r Doing vis %i",countNvis);fflush(stdout);};
@@ -722,7 +722,6 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      };
 
 
-
 //////////////////////////////////////////////////////
 // Set the interpolation time and compute gains:
 
@@ -731,6 +730,9 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   //   printf("currNant: %i PRIORI:  %.5e  %.5e \n",currNant,PrioriGains[currAntIdx][im][10].real(),PrioriGains[currAntIdx][im][10].imag());
 
 // Find the ALMA antennas involved in the phasing:
+
+
+
      allflagged = true;
      for (ij=0; ij<currNant; ij++) {
          Weight[currAntIdx][ij] = ALMAWeight->getWeight(ij,currT);
@@ -739,7 +741,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 // get ALMA refant used in the Phasing (to correct for X-Y phase offset):
      ALMARefAnt = ALMAWeight->getRefAnt(currT);
-     
+    
+ 
      for (ij=0; ij<nchans[ii]; ij++){
        gainRatio[ij] = PrioriGains[currAntIdx][im][ij]*((cplx32f) std::polar(1.0,XYdel[currAntIdx]*((double) (ij-nchans[ii]/2)))); // (std::complex<float>) std::polar(1.0,XYadd[currAntIdx*nIFconv + im]+XYdel[currAntIdx]*((double) (ij-nchans[ii]/2)));
    //    if(ii==0 && countNvis==1){printf("\n\n%i %i %i- %.2e  %.2e - %.2e  %.2e\n",ij,currAntIdx,im,gainRatio[ij].real(),gainRatio[ij].imag(),XYdel[currAntIdx],XYdel[currAntIdx]*((double) (ij-nchans[ii]/2)));};
@@ -754,21 +757,23 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        int sec = (int) ((dayFrac*24. - ((double) hour) - ((double) min)/60.)*3600.);
        sprintf(message,"WARNING: NO VALID ALMA ANTENNAS ON %i-%i:%i:%i ?!?!\n WILL CONVERT ON THIS TIME *WITHOUT* CALIBRATION\n",day,hour,min,sec);
        fprintf(logFile,"%s",message); fflush(logFile);
-
        lastTFailed = currT ;
      };
 
-
+ //      printf("\nVIS: %i\n",countNvis);
+ //      printf("\nVIS: %i\n",currT);
 
    if (!allflagged){
 /////////
 // GAIN:
 
+   //    printf("\nVIS: %i\n",currT);
 
     // FIRST GAIN IN NORMAL MODE, 0:
      gchanged = allgains[currAntIdx][0]->setInterpolationTime(currT);
       for (ij=0; ij<currNant; ij++) {
         if (Weight[currAntIdx][ij]) {
+
           allgains[currAntIdx][0]->applyInterpolation(ij,0,AnG[currAntIdx][ij]); };
       };
 
@@ -820,10 +825,16 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
 
-
-
 // FORCE RE-COMPUTATION (TO SET UNITY MATRIX) IF ALL ANTENNAS ARE FLAGGED
-  if (allflagged){gchanged=true; dtchanged=true;};
+  if (allflagged){
+      gchanged=false; dtchanged=false;
+      for (j=0; j<nchans[ii]; j++) {
+        Ktotal[currAntIdx][0][0][j] = 1.0; // /oneOverSqrt2;
+        Ktotal[currAntIdx][0][1][j] = Im; // /oneOverSqrt2;
+        Ktotal[currAntIdx][1][0][j] = 1.0; // /oneOverSqrt2;
+        Ktotal[currAntIdx][1][1][j] = -Im; // /oneOverSqrt2;
+      };
+  };
 
 
 
@@ -963,7 +974,6 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
 
-
   if(doNorm){ // Norm. factor will be the geometrical average of gains.
     AntTab = std::sqrt(NormFac[0]*NormFac[1])/((float) nchans[ii]);
   //  printf("GAIN %.3e\n",NormFac[0]);
@@ -984,6 +994,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 // Shall we write in plot file?
      auxB = (currT>=plRange[0] && currT<=plRange[1] && plotIF); //plAnt == otherAnt);
+
 
  //    if(auxB){printf("%.5e %.5e %.5e %.5e | ",Kinv[1][1].imag(),Kinv[1][1].real(),Kinv[1][1].real(),Kinv[1][1].imag());};
   //   if(auxB){printf("%.5e %.5e %.5e %.5e %.5e %.5e %.5e %.5e | ",Ktotal[currAntIdx][0][0][10].real(),Ktotal[currAntIdx][0][0][10].imag(),Ktotal[currAntIdx][0][1][10].real(),Ktotal[currAntIdx][0][1][10].imag(),Ktotal[currAntIdx][1][0][10].real(),Ktotal[currAntIdx][1][0][10].imag(),Ktotal[currAntIdx][1][1][10].real(),Ktotal[currAntIdx][1][1][10].imag());};

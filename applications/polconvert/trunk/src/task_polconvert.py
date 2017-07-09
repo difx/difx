@@ -1224,33 +1224,36 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 # SOLVE FOR THE CROSS-POLARIZATION GAINS:
   if doSolve >= 0.0:
 
-    CGains = {'XYadd':{},'XYratio':{}}
+   CGains = {'XYadd':{},'XYratio':{}}
 
  #   if solint[0]==0:
-    fitMethod = 'COBYLA'   # 'Newton-CG'  # 'nelder-mead'
+   fitMethod = 'COBYLA'   # 'Newton-CG'  # 'nelder-mead'
  #   else:
  #     fitMethod = 'COBYLA'   # 'Newton-CG'  # 'nelder-mead'
 
 
 # Load the solver library:
-    try: 
+   try: 
      import _PolGainSolve as PS
      goodclib = True
      print '\nC++ shared library loaded successfully\n'
-    except:
+   except:
      goodclib=False
      print '\n There has been an error related to the numpy' 
      print ' API version used by CASA. This is related to PolConvert'
      print ' (which uses the API version of your system) and should' 
      print ' be *harmless*.\n'
 
-    if not goodclib:
-      try: 
+   if not goodclib:
+     try: 
        import _PolGainSolve as PS
        goodclib = True
        print '\nC++ shared library loaded successfully\n'
-      except:
+     except:
        goodclib=False
+
+
+   if goodclib:
 
     selAnts = np.array(calAnts,dtype=np.int32)
 
@@ -1378,6 +1381,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     fig.suptitle('CROSS-POLARIZATION GAINS')
     pl.savefig('Cross-Gains.png')
     pl.show()
+
+   else:
+    printMsg("\n\n  doSolve can ONLY work with the source was compiled with DO_SOLVE=True\n  PLEASE, RECOMPILE!\n\n")
 
   else:
 
@@ -1690,7 +1696,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           DRLu = np.max(RLu)/np.std(np.sort(RLu.flatten())[:-nchPlot])
           DLRu = np.max(LRu)/np.std(np.sort(LRu.flatten())[:-nchPlot])
 
-          # RLRatio = (MAXl[0]/MAXl[3])/(MAXl[1]/MAXl[2])
           RLRatio = (MAXl[0]/MAXl[3])/(MAXl[2]/MAXl[1])
 
           toprint = [pli,MAXl[0]/MAX,DRR,MAXl[3]/MAX,DLL,MAXl[1]/MAX,DRL,MAXl[2]/MAX,DLR,MAX/len(fringe),RLRatio]
@@ -1787,8 +1792,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      dChan = max(plotIF)-min(plotIF) + 1
      pl.xlim((min(plotIF)-dChan*0.2,max(plotIF)+0.4*dChan))
 
-     fig.suptitle(jobLabel(DiFXinput)+' ANT: %i'%thisAnt)
-     fig.savefig('FRINGE.PLOTS/ALL_IFs_ANT%i.png'%thisAnt)
+     fig.suptitle(jobLabel(DiFXinput)+' ANT: %i v %i'%(thisAnt,plotAnt))
+     fig.savefig('FRINGE.PLOTS/ALL_IFs_ANT_%i_%i.png'%(thisAnt,plotAnt))
 
      fig3 = pl.figure()
      sub1 = fig3.add_subplot(111)
@@ -1798,9 +1803,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      sub1.plot([min(CONVAMP[:,0])-1, max(CONVAMP[:,0])+1], [1, 1], 'r')
 
      pl.xlabel('IF NUMBER')
-     #pl.ylabel('NORM. RL/LR')
      pl.ylabel('(RR/LL)/(LR/RL)')
-
      pl.xlim((min(CONVAMP[:,0])-1,max(CONVAMP[:,0])+1))
      pl.ylim((0.,np.max(CONVAMP[:,-1])*1.05))
 

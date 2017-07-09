@@ -19,6 +19,9 @@ def parseOptions():
     This script generates the appropriate (Python) commands
     that could be typed into an interactive session, or for the
     more likely use case, piped into CASA for the desired work.
+    If CASA is not found in your path, you must supply it via
+    the environment variable DIFXCASAPATH (which is used to
+    build these tools and hence is probably set in your DiFX setup).
     '''
     des = parseOptions.__doc__
     epi =  'In the typical use case, you would first unpack the QA2 tarball '
@@ -107,9 +110,17 @@ def parseOptions():
         default=2, metavar='INT', type=int,
         help='Index of remote antenna on baseline to converted antenna. ' +
             'The default is 2 (the next antenna in the list).')
+    parser.add_argument('-S', '--sites', dest='sites',
+        default='', metavar='LIST',
+        help='comma-sep list of 2-letter station codes to try' +
+            ' (in order) to use for plot diagnostics')
     parser.add_argument('-X', '--npix', dest='npix',
         default=50, metavar='INT', type=int,
         help='The number of pixels to show in the fringe plots (50)')
+    parser.add_argument('-T', '--test', dest='test',
+        default=False, action='store_true',
+        help='Turns off processing of files, just does plotting')
+        
     # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files')
@@ -215,6 +226,7 @@ def inputRelatedChecks(o):
         raise Exception, 'No job inputs to process (%d)' % len(jobset)
     djobs = list(jobset)
     djobs.sort()
+    o.jobnums = djobs
     o.djobs = str(map(str,djobs))
     if o.verb: print 'Processing jobs "%s"' % o.djobs
 
@@ -277,11 +289,12 @@ def deduceZoomIndicies(o):
     '''
     zoompatt = r'^ZOOM.FREQ.INDEX.\d+:\s*(\d+)'
     almapatt = r'^TELESCOPE NAME %d:\s*AA' % (o.ant-1)
+    amap_re = re.compile(r'^TELESCOPE NAME\s*([0-9])+:\s*([A-Z0-9][A-Z0-9])')
     freqpatt = r'^FREQ..MHZ..\d+:\s*(\d+)'
-    if o.verb: print 'Alma search pattern: "' + str(almapatt) + '"'
     zfirst = set()
     zfinal = set()
     mfqlst = set()
+    antmap = {}
     almaline = ''
     for jobin in o.nargs:
         zfir = ''
@@ -297,6 +310,9 @@ def deduceZoomIndicies(o):
             if zoom:
                 if zfir == '': zfir = zoom.group(1)
                 else:          zfin = zoom.group(1)
+            amap = amap_re.search(line)
+            if amap:
+                antmap[amap.group(2)] = int(amap.group(1))
         ji.close()
         if o.verb: print 'Zoom bands %s..%s from %s' % (zfir, zfin, jobin)
         if len(cfrq) < 1:
@@ -312,9 +328,18 @@ def deduceZoomIndicies(o):
     o.zfinal = int(zfinal.pop())
     if o.verb: print 'Zoom frequency indices %d..%d found in %s..%s' % (
         o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
+    # This could be relaxed to allow AA to be not 0 using antmap
+    if o.verb: print 'Alma search pattern: "' + str(almapatt) + '"'
     if almaline == '':
         raise Exception, 'Telescope Name 0 is not Alma (AA)'
     if o.verb: print 'Found ALMA Telescope line: ' + almaline.rstrip()
+    if o.verb: print 'Remote antenna index was', o.remote
+    if o.verb: print 'Antenna map: ' + str(antmap)
+    for site in o.sites.split(','):
+        if site in antmap:
+            o.remote = antmap[site] + 1
+            break
+    if o.verb: print 'Remote antenna index now', o.remote
     # if the user supplied a band, check that it agrees
     if len(mfqlst) > 1:
         raise Exception, ('Input files have disparate frequency structures:\n'
@@ -412,7 +437,7 @@ def createCasaInput(o):
     # plotAnt=2                         # specifies antenna 2 to plot
     plotAnt=%d
     numFrPltPix=%d
-    doTest=False
+    doTest=%s
     # timeRange=[]                      # don't care
     %stimeRange = [0,0,0,0, 14,0,0,0]   # first 10 days
 
@@ -470,18 +495,50 @@ def createCasaInput(o):
 
     if o.ampnrm: ampnrm = 'True'
     else:        ampnrm = 'False'
+    if o.test:   dotest = 'True'
+    else:        dotest = 'False'
 
     script = template % (o.doPlot[0], o.doPlot[0],
         o.label, o.band, bandnot, bandaid, o.exp,
         o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
         o.qa2, o.qal, o.qa2_dict, ampnrm,
-        o.remote, o.npix, o.doPlot[0],
+        o.remote, o.npix, dotest, o.doPlot[0],
         o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
 
     for line in script.split('\n'):
         ci.write(line[4:] + '\n')
     ci.close()
+
+def removeTrash(o, misc):
+    '''
+    A cleanup function only necessary when CASA crashes to
+    sweep garbage aside so that it cannot cause problems later.
+    '''
+    for m in misc:
+        if os.path.exists(m):
+            print 'Removing prior garbage ',m
+            os.system('rm -rf %s' % m)
+    print 'Removing prior ipython & casa logs'
+    os.system('rm -f ipython-*.log casa*.log')
+
+def doFinalRunCheck(o):
+    '''
+    runpolconvert is careful, but the overhead of getting to it
+    is high, so we check for this last bit of operator fatigue
+    '''
+    swine = []
+    saved = []
+    for job in o.jobnums:
+        swin = './%s_%s.difx' % (o.exp,str(job))
+        save = './%s_%s.save' % (o.exp,str(job))
+        if os.path.exists(save): saved.append(save)
+        if not os.path.exists(swin): swine.append(swin)
+    if len(swine) > 0: print 'These are missing (get them):',swine
+    if len(saved) > 0: print 'These are present (nuke them):',saved
+    if o.run and (len(saved) > 0 or len(swine) > 0):
+        print '\n\n### Disabling Run so you can fix the issue\n'
+        o.run=False
 
 def executeCasa(o):
     '''
@@ -492,6 +549,7 @@ def executeCasa(o):
     misc = [ 'polconvert.last', 'POLCONVERT_STATION1.ANTAB',
              'POLCONVERT.FRINGE', 'POLCONVERT.GAINS', 'PolConvert.log',
              'CONVERSION.MATRIX', 'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
+    removeTrash(o, misc)
     cmd1 = 'rm -f %s' % (o.output)
     cmd2 = '%s --nologger < %s > %s 2>&1' % (o.casa, o.input, o.output)
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
@@ -501,6 +559,8 @@ def executeCasa(o):
     cmd5 = 'mv %s %s casa-logs' % (o.input, o.output)
     cmd6 = ''
     casanow = o.exp + '-casa-logs.' + datetime.datetime.now().isoformat()[:-7]
+    if o.run:
+        doFinalRunCheck(o)
     if o.run:
         if o.verb: print 'Note, ^C will not stop CASA (or polconvert).'
         if o.verb: print 'Follow CASA run with:\n  tail -n +1 -f %s\n' % (

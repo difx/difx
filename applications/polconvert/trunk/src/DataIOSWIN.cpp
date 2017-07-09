@@ -392,8 +392,10 @@ void DataIOSWIN::readHeader(bool doTest) {
      Records[nrec].Source = sidx;
      Records[nrec].fileNumber = auxI;
      Records[nrec].Time = daytemp2; //(daytemp + day0)*86400.;  //  /86400.;
-
-  //   printf("\nTime: %.2f  %.2f",daytemp2, daytemp);
+     
+  //   if (daytemp2<0. || daytemp<0.) {
+  //     printf("\nTime: %.2f  %.2f",daytemp2, daytemp);
+  //   };
 
      Records[nrec].notUsed = true;
      Records[nrec].Antennas[0] = ant1;
@@ -623,8 +625,11 @@ for (i=0; i<4; i++) {
 };
 
 
+
 JDTime = time;
 currConj = conj ;
+
+
 return true;
 
 
@@ -710,6 +715,18 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 
      for (k=0; k<Freqs[currFreq].Nchan; k++) {
 
+
+  /*     printf("\nk %i %.2f  %.2f \n",thisAnt, M[0][0][k].real(),M[0][0][k].imag());
+       printf("k %i %.2f  %.2f \n",thisAnt, M[0][1][k].real(),M[0][1][k].imag());
+       printf("k %i %.2f  %.2f \n",thisAnt, M[1][0][k].real(),M[1][0][k].imag());
+       printf("k %i %.2f  %.2f \n",thisAnt, M[1][1][k].real(),M[1][1][k].imag());
+
+       printf("k %i %.2e  %.2e \n",thisAnt, currentVis[a11][k].real(),currentVis[a11][k].imag());
+       printf("k %i %.2e  %.2e \n",thisAnt, currentVis[a12][k].real(),currentVis[a12][k].imag());
+       printf("k %i %.2e  %.2e \n",thisAnt, currentVis[a21][k].real(),currentVis[a21][k].imag());
+       printf("k %i %.2e  %.2e \n",thisAnt, currentVis[a22][k].real(),currentVis[a22][k].imag());
+*/
+
        if (currConj) {
 
          bufferVis[ca11][k] = M[0][0][k]*currentVis[a11][k]+M[0][1][k]*currentVis[a21][k];
@@ -730,14 +747,13 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
    rec = currEntries[currFreq][0];
 
    if (print) {
- //    std::cout << currConj << "\n";
      if (currConj){
      if (k==0){
        fwrite(&Records[currVis].Time,sizeof(double),1,plotFile);
-       fwrite(&Records[rec].Antennas[0],sizeof(int),1,plotFile);
-       fwrite(&Records[rec].Antennas[1],sizeof(int),1,plotFile);
-       fwrite(&ParAng[0][rec],sizeof(double),1,plotFile);
-       fwrite(&ParAng[1][rec],sizeof(double),1,plotFile);
+       fwrite(&Records[currVis].Antennas[0],sizeof(int),1,plotFile);
+       fwrite(&Records[currVis].Antennas[1],sizeof(int),1,plotFile);
+       fwrite(&ParAng[0][currVis],sizeof(double),1,plotFile);
+       fwrite(&ParAng[1][currVis],sizeof(double),1,plotFile);
      };
      fwrite(&currentVis[a11][k],sizeof(std::complex<float>),1,plotFile);
      fwrite(&currentVis[a12][k],sizeof(std::complex<float>),1,plotFile);
