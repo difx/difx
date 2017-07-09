@@ -501,9 +501,6 @@ def executeCasa(o):
     cmd5 = 'mv %s %s casa-logs' % (o.input, o.output)
     cmd6 = ''
     casanow = o.exp + '-casa-logs.' + datetime.datetime.now().isoformat()[:-7]
-    for m in misc:
-        if os.path.exists(m):
-            cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
     if o.run:
         if o.verb: print 'Note, ^C will not stop CASA (or polconvert).'
         if o.verb: print 'Follow CASA run with:\n  tail -n +1 -f %s\n' % (
@@ -514,6 +511,9 @@ def executeCasa(o):
             print 'Success!  See %s for output' % o.output
         logerr = False
         mscerr = False
+        for m in misc:
+            if os.path.exists(m):
+                cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
         if os.system(cmd3 + ' ; ' + cmd4 + ' ; ' + cmd5):
             logerr = True
         elif os.system(cmd6):
@@ -531,6 +531,8 @@ def executeCasa(o):
         if o.verb: print 'Review CASA run with:\n  tail -n +1 %s/%s\n' % (
             casanow, o.output)
     else:
+        for m in misc:
+            cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
         print ''
         print 'You can run casa manually with input from ' + o.input
         print 'Or just do what this script would do now, viz: '
