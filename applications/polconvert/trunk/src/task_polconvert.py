@@ -1690,7 +1690,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           DRLu = np.max(RLu)/np.std(np.sort(RLu.flatten())[:-nchPlot])
           DLRu = np.max(LRu)/np.std(np.sort(LRu.flatten())[:-nchPlot])
 
-          RLRatio = (MAXl[0]/MAXl[3])/(MAXl[1]/MAXl[2])
+          # RLRatio = (MAXl[0]/MAXl[3])/(MAXl[1]/MAXl[2])
+          RLRatio = (MAXl[0]/MAXl[3])/(MAXl[2]/MAXl[1])
 
           toprint = [pli,MAXl[0]/MAX,DRR,MAXl[3]/MAX,DLL,MAXl[1]/MAX,DRL,MAXl[2]/MAX,DLR,MAX/len(fringe),RLRatio]
           fringeAmps[ant1].append([pli,MAXl[0],MAXl[0]/DRR,MAXl[3],MAXl[3]/DLL,MAXl[1],MAXl[1]/DRL,MAXl[2],MAXl[2]/DLR,RLRatio])
@@ -1797,7 +1798,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      sub1.plot([min(CONVAMP[:,0])-1, max(CONVAMP[:,0])+1], [1, 1], 'r')
 
      pl.xlabel('IF NUMBER')
-     pl.ylabel('NORM. RL/LR')
+     #pl.ylabel('NORM. RL/LR')
+     pl.ylabel('(RR/LL)/(LR/RL)')
+
      pl.xlim((min(CONVAMP[:,0])-1,max(CONVAMP[:,0])+1))
      pl.ylim((0.,np.max(CONVAMP[:,-1])*1.05))
 
