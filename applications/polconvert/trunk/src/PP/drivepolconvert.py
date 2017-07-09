@@ -87,6 +87,9 @@ def parseOptions():
     parser.add_argument('-d', '--noDterm', dest='nodt',
         default=False, action='store_true',
         help='disable use of Dterm calibration tables')
+    parser.add_argument('-A', '--ampNorm', dest='ampnrm',
+        default=True, action='store_false',
+        help='turn off amplitude normalization')
     parser.add_argument('-s', '--spw', dest='spw',
         default=-1, metavar='INT', type=int,
         help='Index of SPW for PolConvert to use: 0,1,2,3 for the ' +
@@ -104,6 +107,9 @@ def parseOptions():
         default=2, metavar='INT', type=int,
         help='Index of remote antenna on baseline to converted antenna. ' +
             'The default is 2 (the next antenna in the list).')
+    parser.add_argument('-X', '--npix', dest='npix',
+        default=50, metavar='INT', type=int,
+        help='The number of pixels to show in the fringe plots (50)')
     # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files')
@@ -397,6 +403,7 @@ def createCasaInput(o):
     # --qa2 = %s
     # qal = %s
     qa2 = %s
+    ampNorm = %s
     #
     # other variables that can be set in interactive mode
     # here we set them not to make any interactive plots
@@ -404,6 +411,7 @@ def createCasaInput(o):
     # plotAnt=-1                        # no plotting
     # plotAnt=2                         # specifies antenna 2 to plot
     plotAnt=%d
+    numFrPltPix=%d
     doTest=False
     # timeRange=[]                      # don't care
     %stimeRange = [0,0,0,0, 14,0,0,0]   # first 10 days
@@ -460,12 +468,15 @@ def createCasaInput(o):
         userXY = '#'
         XYvalu = 0.0
 
+    if o.ampnrm: ampnrm = 'True'
+    else:        ampnrm = 'False'
+
     script = template % (o.doPlot[0], o.doPlot[0],
         o.label, o.band, bandnot, bandaid, o.exp,
         o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
-        o.qa2, o.qal, o.qa2_dict,
-        o.remote, o.doPlot[0],
+        o.qa2, o.qal, o.qa2_dict, ampnrm,
+        o.remote, o.npix, o.doPlot[0],
         o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
 
     for line in script.split('\n'):
@@ -486,7 +497,7 @@ def executeCasa(o):
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
     if o.prep: cmd4 = 'mv prepol*.log '
     else:      cmd4 = 'mv '
-    cmd4 += ' casapy-*.log ipython-*.log casa-logs'
+    cmd4 += ' casa*.log ipython-*.log casa-logs'
     cmd5 = 'mv %s %s casa-logs' % (o.input, o.output)
     cmd6 = ''
     casanow = o.exp + '-casa-logs.' + datetime.datetime.now().isoformat()[:-7]

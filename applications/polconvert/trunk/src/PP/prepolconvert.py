@@ -29,8 +29,8 @@ def parseOptions():
     epi += ' a list of input files may be provided as positional'
     epi += ' on the command line.  You may need the *.vex.obs file'
     epi += ' if you wish to run difx2mark4 and have the root be correct.'
-    use = '%(prog)s [options] [input_file] [...]\n'
-    use += '  Version $Id$'
+    use = '%(prog)s [options] [input_file] [...]\n  Version'
+    use += ' $Id$'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     # options
     parser.add_argument('-l', '--suffices', dest='suffices',

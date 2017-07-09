@@ -51,7 +51,7 @@ _PolConvert.so: copy.them
 
 # use copy.them to distinguish build and source dirs
 clean-local:
-	rm -rf build _PolConvert.so *.pyc
+	rm -rf build *.so *.pyc
 	rm -rf polconvert.py polconvert_cli.py mytasks.py
 	rm -f $(ScriptCopies)
 	-[ -f copy.them ] && rm -f $(PolConvertSources) && rm -f copy.them

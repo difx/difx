@@ -51,6 +51,31 @@ try:
 except Exception, ex:
     raise ex
 
+# option to turn off the amplitude calibration logic
+try:
+    if type(ampNorm) == bool:
+        if ampNorm: print 'Amplitude Normalization is done'
+        else:       print 'Amplitude Normalization is off'
+    else:
+        print 'Overriding ampNorm -- turning it on'
+        ampNorm = True
+except Exception, ex:
+    print 'ampNorm not bool?', str(ex)
+    ampNorm = True
+    print 'Amplitude Normalization is on'
+
+# option for fringe plot pixels
+try:
+    if type(numFrPltPix) == int:
+        print 'Fringe plots with %d pixels at center' % numFrPltPix
+    else:
+        print 'Overriding numFrPltPix to 50'
+        numFrPltPix = 50
+except Exception, ex:
+    print 'numFrPltPix not int?', str(ex)
+    numFrPltPix = 50
+    print 'Setting numFrPltPix to 50'
+
 # require constXYadd to be set to allow disabling table
 try:
     if type(constXYadd) == bool:
@@ -93,7 +118,8 @@ except Exception, ex:
 def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     DiFXinput='', DiFXoutput='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
-    XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1):
+    amp_norm=True, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
+    npix=50):
     # based on common drivepolconvert inputs above
     gains = calgains[3:]
     interpolation = ['linear', 'nearest', 'linear', 'linear']
@@ -141,15 +167,23 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     os.rename(DiFXoutput, DiFXsave)
 
     # actually run PolConvert setting everything.
+    # commented arguments are not needed for DiFX, but are
+    # mentioned here as comments for clarity.  CASA supplies
+    # defaults from the task xml file.
     try:
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
+            #DiFXcalc,
             linAntIdx=[1], Range=Range, ALMAant=aantpath,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
             gains=[gains], interpolation=[interpolation],
-            dterms=[dterm], amp_norm=True,
-            XYadd=XYadd, XYratio=XYratio, swapXY=[False], IDI_conjugated=True,
+            dterms=[dterm], amp_norm=amp_norm,
+            XYadd=XYadd,
+            #XYdel,
+            XYratio=XYratio, swapXY=[False], IDI_conjugated=True,
             plotIF=plotIF, doIF=doIF, plotRange=timeRange,
-            plotAnt=plotAnt, doTest=doTest)
+            plotAnt=plotAnt,
+            #excludedAnts, doSolve, solint
+            doTest=doTest, npix=npix)
     except Exception, ex:
         print 'Polconvert Exception'
         if (os.path.exists(DiFXoutput)):
@@ -181,9 +215,10 @@ for job in djobs:
 
     runPolConvert(label, band3=band3, band6Lo=band6Lo, band6Hi=band6Hi,
         DiFXinput=DiFXinput, DiFXoutput=SWIN, DiFXsave=SAVE,
-        XYadd=XYadd, XYratio=XYratio,
+        amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,
-        plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=plotAnt)
+        plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=plotAnt,
+        npix=numFrPltPix)
 
 #
 # eof

@@ -43,6 +43,22 @@ bool SB;
 } FreqSetup;
 
 
+typedef struct {
+double *BaseLine[3];
+double *SinDec;
+double *CosDec;
+double *AntLon;
+double *Lat;
+int NtotAnt;
+int NtotSou;
+int **BasNum;
+} ArrayGeometry;
+
+
+//   int NtotAnt, NtotSou;
+//  double *BaseLine[3], *SinDec, *CosDec, *AntLon, *TanLat, **BasNum;
+//   double *ParAngs[2];
+
 
 /* Class to read FITS-IDI or SWIN files, setup the data streams,
 and iterate over all the baselines with mixed polarization. */
@@ -65,6 +81,10 @@ class DataIO {
 
    void getFrequencies(double* Freqarray);
 
+// Compute parallactic angle.
+  void getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2);
+
+
 // Set the current IF (and reset the mixed-vis. counter):
    virtual bool setCurrentIF(int i) = 0;
 
@@ -86,9 +106,7 @@ class DataIO {
 
  // Modify the visibilities read by "getNextMixedVis" by the calibration matrix supplied
  // Saves the result in the "bufferVis" pointer  
-  virtual void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, FILE *plotFile) = 0;
-
-
+  virtual void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile) = 0;
 
 // Close all files.
    virtual void finish() = 0;
@@ -97,8 +115,10 @@ class DataIO {
 
    static const int MAXIF = 256;
    FreqSetup *Freqs;
+   ArrayGeometry *Geometry;
    double *Freqvals[MAXIF], *doRange, *JDTimes;
-   int *Basels, *Freqids, *an1, *an2, *linAnts;
+   int *Basels, *Freqids, *an1, *an2, *linAnts; //, *sour;
+   double *ParAng[2];
    int NLinAnt, NIFs, Nband, status, Nants, Nfreqs, currFreq;
    long NLinVis, Nvis, currVis, *indexes;
    bool success, currConj;

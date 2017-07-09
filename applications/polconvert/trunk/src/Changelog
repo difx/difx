@@ -1,3 +1,18 @@
+TODO: A BETTER LEAST-SQUARES MINIMIZER FOR THE CROSS-POLARIZATION GAIN ESTIMATES.
+
+
+v1.4
+
+- Bandpass mode for the cross-polarization gains.
+- Parallactic-angle computation (to enable the use of RR and LL in the X-Y gain estimate).
+- Global Cross-Polarization Fringe Fitting, to find X-Y gains.
+- New C++ module to solve for gains.
+
+v1.3
+
+- Returns cross-polarization gains in a list (to apply them to XYadd and XYratio).
+- Estimate (and application) of multi-band delay
+
 v1.2-r7
 
 - Gain files in ANTAB format.

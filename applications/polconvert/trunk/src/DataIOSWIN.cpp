@@ -35,10 +35,10 @@ DataIOSWIN::~DataIOSWIN() {
 };
 
 
-DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt, int *LinAnt, double *Range, int nIF, int *nChan, double **FreqVal, bool Overwrite, bool doTest, double jd0, FILE *logF) {
+DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt, int *LinAnt, double *Range, int nIF, int *nChan, double **FreqVal, bool Overwrite, bool doTest, bool doSolve, double jd0, ArrayGeometry *Geom, FILE *logF) {
 
 
-
+doWriteCirc = doSolve;
 nfiles = nfiledifx;
 int i;
 
@@ -46,6 +46,22 @@ int i;
 //char *message;
 
 logFile = logF;
+
+Geometry = Geom;
+
+//BaseLine[0] = BaseLineD[0];
+//BaseLine[1] = BaseLineD[1];
+//BaseLine[2] = BaseLineD[2];
+//AntLon = Longitude;
+//TanLat = Latitude;
+//BasNum = BasNumD;
+//NtotAnt = NtotAntD;
+//NtotSou = NtotSouD;
+
+//for (i=0; i<NtotSou; i++) {
+// SinDec[i] = sin(DeclinationD[i]);
+// CosDec[i] = cos(DeclinationD[i]);
+//};
 
 
 success = true;
@@ -56,9 +72,12 @@ for (i=0;i<NlinAnt;i++){
   linAnts[i] = LinAnt[i];
 };
 
-Records = new Record[RECBUFFER];
-is1orig = new bool[RECBUFFER];
-is2orig = new bool[RECBUFFER];
+Records = (Record *) malloc(RECBUFFER*sizeof(Record)); // new Record[RECBUFFER];
+is1orig =  (bool *) malloc(RECBUFFER*sizeof(bool)); //new bool[RECBUFFER];
+is2orig = (bool *) malloc(RECBUFFER*sizeof(bool));  //new bool[RECBUFFER];
+ParAng[0] = (double *) malloc(RECBUFFER*sizeof(double));  //new double[RECBUFFER];
+ParAng[1] = (double *) malloc(RECBUFFER*sizeof(double));  //new double[RECBUFFER];
+
 
 is1 = new bool[RECBUFFER];
 is2 = new bool[RECBUFFER];
@@ -182,14 +201,43 @@ void DataIOSWIN::readHeader(bool doTest) {
 
 //  char *message;
   long loc, beg, end, polpos;
-  int basel, fridx, cfidx, mjd;
-  double secs, daytemp;
-
+  int basel, fridx, cfidx, mjd, sidx, ii, jj;
+  double secs, daytemp, daytemp2;
+  double *UVW = new double[3];
+  int UVWsize = 3*sizeof(double);
   char *pol = new char[2];
   char *auxC = new char[4];
 
+  double AuxPA1, AuxPA2;
+
+// AUXILIARY BINARY FILES TO STORE CIRCULAR VISIBILITIES:
+  FILE **circFile = new FILE*[Nfreqs];
+
+// OPEN AUXILIARY BINARY FILES:
+  if (doWriteCirc){
+    for (ii=0; ii<Nfreqs; ii++){
+      sprintf(message,"POLCONVERT.FRINGE/OTHERS.FRINGE_%i",ii+1);
+      circFile[ii] = fopen(message,"wb");
+      fwrite(&Freqs[ii].Nchan,sizeof(int),1,circFile[ii]);
+      for (jj=0;jj<Freqs[ii].Nchan;jj++){
+        fwrite(&Freqvals[ii][jj],sizeof(double),1,circFile[ii]);
+      };
+    };
+  };
+
+
+
+
+
+
   delete[] Records;
   Records = new Record[RECBUFFER];
+
+  delete[] ParAng[0];
+  delete[] ParAng[1];
+  ParAng[0] = new double[RECBUFFER];
+  ParAng[1] = new double[RECBUFFER];
+
 
   delete[] is1orig;
   is1orig = new bool[RECBUFFER];
@@ -216,6 +264,10 @@ void DataIOSWIN::readHeader(bool doTest) {
 
   long bperp, cp;
 
+
+  long RecordSize = 5*sizeof(int) + sizeof(double) + 2*sizeof(char) + endhead;
+
+
  for (auxI=0; auxI<nfiles; auxI++) {
 
   loc = 8;
@@ -230,6 +282,7 @@ void DataIOSWIN::readHeader(bool doTest) {
 
   while(!olddifx[auxI].eof()) {
 
+
    if(loc/bperp > cp){cp += 1; printf("\r  %li%% DONE",cp);fflush(stdout);};
 
    olddifx[auxI].seekg(loc,olddifx[auxI].beg);
@@ -237,10 +290,17 @@ void DataIOSWIN::readHeader(bool doTest) {
    olddifx[auxI].read(reinterpret_cast<char*>(&mjd), sizeof(int));
    olddifx[auxI].read(reinterpret_cast<char*>(&secs), sizeof(double));
    olddifx[auxI].read(reinterpret_cast<char*>(&cfidx), sizeof(int));
-   olddifx[auxI].read(auxC, sizeof(int));
+   olddifx[auxI].read(reinterpret_cast<char*>(&sidx), sizeof(int));
    olddifx[auxI].read(reinterpret_cast<char*>(&fridx), sizeof(int));
    polpos = olddifx[auxI].tellg();
    olddifx[auxI].read(pol, 2*sizeof(char));
+
+   olddifx[auxI].ignore(sizeof(int)+sizeof(double)); // Pulsar bin + Weight
+
+   olddifx[auxI].read(reinterpret_cast<char*>(UVW), UVWsize);
+
+
+
 
 ////////////////
 // WHAT IS THE DIFFERENCE BETWEEN CFIDX AND FRIDX !!!!!!!!
@@ -248,9 +308,9 @@ void DataIOSWIN::readHeader(bool doTest) {
 
   beg = olddifx[auxI].tellg(); 
   if (beg>0) {
-  beg += endhead;
+ // beg += sizeof(int) + sizeof(double);
   end = beg + (Freqs[fridx].Nchan)*sizeof(cplx32f);
-  loc = end + sizeof(cplx32f);
+  loc = end + 2*sizeof(int); // Control word and header version
 
 
 
@@ -260,6 +320,9 @@ void DataIOSWIN::readHeader(bool doTest) {
     Records = (Record*) realloc(Records, CURRSIZE*sizeof(Record));
     is1orig = (bool*) realloc(is1orig, CURRSIZE*sizeof(bool));
     is2orig = (bool*) realloc(is2orig, CURRSIZE*sizeof(bool));
+    ParAng[0] = (double *) realloc(ParAng[0], CURRSIZE*sizeof(double));
+    ParAng[1] = (double *) realloc(ParAng[1], CURRSIZE*sizeof(double));
+
   };
 
 // Check if we are in the time window:
@@ -285,12 +348,53 @@ void DataIOSWIN::readHeader(bool doTest) {
   };
 
 
+// Derive the parallactic angles:
+  getParAng(sidx,ant1,ant2,UVW,AuxPA1,AuxPA2);
+  daytemp2 = (daytemp + day0)*86400.;
+
+
+// Write circular visibilities (assume standard pol. ordering):
+  if (doWriteCirc && (!is1orig[nrec] && !is2orig[nrec]) && (pol[0] == 'R' || pol[0]=='X') && (pol[1] == 'R' || pol[1]=='X')){
+
+
+    for (auxJ=0; auxJ<4; auxJ++){    
+      olddifx[auxI].seekg(beg + (RecordSize + (Freqs[fridx].Nchan)*sizeof(cplx32f))*auxJ, olddifx[auxI].beg);
+      olddifx[auxI].sync();
+      olddifx[auxI].read(reinterpret_cast<char*>(currentVis[auxJ]),end-beg);
+
+    };
+
+    fwrite(&daytemp,sizeof(double),1,circFile[fridx]);
+    fwrite(&ant1,sizeof(int),1,circFile[fridx]);
+    fwrite(&ant2,sizeof(int),1,circFile[fridx]);
+    fwrite(&AuxPA1,sizeof(double),1,circFile[fridx]);
+    fwrite(&AuxPA2,sizeof(double),1,circFile[fridx]);
+
+ //   printf("\nDayTemp2: %.2f",daytemp2);
+
+    for (auxJ=0;auxJ<Freqs[fridx].Nchan;auxJ++){
+     fwrite(&currentVis[0][auxJ],sizeof(std::complex<float>),1,circFile[fridx]);
+     fwrite(&currentVis[2][auxJ],sizeof(std::complex<float>),1,circFile[fridx]);
+     fwrite(&currentVis[3][auxJ],sizeof(std::complex<float>),1,circFile[fridx]);
+     fwrite(&currentVis[1][auxJ],sizeof(std::complex<float>),1,circFile[fridx]);
+   };
+
+  };
+
+
 // Read entry metadata:
+
   if (is1orig[nrec] || is2orig[nrec]) {
 
+
      Records[nrec].Baseline = basel;
+
+     Records[nrec].Source = sidx;
      Records[nrec].fileNumber = auxI;
-     Records[nrec].Time = (daytemp + day0)*86400.;  //  /86400.;
+     Records[nrec].Time = daytemp2; //(daytemp + day0)*86400.;  //  /86400.;
+
+  //   printf("\nTime: %.2f  %.2f",daytemp2, daytemp);
+
      Records[nrec].notUsed = true;
      Records[nrec].Antennas[0] = ant1;
      Records[nrec].Antennas[1] = ant2;
@@ -298,6 +402,13 @@ void DataIOSWIN::readHeader(bool doTest) {
      Records[nrec].byteEnd = end;
      Records[nrec].Pol[0] = pol[0];
      Records[nrec].Pol[1] = pol[1];
+
+// Derive the parallactic angles:
+//     olddifx[auxI].seekg(beg - UVWsize,olddifx[auxI].beg);
+//     olddifx[auxI].read(reinterpret_cast<char*>(UVW), UVWsize);
+//     getParAng(sidx,ant1,ant2,UVW,ParAng[0][nrec],ParAng[1][nrec]);
+    ParAng[0][nrec] = AuxPA1 ; ParAng[1][nrec] = AuxPA2;
+ 
 
 /////////
 // Overwrite pol label entry in SWIN file:
@@ -311,6 +422,7 @@ void DataIOSWIN::readHeader(bool doTest) {
 
      Records[nrec].freqIndex = fridx;
      nrec ++;
+
     };
   };
 
@@ -326,11 +438,24 @@ void DataIOSWIN::readHeader(bool doTest) {
 
 
 
+
  };
 
 
 // day0 is JD (not MJD):
 day0 += 2400000.5 ;
+
+
+
+// CLOSE AUXILIARY BINARY FILES:
+  if (doWriteCirc){
+    for (ii=0; ii<Nfreqs; ii++){
+      fclose(circFile[ii]); 
+    };
+  };
+
+
+
 
 if (nrec==0) {sprintf(message,"\n NO VALID DATA FOUND!"); 
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -547,9 +672,9 @@ for (i=0; i<4; i++) {
 
 
 
-void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, FILE *plotFile) {
+void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile) {
  
-  long k, a11, a12, a21, a22, ca11, ca12, ca21, ca22 ;
+  long k, a11, a12, a21, a22, ca11, ca12, ca21, ca22, rec ;
   std::complex<float>  auxVis;
 
    if (swap){
@@ -594,19 +719,26 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 
        } else {
 
-         bufferVis[ca11][k] = std::conj(M[0][0][k])*currentVis[a11][k]+std::conj(M[1][0][k])*currentVis[a12][k];
-         bufferVis[ca12][k] = std::conj(M[0][1][k])*currentVis[a11][k]+std::conj(M[1][1][k])*currentVis[a12][k];
-         bufferVis[ca21][k] = std::conj(M[0][0][k])*currentVis[a21][k]+std::conj(M[1][0][k])*currentVis[a22][k];
-         bufferVis[ca22][k] = std::conj(M[0][1][k])*currentVis[a21][k]+std::conj(M[1][1][k])*currentVis[a22][k];
+         bufferVis[ca11][k] = std::conj(M[0][0][k])*currentVis[a11][k]+std::conj(M[0][1][k])*currentVis[a12][k];
+         bufferVis[ca12][k] = std::conj(M[1][0][k])*currentVis[a11][k]+std::conj(M[1][1][k])*currentVis[a12][k];
+         bufferVis[ca21][k] = std::conj(M[0][0][k])*currentVis[a21][k]+std::conj(M[0][1][k])*currentVis[a22][k];
+         bufferVis[ca22][k] = std::conj(M[1][0][k])*currentVis[a21][k]+std::conj(M[1][1][k])*currentVis[a22][k];
 
        };
 
 
+   rec = currEntries[currFreq][0];
 
    if (print) {
  //    std::cout << currConj << "\n";
      if (currConj){
-     fwrite(&Records[currVis].Time,sizeof(double),1,plotFile);
+     if (k==0){
+       fwrite(&Records[currVis].Time,sizeof(double),1,plotFile);
+       fwrite(&Records[rec].Antennas[0],sizeof(int),1,plotFile);
+       fwrite(&Records[rec].Antennas[1],sizeof(int),1,plotFile);
+       fwrite(&ParAng[0][rec],sizeof(double),1,plotFile);
+       fwrite(&ParAng[1][rec],sizeof(double),1,plotFile);
+     };
      fwrite(&currentVis[a11][k],sizeof(std::complex<float>),1,plotFile);
      fwrite(&currentVis[a12][k],sizeof(std::complex<float>),1,plotFile);
      fwrite(&currentVis[a21][k],sizeof(std::complex<float>),1,plotFile);
@@ -620,7 +752,13 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
      fwrite(&M[1][0][k],sizeof(std::complex<float>),1,plotFile);
      fwrite(&M[1][1][k],sizeof(std::complex<float>),1,plotFile);
      } else {
-     fwrite(&Records[currVis].Time,sizeof(double),1,plotFile);
+     if (k==0){
+       fwrite(&Records[currVis].Time,sizeof(double),1,plotFile);
+       fwrite(&Records[rec].Antennas[1],sizeof(int),1,plotFile);
+       fwrite(&Records[rec].Antennas[0],sizeof(int),1,plotFile);
+       fwrite(&ParAng[1][rec],sizeof(double),1,plotFile);
+       fwrite(&ParAng[0][rec],sizeof(double),1,plotFile);
+     };
      auxVis = std::conj(currentVis[a11][k]);
      fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
      auxVis = std::conj(currentVis[a21][k]);

@@ -67,3 +67,54 @@ double DataIO::getDay0(){return day0;};
 
 
 
+
+
+
+
+void DataIO::getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2){
+
+double V2, Bx, By, Bz;
+double CH, SH, CT1, CT2, HAng, H1, H2;
+int ibas;
+
+
+if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
+
+  V2 = Geometry->SinDec[sidx]*UVW[1] - Geometry->CosDec[sidx]*UVW[2];
+  ibas = Geometry->BasNum[Ant1][Ant2];
+
+
+  if (ibas<0){
+  ibas = -ibas;
+   Bx = -Geometry->BaseLine[0][ibas];
+   By = -Geometry->BaseLine[1][ibas];
+   Bz = -Geometry->BaseLine[2][ibas];
+  } else {
+   Bx = Geometry->BaseLine[0][ibas];
+   By = Geometry->BaseLine[1][ibas];
+   Bz = Geometry->BaseLine[2][ibas];
+  };
+
+  CH = (UVW[0]*By - V2*Bx); // /(By**2. + Bx**2.);
+  SH = (UVW[0]*Bx + V2*By); // /(By**2. + Bx**2.);
+  CT1 = Geometry->CosDec[sidx]*tan(Geometry->Lat[Ant1]);
+  CT2 = Geometry->CosDec[sidx]*tan(Geometry->Lat[Ant2]);
+
+  HAng = atan2(SH,CH);
+  H1 = HAng + Geometry->AntLon[Ant1];
+  H2 = HAng + Geometry->AntLon[Ant2];
+
+  P1 = atan2(sin(H1), CT1 - Geometry->SinDec[sidx]*cos(H1));
+  P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2));
+
+
+} else {
+
+  P1 = 0.0;
+  P2 = 0.0;
+
+};
+
+};
+
+

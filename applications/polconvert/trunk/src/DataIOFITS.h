@@ -41,7 +41,7 @@ class DataIOFITS: public DataIO {
 
    ~DataIOFITS();
 
-   DataIOFITS(std::string outputfile, int Nant, int *Ants, double *doRange, bool Overwrite, bool doConj, FILE *logF);
+   DataIOFITS(std::string outputfile, int Nant, int *Ants, double *doRange, bool Overwrite, bool doConj, bool doSolve, ArrayGeometry *Geom,  FILE *logF);
 
    bool setCurrentIF(int i);
 
@@ -62,7 +62,7 @@ class DataIOFITS: public DataIO {
 
  // Modify the visibilities read by "getNextMixedVis" by the calibration matrix supplied
  // Saves the result in the "bufferVis" pointer  
-  void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, FILE *plotFile);
+  void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile);
 
 
 
@@ -74,14 +74,23 @@ class DataIOFITS: public DataIO {
 
     void readInput(std::string inputfile);
     void openOutFile(std::string outputfile, bool Overwrite);   
+    void saveCirculars(std::string inputfile);   
 
     fitsfile *fptr, *ofile; 
     FILE *logFile ;
-    bool doConjugate;
+    long *Vis2Save;
+    long NVis2Save;
+
+    int uu, vv, ww, ss;
+
+    double *Times;
+    bool doConjugate, doWriteCirc;
     char polOrder[4], message[512];
-    long jump, Nentry;
+    long jump, Nentry, djump, dsize, TotSize;
     int currIF, currBand;
     std::complex<float> *currentVis ;
     std::complex<float> *bufferVis ;
+    float *currentData ;
+    float *bufferData ;
 
 };

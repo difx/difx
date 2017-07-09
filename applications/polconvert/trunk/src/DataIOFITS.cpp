@@ -51,12 +51,29 @@ corrections are going to be performed.
 If Overwrite == true, the output file is overwritten. If not, it expects the output file
 to exist already (it will not make a new one).
 */
-DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt, double *Range, bool Overwrite, bool doConj, FILE *logF) {
+DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt, double *Range, bool Overwrite, bool doConj, bool doSave, ArrayGeometry *Geom, FILE *logF) {
 
 
 logFile = logF ;
 
+doWriteCirc = doSave;
+
 int i;
+
+Geometry = Geom;
+//BaseLine[0] = BaseLineD[0];
+//BaseLine[1] = BaseLineD[1];
+//BaseLine[2] = BaseLineD[2];
+//AntLon = Longitude;
+//TanLat = Latitude;
+//BasNum = BasNumD;
+//NtotAnt = NtotAntD;
+//NtotSou = NtotSouD;
+
+//for (i=0; i<NtotSou; i++) {
+// SinDec[i] = sin(DeclinationD[i]);
+// CosDec[i] = cos(DeclinationD[i]);
+//};
 
 // Controls whether there is any error in any function:
 success = true;
@@ -81,13 +98,15 @@ currFreq = 0;
 currIF = 0;
 currBand = 0;
 currVis = 0;
-jump = 1;
+jump = 0;
 Nentry = 1;
-
+dsize = 2;
 doRange = Range;
 
 currentVis = new std::complex<float>[8];
 bufferVis = new std::complex<float>[8];
+currentData = new float[12];
+bufferData = new float[12];
 
 /////////////////////////////////
 
@@ -100,6 +119,15 @@ bufferVis = new std::complex<float>[8];
   if (!success){return;};
 
   openOutFile(outputfile, Overwrite);
+
+  if(doWriteCirc){
+    sprintf(message,"\n\nSAVING CIRCULAR-BASIS VISIBILITIES INTO AUXILIARY FILES\n");
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+
+    saveCirculars(outputfile);
+
+};
+
   if (!success){return;};
 ////////////////////////////////////
 
@@ -115,6 +143,150 @@ void DataIOFITS::finish(){
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
    };
 };
+
+
+
+
+
+
+
+
+
+
+
+
+void DataIOFITS::saveCirculars(std::string inputfile) {
+
+
+  int i, j, k, a1, a2, i3, souidx, auxI, flid;
+
+  double AuxPA1, AuxPA2;
+
+  long il, ii;
+
+  long a11, a12, a21, a22;
+
+  double *UVW;
+  UVW = new double[3];
+  float *FUVW;
+  FUVW = new float[3];
+
+  char UVDATA[] = "UV_DATA";
+  char flux[] = "FLUX";
+
+
+//  fits_open_file(&fptr, inputfile.c_str(), READONLY, &status);
+  fits_movnam_hdu(ofile, BINARY_TBL, UVDATA,1, &status);
+
+//  fits_get_colnum(fptr, CASEINSEN, flux, &flid, &status);
+   fits_get_colnum(ofile, CASEINSEN, flux, &Flux, &status);
+
+
+// AUXILIARY BINARY FILES TO STORE CIRCULAR VISIBILITIES:
+  FILE **circFile = new FILE*[Nfreqs];
+
+
+// AUXILIARY MEMORY SPACE TO WRITE CIRCULAR VISIBS:
+   delete bufferVis ;
+   delete bufferData ;
+   bufferVis = new std::complex<float>[4*(Freqs[0].Nchan+1)] ;
+   bufferData = new float[12*(Freqs[0].Nchan+1)] ;
+
+// OPEN AUXILIARY BINARY FILES:
+  if (doWriteCirc){
+    for (ii=0; ii<Nfreqs; ii++){
+      sprintf(message,"POLCONVERT.FRINGE/OTHERS.FRINGE_%i",ii+1);
+      circFile[ii] = fopen(message,"wb");
+      fwrite(&Freqs[ii].Nchan,sizeof(int),1,circFile[ii]);
+      fwrite(Freqvals[ii],Freqs[ii].Nchan*sizeof(double),1,circFile[ii]);
+    };
+  };
+
+
+
+   for (ii=0; ii<NVis2Save;ii++){
+
+
+      il = Vis2Save[ii];
+
+      a1 = Basels[il]/256;
+      a2 = Basels[il]%256;
+
+ //     printf("Vis %i of %i (%i) \n",ii,NVis2Save,il);
+
+      fits_read_col(ofile, TFLOAT, uu, il+1, 1, 1, NULL, &FUVW[0], &auxI, &status);
+      fits_read_col(ofile, TFLOAT, vv, il+1, 1, 1, NULL, &FUVW[1], &auxI, &status);
+      fits_read_col(ofile, TFLOAT, ww, il+1, 1, 1, NULL, &FUVW[2], &auxI, &status);
+      fits_read_col(ofile, TINT, ss, il+1, 1, 1, NULL, &souidx, &auxI, &status);
+
+ //     printf("READ! \n");
+
+      UVW[0] = (double) FUVW[0]; UVW[1] = (double) FUVW[1]; UVW[2] = (double) FUVW[2]; 
+
+
+ //     printf("READ! \n");
+
+      getParAng(souidx-1,a1-1,a2-1,UVW,AuxPA1,AuxPA2);
+
+ //     printf("COMPUTED: %.2e  %.2e \n",AuxPA1,AuxPA2);
+
+      for(i=0;i<Nfreqs;i++) {
+        currIF = i/Nband;
+        currBand = i-currIF*Nband;
+        jump = 4*((long) Freqs[i].Nchan)*((long) currBand);
+        Nentry = 4*((long) Freqs[i].Nchan);
+        fits_read_col(ofile, TFLOAT, Flux, il+1, dsize*jump+1, dsize*Nentry, NULL, bufferData, NULL, &status);
+
+        for (j=0; j<Nentry; j++){i3 = dsize*j; bufferVis[j].real(bufferData[i3]);bufferVis[j].imag(bufferData[i3+1]); };
+
+       fwrite(&Times[il],sizeof(double),1,circFile[i]);
+       fwrite(&a1,sizeof(int),1,circFile[i]);
+       fwrite(&a2,sizeof(int),1,circFile[i]);
+       fwrite(&AuxPA1,sizeof(double),1,circFile[i]);
+       fwrite(&AuxPA2,sizeof(double),1,circFile[i]);
+
+     for (j=0; j<Freqs[i].Nchan; j++){
+       a11 = j*4;
+       a22 = a11+1;
+       a12 = a11+2;
+       a21 = a11+3;
+       fwrite(&bufferVis[a11],sizeof(std::complex<float>),1,circFile[i]);
+       fwrite(&bufferVis[a12],sizeof(std::complex<float>),1,circFile[i]);
+       fwrite(&bufferVis[a21],sizeof(std::complex<float>),1,circFile[i]);
+       fwrite(&bufferVis[a22],sizeof(std::complex<float>),1,circFile[i]);
+     };
+    };
+  };
+
+
+
+
+
+
+// CLOSE AUXILIARY BINARY FILES:
+  if (doWriteCirc){
+    for (ii=0; ii<Nfreqs; ii++){
+      fclose(circFile[ii]); 
+    };
+  };
+
+
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -136,6 +308,20 @@ void DataIOFITS::readInput(std::string inputfile) {
    char SIDEBAND[] = "SIDEBAND";
    char TIME[] = "TIME";
    char DATE[] = "DATE";
+
+   char SOURCE[] = "SOURCE_ID";
+   char SOURCE2[] = "SOURCE";
+
+   char UU0[] = "UU";
+   char VV0[] = "VV";
+   char WW0[] = "WW";
+   char UU1[] = "UU---SIN";
+   char VV1[] = "VV---SIN";
+   char WW1[] = "WW---SIN";
+   char UU2[] = "UU---NCP";
+   char VV2[] = "VV---NCP";
+   char WW2[] = "WW---NCP";
+
    char NOBAND[] = "NO_BAND";
    char NOCHAN[] = "NO_CHAN";
    char ANTENNA[] = "ANTENNA";
@@ -216,7 +402,11 @@ void DataIOFITS::readInput(std::string inputfile) {
    int SB[Nfreqs];
 
 
+
+
+
 // READ FREQUENCIES:
+   TotSize = 0;
    for(jj=0;jj<NIFs;jj++){
      fits_read_col(fptr, TFLOAT, iband, jj+1, 1, Nband, NULL, BW, &ii, &status);
      fits_read_col(fptr, TDOUBLE, ibfreq, jj+1, 1, Nband, NULL, bandfreq, &ii, &status);
@@ -231,6 +421,7 @@ void DataIOFITS::readInput(std::string inputfile) {
      };
 
      for(ii=0;ii<Nband;ii++){
+       TotSize += Nchan;
        Freqs[ii+jj*Nband].Nchan = Nchan;
        Freqs[ii+jj*Nband].BW = (double) BW[ii];
        double dchw = (double) chanwidth[ii] ;
@@ -251,6 +442,7 @@ void DataIOFITS::readInput(std::string inputfile) {
      };
    };
 
+  TotSize *= 4 ; // 4 Stokes
 
 
   sprintf(message,"\n Searching for visibilities with mixed (or linear) polarization.\n\n");
@@ -261,7 +453,7 @@ void DataIOFITS::readInput(std::string inputfile) {
 
 
   long il;
-  int a1, a2;
+  int a1, a2, j, i3, k;
   fits_get_num_rows(fptr, &Nvis, &status);
 
   sprintf(message,"There are  %li visibilities.\n",Nvis);
@@ -270,9 +462,11 @@ void DataIOFITS::readInput(std::string inputfile) {
 
 // ALLOCATE MEMORY FOR MIXED-POL. METADATA:
   Basels = new int[2*Nvis];
-  Freqids = new int[2*Nvis];
+//  Freqids = new int[2*Nvis];
   an1 = new int[2*Nvis];
   an2 = new int[2*Nvis];
+  ParAng[0] = new double[2*Nvis];
+  ParAng[1] = new double[2*Nvis];
   indexes = new long[2*Nvis];
   conjugate = new bool[2*Nvis];
   is1 = new bool[2*Nvis];
@@ -280,16 +474,42 @@ void DataIOFITS::readInput(std::string inputfile) {
   is1orig = new bool[2*Nvis];
   is2orig = new bool[2*Nvis];
   JDTimes = new double[2*Nvis];
-  double *Times = new double[2*Nvis];
+  Times = new double[2*Nvis];
   double *Dates = new double[2*Nvis];
-  for(il=0;il<Nvis;il++){is1orig[il]=false; is2orig[il]=false;};
-
+//  sour = new int[2*Nvis];
+  for(il=0;il<2*Nvis;il++){is1orig[il]=false; is2orig[il]=false;};
+  
 
 // GET COLUMN NUMBERS:
   fits_get_colnum(fptr, CASEINSEN, BASELINE, &ii, &status);
   fits_get_colnum(fptr, CASEINSEN, FREQID, &jj, &status);
   fits_get_colnum(fptr, CASEINSEN, DATE, &kk, &status);
   fits_get_colnum(fptr, CASEINSEN, TIME, &ll, &status);
+  fits_get_colnum(fptr, CASEINSEN, SOURCE, &ss, &status);
+
+  if(status){
+    status = 0;
+    fits_get_colnum(fptr, CASEINSEN, SOURCE2, &ss, &status);
+  };
+//  printf("SIDX: %i  %i\n",ss,status);
+
+  fits_get_colnum(fptr, CASEINSEN, UU0, &uu, &status);
+  if (status){
+    status = 0;
+    fits_get_colnum(fptr, CASEINSEN, UU1, &uu, &status);
+    if (status) {
+      status = 0;
+      fits_get_colnum(fptr, CASEINSEN, UU2, &uu, &status);
+      fits_get_colnum(fptr, CASEINSEN, VV2, &vv, &status);
+      fits_get_colnum(fptr, CASEINSEN, WW2, &ww, &status);
+    } else {
+    fits_get_colnum(fptr, CASEINSEN, VV1, &vv, &status);
+    fits_get_colnum(fptr, CASEINSEN, WW1, &ww, &status);
+    };
+  } else {
+  fits_get_colnum(fptr, CASEINSEN, VV0, &uu, &status);
+  fits_get_colnum(fptr, CASEINSEN, WW0, &uu, &status);
+  };
 
   if (status){
     sprintf(message,"\n\nPROBLEM READING NUMBERS OF COLUMNS!  ERR: %i\n\n",status);
@@ -308,23 +528,42 @@ void DataIOFITS::readInput(std::string inputfile) {
   sprintf(message,"Checking the baseline of each visibility.\n"); //,Nvis);
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
-
+  double AuxPA1, AuxPA2;
   double currT;
+  double *UVW;
+  UVW = new double[3];
+  float *FUVW;
+  FUVW = new float[3];
+  int souidx;
+  bool isLinVis, isRead;
 
-//// USE THIS FOR DEBUGGING
-//  Nvis = 150000;
-//  Nvis = 15000; 
-////////
+
+
+  Vis2Save = new long[2*Nvis];
+  NVis2Save = 0;
+
 
   for (il=0;il<Nvis;il++){
 
+  //    printf("\r Checking vis. #%li of #%li",il,Nvis);
+
+
 // READ CURRENT VISIBIITY METADATA:
   fits_read_col(fptr, TINT, ii, il+1, 1, 1, NULL, &Basels[il], &auxI, &status);
-  fits_read_col(fptr, TINT, jj, il+1, 1, 1, NULL, &Freqids[il], &auxI, &status);
+
+//  printf("\nBASEL %i - %i\n",status,Basels[il]);
+
   fits_read_col(fptr, TDOUBLE, kk, il+1, 1, 1, NULL, &Dates[il], &auxI, &status);
+
+//  printf("DATE %i\n",status);
+
   fits_read_col(fptr, TDOUBLE, ll, il+1, 1, 1, NULL, &Times[il], &auxI, &status);
+
+//  printf("TIME %i\n",status);
+
+
   if (status){
-    sprintf(message,"\n\nPROBLEM READING METADATA!  ERR: %i\n\n",status);
+    sprintf(message,"\n\nPROBLEM READING METADATA!  ERR: %i | row: %li\n\n",status, il);
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
     success=false;return;
@@ -335,40 +574,86 @@ void DataIOFITS::readInput(std::string inputfile) {
       fflush(stdout); 
     };
 
+
 // CURRENT TIME (REFERRED TO FIRST OBSERVING DAY):
-    currT = Dates[il] + Times[il] - Dates[0];
+    currT = Dates[il] + Times[il] - Dates[0]; 
+
 
 // IS THIS VISIBILITY IN THE RIGHT TIME WINDOW?
     if (currT>=doRange[0] && currT<=doRange[1]) {
+
+
+// Time to MJD:
+    Times[il] = ((Times[il]+Dates[il])-2400000.5)*86400.;
+
 
 // ADD-UP VISIILITY TO THE LIST:
 
     a1 = Basels[il]/256;
     a2 = Basels[il]%256;
 
+    isLinVis = false;
+
     for (i=0;i<NLinAnt;i++){
-       if (a1==linAnts[i]){
+      if(a1==linAnts[i] || a2==linAnts[i]){isLinVis=true; break;};
+    };
+
+    if(isLinVis){
+       fits_read_col(fptr, TFLOAT, uu, il+1, 1, 1, NULL, &FUVW[0], &auxI, &status);
+ //      printf("U %i\n",status);
+
+       fits_read_col(fptr, TFLOAT, vv, il+1, 1, 1, NULL, &FUVW[1], &auxI, &status);
+ //      printf("V %i\n",status);
+
+       fits_read_col(fptr, TFLOAT, ww, il+1, 1, 1, NULL, &FUVW[2], &auxI, &status);
+ //      printf("W %i\n",status);
+
+       fits_read_col(fptr, TINT, ss, il+1, 1, 1, NULL, &souidx, &auxI, &status);
+
+ //      printf("SOU %i\n",status);
+
+       UVW[0] = (double) FUVW[0]; UVW[1] = (double) FUVW[1]; UVW[2] = (double) FUVW[2]; 
+
+/////// TODO: SORT OUT a1-1 -> a1
+       getParAng(souidx-1,a1-1,a2-1,UVW,AuxPA1,AuxPA2);
+
+    } else {
+
+     Vis2Save[NVis2Save] = il;
+     NVis2Save += 1;
+
+
+    };
+
+
+
+
+
+    if(isLinVis){
            an1[NLinVis] = a1;
            an2[NLinVis] = a2;
            indexes[NLinVis] = il;
-           conjugate[NLinVis] = true;
+           JDTimes[NLinVis] = Times[il]; //((Times[il]+Dates[il])-2400000.5)*86400.;
+           ParAng[0][NLinVis] = AuxPA1;
+           ParAng[1][NLinVis] = AuxPA2;
+
+       if (a1==linAnts[i]){
            is1orig[NLinVis] = true;
-           JDTimes[NLinVis] = ((Times[il]+Dates[il])-2400000.5)*86400.;
-           NLinVis += 1;
        };
 
        if (a2==linAnts[i]){
-           an1[NLinVis] = a1;
-           an2[NLinVis] = a2;
-           indexes[NLinVis] = il;
-           conjugate[NLinVis] = false;
            is2orig[NLinVis] = true;
-           JDTimes[NLinVis] = ((Times[il]+Dates[il])-2400000.5)*86400.;
-           NLinVis += 1;
        };
+
+       NLinVis += 1;
+
     };
    }; // Comes from if(currT>...)
   };
+
+
+
+
 
 // Reference day for AIPS:
 day0 = Dates[0];
@@ -408,12 +693,18 @@ bool DataIOFITS::setCurrentIF(int i){
   currIF = i/Nband;
   currBand = i-currIF*Nband;
   currVis = 0;
-  jump = 4*((long) Freqs[currFreq].Nchan)*((long) currBand) + 1;
+  jump = 4*((long) Freqs[currFreq].Nchan)*((long) currBand);
   Nentry = 4*((long) Freqs[currFreq].Nchan);
   delete currentVis ;
   delete bufferVis ;
+  delete bufferData ;
+  delete currentData ;
   currentVis = new std::complex<float>[4*(Freqs[currFreq].Nchan+1)] ;
   bufferVis = new std::complex<float>[4*(Freqs[currFreq].Nchan+1)] ;
+
+  currentData = new float[12*(Freqs[currFreq].Nchan+1)] ;
+  bufferData = new float[12*(Freqs[currFreq].Nchan+1)] ;
+
   memcpy(is1, is1orig, 2*Nvis*sizeof(bool));
   memcpy(is2, is2orig, 2*Nvis*sizeof(bool));
   return success;
@@ -451,6 +742,17 @@ void DataIOFITS::openOutFile(std::string outputfile, bool Overwrite) {
    char flux[] = "FLUX"; // compiler warning
    fits_movnam_hdu(ofile, BINARY_TBL, uv_data,1, &status);
    fits_get_colnum(ofile, CASEINSEN, flux, &Flux, &status);
+
+   long repeat,NFlux;
+   int typecode;
+   fits_get_coltype(ofile, Flux, &typecode, &NFlux, &repeat, &status);
+
+   dsize = NFlux/TotSize;
+
+   sprintf(message,"\n\n\n   RECORD SIZE: %i ; VIS. SIZE: %i ; There are %i floats per visibility.\n\n",NFlux,TotSize,dsize);
+   std::cout<< message;
+
+
    if (status){
      sprintf(message,"\n\nPROBLEM ACCESSING VISIBILITY DATA IN NEW FILE!  ERR: %i\n\n",status);
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -476,7 +778,7 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 
  // char *message;
   bool found = false;
-  long i,curridx;
+  long i,curridx, i3;
 
   if (NLinVis==0){return false;};
 
@@ -488,22 +790,40 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
     
     curridx = indexes[currVis];
     if (is1[currVis]){
-      fits_read_col(ofile, TCOMPLEX, Flux, curridx+1, jump, Nentry, NULL, currentVis, NULL, &status);
+      fits_read_col(ofile, TFLOAT, Flux, curridx+1, dsize*jump+1, dsize*Nentry, NULL, currentData, NULL, &status);
       antenna = an1[currVis];
       otherAnt = an2[currVis];
       JDTime = JDTimes[currVis];
       is1[currVis] = false;
       conj = true;
-      found = true; break;
+      found = true; 
+      for (i=0; i<Nentry; i++){i3 = dsize*i; currentVis[i].real(currentData[i3]);currentVis[i].imag(currentData[i3+1]); };
+
+
+  //   sprintf(message,"VISIBS: %.5e %.5e %.5e \n",currentData[30+0],currentData[30+1],currentData[30+2]);
+   // fprintf(logFile,"%s",message); 
+  //    std::cout<<message; // fflush(logFile);
+
+      break;
+
+
     } else if (is2[currVis]){
 
-      fits_read_col(ofile, TCOMPLEX, Flux, curridx+1, jump, Nentry, NULL, currentVis, NULL, &status);
+      fits_read_col(ofile, TFLOAT, Flux, curridx+1, dsize*jump+1, dsize*Nentry, NULL, currentData, NULL, &status);
       antenna = an2[currVis];
       otherAnt = an1[currVis];
       JDTime = JDTimes[currVis];
       is2[currVis] = false;
       conj = false;
-      found = true; break;
+      found = true;
+      for (i=0; i<Nentry; i++){i3 = dsize*i; currentVis[i].real(currentData[i3]); currentVis[i].imag(currentData[i3+1]); };
+
+  //   sprintf(message,"VISIBS: %.3e %.3e %.3e \n",currentData[30+0],currentData[30+1],currentData[30+2]);
+   // fprintf(logFile,"%s",message); 
+   //   std::cout<<message; // fflush(logFile);
+
+      break;
+
     } else {
       currVis += 1;
     };
@@ -540,16 +860,18 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 bool DataIOFITS::setCurrentMixedVis() {
 
    long curridx = indexes[currVis];
-   long i;
+   long i, i3;
  //  char *message;
 
 ////////////////////
 // FOR SOME REASON, WRITE_COL RETURNS THE COMPLEX CONJUGATES????
    if(doConjugate){for (i=0; i<Nentry; i++){bufferVis[i].imag(-bufferVis[i].imag());};};
+
+   for (i=0; i<Nentry; i++){i3=dsize*i; currentData[i3]=bufferVis[i].real(); currentData[i3+1]=bufferVis[i].imag();};
 ////////////////////
 
 
-   fits_write_col(ofile, TCOMPLEX, Flux, curridx+1, jump, Nentry, bufferVis, &status); 
+   fits_write_col(ofile, TFLOAT, Flux, curridx+1, dsize*jump+1, dsize*Nentry, currentData, &status); 
 
    if (status){
      sprintf(message,"\n\nPROBLEM WRITING VISIBILITY DATA!  ERR: %i\n\n",status);
@@ -569,7 +891,7 @@ bool DataIOFITS::setCurrentMixedVis() {
 
 // Convert the data using the corresponding calibration matrix:
 
-void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, FILE *plotFile) {
+void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile) {
  
   long k, a11, a12, a21, a22, ca11, ca12, ca21, ca22 ;
   std::complex<float>  auxVis;
@@ -618,10 +940,10 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 
        } else {
 
-         bufferVis[ca11] = std::conj(M[0][0][k])*currentVis[a11]+std::conj(M[1][0][k])*currentVis[a12];
-         bufferVis[ca12] = std::conj(M[0][1][k])*currentVis[a11]+std::conj(M[1][1][k])*currentVis[a12];
-         bufferVis[ca21] = std::conj(M[0][0][k])*currentVis[a21]+std::conj(M[1][0][k])*currentVis[a22];
-         bufferVis[ca22] = std::conj(M[0][1][k])*currentVis[a21]+std::conj(M[1][1][k])*currentVis[a22];
+         bufferVis[ca11] = std::conj(M[0][0][k])*currentVis[a11]+std::conj(M[0][1][k])*currentVis[a12];
+         bufferVis[ca12] = std::conj(M[1][0][k])*currentVis[a11]+std::conj(M[1][1][k])*currentVis[a12];
+         bufferVis[ca21] = std::conj(M[0][0][k])*currentVis[a21]+std::conj(M[0][1][k])*currentVis[a22];
+         bufferVis[ca22] = std::conj(M[1][0][k])*currentVis[a21]+std::conj(M[1][1][k])*currentVis[a22];
 
        };
 
@@ -629,9 +951,21 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
    if (print) {
  //    std::cout << currConj << " "<< swap << "\n";
 
-     if (currConj){
+ //    if (k==10){
+ //    printf("M00 %i %.5e %.5e\n",k, M[0][0][k].real(),M[0][0][k].real());
+ //    printf("M01 %i %.5e %.5e\n",k, M[0][1][k].real(),M[0][1][k].real());
+ //    printf("M10 %i %.5e %.5e\n",k, M[1][0][k].real(),M[1][0][k].real());
+ //    printf("M11 %i %.5e %.5e\n",k, M[1][1][k].real(),M[1][1][k].real());
+ //    };
 
-     fwrite(&JDTimes[currVis],sizeof(double),1,plotFile);
+     if (currConj){
+     if (k==0){
+       fwrite(&JDTimes[currVis],sizeof(double),1,plotFile);
+       fwrite(&an1[currVis],sizeof(int),1,plotFile);
+       fwrite(&an2[currVis],sizeof(int),1,plotFile);
+       fwrite(&ParAng[0][currVis],sizeof(double),1,plotFile);
+       fwrite(&ParAng[1][currVis],sizeof(double),1,plotFile);
+     };
      fwrite(&currentVis[a11],sizeof(std::complex<float>),1,plotFile);
      fwrite(&currentVis[a12],sizeof(std::complex<float>),1,plotFile);
      fwrite(&currentVis[a21],sizeof(std::complex<float>),1,plotFile);
@@ -645,7 +979,13 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
      fwrite(&M[1][0][k],sizeof(std::complex<float>),1,plotFile);
      fwrite(&M[1][1][k],sizeof(std::complex<float>),1,plotFile);
      } else {
-     fwrite(&JDTimes[currVis],sizeof(double),1,plotFile);
+     if(k==0){
+       fwrite(&JDTimes[currVis],sizeof(double),1,plotFile);
+       fwrite(&an2[currVis],sizeof(int),1,plotFile);
+       fwrite(&an1[currVis],sizeof(int),1,plotFile);
+       fwrite(&ParAng[1][currVis],sizeof(double),1,plotFile);
+       fwrite(&ParAng[0][currVis],sizeof(double),1,plotFile);
+     };
      auxVis = std::conj(currentVis[a11]);
      fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
      auxVis = std::conj(currentVis[a21]);
