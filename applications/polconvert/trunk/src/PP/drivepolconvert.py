@@ -32,10 +32,13 @@ def parseOptions():
     epi += 'script provides, edit the output file and '
     epi += 'then run it manually using the instructions provided. '
     epi += 'In normal usage, you only need '
-    epi += 'to supply the list of jobs and the label.'
-    epi += 'The plotting of per-IF fringes is controlled with the -f option.'
-    use = '%(prog)s [options] [input_file [...]]\n'
-    use += '  Version $Id$'
+    epi += 'to supply the list of jobs and the label (-l). '
+    epi += 'Diagnostic plots of per-IF fringes is controlled with the '
+    epi += '-f option; if used -m, -S, -X and -T become relevant.  In '
+    epi += 'particular, with -T, no conversion is written to disk, '
+    epi += 'but all of the diagnostic plots are made and saved.'
+    use = '%(prog)s [options] [input_file [...]]\n  Version'
+    use += '$Id$'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     # essential options
     parser.add_argument('-v', '--verbose', dest='verb',
@@ -82,11 +85,13 @@ def parseOptions():
         help='table naming scheme for the QA2 tables; there should be ' +
             'six tables for antennas, appphase, bandpass, ampgains, ' +
             'phasegains and xy phase.  Options are "v0", "v1", "v2", '
-            '"v3, v4 or v5" or a ' +
+            '"v3", "v4", "v5", "v6", "v7" or a ' +
             'comma-sep list in an environment variable QA2TABLES.  In '
             'versions prior to v4, ".concatenated.ms" was part of the '
-            'label.  For v4 and subsequent the label is just the '
-            'uid name (and perhaps an embedded version string).')
+            'label.  For v4-v7 and subsequent the label is just the '
+            'uid name (and/or other identifiers).   The default is "v4", '
+            'but v5-v7 may be necessary: the difference is which scans '
+            '(APP or ALMA) are to be used for DTerms and Gxyamp.')
     parser.add_argument('-d', '--noDterm', dest='nodt',
         default=False, action='store_true',
         help='disable use of Dterm calibration tables')
@@ -157,6 +162,7 @@ def calibrationChecks(o):
     o.constXYadd = 'False'
     o.conlabel = o.label
     o.callabel = o.label
+    ### developmental
     if o.qa2 == 'v0':   # original 1mm names
         o.qal = ['antenna.tab','calappphase.tab', 'NONE', 'bandpass-zphs.cal',
                'ampgains.cal.fluxscale', 'phasegains.cal', 'XY0amb-tcon']
@@ -170,16 +176,28 @@ def calibrationChecks(o):
         o.constXYadd = 'True'
         o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
-    elif o.qa2 == 'v4': # v3 also with Gxyamp and concatenated/calibrated
+    ### production
+    elif o.qa2 == 'v4': # v3+Gxyamp/concatenated/calibrated (default)
         o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
                'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
-    elif o.qa2 == 'v5': # v3 also with Gxyamp and concatenated/calibrated
+    elif o.qa2 == 'v5': # v3+Gxyamp/concatenated/calibrated (likely)
         o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
                'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
+    elif o.qa2 == 'v6': # v3+Gxyamp/concatenated/calibrated (possible)
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
+               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
+        o.conlabel = o.label + '.concatenated.ms'
+        o.callabel = o.label + '.calibrated.ms'
+    elif o.qa2 == 'v7': # v3+Gxyamp/concatenated/calibrated (possible)
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
+               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
+        o.conlabel = o.label + '.concatenated.ms'
+        o.callabel = o.label + '.calibrated.ms'
+    ### if push comes to shove
     else:               # supply via environment variable
         o.qal = os.environ['QA2TABLES'].split(',')
     if len(o.qal) < 7:
@@ -604,6 +622,12 @@ def executeCasa(o):
         print '    ' + cmd5
         print '    ' + cmd6
         print '    mv casa-logs ' + casanow
+        print ''
+    if o.test:
+        print ''
+        print 'The *.difx and *.save directories should have identical'
+        print 'contents, and you will need to remove *.save to continue'
+        print 'additional test runs on the same jobs.'
         print ''
 
 #
