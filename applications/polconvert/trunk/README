@@ -2,6 +2,10 @@ PolConvert is implemented as a CASA task and may be installed
 as described in src/INSTALL.  The machinations at this level
 are needed to integrate it into a standard DiFX build process.
 
+Prerequisits:
+- define DIFXCASAPATH enviroment, which should point to the
+  bin directory of your CASA installation
+
 The installed directory contains the elements needed to use
 polconvert from within CASA.  Typically you might add the
 following line to your .casa/init.py file:
