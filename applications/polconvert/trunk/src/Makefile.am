@@ -25,7 +25,7 @@ pkgdata_DATA = _PolConvert.so \
 install-data-am: install-pkgdataDATA install-data-local
 
 # runs the CASA local build in the install directory
-install-data-local:
+install-data-local: install-pkgdataDATA
 	cd $(pkgdatadir) ;\
 	export PATH=@DIFXCASAPATH@${PATH_SEPARATOR}${PATH} ;\
 	buildmytasks

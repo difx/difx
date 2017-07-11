@@ -577,6 +577,16 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   float AntTab;
   std::complex<float> DetInv;
   std::complex<float> Kinv[2][2];
+  std::complex<float> H[2][2]; // = {{1.,Im},{1.,-Im}};
+  std::complex<float> HSw[2][2]; // = {{Im, 1.},{-Im,1.}};
+
+  H[0][0] = 1.; H[0][1] = Im;
+  H[1][0] = 1.; H[1][1] = -Im;
+
+  HSw[0][0] = Im; HSw[0][1] = 1.;
+  HSw[1][0] = -Im; HSw[1][1] = 1.;
+
+
   std::complex<float> gainXY[2]; 
   std::complex<float> gainRatio[maxnchan];
   std::complex<float> absGainRatio;
@@ -829,10 +839,17 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   if (allflagged){
       gchanged=false; dtchanged=false;
       for (j=0; j<nchans[ii]; j++) {
-        Ktotal[currAntIdx][0][0][j] = 1.0; // /oneOverSqrt2;
-        Ktotal[currAntIdx][0][1][j] = Im; // /oneOverSqrt2;
-        Ktotal[currAntIdx][1][0][j] = 1.0; // /oneOverSqrt2;
-        Ktotal[currAntIdx][1][1][j] = -Im; // /oneOverSqrt2;
+       if(XYSWAP[currAntIdx]){
+        Ktotal[currAntIdx][0][0][j] = HSw[0][0]; // /oneOverSqrt2;
+        Ktotal[currAntIdx][0][1][j] = HSw[0][1]; // /oneOverSqrt2;
+        Ktotal[currAntIdx][1][0][j] = HSw[1][0]; // /oneOverSqrt2;
+        Ktotal[currAntIdx][1][1][j] = HSw[1][1]; // /oneOverSqrt2;
+       } else {
+        Ktotal[currAntIdx][0][0][j] = H[0][0]; // /oneOverSqrt2;
+        Ktotal[currAntIdx][0][1][j] = H[0][1]; // /oneOverSqrt2;
+        Ktotal[currAntIdx][1][0][j] = H[1][0]; // /oneOverSqrt2;
+        Ktotal[currAntIdx][1][1][j] = H[1][1]; // /oneOverSqrt2;
+       };
       };
   };
 
@@ -842,7 +859,6 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // Compute the elements of the K matrix (only those that changed):
 
    if (dtchanged || gchanged) {
-
 
 // INITIATE K MATRIX:
    auxD = 0.0;
@@ -953,11 +969,17 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        };
 
    // Multiply by conversion (hybrid) matrix and save result in the "Ktotal" matrix:
- 
-        Ktotal[currAntIdx][0][0][j] = (Kinv[0][0]+Im*Kinv[1][0]); // /oneOverSqrt2;
-        Ktotal[currAntIdx][0][1][j] = (Kinv[0][1]+Im*Kinv[1][1]); // /oneOverSqrt2;
-        Ktotal[currAntIdx][1][0][j] = (Kinv[0][0]-Im*Kinv[1][0]); // /oneOverSqrt2;
-        Ktotal[currAntIdx][1][1][j] = (Kinv[0][1]-Im*Kinv[1][1]); // /oneOverSqrt2;
+        if(XYSWAP[currAntIdx]){
+        Ktotal[currAntIdx][0][0][j] = (Kinv[0][0]*HSw[0][0]+Kinv[1][0]*HSw[0][1]);
+        Ktotal[currAntIdx][0][1][j] = (Kinv[0][1]*HSw[0][0]+Kinv[1][1]*HSw[0][1]);
+        Ktotal[currAntIdx][1][0][j] = (Kinv[0][0]*HSw[1][0]+Kinv[1][0]*HSw[1][1]);
+        Ktotal[currAntIdx][1][1][j] = (Kinv[0][1]*HSw[1][0]+Kinv[1][1]*HSw[1][1]);
+       } else {
+        Ktotal[currAntIdx][0][0][j] = (Kinv[0][0]*H[0][0]+Kinv[1][0]*H[0][1]);
+        Ktotal[currAntIdx][0][1][j] = (Kinv[0][1]*H[0][0]+Kinv[1][1]*H[0][1]);
+        Ktotal[currAntIdx][1][0][j] = (Kinv[0][0]*H[1][0]+Kinv[1][0]*H[1][1]);
+        Ktotal[currAntIdx][1][1][j] = (Kinv[0][1]*H[1][0]+Kinv[1][1]*H[1][1]);
+       };
 
 ////////////////////////////////////
 ////////////////////
@@ -974,9 +996,9 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
 
-  if(doNorm){ // Norm. factor will be the geometrical average of gains.
+  if(doNorm && (dtchanged||gchanged)){ // Norm. factor will be the geometrical average of gains.
     AntTab = std::sqrt(NormFac[0]*NormFac[1])/((float) nchans[ii]);
-  //  printf("GAIN %.3e\n",NormFac[0]);
+ //   printf("GAIN %.3e  %.3e\n",AntTab,NormFac[0]);
     fprintf(gainsFile, "%i  %i  %.10e  %.5e\n",ii+1, currAnt, currT/86400.,AntTab*AntTab);
     for(j=0; j<nchans[ii]; j++){
       Ktotal[currAntIdx][0][0][j] /= AntTab;

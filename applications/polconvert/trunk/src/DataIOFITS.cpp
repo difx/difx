@@ -899,28 +899,28 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 
      for (k=0; k<Freqs[currFreq].Nchan; k++) {
 
-       if (swap){
+ //      if (swap){
 
-        if (currConj) {
-          a21 = k*4;
-          a12 = a21+1;
-          a22 = a21+2;
-          a11 = a21+3;
-        } else {
-          a12 = k*4;
-          a21 = a12+1;
-          a11 = a12+2;
-          a22 = a12+3;
-        };
+ //       if (currConj) {
+ //         a21 = k*4;
+ //         a12 = a21+1;
+ //         a22 = a21+2;
+ //         a11 = a21+3;
+ //       } else {
+ //         a12 = k*4;
+ //         a21 = a12+1;
+ //         a11 = a12+2;
+ //         a22 = a12+3;
+ //       };
 
-       } else {
+ //      } else {
 
          a11 = k*4;
          a22 = a11+1;
          a12 = a11+2;
          a21 = a11+3;
 
-       };
+ //      };
 
 
          ca11 = k*4;

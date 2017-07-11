@@ -682,28 +682,28 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
   long k, a11, a12, a21, a22, ca11, ca12, ca21, ca22, rec ;
   std::complex<float>  auxVis;
 
-   if (swap){
+//   if (swap){
 
-    if (currConj) {
-        a21 = 0;
-        a12 = 1;
-        a22 = 2;
-        a11 = 3;
-    } else {
-        a12 = 0;
-        a21 = 1;
-        a11 = 2;
-        a22 = 3;
-    };
+//    if (currConj) {
+//        a21 = 0;
+//        a12 = 1;
+//        a22 = 2;
+//        a11 = 3;
+//    } else {
+//        a12 = 0;
+//        a21 = 1;
+//        a11 = 2;
+//        a22 = 3;
+//    };
 
-   } else {
+//   } else {
 
        a11 = 0;
        a22 = 1;
        a12 = 2;
        a21 = 3;
 
-   };
+//   };
 
 
      ca11 = 0;
@@ -716,30 +716,33 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
      for (k=0; k<Freqs[currFreq].Nchan; k++) {
 
 
-  /*     printf("\nk %i %.2f  %.2f \n",thisAnt, M[0][0][k].real(),M[0][0][k].imag());
-       printf("k %i %.2f  %.2f \n",thisAnt, M[0][1][k].real(),M[0][1][k].imag());
-       printf("k %i %.2f  %.2f \n",thisAnt, M[1][0][k].real(),M[1][0][k].imag());
-       printf("k %i %.2f  %.2f \n",thisAnt, M[1][1][k].real(),M[1][1][k].imag());
-
-       printf("k %i %.2e  %.2e \n",thisAnt, currentVis[a11][k].real(),currentVis[a11][k].imag());
-       printf("k %i %.2e  %.2e \n",thisAnt, currentVis[a12][k].real(),currentVis[a12][k].imag());
-       printf("k %i %.2e  %.2e \n",thisAnt, currentVis[a21][k].real(),currentVis[a21][k].imag());
-       printf("k %i %.2e  %.2e \n",thisAnt, currentVis[a22][k].real(),currentVis[a22][k].imag());
-*/
-
        if (currConj) {
 
+  //     if(swap){
+  //       bufferVis[ca11][k] = M[0][1][k]*currentVis[a11][k]+M[0][0][k]*currentVis[a21][k];
+  //       bufferVis[ca12][k] = M[0][1][k]*currentVis[a12][k]+M[0][0][k]*currentVis[a22][k];
+  //       bufferVis[ca21][k] = M[1][1][k]*currentVis[a11][k]+M[1][0][k]*currentVis[a21][k];
+  //       bufferVis[ca22][k] = M[1][1][k]*currentVis[a12][k]+M[1][0][k]*currentVis[a22][k];
+  //     } else {
          bufferVis[ca11][k] = M[0][0][k]*currentVis[a11][k]+M[0][1][k]*currentVis[a21][k];
          bufferVis[ca12][k] = M[0][0][k]*currentVis[a12][k]+M[0][1][k]*currentVis[a22][k];
          bufferVis[ca21][k] = M[1][0][k]*currentVis[a11][k]+M[1][1][k]*currentVis[a21][k];
          bufferVis[ca22][k] = M[1][0][k]*currentVis[a12][k]+M[1][1][k]*currentVis[a22][k];
+  //     };
 
        } else {
 
+  //      if(swap){
+  //       bufferVis[ca11][k] = std::conj(M[0][1][k])*currentVis[a11][k]+std::conj(M[0][0][k])*currentVis[a12][k];
+  //       bufferVis[ca12][k] = std::conj(M[1][1][k])*currentVis[a11][k]+std::conj(M[1][0][k])*currentVis[a12][k];
+  //       bufferVis[ca21][k] = std::conj(M[0][1][k])*currentVis[a21][k]+std::conj(M[0][0][k])*currentVis[a22][k];
+  //       bufferVis[ca22][k] = std::conj(M[1][1][k])*currentVis[a21][k]+std::conj(M[1][0][k])*currentVis[a22][k];
+  //      } else {
          bufferVis[ca11][k] = std::conj(M[0][0][k])*currentVis[a11][k]+std::conj(M[0][1][k])*currentVis[a12][k];
          bufferVis[ca12][k] = std::conj(M[1][0][k])*currentVis[a11][k]+std::conj(M[1][1][k])*currentVis[a12][k];
          bufferVis[ca21][k] = std::conj(M[0][0][k])*currentVis[a21][k]+std::conj(M[0][1][k])*currentVis[a22][k];
          bufferVis[ca22][k] = std::conj(M[1][0][k])*currentVis[a21][k]+std::conj(M[1][1][k])*currentVis[a22][k];
+  //      };
 
        };
 

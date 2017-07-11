@@ -243,8 +243,10 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       for i in range(dims[0]-1):
        if phases[i+1,j]-phases[i,j] > np.pi:
         phases[i+1:,j] -= 2.*np.pi
+        printMsg('Adding phase wrap to gain at channel %i'%i)
        elif phases[i+1,j]-phases[i,j] < -np.pi:
         phases[i+1:,j] += 2.*np.pi
+        printMsg('Removing phase wrap to gain at channel %i'%i)
      if check:
        pl.figure()
        pl.plot(180./np.pi*phases[:,0])
@@ -1807,8 +1809,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      pl.xlim((min(CONVAMP[:,0])-1,max(CONVAMP[:,0])+1))
      pl.ylim((0.,np.max(CONVAMP[:,-1])*1.05))
 
-     fig3.suptitle(jobLabel(DiFXinput)+' ANT: %i'%thisAnt)
-     fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS_ANT%i.png'%thisAnt)
+     fig3.suptitle(jobLabel(DiFXinput)+' ANT: %i v %i'%(thisAnt,plotAnt))
+     fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS_ANT_%i_%i.png'%(thisAnt,plotAnt))
 
 
 
