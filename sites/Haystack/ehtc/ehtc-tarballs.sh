@@ -60,6 +60,7 @@ It will not remove the difx2mark4 or difx2fits output, nor the
 polconvert calibration tarball (*APP_DELIVERABLES*).
 
 The single argument 'examples' will provide some suggestions.
+The single argument 'other' will provide some extra special use args.
 "
 EXAMPLES="Standard delivery at the Correlators is to subdirectories
 (as sensible) of one of these:
@@ -132,6 +133,12 @@ EXGEN="To remove tarballs (in case you don't like what was installed):
 which will remove the tarballs and associated logs from the working
 directory as well as the destination directory.
 "
+OTHER="Various additional arguments
+
+    over=true|false     --override-version on difx2{mark4|fits} (false)
+    jobs <list>         terminate argument processing and consider
+                        everything else to be a job number (or job.input)
+"
 
 # defaults
 dry=false
@@ -148,6 +155,7 @@ d2ft=true
 copy=true
 verb=true
 nuke=false
+over=false
 
 args="$@"
 
@@ -162,6 +170,7 @@ case $1 in
 *e*alma) echo "$EXALMA" ; exit 0 ;;
 *e*gen*) echo "$EXGEN" ; exit 0 ;;
 *exam*)  echo "$EXAMPLES" ; exit 0 ;;
+other)   echo "$OTHER" ; exit 0 ;;
 dry=*)   eval "$1" ;;
 exp=*)   eval "$1" ;;
 vers=*)  eval "$1" ;;
@@ -176,7 +185,15 @@ d2m4=*)  eval "$1" ;;
 d2ft=*)  eval "$1" ;;
 copy=*)  eval "$1" ;;
 nuke=*)  eval "$1" ;;
+over=*)  eval "$1" ;;
+jobs)    shift ; break ;;
 esac ; shift ; done
+
+# finish up the jobs list
+jobs=''
+for j in $@
+do jobs="$jobs "`echo $j | sed 's/.input//'` ; done
+echo jobs is $jobs
 
 # marching orders
 $verb && echo '' && echo '' && echo $0 $args | fold && echo ''
@@ -199,6 +216,8 @@ $verb && echo '' && echo '' && echo $0 $args | fold && echo ''
     echo copy must be true or false ; exit 1; }
 [ "$nuke" = 'true' -o "$nuke" = 'false' ] || {
     echo nuke must be true or false ; exit 1; }
+[ "$over" = 'true' -o "$over" = 'false' ] || {
+    echo over must be true or false ; exit 1; }
 $d2m4 && [ "$expn" = '0000' ] && { echo d2m4 is true, need expn; exit 1; }
 [ "$job" = 'nojob' ] && job=$exp
 EXP=`echo $exp | tr a-z A-Z`
@@ -206,6 +225,7 @@ com1="nuke=$nuke exp=$exp vers=$vers subv=$subv"
 com2="verb=$verb dest=$dest"
 com3="dry=$dry src=$src"
 com4="copy=$copy job=$job expn=$expn EXP=$EXP d2m4=$d2m4 d2ft=$d2ft"
+com5="over=$over jobs $jobs"
 
 # verify write permissions in the work directory (for tar creation)
 workdir=`pwd`
@@ -227,7 +247,8 @@ echo 'hi mom' > test-file.$$
 rm -f test-file.$$
 # get joblist and see if source is dest
 cd $srcdir
-jobs=`ls ${job}*.input | sed 's/.input$//'`
+# either user supplied $jobs from above or else everything
+[ -z "$jobs" ] && jobs=`ls ${job}*.input | sed 's/.input$//'`
 set -- $jobs
 [ $# -eq 0 ] && { $d2m4 || $d2ft ; } && { echo no jobs found ; exit 2; }
 job1=$1
@@ -235,19 +256,25 @@ job1=$1
 jobn=$1
 $copy && [ "$srcdir" = "$destdir" ] && { echo source is dest: `pwd` ; exit 2; }
 
+{ $d2m4 || $d2ft ; } && {
+    for j in $jobs
+    do [ -f $j.input ] || { echo $j.input missing; exit 2; } ; done ; }
+
 d2m4exec=`type -p difx2mark4`
 d2ftexec=`type -p difx2fits`
 [ -n "$d2m4exec" ] || { echo difx2mark4 not found in path ; exit 2; }
 [ -n "$d2ftexec" ] || { echo difx2fits not found in path ; exit 2; }
 [ -x "$d2m4exec" ] || { echo difx2mark4 is not executable ; exit 2; }
 [ -x "$d2ftexec" ] || { echo difx2fits is not executable ; exit 2; }
+$over && ov=--override-version || ov=''
 
 $verb && echo Sanity checks passed, proceeding with arguments &&
     echo '        ' $com1 \\ &&
     echo '        ' $com2 \\ &&
     echo '        ' $com3 \\ &&
-    echo '        ' $com4
-$verb && echo Using jobs $job1 .. $jobn
+    echo '        ' $com4 \\ &&
+    echo '        ' $com5
+$verb && echo Using jobs $job1 .. $jobn "($jobs)"
 $verb && echo Working in $srcdir
 $verb && echo Tar output to $workdir
 $verb && echo Delivery to to $destdir
@@ -268,6 +295,7 @@ dxin)
     tarname=${exp}-${vers}-$subv-dxin.tar
     $nuke && rm -f $workdir/$tarname && rm -f $dest/$tarname &&
              rm -f $workdir/$tarname.log
+    ### FIXME content
     content1='*.flist* *.v2d* *.joblist* *codes *vex.obs'
     content2=' ${job}_*.{input,calc,errs,flag,im,machines,threads,difxlog}'
     content=$content1$content2
@@ -278,6 +306,7 @@ swin)
     tarname=${exp}-${vers}-$subv-swin.tar
     $nuke && rm -f $workdir/$tarname && rm -f $dest/$tarname &&
              rm -f $workdir/$tarname.log
+    ### FIXME content
     content='${job}_*.difx'
     ;;
 fits)
@@ -285,6 +314,7 @@ fits)
     $verb && echo making FITS in `pwd`/$fits
     $dry || dotar=true
     tarname=${exp}-${vers}-$subv-fits.tar
+    $nuke && rm -rf $fits
     $nuke && rm -f $workdir/$tarname && rm -f $dest/$tarname &&
              rm -f $workdir/$tarname.log
     content="$fits"
@@ -295,6 +325,7 @@ hops)
     $verb && echo making HOPS in `pwd`/$expn
     $dry || dotar=true
     tarname=${exp}-${vers}-$subv-hops.tar
+    $nuke && rm -rf $expn
     $nuke && rm -f $workdir/$tarname && rm -f $dest/$tarname &&
              rm -f $workdir/$tarname.log
     content="$expn"
@@ -307,6 +338,7 @@ pcin)
     tarname=${exp}-${vers}-$subv-pcin.tar
     $nuke && rm -f $workdir/$tarname && rm -f $dest/$tarname &&
              rm -f $workdir/$tarname.log
+    ### FIXME content
     content1='SourceList.txt SideBand.txt Jobs.txt'
     content2=" ${job}*.{input,calc,flag,im}"
     content3=" ${exp}*.codes ${exp}*.conf ${exp}*.vex.obs"
@@ -336,40 +368,41 @@ pcal)
 logs)
     $verb && echo gathering tar creation logs calibration logs
     cd $workdir
+    ### FIXME content
     echo FIXME
     ;;
 no-alma)
     $verb && echo doing no-alma case in `pwd`
     cd $workdir
-    $0 tar=dxin $com1 $com2 $com3 $com4 || { echo dxin failed ; exit 3; }
-    $0 tar=swin $com1 $com2 $com3 $com4 || { echo swin failed ; exit 3; }
-    $0 tar=fits $com1 $com2 $com3 $com4 || { echo fits failed ; exit 3; }
-    $0 tar=hops $com1 $com2 $com3 $com4 || { echo hops failed ; exit 3; }
+    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 || { echo dxin failed ; exit 3; }
+    $0 tar=swin $com1 $com2 $com3 $com4 $com5 || { echo swin failed ; exit 3; }
+    $0 tar=fits $com1 $com2 $com3 $com4 $com5 || { echo fits failed ; exit 3; }
+    $0 tar=hops $com1 $com2 $com3 $com4 $com5 || { echo hops failed ; exit 3; }
     exit 0
     ;;
 no-hops)
     $verb && echo doing no-hops case in `pwd`
     cd $workdir
-    $0 tar=dxin $com1 $com2 $com3 $com4 || { echo dxin failed ; exit 3; }
-    $0 tar=swin $com1 $com2 $com3 $com4 || { echo swin failed ; exit 3; }
-    $0 tar=fits $com1 $com2 $com3 $com4 || { echo fits failed ; exit 3; }
+    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 || { echo dxin failed ; exit 3; }
+    $0 tar=swin $com1 $com2 $com3 $com4 $com5 || { echo swin failed ; exit 3; }
+    $0 tar=fits $com1 $com2 $com3 $com4 $com5 || { echo fits failed ; exit 3; }
     exit 0
     ;;
 pre-alma)
     $verb && echo doing pre-alma case in `pwd`
     cd $workdir
-    $0 tar=dxin $com1 $com2 $com3 $com4 || { echo dxin failed ; exit 3; }
-    $0 tar=swin $com1 $com2 $com3 $com4 || { echo swin failed ; exit 3; }
+    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 || { echo dxin failed ; exit 3; }
+    $0 tar=swin $com1 $com2 $com3 $com4 $com5 || { echo swin failed ; exit 3; }
     exit 0
     ;;
 post-alma)
     $verb && echo doing post-alma case in `pwd`
     cd $workdir
-    $0 tar=pcin $com1 $com2 $com3 $com4 || { echo pcin failed ; exit 3; }
-    $0 tar=fits $com1 $com2 $com3 $com4 || { echo fits failed ; exit 3; }
-    $0 tar=hops $com1 $com2 $com3 $com4 || { echo hops failed ; exit 3; }
-    $0 tar=pcqk $com1 $com2 $com3 $com4 || { echo pcqk failed ; exit 3; }
-    $0 tar=pcal $com1 $com2 $com3 $com4 || { echo pcal failed ; exit 3; }
+    $0 tar=pcin $com1 $com2 $com3 $com4 $com5 || { echo pcin failed ; exit 3; }
+    $0 tar=fits $com1 $com2 $com3 $com4 $com5 || { echo fits failed ; exit 3; }
+    $0 tar=hops $com1 $com2 $com3 $com4 $com5 || { echo hops failed ; exit 3; }
+    $0 tar=pcqk $com1 $com2 $com3 $com4 $com5 || { echo pcqk failed ; exit 3; }
+    $0 tar=pcal $com1 $com2 $com3 $com4 $com5 || { echo pcal failed ; exit 3; }
     exit 0
     ;;
 *) cat <<....EOF
@@ -400,7 +433,7 @@ pcin)
     [ -f SourceList.txt ] || $dry ||
         grep SOURCE.0.N ${job}*calc > SourceList.txt
     [ -f SideBand.txt ] || $dry ||
-        grep 'SIDEBAND 32' ${job}*input > SourceList.txt
+        grep 'SIDEBAND 32' ${job}*input > SideBand.txt
     [ -f Jobs.txt ] || $dry ||
         sort SourceList.txt SideBand.txt | paste - - |\
 	awk '{printf "%s %-10s %s\n", $1,$4,$7}' |\
@@ -416,13 +449,15 @@ fits)
         exit 4; }
     $dry && {
         echo mkdir $fits
-        echo $d2ftexec $jobs \> $fog
+        echo $d2ftexec $ov $jobs \> $fog
         echo $EXP* $fits
     } || {
         mkdir $fits
         $verb && echo follow difx2fits with: &&
             echo '  'tail -n +1 -f `pwd`/$fog
-        $d2ftexec $jobs > $fog 2>&1 || {
+        echo $d2ftexec $ov $jobs > $fog
+        echo =================== >> $fog
+        $d2ftexec $ov $jobs >> $fog 2>&1 || {
             echo difx2fits failed; exit 4; }
         mv $EXP* $fits
         $verb && echo -n disk usage on fits: && du -sh $fits
@@ -443,12 +478,14 @@ hops)
     }
     $dry && {
         echo mkdir $expn
-        echo $d2m4exec -e $expn -s $exp.codes $jobs \> $dog
+        echo $d2m4exec $ov -e $expn -s $exp.codes $jobs \> $dog
     } || {
         mkdir $expn
         $verb && echo follow difx2mark4 with: &&
             echo '  'tail -n +1 -f `pwd`/$dog
-        $d2m4exec -e $expn -s $exp.codes $jobs > $dog 2>&1 || {
+        echo $d2m4exec $ov -e $expn -s $exp.codes $jobs > $dog
+        echo ========================================== >> $dog
+        $d2m4exec $ov -e $expn -s $exp.codes $jobs >> $dog 2>&1 || {
             echo difx2mark4 failed; exit 4; }
         $verb && echo -n disk usage on ${expn}: && du -sh $expn
     }
@@ -484,6 +521,7 @@ $copy && {
     echo -n cp -p $workdir/$tarname $dest ... &&
             cp -p $workdir/$tarname $dest && echo ok
     [ -f $dest/$tarname ] && ls -lh $dest/$tarname
+    $nuke && [ -f $dest/$tarname ] && rm -f $workdir/$tarname
 }
 
 exit 0

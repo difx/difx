@@ -11,6 +11,7 @@ $Id$
 '''
 
 import argparse
+import glob
 import math
 import re
 import os
@@ -44,13 +45,17 @@ def parseOptions():
         help='The name of the DiFX job.')
     inputs.add_argument('-l', '--joblist', dest='joblist',
         metavar='FILE', default='',
-        help='The full name of the difx *.joblist')
+        help='The path of the difx *.joblist joblist')
     inputs.add_argument('-o', '--vexobs', dest='vexobs',
         metavar='FILE', default='',
-        help='The name of the *.vex.obs joblist')
-    action.add_argument('-B', '--baselines', dest='baselines',
+        help='The path of the *.vex.obs vex file')
+    inputs.add_argument('-i', '--inputs', dest='inputs',
+        metavar='FILE-PATTERN', default='',
+        help='The path to job input/calc files up to the '
+            + ' underscore preceding the job number.')
+    action.add_argument('-A', '--antennas', dest='antennas',
         action='store_true', default=False,
-        help='provide a list of baselines')
+        help='provide a list of antennas')
     action.add_argument('-N', '--numbers', dest='numbers',
         action='store_true', default=False,
         help='provide a list of job numbers')
@@ -124,6 +129,78 @@ def doTestMJD(mjd, verb=False):
     print m
     sys.exit(0)
 
+def parseInputCalc(inp, clc, vrb):
+    '''
+    Read lines of .input and .calc to find the things we want.
+    o.jobbage[#] = [start,stop [antennas]]
+    o.cabbage[jn] = [MJDstart, MJDstop, [antennas], [vexinfo]]
+    vexinfo is [scan,vexstart,mjdstart,sdur,vsrc,mode]
+    '''
+    jni = inp.split('_')[-1].split('.')[0]
+    jnc = clc.split('_')[-1].split('.')[0]
+    if len(jni) != len(jnc): return None,None,None
+    jid_re = re.compile(r'^JOB ID:\s*([0-9]+)')
+    sta_re = re.compile(r'^JOB START TIME:\s*([0-9.]+)')
+    stp_re = re.compile(r'^JOB STOP TIME:\s*([0-9.]+)')
+    stn_re = re.compile(r'^TELESCOPE\s*([0-9]+)\s*NAME:\s*([A-Z0-9]+)')
+    src_re = re.compile(r'^SOURCE\s*([0-9]+)\s*NAME:\s*(.*)$')
+    scn_re = re.compile(r'^SCAN\s*([0-9]+)\s*IDENTIFIER:\s*(.*)$')
+    dur_re = re.compile(r'^SCAN\s*([0-9]+)\s*DUR.*:\s*([0-9]+)$')
+    mde_re = re.compile(r'^SCAN\s*([0-9]+)\s*OBS.*:\s*(.*)$')
+    jid = None
+    mjdstart = None
+    vsrc = None
+    scan = None
+    sdur = None
+    mode = None
+    antenniset = set()
+    jfmt = '%' + ('0%dd' % len(jni))
+    # parse calc file
+    fc = open(clc)
+    for liner in fc.readlines():
+        line = liner.rstrip()
+        jid_hit = jid_re.search(line)
+        if jid_hit: jid = jfmt % (int(jid_hit.group(1)))
+        sta_hit = sta_re.search(line)
+        if sta_hit: mjdstart = float(sta_hit.group(1))
+        stp_hit = stp_re.search(line)
+        if stp_hit: mjdstop  = float(stp_hit.group(1))
+        stn_hit = stn_re.search(line)
+        if stn_hit: antenniset.add(stn_hit.group(2))
+        src_hit = src_re.search(line)
+        if src_hit: vsrc = src_hit.group(2)
+        scn_hit = scn_re.search(line)
+        if scn_hit: scan = scn_hit.group(2)
+        dur_hit = dur_re.search(line)
+        if dur_hit: sdur = dur_hit.group(2)
+        mde_hit = mde_re.search(line)
+        if mde_hit: mode = mde_hit.group(2)
+    fc.close()
+    if mjdstart: vexstart = MJD2Vex(mjdstart, vrb)
+    vexinfo = [scan,vexstart,mjdstart,sdur,vsrc,mode]
+    if jid != jni or jid != jnc: print '#bogus job',jni,jnc,jid
+    answer = [mjdstart, mjdstop, list(antenniset), vexinfo]
+    if vrb: print '# ',jid,answer
+    return jid,answer,antenniset
+
+def doInputs(o):
+    '''
+    Use the input pattern to glob for matching input/calc
+    files and read them to provide the job information.
+    o.jobbage[#] = [start,stop,[antennas],[name,start,smjd,dur,vsrc,mode]]
+    '''
+    o.inptfiles = glob.glob(o.inputs + '_*.input')
+    o.calcfiles = glob.glob(o.inputs + '_*.calc')
+    if len(o.inptfiles) != len(o.calcfiles):
+        print 'Mismatch in number of input/calc files, bailing'
+        return
+    o.pairs = map(lambda x,y:(x,y), sorted(o.inptfiles), sorted(o.calcfiles))
+    o.cabbage = {}
+    for inp,clc in o.pairs:
+        if o.verb: print '#Input:',inp,'\n#Calc: ',clc
+        jn,dets,o.antset = parseInputCalc(inp,clc,o.verb)
+        if dets and jn: o.cabbage[jn] = dets
+
 def parseFirst(line, o):
     '''
     Parse the first line of the job file and gather some info.
@@ -150,12 +227,13 @@ def parseFirst(line, o):
 def doJobList(o):
     '''
     Parse the joblist file and gather useful information
-    into a dict, o.jobbage
+    into a dict, o.jobbage.  After this routine completes,
+    o.jobbage[#] = [start,stop [antennas]]
     '''
     f = open(o.joblist)
     first = True
     o.jobbage = {}
-    o.baseline = set()
+    o.antennaset = set()
     for line in f.readlines():
         if line[0] == '#': continue
         if first:
@@ -166,15 +244,15 @@ def doJobList(o):
             JOBNUM = dets[0].split('_')[1]
             MSTART = float(dets[1])
             MSTOP  = float(dets[2])
-            BASELINES = dets[9:]
+            ANTENNAS = dets[9:]
             if o.verb:
-                print '#Job %s MJD (%.7f..%.7f) baselines %s' % (
-                    JOBNUM, MSTART, MSTOP, '-'.join(BASELINES))
-            o.jobbage[JOBNUM] = [MSTART, MSTOP, BASELINES]
-            for b in BASELINES: o.baseline.add(b)
+                print '#Job %s MJD (%.7f..%.7f) antennas %s' % (
+                    JOBNUM, MSTART, MSTOP, '-'.join(ANTENNAS))
+            o.jobbage[JOBNUM] = [MSTART, MSTOP, ANTENNAS]
+            for b in ANTENNAS: o.antennaset.add(b)
     f.close()
     if o.verb:
-        print '# Unique baselines: ' + ' '.join(o.baseline)
+        print '# Unique antennas: ' + ' '.join(o.antennaset)
 
 def doParseVex(o):
     '''
@@ -185,8 +263,11 @@ def doParseVex(o):
         args = ['VEX2XML', '-in', o.vexobs, '-out', o.vxoxml]
         if o.verb:
             print '#Converting VEX to XML with:\n# ' + ' '.join(args)
-        p = subprocess.Popen(args,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            p = subprocess.Popen(args,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except Exception, ex:
+            raise Exception, 'VEX2XML failed: ' + str(ex)
         (v2xout, v2xerr) = p.communicate()
         p.wait()
         if p.returncode:
@@ -219,7 +300,7 @@ def doFindProj(o):
         sre = scan_re.search(line)
         if sre: lastscan = sre.group(1)
         first = first_re.search(line)
-        if first: thisproj = first.group(1)
+        if first: thisproj = first.group(1)[:-1]
         if len(thisproj) > 0 and len(lastscan) > 0:
             if thisproj in o.projscans:
                 o.projscans[thisproj].append(lastscan)
@@ -250,6 +331,16 @@ def doFindSrcs(o):
             print dname,sname,ra,dec,frame
         o.srcs.append(sname)
 
+def doInputSrcs(o):
+    '''
+    Generate a list of sources as found in o.cabbage
+    '''
+    if not o.cabbage: return
+    o.srcset = set()
+    for c in o.cabbage:
+        o.srcset.add(o.cabbage[c][3][4])
+    o.srcs = list(o.srcset)
+
 def findJobMatch(o, smjd):
     '''
     Find the job with the matching mjd start smjd.
@@ -263,7 +354,9 @@ def findJobMatch(o, smjd):
 def doScanVTree(o):
     '''
     Scan the vex file matching jobs with scans
-    When jobs are so matched, the vex info is appended
+    When jobs are so matched, the vex info is appended:
+    o.jobbage[#] = [start,stop,[antennas],[name,start,smjd,dur,vsrc,mode]]
+    So source is o.jobbage[#][3][4]
     '''
     if not o.vextree: return
     for sn in o.vextree.findall('SCHED/scan'):
@@ -296,40 +389,58 @@ def adjustOptions(o):
     if len(o.mjd) > 0:       doTestMJD(o.mjd, o.verb)
     if o.joblist == '' and o.job != '': o.joblist = o.job + '.joblist'
     if o.vexobs  == '' and o.job != '': o.vexobs  = o.job + '.vex.obs'
+    o.cabbage = None
+    o.antset = None
+    if len(o.inputs) > 0:    doInputs(o)
     o.jobbage = None
-    o.baseline = None
+    o.antennaset = None
     o.projscans = None
     o.srcs = None
     if len(o.joblist) > 0:   doJobList(o)
     o.vextree = None
     if len(o.vexobs) > 0:
-        doParseVex(o)
-        doFindProj(o)
-        doFindSrcs(o)
-        doScanVTree(o)
+        rc = os.system('type VEX2XML 2>&-')
+        if rc == 0: doParseVex(o)
+        if o.vextree:
+            doFindProj(o)
+            doFindSrcs(o)
+            doScanVTree(o)
+            o.rubbage = o.jobbage
+            o.antlers = o.antennaset
+        else:
+            doFindProj(o)
+            doInputSrcs(o)
+            o.rubbage = o.cabbage
+            o.antlers = o.antset
     return o
 
 def doSelectSource(o):
     '''
     Pretty trivial: select on source
+    So source is o.jobbage[#][3][4]
     '''
     if o.source == '': return
+    newjobs = {}
     if o.source in o.srcs:
-        o.srcs = [o.source]
-    else:
-        o.srcs = None
-    # FIXME: attack o.jobbage
+        for j in o.rubbage:
+            if o.rubbage[j][3][4] == o.source:
+                newjobs[j] = o.rubbage[j]
+                if o.verb: print '#S',j,str(newjobs[j])
+    o.rubbage = newjobs
 
 def doSelectProject(o):
     '''
     Pretty trivial: select on project
+    So scan name is o.rubbage[#][3][0]
     '''
     if o.project == '': return
+    newjobs = {}
     if o.project in o.projscans:
-        o.projscans = { o.project : o.projscans[o.project] }
-    else:
-        o.projscans = None
-    # FIXME: attack o.jobbage
+        for j in o.rubbage:
+            if o.rubbage[j][3][0] in o.projscans[o.project]:
+                newjobs[j] = o.rubbage[j]
+                if o.verb: print '#P',j,str(newjobs[j])
+    o.rubbage = newjobs
 
 def selectOptions(o):
     '''
@@ -339,26 +450,28 @@ def selectOptions(o):
     doSelectProject(o)
     return o
 
-def doBaselines(o):
+def doAntennas(o):
     '''
-    Generate a list of baselines from the joblist file
+    Generate a list of antennas from the joblist file
     '''
-    if len(o.baseline) == 0: return
-    print ' '.join(o.baseline)
+    if len(o.antlers) == 0: return
+    print 'antennas="' + ' '.join(o.antlers) + '"'
 
 def doNumbers(o):
     '''
     Generate a list of job numbers from the joblist file
     '''
-    if len(o.jobbage) == 0: return
-    print ' '.join(sorted(o.jobbage.keys()))
+    if len(o.rubbage) == 0: return
+    jl = map(lambda x:"%s_%s.input" % (o.job, x), sorted(o.rubbage.keys()))
+    #print 'jobs="' + ' '.join(sorted(o.rubbage.keys())) + '"'
+    print 'jobs="' + ' '.join(jl) + '"'
 
 def doSources(o):
     '''
     Generate a list of sources from the vex file
     '''
     if len(o.srcs) == 0: return
-    print ' '.join(o.srcs)
+    print 'sources="' + ' '.join(o.srcs) + '"'
 
 def doProjects(o):
     '''
@@ -366,9 +479,7 @@ def doProjects(o):
     '''
     if len(o.projscans) == 0: return
     for p in o.projscans:
-        print 'ALMA Project %-9s:' % p,
-        for s in o.projscans[p]: print s,
-        print
+        print 'project_' + p + '="' + ' '.join(o.projscans[p]) + '"'
 
 # main entry point
 if __name__ == '__main__':
@@ -376,7 +487,7 @@ if __name__ == '__main__':
     o = adjustOptions(o)
     o = selectOptions(o)
 
-    if o.baselines: doBaselines(o)
+    if o.antennas:  doAntennas(o)
     if o.numbers:   doNumbers(o)
     if o.sources:   doSources(o)
     if o.projects:  doProjects(o)
