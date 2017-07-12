@@ -178,7 +178,7 @@ class DifxMachines(object):
 	
 		lineCount = 0
 
-		reLine = re.compile("^\s*(.*?)\s*,\s*([0-2]?),\s*(\d{1,})\s*,?\s*(.*)")	
+		reLine = re.compile("^\s*(.*?)\s*,\s*([0-2]?)\s*,\s*(\d{1,})\s*,?\s*(.*)")	
 		reRange = re.compile("(.+)\[(.*)\-(.*)\]")
 		reLetter = re.compile("[a-z]")		
 
@@ -188,17 +188,14 @@ class DifxMachines(object):
 			lineCount += 1	
 			line = line.strip()
 
+			# remove single line comments and trailing comments
+			if line.find('#') >= 0:
+				line = line[:line.find("#")]
+				line = line.strip()
+
 			# skip empty lines
 			if len(line) == 0:
 				continue
-
-			# skip comments
-			if line.strip().startswith('#'):
-				continue
-
-
-			#remove trailing comment
-			#line = line[:line.find("#")]
 
 			# look for version string
 			if line.startswith("version"):
@@ -209,7 +206,7 @@ class DifxMachines(object):
 
 			result = reLine.match(line)
 			if result is None:
-				raise Exception ("Missformed line in the machine file (line : %s)" % lineCount)
+				raise Exception ("Misformed line in the machine file (line : %s : '%s')" % (lineCount,line))
 
 			nodeNames = []
 			# check if name field contains a range
