@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2017 Walter Brisken                                *
+ *   Copyright (C) 2013-2015 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,6 +36,7 @@
 
 
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -371,7 +372,7 @@ void printvdifmux(const struct vdif_mux *vm)
  * Will stop when one of three conditions occurs:
  * 1. dest array size is exceeded
  * 2. src array is exhausted
- * 3. a gap longer than nGap frames is encountered.  nGap = 0 disables this check
+ * 3. a gap longer than nGap frames is encountered
  *
  * Returns:
  *  < 0 on error
@@ -418,10 +419,12 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 	if(vm->flags & VDIF_MUX_FLAG_GOTOEND)
 	{
+		assert(srcSize > vm->inputFrameSize);
 		maxSrcIndex = srcSize - vm->inputFrameSize;
 	}
 	else
 	{
+		assert(srcSize > vm->nSort*vm->inputFrameSize);
 		maxSrcIndex = srcSize - vm->nSort*vm->inputFrameSize;
 	}
 
@@ -440,6 +443,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 
 	maxDestIndex = destSize/vm->outputFrameSize - 1;
+	assert((destSize/vm->outputFrameSize) > vm->nSort /* can happen if subIntNS is mis-tuned in DiFX */);
 
 	startFrameNumber = startOutputFrameNumber;
 
@@ -461,19 +465,9 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 		cur = src + i;
 		vh = (const vdif_header *)cur;
-
-		if( (vm->flags & VDIF_MUX_FLAG_ENABLEVALIDITY) && (getVDIFFrameInvalid(vh) > 0) )
-		{
-			/* invalid bit is set and respected */
-			i += vm->inputFrameSize;
-			++nInvalidFrame;
-
-			continue;
-		}
-
 		if(*((uint32_t *)(cur+vm->inputFrameSize-4)) == FILL_PATTERN)
 		{
-			/* Fill pattern at end of frame */
+			/* Fill pattern at end of frame or invalid bit is set */
 			i += vm->inputFrameSize;
 			nFill += vm->inputFrameSize;
 
@@ -497,8 +491,17 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 			continue;
 		}
+		if( (vm->flags & VDIF_MUX_FLAG_ENABLEVALIDITY) && (getVDIFFrameInvalid(vh) > 0) )
+		{
+			/* invalid bit is set and respected */
+			i += vm->inputFrameSize;
+			++nInvalidFrame;
 
-		/* If we are here, it looks like we have a VDIF frame to work with */
+			continue;
+		}
+
+
+		/* If we are here, it looks like we have a valid VDIF frame to work with */
 		threadId = getVDIFThreadID(vh);
 		chanId = vm->chanIndex[threadId];
 		if(chanId == MAGIC_BAD_THREAD)
@@ -568,6 +571,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			/* start the shut-down procedure */
 			if(bytesProcessed == -1)
 			{
+				// fprintf(stderr, "src/vdifmux.c bytesProcessed = 0, shut-down procedure, setting it to %d; frameNumber=%lld startFrameNumber=%lld destIndex=%d maxDestIndex=%d : destSize=%d outFrameSize=%d\n", i, frameNumber, startFrameNumber, destIndex, maxDestIndex, destSize, vm->outputFrameSize);
 				bytesProcessed = i;
 			}
 			i += vm->inputFrameSize;
