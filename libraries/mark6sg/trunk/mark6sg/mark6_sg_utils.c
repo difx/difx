@@ -177,8 +177,9 @@ static void* thread_extract_file_blocklist(void* v_args)
         if (m_m6sg_dbglevel > 1) { printf("File %2d block size %d has nr %d\n", ctx->fileidx, bhdr.wb_size, bhdr.blocknum); }
 
         // Catch garbage
-        if (bhdr.wb_size == 0)
+        if ((bhdr.wb_size <= 0) || (bhdr.blocknum < 0))
         {
+            fprintf(stderr, "thread_extract_file_blocklist: fragment file %d (%s): encountered bad blocksize %zd or block-num %zd! Giving up on this file!\n", ctx->fileidx, ctx->filename, (ssize_t)bhdr.wb_size, (ssize_t)bhdr.blocknum);
             fclose(f);
             break;
         }
