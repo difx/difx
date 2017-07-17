@@ -2372,7 +2372,8 @@ public class SystemSettings extends JFrame {
         _defaultNames.runMonitor = false;
         _jobColumnSpecs.networkActivity.show = true;
         _jobColumnSpecs.name.show = true;
-        _jobColumnSpecs.source.show = true;
+        _jobColumnSpecs.source.show = false;
+        _jobColumnSpecs.scan.show = true;
         _jobColumnSpecs.progressBar.show = true;
         _jobColumnSpecs.state.show = true;
         _jobColumnSpecs.experiment.show = false;
@@ -2403,6 +2404,7 @@ public class SystemSettings extends JFrame {
         _jobColumnSpecs.networkActivity.width = 20;
         _jobColumnSpecs.name.width = 150;
         _jobColumnSpecs.source.width = 150;
+        _jobColumnSpecs.scan.width = 150;
         _jobColumnSpecs.progressBar.width = 200;
         _jobColumnSpecs.state.width = 100;
         _jobColumnSpecs.experiment.width = 100;
@@ -3505,6 +3507,10 @@ public class SystemSettings extends JFrame {
                 _jobColumnSpecs.source.show = doiConfig.getJobSource().isShow();
                 _jobColumnSpecs.source.width = doiConfig.getJobSource().getWidth();                
             }
+            if ( doiConfig.getJobScan() != null ) {
+                _jobColumnSpecs.scan.show = doiConfig.getJobScan().isShow();
+                _jobColumnSpecs.scan.width = doiConfig.getJobScan().getWidth();                
+            }
             if ( doiConfig.getJobProgressBar() != null ) {
                 _jobColumnSpecs.progressBar.show = doiConfig.getJobProgressBar().isShow();
                 _jobColumnSpecs.progressBar.width = doiConfig.getJobProgressBar().getWidth();                
@@ -4010,7 +4016,10 @@ public class SystemSettings extends JFrame {
         doiConfig.getJobName().setWidth( _jobColumnSpecs.name.width );                
         doiConfig.setJobSource( factory.createColumnSpec() );
         doiConfig.getJobSource().setShow( _jobColumnSpecs.source.show );
-        doiConfig.getJobSource().setWidth( _jobColumnSpecs.source.width );                
+        doiConfig.getJobSource().setWidth( _jobColumnSpecs.source.width );
+        doiConfig.setJobScan( factory.createColumnSpec() );
+        doiConfig.getJobScan().setShow( _jobColumnSpecs.scan.show );
+        doiConfig.getJobScan().setWidth( _jobColumnSpecs.scan.width );                
         doiConfig.setJobProgressBar( factory.createColumnSpec() );
         doiConfig.getJobProgressBar().setShow( _jobColumnSpecs.progressBar.show );
         doiConfig.getJobProgressBar().setWidth( _jobColumnSpecs.progressBar.width );                
@@ -5217,6 +5226,7 @@ public class SystemSettings extends JFrame {
         ColumnSpec networkActivity = new ColumnSpec();
         ColumnSpec name = new ColumnSpec();
         ColumnSpec source = new ColumnSpec();
+        ColumnSpec scan = new ColumnSpec();
         ColumnSpec progressBar = new ColumnSpec();
         ColumnSpec state = new ColumnSpec();
         ColumnSpec experiment = new ColumnSpec();

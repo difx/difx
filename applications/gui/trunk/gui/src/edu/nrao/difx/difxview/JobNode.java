@@ -105,6 +105,11 @@ public class JobNode extends QueueBrowserNode {
         _source.setText( "unknown" );
         _source.setToolTipText( "Source name for this job, if known." );
         this.add( _source );
+        _scan = new ColumnTextArea();
+        _scan.justify( ColumnTextArea.CENTER );
+        _scan.setText( "unknown" );
+        _scan.setToolTipText( "Scan name for this job, if known." );
+        this.add( _scan );
         _state = new ColumnTextArea();
         _state.justify( ColumnTextArea.CENTER );
         _state.setText( "not started" );
@@ -341,6 +346,8 @@ public class JobNode extends QueueBrowserNode {
         _xOff += _widthName;
         if ( _source.isVisible() )
             setTextArea( _source, _widthSource );
+        if ( _scan.isVisible() )
+            setTextArea( _scan, _widthScan );
         if ( _state.isVisible() )
             setTextArea( _state, _widthState );
         if ( _progress.isVisible() ) {
@@ -1221,6 +1228,19 @@ public class JobNode extends QueueBrowserNode {
         }
     }
     
+    //--------------------------------------------------------------------------
+    //  Find and set the name of the scan for this job.  Similar to source,
+    //  it only works if the job contains a single scan.
+    //--------------------------------------------------------------------------
+    void setScan( ExperimentEditor editor ) {
+        if ( editor != null ) {
+            //  Extract the number assigned to this job by DiFX from its name.
+            Integer num = new Integer( name().substring( name().lastIndexOf( "_" ) + 1 ) );
+            String newScan = editor.scanOfJob( num );
+            scan( newScan );
+        }
+    }
+    
     /*
      * This function is used to generate antenna/weight display areas.
      */
@@ -1273,6 +1293,11 @@ public class JobNode extends QueueBrowserNode {
         _source.updateUI();
     }
     public String source() { return _source.getText(); }
+    public void scan( String newVal ) { 
+        _scan.setText( newVal );
+        _scan.updateUI();
+    }
+    public String scan() { return _scan.getText(); }
     public void experiment( String newVal ) { _experiment.setText( newVal ); }
     public String experiment() { return _experiment.getText(); }
     public void pass( String newVal ) { _pass.setText( newVal ); }
@@ -1537,6 +1562,7 @@ public class JobNode extends QueueBrowserNode {
     public void showNetworkActivity( boolean newVal ) { _networkActivity.setVisible( newVal ); }
     public void showName( boolean newVal ) { _label.setVisible( newVal ); }
     public void showSource( boolean newVal ) { _source.setVisible( newVal ); }
+    public void showScan( boolean newVal ) { _scan.setVisible( newVal ); }
     public void showProgressBar( boolean newVal ) { _progress.setVisible( newVal ); }
     public void showState( boolean newVal ) { _state.setVisible( newVal ); }
     public void showExperiment( boolean newVal ) { _experiment.setVisible( newVal ); }
@@ -1571,6 +1597,7 @@ public class JobNode extends QueueBrowserNode {
     
     public void widthName( int newVal ) { _widthName = newVal; }
     public void widthSource( int newVal ) { _widthSource = newVal; }
+    public void widthScan( int newVal ) { _widthScan = newVal; }
     public void widthProgressBar( int newVal ) { _widthProgressBar = newVal; }
     public void widthState( int newVal ) { _widthState = newVal; }
     public void widthExperiment( int newVal ) { _widthExperiment = newVal; }
@@ -1718,6 +1745,8 @@ public class JobNode extends QueueBrowserNode {
     protected int _widthName;
     protected ColumnTextArea _source;
     protected int _widthSource;
+    protected ColumnTextArea _scan;
+    protected int _widthScan;
     protected JProgressBar _progress;
     protected int _widthProgressBar;
     protected ActivityMonitorLight _networkActivity;

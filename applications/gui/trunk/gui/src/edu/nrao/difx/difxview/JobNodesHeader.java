@@ -93,6 +93,13 @@ public class JobNodesHeader extends BrowserNode {
             }
         });
         _popup.add( _showSource );
+        _showScan = new JCheckBoxMenuItem( "Job Scan" );
+        _showScan.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updateDisplayedData();
+            }
+        });
+        _popup.add( _showScan );
         _showState = new JCheckBoxMenuItem( "State" );
         _showState.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -298,6 +305,14 @@ public class JobNodesHeader extends BrowserNode {
             }
         });
         this.add( _sourceArea );
+        _scanArea = new ColumnTextArea( "Scan" );
+        _scanArea.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showScan.setState( false );
+                updateDisplayedData();
+            }
+        });
+        this.add( _scanArea );
         _progressBar = new ColumnTextArea( "Progress" );
         _progressBar.addKillButton(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -503,7 +518,8 @@ public class JobNodesHeader extends BrowserNode {
     public void activateAll() {
         _showNetworkActivity.setState( true );
         _showName.setState( true );
-        _showSource.setState( true );
+        _showSource.setState( false );
+        _showScan.setState( true );
         _showProgressBar.setState( true );
         _showState.setState( true );
         _showExperiment.setState( true );
@@ -550,6 +566,12 @@ public class JobNodesHeader extends BrowserNode {
         }
         else
             _positionSource = -100;
+        if ( _showScan.getState() ) {
+            setTextArea( _scanArea, _settings.jobColumnSpecs().scan.width );
+            _positionScan = _xOff;
+        }
+        else
+            _positionScan = -100;
         if ( _showState.getState() ) {
             setTextArea( _state, _settings.jobColumnSpecs().state.width );
             _positionState = _xOff;
@@ -715,6 +737,7 @@ public class JobNodesHeader extends BrowserNode {
         _showNetworkActivity.setState( _settings.jobColumnSpecs().networkActivity.show );
         _showName.setState( _settings.jobColumnSpecs().name.show );
         _showSource.setState( _settings.jobColumnSpecs().source.show );
+        _showScan.setState( _settings.jobColumnSpecs().scan.show );
         _showProgressBar.setState( _settings.jobColumnSpecs().progressBar.show );
         _showState.setState( _settings.jobColumnSpecs().state.show );
         _showExperiment.setState( _settings.jobColumnSpecs().experiment.show );
@@ -753,6 +776,7 @@ public class JobNodesHeader extends BrowserNode {
                 //  Change the settings on these items to match our current specifications.
                 thisJob.widthName( _settings.jobColumnSpecs().name.width );
                 thisJob.widthSource( _settings.jobColumnSpecs().source.width );
+                thisJob.widthScan( _settings.jobColumnSpecs().scan.width );
                 thisJob.widthProgressBar( _settings.jobColumnSpecs().progressBar.width );
                 thisJob.widthState( _settings.jobColumnSpecs().state.width );
                 thisJob.widthExperiment( _settings.jobColumnSpecs().experiment.width );
@@ -800,6 +824,7 @@ public class JobNodesHeader extends BrowserNode {
         this.setCursor( _normalCursor );
         _adjustName = false;
         _adjustSource = false;
+        _adjustScan = false;
         _adjustProgressBar = false;
         _adjustState = false;
         _adjustExperiment = false;
@@ -831,6 +856,10 @@ public class JobNodesHeader extends BrowserNode {
         else if ( e.getX() > _positionSource - 3 && e.getX() < _positionSource + 2 ) {
             setCursor( _columnAdjustCursor );
             _adjustSource = true;
+        }
+        else if ( e.getX() > _positionScan - 3 && e.getX() < _positionScan + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustScan = true;
         }
         else if ( e.getX() > _positionProgressBar - 3 && e.getX() < _positionProgressBar + 2 ) {
             setCursor( _columnAdjustCursor );
@@ -947,6 +976,10 @@ public class JobNodesHeader extends BrowserNode {
             _startWidth = _settings.jobColumnSpecs().source.width;
             _startX = e.getX();
         }
+        else if ( _adjustScan ) {
+            _startWidth = _settings.jobColumnSpecs().scan.width;
+            _startX = e.getX();
+        }
         else if ( _adjustProgressBar ) {
             _startWidth = _settings.jobColumnSpecs().progressBar.width;
             _startX = e.getX();
@@ -1060,6 +1093,10 @@ public class JobNodesHeader extends BrowserNode {
             if ( e.getX() - _startX + _startWidth > 5 )
                 _settings.jobColumnSpecs().source.width = _startWidth + e.getX() - _startX;
         }
+        else if ( _adjustScan ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.jobColumnSpecs().scan.width = _startWidth + e.getX() - _startX;
+        }
         else if ( _adjustProgressBar ) {
             if ( e.getX() - _startX + _startWidth > 5 )
                 _settings.jobColumnSpecs().progressBar.width = _startWidth + e.getX() - _startX;
@@ -1169,6 +1206,7 @@ public class JobNodesHeader extends BrowserNode {
                 thisJob.showNetworkActivity( _showNetworkActivity.getState() );
                 thisJob.showName( _showName.getState() );
                 thisJob.showSource( _showSource.getState() );
+                thisJob.showScan( _showScan.getState() );
                 thisJob.showProgressBar( _showProgressBar.getState() );
                 thisJob.showState( _showState.getState() );
                 thisJob.showExperiment( _showExperiment.getState() );
@@ -1200,6 +1238,7 @@ public class JobNodesHeader extends BrowserNode {
         //  Update the headers as well.
         _nameArea.setVisible( _showName.getState() );
         _sourceArea.setVisible( _showSource.getState() );
+        _scanArea.setVisible( _showScan.getState() );
         _progressBar.setVisible( _showProgressBar.getState() );
         _state.setVisible( _showState.getState() );
         _experiment.setVisible( _showExperiment.getState() );
@@ -1227,6 +1266,7 @@ public class JobNodesHeader extends BrowserNode {
         //  And the system settings.
         _settings.jobColumnSpecs().name.show = _showName.getState();
         _settings.jobColumnSpecs().source.show = _showSource.getState();
+        _settings.jobColumnSpecs().scan.show = _showScan.getState();
         _settings.jobColumnSpecs().progressBar.show = _showProgressBar.getState();
         _settings.jobColumnSpecs().state.show = _showState.getState();
         _settings.jobColumnSpecs().experiment.show = _showExperiment.getState();
@@ -1266,6 +1306,11 @@ public class JobNodesHeader extends BrowserNode {
     protected JCheckBoxMenuItem _showSource;
     protected int _positionSource;
     protected boolean _adjustSource;
+    
+    protected ColumnTextArea _scanArea;
+    protected JCheckBoxMenuItem _showScan;
+    protected int _positionScan;
+    protected boolean _adjustScan;
     
     protected ColumnTextArea _progressBar;
     protected JCheckBoxMenuItem _showProgressBar;

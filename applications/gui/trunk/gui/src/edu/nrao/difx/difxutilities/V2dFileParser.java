@@ -234,8 +234,12 @@ public class V2dFileParser {
                 }
                 else if ( _sectionType == RULE_SECTION ) {
                     RuleSection rule = (RuleSection)_currentSection;
-                    if ( newParam.name.contentEquals( "scan" ) )
-                        rule.scan = newParam.value;
+                    if ( newParam.name.contentEquals( "scan" ) ) {
+                        if ( rule.scan == null )
+                            rule.scan = newParam.value;
+                        else
+                            rule.scan += ", " + newParam.value;
+                    }
                     else if ( newParam.name.contentEquals( "setup" ) )
                         rule.setup = newParam.value;
                 }

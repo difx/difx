@@ -1747,10 +1747,11 @@ public class ExperimentEditor extends JFrame {
         }
     }
     
-    ArrayList<ArrayList<String>> _scansInJobs;
+    ArrayList<ArrayList<ArrayList<String>>> _scansInJobs;
     //--------------------------------------------------------------------------
     //  Create a list of all jobs and what scans they contain for this experiment.
-    //  Doing so requires a valid .vex and .v2d file.
+    //  The scans contain scan names and sources.  Doing all of this requires a
+    //  valid .vex and .v2d file.
     //--------------------------------------------------------------------------
     public void findScansInJobs() {
         VexFileParser vexFile = vexFileParser();
@@ -1759,28 +1760,49 @@ public class ExperimentEditor extends JFrame {
         if ( vexFile != null && v2dFile != null ) {
             int startSeries = v2dFile.startSeries();
             Vector<String> scanList = v2dFile.scanList();
-            _scansInJobs = new ArrayList<ArrayList<String>>();
-            ArrayList<String> currentJob = new ArrayList<String>();
+            _scansInJobs = new ArrayList<ArrayList<ArrayList<String>>>();
+            ArrayList<ArrayList<String>> currentJob = new ArrayList<ArrayList<String>>();
             _scansInJobs.add( currentJob );
             for ( Iterator<String> iter = scanList.iterator(); iter.hasNext(); ) {
                 String item = iter.next();
-                //  Each string is either a single scan name or a "*, which indicates
+                //  Each string is either a single scan name or a "*", which indicates
                 //  ALL scan names.
                 if ( item.contentEquals( "*" ) ) {
-                    //  Get every scan in the list.
+                    //  Get every scan in the list (contained in the .vex file).  We get
+                    //  the scan name and source from the same location.
                     for ( Iterator<VexFileParser.Scan> iter1 = vexFile.scanList().iterator(); iter1.hasNext(); ) {
-                        currentJob.add( iter1.next().source );
+                        VexFileParser.Scan scan = iter1.next();
+                        ArrayList<String> scanData = new ArrayList<String>();
+                        //System.out.println( "adding " + scan.name + " and " + scan.source );
+                        scanData.add( scan.name );
+                        scanData.add( scan.source );
                         if ( v2dFile.singleScan() == null || v2dFile.singleScan() ) {
-                            currentJob = new ArrayList<String>();
+                            currentJob.add( scanData );
+                            currentJob = new ArrayList<ArrayList<String>>();
                             _scansInJobs.add( currentJob );
                         }
                     }
                 }
-                //  Otherwise is should just be a single scan.
+                //  Otherwise is should just be a single scan.  The scan is named, but
+                //  the source we have to look up.
                 else {
-                    currentJob.add( item );
-                    if ( !v2dFile.singleScan() ) {
-                        currentJob = new ArrayList<String>();
+                    ArrayList<String> scanData = new ArrayList<String>();
+                    scanData.add( item );
+                    //  Locate the source in the .vex file...
+                    boolean foundIt = false;
+                    for ( Iterator<VexFileParser.Scan> iter1 = vexFile.scanList().iterator(); iter1.hasNext() && !foundIt; ) {
+                        VexFileParser.Scan scan = iter1.next();
+                        if ( item.trim().contentEquals( scan.name.trim() ) ) {
+                            foundIt = true;
+                            scanData.add( scan.source );
+                        }
+                    }
+                    System.out.println( "  " );
+                    if ( !foundIt )
+                        scanData.add( "unknown" );
+                    if ( v2dFile.singleScan() == null || v2dFile.singleScan() ) {
+                        currentJob.add( scanData );
+                        currentJob = new ArrayList<ArrayList<String>>();
                         _scansInJobs.add( currentJob );
                     }
                 }
@@ -1795,20 +1817,38 @@ public class ExperimentEditor extends JFrame {
     //  "unknown".
     //--------------------------------------------------------------------------
     public String sourceOfJob( int num ) {
-        ArrayList<String> sourceList = sourcesOfJob( num );
-        if ( sourceList == null )
+        ArrayList<ArrayList<String>> scanList = scansOfJob( num );
+        if ( scanList == null )
             return "unknown";
-        if ( sourceList.size() == 0 )
+        if ( scanList.size() == 0 )
             return "Unknown";
-        if ( sourceList.size() > 1 )
+        if ( scanList.size() > 1 )
             return "multiple";
-        return sourceList.get( 0 );
+        return scanList.get( 0 ).get( 1 );
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Return a string containing the scan name of a given scan number.  If there
+    //  are multiple sources, translate this to "multiple".  If we don't know
+    //  what scans correspond to what jobs (for whatever reason) return
+    //  "unknown".
+    //--------------------------------------------------------------------------
+    public String scanOfJob( int num ) {
+        //System.out.println( "looking for " + num );
+        ArrayList<ArrayList<String>> scanList = scansOfJob( num );
+        if ( scanList == null )
+            return "unknown";
+        if ( scanList.size() == 0 )
+            return "Unknown";
+        if ( scanList.size() > 1 )
+            return "multiple";
+        return scanList.get( 0 ).get( 0 );
     }
     
     //--------------------------------------------------------------------------
     //  Return an array list containing all sources contained in a job.
     //--------------------------------------------------------------------------
-    public ArrayList<String> sourcesOfJob( int num ) {
+    public ArrayList<ArrayList<String>> scansOfJob( int num ) {
         if ( _scansInJobs == null )
             return null;
         int offset = 1;
@@ -3603,8 +3643,9 @@ public class ExperimentEditor extends JFrame {
                     newJob.state().setBackground( Color.YELLOW );
                     //  Apply the input file data to the job.
                     newJob.inputFile( newFile.trim(), false );
-                    //  Set the source for the job.  This involves looking at the .vex and .v2d data.
+                    //  Set the source and scan name for the job.  This involves looking at the .vex and .v2d data.
                     newJob.setSource( _this );
+                    newJob.setScan( _this );
                     //_fileReadQueue.queueRead( newJob, newFile.trim() );
                     //  Add the input file path to the database if we are using it.
                     if ( db != null ) {

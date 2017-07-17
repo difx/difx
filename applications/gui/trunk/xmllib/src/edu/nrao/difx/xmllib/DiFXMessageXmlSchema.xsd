@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+****************************************************************************
+ *   Copyright (C) 2016 by John Spitzak                                    *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+ -->
 
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
@@ -14,15 +34,22 @@
     <xsd:element name="header" type="header"></xsd:element>
     <xsd:element name="body" type="body"></xsd:element>
     <xsd:element name="mark5Status" type="mark5Status"></xsd:element>
+    <xsd:element name="difxDiagnostic" type="difxDiagnostic"></xsd:element>
     <xsd:element name="difxLoad" type="difxLoad"></xsd:element>
     <xsd:element name="difxAlert" type="difxAlert"></xsd:element>
     <xsd:element name="difxStatus" type="difxStatus"></xsd:element>
     <xsd:element name="difxInfo" type="difxInfo"></xsd:element>
     <xsd:element name="difxWeight" type="difxWeight"></xsd:element>
     <xsd:element name="difxStart" type="difxStart"></xsd:element>
-    <xsd:element name="difxStartUSNO" type="difxStartUSNO"></xsd:element>
     <xsd:element name="difxStop" type="difxStop"></xsd:element>
-    <xsd:element name="difxInputFileRequest" type="difxInputFileRequest"></xsd:element>
+    <xsd:element name="difxSmart" type="difxSmart"></xsd:element>
+    <xsd:element name="difxMachinesDefinition" type="difxMachinesDefinition"></xsd:element>
+    <xsd:element name="difxFileTransfer" type="difxFileTransfer"></xsd:element>
+    <xsd:element name="difxFileOperation" type="difxFileOperation"></xsd:element>
+    <xsd:element name="difxGetDirectory" type="difxGetDirectory"></xsd:element>
+    <xsd:element name="difxMark5Copy" type="difxMark5Copy"></xsd:element>
+    <xsd:element name="difxVex2difxRun" type="difxVex2difxRun"></xsd:element>
+    <xsd:element name="difxMk5Control" type="difxMk5Control"></xsd:element>
     <xsd:element name="difxCommand" type="difxCommand"></xsd:element>
     <xsd:element name="doiResourceConfig" type="doiResourceConfig"></xsd:element>
     <xsd:element name="doiProject" type="doiProject"></xsd:element>
@@ -52,15 +79,22 @@
             <xsd:element name="seqNumber" type="xsd:string"></xsd:element>
             <xsd:choice>
                 <xsd:element ref="mark5Status"/>
+                <xsd:element ref="difxDiagnostic"/>
                 <xsd:element ref="difxLoad"/>
                 <xsd:element ref="difxAlert"/>
                 <xsd:element ref="difxStatus"/>
                 <xsd:element ref="difxInfo"/>
                 <xsd:element ref="difxWeight"/>
                 <xsd:element ref="difxStart"/>
-                <xsd:element ref="difxStartUSNO"/>
                 <xsd:element ref="difxStop"/>
-                <xsd:element ref="difxInputFileRequest"/>
+                <xsd:element ref="difxFileTransfer"/>
+                <xsd:element ref="difxFileOperation"/>
+                <xsd:element ref="difxGetDirectory"/>
+                <xsd:element ref="difxMark5Copy"/>
+                <xsd:element ref="difxVex2difxRun"/>
+                <xsd:element ref="difxMk5Control"/>
+                <xsd:element ref="difxSmart"/>
+                <xsd:element ref="difxMachinesDefinition"/>
                 <xsd:element ref="difxCommand"/>
                 <xsd:element ref="doiSystemConfig"/>
                 <xsd:element ref="doiResourceConfig"/>
@@ -79,6 +113,13 @@
         </xsd:sequence>
     </xsd:complexType>       
 
+    <xsd:complexType name="columnSpec">
+        <xsd:sequence>
+            <xsd:element name="show" type="xsd:boolean"></xsd:element>
+            <xsd:element name="width" type="xsd:int"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
     <xsd:element name="doiSystemConfig">
         <xsd:complexType>
             <xsd:sequence>
@@ -87,15 +128,306 @@
                 <xsd:element ref="dbHost"/>
                 <xsd:element ref="dbSID"/>
                 <xsd:element ref="dbPassword"/>
-                <xsd:element ref="dbJdbcDriver"/>
-                <xsd:element ref="dbJdbcPort"/>
+                <xsd:element ref="dbDriver"/>
+                <xsd:element ref="dbPort"/>
                 <xsd:element ref="dbUrlComposer"/>
                 <xsd:element ref="dbUrl"/>
                 <xsd:element ref="ipAddress"/>
                 <xsd:element ref="port"/>
                 <xsd:element ref="bufferSize"/>
-                <xsd:element ref="loggingEnabled"/>
                 <xsd:element ref="statusValidDuration"/>
+                <xsd:element ref="channelAllData"/>
+                
+                <xsd:element ref="jaxbPackage"/>
+                <xsd:element ref="timeout"/>
+                <xsd:element ref="difxTCPConnection"/>
+                <xsd:element ref="difxRelayBroadcastViaTCPConnection"/>
+                <xsd:element ref="difxControlAddress"/>
+                <xsd:element ref="difxControlPort"/>
+                <xsd:element ref="difxTransferPort"/>
+                <xsd:element ref="difxTransferPortLimit"/>
+                <xsd:element ref="difxMonitorHost"/>
+                <xsd:element ref="difxMonitorPort"/>
+                <xsd:element ref="difxControlUser"/>
+                <xsd:element ref="difxVersion"/>
+                <xsd:element ref="dontUseDefaultStartScript"/>
+                <xsd:element ref="difxStartScript"/>
+                <xsd:element ref="difxBase"/>
+                <xsd:element ref="difxHeadNode"/>
+                <xsd:element ref="dbUseDataBase"/>
+                <xsd:element ref="dbVersion"/>
+                <xsd:element ref="dbName"/>
+                <xsd:element ref="dbMS"/>
+                <xsd:element ref="reportLoc"/>
+                <xsd:element ref="guiDocPath"/>
+                <xsd:element ref="difxUsersGroupURL"/>
+                <xsd:element ref="difxWikiURL"/>
+                <xsd:element ref="difxSVN"/>
+                <xsd:element ref="dbAutoUpdate"/>
+                <xsd:element ref="dbAutoUpdateInterval"/>
+                <xsd:element ref="queueShowCompleted"/>
+                <xsd:element ref="queueShowIncomplete"/>
+                <xsd:element ref="queueShowSelected"/>
+                <xsd:element ref="queueShowUnselected"/>
+                <xsd:element ref="queueShowExperimentScheduled"/>
+                <xsd:element ref="queueShowPassScheduled"/>
+                <xsd:element ref="inactivityWarning"/>
+                <xsd:element ref="inactivityError"/>
+                
+                <xsd:element ref="workingDirectory"/>
+                <xsd:element ref="calcCommand"/>
+                
+                <xsd:element ref="windowConfigMainX"/>
+                <xsd:element ref="windowConfigMainY"/>
+                <xsd:element ref="windowConfigMainW"/>
+                <xsd:element ref="windowConfigMainH"/>
+                <xsd:element ref="windowConfigTitle"/>
+                <xsd:element ref="windowConfigVerticalPanels"/>
+                <xsd:element ref="windowConfigMainDividerLocation"/>
+                <xsd:element ref="windowConfigTopDividerLocation"/>
+                <xsd:element ref="windowConfigQueueBrowserTearOff"/>
+                <xsd:element ref="windowConfigQueueBrowserX"/>
+                <xsd:element ref="windowConfigQueueBrowserY"/>
+                <xsd:element ref="windowConfigQueueBrowserW"/>
+                <xsd:element ref="windowConfigQueueBrowserH"/>
+                <xsd:element ref="windowConfigHardwareMonitorTearOff"/>
+                <xsd:element ref="windowConfigHardwareMonitorX"/>
+                <xsd:element ref="windowConfigHardwareMonitorY"/>
+                <xsd:element ref="windowConfigHardwareMonitorW"/>
+                <xsd:element ref="windowConfigHardwareMonitorH"/>
+                <xsd:element ref="windowConfigExperimentEditorW"/>
+                <xsd:element ref="windowConfigExperimentEditorH"/>
+                <xsd:element ref="windowConfigSettingsWindowW"/>
+                <xsd:element ref="windowConfigSettingsWindowH"/>
+                <xsd:element ref="windowConfigJobEditorMonitorWindowW"/>
+                <xsd:element ref="windowConfigJobEditorMonitorWindowH"/>
+                <xsd:element ref="windowConfigSmartDisplayW"/>
+                <xsd:element ref="windowConfigSmartDisplayH"/>
+                <xsd:element ref="windowConfigEnvironmentVariableDisplayW"/>
+                <xsd:element ref="windowConfigEnvironmentVariableDisplayH"/>
+                <xsd:element ref="windowConfigSourceBasedOnPathDisplayW"/>
+                <xsd:element ref="windowConfigSourceBasedOnPathDisplayH"/>
+                <xsd:element ref="windowConfigRestrictedSourceListDisplayW"/>
+                <xsd:element ref="windowConfigRestrictedSourceListDisplayH"/>
+                <xsd:element ref="windowConfigAntennaDefaultsDisplayW"/>
+                <xsd:element ref="windowConfigAntennaDefaultsDisplayH"/>
+                <xsd:element ref="windowConfigSelectedMessagesDisplayW"/>
+                <xsd:element ref="windowConfigSelectedMessagesDisplayH"/>
+                <xsd:element ref="windowConfigDirectoryDisplayW"/>
+                <xsd:element ref="windowConfigDirectoryDisplayH"/>
+                <xsd:element ref="windowConfigMonitorDisplayW"/>
+                <xsd:element ref="windowConfigMonitorDisplayH"/>
+                <xsd:element ref="windowConfigDiskSearchRulesDisplayW"/>
+                <xsd:element ref="windowConfigDiskSearchRulesDisplayH"/>
+                <xsd:element ref="windowConfigDifxMessageWindowW"/>
+                <xsd:element ref="windowConfigDifxMessageWindowH"/>
+                <xsd:element ref="windowConfigDifxMessageWindowTopFraction"/>
+                <xsd:element ref="windowConfigDifxMessageWindowBottomFraction"/>
+                <xsd:element ref="windowConfigDifxMessageWindowMessageLimit"/>
+
+                <xsd:element ref="defaultNamesVexFileSource"/>
+                <xsd:element ref="defaultNamesViaHttpLocation"/>
+                <xsd:element ref="defaultNamesViaFtpLocation"/>
+                <xsd:element ref="defaultNamesLocalFileLocation"/>
+                <xsd:element ref="defaultNamesVexSourceChoice"/>
+                <xsd:element ref="defaultNamesV2dFileSource"/>
+                <xsd:element ref="defaultNamesV2dViaHttpLocation"/>
+                <xsd:element ref="defaultNamesV2dViaFtpLocation"/>
+                <xsd:element ref="defaultNamesLocalV2dFileLocation"/>
+                <xsd:element ref="defaultNamesV2dSourceChoice"/>
+                <xsd:element ref="defaultSingleInputFile"/>
+                <xsd:element ref="defaultNamesScanBasedJobNames"/>
+                <xsd:element ref="defaultNamesDirListLocation"/>
+                <xsd:element ref="defaultJobCreationSanityCheck"/>
+                <xsd:element ref="defaultNamesRestrictHeadnodeProcessing"/>
+                <xsd:element ref="stopWhenConfigFailsFalse"/>
+                <xsd:element ref="defaultNamesEliminateNonrespondingProcessors"/>
+                <xsd:element ref="defaultNamesElimnateBusyProcessors"/>
+                <xsd:element ref="defaultNamesBusyPercentage"/>
+                <xsd:element ref="defaultNamesChooseBasedOnModule"/>
+                <xsd:element ref="defaultNamesPhaseCalInt"/>
+                <xsd:element ref="defaultNamesToneSelection"/>
+                <xsd:element ref="defaultNamesDataFormat"/>
+                <xsd:element ref="defaultNamesRunMonitorOff"/>
+                
+                <xsd:element ref="suppressUnknownMessageWarnings"/>
+                <xsd:element ref="dontIdentifyMark5sByPattern"/>
+                <xsd:element ref="mark5Pattern"/>
+                <xsd:element ref="requestSpecificMessages"/>
+                <xsd:element name="selectedMessage" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="type" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+
+                <xsd:element ref="eopURL"/>
+                <xsd:element ref="leapSecondsURL"/>
+                <xsd:element ref="useLeapSecondsURL"/>
+                <xsd:element ref="leapSecondsValue"/>
+                <xsd:element ref="autoUpdateEOP"/>
+                <xsd:element ref="autoUpdateSeconds"/>
+
+                <xsd:element ref="correlationDoPolarFalse" />
+                <xsd:element ref="correlationTInt" />
+                <xsd:element ref="correlationSpecRes" />
+                <xsd:element ref="correlationNChan" />
+                <xsd:element ref="correlationFFTSpecRes" />
+                <xsd:element ref="correlationNFFTChan" />
+                <xsd:element ref="correlationSubintNS" />
+                <xsd:element ref="correlationStrideLength" />
+                <xsd:element ref="correlationXmacLength" />
+                <xsd:element ref="correlationNumBufferedFFTs" />
+                <xsd:element ref="correlationApplyDoPolar" />
+                <xsd:element ref="correlationApplyTInt" />
+                <xsd:element ref="correlationApplySpecRes" />
+                <xsd:element ref="correlationApplyFFTSpecRes" />
+                <xsd:element ref="correlationApplyNFFTChan" />
+                <xsd:element ref="correlationApplyPhaseCalInt" />
+                <xsd:element ref="correlationApplySubIntNS" />
+                <xsd:element ref="correlationApplyStrideLength" />
+                <xsd:element ref="correlationApplyXmacLength" />
+                <xsd:element ref="correlationApplyNumBufferedFFTs" />
+    
+                <xsd:element ref="jobNetworkActivity" />
+                <xsd:element ref="jobName" />
+                <xsd:element ref="jobSource" />
+                <xsd:element ref="jobScan" />
+                <xsd:element ref="jobProgressBar" />
+                <xsd:element ref="jobState" />
+                <xsd:element ref="jobExperiment" />
+                <xsd:element ref="jobPass" />
+                <xsd:element ref="jobPriority" />
+                <xsd:element ref="jobQueueTime" />
+                <xsd:element ref="jobCorrelationStart" />
+                <xsd:element ref="jobCorrelationEnd" />
+                <xsd:element ref="jobCorrelationTime" />
+                <xsd:element ref="jobJobStart" />
+                <xsd:element ref="jobJobDuration" />
+                <xsd:element ref="jobInputFile" />
+                <xsd:element ref="jobOutputFile" />
+                <xsd:element ref="jobOutputSize" />
+                <xsd:element ref="jobDifxVersion" />
+                <xsd:element ref="jobSpeedUpFactor" />
+                <xsd:element ref="jobTimeRemaining" />
+                <xsd:element ref="jobNumAntennas" />
+                <xsd:element ref="jobNumForeignAntennas" />
+                <xsd:element ref="jobDutyCycle" />
+                <xsd:element ref="jobStatus" />
+                <xsd:element ref="jobActive" />
+                <xsd:element ref="jobStatusId" />
+                <xsd:element ref="jobWeights" />
+                <xsd:element ref="jobWeightsAsPlots" />
+                <xsd:element ref="jobWeightsAsNumbers" />
+                
+                <xsd:element ref="hardwareIgnored" />
+                <xsd:element ref="hardwareBroadcastMonitor" />
+                <xsd:element ref="hardwareNumCPUs" />
+                <xsd:element ref="hardwareThreadsUsed" />
+                <xsd:element ref="hardwareNumCores" />
+                <xsd:element ref="hardwareBogusGHz" />
+                <xsd:element ref="hardwareType" />
+                <xsd:element ref="hardwareTypeString" />
+                <xsd:element ref="hardwareState" />
+                <xsd:element ref="hardwareEnabled" />
+                <xsd:element ref="hardwareCpuLoad" />
+                <xsd:element ref="hardwareCpuLoadPlot" />
+                <xsd:element ref="hardwareUsedMem" />
+                <xsd:element ref="hardwareTotalMem" />
+                <xsd:element ref="hardwareMemLoad" />
+                <xsd:element ref="hardwareMemLoadPlot" />
+                <xsd:element ref="hardwareNetRxRate" />
+                <xsd:element ref="hardwareNetTxRate" />
+                <xsd:element ref="hardwareStateChanged" />
+                <xsd:element ref="hardwareBankAVSN" />
+                <xsd:element ref="hardwareBankBVSN" />
+                <xsd:element ref="hardwareStatusWord" />
+                <xsd:element ref="hardwareActiveBank" />
+                <xsd:element ref="hardwareScanNumber" />
+                <xsd:element ref="hardwareScanName" />
+                <xsd:element ref="hardwarePosition" />
+                <xsd:element ref="hardwarePlayRate" />
+                <xsd:element ref="hardwareDataMJD" />
+                <xsd:element ref="hardwareCurrentJob" />
+                <xsd:element ref="hardwareActiveJob" />
+                <xsd:element ref="hardwareDataConsumed" />
+                <xsd:element ref="hardwareInputDatarate" />
+                <xsd:element ref="hardwareMemoryUsage" />
+                <xsd:element ref="hardwareNumBufElements" />
+                <xsd:element ref="hardwareStartBufElement" />
+                <xsd:element ref="hardwareActiveBufElement" />
+                <xsd:element ref="hardwareThreadID" />
+                <xsd:element ref="hardwareProcessMicrosec" />
+                <xsd:element ref="hardwareSubintsLost" />
+                
+                <xsd:element ref="jobLocationDefaultsFileFilter" />
+                <xsd:element ref="jobLocationDefaultsExperimentBasedOnPathFalse" />
+                <xsd:element ref="jobLocationDefaultsExperimentNamed" />
+                <xsd:element ref="jobLocationDefaultsExperimentName" />
+                <xsd:element ref="jobLocationDefaultsPassBasedOnPathFalse" />
+                <xsd:element ref="jobLocationDefaultsPassNamed" />
+                <xsd:element ref="jobLocationDefaultsNoPass" />
+                <xsd:element ref="jobLocationDefaultsPassName" />
+                <xsd:element ref="jobLocationDefaultsAutoUpdate" />                
+                <xsd:element ref="invisibleProcessors" />
+                <xsd:element ref="invisibleProcessorCores" />
+                <xsd:element ref="invisibleMark5s" />
+                
+                <xsd:element ref="eliminateCodeStationsCheck" />
+                <xsd:element ref="exciseUnusedScansCheck" />
+                <xsd:element ref="uniqueDataSource" />
+                <xsd:element ref="assignBasedOnPath" />
+                <xsd:element ref="shareDataSourcesBetweenJobs" />
+                <xsd:element ref="shareDataSourcesAsProcessors" />
+                <xsd:element ref="restrictSources" />
+                <xsd:element ref="threadsPerDataSource" />
+                <xsd:element ref="allNodesCheck" />
+                <xsd:element ref="nodesPerCheck" />
+                <xsd:element ref="nodesPer" />
+                <xsd:element ref="allThreadsCheck" />
+                <xsd:element ref="threadsPerNode" />
+                <xsd:element ref="minThreadsPerNode" />
+                <xsd:element ref="threadsPerCheck" />
+                <xsd:element ref="baselineCheck" />
+                <xsd:element ref="jobCheck" />
+                <xsd:element ref="sequentialCheck" />
+                <xsd:element ref="restrictListCheck" />
+                <xsd:element ref="restrictPatternCheck" />
+                <xsd:element ref="processorPattern" />
+                <xsd:element ref="maxJobs" />
+                <xsd:element ref="maxSecondsForHardware" />
+                <xsd:element ref="useMaxSecondsForHardware" />
+                <xsd:element ref="maxSecondsForProcessing" />
+                <xsd:element ref="useMaxSecondsForProcessing" />
+                <xsd:element ref="simultaneousCheck" />
+                <xsd:element ref="tryToSkipMissingStationsCheck" />
+                <xsd:element ref="yieldToOtherSessions" />
+                <xsd:element ref="correlationTimeSum" />
+                <xsd:element ref="correlationTimeN" />
+                <xsd:element name="pathNodePair" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="node" type="xsd:string"/>
+                        <xsd:attribute name="path" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="allowedNode" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="node" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="antennaDefault" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="antennaName" type="xsd:string"/>
+                        <xsd:attribute name="filelist" type="xsd:boolean"/>
+                        <xsd:attribute name="source" type="xsd:string"/>
+                        <xsd:attribute name="dataPath" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="allowedProcessor" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="node" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+                
             </xsd:sequence>
         </xsd:complexType>
     </xsd:element>
@@ -105,15 +437,276 @@
     <xsd:element name="dbHost" type="xsd:string"></xsd:element>
     <xsd:element name="dbSID" type="xsd:string"></xsd:element>
     <xsd:element name="dbPassword" type="xsd:string"></xsd:element>
-    <xsd:element name="dbJdbcDriver" type="xsd:string"></xsd:element>
-    <xsd:element name="dbJdbcPort" type="xsd:string"></xsd:element>
+    <xsd:element name="dbDriver" type="xsd:string"></xsd:element>
+    <xsd:element name="dbPort" type="xsd:string"></xsd:element>
     <xsd:element name="dbUrlComposer" type="xsd:string"></xsd:element>
     <xsd:element name="dbUrl" type="xsd:string"></xsd:element>
     <xsd:element name="ipAddress" type="xsd:string"></xsd:element>
     <xsd:element name="port" type="xsd:int"></xsd:element>
     <xsd:element name="bufferSize" type="xsd:int"></xsd:element>
-    <xsd:element name="loggingEnabled" type="xsd:boolean"></xsd:element>
     <xsd:element name="statusValidDuration" type="xsd:unsignedInt"></xsd:element>
+    <xsd:element name="channelAllData" type="xsd:boolean"></xsd:element>
+                
+    <xsd:element name="jaxbPackage" type="xsd:string"></xsd:element>
+    <xsd:element name="timeout" type="xsd:int"></xsd:element>
+    <xsd:element name="difxTCPConnection" type="xsd:boolean"></xsd:element>
+    <xsd:element name="difxRelayBroadcastViaTCPConnection" type="xsd:boolean"></xsd:element>
+    <xsd:element name="difxControlAddress" type="xsd:string"></xsd:element>
+    <xsd:element name="difxControlPort" type="xsd:int"></xsd:element>
+    <xsd:element name="difxTransferPort" type="xsd:int"></xsd:element>
+    <xsd:element name="difxTransferPortLimit" type="xsd:int"></xsd:element>
+    <xsd:element name="difxMonitorHost" type="xsd:string"></xsd:element>
+    <xsd:element name="difxMonitorPort" type="xsd:int"></xsd:element>
+    <xsd:element name="difxControlUser" type="xsd:string"></xsd:element>
+    <xsd:element name="difxVersion" type="xsd:string"></xsd:element>
+    <xsd:element name="dontUseDefaultStartScript" type="xsd:boolean"></xsd:element>
+    <xsd:element name="difxStartScript" type="xsd:string"></xsd:element>
+    <xsd:element name="difxBase" type="xsd:string"></xsd:element>
+    <xsd:element name="difxHeadNode" type="xsd:string"></xsd:element>
+    <xsd:element name="dbUseDataBase" type="xsd:boolean"></xsd:element>
+    <xsd:element name="dbVersion" type="xsd:string"></xsd:element>
+    <xsd:element name="dbName" type="xsd:string"></xsd:element>
+    <xsd:element name="dbMS" type="xsd:string"></xsd:element>
+    <xsd:element name="reportLoc" type="xsd:string"></xsd:element>
+    <xsd:element name="guiDocPath" type="xsd:string"></xsd:element>
+    <xsd:element name="difxUsersGroupURL" type="xsd:string"></xsd:element>
+    <xsd:element name="difxWikiURL" type="xsd:string"></xsd:element>
+    <xsd:element name="difxSVN" type="xsd:string"></xsd:element>
+    <xsd:element name="dbAutoUpdate" type="xsd:boolean"></xsd:element>
+    <xsd:element name="dbAutoUpdateInterval" type="xsd:int"></xsd:element>
+    <xsd:element name="queueShowCompleted" type="xsd:boolean"></xsd:element>
+    <xsd:element name="queueShowIncomplete" type="xsd:boolean"></xsd:element>
+    <xsd:element name="queueShowSelected" type="xsd:boolean"></xsd:element>
+    <xsd:element name="queueShowUnselected" type="xsd:boolean"></xsd:element>
+    <xsd:element name="queueShowExperimentScheduled" type="xsd:boolean"></xsd:element>
+    <xsd:element name="queueShowPassScheduled" type="xsd:boolean"></xsd:element>
+    <xsd:element name="inactivityWarning" type="xsd:int"></xsd:element>
+    <xsd:element name="inactivityError" type="xsd:int"></xsd:element>
+                
+    <xsd:element name="workingDirectory" type="xsd:string"></xsd:element>
+    <xsd:element name="calcCommand" type="xsd:string"></xsd:element>
+    
+    <xsd:element name="windowConfigMainX" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigMainY" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigMainW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigMainH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigTitle" type="xsd:string"></xsd:element>
+    <xsd:element name="windowConfigVerticalPanels" type="xsd:boolean"></xsd:element>
+    <xsd:element name="windowConfigMainDividerLocation" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigTopDividerLocation" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigQueueBrowserTearOff" type="xsd:boolean"></xsd:element>
+    <xsd:element name="windowConfigQueueBrowserX" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigQueueBrowserY" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigQueueBrowserW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigQueueBrowserH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigHardwareMonitorTearOff" type="xsd:boolean"></xsd:element>
+    <xsd:element name="windowConfigHardwareMonitorX" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigHardwareMonitorY" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigHardwareMonitorW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigHardwareMonitorH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigExperimentEditorW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigExperimentEditorH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSettingsWindowW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSettingsWindowH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigJobEditorMonitorWindowW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigJobEditorMonitorWindowH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSmartDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSmartDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigEnvironmentVariableDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigEnvironmentVariableDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSourceBasedOnPathDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSourceBasedOnPathDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigRestrictedSourceListDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigRestrictedSourceListDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigAntennaDefaultsDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigAntennaDefaultsDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSelectedMessagesDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSelectedMessagesDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDirectoryDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDirectoryDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigMonitorDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigMonitorDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDiskSearchRulesDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDiskSearchRulesDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowTopFraction" type="xsd:double"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowBottomFraction" type="xsd:double"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowMessageLimit" type="xsd:int"></xsd:element>
+                
+    <xsd:element name="defaultNamesVexFileSource" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesViaHttpLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesViaFtpLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesLocalFileLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesVexSourceChoice" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesV2dFileSource" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesV2dViaHttpLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesV2dViaFtpLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesLocalV2dFileLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesV2dSourceChoice" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultSingleInputFile" type="xsd:boolean"></xsd:element>
+    <xsd:element name="defaultNamesScanBasedJobNames" type="xsd:boolean"></xsd:element>
+    <xsd:element name="defaultNamesDirListLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultJobCreationSanityCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="defaultNamesRestrictHeadnodeProcessing" type="xsd:boolean"></xsd:element>
+    <xsd:element name="stopWhenConfigFailsFalse" type="xsd:boolean"></xsd:element>
+    <xsd:element name="defaultNamesEliminateNonrespondingProcessors" type="xsd:boolean"></xsd:element>
+    <xsd:element name="defaultNamesElimnateBusyProcessors" type="xsd:boolean"></xsd:element>
+    <xsd:element name="defaultNamesBusyPercentage" type="xsd:double"></xsd:element>
+    <xsd:element name="defaultNamesChooseBasedOnModule" type="xsd:boolean"></xsd:element>
+    <xsd:element name="defaultNamesPhaseCalInt" type="xsd:int"></xsd:element>
+    <xsd:element name="defaultNamesToneSelection" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesDataFormat" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesRunMonitorOff" type="xsd:boolean"></xsd:element>
+
+    <xsd:element name="suppressUnknownMessageWarnings" type="xsd:boolean"></xsd:element>
+    <xsd:element name="dontIdentifyMark5sByPattern" type="xsd:boolean"></xsd:element>
+    <xsd:element name="mark5Pattern" type="xsd:string"></xsd:element>
+    <xsd:element name="requestSpecificMessages" type="xsd:boolean"></xsd:element>
+
+    <xsd:element name="eopURL" type="xsd:string"></xsd:element>
+    <xsd:element name="leapSecondsURL" type="xsd:string"></xsd:element>
+    <xsd:element name="useLeapSecondsURL" type="xsd:boolean"></xsd:element>
+    <xsd:element name="leapSecondsValue" type="xsd:int"></xsd:element>
+    <xsd:element name="autoUpdateEOP" type="xsd:boolean"></xsd:element>
+    <xsd:element name="autoUpdateSeconds" type="xsd:int"></xsd:element>
+                
+    <xsd:element name="correlationDoPolarFalse" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationTInt" type="xsd:double"></xsd:element>
+    <xsd:element name="correlationSpecRes" type="xsd:double"></xsd:element>
+    <xsd:element name="correlationNChan" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationFFTSpecRes" type="xsd:double"></xsd:element>
+    <xsd:element name="correlationNFFTChan" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationSubintNS" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationStrideLength" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationXmacLength" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationNumBufferedFFTs" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationApplyDoPolar" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyTInt" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplySpecRes" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyFFTSpecRes" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyNFFTChan" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyPhaseCalInt" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplySubIntNS" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyStrideLength" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyXmacLength" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyNumBufferedFFTs" type="xsd:boolean"></xsd:element>
+    
+    <xsd:element name="jobNetworkActivity" type="columnSpec"></xsd:element>
+    <xsd:element name="jobName" type="columnSpec"></xsd:element>
+    <xsd:element name="jobSource" type="columnSpec"></xsd:element>this is the one under edu
+    <xsd:element name="jobScan" type="columnSpec"></xsd:element>
+    <xsd:element name="jobProgressBar" type="columnSpec"></xsd:element>
+    <xsd:element name="jobState" type="columnSpec"></xsd:element>
+    <xsd:element name="jobExperiment" type="columnSpec"></xsd:element>
+    <xsd:element name="jobPass" type="columnSpec"></xsd:element>
+    <xsd:element name="jobPriority" type="columnSpec"></xsd:element>
+    <xsd:element name="jobQueueTime" type="columnSpec"></xsd:element>
+    <xsd:element name="jobCorrelationStart" type="columnSpec"></xsd:element>
+    <xsd:element name="jobCorrelationEnd" type="columnSpec"></xsd:element>
+    <xsd:element name="jobCorrelationTime" type="columnSpec"></xsd:element>
+    <xsd:element name="jobJobStart" type="columnSpec"></xsd:element>
+    <xsd:element name="jobJobDuration" type="columnSpec"></xsd:element>
+    <xsd:element name="jobInputFile" type="columnSpec"></xsd:element>
+    <xsd:element name="jobOutputFile" type="columnSpec"></xsd:element>
+    <xsd:element name="jobOutputSize" type="columnSpec"></xsd:element>
+    <xsd:element name="jobDifxVersion" type="columnSpec"></xsd:element>
+    <xsd:element name="jobSpeedUpFactor" type="columnSpec"></xsd:element>
+    <xsd:element name="jobTimeRemaining" type="columnSpec"></xsd:element>
+    <xsd:element name="jobNumAntennas" type="columnSpec"></xsd:element>
+    <xsd:element name="jobNumForeignAntennas" type="columnSpec"></xsd:element>
+    <xsd:element name="jobDutyCycle" type="columnSpec"></xsd:element>
+    <xsd:element name="jobStatus" type="columnSpec"></xsd:element>
+    <xsd:element name="jobActive" type="columnSpec"></xsd:element>
+    <xsd:element name="jobStatusId" type="columnSpec"></xsd:element>
+    <xsd:element name="jobWeights" type="columnSpec"></xsd:element>
+    <xsd:element name="jobWeightsAsPlots" type="columnSpec"></xsd:element>
+    <xsd:element name="jobWeightsAsNumbers" type="columnSpec"></xsd:element>
+                
+    <xsd:element name="hardwareIgnored" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareBroadcastMonitor" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareNumCPUs" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareThreadsUsed" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareNumCores" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareBogusGHz" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareType" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareTypeString" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareState" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareEnabled" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareCpuLoad" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareCpuLoadPlot" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareUsedMem" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareTotalMem" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareMemLoad" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareMemLoadPlot" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareNetRxRate" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareNetTxRate" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareStateChanged" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareBankAVSN" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareBankBVSN" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareStatusWord" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareActiveBank" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareScanNumber" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareScanName" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwarePosition" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwarePlayRate" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareDataMJD" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareCurrentJob" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareActiveJob" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareDataConsumed" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareInputDatarate" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareMemoryUsage" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareNumBufElements" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareStartBufElement" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareActiveBufElement" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareThreadID" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareProcessMicrosec" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareSubintsLost" type="columnSpec"></xsd:element>
+                
+    <xsd:element name="jobLocationDefaultsFileFilter" type="xsd:string"></xsd:element>
+    <xsd:element name="jobLocationDefaultsExperimentBasedOnPathFalse" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsExperimentNamed" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsExperimentName" type="xsd:string"></xsd:element>
+    <xsd:element name="jobLocationDefaultsPassBasedOnPathFalse" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsPassNamed" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsNoPass" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsPassName" type="xsd:string"></xsd:element>
+    <xsd:element name="jobLocationDefaultsAutoUpdate" type="xsd:boolean"></xsd:element>               
+    <xsd:element name="invisibleProcessors" type="xsd:string"></xsd:element>
+    <xsd:element name="invisibleProcessorCores" type="xsd:string"></xsd:element>
+    <xsd:element name="invisibleMark5s" type="xsd:string"/>
+                                
+    <xsd:element name="eliminateCodeStationsCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="exciseUnusedScansCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="uniqueDataSource" type="xsd:boolean"></xsd:element>
+    <xsd:element name="assignBasedOnPath" type="xsd:boolean"></xsd:element>
+    <xsd:element name="shareDataSourcesBetweenJobs" type="xsd:boolean"></xsd:element>
+    <xsd:element name="shareDataSourcesAsProcessors" type="xsd:boolean"></xsd:element>
+    <xsd:element name="restrictSources" type="xsd:boolean"></xsd:element>
+    <xsd:element name="threadsPerDataSource" type="xsd:int"></xsd:element>
+    <xsd:element name="allNodesCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="nodesPerCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="nodesPer" type="xsd:int"></xsd:element>
+    <xsd:element name="allThreadsCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="threadsPerNode" type="xsd:int"></xsd:element>
+    <xsd:element name="minThreadsPerNode" type="xsd:int"></xsd:element>
+    <xsd:element name="threadsPerCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="baselineCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="sequentialCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="restrictListCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="restrictPatternCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="processorPattern" type="xsd:string"></xsd:element>
+    <xsd:element name="maxJobs" type="xsd:int"></xsd:element>
+    <xsd:element name="maxSecondsForHardware" type="xsd:int"></xsd:element>
+    <xsd:element name="useMaxSecondsForHardware" type="xsd:boolean"></xsd:element>
+    <xsd:element name="maxSecondsForProcessing" type="xsd:int"></xsd:element>
+    <xsd:element name="useMaxSecondsForProcessing" type="xsd:boolean"></xsd:element>
+    <xsd:element name="simultaneousCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="tryToSkipMissingStationsCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="yieldToOtherSessions" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationTimeSum" type="xsd:double"></xsd:element>
+    <xsd:element name="correlationTimeN" type="xsd:double"></xsd:element>
 
     <xsd:complexType name="mark5Status">
         <xsd:sequence>
@@ -130,6 +723,20 @@
         </xsd:sequence>
     </xsd:complexType>
 
+    <xsd:complexType name="difxDiagnostic">
+        <xsd:sequence>
+            <xsd:element name="diagnosticType" type="xsd:string"></xsd:element>
+            <xsd:element name="threadId" type="xsd:int"></xsd:element>
+            <xsd:element name="numBufElements" type="xsd:int"></xsd:element>
+            <xsd:element name="startBufElement" type="xsd:int"></xsd:element>
+            <xsd:element name="activeBufElements" type="xsd:int"></xsd:element>
+            <xsd:element name="bytespersec" type="xsd:double"></xsd:element>
+            <xsd:element name="bytes" type="xsd:long"></xsd:element>
+            <xsd:element name="numSubintsLost" type="xsd:long"></xsd:element>
+            <xsd:element name="microsec" type="xsd:double"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
     <xsd:complexType name="difxLoad">
         <xsd:sequence>
             <xsd:element name="cpuLoad" type="xsd:float"></xsd:element>
@@ -137,6 +744,7 @@
             <xsd:element name="usedMemory" type="xsd:long"></xsd:element>
             <xsd:element name="netRXRate" type="xsd:int"></xsd:element>
             <xsd:element name="netTXRate" type="xsd:int"></xsd:element>
+            <xsd:element name="nCore" type="xsd:int"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 
@@ -152,10 +760,26 @@
             <xsd:element name="state" type="xsd:string"></xsd:element>
             <xsd:element name="message" type="xsd:string"></xsd:element>
             <xsd:element name="visibilityMJD" type="xsd:string"></xsd:element>
+            <xsd:element name="jobstartMJD" type="xsd:string"></xsd:element>
+            <xsd:element name="jobstopMJD" type="xsd:string"></xsd:element>
             <xsd:element name="weight" maxOccurs="unbounded" minOccurs="0">
                 <xsd:complexType>
                     <xsd:attribute name="ant" type="xsd:string"/>
                     <xsd:attribute name="wt" type="xsd:string"/>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxSmart">
+        <xsd:sequence>
+            <xsd:element name="mjd" type="xsd:float"></xsd:element>
+            <xsd:element name="vsn" type="xsd:string"></xsd:element>
+            <xsd:element name="slot" type="xsd:int"></xsd:element>
+            <xsd:element name="smart" maxOccurs="unbounded">
+                <xsd:complexType>
+                    <xsd:attribute name="id" type="xsd:int"/>
+                    <xsd:attribute name="value" type="xsd:int"/>
                 </xsd:complexType>
             </xsd:element>
         </xsd:sequence>
@@ -193,11 +817,26 @@
                     <xsd:attribute name="threads" type="xsd:string"/>
                 </xsd:complexType>
             </xsd:element>
+            <xsd:element name="mpiWrapper" type="xsd:string"></xsd:element>
+            <xsd:element name="mpiOptions" type="xsd:string"></xsd:element>
             <xsd:element name="force" type="xsd:int" minOccurs="0" default="1"></xsd:element>
+            <xsd:element name="difxVersion" type="xsd:string" minOccurs="0" maxOccurs="1" default="unknown"></xsd:element>
+            <xsd:element name="restartSeconds" type="xsd:double"></xsd:element>
+            <xsd:element name="function" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 
-    <xsd:complexType name="difxStartUSNO">
+    <xsd:complexType name="difxStop">
+        <xsd:sequence>
+            <xsd:element name="mpiWrapper" type="xsd:string"></xsd:element>
+            <xsd:element name="difxVersion" type="xsd:string" minOccurs="0" maxOccurs="1" default="unknown"></xsd:element>
+            <xsd:element name="input" type="xsd:string"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxMachinesDefinition">
         <xsd:sequence>
             <xsd:element name="input" type="xsd:string"></xsd:element>
             <xsd:element name="manager">
@@ -216,19 +855,82 @@
                     <xsd:attribute name="threads" type="xsd:string"/>
                 </xsd:complexType>
             </xsd:element>
-            <xsd:element name="force" type="xsd:int" minOccurs="0" default="1"></xsd:element>
+            <xsd:element name="mpiWrapper" type="xsd:string"></xsd:element>
+            <xsd:element name="mpiOptions" type="xsd:string"></xsd:element>
+            <xsd:element name="difxVersion" type="xsd:string" minOccurs="0" maxOccurs="1" default="unknown"></xsd:element>
+            <xsd:element name="testProcessors" type="xsd:boolean"></xsd:element>
+            <xsd:element name="machinesFile" type="xsd:string"></xsd:element>
+            <xsd:element name="threadsFile" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 
-    <xsd:complexType name="difxStop">
+    <xsd:complexType name="difxFileTransfer">
         <xsd:sequence>
-            <xsd:element name="input" type="xsd:string"></xsd:element>
+            <xsd:element name="origin" type="xsd:string"></xsd:element>
+            <xsd:element name="destination" type="xsd:string"></xsd:element>
+            <xsd:element name="direction" type="xsd:string"></xsd:element>
+            <xsd:element name="dataNode" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 
-    <xsd:complexType name="difxInputFileRequest">
+    <xsd:complexType name="difxFileOperation">
         <xsd:sequence>
-            <xsd:element name="input" type="xsd:string"></xsd:element>
+            <xsd:element name="path" type="xsd:string"></xsd:element>
+            <xsd:element name="operation" type="xsd:string"></xsd:element>
+            <xsd:element name="dataNode" type="xsd:string"></xsd:element>
+            <xsd:element name="arg" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxGetDirectory">
+        <xsd:sequence>
+            <xsd:element name="difxVersion" type="xsd:string"></xsd:element>
+            <xsd:element name="mark5" type="xsd:string"></xsd:element>
+            <xsd:element name="vsn" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
+            <xsd:element name="generateNew" type="xsd:int"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxMark5Copy">
+        <xsd:sequence>
+            <xsd:element name="difxVersion" type="xsd:string"></xsd:element>
+            <xsd:element name="mark5" type="xsd:string"></xsd:element>
+            <xsd:element name="vsn" type="xsd:string"></xsd:element>
+            <xsd:element name="scans" type="xsd:string"></xsd:element>
+            <xsd:element name="destination" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxVex2difxRun">
+        <xsd:sequence>
+            <xsd:element name="user" type="xsd:string"></xsd:element>
+            <xsd:element name="node" type="xsd:string"></xsd:element>
+            <xsd:element name="difxVersion" type="xsd:string"></xsd:element>
+            <xsd:element name="passPath" type="xsd:string"></xsd:element>
+            <xsd:element name="file" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
+            <xsd:element name="calcCommand" type="xsd:string"></xsd:element>
+            <xsd:element name="calcOnly" type="xsd:int"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxMk5Control">
+        <xsd:sequence>
+            <xsd:element name="command" type="xsd:string"></xsd:element>
+            <xsd:element name="targetNode" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 
@@ -237,6 +939,54 @@
             <xsd:element name="command" type="xsd:string"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
+
+    <xsd:complexType name="difxJobLogList">
+        <xsd:sequence>
+            <xsd:element name="jobLogs" maxOccurs="unbounded">
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:element name="difxJobLog">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element name="guiVersion" type="xsd:string"></xsd:element>
+                <xsd:element name="data">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="activeID" type="xsd:long"/>
+                            <xsd:element name="time" type="xsd:double"/>
+                            <xsd:element name="inputFile" type="xsd:string"/>
+                            <xsd:element name="baselines" type="xsd:int"/>
+                            <xsd:element name="scanTime" type="xsd:double"/>
+                            <xsd:element name="scans" type="xsd:int"/>
+                            <xsd:element name="headnode" type="xsd:string"/>
+                            <xsd:element name="sourceNodes" maxOccurs="unbounded">
+                                <xsd:complexType>
+                                    <xsd:attribute name="node" type="xsd:string"/>
+                                    <xsd:attribute name="threads" type="xsd:int"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                            <xsd:element name="processingNodes" maxOccurs="unbounded">
+                                <xsd:complexType>
+                                    <xsd:attribute name="node" type="xsd:string"/>
+                                    <xsd:attribute name="threads" type="xsd:int"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                            <xsd:element name="activeIDs" maxOccurs="unbounded">
+                                <xsd:complexType>
+                                    <xsd:attribute name="id" type="xsd:long"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                            <xsd:element name="totalTime" type="xsd:double"/>
+                            <xsd:element name="state" type="xsd:string"/>
+                            <xsd:element name="difxVersion" type="xsd:string"/>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
 
     <xsd:complexType name="doiResourceConfig">
         <xsd:sequence>
@@ -259,6 +1009,8 @@
     <xsd:complexType name="doiJob">
         <xsd:sequence>
             <xsd:element name="jobName" type="xsd:string"></xsd:element>
+            <xsd:element name="jobSource" type="xsd:string"></xsd:element>
+            <xsd:element name="jobScan" type="xsd:string"></xsd:element>
             <xsd:element name="jobPath" type="xsd:string"></xsd:element>
             <xsd:element name="projectName" type="xsd:string"></xsd:element>
             <xsd:element name="projectPath" type="xsd:string"></xsd:element>

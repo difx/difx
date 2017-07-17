@@ -1892,6 +1892,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                                 for ( Iterator<BrowserNode> iter3 = thisPass.childrenIterator(); iter3.hasNext(); ) {
                                     JobNode thisJob = (JobNode)iter3.next();
                                     thisJob.setSource( currentExperiment.editor() );
+                                    thisJob.setScan( currentExperiment.editor() );
                                 }
                             }
                         }
