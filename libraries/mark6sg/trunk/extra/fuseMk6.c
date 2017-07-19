@@ -230,6 +230,12 @@ static int fusem6_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_ctime = time(NULL);
 		stbuf->st_mode  = S_IFDIR | 0555;
 		stbuf->st_nlink = 2 + m_nscans;
+		stbuf->st_size  = 4096;
+		stbuf->st_blksize = 512;
+		for (i=0; i<m_nscans; i++)
+		{
+			stbuf->st_blocks += m_scanstatlist[i].st_size / stbuf->st_blksize;
+		}
 		return 0;
 	}
 
@@ -240,6 +246,8 @@ static int fusem6_getattr(const char *path, struct stat *stbuf)
 		if (strcmp(path+1, m_scannamelist[i]) == 0)
 		{
 			memcpy(stbuf, &m_scanstatlist[i], sizeof(struct stat));
+			stbuf->st_blksize = 512;
+			stbuf->st_blocks = stbuf->st_size / stbuf->st_blksize;
 			pthread_mutex_unlock(&dirlock);
 			return 0;
 		}
