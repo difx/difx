@@ -67,15 +67,30 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
   //Only act on parameter setting commands
   //cout << "received a message" << endl;
   if (difxmessage->type == DIFX_MESSAGE_PARAMETER) {
+    bool toMatches = true;
     DifxMessageParameter * pmessage = &((difxmessage->body).param);
     paramname = string(pmessage->paramName);
     paramvalue = string(pmessage->paramValue);
     cdebug << startl << "Received a parameter message for parameter " << paramname << " and value " << paramvalue << ", targetmpiid is " << pmessage->targetMpiId << endl;
+
+    if(difxmessage->nTo > 0)
+    {
+      toMatches = false;
+      for(int t = 0; t < difxmessage->nTo; ++t)
+      {
+        if(strcmp(difxmessage->to[t], getDifxMessageIdentifier()) == 0)
+        {
+          toMatches = true;
+        }
+      }
+    }
+
     //is it for me
-    if ((pmessage->targetMpiId == config->getMPIId()) || 
+    if (toMatches && (
+        (pmessage->targetMpiId == config->getMPIId()) || 
         (pmessage->targetMpiId == DIFX_MESSAGE_ALLMPIFXCORR) || 
         ((pmessage->targetMpiId == DIFX_MESSAGE_ALLCORES) && config->isCoreProcess()) ||
-        ((pmessage->targetMpiId == DIFX_MESSAGE_ALLDATASTREAMS) && config->isDatastreamProcess())) {
+        ((pmessage->targetMpiId == DIFX_MESSAGE_ALLDATASTREAMS) && config->isDatastreamProcess()))) {
       //is it a shutdown message?
       if (paramname == "keepacting" && paramvalue == "false")
         return false;
