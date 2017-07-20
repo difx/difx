@@ -667,6 +667,13 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 		cinfo << startl << "diskToMemory: starting schedule scan " << readscan << endl;
 	}
 
+	if(readseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) >= config->getExecuteSeconds())
+	{
+		keepreading = false;
+		dataremaining = false;
+		cinfo << startl << "diskToMemory: end of executeseconds reached.  stopping." << endl;
+	}
+
 	if(switchedpower && bufferinfo[buffersegment].validbytes > 0)
 	{
 		static int nt = 0;

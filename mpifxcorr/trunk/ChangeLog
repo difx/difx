@@ -3,6 +3,7 @@ Version 2.6
 * Some improvements to VDIF file reading for very gappy data
 * Some improvements to VDIF for frame sizes greatly differing from 5000 bytes
 * Remove array that was mooted when per-band weights were introduced
+* Allow DifxParameter message to specify new stop time, then cleanly shut down at that time.
 
 Version 2.5
 ~~~~~~~~~~~

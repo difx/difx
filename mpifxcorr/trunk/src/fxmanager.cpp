@@ -90,7 +90,6 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   startmjd = config->getStartMJD();
   startseconds = config->getStartSeconds();
   initns = config->getStartNS();
-  executetimeseconds = config->getExecuteSeconds();
   model = config->getModel();
   estimatedbytes = config->getEstimatedBytes();
 
@@ -180,7 +179,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     polnames = LINEAR_POL_NAMES;
   for(int i=0;i<config->getVisBufferLength();i++)
   {
-    visbuffer[i] = new Visibility(config, i, config->getVisBufferLength(), todiskbuffer, todiskbufferlen, executetimeseconds, initscan, initsec, initns, polnames);
+    visbuffer[i] = new Visibility(config, i, config->getVisBufferLength(), todiskbuffer, todiskbufferlen, config->getExecuteSeconds(), initscan, initsec, initns, polnames);
     pthread_mutex_init(&(bufferlock[i]), NULL);
     islocked[i] = false;
     if(!visbuffer[i]->configuredOK()) { //problem with finding a polyco, probably
@@ -319,7 +318,7 @@ void FxManager::execute()
       continue; //can skip this scan - not interested
     inttime = config->getIntTime(config->getScanConfigIndex(i));
     nsincrement = config->getSubintNS(config->getScanConfigIndex(i));
-    if(model->getScanStartSec(i, startmjd, startseconds) >= executetimeseconds)
+    if(model->getScanStartSec(i, startmjd, startseconds) >= config->getExecuteSeconds())
       break; //can stop here
 
     senddata[3] = initns; //will be zero for all scans except (maybe) the first
@@ -327,9 +326,9 @@ void FxManager::execute()
     senddata[1] = i;
 
     //do as many sends as we need to for this scan
-    while(senddata[2] < model->getScanDuration(i) && (senddata[2]+model->getScanStartSec(i, startmjd, startseconds) < executetimeseconds) && !terminatenow) {
+    while(senddata[2] < model->getScanDuration(i) && (senddata[2]+model->getScanStartSec(i, startmjd, startseconds) < config->getExecuteSeconds()) && !terminatenow) {
       if(senddata[2] == model->getScanDuration(i)-1 || 
-        (senddata[2]+model->getScanStartSec(i, startmjd, startseconds)) == executetimeseconds-1)
+        (senddata[2]+model->getScanStartSec(i, startmjd, startseconds)) == config->getExecuteSeconds()-1)
       {
         if((1000000000-senddata[3]) <= nsincrement/2)
           break;

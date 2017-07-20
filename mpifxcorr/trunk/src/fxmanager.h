@@ -148,7 +148,7 @@ private:
   //variables
   Configuration * config;
   MPI_Comm return_comm;
-  int numcores, mpiid, numdatastreams, startmjd, startseconds, initns, initsec, initscan, executetimeseconds, resultlength, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, writesegment;
+  int numcores, mpiid, numdatastreams, startmjd, startseconds, initns, initsec, initscan, resultlength, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, writesegment;
   long long estimatedbytes;
   double inttime;
   bool keepwriting, circularpols, writethreadinitialised, visibilityconfigok;

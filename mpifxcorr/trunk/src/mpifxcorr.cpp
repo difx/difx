@@ -63,7 +63,6 @@
 //act on an XML command message which was received
 bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
   string paramname, paramvalue;
-  bool ok;
 
   //Only act on parameter setting commands
   //cout << "received a message" << endl;
@@ -92,7 +91,12 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
       else if (paramname == "ltachannels")
         config->setLTADumpChannels(atoi(pmessage->paramValue));
       else if (paramname == "clockupdate")
-        ok = config->updateClock(paramvalue);
+        config->updateClock(paramvalue);
+      else if (paramname == "stopat")
+      {
+        config->setStopTimeUnixTime(atoll(pmessage->paramValue)); // expects unix time; datastreams result in no more data when their timestamps reach this number.
+        cinfo << startl << config->getMPIId() << ": received message requesting stop at Unix data observe time " << paramvalue << ".  executeseconds changed to " << config->getExecuteSeconds() << endl;
+      }
       else {
         cwarn << startl << config->getMPIId() << ": warning - received a parameter instruction regarding " <<  pmessage->paramName << " which cannot be honored and will be ignored!" << endl;
       }

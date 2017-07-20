@@ -276,6 +276,8 @@ public:
   inline int getMaxNumPulsarBins() const { return maxnumpulsarbins; }
   inline int getMTU() const { return mtu; }
   inline int getExecuteSeconds() const { return executeseconds; }
+  inline void setExecuteSeconds(int eseconds) { executeseconds = eseconds; }
+  inline void setStopTimeUnixTime(long long int unixTime) { executeseconds = unixTime - ((startmjd-40587LL)*86400LL + startseconds); }
   inline bool isRestart() const { return (restartseconds>0)?true:false; }
   inline int getStartMJD() const { return startmjd; }
   inline int getStartSeconds() const { return startseconds; }
