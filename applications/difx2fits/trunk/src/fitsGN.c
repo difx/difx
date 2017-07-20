@@ -167,7 +167,11 @@ static int isHSAAntenna(const char *token)
 
 static int isVLITEAntenna(const char *token)
 {
-	if(strlen(token) != 2)
+	int l;
+	
+	l = strlen(token);
+
+	if(l < 2 || l > 3)
 	{
 		return 0;
 	}
@@ -176,6 +180,10 @@ static int isVLITEAntenna(const char *token)
 		return 0;
 	}
 	if(token[1] < '0' || token[1] > '9')
+	{
+		return 0;
+	}
+	if(l == 3 && (token[2] < '0' || token[2] > '9'))
 	{
 		return 0;
 	}

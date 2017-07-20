@@ -106,8 +106,21 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	stop  = D->mjdStop  - (int)D->mjdStart; 
 
 	arrayId1 = 1;
-	polTypeA = 'R';
-	polTypeB = 'L';
+	switch(D->polPair[0])
+	{
+	case 'R':
+	case 'L':
+		polTypeA = 'R';
+		polTypeB = 'L';
+		break;
+	case 'X':
+	case 'Y':
+		polTypeA = 'X';
+		polTypeB = 'Y';
+		break;
+	default:
+		printf("Warning: fitsAN: I don't know how to handle polarization '%c'\n", D->polPair[0]);
+	}
 	time = 0.5 * (stop + start);
 	timeInt = stop - start;
 	for(bandId = 0; bandId < nBand; ++bandId)
