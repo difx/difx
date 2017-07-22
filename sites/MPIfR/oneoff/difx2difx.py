@@ -113,8 +113,9 @@ def stitchVisibilityfile(basename,cfg):
 	polpairs,tmp = setCrossProd(pols_list, pols_list)
 
 	# Extract meta-infos from the DiFX .INPUT file
+	if basename.endswith(('.difx','input')):
+		basename = basename[:basename.rfind('.')]
 	inputfile = basename + '.input'
-	difxfileslist = glob.glob(basename + '.difx/DIFX_*.s*.b*')
 	(numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
 	(numtelescopes, telescopes) = parseDiFX.get_telescopetable_info(inputfile)
 	(numdatastreams, datastreams) = parseDiFX.get_datastreamtable_info(inputfile)
@@ -146,17 +147,42 @@ def stitchVisibilityfile(basename,cfg):
 				zbidx = sum(d.zoomfreqpols[:nn])
 				shortened_zbpols.append(d.zoombandpol[zbidx])
 				shortened_zbindices.append(d.zoombandindex[zbidx:(zbidx+d.zoomfreqpols[nn])])
+			else:
+				#print 'Datastream', datastreams.index(d), 'throw away zoom', z, 'bw', freqs[z].bandwidth
+				pass
 		d.zoomfreqindex = list(shortened_zfreqs)
 		d.zoomfreqpols = list(shortened_zpols)
 		d.zoombandpol = list(shortened_zbpols)
 		d.zoombandindex = list(shortened_zbindices)
 		d.nzoomfreq = len(d.zoomfreqindex)
 		d.nzoomband = sum(d.zoomfreqpols)
+	# 3) add the to-be new "zoom-out" bands
+	base_zoombandindex = 0
+	if len(d.zoombandindex)>0:
+		base_zoombandindex = max(d.zoombandindex)
+	for d in datastreams:
+		for n in range(len(stitch_basefreqs)):
+			d.zoomfreqindex.append(stitch_basefreqindex+n)
+			d.zoomfreqpols.append(2)  # TODO, figure out actual num of pols
+			d.nzoomfreq += 1
+			d.zoombandpol.append('R') # TODO, proper way to decide R or L?
+			d.zoombandindex.append(base_zoombandindex+n)
+			d.nzoomband += 1
+			d.zoombandpol.append('L')
+			d.zoombandindex.append(base_zoombandindex+n)
+			d.nzoomband += 1
 
 	# Read the DiFX .difx/DIFX_* file
+	difxfileslist = glob.glob(basename + '.difx/DIFX_*.s*.b*')
 	difxfilename = difxfileslist[0]
 	difxfile = open(difxfilename, 'r')
-	difxout = open(difxfilename+'.stitched', 'w')
+	difxoutdir = basename + 'D2D.difx'
+	difxoutname = difxoutdir+'/'+difxfilename[difxfilename.find('/')+1:]
+	try:
+		os.mkdir(difxoutdir)
+	except:
+		pass
+	difxout = open(difxoutname, 'w')
 	(vishdr,binhdr) = getVisibilityHeader(difxfile)
 
 	# Affected baselines (make work arrays only for those, save some memory)
@@ -346,10 +372,7 @@ def stitchVisibilityfile(basename,cfg):
 			print ('---quitting early, for DEBUG')
 			break
 
-	# Generate new reference .input for later for the user
-	outputinputfile = basename + '.newinput'
-	f = open(outputinputfile,"w") # truncate
-	f.close()
+	# Determine new FREQ table
 	new_freqs = []
 	for n in range(stitch_basefreqindex):
 		# recorded bands, without zoombands
@@ -362,15 +385,27 @@ def stitchVisibilityfile(basename,cfg):
 		ff.specavg = 1
 		new_freqs.append(ff)
 
-	#print stitched_freqs
-	#print copied_freqs
-	#print new_freqs
-	#print stitch_basefreqindex, len(new_freqs)-1
+	# Read original .input without parsing
+	fin = open(inputfile,"r")
+	in_lines = fin.readlines()
+	fin.close()
 
-        parseDiFX.put_freqtable_info(outputinputfile, new_freqs)
-	parseDiFX.put_datastreamtable_info(outputinputfile, datastreams)
-
-	#modifyInpFile(basename,cfg)
+	# Generate new reference .input for later, re-use parts of original .input
+	outputinputfile = basename + 'D2D.input'
+	fout = open(outputinputfile,"w");
+	idx = [i for i,elem in enumerate(in_lines) if "FREQ TABLE" in elem]
+	for n in range(idx[0]):
+		fout.write(in_lines[n])
+        parseDiFX.put_freqtable_info(fout, new_freqs)
+	idx1 = [i for i,elem in enumerate(in_lines) if "TELESCOPE TABLE" in elem]
+	idx2 = [i for i,elem in enumerate(in_lines) if "DATASTREAM TABLE" in elem]
+	for n in range(idx1[0],idx2[0]):
+		fout.write(in_lines[n])
+	parseDiFX.put_datastreamtable_info(fout, datastreams)
+	idx = [i for i,elem in enumerate(in_lines) if "BASELINE TABLE" in elem]
+	for trailing in in_lines[idx[0]:]:
+		fout.write(trailing)
+	fout.close()
 
 	# Finished
 	print ('\nDone! Final statistics:')
@@ -379,8 +414,8 @@ def stitchVisibilityfile(basename,cfg):
 	print ('    vis. stitched      : %d' % (nstitched))
 	print ('    incomplete stitch  : %d' % (nincomplete))
 	print ('\nOutput files:')
-	print ('    visbility data     : %s' % (difxfilename+'.stitched'))
-	print ('    changes for .input : %s' % (difxfilename+'.newinput'))
+	print ('    visbility data     : %s' % (difxoutname))
+	print ('    changes for .input : %s' % (outputinputfile))
 	print (' ')
 
 if len(sys.argv) < 3:
