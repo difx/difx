@@ -33,7 +33,7 @@ set_defaults()
         msg ("Default control file DEF_CONTROL environment variable undefined!", 3);
         return (1);
         }
-    if (parse_control_file(default_cfile, param.control_file_buff, param.set_string_buff) != 0)
+    if (parse_control_file(default_cfile, &(param.control_file_buff), &(param.set_string_buff)) != 0)
         {
         msg ("Fatal error parsing default control file '%s'", 3, default_cfile);
 	msg ("You must point $DEF_CONTROL to a valid fourfit", 3);

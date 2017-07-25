@@ -28,7 +28,7 @@ def parseOptions():
     '''
     use = '%(prog)s [options]\n'
     use += '  Version '
-    use += '$Id: est_manual_phases.py.in 1765 2017-06-05 16:47:51Z gbc $'
+    use += '$Id: est_manual_phases.py.in 1895 2017-07-24 18:28:00Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     required = parser.add_argument_group('required options')
     flaggers = parser.add_argument_group('flag options')
@@ -49,6 +49,9 @@ def parseOptions():
     flaggers.add_argument('-n', '--nuke', dest='nuke',
         action='store_true', default=False,
         help='Nuke existing control file and start from scratch')
+    flaggers.add_argument('-X', '--mixed', dest='mixed',
+        action='store_true', default=False,
+        help='Fall back on the LMT/ALMA mixed first strategy')
     #
     dbugging.add_argument('-d', '--dry', dest='dry',
         action='store_true', default=False,
@@ -62,7 +65,7 @@ def parseOptions():
         help='Print out the defaults and exit.')
     #
     optional.add_argument('-s', '--sites', dest='sites',
-        metavar='LIST', default='A,L,Z,S,P,J,C,X,Y',
+        metavar='LIST', default='A,L,Z,S,R,P,J,C,X,Y',
         help='Comma separated list of stations to process')
     optional.add_argument('-q', '--sequence', dest='sequence',
         metavar='LIST', default='8,1,1',
@@ -73,6 +76,9 @@ def parseOptions():
     optional.add_argument('-t', '--tolerance', dest='tolerance',
         metavar='FLOAT', default=0.000001, type=float,
         help='Continue until sbd/mbd are smaller than this')
+    optional.add_argument('-a', '--additional', dest='additional',
+        action='store_true', default=False,
+        help='If set, just do the phase/delay on the site list.')
     optional.add_argument('arguments', nargs='*',
         help='Any remaining command-line arguments are treated '
             + 'as control file global directives.  Comments may be included: '
@@ -263,7 +269,7 @@ def genPhaseOffset(o, ref, rem, ref_pol, rem_pol, sgn):
     if converged:
         if o.verb: print '    Converged'
 
-def doTheWork(o):
+def doTheWorkMix(o):
     '''
     Build the control file as specified in program options.
     In the standard (EHT) path, we do the following:
@@ -279,15 +285,33 @@ def doTheWork(o):
     doStarters(o)
     sites = o.sites.split(',')
     mixed = sites.pop(0)
-    if mixed != 'A':
-        raise Exception, 'ALMA is expected to be first in the list of sites'
-    fixed = sites.pop(0)
-    if fixed != 'L':
-        raise Exception, 'LMT is expected to be second in the list of sites'
-    genPhaseDelay(o, mixed, fixed, 'R', 'L', 1)  # step a.
-    genPhaseDelay(o, mixed, fixed, 'L', 'L', 1)  # step b.
-    genPhaseDelay(o, mixed, fixed, 'L', 'R', -1)  # step c.
-    genPhaseOffset(o, mixed, fixed, 'R', 'R', -1) # step d.
+    if not o.additional:
+        if mixed != 'A':
+            raise Exception, 'ALMA is expected to be first in the list of sites'
+        fixed = sites.pop(0)
+        if fixed != 'L':
+            raise Exception, 'LMT is expected to be second in the list of sites'
+        genPhaseDelay(o, mixed, fixed, 'R', 'L', 1)  # step a.
+        genPhaseDelay(o, mixed, fixed, 'L', 'L', 1)  # step b.
+        genPhaseDelay(o, mixed, fixed, 'L', 'R', -1)  # step c.
+        genPhaseOffset(o, mixed, fixed, 'R', 'R', -1) # step d.
+    for other in sites:
+        genPhaseDelay(o, mixed, other, 'R', 'R', -1)
+        genPhaseDelay(o, mixed, other, 'R', 'L', -1)
+
+def doTheWorkAok(o):
+    '''
+    Build the control file as specified in program options.
+    In the standard (EHT) path, we do the following:
+    0. build a site id mk4 id mapping list
+    a. Assume the first site (ALMA) is done properly: phases/delays => 0
+       This is the default, so there is no work.
+    b. for every additional station/pol, use
+       Ax ?? to generate x R/L phase & delay (rem)
+    '''
+    doStarters(o)
+    sites = o.sites.split(',')
+    mixed = sites.pop(0)
     for other in sites:
         genPhaseDelay(o, mixed, other, 'R', 'R', -1)
         genPhaseDelay(o, mixed, other, 'R', 'L', -1)
@@ -389,7 +413,12 @@ if __name__ == '__main__':
         pruneCF(o)
         sys.exit(0)
     try:
-        doTheWork(o)
+        if o.mixed:
+            print 'Assuming ALMA is mixed.'
+            doTheWorkMix(o)
+        else:
+            print 'Assuming ALMA is fixed.'
+            doTheWorkAok(o)
         pruneCF(o)
     except KeyboardInterrupt:
         print '^C, shutting down'

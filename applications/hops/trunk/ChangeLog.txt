@@ -1,4 +1,126 @@
 ------------------------------------------------------------------------
+r1895 | gbc | 2017-07-24 14:28:00 -0400 (Mon, 24 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+added R to the list
+
+------------------------------------------------------------------------
+r1891 | gbc | 2017-07-24 10:34:35 -0400 (Mon, 24 Jul 2017) | 3 lines
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+Added the ALMA-is-good option as a default; kept
+the original work flow available with -X option.
+
+
+------------------------------------------------------------------------
+r1876 | gbc | 2017-07-18 17:00:31 -0400 (Tue, 18 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+added the -a option
+
+------------------------------------------------------------------------
+r1853 | gbc | 2017-07-08 11:21:38 -0400 (Sat, 08 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/vex2xml/Makefile.am
+   M /trunk/vex2xml/chk_env.sh
+
+might worknow, really
+
+------------------------------------------------------------------------
+r1851 | gbc | 2017-07-08 11:01:37 -0400 (Sat, 08 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/vex2xml/chk_env.sh
+
+further fix
+
+------------------------------------------------------------------------
+r1849 | gbc | 2017-07-08 10:14:50 -0400 (Sat, 08 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/vex2xml/chk_env.sh
+
+works prehps
+
+------------------------------------------------------------------------
+r1848 | gbc | 2017-07-08 10:05:46 -0400 (Sat, 08 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/vex2xml/Makefile.am
+   A /trunk/vex2xml/chk_env.sh
+
+fixed up for distcheck
+
+------------------------------------------------------------------------
+r1844 | barrettj | 2017-07-07 08:13:10 -0400 (Fri, 07 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/parse_control_file.c
+
+Merge branch 'master' of github.mit.edu:barrettj/hops
+
+------------------------------------------------------------------------
+r1843 | barrettj | 2017-07-07 08:13:10 -0400 (Fri, 07 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/parse_control_file.c
+
+cleaning up
+
+------------------------------------------------------------------------
+r1841 | barrettj | 2017-07-06 15:58:10 -0400 (Thu, 06 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/parse_cmdline.c
+   M /trunk/postproc/fourfit/parse_control_file.c
+   M /trunk/postproc/fourfit/set_defaults.c
+
+fixing an incredibly stupid bug which prevents the type_222 from actually being written out
+
+------------------------------------------------------------------------
+r1840 | barrettj | 2017-07-06 15:58:09 -0400 (Thu, 06 Jul 2017) | 1 line
+Changed paths:
+   A /trunk/.gitignore
+
+adding .gitignore again, sorry about all the useless commits
+
+------------------------------------------------------------------------
+r1834 | gbc | 2017-06-30 15:11:10 -0400 (Fri, 30 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/Makefile.am
+   M /trunk/misc/plan/plotAlistResids.py
+
+added Helge plotting script for ALMA positin mess
+
+------------------------------------------------------------------------
+r1833 | gbc | 2017-06-30 15:09:44 -0400 (Fri, 30 Jun 2017) | 2 lines
+Changed paths:
+   M /trunk/configure.ac
+
+Version bump to 3.16 following 3.15 delivery to DIFX for 2.5 tag.
+
+
+------------------------------------------------------------------------
+r1831 | gbc | 2017-06-30 13:28:16 -0400 (Fri, 30 Jun 2017) | 1 line
+Changed paths:
+   M /trunk/Makefile.am
+   M /trunk/configure.ac
+
+added defines for optional directories
+
+------------------------------------------------------------------------
+r1830 | gbc | 2017-06-30 10:10:01 -0400 (Fri, 30 Jun 2017) | 1 line
+Changed paths:
+   A /trunk/misc/plan/plotAlistResids.py (from /trunk/scripts/plotAlistResids.py:1829)
+   D /trunk/scripts/plotAlistResids.py
+
+move to better location
+
+------------------------------------------------------------------------
+r1829 | gbc | 2017-06-30 10:09:17 -0400 (Fri, 30 Jun 2017) | 1 line
+Changed paths:
+   A /trunk/scripts/plotAlistResids.py
+
+another sript
+
+------------------------------------------------------------------------
 r1826 | gbc | 2017-06-29 16:35:37 -0400 (Thu, 29 Jun 2017) | 1 line
 Changed paths:
    M /trunk/postproc/fourfit/apply_notches.c

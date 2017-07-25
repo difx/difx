@@ -12,6 +12,7 @@
 #include <string.h>
 #include "control.h"
 #include "parser.h"
+#include "param_struct.h"
 
 #define IS_CONTROL_FILE 1
 #define IS_SET_STRING 2
@@ -27,13 +28,14 @@ int *line_end;
 
 int
 parse_control_file (char* control_file_name,
-                    char* control_file_buff,  //stash stripped but unparsed contents of control file
-                    char* set_string_buff     //stash stripped but unparsed contents of set commands
+                    char** control_file_buff,  //stash stripped but unparsed contents of control file
+                    char** set_string_buff     //stash stripped but unparsed contents of set commands
 )
     {
     int n;
     int flag = 0;
     char *input_string;
+    extern struct type_param param;
 
                                                    /* read input control file */ 
     if (read_control_file (control_file_name,&input_string, &flag) != 0) 
@@ -49,29 +51,29 @@ parse_control_file (char* control_file_name,
     //and set_string_buff = param.set_string_buff, this probably needs to be revised
     if(flag == IS_CONTROL_FILE)
         {
-        if(control_file_buff != NULL)
+        if(*control_file_buff != NULL)
             {   
-            free(control_file_buff);
-            control_file_buff = (char*) malloc( strlen(input_string) + 1 );
+            free(*control_file_buff);
+            *control_file_buff = (char*) malloc( strlen(input_string) + 1 );
             }
         else
             {
-            control_file_buff = (char*) malloc( strlen(input_string) + 1 );
+            *control_file_buff = (char*) malloc( strlen(input_string) + 1 );
             }
-        strcpy(control_file_buff, input_string);
+        strcpy(*control_file_buff, input_string);
         }
     else if(flag == IS_SET_STRING)
         {
-            if(set_string_buff != NULL)
-                {   
-                free(set_string_buff);
-                set_string_buff = (char*) malloc( strlen(input_string) + 1 );
-                }
-            else
-                {
-                set_string_buff = (char*) malloc( strlen(input_string) + 1 );
-                }
-            strcpy(set_string_buff, input_string);
+        if(*set_string_buff != NULL)
+            {   
+            free(*set_string_buff);
+            *set_string_buff = (char*) malloc( strlen(input_string) + 1 );
+            }
+        else
+            {
+            *set_string_buff = (char*) malloc( strlen(input_string) + 1 );
+            }
+        strcpy(*set_string_buff, input_string);
         }
         
                                                   /* perform lexical analysis */
