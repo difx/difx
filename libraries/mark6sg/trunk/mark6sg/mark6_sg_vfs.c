@@ -38,6 +38,7 @@
 #include <linux/limits.h>
 #include <malloc.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -111,6 +112,11 @@ static int vdif_packetsize_hint = 10000 + 32;
 static void* touch_next_blocks_thread(void* p_ioctx);
 static void* writer_thread(void* p_ioctx);
 
+void ioerror_noop_handler(int sig)
+{
+    // catch SIGBUS but do nothing
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 ////// Library Functions /////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
@@ -124,6 +130,9 @@ int mark6_sg_open(const char *scanname, int flags)
     m6sg_virt_filedescr_t* vfd;
     struct stat st;
     int fd, i;
+
+    // Fragment files are mmap()'ed so read errors (disk errors) result in SIGBUS, catch it.
+    signal(SIGBUS, ioerror_noop_handler);
 
     // Ignore prefixed path
     if (strrchr(scanname, '/') != NULL)
@@ -999,6 +1008,9 @@ void* touch_next_blocks_thread(void* p_ioctx)
             char dummy = fdata[off];
             off += pagesz;
             if (m_m6sg_dbglevel>99) { printf("(printf to prevent optimizing away 'dummy') %c", dummy); }
+
+            // Cancel if we're running late relative to user
+            if ((blk + PREFETCH_NUM_BLOCKS_PER_FILE) < vfd->rdblock) break;
         }
 
     }
