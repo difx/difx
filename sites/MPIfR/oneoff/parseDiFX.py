@@ -40,6 +40,16 @@ class Freq:
     decimfac = 1
     npcal = 0
     pcalindices = []
+    def str(self):
+        sb = "LSB" if self.lsb else "USB"
+        return "%12.6f MHz %3s [%4d-ch/%d-avg] @ %.6f MHz" % (self.bandwidth,sb,self.numchan,self.specavg,self.freq)
+    def __eq__(self, other): 
+        if isinstance(other, Freq):
+            eq = (self.freq == other.freq) and (self.bandwidth == other.bandwidth) and (self.lsb == other.lsb)
+            eq = eq and (self.numchan/self.specavg == other.numchan/other.specavg)
+        else:
+            eq = (self.freq == other)
+        return eq
 
 class Telescope:
     name = ""
@@ -254,6 +264,21 @@ def get_baselinetable_info(inputfile):
                 val, lines = nextinputline(lines[1:])
                 baselines[-1].dsbbandindex[-1].append(int(val))
     return (numbaselines, baselines)
+
+def put_baselinetable_info(fo,bl):
+    fo.write("# BASELINE TABLE ###!\n");
+    fo.write("%-20s%d\n" % ("BASELINE ENTRIES:",len(bl)))
+    for n in range(len(bl)):
+        b = bl[n]
+        fo.write("%-20s%d\n" % ("D/STREAM A INDEX %d:"%(n),b.dsaindex))
+        fo.write("%-20s%d\n" % ("D/STREAM B INDEX %d:"%(n),b.dsbindex))
+        fo.write("%-20s%d\n" % ("NUM FREQS %d:"%(n),len(b.freqpols)))
+        for f in range(b.nfreq):
+            fo.write("%-20s%d\n" % ("POL PRODUCTS %d/%d:"%(n,f),b.freqpols[f]))
+            for k in range(b.freqpols[f]):
+                fo.write("%-20s%d\n" % ("D/STREAM A BAND %d:"%(k),b.dsabandindex[f][k]))
+                fo.write("%-20s%d\n" % ("D/STREAM B BAND %d:"%(k),b.dsbbandindex[f][k]))
+    fo.write("\n")
 
 def get_datastreamtable_info(inputfile):
     input = open(inputfile)
