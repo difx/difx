@@ -409,6 +409,18 @@ bool VexMode::hasDuplicateBands() const
 	return false;
 }
 
+int VexMode::getPolarizations() const
+{
+	int rv = 0;
+
+	for(std::map<std::string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+	{
+		rv |= it->second.getPolarizations();
+	}
+
+	return rv;
+}
+
 std::ostream& operator << (std::ostream &os, const VexMode &x)
 {
 	unsigned int nSubband = x.subbands.size();

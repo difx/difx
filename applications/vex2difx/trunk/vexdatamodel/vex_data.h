@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -108,6 +108,7 @@ public:
 	enum DataSource getDataSource(unsigned int antId, unsigned int streamId) const;
 	enum DataSource getDataSource(const std::string &antName, unsigned int streamId) const;
 	bool hasData(const std::string &antName, const VexScan &scan) const;
+	int getPolarizations() const;
 
 	double obsStart() const { return exper.mjdStart; }
 	double obsStop() const { return exper.mjdStop; }

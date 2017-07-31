@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1321,6 +1321,18 @@ bool VexData::hasData(const std::string &antName, const VexScan &scan) const
 	}
 
 	return hd;
+}
+
+int VexData::getPolarizations() const
+{
+	int rv = 0;
+
+	for(std::vector<VexMode>::const_iterator it = modes.begin(); it != modes.end(); ++it)
+	{
+		rv |= it->getPolarizations();
+	}
+
+	return rv;
 }
 
 std::ostream& operator << (std::ostream &os, const VexData &x)

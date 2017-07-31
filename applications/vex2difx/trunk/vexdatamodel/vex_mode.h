@@ -61,6 +61,7 @@ public:
 	void selectTones(const std::string &antName, enum ToneSelection selection, double guardBandMHz);
 	void generateRecordChans();
 	bool hasDuplicateBands() const;
+	int getPolarizations() const;
 
 	std::string defName;
 

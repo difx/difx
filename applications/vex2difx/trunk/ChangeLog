@@ -51,6 +51,7 @@ Version 2.5.0
 * Option sortAntennas in .v2d file (default=true) now allows prevention of sorting (set sortAntennas=false).  Use of this feature requires an antenna list to be provided in the .v2d file.
 * Remove dangerous option for antenna partial matching in .v2d file
 * Check for duplicate channels and warn if found.
+* Check for unsupported polarizations
 * Version for DiFX-2.5, May 16, 2017
 
 Version 2.4.0

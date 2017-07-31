@@ -324,6 +324,35 @@ bool VexSetup::hasDuplicateSubbands() const
 	return false;
 }
 
+/* returns bit map using same values as difxio does */
+int VexSetup::getPolarizations() const
+{
+	int rv = 0;
+
+	for(std::map<std::string,VexIF>::const_iterator it = ifs.begin(); it != ifs.end(); ++it)
+	{
+		switch(it->second.pol)
+		{
+		case 'R':
+			rv |= 0x01;
+			break;
+		case 'L':
+			rv |= 0x02;
+			break;
+		case 'X':
+			rv |= 0x10;
+			break;
+		case 'Y':
+			rv |= 0x20;
+			break;
+		default:
+			rv |= 0x100;	// Error/Unknown bit
+		}
+	}
+
+	return rv;
+}
+
 std::ostream& operator << (std::ostream &os, const VexSetup &x)
 {
 	os << "   Setup:" << std::endl;
