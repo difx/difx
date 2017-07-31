@@ -64,10 +64,10 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	int freqSetId;
 	double time;
 	float timeInt;
-	char polTypeA;
+	char polTypeA = ' ';
 	float polAA[array_MAX_BANDS];
 	float polCalA[array_MAX_BANDS];
-	char polTypeB;
+	char polTypeB = ' ';
 	float polAB[array_MAX_BANDS];
 	float polCalB[array_MAX_BANDS];
 	/* 1-based indices for FITS file */
@@ -88,7 +88,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	fitsbuf = (char *)calloc (nRowBytes, 1);
+	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
 		return 0;
