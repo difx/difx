@@ -130,12 +130,18 @@ def stitchVisibilityfile(basename,cfg):
 	if numfreqs == 0 or numtelescopes == 0 or numdatastreams == 0 or numbaselines == 0:
 		parser.error("Couldn't parse input file " + inputfile + " correctly")
 
-	# Collect all recorded freqs listed in DATASTREAMS
+	# Internal frequency tables and remappings from old to new freq indices
 	out_freqs = {}    # dict out['id']=Freq()
 	in_rec_freqs = 0  # num of distinct recorded freqs
+	n_max_freqs = 256
+	freq_remaps = [-1]*n_max_freqs
+	freq_remaps_isNew = [False]*n_max_freqs
+
+	# Collect all recorded freqs listed in DATASTREAMS
 	for d in datastreams:
 		for fqidx in d.recfreqindex:
 			if fqidx not in out_freqs.keys():
+				freq_remaps[fqidx] = in_rec_freqs
 				out_freqs[fqidx] = copy.deepcopy(freqs[fqidx])
 				in_rec_freqs += 1
 				print ("Keeping recorded frequency  : index %2d : %s" % (fqidx,out_freqs[fqidx].str()))
@@ -171,9 +177,6 @@ def stitchVisibilityfile(basename,cfg):
 	stitch_ids = [n for n in range(len(stitch_out_ids))]
 
 	# Map from old to new frequencies (recorded and zoom)
-	n_max_freqs = 256
-	freq_remaps = [-1]*n_max_freqs
-	freq_remaps_isNew = [False]*n_max_freqs
 	for fi in range(len(freqs)):
 		newidx = [ni for ni in range(len(out_freqs)) if freqs[fi]==out_freqs[ni]]
 		if (len(newidx) > 0):
@@ -189,7 +192,6 @@ def stitchVisibilityfile(basename,cfg):
 			freq_remaps[fi] = stitch_out_ids[stid]
 			freq_remaps_isNew[fi] = True
 			print ("Map zoom %s to stitched single %12.6f--%12.6f : in fq#%2d -> stitch#%d -> out fq#%2d" % (freqs[fi].str(), stitch_basefreqs[stid], stitch_endfreqs[stid],fi,stid,stitch_out_ids[stid]))
-	#print freq_remaps
 
 	# Read the DiFX .difx/DIFX_* file
 	difxfileslist = glob.glob(basename + '.difx/DIFX_*.s*.b*')
@@ -383,11 +385,6 @@ def stitchVisibilityfile(basename,cfg):
 		# Next header
 		(vishdr,binhdr) = getVisibilityHeader(difxfile)
 
-#####
-		if nstitched>=20:
-			print ('---quitting early, for DEBUG')
-			break
-
 	## Generate new .input
 
 	# New FREQ table
@@ -417,6 +414,7 @@ def stitchVisibilityfile(basename,cfg):
 		newds.zoomfreqpols += [npol for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
 
 		# Translate freqs into bands
+		newds.nrecband = npol * len(newds.recfreqindex)
 		newds.nzoomband = npol * len(newds.zoomfreqindex)
 		newds.zoombandindex = [int(n/npol) for n in range(npol*newds.nzoomband)]
 		newds.zoombandpol = ds.zoombandpol[:npol] * newds.nzoomband
@@ -430,45 +428,27 @@ def stitchVisibilityfile(basename,cfg):
 	remapped_freqs = [n for n in range(len(freq_remaps)) if freq_remaps[n]>=0]
 	for b in baselines:
 		newbl = copy.deepcopy(b)
-		# common freqs,bands of the original datastreams:
-		ds1 = datastreams[newbl.dsaindex]
-		ds2 = datastreams[newbl.dsbindex]
-		common_recfreqs = list(set(ds1.recfreqindex) & set(ds2.recfreqindex))
-		common_zoomfreqs = list(set(ds1.zoomfreqindex) & set(ds2.zoomfreqindex))
-		common_freqs = common_recfreqs + common_zoomfreqs
-		common_remapped_freqs = [freq_remaps[f] for f in common_freqs if freq_remaps[f]>=0]
-		common_remapped_freqs = list(set(common_remapped_freqs)) # keeps only unique elements
-		#print newbl.dsaindex, newbl.dsbindex, common_recfreqs, common_zoomfreqs, common_freqs, common_remapped_freqs
-		# transfer common freqs to new baseline entry
 		nds1 = new_datastreams[newbl.dsaindex]
 		nds2 = new_datastreams[newbl.dsbindex]
-		newbl.nfreq = len(common_remapped_freqs)
+		nds1_allfreqs = nds1.recfreqindex + nds1.zoomfreqindex
+		nds2_allfreqs = nds2.recfreqindex + nds2.zoomfreqindex
+		common_freqs = list(set(nds1_allfreqs) & set(nds2_allfreqs)) # keeps only unique elements
+		newbl.nfreq = len(common_freqs)
 		newbl.freqpols = [cfg['stitch_nstokes']] * newbl.nfreq
-		print common_remapped_freqs
 		newbl.dsabandindex = []
 		newbl.dsbbandindex = []
-		for f in common_remapped_freqs:
+		for f in common_freqs:
 			npol = 2
-			i1 = -1
-			if f in nds1.recfreqindex:
-				i1 = nds1.recfreqindex.index(f)
-			elif f in nds1.zoomfreqindex:
-				i1 = len(nds1.recfreqindex) + nds1.zoomfreqindex.index(f)
-			else:
-				print("Error: freq %d not found in datastream %d!" % (f,newbl.dsaindex)) 
-			i2 = -1
-			if f in nds2.recfreqindex:
-				i2 = nds2.recfreqindex.index(f)
-			elif f in nds2.zoomfreqindex:
-				i2 = len(nds2.recfreqindex) + nds2.zoomfreqindex.index(f)
-			else:
-				print("Error: freq %d not found in datastream %d!" % (f,newbl.dsaindex)) 
+			assert(f in nds1_allfreqs)
+			assert(f in nds2_allfreqs)
+			i1 = nds1_allfreqs.index(f)
+			i2 = nds2_allfreqs.index(f)
 			if cfg['stitch_nstokes']==4:
-				newbl.dsabandindex.append([npol*i1,npol*i1+0,npol*i1+1,npol*i1+1])
-				newbl.dsbbandindex.append([npol*i2,npol*i2+1,npol*i1+0,npol*i2+1])
+				newbl.dsabandindex.append([npol*i1+0,npol*i1+0,npol*i1+1,npol*i1+1])
+				newbl.dsbbandindex.append([npol*i2+0,npol*i2+1,npol*i2+0,npol*i2+1])
 			elif cfg['stitch_nstokes']==2:
-				newbl.dsabandindex.append([npol*i1,npol*i1+1])
-				newbl.dsbbandindex.append([npol*i2,npol*i2+1])
+				newbl.dsabandindex.append([npol*i1+0,npol*i1+1])
+				newbl.dsbbandindex.append([npol*i2+0,npol*i2+1])
 			else:
 				print("Warning: unexpected nstokes of %d" % (cfg['stitch_nstokes']))
 				newbl.dsabandindex.append([i1])
