@@ -37,7 +37,7 @@ content = []
 index = []
 codes = {}
 out = ""
-bands = {'L': 1250, 'S': 2000, "C": 4000, "X": 7000, "K": 13000, "Q": 40000, "V": 50000, "W": 75000}
+bands = {'L': 1250, 'S': 2000, "C": 4000, "X": 7000, "K": 13000, "Q": 40000, "V": 50000, "W": 75000, "B": 200000}
 
 reSection = re.compile("^\$(.*);")
 
@@ -197,7 +197,7 @@ def printFreq():
 				sys.exit(1)
 			count += 1
 
-			out.write("chan_def = %s%d : &%s :%f %s\n" % ("B", count, selBand, freq,match.group(2)) )
+			out.write("chan_def = %s%d : &%s :%f %s\n" % (selBand, count, selBand, freq,match.group(2)) )
 			continue
 				
 		out.write(content[i])
