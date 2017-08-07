@@ -13,6 +13,8 @@ Version 3.5.0
 * Adding support for taking union of frequency setups; depends on incomplete implementation in difxio
 * Don't raise a warning for a normal case where the sniffer buffer can be breached by one element.  Just ignore it and move on.
 * Support frequency setup merging using the --union option
+* Support building FITS files for profile mode correlations
+  (autocorrelations included for bins > 0)
 * Check polarizations for legality before proceeding (and segfaulting)
 * Version for DiFX-2.5, May 16, 2017
 
