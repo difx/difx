@@ -1,5 +1,5 @@
 bin_PROGRAMS = printDiFX
-dist_bin_SCRIPTS = diffDiFX.py plotDiFX.py plotDiFXPCal.py parseDiFX.py fringeFindDiFX.py plotDynamicSpectrum.py snipDiFX.py
+dist_bin_SCRIPTS = diffDiFX.py plotDiFX.py plotDiFXPCal.py parseDiFX.py fringeFindDiFX.py plotDynamicSpectrum.py snipDiFX.py polswapDiFX.py
 
 AM_CXXFLAGS = $(DIFXMESSAGE_CFLAGS) $(FXCORR_CFLAGS) $(IPP_CFLAGS) 
 printDiFX_SOURCES = printDiFX.cpp
