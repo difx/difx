@@ -36,6 +36,20 @@ class Freq:
     lsb = False
     numchan = 0
     specavg = 0
+    oversamplefac = 1
+    decimfac = 1
+    npcal = 0
+    pcalindices = []
+    def str(self):
+        sb = "LSB" if self.lsb else "USB"
+        return "%12.6f MHz %3s [%4d-ch/%d-avg] @ %.6f MHz" % (self.bandwidth,sb,self.numchan,self.specavg,self.freq)
+    def __eq__(self, other): 
+        if isinstance(other, Freq):
+            eq = (self.freq == other.freq) and (self.bandwidth == other.bandwidth) and (self.lsb == other.lsb)
+            eq = eq and (self.numchan/self.specavg == other.numchan/other.specavg)
+        else:
+            eq = (self.freq == other)
+        return eq
 
 class Telescope:
     name = ""
@@ -175,6 +189,19 @@ def parse_output_header(input):
     toreturn.append(orgbuffer)
     return toreturn 
 
+def make_output_header_v1(hdrstruct):
+    fmt_part1 = "iidiii" # baselinenum, mjd, seconds, configindex, srcindex, freqindex
+    fmt_part2 = "idddd" # pulsarbin, dataweight, u, v, w
+    packed = [struct.pack('I', SYNC_WORD)]
+    packed.append(struct.pack('i', 1))
+    for n in range(6):
+        packed.append(struct.pack(fmt_part1[n], hdrstruct[n]))
+    packed.append(hdrstruct[6]) # polpair
+    for n in range(7,12):
+        packed.append(struct.pack(fmt_part2[n-7], hdrstruct[n]))
+    binhdr = b''.join(packed)
+    return binhdr
+
 def get_telescopetable_info(inputfile):
     input = open(inputfile)
     lines = input.readlines()
@@ -237,6 +264,21 @@ def get_baselinetable_info(inputfile):
                 val, lines = nextinputline(lines[1:])
                 baselines[-1].dsbbandindex[-1].append(int(val))
     return (numbaselines, baselines)
+
+def put_baselinetable_info(fo,bl):
+    fo.write("# BASELINE TABLE ###!\n");
+    fo.write("%-20s%d\n" % ("BASELINE ENTRIES:",len(bl)))
+    for n in range(len(bl)):
+        b = bl[n]
+        fo.write("%-20s%d\n" % ("D/STREAM A INDEX %d:"%(n),b.dsaindex))
+        fo.write("%-20s%d\n" % ("D/STREAM B INDEX %d:"%(n),b.dsbindex))
+        fo.write("%-20s%d\n" % ("NUM FREQS %d:"%(n),len(b.freqpols)))
+        for f in range(b.nfreq):
+            fo.write("%-20s%d\n" % ("POL PRODUCTS %d/%d:"%(n,f),b.freqpols[f]))
+            for k in range(b.freqpols[f]):
+                fo.write("%-20s%d\n" % ("D/STREAM A BAND %d:"%(k),b.dsabandindex[f][k]))
+                fo.write("%-20s%d\n" % ("D/STREAM B BAND %d:"%(k),b.dsbbandindex[f][k]))
+    fo.write("\n")
 
 def get_datastreamtable_info(inputfile):
     input = open(inputfile)
@@ -314,6 +356,40 @@ def get_datastreamtable_info(inputfile):
             datastreams[-1].zoombandindex.append(int(val))
     return(numdatastreams, datastreams)
 
+
+def put_datastreamtable_info(fo,ds):
+    fo.write("# DATASTREAM TABLE #!\n")
+    fo.write("%-20s%d\n" % ("DATASTREAM ENTRIES:",len(ds)))
+    fo.write("DATA BUFFER FACTOR: 32\n")
+    fo.write("NUM DATA SEGMENTS:  8\n")
+    for d in ds:
+        fo.write("%-20s%d\n" % ("TELESCOPE INDEX:",d.telescopeindex))
+        fo.write("%-20s%f\n" % ("TSYS:",d.tsys))
+        fo.write("%-20s%s\n" % ("DATA FORMAT:",d.format))
+        fo.write("%-20s%d\n" % ("QUANTISATION BITS:",d.quantbits))
+        fo.write("%-20s%d\n" % ("DATA FRAME SIZE:",d.framesize))
+        fo.write("%-20s%s\n" % ("DATA SAMPLING:",d.datasampling))
+        fo.write("%-20s%s\n" % ("DATA SOURCE:",d.datasource))
+        fo.write("%-20s%s\n" % ("FILTERBANK USED:","FALSE")) # TODO
+        fo.write("%-20s%d\n" % ("PHASE CAL INT (MHZ):",d.phasecalint))
+        fo.write("%-20s%d\n" % ("NUM RECORDED FREQS:",d.nrecfreq))
+        for n in range(d.nrecfreq):
+            fo.write("%-20s%d\n" % ("REC FREQ INDEX %d:"%(n),d.recfreqindex[n]))
+            fo.write("%-20s%f\n" % ("CLK OFFSET %d (us):"%(n),d.recclockoffset[n]))
+            fo.write("%-20s%f\n" % ("FREQ OFFSET %d (Hz):"%(n),d.recfreqoffset[n]))
+            fo.write("%-20s%d\n" % ("NUM REC POLS %d:"%(n),d.recfreqpols[n]))
+        for n in range(d.nrecband):
+            fo.write("%-20s%s\n" % ("REC BAND %d POL:"%(n),d.recbandpol[n]))
+            fo.write("%-20s%d\n" % ("REC BAND %d INDEX:"%(n),d.recbandindex[n]))
+        fo.write("%-20s%d\n" % ("NUM ZOOM FREQS:",d.nzoomfreq))
+        for n in range(d.nzoomfreq):
+            fo.write("%-20s%d\n" % ("ZOOM FREQ INDEX %d:"%(n),d.zoomfreqindex[n]))
+            fo.write("%-20s%d\n" % ("NUM ZOOM POLS %d:"%(n),d.zoomfreqpols[n]))
+        for n in range(d.nzoomband):
+            fo.write("%-20s%s\n" % ("ZOOM BAND %d POL:"%(n),d.zoombandpol[n]))
+            fo.write("%-20s%d\n" % ("ZOOM BAND %d INDEX:"%(n),d.zoombandindex[n]))
+    fo.write("\n")
+
 def get_configtable_info(inputfile):
     input = open(inputfile)
     lines = input.readlines()
@@ -369,6 +445,31 @@ def get_freqtable_info(inputfile):
             freqs[-1].lsb = True
         freqs[-1].numchan = int(lines[at+3][20:])
         freqs[-1].specavg = int(lines[at+4][20:])
-	nphasecal = int(lines[at+7][20:])
-        at += 8 + nphasecal
+        freqs[-1].oversamplefac = int(lines[at+5][20:])
+        freqs[-1].decimfac = int(lines[at+6][20:])
+	freqs[-1].npcal = int(lines[at+7][20:])
+        for p in range(freqs[-1].npcal):
+	    freqs[-1].pcalindices.append(int(lines[at+8+p][20:]))
+        at += 8 + freqs[-1].npcal
     return (numfreqs, freqs)
+
+def put_freqtable_info(fo,freqs):
+    fo.write("# FREQ TABLE #######!\n")
+    fo.write("%-20s%d\n" % ("FREQ ENTRIES:",len(freqs)))
+    for i in range(len(freqs)):
+        f = freqs[i]
+        fo.write("%-20s%.11f\n" % ("FREQ (MHZ) %d:"%(i),f.freq))
+        fo.write("%-20s%.11f\n" % ("BW (MHZ) %d:"%(i),f.bandwidth))
+        if f.lsb:
+            fo.write("%-20sL\n" % ("SIDEBAND %d:"%(i)))
+        else:
+            fo.write("%-20sU\n" % ("SIDEBAND %d:"%(i)))
+        fo.write("%-20s%d\n" % ("NUM CHANNELS %d:"%(i),f.numchan))
+        fo.write("%-20s%d\n" % ("CHANS TO AVG %d:"%(i),f.specavg))
+        fo.write("%-20s%d\n" % ("OVERSAMPLE FAC. %d:"%(i),f.oversamplefac))
+        fo.write("%-20s%d\n" % ("DECIMATION FAC. %d:"%(i),f.decimfac))
+        fo.write("%-20s%d\n" % ("PHASE CALS %d OUT:"%(i),f.npcal))
+        for p in range(f.npcal):
+            fo.write("%-20s%d\n" % ("PHASE CAL %d/%d INDEX:"%(i,p),f.pcalindices[p]))
+    fo.write("\n")
+
