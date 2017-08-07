@@ -36,7 +36,6 @@
 
 
 
-#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -419,12 +418,10 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 	if(vm->flags & VDIF_MUX_FLAG_GOTOEND)
 	{
-		assert(srcSize > vm->inputFrameSize);
 		maxSrcIndex = srcSize - vm->inputFrameSize;
 	}
 	else
 	{
-		assert(srcSize > vm->nSort*vm->inputFrameSize);
 		maxSrcIndex = srcSize - vm->nSort*vm->inputFrameSize;
 	}
 
@@ -443,9 +440,19 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 
 	maxDestIndex = destSize/vm->outputFrameSize - 1;
-	assert((destSize/vm->outputFrameSize) > vm->nSort /* can happen if subIntNS is mis-tuned in DiFX */);
 
 	startFrameNumber = startOutputFrameNumber;
+
+	/* Double-check there is enough data to actually output something */
+	if((srcSize <= vm->nSort*vm->inputFrameSize) || ((destSize/vm->outputFrameSize) <= vm->nSort))
+	{
+		// the above can happen if subIntNS is mis-tuned in DiFX
+		if (stats)
+		{
+			memset(stats, 0, sizeof(struct vdif_mux_statistics));
+		}
+		return -1;
+	}
 
 	/* clear mask of presence */
 	for(i = 0; i <= maxDestIndex; ++i)
