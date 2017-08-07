@@ -1,3 +1,7 @@
+Version 0.7
+* New dangerous utility difxPolswap.py for relabeling polarizations in Swinburne format DiFX output
+* parseDiFX.py: get more FREQ TABLE infos, add to-string conversion for Datastream etc objects
+
 Version 0.6
 * New utility plotDiFXPCal.py
 * fringeFindDiFX.py: switched to numpy, options to show/hide zero baseline data (-z, -Z)
