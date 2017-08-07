@@ -451,9 +451,23 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 
 	// multiplex and corner turn the data
 	muxReturn = vdifmux(destination, readbytes, readbuffer+muxindex, bytesvisible, &vm, startOutputFrameNumber, &vstats);
-	if(muxReturn < 0)
+
+	if(muxReturn <= 0)
 	{
-		cwarn << startl << "vdifmux returned " << muxReturn << endl;
+		dataremaining = false;
+		bufferinfo[buffersegment].validbytes = 0;
+		readbufferleftover = 0;
+
+		if(muxReturn < 0)
+		{
+			cerror << startl << "vdifmux() failed with return code " << muxReturn << ", likely input buffer is too small!" << endl;
+		}
+		else
+		{
+			cinfo << startl << "vdifmux returned no data.  Assuming end of file." << endl;
+		}
+
+		return 0;
 	}
 
 	if(vstats.startFrameNumber % vm.frameGranularity != 0)
@@ -464,6 +478,14 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		muxindex += vm.frameGranularity*vm.inputFrameSize;
 		bytesvisible -= vm.frameGranularity*vm.inputFrameSize;
 		muxReturn = vdifmux(destination, readbytes, readbuffer+muxindex, bytesvisible, &vm, startOutputFrameNumber, &vstats);
+		if(muxReturn < 0)
+		{
+			dataremaining = false;
+			bufferinfo[buffersegment].validbytes = 0;
+			readbufferleftover = 0;
+			cerror << startl << "vdifmux() failed with return code " << muxReturn << ", likely input buffer is too small!" << endl;
+			return 0;
+		}
 	}
 
 	if(0)

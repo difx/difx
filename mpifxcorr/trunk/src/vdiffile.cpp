@@ -507,7 +507,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 
 		if(muxReturn < 0)
 		{
-			cwarn << startl << "vdifmux returned " << muxReturn << endl;
+			cerror << startl << "vdifmux() failed with return code " << muxReturn << ", likely input buffer is too small!" << endl;
 		}
 		else
 		{

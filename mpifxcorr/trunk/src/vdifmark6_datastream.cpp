@@ -326,9 +326,22 @@ cinfo << startl << "Mark6 Gather: " << bytestoread << " requested, " << bytes <<
 	// multiplex and corner turn the data
 	muxReturn = vdifmux(destination, readbytes, readbuffer, bytesvisible, &vm, startOutputFrameNumber, &vstats);
 
-	if(muxReturn < 0)
+	if(muxReturn <= 0)
 	{
-		cwarn << startl << "vdifmux returned " << muxReturn << endl;
+		dataremaining = false;
+		bufferinfo[buffersegment].validbytes = 0;
+		readbufferleftover = 0;
+
+		if(muxReturn < 0)
+		{
+			cerror << startl << "vdifmux() failed with return code " << muxReturn << ", likely input buffer is too small!" << endl;
+		}
+		else
+		{
+			cinfo << startl << "vdifmux returned no data.  Assuming end of file." << endl;
+		}
+
+		return 0;
 	}
 
 	consumedbytes += bytes;
