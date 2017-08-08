@@ -145,6 +145,7 @@ def stitchVisibilityfile(basename,cfg):
 				out_freqs[fqidx] = copy.deepcopy(freqs[fqidx])
 				in_rec_freqs += 1
 				print ("Keeping recorded frequency  : index %2d : %s" % (fqidx,out_freqs[fqidx].str()))
+
 	# Collect all zoom bands listed in DATASTREAMS that already match the target bandwidth
 	for d in datastreams:
 		for fqidx in d.zoomfreqindex:
@@ -155,11 +156,21 @@ def stitchVisibilityfile(basename,cfg):
 			if fqidx not in out_freqs.keys():
 				out_freqs[fqidx] = copy.deepcopy(zf)
 				print ("Keeping zoom frequency      : index %2d : %s" % (fqidx,zf.str()))
-	# Invent new zoom bands if necessary
+
+	# Check stitch config: invent new zoom bands if necessary
 	stitch_out_ids = []
 	for fsky in stitch_basefreqs:
-		exists = any([fsky==zf for zf in out_freqs])
-		if not exists:
+		match_existing = [(out_freqs[key].freq==fsky and not out_freqs[key].lsb) for key in out_freqs.keys()]
+		exists = any(match_existing)
+		if exists:
+			# Re-use an existing matching zoom frequency
+			i = match_existing.index(True)
+			id = out_freqs.keys()[i]
+			zf = out_freqs[id]
+			stitch_out_ids.append(id)
+			print ("Re-using zoom for stitch    : index %2d : %s" % (id,zf.str()))
+		else:
+			# Invent new zoom
 			zf = parseDiFX.Freq()
 			zf.freq = fsky
 			zf.bandwidth = target_bw
@@ -172,8 +183,7 @@ def stitchVisibilityfile(basename,cfg):
 			out_freqs[id] = copy.deepcopy(zf)
 			stitch_out_ids.append(id)
 			print ("Creating new zoom frequency : index %2d : %s" % (id,zf.str()))
-		else:
-			print ("Zoom exists")
+
 	stitch_ids = [n for n in range(len(stitch_out_ids))]
 
 	# Map from old to new frequencies (recorded and zoom)
@@ -183,12 +193,16 @@ def stitchVisibilityfile(basename,cfg):
 			ni = min(newidx)
 			if (ni < in_rec_freqs):
 				freq_remaps[fi] = ni
+
 	# Also map each to-be-stitched-multi-zoom into respective new single post-stitch zoom
 	for fi in range(in_rec_freqs,len(freqs)):
 		if (freqs[fi].bandwidth == target_bw) and (freqs[fi].numchan/freqs[fi].specavg == target_nchan):
+			# Retain one-to-one map for existing matching zoom freqs
+			freq_remaps[fi] = fi
 			continue
 		stid = getGlueIndex(freqs[fi].freq,cfg)
 		if (stid >= 0):
+			# Add to some many-to-one map of invented zoom freqs
 			freq_remaps[fi] = stitch_out_ids[stid]
 			freq_remaps_isNew[fi] = True
 			print ("Map zoom %s to stitched single %12.6f--%12.6f : in fq#%2d -> stitch#%d -> out fq#%2d" % (freqs[fi].str(), stitch_basefreqs[stid], stitch_endfreqs[stid],fi,stid,stitch_out_ids[stid]))
@@ -282,7 +296,6 @@ def stitchVisibilityfile(basename,cfg):
 
 		# Info string
 		vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,T,nchan,bw,str(uvw))
-		#print ('INFO  : %s' % (vis_info))
 
 		# Write out visibility to output file
 		if baseline not in baseline_list:
@@ -316,7 +329,7 @@ def stitchVisibilityfile(basename,cfg):
 
 				if cfg['verbose']:
 					print ('take  : %s' % (vis_info))
-				assert( (freq_remaps[freqindex] >= 0) and (freq_remaps[freqindex] not in stitch_out_ids))
+				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
 				difxout.write(rawvis)
 				ncopied += 1
