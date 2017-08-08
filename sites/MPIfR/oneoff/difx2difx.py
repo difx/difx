@@ -207,12 +207,13 @@ def stitchVisibilityfile(basename,cfg):
 	(vishdr,binhdr) = getVisibilityHeader(difxfile)
 
 	# Pull out antenna indices based on telescope names
+	telNames = [t.name for t in telescopes]
 	stAntIDs = []
 	for sa in stitch_antennas:
 		id = [n for n in range(len(telescopes)) if telescopes[n].name==sa]
 		if len(id) != 1:
-			print ("Error: got %d hits for telescope %s in telescope list!" % (len(id),sa))
-			return
+			print ("Warning: got %d hits for telescope %s in .difx file telescope list of %s!" % (len(id),sa,str(telNames)))
+			continue
 		id = id[0] + 1 # index (0..N-1) into antenna nr (1..N)
 		stAntIDs.append(id)
 
@@ -227,7 +228,6 @@ def stitchVisibilityfile(basename,cfg):
 				baseline_list.append(sid + tid*256)
 		# Auto
 		baseline_list.append(sid + sid*256)
-	#print stitch_out_ids, baseline_list, polpairs
 
 	# Dictionary of per-polarizationpair working buffers into which spectra are stitched
 	stitch_workbufs = { bline:{ polkey:{bandkey:numpy.copy(blank_viz) for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
@@ -248,8 +248,9 @@ def stitchVisibilityfile(basename,cfg):
 		polpair = vishdr[6]
 		weight = vishdr[8]
 		uvw = vishdr[9:12]
-		ant1 = baseline % 256
-		ant2 = (baseline-ant1)/256
+                # Antenna order as in difx2mark4: ref=ant1="256*nr", rem=ant2="nr%256"
+		ant2 = baseline % 256
+		ant1 = (baseline-ant2)/256
 		ant1name = telescopes[ant1-1].name
 		ant2name = telescopes[ant2-1].name
 		T = mjd + seconds/86400.0
@@ -262,6 +263,9 @@ def stitchVisibilityfile(basename,cfg):
 
 		# Read the entire visibility data from disk
 		rawvis = difxfile.read(8*nchan)
+		if len(rawvis) != 8*nchan:
+			print ('Short read! Stopping.')
+			break
 
 		if (seconds != seconds_prev):
 			print (('\n---- %d %12.7f ' + '-'*115) % (mjd,seconds))
@@ -277,7 +281,8 @@ def stitchVisibilityfile(basename,cfg):
 		stid = getGlueIndex(fsky,cfg)
 
 		# Info string
-		vis_info = '%s-%s/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,out_freqindex,freqindex,stid,fsky,polpair,T,nchan,bw,str(uvw))
+		vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,T,nchan,bw,str(uvw))
+		#print ('INFO  : %s' % (vis_info))
 
 		# Write out visibility to output file
 		if baseline not in baseline_list:
@@ -308,6 +313,7 @@ def stitchVisibilityfile(basename,cfg):
 			if (bw == target_bw):
 
 				# Visibility already at target bandwidth, just copy the data
+
 				if cfg['verbose']:
 					print ('take  : %s' % (vis_info))
 				assert( (freq_remaps[freqindex] >= 0) and (freq_remaps[freqindex] not in stitch_out_ids))
@@ -321,9 +327,38 @@ def stitchVisibilityfile(basename,cfg):
 			else:
 
 				# Need to stitch narrowband visibility into wideband context
+
+				# Ignore bands not requested to be stitched
 				if (stid < 0):
-					print ('Crap.. could not locate %.6f MHz! Check the stitch frequencies in your config file!' % (fsky))
-					return
+					if cfg['verbose']:
+						print ('ignore: %s (not in stitch freqs list)' % (vis_info))
+					(vishdr,binhdr) = getVisibilityHeader(difxfile)
+					continue
+
+				# Get the complex data
+				visdata = numpy.fromstring(rawvis, dtype='complex64')
+
+				# Determine the region into which this visibility data would be inserted
+				choffset = int( ((fsky - stitch_basefreqs[stid]) / target_bw) * target_nchan )
+				if (choffset+nchan)>target_nchan:
+					# Sometimes a wide recorded band falls into the stitching frequency region,
+					# but then may not fit fully into the stitching freq region.
+					# Options are:
+					# 1) discard and hope the corresponding zoom band data will appear soon
+					#if cfg['verbose']:
+					#	print ('ignore: %s (too wide, maybe a recorded instead of zoom freq)' % (vis_info))
+					#(vishdr,binhdr) = getVisibilityHeader(difxfile)
+					#continue
+					# 2) use the maximum possible amount of the data
+					nchan_new = target_nchan - choffset
+					if (nchan_new < 1):
+						print ('Unexpected, after cropping a too-wide band ended up with %d remaining channels' % (nchan_new))
+						(vishdr,binhdr) = getVisibilityHeader(difxfile)
+						continue
+					visdata = visdata[:nchan_new]
+					bw = bw * nchan_new/nchan
+					nchan = nchan_new
+					print('crop  : %s to %d chan' % (vis_info,nchan_new))
 
 				# Keep track of timestamp
 				if (stitch_timestamps[baseline][polpair][stid] < 0):
@@ -335,9 +370,9 @@ def stitchVisibilityfile(basename,cfg):
 					# so a timestamp change indicates all data of previous time should've been fully read by now (no older data follows)
 					ncurr = stitch_chcounts[baseline][polpair][stid]
 					if (ncurr > 0):
-						TS_old = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
+						T_old = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
 						nincomplete += 1
-						msg = '%s-%s/%d:%.7f/%s mjd:%12.8f only %d of %d channels' % (ant1name,ant2name,stid,stitch_basefreqs[stid],polpair,TS_old,ncurr,target_nchan)
+						msg = '%s-%s/%d/%d:%.7f/%s mjd:%12.8f only %d of %d channels' % (ant1name,ant2name,baseline,stid,stitch_basefreqs[stid],polpair,T_old,ncurr,target_nchan)
 						print ('Warning: discarded an incomplete stitch: %s' % (msg))
 					assert(ncurr < target_nchan)
 					stitch_timestamps[baseline][polpair][stid] = seconds
@@ -345,10 +380,8 @@ def stitchVisibilityfile(basename,cfg):
 					stitch_freqbws[baseline][polpair][stid] = []
 					stitch_workbufs[baseline][polpair][stid].fill(0)
 					#print (('---- %d %.7f ' + '-'*80 + '\n') % (mjd,seconds))
-
+	
 				# Insert the new visibility data into the correct working buffer at the correct location
-				visdata = numpy.fromstring(rawvis, dtype='complex64')
-				choffset = int( ((fsky - stitch_basefreqs[stid]) / target_bw) * target_nchan )
 				stitch_workbufs[baseline][polpair][stid][choffset:(choffset+nchan)] = visdata
 				stitch_chcounts[baseline][polpair][stid] += nchan
 				stitch_freqbws[baseline][polpair][stid].append(bw)
@@ -360,7 +393,7 @@ def stitchVisibilityfile(basename,cfg):
 				if stitch_chcounts[baseline][polpair][stid] >= target_nchan:
 					TS = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
 					bwsum = numpy.sum(stitch_freqbws[baseline][polpair][stid])
-					vis_info = '%s-%s/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,out_freqindex,freqindex,stid,fsky,polpair,TS,stitch_chcounts[baseline][polpair][stid],bwsum,str(uvw))
+					vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,TS,stitch_chcounts[baseline][polpair][stid],bwsum,str(uvw))
 					if cfg['verbose']:
 						print ('stitch: %s' % (vis_info))
 
@@ -395,15 +428,18 @@ def stitchVisibilityfile(basename,cfg):
 	# New DATASTREAM table
 	new_datastreams = []
 	for ds in datastreams:
-		npol = 2
 		newds = copy.deepcopy(ds)
 		ds_specific_remaps = [freq_remaps[zfi] for zfi in ds.zoomfreqindex]
+
+		# Determine number of pols in this datastream (for example ALMA has two single-pol datastreams)
+		npol = len(list(set(newds.recbandpol)))
 
 		# Retain all recorded freqs and bands
 		# newds.recfreqindex = newds.recfreqindex
 		# newds.recfreqpols = newds.recfreqpols
 		# newds.recbandindex = newds.recbandindex
 		# newds.recbandpol = newds.recbandpol
+		# newrec = [freq_remaps[rfi] for rfi in newds.recfreqindex if (freq_remaps[zfi]>=0)]
 
 		# Retain all bandwidth-matching zoom freqs
 		newds.zoomfreqindex = [freq_remaps[zfi] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
@@ -423,6 +459,11 @@ def stitchVisibilityfile(basename,cfg):
 		newds.nzoomfreq = len(newds.zoomfreqindex)
 		new_datastreams.append(newds)
 
+		print ("DS%d : rec freqs %s, zoom freqs %s\n      rec freq bands %s, zoom bands %s\n      rec freq pols %s, zoom band pols %s" 
+			% (datastreams.index(ds),str(newds.recfreqindex),str(newds.zoomfreqindex),
+			   str(newds.recbandindex),str(newds.zoombandindex),
+			   str(newds.recbandpol),str(newds.zoombandpol)))
+
 	# New BASELINE table
 	new_baselines = []
 	remapped_freqs = [n for n in range(len(freq_remaps)) if freq_remaps[n]>=0]
@@ -430,29 +471,58 @@ def stitchVisibilityfile(basename,cfg):
 		newbl = copy.deepcopy(b)
 		nds1 = new_datastreams[newbl.dsaindex]
 		nds2 = new_datastreams[newbl.dsbindex]
-		nds1_allfreqs = nds1.recfreqindex + nds1.zoomfreqindex
-		nds2_allfreqs = nds2.recfreqindex + nds2.zoomfreqindex
-		common_freqs = list(set(nds1_allfreqs) & set(nds2_allfreqs)) # keeps only unique elements
+		npol1 = len(list(set(nds1.recbandpol)))
+		npol2 = len(list(set(nds2.recbandpol)))
+		max_stokes = npol1*npol2
+		allfreqs1 = nds1.recfreqindex + nds1.zoomfreqindex
+		allfreqs2 = nds2.recfreqindex + nds2.zoomfreqindex
+		common_freqs = list(set(allfreqs1) & set(allfreqs2)) # keeps only unique elements
 		newbl.nfreq = len(common_freqs)
-		newbl.freqpols = [cfg['stitch_nstokes']] * newbl.nfreq
 		newbl.dsabandindex = []
 		newbl.dsbbandindex = []
+		newbl.freqpols = []
 		for f in common_freqs:
 			npol = 2
-			assert(f in nds1_allfreqs)
-			assert(f in nds2_allfreqs)
-			i1 = nds1_allfreqs.index(f)
-			i2 = nds2_allfreqs.index(f)
-			if cfg['stitch_nstokes']==4:
-				newbl.dsabandindex.append([npol*i1+0,npol*i1+0,npol*i1+1,npol*i1+1])
-				newbl.dsbbandindex.append([npol*i2+0,npol*i2+1,npol*i2+0,npol*i2+1])
-			elif cfg['stitch_nstokes']==2:
-				newbl.dsabandindex.append([npol*i1+0,npol*i1+1])
-				newbl.dsbbandindex.append([npol*i2+0,npol*i2+1])
-			else:
-				print("Warning: unexpected nstokes of %d" % (cfg['stitch_nstokes']))
-				newbl.dsabandindex.append([i1])
-				newbl.dsbbandindex.append([i2])
+			assert(f in allfreqs1)
+			assert(f in allfreqs2)
+			i1 = allfreqs1.index(f)
+			i2 = allfreqs2.index(f)
+			if max_stokes == 1:
+				newbl.dsabandindex.append([npol1*i1])
+				newbl.dsbbandindex.append([npol2*i2])
+			elif max_stokes == 2:  # one of XL XR / YL YR / LL LR / RL RR
+				if npol1 == 1:
+					newbl.dsabandindex.append([npol1*i1,  npol1*i1  ])
+					newbl.dsbbandindex.append([npol2*i2+0,npol2*i2+1])
+				else:
+					newbl.dsabandindex.append([npol1*i1+0,npol1*i1+1])
+					newbl.dsbbandindex.append([npol2*i2,  npol2*i2  ])
+			elif max_stokes == 4:
+				if cfg['stitch_nstokes']==4:
+					newbl.dsabandindex.append([npol1*i1+0,npol1*i1+0,npol1*i1+1,npol1*i1+1])
+					newbl.dsbbandindex.append([npol2*i2+0,npol2*i2+1,npol2*i2+0,npol2*i2+1])
+				elif cfg['stitch_nstokes']==2:
+					# one XX YY / XL YR / LL RR
+					newbl.dsabandindex.append([npol1*i1+0,npol1*i1+1])
+					newbl.dsbbandindex.append([npol2*i2+0,npol2*i2+1])
+				else:
+					print("Warning: unexpected nstokes of %d" % (cfg['stitch_nstokes']))
+					newbl.dsabandindex.append([npol1*i1])
+					newbl.dsbbandindex.append([npol2*i2])
+			newbl.freqpols.append(len(newbl.dsabandindex[-1]))
+
+			assert( len(newbl.dsabandindex[-1]) == len(newbl.dsbbandindex[-1]) )
+			if cfg['verbose']:
+				print ("Baseline DS%d x DS%d" % (newbl.dsaindex, newbl.dsbindex))
+				print ("     stream %d freqs %s" % (newbl.dsaindex, str(allfreqs1)))
+				print ("     stream %d freqs %s" % (newbl.dsbindex, str(allfreqs2)))
+				print ("     common freqs %s" % (str(common_freqs)))
+				print ("        now freq %d = (ds1 frq %d, ds2 frq %d)" % (f,i1,2))
+				print ("            num pols = (%d, %d)" % (npol1,npol2))
+				print ("            dsa[end] = %s" % (str(newbl.dsabandindex[-1])))
+				print ("            dsb[end] = %s" % (str(newbl.dsbbandindex[-1])))
+				print ("        has %d freqpols" % (newbl.freqpols[-1]))
+				#print newbl.dsabandindex[-1], newbl.dsbbandindex[-1]
 		new_baselines.append(newbl)
 
 	# Read original .input without parsing
