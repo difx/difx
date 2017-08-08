@@ -199,6 +199,7 @@ def stitchVisibilityfile(basename,cfg):
 		if (freqs[fi].bandwidth == target_bw) and (freqs[fi].numchan/freqs[fi].specavg == target_nchan):
 			# Retain one-to-one map for existing matching zoom freqs
 			freq_remaps[fi] = fi
+			freq_remaps_isNew[fi] = True
 			continue
 		stid = getGlueIndex(freqs[fi].freq,cfg)
 		if (stid >= 0):
@@ -452,7 +453,6 @@ def stitchVisibilityfile(basename,cfg):
 		# newds.recfreqpols = newds.recfreqpols
 		# newds.recbandindex = newds.recbandindex
 		# newds.recbandpol = newds.recbandpol
-		# newrec = [freq_remaps[rfi] for rfi in newds.recfreqindex if (freq_remaps[zfi]>=0)]
 
 		# Retain all bandwidth-matching zoom freqs
 		newds.zoomfreqindex = [freq_remaps[zfi] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
@@ -462,20 +462,27 @@ def stitchVisibilityfile(basename,cfg):
 		newds.zoomfreqindex += [nzfi for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
 		newds.zoomfreqpols += [npol for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
 
+		newds.zoomfreqindex = list(set(newds.zoomfreqindex)) # keep uniques only
+
 		# Translate freqs into bands
 		newds.nrecband = npol * len(newds.recfreqindex)
 		newds.nzoomband = npol * len(newds.zoomfreqindex)
-		newds.zoombandindex = [int(n/npol) for n in range(npol*newds.nzoomband)]
-		newds.zoombandpol = ds.zoombandpol[:npol] * newds.nzoomband
+		newds.zoombandindex = [int(n/npol) for n in range(newds.nzoomband)]
+		newds.zoombandpol = ds.zoombandpol[:npol] * (newds.nzoomband/npol)
 
 		# Update the counts
 		newds.nzoomfreq = len(newds.zoomfreqindex)
 		new_datastreams.append(newds)
 
-		print ("DS%d : rec freqs %s, zoom freqs %s\n      rec freq bands %s, zoom bands %s\n      rec freq pols %s, zoom band pols %s" 
-			% (datastreams.index(ds),str(newds.recfreqindex),str(newds.zoomfreqindex),
-			   str(newds.recbandindex),str(newds.zoombandindex),
-			   str(newds.recbandpol),str(newds.zoombandpol)))
+		if cfg['verbose']:
+			print ("DS%d : rec freqs      : %s" % (datastreams.index(ds),str(newds.recfreqindex)))
+			print ("      rec freq pols  : %s" % (str(newds.recfreqpols)))
+			print ("      rec bands      : %s" % (str(newds.recbandindex)))
+			print ("      rec band pols  : %s" % (str(newds.recbandpol)))
+			print ("      zoom freqs     : %s" % (str(newds.zoomfreqindex)))
+			print ("      zoom freq pols : %s" % (str(newds.zoomfreqpols)))
+			print ("      zoom bands     : %s" % (str(newds.zoombandindex)))
+			print ("      zoom band pols : %s" % (str(newds.zoombandpol)))
 
 	# New BASELINE table
 	new_baselines = []
@@ -543,6 +550,12 @@ def stitchVisibilityfile(basename,cfg):
 	in_lines = fin.readlines()
 	fin.close()
 
+	# Replace OUTPUT FILENAME entry
+	for l in in_lines:
+		if l[:16]=="OUTPUT FILENAME:":
+			i = in_lines.index(l)
+			in_lines[i] = "%-20s%s\n" % ("OUTPUT FILENAME:",difxoutdir)
+	
 	# Generate new reference .input for later, re-use parts of original .input
 	outputinputfile = basename + 'D2D.input'
 	fout = open(outputinputfile,"w");
