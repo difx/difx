@@ -340,6 +340,9 @@ def get_datastreamtable_info(inputfile):
             val, lines = nextinputline(lines[1:])
             datastreams[-1].recbandindex.append(int(val))
         val, lines = nextinputline(lines[1:])
+        datastreams[-1].zoomfreqpols = []
+        datastreams[-1].zoomfreqindex = []
+        datastreams[-1].nzoomband = 0
         datastreams[-1].nzoomfreq = int(val)
         for j in range(datastreams[-1].nzoomfreq):
             val, lines = nextinputline(lines[1:])
