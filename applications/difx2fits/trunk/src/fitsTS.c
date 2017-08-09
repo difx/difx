@@ -762,6 +762,7 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 			configId = scan->configId;
 			freqSetId = D->config[configId].freqSetId;
 			freqId1 = freqSetId + 1;
+
 			
 			nanify(tSys);
 			populateTSys(tSys, D, configId, antId, tSysRecBand, nRecBand);
@@ -919,16 +920,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 				int i;
 
 				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
-				if(n > 1)
-				{
-					fprintf(stderr, "\nWarning: > 1 datastream for antennaId=%d.  This has not been tested.\n", antId);
-					fprintf(stderr, "Datastreams are:");
-					for(i = 0; i < n; ++i)
-					{
-						fprintf(stderr, " %d", origDsIds[i]);
-					}
-					fprintf(stderr, "\n");
-				}
 				for(i = 0; i < n; ++i)
 				{
 					v = getDifxTsys(D, p_fits_keys, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phaseCentre, nRowBytes, fitsbuf, nColumn, columns, out, T, nRec);
