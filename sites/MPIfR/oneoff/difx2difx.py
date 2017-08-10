@@ -98,6 +98,20 @@ def modifyInpFile(basename,cfg):
 		fout.write(line)
 	fout.close()
 
+"""Look through dictionary for object, return key of object if it exists"""
+def findFreqObj(dict,freqobj):
+	for k in dict.keys():
+		if (dict[k] == freqobj):
+			return k
+	return None
+
+"""Invent next unique (numerical) key for dictionary"""
+def inventNextKey(dict):
+	idNr = len(dict)
+	while idNr in dict.keys():
+		idNr += 1
+	return idNr
+
 """Copy visibilities from given base DiFX fileset into new file, while doing frequency stitching during the process"""
 def stitchVisibilityfile(basename,cfg):
 
@@ -140,11 +154,13 @@ def stitchVisibilityfile(basename,cfg):
 	# Collect all recorded freqs listed in DATASTREAMS
 	for d in datastreams:
 		for fqidx in d.recfreqindex:
-			if fqidx not in out_freqs.keys():
-				freq_remaps[fqidx] = in_rec_freqs
-				out_freqs[fqidx] = copy.deepcopy(freqs[fqidx])
+			i = findFreqObj(out_freqs,freqs[fqidx])
+			if (i == None):
+				id = inventNextKey(out_freqs)
+				freq_remaps[fqidx] = id
+				out_freqs[id] = copy.deepcopy(freqs[fqidx])
 				in_rec_freqs += 1
-				print ("Keeping recorded frequency  : index %2d : %s" % (fqidx,out_freqs[fqidx].str()))
+				print ("Keeping recorded frequency  : index %2d/%2d : %s" % (fqidx,id,out_freqs[fqidx].str()))
 
 	# Collect all zoom bands listed in DATASTREAMS that already match the target bandwidth
 	for d in datastreams:
@@ -153,9 +169,12 @@ def stitchVisibilityfile(basename,cfg):
 			if (zf.bandwidth != target_bw) or ((zf.numchan/zf.specavg) != target_nchan):
 				# print ("Skipping zoom frequency     : index %d : %s" % (fqidx,zf.str()))
 				continue
-			if fqidx not in out_freqs.keys():
-				out_freqs[fqidx] = copy.deepcopy(zf)
-				print ("Keeping zoom frequency      : index %2d : %s" % (fqidx,zf.str()))
+			i = findFreqObj(out_freqs,zf)
+			if (i == None):
+				id = inventNextKey(out_freqs)
+				freq_remaps[fqidx] = id
+				out_freqs[id] = copy.deepcopy(zf)
+				print ("Keeping zoom frequency      : index %2d/%2d : %s" % (fqidx,id,zf.str()))
 
 	# Check stitch config: invent new zoom bands if necessary
 	stitch_out_ids = []
@@ -168,7 +187,8 @@ def stitchVisibilityfile(basename,cfg):
 			id = out_freqs.keys()[i]
 			zf = out_freqs[id]
 			stitch_out_ids.append(id)
-			print ("Re-using zoom for stitch    : index %2d : %s" % (id,zf.str()))
+			old_id = freq_remaps.index(id)
+			print ("Re-using zoom for stitch    : index %2d/%2d : %s" % (old_id,id,zf.str()))
 		else:
 			# Invent new zoom
 			zf = parseDiFX.Freq()
@@ -177,22 +197,12 @@ def stitchVisibilityfile(basename,cfg):
 			zf.numchan = target_nchan
 			zf.specavg = 1
 			zf.lsb = False # TODO
-			id = len(out_freqs)
-			while id in out_freqs.keys():
-				id += 1
+			id = inventNextKey(out_freqs)
 			out_freqs[id] = copy.deepcopy(zf)
 			stitch_out_ids.append(id)
-			print ("Creating new zoom frequency : index %2d : %s" % (id,zf.str()))
+			print ("Creating new zoom frequency : index --/%2d : %s" % (id,zf.str()))
 
 	stitch_ids = [n for n in range(len(stitch_out_ids))]
-
-	# Map from old to new frequencies (recorded and zoom)
-	for fi in range(len(freqs)):
-		newidx = [ni for ni in range(len(out_freqs)) if freqs[fi]==out_freqs[ni]]
-		if (len(newidx) > 0):
-			ni = min(newidx)
-			if (ni < in_rec_freqs):
-				freq_remaps[fi] = ni
 
 	# Also map each to-be-stitched-multi-zoom into respective new single post-stitch zoom
 	for fi in range(in_rec_freqs,len(freqs)):
