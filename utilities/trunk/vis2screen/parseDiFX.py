@@ -450,9 +450,11 @@ def get_freqtable_info(inputfile):
         freqs[-1].specavg = int(lines[at+4][20:])
         freqs[-1].oversamplefac = int(lines[at+5][20:])
         freqs[-1].decimfac = int(lines[at+6][20:])
-	freqs[-1].npcal = int(lines[at+7][20:])
+        di = lines[at+7].rfind(':')
+        freqs[-1].npcal = int(lines[at+7][di+1:])
         for p in range(freqs[-1].npcal):
-	    freqs[-1].pcalindices.append(int(lines[at+8+p][20:]))
+            di = lines[at+8+p].rfind(':')
+            freqs[-1].pcalindices.append(int(lines[at+8+p][di+1:]))
         at += 8 + freqs[-1].npcal
     return (numfreqs, freqs)
 
