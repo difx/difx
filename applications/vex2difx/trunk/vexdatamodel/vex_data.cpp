@@ -857,6 +857,36 @@ void VexData::generateEvents(std::list<Event> &events) const
 	events.sort();
 }
 
+void VexData::setDifxTsys(unsigned int antId, unsigned int streamId, double tSys)
+{
+	std::vector<VexMode>::iterator mit;
+
+	if(antId >= antennas.size())
+	{
+		std::cerr << "Developer error: VexData::setDifxTsys: antId = " << antId << " where size of antennas[] is " << antennas.size() << std::endl;
+		
+		exit(EXIT_FAILURE);
+	}
+
+	for(mit = modes.begin(); mit != modes.end(); ++mit)
+	{
+		std::map<std::string,VexSetup>::iterator it = mit->setups.find(antennas[antId].name);
+
+		if(it == mit->setups.end())
+		{
+			continue;
+		}
+		if(streamId >= it->second.streams.size())
+		{
+			std::cerr << "Developer error: VexData::setDifxTsys: antId = " << antId << " streamId = " << streamId << " where number of streams is " << it->second.streams.size() << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		it->second.streams[streamId].difxTsys = tSys;
+	}
+}
+
 void VexData::setNoDatastream(unsigned int antId, unsigned int streamId)
 {
 	setDataSource(antId, streamId, DataSourceNone);

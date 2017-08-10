@@ -1,3 +1,7 @@
+Version 2.6.0
+~~~~~~~~~~~~~
+* New DATASTREAM parameter tSys that passes through into .input files
+
 Version 2.5.0
 ~~~~~~~~~~~~~
 * Users can now supply comments in one or more COMMENT { } blocks

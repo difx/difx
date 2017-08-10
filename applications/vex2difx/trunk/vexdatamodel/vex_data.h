@@ -88,6 +88,7 @@ public:
 	void addBreakEvents(std::list<Event> &events, const std::vector<double> &breaks) const;
 	void addLeapSecondEvents(std::list<Event> &events) const;
 	void generateEvents(std::list<Event> &events) const;
+	void setDifxTsys(unsigned int antId, unsigned int streamId, double tSys);
 	void setNoDatastream(unsigned int antId, unsigned int streamId);
 	void setFiles(unsigned int antId, unsigned int streamId, const std::vector<VexBasebandData> &files);
 	void setMark6Files(unsigned int antId, unsigned int streamId, const std::vector<VexBasebandData> &files);

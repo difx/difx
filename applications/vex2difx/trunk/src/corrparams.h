@@ -151,6 +151,7 @@ TODO:
 * Test all non-fake modes
 */
 
+/* NOTE! If something is added to this structure, you might need to update DatastreamSetup::merge() */
 class DatastreamSetup
 {
 public:
@@ -174,6 +175,7 @@ public:
 
 	int startBand;		// within the antenna's baseband channels (defined in vex order), where does this datastream start? [0-based]; -1 indicates not initialized
 	int nBand;		// number of baseband channels provided by this datastream
+	double tSys;		// The TSYS parameter of the .input file.  Normally this is zero
 };
 
 class AntennaSetup

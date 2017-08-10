@@ -315,7 +315,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, const
 
 				dd->antennaId = antennaId;
 				dd->dataSource = stream.dataSource;
-				dd->tSys = 0.0;
+				dd->tSys = stream.difxTsys;
 				dd->dataSampling = stream.dataSampling;
 				switch(dd->dataSource)
 				{

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -595,7 +595,7 @@ std::ostream& operator << (std::ostream &os, const VexStream &x)
 		formatName << "Illegal(" << x.format << ")";
 	}
 
-	os << " [format=" << formatName.str() << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan << ", dataFrameSize=" << x.dataFrameSize() << ", nThread=" << x.nThread << ", singleThread=" << x.singleThread << ", sampRate=" << x.sampRate;
+	os << " [format=" << formatName.str() << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan << ", dataFrameSize=" << x.dataFrameSize() << ", nThread=" << x.nThread << ", singleThread=" << x.singleThread << ", sampRate=" << x.sampRate << ", ySys=" << x.difxTsys;
 	if(!x.threads.empty())
 	{
 		for(std::vector<int>::const_iterator it = x.threads.begin(); it != x.threads.end(); ++it)

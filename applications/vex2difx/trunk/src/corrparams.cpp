@@ -789,6 +789,7 @@ DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name)
 	dataSampling = NumSamplingTypes;	// flag that no sampling is is identified here
 	startBand = -1;
 	nBand = 0;				// Zero implies all.
+	tSys = 0.0;
 }
 
 
@@ -950,6 +951,10 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 		basebandFiles.clear();
 		basebandFiles.push_back(VexBasebandData(value, 0, -1));
 	}
+	else if(key == "tSys")
+	{
+		ss >> tSys;
+	}
 	else
 	{
 		std::cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << std::endl; 
@@ -985,6 +990,7 @@ bool DatastreamSetup::hasBasebandData(const Interval &interval) const
 int DatastreamSetup::merge(const DatastreamSetup *dss)
 {
 	nBand = dss->nBand;	// there is no way for the defaultDatastreamSetup to have this set
+	tSys = dss->tSys;
 
 	if(dataSource == DataSourceUnspecified || dss->dataSource == DataSourceNone)
 	{

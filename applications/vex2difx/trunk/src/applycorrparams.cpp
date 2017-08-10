@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -448,6 +448,8 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 		{
 			// Here just directly copy updated values from v2d into existing structure
 			const DatastreamSetup &dss = as->datastreamSetups[i];
+
+			V->setDifxTsys(a, i, dss.tSys);
 
 			switch(dss.dataSource)
 			{

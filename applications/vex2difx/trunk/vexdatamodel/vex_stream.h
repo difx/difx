@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -59,7 +59,7 @@ public:
 
 	static char DataFormatNames[NumDataFormats+1][16];
 
-	VexStream() : sampRate(0.0), nBit(0), nRecordChan(0), VDIFFrameSize(0), singleThread(false), dataSampling(SamplingReal), dataSource(DataSourceUnspecified) {}
+	VexStream() : sampRate(0.0), nBit(0), nRecordChan(0), VDIFFrameSize(0), singleThread(false), dataSampling(SamplingReal), dataSource(DataSourceUnspecified), difxTsys(0.0) {}
 	double dataRateMbps() const { return sampRate*nBit*nRecordChan/1000000.0; }
 	static enum DataFormat stringToDataFormat(const std::string &str);
 	static bool isSingleThreadVDIF(const std::string &str);
@@ -85,6 +85,7 @@ public:
 	enum DataFormat format;
 	enum SamplingType dataSampling;	// Real or Complex
 	enum DataSource dataSource;
+	double difxTsys;		// The DiFX .input file TSYS value for this datastream
 
 private:
 	static bool Init();		// called to initialize the regexes below
