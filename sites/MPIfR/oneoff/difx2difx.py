@@ -208,8 +208,7 @@ def stitchVisibilityfile(basename,cfg):
 	for fi in range(in_rec_freqs,len(freqs)):
 		if (freqs[fi].bandwidth == target_bw) and (freqs[fi].numchan/freqs[fi].specavg == target_nchan):
 			# Retain one-to-one map for existing matching zoom freqs
-			freq_remaps[fi] = fi
-			freq_remaps_isNew[fi] = True
+			freq_remaps_isNew[fi] = False
 			continue
 		stid = getGlueIndex(freqs[fi].freq,cfg)
 		if (stid >= 0):
@@ -442,6 +441,8 @@ def stitchVisibilityfile(basename,cfg):
 		# Next header
 		(vishdr,binhdr) = getVisibilityHeader(difxfile)
 
+		#if nstitched > 100: break  # quick-exit for debug
+
 	## Generate new .input
 
 	# New FREQ table
@@ -466,13 +467,13 @@ def stitchVisibilityfile(basename,cfg):
 
 		# Retain all bandwidth-matching zoom freqs
 		newds.zoomfreqindex = [freq_remaps[zfi] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
-		newds.zoomfreqpols = [ds.zoomfreqpols[zfi] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
+		newds.zoomfreqpols = [ds.zoomfreqpols[ds.zoomfreqindex.index(zfi)] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
 
 		# Add all stitched invented freqs
 		newds.zoomfreqindex += [nzfi for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
 		newds.zoomfreqpols += [npol for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
 
-		newds.zoomfreqindex = list(set(newds.zoomfreqindex)) # keep uniques only
+		newds.zoomfreqindex = list(set(newds.zoomfreqindex)) # keep uniques only, TODO: should shorten zoomfreqpols list equally!
 
 		# Translate freqs into bands
 		newds.nrecband = npol * len(newds.recfreqindex)
@@ -498,19 +499,32 @@ def stitchVisibilityfile(basename,cfg):
 	new_baselines = []
 	remapped_freqs = [n for n in range(len(freq_remaps)) if freq_remaps[n]>=0]
 	for b in baselines:
+
 		newbl = copy.deepcopy(b)
+
 		nds1 = new_datastreams[newbl.dsaindex]
 		nds2 = new_datastreams[newbl.dsbindex]
 		npol1 = len(list(set(nds1.recbandpol)))
 		npol2 = len(list(set(nds2.recbandpol)))
 		max_stokes = npol1*npol2
+
+		# Keep only freqs common to both datastreams, and that match the target bandwidth
 		allfreqs1 = nds1.recfreqindex + nds1.zoomfreqindex
 		allfreqs2 = nds2.recfreqindex + nds2.zoomfreqindex
-		common_freqs = list(set(allfreqs1) & set(allfreqs2)) # keeps only unique elements
+		common_freqs = list(set(allfreqs1) & set(allfreqs2))
+		common_freqs = [fnr for fnr in common_freqs if (freqs[fnr].bandwidth == target_bw)]
+
 		newbl.nfreq = len(common_freqs)
 		newbl.dsabandindex = []
 		newbl.dsbbandindex = []
 		newbl.freqpols = []
+
+		if cfg['verbose']:
+			print ("Baseline DS%d x DS%d" % (newbl.dsaindex, newbl.dsbindex))
+			print ("     stream %d freqs %s" % (newbl.dsaindex, str(allfreqs1)))
+			print ("     stream %d freqs %s" % (newbl.dsbindex, str(allfreqs2)))
+			print ("     common freqs %s" % (str(common_freqs)))
+
 		for f in common_freqs:
 			npol = 2
 			assert(f in allfreqs1)
@@ -539,20 +553,18 @@ def stitchVisibilityfile(basename,cfg):
 					print("Warning: unexpected nstokes of %d" % (cfg['stitch_nstokes']))
 					newbl.dsabandindex.append([npol1*i1])
 					newbl.dsbbandindex.append([npol2*i2])
+
 			newbl.freqpols.append(len(newbl.dsabandindex[-1]))
 
 			assert( len(newbl.dsabandindex[-1]) == len(newbl.dsbbandindex[-1]) )
 			if cfg['verbose']:
-				print ("Baseline DS%d x DS%d" % (newbl.dsaindex, newbl.dsbindex))
-				print ("     stream %d freqs %s" % (newbl.dsaindex, str(allfreqs1)))
-				print ("     stream %d freqs %s" % (newbl.dsbindex, str(allfreqs2)))
-				print ("     common freqs %s" % (str(common_freqs)))
 				print ("        now freq %d = (ds1 frq %d, ds2 frq %d)" % (f,i1,2))
 				print ("            num pols = (%d, %d)" % (npol1,npol2))
 				print ("            dsa[end] = %s" % (str(newbl.dsabandindex[-1])))
 				print ("            dsb[end] = %s" % (str(newbl.dsbbandindex[-1])))
 				print ("        has %d freqpols" % (newbl.freqpols[-1]))
 				#print newbl.dsabandindex[-1], newbl.dsbbandindex[-1]
+
 		new_baselines.append(newbl)
 
 	# Read original .input without parsing
