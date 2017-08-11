@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken & John Morgan               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & John Morgan               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1580,6 +1580,12 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 									{
 										continue;	/* to next line in file */
 									}
+
+									if(lineCablePeriod <= 0.0)
+									{
+										lineCablePeriod = 60.0/86400.0;
+									}
+
 									cableScanId = nextCableScanId;
 									cableTime = nextCableTime;
 									cablePeriod = nextCablePeriod;

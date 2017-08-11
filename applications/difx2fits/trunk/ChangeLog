@@ -1,5 +1,4 @@
 Version 3.5.0
-* Post DiFX 2.4
 * Remove duplicate RDATE keywords from AG and ML tables
 * With changes in difxio, ensure same-day EOPs are equal before merging jobs
 * Make use of EOP merging mode concept.  See changelog in difxio.
@@ -16,6 +15,7 @@ Version 3.5.0
 * Support building FITS files for profile mode correlations
   (autocorrelations included for bins > 0)
 * Check polarizations for legality before proceeding (and segfaulting)
+* Fix for cablecal files when reported measurement duration is zero
 * Version for DiFX-2.5, May 16, 2017
 
 Version 3.4.0
