@@ -7,7 +7,7 @@
 '''
 Script to parse a joblist and a vex file and produce lists of job numbers
 
-$Id$
+$Id: ehtc-joblist.py 1947 2017-08-10 20:30:57Z gbc $
 '''
 
 import argparse
@@ -25,18 +25,20 @@ def parseOptions():
     '''
     des = 'This script requires a DiFX joblist file, the vex.obs file and '
     des += 'selection criteria; and it produces a list of jobs to process.'
-    inp = 'Inputs:'
-    act = 'Actions:'
-    sel = 'Selections:'
-    tst = 'Tests:'
-    epi = 'For example...'
+    inp = None
+    act = None
+    sel = None
+    tst = None
+    epi = 'For example to generate a report on 3C279 outside ALMA projects, '
+    epi += ' try this: '
+    epi += ' ehtc-joblist.py -i *.input -o *.vex.obs -p na -s 3C279 -R'
     use = '%(prog)s [options]\n'
-    use += '  Version $Id$'
+    use += '  Version $Id: ehtc-joblist.py 1947 2017-08-10 20:30:57Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
-    inputs = parser.add_argument_group('Input Options', inp)
-    action = parser.add_argument_group('Action Options', act)
-    select = parser.add_argument_group('Selection Options', sel)
-    tester = parser.add_argument_group('Testing Options', tst)
+    inputs = parser.add_argument_group('input options', inp)
+    action = parser.add_argument_group('action options', act)
+    select = parser.add_argument_group('selection options', sel)
+    tester = parser.add_argument_group('testing options', tst)
     inputs.add_argument('-v', '--verbose', dest='verb',
         action='store_true', default=False,
         help='provide some commentary')
@@ -56,21 +58,38 @@ def parseOptions():
     action.add_argument('-A', '--antennas', dest='antennas',
         action='store_true', default=False,
         help='provide a list of antennas')
+    action.add_argument('-C', '--scans', dest='scans',
+        action='store_true', default=False,
+        help='provide a list of scan numbers')
     action.add_argument('-N', '--numbers', dest='numbers',
         action='store_true', default=False,
         help='provide a list of job numbers')
+    action.add_argument('-J', '--jobinputs', dest='jobinputs',
+        action='store_true', default=False,
+        help='provide a list of job input files')
     action.add_argument('-S', '--sources', dest='sources',
         action='store_true', default=False,
         help='provide a list of sources from the SOURCE section')
     action.add_argument('-P', '--projects', dest='projects',
         action='store_true', default=False,
         help='provide a list of ALMA projects from the vex file')
+    action.add_argument('-R', '--report', dest='report',
+        action='store_true', default=False,
+        help='provide a summary list of scans ' +
+             'with source, project and antennas')
+    action.add_argument('-G', '--groups', dest='groups',
+        action='store_true', default=False,
+        help='provide a summary list of proj/targ/class groups')
+    select.add_argument('-d', '--difx', dest='difx',
+	action='store_true', default=False,
+	help='Restrict to scans with data in .difx dir')
     select.add_argument('-s', '--source', dest='source',
         metavar='STRING', default='',
         help='The name of the target source as found in the SOURCE section')
     select.add_argument('-p', '--project', dest='project',
         metavar='STRING', default='',
-        help='The name of the ALMA project as declared by intent')
+        help='The name of the ALMA project as declared by intents ' +
+            'ALMA:PROJECT_FIRST_SCAN:... and ALMA:PROJECT_FINAL_SCAN:...')
     tester.add_argument('-V', '--Vex', dest='vex',
         metavar='VEXTIME', default='',
         help='convert a Vex Time into MJD (and exit)')
@@ -189,6 +208,10 @@ def doInputs(o):
     files and read them to provide the job information.
     o.jobbage[#] = [start,stop,[antennas],[name,start,smjd,dur,vsrc,mode]]
     '''
+    if o.verb: print '# globbing with:', o.inputs + '_*.input'
+    if len(o.inputs) > 0 and o.job == '':
+        o.job = os.path.basename(o.inputs)
+        if o.verb: print '# set job to', o.job
     o.inptfiles = glob.glob(o.inputs + '_*.input')
     o.calcfiles = glob.glob(o.inputs + '_*.calc')
     if len(o.inptfiles) != len(o.calcfiles):
@@ -230,6 +253,8 @@ def doJobList(o):
     into a dict, o.jobbage.  After this routine completes,
     o.jobbage[#] = [start,stop [antennas]]
     '''
+    if not os.path.exists(o.joblist): return
+    if o.verb: print '# examining ',o.joblist
     f = open(o.joblist)
     first = True
     o.jobbage = {}
@@ -286,33 +311,44 @@ def doFindProj(o):
         scan x++
         * intent = "ALMA:PROJECT_FIRST_SCAN:zzzz"
         ...
+    Scans not assigned go to a catch-all project na (for not
+    applicable or not ALMA).
     '''
     f = open(o.vexobs)
     o.projscans = {}
     lastscan = ''
-    thisproj = ''
+    thisproj = 'na'
     scan_re = re.compile(r'\s*scan\s*([^;]+);')
     first_re = re.compile(
         r'.*intent.*=.*ALMA:PROJECT_FIRST_SCAN:(.*).$')
     final_re = re.compile(
         r'.*intent.*=.*ALMA:PROJECT_FINAL_SCAN:(.*).$')
+    comnt_re = re.compile(r'\s*[*]')
     for line in f.readlines():
         sre = scan_re.search(line)
-        if sre: lastscan = sre.group(1)
+        if sre:
+            lastscan = sre.group(1)
+            if o.verb: print 'assigning lastscan', lastscan
+            continue
         first = first_re.search(line)
+        final = final_re.search(line)
+        comnt = comnt_re.search(line)
+        if not first and not final and comnt:
+            continue
         if first: thisproj = first.group(1)[:-1]
         if len(thisproj) > 0 and len(lastscan) > 0:
             if thisproj in o.projscans:
                 o.projscans[thisproj].append(lastscan)
+                if o.verb: print 'appending lastscan', lastscan, 'to',thisproj
             else:
                 o.projscans[thisproj] = [lastscan]
+                if o.verb: print 'new prj w/lastscan', lastscan, 'to',thisproj
             lastscan = ''
-        final = final_re.search(line)
-        if final: thisproj = ''
+        if final: thisproj = 'na'
     f.close()
     if o.verb:
         for p in sorted(o.projscans.keys()):
-            print p, ': ', o.projscans[p]
+            print '# project', p, ': ', o.projscans[p]
 
 def doFindSrcs(o):
     '''
@@ -414,12 +450,30 @@ def adjustOptions(o):
             o.antlers = o.antset
     return o
 
+def doSelectData(o):
+    '''
+    Remove jobs that appear to have no useful data
+    '''
+    if not o.difx: return
+    if o.inputs == '': return
+    # o.difxdirs = glob.glob(o.inputs + '_*.difx')
+    newjobs = {}
+    for j in o.rubbage:
+	difx = '%s_%s.difx' % (o.inputs, j)
+	files = glob.glob(difx + '/*')
+	if len(files) > 0:
+	    newjobs[j] = o.rubbage[j]
+	else:
+	    if o.verb: print '# No data in ' + difx + '/*'
+    o.rubbage = newjobs
+
 def doSelectSource(o):
     '''
     Pretty trivial: select on source
     So source is o.jobbage[#][3][4]
     '''
     if o.source == '': return
+    if o.verb: print '# Selecting on source', o.source
     newjobs = {}
     if o.source in o.srcs:
         for j in o.rubbage:
@@ -434,6 +488,7 @@ def doSelectProject(o):
     So scan name is o.rubbage[#][3][0]
     '''
     if o.project == '': return
+    if o.verb: print '# Selecting on project', o.project, len(o.projscans)
     newjobs = {}
     if o.project in o.projscans:
         for j in o.rubbage:
@@ -446,6 +501,7 @@ def selectOptions(o):
     '''
     Apply selections to limit things reported
     '''
+    doSelectData(o)
     doSelectSource(o)
     doSelectProject(o)
     return o
@@ -457,14 +513,30 @@ def doAntennas(o):
     if len(o.antlers) == 0: return
     print 'antennas="' + ' '.join(o.antlers) + '"'
 
+def doJobInputs(o):
+    '''
+    Generate a list of job input files from the joblist file
+    '''
+    if len(o.rubbage) == 0: return
+    jl = map(lambda x:"%s_%s.input" % (o.job, x), sorted(o.rubbage.keys()))
+    #print 'jobs="' + ' '.join(sorted(o.rubbage.keys())) + '"'
+    print 'jobs="' + ' '.join(jl) + '"'
+
+def doScans(o):
+    '''
+    Generate a list of scan numbers
+    '''
+    if len(o.rubbage) == 0: return
+    js = map(lambda x:o.rubbage[x][3][0], sorted(o.rubbage.keys()))
+    print 'scans="' + ' '.join(js) + '"'
+
 def doNumbers(o):
     '''
     Generate a list of job numbers from the joblist file
     '''
     if len(o.rubbage) == 0: return
     jl = map(lambda x:"%s_%s.input" % (o.job, x), sorted(o.rubbage.keys()))
-    #print 'jobs="' + ' '.join(sorted(o.rubbage.keys())) + '"'
-    print 'jobs="' + ' '.join(jl) + '"'
+    print 'numbers="' + ' '.join(sorted(o.rubbage.keys())) + '"'
 
 def doSources(o):
     '''
@@ -481,6 +553,51 @@ def doProjects(o):
     for p in o.projscans:
         print 'project_' + p + '="' + ' '.join(o.projscans[p]) + '"'
 
+def doReport(o):
+    '''
+    Generate a useful report of jobs.
+    o.jobbage[#] = [start,stop,[antennas],[name,start,smjd,dur,vsrc,mode]]
+    '''
+    if len(o.rubbage) == 0: return
+    for j in sorted(o.rubbage.keys()):
+        job = o.rubbage[j]
+        scan = job[3][0]
+        proj = 'dunno'
+        for p in o.projscans:
+            if scan in o.projscans[p]: proj = p
+        antlist = '-'.join(sorted(job[2]))
+        print ('%5s %6s %10s %8s %s' %
+            (j, job[3][0], job[3][4], proj, antlist)),
+        if antlist[0:2] != 'AA':
+            print '# do not polconvert!'
+        else:
+            print ''
+
+def doGroups(o):
+    '''
+    Generate a list of proj=yyy targ=XXX class=sci|cal
+    The logic is similar to the preceding routine.
+    '''
+    if len(o.rubbage) == 0: return
+    ans = set()
+    for j in sorted(o.rubbage.keys()):
+        job = o.rubbage[j]
+        scan = job[3][0]
+        targ = job[3][4]
+        proj = 'na'
+        for p in o.projscans:
+            if scan in o.projscans[p]: proj = p
+        # everything is calibrator except:
+        # M87, SGRA as calibrators are 'eht' and proj=targ is 'sci'
+        if proj.upper() == targ:                                 clss = 'sci'
+        elif proj == 'na' and (targ == 'M87' or targ == 'SGRA'): clss = 'sci'
+        elif proj != 'm87' and targ == 'M87':                    clss = 'eht'
+        elif proj != 'sgra' and targ == 'SGRA':                  clss = 'eht'
+        else:                                                    clss = 'cal'
+        ans.add(':'.join([proj,targ,clss]))
+    for a in sorted(list(ans)):
+        print ('export proj=%s targ=%s class=%s' % tuple(a.split(':')))
+
 # main entry point
 if __name__ == '__main__':
     o = parseOptions()
@@ -488,9 +605,13 @@ if __name__ == '__main__':
     o = selectOptions(o)
 
     if o.antennas:  doAntennas(o)
+    if o.jobinputs: doJobInputs(o)
+    if o.scans:     doScans(o)
     if o.numbers:   doNumbers(o)
     if o.sources:   doSources(o)
     if o.projects:  doProjects(o)
+    if o.report:    doReport(o)
+    if o.groups:    doGroups(o)
 
     sys.exit(0)
 
