@@ -38,6 +38,23 @@ def getVisibilityHeader(f):
 	bin = f.read(rdlen)
 	return (h,bin)
 
+"""Spectral averaging"""
+def spectralAvgRaw(rawvis, chavg, doComplex=True):
+	if doComplex:
+		visdata = numpy.fromstring(rawvis, dtype='complex64')
+	else:
+		visdata = numpy.fromstring(rawvis, dtype='float32')
+	N = len(visdata)
+	assert((N % chavg)==0)
+	visdata = numpy.average(visdata.reshape((N/chavg,chavg)), axis=1)
+	return visdata.tostring()
+
+def spectralAvgNumpy(visdata, chavg):
+	N = len(visdata)
+	assert((N % chavg)==0)
+	visdata = numpy.average(visdata.reshape((N/chavg,chavg)), axis=1)
+	return visdata
+
 """
 Read a difx2difx configuration file.
 Example contents:
@@ -64,6 +81,16 @@ def getConfig(cfgfilename):
 		cfg['stitch_antennas'].append(sa)
 	cfg['stitch_nstokes'] = int(cfgparser.get(section, 'stitch_nstokes'))
 
+	# Optional settings
+	try:
+		cfg['target_chavg'] = cfgparser.getint(section, 'target_chavg')
+	except:
+		cfg['target_chavg'] = 1
+	try:
+		cfg['verbose'] = cfgparser.getboolean(section, 'verbose')
+	except:
+		cfg['verbose'] = False
+
 	# User frequencies
 	fqlist = cfgparser.get(section, 'stitch_basefreqs')
 	cfg['stitch_basefreqs'] = []
@@ -72,9 +99,6 @@ def getConfig(cfgfilename):
 		f = float(fq)
 		cfg['stitch_basefreqs'].append(f)
 		cfg['stitch_endfreqs'].append(f + cfg['target_bw']) # USB assumed
-
-	# Internal settings
-	cfg['verbose'] = True
 
 	return cfg
 
@@ -160,7 +184,7 @@ def stitchVisibilityfile(basename,cfg):
 				freq_remaps[fqidx] = id
 				out_freqs[id] = copy.deepcopy(freqs[fqidx])
 				in_rec_freqs += 1
-				print ("Keeping recorded frequency  : index %2d/%2d : %s" % (fqidx,id,out_freqs[fqidx].str()))
+				print ("Keeping recorded frequency  : index %2d/%2d : %s" % (fqidx,id,freqs[fqidx].str()))
 
 	# Collect all zoom bands listed in DATASTREAMS that already match the target bandwidth
 	for d in datastreams:
@@ -262,6 +286,8 @@ def stitchVisibilityfile(basename,cfg):
 
 	# Parse each visibility entry
 	seconds_prev = -1
+	seconds_first = 0
+	seconds_report_prev = 0
 	while len(vishdr) > 0:
 
 		# Visibility properties
@@ -292,8 +318,16 @@ def stitchVisibilityfile(basename,cfg):
 			break
 
 		if (seconds != seconds_prev):
-			print (('\n---- %d %12.7f ' + '-'*115) % (mjd,seconds))
 			seconds_prev = seconds
+			if cfg['verbose']:
+				print (('\n---- %d %12.7f ' + '-'*115) % (mjd,seconds))
+			elif (seconds - seconds_report_prev)>1.0:
+				if seconds_first <= 0:
+					seconds_first = mjd*24*60*60 + seconds
+				dTstart = mjd*24*60*60 + seconds - seconds_first
+				seconds_report_prev = seconds
+				print ("at %d %12.7f, %.3f seconds from start" % (mjd,seconds,dTstart))
+				print ("\033[F\033[F")
 
 		# Remap the frequency reference
 		out_freqindex = freqindex
@@ -318,6 +352,8 @@ def stitchVisibilityfile(basename,cfg):
 					print ('copy  : %s' % (vis_info))
 				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
+				if cfg['target_chavg'] > 1:
+					rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'], doComplex=(ant1!=ant2))
 				difxout.write(rawvis)
 				ncopied += 1
 
@@ -341,6 +377,8 @@ def stitchVisibilityfile(basename,cfg):
 					print ('take  : %s' % (vis_info))
 				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
+				if cfg['target_chavg'] > 1:
+					rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'], doComplex=(ant1!=ant2))
 				difxout.write(rawvis)
 				ncopied += 1
 
@@ -381,7 +419,8 @@ def stitchVisibilityfile(basename,cfg):
 					visdata = visdata[:nchan_new]
 					bw = bw * nchan_new/nchan
 					nchan = nchan_new
-					print('crop  : %s to %d chan' % (vis_info,nchan_new))
+					if cfg['verbose']:
+						print('crop  : %s to %d chan' % (vis_info,nchan_new))
 
 				# Keep track of timestamp
 				if (stitch_timestamps[baseline][polpair][stid] < 0):
@@ -396,7 +435,8 @@ def stitchVisibilityfile(basename,cfg):
 						T_old = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
 						nincomplete += 1
 						msg = '%s-%s/%d/%d:%.7f/%s mjd:%12.8f only %d of %d channels' % (ant1name,ant2name,baseline,stid,stitch_basefreqs[stid],polpair,T_old,ncurr,target_nchan)
-						print ('Warning: discarded an incomplete stitch: %s' % (msg))
+						if cfg['verbose']:
+							print ('Warning: discarded an incomplete stitch: %s' % (msg))
 					assert(ncurr < target_nchan)
 					stitch_timestamps[baseline][polpair][stid] = seconds
 					stitch_chcounts[baseline][polpair][stid] = 0
@@ -426,7 +466,11 @@ def stitchVisibilityfile(basename,cfg):
 
 					# Write header and assembled data
 					difxout.write(binhdr)
-					stitch_workbufs[baseline][polpair][stid].tofile(difxout)
+					if cfg['target_chavg'] > 1:
+						vis = spectralAvgNumpy(stitch_workbufs[baseline][polpair][stid], cfg['target_chavg'])
+					else:
+						vis = stitch_workbufs[baseline][polpair][stid]
+					vis.tofile(difxout)
 					nstitched += 1
 
 					# Reset
@@ -448,6 +492,7 @@ def stitchVisibilityfile(basename,cfg):
 	# New FREQ table
 	new_freqs = []
 	for of in out_freqs.keys(): # dict into list
+		out_freqs[of].specavg = out_freqs[of].specavg * cfg['target_chavg']
 		new_freqs.append(out_freqs[of])
 
 	# New DATASTREAM table
@@ -464,6 +509,7 @@ def stitchVisibilityfile(basename,cfg):
 		# newds.recfreqpols = newds.recfreqpols
 		# newds.recbandindex = newds.recbandindex
 		# newds.recbandpol = newds.recbandpol
+		newds.recfreqindex = [freq_remaps[rfi] for rfi in newds.recfreqindex]
 
 		# Retain all bandwidth-matching zoom freqs
 		newds.zoomfreqindex = [freq_remaps[zfi] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
@@ -512,7 +558,7 @@ def stitchVisibilityfile(basename,cfg):
 		allfreqs1 = nds1.recfreqindex + nds1.zoomfreqindex
 		allfreqs2 = nds2.recfreqindex + nds2.zoomfreqindex
 		common_freqs = list(set(allfreqs1) & set(allfreqs2))
-		common_freqs = [fnr for fnr in common_freqs if (freqs[fnr].bandwidth == target_bw)]
+		common_freqs = [fnr for fnr in common_freqs if (out_freqs[fnr].bandwidth == target_bw)]
 
 		newbl.nfreq = len(common_freqs)
 		newbl.dsabandindex = []
