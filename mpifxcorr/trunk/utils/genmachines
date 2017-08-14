@@ -468,7 +468,7 @@ def uniqueVsns(datastreams):
 	else:
 		return 1
 
-def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
+def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 	ok = True
 
         # check if host is an allowed headnode
@@ -476,8 +476,6 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 	if not hostname in difxmachines.getHeadNodeNames():
 		print 'ERROR: hostname (%s) is not an allowed headnode in the machines file : %s' % (hostname, machinesfile)
 		exit(1)
-
-	infile = files[0]
 
 	basename = infile[0:-5]
 	if basename + 'input' != infile:
@@ -655,6 +653,7 @@ if __name__ == "__main__":
             print "ERROR: This version of genmachines requires a cluster defintion file of version > %s. Found version is: %s.%s" % (minMachinefileVersion, major,minor)
             exit(1)
         
-	v = run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb)
-	if v != 0:
-		exit(v)
+	for file in files:
+		v = run(file, machinesfile, overheadcores, verbose, dothreads, useDifxDb)
+		if v != 0:
+			exit(v)
