@@ -18,7 +18,7 @@ The main options are (with defaults in parentheses)
 
 and one of the simple tar targets,
 
-    tar=dxin|swin|fits|hops|hmix|pcin|pcqk|pcal|4fit
+    tar=dxin|swin|fits|hops|hmix|pcin|pcqk|4fit
 
 which specify which tarballs are to be made:
 
@@ -29,7 +29,6 @@ which specify which tarballs are to be made:
     hmix    difx2mark4 outputs prior to polconvert
     pcin    polconvert inputs (if ALMA)
     pcqk    polconvert quick-look outputs (if ALMA)
-    pcal    polconvert calibration table tarball (if ALMA)
     4fit    correlator fourfit output (pc'd; type 200s + alist)
 
 Or, for convenience,
@@ -40,7 +39,7 @@ Or, for convenience,
     tar=pre-alma    does:   dxin swin hmix
     tar=post-alma   does:   pcin fits hops pcqk
 
-(Note pcal and 4fit probably don't make sense in these groupings.)
+(Note 4fit probably doesn't make sense in these groupings.)
 The 4fit option requires 2 passes; one to build an \$expn dir to
 run fourfit in, and a second pass to create the tarball.  You may
 repeat this (see \$flab below) non-destructively.
@@ -414,15 +413,6 @@ pcqk)
       content="$content ${j}*polconvert*/PolConvert.log"
     done
     ;;
-pcal)
-    $verb && echo gathering PolConvert calibration `pwd`
-    pcal=`ls *APP_DELIVERABLES*`
-    [ -f "$pcal" ] || { echo "*APP_DELIVERABLES*" not found ; exit 3 ; }
-    content=$pcal
-    $nuke && [ -f $destdir/$content ] &&
-        echo $destdir already exists and you have nuke=true &&
-        echo FIX with: rm -f $destdir/$content
-    ;;
 4fit)
     $verb && echo fourfitting in `pwd`
     ffconf=$exp-$vers-$subv.conf
@@ -497,14 +487,13 @@ post-alma)
     hmix    difx2mark4 outputs prior to polconvert
     pcin    polconvert inputs (if ALMA)
     pcqk    polconvert quick-look outputs (if ALMA)
-    pcal    polconvert calibration table tarball (if ALMA)
     4fit    correlator fourfit output (pc'd; type 200s + alist)
 
     tar=post-corr   does:   dxin swin
     tar=no-alma     does:   dxin swin fits hops
     tar=no-hops     does:   dxin swin fits
     tar=pre-alma    does:   dxin swin hmix
-    tar=post-alma   does:   pcin fits hops pcqk pcal
+    tar=post-alma   does:   pcin fits hops pcqk
 ....EOF
     exit 3
     ;;
@@ -671,16 +660,11 @@ $dotar && [ -n "$tarname" -a -n "$content" ] && (
     [ -s "$workdir/$tarname" ] || {
         echo "tarball '$tarname' is empty"; exit 5; }
     true
-) || [ "$tar" = 'pcal' ] || {
+) || {
     $verb && echo "Not making tarball '$tarname', so nothing to copy"
     copy=false
 }
 
-# and finally copy it to the destination
-[ "$tar" = 'pcal' ] && {
-    tarname=$content
-    workdir=$srcdir
-}
 # general tarball install rule
 $copy && {
     [ -f $destdir/$tarname ] && {
