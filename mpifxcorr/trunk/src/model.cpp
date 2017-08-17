@@ -26,12 +26,13 @@
 #include "configuration.h"
 #include "alert.h"
 #include "model.h"
+#include "sysutil.h"
 
 Model::Model(Configuration * conf, string cfilename)
   : config(conf), calcfilename(cfilename)
 {
   opensuccess = true;
-  ifstream * input = new ifstream(calcfilename.c_str());
+  ifstream * input = ifstreamOpen(calcfilename.c_str());
 
   if(!input->is_open() || input->bad()) {
     cfatal << startl << "Error opening model file " << calcfilename << " - aborting!!!" << endl;
@@ -605,7 +606,7 @@ bool Model::readPolynomialSamples(ifstream * input)
   config->getinputline(input, &imfilename, "IM FILENAME");
   input->close();
 
-  input->open(imfilename.c_str());
+  ifstreamOpen(*input,imfilename.c_str());
   if(!input->is_open() || input->bad()) {
     cfatal << startl << "Error opening IM file " << imfilename << " - aborting!!!" << endl;
     return false; //note exit here

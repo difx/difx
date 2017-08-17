@@ -36,6 +36,7 @@
 #include "alert.h"
 #include "vdifio.h"
 #include "mathutil.h"
+#include "sysutil.h"
 
 int Configuration::MONITOR_TCP_WINDOWBYTES;
 
@@ -87,7 +88,7 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   model = NULL;
 
   //open the file
-  ifstream * input = new ifstream(configfile);
+  ifstream * input = ifstreamOpen(configfile);
   if(input->fail() || !input->is_open())
   {
     //need to write this message from all processes - sometimes it is visible to head node but no-one else...
@@ -1712,7 +1713,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
     return false;
 
   //read in the core numthreads info
-  ifstream coreinput(coreconffilename.c_str());
+  ifstream coreinput;
+  ifstreamOpen(coreinput, coreconffilename.c_str());
   numcoreconfs = 0;
   if(!coreinput.is_open() || coreinput.bad())
   {
@@ -2929,7 +2931,8 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
 
   if(mpiid == 0) //only write one copy of this info message
     cinfo << startl << "About to process phased array file " << filename << endl;
-  ifstream phasedarrayinput(filename.c_str(), ios::in);
+  ifstream phasedarrayinput;
+  ifstreamOpen(phasedarrayinput, filename.c_str());
   if(!phasedarrayinput.is_open() || phasedarrayinput.bad())
   {
     if(mpiid == 0) //only write one copy of this error message
@@ -3037,7 +3040,8 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
 
   if(mpiid == 0) //only write one copy of this info message
     cinfo << startl << "About to process pulsar file " << filename << endl;
-  ifstream pulsarinput(filename.c_str(), ios::in);
+  ifstream pulsarinput;
+  ifstreamOpen(pulsarinput, filename.c_str());
   if(!pulsarinput.is_open() || pulsarinput.bad())
   {
     if(mpiid == 0) //only write one copy of this error message
@@ -3053,7 +3057,7 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   {
     getinputline(&pulsarinput, &(polycofilenames[i]), "POLYCO FILE");
     numsubpolycos[i] = 0;
-    temppsrinput.open(polycofilenames[i].c_str());
+    ifstreamOpen(temppsrinput, polycofilenames[i].c_str());
     if(!temppsrinput.is_open() || temppsrinput.bad()) {
       if(mpiid == 0) //only write one copy of this error message
         cerror << startl << "Could not open polyco file " << polycofilenames[i] << ", but continuing..." << endl;
