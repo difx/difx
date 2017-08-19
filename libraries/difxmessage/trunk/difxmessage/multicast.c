@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -109,22 +109,24 @@ int openMultiCastSocket(const char *group, int port)
 		return -4;
 	}
 
-	if (!isDifxMessageUnicast()) { 
-	  mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-	  v = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq));
-	  if(v < 0) 
-	    {
-		printf("Error: Cannot configure multicast.  This is likely due to\n");
-		printf("Your network configuration not having a route set for\n");
-		printf("The DIFX multicast group: %s .  This can be done\n", group);
-		printf("Perhaps at the command line you should try:\n");
-		printf("  route add %s <dev>\n", group);
-		printf("where <dev> is the network interface appropriate for this\n");
-		printf("multicast traffic.\n");
+	if(!isDifxMessageUnicast())
+	{ 
+		mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+		v = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq));
+		if(v < 0) 
+		{
+			printf("Error: Cannot configure multicast.  This is likely due to\n");
+			printf("your network configuration not having a route set for\n");
+			printf("the DIFX multicast group: %s .  This can be done\n", group);
+			printf("perhaps at the command line you should try:\n");
+			printf("  route add %s <dev>\n", group);
+			printf("where <dev> is the network interface appropriate for this\n");
+			printf("multicast traffic.\n");
 
-		return -5;
-	    }
+			return -5;
+		}
 	} 
+
 	return sock;
 }
 
