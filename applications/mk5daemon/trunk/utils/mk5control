@@ -7,9 +7,9 @@ import socket
 import re
 
 program = 'mk5control'
-version = '0.5'
+version = '0.6'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20151118'
+verdate = '20170819'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -38,7 +38,9 @@ def usage(pgm):
 	print '  stopcopy -- stop a copy in progress'
 	print '  getver -- tell machine to report its version info'
 	print '  mountXX -- mount /dev/sdXX /mnt/usb'
+	print '  mountLABEL -- mount /dev/disk/by-label/LABEL /mnt/usb'
 	print '  umount -- umount /mnt/usb'
+	print '  listfs -- list filesystems with labels'
 	print '  startfuseMk5A, startfuseMk5B -- start a fuse mount of module in A or B on /mnt/diskpack'
 	print '  stopfuseMk5 -- stop fuse mount on /mnt/diskpack\n'
 	print '<machines> is a list of cluster members to receive the message;'

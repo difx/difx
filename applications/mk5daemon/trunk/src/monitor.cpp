@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,6 +33,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <signal.h>
+#include <glob.h>
 #include <difxmessage.h>
 #include <net/if.h>
 #include <arpa/inet.h>
@@ -224,25 +225,40 @@ void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		
 static void mountdisk(Mk5Daemon *D, const char *diskdev)
 {
-	char dev[64];
+	const int maxDevLength = 64;
+	const char mountPoint[] = "/mnt/usb";
+	char dev[maxDevLength];
 	char command[MAX_COMMAND_SIZE];
 	char message[DIFX_MESSAGE_LENGTH];
 	char rv[256] = "hidden message";
 	char *c;
 	FILE *pin;
+	int l;
 
-	if(strlen(diskdev) > 10)
+	l = strlen(diskdev);
+
+	if(l > 16)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Mount: device name is bogus: /dev/sd%s", diskdev);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount: device name is bogus: /dev/sd%s", diskdev);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	
 		return;
 	}
+
+	snprintf(command, MAX_COMMAND_SIZE, "mkdir -p %s", mountPoint);
 	
-	sprintf(dev, "/dev/sd%s", diskdev);
-	
-	snprintf(command, MAX_COMMAND_SIZE, "/bin/mount -t auto %s /mnt/usb 2>&1", dev);
+	if(l > 0 || l <= 3)
+	{
+		/* mount by device name */
+		snprintf(dev, maxDevLength, "/dev/sd%s", diskdev);
+	}
+	else
+	{
+		/* mount by filesystem label */
+		snprintf(dev, maxDevLength, "/dev/disk/by-label/%s", diskdev);
+	}
+
+	snprintf(command, MAX_COMMAND_SIZE, "/bin/mount -t auto %s %s 2>&1", dev, mountPoint);
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 	Logger_logData(D->log, message);
@@ -351,6 +367,29 @@ static void umountdisk(Mk5Daemon *D)
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Unmount /mnt/usb attempt : Success");
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
+}
+
+static void listFilesystems(Mk5Daemon *D)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	glob_t globbuf;
+	int i;
+	int p;
+
+	p = snprintf(message, DIFX_MESSAGE_LENGTH, "Filesystem list:");
+
+	glob("/dev/disk/by-label/*", 0, 0, &globbuf);
+	for(i = 0; i < globbuf.gl_pathc; ++i)
+	{
+		p += snprintf(message + p, DIFX_MESSAGE_LENGTH - p, " %s", globbuf.gl_pathv[i] + 19);
+		if(p >= DIFX_MESSAGE_LENGTH)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Filesystem count: %d\n", (int)(globbuf.gl_pathc));
+			break;
+		}
+	}
+	globfree(&globbuf);
+	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 }
 
 void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
@@ -588,6 +627,10 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	else if(strcmp(cmd, "umount") == 0)
 	{
 		umountdisk(D);
+	}
+	else if(strcmp(cmd, "listfs") == 0)
+	{
+		listFilesystems(D);
 	}
 	else if(strncmp(cmd, "reown_vfastr", 12) == 0 && strlen(cmd) > 12)
 	{

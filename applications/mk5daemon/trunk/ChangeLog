@@ -1,6 +1,11 @@
+Version 2.6.0
+~~~~~~~~~~~~~
+* Post DiFX-2.5
+* Allow mount command to work on label rather than device
+* listfs command to list available filesystems with labels
+
 Version 2.5.0
 ~~~~~~~~~~~~~
-* Post DiFX-2.4
 * Count number of streamstor cards and if < 1, don't consider the unit to be a Mark5 unit.
 * mk5cp: don't rewrite directory file unnecessarily
 * Look for sigterm; tie to same exit routine as sigint
