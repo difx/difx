@@ -722,7 +722,7 @@ except:
 	
 # loop over all arguments
 fb = None
-runJoblist = False
+runJobList = False
 for a in args[start:]:
 	# check for extension
 	if a[-6:] == '.input':
