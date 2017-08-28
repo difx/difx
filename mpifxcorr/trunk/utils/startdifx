@@ -31,7 +31,7 @@
 
 PROGRAM = 'startdifx'
 VERSION = '2.5.0'
-VERDATE = '20160727'
+VERDATE = '20170825'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -617,10 +617,10 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 
 	# spawn a logger process that will quit once this script ends
 	# this will quietly fail on systems without difxlog installed
-	cmd = 'difxlog %s %s.difxlog 4 %d &' % (identifier, fileBase, getpid())
+        cmd = ['difxlog', str(identifier), fileBase+".difxlog", "4", str(getpid())]
 	if verbose > 1:
 		print 'Executing: %s' % cmd
-	system(cmd);
+        logProcess = subprocess.Popen(cmd)
 
 	if difxLabel == None or difxLabel == '':
 		difxProgram = 'mpifxcorr'
@@ -653,6 +653,11 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 			print 'Executing: %s' % cmd
 		system(cmd)
 	sendMessage(fileBase, 'MpiDone', '')
+
+	# end difxlog (necessary when running startdifx with joblist)
+	if runJobList:
+            logProcess.kill()
+			
 
 	return None
 
@@ -717,11 +722,13 @@ except:
 	
 # loop over all arguments
 fb = None
+runJoblist = False
 for a in args[start:]:
 	# check for extension
 	if a[-6:] == '.input':
 		fb = a[:-6]
 	elif a[-8:] == '.joblist':
+		runJobList = True
 		d = open(a).readlines()
 		for l in d:
 			parts = l.split()
