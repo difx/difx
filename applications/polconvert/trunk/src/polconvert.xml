@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.4.1\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.4.2\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.4.1\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.4.2\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -71,6 +71,12 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <description>Time shift and time tolerance (in sec) for the CALAPPPHASE table obtained from the ASDM.</description>
       <value>[0.,5.]</value>
     </param>
+
+    <param type="string" name="APPrefant" mustexist="false">
+      <description>If not empty, re-reference the TelCal phases, assuming that the X-Y phase-difference table provided in \'gains\' (see keyword below) uses APPrefant as the reference antenna. Notice that the name of the gain table with the X-Y phase differences has to contain the string \'.XY0\'.</description>
+      <value></value>
+    </param>
+
 
     <param type="any" name="gains" mustexist="false">
       <description>Gain tables to pre-calibrate the linear-pol VLBI stations (one list of gains per linear-pol station).</description>
@@ -164,10 +170,14 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
     </param>
 
     <param type="int" name="npix" mustexist="false">
-      <description>Number of pixels for the fringe plots.</description>
+      <description>Number of pixels for the fringe plots (and fringe search).</description>
       <value>50</value>
     </param>
 
+    <param type="bool" name="solveAmp" mustexist="false">
+      <description>if the cross-polarization gains are being estimated, solve also for the X/Y amplitude ratios.</description>
+      <value>True</value>
+    </param>
 
 
 </input>

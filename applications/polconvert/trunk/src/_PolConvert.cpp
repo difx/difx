@@ -136,7 +136,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   //     strftime(logname, 28, "PolConvert.%j_%H_%M_%S.log", gmtime(&now));
   //  };
 
-    FILE *logFile = fopen("PolConvert.log","w");
+    FILE *logFile = fopen("PolConvert.log","a");
 
 
 

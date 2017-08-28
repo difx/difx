@@ -98,6 +98,11 @@ def parseOptions():
     parser.add_argument('-A', '--ampNorm', dest='ampnrm',
         default=True, action='store_false',
         help='turn off amplitude normalization')
+    parser.add_argument('-G', '--gainDel', dest='gaindel',
+        default='', metavar='LIST',
+        help='comma-sep list of gain tables to delete: del(gains[x])' +
+            'will be applied for every x in the list AFTER checks for' +
+            'existence of tables has been carried out')
     parser.add_argument('-s', '--spw', dest='spw',
         default=-1, metavar='INT', type=int,
         help='Index of SPW for PolConvert to use: 0,1,2,3 for the ' +
@@ -447,6 +452,7 @@ def createCasaInput(o):
     # qal = %s
     qa2 = %s
     ampNorm = %s
+    gainDel = '%s'
     #
     # other variables that can be set in interactive mode
     # here we set them not to make any interactive plots
@@ -520,7 +526,7 @@ def createCasaInput(o):
         o.label, o.band, bandnot, bandaid, o.exp,
         o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
-        o.qa2, o.qal, o.qa2_dict, ampnrm,
+        o.qa2, o.qal, o.qa2_dict, ampnrm, o.gaindel,
         o.remote, o.npix, dotest, o.doPlot[0],
         o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
 

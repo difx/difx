@@ -47,8 +47,8 @@
 #
 #
 
-__version__ = "1.4.1"
-date = 'JUL 2017'     
+__version__ = "1.4.2"
+date = 'AUG 2017'     
 
 
 ################
@@ -99,13 +99,48 @@ tb = gentools(['tb'])[0]
 # NOT EXECUTED IF THE FILE IS LOADED AS A MODULE.
 # GENERAL USERS SHOULD *NOT* BOTHER OF THESE LINES
 # (DO NOT EDIT THEM, SINCE THEY HAVE *NO EFFECT* ON
-# THE PROGRAM WHEN YOU LOAD IT AS A MODULE!
+# THE PROGRAM WHEN YOU LOAD IT AS A MODULE!)
 ###########################
 
 
 if __name__=='__main__':
 
  if True:
+
+  IDI                =  "ivan-hi/e17c07-1-hi_1016.difx"
+  OUTPUTIDI          =  "ivan-hi/e17c07-1-hi_1016.difx.polconvert"
+  DiFXinput          =  "ivan-hi/e17c07-1-hi_1016.input"
+  DiFXcalc           =  "ivan-hi/e17c07-1-hi_1016.calc"
+  doIF               =  range(2,32)
+  linAntIdx          =  [1]
+  Range              =  []
+  calAPP = 'TRACK_C.concatenated.ms.calappphase'
+  ALMAant = 'TRACK_C.concatenated.ms.ANTENNA'
+  spw                =  -1
+  calAPPTime         =  [0.0, 5.0]
+  APPrefant          =  ""
+  gains              =  [['TRACK_C.concatenated.ms.bandpass-zphs', 'TRACK_C.concatenated.ms.flux_inf.APP', 'TRACK_C.calibrated.ms.XY0.APP.REFANT_DA44', 'TRACK_D.calibrated.ms.Gxyamp.APP']]
+  interpolation      =  []
+  dterms             =  ['TRACK_D.calibrated.ms.Df0.APP']
+  amp_norm           =  True
+  XYadd              =  [0.0]
+  XYdel              =  [0.0]
+  XYratio            =  [1.0]
+  swapXY             =  [False]
+  swapRL             =  False
+  IDI_conjugated     =  False
+  plotIF             =  []
+  plotRange          =  [0, 0, 0, 0, 10, 0, 0, 0]
+  plotAnt            =  2
+  excludeAnts        =  []
+  doSolve            =  -1
+  solint             =  [1, 1]
+  doTest             =  True
+  npix               =  50
+
+
+
+ if False:
 
   IDI                =  "./e17d05_1221.save"
   OUTPUTIDI          =  "./e17d05_1221.difx"
@@ -136,6 +171,7 @@ if __name__=='__main__':
   doSolve = -1
   solint = [1,1]
   excludeAnts = []
+  refant             = ''
 
  if False:
 
@@ -168,7 +204,7 @@ if __name__=='__main__':
   solint             =  [1, 1]
   doTest             =  True
   npix               =  50
-
+  refant             = ''
 
 
 
@@ -186,13 +222,178 @@ if __name__=='__main__':
 # COMMENT OUT THIS LINE WHEN DEBUGGING
 # YOU SHALL THEN RUN THIS FILE WITH "execfile(...)"
 
-def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, gains, interpolation, dterms, amp_norm, XYadd, XYdel, XYratio, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,excludeAnts,doSolve,solint,doTest,npix):
+def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, gains, interpolation, dterms, amp_norm, XYadd, XYdel, XYratio, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,excludeAnts,doSolve,solint,doTest,npix,solveAmp):
 
  if True:
 ############################################
 
 
   DEBUG = True
+
+
+
+# Auxiliary function: print error and raise exception:
+  def printError(msg):
+    print msg,'\n' 
+    casalog.post('PolConvert: '+msg+'\n')
+    lfile = open("PolConvert.log","a")
+    print >> lfile,'\n'+msg+'\n'
+    lfile.close()
+    raise Exception(msg)
+
+
+
+
+# Auxiliary function: print message (terminal and log):
+  def printMsg(msg, doterm=True, dolog=True):
+    if doterm:
+      print msg
+    if dolog:
+      casalog.post('PolConvert: '+msg)
+      lfile = open("PolConvert.log","a")
+      print >> lfile,'\n'+msg+'\n'
+      lfile.close()
+
+
+
+
+
+
+
+# Auxiliary function: Re-reference XY-phases to 
+# another ALMA refant, using the CalAPPPhase table:
+  def ReReference(CALAPPPHASE,XY0,SPW,REFANT):
+
+    printMsg("\n\n  GOING TO RE-REFERENCE X-Y PHASES TO %s.\n\n"%REFANT)
+
+    DTMax = 180. # Minimum time gap (sec) to assume that TelCal has been reset.
+
+# Figure out the baseband:
+    tb.open('%s/SPECTRAL_WINDOW'%XY0)
+    try:
+      spname = tb.getcol('NAME')[SPW]
+      BB =  [ii for ii in spname.split('#') if "BB_" in ii][0]
+    except:
+      printError("\n ERROR: BAD NAME FOR SPW %i IN TABLE %s\n"%(SPW,XY0))
+    tb.close()
+
+
+# Read TelCal's phases:
+    tb.open(CALAPPPHASE)
+    IMAX = np.argmax(tb.getcol('numPhasedAntennas'))
+    ANT = list(tb.getcell('phasedAntennas',IMAX))
+
+    try:
+      REFIDX = ANT.index(REFANT)
+    except:
+      printError("\n\n ERROR: ANTENNA %s IS NOT IN CALAPP-PHASE TABLE!"%REFANT)
+
+    ti = tb.getcol('startValidTime')
+    bb = tb.getcol('basebandName')
+
+    Tsort = np.argsort(ti)
+    Torder = np.copy(ti[Tsort])
+    UT = 24.*(Torder/86400.-int(Torder[0]/86400.))
+
+# Arrange phases of the REFANT:
+    Gains = []
+    for i in range(len(ti)):
+      aux = list(tb.getcell('phasedAntennas', rownr = i))
+      try:
+        REFI = aux.index(REFANT)
+        aux2 = tb.getcell('phaseValues', rownr = i)
+        NIF = tb.getcell('numChannels', rownr = i)
+        Gains.append([aux2[NIF*REFI:NIF*(REFI+1)],aux2[NIF*(REFI+len(aux)):NIF*(REFI+len(aux)+1)]])
+      except:
+        printMsg("WARNING: ANTENNA %s NOT IN LIST OF PHASE ANTENNAS AT TIME %.1f.\n      THE RESULTING X-Y PHASES MAY BE *WRONG* AT THIS TIME!"%(REFANT,ti))
+        Gains.append([np.zeros(NIF),np.zeros(NIF)])
+
+    GainsA = np.array(Gains)
+
+
+# Filter phases for the SPW:
+    b1 = bb[Tsort] == BB
+
+    Nchan = np.shape(GainsA)[-1]
+    
+    IX = np.copy(GainsA[Tsort,:][b1,0,:])
+    IY = np.copy(GainsA[Tsort,:][b1,1,:])
+
+    tb.close()
+    Mask = np.where(np.logical_and(Torder[b1][1:]-Torder[b1][:-1]>DTMax,IX[:-1,0]!=0.0))
+
+# Plot TelCal phases for REFANT:
+    plfig = pl.figure()
+    plsub = plfig.add_subplot(111)
+    symb = ['or','og','ob','ok','om','oy','^r','^g','^b','^k','^m','^y']
+    XYDiff = []
+    AvXY = []
+    for ni in range(Nchan):
+      IntX = IX[1:,ni][Mask]
+      IntY = IY[1:,ni][Mask]
+      XYDiff.append(np.mod(IntX-IntY,2.*np.pi))
+
+# We take the time MEDIAN as the best XY-phase estimate for the REFANT:
+      AvXY.append(np.median(XYDiff[-1]))
+
+      plsub.plot(UT[b1][1:][Mask],XYDiff[-1]*180./np.pi,symb[ni],label='CH %i'%(ni+1))
+      printMsg('For antenna %s, Chan %i, found TelCal median X-Y phase of %.1f deg.'%(REFANT,ni+1,180./np.pi*AvXY[-1]))
+
+    pl.legend(numpoints=1)
+    plsub.set_xlabel('UT (h)')
+    plsub.set_ylabel('X-Y phase (deg.)')
+    plsub.set_xlim((0,24))
+    pl.title('TelCal X-Y phases for new REFANT: %s'%REFANT)
+    pl.savefig('%s.RE-REFERENCING.png'%CALAPPPHASE)
+
+
+# Correct XY=phase table:
+    printMsg("\n\n ADDING PHASES TO NEW XY0 TABLE\n\n")
+    os.system("rm -rf %s.REFANT_%s"%(XY0,REFANT))
+    os.system("cp -r %s %s.REFANT_%s"%(XY0,XY0,REFANT))
+
+    tb.open("%s.REFANT_%s"%(XY0,REFANT),nomodify=False)
+    spwi = tb.getcol('SPECTRAL_WINDOW_ID')
+    XYData = tb.getcol("CPARAM")
+    Mask = spwi==SPW
+    NNu = np.shape(XYData)[1]
+    NuPerChan = NNu/Nchan
+    for ni in range(Nchan):
+      XYData[0,ni*NuPerChan:(ni+1)*NuPerChan,Mask] *= np.exp(-1.j*(AvXY[ni]))
+
+    tb.putcol("CPARAM",XYData)
+    tb.close()
+
+# Plot new vs. old XY-phases:
+    Idx = np.where(Mask)[0][0]
+    tb.open(XY0)
+    XOrig = tb.getcol("CPARAM")[0,:,Idx]
+    YOrig = tb.getcol("CPARAM")[1,:,Idx]
+    tb.close()
+    plfig.clf()
+    plsub = plfig.add_subplot(111)
+    plsub.plot(np.angle(XOrig/YOrig)*180./np.pi,'or',label='Original')
+
+    tb.open("%s.REFANT_%s"%(XY0,REFANT))
+    XOrig = tb.getcol("CPARAM")[0,:,Idx]
+    YOrig = tb.getcol("CPARAM")[1,:,Idx]
+    tb.close()
+    plsub.plot(np.angle(XOrig/YOrig)*180./np.pi,'ob',label='Re-Referenced')
+
+    pl.legend(loc=0,numpoints=1)
+    plsub.set_ylim((-250,250))
+    pl.savefig('%s_RE-REF_XYPHASES.png'%XY0)
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Auxiliary function: derive job label from DiFXinput
@@ -204,19 +405,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       pass
     return label
 
-# Auxiliary function: print error and raise exception:
-  def printError(msg):
-    print msg,'\n' 
-    casalog.post('PolConvert: '+msg+'\n')
-    raise Exception(msg)
 
 
-# Auxiliary function: print message (terminal and log):
-  def printMsg(msg, doterm=True, dolog=True):
-    if doterm:
-      print msg
-    if dolog:
-      casalog.post('PolConvert: '+msg)
 
 
 # Auxiliary function: unwrap phases for time interpolation
@@ -252,6 +442,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        pl.plot(180./np.pi*phases[:,0])
        pl.show()
        raw_input('CHECK')
+
+
+
 
 # Auxiliary function: prepare the CALAPPPHASE, from a set of MSs:
   def makeCalAPP(mslist):
@@ -543,6 +736,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     antimes[ian] = auxarr
     
    nphtimes = [len(anti) for anti in antimes]
+
 
   else:
 
@@ -874,6 +1068,30 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   NSUM[0] = len(allants)
 
 
+
+########################################
+# Re-reference phases, if needed:
+  if len(APPrefant)>0:
+    if APPrefant not in allants:
+      printError("\n\nERROR: Antenna %s NOT FOUND in the table!"%APPrefant)
+
+# Get the first gain table in list that has the ".XY0" string:
+    XY0 = [gi for gi in range(ngain[0]) if '.XY0' in gains[0][gi]][0]
+
+# Re-reference and re-assign gain table:
+    ReReference(calAPP, gains[0][XY0], int(spw), APPrefant)
+    gains[0][XY0] = "%s.REFANT_%s"%(gains[0][XY0],APPrefant) 
+
+########################################
+
+
+
+
+
+
+
+
+
 ####################################
 # READ CALIBRATION TABLES:
   gaindata = []
@@ -909,7 +1127,16 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     tb.open(dterms[i])
     spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
     data = tb.getcol('CPARAM')[:,:,spmask]
-    antrow = np.array([allants.index(tabants[ai]) for ai in tb.getcol('ANTENNA1')[spmask]])
+
+    antrow = []
+    for ai in tb.getcol('ANTENNA1')[spmask]:
+      if tabants[ai] in allants: 
+        antrow.append(allants.index(tabants[ai]))
+      else:
+        antrow.append(-1)
+    antrow = np.array(antrow)
+
+
     trow = tb.getcol('TIME')[spmask]
     flagrow = tb.getcol('FLAG')[:,:,spmask]
     flagsf = np.logical_or(flagrow[0,:,:],flagrow[1,:,:])
@@ -918,6 +1145,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     tb.close()
     dtdata[i].append(np.zeros(nchan).astype(np.float64))
     dtdata[i][0][:] = dtfreqs
+   
     for ant in range(NSUM[i]):
       dtdata[i].append([])
       dd0 = data[0,:,:]
@@ -942,7 +1170,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        dtdata[i][-1].append(np.zeros((dims[0],1)).astype(np.float64))
        dtdata[i][-1].append(np.zeros((dims[0],1)).astype(np.float64))
        dtdata[i][-1].append(np.zeros((dims[0],1)).astype(np.bool))
-
+ 
    
   
    for j,gain in enumerate(gains[i]):
@@ -987,7 +1215,20 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           kind[-1].append(2)
         else:
           kind[-1].append(1)
-      antrow = np.array([allants.index(tabants[ai]) for ai in tb.getcol('ANTENNA1')[spmask]])[tsort]
+
+
+   #   antrow = np.array([allants.index(tabants[ai]) for ai in tb.getcol('ANTENNA1')[spmask]])[tsort]
+
+      antrow = []
+      for ai in tb.getcol('ANTENNA1')[spmask]:
+        if tabants[ai] in allants: 
+          antrow.append(allants.index(tabants[ai]))
+        else:
+          antrow.append(-1)
+      antrow = np.array(antrow)[tsort]
+
+
+
       flagrow = (tb.getcol('FLAG')[:,:,spmask])[:,:,tsort]
       if np.shape(data)[0] == 2:  # A DUAL-POL GAIN (i.e., mode 'G')
         flagsf = np.logical_or(flagrow[0,:],flagrow[1,:])
@@ -1007,30 +1248,39 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
         else:  # A GAIN IN MODE 'T'
           dd0 = data[0,:,:]
           dd1 = data[0,:,:]
-        dims = np.shape(dd0[:,antrow==ant])
+        antrowant = antrow==ant
+        dims = np.shape(dd0[:,antrowant])
         isFlagged=False
-        if dims[1]==0:
-          dims = (dims[0],1)
-          isFlagged=True
-          ant=refants[0]
-        gaindata[i][j][-1].append(np.zeros(np.shape(trow[antrow==ant])).astype(np.float64))
+   # All antennas MUST have the re-ref XY0 phase, even if not used 
+   # in the pol. calibration!
+        if ".XY0" in gain:
+          if dims[1]==0:
+            antrowant = antrow==refants[0]
+            dims = np.shape(dd0[:,antrowant])
+        else:
+          if dims[1]==0:
+            dims = (dims[0],1)
+            isFlagged=True
+            antrowant = antrow==refants[0]
+       #     ant=refants[0]
+        gaindata[i][j][-1].append(np.zeros(np.shape(trow[antrowant])).astype(np.float64))
         gaindata[i][j][-1].append(np.ones(dims).astype(np.float64))
         gaindata[i][j][-1].append(np.zeros(dims).astype(np.float64))
         gaindata[i][j][-1].append(np.ones(dims).astype(np.float64))
         gaindata[i][j][-1].append(np.zeros(dims).astype(np.float64))
         gaindata[i][j][-1].append(np.zeros(dims).astype(np.bool))
         if not isFlagged:
-         gaindata[i][j][-1][0][:] = trow[antrow==ant]
+         gaindata[i][j][-1][0][:] = trow[antrowant]
          if j==0:
-          gaindata[i][j][-1][1][:] = np.abs(dd0[:,antrow==ant])
+          gaindata[i][j][-1][1][:] = np.abs(dd0[:,antrowant])
          else: # CHANGE TO = 1.0 FOR TESTING:
-          gaindata[i][j][-1][1][:] = np.abs(dd0[:,antrow==ant])
-         gaindata[i][j][-1][2][:] = np.angle(dd0[:,antrow==ant])
+          gaindata[i][j][-1][1][:] = np.abs(dd0[:,antrowant])
+         gaindata[i][j][-1][2][:] = np.angle(dd0[:,antrowant])
          unwrap(gaindata[i][j][-1][2]) #, check=ant<3)
-         gaindata[i][j][-1][3][:] = np.abs(dd1[:,antrow==ant])
-         gaindata[i][j][-1][4][:] = np.angle(dd1[:,antrow==ant])
+         gaindata[i][j][-1][3][:] = np.abs(dd1[:,antrowant])
+         gaindata[i][j][-1][4][:] = np.angle(dd1[:,antrowant])
          unwrap(gaindata[i][j][-1][4]) #, check=ant<3)
-         gaindata[i][j][-1][5][:] = flags[:,antrow==ant]
+         gaindata[i][j][-1][5][:] = flags[:,antrowant]
 
    #     if 'Gxyamp' in gain:
    #       print 'X for %i: '%ant,gaindata[i][j][-1][1] 
@@ -1295,7 +1545,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     dropAnt = calAnts.index(plotAnt)
     rateAnts = calAnts[:dropAnt] + calAnts[dropAnt+1:]
     printMsg("\n Estimate antenna delays & rates\n")
-    PS.DoGFF(rateAnts)
+    PS.DoGFF(rateAnts,npix,True)
 
 
 # BP MODE:
@@ -1316,16 +1566,23 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
          if chran==0:
            p0 = []
            for ci in fitAnts:
-             p0 += [ 1.0, 0.0] 
+             if solveAmp:
+               p0 += [ 1.0, 0.0]
+             else:
+               p0 += [0.0]
          else:
            p0 = list(myfit.x)
 
          laux = [pli]
          sys.stdout.write('\r Apply rates and estimate cross-gains for IF #%i, channels %i to %i   '%(pli,BPChan[chran],BPChan[chran+1]-1))
          sys.stdout.flush()
-         myfit = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, BPChan[chran],BPChan[chran+1]),method=fitMethod)
+         myfit = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, BPChan[chran],BPChan[chran+1],solveAmp),method=fitMethod)
          for ci,calant in enumerate(fitAnts):
-            temp[ci][BPChan[chran]:BPChan[chran+1]+1]= (myfit.x[2*ci]*np.exp(1.j*myfit.x[2*ci+1]))
+           if solveAmp:
+             temp[ci][BPChan[chran]:BPChan[chran+1]+1]= (myfit.x[2*ci]*np.exp(1.j*myfit.x[2*ci+1]))
+           else:
+             temp[ci][BPChan[chran]:BPChan[chran+1]+1]= np.exp(1.j*myfit.x[ci])
+
 
        for ci,calant in enumerate(fitAnts):
          CGains['XYratio'][calant].append(list(1./np.abs(temp[ci])))
@@ -1336,20 +1593,26 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     else:
       p0 = []
       for ci in fitAnts:
-        p0 += [ 1.0, 0.0] 
+        if solveAmp:
+          p0 += [ 1.0, 0.0]
+        else:
+          p0 += [0.0]
       for ci in fitAnts:
         p0 += [0.0] 
       laux = list(plotIF)
-      print 'First Chi2: ', PS.GetChi2(np.array(p0),laux,fitAnts,0,MaxChan-1)
-      raw_input("HOLD")
-      myfit = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts,0,MaxChan-1),method=fitMethod)
+      print 'First Chi2: ', PS.GetChi2(np.array(p0),laux,fitAnts,0,MaxChan-1,solveAmp)
+      myfit = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts,0,MaxChan-1,solveAmp),method=fitMethod)
       RefFreq = AllFreqs[0][0]
       for ci,calant in enumerate(fitAnts):
   #     print '\nAntenna %i: Ampli: %.2f ; Phase: %.2f deg.; Delay: %.3e s\n'%(calant,myfit.x[2*ci], 180./np.pi*myfit.x[2*ci+1],myfit.x[2*len(fitAnts)+ci])
        CGains['XYadd'][calant] = []
        CGains['XYratio'][calant] = []
        for plii,pli in enumerate(plotIF):
-        CrossGain = (myfit.x[2*ci]*np.exp(1.j*myfit.x[2*ci+1]))*np.exp(1.j*(AllFreqs[plii]-RefFreq)*myfit.x[2*len(fitAnts)+ci])
+        if solveAmp:
+          CrossGain = (myfit.x[2*ci]*np.exp(1.j*myfit.x[2*ci+1]))*np.exp(1.j*(AllFreqs[plii]-RefFreq)*myfit.x[2*len(fitAnts)+ci])
+        else:
+          CrossGain = (np.exp(1.j*myfit.x[ci]))*np.exp(1.j*(AllFreqs[plii]-RefFreq)*myfit.x[len(fitAnts)+ci])
+
         CGains['XYadd'][calant].append(list(-180./np.pi*np.angle(CrossGain)))
         CGains['XYratio'][calant].append(list(1./np.abs(CrossGain)))
 
@@ -1793,9 +2056,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      pl.xlabel('IF NUMBER')
      dChan = max(plotIF)-min(plotIF) + 1
      pl.xlim((min(plotIF)-dChan*0.2,max(plotIF)+0.4*dChan))
-
-     fig.suptitle(jobLabel(DiFXinput)+' ANT: %i v %i'%(thisAnt,plotAnt))
-     fig.savefig('FRINGE.PLOTS/ALL_IFs_ANT_%i_%i.png'%(thisAnt,plotAnt))
+     pl.ylim((0.,1.1*np.max(CONVAMP[:,[1,3,5,7]])))
+     fig.suptitle(jobLabel(DiFXinput)+' ANT: %i'%thisAnt)
+     fig.savefig('FRINGE.PLOTS/ALL_IFs_ANT%i.png'%thisAnt)
 
      fig3 = pl.figure()
      sub1 = fig3.add_subplot(111)
@@ -1809,8 +2072,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      pl.xlim((min(CONVAMP[:,0])-1,max(CONVAMP[:,0])+1))
      pl.ylim((0.,np.max(CONVAMP[:,-1])*1.05))
 
-     fig3.suptitle(jobLabel(DiFXinput)+' ANT: %i v %i'%(thisAnt,plotAnt))
-     fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS_ANT_%i_%i.png'%(thisAnt,plotAnt))
+     fig3.suptitle(jobLabel(DiFXinput)+' ANT: %i'%thisAnt)
+     fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS_ANT%i.png'%thisAnt)
 
 
 
@@ -1824,8 +2087,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 
-  printMsg('Please, check the PolConvert.log file for special messages.')
+  printMsg('Please, check the PolConvert.log file for special messages.',dolog=False)
 
-  return CGains
+ # return CGains
 
 

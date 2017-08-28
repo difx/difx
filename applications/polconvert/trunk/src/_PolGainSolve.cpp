@@ -94,7 +94,7 @@ PyMODINIT_FUNC init_PolGainSolve(void)
 
    int NIF = 0;
    int NBas;
-
+   int npix = 0;
    double **Frequencies, *Rates, *Delays00, *Delays11;
    double Chi2Old = 0.0;
    double TAvg = 1.0;
@@ -832,6 +832,7 @@ int *antFit;
 double *T0 = new double[NBas];  
 double *T1 = new double[NBas];
 bool isFirst = true;
+int applyRate;
 
 cplx64f *aroundPeak00 = new cplx64f[3];
 cplx64f *aroundPeak11 = new cplx64f[3];
@@ -841,7 +842,7 @@ cplx64f *aroundPeak11 = new cplx64f[3];
 
 PyObject *antList;
 
-if (!PyArg_ParseTuple(args, "O", &antList)){
+if (!PyArg_ParseTuple(args, "Oii", &antList,&npix, &applyRate)){
      sprintf(message,"Failed DoGFF! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
@@ -850,6 +851,7 @@ if (!PyArg_ParseTuple(args, "O", &antList)){
 };
 
 
+if (applyRate==0){printf("\n\n   Residual rate will NOT be estimated\n\n");};
 NantFit = (int) PyList_Size(antList);
 antFit = new int[NantFit];
 
@@ -886,8 +888,6 @@ cplx64f *BufferVis00 = (cplx64f *) malloc(TotDim*sizeof(cplx64f));
 cplx64f *BufferVis11 = (cplx64f *) malloc(TotDim*sizeof(cplx64f));
 
 
-
-
 for(j=0; j<NBas; j++){
 
 
@@ -921,9 +921,12 @@ for (i=0; i<NIF; i++){
       if (BNum==j){
         if(isFirst){
           T0[j] = Times[i][k];
+          T1[j] = Times[i][k];
           isFirst = false;
      //     printf("DOING IF %i (%i CHANS) FOR BASELINE %i (ANTS: %i-%i)\n",i,Nchan[i],j,a1,a2);
         };
+        if (T0[j] > Times[i][k]){T0[j] = Times[i][k];};
+
         memcpy(&BufferVis00[NcurrVis*Nchan[i]],&RR[i][k][0],Nchan[i]*sizeof(cplx64f));
         memcpy(&BufferVis11[NcurrVis*Nchan[i]],&LL[i][k][0],Nchan[i]*sizeof(cplx64f));
 
@@ -933,7 +936,9 @@ for (i=0; i<NIF; i++){
 //    printf("LL: %i - %i - %.5e  %.5e\n",150,25,NcurrVis, 25, LL[i][k][25], BufferVis11[NcurrVis*Nchan[i] + 25]);
 
         NcurrVis += 1;
-        T1[j] = Times[i][k];
+     //   T1[j] = Times[i][k];
+        if (T1[j] < Times[i][k]){T1[j] = Times[i][k];};
+
   //      printf("COPIED VISIB. %i\n",k);
       };
     };
@@ -961,16 +966,24 @@ for (i=0; i<NIF; i++){
   double AbsP;
   int nu00[3],ti00[3], nu11[3],ti11[3], row;
 
+  int Chi, Chf, ti, tf;
 
+  if (Nchan[i]>npix){Chi = npix/2; Chf = Nchan[i]-npix/2;}
+              else  {Chi = Nchan[i]/2; Chf = Nchan[i]/2;};
+
+
+  if (NcurrVis>npix){ti = npix/2; tf = NcurrVis-npix/2;}
+              else  {ti = NcurrVis/2; tf = NcurrVis/2;};
 
   nu00[1] = 0; ti00[1] = 0; nu11[1] = 0; ti11[1] = 0;
 
   if (NcurrVis >1){
-  for (l=0; l<NcurrVis; l++){
+
+// First Quadrant:
+  for (l=0; l<ti; l++){
     row = l*Nchan[i];
-    for (k=0; k<Nchan[i];k++){
+    for (k=0; k<Chi;k++){
       AbsP = std::abs(BufferVis00[row + k]);
-//      printf("%i - %i - %.5e\n",l,k,AbsP);
       if (AbsP>Peak00){
          Peak00 = AbsP;
          nu00[1] = k; ti00[1] = l; 
@@ -982,6 +995,59 @@ for (i=0; i<NIF; i++){
       };
     };
   };
+
+
+// Second Quadrant:
+  for (l=tf; l<NcurrVis; l++){
+    row = l*Nchan[i];
+    for (k=0; k<Chi;k++){
+      AbsP = std::abs(BufferVis00[row + k]);
+      if (AbsP>Peak00){
+         Peak00 = AbsP;
+         nu00[1] = k; ti00[1] = l; 
+      };
+      AbsP = std::abs(BufferVis11[row + k]);
+      if (AbsP>Peak11){
+         Peak11 = AbsP;
+         nu11[1] = k; ti11[1] = l; 
+      };
+    };
+  };
+
+// Third Quadrant:
+  for (l=0; l<ti; l++){
+    row = l*Nchan[i];
+    for (k=Chf; k<Nchan[i];k++){
+      AbsP = std::abs(BufferVis00[row + k]);
+      if (AbsP>Peak00){
+         Peak00 = AbsP;
+         nu00[1] = k; ti00[1] = l; 
+      };
+      AbsP = std::abs(BufferVis11[row + k]);
+      if (AbsP>Peak11){
+         Peak11 = AbsP;
+         nu11[1] = k; ti11[1] = l; 
+      };
+    };
+  };
+
+// Fourth Quadrant:
+  for (l=tf; l<NcurrVis; l++){
+    row = l*Nchan[i];
+    for (k=Chf; k<Nchan[i];k++){
+      AbsP = std::abs(BufferVis00[row + k]);
+      if (AbsP>Peak00){
+         Peak00 = AbsP;
+         nu00[1] = k; ti00[1] = l; 
+      };
+      AbsP = std::abs(BufferVis11[row + k]);
+      if (AbsP>Peak11){
+         Peak11 = AbsP;
+         nu11[1] = k; ti11[1] = l; 
+      };
+    };
+  };
+
 
 
 /////////
@@ -1081,7 +1147,7 @@ if (ti11[1]==NcurrVis-1){ti11[2]=0;} else{ti11[2]=ti11[1]+1;};
 /////////////////
 // Globalize the rate and delay solutions:
 
-printf("NANTFIT: %i\n",NantFit);
+printf("# of free antenna gains (per pol.): %i\n",NantFit);
 
 double *Hessian = new double[NantFit*NantFit];
 double *RateResVec = new double[NantFit];
@@ -1100,8 +1166,12 @@ for (i=0;i<NantFit;i++){
   DelResVec11[i] = 0.0;
 };
 
+
+if (NantFit>1){
+
 for (i=0; i<NIF; i++){
   for (a1=0; a1<NCalAnt; a1++){
+    
     for (a2=a1+1;a2<NCalAnt;a2++){
 
        af1 = -1; af2 = -1;
@@ -1115,38 +1185,79 @@ for (i=0; i<NIF; i++){
       if (BNum>0){
 
        if (af1>=0){
-         RateResVec[af1] += Weights[i][j]*(BLRates00[i][BNum] + BLRates11[i][BNum])/2.;
-         DelResVec00[af1] += Weights[i][j]*BLDelays00[i][BNum];
-         DelResVec11[af1] += Weights[i][j]*BLDelays11[i][BNum];
-         Hessian[af1*NantFit + af1] += Weights[i][j];
+         RateResVec[af1] += Weights[i][BNum]*(BLRates00[i][BNum] + BLRates11[i][BNum])/2.;
+         DelResVec00[af1] += Weights[i][BNum]*BLDelays00[i][BNum];
+         DelResVec11[af1] += Weights[i][BNum]*BLDelays11[i][BNum];
+         Hessian[af1*NantFit + af1] += Weights[i][BNum];
        };
        if (af2>=0){
-         RateResVec[af2] += Weights[i][j]*(-BLRates00[i][BNum] - BLRates11[i][BNum])/2.;
-         DelResVec00[af2] -= Weights[i][j]*BLDelays00[i][BNum];
-         DelResVec11[af2] -= Weights[i][j]*BLDelays11[i][BNum];
-         Hessian[af2*NantFit + af2] += Weights[i][j];
+         RateResVec[af2] += Weights[i][BNum]*(-BLRates00[i][BNum] - BLRates11[i][BNum])/2.;
+         DelResVec00[af2] -= Weights[i][BNum]*BLDelays00[i][BNum];
+         DelResVec11[af2] -= Weights[i][BNum]*BLDelays11[i][BNum];
+         Hessian[af2*NantFit + af2] += Weights[i][BNum];
        };
        if (af1>=0 && af2>=0){
-         Hessian[af1*NantFit + af2] += -Weights[i][j];
-         Hessian[af2*NantFit + af1] += -Weights[i][j];
+         Hessian[af1*NantFit + af2] += -Weights[i][BNum];
+         Hessian[af2*NantFit + af1] += -Weights[i][BNum];
        };
       };
     };
   };
 };
 
-printf("HESSIAN:\n");
+
+} else {
+
+  BNum = BasNum[CalAnts[0]-1][CalAnts[1]-1];
+
+  for (i=0; i<NIF; i++){
+    Hessian[0] += Weights[i][BNum];
+    RateResVec[0] += Weights[i][BNum]*(BLRates00[i][BNum] + BLRates11[i][BNum])/2.;
+    DelResVec00[0] += Weights[i][BNum]*BLDelays00[i][BNum];
+    DelResVec11[0] += Weights[i][BNum]*BLDelays11[i][BNum];
+  };
+//  Rates[0] = 0.0; //RateResVec[0]/((double) NIF);
+//  Delays00[0] = 0.0; // DelResVec00[0]/((double) NIF);
+//  Delays11[0] = 0.0; // DelResVec11[0]/((double) NIF);
+
+  for (i=0; i<NCalAnt; i++){
+    Rates[i] = 0.0;
+    Delays00[i] = 0.0;
+    Delays11[i] = 0.0;
+
+    if(CalAnts[i]==antFit[0]){
+      if (applyRate>0){Rates[i] = -RateResVec[0]/((double) NIF);};
+      Delays00[i] = -DelResVec00[0]/((double) NIF);
+      Delays11[i] = -DelResVec11[0]/((double) NIF);
+    };
+  };
+
+};
+
+
+printf("\n\nHessian Globalization Matrix:\n\n");
 for (i=0; i<NantFit; i++){
+  printf("  ");
   for (j=0; j<NantFit; j++){
      printf("%.2e ",Hessian[i*NantFit+j]);
   };
 printf("\n");
 };
+printf("\n");
 
-printf("RATES:\n");
-for (i=0; i<NBas; i++){
-     printf("%.2e %.2e   ",BLRates00[i]);
-};
+//printf("Baseline rates (Hz):\n");
+//for (i=0; i<NBas; i++){
+//     printf("R: %.2e L: %.2e | ",BLRates00[i][0],BLRates11[i][0]);
+//};
+//printf("\n\n");
+
+//printf("ANTENNA RATES:\n");
+//for (i=0; i<NantFit; i++){
+//     printf("%.2e | ",Rates[i]);
+//};
+//printf("\n\n");
+
+
 
 // The Hessian's inverse can be reused for rates, delays and phases!
 
@@ -1162,6 +1273,10 @@ gsl_linalg_LU_invert (&m.matrix, perm, &inv.matrix);
 
 
 // Derive the rates as CovMat*RateVec and delays as CovMat*DelVec:
+
+if (NantFit>1){
+
+
 for (i=0; i<NCalAnt; i++){
   Rates[i] = 0.0;
   Delays00[i] = 0.0;
@@ -1172,13 +1287,22 @@ for (i=0; i<NCalAnt; i++){
   };
   if (af1 >=0){
     for (j=0; j<NantFit; j++){
-      Rates[i] -= RateResVec[j]*gsl_matrix_get(&inv.matrix,af1,j);
+      if(applyRate>0){Rates[i] -= RateResVec[j]*gsl_matrix_get(&inv.matrix,af1,j);};
       Delays00[i] -= DelResVec00[j]*gsl_matrix_get(&inv.matrix,af1,j);
       Delays11[i] -= DelResVec11[j]*gsl_matrix_get(&inv.matrix,af1,j);
     };
   };
+
+};
+
+};
+
+for (i=0; i<NCalAnt; i++){
+
   printf("Antenna %i -> Rate: %.3e Hz; RR Delay: %.3e s; LL Delay: %.3e s\n",CalAnts[i],Rates[i],Delays00[i],Delays11[i]);
 };
+
+
 
 double MaxRateDev = -1.0;
 double MaxDelDev = -1.0;
@@ -1208,10 +1332,12 @@ for (i=0; i<NIF; i++){
   };
 };
 
-printf("\n\nMax. fringe deviation (rate): Bas. %i-%i at IF %i (%.1e deg. across window)\n",CalAnts[BadA1R],CalAnts[BadA2R],IFNum[BadIFR],fabs(MaxRateDev*(T1[BadBR]-T0[BadBR])*180.));
-printf("Max. fringe deviation (delay): Bas. %i-%i at IF %i (%.1e deg. across window)\n\n",CalAnts[BadA1],CalAnts[BadA2],IFNum[BadIF],fabs(MaxDelDev*(Frequencies[BadIF][Nchan[BadIF]-1]-Frequencies[BadIF][0])*180.));
+//if (NantFit>1){
 
+  printf("\n\nMax. fringe deviation (rate): Bas. %i-%i at IF %i (%.1e deg. across window)\n",CalAnts[BadA1R],CalAnts[BadA2R],IFNum[BadIFR],fabs(MaxRateDev*(T1[BadBR]-T0[BadBR])*180.));
+  printf("Max. fringe deviation (delay): Bas. %i-%i at IF %i (%.1e deg. across window)\n\n",CalAnts[BadA1],CalAnts[BadA2],IFNum[BadIF],fabs(MaxDelDev*(Frequencies[BadIF][Nchan[BadIF]-1]-Frequencies[BadIF][0])*180.));
 
+//};
 
 
 /////////////////
@@ -1250,7 +1376,7 @@ return ret;
 static PyObject *GetChi2(PyObject *self, PyObject *args) { 
 
 int NIFComp, Npar, NantFit;
-int Ch0, Ch1;
+int Ch0, Ch1,solveAmp;
 int i,j,k;
 double *CrossG;
 int *doIF, *antFit;
@@ -1266,7 +1392,7 @@ double Drate1, Drate2;
 PyObject *pars, *IFlist, *antList;
 
 
-if (!PyArg_ParseTuple(args, "OOOii", &pars, &IFlist, &antList, &Ch0, &Ch1)){
+if (!PyArg_ParseTuple(args, "OOOiii", &pars, &IFlist, &antList, &Ch0, &Ch1, &solveAmp)){
      sprintf(message,"Failed GetChi2! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
@@ -1342,7 +1468,7 @@ int is1, is2;
 
 cplx64f G1, G2, Rho1, Rho2; //, auxC00, auxC01,auxC10,auxC11;
 cplx64f Error;
-cplx64f oneC, G1nu, G2nu; 
+cplx64f oneC, G1nu, G2nu, RateFactor; 
 
 oneC= cplx64f(1.0,0.0);
 
@@ -1392,9 +1518,12 @@ for (i=0; i<NIFComp; i++){
     };
 
     BNum = BasNum[a1-1][a2-1];
+    if(ac1>=0){Drate1 = TWOPI*Rates[ac1]*(Times[currIF][k]-T0);} else {Drate1=0.0;};
+    if(ac2>=0){Drate2 = TWOPI*Rates[ac2]*(Times[currIF][k]-T0);} else {Drate2=0.0;};
 
-    if(ac1>=0){Drate1 = TWOPI*Rates[ac1-1]*(Times[currIF][k]-T0);} else {Drate1=0.0;};
-    if(ac2>=0){Drate2 = TWOPI*Rates[ac2-1]*(Times[currIF][k]-T0);} else {Drate2=0.0;};
+    RateFactor = std::polar(1.0,Drate1-Drate2);
+
+//    printf("%i %i %.2e %.2e \n",ac1,ac2,Drate1,Drate2);
 
     af1 = -1; af2 = -1;
     for(j=0; j<NantFit; j++) {
@@ -1416,16 +1545,29 @@ for (i=0; i<NIFComp; i++){
     };
 
 
-// The crossGains at the ref. channel:      
-    if (af1 >= 0){
-      G1 = std::polar(CrossG[(af1)*2], CrossG[(af1)*2+1] + Drate1);
-    } else { G1 = std::polar(1.0, Drate1);};
+// The crossGains at the ref. channel: 
+     
+    if (solveAmp==0){
 
-    if (af2 >= 0){
-      G2 = std::polar(CrossG[(af2)*2], -CrossG[(af2)*2+1] - Drate2);
-    } else { G2 = std::polar(1.0, -Drate2);};
+      if (af1 >= 0){
+        G1 = std::polar(1.0, CrossG[af1]); // + Drate1);
+      } else { G1 = std::polar(1.0, 0.0);}; //Drate1);};
 
+      if (af2 >= 0){
+        G2 = std::polar(1.0, -CrossG[af2]); // - Drate2);
+      } else { G2 = std::polar(1.0, 0.0);}; //-Drate2);};
 
+    } else {
+
+      if (af1 >= 0){
+        G1 = std::polar(CrossG[(af1)*2], CrossG[(af1)*2+1]); // + Drate1);
+      } else { G1 = std::polar(1.0, 0.0);}; //Drate1);};
+
+      if (af2 >= 0){
+        G2 = std::polar(CrossG[(af2)*2], -CrossG[(af2)*2+1]); // - Drate2);
+      } else { G2 = std::polar(1.0, 0.0);}; //-Drate2);};
+
+    };
 
     if(BNum>=0){
 
@@ -1438,10 +1580,12 @@ for (i=0; i<NIFComp; i++){
 // Add the multi-band delays:
      if (SolAlgor == 0){
       if (af1 >= 0){
-        MBD1 = CrossG[NantFit*2+af1]*(Frequencies[currIF][j]-RefNu);
+        if(solveAmp==0){MBD1 = CrossG[NantFit+af1]*(Frequencies[currIF][j]-RefNu);} else {
+          MBD1 = CrossG[NantFit*2+af1]*(Frequencies[currIF][j]-RefNu);};
       } else {MBD1 = 0.0;};
       if (af2 >= 0){
-        MBD2 = CrossG[NantFit*2+af2]*(Frequencies[currIF][j]-RefNu);
+        if(solveAmp==0){MBD2 = CrossG[NantFit+af2]*(Frequencies[currIF][j]-RefNu);} else {
+        MBD2 = CrossG[NantFit*2+af2]*(Frequencies[currIF][j]-RefNu);};
       } else {MBD2 = 0.0;};
        G1nu = G1*(std::polar(1.0,MBD1));
        G2nu = G2*(std::polar(1.0,-MBD2));
@@ -1455,31 +1599,31 @@ for (i=0; i<NIFComp; i++){
 // USE MINIMIZATION OF THE CROSS-HAND CORRELATIONS:
      if(AddCrossHand){
        if (is1 && is2){
-         auxC01[BNum] += (RL[currIF][k][j] + Rho1*LL[currIF][k][j] + Rho2*RR[currIF][k][j] + Rho1*Rho2*LR[currIF][k][j])/PA1[currIF][k]/PA2[currIF][k];
-         auxC10[BNum] += (LR[currIF][k][j] + Rho1*RR[currIF][k][j] + Rho2*LL[currIF][k][j] + Rho1*Rho2*RL[currIF][k][j])*PA1[currIF][k]*PA2[currIF][k];
+         auxC01[BNum] += (RL[currIF][k][j] + Rho1*LL[currIF][k][j] + Rho2*RR[currIF][k][j] + Rho1*Rho2*LR[currIF][k][j])/PA1[currIF][k]/PA2[currIF][k]*RateFactor;
+         auxC10[BNum] += (LR[currIF][k][j] + Rho1*RR[currIF][k][j] + Rho2*LL[currIF][k][j] + Rho1*Rho2*RL[currIF][k][j])*PA1[currIF][k]*PA2[currIF][k]*RateFactor;
        } else if (is1){
-         auxC01[BNum] += (RL[currIF][k][j] + Rho1*LL[currIF][k][j])/PA1[currIF][k]*G2nu;
-         auxC10[BNum] += (LR[currIF][k][j] + Rho1*RR[currIF][k][j])*PA1[currIF][k];
+         auxC01[BNum] += (RL[currIF][k][j] + Rho1*LL[currIF][k][j])/PA1[currIF][k]*G2nu*RateFactor;
+         auxC10[BNum] += (LR[currIF][k][j] + Rho1*RR[currIF][k][j])*PA1[currIF][k]*RateFactor;
        } else if (is2){
-         auxC01[BNum] += (RL[currIF][k][j] + Rho2*RR[currIF][k][j])/PA2[currIF][k];
-         auxC10[BNum] += (LR[currIF][k][j] + Rho2*LL[currIF][k][j])*PA2[currIF][k]*G1nu;
+         auxC01[BNum] += (RL[currIF][k][j] + Rho2*RR[currIF][k][j])/PA2[currIF][k]*RateFactor;
+         auxC10[BNum] += (LR[currIF][k][j] + Rho2*LL[currIF][k][j])*PA2[currIF][k]*G1nu*RateFactor;
        };
      };
 
 // USE GLOBAL CROSS-POLARIZATION FRINGE FITTING:
      if(AddParHand){
        if (is1 && is2){
-         auxC00[BNum] += (RR[currIF][k][j] + Rho1*LR[currIF][k][j] + Rho2*RL[currIF][k][j] + Rho1*Rho2*LL[currIF][k][j])/PA1[currIF][k]*PA2[currIF][k];
-         auxC11[BNum] += (LL[currIF][k][j] + Rho1*RL[currIF][k][j] + Rho2*LR[currIF][k][j] + Rho1*Rho2*RR[currIF][k][j])*PA1[currIF][k]/PA2[currIF][k];
+         auxC00[BNum] += (RR[currIF][k][j] + Rho1*LR[currIF][k][j] + Rho2*RL[currIF][k][j] + Rho1*Rho2*LL[currIF][k][j])/PA1[currIF][k]*PA2[currIF][k]*RateFactor;
+         auxC11[BNum] += (LL[currIF][k][j] + Rho1*RL[currIF][k][j] + Rho2*LR[currIF][k][j] + Rho1*Rho2*RR[currIF][k][j])*PA1[currIF][k]/PA2[currIF][k]*RateFactor;
        } else if (is1){
-         auxC00[BNum] += (RR[currIF][k][j] + Rho1*LR[currIF][k][j])/PA1[currIF][k];
-         auxC11[BNum] += (LL[currIF][k][j] + Rho1*RL[currIF][k][j])*PA1[currIF][k]*G2nu;
+         auxC00[BNum] += (RR[currIF][k][j] + Rho1*LR[currIF][k][j])/PA1[currIF][k]*RateFactor;
+         auxC11[BNum] += (LL[currIF][k][j] + Rho1*RL[currIF][k][j])*PA1[currIF][k]*G2nu*RateFactor;
        } else if (is2){
-         auxC00[BNum] += (RR[currIF][k][j] + Rho2*RL[currIF][k][j])*PA2[currIF][k];
-         auxC11[BNum] += (LL[currIF][k][j] + Rho2*LR[currIF][k][j])/PA2[currIF][k]*G1nu;
+         auxC00[BNum] += (RR[currIF][k][j] + Rho2*RL[currIF][k][j])*PA2[currIF][k]*RateFactor;
+         auxC11[BNum] += (LL[currIF][k][j] + Rho2*LR[currIF][k][j])/PA2[currIF][k]*G1nu*RateFactor;
        } else {
-         auxC00[BNum] += RR[currIF][k][j];
-         auxC11[BNum] += LL[currIF][k][j]*G2nu*G1nu;
+         auxC00[BNum] += RR[currIF][k][j]*RateFactor;
+         auxC11[BNum] += LL[currIF][k][j]*G2nu*G1nu*RateFactor;
        };
      };
 

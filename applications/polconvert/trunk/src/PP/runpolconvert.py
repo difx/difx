@@ -51,6 +51,24 @@ try:
 except Exception, ex:
     raise ex
 
+# option to delete specific gain tables from the list
+try:
+    gdblst = ['bandpass', 'ampgains', 'phsgains', 'xyrelphs', 'gxyampli']
+    if type(gainDel) == str:
+        for g in gainDel.split(','):
+            print 'Deleting ' + gdblst[int(g)]
+            del calgains[3+int(g)]
+        print 'Revised calgains list is:'
+        for c in calgains: print '    ', c
+    else:
+        gainDel = ''
+        print 'Overriding gainDel -- turning it off'
+except Exception, ex:
+    print type(gainDel)
+    print 'gainDel not str?', str(ex)
+    gainDel = ''
+    print 'gain deletion turned off'
+
 # option to turn off the amplitude calibration logic
 try:
     if type(ampNorm) == bool:
@@ -171,10 +189,12 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     # mentioned here as comments for clarity.  CASA supplies
     # defaults from the task xml file.
     try:
+        print 'Calling PolConvert from runpolconvert'
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
             #DiFXcalc,
             linAntIdx=[1], Range=Range, ALMAant=aantpath,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
+            #APPrefant,
             gains=[gains], interpolation=[interpolation],
             dterms=[dterm], amp_norm=amp_norm,
             XYadd=XYadd,
@@ -183,7 +203,9 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
             plotIF=plotIF, doIF=doIF, plotRange=timeRange,
             plotAnt=plotAnt,
             #excludedAnts, doSolve, solint
-            doTest=doTest, npix=npix)
+            doTest=doTest, npix=npix,
+            solveAmp=False
+            )
     except Exception, ex:
         print 'Polconvert Exception'
         if (os.path.exists(DiFXoutput)):
@@ -213,6 +235,7 @@ for job in djobs:
     SWIN = ('%s/%s_%s.difx' % (DiFXout,expName,job))
     SAVE = ('%s/%s_%s.save' % (DiFXout,expName,job))
 
+    print '\nProceeding with job ' + job + '\n'
     runPolConvert(label, band3=band3, band6Lo=band6Lo, band6Hi=band6Hi,
         DiFXinput=DiFXinput, DiFXoutput=SWIN, DiFXsave=SAVE,
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
