@@ -2057,8 +2057,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      dChan = max(plotIF)-min(plotIF) + 1
      pl.xlim((min(plotIF)-dChan*0.2,max(plotIF)+0.4*dChan))
      pl.ylim((0.,1.1*np.max(CONVAMP[:,[1,3,5,7]])))
-     fig.suptitle(jobLabel(DiFXinput)+' ANT: %i'%thisAnt)
-     fig.savefig('FRINGE.PLOTS/ALL_IFs_ANT%i.png'%thisAnt)
+     fig.suptitle(jobLabel(DiFXinput)+' ANT: %i v %i'%(thisAnt,plotAnt))
+     fig.savefig('FRINGE.PLOTS/ALL_IFs_ANT_%i_%i.png'%(thisAnt,plotAnt))
 
      fig3 = pl.figure()
      sub1 = fig3.add_subplot(111)
@@ -2072,8 +2072,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      pl.xlim((min(CONVAMP[:,0])-1,max(CONVAMP[:,0])+1))
      pl.ylim((0.,np.max(CONVAMP[:,-1])*1.05))
 
-     fig3.suptitle(jobLabel(DiFXinput)+' ANT: %i'%thisAnt)
-     fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS_ANT%i.png'%thisAnt)
+     fig3.suptitle(jobLabel(DiFXinput)+' ANT: %i v %i'%(thisAnt,plotAnt))
+     fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS_ANT_%i_%i.png'%(thisAnt,plotAnt))
 
 
 
