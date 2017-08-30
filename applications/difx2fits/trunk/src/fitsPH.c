@@ -1542,7 +1542,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						dumpTime = (accumStart + accumEnd)*0.5;
 						dumpTimeInt = nAccum*D->config[configId].tInt/86400;
 						/* Divide pcals through by integration time in seconds */
-						for(k=0; k < nPol; ++k)
+						for(k = 0; k < nPol; ++k)
 						{
 							for(t = 0; t < nTone*nBand; ++t)
 							{
@@ -1662,6 +1662,19 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 						for(k = 0; k < nPol; ++k)
 						{
+							int l;
+
+							for(l = 0; l < nTone*nBand; ++l)
+							{
+								if(pulseCalReAcc[k][l] == 0.0 && pulseCalImAcc[k][l] == 0.0)
+								{
+									freqs[k][l] = nan.d;
+									pulseCalReAcc[k][l] = nan.f;
+									pulseCalImAcc[k][l] = nan.f;
+									pulseCalRate[k][l] = nan.f;
+								}
+							}
+
 							FITS_WRITE_ARRAY(stateCount[k], p_fitsbuf, 4*nBand);
 							if(nTone > 0)
 							{

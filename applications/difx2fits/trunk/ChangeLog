@@ -16,6 +16,7 @@ Version 3.5.0
   (autocorrelations included for bins > 0)
 * Check polarizations for legality before proceeding (and segfaulting)
 * Fix for cablecal files when reported measurement duration is zero
+* In pulse cal table, set unused entries to NaNs to confirm to IDI-FITS standard
 * Version for DiFX-2.5, May 16, 2017
 
 Version 3.4.0
