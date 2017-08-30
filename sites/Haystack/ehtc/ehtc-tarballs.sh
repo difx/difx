@@ -631,12 +631,12 @@ hops|hmix|haxp)
     $dry && { echo dry mode not implemented for this case ; exit 4 ; }
     cd $workdir/$expn
     [ -s "$ffconf" ] || { echo nothing in $expn/$ffconf ; exit 4; }
-    set -- `ls */$target*`
+    set -- `ls */${targ/./*}*`
     rm -f ff-$label.log
     [ $# -ge 1 ] || { echo no root files to correlate with ; exit 4; }
     echo Launching fourfits on $# scans in parallel...be patient.
     echo Fourfitting version is flab, "'$flab'".
-    for r in */$target* ; do fourfit -c $ffconf $r 2>ff-$label.log & done
+    for r in */${targ/./*}* ; do fourfit -c $ffconf $r 2>ff-$label.log & done
     wait
     echo Making alist
     alist -v6 -o $exp-$vers-$subv-$label.alist * \
