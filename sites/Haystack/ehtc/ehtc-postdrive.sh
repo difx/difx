@@ -9,6 +9,9 @@
 # most of the time:
 #  $ehtc/ehtc-postdrive.sh echo $jobs
 #  $ehtc/ehtc-postdrive.sh eval $jobs
+# and
+#  $ehtc/ehtc-postdrive.sh echo haxp $jobs
+#  $ehtc/ehtc-postdrive.sh eval haxp $jobs
 #
 echo=${1-'help'}
 ffit=true
@@ -21,8 +24,11 @@ shift
 [ $# -ge 1 ] || { echo no jobs, no work, not quite.... ; exit 0 ; }
 
 # only one of these, please
-[ "$1" = true  ] && ffit=true && echo '  [WITH FOURFIT] ' && shift
-[ "$1" = false ] && ffit=false && echo '  [NO FOURFIT] ' && shift
+echo ''
+[ "$1" = true  ] && ffit=true  && echo '  [WITH FOURFIT] ' && shift
+[ "$1" = false ] && ffit=false && echo '  [NO FOURFIT] '   && shift
+[ "$1" = haxp  ] && ffit=haxp  && echo '  [NO ALMA D2M]  ' && shift
+[ $ffit = haxp ] && ffit=false && haxp=true || haxp=false
 
 [ -z "$exp"   ] && { echo exp   must be defined ; exit 1 ; }
 [ -z "$vers"  ] && { echo vers  must be defined ; exit 1 ; }
@@ -33,7 +39,8 @@ shift
 [ -z "$targ"  ] && { echo targ  must be defined ; exit 1 ; }
 [ -z "$dout"  ] && { echo dout  must be defined ; exit 1 ; }
 [ -z "$proj"  ] && { echo proj  must be defined ; exit 1 ; }
-[ "$ffit" = 'true' -o "$ffit" = 'false' ] || { echo prog error ; exit 1; }
+[ "$ffit" = 'true' -o "$ffit" = 'false' ] || { echo prog error ffit; exit 1; }
+[ "$haxp" = 'true' -o "$haxp" = 'false' ] || { echo prog error haxp; exit 1; }
 
 jobs="$@"
 
@@ -43,6 +50,31 @@ echo proj is $proj
 echo jobs is $jobs
 echo ''
 
+# do the haxp thing which is similar to the swin case common to
+# both pathways above...however we need some additional setup to
+# work in the tarball directory rather than the v$vers dir
+$haxp && {
+    cd ../v${vers}tb
+    $echo pwd
+    [ -h $exp.codes ] || [ $echo = echo ] ||
+        ln -s ../v${vers}p${iter}/$exp.codes .
+    $echo ls -l $exp.codes
+    newjobs=''
+    for j in $jobs ; do newjobs="$newjobs ../v${vers}/$j" ; done
+    $echo \
+    $ehtc/ehtc-tarballs.sh tar=haxp \
+        exp=$exp vers=$vers subv=$subv \
+        expn=$expn nuke=true over=true \
+        save=true label=$label \
+        dest=./tarballs target=$targ jobs $newjobs
+    cd ../v${vers}p${iter}
+    $echo pwd
+    exit 0
+}
+
+# do the project-based dance for the routine stuff
+#   na:   post-corr, fits, hops, 2x 4fit
+#   alma: post-alma, post-corr, 2x 4fit
 [ $proj = na ] && {
     # non-ALMA case
     $echo \

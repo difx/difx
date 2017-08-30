@@ -18,7 +18,7 @@ The main options are (with defaults in parentheses)
 
 and one of the simple tar targets,
 
-    tar=dxin|swin|fits|hops|hmix|pcin|pcqk|4fit
+    tar=dxin|swin|fits|hops|hmix|haxp|pcin|pcqk|4fit
 
 which specify which tarballs are to be made:
 
@@ -26,7 +26,8 @@ which specify which tarballs are to be made:
     swin    DiFX (SWIN) output files
     fits    difx2fits outputs
     hops    difx2mark4 outputs following polconvert
-    hmix    difx2mark4 outputs prior to polconvert
+    hmix    difx2mark4 outputs prior to polconvert (mixed pols)
+    haxp    difx2mark4 outputs alma-only mixed pols 
     pcin    polconvert inputs (if ALMA)
     pcqk    polconvert quick-look outputs (if ALMA)
     4fit    correlator fourfit output (pc'd; type 200s + alist)
@@ -368,9 +369,10 @@ fits)
     $d2ft || [ -d $fits ] || { echo no FITS output dir $fits; exit 3; }
     $d2ft && work=fits
     ;;
-hops|hmix)
-    $verb && [ $tar = hops ] && echo making HOPS'(post-pc)' in `pwd`/$expn
-    $verb && [ $tar = hmix ] && echo making HOPS'(pre-pc)'  in `pwd`/$expn
+hops|hmix|haxp)
+    $verb && [ $tar = hops ] && echo making HOPS'(post-pc)'   in `pwd`/$expn
+    $verb && [ $tar = hmix ] && echo making HOPS'(pre-pc)'    in `pwd`/$expn
+    $verb && [ $tar = haxp ] && echo making HOPS'(just alma)' in `pwd`/$expn
     $dry || dotar=true
     tarname=${exp}-${vers}-$subv-$label-$tar.tar
     $nuke && rm -rf $expn
@@ -378,7 +380,7 @@ hops|hmix)
              rm -f $workdir/logs/$tarname.log
     content="$expn"
     $d2m4 || [ -d "$expn" ] || { echo No HOPS output $expn to tar; exit 3; }
-    $d2m4 && work=hops
+    $d2m4 && work=$tar
     ;;
 pcin)
     $verb && echo gathering PolConvert inputs in `pwd`
@@ -484,7 +486,8 @@ post-alma)
     swin    DiFX (SWIN) output files
     fits    difx2fits outputs
     hops    difx2mark4 outputs
-    hmix    difx2mark4 outputs prior to polconvert
+    hmix    difx2mark4 outputs prior to polconvert (mixed pols)
+    haxp    difx2mark4 outputs alma-only mixed pols 
     pcin    polconvert inputs (if ALMA)
     pcqk    polconvert quick-look outputs (if ALMA)
     4fit    correlator fourfit output (pc'd; type 200s + alist)
@@ -541,7 +544,7 @@ fits)
         $verb && echo -n disk usage on fits: && du -sh $fits
     }
     ;;
-hops|hmix)
+hops|hmix|haxp)
     $verb && echo running difx2mark4 for $expn in `pwd` with $exp.codes
     dog=$expn/difx2mark4-${exp}-${vers}-$subv.log
     [ -d "$expn" ] && {
@@ -550,17 +553,16 @@ hops|hmix)
         exit 4;
     }
     [ -f "$exp.codes" ] || {
-        [ -f "codes" ] && {
-            echo    cp -p codes $exp.codes &&
-            $dry || cp -p codes $exp.codes
-        }
+        echo Not finding difx2mark4 codes: $exp.codes ... fix it
+        exit 4;
     }
     $dry && {
         echo mkdir $expn
         echo $d2m4exec $ov -e $expn -s $exp.codes $jobs \> $dog
     } || {
         mkdir $expn
-        $save && savename=$exp-$vers-$subv-$label.$expn.save
+        [ $work = haxp ] && part='-haxp' || part=''
+        $save && savename=$exp-$vers-$subv-$label$part.$expn.save
         $verb && echo follow difx2mark4 with: &&
             echo '  'tail -n +1 -f `pwd`/$dog
         echo $d2m4exec $ov -e $expn -s $exp.codes $jobs > $dog
@@ -648,6 +650,20 @@ hops|hmix)
     ;;
 esac
 
+# prune prior to tarring
+[ "$work" = 'haxp' ] && {
+    $verb && echo pruning d2m4 output to ALMA-only baselines in `pwd`
+    [ -d $expn ] || {
+        echo We have missing dir $expn when we should have it ; exit 4
+    }
+    [ "$savename" = $exp-$vers-$subv-$label-haxp.$expn.save ] || {
+        echo Internal logic error...bailing ; exit 4
+    }
+    toast=`ls -1 $expn/*/[^A]?..?????? | wc -l`
+    rm -f $expn/*/[^A]?..??????
+    echo Removed $toast correlation files
+}
+
 # for the tarball cases, actually make the tarball
 $dotar && [ -n "$tarname" -a -n "$content" ] && (
     $verb && echo Making $tarname, see $workdir/logs/$tarname.log
@@ -683,7 +699,7 @@ fits)
     [ -d $savename ] && mv $savename $savename.prev
     [ -d $fits ] && mv $fits $savename
     ;;
-hops|hmix)
+hops|hmix|haxp)
     [ -d $savename ] && mv $savename $savename.prev
     [ -d $expn ] && mv $expn $savename
     ;;

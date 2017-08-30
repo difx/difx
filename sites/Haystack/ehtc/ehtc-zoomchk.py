@@ -19,7 +19,7 @@ def parseOptions():
     des = parseOptions.__doc__
     epi = ''
     use = '%(prog)s [options] [input_file [...]]\n  Version'
-    use += '$Id: ehtc-zoomchk.py 1951 2017-08-14 14:33:30Z gbc $'
+    use += '$Id: ehtc-zoomchk.py 1969 2017-08-29 16:15:47Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     # essential options
     parser.add_argument('-v', '--verbose', dest='verb',
@@ -106,11 +106,12 @@ def deduceZoomIndicies(o):
         print '#'
         for j in jlist:
             print "jobs='%s'" % ' '.join(sorted(jlist[j]))
-            print "# and then:"
             print "drivepolconvert.py -v $opts -l $pcal $jobs"
             print '#'
         print '## Be sure to reset the variable jobs to the original list'
-        print '## for subsequent processing.'
+        print '## for subsequent processing, e.g.'
+        print '#'
+        print 'eval `$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs $jselect -J`'
         print '#'
     else:
         o.zfirst = int(zfirst.pop())
