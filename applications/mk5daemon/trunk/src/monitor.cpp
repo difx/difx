@@ -233,11 +233,11 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 	char rv[256] = "hidden message";
 	char *c;
 	FILE *pin;
-	int l;
+	unsigned int l;
 
 	l = strlen(diskdev);
 
-	if(l > 16)
+	if(l == 0 || l > 16)
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount: device name is bogus: /dev/sd%s", diskdev);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
@@ -247,7 +247,7 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 
 	snprintf(command, MAX_COMMAND_SIZE, "mkdir -p %s", mountPoint);
 	
-	if(l > 0 || l <= 3)
+	if(l <= 2)
 	{
 		/* mount by device name */
 		snprintf(dev, maxDevLength, "/dev/sd%s", diskdev);

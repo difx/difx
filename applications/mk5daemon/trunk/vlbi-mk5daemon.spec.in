@@ -38,6 +38,7 @@ chmod a+x /sbin/halt
 %{_bindir}/killjob
 %{_bindir}/listcpus
 %{_bindir}/listmodules
+%{_bindir}/listmedia
 %{_bindir}/mk5daemon
 %{_bindir}/mk5cat
 %{_bindir}/mk5control
