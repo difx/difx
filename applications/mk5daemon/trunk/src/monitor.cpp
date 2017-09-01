@@ -234,8 +234,20 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 	char *c;
 	FILE *pin;
 	unsigned int l;
+	char buf[PATH_MAX+1];
+
+	buf[0] = 0;
 
 	l = strlen(diskdev);
+
+	if(D->mountedDisk[0])
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount: device %s is already mounted", D->mountedDisk);
+
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+
+		return;
+	}
 
 	if(l == 0 || l > 16)
 	{
@@ -251,11 +263,39 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 	{
 		/* mount by device name */
 		snprintf(dev, maxDevLength, "/dev/sd%s", diskdev);
+
+		snprintf(D->mountedDisk, PATH_MAX, "sd%s", diskdev);
 	}
 	else
 	{
+		ssize_t n;
+
 		/* mount by filesystem label */
 		snprintf(dev, maxDevLength, "/dev/disk/by-label/%s", diskdev);
+
+		n = readlink(dev, buf, PATH_MAX);
+		if(n > 0)
+		{
+			char *bareDev;
+			unsigned int j;
+
+			buf[n] = 0;
+			bareDev = buf;
+			for(j = 0; buf[j]; ++j)
+			{
+				if(buf[j] == '/')
+				{
+					bareDev = buf + j + 1;
+				}
+			}
+			snprintf(D->mountedDisk, PATH_MAX, "%s", bareDev);
+		}
+		else
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Mount: device with label %s does not seem to exist.", diskdev);
+
+			return;
+		}
 	}
 
 	snprintf(command, MAX_COMMAND_SIZE, "/bin/mount -t auto %s %s 2>&1", dev, mountPoint);
@@ -269,18 +309,22 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 
 	if(c)
 	{
+		/* mount didn't go well... */
+
 		int l;
 		
 		/* strip endline */
 		l = strlen(rv);
 		rv[l-1] = 0;
 
+		D->mountedDisk[0] = 0;
+
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount %s attempt : %s", dev, rv);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	}
 	else
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount %s attempt : Success", dev);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount %s attempt : Success %s", dev, D->mountedDisk);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
 }
@@ -364,16 +408,18 @@ static void umountdisk(Mk5Daemon *D)
 	}
 	else
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Unmount /mnt/usb attempt : Success");
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Unmount /mnt/usb attempt : Success %s", D->mountedDisk);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
+
+	D->mountedDisk[0] = 0;
 }
 
 static void listFilesystems(Mk5Daemon *D)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	glob_t globbuf;
-	int i;
+	unsigned int i;
 	int p;
 
 	p = snprintf(message, DIFX_MESSAGE_LENGTH, "Filesystem list:");
@@ -381,7 +427,39 @@ static void listFilesystems(Mk5Daemon *D)
 	glob("/dev/disk/by-label/*", 0, 0, &globbuf);
 	for(i = 0; i < globbuf.gl_pathc; ++i)
 	{
-		p += snprintf(message + p, DIFX_MESSAGE_LENGTH - p, " %s", globbuf.gl_pathv[i] + 19);
+		char status;
+
+		status = ' ';
+
+		if(D->mountedDisk[0])
+		{
+			ssize_t n;
+			unsigned int j;
+			char buf[PATH_MAX+1];
+			char *bareDev;
+
+			n = readlink(globbuf.gl_pathv[i], buf, PATH_MAX);
+
+			bareDev = buf;
+			for(j = 0; buf[j]; ++j)
+			{
+				if(buf[j] == '/')
+				{
+					bareDev = buf + j + 1;
+				}
+			}
+
+			if(n > 0)
+			{
+				buf[n] = 0;
+				if(strcmp(bareDev, D->mountedDisk) == 0)
+				{
+					status = '*';
+				}
+			}
+		}
+
+		p += snprintf(message + p, DIFX_MESSAGE_LENGTH - p, " %s%c", globbuf.gl_pathv[i] + 19, status);
 		if(p >= DIFX_MESSAGE_LENGTH)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, "Filesystem count: %d\n", (int)(globbuf.gl_pathc));

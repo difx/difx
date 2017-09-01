@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,6 +35,7 @@
 #include <string>
 #include <time.h>
 #include <difxmessage.h>
+#include <limits.h>
 #include "config.h"
 #include "logger.h"
 #include "options.h"
@@ -224,6 +225,7 @@ typedef struct
 #ifdef HAS_MARK6META
         Mark6 *mark6;
 #endif
+	char mountedDisk[PATH_MAX+1];
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
