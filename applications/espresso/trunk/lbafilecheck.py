@@ -52,7 +52,7 @@ def makefilelists(
     #TEMPFILE = tempfile.NamedTemporaryFile()
     tempfilename = expname + "_" + telescope+"tempfilenamexxx.txt"
     TEMPFILE = open(tempfilename, "w")
-    command = " ".join(["ssh", machine, "ls", filepattern])
+    command = " ".join(["ssh", machine, "'echo", filepattern, "|xargs ls'"])
     #command = " ".join(["ls", filepattern])
     print command
     filelist, error1 = subprocess.Popen(
