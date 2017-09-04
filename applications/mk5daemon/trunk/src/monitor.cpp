@@ -258,6 +258,7 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 	}
 
 	snprintf(command, MAX_COMMAND_SIZE, "mkdir -p %s", mountPoint);
+	system(command);
 	
 	if(l <= 2)
 	{
