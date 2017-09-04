@@ -89,8 +89,11 @@ const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 240000
 
 volatile int *signalDie = 0;
 
-struct sigaction old_sigint_action;
-struct sigaction old_sigterm_action;
+/* Note: must use the less appropriate signal() rather than sigaction() call 
+ * because streamstor library seems to use signal() and mixing the two
+ * is bad. */
+sighandler_t oldsiginthand;
+sighandler_t oldsigtermhand;
 
 
 const char recordStateStrings[][10] =
@@ -632,7 +635,6 @@ void sigintHandler(int j)
 	{
 		*signalDie = 1;
 	}
-	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 void sigtermHandler(int j)
@@ -641,7 +643,6 @@ void sigtermHandler(int j)
 	{
 		*signalDie = 1;
 	}
-	sigaction(SIGTERM, &old_sigint_action, 0);
 }
 
 void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage)
@@ -1106,8 +1107,6 @@ int main(int argc, char **argv)
     int halfLoadMonInterval;
     int pid;
     int status;
-    struct sigaction new_sigint_action;
-    struct sigaction new_sigterm_action;
 
 #ifdef HAVE_XLRAPI_H
     time_t firstTime;
@@ -1213,16 +1212,8 @@ int main(int argc, char **argv)
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Number of CPU cores found = %d\n", D->load.nCore);
 	Logger_logData(D->log, message);
 
-
-	new_sigint_action.sa_handler = sigintHandler;
-	sigemptyset(&new_sigint_action.sa_mask);
-	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
-	
-	new_sigterm_action.sa_handler = sigtermHandler;
-	sigemptyset(&new_sigterm_action.sa_mask);
-	new_sigterm_action.sa_flags = 0;
-	sigaction(SIGTERM, &new_sigterm_action, &old_sigterm_action);
+	oldsiginthand = signal(SIGINT, sigintHandler);
+	oldsigtermhand = signal(SIGTERM, sigtermHandler);
 
 	lastTime = time(0);
 

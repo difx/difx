@@ -76,7 +76,12 @@ const char verdate[] = "20140619";
 
 volatile int die = 0;
 const int statsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
-struct sigaction old_sigint_action;
+
+/* Note: must use the less appropriate signal() rather than sigaction() call 
+ * because streamstor library seems to use signal() and mixing the two
+ * is bad. */
+sighandler_t oldsiginthand;
+sighandler_t oldsigtermhand;
 
 enum ConditionMode
 {
@@ -129,7 +134,12 @@ void siginthand(int j)
 {
 	fprintf(stderr, "SIGINT caught; aborting operation.\n");
 	die = 1;
-	sigaction(SIGINT, &old_sigint_action, 0);
+}
+
+void sigtermhand(int j)
+{
+	fprintf(stderr, "SIGTERM caught; aborting operation.\n");
+	die = 1;
 }
 
 int getModuleLabel(SSHANDLE xlrDevice, int bank, char label[XLR_LABEL_LENGTH+1])
@@ -790,7 +800,6 @@ int main(int argc, char **argv)
 	int dirVersion = -1;
 	int lockWait = MARK5_LOCK_DONT_WAIT;
 	int retval = EXIT_SUCCESS;
-	struct sigaction new_sigint_action;
 
 	if(argc < 2)
 	{
@@ -959,10 +968,8 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	new_sigint_action.sa_handler = siginthand;
-	sigemptyset(&new_sigint_action.sa_mask);
-	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
+	oldsiginthand = signal(SIGINT, siginthand);
+	oldsigtermhand = signal(SIGTERM, sigtermhand);
 
 	/* 60 seconds should be enough to complete any XLR command */
 	setWatchdogTimeout(60);

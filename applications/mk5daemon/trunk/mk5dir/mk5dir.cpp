@@ -43,7 +43,7 @@
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.15";
-const char verdate[] = "20170520";
+const char verdate[] = "20170904";
 
 enum DMS_Mode
 {
@@ -57,17 +57,28 @@ int verbose = 0;
 volatile int die = 0;
 SSHANDLE xlrDevice;
 
-struct sigaction old_sigint_action;
+/* Note: must use the less appropriate signal() rather than sigaction() call 
+ * because streamstor library seems to use signal() and mixing the two
+ * is bad. */
+sighandler_t oldsiginthand;
+sighandler_t oldsigtermhand;
 
 void siginthand(int j)
 {
 	if(verbose)
 	{
-		printf("Being killed\n");
+		printf("Being killed (INT)\n");
 	}
 	die = 1;
+}
 
-	sigaction(SIGINT, &old_sigint_action, 0);
+void sigtermhand(int j)
+{
+	if(verbose)
+	{
+		printf("Being killed (TERM)\n");
+	}
+	die = 1;
 }
 
 
@@ -308,7 +319,6 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	char modules[modulesLength] = "";
 	int mv = 0;
 	int v;
-	struct sigaction new_sigint_action;
 
 	memset(&mk5status, 0, sizeof(mk5status));
 
@@ -351,10 +361,8 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
 
-	new_sigint_action.sa_handler = siginthand;
-	sigemptyset(&new_sigint_action.sa_mask);
-	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
+	oldsiginthand = signal(SIGINT, siginthand);
+	oldsigtermhand = signal(SIGTERM, sigtermhand);
 
 	if(strcmp(vsn, "AB") == 0)
 	{
@@ -581,6 +589,7 @@ int main(int argc, char **argv)
 	enum DMS_Mode dmsMode = DMS_MODE_FAIL_UNLESS_SAFE;
 	int v;
 	const char *dmsMaskStr;
+	int lockWait = 10;	/* [sec] set to MARK5_LOCK_WAIT_FOREVER if immediate quit on lock behavior is wanted */
 	int dmsMask = 7;
 	int startScan = -1;
 	int stopScan = -1;
@@ -715,7 +724,7 @@ int main(int argc, char **argv)
 
 	/* *********** */
 
-	v = lockMark5(MARK5_LOCK_DONT_WAIT);
+	v = lockMark5(lockWait);
 
 	if(v < 0)
 	{

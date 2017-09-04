@@ -3,6 +3,7 @@ Version 2.6.0
 * Post DiFX-2.5
 * Allow mount command to work on label rather than device
 * listfs command to list available filesystems with labels
+* mk5cp support for append mode: will continue writing partial files of matching filenames
 
 Version 2.5.0
 ~~~~~~~~~~~~~
@@ -28,6 +29,8 @@ Version 2.5.0
 * startfusemk5: new utility to start fuseMk5
 * stopfuseMk5: new utility to stop fuseMk5
 * Use sigaction for signal handling
+* REVERT to signal() for signal handling in programs linking to streamstor
+library!  mixing signal() (used within streamstor library) and sigaction() causes problems! 
 * Better handling of interruption in mk5cp
 * Version for DiFX-2.5, May 16, 2017
 

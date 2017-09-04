@@ -45,7 +45,7 @@
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.6";
-const char verdate[] = "20170520";
+const char verdate[] = "20170904";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -58,13 +58,22 @@ const int statsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800
 
 volatile int die = 0;
 
-struct sigaction old_sigint_action;
+/* Note: must use the less appropriate signal() rather than sigaction() call 
+ * because streamstor library seems to use signal() and mixing the two
+ * is bad. */
+sighandler_t oldsiginthand;
+sighandler_t oldsigtermhand;
 
 void siginthand(int j)
 {
-	fprintf(stderr, "<Being killed>");
+	fprintf(stderr, "Being killed (INT)\n");
 	die = 1;
-	sigaction(SIGINT, &old_sigint_action, 0);
+}
+
+void sigtermhand(int j)
+{
+	fprintf(stderr, "Being killed (TERM)\n");
+	die = 1;
 }
 
 static void usage(const char *pgm)
@@ -859,7 +868,6 @@ int main(int argc, char **argv)
 	char *dirFile = 0;
 	long long ptr = 0;
 	int retval = EXIT_SUCCESS;
-	struct sigaction new_sigint_action;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -975,10 +983,8 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	new_sigint_action.sa_handler = siginthand;
-	sigemptyset(&new_sigint_action.sa_mask);
-	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
+	oldsiginthand = signal(SIGINT, siginthand);
+	oldsigtermhand = signal(SIGTERM, sigtermhand);
 
 	setWatchdogVerbosity(verbose);
 

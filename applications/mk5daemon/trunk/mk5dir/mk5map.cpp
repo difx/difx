@@ -48,7 +48,7 @@
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.3";
-const char verdate[] = "20170520";
+const char verdate[] = "20170904";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
@@ -67,7 +67,11 @@ enum DMS_Mode
 int verbose = 1;
 volatile int die = 0;
 
-struct sigaction old_sigint_action;
+/* Note: must use the less appropriate signal() rather than sigaction() call 
+ * because streamstor library seems to use signal() and mixing the two
+ * is bad. */
+sighandler_t oldsiginthand;
+sighandler_t oldsigtermhand;
 
 static void usage(const char *pgm)
 {
@@ -100,10 +104,18 @@ void siginthand(int j)
 {
 	if(verbose)
 	{
-		fprintf(stderr, "Being killed\n");
+		fprintf(stderr, "Being killed (INT)\n");
 	}
 	die = 1;
-	sigaction(SIGINT, &old_sigint_action, 0);
+}
+
+void sigtermhand(int j)
+{
+	if(verbose)
+	{
+		fprintf(stderr, "Being killed (TERM)\n");
+	}
+	die = 1;
 }
 
 class Datum
@@ -314,7 +326,6 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	FILE *out;
 	int64_t lastnewpos;
 	double r;
-	struct sigaction new_sigint_action;
 
 	dRate = rate * fraction;	
 
@@ -396,10 +407,8 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
 
-	new_sigint_action.sa_handler = siginthand;
-	sigemptyset(&new_sigint_action.sa_mask);
-	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
+	oldsiginthand = signal(SIGINT, siginthand);
+	oldsigtermhand = signal(SIGTERM, sigtermhand);
 
 	// The action starts here
 

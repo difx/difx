@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <difxmessage.h>
 #include <mark5ipc.h>
@@ -47,15 +48,19 @@
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.15";
-const char verdate[] = "20170520";
+const char verdate[] = "20170904";
 
 const int defaultChunkSize = 50000000;
 
 int verbose = 0;
 volatile int die = 0;
 
-struct sigaction old_sigint_action;
-struct sigaction old_sigterm_action;
+/* Note: must use the less appropriate signal() rather than sigaction() call 
+ * because streamstor library seems to use signal() and mixing the two
+ * is bad. */
+sighandler_t oldsiginthand;
+sighandler_t oldsigtermhand;
+
 
 const int MaxCommandLength = 400;
 
@@ -65,26 +70,23 @@ enum CopyMode
 	COPY_MODE_NODIR
 };
 
+
 void siginthand(int j)
 {
 	if(verbose)
 	{
-		fprintf(stderr, "Being killed (INT).  Partial output will be preserved.\n");
+		fprintf(stderr, "Being killed (INT)\n");
 	}
 	die = 1;
-
-	sigaction(SIGINT, &old_sigint_action, 0);
 }
 
 void sigtermhand(int j)
 {
 	if(verbose)
 	{
-		fprintf(stderr, "Being killed (TERM).  Partial output will be preserved.\n");
+		fprintf(stderr, "Being killed (TERM)\n");
 	}
 	die = 1;
-
-	sigaction(SIGTERM, &old_sigterm_action, 0);
 }
 
 int usage(const char *pgm)
@@ -285,7 +287,56 @@ static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, cha
 	return 0;
 }
 
-int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, int scanNum, long long byteStart, long long byteStop, DifxMessageMk5Status *mk5status, int chunkSize, long long *nGoodBytes, long long *nReplacedBytes)
+/* if doAppend != 0 and the output file exists, this tries to start from where a previous attempt left off */
+static FILE *openOutputFile(const char *filename, int doAppend, long long *byteStart, long long byteStop)
+{
+	if(doAppend)
+	{
+		struct stat st;
+		int ok;
+
+		ok = stat(filename, &st);
+		if(ok == 0)	/* file exists */
+		{
+			off_t size;
+
+			size = st.st_size;
+
+			if(size >= (byteStop - *byteStart))
+			{
+				*byteStart += size;
+
+				/* The caller should look at the value of *byteStart after returning.  If *byteStart = byteStop, then this was successful as no effort was needed. */
+				
+				return 0;
+			}
+			else
+			{
+				if(size % 8 != 0)
+				{
+					/* non multiple of 8 bytes in file.  Must truncate it */
+					size -= (size % 8);
+
+					truncate(filename, size);
+				}
+
+				*byteStart += size;
+
+				return fopen(filename, "a");
+			}
+		}
+		else
+		{
+			return fopen(filename, "w");
+		}
+	}
+	else
+	{
+		return fopen(filename, "w");
+	}
+}
+
+int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, int scanNum, long long byteStart, long long byteStop, DifxMessageMk5Status *mk5status, int chunkSize, long long *nGoodBytes, long long *nReplacedBytes, int doAppend)
 {
 	FILE *out;
 	long long readptr;
@@ -303,6 +354,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	char scpLogin[DIFX_MESSAGE_FILENAME_LENGTH];
 	char scpDest[DIFX_MESSAGE_FILENAME_LENGTH];
 	int nReread = 0;
+	long long origByteStart;
 
 	parsescp(scpLogin, scpDest, outPath);
 
@@ -316,10 +368,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 		byteStop += (8-byteStart % 8);
 	}
 
-	if(chunkSize <= 0)
-	{
-		chunkSize = byteStop - byteStart;
-	}
+	origByteStart = byteStart;
 
 	if(strcmp(outPath, "-") == 0)
 	{
@@ -351,9 +400,29 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	else
 	{
 		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", outPath, outName); 
-		out = fopen(filename, "w");
+		out = openOutputFile(filename, doAppend, &byteStart, byteStop);
 		if(!out)
 		{
+			if(doAppend)
+			{
+				/* look for some special cases that can come out of append mode */
+				if(byteStart == byteStop)  /* This means the existing file was the right size.  Declare success. */
+				{
+					snprintf(message, DIFX_MESSAGE_LENGTH, "File %s exists with the correct size.  Not recopying.", filename);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+					fprintf(stderr, "%s\n", message);
+
+					return 0;	/* success */
+				}
+				else if(byteStart > byteStop)	/* larger than expected destination file exists.  This is not good. */
+				{
+					snprintf(message, DIFX_MESSAGE_LENGTH, "File %s exists with size larger than expected.  Copying will not proceed.", filename);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+					fprintf(stderr, "%s\n", message);
+
+					return -1;	/* success */
+				}
+			}
 			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open file %s for write.  Check permissions!", filename);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			fprintf(stderr, "Error: %s\n", message);
@@ -363,6 +432,11 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	}
 
 	fprintf(stderr, "outName = %s\n", filename);
+
+	if(chunkSize <= 0)
+	{
+		chunkSize = byteStop - byteStart;
+	}
 
 	readptr = byteStart;
 	togo = byteStop-byteStart;
@@ -382,7 +456,14 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	gettimeofday(&t0, 0);
 	gettimeofday(&t1, 0);
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Copying portion (%Ld, %Ld) of scan %d to file %s", byteStart, byteStop, scanNum+1, filename);
+	if(byteStart > origByteStart)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Copying portion (%Ld, %Ld) of scan %d to file %s (appending: %Ld bytes previously copied)", byteStart, byteStop, scanNum+1, filename, byteStart - origByteStart);
+	}
+	else
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Copying portion (%Ld, %Ld) of scan %d to file %s", byteStart, byteStop, scanNum+1, filename);
+	}
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
 	for(int i = 0; togo > 0; ++i)
@@ -780,7 +861,7 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int 
 	}
 }
 
-int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status, int chunkSize, long long *nGoodBytes, long long *nReplacedBytes)
+int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status, int chunkSize, long long *nGoodBytes, long long *nReplacedBytes, int doAppend)
 {
 	FILE *out;
 	long long readptr;
@@ -796,8 +877,13 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 	long long wGood=0, wBad=0;
 	char scpLogin[DIFX_MESSAGE_FILENAME_LENGTH];
 	char scpDest[DIFX_MESSAGE_FILENAME_LENGTH];
+	long long byteStart;
+	long long byteStop;
 
 	parsescp(scpLogin, scpDest, outPath);
+
+	byteStart = scan->start;
+	byteStop = scan->start + scan->length;
 
 	if(strcmp(outPath, "-") == 0)
 	{
@@ -831,9 +917,29 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 	else
 	{
 		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%8s_%04d_%s", outPath, vsn, scanNum+1, scan->name.c_str()); 
-		out = fopen(filename, "w");
+		out = openOutputFile(filename, doAppend, &byteStart, byteStop);
 		if(!out)
 		{
+			if(doAppend)
+			{
+				/* look for some special cases that can come out of append mode */
+				if(byteStart == byteStop)  /* This means the existing file was the right size.  Declare success. */
+				{
+					snprintf(message, DIFX_MESSAGE_LENGTH, "File %s exists with the correct size.  Not recopying.", filename);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+					fprintf(stderr, "%s\n", message);
+
+					return 0;	/* success */
+				}
+				else if(byteStart > byteStop)	/* larger than expected destination file exists.  This is not good. */
+				{
+					snprintf(message, DIFX_MESSAGE_LENGTH, "File %s exists with size larger than expected.  Copying will not proceed.", filename);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+					fprintf(stderr, "%s\n", message);
+
+					return -1;	/* success */
+				}
+			}
 			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open file %s for write.  Check permissions!", filename);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			fprintf(stderr, "Error: %s\n", message);
@@ -844,8 +950,8 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 
 	fprintf(stderr, "outName = %s\n", filename);
 
-	readptr = scan->start;
-	togo = scan->length;
+	readptr = byteStart;
+	togo = byteStop - byteStart;
 	data = (streamstordatatype *)malloc(chunkSize);
 	len = chunkSize;
 
@@ -855,14 +961,21 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 	if(verbose)
 	{
 		fprintf(stderr, "Writing %s\n", filename);
-		fprintf(stderr, "start/length = %Ld/%Ld\n", scan->start, scan->length);
+		fprintf(stderr, "start/length = %Ld/%Ld\n", readptr, togo);
 	}
 
 	rate = 0.0;
 	gettimeofday(&t0, 0);
 	gettimeofday(&t1, 0);
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Copying scan %d to file %s", scanNum+1, filename);
+	if(byteStart > scan->start)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Copying scan %d to file %s (appending: %Ld bytes previously copied)", scanNum+1, filename, byteStart - scan->start);
+	}
+	else
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Copying scan %d to file %s", scanNum+1, filename);
+	}
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
 	for(int i = 0; togo > 0; ++i)
@@ -894,6 +1007,10 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
 		if(xlrRC != XLR_SUCCESS)
 		{
+			if(die)
+			{
+				break;
+			}
 			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
 			if(out != stdout)
 			{
@@ -1059,7 +1176,7 @@ static int parseByteRange(long long *start, long long *stop, const char *scanLis
 	}
 }
 
-static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force, enum Mark5ReadMode readMode, int chunkSize, int fix5b)
+static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force, enum Mark5ReadMode readMode, int chunkSize, int fix5b, int doAppend)
 {
 	int mjdNow;
 	const char *mk5dirpath;
@@ -1080,8 +1197,9 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
 	DifxMessageMk5Status mk5status;
-	struct sigaction new_sigint_action;
-	struct sigaction new_sigterm_action;
+
+	oldsiginthand = signal(SIGINT, siginthand);
+	oldsigtermhand = signal(SIGTERM, sigtermhand);
 
 	memset(&mk5status, 0, sizeof(mk5status));
 
@@ -1144,16 +1262,6 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
-
-	new_sigint_action.sa_handler = siginthand;
-	sigemptyset(&new_sigint_action.sa_mask);
-	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
-
-	new_sigterm_action.sa_handler = sigtermhand;
-	sigemptyset(&new_sigterm_action.sa_mask);
-	new_sigterm_action.sa_flags = 0;
-	sigaction(SIGTERM, &new_sigterm_action, &old_sigterm_action);
 
 	if(strlen(vsn) != 8)
 	{
@@ -1285,7 +1393,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					continue;
 				}
 				snprintf(outName, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s_%d", module.label.c_str(), scanList, nGood+nBad);
-				v = copyByteRange(xlrDevice, outPath, outName, scanIndex, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
+				v = copyByteRange(xlrDevice, outPath, outName, scanIndex, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes, doAppend);
 				if(v == 0)
 				{
 					++nGood;
@@ -1318,7 +1426,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			}
 
 			snprintf(outName, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s", module.label.c_str(), scanList);
-			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
+			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes, doAppend);
 
 			if(v == 0)
 			{
@@ -1385,7 +1493,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 						}
 						else
 						{
-							v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
+							v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes, doAppend);
 						}
 						if(v == 0)
 						{
@@ -1440,7 +1548,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					}
 					else
 					{
-						v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
+						v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes, doAppend);
 					}
 					if(v == 0) 
 					{
@@ -1492,7 +1600,10 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			}
 		}
 
-		reportDriveStats(xlrDevice, vsn);
+		if(die == 0)
+		{
+			reportDriveStats(xlrDevice, vsn);
+		}
 	}
 	else
 	{
@@ -1514,7 +1625,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 	return 0;
 }
 
-static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int force, enum Mark5ReadMode readMode, int chunkSize)
+static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int force, enum Mark5ReadMode readMode, int chunkSize, int doAppend)
 {
 	int v;
 	int nGood, nBad;
@@ -1616,7 +1727,7 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 		if(parseByteRange(&byteStart, &byteStop, scanList))
 		{
 			snprintf(outName, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s", vsn, scanList);
-			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes);
+			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize, &nGoodBytes, &nReplacedBytes, doAppend);
 
 			if(v == 0)
 			{
@@ -1672,7 +1783,10 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 			}
 		}
 
-		reportDriveStats(xlrDevice, vsn);
+		if(die == 0)
+		{
+			reportDriveStats(xlrDevice, vsn);
+		}
 	}
 	else
 	{
@@ -1702,10 +1816,11 @@ int main(int argc, char **argv)
 	int force = 0;
 	int fix5b = 0;
 	int v;
-	int lockWait = MARK5_LOCK_DONT_WAIT;
+	int lockWait = 10;	/* [sec] set to MARK5_LOCK_WAIT_FOREVER if immediate quit on lock behavior is wanted */
 	int chunkSize = defaultChunkSize;
 	enum CopyMode copyMode = COPY_MODE_NORMAL;
 	enum Mark5ReadMode readMode = MARK5_READ_MODE_NORMAL;
+	int doAppend = 0;
 
 	v = strlen(argv[0]);
 	if(v >= 6 && strcmp(argv[0]+v-6, "mk5cat") == 0)
@@ -1788,6 +1903,11 @@ int main(int argc, char **argv)
 			chunkSize = 5*defaultChunkSize;
 			printf("Using large chunk size = %d\n", chunkSize);
 		}
+		else if(strcmp(argv[a], "-a") == 0 ||
+		        strcmp(argv[a], "--append") == 0)
+		{
+			doAppend = 1;
+		}
 		else if(vsn[0] == 0)
 		{
 			strncpy(vsn, argv[a], 8);
@@ -1859,10 +1979,10 @@ int main(int argc, char **argv)
 		switch(copyMode)
 		{
 			case COPY_MODE_NORMAL:
-				v = mk5cp(vsn, scanList, outPath, force, readMode, chunkSize, fix5b);
+				v = mk5cp(vsn, scanList, outPath, force, readMode, chunkSize, fix5b, doAppend);
 				break;
 			case COPY_MODE_NODIR:
-				v = mk5cp_nodir(vsn, scanList, outPath, force, readMode, chunkSize);
+				v = mk5cp_nodir(vsn, scanList, outPath, force, readMode, chunkSize, doAppend);
 				break;
 		}
 		if(v < 0)
@@ -1870,9 +1990,7 @@ int main(int argc, char **argv)
 			if(watchdogXLRError[0] != 0)
 			{
 				char message[DIFX_MESSAGE_LENGTH];
-				snprintf(message, DIFX_MESSAGE_LENGTH, 
-					"Streamstor error executing: %s : %s",
-					watchdogStatement, watchdogXLRError);
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Streamstor error executing: %s : %s", watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
 		}

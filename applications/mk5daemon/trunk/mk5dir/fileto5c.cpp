@@ -52,7 +52,7 @@
 const char program[] = "fileto5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.6";
-const char verdate[] = "20170520";
+const char verdate[] = "20170904";
 
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 const unsigned int defaultChunkSizeMB = 20;
@@ -61,7 +61,11 @@ const int MaxLabelLength = 40;
 const int Mark5BFrameSize = 10016;
 const UINT32 Mark5BSyncWord = 0xABADDEED;
 
-struct sigaction old_sigint_action;
+/* Note: must use the less appropriate signal() rather than sigaction() call 
+ * because streamstor library seems to use signal() and mixing the two
+ * is bad. */
+sighandler_t oldsiginthand;
+sighandler_t oldsigtermhand;
 
 volatile int die = 0;
 
@@ -99,7 +103,11 @@ static void usage(const char *pgm)
 void siginthand(int j)
 {
 	die = 2;
-	sigaction(SIGINT, &old_sigint_action, 0);
+}
+
+void sigtermhand(int j)
+{
+	die = 2;
 }
 
 static void filename2label(char *label, const char *filename)
@@ -926,7 +934,6 @@ int main(int argc, char **argv)
 	const char *filename = 0;
 	char label[MaxLabelLength] = "";
 	int statsRange[XLR_MAXBINS];
-	struct sigaction new_sigint_action;
 
 	memset((char *)(&mk5status), 0, sizeof(mk5status));
 
@@ -1097,12 +1104,10 @@ int main(int argc, char **argv)
 
 	/* *********** */
 
-	v = lockMark5(3);
+	oldsiginthand = signal(SIGINT, siginthand);
+	oldsigtermhand = signal(SIGTERM, sigtermhand);
 
-	new_sigint_action.sa_handler = siginthand;
-	sigemptyset(&new_sigint_action.sa_mask);
-	new_sigint_action.sa_flags = 0;
-	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
+	v = lockMark5(3);
 
 	if(v < 0)
 	{
