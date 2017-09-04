@@ -223,6 +223,7 @@ def plot_speedup(logfiles, outdir, expname):
 
 def run_interactive(corrjoblist, outdir):
     """Run jobs in an interactive enviroment"""
+    bad_jobs = []
     difxwatch = None
     for jobname in sorted(corrjoblist.keys()):
         if options.difxwatch:
@@ -259,16 +260,11 @@ def run_interactive(corrjoblist, outdir):
             # we're finished with the log...
             os.kill(errormon2.pid, 9)
             time.sleep(1)
-            logfilename = outdir + jobname + ".difxlog"
-            logfiles.append(jobname + ".difxlog")
-            logfile = open(logfilename, "w")
-            print "\nfiltering the log file and copying to", logfile.name
-            #shutil.copy2('log', logfile)
-            log_lines = filter_log("log", jobname)
-            for line in log_lines:
-                print>>logfile, line,
-            logfile.close()
+            job_ok = write_difxlog("./log", outdir, jobname)
+            if not job_ok:
+                bad_jobs.append(jobname)
 
+    return bad_jobs
 
 def filter_log(infile, jobname):
     filtered_file = []
@@ -282,7 +278,6 @@ def wait_for_file(filename):
     while not os.path.exists(filename):
         print "Waiting for", filename
         time.sleep(1)
-
     print filename, "found!"
 
 
@@ -327,7 +322,7 @@ def get_jobids(jobnames, batchenv):
 
 
 def run_batch(corrjoblist, outdir):
-    """Run jobs in a batch enviroment"""
+    """Run jobs in a batch environment"""
 
     # get the batch commands for the slurm or pbs
     batch_launch, batch_q, batch_cancel, batch_sep = check_batch()
@@ -350,6 +345,7 @@ def run_batch(corrjoblist, outdir):
     pass_logfilename = passname + ".difxlog"
     try:
         wait_for_file(errormon_log)
+        time.sleep(1)
         print "renaming log to", pass_logfilename
         shutil.move("./log", pass_logfilename)
     except:
@@ -400,19 +396,16 @@ def run_batch(corrjoblist, outdir):
             #raise
 
     # tidy up log files for each job
+    bad_jobs = []
     for jobname in sorted(corrjoblist.keys()):
         # we're finished with the logs..
         os.kill(errormon2.pid, 9)
         #time.sleep(1)
-        logfilename = outdir + jobname + ".difxlog"
-        logfiles.append(jobname + ".difxlog")
-        logfile = open(logfilename, "w")
-        print "\nfiltering the log file and copying to", logfile.name
-        #shutil.copy2("log", logfile)
-        log_lines = filter_log(pass_logfilename, jobname)
-        for line in log_lines:
-            print>>logfile, line,
-        logfile.close()
+        job_ok = write_difxlog(pass_logfilename, outdir, jobname)
+        if not job_ok:
+            bad_jobs.append(jobname)
+
+    return bad_jobs
 
 
 def set_difx_message_port(start_port=50201):
@@ -435,6 +428,21 @@ def set_difx_message_port(start_port=50201):
 
     return difx_message_port
 
+def write_difxlog(log_in, outdir, jobname):
+    logfilename = outdir + jobname + ".difxlog"
+    logfiles.append(jobname + ".difxlog")
+    logfile = open(logfilename, "w")
+    print "\nfiltering the log file and copying to", logfile.name
+    #shutil.copy2('log', logfile)
+    log_lines = filter_log(log_in, jobname)
+    job_ok = False
+    for line in log_lines:
+        print>>logfile, line,
+        if "BYE" in line:
+            job_ok = True
+    logfile.close()
+
+    return job_ok
 
 # Main program start.
 # parse the options
@@ -772,11 +780,12 @@ logfiles = []
 
 
 # run each job
+bad_jobs = []
 try:
     if options.interactive:
-        run_interactive(corrjoblist, outdir)
+        bad_jobs = run_interactive(corrjoblist, outdir)
     else:
-        run_batch(corrjoblist, outdir)
+        bad_jobs = run_batch(corrjoblist, outdir)
 finally:
 
     ## kill the difxwatch process (kill -INT so it cleans itself up)
@@ -815,3 +824,10 @@ finally:
     print "\n\nWaiting for plotting process", speedup.pid, "to finish"
     plotmsg, ploterr = speedup.communicate()
     print plotmsg, ploterr
+
+    #if not options.clockjob and not options.testjob:
+    print "Jobs that may need redoing:"
+    if bad_jobs:
+        print "espresso.py " + " ".join(bad_jobs)
+    else:
+        print "None"
