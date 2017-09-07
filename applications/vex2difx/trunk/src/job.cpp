@@ -36,6 +36,8 @@
 
 void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> > &removedAntennas, bool sortAntennas)
 {
+	std::list<std::pair<int,std::string> > allAntennas;
+
 	jobAntennas.clear();
 
 	for(std::vector<std::string>::const_iterator s = scans.begin(); s != scans.end(); ++s)
@@ -45,17 +47,24 @@ void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> 
 		{
 			if(find(jobAntennas.begin(), jobAntennas.end(), a->first) == jobAntennas.end())
 			{
+				allAntennas.push_back(std::pair<int,std::string>(jobId,a->first));
 				if(V.hasData(a->first, *S))	// a->first is antenna name
 				{
 					jobAntennas.push_back(a->first);
 				}
-				else
-				{
-					removedAntennas.push_back(std::pair<int,std::string>(jobId, a->first));
-				}
 			}
 		}
 	}
+
+	// find antennas in allAntennas that never got into jobAntennas
+	for(std::list<std::pair<int,std::string> >::const_iterator a = allAntennas.begin(); a != allAntennas.end(); ++a)
+	{
+		if (std::find(jobAntennas.begin(), jobAntennas.end(), a->second) == jobAntennas.end()) 
+		{
+			removedAntennas.push_back(*a);
+		}
+	}
+
 	if(sortAntennas)
 	{
 		sort(jobAntennas.begin(), jobAntennas.end());
