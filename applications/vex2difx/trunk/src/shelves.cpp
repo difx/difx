@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -68,14 +68,18 @@ int Shelves::load(const std::string &fileName)
 			continue;
 		}
 
-		if(sscanf(s, "%31s%31s%31s", a, v, ms) != 3)
+		int l = sscanf(s, "%31s%31s%31s", a, v, ms);
+		if(l < 2)
 		{
 			std::cerr << "Warning: line " << lineNum << " of " << fileName << " not parsable." << std::endl;
 
 			++nWarn;
 		}
 
-		shelfMap[v] = ms;
+		if(l == 3)
+		{
+			shelfMap[v] = ms;
+		}
 	}
 
 	is.close();
