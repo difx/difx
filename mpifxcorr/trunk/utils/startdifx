@@ -699,7 +699,7 @@ optParser.add_option("-f", "--force", dest="deletePolicy", action="store_const",
 optParser.add_option("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not calculate delay model, even if needed")
 optParser.add_option("-D", "--difxdb", dest="difxdb", action="store_true", help="make use of difxdb to obtain module location")
 optParser.add_option("-F", "--fits", dest="makeFits", action="store_true", help="generate 1 fits file per job at end of each job")
-optParser.add_option("-v", "--verbose", dest="verbose", action="count", help="send more output to the screen  (use -v -v for extra info)")
+optParser.add_option("-v", "--verbose", dest="verbose", action="count", help="send more output to the screen and difxlog file (use -v -v for extra info)")
 optParser.add_option("-q", "--quiet", dest="quiet", action="count", help="be quieter")
 optParser.add_option("-l", "--localhead", dest="useLocalHead", action="store_true", help="use the current host as the head node. Overrides DIFX_HEAD_NODE.")
 optParser.add_option("--override-version", dest="override", action="store_true", help="ignore difx version differences")
