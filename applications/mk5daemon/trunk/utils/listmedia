@@ -77,12 +77,12 @@ class MessageParser:
 	def start(self, tag, attrs):
 		if tag == 'alertMessage':
 			self.type = tag
-			self.ok = True
 	
 	def parseAlertMessage(self):
 		s = split(self.tmp)
 		if len(s) > 2:
 			if s[0] == 'Filesystem' and s[1] == 'list:':
+				self.ok = True
 				for m in s[2:]:
 					self.media.append(m)
 
@@ -133,17 +133,19 @@ def getMediaListByMulticast(maxtime, verbose):
 	dt = 0.2
 	t = 0.0
 
-	# First send out a call for media
-	sendRequest("mark5", "listfs")
-	sendRequest("mark6", "listfs")
-
-	# Now listen for responses, until time runs out
+	# Open receiving socket
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.bind(('', port))
 	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
 	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 	s.settimeout(dt)
+
+	# Send out a call for media
+	sendRequest("mark5", "listfs")
+	sendRequest("mark6", "listfs")
+
+	# Now listen for responses, until time runs out
 	results = {}
 	while t < maxtime:
 		try:
@@ -156,7 +158,8 @@ def getMediaListByMulticast(maxtime, verbose):
 			p.feed(sender, message)
 			info = p.getinfo()
 			p.close()
-			results[info[0]] = info[1]
+			if p.ok:
+				results[info[0]] = info[1]
 
 		except socket.timeout:
 			t += dt
@@ -170,10 +173,11 @@ def printResults(results):
 	keys = results.keys()
 	keys.sort()
 	for key in keys:
-		media = ''
-		for m in results[key]:
-			media += (m + ' ')
-		print '%-10s %s' % (key, media)
+		if len(results[key]) > 0:
+			media = ''
+			for m in results[key]:
+				media += (m + ' ')
+			print '%-10s %s' % (key, media)
 
 
 #----------------------
@@ -187,6 +191,6 @@ group = getenv('DIFX_MESSAGE_GROUP')
 if group == None:
 	group = defaultDifxMessageGroup
 
-results = getMediaListByMulticast(0.5, 1)
+results = getMediaListByMulticast(1, 1)
 
 printResults(results)

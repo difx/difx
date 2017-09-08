@@ -110,8 +110,10 @@ int usage(const char *pgm)
 	fprintf(stderr, "  -v             Be more verbose\n\n");
 	fprintf(stderr, "  --quiet\n");
 	fprintf(stderr, "  -q             Be less verbose\n\n");
+	fprintf(stderr, "  --append\n");
+	fprintf(stderr, "  -a             Append output data to partial file, or don't copy if complete file exists\n\n");
 	fprintf(stderr, "  --fix5b\n");
-	fprintf(stderr, "  -5             Perform packet reordering and filtering for Mark5B format\n");
+	fprintf(stderr, "  -5             Perform packet reordering and filtering for Mark5B format\n\n");
 	fprintf(stderr, "  --force\n");
 	fprintf(stderr, "  -f             Continue even if dir is screwy\n\n");
 	fprintf(stderr, "  --rt           Read using Real-Time mode\n\n");
