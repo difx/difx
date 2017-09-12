@@ -124,7 +124,7 @@ def genipppc(path, ippversion):
                 out.write('Cflags: -I${base}/include\n')
 
 
-	elif major == 7 or major == 8 or major == 9 or major == 2017:
+	elif major == 7 or major == 8 or major == 9 or major == 2017 or major == 2018:
         
 		if platform == "darwin":
 			out.write('Libs: -Wl,-rpath,${base}/ipp/lib -L${base}/ipp/lib -lipps -lippvm -lippcore\n')
