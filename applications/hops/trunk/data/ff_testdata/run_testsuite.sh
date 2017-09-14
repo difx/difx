@@ -7,6 +7,7 @@
 
 verb=false
 [ -n "$testverb" ] && verb=true
+[ -n "$testverb" -a "$testverb" -gt 1 ] && set -x
 
 [ -d "$srcdir" ] || { echo srcdir not set; exit 1; }
 ${HOPS_SETUP-'false'} || . $srcdir/chk_env.sh
@@ -22,7 +23,7 @@ PATH_TO_MK4IOSOURCE=$srcdir/../../sub/mk4py/
 
 #make sure we have permission to mess around in the test/build directory
 #since distcheck plays silly games with where we are allowed to r/w
-chmod u+rw -R $CURRENT_TEST_DIR
+chmod -R u+rw $CURRENT_TEST_DIR
 
 #to avoid making a mess in the source directory its easiest to
 #just copy all the data files we need into the build directory
@@ -32,7 +33,7 @@ fi
 
 cp -r "$DATADIR_ORIG/." "$CURRENT_TEST_DIR/test_data_copy"
 export DATADIR="$CURRENT_TEST_DIR/test_data_copy"
-chmod u+rw -R $DATADIR
+chmod -R u+rw $DATADIR
 
 #copy in the python libraries which have been orphaned by automake distcheck
 if [ "$DO_SETUP" == 'true' ]
@@ -51,8 +52,8 @@ python ./hopstestsuite.py
 PASS_FAIL=$?
 
 #once again make sure we have permission to mess around in the test directory
-chmod u+rw -R $CURRENT_TEST_DIR
-chmod u+rw -R $DATADIR
+chmod -R u+rw $CURRENT_TEST_DIR
+chmod -R u+rw $DATADIR
 
 #clean up the mess we made, since distcheck will complain about it
 if [ "$DO_SETUP" == 'true' ]

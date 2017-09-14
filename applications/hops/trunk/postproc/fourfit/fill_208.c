@@ -19,6 +19,8 @@
 #include "mk4_data.h"
 #include "param_struct.h"
 
+#define POLCHAR_OFFSET 64
+
 int
 fill_208 (
 struct type_pass *pass,
@@ -37,6 +39,13 @@ struct type_208 *t208)
     char qcode, errcode, tqcode[6];
 
     clear_208 (t208);
+
+    //Add in an indicator of which polarization product we have:
+    //Encode pass and param pol values in the unused1 padding portion of the type 208
+    t208->unused1[0] = pass->pol + POLCHAR_OFFSET; 
+    t208->unused1[1] = param->pol + POLCHAR_OFFSET;
+    t208->unused1[2] = '\0';
+
                                         /* Compute apriori model */
     if (compute_model (param, sdata, t202, &adelay, &arate, &aaccel,
                        &adelay_ref, &arate_ref, &ref_stn_delay) != 0)

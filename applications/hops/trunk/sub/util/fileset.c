@@ -15,21 +15,25 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include "fileset.h"
 #include "mk4_util.h"
+#include <regex.h>
 
 int
 fileset(char *rootname, struct fileset *fset)
     {
-    int i, nfil;
-    char temp[256], *ptr, *rootcode;
+    int i, nfil, rerc;
+    char temp[1024], *ptr, *rootcode;
     DIR *dp, *opendir();
     struct dirent *ds, *readdir();
     fstruct fstemp;
+    regex_t preg;
+    regmatch_t pmatch[3];
                                         /* Initialize */
     fset->expno = 0;
     fset->scandir[0] = '\0';
@@ -48,12 +52,12 @@ fileset(char *rootname, struct fileset *fset)
     strcpy (fset->scandir, rootname);
     ptr = strrchr (fset->scandir, '/');
     *ptr = '\0';
-                                        /* Copy out rootname, and get rootcode */
+                                        /* Copy rootname and get rootcode */
     strcpy (fset->rootname, ptr+1);
     rootcode = strrchr (fset->rootname, '.');
     rootcode++;
-                                        /* Make spare copy and dissect out the */
-                                        /* scan and experiment directories */
+                                        /* Make spare copy & dissect out the */
+                                        /* exp and scan directories */
     strcpy (temp, fset->scandir);
     ptr = strrchr (temp, '/');
     if (ptr == NULL)
@@ -71,8 +75,26 @@ fileset(char *rootname, struct fileset *fset)
         }
     if (sscanf (ptr+1, "%hd", &(fset->expno)) != 1)
         {
-        msg ("Failure decoding experiment number in fileset()", 2);
-        return (-1);
+        for (i=0;i<2;i++) pmatch[i].rm_so = pmatch[i].rm_eo = 0;
+        rerc = regcomp(&preg, "[^0-9]*([0-9]{4})[^0-9]*", REG_EXTENDED);
+        if (!rerc) rerc = regexec(&preg, ptr+1, 2, pmatch, 0);
+        if (rerc) msg("RC %d from regexec on '%s'", 3, rerc, ptr+1);
+        if (!rerc)
+            {
+            for (i=0;i<2;i++) msg ("Fset expno match positions %d..%d", 1,
+                pmatch[i].rm_so, pmatch[i].rm_eo);
+            *(ptr+1+pmatch[1].rm_eo) = 0;   /* null terminate match */
+            fset->expno = atoi(ptr+1+pmatch[1].rm_so);
+            }
+        regfree(&preg);
+        if (fset->expno <= 0 || fset->expno > 9999)
+            {
+            if (rerc) msg ("Failure decoding expno(re) in fileset()", 2);
+            else msg ("Failure decoding experiment number in fileset()", 2);
+            return (-1);
+            }
+        else
+            msg ("Deduced expno %d useing re method", 1, fset->expno);
         }
                                         /* Open the scan directory */
     if ((dp = opendir (fset->scandir)) == NULL)

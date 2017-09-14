@@ -71,7 +71,7 @@ void norm_fx (struct type_pass *pass,
     int station_pol_mode = CIRC_MODE;
     if( pass->linpol[0] == 0 && pass->linpol[1] == 0){station_pol_mode = CIRC_MODE;}
     if( pass->linpol[0] == 1 && pass->linpol[1] == 1){station_pol_mode = LIN_MODE;}
-    if( pass->linpol[0] != pass->linpol[1] ){station_pol_mode = MIXED_MODE;}
+    if( pass->linpol[0] != pass->linpol[1] ){station_pol_mode = MIXED_MODE;};
 
     if (pass->npols == 1)
         {
@@ -278,11 +278,23 @@ void norm_fx (struct type_pass *pass,
                                     // from DC edge for this spectral point
                 deltaf = -2e-3 * i / (2e6 * param.samp_period * nlags);
 
+                // One size may not fit all.  The code below is a compromise
+                // between current geodetic practice and current EHT needs.
+                if (param.pc_mode[0] == MANUAL && param.pc_mode[1] == MANUAL)
+                    {
+                    // the correction had the wrong sign and minor O(1/nlags) error
+                    // if one is trying to keep the mean phase of this channel fixed
+                    phase_shift = - 1e-3 * diff_delay / (4e6 * param.samp_period);
+                    phase_shift *= - (double)(nlags - 2) / (double)(nlags);
+                    // per-channel phase should now be stable against delay adjustments
+                    }
+                else
+                    {
                                     // correction to mean phase depends on sideband
-                phase_shift = - 1e-3 * diff_delay / (4e6 * param.samp_period);
-                if (sb)
-                    phase_shift = -phase_shift;
-
+                    phase_shift = - 1e-3 * diff_delay / (4e6 * param.samp_period);
+                    if (sb)
+                        phase_shift = -phase_shift;
+                    }
                                     // apply phase ramp to spectral points 
                 z = z * cexp (-2.0 * M_PI * I * (diff_delay * deltaf + phase_shift));
                 xp_spec[i] += z;
@@ -349,9 +361,22 @@ void norm_fx (struct type_pass *pass,
     if ((datum->usbfrac >= 0.0) && (datum->lsbfrac >= 0.0)) 
         factor /= 4.0;              // x2 factor for sb and for polcof
                                     // correct for multiple pols being added in
-    factor *= polcof_sum;
+
+    //For linear pol IXY fourfitting, make sure that we normalize for the two pols
+    if( param.pol == POL_IXY)
+        {
+        factor *= 2.0;
+        }
+    else
+        {
+        factor *= polcof_sum; //should be 1.0 in all other cases, so this isn't really necessary
+        }
+
+    //why do we do this check? factor should never be negative (see above)
+    //and if factor == 0, is this an error that should be flagged? 
     if (factor > 0.0)
         factor = 1.0 / factor;
+
     msg ("usbfrac %f lsbfrac %f polcof_sum %f factor %1f", -2, 
             datum->usbfrac, datum->lsbfrac, polcof_sum, factor);
     for (i=0; i<4*nlags; i++) 

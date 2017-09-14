@@ -96,6 +96,7 @@ copy_208 (struct type_208 *t208,
         t208_v1 = (struct type_208_v1 *) *ptr;
         strncpy (t208_v1->record_id, "208", 3);
         strncpy (t208_v1->version_no, "01", 2);
+        strncpy (t208_v1->unused1, t208->unused1, 3);
         t208_v1->quality = t208->quality;
         t208_v1->errcode = t208->errcode;
         strncpy (t208_v1->tape_qcode, t208->tape_qcode, 6);

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1831 2017-06-30 17:28:16Z gbc $
+# $Id: Makefile.am 1958 2017-08-16 19:48:05Z barrettj $
 #
 
 #
@@ -66,16 +66,6 @@ TAR_HOPS = h
 DCF_HOPS = --disable-hops
 endif
 
-# this is for transitioning to a new world order
-if HAVE_HOPES
-HPESDIRS = @HPESDIR@
-TAR_HPES = hopes
-DCF_HPES = --enable-hopes
-else
-HPESDIRS =
-TAR_HPES =
-DCF_HPES = --disable-hopes
-endif
 #
 # this is for VEX2XML
 if HAVE_VEX2XML
@@ -86,6 +76,18 @@ else
 VXMLDIRS =
 TAR_VXML =
 DCF_VXML = --disable-vex2xml
+endif
+
+
+# this is for transitioning to a new world order
+if HAVE_HOPES
+HPESDIRS = @HPESDIR@
+TAR_HPES = chops
+DCF_HPES = --enable-hopes
+else
+HPESDIRS =
+TAR_HPES =
+DCF_HPES = --disable-hopes
 endif
 
 DISTCHECK_CONFIGURE_FLAGS = \

@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id: hops.bash.in 1727 2017-05-10 14:56:21Z barrettj $
+# $Id: hops.bash.in 1954 2017-08-14 19:47:59Z barrettj $
 #
 # Version @VERSION@
 #
@@ -36,6 +36,7 @@ will set up your HOPS environment by modifying the following variables:
     DEF_CONTROL     used by fourfit
     GS_DEVICE       used by ghostscript
     DATADIR         parent of experiment data directory
+    TESTDATADIR     directory for hops test data
 
     SCHEDDIR, AFILEDIR, SYSVEX, TASK, BIN, TMP
 		    heritage variables that are
@@ -87,7 +88,7 @@ esac
     export PYTHONPATH=$Pyp
     [ "$HOPS_SETUP" = false ] && HOPS_SETUP=''
     unset HOPS_ROOT HOPS_VERS HOPS_ARCH HOPS_DOCS
-    unset PROGDOC TEXT AHELP DEF_CONTROL DATADIR
+    unset PROGDOC TEXT AHELP DEF_CONTROL DATADIR TESTDATADIR
     unset SCHEDDIR AFILEDIR SYSVEX TASK BIN TMP
     unset prefix exec_prefix datarootdir pythondir
     unset Path Info Libp Pyp
@@ -133,7 +134,11 @@ hops_pythondir=$pythondir
 	LD_LIBRARY_PATH=${Libp}:$LD_LIBRARY_PATH
     [ -d "@DIFXLIBS@" ] &&
 	LD_LIBRARY_PATH=@DIFXLIBS@:$LD_LIBRARY_PATH
+    if [ "@USE_HOPES@" = true ]; then
+    LD_LIBRARY_PATH=@libdir@:$LD_LIBRARY_PATH
+    else
     LD_LIBRARY_PATH=@libdir@/hops:$LD_LIBRARY_PATH
+    fi
     export LD_LIBRARY_PATH
 
     [ -z "$PYTHONPATH" ] && PYTHONPATH=@pkgpythondir@ ||
@@ -153,6 +158,7 @@ hops_pythondir=$pythondir
 
     # /correlator/data is the current working equivalent
     [ -z "$DATADIR" ] && export DATADIR=$HOPS_ROOT/data
+    [ -z "$TESTDATADIR" ] && export TESTDATADIR=@datadir@/hops/testdata
 
     # printing via autoconfig
     [ -n "@PRINTER@" -a -z "$MK4_PRINTER" ] && export MK4_PRINTER=@PRINTER@

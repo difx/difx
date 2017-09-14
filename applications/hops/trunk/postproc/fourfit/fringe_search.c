@@ -85,21 +85,29 @@ int fringe_search ( struct vex* root, struct type_pass* pass)
         if (rc < 0)
             {
             msg ("Error return from ion_search_smooth", 2);
+            free (sbarray);
             return (-1);
             }
         else if (rc > 0)                // non-fatal condition
+            {
+            free (sbarray);
             return (rc);
+            }
         }
     else                                // 3-tiered non-smoothed ion search
         {
         rc = ion_search (pass);
         if (rc < 0)
             {
+            free (sbarray);
             msg ("Error return from ion_search", 2);
             return (-1);
             }
         else if (rc > 0)                // non-fatal condition
-            return (rc);
+            {
+                free (sbarray);
+                return (rc);
+            }
         }
 
                                         /* Write the fringe file to disk, with */
@@ -111,9 +119,14 @@ int fringe_search ( struct vex* root, struct type_pass* pass)
     if (oret > 0)
         {
         msg ("Error writing results", 2);
+        free (sbarray);
         return (-1);
         }
-    else if (oret < 0) return (-1);
+    else if (oret < 0)
+        {
+        free (sbarray);
+        return (-1);
+        }
                                         /* Free allocated memory */
     free (sbarray);
 

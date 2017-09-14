@@ -1,6 +1,6 @@
 A quasi-current list
 
-sudo apt install gcc make autoconf automake
+sudo apt install gcc make autoconf automake libtool
 sudo apt install rsync subversion subversion-tools
 sudo apt install flex bison gdb
 sudo apt install pgplot5 libx11-dev libpng12-dev

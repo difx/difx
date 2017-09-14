@@ -17,7 +17,7 @@
 #define MBD_GRID_MAX 8192
 int search (struct type_pass *pass)
     {
-    fftw_complex *data; 
+    fftw_complex *data = NULL; 
     double mb_delay[MBD_GRID_MAX]; 
     static complex rate_spectrum[MAXFREQ][MAXAP];
     static double amps[MBD_GRID_MAX][MAXAP], drtemp[MAXAP];
@@ -45,6 +45,11 @@ int search (struct type_pass *pass)
     status.total_lsb_frac = 0.0;
                                         // allocate fftw data array
     data = fftw_malloc (sizeof (fftw_complex) * MBD_GRID_MAX);
+    if (data == NULL)
+        {
+        msg ("fftw_malloc() failed to allocate memory");
+        return (-1);
+        }
     
                                         /* Make sure data will fit (note that auto
                                          * correlations use up twice as many lags */
@@ -52,12 +57,14 @@ int search (struct type_pass *pass)
         {
         msg ("Too many lags (%d) and/or aps (%d) for data & plot arrays (%d)",
              2, param.nlags, param.num_ap, MAX_APXLAG);
+        fftw_free (data);
         return (-1);
         }
                                         /* trap for too many lags */
     if (param.nlags > MAXLAG)
         {
         msg ("Too many (%d) lags", 2, param.nlags);
+        fftw_free (data);
         return (-1);
         }
 
@@ -119,6 +126,7 @@ int search (struct type_pass *pass)
         {
         msg ("Too many mbd grid points (%d) for array (%d), check freq sequence",
              2, status.grid_points, MBD_GRID_MAX);
+        fftw_free (data);
         return (-1);
         }
 
@@ -262,9 +270,10 @@ int search (struct type_pass *pass)
                                         /* Store values for overall max */
     update (pass, max_mbd_cell, global_max, max_lag, max_dr_cell, GLOBAL);
 
-    if (global_max == 0.0)
+    if (global_max <= 0.0)
         {
         msg ("Probable internal data selection error, values all zero", 2);
+        fftw_free (data);
         return (-1);
         }
 
@@ -278,4 +287,3 @@ int search (struct type_pass *pass)
     return (0);         /* This return should be modified to give some indication */
                         /* of whether the search was successful.                  */
     }   
-

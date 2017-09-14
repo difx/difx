@@ -114,6 +114,7 @@ addr_208 (short version,
                                         /* (see bytflp.h) */
         strncpy (t208->record_id, "208", 3);
         strncpy (t208->version_no, "01", 2);
+        strncpy (t208->unused1, t208_v1->unused1, 3);
         t208->quality = t208_v1->quality;
         t208->errcode = t208_v1->errcode;
         strncpy (t208->tape_qcode, t208_v1->tape_qcode, 6);

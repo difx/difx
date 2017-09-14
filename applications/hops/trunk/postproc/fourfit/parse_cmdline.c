@@ -269,7 +269,9 @@ int parse_polar (char *field, short *code)
     if (strcmp (field, "all") == 0)
         kode = POL_ALL;                 // we will do all present polarizations, one at a time
     else if (strcmp (field, "I") == 0)
+        {
         kode = POL_IXY;                 // form Stokes I for linear polarization data
+        }
     else if (strlen (field) < 12)
         {
         strcpy (buff, field);

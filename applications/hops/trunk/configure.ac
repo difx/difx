@@ -6,11 +6,19 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.15, gbc@haystack.mit.edu)
-#AM_INIT_AUTOMAKE([foreign std-options])
+AC_INIT(hops, 3.16, gbc@haystack.mit.edu)
 AM_INIT_AUTOMAKE([foreign])
+
+#why does subdir-objects break fearfit??
+#AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects])
+
 AC_CONFIG_SRCDIR([hops.bash.in])
 AC_CONFIG_HEADERS([hops_config.h])
+AC_CONFIG_MACRO_DIR([m4])
+m4_ifset([LT_INIT], [LT_INIT], [AC_PROG_LIBTOOL])
+m4_ifset([LT_WITH_LTDL], [LT_WITH_LTDL], [AC_LIB_LTDL])
+
+AC_PROG_CC
 
 # ignore this line
 AC_GBC_INIT([This file captures critical configuration details])
@@ -87,11 +95,6 @@ AC_GBC_NOTICE([enable_checks is --$enable_checks--])
 BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%S"`
 AC_SUBST(BUILD_DATE)
 
-have_hopes=false
-### option disabled
-AC_SUBST(HPESDIR)
-AM_CONDITIONAL(HAVE_HOPES, $have_hopes)
-
 #
 # Control the core HOPS post-processing tools
 #
@@ -100,6 +103,12 @@ if [test x$enable_hops = xyes] ; then
 else
     have_hops=false
 fi
+
+### option disabled
+
+AC_SUBST(HPESDIR)
+AM_CONDITIONAL(HAVE_HOPES, $have_hopes)
+
 AC_GBC_NOTICE([%%% have_hops is $have_hops (required)])
 AM_CONDITIONAL(HAVE_HOPS, $have_hops)
 
@@ -111,14 +120,22 @@ AC_SUBST(IFFYDIR)
 AC_SUBST(M4PYDIR)
 AM_CONDITIONAL(HAVE_DEVEL, $have_devel)
 
+
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+
+
 # autoscan suggested list of checks follows
 
 # Checks for programs.
 AC_PATH_PROG([AUTORECONF], [autoreconf], [/bin/false])
 AC_PATH_PROG([ACLOCAL], [aclocal], [/bin/false])
 AC_PROG_CC
-AC_PROG_RANLIB
 AC_PROG_F77
+AC_PROG_LN_S
+AC_PROG_RANLIB
 AC_F77_LIBRARY_LDFLAGS
 # this must follow AC_PROG_CC and AC_PROG_F77 for some reason
 if [test x$enable_mark5 = xyes] ; then
@@ -169,6 +186,16 @@ else
     have_python=false
 fi
 AM_CONDITIONAL([HAVE_PYTHON], [$have_python])
+# .so on linux, .dylib on darwin
+# libtool machinery on macos appears to define LT_SHARED_EXT as .dylib
+# safest to do it ourselves
+AC_GBC_NOTICE([version_type: $version_type])
+if [test x$version_type = xdarwin ] ; then
+    HOPSPYSHLEXT='.dylib'
+else
+    HOPSPYSHLEXT='.so'
+fi
+AC_SUBST(HOPSPYSHLEXT)
 
 if [ $have_python = "true" ] ; then
     AC_PYTHON_MODULE_CHECK(setuptools)
@@ -193,6 +220,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h inttypes.h limits.h])
 AC_CHECK_HEADERS([locale.h netdb.h netinet/in.h stddef.h stdint.h])
 AC_CHECK_HEADERS([stdlib.h string.h strings.h sys/socket.h unistd.h])
+AC_CHECK_HEADERS([sys/time.h sys/timeb.h])
 fi
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -239,9 +267,12 @@ AH_BOTTOM(
 #endif /* WORDS_BIGENDIAN */])
 if [$ac_hops] ; then
 AC_C_CONST
+AC_C_INLINE
+AC_C_VOLATILE
+AC_TYPE_OFF_T
+AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
-AC_C_VOLATILE
 fi
 
 # Checks for library functions.
@@ -251,12 +282,16 @@ AC_FUNC_LSTAT
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_MEMCMP
+AC_FUNC_MKTIME
+AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_FUNC_STAT
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([floor getcwd isascii memset mkdir modf pow rint sqrt])
 AC_CHECK_FUNCS([strcasecmp strchr strdup strerror strncasecmp strrchr])
 AC_CHECK_FUNCS([strspn strstr])
+AC_CHECK_FUNCS([clock_gettime gethostname gettimeofday munmap putenv])
+AC_CHECK_FUNCS([regcomp strtol strtoul])
 fi
 
 have_gsl=false
@@ -488,20 +523,29 @@ if [test x$enable_checks = xyes] ; then
   fi
 fi
 
+
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+
+
 #
 # Always make these files....
 #
 AC_CONFIG_FILES([
     Makefile
+	help/Makefile
     README.txt
 ])
+
 
 #
 # The core HOPS postprocessing tools
 #
-if [ $have_hops = "true" ] ; then
+
+if [ "$have_hops" = true ] ; then
     AC_CONFIG_FILES([
-	help/Makefile
 	include/Makefile
 	scripts/Makefile
 	scripts/phorc/Makefile

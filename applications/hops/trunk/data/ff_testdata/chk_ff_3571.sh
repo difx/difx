@@ -33,7 +33,8 @@ read a snr b <<<"$line"
 
 # snr bounds
 low=395.9
-high=396.3
+high=401
+#high=396.3 (this value is from before the change to IXY fourfit amplitudes)
 aok=$(echo "$snr>$low && $snr<$high" | bc)
 $verb && echo aok is $aok and "$low < $snr < $high" is expected from: $line
 

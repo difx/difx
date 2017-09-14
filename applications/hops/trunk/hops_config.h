@@ -21,6 +21,9 @@
 /* Define to 1 if using `alloca.c'. */
 /* #undef C_ALLOCA */
 
+/* Define to 1 if you have the `alarm' function. */
+#define HAVE_ALARM 1
+
 /* Define to 1 if you have `alloca', as a function or macro. */
 #define HAVE_ALLOCA 1
 
@@ -28,15 +31,70 @@
    */
 #define HAVE_ALLOCA_H 1
 
+/* Define to 1 if you have the `argz_add' function. */
+#define HAVE_ARGZ_ADD 1
+
+/* Define to 1 if you have the `argz_append' function. */
+#define HAVE_ARGZ_APPEND 1
+
+/* Define to 1 if you have the `argz_count' function. */
+#define HAVE_ARGZ_COUNT 1
+
+/* Define to 1 if you have the `argz_create_sep' function. */
+#define HAVE_ARGZ_CREATE_SEP 1
+
+/* Define to 1 if you have the <argz.h> header file. */
+#define HAVE_ARGZ_H 1
+
+/* Define to 1 if you have the `argz_insert' function. */
+#define HAVE_ARGZ_INSERT 1
+
+/* Define to 1 if you have the `argz_next' function. */
+#define HAVE_ARGZ_NEXT 1
+
+/* Define to 1 if you have the `argz_stringify' function. */
+#define HAVE_ARGZ_STRINGIFY 1
+
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #define HAVE_ARPA_INET_H 1
+
+/* Define to 1 if you have the `clock_gettime' function. */
+/* #undef HAVE_CLOCK_GETTIME */
+
+/* Define to 1 if you have the `closedir' function. */
+#define HAVE_CLOSEDIR 1
+
+/* Define to 1 if you have the declaration of `cygwin_conv_path', and to 0 if
+   you don't. */
+/* #undef HAVE_DECL_CYGWIN_CONV_PATH */
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
    */
 #define HAVE_DIRENT_H 1
 
+/* Define if you have the GNU dld library. */
+/* #undef HAVE_DLD */
+
+/* Define to 1 if you have the <dld.h> header file. */
+/* #undef HAVE_DLD_H */
+
+/* Define to 1 if you have the `dlerror' function. */
+#define HAVE_DLERROR 1
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#define HAVE_DLFCN_H 1
+
+/* Define to 1 if you have the <dl.h> header file. */
+/* #undef HAVE_DL_H */
+
 /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
 /* #undef HAVE_DOPRNT */
+
+/* Define if you have the _dyld_func_lookup function. */
+/* #undef HAVE_DYLD */
+
+/* Define to 1 if the system has the type `error_t'. */
+#define HAVE_ERROR_T 1
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #define HAVE_FCNTL_H 1
@@ -53,6 +111,15 @@
 /* Define to 1 if you have the `getcwd' function. */
 #define HAVE_GETCWD 1
 
+/* Define to 1 if you have the `gethostname' function. */
+#define HAVE_GETHOSTNAME 1
+
+/* Define to 1 if you have the `getpagesize' function. */
+#define HAVE_GETPAGESIZE 1
+
+/* Define to 1 if you have the `gettimeofday' function. */
+#define HAVE_GETTIMEOFDAY 1
+
 /* Define to 1 if you have the <gsl/gsl_randist.h> header file. */
 /* #undef HAVE_GSL_GSL_RANDIST_H */
 
@@ -61,6 +128,12 @@
 
 /* Define to 1 if you have the `isascii' function. */
 #define HAVE_ISASCII 1
+
+/* Define if you have the libdl library or equivalent. */
+#define HAVE_LIBDL 1
+
+/* Define if libdlloader will be built on this platform */
+#define HAVE_LIBDLLOADER 1
 
 /* Define to 1 with -lgsl (noise testing) */
 /* #undef HAVE_LIBGSL */
@@ -81,6 +154,12 @@
    zero-length file name argument. */
 /* #undef HAVE_LSTAT_EMPTY_STRING_BUG */
 
+/* Define this if a modern libltdl is already installed */
+#define HAVE_LTDL 1
+
+/* Define to 1 if you have the <mach-o/dyld.h> header file. */
+/* #undef HAVE_MACH_O_DYLD_H */
+
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #define HAVE_MALLOC 1
@@ -94,11 +173,17 @@
 /* Define to 1 if you have the `mkdir' function. */
 #define HAVE_MKDIR 1
 
+/* Define to 1 if you have a working `mmap' system call. */
+#define HAVE_MMAP 1
+
 /* Define to 1 if you have the `modf' function. */
 #define HAVE_MODF 1
 
 /* Define to 1 if you have the `mremap' function. */
 /* #undef HAVE_MREMAP */
+
+/* Define to 1 if you have the `munmap' function. */
+#define HAVE_MUNMAP 1
 
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 /* #undef HAVE_NDIR_H */
@@ -109,15 +194,33 @@
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #define HAVE_NETINET_IN_H 1
 
+/* Define to 1 if you have the `opendir' function. */
+#define HAVE_OPENDIR 1
+
 /* Define to 1 if you have the `pow' function. */
 #define HAVE_POW 1
+
+/* Define if libtool can extract symbol lists from object files. */
+#define HAVE_PRELOADED_SYMBOLS 1
+
+/* Define to 1 if you have the `putenv' function. */
+#define HAVE_PUTENV 1
+
+/* Define to 1 if you have the `readdir' function. */
+#define HAVE_READDIR 1
 
 /* Define to 1 if your system has a GNU libc compatible `realloc' function,
    and to 0 otherwise. */
 #define HAVE_REALLOC 1
 
+/* Define to 1 if you have the `regcomp' function. */
+#define HAVE_REGCOMP 1
+
 /* Define to 1 if you have the `rint' function. */
 #define HAVE_RINT 1
+
+/* Define if you have the shl_load function. */
+/* #undef HAVE_SHL_LOAD */
 
 /* Define to 1 if you have the `sqrt' function. */
 #define HAVE_SQRT 1
@@ -153,6 +256,12 @@
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
 
+/* Define to 1 if you have the `strlcat' function. */
+/* #undef HAVE_STRLCAT */
+
+/* Define to 1 if you have the `strlcpy' function. */
+/* #undef HAVE_STRLCPY */
+
 /* Define to 1 if you have the `strncasecmp' function. */
 #define HAVE_STRNCASECMP 1
 
@@ -165,9 +274,18 @@
 /* Define to 1 if you have the `strstr' function. */
 #define HAVE_STRSTR 1
 
+/* Define to 1 if you have the `strtol' function. */
+#define HAVE_STRTOL 1
+
+/* Define to 1 if you have the `strtoul' function. */
+#define HAVE_STRTOUL 1
+
 /* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
    */
 /* #undef HAVE_SYS_DIR_H */
+
+/* Define to 1 if you have the <sys/dl.h> header file. */
+/* #undef HAVE_SYS_DL_H */
 
 /* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
    */
@@ -179,6 +297,12 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
 
+/* Define to 1 if you have the <sys/timeb.h> header file. */
+#define HAVE_SYS_TIMEB_H 1
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#define HAVE_SYS_TIME_H 1
+
 /* Define to 1 if you have the <sys/types.h> header file. */
 #define HAVE_SYS_TYPES_H 1
 
@@ -188,18 +312,44 @@
 /* Define to 1 if you have the `vprintf' function. */
 #define HAVE_VPRINTF 1
 
+/* This value is set to 1 to indicate that the system argz facility works */
+#define HAVE_WORKING_ARGZ 1
+
 /* set nonzero when streamstor supports XLRGetDriveTemp() */
 #define HAVE_XLRGetDriveTemp 0
 
 /* HOPS package rev number */
-#define HOPS_REVISION 3.15
+#define HOPS_REVISION 3.16
 
 /* Haystack SVN rev number */
-#define HOPS_SVN_REV 1897
+#define HOPS_SVN_REV 2002
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
 #define LSTAT_FOLLOWS_SLASHED_SYMLINK 1
+
+/* Define if the OS needs help to load dependent libraries for dlopen(). */
+/* #undef LTDL_DLOPEN_DEPLIBS */
+
+/* Define to the system default library search path. */
+#define LT_DLSEARCH_PATH "/lib64:/usr/lib64:/lib:/usr/lib:/usr/lib64/atlas:/opt/ofed-1.5.4.1/lib64:/usr/lib64/mysql:/opt/ofed-1.5.4.1/lib64:/opt/ofed-1.5.4.1/lib:/usr/lib64/qt-3.3/lib:/usr/lib64/tcl8.5"
+
+/* The archive extension */
+#define LT_LIBEXT "a"
+
+/* Define to the extension used for runtime loadable modules, say, ".so". */
+#define LT_MODULE_EXT ".so"
+
+/* Define to the name of the environment variable that determines the run-time
+   module search path. */
+#define LT_MODULE_PATH_VAR "LD_LIBRARY_PATH"
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#define LT_OBJDIR ".libs/"
+
+/* Define if dlsym() requires a leading underscore in symbol names. */
+/* #undef NEED_USCORE */
 
 /* Name of package */
 #define PACKAGE "hops"
@@ -211,13 +361,16 @@
 #define PACKAGE_NAME "hops"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "hops 3.15"
+#define PACKAGE_STRING "hops 3.16"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "hops"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.15"
+#define PACKAGE_VERSION "3.16"
+
+/* Python install dir */
+/* #undef PYTHON_SITE_PREFIX */
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
@@ -230,11 +383,14 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#define TIME_WITH_SYS_TIME 1
+
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "3.15"
+#define VERSION "3.16"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -251,11 +407,29 @@
 /* Define to 1 if the X Window System is missing or not being used. */
 /* #undef X_DISPLAY_MISSING */
 
+/* Define so that glibc/gnulib argp.h does not typedef error_t. */
+/* #undef __error_t_defined */
+
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */
 
+/* Define to a type to use for `error_t' if it is not otherwise available. */
+/* #undef error_t */
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+/* #undef inline */
+#endif
+
 /* Define to rpl_malloc if the replacement function should be used. */
 /* #undef malloc */
+
+/* Define to `long int' if <sys/types.h> does not define. */
+/* #undef off_t */
+
+/* Define to `int' if <sys/types.h> does not define. */
+/* #undef pid_t */
 
 /* Define to rpl_realloc if the replacement function should be used. */
 /* #undef realloc */

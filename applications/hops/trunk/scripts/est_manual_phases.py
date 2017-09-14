@@ -28,7 +28,7 @@ def parseOptions():
     '''
     use = '%(prog)s [options]\n'
     use += '  Version '
-    use += '$Id: est_manual_phases.py.in 1895 2017-07-24 18:28:00Z gbc $'
+    use += '$Id: est_manual_phases.py.in 1940 2017-08-03 15:13:11Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     required = parser.add_argument_group('required options')
     flaggers = parser.add_argument_group('flag options')
@@ -314,7 +314,7 @@ def doTheWorkAok(o):
     mixed = sites.pop(0)
     for other in sites:
         genPhaseDelay(o, mixed, other, 'R', 'R', -1)
-        genPhaseDelay(o, mixed, other, 'R', 'L', -1)
+        genPhaseDelay(o, mixed, other, 'L', 'L', -1)
 
 def pruneCF(o):
     '''

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1763 2017-06-02 18:08:08Z gbc $
+# $Id: Makefile.am 1987 2017-09-12 20:29:46Z gbc $
 #
 
 SUBDIRS =
@@ -103,8 +103,10 @@ TESTS = chk_ff_2836.sh chk_ff_2843.sh chk_ff_3372.sh chk_ff_3413.sh \
 	chk_aedit.sh chk_fringex.sh chk_average.sh \
 	chk_avefix.sh chk_cofit.sh chk_search.sh \
 	chk_fourmer.sh chk_frmrsrch.sh chk_hdlinks.sh
+#FAIL_TESTS = chk_ff_3413.sh chk_ff_3571.sh
 if HAVE_PYTHON
 TESTS += run_testsuite.sh
+#FAIL_TESTS += run_testsuite.sh
 endif
 expdata = $(EXP_2836) $(EXP_2843) $(EXP_3365) $(EXP_3372) $(EXP_3413) \
 	$(EXP_3571) $(EXP_3562) $(AVERAGEFIX)

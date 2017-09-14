@@ -124,7 +124,7 @@ control_file_path_arg = data_dir_env + "/3571/cf3571_244-1249"
 root_file_path_arg = data_dir_env + "/3571/244-1717/0727-115.zbgwce"
 
 ff_list = ht.fourfit_generate_fringe(option_arg, baseline_arg, control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
-snr_3571_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=395.9, snr_high=396.3)
+snr_3571_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=400.3, snr_high=400.7)
 
 if snr_3571_check_pass:
     if verbosity_toggle:
@@ -151,38 +151,54 @@ original_GE = ht.find_fringe_files(root_file_path_arg, baseline="GE", freq_band=
 original_HE = ht.find_fringe_files(root_file_path_arg, baseline="HE", freq_band="X")
 original_GH = ht.find_fringe_files(root_file_path_arg, baseline="GH", freq_band="X")
 
-#generate and compare the fringe file contents against the originals
-current_GE = ht.fourfit_generate_fringe(option_arg, "GE", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
-GE_test_value = ht.compare_fringe_files(original_GE[0], current_GE[0], verbose=verbosity_toggle, pedantic=False)
-if GE_test_value == 0:
-    if verbosity_toggle:
-        print "test 3562-GE baseline fringe file check passed"
+if len(original_GE) == 1:
+    #generate and compare the fringe file contents against the originals
+    current_GE = ht.fourfit_generate_fringe(option_arg, "GE", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+    GE_test_value = ht.compare_fringe_files(original_GE[0], current_GE[0], verbose=verbosity_toggle, pedantic=False)
+    if GE_test_value == 0:
+        if verbosity_toggle:
+            print "test 3562-GE baseline fringe file check passed"
+    else:
+        status = 2
+        if verbosity_toggle:
+            print "test 3562-GE baseline fringe file check failed"
 else:
-    status = 2
+    GE_test_value = -1
+    status = 7
     if verbosity_toggle:
-        print "test 3562-GE baseline fringe file check failed"
+        print "no 3562-GE baseline fringe found to check!"
 
-
-current_HE = ht.fourfit_generate_fringe(option_arg, "HE", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
-HE_test_value = ht.compare_fringe_files(original_HE[0], current_HE[0], verbose=verbosity_toggle, pedantic=False)
-if HE_test_value == 0:
-    if verbosity_toggle:
-        print "test 3562-HE baseline fringe file check passed"
+if len(original_HE) == 1:
+    current_HE = ht.fourfit_generate_fringe(option_arg, "HE", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+    HE_test_value = ht.compare_fringe_files(original_HE[0], current_HE[0], verbose=verbosity_toggle, pedantic=False)
+    if HE_test_value == 0:
+        if verbosity_toggle:
+            print "test 3562-HE baseline fringe file check passed"
+    else:
+        status = 2
+        if verbosity_toggle:
+            print "test 3562-GE baseline fringe file check failed"
 else:
-    status = 2
+    HE_test_value = -1
+    status = 7
     if verbosity_toggle:
-        print "test 3562-GE baseline fringe file check failed"
-        
-current_GH = ht.fourfit_generate_fringe(option_arg, "GH", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
-GH_test_value = ht.compare_fringe_files(original_GH[0], current_GH[0], verbose=verbosity_toggle, pedantic=False)
-if GH_test_value == 0:
-    if verbosity_toggle:
-        print "test 3562-GH baseline fringe file check passed"
-else:
-    status = 2
-    if verbosity_toggle:
-        print "test 3562-GH baseline fringe file check failed"
+        print "no 3562-HE baseline fringe found to check!"
 
+if len(original_GH) == 1:
+    current_GH = ht.fourfit_generate_fringe(option_arg, "GH", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+    GH_test_value = ht.compare_fringe_files(original_GH[0], current_GH[0], verbose=verbosity_toggle, pedantic=False)
+    if GH_test_value == 0:
+        if verbosity_toggle:
+            print "test 3562-GH baseline fringe file check passed"
+    else:
+        status = 2
+        if verbosity_toggle:
+            print "test 3562-GH baseline fringe file check failed"
+else:
+    GH_test_value = -1
+    status = 7
+    if verbosity_toggle:
+        print "no 3562-GH baseline fringe found to check!"
 
 #4/26/17 Adding a check on the control file hash, this is only present in the newly constructed
 #fringe files, not the old reference fringe files, but we only need to check a single value

@@ -1,4 +1,1207 @@
 ------------------------------------------------------------------------
+r2002 | gbc | 2017-09-14 11:06:56 -0400 (Thu, 14 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+fixed the darwin test, it now works on linux and my mac
+
+------------------------------------------------------------------------
+r2000 | gbc | 2017-09-14 09:53:05 -0400 (Thu, 14 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/sub/mk4py/difxio.py
+   M /trunk/sub/mk4py/mk4.py
+
+removed executable
+
+------------------------------------------------------------------------
+r1999 | gbc | 2017-09-14 08:34:13 -0400 (Thu, 14 Sep 2017) | 1 line
+Changed paths:
+   A /trunk/data/ff_testdata/testdata/3562/141-0002/GE.X.1.yxhoyl
+   A /trunk/data/ff_testdata/testdata/3562/141-0002/GH.X.3.yxhoyl
+   A /trunk/data/ff_testdata/testdata/3562/141-0002/HE.X.2.yxhoyl
+   A /trunk/data/ff_testdata/testdata/3562/3562-captured.fsumm
+   A /trunk/data/ff_testdata/testdata/3562/3562-captured.tsumm
+
+adding new data for repaired -PI normalization
+
+------------------------------------------------------------------------
+r1995 | gbc | 2017-09-13 17:29:28 -0400 (Wed, 13 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/hopstestsuite.py.in
+   M /trunk/data/ff_testdata/run_testsuite.sh
+
+fixed up a few macos things
+
+------------------------------------------------------------------------
+r1994 | gbc | 2017-09-13 16:47:20 -0400 (Wed, 13 Sep 2017) | 1 line
+Changed paths:
+   D /trunk/data/ff_testdata/testdata/3562/temp-save
+
+removing previous saved data of ff_testdata/testdata/3562/temp-save
+
+------------------------------------------------------------------------
+r1993 | gbc | 2017-09-13 16:46:41 -0400 (Wed, 13 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/hopstestsuite.py.in
+   D /trunk/data/ff_testdata/testdata/3562/141-0002/GE.X.1.yxhoyl
+   D /trunk/data/ff_testdata/testdata/3562/141-0002/GH.X.3.yxhoyl
+   D /trunk/data/ff_testdata/testdata/3562/141-0002/HE.X.2.yxhoyl
+   D /trunk/data/ff_testdata/testdata/3562/3562-captured.fsumm
+   D /trunk/data/ff_testdata/testdata/3562/3562-captured.tsumm
+   A /trunk/data/ff_testdata/testdata/3562/temp-save
+   A /trunk/data/ff_testdata/testdata/3562/temp-save/3562-captured.fsumm (from /trunk/data/ff_testdata/testdata/3562/3562-captured.fsumm:1992)
+   A /trunk/data/ff_testdata/testdata/3562/temp-save/3562-captured.tsumm (from /trunk/data/ff_testdata/testdata/3562/3562-captured.tsumm:1992)
+   A /trunk/data/ff_testdata/testdata/3562/temp-save/GE.X.1.yxhoyl (from /trunk/data/ff_testdata/testdata/3562/141-0002/GE.X.1.yxhoyl:1992)
+   A /trunk/data/ff_testdata/testdata/3562/temp-save/GH.X.3.yxhoyl (from /trunk/data/ff_testdata/testdata/3562/141-0002/GH.X.3.yxhoyl:1992)
+   A /trunk/data/ff_testdata/testdata/3562/temp-save/HE.X.2.yxhoyl (from /trunk/data/ff_testdata/testdata/3562/141-0002/HE.X.2.yxhoyl:1992)
+
+repaired test suites for improved -PI calculations
+
+------------------------------------------------------------------------
+r1992 | barrettj | 2017-09-13 16:16:10 -0400 (Wed, 13 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_3571.sh
+   M /trunk/postproc/fearfit/hook_import.sh
+
+tweaks to test suite
+
+------------------------------------------------------------------------
+r1991 | barrettj | 2017-09-13 16:16:10 -0400 (Wed, 13 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/src/addr_208.c
+   M /trunk/chops/source/c_src/dfio/src/copy_208.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_208.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/fringe_search.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/chops/source/c_src/mk4util/src/fileset.c
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/__init__.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/source_analysis_lib.py
+   M /trunk/postproc/fearfit/hook_import.sh
+   M /trunk/postproc/fourfit/fill_208.c
+   M /trunk/postproc/fourfit/make_plotdata.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/parse_cmdline.c
+   M /trunk/sub/dfio/addr_208.c
+   M /trunk/sub/dfio/copy_208.c
+
+merging in ixy_amp fix branch
+
+------------------------------------------------------------------------
+r1990 | gbc | 2017-09-13 15:51:25 -0400 (Wed, 13 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/search.c
+
+a bit of robustification
+
+------------------------------------------------------------------------
+r1989 | gbc | 2017-09-13 15:20:46 -0400 (Wed, 13 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/diff_file_phase.c
+
+bug fix: only use pd[] values in bound
+
+------------------------------------------------------------------------
+r1987 | gbc | 2017-09-12 16:29:46 -0400 (Tue, 12 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/postproc/fourfit/norm_fx.c
+
+reverted the phase_shift behavior for non-MANUAL pc mode
+
+------------------------------------------------------------------------
+r1986 | gbc | 2017-09-12 16:10:48 -0400 (Tue, 12 Sep 2017) | 1 line
+Changed paths:
+   A /trunk/doc/fourfit/web
+   A /trunk/doc/fourfit/web/fourfit_phase_by_file.docx
+   A /trunk/doc/fourfit/web/fourfit_phase_by_file.pdf
+
+more crap
+
+------------------------------------------------------------------------
+r1985 | barrettj | 2017-09-12 11:58:11 -0400 (Tue, 12 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/diff_file_phase.c
+
+patch for adhoc phase file bug, removed extraneous for loop
+
+------------------------------------------------------------------------
+r1983 | gbc | 2017-09-11 16:20:45 -0400 (Mon, 11 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/MacPorts.txt
+
+got it to work
+
+------------------------------------------------------------------------
+r1982 | gbc | 2017-09-11 16:15:31 -0400 (Mon, 11 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/snratio/Makefile.am
+   M /trunk/postproc/snratio/snratio.c
+
+compilation fixes
+
+------------------------------------------------------------------------
+r1981 | gbc | 2017-09-11 16:07:31 -0400 (Mon, 11 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/sub/mk4py/extern.c
+
+avoid collision with util/environment
+
+------------------------------------------------------------------------
+r1979 | gbc | 2017-09-07 16:14:54 -0400 (Thu, 07 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/postproc/fearfit/hook_import.sh
+
+this now passes tests, with XFAIL
+
+------------------------------------------------------------------------
+r1978 | gbc | 2017-09-07 16:07:47 -0400 (Thu, 07 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+
+marked 3413 and 3571 as failing pending acceptance of new code
+
+------------------------------------------------------------------------
+r1977 | gbc | 2017-09-07 16:03:37 -0400 (Thu, 07 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/norm_fx.c
+
+activating the fix
+
+------------------------------------------------------------------------
+r1976 | gbc | 2017-09-07 15:17:30 -0400 (Thu, 07 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/norm_fx.c
+
+copied the wrong line--this should be equivalent to old code
+
+------------------------------------------------------------------------
+r1975 | gbc | 2017-09-07 14:44:53 -0400 (Thu, 07 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/norm_fx.c
+
+temporary FIX_PHASE_SHIFT 0 code to allow testing
+
+------------------------------------------------------------------------
+r1973 | rjc | 2017-09-01 10:54:36 -0400 (Fri, 01 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/algorithms.tex
+   M /trunk/doc/fourfit/fourfit_users_manual.pdf
+
+add short description of pseudo-I observable
+
+------------------------------------------------------------------------
+r1971 | gbc | 2017-08-31 12:02:45 -0400 (Thu, 31 Aug 2017) | 1 line
+Changed paths:
+   A /trunk/scripts/adhoc-baseline.pl
+
+another vincent script
+
+------------------------------------------------------------------------
+r1967 | barrettj | 2017-08-24 15:20:13 -0400 (Thu, 24 Aug 2017) | 1 line
+Changed paths:
+   M /trunk
+   M /trunk/m4
+
+updating svn:ignore to disregard some libtool generated files
+
+------------------------------------------------------------------------
+r1965 | barrettj | 2017-08-23 11:29:52 -0400 (Wed, 23 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+
+minor fix in phorc
+
+------------------------------------------------------------------------
+r1964 | barrettj | 2017-08-23 07:45:59 -0400 (Wed, 23 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+
+fixing library name
+
+------------------------------------------------------------------------
+r1962 | barrettj | 2017-08-18 16:07:12 -0400 (Fri, 18 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fearfit/hook_import.sh
+
+updating hook_import.sh
+
+------------------------------------------------------------------------
+r1961 | barrettj | 2017-08-18 16:07:12 -0400 (Fri, 18 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/diff_file_phase.c
+
+adding another safety check against accessing a null pmall ptr when the ad hoc phase file is missing
+
+------------------------------------------------------------------------
+r1960 | barrettj | 2017-08-18 16:07:12 -0400 (Fri, 18 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/diff_file_phase.c
+   M /trunk/postproc/fourfit/search.c
+
+importing ck's fixes for kazu's bug
+
+------------------------------------------------------------------------
+r1958 | barrettj | 2017-08-16 15:48:05 -0400 (Wed, 16 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/Makefile.am
+   M /trunk/chops/data/Makefile.am
+   M /trunk/chops/source/c_src/applications/aedit/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/phorc_module/Makefile.am
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_handle.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/mixedmode.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/configure.ac
+
+getting distcheck to work with devel and hopes
+
+------------------------------------------------------------------------
+r1957 | barrettj | 2017-08-16 15:48:04 -0400 (Wed, 16 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/afio/Makefile.am
+   M /trunk/chops/source/c_src/applications/aedit/CMakeLists.txt
+   M /trunk/chops/source/c_src/applications/aedit/Makefile.am
+   M /trunk/chops/source/c_src/applications/alist/CMakeLists.txt
+   M /trunk/chops/source/c_src/applications/alist/Makefile.am
+   M /trunk/chops/source/c_src/applications/fourfit/CMakeLists.txt
+   M /trunk/chops/source/c_src/applications/fourfit/Makefile.am
+   M /trunk/chops/source/c_src/dfio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/mk4util/Makefile.am
+   M /trunk/chops/source/c_src/vex/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   D /trunk/chops/source/python_src/hopstest_module/hopstest/__init__.py
+   D /trunk/chops/source/python_src/hopstest_module/hopstest/hopstest.py
+   A /trunk/chops/source/python_src/hopstest_module/hopstestb
+   A /trunk/chops/source/python_src/hopstest_module/hopstestb/__init__.py
+   A /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py (from /trunk/chops/source/python_src/hopstest_module/hopstest/hopstest.py:1956)
+   D /trunk/chops/source/python_src/hopstest_module/hopstestsuite.py.in
+   A /trunk/chops/source/python_src/hopstest_module/hopstestsuiteb.py.in (from /trunk/chops/source/python_src/hopstest_module/hopstestsuite.py.in:1956)
+   M /trunk/chops/source/python_src/hopstest_module/setup.py.in
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   D /trunk/chops/source/python_src/mk4_module/afio/__init__.py
+   D /trunk/chops/source/python_src/mk4_module/afio/afio.py
+   A /trunk/chops/source/python_src/mk4_module/afiob
+   A /trunk/chops/source/python_src/mk4_module/afiob/__init__.py
+   A /trunk/chops/source/python_src/mk4_module/afiob/afiob.py (from /trunk/chops/source/python_src/mk4_module/afio/afio.py:1956)
+   D /trunk/chops/source/python_src/mk4_module/mk4/__init__.py
+   D /trunk/chops/source/python_src/mk4_module/mk4/mk4.py
+   A /trunk/chops/source/python_src/mk4_module/mk4b
+   A /trunk/chops/source/python_src/mk4_module/mk4b/__init__.py
+   A /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py (from /trunk/chops/source/python_src/mk4_module/mk4/mk4.py:1956)
+   M /trunk/chops/source/python_src/mk4_module/setup.py.in
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_handle.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/mixedmode.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/plotting.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/configure.ac
+
+renaming things in chops to avoid conflicts with mainline hops
+
+------------------------------------------------------------------------
+r1955 | barrettj | 2017-08-14 15:48:04 -0400 (Mon, 14 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.in
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am.in
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am.in
+   M /trunk/chops/source/python_src/phorc_module/Makefile.am
+   M /trunk/chops/source/python_src/phorc_module/Makefile.am.in
+   M /trunk/configure.ac
+
+some small changes to get things working in trunk, make distcheck does not yet work when using --enable-hopes
+
+------------------------------------------------------------------------
+r1954 | barrettj | 2017-08-14 15:47:59 -0400 (Mon, 14 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/.gitignore
+   M /trunk/Makefile.am
+   A /trunk/chops
+   A /trunk/chops/CMakeLists.txt
+   A /trunk/chops/Makefile.am
+   A /trunk/chops/autogen.sh
+   A /trunk/chops/chopsenv.sh.in
+   A /trunk/chops/cmake
+   A /trunk/chops/cmake/FindFFTW.cmake
+   A /trunk/chops/cmake/FindGFORTRAN.cmake
+   A /trunk/chops/cmake/FindPGPLOT.cmake
+   A /trunk/chops/cmake/chopsDefaults.cmake
+   A /trunk/chops/configure.ac
+   A /trunk/chops/data
+   A /trunk/chops/data/CMakeLists.txt
+   A /trunk/chops/data/Makefile.am
+   A /trunk/chops/data/testdata.tar.gz
+   A /trunk/chops/hops_config.h.cmake
+   A /trunk/chops/hops_config.h.in
+   A /trunk/chops/m4
+   A /trunk/chops/m4/printer.m4
+   A /trunk/chops/pypath.py
+   A /trunk/chops/readme.txt
+   A /trunk/chops/source
+   A /trunk/chops/source/Makefile.am
+   A /trunk/chops/source/bash_src
+   A /trunk/chops/source/bash_src/chopsenv.sh.cmake
+   A /trunk/chops/source/c_src
+   A /trunk/chops/source/c_src/Makefile.am
+   A /trunk/chops/source/c_src/afio
+   A /trunk/chops/source/c_src/afio/CMakeLists.txt
+   A /trunk/chops/source/c_src/afio/Makefile.am
+   A /trunk/chops/source/c_src/afio/Makefile.am.in
+   A /trunk/chops/source/c_src/afio/import_afio.sh
+   A /trunk/chops/source/c_src/afio/include
+   A /trunk/chops/source/c_src/afio/include/adata.h
+   A /trunk/chops/source/c_src/afio/include/afile_structure.h
+   A /trunk/chops/source/c_src/afio/include/mk4_afio.h
+   A /trunk/chops/source/c_src/afio/src
+   A /trunk/chops/source/c_src/afio/src/afile_header.c
+   A /trunk/chops/source/c_src/afio/src/aline_id.c
+   A /trunk/chops/source/c_src/afio/src/check_sizes.c
+   A /trunk/chops/source/c_src/afio/src/clear_afile_structure.c
+   A /trunk/chops/source/c_src/afio/src/clear_csumm.c
+   A /trunk/chops/source/c_src/afio/src/clear_fsumm.c
+   A /trunk/chops/source/c_src/afio/src/clear_rsumm.c
+   A /trunk/chops/source/c_src/afio/src/clear_tsumm.c
+   A /trunk/chops/source/c_src/afio/src/corelname.c
+   A /trunk/chops/source/c_src/afio/src/fringename.c
+   A /trunk/chops/source/c_src/afio/src/get_unique_name.c
+   A /trunk/chops/source/c_src/afio/src/parse_csumm.c
+   A /trunk/chops/source/c_src/afio/src/parse_fsumm.c
+   A /trunk/chops/source/c_src/afio/src/parse_rsumm.c
+   A /trunk/chops/source/c_src/afio/src/parse_tsumm.c
+   A /trunk/chops/source/c_src/afio/src/read_afile.c
+   A /trunk/chops/source/c_src/afio/src/rootname.c
+   A /trunk/chops/source/c_src/afio/src/write_csumm.c
+   A /trunk/chops/source/c_src/afio/src/write_fsumm.c
+   A /trunk/chops/source/c_src/afio/src/write_rsumm.c
+   A /trunk/chops/source/c_src/afio/src/write_tsumm.c
+   A /trunk/chops/source/c_src/applications
+   A /trunk/chops/source/c_src/applications/Makefile.am
+   A /trunk/chops/source/c_src/applications/aedit
+   A /trunk/chops/source/c_src/applications/aedit/CMakeLists.txt
+   A /trunk/chops/source/c_src/applications/aedit/Makefile.am
+   A /trunk/chops/source/c_src/applications/aedit/Makefile.am.in
+   A /trunk/chops/source/c_src/applications/aedit/aedit.c
+   A /trunk/chops/source/c_src/applications/aedit/include
+   A /trunk/chops/source/c_src/applications/aedit/include/aedata.h
+   A /trunk/chops/source/c_src/applications/aedit/include/aedit.h
+   A /trunk/chops/source/c_src/applications/aedit/include/aedit_proto.h
+   A /trunk/chops/source/c_src/applications/aedit/include/close_flags.h
+   A /trunk/chops/source/c_src/applications/aedit/include/flags.h
+   A /trunk/chops/source/c_src/applications/aedit/include/param_list.h
+   A /trunk/chops/source/c_src/applications/aedit/include/psplot.h
+   A /trunk/chops/source/c_src/applications/aedit/include/pstruct.h
+   A /trunk/chops/source/c_src/applications/aedit/include/sizelimits.h
+   A /trunk/chops/source/c_src/applications/aedit/include/sort.h
+   A /trunk/chops/source/c_src/applications/aedit/include/summary.h
+   A /trunk/chops/source/c_src/applications/aedit/include/tempo.h
+   A /trunk/chops/source/c_src/applications/aedit/include/usearray.h
+   A /trunk/chops/source/c_src/applications/aedit/src
+   A /trunk/chops/source/c_src/applications/aedit/src/active_filter.c
+   A /trunk/chops/source/c_src/applications/aedit/src/add_station.c
+   A /trunk/chops/source/c_src/applications/aedit/src/aeclr_corel.c
+   A /trunk/chops/source/c_src/applications/aedit/src/aeclr_fringe.c
+   A /trunk/chops/source/c_src/applications/aedit/src/aeclr_quad.c
+   A /trunk/chops/source/c_src/applications/aedit/src/aeclr_root.c
+   A /trunk/chops/source/c_src/applications/aedit/src/aeclr_triangle.c
+   A /trunk/chops/source/c_src/applications/aedit/src/alloc_btq.c
+   A /trunk/chops/source/c_src/applications/aedit/src/allocate_parms.c
+   A /trunk/chops/source/c_src/applications/aedit/src/auto_hardcopy.c
+   A /trunk/chops/source/c_src/applications/aedit/src/axis.c
+   A /trunk/chops/source/c_src/applications/aedit/src/axis_scale.c
+   A /trunk/chops/source/c_src/applications/aedit/src/calc_close.c
+   A /trunk/chops/source/c_src/applications/aedit/src/cfilter.c
+   A /trunk/chops/source/c_src/applications/aedit/src/check_env.c
+   A /trunk/chops/source/c_src/applications/aedit/src/cleanup.c
+   A /trunk/chops/source/c_src/applications/aedit/src/cleanup_psplot.c
+   A /trunk/chops/source/c_src/applications/aedit/src/clear.c
+   A /trunk/chops/source/c_src/applications/aedit/src/clear_fqex.c
+   A /trunk/chops/source/c_src/applications/aedit/src/clear_pstruct.c
+   A /trunk/chops/source/c_src/applications/aedit/src/clear_source.c
+   A /trunk/chops/source/c_src/applications/aedit/src/clear_summ.c
+   A /trunk/chops/source/c_src/applications/aedit/src/command_id.c
+   A /trunk/chops/source/c_src/applications/aedit/src/cross_link.c
+   A /trunk/chops/source/c_src/applications/aedit/src/cursor_select.c
+   A /trunk/chops/source/c_src/applications/aedit/src/datum_value.c
+   A /trunk/chops/source/c_src/applications/aedit/src/display_psdata.c
+   A /trunk/chops/source/c_src/applications/aedit/src/dup_check.c
+   A /trunk/chops/source/c_src/applications/aedit/src/dup_flag.c
+   A /trunk/chops/source/c_src/applications/aedit/src/edit.c
+   A /trunk/chops/source/c_src/applications/aedit/src/edit_close.c
+   A /trunk/chops/source/c_src/applications/aedit/src/edit_families.c
+   A /trunk/chops/source/c_src/applications/aedit/src/erase_point.c
+   A /trunk/chops/source/c_src/applications/aedit/src/esdesp_check.c
+   A /trunk/chops/source/c_src/applications/aedit/src/execute.c
+   A /trunk/chops/source/c_src/applications/aedit/src/extract_parms.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ffilter.c
+   A /trunk/chops/source/c_src/applications/aedit/src/fill4_parms.c
+   A /trunk/chops/source/c_src/applications/aedit/src/fill_closure.c
+   A /trunk/chops/source/c_src/applications/aedit/src/fill_tdata.c
+   A /trunk/chops/source/c_src/applications/aedit/src/fplot.c
+   A /trunk/chops/source/c_src/applications/aedit/src/get_axis.c
+   A /trunk/chops/source/c_src/applications/aedit/src/get_param.c
+   A /trunk/chops/source/c_src/applications/aedit/src/get_param_list.c
+   A /trunk/chops/source/c_src/applications/aedit/src/get_plot_data.c
+   A /trunk/chops/source/c_src/applications/aedit/src/get_plot_datum.c
+   A /trunk/chops/source/c_src/applications/aedit/src/get_ps_indices4.c
+   A /trunk/chops/source/c_src/applications/aedit/src/help.c
+   A /trunk/chops/source/c_src/applications/aedit/src/init_inputs.c
+   A /trunk/chops/source/c_src/applications/aedit/src/init_summ.c
+   A /trunk/chops/source/c_src/applications/aedit/src/locate_pscurs.c
+   A /trunk/chops/source/c_src/applications/aedit/src/make_psarray4.c
+   A /trunk/chops/source/c_src/applications/aedit/src/make_tri.c
+   A /trunk/chops/source/c_src/applications/aedit/src/makekey.c
+   A /trunk/chops/source/c_src/applications/aedit/src/mk3_qf.c
+   A /trunk/chops/source/c_src/applications/aedit/src/param_list.c
+   A /trunk/chops/source/c_src/applications/aedit/src/parse_cmdline.c
+   A /trunk/chops/source/c_src/applications/aedit/src/parse_commands.c
+   A /trunk/chops/source/c_src/applications/aedit/src/plot.c
+   A /trunk/chops/source/c_src/applications/aedit/src/plot_fqex.c
+   A /trunk/chops/source/c_src/applications/aedit/src/plot_header.c
+   A /trunk/chops/source/c_src/applications/aedit/src/plot_points.c
+   A /trunk/chops/source/c_src/applications/aedit/src/plot_quality.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_allsumm.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_csumm.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_fsumm.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_inputs.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_rsumm.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_source.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_ssumm.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_summary.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pr_tsumm.c
+   A /trunk/chops/source/c_src/applications/aedit/src/print_data.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_baselabel.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_fplot.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_free.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_inside.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_proc_datum.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_scanlabel.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_selbase.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_selqual.c
+   A /trunk/chops/source/c_src/applications/aedit/src/ps_selscan.c
+   A /trunk/chops/source/c_src/applications/aedit/src/psfile4.c
+   A /trunk/chops/source/c_src/applications/aedit/src/psplot.c
+   A /trunk/chops/source/c_src/applications/aedit/src/psplot4.c
+   A /trunk/chops/source/c_src/applications/aedit/src/psplot_defaults4.c
+   A /trunk/chops/source/c_src/applications/aedit/src/pstag_process.c
+   A /trunk/chops/source/c_src/applications/aedit/src/qarray_index.c
+   A /trunk/chops/source/c_src/applications/aedit/src/qfilter.c
+   A /trunk/chops/source/c_src/applications/aedit/src/read_cursor.c
+   A /trunk/chops/source/c_src/applications/aedit/src/read_data.c
+   A /trunk/chops/source/c_src/applications/aedit/src/rfilter.c
+   A /trunk/chops/source/c_src/applications/aedit/src/run_com_file.c
+   A /trunk/chops/source/c_src/applications/aedit/src/run_pscursor.c
+   A /trunk/chops/source/c_src/applications/aedit/src/save.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_baselines.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_device.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_fraction.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_frequencies.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_mode.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_nfreq.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_pols.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_prange.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_procrange.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_pscodes.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_psparam.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_qcodes.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_quads.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_sources.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_stations.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_timerange.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_triangles.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_type.c
+   A /trunk/chops/source/c_src/applications/aedit/src/set_year.c
+   A /trunk/chops/source/c_src/applications/aedit/src/setup_plot.c
+   A /trunk/chops/source/c_src/applications/aedit/src/setup_psplot.c
+   A /trunk/chops/source/c_src/applications/aedit/src/smatch.c
+   A /trunk/chops/source/c_src/applications/aedit/src/sorter.c
+   A /trunk/chops/source/c_src/applications/aedit/src/station_reduce.c
+   A /trunk/chops/source/c_src/applications/aedit/src/summ_corel.c
+   A /trunk/chops/source/c_src/applications/aedit/src/summ_data.c
+   A /trunk/chops/source/c_src/applications/aedit/src/summ_fringe.c
+   A /trunk/chops/source/c_src/applications/aedit/src/summ_quad.c
+   A /trunk/chops/source/c_src/applications/aedit/src/summ_root.c
+   A /trunk/chops/source/c_src/applications/aedit/src/summ_triangle.c
+   A /trunk/chops/source/c_src/applications/aedit/src/symbol_key.c
+   A /trunk/chops/source/c_src/applications/aedit/src/tarray_index.c
+   A /trunk/chops/source/c_src/applications/aedit/src/test1.c
+   A /trunk/chops/source/c_src/applications/aedit/src/tfilter.c
+   A /trunk/chops/source/c_src/applications/aedit/src/time_axis.c
+   A /trunk/chops/source/c_src/applications/aedit/src/triangle_value.c
+   A /trunk/chops/source/c_src/applications/aedit/src/tricheck.c
+   A /trunk/chops/source/c_src/applications/aedit/src/trngl_present.c
+   A /trunk/chops/source/c_src/applications/aedit/src/unflag.c
+   A /trunk/chops/source/c_src/applications/aedit/src/update_fqex.c
+   A /trunk/chops/source/c_src/applications/aedit/src/update_sinfo.c
+   A /trunk/chops/source/c_src/applications/aedit/src/write_data.c
+   A /trunk/chops/source/c_src/applications/aedit/src/write_families.c
+   A /trunk/chops/source/c_src/applications/aedit/src/write_param.c
+   A /trunk/chops/source/c_src/applications/aedit/src/write_prmline.c
+   A /trunk/chops/source/c_src/applications/aedit/src/write_psfile.c
+   A /trunk/chops/source/c_src/applications/aedit/src/write_pshdr.c
+   A /trunk/chops/source/c_src/applications/aedit/src/write_reproc.c
+   A /trunk/chops/source/c_src/applications/aedit/src/write_tdata.c
+   A /trunk/chops/source/c_src/applications/aedit/src/zoom.c
+   A /trunk/chops/source/c_src/applications/alist
+   A /trunk/chops/source/c_src/applications/alist/CMakeLists.txt
+   A /trunk/chops/source/c_src/applications/alist/Makefile.am
+   A /trunk/chops/source/c_src/applications/alist/Makefile.am.in
+   A /trunk/chops/source/c_src/applications/alist/alist.c
+   A /trunk/chops/source/c_src/applications/alist/open_output.c
+   A /trunk/chops/source/c_src/applications/alist/parse_cmdline.c
+   A /trunk/chops/source/c_src/applications/alist/summarize_mk4fringe.c
+   A /trunk/chops/source/c_src/applications/fourfit
+   A /trunk/chops/source/c_src/applications/fourfit/CMakeLists.txt
+   A /trunk/chops/source/c_src/applications/fourfit/Makefile.am
+   A /trunk/chops/source/c_src/applications/fourfit/Makefile.am.in
+   A /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   A /trunk/chops/source/c_src/applications/fourfit/import_fourfit.sh
+   A /trunk/chops/source/c_src/dfio
+   A /trunk/chops/source/c_src/dfio/CMakeLists.txt
+   A /trunk/chops/source/c_src/dfio/Makefile.am
+   A /trunk/chops/source/c_src/dfio/Makefile.am.in
+   A /trunk/chops/source/c_src/dfio/import_dfio.sh
+   A /trunk/chops/source/c_src/dfio/include
+   A /trunk/chops/source/c_src/dfio/include/T1.h
+   A /trunk/chops/source/c_src/dfio/include/bytflp.h
+   A /trunk/chops/source/c_src/dfio/include/mk4_data.h
+   A /trunk/chops/source/c_src/dfio/include/mk4_dfio.h
+   A /trunk/chops/source/c_src/dfio/include/mk4_records.h
+   A /trunk/chops/source/c_src/dfio/include/type_000.h
+   A /trunk/chops/source/c_src/dfio/include/type_100.h
+   A /trunk/chops/source/c_src/dfio/include/type_101.h
+   A /trunk/chops/source/c_src/dfio/include/type_110.h
+   A /trunk/chops/source/c_src/dfio/include/type_120.h
+   A /trunk/chops/source/c_src/dfio/include/type_200.h
+   A /trunk/chops/source/c_src/dfio/include/type_201.h
+   A /trunk/chops/source/c_src/dfio/include/type_202.h
+   A /trunk/chops/source/c_src/dfio/include/type_203.h
+   A /trunk/chops/source/c_src/dfio/include/type_204.h
+   A /trunk/chops/source/c_src/dfio/include/type_205.h
+   A /trunk/chops/source/c_src/dfio/include/type_206.h
+   A /trunk/chops/source/c_src/dfio/include/type_207.h
+   A /trunk/chops/source/c_src/dfio/include/type_208.h
+   A /trunk/chops/source/c_src/dfio/include/type_210.h
+   A /trunk/chops/source/c_src/dfio/include/type_212.h
+   A /trunk/chops/source/c_src/dfio/include/type_220.h
+   A /trunk/chops/source/c_src/dfio/include/type_221.h
+   A /trunk/chops/source/c_src/dfio/include/type_222.h
+   A /trunk/chops/source/c_src/dfio/include/type_230.h
+   A /trunk/chops/source/c_src/dfio/include/type_300.h
+   A /trunk/chops/source/c_src/dfio/include/type_301.h
+   A /trunk/chops/source/c_src/dfio/include/type_302.h
+   A /trunk/chops/source/c_src/dfio/include/type_303.h
+   A /trunk/chops/source/c_src/dfio/include/type_304.h
+   A /trunk/chops/source/c_src/dfio/include/type_305.h
+   A /trunk/chops/source/c_src/dfio/include/type_306.h
+   A /trunk/chops/source/c_src/dfio/include/type_307.h
+   A /trunk/chops/source/c_src/dfio/include/type_308.h
+   A /trunk/chops/source/c_src/dfio/include/type_309.h
+   A /trunk/chops/source/c_src/dfio/include/type_comp.h
+   A /trunk/chops/source/c_src/dfio/src
+   A /trunk/chops/source/c_src/dfio/src/addr_100.c
+   A /trunk/chops/source/c_src/dfio/src/addr_101.c
+   A /trunk/chops/source/c_src/dfio/src/addr_110.c
+   A /trunk/chops/source/c_src/dfio/src/addr_120.c
+   A /trunk/chops/source/c_src/dfio/src/addr_200.c
+   A /trunk/chops/source/c_src/dfio/src/addr_201.c
+   A /trunk/chops/source/c_src/dfio/src/addr_202.c
+   A /trunk/chops/source/c_src/dfio/src/addr_203.c
+   A /trunk/chops/source/c_src/dfio/src/addr_204.c
+   A /trunk/chops/source/c_src/dfio/src/addr_205.c
+   A /trunk/chops/source/c_src/dfio/src/addr_206.c
+   A /trunk/chops/source/c_src/dfio/src/addr_207.c
+   A /trunk/chops/source/c_src/dfio/src/addr_208.c
+   A /trunk/chops/source/c_src/dfio/src/addr_210.c
+   A /trunk/chops/source/c_src/dfio/src/addr_212.c
+   A /trunk/chops/source/c_src/dfio/src/addr_220.c
+   A /trunk/chops/source/c_src/dfio/src/addr_221.c
+   A /trunk/chops/source/c_src/dfio/src/addr_222.c
+   A /trunk/chops/source/c_src/dfio/src/addr_230.c
+   A /trunk/chops/source/c_src/dfio/src/addr_300.c
+   A /trunk/chops/source/c_src/dfio/src/addr_301.c
+   A /trunk/chops/source/c_src/dfio/src/addr_302.c
+   A /trunk/chops/source/c_src/dfio/src/addr_303.c
+   A /trunk/chops/source/c_src/dfio/src/addr_304.c
+   A /trunk/chops/source/c_src/dfio/src/addr_305.c
+   A /trunk/chops/source/c_src/dfio/src/addr_306.c
+   A /trunk/chops/source/c_src/dfio/src/addr_307.c
+   A /trunk/chops/source/c_src/dfio/src/addr_308.c
+   A /trunk/chops/source/c_src/dfio/src/addr_309.c
+   A /trunk/chops/source/c_src/dfio/src/clear_100.c
+   A /trunk/chops/source/c_src/dfio/src/clear_101.c
+   A /trunk/chops/source/c_src/dfio/src/clear_110.c
+   A /trunk/chops/source/c_src/dfio/src/clear_120.c
+   A /trunk/chops/source/c_src/dfio/src/clear_200.c
+   A /trunk/chops/source/c_src/dfio/src/clear_201.c
+   A /trunk/chops/source/c_src/dfio/src/clear_202.c
+   A /trunk/chops/source/c_src/dfio/src/clear_203.c
+   A /trunk/chops/source/c_src/dfio/src/clear_204.c
+   A /trunk/chops/source/c_src/dfio/src/clear_205.c
+   A /trunk/chops/source/c_src/dfio/src/clear_206.c
+   A /trunk/chops/source/c_src/dfio/src/clear_207.c
+   A /trunk/chops/source/c_src/dfio/src/clear_208.c
+   A /trunk/chops/source/c_src/dfio/src/clear_210.c
+   A /trunk/chops/source/c_src/dfio/src/clear_212.c
+   A /trunk/chops/source/c_src/dfio/src/clear_220.c
+   A /trunk/chops/source/c_src/dfio/src/clear_221.c
+   A /trunk/chops/source/c_src/dfio/src/clear_222.c
+   A /trunk/chops/source/c_src/dfio/src/clear_230.c
+   A /trunk/chops/source/c_src/dfio/src/clear_300.c
+   A /trunk/chops/source/c_src/dfio/src/clear_301.c
+   A /trunk/chops/source/c_src/dfio/src/clear_302.c
+   A /trunk/chops/source/c_src/dfio/src/clear_303.c
+   A /trunk/chops/source/c_src/dfio/src/clear_304.c
+   A /trunk/chops/source/c_src/dfio/src/clear_305.c
+   A /trunk/chops/source/c_src/dfio/src/clear_306.c
+   A /trunk/chops/source/c_src/dfio/src/clear_307.c
+   A /trunk/chops/source/c_src/dfio/src/clear_308.c
+   A /trunk/chops/source/c_src/dfio/src/clear_309.c
+   A /trunk/chops/source/c_src/dfio/src/clear_coord.c
+   A /trunk/chops/source/c_src/dfio/src/clear_mk4corel.c
+   A /trunk/chops/source/c_src/dfio/src/clear_mk4fringe.c
+   A /trunk/chops/source/c_src/dfio/src/clear_mk4sdata.c
+   A /trunk/chops/source/c_src/dfio/src/compress.c
+   A /trunk/chops/source/c_src/dfio/src/copy_100.c
+   A /trunk/chops/source/c_src/dfio/src/copy_101.c
+   A /trunk/chops/source/c_src/dfio/src/copy_110.c
+   A /trunk/chops/source/c_src/dfio/src/copy_120.c
+   A /trunk/chops/source/c_src/dfio/src/copy_200.c
+   A /trunk/chops/source/c_src/dfio/src/copy_201.c
+   A /trunk/chops/source/c_src/dfio/src/copy_202.c
+   A /trunk/chops/source/c_src/dfio/src/copy_203.c
+   A /trunk/chops/source/c_src/dfio/src/copy_204.c
+   A /trunk/chops/source/c_src/dfio/src/copy_205.c
+   A /trunk/chops/source/c_src/dfio/src/copy_206.c
+   A /trunk/chops/source/c_src/dfio/src/copy_207.c
+   A /trunk/chops/source/c_src/dfio/src/copy_208.c
+   A /trunk/chops/source/c_src/dfio/src/copy_210.c
+   A /trunk/chops/source/c_src/dfio/src/copy_212.c
+   A /trunk/chops/source/c_src/dfio/src/copy_220.c
+   A /trunk/chops/source/c_src/dfio/src/copy_221.c
+   A /trunk/chops/source/c_src/dfio/src/copy_222.c
+   A /trunk/chops/source/c_src/dfio/src/copy_230.c
+   A /trunk/chops/source/c_src/dfio/src/copy_300.c
+   A /trunk/chops/source/c_src/dfio/src/copy_301.c
+   A /trunk/chops/source/c_src/dfio/src/copy_302.c
+   A /trunk/chops/source/c_src/dfio/src/copy_303.c
+   A /trunk/chops/source/c_src/dfio/src/copy_304.c
+   A /trunk/chops/source/c_src/dfio/src/copy_305.c
+   A /trunk/chops/source/c_src/dfio/src/copy_306.c
+   A /trunk/chops/source/c_src/dfio/src/copy_307.c
+   A /trunk/chops/source/c_src/dfio/src/copy_308.c
+   A /trunk/chops/source/c_src/dfio/src/copy_309.c
+   A /trunk/chops/source/c_src/dfio/src/corel_alloc.c
+   A /trunk/chops/source/c_src/dfio/src/display_221.c
+   A /trunk/chops/source/c_src/dfio/src/init_000.c
+   A /trunk/chops/source/c_src/dfio/src/open_datafile.c
+   A /trunk/chops/source/c_src/dfio/src/read_mk4corel.c
+   A /trunk/chops/source/c_src/dfio/src/read_mk4file.c
+   A /trunk/chops/source/c_src/dfio/src/read_mk4fringe.c
+   A /trunk/chops/source/c_src/dfio/src/read_mk4sdata.c
+   A /trunk/chops/source/c_src/dfio/src/test_compress.c
+   A /trunk/chops/source/c_src/dfio/src/write_err.c
+   A /trunk/chops/source/c_src/dfio/src/write_mk4corel.c
+   A /trunk/chops/source/c_src/dfio/src/write_mk4fringe.c
+   A /trunk/chops/source/c_src/dfio/src/write_mk4sdata.c
+   A /trunk/chops/source/c_src/dfio/src/write_record.c
+   A /trunk/chops/source/c_src/fourfit_libs
+   A /trunk/chops/source/c_src/fourfit_libs/Makefile.am
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/CMakeLists.txt
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am.in
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/import_ffcontrol.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/parser.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/create_fsm.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/criteria_match.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/default_cblock.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/get_bfstring.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/init_tokens.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/lex.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parse_control_file.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/read_control_file.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/skip_data.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/skip_index.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/CMakeLists.txt
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am.in
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/import_ffcore.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/filter.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/fourfit_signal_handler.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/freqlist.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/pass_struct.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/plot_struct.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/refringe.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/statistics.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/write_lock_mechanism.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/check_rflist.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/clear_freq_corel.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/clear_pass.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/create_lockfile.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/diff_file_phase.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/fill_param.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/fourfit_signal_handler.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/generate_cblock.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/get_corel_data.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/make_flist.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/make_passes.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/pcal_interp.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/read_sdata.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/refringe_list.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/set_defaults.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/set_pointers.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/stcount_interp.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/time_range.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/update.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/vrot.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/wait_for_write_lock.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/CMakeLists.txt
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am.in
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/import_ffio.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_200.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_201.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_202.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_203.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_204.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_205.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_206.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_207.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_208.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_210.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_212.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_222.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_230.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_fringe_info.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/CMakeLists.txt
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am.in
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/import_ffmath.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/src
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/src/ap_mean.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/src/bcd_to_2int.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/src/interp555.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/src/linterp.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/src/max555.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/src/parabola.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/CMakeLists.txt
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am.in
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/import_ffplot.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/display_fplot.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/grid.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_postplot.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/output.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_complex.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_graph.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/put_char_at.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/sprint_char_arr.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/sprint_date.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/CMakeLists.txt
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am.in
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_filter.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_normalization.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_rms.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_model.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_qf.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/create_fname.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/delay_rate.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/freq_spacing.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/fringe_search.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/gate_off.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/interp.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/ion_search.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/organize_data.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/pcalibrate.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/precorrect.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/report_actions.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/rotate_pcal.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/sampler_delays.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search_windows.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/update.c
+   A /trunk/chops/source/c_src/mk4util
+   A /trunk/chops/source/c_src/mk4util/CMakeLists.txt
+   A /trunk/chops/source/c_src/mk4util/Makefile.am
+   A /trunk/chops/source/c_src/mk4util/Makefile.am.in
+   A /trunk/chops/source/c_src/mk4util/import_mk4util.sh
+   A /trunk/chops/source/c_src/mk4util/include
+   A /trunk/chops/source/c_src/mk4util/include/account.h
+   A /trunk/chops/source/c_src/mk4util/include/fileset.h
+   A /trunk/chops/source/c_src/mk4util/include/fstruct.h
+   A /trunk/chops/source/c_src/mk4util/include/general.h
+   A /trunk/chops/source/c_src/mk4util/include/mk4_sizes.h
+   A /trunk/chops/source/c_src/mk4util/include/mk4_typedefs.h
+   A /trunk/chops/source/c_src/mk4util/include/mk4_util.h
+   A /trunk/chops/source/c_src/mk4util/src
+   A /trunk/chops/source/c_src/mk4util/src/account.c
+   A /trunk/chops/source/c_src/mk4util/src/check_name.c
+   A /trunk/chops/source/c_src/mk4util/src/clear_date.c
+   A /trunk/chops/source/c_src/mk4util/src/clear_fstruct.c
+   A /trunk/chops/source/c_src/mk4util/src/confirm.c
+   A /trunk/chops/source/c_src/mk4util/src/datec_to_datef.c
+   A /trunk/chops/source/c_src/mk4util/src/datef_to_datec.c
+   A /trunk/chops/source/c_src/mk4util/src/day_of_datef.c
+   A /trunk/chops/source/c_src/mk4util/src/environment.c
+   A /trunk/chops/source/c_src/mk4util/src/extract_filenames.c
+   A /trunk/chops/source/c_src/mk4util/src/fileset.c
+   A /trunk/chops/source/c_src/mk4util/src/get_abs_path.c
+   A /trunk/chops/source/c_src/mk4util/src/get_filelist.c
+   A /trunk/chops/source/c_src/mk4util/src/hptoie.c
+   A /trunk/chops/source/c_src/mk4util/src/hptoie4.c
+   A /trunk/chops/source/c_src/mk4util/src/hptoie8.c
+   A /trunk/chops/source/c_src/mk4util/src/int_to_time.c
+   A /trunk/chops/source/c_src/mk4util/src/ismk4.c
+   A /trunk/chops/source/c_src/mk4util/src/minmax.c
+   A /trunk/chops/source/c_src/mk4util/src/msg.c
+   A /trunk/chops/source/c_src/mk4util/src/report_times.c
+   A /trunk/chops/source/c_src/mk4util/src/root_belong.c
+   A /trunk/chops/source/c_src/mk4util/src/root_id.c
+   A /trunk/chops/source/c_src/mk4util/src/sexigesimal2hrdeg.c
+   A /trunk/chops/source/c_src/mk4util/src/sort_names.c
+   A /trunk/chops/source/c_src/mk4util/src/swap.c
+   A /trunk/chops/source/c_src/mk4util/src/syntax.c
+   A /trunk/chops/source/c_src/mk4util/src/time_to_double.c
+   A /trunk/chops/source/c_src/mk4util/src/time_to_int.c
+   A /trunk/chops/source/c_src/vex
+   A /trunk/chops/source/c_src/vex/CMakeLists.txt
+   A /trunk/chops/source/c_src/vex/Makefile.am
+   A /trunk/chops/source/c_src/vex/Makefile.am.in
+   A /trunk/chops/source/c_src/vex/import_vex.sh
+   A /trunk/chops/source/c_src/vex/include
+   A /trunk/chops/source/c_src/vex/include/cvex.h
+   A /trunk/chops/source/c_src/vex/include/evex.h
+   A /trunk/chops/source/c_src/vex/include/ivex.h
+   A /trunk/chops/source/c_src/vex/include/lvex.h
+   A /trunk/chops/source/c_src/vex/include/mk4_vex.h
+   A /trunk/chops/source/c_src/vex/include/ovex.h
+   A /trunk/chops/source/c_src/vex/include/svex.h
+   A /trunk/chops/source/c_src/vex/include/vex.h
+   A /trunk/chops/source/c_src/vex/src
+   A /trunk/chops/source/c_src/vex/src/block_params.c
+   A /trunk/chops/source/c_src/vex/src/check_intrange.c
+   A /trunk/chops/source/c_src/vex/src/check_realrange.c
+   A /trunk/chops/source/c_src/vex/src/check_scan.c
+   A /trunk/chops/source/c_src/vex/src/check_stloc.c
+   A /trunk/chops/source/c_src/vex/src/check_strrange.c
+   A /trunk/chops/source/c_src/vex/src/cvex_info.c
+   A /trunk/chops/source/c_src/vex/src/decode_pval.c
+   A /trunk/chops/source/c_src/vex/src/do_antenna.c
+   A /trunk/chops/source/c_src/vex/src/do_bbc.c
+   A /trunk/chops/source/c_src/vex/src/do_clock.c
+   A /trunk/chops/source/c_src/vex/src/do_das.c
+   A /trunk/chops/source/c_src/vex/src/do_eop.c
+   A /trunk/chops/source/c_src/vex/src/do_exper.c
+   A /trunk/chops/source/c_src/vex/src/do_freq.c
+   A /trunk/chops/source/c_src/vex/src/do_head_pos.c
+   A /trunk/chops/source/c_src/vex/src/do_if.c
+   A /trunk/chops/source/c_src/vex/src/do_pass_order.c
+   A /trunk/chops/source/c_src/vex/src/do_phase_cal_detect.c
+   A /trunk/chops/source/c_src/vex/src/do_roll.c
+   A /trunk/chops/source/c_src/vex/src/do_site.c
+   A /trunk/chops/source/c_src/vex/src/do_source.c
+   A /trunk/chops/source/c_src/vex/src/do_track.c
+   A /trunk/chops/source/c_src/vex/src/evex_info.c
+   A /trunk/chops/source/c_src/vex/src/fill_deflists.c
+   A /trunk/chops/source/c_src/vex/src/fill_scanlist.c
+   A /trunk/chops/source/c_src/vex/src/fill_station_parms.c
+   A /trunk/chops/source/c_src/vex/src/find_statements.c
+   A /trunk/chops/source/c_src/vex/src/get_block_mode.c
+   A /trunk/chops/source/c_src/vex/src/get_chip_mode.c
+   A /trunk/chops/source/c_src/vex/src/get_corr_bd_parms.c
+   A /trunk/chops/source/c_src/vex/src/get_corr_mode.c
+   A /trunk/chops/source/c_src/vex/src/get_def.c
+   A /trunk/chops/source/c_src/vex/src/get_drive_init.c
+   A /trunk/chops/source/c_src/vex/src/get_global_deflist.c
+   A /trunk/chops/source/c_src/vex/src/get_logscan.c
+   A /trunk/chops/source/c_src/vex/src/get_mode_deflist.c
+   A /trunk/chops/source/c_src/vex/src/get_pbs_init.c
+   A /trunk/chops/source/c_src/vex/src/get_pcm_config.c
+   A /trunk/chops/source/c_src/vex/src/get_pcm_tables.c
+   A /trunk/chops/source/c_src/vex/src/get_section_mode.c
+   A /trunk/chops/source/c_src/vex/src/get_statement.c
+   A /trunk/chops/source/c_src/vex/src/get_station_deflist.c
+   A /trunk/chops/source/c_src/vex/src/get_su_chan_out.c
+   A /trunk/chops/source/c_src/vex/src/get_su_connect.c
+   A /trunk/chops/source/c_src/vex/src/get_trm_config.c
+   A /trunk/chops/source/c_src/vex/src/get_val_list.c
+   A /trunk/chops/source/c_src/vex/src/get_version.c
+   A /trunk/chops/source/c_src/vex/src/get_vex.c
+   A /trunk/chops/source/c_src/vex/src/in_comment.c
+   A /trunk/chops/source/c_src/vex/src/in_quote.c
+   A /trunk/chops/source/c_src/vex/src/init_scan.c
+   A /trunk/chops/source/c_src/vex/src/ivex_info.c
+   A /trunk/chops/source/c_src/vex/src/locate_blocks.c
+   A /trunk/chops/source/c_src/vex/src/locate_cq.c
+   A /trunk/chops/source/c_src/vex/src/lvex_info.c
+   A /trunk/chops/source/c_src/vex/src/nextchar.c
+   A /trunk/chops/source/c_src/vex/src/param_formats.c
+   A /trunk/chops/source/c_src/vex/src/parse_date.c
+   A /trunk/chops/source/c_src/vex/src/parse_dec.c
+   A /trunk/chops/source/c_src/vex/src/parse_pval.c
+   A /trunk/chops/source/c_src/vex/src/parse_ra.c
+   A /trunk/chops/source/c_src/vex/src/parse_ref.c
+   A /trunk/chops/source/c_src/vex/src/parse_units.c
+   A /trunk/chops/source/c_src/vex/src/parse_vexfile.c
+   A /trunk/chops/source/c_src/vex/src/print_location.c
+   A /trunk/chops/source/c_src/vex/src/process_qstring.c
+   A /trunk/chops/source/c_src/vex/src/read_file.c
+   A /trunk/chops/source/c_src/vex/src/scan_info.c
+   A /trunk/chops/source/c_src/vex/src/strip_text.c
+   A /trunk/chops/source/c_src/vex/src/svex_info.c
+   A /trunk/chops/source/c_src/vex/src/vex_init.c
+   A /trunk/chops/source/c_src/vex/src/write_vexfile.c
+   A /trunk/chops/source/c_src/vex/text
+   A /trunk/chops/source/c_src/vex/text/blk_stmt.txt
+   A /trunk/chops/source/c_src/vex/text/pformat.txt
+   A /trunk/chops/source/cpp_src
+   A /trunk/chops/source/cpp_src/Test
+   A /trunk/chops/source/cpp_src/Test/CMakeLists.txt
+   A /trunk/chops/source/cpp_src/Test/TestParseVex.cc
+   A /trunk/chops/source/cpp_src/Test/TestSerialization.cc
+   A /trunk/chops/source/cpp_src/Test/TestStructWriting.cc
+   A /trunk/chops/source/cpp_src/Test/TestVexConversion.cc
+   A /trunk/chops/source/cpp_src/Test/data
+   A /trunk/chops/source/cpp_src/Test/data/0727-115.zbgwce
+   A /trunk/chops/source/cpp_src/Test/data/OJ287.yyexqh
+   A /trunk/chops/source/cpp_src/VDPSerialization
+   A /trunk/chops/source/cpp_src/VDPSerialization/CMakeLists.txt
+   A /trunk/chops/source/cpp_src/VDPSerialization/include
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedPassedPointerPODArrayOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedPassedPointerPODOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedPointerObjectOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedPointerPODArrayInputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedPointerPODArrayOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedPointerPODInputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedPointerPODOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedReferencePODInputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedValuePODInputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPAssociatedValuePODOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPCallbackTypes.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPCharacterDefinitions.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPDefinitions.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPEmptyOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPFileReader.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPFileWriter.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPFixedSizeInputOutputObject.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPInputCollector.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPInputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPInputObject.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPInputOutputObject.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPIsDerivedFrom.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPObject.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPObjectInputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPObjectOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPOutputCollector.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPOutputObject.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPPODArrayOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPPODConverter.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPPODInputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPPODOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPStructMemberPODArrayOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPStructMemberPODInputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPStructMemberPODOutputNode.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPStructuredASCIIHeaders.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPToken.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/include/VDPTokenizer.hh
+   A /trunk/chops/source/cpp_src/VDPSerialization/src
+   A /trunk/chops/source/cpp_src/VDPSerialization/src/VDPCharacterDefinitions.cc
+   A /trunk/chops/source/cpp_src/VDPSerialization/src/VDPFileReader.cc
+   A /trunk/chops/source/cpp_src/VDPSerialization/src/VDPFileWriter.cc
+   A /trunk/chops/source/cpp_src/VDPSerialization/src/VDPInputCollector.cc
+   A /trunk/chops/source/cpp_src/VDPSerialization/src/VDPOutputCollector.cc
+   A /trunk/chops/source/cpp_src/VDPSerialization/src/VDPToken.cc
+   A /trunk/chops/source/cpp_src/VDPSerialization/src/VDPTokenizer.cc
+   A /trunk/chops/source/cpp_src/VexInterface
+   A /trunk/chops/source/cpp_src/VexInterface/CMakeLists.txt
+   A /trunk/chops/source/cpp_src/VexInterface/include
+   A /trunk/chops/source/cpp_src/VexInterface/include/ChanStructWrapper.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/DateStructWrapper.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/ScanStructWrapper.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/SkyCoordStructWrapper.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/SourceStructWrapper.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/StationStructWrapper.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/VDPTestA.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/VDPTestB.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/VDPTestC.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/VDPTestD.hh
+   A /trunk/chops/source/cpp_src/VexInterface/include/VDPTestE.hh
+   A /trunk/chops/source/cpp_src/VexInterface/src
+   A /trunk/chops/source/cpp_src/VexInterface/src/ChanStructWrapper.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/DateStructWrapper.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/ScanStructWrapper.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/SkyCoordStructWrapper.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/SourceStructWrapper.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/StationStructWrapper.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/VDPTestA.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/VDPTestB.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/VDPTestC.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/VDPTestD.cc
+   A /trunk/chops/source/cpp_src/VexInterface/src/VDPTestE.cc
+   A /trunk/chops/source/python_src
+   A /trunk/chops/source/python_src/Makefile.am
+   A /trunk/chops/source/python_src/ffcontrol_module
+   A /trunk/chops/source/python_src/ffcontrol_module/CMakeLists.txt
+   A /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   A /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.in
+   A /trunk/chops/source/python_src/ffcontrol_module/ffcontrol
+   A /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/__init__.py
+   A /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   A /trunk/chops/source/python_src/ffcontrol_module/include
+   A /trunk/chops/source/python_src/ffcontrol_module/include/ffcontrol_module_extern.h
+   A /trunk/chops/source/python_src/ffcontrol_module/setup.py.in
+   A /trunk/chops/source/python_src/ffcontrol_module/src
+   A /trunk/chops/source/python_src/ffcontrol_module/src/construct_cblock.c
+   A /trunk/chops/source/python_src/ffcontrol_module/src/ffcontrol_module_extern.c
+   A /trunk/chops/source/python_src/hopstest_module
+   A /trunk/chops/source/python_src/hopstest_module/CMakeLists.txt
+   A /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   A /trunk/chops/source/python_src/hopstest_module/Makefile.am.in
+   A /trunk/chops/source/python_src/hopstest_module/hopstest
+   A /trunk/chops/source/python_src/hopstest_module/hopstest/__init__.py
+   A /trunk/chops/source/python_src/hopstest_module/hopstest/hopstest.py
+   A /trunk/chops/source/python_src/hopstest_module/hopstestsuite.py.in
+   A /trunk/chops/source/python_src/hopstest_module/setup.py.in
+   A /trunk/chops/source/python_src/mk4_module
+   A /trunk/chops/source/python_src/mk4_module/CMakeLists.txt
+   A /trunk/chops/source/python_src/mk4_module/Makefile.am
+   A /trunk/chops/source/python_src/mk4_module/Makefile.am.in
+   A /trunk/chops/source/python_src/mk4_module/afio
+   A /trunk/chops/source/python_src/mk4_module/afio/__init__.py
+   A /trunk/chops/source/python_src/mk4_module/afio/afio.py
+   A /trunk/chops/source/python_src/mk4_module/include
+   A /trunk/chops/source/python_src/mk4_module/include/mk4_module_extern.h
+   A /trunk/chops/source/python_src/mk4_module/mk4
+   A /trunk/chops/source/python_src/mk4_module/mk4/__init__.py
+   A /trunk/chops/source/python_src/mk4_module/mk4/mk4.py
+   A /trunk/chops/source/python_src/mk4_module/setup.py.in
+   A /trunk/chops/source/python_src/mk4_module/src
+   A /trunk/chops/source/python_src/mk4_module/src/mk4_module_extern.c
+   A /trunk/chops/source/python_src/phorc_module
+   A /trunk/chops/source/python_src/phorc_module/CMakeLists.txt
+   A /trunk/chops/source/python_src/phorc_module/Makefile.am
+   A /trunk/chops/source/python_src/phorc_module/Makefile.am.in
+   A /trunk/chops/source/python_src/phorc_module/phorc
+   A /trunk/chops/source/python_src/phorc_module/phorc/__init__.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/baseline_fringe_product_list.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/control_analysis_lib.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_handle.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/mixedmode.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/plotting.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   A /trunk/chops/source/python_src/phorc_module/setup.py.in
+   M /trunk/configure.ac
+   M /trunk/hops.bash.in
+
+Merge branch 'barrettj_chops' into trunk
+
+------------------------------------------------------------------------
+r1940 | gbc | 2017-08-03 11:13:11 -0400 (Thu, 03 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+use only parallel hands
+
+------------------------------------------------------------------------
+r1924 | barrettj | 2017-08-01 14:28:17 -0400 (Tue, 01 Aug 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fearfit/hook_import.sh
+   M /trunk/postproc/fourfit/fringe_search.c
+   M /trunk/postproc/fourfit/search.c
+
+patch for memory leak in fringe_search.c
+
+------------------------------------------------------------------------
+r1921 | gbc | 2017-07-31 10:44:27 -0400 (Mon, 31 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+backward compatibility for pre-auto 2.62 autoconfs.  Apparently m4_ifset() is defined by 2.59, but not documented until 2.62 or so
+
+------------------------------------------------------------------------
+r1917 | barrettj | 2017-07-28 11:59:11 -0400 (Fri, 28 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_env.sh
+
+hopefully a fix for libtool/distcheck
+
+------------------------------------------------------------------------
+r1915 | barrettj | 2017-07-28 08:13:06 -0400 (Fri, 28 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+fixing a typo
+
+------------------------------------------------------------------------
+r1913 | barrettj | 2017-07-27 13:12:11 -0400 (Thu, 27 Jul 2017) | 1 line
+Changed paths:
+   A /trunk/autogen.sh
+   M /trunk/configure.ac
+   M /trunk/sub/mk4py/Makefile.am
+
+Merge remote-tracking branch 'origin/barrettj_import'
+
+------------------------------------------------------------------------
+r1908 | gbc | 2017-07-26 11:35:39 -0400 (Wed, 26 Jul 2017) | 1 line
+Changed paths:
+   M /trunk/sub/util/fileset.c
+
+use ERE to get expno if scan dir is not canonical
+
+------------------------------------------------------------------------
 r1895 | gbc | 2017-07-24 14:28:00 -0400 (Mon, 24 Jul 2017) | 1 line
 Changed paths:
    M /trunk/scripts/est_manual_phases.py.in

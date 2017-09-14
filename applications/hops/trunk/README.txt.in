@@ -109,6 +109,7 @@ suffer from some unidentified issues, so beware.  See the two files
     Fink.txt
 
 for some help on installing HOPS using those MacOS package systems.
+MacPorts.txt is the current best chioce.
 
 Another general issue is that the automated machinery is not always able
 to identify all the flag/linkage information needed by all the fortran

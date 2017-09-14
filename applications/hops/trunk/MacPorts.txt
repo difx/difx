@@ -25,6 +25,22 @@ Getting HOPS running via MacPorts.
     sudo port install fftw-3
     # no dependencies
 
+2a) For fortran support see
+
+    http://hpc.sourceforge.net
+
+2b) Libtool
+
+    mac ports brings in a broken version of libtool or maybe
+    it is mac os that brings in a broken version of libtool,
+    but either way, the current code requires libtoolize which
+    is missing.  YOu can get it with, e.g.
+
+    curl -OL http://ftpmirror.gnu.org/libtool/libtool-2.4.2.tar.gz
+    tar -xzf libtool-2.4.2.tar.gz
+    cd libtool-2.4.2
+    ./configure && make && sudo make install
+
 3) You'll need an explicit reference to ghostscript as /usr/bin/gs
 
     sudo port install ghostscript

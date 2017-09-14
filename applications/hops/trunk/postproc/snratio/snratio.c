@@ -100,6 +100,7 @@ void addsec();
 int parse_station_name (char *in_line, int nbl, char *ref, char *rem);
 
 char progname[8] = "snratio";
+int msglev = 3;
 
 int main(int argc, char *argv[])
 {

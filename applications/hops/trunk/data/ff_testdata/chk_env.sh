@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_env.sh 1465 2016-12-15 15:13:23Z barrettj $
+# $Id: chk_env.sh 1917 2017-07-28 15:59:11Z barrettj $
 #
 # environment setup -- HOPS_SETUP is not set or false
 # This script is really only needed for distcheck where
@@ -44,8 +44,10 @@ umask 0002
 	    ln -s ../../../../sub/vex/text/$t .
     done
     export PATH=`pwd`:$PATH
+    export TEMP_MK4PY_LIB_DIR=`pwd`/../../../sub/mk4py/.libs
     [ -z "$LD_LIBRARY_PATH" ] && LD_LIBRARY_PATH=/dev/null
     export LD_LIBRARY_PATH LD_LIBRARY_PATH=$PGPLOT_DIR:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH LD_LIBRARY_PATH=$TEMP_MK4PY_LIB_DIR:$LD_LIBRARY_PATH
     export DEF_CONTROL=/dev/null
     export TEXT=`pwd`
     export HOPS_PYTEST_SETUP_NEEDED='true'
