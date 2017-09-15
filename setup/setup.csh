@@ -38,6 +38,17 @@ setenv DIFX_BINARY_PORT 50202
 ####### CALC SERVER NAME ######### 
 setenv CALC_SERVER localhost
 
+# uncomment/modify these lines if you have enabled HOPS
+# or alternatively be sure to source $DIFXROOT/bin/hops.bash
+# setenv GS_DEVICE x11
+# setenv PGPLOT_TYPE /xw
+# setenv DEF_CONTROL /dev/null
+# setenv DATADIR /tmp
+# setenv HOPS_DOCS ${DIFXROOT}/share/hops
+# setenv PROGDOC ${HOPS_DOCS}/vhelp
+# setenv AHELP ${HOPS_DOCS}/vhelp/aedit
+# setenv TEXT ${HOPS_DOCS}/text
+
 ####### MPI RUNTIME OPTIONS #################
 ####### Uncomment and modify if needed, #####
 ####### such as Open MPI 1.8.4 ##############

@@ -370,7 +370,7 @@ if components["difx2mark4"]:
 if components["difxfilterbank"]:
     apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
 if components["hops"]:
-    apptargets.append(["hops",       difx_version, True,False,True,False])
+    apptargets.append(["hops",       difx_version, True,True,True,False])
 if components["m6support"]:
     apptargets.append(["m6support",  difx_version, True,False,True,False])
 if components["polconvert"]:
