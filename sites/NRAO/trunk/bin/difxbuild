@@ -1512,7 +1512,7 @@ component_hops_2_5 = \
 [ \
 	'hops', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/hops', \
-	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
 component_guiserver_2_5 = \
