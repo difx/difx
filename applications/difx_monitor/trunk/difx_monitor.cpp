@@ -44,6 +44,7 @@ int socketnumber, currentconfig, maxresultlength, nav, atseconds, currentscan;
 int resultlength, numchannels, nprod=0, mjd;
 double intseconds = 1;
 IppsFFTSpec_R_32f* fftspec=NULL;
+Ipp8u *wbuf=NULL;
 cf32 ** productvis=NULL;
 f32  *phase[MAXPOL], *amplitude[MAXPOL];
 f32 *lags[MAXPOL];
@@ -55,7 +56,7 @@ int main(int argc, const char * argv[])
   int prod, nvis, startsec;
   cf32 *vis;
   struct monclient monserver;
- Configuration * config;
+  Configuration * config;
   Model * model;
   vector<DIFX_ProdConfig> products;
   struct product_offset *plotprod;
@@ -242,7 +243,7 @@ void plot_results(Configuration * config, Model * model)
 	    exit(1);
 	  }
 
-	  ippsFFTInv_CCSToR_32f((Ipp32f*)productvis[at], lags[k], fftspec, 0);
+	  ippsFFTInv_CCSToR_32f((Ipp32f*)productvis[at], lags[k], fftspec, wbuf);
 	  //rearrange the lags into order
 	  for(int l=0;l<numchannels;l++) {
             temp = lags[k][l];
@@ -489,14 +490,15 @@ void change_config(Configuration * config, int configindex, const char *inputfil
   cout << "New config " << currentconfig << " at " << atseconds << endl;
 
   if(xval) delete [] xval;
-  if(fftspec) ippsFFTFree_R_32f(fftspec);
+  if(fftspec) ippFree(fftspec);
 
   for (i=0; i<MAXPOL; i++) {
     if(lags[i]) vectorFree(lags[i]);
     if(phase[i]) vectorFree(phase[i]);
     if(amplitude[i]) vectorFree(amplitude[i]);
   }
-
+  if (wbuf) ippFree(wbuf);
+  
   if (productvis) {
     for (i=0; i<nprod; i++) {
       if (productvis[i]) vectorFree(productvis[i]);
@@ -518,8 +520,28 @@ void change_config(Configuration * config, int configindex, const char *inputfil
   int order = 0;
   while(((numchannels*2) >> order) > 1)
     order++;
-  ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+#ifdef IPP9
+  int sizeFFTSpec, sizeFFTInitBuf, wbufsize;
+  u8 *fftInitBuf, *fftSpecBuf;
+  
+  ippsFFTGetSize_R_32f(order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast,  &sizeFFTSpec, &sizeFFTInitBuf, &wbufsize);
+  fftSpecBuf = ippsMalloc_8u(sizeFFTSpec);
+  if (sizeFFTInitBuf>0)
+    fftInitBuf = ippsMalloc_8u(sizeFFTInitBuf);
+  else
+    fftInitBuf=NULL;
+  if (wbufsize>0)
+    wbuf = ippsMalloc_8u(wbufsize);
+  else
+    wbuf=NULL;
 
+  // Initialize FFT
+  ippsFFTInit_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast, fftSpecBuf, fftInitBuf);
+  if (fftInitBuf) ippFree(fftInitBuf);
+#else
+  ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+#endif
+  
   nav = (int)ceil(intseconds/config->getIntTime(currentconfig));
   cout << "#Integrations to average = " << nav << endl;
 

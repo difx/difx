@@ -42,6 +42,7 @@ int main(int argc, const char * argv[]) {
   float delta, min, max, temp;
   PLFLT *xval=NULL, *phase[MAX_PROD], *amp[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
   cf32 *vis32;
+  Ipp8u *wbuf=NULL;
   Ipp64fc *vis64;
   string sourcename;
   ostringstream ss;
@@ -150,8 +151,8 @@ int main(int argc, const char * argv[]) {
 	    cout << "Number of channels = " << nchan << endl;
 	    if (xval!=NULL) vectorFree(xval);
 	    if (lagx!=NULL) vectorFree(lagx);
-	    if (vis64!=NULL) vectorFree(fftspec);
-	    if (fftspec!=NULL) ippsFFTFree_R_64f(fftspec);
+	    if (vis64!=NULL) vectorFree(vis64);
+	    if (fftspec!=NULL) ippFree(fftspec);
 	    for (i=0; i<nprod; i++) {
 	      if (amp[i]!=NULL) vectorFree(amp[i]);
 	      if (phase[i]!=NULL) vectorFree(phase[i]);
@@ -184,7 +185,28 @@ int main(int argc, const char * argv[]) {
 	    int order = 0;
 	    while(((nchan*2) >> order) > 1)
 	      order++;
+#ifdef IPP9
+	int sizeFFTSpec, sizeFFTInitBuf, wbufsize;
+	u8 *fftInitBuf, *fftSpecBuf;
+  
+	ippsFFTGetSize_R_64f(order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast,  &sizeFFTSpec, &sizeFFTInitBuf, &wbufsize);
+	fftSpecBuf = ippsMalloc_8u(sizeFFTSpec);
+	if (sizeFFTInitBuf>0)
+	  fftInitBuf = ippsMalloc_8u(sizeFFTInitBuf);
+	else
+	  fftInitBuf=NULL;
+	if (wbufsize>0)
+	  wbuf = ippsMalloc_8u(wbufsize);
+	else
+	  wbuf=NULL;
+
+	// Initialize FFT
+	ippsFFTInit_R_64f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast, fftSpecBuf, fftInitBuf);
+	if (fftInitBuf) ippFree(fftInitBuf);
+#else
 	    ippsFFTInitAlloc_R_64f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+	    wbuf = NULL;
+#endif
 	  } else  {
 	    cerr << "Does not support mixed number of channels between products" << endl;
 	    exit(1); // Should do a cleaner exit
@@ -199,7 +221,7 @@ int main(int argc, const char * argv[]) {
 	ippsPhase_64fc(vis64, phase[ivis], nchan);
 	vectorMulC_f64_I(180/M_PI, phase[ivis], nchan);
 
-	ippsFFTInv_CCSToR_64f((Ipp64f*)vis64, lags[ivis], fftspec, 0);
+	ippsFFTInv_CCSToR_64f((Ipp64f*)vis64, lags[ivis], fftspec, wbuf);
 	//rearrange the lags into order
 	for(i=0;i<nchan;i++) {
 	  temp = lags[ivis][i];

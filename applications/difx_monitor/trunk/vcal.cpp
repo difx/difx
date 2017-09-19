@@ -133,7 +133,24 @@ int main(int argc, const char * argv[]) {
 	nchan = numchan;
 	while(((nchan*2) >> order) > 1) order++;
 
+#ifdef IPP9
+	int sizeFFTSpec, sizeFFTInitBuf, wbufsize;
+	u8 *fftInitBuf, *fftSpecBuf;
+  
+	ippsFFTGetSize_R_32f(order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast,  &sizeFFTSpec, &sizeFFTInitBuf, &wbufsize);
+	fftSpecBuf = ippsMalloc_8u(sizeFFTSpec);
+	if (sizeFFTInitBuf>0)
+	  fftInitBuf = ippsMalloc_8u(sizeFFTInitBuf);
+	else
+	  fftInitBuf=NULL;
+
+	// Initialize FFT
+	ippsFFTInit_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast, fftSpecBuf, fftInitBuf);
+	if (fftInitBuf) ippFree(fftInitBuf);
+	
+#else
 	ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+#endif	
       } else if (nchan!=numchan) {
 	cerr << "Do not support differing number of channels. Abort" << endl;
 	exit(1);

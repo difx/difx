@@ -45,7 +45,7 @@ AC_C_INLINE
 AC_HEADER_TIME
 
 # Checks for library functions.
-AC_FUNC_MALLOC
+#AC_FUNC_MALLOC  ## CJP This breaks C++??
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([gethostbyname inet_ntoa memset socket])
 
