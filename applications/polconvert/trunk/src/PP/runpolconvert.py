@@ -54,12 +54,14 @@ except Exception, ex:
 # option to delete specific gain tables from the list
 try:
     gdblst = ['bandpass', 'ampgains', 'phsgains', 'xyrelphs', 'gxyampli']
-    if type(gainDel) == str:
+    if type(gainDel) == str and ',' in gainDel:
         for g in gainDel.split(','):
             print 'Deleting ' + gdblst[int(g)]
             del calgains[3+int(g)]
         print 'Revised calgains list is:'
         for c in calgains: print '    ', c
+    elif gainDel == '':
+        print 'No gain deletion requested'
     else:
         gainDel = ''
         print 'Overriding gainDel -- turning it off'
@@ -68,6 +70,20 @@ except Exception, ex:
     print 'gainDel not str?', str(ex)
     gainDel = ''
     print 'gain deletion turned off'
+
+# option to control gain processing, which should be either
+# 'T' (combine) or 'G' (split) for handling of X&Y all gains
+# except XY0, bandpass or Gxyamp (which stay 'G'); the eventual
+# gaintype list must have the same structure as gains, interpolation.
+try:
+    if not (gainmeth == 'T' or gainmeth == 'G'):
+        gainmeth = 'T'
+        print 'illegal gain type supplied, defaulting to', gainmeth
+    if gainmeth == 'T': print 'X and Y cals will be combined'
+    if gainmeth == 'G': print 'X and Y cals will be split'
+except Exception, ex:
+    gainmeth = 'T'
+    print 'gain type not supplied, defaulting to', gainmeth
 
 # option to turn off the amplitude calibration logic
 try:
@@ -137,7 +153,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     DiFXinput='', DiFXoutput='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
     amp_norm=True, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
-    npix=50):
+    npix=50, gainmeth='T'):
     # based on common drivepolconvert inputs above
     gains = calgains[3:]
     interpolation = ['linear', 'nearest', 'linear', 'linear']
@@ -150,11 +166,15 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         gains = gains[0:3]
         interpolation = interpolation[0:3]
 
+    gaintype = map(lambda g: 'G' if ('XY0' in g or 'bandpass' in g or
+        'Gxyamp' in g) else 'T', gains)
+
     # cover for optional tables
     while len(interpolation) < len(gains):
         interpolation.append('linear')
     print 'gains', len(gains), gains
     print 'interpolation', len(interpolation), interpolation
+    print 'gaintype', len(gaintype), gaintype
 
     if band3:
         spw=0
@@ -188,6 +208,8 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     # commented arguments are not needed for DiFX, but are
     # mentioned here as comments for clarity.  CASA supplies
     # defaults from the task xml file.
+    # Note that this is hardwired to just one antenna conversion
+    # even though PolConvert may do several.
     try:
         print 'Calling PolConvert from runpolconvert'
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
@@ -196,6 +218,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
             #APPrefant,
             gains=[gains], interpolation=[interpolation],
+            gaintype=[gaintype],
             dterms=[dterm], amp_norm=amp_norm,
             XYadd=XYadd,
             #XYdel,
@@ -205,6 +228,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
             #excludedAnts, doSolve, solint
             doTest=doTest, npix=npix,
             solveAmp=False
+            # , solveMethod=gradient
             )
     except Exception, ex:
         print 'Polconvert Exception'
@@ -241,7 +265,7 @@ for job in djobs:
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=plotAnt,
-        npix=numFrPltPix)
+        npix=numFrPltPix, gainmeth=gainmeth)
 
 #
 # eof

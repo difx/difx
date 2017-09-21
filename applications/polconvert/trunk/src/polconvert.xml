@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.4.2\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.5-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.4.2\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.5-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -87,6 +87,12 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <description> Interpolation type to use (one per calibration table). Tells whether to apply linear or nearest interpolation. Default is to use linear for all tables.</description>
       <value>[]</value>
     </param>
+
+    <param type="any" name="gaintype" mustexist="false">
+      <description> Type of gain to impose (one per calibration table). Default is \'T\' for all tables, unless either the string \'XY0\', \'bandpass\' or \'Gxyamp\' appears in the table name. The gain types can be either \'G\' (i.e., split gains per polarization) or \'T\' (i.e., combine polarizations).</description>
+      <value>[]</value>
+    </param>
+
 
 
     <param type="any" name="dterms" mustexist="false">
@@ -180,6 +186,12 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
     </param>
 
 
+    <param type="string" name="solveMethod" mustexist="false">
+      <description>Method for the minimization of the Chi squared in the GCPFF. Can be \'gradient\', \'Levenberg-Marquardt\' or \'COBYLA\'.</description>
+      <value>gradient</value>
+    </param>
+
+
 </input>
 
   <returns type="bool"/>
@@ -195,11 +207,12 @@ PROCEDURE:
 If a VLBI antenna used linear-feed receivers, PolConvert must first
 estimate the X-Y cross gain for that antenna (phase, amplitude, 
 and multi-band delay) before the final conversion. Use the plotting
-option of PolConvert to plot a selected scan of a baseline and these
-data will also be used to estimate the cross-gains. PolConvert 
-returns a list with the amplitude and phase cross-gains when it is 
-run in plotting mode, so the user can set this output in XYadd and
-XYratio, in a second run of PolConvert.
+option of PolConvert to plot a selected scan of a given baseline and 
+that scan will be used to estimate the cross-polarization gains. 
+PolConvert returns a list with the amplitude and phase cross-gains 
+for all the antennas, as long as it is run in plotting mode. The user 
+can then set these gain lists to XYadd and XYratio for a second run 
+of PolConvert.
 
 Given an FITS-IDI file (or set of SWIN DiFX files) with phased-ALMA 
 observations, the user must first calibrate completely (i.e., in full 
@@ -322,7 +335,7 @@ If it was ALMA the antenna with swapped pol. channels, then:
 - XYadd = [[0.0, 0.0, 0.0, 0.0], [65., 30., 25., 10.]]
 
 
-NOTICE THAT POLCONVERT CAN ESTIMATE THE XYADD, XYDEL, AND XYRATIO, FROM 
+NOTICE THAT POLCONVERT CAN ESTIMATE THE XYADD AND XYRATIO, FROM 
 THE SCAN THAT YOU ASK IT TO PLOT. IF IT IS A SCAN OF A STRONG CALIBRATOR,
 POLCONVERT CAN ESTIMATE ALL THESE QUANTITIES FOR YOUR VLBI STATIONS WITH
 LINEAR FEEDS.

@@ -92,6 +92,11 @@ def parseOptions():
             'uid name (and/or other identifiers).   The default is "v4", '
             'but v5-v7 may be necessary: the difference is which scans '
             '(APP or ALMA) are to be used for DTerms and Gxyamp.')
+    parser.add_argument('-y', '--gainmeth', dest='gainmeth',
+        default='T', metavar='CHAR',
+        help='Specify the gain method to use on all calibration tables'
+            ' except ones with "XY0", "bandpass" or "Gxyamp" in name;'
+            ' "T" combines the gains, "G" retains separation of X and Y.')
     parser.add_argument('-d', '--noDterm', dest='nodt',
         default=False, action='store_true',
         help='disable use of Dterm calibration tables')
@@ -225,6 +230,8 @@ def calibrationChecks(o):
                 raise Exception, 'Required directory %s is missing' % d
         elif o.verb:
             print 'Calibration table %s is present' % d
+    if o.gainmeth != 'T' and o.gainmeth != 'G':
+        raise Exception, 'Illegal gainmeth %s' % o.gainmeth
 
 def inputRelatedChecks(o):
     '''
@@ -451,6 +458,7 @@ def createCasaInput(o):
     # --qa2 = %s
     # qal = %s
     qa2 = %s
+    gainmeth = '%s'
     ampNorm = %s
     gainDel = '%s'
     #
@@ -526,7 +534,7 @@ def createCasaInput(o):
         o.label, o.band, bandnot, bandaid, o.exp,
         o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
-        o.qa2, o.qal, o.qa2_dict, ampnrm, o.gaindel,
+        o.qa2, o.qal, o.qa2_dict, o.gainmeth, ampnrm, o.gaindel,
         o.remote, o.npix, dotest, o.doPlot[0],
         o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
 
