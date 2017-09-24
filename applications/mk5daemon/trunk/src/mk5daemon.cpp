@@ -1021,7 +1021,7 @@ int parseCmd (int argc, char **argv, Options &options)
 		else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
 		{
 			usage(argv[0]);
-			return 0;
+			exit(0);
 		}
 		else if(strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
 		{
@@ -1151,10 +1151,14 @@ int main(int argc, char **argv)
 	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 0);
 
 	// parse the command line options
-	if (parseCmd(argc, argv, options) == -1)
+	if(parseCmd(argc, argv, options) == -1)
+	{
 		return(EXIT_FAILURE);
-	if (options.validate() < 0)
+	}
+	if(options.validate() < 0)
+	{
 		return(EXIT_FAILURE);
+	}
 
 	v = checkRunning("localhost");
 	if(v == 0)

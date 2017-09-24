@@ -142,8 +142,7 @@ def getMediaListByMulticast(maxtime, verbose):
 	s.settimeout(dt)
 
 	# Send out a call for media
-	sendRequest("mark5", "listfs")
-	sendRequest("mark6", "listfs")
+	sendRequest("all", "listfs")
 
 	# Now listen for responses, until time runs out
 	results = {}
