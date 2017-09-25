@@ -708,7 +708,7 @@ static int getModes(VexData *V, Vex *v)
 			// Derive IF map
 			for(p = get_all_lowl(antName.c_str(), modeDefName, T_IF_DEF, B_IF, v); p; p = get_all_lowl_next())
 			{
-				double phaseCal;
+				double phaseCal, phaseCalBase;
 				
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
 				VexIF &vif = setup.ifs[std::string(value)];
@@ -736,26 +736,38 @@ static int getModes(VexData *V, Vex *v)
 				}
 				if(fabs(phaseCal) < 1.0)
 				{
-					vif.phaseCalIntervalMHz = 0;
+					vif.phaseCalIntervalMHz = 0.0f;
 				}
 				else if(fabs(phaseCal-1000000.0) < 1.0)
 				{
-					vif.phaseCalIntervalMHz = 1;
+					vif.phaseCalIntervalMHz = 1.0f;
 				}
 				else if(fabs(phaseCal-5000000.0) < 1.0)
 				{
-					vif.phaseCalIntervalMHz = 5;
+					vif.phaseCalIntervalMHz = 5.0f;
 				}
 				else if(fabs(phaseCal-200000000.0) < 1.0)
 				{
-					vif.phaseCalIntervalMHz = 200;
+					vif.phaseCalIntervalMHz = 200.0f;
 				}
 				else
 				{
 					std::cerr << "Warning: Unsupported pulse cal interval of " << (phaseCal/1000000.0) << " MHz requested for antenna " << antName << "." << std::endl;
 					++nWarn;
-					vif.phaseCalIntervalMHz = static_cast<int>((phaseCal + 0.5)/1000000.0);
+					vif.phaseCalIntervalMHz = static_cast<float>(phaseCal/1000000.0);
 				}
+
+				vex_field(T_IF_DEF, p, 7, &link, &name, &value, &units);
+				if(value)
+				{
+					fvex_double(&value, &units, &phaseCalBase);
+				}
+				else
+				{
+					phaseCalBase = 0.0;
+				}
+				vif.phaseCalBaseMHz = static_cast<float>(phaseCalBase/1000000.0);
+
 
 				p2 = p2array[p2count++];
 #if 0

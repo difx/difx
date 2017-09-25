@@ -144,7 +144,7 @@ std::string VexIF::VLBABandName() const
 
 std::ostream& operator << (std::ostream &os, const VexIF &x)
 {
-	os << "[name=" << x.name << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCalInterval=" << x.phaseCalIntervalMHz << " MHz]";
+	os << "[name=" << x.name << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCalInterval=" << x.phaseCalIntervalMHz << " MHz, phaseCalBase=" << x.phaseCalBaseMHz << " MHz]";
 
 	return os;
 }

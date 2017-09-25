@@ -42,14 +42,16 @@ class VexSetup	// Container for all antenna-specific settings
 {
 public:
 	VexSetup() : streams(1) {};
-	int phaseCalIntervalMHz() const;
+	float phaseCalIntervalMHz() const;
+	float phaseCalBaseMHz() const;
 	const VexIF *getIF(const std::string &ifName) const;
 	void sortChannels();				// sorts by channel name
 	bool hasUniqueRecordChans() const;		// true if each channel's recordChan parameter is unique
 	void assignRecordChans();
 	double firstTuningForIF(const std::string &ifName) const;	// returns Hz
 	double dataRateMbps() const;
-	void setPhaseCalInterval(int phaseCalIntervalMHz);
+	void setPhaseCalInterval(float phaseCalIntervalMHz);
+	void setPhaseCalBase(float phaseCalBaseMHz);
 	void selectTones(enum ToneSelection selection, double guardBandMHz);
 	bool usesFormat(enum VexStream::DataFormat format) const;
 	size_t nStream() const { return streams.size(); }

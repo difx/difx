@@ -39,7 +39,7 @@ class VexChannel		// Antenna-specific baseband channel details
 {
 public:
 	VexChannel() : recordChan(-1), subbandId(-1), bbcFreq(0.0), bbcBandwidth(0.0), bbcSideBand(' '), threadId(0) {}
-	void selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz);
+	void selectTones(float toneIntervalMHz, float toneBaseMHz, enum ToneSelection selection, double guardBandMHz);
 	char bandCode() const;
 	friend bool operator ==(const VexChannel &c1, const VexChannel &c2);
 	friend bool operator <(const VexChannel &c1, const VexChannel &c2);

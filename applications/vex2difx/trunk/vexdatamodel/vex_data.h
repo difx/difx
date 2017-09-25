@@ -77,7 +77,8 @@ public:
 	VexAntenna *newAntenna();
 	VexEOP *newEOP();
 	void swapPolarization(const std::string &antName);
-	void setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz);
+	void setPhaseCalInterval(const std::string &antName, float phaseCalIntervalMHz);
+	void setPhaseCalBase(const std::string &antName, float phaseCalBaseMHz);
 	void selectTones(const std::string &antName, enum ToneSelection selection, double guardBandMHz);
 	void setClock(const std::string &antName, const VexClock &clock);
 	void setTcalFrequency(const std::string &antName, int tcalFrequency);

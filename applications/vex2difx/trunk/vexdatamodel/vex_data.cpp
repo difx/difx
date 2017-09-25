@@ -715,7 +715,7 @@ void VexData::swapPolarization(const std::string &antName)
 	}
 }
 
-void VexData::setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz)
+void VexData::setPhaseCalInterval(const std::string &antName, float phaseCalIntervalMHz)
 {
 	for(std::vector<VexMode>::iterator it = modes.begin(); it != modes.end(); ++it)
 	{

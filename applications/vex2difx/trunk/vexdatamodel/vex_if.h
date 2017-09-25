@@ -45,7 +45,8 @@ public:
 	double ifSSLO;		// [Hz] SSLO of the IF
 	char ifSideBand;	// U or L
 	char pol;		// R or L
-	int phaseCalIntervalMHz;// MHz, typically 1 or 5 (or 0 if none)
+	float phaseCalIntervalMHz;// MHz, typically 1 or 5 (or 0 if none)
+	float phaseCalBaseMHz; // MHz, typically 0 (VEX Rev 1.5b1, 2002)
 
 	// special values needed for VLBA, extracted from comment line
 	std::string comment;

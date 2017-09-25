@@ -30,11 +30,11 @@
 #include <algorithm>
 #include "vex_channel.h"
 
-void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz)
+void VexChannel::selectTones(float toneIntervalMHz, float toneBaseMHz, enum ToneSelection selection, double guardBandMHz)
 {
 	double epsilonHz = 1.0;
 	unsigned int tonesInBand;
-	int firstToneMHz;
+	float firstToneMHz;
 
 	if(toneIntervalMHz <= 0)
 	{
@@ -49,13 +49,13 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 	if(bbcSideBand == 'U')
 	{
 		unsigned int m = static_cast<int>( (bbcFreq + epsilonHz)*1.0e-6/toneIntervalMHz );
-		firstToneMHz = (m+1)*toneIntervalMHz;
+		firstToneMHz = (m+1)*toneIntervalMHz + toneBaseMHz;
 		tonesInBand = static_cast<int>((bbcFreq + bbcBandwidth)*1.0e-6 - firstToneMHz)/toneIntervalMHz + 1;
 	}
 	else
 	{
 		unsigned int m = static_cast<int>( (bbcFreq - epsilonHz)*1.0e-6/toneIntervalMHz );
-		firstToneMHz = m*toneIntervalMHz;
+		firstToneMHz = m*toneIntervalMHz + toneBaseMHz;
 		tonesInBand = static_cast<int>(firstToneMHz - (bbcFreq - bbcBandwidth)*1.0e-6)/toneIntervalMHz + 1;
 	}
 
@@ -152,7 +152,7 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 		{
 			// If not enough tones are found, recurse a bit...
 			printf("Recursing %f\n", guardBandMHz/2.0);
-			selectTones(toneIntervalMHz, selection, guardBandMHz/2.0);	
+			selectTones(toneIntervalMHz, toneBaseMHz, selection, guardBandMHz/2.0);	
 		}
 		break;
 	case ToneSelectionMost:
@@ -178,7 +178,7 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 		if(tones.size() < tonesInBand && tones.size() < 2 && guardBandMHz > bbcBandwidth*1.0e-6/2000)
 		{
 			// If not enough tones are found, recurse a bit...
-			selectTones(toneIntervalMHz, selection, guardBandMHz/2.0);	
+			selectTones(toneIntervalMHz, toneBaseMHz, selection, guardBandMHz/2.0);	
 		}
 		break;
 	default:
