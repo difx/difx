@@ -77,12 +77,12 @@ except Exception, ex:
 # gaintype list must have the same structure as gains, interpolation.
 try:
     if not (gainmeth == 'T' or gainmeth == 'G'):
-        gainmeth = 'T'
+        gainmeth = 'G'
         print 'illegal gain type supplied, defaulting to', gainmeth
     if gainmeth == 'T': print 'X and Y cals will be combined'
     if gainmeth == 'G': print 'X and Y cals will be split'
 except Exception, ex:
-    gainmeth = 'T'
+    gainmeth = 'G'
     print 'gain type not supplied, defaulting to', gainmeth
 
 # option to turn off the amplitude calibration logic
@@ -153,7 +153,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     DiFXinput='', DiFXoutput='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
     amp_norm=True, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
-    npix=50, gainmeth='T'):
+    npix=50, gainmeth='G'):
     # based on common drivepolconvert inputs above
     gains = calgains[3:]
     interpolation = ['linear', 'nearest', 'linear', 'linear']

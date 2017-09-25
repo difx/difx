@@ -93,7 +93,7 @@ def parseOptions():
             'but v5-v7 may be necessary: the difference is which scans '
             '(APP or ALMA) are to be used for DTerms and Gxyamp.')
     parser.add_argument('-y', '--gainmeth', dest='gainmeth',
-        default='T', metavar='CHAR',
+        default='G', metavar='CHAR',
         help='Specify the gain method to use on all calibration tables'
             ' except ones with "XY0", "bandpass" or "Gxyamp" in name;'
             ' "T" combines the gains, "G" retains separation of X and Y.')
