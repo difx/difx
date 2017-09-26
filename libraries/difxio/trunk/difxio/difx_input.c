@@ -1337,7 +1337,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 
 			return 0;
 		}
-		D->datastream[e].phaseCalIntervalMHz = atoi(DifxParametersvalue(ip, r));
+		D->datastream[e].phaseCalIntervalMHz = atof(DifxParametersvalue(ip, r));
 
 		r = DifxParametersfind(ip, r+1, "NUM RECORDED FREQS");
 		if(r < 0)
