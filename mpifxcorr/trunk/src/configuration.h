@@ -155,8 +155,10 @@ public:
     { return telescopetable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex].name; }
   inline double getDTsys(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
-  inline int getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) const
+  inline float getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
+  inline float getDPhaseCalBaseMHz(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalbasemhz; }
   inline int getDSwitchedPowerFrequency(int datastreamindex) const
     { return datastreamtable[datastreamindex].switchedpowerfrequency; }
   inline int getDMaxRecordedPCalTones(int configindex, int configdatastreamindex) const
@@ -773,7 +775,8 @@ private:
     datasampling sampling;
     complextype tcomplex;
     bool ismuxed;
-    int phasecalintervalmhz;
+    float phasecalintervalmhz;
+    float phasecalbasemhz;
     int switchedpowerfrequency; // e.g., 80 Hz for VLBA
     int numbits;
     int bytespersamplenum;

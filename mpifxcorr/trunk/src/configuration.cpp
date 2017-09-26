@@ -1474,7 +1474,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
         return false;
       }
     }
-    datastreamtable[i].phasecalintervalmhz = atoi(line.c_str());
+    datastreamtable[i].phasecalintervalmhz = atof(line.c_str());
+    datastreamtable[i].phasecalbasemhz = 0; // vex1.5 TODO get this how without changing .input syntax?
 
     getinputline(input, &line, "NUM RECORDED FREQS");
     datastreamtable[i].numrecordedfreqs = atoi(line.c_str());
