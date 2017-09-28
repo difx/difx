@@ -68,9 +68,7 @@ foreach (@ARGV) {
     my $timestr = turn2str(fmod($seconds/60/60/24, 1.0));
 	
     my $mjd =  cal2mjd(1, ($refepoch%2)*6+1, 2000 + int($refepoch/2));
-    print "**$mjd - $seconds\n";
     $mjd += int($seconds/(60*60*24));
-    print "**$mjd\n";
     my ($day, $month, $year, $ut) = mjd2cal($mjd);
     my $date = sprintf("%02d/%02d/%04d", $day, $month, $year);
 
