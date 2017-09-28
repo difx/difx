@@ -7,6 +7,9 @@ use POSIX;
 
 sub turn2str ($);
 sub readheader($);
+sub decodedata($$$$$);
+sub mjd2cal($);
+sub cal2mjd($$$;$);
 
 my ($invalid, $legacy, $seconds, $refepoch, $frame, $version, $nchan, $framelength, $complex, $nbits, $threadid, $antid, $edv, $eud1, $eud2, $edu3, $eud4);
 
@@ -14,7 +17,9 @@ my $once = 0;
 my $check = 0;
 my $help = 0;
 my $skip = 0;
-GetOptions('once'=>\$once, 'check'=>\$check, 'help'=>\$help, 'skip=i'=>\$skip);
+my $data = 0;
+
+GetOptions('once'=>\$once, 'check'=>\$check, 'help'=>\$help, 'skip=i'=>\$skip, 'data'=>\$data);
 
 my ($lastframe, $lastsec);
 
@@ -62,53 +67,72 @@ foreach (@ARGV) {
     
     my $timestr = turn2str(fmod($seconds/60/60/24, 1.0));
 	
-	if (!$check) {
-	  print<<EOF;
+    my $mjd =  cal2mjd(1, ($refepoch%2)*6+1, 2000 + int($refepoch/2));
+    print "**$mjd - $seconds\n";
+    $mjd += int($seconds/(60*60*24));
+    print "**$mjd\n";
+    my ($day, $month, $year, $ut) = mjd2cal($mjd);
+    my $date = sprintf("%02d/%02d/%04d", $day, $month, $year);
+
+	
+    if (!$check) {
+      print<<EOF;
 INVALID:     $invalid
 LEGACY:      $legacy
-FRAMELENGTH: $framelength
+SECONDS:     $seconds     $date $timestr
 
-SECONDS:     $seconds     $timestr
 EPOCH:       $refepoch
 FRAME#:      $frame
 
+VERSION:     $version
 NCHAN:       $nchan
-NBITS:       $nbits
+FRAMELENGTH: $framelength
+
 COMPLEX:     $complex
+NBITS:       $nbits
+THREADID:    $threadid
 ANTID:       $antid
 EOF
-	} else { # $check==True
-	  if ($first) {
-		$lastsec = $seconds;
-		$lastframe = $frame;
+    } else { # $check==True
+      if ($first) {
+	$lastsec = $seconds;
+	$lastframe = $frame;
+      } else {
+	if ($frame-$lastframe!=1) {
+	  if ($seconds==$lastsec) {
+	    printf("Skipped %d frames at $timestr/$lastframe--$frame\n", $frame-$lastframe-1);
+	  } elsif ($seconds-$lastsec==1) {
+	    if ($frame!=0) {
+	      printf("Skipped > %d frames at $timestr/$lastframe--$frame\n", $frame);
+	    }
 	  } else {
-		if ($frame-$lastframe!=1) {
-		  if ($seconds==$lastsec) {
-			printf("Skipped %d frames at $timestr/$lastframe--$frame\n", $frame-$lastframe-1);
-		  } elsif ($seconds-$lastsec==1) {
-			if ($frame!=0) {
-			  printf("Skipped > %d frames at $timestr/$lastframe--$frame\n", $frame);
-			}
-		  } else {
-			printf("Skipped  %d seconds at $timestr\n", $seconds-$lastsec);
-		  }
-		}
-		$lastframe = $frame;
-		$lastsec = $seconds;
+	    printf("Skipped  %d seconds at $timestr\n", $seconds-$lastsec);
 	  }
 	}
-	my $status;
-	if ($legacy) {
-      $status = sysseek(VDIF, $framelength-16, 1);
-    } else {
-      $status = sysseek(VDIF, $framelength-32, 1);
+	$lastframe = $frame;
+	$lastsec = $seconds;
+      }
     }
-    if (!defined $status) {
-      close(VDIF);
-      last;
+
+    my $datasize = $framelength;
+    if ($legacy) {
+      $datasize -= 16;
+    } else {
+      $datasize -= 32;
+    }
+    
+    if ($data) {
+      decodedata(*VDIF, $datasize, $nchan, $nbits, $complex);
+    } else {
+      my $status;
+      $status = sysseek(VDIF, $datasize, 1);
+      if (!defined $status) {
+	close(VDIF);
+	last;
+      }
     }
     last if ($once);
-	$first = 0;
+    $first = 0;
   }
 }
 
@@ -164,6 +188,48 @@ sub readheader($) {
 
   return ($invalid, $legacy, $seconds, $refepoch, $frame, $version, $nchan, $framelength, $complex, $nbits, $threadid, $antid, $edv, $eud1, $eud2, $edu3, $eud4);
 
+}
+
+sub decode8bit($) {
+  return ($_[0]-128);
+}
+
+sub decodedata($$$$$) {
+  my ($vdif, $datalength, $nchan, $bits, $complex) = @_;
+  my $buf;
+  my $nread = sysread($vdif, $buf, $datalength);
+  if (! defined($nread)) {
+    die("Error reading $_: $!");
+    return undef;
+  } elsif ($nread!=$datalength) {
+    die "Error: Only read $nread bytes from frame\n";
+  }
+
+  my @samples = unpack 'C*', $buf;
+
+  my ($i, $j, $o);
+  my $n = scalar(@samples);
+
+  $o = 0;
+  if ($bits==8) {
+    if ($complex) {
+      for ($i=0; $i<$n/2/$nchan; $i++) {
+	for ($j=0; $j<$nchan; $j++) {
+	  printf(" %4.0f%+4.0fi", decode8bit($samples[$o++]), decode8bit($samples[$o++]));
+	}
+	printf("\n");
+      }
+    } else {
+      for ($i=0; $i<$n/$nchan; $i++) {
+	for ($j=0; $j<$nchan; $j++) {
+	  printf(" %4.0f", decode8bit($samples[$o++]));
+	}
+	printf("\n");
+      }
+    }
+  } else {
+    die "Cannot decode nbits=$bits\n";
+  }
 }
 
 sub turn2str ($) {
@@ -260,4 +326,56 @@ sub turn2str ($) {
     $str = '-'.$str;
   }
   return $str;
+}
+
+sub cal2mjd($$$;$) {
+  my($day, $month, $year, $ut) = @_;
+  $ut = 0.0 if (!defined $ut);
+
+  my ($m, $y);
+  if ($month <= 2) {
+    $m = int($month+9);
+    $y = int($year-1);
+  } else {
+    $m = int($month-3);
+    $y = int($year);
+  }
+  my $c = int($y/100);
+  $y = $y-$c*100;
+  my $x1 = int(146097.0*$c/4.0);
+  my $x2 = int(1461.0*$y/4.0);
+  my $x3 = int((153.0*$m+2.0)/5.0);
+  return($x1+$x2+$x3+$day-678882+$ut);
+}
+
+# Return the nearest integer (ie round)
+sub nint ($) {
+  my ($x) = @_;
+  ($x<0.0) ? return(ceil($x-0.5)) : return(floor($x+0.5))
+}
+
+sub mjd2cal($) {
+
+  my $mjd = shift;
+
+  my $ut = fmod($mjd,1.0);
+  if ($ut<0.0) {
+    $ut += 1.0;
+    $mjd -= 1;
+  }
+
+  use integer;  # Calculations require integer division and modulation
+  # Get the integral Julian Day number
+  my $jd = nint($mjd + 2400001);
+
+  # Do some rather cryptic calculations
+
+  my $temp1 = 4*($jd+((6*(((4*$jd-17918)/146097)))/4+1)/2-37);
+  my $temp2 = 10*((($temp1-237)%1461)/4)+5;
+
+  my $year = $temp1/1461-4712;
+  my $month =(($temp2/306+2)%12)+1;
+  my $day = ($temp2%306)/10+1;
+
+  return($day, $month, $year, $ut);
 }
