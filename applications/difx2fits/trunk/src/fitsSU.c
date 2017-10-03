@@ -41,7 +41,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 
 	struct fitsBinTableColumn columns[] =
 	{
-		{"ID_NO.", "1J", "source id number", 0},
+		{"SOURCE_ID", "1J", "source id number", 0},
 		{"SOURCE", "16A", "source name", 0},
 		{"QUAL", "1J", "source qualifier", 0},
 		{"CALCODE", "4A", "calibrator code", 0},
@@ -51,7 +51,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 		{"UFLUX", bandFormFloat, "upol flux density at ref freq", "JY"},
 		{"VFLUX", bandFormFloat, "vpol flux density at ref freq", "JY"},
 		{"ALPHA", bandFormFloat, "spectral index", 0},
-		{"FREQOFF", bandFormDouble, "freq. offset from ref freq.","HZ"},
+		{"FREQOFF", bandFormFloat, "freq. offset from ref freq.","HZ"},
 		{"RAEPO", "1D", "Right Ascension at EQUINOX", "DEGREES"},
 		{"DECEPO", "1D", "Declination at EQUINOX", "DEGREES"},
 		{"EQUINOX", "8A", "Mean equinox"},
@@ -80,7 +80,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 	float fluxU[array_MAX_BANDS];
 	float fluxV[array_MAX_BANDS];
 	float alpha[array_MAX_BANDS];
-	double freqOffset[array_MAX_BANDS];
+	float freqOffset[array_MAX_BANDS];
 	char equinox[8];
 	double sysVel[array_MAX_BANDS];
 	double restFreq[array_MAX_BANDS];
