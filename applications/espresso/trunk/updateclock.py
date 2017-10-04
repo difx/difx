@@ -28,6 +28,7 @@ import optparse
 import time
 import os
 import espressolib
+import numpy
 
 
 def parseparam(param, line):
@@ -77,6 +78,10 @@ parser.add_option(
         "--frequency", "-f",
         type="float", dest="frequency", default=None,
         help="Observation frequency (MHz), required for rate calculations")
+parser.add_option(
+        "--addmean", "-m",
+        action="store_true", dest="addmean", default=False,
+        help="Add the mean clock offset/rate adjustment")
 
 (options, args) = parser.parse_args()
 if len(args) != 1:
@@ -111,19 +116,33 @@ if options.rate_adjust and len(rate_list) != len(station_list):
 if options.rate_adjust and not options.frequency:
     raise Exception("You must set the frequency (-f) if you are adjusting the rate!")
 
+offset_list = [float(offset) for offset in offset_list]
+rate_list = [float(rate) for rate in rate_list]
+
+# offset all adjustments by the mean adjustment so that the net change is 0
+if options.addmean:
+    if offset_list:
+        offset_mean = sum(offset_list)/len(offset_list)
+        print "mean offset: {0:0.3f}".format(offset_mean)
+    if rate_list:
+        rate_mean = sum(rate_list)/len(rate_list)
+        print "mean rate: {0:0.3E}".format(rate_mean)
+    offset_list = [offset-offset_mean for offset in offset_list]
+    rate_list = [rate-rate_mean for rate in rate_list]
 
 station = dict()
 for i in range(len(station_list)):
     if not station_list[i] in station:
         station[station_list[i]] = dict()
     try:
-        station[station_list[i]]["offset_adjust"] = float(offset_list[i])
+        station[station_list[i]]["offset_adjust"] = offset_list[i]
     except:
         station[station_list[i]]["offset_adjust"] = 0
     try:
-        station[station_list[i]]["rate_adjust"] = float(rate_list[i])
+        station[station_list[i]]["rate_adjust"] = rate_list[i]
     except:
         station[station_list[i]]["rate_adjust"] = 0
+
 
 if options.frequency:
     frequency = options.frequency
