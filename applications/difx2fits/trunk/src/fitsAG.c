@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include <difxio/antenna_db.h>
 #include "config.h"
 #include "difx2fits.h"
 
@@ -74,11 +75,12 @@ static double arrayGMST(int mjd)
 struct __attribute__((packed)) AGrow
 {
 	char name[8];
-	double x, y, z;
-	float dx, dy, dz;
+	double x, y, z; /* [m] */
+	float dx, dy, dz; /* [m/s] */
 	int32_t antId1;
 	int32_t mountType;
 	float offset[3];
+	float diameter; /* [m] */
 };
 
 const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
@@ -92,7 +94,8 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 		{"ORBPARM", "0D", "orbital parameters", 0},
 		{"NOSTA", "1J", "station id number", 0},
 		{"MNTSTA", "1J", "antenna mount type", 0},
-		{"STAXOF", "3E", "axis offset, x, y, z", "METERS"}
+		{"STAXOF", "3E", "axis offset, x, y, z", "METERS"},
+		{"DIAMETER", "1E", "antenna diameter", "METERS"}
 	};
 
 	char ref_date[12];
@@ -170,8 +173,11 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 		const DifxAntenna *antenna;
 		struct AGrow row;
 		int i;
+		AntennaDBEntry *ae;
 
 		antenna = D->antenna + a;
+
+		ae = antennaDBGetByXYZ(antenna->X, antenna->Y, antenna->Z);
 
 		strcpypad(row.name, antenna->name, 8);
 		row.x = antenna->X;
@@ -191,6 +197,14 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 		for(i = 0; i < 3; ++i)
 		{
 			row.offset[i] = antenna->offset[i];
+		}
+		if(ae)
+		{
+			row.diameter = ae->diameter;
+		}
+		else
+		{
+			row.diameter = 0.0;
 		}
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, NELEMENTS(columns), &row);

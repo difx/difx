@@ -1,5 +1,7 @@
 Version 3.6.0
 * SU table: make more IDI-FITS compliant
+* AG table: fill in antenna diameters, or 0 if not known.
+  - values used in difxio: difxio/antenna_db.c
 
 Version 3.5.0
 * Remove duplicate RDATE keywords from AG and ML tables
