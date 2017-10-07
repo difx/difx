@@ -14,6 +14,8 @@ typedef struct
 
 void fprintAntennaDBEntry(FILE *out, const AntennaDBEntry *ae);
 
+const AntennaDBEntry *antennaDBGetByIndex(unsigned int index);
+
 const AntennaDBEntry *antennaDBGetByXYZ(double x, double y, double z);
 
 const AntennaDBEntry *antennaDBGetByName(const char *name);

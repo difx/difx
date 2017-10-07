@@ -12,6 +12,12 @@ bin_PROGRAMS = \
 	testephem \
 	teststringarray
 
+noinst_PROGRAMS = \
+	testantdb
+
+testantdb_SOURCES = \
+	testantdb.c
+
 testdifxinput_SOURCES = \
 	testdifxinput.c
 

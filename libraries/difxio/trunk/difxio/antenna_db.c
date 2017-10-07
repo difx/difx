@@ -76,11 +76,86 @@ AntennaDBEntry antennaDBEntries[] =
 	{ "Sardinia",       -1, -1, -100, 65.0 },
 };
 
+int lat2str(char *latstr, int length, double lat)
+{
+	double x, s;
+	int d, m;
+	char hemi = ' ';
 
+	x = lat*180.0/M_PI;
+
+	if(x < 0.0)
+	{
+		x = -x;
+		hemi = 'S';
+	}
+	else if(x > 0.0)
+	{
+		hemi = 'N';
+	}
+	d = (int)x;
+	x = (x - d)*60.0;
+	m = (int)x;
+	s = (x - m)*60.0;
+	
+	return snprintf(latstr, length, "%c%02dd%02dm%06.3fs", hemi, d, m, s);
+}
+
+int lon2str(char *lonstr, int length, double lon)
+{
+	double x, s;
+	int d, m;
+	char hemi = ' ';
+
+	x = lon*180.0/M_PI;
+
+	if(x < 0.0)
+	{
+		x = -x;
+		hemi = 'W';
+	}
+	else if(x > 0.0)
+	{
+		hemi = 'E';
+	}
+	d = (int)x;
+	x = (x - d)*60.0;
+	m = (int)x;
+	s = (x - m)*60.0;
+	
+	return snprintf(lonstr, length, "%c%02dd%02dm%06.3fs", hemi, d, m, s);
+}
 
 void fprintAntennaDBEntry(FILE *out, const AntennaDBEntry *ae)
 {
-	fprintf(out, "%s  (%3.1f, %3.1f, %3.1f)  diameter=%3.1f\n", ae->name, ae->x, ae->y, ae->z, ae->diameter);
+	const int StrSize = 16;
+	double lat, lon, alt; /* rad, rad, m */
+	char latstr[StrSize];
+	char lonstr[StrSize];
+	
+	ecef2lla(&lat, &lon, &alt, ae->x, ae->y, ae->z);
+	lat2str(latstr, StrSize, lat);
+	lon2str(lonstr, StrSize, lon);
+
+	fprintf(out, "%s  (%3.1f, %3.1f, %3.1f) = (%s, %s, %3.1f) D=%3.1f\n", ae->name, ae->x, ae->y, ae->z, latstr, lonstr, alt, ae->diameter);
+}
+
+const AntennaDBEntry *antennaDBGetByIndex(unsigned int index)
+{
+	int N;
+
+	N = sizeof(antennaDBEntries)/sizeof(AntennaDBEntry);
+
+	if(index >= N)
+	{
+		return 0;
+	}
+	if(antennaDBEntries[index].name[0] == 0)
+	{
+		return 0;
+	}
+
+	return antennaDBEntries + index;
 }
 
 const AntennaDBEntry *antennaDBGetByXYZ(double x, double y, double z)
