@@ -216,8 +216,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].datafilenames; }
   inline int getDRecordedFreqNumPCalTones(int configindex, int configdatastreamindex, int recordedfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqpcaltones[recordedfreqindex]; }
-  inline int getDRecordedFreqPCalToneFreq(int configindex, int configdatastreamindex, int recordedfreqindex, int tone) const
-    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqs[recordedfreqindex][tone]; }
+  inline double getDRecordedFreqPCalToneFreqHz(int configindex, int configdatastreamindex, int recordedfreqindex, int tone) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqshz[recordedfreqindex][tone]; }
   inline int getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaloffsetshz[recordedfreqindex]; }
   inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
@@ -794,7 +794,7 @@ private:
     int *  recordedfreqpols;
     int *  recordedfreqtableindices;
     int *  numrecordedfreqpcaltones;
-    int ** recordedfreqpcaltonefreqs; 
+    double ** recordedfreqpcaltonefreqshz;
     int * recordedfreqpcaloffsetshz;
     double * recordedfreqclockoffsets;
     double * recordedfreqclockoffsetsdelta;

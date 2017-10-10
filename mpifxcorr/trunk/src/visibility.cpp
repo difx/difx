@@ -723,7 +723,8 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   string pcalline;
   int binloop, freqindex, numpolproducts, resultindex, freqchannels;
   int year, month, day;
-  int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount, tonefreq;
+  int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount;
+  float tonefreq;
   float currentweight;
   double scanoffsetsecs, pcalmjd;
   bool modelok;
@@ -955,10 +956,10 @@ The four columns are:
             continue; //move on
           }
 
-          tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
+          tonefreq = 1e-6*config->getDRecordedFreqPCalToneFreqHz(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
           if(config->getDRecordedLowerSideband(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j)))
           {
-            sprintf(pcalstr, " %d %c %12.5e %12.5e",
+            sprintf(pcalstr, " %.4g %c %12.5e %12.5e",
                     tonefreq,
                     config->getDRecordedBandPol(currentconfigindex, i, j),
                     results[resultindex].re,
@@ -966,7 +967,7 @@ The four columns are:
           }
           else
           {
-            sprintf(pcalstr, " %d %c %12.5e %12.5e",
+            sprintf(pcalstr, " %.4g %c %12.5e %12.5e",
                     tonefreq,
                     config->getDRecordedBandPol(currentconfigindex, i, j),
                     results[resultindex].re,
