@@ -640,7 +640,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                              pfb[i].stn[k].bw,
                              j, 
                              pfb[i].stn[k].pol,
-                             pfb[i].stn[k].pcal_int);
+                             (int)(pfb[i].stn[k].pcal_int+0.5));
                                     // keep track of polarizations that appear
                     L_used |= pfb[i].stn[k].pol == 'L';
                     R_used |= pfb[i].stn[k].pol == 'R';
@@ -652,7 +652,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                      && pfb[i].stn[k].pcal_int != 5
                      && pfb[i].stn[k].pcal_int != 10
                      && pfb[i].stn[k].pcal_int != 200)
-                        printf ("Warning! Pcal interval of %d MHz has no BBC statement.\n",
+                        printf ("Warning! Pcal interval of %.12g MHz has no BBC statement.\n",
                                 pfb[i].stn[k].pcal_int);
                     ik = i;         // save i for which k applied
                     j++;

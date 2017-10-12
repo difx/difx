@@ -238,11 +238,11 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                      "               %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n",
                   n, pfb[n].stn[0].sideband, pfb[n].stn[0].pol, pfb[n].stn[0].first_time,
                   pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].zoom, 
-                  pfb[n].stn[0].pcal_int, pfb[n].stn[0].bs, pfb[n].stn[0].freq,
+                  (int)(pfb[n].stn[0].pcal_int+0.5), pfb[n].stn[0].bs, pfb[n].stn[0].freq,
                   pfb[n].stn[0].bw, pfb[n].stn[0].chan_id,
                   pfb[n].stn[1].sideband, pfb[n].stn[1].pol, pfb[n].stn[1].first_time,
                   pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].zoom, 
-                  pfb[n].stn[1].pcal_int, pfb[n].stn[1].bs, pfb[n].stn[1].freq, 
+                  (int)(pfb[n].stn[1].pcal_int+0.5), pfb[n].stn[1].bs, pfb[n].stn[1].freq, 
                   pfb[n].stn[1].bw, pfb[n].stn[1].chan_id);
         }
 
