@@ -959,7 +959,7 @@ The four columns are:
           tonefreq = 1e-6*config->getDRecordedFreqPCalToneFreqHz(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
           if(config->getDRecordedLowerSideband(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j)))
           {
-            sprintf(pcalstr, " %.4g %c %12.5e %12.5e",
+            sprintf(pcalstr, " %.12g %c %12.5e %12.5e",
                     tonefreq,
                     config->getDRecordedBandPol(currentconfigindex, i, j),
                     results[resultindex].re,
@@ -967,7 +967,7 @@ The four columns are:
           }
           else
           {
-            sprintf(pcalstr, " %.4g %c %12.5e %12.5e",
+            sprintf(pcalstr, " %.12g %c %12.5e %12.5e",
                     tonefreq,
                     config->getDRecordedBandPol(currentconfigindex, i, j),
                     results[resultindex].re,
