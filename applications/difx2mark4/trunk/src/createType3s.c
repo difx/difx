@@ -445,6 +445,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         continue;
                                     }
                                 else    // for now, version 1 is only alternative
+#ifdef INTEGER_PC_FREQ
                                     {
                                     sscanf (line + nchars, "%d %c %lf%lf%n", 
                                             &ifreq, &polar, &cquad, &squad, &mchars);
@@ -454,6 +455,16 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     if (ifreq == -1)
                                         continue;
                                     }
+#else /* INTEGER_PC_FREQ */
+                                    {
+                                    sscanf (line + nchars, "%lf %c %lf%lf%n", 
+                                            &freq, &polar, &cquad, &squad, &mchars);
+                                    nchars += mchars;
+                                        // skip over tones that weren't extracted
+                                    if (freq < 0)
+                                        continue;
+                                    }
+#endif /* INTEGER_PC_FREQ */
                                         // swap sign of imaginary part
                                 squad *= -1;
                                         // b is channel index into the t309 record array
