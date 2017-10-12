@@ -2,9 +2,13 @@ Version 2.6
 ~~~~~~~~~~~
 * Some improvements to VDIF file reading for very gappy data
 * Some improvements to VDIF for frame sizes greatly differing from 5000 bytes
+* Some improvements in opening input files; reattempts on NFS-typical errors of "EAGAIN Resource temporarily unavailable"
 * Remove array that was mooted when per-band weights were introduced
 * Allow DifxParameter message to specify new stop time, then cleanly shut down at that time.
 * DifxParameters with <to></to> blocks are compared against the job name.
+* startdifx: end difxlog process after every job when running with joblist
+* genmachines: fixed support for multiple input files
+* PCAL: allow tone intervals denser than an integer MHz (Wettzell twin telescope workaround)
 
 Version 2.5
 ~~~~~~~~~~~
