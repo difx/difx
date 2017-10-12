@@ -49,7 +49,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
         Y_used = FALSE,
         dstr,
         redstr,
-        antbits[100];
+        antbits[100] = { 0 };
 
     char s[256],
          *pst[50],
@@ -62,14 +62,14 @@ int createRoot (DifxInput *D,           // difx input structure pointer
          dms[18],
          *pchar,
          c,
-         current_site[3],
-         line[30000],
-         def_block[30000],
-         trax1b[100],
-         trax2b[100],
+         current_site[3] = { 0 },
+         line[30000] = { 0 },
+         def_block[30000] = { 0 },
+         trax1b[100] = { 0 },
+         trax2b[100] = { 0 },
          trax1b_used,
          trax2b_used,
-         antnam[4];
+         antnam[4] = { 0 };
 
     double freak,
            fract;
@@ -78,7 +78,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                 valtime;
 
 
-    char *blocks[] = {"$NO_BLOCK", "$GLOBAL", "$EXPER", "$MODE", "$STATION", "$ANTENNA",
+    const char *blocks[] = {"$NO_BLOCK", "$GLOBAL", "$EXPER", "$MODE", "$STATION", "$ANTENNA",
                       "$SITE", "$BBC", "$DAS", "$FREQ", "$HEAD_POS", "$IF",
                       "$PHASE_CAL_DETECT", "$PASS_ORDER", "$PROCEDURES", "$ROLL",
                       "$SCHEDULING_PARAMS", "$SCHED", "$SEFD", "$SOURCE", "$TRACKS",
@@ -90,7 +90,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                       SCHEDULING_PARAMS, SCHED, SEFD, SOURCE, TRACKS,
                       EOP, CLOCK, TAPELOG_OBS, END_LIST};
                                     // lines to be appended to output root file
-    char *extra_lines[] = {"$EVEX_REV;\n", 
+    const char *extra_lines[] = {"$EVEX_REV;\n", 
                            " rev = 1.0;\n", 
                            "$EVEX;\n",
                            " def 1234_std;\n", 
@@ -340,6 +340,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                                 redstr = dstr;
                             if (redstr < 0) continue;       // not assigned this job
                             pdds = D->datastream + redstr;
+                            if ((size_t)(pdds->antennaId) >= sizeof(antbits)/sizeof(antbits[0]))
+                                printf("      Programmer error: antenna Id %d exceeds hardcoded array size %zu\n", pdds->antennaId, sizeof(antbits)/sizeof(antbits[0])); // let segfault
                             antbits[pdds->antennaId] = pdds->quantBits;
                             }
 
@@ -505,6 +507,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                     i = isValidAntenna(D, current_site, scanId);
                     if (i < 0)
                         {
+                        // TODO: when nsite != nant the "discard" below leads to segfault further down the line?
                         if (opts->verbose > 0)
                             printf ("        intl_name %c%c difx_name -- mk4_id - "
                                              "difx site index --\n",
