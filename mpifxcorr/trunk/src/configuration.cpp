@@ -1292,7 +1292,8 @@ bool Configuration::processConfig(ifstream * input)
 bool Configuration::processDatastreamTable(ifstream * input)
 {
   datastreamdata * dsdata;
-  int configindex, freqindex, decimationfactor, tonefreq;
+  int configindex, freqindex, decimationfactor;
+  double tonefreq;
   double lofreq, parentlowbandedge, parenthighbandedge, lowbandedge, highbandedge, recbandwidth;
   string line = "";;
   string key = "";
@@ -1633,7 +1634,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
 
         if(freqtable[freqindex].lowersideband)
         {     // LSB
-          tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
+          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz;
           if(tonefreq == lofreq)
             tonefreq -= dsdata->phasecalintervalmhz;
           if(tonefreq >= lofreq - freqtable[freqindex].bandwidth)
@@ -1663,7 +1664,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
         }
         else
         {     // USB
-          tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
+          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz;
           if(tonefreq <= lofreq)
             tonefreq += dsdata->phasecalintervalmhz;
           if(tonefreq <= lofreq + freqtable[freqindex].bandwidth)
