@@ -593,8 +593,7 @@ static int parseDifxPulseCal(const char *line,
 	int toneIndex;
 	int band, pol, bandPol, recFreq;
 	int nonTiny = 0;
-	int A;
-	float B, C;
+	float A, B, C;
 	char P[2];
 	double mjd;
 	char antName[DIFXIO_NAME_LENGTH];
@@ -786,7 +785,7 @@ static int parseDifxPulseCal(const char *line,
 		/* this pol/band combination is not used.  Read all of the dummies from PCAL file */
 		for(tone = 0; tone < nt; ++tone)	/* nt is taken from line header and is max number of tones */
 		{
-			n = sscanf(line, "%d%1s%f%f%n", &A, P, &B, &C, &p);
+			n = sscanf(line, "%f%1s%f%f%n", &A, P, &B, &C, &p);
 			++slot;
 			if(n < 4)
 			{
@@ -843,14 +842,14 @@ static int parseDifxPulseCal(const char *line,
 			}
 
 			/* Check that frequency is correct */
-			if(A != (int)(toneFreq[tone]+0.5))
+			if(A != toneFreq[tone])
 			{
 				static int nFreqMatchError = 0;
 
 				++nFreqMatchError;
 				if(nFreqMatchError <= 20)
 				{
-					printf("\nWarning: parseDifxPulseCal: tone frequency in PCAL file %d doesn't match expected %g for antenna %d, mjd %12.6f  slot=%d\n", A, toneFreq[tone], dd->antennaId, mjd, slot);
+					printf("\nWarning: parseDifxPulseCal: tone frequency in PCAL file %g doesn't match expected %g for antenna %d, mjd %12.6f  slot=%d\n", A, toneFreq[tone], dd->antennaId, mjd, slot);
 				}
 				if(nFreqMatchError == 20)
 				{
