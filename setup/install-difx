@@ -93,7 +93,7 @@ Options:
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
-                    "datasim", ]
+                    "datasim", "difxcalc11"]
 
     """
     pass
@@ -149,6 +149,7 @@ components = {"perl"          :False,
               "codifio"       :True,
               "vdifio"        :True,
               "calcif2"       :True,
+              "difxcalc11"    :True,
               "difx2profile"  :True,
               "misc"          :True,
               "vis2screen"    :True,
@@ -180,6 +181,7 @@ def setNormalComponentsFalse():
 	components["misc"] = False
 	components["vis2screen"] = False
 	components["calcserver"] = False
+	components["difxcalc11"] = False
 	components["difx2fits"] = False
 	components["vex2difx"] = False
 	components["difx2mark4"] = False
@@ -361,6 +363,8 @@ if components["calcif2"] and master_tag:
     apptargets.append(["calcif2",   difx_version, True,False,True,False])
 if components["calcserver"]:
     apptargets.append(["calcserver", difx_version, True,True,False,False])
+if components["difxcalc11"]:
+    apptargets.append(["difxcalc11", difx_version, True,False,False,False])
 if components["difx2fits"]:
     apptargets.append(["difx2fits",  difx_version, True,False,True,False])
 if components["vex2difx"]:
