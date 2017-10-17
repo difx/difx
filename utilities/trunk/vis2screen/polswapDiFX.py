@@ -28,7 +28,7 @@ def getVisibilityHeader(f):
 
 def polswapVisibilityfile(basename,targetAnts):
 
-	polswap = {'R':'L', 'L':'R', 'X':'Y', 'Y':'X'}
+	polswap = {'R':'L', 'L':'R', 'X':'Y', 'Y':'X', 'H':'V', 'V':'H'}
 
 	# Extract meta-infos from the DiFX .INPUT file
 	if basename.endswith(('.difx','.input','.calc')):
