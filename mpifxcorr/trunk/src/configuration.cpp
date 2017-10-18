@@ -309,6 +309,7 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
     if(consistencyok)
       consistencyok = populateRecordBandIndicies();
     commandthreadinitialised = false;
+    commandthreadfailed = false;
     dumpsta = false;
     dumplta = false;
     dumpkurtosis = false;
