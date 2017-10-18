@@ -8,6 +8,7 @@ Version 2.6.0
   - finer P-cal spacing; 'float' replaces 'int' in vex2difx and .input
   - Note: P-cal base frequency is not yet supported in .input file
 * ANTENNA parameter polConvert can be set to true to indicate desire to perform polarization basis conversion on this antenna.  This will eliminate a warning that is not needed in this case.
+* Added parameter exahustiveAutocorrs to allow correlation of cross-hand autocorrelations when polarisations are in different datastreams
 
 Version 2.5.0
 ~~~~~~~~~~~~~

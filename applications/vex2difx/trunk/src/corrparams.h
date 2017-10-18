@@ -352,6 +352,7 @@ public:
 	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
 	bool tweakIntTime;	// nadger the integration time to make values nice
 	bool sortAntennas;	// generally a good idea (defaults to true). Sorts alphabetically.
+	bool exhaustiveAutocorrs; // Turn off "normal" autocorr and generate autocorrs in the baseline table, which will also match across datastreams
 	int nCore;
 	int nThread;
 	double maxLength;	// [days]

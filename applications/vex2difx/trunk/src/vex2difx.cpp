@@ -808,10 +808,25 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 			// 8. a zoom band with opposite sideband
 
 			// Needless to say, this logic can probably be simplified some, but it seems to work!
+			//
+			// Finally, we have the case of exhaustiveAutocorrs
+			// Here we disable "normal" autocorrelations and instead construct autocorrs as baselines
+			// This allows us to grab cross-hand autocorrs when the polarisations are in different baselines
 
-			for(int a1 = 0; a1 < D->nAntenna-1; ++a1)
+			int enda1 = D->nAntenna-1;
+			if(P->exhaustiveAutocorrs)
 			{
-				for(int a2 = a1 + 1; a2 < D->nAntenna; ++a2)
+				enda1 = D->nAntenna;
+				config->doAutoCorr = 0;
+			}
+			for(int a1 = 0; a1 < enda1; ++a1)
+			{
+				int starta2 = a1 + 1;
+				if(P->exhaustiveAutocorrs)
+				{
+					starta2 = a1;
+				}
+				for(int a2 = starta2; a2 < D->nAntenna; ++a2)
 				{
 					for(int configds1 = 0; configds1 < config->nDatastream; ++configds1)
 					{
@@ -1433,6 +1448,10 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	{
 		config->nBaseline = nDatastream*(nDatastream-1)/2;	// this is a worst case (but typical) scenario; may shrink later.
 									// FIXME: it seems the shrinking causes seg faults.  
+		if(P->exhaustiveAutocorrs)
+		{
+			config->nBaseline += 2*nDatastream; // worst case if every datastream has a corresponding partner
+		}
 	}
 
 	//if guardNS was set to negative value, change it to the right amount to allow for

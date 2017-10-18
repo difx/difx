@@ -1778,6 +1778,7 @@ void CorrParams::defaults()
 	nThread = 0;
 	tweakIntTime = false;
 	sortAntennas = true;
+	exhaustiveAutocorrs = false;
 }
 
 void pathify(std::string &filename)
@@ -1876,6 +1877,10 @@ int CorrParams::setkv(const std::string &key, const std::string &value)
 	else if(key == "mediaSplit")
 	{
 		mediaSplit = parseBoolean(value);
+	}
+	else if(key == "exhaustiveAutocorrs")
+	{
+		exhaustiveAutocorrs = parseBoolean(value);
 	}
 	else if(key == "maxLength")
 	{
