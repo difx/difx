@@ -111,6 +111,7 @@ public:
 	enum DataSource getDataSource(const std::string &antName, unsigned int streamId) const;
 	bool hasData(const std::string &antName, const VexScan &scan) const;
 	int getPolarizations() const;
+	int getConvertedPolarizations() const;
 
 	double obsStart() const { return exper.mjdStart; }
 	double obsStop() const { return exper.mjdStop; }
@@ -147,6 +148,7 @@ public:
 	void setAntennaAxisOffset(const std::string &antName, double axisOffset);
 	int getNumAntennaRecChans(const std::string &name) const;
 	bool removeAntenna(const std::string name);	// Note: cannot pass name as reference!
+	void setAntennaPolConvert(const std::string &name, bool doConvert);
 
 	size_t nMode() const { return modes.size(); }
 	int getModeIdByDefName(const std::string &defName) const;

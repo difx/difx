@@ -421,6 +421,40 @@ int VexMode::getPolarizations() const
 	return rv;
 }
 
+int VexMode::getConvertedPolarizations(const std::list<std::string> &antsToConvert) const
+{
+	int rv = 0;
+
+	for(std::map<std::string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+	{
+		int pols;
+		
+		pols = it->second.getPolarizations();
+		if(find(antsToConvert.begin(), antsToConvert.end(), it->first) != antsToConvert.end())
+		{
+			int convertedPols;
+
+			convertedPols == 0;
+			if(pols & DIFXIO_POL_RL)
+			{
+				convertedPols |= DIFXIO_POL_XY;
+			}
+			if(pols & DIFXIO_POL_XY)
+			{
+				convertedPols |= DIFXIO_POL_RL;
+			}
+			if(pols & DIFXIO_POL_ERROR)
+			{
+				convertedPols |= DIFXIO_POL_ERROR;
+			}
+			pols = convertedPols;
+		}
+		rv |= pols;
+	}
+
+	return rv;
+}
+
 std::ostream& operator << (std::ostream &os, const VexMode &x)
 {
 	unsigned int nSubband = x.subbands.size();

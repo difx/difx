@@ -32,6 +32,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <list>
 #include <regex.h>
 #include "vex_data.h"
 #include "vex_utility.h"
@@ -781,6 +782,17 @@ void VexData::setAntennaAxisOffset(const std::string &antName, double axisOffset
 	}
 }
 
+void VexData::setAntennaPolConvert(const std::string &antName, bool doConvert)
+{
+	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->name == antName)
+		{
+			it->polConvert = doConvert;
+		}
+	}
+}
+
 void VexData::addExperEvents(std::list<Event> &events) const
 {
 	addEvent(events, exper.mjdStart, Event::OBSERVE_START, exper.name); 
@@ -1360,6 +1372,27 @@ int VexData::getPolarizations() const
 	for(std::vector<VexMode>::const_iterator it = modes.begin(); it != modes.end(); ++it)
 	{
 		rv |= it->getPolarizations();
+	}
+
+	return rv;
+}
+
+int VexData::getConvertedPolarizations() const
+{
+	int rv = 0;
+	std::list<std::string> antsToConvert;
+
+	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->polConvert)
+		{
+			antsToConvert.push_back(it->name);
+		}
+	}
+
+	for(std::vector<VexMode>::const_iterator it = modes.begin(); it != modes.end(); ++it)
+	{
+		rv |= it->getConvertedPolarizations(antsToConvert);
 	}
 
 	return rv;

@@ -581,6 +581,8 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 		{
 			V->setAntennaAxisOffset(A->name, as->axisOffset);
 		}
+
+		V->setAntennaPolConvert(A->name, as->polConvert);
 	}
 
 	// remove any datastreams with no data source

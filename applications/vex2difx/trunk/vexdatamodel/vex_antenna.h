@@ -51,6 +51,7 @@ public:
 	void removeBasebandData(int streamId);
 	bool hasVSNs() const { return !vsns.empty(); }
 	bool isVLBA() const { return ::isVLBA(defName); }
+	void setAntennaPolConvert(bool doConvert) { polConvert = doConvert; }
 
 	std::string name;
 	std::string defName;	// Sometimes names get changed
@@ -62,6 +63,7 @@ public:
 	double axisOffset;	// (m)
 	std::vector<VexClock> clocks;
 	int tcalFrequency;	// Hz
+	bool polConvert;	// If true, swap polarization basis RL->XY or XY->RL
 
 	// actual baseband data is associated with the antenna 
 	std::vector<VexBasebandData> vsns;	// indexed by vsn number

@@ -204,6 +204,7 @@ public:
 	double deltaClockRate;	// [sec/sec]
 	// flag
 	bool polSwap;		// If true, swap polarizations
+	bool polConvert;	// request change of basis from RL->XY or XY->RL
 	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
 	enum ToneSelection toneSelection;	// Which tones to propagate to FITS
 	double toneGuardMHz;	// to avoid getting tones too close to band edges; default = bandwidth/8
@@ -320,6 +321,7 @@ public:
 	bool useAntenna(const std::string &antName) const;
 	bool useBaseline(const std::string &ant1, const std::string &ant2) const;
 	bool swapPol(const std::string &antName) const;
+	bool convertPol(const std::string &antName) const;
 	const CorrSetup *getCorrSetup(const std::string &name) const;
 	CorrSetup *getNonConstCorrSetup(const std::string &name);
 	const SourceSetup *getSourceSetup(const std::string &name) const;

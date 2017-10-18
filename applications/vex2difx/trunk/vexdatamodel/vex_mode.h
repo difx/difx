@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
 #include <difxio.h>
 #include "vex_subband.h"
 #include "vex_setup.h"
@@ -62,6 +63,7 @@ public:
 	void generateRecordChans();
 	bool hasDuplicateBands() const;
 	int getPolarizations() const;
+	int getConvertedPolarizations(const std::list<std::string> &antsToConvert) const;
 
 	std::string defName;
 

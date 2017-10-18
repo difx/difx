@@ -60,10 +60,17 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 	int nWarn = 0;
 	int nError = 0;
 
-	polarizations = V->getPolarizations();
+	polarizations = V->getConvertedPolarizations();
 	if((polarizations & DIFXIO_POL_RL) && (polarizations & DIFXIO_POL_XY))
 	{
-		std::cerr << "Warning: both linear and circular polarizations are listed in the .vex file.  Very partial support exists for such modes within DiFX.  Use at your own risk!" << std::endl;
+		if(polarizations != V->getPolarizations())
+		{
+			std::cerr << "Warning: after performing requested polarization conversions, both linear and circular polarizations are due to be correlated.  Use at your own risk!" << std::endl;
+		}
+		else
+		{
+			std::cerr << "Warning: both linear and circular polarizations are listed in the .vex file.  Very partial support exists for such modes within DiFX.  Use at your own risk!" << std::endl;
+		}
 		++nWarn;
 	}
 	if(polarizations & DIFXIO_POL_ERROR)

@@ -64,6 +64,7 @@ public:
 	double getAverageSampleRate() const;	/* samples per second */
 	bool hasDuplicateSubbands() const;
 	int getPolarizations() const;
+	int getConvertedPolarizations() const;
 
 	std::map<std::string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
 	std::vector<VexChannel> channels;

@@ -9,7 +9,7 @@ SOURCE 3C273 { calCode = V }
 SOURCE J1310+3220 { calCode = V }
 SOURCE J1331+3030 { calCode = V }
 
-ANTENNA BR { toneSelection=smart }
+ANTENNA BR { polConvert = false toneSelection=smart }
 ANTENNA FD { toneSelection=smart }
 ANTENNA HN { toneSelection=smart }
 ANTENNA KP { toneSelection=smart }

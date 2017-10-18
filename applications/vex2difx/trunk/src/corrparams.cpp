@@ -1100,6 +1100,7 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 AntennaSetup::AntennaSetup(const std::string &name) : vexName(name), defaultDatastreamSetup(name)
 {
 	polSwap = false;
+	polConvert = false;
 	X = ANTENNA_COORD_NOT_SET;
 	Y = ANTENNA_COORD_NOT_SET;
 	Z = ANTENNA_COORD_NOT_SET;
@@ -1144,6 +1145,10 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	else if(key == "polSwap")
 	{
 		polSwap = parseBoolean(value);
+	}
+	else if(key == "polConvert")
+	{
+		polConvert = parseBoolean(value);
 	}
 	else if(key == "clockOffset" || key == "clock0")
 	{
@@ -2782,6 +2787,21 @@ bool CorrParams::swapPol(const std::string &antName) const
 		if(a->vexName == antName)
 		{
 			return a->polSwap;
+		}
+	}
+
+	return false;
+}
+
+bool CorrParams::convertPol(const std::string &antName) const
+{
+	std::vector<AntennaSetup>::const_iterator a;
+
+	for(a = antennaSetups.begin(); a != antennaSetups.end(); ++a)
+	{
+		if(a->vexName == antName)
+		{
+			return a->polConvert;
 		}
 	}
 
