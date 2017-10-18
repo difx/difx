@@ -2931,8 +2931,7 @@ bool Configuration::consistencyCheck()
 
 bool Configuration::processPhasedArrayConfig(string filename, int configindex)
 {
-  string line;
-
+  bool rc;
   if(mpiid == 0) //only write one copy of this info message
     cinfo << startl << "About to process phased array file " << filename << endl;
   ifstream phasedarrayinput;
@@ -2940,10 +2939,19 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
   if(!phasedarrayinput.is_open() || phasedarrayinput.bad())
   {
     if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "Could not open phased array config file " << line << " - aborting!!!" << endl;
+      cfatal << startl << "Could not open phased array config file " << filename << " - aborting!!!" << endl;
     return false;
   }
-  getinputline(&phasedarrayinput, &line, "OUTPUT TYPE");
+  rc = processPhasedArrayConfig(&phasedarrayinput, configindex, filename);
+  phasedarrayinput.close();
+  return rc;
+}
+
+bool Configuration::processPhasedArrayConfig(istream * input, int configindex, string reffile)
+{
+  string line;
+
+  getinputline(input, &line, "OUTPUT TYPE");
   if(line == "FILTERBANK")
     configs[configindex].padomain = FREQUENCY;
   else if (line == "TIMESERIES") {
@@ -2956,7 +2964,7 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
       cerror << startl << "Unknown phased array output type " << line << " - setting to FILTERBANK" << endl;
     configs[configindex].padomain = FREQUENCY;
   }
-  getinputline(&phasedarrayinput, &line, "OUTPUT FORMAT");
+  getinputline(input, &line, "OUTPUT FORMAT");
   if(line == "DIFX") {
     if(configs[configindex].padomain == TIME) {
       if(mpiid == 0) //only write one copy of this error message
@@ -2989,21 +2997,21 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
       configs[configindex].paoutputformat = VDIFOUT;
     }
   }
-  getinputline(&phasedarrayinput, &line, "ACC TIME (NS)");
+  getinputline(input, &line, "ACC TIME (NS)");
   configs[configindex].paaccumulationns = atoi(line.c_str());
-  getinputline(&phasedarrayinput, &line, "COMPLEX OUTPUT");
+  getinputline(input, &line, "COMPLEX OUTPUT");
   if(line == "TRUE" || line == "true" || line == "True")
     configs[configindex].pacomplexoutput = true;
   else
     configs[configindex].pacomplexoutput = false;
-  getinputline(&phasedarrayinput, &line, "OUTPUT BITS");
+  getinputline(input, &line, "OUTPUT BITS");
   configs[configindex].pabits = atoi(line.c_str());
   configs[configindex].paweights = new double*[freqtablelength]();
   configs[configindex].numpafreqpols = new int[freqtablelength]();
   configs[configindex].papols = new char*[freqtablelength]();
   for(int i=0;i<freqtablelength;i++)
   {
-    getinputline(&phasedarrayinput, &line, "NUM FREQ");
+    getinputline(input, &line, "NUM FREQ");
     configs[configindex].numpafreqpols[i] = atoi(line.c_str());
     if(configs[configindex].numpafreqpols[i] > 0)
     {
@@ -3011,12 +3019,12 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
       configs[configindex].papols[i] = new char[configs[configindex].numpafreqpols[i]]();
       for(int j=0;j<configs[configindex].numpafreqpols[i];j++)
       {
-        getinputline(&phasedarrayinput, &line, "FREQ");
+        getinputline(input, &line, "FREQ");
         configs[configindex].papols[i][j] = line.c_str()[0];
       }
       for(int j=0;j<numdatastreams;j++)
       {
-        getinputline(&phasedarrayinput, &line, "FREQ");
+        getinputline(input, &line, "FREQ");
         configs[configindex].paweights[i][j] = atof(line.c_str());
         if(configs[configindex].paweights[i][j] < 0.0)
         {
@@ -3027,23 +3035,15 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
       }
     }
   }
-  phasedarrayinput.close();
   return true;
 }
 
 bool Configuration::processPulsarConfig(string filename, int configindex)
 {
-  int numpolycofiles, ncoefficients, polycocount;
-  string line;
-  string * polycofilenames;
-  double * binphaseends;
-  double * binweights;
-  int * numsubpolycos;
-  char psrline[128];
-  ifstream temppsrinput;
-
+  bool rc;
   if(mpiid == 0) //only write one copy of this info message
     cinfo << startl << "About to process pulsar file " << filename << endl;
+
   ifstream pulsarinput;
   ifstreamOpen(pulsarinput, filename.c_str());
   if(!pulsarinput.is_open() || pulsarinput.bad())
@@ -3052,52 +3052,76 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
       cfatal << startl << "Could not open pulsar config file " << filename << " - aborting!!!" << endl;
     return false;
   }
-  getinputline(&pulsarinput, &line, "NUM POLYCO FILES");
+  rc = processPulsarConfig(&pulsarinput, configindex, filename);
+  pulsarinput.close();
+  return rc;
+}
+
+bool Configuration::processPulsarConfig(istream * input, int configindex, string reffile)
+{
+  int numpolycofiles, ncoefficients, polycocount;
+  string line;
+  string * polycofilenames;
+  double * binphaseends;
+  double * binweights;
+  int * numsubpolycos;
+  char psrline[128];
+  ifstream polycoinput;
+
+  if(mpiid == 0) //only write one copy of this info message
+    cinfo << startl << "About to process pulsar configuration " << reffile << endl;
+  if(input->bad())
+  {
+    if(mpiid == 0) //only write one copy of this error message
+      cfatal << startl << "Could not open pulsar config " << reffile << " - aborting!!!" << endl;
+    return false;
+  }
+  getinputline(input, &line, "NUM POLYCO FILES");
   numpolycofiles = atoi(line.c_str());
   polycofilenames = new string[numpolycofiles];
   numsubpolycos = new int[numpolycofiles]();
   configs[configindex].numpolycos = 0;
   for(int i=0;i<numpolycofiles;i++)
   {
-    getinputline(&pulsarinput, &(polycofilenames[i]), "POLYCO FILE");
+    getinputline(input, &(polycofilenames[i]), "POLYCO FILE");
     numsubpolycos[i] = 0;
-    ifstreamOpen(temppsrinput, polycofilenames[i].c_str());
-    if(!temppsrinput.is_open() || temppsrinput.bad()) {
+    ifstreamOpen(polycoinput, polycofilenames[i].c_str());
+    if(!polycoinput.is_open() || polycoinput.bad()) {
       if(mpiid == 0) //only write one copy of this error message
         cerror << startl << "Could not open polyco file " << polycofilenames[i] << ", but continuing..." << endl;
       continue;
     }
-    temppsrinput.getline(psrline, 128);
-    temppsrinput.getline(psrline, 128);
-    while(!(temppsrinput.eof() || temppsrinput.fail())) {
+    polycoinput.getline(psrline, 128);
+    polycoinput.getline(psrline, 128);
+    while(!(polycoinput.eof() || polycoinput.fail())) {
       psrline[54] = '\0';
       ncoefficients = atoi(&(psrline[49]));
       for(int j=0;j<ncoefficients/3 + 2;j++)
-        temppsrinput.getline(psrline, 128);
+        polycoinput.getline(psrline, 128);
       numsubpolycos[i]++;
       configs[configindex].numpolycos++;
     }
-    temppsrinput.close();
+    polycoinput.close();
   }
   if(configs[configindex].numpolycos == 0) {
     if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "No polycos were parsed from the binconfig file " << filename << " - aborting!!!" << endl;
+      cfatal << startl << "No polycos were parsed from the binconfig file " << reffile << " - aborting!!!" << endl;
     delete [] numsubpolycos;
     return false;
   }
-  getinputline(&pulsarinput, &line, "NUM PULSAR BINS");
+  getinputline(input, &line, "NUM PULSAR BINS");
   configs[configindex].numbins = atoi(line.c_str());
   if(configs[configindex].numbins > maxnumpulsarbins)
     maxnumpulsarbins = configs[configindex].numbins;
   binphaseends = new double[configs[configindex].numbins]();
   binweights = new double[configs[configindex].numbins]();
-  getinputline(&pulsarinput, &line, "SCRUNCH OUTPUT");
+  getinputline(input, &line, "SCRUNCH OUTPUT");
   configs[configindex].scrunchoutput = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
   for(int i=0;i<configs[configindex].numbins;i++)
   {
-    getinputline(&pulsarinput, &line, "BIN PHASE END");
+    getinputline(input, &line, "BIN PHASE END");
     binphaseends[i] = atof(line.c_str());
-    getinputline(&pulsarinput, &line, "BIN WEIGHT");
+    getinputline(input, &line, "BIN WEIGHT");
     binweights[i] = atof(line.c_str());
   }
 
@@ -3123,7 +3147,6 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   delete [] binweights;
   delete [] polycofilenames;
   delete [] numsubpolycos;
-  pulsarinput.close();
   return true;
 }
 
