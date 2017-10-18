@@ -1,0 +1,52 @@
+Hi Geoff
+
+1- I modified the "architecture.h.in" file and I have attached it to this email. You need to replace it with the original file and disable "ipp_enabled" variable in "configure.ac" file and re-compile the code. (I re-compiled it one more time this morning  and it compiled without an error on a new fresh linux system).
+
+Basically, in this file I have asked CUDA cuFFT to take control of fftw3 operations and do everything automatically by changing a header file and benchmarks in my presentation is based on all automatic operations (like transmitting data, memory allocation, device selection and more). In this case, there are excessive amount of data transitions between Host's  memory and Device's memory. So, although there were improvement in my experiments, I believe the improvement can get much more significant by optimizing the code. There are many inline functions like the one below as an example:
+
+inline vecStatus genericAdd_32f_I(const f32 *src, f32 *srcdest, int length)
+{ for(int i=0;i<length;i++) srcdest[i] += src[i]; return vecNoErr; }
+
+where output and input are related to each other with the same index number, which is an "extremely parallel" situation. I have converted some of them, but the changes are not in the file attached to this email. I have not debugged or profiled the code with these functions converted to CUDA kernel yet.
+
+One more thing that might be necessary to mention is that according to the CUDA documentation, it's better to let the driver choose the GPU device, however, in my experiments the driver didn't go on a secondary device. I believe this happened because  there were no concurrent kernels running at any time. I'll work on using more devices after I converted the whole code to include CUDA kernels and made sure they work as expected. 
+
+2- Yes, I'll continue working on DiFX code as well.
+
+Best Regards
+Arash Roshanineshat
+"Arash  Roshanineshat" <a.roshanineshat@vikes.csuohio.edu>
+
+
+  
+From: Geoff Crew <gbc@haystack.mit.edu>
+Sent: Tuesday, October 17, 2017 10:50:06 AM
+To: Arash Roshanineshat
+Cc: Jonathan Weintroub; Adam Deller
+Subject: GPU acceleration of DiFX
+    
+Hi Aresh,
+
+I'm at the DiFX meeting being held this week in Bologna, Italy, and
+the topic of GPU acceleration of DiFX came up.  I shared your work
+from this past summer with Jonathan on using cuFFTw to speed up DiFX
+and the benchmarking (from the presentation you made at CASPER which
+Jonathan pointed me at).
+
+They are *very* interested in following this up.  So:
+
+(a) Are the changes to the DiFX source available somewhere that we can
+scoop up and incorporate into DiFX and try on other GPU enabled
+architectures?  and
+
+(b) What are your plans?  Are you interested in continuing with this topic?
+
+(I've CC'd Adam Deller who can speak for the DiFX team.)
+
+-- 
+
+                Geoff Crew (gbc@haystack.mit.edu)
+
+    
+
+!DSPAM:59e7737b253345083819021!
