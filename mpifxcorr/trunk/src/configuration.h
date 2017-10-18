@@ -603,7 +603,7 @@ public:
   * @param line Existing string to store value in
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
   */
-  void getinputline(ifstream * input, std::string * line, std::string startofheader) const;
+  void getinputline(istream * input, std::string * line, std::string startofheader) const;
 
  /**
   * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
@@ -612,10 +612,10 @@ public:
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
   * @param intval An integer value which should follow startofheader
   */
-  void getinputline(ifstream * input, std::string * line, std::string startofheader, int intval) const;
+  void getinputline(istream * input, std::string * line, std::string startofheader, int intval) const;
 
   /** Actual function **/
-  void getinputline(ifstream * input, std::string * line, std::string startofheader, bool verbose) const;
+  void getinputline(istream * input, std::string * line, std::string startofheader, bool verbose) const;
 
  /**
   * Utility method which reads a line from a file, splitting it into a key and a value and storing both
@@ -623,7 +623,7 @@ public:
   * @param key String to store key in
   * @param val String to store value in
   */
-  void getinputkeyval(ifstream * input, std::string * key, std::string * val) const;
+  void getinputkeyval(istream * input, std::string * key, std::string * val) const;
 
  /**
   * Utility method which converts a year,month,day into mjd and hour,minute,second into seconds from start of day
@@ -823,7 +823,7 @@ private:
   * @param input Open file stream for the input file
   * @return The kind of section encountered
   */
-  sectionheader getSectionHeader(ifstream * input);
+  sectionheader getSectionHeader(istream * input);
 
  /**
   * Looks at number of output channels for each used frequency to determine the best xmac stride
@@ -868,59 +868,59 @@ private:
   * @param input Open file stream for the input file
   * @return Whether the baseline table was successfully parsed (failure should abort)
   */
-  bool processBaselineTable(ifstream * input);
+  bool processBaselineTable(istream * input);
 
  /**
   * Loads the common settings from the file into memory
   * @param input Open file stream for the input file
   */
-  void processCommon(ifstream * input);
+  void processCommon(istream * input);
 
  /**
   * Loads the config table from the file into memory
   * @param input Open file stream for the input file
   * @return Whether the config table was successfully parsed (failure should abort)
   */
-  bool processConfig(ifstream * input);
+  bool processConfig(istream * input);
 
  /**
   * Loads the rule table from the file into memory
   * @param input Open file stream for the input file
   * @return Whether the rule table was successfully parsed (failure should abort)
   */
-  bool processRuleTable(ifstream * input);
+  bool processRuleTable(istream * input);
 
  /**
   * Loads the datastream table from the file into memory
   * @param input Open file stream for the input file
   * @return Whether the datastream table was successfully parsed (failure should abort)
   */
-  bool processDatastreamTable(ifstream * input);
+  bool processDatastreamTable(istream * input);
 
  /**
   * Loads the data table from the file into memory
   * @param input Open file stream for the input file
   */
-  void processDataTable(ifstream * input);
+  void processDataTable(istream * input);
 
  /**
   * Loads the frequency table from the file into memory
   * @param input Open file stream for the input file
   * @return Whether the freq table was successfully parsed (failure should abort)
   */
-  bool processFreqTable(ifstream * input);
+  bool processFreqTable(istream * input);
 
  /**
   * Loads the telescope table from the file into memory
   * @param input Open file stream for the input file
   */
-  void processTelescopeTable(ifstream * input);
+  void processTelescopeTable(istream * input);
 
  /**
   * Loads the network table from the file into memory
   * @param input Open file stream for the input file
   */
-  void processNetworkTable(ifstream * input);
+  void processNetworkTable(istream * input);
 
  /**
   * Loads the pulsar setup data for the specified config and creates the Polyco objects

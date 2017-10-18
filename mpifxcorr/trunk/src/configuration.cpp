@@ -884,7 +884,7 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
   }
 }
 
-Configuration::sectionheader Configuration::getSectionHeader(ifstream * input)
+Configuration::sectionheader Configuration::getSectionHeader(istream * input)
 {
   string line = "";
 
@@ -917,7 +917,7 @@ Configuration::sectionheader Configuration::getSectionHeader(ifstream * input)
   return UNKNOWN;
 }
 
-bool Configuration::processBaselineTable(ifstream * input)
+bool Configuration::processBaselineTable(istream * input)
 {
   int tempint, dsband, findex, matchfindex;
   int ** tempintptr;
@@ -1163,7 +1163,7 @@ bool Configuration::populateRecordBandIndicies()
   return true;
 }
 
-void Configuration::processCommon(ifstream * input)
+void Configuration::processCommon(istream * input)
 {
   string line;
 
@@ -1207,7 +1207,7 @@ void Configuration::processCommon(ifstream * input)
   commonread = true;
 }
 
-bool Configuration::processConfig(ifstream * input)
+bool Configuration::processConfig(istream * input)
 {
   string line;
   int arraystridelenfrominputfile;
@@ -1289,7 +1289,7 @@ bool Configuration::processConfig(ifstream * input)
   return true;
 }
 
-bool Configuration::processDatastreamTable(ifstream * input)
+bool Configuration::processDatastreamTable(istream * input)
 {
   datastreamdata * dsdata;
   int configindex, freqindex, decimationfactor;
@@ -1475,8 +1475,10 @@ bool Configuration::processDatastreamTable(ifstream * input)
         return false;
       }
     }
-    datastreamtable[i].phasecalintervalmhz = atof(line.c_str());
-    datastreamtable[i].phasecalbasemhz = 0; // vex1.5 TODO get this how without changing .input syntax?
+    if (sscanf(line.c_str(), "%f%f", &datastreamtable[i].phasecalintervalmhz, &datastreamtable[i].phasecalbasemhz) != 2) {
+      // vex1.5 TODO how receive P-Cal Base without changing .input syntax? here we just take it appended optionally to the existing PCAL line
+      datastreamtable[i].phasecalbasemhz = 0; // default
+    }
 
     getinputline(input, &line, "NUM RECORDED FREQS");
     datastreamtable[i].numrecordedfreqs = atoi(line.c_str());
@@ -1748,7 +1750,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
   return true;
 }
 
-bool Configuration::processRuleTable(ifstream * input)
+bool Configuration::processRuleTable(istream * input)
 {
   int count=0;
   string key, val;
@@ -1813,7 +1815,7 @@ bool Configuration::processRuleTable(ifstream * input)
   return true;
 }
 
-void Configuration::processDataTable(ifstream * input)
+void Configuration::processDataTable(istream * input)
 {
   string line;
 
@@ -1827,7 +1829,7 @@ void Configuration::processDataTable(ifstream * input)
   }
 }
 
-bool Configuration::processFreqTable(ifstream * input)
+bool Configuration::processFreqTable(istream * input)
 {
   string line, key;
 
@@ -1904,7 +1906,7 @@ bool Configuration::processFreqTable(ifstream * input)
   return true;
 }
 
-void Configuration::processTelescopeTable(ifstream * input)
+void Configuration::processTelescopeTable(istream * input)
 {
   string line;
 
@@ -1927,7 +1929,7 @@ void Configuration::processTelescopeTable(ifstream * input)
   }
 }
 
-void Configuration::processNetworkTable(ifstream * input)
+void Configuration::processNetworkTable(istream * input)
 {
   string line;
 
@@ -3264,7 +3266,7 @@ void Configuration::makeFortranString(string line, int length, char * destinatio
   }
 }
 
-void Configuration::getinputkeyval(ifstream * input, std::string * key, std::string * val) const
+void Configuration::getinputkeyval(istream * input, std::string * key, std::string * val) const
 {
   if(input->eof())
     cerror << startl << "Trying to read past the end of file!" << endl;
@@ -3281,7 +3283,7 @@ void Configuration::getinputkeyval(ifstream * input, std::string * key, std::str
   *key = key->substr(0, key->find_first_of(':'));
 }
 
-void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader, bool verbose) const
+void Configuration::getinputline(istream * input, std::string * line, std::string startofheader, bool verbose) const
 {
   if(input->eof())
     cerror << startl << "Trying to read past the end of file!" << endl;
@@ -3306,13 +3308,13 @@ void Configuration::getinputline(ifstream * input, std::string * line, std::stri
   *line = line->substr(keylength);
 }
 
-void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader) const
+void Configuration::getinputline(istream * input, std::string * line, std::string startofheader) const
 {
   getinputline(input, line, startofheader, true);
 }
 
 
-void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader, int intval) const
+void Configuration::getinputline(istream * input, std::string * line, std::string startofheader, int intval) const
 {
   char buffer[MAX_KEY_LENGTH+1];
   sprintf(buffer, "%s%i", startofheader.c_str(), intval);
