@@ -733,7 +733,7 @@ try:
 except:
 	start = 0
 
-if len(options.agent) > 0: agent = options.agent
+if options.agent: agent = options.agent
 	
 # loop over all arguments
 fb = None
