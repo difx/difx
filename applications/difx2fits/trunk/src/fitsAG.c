@@ -187,7 +187,23 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 		row.dy = antenna->dY;
 		row.dz = antenna->dZ;
 		row.antId1 = a+1;
-		row.mountType = antenna->mount;
+		if(ae != 0 && ae->mountType[0])
+		{
+			int mt;
+
+			mt = stringToMountType(ae->mountType);
+
+			if(mt != antenna->mount)
+			{
+				printf("\nNote: changing mount type of antenna %s from %d = %s to %d = %s.  I hope this is OK.\n", antenna->name, antenna->mount, antennaMountTypeNames[antenna->mount], mt, ae->mountType);
+			}
+
+			row.mountType = mt;
+		}
+		else
+		{
+			row.mountType = antenna->mount;
+		}
 		if(antenna->mount == AntennaMountXYNS)
 		{
 			printf("\n\nWarning: mount type XYNS is not handled in AIPS so is being set to XYEW.\n");

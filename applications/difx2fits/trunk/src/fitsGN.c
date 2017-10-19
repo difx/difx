@@ -66,7 +66,7 @@ static const float bandEdges[N_VLBA_BANDS+1] =
 	1550, 	/* 18cm L  Different from above due to two separate gain curve files */
 	2000,	/* 13cm S  */
 	4000,	/* 6cm  C  */
-	6000,	/* 4cm  X  */
+	8000,	/* 4cm  X  */
 	10000,	/* 2cm  U  */
 	18000, 	/* 1cm  K  */
 	26000, 	/*      Ka  Not yet existing */
