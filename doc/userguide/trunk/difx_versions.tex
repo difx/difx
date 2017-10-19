@@ -591,6 +591,59 @@ Here is a list of other features to add to DiFX that are not directly tied to an
 \item Support for antenna local oscillator offsets
 \end{enumerate}
 
+\subsection{DiFX 2.5.1}
+
+\subsubsection{New Features}
+
+\begin{enumerate}
+
+\item Innitial support for correlating Mark6. This is still much a work in progress.
+\item Multiple datastreams per antenna supported via {\tt vex2difx}
+\item New delay model program: difxcalc11.? No longer requires calcserver.
+\item Support for more than 6 days of EOP values.
+\item ``Union mode'' in difx2fits allows merging of correlation output that uses different setups. Some restrictions apply. Designed for GMVA and RadioAstron use.
+\item Improved VDIF support: wider range of bits/threads, support for multi-channel, multi-thread VDIF, support for complex multi-thread VDIF
+\item Support for new VDIF Extended Data Version 4 which is useful for multiplexed VDIF data. See: \url{http://vlbi.org/vdif/docs/edv4description.pdf}
+\item Python bindings for vdifio and mark5access
+\item mpifxcorr: per-thread weights implemented
+\item Automatic selection of arraystride by mpifxcorr if set to zero; this is done per-datastream.? Very useful for correlation of ALMA data or others with non-standard sample rates.
+\item Automatic selection of xmacstride by mpifxcorr if set to zero
+\item Automatic selection of guardns by mpifxcorr if set to zero
+\item mpifxcorr can now operate with unicast messages instead of multicast. Useful in some situations where multicast is not
+supported.
+\item New ``dirlist'' module/file directory listing format. 
+\item {\tt mk5cp} append mode to resume interrupted copy
+\item ALMA support in HOPS: non-power-of-two FFTs, up to 64 freq.\ channels, full linear/circular/mixed polarization support
+\item HOPS improvemetns for VGOS through improved manual phase cal support
+\item New package: polconvert. Used to post-correlation convert from linear to circular polariations
+\item New package: autozoom. Helps a user develop {\tt .v2d} file content when setting up complicated zoom band configurations.
+\item New package: datasim: generate baseband data suitable for simulated correlation
+\item Improved error reporting in many places
+
+\end{enumerate}
+
+\subsubsection{Bug fixes}
+
+\begin{enumerate}
+
+\item fix for incorrect reporting of memory use by mpifxcorr (needed longer int sizes)
+\item dataweights would sometimes be incorrect after abrupt ending of data from a datastream.
+\item FITS-IDI files produced by difx2fits more standards compliant; fix problem that caused AIPS task VBGLU to fail.
+\item Several segfaults across a number of programs/utils now are caught and provide useful feedback. 
+
+\end{enumerate}
+
+\subsubsection{Caveats}
+
+\begin{enumerate}
+
+\item Various changes made between DiFX 2.4 and 2.5 are not API-compatible. Please don't mix packages from these two releases.  If you have non-DiFX software that links against the DiFX libraries, be sure to recompile them. A small number of changes may result in need to restructure such code.
+\item Unlike previous DiFX releases, each tagged version will be its own SVN copy. If the number of minor releases within the 2.5 series gets large, some (reversible) pruning of the SVN repository may occur.  There has been some debate about the best tagging strategy: bring any strong opinions to the Bologna meeting, where further changes to release and tagging policies can be discussed if needed.
+
+\end{enumerate}
+
+
+
 \subsection{DiFX and AIPS}
 
 Only one task in AIPS, {\tt FITLD}, has to deal with the telescope/correlator specific aspect of the FITS-IDI files that the VLBA correlator and DiFX generate.
