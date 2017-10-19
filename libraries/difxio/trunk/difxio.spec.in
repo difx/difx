@@ -37,13 +37,24 @@ make
 %{_includedir}/difxio/difx_write.h
 %{_includedir}/difxio/difx_calculator.h
 %{_includedir}/difxio/difx_tcal.h
+%{_includedir}/difxio/antenna_db.h
+%{_includedir}/difx_radioastron.h
 %{_bindir}/difxcalculator
+%{_bindir}/difxcopy
 %{_bindir}/testtcal
 %{_bindir}/testdifxinput
 %{_bindir}/testparsedifx
 %{_bindir}/testparsevis
 %{_bindir}/teststringarray
 %{_bindir}/testephem
+%{_bindir}/avgDiFX
+%{_bindir}/calcderiv
+%{_bindir}/computetotals
+%{_bindir}/mvdifxhere
+%{_bindir}/pbgen
+%{_bindir}/psrflag
+%{_bindir}/reducepoly
+%{_bindir}/tabulatedelays
 
 %changelog
 * Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>

@@ -23,6 +23,7 @@ bin_PROGRAMS = \
 	tabulatedelays
 
 dist_bin_SCRIPTS = \
+	difxcopy \
 	mvdifxhere
 
 avgDiFX_SOURCES = \
