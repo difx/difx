@@ -38,7 +38,7 @@ make
 %{_includedir}/difxio/difx_calculator.h
 %{_includedir}/difxio/difx_tcal.h
 %{_includedir}/difxio/antenna_db.h
-%{_includedir}/difx_radioastron.h
+%{_includedir}/difxio/difx_radioastron.h
 %{_bindir}/difxcalculator
 %{_bindir}/difxcopy
 %{_bindir}/testtcal
