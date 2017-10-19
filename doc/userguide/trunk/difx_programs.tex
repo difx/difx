@@ -1,3 +1,31 @@
+
+% FIXME: make sure the following get documented:
+% difxcalc11
+% plotpcal2
+% mvdifxhere
+% computetotals (not yet tested)
+% polconvert
+% fuseMk5
+% filterVDIF
+% generateVDIF
+% fakemultiVDIF
+% fileto5c
+% mk6gather
+% mk6vmux
+% mk6summary
+% mk6mon
+% mk6copy
+% m6sg_mount
+% m6sg_gather
+% m6sg_blocknrs
+% 2dirlist 
+% calcsig
+% printdirlist
+% stripVDIF
+
+
+% document whole mark6sg packages in here
+
 \section{Reference guide to programs and utilities} \label{sec:programs}
 
 This section has usage information for the numerous programs and scripts used in the DiFX system.
@@ -10,7 +38,7 @@ The package that includes each program is included in its section heading.
 
 Note that several VLBA specific programs are discussed in this manual that are not documented here, such as {\tt tsm}.
 These are preexisting programs that may be documented elsewhere and are less likely to be useful outside VLBA operations.
-Also note that programs from the {\tt difx\_db} package are internal to NRAO and in general are not applicable outside VLBA operations.
+Also note that programs from the {\tt nrao\_difx\_db} package are internal to NRAO and in general are not applicable outside VLBA operations.
 The code for these programs can be made available upon request.
 
 
@@ -216,7 +244,7 @@ Program {\tt cleanVDIF} loops through a VDIF file writing valid content to a new
 
 % condition -------------------------------------------------------------------
 
-\subsection{condition {\small $\mathrm{(package: difx\_db)}$}}
+\subsection{condition {\small $\mathrm{(package: nrao\_difx\_db)}$}}
 
 This is an NRAO-only program owing to its ties to the VLBA database.
 
@@ -252,7 +280,7 @@ Environment variable {\tt VLBA\_DB} must be set to point to the correct database
 
 % condition_watch -------------------------------------------------------------
 
-\subsection{condition\_watch {\small $\mathrm{(package: difx\_db)}$}}
+\subsection{condition\_watch {\small $\mathrm{(package: nrao\_difx\_db)}$}}
 
 This is an NRAO-only program owing to its ties to the VLBA database.
 
@@ -332,51 +360,53 @@ The columns displayed are:
 
 
 
-% db2vex ----------------------------------------------------------------------
+% db2vex --- OBSOLETE ---------------------------------------------------------
 
-\subsection{db2vex {\small $\mathrm{(package: difx\_db)}$}}
-
-This is an NRAO-only program owing to its ties to the VLBA database.
-
-Python program {\tt db2vex} adds three tables to a vex file based on data found within the VLBA database and VLA databases.
-For legacy VLBA/HSA projects, the Oracle database is accessed using the {\tt cx\_Oracle} library to retrieve information from the {\tt TAPELOG\_OBS}, {\tt CLOCK}, and {\tt EOP} tables.
-For RDBE VLBA/GBT projects, a new Postgres VLBA database (vlbampts) using the EVLA monitor data format is accessed.
-For projects containing the (modern) phased-VLA, the EVLA database (evlampts) is accessed for similar information.
-
-This program should be run after the Earth Orientation Parameters (EOPs) for a project have reached a suitable maturity and after the clocks for the antennas have been inserted into the (legacy) database.
-If a preliminary run of this program is made for the purposes of doing a clock search correlation pass it is recommended that the output file (a vex format file with the new tables attached) get renamed to indicate that this is not to be used to derive jobs for production correlator passes.
-
-\begin{itemize}
-\item[] Usage: {\tt db2vex} $[$ {\em options} $]$ {\em vexFile} $[$ {\em fsLog} $\cdots ]$
-\item[] {\em options} can be:
-\begin{itemize}
-\item[] {\tt -h} or {\tt --help} : print usage information and exit
-\item[] {\tt -v} or {\tt --verbose} : be verbose in execution
-\item[] {\tt -f} or {\tt --force} : force program to overwrite existing db2vex output files
-\item[] {\tt -p} or {\tt --preobs} : don't look for VSNs, but get clock and EOP values (used for USNO observations by goUSNO)
-\item[] {\tt -a} or {\tt --mark5a} : force to run in Mark5A mode
-\item[] {\tt -c} or {\tt --mark5c} : force to run in Mark5C mode
-\item[] {\tt -u} or {\tt --usno} : force to run in USNO Mark5C mode
-\item[] {\tt --vsnProjectCode} {\em projectCode} : use {\em projectCode} when getting VSNs from the database
-\end{itemize}
-\item[] {\em vexFile} is the name of the vex file produced by {\tt sched}
-\item[] {\em fsLog} is a field system log file; multiple such files can be provided
-\item[] Example 1: {\tt db2vex bx123.skd}
-\item[] Example 2: {\tt db2vex -v gb070.vex gb070nt.log gb070mc.log}
-\end{itemize}
-
-\noindent
-The output of {\tt db2vex} will be another vex format file called {\em vexFile}{\tt .obs} .
-This output file is to be used by {\tt vex2difx} for conversion into jobs to run by {\tt mpifxcorr} .
-The {\tt --vsnProjectCode} was intended for a pathological situation where a project code had to be renamed.
-
-\noindent
-Notes: 
-\begin{enumerate}
-\item Environment variable {\tt VLBA\_DB} must be set to point to the Oracle database in question.
-\item Mark5C observations require environment variable {\tt VLBAMPTS\_DB} to point to the new EVLA-style VLBA database
-\item Observations using the phased VLA require environment variable {\tt EVLAMPTS\_DB} to point to the EVLA monitor database
-\end{enumerate}
+%\subsection{db2vex {\small $\mathrm{(package: nrao\_difx\_db)}$}}
+%
+%{\bf This program has been superceded by {\tt vex2obs}}
+%
+%This is an NRAO-only program owing to its ties to the VLBA database.
+%
+%Python program {\tt db2vex} adds three tables to a vex file based on data found within the VLBA database and VLA databases.
+%For legacy VLBA/HSA projects, the Oracle database is accessed using the {\tt cx\_Oracle} library to retrieve information from the {\tt TAPELOG\_OBS}, {\tt CLOCK}, and {\tt EOP} tables.
+%For RDBE VLBA/GBT projects, a new Postgres VLBA database (vlbampts) using the EVLA monitor data format is accessed.
+%For projects containing the (modern) phased-VLA, the EVLA database (evlampts) is accessed for similar information.
+%
+%This program should be run after the Earth Orientation Parameters (EOPs) for a project have reached a suitable maturity and after the clocks for the antennas have been inserted into the (legacy) database.
+%If a preliminary run of this program is made for the purposes of doing a clock search correlation pass it is recommended that the output file (a vex format file with the new tables attached) get renamed to indicate that this is not to be used to derive jobs for production correlator passes.
+%
+%\begin{itemize}
+%\item[] Usage: {\tt db2vex} $[$ {\em options} $]$ {\em vexFile} $[$ {\em fsLog} $\cdots ]$
+%\item[] {\em options} can be:
+%\begin{itemize}
+%\item[] {\tt -h} or {\tt --help} : print usage information and exit
+%\item[] {\tt -v} or {\tt --verbose} : be verbose in execution
+%\item[] {\tt -f} or {\tt --force} : force program to overwrite existing db2vex output files
+%\item[] {\tt -p} or {\tt --preobs} : don't look for VSNs, but get clock and EOP values (used for USNO observations by goUSNO)
+%\item[] {\tt -a} or {\tt --mark5a} : force to run in Mark5A mode
+%\item[] {\tt -c} or {\tt --mark5c} : force to run in Mark5C mode
+%\item[] {\tt -u} or {\tt --usno} : force to run in USNO Mark5C mode
+%\item[] {\tt --vsnProjectCode} {\em projectCode} : use {\em projectCode} when getting VSNs from the database
+%\end{itemize}
+%\item[] {\em vexFile} is the name of the vex file produced by {\tt sched}
+%\item[] {\em fsLog} is a field system log file; multiple such files can be provided
+%\item[] Example 1: {\tt db2vex bx123.skd}
+%\item[] Example 2: {\tt db2vex -v gb070.vex gb070nt.log gb070mc.log}
+%\end{itemize}
+%
+%\noindent
+%The output of {\tt db2vex} will be another vex format file called {\em vexFile}{\tt .obs} .
+%This output file is to be used by {\tt vex2difx} for conversion into jobs to run by {\tt mpifxcorr} .
+%The {\tt --vsnProjectCode} was intended for a pathological situation where a project code had to be renamed.
+%
+%\noindent
+%Notes: 
+%\begin{enumerate}
+%\item Environment variable {\tt VLBA\_DB} must be set to point to the Oracle database in question.
+%\item Mark5C observations require environment variable {\tt VLBAMPTS\_DB} to point to the new EVLA-style VLBA database
+%\item Observations using the phased VLA require environment variable {\tt EVLAMPTS\_DB} to point to the EVLA monitor database
+%\end{enumerate}
 
 
 
@@ -538,7 +568,7 @@ as well as the {\tt .vex} file referenced in the {\tt .input} file, which may be
 
 % difxarch --------------------------------------------------------------------
 
-\subsection{difxarch {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxarch}
+\subsection{difxarch {\small $\mathrm{(package: nrao\_difx\_db)}$}} \label{sec:difxarch}
 
 Program {\tt difxarch} is a simple script that moves {\tt FITS} files produced by {\tt makefits} from the correlation queue staging area (defined by the {\tt DIFX\_QUEUE\_BASE} environment variable) to the archive staging area (defined by environment variable {\tt DIFX\_ARCHIVE\_ROOT}).
 A process running on the archive computer will periodically monitor new files in this staging area and will then copy them to the actual archive.
@@ -631,7 +661,7 @@ Known bugs:
 
 % difxclean -------------------------------------------------------------------
 
-\subsection{difxclean {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxclean}
+\subsection{difxclean {\small $\mathrm{(package: nrao\_difx\_db)}$}} \label{sec:difxclean}
 
 Program {\tt difxclean} simply deletes all data from {\tt \$DIFX\_QUEUE/} for a particular project.
 It also removes all jobs with status not equal to {\tt COMPLETE} for this project from the {\tt DIFXQUEUE} table of the database.
@@ -658,7 +688,7 @@ The user does not have to be in any particular directory when running this progr
 
 % difxcopy --------------------------------------------------------------------
 
-\subsection{difxcopy {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxcopy}
+\subsection{difxcopy {\small $\mathrm{(package: difxio)}$}} \label{sec:difxcopy}
 
 Python program {\tt difxcopy} is used to copy DiFX input (and other) files to a different directory.
 In the process, explicit references to other files that are being copied are changed to reflect their
@@ -750,7 +780,7 @@ The possible values and their meanings are:
 
 % difxqueue -------------------------------------------------------------------
 
-\subsection{difxqueue {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxqueue}
+\subsection{difxqueue {\small $\mathrm{(package: nrao\_difx\_db)}$}} \label{sec:difxqueue}
 
 
 This is an NRAO-only program owing to its ties to the VLBA database.
@@ -889,7 +919,7 @@ Documentation of this output file format can be found in \S\ref{sec:speed.out}.
 
 % difxusage -------------------------------------------------------------------
 
-\subsection{difxusage {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxusage}
+\subsection{difxusage {\small $\mathrm{(package: nrao\_difx\_db)}$}} \label{sec:difxusage}
 
 This is an NRAO-only program owing to its ties to the VLBA database.
 
@@ -989,7 +1019,7 @@ The only specific detail that will be mentioned here is the contorted path the s
 
 % e2ecopy ---------------------------------------------------------------------
 
-\subsection{e2ecopy {\small $\mathrm{(package: difx\_db)}$}} \label{sec:e2ecopy}
+\subsection{e2ecopy {\small $\mathrm{(package: nrao\_difx\_db)}$}} \label{sec:e2ecopy}
 
 Program {\tt e2ecopy} copies files one directory to another, changing the ownership to 
 {\tt \$DIFX\_ARCH\_USERNAME} in the process.
@@ -1138,7 +1168,7 @@ It is suggested to run this program immediately before starting the software cor
 
 % getshelf --------------------------------------------------------------------
 
-\subsection{getshelf {\small $\mathrm{(package: difx\_db)}$}} \label{sec:getshelf}
+\subsection{getshelf {\small $\mathrm{(package: nrao\_difx\_db)}$}} \label{sec:getshelf}
 
 This is an NRAO-only program owing to its ties to the VLBA database.
 
@@ -1169,7 +1199,7 @@ Default is the current working directory if none is provided.
 
 % getvex -------------------------------------------------- OBSOLETE ----------
 %
-%\subsection{getvex {\small $\mathrm{(package: difx\_db)}$}} \label{sec:getvex}
+%\subsection{getvex {\small $\mathrm{(package: nrao\_difx\_db)}$}} \label{sec:getvex}
 %
 %This is an NRAO-only program owing to its assumption of file locations.
 %
@@ -2404,11 +2434,6 @@ The main purpose of this program is to evaluate the impact of using different po
 
 
 
-% stripVDIF ------------------------------------------------ INCOMPLETE -------
-
-\subsection{stripVDIF {\small $\mathrm{(package: vdifio)}$}} \label{sec:stripVDIF}
-
-
 
 % startdifx -------------------------------------------------------------------
 
@@ -3049,6 +3074,7 @@ Thus, when {\tt db2vex} is run some of these error messages may be seen.
 \item[] {\tt -f} or {\tt --format} : add per-antenna format description to output
 \item[] {\tt -b} or {\tt --bands} : print list of bands used by {\em vexFile}
 \item[] {\tt -u} or {\tt --diskusage} : add per-antenna disk usage to output
+\item[] {\tt -s} or {\tt --scans} : print list of scans and antennas used by each
 \end{itemize}
 \item[] {\em vexFile} is the vex format file to be inspected.
 \end{itemize}
