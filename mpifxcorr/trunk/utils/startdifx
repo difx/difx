@@ -43,6 +43,7 @@ genmachines              = 'genmachines -v'
 defaultDelayModelProgram = 'calcif2'
 difx2fits                = 'difx2fits -v'
 mpiOptions               = '--mca mpi_yield_when_idle 1 --mca rmaps seq'
+agent                    = ''
 
 from sys import argv, exit, stdout
 from os import popen, getcwd, system, getenv, getpid, environ
@@ -615,11 +616,18 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	if np <= 0:
 		return 'Error: %s.machines not found' % fileBase
 
+        # check before proceeding
+        cmd = 'checkmpifxcorr %s.input' % fileBase
+        if verbose > 1:
+            print 'Executing: %s' % cmd
+        if (system(cmd)):
+            return 'Error: checkmpifxcorr has issues with this job'
+
 	# spawn a logger process that will quit once this script ends
 	# this will quietly fail on systems without difxlog installed
         cmd = ['difxlog', str(identifier), fileBase+".difxlog", "4", str(getpid())]
 	if verbose > 1:
-		print 'Executing: %s' % cmd
+		print 'Executing: %s' % ' '.join(cmd)
         logProcess = subprocess.Popen(cmd)
 
 	if difxLabel == None or difxLabel == '':
@@ -632,7 +640,11 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	else:
 		restartOption = ''
 
-	cmd = 'mpirun -np %d --hostfile %s.machines %s  %s %s.input%s' % (np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
+        if len(agent) > 0:  # hand off to agent
+            cmd = '%s %s' % (agent, fileBase)
+        else:               # hand off to mpirun
+            cmd = 'mpirun -np %d --hostfile %s.machines %s  %s %s.input%s' % (
+                np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
 
 	sendMessage(fileBase, 'Spawning', 'Spawning %d processes' % np)
 	if verbose > 0:
@@ -690,6 +702,7 @@ optParser = OptionParser(version="%prog " + VERSION , usage=usage)
 
 optParser.set_defaults(machinesPolicy=2, useStartMessage=False, deletePolicy=0, makeModel=True, difxdb=False, makeFits=False, verbose=0, quiet=0, useLocalHead=False, override=False, machinesFile="")
 
+optParser.add_option("-A", "--agent", dest="agent", action="store", type="string", help="call mpirun through this agent with filebase as only argument")
 optParser.add_option("-g", "--genmachines", dest="machinesPolicy", action="store_const", const=2, help="will run genmachines even if not needed [default]")
 optParser.add_option("-a", "--automachines", dest="machinesPolicy", action="store_const", const=1, help="will run genmachines if needed")
 optParser.add_option("-n", "--nomachines", dest="machinesPolicy", action="store_const", const=0, help="will not run genmachines, even if needed")
@@ -719,6 +732,8 @@ try:
 	start = 1
 except:
 	start = 0
+
+if len(options.agent) > 0: agent = options.agent
 	
 # loop over all arguments
 fb = None
