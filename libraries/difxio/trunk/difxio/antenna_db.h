@@ -3,14 +3,20 @@
 
 #include <stdio.h>
 
-#define ANTENNA_DB_NAME_LENGTH	16
+#define ANTENNA_DB_NAME_LENGTH		16
+#define ANTENNA_DB_MOUNT_LENGTH		8
 
 typedef struct
 {
 	char name[ANTENNA_DB_NAME_LENGTH];
-	double x, y, z;				/* ITRF coords [m] */
-	double diameter;			/* [m] */
+	double x, y, z;					/* ITRF coords [m]; note: not precise enough for correlation! */
+	double diameter;				/* [m] */
+	double arrayExtent;				/* [km] ; radius of array from the given xyz.  0.0 for single dishes */
+	char mountType[ANTENNA_DB_MOUNT_LENGTH];	/* leave blank for AzEl */
 } AntennaDBEntry;
+
+/* recognized mount types: "" -> "AZEL", "EQUA", "SPACE", "XYEW", "NASR", "NASL", "XYNS" */
+
 
 void fprintAntennaDBEntry(FILE *out, const AntennaDBEntry *ae);
 

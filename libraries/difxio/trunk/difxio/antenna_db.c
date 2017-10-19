@@ -2,10 +2,11 @@
 #include <strings.h>
 #include "antenna_db.h"
 
-AntennaDBEntry antennaDBEntries[] =
+AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays? */
 {
 	{ "Algonquin",        918034.4879,  -4346132.3267,   4561971.2292,  46.0 },
-	{ "Apex",            2225039.5297,  -5441197.6292,  -2479303.3597,  12.0 },
+	{ "ALMA",            2225061.1636,  -5440057.36994, -2481681.15054, 12.0, 10.0 },
+	{ "Apex",            2225039.5297,  -5441197.6292,  -2479303.3597,  12.0, 0, "NASL" },
 	{ "Arecibo",         2390486.9000,  -5564731.4400,   1994720.4500,  25.0 },
 	{ "Badary",          -838201.0685,   3865751.5652,   4987670.8885,  32.0 },
 	{ "Brewster",       -2112065.2062,  -3705356.5048,   4726813.6759,  25.0 },
@@ -18,10 +19,10 @@ AntennaDBEntry antennaDBEntries[] =
 	{ "Fort Davis",     -1324009.3266,  -5332181.9547,   3231962.3949,  25.0 },
 	{ "GBT",             -882589.4102,  -4924872.3416,   3943729.4062,  100.0 },
 	{ "Hart RAO 15",     5085490.8010,   2668161.4892,  -2768692.6239,  15.0 },
-	{ "Hart RAO 26",     5085442.7637,   2668263.7913,  -2768696.7523,  26.0 },
+	{ "Hart RAO 26",     5085442.7637,   2668263.7913,  -2768696.7523,  26.0, 0, "EQUA" },
 	{ "Haystack",        1492404.4908,  -4457266.5294,   4296881.8536,  37.0 },
 	{ "Hobart 12",      -3949990.7783,   2522421.2046,  -4311708.0242,  12.0 },
-	{ "Hobart 26",      -3950237.3590,   2522347.6804,  -4311561.8790,  26.0 },
+	{ "Hobart 26",      -3950237.3590,   2522347.6804,  -4311561.8790,  26.0, 0, "XYEW" },
 	{ "Irbene",          3183649.615,    1276902.735,    5359264.576,   32.0 },
 	{ "Irbene 16",       3183295.000,    1276276.000,    5359611.000,   16.0 },
 	{ "Iriki",          -3521719.7439,   4132174.6639,   3336994.1873,  20.0 },
@@ -34,6 +35,7 @@ AntennaDBEntry antennaDBEntries[] =
 	{ "Katherine",      -4147354.6449,   4581542.3911,  -1573303.2196,  12.0 },
 	{ "Kitt Peak",      -1995678.8402,  -5037317.6968,   3357328.0251,  25.0 },
 	{ "Kunming",        -1281152.8016,   5640864.4199,   2682653.5123,  40.0 },
+	{ "LMT",             -768715.6320,  -5988507.0720,   2063354.8520,  50.0, 0, "NASL" },
 	{ "Los Alamos",     -1449752.5839,  -4975298.5757,   3709123.8459,  25.0 },
 	{ "Matera",          4641938.4731,   1393003.3222,   4133325.7702,  20.0 },
 	{ "Mauna Kea",      -5464075.1847,  -2495248.1055,   2148297.3649,  25.0 },
@@ -44,21 +46,22 @@ AntennaDBEntry antennaDBEntries[] =
 	{ "Mopra",          -4682769.05850,  2802619.04217, -3291759.33837, 22.0 },
 	{ "North Liberty",   -130872.4987,  -4762317.0925,   4226851.0014,  25.0 },
 	{ "Noto",            4934562.8407,   1321201.5428,   3806484.7336,  32.0 },
-	{ "NRAO 140ft",       882879.6538,  -4924482.3314,   3944130.7317,  42.7 },
+	{ "NRAO 140ft",       882879.6538,  -4924482.3314,   3944130.7317,  42.7, 0, "EQUA" },
 	{ "Ny Alesund",      1202462.5260,    252734.5205,   6237766.2033,  20.0 },
 	{ "Ogasawara",      -4491068.6486,   3481545.0064,   2887399.6888,  20.0 },
 	{ "O'Higgins",       1525833.3121,  -2432463.6960,  -5676174.5055,  10.0 },
 	{ "Onsala 60",       3370605.8010,    711917.7196,   5349830.9004,  20.0 },
-	{ "Onsala 85",       3370965.9090,    711466.1978,   5349664.1947,  25.0 },
+	{ "Onsala 85",       3370965.9090,    711466.1978,   5349664.1947,  25.0, 0, "EQUA" },
 	{ "OVRO 130ft",     -2409601.0751,  -4478349.2866,   3838603.1236,  39.6 },
 	{ "Owens Valley",   -2409150.4018,  -4478573.1180,   3838617.3385,  25.0 },
 	{ "Parkes",         -4554232.4864,   2816758.8662,  -3454035.0137,  64.0 },
-	{ "Pico Veleta",     5088967.74544,  -301681.18586,  3825012.20561, 30.0 },
+	{ "Pico Veleta",     5088967.74544,  -301681.18586,  3825012.20561, 30.0, 0, "NASL" },
 	{ "Pie Town",       -1640953.9383,  -5014816.0237,   3575411.7916,  25.0 },
 	{ "Saint Croix",     2607848.6379,  -5488069.5358,   1932739.7326,  25.0 },
 	{ "Sardinia",        4865182.7660,    791922.6890,   4035137.1740,  65.0 },
 	{ "Seshan",         -2831687.3927,   4675733.4877,   3275327.5043,  25.0 },
-	{ "SMT",            -1828796.2000,   -5054406.800,   3427865.2000,  10.0 },
+	{ "SMA",            -5464555.4930,  -2492927.9890,   2150797.1760,  0.5, 0, "NASL" },
+	{ "SMT",            -1828796.2000,   -5054406.800,   3427865.2000,  10.0, 0, "NASR" },
 	{ "South Pole",          809.7616,      -816.8480,  -6359568.7286,  10.0 },
 	{ "Svetloe",         2730173.6723,   1562442.7934,   5529969.1413,  32.0 },
 	{ "Syowa",           1766194.2159,   1460410.9181,  -5932273.3585,  11.0 },
@@ -70,7 +73,9 @@ AntennaDBEntry antennaDBEntries[] =
 	{ "Ulsan",          -3287268.1566,   4023449.1207,   3687380.1796,  21.0 },
 	{ "Urunqi",           228310.2129,   4631922.7656,   4367064.0638,  25.0 },
 	{ "Usuda",          -3855355.4324,   3427427.5708,   3740971.1373,  64.0 },
+	{ "VLA",            -1601185.4286,  -5041977.1754,   3554875.6231,  25.0, 25.0 },
 	{ "Warkworth",      -5115425.635,     477880.304,   -3767042.837,   30.0 },
+	{ "Westerbork",      3828651.2900,    443447.4800,   5064921.5700,  25.0, 2.5, "EQUA" },
 	{ "Westford",        1492206.3413,  -4458130.5326,   4296015.6009,  18.3 },
 	{ "Wettzell",        4075539.6310,    931735.5366,   4801629.5267,  20.0 },
 	{ "Yarragadee",     -2388896.1302,   5043349.9932,  -3078590.8577,  12.0 },
@@ -78,10 +83,6 @@ AntennaDBEntry antennaDBEntries[] =
 	{ "Yonsei",         -3042278.2562,   4045902.8094,   3867376.1435,  21.0 },
 	{ "Zelenchukskya",   3451207.5353,   3060375.4139,   4391915.0384,  32.0 },
 	{ "", 0.0, 0.0, 0.0, 0.0 },	/* this must terminate the list */
-
-	/* incomplete records follow: */
-	/* ALMA: 2225061.16360 m:-5440057.36994 m:-2481681.15054 m */
-	/* SMA: -5464555.49300 m:-2492927.98900 m: 2150797.17600 m */
 };
 
 int lat2str(char *latstr, int length, double lat)
@@ -145,7 +146,7 @@ void fprintAntennaDBEntry(FILE *out, const AntennaDBEntry *ae)
 	lat2str(latstr, StrSize, lat);
 	lon2str(lonstr, StrSize, lon);
 
-	fprintf(out, "%s  (%3.1f, %3.1f, %3.1f) = (%s, %s, %3.1f) D=%3.1f\n", ae->name, ae->x, ae->y, ae->z, latstr, lonstr, alt, ae->diameter);
+	fprintf(out, "%s  (%3.1f, %3.1f, %3.1f) = (%s, %s, %3.1f) D=%3.1fm A=%3.1fkm mount=%s\n", ae->name, ae->x, ae->y, ae->z, latstr, lonstr, alt, ae->diameter, ae->arrayExtent, ae->mountType[0] ? ae->mountType : "AZEL");
 }
 
 const AntennaDBEntry *antennaDBGetByIndex(unsigned int index)
@@ -171,11 +172,35 @@ const AntennaDBEntry *antennaDBGetByXYZ(double x, double y, double z)
 	const double tol = 5.0;	/* meters; tolerance per axis */
 	int i;
 
+	/* First look for single dishes */
 	for(i = 0; antennaDBEntries[i].name[0]; ++i)
 	{
+		if(antennaDBEntries[i].arrayExtent > 0.0)
+		{
+			continue;
+		}
 		if(fabs(antennaDBEntries[i].x - x) < tol &&
 		   fabs(antennaDBEntries[i].y - y) < tol &&
 		   fabs(antennaDBEntries[i].z - z) < tol)
+		{
+			return antennaDBEntries + i;
+		}
+	}
+
+	/* Then look for arrays */
+	for(i = 0; antennaDBEntries[i].name[0]; ++i)
+	{
+		double dx, dy, dz, r;
+		if(antennaDBEntries[i].arrayExtent <= 0.0)
+		{
+			continue;
+		}
+
+		dx = antennaDBEntries[i].x - x;
+		dy = antennaDBEntries[i].y - y;
+		dz = antennaDBEntries[i].z - z;
+		r = antennaDBEntries[i].arrayExtent;
+		if(dx*dx + dy*dy + dz*dz < r*r)
 		{
 			return antennaDBEntries + i;
 		}
