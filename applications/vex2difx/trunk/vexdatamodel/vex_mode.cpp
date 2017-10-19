@@ -430,11 +430,12 @@ int VexMode::getConvertedPolarizations(const std::list<std::string> &antsToConve
 		int pols;
 		
 		pols = it->second.getPolarizations();
+
 		if(find(antsToConvert.begin(), antsToConvert.end(), it->first) != antsToConvert.end())
 		{
 			int convertedPols;
 
-			convertedPols == 0;
+			convertedPols = 0;
 			if(pols & DIFXIO_POL_RL)
 			{
 				convertedPols |= DIFXIO_POL_XY;
@@ -449,6 +450,7 @@ int VexMode::getConvertedPolarizations(const std::list<std::string> &antsToConve
 			}
 			pols = convertedPols;
 		}
+
 		rv |= pols;
 	}
 
