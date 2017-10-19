@@ -95,6 +95,8 @@ Options:
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
                     "datasim", "difxcalc11"]
 
+   Remember, if you haven't signed up to the difx-users mailing list, please
+   do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.
     """
     pass
 
@@ -831,3 +833,7 @@ if (force and not errors == []):
         print error
 else:
     print "Done!"
+
+##### Remind people to sign up to difx-users! ############
+print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
+print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."
