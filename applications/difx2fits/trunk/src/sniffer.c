@@ -93,10 +93,6 @@ static void resetAccumulator(Accumulator *A)
 		A->weightMax[i] = 0.0;
 		A->weightSum[i] = 0.0;
 		A->nRec[i] = 0;
-		for(p = 0; p < 4; ++p)
-		{
-			A->ifWeightSum[i][p] = 0.0;
-		}
 	}
 	for(i = 0; i < A->nIF; ++i)
 	{
@@ -108,6 +104,10 @@ static void resetAccumulator(Accumulator *A)
 			memset(A->ifSpectrum[i][3][t], 0, A->nChan*sizeof(fftw_complex));
 		}
 		A->if2bbc[i][0] = A->if2bbc[i][1] = 0;
+		for(p = 0; p < 4; ++p)
+		{
+			A->ifWeightSum[i][p] = 0.0;
+		}
 	}
 	A->mjdStart = 0;
 	A->mjdSum = 0.0;
@@ -166,9 +166,11 @@ static Accumulator *newAccumulatorArray(Sniffer *S, int n)
 		A[a].sourceId = -1;
 
 		A[a].ifWeightSum = (double **)malloc(A[a].nIF*sizeof(double *));
+		A[a].if2bbc = (int **)malloc(A[a].nIF*sizeof(int *));
 		for(i = 0; i < S->nIF; ++i)
 		{
 			A[a].ifWeightSum[i] = (double *)calloc(4, sizeof(double));
+			A[a].if2bbc[i] = (int *)calloc(2, sizeof(int));
 		}
 	}
 
@@ -224,8 +226,10 @@ static void deleteAccumulatorArray(Accumulator *A, int n)
 			for(i = 0; i < A->nIF; ++i)
 			{
 				free(A[a].ifWeightSum[i]);
+				free(A[a].if2bbc[i]);
 			}
 			free(A[a].ifWeightSum);
+			free(A[a].if2bbc);
 		}
 	}
 
@@ -363,23 +367,30 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	}
 	fprintf(S->apc, "obscode:  %s\n", D->job->obsCode);
 
-	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.cpol", filebase);
-	if(v >= DIFXIO_FILENAME_LENGTH)
+	if(S->nStokes == 4)
 	{
-		fprintf(stderr, "\nError: sniffer cpol filename too long.  No sniffing today\n");
-		deleteSniffer(S);
+		v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.cpol", filebase);
+		if(v >= DIFXIO_FILENAME_LENGTH)
+		{
+			fprintf(stderr, "\nError: sniffer cpol filename too long.  No sniffing today\n");
+			deleteSniffer(S);
 
-		return 0;
+			return 0;
+		}
+		S->cpol = fopen(filename, "w");
+		if(!S->cpol)
+		{
+			fprintf(stderr, "Cannot open %s for write\n", filename);
+			deleteSniffer(S);
+
+			return 0;
+		}
+		fprintf(S->cpol, "obscode:  %s\n", D->job->obsCode);
 	}
-	S->cpol = fopen(filename, "w");
-	if(!S->cpol)
+	else
 	{
-		fprintf(stderr, "Cannot open %s for write\n", filename);
-		deleteSniffer(S);
-
-		return 0;
+		S->cpol = 0;
 	}
-	fprintf(S->cpol, "obscode:  %s\n", D->job->obsCode);
 
 
 	/* Open weights file */
@@ -772,12 +783,15 @@ static int dump(Sniffer *S, Accumulator *A)
 			S->D->antenna[a2].name,
 			A->nBBC);
 
-		fprintf(S->cpol, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
-			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
-			S->D->source[A->sourceId].name, a1+1, a2+1,
-			S->D->antenna[a1].name,
-			S->D->antenna[a2].name,
-			S->nIF);
+		if(S->cpol)
+		{
+			fprintf(S->cpol, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
+				(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
+				S->D->source[A->sourceId].name, a1+1, a2+1,
+				S->D->antenna[a1].name,
+				S->D->antenna[a2].name,
+				S->nIF);
+		}
 
 		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
@@ -936,80 +950,83 @@ static int dump(Sniffer *S, Accumulator *A)
 				specRate);
 		}
 
-		for(ifNum = 0; ifNum < S->nIF; ++ifNum)
+		if(S->cpol)
 		{
-			fftw_complex z;
-			int bbc0, bbc1;
-			int pol;
-			double stokesAmp[4];
-			double norm;
-
-			bbc0 = A->if2bbc[ifNum][0];
-			bbc1 = A->if2bbc[ifNum][1];
-
-			if(A->nRec[bbc0] < S->nTime/2 || A->nRec[bbc1] < S->nTime/2 || A->ifWeightSum[ifNum][0] == 0.0 || A->ifWeightSum[ifNum][1] == 0.0 || A->ifWeightSum[ifNum][2] == 0.0 || A->ifWeightSum[ifNum][3] == 0.0)
+			for(ifNum = 0; ifNum < S->nIF; ++ifNum)
 			{
-				fprintf(S->cpol, " 0 0");
-				continue;
-			}
+				fftw_complex z;
+				int bbc0, bbc1;
+				int pol;
+				double stokesAmp[4];
+				double norm;
 
-			for(pol = 2; pol < 4; ++pol)	/* start at 2 because parallel hands are already done */
-			{
-				array = A->ifSpectrum[ifNum][pol];
-				memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
-				for(j = 0; j < A->nTime; ++j)
+				bbc0 = A->if2bbc[ifNum][0];
+				bbc1 = A->if2bbc[ifNum][1];
+
+				if(A->nRec[bbc0] < S->nTime/2 || A->nRec[bbc1] < S->nTime/2 || A->weightSum[bbc0] == 0.0 || A->weightSum[bbc1] == 0.0 || A->ifWeightSum[ifNum][2] == 0.0 || A->ifWeightSum[ifNum][3] == 0.0)
 				{
-					int i;
-
-					for(i = 0; i < A->nChan; ++i)
-					{
-						S->fftbuffer[j*S->fft_nx + i] = array[j][i];
-					}
+					fprintf(S->cpol, " %d %d", -100-bbc0, -100-bbc1);
+					continue;
 				}
 
-				/* First transform in time to form rates.  Here we do
-				 * the spectral line sniffing to look for peak in
-				 * rate/chan space*/
-				fftw_execute(S->plan1);
-
-				/* Now do second axis of FFT (frequency) to look for a peak in rate/delay space */
-				fftw_execute(S->plan2);
-
-				max2 = 0.0;
-				besti = bestj = 0;
-				for(j = 0; j < S->fft_ny; ++j)
+				for(pol = 2; pol < 4; ++pol)	/* start at 2 because parallel hands are already done */
 				{
-					int i;
-
-					for(i = 0; i < S->fft_nx; ++i)
+					array = A->ifSpectrum[ifNum][pol];
+					memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
+					for(j = 0; j < A->nTime; ++j)
 					{
-						z = S->fftbuffer[j*S->fft_nx + i];
-						amp2 = creal(z*~z);
-						if(amp2 > max2)
+						int i;
+
+						for(i = 0; i < A->nChan; ++i)
 						{
-							besti = i;
-							bestj = j;
-							max2 = amp2;
+							S->fftbuffer[j*S->fft_nx + i] = array[j][i];
 						}
 					}
+
+					/* First transform in time to form rates.  Here we do
+					 * the spectral line sniffing to look for peak in
+					 * rate/chan space*/
+					fftw_execute(S->plan1);
+
+					/* Now do second axis of FFT (frequency) to look for a peak in rate/delay space */
+					fftw_execute(S->plan2);
+
+					max2 = 0.0;
+					besti = bestj = 0;
+					for(j = 0; j < S->fft_ny; ++j)
+					{
+						int i;
+
+						for(i = 0; i < S->fft_nx; ++i)
+						{
+							z = S->fftbuffer[j*S->fft_nx + i];
+							amp2 = creal(z*~z);
+							if(amp2 > max2)
+							{
+								besti = i;
+								bestj = j;
+								max2 = amp2;
+							}
+						}
+					}
+					z = S->fftbuffer[bestj*S->fft_nx + besti];
+					phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
+					stokesAmp[pol] = sqrt(max2);
 				}
-				z = S->fftbuffer[bestj*S->fft_nx + besti];
-				phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
-				stokesAmp[pol] = sqrt(max2);
+				norm = sqrt(amp[bbc0]*amp[bbc1]);
+				if(norm == 0.0)
+				{
+					fprintf(S->cpol, " -1 -1");
+				}
+				else
+				{
+					fprintf(S->cpol, " %5.3f %5.3f", stokesAmp[2]/norm, stokesAmp[3]/norm);
+				}
 			}
-			norm = sqrt(amp[bbc0]*amp[bbc1]);
-			if(norm == 0.0)
-			{
-				fprintf(S->cpol, " -1 -1");
-			}
-			else
-			{
-				fprintf(S->cpol, " %5.3f %5.3f", stokesAmp[2]/norm, stokesAmp[3]/norm);
-			}
+			fprintf(S->cpol, "\n");
 		}
 		fprintf(S->apd, "\n");
 		fprintf(S->apc, "\n");
-		fprintf(S->cpol, "\n");
 	}
 
 	return 0;
