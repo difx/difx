@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2017 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,8 +39,8 @@
 
 const char program[] = "avgDiFX";
 const char author[] = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "2015 Nov 08";
+const char version[] = "0.2";
+const char verdate[] = "20171020";
 
 void usage(const char *pgm)
 {
@@ -327,7 +327,6 @@ AverageInput *openAverageInput(const char *filename)
 	snprintf(A->outputFile, DIFXIO_FILENAME_LENGTH, "%s", G.gl_pathv[0]);
 	globfree(&G);
 
-printf("Opening %s\n", A->outputFile);
 	A->in = fopen(A->outputFile, "r");
 	if(!A->in)
 	{
@@ -407,6 +406,7 @@ void arg2fileset(char *dest, const char *src, int length)
 
 int main(int argc, char **argv)
 {
+	const int MaxCommandSize = 3*DIFXIO_FILENAME_LENGTH;
 	char path[DIFXIO_FILENAME_LENGTH];
 	char outputFilename[DIFXIO_FILENAME_LENGTH];
 	char cmd[2*DIFXIO_FILENAME_LENGTH];
@@ -418,6 +418,8 @@ int main(int argc, char **argv)
 	char inputFileset1[DIFXIO_FILENAME_LENGTH] = "";
 	char inputFileset2[DIFXIO_FILENAME_LENGTH] = "";
 	char outputFileset[DIFXIO_FILENAME_LENGTH] = "";
+	char historyFile[DIFXIO_FILENAME_LENGTH];
+	char cpHistory[MaxCommandSize];
 
 	if(argc != 4)
 	{
@@ -453,6 +455,8 @@ int main(int argc, char **argv)
 
 		return EXIT_FAILURE;
 	}
+
+	snprintf(cpHistory, MaxCommandSize, "cp -f %s/*.history %s/*.history %s.difx/", A1->D->job->outputFile, A2->D->job->outputFile, outputFileset);
 
 	rv = readAverageInput(A1);
 	if(rv != 0)
@@ -513,6 +517,7 @@ int main(int argc, char **argv)
 	snprintf(A1->D->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s/%s.threads", path, outputFileset);
 	snprintf(A1->D->job->imFile, DIFXIO_FILENAME_LENGTH, "%s/%s.im", path, outputFileset);
 	snprintf(A1->D->job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", path, outputFileset);
+	snprintf(historyFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx/avgDIFX.history", path, outputFileset);
 
 	writeDifxCalc(A1->D);
 	writeDifxInput(A1->D);
@@ -635,6 +640,23 @@ int main(int argc, char **argv)
 	deleteAverageInput(A1);
 	deleteAverageInput(A2);
 	fclose(out);
+
+	system(cpHistory);
+	out = fopen(historyFile, "w");
+	if(out)
+	{
+		fprintf(out, "%s ver %s was used to average two DiFX filesets:\n", program, version);
+		fprintf(out, "  %s\n", inputFileset1);
+		fprintf(out, "  %s\n", inputFileset2);
+		fprintf(out, "%d records averaged from both files\n", n0);
+		fprintf(out, "%d records copied from first file\n", n1);
+		fprintf(out, "%d records copied from second file\n", n2);
+		fclose(out);
+	}
+	else
+	{
+		printf("Note: could not open %s for write...\n", historyFile);
+	}
 
 	return 0;
 }
