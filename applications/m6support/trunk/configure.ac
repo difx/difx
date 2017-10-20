@@ -72,6 +72,11 @@ AC_CHECK_FUNCS([\
 # AM_CONDITIONAL(HAVE_FFTW, $hasfftw)
 PKG_CHECK_MODULES(FUSE, fuse, [hasfuse=true], [hasfuse=false])
 AM_CONDITIONAL(HAVE_FUSE, $hasfuse && $with_fuse)
+PKG_CHECK_MODULES([DIFXMESSAGE], [difxmessage >= 2.5.0 difxmessage < 7], [hasdifxmsg=true], [hasdifxmsg=false])
+AM_CONDITIONAL(HAVE_DIFXMESSAGE, $hasdifxmsg)
+if test "$hasdifxmsg" = true; then
+  AC_DEFINE(HAVE_DIFXMESSAGE, 1, [Define if you have DiFXMessage library.])
+fi
 
 AC_CONFIG_FILES([Makefile])
 
