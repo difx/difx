@@ -14,8 +14,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.60'
-verdate = '20170915'
+version = '0.61'
+verdate = '20171020'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -638,7 +638,7 @@ component_hops_trunk = \
 [ \
 	'hops', \
 	'https://svn.atnf.csiro.au/difx/applications/hops/trunk', \
-	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot', 'nodist'] \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot', 'nodist'] \
 ]
 
 component_python_trunk = \
