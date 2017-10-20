@@ -1430,7 +1430,6 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		}
 		else
 		{
-			//fprintf(stdout, "Found an ok record\n");
 #ifdef HAVE_FFTW
 			if(S)
 			{

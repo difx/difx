@@ -3,6 +3,8 @@ Version 3.6.0
 * AG table: fill in antenna diameters, or 0 if not known.
   - values used in difxio: difxio/antenna_db.c
 * AG table: override mount type with antenna_db.c values
+* Header: look in all .difx/ directories that are contributing to FITS file and dump contents of *.history into HISTORY section of FITS file.  This will not duplicate two .history files with the same name in the same FITS file.  .history files should be text files.  Any lines in these files longer than 70 characters will wrap.  These .history files get included after any history files included at command line.
+* Generate data for new kind of sniffer plot: examination of cross-pol response
 
 Version 3.5.0
 * Remove duplicate RDATE keywords from AG and ML tables

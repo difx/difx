@@ -34,16 +34,19 @@
 typedef struct
 {
 	fftw_complex ***spectrum;	/* [BBC][Time][Chan] */
+	fftw_complex ****ifSpectrum;	/* [IF][Stokes][Time][Chan]; note that Stokes=0,1 just point to data in spectrum, or zero if single pol */
 	int a1, a2, sourceId;
 	double mjdStart, mjdMax;
 	double mjdSum;
 	int mjdCount;
 	int nTime, nChan;
-	int nBBC;
+	int nBBC, nIF;
 	double *weightSum;
 	double *weightMin;
 	double *weightMax;
+	double **ifWeightSum;
 	double *lastDump;
+	int **if2bbc;			/* [ifNum][pol] */
 	int *nRec;
 	int *isLSB;
 } Accumulator;
@@ -55,6 +58,7 @@ struct _Sniffer
 	FILE *wts;
 	FILE *acb;
 	FILE *xcb;
+	FILE *cpol;	/* stores cross polarization results: |RL/sqrt(RR*LL)|, and |LR/sqrt(RR*LL)| */
 	double solInt;			/* (sec) FFT interval */
 	double bw;			/* (MHz) IF bandwidth */
 	double deltaT;			/* (sec) grid spacing */
@@ -77,7 +81,7 @@ struct _Sniffer
 
 static void resetAccumulator(Accumulator *A)
 {
-	int i, t;
+	int i, t, p;
 
 	for(i = 0; i < A->nBBC; ++i)
 	{
@@ -89,6 +93,21 @@ static void resetAccumulator(Accumulator *A)
 		A->weightMax[i] = 0.0;
 		A->weightSum[i] = 0.0;
 		A->nRec[i] = 0;
+		for(p = 0; p < 4; ++p)
+		{
+			A->ifWeightSum[i][p] = 0.0;
+		}
+	}
+	for(i = 0; i < A->nIF; ++i)
+	{
+		A->ifSpectrum[i][0] = 0;
+		A->ifSpectrum[i][1] = 0;
+		for(t = 0; t < A->nTime; ++t)
+		{
+			memset(A->ifSpectrum[i][2][t], 0, A->nChan*sizeof(fftw_complex));
+			memset(A->ifSpectrum[i][3][t], 0, A->nChan*sizeof(fftw_complex));
+		}
+		A->if2bbc[i][0] = A->if2bbc[i][1] = 0;
 	}
 	A->mjdStart = 0;
 	A->mjdSum = 0.0;
@@ -109,6 +128,7 @@ static Accumulator *newAccumulatorArray(Sniffer *S, int n)
 		int i;
 
 		A[a].nBBC = nBBC;
+		A[a].nIF = S->nIF;
 		A[a].nChan = S->nChan;
 		A[a].nTime = S->nTime;
 		A[a].spectrum = (fftw_complex ***)malloc(nBBC*sizeof(fftw_complex **));
@@ -122,6 +142,21 @@ static Accumulator *newAccumulatorArray(Sniffer *S, int n)
 				A[a].spectrum[i][t] = (fftw_complex *)calloc(S->nChan, sizeof(fftw_complex));
 			}
 		}
+		A[a].ifSpectrum = (fftw_complex ****)malloc(S->nIF*sizeof(fftw_complex **));
+		for(i = 0; i < S->nIF; ++i)
+		{
+			int t;
+			A[a].ifSpectrum[i] = (fftw_complex ***)malloc(4*sizeof(fftw_complex **));
+			A[a].ifSpectrum[i][0] = 0;
+			A[a].ifSpectrum[i][1] = 0;
+			A[a].ifSpectrum[i][2] = (fftw_complex **)malloc(S->nTime*sizeof(fftw_complex *));
+			A[a].ifSpectrum[i][3] = (fftw_complex **)malloc(S->nTime*sizeof(fftw_complex *));
+			for(t = 0; t < A[a].nTime; ++t)
+			{
+				A[a].ifSpectrum[i][2][t] = (fftw_complex *)calloc(S->nChan, sizeof(fftw_complex));
+				A[a].ifSpectrum[i][3][t] = (fftw_complex *)calloc(S->nChan, sizeof(fftw_complex));
+			}
+		}
 		A[a].nRec = (int *)calloc(nBBC, sizeof(int));
 		A[a].isLSB = (int *)calloc(nBBC, sizeof(int));
 		A[a].weightSum = (double *)calloc(nBBC, sizeof(double));
@@ -129,6 +164,12 @@ static Accumulator *newAccumulatorArray(Sniffer *S, int n)
 		A[a].weightMax = (double *)calloc(nBBC, sizeof(double));
 		A[a].lastDump = (double *)calloc(S->D->nSource, sizeof(double));
 		A[a].sourceId = -1;
+
+		A[a].ifWeightSum = (double **)malloc(A[a].nIF*sizeof(double *));
+		for(i = 0; i < S->nIF; ++i)
+		{
+			A[a].ifWeightSum[i] = (double *)calloc(4, sizeof(double));
+		}
 	}
 
 	return A;
@@ -159,6 +200,19 @@ static void deleteAccumulatorArray(Accumulator *A, int n)
 				}
 				free(A[a].spectrum[i]);
 			}
+			for(i = 0; i < A[a].nIF; ++i)
+			{
+				int t;
+
+				for(t = 0; t < A[a].nTime; ++t)
+				{
+					free(A[a].ifSpectrum[i][2][t]);
+					free(A[a].ifSpectrum[i][3][t]);
+				}
+				free(A[a].ifSpectrum[i][2]);
+				free(A[a].ifSpectrum[i][3]);
+				free(A[a].ifSpectrum[i]);
+			}
 			free(A[a].spectrum);
 			free(A[a].nRec);
 			free(A[a].isLSB);
@@ -166,6 +220,12 @@ static void deleteAccumulatorArray(Accumulator *A, int n)
 			free(A[a].weightMin);
 			free(A[a].weightMax);
 			free(A[a].lastDump);
+
+			for(i = 0; i < A->nIF; ++i)
+			{
+				free(A[a].ifWeightSum[i]);
+			}
+			free(A[a].ifWeightSum);
 		}
 	}
 
@@ -303,6 +363,25 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	}
 	fprintf(S->apc, "obscode:  %s\n", D->job->obsCode);
 
+	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.cpol", filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\nError: sniffer cpol filename too long.  No sniffing today\n");
+		deleteSniffer(S);
+
+		return 0;
+	}
+	S->cpol = fopen(filename, "w");
+	if(!S->cpol)
+	{
+		fprintf(stderr, "Cannot open %s for write\n", filename);
+		deleteSniffer(S);
+
+		return 0;
+	}
+	fprintf(S->cpol, "obscode:  %s\n", D->job->obsCode);
+
+
 	/* Open weights file */
 	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.wts", filebase);
 	if(v >= DIFXIO_FILENAME_LENGTH)
@@ -414,6 +493,11 @@ void deleteSniffer(Sniffer *S)
 			fclose(S->apc);
 			S->apc = 0;
 		}
+		if(S->cpol)
+		{
+			fclose(S->cpol);
+			S->cpol = 0;
+		}
 		if(S->wts)
 		{
 			fclose(S->wts);
@@ -482,7 +566,8 @@ static int dump(Sniffer *S, Accumulator *A)
 	int b, j, p, a1, a2, besti, bestj;
 	fftw_complex **array;
 	double amp2, max2;
-	double amp, phase, delay, rate;
+	double phase, delay, rate;
+	double *amp;
 	double specAmp, specPhase, specRate;
 	int specChan;
 	double peak[3];
@@ -502,6 +587,8 @@ static int dump(Sniffer *S, Accumulator *A)
 	{
 		return 0;
 	}
+
+	amp = (double *)malloc(A->nBBC*sizeof(double));
 
 	mjd = A->mjdSum / A->mjdCount;
 
@@ -623,9 +710,7 @@ static int dump(Sniffer *S, Accumulator *A)
 		int bbc;
 
 		/* weights file */
-		fprintf(S->wts, "%5d %8.5f %2d %-3s %2d",
-			(int)mjd, 24.0*(mjd-(int)mjd), A->a1+1,
-			S->D->antenna[A->a1].name, A->nBBC);
+		fprintf(S->wts, "%5d %8.5f %2d %-3s %2d", (int)mjd, 24.0*(mjd-(int)mjd), A->a1+1, S->D->antenna[A->a1].name, A->nBBC);
 
 		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
@@ -669,6 +754,7 @@ static int dump(Sniffer *S, Accumulator *A)
 	else
 	{
 		int bbc;
+		int ifNum;
 
 		/* fringe fit */
 
@@ -685,6 +771,13 @@ static int dump(Sniffer *S, Accumulator *A)
 			S->D->antenna[a1].name,
 			S->D->antenna[a2].name,
 			A->nBBC);
+
+		fprintf(S->cpol, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
+			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
+			S->D->source[A->sourceId].name, a1+1, a2+1,
+			S->D->antenna[a1].name,
+			S->D->antenna[a2].name,
+			S->nIF);
 
 		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
@@ -779,8 +872,8 @@ static int dump(Sniffer *S, Accumulator *A)
 			}
 			z = S->fftbuffer[bestj*S->fft_nx + besti];
 			phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
-			amp = sqrt(max2);
-			peak[1] = amp;
+			amp[bbc] = sqrt(max2);
+			peak[1] = amp[bbc];
 			if(besti == 0)
 			{
 				z = S->fftbuffer[(bestj+1)*S->fft_nx - 1];
@@ -832,7 +925,7 @@ static int dump(Sniffer *S, Accumulator *A)
 
 			fprintf(S->apd, " %10.4f %7.5f %10.4f %10.6f", 
 				delay, 
-				2.0*amp/(A->weightSum[bbc]*S->nChan), 
+				2.0*amp[bbc]/(A->weightSum[bbc]*S->nChan), 
 				phase, 
 				rate);
 
@@ -842,14 +935,87 @@ static int dump(Sniffer *S, Accumulator *A)
 				specPhase,
 				specRate);
 		}
+
+		for(ifNum = 0; ifNum < S->nIF; ++ifNum)
+		{
+			fftw_complex z;
+			int bbc0, bbc1;
+			int pol;
+			double stokesAmp[4];
+			double norm;
+
+			bbc0 = A->if2bbc[ifNum][0];
+			bbc1 = A->if2bbc[ifNum][1];
+
+			if(A->nRec[bbc0] < S->nTime/2 || A->nRec[bbc1] < S->nTime/2 || A->ifWeightSum[ifNum][0] == 0.0 || A->ifWeightSum[ifNum][1] == 0.0 || A->ifWeightSum[ifNum][2] == 0.0 || A->ifWeightSum[ifNum][3] == 0.0)
+			{
+				fprintf(S->cpol, " 0 0");
+				continue;
+			}
+
+			for(pol = 2; pol < 4; ++pol)	/* start at 2 because parallel hands are already done */
+			{
+				array = A->ifSpectrum[ifNum][pol];
+				memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
+				for(j = 0; j < A->nTime; ++j)
+				{
+					int i;
+
+					for(i = 0; i < A->nChan; ++i)
+					{
+						S->fftbuffer[j*S->fft_nx + i] = array[j][i];
+					}
+				}
+
+				/* First transform in time to form rates.  Here we do
+				 * the spectral line sniffing to look for peak in
+				 * rate/chan space*/
+				fftw_execute(S->plan1);
+
+				/* Now do second axis of FFT (frequency) to look for a peak in rate/delay space */
+				fftw_execute(S->plan2);
+
+				max2 = 0.0;
+				besti = bestj = 0;
+				for(j = 0; j < S->fft_ny; ++j)
+				{
+					int i;
+
+					for(i = 0; i < S->fft_nx; ++i)
+					{
+						z = S->fftbuffer[j*S->fft_nx + i];
+						amp2 = creal(z*~z);
+						if(amp2 > max2)
+						{
+							besti = i;
+							bestj = j;
+							max2 = amp2;
+						}
+					}
+				}
+				z = S->fftbuffer[bestj*S->fft_nx + besti];
+				phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
+				stokesAmp[pol] = sqrt(max2);
+			}
+			norm = sqrt(amp[bbc0]*amp[bbc1]);
+			if(norm == 0.0)
+			{
+				fprintf(S->cpol, " -1 -1");
+			}
+			else
+			{
+				fprintf(S->cpol, " %5.3f %5.3f", stokesAmp[2]/norm, stokesAmp[3]/norm);
+			}
+		}
 		fprintf(S->apd, "\n");
 		fprintf(S->apc, "\n");
+		fprintf(S->cpol, "\n");
 	}
 
 	return 0;
 }
 
-static int add(Accumulator *A, int bbc, int index, float weight, const float *data, int stride, int isLSB, double mjd)
+static void add(Accumulator *A, int bbc, int index, float weight, const float *data, int stride, int isLSB, double mjd)
 {
 	fftw_complex *array;
 	int c;
@@ -876,8 +1042,23 @@ static int add(Accumulator *A, int bbc, int index, float weight, const float *da
 	}
 	++A->mjdCount;
 	A->mjdSum += mjd;
+}
 
-	return A->nRec[bbc];
+static void addIF(Accumulator *A, int ifNum, int pol, int index, float weight, const float *data, int stride)
+{
+	fftw_complex *array;
+	int c;
+
+	array = A->ifSpectrum[ifNum][pol][index];
+	for(c = 0; c < A->nChan; ++c)
+	{
+		const complex float *z;
+		
+		z = (complex float *)(data + c*stride);
+		array[c] += (*z)*weight;
+	}
+
+	A->ifWeightSum[ifNum][pol] += weight;
 }
 
 int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
@@ -989,6 +1170,23 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 			weight = data->data[p + S->nStokes*i];
 			offset = S->nStokes*S->nIF + stride*S->nChan*i + p*S->nComplex;
 			add(A, bbc, index, weight, data->data+offset, stride, isLSB, mjd);
+		}
+		if(S->nStokes == 4 && data->data[2 + S->nStokes*i] > 0)	/* check for existence of cross-polar data */
+		{
+			int offset;
+
+			/* RR */
+			A->ifSpectrum[i][0] = A->spectrum[i*S->nPol + 0];
+			A->if2bbc[i][0] = i*S->nPol + 0;
+			/* LL */
+			A->ifSpectrum[i][1] = A->spectrum[i*S->nPol + 1];
+			A->if2bbc[i][1] = i*S->nPol + 1;
+			/* RL */
+			offset = S->nStokes*S->nIF + stride*S->nChan*i + 2*S->nComplex;
+			addIF(A, i, 2, index, data->data[2 + S->nStokes*i], data->data+offset, stride);
+			/* LR */
+			offset = S->nStokes*S->nIF + stride*S->nChan*i + 3*S->nComplex;
+			addIF(A, i, 3, index, data->data[3 + S->nStokes*i], data->data+offset, stride);
 		}
 	}
 
