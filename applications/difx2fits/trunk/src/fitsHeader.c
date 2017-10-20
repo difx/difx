@@ -52,7 +52,7 @@ static int isFileInGlob(const char *fileName, int fileStart, const glob_t *g)
 	return 0;
 }
 
-static void writeHistoryFile(const char *fileName, struct fitsPrivate *out)
+static void writeHistoryFile(const char *fileName, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
 	const int maxHistoryLength = 70;
 	FILE *in;
@@ -87,10 +87,15 @@ static void writeHistoryFile(const char *fileName, struct fitsPrivate *out)
 		}
 
 		fclose(in);
+
+		if(opts->verbose > 0)
+		{
+			printf("Including %s as HISTORY\n", fileName);
+		}
 	}
 }
 
-static void writeDifxHistory(const DifxInput *D, struct fitsPrivate *out)
+static void writeDifxHistory(const DifxInput *D, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
 	glob_t *globs;
 	int j;
@@ -121,18 +126,16 @@ static void writeDifxHistory(const DifxInput *D, struct fitsPrivate *out)
 			{
 				if(isFileInGlob(globs[j].gl_pathv[f] + fileStart[f], fileStart[p], globs+p))
 				{
-					printf("Skipping %s because it was repeated in jobId=%d\n", globs[j].gl_pathv[f], p);
 					break;
 				}
 			}
 			if(p < j)
 			{
-				break;
+				continue;
 			}
 
 			/* If we get here, then this file has unique name and should be included */
-			printf("Including %s in HISTORY\n", globs[j].gl_pathv[f]);
-			writeHistoryFile(globs[j].gl_pathv[f], out);
+			writeHistoryFile(globs[j].gl_pathv[f], out, opts);
 		}
 	}
 	
@@ -250,11 +253,11 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *ou
 
 	if(opts->historyFile)
 	{
-		writeHistoryFile(opts->historyFile, out);
+		writeHistoryFile(opts->historyFile, out, opts);
 	}
 
 	/* Look for and convey history from each .difx/ *.history file */
-	writeDifxHistory(D, out);
+	writeDifxHistory(D, out, opts);
 	
 	fitsWriteEnd(out);
 
