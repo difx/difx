@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2017 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,11 +30,120 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <glob.h>
 #include "difx2fits.h"
 
 #define SEC_DAY         86400.0             /* seconds in a mean solar day */
 #define MUSEC_DAY       86400000000.0       /* mus in a mean solar day */
 #define MJD_UNIX0       40587.0             /* MJD at beginning of unix time */
+
+static int isFileInGlob(const char *fileName, int fileStart, const glob_t *g)
+{
+	int f;
+
+	for(f = 0; f < g->gl_pathc;  ++f)
+	{
+		if(strcmp(fileName, g->gl_pathv[f] + fileStart) == 0)
+		{
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static void writeHistoryFile(const char *fileName, struct fitsPrivate *out)
+{
+	const int maxHistoryLength = 70;
+	FILE *in;
+	char strng[maxHistoryLength+1];
+
+	in = fopen(fileName, "r");
+	if(!in)
+	{
+		printf("\nWarning: cannot load history file: %s\n                            ", fileName);
+	}
+	else
+	{
+		fitsWriteComment(out, "HISTORY", "");
+		for(;;)
+		{
+			int j;
+
+			fgets(strng, maxHistoryLength, in);
+			if(feof(in))
+			{
+				break;
+			}
+			strng[maxHistoryLength] = 0;
+			for(j = 0; strng[j]; ++j)
+			{
+				if(strng[j] < ' ')
+				{
+					strng[j] = ' ';
+				}
+			}
+			fitsWriteComment(out, "HISTORY", strng);
+		}
+
+		fclose(in);
+	}
+}
+
+static void writeDifxHistory(const DifxInput *D, struct fitsPrivate *out)
+{
+	glob_t *globs;
+	int j;
+	int *fileStart;	/* where in full path the filename begins */
+
+	globs = (glob_t *)calloc(D->nJob, sizeof(glob_t));
+	fileStart = (int *)calloc(D->nJob, sizeof(int));
+
+	for(j = 0; j < D->nJob; ++j)
+	{
+		char pattern[PATH_MAX];
+		int ok;
+
+		snprintf(pattern, PATH_MAX, "%s/*.history", D->job[j].outputFile);
+		ok = glob(pattern, 0, 0, globs+j);
+		fileStart[j] = strlen(D->job[j].outputFile) + 1;
+	}
+
+	for(j = 0; j < D->nJob; ++j)
+	{
+		int f;
+
+		for(f = 0; f < globs[j].gl_pathc; ++f)
+		{
+			int p;
+
+			for(p = 0; p < j; ++p)
+			{
+				if(isFileInGlob(globs[j].gl_pathv[f] + fileStart[f], fileStart[p], globs+p))
+				{
+					printf("Skipping %s because it was repeated in jobId=%d\n", globs[j].gl_pathv[f], p);
+					break;
+				}
+			}
+			if(p < j)
+			{
+				break;
+			}
+
+			/* If we get here, then this file has unique name and should be included */
+			printf("Including %s in HISTORY\n", globs[j].gl_pathv[f]);
+			writeHistoryFile(globs[j].gl_pathv[f], out);
+		}
+	}
+	
+	for(j = 0; j < D->nJob; ++j)
+	{
+		globfree(globs+j);
+	}
+
+	free(globs);
+	free(fileStart);
+}
 
 double timeMjd()
 {
@@ -127,9 +236,7 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *ou
 
 	for(j = 0; j < D->nJob; ++j)
 	{
-		snprintf(strng, maxLength, "DIFXJOB : %d.%d.%d", 
-			D->job[j].jobId, D->job[j].subjobId, 
-			D->job[j].subarrayId);
+		snprintf(strng, maxLength, "DIFXJOB : %d.%d.%d", D->job[j].jobId, D->job[j].subjobId, D->job[j].subarrayId);
 		fitsWriteComment(out, "HISTORY", strng);
 
 		time2str(D->job[j].mjdStart, "", str);
@@ -143,36 +250,11 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *ou
 
 	if(opts->historyFile)
 	{
-		FILE *in;
-
-		in = fopen(opts->historyFile, "r");
-		if(!in)
-		{
-			printf("\nWarning: cannot load history file: %s\n                            ", opts->historyFile);
-		}
-		else
-		{
-			for(;;)
-			{
-				fgets(strng, 70, in);
-				if(feof(in))
-				{
-					break;
-				}
-				strng[70] = 0;
-				for(j = 0; strng[j]; ++j)
-				{
-					if(strng[j] < ' ')
-					{
-						strng[j] = ' ';
-					}
-				}
-				fitsWriteComment(out, "HISTORY", strng);
-			}
-
-			fclose(in);
-		}
+		writeHistoryFile(opts->historyFile, out);
 	}
+
+	/* Look for and convey history from each .difx/ *.history file */
+	writeDifxHistory(D, out);
 	
 	fitsWriteEnd(out);
 
