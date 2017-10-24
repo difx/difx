@@ -196,6 +196,8 @@ def convertdate(indate, outformat="mjd"):
     vexformat = "%Yy%jd%Hh%Mm%Ss"
     vlbaformat = "%Y%b%d-%H:%M:%S"
     isoformat = "%Y-%m-%dT%H:%M:%S"
+    # date only part of ISO8601
+    isoformat_d = "%Y-%m-%d"
 
     # vex format can truncate from the right, have 2 digits for the year, and
     # decimal seconds
@@ -216,7 +218,7 @@ def convertdate(indate, outformat="mjd"):
         if "." in indate:
             vexformat_in = vexformat_in.replace("s", ".%fs")
 
-    timeformats = [vexformat_in, vlbaformat, isoformat]
+    timeformats = [vexformat_in, vlbaformat, isoformat, isoformat_d]
 
     # convert the input time to a datetime
 
@@ -247,7 +249,8 @@ def convertdate(indate, outformat="mjd"):
         outdate = date.strftime(vexformat)
     else:
         raise Exception(
-                "Output format not recognised, choose from: mjd, vex, iso or vlba")
+                "Output format not recognised, choose from: mjd, vex, iso or"
+                " vlba")
 
     return outdate
 

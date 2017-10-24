@@ -47,7 +47,7 @@ def get_leapsec(leapsec_page, targetJD):
 
 
 usage = """%prog <date>
-<date> can either be MJD or VEX time
+<date> can either be in MJD, VEX, ISO8601 or VLBA format
 Returns 5 days of EOPs around <date> in .v2d format"""
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
 parser.add_option(
@@ -118,7 +118,7 @@ nlines = 0
 neop = -1
 for line in eop_page:
     nlines += 1
-    # skip the first line, which isn't commented for some reason
+    # skip the first line, which isn't commented
     if (nlines == 1):
         continue
     if not line:
