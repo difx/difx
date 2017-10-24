@@ -92,23 +92,26 @@ if options.vex:
   comment = "*"
 else:
   comment = "#"
-print comment + " EOPs downloaded at", time.strftime("%Y-%m-%d %H:%M:%S (%z)")
-
-vexeop = """def EOP{0:d};
-  TAI-UTC = {1:d};
-  A1-TAI = 0 sec;
-  eop_ref_epoch = {2:s};
-  num_eop_points = 1;
-  eop_interval = 24 hr;
-  ut1-utc = {3:0.6f};
-  x_wobble = {4:0.6f} asec;
-  y_wobble = {5:0.6f} asec;
-enddef;"""
+print comment, "EOPs downloaded at", time.strftime("%Y-%m-%d %H:%M:%S (%z)")
 
 v2deop = "EOP {0:d} {{ xPole={1:f} yPole={2:f} tai_utc={3:d} ut1_utc={4:f} }}"
 
+vexeop = """def EOP{5:d};
+  TAI-UTC = {3:d};
+  A1-TAI = 0 sec;
+  eop_ref_epoch = {0:s};
+  num_eop_points = 1;
+  eop_interval = 24 hr;
+  ut1-utc = {4:0.6f};
+  x_wobble = {1:0.6f} asec;
+  y_wobble = {2:0.6f} asec;
+enddef;"""
+
 if options.vex:
     print "$EOP;"
+    eopformat = vexeop
+else:
+    eopformat = v2deop
 
 # parse the eop page
 nlines = 0
@@ -139,8 +142,6 @@ for line in eop_page:
         eopdate = int(eop_fields[0]-2400000.5)
         if options.vex:
             eopdate = espressolib.convertdate(eopdate, outformat="vex")
-            print vexeop.format(neop, tai_utc, eopdate, ut1_utc, xpole, ypole)
-        else:
-            print v2deop.format(eopdate, xpole, ypole, tai_utc, ut1_utc)
+        print eopformat.format(eopdate, xpole, ypole, tai_utc, ut1_utc, neop)
 
 print >>sys.stderr, "Processed %d lines" % nlines
