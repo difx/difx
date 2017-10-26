@@ -1326,6 +1326,7 @@ doublereal *double__;
   num_found=0;
   LOOKUP(num_found,num,angle,num_factor);
   LOOKUP(num_found,num,length,num_factor);
+  LOOKUP(num_found,num,time,num_factor);
 
   denom_found=0;
   LOOKUP(denom_found,denom,time,denom_factor);

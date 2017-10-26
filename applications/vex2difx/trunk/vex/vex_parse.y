@@ -658,9 +658,9 @@ clock_early:	T_CLOCK_EARLY '=' ':' unit_value ';'
 				{$$=make_clock_early(NULL,$4,NULL,NULL);}
 		| T_CLOCK_EARLY '=' T_NAME ':' unit_value ';'
 				{$$=make_clock_early($3,$5,NULL,NULL);}
-	| T_CLOCK_EARLY '=' T_NAME ':' unit_value ':' T_NAME ':' value ';'
+	| T_CLOCK_EARLY '=' T_NAME ':' unit_value ':' T_NAME ':' unit_option ';'
 				{$$=make_clock_early($3,$5,$7,$9);}
-	| T_CLOCK_EARLY '=' ':' unit_value ':' T_NAME ':' value ';'
+	| T_CLOCK_EARLY '=' ':' unit_value ':' T_NAME ':' unit_option ';'
 				{$$=make_clock_early(NULL,$4,$6,$8);}
 ;
 /* $DAS block */

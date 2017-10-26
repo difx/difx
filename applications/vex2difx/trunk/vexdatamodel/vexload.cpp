@@ -437,7 +437,14 @@ static int getAntennas(VexData *V, Vex *v)
 						}
 						if(C->rate && C->origin) 
 						{
-							clock.rate = atof(C->rate->value);
+							if(C->rate->units)
+							{
+								fvex_double(&(C->rate->value), &(C->rate->units), &clock.rate);
+							}
+							else
+							{
+								clock.rate = atof(C->rate->value);
+							}
 							clock.offset_epoch = vexDate(C->origin);
 						}
 						

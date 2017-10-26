@@ -1663,19 +1663,19 @@ enddef;
 *------------------------------------------------------------------------------
 $CLOCK;
 def Br;
-  clock_early = 2016y007d12h31m24s : 2.65860530e-06 sec : 2015y363d03h33m20s : 5.46681027e-14;  * offset = -0.34 usec
+  clock_early = 2016y007d12h31m24s : 2.65860530e-06 sec : 2015y363d03h33m20s : 5.46681027e-14 sec/sec;  * offset = -0.34 usec
     * clock_start =  2702.88 ns  clock_end =  2703.16 ns
 enddef;
 def Fd;
-  clock_early = 2016y007d12h31m24s : 5.34931314e-07 sec : 2015y363d07h29m04s : 2.16557683e-13;  * offset = -0.39 usec
+  clock_early = 2016y007d12h31m24s : 5.34931314e-07 sec : 2015y363d07h29m04s : 2.16557683e-7 usec/sec;  * offset = -0.39 usec
     * clock_start =   707.25 ns  clock_end =   708.36 ns
 enddef;
 def Hn;
-  clock_early = 2016y007d12h31m24s : 2.04467616e-06 sec : 2015y363d03h33m20s : 1.10761579e-14;  * offset = -0.26 usec
+  clock_early = 2016y007d12h31m24s : 2.04467616e-06 sec : 2015y363d03h33m20s : 1.10761579e-20 sec/usec;  * offset = -0.26 usec
     * clock_start =  2053.65 ns  clock_end =  2053.70 ns
 enddef;
 def Kp;
-  clock_early = 2016y007d12h31m24s : 5.42608746e-07 sec : 2015y363d03h33m20s : 9.90913636e-14;  * offset = -0.26 usec
+  clock_early = 2016y007d12h31m24s : 5.42608746e-07 sec : 2015y363d03h33m20s : 9.90913636e-14 usec/usec;  * offset = -0.26 usec
     * clock_start =   622.86 ns  clock_end =   623.37 ns
 enddef;
 def La;
