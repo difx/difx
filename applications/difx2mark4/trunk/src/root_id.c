@@ -13,10 +13,50 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include "difx2mark4.h"
 
-char*
-root_id(year, day, hour, min, sec)
-int year, day, hour, min, sec;
+/* [a-z]x6 before this unix clock and [0-9A-Z]x6 after it */
+#define HOPS_ROOT_BREAK (1519659904)
+
+int root_id_delta(time_t now)
+{
+    int delta = 4;
+    if (now >= HOPS_ROOT_BREAK) delta = 1;
+    if (getenv("DIFX2MARK4RCOFFSECS"))
+            printf("# Time delta %d secs for %lu\n", delta, now);
+    return(delta);
+}
+
+char* root_id_later(time_t now)
+{
+    long m, u = now - HOPS_ROOT_BREAK;
+    static char datestr[8];
+    char *date = datestr;
+    m = u / (36*36*36*36*36);
+    u -= m * (36*36*36*36*36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    m = u / (36*36*36*36);
+    u -= m * (36*36*36*36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    m = u / (36*36*36);
+    u -= m * (36*36*36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    m = u / (36*36);
+    u -= m * (36*36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    m = u / (36);
+    u -= m * (36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    *date++ = (u < 10) ? (char)('0' + u) : (char)('A' + u - 10);
+    *date = 0;
+    if (getenv("DIFX2MARK4RCOFFSECS")) printf("# new rootcode %s\n", datestr);
+    return(datestr);
+}
+
+/* original implementation follows */
+char* root_id(int year, int day, int hour, int min, int sec)
 {
         int year_79, elapsed, nleaps;
         static char code[7];
@@ -42,6 +82,15 @@ int year, day, hour, min, sec;
         code[1] = 'a' + (elapsed/456976) % 26;                  /* 0 --> 'aaaaaa' */
         code[0] = 'a' + elapsed/11881376;
 
+        if (getenv("DIFX2MARK4RCOFFSECS")) printf("# old rootcode %s\n", code);
         return(code);
 }
+
+char* root_id_break(time_t now, int year, int day, int hour, int min, int sec)
+{
+    if (getenv("DIFX2MARK4RCOFFSECS")) printf("# root id %lu\n", now + sec);
+    if (now + sec >= HOPS_ROOT_BREAK) return(root_id_later(now + sec));
+    else return(root_id(year, day, hour, min, sec));
+}
+
 // vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

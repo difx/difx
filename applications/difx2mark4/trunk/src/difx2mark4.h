@@ -21,6 +21,7 @@
 
 #include <difxio/difx_input.h>
 #include <limits.h>
+#include <time.h>
 
 #define MAX_INPUT_FILES 4096
 #define MAX_VIS 8192
@@ -147,6 +148,8 @@ void normalize (struct CommandLineOptions *, vis_record *, int, int, int,
                 struct fblock_tag *);
                                     // root_id.c
 char *root_id(int, int, int, int, int);
+char *root_id_break(time_t, int, int, int, int, int);
+int root_id_delta(time_t);
                                     // single_code.c
 char single_code (char *, char *);
                                     // swabr.c

@@ -365,10 +365,11 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
         err;
     static int first = TRUE, 
                year, day, hour, min, sec;
-    time_t now;
+    static time_t now;
     struct tm *t;
     struct stat stat_s;
     char *rcode,                    // six-letter timecode suffix
+         *rcoff,                    // allowing time offset for testing
          rootname[DIFXIO_FILENAME_LENGTH],             // full root filename
          path[DIFXIO_FILENAME_LENGTH+5];
 
@@ -378,19 +379,24 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
     if (first)                  // on first time through get and save time
         {
         now = time ((time_t *) NULL);
-        t = localtime (&now);
+        // additional adjustments, for testing
+        rcoff = getenv("DIFX2MARK4RCOFFSECS");
+        if (rcoff) now += atoi(rcoff);
+        // localtime in previous usage
+        t = gmtime (&now);
         year = t->tm_year;
         day = t->tm_yday+1;
         hour = t->tm_hour;
         min = t->tm_min;
         sec = t->tm_sec;
+        now -= sec;
         first = FALSE;
         }
     else
-        sec += 4;               // avoid collisions by moving to next code (4s later)
+        sec += root_id_delta(now + sec);        // avoid collisions
 
                                 // generate 6-char rootcode timestamp
-    rcode = root_id (year, day, hour, min, sec);
+    rcode = root_id_break (now, year, day, hour, min, sec);
                  
                                 // make scan directory
     snprintf(path, DIFXIO_FILENAME_LENGTH, "%s/%s", node, D->scan[scanId].identifier);
