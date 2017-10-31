@@ -434,8 +434,9 @@ bool CalTable::setInterpolationTime(double itime) {
   if (itime == currTime) {gainChanged = false; return gainChanged;};
 
   long i; //, auxI;
-  long ti0, ti1; 
-  double Kt;
+  long ti0 = 0;
+  long ti1 = 0; 
+  double Kt = 0.0;
   long Nts; 
   double auxD, auxD2;
   int iant;

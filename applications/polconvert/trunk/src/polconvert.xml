@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.5-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.6-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.5-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.6-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -88,11 +88,16 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <value>[]</value>
     </param>
 
-    <param type="any" name="gaintype" mustexist="false">
-      <description> Type of gain to impose (one per calibration table). Default is \'T\' for all tables, unless either the string \'XY0\', \'bandpass\' or \'Gxyamp\' appears in the table name. The gain types can be either \'G\' (i.e., split gains per polarization) or \'T\' (i.e., combine polarizations).</description>
+    <param type="any" name="gainmode" mustexist="false">
+      <description> Mode of gain calibration to impose (one per calibration table). Default is \'T\' for all tables, unless either the string \'XY0\', \'bandpass\' or \'Gxyamp\' appears in the table name. The gain types can be either \'G\' (i.e., split gains per polarization) or \'T\' (i.e., combine polarizations).</description>
       <value>[]</value>
     </param>
 
+
+    <param type="double" name="XYavgTime" mustexist="false">
+      <description> Re-compute the G-mode gains by adding a time smoothing of X-Y differences to the T-mode gains. Default is NOT to do this (i.e., use the G-mode gains as given). If positive, use a running time average with this size (in seconds).</description>
+      <value>0.0</value>
+    </param>
 
 
     <param type="any" name="dterms" mustexist="false">

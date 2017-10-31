@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include <gsl/gsl_linalg.h>
 
 
+
 typedef std::complex<double> cplx64f;
 typedef std::complex<float> cplx32f;
 
@@ -133,6 +134,7 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
     PyObject *ret = Py_BuildValue("i",-1);
     return ret;
   };
+
 
 TAvg = (double) PyInt_AsLong(PyList_GetItem(solints,1));
 SolAlgor = (int) PyInt_AsLong(PyList_GetItem(solints,0));
@@ -288,6 +290,11 @@ AddCrossHand = true;
 
 
 
+//Py_DECREF(RelWeight);
+Py_DECREF(solints);
+Py_DECREF(calant);
+Py_DECREF(linant);
+
 
     PyObject *ret = Py_BuildValue("i",0);
     return ret;
@@ -316,7 +323,7 @@ if (!PyArg_ParseTuple(args, "iss", &IFN,&file1, &file2)){
 
 
 
-int i, j, k, l;
+int i, j, k;
 double AuxT, AuxPA1, AuxPA2;
 
 bool is1, is2;
@@ -488,7 +495,8 @@ MPfile.seekg(sizeof(int),MPfile.beg);
 
 // Read visibilities (Mix Pol):
 int currI = 0;
-bool isGood, is1c, is2c, isFlipped;
+bool isGood, isFlipped;
+//bool  is1c, is2c;
 cplx64f Exp1, Exp2;
 
 cplx32f AuxRR, AuxRL, AuxLR, AuxLL;
@@ -504,7 +512,7 @@ while(!MPfile.eof()){
 
 // Check if visib is observed by CalAnts:
   isGood = false; is1 = false; is2 = false;
-  is1c = true; is2c = true;
+//  is1c = true; is2c = true;
 
   isFlipped = false;
 
@@ -522,14 +530,14 @@ while(!MPfile.eof()){
       Exp2 = std::polar(1.0,AuxPA2);
 
 // Check if there is (are) Circ Pol antenna(s):
-      for (l=0; l<Nlin; l++){
-        if (AuxA1 == Lant[l]){
-          if(isFlipped){is2c = false;}else{is1c=false;};
-        };
-        if (AuxA2 == Lant[l]){
-          if(isFlipped){is1c = false;}else{is2c=false;};
-        };
-     };
+//      for (l=0; l<Nlin; l++){
+//        if (AuxA1 == Lant[l]){
+//          if(isFlipped){is2c = false;}else{is1c=false;};
+//        };
+//        if (AuxA2 == Lant[l]){
+//          if(isFlipped){is1c = false;}else{is2c=false;};
+//        };
+//     };
 
      Times[NIF-1][currI] = AuxT;
  //    printf("DT: %.5e\n",Times[NIF-1][currI]-Times[NIF-1][0]);
@@ -809,6 +817,10 @@ if (!PyArg_ParseTuple(args, "OO", &ratesArr, &antList)){
     return ret;
 };
 
+
+
+
+
 NantFix = (int) PyList_Size(antList);
 
 rates = (double *) PyArray_DATA(ratesArr);
@@ -822,6 +834,8 @@ for (i=0; i<NantFix; i++){
   Rates[j-1] = rates[i];
 };
 
+Py_DECREF(ratesArr);
+Py_DECREF(antList);
 
 PyObject *ret = Py_BuildValue("i",0);
 return ret;
@@ -861,6 +875,7 @@ if (!PyArg_ParseTuple(args, "Oii", &antList,&npix, &applyRate)){
     PyObject *ret = Py_BuildValue("i",-1);
     return ret;
 };
+
 
 
 if (applyRate==0){printf("\n\n   Residual rate will NOT be estimated\n\n");};
@@ -1456,6 +1471,7 @@ for (i=0; i<NIF; i++){
 
 fftw_free(BufferVis00); fftw_free(BufferVis11); fftw_free(outXX); fftw_free(outYY);
 
+Py_DECREF(antList);
 
 
 PyObject *ret = Py_BuildValue("i",0);
@@ -1622,6 +1638,8 @@ gsl_permutation *perm = gsl_permutation_alloc (Npar);
 int currIF, a1, a2, ac1,ac2,af1, af2, currDer;
 int is1, is2, auxI1, auxI2;
 
+auxI1 = 0;
+
 cplx64f *G1 = new cplx64f[Npar+1];
 cplx64f *G2 = new cplx64f[Npar+1]; 
 cplx64f Error;
@@ -1665,7 +1683,7 @@ int BNum;
 
 double Chi2 = 0.0;
 double auxD1, auxD2;
-double TRatio = 1.0;
+// double TRatio = 1.0;
 
 
 

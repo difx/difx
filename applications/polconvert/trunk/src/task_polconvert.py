@@ -47,8 +47,8 @@
 #
 #
 
-__version__ = "1.5-beta"
-date = 'SEP 2017'     
+__version__ = "1.6-beta"
+date = 'OCT 2017'     
 
 
 ################
@@ -286,7 +286,7 @@ if __name__=='__main__':
 # COMMENT OUT THIS LINE WHEN DEBUGGING
 # YOU SHALL THEN RUN THIS FILE WITH "execfile(...)"
 
-def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, gains, interpolation, gaintype, dterms, amp_norm, XYadd, XYdel, XYratio, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,excludeAnts,doSolve,solint,doTest,npix,solveAmp,solveMethod):
+def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, gains, interpolation, gainmode, XYavgTime, dterms, amp_norm, XYadd, XYdel, XYratio, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,excludeAnts,doSolve,solint,doTest,npix,solveAmp,solveMethod):
 
 # if True:
 ############################################
@@ -318,6 +318,49 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       print >> lfile,'\n'+msg+'\n'
       lfile.close()
 
+
+
+
+
+
+# Auxiliary function: Smooth the X-Y difference of G-mode gains
+# using a running average:
+  def XYsmooth(GAINTABLE, DTIME, SPW):
+
+    os.system('rm -rf %s.XYsmooth.PolConvert'%GAINTABLE)
+    try:
+      os.system('cp -r %s %s.XYsmooth.PolConvert'%(GAINTABLE,GAINTABLE))
+      tb.open('%s.XYsmooth.PolConvert/ANTENNA'%GAINTABLE)
+      GallAnts = tb.getcol('NAME')
+      tb.close()
+
+      tb.open('%s.XYsmooth.PolConvert'%GAINTABLE,nomodify=False)
+      Gtimes = tb.getcol('TIME')
+      Gants = tb.getcol('ANTENNA1')
+      Gspws = tb.getcol('SPECTRAL_WINDOW_ID')
+      Mask = Gspws == SPW
+      Ggains = tb.getcol('CPARAM')
+
+    except:
+      printError('ERROR: Bad gain table %s!'%GAINTABLE)
+
+   # Get the X-Y phase differences:
+    GDiff = np.sqrt(Ggains[0,0,:][Mask]*np.conjugate(Ggains[1,0,:][Mask]))
+    TMode = np.sqrt(Ggains[0,0,:][Mask]*Ggains[1,0,:][Mask])
+ 
+  # Smooth them:
+    for iant in range(len(GallAnts)):
+      printMsg('Smoothing X-Y difference for antenna %s'%GallAnts[iant])
+      Mask2 = Gants[Mask]==iant
+      AntTimes = np.copy(Gtimes[Mask][Mask2])
+      for ti in AntTimes:
+         Window = np.where(np.abs(ti-AntTimes)<DTIME)
+         AvgDiff = np.median(np.real(GDiff[Mask2][Window])) + 1.j*np.median(np.imag(GDiff[Mask2][Window]))
+         AvgDiff /= np.abs(AvgDiff)
+         Ggains[0,0,:][Mask][Mask2][Window] = TMode[Mask2][Window]*AvgDiff
+         Ggains[1,0,:][Mask][Mask2][Window] = TMode[Mask2][Window]/AvgDiff
+
+              
 
 
 
@@ -698,23 +741,34 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
         printMsg("integration type " + ints + " requested.")
         printError("Only \'linear\' and \'nearest\' interpolations are supported!")
 
-  if type(gaintype) is not list:
-    printError("gaintype must be a list (or a list of lists)!")
 
-  if len(gaintype)==0:
-    gaintype = [[] for i in range(nALMA)]
+  try:
+    XYavgTime = float(XYavgTime)
+  except:
+    printError("XYavgTime must be a positive (or zero) double!")
 
-  if len(gaintype)!= nALMA:
-    printError("Wrong length for gaintype!")
+  if XYavgTime < 0.0:
+    printError("XYavgTime must be positive or zero!")
 
-  for i,gtype in enumerate(gaintype):
+
+
+  if type(gainmode) is not list:
+    printError("gainmode must be a list (or a list of lists)!")
+
+  if len(gainmode)==0:
+    gainmode = [[] for i in range(nALMA)]
+
+  if len(gainmode)!= nALMA:
+    printError("Wrong length for gainmode!")
+
+  for i,gtype in enumerate(gainmode):
     if type(gtype) is not list:
-      printError("gaintype must be a list (or a list of of lists)!")
+      printError("gainmode must be a list (or a list of of lists)!")
     if len(gtype)==0:
-      gaintype[i] = [{True:'G',False:'T'}['XY0' in g or 'bandpass' in g or 'Gxyamp' in g] for g in gains[i]]
-      gtype = gaintype[i]
+      gainmode[i] = [{True:'G',False:'T'}['XY0' in g or 'bandpass' in g or 'Gxyamp' in g] for g in gains[i]]
+      gtype = gainmode[i]
     if len(gtype) != len(gains[i]):
-      printError("gaintype must have the same dimensions as gains!")
+      printError("gainmode must have the same dimensions as gains!")
     for ints in gtype:
       if ints not in ['G','T']:
         printMsg("Gain type " + ints + " requested.")
@@ -722,7 +776,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
   for gi in range(len(gains)):
     for gii in range(len(gains[gi])):
-      printMsg('Will calibrate with table %s in %s mode.'%(os.path.basename(gains[gi][gii]),gaintype[gi][gii]))
+      printMsg('Will calibrate with table %s in %s mode.'%(os.path.basename(gains[gi][gii]),gainmode[gi][gii]))
 
 # Sanity check for gains and dterms:
   for g in gains:
@@ -857,23 +911,31 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     printMsg('\n\nYou have asked to convert a set of SWIN files.')
     if len(DiFXinput)==0 or not os.path.exists(DiFXinput) or not os.path.isfile(DiFXinput):
       printError("Invalid DiFX input file!")
-    print 'Opening calc file...'
+    printMsg('Opening calc file... %s' % DiFXcalc)
     try:
-      antcoords = []  ; soucoords = [[],[]]
+      printMsg('Opening "%s"' % (DiFXcalc))
+      antcoords = []  ; soucoords = [[],[]]; antmounts = []
       calc = open(DiFXcalc)
       lines = calc.readlines()
       calc.close()
+      printMsg('Read %d lines from %s' % (len(lines), DiFXcalc))
       for ii, line in enumerate(lines):
         if 'TELESCOPE' in line and 'X (m):' in line:
+          printMsg(line.rstrip())
           antcoords.append(map(float,[ll.split()[-1] for ll in lines[ii:ii+3]]))
+          antmounts.append(0)
         if 'SOURCE' in line and ' RA: ' in line:
+          printMsg(line.rstrip())
           soucoords[0].append(float(line.split()[-1]))
           soucoords[1].append(float(lines[ii+1].split()[-1]))
       antcoords = np.array(antcoords,dtype=np.float)
+      antmounts = np.array(antmounts)
       soucoords[0] = np.array(soucoords[0],dtype=np.float)
       soucoords[1] = np.array(soucoords[1],dtype=np.float)
+      printMsg('done parsing calc')
     except:
-      printMsg("WARNING! Invalid DiFX calc file!\nPolConvert may not calibrate properly.")
+      printMsg(("WARNING! Invalid DiFX calc file '%s'!\n" + 
+        "PolConvert may not calibrate properly.") % DiFXcalc)
   elif os.path.isfile(IDI):
     isSWIN = False
     printMsg('\n\nYou have asked to convert a FITS-IDI file.')
@@ -886,7 +948,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           grarr = ii
         elif group.name == 'SOURCE':
           grsou = ii
-      antcoords = np.array(ffile[grarr].data['STABXYZ'],dtype=np.float)
+
+
       raappUnit = ffile[grsou].data.columns[ [coln.name for coln in ffile[grsou].data.columns].index('RAAPP') ].unit
       decappUnit = ffile[grsou].data.columns[ [coln.name for coln in ffile[grsou].data.columns].index('DECAPP') ].unit
 
@@ -899,6 +962,19 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
         soucoords[1] *= np.pi/180.
 
       ffile.close()
+
+# THESE LINES FAIL IF ORBPARM IS PRESENT IN ARRAY GEOMETRY!
+#      antcoords = np.array(ffile[grarr].data['STABXYZ'],dtype=np.float)
+#      antmounts = np.array(ffile[grarr].data['MNTSTA'],dtype=np.float)
+      import _getAntInfo as gA
+      
+      success = gA.getAntInfo(IDI)
+      if success != 0:
+        printError("ERROR GETTING FITS-IDI METADATA! ERR: %i"%success)
+      else:
+        antcoords = gA.getCoords()
+        antmounts = gA.getMounts()
+
     except:
       printMsg('WARNING! This FITS-IDI file has missing information!\nPolConvert may not calibrate properly.')
   else:
@@ -924,7 +1000,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     if len(antcoords) == 0:
       Nteles = [inputlines.index(l) for l in inputlines if 'TELESCOPE ENTRIES' in l][0]
       antcoords = np.ones((Nteles,3),dtype=np.float)
-
+      antmounts = np.zeros(Nteles,dtype=np.int)
     if len(soucoords[0])==0:
       soucoords = [np.zeros(1,dtype=np.float),np.zeros(1,dtype=np.float)]
 
@@ -1289,7 +1365,15 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        gaindata[i][j][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        gaindata[i][j][-1].append(np.zeros((nchan,ntime)).astype(np.bool))
      else:
+
+# Smooth X-Y differences:
+      if gainmode[i][j]=='G' and XYavgTime>0.0:
+        XYsmooth(gain, XYavgTime, int(spw)) 
+        gain = gain+'.XYsmooth.PolConvert'
+
+# Read data and metadata:
       sucess = tb.open(os.path.join(gain,'SPECTRAL_WINDOW'))
+
       if not success:
         printError("ERROR READING TABLE %s"%gain)
       gfreqs = tb.getcol('CHAN_FREQ')[:,int(spw)]
@@ -1341,7 +1425,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       for ant in range(NSUM[i]):
         gaindata[i][j].append([])
         if np.shape(data)[0] == 2:  # A DUAL-POL GAIN (i.e., mode 'G')
-          if gaintype[i][j] == 'G':
+          if gainmode[i][j] == 'G':
             dd0 = data[0,:,:]
             dd1 = data[1,:,:]
           else:  # DUAL-POL GAIN FORCED TO 'T' MODE:
@@ -1465,7 +1549,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 # Do it!
 #  print nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, amp_norm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, isLinear
 
-  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, amp_norm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, isLinear)
+  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, amp_norm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, antmounts, isLinear)
 
   printMsg("\n###\n### Done with PolConvert (status %d).\n###" % (didit))
 
@@ -1523,7 +1607,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        currT = fmt0%(tobs,hour,minute)
        if currT != prevT:  # Limited time resolution in ANTAB
          prevT = currT
-         print >> outf, currT + fmt1%tuple(entry[1:]**2.)
+         print >> outf, currT + fmt1%tuple(entry[1:])
      print >> outf, "/"
      outf.close()
 

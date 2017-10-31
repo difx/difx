@@ -85,6 +85,19 @@ except Exception, ex:
     gainmeth = 'G'
     print 'gain type not supplied, defaulting to', gainmeth
 
+# option to average gains over some interval to cut down on noise
+try:
+    if type(XYavgTime) == float:
+        if XYavgTime > 0.0: print 'Gains averaged over %f secs' % XYavgTime
+        else:               print 'No time averaging of gains'
+    else:
+        print 'disabling XYavgTime'
+        XYavgTime = 0.0
+except Exception, ex:
+    print 'XYavgTime not float?', str(ex)
+    XYavgTime = 0.0
+    print 'XYavgTime set to 0.0 (disabled)'
+
 # option to turn off the amplitude calibration logic
 try:
     if type(ampNorm) == bool:
@@ -153,7 +166,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     DiFXinput='', DiFXoutput='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
     amp_norm=True, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
-    npix=50, gainmeth='G'):
+    npix=50, gainmeth='T', XYavgTime=0.0):
     # based on common drivepolconvert inputs above
     gains = calgains[3:]
     interpolation = ['linear', 'nearest', 'linear', 'linear']
@@ -167,7 +180,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
         interpolation = interpolation[0:3]
 
     gaintype = map(lambda g: 'G' if ('XY0' in g or 'bandpass' in g or
-        'Gxyamp' in g) else 'T', gains)
+        'Gxyamp' in g) else gainmeth, gains)
 
     # cover for optional tables
     while len(interpolation) < len(gains):
@@ -204,31 +217,33 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     # ok, save it and proceed
     os.rename(DiFXoutput, DiFXsave)
 
-    # actually run PolConvert setting everything.
-    # commented arguments are not needed for DiFX, but are
-    # mentioned here as comments for clarity.  CASA supplies
-    # defaults from the task xml file.
-    # Note that this is hardwired to just one antenna conversion
-    # even though PolConvert may do several.
+    # Now we actual run PolConvert setting (almost) everything.
+    # Commented arguments are not needed for DiFX, but are
+    # mentioned here as comments for clarity and coordination
+    # with task_polconvert.py:^def polconvert(...)
+    # CASA supplies defaults from the task xml file.
     try:
         print 'Calling PolConvert from runpolconvert'
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
             #DiFXcalc,
-            linAntIdx=[1], Range=Range, ALMAant=aantpath,
+            doIF=doIF,
+            linAntIdx=linAnt, Range=Range, ALMAant=aantpath,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
             #APPrefant,
             gains=[gains], interpolation=[interpolation],
-            gaintype=[gaintype],
+            gainmode=[gaintype], XYavgTime=XYavgTime,
             dterms=[dterm], amp_norm=amp_norm,
             XYadd=XYadd,
             #XYdel,
-            XYratio=XYratio, swapXY=[False], IDI_conjugated=True,
-            plotIF=plotIF, doIF=doIF, plotRange=timeRange,
+            XYratio=XYratio, swapXY=[False],
+            #swapRL,
+            IDI_conjugated=True,
+            plotIF=plotIF, plotRange=timeRange,
             plotAnt=plotAnt,
-            #excludedAnts, doSolve, solint
+            #excludedAnts, doSolve, solint,
             doTest=doTest, npix=npix,
             solveAmp=False
-            # , solveMethod=gradient
+            #, solveMethod=gradient
             )
     except Exception, ex:
         print 'Polconvert Exception'
@@ -236,6 +251,14 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
             shutil.rmtree(DiFXoutput)
         os.rename(DiFXsave, DiFXoutput)
         raise ex
+
+    try:
+        makeHistory(label, DiFXoutput, doIF=doIF, linAntIdx=linAntIdx,
+            spw=spw, calAPPTime=calAPPTime, interpolation=[interpolation],
+            gainmode=[gaintype], XYavgTime=XYavgTime, amp_norm=amp_norm,
+            XYadd=XYadd, XYratio=XYratio, swapXY=[False])
+    except Exception, ex:
+        print 'Ignoring exception writing history:', str(ex)
 
     # save the plots and other developer artifacts in a subdir
     pcprods = [ 'PolConvert.log', 'Fringe.plot%d.png'%plotAnt,
@@ -252,6 +275,37 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
                 os.rename(art, outdir + '/' + art)
         print savename + ' results moved to ' + outdir
 
+def makeHistory(label, DiFXoutput, doIF=[], linAntIdx=[], spw=-1,
+    calAPPTime=[], interpolation=[], gainmode=[], XYavgTime=0.0,
+    amp_norm=True, XYadd=XYadd, XYratio=XYratio, swapXY=[]):
+    '''
+    Generate a history record for eventual use by difx2fits
+    '''
+    if not os.path.isdir(DiFXoutput):
+        print 'No directory for polconvert history'
+        return
+    history = DiFXoutput + '/polconvert.history'
+    fh = open(history, 'w')
+    fh.write('PolConvert done: %s\n' %
+        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S'))
+    fh.write('QA2 set: %s\n' % label)
+    iflist = str(doIF)
+    while len(iflist) > 0:
+        fh.write('IF list: %s\n' % iflist[0:60])
+        iflist = iflist[60:]
+    fh.write('linAntIdx: %s\n' % str(linAntIdx))
+    fh.write('spw: %s\n' % str(spw))
+    fh.write('calAPPTime: %s\n' % str(calAPPTime))
+    fh.write('interpolation: %s\n' % str(interpolation))
+    fh.write('gainmode: %s\n' % str(gainmode))
+    fh.write('XYavgTime: %s\n' % str(XYavgTime))
+    fh.write('ampnorm: %s\n' % str(ampnorm))
+    fh.write('XYadd: %s\n' % str(XYadd))
+    fh.write('XYratio: %s\n' % str(XYratio))
+    fh.write('swapXY: %s\n' % str(swapXY))
+    fh.close()
+    print 'Wrote history to', history
+
 for job in djobs:
     # DiFX output dir and input files:
     DiFXout = '.'
@@ -265,7 +319,7 @@ for job in djobs:
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=plotAnt,
-        npix=numFrPltPix, gainmeth=gainmeth)
+        npix=numFrPltPix, gainmeth=gainmeth, XYavgTime=XYavgTime)
 
 #
 # eof

@@ -73,10 +73,11 @@ double DataIO::getDay0(){return day0;};
 
 void DataIO::getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2){
 
-double V2, Bx, By, Bz;
-double CH, SH, CT1, CT2, HAng, H1, H2;
+double V2, Bx, By; //, Bz;
+double CH, SH, CT1, CT2, HAng, H1, H2, Elev1, Elev2;
 int ibas;
 
+Elev1 = 0.0; Elev2 = 0.0;
 
 if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
 
@@ -88,11 +89,11 @@ if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
   ibas = -ibas;
    Bx = -Geometry->BaseLine[0][ibas];
    By = -Geometry->BaseLine[1][ibas];
-   Bz = -Geometry->BaseLine[2][ibas];
+//   Bz = -Geometry->BaseLine[2][ibas];
   } else {
    Bx = Geometry->BaseLine[0][ibas];
    By = Geometry->BaseLine[1][ibas];
-   Bz = Geometry->BaseLine[2][ibas];
+//   Bz = Geometry->BaseLine[2][ibas];
   };
 
   CH = (UVW[0]*By - V2*Bx); // /(By**2. + Bx**2.);
@@ -104,8 +105,38 @@ if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
   H1 = HAng + Geometry->AntLon[Ant1];
   H2 = HAng + Geometry->AntLon[Ant2];
 
-  P1 = atan2(sin(H1), CT1 - Geometry->SinDec[sidx]*cos(H1));
-  P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2));
+  // sin(lat)*sin(dec)+cos(lat)cos(dec)cos(H)
+
+  if (Geometry->Mount[Ant1] > 3){
+  Elev1 = asin(sin(Geometry->Lat[Ant1])*Geometry->SinDec[sidx]+cos(Geometry->Lat[Ant1])*Geometry->CosDec[sidx]*cos(H1));};
+
+  if (Geometry->Mount[Ant2] > 3){
+  Elev2 = asin(sin(Geometry->Lat[Ant1])*Geometry->SinDec[sidx]+cos(Geometry->Lat[Ant1])*Geometry->CosDec[sidx]*cos(H1));};
+ 
+
+  switch (Geometry->Mount[Ant1]){
+  case 0:  P1 = atan2(sin(H1), CT1 - Geometry->SinDec[sidx]*cos(H1)); // ALT-AZ
+  case 1: P1 = 0.; // EQ
+  case 2: P1 = 0.; // ORBITAL (NO WAY!)
+  case 3: P1 = atan2(cos(H1), Geometry->SinDec[sidx]*sin(H1)); // X-Y (E-W?)
+  case 4: P1 = atan2(sin(H1), CT1 - Geometry->SinDec[sidx]*cos(H1)) + Elev1; // NA-R
+  case 5: P1 = atan2(sin(H1), CT1 - Geometry->SinDec[sidx]*cos(H1)) - Elev1; // NA-L
+  default: P1 = 0.;
+
+  };
+
+  switch (Geometry->Mount[Ant2]){
+  case 0:  P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2)); // ALT-AZ
+  case 1: P2 = 0.; // EQ
+  case 2: P2 = 0.; // ORBITAL (NO WAY!)
+  case 3: P2 = atan2(cos(H2), Geometry->SinDec[sidx]*sin(H2)); // X-Y (E-W?)
+  case 4: P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2)) + Elev2; // NA-R
+  case 5: P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2)) - Elev2; // NA-L
+  default: P2 = 0.;
+
+  };
+
+//  P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2));
 
 
 } else {

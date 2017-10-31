@@ -206,7 +206,7 @@ void DataIOSWIN::readHeader(bool doTest) {
   double *UVW = new double[3];
   int UVWsize = 3*sizeof(double);
   char *pol = new char[2];
-  char *auxC = new char[4];
+//  char *auxC = new char[4];
 
   double AuxPA1, AuxPA2;
 

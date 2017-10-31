@@ -48,6 +48,7 @@ double *BaseLine[3];
 double *SinDec;
 double *CosDec;
 double *AntLon;
+int *Mount;
 double *Lat;
 int NtotAnt;
 int NtotSou;

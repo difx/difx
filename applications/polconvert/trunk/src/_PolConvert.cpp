@@ -50,7 +50,7 @@
 #
 
 */
-
+ 
 
 #include <Python.h>
 // compiler warning that we use a deprecated NumPy API
@@ -117,13 +117,13 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
     PyObject *ngain, *nsum, *gains, *ikind, *dterms, *plotRange, *IDI, *antnum, *tempPy, *ret; 
     PyObject *allphants, *nphtimes, *phanttimes, *Range, *SWAP, *doIF, *metadata, *refAnts;
-    PyObject *asdmTimes, *plIF, *isLinearObj, *XYaddObj, *XYdelObj, *antcoordObj, *soucoordObj; 
+    PyObject *asdmTimes, *plIF, *isLinearObj, *XYaddObj, *XYdelObj, *antcoordObj, *soucoordObj, *antmountObj; 
     int nALMA, plAnt, nPhase, doTest, doConj, doNorm;
     double doSolve;
  //   double XYadd;
     bool isSWIN; 
 
-    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOidiiOOOOOO",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doSolve, &doConj, &doNorm, &XYaddObj, &XYdelObj, &metadata, &soucoordObj, &antcoordObj, &isLinearObj)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
+    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOidiiOOOOOOO",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doSolve, &doConj, &doNorm, &XYaddObj, &XYdelObj, &metadata, &soucoordObj, &antcoordObj, &antmountObj, &isLinearObj)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
 
 
 
@@ -228,6 +228,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
     double *AntCoordArr = (double *)PyArray_DATA(antcoordObj);
 
+    int *AntMountArr = (int *)PyArray_DATA(antmountObj);
+
     double *SouCoordArr = (double *)PyArray_DATA(PyList_GetItem(soucoordObj,1));
 
     
@@ -243,6 +245,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     Geometry->SinDec = new double[Geometry->NtotSou];
     Geometry->CosDec = new double[Geometry->NtotSou];
     Geometry->AntLon = new double[Geometry->NtotAnt];
+    Geometry->Mount = new int[Geometry->NtotAnt];
     Geometry->Lat = new double[Geometry->NtotAnt];
     Geometry->BasNum = new int*[Geometry->NtotAnt];
 
@@ -256,6 +259,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      Geometry->AntLon[i] = atan2(AntCoordArr[I3+1],AntCoordArr[I3]);
      RR = sqrt(AntCoordArr[I3]*AntCoordArr[I3] + AntCoordArr[I3+1]*AntCoordArr[I3+1]) ;
      Geometry->Lat[i] = atan2(AntCoordArr[I3+2],RR);
+     Geometry->Mount[i] = AntMountArr[i];
   //   std::cout << i+1 << " " << Geometry->AntLon[i]*180./3.1415926535<<" "<<atan(Geometry->TanLat[i])*180./3.1415926535 <<"\n";
 
      for (j=i; j<Geometry->NtotAnt;j++){
@@ -804,11 +808,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      if (ALMARefAnt>=0 && !(allgains[currAntIdx][ik]->isBandpass())){
        if (allgains[currAntIdx][ik]->getInterpolation(ALMARefAnt,0,gainXY)){
         for (ij=0; ij<nchans[ii]; ij++){
-      //   absGainRatio = gainXY[0]/gainXY[1];
-      //   gainRatio[ij] *= absGainRatio/((cplx32f) abs(absGainRatio));
-      //   gainRatio[ij] /= std::abs(gainRatio[ij]);  // Normalize gain ratio.
          gainRatio[ij] *= gainXY[0]/gainXY[1];
- 
+         gainRatio[ij] /= std::abs(gainRatio[ij]);  // Normalize gain ratio. 
         };
        } else {
           sprintf(message,"ERROR with ALMA Ref. Ant. in gain table!\n");

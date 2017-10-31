@@ -158,7 +158,7 @@ void DataIOFITS::finish(){
 void DataIOFITS::saveCirculars(std::string inputfile) {
 
 
-  int i, j, k, a1, a2, i3, souidx, auxI, flid;
+  int i, j, a1, a2, i3, souidx, auxI;
 
   double AuxPA1, AuxPA2;
 
@@ -195,7 +195,7 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
 // OPEN AUXILIARY BINARY FILES:
   if (doWriteCirc){
     for (ii=0; ii<Nfreqs; ii++){
-      sprintf(message,"POLCONVERT.FRINGE/OTHERS.FRINGE_%i",ii+1);
+      sprintf(message,"POLCONVERT.FRINGE/OTHERS.FRINGE_%li",ii+1);
       circFile[ii] = fopen(message,"wb");
       fwrite(&Freqs[ii].Nchan,sizeof(int),1,circFile[ii]);
       fwrite(Freqvals[ii],Freqs[ii].Nchan*sizeof(double),1,circFile[ii]);
@@ -453,7 +453,7 @@ void DataIOFITS::readInput(std::string inputfile) {
 
 
   long il;
-  int a1, a2, j, i3, k;
+  int a1, a2;
   fits_get_num_rows(fptr, &Nvis, &status);
 
   sprintf(message,"There are  %li visibilities.\n",Nvis);
@@ -535,7 +535,7 @@ void DataIOFITS::readInput(std::string inputfile) {
   float *FUVW;
   FUVW = new float[3];
   int souidx;
-  bool isLinVis, isRead;
+  bool isLinVis;
 
 
 
@@ -749,7 +749,7 @@ void DataIOFITS::openOutFile(std::string outputfile, bool Overwrite) {
 
    dsize = NFlux/TotSize;
 
-   sprintf(message,"\n\n\n   RECORD SIZE: %i ; VIS. SIZE: %i ; There are %i floats per visibility.\n\n",NFlux,TotSize,dsize);
+   sprintf(message,"\n\n\n   RECORD SIZE: %li ; VIS. SIZE: %li ; There are %li floats per visibility.\n\n",NFlux,TotSize,dsize);
    std::cout<< message;
 
 
