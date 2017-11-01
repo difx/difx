@@ -1,5 +1,6 @@
 dist_bin_SCRIPTS = \
 	addMark5b.pl \
+	addVDIF.pl \
 	day2mjd \
 	difxcopy \
 	dir2filelist.pl \
