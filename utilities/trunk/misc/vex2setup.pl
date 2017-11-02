@@ -29,6 +29,7 @@ my $v2dfile = undef;
 my $nCore = 10;
 my $nThread = 7;
 my $scan = undef;
+my $files = undef;
 
 my $cluster = 'cave%02d-ext';
 my $nNode = 14;
@@ -39,10 +40,10 @@ my @activestations = ();
 
 GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'debug'=>\$debug,
-	   'start=s'=>\$starttime, 'v2d=s'=>\$v2dfile,
+	   'start=s'=>\$starttime, 'v2d=s'=>\$v2dfile, 'files=s'=>\$files,
 	   'ant=s'=>\@activestations, 'cluster=s'=>\$cluster,
-	   'nodes=i'=>\$nNode, 'duration=i'=>\$requested_duration,
-	   'scan=s'=>\$scan);
+	   'nodes=i'=>\$nNode, 'threads=i'=>\$nThread, 'core=i'=>\$nCore,
+	   'duration=i'=>\$requested_duration, 'scan=s'=>\$scan);
 
 if (@ARGV!=1 && @ARGV!=2) {
   Usage();
@@ -173,6 +174,34 @@ if (scalar(keys(%$stationmodes)) != $ntel) {
   warn "$mode does not contain all telscopes. Setup will be inconsistent\n";
 }
 
+my %files;
+if (defined $files) {
+  if ($evlbi) {
+    warn "Cannot use files and eVLBI simultaneously\n";
+    exit(1);
+  }
+  open(FILES, $files) || die "Cannot open $files: $!\n";
+  while (<FILES>) {
+    s/\#.*$//; # Remove comments
+    s/^\s+//;  # Remove leading space
+    s/\s+$//;  # Remove trailing space
+    next if $_ eq '';
+
+    my @elem = split;
+    if (scalar(@elem)==1)  {
+      warn "Skipping \"$_\"\n";
+      next;
+    }
+    my $key = uc(shift @elem);
+    if (exists $files{$key}) {
+      push(@$files{$key}, @elem);
+    } else {
+      $files{$key} = [@elem];
+    }
+  }
+  close(FILES);
+}
+
 
 my $antlist = join(', ', map(uc, @activestations));
 # Open input file (which is our output...)
@@ -189,6 +218,7 @@ minLength=1
 
 dataBufferFactor = 256
 nDataSegments = 64
+tweakIntTime = true
 
 antennas = $antlist
 
@@ -265,6 +295,11 @@ EOF
 }
   if (defined $format) {
     print V2D " format = $format\n";
+  }
+
+  if (defined $files && exists $files{$ANT}) {
+    my $files = join(', ', @{$files{$ANT}});
+    print V2D " file = $files\n";
   }
 
   if (defined $antpos[0]) {
