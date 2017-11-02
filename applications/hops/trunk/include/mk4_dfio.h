@@ -133,7 +133,10 @@ extern int copy_308 (struct type_308 *, char **);
 extern int copy_309 (struct type_309 *, char **);
 
 /*----------------------------------------------------------------------------*/
-extern int  alloc_t120_array (int, int, struct index_tag *);
+
+//The following function is unused in hops 10/10/17 JPB
+//extern int  alloc_t120_array (int, int, struct index_tag *);
+
 extern void clear_coord (struct sky_coord *);
 extern void clear_mk4corel (struct mk4_corel *);
 extern void clear_mk4fringe (struct mk4_fringe *);

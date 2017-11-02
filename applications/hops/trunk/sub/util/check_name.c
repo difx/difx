@@ -13,7 +13,7 @@
 /* Initial version CJL 26 September 1991                     */
 /* General version for library use, CJL 23 December 1992     */
 /* Modified for Mk4 use with more file types Aug. 4 1995 CJL */
-/*                                                           */
+/* islower->isalnum for new rootcode Nov 2017 GBC            */
 /*************************************************************/
 
 #include <stdio.h>
@@ -165,7 +165,7 @@ check_name(char *name, fstruct *f_info)
     else
         {
         for (l = 0; l < 6; l++)
-            if(! islower (rootcode[l])) errcode |= BADROOT;
+            if(! isalnum (rootcode[l])) errcode |= BADROOT;
         }
     if ((errcode & BADROOT) == 0) strcpy (f_info->rootcode, rootcode);
 

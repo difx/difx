@@ -12,7 +12,6 @@
 #include <string.h>
 #include "control.h"
 #include "parser.h"
-#include "param_struct.h"
 
 #define IS_CONTROL_FILE 1
 #define IS_SET_STRING 2
@@ -35,7 +34,6 @@ parse_control_file (char* control_file_name,
     int n;
     int flag = 0;
     char *input_string;
-    extern struct type_param param;
 
                                                    /* read input control file */ 
     if (read_control_file (control_file_name,&input_string, &flag) != 0) 

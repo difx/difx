@@ -154,6 +154,12 @@ read_mk4corel (char *filename,
                     msg ("Inconsistent type 101 record in corel file", 2);
                     return (-1);
                     }
+                                        /*Sanity check that the channel names are present */
+                if ( strlen(temp101->ref_chan_id) == 0 || strlen(temp101->rem_chan_id) == 0 )
+                    {
+                    msg ("Inconsistent type 101 record in corel file, missing channel ID labels", 2);
+                    return (-1);
+                    }
                                         /* Expand index array if necessary */
                 if (corel_alloc (corel, nidx, 0) != 0) return (-1);
 

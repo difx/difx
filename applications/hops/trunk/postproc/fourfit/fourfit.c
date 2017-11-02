@@ -149,7 +149,7 @@ main (int argc, char** argv)
     while (files[i].order >= 0)
         {
         inputname = files[i++].name;
-        msg ("processing %s fileset", -1, inputname);
+        msg ("processing %s fileset", 2, inputname); // -1->2 Hotaka
                                         /* Performs sanity check on requested file */
                                         /* and reports internally.  Allows for */
                                         /* fringe_all=false, among other things */
@@ -245,8 +245,20 @@ main (int argc, char** argv)
                                         /* Quit request from user */
             if (fs_ret < 0) 
                 {
-                msg ("Quitting by request", 2);
-                break;
+                /* avoiding num_ap<0 crash: Hotaka 9/28/2017 */
+                if (pass->num_ap < 0)
+                    {
+                        msg ("stop_offset < start_offset !!", 2);
+                        msg ("Skipping %s/%s and continuing", 2,
+                            inputname, fs->name);
+                    }
+                else
+                    {
+                        msg ("Quitting: failed to find fringe on", 2);
+                        msg ("%s/%s and the user should ask why.", 2,
+                            inputname, fs->name);
+                        break;
+                    }
                 }
                                         /* Move to next file in fileset */
             }                           /* End of baseline loop */

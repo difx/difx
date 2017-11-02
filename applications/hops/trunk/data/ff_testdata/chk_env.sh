@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_env.sh 1917 2017-07-28 15:59:11Z barrettj $
+# $Id: chk_env.sh 2010 2017-09-15 19:14:46Z gbc $
 #
 # environment setup -- HOPS_SETUP is not set or false
 # This script is really only needed for distcheck where
@@ -40,8 +40,12 @@ umask 0002
     done
     for t in blk_stmt.txt  pformat.txt
     do
+        # this works building in _build dir (through automake 1.13)
 	[ -f ../../../../sub/vex/text/$t ] &&
 	    ln -s ../../../../sub/vex/text/$t .
+        # this works building in _build/sub dir (automake 1.15)
+	[ -f ../../../../../sub/vex/text/$t ] &&
+	    ln -s ../../../../../sub/vex/text/$t .
     done
     export PATH=`pwd`:$PATH
     export TEMP_MK4PY_LIB_DIR=`pwd`/../../../sub/mk4py/.libs

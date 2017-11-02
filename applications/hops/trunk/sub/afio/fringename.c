@@ -14,6 +14,7 @@
 /*      Modified to handle '.' characters in source name properly       */
 /*      930303 by CJL                                                   */
 /*      Moved to AFIO library for more generic utility 931018 by CJL    */
+/*      islower -> isalnum for new root code Nov 2017 GBC               */
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
@@ -33,7 +34,7 @@ fringename(fringesum *fsumm)
     bad = FALSE;
                                                 /* Generate root code */
     if (strlen(fsumm->root_id) != 6) bad = TRUE;
-    for (i=0; i<6; i++) if (! islower(fsumm->root_id[i])) bad = TRUE;
+    for (i=0; i<6; i++) if (! isalnum(fsumm->root_id[i])) bad = TRUE;
     if (bad)
         {
         msg ("Bad root id code '%s'", 3, fsumm->root_id);

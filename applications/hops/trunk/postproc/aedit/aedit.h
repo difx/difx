@@ -16,12 +16,16 @@ struct inputs {
         int     end;
         int     proc_begin;
         int     proc_end;
-        char    stations[15];
-        char    baselines[50];
-        char    triangles[80];
-        char    quads[100];
-        char    frequencies[10];
-        char    polarizations[49];
+        char    stations[2*MAXSTEXP];  /*2 chars per station (1 char + space) */
+        char    baselines[3*MAXBASE];  /*3 chars per baseline */
+
+        /*4 chars per triangle, for 40 stations (MAXSTEXP) this is around 50kb 
+        /*on the stack which is probably unecessarily large */
+        /*however, this shouldn't be a problem for most modern computers */
+        char    triangles[4*MAXCLOSE]; 
+        char    quads[1024];           /*quads are not yet implemented*/
+        char    frequencies[2*MAXFREQ];/*2 chars per frequency (1 char + space) */
+        char    polarizations[128];
         int     experiment;
         char    qcodes[20];
         char    type[10];

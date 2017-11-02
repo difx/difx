@@ -17,7 +17,7 @@
 #include "vex.h"
 #include "param_struct.h"
 
-int 
+int
 time_range (struct scan_struct* ovex, struct station_struct* stn1, struct station_struct* stn2, struct mk4_corel* cdata, struct type_param* param)
     {
     char st1, st2;
@@ -63,7 +63,7 @@ time_range (struct scan_struct* ovex, struct station_struct* stn1, struct statio
     param->maxap = 0;
     for (ind=0; ind<cdata->index_space; ind++)
         {
-        if (cdata->index[ind].t101 == NULL) 
+        if (cdata->index[ind].t101 == NULL)
             continue;
         for (ap=0; ap<cdata->index[ind].ap_space; ap++)
             {
@@ -74,6 +74,14 @@ time_range (struct scan_struct* ovex, struct station_struct* stn1, struct statio
             if (apno < param->minap) param->minap = apno;
             }
         }
+
+    /*this check is here to catch situations where, not valid t101 or t120 data is found*/
+    if(param->minap == 10000)
+        {
+            msg ("Inconsistent type 101 and type 120 data, could not determine number of APs.", 3);
+            return (-1);
+        }
+
     param->num_ap = param->maxap - param->minap + 1;
                                         /* These are the actual start and stop */
                                         /* times of the data stream, from start */
@@ -89,7 +97,7 @@ time_range (struct scan_struct* ovex, struct station_struct* stn1, struct statio
     param->start = start_ref + param->minap * param->acc_period;
                                         /* adjust start to be no earlier than the start
                                          * of the AP containing the scheduled start time */
-    if (param->start + param->acc_period <= param->start_nom) 
+    if (param->start + param->acc_period <= param->start_nom)
         {
                                         /* Adjust to new "first ap" */
         startoff = param->start_nom - param->start;
@@ -101,7 +109,7 @@ time_range (struct scan_struct* ovex, struct station_struct* stn1, struct statio
     param->stop = start_ref + (param->maxap + 1) * param->acc_period;
                                         // include last partial AP, but no more
                                         // rjc/kad   2010.7.27
-    // if (param->stop > param->stop_nom) 
+    // if (param->stop > param->stop_nom)
     //     param->stop = param->stop_nom;
     if (param->stop > param->stop_nom + param->acc_period)
         param->stop = param->stop_nom + param->acc_period
@@ -134,7 +142,7 @@ time_range (struct scan_struct* ovex, struct station_struct* stn1, struct statio
         }
     if (param->num_ap < 0)
         {
-        msg ("Too few accumulation periods in this scan, range %d..%d", 
+        msg ("Too few accumulation periods in this scan, range %d..%d",
              3, param->minap, param->maxap);
         return (-1);
         }

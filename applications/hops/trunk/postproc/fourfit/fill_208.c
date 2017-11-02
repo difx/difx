@@ -133,7 +133,9 @@ struct type_208 *t208)
         delta_f = fmod (param->ref_freq - pass->pass_data[0].frequency, status->freq_space);
         msg ("delta_mbd %g delta_f %g", 1, delta_mbd, delta_f);
         t208->totphase += 360.0 * delta_mbd * delta_f;
+        t208->totphase = fmod(t208->totphase, 360.0);
         t208->resphase += 360.0 * delta_mbd * delta_f;
+        t208->resphase = fmod(t208->resphase, 360.0);
         }
 
     msg ("residual phase %f", 1, t208->resphase);

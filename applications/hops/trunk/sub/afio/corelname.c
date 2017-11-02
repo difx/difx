@@ -14,6 +14,7 @@
 /*      Modified to handle '.' characters in source name properly       */
 /*      930303 by CJL                                                   */
 /*      Moved to AFIO library for more generic utility 931018 by CJL    */
+/*      islower -> isalnum for new root code Nov 2017 GBC               */
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
@@ -33,7 +34,7 @@ corelname (corelsum *csumm)
     bad = FALSE;
                                                 /* Generate root code */
     if (strlen(csumm->root_id) != 6) bad = TRUE;
-    for (i=0; i<6; i++) if (! islower(csumm->root_id[i])) bad = TRUE;
+    for (i=0; i<6; i++) if (! isalnum(csumm->root_id[i])) bad = TRUE;
     if (bad)
         {
         msg ("Bad root id code '%s'", 3, csumm->root_id);
