@@ -14,13 +14,14 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.61'
-verdate = '20171020'
+version = '0.62'
+verdate = '20171115'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
-openmpiVersion = '1.10'
+openmpiVersion = '1.6'       # version in use by VLBA correlator 
+#openmpiVersion = '1.10'      # version in use by USNO correlator
 pgplotVersion = '5.2'
 schedVersion = '11.4'
 schedUpdate = ''
