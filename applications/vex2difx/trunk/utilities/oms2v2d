@@ -36,8 +36,8 @@ from os.path import isfile, isdir
 from os import umask, popen, system
 
 program = 'oms2v2d'
-version = '1.5'
-verdate = '20171023'
+version = '1.6'
+verdate = '20171116'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -55,6 +55,8 @@ def usage(pgm):
 	print '  -n       use near-real-time options: .preobs and filelists\n'
 	print '  --datacopy'
 	print '  -d       look for files in /home/datacopy-* (VLBA only, assumes VDIF)\n'
+	print '  --datacopy5b'
+	print '           look for files in /home/datacopy-* (VLBA only, assumes Mark5B)\n'
 	print '  --file'
 	print '  -F       make .v2d file for file-based correlation\n'
 	print '  --quiet'
@@ -139,7 +141,7 @@ def readOMS(filename, verbose):
 
 	return current
 
-
+# return list of (host, filesystem)
 def getDatacopyInfo():
 	data = popen('dcadmin listfs', 'r')
 	info = []
@@ -151,25 +153,34 @@ def getDatacopyInfo():
 
 	return info
 
-def getDatacopyAntennaSetup(datacopyInfo, prefix, s):
+def getDatacopyAntennaSetup(datacopyInfo, prefix, stn, datacopyFormat):
+	filelist = '%s.%s.filelist' % (lower(prefix), lower(stn))
+	if datacopyFormat == 'VDIF':
+		cmd = 'vsum -s `dcls %s %s` > %s' % (prefix, stn, filelist)
+	elif datacopyFormat == 'Mark5B':
+		cmd = 'm5bsum -s `dcls %s %s` > %s' % (prefix, stn, filelist)
+	print 'Executing: %s' % cmd
+	system(cmd)
+
+	# get first line of file
+	firstfile = (open(filelist).readline().split())[0]
+
 	for machine, filesystem in datacopyInfo:
-		path = '%s/Projects/%s/%s_%s' % (filesystem, prefix, prefix, lower(s))
-		if isdir(path):
-			filelist = '%s.filelist' % lower(s)
-			cmd = 'vsum -s %s/* > %s' % (path, filelist)
-			print 'Executing: %s' % cmd
-			system(cmd)
+		if filesystem in firstfile:
 			return 'filelist=%s machine=%s ' % (filelist, machine)
+
 	return None
 
-
-def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyInfo, verbose):
+def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
 	corr = oms['CORRELATOR_PARAMETERS'][0]
 
 	if verbose > 0:
 		print 'Writing: %s' % v2dFile
 	out = open(v2dFile, 'w')
+
+	if datacopyFormat != None:
+		datacopyInfo = getDatacopyInfo()
 
 	bw = oms['MAXBW']
 	if bw != oms['MINBW']:
@@ -206,7 +217,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyInfo, verbose):
 	out.write('vex = %s\n\n' % vexFile)
 	out.write('antennas = %s\n\n' % stnString)
 
-	if nrt or filebased or (datacopyInfo != None):
+	if nrt or filebased or (datacopyFormat != None):
 		machineString = 'swc000, swc001, swc002, swc003, swc004, swc005, swc006, swc007, swc007, swc009, swc010'
 		out.write('machines = %s\n' % machineString);
 		out.write('nCore = 10\n')
@@ -229,8 +240,8 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyInfo, verbose):
 			extra += 'filelist=%s_%s.filelist machine=%s ' % (lower(prefix), lower(s), machineMap[s])
 		elif filebased:
 			extra += 'filelist=%s.filelist machine=%s ' % (lower(s), machineMap[s])
-		elif datacopyInfo != None:
-			datacopyAntennaSetup = getDatacopyAntennaSetup(datacopyInfo, prefix, s)
+		elif datacopyFormat != None:
+			datacopyAntennaSetup = getDatacopyAntennaSetup(datacopyInfo, prefix, s, datacopyFormat)
 			if datacopyAntennaSetup == None:
 				print 'Warning: data for antenna %s not found.  Skipping.  You will need to update the antenna list in the .v2d file.' % s
 				out.write('# ANTENNA %s -- Data not found\n' % s)
@@ -269,7 +280,7 @@ force = False
 stop = False
 nrt = False	# near real time mode
 filebased = False
-datacopyInfo = None
+datacopyFormat = None
 verbose = 1
 for a in argv[1:]:
 	if a[0] == '-':
@@ -286,7 +297,9 @@ for a in argv[1:]:
 		elif a in ['-F', '--file']:
 			filebased = True
 		elif a in ['-d', '--datacopy']:
-			datacopyInfo = getDatacopyInfo()
+			datacopyFormat = 'VDIF'
+		elif a in ['--datacopy5b']:
+			datacopyFormat = 'Mark5B'
 		else:
 			print 'Unknown command line option: %s' % a
 			stop = True
@@ -348,4 +361,4 @@ if isfile(v2dFile):
 
 oms = readOMS(omsFile, verbose)
 
-writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyInfo, verbose)
+writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose)
