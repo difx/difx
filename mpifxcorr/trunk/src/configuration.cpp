@@ -926,7 +926,8 @@ bool Configuration::processBaselineTable(istream * input)
   datastreamdata dsdata;
   baselinedata bldata;
 
-  getInputEntry(input, "BASELINE ENTRIES", &baselinetablelength);
+  getinputline(input, &line, "BASELINE ENTRIES");
+  baselinetablelength = atoi(line.c_str());
   baselinetable = new baselinedata[baselinetablelength]();
   estimatedbytes += baselinetablelength*sizeof(baselinedata);
   if(baselinetablelength < numbaselines)
@@ -941,9 +942,12 @@ bool Configuration::processBaselineTable(istream * input)
     //read in the info for this baseline
     baselinetable[i].localfreqindices = new int[freqtablelength]();
     baselinetable[i].totalbands = 0;
-    getInputEntry(input, "D/STREAM A INDEX ", i, &baselinetable[i].datastream1index);
-    getInputEntry(input, "D/STREAM B INDEX ", i, &baselinetable[i].datastream2index);
-    getInputEntry(input, "NUM FREQS ", &baselinetable[i].numfreqs);
+    getinputline(input, &line, "D/STREAM A INDEX ", i);
+    baselinetable[i].datastream1index = atoi(line.c_str());
+    getinputline(input, &line, "D/STREAM B INDEX ", i);
+    baselinetable[i].datastream2index = atoi(line.c_str());
+    getinputline(input, &line, "NUM FREQS ", i);
+    baselinetable[i].numfreqs = atoi(line.c_str());
     baselinetable[i].oddlsbfreqs = new int[baselinetable[i].numfreqs]();
     baselinetable[i].numpolproducts = new int[baselinetable[i].numfreqs]();
     baselinetable[i].datastream1bandindex = new int*[baselinetable[i].numfreqs]();
@@ -955,7 +959,8 @@ bool Configuration::processBaselineTable(istream * input)
     for(int j=0;j<baselinetable[i].numfreqs;j++)
     {
       baselinetable[i].oddlsbfreqs[j] = 0;
-      getInputEntry(input, "POL PRODUCTS ", i, &baselinetable[i].numpolproducts[j]);
+      getinputline(input, &line, "POL PRODUCTS ", i);
+      baselinetable[i].numpolproducts[j] = atoi(line.c_str());
       baselinetable[i].datastream1bandindex[j] = new int[baselinetable[i].numpolproducts[j]]();
       baselinetable[i].datastream2bandindex[j] = new int[baselinetable[i].numpolproducts[j]]();
       baselinetable[i].datastream1recordbandindex[j] = new int[baselinetable[i].numpolproducts[j]]();
@@ -965,8 +970,9 @@ bool Configuration::processBaselineTable(istream * input)
       for(int k=0;k<baselinetable[i].numpolproducts[j];k++)
       {
         baselinetable[i].totalbands++;
-        getInputEntry(input, "D/STREAM A BAND ", k, &baselinetable[i].datastream1bandindex[j][k]);
-        getInputEntry(input, "D/STREAM B BAND ", k, &baselinetable[i].datastream2bandindex[j][k]);
+        getinputline(input, &line, "D/STREAM A BAND ", k);
+        baselinetable[i].datastream1bandindex[j][k] = atoi(line.c_str());
+        getinputline(input, &line, "D/STREAM B BAND ", k);
         baselinetable[i].datastream2bandindex[j][k] = atoi(line.c_str());
         baselinetable[i].polpairs[j][k] = new char[3]();
         estimatedbytes += 3;
@@ -1161,24 +1167,28 @@ bool Configuration::populateRecordBandIndicies()
 void Configuration::processCommon(istream * input)
 {
   string line;
-  double s;
 
-  getInputEntry(input, "CALC FILENAME", &calcfilename);
-  getInputEntry(input, "CORE CONF FILENAME", &coreconffilename);
-  getInputEntry(input, "EXECUTE TIME (SEC)", &executeseconds);
-  getInputEntry(input, "START MJD", &startmjd);
-  getInputEntry(input, "START SECONDS", &s);
-  startseconds = (int)s;
-  startns = (int)((s - ((double)startseconds))*1000000000.0 + 0.5);
+  getinputline(input, &calcfilename, "CALC FILENAME");
+  getinputline(input, &coreconffilename, "CORE CONF FILENAME");
+  getinputline(input, &line, "EXECUTE TIME (SEC)");
+  executeseconds = atoi(line.c_str());
+  getinputline(input, &line, "START MJD");
+  startmjd = atoi(line.c_str());
+  getinputline(input, &line, "START SECONDS");
+  startseconds = atoi(line.c_str());
+  startns = (int)((atof(line.c_str()) - ((double)startseconds))*1000000000.0 + 0.5);
   if(restartseconds > 0) {
     startseconds = (int)(atof(line.c_str()) + restartseconds);
     startns = (int)((atof(line.c_str()) + restartseconds - ((double)startseconds))*1000000000.0 + 0.5);
     executeseconds -= int(restartseconds);
   }
-  getInputEntry(input, "ACTIVE DATASTREAMS", &numdatastreams);
-  getInputEntry(input, "ACTIVE BASELINES", &numbaselines);
-  getInputEntry(input, "VIS BUFFER LENGTH", &visbufferlength);
-  getInputEntry(input, "OUTPUT FORMAT", &line);
+  getinputline(input, &line, "ACTIVE DATASTREAMS");
+  numdatastreams = atoi(line.c_str());
+  getinputline(input, &line, "ACTIVE BASELINES");
+  numbaselines = atoi(line.c_str());
+  getinputline(input, &line, "VIS BUFFER LENGTH");
+  visbufferlength = atoi(line.c_str());
+  getinputline(input, &line, "OUTPUT FORMAT");
   if(line == "SWIN" || line == "DIFX")
   {
     outformat = DIFX;
@@ -1193,7 +1203,7 @@ void Configuration::processCommon(istream * input)
       cerror << startl << "Unknown output format " << line << " (case sensitive choices are SWIN, DIFX (same thing) and ASCII), assuming SWIN/DIFX" << endl;
     outformat = DIFX;
   }
-  getInputEntry(input, "OUTPUT FILENAME", &outputfilename);
+  getinputline(input, &outputfilename, "OUTPUT FILENAME");
 
   commonread = true;
 }
@@ -1206,7 +1216,8 @@ bool Configuration::processConfig(istream * input)
   maxnumpulsarbins = 0;
   maxnumbufferedffts = 0;
 
-  getInputEntry(input, "NUM CONFIGURATIONS", &numconfigs);
+  getinputline(input, &line, "NUM CONFIGURATIONS");
+  numconfigs = atoi(line.c_str());
   configs = new configdata[numconfigs];
   estimatedbytes += numconfigs*sizeof(configdata);
   for(int i=0;i<numconfigs;i++)
@@ -1214,12 +1225,17 @@ bool Configuration::processConfig(istream * input)
     configs[i].arraystridelen = new int[numdatastreams]();
     configs[i].datastreamindices = new int[numdatastreams]();
     configs[i].baselineindices = new int [numbaselines]();
-    getInputEntry(input, "CONFIG NAME", &(configs[i].name));
-    getInputEntry(input, "INT TIME (SEC)", &configs[i].inttime);
-    getInputEntry(input, "SUBINT NANOSECONDS", &configs[i].subintns);
-    getInputEntry(input, "GUARD NANOSECONDS", &configs[i].guardns);
-    getInputEntry(input, "FRINGE ROTN ORDER", &configs[i].fringerotationorder);
-    getInputEntry(input, "ARRAY STRIDE LEN", &arraystridelenfrominputfile);
+    getinputline(input, &(configs[i].name), "CONFIG NAME");
+    getinputline(input, &line, "INT TIME (SEC)");
+    configs[i].inttime = atof(line.c_str());
+    getinputline(input, &line, "SUBINT NANOSECONDS");
+    configs[i].subintns = atoi(line.c_str());
+    getinputline(input, &line, "GUARD NANOSECONDS");
+    configs[i].guardns = atoi(line.c_str());
+    getinputline(input, &line, "FRINGE ROTN ORDER");
+    configs[i].fringerotationorder = atoi(line.c_str());
+    getinputline(input, &line, "ARRAY STRIDE LEN");
+    arraystridelenfrominputfile = atoi(line.c_str());
     if(arraystridelenfrominputfile < 0)
     {
       if(mpiid == 0) //only write one copy of this error message
@@ -1230,33 +1246,44 @@ bool Configuration::processConfig(istream * input)
     {
       configs[i].arraystridelen[j] = arraystridelenfrominputfile;
     }
-    getInputEntry(input, "XMAC STRIDE LEN", &configs[i].xmacstridelen);
+    getinputline(input, &line, "XMAC STRIDE LEN");
+    configs[i].xmacstridelen = atoi(line.c_str());
     if(configs[i].xmacstridelen < 0)
     {
       if(mpiid == 0) //only write one copy of this error message
         cfatal << startl << "Invalid value for xmaclength: " << configs[i].xmacstridelen << endl;
       consistencyok = false;
     }
-    getInputEntry(input, "NUM BUFFERED FFTS", &configs[i].numbufferedffts);
+    getinputline(input, &line, "NUM BUFFERED FFTS");
+    configs[i].numbufferedffts = atoi(line.c_str());
     if(configs[i].numbufferedffts > maxnumbufferedffts)
       maxnumbufferedffts = configs[i].numbufferedffts;
-    getInputEntry(input, "WRITE AUTOCORRS", &configs[i].writeautocorrs);
-    getInputEntry(input, "PULSAR BINNING", &configs[i].pulsarbin);
+    getinputline(input, &line, "WRITE AUTOCORRS");
+    configs[i].writeautocorrs = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
+    getinputline(input, &line, "PULSAR BINNING");
+    configs[i].pulsarbin = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
     if(configs[i].pulsarbin)
     {
-      getInputEntry(input, "PULSAR CONFIG FILE", &configs[i].pulsarconfigfilename);
+      getinputline(input, &configs[i].pulsarconfigfilename, "PULSAR CONFIG FILE");
     }
-    getInputEntry(input, "PHASED ARRAY", &configs[i].phasedarray);
+    getinputline(input, &line, "PHASED ARRAY");
+    configs[i].phasedarray = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
     if(configs[i].phasedarray)
     {
       if(mpiid == 0) //only write one copy of this error message
         cwarn << startl << "PHASED ARRAY = TRUE but phased array mode is not yet supported!" << endl;
-      getInputEntry(input, "PHASED ARRAY CONFIG FILE", &configs[i].phasedarrayconfigfilename);
+      getinputline(input, &configs[i].phasedarrayconfigfilename, "PHASED ARRAY CONFIG FILE");
     }
     for(int j=0;j<numdatastreams;j++)
-      getInputEntry(input, "DATASTREAM ", j, &configs[i].datastreamindices[j]);
+    {
+      getinputline(input, &line, "DATASTREAM ", j);
+      configs[i].datastreamindices[j] = atoi(line.c_str());
+    }
     for(int j=0;j<numbaselines;j++)
-      getInputEntry(input, "BASELINE ", j, &configs[i].baselineindices[j]);
+    {
+      getinputline(input, &line, "BASELINE ", j);
+      configs[i].baselineindices[j] = atoi(line.c_str());
+    }
   }
 
   configread = true;
@@ -1273,7 +1300,8 @@ bool Configuration::processDatastreamTable(istream * input)
   string key = "";
   bool ok = true;
 
-  getInputEntry(input, "DATASTREAM ENTRIES", &datastreamtablelength);
+  getinputline(input, &line, "DATASTREAM ENTRIES");
+  datastreamtablelength = atoi(line.c_str());
   datastreamtable = new datastreamdata[datastreamtablelength];
   estimatedbytes += datastreamtablelength*sizeof(datastreamdata);
   if(datastreamtablelength < numdatastreams)
@@ -1287,8 +1315,10 @@ bool Configuration::processDatastreamTable(istream * input)
     configs[i].ordereddatastreamindices = new int[datastreamtablelength]();
 
   //get the information on the length of the internal buffer for the datastreams
-  getInputEntry(input, "DATA BUFFER FACTOR", &databufferfactor);
-  getInputEntry(input, "NUM DATA SEGMENTS", &numdatasegments);
+  getinputline(input, &line, "DATA BUFFER FACTOR");
+  databufferfactor = atoi(line.c_str());
+  getinputline(input, &line, "NUM DATA SEGMENTS");
+  numdatasegments = atoi(line.c_str());
 
   for(int i=0;i<datastreamtablelength;i++)
   {
@@ -1314,9 +1344,12 @@ bool Configuration::processDatastreamTable(istream * input)
     }
 
     //read all the info for this datastream
-    getInputEntry(input, "TELESCOPE INDEX", &datastreamtable[i].telescopeindex);
-    getInputEntry(input, "TSYS", &datastreamtable[i].tsys);
-    getInputEntry(input, "DATA FORMAT", &line);
+    getinputline(input, &line, "TELESCOPE INDEX");
+    datastreamtable[i].telescopeindex = atoi(line.c_str());
+    getinputline(input, &line, "TSYS");
+    datastreamtable[i].tsys = atof(line.c_str());
+
+    getinputline(input, &line, "DATA FORMAT");
     datastreamtable[i].ismuxed = false;
     if(line == "LBASTD")
       datastreamtable[i].format = LBASTD;
@@ -1365,10 +1398,13 @@ bool Configuration::processDatastreamTable(istream * input)
         cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, K5, MKIV, VLBA, VLBN, MARK5B, KVN5B, VDIF, VDIFL and INTERLACEDVDIF)" << endl;
       return false;
     }
+    getinputline(input, &line, "QUANTISATION BITS");
+    datastreamtable[i].numbits = atoi(line.c_str());
 
-    getInputEntry(input, "QUANTISATION BITS", &datastreamtable[i].numbits);
-    getInputEntry(input, "DATA FRAME SIZE", &datastreamtable[i].framebytes);
-    getInputEntry(input, "DATA SAMPLING", &line);
+    getinputline(input, &line, "DATA FRAME SIZE");
+    datastreamtable[i].framebytes = atoi(line.c_str());
+
+    getinputline(input, &line, "DATA SAMPLING");
     if(line == "REAL")
       datastreamtable[i].sampling = REAL;
     else if(line == "COMPLEX" || line == "COMPLEX_IQ" || line == "COMPLEX_SSB") {
@@ -1386,7 +1422,7 @@ bool Configuration::processDatastreamTable(istream * input)
       return false;
     }
 
-    getInputEntry(input, "DATA SOURCE", &line);
+    getinputline(input, &line, "DATA SOURCE");
     if(line == "FILE")
       datastreamtable[i].source = UNIXFILE;
     else if(line == "MODULE")
@@ -1408,24 +1444,55 @@ bool Configuration::processDatastreamTable(istream * input)
 
     datastreamtable[i].filterbank=false;
     datastreamtable[i].linear2circular=false;
-    getInputEntryOptional(input, "FILTERBANK USED", &datastreamtable[i].filterbank, false);
-    if (getInputEntryOptional(input, "PROCESSING METHOD", &line, string("")))
-      if (line == "FILTERBANK")
-        datastreamtable[i].filterbank=true;
+    getinputkeyval(input, &key, &line);
+    if (key=="FILTERBANK USED") {
+      if ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t")) 
+	datastreamtable[i].filterbank = true;
+    } else if (key=="PROCESSING METHOD") {
+      if (line == "FILTERBANK") 
+      	datastreamtable[i].filterbank=true;
       else if (line=="L2C" || line=="LINEAR2CIRCULAR") {
-        cinfo << startl << "Linear to Circular enabled" << endl;
-        datastreamtable[i].linear2circular=true;
-      } else if (line != "NONE")
-        cerror << startl << "Unknown PROCESSING METHOD '" << line << "'. Ignoring." << endl;
-
+	cinfo << startl << "Linear to Circular enabled" << endl;
+      	datastreamtable[i].linear2circular=true;
+      } else if (line != "NONE") 
+	cerror << startl << "Unknown PROCESSING METHOD '" << line << "'. Ignoring." << endl;
+    } else {
+      cfatal << startl << "We thought we were reading something starting with 'FILTERBANK USED', when we actually got '" << key << "'" << endl;
+      return false;
+    }
     if (mpiid==0 && datastreamtable[i].filterbank)
       cwarn << startl << "Filterbank channelization requested but not yet supported!!!" << endl;
 
-    getInputEntryOptional(input, "TCAL FREQUENCY", &datastreamtable[i].switchedpowerfrequency, 0);
-    getInputEntry(input, "PHASE CAL INT (MHZ)", &datastreamtable[i].phasecalintervalmhz);
-    getInputEntryOptional(input, "PHASE CAL BASE(MHZ)", &datastreamtable[i].phasecalbasemhz, 0.0f);
+    getinputkeyval(input, &key, &line);
+    if(key.find("TCAL FREQUENCY") != string::npos) {
+      datastreamtable[i].switchedpowerfrequency = atoi(line.c_str());
+      getinputline(input, &line, "PHASE CAL INT (MHZ)");
+    }
+    else {
+      datastreamtable[i].switchedpowerfrequency = 0;
+      if(key.find("PHASE CAL INT (MHZ)") == string::npos) {
+        if(mpiid == 0) //only write one copy of this error message
+          cfatal << startl << "Went looking for PHASE CAL INT (MHZ) (or maybe TCAL FREQUENCY), but got " << key << endl;
+        return false;
+      }
+    }
+    datastreamtable[i].phasecalintervalmhz = atof(line.c_str());
 
-    getInputEntry(input, "NUM RECORDED FREQS", &datastreamtable[i].numrecordedfreqs);
+    getinputkeyval(input, &key, &line);
+    if (key.find("PHASE CAL BASE(MHZ)") != string::npos) {
+      datastreamtable[i].phasecalbasemhz = atof(line.c_str());
+      getinputline(input, &line, "NUM RECORDED FREQS");
+    }
+    else {
+      datastreamtable[i].phasecalbasemhz = 0;
+      if(key.find("NUM RECORDED FREQS") == string::npos) {
+        if(mpiid == 0) //only write one copy of this error message
+          cfatal << startl << "Went looking for NUM RECORDED FREQS (or maybe PHASE CAL BASE(MHZ)), but got " << key << endl;
+        return false;
+      }
+    }
+    datastreamtable[i].numrecordedfreqs = atoi(line.c_str());
+
     datastreamtable[i].recordedfreqpols = new int[datastreamtable[i].numrecordedfreqs]();
     datastreamtable[i].recordedfreqtableindices = new int[datastreamtable[i].numrecordedfreqs]();
     datastreamtable[i].recordedfreqclockoffsets = new double[datastreamtable[i].numrecordedfreqs]();
@@ -1436,8 +1503,9 @@ bool Configuration::processDatastreamTable(istream * input)
     datastreamtable[i].numrecordedbands = 0;
     for(int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
     {
-      getInputEntry(input, "REC FREQ INDEX ", j, &datastreamtable[i].recordedfreqtableindices[j]);
-      getInputEntry(input, "CLK OFFSET ", j, &line);
+      getinputline(input, &line, "REC FREQ INDEX ", j);
+      datastreamtable[i].recordedfreqtableindices[j] = atoi(line.c_str());
+      getinputline(input, &line, "CLK OFFSET ", j);
       size_t found;
       found = line.find_first_of(':');
       if (found==std::string::npos) {
@@ -1464,9 +1532,10 @@ bool Configuration::processDatastreamTable(istream * input)
 
       if(j == 0 && datastreamtable[i].recordedfreqclockoffsets[j] != 0.0 && mpiid == 0)
         cwarn << startl << "Model accountability is compromised if the first band of a telescope has a non-zero clock offset! If this is the first/only datastream for " << telescopetable[datastreamtable[i].telescopeindex].name << ", you should adjust the telescope clock so that the offset for this band is ZERO!" << endl;
-
-      getInputEntry(input, "FREQ OFFSET ", j, &datastreamtable[i].recordedfreqlooffsets[j]); //Freq offset is positive if recorded LO frequency was higher than the frequency in the frequency table
-      getInputEntry(input, "NUM REC POLS ", j, &datastreamtable[i].recordedfreqpols[j]);
+      getinputline(input, &line, "FREQ OFFSET ", j); //Freq offset is positive if recorded LO frequency was higher than the frequency in the frequency table
+      datastreamtable[i].recordedfreqlooffsets[j] = atof(line.c_str());
+      getinputline(input, &line, "NUM REC POLS ", j);
+      datastreamtable[i].recordedfreqpols[j] = atoi(line.c_str());
       datastreamtable[i].numrecordedbands += datastreamtable[i].recordedfreqpols[j];
     }
     decimationfactor = freqtable[datastreamtable[i].recordedfreqtableindices[0]].decimationfactor;
@@ -1501,15 +1570,18 @@ bool Configuration::processDatastreamTable(istream * input)
     estimatedbytes += datastreamtable[i].numrecordedbands*5;
     for(int j=0;j<datastreamtable[i].numrecordedbands;j++)
     {
-      getInputEntry(input, "REC BAND " /* <j> POL */, j, &datastreamtable[i].recordedbandpols[j]);
-      getInputEntry(input, "REC BAND " /* <j> INDEX */, j, &datastreamtable[i].recordedbandlocalfreqindices[j]);
+      getinputline(input, &line, "REC BAND ", j);
+      datastreamtable[i].recordedbandpols[j] = *(line.data());
+      getinputline(input, &line, "REC BAND ", j);
+      datastreamtable[i].recordedbandlocalfreqindices[j] = atoi(line.c_str());
       if(datastreamtable[i].recordedbandlocalfreqindices[j] >= datastreamtable[i].numrecordedfreqs) {
         if(mpiid == 0) //only write one copy of this error message
           cerror << startl << "Attempting to refer to freq outside local table!!!" << endl;
         return false;
       }
     }
-    getInputEntry(input, "NUM ZOOM FREQS", &datastreamtable[i].numzoomfreqs);
+    getinputline(input, &line, "NUM ZOOM FREQS");
+    datastreamtable[i].numzoomfreqs = atoi(line.c_str());
     datastreamtable[i].zoomfreqtableindices = new int[datastreamtable[i].numzoomfreqs]();
     datastreamtable[i].zoomfreqpols = new int[datastreamtable[i].numzoomfreqs]();
     datastreamtable[i].zoomfreqparentdfreqindices = new int[datastreamtable[i].numzoomfreqs]();
@@ -1518,8 +1590,10 @@ bool Configuration::processDatastreamTable(istream * input)
     datastreamtable[i].numzoombands = 0;
     for(int j=0;j<datastreamtable[i].numzoomfreqs;j++)
     {
-      getInputEntry(input, "ZOOM FREQ INDEX ", j, &datastreamtable[i].zoomfreqtableindices[j]);
-      getInputEntry(input, "NUM ZOOM POLS ", j, &datastreamtable[i].zoomfreqpols[j]);
+      getinputline(input, &line, "ZOOM FREQ INDEX ");
+      datastreamtable[i].zoomfreqtableindices[j] = atoi(line.c_str());
+      getinputline(input, &line, "NUM ZOOM POLS ", j);
+      datastreamtable[i].zoomfreqpols[j] = atoi(line.c_str());
       datastreamtable[i].numzoombands += datastreamtable[i].zoomfreqpols[j];
       datastreamtable[i].zoomfreqparentdfreqindices[j] = -1;
       for (int k=0;k<datastreamtable[i].numrecordedfreqs;k++) {
@@ -1548,8 +1622,10 @@ bool Configuration::processDatastreamTable(istream * input)
     estimatedbytes += 5*datastreamtable[i].numzoombands;
     for(int j=0;j<datastreamtable[i].numzoombands;j++)
     {
-      getInputEntry(input, "ZOOM BAND " /* <j> POL */, j, &datastreamtable[i].zoombandpols[j]);
-      getInputEntry(input, "ZOOM BAND " /* <j> INDEX */, j, &datastreamtable[i].zoombandlocalfreqindices[j]);
+      getinputline(input, &line, "ZOOM BAND ", j);
+      datastreamtable[i].zoombandpols[j] = *(line.data());
+      getinputline(input, &line, "ZOOM BAND ", j);
+      datastreamtable[i].zoombandlocalfreqindices[j] = atoi(line.c_str());
       if(datastreamtable[i].zoombandlocalfreqindices[j] >= datastreamtable[i].numzoomfreqs) {
         if(mpiid == 0) //only write one copy of this error message
           cerror << startl << "Attempting to refer to freq outside local table!!!" << endl;
@@ -1571,7 +1647,7 @@ bool Configuration::processDatastreamTable(istream * input)
 
         if(freqtable[freqindex].lowersideband)
         {     // LSB
-          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz - dsdata->phasecalbasemhz;
+          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz;
           if(tonefreq == lofreq)
             tonefreq -= dsdata->phasecalintervalmhz;
           if(tonefreq >= lofreq - freqtable[freqindex].bandwidth)
@@ -1601,7 +1677,7 @@ bool Configuration::processDatastreamTable(istream * input)
         }
         else
         {     // USB
-          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz + dsdata->phasecalbasemhz;
+          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz;
           if(tonefreq <= lofreq)
             tonefreq += dsdata->phasecalintervalmhz;
           if(tonefreq <= lofreq + freqtable[freqindex].bandwidth)
@@ -1661,8 +1737,8 @@ bool Configuration::processDatastreamTable(istream * input)
   }
   else
   {
-    int maxlines;
-    getInputEntry(&coreinput, "NUMBER OF CORES", &maxlines);
+    getinputline(&coreinput, &line, "NUMBER OF CORES");
+    int maxlines = atoi(line.c_str());
     numprocessthreads = new int[maxlines]();
     getline(coreinput, line);
     for(int i=0;i<maxlines;i++)
@@ -1689,7 +1765,8 @@ bool Configuration::processRuleTable(istream * input)
 {
   int count=0;
   string key, val;
-  getInputEntry(input, "NUM RULES", &numrules);
+  getinputline(input, &key, "NUM RULES");
+  numrules = atoi(key.c_str());
   rules = new ruledata[numrules];
   estimatedbytes += numrules*sizeof(ruledata);
   for(int i=0;i<numrules;i++) {
@@ -1755,10 +1832,11 @@ void Configuration::processDataTable(istream * input)
 
   for(int i=0;i<datastreamtablelength;i++)
   {
-    getInputEntry(input, "D/STREAM ", i, &datastreamtable[i].numdatafiles);
+    getinputline(input, &line, "D/STREAM ", i);
+    datastreamtable[i].numdatafiles = atoi(line.c_str());
     datastreamtable[i].datafilenames = new string[datastreamtable[i].numdatafiles];
     for(int j=0;j<datastreamtable[i].numdatafiles;j++)
-      getInputEntry(input, "FILE ", i, &(datastreamtable[i].datafilenames[j]));
+      getinputline(input, &(datastreamtable[i].datafilenames[j]), "FILE ", i);
   }
 }
 
@@ -1766,33 +1844,51 @@ bool Configuration::processFreqTable(istream * input)
 {
   string line, key;
 
-  getInputEntry(input, "FREQ ENTRIES", &freqtablelength);
+  getinputline(input, &line, "FREQ ENTRIES");
+  freqtablelength = atoi(line.c_str());
   freqtable = new freqdata[freqtablelength];
   estimatedbytes += freqtablelength*sizeof(freqdata);
   for(int i=0;i<freqtablelength;i++)
   {
-    getInputEntry(input, "FREQ (MHZ) ", i, &freqtable[i].bandedgefreq);
-    getInputEntry(input, "BW (MHZ) ", i, &freqtable[i].bandwidth);
-    getInputEntry(input, "SIDEBAND ", i, &line);
+    getinputline(input, &line, "FREQ (MHZ) ", i);
+    freqtable[i].bandedgefreq = atof(line.c_str());
+    getinputline(input, &line, "BW (MHZ) ", i);
+    freqtable[i].bandwidth = atof(line.c_str());
+    getinputline(input, &line, "SIDEBAND ", i);
     freqtable[i].lowersideband = ((line == "L") || (line == "l") || (line == "LOWER") || (line == "lower"))?true:false;
     freqtable[i].correlatedagainstupper = false;
-    getInputEntryOptional(input, "RX NAME ", &freqtable[i].rxName, string(""));
-    getInputEntry(input, "NUM CHANNELS ", &freqtable[i].numchannels);
+    getinputkeyval(input, &key, &line);
+    if(key.find("RX NAME ") != string::npos) //look for optional Receiver Name
+    {
+      freqtable[i].rxName = line;
+      getinputkeyval(input, &key, &line);
+    }
+    // Verify next line is NUM CHANNELS
+    if(key.find("NUM CHANNELS ") == string::npos)
+    {
+      cfatal << startl << "Looking for NUM CHANNELS for FREQ table entry " << i << "failed" << endl;
+      return false;
+    }
+    freqtable[i].numchannels = atoi(line.c_str());
     if(freqtable[i].numchannels > maxnumchannels)
       maxnumchannels = freqtable[i].numchannels;
-    getInputEntry(input, "CHANS TO AVG ", &freqtable[i].channelstoaverage);
+    getinputline(input, &line, "CHANS TO AVG ");
+    freqtable[i].channelstoaverage = atoi(line.c_str());
     if (freqtable[i].channelstoaverage <= 0 || (freqtable[i].channelstoaverage > 1 && freqtable[i].numchannels % freqtable[i].channelstoaverage != 0)) {
       if(mpiid == 0) //only write one copy of this error message
         cerror << startl << "Channels to average must be positive and the number of channels must be divisible by channels to average - not the case for frequency entry " << i << "(" << freqtable[i].channelstoaverage << ","<<freqtable[i].numchannels<<") - aborting!!!" << endl;
       return false;
     }
-    getInputEntry(input, "OVERSAMPLE FAC. ", &freqtable[i].oversamplefactor);
-    getInputEntry(input, "DECIMATION FAC. ", &freqtable[i].decimationfactor);
-
-    int npcals; //mpifxcorr doesn't need to store this information
-    getInputEntry(input, "PHASE CALS ", &npcals);
+    getinputline(input, &line, "OVERSAMPLE FAC. ");
+    freqtable[i].oversamplefactor = atoi(line.c_str());
+    getinputline(input, &line, "DECIMATION FAC. ");
+    freqtable[i].decimationfactor = atoi(line.c_str());
+    getinputline(input, &line, "PHASE CALS ");
+    int npcals = atoi(line.c_str()); //mpifxcorr doesn't need to store this information
     for(int j=0;j<npcals;j++)
-      getInputEntry(input, "PHASE CAL ", &line);
+    {
+      getinputline(input, &line, "PHASE CAL ");
+    }
     freqtable[i].matchingwiderbandindex = -1;
     freqtable[i].matchingwiderbandoffset = -1;
   }
@@ -1825,17 +1921,22 @@ void Configuration::processTelescopeTable(istream * input)
 {
   string line;
 
-  getInputEntry(input, "TELESCOPE ENTRIES", &telescopetablelength);
+  getinputline(input, &line, "TELESCOPE ENTRIES");
+  telescopetablelength = atoi(line.c_str());
   telescopetable = new telescopedata[telescopetablelength];
   estimatedbytes += telescopetablelength*sizeof(telescopedata);
   for(int i=0;i<telescopetablelength;i++)
   {
-    getInputEntry(input, "TELESCOPE NAME ", i, &telescopetable[i].name);
-    getInputEntry(input, "CLOCK REF MJD ", i, &telescopetable[i].clockrefmjd);
-    getInputEntry(input, "CLOCK POLY ORDER ", i, &telescopetable[i].clockorder);
+    getinputline(input, &(telescopetable[i].name), "TELESCOPE NAME ", i);
+    getinputline(input, &line, "CLOCK REF MJD ", i);
+    telescopetable[i].clockrefmjd = atof(line.c_str());
+    getinputline(input, &line, "CLOCK POLY ORDER ", i);
+    telescopetable[i].clockorder = atoi(line.c_str());
     telescopetable[i].clockpoly = new double[telescopetable[i].clockorder+1]();
-    for(int j=0;j<telescopetable[i].clockorder+1;j++)
-      getInputEntry(input, "CLOCK COEFF ", i, &telescopetable[i].clockpoly[j]);
+    for(int j=0;j<telescopetable[i].clockorder+1;j++) {
+      getinputline(input, &line, "CLOCK COEFF ", i);
+      telescopetable[i].clockpoly[j] = atof(line.c_str());
+    }
   }
 }
 
@@ -1845,7 +1946,7 @@ void Configuration::processNetworkTable(istream * input)
 
   for(int i=0;i<datastreamtablelength;i++)
   {
-    getInputEntry(input, "PORT NUM ", i, &line);
+    getinputline(input, &line, "PORT NUM ", i);
     if(isalpha(line[0]))
     {
       // sign that this is raw ethernet
@@ -1856,7 +1957,8 @@ void Configuration::processNetworkTable(istream * input)
     {
       datastreamtable[i].portnumber = atoi(line.c_str());
     }
-    getInputEntry(input, "TCP WINDOW (KB) ", i, &datastreamtable[i].tcpwindowsizekb);
+    getinputline(input, &line, "TCP WINDOW (KB) ", i);
+    datastreamtable[i].tcpwindowsizekb = atoi(line.c_str());
   }
 }
 
@@ -2860,7 +2962,7 @@ bool Configuration::processPhasedArrayConfig(istream * input, int configindex, s
 {
   string line;
 
-  getInputEntry(input, "OUTPUT TYPE", &line);
+  getinputline(input, &line, "OUTPUT TYPE");
   if(line == "FILTERBANK")
     configs[configindex].padomain = FREQUENCY;
   else if (line == "TIMESERIES") {
@@ -2873,8 +2975,7 @@ bool Configuration::processPhasedArrayConfig(istream * input, int configindex, s
       cerror << startl << "Unknown phased array output type " << line << " - setting to FILTERBANK" << endl;
     configs[configindex].padomain = FREQUENCY;
   }
-
-  getInputEntry(input, "OUTPUT FORMAT", &line);
+  getinputline(input, &line, "OUTPUT FORMAT");
   if(line == "DIFX") {
     if(configs[configindex].padomain == TIME) {
       if(mpiid == 0) //only write one copy of this error message
@@ -2907,24 +3008,35 @@ bool Configuration::processPhasedArrayConfig(istream * input, int configindex, s
       configs[configindex].paoutputformat = VDIFOUT;
     }
   }
-  getInputEntry(input, "ACC TIME (NS)", &configs[configindex].paaccumulationns);
-  getInputEntry(input, "COMPLEX OUTPUT", &configs[configindex].pacomplexoutput);
-  getInputEntry(input, "OUTPUT BITS", &configs[configindex].pabits);
+  getinputline(input, &line, "ACC TIME (NS)");
+  configs[configindex].paaccumulationns = atoi(line.c_str());
+  getinputline(input, &line, "COMPLEX OUTPUT");
+  if(line == "TRUE" || line == "true" || line == "True")
+    configs[configindex].pacomplexoutput = true;
+  else
+    configs[configindex].pacomplexoutput = false;
+  getinputline(input, &line, "OUTPUT BITS");
+  configs[configindex].pabits = atoi(line.c_str());
   configs[configindex].paweights = new double*[freqtablelength]();
   configs[configindex].numpafreqpols = new int[freqtablelength]();
   configs[configindex].papols = new char*[freqtablelength]();
   for(int i=0;i<freqtablelength;i++)
   {
-    getInputEntry(input, "NUM FREQ", &configs[configindex].numpafreqpols[i]);
+    getinputline(input, &line, "NUM FREQ");
+    configs[configindex].numpafreqpols[i] = atoi(line.c_str());
     if(configs[configindex].numpafreqpols[i] > 0)
     {
       configs[configindex].paweights[i] = new double[numdatastreams]();
       configs[configindex].papols[i] = new char[configs[configindex].numpafreqpols[i]]();
       for(int j=0;j<configs[configindex].numpafreqpols[i];j++)
-        getInputEntry(input, "FREQ", &configs[configindex].papols[i][j]);
+      {
+        getinputline(input, &line, "FREQ");
+        configs[configindex].papols[i][j] = line.c_str()[0];
+      }
       for(int j=0;j<numdatastreams;j++)
       {
-        getInputEntry(input, "FREQ", &configs[configindex].paweights[i][j]);
+        getinputline(input, &line, "FREQ");
+        configs[configindex].paweights[i][j] = atof(line.c_str());
         if(configs[configindex].paweights[i][j] < 0.0)
         {
           if(mpiid == 0)
@@ -2975,13 +3087,14 @@ bool Configuration::processPulsarConfig(istream * input, int configindex, string
       cfatal << startl << "Could not open pulsar config " << reffile << " - aborting!!!" << endl;
     return false;
   }
-  getInputEntry(input, "NUM POLYCO FILES", &numpolycofiles);
+  getinputline(input, &line, "NUM POLYCO FILES");
+  numpolycofiles = atoi(line.c_str());
   polycofilenames = new string[numpolycofiles];
   numsubpolycos = new int[numpolycofiles]();
   configs[configindex].numpolycos = 0;
   for(int i=0;i<numpolycofiles;i++)
   {
-    getInputEntry(input, "POLYCO FILE", &polycofilenames[i]);
+    getinputline(input, &(polycofilenames[i]), "POLYCO FILE");
     numsubpolycos[i] = 0;
     ifstreamOpen(polycoinput, polycofilenames[i].c_str());
     if(!polycoinput.is_open() || polycoinput.bad()) {
@@ -3007,16 +3120,20 @@ bool Configuration::processPulsarConfig(istream * input, int configindex, string
     delete [] numsubpolycos;
     return false;
   }
-  getInputEntry(input, "NUM PULSAR BINS", &configs[configindex].numbins);
+  getinputline(input, &line, "NUM PULSAR BINS");
+  configs[configindex].numbins = atoi(line.c_str());
   if(configs[configindex].numbins > maxnumpulsarbins)
     maxnumpulsarbins = configs[configindex].numbins;
   binphaseends = new double[configs[configindex].numbins]();
   binweights = new double[configs[configindex].numbins]();
-  getInputEntry(input, "SCRUNCH OUTPUT", &configs[configindex].scrunchoutput);
+  getinputline(input, &line, "SCRUNCH OUTPUT");
+  configs[configindex].scrunchoutput = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
   for(int i=0;i<configs[configindex].numbins;i++)
   {
-    getInputEntry(input, "BIN PHASE END", &binphaseends[i]);
-    getInputEntry(input, "BIN WEIGHT", &binweights[i]);
+    getinputline(input, &line, "BIN PHASE END");
+    binphaseends[i] = atof(line.c_str());
+    getinputline(input, &line, "BIN WEIGHT");
+    binweights[i] = atof(line.c_str());
   }
 
   //create the polycos
@@ -3121,21 +3238,32 @@ bool Configuration::fillHeaderData(ifstream * input, int & baselinenum, int & mj
       return false;
 
     //if we get.d2 here, must be an old style ascii file
-    getInputEntry(input, "LINE NUM", &baselinenum);
-    getInputEntry(input, "MJD", &mjd);
-    getInputEntry(input, "SECONDS", &seconds);
-    getInputEntry(input, "CONFIG INDEX", &configindex);
-    getInputEntry(input, "SOURCE INDEX", &sourceindex);
-    getInputEntry(input, "FREQ INDEX", &freqindex);
-    getInputEntry(input, "POLARISATION PAIR", &line);
+    getinputline(input, &line, "LINE NUM");
+    baselinenum = atoi(line.c_str());
+    getinputline(input, &line, "MJD");
+    mjd = atoi(line.c_str());
+    getinputline(input, &line, "SECONDS");
+    seconds = atof(line.c_str());
+    getinputline(input, &line, "CONFIG INDEX");
+    configindex = atoi(line.c_str());
+    getinputline(input, &line, "SOURCE INDEX");
+    sourceindex = atoi(line.c_str());
+    getinputline(input, &line, "FREQ INDEX");
+    freqindex = atoi(line.c_str());
+    getinputline(input, &line, "POLARISATION PAIR");
     polpair[0] = line.at(0);
     polpair[1] = line.at(1);
-    getInputEntry(input, "PULSAR BIN", &pulsarbin);
-    getInputEntry(input, "FLAGGED", &line);
-    getInputEntry(input, "DATA WEIGHT", &dataweight);
-    getInputEntry(input, "U (METRES)", &uvw[0]);
-    getInputEntry(input, "V (METRES)", &uvw[1]);
-    getInputEntry(input, "W (METRES)", &uvw[2]);
+    getinputline(input, &line, "PULSAR BIN");
+    pulsarbin = atoi(line.c_str());
+    getinputline(input, &line, "FLAGGED");
+    getinputline(input, &line, "DATA WEIGHT");
+    dataweight = atof(line.c_str());
+    getinputline(input, &line, "U (METRES)");
+    uvw[0] = atof(line.c_str());
+    getinputline(input, &line, "V (METRES)");
+    uvw[1] = atof(line.c_str());
+    getinputline(input, &line, "W (METRES)");
+    uvw[2] = atof(line.c_str());
     return true;
   }
   input->read((char*)(&version), 4);
@@ -3189,17 +3317,6 @@ void Configuration::getinputkeyval(istream * input, std::string * key, std::stri
   *key = key->substr(0, key->find_first_of(':'));
 }
 
-bool Configuration::peekinputkeyval(istream * input, const std::string& expectedkey, std::string * key, std::string * val) const
-{
-  streampos spos = input->tellg();
-  getinputkeyval(input, key, val);
-  if (key->find(expectedkey) == string::npos) {
-    input->seekg(spos);
-    return false;
-  }
-  return true;
-}
-
 void Configuration::getinputline(istream * input, std::string * line, std::string startofheader, bool verbose) const
 {
   if(input->eof())
@@ -3230,156 +3347,12 @@ void Configuration::getinputline(istream * input, std::string * line, std::strin
   getinputline(input, line, startofheader, true);
 }
 
+
 void Configuration::getinputline(istream * input, std::string * line, std::string startofheader, int intval) const
 {
   char buffer[MAX_KEY_LENGTH+1];
   sprintf(buffer, "%s%i", startofheader.c_str(), intval);
   getinputline(input, line, string(buffer), true);
-}
-
-template<> bool Configuration::getInputEntry<float>(istream * input, const std::string& key, float * dest)
-{
-  std::string line;
-  getinputline(input, &line, key);
-  *dest = atof(line.c_str());
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<float>(istream * input, const std::string& key, const int intval, float * dest)
-{
-  std::string line;
-  getinputline(input, &line, key, intval);
-  *dest = atof(line.c_str());
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<double>(istream * input, const std::string& key, double * dest)
-{
-  std::string line;
-  getinputline(input, &line, key);
-  *dest = atof(line.c_str());
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<double>(istream * input, const std::string& key, const int intval, double * dest)
-{
-  std::string line;
-  getinputline(input, &line, key, intval);
-  *dest = atof(line.c_str());
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<int>(istream * input, const std::string& key, int * dest)
-{
-  std::string line;
-  getinputline(input, &line, key);
-  *dest = atoi(line.c_str());
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<int>(istream * input, const std::string& key, const int intval, int * dest)
-{
-  std::string line;
-  getinputline(input, &line, key, intval);
-  *dest = atoi(line.c_str());
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<long long>(istream * input, const std::string& key, long long * dest)
-{
-  std::string line;
-  getinputline(input, &line, key);
-  *dest = atoll(line.c_str());
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<long long>(istream * input, const std::string& key, const int intval, long long * dest)
-{
-  std::string line;
-  getinputline(input, &line, key, intval);
-  *dest = atoll(line.c_str());
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<std::string>(istream * input, const std::string& key, std::string * dest)
-{
-  getinputline(input, dest, key);
-  return true;
-}
-
-template<>
-bool Configuration::getInputEntry<std::string>(istream * input, const std::string& key, const int intval, std::string * dest)
-{
-  getinputline(input, dest, key, intval);
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<char>(istream * input, const std::string& key, char * dest)
-{
-  std::string line;
-  getinputline(input, &line, key);
-  *dest = line.c_str()[0];
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<char>(istream * input, const std::string& key, const int intval, char * dest)
-{
-  std::string line;
-  getinputline(input, &line, key, intval);
-  *dest = line.c_str()[0];
-  return true;
-}
-
-template<> bool Configuration::getInputEntry<bool>(istream * input, const std::string& key, bool * dest)
-{
-  std::string line;
-  getinputline(input, &line, key);
-  *dest = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t")) ? true : false;
-  return true;
-}
-
-template<> bool Configuration::getInputEntryOptional<std::string>(istream * input, const std::string& key, std::string* dest, const std::string& defaultval)
-{
-  std::string line, currkey;
-  bool match = peekinputkeyval(input, key, &currkey, &line);
-  if (match)
-    *dest = line;
-  else
-    *dest = defaultval;
-  return match;
-}
-
-template<> bool Configuration::getInputEntryOptional<int>(istream * input, const std::string& key, int* dest, const int& defaultval)
-{
-  std::string line, currkey;
-  bool match = peekinputkeyval(input, key, &currkey, &line);
-  if (match)
-    *dest = atoi(line.c_str());
-  else
-    *dest = defaultval;
-  return match;
-}
-
-template<> bool Configuration::getInputEntryOptional<float>(istream * input, const std::string& key, float* dest, const float& defaultval)
-{
-  std::string line, currkey;
-  bool match = peekinputkeyval(input, key, &currkey, &line);
-  if (match)
-    *dest = atof(line.c_str());
-  else
-    *dest = defaultval;
-  return match;
-}
-
-template<> bool Configuration::getInputEntryOptional<bool>(istream * input, const std::string& key, bool* dest, const bool& defaultval)
-{
-  std::string line, currkey;
-  bool match = peekinputkeyval(input, key, &currkey, &line);
-  if (match)
-    *dest = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t")) ? true : false;
-  else
-    *dest = defaultval;
-  return match;
 }
 
 void Configuration::getMJD(int & d, int & s, int year, int month, int day, int hour, int minute, int second) const
