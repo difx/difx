@@ -577,6 +577,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   long countNvis;
 
   std::complex<float> AD, BC, auxD;
+  auxD = 0.0;
   float NormFac[2];
   float AntTab;
   std::complex<float> DetInv;
@@ -930,12 +931,6 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      Ktotal[currAntIdx][0][1][j] *= gainRatio[j];
      Ktotal[currAntIdx][1][1][j] *= gainRatio[j];
 
-// Normalize amplitudes:
-
- 
- //   if(j==10){printf("\n\n\nKTOTAL: %.5e  %.5e |  %.5e  %.5e |  %.5e  %.5e |  %.5e  %.5e \n\n\n",Ktotal[currAntIdx][0][0][j].real(),Ktotal[currAntIdx][0][0][j].imag(),Ktotal[currAntIdx][0][1][j].real(),Ktotal[currAntIdx][0][1][j].imag(),Ktotal[currAntIdx][1][0][j].real(),Ktotal[currAntIdx][1][0][j].imag(),Ktotal[currAntIdx][1][1][j].real(),Ktotal[currAntIdx][1][1][j].imag());};
-
-
 ////////////
 
 ///////////////////////////
@@ -984,9 +979,6 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 ////////////////////////////////////
 ////////////////////
- //   if(j==10){printf("\n\n\nLAST KTOTAL: %.5e  %.5e |  %.5e  %.5e |  %.5e  %.5e |  %.5e  %.5e \n\n\n",Ktotal[currAntIdx][0][0][j].real(),Ktotal[currAntIdx][0][0][j].imag(),Ktotal[currAntIdx][0][1][j].real(),Ktotal[currAntIdx][0][1][j].imag(),Ktotal[currAntIdx][1][0][j].real(),Ktotal[currAntIdx][1][0][j].imag(),Ktotal[currAntIdx][1][1][j].real(),Ktotal[currAntIdx][1][1][j].imag());};
-
-
 
     };   // Comes from: for(j=0; j<nchans[ii]; j++) 
 
@@ -1000,7 +992,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   if(doNorm && (dtchanged||gchanged)){ // Norm. factor will be the geometrical average of gains.
     AntTab = std::sqrt(NormFac[0]*NormFac[1])/((float) nchans[ii]);
  //   printf("GAIN %.3e  %.3e\n",AntTab,NormFac[0]);
-    fprintf(gainsFile, "%i  %i  %.10e  %.5e\n",ii+1, currAnt, currT/86400.,AntTab*AntTab);
+    fprintf(gainsFile, "%i  %i  %.10e  %.5e \n",ii+1, currAnt, currT/86400.,AntTab*AntTab*std::abs(auxD));
     for(j=0; j<nchans[ii]; j++){
       Ktotal[currAntIdx][0][0][j] /= AntTab;
       Ktotal[currAntIdx][0][1][j] /= AntTab;
@@ -1017,12 +1009,6 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 // Shall we write in plot file?
      auxB = (currT>=plRange[0] && currT<=plRange[1] && plotIF); //plAnt == otherAnt);
-
-
- //    if(auxB){printf("%.5e %.5e %.5e %.5e | ",Kinv[1][1].imag(),Kinv[1][1].real(),Kinv[1][1].real(),Kinv[1][1].imag());};
-  //   if(auxB){printf("%.5e %.5e %.5e %.5e %.5e %.5e %.5e %.5e | ",Ktotal[currAntIdx][0][0][10].real(),Ktotal[currAntIdx][0][0][10].imag(),Ktotal[currAntIdx][0][1][10].real(),Ktotal[currAntIdx][0][1][10].imag(),Ktotal[currAntIdx][1][0][10].real(),Ktotal[currAntIdx][1][0][10].imag(),Ktotal[currAntIdx][1][1][10].real(),Ktotal[currAntIdx][1][1][10].imag());};
-
-//     if(auxB){printf("%.5e %.5e %.5e %.5e %.5e %.5e %.5e %.5e | ",Kinv[0][0].real(),Kinv[0][0].imag(),Kinv[0][1].real(),Kinv[0][1].imag(),Kinv[1][0].real(),Kinv[1][0].imag(),Kinv[1][1].real(),Kinv[1][1].imag());};
 
 
 // Convert:

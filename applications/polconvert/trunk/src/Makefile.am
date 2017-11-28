@@ -11,13 +11,15 @@ PolConvertSources = \
 	_PolConvert.cpp polconvert.xml \
 	_getAntInfo.cpp _PolGainSolve.cpp \
 	setup.py task_polconvert.py
-PostPolScripts = PP/prepolconvert.py PP/runpolconvert.py PP/README.POLCONVERT
-ScriptCopies = prepolconvert.py runpolconvert.py README.POLCONVERT 
+PostPolScripts = PP/prepolconvert.py PP/runpolconvert.py PP/README.POLCONVERT \
+	PP/Estimate_DPFU.py
+ScriptCopies = prepolconvert.py runpolconvert.py README.POLCONVERT \
+	Estimate_DPFU.py
 
 # BUILT_SOURCES doesn't help here.
 BuiltSources = $(PolConvertSources) $(PostPolScripts)
 
-bin_SCRIPTS = PP/prepolconvert.py PP/drivepolconvert.py
+bin_SCRIPTS = PP/prepolconvert.py PP/drivepolconvert.py PP/Estimate_DPFU.py
 pkgdata_DATA = _PolConvert.so \
 	_getAntInfo.so _PolGainSolve.so \
 	PP/runpolconvert.py task_polconvert.py polconvert.xml \

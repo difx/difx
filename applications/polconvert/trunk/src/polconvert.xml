@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.6-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.7-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.6-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.7-beta\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -105,10 +105,11 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <value>["NONE"]</value>
     </param>
 
-    <param type="bool" name="amp_norm" mustexist="false">
-      <description>If True, normalize the amplitude correction to the X-Y average, and save the scaling factor (vs time) in an external (ASCII) file. If False, apply the amplitude correction as is.</description>
-      <value>True</value>
+    <param type="double" name="amp_norm" mustexist="false">
+      <description>If positive, normalize the amplitude correction to the X-Y average, and save the scaling factor (vs time) in an external (ASCII) file (ANTAB format, assuming a DPFU=amp_norm). If zero, or negative, apply the amplitude correction as is.</description>
+      <value>0.01</value>
     </param>
+
 
     <param type="any" name="XYadd" mustexist="false">
       <description>Add manually a phase between X and Y before conversion (in deg.). Either a list with one value per linear-pol station OR a list of lists (i.e., one value per IF for each antenna) OR a list of lists of lists (one value per channel, for each IF, for each linear-polarization antenna).</description>
@@ -125,7 +126,6 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <description>Add manually an amplitude ratio between X and Y before conversion (R=X/Y). Follows the same format as XYadd.</description>
       <value>[1.0]</value>
     </param>
-
 
     <param type="any" name="swapXY" mustexist="false">
       <description>Swap X-Y before conversion. One boolean per linear-pol VLBI station.</description>

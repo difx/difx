@@ -830,7 +830,6 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 
 
 
-
     if (currVis == NLinVis){break;};
 
   };
@@ -839,6 +838,8 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 // FOR SOME REASON, READ_COL RETURNS THE COMPLEX CONJUGATES????
   if(doConjugate){for (i=0; i<Nentry; i++){currentVis[i].imag(-currentVis[i].imag());};};
 ////////////////////
+
+  if (found && (is1[currVis] || is2[currVis])){canPlot=false;} else {canPlot=true;};
 
 
   if (status){
@@ -899,28 +900,12 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 
      for (k=0; k<Freqs[currFreq].Nchan; k++) {
 
- //      if (swap){
-
- //       if (currConj) {
- //         a21 = k*4;
- //         a12 = a21+1;
- //         a22 = a21+2;
- //         a11 = a21+3;
- //       } else {
- //         a12 = k*4;
- //         a21 = a12+1;
- //         a11 = a12+2;
- //         a22 = a12+3;
- //       };
-
- //      } else {
 
          a11 = k*4;
          a22 = a11+1;
          a12 = a11+2;
          a21 = a11+3;
 
- //      };
 
 
          ca11 = k*4;
@@ -948,15 +933,7 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
        };
 
 
-   if (print) {
- //    std::cout << currConj << " "<< swap << "\n";
-
- //    if (k==10){
- //    printf("M00 %i %.5e %.5e\n",k, M[0][0][k].real(),M[0][0][k].real());
- //    printf("M01 %i %.5e %.5e\n",k, M[0][1][k].real(),M[0][1][k].real());
- //    printf("M10 %i %.5e %.5e\n",k, M[1][0][k].real(),M[1][0][k].real());
- //    printf("M11 %i %.5e %.5e\n",k, M[1][1][k].real(),M[1][1][k].real());
- //    };
+   if (print && canPlot) {
 
      if (currConj){
      if (k==0){

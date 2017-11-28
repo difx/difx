@@ -47,7 +47,7 @@
 #
 #
 
-__version__ = "1.6-beta"
+__version__ = "1.7-beta"
 date = 'OCT 2017'     
 
 
@@ -86,6 +86,7 @@ import scipy.optimize as spopt
 import numpy as np
 import pylab as pl
 import datetime as dt
+import sys
 from taskinit import *
 ms = gentools(['ms'])[0]
 tb = gentools(['tb'])[0]
@@ -122,7 +123,7 @@ if __name__=='__main__':
   gains              =  [['TRACK_C.concatenated.ms.bandpass-zphs', 'TRACK_C.concatenated.ms.flux_inf.APP', 'TRACK_C.calibrated.ms.XY0.APP.REFANT_DA44', 'TRACK_D.calibrated.ms.Gxyamp.APP']]
   interpolation      =  []
   dterms             =  ['TRACK_D.calibrated.ms.Df0.APP']
-  amp_norm           =  True
+#  amp_norm           =  True
   XYadd              =  [0.0]
   XYdel              =  [0.0]
   XYratio            =  [1.0]
@@ -156,7 +157,7 @@ if __name__=='__main__':
   gains              =  [['uid___A002_Xbebcb7_D.concatenated.ms.bandpass-zphs', 'uid___A002_Xbebcb7_D.concatenated.ms.flux_inf.APP', 'uid___A002_Xbebcb7_D.concatenated.ms.phase_int.APP', 'uid___A002_Xbebcb7_D.calibrated.ms.XY0.APP', 'uid___A002_Xbebcb7_D.calibrated.ms.Gxyamp.APP']]
   interpolation      =  [['linear', 'nearest', 'linear', 'linear', 'linear']]
   dterms             =  ['uid___A002_Xbebcb7_D.calibrated.ms.Df0.APP']
-  amp_norm           =  True
+#  amp_norm           =  True
   XYadd              =  [0.0]
   XYratio            =  [1.0]
   XYdel              =  [0.0]           
@@ -189,7 +190,7 @@ if __name__=='__main__':
   gains              =  [['uid___A002_Xbebcb7_D.calibrated.ms.Gxyamp.APP', 'uid___A002_Xbebcb7_D.calibrated.ms.XY0.APP', 'uid___A002_Xbebcb7_D.concatenated.ms.bandpass-zphs', 'uid___A002_Xbebcb7_D.concatenated.ms.flux_inf.APP', 'uid___A002_Xbebcb7_D.concatenated.ms.phase_int.APP']]
   interpolation      =  []
   dterms             =  ['uid___A002_Xbebcb7_D.calibrated.ms.Df0.APP']
-  amp_norm           =  False
+#  amp_norm           =  False
   XYadd              =  [0.0]
   XYdel              =  [0.0]
   XYratio            =  [1.0]
@@ -222,7 +223,7 @@ if __name__=='__main__':
   gains              =  [['NONE']]
   interpolation      =  []
   dterms             =  ['NONE']
-  amp_norm           =  False
+#  amp_norm           =  False
   XYadd              =  [[0.0]]
   XYdel              =  [0.0]
   XYratio            =  [[1.0]]
@@ -255,7 +256,7 @@ if __name__=='__main__':
   gains              =  [['NONE']]
   interpolation      =  []
   dterms             =  ['NONE']
-  amp_norm           =  False
+#  amp_norm           =  False
   XYadd              =  [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
   XYdel              =  [0.0]
   XYratio            =  [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
@@ -325,7 +326,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 # Auxiliary function: Smooth the X-Y difference of G-mode gains
 # using a running average:
-  def XYsmooth(GAINTABLE, DTIME, SPW):
+  def XYsmooth(GAINTABLE, DTIME, SPW, IANT=-1):
 
     os.system('rm -rf %s.XYsmooth.PolConvert'%GAINTABLE)
     try:
@@ -334,33 +335,60 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       GallAnts = tb.getcol('NAME')
       tb.close()
 
+      if IANT>=0:
+        allAnts = [IANT]
+      else:
+        allAnts = range(len(GallAnts))
+
       tb.open('%s.XYsmooth.PolConvert'%GAINTABLE,nomodify=False)
       Gtimes = tb.getcol('TIME')
       Gants = tb.getcol('ANTENNA1')
       Gspws = tb.getcol('SPECTRAL_WINDOW_ID')
-      Mask = Gspws == SPW
+      Gflg = np.logical_not(tb.getcol('FLAG'))
+      Ggood = np.logical_and(Gflg[0,0,:],Gflg[1,0,:])
+      Mask = np.logical_and(Gspws == SPW, Ggood)
       Ggains = tb.getcol('CPARAM')
 
     except:
       printError('ERROR: Bad gain table %s!'%GAINTABLE)
 
    # Get the X-Y phase differences:
-    GDiff = np.sqrt(Ggains[0,0,:][Mask]*np.conjugate(Ggains[1,0,:][Mask]))
-    TMode = np.sqrt(Ggains[0,0,:][Mask]*Ggains[1,0,:][Mask])
- 
-  # Smooth them:
-    for iant in range(len(GallAnts)):
-      printMsg('Smoothing X-Y difference for antenna %s'%GallAnts[iant])
-      Mask2 = Gants[Mask]==iant
-      AntTimes = np.copy(Gtimes[Mask][Mask2])
-      for ti in AntTimes:
-         Window = np.where(np.abs(ti-AntTimes)<DTIME)
-         AvgDiff = np.median(np.real(GDiff[Mask2][Window])) + 1.j*np.median(np.imag(GDiff[Mask2][Window]))
-         AvgDiff /= np.abs(AvgDiff)
-         Ggains[0,0,:][Mask][Mask2][Window] = TMode[Mask2][Window]*AvgDiff
-         Ggains[1,0,:][Mask][Mask2][Window] = TMode[Mask2][Window]/AvgDiff
+    GDiff = np.sqrt(Ggains[0,0,:]*np.conjugate(Ggains[1,0,:]))
+    TMode = np.sqrt(Ggains[0,0,:]*Ggains[1,0,:])
 
-              
+  # Smooth them:
+    for iant in allAnts:
+      Mask2 = np.where(np.logical_and(Mask,Gants==iant))[0]
+    #  AntTimes = Gtimes[Mask2]
+      sys.stdout.write('\rSmoothing X-Y difference for antenna %s (%i of %i)   '%(GallAnts[iant],iant+1,len(GallAnts)))
+      sys.stdout.flush()
+
+      for tii,ti in enumerate(Mask2):
+        Window = []
+        tij = tii
+        while tij>=0 and np.abs(Gtimes[ti]-Gtimes[Mask2[tij]])<DTIME/2.:
+          Window.append(GDiff[Mask2[tij]])
+          tij -= 1
+        tij = tii+1
+        while tij<len(Mask2) and np.abs(Gtimes[ti]-Gtimes[Mask2[tij]])<DTIME/2.:
+          Window.append(GDiff[Mask2[tij]])
+          tij += 1
+
+
+
+        AvgDiff = np.median(np.real(Window)) + 1.j*np.median(np.imag(Window))
+        AvgDiff /= np.abs(AvgDiff)
+        Ggains[0,0,ti] = TMode[ti]*AvgDiff
+        Ggains[1,0,ti] = TMode[ti]/AvgDiff
+
+    tb.putcol('CPARAM',Ggains) 
+    tb.close()         
+    print '\nDONE!\n\n' 
+
+
+
+
+
 
 
 
@@ -743,7 +771,10 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
   try:
+ #   print XYavgTime
     XYavgTime = float(XYavgTime)
+ #   print XYavgTime
+
   except:
     printError("XYavgTime must be a positive (or zero) double!")
 
@@ -1367,7 +1398,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      else:
 
 # Smooth X-Y differences:
+ #     print gainmode[i][j], XYavgTime
       if gainmode[i][j]=='G' and XYavgTime>0.0:
+        printMsg("Will average X-Y phase differences over %.1f seconds"%XYavgTime)
         XYsmooth(gain, XYavgTime, int(spw)) 
         gain = gain+'.XYsmooth.PolConvert'
 
@@ -1529,7 +1562,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 #  print OUTPUT
-  if amp_norm:
+  if amp_norm>0.0:
     os.system('rm -rf POLCONVERT.GAINS')
 
   if len(plotIF)>0:
@@ -1548,8 +1581,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 # Do it!
 #  print nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, amp_norm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, isLinear
-
-  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, amp_norm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, antmounts, isLinear)
+  doAmpNorm = amp_norm>0.0
+  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, antmounts, isLinear)
 
   printMsg("\n###\n### Done with PolConvert (status %d).\n###" % (didit))
 
@@ -1559,8 +1592,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 # GENERATE ANTAB FILE(s):
 
+  DPFU = float(amp_norm)
 
-  if amp_norm:
+  if doAmpNorm:
     printMsg('Generating ANTAB file(s).')
     try:
       gfile = open("POLCONVERT.GAINS")
@@ -1586,17 +1620,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       mask = np.logical_and(IFs==i,AntIdx==j)
       for datum in Data[mask]:
         itime = np.where(Times==datum[0])[0]
-        Tsys[itime,ii+1] = datum[1]
+        Tsys[itime,ii+1] = datum[1]*DPFU
 
      outf = open("POLCONVERT_STATION%i.ANTAB"%j,"w")
-     print >> outf,"GAIN AA  ELEV DPFU=1.000   FREQ=10,100000"
+     print >> outf,"GAIN AA  ELEV DPFU=%.3f   FREQ=10,100000"%DPFU
      print >> outf,"POLY=1.0000E+00"
      print >> outf,"/"
      print >> outf,"TSYS AA  FT=1.0  TIMEOFF=0"
      print >> outf,"INDEX= "+', '.join(['\'L%i|R%i\''%(i+1,i+1) for i in range(len(doIF))])
      print >> outf,"/"
-     fmt0 = "%i %i:%2.2f  "
-     fmt1 = "%4.2f  "*len(doIF)
+     fmt0 = "%i %i:%2.4f  "
+     fmt1 = "%8.2f  "*len(doIF)
      prevT = " "
      for entry in Tsys:
        MJD2000 = 51544

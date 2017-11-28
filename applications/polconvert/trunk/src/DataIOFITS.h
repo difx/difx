@@ -84,7 +84,7 @@ class DataIOFITS: public DataIO {
     int uu, vv, ww, ss;
 
     double *Times;
-    bool doConjugate, doWriteCirc;
+    bool doConjugate, doWriteCirc, canPlot;
     char polOrder[4], message[512];
     long jump, Nentry, djump, dsize, TotSize;
     int currIF, currBand;

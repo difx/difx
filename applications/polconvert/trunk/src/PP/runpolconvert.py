@@ -9,6 +9,8 @@ import os
 import shutil
 import re
 
+pcvers='1.7-beta'
+
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.
 
@@ -100,16 +102,16 @@ except Exception, ex:
 
 # option to turn off the amplitude calibration logic
 try:
-    if type(ampNorm) == bool:
-        if ampNorm: print 'Amplitude Normalization is done'
-        else:       print 'Amplitude Normalization is off'
+    if type(ampNorm) == float:
+        if ampNorm: print 'Amplitude Normalization is ',ampNorm
+        else:       print 'Amplitude Normalization is other:',ampNorm
     else:
         print 'Overriding ampNorm -- turning it on'
-        ampNorm = True
+        ampNorm = 1.0
 except Exception, ex:
-    print 'ampNorm not bool?', str(ex)
-    ampNorm = True
-    print 'Amplitude Normalization is on'
+    print 'ampNorm not float?', str(ex)
+    ampNorm = 1.0
+    print 'Amplitude Normalization is now',ampNorm
 
 # option for fringe plot pixels
 try:
@@ -165,7 +167,7 @@ except Exception, ex:
 def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     DiFXinput='', DiFXoutput='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
-    amp_norm=True, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
+    amp_norm=1.0, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
     npix=50, gainmeth='T', XYavgTime=0.0):
     # based on common drivepolconvert inputs above
     gains = calgains[3:]
@@ -277,7 +279,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
 
 def makeHistory(label, DiFXoutput, doIF=[], linAntIdx=[], spw=-1,
     calAPPTime=[], interpolation=[], gainmode=[], XYavgTime=0.0,
-    amp_norm=True, XYadd=XYadd, XYratio=XYratio, swapXY=[]):
+    amp_norm=1.0, XYadd=XYadd, XYratio=XYratio, swapXY=[]):
     '''
     Generate a history record for eventual use by difx2fits
     '''
@@ -286,20 +288,20 @@ def makeHistory(label, DiFXoutput, doIF=[], linAntIdx=[], spw=-1,
         return
     history = DiFXoutput + '/polconvert.history'
     fh = open(history, 'w')
-    fh.write('PolConvert done: %s\n' %
-        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S'))
+    fh.write('PolConvert %s: %s\n' % (pcvers,
+        datetime.datetime.now().strftime('%Y-%m-%dT%H.%M.%S')))
     fh.write('QA2 set: %s\n' % label)
     iflist = str(doIF)
     while len(iflist) > 0:
         fh.write('IF list: %s\n' % iflist[0:60])
         iflist = iflist[60:]
-    fh.write('linAntIdx: %s\n' % str(linAntIdx))
+    fh.write('linAntIdx: %s == %s\n' % (str(linAntIdx), 'AA'))
     fh.write('spw: %s\n' % str(spw))
     fh.write('calAPPTime: %s\n' % str(calAPPTime))
     fh.write('interpolation: %s\n' % str(interpolation))
     fh.write('gainmode: %s\n' % str(gainmode))
     fh.write('XYavgTime: %s\n' % str(XYavgTime))
-    fh.write('ampnorm: %s\n' % str(ampnorm))
+    fh.write('amp_norm: %s\n' % str(amp_norm))
     fh.write('XYadd: %s\n' % str(XYadd))
     fh.write('XYratio: %s\n' % str(XYratio))
     fh.write('swapXY: %s\n' % str(swapXY))

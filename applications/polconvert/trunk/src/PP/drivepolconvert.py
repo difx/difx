@@ -104,8 +104,8 @@ def parseOptions():
         default=False, action='store_true',
         help='disable use of Dterm calibration tables')
     parser.add_argument('-A', '--ampNorm', dest='ampnrm',
-        default=True, action='store_false',
-        help='turn off amplitude normalization')
+        default=1.0, type=float,
+        help='set the DPFU in ANTAB or <=0 to apply it')
     parser.add_argument('-G', '--gainDel', dest='gaindel',
         default='', metavar='LIST',
         help='comma-sep list of gain tables to delete: del(gains[x])' +
@@ -369,12 +369,14 @@ def deduceZoomIndicies(o):
         raise Exception, 'Telescope Name 0 is not Alma (AA)'
     if o.verb: print 'Found ALMA Telescope line: ' + almaline.rstrip()
     if o.verb: print 'Remote antenna index was', o.remote
-    if o.verb: print 'Antenna map: ' + str(antmap)
+    if o.verb: print 'Antenna map: ' + str(antmap) + ' (plus 1)'
+    thesite = 'unknown'
     for site in o.sites.split(','):
         if site in antmap:
             o.remote = antmap[site] + 1
+            thesite = site
             break
-    if o.verb: print 'Remote antenna index now', o.remote
+    if o.verb: print 'Remote antenna index now', o.remote, 'which is', thesite
     # if the user supplied a band, check that it agrees
     if len(mfqlst) > 1:
         raise Exception, ('Input files have disparate frequency structures:\n'
@@ -465,7 +467,7 @@ def createCasaInput(o):
     qa2 = %s
     gainmeth = '%s'
     XYavgTime = %.3g
-    ampNorm = %s
+    ampNorm = %.3g
     gainDel = '%s'
     #
     # other variables that can be set in interactive mode
@@ -531,8 +533,6 @@ def createCasaInput(o):
         userXY = '#'
         XYvalu = 0.0
 
-    if o.ampnrm: ampnrm = 'True'
-    else:        ampnrm = 'False'
     if o.test:   dotest = 'True'
     else:        dotest = 'False'
 
@@ -540,7 +540,7 @@ def createCasaInput(o):
         o.label, o.band, bandnot, bandaid, o.exp,
         o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
-        o.qa2, o.qal, o.qa2_dict, o.gainmeth, o.avgtime, ampnrm, o.gaindel,
+        o.qa2, o.qal, o.qa2_dict, o.gainmeth, o.avgtime, o.ampnrm, o.gaindel,
         o.remote, o.npix, dotest, o.doPlot[0],
         o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
 

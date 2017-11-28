@@ -1,3 +1,6 @@
+#
+## this file is for historical reference...probably superceded
+#
 # YOU SHOULD RUN POLCONVERT WITHIN CASA WITH THE FOLLOWING PARAMETERS
 # AND SUITABLE EDITS.
 
@@ -40,7 +43,7 @@ gains = [['uid___A002_Xb542b2.concatenated.ms.bandpass-zphs',
 
 dterms = ['uid___A002_Xb542b2.concatenated.ms.Df0']
 
-amp_norm = True  # DON'T APPLY AMPLITUDE CORRECTION.
+amp_norm = 1.0  # DON'T APPLY AMPLITUDE CORRECTION.
                  # BUILD AN ANTAB FILE INSTEAD.
 XYadd = [0.0] # CHANGE TO 180. IF R <-> L
 swapXY = False # UNLIKELY TO CHANGE

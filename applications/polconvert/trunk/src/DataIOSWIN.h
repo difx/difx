@@ -102,11 +102,13 @@ class DataIOSWIN: public DataIO {
     char message[512];
     int nfiles;
     std::ifstream *olddifx;
-    std::ofstream *newdifx;
-    bool isOverWrite, doWriteCirc;
+    std::fstream *newdifx;
+    bool isOverWrite, doWriteCirc, canPlot;
     long currEntries[MAXIF][4], nrec;
     long *filesizes;
     std::complex<float> *currentVis[4] ;
     std::complex<float> *bufferVis[4] ;
+    std::complex<float> *auxVis[4] ;
+
     Record *Records ;
 };
