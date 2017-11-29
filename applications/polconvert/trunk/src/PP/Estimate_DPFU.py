@@ -1,10 +1,37 @@
+#!/usr/bin/python
+#
+# Script to generate DFPU values; but it is required to run within
+# CASA for the imports.
+#
+# $Id$
+#
+
 import pylab as pl
 import numpy as np
+import os
 
-TsysTable = '/home/marti/NO_BACKUP/EHT_TARS/B/TRACK_B.APP.artifacts/TRACK_B.TSYS_INFO/uid___A002_Xbec3cb_X1aa5.SYSCAL'
+try:
+    for var in [ TsysTable, Flux_inf, CalAppPhase ]:
+        if type(var) == str:
+            if os.path.exists(var) and os.path.isdir(var):
+                print 'Using', var
+            else:
+                print 'Not a directory:', var
+        else:
+            print 'Not a string:', var
+except Exception, ex:
+    print 'Problem with variables'
+    raise ex
 
-Flux_inf = '/home/marti/NO_BACKUP/EHT_TARS/B/TRACK_B.concatenated.ms.flux_inf.APP'
-
+###################################
+# GET # Phased Antennas
+tb.open(CalAppPhase)
+NPhased = set()
+npa = tb.getvarcol('numPhasedAntennas')
+for row in npa: NPhased.add(npa[row][0])
+print 'This track has',sorted(list(NPhased)),'phased antennas'
+MNPhased = np.median(map(lambda e: e[0], npa.values()))
+print 'The median number phased is', int(MNPhased)
 
 
 ###################################
