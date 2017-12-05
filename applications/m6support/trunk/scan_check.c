@@ -1,5 +1,5 @@
 /*
- * $Id: scan_check.c 2560 2014-10-08 21:23:19Z gbc $
+ * $Id: scan_check.c 4508 2017-12-04 20:02:49Z gbc $
  *
  * Code to verify scans at time of recording.
  */
@@ -28,8 +28,8 @@ static int usage(char *name)
             "  -v            verbose, may be repeated for more\n"
             "  -c <string>   configure the checker\n"
             "\n"
-            "%s will check files and return nonzero if something is.\n"
-            "amiss.  Increasing verbosity will provide more details.\n"
+            "%s will check files and return nonzero if something\n"
+            "is amiss.  Increasing verbosity will provide more details.\n"
             "Use -c\"help\" for options on configuring the checker;\n"
             "however the defaults are intended to be sensible.\n",
             name

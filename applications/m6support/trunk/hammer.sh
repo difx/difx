@@ -6,7 +6,7 @@ size=10g
 slots=1234
 prefix=crap
 suffix=zero
-maxfiles=5000
+maxfiles=10000
 cpus=0
 cps=8
 label=unknown
@@ -36,9 +36,9 @@ where the options are any of these:
     slots=$slots       Mark6 slots with modules to condition
     prefix=$prefix      prefix to empty files written
     suffix=$suffix      suffix to empty files written
-    maxfiles=$maxfiles    maximum number of files / disk
+    maxfiles=$maxfiles   maximum number of files / disk
     purge=$purge       remove files when done
-    cullrate=$cullrate   cull files slower than this
+    cullrate=$cullrate    cull files slower than this
 
 will write empty files to all the disks of the slots appearing
 in the slots argument, up to a maximum of maxfiles per disk.
@@ -59,9 +59,12 @@ run the script on a subsequent occasion.
 If purge is true, the temporary files (and anything else in the
 data directories) will be removed if the script is allowed to
 finish.  You can also accomplish this manually with maxfiles=0.
+This will not touch files parked in other directories.
 
 Note that if you want to condition completely, you should fill
-it completely (or plan to) before setting purge=true.
+it completely (or plan to) before setting purge=true.  You should
+also completely reinitialize the modules to get a clean state if
+you have time to do so.
 
 If the cullrate is nonzero, files with write rates slower than
 this value will be culled to a location that is not purged on

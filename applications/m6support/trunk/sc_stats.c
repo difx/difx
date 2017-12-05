@@ -1,5 +1,5 @@
 /*
- * $Id: sc_stats.c 4193 2017-01-03 21:07:02Z gbc $
+ * $Id: sc_stats.c 4454 2017-09-29 15:33:21Z gbc $
  *
  * Statistics checker for scan check
  */
@@ -116,9 +116,37 @@ void stats_delta(BSInfo *bsi, BSInfo *lst, BSInfo *del,
     del->packet_octets = bsi->packet_octets;
     del->bits_sample = bsi->bits_sample;
     rep = stats_repstr(del, lab);
-    fprintf(stdout, "%s delta at pkt %08lX(%lu) for %d\n%s",
-        lab, ((void*)pkt - start), ((void*)pkt - start), count, rep);
+    fprintf(stdout, "%s%s at pkt %08lX(%lu) for %d\n%s",
+        lab, stats_timestamp(pkt),
+        ((void*)pkt - start), ((void*)pkt - start), count, rep);
     *lst = *bsi;    /* for next time */
+}
+
+#include "sg_access.h"
+
+static unsigned long stats_packet_rate = 125000L;
+
+void stats_set_packet_rate(unsigned long newrate)
+{
+    stats_packet_rate = newrate;
+}
+unsigned long stats_get_packet_rate(void)
+{
+    return(stats_packet_rate);
+}
+
+/*
+ * Helper routine where we need it to look up the time
+ * For the moment *assume* 125000 packets per second.
+ */
+char *stats_timestamp(uint32_t *pkt)
+{
+    static char sts[200];
+    VDIFHeader *vh = (VDIFHeader *)pkt;
+    snprintf(sts, 200, "ts %s.%09d",
+        sg_vextime(vh->w2.ref_epoch, vh->w1.secs_inre),
+        1000000000L * vh->w2.df_num_insec / stats_packet_rate);
+    return(sts);
 }
 
 /*

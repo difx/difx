@@ -1,5 +1,5 @@
 /*
- * $Id: sg_advice.c 4287 2017-05-01 17:10:37Z gbc $
+ * $Id: sg_advice.c 4315 2017-05-11 21:11:03Z gbc $
  * 
  * Code to boost performance on reads to sg files
  *
@@ -27,11 +27,13 @@
  */
 
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include "sg_access.h"
+#include "vdifuse.h"
 
 int sg_advice_disable = 0;
 
@@ -51,23 +53,33 @@ int sg_advice_disable = 0;
 
 static int  advice_type = SG_ADVICE_DISABLE;
 static long pagesize = 0L;
+static long open_max = 0L;
 static unsigned long addrmask = 0L;
 static long blockage = SG_ADVICE_BLOCKS;
+
+static pthread_once_t sg_advice_control = PTHREAD_ONCE_INIT;
+typedef struct pidex { pthread_t tid; pthread_mutex_t tmx; } Pidex;
+Pidex *sg_advice_threads = (Pidex *)0;
 
 /*
  * Initialization code.
  * For the methods that require a helper thread, we make preparations
  * to support them.
  */
-static void sg_advice_init(int verbose)
+static void sg_advice_init(void)
 {
     char    *hint = getenv("SG_ACCESS_ADVICE");
     char    *blks = getenv("SG_ACCESS_BLOCKS");
 
+    open_max = sysconf(_SC_OPEN_MAX);
     pagesize = sysconf(_SC_PAGESIZE);
+    vdifuse_trace(VDT("pagesize is %d\n"), pagesize);
+    vdifuse_trace(VDT("open_max is %d\n"), open_max);
     addrmask = ~(pagesize - 1);
     advice_type = hint ? atoi(hint) : SG_ADVICE_DEFAULT;
     blockage = blks ? atol(blks) : SG_ADVICE_BLOCKS;
+    vdifuse_trace(VDT("SG_ACCESS_ADVICE is %d\n"), advice_type);
+    vdifuse_trace(VDT("SG_ACCESS_BLOCKS is %ld\n"), blockage);
 
     switch (advice_type) {
     case SG_ADVICE_DISABLE:
@@ -77,20 +89,24 @@ static void sg_advice_init(int verbose)
     case SG_ADVICE_MADV_WILLNEED:
     case SG_ADVICE_POSIX_FADVISE:
     default:
-        /* no action here */
+        vdifuse_trace(VDT("Advice %d selected\n"), advice_type);
         break;
     case SG_ADVICE_SPAWN_READAHEAD:
         /* initialize for threads */
+        vdifuse_trace(VDT("SG_ADVICE_SPAWN_READAHEAD selected\n"));
         break;
     case SG_ADVICE_SPAWN_READTHREAD:
         /* initialize for threads */
+        vdifuse_trace(VDT("SG_ADVICE_SPAWN_READTHREAD selected\n"));
+        sg_advice_threads = (Pidex *)calloc(open_max, sizeof(Pidex));
         break;
     }
-    if (hint || blks) fprintf(stderr,
-        "Page size is %luB Blockage is %luB Mase is %lx\n"
-        "Advice is %d and Disable is %d hint %s type %d\n",
-        pagesize, blockage, addrmask,
-        advice_type, sg_advice_disable, hint, advice_type);
+    if (hint || blks) {
+        vdifuse_trace(VDT("Page size is %luB Blockage is %luB Mask is %lx\n"),
+            pagesize, blockage, addrmask);
+        vdifuse_trace(VDT("Advice is %d and Disable is %d hint %s type %d\n"),
+            advice_type, sg_advice_disable, hint, advice_type);
+    }
 }
 
 /*
@@ -98,9 +114,17 @@ static void sg_advice_init(int verbose)
  */
 void sg_advice_term(int mmfd)
 {
-    if (advice_type != SG_ADVICE_SPAWN_READAHEAD &&
-        advice_type != SG_ADVICE_SPAWN_READTHREAD) return;
+    //if (advice_type != SG_ADVICE_SPAWN_READTHREAD) return;
+    if (sg_advice_threads == (Pidex*)0) return;
+
     /* code to terminate mmfd would go here */
+    pthread_mutex_lock(&sg_advice_threads[mmfd].tmx);
+    (void)pthread_cancel(sg_advice_threads[mmfd].tid);
+    (void)pthread_join(sg_advice_threads[mmfd].tid, 0);
+    pthread_mutex_unlock(&sg_advice_threads[mmfd].tmx);
+    vdifuse_trace(VDT("Cancelled %lu on %02d\n"),
+        sg_advice_threads[mmfd].tid, mmfd);
+    sg_advice_threads[mmfd].tid = 0;
 }
 
 /*
@@ -115,7 +139,8 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
     void *addr, *drop;
     size_t len = blockage;
 
-    if (pagesize == 0L) sg_advice_init(sgi->verbose);   /* once */
+    //if (pagesize == 0L) sg_advice_init();   /* once */
+    (void)pthread_once(&sg_advice_control, &sg_advice_init);
     if (sg_advice_disable || pagesize == 0L) return;
 
     /* madvice code; trim request to mmap()ed range */
@@ -130,6 +155,7 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
     else         drop = addr + len;
     if (drop < sgi->smi.start) drop = 0;
     if (drop + len >= sgi->smi.eomem) drop = 0;
+
 
     /*
      * Take an appropriate action based on advice type
@@ -151,12 +177,14 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
         else return;
         break;
     case SG_ADVICE_SPAWN_READAHEAD:
+        if (drop) (void)madvise(drop, len, MADV_DONTNEED);
         spawn_readahead_thread(sgi->smi.mmfd,
             (off_t)(addr - sgi->smi.start), len, sgi->smi.size);
         return;
     case SG_ADVICE_SPAWN_READTHREAD:
-        /* code might go here */
-        break;
+        if (drop) (void)madvise(drop, len, MADV_DONTNEED);
+        spawn_toucher_thread(sgi->smi.mmfd, addr, len, pagesize);
+        return;
     default:
         break;
     }

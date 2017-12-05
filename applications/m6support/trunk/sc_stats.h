@@ -1,5 +1,5 @@
 /*
- * $Id: sc_stats.h 4018 2016-06-30 21:01:35Z gbc $
+ * $Id: sc_stats.h 4454 2017-09-29 15:33:21Z gbc $
  *
  * Statistics checker for scan check
  */
@@ -38,6 +38,9 @@ extern void stats_check(BSInfo *bsi, uint64_t *optr);
 /* Delta stats module */
 extern void stats_delta(BSInfo *bsi, BSInfo *lst, BSInfo *del,
                         uint32_t *pkt, int count, int fnum, void *start);
+extern char *stats_timestamp(uint32_t *pkt);
+void stats_set_packet_rate(unsigned long newrate);
+unsigned long stats_get_packet_rate(void);
 
 #endif /* sc_stats_h */
 

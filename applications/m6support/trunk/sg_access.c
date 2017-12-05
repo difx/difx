@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.c 4284 2017-05-01 14:06:55Z gbc $
+ * $Id: sg_access.c 4498 2017-11-20 22:00:42Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -68,11 +68,13 @@ int sg_get_station_id_mask(void)
  * assuming the packet header is zero except for the invalid bit and length.
  * (I.e. fill packets are presumed to be filled correctly.)
  */
-uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab, VDIFsigu *vc)
+uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab,
+    VDIFsigu *vc, short *thp)
 {
     VDIFsigu vdif_signature;
     VDIFHeader *vh = (VDIFHeader *)vhp;
     static char *labs[5] = { "??", "ok", "nv", "OK", "NV" };
+    static char threp[80];     /* 8 threads(max) * 5 chars = 40 */
     int labi = 0;
     /* compute signature */
     vdif_signature.word              = 0LL;
@@ -99,7 +101,48 @@ uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab, VDIFsigu *vc)
         "%s  %08x%08x %08x%08x %08x%08x %08x%08x\n",
         lab, vhp, vdif_signature.word, labs[labi], (void *)vhp - o,
         lab, vhp[1], vhp[0], vhp[3], vhp[2], vhp[5], vhp[4], vhp[7], vhp[6]);
+    /* update list of threads */
+    if (thp) sg_threads(thp, vh->w4.threadID, verb>0 ? threp : 0);
+    if (thp && verb>0) fputs(threp, sgalog);
     return(vdif_signature.word);
+}
+
+/* Set a bound on legality since lower thread ids are the norm */
+static int max_legal_thread_id = 1023;
+void sg_set_max_legal_thread_id(int max)
+{
+    if (max < 0 || max > 1023) return;
+    max_legal_thread_id = max;
+}
+int sg_get_max_legal_thread_id(void)
+{
+    return(max_legal_thread_id);
+}
+
+/*
+ * Some management for threads; assumes thp[] entries are initialized
+ * with invalid values (e.g. -1).  Report here is just for diagnostics.
+ */
+void sg_threads(short *thp, short tid, char *threp)
+{
+    static int bads = 0;
+    int ii = 0;
+    if (tid < 0 || tid > max_legal_thread_id) {
+        bads++;
+    } else for (ii = 0; ii < MAX_VDIF_THREADS; ii++) {
+        if (tid == thp[ii]) {
+            break;                      /* found */
+        } else if (thp[ii] >= 0 && thp[ii] <= max_legal_thread_id) {
+            continue;                   /* legal */
+        } else {
+            thp[ii] = tid;
+            break;                      /* added */
+        }
+    }
+    if (threp) snprintf(threp, 80,
+        "threads: %d %s[%d] %d,%d,%d,%d,%d,%d,%d,%d\n",
+        tid, ii < MAX_VDIF_THREADS ? "ok" : "er", bads,
+        thp[0], thp[1], thp[2], thp[3], thp[4], thp[5], thp[6], thp[7]);
 }
 
 /*
@@ -277,7 +320,7 @@ static void sg_first_packet_common(SGInfo *sgi, off_t foff, off_t *rwdsp)
     do {
         vhp0 = (uint32_t *)(sgi->smi.start + foff + poff);
         vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-            "fpc0:", vdsp);
+            "fpc0:", vdsp, sgi->threads);
         if (*rwdsp == 0) {
             rwords = 2 * vds0.bits.df_len + poff / sizeof(uint32_t);
             if (rwords > SG_MAX_VDIF_BYTES/4) rwords = SG_MAX_VDIF_BYTES/4;
@@ -285,7 +328,7 @@ static void sg_first_packet_common(SGInfo *sgi, off_t foff, off_t *rwdsp)
         vhp1 = vhp0 + rwords;
         vds1.word = (vhp1 < (uint32_t *)(sgi->smi.eomem - sizeof(VDIFHeader)))
                   ? sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-                    "fpc1:", vdsp) : 0LL;
+                    "fpc1:", vdsp, sgi->threads) : 0LL;
     } while ((vds0.word != vds1.word) &&
              ((poff += sizeof(uint32_t)) < rwords));
     
@@ -359,13 +402,13 @@ static uint64_t valid_first_signature(SGInfo *sgi, off_t foff, uint32_t rdsize)
     do {
         vh0 = (VDIFHeader *)vhp0;
         vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-            "vfs0:", (VDIFsigu *)0);
+            "vfs0:", (VDIFsigu *)0, sgi->threads);
         vhp1 = vhp0 + rdsize / sizeof(uint32_t);
         vh1 = (VDIFHeader *)vhp1;
         if (vhp1 > (uint32_t *)(sgi->smi.eomem - sizeof(VDIFHeader)))
             return(0LL);
         vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-                    "vfs1:", (VDIFsigu *)0);
+                    "vfs1:", (VDIFsigu *)0, sgi->threads);
         if ((vds0.word == vds1.word) &&
             !(vh0->w1.invalid || vh1->w1.invalid)) {
                 if (sgi->verbose>1) fprintf(sgalog,
@@ -423,9 +466,9 @@ static void sg_final_packet(SGInfo *sgi)
     vhp0 = (uint32_t *)(sgi->smi.eomem - 2 * sgi->read_size + sgi->pkt_offset);
     vhp1 = (uint32_t *)(sgi->smi.eomem - 1 * sgi->read_size + sgi->pkt_offset);
     vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-1,
-        "fnp0:", &sgi->vdif_signature);
+        "fnp0:", &sgi->vdif_signature, sgi->threads);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-1,
-        "fnp1:", &sgi->vdif_signature);
+        "fnp1:", &sgi->vdif_signature, sgi->threads);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         sgi->sg_version = SG_VERSION_SIG_FINAL_FAIL;
         if (sgi->verbose>2)
@@ -466,9 +509,9 @@ static void sg_double_short(SGInfo *sgi, uint32_t *vhp0, uint32_t *vhp1)
     VDIFsigu vds0, vds1;
 
     vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-        "dsh0:", &sgi->vdif_signature);
+        "dsh0:", &sgi->vdif_signature, sgi->threads);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "dsh1:", &sgi->vdif_signature);
+        "dsh1:", &sgi->vdif_signature, sgi->threads);
 
     update_fr_cnt_max_fr_ptr32(vhp0, sgi->frame_cnt_max);
     while (vds0.word == vds1.word && vds0.word == sgi->vdif_signature.word) {
@@ -484,7 +527,7 @@ static void sg_double_short(SGInfo *sgi, uint32_t *vhp0, uint32_t *vhp1)
             return;
         }
         vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-3,
-            "dswh:", &sgi->vdif_signature);
+            "dswh:", &sgi->vdif_signature, sgi->threads);
     }
 
     /* ok, vhp1 points to the first short block */
@@ -514,7 +557,7 @@ static void sg_double_short(SGInfo *sgi, uint32_t *vhp0, uint32_t *vhp1)
     /* check signature in new block */
     vhp1 += sgi->sg_wbht_size / sizeof(uint32_t);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "dsnw:", &sgi->vdif_signature);
+        "dsnw:", &sgi->vdif_signature, sgi->threads);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         if (sgi->verbose>1) fprintf(sgalog,
             "But blocks appear to be corrupt\n");
@@ -559,9 +602,9 @@ static void sg_short_endfix(SGInfo *sgi)
         sgi->sg_wr_block + sgi->sg_wbht_size + sgi->pkt_offset);
     vhp1 = vhp0 + (sgi->read_size / sizeof(uint32_t));
     vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-        "sef0:", &sgi->vdif_signature);
+        "sef0:", &sgi->vdif_signature, sgi->threads);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "sef1:", &sgi->vdif_signature);
+        "sef1:", &sgi->vdif_signature, sgi->threads);
 
     /* usually, there is no short block at the end of the file */
     if (vds0.word == vds1.word && vds0.word == sgi->vdif_signature.word) {
@@ -581,17 +624,17 @@ static void sg_short_endfix(SGInfo *sgi)
     vhp0 -= sgi->sg_wbht_size / sizeof(uint32_t);
     vhp1 -= sgi->sg_wbht_size / sizeof(uint32_t);
     vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-        "sef2:", &sgi->vdif_signature);
+        "sef2:", &sgi->vdif_signature, sgi->threads);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "sef3:", &sgi->vdif_signature);
+        "sef3:", &sgi->vdif_signature, sgi->threads);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         /* this may happen if there are two short blocks at the end */
         vhp0 -= sgi->sg_wbht_size / sizeof(uint32_t);
         vhp1 -= sgi->sg_wbht_size / sizeof(uint32_t);
         vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-            "sef4:", &sgi->vdif_signature);
+            "sef4:", &sgi->vdif_signature, sgi->threads);
         vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-            "sef5:", &sgi->vdif_signature);
+            "sef5:", &sgi->vdif_signature, sgi->threads);
         if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
             /* this would happen if the blocks were corrupt */
             sgi->sg_version = SG_VERSION_SIG_SEBLK_FAIL;
@@ -626,13 +669,13 @@ static void sg_short_endfix(SGInfo *sgi)
             return;
         }
         vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-3,
-            "sef6:", &sgi->vdif_signature);
+            "sef6:", &sgi->vdif_signature, sgi->threads);
     }
 
     /* ok, we didn't run off the end and the signatures are different */
     vhp1 += sgi->sg_wbht_size / sizeof(uint32_t);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "sef7:", &sgi->vdif_signature);
+        "sef7:", &sgi->vdif_signature, sgi->threads);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         /* this would happen if the blocks were corrupt */
         sgi->sg_version = SG_VERSION_SIG_SEBLK_BAIL2;
@@ -673,7 +716,7 @@ static uint32_t sg_binary_search(SGInfo *sgi,
         bpx = start + sgi->sg_fht_size + xamen * (off_t)sgi->sg_wr_block;
         bhtx = (uint32_t *)bpx;
         vdsx.word = sg_get_vsig(bhtx + offset, start, sgi->verbose-2,
-            "bshx:", &sgi->vdif_signature);
+            "bshx:", &sgi->vdif_signature, sgi->threads);
         if (sgi->verbose>1) fprintf(sgalog,
             "sgb: lower %u xamen %u upper %u size %u\n",
                 lower, xamen, upper, bhtx[1]);
@@ -737,9 +780,9 @@ static uint32_t sg_short_search(SGInfo *sgi, uint32_t blks, off_t runt)
     bht1 = (uint32_t *)bp1;
 
     vds0.word = sg_get_vsig(bht0 + offset, start, sgi->verbose-2,
-        "ssh0:", &sgi->vdif_signature);
+        "ssh0:", &sgi->vdif_signature, sgi->threads);
     vds1.word = sg_get_vsig(bht1 + offset, start, sgi->verbose-2,
-        "ssh1:", &sgi->vdif_signature);
+        "ssh1:", &sgi->vdif_signature, sgi->threads);
 
     /* easy cases */
     if (vds0.word != sgi->vdif_signature.word ||
@@ -989,15 +1032,19 @@ char *sg_error_str(int err)
  * All non-mm_* functions test sgi->sg_version before proceeding.
  * All unassigned data in the structure are zeroed at the start
  * and should be set to valid values at the end (if all is well).
+ * A few things from the sgi object are retained, but most are rebuilt.
  */
 void sg_info(const char *file, SGInfo *sgi)
 {
     int verbcopy = sgi->verbose;
     int fcmxcopy = sgi->frame_cnt_max;
+    int ii;
     SGMMInfo smicopy = sgi->smi;
 
     if (sgi->name) free(sgi->name);
     memset(sgi, 0, sizeof(SGInfo));
+    /* set thread ids to all be invalid */
+    for (ii = 0; ii < MAX_VDIF_THREADS; ii++) sgi->threads[ii] = -1;
     sgi->smi = smicopy;
     sgi->verbose = verbcopy;
     sgi->eval_time = current_or_elapsed_secs((double *)0);
@@ -1396,7 +1443,7 @@ int sg_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end, int *nv)
     if (!sgi || (sgi->smi.start == 0)) return(nl);
     while (nl-- > 0) {
         vds.word = sg_get_vsig(pkt, sgi->smi.start, sgi->verbose-3,
-            "pchk:", &sgi->vdif_signature);
+            "pchk:", &sgi->vdif_signature, sgi->threads);
         if ((pkt >= end) || vds.word != (sgi->vdif_signature.word)) nbad ++;
         update_fr_cnt_max_fr_ptr32(pkt, sgi->frame_cnt_max);
         pkt += sgi->read_size / sizeof(uint32_t);

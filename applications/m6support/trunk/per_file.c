@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 4193 2017-01-03 21:07:02Z gbc $
+ * $Id: per_file.c 4508 2017-12-04 20:02:49Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -53,6 +53,7 @@ static struct checker_work {
     uint32_t    extend_hchk;        /* check the extended header */
     uint32_t    flist_only;         /* only generate an flist entry */
     uint32_t    pps_search;         /* looking for pps jumps */
+    uint32_t    showthreads;        /* whether to report on threads */
 
     /* evolving */
     char        *cur_file;          /* name of the current file */
@@ -257,6 +258,9 @@ static void check_random(Random_Picker *rp)
         if (work.stat_delta)
             stats_delta(&work.bsi, &work.blst, &work.bdel,
                 pkt, nl, work.cur_numb, work.sgi.smi.start);
+        if (work.showthreads) (void)sg_get_vsig(pkt,
+            (void*)0, work.sgi.verbose > 2 ? 1 : 0,
+            "thr:", (VDIFsigu*)0, work.sgi.threads);
         if (time_to_bail()) break;
     }
 }
@@ -375,6 +379,20 @@ static void flist_report(void)
 }
 
 /*
+ * Provide a one-liner on threads
+ */
+static void thread_summary(char *lab, short *threads)
+{
+    int ii;
+    fprintf(stdout, "%s:threads", lab);
+    for (ii = 0; ii < MAX_VDIF_THREADS; ii++) {
+        if (threads[ii] < 0 || threads[ii] > 1023) break;
+        fprintf(stdout, " %d", threads[ii]);
+    }
+    fprintf(stdout, "\n");
+}
+
+/*
  * Provide a summary report
     else if (work.pps_search > 0) search_report();
  */
@@ -390,6 +408,7 @@ static void summary_report(void)
              sg_vextime(work.sgi.ref_epoch, work.sgi.first_secs),
         lab, work.pickername, work.pkts_passed, work.pkts_failed,
              work.pkts_timing, work.pkts_filled, work.pkts_tested);
+    if (work.showthreads) thread_summary(lab, work.sgi.threads);
     strcat(lab, ":");
     if (verb>0) sg_report(&work.sgi, lab);
     strcat(lab, "stats:");
@@ -703,21 +722,21 @@ static int set_alarm_etc(int files)
  */
 static int help_chk_opt(void)
 {
-    fprintf(stdout, "Checker options:\n");
+    fprintf(stdout, "Checker options include:\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  version          readonly internal version (%g)\n",
+    fprintf(stdout, "  version          of m6support toolset (%g)\n",
         M6_VERSION);
-    fprintf(stdout, "  alarm=<float>    per-file check time limit (%g)\n",
+    fprintf(stdout, "  alarm=<float>    per-file check time limit (%g s)\n",
         work.alarm_secs);
     fprintf(stdout, "  seed=<int>       seed for trials (%u)\n",
         work.trial_seed);
-    fprintf(stdout, "  sgv=<int>        internal sg verbosity (%u)\n",
+    fprintf(stdout, "  sgv=<int>        internal verbosity (%u) on sg lib\n",
         work.sgi.verbose);
     fprintf(stdout, "  loops=<int>      approx # spots to check (%u)\n",
         work.pkts_loops);
     fprintf(stdout, "  runs=<int>       approx # packets/spot (%u)\n",
         work.pkts_runs);
-    fprintf(stdout, "  starter=<int>    start packets in (%u, sequential)\n",
+    fprintf(stdout, "  starter=<int>    start packet (%u) in sequential mode\n",
         work.pkts_seqstarter);
     fprintf(stdout, "  chans=<csv>      list of channels for stats (\"\")\n"
         /*work.stat_chans*/);
@@ -725,15 +744,19 @@ static int help_chk_opt(void)
         work.stat_octets);
     fprintf(stdout, "  sdelta=<int>     dump statistics after (%u) pkts\n",
         work.stat_delta);
+    fprintf(stdout, "  srate=<int>      set rate for sdelta (%lu pkts/s)\n",
+        stats_get_packet_rate());
     fprintf(stdout, "  smask=<int>      station bits to check (%u)\n",
         work.station_mask);
     fprintf(stdout, "  exthdr=<str>     examine extended headers (%s)\n",
-        work.extend_hchk ? "inactive" : "activated");
+        work.extend_hchk ? "activated" : "inactive");
     fprintf(stdout, "  ofs=<int>:<int>  user supplied offset and size\n");
     fprintf(stdout, "  flist=<int>      only generate flist if !0 (%u)\n",
         work.flist_only);
     fprintf(stdout, "  mxppsdel=<ns>    search for jumps > this (%u)\n",
         work.pps_search);
+    fprintf(stdout, "  threads=0|max    show threads (%d), set max legal\n",
+        work.showthreads);
     /* ispy is not settable from command line */
     fprintf(stdout, "\n");
     fprintf(stdout, "Generally speaking, you can increase the amount\n");
@@ -743,16 +766,24 @@ static int help_chk_opt(void)
     fprintf(stdout, "the program will start at the beginning and run\n");
     fprintf(stdout, "through the number of packets specified by runs.\n");
     fprintf(stdout, "To do the whole file sequentially, set runs=0.\n");
-    fprintf(stdout, "To start in the middle, use starter.\n");
+    fprintf(stdout, "To start in the middle, set starter > 0.\n");
+    fprintf(stdout, "\n");
     fprintf(stdout, "Use exthdr=help for help with those options.\n");
+    fprintf(stdout, "-c exthdr= activates the capability, but you will\n");
+    fprintf(stdout, "may only get useful results with some configuration.\n");
+    fprintf(stdout, "\n");
     fprintf(stdout, "The ofs= argument supplies an offset in the pkt\n");
     fprintf(stdout, "read size where the VDIF packet is found together\n");
     fprintf(stdout, "with that read size.  This is used to \"try harder\n");
     fprintf(stdout, "to find a valid packet if there are invalid packets\n");
+    fprintf(stdout, "\n");
     fprintf(stdout, "If a GPS PPS is available in the extended header,\n");
     fprintf(stdout, "you can use the mxppsdel to search for gaps which\n");
     fprintf(stdout, "exceed the value supplied.  This assumes you have\n");
     fprintf(stdout, "used the exthdr option to configure the GPS PPS.\n");
+    fprintf(stdout, "Minimal support for threads is provided.  If you\n");
+    fprintf(stdout, "set a max value for legal thread id, you will get\n");
+    fprintf(stdout, "a list of thread ids that are less than that value.\n");
     return(1);
 }
 
@@ -815,6 +846,10 @@ int m6sc_set_chk_opt(const char *arg)
         if (work.stat_delta < 0) work.stat_delta = 0;
         if (verb>1) fprintf(stdout,
             "opt: Statistics dump every %u packets\n", work.stat_delta);
+    } else if (!strncmp(arg, "srate=", 6)) {
+        stats_set_packet_rate(atol(arg+6));
+        if (verb>1) fprintf(stdout,
+            "opt: Statistics pkt rate now %ul pps\n", stats_get_packet_rate());
     } else if (!strncmp(arg, "smask=", 6)) {
         sg_set_station_id_mask(atoi(arg+6));
         work.station_mask = sg_get_station_id_mask();
@@ -843,6 +878,13 @@ int m6sc_set_chk_opt(const char *arg)
         work.pps_search = atoi(arg+9);
         if (verb>1) fprintf(stdout,
             "opt: Searching for PPS jumps > %u\n", work.pps_search);
+    } else if (!strncmp(arg, "threads=", 8)){
+        work.showthreads = atoi(arg+8);
+        if (work.showthreads > 0 || work.showthreads < 1024)
+            sg_set_max_legal_thread_id(work.showthreads);
+        if (verb>1) fprintf(stdout,
+            "opt: %s showing threads; max legal thread id is %d\n",
+            work.showthreads ? "am" : "not", sg_get_max_legal_thread_id());
     } else {
         fprintf(stderr, "Unknown option %s\n", arg);
         return(1);

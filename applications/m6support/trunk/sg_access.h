@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.h 4287 2017-05-01 17:10:37Z gbc $
+ * $Id: sg_access.h 4500 2017-11-21 15:53:54Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/types.h>
 #include "vdif.h"
 
 /*
@@ -25,6 +26,9 @@ typedef struct sg_mmap_info {
     int         mmfd;           /* file descriptor >=0 if in use */
     int         users;          /* number of users for this mapping */
 } SGMMInfo; 
+
+/* most likely 4 is enough */
+#define MAX_VDIF_THREADS 8
 
 /*
  * A structure to hold what we can easily find out about an SG fragment
@@ -48,6 +52,8 @@ typedef struct sg_info {
     uint32_t    final_frame;    /* frame counter of final packet */
     uint32_t    frame_cnt_max;  /* maximum frame counter value seen */
     VDIFsigu    vdif_signature; /* header signature */
+    short       threads[MAX_VDIF_THREADS];
+    short       reserved[MAX_VDIF_THREADS * 2];
 
     /* sg version 2 */
     int32_t     sg_version;
@@ -161,9 +167,14 @@ extern char *sg_repstr(SGInfo *sgi, char *label);
 
 /* Computes the vdif header signature from a pointer to 1st header word */
 extern uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb,
-    char *lab, VDIFsigu *vc);
+    char *lab, VDIFsigu *vc, short *thp);
 extern void sg_set_station_id_mask(int mask);
 extern int sg_get_station_id_mask(void);
+
+/* Some hooks for threads */
+extern void sg_threads(short *thp, short tid, char *report);
+extern void sg_set_max_legal_thread_id(int max);
+extern int sg_get_max_legal_thread_id(void);
 
 /* Extra effort if file starts out invalid */
 extern void sg_set_user_poff_and_size(const char *arg);
@@ -181,6 +192,7 @@ extern void sg_logger(FILE *fp);
 extern void sg_advice(SGInfo *sgi, void *pkt, int dir);
 extern void sg_advice_term(int mmfd);
 extern void spawn_readahead_thread(int fd, off_t addr, size_t len, size_t mx);
+extern void spawn_toucher_thread(int fd, void *a, size_t l, long pg);
 
 #endif /* sg_access_h */
 

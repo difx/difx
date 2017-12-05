@@ -26,7 +26,7 @@ endif
 
 dist_noinst_HEADERS = vdif.h vdif_epochs.h vdif_time_util.h \
 	sg_access.h sc_stats.h exthdr.h m6scmodule.h $(vdifuse_h)
-test_scripts = hammer.sh hammerplot.sh fillerfrac.sh
+test_scripts = hammer.sh hammerplot.sh fillerfrac.sh statsplot.py glitchplot.sh
 
 check_PROGRAMS =
 TESTS = 
