@@ -176,6 +176,7 @@ verb=true
 nuke=false
 over=false
 save=false
+haxprune=true
 label=''
 flab=''
 target=none
@@ -213,6 +214,7 @@ save=*)  eval "$1" ;;
 label=*) eval "$1" ;;
 flab=*)   eval "$1" ;;
 target=*) eval "$1" ;;
+haxprune=*) eval "$1" ;;
 jobs)    shift ; break ;;
 esac ; shift ; done
 
@@ -245,6 +247,8 @@ $verb && echo '' && echo '' && echo $0 $args | fold && echo ''
     echo nuke must be true or false ; exit 1; }
 [ "$over" = 'true' -o "$over" = 'false' ] || {
     echo over must be true or false ; exit 1; }
+[ "$haxprune" = 'true' -o "$haxprune" = 'false' ] || {
+    echo haxprune must be true or false ; exit 1; }
 $d2m4 && [ "$expn" = '0000' ] && { echo d2m4 is true, need expn; exit 1; }
 [ "$job" = 'nojob' ] && job=$exp
 EXP=`echo $exp | tr a-z A-Z`
@@ -254,7 +258,7 @@ EXP=`echo $exp | tr a-z A-Z`
 }
 
 # variables passed to group tasks
-com1="nuke=$nuke exp=$exp vers=$vers subv=$subv"
+com1="nuke=$nuke exp=$exp vers=$vers subv=$subv haxprune=$haxprune"
 com2="verb=$verb dest=$dest"
 com3="dry=$dry src=$src"
 com4="copy=$copy job=$job expn=$expn EXP=$EXP d2m4=$d2m4 d2ft=$d2ft"
@@ -375,6 +379,7 @@ hops|hmix|haxp)
     $verb && [ $tar = haxp ] && echo making HOPS'(just alma)' in `pwd`/$expn
     $dry || dotar=true
     tarname=${exp}-${vers}-$subv-$label-$tar.tar
+    [ -d "$expn" -a ! -d "$expn.orig" ] && mv $expn $expn.orig
     $nuke && rm -rf $expn
     $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
              rm -f $workdir/logs/$tarname.log
@@ -659,9 +664,13 @@ esac
     [ "$savename" = $exp-$vers-$subv-$label-haxp.$expn.save ] || {
         echo Internal logic error...bailing ; exit 4
     }
-    toast=`ls -1 $expn/*/[^A]?..?????? | wc -l`
-    rm -f $expn/*/[^A]?..??????
-    echo Removed $toast correlation files
+    $haxprune && {
+        toast=`ls -1 $expn/*/[^A]?..?????? | wc -l`
+        rm -f $expn/*/[^A]?..??????
+        echo Removed $toast correlation files
+    } || {
+        echo haxprune is $haxprune so retaining all correlation files
+    }
 }
 
 # for the tarball cases, actually make the tarball
@@ -702,6 +711,7 @@ fits)
 hops|hmix|haxp)
     [ -d $savename ] && mv $savename $savename.prev
     [ -d $expn ] && mv $expn $savename
+    [ -d $expn.orig ] && mv $expn.orig $expn
     ;;
 4fit-4fit)
     [ -d $savename ] && mv $savename $savename.prev
