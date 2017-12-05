@@ -138,6 +138,11 @@ def parseOptions():
     parser.add_argument('-T', '--test', dest='test',
         default=False, action='store_true',
         help='Turns off processing of files, just does plotting')
+    parser.add_argument('-z', '--zmchk', dest='zmchk',
+        default=False, action='store_true',
+        help='the default (False) assumes the PolConvert fix to not' +
+            ' crash if the IFs mentioned cannot be converted; set this' +
+            ' to recover the original behavior which protects PolConvert.')
         
     # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
@@ -357,11 +362,14 @@ def deduceZoomIndicies(o):
         zfinal.add(zfin)
         mfqlst.add(cfrq[len(cfrq)/2])
     if len(zfirst) != 1 or len(zfinal) != 1:
-        raise Exception, ('Encountered ambiguities in zoom freq ranges: ' +
-            'first is ' + str(zfirst) + ' and final is ' + str(zfinal))
-    o.zfirst = int(zfirst.pop())
-    o.zfinal = int(zfinal.pop())
-    if o.verb: print 'Zoom frequency indices %d..%d found in %s..%s' % (
+        if o.zmchk:
+            raise Exception, ('Encountered ambiguities in zoom freq ranges: ' +
+                'first is ' + str(zfirst) + ' and final is ' + str(zfinal))
+        elif o.verb:
+            print 'global zoom first',str(zfirst),'and final',str(zfinal)
+    o.zfirst = sorted(list(zfirst))[0]  # int(zfirst.pop())
+    o.zfinal = sorted(list(zfinal))[-1] # int(zfinal.pop())
+    if o.verb: print 'Zoom frequency indices %d..%d found in %s\n  ..%s' % (
         o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
     # This could be relaxed to allow AA to be not 0 using antmap
     if o.verb: print 'Alma search pattern: "' + str(almapatt) + '"'

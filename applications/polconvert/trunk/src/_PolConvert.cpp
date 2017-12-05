@@ -106,7 +106,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 {
 
 
-  //static const std::complex<float> oneOverSqrt2 = 0.7071067811;
+  static const std::complex<float> oneOverSqrt2 = 0.7071067811;
 //  static const std::complex<float> Im = (std::complex<float>) std::polar(1.0,1.570796326);  
     static const cplx32f Im = cplx32f(0.,1.);
  
@@ -617,7 +617,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
     FILE *plotFile[nIFplot];
-    FILE *gainsFile;
+    FILE *gainsFile = (FILE*)0;
 
 // Prepare plotting files:
     int noI = -1;
@@ -667,11 +667,12 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
       if (IFs2Plot[ij]==ii){plotIF=true;IFplot=ij; break;};
     };
 
-    if (ii >= nnu) {
-      sprintf(message,"ERROR! DATA DO NOT HAVE IF #%i !!\n",ii);  
-      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+ //   if (ii >= nnu) {
+ //     sprintf(message,"ERROR! DATA DO NOT HAVE IF #%i !!\n",ii);  
+ //     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+ //   return ret;};
 
-    return ret;};
+
 
     sprintf(message,"\nDoing subband %i of %i\n",ii+1,nnu);
     fprintf(logFile,"%s",message); 
@@ -680,7 +681,14 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     fflush(stdout);
 
 
-    if(!DifXData->setCurrentIF(ii)){return ret;};
+// Only proceed if IF is OK:
+    if(!DifXData->setCurrentIF(ii)){             //return ret;};
+
+      sprintf(message,"WARNING! DATA DO NOT HAVE SUCH AN IF!! WILL SKIP CONVERSION\n");  
+      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+
+    } else {
+
 
 // Get the frequencies of the current IF:
      DifXData->getFrequencies(DifXFreqs);
@@ -966,15 +974,15 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
    // Multiply by conversion (hybrid) matrix and save result in the "Ktotal" matrix:
         if(XYSWAP[currAntIdx]){
-        Ktotal[currAntIdx][0][0][j] = (Kinv[0][0]*HSw[0][0]+Kinv[1][0]*HSw[0][1]);
-        Ktotal[currAntIdx][0][1][j] = (Kinv[0][1]*HSw[0][0]+Kinv[1][1]*HSw[0][1]);
-        Ktotal[currAntIdx][1][0][j] = (Kinv[0][0]*HSw[1][0]+Kinv[1][0]*HSw[1][1]);
-        Ktotal[currAntIdx][1][1][j] = (Kinv[0][1]*HSw[1][0]+Kinv[1][1]*HSw[1][1]);
+        Ktotal[currAntIdx][0][0][j] = (Kinv[0][0]*HSw[0][0]+Kinv[1][0]*HSw[0][1])*oneOverSqrt2;
+        Ktotal[currAntIdx][0][1][j] = (Kinv[0][1]*HSw[0][0]+Kinv[1][1]*HSw[0][1])*oneOverSqrt2;
+        Ktotal[currAntIdx][1][0][j] = (Kinv[0][0]*HSw[1][0]+Kinv[1][0]*HSw[1][1])*oneOverSqrt2;
+        Ktotal[currAntIdx][1][1][j] = (Kinv[0][1]*HSw[1][0]+Kinv[1][1]*HSw[1][1])*oneOverSqrt2;
        } else {
-        Ktotal[currAntIdx][0][0][j] = (Kinv[0][0]*H[0][0]+Kinv[1][0]*H[0][1]);
-        Ktotal[currAntIdx][0][1][j] = (Kinv[0][1]*H[0][0]+Kinv[1][1]*H[0][1]);
-        Ktotal[currAntIdx][1][0][j] = (Kinv[0][0]*H[1][0]+Kinv[1][0]*H[1][1]);
-        Ktotal[currAntIdx][1][1][j] = (Kinv[0][1]*H[1][0]+Kinv[1][1]*H[1][1]);
+        Ktotal[currAntIdx][0][0][j] = (Kinv[0][0]*H[0][0]+Kinv[1][0]*H[0][1])*oneOverSqrt2;
+        Ktotal[currAntIdx][0][1][j] = (Kinv[0][1]*H[0][0]+Kinv[1][1]*H[0][1])*oneOverSqrt2;
+        Ktotal[currAntIdx][1][0][j] = (Kinv[0][0]*H[1][0]+Kinv[1][0]*H[1][1])*oneOverSqrt2;
+        Ktotal[currAntIdx][1][1][j] = (Kinv[0][1]*H[1][0]+Kinv[1][1]*H[1][1])*oneOverSqrt2;
        };
 
 ////////////////////////////////////
@@ -992,7 +1000,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   if(doNorm && (dtchanged||gchanged)){ // Norm. factor will be the geometrical average of gains.
     AntTab = std::sqrt(NormFac[0]*NormFac[1])/((float) nchans[ii]);
  //   printf("GAIN %.3e  %.3e\n",AntTab,NormFac[0]);
-    fprintf(gainsFile, "%i  %i  %.10e  %.5e \n",ii+1, currAnt, currT/86400.,AntTab*AntTab*std::abs(auxD));
+    fprintf(gainsFile, "%i  %i  %.10e  %.5e \n",ii+1, currAnt, currT/86400.,AntTab*AntTab/std::abs(auxD));
     for(j=0; j<nchans[ii]; j++){
       Ktotal[currAntIdx][0][0][j] /= AntTab;
       Ktotal[currAntIdx][0][1][j] /= AntTab;
@@ -1025,6 +1033,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
    };  // Go to next mixed-vis in this IF.
 
   
+  }; // Comes from the check of IF.
 
 
   }; ///////////////////////////////

@@ -682,7 +682,7 @@ bool DataIOFITS::setCurrentIF(int i){
 
  // char *message;
 
-  if (i>=Nfreqs){
+  if ( i>=Nfreqs || i<0 ){
     sprintf(message,"\nERROR! IF %i CANNOT BE FOUND!\n",i+1); 
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 

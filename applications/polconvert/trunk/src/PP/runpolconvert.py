@@ -9,7 +9,7 @@ import os
 import shutil
 import re
 
-pcvers='1.7-beta'
+pcvers='1.7.0'
 
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.

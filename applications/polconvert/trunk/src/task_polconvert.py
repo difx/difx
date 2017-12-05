@@ -47,8 +47,8 @@
 #
 #
 
-__version__ = "1.7-beta"
-date = 'OCT 2017'     
+__version__ = "1.7.0"
+date = 'Dec 5, 2017'     
 
 
 ################
@@ -1131,10 +1131,11 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     calfreqs2 = calfreqs + tb.getcol('CHAN_WIDTH')[0,:]*nchansp/1.e6
     tb.close()
     nurange = [[np.min([calfreqs[i],calfreqs2[i]]),np.max([calfreqs[i],calfreqs2[i]])] for i in range(len(calfreqs))]
-    spwsel = [-1 for nu in doIF]
+    spwsel = -np.ones(len(doIF),dtype=np.int)   #[-1 for nu in doIF]
     slop = 5.0 # MHz
     for nui,nu in enumerate(doIF):
       for spwi in range(len(calfreqs)):
+       try:
         nu0 = FrInfo['FREQ (MHZ)'][nu-1]
         nu1 = FrInfo['FREQ (MHZ)'][nu-1] + FrInfo['BW (MHZ)'][nu-1]*FrInfo['SIGN'][nu-1]
         nus = [np.min([nu0,nu1]),np.max([nu0,nu1])]
@@ -1144,17 +1145,24 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           print ' pass'
         else:
           print ' fail'
+       except:
+        printMsg("WARNING! spw %i is NOT in SWIN file! Will skip it!"%nu)
+        spwsel[nui] = -2
     errmsg = []
     isErr = False
     for i,spws in enumerate(spwsel):
-       if spws < 0:
+       if spws == -1:
          isErr = True
          errmsg += [str(doIF[i])]
 
     if isErr:
-         printError("There is no spw that covers all the IF frequencies!\n" +
+         printMsg("WARNING! There is no spw that covers all the IF frequencies!\n" +
             "Problematic IFs are:  %s"%(','.join(errmsg)))
-    spwsel = list(set(spwsel))
+
+         doIF = [doIF[i] for i in range(len(doIF)) if i in list(np.where(spwsel>=0)[0])]
+         printMsg('\n\n  NEW LIST OF IFs: '+','.join(map(str,doIF)))
+
+    spwsel = list(set(spwsel[spwsel>=0]))
     if len(spwsel)>1:
        printError("There is more than one possible spw for some IFs!")
 
@@ -2078,7 +2086,16 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
    ResidGains = {} 
    MixedCalib = {} 
 
+
+# Filter out IFs with no data:
+   GoodIFs = []
    for pli in plotIF:
+     if os.stat("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli).st_size>10:
+       GoodIFs.append(pli)
+     else:
+       printMsg("WARNING! IF %i was NOT polconverted properly\n"%pli)
+
+   for pli in GoodIFs:
 
     print '\n\n'
     printMsg("Plotting selected fringe for IF #%i"%pli)

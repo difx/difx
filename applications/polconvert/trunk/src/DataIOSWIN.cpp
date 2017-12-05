@@ -181,7 +181,7 @@ bool DataIOSWIN::setCurrentIF(int i){
 
 //  char *message;
 
-  if (i>=Nfreqs){success=false; 
+  if ( i>=Nfreqs || i<0 ){success=false; 
       sprintf(message,"\nERROR! IF %i CANNOT BE FOUND!\n",i+1); 
       fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
@@ -622,7 +622,9 @@ for (i=0; i<4; i++) {
   } else {
 
     for (k=0; k<Freqs[currFreq].Nchan; k++) {
-      currentVis[i][k] = {0.0,0.0};
+      //  IVAN: compiler complained
+      //currentVis[i][k] = {0.0,0.0};
+      currentVis[i][k] = (std::complex<float>)0;
     };
   };
 };
@@ -687,7 +689,9 @@ for (i=0; i<4; i++) {
   } else {
 
     for(k=0;k<Freqs[currFreq].Nchan; k++) {
-      auxVis[i][k] = {0.0,0.0};
+      //  IVAN: compiler complained
+      //auxVis[i][k] = {0.0,0.0};
+      auxVis[i][k] = (std::complex<float>)0;
     };
 
   };
