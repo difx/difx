@@ -10,6 +10,9 @@ import pylab as pl
 import numpy as np
 import os
 
+print 'Interactive plotting off.'
+pl.ioff()
+
 try:
     for var in [ TsysTable, Flux_inf, CalAppPhase ]:
         if type(var) == str:
@@ -54,6 +57,10 @@ HH = AllTime/86400.
 HH -= np.floor(np.min(HH))
 HH *= 24.
 HT = HH%24.
+# Figure out the time for this uid
+#IsoT=map(lambda x:qa.time({'value':x/86400.0,'unit':'d'},form='fits'),AllTime)
+IStart=qa.time({'value':np.min(AllTime)/86400.0,'unit':'d'},form='fits')[0]
+print 'This Table starts at',IStart
 ####################################
 
 
@@ -175,4 +182,7 @@ pl.savefig('DPFU.png')
 
 Phased = DPFU[:,0]>0.0
 NPhas = np.sum(Phased)
-print 'Average DPFU over %i antennas: %.3f K/Jy'%(NPhas,np.average(DPFU[Phased]))
+DPFUave = np.average(DPFU[Phased])
+print 'Ave DPFU on %i ant: %.3f K/Jy'%(NPhas,DPFUave)
+
+# eof
