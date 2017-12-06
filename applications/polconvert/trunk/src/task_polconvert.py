@@ -1638,7 +1638,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      print >> outf,"INDEX= "+', '.join(['\'L%i|R%i\''%(i+1,i+1) for i in range(len(doIF))])
      print >> outf,"/"
      fmt0 = "%i %i:%2.4f  "
-     fmt1 = "%8.2f  "*len(doIF)
+     # boost field width to retain significant figures
+     fmt1 = "%10.4f  "*len(doIF)
      prevT = " "
      for entry in Tsys:
        MJD2000 = 51544

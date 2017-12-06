@@ -1,6 +1,8 @@
 
+
 v1.5 - v1.7
 
+- antab for ALMA is now correct; missing cross-pol autocors for ALMA now fixed
 - general expansion of capabilities in response to EHT issues and
 - support for non-ALMA linear pol sites (EVN, &c.)
 

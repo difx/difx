@@ -105,7 +105,7 @@ def parseOptions():
         help='disable use of Dterm calibration tables')
     parser.add_argument('-A', '--ampNorm', dest='ampnrm',
         default=1.0, type=float,
-        help='set the DPFU in ANTAB or <=0 to apply it')
+        help='set the DPFU in ANTAB or <=0 to apply it (0)')
     parser.add_argument('-G', '--gainDel', dest='gaindel',
         default='', metavar='LIST',
         help='comma-sep list of gain tables to delete: del(gains[x])' +
@@ -140,8 +140,8 @@ def parseOptions():
         help='Turns off processing of files, just does plotting')
     parser.add_argument('-z', '--zmchk', dest='zmchk',
         default=False, action='store_true',
-        help='the default (False) assumes the PolConvert fix to not' +
-            ' crash if the IFs mentioned cannot be converted; set this' +
+        help='the default (False) assumes that a PolConvert fix (to not' +
+            ' crash if the IFs mentioned cannot be converted); set this' +
             ' to recover the original behavior which protects PolConvert.')
         
     # the remaining arguments provide the list of input files
@@ -367,8 +367,8 @@ def deduceZoomIndicies(o):
                 'first is ' + str(zfirst) + ' and final is ' + str(zfinal))
         elif o.verb:
             print 'global zoom first',str(zfirst),'and final',str(zfinal)
-    o.zfirst = sorted(list(zfirst))[0]  # int(zfirst.pop())
-    o.zfinal = sorted(list(zfinal))[-1] # int(zfinal.pop())
+    o.zfirst = int(sorted(list(zfirst))[0])  # int(zfirst.pop())
+    o.zfinal = int(sorted(list(zfinal))[-1]) # int(zfinal.pop())
     if o.verb: print 'Zoom frequency indices %d..%d found in %s\n  ..%s' % (
         o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
     # This could be relaxed to allow AA to be not 0 using antmap
