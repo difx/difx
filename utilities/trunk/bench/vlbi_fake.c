@@ -77,7 +77,7 @@ int main(int argc, char * const argv[]) {
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
   long *lbuf;
-  uint64_t mjdsec, bwrote;
+  uint64_t mjdsec, bwrote, totalpackets;
   double thismjd, finishmjd, ut, t0, t1, t2, dtmp;
   float speed, ftmp;
   unsigned long long filesize, networksize, nwritten, totalsize;
@@ -96,6 +96,7 @@ int main(int argc, char * const argv[]) {
   double mjd = -1;
   int numchan = 4;
   int numthread = 1;
+  int drop = -1;
   datamode mode = LBADR;
   int bits=2;
   int bandwidth=16;
@@ -141,6 +142,7 @@ int main(int argc, char * const argv[]) {
     {"nchan", 1, 0, 'n'},
     {"bits", 1, 0, 'b'},
     {"nthread", 1, 0, 'T'},
+    {"drop", 1, 0, 'j'},
     {"mark5b", 0, 0, 'B'},
     {"mk5b", 0, 0, 'B'},
     {"vdif", 0, 0, 'v'},
@@ -273,6 +275,15 @@ int main(int argc, char * const argv[]) {
       }
       break;
       
+    case 'j':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1)
+        fprintf(stderr, "Bad drop option %s\n", optarg);
+      else {
+        drop = tmp;
+      }
+      break;
+      
     case 'm':
       status = sscanf(optarg, "%d", &tmp);
       if (status!=1)
@@ -386,7 +397,9 @@ int main(int argc, char * const argv[]) {
       printf("  -S/blocksize <SIZE>   Blocksize to write, kB (1 MB default)\n");
       printf("  -f/filesize <SIZE>    Size in sec for files (1)\n");
       printf("  -nthread <NUM>        Number of threads (VDIF only)\n");
+      printf("  -drop <NUM>           Drop every NUM packets (UDP only)\n");
       printf("  -complex              Complex samples (VDIF only)\n");
+      printf("  -novtp                Don't use VTP protocol (raw VLBI data)\n");
       printf("  -h/-help              This list\n");
       return(1);
     break;
@@ -442,6 +455,9 @@ int main(int argc, char * const argv[]) {
 
   finishmjd = mjd+duration/(60.*60.*24.);
 
+  printf("Using MJD=%.4f\n", mjd);
+
+  
   datarate = numchan*bits*bandwidth*2/numthread; // Mbps (per thread if nthread>1), assuming Nyquist
   printf("Datarate is %d Mbps/thread\n", datarate);
 
@@ -461,6 +477,8 @@ int main(int argc, char * const argv[]) {
 	     udp.size+20+4*2+(int)sizeof(long long));
       exit(1);
     }
+  } else {
+    drop = -1;
   }
 
   if (mode==MARK5B) {
@@ -596,6 +614,7 @@ int main(int argc, char * const argv[]) {
   t0 = tim();
   t1 = t0;
 
+  totalpackets = 0;
   bwrote = 0;
   currentthread=0;
   while (mjd+0.001/60/60/24<finishmjd) {
@@ -657,15 +676,17 @@ int main(int argc, char * const argv[]) {
 
     // Send data buffer
     nwritten = 0;
-    while (nwritten<filesize) {
-      ntowrite = filesize-nwritten;
+    totalpackets++;
+    if (drop<0 || totalpackets %drop) {
+      while (nwritten<filesize) {
+	ntowrite = filesize-nwritten;
       if (ntowrite>bufsize) ntowrite = bufsize;
 
       status = netsend(sock, buf, ntowrite, &udp);
       if (status) exit(1);
       nwritten += ntowrite;
       bwrote += ntowrite;
-
+      }
     }
     t2 = tim();
 
@@ -680,14 +701,13 @@ int main(int argc, char * const argv[]) {
     }
     
     if (mode==MARK5B) {
-      mjd = mark5b_mjd(&mk5_header);
       next_mark5bheader(&mk5_header);
-
+      mjd = mark5b_mjd(&mk5_header);
     } else if (mode==VDIF) {
+      nextVDIFHeader(&vdif_headers[currentthread], framepersec);
       currentthread++;
       if (currentthread == numthread) {
         currentthread = 0;
-	nextVDIFHeader(&vdif_headers[currentthread], framepersec);
 	mjd = getVDIFFrameDMJD(&vdif_headers[currentthread], framepersec);
       }
 
