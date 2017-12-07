@@ -57,10 +57,10 @@ HH = AllTime/86400.
 HH -= np.floor(np.min(HH))
 HH *= 24.
 HT = HH%24.
-# Figure out the time for this uid
-#IsoT=map(lambda x:qa.time({'value':x/86400.0,'unit':'d'},form='fits'),AllTime)
-IStart=qa.time({'value':np.min(AllTime)/86400.0,'unit':'d'},form='fits')[0]
-print 'This Table starts at',IStart
+# Figure out start for this uid as both MJD and Iso time.
+MStart=np.min(AllTime)/86400.0
+IStart=qa.time({'value':MStart,'unit':'d'},form='fits')[0]
+print 'This Table starts at',MStart,IStart
 ####################################
 
 
