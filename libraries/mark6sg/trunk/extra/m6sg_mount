@@ -111,6 +111,22 @@ def unmount_all():
 		procs = procs + unmount(entry['mk6_mountpoint'])
 	return procs
 
+"""Unmount any no longer present devices that Linux (bug?) still keeps mounted somewhere"""
+def unmount_invisible():
+
+	query = subprocess.Popen(["/usr/bin/sudo", "/bin/mount"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	(out,rc) = query.communicate()
+	allmounts = out.split('\n')
+
+	p = []
+	for entry in allmounts:
+		if "/mnt/disks/" in entry:
+			dev = entry.split()[0]
+			print entry, dev
+			p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/umount", dev], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
+	for sp in p:
+		(o,rc) = sp.communicate()
+
 def main(argv=sys.argv):
 
 	if (not(len(argv) in [1,2]) or (len(argv)==2 and argv[1]!='-u')):
@@ -119,6 +135,7 @@ def main(argv=sys.argv):
 
 	if (len(argv)==2 and argv[1]=='-u'):
 		procs = unmount_all()
+		unmount_invisible()
 	else:
 		procs = mount_all()
 
