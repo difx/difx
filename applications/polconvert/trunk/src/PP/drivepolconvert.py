@@ -125,9 +125,11 @@ def parseOptions():
             'N for that many channels spread through the IF range, '
             'or 0 for off.')
     parser.add_argument('-m', '--remote', dest='remote',
-        default=2, metavar='INT', type=int,
+        default=-1, metavar='INT', type=int,
         help='Index of remote antenna on baseline to converted antenna. ' +
-            'The default is 2 (the next antenna in the list).')
+            'The default is -1 (disabled).  The vex file will be searched' +
+            'for the appropriate indices based on the site list, see -S.' +
+            'This value may be used only if there are issues...')
     parser.add_argument('-S', '--sites', dest='sites',
         default='', metavar='LIST',
         help='comma-sep list of 2-letter station codes to try' +
@@ -326,7 +328,13 @@ def deduceZoomIndicies(o):
     '''
     Pull the Zoom frequency indicies from the input files and check
     that all input files produce the same first and last values.
+    The user can specify a remote antenna, but now logic here (and
+    in runpolconvert) switches to o.remotelist assuming it is of the
+    proper length.  This should solve poor plotting choices.
     '''
+    sitelist = o.sites.split(',')
+    if o.verb: print 'Sitelist is',sitelist
+    o.remotelist = []
     zoompatt = r'^ZOOM.FREQ.INDEX.\d+:\s*(\d+)'
     almapatt = r'^TELESCOPE NAME %d:\s*AA' % (o.ant-1)
     amap_re = re.compile(r'^TELESCOPE NAME\s*([0-9])+:\s*([A-Z0-9][A-Z0-9])')
@@ -336,6 +344,7 @@ def deduceZoomIndicies(o):
     mfqlst = set()
     antmap = {}
     almaline = ''
+    plotant = -1
     for jobin in o.nargs:
         zfir = ''
         zfin = ''
@@ -353,6 +362,13 @@ def deduceZoomIndicies(o):
             amap = amap_re.search(line)
             if amap:
                 antmap[amap.group(2)] = int(amap.group(1))
+        for site in sitelist:
+            if site in antmap:
+                plotant = antmap[site] + 1
+                break
+        o.remotelist.append(plotant)
+        plotant = -1
+        antmap = {}
         ji.close()
         if o.verb: print 'Zoom bands %s..%s from %s' % (zfir, zfin, jobin)
         if len(cfrq) < 1:
@@ -376,15 +392,9 @@ def deduceZoomIndicies(o):
     if almaline == '':
         raise Exception, 'Telescope Name 0 is not Alma (AA)'
     if o.verb: print 'Found ALMA Telescope line: ' + almaline.rstrip()
-    if o.verb: print 'Remote antenna index was', o.remote
-    if o.verb: print 'Antenna map: ' + str(antmap) + ' (plus 1)'
-    thesite = 'unknown'
-    for site in o.sites.split(','):
-        if site in antmap:
-            o.remote = antmap[site] + 1
-            thesite = site
-            break
-    if o.verb: print 'Remote antenna index now', o.remote, 'which is', thesite
+    if o.verb: print 'Remote antenna index is', o.remote
+    if (len(o.remotelist) != len(o.nargs)): o.remotelist = []
+    if o.verb: print 'Remote antenna list is',o.remotelist
     # if the user supplied a band, check that it agrees
     if len(mfqlst) > 1:
         raise Exception, ('Input files have disparate frequency structures:\n'
@@ -484,6 +494,7 @@ def createCasaInput(o):
     # plotAnt=-1                        # no plotting
     # plotAnt=2                         # specifies antenna 2 to plot
     plotAnt=%d
+    plotAntList=%s
     numFrPltPix=%d
     doTest=%s
     # timeRange=[]                      # don't care
@@ -549,7 +560,7 @@ def createCasaInput(o):
         o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
         o.qa2, o.qal, o.qa2_dict, o.gainmeth, o.avgtime, o.ampnrm, o.gaindel,
-        o.remote, o.npix, dotest, o.doPlot[0],
+        o.remote, o.remotelist, o.npix, dotest, o.doPlot[0],
         o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
 
     for line in script.split('\n'):
@@ -597,7 +608,7 @@ def executeCasa(o):
              'CONVERSION.MATRIX', 'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
     removeTrash(o, misc)
     cmd1 = 'rm -f %s' % (o.output)
-    cmd2 = '%s --nologger < %s > %s 2>&1' % (o.casa, o.input, o.output)
+    cmd2 = '%s --nologger -c %s > %s 2>&1' % (o.casa, o.input, o.output)
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
     if o.prep: cmd4 = 'mv prepol*.log '
     else:      cmd4 = 'mv '

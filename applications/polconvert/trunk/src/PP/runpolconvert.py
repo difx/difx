@@ -125,6 +125,17 @@ except Exception, ex:
     numFrPltPix = 50
     print 'Setting numFrPltPix to 50'
 
+# option to use different peers per scan
+try:
+    if type(plotAntList) == list:
+        plotAntList.reverse()
+        print 'Popping antennas with indices',plotAntList
+    else:
+        raise Exception, 'plotAntList not a list'
+except Exception, ex:
+    print ex, 'Disabled plotAntList, using plotAnt', plotAnt
+    plotAntList = []
+
 # require constXYadd to be set to allow disabling table
 try:
     if type(constXYadd) == bool:
@@ -315,12 +326,15 @@ for job in djobs:
     SWIN = ('%s/%s_%s.difx' % (DiFXout,expName,job))
     SAVE = ('%s/%s_%s.save' % (DiFXout,expName,job))
 
+    if len(plotAntList) > 0: usePlotAnt = plotAntList.pop()
+    else:                    usePlotAnt = plotAnt
+
     print '\nProceeding with job ' + job + '\n'
     runPolConvert(label, band3=band3, band6Lo=band6Lo, band6Hi=band6Hi,
         DiFXinput=DiFXinput, DiFXoutput=SWIN, DiFXsave=SAVE,
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,
-        plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=plotAnt,
+        plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=usePlotAnt,
         npix=numFrPltPix, gainmeth=gainmeth, XYavgTime=XYavgTime)
 
 #
