@@ -16,7 +16,7 @@ if not os.path.isdir(artsy[0]):
     raise Exception, ('%s must be a directory' % artsy[0])
 
 # this should now be the label
-label = artsy[0].split('.')[0]
+label = artsy[0].split('.APP.artifacts')[0]
 ddir = ('%s-DPFU.artifacts' % label)
 
 # one level of protection
