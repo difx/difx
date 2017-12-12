@@ -632,7 +632,7 @@ for (i=0; i<4; i++) {
 
 // Case of auto-correlations (in the 2nd round of conversion):
 
- if (currEntries[currFreq][2]==-1 && currEntries[currFreq][3]==-1 && complete){
+ if (currEntries[currFreq][2]==-1 && currEntries[currFreq][3]==-1 && complete && antenna == otherAnt){
     for (k=0;k<Freqs[currFreq].Nchan; k++) {
       currentVis[3][k] = auxVis[2][k];
       currentVis[2][k] = auxVis[3][k];
