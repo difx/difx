@@ -19,7 +19,7 @@ def parseOptions():
     des = parseOptions.__doc__
     epi = ''
     use = '%(prog)s [options] [input_file [...]]\n  Version'
-    use += '$Id: ehtc-zoomchk.py 2146 2017-12-05 22:28:34Z gbc $'
+    use += '$Id: ehtc-zoomchk.py 2166 2017-12-13 22:04:46Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     # essential options
     parser.add_argument('-v', '--verbose', dest='verb',
@@ -144,12 +144,14 @@ def deduceZoomIndicies(o):
         print '#'
     else:
         # all are the same and alma present
-        o.zfirst = sorted(list(zfirst))[0]
-        o.zfinal = sorted(list(zfinal))[-1]
-        if o.verb: print 'Zoom frequency indices %d..%d in %s\n  ..%s' % (
+        o.zfirst = int(sorted(list(zfirst))[0])
+        o.zfinal = int(sorted(list(zfinal))[-1])
+        if o.verb: print '## Zoom frequency indices %d..%d in %s\n##  ..%s' % (
             o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
         print '## We believe PolConvert can handle these:',
-        for z in zoomys: print '##', z
+        print '##',
+        for z in zoomys: print z,
+        print
 
 #
 # enter here to do the work

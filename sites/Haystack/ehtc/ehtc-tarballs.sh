@@ -34,16 +34,19 @@ which specify which tarballs are to be made:
 
 Or, for convenience,
 
-    tar=post-corr   does:   dxin swin
+    tar=post-corr   does:   dxin swin haxp
     tar=no-alma     does:   dxin swin fits hops
     tar=no-hops     does:   dxin swin fits
     tar=pre-alma    does:   dxin swin hmix
     tar=post-alma   does:   pcin fits hops pcqk
 
-(Note 4fit probably doesn't make sense in these groupings.)
-The 4fit option requires 2 passes; one to build an \$expn dir to
-run fourfit in, and a second pass to create the tarball.  You may
-repeat this (see \$flab below) non-destructively.
+Note 4fit probably doesn't make sense in these groupings: The 4fit
+option requires 2 passes; one to build an \$expn dir to run fourfit
+in, and a second pass to create the tarball.  You may repeat this
+(see \$flab below) non-destructively.  The post-corr products (dxin,
+swin and haxp) operate in the correlation directory.  Since haxp
+needs to make a HOPS experiment directory, it will move any such
+directory aside (\$expn.orig).
 
 The no-alma case is presumed to have been processed in one directory;
 the no-hops case is if d2m4 was already run (and collected from
@@ -59,8 +62,9 @@ require additional information which is also supplied via options:
     copy=true|false copy the tarballs to dest (true)
     nuke=true|false remove working and dest products (false)
     save=true|false save products that might get nuked (false)
-    label=          an additional token to be included in tarnames
-    flab=           an additional version label for re-fourfitting
+    label=<string>  an additional token to be included in tarnames
+    flab=<char>     an additional version label for re-fourfitting
+    haxprune=true|false whether to restrict this to ALMA bl or not (true)
 
 The d2?? options presume you want to process all input files in \$src
 and will refuse to run if they find that this has already been done.
@@ -74,12 +78,15 @@ nuked on a subsequent run.  The label (if non-empty) can be used to
 label tarballs of subsets of processing (e.g. by project-source).
 Finally flab can be used to support re-fourfitting (e.g. with a new
 fourfit control file) and is only used in the 4fit option.  The saved
-dir and tarball will be named '4fit\$flab' so name wisely.
+dir and tarball will be named '4fit\$flab' so name wisely.  Finally,
+'tar=haxp haxprue=false' should be equivalent to 'tar=hmix'.
 
 Typically the label would be <project>-<source>.
 
 The single argument 'examples' will provide some suggestions.
 The single argument 'other' will provide some extra special use args.
+
+For production work, the ehtc-postdrive.sh should be used.
 "
 EXAMPLES="Standard delivery at the Correlators is to subdirectories
 (as sensible) of one of these:
@@ -258,11 +265,12 @@ EXP=`echo $exp | tr a-z A-Z`
 }
 
 # variables passed to group tasks
-com1="nuke=$nuke exp=$exp vers=$vers subv=$subv haxprune=$haxprune"
+com1="nuke=$nuke exp=$exp vers=$vers subv=$subv"
 com2="verb=$verb dest=$dest"
 com3="dry=$dry src=$src"
 com4="copy=$copy job=$job expn=$expn EXP=$EXP d2m4=$d2m4 d2ft=$d2ft"
-com5="over=$over save=$save label=$label target=$target flab=$flab jobs $jobs"
+com5="over=$over save=$save label=$label target=$target flab=$flab"
+com6="haxprune=$haxprune jobs $jobs"
 
 # verify write permissions in the work directory (for tar creation)
 workdir=`pwd`
@@ -313,12 +321,13 @@ fourfit=`type -p fourfit`
 $over && ov=--override-version || ov=''
 delete=''
 
-$verb && echo Sanity checks passed, proceeding with arguments &&
+$verb && echo Sanity checks passed, proceeding with $tar on arguments &&
     echo '        ' $com1 \\ &&
     echo '        ' $com2 \\ &&
     echo '        ' $com3 \\ &&
     echo '        ' $com4 \\ &&
-    echo '        ' $com5
+    echo '        ' $com5 \\ &&
+    echo '        ' $com6
 $verb && echo Using jobs $job1 .. $jobn "($jobs)"
 $verb && echo Source is $srcdir
 $verb && echo Tar output to $workdir
@@ -379,7 +388,8 @@ hops|hmix|haxp)
     $verb && [ $tar = haxp ] && echo making HOPS'(just alma)' in `pwd`/$expn
     $dry || dotar=true
     tarname=${exp}-${vers}-$subv-$label-$tar.tar
-    [ -d "$expn" -a ! -d "$expn.orig" ] && mv $expn $expn.orig
+    [ -d "$expn" -a ! -d "$expn.orig" ] && {
+        mv $expn $expn.orig || { echo Cannot preserve $expn ; exit 3; } ; }
     $nuke && rm -rf $expn
     $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
              rm -f $workdir/logs/$tarname.log
@@ -412,6 +422,7 @@ pcqk)
     content=''
     for j in $jobs
     do
+      content="$content ${j}*/polconvert.history"
       content="$content ${j}*polconvert*/*MATRIX"
       content="$content ${j}*polconvert*/*PEAKS"
       content="$content ${j}*polconvert*/*PLOTS"
@@ -437,53 +448,72 @@ pcqk)
 no-alma)
     $verb && echo doing no-alma case in `pwd`
     cd $workdir
-    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 || { echo dxin failed ; exit 3; }
+    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo dxin failed ; exit 3; }
     cd $workdir
-    $0 tar=swin $com1 $com2 $com3 $com4 $com5 || { echo swin failed ; exit 3; }
+    $0 tar=swin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo swin failed ; exit 3; }
     cd $workdir
-    $0 tar=fits $com1 $com2 $com3 $com4 $com5 || { echo fits failed ; exit 3; }
+    $0 tar=fits $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo fits failed ; exit 3; }
     cd $workdir
-    $0 tar=hops $com1 $com2 $com3 $com4 $com5 || { echo hops failed ; exit 3; }
+    $0 tar=hops $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo hops failed ; exit 3; }
     exit 0
     ;;
 no-hops)
     $verb && echo doing no-hops case in `pwd`
     cd $workdir
-    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 || { echo dxin failed ; exit 3; }
+    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo dxin failed ; exit 3; }
     cd $workdir
-    $0 tar=swin $com1 $com2 $com3 $com4 $com5 || { echo swin failed ; exit 3; }
+    $0 tar=swin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo swin failed ; exit 3; }
     cd $workdir
-    $0 tar=fits $com1 $com2 $com3 $com4 $com5 || { echo fits failed ; exit 3; }
+    $0 tar=fits $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo fits failed ; exit 3; }
     exit 0
     ;;
 post-corr)
     $verb && echo doing post-corr case in `pwd`
     cd $workdir
-    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 || { echo dxin failed ; exit 3; }
+    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo dxin failed ; exit 3; }
     cd $workdir
-    $0 tar=swin $com1 $com2 $com3 $com4 $com5 || { echo swin failed ; exit 3; }
+    $0 tar=swin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo swin failed ; exit 3; }
+    cd $workdir
+    $0 tar=haxp $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo swin failed ; exit 3; }
     exit 0
     ;;
 pre-alma)
     $verb && echo doing pre-alma case in `pwd`
     cd $workdir
-    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 || { echo dxin failed ; exit 3; }
+    $0 tar=dxin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo dxin failed ; exit 3; }
     cd $workdir
-    $0 tar=swin $com1 $com2 $com3 $com4 $com5 || { echo swin failed ; exit 3; }
+    $0 tar=swin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo swin failed ; exit 3; }
     cd $workdir
-    $0 tar=hmix $com1 $com2 $com3 $com4 $com5 || { echo hmix failed ; exit 3; }
+    $0 tar=hmix $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo hmix failed ; exit 3; }
     exit 0
     ;;
 post-alma)
     $verb && echo doing post-alma case in `pwd`
     cd $workdir
-    $0 tar=pcin $com1 $com2 $com3 $com4 $com5 || { echo pcin failed ; exit 3; }
+    $0 tar=pcin $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo pcin failed ; exit 3; }
     cd $workdir
-    $0 tar=fits $com1 $com2 $com3 $com4 $com5 || { echo fits failed ; exit 3; }
+    $0 tar=fits $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo fits failed ; exit 3; }
     cd $workdir
-    $0 tar=hops $com1 $com2 $com3 $com4 $com5 || { echo hops failed ; exit 3; }
+    $0 tar=hops $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo hops failed ; exit 3; }
     cd $workdir
-    $0 tar=pcqk $com1 $com2 $com3 $com4 $com5 || { echo pcqk failed ; exit 3; }
+    $0 tar=pcqk $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo pcqk failed ; exit 3; }
     exit 0
     ;;
 *) cat <<....EOF
@@ -497,7 +527,7 @@ post-alma)
     pcqk    polconvert quick-look outputs (if ALMA)
     4fit    correlator fourfit output (pc'd; type 200s + alist)
 
-    tar=post-corr   does:   dxin swin
+    tar=post-corr   does:   dxin swin haxp
     tar=no-alma     does:   dxin swin fits hops
     tar=no-hops     does:   dxin swin fits
     tar=pre-alma    does:   dxin swin hmix
@@ -566,8 +596,12 @@ hops|hmix|haxp)
         echo $d2m4exec $ov -e $expn -s $exp.codes $jobs \> $dog
     } || {
         mkdir $expn
-        [ $work = haxp ] && part='-haxp' || part=''
+        $verb && echo savename is $savename and work is $work
+        part=''
+        [ "$work" = haxp ] && part='-haxp'
+        [ "$work" = hmix ] && part='-hmix'
         $save && savename=$exp-$vers-$subv-$label$part.$expn.save
+        $verb && echo savename is $savename
         $verb && echo follow difx2mark4 with: &&
             echo '  'tail -n +1 -f `pwd`/$dog
         echo $d2m4exec $ov -e $expn -s $exp.codes $jobs > $dog
@@ -641,7 +675,11 @@ hops|hmix|haxp)
     [ $# -ge 1 ] || { echo no root files to correlate with ; exit 4; }
     echo Launching fourfits on $# scans in parallel...be patient.
     echo Fourfitting version is flab, "'$flab'".
-    for r in */${targ/./*}* ; do fourfit -c $ffconf $r 2>ff-$label.log & done
+    for r in */${targ/./*}*
+    do
+        ll=ff-$label-`echo $r | tr / -`.log
+        fourfit -c $ffconf $r 2>$ll 1>&2 &
+    done
     wait
     echo Making alist
     alist -v6 -o $exp-$vers-$subv-$label.alist * \
@@ -662,7 +700,10 @@ esac
         echo We have missing dir $expn when we should have it ; exit 4
     }
     [ "$savename" = $exp-$vers-$subv-$label-haxp.$expn.save ] || {
-        echo Internal logic error...bailing ; exit 4
+        echo savename issue: $savename
+        echo savename issue: $exp-$vers-$subv-$label-haxp.$expn.save
+        echo Internal logic error...check savename and dirs...
+        # bailing ; exit 4
     }
     $haxprune && {
         toast=`ls -1 $expn/*/[^A]?..?????? | wc -l`

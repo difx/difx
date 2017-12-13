@@ -7,7 +7,7 @@
 '''
 Script to parse a joblist and a vex file and produce lists of job numbers
 
-$Id: ehtc-joblist.py 1947 2017-08-10 20:30:57Z gbc $
+$Id: ehtc-joblist.py 2157 2017-12-12 21:48:51Z gbc $
 '''
 
 import argparse
@@ -33,7 +33,7 @@ def parseOptions():
     epi += ' try this: '
     epi += ' ehtc-joblist.py -i *.input -o *.vex.obs -p na -s 3C279 -R'
     use = '%(prog)s [options]\n'
-    use += '  Version $Id: ehtc-joblist.py 1947 2017-08-10 20:30:57Z gbc $'
+    use += '  Version $Id: ehtc-joblist.py 2157 2017-12-12 21:48:51Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     inputs = parser.add_argument_group('input options', inp)
     action = parser.add_argument_group('action options', act)
@@ -435,7 +435,9 @@ def adjustOptions(o):
     if len(o.joblist) > 0:   doJobList(o)
     o.vextree = None
     if len(o.vexobs) > 0:
-        rc = os.system('type VEX2XML 2>&-')
+        tcmd = 'type VEX2XML 2>&-'
+        if not o.verb: tcmd = tcmd + '1<&-'
+        rc = os.system(tcmd)
         if rc == 0: doParseVex(o)
         if o.vextree:
             doFindProj(o)
@@ -558,7 +560,7 @@ def doReport(o):
     Generate a useful report of jobs.
     o.jobbage[#] = [start,stop,[antennas],[name,start,smjd,dur,vsrc,mode]]
     '''
-    if len(o.rubbage) == 0: return
+    if o.rubbage == None or len(o.rubbage) == 0: return
     for j in sorted(o.rubbage.keys()):
         job = o.rubbage[j]
         scan = job[3][0]
