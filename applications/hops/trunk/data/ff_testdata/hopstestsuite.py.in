@@ -1,3 +1,4 @@
+from __future__ import print_function
 #!@PYTHON@
 
 #@file
@@ -40,11 +41,11 @@ snr_2836_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=139.9, snr_high=1
 
 if snr_2836_check_pass:
     if verbosity_toggle:
-        print "snr 2836 check passed"
+        print("snr 2836 check passed")
 else:
     status = 1
     if verbosity_toggle:
-        print "snr 2836 check failed"
+        print("snr 2836 check failed")
 
 ht.clean_up_fringe_files(ff_list)
 
@@ -63,11 +64,11 @@ snr_2843_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=47.8, snr_high=48
 
 if snr_2843_check_pass:
     if verbosity_toggle:
-        print "snr 2843 check passed"
+        print("snr 2843 check passed")
 else:
     status = 1
     if verbosity_toggle:
-        print "snr 2843 check failed"
+        print("snr 2843 check failed")
 
 ht.clean_up_fringe_files(ff_list)
 
@@ -85,11 +86,11 @@ snr_3372_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=143.6, snr_high=1
 
 if snr_3372_check_pass:
     if verbosity_toggle:
-        print "snr 3372 check passed"
+        print("snr 3372 check passed")
 else:
     status = 1
     if verbosity_toggle:
-        print "snr 3372 check failed"
+        print("snr 3372 check failed")
 
 ht.clean_up_fringe_files(ff_list)
 
@@ -107,11 +108,11 @@ snr_3413_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=123.8, snr_high=1
 
 if snr_3413_check_pass:
     if verbosity_toggle:
-        print "snr 3413 check passed"
+        print("snr 3413 check passed")
 else:
     status = 1
     if verbosity_toggle:
-        print "snr 3413 check failed"
+        print("snr 3413 check failed")
 
 ht.clean_up_fringe_files(ff_list)
 
@@ -128,11 +129,11 @@ snr_3571_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=400.3, snr_high=4
 
 if snr_3571_check_pass:
     if verbosity_toggle:
-        print "snr 3571 check passed"
+        print("snr 3571 check passed")
 else:
     status = 1
     if verbosity_toggle:
-        print "snr 3571 check failed"
+        print("snr 3571 check failed")
 
 
 #clean up the test fringe file we made
@@ -157,48 +158,48 @@ if len(original_GE) == 1:
     GE_test_value = ht.compare_fringe_files(original_GE[0], current_GE[0], verbose=verbosity_toggle, pedantic=False)
     if GE_test_value == 0:
         if verbosity_toggle:
-            print "test 3562-GE baseline fringe file check passed"
+            print("test 3562-GE baseline fringe file check passed")
     else:
         status = 2
         if verbosity_toggle:
-            print "test 3562-GE baseline fringe file check failed"
+            print("test 3562-GE baseline fringe file check failed")
 else:
     GE_test_value = -1
     status = 7
     if verbosity_toggle:
-        print "no 3562-GE baseline fringe found to check!"
+        print("no 3562-GE baseline fringe found to check!")
 
 if len(original_HE) == 1:
     current_HE = ht.fourfit_generate_fringe(option_arg, "HE", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
     HE_test_value = ht.compare_fringe_files(original_HE[0], current_HE[0], verbose=verbosity_toggle, pedantic=False)
     if HE_test_value == 0:
         if verbosity_toggle:
-            print "test 3562-HE baseline fringe file check passed"
+            print("test 3562-HE baseline fringe file check passed")
     else:
         status = 2
         if verbosity_toggle:
-            print "test 3562-GE baseline fringe file check failed"
+            print("test 3562-GE baseline fringe file check failed")
 else:
     HE_test_value = -1
     status = 7
     if verbosity_toggle:
-        print "no 3562-HE baseline fringe found to check!"
+        print("no 3562-HE baseline fringe found to check!")
 
 if len(original_GH) == 1:
     current_GH = ht.fourfit_generate_fringe(option_arg, "GH", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
     GH_test_value = ht.compare_fringe_files(original_GH[0], current_GH[0], verbose=verbosity_toggle, pedantic=False)
     if GH_test_value == 0:
         if verbosity_toggle:
-            print "test 3562-GH baseline fringe file check passed"
+            print("test 3562-GH baseline fringe file check passed")
     else:
         status = 2
         if verbosity_toggle:
-            print "test 3562-GH baseline fringe file check failed"
+            print("test 3562-GH baseline fringe file check failed")
 else:
     GH_test_value = -1
     status = 7
     if verbosity_toggle:
-        print "no 3562-GH baseline fringe found to check!"
+        print("no 3562-GH baseline fringe found to check!")
 
 #4/26/17 Adding a check on the control file hash, this is only present in the newly constructed
 #fringe files, not the old reference fringe files, but we only need to check a single value
@@ -237,11 +238,11 @@ alist_result2 = ht.compare_alist_files( data_dir_env + "/3562/3562-original.fsum
 
 if alist_result1 == 0 and alist_result2 == 0:
     if verbosity_toggle:
-        print "alist fringe file for test 3562 comparsion check passed"
+        print("alist fringe file for test 3562 comparsion check passed")
 else:
     status = 3
     if verbosity_toggle:
-        print "alist fringe file for test 3562 comparsion check failed"
+        print("alist fringe file for test 3562 comparsion check failed")
 
 #if we failed, clean up and exit
 if alist_result1 !=0 or alist_result2 != 0:
@@ -266,11 +267,11 @@ alist_result2 = ht.compare_alist_files(data_dir_env + "/orig.tsumm", data_dir_en
 
 if alist_result1 == 0 and alist_result2 == 0:
     if verbosity_toggle:
-        print "closure triangle for test 3562 comparsion check passed"
+        print("closure triangle for test 3562 comparsion check passed")
 else:
     status = 4
     if verbosity_toggle:
-        print "closure triangle for test 3562 comparsion check failed"
+        print("closure triangle for test 3562 comparsion check failed")
 
 #clean up the fringe files we made
 ht.clean_up_test_fringe_files(original_ff_list, current_ff_list)

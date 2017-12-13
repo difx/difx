@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.16, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.17, gbc@haystack.mit.edu)
 AM_INIT_AUTOMAKE([foreign])
 
 #why does subdir-objects break fearfit??
@@ -180,12 +180,24 @@ AC_SUBST(GS_COPYPAGE_OK)
 AC_PATH_PROGS(PERL, perl, /bin/false)
 #AC_PATH_PROGS(PYTHON, python, /bin/false)
 AM_PATH_PYTHON([2.4],,[:])
+
+
 if [test "$PYTHON" != : -a "$pythondir" != ""] ; then
-    have_python=true
+    #check for package 'future'
+    pyfuture_test=`python -c "import future" 2>/dev/null; echo $?`
+    if [test "$pyfuture_test" = 0 ]; then
+        have_python=true
+        AC_GBC_NOTICE([found python requirements.])
+    else 
+        AC_GBC_NOTICE([python package future missing, python tools will not be built.])
+        have_python=false
+    fi
 else
+    AC_GBC_NOTICE([python missing, python tools will not be built.])
     have_python=false
 fi
 AM_CONDITIONAL([HAVE_PYTHON], [$have_python])
+
 # .so on linux, .dylib on darwin
 # libtool machinery on macos appears to define LT_SHARED_EXT as .dylib
 # safest to do it ourselves
@@ -197,10 +209,6 @@ else
 fi
 AC_SUBST(HOPSPYSHLEXT)
 
-if [ $have_python = "true" ] ; then
-    AC_PYTHON_MODULE_CHECK(setuptools)
-#    AM_COND_IF([HAVE_PYTHON_MODULE_setuptools], AC_MSG_NOTICE([found python setuptools]), AC_MSG_NOTICE([missing python setuptools]))
-fi
 
 have_vex2xml=false
 have_javas=false
@@ -548,7 +556,6 @@ if [ "$have_hops" = true ] ; then
     AC_CONFIG_FILES([
 	include/Makefile
 	scripts/Makefile
-	scripts/phorc/Makefile
 	correlator/Makefile
 	correlator/CorAsc2/Makefile
 	data/Makefile

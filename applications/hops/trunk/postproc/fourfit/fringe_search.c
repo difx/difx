@@ -124,8 +124,9 @@ int fringe_search ( struct vex* root, struct type_pass* pass)
         }
     else if (oret < 0)
         {
+        msg ("User quit request", 1);
         free (sbarray);
-        return (-1);
+        return (-2);
         }
                                         /* Free allocated memory */
     free (sbarray);

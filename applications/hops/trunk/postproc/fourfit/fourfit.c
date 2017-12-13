@@ -83,10 +83,11 @@ main (int argc, char** argv)
     struct freq_corel corel[MAXFREQ];
     /* msg ("MAXFREQ == %d\n", 0, MAXFREQ); */
     struct type_pass *pass;
-    char *inputname, *check_rflist();
+    char *inputname, *check_rflist(), processmsg[512];
     char oldroot[256], rootname[256];
     int i, j, k, npass, totpass, ret, nbchecked, nbtried, checked, tried;
     int successes, failures, nroots, nc, fno, fs_ret;
+    int user_ok = TRUE;
     fstruct *files, *fs;
     struct fileset fset;
     bsgstruct *base_sgrp;
@@ -146,19 +147,31 @@ main (int argc, char** argv)
     i = 0; successes = 0; failures = 0; nroots = 0; tried = 0;
     *root.filename = 0;
     msg ("files[0].order = %d",0, files[i].order);
-    while (files[i].order >= 0)
+    while (files[i].order >= 0 && user_ok)
         {
         inputname = files[i++].name;
-        msg ("processing %s fileset", 2, inputname); // -1->2 Hotaka
+        snprintf(processmsg, sizeof(processmsg)-1,
+            "The above errors occurred while processing\n"
+            "%s: %s\n"
+            "%s: the top-level resolution is as follows:",
+                progname, inputname, progname);
+        msg ("%s(Starting loop on files)", 0, processmsg);
+        //msg ("processing %s fileset", 2, inputname); // -1->2 Hotaka
                                         /* Performs sanity check on requested file */
                                         /* and reports internally.  Allows for */
                                         /* fringe_all=false, among other things */
                                         /* Fills in absolute pathname of root */
                                         /* we need to read */
-        if (get_abs_path (inputname, rootname) != 0) continue; 
+        if (get_abs_path (inputname, rootname) != 0)
+            {
+            msg ("%sUnable to find abspath for %s, skipping", 2,
+                processmsg, rootname);
+            continue; 
+            }
         if (get_vex (rootname, OVEX | EVEX | IVEX | LVEX, "", &root) != 0)
             {
-            msg ("Error reading root for file %s, skipping", 3, inputname);
+            msg ("%sError reading root for file %s, skipping", 2,
+                processmsg, inputname);
             continue;
             }
         nroots++;
@@ -172,7 +185,7 @@ main (int argc, char** argv)
                                         /* Find all files belonging to this root */
         if (fileset (rootname, &fset) != 0)
             {
-            msg ("Error getting fileset of '%s'", 2, rootname);
+            msg ("%sError getting fileset of '%s'", 2, processmsg, rootname);
             continue;
             }
                                         /* Keep track of latest type-2 file number */
@@ -180,7 +193,8 @@ main (int argc, char** argv)
                                         /* Read in all the type-3 files */
         if (read_sdata (&fset, sdata) != 0)
             {
-            msg ("Error reading in the sdata files for '%s'", 2, rootname);
+            msg ("%sError reading in the sdata files for '%s'", 2,
+                processmsg, rootname);
             continue;
             }
         msg ("Successfully read station data for %s", 0, rootname);
@@ -190,7 +204,7 @@ main (int argc, char** argv)
                                         /* and, if refringing, in check_rflist */
         totpass = 0; ret = 0; nbchecked = 0; nbtried = 0;
         fno = -1;
-        while (fset.file[++fno].type > 0)
+        while (fset.file[++fno].type > 0 && user_ok)
             {
             fs = fset.file + fno;
             msg ("Encountered type %d file:  %s", -1, fs->type, fs->name);
@@ -209,14 +223,20 @@ main (int argc, char** argv)
                                         /* non-zero return generally means this */
                                         /* baseline not required, instead of error */
                                         /* (it looks at control information) */
-            if (get_corel_data (fs, root.ovex, root.filename, &cdata) != 0)  continue;
+            if (get_corel_data (fs, root.ovex, root.filename, &cdata) != 0)
+                {
+                msg ("%sUnable to get correlation data for %s/%s", 1,
+                    processmsg, inputname, fs->name);
+                continue;
+                }
             if (do_accounting) account ("Read data files");
                                         /* Put data in useful form */
                                         /* Also, interpolate sdata info */
             msg ("Organizing data for file %s", 0, inputname);
             if (organize_data (&cdata, root.ovex, root.ivex, sdata, corel) != 0)
                 {
-                msg ("Error organizing data for file %s, skipping", 2, inputname);
+                msg ("%sError organizing data for file %s, skipping", 2,
+                    processmsg, inputname);
                 continue;
                 }
             if (do_accounting) account ("Organize data");
@@ -225,8 +245,8 @@ main (int argc, char** argv)
                                         /* of the pass array */
             if (make_passes (root.ovex, corel, &param, &pass, &npass) != 0)
                 {
-                msg ("Error setting up fringing passes for %s, %2s, skipping",
-                         2, inputname, fs->baseline);
+                msg ("%sError on fringe passes setup for %s, %2s, skipping", 2,
+                         processmsg, inputname, fs->baseline);
                 continue;
                 }
             if (do_accounting) account ("Make passes");
@@ -242,22 +262,33 @@ main (int argc, char** argv)
                 if (fs_ret < 0) break;
                 ret += fs_ret;
                 }
-                                        /* Quit request from user */
-            if (fs_ret < 0) 
+            
+            if (fs_ret < 0)             /* quit request */
                 {
                 /* avoiding num_ap<0 crash: Hotaka 9/28/2017 */
                 if (pass->num_ap < 0)
                     {
+                        msg ("%s", 2, processmsg);
                         msg ("stop_offset < start_offset !!", 2);
                         msg ("Skipping %s/%s and continuing", 2,
                             inputname, fs->name);
                     }
-                else
+                else if (fs_ret == -2)
                     {
-                        msg ("Quitting: failed to find fringe on", 2);
-                        msg ("%s/%s and the user should ask why.", 2,
-                            inputname, fs->name);
-                        break;
+                        msg ("quitting by request", 1);
+                        user_ok = FALSE;
+                    }
+                else
+                /* still try to continue */
+                    {
+                        msg ("%s", 2, processmsg);
+                        msg ("Failed to find fringe on", 2);
+                        msg ("%s/%s (pol %s) and the user should ask why.", 2,
+                            inputname, fs->name,
+                            (0 <= pass[k].pol && pass[k].pol <= 3)
+                                ? polab[pass[k].pol] : "??");
+                        msg ("continuing", 2);
+                        // break;  continue and pray
                     }
                 }
                                         /* Move to next file in fileset */

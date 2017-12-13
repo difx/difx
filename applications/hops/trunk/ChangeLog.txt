@@ -1,4 +1,679 @@
 ------------------------------------------------------------------------
+r2159 | gbc | 2017-12-12 17:20:52 -0500 (Tue, 12 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/hfold/Makefile.am
+
+finished the rename of fold
+
+------------------------------------------------------------------------
+r2156 | gbc | 2017-12-12 13:07:38 -0500 (Tue, 12 Dec 2017) | 3 lines
+Changed paths:
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/fringe_search.c
+   M /trunk/postproc/fourfit/pass_struct.h
+
+Mods to top-level logic loop to give the user a better
+clue of what is happening when something goes awry.
+
+
+------------------------------------------------------------------------
+r2155 | barrettj | 2017-12-12 12:22:24 -0500 (Tue, 12 Dec 2017) | 2 lines
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+Merge branch 'barrettj_clkjump_phorc' into trunk
+Adding the ability to limit time range by scan id to vgoscf_generate.py
+
+------------------------------------------------------------------------
+r2153 | barrettj | 2017-12-11 14:55:54 -0500 (Mon, 11 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+
+adding mean band delay dat file generation, fixed bug in format specification and added ability to toggle header
+
+------------------------------------------------------------------------
+r2152 | barrettj | 2017-12-11 14:55:53 -0500 (Mon, 11 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+
+working on generating mean band delay files
+
+------------------------------------------------------------------------
+r2150 | gbc | 2017-12-07 12:42:15 -0500 (Thu, 07 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/Makefile.am
+
+new comparison script
+
+------------------------------------------------------------------------
+r2149 | gbc | 2017-12-07 12:41:36 -0500 (Thu, 07 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/compare-baselines-v6.pl
+
+new version hot off the press
+
+------------------------------------------------------------------------
+r2137 | barrettj | 2017-12-04 11:53:45 -0500 (Mon, 04 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/afio/src/corelname.c
+   M /trunk/chops/source/c_src/afio/src/fringename.c
+   M /trunk/chops/source/c_src/afio/src/rootname.c
+   M /trunk/chops/source/c_src/applications/aedit/include/aedit.h
+   M /trunk/chops/source/c_src/dfio/src/read_mk4corel.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/time_range.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_208.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_postplot.c
+   M /trunk/chops/source/c_src/mk4util/src/check_name.c
+
+importing changes into chops
+
+------------------------------------------------------------------------
+r2135 | barrettj | 2017-11-30 14:22:27 -0500 (Thu, 30 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+
+adjusting time stamps in pcc plots
+
+------------------------------------------------------------------------
+r2134 | barrettj | 2017-11-30 10:36:52 -0500 (Thu, 30 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+
+adding in a check for missing/incomplete/corrupted data
+
+------------------------------------------------------------------------
+r2132 | barrettj | 2017-11-29 15:35:44 -0500 (Wed, 29 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+added default parameter statements to vgos scripts, bugfix in band selection
+
+------------------------------------------------------------------------
+r2129 | barrettj | 2017-11-27 16:02:48 -0500 (Mon, 27 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+fixing a type error in vgos script
+
+------------------------------------------------------------------------
+r2128 | barrettj | 2017-11-27 15:21:18 -0500 (Mon, 27 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+
+minor fix to distcheck when chops is built
+
+------------------------------------------------------------------------
+r2127 | barrettj | 2017-11-27 15:21:17 -0500 (Mon, 27 Nov 2017) | 13 lines
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/baseline_fringe_product_list.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+   M /trunk/configure.ac
+   M /trunk/data/ff_testdata/hopstest.py
+
+Squashed commit of the following:
+
+commit 8608b0af4282c62a71a4b36bea691f5c8bde3fb8
+Author: John Barrett <barrettj@mit.edu>
+Date:   Mon Nov 27 14:26:02 2017 -0500
+
+    changes to include minor logging info
+
+commit e9d53fc8d0556d7ef2a0e9174e8cf4a805701c71
+Author: John Barrett <barrettj@mit.edu>
+Date:   Mon Nov 27 14:02:29 2017 -0500
+
+    adding a script to call vgos experiment processing functions
+
+------------------------------------------------------------------------
+r2123 | barrettj | 2017-11-22 15:27:09 -0500 (Wed, 22 Nov 2017) | 3 lines
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+
+oops, revert "minor change"
+
+This reverts commit 92c55b21a44a71d7ca683387bdf55c8d943de622.
+
+------------------------------------------------------------------------
+r2122 | barrettj | 2017-11-22 15:24:09 -0500 (Wed, 22 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+
+minor change
+
+------------------------------------------------------------------------
+r2121 | barrettj | 2017-11-22 15:05:06 -0500 (Wed, 22 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+
+minor fix in help comment to pcc_generate
+
+------------------------------------------------------------------------
+r2120 | barrettj | 2017-11-22 14:55:23 -0500 (Wed, 22 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py
+
+propagating memleak fix into chops/mk4b lib
+
+------------------------------------------------------------------------
+r2119 | barrettj | 2017-11-22 14:38:28 -0500 (Wed, 22 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/sub/mk4py/mk4.py.in
+
+adding __del__ calls fix memory leak in mk4py library when reading corel and sdata files
+
+------------------------------------------------------------------------
+r2117 | barrettj | 2017-11-22 13:55:33 -0500 (Wed, 22 Nov 2017) | 151 lines
+Changed paths:
+   M /trunk/chops/source/python_src/Makefile.am
+   M /trunk/chops/source/python_src/phorc_module/Makefile.am
+   M /trunk/chops/source/python_src/phorc_module/phorc/__init__.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   A /trunk/chops/source/python_src/scripts
+   A /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+   M /trunk/configure.ac
+
+Squashed commit of the following:
+
+commit 3dfaf871730fbabaac758afeec650f7fd0d80de9
+Author: John Barrett <barrettj@mit.edu>
+Date:   Wed Nov 22 13:50:51 2017 -0500
+
+    adding pcc_generate.py into the chops build
+
+commit a6d8060ee55973d87502a55d965c75fb262f97e5
+Author: John Barrett <barrettj@mit.edu>
+Date:   Wed Nov 22 11:45:51 2017 -0500
+
+    minor changes
+
+commit 9e2c6a079a91fa3890f7e6ad0750136d0dff0e51
+Author: John Barrett <barrettj@mit.edu>
+Date:   Wed Nov 22 11:35:05 2017 -0500
+
+    adding additional dat format
+
+commit 47049e06642c782c308b0e47fb5b2b8f97a859fe
+Author: John Barrett <barrettj@mit.edu>
+Date:   Wed Nov 22 11:11:30 2017 -0500
+
+    clean up the proxy cable cal script
+
+commit 541399192b767829f31e2f189d5388c5a3f226b3
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Nov 21 15:57:47 2017 -0500
+
+    adding proxy cable cal script
+
+commit 4bca590ae153b6ad6bf42823bb36ca33067bbd87
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Nov 21 14:10:28 2017 -0500
+
+    minor change
+
+commit cca92943801c51108e5780d33e36bfcef4e0350a
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Nov 21 13:36:00 2017 -0500
+
+    plotting work in proxy cable call lib
+
+commit 73dc202b73d204ec61dc81f895bbc11abab44bd9
+Author: John Barrett <barrettj@mit.edu>
+Date:   Mon Nov 20 13:47:48 2017 -0500
+
+    wip again
+
+commit 939e3fac0e4f58f4fba86edb189a661b9f3a326e
+Author: John Barrett <barrettj@mit.edu>
+Date:   Fri Nov 17 16:01:28 2017 -0500
+
+    starting work on adding mean delay plots, not working yet
+
+commit 3f7338470e0ce2ca92699fa2f877cd3f1b3e0fbe
+Author: John Barrett <barrettj@mit.edu>
+Date:   Fri Nov 17 15:24:28 2017 -0500
+
+    starting to stabilize the interface
+
+commit bdc2abb61e82fbb62f6615e4683a12c8febe17b6
+Author: John Barrett <barrettj@mit.edu>
+Date:   Fri Nov 17 10:58:11 2017 -0500
+
+    proxy cable cal seems to be working, now need to add some scripting tools
+
+commit 21a580cf5318bea4a72eea6ba70b5ba493f0b9e3
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Nov 16 08:58:39 2017 -0500
+
+    WIP
+
+commit 8c81e78616394b19054fd296e4d9cf4871926362
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Nov 14 16:02:12 2017 -0500
+
+    some plot labels, need to fix time as_string
+
+commit e1420b705b9a26bc7054901e59de8fd4a0404e1c
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Nov 14 15:10:18 2017 -0500
+
+    fixing the phase offset when fitting
+
+commit 5eb870838c763abd3f408e503756ee74f8fc7532
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Nov 14 13:07:17 2017 -0500
+
+    patching things up, looks good now, band delays in reasonable agreement (+/-1ps) with BC's code
+
+commit 65f10fd6a9a848e194e2a3882b8ae2c580a6c8a9
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Nov 14 09:20:05 2017 -0500
+
+    clean up
+
+commit df7847b7ecbd1f69996845c5c7c64a46b195e7b9
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Nov 14 09:16:21 2017 -0500
+
+    bug fixes in pcc module
+
+commit 3a228a765c4cc3b2f9d90d55d6ac1f7f9396068c
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Nov 9 16:05:21 2017 -0500
+
+    upgrades to delay fitting routines, code is now broken
+
+commit d79fc2e9931e4b3158534448d7fcacd6fda1d64e
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Nov 9 14:03:27 2017 -0500
+
+    fixing time stamp issue
+
+commit a6ce4f76b91535d2ed5e189cbdb5caf464cd09d6
+Author: John Barrett <barrettj@mit.edu>
+Date:   Fri Nov 3 15:41:56 2017 -0400
+
+    wip pcc
+
+commit 97b83f42110f2ad145d5a13182798b0354565ddf
+Author: John Barrett <barrettj@mit.edu>
+Date:   Fri Nov 3 11:13:08 2017 -0400
+
+    temp
+
+commit 04329a02baf5dce532018e8215db5a33cc1243bc
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Nov 2 15:49:12 2017 -0400
+
+    more work on proxy cable cal delay fitting
+
+commit 931a40dfc858d376951faf9a2e5be86751732629
+Author: John Barrett <barrettj@mit.edu>
+Date:   Wed Nov 1 14:36:44 2017 -0400
+
+    proxy cable cal work
+
+commit 1d118baab1d5a1890964d55f60136b0a37cf5d32
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Oct 31 21:26:38 2017 -0400
+
+    proxy cable cal work
+
+commit b93a45e3909c1e35ef4c01502a7197d1b7e04f44
+Author: John Barrett <barrettj@mit.edu>
+Date:   Mon Oct 30 16:05:38 2017 -0400
+
+    band delay fitting wip
+
+------------------------------------------------------------------------
+r2098 | barrettj | 2017-11-07 09:17:00 -0500 (Tue, 07 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+
+allowing more flexibility for bad parallatic angles
+
+------------------------------------------------------------------------
+r2086 | gbc | 2017-11-01 14:48:52 -0400 (Wed, 01 Nov 2017) | 2 lines
+Changed paths:
+   M /trunk/sub/afio/corelname.c
+   M /trunk/sub/afio/fringename.c
+   M /trunk/sub/afio/rootname.c
+   M /trunk/sub/util/check_name.c
+
+Fixes for new rootcode: islower() -> isalnum() appears sufficient.
+
+
+------------------------------------------------------------------------
+r2085 | gbc | 2017-11-01 14:48:20 -0400 (Wed, 01 Nov 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/fill_208.c
+
+keep tot phase in 0-360
+
+------------------------------------------------------------------------
+r2068 | barrettj | 2017-10-30 08:52:32 -0400 (Mon, 30 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+
+Merge branch 'trunk' of github.mit.edu:barrettj/hops into trunk
+
+------------------------------------------------------------------------
+r2066 | gbc | 2017-10-27 15:45:53 -0400 (Fri, 27 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/misc/time/htime.c
+
+insert symbolic
+
+------------------------------------------------------------------------
+r2063 | barrettj | 2017-10-27 13:44:57 -0400 (Fri, 27 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/CMakeLists.txt
+   M /trunk/chops/source/python_src/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   A /trunk/chops/source/python_src/vex_module
+   A /trunk/chops/source/python_src/vex_module/CMakeLists.txt
+   A /trunk/chops/source/python_src/vex_module/Makefile.am
+   A /trunk/chops/source/python_src/vex_module/Makefile.am.in
+   A /trunk/chops/source/python_src/vex_module/include
+   A /trunk/chops/source/python_src/vex_module/include/vexpy_module_extern.h
+   A /trunk/chops/source/python_src/vex_module/setup.py.in
+   A /trunk/chops/source/python_src/vex_module/src
+   A /trunk/chops/source/python_src/vex_module/src/vexpy_module_extern.c
+   A /trunk/chops/source/python_src/vex_module/vexpy
+   A /trunk/chops/source/python_src/vex_module/vexpy/__init__.py
+   A /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+   M /trunk/configure.ac
+
+adding a module to support vex access in python
+
+------------------------------------------------------------------------
+r2058 | barrettj | 2017-10-26 10:19:48 -0400 (Thu, 26 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   D /trunk/m4/python_module_check.m4
+
+fixing the python futures module test, hopefully this should be safe for older autoconf
+
+------------------------------------------------------------------------
+r2056 | barrettj | 2017-10-25 16:15:57 -0400 (Wed, 25 Oct 2017) | 3 lines
+Changed paths:
+   M /trunk/chops/source/Makefile.am
+   M /trunk/configure.ac
+   M /trunk/data/ff_testdata/hopstest.py
+   M /trunk/data/ff_testdata/hopstestsuite.py.in
+   M /trunk/m4/python_module_check.m4
+   M /trunk/scripts/Makefile.am
+   D /trunk/scripts/phorc/Makefile.am
+   D /trunk/scripts/phorc/setup.py
+   D /trunk/scripts/phorc/src/phorc/__init__.py
+   D /trunk/scripts/phorc/src/phorc/baseline_fringe_product_list.py
+   D /trunk/scripts/phorc/src/phorc/ffres2pcp_lib.py
+   D /trunk/scripts/phorc/src/phorc/fourphase_lib.py
+   D /trunk/scripts/phorc/src/phorc/fringe_file_handle.py
+   D /trunk/scripts/phorc/src/phorc/mixedmode.py
+   D /trunk/scripts/phorc/src/phorc/plotting.py
+   D /trunk/scripts/phorc/src/phorc/processing.py
+   D /trunk/scripts/phorc/src/phorc/scripting.py
+   M /trunk/sub/mk4py/afio.py.in
+   M /trunk/sub/mk4py/mk4.py.in
+
+Merge branch 'barrettj_ckpyfix23' into trunk
+
+This adds a dependency on the python package 'future' in order to enable support for python 2/3
+
+------------------------------------------------------------------------
+r2052 | barrettj | 2017-10-23 12:44:54 -0400 (Mon, 23 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/aedit/aedit.h
+
+bumping up the size of the input char buffers in aedit, they are now based on the definitions in sizelimits.h, which is probably overkill but should prevent overflow
+
+------------------------------------------------------------------------
+r2050 | barrettj | 2017-10-19 09:15:02 -0400 (Thu, 19 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/time_range.c
+   M /trunk/sub/dfio/read_mk4corel.c
+
+adding some sanity checks and messages to make fourfit less cryptic when channel defs are missing
+
+------------------------------------------------------------------------
+r2049 | barrettj | 2017-10-19 09:15:02 -0400 (Thu, 19 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/sub/dfio/read_mk4corel.c
+
+warning about missing channel ids
+
+------------------------------------------------------------------------
+r2047 | barrettj | 2017-10-10 14:52:09 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/import_hops.sh
+   A /trunk/chops/source/c_src/applications/aedit/import_aedit.sh
+   A /trunk/chops/source/c_src/applications/alist/import_alist.sh
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+
+adding imports for alist and aedit
+
+------------------------------------------------------------------------
+r2046 | barrettj | 2017-10-10 14:28:17 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   A /trunk/chops/import_hops.sh
+
+adding a global import script for chops
+
+------------------------------------------------------------------------
+r2044 | barrettj | 2017-10-10 14:04:31 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+
+finishing chops import
+
+------------------------------------------------------------------------
+r2043 | barrettj | 2017-10-10 14:04:31 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/postproc/fourfit/sprint_date.c
+
+fixing struct declaration in sprint_date from date to datec, not sure how this compiled in the first place
+
+------------------------------------------------------------------------
+r2042 | barrettj | 2017-10-10 14:04:30 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/import_ffio.sh
+
+removing unused create_fname.c from ffio import script
+
+------------------------------------------------------------------------
+r2041 | barrettj | 2017-10-10 14:04:30 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/set_defaults.c
+
+minor import
+
+------------------------------------------------------------------------
+r2040 | barrettj | 2017-10-10 14:04:30 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/parse_control_file.c
+
+removing unused declaration/include of param_struct in parse_control_file
+
+------------------------------------------------------------------------
+r2039 | barrettj | 2017-10-10 14:04:29 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/include/mk4_dfio.h
+   M /trunk/include/mk4_dfio.h
+
+commenting out and unused function
+
+------------------------------------------------------------------------
+r2038 | barrettj | 2017-10-10 14:04:29 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/import_dfio.sh
+   M /trunk/chops/source/c_src/dfio/include/mk4_dfio.h
+
+eliminating unused files
+
+------------------------------------------------------------------------
+r2037 | barrettj | 2017-10-10 14:04:28 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/CMakeLists.txt
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/CMakeLists.txt
+   M /trunk/chops/source/c_src/mk4util/CMakeLists.txt
+
+some minor clean up
+
+------------------------------------------------------------------------
+r2036 | barrettj | 2017-10-10 14:04:23 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/data/testdata.tar.gz
+
+updating chops test data tarball
+
+------------------------------------------------------------------------
+r2035 | barrettj | 2017-10-10 14:04:16 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/CMakeLists.txt
+   M /trunk/chops/chopsenv.sh.in
+   M /trunk/chops/source/bash_src/chopsenv.sh.cmake
+   M /trunk/chops/source/c_src/afio/CMakeLists.txt
+   M /trunk/chops/source/c_src/applications/aedit/CMakeLists.txt
+   M /trunk/chops/source/c_src/applications/alist/CMakeLists.txt
+   M /trunk/chops/source/c_src/applications/fourfit/CMakeLists.txt
+   M /trunk/chops/source/c_src/dfio/CMakeLists.txt
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/CMakeLists.txt
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/CMakeLists.txt
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/CMakeLists.txt
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/CMakeLists.txt
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/CMakeLists.txt
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/CMakeLists.txt
+   M /trunk/chops/source/c_src/mk4util/CMakeLists.txt
+   M /trunk/chops/source/c_src/vex/CMakeLists.txt
+   M /trunk/chops/source/python_src/ffcontrol_module/CMakeLists.txt
+   M /trunk/chops/source/python_src/hopstest_module/CMakeLists.txt
+   M /trunk/chops/source/python_src/mk4_module/CMakeLists.txt
+
+getting cmake build to work in chops again
+
+------------------------------------------------------------------------
+r2034 | barrettj | 2017-10-10 14:04:14 -0400 (Tue, 10 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/chops/CMakeLists.txt
+   M /trunk/chops/cmake/chopsDefaults.cmake
+   M /trunk/chops/source/python_src/hopstest_module/CMakeLists.txt
+
+adding option to disable automake file reconfiguration
+
+------------------------------------------------------------------------
+r2032 | gbc | 2017-10-09 14:11:08 -0400 (Mon, 09 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/misc/time/hops_time.c
+   M /trunk/misc/time/ht_parser.c
+   M /trunk/misc/time/htime.c
+   M /trunk/misc/time/htime.h
+   M /trunk/misc/time/rtype.c
+
+added prototype new hops rootcode
+
+------------------------------------------------------------------------
+r2030 | gbc | 2017-10-08 16:01:56 -0400 (Sun, 08 Oct 2017) | 1 line
+Changed paths:
+   A /trunk/misc/time/difx2mark4-make_id.c
+   A /trunk/misc/time/difx2mark4-root_id.c
+   A /trunk/misc/time/sub-util-root_id.c
+
+capturing some code for testing
+
+------------------------------------------------------------------------
+r2029 | gbc | 2017-10-08 13:43:40 -0400 (Sun, 08 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/misc/time/htime.c
+   M /trunk/misc/time/htime.h
+
+adding length to the heuristics
+
+------------------------------------------------------------------------
+r2028 | gbc | 2017-10-08 13:36:31 -0400 (Sun, 08 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/misc/time/htime.c
+   M /trunk/misc/time/htime.h
+   M /trunk/misc/time/rtype.c
+
+rename to canonical "rootcode"
+
+------------------------------------------------------------------------
+r2026 | gbc | 2017-10-08 12:24:53 -0400 (Sun, 08 Oct 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/fourfit.c
+
+hotaka patch to keep going on pilot error
+
+------------------------------------------------------------------------
+r2024 | gbc | 2017-10-06 15:49:30 -0400 (Fri, 06 Oct 2017) | 1 line
+Changed paths:
+   A /trunk/doc/fourfit/lags
+   A /trunk/doc/fourfit/lags/lag-photo.jpg
+   A /trunk/doc/fourfit/lags/lag-photo.txt
+
+a nugget
+
+------------------------------------------------------------------------
+r2020 | gbc | 2017-09-26 17:45:21 -0400 (Tue, 26 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/difx/dumpswin.c
+
+allow norm by dataweight
+
+------------------------------------------------------------------------
+r2019 | gbc | 2017-09-26 15:30:26 -0400 (Tue, 26 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/difx/dumpswin.c
+
+spiffed up for autocorrs
+
+------------------------------------------------------------------------
+r2016 | gbc | 2017-09-22 14:04:12 -0400 (Fri, 22 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/scripts/compare-baselines-v6.pl
+
+exec this
+
+------------------------------------------------------------------------
+r2015 | gbc | 2017-09-22 13:29:55 -0400 (Fri, 22 Sep 2017) | 1 line
+Changed paths:
+   A /trunk/scripts/compare-baselines-v6.pl
+
+another script from vincent
+
+------------------------------------------------------------------------
+r2010 | gbc | 2017-09-15 15:14:46 -0400 (Fri, 15 Sep 2017) | 4 lines
+Changed paths:
+   M /trunk/data/ff_testdata/chk_env.sh
+
+starting with automake 1.15 the build apparently takes place
+in a subdir of _build (_build/sub).  I have NO idea why, but
+the construction of the bogus path area needed amending.
+
+
+------------------------------------------------------------------------
+r2004 | gbc | 2017-09-14 16:05:40 -0400 (Thu, 14 Sep 2017) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+version bump to 3.17
+
+------------------------------------------------------------------------
 r2002 | gbc | 2017-09-14 11:06:56 -0400 (Thu, 14 Sep 2017) | 1 line
 Changed paths:
    M /trunk/configure.ac

@@ -63,7 +63,7 @@ void generate_text (struct scan_struct *root,
     extern char control_filename[];
     extern char *pexec;
     extern char version_no[], progname[];
-    extern char *sprint_char_arr(), *sprint_date();
+    extern char *sprint_char_arr();
     struct stat xeq_stat;
     int i, j, n, k;
     int start_plot, limit_plot;

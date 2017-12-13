@@ -1,4 +1,4 @@
-This is a distribution of HOPS (version 3.16), the
+This is a distribution of HOPS (version 3.17), the
 Haystack Observatory Post-processing System software.
 
 
@@ -8,13 +8,13 @@ Haystack Observatory Post-processing System software.
 If you haven't already done so, unpack the tarball in a convenient place:
 
     cd /Somewhere
-    tar zxf hops-3.16.tar.gz
+    tar zxf hops-3.17.tar.gz
 
 and proceed with the standard build process, e.g.:
 
-    mkdir bld-3.16
-    cd bld-3.16
-    ../hops-3.16/configure
+    mkdir bld-3.17
+    cd bld-3.17
+    ../hops-3.17/configure
     make install
 
 which installs the tools into a subdirectory of /Somewhere.   You should
@@ -64,24 +64,24 @@ The complete software package requires X11, PGPLOT, (possibly) version
 these are often not to be found in the usual places, so configure may need
 some help to get it right.
 
-    ../hops-3.16/configure --help=short
+    ../hops-3.17/configure --help=short
 
 provides the (short) help on configure.  So if the default X11 search
 didn't work, one of these might find X11 on your system:
 
-    ../hops-3.16/configure --enable-xtrap
-    ../hops-3.16/configure --enable-pathx
+    ../hops-3.17/configure --enable-xtrap
+    ../hops-3.17/configure --enable-pathx
 
 Likewise, PGPLOT is normally installed in /usr/local/pgplot, but that
 may not be what you want:
 
-    ../hops-3.16/configure PGPLOT_DIR=/usr/local/pgplot64
+    ../hops-3.17/configure PGPLOT_DIR=/usr/local/pgplot64
 
 and if those fail, you can try setting more variables, e.g. the
 following worked once upon a time  on MacOS with fink support for
 all the usual linux tools:
 
-    ../hops-3.16/configure \
+    ../hops-3.17/configure \
 	LDFLAGS=-L/usr/X11/lib \
 	CC=gcc-4 F77=gfortran \
 	X_INSANE='-lobjc -framework Foundation -L/sw/lib -lpng -laquaterm'
@@ -116,7 +116,7 @@ to identify all the flag/linkage information needed by all the fortran
 possibilites.  (Fortran is mostly used to compile pgplot, see above.)
 E.g.
 
-    ../hops-3.16/configure FLIBS='-lf2c -lgcc
+    ../hops-3.17/configure FLIBS='-lf2c -lgcc
 
 might be needed if f77 is really a wrapper around f2c.
 
@@ -146,7 +146,7 @@ at the top of the build directory.  They should be relatively quick
 and painless.  The x11 plotting is disabled for these tests, however
 you can see some plots quickly flash by with:
 
-    pushd $HOPS_ROOT/bld-3.16/data/ff_testdata
+    pushd $HOPS_ROOT/bld-3.17/data/ff_testdata
     make check test_gs_device=x11
 
 Additionally, from the same directory
@@ -155,7 +155,7 @@ Additionally, from the same directory
 
 to verify X11 display capabilities.  Or
 
-    pushd $HOPS_ROOT/hops-3.16/data/ff_testdata
+    pushd $HOPS_ROOT/hops-3.17/data/ff_testdata
     ./tst_fourfit.sh
 
 or just read the script and type the commands....
@@ -169,7 +169,7 @@ as a sub-shell of bash.  For example:
 
     tcsh> bash
     bash$ source ~/bin/hops.bash
-    Setup HOPS v3.16 with HOPS_ROOT=/home/gbc/HOPS for i686-3.16
+    Setup HOPS v3.17 with HOPS_ROOT=/home/gbc/HOPS for i686-3.17
     bash$ tcsh
 
 and if all the shell nesting bothers you
