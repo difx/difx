@@ -163,6 +163,7 @@ components = {"perl"          :False,
               "difxfilterbank":False,
               "hops"          :False,
               "m6support"     :False,
+              "mark6sg"       :False,
               "polconvert"    :False,
               "guiServer"     :False,
               "mk5daemon"     :False,
@@ -230,6 +231,7 @@ if len(opts) > 0:
             components["hops"] = True
         if o == "--withm6support":
             components["m6support"] = True
+            components["mark6sg"] = True
         if o == "--withpolconvert":
             components["polconvert"] = True
         if o == "--withguiserver":
@@ -348,6 +350,8 @@ if components["codifio"]:
     libtargets.append(["codifio",    difx_version, True,True,True,False])
 if components["vdifio"]:
     libtargets.append(["vdifio",     difx_version, True,True,True,False])
+if components["mark6sg"]:
+    libtargets.append(["mark6sg",    difx_version, True,True,True,False])
 
 utiltargets = []
 if components["calcif2"] and not master_tag:
