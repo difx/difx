@@ -608,7 +608,8 @@ def executeCasa(o):
              'CONVERSION.MATRIX', 'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
     removeTrash(o, misc)
     cmd1 = 'rm -f %s' % (o.output)
-    cmd2 = '%s --nologger -c %s > %s 2>&1' % (o.casa, o.input, o.output)
+    cmd2 = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
+        o.casa, o.input, o.output)
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
     if o.prep: cmd4 = 'mv prepol*.log '
     else:      cmd4 = 'mv '
@@ -619,11 +620,20 @@ def executeCasa(o):
     if o.run:
         doFinalRunCheck(o)
     if o.run:
-        if o.verb: print 'Note, ^C will not stop CASA (or polconvert).'
-        if o.verb: print 'Follow CASA run with:\n  tail -n +1 -f %s\n' % (
-            o.output)
-        if os.system(cmd1 + ' ; ' + cmd2):
-            raise Exception, 'CASA execution "failed"'
+        if os.system(cmd1):
+            raise Exception, 'That which cannot fail (rm -f), failed'
+        if o.verb:
+            print 'Note, ^C will not stop CASA (or polconvert).'
+            print 'If it appears to hang, use kill -9 and then'
+            print '"touch killcasa" to allow normal cleanup.'
+            print 'Follow CASA run with:\n  tail -n +1 -f %s\n' % (o.output)
+        if os.system(cmd2):
+            if os.path.exists('killcasa'):
+                print 'Removing killcasa'
+                os.unlink('killcasa')
+                print 'Proceeding with remaining cleanup'
+            else:
+                raise Exception, 'CASA execution "failed"'
         if o.verb:
             print 'Success!  See %s for output' % o.output
         logerr = False

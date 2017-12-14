@@ -8,6 +8,7 @@ import datetime
 import os
 import shutil
 import re
+import sys
 
 pcvers='1.7.0'
 
@@ -336,6 +337,11 @@ for job in djobs:
         timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=usePlotAnt,
         npix=numFrPltPix, gainmeth=gainmeth, XYavgTime=XYavgTime)
+    print '\nFinished with job ' + job + '\n'
+
+# make sure the last of the log gets written out so we are sure we are done
+print 'Finished with runpolconvert tasks'
+sys.stdout.flush()
 
 #
 # eof
