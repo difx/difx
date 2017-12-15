@@ -1,3 +1,5 @@
+if HAVE_MMSG
+
 ACLOCAL_AMFLAGS=-I m4
 
 SUBDIRS = jsmn mark6sg test extra
@@ -18,3 +20,10 @@ rpm: distdir
 	rpmbuild -tb $(distdir).tar.gz
 	$(am__remove_distdir)
 
+else !HAVE_MMSG
+
+ACLOCAL_AMFLAGS=-I m4
+
+SUBDIRS = 
+
+endif !HAVE_MMSG
