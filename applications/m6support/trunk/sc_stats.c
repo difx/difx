@@ -143,9 +143,9 @@ char *stats_timestamp(uint32_t *pkt)
 {
     static char sts[200];
     VDIFHeader *vh = (VDIFHeader *)pkt;
-    snprintf(sts, 200, "ts %s.%09d",
+    snprintf(sts, 200, "ts %s.%09lu",
         sg_vextime(vh->w2.ref_epoch, vh->w1.secs_inre),
-        1000000000L * vh->w2.df_num_insec / stats_packet_rate);
+        (long unsigned)(1000000000L * vh->w2.df_num_insec / stats_packet_rate));
     return(sts);
 }
 

@@ -42,7 +42,7 @@ extern void m6sc_verbosity(const int verbose);
  * scanref is some identifying string: scanname|scan# : gref
  *
  * nf is planned number of files, mf is expected max frame rate (0 if unknown),
- * tol is fractional tolerance on statistics assessment (0 -> 0.2 default).
+ * tolerance on scan check is an option which defaults to 0.2 (20%).
  */
 extern void m6sc_sr_start(const char *scanref, int nf, int mf, double tol);
 extern void m6sc_sr_accum(void);

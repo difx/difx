@@ -49,6 +49,7 @@ static struct checker_work {
     char        stat_chans[256];    /* csv list of channels */
     uint32_t    stat_octets;        /* max number of samples/packet */
     uint32_t    stat_delta;         /* dump stats after so many pkts */
+    double      stat_toler;         /* tolerance on statistics checking */
     uint32_t    station_mask;       /* bits of station to check */
     uint32_t    extend_hchk;        /* check the extended header */
     uint32_t    flist_only;         /* only generate an flist entry */
@@ -81,6 +82,7 @@ static struct checker_work {
     .trial_seed = 17,               /* doesn't really matter */
     .pkts_loops = 5,                /* briefest of touches */
     .pkts_runs = 20,                /* a really small patch */
+    .stat_toler = 0.1,              /* default tolerance */
     .stat_octets = SG_MAX_VDIF_BYTES,
     .station_mask = SG_STATION_MASK
 };
@@ -421,7 +423,8 @@ static void summary_report(void)
 }
 
 /*
- * Declare the start of a new group
+ * Declare the start of a new group.
+ * 'tol' is unused; it is in the interface to cplane but it is now ignored.
  */
 void m6sc_sr_start(const char *scanref, int nf, int mf, double tol)
 {
@@ -434,7 +437,9 @@ void m6sc_sr_start(const char *scanref, int nf, int mf, double tol)
     work.sci.alpha_fr = 0;
     work.sci.nf_exp = nf;
     work.sci.exp_fr = mf;
-    work.sci.tol = (tol > 0.0) ? tol : 0.2;
+    // was: work.sci.tol = (tol > 0.0) ? tol : 0.2;
+    // tolerance now set via set/get on work.stat.toler
+    work.sci.tol = work.stat_toler;
 }
 
 /*
@@ -744,6 +749,8 @@ static int help_chk_opt(void)
         work.stat_octets);
     fprintf(stdout, "  sdelta=<int>     dump statistics after (%u) pkts\n",
         work.stat_delta);
+    fprintf(stdout, "  stoler=<float>   tolerance on statistics check (%g)\n",
+        work.stat_toler);
     fprintf(stdout, "  srate=<int>      set rate for sdelta (%lu pkts/s)\n",
         stats_get_packet_rate());
     fprintf(stdout, "  smask=<int>      station bits to check (%u)\n",
@@ -846,10 +853,15 @@ int m6sc_set_chk_opt(const char *arg)
         if (work.stat_delta < 0) work.stat_delta = 0;
         if (verb>1) fprintf(stdout,
             "opt: Statistics dump every %u packets\n", work.stat_delta);
+    } else if (!strncmp(arg, "stoler=", 7)) {
+        work.stat_toler = atof(arg+7);
+        if (work.stat_toler < 0) work.stat_toler = 0.2;
+        if (verb>1) fprintf(stdout,
+            "opt: Statistics tolerance now %g\n", work.stat_toler);
     } else if (!strncmp(arg, "srate=", 6)) {
         stats_set_packet_rate(atol(arg+6));
         if (verb>1) fprintf(stdout,
-            "opt: Statistics pkt rate now %ul pps\n", stats_get_packet_rate());
+            "opt: Statistics pkt rate now %lu pps\n", stats_get_packet_rate());
     } else if (!strncmp(arg, "smask=", 6)) {
         sg_set_station_id_mask(atoi(arg+6));
         work.station_mask = sg_get_station_id_mask();
@@ -916,6 +928,8 @@ char *m6sc_get_chk_opt(const char *arg)
         snprintf(answer, sizeof(answer), "%u", work.stat_octets);
     } else if (!strncmp(arg, "sdelta", 6)) {
         snprintf(answer, sizeof(answer), "%u", work.stat_delta);
+    } else if (!strncmp(arg, "stoler", 6)) {
+        snprintf(answer, sizeof(answer), "%g", work.stat_toler);
     } else if (!strncmp(arg, "smask", 5)) {
         snprintf(answer, sizeof(answer), "%u", work.station_mask);
     } else {
