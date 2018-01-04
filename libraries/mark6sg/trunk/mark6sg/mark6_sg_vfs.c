@@ -54,6 +54,9 @@
 #define PREFETCH_NUM_BLOCKS_PER_FILE    4
 #define WRITER_FRAMES_PER_BLOCK         5000
 
+// When disks have unrelocatable bad sectors that cause I/O errors, mmap()'ed regions cause SIGBUS, whereas fread() returns a handleable error
+#define AVOID_MMAP                      0  // 1 to use fread() file access instead of mapped memory access to read file data
+
 // Internal structs
 typedef struct io_thread_ctx_tt {
     pthread_t tid;
@@ -564,8 +567,21 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
         fid  = vfd->blks[blk].file_id;
         foff = vfd->blks[blk].file_offset + nskip;
 
+#if !AVOID_MMAP
         if (m_m6sg_dbglevel>2) { printf("memcpy() file %2d offset %ld : virtual offset %ld : req %ld\n", fid, foff, rdoffset, nwanted); }
         memcpy(buf+nread, ((char*)vfd->fmmap[fid]) + foff, nwanted);
+#else
+        if (m_m6sg_dbglevel>2) { printf("pread() file %2d offset %ld : virtual offset %ld : req %ld\n", fid, foff, rdoffset, nwanted); }
+        size_t pread_ngot = 0;
+        while (pread_ngot < nwanted) {
+            ssize_t nrd = pread(vfd->fds[fid], buf+nread+pread_ngot, nwanted-pread_ngot, foff+pread_ngot);
+            if (nrd <= 0) {
+                printf("pread() file %2d <%s> offset %ld : underlying file returned error %d (%s)\n", fid, vfd->filepathlist[fid], foff+pread_ngot, errno, strerror(errno));
+                break;
+            }
+            pread_ngot += nrd;
+        }
+#endif
 
         rdoffset += nwanted;
         nread    += nwanted;
@@ -961,7 +977,9 @@ void* touch_next_blocks_thread(void* p_ioctx)
     io_thread_ctx_t*       ctx = (io_thread_ctx_t*)p_ioctx;
     m6sg_virt_filedescr_t* vfd = (m6sg_virt_filedescr_t*)(ctx->vfd);
 
+#if !AVOID_MMAP
     char* fdata = (char*)(vfd->fmmap[ctx->file_id]);
+#endif
 
     if (m_m6sg_dbglevel>2) { fprintf(stderr, "START thread for file %2d inc %d\n", ctx->file_id, pagesz); }
 
@@ -1005,7 +1023,12 @@ void* touch_next_blocks_thread(void* p_ioctx)
             // fetch of missing page from underlying mmap()'ed file.
             // Data is not actually used here. The pages cached by
             // kernel will however be available in future read() calls.
-            char dummy = fdata[off];
+            char dummy;
+#if !AVOID_MMAP
+            dummy = fdata[off];
+#else
+            (void)pread(vfd->fds[ctx->file_id], &dummy, 1, off);
+#endif
             off += pagesz;
             if (m_m6sg_dbglevel>99) { printf("(printf to prevent optimizing away 'dummy') %c", dummy); }
 
