@@ -457,9 +457,9 @@ class MainWindow(GenericWindow):
                     releaseList.append(slot.module.vsn)
                     
             
-            # check if "dirLess" checkbox is activated
+            # check if "dirLess" checkbox is activated (exclude mark6 modules)
             if (self.filterDirLess.get()):
-                if (hasDir(slot.module.vsn)):
+                if hasDir(slot.module.vsn) or self.patternMark6VSN.match(slot.module.vsn):
                     continue
                     
             # check if "uscanned" checkbox is activated
@@ -740,6 +740,10 @@ class MainWindow(GenericWindow):
              
         for slot in slots:
             
+	    # exclude mark6 modules until .dir mechanics exist
+	    if self.patternMark6VSN.match(slot.module.vsn):
+		continue
+
 	    isDir = False
 	    isScan = False
             # find modules without .dir file
@@ -758,7 +762,7 @@ class MainWindow(GenericWindow):
 	    # exists anymore (e.g. when manually deleted from disk)
 	    if isScan and not isDir:
 		self.scanModulesDlg.scanModules(slot.module)
-		print "rescan module: ", slot.module.vsn
+		print "missing .dir file for %s.  You might want to rescan the module. " %  slot.module.vsn
 		
         
         self.lblNumDirLess["text"] = dirLessCount
