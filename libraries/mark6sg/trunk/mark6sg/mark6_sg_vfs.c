@@ -49,6 +49,14 @@
 #include <netinet/ip.h>
 #include <sys/socket.h>
 
+#if HAVE_CONFIG_H
+    #include "../config.h"
+    #if HAVE_DIFXMESSAGE
+    #include <difxmessage.h>
+    #include <unistd.h>
+    #endif
+#endif
+
 // Prefetch (via mmap() MAP_POPULATE-like threaded forced kernel page faults)
 #define USE_MMAP_POPULATE_LIKE_PREFETCH 1  // 1 to enable, 0 to disable
 #define PREFETCH_NUM_BLOCKS_PER_FILE    4
@@ -123,6 +131,18 @@ void ioerror_noop_handler(int sig)
 //////////////////////////////////////////////////////////////////////////////////////
 ////// Library Functions /////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
+
+/** Init on library load */
+__attribute__((constructor)) void init(void)
+{
+#if HAVE_DIFXMESSAGE
+    char hostname[DIFX_MESSAGE_LENGTH];
+    gethostname(hostname, sizeof(hostname)-1);
+    difxMessageInitFull(-1, "libmark6sg", hostname);
+    difxMessageSendDifxAlert("libmark6sg started", DIFX_ALERT_LEVEL_INFO);
+    difxMessagePrint();
+#endif
+}
 
 /**
  * Open a scatter-gather recording for reading.
@@ -256,6 +276,16 @@ int mark6_sg_open(const char *scanname, int flags)
         vfd->touch_ctxs[i].vfd = vfd;
         vfd->touch_ctxs[i].file_id = i;
         pthread_create(&(vfd->touch_ctxs[i].tid), NULL, touch_next_blocks_thread, &(vfd->touch_ctxs[i]));
+    }
+#endif
+
+#if HAVE_DIFXMESSAGE
+    if (1) {
+        DifxMessageMark6Status m6st;
+        memset(&m6st, 0x00, sizeof(m6st));
+        m6st.state = MARK6_STATE_OPEN;
+        snprintf(m6st.scanName, sizeof(m6st.scanName-1), "%s", scanname);
+        difxMessageSendMark6Status(&m6st);
     }
 #endif
 
@@ -467,6 +497,15 @@ int mark6_sg_close(int fd)
 
     m6sg_open_files_list.nopen--;
     pthread_mutex_unlock(&vfs_lock);
+
+#if HAVE_DIFXMESSAGE
+    if (1) {
+        DifxMessageMark6Status m6st;
+        memset(&m6st, 0x00, sizeof(m6st));
+        m6st.state = MARK6_STATE_CLOSE;
+        difxMessageSendMark6Status(&m6st);
+    }
+#endif
 
     return 0;
 }
