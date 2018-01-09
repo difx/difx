@@ -30,12 +30,13 @@ from string import strip
 
 class ListboxColumn(object):
     
-    def __init__(self, header="", width=10, sortable=True, searchable=True):
+    def __init__(self, header="", width=10, sortable=True, searchable=True, numeric=False):
         
         self.header = header
         self.width = width
         self.sortable = sortable
         self.searchable = searchable
+        self.numeric = numeric
         
     
 class MultiListbox(Frame):
@@ -190,6 +191,12 @@ class MultiListbox(Frame):
       
       col, direction = self.colmapping[button]
 
+
+      if direction == 1:
+	  reverse = False
+      else: 
+          reverse = True
+
       # get the entire table data into mem
       tableData = self.get(0,END)
       
@@ -213,11 +220,11 @@ class MultiListbox(Frame):
          
          if direction==1: button.config(text=u"\u2191" + btnLabel)
          else: button.config(text=u"\u2193" + btnLabel)
-         # sort by col
-         def colsort(x, y, mycol=col, direction=direction):
-            return direction*cmp(x[mycol], y[mycol])
 
-         tableData.sort(colsort)
+	 if self.columns[col].numeric:
+		 tableData = sorted (tableData, reverse=reverse, key=lambda x: 0.0 if x[col]=="" else float(x[col]))
+         else:
+		tableData = sorted (tableData, reverse=reverse, key=lambda x:(x[col]))
 
       #clear widget
       self.delete(0,END)
@@ -230,6 +237,7 @@ class MultiListbox(Frame):
       if(direction==1): direction=-1
       else: direction += 1
       self.colmapping[button] = (col, direction)
+
 
    def _select(self, y):
       row = self.lists[0].nearest(y)
