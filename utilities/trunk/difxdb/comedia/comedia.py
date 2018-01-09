@@ -108,8 +108,8 @@ class MainWindow(GenericWindow):
         self.filterModuleTypeVar.set(self.moduleTypes[0])
         
         # regular expressions for matching various VSN types
-        self.patternSataVSN = re.compile('([a-zA-Z]+[-]\d+)')
-        self.patternPataVSN = re.compile('([a-zA-Z]+[\+]\d+)')
+        self.patternSataVSN = re.compile('([a-zA-Z]+[+]\d+)')
+        self.patternPataVSN = re.compile('([a-zA-Z]+[\-]\d+)')
         self.patternMark6VSN = re.compile('([a-zA-Z]+[%]\d+)')
                 
     def show(self):
