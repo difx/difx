@@ -47,7 +47,9 @@ def spectralAvgRaw(rawvis, chavg, doComplex=True):
 	N = len(visdata)
 	assert((N % chavg)==0)
 	visdata = numpy.average(visdata.reshape((N/chavg,chavg)), axis=1)
-	return visdata.tostring()
+	rawout = visdata.tostring()
+	assert(len(rawout)==len(rawvis)/chavg)
+	return rawout
 
 def spectralAvgNumpy(visdata, chavg):
 	N = len(visdata)
@@ -236,6 +238,10 @@ def stitchVisibilityfile(basename,cfg):
 			continue
 		stid = getGlueIndex(freqs[fi].freq,cfg)
 		if (stid >= 0):
+			if freqs[fi].lsb:
+				# Ignore LSB. All zoom outputs should be USB.
+				print ("Ignore LSB %s" % (freqs[fi].str()))
+				continue
 			# Add to some many-to-one map of invented zoom freqs
 			freq_remaps[fi] = stitch_out_ids[stid]
 			freq_remaps_isNew[fi] = True
@@ -252,7 +258,6 @@ def stitchVisibilityfile(basename,cfg):
 	except:
 		pass
 	difxout = open(difxoutname, 'w')
-	(vishdr,binhdr) = getVisibilityHeader(difxfile)
 
 	# Pull out antenna indices based on telescope names
 	telNames = [t.name for t in telescopes]
@@ -288,7 +293,11 @@ def stitchVisibilityfile(basename,cfg):
 	seconds_prev = -1
 	seconds_first = 0
 	seconds_report_prev = 0
-	while len(vishdr) > 0:
+	while True:
+
+		(vishdr,binhdr) = getVisibilityHeader(difxfile)
+		if len(vishdr) <= 0:
+			break
 
 		# Visibility properties
 		baseline = vishdr[0]
@@ -353,7 +362,7 @@ def stitchVisibilityfile(basename,cfg):
 				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
 				if cfg['target_chavg'] > 1:
-					rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'], doComplex=(ant1!=ant2))
+					rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'])
 				difxout.write(rawvis)
 				ncopied += 1
 
@@ -378,7 +387,7 @@ def stitchVisibilityfile(basename,cfg):
 				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
 				if cfg['target_chavg'] > 1:
-					rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'], doComplex=(ant1!=ant2))
+					rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'])
 				difxout.write(rawvis)
 				ncopied += 1
 
@@ -393,7 +402,6 @@ def stitchVisibilityfile(basename,cfg):
 				if (stid < 0):
 					if cfg['verbose']:
 						print ('ignore: %s (not in stitch freqs list)' % (vis_info))
-					(vishdr,binhdr) = getVisibilityHeader(difxfile)
 					continue
 
 				# Get the complex data
@@ -408,13 +416,11 @@ def stitchVisibilityfile(basename,cfg):
 					# 1) discard and hope the corresponding zoom band data will appear soon
 					#if cfg['verbose']:
 					#	print ('ignore: %s (too wide, maybe a recorded instead of zoom freq)' % (vis_info))
-					#(vishdr,binhdr) = getVisibilityHeader(difxfile)
 					#continue
 					# 2) use the maximum possible amount of the data
 					nchan_new = target_nchan - choffset
 					if (nchan_new < 1):
 						print ('Unexpected, after cropping a too-wide band ended up with %d remaining channels' % (nchan_new))
-						(vishdr,binhdr) = getVisibilityHeader(difxfile)
 						continue
 					visdata = visdata[:nchan_new]
 					bw = bw * nchan_new/nchan
@@ -481,9 +487,6 @@ def stitchVisibilityfile(basename,cfg):
 				stitch_chcounts[baseline][polpair][stid] = 0
 				stitch_freqbws[baseline][polpair][stid] = []
 				stitch_workbufs[baseline][polpair][stid].fill(0)
-
-		# Next header
-		(vishdr,binhdr) = getVisibilityHeader(difxfile)
 
 		#if nstitched > 100: break  # quick-exit for debug
 
