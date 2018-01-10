@@ -1,3 +1,7 @@
+* post 2.5 changes
+comedia: can show .dir file corresponding to selected module
+comedia: poperly sort numeric table columns
+comedia: exclude mark6 modules from .dir related content
 * post 2.4 changes
 getreleaselist: order output by experiment code
 comedia: email notification for modules containing unknown experiments

@@ -85,6 +85,7 @@ class MainWindow(GenericWindow):
         self.notificationOptionsDlg= NotificationOptionsWindow(self,rootWidget)
         self.scanModulesDlg = ScanModulesWindow(self, rootWidget)
 	self.editExpDlg = EditExperimentsWindow(self, rootWidget)
+	self.showDirDlg = DirFileWindow(self, rootWidget)
         
         self.defaultBgColor = rootWidget["background"]
         self.isConnected = False
@@ -211,6 +212,7 @@ class MainWindow(GenericWindow):
         self.btnPrintVSNLabel = Button (frmAction, text="Print VSN label", command=self.printVSNLabel,state=DISABLED)
         self.btnRescan = Button (frmAction, text="Rescan directory", command=self.rescanModuleEvent,state=DISABLED)
         self.btnExpad = Button (frmAction, text="Show exp. details", command=self.showExpDetailEvent,state=DISABLED) 
+        self.btnShowDir = Button (frmAction, text="Show .dir file", command=self.showDirFileWindow,state=DISABLED) 
 	
         # arrange objects on grid     
         self.frmFilter.grid(row=3,column=0, sticky=E+W+N+S,padx=2,pady=2) 
@@ -257,6 +259,7 @@ class MainWindow(GenericWindow):
         self.btnPrintLibraryLabel.grid(row=21,column=0, sticky=E+W)
         self.btnPrintVSNLabel.grid(row=21,column=1, sticky=E+W)
         self.btnExpad.grid(row=21,column=2, sticky=E+W)
+        self.btnShowDir.grid(row=31,column=0, sticky=E+W)
 	
         # bind events to widgets
         self.txtLocationContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
@@ -503,6 +506,7 @@ class MainWindow(GenericWindow):
         self.btnPrintVSNLabel["state"] = DISABLED
         self.btnRescan["state"] = DISABLED
         self.btnExpad["state"] = DISABLED
+        self.btnShowDir["state"] = DISABLED
         self.btnPrintLibraryLabel["state"] = DISABLED
         self.btnDeleteModule["state"] = DISABLED
         self.txtLocationContent["state"] = NORMAL
@@ -561,6 +565,8 @@ class MainWindow(GenericWindow):
                 
 	    if len(assignedCodes) > 0:
 		self.btnExpad["state"] = NORMAL
+	    if (hasDir(slot.module.vsn)):
+		self.btnShowDir["state"] = NORMAL
                 
             self._saveModuleDetails()
             
@@ -688,6 +694,11 @@ class MainWindow(GenericWindow):
         
         self.updateSlotListbox()
         
+#    def showDirEvent(self):
+#	if self.selectedSlotIndex == -1:
+#            return
+#	return
+
     def showExpDetailEvent(self):
 
 	if self.selectedSlotIndex == -1:
@@ -932,6 +943,26 @@ class MainWindow(GenericWindow):
         
         session.close()
 
+    def showDirFileWindow(self):
+        
+        if (self.selectedSlotIndex < 0):
+            return
+
+        dirPath = os.getenv("MARK5_DIR_PATH")
+        if (dirPath == None):
+            return
+
+
+        
+        session = dbConn.session()
+        slot = model.Slot()
+        slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+        if (os.path.isfile(dirPath + "/" + slot.module.vsn + ".dir")):
+		self.showDirDlg.dirFilename = dirPath + "/" + slot.module.vsn + ".dir"
+		self.showDirDlg.show()
+        
+        session.close()
+
     def showChangeSlotWindow(self):
         
         if (self.selectedSlotIndex < 0):
@@ -989,6 +1020,8 @@ class CheckoutWindow(GenericWindow):
         return 
         
         
+
+
 class CheckinWindow(GenericWindow):
      
     def __init__(self, parent=None, rootWidget=None):
@@ -1163,6 +1196,57 @@ class CheckinWindow(GenericWindow):
         session.close()
         return
     
+class DirFileWindow(GenericWindow):
+
+    def __init__(self, parent, rootWidget=None):
+
+        # call super class constructor
+        super( DirFileWindow, self ).__init__(parent, rootWidget)
+
+	self.dirFilename = ""
+
+
+    def show(self):
+
+        # create modal dialog
+        self.dlg = Toplevel(self.rootWidget, takefocus=True)
+        self.dlg.title ("Show .dir file")
+        self.dlg.transient(self.rootWidget)
+        self.dlg.state("normal")
+        self.dlg.grab_set()
+
+        self._setupWidgets()
+
+    def _setupWidgets(self):
+
+        if self.dirFilename == "":
+            return
+
+        self.dlg.title (self.dirFilename)
+
+
+        self.txtDir = Text(self.dlg , width=150)
+	self.txtDir.grid(row=10, column=0, sticky=E+W)
+	yScroll = Scrollbar ( self.dlg, orient=VERTICAL )
+
+	yScroll.config(command=self.txtDir.yview)
+	self.txtDir.config(yscrollcommand = yScroll.set)
+        yScroll.grid ( row=10, column=2, sticky=W+N+S )
+
+
+	try:
+	    print self.dirFilename
+	    dirFile = open(self.dirFilename, "r")
+	    self.txtDir.insert(END, dirFile.read())
+
+	    dirFile.close()
+	except:
+	    return
+
+	self.txtDir.config (state=DISABLED)
+	
+	
+
 class ChangeSlotWindow(GenericWindow):
     
     def __init__(self, parent, rootWidget=None):
