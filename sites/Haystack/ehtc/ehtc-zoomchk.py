@@ -139,8 +139,12 @@ def deduceZoomIndicies(o):
         jok = []
         for j in jlist:
             jok = jok + jlist[j]
-        print "jobs='%s'" % ' '.join(sorted[jok])
+        print "jobs='%s'" % ' '.join(sorted(jok))
         print "drivepolconvert.py -v $opts -l $pcal $jobs"
+        print '#'
+        print '# But be certain to reset $jobs to the full set after'
+        print '# you finish the PolConvert step so that these scans'
+        print '# are included in the tarballs.'
         print '#'
     else:
         # all are the same and alma present
