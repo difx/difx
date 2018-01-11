@@ -168,13 +168,14 @@ static void* thread_extract_file_blocklist(void* v_args)
     memset(&bhdr, 0, sizeof(bhdr));
     while (1)
     {
+        ssize_t curr_offset = ftell(f);
         size_t nrd = fread(&bhdr, bhdr_size, 1, f);
         if ((nrd != 1) || feof(f))
         {
             fclose(f);
             break;
         }
-        if (m_m6sg_dbglevel > 1) { printf("File %2d block size %d has nr %d\n", ctx->fileidx, bhdr.wb_size, bhdr.blocknum); }
+        if (m_m6sg_dbglevel > 1) { printf("File %2d offset %zd block has size %d and nr %d\n", ctx->fileidx, curr_offset, bhdr.wb_size, bhdr.blocknum); }
 
         // Catch garbage
         if ((bhdr.wb_size <= 0) || (bhdr.blocknum < 0))
@@ -644,6 +645,18 @@ static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, 
     qsort((void*)blks, nblocks, sizeof(m6sg_blockmeta_t), m6sg_block_comparefunc); // if random
     // mergesort((void*)blks, nblocks, sizeof(m6sg_blockmeta_t), m6sg_block_comparefunc); // if partly pre-sorted; libbsd required
 
+    // Remove duplicate block nrs
+    for (i=0; i<(nblocks-1); i++) {
+        if (blks[i].blocknum == blks[i+1].blocknum) {
+            if ((i+2) < nblocks) {
+                // keep blks[i], overwrite blks[i+1..N] with blks[i+2..N]
+                memmove(&blks[i+1], &blks[i+2], (nblocks-i-1)*sizeof(m6sg_blockmeta_t));
+            }
+            nblocks--;
+            if (m_m6sg_dbglevel > 0) { printf("Warning: removing duplicate block %d.\n", blks[i].blocknum); }
+        }
+    }
+
     // Go through the block list and calculate "virtual" byte offsets
     prevblk = &blks[0];
     blks[0].virtual_offset = 0;
@@ -654,12 +667,12 @@ static size_t mark6_sg_blocklist_rebuild(int nfiles, const char** filenamelist, 
 
         if (blks[i].blocknum != (prevblk->blocknum + 1))
         {
-            int gaplen = ((blks[i].blocknum-1) - (prevblk->blocknum+1));
+            int gaplen = ((blks[i].blocknum-1) - (prevblk->blocknum+1)) + 1;
             // NOTE:  if Mark6 used a variable block size it is impossible to tell here how much data were lost
             // NOTE2: choosing here to hop over missing data to have gapless virtual offsets, but in principle, could allow gaps via
             //    blks[i].virtual_offset +=  ((off_t)gaplen)*prevblk.datalen;
             nmissing += gaplen;
-            if (m_m6sg_dbglevel > 0) { printf("Missing blocks %d to %d.\n", prevblk->blocknum+1, blks[i].blocknum-1); }
+            if (m_m6sg_dbglevel > 0) { printf("Missing %d blocks between %d and %d.\n", gaplen, prevblk->blocknum, blks[i].blocknum); }
         }
 
         prevblk = &blks[i];
