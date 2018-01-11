@@ -46,9 +46,10 @@ plotpcal2 [options] [operation] [tone selection] [data]
 
 This utility is distributed within the difx2fits package.
 
-[options] will eventually be more useful, but currently the only thing it can support is:
+[options] will eventually be more useful, but currently the only things it can support are:
 
     -lines
+    -combinefiles
 
 which replaces the scatter plot with a line plot
 
@@ -468,12 +469,16 @@ def antList(fileData):
 	antennas.sort()
 	return antennas
 
-def getAntennaData(fileData, A):
-	D = []
+def appendAntennaData(fileData, A, D):
 	for f in fileData:
 		if f.antenna == A:
 			D.append(f)
 	D.sort()
+	return D
+
+def getAntennaData(fileData, A):
+	D = []
+	D = appendAntennaData(fileData, A, D)
 	return D
 
 def calculateAmplitudes(plotData, row, rec, toneColumns):
@@ -880,9 +885,16 @@ for f in fileList:
 
 antennas = antList(data)
 
-for A in antennas:
-	D = getAntennaData(data, A)
-	print 'Processing %s: %d files' % (A, len(D))
+if 'combinefiles' in options:
+	D = []
+	for A in antennas:
+		print 'Processing %s: %d files' % (A, len(D))
+		D = appendAntennaData(data, A, D)	
 	generatePlots(op, toneSelect, D, options)
+else:
+	for A in antennas:
+		D = getAntennaData(data, A)
+		print 'Processing %s: %d files' % (A, len(D))
+		generatePlots(op, toneSelect, D, options)
 
 # vim: tabstop=8:softtabstop=8:shiftwidth=8:noexpandtab
