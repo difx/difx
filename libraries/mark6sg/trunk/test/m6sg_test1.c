@@ -56,6 +56,9 @@ int main(int argc, char** argv)
     /* Change verbosity */
     mark6_sg_verbositylevel(0); // 0=none, 1=little, 2=debug, 3=more debug
 
+    /* Set location of Mark6 sg fragments */
+    mark6_sg_set_rootpattern("/mnt/disks/[12]/?/data/");
+
     /* List of all uniquely named files behind Mark6 scatter-gather mountpoints */
     nscans = mark6_sg_list_all_scans(&uniquenamelist);
     if (nscans <= 0)
@@ -97,15 +100,22 @@ int main(int argc, char** argv)
     nrd = mark6_sg_read(fd, buf, M_BUFSIZE);
     if (nrd > 0)
     {
-        printf("Writing %ld bytes of extracted data to %s\n", nrd, OUT_FILE);
         fo  = fopen(OUT_FILE, "w");
-        fwrite(buf, nrd, 1, fo);
-        fclose(fo);
+        if (fo) {
+            printf("Writing %ld bytes of extracted data to %s\n", nrd, OUT_FILE);
+            fwrite(buf, nrd, 1, fo);
+            fclose(fo);
+        }
     }
     else
     {
         printf("Scan %s could not be read or contained no data\n", fname);
     }
+
+    while (nrd > 0) {
+        nrd = mark6_sg_read(fd, buf, M_BUFSIZE);
+    }
+
     (int)mark6_sg_close(fd);
     free(buf);
 
