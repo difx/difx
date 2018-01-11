@@ -43,6 +43,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -93,6 +94,7 @@ typedef struct m6sg_virt_filedescr {
     off_t     rdoffset;
     size_t    rdblock;
     int       nfiles;
+    char      scanname[1024];
     char**    filepathlist;
     char**    filenamelist; // (unused, although populated)
     int       fds[MARK6_SG_MAXFILES];
@@ -211,6 +213,7 @@ int mark6_sg_open(const char *scanname, int flags)
     memset((void*)vfd, 0, sizeof(m6sg_virt_filedescr_t));
     vfd->valid = 1;
     vfd->mode = O_RDONLY;
+    snprintf(vfd->scanname, sizeof(vfd->scanname)-1, "%s", scanname);
     pthread_mutex_init(&vfd->lock, NULL);
     pthread_mutex_unlock(&vfs_lock);
 
@@ -284,7 +287,7 @@ int mark6_sg_open(const char *scanname, int flags)
         DifxMessageMark6Status m6st;
         memset(&m6st, 0x00, sizeof(m6st));
         m6st.state = MARK6_STATE_OPEN;
-        snprintf(m6st.scanName, sizeof(m6st.scanName-1), "%s", scanname);
+        snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", vfd->scanname);
         difxMessageSendMark6Status(&m6st);
     }
 #endif
@@ -442,6 +445,16 @@ int mark6_sg_close(int fd)
         return -1;
     }
 
+#if HAVE_DIFXMESSAGE
+    if (1) {
+        DifxMessageMark6Status m6st;
+        memset(&m6st, 0x00, sizeof(m6st));
+        m6st.state = MARK6_STATE_CLOSE;
+        snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", vfd->scanname);
+        difxMessageSendMark6Status(&m6st);
+    }
+#endif
+
     if (vfd->mode == O_RDONLY)
     {
 #if (USE_MMAP_POPULATE_LIKE_PREFETCH != 0)
@@ -497,15 +510,6 @@ int mark6_sg_close(int fd)
 
     m6sg_open_files_list.nopen--;
     pthread_mutex_unlock(&vfs_lock);
-
-#if HAVE_DIFXMESSAGE
-    if (1) {
-        DifxMessageMark6Status m6st;
-        memset(&m6st, 0x00, sizeof(m6st));
-        m6st.state = MARK6_STATE_CLOSE;
-        difxMessageSendMark6Status(&m6st);
-    }
-#endif
 
     return 0;
 }
@@ -630,6 +634,45 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
     // Remember current block nr (not exactly thread safe, but non-critical)
     vfd->rdblock = blk;
     vfd->rdoffset = rdoffset;
+
+    // Report the current read position via multicast
+#if HAVE_DIFXMESSAGE
+    if (1) {
+        static off_t prev_reported_offset = 0;
+        static struct timeval prev_time;
+        int do_report = 0;
+        off_t delta_read;
+
+        if (rdoffset < prev_reported_offset) {
+            prev_reported_offset = rdoffset;
+        }
+
+        delta_read = rdoffset - prev_reported_offset;
+        if (delta_read > 1024e6) {
+            do_report = 1;
+        }
+
+        if (do_report) {
+            DifxMessageMark6Status m6st;
+            struct timeval now;
+            double dt;
+
+            gettimeofday(&now, NULL);
+            dt = (now.tv_sec - prev_time.tv_sec) + 1e-6*(now.tv_usec - prev_time.tv_usec);
+
+            memset(&m6st, 0x00, sizeof(m6st));
+            m6st.state = MARK6_STATE_PLAY;
+            m6st.position = rdoffset;
+            m6st.rate = (delta_read*8e-6)/dt;
+            snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", vfd->scanname);
+            difxMessageSendMark6Status(&m6st);
+
+            prev_reported_offset = rdoffset;
+            prev_time = now;
+            //printf("difxmessage PLAY %s rate %.3fMbps off=%zu dn=%zu dt=%.3f\n", vfd->scanname, m6st.rate, rdoffset, delta_read, dt);
+        }
+    }
+#endif
 
     return nread;
 }
