@@ -162,6 +162,9 @@ def stitchVisibilityfile(basename,cfg):
 	# Extract meta-infos from the DiFX .INPUT file
 	if basename.endswith(('.difx','input')):
 		basename = basename[:basename.rfind('.')]
+	basename_pathless = basename
+	if basename.rfind('/') >= 0:
+		basename_pathless = basename[(basename.rfind('/')+1):]
 	inputfile = basename + '.input'
 	(numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
 	(numtelescopes, telescopes) = parseDiFX.get_telescopetable_info(inputfile)
@@ -250,9 +253,12 @@ def stitchVisibilityfile(basename,cfg):
 	# Read the DiFX .difx/DIFX_* file
 	difxfileslist = glob.glob(basename + '.difx/DIFX_*.s*.b*')
 	difxfilename = difxfileslist[0]
+	difxfilename_pathless = difxfilename
+	if difxfilename.rfind('/') >= 0:
+		difxfilename_pathless = difxfilename[(difxfilename.rfind('/')+1):]
 	difxfile = open(difxfilename, 'r')
-	difxoutdir = basename + 'D2D.difx'
-	difxoutname = difxoutdir+'/'+difxfilename[difxfilename.find('/')+1:]
+	difxoutdir = basename_pathless + 'D2D.difx'
+	difxoutname = difxoutdir + '/' + difxfilename_pathless
 	try:
 		os.mkdir(difxoutdir)
 	except:
@@ -628,7 +634,7 @@ def stitchVisibilityfile(basename,cfg):
 			in_lines[i] = "%-20s%s\n" % ("OUTPUT FILENAME:",difxoutdir)
 	
 	# Generate new reference .input for later, re-use parts of original .input
-	outputinputfile = basename + 'D2D.input'
+	outputinputfile = basename_pathless + 'D2D.input'
 	fout = open(outputinputfile,"w");
 	idx = [i for i,elem in enumerate(in_lines) if "FREQ TABLE" in elem]
 	for n in range(idx[0]):
