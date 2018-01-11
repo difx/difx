@@ -31,7 +31,7 @@ program = 'plotpcal2'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 version = '0.3'
 
-legalOps = ['amp', 'phase', 'delay', 'xy']
+legalOps = ['amp', 'phase', 'delay', 'xy', 'ampphase']
 
 def usage(prog):
 	print '\n%s ver. %s  %s\n' % (program, version, author)
@@ -59,6 +59,8 @@ phase plot the phase of the tone(s) vs. time
 amp plot the amplitude of the tone(s) vs. time
 
 xy plot the real part vs. imag part
+
+ampphase plot the amplitude of the tone(s) vs. their phase
 
 delay plot the delay as determined by differencing phases of 2 tones
 
@@ -379,7 +381,7 @@ class File:
 					if lastRB != rb:
 						lastRB = rb
 						toneNum = 0
-					freq = int(s[i+freqColumn])
+					freq = float(s[i+freqColumn])
 					if rb >= 0 and freq >= 0:
 						record.append(Tone(rb, toneNum, freq, float(s[i+toneColumn]), float(s[i+toneColumn+1])))
 						toneNum += 1
@@ -489,6 +491,11 @@ def calculateComplex(plotDataX, plotDataY, row, rec, toneColumns):
 		plotDataX[i][row] = rec.tones[toneColumns[i]].re
 		plotDataY[i][row] = rec.tones[toneColumns[i]].im
 
+def calculateAmpPhase(plotDataX, plotDataY, row, rec, toneColumns):
+	for i in range(len(toneColumns)):
+		plotDataX[i][row] = rec.tones[toneColumns[i]].amp()
+		plotDataY[i][row] = rec.tones[toneColumns[i]].phase()
+
 # in units of picoseconds
 def calculateDelays(plotData, row, rec, toneColumns):
 	plotData[0][row] = rec.mjd
@@ -553,13 +560,13 @@ def getOneToneColumns(toneSelect, d):
 				continue
 			rb = d.tonesInRecBand.keys()[rbi]
 			if cd[1][0] == '%':		# freq modulo this amount, not absolute freq
-				fq = int(cd[1][1:])	# freq (MHz)
+				fq = float(cd[1][1:])	# freq (MHz)
 				for t in range(d.totalTones):
 					tone = record.tones[t]
 					if tone.recBand == rb and tone.freq % fq == 0:
 						columns.append(t)
 			else:				# absolute frequency
-				fq = int(cd[1])		# freq (MHz)
+				fq = float(cd[1])	# freq (MHz)
 				for t in range(d.totalTones):
 					tone = record.tones[t]
 					if tone.recBand == rb and tone.freq ==fq:
@@ -569,13 +576,13 @@ def getOneToneColumns(toneSelect, d):
 			cd = split(tss[1], ',')	# column identifying data
 			for c in cd:
 				if c[0] == '%':		# freq modulo this amount, not absolute freq
-					fq = int(c[1:])	# freq (MHz)
+					fq = float(c[1:])	# freq (MHz)
 					for t in range(d.totalTones):
 						tone = record.tones[t]
 						if tone.freq % fq == 0:
 							columns.append(t)
 				else:				# absolute frequency
-					fq = int(c)		# freq (MHz)
+					fq = float(c)		# freq (MHz)
 					for t in range(d.totalTones):
 						tone = record.tones[t]
 						if tone.freq == fq:
@@ -819,6 +826,28 @@ def generatePlots(op, toneSelect, data, options):
 			xlabel('Real:')
 			ylabel('Imag:')
 			for i in range(nColumn):
+				if 'lines' in options:
+					plot(plotDataX[i], plotDataY[i], color=colors[(i-1)%len(colors)], linewidth=1)
+				else:
+					scatter(plotDataX[i], plotDataY[i], color=colors[(i-1)%len(colors)], s=3)
+		elif op == 'ampphase':
+			toneColumns = getOneToneColumns(toneSelect, d)
+			if options['verbose'] > 0:
+				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
+			nColumn = len(toneColumns)
+			nRow = len(d.records)
+			print 'nCol nRow : ', nColumn, nRow
+			plotDataX = np.zeros((nColumn, nRow))
+			plotDataY = np.zeros((nColumn, nRow))
+			nPoints += nRow * nColumn
+			for row in range(nRow):
+				calculateAmpPhase(plotDataX, plotDataY, row, d.records[row], toneColumns)
+			for i in range(0, nColumn):
+				unwrapPhases(plotDataY[i])
+
+			xlabel('Amplitude')
+			ylabel('Phase (degrees)')
+			for i in range(0, nColumn):
 				if 'lines' in options:
 					plot(plotDataX[i], plotDataY[i], color=colors[(i-1)%len(colors)], linewidth=1)
 				else:
