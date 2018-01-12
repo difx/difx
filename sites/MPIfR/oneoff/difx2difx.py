@@ -13,6 +13,7 @@ Output:
 
 """
 import glob, sys, os, struct, time, math, numpy, copy, ConfigParser
+import hashlib
 import parseDiFX
 
 """Return the cross product of two sets"""
@@ -104,26 +105,6 @@ def getConfig(cfgfilename):
 
 	return cfg
 
-"""Write a new .input file"""
-def modifyInpFile(basename,cfg):
-
-	inputfile = basename + '.input'
-	fin = open(inputfile,'r')
-	lines = fin.readlines()
-	fin.close()
-
-	outputinputfile = basename + '.newinput'
-	fout = open(outputinputfile, 'w')
-	for line in lines:
-		# Replace lines like "NUM CHANNELS 36:    8000" with the same line except modify the num of channels
-		# and similar with lines like "BW (MHZ) "
-		if line[:13] == 'NUM CHANNELS ':
-			line = line[:20] + str(cfg['target_nchan']) + '\n'
-		elif line[:9] == 'BW (MHZ) ':
-			line = '%s%.12f\n' % (line[:20],cfg['target_bw'])
-		fout.write(line)
-	fout.close()
-
 """Look through dictionary for object, return key of object if it exists"""
 def findFreqObj(dict,freqobj):
 	for k in dict.keys():
@@ -138,6 +119,51 @@ def inventNextKey(dict):
 		idNr += 1
 	return idNr
 
+"""Keep track of visibilities already written, via looking up Time Baseline Freq Pol in a hash table
+   Returns True if hash table already contains an entry for this visibility
+   Returns False otherwise and inserts an entry for this visibility
+"""
+vis_hashtable = {}
+vis_hashtable_cleanupSec = 0
+def vis_already_written(mjd,seconds,baseline,freqnr,polpair):
+	global vis_hashtable
+	global vis_hashtable_cleanupSec
+
+	longsecs = seconds + (mjd-57846)*31622400
+
+	# Keep the hashtable from growing too much; keeping track for the latest 10 seconds is probably enough
+	history_secs = 5
+	if (longsecs - vis_hashtable_cleanupSec) > (2*history_secs):
+		vis_hashtable_cleanupSec = longsecs - history_secs
+		curr_keys = vis_hashtable.keys()
+		nremoved = 0
+		for key in curr_keys:
+			if not (key in vis_hashtable):
+				continue
+			if vis_hashtable[key] < vis_hashtable_cleanupSec:
+				del vis_hashtable[key]
+				nremoved += 1
+		#print ('vis_already_written() : removed %d entries older than %d seconds' % (nremoved,history_secs))
+
+	# Generate hash for this visibility
+	m = hashlib.sha256()
+	m.update(str(mjd))
+	m.update(str(seconds))
+	m.update(str(baseline * 8563))
+	m.update(str(freqnr * 12503))
+	m.update(str(polpair))
+	key = m.hexdigest()
+
+	# Check if visibility exists
+	if key in vis_hashtable:
+		#print ('vis_already_written(%d, %d, %d, %d, %s) : visibility exists' % (mjd,seconds,baseline,freqnr,polpair))
+		return True
+	else:
+		#print ('vis_already_written(%d, %d, %d, %d, %s) : visibility is NEW, hash %s' % (mjd,seconds,baseline,freqnr,polpair,key))
+		vis_hashtable[key] = longsecs
+		return False
+
+
 """Copy visibilities from given base DiFX fileset into new file, while doing frequency stitching during the process"""
 def stitchVisibilityfile(basename,cfg):
 
@@ -149,15 +175,14 @@ def stitchVisibilityfile(basename,cfg):
 	stitch_antennas = cfg['stitch_antennas']
 	blank_viz = numpy.fromstring('\0'*8*target_nchan, dtype='complex64')
 
-	# All polarisation pairs 'RR', 'RL', ... to 'YY'
+	# All polarisation pairs 'RR', 'RL', ... to 'YL'
 	if cfg['stitch_nstokes'] > 2:
-		#pols_list = ['R','L']
 		pols_list = ['R','L','X','Y']
 		polpairs,tmp = setCrossProd(pols_list, pols_list)
 	else:
-		#polpairs = ['RR','LL']
-		#polpairs = ['RR','LL','XX','YY']
-		polpairs = ['RR','LL','XX','YY','RX','LY','XR','YL']
+		polpairs = ['RR','LL','XX','YY']   # parallel-hand only
+		polpairs += ['RX', 'LY','XR','YL'] # potential parallel-hand
+		polpairs += ['LX', 'RY','XL','YR'] # potential parallel-hand (depends on polconvert.py)
 
 	# Extract meta-infos from the DiFX .INPUT file
 	if basename.endswith(('.difx','input')):
@@ -166,10 +191,13 @@ def stitchVisibilityfile(basename,cfg):
 	if basename.rfind('/') >= 0:
 		basename_pathless = basename[(basename.rfind('/')+1):]
 	inputfile = basename + '.input'
+	inputfile_cfg = parseDiFX.get_common_settings(inputfile)
 	(numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
 	(numtelescopes, telescopes) = parseDiFX.get_telescopetable_info(inputfile)
 	(numdatastreams, datastreams) = parseDiFX.get_datastreamtable_info(inputfile)
 	(numbaselines, baselines) = parseDiFX.get_baselinetable_info(inputfile)
+	if 'difxfile' not in inputfile_cfg:
+		parser.error("Couldn't parse COMMON SETTINGS of input file " + inputfile + " correctly")
 	if numfreqs == 0 or numtelescopes == 0 or numdatastreams == 0 or numbaselines == 0:
 		parser.error("Couldn't parse input file " + inputfile + " correctly")
 
@@ -251,7 +279,12 @@ def stitchVisibilityfile(basename,cfg):
 			print ("Map zoom %s to stitched single %12.6f--%12.6f : in fq#%2d -> stitch#%d -> out fq#%2d" % (freqs[fi].str(), stitch_basefreqs[stid], stitch_endfreqs[stid],fi,stid,stitch_out_ids[stid]))
 
 	# Read the DiFX .difx/DIFX_* file
-	difxfileslist = glob.glob(basename + '.difx/DIFX_*.s*.b*')
+	#glob_pattern = basename + '.difx/DIFX_*.s*.b*'
+	glob_pattern = inputfile_cfg['difxfile'] + '/DIFX_*.s*.b*'
+	difxfileslist = glob.glob(glob_pattern)
+	if len(difxfileslist) <= 0:
+		print ('Error: no visibility data file found in %s!' % (glob_pattern))
+		return
 	difxfilename = difxfileslist[0]
 	difxfilename_pathless = difxfilename
 	if difxfilename.rfind('/') >= 0:
@@ -263,6 +296,9 @@ def stitchVisibilityfile(basename,cfg):
 		os.mkdir(difxoutdir)
 	except:
 		pass
+	if os.path.exists(difxoutname):
+		print ('Warning: %s already exists, skipping the processing of %s!' % (difxoutname,difxfilename))
+		return
 	difxout = open(difxoutname, 'w')
 
 	# Pull out antenna indices based on telescope names
@@ -363,8 +399,14 @@ def stitchVisibilityfile(basename,cfg):
 
 			# Keep data if bandwidth matches
 			if (bw == target_bw) and (nchan == target_nchan):
+
+				if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
+					if cfg['verbose']:
+						print ('(copy): %s' % (vis_info))
+					continue
 				if cfg['verbose']:
 					print ('copy  : %s' % (vis_info))
+
 				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
 				if cfg['target_chavg'] > 1:
@@ -388,8 +430,13 @@ def stitchVisibilityfile(basename,cfg):
 
 				# Visibility already at target bandwidth, just copy the data
 
+				if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
+					if cfg['verbose']:
+						print ('(take): %s' % (vis_info))
+					continue
 				if cfg['verbose']:
 					print ('take  : %s' % (vis_info))
+
 				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
 				if cfg['target_chavg'] > 1:
@@ -469,6 +516,11 @@ def stitchVisibilityfile(basename,cfg):
 					TS = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
 					bwsum = numpy.sum(stitch_freqbws[baseline][polpair][stid])
 					vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,TS,stitch_chcounts[baseline][polpair][stid],bwsum,str(uvw))
+	
+					if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
+						if cfg['verbose']:
+							print ('(stch): %s' % (vis_info))
+						continue
 					if cfg['verbose']:
 						print ('stitch: %s' % (vis_info))
 
