@@ -202,6 +202,39 @@ def make_output_header_v1(hdrstruct):
     binhdr = b''.join(packed)
     return binhdr
 
+def get_common_settings(inputfile):
+    input = open(inputfile)
+    lines = input.readlines()
+    input.close()
+
+    at = 0
+    while at < len(lines) and lines[at] != "# COMMON SETTINGS ##!\n":
+        at += 1
+    at += 1
+
+    settings = {}
+    val, lines = nextinputline(lines[at:])
+    settings['calcfile'] = val
+    val, lines = nextinputline(lines[1:])
+    settings['corefile'] = val
+    val, lines = nextinputline(lines[1:])
+    settings['exectime'] = float(val)
+    val, lines = nextinputline(lines[1:])
+    settings['startmjd'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['startsec'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['datastreams'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['baselines'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['visbuflen'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['outformat'] = val
+    val, lines = nextinputline(lines[1:])
+    settings['difxfile'] = val
+    return settings
+
 def get_telescopetable_info(inputfile):
     input = open(inputfile)
     lines = input.readlines()

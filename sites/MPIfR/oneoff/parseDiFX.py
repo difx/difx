@@ -202,6 +202,39 @@ def make_output_header_v1(hdrstruct):
     binhdr = b''.join(packed)
     return binhdr
 
+def get_common_settings(inputfile):
+    input = open(inputfile)
+    lines = input.readlines()
+    input.close()
+
+    at = 0
+    while at < len(lines) and lines[at] != "# COMMON SETTINGS ##!\n":
+        at += 1
+    at += 1
+
+    settings = {}
+    val, lines = nextinputline(lines[at:])
+    settings['calcfile'] = val
+    val, lines = nextinputline(lines[1:])
+    settings['corefile'] = val
+    val, lines = nextinputline(lines[1:])
+    settings['exectime'] = float(val)
+    val, lines = nextinputline(lines[1:])
+    settings['startmjd'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['startsec'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['datastreams'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['baselines'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['visbuflen'] = int(val)
+    val, lines = nextinputline(lines[1:])
+    settings['outformat'] = val
+    val, lines = nextinputline(lines[1:])
+    settings['difxfile'] = val
+    return settings
+
 def get_telescopetable_info(inputfile):
     input = open(inputfile)
     lines = input.readlines()
@@ -340,9 +373,9 @@ def get_datastreamtable_info(inputfile):
             val, lines = nextinputline(lines[1:])
             datastreams[-1].recbandindex.append(int(val))
         val, lines = nextinputline(lines[1:])
-	datastreams[-1].zoomfreqpols = []
+        datastreams[-1].zoomfreqpols = []
         datastreams[-1].zoomfreqindex = []
-	datastreams[-1].nzoomband = 0
+        datastreams[-1].nzoomband = 0
         datastreams[-1].nzoomfreq = int(val)
         for j in range(datastreams[-1].nzoomfreq):
             val, lines = nextinputline(lines[1:])
@@ -451,10 +484,10 @@ def get_freqtable_info(inputfile):
         freqs[-1].oversamplefac = int(lines[at+5][20:])
         freqs[-1].decimfac = int(lines[at+6][20:])
         di = lines[at+7].rfind(':')
-	freqs[-1].npcal = int(lines[at+7][di+1:])
+        freqs[-1].npcal = int(lines[at+7][di+1:])
         for p in range(freqs[-1].npcal):
             di = lines[at+8+p].rfind(':')
-	    freqs[-1].pcalindices.append(int(lines[at+8+p][di+1:]))
+            freqs[-1].pcalindices.append(int(lines[at+8+p][di+1:]))
         at += 8 + freqs[-1].npcal
     return (numfreqs, freqs)
 
