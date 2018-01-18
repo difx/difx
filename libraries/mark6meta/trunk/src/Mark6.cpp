@@ -534,9 +534,9 @@ void Mark6::pollDevices()
                         
                         newDevices_m.push_back(disk);
                         changeCount++;
-                        cout << "Controller ID=" << disk.getControllerId() << endl;
-                        cout << "Disk ID=" << disk.getDiskId() << endl;
-                        cout << "Disk serial=" << disk.getSerial() << endl;
+                        //cout << "Controller ID=" << disk.getControllerId() << endl;
+                        //cout << "Disk ID=" << disk.getDiskId() << endl;
+                        //cout << "Disk serial=" << disk.getSerial() << endl;
                     }
                     else if (devtype == "partition")
                     {   
@@ -584,7 +584,7 @@ void Mark6::pollDevices()
                 {
                     //modules_m[iSlot].isComplete();
                     //cout << "Slot " << iSlot << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << modules_m[iSlot].isComplete() << endl;
-                    cout << "Slot " << iSlot << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
+                    cout << "Slot " << iSlot+1 << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
                 }
                 cout << endl;
     }
@@ -637,14 +637,15 @@ int Mark6::enumerateDevices()
 				string devName = string(sysname);                               
 				Mark6DiskDevice disk(devName);
 
-				if (devpath != NULL)
-					disk.setControllerId( parseControllerId(string(devpath)) );
 				if (sasaddress != NULL)
 					disk.setDiskId(parseDiskId(string(sasaddress)));
+
+				if (devpath != NULL)
+					disk.setControllerId( parseControllerId(string(devpath)) );
 				if (serial != NULL)
 					disk.setSerial(string(serial));
-				                               
-                                //cout << "device " << devName << " serial " << serial <<endl;
+							       
+				//cout << "device " << devName << " serial " << serial <<endl;
 				newDevices_m.push_back(disk);			
 				devCount++;
 				//cout << "Controller ID=" << disk.getControllerId() << endl;
@@ -687,13 +688,15 @@ long Mark6::parseDiskId(std::string sasAddress)
     return(strtol(sasAddress.substr(11,1).c_str(), NULL, 16));
 }
 
+
 /**
  * Obtains the controller id (should be either 0 or 1) by parsing the output 
  * of the devpath information provided by UDEV. If the internal cabling
  * of the Mark6 machine is done correctly module slots 1 and 2 should be
  * located on controller id=1 whereas slots 3 and 4 should have a controller id=0
  * @returns the controller id; -1 if no controller id was found in the devpath
- * @todo currently controllers are distinguished by the PCI identifier which is "17" for controller0 and "0" for controller1. Hopefully this is always the case. Should be discussed with Chet.
+ * @todo controllers are distinguished by the PCI identifier. APPARENTLY one of the controllers always shows as "host0". Don't know if this is always true. Should be discussed with Chet.
+ *
  * 
  */
 int Mark6::parseControllerId(string devpath)
@@ -703,7 +706,8 @@ int Mark6::parseControllerId(string devpath)
     if (found != string::npos)
         return(0);
     
-    found = devpath.find("host17");
+    // any other host will receiver controllerId 1
+    found = devpath.find("host");
     if (found != string::npos)
         return(1);
     
