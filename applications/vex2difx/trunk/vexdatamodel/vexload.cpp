@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2016 by Walter Brisken                             *
+ *   Copyright (C) 2009-2018 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,7 +42,7 @@
 #include "../vex/vex_parse.h"
 
 // maximum number of defined IFs
-#define MAX_IF 4
+#define MAX_IF 32
 
 using namespace std;
 
@@ -706,6 +706,11 @@ static int getModes(VexData *V, Vex *v)
 			p2count = 0;
 			for(p = get_all_lowl(antName.c_str(), modeDefName, T_COMMENT_TRAILING, B_IF, v); p; p = get_all_lowl_next())
 			{
+				if(p2count >= MAX_IF)
+				{
+					std::cerr << "Developer error: Value of MAX_IF is too small in vexload.cpp, instance 1" << std::endl;
+					exit(0);
+				}
 				p2array[p2count++] = p;
 			}
 
@@ -776,6 +781,11 @@ static int getModes(VexData *V, Vex *v)
 				vif.phaseCalBaseMHz = static_cast<float>(phaseCalBase/1000000.0);
 
 
+				if(p2count >= MAX_IF)
+				{
+					std::cerr << "Developer error: Value of MAX_IF is too small in vexload.cpp, instance 2" << std::endl;
+					exit(0);
+				}
 				p2 = p2array[p2count++];
 #if 0
 				if(!p2)
