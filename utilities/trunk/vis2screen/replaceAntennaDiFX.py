@@ -106,8 +106,8 @@ def buildIndex(inputfilename,difxfile,antList):
 def patchDiFX(basename_dst,basename_src,antList):
 
 	# Derive file names
-	(basename_dst, pathless_basename_dst) = getBasename(basename_dst)
-	(basename_src, pathless_basename_src) = getBasename(basename_src)
+	(pathless_basename_dst, basename_dst) = getBasename(basename_dst)
+	(pathless_basename_src, basename_src) = getBasename(basename_src)
 
 	# Open DiFX files
 	difxdstfile = glob.glob(basename_dst + '.difx/DIFX_*.s*.b*')[0]
@@ -138,7 +138,7 @@ def patchDiFX(basename_dst,basename_src,antList):
 	if numfreqs == 0 or numtelescopes == 0 or numdatastreams == 0 or numbaselines == 0:
 		print ("Couldn't parse input file " + inputfilename + " correctly")
 		sys.exit(-1)
-	newinputfile = basename_dst + '_antreplaced.input'
+	newinputfile = pathless_basename_dst + '_antreplaced.input'
 	try:
 		shutil.copyfile(inputfilename, newinputfile)
 	except Exception as e:
@@ -222,6 +222,9 @@ def patchDiFX(basename_dst,basename_src,antList):
 	print('Vis. not in src : %d' % (Nnotfound))
 	if Nnotfound > 0:
 		print('        details : %s' % (str(Vnotfound)))
+
+	# TODO:
+	print ('Generated visibilities and %s, but please manually edit its OUTPUT FILENAME line to fix the path (TODO: automatic path fix)' % (newinputfile))
 
 # Cmd line args
 if __name__ == "__main__":
