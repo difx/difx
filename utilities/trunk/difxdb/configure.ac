@@ -16,4 +16,5 @@ AC_OUTPUT([ \
 	difxdbModule/Makefile \
 	difxdbTapelog/Makefile \
 	difxdbInventory/Makefile \
+	difxdbExperiment/Makefile \
 ])

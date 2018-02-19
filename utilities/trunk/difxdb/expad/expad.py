@@ -198,7 +198,8 @@ class MainWindow(GenericWindow):
         self.cboType.bind('<ButtonRelease-1>', self.onExpDetailChange)
         self.btnUpdate["state"] = DISABLED
         self.btnDelete["state"] = DISABLED
-
+        
+        
   
     def onExpDetailChange(self, Event):
         
@@ -549,11 +550,9 @@ class AddExperimentWindow(GenericWindow):
         
     def _setupWidgets(self):
                      
-        Label(self.dlg, text="Code").grid(row=0, sticky=W)
-        self.txtExpCode = Entry(self.dlg)
-        Label(self.dlg, text="Analyst").grid(row=1, sticky=W)
-        Label(self.dlg, text="Type").grid(row=2, sticky=W)
         
+        self.txtExpCode = Entry(self.dlg) 
+        self.txtObsDate =  Entry(self.dlg)   
         self.cboType= Listbox(self.dlg, listvariable=self.cboTypeVar, selectmode=MULTIPLE, height=5, selectforeground="white", selectbackground="dodger blue", fg="grey" )
         self.cboType.delete(0,END)
 	self.cboType.insert(0, *self.expTypes)
@@ -563,11 +562,21 @@ class AddExperimentWindow(GenericWindow):
         btnOK = Button(self.dlg, text="OK", command=self._persistExperiment)
         btnCancel = Button(self.dlg, text="Cancel", command=self.dlg.destroy)
         
+        Label(self.dlg, text="Code").grid(row=0, sticky=W)
+        Label(self.dlg, text="Analyst").grid(row=1, sticky=W)
+        Label(self.dlg, text="Type").grid(row=2, sticky=W)
+        Label(self.dlg, text="Observation date").grid(row=10, sticky=W)
+        
+        Label(self.dlg, text="*").grid(row=0, column=3,sticky=W)
+        Label(self.dlg, text="(yyyy-mm-dd)").grid(row=10, column=3, sticky=W)
+        
         self.txtExpCode.grid(row=0, column=1, sticky=E+W)
         self.cboUser.grid(row=1, column=1, sticky=E+W)
         self.cboType.grid(row=2, column=1, sticky=E+W)
-        btnOK.grid(row=10, column=0)
-        btnCancel.grid(row=10, column=1, sticky=E)
+        self.txtObsDate.grid(row=10, column=1, sticky=E+W)
+        
+        btnOK.grid(row=100, column=0)
+        btnCancel.grid(row=100, column=1, sticky=E)
         
         self.txtExpCode.focus_set()
         
