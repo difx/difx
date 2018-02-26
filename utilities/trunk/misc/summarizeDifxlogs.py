@@ -49,19 +49,32 @@ def getWeightlabels(inputfile):
 	return labels
 
 def getWallclockStr(logfile):
+	mpiDone = False
+	wallclockFound = False
+	s = ''
 	f = open(logfile, 'r')
 	while True:
 		l = f.readline()
 		if len(l) <= 0:
 			break
-		# 'Fri Feb 23 22:45:21 2018   0 fxmanager INFO  Total wallclock time was **1011.36** seconds'
-		if not('Total wallclock' in l):
+		# STATUS MpiDone
+		if ('STATUS MpiDone' in l) or ('STATUS Done' in l):
+			mpiDone = True
 			continue
-		elems = l.split('**')
-		str = bcolors.GREEN + elems[1] + ' sec' + bcolors.ENDC
-		return str
-	str = bcolors.RED + 'no runtime' + bcolors.ENDC
-	return str
+		# 'Fri Feb 23 22:45:21 2018   0 fxmanager INFO  Total wallclock time was **1011.36** seconds'
+		if 'Total wallclock' in l:
+			elems = l.split('**')
+			T = elems[1]
+			s = '%s%s sec%s' % (bcolors.GREEN,T,bcolors.ENDC)
+			wallclockFound = True
+	if not wallclockFound:
+		s = bcolors.RED + 'no runtime' + bcolors.ENDC
+	if not mpiDone:
+		s = s + ', ' + bcolors.RED + 'no MpiDone' + bcolors.ENDC
+	else:
+		s = s + ', ' + bcolors.GREEN + 'MpiDone' + bcolors.ENDC
+
+	return s
 
 def weights2text(weights, labels, alltelescopes):
 	s = ''
