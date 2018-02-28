@@ -12,9 +12,12 @@
 #
 #============================================================================
 
+import gzip
+import pexpect
 import os
 import sys
 import re
+import time
 import datetime
 import shutil
 import subprocess
@@ -138,21 +141,18 @@ def getTransferFileCount(source, destination, options=""):
     mn = re.findall(r'Number of files transferred: (\d+)', remainder)
     fileCount = int(mn[0])
     
-    print "Number of files to be transferred: %d " % fileCount
+#    print "Number of files to be transferred: %d " % fileCount
     
     return(totalCount, fileCount)
 
-def syncDir(path, user, config, fileCount, dryRun):
+def syncDir(path, user, config, fileCount):
     
     server = config.get("difxarchive", "archiveserver")
     remotePath = config.get("difxarchive", "archiveremotepath")
     
-    logger.info( "Copying files from %s to: %s" % (path, server))
+    logger.info( "Syncing files from %s to: %s" % (path, server))
     
-    if dryRun:
-        cmd = 'rsync -av  --dry-run %s %s@%s:%s' % ( path, user, server, remotePath) 
-    else:    
-        cmd = 'rsync -av  --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
+    cmd = 'rsync -av  --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
         
     proc = subprocess.Popen(cmd,
                                        shell=True,
@@ -160,7 +160,7 @@ def syncDir(path, user, config, fileCount, dryRun):
                                        stdout=subprocess.PIPE,
                                        )
     
-    while True and not dryRun:
+    while True:
         output = proc.stdout.readline()
 
         if not output:
@@ -177,13 +177,12 @@ def syncDir(path, user, config, fileCount, dryRun):
              if int(m[0][0]) == 0:
                       break
                       
-    logger.info('Finished')
-    
+    sys.stdout.write('\n')
     return
 
 def buildReferenceOptions():
     
-    includePattern = ["*.vex", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log", "cf_*", "rf_*"]
+    includePattern = ["*.vex", "*.obs", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log", "cf_*", "rf_*"]
     
     cmd = " --include '*/' "
     for pattern in includePattern:
@@ -194,7 +193,7 @@ def buildReferenceOptions():
     return(cmd)
     
     
-def syncReferenceDir(path, referencePath, fileCount, options, dryRun):
+def syncReferenceDir(path, referencePath, fileCount, options):
     
     
     # check that destination path has trailing slash
@@ -207,12 +206,9 @@ def syncReferenceDir(path, referencePath, fileCount, options, dryRun):
      
     cmd = "rsync -av --progress " + options
     
-    if dryRun:
-        cmd += " --dry-run "
-    
     cmd += path + " " + referencePath
     
-    logger.info( "Copying reference files from: %s to: %s" % (path, referencePath))
+    logger.info( "Syncing reference files from %s to: %s" % (path, referencePath))
     
     proc = subprocess.Popen(cmd,
                                        shell=True,
@@ -220,7 +216,7 @@ def syncReferenceDir(path, referencePath, fileCount, options, dryRun):
                                        stdout=subprocess.PIPE,
                                        )
     
-    while True and not dryRun:
+    while True:
         output = proc.stdout.readline()
         
         if not output:
@@ -235,30 +231,33 @@ def syncReferenceDir(path, referencePath, fileCount, options, dryRun):
              if int(m[0][0]) == 0 :
                       break
     
-    logger.info('Finished')
+    sys.stdout.write('\n')
     return
 
 def packDirectory(rootPath, packDir, outDir, filename):
-    '''
-    packs the contents of the given subdirectory.
-    The tar and gzip steps need to be done separately
-    in order to allow verification of the tar archive.
-    '''
 
-    zipFile = filename + ".gz"
+    zipFile = "%s/%s.gz" % (outDir, filename)
+
+    baseDir = os.path.dirname(rootPath)
+    expDir = os.path.basename(rootPath)
+
+    if len(baseDir) == 0:
+        baseDir = "."
+
+    #print "baseDir=%s expDir=%s" % (baseDir, expDir)
 
     # if packDir contains a list of files the path needs to be modified
     if type(packDir) == list:
         tmp = ""
         for file in packDir:
-            tmp += "%s/%s " % (rootPath, file)
+            tmp += "%s/%s " % (expDir, file)
         packDir = tmp
     else:
-        packDir = "%s/%s" % (rootPath, packDir)
+        packDir = "%s/%s" % (expDir, packDir)
 
     filename = "%s/%s" % (outDir, filename)
 
-    print rootPath, packDir, outDir, filename
+    #print rootPath, packDir, outDir, filename
 
 
     if os.path.isfile(filename):
@@ -271,30 +270,39 @@ def packDirectory(rootPath, packDir, outDir, filename):
     logger.info("Creating tar file %s" % (filename))
     # create tar file
     command = "tar -cWvf %s %s" % (filename, packDir)
-    print command
-    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    for line in iter(p.stderr.readline,''):
-        logger.error(line.rstrip())
-        errorCount +=1
-    if errorCount > 0:
-        exitOnError("An error has occured while trying to create %s" % (filename))
+    #print command
+    os.chdir(baseDir)
+    #print baseDir
+    child = pexpect.spawn(command, logfile = sys.stdout)
+    child.expect([pexpect.EOF,pexpect.TIMEOUT])
 
-    for line in iter(p.stdout.readline,''):
-        logger.info(line.rstrip())
     logger.info("Finished writing tar file %s" % (filename))
 
     logger.info("Zipping tar file %s" % (zipFile))
-    # zipping the tar file
-    errorCount = 0
-    p = subprocess.Popen(['gzip', filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    for line in iter(p.stderr.readline,''):
-        logger.error(line.rstrip())
-        errorCount +=1
-    if errorCount > 0:
+    try:
+        with open(filename, 'rb') as f_in, gzip.open(zipFile, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    except:
         exitOnError("An error has occured while trying to zip %s" % (filename))
+    
+    if not os.path.isfile(zipFile):
+        exitOnError("The zip file has not been created: %s" % (zipFile))
 
-    for line in iter(p.stdout.readline,''):
-        logger.info(line.rstrip())
+    # now remove the tar file
+    if os.path.isfile(filename):
+        os.remove(filename)
+    
+    # zipping the tar file
+    #errorCount = 0
+    #p = subprocess.Popen(['gzip', filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #for line in iter(p.stderr.readline,''):
+    #    logger.error(line.rstrip())
+    #    errorCount +=1
+    #if errorCount > 0:
+    #    exitOnError("An error has occured while trying to zip %s" % (filename))
+#
+#    for line in iter(p.stdout.readline,''):
+#        logger.info(line.rstrip())
     logger.info("Finished zipping tar file %s" % (zipFile))
 
 def setupLoggers(logPath):
@@ -318,19 +326,6 @@ def setupLoggers(logPath):
     logger.addHandler(ch)
 
     
-def searchHops(path):
-    isHops = False
-
-    reHops = re.compile("^\d{4}$")
-    print "Searching for HOPS subdirectories"
-    for subdir, dirs, files in os.walk(path):
-    	for dir in dirs:
-        	# check for fourfit subdirectories (4-digit numeric)
-        	if reHops.match(dir):
-          		print "Found: " + subdir + "/" + dir
-			isHops = True
-    return(isHops)
-
 def confirmAction():
     
      # if --force option was used skip confirmation
@@ -349,8 +344,10 @@ def confirmAction():
 
 def confirmArchiveDirs(archiveDirs):
     while True:
+        print "-------------------------------------------------"
         print "Will archive all files in the top-level directory"
         print "as well as the following directories: ", ' ' .join(archiveDirs)
+        print "-------------------------------------------------"
         while True:
             ret = raw_input("Proceed using this selection? [y/n] (n for making changes): ")
             ret = lower(ret.strip())
@@ -365,9 +362,61 @@ def confirmArchiveDirs(archiveDirs):
             ret = raw_input("Specify directories to be archived (space separated list): ")
             archiveDirs = ret.split()
         else:
-            return
+            break
+
+    return archiveDirs
 
     
+def getArchiveDirs(path):
+
+    archiveDirs = []
+    prodDirs = []
+    searchStr = "%s(\d+)" % versionPrefix
+    version = 0
+    reProdDir = re.compile(searchStr)
+
+    # find all files and subdirectories under path
+    for dirpath, dirnames, filenames in os.walk(path):
+        # inspect the top level directories
+        if fringeDir in dirnames:
+            archiveDirs.append(fringeDir)
+        if filesDir in dirnames:
+            archiveDirs.append(filesDir)
+        if exportDir in dirnames:
+            archiveDirs.append(exportDir)
+
+        # find production run directory with highest version count
+        for dir in dirnames:
+            match = reProdDir.match(dir)
+            if match:
+                if match.group(1) > version:
+                    prodDirs = []
+                if match.group(1) >= version:
+                    prodDirs.append(dir)
+                    version = match.group(1)
+
+        for dir in prodDirs:
+            archiveDirs.append(dir)
+    
+        # remove archive directory from list of candidate directories
+        if tmpDir in dirnames:
+            dirnames.remove(tmpDir)
+
+
+        print "-------------------------------------------"
+        print "Found the following top-level directories: ", ' ' . join(dirnames)
+        archiveDirs = confirmArchiveDirs(archiveDirs)
+        return archiveDirs, filenames
+
+    
+def cleanup():
+
+    logging.shutdown()
+    time.sleep(1)
+    tmpPath = "%s/%s" % (path, tmpDir)
+    if os.path.isdir(tmpPath):
+        # remove the tmp_difxlog directory and all its subdirs
+        shutil.rmtree(tmpPath, ignore_errors=False)
     
 if __name__ == "__main__":
 
@@ -377,7 +426,7 @@ if __name__ == "__main__":
     
     parser.add_option("-u", "--user", dest="user", type="string" ,action="store", help="Do the archival as the specified user. This overrides the defaultuser directive in difxdb.ini")
     parser.add_option("-f", "--force", dest="force" ,action="store_true", default=False, help="Delete files without further confirmation ")
-    parser.add_option("-d", "--dry-run", dest="dryRun" ,action="store_true", default=False, help="Simulate archival. Don't rsync files, don't update database. ")
+    parser.add_option("-a", "--all", dest="all" ,action="store_true", default=False, help="Backup all files and directories.")
     parser.add_option("-D", "--db-only", dest="dbOnly" ,action="store_true", default=False, help="Update database only, don't copy files (use with care!) ")
     parser.add_option("-k", "--keep", dest="keep" ,action="store_true", default=False, help="Keep files on local disk after archiving.")
     # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
@@ -394,6 +443,7 @@ if __name__ == "__main__":
     if path[-1:] == "/":
 	path = path[0:-1]
 
+    
     if not options.dbOnly:
         # check that path exists
         if not isdir(path):
@@ -406,7 +456,8 @@ if __name__ == "__main__":
     os.mkdir(archiveDir)
 
     # setup the console and file logger
-    setupLoggers(path)
+    logPath = "%s/%s" % (path, tmpDir)
+    setupLoggers(logPath)
 
     logger.info("Starting difxarchive") 
 
@@ -426,8 +477,6 @@ if __name__ == "__main__":
     except Exception as e:
         exitOnError(e)
 
-
-
     # check that experiment exists in the database
     if not experimentExists(session, code):
         exitOnError("Experiment with code %s not found in the database." % code)
@@ -437,7 +486,6 @@ if __name__ == "__main__":
         print "Experiment has been archived already."
         confirmAction()
     
-
     if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
         major, minor = getCurrentSchemaVersionNumber(session)
         exitOnError("Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor))
@@ -455,62 +503,32 @@ if __name__ == "__main__":
             # obtain kerberos ticket
             getTicket(user)
                 
-            archiveDirs = []
-            prodDirs = []
-            searchStr = "%s(\d+)" % versionPrefix
-            reProdDir = re.compile(searchStr)
-            version = 0
+            # construct the list of files and directories to be archived
+            archiveDirs, filenames = getArchiveDirs(path)
 
-            # find all files and subdirectories
-            for dirpath, dirnames, filenames in os.walk(path):
-                # inspect the top level directories
-                if fringeDir in dirnames:
-                    archiveDirs.append(fringeDir)
-                if filesDir in dirnames:
-                    archiveDirs.append(filesDir)
-                if exportDir in dirnames:
-                    archiveDirs.append(exportDir)
-
-                # find production run directory with highest version count
-                for dir in dirnames:
-                    match = reProdDir.match(dir)
-                    if match:
-                        if match.group(1) > version:
-                            prodDirs = []
-                        if match.group(1) >= version:
-                            prodDirs.append(dir)
-                            version = match.group(1)
-                            
-                for dir in prodDirs:
-                    archiveDirs.append(dir)
-
-
-                print "-------------------------------------------"
-                print "Found the following top-level directories: ", ' ' . join(dirnames)
-                print "-------------------------------------------"
-                confirmArchiveDirs(archiveDirs)
-                break
-                
             # pack the directories
-            rootDir = "%s/%s" %(path, archiveDir)
-            print rootDir
+            #print archiveDir, archiveDirs
             for dir in archiveDirs:
+                logger.info("Now packing %s" % dir)
                 packDirectory(path, dir, archiveDir, dir + ".tar")
+                logger.info("Done packing %s" % dir)
             # now pack the top-level files
             packDirectory(path, filenames, archiveDir, "main.tar")
 
-
             # Now sync the tar files to the backup server
+            passCount = 0
             while True:
                 total, fileCount = getTransferFileCount(archiveDir, destination)
                 if (fileCount == 0):
                     break
 
                 # copy files to the archive server
-                syncDir(archiveDir, user, config, total, options.dryRun )
-
-                if options.dryRun:
-                    break
+                syncDir(archiveDir, user, config, total )
+                
+                logger.info ("Pass %d. Syncing %d files" % (passCount, fileCount))
+                passCount +=1
+            logger.info("Finished")
+                
 
             # Now copy the reference files
             destDir = "%s/%s" % (config.get("difxarchive", "refbackuppath"), code)
@@ -520,14 +538,18 @@ if __name__ == "__main__":
             for dir in archiveDirs:
                 srcDir = "%s/%s" % (path, dir)
                 syncOptions = buildReferenceOptions()
+                passCount = 0
                 while True:
                     total, fileCount = getTransferFileCount(srcDir, destDir, syncOptions)
-                    print fileCount 
                     if (fileCount == 0):
                         break
-                    syncReferenceDir(srcDir, destDir, total, syncOptions, options.dryRun)
+                    syncReferenceDir(srcDir, destDir, total, syncOptions)
+
+                    logger.info ("Pass %d. Syncing %d files" % (passCount, fileCount))
+                    passCount +=1
 
             # copy all files in filesDir
+            passCount = 0
             while True:
                 srcDir = "%s/%s" % (path, filesDir)
                 if not os.path.isdir(srcDir):
@@ -536,44 +558,46 @@ if __name__ == "__main__":
                 total, fileCount = getTransferFileCount(srcDir, destDir, syncOptions)
                 if (fileCount == 0):
                     break
-                syncReferenceDir(srcDir, destDir, total, syncOptions, options.dryRun)
+                syncReferenceDir(srcDir, destDir, total, syncOptions)
+                logger.info ("Pass %d. Syncing %d files" % (passCount, fileCount))
+                passCount +=1
 
             # copy all top-level files
+            passCount = 0
             while True:
                 srcDir = "%s/*" % (path)
                 syncOptions = "--exclude '*/' --exclude 'difxarchive.log' --include '*' " 
                 total, fileCount = getTransferFileCount(srcDir, destDir, syncOptions)
                 if (fileCount == 0):
                     break
-                syncReferenceDir(srcDir, destDir, total, syncOptions, options.dryRun)
+                syncReferenceDir(srcDir, destDir, total, syncOptions)
+                logger.info ("Pass %d. Syncing %d files" % (passCount, fileCount))
+                passCount +=1
 
+        # update database
+        session = dbConn.session()
+        experiment = getExperimentByCode(session, code)
+        experiment.dateArchived = datetime.datetime.now()
+        experiment.archivedBy = user
+        session.commit()
+        session.flush()
+        session.close()
+        logger.info("Updated database status")
 
-        if not options.dryRun:
-            
-            # update database
-            session = dbConn.session()
-            experiment = getExperimentByCode(session, code)
-            experiment.dateArchived = datetime.datetime.now()
-            experiment.archivedBy = user
-            session.commit()
-            session.flush()
-            session.close()
-            logger.info("Updated database status")
+        # finally upload difxarchive.log
+        shutil.copy(logPath + "/difxarchive.log", archiveDir)
+        syncDir(archiveDir, user, config, 1)
+        syncReferenceDir(logPath + "/difxarchive.log", destDir, 1, "")
 
-            # finally upload difxarchive.log
-            shutil.copy(path + "/difxarchive.log", archiveDir)
-            syncDir(archiveDir, user, config, 1, options.dryRun )
-            syncReferenceDir(path + "/difxarchive.log", destDir, 1, "", options.dryRun)
-
-            if not options.dbOnly and not options.keep:
-                # delete files
-                print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
-                confirmAction()
-                logger.info("Deleted %s" % (path))
+        if not options.dbOnly and not options.keep:
+            # delete files
+            print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
+            confirmAction()
+            logger.info("Deleted %s" % (path))
 #
-                shutil.rmtree(path, ignore_errors=True)
-            
-            
+            shutil.rmtree(path, ignore_errors=True)
+        
+        
 
     except Exception as e:
         exitOnError(e)
@@ -583,6 +607,7 @@ if __name__ == "__main__":
         # destroy kerberos tickets
         destroyTicket()
         logger.info ("Done")
+        cleanup()
         
     
    
