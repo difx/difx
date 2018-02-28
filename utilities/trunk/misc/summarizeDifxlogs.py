@@ -48,10 +48,11 @@ def getWeightlabels(inputfile):
 			labels.append(telescopes[antindex])
 	return labels
 
-def getWallclockStr(logfile):
+def getTimingsStr(logfile):
 	mpiDone = False
-	wallclockFound = False
-	s = ''
+	wallclockTime = -1
+	peakDatatime = -1
+
 	f = open(logfile, 'r')
 	while True:
 		l = f.readline()
@@ -61,18 +62,36 @@ def getWallclockStr(logfile):
 		if ('STATUS MpiDone' in l) or ('STATUS Done' in l):
 			mpiDone = True
 			continue
+		# Vis. 39 to write out time 239.6
+		if 'to write out time' in l:
+			T = l[(l.find('out time ') + len('out time ')):]
+			if float(T) > peakDatatime:
+				peakDatatime = float(T)
+			continue
 		# 'Fri Feb 23 22:45:21 2018   0 fxmanager INFO  Total wallclock time was **1011.36** seconds'
 		if 'Total wallclock' in l:
 			elems = l.split('**')
 			T = elems[1]
-			s = '%s%s sec%s' % (bcolors.GREEN,T,bcolors.ENDC)
-			wallclockFound = True
-	if not wallclockFound:
-		s = bcolors.RED + 'no runtime' + bcolors.ENDC
-	if not mpiDone:
-		s = s + ', ' + bcolors.RED + 'no MpiDone' + bcolors.ENDC
+			wallclockTime = float(T)
+
+	s = ''
+	if wallclockTime == -1:
+		s = s + '%s%s,%s ' % (bcolors.RED,'no runtime',bcolors.ENDC)
 	else:
-		s = s + ', ' + bcolors.GREEN + 'MpiDone' + bcolors.ENDC
+		s = s + '%s%s sec,%s ' % (bcolors.GREEN,str(wallclockTime),bcolors.ENDC)
+		if peakDatatime > 0:
+			factor = wallclockTime/peakDatatime
+			if factor <= 1:
+				ccode = bcolors.GREEN
+			elif factor <= 10L:
+				ccode = bcolors.ORANGE
+			else:
+				ccode = bcolors.RED
+			s = s + '%s%.1fx slowdown, %s' % (ccode,factor,bcolors.ENDC)
+	if not mpiDone:
+		s = s + bcolors.RED + 'no MpiDone' + bcolors.ENDC
+	else:
+		s = s + bcolors.GREEN + 'MpiDone' + bcolors.ENDC
 
 	return s
 
@@ -98,8 +117,8 @@ files.sort()
 print ('Wallclock times:')
 for logname in files:
 	jobname = logname[:logname.rfind('.')]
-	wallclockstr = getWallclockStr(logname)
-	print ('%s : %s' % (jobname,wallclockstr))
+	timingsstr = getTimingsStr(logname)
+	print ('%s : %s' % (jobname,timingsstr))
 print ('')
 
 print ('Weights:')
