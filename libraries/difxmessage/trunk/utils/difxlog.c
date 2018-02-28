@@ -108,6 +108,10 @@ int main(int argc, char **argv)
 	time_t t, lastt;
 	char timestr[TimeLength];
 	char tag[TagLength];
+        char *wgtfmt = getenv("DIFX_WEIGHTS_FORMAT");
+
+        /* fall back to default short format */
+        if (!wgtfmt || wgtfmt[0] != '%') wgtfmt = "%4.2f";
 
 	time(&t);
 	lastt = t;
@@ -207,7 +211,7 @@ int main(int argc, char **argv)
 					fprintf(out, "%s  WEIGHTS", tag);
 					for(i = 0; i <= S->maxDS; ++i)
 					{
-						fprintf(out, " %4.2f", S->weight[i]);
+						fprintf(out, wgtfmt, S->weight[i]);
 					}
 					fprintf(out, "\n");
 				}
