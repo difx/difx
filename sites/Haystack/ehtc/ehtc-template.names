@@ -1,15 +1,16 @@
-A Aa	ALMA
-C Sn	SMA Comparison
-G Gt	Greenland Telescope
-H Hh	Haystack
-J Jc	JCMT
-K Kp	Kitt Peak
-L Lm	LMT
-N No	NOEMA
-P Pv	Pico Veleta
-R Sr	SMA Redundant
-S Sm	SMA Phased
-T Tt	(reserved)
-X Ap	APEX
-Y Sp	SPT (South Pole)
-Z Az	SMT (Arizona)
+A Aa	ALMA Phased         
+B Aq	ALMA Single         
+C Sq	SMA Single          
+G Gl	Greenland Telescope 
+H Hs	Haystack            
+J Mm	JCMT                
+K Kt	Kitt Peak           
+L Lm	LMT                 
+M Nq	NOEMA Single        
+N Na	NOEMA Phased        
+P Pv	Pico Veleta         
+R Sr	SMA Redundant       
+S Sw	SMA Phased          
+X Aq	APEX                
+Y Sz	SPT (South Pole)    
+Z Mg	SMT (Arizona)       

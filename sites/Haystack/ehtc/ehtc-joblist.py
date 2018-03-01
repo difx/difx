@@ -7,7 +7,7 @@
 '''
 Script to parse a joblist and a vex file and produce lists of job numbers
 
-$Id: ehtc-joblist.py 2157 2017-12-12 21:48:51Z gbc $
+$Id: ehtc-joblist.py 2257 2018-03-01 21:39:21Z gbc $
 '''
 
 import argparse
@@ -33,7 +33,7 @@ def parseOptions():
     epi += ' try this: '
     epi += ' ehtc-joblist.py -i *.input -o *.vex.obs -p na -s 3C279 -R'
     use = '%(prog)s [options]\n'
-    use += '  Version $Id: ehtc-joblist.py 2157 2017-12-12 21:48:51Z gbc $'
+    use += '  Version $Id: ehtc-joblist.py 2257 2018-03-01 21:39:21Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     inputs = parser.add_argument_group('input options', inp)
     action = parser.add_argument_group('action options', act)
@@ -55,6 +55,10 @@ def parseOptions():
         metavar='FILE-PATTERN', default='',
         help='The path to job input/calc files up to the '
             + ' underscore preceding the job number.')
+    inputs.add_argument('-c', '--codes', dest='codes',
+        metavar='FILE', default='',
+        help='difx2mark4 station code file augmented with a column'
+            + ' of polarizations per station')
     action.add_argument('-A', '--antennas', dest='antennas',
         action='store_true', default=False,
         help='provide a list of antennas')
@@ -77,6 +81,9 @@ def parseOptions():
         action='store_true', default=False,
         help='provide a summary list of scans ' +
              'with source, project and antennas')
+    action.add_argument('-K', '--check', dest='check',
+        action='store_true', default=False,
+        help='provide a summary list checking 4fit products')
     action.add_argument('-G', '--groups', dest='groups',
         action='store_true', default=False,
         help='provide a summary list of proj/targ/class groups')
@@ -416,6 +423,7 @@ def doScanVTree(o):
                 print job,' ', sits
             o.jobbage[job].append([name, start, smjd, dur, vsrc, mode])
             o.jobbage[job].append(sits)
+        o.vexscans[name] = [name, start, smjd, vsrc, mode]
 
 def adjustOptions(o):
     '''
@@ -429,26 +437,32 @@ def adjustOptions(o):
     o.antset = None
     if len(o.inputs) > 0:    doInputs(o)
     o.jobbage = None
+    o.vexscans = {}
     o.antennaset = None
     o.projscans = None
     o.srcs = None
     if len(o.joblist) > 0:   doJobList(o)
     o.vextree = None
     if len(o.vexobs) > 0:
-        tcmd = 'type VEX2XML 2>&-'
-        if not o.verb: tcmd = tcmd + '1<&-'
+        tcmd = 'type VEX2XML >/dev/null'
+        if not o.verb: tcmd = tcmd + ' 2>&1'
         rc = os.system(tcmd)
         if rc == 0: doParseVex(o)
         if o.vextree:
             doFindProj(o)
             doFindSrcs(o)
             doScanVTree(o)
-            o.rubbage = o.jobbage
+            if o.jobbage is not None:
+                o.rubbage = o.jobbage   # use info from job list
+            elif o.cabbage is not None:
+                o.rubbage = o.cabbage   # use info from calc files
+            else:
+                o.rubbage = None        # eventually to crash & burn
             o.antlers = o.antennaset
         else:
             doFindProj(o)
             doInputSrcs(o)
-            o.rubbage = o.cabbage
+            o.rubbage = o.cabbage       # can only use calc files
             o.antlers = o.antset
     return o
 
@@ -600,6 +614,123 @@ def doGroups(o):
     for a in sorted(list(ans)):
         print ('export proj=%s targ=%s class=%s' % tuple(a.split(':')))
 
+def doLostScans(o):
+    '''
+    Provide in o.lostscans{} those which aren't found in o.rubbage.
+    o.rubbage = o.cabbage
+    o.rubbage[jn] = [MJDstart, MJDstop, [antennas], [vexinfo]]
+    vexinfo = [scan,vexstart,mjdstart,sdur,vsrc,mode]
+    o.vexscans[name] = [name, start, smjd, vsrc, mode]
+    '''
+    o.lostscans = o.vexscans
+    for jn in o.rubbage:
+        vexinfo = o.rubbage[jn][3]
+        name = vexinfo[0]
+        if name in o.lostscans: del o.lostscans[name]
+
+def doReportLostScans(o):
+    '''
+    Provide a report of scans that don't have matching jobs.
+    Each scan name has a list: [name, start, smjd, vsrc, mode]
+    '''
+    print '### Totally missing scans'
+    for name in o.lostscans:
+        print 'Missing %s at %s on %s' % (
+            name, o.lostscans[name][1], o.lostscans[name][3])
+    print
+
+def prodDict(verb, codefile):
+    '''
+    Open the file and calculate the number of fringes for all
+    possible baseline product combinations.
+    '''
+    cf = open(codefile)
+    spol = {}
+    sdic = {}
+    bpol = {}
+    for liner in cf.readlines():
+        try:
+            one,two,pol = liner.rstrip().split()
+            spol[one] = int(pol)
+            sdic[two.upper()] = one
+        except:
+            pass
+    if verb: print 'station',spol
+    if verb: print 'scodes',sdic
+    for ref in spol:
+        for rem in spol:
+            if spol[ref] > 0 and spol[rem] > 0:
+                if ref == rem:  # auto
+                    bpol[ref+rem] = spol[ref]
+                else:           # cross
+                    bpol[ref+rem] = spol[ref]*spol[rem]
+    if verb: print 'baseline',bpol
+    cf.close()
+    return sdic,bpol
+
+def calcExpFringes(verb, scdic, blprodic, antennas, fringes):
+    '''
+    For each baseline work out how many pol products should be present
+    and report errors.
+    '''
+    if verb: print antennas
+    total = 0
+    track = {}
+    for reftwo in sorted(antennas):
+        ref = scdic[reftwo]
+        for remtwo in sorted(antennas):
+            rem = scdic[remtwo]
+            if ref+rem in track or rem+ref in track: continue
+            track[ref+rem] = blprodic[ref+rem]
+            total += track[ref+rem]
+    if verb: print track
+    error = ''
+    for fringe in sorted(fringes):
+        frng = os.path.basename(fringe)
+        bl = frng[0]+frng[1]
+        lb = frng[1]+frng[0]
+        if bl in track:
+            track[bl] -= 1
+        elif lb in track:
+            track[lb] -= 1
+        else:
+            error += ' ' + bl + '|' + lb
+    if verb: print track
+    for bl in track:
+        if track[bl] > 0: error += ' ' + bl + ':' + str(track[bl])
+        if track[bl] < 0: error += ' ' + bl + '!' + str(track[bl])
+    if verb: print error
+    return total,error
+
+def doCheck(o):
+    '''
+    Find all the 4fit directories and look for all the required products
+    Provide some sort of summary geared towards noticing things missing.
+    '''
+    doLostScans(o)
+    if len(o.lostscans) > 0: doReportLostScans(o)
+    o.scodes, o.blprods = prodDict(o.verb, o.codes)
+    for jn in o.cabbage:
+        antennas = o.cabbage[jn][2]
+        vexinfo = o.cabbage[jn][3]
+        scanname = vexinfo[0]
+        vexstart = vexinfo[1]
+        ffdir = glob.glob('*-4fit*save/' + scanname)
+        if len(ffdir) == 1:
+            ffringes = glob.glob(ffdir[0] + '/' + '??.B.*.*')
+            #print jn,scanname,vexstart,antennas,ffdir[0],len(ffringes)
+            if len(o.blprods) > 0:
+                efrng,edets = calcExpFringes(
+                    o.verb, o.scodes, o.blprods, antennas, ffringes)
+            print jn,scanname,'have',len(ffringes),'fringes,',efrng,'expected',
+            if len(edets) > 0:
+                print '( missing:',edets,')'
+            else:
+                print
+        else:
+            print jn,scanname,'has no 4fit dir'
+
+
 # main entry point
 if __name__ == '__main__':
     o = parseOptions()
@@ -614,6 +745,7 @@ if __name__ == '__main__':
     if o.projects:  doProjects(o)
     if o.report:    doReport(o)
     if o.groups:    doGroups(o)
+    if o.check:     doCheck(o)
 
     sys.exit(0)
 
