@@ -13,10 +13,46 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
-#include "mk4_util.h"
+#include <stdlib.h>
+#include <time.h>
 
-char*
-root_id(int year, int day, int hour, int min, int sec)
+/* [a-z]x6 before this unix clock and [0-9A-Z]x6 after it */
+#define HOPS_ROOT_BREAK (1519659904)
+
+int root_id_delta(time_t now)
+{
+    int delta = 4;
+    if (now >= HOPS_ROOT_BREAK) delta = 1;
+    return(delta);
+}
+
+char* root_id_later(time_t now)
+{
+    long m, u = now - HOPS_ROOT_BREAK;
+    static char datestr[8];
+    char *date = datestr;
+    m = u / (36*36*36*36*36);
+    u -= m * (36*36*36*36*36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    m = u / (36*36*36*36);
+    u -= m * (36*36*36*36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    m = u / (36*36*36);
+    u -= m * (36*36*36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    m = u / (36*36);
+    u -= m * (36*36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    m = u / (36);
+    u -= m * (36);
+    *date++ = (m < 10) ? (char)('0' + m) : (char)('A' + m - 10);
+    *date++ = (u < 10) ? (char)('0' + u) : (char)('A' + u - 10);
+    *date = 0;
+    return(datestr);
+}
+
+/* original implementation follows */
+char* root_id(int year, int day, int hour, int min, int sec)
 {
         int year_79, elapsed, nleaps;
         static char code[7];
@@ -29,7 +65,7 @@ root_id(int year, int day, int hour, int min, int sec)
         if(day == 366 && (year_79 + 3) % 4 != 0) return(NULL);  /* Leap year? */
         if(hour < 0 || hour > 23) return(NULL);
         if(min < 0 || min > 59) return(NULL);
-        if(sec < 0 || sec > 59) return(NULL);
+        if(sec < 0) return(NULL);  // allow secs beyond 59 for sequential rcode gen
 
                                 /* 4-sec periods elapsed since 00:00 Jan 1 1979 */
         elapsed = year_79*7884000 + (day+nleaps-1)*21600 + hour*900 + min*15 + (sec/4);
@@ -44,3 +80,11 @@ root_id(int year, int day, int hour, int min, int sec)
 
         return(code);
 }
+
+char* root_id_break(time_t now, int year, int day, int hour, int min, int sec)
+{
+    if (now + sec >= HOPS_ROOT_BREAK) return(root_id_later(now + sec));
+    else return(root_id(year, day, hour, min, sec));
+}
+
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

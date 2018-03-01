@@ -67,8 +67,8 @@ default_cblock (struct c_block *cb_ptr)
     cb_ptr -> ion_window[1]  =  20.0;
     cb_ptr -> ion_npts       = 1;
     cb_ptr -> interpolator   = SIMUL;
-    cb_ptr -> station_delay.ref  = 150e-9;   // a priori station delay of 150 ns
-    cb_ptr -> station_delay.rem  = 150e-9;
+    cb_ptr -> station_delay.ref  = 0;   // a priori station delay (default changed from 150ns to 0 per AEN request on 02/20/18 JPB)
+    cb_ptr -> station_delay.rem  = 0;
     cb_ptr -> pc_delay_l.ref= 0.0;
     cb_ptr -> pc_delay_l.rem= 0.0;
     cb_ptr -> pc_delay_r.ref= 0.0;

@@ -226,13 +226,18 @@ calc_rms (struct type_pass *pass)
                 }
             plot.seg_phs[fr][seg] = carg (vsumf);
                                         /* Pcals */
-            if (refpcwt == 0.0)
-                plot.seg_refpcal[fr][seg] = 1000.0;
+            if (param.pc_mode[0] == MANUAL)
+                plot.seg_refpcal[fr][seg] = status.pc_offset[fr][0][stnpol[0][pass->pol]];
+            else if (refpcwt == 0.0)
+                plot.seg_refpcal[fr][seg] = 0.0;
             else 
                 plot.seg_refpcal[fr][seg] = carg (refpc) * 180.0 / M_PI;
-            if (rempcwt == 0.0) 
-                plot.seg_rempcal[fr][seg] = 1000.0;
-            else
+
+            if (param.pc_mode[1] == MANUAL)
+                plot.seg_rempcal[fr][seg] = status.pc_offset[fr][1][stnpol[1][pass->pol]];
+            else if (rempcwt == 0.0)
+                plot.seg_rempcal[fr][seg] = 0.0;
+            else 
                 plot.seg_rempcal[fr][seg] = carg (rempc) * 180.0 / M_PI;
             }
                                         /* Record amp/phase for all freqs */

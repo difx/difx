@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1695 2017-05-02 01:25:23Z barrettj $
+# $Id: Makefile.am 2237 2018-02-16 18:14:07Z barrettj $
 #
 
 SUBDIRS = .
@@ -19,7 +19,8 @@ hops_headers =  account.h adata.h cvex.h data.h evex.h \
 		type_303.h type_304.h type_305.h type_306.h \
 		type_307.h type_308.h type_309.h \
 		type_comp.h vex.h afile_structure.h \
-		fourfit_signal_handler.h write_lock_mechanism.h
+		fourfit_signal_handler.h write_lock_mechanism.h \
+		adler32_checksum.h
 
 # slightly problematic (but needed)
 # cpgplot.h should be included from the local PGPLOT distribution

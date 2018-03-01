@@ -17,26 +17,7 @@
 #include <stdlib.h>
 #include "mk4_data.h"
 #include "param_struct.h"
-
-
-//Adler32 checksum base on zlib implementation,
-//could be replaced with better hashing method
-#define MOD_ADLER 65521
-
-unsigned int adler32_checksum(unsigned char *buf, int len)
-    {
-    unsigned int s1 = 1;
-    unsigned int s2 = 0;
-    int n;
-
-    for(n = 0; n < len; n++) 
-        {
-        s1 = (s1 + buf[n]) % MOD_ADLER;
-        s2 = (s2 + s1) % MOD_ADLER;
-        }
-    return (s2 << 16) + s1;
-    }
-
+#include "adler32_checksum.h"
 
 int
 fill_222(

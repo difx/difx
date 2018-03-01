@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_env.sh 2010 2017-09-15 19:14:46Z gbc $
+# $Id: chk_env.sh 2182 2017-12-28 19:19:01Z gbc $
 #
 # environment setup -- HOPS_SETUP is not set or false
 # This script is really only needed for distcheck where
@@ -40,6 +40,9 @@ umask 0002
     done
     for t in blk_stmt.txt  pformat.txt
     do
+        # this is for the conventional trunk and build as peers
+        [ -f ../../../../trunk/sub/vex/text/$t ] &&
+            ln -s ../../../../trunk/sub/vex/text/$t .
         # this works building in _build dir (through automake 1.13)
 	[ -f ../../../../sub/vex/text/$t ] &&
 	    ln -s ../../../../sub/vex/text/$t .

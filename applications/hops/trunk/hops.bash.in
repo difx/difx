@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id: hops.bash.in 1954 2017-08-14 19:47:59Z barrettj $
+# $Id: hops.bash.in 2220 2018-02-05 20:10:57Z barrettj $
 #
 # Version @VERSION@
 #
@@ -26,6 +26,7 @@ will set up your HOPS environment by modifying the following variables:
     HOPS_DOCS       program documentation support
     HOPS_SETUP      is set true after invocation
     HOPS_QUIET      controls setup diagnostics
+    HOPS_PREFIX     directory where hops was installed
 
     PGPLOT_DIR      sets this appropriately if not otherwise defined
     PGPLOT_TYPE     sets this to /xw if not defined
@@ -87,7 +88,7 @@ esac
     export LD_LIBRARY_PATH=$Libp
     export PYTHONPATH=$Pyp
     [ "$HOPS_SETUP" = false ] && HOPS_SETUP=''
-    unset HOPS_ROOT HOPS_VERS HOPS_ARCH HOPS_DOCS
+    unset HOPS_ROOT HOPS_VERS HOPS_ARCH HOPS_DOCS HOPS_PREFIX
     unset PROGDOC TEXT AHELP DEF_CONTROL DATADIR TESTDATADIR
     unset SCHEDDIR AFILEDIR SYSVEX TASK BIN TMP
     unset prefix exec_prefix datarootdir pythondir
@@ -112,6 +113,7 @@ hops_pythondir=$pythondir
     #
     Setup=Setup
     export HOPS_ROOT=@HOPS_ROOT@
+    export HOPS_PREFIX=@prefix@
     export HOPS_ARCH=@HOPS_ARCH@
     export HOPS_VERS=@VERSION@
     export HOPS_SETUP=true

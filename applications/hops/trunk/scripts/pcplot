@@ -1,0 +1,211 @@
+#!/usr/bin/python
+#
+
+import sys
+import re
+import math
+import numpy as np
+import optparse
+import matplotlib.pyplot as plt
+import matplotlib.mlab
+import matplotlib.ticker
+
+from pylab import *
+
+from subprocess import Popen, PIPE
+
+
+drad = np.pi / 180.0                # conversion factor for degrees to radians
+
+usage_text = '\n pcplot [options] <baseline> <root_filename>' \
+             '\n e.g.: pcplot  -p XY TV:X 3C279.xyzzys'
+parser = optparse.OptionParser (usage=usage_text)
+
+parser.add_option(
+    '-P', '--polarization', dest='polprod', help='polarization product (1)',
+    default='all')
+
+parser.add_option(
+    '-t', '--type', dest='plot_type', help='type <1:amp&ph vs tone  2:amp vs ph 3:phasors 4:stacked> (1)',
+    default=1)
+
+parser.add_option(
+    '-v', '--verbose', action='store_true', dest='verbose', help='verbose mode (false)',
+    default=False)
+
+(opts, args) = parser.parse_args ()
+
+if len (args) != 2:
+    print "use -h option for help"
+    sys.exit(0)
+
+if opts.verbose:
+    print 'opts: ', opts
+    print 'args: ', args
+
+bline = '-b'+args[0]
+root = args[1]
+print bline, root
+
+opts.plot_type = int (opts.plot_type)
+
+ff = 'fourfit'
+mode = '-t'
+msglev = '-m0'
+setstring = 'set pc_period 999'
+
+plot_hdr = root[root.rfind ('/')+1:] + '   ' + opts.polprod + '    '
+
+pargs = [ff, mode, bline, '-P'+opts.polprod, msglev, root] + setstring.split ()
+p = Popen(pargs, stdout=PIPE, stderr=PIPE)
+
+output, stderr = p.communicate ()
+
+rc = p.returncode
+lines = stderr.split ('\n')
+
+cols = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'b']
+found_any = True
+
+for st in range (0, 2):
+    station = bline[st+2]
+                                # create figure title based on plot type
+    if opts.plot_type == 1:     # plot amp & phase vs tone #
+        plt.figure (station +' phases (red) and amps (blue) by tone number', figsize=(8,10.5))
+    elif opts.plot_type == 2:   # plot amp vs phase
+        plt.figure (station +' amp vs phase', figsize=(8,10.5))
+    elif opts.plot_type == 3:   # plot pcal phasors
+        plt.figure (station +' pcal phasors', figsize=(8,10.5))
+    elif opts.plot_type == 4:   # stacked pc phases
+        plt.figure (plot_hdr + 'stacked pcal relative phases', figsize=(8,10.5))
+
+    for ch in range (0,32):
+        x = []
+        y = []
+        found_ch = False
+        max_chan = -1
+
+        for line in lines:
+            fields = line.split ()
+            if re.search ('rotated', line):
+                stn = int (fields[2])
+                chan = int (fields[4])
+                max_chan = max (max_chan, chan)
+                pol = fields[6]
+                ap = fields[8]
+                tone = int (fields[10])
+                
+                if stn == st and chan == ch:
+                    found_ch = True
+                    x.append (float (fields[15]))
+                    y.append (float (fields[14]))
+            elif re.search ('pc_phases', line):
+                codes = fields[1]
+            elif re.search ('No valid data', line):
+                found_any = False
+                break
+
+        if found_ch == False or found_any == False:
+            if ch == 0:
+                print 'Error: No pcal data returned from fourfit!'
+                found_any = False
+            break                   # skip the rest of processing for null channel
+                                    # massage data to plot nicely
+        phases = np.array (x)
+        amps = np.array (y)
+
+        tone_nums = np.array (range (0, len (phases)))
+                                    # connect phases
+        for k in range (1, len (phases)):
+            if phases[k] - phases[k-1] > 180.0:
+                phases[k] = phases[k] - 360.0
+            elif phases[k] - phases[k-1] <= -180.0:
+                phases[k] = phases[k] + 360.0
+
+        xm = np.mean (phases)
+        ym = np.mean (amps)
+                                    # determine plot grid dimensions
+        if opts.plot_type == 4:
+            nranks = 2
+            nfiles = 1
+        elif max_chan < 8:
+            nranks = 4
+            nfiles = 2
+        elif max_chan < 16:
+            nranks = 4
+            nfiles = 4
+        elif opts.plot_type == 4:
+            nranks = 2
+            nfiles = 1
+        else:
+            nranks = 8
+            nfiles = 4
+                                    # plot according to type
+
+        if opts.plot_type == 1:     # type 1: amp & phase vs tone #
+            plt.subplot (nranks, nfiles, ch+1)
+                                    # pad phase range a little for beauty
+            phimin = np.amin (phases) - 10.0
+            phimax = np.amax (phases) + 10.0
+                                    # normalize amp to plot with 0-150 scale
+            for k in range (0, len (phases)):
+                amps[k] = amps[k] / 150 * (phimax - phimin) + phimin
+            #print 'st', st, 'ch', ch, 'phases', phases
+            plt.plot (tone_nums, phases, '-ro', tone_nums, amps, '-bo')
+            plt.xlabel (" ch '" + codes[ch] + "'")
+
+            plt.ylim (phimin, phimax)
+
+        elif opts.plot_type == 2:   # type 2: amp vs phase
+                                    # compute phases relative to mean
+            for k in range (0, len (phases)):
+                phases[k] = phases[k] - xm
+                                    # pad phase range a little for beauty
+            phimin = np.amin (phases) - 10.0
+            phimax = np.amax (phases) + 10.0
+
+            axes = plt.subplot (nranks, nfiles, ch+1)
+            plt.plot (phases, amps, '-o')
+            axes.tick_params(labelsize=8)
+            plt.xlabel ("'ch " + codes[ch] + "' ph(deg)",
+                        fontsize=8)
+            plt.xlim (phimin, phimax)
+            plt.ylabel ('pcal amp', fontsize=8)
+
+        elif opts.plot_type == 3:   # type 3: pcal phasors
+                                    # convert phases to radians
+            for k in range (0, len (phases)):
+                phases[k] = phases[k] * drad
+
+            ax = plt.subplot (nranks/4, nranks/2, (ch+1)/4, projection='polar')
+
+            col = cols[ch % 8]
+            ax.plot (phases, amps, color=col)
+            plt.xlabel ("'ch " + codes[ch] + "'",
+                        color = col,
+                        horizontalalignment = 'right')
+        elif opts.plot_type == 4:   # type 4: stacked phases
+            plt.subplot (nranks, nfiles, st+1)
+                                    # get phases rel to mean and then stack
+            for k in range (0, len (phases)):
+                phases[k] = phases[k] - xm + 10 * ch
+                                    # pad phase range a little for beauty
+            #phimin = np.amin (phases) - 10.0
+            phimin = -20.0
+            phimax = np.amax (phases) + 10.0
+
+            #print 'st', st, 'ch', ch, 'phases', phases
+            plt.plot (tone_nums, phases, '-ro')
+            if st == 1:
+                plt.xlabel ('tone numbers')
+            plt.ylabel (station + ' phases in ascending channel order', 
+                        fontsize=10)
+
+            plt.ylim (phimin, phimax)
+
+    if opts.plot_type <> 4:
+        plt.tight_layout (pad=0.0, w_pad=0.0, h_pad=0.0)
+
+if found_any:
+    plt.show ()
+

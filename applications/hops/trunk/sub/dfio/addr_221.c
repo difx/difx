@@ -32,9 +32,9 @@
 #define TRUE 1
 
 struct type_221 *
-addr_221 (short version,
+addr_221_impl (short version,
           void *address,
-          int *size)
+          int *size, int truncate_data)
     {
     int clen, dlen, reclen, n8;
     char *decompressed, workspace[32784];
@@ -56,42 +56,70 @@ addr_221 (short version,
                                         /* with hidden byte flipping if needed */
                                         /* (see bytflp.h) */
         cp_int (clen, t221_v0->ps_length);
-                                        /* Allocate space for decompressed plot */
-                                        /* Assume compression never exceeds factor 8 */
-        decompressed = (char *)malloc (clen * 8);
-        msg ("Allocated memory block %d", -1, decompressed);
-                                        /* Decompress into new pplot location */
-        compress_decompress (workspace, t221_v0->pplot, clen, decompressed, &dlen);
-                                        /* Allocate output record, allow for null term. */
-                                        /* Should condition this to be multiple of 8? */
-        reclen = sizeof (struct type_221) - 1 + dlen + 1;
-        t221 = (struct type_221 *)malloc (reclen);
-        msg ("Allocated memory block %d", -1, t221);
-                                        /* Fill in the record */
-        strncpy (t221->record_id, "221", 3);
-        strncpy (t221->version_no, "00", 2);
-        cp_short (t221->padded, t221_v0->padded);
-        t221->ps_length = dlen + 1;
-        memcpy (t221->pplot, decompressed, dlen + 1);
-                                        /* Null-terminate */
-        t221->pplot[dlen] = '\0';
-                                        /* Tidy up */
-        free (decompressed);
-        msg ("Freed memory block %d", -1, decompressed);
-                                        /* Note input bytes so we can maintain */
-                                        /* pointer in file image */
-        *size = sizeof (struct type_221_v0) - 1 + clen;
-                                        /* Size is padded to multiple of 8 bytes */
-                                        /* but some files from Apr/May '01 are not */
-        msg ("Type 221 padding flag = %d", -1, t221->padded);
-        if (t221->padded != 0)
-            {
-            if ((*size % 8) != 0)
+
+        if(truncate_data)
+        {
+            //dummy version required if we want to read a fringe file
+            //but want to skip an unused post-script plot
+            //for example this is needed to speed up fringex processing
+            *size = sizeof (struct type_221_v0) - 1 + clen;
+            reclen = sizeof (struct type_221);
+            t221 = (struct type_221 *)malloc (reclen);
+            strncpy (t221->record_id, "221", 3);
+            strncpy (t221->version_no, "00", 2);
+            t221->pplot[0] = '\0';
+            t221->ps_length = 1;
+            cp_short (t221->padded, t221_v0->padded);
+
+            if (t221->padded != 0)
                 {
-                n8 = *size / 8;
-                *size = 8 * (n8 + 1);
+                if ((*size % 8) != 0)
+                    {
+                    n8 = *size / 8;
+                    *size = 8 * (n8 + 1);
+                    }
                 }
-            }
+        }
+        else
+        {
+            //go ahead and actually read the post-script and load it into memory
+                                            /* Allocate space for decompressed plot */
+                                            /* Assume compression never exceeds factor 8 */
+            decompressed = (char *)malloc (clen * 8);
+            msg ("Allocated memory block %d", -1, decompressed);
+                                            /* Decompress into new pplot location */
+            compress_decompress (workspace, t221_v0->pplot, clen, decompressed, &dlen);
+                                            /* Allocate output record, allow for null term. */
+                                            /* Should condition this to be multiple of 8? */
+            reclen = sizeof (struct type_221) - 1 + dlen + 1;
+            t221 = (struct type_221 *)malloc (reclen);
+            msg ("Allocated memory block %d", -1, t221);
+                                            /* Fill in the record */
+            strncpy (t221->record_id, "221", 3);
+            strncpy (t221->version_no, "00", 2);
+            cp_short (t221->padded, t221_v0->padded);
+            t221->ps_length = dlen + 1;
+            memcpy (t221->pplot, decompressed, dlen + 1);
+                                            /* Null-terminate */
+            t221->pplot[dlen] = '\0';
+                                            /* Tidy up */
+            free (decompressed);
+            msg ("Freed memory block %d", -1, decompressed);
+                                            /* Note input bytes so we can maintain */
+                                            /* pointer in file image */
+            *size = sizeof (struct type_221_v0) - 1 + clen;
+                                            /* Size is padded to multiple of 8 bytes */
+                                            /* but some files from Apr/May '01 are not */
+            msg ("Type 221 padding flag = %d", -1, t221->padded);
+            if (t221->padded != 0)
+                {
+                if ((*size % 8) != 0)
+                    {
+                    n8 = *size / 8;
+                    *size = 8 * (n8 + 1);
+                    }
+                }
+        }
 
         return (t221);
         }
@@ -100,4 +128,20 @@ addr_221 (short version,
         msg ("Unrecognized type 221 record version number %d", 2, version);
         return (NULL);
         }
+    }
+
+struct type_221 *
+addr_221 (short version,
+          void *address,
+          int *size)
+    {
+        return addr_221_impl(version, address, size, 0);
+    }
+
+struct type_221 *
+addr_221_dummy (short version,
+          void *address,
+          int *size)
+    {
+        return addr_221_impl(version, address, size, 1);
     }

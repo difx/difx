@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.17, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.18, gbc@haystack.mit.edu)
 AM_INIT_AUTOMAKE([foreign])
 
 #why does subdir-objects break fearfit??
@@ -589,16 +589,16 @@ if [ "$have_hops" = true ] ; then
 	[chmod +x scripts/fourphase]
     )
     AC_CONFIG_FILES(
-        [scripts/fourphase_mod],
-        [chmod +x scripts/fourphase_mod]
-    )
-    AC_CONFIG_FILES(
-        [scripts/ffres2pcp],
-        [chmod +x scripts/ffres2pcp]
+        [scripts/fourphase_original],
+        [chmod +x scripts/fourphase_original]
     )
     AC_CONFIG_FILES(
         [scripts/est_manual_phases.py],
         [chmod +x scripts/est_manual_phases.py]
+    )
+    AC_CONFIG_FILES(
+        [scripts/pcplot],
+        [chmod +x scripts/pcplot]
     )
     if [ $have_python = "true" ] ; then
         AC_CONFIG_FILES( [data/ff_testdata/hopstestsuite.py])

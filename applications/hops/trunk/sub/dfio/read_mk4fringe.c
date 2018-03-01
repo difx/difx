@@ -17,8 +17,7 @@
 #include "mk4_util.h"
 
 int
-read_mk4fringe (char *filename,
-                struct mk4_fringe *fringe)
+read_mk4fringe_impl (char *filename, struct mk4_fringe *fringe, int truncate_data)
     {
     int i, n, totbytes, type, bytes, size, rec_id, version;
     void *alloc_ptr;
@@ -163,26 +162,59 @@ read_mk4fringe (char *filename,
                 break;
 
             case 221:
-                fringe->t221 = (struct type_221 *)addr_221 (version, ptr, &size);
-                msg ("type 221 record size = %d", 0, size);
-                if (fringe->t221 != (struct type_221 *)ptr) alloc_ptr = fringe->t221;
-                msg ("Type 221 record address = %X", -2, fringe->t221);
-                break;
+                if (truncate_data)
+                {
+                    fringe->t221 = (struct type_221 *)addr_221_dummy (version, ptr, &size);
+                    msg ("type 221 record size = %d", 0, size);
+                    if (fringe->t221 != (struct type_221 *)ptr) alloc_ptr = fringe->t221;
+                    msg ("Type 221 record address = %X", -2, fringe->t221);
+                    break;
+                    // 
+                    // totbytes = bytes;
+                    // size = 0;
+                    // break;
+                }
+                else
+                {
+                    fringe->t221 = (struct type_221 *)addr_221 (version, ptr, &size);
+                    msg ("type 221 record size = %d", 0, size);
+                    if (fringe->t221 != (struct type_221 *)ptr) alloc_ptr = fringe->t221;
+                    msg ("Type 221 record address = %X", -2, fringe->t221);
+                    break;
+                }
 
             case 222:
-                fringe->t222 = (struct type_222 *)addr_222 (version, ptr, &size);
-                msg ("type 222 record size = %d", 0, size);
-                if (fringe->t222 != (struct type_222 *)ptr) alloc_ptr = fringe->t222;
-                msg ("Type 222 record address = %X", -2, fringe->t222);
-                break;
+                if (truncate_data)
+                {
+                    totbytes = bytes;
+                    size = 0;
+                    break;
+                }
+                else
+                {
+                    fringe->t222 = (struct type_222 *)addr_222 (version, ptr, &size);
+                    msg ("type 222 record size = %d", 0, size);
+                    if (fringe->t222 != (struct type_222 *)ptr) alloc_ptr = fringe->t222;
+                    msg ("Type 222 record address = %X", -2, fringe->t222);
+                    break;
+                }
 
             case 230:
-                i = fringe->n230;
-                fringe->t230[i] = (struct type_230 *)addr_230 (version, ptr, &size);
-                if (fringe->t230[i] != (struct type_230 *)ptr) alloc_ptr = fringe->t230[i];
-                fringe->n230 += 1;
-                msg ("Type 230 record number %d address = %X", -2, i, fringe->t230[i]);
-                break;
+                if (truncate_data)
+                {
+                    totbytes = bytes;
+                    size = 0;
+                    break;
+                }
+                else
+                {
+                    i = fringe->n230;
+                    fringe->t230[i] = (struct type_230 *)addr_230 (version, ptr, &size);
+                    if (fringe->t230[i] != (struct type_230 *)ptr) alloc_ptr = fringe->t230[i];
+                    fringe->n230 += 1;
+                    msg ("Type 230 record number %d address = %X", -2, i, fringe->t230[i]);
+                    break;
+                }
 
             default:
                 msg ("Inappropriate record type %d in fringe file", 2, rec_id);
@@ -207,4 +239,19 @@ read_mk4fringe (char *filename,
 
     msg ("Number of type 230 records = %d", -2, fringe->n230);
     return (0);
+    }
+
+
+//wrapper functions...sure would be nice if c had default args
+
+int
+read_mk4fringe (char *filename, struct mk4_fringe *fringe)
+    {
+        return read_mk4fringe_impl(filename, fringe, 0);
+    }
+
+int
+read_mk4fringe_truncated (char *filename, struct mk4_fringe *fringe)
+    {
+        return read_mk4fringe_impl(filename, fringe, 1);
     }

@@ -24,6 +24,9 @@ int main (int argc, char **argv)
     {
     int i, j, nfiles, ln, nnsecs, rt, nrates, dl, ndelays, nw, vers;
     int tt_save, so_save;
+    int temp_nsegs = 0;
+    int max_nsegs = 0;
+    int error_code = 0;
     static struct fxparam fxp;
     struct loops loops;
     fstruct *files;
@@ -31,6 +34,7 @@ int main (int argc, char **argv)
                                         /* Start accounting */
     account ("!BEGIN");
                                         /* Initialize parameter structure */
+    init_fxp(&fxp);
     clear_fxp (&fxp, ALL);
     clear_loops (&loops);
                                         /* Process the command line */
@@ -86,8 +90,22 @@ int main (int argc, char **argv)
                                         /* in -c mode */
                     if (! (fxp.mode & CMODE))
                         fxp.delayoff += fxp.fringe->t208->resid_mbd;
-                                        /* Accumulate numbers for each segment */
+
+                    //allocate and clear the proper amount memory
                     clear_fxp (&fxp, ACCUMS);
+                    temp_nsegs = determine_nsegs(&fxp);
+                    if(temp_nsegs > max_nsegs)
+                    {
+                        max_nsegs = temp_nsegs;
+                        error_code = realloc_segs(&fxp,max_nsegs);
+                        if(error_code)
+                        {
+                            msg ("Memory allocation error, the number of segments is too large: nsegs = %d, aborting. ", 0, max_nsegs );
+                            exit(1);
+                        }
+                        clear_fxp (&fxp, ACCUMS);
+                    }
+                                        /* Accumulate numbers for each segment */
                     accum_segs (&fxp);
 
                     if (fxp.account) account ("Accumulate");

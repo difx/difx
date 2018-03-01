@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1699 2017-05-02 16:39:30Z gbc $
+# $Id: Makefile.am 2235 2018-02-16 18:14:07Z barrettj $
 #
 
 SUBDIRS = .
@@ -20,7 +20,8 @@ libmk4util_a_SOURCES = check_name.c datec_to_datef.c extract_filenames.c  \
 		       time_to_int.c int_to_time.c environment.c  \
 		       minmax.c account.c report_times.c syntax.c  \
 		       clear_date.c swap.c fileset.c ismk4.c  \
-		       time_to_double.c get_abs_path.c sexigesimal2hrdeg.c
+		       time_to_double.c get_abs_path.c sexigesimal2hrdeg.c \
+		       adler32_checksum.c
 
 # the original test program
 check_PROGRAMS = test_root_id

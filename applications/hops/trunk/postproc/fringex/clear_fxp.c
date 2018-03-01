@@ -36,9 +36,21 @@ void clear_fxp (struct fxparam *fxp, int mode)
 
     if ((mode == ALL) || (mode == FILES))
         {
-        fxp->fringe = NULL;
-        fxp->sdata[0] = NULL;
-        fxp->sdata[1] = NULL;
+        if(fxp->fringe != NULL)
+        {
+            clear_mk4fringe(fxp->fringe);
+            fxp->fringe = NULL;
+        }
+        if(fxp->sdata[0] != NULL)
+        {
+            clear_mk4sdata(fxp->sdata[0]);
+            fxp->sdata[0] = NULL;
+        }
+        if(fxp->sdata[1] != NULL)
+        {
+            clear_mk4sdata(fxp->sdata[1]);
+            fxp->sdata[1] = NULL;
+        }
         fxp->srch_cotime = 0.0;
         fxp->noloss_cotime = 0.0;
         fxp->rate = 0.0;
@@ -55,7 +67,7 @@ void clear_fxp (struct fxparam *fxp, int mode)
         fxp->numaccp = 0;
         fxp->tstart = 0;
         fxp->segstart = 0.0;
-        for (i=0; i<MAXSEG; i++)
+        for (i=0; i<fxp->nsegs_allocd; i++)
             {
             fxp->rsum[i] = 0.0;
             fxp->isum[i] = 0.0;

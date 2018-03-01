@@ -54,4 +54,3 @@ extern double time_to_double (struct date);
 extern int    time_to_int (int, int, int, int, int);
 
 #endif
-

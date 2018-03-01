@@ -36,7 +36,7 @@ int read_binaries (fstruct *file, struct fxparam *fxp)
     strcpy (rootcode, file->rootcode);
                                         /* Read the fringe file */
     fringe.nalloc = 0;                 // no memory blocks yet allocated
-    if (read_mk4fringe (fringename, &fringe) != 0)
+    if (read_mk4fringe_truncated (fringename, &fringe) != 0)
         {
         msg ("Failure reading fringe file %s", 2, fringename);
         return (1);
@@ -74,7 +74,13 @@ int read_binaries (fstruct *file, struct fxparam *fxp)
                                         /* already in memory.  Point to current */
                                         /* baseline */
     sprintf (rootname, "%s%s.%s", directory, source, rootcode);
-    if (get_vex (rootname, OVEX | EVEX, "", &root) != 0)
+
+                                        /* modified get_vex call to ignore ovex */
+                                        /* data, changed (OVEX | EVEX) to EVEX */
+                                        /* since the only thing fringex needs is */
+                                        /* the aplength in the evex data */
+                                        /* jpb Feb 12, 2018 */
+    if (get_vex (rootname, EVEX, "", &root) != 0)
         {
         msg ("Failure reading root file %s", 2, rootname);
         return (1);
@@ -94,8 +100,11 @@ int read_binaries (fstruct *file, struct fxparam *fxp)
         
         strcpy (stnfile_name+lastslash+4, stnfile_name+strlen(fringename)-6);
 
-                                        // now read data into sdata array
-        if (read_mk4sdata (stnfile_name, &sdata[j]) != 0)
+        /* now read data into sdata array */
+        /* we use the truncated version of read_mk4sdata */
+        /* because we do not use the p-cal data, which */
+        /* can be very expensive to read */
+        if (read_mk4sdata_truncated (stnfile_name, &sdata[j]) != 0)
             {
             msg ("Failure reading station %d data file %s", 2, j, stnfile_name);
             return (1);

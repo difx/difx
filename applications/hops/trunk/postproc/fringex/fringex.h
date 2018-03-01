@@ -1,4 +1,3 @@
-#define MAXSEG 5120
                                         /* Modes for clear_fxp() */
 #define ALL    0
 #define FILES  1
@@ -11,6 +10,10 @@
 #define NOLOSS     0x10
 #define BINARYMODE 0x20
 #define SRCHPOS    0x40
+
+//memory allocation codes
+#define NO_ALLOC_ERROR 0
+#define ALLOC_ERROR 1
 
 //#define PI 3.141592654
 #define PI M_PI
@@ -64,14 +67,15 @@ struct fxparam
 
                                         /* Interim segment sums */
     int         nsegs;
+    int         nsegs_allocd;
     double      tstart;
     double      numaccp;
     double      segstart;
-    double      rsum[MAXSEG];
-    double      isum[MAXSEG];
-    double      segsec[MAXSEG];
-    double      segcount[MAXSEG];
-    double      seglen[MAXSEG];
+    double*      rsum;
+    double*      isum;
+    double*      segsec;
+    double*      segcount;
+    double*      seglen;
                                         /* Receptacle for results */
     fringesum   adata;
     };
@@ -94,6 +98,9 @@ struct loops
 extern int msglev;
 
 extern void accum_segs (struct fxparam *);
+extern void init_fxp(struct fxparam *);
+extern int determine_nsegs (const struct fxparam *);
+extern int realloc_segs(struct fxparam *, int);
 extern int calc_seg (struct fxparam *, int );
 extern void clear_loops (struct loops *);
 extern void clear_fxp (struct fxparam *, int );

@@ -15,12 +15,6 @@ import os
 import math
 import numpy as np
 
-import shutil
-import hopstest as ht
-import mk4
-import tempfile
-from distutils.dir_util import copy_tree
-
 from subprocess import Popen, PIPE
 
 def main():
@@ -50,11 +44,8 @@ def main():
         '-i', '--ion_original', action='store_true', dest='ion_original', 
         help='use original cf iono. model (false)', default=False)
 
-    parser.add_option(
-        '-n', '--num_processes', dest='n_procs', help='set number of simultaneous fourfit threads (default=1)', default=1)
-
     (opts, args) = parser.parse_args()
-    
+
     if len(args) != 2:
         print "use -h option for help"
         sys.exit(0)
@@ -80,24 +71,12 @@ def main():
     for bl in blist:
         if bl[0] == bl[1]:
             blist.remove (bl)
-            
-    #create a temp directory for workspace
-    temp_dir = tempfile.mkdtemp()
 
-    #first figure out the root directory, scan and the experiment number
-    abs_root_path = os.path.abspath(root)
-    scan_dir = os.path.dirname(abs_root_path)
-    exp_dir = os.path.dirname(scan_dir)
-    root_filename = os.path.split(abs_root_path)[1]
-    scan_name = os.path.split(scan_dir)[1]
-    exp_name = os.path.split(exp_dir)[1]
-
-    #copy the root directories contents over to a temp directory mirroring
-    #the file tree of the original scan
-    path = os.path.join(temp_dir, exp_name, scan_name)
-    copy_tree(scan_dir, path)
-    #set root to point to the new temp directory
-    root = os.path.join(path, root_filename)
+    k = root.rfind ('/')            # form path for root's directory
+    if k < 0:
+        path = '.'
+    else:
+        path = root[0:k]
 
     filz = os.listdir (path)
     blines = []
@@ -109,23 +88,18 @@ def main():
         for bl in blines:
             print bl
 
+        
+
     sbd = []
     mbd = []
     phase = []
     tec = []
-
     ff = 'fourfit'
-
-    # insert control file name, if specified    
+                                    # insert control file name, if specified
     if opts.cfile:
         cf = '-c ' + opts.cfile
     else:
         cf = ''
-
-    control_file = ""
-    if opts.cfile:
-        control_file = os.path.abspath( opts.cfile )
-
                                     # determine output file name
     if opts.test:
         of_name = opts.cfile
@@ -135,24 +109,20 @@ def main():
         else:
             of_name = opts.cfile + 'I'
                                     # are fringe plots desired?
-    ff_opts = ""
     if opts.fplot:
-        ff_opts = '-p'
-        
-    if opts.fplot:
-        ff = 'fourfit -p ' + cf
+        ff = 'fourfit -pt ' + cf
     else:
-        ff = 'fourfit ' + cf
+        ff = 'fourfit -t ' + cf
 
                                     # find best-fit ionosphere tec
-    st_tec = all_blines_ion_parallel (ff, control_file, ff_opts, blines, stations, root, chans, opts, max_num_processes=opts.n_procs)
-
+    st_tec = all_blines_ion (ff, blines, stations, root, chans, opts)
+#   st_tec = np.array ([-4.60069738, 9.47987958,-4.8791822 ])
     if opts.verbose:
         print 'dTEC by station for', stations, ':\n', st_tec
 
                                     # delay and phase fits
     if not opts.test:
-        bproducts = all_blines_phd_parallel (ff, control_file, ff_opts, blines, stations, st_tec, root, chans, opts, max_num_processes=opts.n_procs)
+        bproducts = all_blines_phd (ff, blines, stations, st_tec, root, chans, opts)
                                     # do statistical analysis to catch errors
         bproducts = bp_analyze (blines, bproducts, opts)
                                     # now fit ph & del params to data
@@ -164,88 +134,21 @@ def main():
                                     # create output file with new params
         write_out (of_name, root, stations, st_tec, ydelays, yphases, opts)
                                     # see if new file works well
-    ff = 'fourfit -c ' + of_name
-    test_out_parallel (of_name, ff, of_name, ff_opts, blines, stations, root, st_tec, opts, max_num_processes=opts.n_procs)
-
-    #clean up
-    shutil.rmtree(temp_dir, ignore_errors=False, onerror=None)
+    ff = 'fourfit -t -c ' + of_name
+    test_out (of_name, ff, blines, stations, root, st_tec, opts)
 
     sys.exit()
-    
-def launch_processes_in_parallel(full_arg_list, max_num_processes=1):
-    #launch processes in parallel
-    threads = []
-    generated_fringe_files = []
-    processed_args_list = []
-    arg_list = full_arg_list
-    #generate new threads, and monitor until all data is processed
-    while threads or arg_list:
 
-        #spawn a new thread if we are not using the max number of processes and there are still files to process
-        if (len(threads) < max_num_processes) and (len(arg_list) != 0 ):
-            t_args = arg_list.pop()
-            t = ht.FourFitThread(target=ht.fourfit_generate_fringe, args=t_args)
-            t.setDaemon(True)
-            t.start()
-            threads.append(t)
 
-        #we have already spawned the max number of process (or there is no data left to run on) so just
-        #monitor the running processes and remove them once they are finished
-        else:
-            for thread in threads:
-                if not thread.isAlive():
-                    generated_files = thread.get_return_value()
-                    processed_args= thread.get_input_args()
-                    #generated_files = thread.join()
-                    generated_fringe_files.extend( generated_files )
-                    for n in range(0, len(generated_files) ):
-                        processed_args_list.append( processed_args )
-                    threads.remove(thread)
-                    
-    return generated_fringe_files, processed_args_list
-    
 
 # function to find best-fit ionosphere for all baselines
-def all_blines_ion_parallel (ff, control_file, ff_opts, blines, stations, root, chans, opts, max_num_processes=1):
+
+def all_blines_ion (ff, blines, stations, root, chans, opts):
     print '\nfitting ionosphere tec...'
     bl_tec = []
     bl_combo_snr = []
-    
-    pol_opts = []
-    for n in range(0,len(pol_prods)):
-        pol_opts.append('-P'+pol_prods[n])
-
-    bl_setstrings = []
-    
-    for bl in blines:
-        setstring = zero_string (bl)
-        # tack on ion. search stmts.
-        if not opts.ion_original:
-            setstring += 'if '
-            setstring += 'ion_npts 41 ion_win -80.0 80.0 '
-        bl_setstrings.append(setstring)
-    
-    #determine number of jobs we need to run
-    n_opts = len(pol_opts)
-    n_baselines = len(blines)
-    n_total = n_opts*n_baselines
-
-    #easiest to just construct a list of arg lists for each process we need to run
-    arg_list = []
-    for nbase in range(0,n_baselines):
-        for npol in range(0,n_opts):
-                if opts.fplot:
-                    arg_list.append( [ pol_opts[npol], blines[nbase], control_file, root, False, bl_setstrings[nbase], True ] )
-                else:
-                    arg_list.append( [ pol_opts[npol], blines[nbase], control_file, root, False, bl_setstrings[nbase], False ] )
-
-    processed_args_list = []
-    generated_fringe_files = []
-    [generated_fringe_files, processed_args_list] = launch_processes_in_parallel(arg_list, max_num_processes)
-
-    #now we read out the fringe files and determine best-fit tec for each baseline
     for bl in blines:               # determine best-fit tec for each baseline
-        [dtec, combo_snr] = bline_ion_from_file(bl, processed_args_list, generated_fringe_files,opts) 
+        [dtec, combo_snr] = bline_ion (ff, bl, root, chans, opts)
         bl_tec.append (dtec)
         bl_combo_snr.append (combo_snr)
 
@@ -285,176 +188,163 @@ def all_blines_ion_parallel (ff, control_file, ff_opts, blines, stations, root, 
     return st_tec
 
 
-# function to find best ionosphere for 1 baseline from collection of files
-def bline_ion_from_file (bl, processed_args_list, generated_file_list, opts):
-    
-    pol_opts = []
-    for n in range(0,len(pol_prods)):
-        pol_opts.append('-P'+pol_prods[n])
 
-        
+
+
+# function to find best ionosphere for 1 baseline
+
+def bline_ion (ff, bl, root, chans, opts):
     refstn = bl[0]
     remstn = bl[1]
-    bline = bl
+    bline = '-b'+bl
+    setstring = zero_string (bl)
+                                    # tack on ion. search stmts.
+    if not opts.ion_original:
+        setstring += 'if\n'
+        setstring += 'ion_npts 41 ion_win -80.0 80.0\n'
 
     sum_dtec_weighted = 0.0
     sum_weights = 0.0
 
-    results_table = []
-    results_table.append(['bl', 'pol', 'snr', 'amp', 'phase', 'sbd', 'mbd', 'dtec'])
-
     dtec_min = 1e6
     dtec_max = -1e6
-    for j in range(0, len(pol_opts) ):
-        pp = pol_opts[j] 
-        for i in range( 0, len(processed_args_list) ):
-            p_args = processed_args_list[i]
-            if p_args[1] == bline and p_args[0] == pp:
-                file_to_read = generated_file_list[i]
-                [snr, sb, mb, phi, dtec, amp] = pol_prod_read_fringe( file_to_read )
-                results_table.append([bl, pol_prods[j], round(snr,2), round(10000*amp,3), round(phi,2), round(sb,6) , round(mb,6), round(dtec,6)])
-                sum_dtec_weighted += dtec * snr * snr
-                sum_weights += snr * snr
-                if dtec > dtec_max:
-                    dtec_max = dtec
-                if dtec < dtec_min:
-                    dtec_min = dtec
-
+    for pp in pol_prods:
+        [snr, sb, mb, phi, dtec] = pol_prod (ff, bline, pp, root, setstring)
+        if opts.verbose:
+            print 'base', bl, 'pol', pp, 'snr', snr, 'dtec', dtec
+        sum_dtec_weighted += dtec * snr * snr
+        sum_weights += snr * snr
+        if dtec > dtec_max:
+            dtec_max = dtec
+        if dtec < dtec_min:
+            dtec_min = dtec
     dtec = sum_dtec_weighted / sum_weights
     weight = math.sqrt (sum_weights)
-                        # detect overly large ion discrepancy
+                                    # detect overly large ion discrepancy
     dtec_ptop = dtec_max - dtec_min
     if dtec_ptop > 3.0:
         print '\n**** ERROR **** bad ionosphere fit! dtec on baseline', bl, \
-            'differed by %6.1f ' % dtec_ptop, 'TEC units'
+              'differed by %6.1f ' % dtec_ptop, 'TEC units'
     elif dtec_ptop > 1.0:
         print '\n**** WARNING **** check ionosphere fit! dtec on baseline', bl, \
-            'differed by %6.1f ' % dtec_ptop, 'TEC units'
-
-    if opts.verbose:
-        print_table(results_table)
+              'differed by %6.1f ' % dtec_ptop, 'TEC units'
 
     return dtec, weight
+
+
+
+
 
 # function to generate setstring for 0 a priori case
 
 def zero_string (bl):
                                     # force a priori phases and delays to zero
-    setstring = 'set if station ' + bl[0] + ' '
-    setstring += 'pc_delay_x 0.0' + ' '
-    setstring += 'pc_delay_y 0.0' + ' '
+    setstring = 'set if station ' + bl[0] + '\n'
+    setstring += 'pc_delay_x 0.0' + '\n'
+    setstring += 'pc_delay_y 0.0' + '\n'
+    setstring += 'pc_phases_x ' + chans + 32 * ' 0.0' + '\n'
+    setstring += 'pc_phases_y ' + chans + 32 * ' 0.0' + '\n'
 
-    setstring += 'if station ' + bl[1] + ' '
-    setstring += 'pc_delay_x 0.0' + ' '
-    setstring += 'pc_delay_y 0.0' + ' '
+    setstring += '\nif station ' + bl[1] + '\n'
+    setstring += 'pc_delay_x 0.0' + '\n'
+    setstring += 'pc_delay_y 0.0' + '\n'
+    setstring += 'pc_phases_x ' + chans + 32 * ' 0.0' + '\n'
+    setstring += 'pc_phases_y ' + chans + 32 * ' 0.0' + '\n'
 
     return setstring
 
-# function to invoke fourfit on 1 polarization product
-def pol_prod(ff, control_file, ff_opts, bline, polar, root, extrastring):
-    #set the polarization selection
-    fourfit_opts = ff_opts + ' -P' + polar
-    #generate the fringe file
-    output_file = ht.fourfit_generate_fringe(fourfit_opts, bline, control_file, root, verbose=False, set_commands=extrastring)
-    #now read the file and extract the parameters we want
-    results = pol_prod_read_fringe(output_file[0])
-    return results
 
-#read data from fringe file
-def pol_prod_read_fringe(filename):
-    ffile = mk4.mk4fringe(filename)
-    #get the fringe solution data from the type_208 
-    t208 = ffile.t208.contents
-    snr = t208.snr
-    amp = t208.amplitude
-    phase = t208.resphase
-    sbd = t208.resid_sbd
-    mbd = t208.resid_mbd
-    #ion_diff (TEC) is stored in the type_201.dispersion
-    ion_dtec = ffile.t201.contents.dispersion
-    results = [snr, sbd, mbd, phase, ion_dtec, amp]
-    return results
+
+
+
+# function to invoke fourfit on 1 polarization product
+
+def pol_prod (ff, bline, polar, root, extrastring):
+    dtec = 0.0
+    polar = '-P' + polar
+    msglev = '-m1'
+    pargs = ff.split() + [bline, polar, msglev, root] + extrastring.split ()
+                                    # invoke fourfit via a pipe
+    try:
+        p = Popen (pargs, stdout=PIPE, stderr=PIPE)
+    except OSError, e:
+        print 'System error trying to run "', ff, '"'
+        print e.strerror
+        sys.exit ()
+
+    output, stderr = p.communicate()
+
+    for line in stderr.split('\n'):
+        fields = line.split ()
+        if re.search ('max555', line):
+            sbd = float (fields[7])
+            mbd = float (fields[9])
+        elif re.search ('residual phase', line):
+            phz = float (fields[3])
+        elif re.search ('differential TEC', line):
+            dtec = float (fields[5])
+        elif re.search ('SNR', line):
+            snr = float (fields[2])
+                                    # ensure that values were found
+    if 'sbd' in vars () and 'mbd' in vars () and 'phz' in vars ():
+        return snr, sbd, mbd, phz, dtec
+    else:
+        print 'fourfit returned an error: ', stderr
+        sys.exit ()
+
+
+
+
 
 # function to find delay and phase parameters on all baselines
-def all_blines_phd_parallel (ff, control_file, ff_opts, blines, stations, st_tec, root, chans, opts, max_num_processes=1):
+
+def all_blines_phd (ff, blines, stations, st_tec, root, chans, opts):
     print '\ngenerating baseline & pol-prod data using dTECs...'
     bproducts = []
-    
-    pol_opts = []
-    for n in range(0,len(pol_prods)):
-        pol_opts.append('-P'+pol_prods[n])
-
-    bl_setstrings = []
-    
     for bl in blines:
         dtec = 0.0
-        setstring = zero_string (bl) + ' if ion_npts 1 '
+        setstring = zero_string (bl) + ' if ion_npts 1\n'
         s = 0
         for st in stations:         # form dtec = rem - ref tec
             if st == bl[0] or st == bl[1]:
-                setstring += ' if station ' + st + ' ionosphere ' + str (st_tec[s]) + ' '
+                setstring += ' if station ' + st + ' ionosphere ' + str (st_tec[s])
             s += 1
-        bl_setstrings.append(setstring)
-        
-    #determine number of jobs we need to run
-    n_opts = len(pol_opts)
-    n_baselines = len(blines)
 
-    #easiest to just construct a list of arg lists for each process we need to run
-    arg_list = []
-    for nbase in range(0,n_baselines):
-        for npol in range(0,n_opts):
-            if opts.fplot:
-                arg_list.append( [ pol_opts[npol], blines[nbase], control_file, root, False, bl_setstrings[nbase], True ] )
-            else:
-                arg_list.append( [ pol_opts[npol], blines[nbase], control_file, root, False, bl_setstrings[nbase], False ] )
-    
-    processed_args_list = []
-    generated_fringe_files = []
-    [generated_fringe_files, processed_args_list] = launch_processes_in_parallel(arg_list, max_num_processes)
-    
-    #now we read out the fringe files and determine best-fit tec for each baseline
-    for bl in blines:               # determine best-fit tec for each baseline
-        products = bline_phd_from_file(bl, processed_args_list, generated_fringe_files,opts) 
+        products = bline_phd (ff, bl, blines, root, chans, setstring, opts)
         bproducts.append (products)
-    
+
     return bproducts
 
-# function to find delay and phase parameters on 1 baseline & 4 polarization products from fringe files
-def bline_phd_from_file (bl, processed_args_list, generated_file_list, opts):
 
-    pol_opts = []
-    for n in range(0,len(pol_prods)):
-        pol_opts.append('-P'+pol_prods[n])
 
-    bline = bl
+
+
+# function to find delay and phase parameters on 1 baseline & 4 polarization products
+
+def bline_phd (ff, bl, blines, root, chans, setstring, opts):
+
+    bline = '-b'+bl
     products = []
-    
-    results_table = []
-    results_table.append(['bl', 'pol', 'snr', 'amp', 'phase', 'sbd', 'mbd', 'dtec'])
 
-    for j in range(0, len(pol_opts) ):
-        pp = pol_opts[j] 
-        for i in range( 0, len(processed_args_list) ):
-            p_args = processed_args_list[i]
-            if p_args[1] == bline and p_args[0] == pp:
-                file_to_read = generated_file_list[i]
-                [snr, sb, mb, phi, dtec, amp] = pol_prod_read_fringe( file_to_read )
-                results_table.append([bl, pol_prods[j], round(snr,2), round(10000*amp,3), round(phi,2), round(sb,6) , round(mb,6), round(dtec,6)])
-                # print 'baseline', bl, 'pol_prod', pp, 'mbd', mb, 'phase %6.1f' % phi, 'snr', snr
-                if snr < 15:
-                    print '\n**** ERROR ****', pp, 'on', bl, 'has snr of only', snr
-                elif snr < 25:
-                    print '\n**** WARNING ****', pp, 'on', bl, 'has snr of only', snr
-                products.append ([mb, phi, snr])
-
-
-    if opts.verbose:
-        print_table(results_table)
+    p = 0
+    for pp in pol_prods:
+        [snr, sb, mb, phi, dtec] = pol_prod (ff, bline, pp, root, setstring)
+        print 'baseline', bl, 'pol_prod', pp, 'mbd', mb, 'phase %6.1f' % phi, 'snr', snr
+        if snr < 15:
+            print '\n**** ERROR ****', pp, 'on', bl, 'has snr of only', snr
+        elif snr < 25:
+            print '\n**** WARNING ****', pp, 'on', bl, 'has snr of only', snr
+        products.append ([mb, phi, snr])
+        p += 1
 
     return products
 
+
+
+
+
 # function to fit station y phases and delays to baseline data
+
 # bproducts is triply-nested list, most-significantly indexed 
 # by baseline, then pol-prod within baseline, and [mbd, phase, snr]
 
@@ -479,6 +369,9 @@ def fit_phd (blines, stations, bproducts, opts):
     phases = fit_data (blines, stations, phz, wgt, opts)
     
     return delays, phases
+
+
+
 
 
 # function to determine best-fit delays or phases using least-squares
@@ -521,6 +414,8 @@ def fit_data (blines, stations, data, wgt, opts):
         params[n+ns] = params[n] - params[n+ns]
                                     # ret y values, which are in 2nd half of the array
     return params[ns:2*ns]
+
+
 
 
 
@@ -631,8 +526,12 @@ def write_out (of_name, root, stations, st_tec, ydelays, yphases, opts):
         ofile.write ('  pc_delay_x ' + ' 0.0' + '\n')
         ofile.write ('  pc_delay_y ' + '%8.3f' % (ydelays[n]) + '\n')
 
-        pcpx = '  pc_phase_offset_x ' + ' 0.0'
-        pcpy = '  pc_phase_offset_y ' + '%7.1f' % (yphases[n])
+        pcpx = '  pc_phases_x abcdefghijklmnopqrstuvwxyzABCDEF'
+        pcpy = '  pc_phases_y abcdefghijklmnopqrstuvwxyzABCDEF'
+
+        for i in range(32):
+            pcpx += ' 0.0'
+            pcpy += '%7.1f' % (yphases[n])
 
         ofile.write (pcpx + '\n')
         ofile.write (pcpy + '\n')
@@ -640,52 +539,25 @@ def write_out (of_name, root, stations, st_tec, ydelays, yphases, opts):
     ofile.close ()
     return
 
+
+
+
+
 # do consistency tests on 
-def test_out_parallel (cf_name, ff, control_file, ff_opts, blines, stations, root, st_tec, opts, max_num_processes=1):
+def test_out (cf_name, ff, blines, stations, root, st_tec, opts):
     print '\nchecking derived offset parameters...'
-
-    pol_opts = []
-    for n in range(0,len(pol_prods)):
-        pol_opts.append('-P'+pol_prods[n])
-
-    bl_setstrings = []
-    for bl in blines:
-        bline = bl
+    for bl in blines:               # test baselines one at a time
+        mbds = []
+        phis = []
+        bline = '-b'+bl
         sref = stations.index (bl[0])
         srem = stations.index (bl[1])
         setstring = 'set ion_npts 1'
         setstring += ' if station ' + stations[sref] + ' ionosphere ' + str(st_tec[sref])
         setstring += ' if station ' + stations[srem] + ' ionosphere ' + str(st_tec[srem])
-        bl_setstrings.append(setstring)
-    
-    #determine number of jobs we need to run
-    n_opts = len(pol_opts)
-    n_baselines = len(blines)
 
-    #easiest to just construct a list of arg lists for each process we need to run
-    arg_list = []
-    for nbase in range(0,n_baselines):
-        for npol in range(0,n_opts):
-                arg_list.append( [ pol_opts[npol], blines[nbase], control_file, root, False, bl_setstrings[nbase] ] )
-                
-    #run the threads
-    processed_args_list = []
-    generated_fringe_files = []
-    [generated_fringe_files, processed_args_list] = launch_processes_in_parallel(arg_list, max_num_processes)
-
-    #now go ahead and extract the data from the fringe files
-    for bl in blines:               # test baselines one at a time
-        mbds = []
-        phis = []
         for pp in pol_prods:        # gather data on each pol-prod per bl
-            #figure out which file we need to look at
-            file_to_read = ""
-            for i in range( 0, len(processed_args_list) ):
-                p_args = processed_args_list[i]
-                pol_prod_opt = '-P'+pp
-                if p_args[1] == bl and p_args[0] == pol_prod_opt:
-                    file_to_read = generated_fringe_files[i]
-            [snr, sb, mb, phi, dtec, amp] = pol_prod_read_fringe( file_to_read )
+            [snr, sb, mb, phi, dtec] = pol_prod (ff, bline, pp, root, setstring)
             mbds.append (mb)
             phis.append (phi)
             print pp, 'mbd', mb, 'phase %6.1f' % phi
@@ -712,6 +584,9 @@ def test_out_parallel (cf_name, ff, control_file, ff_opts, blines, stations, roo
     return
 
 
+
+
+
 # calculate rms of a numeric list
 def rms (x_array):
     sum = 0.0
@@ -728,19 +603,6 @@ def rms (x_array):
 
 
 
-def print_table(table):
-    # Split input data by row and then on spaces
-
-    max_width = 0
-    for row in table:
-        for col in row:
-            if len(str(col)) > max_width:
-                max_width = len(str(col))
-
-    max_width += 2;
-
-    for row in table:
-        print "".join(str(word).ljust(max_width) for word in row)
 
 
 

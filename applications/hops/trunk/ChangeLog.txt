@@ -1,4 +1,479 @@
 ------------------------------------------------------------------------
+r2248 | barrettj | 2018-02-27 15:55:11 -0500 (Tue, 27 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/src/root_id.c
+   M /trunk/postproc/fourmer/fourmer.c
+   M /trunk/sub/util/root_id.c
+
+patching fourmer to deal with hops y2k bug
+
+------------------------------------------------------------------------
+r2245 | gbc | 2018-02-21 15:08:27 -0500 (Wed, 21 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+brutally disabled fearfit
+
+------------------------------------------------------------------------
+r2244 | gbc | 2018-02-21 14:00:04 -0500 (Wed, 21 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+
+fixing checksum
+
+------------------------------------------------------------------------
+r2243 | gbc | 2018-02-21 13:44:59 -0500 (Wed, 21 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/Copyright
+
+updated year
+
+------------------------------------------------------------------------
+r2242 | barrettj | 2018-02-21 09:06:54 -0500 (Wed, 21 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fringex/clear_fxp.c
+   M /trunk/postproc/fringex/init_fxp.c
+
+fix memory leak in fringex
+
+------------------------------------------------------------------------
+r2240 | barrettj | 2018-02-20 10:45:49 -0500 (Tue, 20 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/default_cblock.c
+   M /trunk/postproc/fourfit/default_cblock.c
+
+changing default station delay from 150ns to 0ns, per AEN request
+
+------------------------------------------------------------------------
+r2238 | barrettj | 2018-02-16 15:32:36 -0500 (Fri, 16 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+
+adding source name to proxy cable cal files
+
+------------------------------------------------------------------------
+r2237 | barrettj | 2018-02-16 13:14:07 -0500 (Fri, 16 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/include/Makefile.am
+
+fix makefile for distcheck
+
+------------------------------------------------------------------------
+r2236 | barrettj | 2018-02-16 13:14:07 -0500 (Fri, 16 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parse_control_file.c
+
+making sure hops/chops checksums match
+
+------------------------------------------------------------------------
+r2235 | barrettj | 2018-02-16 13:14:07 -0500 (Fri, 16 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parse_control_file.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_222.c
+   M /trunk/chops/source/c_src/mk4util/Makefile.am
+   M /trunk/chops/source/c_src/mk4util/import_mk4util.sh
+   A /trunk/chops/source/c_src/mk4util/include/adler32_checksum.h
+   M /trunk/chops/source/c_src/mk4util/include/mk4_util.h
+   A /trunk/chops/source/c_src/mk4util/src/adler32_checksum.c
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   A /trunk/chops/source/python_src/ffcontrol_module/src/compute_control_file_hash.c
+   M /trunk/chops/source/python_src/phorc_module/phorc/__init__.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   A /trunk/include/adler32_checksum.h
+   M /trunk/include/mk4_util.h
+   M /trunk/postproc/fourfit/fill_222.c
+   M /trunk/sub/util/Makefile.am
+   A /trunk/sub/util/adler32_checksum.c
+
+Merge branch 'barrettj_ffcontrolpy_hash' into trunk
+
+------------------------------------------------------------------------
+r2232 | barrettj | 2018-02-13 10:46:34 -0500 (Tue, 13 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/hops_checksum.sh.in
+   M /trunk/chops/import_hops.sh
+   M /trunk/chops/source/c_src/dfio/src/addr_221.c
+   M /trunk/sub/dfio/addr_221.c
+
+fixing problem in truncated type_221 read, due to 8-byte boundary padding
+
+------------------------------------------------------------------------
+r2231 | barrettj | 2018-02-13 09:35:57 -0500 (Tue, 13 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+
+chops import
+
+------------------------------------------------------------------------
+r2230 | barrettj | 2018-02-13 09:16:52 -0500 (Tue, 13 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/src/addr_221.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+
+chops import
+
+------------------------------------------------------------------------
+r2229 | barrettj | 2018-02-13 09:08:08 -0500 (Tue, 13 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/sub/dfio/addr_221.c
+
+fix in addr_221
+
+------------------------------------------------------------------------
+r2227 | barrettj | 2018-02-12 13:33:48 -0500 (Mon, 12 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/include/mk4_dfio.h
+   M /trunk/chops/source/c_src/dfio/src/addr_221.c
+   M /trunk/chops/source/c_src/dfio/src/read_mk4fringe.c
+   M /trunk/include/mk4_dfio.h
+   M /trunk/postproc/fringex/read_binaries.c
+   M /trunk/sub/dfio/addr_221.c
+   M /trunk/sub/dfio/read_mk4fringe.c
+
+adding some dummy/truncated io routines to further speed up fringex
+
+------------------------------------------------------------------------
+r2225 | barrettj | 2018-02-08 15:57:39 -0500 (Thu, 08 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/dfio/include/mk4_dfio.h
+   M /trunk/chops/source/c_src/dfio/src/addr_309.c
+   M /trunk/chops/source/c_src/dfio/src/read_mk4sdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/pass_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_rms.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/fringe_search.c
+
+importing hops -> chops
+
+------------------------------------------------------------------------
+r2224 | barrettj | 2018-02-08 15:50:46 -0500 (Thu, 08 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/Makefile.am
+   A /trunk/chops/hops_checksum.sh.in
+   M /trunk/chops/import_hops.sh
+   A /trunk/chops/run_checksum.sh.in
+   M /trunk/chops/source/c_src/afio/Makefile.am
+   M /trunk/chops/source/c_src/afio/import_afio.sh
+   M /trunk/chops/source/c_src/applications/aedit/Makefile.am
+   M /trunk/chops/source/c_src/applications/aedit/import_aedit.sh
+   M /trunk/chops/source/c_src/applications/alist/Makefile.am
+   M /trunk/chops/source/c_src/applications/alist/import_alist.sh
+   M /trunk/chops/source/c_src/applications/fourfit/Makefile.am
+   M /trunk/chops/source/c_src/applications/fourfit/import_fourfit.sh
+   M /trunk/chops/source/c_src/dfio/Makefile.am
+   M /trunk/chops/source/c_src/dfio/import_dfio.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/import_ffcontrol.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/import_ffcore.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/import_ffio.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/import_ffmath.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/import_ffplot.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   M /trunk/chops/source/c_src/mk4util/Makefile.am
+   M /trunk/chops/source/c_src/mk4util/import_mk4util.sh
+   M /trunk/chops/source/c_src/vex/Makefile.am
+   M /trunk/chops/source/c_src/vex/import_vex.sh
+   M /trunk/configure.ac
+
+fixing a merge gone bad, this re-adds all of the chops-import checksum tests
+
+------------------------------------------------------------------------
+r2223 | barrettj | 2018-02-08 14:28:11 -0500 (Thu, 08 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/include/mk4_dfio.h
+   M /trunk/postproc/fringex/read_binaries.c
+   M /trunk/sub/dfio/read_mk4sdata.c
+
+adding a truncated version of read_mk4sdata, to allow fringex to avoid wasting time reading pcal data
+
+------------------------------------------------------------------------
+r2222 | barrettj | 2018-02-08 14:28:10 -0500 (Thu, 08 Feb 2018) | 57 lines
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   A /trunk/chops/source/python_src/scripts/pcc_select.py.in
+   M /trunk/configure.ac
+
+Squashed commit of the following:
+
+commit 1963c707cfc59a1b98518a545e877de8b3603d15
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Feb 6 13:22:46 2018 -0500
+
+    some minor clean up
+
+commit 6872bfc7028f47dd5ebd8bec1f19b1d63c6b9e14
+Author: John Barrett <barrettj@mit.edu>
+Date:   Tue Feb 6 11:58:52 2018 -0500
+
+    first working version of pcc_select, needs cleanup
+
+commit 32b721e048b3ead01ea7ac688f5b68cccdb8d578
+Author: John Barrett <barrettj@mit.edu>
+Date:   Mon Feb 5 16:02:29 2018 -0500
+
+    pcc select wip
+
+commit f50c30405b3929678d950253745f9238a03528b3
+Merge: c71ef04 e857cf6
+Author: John Barrett <barrettj@mit.edu>
+Date:   Mon Feb 5 15:15:40 2018 -0500
+
+    Merge branch 'trunk' into barrettj_pcc_select
+
+commit c71ef04adb0180bb9d847c61bb7508e922af8e08
+Author: John Barrett <barrettj@mit.edu>
+Date:   Mon Feb 5 14:25:14 2018 -0500
+
+    band delay select/average wip
+
+commit 837aa8adde7c69c2094a2b6c016d50e59843c363
+Author: John Barrett <barrettj@mit.edu>
+Date:   Sun Feb 4 09:29:45 2018 -0500
+
+    wip
+
+commit c9738b2ba38879ca1341077f916e464562ee652c
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Feb 1 16:03:34 2018 -0500
+
+    minor changes
+
+commit eb7294136700d31f0c706df4b06b9b285646bae2
+Merge: 494c6b9 b0552bb
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Feb 1 14:15:43 2018 -0500
+
+    Merge branch 'trunk' into barrettj_pcc_select
+
+commit 494c6b93f0430e01f41933a1b7a9801b25631f8e
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Jan 25 15:06:32 2018 -0500
+
+    starting work on pcc_select script
+
+------------------------------------------------------------------------
+r2220 | barrettj | 2018-02-05 15:10:57 -0500 (Mon, 05 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/mk4_module/afiob/afiob.py
+   M /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+   M /trunk/hops.bash.in
+
+making locating hops shared libs more robust, this may need work for macs
+
+------------------------------------------------------------------------
+r2218 | barrettj | 2018-02-01 14:27:15 -0500 (Thu, 01 Feb 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+
+small change to phase mean in ffres2pcp
+
+------------------------------------------------------------------------
+r2216 | barrettj | 2018-01-29 10:15:21 -0500 (Mon, 29 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+added option to limit number of scans used by fourphase in vgoscf_generate
+
+------------------------------------------------------------------------
+r2214 | barrettj | 2018-01-24 14:34:37 -0500 (Wed, 24 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+
+small message
+
+------------------------------------------------------------------------
+r2213 | barrettj | 2018-01-24 11:53:38 -0500 (Wed, 24 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+some checks for missing stations, adding ability to specify output filename in vgoscf_generate
+
+------------------------------------------------------------------------
+r2212 | barrettj | 2018-01-24 09:23:41 -0500 (Wed, 24 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+adding ability to do work in scratch space directory to vgoscf_generate, needs some safety checks (i.e. when station is missing)
+
+------------------------------------------------------------------------
+r2210 | barrettj | 2018-01-23 12:54:29 -0500 (Tue, 23 Jan 2018) | 1 line
+Changed paths:
+   A /trunk/scripts/fourphase_original.in
+
+oops, adding missing file
+
+------------------------------------------------------------------------
+r2209 | barrettj | 2018-01-23 12:52:33 -0500 (Tue, 23 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/scripts/Makefile.am
+   M /trunk/scripts/fourphase.in
+   D /trunk/scripts/fourphase_mod.in
+
+rename fourphase_mod as per AEN request
+
+------------------------------------------------------------------------
+r2208 | barrettj | 2018-01-23 12:42:12 -0500 (Tue, 23 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/configure.ac
+   M /trunk/scripts/Makefile.am
+   D /trunk/scripts/ffres2pcp.in
+
+replacing ffres2pcp script with call to library code
+
+------------------------------------------------------------------------
+r2206 | barrettj | 2018-01-23 08:32:12 -0500 (Tue, 23 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fringex/Makefile.am
+   M /trunk/postproc/fringex/accum_segs.c
+   M /trunk/postproc/fringex/clear_fxp.c
+   A /trunk/postproc/fringex/determine_nsegs.c (from /trunk/postproc/fringex/accum_segs.c:2205)
+   M /trunk/postproc/fringex/fringex.c
+   M /trunk/postproc/fringex/fringex.h
+   A /trunk/postproc/fringex/init_fxp.c
+   A /trunk/postproc/fringex/realloc_segs.c
+
+changes to fringex to allow for dynamic allocation of segment storage
+
+------------------------------------------------------------------------
+r2203 | barrettj | 2018-01-22 11:09:44 -0500 (Mon, 22 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fringex/fringex.h
+
+bumping up the maximum number of segments in fringex, this needs some work to make it dynamic
+
+------------------------------------------------------------------------
+r2201 | rjc | 2018-01-18 12:25:37 -0500 (Thu, 18 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/sub/dfio/addr_309.c
+
+ensure that there is no chan_name overrun in type 309 recs
+
+------------------------------------------------------------------------
+r2200 | rjc | 2018-01-18 12:20:57 -0500 (Thu, 18 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/calc_rms.c
+
+fixed manual pcal phase plot bug
+
+------------------------------------------------------------------------
+r2195 | barrettj | 2018-01-17 08:03:54 -0500 (Wed, 17 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+Merge branch 'barrettj_altphasedelay' into trunk
+
+------------------------------------------------------------------------
+r2193 | gbc | 2018-01-13 10:11:09 -0500 (Sat, 13 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+missing config magic
+
+------------------------------------------------------------------------
+r2191 | rjc | 2018-01-12 12:39:14 -0500 (Fri, 12 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/scripts/Makefile.am
+   A /trunk/scripts/pcplot.in
+
+added new python program called pcplot, which plots phase cal
+
+------------------------------------------------------------------------
+r2187 | barrettj | 2018-01-11 11:19:58 -0500 (Thu, 11 Jan 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+Merge branch 'barrettj_altphasedelay' into trunk
+
+------------------------------------------------------------------------
+r2184 | gbc | 2018-01-04 11:34:29 -0500 (Thu, 04 Jan 2018) | 1 line
+Changed paths:
+   A /trunk/scripts/scanmod.awk
+
+walter alef scanmod script
+
+------------------------------------------------------------------------
+r2182 | gbc | 2017-12-28 14:19:01 -0500 (Thu, 28 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_env.sh
+
+not sure how this got missed, but it did
+
+------------------------------------------------------------------------
+r2180 | gbc | 2017-12-22 13:36:09 -0500 (Fri, 22 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/plotAlistResids.py
+
+a version that takes filenames
+
+------------------------------------------------------------------------
+r2178 | gbc | 2017-12-21 11:05:53 -0500 (Thu, 21 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/vex/text/pformat.txt
+
+replacing obsolete version
+
+------------------------------------------------------------------------
+r2176 | gbc | 2017-12-20 15:17:55 -0500 (Wed, 20 Dec 2017) | 1 line
+Changed paths:
+   A /trunk/doc/pcplot
+   A /trunk/doc/pcplot/pcplot.txt
+   A /trunk/doc/pcplot/t1_E_RR.png
+   A /trunk/doc/pcplot/t1_G_RR.png
+   A /trunk/doc/pcplot/t2_E_RR.png
+   A /trunk/doc/pcplot/t2_G_RR.png
+   A /trunk/doc/pcplot/t3_E_RR.png
+   A /trunk/doc/pcplot/t3_G_RR.png
+
+some things about pcplot
+
+------------------------------------------------------------------------
+r2174 | gbc | 2017-12-19 15:58:52 -0500 (Tue, 19 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/misc/plan/netsolv.c
+   M /trunk/misc/plan/network.c
+   M /trunk/misc/plan/network.h
+
+maybe fixed this up a bit
+
+------------------------------------------------------------------------
+r2172 | gbc | 2017-12-15 19:32:27 -0500 (Fri, 15 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/lex.c
+
+matching change for chops
+
+------------------------------------------------------------------------
+r2171 | gbc | 2017-12-15 18:26:05 -0500 (Fri, 15 Dec 2017) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/lex.c
+
+removed restriction
+
+------------------------------------------------------------------------
 r2159 | gbc | 2017-12-12 17:20:52 -0500 (Tue, 12 Dec 2017) | 1 line
 Changed paths:
    M /trunk/postproc/hfold/Makefile.am

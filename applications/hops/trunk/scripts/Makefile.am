@@ -1,13 +1,13 @@
 #
-# $Id: Makefile.am 2150 2017-12-07 17:42:15Z gbc $
+# $Id: Makefile.am 2209 2018-01-23 17:52:33Z barrettj $
 #
 
 helpdir = $(pkgdatadir)/vhelp
 
 dist_bin_SCRIPTS =  vhelp env_check vhelper.sh pplot_print \
-		    hops_data_links.pl vhelp.sh fourphase fourphase_mod \
-		    ffres2pcp est_manual_phases.py hops_vex2ovex.py \
-		    compare-baselines-v6.pl
+		    hops_data_links.pl vhelp.sh fourphase fourphase_original \
+		    est_manual_phases.py hops_vex2ovex.py \
+		    compare-baselines-v6.pl pcplot
 dist_help_DATA   =  vhelp1.awk vhelp2.awk
 
 orig_scripts = vhelp.dist

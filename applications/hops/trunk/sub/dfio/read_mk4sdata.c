@@ -10,6 +10,14 @@
 /*                                                                      */
 /* Created 11 March 1998 by CJL                                         */
 /* Added type_309 record support       rjc  2006.2.6                    */
+/*                                                                      */
+/* Feb 8, 2018 JPB                                                      */
+/* Added  wrappers for the implementation and added a truncated         */
+/* version of read_mk4sdata.c. It ignores all record types except       */
+/* for 000, 300, and 301-303.                                           */
+/* This is only of use in order to speed up fringex in the presence     */
+/* of p-cal data (not used by fringex), since the un-truncated          */
+/* version of read_mk4sdata can take substantially longer to read files */
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -19,10 +27,11 @@
 #include "mk4_dfio.h"
 #include "mk4_util.h"
 
+
 int
-read_mk4sdata (char *filename,
-               struct mk4_sdata *sdata)
+read_mk4sdata_impl(char *filename, struct mk4_sdata *sdata, int truncate_data)
     {
+
     int i, n, totbytes, type, bytes, size, rec_id, chan;
     short int version;
     void *alloc_ptr;
@@ -188,70 +197,123 @@ read_mk4sdata (char *filename,
                                         /* Do not attempt to sort them, just add */
                                         /* them in as they occur */
             case 304:
-                if (sdata->n304 >= MAXSTATPER)
-                    {
-                    msg ("Error, too many type 304 records in %s", 2, filename);
-                    return (-1);
-                    }
-                ptr_304 = sdata->t304 + sdata->n304;
-                *ptr_304 = addr_304 (version, ptr, &size);
-                if (*ptr_304 != (struct type_304 *)ptr) alloc_ptr = *ptr_304;
-                sdata->n304 += 1;
-                break;
+                if (truncate_data)
+                {
+                    totbytes = bytes;
+                    size = 0;
+                    break;
+                }
+                else
+                {
+                    if (sdata->n304 >= MAXSTATPER)
+                        {
+                        msg ("Error, too many type 304 records in %s", 2, filename);
+                        return (-1);
+                        }
+                    ptr_304 = sdata->t304 + sdata->n304;
+                    *ptr_304 = addr_304 (version, ptr, &size);
+                    if (*ptr_304 != (struct type_304 *)ptr) alloc_ptr = *ptr_304;
+                    sdata->n304 += 1;
+                    break;
+                }
 
             case 306:
-                if (sdata->n306 >= MAXSTATPER)
-                    {
-                    msg ("Error, too many type 306 records in %s", 2, filename);
-                    return (-1);
-                    }
-                ptr_306 = sdata->t306 + sdata->n306;
-                *ptr_306 = addr_306 (version, ptr, &size);
-                if (*ptr_306 != (struct type_306 *)ptr) alloc_ptr = *ptr_306;
-                sdata->n306 += 1;
-                break;
+                if (truncate_data)
+                {
+                    totbytes = bytes;
+                    size = 0;
+                    break;
+                }
+                else
+                {
+                    if (sdata->n306 >= MAXSTATPER)
+                        {
+                        msg ("Error, too many type 306 records in %s", 2, filename);
+                        return (-1);
+                        }
+                    ptr_306 = sdata->t306 + sdata->n306;
+                    *ptr_306 = addr_306 (version, ptr, &size);
+                    if (*ptr_306 != (struct type_306 *)ptr) alloc_ptr = *ptr_306;
+                    sdata->n306 += 1;
+                    break;
+                }
 
             case 307:
-                if (sdata->n308 >= MAXSTATPER)
-                    {
-                    msg ("Error, too many type 307 records in %s", 2, filename);
-                    return (-1);
-                    }
-                ptr_307 = sdata->t307 + sdata->n307;
-                *ptr_307 = addr_307 (version, ptr, &size);
-                if (*ptr_307 != (struct type_307 *)ptr) alloc_ptr = *ptr_307;
-                sdata->n307 += 1;
-                break;
+                if (truncate_data)
+                {
+                    totbytes = bytes;
+                    size = 0;
+                    break;
+                }
+                else
+                {
+                    if (sdata->n308 >= MAXSTATPER)
+                        {
+                        msg ("Error, too many type 307 records in %s", 2, filename);
+                        return (-1);
+                        }
+                    ptr_307 = sdata->t307 + sdata->n307;
+                    *ptr_307 = addr_307 (version, ptr, &size);
+                    if (*ptr_307 != (struct type_307 *)ptr) alloc_ptr = *ptr_307;
+                    sdata->n307 += 1;
+                    break;
+                }
 
             case 308:
-                if (sdata->n308 >= MAXSTATPER)
-                    {
-                    msg ("Error, too many type 308 records in %s", 2, filename);
-                    return (-1);
-                    }
-                ptr_308 = sdata->t308 + sdata->n308;
-                *ptr_308 = addr_308 (version, ptr, &size);
-                if (*ptr_308 != (struct type_308 *)ptr) alloc_ptr = *ptr_308;
-                sdata->n308 += 1;
-                break;
+                if (truncate_data)
+                {
+                    totbytes = bytes;
+                    size = 0;
+                    break;
+                }
+                else
+                {
+                    if (sdata->n308 >= MAXSTATPER)
+                        {
+                        msg ("Error, too many type 308 records in %s", 2, filename);
+                        return (-1);
+                        }
+                    ptr_308 = sdata->t308 + sdata->n308;
+                    *ptr_308 = addr_308 (version, ptr, &size);
+                    if (*ptr_308 != (struct type_308 *)ptr) alloc_ptr = *ptr_308;
+                    sdata->n308 += 1;
+                    break;
+                }
             
             case 309:
-                if (sdata->n309 >= MAXSTATPER)
-                    {
-                    msg ("Error, too many type 309 records in %s", 2, filename);
-                    return (-1);
-                    }
-                ptr_309 = sdata->t309 + sdata->n309;
-                *ptr_309 = addr_309 (version, ptr, &size);
-                if (*ptr_309 != (struct type_309 *)ptr) alloc_ptr = *ptr_309;
-                sdata->n309 += 1;
-                break;
-
+                if (truncate_data)
+                {
+                    totbytes = bytes;
+                    size = 0;
+                    break;
+                }
+                else
+                {
+                    if (sdata->n309 >= MAXSTATPER)
+                        {
+                        msg ("Error, too many type 309 records in %s", 2, filename);
+                        return (-1);
+                        }
+                    ptr_309 = sdata->t309 + sdata->n309;
+                    *ptr_309 = addr_309 (version, ptr, &size);
+                    if (*ptr_309 != (struct type_309 *)ptr) alloc_ptr = *ptr_309;
+                    sdata->n309 += 1;
+                    break;
+                }
                                         /* Throw away raw records for now */
             case 305:
-                dummy = (char *)addr_305 (version, ptr, &size);
-                if (dummy != ptr) free (dummy);
-                break;
+                if (truncate_data)
+                {
+                    totbytes = bytes;
+                    size = 0;
+                    break;
+                }
+                else
+                {
+                    dummy = (char *)addr_305 (version, ptr, &size);
+                    if (dummy != ptr) free (dummy);
+                    break;
+                }
                 
             default:
                 msg ("Inappropriate record type %d in sdata file", 2, rec_id);
@@ -275,4 +337,18 @@ read_mk4sdata (char *filename,
                 totbytes, bytes);
 
     return (0);
+    }
+
+//wrapper functions...sure would be nice if c had default args
+
+int
+read_mk4sdata (char *filename, struct mk4_sdata *sdata)
+    {
+        return read_mk4sdata_impl(filename, sdata, 0);
+    }
+
+int
+read_mk4sdata_truncated (char *filename, struct mk4_sdata *sdata)
+    {
+        return read_mk4sdata_impl(filename, sdata, 1);
     }

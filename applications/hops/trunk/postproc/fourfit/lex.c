@@ -308,17 +308,17 @@ char *next_token;
 
    n = strlen (next_token);
 
-   if (n < 1 || n > MAXFREQ)
-      validity = 0;                          /* wrong length, post as invalid */
-
-   else
-      {
+// if (n < 1 || n > MAXFREQ)
+//    validity = 0;                          /* wrong length, post as invalid */
+//
+// else
+//    {
       validity = 1;
       for (i=0; i<n; i++)
          if (isgraph (next_token[i]) == 0)
             validity = 0;           /* non-printing character, post not valid */
-      }
-
+//    }
+//
    return (validity);
    }
    

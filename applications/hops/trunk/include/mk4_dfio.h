@@ -56,7 +56,11 @@ extern struct type_208 * addr_208 (short, void *, int *);
 extern struct type_210 * addr_210 (short, void *, int *);
 extern struct type_212 * addr_212 (short, void *, int *);
 extern struct type_220 * addr_220 (short, void *, int *);
+
+extern struct type_221 * addr_221_impl (short, void *, int *, int);
 extern struct type_221 * addr_221 (short, void *, int *);
+extern struct type_221 * addr_221_dummy (short, void *, int *);
+
 extern struct type_222 * addr_222 (short, void *, int *);
 extern struct type_230 * addr_230 (short, void *, int *);
 extern struct type_300 * addr_300 (short, void *, int *);
@@ -151,9 +155,13 @@ extern int  init_000 (struct type_000 *, char *);
 extern int  open_datafile (char [], int *, FILE **);
 extern int  read_mk4corel (char *, struct mk4_corel *);
 extern int  read_mk4file (FILE *, char **);
+extern int  read_mk4fringe_impl (char *, struct mk4_fringe *, int);
 extern int  read_mk4fringe (char *, struct mk4_fringe *);
+extern int  read_mk4fringe_truncated (char *, struct mk4_fringe *);
 /* extern int  read_mk4root (char *, struct mk4_root *); */
+extern int  read_mk4sdata_impl(char *, struct mk4_sdata *, int);
 extern int  read_mk4sdata (char *, struct mk4_sdata *);
+extern int  read_mk4sdata_truncated (char *, struct mk4_sdata *);
 extern int  write_err (FILE *, char *);
 extern int  write_mk4corel (struct mk4_corel *, char *);
 extern int  write_mk4fringe (struct mk4_fringe *, char *);

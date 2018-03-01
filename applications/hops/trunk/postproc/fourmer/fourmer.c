@@ -30,6 +30,7 @@ char progname[] = "fourmer";
                                 // from root_id.c: returns
                                 //   a six-letter timestamp
 char *root_id(int, int, int, int, int);
+char* root_id_break(time_t now, int year, int day, int hour, int min, int sec);
                                 // TODO: comment
 int do_record_merge(char *, char *, char *, char *);
 
@@ -345,7 +346,9 @@ static char *make_outname(char *rootA, char *pwd, char *rootC)
 	{
 	now = time((time_t *)NULL);
 	t = localtime(&now);    // generate new 6-char rootcode timestamp
-	rcode = root_id(t->tm_year, t->tm_yday+1,
+	// rcode = root_id(t->tm_year, t->tm_yday+1,
+	// 		t->tm_hour, t->tm_min, t->tm_sec);
+    rcode = root_id_break(now, t->tm_year, t->tm_yday+1,
 			t->tm_hour, t->tm_min, t->tm_sec);
 				// rootA & rootC differ by timestamp & path
 	pchar = strrchr (rootA, '/');
