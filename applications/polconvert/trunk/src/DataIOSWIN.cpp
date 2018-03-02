@@ -542,6 +542,12 @@ else if (idx <4) {
  };
 
  if(idx==2){indices[2] = -1; indices[3] = -1; break;};
+ if(idx==1){indices[1] = -1; indices[2] = -1; indices[3] = -1; 
+   sprintf(message,"\n ERROR! ONLY ONE LINEAR POLARIZATION CHANNEL WILL NOT WORK!!");
+   fprintf(logFile,"%s",message); fflush(logFile);// std::cout<<message;
+   fflush(logFile);
+  break;};
+
 
 } else {
  break;
@@ -678,7 +684,7 @@ for (i=0; i<4; i++) {
   newdifx[fnum].write(reinterpret_cast<char*>(bufferVis[i]),Records[rec].byteEnd-Records[rec].byteIni);
   newdifx[fnum].clear();
 
- } else {  
+ }  /* else {  
 
   if (!canPlot){ // Case of auto-correlations (2nd round of conversion):   
 
@@ -696,7 +702,7 @@ for (i=0; i<4; i++) {
 
   };
 
- };
+ };  */
 
 };
 
@@ -716,9 +722,9 @@ for (i=0; i<4; i++) {
 
 void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile) {
  
-  long k, a11, a12, a21, a22, ca11, ca12, ca21, ca22, rec ;
-  std::complex<float>  auxVis;
-
+  long k, a11, a12, a21, a22, ca11, ca12, ca21, ca22;
+  std::complex<float>  auxVisApply;
+  int i;
 
        a11 = 0;
        a22 = 1;
@@ -754,7 +760,7 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
        };
 
 
-   rec = currEntries[currFreq][0];
+ //  rec = currEntries[currFreq][0];
 
    if (print && canPlot) {
      if (currConj){
@@ -780,39 +786,76 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
      } else {
      if (k==0){
        fwrite(&Records[currVis].Time,sizeof(double),1,plotFile);
-       fwrite(&Records[rec].Antennas[1],sizeof(int),1,plotFile);
-       fwrite(&Records[rec].Antennas[0],sizeof(int),1,plotFile);
-       fwrite(&ParAng[1][rec],sizeof(double),1,plotFile);
-       fwrite(&ParAng[0][rec],sizeof(double),1,plotFile);
+       fwrite(&Records[currVis].Antennas[1],sizeof(int),1,plotFile);
+       fwrite(&Records[currVis].Antennas[0],sizeof(int),1,plotFile);
+       fwrite(&ParAng[1][currVis],sizeof(double),1,plotFile);
+       fwrite(&ParAng[0][currVis],sizeof(double),1,plotFile);
      };
-     auxVis = std::conj(currentVis[a11][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(currentVis[a21][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(currentVis[a12][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(currentVis[a22][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(bufferVis[ca11][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(bufferVis[ca21][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(bufferVis[ca12][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(bufferVis[ca22][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(M[0][0][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(M[1][0][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(M[0][1][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
-     auxVis = std::conj(M[1][1][k]);
-     fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(currentVis[a11][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(currentVis[a21][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(currentVis[a12][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(currentVis[a22][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(bufferVis[ca11][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(bufferVis[ca21][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(bufferVis[ca12][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(bufferVis[ca22][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(M[0][0][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(M[1][0][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(M[0][1][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
+     auxVisApply = std::conj(M[1][1][k]);
+     fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
      };
 
    };
  };
+
+
+
+
+///////////////////////////////////
+// UPDATE THE AUXILIAR VISIBILITIES (I.E. FOR AUTOCORRS WITH MISSING CROSS-POLS):
+
+
+for (i=0; i<4; i++) {
+
+
+ if (currEntries[currFreq][i]<0) {
+
+  if (!canPlot){ // Case of auto-correlations (2nd round of conversion):   
+
+    for(k=0;k<Freqs[currFreq].Nchan; k++) {
+      auxVis[i][k] = bufferVis[i][k];
+    };
+
+  } else {
+
+    for(k=0;k<Freqs[currFreq].Nchan; k++) {
+      //  IVAN: compiler complained
+      //auxVis[i][k] = {0.0,0.0};
+      auxVis[i][k] = (std::complex<float>)0;
+    };
+
+  };
+
+ }; 
+
+};
+///////////////////////////////////
+
+
+
+
 
 };
 

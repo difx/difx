@@ -323,6 +323,32 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 
+# Auxiliary function: Geometric Median of a complex number:
+  def geoMedian(Window, method='phasor'):
+
+    WinData = np.array(Window)
+
+ # Simplest approach (Amp & Phase separate). Assume NO WRAPS in phase:
+    pAvg = np.median(np.abs(WinData))*np.exp(1.j*np.median(np.angle(WinData)))
+    if method=='phasor': 
+      return pAvg
+
+
+ # A bit more complicated (point of minimum distance).
+    elif method=='Torricelli':
+
+      def L1Dist(p):
+        return np.sum(np.abs(WinData-p[0]-1.j*p[1]))
+
+      Torr = spopt.minimize(L1Dist, [pAvg.real, pAvg.imag], method='COBYLA')
+      return Torr.x[0] + 1.j*Torr.x[1]
+
+
+
+
+
+
+
 
 # Auxiliary function: Smooth the X-Y difference of G-mode gains
 # using a running average:
@@ -345,21 +371,29 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       Gants = tb.getcol('ANTENNA1')
       Gspws = tb.getcol('SPECTRAL_WINDOW_ID')
       Gflg = np.logical_not(tb.getcol('FLAG'))
-      Ggood = np.logical_and(Gflg[0,0,:],Gflg[1,0,:])
+      if np.shape(Gflg)[0] > 1:
+        isT = 1
+      else: 
+        isT = 0
+  #    print isT, np.shape(Gflg)
+      Ggood = np.logical_and(Gflg[0,0,:],Gflg[isT,0,:])
       Mask = np.logical_and(Gspws == SPW, Ggood)
       Ggains = tb.getcol('CPARAM')
 
     except:
       printError('ERROR: Bad gain table %s!'%GAINTABLE)
 
-   # Get the X-Y phase differences:
-    GDiff = np.sqrt(Ggains[0,0,:]*np.conjugate(Ggains[1,0,:]))
-    TMode = np.sqrt(Ggains[0,0,:]*Ggains[1,0,:])
+   # Get the X-Y cross-phase gain:
+    GDiff = Ggains[0,0,:]/Ggains[isT,0,:]  
+
+   # Get the polarization-independent gain:
+    TMode = Ggains[0,0,:]*Ggains[isT,0,:]
+
+
 
   # Smooth them:
     for iant in allAnts:
       Mask2 = np.where(np.logical_and(Mask,Gants==iant))[0]
-    #  AntTimes = Gtimes[Mask2]
       sys.stdout.write('\rSmoothing X-Y difference for antenna %s (%i of %i)   '%(GallAnts[iant],iant+1,len(GallAnts)))
       sys.stdout.flush()
 
@@ -375,12 +409,16 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           tij += 1
 
 
-
-        AvgDiff = np.median(np.real(Window)) + 1.j*np.median(np.imag(Window))
+  # Median (normalized):
+        AvgDiff = geoMedian(Window)
         AvgDiff /= np.abs(AvgDiff)
-        Ggains[0,0,ti] = TMode[ti]*AvgDiff
-        Ggains[1,0,ti] = TMode[ti]/AvgDiff
 
+
+        Ggains[0,0,ti] = np.sqrt(TMode[ti]*AvgDiff)
+        Ggains[isT,0,ti] = np.sqrt(TMode[ti]/AvgDiff)
+
+
+  # Update the table:
     tb.putcol('CPARAM',Ggains) 
     tb.close()         
     print '\nDONE!\n\n' 
@@ -801,9 +839,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     if len(gtype) != len(gains[i]):
       printError("gainmode must have the same dimensions as gains!")
     for ints in gtype:
-      if ints not in ['G','T']:
+      if ints not in ['G','T','S']:
         printMsg("Gain type " + ints + " requested.")
-        printError("Only \'G\' and \'T\' interpolations are supported!")
+        printError("Only \'G\', \'S\' and \'T\' interpolations are supported!")
 
   for gi in range(len(gains)):
     for gii in range(len(gains[gi])):
@@ -1407,7 +1445,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 # Smooth X-Y differences:
  #     print gainmode[i][j], XYavgTime
-      if gainmode[i][j]=='G' and XYavgTime>0.0:
+      if gainmode[i][j]=='S' and XYavgTime>0.0:
         printMsg("Will average X-Y phase differences over %.1f seconds"%XYavgTime)
         XYsmooth(gain, XYavgTime, int(spw)) 
         gain = gain+'.XYsmooth.PolConvert'
@@ -1466,7 +1504,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       for ant in range(NSUM[i]):
         gaindata[i][j].append([])
         if np.shape(data)[0] == 2:  # A DUAL-POL GAIN (i.e., mode 'G')
-          if gainmode[i][j] == 'G':
+          if gainmode[i][j] in ['G','S']:
             dd0 = data[0,:,:]
             dd1 = data[1,:,:]
           else:  # DUAL-POL GAIN FORCED TO 'T' MODE:
