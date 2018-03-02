@@ -38,7 +38,7 @@ try:
     dtermcal = ('%s.'+qa2['d'])%callabel # Df0
     bandpass = ('%s.'+qa2['b'])%conlabel # bandpass-zphs
     ampgains = ('%s.'+qa2['g'])%conlabel # flux_inf.APP
-    phsgains = ('%s.'+qa2['p'])%conlabel # phase_int.APP
+    phsgains = ('%s.'+qa2['p'])%conlabel # phase_int.APP*
     xyrelphs = ('%s.'+qa2['x'])%callabel # XY0.APP or XY0.ALMA
     gxyampli = ('%s.'+qa2['y'])%callabel # Gxyamp.APP or Gxyamp.ALMA
     if v4tables:
@@ -157,27 +157,23 @@ try:
 except Exception, ex:
     raise ex
 
-# one of of these should be True, the others False
+# Use 1..4 or -1 for the spw
 try:
-    if not (band3 or band6Lo or band6Hi):
-        raise Exception, 'One of band3 or band6Lo or band6Hi must be True'
-    if (band3 and band6Lo) or (band3 and band6Hi) or (band6Lo and band6Hi):
-        raise Exception, 'Only one of band3 or band6Lo or band6Hi may be True'
-    if band3: print 'Band 3 operation'
-    if band6Lo: print 'Band 6 Lo operation'
-    if band6Hi: print 'Band 6 Hi operation'
+    if type(spwToUse) == int:
+        if spwToUse in [-1, 1, 2, 3, 4]: pass
+        else:                            spwToUse = -1
 except Exception, ex:
     raise ex
+print 'Spectral window request is for',spwToUse
 
 #
-# A method to drive Polconvert for anticipated Cycle4 needs.
+# A method to drive Polconvert for anticipated Cycle4/5 needs.
 # 
 # Notice that PolConvert knows that we have a set of SWIN files, because we
 # give a directory to the IDI keyword (instead of a file).
-# plotAnt=2 selects the baseline betwen antennas 1(AA) and 2
+# plotAnt=2 selects the baseline betwen antennas 1(AA) and 2(whatever)
 #
-def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
-    DiFXinput='', DiFXoutput='', DiFXsave='',
+def runPolConvert(label, spw=-1, DiFXinput='', DiFXoutput='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
     amp_norm=1.0, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
     npix=50, gainmeth='T', XYavgTime=0.0):
@@ -202,24 +198,7 @@ def runPolConvert(label, band3=False, band6Lo=False, band6Hi=False,
     print 'gains', len(gains), gains
     print 'interpolation', len(interpolation), interpolation
     print 'gaintype', len(gaintype), gaintype
-
-    if band3:
-        spw=0
-        bnd='Band 3'
-    elif band6Lo:
-        spw=2
-        bnd='Band 6 Lo'
-    elif band6Hi:
-        spw=3
-        bnd='Band 6 Hi'
-    else:
-        raise Exception, 'No band selected for PolConvert to work with'
-    try:
-        if spwToUse != 4: spw = spwToUse
-    except:
-        print 'spwToUse was not defined'
-    print 'PolConvert will use Spectral Window %d for %s on %s' % (
-        spw, bnd, label)
+    print 'PolConvert will use Spectral Window %d on %s' % (spw, label)
 
     if not os.path.exists(DiFXinput):
         raise Exception, 'No DiFX input %s'%DiFXinput
@@ -331,7 +310,7 @@ for job in djobs:
     else:                    usePlotAnt = plotAnt
 
     print '\nProceeding with job ' + job + '\n'
-    runPolConvert(label, band3=band3, band6Lo=band6Lo, band6Hi=band6Hi,
+    runPolConvert(label, spw=spwToUse,
         DiFXinput=DiFXinput, DiFXoutput=SWIN, DiFXsave=SAVE,
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,

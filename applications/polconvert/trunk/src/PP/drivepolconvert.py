@@ -61,18 +61,10 @@ def parseOptions():
     parser.add_argument('-o', '--output', dest='output',
         default='', metavar='FILE',
         help='name of output file to collect CASA output chatter.')
-#   parser.add_argument('-t', '--qa2tar', dest='qa2tar',
-#       default='', metavar='TARFILE',
-#       help='tarfile with QA2 results.  If supplied, the results are'
-#       'extracted and the -l label argument is updated appropriately')
     parser.add_argument('-e', '--exp', dest='exp',
         default='', metavar='STRING',
         help='VEX experiment name, prefix of job input files; it will '
         'be derived from the list of jobs if not supplied')
-    parser.add_argument('-b', '--band', dest='band',
-        default='', metavar='STRING',
-        help='ALMA band: one of "3" (86.268 GHz), '
-        '"6Lo" (227.1 GHz) or "6Hi" (229.1 GHz)')
     parser.add_argument('-a', '--ant', dest='ant',
         default=1, metavar='INT', type=int,
         help='1-based index of linear (ALMA) antenna (normally 1)')
@@ -81,17 +73,16 @@ def parseOptions():
         help='user supplied XY angle adjustment or empty for defaults, '
         'normally 180.0 or 0.0')
     parser.add_argument('-q', '--qa2', dest='qa2',
-        default='v4', metavar='STRING',
+        default='v8', metavar='STRING',
         help='table naming scheme for the QA2 tables; there should be ' +
-            'six tables for antennas, appphase, bandpass, ampgains, ' +
-            'phasegains and xy phase.  Options are "v0", "v1", "v2", '
-            '"v3", "v4", "v5", "v6", "v7" or a ' +
+            'eight tables for antennas, appphase, dterms, bandpass, ' +
+            'ampgains, phasegains and xy phase and xy gains.  ' +
+            'Options are "v0" .. "v11" or a ' +
             'comma-sep list in an environment variable QA2TABLES.  In '
             'versions prior to v4, ".concatenated.ms" was part of the '
-            'label.  For v4-v7 and subsequent the label is just the '
-            'uid name (and/or other identifiers).   The default is "v4", '
-            'but v5-v7 may be necessary: the difference is which scans '
-            '(APP or ALMA) are to be used for DTerms and Gxyamp.')
+            'label.  For v4-v11 and subsequent the label is just the '
+            'uid name (and/or other identifiers).   The default is "v8". '
+            'Examine the script for the details....')
     parser.add_argument('-E', '--avgtime', dest='avgtime',
         default=0.0, metavar='FLOAT', type=float,
         help='If >0 this will time-average the gains to reduce noise')
@@ -114,8 +105,7 @@ def parseOptions():
     parser.add_argument('-s', '--spw', dest='spw',
         default=-1, metavar='INT', type=int,
         help='Index of SPW for PolConvert to use: 0,1,2,3 for the ' +
-            'four basebands, -1 for PolConvert to select, or 4 to use ' +
-            'the band3, band6Lo or band6Hi assignments.')
+            'four basebands, or -1 (default) for PolConvert to select')
     # plotting arguments
     parser.add_argument('-f', '--fringe', dest='fringe',
         default=4, metavar='INT', type=int,
@@ -151,27 +141,6 @@ def parseOptions():
         help='List of DiFX input job files')
     return parser.parse_args()
 
-#def tarballExtraction(o):
-#   '''
-#   Extract the tarball if it is supplied, and work out the label
-#   if none was given.
-#   '''
-#   if o.qa2tar != '' and os.path.exists(o.qa2tar):
-#       cmd = 'tar zxf %s' % o.qa2tar
-#       if o.verb: print 'Extracting tarfile with: %s' % cmd
-#       if os.system(cmd):
-#           raise Exception, 'Unable to untar %s' % o.qa2tar
-#       parts = o.qa2tar.split('.')
-#       # work out the label from the tarball name
-#       if o.label != '':
-#           pass
-#       elif parts[-1] == 'tgz':
-#           o.label = '.'.join(parts[0:-1])
-#       elif parts[-1] == 'gz' and parts[-2] == 'tar':
-#           o.label = '.'.join(parts[0:-2])
-#       else:
-#           raise Exception, 'Unable to create processing label'
-
 def calibrationChecks(o):
     '''
     Check that required files are present.
@@ -196,27 +165,32 @@ def calibrationChecks(o):
         o.constXYadd = 'True'
         o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
-    ### production
-    elif o.qa2 == 'v4': # v3+Gxyamp/concatenated/calibrated (default)
+    ### production default
+    elif o.qa2 == 'v4' or o.qa2 == 'v8': # v3+D-APP/G-APP
         o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
                'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
-    elif o.qa2 == 'v5': # v3+Gxyamp/concatenated/calibrated (likely)
+        if o.qa2 == 'v8': o.qal[5] += '.XYsmooth'
+    ### or other desperation plans
+    elif o.qa2 == 'v5' or o.qa2 == 'v9': # v3+D-ALMA/G-ALMA
         o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
                'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
-    elif o.qa2 == 'v6': # v3+Gxyamp/concatenated/calibrated (possible)
+        if o.qa2 == 'v9': o.qal[5] += '.XYsmooth'
+    elif o.qa2 == 'v6' or o.qa2 == 'v10': # v3+D-ALMA/G-APP
         o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
                'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
-    elif o.qa2 == 'v7': # v3+Gxyamp/concatenated/calibrated (possible)
+        if o.qa2 == 'v10': o.qal[5] += '.XYsmooth'
+    elif o.qa2 == 'v7' or o.qa2 == 'v11': # v3+D-APP/G-ALMA
         o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
                'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
+        if o.qa2 == 'v11': o.qal[5] += '.XYsmooth'
     ### if push comes to shove
     else:               # supply via environment variable
         o.qal = os.environ['QA2TABLES'].split(',')
@@ -401,23 +375,14 @@ def deduceZoomIndicies(o):
             '  Median frequencies: ' + str(mfqlst) + '\n'
             '  and these must be processed separately')
     medianfreq = float(mfqlst.pop())
-    if   medianfreq <  90000.0: medianband = '3'
-    elif medianfreq < 228100.0: medianband = '6Lo'
-    elif medianfreq < 230100.0: medianband = '6Hi'
-    if o.band == '':
-        o.band = medianband
-        print 'Working with band %s based on median freq (%f)' % (
-            o.band, medianfreq)
-    elif o.band == medianband:
-        if o.verb:
-            print ('Supplied band (%s) agrees with median freq. (%f, %s)' %
-                (o.band, medianfreq, medianband))
-    else:
-        raise Exception, ('User-supplied band (%s) disagrees with '
-            'input frequencies (%f, %s)' % (o.band, medianfreq, medianband))
-    # this should not be needed with the above
-    if not (o.band == '3' or o.band == '6Lo' or o.band == '6Hi'):
-        raise Exception, 'Observing band mis-specified, use -b 3|6Lo|6Hi'
+    if   medianfreq <  90000.0: medianband = '3 (GMVA)'
+    elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
+    elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
+    elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
+    elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
+    else:                       medianband = '??? band 7 ???'
+    print 'Working with band %s based on median freq (%f)' % (
+            medianband, medianfreq)
 
 def plotPrep(o):
     '''
@@ -464,9 +429,6 @@ def createCasaInput(o):
     # variables initialized from drivepolconvert.py:
     #
     label = '%s'
-    band%s = True
-    band%s = False
-    band%s = False
     expName = '%s'
     linAnt = [%s]
     rpcpath = os.environ['DIFXROOT'] + '/share/polconvert/runpolconvert.py'
@@ -498,29 +460,14 @@ def createCasaInput(o):
     numFrPltPix=%d
     doTest=%s
     # timeRange=[]                      # don't care
-    %stimeRange = [0,0,0,0, 14,0,0,0]   # first 10 days
-
-    if not (band3 or band6Hi or band6Lo):
-        print 'Pilot error, only one of band3, band6Hi or band6Lo may be true'
-        quit()
-
-    if band3:
-        band = 'band3'
-        XYadd=[0.0]
-
-    if band6Lo:
-        band = 'band6Lo'
-        XYadd=[0.0]
-
-    if band6Hi:
-        band = 'band6Hi'
-        XYadd=[0.0]
+    %stimeRange = [0,0,0,0, 14,0,0,0]   # first 14 days
+    XYadd = [0.0]
 
     spwToUse = %d
     constXYadd = %s
     %sXYadd = [%f]
     XYratio = [1.0]
-    print 'using %%s with XYadd %%s' %% (band, str(XYadd))
+    print 'using XYadd %%s' %% (str(XYadd))
 
     djobs = %s
     print 'djobs contains these jobs: ' + str(djobs)
@@ -532,18 +479,6 @@ def createCasaInput(o):
     execfile(rpcpath)
     quit()
     '''
-    # transfer script parameters to the input script
-    if o.band == '3':
-        bandnot = '6Lo'
-        bandaid = '6Hi'
-    elif o.band == '6Lo':
-        bandnot = '3'
-        bandaid = '6Hi'
-    elif o.band == '6Hi':
-        bandnot = '3'
-        bandaid = '6Lo'
-    else:
-        raise Exception, 'Programmer error, illegal case'
 
     if o.xyadd != '':
         userXY = ''
@@ -556,7 +491,7 @@ def createCasaInput(o):
     else:        dotest = 'False'
 
     script = template % (o.doPlot[0], o.doPlot[0],
-        o.label, o.band, bandnot, bandaid, o.exp,
+        o.label, o.exp,
         o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
         o.qa2, o.qal, o.qa2_dict, o.gainmeth, o.avgtime, o.ampnrm, o.gaindel,
