@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken                             *
+ *   Copyright (C) 2009-2018 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,8 +40,8 @@
 #include <vexdatamodel.h>
 
 const std::string program("vexpeek");
-const std::string version("0.7");
-const std::string verdate("20130925");
+const std::string version("0.8");
+const std::string verdate("20180304");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -60,6 +60,7 @@ void usage(const char *pgm)
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
 	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
 	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
+	std::cout << "  -m or --modules : print disk modules used (from TAPELOG_OBS)" << std::endl;
 	std::cout << std::endl;
 }
 
@@ -160,6 +161,54 @@ void antennaSummary(const VexData *V, int doFormat, int doUsage)
 			std::cout.precision(p);
 		}
 		std::cout << std::endl;
+	}
+
+	std::cout.precision(p);
+}
+
+void moduleSummary(VexData *V)
+{
+	std::map<std::string,Interval> as;
+
+	for(unsigned int s = 0; s < V->nScan(); ++s)
+	{
+		const VexScan *scan = V->getScan(s);
+
+		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		{
+			const Interval &vi = it->second;
+
+			if(as.count(it->first) == 0)
+			{
+				as[it->first] = Interval(vi);
+			}
+			else
+			{
+				if(vi.mjdStart < as[it->first].mjdStart)
+				{
+					as[it->first].mjdStart = vi.mjdStart;
+				}
+				if(vi.mjdStop > as[it->first].mjdStop)
+				{
+					as[it->first].mjdStop = vi.mjdStop;
+				}
+			}
+		}
+	}
+
+	int p = std::cout.precision();
+
+	std::cout.precision(13);
+
+	for(std::map<std::string,Interval>::const_iterator it = as.begin(); it != as.end(); ++it)
+	{
+		std::vector<VexBasebandData> *vsns;
+
+		vsns = V->getVSNs(it->first);
+		for(std::vector<VexBasebandData>::const_iterator vi = vsns->begin(); vi != vsns->end(); ++vi)
+		{
+			std::cout << it->first << " " << vi->filename << " " << vi->mjdStart << " " << vi->mjdStop << std::endl;
+		}
 	}
 
 	std::cout.precision(p);
@@ -270,6 +319,7 @@ int main(int argc, char **argv)
 	int doScanList = 0;
 	int doFormat = 0;
 	int doUsage = 0;
+	int doModules = 0;
 	int a;
 	const char *fileName = 0;
 
@@ -299,6 +349,11 @@ int main(int argc, char **argv)
 			strcmp(argv[a], "--diskusage") == 0)
 		{
 			++doUsage;
+		}
+		else if(strcmp(argv[a], "-m") == 0 ||
+			strcmp(argv[a], "--modules") == 0)
+		{
+			++doModules;
 		}
 		else if(strcmp(argv[a], "-h") == 0 ||
 		        strcmp(argv[a], "--help") == 0)
@@ -355,10 +410,18 @@ int main(int argc, char **argv)
 		std::cout << *V << std::endl;
 		std::cout << std::endl;
 	}
+	else if(doModules)
+	{
+		int p = std::cout.precision();
+
+		std::cout.precision(13);
+		std::cout << V->getExper()->name << " " << V->obsStart() << " " << V->obsStop() << std::endl;
+		std::cout.precision(p);
+		moduleSummary(V);
+	}
 	else
 	{
 		std::cout << V->getExper()->name << std::endl;
-
 		antennaSummary(V, doFormat, doUsage);
 	}
 

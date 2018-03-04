@@ -1,8 +1,10 @@
 Version 2.6.0
 ~~~~~~~~~~~~~
 * New DATASTREAM parameter tSys that passes through into .input files
-* vexpeek: new --scans option produces a listing of scans in the VEX file,
-  useful to help select suitable scans for clock searches in early correlation
+* vexpeek:
+  - new --scans option produces a listing of scans in the VEX file,
+      useful to help select suitable scans for clock searches in early correlation
+  - new --modules option produces listing of media in the TAPELOG_OBS section
 * Improved parsing of P-cal $IF if_def entries (vex1.5)
   - parse P-cal base frequency; allows a shifted P-cal
   - finer P-cal spacing; 'float' replaces 'int' in vex2difx and .input
