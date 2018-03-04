@@ -46,7 +46,8 @@ def parseOptions():
         help='be chatty about the work')
     parser.add_argument('-p', '--prep', dest='prep',
         default=False, action='store_true',
-        help='run prepolconvert.py on the same joblist')
+        help='run prepolconvert.py on the same joblist--'
+        'generally not a good idea unless you are certain it will work')
     parser.add_argument('-r', '--run', dest='run',
         default=False, action='store_true',
         help='execute CASA with the generated input')
@@ -55,6 +56,12 @@ def parseOptions():
         help='prefix to the QA2 polconvert calibration directories. '
         'The exact names despend on the QA2 version (see -q option).')
     # optional, developmental or convenience arguments
+    parser.add_argument('-P', '--parallel', dest='parallel',
+        default=0, metavar='INT', type=int,
+        help='Number of CASA jobs to run in parallel.  The best value '
+        'depends on the number of physical cores and the memory available. '
+        '0 reverts to the non-parallel execution logic; 1 should provide '
+        'similar results, >1 should simply be that much faster.')
     parser.add_argument('-i', '--input', dest='input',
         default='', metavar='FILE',
         help='name of input file that will be created for CASA.')
@@ -280,7 +287,6 @@ def checkOptions(o):
     We do this prior to any real work, but after tarball extraction
     if such was provided.  The subfunctions throw exceptions on issues.
     '''
-#   tarballExtraction(o)
     calibrationChecks(o)
     inputRelatedChecks(o)
     runRelatedChecks(o)
@@ -302,6 +308,7 @@ def deduceZoomIndicies(o):
     '''
     Pull the Zoom frequency indicies from the input files and check
     that all input files produce the same first and last values.
+    (PolConvert is now more forgiving of varying zoom channel usage.)
     The user can specify a remote antenna, but now logic here (and
     in runpolconvert) switches to o.remotelist assuming it is of the
     proper length.  This should solve poor plotting choices.
@@ -426,8 +433,9 @@ def createCasaInput(o):
     %simport pylab as pl
     %spl.ioff()
     #
-    # variables initialized from drivepolconvert.py:
+    # variables from drivepolconvert.py required for runpolconvert.py:
     #
+    DiFXout = '.'
     label = '%s'
     expName = '%s'
     linAnt = [%s]
@@ -501,6 +509,14 @@ def createCasaInput(o):
     for line in script.split('\n'):
         ci.write(line[4:] + '\n')
     ci.close()
+
+def createCasaInputParallel(o):
+    '''
+    Create all of the CASA working directories and input files.
+    This is only used if o.parallel is > 0.
+    '''
+    if o.verb: print 'Creating CASA work dirs and input files ' + o.input
+    pass
 
 def removeTrash(o, misc):
     '''
@@ -614,6 +630,12 @@ def executeCasa(o):
         print 'additional test runs on the same jobs.'
         print ''
 
+def executeCasaParallel(o):
+    '''
+    Drive o.parallel executions of CASA in parallel.
+    '''
+    if o.verb: print 'Driving %d parallel CASA jobs' % (o.parallel)
+
 #
 # enter here to do the work
 #
@@ -624,8 +646,12 @@ if __name__ == '__main__':
         runPrePolconvert(o)
     deduceZoomIndicies(o)
     plotPrep(o)
-    createCasaInput(o)
-    executeCasa(o)
+    if o.parallel == 0:
+        createCasaInput(o)
+        executeCasa(o)
+    else:
+        createCasaInputParallel(o)
+        executeCasaParallel(o)
 
 #
 # eof

@@ -18,7 +18,7 @@ pcvers='1.7.1'
 # Between v3 and v4 concatenated -> concatenated | calibrated
 # if concatenated.ms is already in label, we'll assume v3 or earlier
 # else use newer names here.
-print '\nRunning PolConvert Wrapper with label ' + label
+print '\nRunning PolConvert Wrapper with label ' + label + ' in ' + DiFXout
 v4tables = None
 lm = re.match('(.*)\.concatenated.ms', label)
 if lm:
@@ -33,14 +33,14 @@ else:
 # Things that we are expecting to be provided from the QA2 processing
 # We use a dictionary to allow name changes (which happened in development).
 try:
-    aantpath = ('%s.'+qa2['a'])%conlabel # ANTENNA
-    calapphs = ('%s.'+qa2['c'])%conlabel # calappphase
-    dtermcal = ('%s.'+qa2['d'])%callabel # Df0
-    bandpass = ('%s.'+qa2['b'])%conlabel # bandpass-zphs
-    ampgains = ('%s.'+qa2['g'])%conlabel # flux_inf.APP
-    phsgains = ('%s.'+qa2['p'])%conlabel # phase_int.APP*
-    xyrelphs = ('%s.'+qa2['x'])%callabel # XY0.APP or XY0.ALMA
-    gxyampli = ('%s.'+qa2['y'])%callabel # Gxyamp.APP or Gxyamp.ALMA
+    aantpath = ('%s/%s.'+qa2['a'])%(DiFXout,conlabel) # ANTENNA
+    calapphs = ('%s/%s.'+qa2['c'])%(DiFXout,conlabel) # calappphase
+    dtermcal = ('%s/%s.'+qa2['d'])%(DiFXout,callabel) # Df0
+    bandpass = ('%s/%s.'+qa2['b'])%(DiFXout,conlabel) # bandpass-zphs
+    ampgains = ('%s/%s.'+qa2['g'])%(DiFXout,conlabel) # flux_inf.APP
+    phsgains = ('%s/%s.'+qa2['p'])%(DiFXout,conlabel) # phase_int.APP*
+    xyrelphs = ('%s/%s.'+qa2['x'])%(DiFXout,callabel) # XY0.APP or XY0.ALMA
+    gxyampli = ('%s/%s.'+qa2['y'])%(DiFXout,callabel) # Gxyamp.APP/Gxyamp.ALMA
     if v4tables:
         calgains = [aantpath, calapphs, dtermcal,
                     bandpass, ampgains, phsgains, xyrelphs, gxyampli]
@@ -89,6 +89,8 @@ except Exception, ex:
     print 'gain type not supplied, defaulting to', gainmeth
 
 # option to average gains over some interval to cut down on noise
+# this is a largely untested option: the preference is to do the
+# averaging on the QA2 products prior to this stage
 try:
     if type(XYavgTime) == float:
         if XYavgTime > 0.0: print 'Gains averaged over %f secs' % XYavgTime
@@ -173,7 +175,8 @@ print 'Spectral window request is for',spwToUse
 # give a directory to the IDI keyword (instead of a file).
 # plotAnt=2 selects the baseline betwen antennas 1(AA) and 2(whatever)
 #
-def runPolConvert(label, spw=-1, DiFXinput='', DiFXoutput='', DiFXsave='',
+def runPolConvert(label, spw=-1, DiFXinput='',
+    DiFXoutput='', DiFXcalc='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
     amp_norm=1.0, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
     npix=50, gainmeth='T', XYavgTime=0.0):
@@ -217,8 +220,8 @@ def runPolConvert(label, spw=-1, DiFXinput='', DiFXoutput='', DiFXsave='',
     # CASA supplies defaults from the task xml file.
     try:
         print 'Calling PolConvert from runpolconvert'
-        polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput, DiFXinput=DiFXinput,
-            #DiFXcalc,
+        polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput,
+            DiFXinput=DiFXinput, DiFXcalc=DiFXcalc,
             doIF=doIF,
             linAntIdx=linAnt, Range=Range, ALMAant=aantpath,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
@@ -251,7 +254,7 @@ def runPolConvert(label, spw=-1, DiFXinput='', DiFXoutput='', DiFXsave='',
             gainmode=[gaintype], XYavgTime=XYavgTime, amp_norm=amp_norm,
             XYadd=XYadd, XYratio=XYratio, swapXY=[False])
     except Exception, ex:
-        print 'Ignoring exception writing history:', str(ex)
+        print 'Ignoring exception while writing history:', str(ex)
 
     # save the plots and other developer artifacts in a subdir
     pcprods = [ 'PolConvert.log', 'Fringe.plot%d.png'%plotAnt,
@@ -259,6 +262,7 @@ def runPolConvert(label, spw=-1, DiFXinput='', DiFXoutput='', DiFXsave='',
                 'FRINGE.PEAKS.dat', 'POLCONVERT.FRINGE', 'POLCONVERT.GAINS',
                 'POLCONVERT_STATION1.ANTAB', 'CONVERSION.MATRIX',
                 'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
+    # this is used only in non-parallel execution
     if savename != '':
         now = datetime.datetime.now()
         outdir = now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
@@ -301,8 +305,10 @@ def makeHistory(label, DiFXoutput, doIF=[], linAntIdx=[], spw=-1,
 
 for job in djobs:
     # DiFX output dir and input files:
-    DiFXout = '.'
+    # DiFXout is defined in the input.
     DiFXinput = ('%s/%s_%s.input' % (DiFXout,expName,job))
+    #DiFXcalc = ('%s/%s_%s.calc' % (DiFXout,expName,job))
+    #DiFXcalc is not used in the default ALMA implementation
     SWIN = ('%s/%s_%s.difx' % (DiFXout,expName,job))
     SAVE = ('%s/%s_%s.save' % (DiFXout,expName,job))
 
@@ -311,7 +317,7 @@ for job in djobs:
 
     print '\nProceeding with job ' + job + '\n'
     runPolConvert(label, spw=spwToUse,
-        DiFXinput=DiFXinput, DiFXoutput=SWIN, DiFXsave=SAVE,
+        DiFXinput=DiFXinput, DiFXcalc='', DiFXoutput=SWIN, DiFXsave=SAVE,
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=usePlotAnt,
