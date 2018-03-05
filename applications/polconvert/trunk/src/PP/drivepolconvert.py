@@ -11,6 +11,7 @@ import argparse
 import datetime
 import os
 import re
+import stat
 
 def parseOptions():
     '''
@@ -416,13 +417,10 @@ def plotPrep(o):
         print 'Shifting baseline from %d-%d to %d-%d' % (
             o.ant, o.remote - 1, o.ant, o.remote)
 
-def createCasaInput(o):
+def getInputTemplate():
     '''
-    This function creates a file of python commands that can be piped
-    directly into CASA.
+    This is the input script with %-able adjustments.
     '''
-    if o.verb: print 'Creating CASA input file ' + o.input
-    ci = open(o.input, 'w')
     template='''    #!/usr/bin/python
     # This file contains python commands that may either be fed
     # directly to CASA as standard input, or else cut&pasted into
@@ -435,7 +433,7 @@ def createCasaInput(o):
     #
     # variables from drivepolconvert.py required for runpolconvert.py:
     #
-    DiFXout = '.'
+    DiFXout = '%s'
     label = '%s'
     expName = '%s'
     linAnt = [%s]
@@ -470,24 +468,35 @@ def createCasaInput(o):
     # timeRange=[]                      # don't care
     %stimeRange = [0,0,0,0, 14,0,0,0]   # first 14 days
     XYadd = [0.0]
-
+    #
     spwToUse = %d
     constXYadd = %s
     %sXYadd = [%f]
     XYratio = [1.0]
     print 'using XYadd %%s' %% (str(XYadd))
-
+    #
     djobs = %s
     print 'djobs contains these jobs: ' + str(djobs)
-
     #
+    workdir = '%s'
     # actually do the work:
-    print 'executing "execfile(rpcpath)" with rcpath:'
+    print 'executing "execfile(rpcpath)" with rcpath and working directory'
     print rpcpath
+    print workdir
+    print os.getcwd()
     execfile(rpcpath)
     quit()
     '''
+    return template
 
+def createCasaInput(o, joblist, caldir, workdir):
+    '''
+    This function creates a file of python commands that can be piped
+    directly into CASA.  It is now written to support both the single
+    processing as well as the parallel processing case.
+    '''
+    oinput = workdir + '/' + o.input
+    if o.verb: print 'Creating CASA input file ' + oinput
     if o.xyadd != '':
         userXY = ''
         XYvalu = float(o.xyadd)
@@ -498,25 +507,90 @@ def createCasaInput(o):
     if o.test:   dotest = 'True'
     else:        dotest = 'False'
 
+    template = getInputTemplate()
     script = template % (o.doPlot[0], o.doPlot[0],
-        o.label, o.exp,
-        o.ant, o.zfirst, o.zfinal,
+        caldir, o.label, o.exp, o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
         o.qa2, o.qal, o.qa2_dict, o.gainmeth, o.avgtime, o.ampnrm, o.gaindel,
         o.remote, o.remotelist, o.npix, dotest, o.doPlot[0],
-        o.spw, o.constXYadd, userXY, XYvalu, o.djobs)
-
+        o.spw, o.constXYadd, userXY, XYvalu, joblist, workdir)
+    # write the file, stripping indents
+    ci = open(oinput, 'w')
     for line in script.split('\n'):
         ci.write(line[4:] + '\n')
     ci.close()
+    return os.path.exists(oinput)
+
+def createCasaInputSingle(o):
+    '''
+    Create the input to process all jobs in the current
+    working directory, sequentially.
+    '''
+    if createCasaInput(o, o.djobs, '.', '.'):
+        if o.verb: print 'Created %s for single-threaded execution' % o.input
+    else:
+        print 'Problem creating',o.input
+        o.run = False
+
+def createCasaCommand(o, job, workdir):
+    '''
+    The required shell incantation to run one job (it is the
+    same incantation for all jobs, but it is convenient to put
+    it into the workdir.  Some of these are the same as in
+    the original executeCasa() function.  The base filename
+    of the command is returned as that is what will be executed
+    in the specified working directory.
+    '''
+    basecmd = o.exp + '.' + job + '.pc-casa-command'
+    cmdfile = workdir + '/' + basecmd
+    cmd2 = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
+        o.casa, o.input, o.output)
+    os.mkdir(workdir + '/casa-logs')
+    cmd4 = 'mv casa*.log ipython-*.log casa-logs'
+    cmd5 = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
+    cmd6 = 'mv polconvert.last casa-logs'
+    cs = open(cmdfile, 'w')
+    cs.write('#!/bin/sh\n')
+    cs.write(cmd2 + '\n')
+    cs.write(cmd4 + '\n')
+    cs.write(cmd5 + '\n')
+    cs.write(cmd6 + '\n')
+    cs.write('exit 0' + '\n')
+    cs.close()
+    execbits = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+    execbits |= stat.S_IRGRP | stat.S_IROTH
+    os.chmod(cmdfile, execbits)
+    if os.path.exists(cmdfile): return basecmd
+    else:                       return 'error'
 
 def createCasaInputParallel(o):
     '''
     Create all of the CASA working directories and input files.
-    This is only used if o.parallel is > 0.
+    This is only used if o.parallel is > 0.  The work is similar
+    to the createCasaInput() input case except we must first create
+    a working directory of the appropriate name before creating the
+    script file.  The working directory (in the other case) was
+    created in runpolconvert after the execution.
     '''
     if o.verb: print 'Creating CASA work dirs and input files ' + o.input
-    pass
+    o.workdirs = {}
+    o.workcmds = {}
+    if checkDifxSaveDirsError(o, True):
+        print 'Either *.difx dirs are missing or *.save dirs are present'
+        o.jobnums = []
+    for job in sorted(o.jobnums):
+        now = datetime.datetime.now()
+        savename = o.exp + '_' + job
+        workdir = now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
+        os.mkdir(workdir)
+        odjobs = str(map(str,[job]))
+        if createCasaInput(o, odjobs, '..', workdir):
+            cmdfile = createCasaCommand(o, job, workdir)
+            o.workdirs[job] = workdir
+            o.workcmds[job] = cmdfile
+            print '--- created working dir with inputs for job %s ---' % job
+        else:
+            print '*** unable to create workdir or input for job %s ***' % job
 
 def removeTrash(o, misc):
     '''
@@ -530,10 +604,9 @@ def removeTrash(o, misc):
     print 'Removing prior ipython & casa logs'
     os.system('rm -f ipython-*.log casa*.log')
 
-def doFinalRunCheck(o):
+def checkDifxSaveDirsError(o, vrb):
     '''
-    runpolconvert is careful, but the overhead of getting to it
-    is high, so we check for this last bit of operator fatigue
+    Verify that that which must exist does, and that which should not doesn't.
     '''
     swine = []
     saved = []
@@ -542,9 +615,18 @@ def doFinalRunCheck(o):
         save = './%s_%s.save' % (o.exp,str(job))
         if os.path.exists(save): saved.append(save)
         if not os.path.exists(swin): swine.append(swin)
-    if len(swine) > 0: print 'These are missing (get them):',swine
-    if len(saved) > 0: print 'These are present (nuke them):',saved
-    if o.run and (len(saved) > 0 or len(swine) > 0):
+    if (len(saved) > 0 or len(swine) > 0):
+        if vrb and len(swine) > 0: print 'These are missing (get them):',swine
+        if vrb and len(saved) > 0: print 'These are present (nuke them):',saved
+        return True
+    return False
+
+def doFinalRunCheck(o):
+    '''
+    runpolconvert is careful, but the overhead of getting to it
+    is high, so we check for this last bit of operator fatigue
+    '''
+    if o.run and checkDifxSaveDirsError(o, o.run):
         print '\n\n### Disabling Run so you can fix the issue\n'
         o.run=False
 
@@ -634,7 +716,17 @@ def executeCasaParallel(o):
     '''
     Drive o.parallel executions of CASA in parallel.
     '''
+    if not o.run:
+        print 'CASA commands and working directories have been prepared.'
+        print 'You can execute the jobs manually, with these commands:'
+        for job in o.workdirs:
+            wdir = o.workdirs[job]
+            ccmd = o.workcmds[job]
+            print '  pushd',wdir,'; ./'+ccmd,'& popd'
+        return
     if o.verb: print 'Driving %d parallel CASA jobs' % (o.parallel)
+    for job in o.workdirs:
+        print 'you could do something with %d in %s' % (job, o.workdirs[job])
 
 #
 # enter here to do the work
@@ -647,7 +739,7 @@ if __name__ == '__main__':
     deduceZoomIndicies(o)
     plotPrep(o)
     if o.parallel == 0:
-        createCasaInput(o)
+        createCasaInputSingle(o)
         executeCasa(o)
     else:
         createCasaInputParallel(o)

@@ -315,11 +315,14 @@ for job in djobs:
     if len(plotAntList) > 0: usePlotAnt = plotAntList.pop()
     else:                    usePlotAnt = plotAnt
 
+    if DiFXout == '.': thesavename = expName + '_' + job
+    else:              thesavename = ''
+
     print '\nProceeding with job ' + job + '\n'
     runPolConvert(label, spw=spwToUse,
         DiFXinput=DiFXinput, DiFXcalc='', DiFXoutput=SWIN, DiFXsave=SAVE,
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
-        timeRange=timeRange, doTest=doTest, savename=expName + '_' + job,
+        timeRange=timeRange, doTest=doTest, savename=thesavename,
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=usePlotAnt,
         npix=numFrPltPix, gainmeth=gainmeth, XYavgTime=XYavgTime)
     print '\nFinished with job ' + job + '\n'
