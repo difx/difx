@@ -12,6 +12,8 @@ import datetime
 import os
 import re
 import stat
+import threading
+import time
 
 def parseOptions():
     '''
@@ -496,7 +498,7 @@ def createCasaInput(o, joblist, caldir, workdir):
     processing as well as the parallel processing case.
     '''
     oinput = workdir + '/' + o.input
-    if o.verb: print 'Creating CASA input file ' + oinput
+    if o.verb: print 'Creating CASA input file\n  ' + oinput
     if o.xyadd != '':
         userXY = ''
         XYvalu = float(o.xyadd)
@@ -543,19 +545,21 @@ def createCasaCommand(o, job, workdir):
     '''
     basecmd = o.exp + '.' + job + '.pc-casa-command'
     cmdfile = workdir + '/' + basecmd
-    cmd2 = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
-        o.casa, o.input, o.output)
     os.mkdir(workdir + '/casa-logs')
-    cmd4 = 'mv casa*.log ipython-*.log casa-logs'
-    cmd5 = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
-    cmd6 = 'mv polconvert.last casa-logs'
+    cmd = map(str,range(10))
+    cmd[0] = '#!/bin/sh'
+    cmd[1] = 'cd ' + workdir
+    cmd[2] = '[ -f killcasa ] && exit 0 || echo "starting" > ./status'
+    cmd[3] = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
+        o.casa, o.input, o.output)
+    cmd[4] = 'echo "converted" > ./status'
+    cmd[5] = 'mv casa*.log ipython-*.log casa-logs'
+    cmd[6] = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
+    cmd[7] = 'mv polconvert.last casa-logs'
+    cmd[8] = 'echo "complete" > ./status'
+    cmd[9] = 'exit 0'
     cs = open(cmdfile, 'w')
-    cs.write('#!/bin/sh\n')
-    cs.write(cmd2 + '\n')
-    cs.write(cmd4 + '\n')
-    cs.write(cmd5 + '\n')
-    cs.write(cmd6 + '\n')
-    cs.write('exit 0' + '\n')
+    for ii in range(10): cs.write(cmd[ii] + '\n')
     cs.close()
     execbits = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
     execbits |= stat.S_IRGRP | stat.S_IROTH
@@ -588,7 +592,7 @@ def createCasaInputParallel(o):
             cmdfile = createCasaCommand(o, job, workdir)
             o.workdirs[job] = workdir
             o.workcmds[job] = cmdfile
-            print '--- created working dir with inputs for job %s ---' % job
+            # print '--- created working dir with inputs for job %s ---' % job
         else:
             print '*** unable to create workdir or input for job %s ***' % job
 
@@ -712,9 +716,89 @@ def executeCasa(o):
         print 'additional test runs on the same jobs.'
         print ''
 
+def convertOneScan(job,wdr,cmd):
+    '''
+    Process one scan for this job as laid out in wdr using cmd
+    '''
+    print ' job', job, 'in', wdr
+    # sanity check
+    if True:
+        os.chdir(wdr)
+        print ' job', job, 'is', os.path.basename(os.getcwd())
+        os.chdir('..')
+    print ' job', job, 'w/', cmd
+    if o.doit: os.system(cmd)
+    else: os.system('/usr/bin/sleep 10')
+    time.sleep(o.sleeper)
+
+def launchNewScanWorker(o, where):
+    '''
+    This pulls a job for one scan out of the dictionaries
+    and launches a thread to have CASA process it.
+    '''
+    job = sorted(o.workdirs)[0];
+    wdr = o.workdirs.pop(job)
+    cmd = o.workcmds.pop(job)
+    th = threading.Thread(target=convertOneScan,args=(job,wdr,cmd))
+    o.workbees.append(th)
+    print 'Spawning thread',th.name,'on job', job,where
+    th.start()
+    time.sleep(o.sleeper)
+
+def waitForNextWorker(o):
+    '''
+    Monitor the threads; when one is no longer alive spawn a new job.
+    When we run out of jobs, the number of active threads will normally
+    drop to zero and then we are done.  Need to consider how to kill
+    this beast.
+    '''
+    while True:
+        for th in o.workbees:
+            if th.isAlive():
+                time.sleep(o.sleeper)
+            else: # it finished
+                o.workbees.remove(th)
+                if len(o.workdirs) > 0:
+                    launchNewScanWorker(o, '(recycled)')
+                else:
+                    print 'Have',len(o.workbees),'threads still running'
+                    if len(o.workbees) == 0:
+                        print 'Done!'
+                        return
+
+def executeThreads(o):
+    '''
+    Create and managed o.parallel threads of execution so that each
+    job is delivered to a thread for processing.  We keep processing
+    as long as there is work to do and we are able to launch threads.
+    Once we have reached the limit, we launch new threads for the
+    remaining scans as thread slots become available
+    '''
+    while len(o.workdirs) > 0:
+        if len(o.workbees) < o.parallel:
+            launchNewScanWorker(o, '(original)')
+        else:
+            waitForNextWorker(o)
+            print 'Really!!'
+            return
+
+def reportWorkTodo(o):
+    '''
+    Give the user a hint of what happened.
+    '''
+    if len(o.workdirs) > 0:
+        print 'Several jobs were not processed:'
+        for job in o.workdirs:
+            print ' job', job, 'in', o.workdirs[job]
+            print ' job', job, 'w/', o.workcmds[job]
+    print 'Finished!!!'
+
 def executeCasaParallel(o):
     '''
     Drive o.parallel executions of CASA in parallel.
+    Aside from o.workdirs and o.workcmds, o.workbees contain the
+    references to threading objects, and o.sleeper puts in pauses
+    to avoid race conditions and give the human time to read.
     '''
     if not o.run:
         print 'CASA commands and working directories have been prepared.'
@@ -725,8 +809,24 @@ def executeCasaParallel(o):
             print '  pushd',wdir,'; ./'+ccmd,'& popd'
         return
     if o.verb: print 'Driving %d parallel CASA jobs' % (o.parallel)
-    for job in o.workdirs:
-        print 'you could do something with %d in %s' % (job, o.workdirs[job])
+    try:
+        o.workbees = []
+        o.sleeper = 2
+        o.doit = False  # Developer disable, set to true later
+        if o.parallel > 0:
+            executeThreads(o)
+    except KeyboardInterrupt:   #^C
+        print ', Shutting down...'
+        print 'You may need to use ps to find and kill some stuck'
+        print 'processes in a few minutes if they are still running'
+    except KeyError:
+        print 'Developer screwup...'
+        raise
+    except Exception:
+        print 'Some other problem...'
+        raise
+    finally:
+        reportWorkTodo(o)
 
 #
 # enter here to do the work
