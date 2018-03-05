@@ -1,5 +1,16 @@
 #!/usr/bin/python
-import os, fnmatch
+#
+# (C) 2018 Jan Wagner
+#
+'''
+Usage: summarizeDifxlogs.py [--help|-h] [--color|-c]
+
+Produces a summary of a DiFX correlation run in the current working directory.
+Inspects the *.difxlog and associated *.input files and reports average
+station (datastream) weights, run times, and (non)clean DiFX completion.
+'''
+
+import os, fnmatch, sys
 from operator import add
 
 class bcolors:
@@ -9,9 +20,11 @@ class bcolors:
 	RED = '\033[91m'
 	ENDC = '\033[0m'
 
+'''Return per-datastream weights found in a DiFX log file. Also determine the display format (nr of decimals) of the weights in the log file.'''
 def getWeights(logfile):
 	weights = []
 	N = 1
+	Ndecimals = 2
 	f = open(logfile, 'r')
 	while True:
 		l = f.readline()
@@ -20,16 +33,23 @@ def getWeights(logfile):
 		if not('WEIGHTS' in l):
 			continue
 		idx = l.find('WEIGHTS') + len('WEIGHTS') + 1
-		curr_weights = [float(v) for v in l[idx:].split()]
+		curr_weights_strlist = l[idx:].split()
+		if len(curr_weights_strlist) < 1:
+			continue
+		Ndecimals = len(curr_weights_strlist[0]) - (curr_weights_strlist[0].find('.') + 1)
+		curr_weights = [float(v) for v in curr_weights_strlist]
 		if len(weights) != len(curr_weights):
 			weights = curr_weights
 		else:
 			weights = map(add, weights, curr_weights)
 			N += 1
+	weightfmt = '%%.%df' % (Ndecimals)
+	weighttrunc = 10.0**Ndecimals
 	weights = [w/float(N) for w in weights] # average value
-	weights = [int(w*100)/100.0 for w in weights] # truncate decimals
-	return weights
+	weights = [int(w*weighttrunc)/weighttrunc for w in weights] # truncate decimals
+	return (weights,weightfmt)
 
+'''Get list of antennas associated with each datastream from DiFX .input file'''
 def getWeightlabels(inputfile):
 	telescopes = {}
 	labels = []
@@ -48,6 +68,7 @@ def getWeightlabels(inputfile):
 			labels.append(telescopes[antindex])
 	return labels
 
+'''Get runtime and scan length from a DiFX log file, as well as MPI completion status'''
 def getTimingsStr(logfile):
 	mpiDone = False
 	wallclockTime = -1
@@ -95,12 +116,12 @@ def getTimingsStr(logfile):
 
 	return s
 
-def weights2text(weights, labels, alltelescopes):
+def weights2text(weights, labels, alltelescopes, weightfmt='%3.2f'):
 	s = ''
 	#for a in alltelescopes:
 	#	indexes = [i for i,x in enumerate(labels) if x==a]
 	for i in range(len(weights)):
-		ss = '%s:%3.2f ' % (labels[i],weights[i])
+		ss = ('%s:' + weightfmt + ' ') % (labels[i],weights[i])
 		if weights[i] >= 0.90:
 			s += bcolors.GREEN + ss
 		elif weights[i] >= 0.40:
@@ -110,22 +131,46 @@ def weights2text(weights, labels, alltelescopes):
 	s += bcolors.ENDC
 	return s
 
+# Defaults
+doColor = False
+doTimefactors = True
+doWeights = True
+
+# Args
+if ('--color' in sys.argv) or ('-c' in sys.argv):
+	doColor = True
+
+if ('--help' in sys.argv) or ('-h' in sys.argv):
+	print (__doc__)
+	sys.exit(0)
+
+if not doColor:
+	# awful hack...
+	bcolors.DEFAULT = ''
+	bcolors.GREEN = ''
+	bcolors.ORANGE = ''
+	bcolors.RED = ''
+	bcolors.ENDC = ''
+
+# List all log files in CWD
 telescopes = set()
 files = fnmatch.filter(os.listdir('.'), '*.difxlog')
 files.sort()
 
-print ('Wallclock times:')
-for logname in files:
-	jobname = logname[:logname.rfind('.')]
-	timingsstr = getTimingsStr(logname)
-	print ('%s : %s' % (jobname,timingsstr))
-print ('')
-
-print ('Weights:')
-for logname in files:
-	jobname = logname[:logname.rfind('.')]
-	weightvalues = getWeights(logname)
-	weightantennas = getWeightlabels(jobname + '.input')
-	telescopes = telescopes | set(weightantennas)
-	weightsstr = weights2text(weightvalues, weightantennas, telescopes)
-	print ('%s : %s' % (jobname,weightsstr))
+# Summaries
+if doTimefactors:
+	print ('## Wallclock times:')
+	for logname in files:
+		jobname = logname[:logname.rfind('.')]
+		timingsstr = getTimingsStr(logname)
+		print ('# %s : %s' % (jobname,timingsstr))
+	print ('#')
+if doWeights:
+	print ('## Weights:')
+	for logname in files:
+		jobname = logname[:logname.rfind('.')]
+		(weightvalues,weightfmt) = getWeights(logname)
+		weightantennas = getWeightlabels(jobname + '.input')
+		telescopes = telescopes | set(weightantennas)
+		weightsstr = weights2text(weightvalues, weightantennas, telescopes, weightfmt)
+		print ('# %s : %s' % (jobname,weightsstr))
