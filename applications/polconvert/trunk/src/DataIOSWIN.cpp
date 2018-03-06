@@ -619,7 +619,7 @@ for (rec = 0; rec < 4; rec++) {
 
 // Get the data and return them:
 for (i=0; i<4; i++) {
-  if (currEntries[currFreq][i]>0){
+  if (currEntries[currFreq][i]>=0){
   rec = currEntries[currFreq][i];
   fnum = Records[rec].fileNumber;
   newdifx[fnum].seekg(Records[rec].byteIni, olddifx[fnum].beg);
@@ -640,8 +640,8 @@ for (i=0; i<4; i++) {
 
  if (currEntries[currFreq][2]==-1 && currEntries[currFreq][3]==-1 && complete && antenna == otherAnt){
     for (k=0;k<Freqs[currFreq].Nchan; k++) {
-      currentVis[3][k] = auxVis[2][k];
-      currentVis[2][k] = auxVis[3][k];
+      currentVis[3][k] = auxVis[3][k];
+      currentVis[2][k] = auxVis[2][k];
     };
  };
 
@@ -677,7 +677,7 @@ int i,k, fnum = 0;
 
 for (i=0; i<4; i++) {
 
- if (currEntries[currFreq][i]>0){
+ if (currEntries[currFreq][i]>=0){
   rec = currEntries[currFreq][i];
   fnum = Records[rec].fileNumber;
   newdifx[fnum].seekp(Records[rec].byteIni, newdifx[fnum].beg);
@@ -735,8 +735,8 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 
        ca11 = 0;
        ca22 = 1;
-       ca12 = 3;
-       ca21 = 2;
+       ca12 = 2;
+       ca21 = 3;
 
 
 

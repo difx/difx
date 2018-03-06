@@ -633,7 +633,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
  
 
     if(doNorm){
-      printf("CREATING GAIN FILE\n"); 
+      printf("CREATING GAIN FILE.\n"); 
 //      for(ii=0; ii<nnu;ii++){
 //         sprintf(message,"POLCONVERT.GAINS.IF%i",ii);
 //         gainsFile[ii] = fopen(message,"w");
@@ -649,6 +649,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
  //   if (plIF>=0 && plIF < nnu){fwrite(&nchans[plIF],sizeof(int),1,plotFile);}else{fwrite(&noI,sizeof(int),1,plotFile);};
 
 
+  sprintf(message,"\n POLCONVERTING THE DATA.\n\n");
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 
 
