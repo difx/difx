@@ -546,20 +546,23 @@ def createCasaCommand(o, job, workdir):
     basecmd = o.exp + '.' + job + '.pc-casa-command'
     cmdfile = workdir + '/' + basecmd
     os.mkdir(workdir + '/casa-logs')
-    cmd = map(str,range(10))
-    cmd[0] = '#!/bin/sh'
-    cmd[1] = 'cd ' + workdir
-    cmd[2] = '[ -f killcasa ] && exit 0 || echo "starting" > ./status'
-    cmd[3] = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
+    cmd = map(str,range(13))
+    cmd[0]  = '#!/bin/sh'
+    cmd[1]  = '[ -f killcasa ] && exit 0'
+    cmd[2]  = 'cd ' + workdir + ' && echo "starting" > ./status || exit 1'
+    cmd[3]  = 'date -u +%Y-%m-%dT%H:%M:%S > ./timing'
+    cmd[4]  = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
         o.casa, o.input, o.output)
-    cmd[4] = 'echo "converted" > ./status'
-    cmd[5] = 'mv casa*.log ipython-*.log casa-logs'
-    cmd[6] = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
-    cmd[7] = 'mv polconvert.last casa-logs'
-    cmd[8] = 'echo "complete" > ./status'
-    cmd[9] = 'exit 0'
+    cmd[5]  = 'echo "converted" > ./status'
+    cmd[6]  = 'mv casa*.log ipython-*.log casa-logs'
+    cmd[7]  = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
+    cmd[8]  = 'mv polconvert.last casa-logs'
+    cmd[9]  = 'echo "complete" > ./status'
+    cmd[10] = 'date -u +%Y-%m-%dT%H:%M:%S >> ./timing'
+    cmd[11] = 'echo " "CASA for job %s finished.' % job
+    cmd[12] = 'exit 0'
     cs = open(cmdfile, 'w')
-    for ii in range(10): cs.write(cmd[ii] + '\n')
+    for ii in range(len(cmd)): cs.write(cmd[ii] + '\n')
     cs.close()
     execbits = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
     execbits |= stat.S_IRGRP | stat.S_IROTH
@@ -582,10 +585,10 @@ def createCasaInputParallel(o):
     if checkDifxSaveDirsError(o, True):
         print 'Either *.difx dirs are missing or *.save dirs are present'
         o.jobnums = []
+    o.now = datetime.datetime.now()
     for job in sorted(o.jobnums):
-        now = datetime.datetime.now()
         savename = o.exp + '_' + job
-        workdir = now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
+        workdir = o.now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
         os.mkdir(workdir)
         odjobs = str(map(str,[job]))
         if createCasaInput(o, odjobs, '..', workdir):
@@ -722,12 +725,13 @@ def convertOneScan(job,wdr,cmd):
     '''
     print ' job', job, 'in', wdr
     # sanity check
-    if True:
+    if o.checkdir:
         os.chdir(wdr)
         print ' job', job, 'is', os.path.basename(os.getcwd())
         os.chdir('..')
     print ' job', job, 'w/', cmd
-    if o.doit: os.system(cmd)
+    # either doit or just vet the thread machinery
+    if o.run: os.system(wdr + '/' + cmd)
     else: os.system('/usr/bin/sleep 10')
     time.sleep(o.sleeper)
 
@@ -763,7 +767,7 @@ def waitForNextWorker(o):
                 else:
                     print 'Have',len(o.workbees),'threads still running'
                     if len(o.workbees) == 0:
-                        print 'Done!'
+                        print 'Done! -- all CASA workers have finished'
                         return
 
 def executeThreads(o):
@@ -779,8 +783,8 @@ def executeThreads(o):
             launchNewScanWorker(o, '(original)')
         else:
             waitForNextWorker(o)
-            print 'Really!!'
             return
+    print 'Wait for processing threads to finish.'
 
 def reportWorkTodo(o):
     '''
@@ -791,7 +795,7 @@ def reportWorkTodo(o):
         for job in o.workdirs:
             print ' job', job, 'in', o.workdirs[job]
             print ' job', job, 'w/', o.workcmds[job]
-    print 'Finished!!!'
+    print 'Results are in',o.now.strftime('*.polconvert-%Y-%m-%dT%H.%M.%S')
 
 def executeCasaParallel(o):
     '''
@@ -808,11 +812,17 @@ def executeCasaParallel(o):
             ccmd = o.workcmds[job]
             print '  pushd',wdir,'; ./'+ccmd,'& popd'
         return
-    if o.verb: print 'Driving %d parallel CASA jobs' % (o.parallel)
+    if o.verb:
+        print 'Driving %d parallel CASA jobs' % (o.parallel)
+        print '  Touch "killcasa" to terminate prematurely.'
+        print '  (Current CASA jobs will continue until done.)'
     try:
         o.workbees = []
-        o.sleeper = 2
-        o.doit = False  # Developer disable, set to true later
+        o.sleeper = 1
+        # developer option to double-check working dir
+        o.checkdir = False
+        # developer option to test threading logic.
+        # o.run = False
         if o.parallel > 0:
             executeThreads(o)
     except KeyboardInterrupt:   #^C
@@ -827,6 +837,8 @@ def executeCasaParallel(o):
         raise
     finally:
         reportWorkTodo(o)
+        try: os.unlink('killcasa')
+        except: pass
 
 #
 # enter here to do the work
