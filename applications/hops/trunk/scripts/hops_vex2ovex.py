@@ -368,7 +368,7 @@ def buildCodeMap(verb=False):
 	if args.codes is not None:
 		for line in args.codes:
 			token = line.split()
-			if len(token) > 2:
+			if len(token) < 2:
 				print "Error: Illegal format of the code mapping file. See help for details about the correct format"
 				sys.exit(1)
 			codes[token[1]] = token[0]
