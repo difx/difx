@@ -32,6 +32,7 @@ echo ''
 
 [ -z "$exp"   ] && { echo exp   must be defined ; exit 1 ; }
 [ -z "$vers"  ] && { echo vers  must be defined ; exit 1 ; }
+[ -z "$relv"  ] && { echo relv  must be defined ; exit 1 ; }
 [ -z "$subv"  ] && { echo subv  must be defined ; exit 1 ; }
 [ -z "$iter"  ] && { echo iter  must be defined ; exit 1 ; }
 [ -z "$expn"  ] && { echo expn  must be defined ; exit 1 ; }
@@ -65,7 +66,7 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=haxp \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $newjobs
     cd ../v${vers}p${iter}
     $echo pwd
@@ -84,7 +85,7 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=post-corr \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs src=$dout jobs $jobs
     $echo \
     cd ../v${vers}p${iter}
@@ -93,25 +94,25 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=fits \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $jobs
     $echo \
     $ehtc/ehtc-tarballs.sh tar=hops \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $jobs
     $ffit && $echo \
     $ehtc/ehtc-tarballs.sh tar=4fit \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $jobs
     $ffit && $echo \
     $ehtc/ehtc-tarballs.sh tar=4fit \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $jobs
     $ffit || {
         echo
@@ -122,9 +123,10 @@ $haxp && {
         echo  calibrations in the fourfit file.
         echo
         echo $ehtc/ehtc-tarballs.sh tar=4fit flab=\$flab \\ && echo \
-        '    'exp=\$exp vers=\$vers subv=\$subv \
-        expn=\$expn nuke=true over=true \\ && echo \
-        '    'save=true label=\$label dest=./tarballs target=\$targ jobs \$jobs
+        '    'exp=\$exp vers=\$vers subv=\$subv \\ && echo \
+        '    'expn=\$expn nuke=true over=true \\ && echo \
+        '    'save=true label=\$label relv=\$relv \\ && echo \
+        '    'dest=./tarballs target=\$targ jobs \$jobs
         echo '============================================================'
         echo
     }
@@ -135,7 +137,7 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=post-alma \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $jobs
     $echo \
     cd ../v${vers}tb
@@ -144,7 +146,7 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=post-corr \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs src=$dout jobs $jobs
     $echo \
     cd ../v${vers}p${iter}
@@ -153,14 +155,14 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=4fit \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $jobs
     # no need for pc phases
     $ffit && $echo \
     $ehtc/ehtc-tarballs.sh tar=4fit \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label \
+        save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $jobs
     $ffit || {
         echo 
@@ -171,9 +173,10 @@ $haxp && {
         echo  calibrations in the fourfit file.
         echo
         echo $ehtc/ehtc-tarballs.sh tar=4fit flab=\$flab \\ && echo \
-        '    'exp=\$exp vers=\$vers subv=\$subv \
-        expn=\$expn nuke=true over=true \\ && echo \
-        '    'save=true label=\$label dest=./tarballs target=\$targ jobs \$jobs
+        '    'exp=\$exp vers=\$vers subv=\$subv \\ && echo \
+        '    'expn=\$expn nuke=true over=true \\ && echo \
+        '    'save=true label=\$label relv=\$relv \\ && echo \
+        '    'dest=./tarballs target=\$targ jobs \$jobs
         echo '============================================================'
         echo
     }

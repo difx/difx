@@ -64,6 +64,7 @@ require additional information which is also supplied via options:
     save=true|false save products that might get nuked (false)
     label=<string>  an additional token to be included in tarnames
     flab=<char>     an additional version label for re-fourfitting
+    relv=<int>      release version if different from correlation vers
     haxprune=true|false whether to restrict this to ALMA bl or not (true)
 
 The d2?? options presume you want to process all input files in \$src
@@ -170,6 +171,7 @@ OTHER="Various additional arguments
 dry=false
 exp=noexp
 vers=novers
+relv=''
 subv=1
 dest=.
 src=.
@@ -220,6 +222,7 @@ over=*)  eval "$1" ;;
 save=*)  eval "$1" ;;
 label=*) eval "$1" ;;
 flab=*)   eval "$1" ;;
+relv=*)   eval "$1" ;;
 target=*) eval "$1" ;;
 haxprune=*) eval "$1" ;;
 jobs)    shift ; break ;;
@@ -256,6 +259,7 @@ $verb && echo '' && echo '' && echo $0 $args | fold && echo ''
     echo over must be true or false ; exit 1; }
 [ "$haxprune" = 'true' -o "$haxprune" = 'false' ] || {
     echo haxprune must be true or false ; exit 1; }
+[ -z "$relv" ] && relv=$vers
 $d2m4 && [ "$expn" = '0000' ] && { echo d2m4 is true, need expn; exit 1; }
 [ "$job" = 'nojob' ] && job=$exp
 EXP=`echo $exp | tr a-z A-Z`
@@ -270,7 +274,7 @@ com2="verb=$verb dest=$dest"
 com3="dry=$dry src=$src"
 com4="copy=$copy job=$job expn=$expn EXP=$EXP d2m4=$d2m4 d2ft=$d2ft"
 com5="over=$over save=$save label=$label target=$target flab=$flab"
-com6="haxprune=$haxprune jobs $jobs"
+com6="haxprune=$haxprune relv=$relv jobs $jobs"
 
 # verify write permissions in the work directory (for tar creation)
 workdir=`pwd`
@@ -346,7 +350,7 @@ case $tar in
 dxin)
     $verb && echo gathering DiFX inputs in `pwd`
     $dry || dotar=true
-    tarname=${exp}-${vers}-$subv-$label-dxin.tar
+    tarname=${exp}-${relv}-$subv-$label-dxin.tar
     $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
              rm -f $workdir/logs/$tarname.log
     content1='*.flist* *.v2d* *.joblist* *codes *vex.obs'
@@ -361,7 +365,7 @@ dxin)
 swin)
     $verb && echo gathering DiFX output in `pwd`
     $dry || dotar=true
-    tarname=${exp}-${vers}-$subv-$label-swin.tar
+    tarname=${exp}-${relv}-$subv-$label-swin.tar
     $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
              rm -f $workdir/logs/$tarname.log
     content=''
@@ -374,7 +378,7 @@ fits)
     fits=${exp}-${vers}-$subv-$label.fits
     $verb && echo making FITS in `pwd`/$fits
     $dry || dotar=true
-    tarname=${exp}-${vers}-$subv-$label-fits.tar
+    tarname=${exp}-${relv}-$subv-$label-fits.tar
     $nuke && rm -rf $fits
     $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
              rm -f $workdir/logs/$tarname.log
@@ -387,7 +391,7 @@ hops|hmix|haxp)
     $verb && [ $tar = hmix ] && echo making HOPS'(pre-pc)'    in `pwd`/$expn
     $verb && [ $tar = haxp ] && echo making HOPS'(just alma)' in `pwd`/$expn
     $dry || dotar=true
-    tarname=${exp}-${vers}-$subv-$label-$tar.tar
+    tarname=${exp}-${relv}-$subv-$label-$tar.tar
     [ -d "$expn" -a ! -d "$expn.orig" ] && {
         mv $expn $expn.orig || { echo Cannot preserve $expn ; exit 3; } ; }
     $nuke && rm -rf $expn
@@ -400,7 +404,7 @@ hops|hmix|haxp)
 pcin)
     $verb && echo gathering PolConvert inputs in `pwd`
     $dry || dotar=true
-    tarname=${exp}-${vers}-$subv-$label-pcin.tar
+    tarname=${exp}-${relv}-$subv-$label-pcin.tar
     $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
              rm -f $workdir/logs/$tarname.log
     content1="SourceList-$label.txt SideBand-$label.txt Jobs-$label.txt"
@@ -416,7 +420,7 @@ pcin)
 pcqk)
     $verb && echo gathering PolConvert quick-look in `pwd`
     $dry || dotar=true
-    tarname=${exp}-${vers}-$subv-$label-pcqk.tar
+    tarname=${exp}-${relv}-$subv-$label-pcqk.tar
     $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
              rm -f $workdir/logs/$tarname.log
     content=''
@@ -438,7 +442,7 @@ pcqk)
     [ -d $expn ] && work=4fit-4fit || work=4fit-prep
     [ $work = 4fit-prep ] && tarname=''
     [ $work = 4fit-4fit ] &&
-        tarname=${exp}-${vers}-$subv-$label-4fit$flab.tar &&
+        tarname=${exp}-${relv}-$subv-$label-4fit$flab.tar &&
         $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
                  rm -f $workdir/logs/$tarname.log
     [ $work = 4fit-4fit ] && $dry || dotar=true
