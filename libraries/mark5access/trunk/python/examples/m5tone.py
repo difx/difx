@@ -196,7 +196,7 @@ def main(argv=sys.argv):
 	if len(argv) == 9:
 		offset = int(argv[8])
 
-	fout  = open(argv[3], 'wb')
+	fout  = open(argv[3], 'wb', 1)
 	if_nr = int(argv[4])
 	Tint  = float(argv[5])
 	tfreq = float(argv[6])
