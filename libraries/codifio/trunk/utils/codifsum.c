@@ -43,6 +43,13 @@ int main (int argc, char **argv) {
       continue;
     }
 
+    //sook = lseek(file, 8, SEEK_SET);
+    //if (sook==-1) {
+    //  perror("Error seeking within file\n");
+    //  close(file);
+    //  exit(1);
+    //}
+
     stnCode = (char*)&stationID;
 
     while (1) {
@@ -58,7 +65,6 @@ int main (int argc, char **argv) {
 	close(file);
 	exit(1);
       }
-
 
       stationID = getCODIFStationID(header);
       printf("INVALID:     %d\n", getCODIFFrameInvalid(header));
@@ -94,26 +100,14 @@ int main (int argc, char **argv) {
       
       printf("-------------------\n");
       
-
-      
-
       sook = lseek(file, getCODIFFrameBytes(header), SEEK_CUR);
       if (sook==-1) {
 	perror("Error seeking within file\n");
 	close(file);
 	exit(1);
       }
-
-
-      
-
     }
     
-
-
     close(file);
-    
   }
-
-
 }
