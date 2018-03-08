@@ -346,15 +346,17 @@ class MainWindow(GenericWindow):
 
             try:
                 font = PIL.ImageFont.truetype(self.config.get("Comedia","fontFile"), int(self.config.get("Comedia", "fontSize")))
+                fontSmall = PIL.ImageFont.truetype(self.config.get("Comedia","fontFile"), int(self.config.get("Comedia", "fontSize"))-2)
             except:
 		print "Cannot find font: %s. Using default font" % (self.config.get("Comedia","fontFile"))
                 font = PIL.ImageFont.load_default()
+                fontSmall = PIL.ImageFont.load_default()
             
             os.system('rm -f /tmp/comedia_tmp.png')
             draw = PIL.ImageDraw.Draw(im)
             draw.text((10,10), self.config.get("Comedia","headerLine"), font=font, fill=1)
             draw.text((10,40),"%s" % slot.location, font=font, fill=1)
-            draw.text((10,70),"%s / %s / %s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate) , font=font, fill=1)
+            draw.text((10,70),"%s/%s/%s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate) , font=fontSmall, fill=1)
 
             im.save("/tmp/comedia_tmp.png")
             
@@ -1044,6 +1046,8 @@ class CheckinWindow(GenericWindow):
         
         self.chkPrintLibLabelVar = IntVar()
         self.chkPrintLibLabelVar.set(1)
+	self.vsnStringVar = StringVar()
+	#self.vsnStringVar.trace("w", lambda name, index, mode, var=self.vsnStringVar: self.callback(self.vsnStringVar))
         
         self._setupWidgets()
         self.updateExperimentListbox()
@@ -1067,10 +1071,11 @@ class CheckinWindow(GenericWindow):
         yScroll2 = Scrollbar ( self.dlg, orient=VERTICAL )
 
         Label(self.dlg, text="VSN").grid(row=0)
-        Label(self.dlg, text="Slot").grid(row=1)
+        Label(self.dlg, text="Slot").grid(row=2)
         Label(self.dlg, text="Experiment(s)\n(optional)").grid(row=3)
 
-        self.txtVSN = Entry(self.dlg)
+        #self.txtVSN = Entry(self.dlg)
+        self.txtVSN = Entry(self.dlg, textvariable=self.vsnStringVar)
 
         self.lstSlot = Listbox(self.dlg, yscrollcommand=yScroll.set, height=5, exportselection = False )
         self.lstExp = Listbox(self.dlg, yscrollcommand=yScroll2.set, height=5 , selectmode=MULTIPLE, exportselection = False)
@@ -1092,14 +1097,14 @@ class CheckinWindow(GenericWindow):
 
         # arrange elements on grid
         self.txtVSN.grid(row=0, column=1)
-        self.lstSlot.grid(row=1, column=1)
+        self.lstSlot.grid(row=2, column=1)
         self.lstExp.grid(row=3, column=1)
         chkPrintLibLabel.grid(row=4,column=1, sticky=W)
 
         btnOK.grid(row=10, column=1, sticky=W,pady=7)
         btnCancel.grid(row=10, column=3, sticky=E+W)
         btnAddExp.grid(row=3, column=3, sticky=E+W)
-        yScroll.grid ( row=1, column=2, sticky=W+N+S )
+        yScroll.grid ( row=2, column=2, sticky=W+N+S )
         yScroll2.grid ( row=3, column=2, sticky=W+N+S )
         
         self.txtVSN.focus_set()
@@ -1107,7 +1112,7 @@ class CheckinWindow(GenericWindow):
         
     def _splitVSNLabelScan(self):
         
-        m = re.match('([a-zA-Z]+[%\+-]\d+)/(\d+)/(.+)', self.txtVSN.get().lstrip())
+        m = re.match('([a-zA-Z]+[%\+-]\d+)/(\d+)/(\d+).*', self.txtVSN.get().lstrip())
      
         if (m != None):
             vsn = upper(m.group(1))
@@ -1119,7 +1124,7 @@ class CheckinWindow(GenericWindow):
             capacity = m.group(2)
             datarate = m.group(3)
             # drop CRC code at end of datarate (appears when VSN label is scanned)
-            datarate = datarate[:-1]
+            #datarate = datarate[:-1]
             
             return(vsn, capacity, datarate)
         else:
@@ -2223,7 +2228,7 @@ class MyImageWriter(ImageWriter):
         xpos = self.quiet_zone
         pos = (self._mm2px(xpos, self.dpi), self._mm2px(ypos, self.dpi))
         font = PIL.ImageFont.truetype(FONT, self.font_size)
-        self._draw.text(pos, self.text, font=font, fill=self.foreground)
+        self._draw.text(pos, self.text[:-1], font=font, fill=self.foreground)
         
  
 class ComediaConfig(DifxDbConfig):
