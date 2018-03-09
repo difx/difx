@@ -174,6 +174,12 @@ static int mark5_stream_frame_time_vdifb(const struct mark5_stream *ms, int *mjd
 	{
 		return -1;
 	}
+
+	if(!ms->frame)
+	{
+		return -1;
+	}
+
 	v = (struct mark5_format_vdifb *)(ms->formatdata);
 
 #ifdef WORDS_BIGENDIAN
