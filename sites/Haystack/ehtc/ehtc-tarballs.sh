@@ -80,7 +80,8 @@ label tarballs of subsets of processing (e.g. by project-source).
 Finally flab can be used to support re-fourfitting (e.g. with a new
 fourfit control file) and is only used in the 4fit option.  The saved
 dir and tarball will be named '4fit\$flab' so name wisely.  Finally,
-'tar=haxp haxprue=false' should be equivalent to 'tar=hmix'.
+'tar=haxp haxprue=false' should be equivalent to 'tar=hmix' and will
+be so processed.
 
 Typically the label would be <project>-<source>.
 
@@ -267,6 +268,16 @@ EXP=`echo $exp | tr a-z A-Z`
 [ "$target" = none -a "$tar" = 4fit ] && {
     echo you must specify a target for 4fit tar option; exit 1;
 }
+[ "$tar" = haxp -a "$haxprune" = false ] && {
+    echo relabelling tarball to hmix since an unpruned haxp requested
+    [ -n "$haxpruneinsist" ] && {
+        echo ok, you are insisting--probably testing
+    } || {
+        tar=hmix
+        haxprune=false
+    }
+    echo "(debug) tar is $tar haxprune is $haxprune"
+}
 
 # variables passed to group tasks
 com1="nuke=$nuke exp=$exp vers=$vers subv=$subv"
@@ -437,7 +448,10 @@ pcqk)
     ;;
 4fit)
     $verb && echo fourfitting in `pwd`
-    ffconf=$exp-$vers-$subv.conf
+    # try release version first
+    ffconf=$exp-$relv-$subv.conf
+    # fall back to correlator version
+    [ -f $ffconf ] || ffconf=$exp-$vers-$subv.conf
     [ -f $ffconf ] || { echo no config file for fourfitting ; exit 3 ; }
     [ -d $expn ] && work=4fit-4fit || work=4fit-prep
     [ $work = 4fit-prep ] && tarname=''

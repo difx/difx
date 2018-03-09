@@ -27,7 +27,7 @@ shift
 echo ''
 [ "$1" = true  ] && ffit=true  && echo '  [WITH FOURFIT] ' && shift
 [ "$1" = false ] && ffit=false && echo '  [NO FOURFIT] '   && shift
-[ "$1" = haxp  ] && ffit=haxp  && echo '  [NO ALMA D2M]  ' && shift
+[ "$1" = haxp  ] && ffit=haxp  && echo '  [ALMA ONLY D2M]' && shift
 [ $ffit = haxp ] && ffit=false && haxp=true || haxp=false
 
 [ -z "$exp"   ] && { echo exp   must be defined ; exit 1 ; }

@@ -7,7 +7,7 @@
 '''
 Script to parse a joblist and a vex file and produce lists of job numbers
 
-$Id: ehtc-joblist.py 2257 2018-03-01 21:39:21Z gbc $
+$Id: ehtc-joblist.py 2271 2018-03-07 19:37:41Z gbc $
 '''
 
 import argparse
@@ -33,7 +33,7 @@ def parseOptions():
     epi += ' try this: '
     epi += ' ehtc-joblist.py -i *.input -o *.vex.obs -p na -s 3C279 -R'
     use = '%(prog)s [options]\n'
-    use += '  Version $Id: ehtc-joblist.py 2257 2018-03-01 21:39:21Z gbc $'
+    use += '  Version $Id: ehtc-joblist.py 2271 2018-03-07 19:37:41Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     inputs = parser.add_argument_group('input options', inp)
     action = parser.add_argument_group('action options', act)
@@ -327,9 +327,9 @@ def doFindProj(o):
     thisproj = 'na'
     scan_re = re.compile(r'\s*scan\s*([^;]+);')
     first_re = re.compile(
-        r'.*intent.*=.*ALMA:PROJECT_FIRST_SCAN:(.*).$')
+        r'.*intent.*=.*"ALMA:PROJECT_FIRST_SCAN:(.*)"$')
     final_re = re.compile(
-        r'.*intent.*=.*ALMA:PROJECT_FINAL_SCAN:(.*).$')
+        r'.*intent.*=.*"ALMA:PROJECT_FINAL_SCAN:(.*)"$')
     comnt_re = re.compile(r'\s*[*]')
     for line in f.readlines():
         sre = scan_re.search(line)
@@ -342,7 +342,7 @@ def doFindProj(o):
         comnt = comnt_re.search(line)
         if not first and not final and comnt:
             continue
-        if first: thisproj = first.group(1)[:-1]
+        if first: thisproj = first.group(1)
         if len(thisproj) > 0 and len(lastscan) > 0:
             if thisproj in o.projscans:
                 o.projscans[thisproj].append(lastscan)
