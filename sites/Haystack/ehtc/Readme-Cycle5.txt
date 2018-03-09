@@ -167,15 +167,21 @@ ls -lh $release/$proj-$class/$evs-$proj-$targ*tar
 # pause to observe correct progress and make comments:
 #   # ... details of interest to correlator folks
 #   ###  important messages that can be grepped out to make a summary
+#--------------------------------------------------------------------------
+
+<<<log of commands goes here>>>
 
 #--------------------------------------------------------------------------
-# save logfile:
-# cp -p $exp-$subv-v${vers}${ctry}p${iter}.logfile $release/logs
-#--------------------------------------------------------------------------
+# save logfile incrementally or when done:
+cp -p $exp-$subv-v${vers}${ctry}p${iter}.logfile $release/logs
+# check on progress/missing scans:
+$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K
+
 # TODO list ======================
 # $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G
 
 # Cleanup list ======================
+# after tarballs are delivered and you want to recover disk space
 rm -rf $exp-$vers-${subv}_*.save
 
 #
