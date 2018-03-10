@@ -9,7 +9,7 @@
 # most of the time:
 #  $ehtc/ehtc-postdrive.sh echo $jobs
 #  $ehtc/ehtc-postdrive.sh eval $jobs
-# and
+# and deprecated:
 #  $ehtc/ehtc-postdrive.sh echo haxp $jobs
 #  $ehtc/ehtc-postdrive.sh eval haxp $jobs
 #
@@ -45,31 +45,38 @@ echo ''
 
 jobs="$@"
 
+# workdir is presumably one of the polconvert postprocessing dirs
+# while dout is where the correlator DiFX output sits
+# tbdir is safe place for postprocessing
+workdir=`pwd`
+tbdir=$workdir/tbdir
+[ -d $tbdir ] || mkdir $tbdir
+[ -h $tbdir/$exp.codes ] ||
+    ( cd $tbdir && ln -s $workdir/$exp.codes . )
+[ -d $workdir/tarballs ] || mkdir $workdir/tarballs
 
 echo ''
 echo proj is $proj
 echo jobs is $jobs
+echo workdir $workdir
 echo ''
 
 # do the haxp thing which is similar to the swin case common to
 # both pathways above...however we need some additional setup to
 # work in the tarball directory rather than the v$vers dir
+# this block of code was developmental and is deprecated
 $haxp && {
-    cd ../v${vers}tb
+    cd $tbdir
     $echo pwd
-    [ -h $exp.codes ] || [ $echo = echo ] ||
-        ln -s ../v${vers}p${iter}/$exp.codes .
     $echo ls -l $exp.codes
     newjobs=''
-    for j in $jobs ; do newjobs="$newjobs ../v${vers}/$j" ; done
+    for j in $jobs ; do newjobs="$newjobs ${dout}/$j" ; done
     $echo \
     $ehtc/ehtc-tarballs.sh tar=haxp \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
         save=true label=$label relv=$relv \
-        dest=./tarballs target=$targ jobs $newjobs
-    cd ../v${vers}p${iter}
-    $echo pwd
+        dest=$workdir/tarballs target=$targ jobs $newjobs
     exit 0
 }
 
@@ -79,16 +86,22 @@ $haxp && {
 [ $proj = na ] && {
     # non-ALMA case
     $echo \
-    cd ../v${vers}tb
+    cd $tbdir
     $echo pwd
     $echo \
     $ehtc/ehtc-tarballs.sh tar=post-corr \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
         save=true label=$label relv=$relv \
-        dest=./tarballs src=$dout jobs $jobs
+        dest=$workdir/tarballs src=$dout jobs $jobs
+    [ -d ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.save ] &&
+      mv ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.save \
+         ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.prev-$$
+    [ -d $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save ] &&
+      mv $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save . ||
+      echo unable to mv $exp-$vers-$subv-$proj-$targ-haxp.$expn.save
     $echo \
-    cd ../v${vers}p${iter}
+    cd $workdir
     $echo pwd
     $echo \
     $ehtc/ehtc-tarballs.sh tar=fits \
@@ -140,16 +153,22 @@ $haxp && {
         save=true label=$label relv=$relv \
         dest=./tarballs target=$targ jobs $jobs
     $echo \
-    cd ../v${vers}tb
+    cd $tbdir
     $echo pwd
     $echo \
     $ehtc/ehtc-tarballs.sh tar=post-corr \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
         save=true label=$label relv=$relv \
-        dest=./tarballs src=$dout jobs $jobs
+        dest=$workdir/tarballs src=$dout jobs $jobs
+    [ -d ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.save ] &&
+      mv ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.save \
+         ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.prev-$$
+    [ -d $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save ] &&
+      mv $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save . ||
+      echo unable to mv $exp-$vers-$subv-$proj-$targ-haxp.$expn.save
     $echo \
-    cd ../v${vers}p${iter}
+    cd $workdir
     $echo pwd
     $ffit && $echo \
     $ehtc/ehtc-tarballs.sh tar=4fit \
@@ -182,6 +201,14 @@ $haxp && {
     }
     true
 }
+
+echo
+trash=`find . -name \*.prev-\*`
+[ -n "$trash" ] && echo You may want to delete these: &&
+    echo 'find . -name \*.prev-\*'
+    echo "$trash" | sed 's/^/  rm -rf /'
+    echo 'Or: find . -name \*.prev-\* -exec rm -rf {} \; -prune'
+echo
 
 #
 # eof

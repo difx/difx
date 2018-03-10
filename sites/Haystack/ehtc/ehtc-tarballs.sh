@@ -66,6 +66,7 @@ require additional information which is also supplied via options:
     flab=<char>     an additional version label for re-fourfitting
     relv=<int>      release version if different from correlation vers
     haxprune=true|false whether to restrict this to ALMA bl or not (true)
+    fitsname=true|false provides a proper output name on FITS files (false)
 
 The d2?? options presume you want to process all input files in \$src
 and will refuse to run if they find that this has already been done.
@@ -187,6 +188,7 @@ nuke=false
 over=false
 save=false
 haxprune=true
+fitsname=false
 label=''
 flab=''
 target=none
@@ -226,6 +228,7 @@ flab=*)   eval "$1" ;;
 relv=*)   eval "$1" ;;
 target=*) eval "$1" ;;
 haxprune=*) eval "$1" ;;
+fitsname=*) eval "$1" ;;
 jobs)    shift ; break ;;
 esac ; shift ; done
 
@@ -260,6 +263,8 @@ $verb && echo '' && echo '' && echo $0 $args | fold && echo ''
     echo over must be true or false ; exit 1; }
 [ "$haxprune" = 'true' -o "$haxprune" = 'false' ] || {
     echo haxprune must be true or false ; exit 1; }
+[ "$fitsname" = 'true' -o "$fitsname" = 'false' ] || {
+    echo fitsname must be true or false ; exit 1; }
 [ -z "$relv" ] && relv=$vers
 $d2m4 && [ "$expn" = '0000' ] && { echo d2m4 is true, need expn; exit 1; }
 [ "$job" = 'nojob' ] && job=$exp
@@ -285,7 +290,7 @@ com2="verb=$verb dest=$dest"
 com3="dry=$dry src=$src"
 com4="copy=$copy job=$job expn=$expn EXP=$EXP d2m4=$d2m4 d2ft=$d2ft"
 com5="over=$over save=$save label=$label target=$target flab=$flab"
-com6="haxprune=$haxprune relv=$relv jobs $jobs"
+com6="haxprune=$haxprune fitsname=$fitsname relv=$relv jobs $jobs"
 
 # verify write permissions in the work directory (for tar creation)
 workdir=`pwd`
@@ -387,6 +392,7 @@ swin)
     ;;
 fits)
     fits=${exp}-${vers}-$subv-$label.fits
+    FITS=${exp}-${vers}-$subv-$label
     $verb && echo making FITS in `pwd`/$fits
     $dry || dotar=true
     tarname=${exp}-${relv}-$subv-$label-fits.tar
@@ -574,26 +580,32 @@ pcin)
     ;;
 fits)
     $verb && echo running difx2fits and moving output to fits directory
-    fog=$fits/difx2fits-${exp}-${vers}-$subv.log
-    [ -d "$fits" ] && {
-        echo `pwd`/$fits exists, but d2ft is true;
-        echo FIX with:  rm -rf `pwd`/$fits
+    $fitsname && fitsout=$fits || fitsout=
+    fog=$fits.work/difx2fits-${exp}-${vers}-$subv.log
+    [ -d "$fits.work" -o -d "$fits" ] && {
+        echo `pwd`/$fits.work or `pwd`/$fits exists, but d2ft is true;
+        echo FIX with:  rm -rf `pwd`/$fits.work `pwd`/$fits
         exit 4;
     }
+    parts="{log,xcb,wts,cpol,apd,apc,acb,jobmatrix,fits}"
     $dry && {
-        echo mkdir $fits
-        echo $d2ftexec $ov $jobs \> $fog
-        echo $EXP* $fits
+        echo mkdir $fits.work
+        echo $d2ftexec $ov $jobs $fitsout \> $fog
+        $fitsname || echo mv $EXP* $fits.work
+        $fitsname && echo mv $FITS.$parts $fits.work
+        echo mv $fits.work $FITS.fits
     } || {
-        mkdir $fits
+        mkdir $fits.work
         $save && savename=$fits.save
         $verb && echo follow difx2fits with: &&
             echo '  'tail -n +1 -f `pwd`/$fog
-        echo $d2ftexec $ov $jobs > $fog
+        echo $d2ftexec $ov $jobs $fitsout > $fog
         echo =================== >> $fog
-        $d2ftexec $ov $jobs >> $fog 2>&1 || {
+        $d2ftexec $ov $jobs $fitsout >> $fog 2>&1 || {
             echo difx2fits failed; exit 4; }
-        mv $EXP* $fits
+        $fitsname || mv $EXP* $fits.work
+        $fitsname && eval mv $FITS.$parts $fits.work
+        mv $fits.work $FITS.fits
         $verb && echo -n disk usage on fits: && du -sh $fits
     }
     ;;
@@ -614,12 +626,11 @@ hops|hmix|haxp)
         echo $d2m4exec $ov -e $expn -s $exp.codes $jobs \> $dog
     } || {
         mkdir $expn
-        $verb && echo savename is $savename and work is $work
         part=''
         [ "$work" = haxp ] && part='-haxp'
         [ "$work" = hmix ] && part='-hmix'
         $save && savename=$exp-$vers-$subv-$label$part.$expn.save
-        $verb && echo savename is $savename
+        $verb && echo savename is $savename and work is $work
         $verb && echo follow difx2mark4 with: &&
             echo '  'tail -n +1 -f `pwd`/$dog
         echo $d2m4exec $ov -e $expn -s $exp.codes $jobs > $dog
@@ -764,16 +775,16 @@ $copy && {
 
 $save && [ -n "$savename" ] && case $work in
 fits)
-    [ -d $savename ] && mv $savename $savename.prev
+    [ -d $savename ] && mv $savename $savename.prev-$$
     [ -d $fits ] && mv $fits $savename
     ;;
 hops|hmix|haxp)
-    [ -d $savename ] && mv $savename $savename.prev
+    [ -d $savename ] && mv $savename $savename.prev-$$
     [ -d $expn ] && mv $expn $savename
     [ -d $expn.orig ] && mv $expn.orig $expn
     ;;
 4fit-4fit)
-    [ -d $savename ] && mv $savename $savename.prev
+    [ -d $savename ] && mv $savename $savename.prev-$$
     [ -d $expn ] && mv $expn $savename
     ;;
 esac

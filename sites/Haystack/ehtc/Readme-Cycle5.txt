@@ -78,8 +78,6 @@ cd $work/$exp/v${vers}${ctry}p${iter}/$subv
     mkdir $work/$exp/v${vers}${ctry}p${iter}
 [ -d $work/$exp/v${vers}${ctry}p${iter}/$subv ] ||
     mkdir $work/$exp/v${vers}${ctry}p${iter}/$subv
-[ -d $work/$exp/v${vers}tb ] ||
-    mkdir $work/$exp/v${vers}tb
 [ -d $release ] || mkdir $release
 cd $work/$exp/v${vers}${ctry}p${iter}/$subv
 
