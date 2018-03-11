@@ -61,6 +61,10 @@ echo jobs is $jobs
 echo workdir $workdir
 echo ''
 
+# allows fitsname to be true or false from the environment
+[ -n "$fitsname" ] && [ "$fitsname" = true -o "$fitsname" = false ] &&
+    fn=fitsname=$fitsname || fn=''
+
 # do the haxp thing which is similar to the swin case common to
 # both pathways above...however we need some additional setup to
 # work in the tarball directory rather than the v$vers dir
@@ -107,7 +111,7 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=fits \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label relv=$relv \
+        save=true label=$label relv=$relv $fn \
         dest=./tarballs target=$targ jobs $jobs
     $echo \
     $ehtc/ehtc-tarballs.sh tar=hops \
@@ -150,7 +154,7 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=post-alma \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label relv=$relv \
+        save=true label=$label relv=$relv $fn \
         dest=./tarballs target=$targ jobs $jobs
     $echo \
     cd $tbdir
@@ -161,12 +165,14 @@ $haxp && {
         expn=$expn nuke=true over=true \
         save=true label=$label relv=$relv \
         dest=$workdir/tarballs src=$dout jobs $jobs
-    [ -d ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.save ] &&
-      mv ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.save \
-         ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.prev-$$
-    [ -d $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save ] &&
-      mv $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save . ||
-      echo unable to mv $exp-$vers-$subv-$proj-$targ-haxp.$expn.save
+    [ "$echo" = eval ] && {
+        [ -d ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.save ] &&
+          mv ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.save \
+             ./$exp-$vers-$subv-$proj-$targ-haxp.$expn.prev-$$
+        [ -d $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save ] &&
+          mv $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save . ||
+          echo unable to mv $exp-$vers-$subv-$proj-$targ-haxp.$expn.save
+    } || echo mv $dout/$exp-$vers-$subv-$proj-$targ-haxp.$expn.save .
     $echo \
     cd $workdir
     $echo pwd
@@ -205,9 +211,9 @@ $haxp && {
 echo
 trash=`find . -name \*.prev-\*`
 [ -n "$trash" ] && echo You may want to delete these: &&
-    echo 'find . -name \*.prev-\*'
-    echo "$trash" | sed 's/^/  rm -rf /'
-    echo 'Or: find . -name \*.prev-\* -exec rm -rf {} \; -prune'
+    echo 'find . -name \*.prev-\*' &&
+    echo "$trash" | sed 's/^/  rm -rf /' &&
+    echo 'Or: find . -name \*.prev-\* -exec rm -rf {} \; -prune' &&
 echo
 
 #

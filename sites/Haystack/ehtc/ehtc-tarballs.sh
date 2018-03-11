@@ -579,23 +579,27 @@ pcin)
     delete="SourceList-$label.txt SideBand-$label.txt Jobs-$label.txt"
     ;;
 fits)
+    # the problem here is that the directory needs to be named .fits
+    # to correspond to the other packages, but that name is also used
+    # for the FITS file generated in this directory.
     $verb && echo running difx2fits and moving output to fits directory
     $fitsname && fitsout=$fits || fitsout=
-    fog=$fits.work/difx2fits-${exp}-${vers}-$subv.log
-    [ -d "$fits.work" -o -d "$fits" ] && {
-        echo `pwd`/$fits.work or `pwd`/$fits exists, but d2ft is true;
-        echo FIX with:  rm -rf `pwd`/$fits.work `pwd`/$fits
+    fog=$FITS.work/difx2fits-${exp}-${vers}-$subv.log
+    [ $FITS.fits = $fits ] || { echo developer error ; exit 5; }
+    [ -d "$FITS.work" -o -d "$fits" ] && {
+        echo `pwd`/$FITS.work or `pwd`/$fits exists, but d2ft is true;
+        echo FIX with:  rm -rf `pwd`/$FITS.work `pwd`/$fits
         exit 4;
     }
-    parts="{log,xcb,wts,cpol,apd,apc,acb,jobmatrix,fits}"
+    parts="{log,xcb,wts,cpol,apd,apc,acb,jobmatrix,fits,fits_setup*}"
     $dry && {
-        echo mkdir $fits.work
+        echo mkdir $FITS.work
         echo $d2ftexec $ov $jobs $fitsout \> $fog
-        $fitsname || echo mv $EXP* $fits.work
-        $fitsname && echo mv $FITS.$parts $fits.work
-        echo mv $fits.work $FITS.fits
+        $fitsname || echo mv $EXP* $FITS.work
+        $fitsname && echo mv $FITS*$parts $FITS.work
+        echo mv $FITS.work $FITS.fits
     } || {
-        mkdir $fits.work
+        mkdir $FITS.work
         $save && savename=$fits.save
         $verb && echo follow difx2fits with: &&
             echo '  'tail -n +1 -f `pwd`/$fog
@@ -603,10 +607,10 @@ fits)
         echo =================== >> $fog
         $d2ftexec $ov $jobs $fitsout >> $fog 2>&1 || {
             echo difx2fits failed; exit 4; }
-        $fitsname || mv $EXP* $fits.work
-        $fitsname && eval mv $FITS.$parts $fits.work
-        mv $fits.work $FITS.fits
-        $verb && echo -n disk usage on fits: && du -sh $fits
+        $fitsname || mv $EXP* $FITS.work
+        $fitsname && eval mv $FITS*$parts $FITS.work
+        mv $FITS.work $FITS.fits
+        $verb && echo -n disk usage on fits: && du -sh $FITS.$fits
     }
     ;;
 hops|hmix|haxp)
