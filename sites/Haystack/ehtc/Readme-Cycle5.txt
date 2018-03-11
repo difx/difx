@@ -1,21 +1,22 @@
 #
-# Canned instructions for polconversion and packaging for Jan DR 2018.
+# Instructions for polconversion/packaging for <Observation><Band>
 #
-# This version is appropriate to Cycle5 onwards
+# This version is appropriate to Cycle5 (b1..b4)
 # The template for this file is in:     $ehtc/Readme-Cycle5.txt
-# rename it to:      $exp-$subv-v${vers}${ctry}p${iter}.logfile
+# rename it to:      $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile
 #
 # Make a copy for each band/track and customize the environment
 # variables at the top of the ENVIRONMENT section.
 #
 
 # ENVIRONMENT =====================
-# go to working host and setup tools -- different per site
+# go to working host and setup versioned tools -- different per site
 to eht
 casadev   # alias that adds CASA 4.7.2 bin to PATH
+#source /swc/difx/setup-DiFX-2.5.2.bash
 #source /swc/difx/setup-DiFX-2.5.bash
 source /swc/difx/setup-difx.bash
-#source /swc/difx/difx-root-18Jan09/setup-difx.bash
+#source /swc/difx/difx-root-YYmonDD/setup-difx.bash
 #source /swc/hops/hops.bash
 source $DIFXROOT/bin/hops.bash
 
@@ -31,34 +32,35 @@ export corr=/data-sc15/difxoper
 export work=/data-sc15/difxoper
 
 # principal vars for tracking all the revisions and forth
-export exp=e18j28
+export exp=e18...
 export vers=1
 export ctry=''
 export subv=b1
 export iter=1
 export relv=1
 export flab=''
-export expn=3635
+export expn=3...
 
-# the polconvert variables
-export pcal=2017_7CSV
+# polconvert variables and other option variables
+export pcal=TRACK_?                            # per QA2 delivery
 export pdir=$hays/$exp/$exp-$vers/qa2
-export dpfu=0.0308574
-export scmp='PV,MG,SW,AQ,LM,SR,SZ'
-export opts="-r -P15 -S $scmp -f 4 -A $dpfu -q v4"
+export dpfu=0.0308574                          # ave over session
+export scmp='PV,MG,SW,AQ,LM,SR,SZ'             # cycle5
+export opts="-r -P15 -S $scmp -f 4 -A $dpfu"   # -q v4 if needed
+export fitsname=false
 
 # derived vars
 export release=$arch/$exp/$exp-$relv
 export dout=$corr/$exp/v${vers}$ctry/$subv
 export evs=$exp-$vers-$subv
 export ers=$exp-$relv-$subv
-export ptar=${pcal}.APP_DELIVERABLES.tgz
+export ptar=$pcal.APP_DELIVERABLES.tgz
 
 # check:
 [ `( 
 echo =============================================================== && \
 echo $exp $vers .$ctry. $subv $iter $relv .$flab. $expn && \
-echo $evs $ers $opts && \
+echo $evs $ers $opts $fitsname && \
 echo $dout && \
 echo $ptar $pcal && \
 echo $pdir && \
@@ -68,7 +70,7 @@ type casa && \
 type mpifxcorr && \
 type fourfit && \
 echo =============================================================== 
-) | wc -w` -eq 37 ] && echo variables are ok || echo issue with variables
+) | wc -w` -eq 36 ] && echo variables are ok || echo issue with variables
 
 # Nth TIME SETUP =================
 cd $work/$exp/v${vers}${ctry}p${iter}/$subv
@@ -93,13 +95,11 @@ cd $work/$exp/v${vers}${ctry}p${iter}/$subv
 # link in QA2 for this band
 for d in ../qa2/$pcal.* ; do ln -s $d . ; done
 
+ls -ld $pcal.*
 cp -p $ehtc/ehtc-template.codes $exp.codes
 cp -p $dout/*vex.obs .
 
-# if haxp is to be generated -- this is the default:
-cp -p $exp.codes $dout
-# and it works in $dout so save this or bad things may happen
-ls -ld $dout/$expn
+# haxp is generated in $dout so preserve $expn if found:
 [ -d $dout/$expn ] && mv $dout/$expn $dout/$expn.save
 
 # clean slate fourfit control file
@@ -119,6 +119,7 @@ EOF
 ff_conf=`ls -t $corr/$exp/v${vers}*p*/$evs.conf | head -1`
 ff_conf=`ls -t $work/$exp/v${vers}*p*/$evs.conf | head -1`
 [ -f "$ff_conf" ] && cp -p $ff_conf . && ls -l $evs.conf
+# rename to the release version
 mv $evs.conf $ers.conf
 
 # generate TODO list with:
@@ -127,7 +128,7 @@ $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G
 # maintain notes while you execute and post this file periodically to
 [ -d $release/logs ] || mkdir $release/logs
 # verify that this file is:
-# $exp-$subv-v${vers}${ctry}p${iter}.logfile
+# $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile
 
 # GENERAL PROCESSING TEMPLATE ======================
 export proj=yyy targ=XXX class=cal|sci
@@ -135,28 +136,27 @@ export label=$proj-$targ
 export jselect="-p $proj -s $targ"
 eval `$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs $jselect -J`
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs $jselect -R
-# review list of jobs, review $scmp, $opts
+# review list of jobs and paste into logfile, review $scmp, $opts
+# pull over data and evaluate partitioning of job list
 prepolconvert.py -v -k -s $dout $jobs
-# evaluate partitioning of job list (use -v if error)
 $ehtc/ehtc-zoomchk.py -v $jobs
-# subdivide $jobs as necessary, do the polconvert on each set of $jobs
+# subdivide $jobs as instructed and do the polconvert on each set of $jobs
 drivepolconvert.py -v $opts -l $pcal $jobs
 # evaluate results on full set of $jobs--look at ALL_IFs plots; then
 #--------------------------------------------------------------------------
 # A: until you have the fourfit control file built:
-# cd $expn ; $ehtc/est_manual_phases.py -c $evs.conf <root> ; cd ..
 $ehtc/ehtc-postdrive.sh echo false $jobs
 $ehtc/ehtc-postdrive.sh eval false $jobs
+# ie.: cd $expn ; $ehtc/est_manual_phases.py -c $evs.conf <root> ; cd ..
 # B: thereafter, where you just re-use it.
 $ehtc/ehtc-postdrive.sh echo $jobs
 $ehtc/ehtc-postdrive.sh eval $jobs
-# C: any other products  (e.g. other FITS, as TBD; haxp is now done above)
 #--------------------------------------------------------------------------
 # archive to output (after reviewing/checking some of the products)
 ls -lh ./tarballs/*
 [ -d $release/$proj-$class ] || mkdir $release/$proj-$class
 mv ./tarballs/* $release/$proj-$class
-ls -lh $release/$proj-$class/$evs-$proj-$targ*tar
+ls -lh $release/$proj-$class/$ers-$proj-$targ*tar
 # send email to GBC if tarballs are to be released outside of Corr WG
 
 # EXECUTION NOTES ======================
@@ -171,8 +171,8 @@ ls -lh $release/$proj-$class/$evs-$proj-$targ*tar
 
 #--------------------------------------------------------------------------
 # save logfile incrementally or when done:
-cp -p $exp-$subv-v${vers}${ctry}p${iter}.logfile $release/logs
-# check on progress/missing scans:
+cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
+# check on progress/missing scans (incrementally or when done):
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K
 
 # TODO list ======================
@@ -181,6 +181,7 @@ $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K
 # Cleanup list ======================
 # after tarballs are delivered and you want to recover disk space
 rm -rf $exp-$vers-${subv}_*.save
+rm -rf $exp-$relv-${subv}_*.save
 
 #
 # eof

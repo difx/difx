@@ -10,7 +10,8 @@ The main options are (with defaults in parentheses)
 
     dry=true|false    to do it or to just say it (false)
     exp=<exp>         experiment name (required)
-    vers=<vers>       processing version (required)
+    vers=<vers>       correlator processing version (required)
+    relv=<int>        release version (required if not correlation vers)
     subv=<subv>       and subversion (1)
     dest=<dir>        the destination directory (.)
     src=<dir>         the directory holding data (.)
@@ -64,7 +65,6 @@ require additional information which is also supplied via options:
     save=true|false save products that might get nuked (false)
     label=<string>  an additional token to be included in tarnames
     flab=<char>     an additional version label for re-fourfitting
-    relv=<int>      release version if different from correlation vers
     haxprune=true|false whether to restrict this to ALMA bl or not (true)
     fitsname=true|false provides a proper output name on FITS files (false)
 
@@ -285,12 +285,12 @@ EXP=`echo $exp | tr a-z A-Z`
 }
 
 # variables passed to group tasks
-com1="nuke=$nuke exp=$exp vers=$vers subv=$subv"
+com1="nuke=$nuke exp=$exp vers=$vers subv=$subv relv=$relv"
 com2="verb=$verb dest=$dest"
 com3="dry=$dry src=$src"
 com4="copy=$copy job=$job expn=$expn EXP=$EXP d2m4=$d2m4 d2ft=$d2ft"
 com5="over=$over save=$save label=$label target=$target flab=$flab"
-com6="haxprune=$haxprune fitsname=$fitsname relv=$relv jobs $jobs"
+com6="haxprune=$haxprune fitsname=$fitsname jobs $jobs"
 
 # verify write permissions in the work directory (for tar creation)
 workdir=`pwd`
@@ -391,8 +391,8 @@ swin)
     done
     ;;
 fits)
-    fits=${exp}-${vers}-$subv-$label.fits
-    FITS=${exp}-${vers}-$subv-$label
+    fits=${exp}-${relv}-$subv-$label.fits
+    FITS=${exp}-${relv}-$subv-$label
     $verb && echo making FITS in `pwd`/$fits
     $dry || dotar=true
     tarname=${exp}-${relv}-$subv-$label-fits.tar
@@ -455,14 +455,14 @@ pcqk)
 4fit)
     $verb && echo fourfitting in `pwd`
     # try release version first
-    ffconf=$exp-$relv-$subv.conf
+    ffconf=${exp}-${relv}-${subv}.conf
     # fall back to correlator version
-    [ -f $ffconf ] || ffconf=$exp-$vers-$subv.conf
+    [ -f $ffconf ] || ffconf=${exp}-${vers}-${subv}.conf
     [ -f $ffconf ] || { echo no config file for fourfitting ; exit 3 ; }
     [ -d $expn ] && work=4fit-4fit || work=4fit-prep
     [ $work = 4fit-prep ] && tarname=''
     [ $work = 4fit-4fit ] &&
-        tarname=${exp}-${relv}-$subv-$label-4fit$flab.tar &&
+        tarname=${exp}-${relv}-${subv}-$label-4fit$flab.tar &&
         $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
                  rm -f $workdir/logs/$tarname.log
     [ $work = 4fit-4fit ] && $dry || dotar=true
@@ -584,7 +584,7 @@ fits)
     # for the FITS file generated in this directory.
     $verb && echo running difx2fits and moving output to fits directory
     $fitsname && fitsout=$fits || fitsout=
-    fog=$FITS.work/difx2fits-${exp}-${vers}-$subv.log
+    fog=$FITS.work/difx2fits-${exp}-${relv}-$subv.log
     [ $FITS.fits = $fits ] || { echo developer error ; exit 5; }
     [ -d "$FITS.work" -o -d "$fits" ] && {
         echo `pwd`/$FITS.work or `pwd`/$fits exists, but d2ft is true;
@@ -610,12 +610,12 @@ fits)
         $fitsname || mv $EXP* $FITS.work
         $fitsname && eval mv $FITS*$parts $FITS.work
         mv $FITS.work $FITS.fits
-        $verb && echo -n disk usage on fits: && du -sh $FITS.$fits
+        $verb && echo -n disk usage on fits: && du -sh $FITS.fits
     }
     ;;
 hops|hmix|haxp)
     $verb && echo running difx2mark4 for $expn in `pwd` with $exp.codes
-    dog=$expn/difx2mark4-${exp}-${vers}-$subv.log
+    dog=$expn/difx2mark4-${exp}-${relv}-$subv.log
     [ -d "$expn" ] && {
         echo `pwd`/$expn exists, but d2m4 is true;
         echo FIX with:  rm -rf `pwd`/$expn
@@ -633,7 +633,7 @@ hops|hmix|haxp)
         part=''
         [ "$work" = haxp ] && part='-haxp'
         [ "$work" = hmix ] && part='-hmix'
-        $save && savename=$exp-$vers-$subv-$label$part.$expn.save
+        $save && savename=${exp}-${relv}-${subv}-$label$part.$expn.save
         $verb && echo savename is $savename and work is $work
         $verb && echo follow difx2mark4 with: &&
             echo '  'tail -n +1 -f `pwd`/$dog
@@ -652,8 +652,8 @@ hops|hmix|haxp)
     ;;
 4fit-prep)
     $verb && echo prepping fourfit for $expn in `pwd` with $ffconf
-    [ -d $exp-$vers-$subv-$label.$expn.save ] && {
-        cdata=$exp-$vers-$subv-$label.$expn.save 
+    [ -d $exp-$relv-$subv-$label.$expn.save ] && {
+        cdata=$exp-$relv-$subv-$label.$expn.save 
     } || {
         echo No correlated data found for fourfit ; exit 4
     }
@@ -715,13 +715,13 @@ hops|hmix|haxp)
     done
     wait
     echo Making alist
-    alist -v6 -o $exp-$vers-$subv-$label.alist * \
-        > $exp-$vers-$subv-$label.alist.warnings 2>&1
-    ls -l $exp-$vers-$subv-$label.alist
+    alist -v6 -o $exp-$relv-$subv-$label.alist * \
+        > $exp-$relv-$subv-$label.alist.warnings 2>&1
+    ls -l $exp-$relv-$subv-$label.alist
     echo Removing symlinks prior to tarballing
     cd $workdir
     find $expn -type l -exec rm {} \;
-    savename=$exp-$vers-$subv-$label-4fit$flab.$expn.save
+    savename=$exp-$relv-$subv-$label-4fit$flab.$expn.save
     echo savename is $savename
     ;;
 esac
@@ -732,9 +732,9 @@ esac
     [ -d $expn ] || {
         echo We have missing dir $expn when we should have it ; exit 4
     }
-    [ "$savename" = $exp-$vers-$subv-$label-haxp.$expn.save ] || {
+    [ "$savename" = $exp-$relv-$subv-$label-haxp.$expn.save ] || {
         echo savename issue: $savename
-        echo savename issue: $exp-$vers-$subv-$label-haxp.$expn.save
+        echo savename issue: $exp-$relv-$subv-$label-haxp.$expn.save
         echo Internal logic error...check savename and dirs...
         # bailing ; exit 4
     }

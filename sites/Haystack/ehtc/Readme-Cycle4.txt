@@ -1,19 +1,22 @@
 #
 # Canned instructions for polconversion and packaging for ...
 #
-# This version is appropriate to Cycle4 through Rev3
+# This version is appropriate to Cycle4 following Rev3
+# The template for this file is in:     $ehtc/Readme-Cycle4.txt
+# rename it to:      $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile
 #
 # Make a copy for each band/track and customize the environment
 # variables at the top of the ENVIRONMENT section.
 #
 
 # ENVIRONMENT =====================
-# go to working host and setup tools -- different per site
+# go to working host and setup versioned tools -- different per site
 to eht
 casadev   # alias that adds CASA 4.7.2 bin to PATH
+source /swc/difx/setup-DiFX-2.5.2.bash
 #source /swc/difx/setup-DiFX-2.5.bash
 #source /swc/difx/setup-difx.bash
-source /swc/difx/difx-root-18Jan09/setup-difx.bash
+#source /swc/difx/difx-root-18Jan09/setup-difx.bash
 #source /swc/hops/hops.bash
 source $DIFXROOT/bin/hops.bash
 
@@ -29,33 +32,35 @@ export corr=/data-sc05/difxoper
 export work=/data-sc15/difxoper
 
 # principal vars for tracking all the revisions and forth
-export exp=e17d05
+export exp=e17...
 export vers=3
 export ctry=''
 export subv=lo
-export iter=2
-export relv=3
+export iter=5
+export relv=4
 export flab=''
-export expn=3597
+export expn=3...
 
-# the polconvert variables
-export pcal=TRACK_D
+# polconvert variables and other option variables
+export pcal=TRACK_?
 export pdir=$hays/$exp/$exp-$vers/qa2
 export dpfu=0.0308574
 export scmp='PV,AZ,SM,AP,LM,SR,SP'
-export opts="-r -S $scmp -f 4 -A $dpfu"
+export opts="-r -P15 -S $scmp -f 4 -A $dpfu"
+export fitsname=false
 
 # derived vars
 export release=$arch/$exp/$exp-$relv
 export dout=$corr/$exp/v${vers}$ctry
 export evs=$exp-$vers-$subv
+export ers=$exp-$relv-$subv
 export ptar=$pcal.APP_DELIVERABLES.tgz
 
 # check:
 [ `( 
 echo =============================================================== && \
 echo $exp $vers .$ctry. $subv $iter $relv .$flab. $expn && \
-echo $evs $opts && \
+echo $evs $ers $opts $fitsname && \
 echo $dout && \
 echo $ptar $pcal && \
 echo $pdir && \
@@ -65,7 +70,7 @@ type casa && \
 type mpifxcorr && \
 type fourfit && \
 echo =============================================================== 
-) | wc -w` -eq 33 ] && echo variables are ok || echo issue with variables
+) | wc -w` -eq 36 ] && echo variables are ok || echo issue with variables
 
 # Nth TIME SETUP =================
 cd $work/$exp/v${vers}${ctry}p${iter}
@@ -73,15 +78,16 @@ cd $work/$exp/v${vers}${ctry}p${iter}
 # ONE TIME SETUP =================
 [ -d $work/$exp/v${vers}${ctry}p${iter} ] ||
     mkdir $work/$exp/v${vers}${ctry}p${iter}
-[ -d $work/$exp/v${vers}tb ] ||
-    mkdir $work/$exp/v${vers}tb
 [ -d $release ] || mkdir $release
 cd $work/$exp/v${vers}${ctry}p${iter}
 tar zxf $pdir/$ptar
 
-cp -p $ehtc/ehtc-template.codes $exp.codes
+ls -ld $pcal.*
+cp -p $ehtc/ehtc-cycle4.codes $exp.codes
 cp -p $dout/*vex.obs .
-# cp -p $dout/*joblist .
+
+# haxp is generated in $dout so preserve $expn if found:
+[ -d $dout/$expn ] && mv $dout/$expn $dout/$expn.save
 
 # clean slate fourfit control file
 cat > $evs.conf <<EOF
@@ -97,22 +103,19 @@ dr_win -0.000001 0.000001
 * adjustments follow
 EOF
 # may need to edit the above or just use one of these
-ff_conf=`ls -tr $corr/$exp/v${vers}*p*/$evs.conf | head -1`
-ff_conf=`ls -tr $work/$exp/v${vers}*p*/$evs.conf | head -1`
+ff_conf=`ls -t $corr/$exp/v${vers}*p*/$evs.conf | head -1`
+ff_conf=`ls -t $work/$exp/v${vers}*p*/$evs.conf | head -1`
 [ -f "$ff_conf" ] && cp -p $ff_conf . && ls -l $evs.conf
-
-# if haxp is to be generated
-cp -p $exp.codes $dout
-
-# move this aside if it exists:
-ls -ld $dout/$expn
-mv $dout/$expn $dout/$expn.save
+# rename to the release version
+mv $evs.conf $ers.conf
 
 # generate TODO list with:
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G
 
 # maintain notes while you execute and post this file periodically to
 [ -d $release/logs ] || mkdir $release/logs
+# verify that this file is:
+# $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile
 
 # GENERAL PROCESSING TEMPLATE ======================
 export proj=yyy targ=XXX class=cal|sci
@@ -120,28 +123,27 @@ export label=$proj-$targ
 export jselect="-p $proj -s $targ"
 eval `$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs $jselect -J`
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs $jselect -R
-# review list of jobs, review $scmp, $opts
+# review list of jobs and paste into logfile, review $scmp, $opts
+# pull over data and evaluate partitioning of job list
 prepolconvert.py -v -k -s $dout $jobs
-# evaluate partitioning of job list (use -v if error)
 $ehtc/ehtc-zoomchk.py -v $jobs
-# subdivide $jobs as necessary, do the polconvert on each set of $jobs
+# subdivide $jobs as instructed and do the polconvert on each set of $jobs
 drivepolconvert.py -v $opts -l $pcal $jobs
 # evaluate results on full set of $jobs--look at ALL_IFs plots; then
 #--------------------------------------------------------------------------
 # A: until you have the fourfit control file built:
-# cd $expn ; $ehtc/est_manual_phases.py -c $evs.conf <root> ; cd ..
 $ehtc/ehtc-postdrive.sh echo false $jobs
 $ehtc/ehtc-postdrive.sh eval false $jobs
+# ie.: cd $expn ; $ehtc/est_manual_phases.py -c $evs.conf <root> ; cd ..
 # B: thereafter, where you just re-use it.
 $ehtc/ehtc-postdrive.sh echo $jobs
 $ehtc/ehtc-postdrive.sh eval $jobs
-# C: any other products  (e.g. other FITS, as TBD; haxp is now done above)
 #--------------------------------------------------------------------------
 # archive to output (after reviewing/checking some of the products)
-ls -lh ../*/tarballs/*
+ls -lh ./tarballs/*
 [ -d $release/$proj-$class ] || mkdir $release/$proj-$class
-mv ../*/tarballs/* $release/$proj-$class
-ls -lh $release/$proj-$class/$evs-$proj-$targ*tar
+mv ./tarballs/* $release/$proj-$class
+ls -lh $release/$proj-$class/$ers-$proj-$targ*tar
 # send email to GBC if tarballs are to be released outside of Corr WG
 
 # EXECUTION NOTES ======================
@@ -150,18 +152,23 @@ ls -lh $release/$proj-$class/$evs-$proj-$targ*tar
 # pause to observe correct progress and make comments:
 #   # ... details of interest to correlator folks
 #   ###  important messages that can be grepped out to make a summary
+#--------------------------------------------------------------------------
+
+<<<log of commands goes here>>>
 
 #--------------------------------------------------------------------------
-# done.
-# save logfile:
-# cp -p $exp-$subv-v${vers}${ctry}p${iter}.logfile $release/logs
-#
-#--------------------------------------------------------------------------
+# save logfile incrementally or when done:
+cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
+# check on progress/missing scans (incrementally or when done):
+$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K
+
 # TODO list ======================
 # $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G
 
 # Cleanup list ======================
+# after tarballs are delivered and you want to recover disk space
 rm -rf $exp-$vers-${subv}_*.save
+rm -rf $exp-$relv-${subv}_*.save
 
 #
 # eof
