@@ -39,7 +39,10 @@ def parseOptions():
     epi += 'Diagnostic plots of per-IF fringes is controlled with the '
     epi += '-f option; if used -m, -S, -X and -T become relevant.  In '
     epi += 'particular, with -T, no conversion is written to disk, '
-    epi += 'but all of the diagnostic plots are made and saved.'
+    epi += 'but all of the diagnostic plots are made and saved. '
+    epi += 'Parallelization is possible with the -P option.  In the event '
+    epi += 'of problematic jobs, remove them from your list and deal with '
+    epi += 'them individually.'
     use = '%(prog)s [options] [input_file [...]]\n  Version'
     use += '$Id$'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
@@ -316,6 +319,7 @@ def deduceZoomIndicies(o):
     in runpolconvert) switches to o.remotelist assuming it is of the
     proper length.  This should solve poor plotting choices.
     '''
+    # Todo: fix for the case antenna needing work isn't telescope 0/AA
     sitelist = o.sites.split(',')
     if o.verb: print 'Sitelist is',sitelist
     o.remotelist = []
@@ -327,9 +331,9 @@ def deduceZoomIndicies(o):
     zfinal = set()
     mfqlst = set()
     antmap = {}
-    almaline = ''
-    plotant = -1
+    newargs = []
     for jobin in o.nargs:
+        almaline = ''
         zfir = ''
         zfin = ''
         cfrq = []
@@ -346,14 +350,32 @@ def deduceZoomIndicies(o):
             amap = amap_re.search(line)
             if amap:
                 antmap[amap.group(2)] = int(amap.group(1))
+        ji.close()
+
+        # cull jobs that do not appear to have AA as telescope 0
+        if almaline == '':
+            issue = True
+            for jn in o.jobnums:
+                if '_' + str(jn) + '.input' in jobin:
+                    print 'ALMA not in',jobin,', skipping (',jn,')'
+                    o.jobnums.remove(jn)
+                    issue = False
+                    break
+            if issue: raise Exception, 'Unable to purge job ' + jobin
+            else:     continue
+        else:
+            print 'Found ALMA in',jobin,almaline.rstrip()
+            newargs.append(jobin)
+
+        # print workout plot ant for this job
+        plotant = -1
         for site in sitelist:
             if site in antmap:
                 plotant = antmap[site] + 1
                 break
         o.remotelist.append(plotant)
-        plotant = -1
         antmap = {}
-        ji.close()
+
         if o.verb: print 'Zoom bands %s..%s from %s' % (zfir, zfin, jobin)
         if len(cfrq) < 1:
             raise Exception, 'Very odd, no frequencies in input file ' + jobin
@@ -361,6 +383,8 @@ def deduceZoomIndicies(o):
         zfirst.add(zfir)
         zfinal.add(zfin)
         mfqlst.add(cfrq[len(cfrq)/2])
+
+    o.nargs = newargs
     if len(zfirst) != 1 or len(zfinal) != 1:
         if o.zmchk:
             raise Exception, ('Encountered ambiguities in zoom freq ranges: ' +
@@ -372,13 +396,13 @@ def deduceZoomIndicies(o):
     if o.verb: print 'Zoom frequency indices %d..%d found in %s\n  ..%s' % (
         o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
     # This could be relaxed to allow AA to be not 0 using antmap
-    if o.verb: print 'Alma search pattern: "' + str(almapatt) + '"'
-    if almaline == '':
-        raise Exception, 'Telescope Name 0 is not Alma (AA)'
-    if o.verb: print 'Found ALMA Telescope line: ' + almaline.rstrip()
-    if o.verb: print 'Remote antenna index is', o.remote
+    #if o.verb: print 'Alma search pattern: "' + str(almapatt) + '"'
+    #if almaline == '':
+    #    raise Exception, 'Telescope Name 0 is not Alma (AA)'
+    #if o.verb: print 'Found ALMA Telescope line: ' + almaline.rstrip()
+    #if o.verb: print 'Remote antenna index is', o.remote
     if (len(o.remotelist) != len(o.nargs)): o.remotelist = []
-    if o.verb: print 'Remote antenna list is',o.remotelist
+    if o.verb: print 'Remote antenna list is',o.remotelist,'index is',o.remote
     # if the user supplied a band, check that it agrees
     if len(mfqlst) > 1:
         raise Exception, ('Input files have disparate frequency structures:\n'
