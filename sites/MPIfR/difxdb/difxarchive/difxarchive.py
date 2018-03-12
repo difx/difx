@@ -12,14 +12,13 @@
 #
 #============================================================================
 
-import gzip
+import tarfile
 import pexpect
 import os
 import sys
 import re
 import time
 import datetime
-import shutil
 import subprocess
 import getpass
 import glob
@@ -74,22 +73,35 @@ def exitOnError(exception):
 	Exit routine to be called whenever an error/exception has occured
 	'''
         print exception
+
         logger.error(exception)
 	
         # destroy kerberos tickets
-        destroyTicket()
+        #destroyTicket()
 
         logger.info("Aborting")
+        cleanup()
         
 	exit(1)
 
+def renewTicket(user):
+    '''
+    renews the kerberos ticket (needed for jobs that run for a very long time
+    '''
+    cmd = '/usr/bin/kinit -R %s@%s' % (user, krbDomain)
+    kinit = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    kinit.wait()
+
 def getTicket(user):
+    '''
+    obtains a kerberos ticket for the given user
+    '''
     
     logger.info ("Obtaining kerberos ticket for user %s" % user)
     password = getpass.getpass("Enter password for user %s:" % (user))
     
     kinit = '/usr/bin/kinit'
-    kinit_args = [ kinit, '%s@%s' % (user,krbDomain) ]
+    kinit_args = [ kinit, '-l 48h', '-r 30d','%s@%s' % (user,krbDomain) ]
     kinit = Popen(kinit_args, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     kinit.stdin.write('%s\n' % password)
     kinit.wait()
@@ -125,14 +137,12 @@ def readConfig():
     
     return (config)
 
-def getTransferFileCount(source, destination, options=""):
+def getTransferFileCount(source, destination, rsyncOptions=""):
 	
-    cmd = 'rsync -az --stats --dry-run %s %s %s' % ( options, source, destination) 
-    proc = subprocess.Popen(cmd,
-                                       shell=True,
-                                       stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE,
-                                       )
+    cmd = 'rsync -az --stats --dry-run %s %s %s' % ( rsyncOptions, source, destination) 
+    if options.verbose:
+        print "Executing: ", cmd
+    proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     
     remainder = proc.communicate()[0]
     
@@ -234,6 +244,57 @@ def syncReferenceDir(path, referencePath, fileCount, options):
     sys.stdout.write('\n')
     return
 
+def verifyArchive(filename):
+    '''
+    Verifies the tar contents against the file system 
+    '''
+
+    # get archive file info
+    tar = tarfile.open(filename, "r:gz")
+    tarFiles = []
+    tarDirectories = []
+
+    logger.info( "Verifying the contents of the archive %s" % (filename))
+    for tarinfo in tar:
+        # verify file exists in the filesystem
+        if not os.path.exists(tarinfo.name):
+            onErrorExit("The archive contains a file which does not exist in the filesystem: %s" % (tarinfo.name))
+
+        if tarinfo.isreg():
+            tarFiles.append(tarinfo.name)
+            # get info for file in the filesystem
+            statinfo = os.stat(tarinfo.name)
+
+            # verify file sizes
+            if tarinfo.size != statinfo.st_size:
+                onErrorExit( "The archive filesize differs from the filesystem size for file %s" % (tarinfo.name))
+
+            if options.verbose:
+                print "Verifying: ", tarinfo.name, " size=", tarinfo.size, "fs size=", statinfo.st_size, "OK"
+
+        elif tarinfo.isdir():
+            tarDirectories.append(tarinfo.name)
+
+    tar.close()
+
+    logger.info( "Contents of the archive %s OK" % (filename))
+    return tarFiles
+
+def verifyCompleteness(tarfiles, packDir):
+    '''
+    checks that all files in the packDir and subdirectories are contained in the tarfiles
+    '''
+
+    logger.info( "Checking completeness of the archive ")
+    for subdir, dirs, files in os.walk(packDir):
+        for file in files:
+            checkFile = "%s/%s" % (subdir, file)
+            if checkFile not in tarfiles:
+                exitOnError("Disk file %s not found in archive" % (checkFile))
+            if options.verbose:
+                print "Verified that %s is contained in the archive" % (file)
+    logger.info( "Archive is complete" )
+
 def packDirectory(rootPath, packDir, outDir, filename):
 
     zipFile = "%s/%s.gz" % (outDir, filename)
@@ -255,10 +316,10 @@ def packDirectory(rootPath, packDir, outDir, filename):
     else:
         packDir = "%s/%s" % (expDir, packDir)
 
-    filename = "%s/%s" % (outDir, filename)
+#    filename = "%s/%s" % (outDir, filename)
+    filename = zipFile
 
     #print rootPath, packDir, outDir, filename
-
 
     if os.path.isfile(filename):
         exitOnError("File already exists (%s)" % (filename))
@@ -269,41 +330,19 @@ def packDirectory(rootPath, packDir, outDir, filename):
 
     logger.info("Creating tar file %s" % (filename))
     # create tar file
-    command = "tar -cWvf %s %s" % (filename, packDir)
-    #print command
+    #command = "tar -cWvf %s %s" % (filename, packDir)
+    command = '/bin/bash -c "tar -czf - %s | pv -p --timer --rate --bytes > %s"' % (packDir, filename)
+    if options.verbose:
+        print "Executing command: ", command
     os.chdir(baseDir)
     #print baseDir
-    child = pexpect.spawn(command, logfile = sys.stdout)
-    child.expect([pexpect.EOF,pexpect.TIMEOUT])
+    child = pexpect.spawn(command, logfile = sys.stdout, timeout=None)
+    ret = child.expect([pexpect.EOF,pexpect.TIMEOUT, "Error"])
+    if ret != 0:
+        exitOnError("Error creating archive: %s " % (filename))
 
-    logger.info("Finished writing tar file %s" % (filename))
-
-    logger.info("Zipping tar file %s" % (zipFile))
-    try:
-        with open(filename, 'rb') as f_in, gzip.open(zipFile, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-    except:
-        exitOnError("An error has occured while trying to zip %s" % (filename))
-    
-    if not os.path.isfile(zipFile):
-        exitOnError("The zip file has not been created: %s" % (zipFile))
-
-    # now remove the tar file
-    if os.path.isfile(filename):
-        os.remove(filename)
-    
-    # zipping the tar file
-    #errorCount = 0
-    #p = subprocess.Popen(['gzip', filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #for line in iter(p.stderr.readline,''):
-    #    logger.error(line.rstrip())
-    #    errorCount +=1
-    #if errorCount > 0:
-    #    exitOnError("An error has occured while trying to zip %s" % (filename))
-#
-#    for line in iter(p.stdout.readline,''):
-#        logger.info(line.rstrip())
-    logger.info("Finished zipping tar file %s" % (zipFile))
+    tarfiles = verifyArchive(filename)
+    verifyCompleteness(tarfiles, packDir)
 
 def setupLoggers(logPath):
     
@@ -339,7 +378,7 @@ def confirmAction():
             print 'Not continuing.\n'
 
             # destroy kerberos tickets
-            destroyTicket()
+            #destroyTicket()
             exit(0)
 
 def confirmArchiveDirs(archiveDirs):
@@ -402,10 +441,14 @@ def getArchiveDirs(path):
         if tmpDir in dirnames:
             dirnames.remove(tmpDir)
 
+        if options.all:
+            archiveDirs = dirnames
+        else:
 
-        print "-------------------------------------------"
-        print "Found the following top-level directories: ", ' ' . join(dirnames)
-        archiveDirs = confirmArchiveDirs(archiveDirs)
+            print "-------------------------------------------"
+            print "Found the following top-level directories: ", ' ' . join(dirnames)
+            archiveDirs = confirmArchiveDirs(archiveDirs)
+
         return archiveDirs, filenames
 
     
@@ -429,6 +472,8 @@ if __name__ == "__main__":
     parser.add_option("-a", "--all", dest="all" ,action="store_true", default=False, help="Backup all files and directories.")
     parser.add_option("-D", "--db-only", dest="dbOnly" ,action="store_true", default=False, help="Update database only, don't copy files (use with care!) ")
     parser.add_option("-k", "--keep", dest="keep" ,action="store_true", default=False, help="Keep files on local disk after archiving.")
+    parser.add_option("-v", "--verbose", action="store_true", default=False, help="Enable verbose output")
+
     # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
     (options, args) = parser.parse_args()   
      
@@ -512,13 +557,19 @@ if __name__ == "__main__":
                 logger.info("Now packing %s" % dir)
                 packDirectory(path, dir, archiveDir, dir + ".tar")
                 logger.info("Done packing %s" % dir)
-            # now pack the top-level files
+                renewTicket(user)
+            ## now pack the top-level files
             packDirectory(path, filenames, archiveDir, "main.tar")
+            renewTicket(user)
 
             # Now sync the tar files to the backup server
             passCount = 0
             while True:
                 total, fileCount = getTransferFileCount(archiveDir, destination)
+                
+                if options.verbose:
+                    print "Remaining files to be transfered: ", fileCount
+
                 if (fileCount == 0):
                     break
 
@@ -528,6 +579,7 @@ if __name__ == "__main__":
                 logger.info ("Pass %d. Syncing %d files" % (passCount, fileCount))
                 passCount +=1
             logger.info("Finished")
+            renewTicket(user)
                 
 
             # Now copy the reference files
@@ -605,7 +657,7 @@ if __name__ == "__main__":
         sys.exit(1)
     finally:
         # destroy kerberos tickets
-        destroyTicket()
+        #destroyTicket()
         logger.info ("Done")
         cleanup()
         
