@@ -173,7 +173,8 @@ ls -lh $release/$proj-$class/$ers-$proj-$targ*tar
 # save logfile incrementally or when done:
 cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
 # check on progress/missing scans (incrementally or when done):
-$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K
+$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K |\
+  sort -k 1n > $release/logs/$ers-manifest.txt
 
 # TODO list ======================
 # $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G
