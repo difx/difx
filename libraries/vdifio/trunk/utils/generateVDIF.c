@@ -396,11 +396,17 @@ int main (int argc, char * const argv[]) {
       printf("Error creating CODIF header. Aborting\n");
       exit(1);
     }
+#ifdef TEXTURE
     // Whack some texture to the extended bytes
     cheader.extended2 = 0xAAAAAAAA;
     cheader.extended3 = 0xBBBBBBBB;  
     cheader.extended4 = 0xCCCCCCCC;
-
+#else
+    // Whack some texture to the extended bytes
+    cheader.extended2 = 0x0;
+    cheader.extended3 = 0x0;  
+    cheader.extended4 = 0x0;
+#endif
     setCODIFEpochMJD(&cheader, mjd);
     setCODIFFrameMJDSec(&cheader, (uint64_t)floor(mjd*60*60*24));
     setCODIFFrameNumber(&cheader,0);
@@ -413,10 +419,17 @@ int main (int argc, char * const argv[]) {
       printf("Error creating VDIF header. Aborting\n");
       exit(1);
     }
+#ifdef TEXTURE
     // Whack some texture to the extended bytes
     vheader.extended2 = 0xAAAAAAAA;
     vheader.extended3 = 0xBBBBBBBB;  
     vheader.extended4 = 0xCCCCCCCC;
+#else
+    // Whack some texture to the extended bytes
+    vheader.extended2 = 0x0;
+    vheader.extended3 = 0x0;  
+    vheader.extended4 = 0x0;
+#endif
 
     setVDIFEpochMJD(&vheader, mjd);
     setVDIFFrameMJDSec(&vheader, (uint64_t)floor(mjd*60*60*24));
