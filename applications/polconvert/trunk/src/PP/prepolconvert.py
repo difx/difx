@@ -135,9 +135,11 @@ def do_copy(o, src, dst):
     if os.path.isfile(src):
         if o.verb: print do_copy.__doc__ % ('file', src, dst)
         shutil.copy(src, dst)
+        os.chmod(dst, 0644)
     else:
         if o.verb: print do_copy.__doc__ % (' dir', src, dst)
         shutil.copytree(src, dst)
+        os.chmod(dst, 0755)
 
 #
 # enter here to do the work
