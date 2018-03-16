@@ -121,6 +121,7 @@ ff_conf=`ls -t $work/$exp/v${vers}*p*/$evs.conf | head -1`
 [ -f "$ff_conf" ] && cp -p $ff_conf . && ls -l $evs.conf
 # rename to the release version
 mv $evs.conf $ers.conf
+ls -l $ers.conf
 
 # generate TODO list with:
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G
@@ -155,7 +156,7 @@ $ehtc/ehtc-postdrive.sh eval $jobs
 # archive to output (after reviewing/checking some of the products)
 ls -lh ./tarballs/*
 [ -d $release/$proj-$class ] || mkdir $release/$proj-$class
-mv ./tarballs/* $release/$proj-$class
+mv -v ./tarballs/$ers-$proj-$targ*tar $release/$proj-$class
 ls -lh $release/$proj-$class/$ers-$proj-$targ*tar
 # send email to GBC if tarballs are to be released outside of Corr WG
 
