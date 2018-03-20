@@ -392,10 +392,17 @@ def confirmAction():
 
 def confirmArchiveDirs(archiveDirs):
     while True:
+
+	if len(archiveDirs) == 0:
+		dirs = "None"
+	else:
+		dirs = ' ' .join(archiveDirs)
+
         print "-------------------------------------------------"
         print "Will archive all files in the top-level directory"
-        print "as well as the following directories: ", ' ' .join(archiveDirs)
+        print "plus the following directories: ", dirs
         print "-------------------------------------------------"
+
         while True:
             ret = raw_input("Proceed using this selection? [y/n] (n for making changes): ")
             ret = lower(ret.strip())
