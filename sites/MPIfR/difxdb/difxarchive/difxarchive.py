@@ -250,27 +250,33 @@ def verifyArchive(filename):
     '''
 
     # get archive file info
-    tar = tarfile.open(filename, "r:gz")
+    if options.zip:
+        tar = tarfile.open(filename, "r:gz")
+    else:
+        tar = tarfile.open(filename, "r")
+
     tarFiles = []
     tarDirectories = []
 
     logger.info( "Verifying the contents of the archive %s" % (filename))
     for tarinfo in tar:
-        # verify file exists in the filesystem
-        if not os.path.exists(tarinfo.name):
-            onErrorExit("The archive contains a file which does not exist in the filesystem: %s" % (tarinfo.name))
 
         if tarinfo.isreg():
-            tarFiles.append(tarinfo.name)
+            # verify file exists in the filesystem
+            if not os.path.exists(tarinfo.name):
+                exitOnError("The archive contains a file which does not exist in the filesystem: %s" % (tarinfo.name))
+
             # get info for file in the filesystem
             statinfo = os.stat(tarinfo.name)
 
             # verify file sizes
             if tarinfo.size != statinfo.st_size:
-                onErrorExit( "The archive filesize differs from the filesystem size for file %s" % (tarinfo.name))
+                exitOnError( "The archive filesize differs from the filesystem size for file %s" % (tarinfo.name))
 
             if options.verbose:
                 print "Verifying: ", tarinfo.name, " size=", tarinfo.size, "fs size=", statinfo.st_size, "OK"
+
+            tarFiles.append(tarinfo.name)
 
         elif tarinfo.isdir():
             tarDirectories.append(tarinfo.name)
@@ -295,9 +301,12 @@ def verifyCompleteness(tarfiles, packDir):
                 print "Verified that %s is contained in the archive" % (file)
     logger.info( "Archive is complete" )
 
-def packDirectory(rootPath, packDir, outDir, filename):
+def packDirectory(rootPath, packDir, outDir, filename, recurse=True):
 
-    zipFile = "%s/%s.gz" % (outDir, filename)
+    if options.zip:
+        filename = "%s/%s.gz" % (outDir, filename)
+    else:
+        filename = "%s/%s" % (outDir, filename)
 
     baseDir = os.path.dirname(rootPath)
     expDir = os.path.basename(rootPath)
@@ -305,37 +314,37 @@ def packDirectory(rootPath, packDir, outDir, filename):
     if len(baseDir) == 0:
         baseDir = "."
 
-    #print "baseDir=%s expDir=%s" % (baseDir, expDir)
-
-    # if packDir contains a list of files the path needs to be modified
-    if type(packDir) == list:
-        tmp = ""
-        for file in packDir:
-            tmp += "%s/%s " % (expDir, file)
-        packDir = tmp
+    if rootPath == packDir:
+        packDir = expDir + "/*"
     else:
-        packDir = "%s/%s" % (expDir, packDir)
-
-#    filename = "%s/%s" % (outDir, filename)
-    filename = zipFile
-
-    #print rootPath, packDir, outDir, filename
+        packDir = "%s/%s" % (expDir, packDir)   
 
     if os.path.isfile(filename):
         exitOnError("File already exists (%s)" % (filename))
-    if os.path.isfile(zipFile):
-        exitOnError("File already exists (%s)" % (zipFile))
 
     errorCount = 0
 
     logger.info("Creating tar file %s" % (filename))
-    # create tar file
-    #command = "tar -cWvf %s %s" % (filename, packDir)
-    command = '/bin/bash -c "tar -czf - %s | pv -p --timer --rate --bytes > %s"' % (packDir, filename)
+#
+    tarOpts = " --create "
+
+    if options.zip:
+        tarOpts += " --gzip "
+
+    if options.verbose:
+        tarOpts += " --verbose "
+
+    if recurse == False:
+        tarOpts += " --no-recursion "
+
+    os.chdir(baseDir)
+
+#    if tarMode == "directory":
+
+    command = '/bin/bash -c "tar %s --file - %s | pv -p --timer --rate --bytes > %s"' % (tarOpts, packDir, filename)
     if options.verbose:
         print "Executing command: ", command
-    os.chdir(baseDir)
-    #print baseDir
+
     child = pexpect.spawn(command, logfile = sys.stdout, timeout=None)
     ret = child.expect([pexpect.EOF,pexpect.TIMEOUT, "Error"])
     if ret != 0:
@@ -473,6 +482,8 @@ if __name__ == "__main__":
     parser.add_option("-D", "--db-only", dest="dbOnly" ,action="store_true", default=False, help="Update database only, don't copy files (use with care!) ")
     parser.add_option("-k", "--keep", dest="keep" ,action="store_true", default=False, help="Keep files on local disk after archiving.")
     parser.add_option("-v", "--verbose", action="store_true", default=False, help="Enable verbose output")
+    parser.add_option("-z", "--zip", action="store_true", default=False, help="Zip archive")
+
 
     # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
     (options, args) = parser.parse_args()   
@@ -552,14 +563,13 @@ if __name__ == "__main__":
             archiveDirs, filenames = getArchiveDirs(path)
 
             # pack the directories
-            #print archiveDir, archiveDirs
             for dir in archiveDirs:
                 logger.info("Now packing %s" % dir)
-                packDirectory(path, dir, archiveDir, dir + ".tar")
+                packDirectory(path, dir, archiveDir, dir + ".tar", recurse=True)
                 logger.info("Done packing %s" % dir)
                 renewTicket(user)
             ## now pack the top-level files
-            packDirectory(path, filenames, archiveDir, "main.tar")
+            packDirectory(path, path, archiveDir, "main.tar", recurse=False)
             renewTicket(user)
 
             # Now sync the tar files to the backup server
