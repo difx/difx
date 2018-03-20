@@ -39,7 +39,8 @@ tarDirs = []
 description = "Program to search for fourfit subdirectories (e.g. 1234) recursively. All the discovered directories will be tar'ed, gzip'ed and the original directory will be removed."
 
 parser = argparse.ArgumentParser(description=description)
-parser.add_argument('-z', "--zip", action='store_true' , dest="compress", help='Compress tar-archive with gzip.')
+parser.add_argument('-z', "--zip", action='store_true' , dest="compress", default=False, help='Compress tar-archive with gzip.')
+parser.add_argument('-l', "--list", action='store_true' , dest="list", default=False, help='Only list discovered HOPS subdirectories. Do not pack.')
 parser.add_argument('rootdir', help='The root directory underneath which to start finding the HOPS directories.')
 args = parser.parse_args()
 
@@ -51,7 +52,16 @@ for subdir, dirs, files in os.walk(args.rootdir):
           print "Found: " + subdir + "/" + dir
           tarDirs.append(subdir + "/" + dir)
 
+if args.list:
+	sys.exit(0)
+	
+
 for dir in tarDirs:
+
+    # check that path exist (could have been packed already)
+    if os.path.isdir(dir) == False:
+	continue
+
     path,code = os.path.split(dir)
 
     if args.compress:
@@ -68,7 +78,7 @@ for dir in tarDirs:
       tar.add(dir, arcname=code)
       tar.close()
     except:
-      system.exit("An error has occured when creating the tarball: " + filename)
+      sys.exit("An error has occured when creating the tarball: " + filename)
   
     # remove hops subdirectory
     try:
