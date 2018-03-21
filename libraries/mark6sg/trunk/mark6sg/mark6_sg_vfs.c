@@ -776,6 +776,7 @@ ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
 /**
  * Move data from a socket into a scattered fileset
  */
+#ifdef HAVE_MMSG
 ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
 {
     m6sg_virt_filedescr_t* vfd;
@@ -895,7 +896,13 @@ ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
 
     return nwr;
 }
-
+#else
+ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
+{
+    errno = ENOTSUP;
+    return -1;
+}
+#endif
 
 /**
  * Seek to new read offset.

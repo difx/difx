@@ -38,6 +38,9 @@ AM_CONDITIONAL([USE_FUSE], [test "$HAVE_FUSE" -eq 1])
 
 AC_CHECK_FUNC([recvmmsg], [HAVE_MMSG=1], [HAVE_MMGS=0])
 AM_CONDITIONAL([HAVE_MMSG], [test "$HAVE_MMSG" -eq 1])
+if test "$HAVE_MMSG" = 1; then
+  AC_DEFINE(HAVE_MMSG, 1, [Define if your OS supports recvmmsg.])
+fi
 
 PKG_CHECK_MODULES([DIFXMESSAGE], [difxmessage >= 2.5.0 difxmessage < 7], [HAVE_DIFXMESSAGE=1], [HAVE_DIFXMESSAGE=0])
 AM_CONDITIONAL([USE_DIFXMESSAGE], [test "$HAVE_DIFXMESSAGE" -eq 1])
