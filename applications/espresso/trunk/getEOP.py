@@ -22,9 +22,9 @@
 # given date and return in format suitable for appending to .v2d or .vex file.
 # Takes dates in MJD, VEX, ISO8601 or VLBA format.
 # October 2017: change to use requests module. Optional vex output.
-# EOP data from http://gemini.gsfc.nasa.gov/solve_save/usno_finals.erp
-# Leap second data come from:
-# http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat
+# EOP data from: "https://vlbi.gsfc.nasa.gov/apriori/usno_finals.erp"
+# Leap second data come from: "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat"
+# 
 
 import optparse
 import re
@@ -33,6 +33,7 @@ import requests
 import espressolib
 import sys
 import time
+import os
 
 
 def get_leapsec(leapsec_page, targetJD):
@@ -54,6 +55,15 @@ parser.add_option(
         "--vex", "-v",
         dest="vex", action="store_true", default=False,
         help="Produce vex format output")
+parser.add_option(
+        "--local", "-l",
+        dest="local", action="store_true", default=False,
+        help="Take EOPs from local $DIFX_EOPS and $DIFX_UT1LS files instead of"
+        " web")
+parser.add_option(
+        "--noverify",
+        dest="verify", action="store_false", default=True,
+        help="Disable HTTPS certificate checking (at own risk!)")
 
 (options, args) = parser.parse_args()
 
@@ -61,38 +71,51 @@ if len(args) != 1:
     parser.print_help()
     parser.error("Give a date in MJD or VEX format")
 
+if options.vex:
+  comment = "*"
+else:
+  comment = "#"
+
 # get target MJD
 targetMJD = args[0]
 # convert to MJD if necessary
 targetMJD = espressolib.convertdate(targetMJD, "mjd")
-#print targetMJD
-
 targetJD = round(targetMJD) + 2400000.5
+
 
 # dates before June 1979 not valid (earliest EOPs)
 if (targetJD < 2444055.5):
     raise Exception("Date too early. No valid EOPs before July 1979")
 
 # fetch EOP data
-eop_url = "https://vlbi.gsfc.nasa.gov/apriori/usno_finals.erp"
-leapsec_url = (
-        "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat")
+if not options.local:
+    #eop_url = "https://gemini.gsfc.nasa.gov/solve_save/usno_finals.erp"
+    #leapsec_url = (
+            #"https://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat")
+    eop_url = "https://vlbi.gsfc.nasa.gov/apriori/usno_finals.erp"
+    leapsec_url = "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat"
+    
+    print >>sys.stderr, "Fetching EOP data from ", eop_url
+    eop_page = requests.get(eop_url, verify=options.verify).content.split("\n")
+    
+    print >>sys.stderr, "Fetching leap second data from", leapsec_url
+    #leapsec_page = urllib.FancyURLopener().open(leapsec_url).readlines()
+    leapsec_page = requests.get(
+            leapsec_url, verify=options.verify).content.split("\n")
+    print comment, "EOPs downloaded at", time.strftime("%Y-%m-%d %H:%M:%S (%z)")
 
-print >>sys.stderr, "Fetching EOP data..."
-#eop_page = urllib.FancyURLopener().open(eop_url).readlines()
-eop_page = requests.get(eop_url).content.split("\n")
-print >>sys.stderr, "...got it."
-
-print >>sys.stderr, "Fetching Leap second data..."
-#leapsec_page = urllib.FancyURLopener().open(leapsec_url).readlines()
-leapsec_page = requests.get(leapsec_url).content.split("\n")
-print >>sys.stderr, "...got it.\n"
-
-if options.vex:
-  comment = "*"
 else:
-  comment = "#"
-print comment, "EOPs downloaded at", time.strftime("%Y-%m-%d %H:%M:%S (%z)")
+    # or read from local files
+    eop_filename = os.environ.get("DIFX_EOPS")
+    print >>sys.stderr, "Reading EOP data from ", eop_filename
+    eop_page = open(eop_filename).readlines()
+    eop_page_stats = os.stat(eop_filename)
+    eop_update_time = time.gmtime(os.stat(eop_filename)[9])
+    leapsec_filename = os.environ.get("DIFX_UT1LS")
+    print >>sys.stderr, "Reading leap second data from", leapsec_filename
+    leapsec_page = open(leapsec_filename).readlines()
+    print comment, "EOPs from", eop_filename, "last updated at", time.strftime(
+            "%Y-%m-%d %H:%M:%S (%z)", eop_update_time)
 
 v2deop = "EOP {0:d} {{ xPole={1:f} yPole={2:f} tai_utc={3:d} ut1_utc={4:f} }}"
 
@@ -116,10 +139,9 @@ else:
 # parse the eop page
 nlines = 0
 neop = -1
-for line in eop_page:
-    nlines += 1
+for nlines, line in enumerate(eop_page):
     # skip the first line, which isn't commented
-    if (nlines == 1):
+    if (nlines == 0):
         continue
     if not line:
         continue
@@ -144,4 +166,4 @@ for line in eop_page:
             eopdate = espressolib.convertdate(eopdate, outformat="vex")
         print eopformat.format(eopdate, xpole, ypole, tai_utc, ut1_utc, neop)
 
-print >>sys.stderr, "Processed %d lines" % nlines
+print >>sys.stderr, "Processed {0:d} lines".format(nlines)
