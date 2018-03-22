@@ -51,6 +51,29 @@ def change_path(inputfilename, changeparm, oldpath, newpath):
 
     fileinput.close()
 
+def run_calc(calcbin, jobname, calcfilename):
+    # tidy up old calcif2 files and run calcif2 again
+    calcoutputfiles = [".uvw", ".rate", ".im", ".delay"]
+    for file in calcoutputfiles:
+        # clear up old calc files so we are sure it completed
+        file = jobname + file
+        if os.path.exists(file):
+            os.remove(file)
+
+    command = None
+    if "calcif2" == calcbin:
+        command = " ".join(["calcif2", calcfilename])
+    else:
+        calcserver = os.environ.get("DIFXCALC_SERVER", None)
+        pwd = os.environ.get("PWD")
+        if calcserver is not None:
+            command = " ".join(
+                    ["ssh", calcserver, "'", ".", "${HOME}/pipe.setup;", "cd",
+                    pwd, ";", calcbin, calcfilename, "'"])
+        else:
+            command = " ".join([calcbin, calcfilename])
+    print command
+    subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
 def run_calcif2(jobname, calcfilename):
     # tidy up old calcif2 files and run calcif2 again
@@ -149,6 +172,7 @@ def parse_v2dfile(v2dfilename):
     v2dfile = open(v2dfilename).readlines()
     vexfilename = str()
     binconfigfilename = None
+    calc = None
     for line in v2dfile:
         # remove comments
         line = re.sub(r"#.*", "", line)
@@ -158,8 +182,12 @@ def parse_v2dfile(v2dfilename):
         binconfigmatch = re.search(r"binConfig\s*=\s*(\S*)", line)
         if binconfigmatch:
             binconfigfilename = binconfigmatch.group(1)
+        calcmatch = re.search(r"delayModel\s*=\s*(\S*)", line)
+        if calcmatch:
+            calc = calcmatch.group(1)
 
-    return vexfilename, binconfigfilename
+
+    return vexfilename, binconfigfilename, calc
 
 
 def parse_binconfig(binconfigfilename):
@@ -378,7 +406,7 @@ def run_batch(corrjoblist, outdir):
 
             raw_input(
                     "Jobs submitted - hit ^C when all jobs have completed."
-                    " Hit return to see list of running jobs.")
+                    " Hit return to see list of unfinished jobs.")
         except KeyboardInterrupt:
             for jobname in jobids:
                 command = " ".join([batch_cancel, jobname])
@@ -624,7 +652,7 @@ if options.clockjob or options.testjob or options.force:
 
 # run vex2difx.
 v2dfilename = passname + ".v2d"
-vexfilename, binconfigfilename = parse_v2dfile(v2dfilename)
+vexfilename, binconfigfilename, calcbin = parse_v2dfile(v2dfilename)
 if not vexfilename:
     raise Exception("Could not find VEX file in " + v2dfilename)
 
@@ -692,7 +720,7 @@ for jobname in sorted(corrjoblist.keys()):
 
     # run calcif2
     if not options.nocalc:
-        run_calcif2(jobname, calcfilename)
+        run_calc(calcbin, jobname, calcfilename)
 
     # copy any old jobs to a backupdir
     backup_oldrun(jobname, outdir, backupdir)
