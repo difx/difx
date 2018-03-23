@@ -1,3 +1,9 @@
+Version 2.5.2
+~~~~~~~~~~~~~
+* Comply with "delay_model" parameter in v2d file.
+* Option to read EOPs from local file.
+* Use new GSFC servers for remote EOPs.
+
 Version 2.5
 ~~~~~~~~~~~~~
 * Add support for slurm and pbs batch schedulers.
