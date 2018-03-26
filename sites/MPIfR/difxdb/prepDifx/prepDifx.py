@@ -100,7 +100,7 @@ def expPrepare(code):
 
     # check if experiment path exists already
     if os.path.isdir(args.path):
-        sys.exit("ERROR: experiment directory (%s) already exists. (use -u option to update it)" % args.path)
+        sys.exit("ERROR: experiment directory (%s) already exists. (either delete it or use -u option to update it)" % args.path)
 
     # if not create it
     try:
@@ -225,8 +225,8 @@ if __name__ == "__main__":
 
     if args.update:
         expUpdate()
-    elif args.finalize:
-        expFinalize()
+    #elif args.finalize:
+    #    expFinalize()
     else:
         expPrepare(code)
 
