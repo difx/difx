@@ -595,7 +595,7 @@ std::ostream& operator << (std::ostream &os, const VexStream &x)
 		formatName << "Illegal(" << x.format << ")";
 	}
 
-	os << " [format=" << formatName.str() << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan << ", dataFrameSize=" << x.dataFrameSize() << ", nThread=" << x.nThread << ", singleThread=" << x.singleThread << ", sampRate=" << x.sampRate << ", ySys=" << x.difxTsys;
+	os << " [format=" << formatName.str() << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan << ", dataFrameSize=" << x.dataFrameSize() << ", nThread=" << x.nThread << ", singleThread=" << x.singleThread << ", sampRate=" << x.sampRate << ", tSys=" << x.difxTsys;
 	if(!x.threads.empty())
 	{
 		for(std::vector<int>::const_iterator it = x.threads.begin(); it != x.threads.end(); ++it)
