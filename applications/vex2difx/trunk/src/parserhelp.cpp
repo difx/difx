@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2015 by Chris Phillips & Walter Brisken            *
+ *   Copyright (C) 2014-2018 by Chris Phillips & Walter Brisken            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -308,7 +308,9 @@ double parseTime(const std::string &timeStr)
 	{
 		//Test for Vex
 		p = strptime(str, "%Yy%jd%Hh%Mm%Ss", &tm);
-#ifdef __APPLE__
+
+#ifdef __NOAPPLE__
+		// This no longer seems to be neceesary for OSX
 		tm.tm_mday = tm.tm_yday+1; // mktime not guaranteed to pick up dayno
 #endif
 	}
