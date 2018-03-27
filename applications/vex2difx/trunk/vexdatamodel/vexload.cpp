@@ -57,9 +57,15 @@ static void fixOhs(std::string &str)
 {
 	unsigned int i;
 
+	// The format of Mark5/6 disk packs is name&number where name
+    // is a four character string for mark5 and a 3 character stream for
+	// mark6.  The delimiter for mark5 is a + or a - while the mark5 uses
+    // the % sign.  This method fixes any zeroes that happen to be in the
+    // name section by turning them to capital O's.
+
 	for(i = 0; i < str.length(); ++i)
 	{
-		if(str[i] == '-' || str[i] == '+')
+		if(str[i] == '-' || str[i] == '+' || str[i] == '%')
 		{
 			break;
 		}
