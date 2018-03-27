@@ -22,6 +22,7 @@ applications/m6support		https://svn.atnf.csiro.au/difx/applications/m6support/tr
 applications/vex2difx		https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk
 applications/polconvert		https://svn.atnf.csiro.au/difx/applications/polconvert/trunk
 applications/datasim		https://svn.atnf.csiro.au/difx/applications/datasim/trunk
+applications/difxcalc11		https://svn.atnf.csiro.au/difx/applications/difxcalc11/trunk
 utilities/bench			https://svn.atnf.csiro.au/difx/utilities/trunk/bench
 utilities/difx2profile		https://svn.atnf.csiro.au/difx/utilities/trunk/pulsar/difx2profile
 utilities/difxdb		https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb
