@@ -32,8 +32,8 @@ import os
 import time
 import tkMessageBox
 import PIL
-import barcode
 import subprocess
+
 
 from difxdb.business.versionhistoryaction import *
 from difxdb.business.experimentaction import * 
@@ -45,7 +45,6 @@ from difxutil.dbutil import *
 from difxdb.difxdbconfig import DifxDbConfig
 from difxfile.difxdir import *
 
-from barcode.writer import ImageWriter, FONT
 from string import strip, upper
 from collections import deque
 
@@ -294,39 +293,24 @@ class MainWindow(GenericWindow):
         
         return
             
-        
-    def printVSNLabel(self, label=""):
-        
-        if label == "":
-            if (self.selectedSlotIndex < 0):
-                return
+             
+    def printVSNLabel(self):
 
-            session = dbConn.session()
-            slot = model.Slot()
-            slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
-        
-            if (slot is not None):
-                 vsnString = "%s/%s/%s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate)
-                 
-            session.close()
-            
-        else:
-            vsnString = label
-            
-            
-        os.system('rm -f /tmp/comedia_vsn.png')
-            
-            
-        options = dict(font_size=62, dpi=300, text_distance=0, quiet_zone=1, module_height=10) 
-            
-        ean = barcode.get_barcode('code39', vsnString, writer=MyImageWriter())
-        ean.save('/tmp/comedia_vsn', options )
-            
-        os.system( self.config.get("Comedia", "printCommand") + ' -o ppi=300 /tmp/comedia_vsn.png')
-        os.system('rm -f /tmp/comedia_vsn.png')
-        
-        
-    
+	    if (self.selectedSlotIndex < 0):
+		return
+
+	    session = dbConn.session()
+	    slot = model.Slot()
+	    slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+
+	    if (slot is not None):
+		 vsnString = "%s/%s/%s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate)
+
+	    session.close()
+
+	    printBarcode(vsnString, self.config.get("Comedia", "printCommand"))
+		
+
     def printLibraryLabel(self, slotName=None):
         
         if (slotName == None):
@@ -2071,23 +2055,13 @@ class PrintVSNLabelWindow(GenericWindow):
         self.txtVSN.grid(row=0, column=1,sticky=E+W)
         
     def printVSNLabel(self):
-        
-        
-        vsnString = self.txtVSN.get()
-            
-            
-        os.system('rm -f /tmp/comedia_vsn.png')
-            
-            
-        options = dict(font_size=62, dpi=300, text_distance=0, quiet_zone=1, module_height=10) 
-            
-        ean = barcode.get_barcode('code39', vsnString, writer=MyImageWriter())
-        ean.save('/tmp/comedia_vsn', options )
-            
-        os.system( self.config.get("Comedia", "printCommand") + ' -o ppi=300 /tmp/comedia_vsn.png')
-        os.system('rm -f /tmp/comedia_vsn.png')
-        
-        self.dlg.destroy()
+         
+         
+         vsnString = self.txtVSN.get()
+
+	 printBarcode(vsnString, self.config.get("Comedia", "printCommand"))
+             
+         self.dlg.destroy()
         
     
 class LabelOptionsWindow(GenericWindow):
@@ -2209,28 +2183,6 @@ class AddExperimentWindow(GenericWindow):
      
         self.close()
         
-class MyImageWriter(ImageWriter):
-    
-    def _mm2px(self, mm, dpi=300):
-        return (mm * dpi) / 25.4
-
-    def calculate_size(self, modules_per_line, number_of_lines, dpi=300):
-        
-        width = 2 * self.quiet_zone + modules_per_line * self.module_width
-        height = 1.0 + self.module_height * number_of_lines
-        if self.text:
-            height += (self.font_size + self.text_distance) / 3
-
-        return int(self._mm2px(width, dpi)), int(self._mm2px(height, dpi))
-
-    def _paint_text(self, xpos, ypos):
-        # align font to the left side of the bar code
-        xpos = self.quiet_zone
-        pos = (self._mm2px(xpos, self.dpi), self._mm2px(ypos, self.dpi))
-        font = PIL.ImageFont.truetype(FONT, self.font_size)
-        self._draw.text(pos, self.text[:-1], font=font, fill=self.foreground)
-        
- 
 class ComediaConfig(DifxDbConfig):
 
     def makeDefaultConfig(self):
@@ -2247,6 +2199,30 @@ class ComediaConfig(DifxDbConfig):
         self.config.set('Comedia', 'smtpTo', '')
         self.config.set('Comedia', 'enableEmailNotification', '0')
           
+def printBarcode(label, printCommand):
+
+	try:
+		from reportlab.graphics.barcode import code39
+		from reportlab.lib.units import mm
+		from reportlab.pdfgen import canvas
+	except:
+		tkMessageBox.showinfo("Missing package", "For using the barcode functionality please install the python reportlab package.")
+		return
+		
+	c = canvas.Canvas("/tmp/comedia_vsn.pdf")
+	c.setPageSize((89*mm,36*mm))
+	c.setFontSize(20)
+	barcode39 = code39.Standard39(label, barHeight=10*mm, barWidth=0.27*mm, humanReadable=0, checksum=0)
+
+	c.drawString(6*mm, 17*mm, label)
+	barcode39.drawOn(c, 0, 5*mm)
+
+	c.showPage()
+	c.save()
+
+        os.system( printCommand + ' -o ppi=300 /tmp/comedia_vsn.pdf')
+
+
 if __name__ == "__main__":
     
     dbConn = None
