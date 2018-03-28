@@ -63,13 +63,13 @@ const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with 
 
 static int calculateWorstcaseGuardNS(double sampleRate, int subintNS, int nBit, int nSubband)
 {
-	double sampleTimeNS = 1.0e9/sampleRate;
+        double sampleTimeNS = 1.0e9/sampleRate;
 	double nsAccumulate = sampleTimeNS;
 	const double MaxEarthGeomSlipRate = 1600.0;	// ns/sec
-	
-	while(fabs(nsAccumulate - static_cast<int>(nsAccumulate)) > 1.0e-12)
+
+	while(fabs(nsAccumulate - round(nsAccumulate)) > 2.0e-11)
 	{
-		nsAccumulate += sampleTimeNS;
+	  nsAccumulate += sampleTimeNS;
 	}
 
 	if(nBit*nSubband < 8)
@@ -77,7 +77,7 @@ static int calculateWorstcaseGuardNS(double sampleRate, int subintNS, int nBit, 
 		nsAccumulate = nsAccumulate*8.0/(nBit*nSubband);
 	}
 
-	return static_cast<int>(nsAccumulate + MaxEarthGeomSlipRate*subintNS*1.0e-9 + 1.0);
+	return static_cast<int>(round(nsAccumulate + MaxEarthGeomSlipRate*subintNS*1.0e-9 + 1.0));
 }
 
 static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const CorrParams *P)
