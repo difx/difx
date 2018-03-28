@@ -114,7 +114,7 @@ int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum)
 
 int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize)
 {
-	int bufferSize = 2000000;	/* 2 MB should encounter all threads of a usual VDIF file */
+	int bufferSize = 1215*8224*8;	/* 2 MB should've encountered all threads of a usual VDIF file; however VGOS DBBC3 uses single-thread 8224-byte x 1215-frame sequences before switching to another thread */
 	unsigned char *buffer;
 	struct stat st;
 	int rv, i, N;
