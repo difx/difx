@@ -89,6 +89,8 @@ currVis = 0;
 
 doRange = Range;
 
+isAutoCorr = false;
+
 
 // READ FREQUENCIES FOR ALL IFs:
 Nfreqs = nIF;
@@ -281,24 +283,24 @@ void DataIOSWIN::readHeader(bool doTest) {
 
   cp = 0;
 
-  while(!olddifx[auxI].eof()) {
+  while(!newdifx[auxI].eof()) {
 
 
    if(loc/bperp > cp){cp += 1; printf("\r  %li%% DONE",cp);fflush(stdout);};
 
-   olddifx[auxI].seekg(loc,olddifx[auxI].beg);
-   olddifx[auxI].read(reinterpret_cast<char*>(&basel), sizeof(int));
-   olddifx[auxI].read(reinterpret_cast<char*>(&mjd), sizeof(int));
-   olddifx[auxI].read(reinterpret_cast<char*>(&secs), sizeof(double));
-   olddifx[auxI].read(reinterpret_cast<char*>(&cfidx), sizeof(int));
-   olddifx[auxI].read(reinterpret_cast<char*>(&sidx), sizeof(int));
-   olddifx[auxI].read(reinterpret_cast<char*>(&fridx), sizeof(int));
-   polpos = olddifx[auxI].tellg();
-   olddifx[auxI].read(pol, 2*sizeof(char));
+   newdifx[auxI].seekg(loc,newdifx[auxI].beg);
+   newdifx[auxI].read(reinterpret_cast<char*>(&basel), sizeof(int));
+   newdifx[auxI].read(reinterpret_cast<char*>(&mjd), sizeof(int));
+   newdifx[auxI].read(reinterpret_cast<char*>(&secs), sizeof(double));
+   newdifx[auxI].read(reinterpret_cast<char*>(&cfidx), sizeof(int));
+   newdifx[auxI].read(reinterpret_cast<char*>(&sidx), sizeof(int));
+   newdifx[auxI].read(reinterpret_cast<char*>(&fridx), sizeof(int));
+   polpos = newdifx[auxI].tellg();
+   newdifx[auxI].read(pol, 2*sizeof(char));
 
-   olddifx[auxI].ignore(sizeof(int)+sizeof(double)); // Pulsar bin + Weight
+   newdifx[auxI].ignore(sizeof(int)+sizeof(double)); // Pulsar bin + Weight
 
-   olddifx[auxI].read(reinterpret_cast<char*>(UVW), UVWsize);
+   newdifx[auxI].read(reinterpret_cast<char*>(UVW), UVWsize);
 
 
 
@@ -307,7 +309,7 @@ void DataIOSWIN::readHeader(bool doTest) {
 // WHAT IS THE DIFFERENCE BETWEEN CFIDX AND FRIDX !!!!!!!!
 ////////////////
 
-  beg = olddifx[auxI].tellg(); 
+  beg = newdifx[auxI].tellg(); 
   if (beg>0) {
  // beg += sizeof(int) + sizeof(double);
   end = beg + (Freqs[fridx].Nchan)*sizeof(cplx32f);
@@ -359,9 +361,9 @@ void DataIOSWIN::readHeader(bool doTest) {
 
 
     for (auxJ=0; auxJ<4; auxJ++){    
-      olddifx[auxI].seekg(beg + (RecordSize + (Freqs[fridx].Nchan)*sizeof(cplx32f))*auxJ, olddifx[auxI].beg);
-      olddifx[auxI].sync();
-      olddifx[auxI].read(reinterpret_cast<char*>(currentVis[auxJ]),end-beg);
+      newdifx[auxI].seekg(beg + (RecordSize + (Freqs[fridx].Nchan)*sizeof(cplx32f))*auxJ, newdifx[auxI].beg);
+      newdifx[auxI].sync();
+      newdifx[auxI].read(reinterpret_cast<char*>(currentVis[auxJ]),end-beg);
 
     };
 
@@ -436,8 +438,8 @@ void DataIOSWIN::readHeader(bool doTest) {
 
 
 // Rewind:
-  olddifx[auxI].clear();
-  olddifx[auxI].seekg(0,olddifx[auxI].beg);
+  newdifx[auxI].clear();
+  newdifx[auxI].seekg(0,newdifx[auxI].beg);
 
 
 
@@ -622,7 +624,7 @@ for (i=0; i<4; i++) {
   if (currEntries[currFreq][i]>=0){
   rec = currEntries[currFreq][i];
   fnum = Records[rec].fileNumber;
-  newdifx[fnum].seekg(Records[rec].byteIni, olddifx[fnum].beg);
+  newdifx[fnum].seekg(Records[rec].byteIni, newdifx[fnum].beg);
   newdifx[fnum].sync();
   newdifx[fnum].read(reinterpret_cast<char*>(currentVis[i]),Records[rec].byteEnd-Records[rec].byteIni);
   } else {
@@ -638,12 +640,16 @@ for (i=0; i<4; i++) {
 
 // Case of auto-correlations (in the 2nd round of conversion):
 
- if (currEntries[currFreq][2]==-1 && currEntries[currFreq][3]==-1 && complete && antenna == otherAnt){
-    for (k=0;k<Freqs[currFreq].Nchan; k++) {
-      currentVis[3][k] = auxVis[3][k];
-      currentVis[2][k] = auxVis[2][k];
-    };
- };
+// if (currEntries[currFreq][2]==-1 && currEntries[currFreq][3]==-1 && complete && antenna == otherAnt){
+ if ( antenna == otherAnt ){
+   isAutoCorr = true;
+   if (complete){
+     for (k=0;k<Freqs[currFreq].Nchan; k++) {
+       currentVis[3][k] = auxVis[3][k];
+       currentVis[2][k] = auxVis[2][k];
+     };
+   };
+ } else {isAutoCorr = false;};
 
 
 
@@ -682,6 +688,7 @@ for (i=0; i<4; i++) {
   fnum = Records[rec].fileNumber;
   newdifx[fnum].seekp(Records[rec].byteIni, newdifx[fnum].beg);
   newdifx[fnum].write(reinterpret_cast<char*>(bufferVis[i]),Records[rec].byteEnd-Records[rec].byteIni);
+  newdifx[fnum].sync();
   newdifx[fnum].clear();
 
  }  /* else {  
@@ -708,7 +715,7 @@ for (i=0; i<4; i++) {
 
   newdifx[fnum].flush();
   newdifx[fnum].sync();
-  olddifx[fnum].sync();
+//  olddifx[fnum].sync();
 
   return true;
 
@@ -830,7 +837,7 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 for (i=0; i<4; i++) {
 
 
- if (currEntries[currFreq][i]<0) {
+ if (currEntries[currFreq][i]<0 || (isAutoCorr && i>1) ) {
 
   if (!canPlot){ // Case of auto-correlations (2nd round of conversion):   
 

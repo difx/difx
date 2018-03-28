@@ -8,7 +8,7 @@
 # All these gains are then pre-applied to all data before conversion in
 # a second PolConvert run, and new FITS-IDI files are generated.
 ######
-
+import pickle as pk
 
 REFANT = 4 # Antenna to which refer the conversion gain solution (O8)
 LINANT = 2 # Antenna with linear feed (EB)
@@ -57,7 +57,7 @@ for i in range(NITER):
 
 
 
-  GainsIt = polconvert(IDI=REF_IDI,
+  polconvert(IDI=REF_IDI,
              OUTPUTIDI=REF_IDI,
              linAntIdx=[LINANT],
              plotIF = [],
@@ -67,14 +67,21 @@ for i in range(NITER):
              Range = CALRANGE,
              plotRange = CALRANGE,
              IDI_conjugated = False,
-             doSolve = -1,   #4,
-             solveMode = 1,  #BP MODE
+             doSolve = 1000.,   #4,
+             solint = [1,1],  #BP MODE
              plotAnt = REFANT,
-             amp_norm = False,
+             amp_norm = 0.0,
+             solveMethod = 'COBYLA',
              excludeAnts = [8,9],
              doTest=True)
   
+  ifile = open('PolConvert.XYGains.dat')
+  GainsIt = pk.load(ifile)
+  ifile.close()
+
   TotGains.append(GainsIt)
+
+
   for k in range(NIF):
     EndGainsAmp[k] = EndGainsAmp[k]*np.array(GainsIt['XYratio'][LINANT][k])
     EndGainsPhase[k] = EndGainsPhase[k] + np.array(GainsIt['XYadd'][LINANT][k])
@@ -87,6 +94,9 @@ for i in range(NITER):
 
 # HERE WE CAN CONVERT ALL IDIs:
 if False:
+ XYadd = [[list(ll) for ll in EndGainsAmp]]
+ XYratio = [[list(ll) for ll in EndGainsPhase]]
+
  for IDI in ALL_IDIs:
   polconvert(IDI=IDI,
              OUTPUTIDI=IDI+SUFFIX,
@@ -96,5 +106,5 @@ if False:
              XYdel = [multiBand],
              IDI_conjugated = False,
              XYratio = [AmpRat],
-             amp_norm = False,
+             amp_norm = 0.0,
              doTest=False)

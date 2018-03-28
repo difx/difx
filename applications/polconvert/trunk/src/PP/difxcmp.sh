@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # script to assist reconciliation with a difx trunk
 #
@@ -7,52 +7,68 @@
 [ -n "$bzr" -a -d "$bzr" ] || echo define bzr to source
 [ -n "$dfx" -a -d "$dfx" ] || echo define dfx to destination
 
-action=$1 ; shift
+action=${1-'help'} ; shift
+
+skip='build mytasks.py polconvert_cli.py polconvert.py'
+skip="$skip build/temp.linux-x86_64-2.7"
+
+[ $# -eq 0 ] && set -- 'no-such-file'
 
 for f
-do case $action in
-dir)
+do
+  [ -d $f ] && continue
+  # ignore things that don't go to DiFX but are in bzr
+  punt=false
+  for s in $skip
+  do [ "$f" = "$s" ] && punt=true ; done
+  $punt && echo skipping $f && continue
+  # decide what to do
+  case $action in
+  dir)
     ls -ld $bzr
     ls -ld $dfx
     ;;
-ls)
+  ls)
     ls -l $bzr/$f $dfx/$f 2>&- | sed -e "s+$bzr+\$bzr+" -e "s+$dfx+\$dfx+"
     ;;
-diff)
+  diff)
     diff $bzr/$f $dfx/$f
     ;;
-cmp)
+  cmp)
     cmp $bzr/$f $dfx/$f
     ;;
-dcp)
+  dcp)
     [ -f $dfx/$f ] || { echo \#\#\# skipping $f ; continue ; }
     cmp $bzr/$f $dfx/$f 2>&- 1>&- || cp -p $bzr/$f $dfx/$f
     ;;
-dget)
+  dget)
     [ -f $bzr/$f ] || { echo \#\#\# skipping $f ; continue ; }
     cmp $dfx/$f $bzr/$f 2>&- 1>&- || cp -p $dfx/$f $bzr/$f
     ;;
-cp)
+  cp)
     cp -p $bzr/$f $dfx/$f
     ;;
-get)
+  get)
     cp -p $dfx/$f $bzr/$f
     ;;
-*)  cat <<....EOF
-    action $action is not supported
+  *)
+    [ "$action" = 'help' ] || action $action is not supported
+    cat <<....EOF
     legal actions are
-    dir  -- list dirs
-    ls   -- list the files
-    cmp  -- run cmp
-    diff -- run diff
-    cp   -- bzr to difx
-    get  -- difx to bzr
-    dcp  -- diff and cp files different
-    dget -- diff and cp files different
+      dir  -- list dirs
+      ls   -- list the files
+      cmp  -- run cmp
+      diff -- run diff
+      cp   -- bzr to difx
+      get  -- difx to bzr
+      dcp  -- diff and cp files different
+      dget -- diff and cp files different
 ....EOF
     exit 1
     ;;
-esac ; done
+  esac
+
+done
 
 #
 # eof

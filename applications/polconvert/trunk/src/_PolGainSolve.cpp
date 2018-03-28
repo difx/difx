@@ -205,7 +205,6 @@ AddCrossHand = true;
     };
   };
   
-
   auxC00 = new cplx64f*[k]; //[3*NCalAnt+1];
   auxC01 = new cplx64f*[k]; //[3*NCalAnt+1];
   auxC10 = new cplx64f*[k]; //[3*NCalAnt+1];
@@ -241,6 +240,7 @@ AddCrossHand = true;
 
   Lant = (int *)PyArray_DATA(linant);
   Nlin = PyArray_DIM(linant,0);
+
 
 //  printf("N linears: %i  | N Cal. Antennas: %i\n",Nlin,NCalAnt);
 
@@ -291,9 +291,9 @@ AddCrossHand = true;
 
 
 //Py_DECREF(RelWeight);
-Py_DECREF(solints);
-Py_DECREF(calant);
-Py_DECREF(linant);
+//Py_DECREF(solints);
+//Py_DECREF(calant);
+//Py_DECREF(linant);
 
 
     PyObject *ret = Py_BuildValue("i",0);
@@ -834,8 +834,8 @@ for (i=0; i<NantFix; i++){
   Rates[j-1] = rates[i];
 };
 
-Py_DECREF(ratesArr);
-Py_DECREF(antList);
+//Py_DECREF(ratesArr);
+//Py_DECREF(antList);
 
 PyObject *ret = Py_BuildValue("i",0);
 return ret;
@@ -1471,7 +1471,7 @@ for (i=0; i<NIF; i++){
 
 fftw_free(BufferVis00); fftw_free(BufferVis11); fftw_free(outXX); fftw_free(outYY);
 
-Py_DECREF(antList);
+//Py_DECREF(antList);
 
 
 PyObject *ret = Py_BuildValue("i",0);

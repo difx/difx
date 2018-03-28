@@ -47,7 +47,7 @@
 #
 #
 
-__version__ = "1.7.1"
+__version__ = "1.7.2"
 date = 'Dec 5, 2017'     
 
 
@@ -88,6 +88,7 @@ import pylab as pl
 import datetime as dt
 import sys
 from taskinit import *
+import pickle as pk
 ms = gentools(['ms'])[0]
 tb = gentools(['tb'])[0]
 
@@ -106,113 +107,12 @@ tb = gentools(['tb'])[0]
 
 if __name__=='__main__':
 
- if True:
-
-  IDI                =  "ivan-hi/e17c07-1-hi_1016.difx"
-  OUTPUTIDI          =  "ivan-hi/e17c07-1-hi_1016.difx.polconvert"
-  DiFXinput          =  "ivan-hi/e17c07-1-hi_1016.input"
-  DiFXcalc           =  "ivan-hi/e17c07-1-hi_1016.calc"
-  doIF               =  range(2,32)
-  linAntIdx          =  [1]
-  Range              =  []
-  calAPP = 'TRACK_C.concatenated.ms.calappphase'
-  ALMAant = 'TRACK_C.concatenated.ms.ANTENNA'
-  spw                =  -1
-  calAPPTime         =  [0.0, 5.0]
-  APPrefant          =  ""
-  gains              =  [['TRACK_C.concatenated.ms.bandpass-zphs', 'TRACK_C.concatenated.ms.flux_inf.APP', 'TRACK_C.calibrated.ms.XY0.APP.REFANT_DA44', 'TRACK_D.calibrated.ms.Gxyamp.APP']]
-  interpolation      =  []
-  dterms             =  ['TRACK_D.calibrated.ms.Df0.APP']
-#  amp_norm           =  True
-  XYadd              =  [0.0]
-  XYdel              =  [0.0]
-  XYratio            =  [1.0]
-  swapXY             =  [False]
-  swapRL             =  False
-  IDI_conjugated     =  False
-  plotIF             =  []
-  plotRange          =  [0, 0, 0, 0, 10, 0, 0, 0]
-  plotAnt            =  2
-  excludeAnts        =  []
-  doSolve            =  -1
-  solint             =  [1, 1]
-  doTest             =  True
-  npix               =  50
-
-
-
- if False:
-
-  IDI                =  "./e17d05_1221.save"
-  OUTPUTIDI          =  "./e17d05_1221.difx"
-  DiFXinput          =  "./e17d05_1221.input"
-  doIF               =  [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67]
- # doIF             =  [36, 44, 52, 60]
-  linAntIdx          =  [1]
-  Range              =  []
-  ALMAant            =  "uid___A002_Xbebcb7_D.concatenated.ms.ANTENNA"
-  spw                =  -1
-  calAPP             =  "uid___A002_Xbebcb7_D.concatenated.ms.calappphase"
-  calAPPTime         =  [0.0, 8.0]
-  gains              =  [['uid___A002_Xbebcb7_D.concatenated.ms.bandpass-zphs', 'uid___A002_Xbebcb7_D.concatenated.ms.flux_inf.APP', 'uid___A002_Xbebcb7_D.concatenated.ms.phase_int.APP', 'uid___A002_Xbebcb7_D.calibrated.ms.XY0.APP', 'uid___A002_Xbebcb7_D.calibrated.ms.Gxyamp.APP']]
-  interpolation      =  [['linear', 'nearest', 'linear', 'linear', 'linear']]
-  dterms             =  ['uid___A002_Xbebcb7_D.calibrated.ms.Df0.APP']
-#  amp_norm           =  True
-  XYadd              =  [0.0]
-  XYratio            =  [1.0]
-  XYdel              =  [0.0]           
-  swapXY             =  [False]
-  swapRL             =  False
-  IDI_conjugated     =  True
-  plotIF             =  list(doIF)
-  plotRange          =  [0, 0, 0, 0, 14, 0, 0, 0]
-  plotAnt            =  2
-  doTest             =  True
-  npix               =  50
-  doSolve = -1
-  solint = [1,1]
-  excludeAnts = []
-  refant             = ''
-
- if False:
-
-  IDI                =  "SWIN/e17d05_022.difx"
-  OUTPUTIDI          =  "TEST"
-  DiFXinput          =  "SWIN/e17d05_022.input"
-  DiFXcalc           =  ""
-  doIF               =  range(37, 65)
-  linAntIdx          =  [1]
-  Range              =  [0,0,0,0,2,0,0,0]
-  ALMAant            =  "uid___A002_Xbebcb7_D.concatenated.ms.ANTENNA"
-  spw                =  -1
-  calAPP             =  "uid___A002_Xbebcb7_D.concatenated.ms.calappphase"
-  calAPPTime         =  [0.0, 5.0]
-  gains              =  [['uid___A002_Xbebcb7_D.calibrated.ms.Gxyamp.APP', 'uid___A002_Xbebcb7_D.calibrated.ms.XY0.APP', 'uid___A002_Xbebcb7_D.concatenated.ms.bandpass-zphs', 'uid___A002_Xbebcb7_D.concatenated.ms.flux_inf.APP', 'uid___A002_Xbebcb7_D.concatenated.ms.phase_int.APP']]
-  interpolation      =  []
-  dterms             =  ['uid___A002_Xbebcb7_D.calibrated.ms.Df0.APP']
-#  amp_norm           =  False
-  XYadd              =  [0.0]
-  XYdel              =  [0.0]
-  XYratio            =  [1.0]
-  swapXY             =  [False]
-  swapRL             =  False
-  IDI_conjugated     =  False
-  plotIF             =  range(37,65)
-  plotRange          =  [0, 0, 0, 0, 2, 0, 0, 0]
-  plotAnt            =  4
-  excludeAnts        =  []
-  doSolve            =  -1
-  solint             =  [1, 1]
-  doTest             =  True
-  npix               =  50
-  refant             = ''
-
- if False:
+  taskname           = "polconvert"
   IDI                =  "VT23B.PASS2.1.FITS"
   OUTPUTIDI          =  "VT23B.PASS2.1.FITS"
   DiFXinput          =  ""
   DiFXcalc           =  ""
-  doIF               =  [1]
+  doIF               =  []
   linAntIdx          =  [1]
   Range              =  [0, 1, 5, 0, 0, 1, 10, 0]
   ALMAant            =  ""
@@ -222,15 +122,17 @@ if __name__=='__main__':
   APPrefant          =  ""
   gains              =  [['NONE']]
   interpolation      =  []
+  gainmode           =  []
+  XYavgTime          =  0.0
   dterms             =  ['NONE']
-#  amp_norm           =  False
-  XYadd              =  [[0.0]]
+  amp_norm           =  0.0
+  XYadd              = [0.0] 
   XYdel              =  [0.0]
-  XYratio            =  [[1.0]]
+  XYratio            =  [1.0]
   swapXY             =  [False]
   swapRL             =  False
   IDI_conjugated     =  False
-  plotIF             =  [1]
+  plotIF             =  []
   plotRange          =  [0, 1, 5, 0, 0, 1, 10, 0]
   plotAnt            =  5
   excludeAnts        =  []
@@ -239,39 +141,8 @@ if __name__=='__main__':
   doTest             =  True
   npix               =  50
   solveAmp           =  True
+  solveMethod        =  "gradient"
 
- if True:
-  IDI                =  "eo014_1_1.IDI6"
-  OUTPUTIDI          =  "eo014_1_1.IDI6"
-  DiFXinput          =  ""
-  DiFXcalc           =  ""
-  doIF               =  [1, 2, 3, 4, 5, 6, 7, 8]
-  linAntIdx          =  [2]
-  Range              =  [0, 23, 28, 0, 0, 23, 39, 45]
-  ALMAant            =  ""
-  spw                =  -1
-  calAPP             =  ""
-  calAPPTime         =  [0.0, 5.0]
-  APPrefant          =  ""
-  gains              =  [['NONE']]
-  interpolation      =  []
-  dterms             =  ['NONE']
-#  amp_norm           =  False
-  XYadd              =  [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
-  XYdel              =  [0.0]
-  XYratio            =  [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
-  swapXY             =  [False]
-  swapRL             =  False
-  IDI_conjugated     =  False
-  plotIF             =  []
-  plotRange          =  [0, 23, 28, 0, 0, 23, 39, 45]
-  plotAnt            =  4
-  excludeAnts        =  [8, 9]
-  doSolve            =  100.0
-  solint             =  [1, 1]
-  doTest             =  True
-  npix               =  50
-  solveAmp           =  True
 
 #
 #
@@ -809,9 +680,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
   try:
- #   print XYavgTime
     XYavgTime = float(XYavgTime)
- #   print XYavgTime
 
   except:
     printError("XYavgTime must be a positive (or zero) double!")
@@ -870,7 +739,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       except:
        printError("Invalid format for XYdel!\n Should be a LIST of numbers, as large as the number of linear-polarization VLBI stations!")
 
- # print 'XYdel: ',XYdel, XYdelF
 
 
 
@@ -1275,18 +1143,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        PrioriGains[i].append(np.array(XYratioF[i][j]*np.exp(1.j*XYaddF[i][j]),dtype=np.complex64))
 
 
-#  print PrioriGains
-#  fig = pl.figure()
-#  sub1 = fig.add_subplot(121)
-#  sub1.plot(np.angle(np.concatenate(PrioriGains[0]))*180./np.pi,'.r')
-#  sub1.plot(np.concatenate(XYaddF[0])*180./np.pi+2,'.r')
-
-#  sub2 = fig.add_subplot(122)
-#  sub2.plot(np.abs(np.concatenate(PrioriGains[0])),'.r')
-#  sub2.plot(np.concatenate(XYratioF[0])+0.1,'.r')
-
-#  raw_input("HOLA")
-
 
 
 
@@ -1444,7 +1300,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      else:
 
 # Smooth X-Y differences:
- #     print gainmode[i][j], XYavgTime
       if gainmode[i][j]=='S' and XYavgTime>0.0:
         printMsg("Will average X-Y phase differences over %.1f seconds"%XYavgTime)
         XYsmooth(gain, XYavgTime, int(spw)) 
@@ -1462,7 +1317,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       tabants = tb.getcol('NAME')
       tb.close()
       tb.open(gain)
-   #   print gain
       spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
       trowns = tb.getcol('TIME')[spmask]
       tsort = np.argsort(trowns)
@@ -1548,12 +1402,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
          unwrap(gaindata[i][j][-1][4]) #, check=ant<3)
          gaindata[i][j][-1][5][:] = flags[:,antrowant]
 
-   #     if 'Gxyamp' in gain:
-   #       print 'X for %i: '%ant,gaindata[i][j][-1][1] 
-   #       print 'Y for %i: '%ant,gaindata[i][j][-1][3]
 # COMPUTE TIME RANGES:
 
-#  raw_input('HOLD')
 
   if len(plotRange)==0:
     plRan = np.array([0.,0.])
@@ -1607,7 +1457,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     OUTPUT = OUTPUTIDI
 
 
-#  print OUTPUT
   if amp_norm>0.0:
     os.system('rm -rf POLCONVERT.GAINS')
 
@@ -1620,13 +1469,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
   printMsg("\n###\n### Going to PolConvert\n###")
 
-# Add as many values of XYadd phases (per antenna) as IFs to be convereted:
-#  for i in range(len(XYaddF)):
-#    for j in range(len(XYaddF[i]),len(doIF)):
-#      XYaddF[i].append(XYaddF[i][-1])
-
-# Do it!
-#  print nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, amp_norm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, isLinear
   doAmpNorm = amp_norm>0.0
   didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, antmounts, isLinear)
 
@@ -1897,16 +1739,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 
- #    print "\n\n   ",i,"\n"
      if i >= MAXIT:
         printMsg("\n WARNING! Gain estimate did NOT converge! \n   Potential problem in IF(s): %s | Chan(s): %i-%i\n     Check the outputs!\n"%(','.join(map(str,IFlist)),Ch0,Ch1-1))
         printMsg("\n    Best error: %.3e in ChSq /  %.3e in gains\n"%(np.abs(relchange),Gchange))
 
-  #   raw_input('HOLD')
 
-   #  if solveAmp:
      return minGains
-   #  else:
 
 
 
@@ -1930,7 +1768,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     cAnts = np.array(calAnts,dtype=np.int32)
     lAnts = np.array(linAntIdx,dtype=np.int32)
     MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts)
-    
     AllFreqs = []
     print '\n\n'
     for pli in plotIF:
@@ -1938,15 +1775,11 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       file1 = "POLCONVERT.FRINGE/OTHERS.FRINGE_%i"%pli
       file2 = "POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli
       PS.ReadData(pli, file1, file2)
-#      print 'DONE!\n'
       AllFreqs.append(PS.GetIFs(pli))
 
     MaxChan = max([np.shape(pp)[0] for pp in AllFreqs])
 
     printMsg("\nWill now estimate the residual cross-polarization gains.\n")
-
-#    def ChiSq(p,IF,c0,c1):
-#      return PS.GetChi2(p,IF,c0,c1)
 
 
 
@@ -1991,17 +1824,16 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
          if fitMethod not in scipyMethods:
            myfit = LMMin(p0,laux,fitAnts,BPChan[chran],BPChan[chran+1],solveAmp,useCov)
          else:
-           mymin = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, BPChan[chran],BPChan[chran+1],solveAmp,-1.0),method=fitMethod)
+           mymin = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, BPChan[chran],BPChan[chran+1],solveAmp,-1.0,useCov),method=fitMethod)
            myfit = mymin.values()[5]
+
          for ci,calant in enumerate(fitAnts):
+
            if solveAmp:
-# RE+IM SPACE:
-#             temp[ci][BPChan[chran]:BPChan[chran+1]+1]= myfit[2*ci] + 1.j*myfit[2*ci+1] 
 # AMP+PHASE SPACE:
              temp[ci][BPChan[chran]:BPChan[chran+1]+1]= (myfit[2*ci]*np.exp(1.j*myfit[2*ci+1]))
            else:
              temp[ci][BPChan[chran]:BPChan[chran+1]+1]= np.exp(1.j*myfit[ci])
-
 
        for ci,calant in enumerate(fitAnts):
          CGains['XYratio'][calant].append(list(1./np.abs(temp[ci])))
@@ -2019,16 +1851,15 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       for ci in fitAnts:
         p0 += [0.0] 
       laux = list(plotIF)
-      print 'First Chi2: ', PS.GetChi2(np.array(p0),laux,fitAnts,0,MaxChan-1,solveAmp,-1.0)
+      print 'First Chi2: ', PS.GetChi2(np.array(p0),laux,fitAnts,0,MaxChan-1,solveAmp,-1.0,False)
       if fitMethod not in scipyMethods: #=='Levenberg-Marquardt':
         myfit = LMMin(p0,laux,fitAnts,0,MaxChan-1,solveAmp,useCov)
       else:
-        mymin = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, 0,MaxChan-1,solveAmp,-1.0),method=fitMethod)
+        mymin = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, 0,MaxChan-1,solveAmp,-1.0,False),method=fitMethod)
         myfit = mymin.values()[5]
 
       RefFreq = AllFreqs[0][0]
       for ci,calant in enumerate(fitAnts):
-  #     print '\nAntenna %i: Ampli: %.2f ; Phase: %.2f deg.; Delay: %.3e s\n'%(calant,myfit.x[2*ci], 180./np.pi*myfit.x[2*ci+1],myfit.x[2*len(fitAnts)+ci])
        CGains['XYadd'][calant] = []
        CGains['XYratio'][calant] = []
        for plii,pli in enumerate(plotIF):
@@ -2042,6 +1873,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
         CGains['XYadd'][calant].append(list(-180./np.pi*np.angle(CrossGain)))
         CGains['XYratio'][calant].append(list(1./np.abs(CrossGain)))
+
 
 
     fig = pl.figure()
@@ -2058,6 +1890,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       MaxG = max(MaxG,np.max(toplot))
       sub2.plot(Freq2Plot,toplot,symbol[((anti-1)/len(color))%len(symbol)]+color[(anti-1)%len(color)],label='ANT. '+str(anti))
 
+
+
+
     sub1.set_ylim((-180.,180.))
     sub2.set_ylim((0.,1.1*MaxG))
     pl.setp(sub1.get_xticklabels(),'visible',False)
@@ -2066,14 +1901,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     sub2.set_xlim((np.min(Freq2Plot) - Dnu*0.1,np.max(Freq2Plot) + Dnu*0.45))
     sub2.set_ylim((0.,2.5))
 
+
     sub2.legend(numpoints=1)
     sub1.set_ylabel('Cross-Phase (deg.)')
     sub2.set_ylabel('Cross-Amp (Norm.)')
     sub2.set_xlabel('Frequency (GHz)')
 
+
     fig.suptitle('CROSS-POLARIZATION GAINS')
     pl.savefig('Cross-Gains.png')
     pl.show()
+
 
    else:
     printMsg("\n\n  doSolve can ONLY work with the source was compiled with DO_SOLVE=True\n  PLEASE, RECOMPILE!\n\n")
@@ -2113,13 +1951,16 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 
-
 # PLOT FRINGES:
 
   if plotFringe and didit==0:
 
+
+
    fig = pl.figure(figsize=(12,6))
+
    fig2 = pl.figure()
+
    fringeAmps = {} 
    fringeAmpsMix = {} 
    ResidGains = {} 
@@ -2140,6 +1981,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     printMsg("Plotting selected fringe for IF #%i"%pli)
 
     frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli,"rb")
+
+
     alldats = frfile.read(4)
     nchPlot = stk.unpack("i",alldats[:4])[0]
     dtype = np.dtype([("JDT",np.float64),("ANT1",np.int32),("ANT2",np.int32),
@@ -2244,6 +2087,20 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           ratt = 1.0   
 
           fig.subplots_adjust(left=0.02,right=0.98,wspace=0.05,hspace=0.2)
+ 
+          try:
+            del sub0
+            del sub1
+            del sub2
+            del sub3
+            del sub4
+            del sub5
+            del sub6
+            del sub7
+            del sub
+            del cbar
+          except:
+            pass
 
           sub0 = fig.add_subplot(241)
           sub0.imshow(np.abs(RRu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
@@ -2304,18 +2161,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           ratt = float(np.shape(Kmat[0])[1])/float(np.shape(Kmat[0])[0])
 
           fig2.clf()
-
-      #    pmsg = '\n\nMAXIMUM DEVIATION OF HYBRID-MATRIX AMPLITUDE:\n' 
-      #    Pmat = [np.abs(ki) for ki in Kmat]
-      #    pmsg += 'XR-XR -> 0.0%\n'
-      #    P1 = np.unravel_index(np.argmax(np.abs(Pmat[0]-Pmat[1])/Pmat[0]),np.shape(Pmat[0]))
-      #    P2 = np.unravel_index(np.argmax(np.abs(Pmat[0]-Pmat[2])/Pmat[0]),np.shape(Pmat[0]))
-      #    P3 = np.unravel_index(np.argmax(np.abs(Pmat[0]-Pmat[3])/Pmat[0]),np.shape(Pmat[0]))
-      #    pmsg += 'XR-XL -> %.1f%%\n'%(100.*((Pmat[0]-Pmat[1])/Pmat[0])[P1])
-      #    pmsg += 'XR-YR -> %.1f%%\n'%(100.*((Pmat[0]-Pmat[2])/Pmat[0])[P2])
-      #    pmsg += 'XR-YL -> %.1f%%\n'%(100.*((Pmat[0]-Pmat[3])/Pmat[0])[P3])
-
-      #    printMsg(pmsg)
 
           fig2.subplots_adjust(right=0.8)
           cbar_ax = fig2.add_axes([0.85, 0.15, 0.05, 0.7])
@@ -2428,7 +2273,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           printMsg(pmsg) 
 
           pfile.write(pmsg)
- #     pfile.close()
 
     try:
       del uncal[3],uncal[2],uncal[1],uncal[0],uncal
@@ -2526,6 +2370,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
   printMsg('Please, check the PolConvert.log file for special messages.',dolog=False)
 
-  return CGains
+  ofile = open('PolConvert.XYGains.dat','w')
+  pk.dump(CGains,ofile)
+  ofile.close()
+#  return CGains
 
 

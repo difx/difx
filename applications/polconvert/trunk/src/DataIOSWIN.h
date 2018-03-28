@@ -103,7 +103,7 @@ class DataIOSWIN: public DataIO {
     int nfiles;
     std::ifstream *olddifx;
     std::fstream *newdifx;
-    bool isOverWrite, doWriteCirc, canPlot;
+    bool isOverWrite, doWriteCirc, canPlot, isAutoCorr;
     long currEntries[MAXIF][4], nrec;
     long *filesizes;
     std::complex<float> *currentVis[4] ;
