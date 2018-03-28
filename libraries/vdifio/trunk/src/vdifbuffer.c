@@ -36,7 +36,7 @@
 int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 {
 	int frameSize;
-	int likelyFrameSizes[] = {5032, 10032, 20032, 40032, 80032, 160032, 8032, 16032, 32032, 1032, 2032, 4032};	/* add more here as you like ... */
+	int likelyFrameSizes[] = {5032, 10032, 20032, 40032, 80032, 160032, 8032, 16032, 32032, 1032, 2032, 4032, 8224, 1312};	/* add more here as you like ... */
 	const int nLikelyFrameSizes = sizeof(likelyFrameSizes)/sizeof(likelyFrameSizes[0]);
 	int f;
 
