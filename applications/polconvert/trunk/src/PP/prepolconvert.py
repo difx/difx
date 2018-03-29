@@ -82,12 +82,12 @@ def do_save(o, src, dst):
     if src == dst:
         tmp = src + '.' + o.orig
         if os.path.exists(tmp):
-            if o.verb: 'Backup copy already exists: ' + tmp
+            if o.verb: print('Backup copy already exists: ' + tmp)
         else:
             if os.path.exists(src):
                 os.rename(src, tmp)
             else:
-                if o.verb: 'No source file to save: ' + src
+                if o.verb: print('No source file to save: ' + src)
         src = tmp
     if os.path.exists(dst):
         if o.clobber:
