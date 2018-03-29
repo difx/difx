@@ -409,7 +409,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
 int getBaselineIndex (DifxInput *D, int a1, int a2)
     {
     int i;
-
+#warning "FIXME: getBaselineIndex return value incorrect/incomplete when one antenna has multiple datastreams"
     for (i=0; i<D->nBaseline; i++)
         if ((D->datastream[D->baseline[i].dsA].antennaId == a1
          && D->datastream[D->baseline[i].dsB].antennaId == a2)
