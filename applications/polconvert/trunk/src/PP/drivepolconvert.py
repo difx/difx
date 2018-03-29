@@ -439,7 +439,7 @@ def plotPrep(o):
         for ii in range(1,o.fringe):
             o.flist += ',(%d*len(doIF)/%d)' % (ii, o.fringe)
     if o.remote == o.ant:
-        o.remote == o.ant + 1
+        o.remote = o.ant + 1
         print 'Shifting baseline from %d-%d to %d-%d' % (
             o.ant, o.remote - 1, o.ant, o.remote)
 
@@ -743,7 +743,7 @@ def executeCasa(o):
         print 'additional test runs on the same jobs.'
         print ''
 
-def convertOneScan(job,wdr,cmd):
+def convertOneScan(o,job,wdr,cmd):
     '''
     Process one scan for this job as laid out in wdr using cmd
     '''
@@ -764,10 +764,10 @@ def launchNewScanWorker(o, where):
     This pulls a job for one scan out of the dictionaries
     and launches a thread to have CASA process it.
     '''
-    job = sorted(o.workdirs)[0];
+    job = sorted(o.workdirs)[0]
     wdr = o.workdirs.pop(job)
     cmd = o.workcmds.pop(job)
-    th = threading.Thread(target=convertOneScan,args=(job,wdr,cmd))
+    th = threading.Thread(target=convertOneScan,args=(o,job,wdr,cmd))
     o.workbees.append(th)
     print 'Spawning thread',th.name,'on job', job,where
     th.start()
@@ -862,24 +862,24 @@ def executeCasaParallel(o):
     finally:
         reportWorkTodo(o)
         try: os.unlink('killcasa')
-        except: pass
+        finally: pass
 
 #
 # enter here to do the work
 #
 if __name__ == '__main__':
-    o = parseOptions()
-    checkOptions(o)
-    if o.prep:
-        runPrePolconvert(o)
-    deduceZoomIndicies(o)
-    plotPrep(o)
-    if o.parallel == 0:
-        createCasaInputSingle(o)
-        executeCasa(o)
+    opts = parseOptions()
+    checkOptions(opts)
+    if opts.prep:
+        runPrePolconvert(opts)
+    deduceZoomIndicies(opts)
+    plotPrep(opts)
+    if opts.parallel == 0:
+        createCasaInputSingle(opts)
+        executeCasa(opts)
     else:
-        createCasaInputParallel(o)
-        executeCasaParallel(o)
+        createCasaInputParallel(opts)
+        executeCasaParallel(opts)
 
 #
 # eof
