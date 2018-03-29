@@ -357,6 +357,39 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 u.t120.fw.weight = -0.0;
             else
                 u.t120.fw.weight = rec->weight;
+                                    // double-check that vis record pols match DiFX .input metadata
+            if (0) {
+                char allowedpols[500];
+                int ff,pp, legal=0;
+                                    // TODO: 'blind' from getBaselineIndex (D, a1, a2) futher above works only if both
+                                    // antennas are single-datastream; in EHTC case the check below finds the wrong polarizations
+                DifxBaseline* db = &(D->baseline[blind]);
+                memset(allowedpols, 0, sizeof(allowedpols));
+                for (ff=0; ff<db->nFreq && !legal; ff++) {
+                    for (pp=0; pp<db->nPolProd[ff] && !legal; pp++) {
+                        char polA, polB;
+                        int bfqA, bfqB;
+                        (void)getDifxDatastreamBandFreqIdAndPol(&bfqA, &polA, D->datastream + db->dsA, db->bandA[ff][pp]);
+                        (void)getDifxDatastreamBandFreqIdAndPol(&bfqB, &polB, D->datastream + db->dsB, db->bandB[ff][pp]);
+                        if (bfqA != bfqB)
+                            fprintf(stderr,
+                                    "Warning: .difx data freq Id mismatch on baseline %d (%.2s-%.2s) freq %d! Should not happen!\n",
+                                    rec->baseline, (stns + a1)->intl_name, (stns + a2)->intl_name, rec->freq_index);
+                                    // TODO: compare 'rec->freq_index' against bandFreqIndex or zoomBandFreqIndex whichever is correct,
+                                    // and do the below check only on the matching frequency
+                        if (rec->pols[0]==polA && rec->pols[1]==polB) {
+                            legal = 1;
+                        }
+                        strncat(allowedpols, "|", 1);
+                        strncat(allowedpols, &polA, 1);
+                        strncat(allowedpols, &polB, 1);
+                    }
+                }
+                if (!legal)
+                    fprintf(stderr,
+                            "Warning: mismatch on baseline %d (%.2s-%.2s) freq %d vis data has pol %.2s, .input has %s\n",
+                            rec->baseline, (stns + a1)->intl_name, (stns + a2)->intl_name, rec->freq_index, rec->pols, allowedpols);
+            }
                                     // calculate accumulation period index from start of scan
             u.t120.ap = (8.64e4 * (rec->mjd - D->scan[scanId].mjdStart) + rec->iat)
                                  / D->config[configId].tInt;
