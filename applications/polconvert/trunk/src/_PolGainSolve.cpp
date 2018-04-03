@@ -116,10 +116,6 @@ PyMODINIT_FUNC init_PolGainSolve(void)
 
 
 
-//PolGainSolve::~PolGainSolve() {
-//};
-
-
 
 
 static PyObject *PolGainSolve(PyObject *self, PyObject *args){
@@ -145,25 +141,6 @@ AddParHand = RelWeight>0.0;
 AddCrossHand = true;
 
 
-/*
-  if (TAvg >0){
-    SolMode = 1;
-  } else if (TAvg <0){
-    SolMode = -1;
-    TAvg = -TAvg;
-  } else {
-    SolMode = 0;
-    TAvg = 1.0;
-  };
-
-  if(TAvg >= 100.){
-    AddCrossHand = true;
-    TAvg -=100;
-    if (TAvg<1.0){TAvg=1.0;}; 
-  } else {
-    AddCrossHand = false;
-  };
-*/
 
   CalAnts = (int *)PyArray_DATA(calant);
   NCalAnt = PyArray_DIM(calant,0);
@@ -191,13 +168,11 @@ AddCrossHand = true;
         if(j==CalAnts[l]-1){isCal2=true;};
       };
 
-  //    printf("LOOP %i %i -  %i %i\n",i,j,isCal1,isCal2);
 
       if (isCal1 && isCal2){
         BasNum[i][j] = k;
    //     BasNum[j][i] = k;
         k += 1;
- //       printf("%i - %i | %i\n",i+1,j+1,BasNum[i][j]);
       };
 
 
@@ -205,10 +180,10 @@ AddCrossHand = true;
     };
   };
   
-  auxC00 = new cplx64f*[k]; //[3*NCalAnt+1];
-  auxC01 = new cplx64f*[k]; //[3*NCalAnt+1];
-  auxC10 = new cplx64f*[k]; //[3*NCalAnt+1];
-  auxC11 = new cplx64f*[k]; //[3*NCalAnt+1];
+  auxC00 = new cplx64f*[k]; 
+  auxC01 = new cplx64f*[k]; 
+  auxC10 = new cplx64f*[k];
+  auxC11 = new cplx64f*[k];
 
   for(i=0;i<k;i++){
     auxC00[i] = new cplx64f[3*NCalAnt+1];
@@ -242,28 +217,23 @@ AddCrossHand = true;
   Nlin = PyArray_DIM(linant,0);
 
 
-//  printf("N linears: %i  | N Cal. Antennas: %i\n",Nlin,NCalAnt);
-
-//  int i;
-//  for (i=0; i<NCalAnt;i++){printf("ANT: %i\n",CalAnts[i]);};
-
 // Re-allocate memory:
   if (NIF >0){
-    free(NVis); // = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-    free(IFNum); // = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-    free(NCVis);// = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-    free(NLVis);// = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-    free(Nchan); //= (int *) malloc(MAXIF*sizeof(int));// new int[1];
-    free(Frequencies);// = (double **) malloc(MAXIF*sizeof(double*)); // new double*[1];
-    free(Ant1); //= (int**) malloc(MAXIF*sizeof(int*));
-    free(Ant2); //= (int**) malloc(MAXIF*sizeof(int*));
-    free(Times);// = (double**) malloc(MAXIF*sizeof(double*));
-    free(PA1); //= (cplx32f**) malloc(MAXIF*sizeof(cplx32f*));
-    free(PA2); //= (cplx32f**) malloc(MAXIF*sizeof(cplx32f*));
-    free(RR); //= (cplx32f***) malloc(MAXIF*sizeof(cplx32f**));
-    free(LR); //= (cplx32f***) malloc(MAXIF*sizeof(cplx32f**));
-    free(RL); //= (cplx32f***) malloc(MAXIF*sizeof(cplx32f**));
-    free(LL); //= (cplx32f***) malloc(MAXIF*sizeof(cplx32f**));
+    free(NVis); 
+    free(IFNum);
+    free(NCVis);
+    free(NLVis);
+    free(Nchan);
+    free(Frequencies);
+    free(Ant1);
+    free(Ant2);
+    free(Times);
+    free(PA1); 
+    free(PA2);
+    free(RR);
+    free(LR); 
+    free(RL);
+    free(LL);
   };
 
 
@@ -272,12 +242,12 @@ AddCrossHand = true;
 
 // Set Memory:
 
-  NVis = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-  IFNum = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-  NCVis = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-  NLVis = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-  Nchan = (int *) malloc(MAXIF*sizeof(int));// new int[1];
-  Frequencies = (double **) malloc(MAXIF*sizeof(double*)); // new double*[1];
+  NVis = (int *) malloc(MAXIF*sizeof(int));
+  IFNum = (int *) malloc(MAXIF*sizeof(int));
+  NCVis = (int *) malloc(MAXIF*sizeof(int));
+  NLVis = (int *) malloc(MAXIF*sizeof(int));
+  Nchan = (int *) malloc(MAXIF*sizeof(int));
+  Frequencies = (double **) malloc(MAXIF*sizeof(double*));
   Ant1 = (int**) malloc(MAXIF*sizeof(int*));
   Ant2 = (int**) malloc(MAXIF*sizeof(int*));
   Times = (double**) malloc(MAXIF*sizeof(double*));
@@ -287,13 +257,6 @@ AddCrossHand = true;
   LR = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   RL = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   LL = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
-
-
-
-//Py_DECREF(RelWeight);
-//Py_DECREF(solints);
-//Py_DECREF(calant);
-//Py_DECREF(linant);
 
 
     PyObject *ret = Py_BuildValue("i",0);
@@ -306,7 +269,7 @@ AddCrossHand = true;
 
 
 
-static PyObject *ReadData(PyObject *self, PyObject *args) { //std::string CPFileName, std::string MPFileName){
+static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 int IFN;
 const char *file1, *file2;
@@ -346,6 +309,12 @@ if (NIF > MAXIF){
   NLVis = (int*) realloc(NLVis,MAXIF*sizeof(int));
   IFNum = (int*) realloc(IFNum,MAXIF*sizeof(int));
 
+  if(!Nchan || !Frequencies || !NVis || !NCVis || !NLVis || !IFNum){
+    Nchan=NULL; Frequencies=NULL; NVis=NULL; NCVis=NULL; NLVis=NULL; IFNum=NULL;
+    PyObject *ret = Py_BuildValue("i",-2);
+    return ret;
+  };
+
 // Set memory for the visibilities and metadata:
   Ant1 = (int**) realloc(Ant1,MAXIF*sizeof(int*));
   Ant2 = (int**) realloc(Ant2,MAXIF*sizeof(int*));
@@ -356,6 +325,16 @@ if (NIF > MAXIF){
   LR = (cplx64f***) realloc(LR,MAXIF*sizeof(cplx64f**));
   RL = (cplx64f***) realloc(RL,MAXIF*sizeof(cplx64f**));
   LL = (cplx64f***) realloc(LL,MAXIF*sizeof(cplx64f**));
+
+  if(!Ant1 || !Ant2 || !Times || !PA1 || !PA2 || !RR || !LR || !RL || !LL){
+    Ant1=NULL; Ant2=NULL; Times=NULL; PA1=NULL; PA2=NULL; RR=NULL;
+    LR=NULL; RL=NULL; LL=NULL;
+    PyObject *ret = Py_BuildValue("i",-3);
+    return ret;
+  };
+
+
+
 };
 
 // IF NUMBER:
@@ -775,7 +754,9 @@ return PyArray_Return(out_Freq);
 // Quinn Estimator of the FFT peak with sub-bin precision:
 
 double QuinnTau(double x){
-  return 0.25*log(3.*x*x + 6.*x + 1.) - sqrt(6.)/24.*log((x+1.-sqrt(2./3.))/(x+1.+sqrt(2./3.)));
+//  return 0.25*log(3.*x*x + 6.*x + 1.) - sqrt(6.)/24.*log((x+1.-sqrt(2./3.))/(x+1.+sqrt(2./3.)));
+  return 0.25*log1p(3.*x*x + 6.*x) - sqrt(6.)/24.*log1p(-2.*sqrt(2./3.)/(x+1.+sqrt(2./3.)));
+
 };
 
 double QuinnEstimate(cplx64f *FFTVec){
@@ -1470,6 +1451,34 @@ for (i=0; i<NIF; i++){
 /////////////////
 
 fftw_free(BufferVis00); fftw_free(BufferVis11); fftw_free(outXX); fftw_free(outYY);
+
+delete[] antFit;
+delete[] T0;
+delete[] T1;
+delete[] aroundPeak00;
+delete[] aroundPeak11;
+
+for (i=0; i<NIF;i++){
+  delete[] BLRates00[i];
+  delete[] BLRates11[i];
+  delete[] BLDelays00[i];
+  delete[] BLDelays11[i];
+  delete[] Weights[i];
+};
+
+delete[] BLRates00;
+delete[] BLRates11;
+delete[] BLDelays00;
+delete[] BLDelays11;
+delete[] Weights;
+
+delete[] Hessian;
+delete[] RateResVec;
+delete[] DelResVec00;
+delete[] DelResVec11;
+delete[] CovMat;
+
+
 
 //Py_DECREF(antList);
 
@@ -2375,6 +2384,8 @@ for(i=0;i<Npar;i++){
   CrossG[i] += SolVec[i];
 };
 
+delete[] DirDer;
+
 }; // comes from id(doCov)
 
   if (SolAlgor==0){
@@ -2383,8 +2394,24 @@ for(i=0;i<Npar;i++){
 
   Chi2Old = Chi2;
 
-//    PyObject *ret = Py_BuildValue("[d,d]",Chi2,TheorImpr);
     PyObject *ret = Py_BuildValue("d",Chi2);
+
+  delete[] Tm;
+  delete[] DerAux1;
+  delete[] DerAux2;
+  delete[] doIF;
+  delete[] antFit;
+  delete[] CovMat;
+  delete[] IndVec;
+  delete[] SolVec;
+  delete[] G1;
+  delete[] G2;
+  delete[] G1nu;
+  delete[] G2nu;
+  delete[] MBD1;
+  delete[] MBD2;
+  delete[] AvVis;
+  delete[] DerIdx;
 
     return ret;
 

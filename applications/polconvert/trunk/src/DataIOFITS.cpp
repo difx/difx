@@ -270,7 +270,7 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
     };
   };
 
-
+  delete[] circFile;
 
 
 };
@@ -515,7 +515,7 @@ void DataIOFITS::readInput(std::string inputfile) {
     sprintf(message,"\n\nPROBLEM READING NUMBERS OF COLUMNS!  ERR: %i\n\n",status);
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
-    success=false;return;
+    success=false; delete[] Dates; return;
   };
 
 
@@ -665,6 +665,8 @@ if (status){
 
    success=false;return;
 };
+
+delete[] Dates;
 
 return;
 

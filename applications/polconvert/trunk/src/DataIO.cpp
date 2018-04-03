@@ -115,7 +115,7 @@ if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
  
 
   switch (Geometry->Mount[Ant1]){
-  case 0: P1 = atan2(sin(H1), CT1 - Geometry->SinDec[sidx]*cos(H1)); break; // ALT-AZ
+  case 0:  P1 = atan2(sin(H1), CT1 - Geometry->SinDec[sidx]*cos(H1)); break; // ALT-AZ
   case 1: P1 = 0.; break; // EQ
   case 2: P1 = 0.; break; // ORBITAL (NO WAY!)
   case 3: P1 = atan2(cos(H1), Geometry->SinDec[sidx]*sin(H1)); break; // X-Y (E-W?)
@@ -126,12 +126,12 @@ if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
   };
 
   switch (Geometry->Mount[Ant2]){
-  case 0: P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2)); break; // ALT-AZ
-  case 1: P2 = 0.; break; // EQ
-  case 2: P2 = 0.; break; // ORBITAL (NO WAY!)
-  case 3: P2 = atan2(cos(H2), Geometry->SinDec[sidx]*sin(H2)); break; // X-Y (E-W?)
-  case 4: P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2)) + Elev2; break; // NA-R
-  case 5: P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2)) - Elev2; break; // NA-L
+  case 0:  P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2));  break; // ALT-AZ
+  case 1: P2 = 0.;  break; // EQ
+  case 2: P2 = 0.;  break; // ORBITAL (NO WAY!)
+  case 3: P2 = atan2(cos(H2), Geometry->SinDec[sidx]*sin(H2));  break; // X-Y (E-W?)
+  case 4: P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2)) + Elev2;  break; // NA-R
+  case 5: P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2)) - Elev2;  break; // NA-L
   default: P2 = 0.;
 
   };

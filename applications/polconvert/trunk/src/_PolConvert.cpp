@@ -460,7 +460,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      if(!DifXData->succeed()){
           sprintf(message,"\nERROR WITH DATA FILE(S)!\n");
           fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-
+          ret = Py_BuildValue("i",-1);
           return ret;
      };
 
@@ -719,7 +719,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     //   if(countNvis%1024==0){printf("\r Doing vis %i",countNvis);fflush(stdout);};
 
 // Check if there was an error in reading:
-     if (!DifXData->succeed()){DifXData->finish();return ret;};
+     if (!DifXData->succeed()){fclose(gainsFile);DifXData->finish();return ret;};
 
   //      printf("\nVIS: %i; %.2f / %.2f  -  %.2f",countNvis,currT, doRange[0], doRange[1]);
 
@@ -1054,12 +1054,120 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   sprintf(message,"\nDONE WITH POLCONVERT!\n");
   fprintf(logFile,"%s",message); std::cout << message; fflush(logFile);
 
-  fclose(logFile);
+
 // finished with no errors:
-    ret = Py_BuildValue("i",0);
+  ret = Py_BuildValue("i",0);
+
+
+
+/////////////////////////////////////////////////
+// Free memory:
+
+  fclose(logFile);
+
+  for (ij=0; ij<nALMA; ij++) {
+    auxI = nsumArr[ij];
+    for (ii=0; ii<auxI; ii++) {
+      delete[] AnG[ij][ii][0];
+      delete[] AnG[ij][ii][1];
+      delete[] AnDt[ij][ii][0];
+      delete[] AnDt[ij][ii][1];
+      delete[] AnG[ij][ii];
+      delete[] AnDt[ij][ii];
+    };
+    delete[] AnG[ij];
+    delete[] AnDt[ij];
+    delete[] Weight[ij];
+
+    for (ii=0; ii<2; ii++) {
+      for (ik=0; ik<2; ik++) {
+        for (il=0; il<auxI; il++) {
+          delete[] K[ij][ii][ik][il];
+          delete[] Kfrozen[ij][ii][ik][il];
+        };
+        delete[] K[ij][ii][ik];
+        delete[] Kfrozen[ij][ii][ik];
+        delete[] Ktotal[ij][ii][ik];
+      };
+    };
+
+   };
+
+    for (i=0;i<nALMA;i++){
+     for (j=0;j<nsumArr[i];j++){delete[] dttimesArr[i][j];};
+     for (j=0; j<ngainTabs[i]; j++){
+      delete[] ntimeArr[i][j];
+      delete[] timesArr[i][j];
+      delete[] gainsArrR1[i][j];
+      delete[] gainsArrI1[i][j];
+      delete[] gainsArrR2[i][j];
+      delete[] gainsArrI2[i][j];
+      delete[] gainflag[i][j];
+      delete allgains[i][j];
+    };
+    delete alldterms[i];
+    delete[] allgains[i];
+    delete[]  ntimeArr[i]; 
+    delete[]  timesArr[i];
+    delete[]  gainsArrR1[i];
+    delete[]  gainsArrI1[i];
+    delete[]  gainsArrR2[i];
+    delete[]  gainsArrI2[i];
+    delete[]  gainflag[i];
+    delete[] kind[i];
+    delete[]  nchanArr[i];
+    delete[]  freqsArr[i];
+    delete[] dttimesArr[i];
+    delete[] ndttimeArr[i];
+    delete[] dtflag[i];
+    delete[] dtermsArrR1[i];
+    delete[] dtermsArrI1[i];
+    delete[] dtermsArrR2[i];
+    delete[] dtermsArrI2[i];
+
+   };
+
+
+  for (i=0;i<NPGain;i++){
+    delete[] PrioriGains[i]; 
+  };
+  delete[] PrioriGains;
+
+    delete[] alldterms;
+    delete[] allgains;
+    delete[] kind;
+    delete[] nsumArr;
+    delete[] almanums;
+    delete[]  ntimeArr;
+    delete[]  nchanArr;
+    delete[]  timesArr;
+    delete[]  gainsArrR1;
+    delete[]  gainsArrI1;
+    delete[]  gainsArrR2;
+    delete[]  gainsArrI2;
+    delete[]  gainflag;
+    delete[]  freqsArr;
+
+    delete[] ndttimeArr;
+    delete[] dttimesArr;
+    delete[] dtermsArrR1;
+    delete[] dtermsArrI1;
+    delete[] dtermsArrR2;
+    delete[] dtermsArrI2;
+
+    delete[] isLinear;
+    delete[] XYSWAP;
+    delete[] ngainTabs;
+
+    delete[] dtflag;
+    delete[] nchanDt; 
+    delete[] dtfreqsArr;
+
+/////////////////////////////////////////////////////
+
+
     return ret;
 
 }
-
 
 

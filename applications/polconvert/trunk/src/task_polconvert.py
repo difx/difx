@@ -1774,7 +1774,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       printMsg("Reading back IF #%i"%pli)
       file1 = "POLCONVERT.FRINGE/OTHERS.FRINGE_%i"%pli
       file2 = "POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli
-      PS.ReadData(pli, file1, file2)
+      success = PS.ReadData(pli, file1, file2)
+      if success != 0:
+        printError('Failed PolGainSolve: ERROR %i'%success)
       AllFreqs.append(PS.GetIFs(pli))
 
     MaxChan = max([np.shape(pp)[0] for pp in AllFreqs])

@@ -32,6 +32,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 DataIOSWIN::~DataIOSWIN() {
 
+  free(Records);
+  free(ParAng[0]);
+  free(ParAng[1]);
+  free(is1orig);
+  free(is2orig);
+  free(is1);
+  free(is2);
+
 };
 
 
@@ -77,7 +85,8 @@ is1orig =  (bool *) malloc(RECBUFFER*sizeof(bool)); //new bool[RECBUFFER];
 is2orig = (bool *) malloc(RECBUFFER*sizeof(bool));  //new bool[RECBUFFER];
 ParAng[0] = (double *) malloc(RECBUFFER*sizeof(double));  //new double[RECBUFFER];
 ParAng[1] = (double *) malloc(RECBUFFER*sizeof(double));  //new double[RECBUFFER];
-
+//is1 = (bool *) malloc(RECBUFFER*sizeof(bool));
+//is2 = (bool *) malloc(RECBUFFER*sizeof(bool));
 
 is1 = new bool[RECBUFFER];
 is2 = new bool[RECBUFFER];
@@ -229,30 +238,30 @@ void DataIOSWIN::readHeader(bool doTest) {
   };
 
 
+  success = true;
+
+
+
+  free(Records);
+  free(ParAng[0]);
+  free(ParAng[1]);
+  free(is1orig);
+  free(is2orig);
+  delete is1;
+  delete is2;
+
+  Records = (Record *) malloc(RECBUFFER*sizeof(Record)); // new Record[RECBUFFER];
+  is1orig =  (bool *) malloc(RECBUFFER*sizeof(bool)); //new bool[RECBUFFER];
+  is2orig = (bool *) malloc(RECBUFFER*sizeof(bool));  //new bool[RECBUFFER];
+  ParAng[0] = (double *) malloc(RECBUFFER*sizeof(double));  //new double[RECBUFFER];
+  ParAng[1] = (double *) malloc(RECBUFFER*sizeof(double));  //new double[RECBUFFER];
+//  is1 = (bool *) malloc(RECBUFFER*sizeof(bool));
+//  is2 = (bool *) malloc(RECBUFFER*sizeof(bool));
 
 
 
 
-  delete[] Records;
-  Records = new Record[RECBUFFER];
 
-  delete[] ParAng[0];
-  delete[] ParAng[1];
-  ParAng[0] = new double[RECBUFFER];
-  ParAng[1] = new double[RECBUFFER];
-
-
-  delete[] is1orig;
-  is1orig = new bool[RECBUFFER];
-
-  delete[] is2orig;
-  is2orig = new bool[RECBUFFER];
-
-  delete[] is1;
-  is1 = new bool[RECBUFFER];
-
-  delete[] is2;
-  is2 = new bool[RECBUFFER];
 
   nrec = 0;
   long CURRSIZE = RECBUFFER;
@@ -321,11 +330,14 @@ void DataIOSWIN::readHeader(bool doTest) {
   if (nrec == CURRSIZE) {
     CURRSIZE += RECBUFFER; 
     Records = (Record*) realloc(Records, CURRSIZE*sizeof(Record));
+    if(!Records){success = false; goto FREE;};
     is1orig = (bool*) realloc(is1orig, CURRSIZE*sizeof(bool));
+    if(!is1orig){success = false; goto FREE;};
     is2orig = (bool*) realloc(is2orig, CURRSIZE*sizeof(bool));
+    if(!is2orig){success = false; goto FREE;};
     ParAng[0] = (double *) realloc(ParAng[0], CURRSIZE*sizeof(double));
     ParAng[1] = (double *) realloc(ParAng[1], CURRSIZE*sizeof(double));
-
+    if(!ParAng[0] || !ParAng[1]){success = false; goto FREE;};
   };
 
 // Check if we are in the time window:
@@ -394,11 +406,8 @@ void DataIOSWIN::readHeader(bool doTest) {
 
      Records[nrec].Source = sidx;
      Records[nrec].fileNumber = auxI;
-     Records[nrec].Time = daytemp2; //(daytemp + day0)*86400.;  //  /86400.;
+     Records[nrec].Time = daytemp2; 
      
-  //   if (daytemp2<0. || daytemp<0.) {
-  //     printf("\nTime: %.2f  %.2f",daytemp2, daytemp);
-  //   };
 
      Records[nrec].notUsed = true;
      Records[nrec].Antennas[0] = ant1;
@@ -409,9 +418,6 @@ void DataIOSWIN::readHeader(bool doTest) {
      Records[nrec].Pol[1] = pol[1];
 
 // Derive the parallactic angles:
-//     olddifx[auxI].seekg(beg - UVWsize,olddifx[auxI].beg);
-//     olddifx[auxI].read(reinterpret_cast<char*>(UVW), UVWsize);
-//     getParAng(sidx,ant1,ant2,UVW,ParAng[0][nrec],ParAng[1][nrec]);
     ParAng[0][nrec] = AuxPA1 ; ParAng[1][nrec] = AuxPA2;
  
 
@@ -450,6 +456,18 @@ void DataIOSWIN::readHeader(bool doTest) {
 // day0 is JD (not MJD):
 day0 += 2400000.5 ;
 
+FREE:
+if (!success){
+  free(Records);
+  free(ParAng[0]);
+  free(ParAng[1]);
+  free(is1orig);
+  free(is2orig);
+  free(is1);
+  free(is2);
+  Records = NULL; ParAng[0]=NULL; ParAng[1]=NULL;
+  is1orig=NULL; is2orig=NULL;
+};
 
 
 // CLOSE AUXILIARY BINARY FILES:
@@ -459,18 +477,21 @@ day0 += 2400000.5 ;
     };
   };
 
+  delete[] circFile;
 
 
-
-if (nrec==0) {sprintf(message,"\n NO VALID DATA FOUND!"); 
+if (nrec==0) {
+  sprintf(message,"\n NO VALID DATA FOUND!"); 
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-
-success = false;};
-
+  success = false;
+} else {
 // Allocate memory for booleans:
-NLinVis = nrec/4;
-is1 = new bool[nrec];
-is2 = new bool[nrec];
+  NLinVis = nrec/4;
+  is1 = new bool[nrec];
+  is2 = new bool[nrec];
+};
+
+delete[] pol;
 
 };
 
@@ -647,6 +668,9 @@ for (i=0; i<4; i++) {
      for (k=0;k<Freqs[currFreq].Nchan; k++) {
        currentVis[3][k] = auxVis[3][k];
        currentVis[2][k] = auxVis[2][k];
+       currentVis[0][k] = auxVis[0][k];
+       currentVis[1][k] = auxVis[1][k];
+
      };
    };
  } else {isAutoCorr = false;};
@@ -688,34 +712,12 @@ for (i=0; i<4; i++) {
   fnum = Records[rec].fileNumber;
   newdifx[fnum].seekp(Records[rec].byteIni, newdifx[fnum].beg);
   newdifx[fnum].write(reinterpret_cast<char*>(bufferVis[i]),Records[rec].byteEnd-Records[rec].byteIni);
-  newdifx[fnum].sync();
-  newdifx[fnum].clear();
-
- }  /* else {  
-
-  if (!canPlot){ // Case of auto-correlations (2nd round of conversion):   
-
-    for(k=0;k<Freqs[currFreq].Nchan; k++) {
-      auxVis[i][k] = bufferVis[i][k];
-    };
-
-  } else {
-
-    for(k=0;k<Freqs[currFreq].Nchan; k++) {
-      //  IVAN: compiler complained
-      //auxVis[i][k] = {0.0,0.0};
-      auxVis[i][k] = (std::complex<float>)0;
-    };
-
-  };
-
- };  */
-
+ };
 };
 
   newdifx[fnum].flush();
   newdifx[fnum].sync();
-//  olddifx[fnum].sync();
+  newdifx[fnum].clear();
 
   return true;
 
@@ -837,7 +839,7 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 for (i=0; i<4; i++) {
 
 
- if (currEntries[currFreq][i]<0 || (isAutoCorr && i>1) ) {
+ if (currEntries[currFreq][i]<0 || isAutoCorr ) {
 
   if (!canPlot){ // Case of auto-correlations (2nd round of conversion):   
 
