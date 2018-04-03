@@ -34,6 +34,10 @@ do
   diff)
     diff $bzr/$f $dfx/$f
     ;;
+  sdiff)
+    echo sdiff -lw164 $bzr/$f $dfx/$f
+    sdiff -lw164 $bzr/$f $dfx/$f
+    ;;
   cmp)
     cmp $bzr/$f $dfx/$f
     ;;
@@ -55,14 +59,15 @@ do
     [ "$action" = 'help' ] || action $action is not supported
     cat <<....EOF
     legal actions are
-      dir  -- list dirs
-      ls   -- list the files
-      cmp  -- run cmp
-      diff -- run diff
-      cp   -- bzr to difx
-      get  -- difx to bzr
-      dcp  -- diff and cp files different
-      dget -- diff and cp files different
+      dir   -- list dirs
+      ls    -- list the files
+      cmp   -- run cmp
+      diff  -- run diff
+      sdiff -- run sdiff (need width 164)
+      cp    -- bzr to difx
+      get   -- difx to bzr
+      dcp   -- diff and cp files different
+      dget  -- diff and cp files different
 ....EOF
     exit 1
     ;;
