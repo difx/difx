@@ -26,7 +26,11 @@ setenv USEGFORTRAN "yes"
 ####### PERL VERSION/SUBVERSION #############
 set perlver="5"
 set perlsver="5.10.1"
-PREPEND PERL5LIB         ${DIFXROOT}/share/perl/$perlver
+if ($?PERL5LIB) then
+  PREPEND PERL5LIB ${DIFXROOT}/share/perl/$perlver
+else
+  setenv PERL5LIB ${DIFXROOT}/share/perl/$perlver
+endif
 
 ####### PORTS FOR DIFXMESSAGE ###############
 # Uncomment these to enable DIFX_MESSAGES
@@ -38,6 +42,7 @@ setenv DIFX_BINARY_PORT 50202
 ####### CALC SERVER NAME ######### 
 setenv CALC_SERVER localhost
 
+####### HOPS ENVIRONMENT #########
 # uncomment/modify these lines if you have enabled HOPS
 # or alternatively be sure to source $DIFXROOT/bin/hops.bash
 # setenv GS_DEVICE x11
@@ -58,9 +63,12 @@ setenv CALC_SERVER localhost
 
 ####### Operating System, use $OSTYPE
 
-if ( $OSTYPE == "darwin" || $OSTYPE == "linux" || $OSTYPE == "linux-gnu") then
-  set OS=$OSTYPE
-else if ( $OSTYPE == "darwin9.0" ) then
+set OSTYPE5=`echo $OSTYPE | awk '{print substr($0,1,5)}'`
+set OSTYPE6=`echo $OSTYPE | awk '{print substr($0,1,6)}'`
+
+if ( $OSTYPE5 == "linux" ) then
+  set OS="linux"
+else if ( $OSTYPE6 == "darwin" ) then
   set OS="darwin"
 else
   echo "Warning supported O/S $OSTYPE";
