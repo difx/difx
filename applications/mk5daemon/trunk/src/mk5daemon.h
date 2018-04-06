@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2018 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -58,7 +58,7 @@ extern const char difxUser[];
 const int MaxConnections = 8;
 
 #define MAX_COMMAND_SIZE		768
-#define MAX_FILENAME_SIZE		256
+#define MAX_FILENAME_SIZE		PATH_MAX
 #define N_BANK				2
 #define N_DRIVE				8
 #define MAX_MACLIST_LENGTH		16
