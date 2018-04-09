@@ -55,7 +55,12 @@ def updateclock(
 
 # parse the options
 usage = """%prog [options] <expname.v2d>
-adjusts the clocks in the v2d format file <expname.v2d>"""
+adjusts the clocks in the v2d format file <expname.v2d>
+E.g.:
+updateclock.py -o "AT=0.214,HO=0.151" -r "AT=2.1,HO=0.5" v252bl.v2d
+*or* equivalently:
+updateclock.py -s "AT,HO" -o "0.214,0.151" -r "2.1,0.5" v252bl.v2d
+"""
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
 parser.add_option(
@@ -71,8 +76,8 @@ parser.add_option(
         type="str", dest="newclockepoch", default=None,
         help="Clock epoch (in MJD or Vex time) for the output file")
 parser.add_option(
-        "--station", "-s",
-        type="str", dest="station", default=None,
+        "--stations", "-s",
+        type="str", dest="stations", default=None,
         help="Comma separated list of stations")
 parser.add_option(
         "--frequency", "-f",
@@ -88,6 +93,9 @@ if len(args) != 1:
     parser.print_help()
     parser.error("no v2d file given")
 
+if options.rate_adjust and not options.frequency:
+    raise Exception(
+            "You must set the frequency (-f) if you are adjusting the rate!")
 
 newclockepoch = options.newclockepoch
 
@@ -98,57 +106,70 @@ if newclockepoch:
 station_list = []
 offset_list = []
 rate_list = []
-if options.station:
-    station_list = options.station.split(",")
+if options.stations:
+    station_list = options.stations.split(",")
     station_list = [station.upper() for station in station_list]
 if options.offset_adjust:
     offset_list = options.offset_adjust.split(",")
 if options.rate_adjust:
     rate_list = options.rate_adjust.split(",")
 
+if options.stations:
+    if options.offset_adjust and len(offset_list) != len(station_list):
+        raise Exception(
+                "number of stations does not match number of clock offsets")
+    if options.rate_adjust and len(rate_list) != len(station_list):
+        raise Exception(
+                "number of stations does not match number of clock rates")
 
-if options.offset_adjust and len(offset_list) != len(station_list):
-    raise Exception("number of stations does not match number of clock offsets")
+stations = dict()
+if options.offset_adjust:
+    for i, value in enumerate(offset_list):
+        station = None
+        offset = None
+        if station_list:
+            station = station_list[i]
+            offset = offset_list[i]
+        else:
+            station, offset = value.split("=")
+        if not station in stations:
+            stations[station] = dict()
+        stations[station]["offset_adjust"]= float(offset)
+        stations[station]["rate_adjust"] = 0
 
-if options.rate_adjust and len(rate_list) != len(station_list):
-    raise Exception("number of stations does not match number of clock rates")
+if options.rate_adjust:
+    for i, value in enumerate(rate_list):
+        station = None
+        rate = None
+        if station_list:
+            station = station_list[i]
+            rate = rate_list[i]
+        else:
+            station, rate = value.split("=")
+        if not station in stations:
+            stations[station] = dict()
+            stations[station]["offset_adjust"] = 0
+        stations[station]["rate_adjust"] = float(rate)
 
-if options.rate_adjust and not options.frequency:
-    raise Exception("You must set the frequency (-f) if you are adjusting the rate!")
-
-offset_list = [float(offset) for offset in offset_list]
-rate_list = [float(rate) for rate in rate_list]
-
-# offset all adjustments by the mean adjustment so that the net change is 0
 if options.addmean:
-    if offset_list:
-        offset_mean = sum(offset_list)/len(offset_list)
-        print "mean offset: {0:0.3f}".format(offset_mean)
-    if rate_list:
-        rate_mean = sum(rate_list)/len(rate_list)
-        print "mean rate: {0:0.3E}".format(rate_mean)
-    offset_list = [offset-offset_mean for offset in offset_list]
-    rate_list = [rate-rate_mean for rate in rate_list]
+    # offset all adjustments by the mean adjustment so that the net change is 0
+    offset_mean = sum(
+            [stations[station]["offset_adjust"] for station in stations])
+    offset_mean /= len(stations)
+    print "mean offset: {0:0.3f}".format(offset_mean)
+    rate_mean = sum(
+            [stations[station]["rate_adjust"] for station in stations])
+    rate_mean /= len(stations)
+    print "mean rate: {0:0.3E}".format(rate_mean)
 
-station = dict()
-for i in range(len(station_list)):
-    if not station_list[i] in station:
-        station[station_list[i]] = dict()
-    try:
-        station[station_list[i]]["offset_adjust"] = offset_list[i]
-    except:
-        station[station_list[i]]["offset_adjust"] = 0
-    try:
-        station[station_list[i]]["rate_adjust"] = rate_list[i]
-    except:
-        station[station_list[i]]["rate_adjust"] = 0
-
-
+    for station in stations:
+        stations[station]["offset_adjust"] -= offset_mean
+        stations[station]["rate_adjust"] -= rate_mean
+        
 if options.frequency:
     frequency = options.frequency
 else:
     frequency = 1
-
 
 #newclockepoch = sys.argv[1]
 # read in and strip the v2dfile of whitespace and newlines
@@ -183,9 +204,9 @@ for line in v2dfile:
     if "{" in line and antname:
         rate_adjust = 0
         offset_adjust = 0
-        if antname in station:
-            rate_adjust = station[antname]["rate_adjust"]
-            offset_adjust = station[antname]["offset_adjust"]
+        if antname in stations:
+            rate_adjust = stations[antname].get("rate_adjust", 0)
+            offset_adjust = stations[antname].get("offset_adjust", 0)
             do_update = True
         #if options.newclockepoch:
         #    do_update = True
