@@ -9,6 +9,7 @@ Version 2.6
 * startdifx: end difxlog process after every job when running with joblist
 * genmachines: fixed support for multiple input files
 * PCAL: allow tone intervals denser than an integer MHz (Wettzell twin telescope workaround)
+* Support for IPP > 9 (specifically IPP 2018)
 
 Version 2.5
 ~~~~~~~~~~~

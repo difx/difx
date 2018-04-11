@@ -64,6 +64,13 @@
 #include <ipps.h>
 #include <ippvm.h>
 #include <ippcore.h>
+#include <ippversion.h>
+
+#ifdef IPP9
+#define IPP_9_API
+#elif(IPP_VERSION_MAJOR == 2018)
+#define IPP_9_API
+#endif
 
 //start with the data types
 #define u8                       Ipp8u
@@ -198,7 +205,7 @@
 
 #define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A11(src, sin, cos, length)
 
-#ifdef IPP9
+#ifdef IPP_9_API
 #define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           genericSplitScaled_16s32f(src, dest, numchannels, chanlen)
 #else
 #define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen)
@@ -237,7 +244,7 @@
 
 // FFT Functions
 
-#ifdef IPP9
+#ifdef IPP_9_API
 inline vecStatus vectorInitFFTR_f32(vecFFTSpecR_f32 **fftspec, int order, int flag, IppHintAlgorithm hint, int *wbufsize, u8 **fftworkbuf) {
   // Alloc FFT buffers
   int sizeFFTSpec, sizeFFTInitBuf;
