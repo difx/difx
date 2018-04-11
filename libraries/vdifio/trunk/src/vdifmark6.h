@@ -155,6 +155,8 @@ const char *getMark6Root();
 
 int getMark6FileList(char ***fileList);
 
+int getMark6SlotFileList(int slot, char ***fileList);
+
 
 
 #ifdef __cplusplus

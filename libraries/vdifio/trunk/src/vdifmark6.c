@@ -1132,7 +1132,74 @@ int getMark6FileList(char ***fileList)
 	for(i = 0; i < n; ++i)
 	{
 		char *p;
+                
+		p = strrchr(G.gl_pathv[i], '/');
+		if(p == 0)
+		{
+			ptrs[i] = G.gl_pathv[i];
+		}
+		else
+		{
+			ptrs[i] = p + 1;
+		}
+	}
 
+	/* sort */
+	qsort(ptrs, n, sizeof(char *), cstring_cmp);
+
+	/* count non-duplicates */
+	last = "///";
+	uniq = 0;
+	for(i = 0; i < n; ++i)
+	{
+		if(strcmp(ptrs[i], last) != 0)
+		{
+			last = ptrs[i];
+
+			/* overwrite beginning of ptrs array with non-duplicates */
+			ptrs[uniq] = ptrs[i];
+
+			++uniq;
+		}
+	}
+
+	/* populate fileList */
+	*fileList = (char **)malloc(uniq*sizeof(char *));
+	for(i = 0; i < uniq; ++i)
+	{
+		(*fileList)[i] = strdup(ptrs[i]);
+	}
+	free(ptrs);
+
+	return uniq;
+}
+
+int getMark6SlotFileList(int slot, char ***fileList)
+{
+	const int MaxFilenameSize = 256;
+	char fileName[MaxFilenameSize];
+	glob_t G;
+	int i, n, v;
+	char **ptrs;	/* points to first character after last / of each found file */
+	const char *last;
+	int uniq;
+
+	snprintf(fileName, MaxFilenameSize, "/mnt/disks/%d/*/data/*", slot);
+
+	v = glob(fileName, GLOB_NOSORT, 0, &G);
+	if(v != 0)
+	{
+		return 0;	/* no matching files found */
+	}
+
+	n = G.gl_pathc;
+	ptrs = (char **)malloc(n*sizeof(char *));
+	
+	/* store just the portion after last / into new pointer array */
+	for(i = 0; i < n; ++i)
+	{
+		char *p;
+                
 		p = strrchr(G.gl_pathv[i], '/');
 		if(p == 0)
 		{

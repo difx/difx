@@ -36,9 +36,9 @@
 #include "config.h"
 
 const char program[] = "vsum";
-const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.5";
-const char verdate[] = "20150919";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>";
+const char version[] = "0.6";
+const char verdate[] = "20190411";
 
 static void usage(const char *pgm)
 {
@@ -47,10 +47,11 @@ static void usage(const char *pgm)
 	printf("Usage: %s [<options>] <file1> [<file2> [ ... ] ]\n\n", pgm);
 	printf("  <fileX> is the name of a VDIF data file\n\n");
 	printf("  <options> can include:\n");
-	printf("    -h or --help      print this usage information and quit\n");
-	printf("    -s or --shortsum  print a short summary, also usable for input to vex2difx\n");
-	printf("    -6 or --mark6     operate directly on Mark6 module data\n");
-	printf("    --allmark6        operate directly on all Mark6 scans found on mounted modules\n");
+	printf("    -h or --help          print this usage information and quit\n");
+	printf("    -s or --shortsum      print a short summary, also usable for input to vex2difx\n");
+	printf("    -6 or --mark6         operate directly on Mark6 module data\n");
+	printf("    --allmark6            operate directly on all Mark6 scans found on mounted modules\n");
+	printf("    --mark6slot <slot>    operate directly on all Mark6 scans found on module in <slot>\n");
 	printf("\n");
 }
 
@@ -134,6 +135,34 @@ void processAllMark6Scans(int shortSum)
 	}
 }
 
+void processMark6ScansSlot(int slot, int shortSum)
+{
+	char **fileList;
+	int n;
+
+	n = getMark6SlotFileList(slot, &fileList);
+
+	if(n == 0)
+	{
+		printf("No Mark6 files found in /mnt/disks/%d/*/data\n", slot);
+	}
+	else
+	{
+		int i;
+
+		for(i = 0; i < n; ++i)
+		{
+			summarizeFile(fileList[i], shortSum, 1);
+		}
+	
+		for(i = 0; i < n; ++i)
+		{
+			free(fileList[i]);
+		}
+		free(fileList);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	if(argc < 2)
@@ -144,7 +173,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		int a;
+		int a, slot;
 		int shortSum = 0;
 		int isMark6 = 0;
 
@@ -170,6 +199,19 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "--allmark6") == 0)
 			{
 				processAllMark6Scans(shortSum);
+				
+				exit(EXIT_SUCCESS);
+			}
+			else if(strcmp(argv[a], "--mark6slot") == 0)
+			{
+                                ++a;
+                                slot = atoi(argv[a]);
+                                if(slot < 1 || slot > 4)
+                                {
+                                        exit(EXIT_FAILURE);
+                                }
+                                
+				processMark6ScansSlot(slot, shortSum);
 				
 				exit(EXIT_SUCCESS);
 			}
