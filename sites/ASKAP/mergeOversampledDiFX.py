@@ -609,8 +609,11 @@ def stitchVisibilityfile(basename,cfg):
 		newds.zoomfreqpols = [ds.zoomfreqpols[ds.zoomfreqindex.index(zfi)] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
 
 		# Add all stitched invented freqs
-		newds.zoomfreqindex += [nzfi for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
-		newds.zoomfreqpols += [npol for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
+                # TODO: This is a quick hack: find ouy why the commented code wasn't working!
+		#newds.zoomfreqindex += [nzfi for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
+		#newds.zoomfreqpols += [npol for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
+                newds.zoomfreqindex += [nzfi for nzfi in stitch_out_ids]
+                newds.zoomfreqpols += [npol for nzfi in stitch_out_ids]
 
 		newds.zoomfreqindex = list(set(newds.zoomfreqindex)) # keep uniques only, TODO: should shorten zoomfreqpols list equally!
 
@@ -618,6 +621,9 @@ def stitchVisibilityfile(basename,cfg):
 		newds.nrecband = npol * len(newds.recfreqindex)
 		newds.nzoomband = npol * len(newds.zoomfreqindex)
 		newds.zoombandindex = [int(n/npol) for n in range(newds.nzoomband)]
+                #TODO: The following is necessary if a datastream had no zoom bands to begin with, but I'm not sure it will always work
+                if len(ds.zoombandpol) == 0:
+                    ds.zoombandpol = newds.recbandpol[:npol]
 		newds.zoombandpol = ds.zoombandpol[:npol] * (newds.nzoomband/npol)
 
 		# Update the counts

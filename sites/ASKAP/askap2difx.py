@@ -160,7 +160,8 @@ def writekeyfile(keyout, obs, twoletterannames):
     keyout.write(" bits     = 2\n")
     keyout.write(" firstlo  = 2100.0\n")
     keyout.write(" freqref  = 2100.0\n")
-    keyout.write(" freqoff  = -608.0, -600.0, -592.0, -584.0, -576.0, -568.0, -560.0, -552.0,\n")
+    keyout.write(" freqoff  = -608.0, -600.0, -592.0, -584.0, -576.0, -568.0, -560.0, -552.0\n")
+    keyout.write(" pol      = L, L, L, L, L, L, L, L\n")
     keyout.write(" pcal     = 'off'\n")
     keyout.write("   /\n")
     keyout.write("endset /\n\n")
@@ -187,7 +188,16 @@ def writev2dfile(v2dout, obs, twoletterannames, datafilelist):
     for d in datafilelist:
         a = d.split('=')[0]
         #v2dout.write("ANTENNA %s { source = FAKE format=CODIF clockOffset=0 clockRate=0 clockEpoch=57000.0 }\n" % a)
-        v2dout.write("ANTENNA %s { file = %s format=CODIF clockOffset=0 clockRate=0 clockEpoch=57000.0 }\n" % (a, d.split('=')[1]))
+        #FIXME: Need to set the clockOffset here appropriately (where does this info come from?)
+        v2dout.write("ANTENNA %s\n{\n" % a)
+        v2dout.write("  file = %s\n" % d.split('=')[1])
+        v2dout.write("  format=CODIFC/27/8064/1\n")
+        v2dout.write("  clockOffset=0\n")
+        v2dout.write("  clockRate=0\n")
+        v2dout.write("  clockEpoch=57000.0\n")
+        v2dout.write("  phaseCalInt=0\n")
+        v2dout.write("  toneSelection=none\n")
+        v2dout.write("  sampling=COMPLEX_DSB\n}\n")
 
     # for a in twoletterannames:
     #     v2dout.write(a)
@@ -201,9 +211,10 @@ def writev2dfile(v2dout, obs, twoletterannames, datafilelist):
     v2dout.write("# gives the desired number of channels\n")
     v2dout.write("SETUP default\n")
     v2dout.write("{\n")
-    v2dout.write("  tInt =  2.000\n")
+    v2dout.write("  tInt =  1.3824\n")
+    v2dout.write("  subintNS = 13824000\n")
     v2dout.write("  nFFTChan =    128\n")
-    v2dout.write("  nChan =  16\n")
+    v2dout.write("  nChan =  128\n")
     v2dout.write("  doPolar = True # Full stokes\n")
     v2dout.write("}\n")
     v2dout.write("\n")
@@ -221,8 +232,9 @@ def writev2dfile(v2dout, obs, twoletterannames, datafilelist):
 
 ## Argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument("fcm", help="ASKAP .fcm file describing array")
-parser.add_argument("obs", help="Flat text .obs file containing start/stop time, source position, baseband files")
+parser.add_argument("fcm",  help="ASKAP .fcm file describing array")
+parser.add_argument("obs",  help="Flat text .obs file containing start/stop time, source position, baseband files")
+parser.add_argument("chan", help="Flat text file containing 1 line per subband, centre freq, sideband, and bandwidth")
 args = parser.parse_args()
 
 ## Check arguments
@@ -230,6 +242,8 @@ if not os.path.exists(args.fcm):
     parser.error("FCM file " + args.fcm + " does not exist")
 if not os.path.exists(args.obs):
     parser.error("obs file " + args.obs + " does not exist")
+if not os.path.exists(args.chan):
+    parser.error("chan file " + args.chan + " does not exist")
 
 ## Load configuration data
 fcm = load_props(args.fcm)
@@ -278,7 +292,7 @@ keyout.close()
 os.system("sched < craftfrb.key")
 
 ## Run getEOP and save the results
-#FIXME Uncomment once new EOP file is once again available...
+# FIXME: remove this once you figure out why getEOP is running so slow
 #os.system("rm -f eopjunk.txt")
 #os.system("getEOP.py " + str(int(float(obs["startmjd"]))) + " > eopjunk.txt")
 eoplines = open("eopjunk.txt").readlines()
@@ -292,10 +306,10 @@ for line in eoplines:
 v2dout.close()
 
 ## Run updateFreqs 
-#FIXME Implement this
+os.system("updatefreqs.py craftfrb.vex " + args.chan)
 
 ## Update the vex file to say "CODIF" rather than "VDIF"
-os.system("sed -i -e 's/VDIF5032/CODIF8256/g' craftfrb.vex")
+os.system("sed -i -e 's/VDIF5032/CODIFD8064/g' craftfrb.vex")
 
 ## Run vex2difx
 os.system("vex2difx craftfrb.v2d")
