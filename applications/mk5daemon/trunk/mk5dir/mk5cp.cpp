@@ -49,8 +49,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.16";
-const char verdate[] = "20180304";
+const char version[] = "0.17";
+const char verdate[] = "20180411";
 
 const int defaultChunkSize = 50000000;
 
@@ -2129,6 +2129,13 @@ int main(int argc, char **argv)
 
 			printf("\n-> Because this is running on %s Mark5B data fixing will be performed\n\n", hn);
 		}
+	}
+
+	if(fix5b && doAppend)
+	{
+		fprintf(stderr, "Error: cannot append with fixMark5B mode enabled\n");
+
+		return EXIT_FAILURE;
 	}
 
 	if(fix5b && copyMode == COPY_MODE_NODIR)
