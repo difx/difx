@@ -577,8 +577,8 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 
 	for(i = 0; i < nFreq; ++i)
 	{
-		writeDifxLineDouble1(out, "FREQ (MHZ) %d", i, "%13.11f", df[i].freq);
-		writeDifxLineDouble1(out, "BW (MHZ) %d", i, "%13.11f", df[i].bw);
+		writeDifxLineDouble1(out, "FREQ (MHZ) %d", i, "%17.15f", df[i].freq);
+		writeDifxLineDouble1(out, "BW (MHZ) %d", i, "%17.15f", df[i].bw);
 		sb[0] = df[i].sideband;
 		writeDifxLine1(out, "SIDEBAND %d", i, sb);
 		if(strlen(df[i].rxName) > 0)
