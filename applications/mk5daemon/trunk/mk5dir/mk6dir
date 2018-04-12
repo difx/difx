@@ -1,0 +1,210 @@
+#!/usr/bin/env python
+
+#**************************************************************************
+#   Copyright (C) 2018 by Mark Wainright                                  *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id: checkdir 6127 2014-06-03 18:27:09Z WalterBrisken $
+# $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/checkdir $
+# $LastChangedRevision: 6127 $
+# $Author: WalterBrisken $
+# $LastChangedDate: 2014-06-03 12:27:09 -0600 (Tue, 03 Jun 2014) $
+#
+#============================================================================
+
+
+program = 'mk6dir'
+version = '0.1'
+author  = 'Mark Wainright'
+verdate = '20180409'
+
+from sys import exit, argv
+from os import getenv, system
+from os.path import isfile, isdir
+from string import split, strip, upper, find
+import subprocess
+import glob
+
+dirPath = getenv("MARK5_DIR_PATH")
+
+def usage(prog):
+	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+	print 'A program to list the files on a mark6 module in a form'
+        print 'that can be used as a vex2difx filelist.'
+        print 'This program is run locally on a mark6 unit, and the'
+        print 'slot number for the module to be listed must be provided.'
+        print 'This program can also change the state of a mark6 module'
+        print 'to "cataloged" (VLBA use).'
+	print '\nUsage: %s [options] <slot number>' % prog
+	print """
+Options can include:
+
+  --verbose
+  -v         Send more output to the screen  (use -v -v for extra info)
+
+  --quiet
+  -q         Be quieter in operation
+
+  --catalog
+  -c         Change module state to "cataloged" (VLBA use)
+
+  --help
+  -h         Print this help information and quit
+
+This program will write the filelist to the directory defined by
+environment variable MARK5_DIR_PATH.
+If this variable is not defined this program will not function.
+
+The filelist file will have the name <VSN>.filelist where <VSN>
+is the module serial number.
+
+Examples:
+
+  mk6dir -v 1      # generate filelist for module in slot 1
+
+  mk6dir -v -c 2   # generate filelist for module in slot 2 and change state to "cataloged"
+
+"""
+	exit(1)
+
+def getVSN(slot):
+        paths = glob.glob("/mnt/disks/.meta/" + slot + "/*/eMSN")
+        if len(paths) <= 0:
+            print "no files found for slot", slot
+            exit(1)
+        first = True
+        for path in paths:
+            file = open(path, "r")
+            vsn = file.read(8)
+            if first is True:
+                firstVSN = vsn
+                first = False
+            else:
+                if vsn != firstVSN:
+                    print "inconsistent vsns", firstVSN, vsn
+                    exit(1)
+        return vsn
+
+# main
+
+if dirPath == None:
+	print 'Error: env. var. MARK5_DIR_PATH not defined.'
+	exit(1)
+
+if not isdir(dirPath):
+	print 'Error: env. var. MARK5_DIR_PATH does not point to a directory.'
+	exit(1)
+
+
+slot = "0"
+verbose = 2
+change = False
+
+if len(argv) == 1:
+	print 'Use -h option for help'
+	exit(1)
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['-v', '--verbose']:
+			verbose += 1
+		elif a in ['-q', '--quiet']:
+			verbose -= 1
+		elif a in ['-c', '--change']:
+			change = True
+		elif a in ['-h', '--help']:
+			usage(argv[0])
+		else:
+			print 'Unknown command line parameter : ', a
+			exit(1)
+	else:
+		slot = a
+
+if slot not in ['1','2','3','4']:
+        print 'slot number must be 1, 2, 3 or 4'
+	exit(1)
+
+if verbose > 2:
+        print "slot", slot
+
+vsn = getVSN(slot)
+
+if verbose > 2:
+        print "vsn", vsn
+
+# get vsum short summary from slot
+out = subprocess.check_output(['vsum', '-s', '--mark6slot', slot])
+
+if len(out) == 0:
+    print "no output from vsum -s --mark6slot", slot
+    exit(1)
+
+if verbose > 2:
+    summarysize = len(out.split('\n')) - 1
+    print summarysize, "files summarized"
+
+# write summary to filelist file
+outpath = dirPath + "/" + vsn + ".filelist"
+
+outfile = open(outpath, "w")
+
+if verbose > 2:
+    print "writing output file", outpath
+
+outfile.write(out)
+
+outfile.close()
+
+# change state of module
+if change is True:
+    if verbose > 2:
+        print "changing state of", vsn, "to \"cataloged\"" 
+    # get mounted disks for slot
+    mountgrepstr = "mount -t xfs | grep /mnt/disks/.meta/" + slot
+    mounts = subprocess.check_output(mountgrepstr, shell=True)
+    mountlist = mounts.split('\n')
+    mountpointlist = []
+    for mount in mountlist:
+        mountsplit = mount.split()
+        if len(mountsplit) >= 3:
+            mountpointlist.append(mountsplit[2])
+
+    # change permissions to read-write
+    for mountpoint in mountpointlist:
+        remountcmd = ["sudo", "mount", "-o", "rw,remount", mountpoint]
+        rc = subprocess.call(remountcmd)
+        if rc != 0:
+           print "remount to read-write failed"
+           exit(1)
+
+    # change state to cataloged
+    statecmd = ["m6state.sh", slot, "cataloged"]
+    res = subprocess.Popen(statecmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out = res.communicate()
+    
+    # change permissions to read only
+    for mountpoint in mountpointlist:
+        remountcmd = ["sudo", "mount", "-o", "ro,remount", mountpoint]
+        rc = subprocess.call(remountcmd)
+        if rc != 0:
+           print "remount to read only failed"
+           exit(1)
+

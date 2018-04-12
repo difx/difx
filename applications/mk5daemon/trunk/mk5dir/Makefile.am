@@ -20,7 +20,8 @@ bin_PROGRAMS =
 endif
 
 dist_bin_SCRIPTS = \
-	checkdir
+	checkdir \
+	mk6dir
 
 fileto5c_SOURCES = \
 	watchdog.cpp \
