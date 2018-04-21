@@ -527,6 +527,8 @@ namespace guiServer {
             Ipp64fc* meanVis64 = NULL;
             Ipp64fc* meanfftVis64 = NULL;
             IppsFFTSpec_R_64f* fftspec = NULL;
+	    u8 *fftworkbuf = NULL;
+	    int wbufsize = 0;
             int threadTimeoutCount = 0;
             bool threadTimeoutActive = false;
             int threadTimeoutModelCount = 0;
@@ -645,7 +647,12 @@ namespace guiServer {
                                 if ( delayLags != NULL )
                                     ippsFree( delayLags );
                                 if ( fftspec != NULL )
+#ifdef IPP_9_API
+                                    ippsFree( fftspec );
+				    ippsFree( fftworkbuf );
+#else
                                     ippsFFTFree_R_64f( fftspec );
+#endif
                                 vis64 = ippsMalloc_64fc( nChannels );
                                 meanVis64 = ippsMalloc_64fc( nChannels );
                                 //  For each product....
@@ -666,7 +673,20 @@ namespace guiServer {
 //                                while( ( ( nChannels * 2 ) >> order ) > 1 )
 /**/                                while( ( ( useFFTSize ) >> order ) > 1 )
                                     order++;
+#ifdef IPP_9_API
+				{
+				  int sizeFFTSpec, sizeFFTInitBuf;
+				  u8 *fftInitBuf, *fftSpecBuf;
+
+				  ippsFFTGetSize_R_64f(order, IPP_FFT_NODIV_BY_ANY, ippAlgHintNone, &sizeFFTSpec, &sizeFFTInitBuf, &wbufsize);
+				  fftSpecBuf = ippsMalloc_8u(sizeFFTSpec);
+				  fftInitBuf = ippsMalloc_8u(sizeFFTInitBuf);
+				  fftworkbuf = ippsMalloc_8u(wbufsize);
+				  ippsFFTInit_R_64f( &fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintNone, fftSpecBuf, fftInitBuf);
+				}
+#else
                                 ippsFFTInitAlloc_R_64f( &fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast );
+#endif
                             }
                             //  Put the visibility data into double-precision complex arrays.
 	                        ippsSet_64fc( complexZero, fftVis64, useFFTSize / 2 );
@@ -870,7 +890,12 @@ namespace guiServer {
             if ( delayLags != NULL )
                 ippsFree( delayLags );
             if ( fftspec != NULL )
+#ifdef IPP_9_API
+                ippsFree( fftspec );
+		ippsFree( fftworkbuf );
+#else
                 ippsFFTFree_R_64f( fftspec );
+#endif
             if ( _monitorServerClient != NULL )
                 delete _monitorServerClient;
             _monitorServerClient = NULL;
