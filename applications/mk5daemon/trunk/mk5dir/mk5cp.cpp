@@ -49,8 +49,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.17";
-const char verdate[] = "20180411";
+const char version[] = "0.18";
+const char verdate[] = "20180428";
 
 const int defaultChunkSize = 50000000;
 
@@ -360,7 +360,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	int skip = 0;
 	char scpLogin[DIFX_MESSAGE_FILENAME_LENGTH];
 	char scpDest[DIFX_MESSAGE_FILENAME_LENGTH];
-	int nReread = 0;
+	unsigned int nReread = 0;
 	long long origByteStart;
 
 	parsescp(scpLogin, scpDest, outPath);
@@ -506,11 +506,22 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
 		if(xlrRC != XLR_SUCCESS)
 		{
+			int tries = 3;
 
-			fprintf(stderr, "Read error: position=%Ld trying one more time:\n", readptr);
-			sleep(2);
-			++nReread;
-			WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
+			while(tries > 0 && xlrRC != XLR_SUCCESS)
+			{
+				char copyXLRError[XLR_ERROR_LENGTH+1];
+				int copyXLRErrorCode;
+
+				copyXLRErrorCode = XLRGetLastError();
+				XLRGetErrorMessage(copyXLRError, copyXLRErrorCode);
+
+				fprintf(stderr, "Read error %d = %s: position=%Ld trying up to %d more time(s):\n", copyXLRErrorCode, copyXLRError, readptr, tries);
+				sleep(5-tries);
+				--tries;
+				++nReread;
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
+			}
 
 			if(xlrRC != XLR_SUCCESS)
 			{
@@ -599,7 +610,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	}
 	if(nReread > 0)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "%d rereads were done.", nReread);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "%u reread(s) were done.", nReread);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 		fprintf(stderr, "Note: %s\n", message);
 	}
@@ -666,6 +677,7 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPathFull, 
 	struct mark5b_fix_statistics stats;
 	char outPath[DIFX_MESSAGE_FILENAME_LENGTH];
 	char outNameBase[DIFX_MESSAGE_FILENAME_LENGTH];
+	unsigned int nReread = 0;
 
 	parseOutPath(outPath, outNameBase, outPathFull);
 
@@ -803,13 +815,33 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPathFull, 
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, data + leftover/sizeof(streamstordatatype), a, b, len) );
 		if(xlrRC != XLR_SUCCESS)
 		{
-			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
-			if(out != stdout)
+			int tries = 3;
+
+			while(tries > 0 && xlrRC != XLR_SUCCESS)
 			{
-				fclose(out);
+				char copyXLRError[XLR_ERROR_LENGTH+1];
+				int copyXLRErrorCode;
+
+				copyXLRErrorCode = XLRGetLastError();
+				XLRGetErrorMessage(copyXLRError, copyXLRErrorCode);
+
+				fprintf(stderr, "Read error %d = %s: position=%Ld trying up to %d more time(s):\n", copyXLRErrorCode, copyXLRError, readptr, tries);
+				sleep(5-tries);
+				--tries;
+				++nReread;
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, data + leftover/sizeof(streamstordatatype), a, b, len) );
 			}
 
-			return -1;
+			if(xlrRC != XLR_SUCCESS)
+			{
+				fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
+				if(out != stdout)
+				{
+					fclose(out);
+				}
+
+				return -1;
+			}
 		}
 
 		countReplaced2(data, len/4, &wGood, &wBad);
@@ -890,6 +922,13 @@ int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPathFull, 
 	free(data);
 	free(fixed);
 
+	if(nReread > 0)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "%u reread(s) were done.", nReread);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+		fprintf(stderr, "Note: %s\n", message);
+	}
+
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Copied scan %d = %s.", scanIndex+1, scan->name.c_str());
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	fprintf(stderr, "%s\n", message);
@@ -934,6 +973,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPathFull, int s
 	long long byteStop;
 	char outPath[DIFX_MESSAGE_FILENAME_LENGTH];
 	char outNameBase[DIFX_MESSAGE_FILENAME_LENGTH];
+	unsigned int nReread = 0;
 
 	parseOutPath(outPath, outNameBase, outPathFull);
 
@@ -1085,17 +1125,38 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPathFull, int s
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
 		if(xlrRC != XLR_SUCCESS)
 		{
+			int tries = 3;
+			
 			if(die)
 			{
 				break;
 			}
-			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
-			if(out != stdout)
+
+			while(tries > 0 && xlrRC != XLR_SUCCESS)
 			{
-				fclose(out);
+				char copyXLRError[XLR_ERROR_LENGTH+1];
+				int copyXLRErrorCode;
+
+				copyXLRErrorCode = XLRGetLastError();
+				XLRGetErrorMessage(copyXLRError, copyXLRErrorCode);
+
+				fprintf(stderr, "Read error %d = %s: position=%Ld trying up to %d more time(s):\n", copyXLRErrorCode, copyXLRError, readptr, tries);
+				sleep(5-tries);
+				--tries;
+				++nReread;
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
 			}
 
-			return -1;
+			if(xlrRC != XLR_SUCCESS)
+			{
+				fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
+				if(out != stdout)
+				{
+					fclose(out);
+				}
+
+				return -1;
+			}
 		}
 
 		countReplaced2(data, len/4, &wGood, &wBad);
@@ -1166,6 +1227,13 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPathFull, int s
 		fclose(out);
 	}
 	free(data);
+
+	if(nReread > 0)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "%u reread(s) were done.", nReread);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+		fprintf(stderr, "Note: %s\n", message);
+	}
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Copied scan %d. %Ld bytes total, %Ld bytes replaced.", scanIndex+1, 4*(wGood+wBad), 4*wBad);
 	if((double)wBad/(double)wGood < 1.0e-8)

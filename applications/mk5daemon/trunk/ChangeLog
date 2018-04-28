@@ -6,6 +6,7 @@ Version 2.6.0
 * mk5cp support for append mode: will continue writing partial files of matching filenames
 * mk5cp support for single scan with time range
 * mk5cp support for provided filenames
+* mk5cp try up to 3 additional times on each read error, and print some more diagnostics
 
 Version 2.5.0
 ~~~~~~~~~~~~~
