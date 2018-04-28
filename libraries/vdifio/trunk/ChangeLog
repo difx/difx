@@ -1,12 +1,10 @@
-Version 1.3
-~~~~~~~~~~~
-* Added ability to summarize a mark6 module in a specific slot
 
 Version 1.2
 ~~~~~~~~~~~
 * Post DiFX-2.5
 * Some improvements in multiplexing very sparse data
 * Options in vmux to change gap/sort tuning parameters
+* Added ability to summarize a mark6 module in a specific slot
 
 Version 1.1
 ~~~~~~~~~~~

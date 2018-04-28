@@ -1,7 +1,7 @@
 Summary: Library and utilities to work with VDIF data
 Name: vlbi-vdifio
 Version: @version@
-Release: 2
+Release: 1
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/vlbi-vdifio-@version@-buildroot

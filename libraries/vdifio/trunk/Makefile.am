@@ -10,6 +10,7 @@ SUBDIRS = \
 	$(PYTHON_OPT)
 
 EXTRA_DIST = \
+	m4 \
 	vlbi-vdifio.spec.in
 
 dist-hook: vlbi-vdifio.spec
