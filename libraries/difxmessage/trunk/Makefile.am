@@ -6,6 +6,7 @@ SUBDIRS = \
 	utils
 
 EXTRA_DIST = \
+	m4 \
 	vlbi-difxmessage.spec.in
 
 dist-hook: $(specfile)
