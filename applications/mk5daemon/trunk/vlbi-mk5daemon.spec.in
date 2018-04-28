@@ -44,6 +44,7 @@ chmod a+x /sbin/halt
 %{_bindir}/mk5control
 %{_bindir}/mk5cp
 %{_bindir}/mk5dir
+%{_bindir}/mk6dir
 %{_bindir}/mk5erase
 %{_bindir}/mk5lock
 %{_bindir}/mk5map
