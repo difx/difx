@@ -49,7 +49,7 @@ for line in vexfilelines:
         else:
             print "Invalid sideband ", freqsplitline[1]
             sys.exit()
-        newline = "     chan_def = : %.12f MHz : %s :   %.12f MHz : &CH%02d : &BBC%02d : &U_Cal; *Rcp\n" % (freq, sideband, bw, fcount+1, fcount+1)
+        newline = "     chan_def = : %.12f MHz : %s :   %.15f MHz : &CH%02d : &BBC%02d : &U_Cal; *Rcp\n" % (freq, sideband, bw, fcount+1, fcount+1)
         vexfilelines[vcount] = newline
         fcount += 1
     vcount += 1

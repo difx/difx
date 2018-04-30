@@ -21,7 +21,12 @@ def load_props(filepath, sep='=', comment_char='#'):
                         currentdict[keysplit[0]] = {}
                     currentdict = currentdict[keysplit[0]]
                     keysplit = keysplit[1:]
-                currentdict[keysplit[0]] = value 
+                if "[" in value and "]" in value and not "*" in value:
+                    v = []
+                    for vx in value.strip()[1:-1].split(','):
+                        v.append(vx)
+                    value = v
+                currentdict[keysplit[0]] = value
     return props
 
 ## Convenience function to convert MJD to YMDHMS
@@ -61,7 +66,7 @@ def writefreqentry(freqout, antenna):
     freqout.write("  pol =  RCP,  LCP  lo1 =  2100,  2100  syn(2) = 2.1\n/\n\n")
 
 ## Function to write a SCHED antenna block
-def writestatentry(statout, antenna, count):
+def writestatentry(statout, antenna, count, itrfpos):
     if count < 10:
         countcode = str(count)
     else:
@@ -80,7 +85,7 @@ def writestatentry(statout, antenna, count):
     statout.write("                   3,  2,  2,  3,  4,  4,  3,  3,  4,  4,  5,  6,  6,  5,\n")
     statout.write("                   6,  6,  5,  6,  5,  5,  4,  4,  3,  2,  2\n")
     statout.write("        AXISOFF=  0.0\n")
-    statout.write("        X= -2556088.476  Y= 5097405.971  Z=  -2848428.398\n")
+    statout.write("        X= %s  Y= %s  Z=  %s\n" % (itrfpos[0], itrfpos[1], itrfpos[2]))
     statout.write("        DXDT= 0.0  DYDT=  0.0  DZDT= 0.0  EPOCH=54466\n")
     statout.write("        FRAME='FROM FCM'\n")
     statout.write("      /\n\n")
@@ -235,6 +240,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("fcm",  help="ASKAP .fcm file describing array")
 parser.add_argument("obs",  help="Flat text .obs file containing start/stop time, source position, baseband files")
 parser.add_argument("chan", help="Flat text file containing 1 line per subband, centre freq, sideband, and bandwidth")
+parser.add_argument("-a", "--ants", help="Comma separated list of antenna names e.g., ak01,ak02,ak03 etc.  All must be present in .fcm, and all must have a akxx.codif file present in this directory.")
 args = parser.parse_args()
 
 ## Check arguments
@@ -244,10 +250,13 @@ if not os.path.exists(args.obs):
     parser.error("obs file " + args.obs + " does not exist")
 if not os.path.exists(args.chan):
     parser.error("chan file " + args.chan + " does not exist")
+if args.ants == "":
+    parser.error("you must supply a list of antennas")
 
 ## Load configuration data
 fcm = load_props(args.fcm)
 obs = load_props(args.obs)
+targetants = args.ants.split(',')
 
 ## Write the SCHED freq and antenna files, and the craftfrb.datafiles
 freqout = open("askapfreq.dat","w")
@@ -262,13 +271,19 @@ for antenna in fcm["common"]["antenna"].keys():
     if not "name" in fcm["common"]["antenna"][antenna].keys():
         continue # This one is probably a test antenna or something, ignore it
     antennaname = fcm["common"]["antenna"][antenna]["name"]
+    if not antennaname in targetants:
+        print "Skipping antenna", antennaname, "from fcm file as it wasn't requested."
+        continue
     writefreqentry(freqout, antennaname)
-    twolettername = writestatentry(statout, antennaname, count)
+    print fcm["common"]["antenna"][antenna]["location"]["itrf"]
+    twolettername = writestatentry(statout, antennaname, count, fcm["common"]["antenna"][antenna]["location"]["itrf"])
     if os.path.exists("%s/%s.codif" % (cwd, antennaname)):
         datafilelist.append("%s=%s/%s.codif" % (twolettername, cwd, antennaname))
         dataout.write(datafilelist[-1] + "\n")
     else:
-        print "Skipping", antennaname, "as we don't have a data file for it"
+        #print "Skipping", antennaname, "as we don't have a data file for it"
+        print "Couldn't find a codif file for", antennaname, "- aborting!"
+        sys.exit()
     antennanames.append(antennaname)
     twoletterannames.append(twolettername)
     count += 1
@@ -277,11 +292,11 @@ statout.close()
 dataout.close()
 
 ## Check how many datafiles we found
-if len(datafilelist) == 0:
-    print "Didn't find any matching .codif files! Aborting"
-    sys.exit()
-elif len(datafilelist) < len(antennanames):
-    print "WARNING: Expected %d matching codif files, but only found %d" % (len(antennanames), len(datafilelist))
+#if len(datafilelist) == 0:
+#    print "Didn't find any matching .codif files! Aborting"
+#    sys.exit()
+#elif len(datafilelist) < len(antennanames):
+#    print "WARNING: Expected %d matching codif files, but only found %d" % (len(antennanames), len(datafilelist))
 
 ## Write the key file
 keyout = open("craftfrb.key","w")
