@@ -10,6 +10,7 @@ Version 2.6
 * genmachines: fixed support for multiple input files
 * PCAL: allow tone intervals denser than an integer MHz (Wettzell twin telescope workaround)
 * Support for IPP > 9 (specifically IPP 2018)
+* genmachines and mark6 datastream updates
 
 Version 2.5
 ~~~~~~~~~~~

@@ -107,6 +107,10 @@ void VDIFMark6DataStream::openfile(int configindex, int fileindex)
 
   cinfo << startl << "Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
 
+  // change state of module to played
+  string cmd = "mk6state played " + datafilenames[configindex][fileindex];
+  system(cmd.c_str());
+
   isnewfile = true;
   //read the header and set the appropriate times etc based on this information
   initialiseFile(configindex, fileindex);

@@ -41,6 +41,7 @@ import sys
 from optparse import OptionParser
 from xml.parsers import expat
 from copy import deepcopy
+from ast import literal_eval
 try:
     from difxfile.difxmachines import *
 except ImportError:
@@ -53,7 +54,8 @@ verdate = '20160112'
 minMachinefileVersion = "1.0"	# cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
-defaultDifxMessageGroup = '224.2.2.1'	
+defaultDifxMessageGroup = '224.2.2.1'
+ignoreIncompleteModules = True
 
 def getUsage():
         """
@@ -202,9 +204,8 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 	    if len(stream.msn) > 0:
 		for m in stream.msn:
 			vsnlist.append(m)
-            
-	missingVsns = deepcopy(vsnlist)
 
+	missingVsns = deepcopy(vsnlist)
 
 	# First send out a call for VSNs
 	sendRequest("mark5","getvsn")
@@ -271,6 +272,62 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 
 	return results, conflicts, missingVsns, notidle, incomplete
 
+# replaces filename mark6 data source with msn, if necessary
+def adjustMark6datastreams(datastreams, inputfile):
+        # get antenna module mapping from .vex.obs
+        prefix = inputfile.replace('.input', '')
+	exp = prefix.split('_')[0]
+	vexobsfile = exp + '.vex.obs'
+	try:
+            tapelogObsFound = False
+            ant = ''
+            mod = ''
+            antennaModuleList = []
+
+	    vexobs = open(vexobsfile)
+	    for line in vexobs:
+                if tapelogObsFound is False:
+                    if '$TAPELOG_OBS;' in line:
+                        tapelogObsFound = True
+                elif tapelogObsFound is True:
+                    if 'def ' in line:
+                        ant = line[4:6].upper()
+                    elif '  VSN = ' in line:
+                        linesegs = line.split(':')
+                        mod = linesegs[1].strip()
+                    elif 'enddef;' in line and '%' in mod:  # adds only mark6 modules to antennaModuleList
+                        antennaModuleList.append([ant,mod])
+                    elif '*-----' in line:
+                        break
+
+        except IOError:
+	    print vexobsfile, "could not be openened, returning"
+	    return
+
+        if len(antennaModuleList) < 1:
+	    print "no antennas using mark6 found, returning"
+	    return
+
+        print "antennaModuleList", antennaModuleList
+
+	# loop through datastreams, modifying mark6 streams if necessary
+	for stream in datastreams:
+	    if stream.type == 'MARK6':
+	        for i in range(len(stream.msn)):
+		    print "msn i", stream.msn[i]
+	            # skip if valid mark6 msn
+		    if len(stream.msn[i]) == 8 and '%' in stream.msn[i]:
+		        continue
+                    # look for antenna in filename
+		    msnsplit = (stream.msn[i]).split('_')
+		    if len(msnsplit) >= 2 and len(msnsplit[1]) == 2:
+		        ant = msnsplit[1].upper()
+			# if antenna found in antenna module list, replace filename with module
+		        for antmod in antennaModuleList:
+			    if ant == antmod[0]:
+			        stream.msn[i] = antmod[1]
+
+
 def getDatastreamsFromInputFile(inputfile):
         """
         Parse the datastream section of the input file to
@@ -284,6 +341,7 @@ def getDatastreamsFromInputFile(inputfile):
         
 	input = open(inputfile).readlines()
     
+        mark6flag = False
 	for inputLine in input:
 		s = split(inputLine, ':')
 		if len(s) < 2:
@@ -333,8 +391,11 @@ def getDatastreamsFromInputFile(inputfile):
 
 
                             elif datastreams[ds].type == 'MARK6':
+			        mark6flag = True
                                 datastreams[ds].msn.append(value)  
-                             
+         
+	if mark6flag is True:
+	    adjustMark6datastreams(datastreams, inputfile)
             
 	return (datastreams)
 
@@ -352,10 +413,10 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
         """
         Write machines file to be used by mpirun
         """
-        
+
 	dsnodes = []
 	threads = []
-        
+
 	for stream in datastreams:
             if stream.type == "FILE":
                 # check if path for this datastream matches storage area defined in the cluster definition file
@@ -408,11 +469,19 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                     print '%s not listed as an active mark5 host in machines file' % matchNode
                     return []
 
-            elif stream.type == "MARK6":    
+            elif stream.type == "MARK6":
 		matchNode = ""	
 		for r in results:
-                    # find  module either in bank A or B
-                            if r[0] in difxmachines.getMk6NodeNames():
+		    if type(r[2]) is dict:
+                        r2msns = [r[2]['slot1MSN'], r[2]['slot2MSN'], r[2]['slot3MSN'], r[2]['slot4MSN']]
+		        missingStreamMsn = False
+		        # all stream msns must be in unit msns
+		        for msn in stream.msn:
+		            if msn not in r2msns:
+			        missingMsn = True
+			        break
+                        if missingStreamMsn == False:
+			    if r[0] in difxmachines.getMk6NodeNames():
                                 matchNode = r[0]
                             else:
                                 # use message sending host
@@ -421,7 +490,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 if matchNode in difxmachines.getMk6NodeNames():
                     dsnodes.append(matchNode)
                 else:
-                    print '%s not listed as an active mark6 host in machines file' % matchNode
+                    print '%s not listed as an active mark5 host in machines file' % matchNode
                     return []
                 
 	# write machine file
@@ -483,7 +552,7 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 		exit(1)
 				
         datastreams =  getDatastreamsFromInputFile(infile)
- 
+
 	if not uniqueVsns(datastreams):
 		print 'ERROR: at least one duplicate VSN exists in %s !' % infile
 		exit(1)
@@ -521,7 +590,8 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 			print '  %s' % n
 
 	if len(incomplete) > 0:
-		ok = False
+                if ignoreIncompleteModules == False:
+		        ok = False
 		print 'Incomplete modules:'
 		for i in incomplete:
 			print '  %s' % i
