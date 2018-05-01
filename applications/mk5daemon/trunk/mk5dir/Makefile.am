@@ -21,7 +21,8 @@ endif
 
 dist_bin_SCRIPTS = \
 	checkdir \
-	mk6dir
+	mk6dir \
+        mk6state
 
 fileto5c_SOURCES = \
 	watchdog.cpp \

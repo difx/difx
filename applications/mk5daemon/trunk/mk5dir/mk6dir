@@ -19,18 +19,6 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: checkdir 6127 2014-06-03 18:27:09Z WalterBrisken $
-# $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/checkdir $
-# $LastChangedRevision: 6127 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2014-06-03 12:27:09 -0600 (Tue, 03 Jun 2014) $
-#
-#============================================================================
-
-
 program = 'mk6dir'
 version = '0.1'
 author  = 'Mark Wainright'
@@ -50,10 +38,10 @@ def usage(prog):
 	print 'A program to list the files on a mark6 module in a form'
         print 'that can be used as a vex2difx filelist.'
         print 'This program is run locally on a mark6 unit, and the'
-        print 'slot number for the module to be listed must be provided.'
+        print 'slot number or VSN for the module to be listed must be provided.'
         print 'This program can also change the state of a mark6 module'
         print 'to "cataloged" (VLBA use).'
-	print '\nUsage: %s [options] <slot number>' % prog
+	print '\nUsage: %s [options] <slot number | VSN>' % prog
 	print """
 Options can include:
 
@@ -78,12 +66,32 @@ is the module serial number.
 
 Examples:
 
-  mk6dir -v 1      # generate filelist for module in slot 1
+  mk6dir -v 1         # generate filelist for module in slot 1
 
-  mk6dir -v -c 2   # generate filelist for module in slot 2 and change state to "cataloged"
+  mk6dir -v LBO%0001  # generate filelist for module with VSN LBO%0001
+
+  mk6dir -v -c 2      # generate filelist for module in slot 2 and change state to "cataloged"
 
 """
 	exit(1)
+
+def getSlotByVSN(slot):
+    for slot in ['1', '2', '3', '4']:
+        for disk in range(8):
+            msnfilepath = '/mnt/disks/.meta/' + slot + '/' + str(disk) + '/eMSN'
+            if isfile(msnfilepath) == True:
+                msnfile = open(msnfilepath)
+                msndata = msnfile.read()
+                msnfile.close()
+                if modident in msndata:
+                    return slot
+                else:
+                    break
+            else:
+                continue
+    print "could not find slot by VSN", modident
+    exit(1)
+
 
 def getVSN(slot):
         paths = glob.glob("/mnt/disks/.meta/" + slot + "/*/eMSN")
@@ -113,8 +121,9 @@ if not isdir(dirPath):
 	print 'Error: env. var. MARK5_DIR_PATH does not point to a directory.'
 	exit(1)
 
-
-slot = "0"
+modident = ''
+slot = ''
+vsn = ''
 verbose = 2
 change = False
 
@@ -136,19 +145,29 @@ for a in argv[1:]:
 			print 'Unknown command line parameter : ', a
 			exit(1)
 	else:
-		slot = a
+		modident = a
 
-if slot not in ['1','2','3','4']:
+if len(modident) == 1:
+    slot = modident
+    if slot not in ['1','2','3','4']:
         print 'slot number must be 1, 2, 3 or 4'
-	exit(1)
+        exit(1)
+elif len(modident) == 8 and '%' in modident:
+    vsn = modident
+else:
+    print "Please provide valid slot number or VSN"
+    exit(1)
+
+if len(slot) == 1 and len(vsn) == 0:
+    vsn = getVSN(slot)
+elif len(slot) == 0 and len(vsn) == 8:
+    slot = getSlotByVSN(vsn)
 
 if verbose > 2:
-        print "slot", slot
-
-vsn = getVSN(slot)
+    print "slot", slot
 
 if verbose > 2:
-        print "vsn", vsn
+    print "vsn", vsn
 
 # get vsum short summary from slot
 out = subprocess.check_output(['vsum', '-s', '--mark6slot', slot])
@@ -196,7 +215,7 @@ if change is True:
            exit(1)
 
     # change state to cataloged
-    statecmd = ["m6state.sh", slot, "cataloged"]
+    statecmd = ["mk6state", "cataloged", slot]
     res = subprocess.Popen(statecmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out = res.communicate()
     

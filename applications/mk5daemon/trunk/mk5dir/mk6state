@@ -1,0 +1,216 @@
+#!/usr/bin/env python
+
+#**************************************************************************
+#   Copyright (C) 2018 by Mark Wainright                                  *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+
+program = 'mk6state'
+version = '0.1'
+author  = 'Mark Wainright'
+verdate = '20180423'
+
+from sys import exit, argv
+from os import getenv, system
+from os.path import isfile, isdir
+from string import split, strip, upper, find
+import subprocess
+import glob
+
+def usage(prog):
+    print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+    print 'A program to change the state of a mark6 module'
+    print 'Module state can be played, erased, recorded, or cataloged.'
+    print 'Module state is stored in the metadata state file on each'
+    print 'disk in the module.'
+    print '\nUsage: %s [options] <desired state> <slot number, MSN, scan file>' % prog
+    print """
+Options can include:
+
+  --verbose
+  -v         Send more output to the screen  (use -v -v for extra info)
+
+  --quiet
+  -q         Be quieter in operation
+
+  --erase
+  -e         Option to confirm erase state change
+
+  --help
+  -h         Print this help information and quit
+
+This program should be run locally on a mark6 unit.
+
+A module can be selected for state change by slot number, module serial number (MSN),
+or by the name of a scan file on the module.
+
+This script can be used to erase a module and change state to erased.  The -e option
+and desired state erased must be used together to confirm erasure.
+
+Examples:
+
+  mk6state -v cataloged 1               # change state of module in slot 1 to cataloged 
+
+  mk6state -v played LBO%0001           # change state of module with MSN LBO%0001 to played
+
+  mk6state -v recorded AB123_KP_No0001  # change state of module with scan file AB123_KP_No0001 to recorded
+  
+  mk6state -v -e erased 2               # change state of module in slot 2 to erased and erase module
+
+"""
+    exit(1)
+
+def getSlotByMSN(modident):
+    for slot in ['1', '2', '3', '4']:
+        for disk in range(8):
+            msnfilepath = '/mnt/disks/.meta/' + slot + '/' + str(disk) + '/eMSN'
+            if isfile(msnfilepath) == True:
+                msnfile = open(msnfilepath)
+                msndata = msnfile.read()
+                msnfile.close()
+                if modident in msndata:
+                    return slot
+                else:
+                    break
+            else:
+                continue
+    print "could not find slot by MSN", modident
+    exit(1)
+
+def getSlotByScanFile(modident):
+    for slot in ['1', '2', '3', '4']:
+        for disk in range(8):
+            scanfilepath = '/mnt/disks/' + slot + '/' + str(disk) + '/data/' + modident
+            if isfile(scanfilepath) == True:
+                return slot
+            else:
+                continue
+    print "could not find slot by scan file", modident
+    exit(1)
+
+verbose = 2
+state = ''
+modident = ''
+erase = False
+
+if len(argv) == 1:
+    print 'Use -h option for help'
+    exit(1)
+
+for a in argv[1:]:
+    if a[0] == '-':
+	if a in ['-v', '--verbose']:
+            verbose += 1
+	elif a in ['-q', '--quiet']:
+            verbose -= 1
+	elif a in ['-e', '--erase']:
+            erase = True
+        elif a in ['-h', '--help']:
+            usage(argv[0])
+        else:
+            print 'Unknown option: ', a
+            exit(1)
+    elif len(state) == 0:
+        state = a
+    else:
+        modident = a
+
+if state not in ['played','erased','recorded','cataloged']:
+    print 'state must be played, erased, recorded or cataloged'
+    exit(1)
+
+if state == "erased" and erase == False:
+    print "must use -e option to confirm state change to", state
+    exit(1)
+
+if len(modident) == 0:
+    print 'must provide a module identifier: slot, MSN, scan file'
+    exit(1)
+
+if len(modident) == 1:
+    if modident not in ['1', '2', '3', '4']:
+        print 'slot must be 1, 2, 3, or 4'
+        exit(1)
+    slot = modident
+elif len(modident) == 8 and '%' in modident:
+    slot = getSlotByMSN(modident)
+else:
+    slot = getSlotByScanFile(modident)
+
+if state == "erased" and erase == False:
+    print "must use -e option to confirm state change to", state
+    exit(1)
+
+if verbose > 2:
+    print 'change slot', slot, 'to state', state
+
+for disk in range(8):
+    # check for eMSN file in metadata to confirm mount
+    msnfilepath = '/mnt/disks/.meta/' + slot + '/' + str(disk) + '/eMSN'
+    if isfile(msnfilepath) == True:
+        # change .meta mount permissions to read-write
+        metamountpoint = '/mnt/disks/.meta/' + slot + '/' + str(disk)
+        remountcmd = ["sudo", "mount", "-o", "rw,remount", metamountpoint]
+        rc = subprocess.call(remountcmd)
+        if rc != 0:
+            print "remount to read-write failed on slot", slot, "disk", disk, ",continuing"
+            continue
+
+        # write state file
+        statefilepath = '/mnt/disks/.meta/' + slot + '/' + str(disk) + '/state'
+        statefile = open(statefilepath, 'w')
+        statefile.write(state + '\n')
+        statefile.close()
+        if verbose > 2:
+            print 'change disk', disk, 'to state', state
+
+        # erase disk if state change is erased
+        if state == 'erased':
+            if verbose > 2:
+                print "erasing slot", slot, "disk", disk
+            # change data mount to read-write
+            datamountpoint = '/mnt/disks/' + slot + '/' + str(disk)
+            remountcmd = ["sudo", "mount", "-o", "rw,remount", datamountpoint]
+            rc = subprocess.call(remountcmd)
+            # move data directory
+            movecmd = ["mv", "-f", "/mnt/disks/" + slot + "/" + str(disk) + "/data", "/mnt/disks/" + slot + "/" + str(disk) + "/data-remove",]
+            rc = subprocess.call(movecmd)
+            # make new data directory
+            mkdircmd = ["mkdir", "/mnt/disks/" + slot + "/" + str(disk) + "/data"]
+            rc = subprocess.call(mkdircmd)
+            # change permissions on data directory
+            permcmd = ["chmod", "777", "/mnt/disks/" + slot + "/" + str(disk) + "/data"]
+            rc = subprocess.call(permcmd)
+            # change ownership of data directory
+            ownercmd = ["sudo", "chown", "root:nmstaff", "/mnt/disks/" + slot + "/" + str(disk) + "/data"]
+            rc = subprocess.call(ownercmd)
+            # remove old data directory and do not wait for subprocess
+            rmdircmd = ["rm", "-rf", "/mnt/disks/" + slot + "/" + str(disk) + "/data-remove"]
+            rc = subprocess.Popen(rmdircmd)
+            # change data mount to read only
+            remountcmd = ["sudo", "mount", "-o", "ro,remount", datamountpoint]
+            rc = subprocess.call(remountcmd)
+
+        # change .meta mount permissions to read only
+        remountcmd = ["sudo", "mount", "-o", "ro,remount", metamountpoint]
+        rc = subprocess.call(remountcmd)
+        if rc != 0:
+            print "remount to read only failed on slot", slot, "disk", disk, ",continuing"
+
+    else:
+        continue
+
