@@ -2698,6 +2698,11 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+        // call mk62v2d script for mark6 related v2d prework
+	// mk62v2d exits without altering v2d if no mark6 modules are present in .vex.obs
+	command = "mk62v2d " + v2dFile;
+        system(command.c_str());
+
 	P = new CorrParams(v2dFile);
 	if(P->vexFile.empty())
 	{

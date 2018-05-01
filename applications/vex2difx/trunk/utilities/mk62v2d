@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+
+#**************************************************************************
+#   Copyright (C) 2018 by Mark Wainright                                  *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+
+from string import split, strip, find, lower
+from sys import exit, argv
+from os.path import isfile, isdir
+from os import umask, popen, system, getcwd, getenv
+from shutil import move
+
+program = 'mk62v2d'
+version = '0.1'
+verdate = '20180412'
+author = 'Mark Wainright'
+
+def usage(pgm):
+	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'Program to update a .v2d file with mark6filelist tags for\n'
+	print 'appropriate antennas.\n'
+	print 'Program will also create appropriate antenna filelist files.\n'
+	print 'Program is called from vex2difx for mark6 related pre-work.\n'
+	print 'Usage: %s [options] <v2d file>\n' % pgm
+	print 'options can include\n'
+	print '  --help'
+	print '  -h       print this help info and quit\n'
+	print '  --verbose'
+	print '  -v       be more verbose in execution (use -v -v for even more!)\n'
+	print '  --quiet'
+	print '  -q       be less verbose\n'
+	print '<v2d file> is a .v2d file that needs mark6filelist tags added\n'
+	exit(0)
+
+# main execution
+
+dirPath = getenv("MARK5_DIR_PATH")
+
+if dirPath == None:
+	print 'Error: env. var. MARK5_DIR_PATH not defined.'
+	exit(1)
+
+if not isdir(dirPath):
+	print 'Error: env. var. MARK5_DIR_PATH does not point to a directory.'
+	exit(1)
+
+umask(02)
+
+inFile = ''
+stop = False
+verbose = 1
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['-h', '--help']:
+			usage(argv[0])
+		elif a in ['-v', '--verbose']:
+			verbose += 1
+		elif a in ['-q', '--quiet']:
+			verbose -= 1
+		else:
+			print 'Unknown command line option: %s' % a
+			stop = True
+	else:
+		if inFile == '':
+			inFile = a
+		else:
+			print 'Extra command line arg. given: %s' % a
+			stop = True
+
+if inFile == '':
+	print 'No input .v2d file provided.'
+	stop = True
+
+if stop:
+	print 'Please run with -h to get usage instructions.\n'
+	exit(0)
+
+if verbose > 1:
+    print "v2d file:", inFile
+
+if inFile[-4:] == '.v2d':
+	prefix = inFile[:-4]
+else:
+	prefix = inFile
+
+vexObsFile = prefix + '.vex.obs'
+
+# get experiment name and TAPELOG_OBS data from .vex.obs
+experName = ''
+experNameFound = False
+tapelogObsFound = False
+ant = ''
+mod = ''
+antennaModuleList = []
+
+vexobs = open(vexObsFile, "r")
+for line in vexobs:
+
+    if experNameFound is False:
+        i = line.find('exper_name')
+	if i != -1:
+	    experNameFound = True
+	    lineend = line[i+10:len(line)-1]
+	    for i in range(len(lineend)):
+	        if lineend[i] not in [' ', '=', ';']:
+		    experName += lineend[i]
+    elif tapelogObsFound is False:
+        if '$TAPELOG_OBS;' in line:
+	    tapelogObsFound = True
+    elif tapelogObsFound is True:
+        if 'def ' in line:
+	    ant = line[4:6].upper()
+	elif '  VSN = ' in line:
+	    linesegs = line.split(':')
+	    mod = linesegs[1].strip()
+	elif 'enddef;' in line and '%' in mod:  # adds only mark6 modules to antennaModuleList
+	    antennaModuleList.append([ant,mod])
+	elif '*-----' in line:
+	    break
+
+if experNameFound is False or tapelogObsFound is False:
+    print "could not find experiment name or TAPELOG_OBS data, exiting"
+    exit(1)
+
+if len(antennaModuleList) is 0:
+    print "no antennas with mark6 modules found, nothing more to do, exiting"
+    exit(0)
+
+if verbose > 1:
+    print "experName", experName
+    print "antModList", antennaModuleList
+
+# make an antenna.filelist for each antenna in the antenna module list
+antList = []
+for antMod in antennaModuleList:
+    antList.append(antMod[0])
+    moduleFilePath = dirPath + '/' + antMod[1] + '.filelist'
+    if isfile(moduleFilePath):
+        modfile = open(moduleFilePath, 'r')
+    else:
+        print "could not fine module filelist", moduleFilePath
+	exit(1)
+    antennaFilePath = antMod[0].lower() + '.filelist'
+    antfile = open(antennaFilePath, 'w')
+    for line in modfile:
+        if experName in line:
+	    antfile.write(line)
+    modfile.close()
+    antfile.close()
+
+# add mark6filelist tags to .v2d file
+move(inFile, inFile + ".bkup")
+readv2d = open(inFile + ".bkup", 'r')
+writev2d = open(inFile, 'w')
+for line in readv2d:
+    if 'ANTENNA' in line:
+        if line[8:10] in antList:
+	    mark6line = line[0:33] + 'mark6filelist=' + line[8:10].lower() + '.filelist }\n'
+	    writev2d.write(mark6line)
+	else:
+	    writev2d.write(line)
+    else:
+        writev2d.write(line)
+readv2d.close()
+writev2d.close()
+
