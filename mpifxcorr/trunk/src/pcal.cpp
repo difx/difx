@@ -355,7 +355,6 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, double pcal_spac
 
 PCalExtractorTrivial::~PCalExtractorTrivial()
 {
-    vecStatus s;
     vectorFree(_cfg->pcal_complex);
     vectorFree(_cfg->pcal_real);
     vectorFreeDFTC_cf32(_cfg->dftspec);
@@ -531,7 +530,6 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
 
 PCalExtractorShifting::~PCalExtractorShifting()
 {
-    vecStatus s;
     vectorFree(_cfg->pcal_complex);
     vectorFree(_cfg->pcal_real);
     vectorFree(_cfg->rotator);
@@ -753,15 +751,11 @@ PCalExtractorComplex::PCalExtractorComplex(double bandwidth_hz,
 
 PCalExtractorComplex::~PCalExtractorComplex()
 {
-    vecStatus s;
     vectorFree(_cfg->pcal_complex);
     vectorFree(_cfg->pcal_real);
     vectorFree(_cfg->rotator);
     vectorFree(_cfg->rotated);
     vectorFreeDFTC_cf32(_cfg->dftspec);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTFree in PCalExtractorComplex::~PCalExtractorComplex "
-                << vectorGetStatusString(s) << endl;
     vectorFree(_cfg->dftworkbuf);
     vectorFree(_cfg->dft_out);
     delete _cfg;
@@ -953,12 +947,9 @@ int pcal_offset_hz, const size_t sampleoffset)
 
 PCalExtractorImplicitShift::~PCalExtractorImplicitShift()
 {
-    vecStatus s;
     vectorFree(_cfg->pcal_complex);
     vectorFree(_cfg->pcal_real);
     vectorFreeDFTC_cf32(_cfg->dftspec);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTFree in PCalExtractorImplicitShift::~PCalExtractorImplicitShift " << vectorGetStatusString(s) << endl;
     vectorFree(_cfg->dftworkbuf);
     vectorFree(_cfg->dft_out);
     delete _cfg;
