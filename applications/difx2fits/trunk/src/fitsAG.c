@@ -173,7 +173,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 		const DifxAntenna *antenna;
 		struct AGrow row;
 		int i;
-		AntennaDBEntry *ae;
+		const AntennaDBEntry *ae;
 
 		antenna = D->antenna + a;
 

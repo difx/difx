@@ -107,10 +107,9 @@ static void writeDifxHistory(const DifxInput *D, struct fitsPrivate *out, const 
 	for(j = 0; j < D->nJob; ++j)
 	{
 		char pattern[PATH_MAX];
-		int ok;
 
 		snprintf(pattern, PATH_MAX, "%s/*.history", D->job[j].outputFile);
-		ok = glob(pattern, 0, 0, globs+j);
+		glob(pattern, 0, 0, globs+j);
 		fileStart[j] = strlen(D->job[j].outputFile) + 1;
 	}
 

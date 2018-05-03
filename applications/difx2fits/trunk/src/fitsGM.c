@@ -207,7 +207,6 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		const DifxPulsar *dp;
 		const DifxPolyco *pc;
 		const DifxConfig *config;
-		const DifxFreqSet *dfs;
 		int configId, freqSetId, scanId;
 
 		for(scanId = 0; scanId < D->nScan; ++scanId)
@@ -226,7 +225,6 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		}
 		dp = D->pulsar + psr;
 		freqSetId = config->freqSetId;
-		dfs = D->freqSet + freqSetId;
 
 		v = getGateWindow(dp, opts->pulsarBin, &phaseOpen, &phaseClose);
 		if(v < 0)
