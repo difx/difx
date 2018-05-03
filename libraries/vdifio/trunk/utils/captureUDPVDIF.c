@@ -310,5 +310,5 @@ int main(int argc, char **argv)
   if(perr != 0)
     fprintf(stderr, "Error in joining writethread!!!");
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
