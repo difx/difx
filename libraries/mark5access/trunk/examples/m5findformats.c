@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
     }
 
     fclose(stderr);
-    for (format = 0; format <= 2; format++) {
+    for (format = 0; format <= 3; format++) {
         for (fanout = 1; fanout <= 8; fanout *= 2) {
             for (rate = 0; rate < sizeof(rates)/sizeof(int); rate++) {
                 for (channels = 1; channels <= 64; channels *= 2) {
@@ -74,6 +74,10 @@ int main(int argc, char* argv[])
                                  snprintf(formatstring, 256, "Mark5B-%d-%d-%d", rates[rate], channels, bitreso);
                                  if (fanout != 1) continue;
                                  break;
+                             case 3:
+                                 snprintf(formatstring, 256, "VDIF_64-%d-%d-%d", rates[rate], channels, bitreso);
+                                 if (fanout != 1) continue;
+                                 break;
                              default:
                                  snprintf(formatstring, 256, "unknown format=%d", format);
 				 break;
@@ -87,14 +91,17 @@ int main(int argc, char* argv[])
                              decode_rc = mark5_stream_decode(ms, 1024LL, unpacked);
                          }
 	                 if (ms && (decode_rc >= 0)) {
-                             fprintf(stdout, "OK: fmt = %s , decoded = %d/1024\n", formatstring, decode_rc); 
+                             if (format == 3) {
+                                 snprintf(formatstring, 256, "VDIF_%d-%d-%d-%d", ms->databytes, ms->Mbps, ms->nchan, ms->nbit);
+                             }
+                             fprintf(stdout, "OK: fmt = %s , decoded = %d/1024\n", formatstring, decode_rc);
                              longlist = strcat(longlist, formatstring);
                              longlist = strcat(longlist, "  ");
                              //mark5_stream_print(ms);
                          } else {
                              //fprintf(stdout, "FAIL: fmt = %s , rc = %d\n", formatstring, decode_rc);
                          }
-                     }                    
+                     }
                 }
             }
         }
