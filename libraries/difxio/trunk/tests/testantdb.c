@@ -3,7 +3,7 @@
 
 void findxyz(double x, double y, double z)
 {
-	AntennaDBEntry *ae;
+	const AntennaDBEntry *ae;
 
 	ae = antennaDBGetByXYZ(x, y, z);
 	if(!ae)
@@ -23,7 +23,7 @@ int main()
 
 	for(i = 0; ; ++i)
 	{
-		AntennaDBEntry *ae;
+		const AntennaDBEntry *ae;
 
 		ae = antennaDBGetByIndex(i);
 		if(!ae)

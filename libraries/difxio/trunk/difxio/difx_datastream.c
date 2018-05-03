@@ -473,7 +473,14 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 	}
 	fprintf(fp, "\n");
 	fprintf(fp, "    tcalFrequency = %d\n", dd->tcalFrequency);
-	fprintf(fp, "    phaseCalIntMHZ = %d\n", dd->phaseCalIntervalMHz);
+	if(fabs(dd->phaseCalIntervalMHz - (int)(dd->phaseCalIntervalMHz + 0.5)) < 0.0001)
+	{
+		fprintf(fp, "    phaseCalIntMHZ = %d\n", (int)(dd->phaseCalIntervalMHz + 0.5));
+	}
+	else
+	{
+		fprintf(fp, "    phaseCalIntMHZ = %7.5f\n", dd->phaseCalIntervalMHz);
+	}
 	fprintf(fp, "    nRecPhaseCalTones = %d\n", dd->nRecTone);
 	for(f = 0; f < dd->nRecTone; ++f)
 	{
