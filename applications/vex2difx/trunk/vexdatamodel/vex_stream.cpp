@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2018 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -298,7 +298,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		{
 			// Here we match the format name but get no additional information
 			format = static_cast<DataFormat>(df);
-			singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+			singleThread = isSingleThreadVDIF(formatName);
 
 			return true;
 		}
