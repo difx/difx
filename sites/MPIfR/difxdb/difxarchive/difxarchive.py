@@ -162,7 +162,7 @@ def syncDir(path, user, config, fileCount):
     
     logger.info( "Syncing files from %s to: %s" % (path, server))
     
-    cmd = 'rsync -av  --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
+    cmd = 'rsync -av --no-perms  --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
         
     proc = subprocess.Popen(cmd,
                                        shell=True,
