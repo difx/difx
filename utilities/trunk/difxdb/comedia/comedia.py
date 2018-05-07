@@ -31,7 +31,8 @@ import re
 import os
 import time
 import tkMessageBox
-import PIL
+from Tkinter import *
+import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 import subprocess
 
 
@@ -49,7 +50,7 @@ from string import strip, upper
 from collections import deque
 
 from sqlalchemy import *
-from Tkinter import *
+#from Tkinter import *
 import Tkconstants, tkFileDialog
 from tkinter.multilistbox import *
 from functools import partial
