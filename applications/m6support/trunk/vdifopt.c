@@ -43,50 +43,47 @@ static int vdifsup_help(char *fullname, char *help)
     if (!name) name = fullname;
     else name++;
     fprintf(stderr,
-        "usage: %s [options] mount-point [directories]\n"
+        "usage: %s [options] mount-point <directories> [fuse-options]\n"
         "\n"
-        "  -a <file>    all of the above with cache <file>\n"
+        "  -h           this help\n"
+        "  --HELP       help and additional FUSE mounting options\n"
+        "  -xhelp       help on processing parameters\n"
         "\n"
         "  -c <file>    create cache <file> for metadata (and exit)\n"
         "  -r <file>    check & report on cache <file> (and exit)\n"
         "  -u <file>    use cache <file> and go into background\n"
-        "  -m <file>    generate v2d-style filelist from <file>\n"
+        "  -a <file>    all of the above with cache <file>\n"
+        "\n"
+        "  -m <file>    generate DiFX v2d-style filelist from cache <file>\n"
         "\n"
         "  -v           verbose commentary, repeatable for more\n"
-        "  -l <file>    log commentary to the specified file\n"
+        "  -l <logfile> log commentary to the specified log file\n"
         "  -t           provide a trace log in /tmp/vdifuse.<pid>\n"
         "  -x <key=val> set various processing parameters\n"
         "\n"
-        "%s is expecting to scan some set of directories for valid VDIF\n"
-        "files or valid Mark6 scatter-gather files, to build a cache of\n"
-        "what it finds (for future access) and to prepare to supply a\n"
-        "FUSE filesystem filled with \"fragments\" (what it found) or\n"
-        "\"sequences\" (what it assembles into virtual files).\n"
+        "%s is expecting to scan a set of <directories> for valid VDIF\n"
+        "files (-xfiles, -xm6raid) or valid Mark6 scatter-gather files (-xm6sg),\n"
+        "to build a cache (-c, -a) of what it finds, and to prepare to supply a FUSE\n"
+        "filesystem filled with \"fragments\" (what it found) and \"sequences\" (what\n"
+        "it assembles into virtual files).\n"
         "\n"
-        "Normal usages is to create and use the cache in one step:\n"
+        "Normal usage is to create and use a new cache in one step:\n"
         "\n"
-        "  %s -a cache mount <directories...>\n"
+        "  %s -a cache-file -xm6sg mount-point <directories>\n"
         "\n"
         "and when finished unmount it with\n"
         "\n"
         "  fusermount -u mount-point\n"
         "\n"
-        "The -c/-r and -u option are available to step through the\n"
-        "process (perhaps checking for errors), or to reuse a cache\n"
-        "that was created previously.  The -m option is a variant of\n"
-        "the -r which provides a filelist suitable for use with DiFX.\n"
-        "\n"
-        "For usage examples,  use \"-xexamples\".\n"
-        "For details on the fuse mounting options, use \"--HELP\".\n"
-        "(Fuse itself uses -d, -s, -f and a plethora of -o options.)\n"
-        "For details on additional processing parameters, use \"-xhelp\".\n"
-        "For details on a variety of known issues, use \"-xissues\".\n"
-        "\n"
-        "The fuse -f option keeps %s in the foreground, and if\n"
-        "combined with -xdebug=N is the best way to debug issues.\n"
+        "The FUSE option -f keeps %s in the foreground, and if combined\n"
+        "with processing parm -xdebug=N is the best way to debug issues.\n"
         "For convenience -v (repeated N) is equivalent to -xdebug=N.\n"
         "\n"
         "The -l/-t options are for debugging problematic files.\n"
+        "\n"
+        "For usage examples, use \"-xexamples\".\n"
+        "For details on additional processing parameters, use \"-xhelp\".\n"
+        "For details on a variety of known issues, use \"-xissues\".\n"
         "\n",
         name, name, name, name
     );
@@ -113,7 +110,7 @@ static int horv(int *argc, char **argv[])
 {
     int aa;
     char *name = (*argv)[0];
-    if (*argc < 2) return(fprintf(stderr, "Arguments are required\n"));
+    if (*argc < 2) return(fprintf(stderr, "Arguments are required (try -h for help)\n"));
     for (aa = 0; aa < *argc; aa++) {
         if (!strncmp((*argv)[aa], "-h", 2)) return(vdifsup_help(name,NULL));
         if (!strncmp((*argv)[aa], "--HELP", 6))

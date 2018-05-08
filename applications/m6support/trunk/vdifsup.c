@@ -1103,7 +1103,7 @@ static int vdifuse_env(void)
 static int vdifuse_options_help(void)
 {
     fprintf(vdflog, "\n");
-    fprintf(vdflog, "General help:\n");
+    fprintf(vdflog, "General help on -x <option> and -x <key=val>:\n");
     fprintf(vdflog, "  help          provides this help\n");
     fprintf(vdflog, "  issues        provides some additional info\n");
     fprintf(vdflog, "  examples      provides some examples\n");
