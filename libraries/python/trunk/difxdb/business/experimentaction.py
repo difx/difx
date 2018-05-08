@@ -84,7 +84,7 @@ def _addExperiment(session,experiment):
     if (experimentExists(session, experiment.code)):
         return
  
-def addExperiment(session, code, types=[], analyst=None, statuscode=0):
+def addExperiment(session, code, types=[], analyst=None, obsDate=None, statuscode=0):
     '''
     Adds an experiment to the database. New experiments receive the default
     state (=unknown). 
@@ -99,6 +99,7 @@ def addExperiment(session, code, types=[], analyst=None, statuscode=0):
     experiment.code = upper(code)
     experiment.number = int(getLastExperimentNumber(session)) + 1
     experiment.user = analyst
+    experiment.dateObserved = obsDate
 
     try:
 	for type in types:
