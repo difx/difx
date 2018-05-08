@@ -30,9 +30,11 @@ import os
 import sys
 import tkMessageBox
 import datetime
+
 from optparse import OptionParser
 from Tkinter import *
 from tkinter.multilistbox import *
+from tkinter.DatePicker import DatePicker
 from string import  upper
 
 from difxdb.model import model
@@ -52,7 +54,7 @@ __lastAuthor__="$Author$"
 
 # minimum database schema version required by this program
 minSchemaMajor = 1
-minSchemaMinor = 4
+minSchemaMinor = 6
 
 
 class GenericWindow(object):
@@ -101,16 +103,11 @@ class MainWindow(GenericWindow):
             
         session.close()
             
-        
-            
     def show(self):
         
         self._setupWidgets()
-        
         self.updateExpListbox()
         
-        
-       
         
     def _setupWidgets(self):
         
@@ -133,10 +130,11 @@ class MainWindow(GenericWindow):
         col4 = ListboxColumn("type", 8)
         col5 = ListboxColumn("modules", 4)
         col6 = ListboxColumn("analyst", 12)
-        col7 = ListboxColumn("created", 14) 
-        col8 = ListboxColumn("archived", 14)
-        col9 = ListboxColumn("released", 14) 
-        self.grdExps = MultiListbox(frmExps, 16, col1, col2, col3, col4, col5, col6, col7, col8, col9)
+        col7 = ListboxColumn("observed", 10) 
+        col8 = ListboxColumn("created", 14) 
+        col9 = ListboxColumn("archived", 14)
+        col10 = ListboxColumn("released", 14) 
+        self.grdExps = MultiListbox(frmExps, 16, col1, col2, col3, col4, col5, col6, col7, col8, col9, col10)
         self.grdExps.bindEvent("<ButtonRelease-1>", self.selectExpEvent)
         
         btnAddExp = Button(frmExps, text="Add experiment", command=self.addExperimentDlg.show)
@@ -144,7 +142,8 @@ class MainWindow(GenericWindow):
         #frmDetail
         Label(frmDetail, text="code: ").grid(row=0,column=0, sticky=W)
         Label(frmDetail, text="number: ").grid(row=1,column=0, sticky=W)
-        Label(frmDetail, text="status: ").grid(row=10,column=0, sticky=W)
+        Label(frmDetail, text="status: ").grid(row=5,column=0, sticky=W)
+        Label(frmDetail, text="observed: ").grid(row=10,column=0, sticky=W)
         Label(frmDetail, text="type: ").grid(row=11,column=0, sticky=W)
         Label(frmDetail, text="analyst: ").grid(row=12,column=0, sticky=W)
         Label(frmDetail, text="released by: ").grid(row=13,column=0, sticky=W)
@@ -155,6 +154,7 @@ class MainWindow(GenericWindow):
         self.txtCode = Entry(frmDetail, text = "")
         self.txtNumber = Entry(frmDetail, text = "")
         self.cboStatus = OptionMenu (frmDetail, self.cboStatusVar, *self.expStati ,command=self.onExpDetailChange)
+	self.txtObsDate = Entry(frmDetail, text = "")
         self.cboType= Listbox(frmDetail, selectmode=MULTIPLE, height=4, selectforeground="white", selectbackground="dodger blue", fg="grey" )
         self.cboUser = OptionMenu(frmDetail, self.cboUserVar,  *self.users, command=self.onExpDetailChange)
         self.cboReleasedBy = OptionMenu(frmDetail, self.cboReleasedByVar,  *self.users, command=self.onExpDetailChange)
@@ -180,7 +180,8 @@ class MainWindow(GenericWindow):
         #arrange widgets on frmDetail
         self.txtCode.grid(row=0, column=1, sticky=E+W)
         self.txtNumber.grid(row=1, column=1, sticky=E+W)
-        self.cboStatus.grid(row=10, column=1, sticky=E+W)
+        self.cboStatus.grid(row=5, column=1, sticky=E+W)
+        self.txtObsDate.grid(row=10, column=1, sticky=E+W)
         self.cboType.grid(row=11, column=1, sticky=E+W)
         self.cboUser.grid(row=12, column=1, sticky=E+W)
         self.cboReleasedBy.grid(row=13, column=1, sticky=E+W)
@@ -305,7 +306,7 @@ class MainWindow(GenericWindow):
             if exp.user is not None:
                 username = exp.user.name
                 
-            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), len(exp.modules), username, exp.dateCreated,  exp.dateArchived, exp.dateReleased))
+            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), len(exp.modules), username, exp.dateObserved, exp.dateCreated,  exp.dateArchived, exp.dateReleased))
      
         session.close()
         
@@ -331,12 +332,14 @@ class MainWindow(GenericWindow):
         self.txtNumber["state"] = NORMAL
         self.txtDateArchived["state"] = NORMAL
         self.cboReleasedBy["state"] = NORMAL
+        self.txtObsDate["state"] = NORMAL
         self.txtArchivedBy["state"] = NORMAL
         self.txtComment["state"] = NORMAL
         
         
         self.txtCode.delete(0,END)
         self.txtNotify.delete(0,END)
+        self.txtObsDate.delete(0,END)
         self.txtNumber.delete(0,END)
         self.txtDateArchived.delete(0,END)
         self.txtArchivedBy.delete(0,END)     
@@ -345,6 +348,7 @@ class MainWindow(GenericWindow):
         if self.selectedExpIndex == -1:
             self.btnUpdate["state"] = DISABLED
             self.btnDelete["state"] = DISABLED
+            self.txtObsDate["state"] = DISABLED
             self.cboStatus["state"] = DISABLED
             self.cboUser["state"] = DISABLED
             self.cboType["state"] = DISABLED
@@ -400,6 +404,7 @@ class MainWindow(GenericWindow):
             self.txtNotify.insert(0, none2String(exp.emailnotification))
             self.txtNumber.insert(0, "%04d" % none2String(exp.number))
             self.txtDateArchived.insert(0, none2String(exp.dateArchived))
+            self.txtObsDate.insert(0, none2String(exp.dateObserved))
             self.txtArchivedBy.insert(0, none2String(exp.archivedBy))
             self.txtComment.insert(1.0, none2String(exp.comment))
             
@@ -408,6 +413,7 @@ class MainWindow(GenericWindow):
         
         self.txtCode["state"] = DISABLED
         self.txtDateArchived["state"] = DISABLED
+        self.txtObsDate["state"] = DISABLED
         self.txtArchivedBy["state"] = DISABLED
         self.cboReleasedBy["state"] = DISABLED
         
@@ -510,6 +516,35 @@ class MainWindow(GenericWindow):
         session.close()
         self.updateExpListbox()
         
+class SelectDateWindow(GenericWindow):
+    def __init__(self, parent, rootWidget=None):
+        super( SelectDateWindow, self ).__init__(parent, rootWidget)
+
+    def show(self):
+
+        # create modal dialog
+        self.dlg = Toplevel(self.parent.rootWidget, takefocus=True)
+        self.dlg.title("Select observation date")
+        self.dlg.transient(self.rootWidget)
+        self.dlg.state("normal")
+        self.dlg.grab_set()
+
+        self._setupWidgets()
+
+    def close(self):
+        
+	self.parent.obsDate = self.cal.selectedDate
+	self.parent.update()
+        self.rootWidget.grab_set()
+        self.dlg.destroy()
+
+    def _setupWidgets(self):
+                     
+        self.cal = DatePicker(self.dlg)
+	btnOK = Button(self.dlg, text="OK", command=self.close)
+	btnOK.grid(row=10,column=10)
+
+
 class AddExperimentWindow(GenericWindow):
      
     def __init__(self, parent, rootWidget=None):
@@ -519,6 +554,9 @@ class AddExperimentWindow(GenericWindow):
         self.cboUserVar = StringVar()
         self.expTypes=[]
         self.users=[]
+        self.obsDate = None
+
+        self.selectDateDlg = SelectDateWindow(self, rootWidget)
         
         session = dbConn.session()
         
@@ -553,10 +591,11 @@ class AddExperimentWindow(GenericWindow):
         
         self.txtExpCode = Entry(self.dlg) 
         self.txtObsDate =  Entry(self.dlg)   
+	self.btnObsDate = Button(self.dlg, text="Select date", command=self._selectObsDate)
         self.cboType= Listbox(self.dlg, listvariable=self.cboTypeVar, selectmode=MULTIPLE, height=5, selectforeground="white", selectbackground="dodger blue", fg="grey" )
         self.cboType.delete(0,END)
 	self.cboType.insert(0, *self.expTypes)
-        
+    
         self.cboUser = OptionMenu(self.dlg, self.cboUserVar,  *self.users)
         
         btnOK = Button(self.dlg, text="OK", command=self._persistExperiment)
@@ -565,21 +604,30 @@ class AddExperimentWindow(GenericWindow):
         Label(self.dlg, text="Code").grid(row=0, sticky=W)
         Label(self.dlg, text="Analyst").grid(row=1, sticky=W)
         Label(self.dlg, text="Type").grid(row=2, sticky=W)
-        Label(self.dlg, text="Observation date").grid(row=10, sticky=W)
+        Label(self.dlg, text="Observation date").grid(row=5, sticky=W)
         
         Label(self.dlg, text="*").grid(row=0, column=3,sticky=W)
         Label(self.dlg, text="(yyyy-mm-dd)").grid(row=10, column=3, sticky=W)
         
-        self.txtExpCode.grid(row=0, column=1, sticky=E+W)
-        self.cboUser.grid(row=1, column=1, sticky=E+W)
-        self.cboType.grid(row=2, column=1, sticky=E+W)
-        self.txtObsDate.grid(row=10, column=1, sticky=E+W)
+        self.txtExpCode.grid(row=0, column=1, columnspan=2, sticky=E+W)
+        self.cboUser.grid(row=1, column=1,columnspan=2, sticky=E+W)
+        self.cboType.grid(row=2, column=1,columnspan=2, sticky=E+W)
+        self.txtObsDate.grid(row=5, column=1, sticky=E+W)
+	self.btnObsDate.grid(row=5, column=2, sticky=E+W)
         
         btnOK.grid(row=100, column=0)
         btnCancel.grid(row=100, column=1, sticky=E)
         
         self.txtExpCode.focus_set()
         
+    def update(self):
+	self.txtObsDate.delete(0,END)
+	self.txtObsDate.insert(0, self.obsDate)
+
+    def _selectObsDate(self):
+	
+	self.selectDateDlg.show()
+
     def _persistExperiment(self):
          
         selectedTypes = []
@@ -603,7 +651,7 @@ class AddExperimentWindow(GenericWindow):
       
         try:
             # add experiment with state "scheduled"
-            addExperiment(session, code, analyst=analyst, types=selectedTypes,statuscode=10)
+            addExperiment(session, code, analyst=analyst, obsDate=self.obsDate, types=selectedTypes,statuscode=10)
         except Exception as e:
             tkMessageBox.showerror("Error", e)
         
