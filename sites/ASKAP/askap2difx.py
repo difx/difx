@@ -179,7 +179,7 @@ def writekeyfile(keyout, obs, twoletterannames):
     keyout.write("minpause = 5\n\n")
     keyout.write("source = '%s'  dur = %d  gap = 0   /\n\n" % (obs["srcname"], int(0.99 + 86400.0*(float(obs["stopmjd"])-float(obs["startmjd"])))))
 
-def writev2dfile(v2dout, obs, twoletterannames, datafilelist):
+def writev2dfile(v2dout, obs, twoletterannames, delays, datafilelist):
     v2dout.write("#  Template v2d file for DiFX correlation of craftfrb\n\n")
     v2dout.write("vex = craftfrb.vex\n")
     v2dout.write("minLength = 1\n\n")
@@ -190,14 +190,14 @@ def writev2dfile(v2dout, obs, twoletterannames, datafilelist):
         if not a == twoletterannames[-1]:
             v2dout.write(", ")
     v2dout.write("\n")
-    for d in datafilelist:
+    for d, delay in zip(datafilelist, delays):
         a = d.split('=')[0]
         #v2dout.write("ANTENNA %s { source = FAKE format=CODIF clockOffset=0 clockRate=0 clockEpoch=57000.0 }\n" % a)
         #FIXME: Need to set the clockOffset here appropriately (where does this info come from?)
         v2dout.write("ANTENNA %s\n{\n" % a)
         v2dout.write("  file = %s\n" % d.split('=')[1])
         v2dout.write("  format=CODIFC/27/8064/1\n")
-        v2dout.write("  clockOffset=0\n")
+        v2dout.write("  clockOffset=%.6f\n" % (-float(delay[:-2])/1000.0))
         v2dout.write("  clockRate=0\n")
         v2dout.write("  clockEpoch=57000.0\n")
         v2dout.write("  phaseCalInt=0\n")
@@ -265,6 +265,7 @@ dataout = open("craftfrb.datafiles","w")
 count = 0
 antennanames = []
 twoletterannames = []
+delays = []
 datafilelist = []
 cwd = os.getcwd()
 for antenna in fcm["common"]["antenna"].keys():
@@ -277,6 +278,7 @@ for antenna in fcm["common"]["antenna"].keys():
     writefreqentry(freqout, antennaname)
     print fcm["common"]["antenna"][antenna]["location"]["itrf"]
     twolettername = writestatentry(statout, antennaname, count, fcm["common"]["antenna"][antenna]["location"]["itrf"])
+    delay = fcm["common"]["antenna"][antenna]["delay"]
     if os.path.exists("%s/%s.codif" % (cwd, antennaname)):
         datafilelist.append("%s=%s/%s.codif" % (twolettername, cwd, antennaname))
         dataout.write(datafilelist[-1] + "\n")
@@ -286,6 +288,7 @@ for antenna in fcm["common"]["antenna"].keys():
         sys.exit()
     antennanames.append(antennaname)
     twoletterannames.append(twolettername)
+    delays.append(delay)
     count += 1
 freqout.close()
 statout.close()
@@ -308,13 +311,15 @@ os.system("sched < craftfrb.key")
 
 ## Run getEOP and save the results
 # FIXME: remove this once you figure out why getEOP is running so slow
-#os.system("rm -f eopjunk.txt")
-#os.system("getEOP.py " + str(int(float(obs["startmjd"]))) + " > eopjunk.txt")
+if not os.path.exists("eopjunk.txt"):
+    os.system("getEOP.py " + str(int(float(obs["startmjd"]))) + " > eopjunk.txt")
+else:
+    print "Using existing EOP data - remove eopjunk.txt if you want to get new data!"
 eoplines = open("eopjunk.txt").readlines()
 
 ## Write the v2d file
 v2dout = open("craftfrb.v2d", "w")
-writev2dfile(v2dout, obs, twoletterannames, datafilelist)
+writev2dfile(v2dout, obs, twoletterannames, delays, datafilelist)
 for line in eoplines:
    if "xPole" in line or "downloaded" in line:
        v2dout.write(line)

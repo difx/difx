@@ -304,288 +304,295 @@ def stitchVisibilityfile(basename,cfg):
         if len(difxfileslist) <= 0:
                 print ('Error: no visibility data file found in %s!' % (glob_pattern))
                 return
-        difxfilename = difxfileslist[0]
-        difxfilename_pathless = difxfilename
-        if difxfilename.rfind('/') >= 0:
-                difxfilename_pathless = difxfilename[(difxfilename.rfind('/')+1):]
-        difxfile = open(difxfilename, 'r')
-        difxoutdir = basename_pathless + 'D2D.difx'
-        difxoutname = difxoutdir + '/' + difxfilename_pathless
-        try:
-                os.mkdir(difxoutdir)
-        except:
-                pass
-        if os.path.exists(difxoutname):
-                print ('Warning: %s already exists, skipping the processing of %s!' % (difxoutname,difxfilename))
-                return
-        difxout = open(difxoutname, 'w')
+        #difxfilename = difxfileslist[0]
+        for difxfilename in difxfileslist:
+                global vis_hashtable
+                vis_hashtable = {}
+                global vis_hashtable_cleanupSec
+                vis_hashtable_cleanupSec = 0
 
-        # Pull out antenna indices based on telescope names
-        telNames = [t.name for t in telescopes]
-        stAntIDs = []
-        if len(stitch_antennas) == 1 and stitch_antennas[0] == "*":
-                for i in range(len(telescopes)):
-                        stAntIDs.append(i+1)
-        else:
-                for sa in stitch_antennas:
-                        id = [n for n in range(len(telescopes)) if telescopes[n].name==sa]
-                        if len(id) != 1:
-                                print ("Warning: got %d hits for telescope %s in .difx file telescope list of %s!" % (len(id),sa,str(telNames)))
-                                continue
-                        id = id[0] + 1 # index (0..N-1) into antenna nr (1..N)
-                        stAntIDs.append(id)
+                difxfilename_pathless = difxfilename
+                if difxfilename.rfind('/') >= 0:
+                        difxfilename_pathless = difxfilename[(difxfilename.rfind('/')+1):]
+                difxfile = open(difxfilename, 'r')
+                difxoutdir = basename_pathless + 'D2D.difx'
+                difxoutname = difxoutdir + '/' + difxfilename_pathless
+                try:
+                        os.mkdir(difxoutdir)
+                except:
+                        pass
+                if os.path.exists(difxoutname):
+                        print ('Warning: %s already exists, skipping the processing of %s!' % (difxoutname,difxfilename))
+                        return
+                difxout = open(difxoutname, 'w')
 
-        # Affected baselines; data of these are stored in stitching memory, other baselines need no stitching
-        baseline_list = []
-        for sid in stAntIDs:
-                # Cross
-                for t in range(numtelescopes):
-                        tid = t + 1 # index (0..N-1) into antenna nr (1..N)
-                        if (tid != sid):
-                                baseline_list.append(tid + sid*256)
-                                baseline_list.append(sid + tid*256)
-                # Auto
-                baseline_list.append(sid + sid*256)
-
-        # Dictionary of per-polarizationpair working buffers into which spectra are stitched
-        stitch_workbufs = { bline:{ polkey:{bandkey:numpy.copy(blank_viz) for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
-        stitch_chcounts = { bline:{ polkey:{bandkey:0 for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
-        stitch_freqbws = { bline:{ polkey:{bandkey:[] for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
-        stitch_timestamps = { bline:{ polkey:{bandkey:-1 for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
-        nstitched = 0; ncopied = 0; nskipped = 0; nincomplete = 0
-
-        # Parse each visibility entry
-        seconds_prev = -1
-        seconds_first = 0
-        seconds_report_prev = 0
-        while True:
-
-                (vishdr,binhdr) = getVisibilityHeader(difxfile)
-                if len(vishdr) <= 0:
-                        break
-
-                # Visibility properties
-                baseline = vishdr[0]
-                mjd = vishdr[1]
-                seconds = vishdr[2]
-                freqindex = vishdr[5]
-                polpair = vishdr[6]
-                weight = vishdr[8]
-                uvw = vishdr[9:12]
-                # Antenna order as in difx2mark4: ref=ant1="256*nr", rem=ant2="nr%256"
-                ant2 = baseline % 256
-                ant1 = (baseline-ant2)/256
-                ant1name = telescopes[ant1-1].name
-                ant2name = telescopes[ant2-1].name
-                T = mjd + seconds/86400.0
-                baselinestr = '%s-%s' % (ant1name,ant2name)					
-
-                # Number of channels in this baseband
-                nchan = freqs[freqindex].numchan / freqs[freqindex].specavg
-                fsky = freqs[freqindex].freq
-                bw = freqs[freqindex].bandwidth
-                if freqs[freqindex].lsb:
-                        fsky -= bw
-
-                # Read the entire visibility data from disk
-                rawvis = difxfile.read(8*nchan)
-                if len(rawvis) != 8*nchan:
-                        print ('Short read! Stopping.')
-                        break
-
-                if (seconds != seconds_prev):
-                        seconds_prev = seconds
-                        if cfg['verbose']:
-                                print (('\n---- %d %12.7f ' + '-'*115) % (mjd,seconds))
-                        elif (seconds - seconds_report_prev)>1.0:
-                                if seconds_first <= 0:
-                                        seconds_first = mjd*24*60*60 + seconds
-                                dTstart = mjd*24*60*60 + seconds - seconds_first
-                                seconds_report_prev = seconds
-                                print ("at %d %12.7f, %.3f seconds from start" % (mjd,seconds,dTstart))
-                                print ("\033[F\033[F")
-
-                # Remap the frequency reference
-                out_freqindex = freqindex
-                if freq_remaps[freqindex] >= 0:
-                        # print ('Remapping input freq index %d to old/new output freq %d' % (freqindex,freq_remaps[freqindex]))
-                        out_freqindex = freq_remaps[freqindex]
-                        vishdr[5] = out_freqindex
-                        binhdr = parseDiFX.make_output_header_v1(vishdr)
-                stid = getGlueIndex(fsky,bw,cfg)
-
-                # Info string
-                vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,T,nchan,bw,str(uvw))
-
-                # Write out visibility to output file
-                if baseline not in baseline_list and not stitch_antennas == "*":
-
-                        # Baseline for which no freq stitching was requested
-
-                        # Keep data if bandwidth matches
-                        if (bw == target_bw) and (nchan == target_nchan):
-
-                                if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
-                                        if cfg['verbose']:
-                                                print ('(copy): %s' % (vis_info))
-                                        continue
-                                if cfg['verbose']:
-                                        print ('copy  : %s' % (vis_info))
-
-                                assert(freq_remaps[freqindex] >= 0)
-                                difxout.write(binhdr)
-                                if cfg['target_chavg'] > 1:
-                                        rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'])
-                                difxout.write(rawvis)
-                                ncopied += 1
-
-                        # Discard data if bandwidth mismatch. Happens e.g. for zoom bands on the non-stitch baselines,
-                        # can ignore these because covered by a different and complete zoomband that doesn't need stitching
-                        else:
-                                nskipped += 1
-                                if cfg['verbose']:
-                                        print ('skip  : %s' % (vis_info))
-                                        pass
+                # Pull out antenna indices based on telescope names
+                telNames = [t.name for t in telescopes]
+                stAntIDs = []
+                if len(stitch_antennas) == 1 and stitch_antennas[0] == "*":
+                        for i in range(len(telescopes)):
+                                stAntIDs.append(i+1)
                 else:
-
-                        # Baseline where freq stitching was requested
-                        resetStitch = False
-
-                        if (bw == target_bw):
-
-                                # Visibility already at target bandwidth, just copy the data
-
-                                if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
-                                        if cfg['verbose']:
-                                                print ('(take): %s' % (vis_info))
+                        for sa in stitch_antennas:
+                                id = [n for n in range(len(telescopes)) if telescopes[n].name==sa]
+                                if len(id) != 1:
+                                        print ("Warning: got %d hits for telescope %s in .difx file telescope list of %s!" % (len(id),sa,str(telNames)))
                                         continue
+                                id = id[0] + 1 # index (0..N-1) into antenna nr (1..N)
+                                stAntIDs.append(id)
+
+                # Affected baselines; data of these are stored in stitching memory, other baselines need no stitching
+                baseline_list = []
+                for sid in stAntIDs:
+                        # Cross
+                        for t in range(numtelescopes):
+                                tid = t + 1 # index (0..N-1) into antenna nr (1..N)
+                                if (tid != sid):
+                                        baseline_list.append(tid + sid*256)
+                                        baseline_list.append(sid + tid*256)
+                        # Auto
+                        baseline_list.append(sid + sid*256)
+
+                # Dictionary of per-polarizationpair working buffers into which spectra are stitched
+                stitch_workbufs = { bline:{ polkey:{bandkey:numpy.copy(blank_viz) for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
+                stitch_chcounts = { bline:{ polkey:{bandkey:0 for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
+                stitch_freqbws = { bline:{ polkey:{bandkey:[] for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
+                stitch_timestamps = { bline:{ polkey:{bandkey:-1 for bandkey in stitch_ids } for polkey in polpairs } for bline in baseline_list }
+                nstitched = 0; ncopied = 0; nskipped = 0; nincomplete = 0
+
+                # Parse each visibility entry
+                seconds_prev = -1
+                seconds_first = 0
+                seconds_report_prev = 0
+                while True:
+
+                        (vishdr,binhdr) = getVisibilityHeader(difxfile)
+                        if len(vishdr) <= 0:
+                                break
+
+                        # Visibility properties
+                        baseline = vishdr[0]
+                        mjd = vishdr[1]
+                        seconds = vishdr[2]
+                        freqindex = vishdr[5]
+                        polpair = vishdr[6]
+                        weight = vishdr[8]
+                        uvw = vishdr[9:12]
+                        # Antenna order as in difx2mark4: ref=ant1="256*nr", rem=ant2="nr%256"
+                        ant2 = baseline % 256
+                        ant1 = (baseline-ant2)/256
+                        ant1name = telescopes[ant1-1].name
+                        ant2name = telescopes[ant2-1].name
+                        T = mjd + seconds/86400.0
+                        baselinestr = '%s-%s' % (ant1name,ant2name)					
+
+                        # Number of channels in this baseband
+                        nchan = freqs[freqindex].numchan / freqs[freqindex].specavg
+                        fsky = freqs[freqindex].freq
+                        bw = freqs[freqindex].bandwidth
+                        if freqs[freqindex].lsb:
+                                fsky -= bw
+
+                        # Read the entire visibility data from disk
+                        rawvis = difxfile.read(8*nchan)
+                        if len(rawvis) != 8*nchan:
+                                print ('Short read! Stopping.')
+                                break
+
+                        if (seconds != seconds_prev):
+                                seconds_prev = seconds
                                 if cfg['verbose']:
-                                        print ('take  : %s' % (vis_info))
+                                        print (('\n---- %d %12.7f ' + '-'*115) % (mjd,seconds))
+                                elif (seconds - seconds_report_prev)>1.0:
+                                        if seconds_first <= 0:
+                                                seconds_first = mjd*24*60*60 + seconds
+                                        dTstart = mjd*24*60*60 + seconds - seconds_first
+                                        seconds_report_prev = seconds
+                                        print ("at %d %12.7f, %.3f seconds from start" % (mjd,seconds,dTstart))
+                                        print ("\033[F\033[F")
 
-                                assert(freq_remaps[freqindex] >= 0)
-                                difxout.write(binhdr)
-                                if cfg['target_chavg'] > 1:
-                                        rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'])
-                                difxout.write(rawvis)
-                                ncopied += 1
+                        # Remap the frequency reference
+                        out_freqindex = freqindex
+                        if freq_remaps[freqindex] >= 0:
+                                # print ('Remapping input freq index %d to old/new output freq %d' % (freqindex,freq_remaps[freqindex]))
+                                out_freqindex = freq_remaps[freqindex]
+                                vishdr[5] = out_freqindex
+                                binhdr = parseDiFX.make_output_header_v1(vishdr)
+                        stid = getGlueIndex(fsky,bw,cfg)
 
-                                # Signal for further below: clear old working data, set new timestamp
-                                resetStitch = True
+                        # Info string
+                        vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,T,nchan,bw,str(uvw))
 
+                        # Write out visibility to output file
+                        if baseline not in baseline_list and not stitch_antennas == "*":
+
+                                # Baseline for which no freq stitching was requested
+
+                                # Keep data if bandwidth matches
+                                if (bw == target_bw) and (nchan == target_nchan):
+
+                                        if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
+                                                if cfg['verbose']:
+                                                        print ('(copy): %s' % (vis_info))
+                                                continue
+                                        if cfg['verbose']:
+                                                print ('copy  : %s' % (vis_info))
+
+                                        assert(freq_remaps[freqindex] >= 0)
+                                        difxout.write(binhdr)
+                                        if cfg['target_chavg'] > 1:
+                                                rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'])
+                                        difxout.write(rawvis)
+                                        ncopied += 1
+
+                                # Discard data if bandwidth mismatch. Happens e.g. for zoom bands on the non-stitch baselines,
+                                # can ignore these because covered by a different and complete zoomband that doesn't need stitching
+                                else:
+                                        nskipped += 1
+                                        if cfg['verbose']:
+                                                print ('skip  : %s' % (vis_info))
+                                                pass
                         else:
 
-                                # Need to stitch narrowband visibility into wideband context
+                                # Baseline where freq stitching was requested
+                                resetStitch = False
 
-                                # Ignore bands not requested to be stitched
-                                if (stid < 0):
-                                        if cfg['verbose']:
-                                                print ('ignore: %s (not in stitch freqs list)' % (vis_info))
-                                        continue
+                                if (bw == target_bw):
 
-                                # Get the complex data
-                                visdata = numpy.fromstring(rawvis, dtype='complex64')
+                                        # Visibility already at target bandwidth, just copy the data
 
-                                # Do the oversampling cutout if needed
-                                if stitch_oversamplenum > 1:
-                                        oversampleoffsetbw = (bw - bw*(float(stitch_oversampledenom)/float(stitch_oversamplenum))) / 2.0
-                                        oversamplelengthchannels = int((float(stitch_oversampledenom)/float(stitch_oversamplenum))*nchan + 0.5)
-                                        oversampleoffsetchannels = (nchan - oversamplelengthchannels)/2
-                                        visdata = visdata[oversampleoffsetchannels:oversampleoffsetchannels + oversamplelengthchannels]
-                                        fsky += oversampleoffsetbw
-                                        bw -= 2*oversampleoffsetbw
-                                        nchan = oversamplelengthchannels
-
-                                # Determine the region into which this visibility data would be inserted
-                                choffset = int( ((fsky - stitch_basefreqs[stid]) / target_bw) * target_nchan )
-                                if (choffset+nchan)>target_nchan:
-                                        # Sometimes a wide recorded band falls into the stitching frequency region,
-                                        # but then may not fit fully into the stitching freq region.  
-                                        # Options are:
-                                        # 1) discard and hope the corresponding zoom band data will appear soon
-                                        #if cfg['verbose']:
-                                        #	print ('ignore: %s (too wide, maybe a recorded instead of zoom freq)' % (vis_info))
-                                        #continue
-                                        # 2) use the maximum possible amount of the data
-                                        nchan_new = target_nchan - choffset
-                                        if (nchan_new < 1):
-                                                print ('Unexpected, after cropping a too-wide band ended up with %d remaining channels' % (nchan_new))
-                                                continue
-                                        visdata = visdata[:nchan_new]
-                                        bw = bw * nchan_new/nchan
-                                        nchan = nchan_new
-                                        if cfg['verbose']:
-                                                print('crop  : %s to %d chan' % (vis_info,nchan_new))
-
-                                if choffset < 0:
-                                        print "This shouldn't happen!"
-                                        continue
-
-                                # Keep track of timestamp
-                                if (stitch_timestamps[baseline][polpair][stid] < 0):
-                                        stitch_timestamps[baseline][polpair][stid] = seconds
-
-                                # Detect a jump in timestamp
-                                if (seconds != stitch_timestamps[baseline][polpair][stid]):
-                                        # We assume the input visibilities are stored in time-increasing order,
-                                        # so a timestamp change indicates all data of previous time should've been fully read by now (no older data follows)
-                                        ncurr = stitch_chcounts[baseline][polpair][stid]
-                                        if (ncurr > 0):
-                                                T_old = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
-                                                nincomplete += 1
-                                                msg = '%s-%s/%d/%d:%.7f/%s mjd:%12.8f only %d of %d channels' % (ant1name,ant2name,baseline,stid,stitch_basefreqs[stid],polpair,T_old,ncurr,target_nchan)
+                                        if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
                                                 if cfg['verbose']:
-                                                        print ('Warning: discarded an incomplete stitch: %s' % (msg))
-                                        assert(ncurr < target_nchan)
-                                        stitch_timestamps[baseline][polpair][stid] = seconds
-                                        stitch_chcounts[baseline][polpair][stid] = 0
-                                        stitch_freqbws[baseline][polpair][stid] = []
-                                        stitch_workbufs[baseline][polpair][stid].fill(0)
-                                        #print (('---- %d %.7f ' + '-'*80 + '\n') % (mjd,seconds))
-        
-                                # Insert the new visibility data into the correct working buffer at the correct location
-                                stitch_workbufs[baseline][polpair][stid][choffset:(choffset+nchan)] = visdata
-                                stitch_chcounts[baseline][polpair][stid] += nchan
-				stitch_freqbws[baseline][polpair][stid].append(bw)
+                                                        print ('(take): %s' % (vis_info))
+                                                continue
+                                        if cfg['verbose']:
+                                                print ('take  : %s' % (vis_info))
 
-				#print (' glue bline %s %s band %d : ch %4d ... %4d : %d new chs : stitched %d ch total' % (baselinestr,polpair,stid,choffset,choffset+nchan-1,nchan,stitch_chcounts[baseline][polpair][stid]))
-				#print choffset, nchan, choffset+nchan, stitch_chcounts[baseline][polpair][stid], (100.0*stitch_chcounts[baseline][polpair][stid])/target_nchan
+                                        assert(freq_remaps[freqindex] >= 0)
+                                        difxout.write(binhdr)
+                                        if cfg['target_chavg'] > 1:
+                                                rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'])
+                                        difxout.write(rawvis)
+                                        ncopied += 1
 
-				# Assembled the full bandwidth now?
-				if stitch_chcounts[baseline][polpair][stid] >= target_nchan:
-					TS = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
-					bwsum = numpy.sum(stitch_freqbws[baseline][polpair][stid])
-					vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,TS,stitch_chcounts[baseline][polpair][stid],bwsum,str(uvw))
-	
-					if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
-						if cfg['verbose']:
-							print ('(stch): %s' % (vis_info))
-						continue
-					if cfg['verbose']:
-						print ('stitch: %s' % (vis_info))
+                                        # Signal for further below: clear old working data, set new timestamp
+                                        resetStitch = True
 
-					# Double-check the bandwidth
-					if numpy.abs(target_bw - bwsum) > 100:
-						print ('Warning: stitched bands gave %.6f MHz bandwidth, differs from target %.6f MHz!' % (bwsum,target_bw))
+                                else:
 
-					# Write header and assembled data
-					difxout.write(binhdr)
-					if cfg['target_chavg'] > 1:
-						vis = spectralAvgNumpy(stitch_workbufs[baseline][polpair][stid], cfg['target_chavg'])
-					else:
-						vis = stitch_workbufs[baseline][polpair][stid]
-					vis.tofile(difxout)
-					nstitched += 1
+                                        # Need to stitch narrowband visibility into wideband context
 
-					# Reset
-					resetStitch = True
+                                        # Ignore bands not requested to be stitched
+                                        if (stid < 0):
+                                                if cfg['verbose']:
+                                                        print ('ignore: %s (not in stitch freqs list)' % (vis_info))
+                                                continue
 
-			if resetStitch and (stid >= 0):
-				stitch_timestamps[baseline][polpair][stid] = seconds
-				stitch_chcounts[baseline][polpair][stid] = 0
-				stitch_freqbws[baseline][polpair][stid] = []
-				stitch_workbufs[baseline][polpair][stid].fill(0)
+                                        # Get the complex data
+                                        visdata = numpy.fromstring(rawvis, dtype='complex64')
 
-		#if nstitched > 100: break  # quick-exit for debug
+                                        # Do the oversampling cutout if needed
+                                        if stitch_oversamplenum > 1:
+                                                oversampleoffsetbw = (bw - bw*(float(stitch_oversampledenom)/float(stitch_oversamplenum))) / 2.0
+                                                oversamplelengthchannels = int((float(stitch_oversampledenom)/float(stitch_oversamplenum))*nchan + 0.5)
+                                                oversampleoffsetchannels = (nchan - oversamplelengthchannels)/2
+                                                visdata = visdata[oversampleoffsetchannels:oversampleoffsetchannels + oversamplelengthchannels]
+                                                fsky += oversampleoffsetbw
+                                                bw -= 2*oversampleoffsetbw
+                                                nchan = oversamplelengthchannels
+
+                                        # Determine the region into which this visibility data would be inserted
+                                        choffset = int( ((fsky - stitch_basefreqs[stid]) / target_bw) * target_nchan )
+                                        if (choffset+nchan)>target_nchan:
+                                                # Sometimes a wide recorded band falls into the stitching frequency region,
+                                                # but then may not fit fully into the stitching freq region.  
+                                                # Options are:
+                                                # 1) discard and hope the corresponding zoom band data will appear soon
+                                                #if cfg['verbose']:
+                                                #	print ('ignore: %s (too wide, maybe a recorded instead of zoom freq)' % (vis_info))
+                                                #continue
+                                                # 2) use the maximum possible amount of the data
+                                                nchan_new = target_nchan - choffset
+                                                if (nchan_new < 1):
+                                                        print ('Unexpected, after cropping a too-wide band ended up with %d remaining channels' % (nchan_new))
+                                                        continue
+                                                visdata = visdata[:nchan_new]
+                                                bw = bw * nchan_new/nchan
+                                                nchan = nchan_new
+                                                if cfg['verbose']:
+                                                        print('crop  : %s to %d chan' % (vis_info,nchan_new))
+
+                                        if choffset < 0:
+                                                print "This shouldn't happen!"
+                                                continue
+
+                                        # Keep track of timestamp
+                                        if (stitch_timestamps[baseline][polpair][stid] < 0):
+                                                stitch_timestamps[baseline][polpair][stid] = seconds
+
+                                        # Detect a jump in timestamp
+                                        if (seconds != stitch_timestamps[baseline][polpair][stid]):
+                                                # We assume the input visibilities are stored in time-increasing order,
+                                                # so a timestamp change indicates all data of previous time should've been fully read by now (no older data follows)
+                                                ncurr = stitch_chcounts[baseline][polpair][stid]
+                                                if (ncurr > 0):
+                                                        T_old = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
+                                                        nincomplete += 1
+                                                        msg = '%s-%s/%d/%d:%.7f/%s mjd:%12.8f only %d of %d channels' % (ant1name,ant2name,baseline,stid,stitch_basefreqs[stid],polpair,T_old,ncurr,target_nchan)
+                                                        if cfg['verbose']:
+                                                                print ('Warning: discarded an incomplete stitch: %s' % (msg))
+                                                assert(ncurr < target_nchan)
+                                                stitch_timestamps[baseline][polpair][stid] = seconds
+                                                stitch_chcounts[baseline][polpair][stid] = 0
+                                                stitch_freqbws[baseline][polpair][stid] = []
+                                                stitch_workbufs[baseline][polpair][stid].fill(0)
+                                                #print (('---- %d %.7f ' + '-'*80 + '\n') % (mjd,seconds))
+                
+                                        # Insert the new visibility data into the correct working buffer at the correct location
+                                        stitch_workbufs[baseline][polpair][stid][choffset:(choffset+nchan)] = visdata
+                                        stitch_chcounts[baseline][polpair][stid] += nchan
+	        			stitch_freqbws[baseline][polpair][stid].append(bw)
+
+	        			#print (' glue bline %s %s band %d : ch %4d ... %4d : %d new chs : stitched %d ch total' % (baselinestr,polpair,stid,choffset,choffset+nchan-1,nchan,stitch_chcounts[baseline][polpair][stid]))
+	        			#print choffset, nchan, choffset+nchan, stitch_chcounts[baseline][polpair][stid], (100.0*stitch_chcounts[baseline][polpair][stid])/target_nchan
+
+	        			# Assembled the full bandwidth now?
+	        			if stitch_chcounts[baseline][polpair][stid] >= target_nchan:
+	        				TS = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
+	        				bwsum = numpy.sum(stitch_freqbws[baseline][polpair][stid])
+	        				vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,TS,stitch_chcounts[baseline][polpair][stid],bwsum,str(uvw))
+	        
+	        				if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
+	        					if cfg['verbose']:
+	        						print ('(stch): %s' % (vis_info))
+	        					continue
+	        				if cfg['verbose']:
+	        					print ('stitch: %s' % (vis_info))
+
+	        				# Double-check the bandwidth
+	        				if numpy.abs(target_bw - bwsum) > 100:
+	        					print ('Warning: stitched bands gave %.6f MHz bandwidth, differs from target %.6f MHz!' % (bwsum,target_bw))
+
+	        				# Write header and assembled data
+	        				difxout.write(binhdr)
+	        				if cfg['target_chavg'] > 1:
+	        					vis = spectralAvgNumpy(stitch_workbufs[baseline][polpair][stid], cfg['target_chavg'])
+	        				else:
+	        					vis = stitch_workbufs[baseline][polpair][stid]
+	        				vis.tofile(difxout)
+	        				nstitched += 1
+
+	        				# Reset
+	        				resetStitch = True
+
+	        		if resetStitch and (stid >= 0):
+	        			stitch_timestamps[baseline][polpair][stid] = seconds
+	        			stitch_chcounts[baseline][polpair][stid] = 0
+	        			stitch_freqbws[baseline][polpair][stid] = []
+	        			stitch_workbufs[baseline][polpair][stid].fill(0)
+
+	        	#if nstitched > 100: break  # quick-exit for debug
+                 
 
 	## Generate new .input
 
