@@ -17,11 +17,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id
-# $HeadURL
-# $LastChangedRevision
-# $Author
-# $LastChangedDate
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
 #
 #============================================================================
 
