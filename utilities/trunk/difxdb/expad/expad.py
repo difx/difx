@@ -74,6 +74,7 @@ class MainWindow(GenericWindow):
         super( MainWindow, self ).__init__(parent, rootWidget)
 
         self.addExperimentDlg = AddExperimentWindow(self, rootWidget)
+	self.selectDateDlg = SelectDateWindow(self, rootWidget)
         
         self.rootWidget.title("expad: Experiment Administration")
         
@@ -84,6 +85,7 @@ class MainWindow(GenericWindow):
         self.cboTypeVar = StringVar()
         self.cboUserVar = StringVar()
         self.cboReleasedByVar = StringVar()
+	self.obsDate = None
         
         session = dbConn.session()
         # obtain all experiment stati from database
@@ -107,6 +109,13 @@ class MainWindow(GenericWindow):
         
         self._setupWidgets()
         self.updateExpListbox()
+
+    def update(self):
+	self.txtObsDate["state"] = NORMAL
+        self.txtObsDate.delete(0,END)
+        self.txtObsDate.insert(0, self.obsDate)
+	self.rootWidget.event_generate("<<Test>>")
+
         
         
     def _setupWidgets(self):
@@ -143,7 +152,7 @@ class MainWindow(GenericWindow):
         Label(frmDetail, text="code: ").grid(row=0,column=0, sticky=W)
         Label(frmDetail, text="number: ").grid(row=1,column=0, sticky=W)
         Label(frmDetail, text="status: ").grid(row=5,column=0, sticky=W)
-        Label(frmDetail, text="observed: ").grid(row=10,column=0, sticky=W)
+        Label(frmDetail, text="observed: (yyyy-mm-dd) ").grid(row=10,column=0, sticky=W)
         Label(frmDetail, text="type: ").grid(row=11,column=0, sticky=W)
         Label(frmDetail, text="analyst: ").grid(row=12,column=0, sticky=W)
         Label(frmDetail, text="released by: ").grid(row=13,column=0, sticky=W)
@@ -165,6 +174,7 @@ class MainWindow(GenericWindow):
         self.txtComment = Text(frmDetail, height=3, width=25)
         self.btnUpdate = Button(frmDetail, text="update experiment", command=self.updateExpEvent)
         self.btnDelete = Button(frmDetail, text="delete experiment", command=self.deleteExpEvent)
+	self.btnObsDate = Button(frmDetail, text="select", command=self.selectDateDlg.show)
         
         self.cboType.insert(END, *self.expTypes)
         
@@ -178,25 +188,30 @@ class MainWindow(GenericWindow):
         btnAddExp.grid(row=10,column=0, sticky=E+W)
         
         #arrange widgets on frmDetail
-        self.txtCode.grid(row=0, column=1, sticky=E+W)
-        self.txtNumber.grid(row=1, column=1, sticky=E+W)
-        self.cboStatus.grid(row=5, column=1, sticky=E+W)
+        self.txtCode.grid(row=0, column=1, columnspan=2, sticky=E+W)
+        self.txtNumber.grid(row=1, column=1, columnspan=2, sticky=E+W)
+        self.cboStatus.grid(row=5, column=1, columnspan=2, sticky=E+W)
         self.txtObsDate.grid(row=10, column=1, sticky=E+W)
-        self.cboType.grid(row=11, column=1, sticky=E+W)
-        self.cboUser.grid(row=12, column=1, sticky=E+W)
-        self.cboReleasedBy.grid(row=13, column=1, sticky=E+W)
-	self.txtNotify.grid(row=14, column=1, sticky=E+W)
-        self.txtDateArchived.grid(row=15, column=1, sticky=E+W)
-        self.txtArchivedBy.grid(row=20, column=1, sticky=E+W)
-        self.txtComment.grid(row=25, column=1, sticky=E+W)
-        self.btnUpdate.grid(row=100, column=0, columnspan=2, sticky=E+W)
-        self.btnDelete.grid(row=110, column=0, columnspan=2, sticky=E+W)
+	self.btnObsDate.grid(row=10,column=2,sticky=E+W)
+        self.cboType.grid(row=11, column=1, columnspan=2, sticky=E+W)
+        self.cboUser.grid(row=12, column=1, columnspan=2, sticky=E+W)
+        self.cboReleasedBy.grid(row=13, column=1, columnspan=2, sticky=E+W)
+	self.txtNotify.grid(row=14, column=1, columnspan=2, sticky=E+W)
+        self.txtDateArchived.grid(row=15, columnspan=2, column=1, sticky=E+W)
+        self.txtArchivedBy.grid(row=20, column=1, columnspan=2, sticky=E+W)
+        self.txtComment.grid(row=25, column=1, columnspan=2, sticky=E+W)
+        self.btnUpdate.grid(row=100, column=0, columnspan=3, sticky=E+W)
+        self.btnDelete.grid(row=110, column=0, columnspan=3, sticky=E+W)
         
         # bind events
         self.txtNotify.bind("<KeyRelease>", self.onExpDetailChange)
+        self.txtObsDate.bind("<KeyRelease>", self.onExpDetailChange)
+        self.txtObsDate.bind("<<Changed>>", self.onExpDetailChange)
         self.txtNumber.bind("<KeyRelease>", self.onExpDetailChange)
         self.txtComment.bind("<KeyRelease>", self.onExpDetailChange)
         self.cboType.bind('<ButtonRelease-1>', self.onExpDetailChange)
+	self.rootWidget.bind("<<Test>>", self.onExpDetailChange)
+        self.btnObsDate["state"] = DISABLED
         self.btnUpdate["state"] = DISABLED
         self.btnDelete["state"] = DISABLED
         
@@ -224,6 +239,7 @@ class MainWindow(GenericWindow):
         
         self.expEdit += self.setChangeColor(self.txtNotify, self.txtNotify.get(), selectedExperiment.emailnotification)
         self.expEdit += self.setChangeColor(self.txtNumber, self.txtNumber.get(), str(selectedExperiment.number).zfill(4))
+        self.expEdit += self.setChangeColor(self.txtObsDate, self.txtObsDate.get(), selectedExperiment.dateObserved)
         self.expEdit += self.setChangeColor(self.cboStatus, self.cboStatusVar.get(), selectedExperiment.status.experimentstatus)
         
         if  selectedExperiment.user is not None:
@@ -348,6 +364,7 @@ class MainWindow(GenericWindow):
         if self.selectedExpIndex == -1:
             self.btnUpdate["state"] = DISABLED
             self.btnDelete["state"] = DISABLED
+            self.btnObsDate["state"] = DISABLED
             self.txtObsDate["state"] = DISABLED
             self.cboStatus["state"] = DISABLED
             self.cboUser["state"] = DISABLED
@@ -364,6 +381,7 @@ class MainWindow(GenericWindow):
             return
         
         self.btnDelete["state"] = NORMAL
+        self.btnObsDate["state"] = NORMAL
         self.cboStatus["state"] = NORMAL
         self.cboUser["state"] = NORMAL
         self.cboType["state"] = NORMAL
@@ -413,7 +431,7 @@ class MainWindow(GenericWindow):
         
         self.txtCode["state"] = DISABLED
         self.txtDateArchived["state"] = DISABLED
-        self.txtObsDate["state"] = DISABLED
+        #self.txtObsDate["state"] = DISABLED
         self.txtArchivedBy["state"] = DISABLED
         self.cboReleasedBy["state"] = DISABLED
         
@@ -434,7 +452,7 @@ class MainWindow(GenericWindow):
         
         if self.selectedExpIndex == -1:
             return
-        
+
         session = dbConn.session()
         
         selectedStatus = self.cboStatusVar
@@ -472,6 +490,17 @@ class MainWindow(GenericWindow):
         
         exp.status = status
         exp.number = self.txtNumber.get()
+	obsDate = ""
+	try:
+		obsDate = datetime.datetime.strptime(self.txtObsDate.get(), "%Y-%m-%d")
+	except Exception as e:
+		print "error", e
+		tkMessageBox.showerror("Error", "Misformed observation date. Must be yyyy-mm-dd")
+		#error += 1
+        	session.close()
+		return
+
+        exp.dateObserved = obsDate
         exp.releasedByUser = getUserByName(session, self.cboReleasedByVar.get());
         exp.comment = strip(self.txtComment.get(1.0, END))
         exp.types = types
@@ -488,12 +517,11 @@ class MainWindow(GenericWindow):
         
         self.selectedExperimentId = exp.id
         
-        session.commit()
-        session.flush()
-        session.close()
+	session.commit()
+	session.flush()
+	self.editExp = 0
         
         session.close()
-        self.editExp = 0
         self.onExpDetailChange(None)
         self.updateExpListbox()
         
