@@ -78,6 +78,9 @@ if test "$hasdifxmsg" = true; then
     AC_DEFINE(HAVE_DIFXMESSAGE, 1, [Define if you have DiFXMessage library.])
 fi
 
+LIBS="${LIBS} ${FUSE_LIBS} ${DIFXMESSAGE_LIBS}"
+CFLAGS="${CFLAGS} ${FUSE_CFLAGS} ${DIFXMESSAGE_CFLAGS}"
+
 AC_CONFIG_FILES([Makefile])
 
 ##AM_COND_IF([WITH_FUSE],

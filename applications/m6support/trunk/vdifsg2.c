@@ -15,6 +15,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#if HAVE_CONFIG_H
+    #include "config.h"
+    #if HAVE_DIFXMESSAGE
+    #include <difxmessage.h>
+    #include <unistd.h>
+    #endif
+#endif
 
 #include "vdifsg2.h"
 #include "vdif_epochs.h"
@@ -1638,6 +1645,15 @@ int open_sgv2_seq(VDIFUSEntry *vs, FFInfo *ffi)
         vdifuse_trace(VDT("Corrupt file %s [error %X]\n"), vs->fuse, errors);
     }
     ffi->fh = errors ? vorrfd : generate_fh();
+#if HAVE_DIFXMESSAGE
+    {
+        DifxMessageMark6Status m6st;
+        memset(&m6st, 0x00, sizeof(m6st));
+        m6st.state = MARK6_STATE_OPEN;
+        snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", vs->fuse);
+        difxMessageSendMark6Status(&m6st);
+    }
+#endif
     return(ffi->fh);
 }
 
@@ -1671,6 +1687,15 @@ void release_sgv2_seq(FFInfo *ffi)
         if ((sfp->err & SGV2_ERR_REOPEN) == 0)
             sg_close(sfp->sgi);
     }
+#if HAVE_DIFXMESSAGE
+    {
+        DifxMessageMark6Status m6st;
+        memset(&m6st, 0x00, sizeof(m6st));
+        m6st.state = MARK6_STATE_CLOSE;
+        snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", sdp->vs->fuse);
+        difxMessageSendMark6Status(&m6st);
+    }
+#endif
     diag_counts(sdp->diag);
     free(ffi->sfrag);
     free(ffi->sdata);
@@ -1771,6 +1796,22 @@ static int do_read_sgv2_seq(char *buf, FFInfo *ffi)
     if (vdifuse_debug>1) show_sgv2_state(ffi, 0, sf ? 1 : 2);
 
     if (stripe_anal(sdp)) return(-EIO); /* stripe_anal fail */
+
+#if HAVE_DIFXMESSAGE
+    /* report the read-out status at random intervals */
+    {
+        char do_difxmsg_report = ((rand() % 10000) == 0);
+        if (do_difxmsg_report) {
+            DifxMessageMark6Status m6st;
+            memset(&m6st, 0x00, sizeof(m6st));
+            m6st.state = MARK6_STATE_PLAY;
+            m6st.position = ffi->offset;
+            m6st.rate = nanf("0"); /* FIXME: use gettimeofday() etc to report a read rate */
+            snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", sdp->vs->fuse);
+            difxMessageSendMark6Status(&m6st);
+        }
+    }
+#endif
 
     /* data request is fully within the stripe */
     if (sdp->roff >= sdp->bybs &&

@@ -24,6 +24,13 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#if HAVE_CONFIG_H
+    #include "config.h"
+    #if HAVE_DIFXMESSAGE
+    #include <difxmessage.h>
+    #include <unistd.h>
+    #endif
+#endif
 
 #include "vdifuse.h"
 
@@ -261,6 +268,13 @@ int main(int argc, char *argv[])
     if (vdifsup_opts(&argc, &argv)) return(1);
     h1 = malloc(0x20);
     if (vdifuse_enable != VDIFUSE_ENABLE_SKIP) {
+#if HAVE_DIFXMESSAGE
+        char hostname[DIFX_MESSAGE_LENGTH];
+        gethostname(hostname, sizeof(hostname)-1);
+        difxMessageInitFull(-1, "vdifuse", hostname);
+        difxMessageSendDifxAlert("vdifuse started", DIFX_ALERT_LEVEL_INFO);
+        difxMessagePrint();
+#endif
         if (vdifuse_debug>4) fprintf(vdflog, "fuse_main...starting\n");
         h2 = malloc(0x20);
         if (vdifuse_debug>2) fprintf(vdflog,
