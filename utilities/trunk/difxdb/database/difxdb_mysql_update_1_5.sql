@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS `ExportFile` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `ExperimentAndExportFile` (
-  `experimentID` bigint(20) DEFAULT NULL,
-  `exportFileID` bigint(20) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+ALTER TABLE `ExportFile` ADD INDEX(`experimentID`);
+
+ALTER TABLE `ExportFile` ADD FOREIGN KEY (`experimentID`) REFERENCES `difxdb`.`Experiment`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 INSERT INTO `difxdb`.`VersionHistory` (
 `major` ,
