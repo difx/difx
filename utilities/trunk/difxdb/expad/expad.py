@@ -31,6 +31,7 @@ import sys
 import tkMessageBox
 import datetime
 
+import ttk
 from optparse import OptionParser
 from Tkinter import *
 from tkinter.multilistbox import *
@@ -43,6 +44,9 @@ from difxdb.model.dbConnection import Schema, Connection
 from difxdb.business.experimentaction import *
 from difxdb.business.experimenttypeaction import *
 from difxdb.business.versionhistoryaction import *
+from difxdb.business.moduleaction import *
+from difxdb.business.filedataaction import *
+from difxdb.business.exportfileaction import *
 from difxdb.business.useraction import *
 from difxutil.dbutil import *
 
@@ -123,31 +127,97 @@ class MainWindow(GenericWindow):
         self.rootWidget.rowconfigure(0, weight=1) 
         self.rootWidget.columnconfigure(0, weight=1)     
         
-        Button(self.rootWidget, text="Exit", command=self.rootWidget.destroy).grid(row=10,column=10,sticky=E)
-        Button(self.rootWidget, text="Refresh", command=self.show).grid(row=10,column=0,sticky=E)
-        
-        # frames
+
+	# top level components
         frmExps = LabelFrame(self.rootWidget, text="Experiments")     
-        frmDetail = LabelFrame(self.rootWidget, text="Detail", padx=5)
-        frmExps.columnconfigure(0,weight=1)
-        frmDetail.columnconfigure(0,weight=1)
+	frmControl = LabelFrame(self.rootWidget, padx=5, pady=15, height=500)
+	frmTabs = ttk.Notebook(self.rootWidget)
+        btnExit = Button(self.rootWidget, text="Exit", command=self.rootWidget.destroy)
+
+        frmExps.grid(row=0, column=0, columnspan=2, sticky=E+W+N+S)
+	frmTabs.grid(row=10,column=0, rowspan=2,sticky=EW)
+	frmControl.grid(row=10, column=1, sticky=E+W+N+S)
+	btnExit.grid(row=11,column=1,sticky=E+W+S)
+        #frmExps.columnconfigure(0,weight=1)
+        #frmExps.rowconfigure(0,weight=1)
+        #frmTabs.columnconfigure(0,weight=1)
+        #frmTabs.rowconfigure(0,weight=1)
+	
+	# frmTabs
+	detailTab = ttk.Frame(frmTabs)
+	mediaTab = ttk.Frame(frmTabs)
+	exportTab = ttk.Frame(frmTabs)
+	historyTab = ttk.Frame(frmTabs)
+	frmTabs.add(detailTab, text='Details', sticky="news")
+	frmTabs.add(mediaTab, text='Media', sticky="news")
+	frmTabs.add(exportTab, text='Export', sticky="news")
+	frmTabs.add(historyTab, text='Status history', sticky="news")
+
+        
+        # frmDetail
+        frmDetail = LabelFrame(detailTab, text="Detail", padx=5)
+        frmDetail.grid(row=0, column=0, sticky=E+W+N+S)
+        #frmTabs.rowconfigure(0,weight=1)
+        #frmTabs.columnconfigure(0,weight=1)
+
+	#frmMedia
+	frmMedia = LabelFrame(mediaTab, text="Media", padx=5)
+        frmMedia.grid(row=0, column=0, sticky=E+W+N+S)
+
+	#frmExport
+	frmExport = LabelFrame(exportTab, text="Export", padx=5)
+	frmExport.grid(row=0, column=0, sticky="nesw")
+
+	# frmControl
+        btnAddExp = Button(frmControl, text="Add experiment", command=self.addExperimentDlg.show)
+        self.btnDelete = Button(frmControl, text="Delete experiment", command=self.deleteExpEvent)
+        Button(frmControl, text="Refresh", command=self.show).grid(row=20,column=0,sticky=E+W)
+
+	btnAddExp.grid(row=0,column=0, sticky=E+W)
+	self.btnDelete.grid(row=10, column=0, sticky=E+W)
+
+
+
+
         
         #frmExps
         col1 = ListboxColumn("experiment", 9)
         col2 = ListboxColumn("number", 4)
-        col3 = ListboxColumn("status", 10)
-        col4 = ListboxColumn("type", 8)
+        col3 = ListboxColumn("status", 15)
+        col4 = ListboxColumn("type", 6)
         col5 = ListboxColumn("modules", 4)
         col6 = ListboxColumn("analyst", 12)
         col7 = ListboxColumn("observed", 10) 
-        col8 = ListboxColumn("created", 14) 
-        col9 = ListboxColumn("archived", 14)
-        col10 = ListboxColumn("released", 14) 
+        col8 = ListboxColumn("created", 10) 
+        col9 = ListboxColumn("archived", 10)
+        col10 = ListboxColumn("released", 10) 
         self.grdExps = MultiListbox(frmExps, 16, col1, col2, col3, col4, col5, col6, col7, col8, col9, col10)
         self.grdExps.bindEvent("<ButtonRelease-1>", self.selectExpEvent)
         
-        btnAddExp = Button(frmExps, text="Add experiment", command=self.addExperimentDlg.show)
              
+	# frmMedia
+	colList = []
+        colList.append(ListboxColumn("station",3, sortable=True))
+        colList.append(ListboxColumn("vsn",8, searchable=True))
+        colList.append(ListboxColumn("location",20, searchable=True))
+        colList.append(ListboxColumn("scans",3, numeric=True))
+        colList.append(ListboxColumn("received",15))
+        colList.append(ListboxColumn("comment",35))
+        columns = tuple(colList)
+
+        self.grdModules = MultiListbox(frmMedia, 19, *columns)
+	self.grdModules.grid(row=0, column=0, sticky="news")
+
+	#frmExport
+	colList = []
+	colList.append(ListboxColumn("path",30, sortable=True))
+	colList.append(ListboxColumn("file",15, sortable=True))
+	colList.append(ListboxColumn("checksum",28, sortable=True))
+	colList.append(ListboxColumn("created",16, sortable=True))
+        columns = tuple(colList)
+        self.grdExports = MultiListbox(frmExport, 19, *columns)
+	self.grdExports.grid(row=0, column=0, sticky="news")
+
         #frmDetail
         Label(frmDetail, text="code: ").grid(row=0,column=0, sticky=W)
         Label(frmDetail, text="number: ").grid(row=1,column=0, sticky=W)
@@ -173,19 +243,14 @@ class MainWindow(GenericWindow):
         self.txtArchivedBy = Entry(frmDetail, text = "")
         self.txtComment = Text(frmDetail, height=3, width=25)
         self.btnUpdate = Button(frmDetail, text="update experiment", command=self.updateExpEvent)
-        self.btnDelete = Button(frmDetail, text="delete experiment", command=self.deleteExpEvent)
 	self.btnObsDate = Button(frmDetail, text="select", command=self.selectDateDlg.show)
         
         self.cboType.insert(END, *self.expTypes)
         
         
-        #arrange widgets on root widget
-        frmExps.grid(row=0, column=0, sticky=E+W+N+S)
-        frmDetail.grid(row=0, column=10, sticky=E+W+N+S)
         
         #arrange widgets on frmExps 
         self.grdExps.grid(row=0, column=0, sticky=E+W+N+S)
-        btnAddExp.grid(row=10,column=0, sticky=E+W)
         
         #arrange widgets on frmDetail
         self.txtCode.grid(row=0, column=1, columnspan=2, sticky=E+W)
@@ -201,7 +266,6 @@ class MainWindow(GenericWindow):
         self.txtArchivedBy.grid(row=20, column=1, columnspan=2, sticky=E+W)
         self.txtComment.grid(row=25, column=1, columnspan=2, sticky=E+W)
         self.btnUpdate.grid(row=100, column=0, columnspan=3, sticky=E+W)
-        self.btnDelete.grid(row=110, column=0, columnspan=3, sticky=E+W)
         
         # bind events
         self.txtNotify.bind("<KeyRelease>", self.onExpDetailChange)
@@ -217,6 +281,47 @@ class MainWindow(GenericWindow):
         
         
   
+    def updateExport(self):
+
+	session = dbConn.session()
+
+        if (self.selectedExperimentId is None):
+            return
+
+        self.grdExports.delete(0, END)
+        self.grdExports.clearData()
+
+	files = getExportFilesByExperimentId(session, self.selectedExperimentId)
+
+
+        for f in files:
+                self.grdExports.appendData((f.exportPath, f.filename, f.checksum, f.dateCreated))
+
+        session.close()
+        self.grdExports.update()
+
+
+    def updateMedia(self):
+	session = dbConn.session()
+
+        if (self.selectedExperimentId is None):
+            return
+
+	self.grdModules.delete(0, END)
+	self.grdModules.clearData()
+
+	modules = getModulesByExperimentId(session, self.selectedExperimentId)
+	files = getFilesByExperimentId(session, self.selectedExperimentId)
+	for module in modules:
+		self.grdModules.appendData((module.stationCode, module.slot.module.vsn, module.slot.location, module.numScans, module.received, module.comment))	
+
+	for f in files:
+		self.grdModules.appendData((f.stationCode, "", f.location, f.numScans, f.received, f.comment))	
+
+	session.close()
+	self.grdModules.update()
+
+
     def onExpDetailChange(self, Event):
         
         self.expEdit = 0
@@ -321,8 +426,20 @@ class MainWindow(GenericWindow):
             username = ""
             if exp.user is not None:
                 username = exp.user.name
+
+	    # for the table shorten datetimes to only dates
+	    dateCreated = ""
+	    dateArchived = ""
+	    dateReleased = ""
+	    
+	    if exp.dateCreated:
+		    dateCreated = exp.dateCreated.date()
+	    if exp.dateArchived:
+		    dateArchived = exp.dateArchived.date()
+	    if exp.dateReleased:
+		    dateReleased = exp.dateReleased.date()
                 
-            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), len(exp.modules), username, exp.dateObserved, exp.dateCreated,  exp.dateArchived, exp.dateReleased))
+            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), len(exp.modules), username, exp.dateObserved, dateCreated,  dateArchived, dateReleased))
      
         session.close()
         
@@ -447,6 +564,8 @@ class MainWindow(GenericWindow):
             self.selectedExpIndex =  -1
         
         self.getExpDetails()
+	self.updateMedia()
+	self.updateExport()
     
     def updateExpEvent(self):
         
@@ -490,15 +609,14 @@ class MainWindow(GenericWindow):
         
         exp.status = status
         exp.number = self.txtNumber.get()
-	obsDate = ""
-	try:
-		obsDate = datetime.datetime.strptime(self.txtObsDate.get(), "%Y-%m-%d")
-	except Exception as e:
-		print "error", e
-		tkMessageBox.showerror("Error", "Misformed observation date. Must be yyyy-mm-dd")
-		#error += 1
-        	session.close()
-		return
+	obsDate = None
+	if (self.txtObsDate.get() != ""):
+		try:
+			obsDate = datetime.datetime.strptime(self.txtObsDate.get(), "%Y-%m-%d")
+		except Exception as e:
+			tkMessageBox.showerror("Error", "Misformed observation date. Must be yyyy-mm-dd")
+			session.close()
+			return
 
         exp.dateObserved = obsDate
         exp.releasedByUser = getUserByName(session, self.cboReleasedByVar.get());
@@ -524,6 +642,7 @@ class MainWindow(GenericWindow):
         session.close()
         self.onExpDetailChange(None)
         self.updateExpListbox()
+	
         
         
     def deleteExpEvent(self):
