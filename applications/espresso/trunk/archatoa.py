@@ -47,8 +47,8 @@ fits_files = args
 
 
 # directories on Horus for ATOA import
-atoa_fits_dir = "horus.atnf.csiro.au:/data/ATOA_10/received/VLBI/"
-atoa_md5sum_dir = "horus.atnf.csiro.au:/data/ATOA_10/received/md5sum/"
+atoa_fits_dir = "horus.atnf.csiro.au:/srv/atoa/received/VLBI"
+atoa_md5sum_dir = "horus.atnf.csiro.au:/srv/atoa/received/md5sum/"
 
 if options.username:
     atoa_fits_dir = options.username + "@" + atoa_fits_dir

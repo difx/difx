@@ -96,6 +96,16 @@ def copy_jobcontrol(expname, jobname, indir, outdir, extension):
     else:
         sys.stderr.write(infile + " not found!")
 
+def fix_paths(inputfilename, calcfilename, indir, outdir):
+    copy_inputfilename = outdir + os.sep + inputfilename
+    copy_calcfilename = outdir + os.sep + calcfilename
+    change_path(copy_inputfilename, "CALC FILENAME:", indir, "./")
+    change_path(copy_inputfilename, "CORE CONF FILENAME:", indir, "./")
+    change_path(copy_inputfilename, "OUTPUT FILENAME:", outdir, "./")
+    change_path(copy_inputfilename, "PULSAR CONFIG FILE:", indir, "./")
+    change_path(copy_calcfilename, "IM FILENAME:", indir, "./")
+    change_path(copy_calcfilename, "FLAG FILENAME:", indir, "./")
+
 
 def make_new_runfiles(
         jobname, expname, jobtime, difx_message_port,
@@ -388,7 +398,7 @@ def run_batch(corrjoblist, outdir):
         except:
             # qstat (PBS) on an empty queue will throw an error which we catch
             # here.
-            print "jobs " + " ".join([jobids]) + " complete"
+            print "jobs", " ".join([jobids]), "complete"
             break
             #print queue_command + "failed!"
             #pass
@@ -636,7 +646,6 @@ if binconfigfilename:
 if not options.novex:
     run_vex2difx(v2dfilename, vex2difx_options)
 
-
 joblistfilename = passname + ".joblist"
 (fulljoblist) = parse_joblistfile(joblistfilename, options.predicted_speedup)
 
@@ -652,8 +661,7 @@ else:
             if re.search(jobpattern + "$", jobname):
                 corrjoblist[jobname] = fulljoblist[jobname]
 
-print "job list to correlate = ", pprint.pformat(corrjoblist), "\n"
-
+print "job list to correlate:", pprint.pformat(corrjoblist), "\n"
 
 # get the paths of our input and output directories
 indir = os.getcwd() + os.sep
@@ -686,8 +694,8 @@ for jobname in sorted(corrjoblist.keys()):
 
     # fix the output filename to point at the cuppa data disk
     if not options.novex:
-        print "\nrenaming the 'OUTPUT FILENAME' in", inputfilename, "from", \
-                indir, "to", outdir
+        print "\nrenaming the 'OUTPUT FILENAME' in", inputfilename, "from",
+        print indir, "to", outdir
         change_path(inputfilename, 'OUTPUT FILENAME:', indir, outdir)
 
     # run calcif2
@@ -702,20 +710,14 @@ for jobname in sorted(corrjoblist.keys()):
     copy_models(jobname, indir, outdir)
 
     # change the path names in the copied .input and .calc to relative paths
-    print ("changing absolute paths to relative paths in the copied .input and"
-            " .calc files")
-    copy_inputfilename = outdir + os.sep + inputfilename
-    copy_calcfilename = outdir + os.sep + calcfilename
-    change_path(copy_inputfilename, "CALC FILENAME:", indir, "./")
-    change_path(copy_inputfilename, "CORE CONF FILENAME:", indir, "./")
-    change_path(copy_inputfilename, "OUTPUT FILENAME:", outdir, "./")
-    change_path(copy_inputfilename, "PULSAR CONFIG FILE:", indir, "./")
-    change_path(copy_calcfilename, "IM FILENAME:", indir, "./")
-    change_path(copy_calcfilename, "FLAG FILENAME:", indir, "./")
+    print(
+            "changing absolute paths to relative paths in the copied .input"
+            " and .calc files")
+    fix_paths(inputfilename, calcfilename, indir, outdir)
 
     # copy job control files to output directory, and rename
-    print "copying the job control files", passname + ".[joblist|v2d]", "to", \
-            outdir
+    print "copying the job control files", passname + ".[joblist|v2d]", "to",
+    print outdir
     copy_jobcontrol(passname, jobname, indir, outdir, ".joblist")
     copy_jobcontrol(passname, jobname, indir, outdir, ".v2d")
 
@@ -723,21 +725,25 @@ for jobname in sorted(corrjoblist.keys()):
     print "copying the vex file", vexfilename, "to", outputvex
     shutil.copy2(vexfilename, outputvex)
 
-# and copy the .vex and .v2d unaltered for ease of reference in the output dir
-print "copying the vex and v2d files", vexfilename, v2dfilename, "to", \
-        outdir, "\n"
+# and copy the .vex .v2d, and _notes.txt unaltered for ease of reference in the
+# output dir
+print "\ncopying the vex and v2d files", vexfilename, v2dfilename, "to", outdir
 shutil.copy2(vexfilename, outdir)
 shutil.copy2(v2dfilename, outdir)
+notesfilename = expname + "_notes.txt"
+if os.path.exists(notesfilename):
+    print "copying the notes file", notesfilename, "to", outdir
+    shutil.copy2(notesfilename, outdir)
 # if pulsar binning, then get the binconfig and polyco too
 if binconfigfilename:
-    print "copying the binconfig and polyco files", binconfigfilename, \
-        polycofilename, "to", outdir, "\n"
+    print "copying the binconfig and polyco files", binconfigfilename,
+    print polycofilename, "to", outdir
     shutil.copy2(binconfigfilename, outdir)
     shutil.copy2(polycofilename, outdir)
+print "\n"
 
 if not options.nopause:
     raw_input("Press return to initiate the correlator job or ^C to quit")
-
 
 # set the $DIFX_MESSAGE_PORT as late as possible in the processing to avoid
 # clashes with other espresso invocations
@@ -764,8 +770,8 @@ for jobname in sorted(corrjoblist.keys()):
 
     # duplicate the run and thread and machines files for the full number of
     # jobs
-    print "duplicating the run file, machines file and .threads files for ", \
-            jobname, "\n"
+    print "duplicating the run file, machines file and .threads files for",
+    print jobname, "\n"
     if options.jobtime:
         jobtime = options.jobtime
     else:
@@ -775,9 +781,7 @@ for jobname in sorted(corrjoblist.keys()):
             jobname, expname, jobtime, str(difx_message_port),
             str(ntasks_per_node))
 
-
 logfiles = []
-
 
 # run each job
 bad_jobs = []

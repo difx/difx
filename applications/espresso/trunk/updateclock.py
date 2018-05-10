@@ -30,11 +30,9 @@ import os
 import espressolib
 import numpy
 
-
 def parseparam(param, line):
     value = re.search(param + r"\s*=\s*(\S+)", line).group(1)
     return value
-
 
 def updateclock(
         clockepoch, clockoffset, clockrate, newclockepoch, offset_adjust,
@@ -107,7 +105,8 @@ station_list = []
 offset_list = []
 rate_list = []
 if options.stations:
-    station_list = options.stations.split(",")
+    station_list = re.sub("\s*", "", options.stations)
+    station_list = station_list.split(",")
     station_list = [station.upper() for station in station_list]
 if options.offset_adjust:
     offset_list = options.offset_adjust.split(",")
@@ -132,7 +131,7 @@ if options.offset_adjust:
             offset = offset_list[i]
         else:
             station, offset = value.split("=")
-        if not station in stations:
+        if station not in stations:
             stations[station] = dict()
         stations[station]["offset_adjust"]= float(offset)
         stations[station]["rate_adjust"] = 0
@@ -146,7 +145,7 @@ if options.rate_adjust:
             rate = rate_list[i]
         else:
             station, rate = value.split("=")
-        if not station in stations:
+        if station not in stations:
             stations[station] = dict()
             stations[station]["offset_adjust"] = 0
         stations[station]["rate_adjust"] = float(rate)

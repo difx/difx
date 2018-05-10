@@ -89,7 +89,6 @@ if len(args) < 2:
     parser.print_help()
     parser.error("Give source and destination directories!")
 
-
 # get the list of subdirectories. Note that we don't want to tar large files,
 # or files that archive users want to access directly.
 # In each  subdirectory form a list of files to be tarred, and a list of files
@@ -107,7 +106,6 @@ mark4file = str()
 os.chdir(args[0])
 tarlists = dict()
 transfer = []
-
 
 for filename in os.listdir(os.curdir):
 
@@ -166,11 +164,9 @@ for filename in os.listdir(os.curdir):
         # add to list of files to be tarred
         tarlists[targroup] += " " + re.escape(filename)
 
-
 # create the output directory
 command = " ".join(["mkdir -p", archdir])
 subprocess.check_call(command, shell=True, stdout=sys.stdout)
-
 
 # tar up small files in this directory to Archive area, one correlator pass at
 # a time
@@ -194,7 +190,6 @@ if os.path.exists("clocks"):
 # and the mark4 output dir
 if mark4file:
     taritup(archdir, expname.upper()+".MARK4.tar.gz", mark4file, gzip=True)
-
 
 # now archive the lot to data.pawsey.org.au
 # First try without a login, assuming we have delegation set up. If that fails,
