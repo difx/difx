@@ -41,6 +41,22 @@ def getModuleById(session, id):
 def getModuleByVSN(session, vsn):
     
     return(session.query(model.Module).filter_by(vsn=vsn).one())
+
+def getModulesByExperimentCode(session, expCode):
+    '''
+    Returns a list of modules that contain data from an experiment with the give experiment code
+    '''
+
+    modules = session.query(model.Module).filter(model.Module.experiments.any(model.Experiment.code==expCode) )
+    return(modules)
+
+def getModulesByExperimentId(session, expId):
+    '''
+    Returns a list of modules that contain data from an experiment with the give experiment Id
+    '''
+
+    modules = session.query(model.Module).filter(model.Module.experiments.any(model.Experiment.id==expId) )
+    return(modules)
    
 
 def isCheckOutAllowed(session, vsn):
