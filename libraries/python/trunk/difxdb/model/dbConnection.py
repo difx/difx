@@ -64,6 +64,7 @@ class Schema(object):
         self.versionHistoryTable = Table("VersionHistory", self.metadata__, autoload=True)
         self.userTable = Table("User", self.metadata__, autoload=True)
         self.exportFileTable = Table("ExportFile", self.metadata__, autoload=True)
+        self.fileDataTable = Table("FileData", self.metadata__, autoload=True)
         
         #association table for many-to-many Experiment/Module relation 
         self.experimentModuleTable = Table('ExperimentAndModule', self.metadata__, autoload=True)
@@ -88,23 +89,22 @@ class Schema(object):
         mapper(Queue, self.jobTable, properties={'Pass':relation(Pass, uselist=False),'status':relation(JobStatus, uselist=False)})
         mapper(Job, self.jobTable, properties={'status':relation(JobStatus, uselist=False)})
         mapper(JobStatus, self.jobStatusTable)
-        mapper(ExportFile, self.exportFileTable)
         
         mapper(Pass, self.passTable, properties={'experiment':relation(Experiment, uselist=False), 'type':relation(PassType, uselist=False)})
         mapper(PassType, self.passTypeTable)
         mapper(ExperimentStatus, self.experimentStatusTable)
-       # mapper(Experiment, self.experimentTable,properties={'status':relation(ExperimentStatus, uselist = False)})
         mapper(Experiment, self.experimentTable, properties={'status':relation(ExperimentStatus, uselist=False), \
             'user':relation(User, primaryjoin=self.experimentTable.c.userID==self.userTable.c.id, uselist = False), \
             'releasedByUser':relation(User, primaryjoin=self.experimentTable.c.releasedByUserID==self.userTable.c.id, uselist = False), \
-            'exportFiles':relation(ExportFile, primaryjoin=self.experimentTable.c.id==self.exportFileTable.c.experimentID, cascade="save-update,merge,delete,delete-orphan", single_parent=True, foreign_keys = [self.experimentTable.c.id], uselist = True), \
-	   # 'exportFiles':relation(ExportFile, secondary=self.experimentAndExportFileTable, primaryjoin=self.experimentAndExportFileTable.c.experimentID==self.experimentTable.c.id, secondaryjoin=self.experimentAndExportFileTable.c.exportFileID==self.exportFileTable.c.id, foreign_keys = [self.experimentAndExportFileTable.c.experimentID, self.experimentAndExportFileTable.c.exportFileID]), \
             'types':relation(ExperimentType, secondary=self.experimentAndTypeTable, primaryjoin=self.experimentAndTypeTable.c.experimentID==self.experimentTable.c.id, secondaryjoin=self.experimentAndTypeTable.c.experimentTypeID==self.experimentTypeTable.c.id, foreign_keys = [self.experimentAndTypeTable.c.experimentID, self.experimentAndTypeTable.c.experimentTypeID])}) 
+
 	mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))}) 
 	mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref=backref('slot', uselist=False))})
         mapper(VersionHistory, self.versionHistoryTable)
         mapper(User, self.userTable)
         mapper(ExperimentType, self.experimentTypeTable)
+	mapper(FileData, self.fileDataTable, properties={'experiment': relation(Experiment, uselist = False, backref=backref('fileData', uselist=False))})
+        mapper(ExportFile, self.exportFileTable, properties={'experiment': relation(Experiment, uselist = False, backref=backref('exportFiles', uselist=False))})
 
 class Connection(object):
     
