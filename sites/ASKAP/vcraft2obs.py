@@ -1,6 +1,25 @@
 #!/usr/bin/python
-import os,sys,glob
+import os,sys,glob,math
 
+# Convenience function
+def posradians2string(rarad, decrad):
+    rah = rarad * 12 / math.pi
+    rhh = int(rah)
+    rmm = int(60*(rah - rhh))
+    rss = 3600*rah - (3600*rhh + 60*rmm)
+    decd = decrad * 180 / math.pi
+    decformat = "+%02d:%02d:%010.7f"
+    if decd < 0:
+        decd = -decd
+        decformat = '-' + decformat[1:]
+    ddd = int(decd)
+    dmm = int(60*(decd - ddd))
+    dss = 3600*decd - (3600*ddd + 60*dmm)
+    rastring  = "%02d:%02d:%011.8f" % (rhh,rmm,rss)
+    decstring = decformat % (ddd, dmm, dss)
+    return rastring, decstring
+
+# Check instantiation
 if not len(sys.argv) == 3:
     print "Usage: %s <example vcraft header> <glob pattern for vcraft files>" % sys.argv[0]
     sys.exit()
@@ -37,11 +56,10 @@ if len(vcraftfiles) == 0:
     sys.exit()
 
 # Write the obs.txt file
-rastring = posrad2string(beamra, True)
-decstring = posrad2string(beamdec, False)
+rastring, decstring = posradians2string(beamra*math.pi/180, beamdec*math.pi/180)
 output = open("obs.txt", "w")
 output.write("startmjd    = %.9f\n" % startmjd)
-output.write("stopmjd     = %.9f\n" % (startmjd + 1./86400))
+output.write("stopmjd     = %.9f\n" % (startmjd + 10./86400))
 output.write("srcname     = CRAFTSRC\n")
 output.write("srcra       = %s\n" % rastring)
 output.write("srcdec      = %s\n" % decstring)
@@ -58,8 +76,9 @@ for f in vcraftfiles:
     antname = ""
     for line in open(f).readlines():
         if line.split()[0] == "ANT":
-             antname = line.split()[1]
+             antname = line.split()[1].lower()
     if antname == "":
         print "Didn't find the antenna name in the header!"
         sys.exit()
+    print "CRAFTConverter %s %s.codif" % (f, antname)
     os.system("CRAFTConverter %s %s.codif" % (f, antname))
