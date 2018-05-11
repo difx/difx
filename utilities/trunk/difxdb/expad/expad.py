@@ -125,47 +125,48 @@ class MainWindow(GenericWindow):
     def _setupWidgets(self):
         
         self.rootWidget.rowconfigure(0, weight=1) 
+        self.rootWidget.rowconfigure(10, weight=1) 
         self.rootWidget.columnconfigure(0, weight=1)     
         
 
 	# top level components
         frmExps = LabelFrame(self.rootWidget, text="Experiments")     
 	frmControl = LabelFrame(self.rootWidget, padx=5, pady=15, height=500)
-	frmTabs = ttk.Notebook(self.rootWidget)
+	self.frmTabs = ttk.Notebook(self.rootWidget)
         btnExit = Button(self.rootWidget, text="Exit", command=self.rootWidget.destroy)
 
         frmExps.grid(row=0, column=0, columnspan=2, sticky=E+W+N+S)
-	frmTabs.grid(row=10,column=0, rowspan=2,sticky=EW)
+	self.frmTabs.grid(row=10,column=0, rowspan=2,sticky=EW)
 	frmControl.grid(row=10, column=1, sticky=E+W+N+S)
 	btnExit.grid(row=11,column=1,sticky=E+W+S)
-        #frmExps.columnconfigure(0,weight=1)
-        #frmExps.rowconfigure(0,weight=1)
-        #frmTabs.columnconfigure(0,weight=1)
-        #frmTabs.rowconfigure(0,weight=1)
+
 	
 	# frmTabs
-	detailTab = ttk.Frame(frmTabs)
-	mediaTab = ttk.Frame(frmTabs)
-	exportTab = ttk.Frame(frmTabs)
-	historyTab = ttk.Frame(frmTabs)
-	frmTabs.add(detailTab, text='Details', sticky="news")
-	frmTabs.add(mediaTab, text='Media', sticky="news")
-	frmTabs.add(exportTab, text='Export', sticky="news")
-	frmTabs.add(historyTab, text='Status history', sticky="news")
+	self.detailTab = ttk.Frame(self.frmTabs)
+	self.mediaTab = ttk.Frame(self.frmTabs)
+	self.exportTab = ttk.Frame(self.frmTabs)
+	self.historyTab = ttk.Frame(self.frmTabs)
+	self.frmTabs.add(self.detailTab, text='Details', sticky="news")
+	self.frmTabs.add(self.mediaTab, text='Media', sticky="news", state="disabled")
+	self.frmTabs.add(self.exportTab, text='Export', sticky="news", state="disabled")
+	self.frmTabs.add(self.historyTab, text='Status history', sticky="news", state="disabled")
 
+        self.detailTab.columnconfigure(0,weight=1)
+        self.detailTab.rowconfigure(0,weight=1)
+        self.mediaTab.columnconfigure(0,weight=1)
+        self.exportTab.columnconfigure(0,weight=1)
+        self.historyTab.columnconfigure(0,weight=1)
         
         # frmDetail
-        frmDetail = LabelFrame(detailTab, text="Detail", padx=5)
+        frmDetail = LabelFrame(self.detailTab, text="Detail", padx=5)
         frmDetail.grid(row=0, column=0, sticky=E+W+N+S)
-        #frmTabs.rowconfigure(0,weight=1)
-        #frmTabs.columnconfigure(0,weight=1)
 
 	#frmMedia
-	frmMedia = LabelFrame(mediaTab, text="Media", padx=5)
+	frmMedia = LabelFrame(self.mediaTab, text="Media", padx=5)
         frmMedia.grid(row=0, column=0, sticky=E+W+N+S)
 
 	#frmExport
-	frmExport = LabelFrame(exportTab, text="Export", padx=5)
+	frmExport = LabelFrame(self.exportTab, text="Export", padx=5)
 	frmExport.grid(row=0, column=0, sticky="nesw")
 
 	# frmControl
@@ -182,10 +183,10 @@ class MainWindow(GenericWindow):
         
         #frmExps
         col1 = ListboxColumn("experiment", 9)
-        col2 = ListboxColumn("number", 4)
+        col2 = ListboxColumn("number", 4, numeric=True)
         col3 = ListboxColumn("status", 15)
         col4 = ListboxColumn("type", 6)
-        col5 = ListboxColumn("modules", 4)
+        col5 = ListboxColumn("datasets", 4, numeric=True)
         col6 = ListboxColumn("analyst", 12)
         col7 = ListboxColumn("observed", 10) 
         col8 = ListboxColumn("created", 10) 
@@ -439,7 +440,9 @@ class MainWindow(GenericWindow):
 	    if exp.dateReleased:
 		    dateReleased = exp.dateReleased.date()
                 
-            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), len(exp.modules), username, exp.dateObserved, dateCreated,  dateArchived, dateReleased))
+	    # number of datasets (modules and files)
+	    numDataset = len(exp.modules) + len(exp.fileData)
+            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), numDataset, username, exp.dateObserved, dateCreated,  dateArchived, dateReleased))
      
         session.close()
         
@@ -493,6 +496,11 @@ class MainWindow(GenericWindow):
             self.txtArchivedBy["state"] = DISABLED
             self.txtComment["state"] = DISABLED
             self.txtDateArchived["state"] = DISABLED
+	    #self.mediaTab["state"] = DISABLED
+     	    self.frmTabs.tab(self.mediaTab, state="disabled")
+     	    self.frmTabs.tab(self.historyTab, state="disabled")
+     	    self.frmTabs.tab(self.exportTab, state="disabled")
+	    
             
             self.selectedExperimentId = None
             return
@@ -545,10 +553,24 @@ class MainWindow(GenericWindow):
             
             #remember original state of the selected experiment record
             self.selectedExperimentId = exp.id
+
+	    #disable media tab if no media 
+	    if len(exp.modules) > 0 or len(exp.fileData) > 0:
+     	    	self.frmTabs.tab(self.mediaTab, state="normal")
+	    else:
+     	    	self.frmTabs.tab(self.mediaTab, state="disabled")
+
+	    #disable export tab if no exported files
+	    if exp.exportFiles:
+     	    	self.frmTabs.tab(self.exportTab, state="normal")
+	    else:
+     	    	self.frmTabs.tab(self.exportTab, state="disabled")
+		
+		
+		
         
         self.txtCode["state"] = DISABLED
         self.txtDateArchived["state"] = DISABLED
-        #self.txtObsDate["state"] = DISABLED
         self.txtArchivedBy["state"] = DISABLED
         self.cboReleasedBy["state"] = DISABLED
         
