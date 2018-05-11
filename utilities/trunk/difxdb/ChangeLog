@@ -3,6 +3,7 @@ comedia: can show .dir file corresponding to selected module
 comedia: poperly sort numeric table columns
 comedia: exclude mark6 modules from .dir related content
 difxdbExperiment: new utility to print experiment summary information
+difxdbParseFiles: new utility to parse the FS for file-based raw data and update the database accordingly
 * post 2.4 changes
 getreleaselist: order output by experiment code
 comedia: email notification for modules containing unknown experiments
