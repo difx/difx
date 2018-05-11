@@ -37,8 +37,6 @@ from difxdb.model.dbConnection import Schema, Connection
 from difxdb.business.filedataaction import *
 from difxdb.business.experimentaction import *
 from difxdb.model import model
-from operator import  attrgetter
-#from optparse import OptionParser
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
@@ -49,9 +47,12 @@ __lastAuthor__="$Author$"
 logger = None
 
 description = "A script to parse the filesystem for file-based correlator data and populate the difxdb database."
-epilog = "NOTE: %s requires the DIFXROOT environment to be defined." 
-epilog += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."
-epilog += "If the configuration is not found a template will be created for you."
+epilog = "The script assumes that under the given root-path subdirectories named after the experiment code exist.\n"
+epilog += "Below the experiment directory subdirectories with the two-letter station codes are expected.\n\n"
+epilog += "NOTE: %(prog)s requires the DIFXROOT environment to be defined.\n" 
+epilog += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.\n"
+epilog += "If the configuration is not found a template will be created for you.\n\n"
+epilog += "The output is logged to file (see also --log-path option)"
 version = "revision = {} author = {}  last changed by = {}".format(__build__, __author__, __lastAuthor__)
 
     
@@ -189,7 +190,7 @@ def parseFS(session, rootPath):
 if __name__ == "__main__":
     
     
-    parser = argparse.ArgumentParser(description=description, epilog=epilog )
+    parser = argparse.ArgumentParser(description=description, epilog=epilog ,formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("rootPath", help='the path of the root directory to search for station data.')
     parser.add_argument("-d", "--dry-run", dest="dryRun", action="store_true", default=False, help="report action only; do not update the database.")
     parser.add_argument("--verbose", action="store_true", default=False, help="verbose output.")
