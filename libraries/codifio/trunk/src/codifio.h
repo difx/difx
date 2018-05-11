@@ -113,7 +113,7 @@ static inline int getCODIFSync(const codif_header *header) { return (int)header-
 static inline uint64_t getCODIFTotalSamples(const codif_header *header) { return header->totalsamples; }
 uint64_t getCODIFFrameMJDSec(codif_header *header);
 int getCODIFFrameMJD(const codif_header *header);
-double getCODIFFrameDMJD(const codif_header *header, int framepersec);
+double getCODIFFrameDMJD(const codif_header *header, double framepersec);
 static inline int getCODIFFrameSecond(const codif_header *header) { return ((int)header->seconds)%86400; }
 static inline int getCODIFFrameNumber(const codif_header *header) { return (int)header->frame; }
 static inline int getCODIFStationID(const codif_header *header) { return (int)header->stationid; }
