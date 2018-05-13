@@ -196,7 +196,7 @@ def writev2dfile(v2dout, obs, twoletterannames, delays, datafilelist):
         #FIXME: Need to set the clockOffset here appropriately (where does this info come from?)
         v2dout.write("ANTENNA %s\n{\n" % a)
         v2dout.write("  file = %s\n" % d.split('=')[1])
-        v2dout.write("  format=CODIFC/27/8064/1\n")
+        v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
         v2dout.write("  clockOffset=%.6f\n" % (-float(delay[:-2])/1000.0))
         v2dout.write("  clockRate=0\n")
         v2dout.write("  clockEpoch=57000.0\n")
@@ -241,6 +241,8 @@ parser.add_argument("fcm",  help="ASKAP .fcm file describing array")
 parser.add_argument("obs",  help="Flat text .obs file containing start/stop time, source position, baseband files")
 parser.add_argument("chan", help="Flat text file containing 1 line per subband, centre freq, sideband, and bandwidth")
 parser.add_argument("-a", "--ants", help="Comma separated list of antenna names e.g., ak01,ak02,ak03 etc.  All must be present in .fcm, and all must have a akxx.codif file present in this directory.")
+parser.add_argument("-b", "--bits", help="Number of bits/sample. Default 1", type=int)
+parser.add_argument("-n", "--framesize", help="Codif framesize. Default 8064", type=int)
 args = parser.parse_args()
 
 ## Check arguments
@@ -252,6 +254,10 @@ if not os.path.exists(args.chan):
     parser.error("chan file " + args.chan + " does not exist")
 if args.ants == "":
     parser.error("you must supply a list of antennas")
+bits = args.bits
+if bits==None: bits=1
+framesize = args.framesize
+if framesize==None: framesize=8064
 
 ## Load configuration data
 fcm = load_props(args.fcm)
@@ -279,6 +285,7 @@ for antenna in fcm["common"]["antenna"].keys():
     print fcm["common"]["antenna"][antenna]["location"]["itrf"]
     twolettername = writestatentry(statout, antennaname, count, fcm["common"]["antenna"][antenna]["location"]["itrf"])
     delay = fcm["common"]["antenna"][antenna]["delay"]
+    print "Looking for %s/%s.codif" % (cwd, antennaname)
     if os.path.exists("%s/%s.codif" % (cwd, antennaname)):
         datafilelist.append("%s=%s/%s.codif" % (twolettername, cwd, antennaname))
         dataout.write(datafilelist[-1] + "\n")
@@ -329,13 +336,16 @@ v2dout.close()
 os.system("updatefreqs.py craftfrb.vex " + args.chan)
 
 ## Update the vex file to say "CODIF" rather than "VDIF"
-os.system("sed -i -e 's/VDIF5032/CODIFD8064/g' craftfrb.vex")
+os.system("sed -i -e 's/VDIF5032/CODIFD{}/g' craftfrb.vex".format(framesize))
 
 ## Run vex2difx
 os.system("vex2difx craftfrb.v2d")
 
 ## Run calcif2
-os.system("calcif2 craftfrb_1.calc")
+#os.system("calcif2 craftfrb_1.calc")
+os.system("\\rm -f craftfrb_1.im")
+os.system("difxcalc craftfrb_1.calc")
+
 
 ## Create the machines and threads file - use lbafilecheck from espresso if available and $DIFX_MACHINES exists
 machinesout = open("craftfrb_1.machines","w")
