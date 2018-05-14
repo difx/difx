@@ -6,6 +6,7 @@ Version 1.2
 * Options in vmux to change gap/sort tuning parameters
 * Added ability to summarize a mark6 module in a specific slot
 * new corner turners:
+  - 1-bit with 32, 64 threads
   - 2-bit with 32, 64 threads
   - 4-bit with 32, 64 threads
   - 8-bit with 32, 64 threads

@@ -465,7 +465,7 @@ static void cornerturn_16thread_1bit(unsigned char *outputBuffer, const unsigned
 
   n = outputDataSize/16;
 
-PRAGMA_OMP(parallel private(i,a,b,c,d,e,f,g,h) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,n))
+PRAGMA_OMP(parallel private(i,a,b,c,d,e,f,g,h,A,B) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,n))
   {
 PRAGMA_OMP(for schedule(dynamic,125) nowait)
     for(i = 0; i < n; ++i)
@@ -574,6 +574,742 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
     }
   }
 }
+
+static void cornerturn_32thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1  = (const uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2  = (const uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3  = (const uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4  = (const uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5  = (const uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6  = (const uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7  = (const uint8_t *)(threadBuffers[7]);
+  const uint8_t *t8  = (const uint8_t *)(threadBuffers[8]);
+  const uint8_t *t9  = (const uint8_t *)(threadBuffers[9]);
+  const uint8_t *t10 = (const uint8_t *)(threadBuffers[10]);
+  const uint8_t *t11 = (const uint8_t *)(threadBuffers[11]);
+  const uint8_t *t12 = (const uint8_t *)(threadBuffers[12]);
+  const uint8_t *t13 = (const uint8_t *)(threadBuffers[13]);
+  const uint8_t *t14 = (const uint8_t *)(threadBuffers[14]);
+  const uint8_t *t15 = (const uint8_t *)(threadBuffers[15]);
+  const uint8_t *t16 = (const uint8_t *)(threadBuffers[16]);
+  const uint8_t *t17 = (const uint8_t *)(threadBuffers[17]);
+  const uint8_t *t18 = (const uint8_t *)(threadBuffers[18]);
+  const uint8_t *t19 = (const uint8_t *)(threadBuffers[19]);
+  const uint8_t *t20 = (const uint8_t *)(threadBuffers[20]);
+  const uint8_t *t21 = (const uint8_t *)(threadBuffers[21]);
+  const uint8_t *t22 = (const uint8_t *)(threadBuffers[22]);
+  const uint8_t *t23 = (const uint8_t *)(threadBuffers[23]);
+  const uint8_t *t24 = (const uint8_t *)(threadBuffers[24]);
+  const uint8_t *t25 = (const uint8_t *)(threadBuffers[25]);
+  const uint8_t *t26 = (const uint8_t *)(threadBuffers[26]);
+  const uint8_t *t27 = (const uint8_t *)(threadBuffers[27]);
+  const uint8_t *t28 = (const uint8_t *)(threadBuffers[28]);
+  const uint8_t *t29 = (const uint8_t *)(threadBuffers[29]);
+  const uint8_t *t30 = (const uint8_t *)(threadBuffers[30]);
+  const uint8_t *t31 = (const uint8_t *)(threadBuffers[31]);
+  uint8_t *outputwordptr = (uint8_t *)outputBuffer;
+  int i, n;
+  uint64_t a, b, c, d, e, f, g, h;
+  union { uint64_t u64; uint8_t u8[8]; } A, B, C, D;
+
+  n = outputDataSize/32;
+
+PRAGMA_OMP(parallel private(i,a,b,c,d,e,f,g,h,A,B,C,D) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      a = t0[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t1[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t2[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t3[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t4[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t5[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t6[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t7[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      A.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t8[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t9[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t10[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t11[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t12[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t13[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t14[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t15[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      B.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t16[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t17[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t18[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t19[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t20[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t21[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t22[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t23[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      C.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t24[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t25[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t26[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t27[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t28[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t29[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t30[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t31[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      D.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      outputwordptr[0]  = A.u8[0];
+      outputwordptr[1]  = B.u8[0];
+      outputwordptr[2]  = C.u8[0];
+      outputwordptr[3]  = D.u8[0];
+      outputwordptr[4]  = A.u8[1];
+      outputwordptr[5]  = B.u8[1];
+      outputwordptr[6]  = C.u8[1];
+      outputwordptr[7]  = D.u8[1];
+      outputwordptr[8]  = A.u8[2];
+      outputwordptr[9]  = B.u8[2];
+      outputwordptr[10] = C.u8[2];
+      outputwordptr[11] = D.u8[2];
+      outputwordptr[12] = A.u8[3];
+      outputwordptr[13] = B.u8[3];
+      outputwordptr[14] = C.u8[3];
+      outputwordptr[15] = D.u8[3];
+      outputwordptr[16] = A.u8[4];
+      outputwordptr[17] = B.u8[4];
+      outputwordptr[18] = C.u8[4];
+      outputwordptr[19] = D.u8[4];
+      outputwordptr[20] = A.u8[5];
+      outputwordptr[21] = B.u8[5];
+      outputwordptr[22] = C.u8[5];
+      outputwordptr[23] = D.u8[5];
+      outputwordptr[24] = A.u8[6];
+      outputwordptr[25] = B.u8[6];
+      outputwordptr[26] = C.u8[6];
+      outputwordptr[27] = D.u8[6];
+      outputwordptr[28] = A.u8[7];
+      outputwordptr[29] = B.u8[7];
+      outputwordptr[30] = C.u8[7];
+      outputwordptr[31] = D.u8[7];
+      outputwordptr += 32;
+    }
+  }
+}
+
+static void cornerturn_64thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1  = (const uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2  = (const uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3  = (const uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4  = (const uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5  = (const uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6  = (const uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7  = (const uint8_t *)(threadBuffers[7]);
+  const uint8_t *t8  = (const uint8_t *)(threadBuffers[8]);
+  const uint8_t *t9  = (const uint8_t *)(threadBuffers[9]);
+  const uint8_t *t10 = (const uint8_t *)(threadBuffers[10]);
+  const uint8_t *t11 = (const uint8_t *)(threadBuffers[11]);
+  const uint8_t *t12 = (const uint8_t *)(threadBuffers[12]);
+  const uint8_t *t13 = (const uint8_t *)(threadBuffers[13]);
+  const uint8_t *t14 = (const uint8_t *)(threadBuffers[14]);
+  const uint8_t *t15 = (const uint8_t *)(threadBuffers[15]);
+  const uint8_t *t16 = (const uint8_t *)(threadBuffers[16]);
+  const uint8_t *t17 = (const uint8_t *)(threadBuffers[17]);
+  const uint8_t *t18 = (const uint8_t *)(threadBuffers[18]);
+  const uint8_t *t19 = (const uint8_t *)(threadBuffers[19]);
+  const uint8_t *t20 = (const uint8_t *)(threadBuffers[20]);
+  const uint8_t *t21 = (const uint8_t *)(threadBuffers[21]);
+  const uint8_t *t22 = (const uint8_t *)(threadBuffers[22]);
+  const uint8_t *t23 = (const uint8_t *)(threadBuffers[23]);
+  const uint8_t *t24 = (const uint8_t *)(threadBuffers[24]);
+  const uint8_t *t25 = (const uint8_t *)(threadBuffers[25]);
+  const uint8_t *t26 = (const uint8_t *)(threadBuffers[26]);
+  const uint8_t *t27 = (const uint8_t *)(threadBuffers[27]);
+  const uint8_t *t28 = (const uint8_t *)(threadBuffers[28]);
+  const uint8_t *t29 = (const uint8_t *)(threadBuffers[29]);
+  const uint8_t *t30 = (const uint8_t *)(threadBuffers[30]);
+  const uint8_t *t31 = (const uint8_t *)(threadBuffers[31]);
+  const uint8_t *t32 = (const uint8_t *)(threadBuffers[32]);
+  const uint8_t *t33 = (const uint8_t *)(threadBuffers[33]);
+  const uint8_t *t34 = (const uint8_t *)(threadBuffers[34]);
+  const uint8_t *t35 = (const uint8_t *)(threadBuffers[35]);
+  const uint8_t *t36 = (const uint8_t *)(threadBuffers[36]);
+  const uint8_t *t37 = (const uint8_t *)(threadBuffers[37]);
+  const uint8_t *t38 = (const uint8_t *)(threadBuffers[38]);
+  const uint8_t *t39 = (const uint8_t *)(threadBuffers[39]);
+  const uint8_t *t40 = (const uint8_t *)(threadBuffers[40]);
+  const uint8_t *t41 = (const uint8_t *)(threadBuffers[41]);
+  const uint8_t *t42 = (const uint8_t *)(threadBuffers[42]);
+  const uint8_t *t43 = (const uint8_t *)(threadBuffers[43]);
+  const uint8_t *t44 = (const uint8_t *)(threadBuffers[44]);
+  const uint8_t *t45 = (const uint8_t *)(threadBuffers[45]);
+  const uint8_t *t46 = (const uint8_t *)(threadBuffers[46]);
+  const uint8_t *t47 = (const uint8_t *)(threadBuffers[47]);
+  const uint8_t *t48 = (const uint8_t *)(threadBuffers[48]);
+  const uint8_t *t49 = (const uint8_t *)(threadBuffers[49]);
+  const uint8_t *t50 = (const uint8_t *)(threadBuffers[50]);
+  const uint8_t *t51 = (const uint8_t *)(threadBuffers[51]);
+  const uint8_t *t52 = (const uint8_t *)(threadBuffers[52]);
+  const uint8_t *t53 = (const uint8_t *)(threadBuffers[53]);
+  const uint8_t *t54 = (const uint8_t *)(threadBuffers[54]);
+  const uint8_t *t55 = (const uint8_t *)(threadBuffers[55]);
+  const uint8_t *t56 = (const uint8_t *)(threadBuffers[56]);
+  const uint8_t *t57 = (const uint8_t *)(threadBuffers[57]);
+  const uint8_t *t58 = (const uint8_t *)(threadBuffers[58]);
+  const uint8_t *t59 = (const uint8_t *)(threadBuffers[59]);
+  const uint8_t *t60 = (const uint8_t *)(threadBuffers[60]);
+  const uint8_t *t61 = (const uint8_t *)(threadBuffers[61]);
+  const uint8_t *t62 = (const uint8_t *)(threadBuffers[62]);
+  const uint8_t *t63 = (const uint8_t *)(threadBuffers[63]);
+  uint8_t *outputwordptr = (uint8_t *)outputBuffer;
+  int i, n;
+  uint64_t a, b, c, d, e, f, g, h;
+  union { uint64_t u64; uint8_t u8[8]; } A, B, C, D, E, F, G, H;
+
+  n = outputDataSize/64;
+
+PRAGMA_OMP(parallel private(i,a,b,c,d,e,f,g,h,A,B,C,D,E,F,G,H) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,t32,t33,t34,t35,t36,t37,t38,t39,t40,t41,t42,t43,t44,t45,t46,t47,t48,t49,t50,t51,t52,t53,t54,t55,t56,t57,t58,t59,t60,t61,t62,t63,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      a = t0[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t1[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t2[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t3[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t4[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t5[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t6[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t7[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      A.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t8[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t9[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t10[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t11[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t12[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t13[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t14[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t15[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      B.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t16[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t17[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t18[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t19[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t20[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t21[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t22[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t23[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      C.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t24[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t25[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t26[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t27[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t28[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t29[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t30[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t31[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      D.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t32[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t33[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t34[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t35[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t36[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t37[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t38[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t39[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      E.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t40[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t41[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t42[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t43[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t44[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t45[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t46[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t47[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      F.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t48[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t49[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t50[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t51[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t52[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t53[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t54[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t55[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      G.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t56[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t57[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t58[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t59[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t60[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t61[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t62[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t63[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      H.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+
+      outputwordptr[0]  = A.u8[0];
+      outputwordptr[1]  = B.u8[0];
+      outputwordptr[2]  = C.u8[0];
+      outputwordptr[3]  = D.u8[0];
+      outputwordptr[4]  = E.u8[0];
+      outputwordptr[5]  = F.u8[0];
+      outputwordptr[6]  = G.u8[0];
+      outputwordptr[7]  = H.u8[0];
+      outputwordptr[8]  = A.u8[1];
+      outputwordptr[9]  = B.u8[1];
+      outputwordptr[10] = C.u8[1];
+      outputwordptr[11] = D.u8[1];
+      outputwordptr[12] = E.u8[1];
+      outputwordptr[13] = F.u8[1];
+      outputwordptr[14] = G.u8[1];
+      outputwordptr[15] = H.u8[1];
+      outputwordptr[16] = A.u8[2];
+      outputwordptr[17] = B.u8[2];
+      outputwordptr[18] = C.u8[2];
+      outputwordptr[19] = D.u8[2];
+      outputwordptr[20] = E.u8[2];
+      outputwordptr[21] = F.u8[2];
+      outputwordptr[22] = G.u8[2];
+      outputwordptr[23] = H.u8[2];
+      outputwordptr[24] = A.u8[3];
+      outputwordptr[25] = B.u8[3];
+      outputwordptr[26] = C.u8[3];
+      outputwordptr[27] = D.u8[3];
+      outputwordptr[28] = E.u8[3];
+      outputwordptr[29] = F.u8[3];
+      outputwordptr[30] = G.u8[3];
+      outputwordptr[31] = H.u8[3];
+      outputwordptr[32] = A.u8[4];
+      outputwordptr[33] = B.u8[4];
+      outputwordptr[34] = C.u8[4];
+      outputwordptr[35] = D.u8[4];
+      outputwordptr[36] = E.u8[4];
+      outputwordptr[37] = F.u8[4];
+      outputwordptr[38] = G.u8[4];
+      outputwordptr[39] = H.u8[4];
+      outputwordptr[40] = A.u8[5];
+      outputwordptr[41] = B.u8[5];
+      outputwordptr[42] = C.u8[5];
+      outputwordptr[43] = D.u8[5];
+      outputwordptr[44] = E.u8[5];
+      outputwordptr[45] = F.u8[5];
+      outputwordptr[46] = G.u8[5];
+      outputwordptr[47] = H.u8[5];
+      outputwordptr[48] = A.u8[6];
+      outputwordptr[49] = B.u8[6];
+      outputwordptr[50] = C.u8[6];
+      outputwordptr[51] = D.u8[6];
+      outputwordptr[52] = E.u8[6];
+      outputwordptr[53] = F.u8[6];
+      outputwordptr[54] = G.u8[6];
+      outputwordptr[55] = H.u8[6];
+      outputwordptr[56] = A.u8[7];
+      outputwordptr[57] = B.u8[7];
+      outputwordptr[58] = C.u8[7];
+      outputwordptr[59] = D.u8[7];
+      outputwordptr[60] = E.u8[7];
+      outputwordptr[61] = F.u8[7];
+      outputwordptr[62] = G.u8[7];
+      outputwordptr[63] = H.u8[7];
+      outputwordptr += 64;
+    }
+  }
+}
+
 
 /* For 2-bit 2-thread corner turning there are two implementions here.  One optimized for 64-bit and the other for 32-bit.
    At compile time one is named cornerturn_2thread_2bit and the other cornerturn_2thread_2bitSlow.  Which is which depends
@@ -4471,6 +5207,10 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_8thread_1bit;
 		case 16:
 			return cornerturn_16thread_1bit;
+		case 32:
+			return cornerturn_32thread_1bit;
+		case 64:
+			return cornerturn_64thread_1bit;
 		/* Then the non-powers-of-two */
 		case 3:
 			return cornerturn_3thread_1bit;
