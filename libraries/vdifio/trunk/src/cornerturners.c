@@ -1920,7 +1920,7 @@ static void cornerturn_16thread_4bit(unsigned char *outputBuffer, const unsigned
 
   n = outputDataSize/16;
 
-PRAGMA_OMP(parallel private(i,xo,xe) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,n))
+PRAGMA_OMP(parallel private(i,x0,x1,x2,x3) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,n))
   {
 PRAGMA_OMP(for schedule(dynamic,125) nowait)
     for(i = 0; i < n; ++i)
@@ -1933,6 +1933,204 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
       *outputwordptr = ((x3 & M1) * 0x1000000000LL) | ((x2 & M1) * 0x100000000LL) | ((x1 & M1) * 0x10LL) | (x0 & M1);
       ++outputwordptr;
       *outputwordptr = ((x3 & M0) * 0x100000000LL)  | ((x2 & M0) * 0x10000000LL)  | (x1 & M0) | ((x0 & M0) >> 4);
+      ++outputwordptr;
+    }
+  }
+}
+
+static void cornerturn_32thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 32 threads of 4-bit data.
+  //
+  // Follow from the logic of 16 thread version
+
+  const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1  = (const uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2  = (const uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3  = (const uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4  = (const uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5  = (const uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6  = (const uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7  = (const uint8_t *)(threadBuffers[7]);
+  const uint8_t *t8  = (const uint8_t *)(threadBuffers[8]);
+  const uint8_t *t9  = (const uint8_t *)(threadBuffers[9]);
+  const uint8_t *t10 = (const uint8_t *)(threadBuffers[10]);
+  const uint8_t *t11 = (const uint8_t *)(threadBuffers[11]);
+  const uint8_t *t12 = (const uint8_t *)(threadBuffers[12]);
+  const uint8_t *t13 = (const uint8_t *)(threadBuffers[13]);
+  const uint8_t *t14 = (const uint8_t *)(threadBuffers[14]);
+  const uint8_t *t15 = (const uint8_t *)(threadBuffers[15]);
+  const uint8_t *t16 = (const uint8_t *)(threadBuffers[16]);
+  const uint8_t *t17 = (const uint8_t *)(threadBuffers[17]);
+  const uint8_t *t18 = (const uint8_t *)(threadBuffers[18]);
+  const uint8_t *t19 = (const uint8_t *)(threadBuffers[19]);
+  const uint8_t *t20 = (const uint8_t *)(threadBuffers[20]);
+  const uint8_t *t21 = (const uint8_t *)(threadBuffers[21]);
+  const uint8_t *t22 = (const uint8_t *)(threadBuffers[22]);
+  const uint8_t *t23 = (const uint8_t *)(threadBuffers[23]);
+  const uint8_t *t24 = (const uint8_t *)(threadBuffers[24]);
+  const uint8_t *t25 = (const uint8_t *)(threadBuffers[25]);
+  const uint8_t *t26 = (const uint8_t *)(threadBuffers[26]);
+  const uint8_t *t27 = (const uint8_t *)(threadBuffers[27]);
+  const uint8_t *t28 = (const uint8_t *)(threadBuffers[28]);
+  const uint8_t *t29 = (const uint8_t *)(threadBuffers[29]);
+  const uint8_t *t30 = (const uint8_t *)(threadBuffers[30]);
+  const uint8_t *t31 = (const uint8_t *)(threadBuffers[31]);
+ 
+  const uint32_t M0 = 0xF0F0F0F0;
+  const uint32_t M1 = 0x0F0F0F0F;
+
+  uint64_t *outputwordptr = (uint64_t *)outputBuffer;
+
+  uint32_t x0, x1, x2, x3, x4, x5, x6, x7;
+  int i, n;
+
+  n = outputDataSize/32;
+
+PRAGMA_OMP(parallel private(i,x0,x1,x2,x3,x4,x5,x6,x7) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      x7 = (t31[i] << 24) | (t29[i] << 16) | (t27[i] << 8) | t25[i];
+      x6 = (t30[i] << 24) | (t28[i] << 16) | (t26[i] << 8) | t24[i];
+      x5 = (t23[i] << 24) | (t21[i] << 16) | (t19[i] << 8) | t17[i];
+      x4 = (t22[i] << 24) | (t20[i] << 16) | (t18[i] << 8) | t16[i];
+      x3 = (t15[i] << 24) | (t13[i] << 16) | (t11[i] << 8) | t9[i];
+      x2 = (t14[i] << 24) | (t12[i] << 16) | (t10[i] << 8) | t8[i];
+      x1 = (t7[i]  << 24) | (t5[i]  << 16) | (t3[i]  << 8) | t1[i];
+      x0 = (t6[i]  << 24) | (t4[i]  << 16) | (t2[i]  << 8) | t0[i];
+
+      *outputwordptr = ((x3 & M1) * 0x1000000000LL) | ((x2 & M1) * 0x100000000LL) | ((x1 & M1) * 0x10LL) | (x0 & M1);
+      ++outputwordptr;
+      *outputwordptr = ((x7 & M1) * 0x1000000000LL) | ((x6 & M1) * 0x100000000LL) | ((x5 & M1) * 0x10LL) | (x4 & M1);
+      ++outputwordptr;
+      *outputwordptr = ((x3 & M0) * 0x100000000LL)  | ((x2 & M0) * 0x10000000LL)  | (x1 & M0) | ((x0 & M0) >> 4);
+      ++outputwordptr;
+      *outputwordptr = ((x7 & M0) * 0x100000000LL)  | ((x6 & M0) * 0x10000000LL)  | (x5 & M0) | ((x4 & M0) >> 4);
+      ++outputwordptr;
+    }
+  }
+}
+
+static void cornerturn_64thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 64 threads of 4-bit data.
+  //
+  // Follow from the logic of 16 thread version
+
+  const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1  = (const uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2  = (const uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3  = (const uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4  = (const uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5  = (const uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6  = (const uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7  = (const uint8_t *)(threadBuffers[7]);
+  const uint8_t *t8  = (const uint8_t *)(threadBuffers[8]);
+  const uint8_t *t9  = (const uint8_t *)(threadBuffers[9]);
+  const uint8_t *t10 = (const uint8_t *)(threadBuffers[10]);
+  const uint8_t *t11 = (const uint8_t *)(threadBuffers[11]);
+  const uint8_t *t12 = (const uint8_t *)(threadBuffers[12]);
+  const uint8_t *t13 = (const uint8_t *)(threadBuffers[13]);
+  const uint8_t *t14 = (const uint8_t *)(threadBuffers[14]);
+  const uint8_t *t15 = (const uint8_t *)(threadBuffers[15]);
+  const uint8_t *t16 = (const uint8_t *)(threadBuffers[16]);
+  const uint8_t *t17 = (const uint8_t *)(threadBuffers[17]);
+  const uint8_t *t18 = (const uint8_t *)(threadBuffers[18]);
+  const uint8_t *t19 = (const uint8_t *)(threadBuffers[19]);
+  const uint8_t *t20 = (const uint8_t *)(threadBuffers[20]);
+  const uint8_t *t21 = (const uint8_t *)(threadBuffers[21]);
+  const uint8_t *t22 = (const uint8_t *)(threadBuffers[22]);
+  const uint8_t *t23 = (const uint8_t *)(threadBuffers[23]);
+  const uint8_t *t24 = (const uint8_t *)(threadBuffers[24]);
+  const uint8_t *t25 = (const uint8_t *)(threadBuffers[25]);
+  const uint8_t *t26 = (const uint8_t *)(threadBuffers[26]);
+  const uint8_t *t27 = (const uint8_t *)(threadBuffers[27]);
+  const uint8_t *t28 = (const uint8_t *)(threadBuffers[28]);
+  const uint8_t *t29 = (const uint8_t *)(threadBuffers[29]);
+  const uint8_t *t30 = (const uint8_t *)(threadBuffers[30]);
+  const uint8_t *t31 = (const uint8_t *)(threadBuffers[31]);
+  const uint8_t *t32 = (const uint8_t *)(threadBuffers[32]);
+  const uint8_t *t33 = (const uint8_t *)(threadBuffers[33]);
+  const uint8_t *t34 = (const uint8_t *)(threadBuffers[34]);
+  const uint8_t *t35 = (const uint8_t *)(threadBuffers[35]);
+  const uint8_t *t36 = (const uint8_t *)(threadBuffers[36]);
+  const uint8_t *t37 = (const uint8_t *)(threadBuffers[37]);
+  const uint8_t *t38 = (const uint8_t *)(threadBuffers[38]);
+  const uint8_t *t39 = (const uint8_t *)(threadBuffers[39]);
+  const uint8_t *t40 = (const uint8_t *)(threadBuffers[40]);
+  const uint8_t *t41 = (const uint8_t *)(threadBuffers[41]);
+  const uint8_t *t42 = (const uint8_t *)(threadBuffers[42]);
+  const uint8_t *t43 = (const uint8_t *)(threadBuffers[43]);
+  const uint8_t *t44 = (const uint8_t *)(threadBuffers[44]);
+  const uint8_t *t45 = (const uint8_t *)(threadBuffers[45]);
+  const uint8_t *t46 = (const uint8_t *)(threadBuffers[46]);
+  const uint8_t *t47 = (const uint8_t *)(threadBuffers[47]);
+  const uint8_t *t48 = (const uint8_t *)(threadBuffers[48]);
+  const uint8_t *t49 = (const uint8_t *)(threadBuffers[49]);
+  const uint8_t *t50 = (const uint8_t *)(threadBuffers[50]);
+  const uint8_t *t51 = (const uint8_t *)(threadBuffers[51]);
+  const uint8_t *t52 = (const uint8_t *)(threadBuffers[52]);
+  const uint8_t *t53 = (const uint8_t *)(threadBuffers[53]);
+  const uint8_t *t54 = (const uint8_t *)(threadBuffers[54]);
+  const uint8_t *t55 = (const uint8_t *)(threadBuffers[55]);
+  const uint8_t *t56 = (const uint8_t *)(threadBuffers[56]);
+  const uint8_t *t57 = (const uint8_t *)(threadBuffers[57]);
+  const uint8_t *t58 = (const uint8_t *)(threadBuffers[58]);
+  const uint8_t *t59 = (const uint8_t *)(threadBuffers[59]);
+  const uint8_t *t60 = (const uint8_t *)(threadBuffers[60]);
+  const uint8_t *t61 = (const uint8_t *)(threadBuffers[61]);
+  const uint8_t *t62 = (const uint8_t *)(threadBuffers[62]);
+  const uint8_t *t63 = (const uint8_t *)(threadBuffers[63]);
+ 
+  const uint32_t M0 = 0xF0F0F0F0;
+  const uint32_t M1 = 0x0F0F0F0F;
+
+  uint64_t *outputwordptr = (uint64_t *)outputBuffer;
+
+  uint32_t x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15;
+  int i, n;
+
+  n = outputDataSize/64;
+
+PRAGMA_OMP(parallel private(i,x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,t32,t33,t34,t35,t36,t37,t38,t39,t40,t41,t42,t43,t44,t45,t46,t47,t48,t49,t50,t51,t52,t53,t54,t55,t56,t57,t58,t59,t60,t61,t62,t63,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      x15 = (t63[i] << 24) | (t61[i] << 16) | (t59[i] << 8) | t57[i];
+      x14 = (t62[i] << 24) | (t60[i] << 16) | (t58[i] << 8) | t56[i];
+      x13 = (t55[i] << 24) | (t53[i] << 16) | (t51[i] << 8) | t49[i];
+      x12 = (t54[i] << 24) | (t52[i] << 16) | (t50[i] << 8) | t48[i];
+      x11 = (t47[i] << 24) | (t45[i] << 16) | (t43[i] << 8) | t41[i];
+      x10 = (t46[i] << 24) | (t44[i] << 16) | (t42[i] << 8) | t40[i];
+      x9  = (t39[i] << 24) | (t37[i] << 16) | (t35[i] << 8) | t33[i];
+      x8  = (t38[i] << 24) | (t36[i] << 16) | (t34[i] << 8) | t32[i];
+      x7  = (t31[i] << 24) | (t29[i] << 16) | (t27[i] << 8) | t25[i];
+      x6  = (t30[i] << 24) | (t28[i] << 16) | (t26[i] << 8) | t24[i];
+      x5  = (t23[i] << 24) | (t21[i] << 16) | (t19[i] << 8) | t17[i];
+      x4  = (t22[i] << 24) | (t20[i] << 16) | (t18[i] << 8) | t16[i];
+      x3  = (t15[i] << 24) | (t13[i] << 16) | (t11[i] << 8) | t9[i];
+      x2  = (t14[i] << 24) | (t12[i] << 16) | (t10[i] << 8) | t8[i];
+      x1  = (t7[i]  << 24) | (t5[i]  << 16) | (t3[i]  << 8) | t1[i];
+      x0  = (t6[i]  << 24) | (t4[i]  << 16) | (t2[i]  << 8) | t0[i];
+
+      *outputwordptr = ((x3  & M1) * 0x1000000000LL) | ((x2  & M1) * 0x100000000LL) | ((x1  & M1) * 0x10LL) | (x0  & M1);
+      ++outputwordptr;
+      *outputwordptr = ((x7  & M1) * 0x1000000000LL) | ((x6  & M1) * 0x100000000LL) | ((x5  & M1) * 0x10LL) | (x4  & M1);
+      ++outputwordptr;
+      *outputwordptr = ((x11 & M1) * 0x1000000000LL) | ((x10 & M1) * 0x100000000LL) | ((x9  & M1) * 0x10LL) | (x8  & M1);
+      ++outputwordptr;
+      *outputwordptr = ((x15 & M1) * 0x1000000000LL) | ((x14 & M1) * 0x100000000LL) | ((x13 & M1) * 0x10LL) | (x12 & M1);
+      ++outputwordptr;
+      *outputwordptr = ((x3  & M0) * 0x100000000LL)  | ((x2  & M0) * 0x10000000LL)  | (x1  & M0) | ((x0  & M0) >> 4);
+      ++outputwordptr;
+      *outputwordptr = ((x7  & M0) * 0x100000000LL)  | ((x6  & M0) * 0x10000000LL)  | (x5  & M0) | ((x4  & M0) >> 4);
+      ++outputwordptr;
+      *outputwordptr = ((x11 & M0) * 0x100000000LL)  | ((x10 & M0) * 0x10000000LL)  | (x9  & M0) | ((x8  & M0) >> 4);
+      ++outputwordptr;
+      *outputwordptr = ((x15 & M0) * 0x100000000LL)  | ((x14 & M0) * 0x10000000LL)  | (x13 & M0) | ((x12 & M0) >> 4);
       ++outputwordptr;
     }
   }
@@ -2245,6 +2443,222 @@ static void cornerturn_16thread_8bit(unsigned char *outputBuffer, const unsigned
   }
 }
 
+static void cornerturn_32thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1  = (const uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2  = (const uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3  = (const uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4  = (const uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5  = (const uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6  = (const uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7  = (const uint8_t *)(threadBuffers[7]);
+  const uint8_t *t8  = (const uint8_t *)(threadBuffers[8]);
+  const uint8_t *t9  = (const uint8_t *)(threadBuffers[9]);
+  const uint8_t *t10 = (const uint8_t *)(threadBuffers[10]);
+  const uint8_t *t11 = (const uint8_t *)(threadBuffers[11]);
+  const uint8_t *t12 = (const uint8_t *)(threadBuffers[12]);
+  const uint8_t *t13 = (const uint8_t *)(threadBuffers[13]);
+  const uint8_t *t14 = (const uint8_t *)(threadBuffers[14]);
+  const uint8_t *t15 = (const uint8_t *)(threadBuffers[15]);
+  const uint8_t *t16 = (const uint8_t *)(threadBuffers[16]);
+  const uint8_t *t17 = (const uint8_t *)(threadBuffers[17]);
+  const uint8_t *t18 = (const uint8_t *)(threadBuffers[18]);
+  const uint8_t *t19 = (const uint8_t *)(threadBuffers[19]);
+  const uint8_t *t20 = (const uint8_t *)(threadBuffers[20]);
+  const uint8_t *t21 = (const uint8_t *)(threadBuffers[21]);
+  const uint8_t *t22 = (const uint8_t *)(threadBuffers[22]);
+  const uint8_t *t23 = (const uint8_t *)(threadBuffers[23]);
+  const uint8_t *t24 = (const uint8_t *)(threadBuffers[24]);
+  const uint8_t *t25 = (const uint8_t *)(threadBuffers[25]);
+  const uint8_t *t26 = (const uint8_t *)(threadBuffers[26]);
+  const uint8_t *t27 = (const uint8_t *)(threadBuffers[27]);
+  const uint8_t *t28 = (const uint8_t *)(threadBuffers[28]);
+  const uint8_t *t29 = (const uint8_t *)(threadBuffers[29]);
+  const uint8_t *t30 = (const uint8_t *)(threadBuffers[30]);
+  const uint8_t *t31 = (const uint8_t *)(threadBuffers[31]);
+
+  n = outputDataSize/32;
+
+  for(i = 0; i < n; ++i)
+  {
+    outputBuffer[32*i]    = t0[i];
+    outputBuffer[32*i+1]  = t1[i];
+    outputBuffer[32*i+2]  = t2[i];
+    outputBuffer[32*i+3]  = t3[i];
+    outputBuffer[32*i+4]  = t4[i];
+    outputBuffer[32*i+5]  = t5[i];
+    outputBuffer[32*i+6]  = t6[i];
+    outputBuffer[32*i+7]  = t7[i];
+    outputBuffer[32*i+8]  = t8[i];
+    outputBuffer[32*i+9]  = t9[i];
+    outputBuffer[32*i+10] = t10[i];
+    outputBuffer[32*i+11] = t11[i];
+    outputBuffer[32*i+12] = t12[i];
+    outputBuffer[32*i+13] = t13[i];
+    outputBuffer[32*i+14] = t14[i];
+    outputBuffer[32*i+15] = t15[i];
+    outputBuffer[32*i+16] = t16[i];
+    outputBuffer[32*i+17] = t17[i];
+    outputBuffer[32*i+18] = t18[i];
+    outputBuffer[32*i+19] = t19[i];
+    outputBuffer[32*i+20] = t20[i];
+    outputBuffer[32*i+21] = t21[i];
+    outputBuffer[32*i+22] = t22[i];
+    outputBuffer[32*i+23] = t23[i];
+    outputBuffer[32*i+24] = t24[i];
+    outputBuffer[32*i+25] = t25[i];
+    outputBuffer[32*i+26] = t26[i];
+    outputBuffer[32*i+27] = t27[i];
+    outputBuffer[32*i+28] = t28[i];
+    outputBuffer[32*i+29] = t29[i];
+    outputBuffer[32*i+30] = t30[i];
+    outputBuffer[32*i+31] = t31[i];
+  }
+}
+
+static void cornerturn_64thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1  = (const uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2  = (const uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3  = (const uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4  = (const uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5  = (const uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6  = (const uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7  = (const uint8_t *)(threadBuffers[7]);
+  const uint8_t *t8  = (const uint8_t *)(threadBuffers[8]);
+  const uint8_t *t9  = (const uint8_t *)(threadBuffers[9]);
+  const uint8_t *t10 = (const uint8_t *)(threadBuffers[10]);
+  const uint8_t *t11 = (const uint8_t *)(threadBuffers[11]);
+  const uint8_t *t12 = (const uint8_t *)(threadBuffers[12]);
+  const uint8_t *t13 = (const uint8_t *)(threadBuffers[13]);
+  const uint8_t *t14 = (const uint8_t *)(threadBuffers[14]);
+  const uint8_t *t15 = (const uint8_t *)(threadBuffers[15]);
+  const uint8_t *t16 = (const uint8_t *)(threadBuffers[16]);
+  const uint8_t *t17 = (const uint8_t *)(threadBuffers[17]);
+  const uint8_t *t18 = (const uint8_t *)(threadBuffers[18]);
+  const uint8_t *t19 = (const uint8_t *)(threadBuffers[19]);
+  const uint8_t *t20 = (const uint8_t *)(threadBuffers[20]);
+  const uint8_t *t21 = (const uint8_t *)(threadBuffers[21]);
+  const uint8_t *t22 = (const uint8_t *)(threadBuffers[22]);
+  const uint8_t *t23 = (const uint8_t *)(threadBuffers[23]);
+  const uint8_t *t24 = (const uint8_t *)(threadBuffers[24]);
+  const uint8_t *t25 = (const uint8_t *)(threadBuffers[25]);
+  const uint8_t *t26 = (const uint8_t *)(threadBuffers[26]);
+  const uint8_t *t27 = (const uint8_t *)(threadBuffers[27]);
+  const uint8_t *t28 = (const uint8_t *)(threadBuffers[28]);
+  const uint8_t *t29 = (const uint8_t *)(threadBuffers[29]);
+  const uint8_t *t30 = (const uint8_t *)(threadBuffers[30]);
+  const uint8_t *t31 = (const uint8_t *)(threadBuffers[31]);
+  const uint8_t *t32 = (const uint8_t *)(threadBuffers[32]);
+  const uint8_t *t33 = (const uint8_t *)(threadBuffers[33]);
+  const uint8_t *t34 = (const uint8_t *)(threadBuffers[34]);
+  const uint8_t *t35 = (const uint8_t *)(threadBuffers[35]);
+  const uint8_t *t36 = (const uint8_t *)(threadBuffers[36]);
+  const uint8_t *t37 = (const uint8_t *)(threadBuffers[37]);
+  const uint8_t *t38 = (const uint8_t *)(threadBuffers[38]);
+  const uint8_t *t39 = (const uint8_t *)(threadBuffers[39]);
+  const uint8_t *t40 = (const uint8_t *)(threadBuffers[40]);
+  const uint8_t *t41 = (const uint8_t *)(threadBuffers[41]);
+  const uint8_t *t42 = (const uint8_t *)(threadBuffers[42]);
+  const uint8_t *t43 = (const uint8_t *)(threadBuffers[43]);
+  const uint8_t *t44 = (const uint8_t *)(threadBuffers[44]);
+  const uint8_t *t45 = (const uint8_t *)(threadBuffers[45]);
+  const uint8_t *t46 = (const uint8_t *)(threadBuffers[46]);
+  const uint8_t *t47 = (const uint8_t *)(threadBuffers[47]);
+  const uint8_t *t48 = (const uint8_t *)(threadBuffers[48]);
+  const uint8_t *t49 = (const uint8_t *)(threadBuffers[49]);
+  const uint8_t *t50 = (const uint8_t *)(threadBuffers[50]);
+  const uint8_t *t51 = (const uint8_t *)(threadBuffers[51]);
+  const uint8_t *t52 = (const uint8_t *)(threadBuffers[52]);
+  const uint8_t *t53 = (const uint8_t *)(threadBuffers[53]);
+  const uint8_t *t54 = (const uint8_t *)(threadBuffers[54]);
+  const uint8_t *t55 = (const uint8_t *)(threadBuffers[55]);
+  const uint8_t *t56 = (const uint8_t *)(threadBuffers[56]);
+  const uint8_t *t57 = (const uint8_t *)(threadBuffers[57]);
+  const uint8_t *t58 = (const uint8_t *)(threadBuffers[58]);
+  const uint8_t *t59 = (const uint8_t *)(threadBuffers[59]);
+  const uint8_t *t60 = (const uint8_t *)(threadBuffers[60]);
+  const uint8_t *t61 = (const uint8_t *)(threadBuffers[61]);
+  const uint8_t *t62 = (const uint8_t *)(threadBuffers[62]);
+  const uint8_t *t63 = (const uint8_t *)(threadBuffers[63]);
+
+  n = outputDataSize/64;
+
+  for(i = 0; i < n; ++i)
+  {
+    outputBuffer[64*i]    = t0[i];
+    outputBuffer[64*i+1]  = t1[i];
+    outputBuffer[64*i+2]  = t2[i];
+    outputBuffer[64*i+3]  = t3[i];
+    outputBuffer[64*i+4]  = t4[i];
+    outputBuffer[64*i+5]  = t5[i];
+    outputBuffer[64*i+6]  = t6[i];
+    outputBuffer[64*i+7]  = t7[i];
+    outputBuffer[64*i+8]  = t8[i];
+    outputBuffer[64*i+9]  = t9[i];
+    outputBuffer[64*i+10] = t10[i];
+    outputBuffer[64*i+11] = t11[i];
+    outputBuffer[64*i+12] = t12[i];
+    outputBuffer[64*i+13] = t13[i];
+    outputBuffer[64*i+14] = t14[i];
+    outputBuffer[64*i+15] = t15[i];
+    outputBuffer[64*i+16] = t16[i];
+    outputBuffer[64*i+17] = t17[i];
+    outputBuffer[64*i+18] = t18[i];
+    outputBuffer[64*i+19] = t19[i];
+    outputBuffer[64*i+20] = t20[i];
+    outputBuffer[64*i+21] = t21[i];
+    outputBuffer[64*i+22] = t22[i];
+    outputBuffer[64*i+23] = t23[i];
+    outputBuffer[64*i+24] = t24[i];
+    outputBuffer[64*i+25] = t25[i];
+    outputBuffer[64*i+26] = t26[i];
+    outputBuffer[64*i+27] = t27[i];
+    outputBuffer[64*i+28] = t28[i];
+    outputBuffer[64*i+29] = t29[i];
+    outputBuffer[64*i+30] = t30[i];
+    outputBuffer[64*i+31] = t31[i];
+    outputBuffer[64*i+32] = t32[i];
+    outputBuffer[64*i+33] = t33[i];
+    outputBuffer[64*i+34] = t34[i];
+    outputBuffer[64*i+35] = t35[i];
+    outputBuffer[64*i+36] = t36[i];
+    outputBuffer[64*i+37] = t37[i];
+    outputBuffer[64*i+38] = t38[i];
+    outputBuffer[64*i+39] = t39[i];
+    outputBuffer[64*i+40] = t40[i];
+    outputBuffer[64*i+41] = t41[i];
+    outputBuffer[64*i+42] = t42[i];
+    outputBuffer[64*i+43] = t43[i];
+    outputBuffer[64*i+44] = t44[i];
+    outputBuffer[64*i+45] = t45[i];
+    outputBuffer[64*i+46] = t46[i];
+    outputBuffer[64*i+47] = t47[i];
+    outputBuffer[64*i+48] = t48[i];
+    outputBuffer[64*i+49] = t49[i];
+    outputBuffer[64*i+50] = t50[i];
+    outputBuffer[64*i+51] = t51[i];
+    outputBuffer[64*i+52] = t52[i];
+    outputBuffer[64*i+53] = t53[i];
+    outputBuffer[64*i+54] = t54[i];
+    outputBuffer[64*i+55] = t55[i];
+    outputBuffer[64*i+56] = t56[i];
+    outputBuffer[64*i+57] = t57[i];
+    outputBuffer[64*i+58] = t58[i];
+    outputBuffer[64*i+59] = t59[i];
+    outputBuffer[64*i+60] = t60[i];
+    outputBuffer[64*i+61] = t61[i];
+    outputBuffer[64*i+62] = t62[i];
+    outputBuffer[64*i+63] = t63[i];
+  }
+}
+
 
 static void cornerturn_2thread_16bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
@@ -2388,6 +2802,320 @@ static void cornerturn_16thread_16bit(unsigned char *outputBuffer, const unsigne
   }
 }
 
+static void cornerturn_32thread_16bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint16_t *t0  = (const uint16_t *)(threadBuffers[0]);
+  const uint16_t *t1  = (const uint16_t *)(threadBuffers[1]);
+  const uint16_t *t2  = (const uint16_t *)(threadBuffers[2]);
+  const uint16_t *t3  = (const uint16_t *)(threadBuffers[3]);
+  const uint16_t *t4  = (const uint16_t *)(threadBuffers[4]);
+  const uint16_t *t5  = (const uint16_t *)(threadBuffers[5]);
+  const uint16_t *t6  = (const uint16_t *)(threadBuffers[6]);
+  const uint16_t *t7  = (const uint16_t *)(threadBuffers[7]);
+  const uint16_t *t8  = (const uint16_t *)(threadBuffers[8]);
+  const uint16_t *t9  = (const uint16_t *)(threadBuffers[9]);
+  const uint16_t *t10 = (const uint16_t *)(threadBuffers[10]);
+  const uint16_t *t11 = (const uint16_t *)(threadBuffers[11]);
+  const uint16_t *t12 = (const uint16_t *)(threadBuffers[12]);
+  const uint16_t *t13 = (const uint16_t *)(threadBuffers[13]);
+  const uint16_t *t14 = (const uint16_t *)(threadBuffers[14]);
+  const uint16_t *t15 = (const uint16_t *)(threadBuffers[15]);
+  const uint16_t *t16 = (const uint16_t *)(threadBuffers[16]);
+  const uint16_t *t17 = (const uint16_t *)(threadBuffers[17]);
+  const uint16_t *t18 = (const uint16_t *)(threadBuffers[18]);
+  const uint16_t *t19 = (const uint16_t *)(threadBuffers[19]);
+  const uint16_t *t20 = (const uint16_t *)(threadBuffers[20]);
+  const uint16_t *t21 = (const uint16_t *)(threadBuffers[21]);
+  const uint16_t *t22 = (const uint16_t *)(threadBuffers[22]);
+  const uint16_t *t23 = (const uint16_t *)(threadBuffers[23]);
+  const uint16_t *t24 = (const uint16_t *)(threadBuffers[24]);
+  const uint16_t *t25 = (const uint16_t *)(threadBuffers[25]);
+  const uint16_t *t26 = (const uint16_t *)(threadBuffers[26]);
+  const uint16_t *t27 = (const uint16_t *)(threadBuffers[27]);
+  const uint16_t *t28 = (const uint16_t *)(threadBuffers[28]);
+  const uint16_t *t29 = (const uint16_t *)(threadBuffers[29]);
+  const uint16_t *t30 = (const uint16_t *)(threadBuffers[30]);
+  const uint16_t *t31 = (const uint16_t *)(threadBuffers[31]);
+  uint16_t *out = (uint16_t *)(outputBuffer);
+
+  n = outputDataSize/64;
+
+  for(i = 0; i < n; ++i)
+  {
+    *out = t0[i];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t3[i];
+    ++out;
+    *out = t4[i];
+    ++out;
+    *out = t5[i];
+    ++out;
+    *out = t6[i];
+    ++out;
+    *out = t7[i];
+    ++out;
+    *out = t8[i];
+    ++out;
+    *out = t9[i];
+    ++out;
+    *out = t10[i];
+    ++out;
+    *out = t11[i];
+    ++out;
+    *out = t12[i];
+    ++out;
+    *out = t13[i];
+    ++out;
+    *out = t14[i];
+    ++out;
+    *out = t15[i];
+    ++out;
+    *out = t16[i];
+    ++out;
+    *out = t17[i];
+    ++out;
+    *out = t18[i];
+    ++out;
+    *out = t19[i];
+    ++out;
+    *out = t20[i];
+    ++out;
+    *out = t21[i];
+    ++out;
+    *out = t22[i];
+    ++out;
+    *out = t23[i];
+    ++out;
+    *out = t24[i];
+    ++out;
+    *out = t25[i];
+    ++out;
+    *out = t26[i];
+    ++out;
+    *out = t27[i];
+    ++out;
+    *out = t28[i];
+    ++out;
+    *out = t29[i];
+    ++out;
+    *out = t30[i];
+    ++out;
+    *out = t31[i];
+    ++out;
+  }
+}
+
+static void cornerturn_64thread_16bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint16_t *t0  = (const uint16_t *)(threadBuffers[0]);
+  const uint16_t *t1  = (const uint16_t *)(threadBuffers[1]);
+  const uint16_t *t2  = (const uint16_t *)(threadBuffers[2]);
+  const uint16_t *t3  = (const uint16_t *)(threadBuffers[3]);
+  const uint16_t *t4  = (const uint16_t *)(threadBuffers[4]);
+  const uint16_t *t5  = (const uint16_t *)(threadBuffers[5]);
+  const uint16_t *t6  = (const uint16_t *)(threadBuffers[6]);
+  const uint16_t *t7  = (const uint16_t *)(threadBuffers[7]);
+  const uint16_t *t8  = (const uint16_t *)(threadBuffers[8]);
+  const uint16_t *t9  = (const uint16_t *)(threadBuffers[9]);
+  const uint16_t *t10 = (const uint16_t *)(threadBuffers[10]);
+  const uint16_t *t11 = (const uint16_t *)(threadBuffers[11]);
+  const uint16_t *t12 = (const uint16_t *)(threadBuffers[12]);
+  const uint16_t *t13 = (const uint16_t *)(threadBuffers[13]);
+  const uint16_t *t14 = (const uint16_t *)(threadBuffers[14]);
+  const uint16_t *t15 = (const uint16_t *)(threadBuffers[15]);
+  const uint16_t *t16 = (const uint16_t *)(threadBuffers[16]);
+  const uint16_t *t17 = (const uint16_t *)(threadBuffers[17]);
+  const uint16_t *t18 = (const uint16_t *)(threadBuffers[18]);
+  const uint16_t *t19 = (const uint16_t *)(threadBuffers[19]);
+  const uint16_t *t20 = (const uint16_t *)(threadBuffers[20]);
+  const uint16_t *t21 = (const uint16_t *)(threadBuffers[21]);
+  const uint16_t *t22 = (const uint16_t *)(threadBuffers[22]);
+  const uint16_t *t23 = (const uint16_t *)(threadBuffers[23]);
+  const uint16_t *t24 = (const uint16_t *)(threadBuffers[24]);
+  const uint16_t *t25 = (const uint16_t *)(threadBuffers[25]);
+  const uint16_t *t26 = (const uint16_t *)(threadBuffers[26]);
+  const uint16_t *t27 = (const uint16_t *)(threadBuffers[27]);
+  const uint16_t *t28 = (const uint16_t *)(threadBuffers[28]);
+  const uint16_t *t29 = (const uint16_t *)(threadBuffers[29]);
+  const uint16_t *t30 = (const uint16_t *)(threadBuffers[30]);
+  const uint16_t *t31 = (const uint16_t *)(threadBuffers[31]);
+  const uint16_t *t32 = (const uint16_t *)(threadBuffers[32]);
+  const uint16_t *t33 = (const uint16_t *)(threadBuffers[33]);
+  const uint16_t *t34 = (const uint16_t *)(threadBuffers[34]);
+  const uint16_t *t35 = (const uint16_t *)(threadBuffers[35]);
+  const uint16_t *t36 = (const uint16_t *)(threadBuffers[36]);
+  const uint16_t *t37 = (const uint16_t *)(threadBuffers[37]);
+  const uint16_t *t38 = (const uint16_t *)(threadBuffers[38]);
+  const uint16_t *t39 = (const uint16_t *)(threadBuffers[39]);
+  const uint16_t *t40 = (const uint16_t *)(threadBuffers[40]);
+  const uint16_t *t41 = (const uint16_t *)(threadBuffers[41]);
+  const uint16_t *t42 = (const uint16_t *)(threadBuffers[42]);
+  const uint16_t *t43 = (const uint16_t *)(threadBuffers[43]);
+  const uint16_t *t44 = (const uint16_t *)(threadBuffers[44]);
+  const uint16_t *t45 = (const uint16_t *)(threadBuffers[45]);
+  const uint16_t *t46 = (const uint16_t *)(threadBuffers[46]);
+  const uint16_t *t47 = (const uint16_t *)(threadBuffers[47]);
+  const uint16_t *t48 = (const uint16_t *)(threadBuffers[48]);
+  const uint16_t *t49 = (const uint16_t *)(threadBuffers[49]);
+  const uint16_t *t50 = (const uint16_t *)(threadBuffers[50]);
+  const uint16_t *t51 = (const uint16_t *)(threadBuffers[51]);
+  const uint16_t *t52 = (const uint16_t *)(threadBuffers[52]);
+  const uint16_t *t53 = (const uint16_t *)(threadBuffers[53]);
+  const uint16_t *t54 = (const uint16_t *)(threadBuffers[54]);
+  const uint16_t *t55 = (const uint16_t *)(threadBuffers[55]);
+  const uint16_t *t56 = (const uint16_t *)(threadBuffers[56]);
+  const uint16_t *t57 = (const uint16_t *)(threadBuffers[57]);
+  const uint16_t *t58 = (const uint16_t *)(threadBuffers[58]);
+  const uint16_t *t59 = (const uint16_t *)(threadBuffers[59]);
+  const uint16_t *t60 = (const uint16_t *)(threadBuffers[60]);
+  const uint16_t *t61 = (const uint16_t *)(threadBuffers[61]);
+  const uint16_t *t62 = (const uint16_t *)(threadBuffers[62]);
+  const uint16_t *t63 = (const uint16_t *)(threadBuffers[63]);
+  uint16_t *out = (uint16_t *)(outputBuffer);
+
+  n = outputDataSize/128;
+
+  for(i = 0; i < n; ++i)
+  {
+    *out = t0[i];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t3[i];
+    ++out;
+    *out = t4[i];
+    ++out;
+    *out = t5[i];
+    ++out;
+    *out = t6[i];
+    ++out;
+    *out = t7[i];
+    ++out;
+    *out = t8[i];
+    ++out;
+    *out = t9[i];
+    ++out;
+    *out = t10[i];
+    ++out;
+    *out = t11[i];
+    ++out;
+    *out = t12[i];
+    ++out;
+    *out = t13[i];
+    ++out;
+    *out = t14[i];
+    ++out;
+    *out = t15[i];
+    ++out;
+    *out = t16[i];
+    ++out;
+    *out = t17[i];
+    ++out;
+    *out = t18[i];
+    ++out;
+    *out = t19[i];
+    ++out;
+    *out = t20[i];
+    ++out;
+    *out = t21[i];
+    ++out;
+    *out = t22[i];
+    ++out;
+    *out = t23[i];
+    ++out;
+    *out = t24[i];
+    ++out;
+    *out = t25[i];
+    ++out;
+    *out = t26[i];
+    ++out;
+    *out = t27[i];
+    ++out;
+    *out = t28[i];
+    ++out;
+    *out = t29[i];
+    ++out;
+    *out = t30[i];
+    ++out;
+    *out = t31[i];
+    ++out;
+    *out = t32[i];
+    ++out;
+    *out = t33[i];
+    ++out;
+    *out = t34[i];
+    ++out;
+    *out = t35[i];
+    ++out;
+    *out = t36[i];
+    ++out;
+    *out = t37[i];
+    ++out;
+    *out = t38[i];
+    ++out;
+    *out = t39[i];
+    ++out;
+    *out = t40[i];
+    ++out;
+    *out = t41[i];
+    ++out;
+    *out = t42[i];
+    ++out;
+    *out = t43[i];
+    ++out;
+    *out = t44[i];
+    ++out;
+    *out = t45[i];
+    ++out;
+    *out = t46[i];
+    ++out;
+    *out = t47[i];
+    ++out;
+    *out = t48[i];
+    ++out;
+    *out = t49[i];
+    ++out;
+    *out = t50[i];
+    ++out;
+    *out = t51[i];
+    ++out;
+    *out = t52[i];
+    ++out;
+    *out = t53[i];
+    ++out;
+    *out = t54[i];
+    ++out;
+    *out = t55[i];
+    ++out;
+    *out = t56[i];
+    ++out;
+    *out = t57[i];
+    ++out;
+    *out = t58[i];
+    ++out;
+    *out = t59[i];
+    ++out;
+    *out = t60[i];
+    ++out;
+    *out = t61[i];
+    ++out;
+    *out = t62[i];
+    ++out;
+    *out = t63[i];
+    ++out;
+  }
+}
+
 
 static void cornerturn_2thread_32bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
@@ -2407,7 +3135,6 @@ static void cornerturn_2thread_32bit(unsigned char *outputBuffer, const unsigned
     ++out;
   }
 }
-
 
 static void cornerturn_4thread_32bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
@@ -2433,7 +3160,6 @@ static void cornerturn_4thread_32bit(unsigned char *outputBuffer, const unsigned
     ++out;
   }
 }
-
 
 static void cornerturn_8thread_32bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
@@ -2471,7 +3197,6 @@ static void cornerturn_8thread_32bit(unsigned char *outputBuffer, const unsigned
     ++out;
   }
 }
-
 
 static void cornerturn_16thread_32bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
@@ -2530,6 +3255,320 @@ static void cornerturn_16thread_32bit(unsigned char *outputBuffer, const unsigne
     *out = t14[i];
     ++out;
     *out = t15[i];
+    ++out;
+  }
+}
+
+static void cornerturn_32thread_32bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint32_t *t0  = (const uint32_t *)(threadBuffers[0]);
+  const uint32_t *t1  = (const uint32_t *)(threadBuffers[1]);
+  const uint32_t *t2  = (const uint32_t *)(threadBuffers[2]);
+  const uint32_t *t3  = (const uint32_t *)(threadBuffers[3]);
+  const uint32_t *t4  = (const uint32_t *)(threadBuffers[4]);
+  const uint32_t *t5  = (const uint32_t *)(threadBuffers[5]);
+  const uint32_t *t6  = (const uint32_t *)(threadBuffers[6]);
+  const uint32_t *t7  = (const uint32_t *)(threadBuffers[7]);
+  const uint32_t *t8  = (const uint32_t *)(threadBuffers[8]);
+  const uint32_t *t9  = (const uint32_t *)(threadBuffers[9]);
+  const uint32_t *t10 = (const uint32_t *)(threadBuffers[10]);
+  const uint32_t *t11 = (const uint32_t *)(threadBuffers[11]);
+  const uint32_t *t12 = (const uint32_t *)(threadBuffers[12]);
+  const uint32_t *t13 = (const uint32_t *)(threadBuffers[13]);
+  const uint32_t *t14 = (const uint32_t *)(threadBuffers[14]);
+  const uint32_t *t15 = (const uint32_t *)(threadBuffers[15]);
+  const uint32_t *t16 = (const uint32_t *)(threadBuffers[16]);
+  const uint32_t *t17 = (const uint32_t *)(threadBuffers[17]);
+  const uint32_t *t18 = (const uint32_t *)(threadBuffers[18]);
+  const uint32_t *t19 = (const uint32_t *)(threadBuffers[19]);
+  const uint32_t *t20 = (const uint32_t *)(threadBuffers[20]);
+  const uint32_t *t21 = (const uint32_t *)(threadBuffers[21]);
+  const uint32_t *t22 = (const uint32_t *)(threadBuffers[22]);
+  const uint32_t *t23 = (const uint32_t *)(threadBuffers[23]);
+  const uint32_t *t24 = (const uint32_t *)(threadBuffers[24]);
+  const uint32_t *t25 = (const uint32_t *)(threadBuffers[25]);
+  const uint32_t *t26 = (const uint32_t *)(threadBuffers[26]);
+  const uint32_t *t27 = (const uint32_t *)(threadBuffers[27]);
+  const uint32_t *t28 = (const uint32_t *)(threadBuffers[28]);
+  const uint32_t *t29 = (const uint32_t *)(threadBuffers[29]);
+  const uint32_t *t30 = (const uint32_t *)(threadBuffers[30]);
+  const uint32_t *t31 = (const uint32_t *)(threadBuffers[31]);
+  uint32_t *out = (uint32_t *)(outputBuffer);
+
+  n = outputDataSize/128;
+
+  for(i = 0; i < n; ++i)
+  {
+    *out = t0[i];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t3[i];
+    ++out;
+    *out = t4[i];
+    ++out;
+    *out = t5[i];
+    ++out;
+    *out = t6[i];
+    ++out;
+    *out = t7[i];
+    ++out;
+    *out = t8[i];
+    ++out;
+    *out = t9[i];
+    ++out;
+    *out = t10[i];
+    ++out;
+    *out = t11[i];
+    ++out;
+    *out = t12[i];
+    ++out;
+    *out = t13[i];
+    ++out;
+    *out = t14[i];
+    ++out;
+    *out = t15[i];
+    ++out;
+    *out = t16[i];
+    ++out;
+    *out = t17[i];
+    ++out;
+    *out = t18[i];
+    ++out;
+    *out = t19[i];
+    ++out;
+    *out = t20[i];
+    ++out;
+    *out = t21[i];
+    ++out;
+    *out = t22[i];
+    ++out;
+    *out = t23[i];
+    ++out;
+    *out = t24[i];
+    ++out;
+    *out = t25[i];
+    ++out;
+    *out = t26[i];
+    ++out;
+    *out = t27[i];
+    ++out;
+    *out = t28[i];
+    ++out;
+    *out = t29[i];
+    ++out;
+    *out = t30[i];
+    ++out;
+    *out = t31[i];
+    ++out;
+  }
+}
+
+static void cornerturn_64thread_32bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint32_t *t0  = (const uint32_t *)(threadBuffers[0]);
+  const uint32_t *t1  = (const uint32_t *)(threadBuffers[1]);
+  const uint32_t *t2  = (const uint32_t *)(threadBuffers[2]);
+  const uint32_t *t3  = (const uint32_t *)(threadBuffers[3]);
+  const uint32_t *t4  = (const uint32_t *)(threadBuffers[4]);
+  const uint32_t *t5  = (const uint32_t *)(threadBuffers[5]);
+  const uint32_t *t6  = (const uint32_t *)(threadBuffers[6]);
+  const uint32_t *t7  = (const uint32_t *)(threadBuffers[7]);
+  const uint32_t *t8  = (const uint32_t *)(threadBuffers[8]);
+  const uint32_t *t9  = (const uint32_t *)(threadBuffers[9]);
+  const uint32_t *t10 = (const uint32_t *)(threadBuffers[10]);
+  const uint32_t *t11 = (const uint32_t *)(threadBuffers[11]);
+  const uint32_t *t12 = (const uint32_t *)(threadBuffers[12]);
+  const uint32_t *t13 = (const uint32_t *)(threadBuffers[13]);
+  const uint32_t *t14 = (const uint32_t *)(threadBuffers[14]);
+  const uint32_t *t15 = (const uint32_t *)(threadBuffers[15]);
+  const uint32_t *t16 = (const uint32_t *)(threadBuffers[16]);
+  const uint32_t *t17 = (const uint32_t *)(threadBuffers[17]);
+  const uint32_t *t18 = (const uint32_t *)(threadBuffers[18]);
+  const uint32_t *t19 = (const uint32_t *)(threadBuffers[19]);
+  const uint32_t *t20 = (const uint32_t *)(threadBuffers[20]);
+  const uint32_t *t21 = (const uint32_t *)(threadBuffers[21]);
+  const uint32_t *t22 = (const uint32_t *)(threadBuffers[22]);
+  const uint32_t *t23 = (const uint32_t *)(threadBuffers[23]);
+  const uint32_t *t24 = (const uint32_t *)(threadBuffers[24]);
+  const uint32_t *t25 = (const uint32_t *)(threadBuffers[25]);
+  const uint32_t *t26 = (const uint32_t *)(threadBuffers[26]);
+  const uint32_t *t27 = (const uint32_t *)(threadBuffers[27]);
+  const uint32_t *t28 = (const uint32_t *)(threadBuffers[28]);
+  const uint32_t *t29 = (const uint32_t *)(threadBuffers[29]);
+  const uint32_t *t30 = (const uint32_t *)(threadBuffers[30]);
+  const uint32_t *t31 = (const uint32_t *)(threadBuffers[31]);
+  const uint32_t *t32 = (const uint32_t *)(threadBuffers[32]);
+  const uint32_t *t33 = (const uint32_t *)(threadBuffers[33]);
+  const uint32_t *t34 = (const uint32_t *)(threadBuffers[34]);
+  const uint32_t *t35 = (const uint32_t *)(threadBuffers[35]);
+  const uint32_t *t36 = (const uint32_t *)(threadBuffers[36]);
+  const uint32_t *t37 = (const uint32_t *)(threadBuffers[37]);
+  const uint32_t *t38 = (const uint32_t *)(threadBuffers[38]);
+  const uint32_t *t39 = (const uint32_t *)(threadBuffers[39]);
+  const uint32_t *t40 = (const uint32_t *)(threadBuffers[40]);
+  const uint32_t *t41 = (const uint32_t *)(threadBuffers[41]);
+  const uint32_t *t42 = (const uint32_t *)(threadBuffers[42]);
+  const uint32_t *t43 = (const uint32_t *)(threadBuffers[43]);
+  const uint32_t *t44 = (const uint32_t *)(threadBuffers[44]);
+  const uint32_t *t45 = (const uint32_t *)(threadBuffers[45]);
+  const uint32_t *t46 = (const uint32_t *)(threadBuffers[46]);
+  const uint32_t *t47 = (const uint32_t *)(threadBuffers[47]);
+  const uint32_t *t48 = (const uint32_t *)(threadBuffers[48]);
+  const uint32_t *t49 = (const uint32_t *)(threadBuffers[49]);
+  const uint32_t *t50 = (const uint32_t *)(threadBuffers[50]);
+  const uint32_t *t51 = (const uint32_t *)(threadBuffers[51]);
+  const uint32_t *t52 = (const uint32_t *)(threadBuffers[52]);
+  const uint32_t *t53 = (const uint32_t *)(threadBuffers[53]);
+  const uint32_t *t54 = (const uint32_t *)(threadBuffers[54]);
+  const uint32_t *t55 = (const uint32_t *)(threadBuffers[55]);
+  const uint32_t *t56 = (const uint32_t *)(threadBuffers[56]);
+  const uint32_t *t57 = (const uint32_t *)(threadBuffers[57]);
+  const uint32_t *t58 = (const uint32_t *)(threadBuffers[58]);
+  const uint32_t *t59 = (const uint32_t *)(threadBuffers[59]);
+  const uint32_t *t60 = (const uint32_t *)(threadBuffers[60]);
+  const uint32_t *t61 = (const uint32_t *)(threadBuffers[61]);
+  const uint32_t *t62 = (const uint32_t *)(threadBuffers[62]);
+  const uint32_t *t63 = (const uint32_t *)(threadBuffers[63]);
+  uint32_t *out = (uint32_t *)(outputBuffer);
+
+  n = outputDataSize/256;
+
+  for(i = 0; i < n; ++i)
+  {
+    *out = t0[i];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t3[i];
+    ++out;
+    *out = t4[i];
+    ++out;
+    *out = t5[i];
+    ++out;
+    *out = t6[i];
+    ++out;
+    *out = t7[i];
+    ++out;
+    *out = t8[i];
+    ++out;
+    *out = t9[i];
+    ++out;
+    *out = t10[i];
+    ++out;
+    *out = t11[i];
+    ++out;
+    *out = t12[i];
+    ++out;
+    *out = t13[i];
+    ++out;
+    *out = t14[i];
+    ++out;
+    *out = t15[i];
+    ++out;
+    *out = t16[i];
+    ++out;
+    *out = t17[i];
+    ++out;
+    *out = t18[i];
+    ++out;
+    *out = t19[i];
+    ++out;
+    *out = t20[i];
+    ++out;
+    *out = t21[i];
+    ++out;
+    *out = t22[i];
+    ++out;
+    *out = t23[i];
+    ++out;
+    *out = t24[i];
+    ++out;
+    *out = t25[i];
+    ++out;
+    *out = t26[i];
+    ++out;
+    *out = t27[i];
+    ++out;
+    *out = t28[i];
+    ++out;
+    *out = t29[i];
+    ++out;
+    *out = t30[i];
+    ++out;
+    *out = t31[i];
+    ++out;
+    *out = t32[i];
+    ++out;
+    *out = t33[i];
+    ++out;
+    *out = t34[i];
+    ++out;
+    *out = t35[i];
+    ++out;
+    *out = t36[i];
+    ++out;
+    *out = t37[i];
+    ++out;
+    *out = t38[i];
+    ++out;
+    *out = t39[i];
+    ++out;
+    *out = t40[i];
+    ++out;
+    *out = t41[i];
+    ++out;
+    *out = t42[i];
+    ++out;
+    *out = t43[i];
+    ++out;
+    *out = t44[i];
+    ++out;
+    *out = t45[i];
+    ++out;
+    *out = t46[i];
+    ++out;
+    *out = t47[i];
+    ++out;
+    *out = t48[i];
+    ++out;
+    *out = t49[i];
+    ++out;
+    *out = t50[i];
+    ++out;
+    *out = t51[i];
+    ++out;
+    *out = t52[i];
+    ++out;
+    *out = t53[i];
+    ++out;
+    *out = t54[i];
+    ++out;
+    *out = t55[i];
+    ++out;
+    *out = t56[i];
+    ++out;
+    *out = t57[i];
+    ++out;
+    *out = t58[i];
+    ++out;
+    *out = t59[i];
+    ++out;
+    *out = t60[i];
+    ++out;
+    *out = t61[i];
+    ++out;
+    *out = t62[i];
+    ++out;
+    *out = t63[i];
     ++out;
   }
 }
@@ -2673,6 +3712,320 @@ static void cornerturn_16thread_64bit(unsigned char *outputBuffer, const unsigne
     *out = t14[i];
     ++out;
     *out = t15[i];
+    ++out;
+  }
+}
+
+static void cornerturn_32thread_64bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint64_t *t0  = (const uint64_t *)(threadBuffers[0]);
+  const uint64_t *t1  = (const uint64_t *)(threadBuffers[1]);
+  const uint64_t *t2  = (const uint64_t *)(threadBuffers[2]);
+  const uint64_t *t3  = (const uint64_t *)(threadBuffers[3]);
+  const uint64_t *t4  = (const uint64_t *)(threadBuffers[4]);
+  const uint64_t *t5  = (const uint64_t *)(threadBuffers[5]);
+  const uint64_t *t6  = (const uint64_t *)(threadBuffers[6]);
+  const uint64_t *t7  = (const uint64_t *)(threadBuffers[7]);
+  const uint64_t *t8  = (const uint64_t *)(threadBuffers[8]);
+  const uint64_t *t9  = (const uint64_t *)(threadBuffers[9]);
+  const uint64_t *t10 = (const uint64_t *)(threadBuffers[10]);
+  const uint64_t *t11 = (const uint64_t *)(threadBuffers[11]);
+  const uint64_t *t12 = (const uint64_t *)(threadBuffers[12]);
+  const uint64_t *t13 = (const uint64_t *)(threadBuffers[13]);
+  const uint64_t *t14 = (const uint64_t *)(threadBuffers[14]);
+  const uint64_t *t15 = (const uint64_t *)(threadBuffers[15]);
+  const uint64_t *t16 = (const uint64_t *)(threadBuffers[16]);
+  const uint64_t *t17 = (const uint64_t *)(threadBuffers[17]);
+  const uint64_t *t18 = (const uint64_t *)(threadBuffers[18]);
+  const uint64_t *t19 = (const uint64_t *)(threadBuffers[19]);
+  const uint64_t *t20 = (const uint64_t *)(threadBuffers[20]);
+  const uint64_t *t21 = (const uint64_t *)(threadBuffers[21]);
+  const uint64_t *t22 = (const uint64_t *)(threadBuffers[22]);
+  const uint64_t *t23 = (const uint64_t *)(threadBuffers[23]);
+  const uint64_t *t24 = (const uint64_t *)(threadBuffers[24]);
+  const uint64_t *t25 = (const uint64_t *)(threadBuffers[25]);
+  const uint64_t *t26 = (const uint64_t *)(threadBuffers[26]);
+  const uint64_t *t27 = (const uint64_t *)(threadBuffers[27]);
+  const uint64_t *t28 = (const uint64_t *)(threadBuffers[28]);
+  const uint64_t *t29 = (const uint64_t *)(threadBuffers[29]);
+  const uint64_t *t30 = (const uint64_t *)(threadBuffers[30]);
+  const uint64_t *t31 = (const uint64_t *)(threadBuffers[31]);
+  uint64_t *out = (uint64_t *)(outputBuffer);
+
+  n = outputDataSize/256;
+
+  for(i = 0; i < n; ++i)
+  {
+    *out = t0[i];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t3[i];
+    ++out;
+    *out = t4[i];
+    ++out;
+    *out = t5[i];
+    ++out;
+    *out = t6[i];
+    ++out;
+    *out = t7[i];
+    ++out;
+    *out = t8[i];
+    ++out;
+    *out = t9[i];
+    ++out;
+    *out = t10[i];
+    ++out;
+    *out = t11[i];
+    ++out;
+    *out = t12[i];
+    ++out;
+    *out = t13[i];
+    ++out;
+    *out = t14[i];
+    ++out;
+    *out = t15[i];
+    ++out;
+    *out = t16[i];
+    ++out;
+    *out = t17[i];
+    ++out;
+    *out = t18[i];
+    ++out;
+    *out = t19[i];
+    ++out;
+    *out = t20[i];
+    ++out;
+    *out = t21[i];
+    ++out;
+    *out = t22[i];
+    ++out;
+    *out = t23[i];
+    ++out;
+    *out = t24[i];
+    ++out;
+    *out = t25[i];
+    ++out;
+    *out = t26[i];
+    ++out;
+    *out = t27[i];
+    ++out;
+    *out = t28[i];
+    ++out;
+    *out = t29[i];
+    ++out;
+    *out = t30[i];
+    ++out;
+    *out = t31[i];
+    ++out;
+  }
+}
+
+static void cornerturn_64thread_64bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint64_t *t0  = (const uint64_t *)(threadBuffers[0]);
+  const uint64_t *t1  = (const uint64_t *)(threadBuffers[1]);
+  const uint64_t *t2  = (const uint64_t *)(threadBuffers[2]);
+  const uint64_t *t3  = (const uint64_t *)(threadBuffers[3]);
+  const uint64_t *t4  = (const uint64_t *)(threadBuffers[4]);
+  const uint64_t *t5  = (const uint64_t *)(threadBuffers[5]);
+  const uint64_t *t6  = (const uint64_t *)(threadBuffers[6]);
+  const uint64_t *t7  = (const uint64_t *)(threadBuffers[7]);
+  const uint64_t *t8  = (const uint64_t *)(threadBuffers[8]);
+  const uint64_t *t9  = (const uint64_t *)(threadBuffers[9]);
+  const uint64_t *t10 = (const uint64_t *)(threadBuffers[10]);
+  const uint64_t *t11 = (const uint64_t *)(threadBuffers[11]);
+  const uint64_t *t12 = (const uint64_t *)(threadBuffers[12]);
+  const uint64_t *t13 = (const uint64_t *)(threadBuffers[13]);
+  const uint64_t *t14 = (const uint64_t *)(threadBuffers[14]);
+  const uint64_t *t15 = (const uint64_t *)(threadBuffers[15]);
+  const uint64_t *t16 = (const uint64_t *)(threadBuffers[16]);
+  const uint64_t *t17 = (const uint64_t *)(threadBuffers[17]);
+  const uint64_t *t18 = (const uint64_t *)(threadBuffers[18]);
+  const uint64_t *t19 = (const uint64_t *)(threadBuffers[19]);
+  const uint64_t *t20 = (const uint64_t *)(threadBuffers[20]);
+  const uint64_t *t21 = (const uint64_t *)(threadBuffers[21]);
+  const uint64_t *t22 = (const uint64_t *)(threadBuffers[22]);
+  const uint64_t *t23 = (const uint64_t *)(threadBuffers[23]);
+  const uint64_t *t24 = (const uint64_t *)(threadBuffers[24]);
+  const uint64_t *t25 = (const uint64_t *)(threadBuffers[25]);
+  const uint64_t *t26 = (const uint64_t *)(threadBuffers[26]);
+  const uint64_t *t27 = (const uint64_t *)(threadBuffers[27]);
+  const uint64_t *t28 = (const uint64_t *)(threadBuffers[28]);
+  const uint64_t *t29 = (const uint64_t *)(threadBuffers[29]);
+  const uint64_t *t30 = (const uint64_t *)(threadBuffers[30]);
+  const uint64_t *t31 = (const uint64_t *)(threadBuffers[31]);
+  const uint64_t *t32 = (const uint64_t *)(threadBuffers[32]);
+  const uint64_t *t33 = (const uint64_t *)(threadBuffers[33]);
+  const uint64_t *t34 = (const uint64_t *)(threadBuffers[34]);
+  const uint64_t *t35 = (const uint64_t *)(threadBuffers[35]);
+  const uint64_t *t36 = (const uint64_t *)(threadBuffers[36]);
+  const uint64_t *t37 = (const uint64_t *)(threadBuffers[37]);
+  const uint64_t *t38 = (const uint64_t *)(threadBuffers[38]);
+  const uint64_t *t39 = (const uint64_t *)(threadBuffers[39]);
+  const uint64_t *t40 = (const uint64_t *)(threadBuffers[40]);
+  const uint64_t *t41 = (const uint64_t *)(threadBuffers[41]);
+  const uint64_t *t42 = (const uint64_t *)(threadBuffers[42]);
+  const uint64_t *t43 = (const uint64_t *)(threadBuffers[43]);
+  const uint64_t *t44 = (const uint64_t *)(threadBuffers[44]);
+  const uint64_t *t45 = (const uint64_t *)(threadBuffers[45]);
+  const uint64_t *t46 = (const uint64_t *)(threadBuffers[46]);
+  const uint64_t *t47 = (const uint64_t *)(threadBuffers[47]);
+  const uint64_t *t48 = (const uint64_t *)(threadBuffers[48]);
+  const uint64_t *t49 = (const uint64_t *)(threadBuffers[49]);
+  const uint64_t *t50 = (const uint64_t *)(threadBuffers[50]);
+  const uint64_t *t51 = (const uint64_t *)(threadBuffers[51]);
+  const uint64_t *t52 = (const uint64_t *)(threadBuffers[52]);
+  const uint64_t *t53 = (const uint64_t *)(threadBuffers[53]);
+  const uint64_t *t54 = (const uint64_t *)(threadBuffers[54]);
+  const uint64_t *t55 = (const uint64_t *)(threadBuffers[55]);
+  const uint64_t *t56 = (const uint64_t *)(threadBuffers[56]);
+  const uint64_t *t57 = (const uint64_t *)(threadBuffers[57]);
+  const uint64_t *t58 = (const uint64_t *)(threadBuffers[58]);
+  const uint64_t *t59 = (const uint64_t *)(threadBuffers[59]);
+  const uint64_t *t60 = (const uint64_t *)(threadBuffers[60]);
+  const uint64_t *t61 = (const uint64_t *)(threadBuffers[61]);
+  const uint64_t *t62 = (const uint64_t *)(threadBuffers[62]);
+  const uint64_t *t63 = (const uint64_t *)(threadBuffers[63]);
+  uint64_t *out = (uint64_t *)(outputBuffer);
+
+  n = outputDataSize/512;
+
+  for(i = 0; i < n; ++i)
+  {
+    *out = t0[i];
+    ++out;
+    *out = t1[i];
+    ++out;
+    *out = t2[i];
+    ++out;
+    *out = t3[i];
+    ++out;
+    *out = t4[i];
+    ++out;
+    *out = t5[i];
+    ++out;
+    *out = t6[i];
+    ++out;
+    *out = t7[i];
+    ++out;
+    *out = t8[i];
+    ++out;
+    *out = t9[i];
+    ++out;
+    *out = t10[i];
+    ++out;
+    *out = t11[i];
+    ++out;
+    *out = t12[i];
+    ++out;
+    *out = t13[i];
+    ++out;
+    *out = t14[i];
+    ++out;
+    *out = t15[i];
+    ++out;
+    *out = t16[i];
+    ++out;
+    *out = t17[i];
+    ++out;
+    *out = t18[i];
+    ++out;
+    *out = t19[i];
+    ++out;
+    *out = t20[i];
+    ++out;
+    *out = t21[i];
+    ++out;
+    *out = t22[i];
+    ++out;
+    *out = t23[i];
+    ++out;
+    *out = t24[i];
+    ++out;
+    *out = t25[i];
+    ++out;
+    *out = t26[i];
+    ++out;
+    *out = t27[i];
+    ++out;
+    *out = t28[i];
+    ++out;
+    *out = t29[i];
+    ++out;
+    *out = t30[i];
+    ++out;
+    *out = t31[i];
+    ++out;
+    *out = t32[i];
+    ++out;
+    *out = t33[i];
+    ++out;
+    *out = t34[i];
+    ++out;
+    *out = t35[i];
+    ++out;
+    *out = t36[i];
+    ++out;
+    *out = t37[i];
+    ++out;
+    *out = t38[i];
+    ++out;
+    *out = t39[i];
+    ++out;
+    *out = t40[i];
+    ++out;
+    *out = t41[i];
+    ++out;
+    *out = t42[i];
+    ++out;
+    *out = t43[i];
+    ++out;
+    *out = t44[i];
+    ++out;
+    *out = t45[i];
+    ++out;
+    *out = t46[i];
+    ++out;
+    *out = t47[i];
+    ++out;
+    *out = t48[i];
+    ++out;
+    *out = t49[i];
+    ++out;
+    *out = t50[i];
+    ++out;
+    *out = t51[i];
+    ++out;
+    *out = t52[i];
+    ++out;
+    *out = t53[i];
+    ++out;
+    *out = t54[i];
+    ++out;
+    *out = t55[i];
+    ++out;
+    *out = t56[i];
+    ++out;
+    *out = t57[i];
+    ++out;
+    *out = t58[i];
+    ++out;
+    *out = t59[i];
+    ++out;
+    *out = t60[i];
+    ++out;
+    *out = t61[i];
+    ++out;
+    *out = t62[i];
+    ++out;
+    *out = t63[i];
     ++out;
   }
 }
@@ -2880,6 +4233,224 @@ static void cornerturn_16thread_128bit(unsigned char *outputBuffer, const unsign
   }
 }
 
+static void cornerturn_32thread_128bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint64_t *t0  = (const uint64_t *)(threadBuffers[0]);
+  const uint64_t *t1  = (const uint64_t *)(threadBuffers[1]);
+  const uint64_t *t2  = (const uint64_t *)(threadBuffers[2]);
+  const uint64_t *t3  = (const uint64_t *)(threadBuffers[3]);
+  const uint64_t *t4  = (const uint64_t *)(threadBuffers[4]);
+  const uint64_t *t5  = (const uint64_t *)(threadBuffers[5]);
+  const uint64_t *t6  = (const uint64_t *)(threadBuffers[6]);
+  const uint64_t *t7  = (const uint64_t *)(threadBuffers[7]);
+  const uint64_t *t8  = (const uint64_t *)(threadBuffers[8]);
+  const uint64_t *t9  = (const uint64_t *)(threadBuffers[9]);
+  const uint64_t *t10 = (const uint64_t *)(threadBuffers[10]);
+  const uint64_t *t11 = (const uint64_t *)(threadBuffers[11]);
+  const uint64_t *t12 = (const uint64_t *)(threadBuffers[12]);
+  const uint64_t *t13 = (const uint64_t *)(threadBuffers[13]);
+  const uint64_t *t14 = (const uint64_t *)(threadBuffers[14]);
+  const uint64_t *t15 = (const uint64_t *)(threadBuffers[15]);
+  const uint64_t *t16 = (const uint64_t *)(threadBuffers[16]);
+  const uint64_t *t17 = (const uint64_t *)(threadBuffers[17]);
+  const uint64_t *t18 = (const uint64_t *)(threadBuffers[18]);
+  const uint64_t *t19 = (const uint64_t *)(threadBuffers[19]);
+  const uint64_t *t20 = (const uint64_t *)(threadBuffers[20]);
+  const uint64_t *t21 = (const uint64_t *)(threadBuffers[21]);
+  const uint64_t *t22 = (const uint64_t *)(threadBuffers[22]);
+  const uint64_t *t23 = (const uint64_t *)(threadBuffers[23]);
+  const uint64_t *t24 = (const uint64_t *)(threadBuffers[24]);
+  const uint64_t *t25 = (const uint64_t *)(threadBuffers[25]);
+  const uint64_t *t26 = (const uint64_t *)(threadBuffers[26]);
+  const uint64_t *t27 = (const uint64_t *)(threadBuffers[27]);
+  const uint64_t *t28 = (const uint64_t *)(threadBuffers[28]);
+  const uint64_t *t29 = (const uint64_t *)(threadBuffers[29]);
+  const uint64_t *t30 = (const uint64_t *)(threadBuffers[30]);
+  const uint64_t *t31 = (const uint64_t *)(threadBuffers[31]);
+  uint64_t *out = (uint64_t *)(outputBuffer);
+
+  n = outputDataSize/256;
+
+  for(i = 0; i < n; i+=2)
+  {
+    *out = t0[i];  ++out; *out = t0[i+1];  ++out;
+    *out = t1[i];  ++out; *out = t1[i+1];  ++out;
+    *out = t2[i];  ++out; *out = t2[i+1];  ++out;
+    *out = t3[i];  ++out; *out = t3[i+1];  ++out;
+    *out = t4[i];  ++out; *out = t4[i+1];  ++out;
+    *out = t5[i];  ++out; *out = t5[i+1];  ++out;
+    *out = t6[i];  ++out; *out = t6[i+1];  ++out;
+    *out = t7[i];  ++out; *out = t7[i+1];  ++out;
+    *out = t8[i];  ++out; *out = t8[i+1];  ++out;
+    *out = t9[i];  ++out; *out = t9[i+1];  ++out;
+    *out = t10[i]; ++out; *out = t10[i+1]; ++out;
+    *out = t11[i]; ++out; *out = t11[i+1]; ++out;
+    *out = t12[i]; ++out; *out = t12[i+1]; ++out;
+    *out = t13[i]; ++out; *out = t13[i+1]; ++out;
+    *out = t14[i]; ++out; *out = t14[i+1]; ++out;
+    *out = t15[i]; ++out; *out = t15[i+1]; ++out;
+    *out = t16[i]; ++out; *out = t16[i+1]; ++out;
+    *out = t17[i]; ++out; *out = t17[i+1]; ++out;
+    *out = t18[i]; ++out; *out = t18[i+1]; ++out;
+    *out = t19[i]; ++out; *out = t19[i+1]; ++out;
+    *out = t20[i]; ++out; *out = t20[i+1]; ++out;
+    *out = t21[i]; ++out; *out = t21[i+1]; ++out;
+    *out = t22[i]; ++out; *out = t22[i+1]; ++out;
+    *out = t23[i]; ++out; *out = t23[i+1]; ++out;
+    *out = t24[i]; ++out; *out = t24[i+1]; ++out;
+    *out = t25[i]; ++out; *out = t25[i+1]; ++out;
+    *out = t26[i]; ++out; *out = t26[i+1]; ++out;
+    *out = t27[i]; ++out; *out = t27[i+1]; ++out;
+    *out = t28[i]; ++out; *out = t28[i+1]; ++out;
+    *out = t29[i]; ++out; *out = t29[i+1]; ++out;
+    *out = t30[i]; ++out; *out = t30[i+1]; ++out;
+    *out = t31[i]; ++out; *out = t31[i+1]; ++out;
+  }
+}
+
+static void cornerturn_64thread_128bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const uint64_t *t0  = (const uint64_t *)(threadBuffers[0]);
+  const uint64_t *t1  = (const uint64_t *)(threadBuffers[1]);
+  const uint64_t *t2  = (const uint64_t *)(threadBuffers[2]);
+  const uint64_t *t3  = (const uint64_t *)(threadBuffers[3]);
+  const uint64_t *t4  = (const uint64_t *)(threadBuffers[4]);
+  const uint64_t *t5  = (const uint64_t *)(threadBuffers[5]);
+  const uint64_t *t6  = (const uint64_t *)(threadBuffers[6]);
+  const uint64_t *t7  = (const uint64_t *)(threadBuffers[7]);
+  const uint64_t *t8  = (const uint64_t *)(threadBuffers[8]);
+  const uint64_t *t9  = (const uint64_t *)(threadBuffers[9]);
+  const uint64_t *t10 = (const uint64_t *)(threadBuffers[10]);
+  const uint64_t *t11 = (const uint64_t *)(threadBuffers[11]);
+  const uint64_t *t12 = (const uint64_t *)(threadBuffers[12]);
+  const uint64_t *t13 = (const uint64_t *)(threadBuffers[13]);
+  const uint64_t *t14 = (const uint64_t *)(threadBuffers[14]);
+  const uint64_t *t15 = (const uint64_t *)(threadBuffers[15]);
+  const uint64_t *t16 = (const uint64_t *)(threadBuffers[16]);
+  const uint64_t *t17 = (const uint64_t *)(threadBuffers[17]);
+  const uint64_t *t18 = (const uint64_t *)(threadBuffers[18]);
+  const uint64_t *t19 = (const uint64_t *)(threadBuffers[19]);
+  const uint64_t *t20 = (const uint64_t *)(threadBuffers[20]);
+  const uint64_t *t21 = (const uint64_t *)(threadBuffers[21]);
+  const uint64_t *t22 = (const uint64_t *)(threadBuffers[22]);
+  const uint64_t *t23 = (const uint64_t *)(threadBuffers[23]);
+  const uint64_t *t24 = (const uint64_t *)(threadBuffers[24]);
+  const uint64_t *t25 = (const uint64_t *)(threadBuffers[25]);
+  const uint64_t *t26 = (const uint64_t *)(threadBuffers[26]);
+  const uint64_t *t27 = (const uint64_t *)(threadBuffers[27]);
+  const uint64_t *t28 = (const uint64_t *)(threadBuffers[28]);
+  const uint64_t *t29 = (const uint64_t *)(threadBuffers[29]);
+  const uint64_t *t30 = (const uint64_t *)(threadBuffers[30]);
+  const uint64_t *t31 = (const uint64_t *)(threadBuffers[31]);
+  const uint64_t *t32 = (const uint64_t *)(threadBuffers[32]);
+  const uint64_t *t33 = (const uint64_t *)(threadBuffers[33]);
+  const uint64_t *t34 = (const uint64_t *)(threadBuffers[34]);
+  const uint64_t *t35 = (const uint64_t *)(threadBuffers[35]);
+  const uint64_t *t36 = (const uint64_t *)(threadBuffers[36]);
+  const uint64_t *t37 = (const uint64_t *)(threadBuffers[37]);
+  const uint64_t *t38 = (const uint64_t *)(threadBuffers[38]);
+  const uint64_t *t39 = (const uint64_t *)(threadBuffers[39]);
+  const uint64_t *t40 = (const uint64_t *)(threadBuffers[40]);
+  const uint64_t *t41 = (const uint64_t *)(threadBuffers[41]);
+  const uint64_t *t42 = (const uint64_t *)(threadBuffers[42]);
+  const uint64_t *t43 = (const uint64_t *)(threadBuffers[43]);
+  const uint64_t *t44 = (const uint64_t *)(threadBuffers[44]);
+  const uint64_t *t45 = (const uint64_t *)(threadBuffers[45]);
+  const uint64_t *t46 = (const uint64_t *)(threadBuffers[46]);
+  const uint64_t *t47 = (const uint64_t *)(threadBuffers[47]);
+  const uint64_t *t48 = (const uint64_t *)(threadBuffers[48]);
+  const uint64_t *t49 = (const uint64_t *)(threadBuffers[49]);
+  const uint64_t *t50 = (const uint64_t *)(threadBuffers[50]);
+  const uint64_t *t51 = (const uint64_t *)(threadBuffers[51]);
+  const uint64_t *t52 = (const uint64_t *)(threadBuffers[52]);
+  const uint64_t *t53 = (const uint64_t *)(threadBuffers[53]);
+  const uint64_t *t54 = (const uint64_t *)(threadBuffers[54]);
+  const uint64_t *t55 = (const uint64_t *)(threadBuffers[55]);
+  const uint64_t *t56 = (const uint64_t *)(threadBuffers[56]);
+  const uint64_t *t57 = (const uint64_t *)(threadBuffers[57]);
+  const uint64_t *t58 = (const uint64_t *)(threadBuffers[58]);
+  const uint64_t *t59 = (const uint64_t *)(threadBuffers[59]);
+  const uint64_t *t60 = (const uint64_t *)(threadBuffers[60]);
+  const uint64_t *t61 = (const uint64_t *)(threadBuffers[61]);
+  const uint64_t *t62 = (const uint64_t *)(threadBuffers[62]);
+  const uint64_t *t63 = (const uint64_t *)(threadBuffers[63]);
+  uint64_t *out = (uint64_t *)(outputBuffer);
+
+  n = outputDataSize/512;
+
+  for(i = 0; i < n; i+=2)
+  {
+    *out = t0[i];  ++out; *out = t0[i+1];  ++out;
+    *out = t1[i];  ++out; *out = t1[i+1];  ++out;
+    *out = t2[i];  ++out; *out = t2[i+1];  ++out;
+    *out = t3[i];  ++out; *out = t3[i+1];  ++out;
+    *out = t4[i];  ++out; *out = t4[i+1];  ++out;
+    *out = t5[i];  ++out; *out = t5[i+1];  ++out;
+    *out = t6[i];  ++out; *out = t6[i+1];  ++out;
+    *out = t7[i];  ++out; *out = t7[i+1];  ++out;
+    *out = t8[i];  ++out; *out = t8[i+1];  ++out;
+    *out = t9[i];  ++out; *out = t9[i+1];  ++out;
+    *out = t10[i]; ++out; *out = t10[i+1]; ++out;
+    *out = t11[i]; ++out; *out = t11[i+1]; ++out;
+    *out = t12[i]; ++out; *out = t12[i+1]; ++out;
+    *out = t13[i]; ++out; *out = t13[i+1]; ++out;
+    *out = t14[i]; ++out; *out = t14[i+1]; ++out;
+    *out = t15[i]; ++out; *out = t15[i+1]; ++out;
+    *out = t16[i]; ++out; *out = t16[i+1]; ++out;
+    *out = t17[i]; ++out; *out = t17[i+1]; ++out;
+    *out = t18[i]; ++out; *out = t18[i+1]; ++out;
+    *out = t19[i]; ++out; *out = t19[i+1]; ++out;
+    *out = t20[i]; ++out; *out = t20[i+1]; ++out;
+    *out = t21[i]; ++out; *out = t21[i+1]; ++out;
+    *out = t22[i]; ++out; *out = t22[i+1]; ++out;
+    *out = t23[i]; ++out; *out = t23[i+1]; ++out;
+    *out = t24[i]; ++out; *out = t24[i+1]; ++out;
+    *out = t25[i]; ++out; *out = t25[i+1]; ++out;
+    *out = t26[i]; ++out; *out = t26[i+1]; ++out;
+    *out = t27[i]; ++out; *out = t27[i+1]; ++out;
+    *out = t28[i]; ++out; *out = t28[i+1]; ++out;
+    *out = t29[i]; ++out; *out = t29[i+1]; ++out;
+    *out = t30[i]; ++out; *out = t30[i+1]; ++out;
+    *out = t31[i]; ++out; *out = t31[i+1]; ++out;
+    *out = t32[i]; ++out; *out = t32[i+1]; ++out;
+    *out = t33[i]; ++out; *out = t33[i+1]; ++out;
+    *out = t34[i]; ++out; *out = t34[i+1]; ++out;
+    *out = t35[i]; ++out; *out = t35[i+1]; ++out;
+    *out = t36[i]; ++out; *out = t36[i+1]; ++out;
+    *out = t37[i]; ++out; *out = t37[i+1]; ++out;
+    *out = t38[i]; ++out; *out = t38[i+1]; ++out;
+    *out = t39[i]; ++out; *out = t39[i+1]; ++out;
+    *out = t40[i]; ++out; *out = t40[i+1]; ++out;
+    *out = t41[i]; ++out; *out = t41[i+1]; ++out;
+    *out = t42[i]; ++out; *out = t42[i+1]; ++out;
+    *out = t43[i]; ++out; *out = t43[i+1]; ++out;
+    *out = t44[i]; ++out; *out = t44[i+1]; ++out;
+    *out = t45[i]; ++out; *out = t45[i+1]; ++out;
+    *out = t46[i]; ++out; *out = t46[i+1]; ++out;
+    *out = t47[i]; ++out; *out = t47[i+1]; ++out;
+    *out = t48[i]; ++out; *out = t48[i+1]; ++out;
+    *out = t49[i]; ++out; *out = t49[i+1]; ++out;
+    *out = t50[i]; ++out; *out = t50[i+1]; ++out;
+    *out = t51[i]; ++out; *out = t51[i+1]; ++out;
+    *out = t52[i]; ++out; *out = t52[i+1]; ++out;
+    *out = t53[i]; ++out; *out = t53[i+1]; ++out;
+    *out = t54[i]; ++out; *out = t54[i+1]; ++out;
+    *out = t55[i]; ++out; *out = t55[i+1]; ++out;
+    *out = t56[i]; ++out; *out = t56[i+1]; ++out;
+    *out = t57[i]; ++out; *out = t57[i+1]; ++out;
+    *out = t58[i]; ++out; *out = t58[i+1]; ++out;
+    *out = t59[i]; ++out; *out = t59[i+1]; ++out;
+    *out = t60[i]; ++out; *out = t60[i+1]; ++out;
+    *out = t61[i]; ++out; *out = t61[i+1]; ++out;
+    *out = t62[i]; ++out; *out = t62[i+1]; ++out;
+    *out = t63[i]; ++out; *out = t63[i+1]; ++out;
+  }
+}
+
 
 void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned char * const *, int)
 {
@@ -2970,6 +4541,10 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_8thread_4bit;
 		case 16:
 			return cornerturn_16thread_4bit;
+		case 32:
+			return cornerturn_32thread_4bit;
+		case 64:
+			return cornerturn_64thread_4bit;
 		/* Then the non-powers-of-two */
 		case 3:
 			return cornerturn_3thread_4bit;
@@ -2997,6 +4572,10 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_8thread_8bit;
 		case 16:
 			return cornerturn_16thread_8bit;
+		case 32:
+			return cornerturn_32thread_8bit;
+		case 64:
+			return cornerturn_64thread_8bit;
 		/* Then the non-powers-of-two */
 		case 3:
 			return cornerturn_3thread_8bit;
@@ -3030,6 +4609,10 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_8thread_16bit;
 		case 16:
 			return cornerturn_16thread_16bit;
+		case 32:
+			return cornerturn_32thread_16bit;
+		case 64:
+			return cornerturn_64thread_16bit;
 		/* Then the non-powers-of-two */
 		/* unsupported cases */
 		default:
@@ -3048,6 +4631,10 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_8thread_32bit;
 		case 16:
 			return cornerturn_16thread_32bit;
+		case 32:
+			return cornerturn_32thread_32bit;
+		case 64:
+			return cornerturn_64thread_32bit;
 		/* unsupported cases */
 		default:
 			return 0;
@@ -3065,6 +4652,10 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_8thread_64bit;
 		case 16:
 			return cornerturn_16thread_64bit;
+		case 32:
+			return cornerturn_32thread_64bit;
+		case 64:
+			return cornerturn_64thread_64bit;
 		/* unsupported cases */
 		default:
 			return 0;
@@ -3082,6 +4673,10 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_8thread_128bit;
 		case 16:
 			return cornerturn_16thread_128bit;
+		case 32:
+			return cornerturn_32thread_128bit;
+		case 64:
+			return cornerturn_64thread_128bit;
 		/* unsupported cases */
 		default:
 			return 0;
