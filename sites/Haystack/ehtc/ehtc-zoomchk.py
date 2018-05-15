@@ -19,7 +19,7 @@ def parseOptions():
     des = parseOptions.__doc__
     epi = ''
     use = '%(prog)s [options] [input_file [...]]\n  Version'
-    use += '$Id: ehtc-zoomchk.py 2186 2018-01-10 16:52:38Z gbc $'
+    use += '$Id: ehtc-zoomchk.py 2316 2018-05-15 18:28:21Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     # essential options
     parser.add_argument('-v', '--verbose', dest='verb',
@@ -58,8 +58,8 @@ def deduceZoomIndicies(o):
     jskip = []
     jlist = {}
     for jobin in o.nargs:
-        zfir = ''
-        zfin = ''
+        zfirch = 1000
+        zfinch = -1
         cfrq = []
         ji = open(jobin, 'r')
         for line in ji.readlines():
@@ -67,12 +67,15 @@ def deduceZoomIndicies(o):
             freq = re.search(freqpatt, line)
             if freq: cfrq.append(freq.group(1))
             if zoom:
-                if zfir == '': zfir = zoom.group(1)
-                else:          zfin = zoom.group(1)
+                zoomch = int(zoom.group(1))
+                if zoomch < zfirch: zfirch = zoomch
+                if zoomch > zfinch: zfinch = zoomch
             amap = amap_re.search(line)
             if amap:
                 antmap[amap.group(2)] = int(amap.group(1))
         ji.close()
+        zfir = str(zfirch)
+        zfin = str(zfinch)
         antlist = '-'.join(
             map(lambda x:x + ':' + str(antmap[x]),sorted(list(antmap))))
         if o.verb: print '# Zoom %s..%s in %s %s' % (
