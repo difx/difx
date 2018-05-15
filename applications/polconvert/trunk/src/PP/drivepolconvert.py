@@ -334,8 +334,8 @@ def deduceZoomIndicies(o):
     newargs = []
     for jobin in o.nargs:
         almaline = ''
-        zfir = ''
-        zfin = ''
+        zfirch = 1000
+        zfinch = -1
         cfrq = []
         ji = open(jobin, 'r')
         for line in ji.readlines():
@@ -345,12 +345,15 @@ def deduceZoomIndicies(o):
             if almaline == '' and alma: almaline = line
             if freq: cfrq.append(freq.group(1))
             if zoom:
-                if zfir == '': zfir = zoom.group(1)
-                else:          zfin = zoom.group(1)
+                zoomch = int(zoom.group(1))
+                if zoomch < zfirch: zfirch = zoomch
+                if zoomch > zfinch: zfinch = zoomch
             amap = amap_re.search(line)
             if amap:
                 antmap[amap.group(2)] = int(amap.group(1))
         ji.close()
+        zfir = str(zfirch)
+        zfin = str(zfinch)
 
         # cull jobs that do not appear to have AA as telescope 0
         if almaline == '':
