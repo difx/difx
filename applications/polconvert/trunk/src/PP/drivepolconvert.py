@@ -672,7 +672,8 @@ def executeCasa(o):
     '''
     misc = [ 'polconvert.last', 'POLCONVERT_STATION1.ANTAB',
              'POLCONVERT.FRINGE', 'POLCONVERT.GAINS', 'PolConvert.log',
-             'CONVERSION.MATRIX', 'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
+             'CONVERSION.MATRIX', 'FRINGE.PEAKS', 'FRINGE.PLOTS',
+             'PolConvert.XYGains.dat' ]
     removeTrash(o, misc)
     cmd1 = 'rm -f %s' % (o.output)
     cmd2 = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
