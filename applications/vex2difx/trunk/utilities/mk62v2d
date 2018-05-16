@@ -91,7 +91,7 @@ if stop:
 	exit(0)
 
 if verbose > 1:
-    print "v2d file:", inFile
+	print "v2d file:", inFile
 
 if inFile[-4:] == '.v2d':
 	prefix = inFile[:-4]
@@ -99,6 +99,14 @@ else:
 	prefix = inFile
 
 vexObsFile = prefix + '.vex.obs'
+f = open(inFile, 'r')
+for line in f:
+	if 'vex' in line:
+		lst = line.split('=')
+		if len(lst)==2 and lst[0].strip()=='vex':
+			vexObsFile = lst[1].strip()
+			break
+f.close()
 
 # get experiment name and TAPELOG_OBS data from .vex.obs
 experName = ''
