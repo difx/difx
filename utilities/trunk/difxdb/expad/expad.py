@@ -58,7 +58,7 @@ __lastAuthor__="$Author$"
 
 # minimum database schema version required by this program
 minSchemaMajor = 1
-minSchemaMinor = 6
+minSchemaMinor = 7
 
 
 class GenericWindow(object):
@@ -92,8 +92,9 @@ class MainWindow(GenericWindow):
 	self.obsDate = None
         
         session = dbConn.session()
+
         # obtain all experiment stati from database
-        self.expStati = []
+        self.expStati = ["select"]
         for status in  session.query(model.ExperimentStatus).order_by("statuscode").all():
             self.expStati.append(status.experimentstatus)
         
@@ -103,7 +104,7 @@ class MainWindow(GenericWindow):
             self.expTypes.append(type.type)
             
         # obtain all enaibled users from the database
-        self.users = []
+        self.users = ["select"]
         for user in getEnabledUsers(session):
             self.users.append(user.name)
             
@@ -115,6 +116,9 @@ class MainWindow(GenericWindow):
         self.updateExpListbox()
 
     def update(self):
+	'''
+	update
+	'''
 	self.txtObsDate["state"] = NORMAL
         self.txtObsDate.delete(0,END)
         self.txtObsDate.insert(0, self.obsDate)
@@ -131,15 +135,16 @@ class MainWindow(GenericWindow):
 
 	# top level components
         frmExps = LabelFrame(self.rootWidget, text="Experiments")     
-	frmControl = LabelFrame(self.rootWidget, padx=5, pady=15, height=500)
+	frmControl = LabelFrame(self.rootWidget, padx=5, pady=15)
+        frmBottomControl = LabelFrame(self.rootWidget)
 	self.frmTabs = ttk.Notebook(self.rootWidget)
         btnExit = Button(self.rootWidget, text="Exit", command=self.rootWidget.destroy)
 
         frmExps.grid(row=0, column=0, columnspan=2, sticky=E+W+N+S)
-	self.frmTabs.grid(row=10,column=0, rowspan=2,sticky=EW)
+	self.frmTabs.grid(row=10,column=0, rowspan=1,sticky=EW)
 	frmControl.grid(row=10, column=1, sticky=E+W+N+S)
-	btnExit.grid(row=11,column=1,sticky=E+W+S)
-
+        frmBottomControl.grid(row=20, column=0, sticky=E+W+N+S)     
+	btnExit.grid(row=20,column=1,sticky=E+W+S)
 	
 	# frmTabs
 	self.detailTab = ttk.Frame(self.frmTabs)
@@ -169,6 +174,10 @@ class MainWindow(GenericWindow):
 	frmExport = LabelFrame(self.exportTab, text="Export", padx=5)
 	frmExport.grid(row=0, column=0, sticky="nesw")
 
+	#frmStatus
+	frmStatus = LabelFrame(self.historyTab,  padx=5, pady=5)
+	frmStatus.grid(row=0, column=0, sticky="nesw")
+
 	# frmControl
         btnAddExp = Button(frmControl, text="Add experiment", command=self.addExperimentDlg.show)
         self.btnDelete = Button(frmControl, text="Delete experiment", command=self.deleteExpEvent)
@@ -177,10 +186,10 @@ class MainWindow(GenericWindow):
 	btnAddExp.grid(row=0,column=0, sticky=E+W)
 	self.btnDelete.grid(row=10, column=0, sticky=E+W)
 
+	#frmBottomControl
+        self.btnUpdate = Button(frmBottomControl, text="update experiment", command=self.updateExpEvent)
+        self.btnUpdate.grid(row=0, column=0, sticky=E+W)
 
-
-
-        
         #frmExps
         col1 = ListboxColumn("experiment", 9)
         col2 = ListboxColumn("number", 4, numeric=True)
@@ -194,7 +203,6 @@ class MainWindow(GenericWindow):
         col10 = ListboxColumn("released", 10) 
         self.grdExps = MultiListbox(frmExps, 16, col1, col2, col3, col4, col5, col6, col7, col8, col9, col10)
         self.grdExps.bindEvent("<ButtonRelease-1>", self.selectExpEvent)
-        
              
 	# frmMedia
 	colList = []
@@ -205,9 +213,30 @@ class MainWindow(GenericWindow):
         colList.append(ListboxColumn("received",15))
         colList.append(ListboxColumn("comment",35))
         columns = tuple(colList)
-
         self.grdModules = MultiListbox(frmMedia, 19, *columns)
 	self.grdModules.grid(row=0, column=0, sticky="news")
+
+        # frmStatus
+	Label(frmStatus, text="Current status: ").grid(row=0,column=0, sticky=W)
+        self.lblCurrentStatus = Label(frmStatus, text = "None")
+	Label(frmStatus, text="New status: ").grid(row=5,column=0, sticky=W)
+        self.lblReleasedBy = Label(frmStatus, text = "Released by")
+        self.cboStatus = OptionMenu (frmStatus, self.cboStatusVar, *self.expStati ,command=self.onExpDetailChange)
+        self.cboStatus.grid(row=5, column=1, sticky=E+W)
+        self.cboReleasedBy = OptionMenu(frmStatus, self.cboReleasedByVar,  *self.users, command=self.onExpDetailChange)
+        self.cboReleasedBy.grid(row=6, column=1, sticky=E+W)
+
+        colList = []
+        colList.append(ListboxColumn("Status",20,sortable=False, searchable=False))
+        colList.append(ListboxColumn("When",20 ,sortable=False, searchable=False))
+        columns = tuple(colList)
+	self.lblCurrentStatus.grid(row=0,column=1, sticky=W)
+	self.lblReleasedBy.grid(row=6,column=0, sticky=W)
+
+	frmHistory = LabelFrame(self.historyTab, text="Status",  padx=5)
+	frmHistory.grid(row=10,column=0, columnspan=2, sticky="news")
+        self.grdStatusHistory = MultiListbox(frmHistory, 15, *columns)
+        self.grdStatusHistory.grid(row=0, column=0, sticky="news")
 
 	#frmExport
 	colList = []
@@ -222,33 +251,29 @@ class MainWindow(GenericWindow):
         #frmDetail
         Label(frmDetail, text="code: ").grid(row=0,column=0, sticky=W)
         Label(frmDetail, text="number: ").grid(row=1,column=0, sticky=W)
-        Label(frmDetail, text="status: ").grid(row=5,column=0, sticky=W)
+        #Label(frmDetail, text="status: ").grid(row=5,column=0, sticky=W)
         Label(frmDetail, text="observed: (yyyy-mm-dd) ").grid(row=10,column=0, sticky=W)
         Label(frmDetail, text="type: ").grid(row=11,column=0, sticky=W)
         Label(frmDetail, text="analyst: ").grid(row=12,column=0, sticky=W)
-        Label(frmDetail, text="released by: ").grid(row=13,column=0, sticky=W)
+        #Label(frmDetail, text="released by: ").grid(row=13,column=0, sticky=W)
         Label(frmDetail, text="email on module arrival: ").grid(row=14,column=0, sticky=W)
         Label(frmDetail, text="date archived: ").grid(row=15,column=0, sticky=W)
         Label(frmDetail, text="archived by: ").grid(row=20,column=0, sticky=W)
         Label(frmDetail, text = "comments: ").grid(row=25, column=0, sticky=W) 
         self.txtCode = Entry(frmDetail, text = "")
         self.txtNumber = Entry(frmDetail, text = "")
-        self.cboStatus = OptionMenu (frmDetail, self.cboStatusVar, *self.expStati ,command=self.onExpDetailChange)
+        #self.btnRenewStatus = Button (frmDetail, text="renew status" , command=self.onExpDetailChange)
 	self.txtObsDate = Entry(frmDetail, text = "")
         self.cboType= Listbox(frmDetail, selectmode=MULTIPLE, height=4, selectforeground="white", selectbackground="dodger blue", fg="grey" )
         self.cboUser = OptionMenu(frmDetail, self.cboUserVar,  *self.users, command=self.onExpDetailChange)
-        self.cboReleasedBy = OptionMenu(frmDetail, self.cboReleasedByVar,  *self.users, command=self.onExpDetailChange)
         self.txtNotify = Entry(frmDetail, text = "")
         self.txtNumber = Entry(frmDetail, text = "")
         self.txtDateArchived = Entry(frmDetail, text = "")
         self.txtArchivedBy = Entry(frmDetail, text = "")
-        self.txtComment = Text(frmDetail, height=3, width=25)
-        self.btnUpdate = Button(frmDetail, text="update experiment", command=self.updateExpEvent)
+        self.txtComment = Text(frmDetail, height=5, width=25)
 	self.btnObsDate = Button(frmDetail, text="select", command=self.selectDateDlg.show)
         
         self.cboType.insert(END, *self.expTypes)
-        
-        
         
         #arrange widgets on frmExps 
         self.grdExps.grid(row=0, column=0, sticky=E+W+N+S)
@@ -256,17 +281,16 @@ class MainWindow(GenericWindow):
         #arrange widgets on frmDetail
         self.txtCode.grid(row=0, column=1, columnspan=2, sticky=E+W)
         self.txtNumber.grid(row=1, column=1, columnspan=2, sticky=E+W)
-        self.cboStatus.grid(row=5, column=1, columnspan=2, sticky=E+W)
+        #self.cboStatus.grid(row=5, column=1, columnspan=2, sticky=E+W)
+        #self.btnRenewStatus.grid(row=5, column=3, sticky=E+W)
         self.txtObsDate.grid(row=10, column=1, sticky=E+W)
 	self.btnObsDate.grid(row=10,column=2,sticky=E+W)
         self.cboType.grid(row=11, column=1, columnspan=2, sticky=E+W)
         self.cboUser.grid(row=12, column=1, columnspan=2, sticky=E+W)
-        self.cboReleasedBy.grid(row=13, column=1, columnspan=2, sticky=E+W)
 	self.txtNotify.grid(row=14, column=1, columnspan=2, sticky=E+W)
         self.txtDateArchived.grid(row=15, columnspan=2, column=1, sticky=E+W)
         self.txtArchivedBy.grid(row=20, column=1, columnspan=2, sticky=E+W)
         self.txtComment.grid(row=25, column=1, columnspan=2, sticky=E+W)
-        self.btnUpdate.grid(row=100, column=0, columnspan=3, sticky=E+W)
         
         # bind events
         self.txtNotify.bind("<KeyRelease>", self.onExpDetailChange)
@@ -282,6 +306,28 @@ class MainWindow(GenericWindow):
         
         
   
+    def updateStatusHistory(self, exp):
+
+	session = dbConn.session()
+        if (self.selectedExperimentId is None):
+            return
+	if (exp is None):
+	    return
+
+	self.lblCurrentStatus["text"] = exp.status.experimentstatus
+
+	# update grdStatusHistory
+        self.grdStatusHistory.delete(0, END)
+        self.grdStatusHistory.clearData()
+
+	history = getStatusHistory(session, self.selectedExperimentId)
+        for item in history:
+                self.grdStatusHistory.appendData((item.status, item.dateCreated))
+
+        self.grdStatusHistory.update()
+
+        session.close()
+
     def updateExport(self):
 
 	session = dbConn.session()
@@ -342,11 +388,17 @@ class MainWindow(GenericWindow):
         #get original types
         for type in selectedExperiment.types:
 		origTypes.append(type.type)
+
+	selectedExperiment.status.experimentstatus = ""
         
         self.expEdit += self.setChangeColor(self.txtNotify, self.txtNotify.get(), selectedExperiment.emailnotification)
         self.expEdit += self.setChangeColor(self.txtNumber, self.txtNumber.get(), str(selectedExperiment.number).zfill(4))
         self.expEdit += self.setChangeColor(self.txtObsDate, self.txtObsDate.get(), selectedExperiment.dateObserved)
-        self.expEdit += self.setChangeColor(self.cboStatus, self.cboStatusVar.get(), selectedExperiment.status.experimentstatus)
+
+	if self.cboStatusVar.get() != "select":
+	    self.expEdit += self.setChangeColor(self.cboStatus, self.cboStatusVar.get(), selectedExperiment.status.experimentstatus)
+	else:
+	    self.cboStatus.config(bg=self.defaultBgColor)
         
         if  selectedExperiment.user is not None:
             self.expEdit += self.setChangeColor(self.cboUser, self.cboUserVar.get(), selectedExperiment.user.name)
@@ -356,7 +408,7 @@ class MainWindow(GenericWindow):
         if  selectedExperiment.releasedByUser is not None:
             self.expEdit += self.setChangeColor(self.cboReleasedBy, self.cboReleasedByVar.get(), selectedExperiment.releasedByUser.name)
         else:
-            self.expEdit += self.setChangeColor(self.cboReleasedBy, self.cboReleasedByVar.get(), "")
+            self.expEdit += self.setChangeColor(self.cboReleasedBy, self.cboReleasedByVar.get(), "select")
         
         self.expEdit += self.setChangeColor(self.txtComment, self.txtComment.get(1.0, END), selectedExperiment.comment)
         
@@ -366,10 +418,17 @@ class MainWindow(GenericWindow):
         else:
             self.expEdit += self.setChangeColor(self.cboType, "0", "0")
         
-        if self.cboStatusVar.get() == "released" and selectedExperiment.status.experimentstatus != "released":
+	# enable released by entry
+        #if self.cboStatusVar.get() == "released" and selectedExperiment.status.experimentstatus != "released":
+        if self.cboStatusVar.get() == "released":
+	    self.cboReleasedBy.grid()
+	    self.lblReleasedBy.grid()
             self.cboReleasedBy["state"] = NORMAL
+	    
         else:
             self.cboReleasedBy["state"] = DISABLED
+	    self.lblReleasedBy.grid_remove()
+	    self.cboReleasedBy.grid_remove()
             
                
         if self.expEdit > 0:
@@ -405,6 +464,10 @@ class MainWindow(GenericWindow):
         return isChange
     
     def updateExpListbox(self):
+	'''
+	retrieves all experiments from the database and fills the grdExps accordingly. Calls getExpDetails() to populate
+	all detail tabs/widgets.
+	'''
                 
         session = dbConn.session()
         exps = session.query(model.Experiment).order_by(desc(model.Experiment.number)).all()
@@ -452,8 +515,6 @@ class MainWindow(GenericWindow):
         self.getExpDetails()
         
         
-        
-        
  
     def getExpDetails(self):
         '''
@@ -498,7 +559,7 @@ class MainWindow(GenericWindow):
             self.txtDateArchived["state"] = DISABLED
 	    #self.mediaTab["state"] = DISABLED
      	    self.frmTabs.tab(self.mediaTab, state="disabled")
-     	    self.frmTabs.tab(self.historyTab, state="disabled")
+     	    self.frmTabs.tab(self.historyTab, state="normal")
      	    self.frmTabs.tab(self.exportTab, state="disabled")
 	    
             
@@ -518,10 +579,13 @@ class MainWindow(GenericWindow):
         session = dbConn.session()
         exp = getExperimentByCode(session, selectedCode)
         
+        self.cboStatusVar.set("select")
+
         # get associated experiment types
         expTypes = []
-        for type in exp.types:
-            expTypes.append(type.type)
+	if exp.types:
+		for type in exp.types:
+		    expTypes.append(type.type)
     
         # select tpyes in Listbox
         self.cboType.selection_clear(0,END)
@@ -532,7 +596,6 @@ class MainWindow(GenericWindow):
                     break
              
         if (exp != None):
-            self.cboStatusVar.set(exp.status.experimentstatus)
             if exp.user is not None:
                 self.cboUserVar.set(exp.user.name)
             else:
@@ -541,7 +604,7 @@ class MainWindow(GenericWindow):
             if exp.releasedByUser is not None:
                 self.cboReleasedByVar.set(none2String(exp.releasedByUser.name))
             else:
-                self.cboReleasedByVar.set("")         
+                self.cboReleasedByVar.set("select")         
             
             self.txtCode.insert(0, exp.code)
             self.txtNotify.insert(0, none2String(exp.emailnotification))
@@ -566,28 +629,36 @@ class MainWindow(GenericWindow):
 	    else:
      	    	self.frmTabs.tab(self.exportTab, state="disabled")
 		
-		
-		
         
         self.txtCode["state"] = DISABLED
         self.txtDateArchived["state"] = DISABLED
         self.txtArchivedBy["state"] = DISABLED
         self.cboReleasedBy["state"] = DISABLED
+
+	# update the additional detail tabs
+	self.updateMedia()
+	self.updateExport()
+	self.updateStatusHistory(exp)
         
+	# call event to process any changes made in any detail fields
         self.onExpDetailChange(None)
         
         session.close()
         
     def selectExpEvent(self, Event):
+	'''
+	Event triggered when an experiment is selected in grdExps
+	Results in all experiment details tabs to be updated
+	'''
         
         if (len(self.grdExps.curselection()) > 0):
             self.selectedExpIndex =  self.grdExps.curselection()
         else:
             self.selectedExpIndex =  -1
+
         
+	# update all detail experiment information
         self.getExpDetails()
-	self.updateMedia()
-	self.updateExport()
     
     def updateExpEvent(self):
         
@@ -596,20 +667,30 @@ class MainWindow(GenericWindow):
 
         session = dbConn.session()
         
-        selectedStatus = self.cboStatusVar
-        status = session.query(model.ExperimentStatus).filter_by(experimentstatus=selectedStatus.get()).one()
-        
         selectedUsername = self.cboUserVar.get()
         user = getUserByName(session, selectedUsername)
         
         selectedCode = self.grdExps.get(self.selectedExpIndex)[0]
         exp = getExperimentByCode(session, selectedCode)
-        
+
+	#check for change in status
+        selectedStatus = self.cboStatusVar.get()
+
+	if selectedStatus != "select":
+	    status = session.query(model.ExperimentStatus).filter_by(experimentstatus=selectedStatus).one()
+	    # make a new entry in the ExperimentStatusHistory
+	    history = model.ExperimentStatusHistory()
+	    history.expID = exp.id
+	    history.status = selectedStatus
+	    history.dateCreated = datetime.datetime.now()
+	    session.add(history)
+
         # validate that this experiment can be set to released
-        if (status.experimentstatus == "released"):
+        if (selectedStatus == "released"):
             # check that required releasedBy has been set for released experiments
             
-            if exp.status.experimentstatus != "released" and self.cboReleasedByVar.get() == "":
+            #if exp.status.experimentstatus != "released" and self.cboReleasedByVar.get() == "":
+            if self.cboReleasedByVar.get() == "select":
                 tkMessageBox.showerror("Error", "Released by field needs to be set.")
                 return
             
@@ -629,7 +710,6 @@ class MainWindow(GenericWindow):
         
       
         
-        exp.status = status
         exp.number = self.txtNumber.get()
 	obsDate = None
 	if (self.txtObsDate.get() != ""):
@@ -641,7 +721,9 @@ class MainWindow(GenericWindow):
 			return
 
         exp.dateObserved = obsDate
-        exp.releasedByUser = getUserByName(session, self.cboReleasedByVar.get());
+	if self.cboReleasedByVar.get() != "select":
+		exp.releasedByUser = getUserByName(session, self.cboReleasedByVar.get());
+
         exp.comment = strip(self.txtComment.get(1.0, END))
         exp.types = types
         exp.user = user
@@ -873,7 +955,7 @@ if __name__ == "__main__":
         if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
             major, minor = getCurrentSchemaVersionNumber(session)
             session.close()
-            print "Error: current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
+            print "Error: current difxdb database schema is %s.%s but %s.%s is the minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
             sys.exit(1)
 
 	# check for experiment(s) passed on the command line
