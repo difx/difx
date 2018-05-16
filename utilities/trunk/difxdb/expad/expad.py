@@ -221,17 +221,23 @@ class MainWindow(GenericWindow):
         self.lblCurrentStatus = Label(frmStatus, text = "None")
 	Label(frmStatus, text="New status: ").grid(row=5,column=0, sticky=W)
         self.lblReleasedBy = Label(frmStatus, text = "Released by")
+        self.lblStatusDate = Label(frmStatus, text = "Date")
+        self.txtStatusDate = Entry(frmStatus, text = "")
+	self.btnStatusDate = Button(frmStatus, text="Select date", command=self._selectStatusDate, state="disabled")
         self.cboStatus = OptionMenu (frmStatus, self.cboStatusVar, *self.expStati ,command=self.onExpDetailChange)
-        self.cboStatus.grid(row=5, column=1, sticky=E+W)
         self.cboReleasedBy = OptionMenu(frmStatus, self.cboReleasedByVar,  *self.users, command=self.onExpDetailChange)
-        self.cboReleasedBy.grid(row=6, column=1, sticky=E+W)
 
         colList = []
         colList.append(ListboxColumn("Status",20,sortable=False, searchable=False))
         colList.append(ListboxColumn("When",20 ,sortable=False, searchable=False))
         columns = tuple(colList)
 	self.lblCurrentStatus.grid(row=0,column=1, sticky=W)
-	self.lblReleasedBy.grid(row=6,column=0, sticky=W)
+        self.cboStatus.grid(row=5, column=1, sticky=E+W)
+	self.lblStatusDate.grid(row=6,column=0, sticky=W)
+	self.txtStatusDate.grid(row=6,column=1, sticky=W)
+	self.btnStatusDate.grid(row=6,column=2, sticky=W)
+	self.lblReleasedBy.grid(row=7,column=0, sticky=W)
+        self.cboReleasedBy.grid(row=7, column=1, sticky=E+W)
 
 	frmHistory = LabelFrame(self.historyTab, text="Status",  padx=5)
 	frmHistory.grid(row=10,column=0, columnspan=2, sticky="news")
@@ -251,18 +257,15 @@ class MainWindow(GenericWindow):
         #frmDetail
         Label(frmDetail, text="code: ").grid(row=0,column=0, sticky=W)
         Label(frmDetail, text="number: ").grid(row=1,column=0, sticky=W)
-        #Label(frmDetail, text="status: ").grid(row=5,column=0, sticky=W)
         Label(frmDetail, text="observed: (yyyy-mm-dd) ").grid(row=10,column=0, sticky=W)
         Label(frmDetail, text="type: ").grid(row=11,column=0, sticky=W)
         Label(frmDetail, text="analyst: ").grid(row=12,column=0, sticky=W)
-        #Label(frmDetail, text="released by: ").grid(row=13,column=0, sticky=W)
         Label(frmDetail, text="email on module arrival: ").grid(row=14,column=0, sticky=W)
         Label(frmDetail, text="date archived: ").grid(row=15,column=0, sticky=W)
         Label(frmDetail, text="archived by: ").grid(row=20,column=0, sticky=W)
         Label(frmDetail, text = "comments: ").grid(row=25, column=0, sticky=W) 
         self.txtCode = Entry(frmDetail, text = "")
         self.txtNumber = Entry(frmDetail, text = "")
-        #self.btnRenewStatus = Button (frmDetail, text="renew status" , command=self.onExpDetailChange)
 	self.txtObsDate = Entry(frmDetail, text = "")
         self.cboType= Listbox(frmDetail, selectmode=MULTIPLE, height=4, selectforeground="white", selectbackground="dodger blue", fg="grey" )
         self.cboUser = OptionMenu(frmDetail, self.cboUserVar,  *self.users, command=self.onExpDetailChange)
@@ -281,8 +284,6 @@ class MainWindow(GenericWindow):
         #arrange widgets on frmDetail
         self.txtCode.grid(row=0, column=1, columnspan=2, sticky=E+W)
         self.txtNumber.grid(row=1, column=1, columnspan=2, sticky=E+W)
-        #self.cboStatus.grid(row=5, column=1, columnspan=2, sticky=E+W)
-        #self.btnRenewStatus.grid(row=5, column=3, sticky=E+W)
         self.txtObsDate.grid(row=10, column=1, sticky=E+W)
 	self.btnObsDate.grid(row=10,column=2,sticky=E+W)
         self.cboType.grid(row=11, column=1, columnspan=2, sticky=E+W)
@@ -305,6 +306,9 @@ class MainWindow(GenericWindow):
         self.btnDelete["state"] = DISABLED
         
         
+    def _selectStatusDate(self):
+	
+	self.selectDateDlg.show()
   
     def updateStatusHistory(self, exp):
 
@@ -397,8 +401,17 @@ class MainWindow(GenericWindow):
 
 	if self.cboStatusVar.get() != "select":
 	    self.expEdit += self.setChangeColor(self.cboStatus, self.cboStatusVar.get(), selectedExperiment.status.experimentstatus)
+	    self.lblStatusDate.grid()
+	    self.txtStatusDate.grid()
+	    self.btnStatusDate.grid()
+	    self.txtStatusDate.delete(0,END)
+	    self.txtStatusDate.insert(0,datetime.datetime.now())
+	
 	else:
 	    self.cboStatus.config(bg=self.defaultBgColor)
+	    self.lblStatusDate.grid_remove()
+	    self.txtStatusDate.grid_remove()
+	    self.btnStatusDate.grid_remove()
         
         if  selectedExperiment.user is not None:
             self.expEdit += self.setChangeColor(self.cboUser, self.cboUserVar.get(), selectedExperiment.user.name)
@@ -559,7 +572,7 @@ class MainWindow(GenericWindow):
             self.txtDateArchived["state"] = DISABLED
 	    #self.mediaTab["state"] = DISABLED
      	    self.frmTabs.tab(self.mediaTab, state="disabled")
-     	    self.frmTabs.tab(self.historyTab, state="normal")
+     	    self.frmTabs.tab(self.historyTab, state="disabled")
      	    self.frmTabs.tab(self.exportTab, state="disabled")
 	    
             
@@ -628,6 +641,8 @@ class MainWindow(GenericWindow):
      	    	self.frmTabs.tab(self.exportTab, state="normal")
 	    else:
      	    	self.frmTabs.tab(self.exportTab, state="disabled")
+
+     	    self.frmTabs.tab(self.historyTab, state="normal")
 		
         
         self.txtCode["state"] = DISABLED
@@ -682,7 +697,7 @@ class MainWindow(GenericWindow):
 	    history = model.ExperimentStatusHistory()
 	    history.expID = exp.id
 	    history.status = selectedStatus
-	    history.dateCreated = datetime.datetime.now()
+	    history.dateCreated = self.txtStatusDate.get()
 	    session.add(history)
 
         # validate that this experiment can be set to released
