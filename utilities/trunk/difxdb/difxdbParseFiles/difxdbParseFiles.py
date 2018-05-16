@@ -31,6 +31,7 @@ import sys
 import string
 import argparse
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from  datetime import datetime
 from difxdb.difxdbconfig import DifxDbConfig
 from difxdb.model.dbConnection import Schema, Connection
@@ -68,7 +69,8 @@ def setupLoggers(logPath):
     logger.setLevel(level)
 
     # logging to file
-    fh = logging.FileHandler(logPath + "/difxdbParseFiles_{:%Y-%m-%d_%H:%M:%S}.log".format(datetime.now()))
+    #fh = logging.FileHandler(logPath + "/difxdbParseFiles_{:%Y-%m-%d_%H:%M:%S}.log".format(datetime.now()))
+    fh = TimedRotatingFileHandler(logPath+"/difxdbParseFiles.log", when="midnight", interval=1, backupCount=7)
 
     fh.setLevel(level)
     fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)-7s - %(message)s'))
