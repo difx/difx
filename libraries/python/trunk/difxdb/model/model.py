@@ -72,3 +72,5 @@ class FileData(object):
 
 class ExportFile(object):
 	pass
+class ExperimentStatusHistory(object):
+	pass

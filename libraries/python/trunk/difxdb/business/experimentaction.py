@@ -271,3 +271,18 @@ def getExportFiles(session, code):
         
     except:
         raise Exception ("Unknown experiment %s" % code)
+
+def getStatusHistory(session, expid):
+    '''
+    Obtains the history of experiment states order by date (descending)
+    '''
+    try:
+        history = session.query(model.ExperimentStatusHistory).filter_by(expID=expid).order_by(desc(model.ExperimentStatusHistory.dateCreated)).all()
+        
+        if (history is None):
+            return []
+        else:
+            return (history)
+        
+    except:
+        raise Exception ("Unknown experiment id %s" % expid)

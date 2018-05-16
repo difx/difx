@@ -26,6 +26,17 @@
 #============================================================================
 from difxdb.model import model
 
+def getFileData(session):
+    '''
+    Returns the list of all data files.
+    Returns None if no files have been found
+    '''
+    try:
+        ret = session.query(model.FileData).all()
+    except:
+        ret = None
+    return(ret)
+
 def getFilesByExperimentId(session, expId):
     '''
     Returns a list of data files associated with the experiment of the given id.

@@ -65,6 +65,7 @@ class Schema(object):
         self.userTable = Table("User", self.metadata__, autoload=True)
         self.exportFileTable = Table("ExportFile", self.metadata__, autoload=True)
         self.fileDataTable = Table("FileData", self.metadata__, autoload=True)
+        self.experimentStatusHistoryTable = Table("ExperimentStatusHistory", self.metadata__, autoload=True)
         
         #association table for many-to-many Experiment/Module relation 
         self.experimentModuleTable = Table('ExperimentAndModule', self.metadata__, autoload=True)
@@ -103,8 +104,10 @@ class Schema(object):
         mapper(VersionHistory, self.versionHistoryTable)
         mapper(User, self.userTable)
         mapper(ExperimentType, self.experimentTypeTable)
-	mapper(FileData, self.fileDataTable, properties={'experiment': relation(Experiment, uselist = False, backref=backref('fileData', uselist=False))})
-        mapper(ExportFile, self.exportFileTable, properties={'experiment': relation(Experiment, uselist = False, backref=backref('exportFiles', uselist=False))})
+        mapper(ExperimentStatusHistory, self.experimentStatusHistoryTable)
+	mapper(FileData, self.fileDataTable, properties={'experiment': relation(Experiment, backref=backref('fileData'))})
+        #mapper(ExportFile, self.exportFileTable, properties={'experiment': relation(Experiment, uselist = False, backref=backref('exportFiles', uselist=False))})
+        mapper(ExportFile, self.exportFileTable, properties={'experiment': relation(Experiment, backref=backref('exportFiles'))})
 
 class Connection(object):
     
