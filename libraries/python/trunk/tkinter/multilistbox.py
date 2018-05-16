@@ -125,7 +125,8 @@ class MultiListbox(Frame):
         sb = Scrollbar(frame, orient=VERTICAL, command=self._scroll)
         sb.grid(row=3, column=colNum, sticky=W+N+S)
         self.lists[0]['yscrollcommand']=sb.set
-        btnClearSearch.grid(row=2, column=colNum, sticky=W+N+S)
+	if enableSearch:
+		btnClearSearch.grid(row=2, column=colNum, sticky=W+N+S)
 
         sb.bind('<Button-4>', lambda e, s=self: s._scroll(SCROLL, -1, UNITS))
         sb.bind('<Button-5>', lambda e, s=self: s._scroll(SCROLL, 1, UNITS))
