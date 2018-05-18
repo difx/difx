@@ -1,5 +1,5 @@
 /*
- * $Id: sc_stats.c 4454 2017-09-29 15:33:21Z gbc $
+ * $Id: sc_stats.c 4523 2017-12-15 14:50:53Z gbc $
  *
  * Statistics checker for scan check
  */

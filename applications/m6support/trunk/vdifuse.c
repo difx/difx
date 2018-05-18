@@ -29,8 +29,8 @@
     #if HAVE_DIFXMESSAGE
     #include <difxmessage.h>
     #include <unistd.h>
-    #endif
-#endif
+    #endif /* HAVE_DIFXMESSAGE */
+#endif /* HAVE_CONFIG_H */
 
 #include "vdifuse.h"
 
@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
         difxMessageInitFull(-1, "vdifuse", hostname);
         difxMessageSendDifxAlert("vdifuse started", DIFX_ALERT_LEVEL_INFO);
         difxMessagePrint();
-#endif
+#endif /* HAVE_DIFXMESSAGE */
         if (vdifuse_debug>4) fprintf(vdflog, "fuse_main...starting\n");
         h2 = malloc(0x20);
         if (vdifuse_debug>2) fprintf(vdflog,

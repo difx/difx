@@ -43,7 +43,7 @@ static int vdifsup_help(char *fullname, char *help)
     if (!name) name = fullname;
     else name++;
     fprintf(stderr,
-        "usage: %s [options] mount-point <directories> [fuse-options]\n"
+        "usage: %s [options] [fuse-options] mount-point <directories>\n"
         "\n"
         "  -h           this help\n"
         "  --HELP       help and additional FUSE mounting options\n"

@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 4508 2017-12-04 20:02:49Z gbc $
+ * $Id: per_file.c 4523 2017-12-15 14:50:53Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets

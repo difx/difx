@@ -78,7 +78,7 @@ do
 
     echo "$minwrite w l $sls title 'min write $minwrite', \\" >> $gnu
     echo "$minread w l $als title 'min read $minread', \\" >> $gnu
-    echo "$reqwrite w l $rls title 'req read $reqwrite'" >> $gnu
+    echo "$reqwrite w l $rls title 'req write $reqwrite'" >> $gnu
     echo 'set output' >> $gnu
 
     gnuplot $gnu

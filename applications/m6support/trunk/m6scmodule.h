@@ -1,5 +1,5 @@
 /*
- * $Id: m6scmodule.h.in 2560 2014-10-08 21:23:19Z gbc $
+ * $Id: m6scmodule.h.in 4523 2017-12-15 14:50:53Z gbc $
  *
  * Python interfaces to the scan checker
  */

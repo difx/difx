@@ -20,8 +20,8 @@
     #if HAVE_DIFXMESSAGE
     #include <difxmessage.h>
     #include <unistd.h>
-    #endif
-#endif
+    #endif /* HAVE_DIFXMESSAGE */
+#endif /* HAVE_CONFIG_H */
 
 #include "vdifsg2.h"
 #include "vdif_epochs.h"
@@ -1652,8 +1652,9 @@ int open_sgv2_seq(VDIFUSEntry *vs, FFInfo *ffi)
         m6st.state = MARK6_STATE_OPEN;
         snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", vs->fuse);
         difxMessageSendMark6Status(&m6st);
+        vdifuse_trace(VDT("DM open %s\n"), vs->fuse);
     }
-#endif
+#endif /* HAVE_DIFXMESSAGE */
     return(ffi->fh);
 }
 
@@ -1694,8 +1695,9 @@ void release_sgv2_seq(FFInfo *ffi)
         m6st.state = MARK6_STATE_CLOSE;
         snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", sdp->vs->fuse);
         difxMessageSendMark6Status(&m6st);
+        vdifuse_trace(VDT("DM close %s\n"), sdp->vs->fuse);
     }
-#endif
+#endif /* HAVE_DIFXMESSAGE */
     diag_counts(sdp->diag);
     free(ffi->sfrag);
     free(ffi->sdata);
@@ -1809,9 +1811,10 @@ static int do_read_sgv2_seq(char *buf, FFInfo *ffi)
             m6st.rate = nanf("0"); /* FIXME: use gettimeofday() etc to report a read rate */
             snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", sdp->vs->fuse);
             difxMessageSendMark6Status(&m6st);
+            vdifuse_trace(VDT("DM play %s\n"), sdp->vs->fuse);
         }
     }
-#endif
+#endif /* HAVE_DIFXMESSAGE */
 
     /* data request is fully within the stripe */
     if (sdp->roff >= sdp->bybs &&
