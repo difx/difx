@@ -111,7 +111,7 @@ int main(int argc, char **argv)
         char *wgtfmt = getenv("DIFX_WEIGHTS_FORMAT");
 
         /* fall back to default short format */
-        if (!wgtfmt || wgtfmt[0] != '%') wgtfmt = "%4.2f";
+        if (!wgtfmt || wgtfmt[0] != '%') wgtfmt = "%5.2f";
 
 	time(&t);
 	lastt = t;
