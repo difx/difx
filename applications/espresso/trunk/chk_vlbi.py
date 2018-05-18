@@ -29,6 +29,7 @@ import re
 import mx.DateTime
 import espressolib
 import subprocess
+import optparse
 
 
 def lbaFileLength(filesize, headervals):
@@ -122,7 +123,7 @@ def m5_to_vextime(m5time):
     return vextime
 
 
-def check_file(infile):
+def check_file(infile, m5bopts):
     """ check each file, then return time range and format. Check for
     Corrupt/missing files. """
 
@@ -167,26 +168,12 @@ def check_file(infile):
         # (YMMV). If we don't have m5bsum and m5time in our path we simply will
         # not do this.
 
-        summary_program = m5bsum
+        summary_program = " ".join([m5bsum, m5bopts])
 
         if '.vdif' in infile.lower():
             # assume we must have a VDIF file.
 
             summary_program = vsum
-            #m5format = "VDIF_1000-64-1-2"
-            ## get the file start time with m5time
-            #command = " ".join([m5time, infile, m5format])
-            #starttime_m5, error = subprocess.Popen(
-            #        command, shell=True, stdout=subprocess.PIPE,
-            #        stderr=subprocess.PIPE).communicate()
-            #try:
-            #    starttime = m5_to_vextime(starttime_m5)
-            #except:
-            #    starttime = None
-            #    endtime = None
-            #    sys.stderr.write(
-            #            "cannot decode start time for " + infile + "\n\n")
-            #endtime = None
 
         try:
             # get the start/stop time with m5bsum/vsum
@@ -301,17 +288,37 @@ def timesort(filelist):
 
 
 if __name__ == "__main__":
+
+    usage = """%prog [options] <datafiles.dat>
+    will check the VLBI baseband files listed in <datafiles.dat> for validity
+    and return the list with their stop/start times appended in format suitable
+    for vex2difx. Works for LBA, Mark5A/B, VDIF formats.
+    """
+    parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
+    parser.add_option(
+            "-r", "--refmjd",
+            type="str", dest="refmjd", default=None,
+            help="Reference date for resolving Mk5B date ambiguity.")
+    (options, args) = parser.parse_args()
+
+    m5bopts = ""
+    if options.refmjd is not None:
+        refmjd = espressolib.convertdate(options.refmjd, outformat="mjd")
+        m5bopts = " ".join(["-r", str(refmjd)])
+    else:
+        refmjd = None
+
     # read the list of files
     filelist = []
     outfilelist = []
-    for filelistname in sys.argv[1:]:
+    for filelistname in args:
         filelist += open(filelistname).readlines()
         filelist = [line.rstrip() for line in filelist]
 
     # check each file, then print it with its time range. 
 
     for infile in filelist:
-        outfile = check_file(infile)
+        outfile = check_file(infile, m5bopts)
         outfilelist.append(outfile)
 
     outfilelist = timesort(outfilelist)

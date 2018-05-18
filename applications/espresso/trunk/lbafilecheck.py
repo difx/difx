@@ -42,7 +42,8 @@ def sortbyfilename(x):
 
 
 def makefilelists(
-        telescope, data_area, machine, dir_patterns, globpatterns, expname):
+        telescope, data_area, machine, dir_patterns, globpatterns, expname,
+        refmjd):
     #outfile = telescope + '.filelist'
     filepattern = str()
     for pattern in dir_patterns:
@@ -81,9 +82,13 @@ def makefilelists(
         print>>ERRORFILE, "chk_vlbi.py not found in $PATH"
         ERRORFILE.close()
         raise Exception("chk_vlbi.py not found in $PATH")
+    if refmjd is not None:
+        opt = " ".join(["-r", refmjd])
+    else:
+        opt = ""
     #command = " ".join(
     #       ["ssh", machine, chk_vlbi, os.getcwd() + os.sep + TEMPFILE.name])
-    command = " ".join([chk_vlbi, os.getcwd() + os.sep + TEMPFILE.name])
+    command = " ".join([chk_vlbi, opt, os.getcwd() + os.sep + TEMPFILE.name])
     #print filelist
     filelist, error2 = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE,
@@ -231,6 +236,10 @@ parser.add_option(
         type="int", dest="ntasks_per_node", default=1,
         help="Number of MPI processes per node."
         " This is for testing purposes only!")
+parser.add_option(
+        "-r", "--refmjd",
+        type="str", dest="refmjd", default=None,
+        help="Reference date for resolving Mk5B date ambiguity.")
 
 #parser.add_option( "--nproc_per_node", "-p",
 #        type='int', dest="nproc_per_node", default=1,
@@ -243,7 +252,6 @@ parser.add_option(
 if len(args) != 1:
     parser.print_help()
     parser.error("no data areas file given")
-
 
 telescopedirs = open(args[0]).readlines()
 telescopedirs = [
@@ -304,7 +312,7 @@ for line in sorted(telescopedirs):
             if pid == 0:
                 nfiles, nbad = makefilelists(
                         telescope, data_area, machine, dir_patterns,
-                        globpatterns, expname)
+                        globpatterns, expname, options.refmjd)
                 print "got", nfiles, "files for", telescope,
                 if nbad:
                     print "(", nbad, "corrupt )",
