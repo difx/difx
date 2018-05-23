@@ -133,7 +133,10 @@ def check_machines(machines):
 
     if machine_error and options.no_rmaps_seq:
         print "\n" * 2, "!" * 20
-        print "Warning:", machine_error, "appear(s) multiple times in the machines.list file, but not in consecutive order. This machine file will not work unless you have openmpi v1.4 or greater!"
+        print "Warning:", machine_error, 
+        print " appear(s) multiple times in the machines.list file, but not",
+        print " in consecutive order. This machine file will not work unless", 
+        print " you have openmpi v1.4 or greater!"
 
 
 def write_threads(expname, hosts, computemachines):

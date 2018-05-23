@@ -378,17 +378,23 @@ def run_batch(corrjoblist, outdir):
     while True:
         try:
             #command = ['squeue', '-u', '$USER']
+            print "-" * 78, "\n"
             try:
                 # remind us what the job is for
                 print open(operator_log).read()
             except:
                 pass
-            print queue_command
-            subprocess.check_call(queue_command, stdout=sys.stdout, shell=True)
-
-            raw_input(
-                    "Jobs submitted - hit ^C when all jobs have completed."
-                    " Hit return to see list of running jobs.")
+            running_jobs = print_queue(queue_command, jobids)
+            if running_jobs:
+                raw_input(
+                        "Jobs submitted - hit ^C to cancel jobs."
+                        " Hit return to see list of running jobs.")
+            else:
+                print
+                print "-" * 78
+                print "All jobs completed:", " ".join(jobids)
+                time.sleep(1)
+                break
         except KeyboardInterrupt:
             for jobname in jobids:
                 command = " ".join([batch_cancel, jobname])
@@ -400,10 +406,6 @@ def run_batch(corrjoblist, outdir):
             # here.
             print "jobs", " ".join([jobids]), "complete"
             break
-            #print queue_command + "failed!"
-            #pass
-            #raise Exception(command + 'failed!')
-            #raise
 
     # tidy up log files for each job
     bad_jobs = []
@@ -453,6 +455,22 @@ def write_difxlog(log_in, outdir, jobname):
     logfile.close()
 
     return job_ok
+
+def print_queue(queue_command, jobids):
+    print queue_command
+    running_jobs = []
+    queue_info = subprocess.Popen(
+            queue_command, stdout=subprocess.PIPE, shell=True).communicate()[0]
+    print queue_info
+    print "Completed jobs:",
+    for jobname in jobids:
+        if jobname not in queue_info:
+            print jobname,
+        else:
+            running_jobs.append(jobname)
+    print "\n"
+    return running_jobs
+
 
 # Main program start.
 # parse the options
@@ -693,8 +711,9 @@ for jobname in sorted(corrjoblist.keys()):
     calcfilename = jobname + ".calc"
 
     # fix the output filename to point at the cuppa data disk
+    print
     if not options.novex:
-        print "\nrenaming the 'OUTPUT FILENAME' in", inputfilename, "from",
+        print "renaming the 'OUTPUT FILENAME' in", inputfilename, "from",
         print indir, "to", outdir
         change_path(inputfilename, 'OUTPUT FILENAME:', indir, outdir)
 
@@ -825,9 +844,13 @@ finally:
         shutil.copy2(operator_log, operator_joblog)
 
     # clean up the forked plot process
-    print "\n\nWaiting for plotting process", speedup.pid, "to finish"
-    plotmsg, ploterr = speedup.communicate()
-    print plotmsg, ploterr
+    try:
+        print "\n\nWaiting for plotting process", speedup.pid, "to finish"
+        plotmsg, ploterr = speedup.communicate()
+        print plotmsg, ploterr
+    except KeyboardInterrupt:
+        speedup.kill()
+        print "Speedup plot not complete!"
 
     #if not options.clockjob and not options.testjob:
     print "Jobs that may need redoing:"
