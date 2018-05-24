@@ -866,6 +866,7 @@ def executeCasaParallel(o):
     finally:
         reportWorkTodo(o)
         try: os.unlink('killcasa')
+        except: pass
         finally: pass
 
 #
