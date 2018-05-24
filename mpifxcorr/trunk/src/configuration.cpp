@@ -69,8 +69,6 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   estimatedbytes = 0;
   model = NULL;
 
-  cout << "Configuration::cstor1()" << endl;
-
   setJobNameFromConfigfilename(string(configfile));
   char * difxmtu = getenv("DIFX_MTU");
   if(difxmtu == 0)
@@ -107,8 +105,6 @@ Configuration::Configuration(istream* input, const string job_name, int id, doub
   maxnumchannels = 0;
   estimatedbytes = 0;
   model = NULL;
-
-  cout << "Configuration::cstor2()" << endl;
 
   setJobNameFromConfigfilename(job_name);
   char * difxmtu = getenv("DIFX_MTU");
