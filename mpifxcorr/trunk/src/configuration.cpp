@@ -57,26 +57,8 @@ static unsigned int calcstridelength(unsigned int arraylength)
 }
 
 Configuration::Configuration(const char * configfile, int id, double restartsec)
-  : mpiid(id), consistencyok(true), restartseconds(restartsec)
+  : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec)
 {
-  string configfilestring = configfile;
-  size_t basestart = configfilestring.find_last_of('/');
-  if(basestart == string::npos)
-    basestart = 0;
-  else
-    basestart = basestart+1;
-  jobname = configfilestring.substr(basestart, string(configfile).find_last_of('.')-basestart);
-  char * difxmtu = getenv("DIFX_MTU");
-  if(difxmtu == 0)
-    mtu = 1500;
-  else
-    mtu = atoi(difxmtu);
-  if (mtu > 9000) {
-    cerror << startl << "DIFX_MTU was set to " << mtu << " - resetting to 9000 bytes (max)" << endl;
-    mtu = 9000;
-  }
-
-  sectionheader currentheader = INPUT_EOF;
   commonread = false;
   datastreamread = false;
   configread = false;
@@ -87,6 +69,19 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   estimatedbytes = 0;
   model = NULL;
 
+  cout << "Configuration::cstor1()" << endl;
+
+  setJobNameFromConfigfilename(string(configfile));
+  char * difxmtu = getenv("DIFX_MTU");
+  if(difxmtu == 0)
+    mtu = 1500;
+  else
+    mtu = atoi(difxmtu);
+  if (mtu > 9000) {
+    cerror << startl << "DIFX_MTU was set to " << mtu << " - resetting to 9000 bytes (max)" << endl;
+    mtu = 9000;
+  }
+
   //open the file
   ifstream * input = ifstreamOpen(configfile);
   if(input->fail() || !input->is_open())
@@ -94,9 +89,64 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
     //need to write this message from all processes - sometimes it is visible to head node but no-one else...
     cfatal << startl << "Cannot open file " << configfile << " - aborting!!!" << endl;
     consistencyok = false;
-  }
+  } else
+    parseConfiguration(input);
+  input->close();
+  delete input;
+}
+
+Configuration::Configuration(istream* input, const string job_name, int id, double restartsec)
+  : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec)
+{
+  commonread = false;
+  datastreamread = false;
+  configread = false;
+  freqread = false;
+  ruleread = false;
+  baselineread = false;
+  maxnumchannels = 0;
+  estimatedbytes = 0;
+  model = NULL;
+
+  cout << "Configuration::cstor2()" << endl;
+
+  setJobNameFromConfigfilename(job_name);
+  char * difxmtu = getenv("DIFX_MTU");
+  if(difxmtu == 0)
+    mtu = 1500;
   else
-    currentheader = getSectionHeader(input);
+    mtu = atoi(difxmtu);
+  if (mtu > 9000) {
+    cerror << startl << "DIFX_MTU was set to " << mtu << " - resetting to 9000 bytes (max)" << endl;
+    mtu = 9000;
+  }
+
+  if(input->fail())
+  {
+    //need to write this message from all processes - sometimes it is visible to head node but no-one else...
+    cfatal << startl << "Cannot read config for " << jobname << " - aborting!!!" << endl;
+    consistencyok = false;
+  } else
+    parseConfiguration(input);
+}
+
+void Configuration::setJobNameFromConfigfilename(string configfilename)
+{
+  size_t basestart = configfilename.find_last_of('/');
+  if(basestart == string::npos)
+    basestart = 0;
+  else
+    basestart = basestart+1;
+  size_t baseend = configfilename.find_last_of('.');
+  if (baseend == string::npos)
+    baseend = configfilename.size();
+  jobname = configfilename.substr(basestart, baseend-basestart);
+}
+
+void Configuration::parseConfiguration(istream* input)
+{
+  sectionheader currentheader = INPUT_EOF;
+  currentheader = getSectionHeader(input);
 
   //go through all the sections and tables in the input file
   while(consistencyok && currentheader != INPUT_EOF)
@@ -203,8 +253,7 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
     }
     consistencyok = false;
   }
-  input->close();
-  delete input;
+  //input->close();
 
   if (consistencyok) {
 

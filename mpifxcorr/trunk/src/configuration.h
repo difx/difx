@@ -77,12 +77,21 @@ public:
   static int MONITOR_TCP_WINDOWBYTES;
 
  /**
-  * Constructor: Reads and stores the information in the input file
+  * Constructor: Reads information from an input file and stores it internally
   * @param configfile The filename of the input file containing configuration information to be read
   * @param id The MPI id of the process (0 = manager, then 1 - N datastreams, N+1 onwards cores
   * @param restartsec The restart time into the job in seconds (to restart a job which died halfway)
   */
   Configuration(const char * configfile, int id, double restartsec=0.0);
+
+ /**
+  * Constructor: Reads information from an input file and stores it internally
+  * @param input The input stream containing configuration information to be read
+  * @param job_name The name to give to the job
+  * @param id The MPI id of the process (0 = manager, then 1 - N datastreams, N+1 onwards cores
+  * @param restartsec The restart time into the job in seconds (to restart a job which died halfway)
+  */
+  Configuration(istream* input, const string job_name, int id, double restartsec=0.0);
 
   ~Configuration();
 
@@ -92,6 +101,8 @@ public:
 //@{
   inline int getMPIId() const { return mpiid; }
   inline string getJobName() const { return jobname; }
+  inline void setJobName(string jname) { jobname = jname; }
+  void setJobNameFromConfigfilename(string configfilename);
   inline string getObsCode() const { return obscode; }
   inline void setObsCode(string ocode) { obscode = ocode; }
   inline long long getEstimatedBytes() const { return estimatedbytes; }
@@ -443,6 +454,12 @@ public:
     { return configs[configindex].papols[freqindex][polindex]; }
 
 //@}
+
+ /**
+  * Read information from an input stream and store it internally into this object
+  * @param input The input stream containing configuration information to be read
+  */
+ void parseConfiguration(istream* input);
 
  /**
   * @param configindex The index of the configuration being used (from the table in the input file)
