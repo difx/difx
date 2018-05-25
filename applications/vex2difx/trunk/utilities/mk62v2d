@@ -24,6 +24,7 @@ from sys import exit, argv
 from os.path import isfile, isdir
 from os import umask, popen, system, getcwd, getenv
 from shutil import move
+from datetime import *
 
 program = 'mk62v2d'
 version = '0.1'
@@ -46,6 +47,99 @@ def usage(pgm):
 	print '  -q       be less verbose\n'
 	print '<v2d file> is a .v2d file that needs mark6filelist tags added\n'
 	exit(0)
+
+def getmonthdate(daynumber, yearnumber):
+    md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+    mdl = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
+    if yearnumber % 4 == 0:
+        dl = mdl
+    else:
+        dl = md
+    for i in range(len(dl)):
+        if daynumber > dl[i] and daynumber <= dl[i+1]:
+	    return [i + 1, daynumber - dl[i]]
+
+def convertscandata2mjd(scandata):
+    mjd0 = datetime(1858, 11, 17, 0, 0)
+    for scan in scandata:
+        startstr = scan[1]
+        lengthstr = scan[2]
+	if len(startstr) == 18 and startstr[4] == 'y' and startstr[8] == 'd' and startstr[11] == 'h' and startstr[14] == 'm' and startstr[17] == 's':
+            startyear = int(startstr[0:4])
+	    startday = int(startstr[5:8])
+	    mondate = getmonthdate(startday, startyear)
+	    startmonth = mondate[0]
+	    startdate = mondate[1]
+	    starthour = int(startstr[9:11])
+	    startminute = int(startstr[12:14])
+	    startsecond = int(startstr[15:17])
+	    startdt = datetime(startyear, startmonth, startdate, starthour, startminute, startsecond)
+	    startmjd = startdt - mjd0
+	    mjdstr = '%.8f' % (startmjd.days + (startmjd.seconds / 86400.0))
+	    scan[1] = mjdstr
+	else:
+	    print 'invalid start date:', scan[1], 'scan:', scan[0]
+	    continue
+	if lengthstr.split()[0].isdigit() is True:
+	    lensec = int(lengthstr.split()[0])
+	    endmjd = startmjd + timedelta(0, lensec)
+	    emjdstr = '%.8f' % (endmjd.days + (endmjd.seconds / 86400.0))
+	    scan[2] = emjdstr
+        else:
+	    print 'could not determine scan length:', scan[2], 'scan:', scan[0]
+	    continue
+
+def getvexscandata(station, vexfile):
+    schedfound = False
+    firstscanfound = False
+    endscan = True
+    refpoint = False
+    scandata = []
+    if verbose > 1:
+        print "Parsing vex scan data for station:", station.upper()
+    for line in vexfile:
+       # find the $SCHED section
+       if schedfound == False:
+           if '$SCHED;' in line:
+	       schedfound = True
+       else:
+           # parse scan sections
+           if 'scan ' == line[0:5]:
+	       scan = []
+	       if firstscanfound == False:
+	           firstscanfound = True
+	       labelstart = line.find('scan ') + 5
+	       labelend = line.find(';')
+	       label = line[labelstart:labelend]
+	       scan.append(label)
+	       endscan = False
+	   elif 'intent' in line:
+	       if 'REFERENCE_POINTING_DETERMINE' in line:
+	           refpoint = True
+               else:
+	           refpoint = False
+	   elif 'start=' in line and '*' not in line:
+	       startstart = line.find('start=') + 6
+	       startend = line.find(';')
+	       start = line[startstart:startend]
+	       scan.append(start)
+	   elif 'station=' in line:
+	       stationstart = line.find('station=') + 8
+	       stationend = line.find(':')
+	       scanstation = line[stationstart:stationend]
+	       if station.lower() == scanstation.lower():
+	           stationdata = line.split(':')
+		   scanlength = stationdata[2].strip()
+	           scan.append(scanlength)
+           elif 'endscan;' == line[0:8] and refpoint == False:
+	       scandata.append(scan)
+	       endscan = True
+	   elif firstscanfound == True and endscan == True:
+	       break
+
+    convertscandata2mjd(scandata)
+    
+    return scandata       
 
 # main execution
 
@@ -91,7 +185,7 @@ if stop:
 	exit(0)
 
 if verbose > 1:
-	print "v2d file:", inFile
+	print "\nv2d file:", inFile, "\n"
 
 if inFile[-4:] == '.v2d':
 	prefix = inFile[:-4]
@@ -150,35 +244,61 @@ if len(antennaModuleList) is 0:
     exit(0)
 
 if verbose > 1:
-    print "experName", experName
-    print "antModList", antennaModuleList
+    print "Experiment name:", experName, "\n"
+    print "List of modules recorded at antennas:"
+    for antMod in antennaModuleList:
+        print "%s recorded at %s" % (antMod[1], antMod[0])
+    print
 
 # make an antenna.filelist for each antenna in the antenna module list
 antList = []
+antNoModuleFileList = []
 for antMod in antennaModuleList:
     antList.append(antMod[0])
-    moduleFilePath = dirPath + '/' + antMod[1] + '.filelist'
+    moduleFileName = antMod[1] + '.filelist'
+    moduleFilePath = dirPath + '/' + moduleFileName
+    antennaFileName = antMod[0].lower() + '.filelist'
     if isfile(moduleFilePath):
+        if verbose > 1:
+            print moduleFileName, "exists, using it to generate", antennaFileName
         modfile = open(moduleFilePath, 'r')
+        antfile = open(antennaFileName, 'w')
+        for line in modfile:
+            if experName in line:
+	        antfile.write(line)
+        modfile.close()
+        antfile.close()
     else:
-        print "could not fine module filelist", moduleFilePath
-	exit(1)
-    antennaFilePath = antMod[0].lower() + '.filelist'
-    antfile = open(antennaFilePath, 'w')
-    for line in modfile:
-        if experName in line:
-	    antfile.write(line)
-    modfile.close()
-    antfile.close()
+        if verbose > 1:
+            print moduleFileName, "does not exist"
+	antNoModuleFileList.append(antMod[0])
+
+if len(antNoModuleFileList) > 0:
+    for ant in antNoModuleFileList:
+	antFileName = ant.lower() + ".filelist"
+        if verbose > 1:
+            print "generating", antFileName, "file from .vex.obs file:", vexObsFile
+	vexobs.seek(0)
+	scandata = getvexscandata(ant, vexobs)
+	if len(scandata) > 0:
+	    antfile = open(antFileName, 'w')
+	    for scan in scandata:
+	        line = experName + '_' + ant.upper() + '_' + scan[0] + ' ' + scan[1] + ' ' + scan[2] + '\n'
+		antfile.write(line)
+	    antfile.close()
 
 # add mark6filelist tags to .v2d file
+if verbose > 1:
+    print
+    print "adding mark6filelist tags to", inFile
+    print
 move(inFile, inFile + ".bkup")
 readv2d = open(inFile + ".bkup", 'r')
 writev2d = open(inFile, 'w')
 for line in readv2d:
     if 'ANTENNA' in line:
         if line[8:10] in antList:
-	    mark6line = line[0:33] + 'mark6filelist=' + line[8:10].lower() + '.filelist }\n'
+	    mark6line = line[0:len(line) - 2] + 'mark6filelist=' + line[8:10].lower() + '.filelist }\n'
 	    writev2d.write(mark6line)
 	else:
 	    writev2d.write(line)
@@ -186,4 +306,5 @@ for line in readv2d:
         writev2d.write(line)
 readv2d.close()
 writev2d.close()
+vexobs.close()
 

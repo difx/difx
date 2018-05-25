@@ -2469,6 +2469,9 @@ static void usage(int argc, char **argv)
 	cout << "     -s" << endl;
 	cout << "     --strict      treat some warnings as errors and quit [default]." << endl;
 	cout << endl;
+	cout << "     -6" << endl;
+	cout << "     --mk6         call mk62v2d utility to generate mark6 related files" << endl;
+	cout << endl;
 	cout << "  <v2d file> is the vex2difx configuration file to process." << endl;
 	cout << endl;
 	cout << "When running " << program << " you will likely see some output to the screen." << endl;
@@ -2583,6 +2586,7 @@ int main(int argc, char **argv)
 	bool writeParams = false;
 	bool deleteOld = false;
 	bool strict = true;
+	bool mk6 = false;
 	int nWarn = 0;
 	int nError = 0;
 	int nSkip = 0;
@@ -2637,6 +2641,11 @@ int main(int argc, char **argv)
 				strcmp(argv[a], "--strict") == 0)
 			{
 				strict = 1;
+			}
+			else if(strcmp(argv[a], "-6") == 0 ||
+				strcmp(argv[a], "--mk6") == 0)
+			{
+				mk6 = 1;
 			}
 			else
 			{
@@ -2700,8 +2709,11 @@ int main(int argc, char **argv)
 
         // call mk62v2d script for mark6 related v2d prework
 	// mk62v2d exits without altering v2d if no mark6 modules are present in .vex.obs
-	command = "mk62v2d " + v2dFile;
-        system(command.c_str());
+	if(mk6)
+	{
+		command = "mk62v2d " + v2dFile;
+	      	system(command.c_str());
+	}
 
 	P = new CorrParams(v2dFile);
 	if(P->vexFile.empty())
