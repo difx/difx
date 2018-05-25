@@ -4,7 +4,6 @@ Version 2.6
 * Some improvements to VDIF for frame sizes greatly differing from 5000 bytes
 * Some improvements in opening input files; reattempts on NFS-typical errors of "EAGAIN Resource temporarily unavailable"
 * Reduce NFS load: .input file is read only by FxManager node and its content is shared with other nodes via MPI Broadcast
-* Input file content is shared by FxManager node (MPI Broadcast), other nodes no longer open the file. This reduces NFS load.
 * Remove array that was mooted when per-band weights were introduced
 * Allow DifxParameter message to specify new stop time, then cleanly shut down at that time.
 * DifxParameters with <to></to> blocks are compared against the job name.
