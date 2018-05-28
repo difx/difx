@@ -692,12 +692,14 @@ class MainWindow(GenericWindow):
         selectedStatus = self.cboStatusVar.get()
 
 	if selectedStatus != "select":
+	    # experiment status was changed
 	    status = session.query(model.ExperimentStatus).filter_by(experimentstatus=selectedStatus).one()
 	    # make a new entry in the ExperimentStatusHistory
 	    history = model.ExperimentStatusHistory()
 	    history.expID = exp.id
 	    history.status = selectedStatus
 	    history.dateCreated = self.txtStatusDate.get()
+	    exp.status = status
 	    session.add(history)
 
         # validate that this experiment can be set to released
