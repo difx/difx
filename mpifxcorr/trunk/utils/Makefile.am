@@ -9,7 +9,8 @@ dist_bin_SCRIPTS = \
 	jobdisks \
 	joblist \
 	jobstatus \
-	startdifx
+	startdifx \
+	calcifMixed
 
 checkmpifxcorr_SOURCES = \
 	checkmpifxcorr.cpp

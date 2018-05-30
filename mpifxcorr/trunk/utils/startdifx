@@ -60,24 +60,27 @@ import signal
 import subprocess
 
 delayModelProgram = defaultDelayModelProgram
+delayModelOptions = getenv("DIFX_CALC_OPTIONS")
 
 verbose = 0
 
 def getUsage():
 	usage = '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
-	usage +='A program to simplify the launching of mpifxcorr'
+	usage +='A program to simplify the launching of mpifxcorr.\n'
 	usage += 'It can also cause model and FITS to be made.\n\n'
 	usage += 'Usage: startdifx [options] [<start delay>] <input1> [<input2> [ ... ] ]\n'
 	usage += 'or:    startdifx [options] [<start delay>] <joblist> \n\n'
 	usage +=  '<start delay> is an optional delay (seconds) to add to the job start time\n'
 	usage +=  '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
-	usage +=  '<joblist> is a joblist file as created by vex2difx (must have .joblist extension)\n'
+	usage +=  '<joblist> as created by vex2difx (.joblist extension required)\n'
 	usage +=  '\nThis program responds to the following environment variables:\n'
-	usage +=  'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
-	usage +=  'DIFX_HEAD_NODE must name the correlation head node (only if using the -m option).\n'
+	usage +=  'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT can be used to override\n'
+        usage +=  'the default group/port of %s/%d\n' % (defaultgroup, defaultport)
+	usage +=  'DIFX_HEAD_NODE must name the correlation head node (only with the -m option).\n'
 	usage +=  'DIFX_MPIRUNOPTIONS can be used to pass options to the mpirun command.\n'
-	usage +=  'DIFX_CALC_PROGRAM can be used to change the delay model program (default is %s)\n' % defaultDelayModelProgram
- 
+	usage +=  'DIFX_CALC_PROGRAM can be used to change the delay model program\n'
+        usage +=  '(the default is %s, but difxcalc can be used).\n' % defaultDelayModelProgram
+	usage +=  'DIFX_CALC_OPTIONS can be used to override options to the delay model program.\n'
 	return(usage)
 
 class Parser:
@@ -538,15 +541,15 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 	
 	if not isfile(fileBase+'.im'):
 		if makeModel and isfile(fileBase+'.calc'):
-			calcOptions = ""
-			if override:
-				calcOptions += "--override-version "
-
-			for i in range(verbose):
-				calcOptions += "-v "
-
+			if delayModelOptions != None and len(delayModelOptions) > 0:
+			    calcOptions = delayModelOptions
+			else:
+			    calcOptions = ""
+			    if override:
+				    calcOptions += "--override-version "
+			    for i in range(verbose):
+				    calcOptions += "-v "
 			system('%s %s %s.calc' % (delayModelProgram, calcOptions, fileBase))
-	
 		else:
 			return 'Error: model not available for %s' % fileBase
 	
@@ -588,13 +591,14 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	
 	if not isfile(fileBase+'.im'):
 		if makeModel and isfile(fileBase+'.calc'):
-			calcOptions = ""
-			if override:
-				calcOptions += "--override-version " 
-
-			for i in range(verbose):
-				calcOptions += "-v "
-
+			if delayModelOptions != None and len(delayModelOptions) > 0:
+			    calcOptions = delayModelOptions
+			else:
+			    calcOptions = ""
+			    if override:
+				    calcOptions += "--override-version "
+			    for i in range(verbose):
+				    calcOptions += "-v "
 			system('%s %s %s.calc' % (delayModelProgram, calcOptions, fileBase))
 		else:
 			return 'Error: model not available for %s' % fileBase
