@@ -118,12 +118,12 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     PyObject *ngain, *nsum, *gains, *ikind, *dterms, *plotRange, *IDI, *antnum, *tempPy, *ret; 
     PyObject *allphants, *nphtimes, *phanttimes, *Range, *SWAP, *doIF, *metadata, *refAnts;
     PyObject *asdmTimes, *plIF, *isLinearObj, *XYaddObj, *XYdelObj, *antcoordObj, *soucoordObj, *antmountObj; 
-    int nALMA, plAnt, nPhase, doTest, doConj, doNorm;
+    int nALMA, plAnt, nPhase, doTest, doConj, doNorm,calField;
     double doSolve;
  //   double XYadd;
     bool isSWIN; 
 
-    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOidiiOOOOOOO",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doSolve, &doConj, &doNorm, &XYaddObj, &XYdelObj, &metadata, &soucoordObj, &antcoordObj, &antmountObj, &isLinearObj)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
+    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOidiiOOOOOOOi",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doSolve, &doConj, &doNorm, &XYaddObj, &XYdelObj, &metadata, &soucoordObj, &antcoordObj, &antmountObj, &isLinearObj,&calField)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
 
 
 
@@ -138,7 +138,13 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
     FILE *logFile = fopen("PolConvert.log","a");
 
-
+    if(calField>=0){
+      sprintf(message,"\nWill use field %i as calibrator/plot\n",calField);
+      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+    } else {
+      sprintf(message,"\nWill use all fields in the timerange\n");
+      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+    };
 
 // Sort out if SWIN files or FITS-IDI files are gonig to be converted:
 // (if the length of the metadata list is zero, this is a FITS-IDI file)
@@ -449,12 +455,12 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        sprintf(message,"\n\n Opening and preparing SWIN files.\n");
        fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
-       DifXData = new DataIOSWIN(nSWINFiles, SWINFiles, nALMA, almanums, doRange, SWINnIF, SWINnchan, SWINFreqs, OverWrite, doTest, iDoSolve, jd0, Geometry, logFile);
+       DifXData = new DataIOSWIN(nSWINFiles, SWINFiles, nALMA, almanums, doRange, SWINnIF, SWINnchan, SWINFreqs, OverWrite, doTest, iDoSolve, calField, jd0, Geometry, logFile);
      } else {
        sprintf(message,"\n\n Opening FITS-IDI file and reading header.\n");
        fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
-       DifXData = new DataIOFITS(outputfits, nALMA, almanums, doRange, OverWrite, doConj, iDoSolve, Geometry, logFile);
+       DifXData = new DataIOFITS(outputfits, nALMA, almanums, doRange, OverWrite, doConj, iDoSolve, calField, Geometry, logFile);
      };
 
      if(!DifXData->succeed()){
@@ -569,7 +575,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // Some extra auxiliary variables:
 
   double currT, lastTFailed;
-  int currAnt, currAntIdx, currNant, otherAnt; 
+  int currAnt, currAntIdx, currNant, otherAnt,currF; 
   bool notinlist, gchanged, dtchanged, toconj;
 
   lastTFailed = 0.0;
@@ -710,7 +716,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
    //  printf("LOOPING VIS\n");
 
-     while(DifXData->getNextMixedVis(currT,currAnt, otherAnt, toconj)){
+     while(DifXData->getNextMixedVis(currT,currAnt, otherAnt, toconj, currF)){
 
        countNvis += 1;
 
@@ -1018,8 +1024,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // Calibrate and convert to circular:
 
 // Shall we write in plot file?
-     auxB = (currT>=plRange[0] && currT<=plRange[1] && plotIF); //plAnt == otherAnt);
-
+     auxB = (currT>=plRange[0] && currT<=plRange[1] && plotIF && (calField<0 || currF==calField)); //plAnt == otherAnt);
 
 // Convert:
      DifXData->applyMatrix(Ktotal[currAntIdx],XYSWAP[currAntIdx],auxB,currAntIdx,plotFile[IFplot]);

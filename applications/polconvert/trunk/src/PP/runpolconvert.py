@@ -239,7 +239,7 @@ def runPolConvert(label, spw=-1, DiFXinput='',
             #excludedAnts, doSolve, solint,
             doTest=doTest, npix=npix,
             solveAmp=False
-            #, solveMethod=gradient
+            #, solveMethod=gradient, calstokes, calfield
             )
     except Exception, ex:
         print 'Polconvert Exception'

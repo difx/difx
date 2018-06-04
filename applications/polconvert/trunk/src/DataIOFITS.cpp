@@ -39,6 +39,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 DataIOFITS::~DataIOFITS() {
 
+
+
 };
 
 /*
@@ -51,7 +53,7 @@ corrections are going to be performed.
 If Overwrite == true, the output file is overwritten. If not, it expects the output file
 to exist already (it will not make a new one).
 */
-DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt, double *Range, bool Overwrite, bool doConj, bool doSave, ArrayGeometry *Geom, FILE *logF) {
+DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt, double *Range, bool Overwrite, bool doConj, bool doSave, int saveSource, ArrayGeometry *Geom, FILE *logF) {
 
 
 logFile = logF ;
@@ -115,7 +117,7 @@ bufferData = new float[12];
 ////////////////////////////////////
 // OPEN FILES, READ DATA, AND FIND OUT
 // ALL THE VISIBILITIES TO BE CORRECTED
-  readInput(outputfile);
+  readInput(outputfile,saveSource);
   if (!success){return;};
 
   openOutFile(outputfile, Overwrite);
@@ -292,7 +294,7 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
 
 
 // FUNTION TO READ THE DATA AND FIND OUT THE MIXED-POL VISIBILITIES
-void DataIOFITS::readInput(std::string inputfile) {
+void DataIOFITS::readInput(std::string inputfile, int saveSource) {
 
 
 // KEYWORDS FOR FITS-IDI FILE:
@@ -465,6 +467,7 @@ void DataIOFITS::readInput(std::string inputfile) {
 //  Freqids = new int[2*Nvis];
   an1 = new int[2*Nvis];
   an2 = new int[2*Nvis];
+  field = new int[2*Nvis];
   ParAng[0] = new double[2*Nvis];
   ParAng[1] = new double[2*Nvis];
   indexes = new long[2*Nvis];
@@ -598,6 +601,8 @@ void DataIOFITS::readInput(std::string inputfile) {
       if(a1==linAnts[i] || a2==linAnts[i]){isLinVis=true; break;};
     };
 
+    fits_read_col(fptr, TINT, ss, il+1, 1, 1, NULL, &souidx, &auxI, &status);
+
     if(isLinVis){
        fits_read_col(fptr, TFLOAT, uu, il+1, 1, 1, NULL, &FUVW[0], &auxI, &status);
  //      printf("U %i\n",status);
@@ -608,7 +613,6 @@ void DataIOFITS::readInput(std::string inputfile) {
        fits_read_col(fptr, TFLOAT, ww, il+1, 1, 1, NULL, &FUVW[2], &auxI, &status);
  //      printf("W %i\n",status);
 
-       fits_read_col(fptr, TINT, ss, il+1, 1, 1, NULL, &souidx, &auxI, &status);
 
  //      printf("SOU %i\n",status);
 
@@ -617,7 +621,7 @@ void DataIOFITS::readInput(std::string inputfile) {
 /////// TODO: SORT OUT a1-1 -> a1
        getParAng(souidx-1,a1-1,a2-1,UVW,AuxPA1,AuxPA2);
 
-    } else {
+    } else if(saveSource<0 || souidx == saveSource) {
 
      Vis2Save[NVis2Save] = il;
      NVis2Save += 1;
@@ -632,6 +636,7 @@ void DataIOFITS::readInput(std::string inputfile) {
     if(isLinVis){
            an1[NLinVis] = a1;
            an2[NLinVis] = a2;
+           field[NLinVis] = souidx;
            indexes[NLinVis] = il;
            JDTimes[NLinVis] = Times[il]; //((Times[il]+Dates[il])-2400000.5)*86400.;
            ParAng[0][NLinVis] = AuxPA1;
@@ -776,7 +781,7 @@ void DataIOFITS::openOutFile(std::string outputfile, bool Overwrite) {
 
 // RETURN THE METADATA OF THE NEXT MIXED-POL. VISIBILITY TO CHANGE.
 // RETURNS WHETHER IT FOUND DATA (TRUE) OR IF ALL VISIBS. HAVE ALREADY BEEN RETURNED (FALSE) 
-bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bool &conj) {
+bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bool &conj, int &calField) {
 
  // char *message;
   bool found = false;
@@ -794,6 +799,7 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
     if (is1[currVis]){
       fits_read_col(ofile, TFLOAT, Flux, curridx+1, dsize*jump+1, dsize*Nentry, NULL, currentData, NULL, &status);
       antenna = an1[currVis];
+      calField = field[currVis];
       otherAnt = an2[currVis];
       JDTime = JDTimes[currVis];
       is1[currVis] = false;
@@ -815,6 +821,7 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
       antenna = an2[currVis];
       otherAnt = an1[currVis];
       JDTime = JDTimes[currVis];
+      calField = field[currVis];
       is2[currVis] = false;
       conj = false;
       found = true;

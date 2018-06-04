@@ -47,8 +47,8 @@
 #
 #
 
-__version__ = "1.7.2"
-date = 'Dec 5, 2017'     
+__version__ = "1.7.4"
+date = 'Apr 11, 2018'     
 
 
 ################
@@ -114,7 +114,7 @@ if __name__=='__main__':
   DiFXcalc           =  ""
   doIF               =  []
   linAntIdx          =  [1]
-  Range              =  [0, 1, 5, 0, 0, 1, 10, 0]
+  Range              =  [0,01,19,56,0,01,23,00] #[0, 1, 5, 0, 0, 1, 10, 0]
   ALMAant            =  ""
   spw                =  -1
   calAPP             =  ""
@@ -133,17 +133,18 @@ if __name__=='__main__':
   swapRL             =  False
   IDI_conjugated     =  False
   plotIF             =  []
-  plotRange          =  [0, 1, 5, 0, 0, 1, 10, 0]
-  plotAnt            =  5
-  excludeAnts        =  []
+  plotRange          =  Range
+  plotAnt            =  4
+  excludeAnts        =  [5]
   doSolve            =  1000.0
   solint             =  [1, 1]
   doTest             =  True
   npix               =  50
   solveAmp           =  True
   solveMethod        =  "gradient"
-
-
+  calstokes          = [1.,0.,0.,0.]
+  solveQU = False
+  calfield = -1
 #
 #
 #
@@ -158,7 +159,7 @@ if __name__=='__main__':
 # COMMENT OUT THIS LINE WHEN DEBUGGING
 # YOU SHALL THEN RUN THIS FILE WITH "execfile(...)"
 
-def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, gains, interpolation, gainmode, XYavgTime, dterms, amp_norm, XYadd, XYdel, XYratio, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,excludeAnts,doSolve,solint,doTest,npix,solveAmp,solveMethod):
+def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, gains, interpolation, gainmode, XYavgTime, dterms, amp_norm, XYadd, XYdel, XYratio, swapXY, swapRL, IDI_conjugated, plotIF, plotRange, plotAnt,excludeAnts,doSolve,solint,doTest,npix,solveAmp,solveMethod, calstokes, calfield):
 
 # if True:
 ############################################
@@ -189,7 +190,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       lfile = open("PolConvert.log","a")
       print >> lfile,'\n'+msg+'\n'
       lfile.close()
-
 
 
 
@@ -553,6 +553,31 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     printError("ERROR! \'solveMethod\' must be any of: %s"%(', '.join(allMethods)))
 
 
+  if type(calstokes) is not list:
+    printError("ERROR! Wrong calstokes!")
+  elif len(calstokes)!=4:
+    printError("ERROR! calstokes should have 4 elements!")
+  for item in calstokes:
+    if type(item) is not float:
+      printError("ERROR! calstokes should only have float elements!")
+
+  Stokes = list(calstokes)
+
+  if Stokes[0]<=0. or Stokes[0]<np.sqrt(Stokes[1]**2.+Stokes[2]**2.+Stokes[3]**2.):
+      printError("ERROR! Inconsistent Stokes parameters!")
+
+# Will implement solveQU soon!
+  solveQU = False
+#  calfield = -1
+
+  if type(solveQU) is not bool:
+    printError("ERROR! Wrong solveQU!")
+  if type(calfield) is not int:
+    printError("ERROR! Wrong calfield!")
+
+#  if calfield>=0:
+#    printMsg("Will use field #%i\n"%calfield)
+
 
   doConj = True
   if type(IDI_conjugated) is not bool:
@@ -589,15 +614,19 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       printError("ERROR! linAntIdx should be a list of integers!")
 
 
-  if type(solint) is not list or len(solint)!= 2:
-    printError("ERROR! solint must be a list of two numbers!")
+  if type(solint) is not list or (len(solint) not in [2,3]):
+    printError("ERROR! solint must be a list of two/three numbers!")
   else:
     try:
       solint[0] = int(solint[0])
       solint[1] = int(solint[1])
     except:
-      printError("ERROR! solint must be a list of two numbers!")
+      printError("ERROR! solint must be a list of two/three numbers!")
 
+  if len(solint)==3:
+    solint[2] = float(solint[2])
+  else: # Default dt
+    solint.append(100.)
 
   nALMA = len(linAntIdx)
 
@@ -1007,7 +1036,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 # ANTENNAS TO PARTICIPATE IN THE GAIN ESTIMATES:
   calAnts = [i+1 for i in range(len(antcoords)) if i+1 not in excludeAnts]
-
+  if plotAnt not in calAnts:
+    printError("ERROR! Reference antenna is NOT in list of calibratable antennas!")
 
 #######################
 ##### GET SPECTRAL WINDOW AUTOMATICALLY:
@@ -1470,7 +1500,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   printMsg("\n###\n### Going to PolConvert\n###")
 
   doAmpNorm = amp_norm>0.0
-  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, antmounts, isLinear)
+  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, antmounts, isLinear,calfield)
 
   printMsg("\n###\n### Done with PolConvert (status %d).\n###" % (didit))
 
@@ -1628,7 +1658,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 ############################################################
 # Levenberg-Marquardt minimizer of the GCPFF problem:
-   def LMMin(p0,IFlist,fitAnts,Ch0,Ch1,solveAmp,useCov):
+   def LMMin(p0,Ch0,Ch1):
 
      MAXIT = maxIter*len(fitAnts)
      relchange = 1.0
@@ -1655,8 +1685,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      while i<MAXIT:
 
        ptst0 = np.copy(currP)
-       currChi2 = PS.GetChi2(ptst0,IFlist,fitAnts,Ch0,Ch1,solveAmp,LMTune,useCov)
-       Chi2_0 = PS.GetChi2(ptst0,IFlist,fitAnts,Ch0,Ch1,solveAmp,-1.0,useCov)
+       currChi2 = PS.GetChi2(ptst0,LMTune,Ch0,Ch1)
+       Chi2_0 = PS.GetChi2(ptst0,-1.0,Ch0,Ch1)
 
        if i==0 or currChi2<minChi2:
          minChi2 = currChi2
@@ -1671,8 +1701,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
          LMTune *= KFacRaise
          ptst0 = np.copy(currP)
 
-         Chi2_ini = PS.GetChi2(ptst0,IFlist,fitAnts,Ch0,Ch1,solveAmp,LMTune,useCov)
-         Chi2_0 = PS.GetChi2(ptst0,IFlist,fitAnts,Ch0,Ch1,solveAmp,-1.0,useCov)
+         Chi2_ini = PS.GetChi2(ptst0,LMTune,Ch0,Ch1)
+         Chi2_0 = PS.GetChi2(ptst0,-1.0,Ch0,Ch1)
          if i>=MAXIT:
            break
 
@@ -1699,8 +1729,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     
 
        ptst0 = np.copy(currP)
-       Chi2_ini = PS.GetChi2(ptst0,IFlist,fitAnts,Ch0,Ch1,solveAmp,LMTune,useCov)
-       Chi2_0 = PS.GetChi2(ptst0,IFlist,fitAnts,Ch0,Ch1,solveAmp,-1.0,useCov)
+       Chi2_ini = PS.GetChi2(ptst0,LMTune,Ch0,Ch1)
+       Chi2_0 = PS.GetChi2(ptst0,-1.0,Ch0,Ch1)
 
        i += 1
 
@@ -1713,8 +1743,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
            i += 1
            LMTune /= KFacDecr
            ptst0 = np.copy(currP)
-           Chi2_ini = PS.GetChi2(ptst0,IFlist,fitAnts,Ch0,Ch1,solveAmp,LMTune,useCov)
-           Chi2_1 = PS.GetChi2(ptst0,IFlist,fitAnts,Ch0,Ch1,solveAmp,-1.0,useCov)
+           Chi2_ini = PS.GetChi2(ptst0,LMTune,Ch0,Ch1)
+           Chi2_1 = PS.GetChi2(ptst0,-1.0,Ch0,Ch1)
 
            if Chi2_1<minChi2:
              minChi2 = Chi2_1
@@ -1768,6 +1798,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     cAnts = np.array(calAnts,dtype=np.int32)
     lAnts = np.array(linAntIdx,dtype=np.int32)
     MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts)
+
     AllFreqs = []
     print '\n\n'
     for pli in plotIF:
@@ -1775,6 +1806,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       file1 = "POLCONVERT.FRINGE/OTHERS.FRINGE_%i"%pli
       file2 = "POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli
       success = PS.ReadData(pli, file1, file2)
+      NScan = PS.GetNScan(0)
       if success != 0:
         printError('Failed PolGainSolve: ERROR %i'%success)
       AllFreqs.append(PS.GetIFs(pli))
@@ -1790,7 +1822,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     dropAnt = calAnts.index(plotAnt)
     rateAnts = calAnts[:dropAnt] + calAnts[dropAnt+1:]
     printMsg("\n Estimate antenna delays & rates\n")
-    PS.DoGFF(rateAnts,npix,True)
+    for nsi in range(NScan):
+      PS.DoGFF(rateAnts,npix,True,nsi)
 
 
 # BP MODE:
@@ -1808,6 +1841,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        if BPChan[-1]<Nchans-1:
          BPChan.append(Nchans-1)
        BPChan = np.array(BPChan,dtype=np.int32)
+       Npar = len(fitAnts)*{True:2,False:1}[solveAmp]
+       laux = [pli]
+       PS.SetFit(Npar,laux,fitAnts,solveAmp,solveQU,Stokes,useCov)
        for chran in range(len(BPChan)-1):
          if chran==0 and plii==0:
            p0 = []
@@ -1824,9 +1860,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
          sys.stdout.flush()
 
          if fitMethod not in scipyMethods:
-           myfit = LMMin(p0,laux,fitAnts,BPChan[chran],BPChan[chran+1],solveAmp,useCov)
+           myfit = LMMin(p0,BPChan[chran],BPChan[chran+1])
          else:
-           mymin = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, BPChan[chran],BPChan[chran+1],solveAmp,-1.0,useCov),method=fitMethod)
+           mymin = spopt.minimize(PS.GetChi2,p0,args=(-1.0, BPChan[chran],BPChan[chran+1]),method=fitMethod)
+
+       #    mymin = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, BPChan[chran],BPChan[chran+1],solveAmp,-1.0,useCov),method=fitMethod)
+
            myfit = mymin.values()[5]
 
          for ci,calant in enumerate(fitAnts):
@@ -1853,11 +1892,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       for ci in fitAnts:
         p0 += [0.0] 
       laux = list(plotIF)
-      print 'First Chi2: ', PS.GetChi2(np.array(p0),laux,fitAnts,0,MaxChan-1,solveAmp,-1.0,False)
+      PS.SetFit(Npar,laux,fitAnts,solveAmp,solveQU,Stokes,useCov)
+ #     print 'First Chi2: ', PS.GetChi2(np.array(p0),-1.0,0,MaxChan-1,solveAmp,solveQU,Stokes,-1.0,False)
       if fitMethod not in scipyMethods: #=='Levenberg-Marquardt':
-        myfit = LMMin(p0,laux,fitAnts,0,MaxChan-1,solveAmp,useCov)
+        myfit = LMMin(p0,0,MaxChan-1)
       else:
-        mymin = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, 0,MaxChan-1,solveAmp,-1.0,False),method=fitMethod)
+        mymin = spopt.minimize(PS.GetChi2,p0,args=(-1.0, 0,MaxChan-1),method=fitMethod)
         myfit = mymin.values()[5]
 
       RefFreq = AllFreqs[0][0]
@@ -1914,6 +1954,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     pl.savefig('Cross-Gains.png')
     pl.show()
 
+    PS.FreeData()
 
    else:
     printMsg("\n\n  doSolve can ONLY work with the source was compiled with DO_SOLVE=True\n  PLEASE, RECOMPILE!\n\n")

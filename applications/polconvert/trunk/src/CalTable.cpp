@@ -84,7 +84,7 @@ CalTable::CalTable(int kind, double **R1,double **P1,double **R2,double **P2, do
       GainAmp[1] = new double**[Nants];
       GainPhase[0] = new double**[Nants];
       GainPhase[1] = new double**[Nants];
-      flags = flag;
+   //   flags = flag;
       for (i=0; i<Nants; i++){
         if (Time[i][0]<JDRange[0]){JDRange[0] = Time[i][0];};
         if (Time[i][Ntimes[i]-1]>JDRange[1]){JDRange[1] = Time[i][Ntimes[i]-1];};
@@ -166,6 +166,7 @@ long auxI, auxI2;
 double frchan;
 bool firstflag = false; 
 //char *message;
+bool allflagged = true;
 
  auxI = -1; // If all channels are flagged, no interpolation is done.
 
@@ -188,8 +189,73 @@ bool firstflag = false;
 //////////////////////
 
 
-
-
+ if (Nchan==1){
+ for (ant=0; ant<Nants; ant++) {
+  allflagged = true;
+  for (tidx=0; tidx<Ntimes[ant]; tidx++) { if(!flags[ant][tidx]){allflagged=false;break;};};
+  if (allflagged){
+    sprintf(message,"\nWARNING: ALMA ANTENNA #%i HAS ALL ITS TIMES FLAGGED!\n",ant);
+    fprintf(logFile,"%s",message);
+    sprintf(message,"SETTING ITS GAIN TO ZERO. CHECK RESULTS CAREFULLY!\n\n");
+    fprintf(logFile,"%s",message);
+    fflush(logFile);
+    for (tidx=0; tidx<Ntimes[ant]; tidx++) {
+         if(isDterm){
+           GainAmp[0][ant][0][tidx] = 0.0;
+           GainAmp[1][ant][0][tidx] = 0.0;
+         } else {
+           GainAmp[0][ant][0][tidx] = 0.0;
+           GainAmp[1][ant][0][tidx] = 0.0;
+         };
+         GainPhase[0][ant][0][tidx] = 0.0;
+         GainPhase[1][ant][0][tidx] = 0.0;
+         flags[ant][tidx] = false;
+    };
+  };
+  // Determine first unflagged time:
+    for (tidx=0; tidx<Ntimes[ant]; tidx++) {
+       if (!flags[ant][tidx]){auxI=tidx;break;};};   //REVISAR
+  // Fill the first flagged channels:
+    for (index=0; index<auxI; index++){
+       GainAmp[0][ant][0][index] = GainAmp[0][ant][0][auxI];
+       GainAmp[1][ant][0][index] = GainAmp[1][ant][0][auxI];
+       GainPhase[0][ant][0][index] = GainPhase[0][ant][0][auxI];
+       GainPhase[1][ant][0][index] = GainPhase[1][ant][0][auxI];
+       flags[ant][index] = false;            // REVISAR
+    };
+  // Determine last unflagged channel
+    for (tidx=Ntimes[ant]-1; tidx>=0; tidx --) {
+       if (!flags[ant][tidx]){auxI=tidx;break;};};  // REVISAR
+  // Fill the last flagged channels:
+    for (index=auxI+1; index<Ntimes[ant]; index++){  // REVISAR
+       GainAmp[0][ant][0][index] = GainAmp[0][ant][0][auxI];
+       GainAmp[1][ant][0][index] = GainAmp[1][ant][0][auxI];
+       GainPhase[0][ant][0][index] = GainPhase[0][ant][0][auxI];
+       GainPhase[1][ant][0][index] = GainPhase[1][ant][0][auxI];
+       flags[ant][index] = false;            // REVISAR
+    };
+  // Look for flagged time ranges and interpolate them:
+   firstflag = false;
+   for (tidx=0; tidx<Ntimes[ant]; tidx++) {
+     if (!firstflag && flags[ant][tidx]){firstflag = true; auxI=tidx-1;};  // REVISAR
+     if (firstflag && !flags[ant][tidx]){
+          firstflag = false;
+          for (auxI2=auxI+1; auxI2<tidx; auxI2++) {
+            frchan = ((double) (auxI2-auxI))/((double) (tidx-auxI));
+            GainAmp[0][ant][0][auxI2] = GainAmp[0][ant][0][tidx]*frchan;
+            GainAmp[0][ant][0][auxI2] += GainAmp[0][ant][0][auxI]*(1.-frchan);
+            GainAmp[1][ant][0][auxI2] = GainAmp[1][ant][0][tidx]*frchan;
+            GainAmp[1][ant][0][auxI2] += GainAmp[1][ant][0][auxI]*(1.-frchan);
+            GainPhase[0][ant][0][auxI2] = GainPhase[0][ant][0][tidx]*frchan;
+            GainPhase[0][ant][0][auxI2] += GainPhase[0][ant][0][auxI]*(1.-frchan);
+            GainPhase[1][ant][0][auxI2] = GainPhase[1][ant][0][tidx]*frchan;
+            GainPhase[1][ant][0][auxI2] += GainPhase[1][ant][0][auxI]*(1.-frchan);
+            flags[ant][auxI2] = false;            // REVISAR
+          };
+     };
+   };
+  };
+ };
 
 
  if (Nchan>1) {
@@ -198,7 +264,6 @@ bool firstflag = false;
 
     index = tidx;   // REVISAR
 
-    bool allflagged = true;
     for (chan=0; chan<Nchan; chan ++) {
        if(!flags[ant][chan*Ntimes[ant]+index]){allflagged=false;};            // REVISAR
     };

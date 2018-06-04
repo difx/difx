@@ -97,7 +97,7 @@ class DataIO {
    return the pure-linear visibilities twice, one iteration for each antenna (the same is 
    true for the auto-correlations of each lin-pol antenna). 
    Returns false if no more mixed-pol visibilities are found for the corresponding IF. */
-   virtual bool getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bool &conj) = 0;
+   virtual bool getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bool &conj, int &calField) = 0;
 
 
 /* Complementary to the function above. Once the visibilities have been 
@@ -118,7 +118,7 @@ class DataIO {
    FreqSetup *Freqs;
    ArrayGeometry *Geometry;
    double *Freqvals[MAXIF], *doRange, *JDTimes;
-   int *Basels, *Freqids, *an1, *an2, *linAnts; //, *sour;
+   int *Basels, *Freqids, *an1, *an2, *linAnts, *field; //, *sour;
    double *ParAng[2];
    int NLinAnt, NIFs, Nband, status, Nants, Nfreqs, currFreq;
    long NLinVis, Nvis, currVis, *indexes;

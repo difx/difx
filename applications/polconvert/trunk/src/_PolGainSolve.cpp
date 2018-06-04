@@ -45,6 +45,8 @@ static char PolGainSolve_docstring[] =
     "Solves for cross-polarization gains from mixed-polarization visibilities";
 static char ReadData_docstring[] =
     "Reads data (one IF) for PolGainSolve";
+static char FreeData_docstring[] =
+    "Releases the data pointers of PolGainSolve";
 static char GetChi2_docstring[] =
     "Computes the Chi2 for a given set of cross-pol gains";
 static char GetIFs_docstring[] =
@@ -53,6 +55,11 @@ static char DoGFF_docstring[] =
     "Performs a simplified GFF (delays and rates). The reference antenna is set by not adding it to the list of fittable antennas";
 static char SetFringeRates_docstring[] =
     "Forces the antenna fringe-rates to the list give, before the GCPFF is performed";
+static char GetNScan_docstring[] =
+    "Returns the number of scans for the given IF.";
+static char SetFit_docstring[] =
+    "Allocates memory for the GCPFF.";
+
 
 
 /* Available functions */
@@ -62,6 +69,9 @@ static PyObject *GetChi2(PyObject *self, PyObject *args);
 static PyObject *GetIFs(PyObject *self, PyObject *args);
 static PyObject *DoGFF(PyObject *self, PyObject *args);
 static PyObject *SetFringeRates(PyObject *self, PyObject *args);
+static PyObject *GetNScan(PyObject *self, PyObject *args);
+static PyObject *FreeData(PyObject *self, PyObject *args);
+static PyObject *SetFit(PyObject *self, PyObject *args);
 
 /* Module specification */
 static PyMethodDef module_methods[] = {
@@ -71,6 +81,10 @@ static PyMethodDef module_methods[] = {
     {"GetIFs", GetIFs, METH_VARARGS, GetIFs_docstring},
     {"DoGFF", DoGFF, METH_VARARGS, DoGFF_docstring},
     {"SetFringeRates", SetFringeRates, METH_VARARGS, SetFringeRates_docstring},
+    {"GetNScan",GetNScan, METH_VARARGS, GetNScan_docstring},
+    {"FreeData", FreeData, METH_VARARGS, FreeData_docstring},
+    {"SetFit", SetFit, METH_VARARGS, SetFit_docstring},
+
     {NULL, NULL, 0, NULL}
 };
 
@@ -95,25 +109,65 @@ PyMODINIT_FUNC init_PolGainSolve(void)
    int MAXIF = 8; // Will reallocate if needed.
    int NCalAnt, Nlin, Ncirc, *Nchan, SolMode, SolAlgor;
    int *IFNum;
-   int *Lant, *Cant, *NVis, *NLVis, *NCVis, *CalAnts;
-
-   int NIF = 0;
-   int NBas;
+   int *Lant, *Cant, *NVis, *NLVis, *NCVis, *CalAnts, *NScan;
+   int solveAmp, useCov, solveQU;
+   int NIF, NIFComp;
+   int NBas, NantFit, Npar;
    int npix = 0;
-   double **Frequencies, *Rates, *Delays00, *Delays11;
+   double **Frequencies, ***Rates, ***Delays00, ***Delays11; 
+   double *Tm;
+   int *doIF, *antFit; 
+
+   double **DStokes; // = new double*[1];
+
    double Chi2Old = 0.0;
    double TAvg = 1.0;
    double RelWeight = 1.0;
-   int **Ant1, **Ant2, **BasNum;
-   double **Times;
+   double T0, T1, DT;
+   int **Ant1, **Ant2, **BasNum, **Scan;
+   double **Times, *CovMat, *IndVec, *SolVec;
    cplx64f **PA1, **PA2, **auxC00, **auxC01, **auxC10, **auxC11;
    cplx64f ***RR, ***RL, ***LR, ***LL, **CrossSpec00, **CrossSpec11;
 
+   double Lambda;
+   bool doCov;
+   double Stokes[4];
+
+   gsl_matrix_view m; 
+   gsl_vector_view x, v;
+   gsl_permutation *perm;
+
    bool AddCrossHand = true;
    bool AddParHand = true;
- 
+   bool StokesSolve;
+
+   cplx64f *G1,*G2, *G1nu, *G2nu; 
+   double *DirDer,*MBD1,*MBD2;
+   int *DerIdx,*AvVis;
+
+
    FILE *logFile;
 
+
+
+
+
+
+
+static PyObject *GetNScan(PyObject *self, PyObject *args){
+  int cIF;
+  PyObject *ret;
+  if (!PyArg_ParseTuple(args, "i",&cIF)){
+     sprintf(message,"Failed GetNScan! Check inputs!\n"); 
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
+     ret = Py_BuildValue("i",-1);
+     return ret;
+  };
+
+  ret = Py_BuildValue("i",NScan[cIF]);
+  return ret;
+
+};
 
 
 
@@ -131,11 +185,33 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
     return ret;
   };
 
+gsl_error_handler_t *ERRH = gsl_set_error_handler_off ();
+NIF = 0;
+Npar=0;
+DStokes = new double*[1];
+DStokes[0] = new double[4];
+CovMat = new double[1];
+IndVec = new double[1];
+SolVec = new double[1];
+G1 = new cplx64f[1];
+G2 = new cplx64f[1];
+G1nu = new cplx64f[1];
+G2nu = new cplx64f[1];
+DirDer = new double[1];
+MBD1 = new double[1];
+MBD2 = new double[1];
+DerIdx = new int[1];
+AvVis = new int[1];
+Tm = new double[1];
+doIF = new int[1];
+antFit = new int[1];
 
 TAvg = (double) PyInt_AsLong(PyList_GetItem(solints,1));
 SolAlgor = (int) PyInt_AsLong(PyList_GetItem(solints,0));
 
-printf("Will divide the calibration iscan into %.1f chunks\n",TAvg);
+sprintf(message,"Will divide each calibration scan into %.1f chunks\n",TAvg);
+fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
+
 
 AddParHand = RelWeight>0.0;
 AddCrossHand = true;
@@ -195,15 +271,6 @@ AddCrossHand = true;
 
   NBas = k;
 
-  Rates = (double *) malloc(NCalAnt*sizeof(double));
-  Delays00 = (double *) malloc(NCalAnt*sizeof(double));
-  Delays11 = (double *) malloc(NCalAnt*sizeof(double));
-
-  for(i=0;i<NCalAnt;i++){
-     Rates[i] = 0.0;
-     Delays00[i] = 0.0;
-     Delays11[i] = 0.0;
-  };
 
   CrossSpec00 = (cplx64f **) malloc(NBas*sizeof(cplx64f*));
   CrossSpec11 = (cplx64f **) malloc(NBas*sizeof(cplx64f*));
@@ -217,6 +284,7 @@ AddCrossHand = true;
   Nlin = PyArray_DIM(linant,0);
 
 
+/*
 // Re-allocate memory:
   if (NIF >0){
     free(NVis); 
@@ -227,6 +295,8 @@ AddCrossHand = true;
     free(Frequencies);
     free(Ant1);
     free(Ant2);
+    free(Scan);
+    free(NScan);
     free(Times);
     free(PA1); 
     free(PA2);
@@ -235,6 +305,7 @@ AddCrossHand = true;
     free(RL);
     free(LL);
   };
+*/
 
 
   NIF = 0;
@@ -250,6 +321,8 @@ AddCrossHand = true;
   Frequencies = (double **) malloc(MAXIF*sizeof(double*));
   Ant1 = (int**) malloc(MAXIF*sizeof(int*));
   Ant2 = (int**) malloc(MAXIF*sizeof(int*));
+  Scan = (int**) malloc(MAXIF*sizeof(int*));
+  NScan = (int*) malloc(MAXIF*sizeof(int));
   Times = (double**) malloc(MAXIF*sizeof(double*));
   PA1 = (cplx64f**) malloc(MAXIF*sizeof(cplx64f*));
   PA2 = (cplx64f**) malloc(MAXIF*sizeof(cplx64f*));
@@ -257,12 +330,53 @@ AddCrossHand = true;
   LR = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   RL = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   LL = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
-
+  Rates = (double ***) malloc(MAXIF*sizeof(double**));
+  Delays00 = (double ***) malloc(MAXIF*sizeof(double**));
+  Delays11 = (double ***) malloc(MAXIF*sizeof(double**));
 
     PyObject *ret = Py_BuildValue("i",0);
     return ret;
 
 };
+
+
+
+
+
+
+
+static PyObject *FreeData(PyObject *self, PyObject *args) {
+
+int i,j; 
+
+for(i=0;i<NIF;i++){
+  for(j=0;j<NVis[i]+1;j++){
+    free(RR[i][j]);free(RL[i][j]);
+    free(LR[i][j]);free(LL[i][j]);
+  };
+  free(Ant1[i]);free(Ant2[i]);free(Scan[i]);free(Times[i]);
+  free(PA1[i]);free(PA2[i]);free(RR[i]);free(RL[i]);
+  free(LR[i]);free(LL[i]);
+  delete Frequencies[i];
+};
+
+if(NIF>0){
+  free(NScan);free(Nchan);free(NVis);
+  free(NCVis);free(NLVis);free(IFNum);
+  free(Frequencies); free(Scan);
+  NIF = -1;
+
+PyObject *ret = Py_BuildValue("i",0);
+return ret;
+
+};
+
+PyObject *ret = Py_BuildValue("i",1);
+return ret;
+
+
+};
+
 
 
 
@@ -308,16 +422,18 @@ if (NIF > MAXIF){
   NCVis = (int*) realloc(NCVis,MAXIF*sizeof(int));
   NLVis = (int*) realloc(NLVis,MAXIF*sizeof(int));
   IFNum = (int*) realloc(IFNum,MAXIF*sizeof(int));
-
   if(!Nchan || !Frequencies || !NVis || !NCVis || !NLVis || !IFNum){
     Nchan=NULL; Frequencies=NULL; NVis=NULL; NCVis=NULL; NLVis=NULL; IFNum=NULL;
     PyObject *ret = Py_BuildValue("i",-2);
     return ret;
   };
 
+
 // Set memory for the visibilities and metadata:
   Ant1 = (int**) realloc(Ant1,MAXIF*sizeof(int*));
   Ant2 = (int**) realloc(Ant2,MAXIF*sizeof(int*));
+  Scan = (int**) realloc(Scan,MAXIF*sizeof(int*));
+  NScan = (int*) realloc(NScan,MAXIF*sizeof(int));
   Times = (double**) realloc(Times,MAXIF*sizeof(double*));
   PA1 = (cplx64f**) realloc(PA1,MAXIF*sizeof(cplx64f*));
   PA2 = (cplx64f**) realloc(PA2,MAXIF*sizeof(cplx64f*));
@@ -325,6 +441,9 @@ if (NIF > MAXIF){
   LR = (cplx64f***) realloc(LR,MAXIF*sizeof(cplx64f**));
   RL = (cplx64f***) realloc(RL,MAXIF*sizeof(cplx64f**));
   LL = (cplx64f***) realloc(LL,MAXIF*sizeof(cplx64f**));
+  Rates = (double ***) realloc(Rates,MAXIF*sizeof(double**));
+  Delays00 = (double ***) realloc(Delays00,MAXIF*sizeof(double**));
+  Delays11 = (double ***) realloc(Delays11,MAXIF*sizeof(double**));
 
   if(!Ant1 || !Ant2 || !Times || !PA1 || !PA2 || !RR || !LR || !RL || !LL){
     Ant1=NULL; Ant2=NULL; Times=NULL; PA1=NULL; PA2=NULL; RR=NULL;
@@ -333,6 +452,11 @@ if (NIF > MAXIF){
     return ret;
   };
 
+  if(!Rates || !Delays00 || !Delays11){
+    Rates=NULL; Delays00=NULL; Delays11=NULL;
+    PyObject *ret = Py_BuildValue("i",-4);
+    return ret;
+  };
 
 
 };
@@ -351,6 +475,12 @@ if (Nchan[NIF-1] > MaxChan){
   for (i=0; i< NBas; i++) {
     CrossSpec00[i] = (cplx64f *) realloc(CrossSpec00[i],MaxChan*sizeof(cplx64f));
     CrossSpec11[i] = (cplx64f *) realloc(CrossSpec11[i],MaxChan*sizeof(cplx64f));
+    if(!CrossSpec00[i] || !CrossSpec11[i]){
+      CrossSpec00[i]=NULL; CrossSpec11[i]=NULL;
+      PyObject *ret = Py_BuildValue("i",-5);
+      return ret;
+    };
+
   };
 };
 
@@ -359,7 +489,7 @@ if (Nchan[NIF-1] > MaxChan){
 MPfile.ignore(sizeof(int));
 
 
-Frequencies[NIF-1] = new double[Nchan[NIF-1]];
+//Frequencies[NIF-1] = new double[Nchan[NIF-1]];
 
 
 
@@ -369,6 +499,15 @@ CPfile.read(reinterpret_cast<char*>(Frequencies[NIF-1]), Nchan[NIF-1]*sizeof(dou
 
 
 //printf("Freqs. %.5e  %.5e\n",Frequencies[NIF-1][0],Frequencies[NIF-1][Nchan[NIF-1]-1]);
+
+
+
+// Number of integration times:
+int NDiffTimes = 0;
+int TimeBuff = 1000;
+double *DiffTimes = (double *) malloc(TimeBuff*sizeof(double));
+bool isTime;
+
 
 // Get Number of visibilities observed by the CalAnts (Circ Pol):
 
@@ -404,6 +543,8 @@ CPfile.ignore(2*sizeof(double)+4*Nchan[NIF-1]*sizeof(cplx32f));
 
 // Get Number of visibilities observed by the CalAnts (Mix Pol):
 NLVis[NIF-1] = 0;
+
+
 
 while(!MPfile.eof()){
 
@@ -442,6 +583,8 @@ Ant1[NIF-1] = (int*) malloc(j*sizeof(int)); // new int[j];
 
 Ant2[NIF-1] = (int*) malloc(j*sizeof(int)); // new int[j];
 
+Scan[NIF-1] = (int*) malloc(j*sizeof(int)); // new int[j];
+
 Times[NIF-1] = (double*) malloc(j*sizeof(double)); // new double[j];
 
 PA1[NIF-1] = (cplx64f*) malloc(j*sizeof(cplx64f)); // new cplx64f[j];
@@ -462,6 +605,7 @@ for (i=0;i<j;i++){
   RL[NIF-1][i] = (cplx64f*) malloc(Nchan[NIF-1]*sizeof(cplx64f)); //new cplx64f[Nchan[NIF-1]];
   LL[NIF-1][i] = (cplx64f*) malloc(Nchan[NIF-1]*sizeof(cplx64f)); //new cplx64f[Nchan[NIF-1]];
 };
+
 
 
 // Rewind files:
@@ -520,6 +664,22 @@ while(!MPfile.eof()){
 
      Times[NIF-1][currI] = AuxT;
  //    printf("DT: %.5e\n",Times[NIF-1][currI]-Times[NIF-1][0]);
+
+     isTime=false;
+     for(j=0;j<NDiffTimes;j++){
+        if(DiffTimes[j]==AuxT){isTime=true;break;};
+     };
+
+     if (!isTime){
+       DiffTimes[NDiffTimes]=AuxT;
+       NDiffTimes += 1;
+       if (NDiffTimes >= TimeBuff){
+         TimeBuff += 1000;
+         DiffTimes = (double *) realloc(DiffTimes,TimeBuff*sizeof(double));
+       };
+     };
+
+
 
      if (isFlipped){
        Ant1[NIF-1][currI] = AuxA2;
@@ -629,6 +789,24 @@ while(!CPfile.eof()){
 
      Times[NIF-1][currI] = AuxT;
 
+
+     isTime=false;
+     for(j=0;j<NDiffTimes;j++){
+        if(DiffTimes[j]==AuxT){isTime=true;break;};
+     };
+
+     if (!isTime){
+       DiffTimes[NDiffTimes]=AuxT;
+       NDiffTimes += 1;
+       if (NDiffTimes >= TimeBuff){
+         TimeBuff += 1000;
+         DiffTimes = (double *) realloc(DiffTimes,TimeBuff*sizeof(double));
+       };
+     };
+
+
+
+
      if (isFlipped){
        Ant1[NIF-1][currI] = AuxA2;
        Ant2[NIF-1][currI] = AuxA1;
@@ -689,6 +867,70 @@ while(!CPfile.eof()){
 
 CPfile.close();
 MPfile.close();
+
+
+
+// Sort times out:
+printf("There are %i int. times.\n",NDiffTimes);
+double temp;
+bool isOut = true;
+while (isOut){
+  isOut = false;
+  for(j=0;j<NDiffTimes-1;j++){
+    if(DiffTimes[j]>DiffTimes[j+1]){
+      isOut=true;
+      temp = DiffTimes[j];
+      DiffTimes[j] = DiffTimes[j+1];
+      DiffTimes[j+1] = temp;
+    };
+  };
+};
+
+
+
+// Get scans:
+double ScanTimes[NDiffTimes];
+NScan[NIF-1] = 1;
+ScanTimes[0] = DiffTimes[0];
+
+for(j=1;j<NDiffTimes;j++){
+  if (std::abs(DiffTimes[j]-DiffTimes[j-1])>100.){
+    ScanTimes[NScan[NIF-1]] = DiffTimes[j];
+//    printf("%i -- %.3f -- %i\n",NScan[NIF-1],std::abs(ScanTimes[NScan[NIF-1]]-ScanTimes[NScan[NIF-1]-1]),j);
+    NScan[NIF-1] += 1;
+  };
+};
+ScanTimes[NScan[NIF-1]] = DiffTimes[NDiffTimes-1]+1.;
+Scan[NIF-1][0] = 0;
+
+// Assign scan number to each visibility:
+for(j=1;j<NVis[NIF-1];j++){
+  for(i=0;i<NScan[NIF-1];i++){
+    if(Times[NIF-1][j]>=ScanTimes[i] && Times[NIF-1][j]<ScanTimes[i+1]){Scan[NIF-1][j]=i;break;};
+  };
+};
+
+
+  Rates[NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
+  Delays00[NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
+  Delays11[NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
+  for(i=0;i<NCalAnt;i++){
+    Rates[NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
+    Delays00[NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
+    Delays11[NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
+    for(k=0;k<NScan[NIF-1];k++){
+      Rates[NIF-1][i][k] = 0.0;
+      Delays00[NIF-1][i][k] = 0.0;
+      Delays11[NIF-1][i][k] = 0.0;
+    };
+  };
+
+
+
+sprintf(message,"Found %i scans for IF %i\n",NScan[NIF-1],IFN);
+fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
+
+free(DiffTimes);
 
 //printf("CLOSED!\n");
 
@@ -785,12 +1027,12 @@ double QuinnEstimate(cplx64f *FFTVec){
 static PyObject *SetFringeRates(PyObject *self, PyObject *args) {
 
 
-int i,j,NantFix;
+int i,j,NantFix,cIF,cScan;
 double *rates;
 
 PyObject *ratesArr, *antList;
 
-if (!PyArg_ParseTuple(args, "OO", &ratesArr, &antList)){
+if (!PyArg_ParseTuple(args, "iiOO", &cIF, &cScan, &ratesArr, &antList)){
      sprintf(message,"Failed SetFringeRates! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
@@ -807,12 +1049,12 @@ NantFix = (int) PyList_Size(antList);
 rates = (double *) PyArray_DATA(ratesArr);
 
 for (i=0; i<NCalAnt; i++){
-  Rates[i] = 0.0;
+  Rates[cIF][i][cScan] = 0.0;
 };
 
 for (i=0; i<NantFix; i++){
   j = (int) PyInt_AsLong(PyList_GetItem(antList,i));
-  Rates[j-1] = rates[i];
+  Rates[cIF][j-1][cScan] = rates[i];
 };
 
 //Py_DECREF(ratesArr);
@@ -830,8 +1072,8 @@ return ret;
 
 static PyObject *DoGFF(PyObject *self, PyObject *args) {
 
-int i,j,k,l, a1,a2, af1, af2, BNum,NantFit;
-int *antFit;
+int i,j,k,l, a1,a2, af1, af2, BNum,cScan;
+
 
 //double Drate, T0;
 //cplx32f Grate;
@@ -849,7 +1091,7 @@ cplx64f *aroundPeak11 = new cplx64f[3];
 
 PyObject *antList;
 
-if (!PyArg_ParseTuple(args, "Oii", &antList,&npix, &applyRate)){
+if (!PyArg_ParseTuple(args, "Oiii", &antList,&npix, &applyRate,&cScan)){
      sprintf(message,"Failed DoGFF! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
@@ -859,8 +1101,13 @@ if (!PyArg_ParseTuple(args, "Oii", &antList,&npix, &applyRate)){
 
 
 
-if (applyRate==0){printf("\n\n   Residual rate will NOT be estimated\n\n");};
+if (applyRate==0){
+  sprintf(message,"\n\n   Residual rate will NOT be estimated\n\n");
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
+};
+
 NantFit = (int) PyList_Size(antList);
+delete[] antFit;
 antFit = new int[NantFit];
 
 for (i=0; i<NantFit; i++){
@@ -883,6 +1130,7 @@ for (i=0; i<NIF;i++){
 };
 
 
+
 int prevChan = Nchan[0];
 int prevNvis = NVis[0]/NBas;
 
@@ -902,14 +1150,6 @@ fftw_complex *outXX = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * MaxDim
 fftw_complex *outYY = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * MaxDim);
 
 
-//int Nplan = 1;
-//int currPlan = 0;
-//fftw_plan *pXX = (fftw_plan *) malloc(sizeof(fftw_plan));
-//fftw_plan *pYY = (fftw_plan *) malloc(sizeof(fftw_plan));
-//pXX[0] = fftw_plan_dft_2d(prevNvis, Nchan[0], BufferVis00, outXX, FFTW_FORWARD, FFTW_MEASURE);
-//pYY[0] = fftw_plan_dft_2d(prevNvis, Nchan[0], BufferVis11, outYY, FFTW_FORWARD, FFTW_MEASURE);
-//int *planChan = (int *) malloc(sizeof(int)); planChan[0] = Nchan[0];
-//int *planNvis = (int *) malloc(sizeof(int)); planNvis[0] = prevNvis;
   
 fftw_plan pXX = fftw_plan_dft_2d(prevNvis, Nchan[0], BufferVis00, outXX, FFTW_FORWARD, FFTW_MEASURE);
 fftw_plan pYY = fftw_plan_dft_2d(prevNvis, Nchan[0], BufferVis11, outYY, FFTW_FORWARD, FFTW_MEASURE);
@@ -920,7 +1160,6 @@ fftw_plan pYY = fftw_plan_dft_2d(prevNvis, Nchan[0], BufferVis11, outYY, FFTW_FO
 cplx64f *TempXX, *TempYY;
 cplx64f *BufferCXX, *BufferCYY;
 
-//printf("\n\n   PLAN MADE: %i %i %i %i\n\n",TotDim,NVis[0],NBas,Nchan[0]);
 
 TempXX = reinterpret_cast<std::complex<double> *>(outXX);
 TempYY = reinterpret_cast<std::complex<double> *>(outYY);
@@ -932,7 +1171,6 @@ BufferCYY = reinterpret_cast<std::complex<double> *>(BufferVis11);
 
 for(j=0; j<NBas; j++){
 
-//bool NChanChanged = false;
 
 for (i=0; i<NIF; i++){
 
@@ -943,31 +1181,8 @@ for (i=0; i<NIF; i++){
   BLDelays00[i][j] = 0.0;
   BLDelays11[i][j] = 0.0;
 
-//  if (isFirst){
     int NcurrVis = 0;
 
-/*
-    if (TotDim != NVis[i]*Nchan[i]){
-      TotDim = NVis[i]*Nchan[i];
-      fftw_free(BufferVis00); fftw_free(BufferVis11); fftw_free(outXX); fftw_free(outYY); fftw_free(AUX);
-      BufferVis00 = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * TotDim);
-      BufferVis11 =  (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * TotDim);
-      AUX =  (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * TotDim);
-      outXX =  (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * TotDim);
-      outYY =  (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * TotDim);
-      TempXX = reinterpret_cast<std::complex<double> *>(outXX);
-      TempYY = reinterpret_cast<std::complex<double> *>(outYY);
-      BufferCXX = reinterpret_cast<std::complex<double> *>(BufferVis00);
-      BufferCYY = reinterpret_cast<std::complex<double> *>(BufferVis11);
-      fftw_destroy_plan(pXX);  
-      fftw_destroy_plan(pYY);
-      pXX = fftw_plan_dft_2d(NVis[i], Nchan[i], BufferVis00, outXX, FFTW_FORWARD, FFTW_MEASURE);
-      pYY = fftw_plan_dft_2d(NVis[i], Nchan[i], BufferVis11, outYY, FFTW_FORWARD, FFTW_MEASURE);
-
-//    printf("\n IF %i HAS %i CHANNELS AND %i VIS. THERE ARE %i BASELINES\n",i+1,Nchan[i],NVis[i],NBas);
-    NChanChanged = true;
-    };  */
-//  };
 
 
 // Arrange data for this baseline:
@@ -975,7 +1190,7 @@ for (i=0; i<NIF; i++){
       a1 = Ant1[i][k];
       a2 = Ant2[i][k];
       BNum = BasNum[a1-1][a2-1];
-      if (BNum==j){
+      if (BNum==j && Scan[i][k]==cScan){
         if(isFirst){
           T0[j] = Times[i][k];
           T1[j] = Times[i][k];
@@ -1002,27 +1217,6 @@ for (i=0; i<NIF; i++){
 // Re-define the FFTW plan if dimensions changed:
     if (Nchan[i] != prevChan || NcurrVis != prevNvis){
 
-/*      currPlan = -1;
-      for (k=0; k>Nplan;k++){
-         if (Nchan[i]==planChan[k] && NcurrVis == planNvis[k]){currPlan=k;break;};
-      };
-      if (currPlan == -1){
-        Nplan += 1; currPlan = Nplan -1;
-        pXX = (fftw_plan *) realloc(pXX,sizeof(fftw_plan)*Nplan);
-        pYY = (fftw_plan *) realloc(pYY,sizeof(fftw_plan)*Nplan);
-        planChan = (int *) realloc(planChan,sizeof(int)*Nplan); planChan[currPlan] = Nchan[i];
-        planNvis = (int *) realloc(planChan,sizeof(int)*Nplan); planNvis[currPlan] = NcurrVis;
-      
-        memcpy(&TempXX[0],&BufferCXX[0],NcurrVis*Nchan[i]*sizeof(cplx64f));
-        pXX[currPlan] = fftw_plan_dft_2d(NcurrVis, Nchan[i], BufferVis00, outXX, FFTW_FORWARD, FFTW_MEASURE);
-        memcpy(&BufferCXX[0],&TempXX[0],NcurrVis*Nchan[i]*sizeof(cplx64f));
-
-        memcpy(&TempXX[0],&BufferCYY[0],NcurrVis*Nchan[i]*sizeof(cplx64f));
-        pYY[currPlan] = fftw_plan_dft_2d(NcurrVis, Nchan[i], BufferVis11, outYY, FFTW_FORWARD, FFTW_MEASURE);
-        memcpy(&BufferCYY[0],&TempXX[0],NcurrVis*Nchan[i]*sizeof(cplx64f));
-
-      };
-*/
 
       prevChan = Nchan[i]; prevNvis = NcurrVis;
 
@@ -1040,13 +1234,10 @@ for (i=0; i<NIF; i++){
 
     fftw_execute(pXX); 
     fftw_execute(pYY); 
-//    fftw_execute_dft(pXX[0],BufferVis00,outXX);
-//    fftw_execute_dft(pYY[0],BufferVis11,outYY);
 
    };
 
 
-//  if(j==4){printf("\n\n\n   TEMPS: %.2e %.2e %.2e %.2e\n\n",TempXX[10].real(),TempXX[10].imag(),TempYY[10].real(),TempYY[10].imag());};
 
   double Peak00 = 0.0;
   double Peak11 = 0.0;
@@ -1238,7 +1429,20 @@ if (ti11[1]==NcurrVis-1){ti11[2]=0;} else{ti11[2]=ti11[1]+1;};
      BLRates00[i][j] = 0.0; BLRates11[i][j] = 0.0; 
      BLDelays00[i][j] = 0.0; BLDelays11[i][j] = 0.0; 
      Weights[i][j] = 0.0;
-     printf("WARNING! BASELINE %i HAS NO DATA IN IF %i!\n",j,i+1);
+
+     sprintf(message,"WARNING! BASELINE %i HAS NO DATA IN IF %i!\n",j,i+1);
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
+
+     for (a1=0; a1<NCalAnt; a1++){
+       for (a2=a1+1;a2<NCalAnt;a2++){
+         if(j == BasNum[CalAnts[a1]-1][CalAnts[a2]-1]){
+          sprintf(message,"ANTS: %i-%i\n",a1+1,a2+1);
+          fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
+          break;
+         };
+       };
+     };
+
   };
 
 //////
@@ -1252,16 +1456,39 @@ if (ti11[1]==NcurrVis-1){ti11[2]=0;} else{ti11[2]=ti11[1]+1;};
 };
 
 
+
+/*
+NcalAnt = 0;
+calAnt = new int[Nant];
+bool GoodRef = false;
+
+
+for (i=0; i<Nant; i++){ 
+  for(j=0;j<Nant;j++){ 
+     if((NData[BasNum[i][j]]>0 || NData[BasNum[j][i]]>0)&& i!=j && (Weights[BasNum[i][j]]>0. ||  Weights[BasNum[j][i]]>0.)){
+       if(i==REFANT || j==REFANT){GoodRef=true;};
+       if(i!=REFANT){calAnt[NcalAnt] = i; NcalAnt ++; break;};
+     };  
+  };
+};
+*/
+
+
+
+
 /////////////////
 // Globalize the rate and delay solutions:
 
-printf("# of free antenna gains (per pol.): %i\n",NantFit);
+sprintf(message,"# of free antenna gains (per pol.): %i\n",NantFit);
+fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
+
 
 double *Hessian = new double[NantFit*NantFit];
 double *RateResVec = new double[NantFit];
 double *DelResVec00 = new double[NantFit];
 double *DelResVec11 = new double[NantFit];
-double *CovMat = new double[NantFit*NantFit];
+delete[] CovMat;
+CovMat = new double[NantFit*NantFit];
 
 for (i=0;i<NantFit*NantFit;i++){
   Hessian[i] = 0.0;
@@ -1274,6 +1501,10 @@ for (i=0;i<NantFit;i++){
   DelResVec11[i] = 0.0;
 };
 
+
+
+////////////////////////////////////
+// AT THE MOMENT, WE COMBINE ALL IFS FOR THE SAME RATES AND DELAYS:
 
 if (NantFit>1){
 
@@ -1312,6 +1543,7 @@ for (i=0; i<NIF; i++){
     };
   };
 };
+/////////////////////////////////
 
 
 } else {
@@ -1323,61 +1555,55 @@ for (i=0; i<NIF; i++){
     RateResVec[0] += Weights[i][BNum]*(BLRates00[i][BNum] + BLRates11[i][BNum])/2.;
     DelResVec00[0] += Weights[i][BNum]*BLDelays00[i][BNum];
     DelResVec11[0] += Weights[i][BNum]*BLDelays11[i][BNum];
-  };
-//  Rates[0] = 0.0; //RateResVec[0]/((double) NIF);
-//  Delays00[0] = 0.0; // DelResVec00[0]/((double) NIF);
-//  Delays11[0] = 0.0; // DelResVec11[0]/((double) NIF);
 
-  for (i=0; i<NCalAnt; i++){
-    Rates[i] = 0.0;
-    Delays00[i] = 0.0;
-    Delays11[i] = 0.0;
+    for (j=0; j<NCalAnt; j++){
+      Rates[i][j][cScan] = 0.0;
+      Delays00[i][j][cScan] = 0.0;
+      Delays11[i][j][cScan] = 0.0;
 
-    if(CalAnts[i]==antFit[0]){
-      if (applyRate>0){Rates[i] = -RateResVec[0]/((double) NIF);};
-      Delays00[i] = -DelResVec00[0]/((double) NIF);
-      Delays11[i] = -DelResVec11[0]/((double) NIF);
+      if(CalAnts[j]==antFit[0]){
+        if (applyRate>0){Rates[i][j][cScan] = -RateResVec[0]/((double) NIF);};
+        Delays00[i][j][cScan] = -DelResVec00[0]/((double) NIF);
+        Delays11[i][j][cScan] = -DelResVec11[0]/((double) NIF);
+      };
     };
   };
-
 };
 
 
 printf("\n\nHessian Globalization Matrix:\n\n");
+bool isSingular, tempSing;
+isSingular=false;
 for (i=0; i<NantFit; i++){
   printf("  ");
+  tempSing = true;
   for (j=0; j<NantFit; j++){
+     if (Hessian[i*NantFit+j]!=0.0){tempSing=false;};
      printf("%.2e ",Hessian[i*NantFit+j]);
   };
+  if (tempSing){isSingular=true;};
 printf("\n");
 };
 printf("\n");
-
-//printf("Baseline rates (Hz):\n");
-//for (i=0; i<NBas; i++){
-//     printf("R: %.2e L: %.2e | ",BLRates00[i][0],BLRates11[i][0]);
-//};
-//printf("\n\n");
-
-//printf("ANTENNA RATES:\n");
-//for (i=0; i<NantFit; i++){
-//     printf("%.2e | ",Rates[i]);
-//};
-//printf("\n\n");
 
 
 
 // The Hessian's inverse can be reused for rates, delays and phases!
 
-gsl_matrix_view m = gsl_matrix_view_array (Hessian, NantFit, NantFit);
-gsl_matrix_view inv = gsl_matrix_view_array(CovMat,NantFit,NantFit);
+gsl_matrix_view mm = gsl_matrix_view_array (Hessian, NantFit, NantFit);
+//gsl_matrix_view inv = gsl_matrix_view_array(CovMat,NantFit,NantFit);
+gsl_vector *xx = gsl_vector_calloc(NantFit);
+gsl_vector_view RateInd = gsl_vector_view_array(RateResVec,NantFit);
 
 int s;
 
-gsl_permutation *perm = gsl_permutation_alloc (NantFit);
+gsl_permutation *permm = gsl_permutation_alloc (NantFit);
 
-gsl_linalg_LU_decomp (&m.matrix, perm, &s);
-gsl_linalg_LU_invert (&m.matrix, perm, &inv.matrix);
+gsl_linalg_LU_decomp (&mm.matrix, permm, &s);
+
+if(!isSingular){gsl_linalg_LU_solve (&mm.matrix, permm, &RateInd.vector, xx);};
+
+//gsl_linalg_LU_invert (&m.matrix, perm, &inv.matrix);
 
 
 // Derive the rates as CovMat*RateVec and delays as CovMat*DelVec:
@@ -1386,36 +1612,48 @@ if (NantFit>1){
 
 
 for (i=0; i<NCalAnt; i++){
-  Rates[i] = 0.0;
-  Delays00[i] = 0.0;
-  Delays11[i] = 0.0;
+  Rates[0][i][cScan] = 0.0;
+  Delays00[0][i][cScan] = 0.0;
+  Delays11[0][i][cScan] = 0.0;
   af1 = -1;
   for(j=0; j<NantFit; j++) {
     if (CalAnts[i]==antFit[j]){af1 = j;};
   };
   if (af1 >=0){
-    for (j=0; j<NantFit; j++){
-      if(applyRate>0){Rates[i] -= RateResVec[j]*gsl_matrix_get(&inv.matrix,af1,j);};
-      Delays00[i] -= DelResVec00[j]*gsl_matrix_get(&inv.matrix,af1,j);
-      Delays11[i] -= DelResVec11[j]*gsl_matrix_get(&inv.matrix,af1,j);
-    };
+     if(applyRate>0){Rates[0][i][cScan] = -gsl_vector_get(xx,af1);};
   };
 
 };
 
+for (i=0; i<NIF; i++){
+  for (j=0; j<NCalAnt; j++){
+    Rates[i][j][cScan] = Rates[0][j][cScan];
+    Delays00[i][j][cScan] = Delays00[0][j][cScan];
+    Delays11[i][j][cScan] = Delays11[0][j][cScan];
+  };
 };
+
+
+
+};
+
+
+
+
+
 
 for (i=0; i<NCalAnt; i++){
 
-  printf("Antenna %i -> Rate: %.3e Hz; RR Delay: %.3e s; LL Delay: %.3e s\n",CalAnts[i],Rates[i],Delays00[i],Delays11[i]);
+//  sprintf(message,"Antenna %i -> Rate: %.3e Hz; RR Delay: %.3e s; LL Delay: %.3e s\n",CalAnts[i],Rates[0][i][cScan],Delays00[0][i][cScan],Delays11[0][i][cScan]);
+  sprintf(message,"Antenna %i -> Rate: %.3e Hz.\n",CalAnts[i],Rates[0][i][cScan]);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
 };
 
 
 
 double MaxRateDev = -1.0;
-double MaxDelDev = -1.0;
-int BadA1 = -1; int BadA2 = -1;
-int BadIF = -1;
+//int BadA1 = -1; int BadA2 = -1;
+//int BadIF = -1;
 int BadA1R = -1; int BadA2R = -1;
 int BadIFR = -1; int BadBR = -1;
 
@@ -1425,25 +1663,20 @@ for (i=0; i<NIF; i++){
   for (a1=0; a1<NCalAnt; a1++){
     for (a2=a1+1;a2<NCalAnt;a2++){
        BNum = BasNum[CalAnts[a1]-1][CalAnts[a2]-1];
-       TempD = fabs(BLRates00[i][BNum] + (Rates[a1] - Rates[a2]));
-//       printf("Check %i %i %i (%.3e %.3e %.3e)\n",i,a1,a2,Rates[a1],Rates[a2],(BLRates11[i][BNum]+BLRates00[i][BNum])*0.5);
+       TempD = fabs(BLRates00[i][BNum] + (Rates[i][a1][cScan] - Rates[i][a2][cScan]));
        if (TempD > MaxRateDev){
           MaxRateDev=TempD; BadIFR=i;BadA1R=a1;BadA2R=a2; BadBR = BNum;};
-       TempD = fabs(BLRates11[i][BNum] + (Rates[a1] - Rates[a2]));
+       TempD = fabs(BLRates11[i][BNum] + (Rates[i][a1][cScan] - Rates[i][a2][cScan]));
        if (TempD > MaxRateDev){
           MaxRateDev=TempD; BadIFR=i;BadA1R=a1;BadA2R=a2; BadBR = BNum;};
-       TempD = fabs(BLDelays00[i][BNum] + (Delays00[a1] - Delays00[a2]));
-       if (TempD > MaxDelDev){MaxDelDev=TempD; BadIF=i;BadA1=a1;BadA2=a2;};
-       TempD = fabs(BLDelays11[i][BNum] + (Delays11[a1] - Delays11[a2]));
-       if (TempD > MaxDelDev){MaxDelDev=TempD; BadIF=i;BadA1=a1;BadA2=a2;};
     };
   };
 };
 
 //if (NantFit>1){
 
-  printf("\n\nMax. fringe deviation (rate): Bas. %i-%i at IF %i (%.1e deg. across window)\n",CalAnts[BadA1R],CalAnts[BadA2R],IFNum[BadIFR],fabs(MaxRateDev*(T1[BadBR]-T0[BadBR])*180.));
-  printf("Max. fringe deviation (delay): Bas. %i-%i at IF %i (%.1e deg. across window)\n\n",CalAnts[BadA1],CalAnts[BadA2],IFNum[BadIF],fabs(MaxDelDev*(Frequencies[BadIF][Nchan[BadIF]-1]-Frequencies[BadIF][0])*180.));
+  sprintf(message,"\n\nMax. fringe deviation (rate): Bas. %i-%i at IF %i (%.1e deg. across window)\n",CalAnts[BadA1R],CalAnts[BadA2R],IFNum[BadIFR],fabs(MaxRateDev*(T1[BadBR]-T0[BadBR])*180.));
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
 
 //};
 
@@ -1452,7 +1685,7 @@ for (i=0; i<NIF; i++){
 
 fftw_free(BufferVis00); fftw_free(BufferVis11); fftw_free(outXX); fftw_free(outYY);
 
-delete[] antFit;
+//delete[] antFit;
 delete[] T0;
 delete[] T1;
 delete[] aroundPeak00;
@@ -1476,7 +1709,7 @@ delete[] Hessian;
 delete[] RateResVec;
 delete[] DelResVec00;
 delete[] DelResVec11;
-delete[] CovMat;
+//delete[] CovMat;
 
 
 
@@ -1523,60 +1756,59 @@ return ret;
 
 
 
+static PyObject *SetFit(PyObject *self, PyObject *args) {
 
-static PyObject *GetChi2(PyObject *self, PyObject *args) { 
-
-int NIFComp, Npar, NantFit;
-int Ch0, Ch1,solveAmp,useCov;
-int i,j,k,l;
-double *CrossG;
-int *doIF, *antFit;
-
-double T0 = Times[0][0];
-double T1 = Times[0][NVis[0]-1];
-double DT = (T1-T0)/TAvg;
-double *Tm = new double[NBas];
-
-double dx = 1.0e-8;
-
-double Drate1, Drate2; 
-double *DerAux1, *DerAux2;
-
-DerAux1 = new double[2];
-DerAux2 = new double[2];
-
-bool CohAvg = true; // Coherent summ for Chi2  ??
-
-PyObject *pars, *IFlist, *antList, *LPy;
+  int i, j, k;
+  bool foundit;
 
 
-if (!PyArg_ParseTuple(args, "OOOiiiOi", &pars, &IFlist, &antList, &Ch0, &Ch1, &solveAmp,&LPy,&useCov)){
-     sprintf(message,"Failed GetChi2! Check inputs!\n"); 
+
+  delete[] Tm;
+  delete[] doIF;
+  delete[] antFit;
+  delete[] CovMat;
+  delete[] IndVec;
+  delete[] SolVec;
+  delete[] G1;
+  delete[] G2;
+  delete[] G1nu;
+  delete[] G2nu;
+  for(i=0;i<Npar+1;i++){delete[] DStokes[i];};
+  delete[] DStokes;
+  delete[] DirDer;
+  delete[] MBD1;
+  delete[] MBD2;
+  delete[] DerIdx;
+  delete[] AvVis;
+
+
+  Tm = new double[NBas];
+
+  T0 = Times[0][0];
+  T1 = Times[0][NVis[0]-1];
+  DT = (T1-T0)/TAvg;
+
+  PyObject *IFlist, *antList, *calstokes, *ret;
+
+if (!PyArg_ParseTuple(args, "iOOiiOi", &Npar, &IFlist, &antList, &solveAmp, &solveQU, &calstokes, &useCov)){
+     sprintf(message,"Failed SetFit! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
-    PyObject *ret = Py_BuildValue("i",-1);
+     ret = Py_BuildValue("i",-1);
     return ret;
 };
 
-double Lambda = PyFloat_AsDouble(LPy);
 
-bool doCov = Lambda >= 0.0;
+  NIFComp = (int) PyList_Size(IFlist);
+  doIF = new int[NIFComp];
+//  printf("\nNIFComp: %i\n",NIFComp);
 
-//printf("\n GetChi2 called with: %i %i %i %.5e\n",Ch0,Ch1,solveAmp,Lambda);
+  NantFit = (int) PyList_Size(antList);
+  antFit = new int[NantFit];
 
-NIFComp = (int) PyList_Size(IFlist);
-doIF = new int[NIFComp];
-
-
-NantFit = (int) PyList_Size(antList);
-antFit = new int[NantFit];
-
-for (i=0; i<NantFit; i++){
-  antFit[i] = (int) PyInt_AsLong(PyList_GetItem(antList,i));
-};
-
-// Find out IFs to compute and do sanity checks:
-bool foundit;
+  for (i=0; i<NantFit; i++){
+    antFit[i] = (int) PyInt_AsLong(PyList_GetItem(antList,i));
+  };
 
 for (i=0; i<NIFComp; i++){
   foundit = false;
@@ -1588,14 +1820,115 @@ for (i=0; i<NIFComp; i++){
      sprintf(message,"BAD IF NUMBER: %i\n",j); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
-     PyObject *ret = Py_BuildValue("i",-1);
+     ret = Py_BuildValue("i",-1);
      return ret;
   };
+};
+
+
+
+CovMat = new double[Npar*Npar];
+IndVec = new double[Npar];
+SolVec = new double[Npar];
+m = gsl_matrix_view_array (CovMat, Npar, Npar);
+v = gsl_vector_view_array (IndVec, Npar);
+x = gsl_vector_view_array (SolVec, Npar);
+perm = gsl_permutation_alloc (Npar);
+
+//////////////////////
+// if calstokes[0]<0, it means we are SOLVING for Stokes!
+double tempD = (double) PyFloat_AsDouble(PyList_GetItem(calstokes,0));
+StokesSolve = tempD<0.;
+if(!StokesSolve){
+  for (i=0; i<4; i++){
+    Stokes[i] = (double) PyFloat_AsDouble(PyList_GetItem(calstokes,i));
+  };
+};
+
+//////////////////////
+
+G1 = new cplx64f[Npar+1];
+G2 = new cplx64f[Npar+1]; 
+DStokes = new double*[Npar+1];
+DirDer = new double[Npar];
+
+MBD1 = new double[Npar+1];
+MBD2 = new double[Npar+1];
+G1nu = new cplx64f[Npar+1];
+G2nu = new cplx64f[Npar+1];
+for(i=0;i<Npar+1;i++){DStokes[i]=new double[4];};
+
+DerIdx = new int[Npar+1];
+AvVis = new int[NBas];
+
+ret = Py_BuildValue("i",0);
+return ret;
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static PyObject *GetChi2(PyObject *self, PyObject *args) { 
+
+//int NIFComp;
+int Ch0, Ch1;
+int i,j,k,l;
+double *CrossG;
+//int *doIF;
+
+//double *Tm = new double[NBas];
+
+double dx = 1.0e-8;
+
+double Drate1, Drate2; 
+double *DerAux1, *DerAux2;
+
+DerAux1 = new double[2];
+DerAux2 = new double[2];
+
+bool CohAvg = true; // Coherent summ for Chi2  ??
+
+PyObject *pars, *ret,*LPy;
+
+
+if (!PyArg_ParseTuple(args, "OOii", &pars, &LPy, &Ch0, &Ch1)){
+     sprintf(message,"Failed GetChi2! Check inputs!\n"); 
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
+     fclose(logFile);
+    ret = Py_BuildValue("i",-1);
+    return ret;
+};
+
+
+  Lambda = PyFloat_AsDouble(LPy);
+  doCov = Lambda >= 0.0;
+
+// Find out IFs to compute and do sanity checks:
+
+for (i=0; i<NIFComp; i++){
   if (Ch1 > Nchan[doIF[i]]){
      sprintf(message,"IF %i ONLY HAS %i CHANNELS. CHANNEL %i DOES NOT EXIST! \n",j,Nchan[doIF[i]], Ch1); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
-     PyObject *ret = Py_BuildValue("i",-1);
+     ret = Py_BuildValue("i",-1);
      return ret;
   };
 };
@@ -1604,7 +1937,7 @@ if (Ch0<0 || Ch0>Ch1){
  sprintf(message,"BAD CHANNEL RANGE: %i TO %i. SHOULD ALL BE POSITIVE AND Ch0 < Ch1\n",Ch0,Ch1); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
-    PyObject *ret = Py_BuildValue("i",-1);
+    ret = Py_BuildValue("i",-1);
     return ret;
 };
 
@@ -1615,23 +1948,21 @@ double RefNu = Frequencies[doIF[0]][0];
 
 
 
-Npar = PyArray_DIM(pars,0);
+//Npar = PyArray_DIM(pars,0);
 CrossG = (double *) PyArray_DATA(pars);
-
-
-// Covariance Matrix:
-
-double *CovMat = new double[Npar*Npar];
-double *IndVec = new double[Npar];
-double *SolVec = new double[Npar];
-
-gsl_matrix_view m = gsl_matrix_view_array (CovMat, Npar, Npar);
-gsl_vector_view v = gsl_vector_view_array (IndVec, Npar);
-gsl_vector_view x = gsl_vector_view_array (SolVec, Npar);
 
 int s;
 
-gsl_permutation *perm = gsl_permutation_alloc (Npar);
+
+
+
+
+
+
+if(StokesSolve){
+  Stokes[0] = 1.0; Stokes[3] = 0.0;
+  for (i=1; i<3; i++){Stokes[i] = CrossG[Npar-3+i];};
+};
 
 
 
@@ -1639,28 +1970,19 @@ gsl_permutation *perm = gsl_permutation_alloc (Npar);
 
 
 
-
-
-
-
-
-int currIF, a1, a2, ac1,ac2,af1, af2, currDer;
+int currIF, a1, a2, ac1,ac2,af1, af2, currDer, cscan;
 int is1, is2, auxI1, auxI2;
 
 auxI1 = 0;
 
-cplx64f *G1 = new cplx64f[Npar+1];
-cplx64f *G2 = new cplx64f[Npar+1]; 
+
+
 cplx64f Error;
 cplx64f oneC, RateFactor, RRRate, RLRate, LRRate, LLRate; 
 
 cplx64f Rho1; 
 cplx64f Rho2; 
-cplx64f *G1nu = new cplx64f[Npar+1];
-cplx64f *G2nu = new cplx64f[Npar+1];
 cplx64f auxC1, auxC2, auxC3;
-double *MBD1 = new double[Npar+1];
-double *MBD2 = new double[Npar+1];
 
 double ParHandWgt = 1.0;
 double CrossHandWgt = 1.0;
@@ -1681,10 +2003,8 @@ for(i=0;i<Npar;i++){
 oneC= cplx64f(1.0,0.0);
 
 
-int *AvVis = new int[NBas];
 
 int Nder = 0;
-int *DerIdx = new int[Npar+1];
 
 int MBD1p, MBD2p, G1pA,G1pF, G2pA, G2pF;
 
@@ -1694,6 +2014,39 @@ double Chi2 = 0.0;
 double auxD1, auxD2;
 // double TRatio = 1.0;
 
+
+/*
+printf("\nThere are %i baselines.\n",NBas);
+for (i=0;i<NBas;i++){printf(" %.3e ",Tm[i]);};
+printf("\nThere are %i IFs.\n",NIFComp);
+for (i=0;i<NIFComp;i++){printf(" %i ",doIF[i]);};
+printf("\nThere are %i fittable antennas.\n",NantFit);
+for (i=0;i<NantFit;i++){printf(" %i ",antFit[i]);};
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+for(l=0;l<Npar+1;l++){
+  for(i=0;i<4;i++){DStokes[l][i] = Stokes[i];};
+};
 
 
 
@@ -1720,7 +2073,7 @@ for (i=0; i<NIFComp; i++){
 
     a1 = Ant1[currIF][k];
     a2 = Ant2[currIF][k];
-
+    cscan = Scan[currIF][k];
 
     ac1 = -1; ac2 = -1;
     for(j=0; j<NCalAnt; j++) {
@@ -1729,8 +2082,8 @@ for (i=0; i<NIFComp; i++){
     };
 
     BNum = BasNum[a1-1][a2-1];
-    if(ac1>=0){Drate1 = TWOPI*Rates[ac1]*(Times[currIF][k]-T0);} else {Drate1=0.0;};
-    if(ac2>=0){Drate2 = TWOPI*Rates[ac2]*(Times[currIF][k]-T0);} else {Drate2=0.0;};
+    if(ac1>=0){Drate1 = TWOPI*Rates[0][ac1][cscan]*(Times[currIF][k]-T0);} else {Drate1=0.0;};
+    if(ac2>=0){Drate2 = TWOPI*Rates[0][ac2][cscan]*(Times[currIF][k]-T0);} else {Drate2=0.0;};
 
     RateFactor = std::polar(1.0,Drate1-Drate2);
     RRRate = RateFactor/PA1[currIF][k]*PA2[currIF][k];
@@ -1744,6 +2097,16 @@ for (i=0; i<NIFComp; i++){
       if (a1==antFit[j]){af1 = j;};
       if (a2==antFit[j]){af2 = j;};
     };
+
+
+
+
+
+
+
+
+
+
 
 
 ///////////////////////////////////////////////
@@ -1846,6 +2209,8 @@ for (i=0; i<NIFComp; i++){
 
     };
 
+
+
     if(BNum>=0){
 
     AvVis[BNum] += 1;
@@ -1916,13 +2281,18 @@ for (i=0; i<NIFComp; i++){
 
 
 
+if(StokesSolve){
+  DerIdx[Nder]=Npar-1; DStokes[Npar-1][1] = DStokes[0][1]+dx; Nder += 1;
+  DerIdx[Nder]=Npar; DStokes[Npar][2] = DStokes[0][2]+dx; Nder += 1;
+};
+
 // Compute all derivatives:
 
     for (l=0; l<Nder; l++){
- 
+//      printf("Doing der %i of %i\n",l+1,Nder); 
       currDer = DerIdx[l];
 
-
+    //  if(BNum==7){printf("Reached %.3f  %.3e  %i %i\n",Times[currIF][k]-Tm[BNum],DT,BNum,j); };
 
 // Convert gain ratios into leakages (for linear-pol antennas):
       
@@ -1964,7 +2334,6 @@ for (i=0; i<NIFComp; i++){
        };
      };
 
-
    };  // Comes from   for (l=0; l<Nder; l++){
 
 
@@ -1973,12 +2342,19 @@ for (i=0; i<NIFComp; i++){
 
 
 
+
+//  cplx64f CrossMod = cplx64f(Stokes[1],Stokes[2]);
+  double ParMod = (Stokes[0]+Stokes[3])/(Stokes[0]-Stokes[3]);
+  cplx64f TempC;
+
+
+
+
 // Did we reach the pre-averaging time?? If so, update the covariance+residuals:
    if (Times[currIF][k]>=Tm[BNum] + DT){
+  //   printf("Reached %.3e  %.3e  %.3e\n",Times[currIF][k],Tm[BNum],DT); 
 
      Tm[BNum] = Times[currIF][k];
-
-
 
 ////////////////////////////////////////////////////////
 // UPDATE THE COVARIANCE MATRIX AND RESIDUALS VECTOR
@@ -1995,73 +2371,68 @@ if(doCov){
   if (AddParHand && abs(auxC11[BNum][0])>0.0){
   for(j=1;j<Nder;j++){
     auxI1 = DerIdx[j];
-
     auxC1 = (auxC00[BNum][auxI1]/auxC11[BNum][auxI1]-Error)/dx;
-
-   if(CohAvg){
-// Coherent approach:
-    auxC2 = auxC1*std::conj(auxC1);
-
-//    DerAux1 = (double *)&auxC2;
-    CovMat[(auxI1-1)*(Npar+1)] += 2.*auxC2.real()*ParHandWgt*BasWgt;
-
-   } else {
-// Incoherent approach:
-    DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
-    CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*ParHandWgt*BasWgt;
-   };
-
-
-    if(useCov){
-    for(l=j+1;l<Nder;l++){
-      auxI2 = DerIdx[l];
-
     if(CohAvg){
 // Coherent approach:
-      auxC3 = (auxC00[BNum][auxI2]/auxC11[BNum][auxI2]-Error)/dx;
-      auxC2 = auxC1*std::conj(auxC3) + std::conj(auxC1)*auxC3;
-//      DerAux2 = (double *)&auxC2;
-      CovMat[(auxI1-1)*Npar+auxI2-1] += auxC2.real()*ParHandWgt*BasWgt;
-   } else {
+     auxC2 = auxC1*std::conj(auxC1);
+     CovMat[(auxI1-1)*(Npar+1)] += 2.*auxC2.real()*ParHandWgt*BasWgt;
+    } else {
 // Incoherent approach:
-      auxC2 = (auxC00[BNum][auxI2]/auxC11[BNum][auxI2]-Error)/dx;
-      DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
-      CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*BasWgt;
+     DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
+     CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*ParHandWgt*BasWgt;
+    };
+
+    if(useCov){
+     for(l=j+1;l<Nder;l++){
+      auxI2 = DerIdx[l];
+
+      if(CohAvg){
+// Coherent approach:
+        auxC3 = (auxC00[BNum][auxI2]/auxC11[BNum][auxI2]-Error)/dx;
+        auxC2 = auxC1*std::conj(auxC3) + std::conj(auxC1)*auxC3;
+        CovMat[(auxI1-1)*Npar+auxI2-1] += auxC2.real()*ParHandWgt*BasWgt;
+      } else {
+// Incoherent approach:
+        auxC2 = (auxC00[BNum][auxI2]/auxC11[BNum][auxI2]-Error)/dx;
+        DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
+        CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*BasWgt;
+      };
+     };  
    };
-
-
-    };  };
-
-
-   };
+  };
 
   if(CohAvg){
 // Coherent approach:
-    auxC2 = (oneC-Error)*std::conj(auxC1) + std::conj(oneC-Error)*auxC1;
+    auxC2 = ((cplx64f)ParMod - Error)*std::conj(auxC1) + std::conj((cplx64f)ParMod-Error)*auxC1;
  //   DerAux2 = (double *)&auxC2;
     IndVec[auxI1-1] += auxC2.real()*ParHandWgt*BasWgt; 
   } else {
 // Incoherent approach:
-    DerAux2[0] = (1.-Error.real())*auxC1.real(); DerAux2[1] = -Error.imag()*auxC1.imag();
+    DerAux2[0] = (ParMod-Error.real())*auxC1.real(); DerAux2[1] = -Error.imag()*auxC1.imag();
     IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*BasWgt; 
   };
-  
-
   };
 
 /////////////////////////////////////////////
-// CONTRIBUTION FROM THE CROSS HANDS:
+// CONTRIBUTION FROM THE CROSS HANDS: RL
   if (AddCrossHand){
 
   for(j=1;j<Nder;j++){
     auxI1 = DerIdx[j];
 
-    auxC1 = (auxC01[BNum][auxI1] - auxC01[BNum][0])/dx;
+    TempC = cplx64f(DStokes[auxI1][1],DStokes[auxI1][1])/(DStokes[auxI1][0]+DStokes[auxI1][3]);
+    TempC -= cplx64f(DStokes[0][1],DStokes[0][2])/(DStokes[0][0]+DStokes[0][3]);
+    auxC1 = TempC/dx;
+    TempC = cplx64f(DStokes[auxI1][1],DStokes[auxI1][1])/(DStokes[auxI1][0]-DStokes[auxI1][3]);
+    TempC -= cplx64f(DStokes[0][1],DStokes[0][2])/(DStokes[0][0]-DStokes[0][3]);
+    auxC1 += TempC/dx;
+
+    auxC1 -= (auxC01[BNum][auxI1]/auxC00[BNum][auxI1] - auxC01[BNum][0]/auxC00[BNum][0])/dx;
+    auxC1 -= (auxC01[BNum][auxI1]/auxC11[BNum][auxI1] - auxC01[BNum][0]/auxC11[BNum][0])/dx;
 
   if(CohAvg){
 // Coherent approach:
     auxC2 = auxC1*std::conj(auxC1);
-//    DerAux1 = (double *)&auxC2;
     CovMat[(auxI1-1)*(Npar+1)] += 2.*auxC2.real()*CrossHandWgt*BasWgt;
 
   } else {
@@ -2070,105 +2441,143 @@ if(doCov){
     CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*BasWgt;
   };
 
-
    if (useCov){
     for(l=j+1;l<Nder;l++){
       auxI2 = DerIdx[l];
 
+      TempC = cplx64f(DStokes[auxI2][1],DStokes[auxI2][1])/(DStokes[auxI2][0]+DStokes[auxI2][3]);
+      TempC -= cplx64f(DStokes[0][1],DStokes[0][2])/(DStokes[0][0]+DStokes[0][3]);
+      auxC3 = TempC/dx;
+      TempC = cplx64f(DStokes[auxI2][1],DStokes[auxI2][1])/(DStokes[auxI2][0]-DStokes[auxI2][3]);
+      TempC -= cplx64f(DStokes[0][1],DStokes[0][2])/(DStokes[0][0]-DStokes[0][3]);
+      auxC3 += TempC/dx;
+
+      auxC3 -= (auxC01[BNum][auxI2]/auxC00[BNum][auxI2] - auxC01[BNum][0]/auxC00[BNum][0])/dx;
+      auxC3 -= (auxC01[BNum][auxI2]/auxC11[BNum][auxI2] - auxC01[BNum][0]/auxC11[BNum][0])/dx;
+
      if(CohAvg){
 // Coherent approach:
-      auxC3 = (auxC01[BNum][auxI2] - auxC01[BNum][0])/dx;
       auxC2 = auxC1*std::conj(auxC3) + std::conj(auxC1)*auxC3;
-//      DerAux2 = (double *)&auxC2;
       CovMat[(auxI1-1)*Npar+auxI2-1] += auxC2.real()*CrossHandWgt*BasWgt ;
      } else {
 // Incoherent approach:
-      auxC2 = (auxC01[BNum][auxI2] - auxC01[BNum][0])/dx;
-      DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
+      DerAux2[0] = auxC1.real()*auxC3.real(); DerAux2[1] = auxC1.imag()*auxC3.imag();
       CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ;
      };
+    };  
+   };
 
-
-    };  };
+   auxC3 = auxC01[BNum][0]/auxC00[BNum][0] + auxC01[BNum][0]/auxC11[BNum][0];
+   auxC3 = -cplx64f(DStokes[0][1],DStokes[0][1])/(DStokes[0][0]+DStokes[0][3]);
+   auxC3 = -cplx64f(DStokes[0][1],DStokes[0][1])/(DStokes[0][0]-DStokes[0][3]);
 
    if(CohAvg){
 // Coherent approach:
-    auxC2 = -std::conj(auxC01[BNum][0])*auxC1 - auxC01[BNum][0]*std::conj(auxC1);
-//    DerAux2 = (double *)&auxC2;
+    auxC2 = std::conj(auxC3)*auxC1 + auxC3*std::conj(auxC1);
     IndVec[auxI1-1] += auxC2.real()*CrossHandWgt*BasWgt ; 
    } else {
 // Incoherent approach:
-    DerAux2[0] = -auxC01[BNum][0].real()*auxC1.real(); DerAux2[1] = -auxC01[BNum][0].imag()*auxC1.imag();
+    DerAux2[0] = auxC3.real()*auxC1.real(); DerAux2[1] = auxC3.imag()*auxC1.imag();
     IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ; 
    };
 
 
 
-    auxC1 = (auxC10[BNum][auxI1] - auxC10[BNum][0])/dx;
+/////////////////////////////////////////////
+// CONTRIBUTION FROM THE CROSS HANDS: LR
+
+    TempC = cplx64f(DStokes[auxI1][1],-DStokes[auxI1][1])/(DStokes[auxI1][0]+DStokes[auxI1][3]);
+    TempC -= cplx64f(DStokes[0][1],-DStokes[0][2])/(DStokes[0][0]+DStokes[0][3]);
+    auxC1 = TempC/dx;
+    TempC = cplx64f(DStokes[auxI1][1],-DStokes[auxI1][1])/(DStokes[auxI1][0]-DStokes[auxI1][3]);
+    TempC -= cplx64f(DStokes[0][1],-DStokes[0][2])/(DStokes[0][0]-DStokes[0][3]);
+    auxC1 += TempC/dx;
+
+    auxC1 -= (auxC10[BNum][auxI1]/auxC00[BNum][auxI1] - auxC10[BNum][0]/auxC00[BNum][0])/dx;
+    auxC1 -= (auxC10[BNum][auxI1]/auxC11[BNum][auxI1] - auxC10[BNum][0]/auxC11[BNum][0])/dx;
 
   if(CohAvg){
 // Coherent approach:
     auxC2 = auxC1*std::conj(auxC1);
-//    DerAux1 = (double *)&auxC2;
-    CovMat[(auxI1-1)*(Npar+1)] += 2.*auxC2.real()*CrossHandWgt*BasWgt ;
+    CovMat[(auxI1-1)*(Npar+1)] += 2.*auxC2.real()*CrossHandWgt*BasWgt;
 
   } else {
 // Incoherent approach:
     DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
-    CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*BasWgt ;
+    CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*BasWgt;
   };
-
 
    if (useCov){
     for(l=j+1;l<Nder;l++){
       auxI2 = DerIdx[l];
 
-    if(CohAvg){
+      TempC = cplx64f(DStokes[auxI2][1],-DStokes[auxI2][1])/(DStokes[auxI2][0]+DStokes[auxI2][3]);
+      TempC -= cplx64f(DStokes[0][1],-DStokes[0][2])/(DStokes[0][0]+DStokes[0][3]);
+      auxC3 = TempC/dx;
+      TempC = cplx64f(DStokes[auxI2][1],-DStokes[auxI2][1])/(DStokes[auxI2][0]-DStokes[auxI2][3]);
+      TempC -= cplx64f(DStokes[0][1],-DStokes[0][2])/(DStokes[0][0]-DStokes[0][3]);
+      auxC3 += TempC/dx;
+
+      auxC3 -= (auxC10[BNum][auxI2]/auxC00[BNum][auxI2] - auxC10[BNum][0]/auxC00[BNum][0])/dx;
+      auxC3 -= (auxC10[BNum][auxI2]/auxC11[BNum][auxI2] - auxC10[BNum][0]/auxC11[BNum][0])/dx;
+
+     if(CohAvg){
 // Coherent approach:
-      auxC3 = (auxC10[BNum][auxI2] - auxC10[BNum][0])/dx;
       auxC2 = auxC1*std::conj(auxC3) + std::conj(auxC1)*auxC3;
-//      DerAux2 = (double *)&auxC2;
       CovMat[(auxI1-1)*Npar+auxI2-1] += auxC2.real()*CrossHandWgt*BasWgt ;
-
-    } else {
+     } else {
 // Incoherent approach:
-      auxC2 = (auxC10[BNum][auxI2] - auxC10[BNum][0])/dx;
-      DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
+      DerAux2[0] = auxC1.real()*auxC3.real(); DerAux2[1] = auxC1.imag()*auxC3.imag();
       CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ;
-    };
+     };
+    };  
+   };
 
+   auxC3 = auxC10[BNum][0]/auxC00[BNum][0] + auxC10[BNum][0]/auxC11[BNum][0];
+   auxC3 = -cplx64f(DStokes[0][1],-DStokes[0][1])/(DStokes[0][0]+DStokes[0][3]);
+   auxC3 = -cplx64f(DStokes[0][1],-DStokes[0][1])/(DStokes[0][0]-DStokes[0][3]);
 
-    }; };
-
-    if(CohAvg){
+   if(CohAvg){
 // Coherent approach:
-    auxC2 = -std::conj(auxC10[BNum][0])*auxC1 - auxC10[BNum][0]*std::conj(auxC1);
-//    DerAux2 = (double *)&auxC2;
+    auxC2 = std::conj(auxC3)*auxC1 + auxC3*std::conj(auxC1);
     IndVec[auxI1-1] += auxC2.real()*CrossHandWgt*BasWgt ; 
-    } else {
+   } else {
 // Incoherent approach:
-    DerAux2[0] = -auxC10[BNum][0].real()*auxC1.real(); DerAux2[1] = -auxC10[BNum][0].imag()*auxC1.imag();
+    DerAux2[0] = auxC3.real()*auxC1.real(); DerAux2[1] = auxC3.imag()*auxC1.imag();
     IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ; 
    };
 
 
-  };
 
+
+
+  };
   };
 
 }; // Comes from if(doCov)
 
 
+
+
+
+
+
+
+
+
+
 //////////////////////////
 // UPDATE THE CHI SQUARE
      if(AddCrossHand){
-        auxD1 = std::abs(auxC01[BNum][0]);  auxD2 = std::abs(auxC10[BNum][0]);
+        auxD1 = std::abs(auxC01[BNum][0]/auxC00[BNum][0]);  auxD2 = std::abs(auxC10[BNum][0]/auxC00[BNum][0]);
+          Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt ;
+        auxD1 = std::abs(auxC01[BNum][0]/auxC11[BNum][0]);  auxD2 = std::abs(auxC10[BNum][0]/auxC11[BNum][0]);
           Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt ;
      };
 
      if (AddParHand){
         if (abs(auxC11[BNum][0])>0.0){
-          auxD1 = std::abs(Error - oneC);
+          auxD1 = std::abs(Error - (Stokes[0]+Stokes[3])/(Stokes[0]-Stokes[3]));
             Chi2 += auxD1*auxD1*ParHandWgt*BasWgt ;
         };
      };
@@ -2182,151 +2591,11 @@ if(doCov){
     };
     AvVis[BNum] = 0;
 
-
    }; // Comes from:   if (Times[currIF][k]>=Tm[BNum] + DT)
-
 
    }; // Comes from if(BNum>=0) 
 
-
   };  // Comes from loop over visibilities
-
-
-
-
-
-
-
-
-
-
-
-/*
-////////////////////////////////
-// If there are remaining visibilities after the last time averaging,
-// compute their fractional effect on the ChiSq:
-
-  for (k=0;k<NBas;k++){
-    if (AvVis[k]>0){
-
-     if (Tm[k]>T0){TRatio = (T1-Tm[k])/(Tm[k]-T0);} else {TRatio = 1.0;};
-
-
-
-////////////////////////////////////////////
-// CONTRIBUTION FROM THE PARALLEL HANDS:
-  if (AddParHand && abs(auxC11[k][0])>0.0){
-
-  Error = auxC00[k][0]/auxC11[k][0];  
-
-
-  if(doCov){
-  for(j=1;j<Nder;j++){
-    auxI1 = DerIdx[j];
-    auxC1 = (auxC00[k][auxI1]/auxC11[k][auxI1]-Error)/dx;
-
-    DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
-
-    CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*ParHandWgt*TRatio;
-    printf(" COVMAT PAR %i-%i: %.3e | %.3e %.3e\n",auxI1,auxI1, CovMat[(auxI1-1)*Npar+auxI2-1], auxC11[k][auxI1].real(), auxC1.real());
-    for(l=j+1;l<Nder;l++){
-      auxI2 = DerIdx[l];
-      auxC2 = (auxC00[BNum][auxI2]/auxC11[BNum][auxI2]-Error)/dx;
-
-      DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
-
-      CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*TRatio ;
-      printf(" COVMAT PAR %i-%i: %.3e | %.3e %.3e\n",auxI1,auxI2, CovMat[(auxI1-1)*Npar+auxI2-1], DerAux2[0], DerAux2[1]);
-
-    };
-   };
-
-
-    DerAux2[0] = (1.-Error.real())*auxC1.real(); DerAux2[1] = -Error.imag()*auxC1.imag();
-
-    IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*TRatio; 
-
-  };
-
-
-  };
-
-/////////////////////////////////////////////
-// CONTRIBUTION FROM THE CROSS HANDS:
-  if (AddCrossHand && doCov){
-
-  for(j=1;j<Nder;j++){
-    auxI1 = DerIdx[j];
-    auxC1 = (auxC01[k][auxI1] - auxC01[k][0])/dx;
-    DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
-
-    CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*TRatio;
-    for(l=j+1;l<Nder;l++){
-      auxI2 = DerIdx[l];
-      auxC2 = (auxC01[BNum][auxI2] - auxC01[BNum][0])/dx;
-      DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
-
-      CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*TRatio ;
-
-    };
-
-
-    DerAux2[0] = -auxC01[BNum][0].real()*auxC1.real(); DerAux2[1] = -auxC01[BNum][0].imag()*auxC1.imag();
-    IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*TRatio; 
-
-
-
-    auxC1 = (auxC10[k][auxI1] - auxC10[k][0])/dx;
-
-    DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
-
-    CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*TRatio;
-    for(l=j+1;l<Nder;l++){
-      auxI2 = DerIdx[l];
-      auxC2 = (auxC10[BNum][auxI2] - auxC10[BNum][0])/dx;
-      DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
-
-      CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*TRatio ;
-    };
-
-
-    DerAux2[0] = -auxC10[BNum][0].real()*auxC1.real(); DerAux2[1] = -auxC10[BNum][0].imag()*auxC1.imag();
-    IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*TRatio; 
-
-
-  };
-
-  };
-
-
-
-
-
-     if(AddCrossHand){
-        auxD1 = std::abs(auxC01[k][0]);  auxD2 = std::abs(auxC10[k][0]);
-          Chi2 += (auxD1*auxD1 + auxD2*auxD2)*TRatio*CrossHandWgt;
-     };
-
-     if (AddParHand){
-        if (abs(auxC11[k][0])>0.0){
-          Error = auxC00[k][0]/auxC11[k][0];
-          auxD1 = std::abs(Error - oneC);
-          Chi2 += (auxD1*auxD1)*TRatio*ParHandWgt;
-        };
-     };
-
-    for(j=0;j<Npar+1;j++){
-      auxC00[k][j] = cplx64f(0., 0.);
-      auxC01[k][j] = cplx64f(0., 0.);
-      auxC10[k][j] = cplx64f(0., 0.);
-      auxC11[k][j] = cplx64f(0., 0.);
-    };
-    AvVis[k] = 0;
-
-    };
-  };  */
-
-
 
 };
 
@@ -2336,24 +2605,12 @@ double TheorImpr = 0.0;
 
 if(doCov){
 // Solve the system:
-double *DirDer = new double[Npar];
-
-//printf("\n\n COV MATRIX: \n");
-
-
-//printf("\n\n COV MATRIX DIAG: \n");
-//for(i=0;i<Npar;i++){
-//      printf("%.3e ",CovMat[i*Npar+i]);
-//};
-//printf("\n");
-
 
 // Find the largest gradient:
 double Largest = 0.0;
 for(i=0;i<Npar;i++){
   if(CovMat[i*Npar+i]>Largest){Largest=CovMat[i*Npar+i];};
 };
-
 
 // Fill in the Hessian's lower part:
 for(i=0;i<Npar;i++){
@@ -2364,13 +2621,8 @@ for(i=0;i<Npar;i++){
        CovMat[i*Npar+j] = 0.0; 
     };
   };
-//  CovMat[i*Npar+i] += Lambda*(Largest + CovMat[i*Npar+i]);
-   CovMat[i*Npar+i] += Lambda*(Largest); //+DirDer[i]); // + CovMat[i*Npar+i]);
-  
+  CovMat[i*Npar+i] += Lambda*(Largest);
 };
-
-
-
 
 if (useCov){
   gsl_linalg_LU_decomp (&m.matrix, perm, &s);
@@ -2384,7 +2636,6 @@ for(i=0;i<Npar;i++){
   CrossG[i] += SolVec[i];
 };
 
-delete[] DirDer;
 
 }; // comes from id(doCov)
 
@@ -2394,8 +2645,10 @@ delete[] DirDer;
 
   Chi2Old = Chi2;
 
-    PyObject *ret = Py_BuildValue("d",Chi2);
+    ret = Py_BuildValue("d",Chi2);
 
+/*
+  delete[] DirDer;
   delete[] Tm;
   delete[] DerAux1;
   delete[] DerAux2;
@@ -2413,7 +2666,11 @@ delete[] DirDer;
   delete[] AvVis;
   delete[] DerIdx;
 
-    return ret;
+  for(i=0;i<Npar+1;i++){delete[] DStokes[i];};
+  delete[] DStokes;
+*/
+
+  return ret;
 
 };
 

@@ -41,7 +41,7 @@ class DataIOFITS: public DataIO {
 
    ~DataIOFITS();
 
-   DataIOFITS(std::string outputfile, int Nant, int *Ants, double *doRange, bool Overwrite, bool doConj, bool doSolve, ArrayGeometry *Geom,  FILE *logF);
+   DataIOFITS(std::string outputfile, int Nant, int *Ants, double *doRange, bool Overwrite, bool doConj, bool doSolve, int saveSource, ArrayGeometry *Geom,  FILE *logF);
 
    bool setCurrentIF(int i);
 
@@ -52,7 +52,7 @@ class DataIOFITS: public DataIO {
    return the pure-linear visibilities twice, one iteration for each antenna (the same is 
    true for the auto-correlations of each lin-pol antenna). 
    Returns false if no more mixed-pol visibilities are found for the corresponding IF. */
-   bool getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bool &conj);
+   bool getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bool &conj, int &calField);
 
 
 /* Complementary to the function above. Once the visibilities have been 
@@ -72,7 +72,7 @@ class DataIOFITS: public DataIO {
   private:
 
 
-    void readInput(std::string inputfile);
+    void readInput(std::string inputfile, int saveSource);
     void openOutFile(std::string outputfile, bool Overwrite);   
     void saveCirculars(std::string inputfile);   
 

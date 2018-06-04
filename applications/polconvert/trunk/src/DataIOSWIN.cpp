@@ -43,7 +43,7 @@ DataIOSWIN::~DataIOSWIN() {
 };
 
 
-DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt, int *LinAnt, double *Range, int nIF, int *nChan, double **FreqVal, bool Overwrite, bool doTest, bool doSolve, double jd0, ArrayGeometry *Geom, FILE *logF) {
+DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt, int *LinAnt, double *Range, int nIF, int *nChan, double **FreqVal, bool Overwrite, bool doTest, bool doSolve, int saveSource, double jd0, ArrayGeometry *Geom, FILE *logF) {
 
 
 doWriteCirc = doSolve;
@@ -125,7 +125,7 @@ for (i=0; i<4; i++){
   isOverWrite = Overwrite ;
 
   openOutFiles(difxfiles);
-  readHeader(doTest);
+  readHeader(doTest,saveSource);
 
 };
 
@@ -209,7 +209,7 @@ bool DataIOSWIN::setCurrentIF(int i){
 
 
 
-void DataIOSWIN::readHeader(bool doTest) {
+void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 
 //  char *message;
   long loc, beg, end, polpos;
@@ -369,7 +369,7 @@ void DataIOSWIN::readHeader(bool doTest) {
 
 
 // Write circular visibilities (assume standard pol. ordering):
-  if (doWriteCirc && (!is1orig[nrec] && !is2orig[nrec]) && (pol[0] == 'R' || pol[0]=='X') && (pol[1] == 'R' || pol[1]=='X')){
+  if ((saveSource<0 || sidx == saveSource) && doWriteCirc && (!is1orig[nrec] && !is2orig[nrec]) && (pol[0] == 'R' || pol[0]=='X') && (pol[1] == 'R' || pol[1]=='X')){
 
 
     for (auxJ=0; auxJ<4; auxJ++){    
@@ -500,12 +500,12 @@ delete[] pol;
 
 
 
-bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bool &conj) {
+bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bool &conj, int &calField) {
 
 
 //char *message;
 long rec, rec1, k;
-int basel, idx, fnum;
+int basel, idx, fnum, field;
 double time;
 long indices[4];
 bool complete;
@@ -535,6 +535,7 @@ for (rec=0; rec<nrec; rec++) {
      idx ++;
      basel = Records[rec].Baseline;
      time = Records[rec].Time;
+     field = Records[rec].Source;
      currVis = rec;
      for (rec1=rec+1; rec1<nrec; rec1++) {
        if (Records[rec1].Baseline==basel && Records[rec1].Time==time && Records[rec1].freqIndex==currFreq) {
@@ -676,7 +677,7 @@ for (i=0; i<4; i++) {
  } else {isAutoCorr = false;};
 
 
-
+calField = field; 
 JDTime = time;
 currConj = conj ;
 
@@ -701,7 +702,7 @@ bool DataIOSWIN::setCurrentMixedVis() {
 
 //char *message;
 long rec;
-int i,k, fnum = 0;
+int i, fnum = 0;
 
 // Write:
 

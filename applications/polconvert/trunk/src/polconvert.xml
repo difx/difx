@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.7.2\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.7.4\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.7.2\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.7.4\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -170,7 +170,7 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 
     <param type="any" name="solint" mustexist="false">
-      <description>If solint[0] null or negative, solve the cross-polarization phase plus a multi-band delay (MBD). If not, solve in bandpass mode by averaging solint[0] channels per solution.\n Divide the solution time range in solint[1] chunks. I.e., if solint[1]==1, the fringes are fully averaged in time (corrected by the fringe rates) before the GPLFF condition is computed.</description>
+      <description>If solint[0] null or negative, solve the cross-polarization phase plus a multi-band delay (MBD). If not, solve in bandpass mode by averaging solint[0] channels per solution.\n Divide the solution time range (per scan) in solint[1] chunks (i.e., in solint[1] subscans). I.e., if solint[1]==1, the fringes are fully averaged in time for each scan (but corrected for the scan fringe rates) before the GPLFF condition is computed. solint[2] is the minimum time jump (in seconds) to split the data into different scans (default: 100 seconds).</description>
       <value>[1,1]</value>
     </param>
 
@@ -194,6 +194,16 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
     <param type="string" name="solveMethod" mustexist="false">
       <description>Method for the minimization of the Chi squared in the GCPFF. Can be \'gradient\', \'Levenberg-Marquardt\' or \'COBYLA\'.</description>
       <value>gradient</value>
+    </param>
+
+    <param type="any" name="calstokes" mustexist="false">
+      <description>Stokes parameters, [I,Q,U,V] of the calibrator (of course, this is only used if doSolve is not negative). The total intensity is not needed in the calibration (i.e., calstokes[0] can be left to 1.0, so that the other parameters will correspond to fractional polarization). </description>
+      <value>[1.,0.,0.,0.]</value>
+    </param>
+
+    <param type="int" name="calfield" mustexist="false">
+      <description>If not negative, field ID of the calibrator (useful if a time range covering several scans is being used in the GCPFF). If negative, use all data in the time range, regardless of the field ID.</description>
+      <value>-1</value>
     </param>
 
 
