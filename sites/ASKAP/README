@@ -1,0 +1,23 @@
+# The following is an example of how to run an ASKAP CRAFT correlation
+# You need just the vcraft files and a fcm file, which I'm assuming is called fcm.txt
+
+# addITRF2fcm.py adds ITRF positions for any antennas that only have WGS84 positions 
+# (need for some commissioning antennas in some FCM files)
+# This could be wrapped up into vcraft2obs if desired
+addITRF2fcm.py fcm.txt
+
+# vcraft2obs.py converts the vcraft files to CODIF, and peeks in to get some info about times, sources, and frequencies
+# It could optionally then also run all the subsequent steps, as it and askap2difx between them actually prints them out now
+vcraft2obs.py "co??_c1_f3.vcraft"
+
+# askap2difx.py sets up all the DiFX input files
+askap2difx.py fcm.txt obs.txt chandefs.txt --ants=ak08,ak18,ak25,ak26,ak32
+
+# ./run.sh is created by askap2difx.py, it is just a script for running DiFX on a single machine
+./run.sh
+
+# The following nadgers the produced DiFX file to merge the oversampled 1.185 MHz channels into clean 4 MHz channels
+# and then builds the FITS files
+rm -rf craftfrb_1D2D.* ; mergeOversampledDiFX.py craftfrb_1.stitchconfig craftfrb_1.difx
+difx2fits craftfrb_1D2D
+

@@ -25,10 +25,19 @@ def setCrossProd(a,b):
 """Check if (part of) a frequency falls into one band in a set of frequency bands"""
 def getGlueIndex(f,bw,cfg):
 	N = len(cfg['stitch_basefreqs'])
+        maxcoverage = -1
+        bestindex = -1
 	for n in range(N):
 		if (f+bw >= cfg['stitch_basefreqs'][n]) and (f < cfg['stitch_endfreqs'][n]):
-			return n
-	return -1
+                        coverage = bw
+                        if f < cfg['stitch_basefreqs'][n]:
+                            coverage = f+bw - cfg['stitch_basefreqs'][n]
+                        if f+bw > cfg['stitch_endfreqs'][n]:
+                            coverage = cfg['stitch_endfreqs'][n] - f
+			if coverage > maxcoverage:
+                            maxcoverage = coverage
+                            bestindex = n
+	return bestindex
 
 """Read next DiFX file visibility header and return it in binary was well as a parsed struct"""
 def getVisibilityHeader(f):

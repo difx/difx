@@ -277,14 +277,23 @@ cwd = os.getcwd()
 for antenna in fcm["common"]["antenna"].keys():
     if not "name" in fcm["common"]["antenna"][antenna].keys():
         continue # This one is probably a test antenna or something, ignore it
+    if not "location" in list(fcm["common"]["antenna"][antenna].keys()):
+        continue # This one is probably a test antenna or something, ignore it
     antennaname = fcm["common"]["antenna"][antenna]["name"]
     if not antennaname in targetants:
         print "Skipping antenna", antennaname, "from fcm file as it wasn't requested."
         continue
     writefreqentry(freqout, antennaname)
-    print fcm["common"]["antenna"][antenna]["location"]["itrf"]
+    #print fcm["common"]["antenna"][antenna]["location"].keys()
+    #print fcm["common"]["antenna"][antenna]["location"]["itrf"]
+    #if not "itrf" in fcm["common"]["antenna"][antenna]["location"].keys():
+    #    wgs84 = fcm["common"]["antenna"][antenna]["location"]["wgs84"]
+        
     twolettername = writestatentry(statout, antennaname, count, fcm["common"]["antenna"][antenna]["location"]["itrf"])
-    delay = fcm["common"]["antenna"][antenna]["delay"]
+    if "delay" in fcm["common"]["antenna"][antenna].keys():
+        delay = fcm["common"]["antenna"][antenna]["delay"]
+    else:
+        delay = "0.0ns"
     print "Looking for %s/%s.codif" % (cwd, antennaname)
     if os.path.exists("%s/%s.codif" % (cwd, antennaname)):
         datafilelist.append("%s=%s/%s.codif" % (twolettername, cwd, antennaname))
@@ -347,7 +356,7 @@ os.system("\\rm -f craftfrb_1.im")
 os.system("difxcalc craftfrb_1.calc")
 
 
-## Create the machines and threads file - use lbafilecheck from espresso if available and $DIFX_MACHINES exists
+## Create the machines and threads file - currently runs on localhost with just one core.
 machinesout = open("craftfrb_1.machines","w")
 for i in range(len(datafilelist) + 2):
     machinesout.write("localhost\n")
@@ -357,6 +366,29 @@ threadsout.write("NUMBER OF CORES:    1\n")
 threadsout.write("8\n")
 threadsout.close()
 
+## Create a little run file for running the observations
+## This is used in preference to startdifx because startdifx uses some MPI options we don't want
+runout = open("run.sh", "w")
+runout.write("#!/bin/sh\n\n")
+runout.write("rm -rf craftfrb_1.difx\n")
+runout.write("rm -rf log*\n")
+runout.write("errormon2 6 &\n")
+runout.write("export ERRORMONPID=$!\n")
+runout.write("mpirun -machinefile machines -np %d mpifxcorr craftfrb_1.input\n" % (len(datafilelist)+2))
+runout.write("kill $ERRORMONPID\n")
+runout.write("rm -f craftfrb_1.difxlog\n")
+runout.write("mv log craftfrb_1.difxlog\n")
+runout.close()
+os.chmod("run.sh", 0775)
+
 ## Print the line needed to run the correlation
-runline = "startdifx -n -f craftfrb_1.input"
+#runline = "startdifx -n -f craftfrb_1.input"
+#print runline
+print "# First run the correlation:"
+runline = "./run.sh\n"
+print runline
+
+## Print the line needed to run the stitching and then subsequently difx2fits
+print "Then run difx2fits"
+runline = "rm -rf craftfrb_1D2D.* ; mergeOversampledDiFX.py craftfrb_1.stitchconfig craftfrb_1.difx\ndifx2fits craftfrb_1D2D"
 print runline

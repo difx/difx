@@ -20,23 +20,22 @@ def posradians2string(rarad, decrad):
     return rastring, decstring
 
 # Check instantiation
-if not len(sys.argv) == 3:
-    print "Usage: %s <example vcraft header> <glob pattern for vcraft files>" % sys.argv[0]
+if not len(sys.argv) == 2:
+    print "Usage: %s <glob pattern for vcraft files>" % sys.argv[0]
     sys.exit()
 
-vcraftheader = sys.argv[1]
-vcraftglobpattern = sys.argv[2]
+vcraftglobpattern = sys.argv[1]
 
-if not os.path.exists(vcraftheader):
-    print vcraftheader, "doesn't exist!"
+vcraftfiles = glob.glob(vcraftglobpattern)
+if len(vcraftfiles) == 0:
+    print "Didn't find any vcraft files!"
     sys.exit()
 
 freqs = []
 beamra = -99
 beamdec = -99
 startmjd = -99
-vcraftheaderlines = open(vcraftheader).readlines()
-for line in vcraftheaderlines:
+for line in open(vcraftfiles[0]).readlines():
     if line.split()[0] == "FREQS":
         freqs = line.split()[1].split(',')
     if line.split()[0] == "BEAM_RA":
@@ -45,14 +44,10 @@ for line in vcraftheaderlines:
         beamdec = float(line.split()[1])
     if line.split()[0] == "START_WRITE_MJD":
         startmjd = float(line.split()[1]) + 37./86400 # Right for the current amount of leap seconds!
+        break
 
 if beamra < -90 or beamdec < -90 or startmjd < -90:
     print "Didn't find all info in", vcraftheader
-    sys.exit()
-
-vcraftfiles = glob.glob(vcraftglobpattern)
-if len(vcraftfiles) == 0:
-    print "Didn't find any vcraft files!"
     sys.exit()
 
 # Write the obs.txt file
@@ -72,13 +67,38 @@ for f in freqs:
 output.close()
 
 # Run the converter for each vcraft file
+antlist = ""
 for f in vcraftfiles:
     antname = ""
     for line in open(f).readlines():
         if line.split()[0] == "ANT":
              antname = line.split()[1].lower()
+             break
     if antname == "":
         print "Didn't find the antenna name in the header!"
         sys.exit()
+    antlist += antname + ","
     print "CRAFTConverter %s %s.codif" % (f, antname)
     os.system("CRAFTConverter %s %s.codif" % (f, antname))
+
+# Write a machines file and a run.sh file
+output = open("machines","w")
+for i in range(len(vcraftfiles)+2):
+    output.write("localhost\n")
+output.close()
+
+output = open("run.sh","w")
+output.write("#!/bin/sh\n\n")
+output.write("rm -rf craft.difx\n")
+output.write("rm -rf log*\n")
+output.write("errormon2 6 &\n")
+output.write("export ERRORMONPID=$!\n")
+output.write("mpirun -machinefile machines -np %d mpifxcorr craft.input\n" % (len(vcraftfiles)+2))
+output.write("kill $ERRORMONPID\n")
+output.write("rm -f craft.difxlog\n")
+output.write("mv log craft.difxlog\n")
+output.close()
+
+# Print out the askap2difx command line to run (ultimately, could just run it ourselves)
+runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-2]
+print runline

@@ -62,3 +62,37 @@ vexout = open(vexfile, "w")
 for line in vexfilelines:
     vexout.write(line)
 vexout.close()
+
+freqs = []
+for line in freqdeflines:
+    freqs.append(int(line.split()[0]))
+stitchfreqs = []
+for freq in freqs:
+    if freq+1 in freqs and freq+2 in freqs and freq+3 in freqs:
+        if freq-1 in stitchfreqs or freq-2 in stitchfreqs or freq-3 in stitchfreqs:
+            continue
+        stitchfreqs.append(freq)
+stitchfreqs.sort()
+if len(stitchfreqs) == 0:
+    print "Couldn't find any freqs to stitch! aborting"
+    sys.exit()
+
+# Now write the stitchconfig file, too
+basename = vexfile.split('/')[-1].split('.')[0]
+stitchout = open("%s_1.stitchconfig" % basename, "w")
+stitchout.write("[config]\n")
+stitchout.write("target_bw: 4.000\n")
+stitchout.write("target_nchan: 432\n")
+stitchout.write("target_chavg: 1\n")
+stitchout.write("stitch_oversamplenum: 32\n")
+stitchout.write("stitch_oversampledenom: 27\n")
+stitchout.write("stitch_nstokes: 1\n")
+stitchout.write("stitch_antennas: *\n")
+stitchout.write("stitch_basefreqs: ")
+for i, freq in enumerate(stitchfreqs):
+    stitchout.write("%.1f" % (freq-0.5))
+    if not i == len(stitchfreqs)-1:
+        stitchout.write(", ")
+stitchout.write("\n")
+stitchout.write("verbose: True\n")
+stitchout.close()
