@@ -167,7 +167,7 @@ int nextCODIFHeader(codif_header *header, int framepersec) {
   if (header->frame>framepersec) {
     return(CODIF_ERROR);
   } else if (header->frame==framepersec) {
-    header->seconds++;
+    header->seconds += header->period;
     header->frame = 0;
   }
   return(CODIF_NOERROR);
