@@ -902,6 +902,7 @@ class AddExperimentWindow(GenericWindow):
         analyst = None
         
         code = upper(self.txtExpCode.get())
+	self.obsDate = self.txtObsDate.get()
        
         # check that Code has been set
         if (code == ""):
