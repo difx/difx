@@ -34,6 +34,7 @@ from difxdb.business.experimentaction import *
 from difxdb.model import model
 from difxfile.difxdir import DifxDir
 from operator import  attrgetter
+from string import upper,lower
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
@@ -103,7 +104,7 @@ if __name__ == "__main__":
 				if station != 0:
 					print "enddef;"
 					
-				print "def " + module.stationCode + ";"
+				print "def " + upper(module.stationCode[0]) + lower(module.stationCode[1]) + ";"
 
 				lastStationCode = module.stationCode
 				count = 0
@@ -113,11 +114,17 @@ if __name__ == "__main__":
 			if not dirFile.getExperimentStartDatetime(upper(expCode)):
 				start = "UNKNOWN"
 			else:
-				start = dirFile.getExperimentStartDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
+				try:
+					start = dirFile.getExperimentStartDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
+				except:
+					sys.exit("Error parsing {}".format(dirFile))
 			if not dirFile.getExperimentStopDatetime(upper(expCode)) is not None:
 				stop = "UNKNOWN"
 			else:
-				stop = dirFile.getExperimentStopDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
+				try:
+					stop = dirFile.getExperimentStopDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
+				except:
+					sys.exit("Error parsing {}".format(dirFile))
 			
 			print "VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop)
 			count += 1
