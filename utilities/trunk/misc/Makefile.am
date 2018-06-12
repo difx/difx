@@ -12,6 +12,8 @@ dist_bin_SCRIPTS = \
 	pcList.pl \
 	sec2time.pl \
 	startcorr.pl \
+	summarizeDifxlogs.py \
+	summarizePolconvertLogs.py \
 	time.pl \
 	time2sec.pl \
 	update_eop \
