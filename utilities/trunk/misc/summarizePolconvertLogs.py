@@ -99,9 +99,23 @@ def checkDiFXViz(job):
 	s = polinfo + ' in ' + difxfilename
 	return s
 
+'''Read scan information (source name, scan ID) for one job'''
+def getScanInfo(job):
+	calcfile = job + '.calc'
+	src = 'n/a'
+	scan = 'n/a'
+	with open(calcfile,'rt') as f:
+		for line in f:
+			if 'SOURCE' in line and 'NAME' in line:
+				src = line.split(':')[-1].strip()
+			if 'SCAN' in line and 'IDENTIFIER' in line:
+				scan = line.split(':')[-1].strip()
+	return src, scan
+
 '''Load a polconvert log file and print a summary'''
 def reportOnLog(fn,do_pols_check=False):
 	job = fn.split('.')[0]
+	src, scan = getScanInfo(job)
 	f = open(fn, 'r')
 	nprinted = 0
 	while True:
@@ -126,7 +140,7 @@ def reportOnLog(fn,do_pols_check=False):
 		if (RL > 0.9*RR) or (LR > 0.9*LL):
 			verdict = bcolors.RED + 'bad' + bcolors.ENDC
 		if nprinted == 0:
-			print ('# %s : %s' % (job,fn))
+			print ('# %s %s %s : %s' % (job,scan,src,fn))
 		print ('# %s IF#%d SNRs : RR %6.2f, LL %6.2f, LR %6.2f, RL %6.2f : %s' % (4*' ',IF,RR,LL,RL,LR,verdict))
 		nprinted += 1
 	f.close()
