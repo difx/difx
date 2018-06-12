@@ -1,3 +1,7 @@
+Version 0.8
+* New dangerous utility removeZerovalAutoDiFX.py for removing zero-valued autopower spectra
+  that were in some cases inserted by DiFX between two DATASTREAMs
+
 Version 0.7
 * New dangerous utility polswapDiFX.py for relabeling polarizations in Swinburne format DiFX output
 * parseDiFX.py: get more FREQ TABLE infos, add to-string conversion for Datastream etc objects
