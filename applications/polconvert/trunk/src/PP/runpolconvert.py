@@ -129,6 +129,7 @@ except Exception, ex:
     print 'Setting numFrPltPix to 50'
 
 # option to use different peers per scan
+# plotAntList.reverse() is to allow plotAntList.pop() below
 try:
     if type(plotAntList) == list:
         plotAntList.reverse()
@@ -312,6 +313,7 @@ for job in djobs:
     SWIN = ('%s/%s_%s.difx' % (DiFXout,expName,job))
     SAVE = ('%s/%s_%s.save' % (DiFXout,expName,job))
 
+    # plotAntList was reversed so that pop delivers the next
     if len(plotAntList) > 0: usePlotAnt = plotAntList.pop()
     else:                    usePlotAnt = plotAnt
 
