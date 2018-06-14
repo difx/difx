@@ -83,4 +83,4 @@ for iline, line in enumerate(atca_summary):
         refant = int(refant)
         refant_pad = pads[refant-1]
 
-print "updatepos.py ATCA {}".format(refant_pad)
+print "updatepos.py ATCA AT_{}".format(refant_pad)
