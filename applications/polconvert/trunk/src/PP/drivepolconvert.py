@@ -235,6 +235,8 @@ def calibrationChecks(o):
 def inputRelatedChecks(o):
     '''
     Check things that will end up in the CASA input file.
+    We introduce the jobset to make sure we only process
+    each input file once.
     '''
     expchk = set()
     jobset = set()
@@ -243,9 +245,14 @@ def inputRelatedChecks(o):
     for j in o.nargs:
         if not os.path.exists(j):
             raise Exception, 'Input file %s is missing' % j
-        expchk.add(j.split('_')[0])
-        jobtmp = j.split('_')[1]
-        jobset.add(jobtmp.split('.')[0])
+        js = j.split('_')
+        ee = js[0]
+        expchk.add(ee)
+        jss = js[1].split('.')
+        jobset.add(jss[0])
+        jsbe = ee + '_' + jss[0] + '.input'
+        if j != jsbe:
+            raise Exception, 'Input file %s not %s' % (j, jsbe)
     if len(expchk) > 1 or len(expchk) == 0:
         raise Exception, ('Only one experiment may be processed ' +
             'but %d are present: %s') % (len(expchk), ','.join(expchk))
@@ -256,8 +263,11 @@ def inputRelatedChecks(o):
     djobs = list(jobset)
     djobs.sort()
     o.jobnums = djobs
-    o.djobs = str(map(str,djobs))
-    if o.verb: print 'Processing jobs "%s"' % o.djobs
+    o.djobs = str(map(str,o.jobnums))
+    o.nargs = []
+    # make sure o.nargs is co-ordered with o.jobnums for reference
+    for jn in o.jobnums: o.nargs.append(o.exp + '_' + jn + '.input')
+    if o.verb: print 'Processing jobs "%s"\n(%s)' % (o.djobs,str(o.nargs))
 
 def runRelatedChecks(o):
     '''
@@ -323,6 +333,8 @@ def deduceZoomIndicies(o):
     sitelist = o.sites.split(',')
     if o.verb: print 'Sitelist is',sitelist
     o.remotelist = []
+    o.remotename = []
+    o.remote_map = []
     zoompatt = r'^ZOOM.FREQ.INDEX.\d+:\s*(\d+)'
     almapatt = r'^TELESCOPE NAME %d:\s*AA' % (o.ant-1)
     amap_re = re.compile(r'^TELESCOPE NAME\s*([0-9])+:\s*([A-Z0-9][A-Z0-9])')
@@ -369,15 +381,16 @@ def deduceZoomIndicies(o):
         else:
             print 'Found ALMA in',jobin,almaline.rstrip()
             newargs.append(jobin)
-
-        # print workout plot ant for this job
-        plotant = -1
-        for site in sitelist:
-            if site in antmap:
-                plotant = antmap[site] + 1
-                break
-        o.remotelist.append(plotant)
-        antmap = {}
+            # workout plot ant for this job
+            plotant = -1
+            for site in sitelist:
+                if site in antmap:
+                    plotant = antmap[site] + 1
+                    o.remotename.append(site)
+                    o.remote_map.append(str(antmap.keys()))
+                    break
+            o.remotelist.append(plotant)
+            antmap = {}
 
         if o.verb: print 'Zoom bands %s..%s from %s' % (zfir, zfin, jobin)
         if len(cfrq) < 1:
@@ -388,6 +401,11 @@ def deduceZoomIndicies(o):
         mfqlst.add(cfrq[len(cfrq)/2])
 
     o.nargs = newargs
+    # o.jobnums is also synchronized
+    # and o.nargs should be synchronized with o.remotelist
+    # o.remotename and o.remote_map are just for readable diagnostics below
+    # and we resync o.djobs here
+    o.djobs = str(map(str,o.jobnums))
     if len(zfirst) != 1 or len(zfinal) != 1:
         if o.zmchk:
             raise Exception, ('Encountered ambiguities in zoom freq ranges: ' +
@@ -396,17 +414,18 @@ def deduceZoomIndicies(o):
             print 'global zoom first',str(zfirst),'and final',str(zfinal)
     o.zfirst = int(sorted(list(zfirst))[0])  # int(zfirst.pop())
     o.zfinal = int(sorted(list(zfinal))[-1]) # int(zfinal.pop())
-    if o.verb: print 'Zoom frequency indices %d..%d found in %s\n  ..%s' % (
+    if o.verb: print 'Zoom freq. indices %d..%d found in \n  %s..%s' % (
         o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
-    # This could be relaxed to allow AA to be not 0 using antmap
-    #if o.verb: print 'Alma search pattern: "' + str(almapatt) + '"'
-    #if almaline == '':
-    #    raise Exception, 'Telescope Name 0 is not Alma (AA)'
-    #if o.verb: print 'Found ALMA Telescope line: ' + almaline.rstrip()
-    #if o.verb: print 'Remote antenna index is', o.remote
+    # Report on remote peer for polconvert plot diagnostics
     if (len(o.remotelist) != len(o.nargs)): o.remotelist = []
-    if o.verb: print 'Remote antenna list is',o.remotelist,'index is',o.remote
-    # if the user supplied a band, check that it agrees
+    if o.verb:
+        for j,r,s,m in map(lambda x,y,z,w:(x,y,z,w),
+            o.nargs, o.remotelist, o.remotename, o.remote_map):
+            print "%s<->%s(%s%s)," % (j,r,s,m),
+        print '\nRemote list len is',len(o.remotelist),'index is',o.remote
+        print 'Remote list is',o.remotelist,'(indices start at 1)'
+        print 'Jobs now',o.djobs
+    # If the user supplied a band, check that it agrees
     if len(mfqlst) > 1:
         raise Exception, ('Input files have disparate frequency structures:\n'
             '  Median frequencies: ' + str(mfqlst) + '\n'
@@ -610,14 +629,16 @@ def createCasaInputParallel(o):
     o.workdirs = {}
     o.workcmds = {}
     if checkDifxSaveDirsError(o, True):
-        print 'Either *.difx dirs are missing or *.save dirs are present'
-        o.jobnums = []
+        raise Exception, 'Fix these *.difx or *.save dirs issues'
     o.now = datetime.datetime.now()
-    for job in sorted(o.jobnums):
+    remotelist = o.remotelist
+    o.remotelist = []
+    for job,rem in map(lambda x,y:(x,y), o.jobnums, remotelist):
         savename = o.exp + '_' + job
         workdir = o.now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
         os.mkdir(workdir)
         odjobs = str(map(str,[job]))
+        o.remote = rem
         if createCasaInput(o, odjobs, '..', workdir):
             cmdfile = createCasaCommand(o, job, workdir)
             o.workdirs[job] = workdir
