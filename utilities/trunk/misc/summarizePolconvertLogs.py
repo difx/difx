@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # (C) 2018 Jan Wagner
 '''
-Usage: summarizePolconvertLogs.py [--help|-h] [--color|-c] [--pols|-p]
+Usage: summarizePolconvertLogs.py [--help|-h] [--color|-c] [--pols|-p] [--short|-s]
 
 Inspects the output of EHT drivepolconvert.py (that invokes CASA polconvert)
 and its logfiles in the current working directory. Reports the fringe SNRs
@@ -9,23 +9,39 @@ found in the logfiles. Optionally checks the polarizations present in each
 output .difx associated with each polconvert log.
 '''
 
-import glob, sys
+import glob, sys, argparse
 try:
 	import parseDiFX
 	have_ParseDiFX = True
 except ImportError:
 	have_ParseDiFX = False
 
-'''Global struct with terminal color codes'''
 class bcolors:
-	DEFAULT = '\033[95m'
-	GREEN = '\033[92m'
-	ORANGE = '\033[93m'
-	RED = '\033[91m'
-	ENDC = '\033[0m'
+	'''Global struct with terminal color codes'''
+	def __init__(self, useColors=True):
+		self.useColor = useColors
+		if useColors:
+			self.on()
+		else:
+			self.off()
+	def doColor(self):
+		return self.useColor
+	def on(self):
+		self.DEFAULT = '\033[95m'
+		self.GREEN = '\033[92m'
+		self.ORANGE = '\033[93m'
+		self.RED = '\033[91m'
+		self.ENDC = '\033[0m'
+	def off(self):
+		self.DEFAULT = ''
+		self.GREEN = ''
+		self.ORANGE = ''
+		self.RED = ''
+		self.ENDC = ''
 
-'''Inspect the DiFX output of a job (<job>.difx/DIFX_*) and look at the polarizations of the visibility data'''
 def checkDiFXViz(job):
+	'''Inspect the DiFX output of a job (<job>.difx/DIFX_*) and look at the polarizations of the visibility data'''
+
 	# Antennas that are linear polarized
 	linear_antennas = ['AA']
 
@@ -86,7 +102,7 @@ def checkDiFXViz(job):
 	pols_full = ('L' in pols_found) and ('R' in pols_found)
 	pols_full = pols_full or (('X' in pols_found) and ('Y' in pols_found))		
 	if pols_circular and pols_linear:
-		polinfo = bcolors.RED + 'mixed' + bcolors.ENDC
+		polinfo = opts.colors.RED + 'mixed' + opts.colors.ENDC
 	elif pols_circular:
 		polinfo = 'circular'
 	else:
@@ -99,8 +115,9 @@ def checkDiFXViz(job):
 	s = polinfo + ' in ' + difxfilename
 	return s
 
-'''Read scan information (source name, scan ID) for one job'''
+
 def getScanInfo(job):
+	'''Read scan information (source name, scan ID) for one job'''
 	calcfile = job + '.calc'
 	src = 'n/a'
 	scan = 'n/a'
@@ -112,16 +129,34 @@ def getScanInfo(job):
 				scan = line.split(':')[-1].strip()
 	return src, scan
 
-'''Load a polconvert log file and print a summary'''
-def reportOnLog(fn,do_pols_check=False):
+
+def reportOnLog(fn, opts):
+	'''Load a polconvert log file and print a summary'''
+	ratings = { 	'good':opts.colors.GREEN+'good'+opts.colors.ENDC,
+			'poor':opts.colors.ORANGE+'poor'+opts.colors.ENDC,
+			'bad':opts.colors.RED+'bad'+opts.colors.ENDC,
+			1:'good', 2:'poor', 3:'bad' }
+	nprinted, ngood, npoor, nbad, nerror = 0, 0, 0, 0, 0
 	job = fn.split('.')[0]
 	src, scan = getScanInfo(job)
+	title = '%s %-7s %-9s' % (job,scan,src)
+
+	if not opts.doShort:
+		print ('# %s' % (title))
+		print ('#  %s' % (fn))
+
 	f = open(fn, 'r')
-	nprinted = 0
 	while True:
 		l = f.readline()
 		if len(l) < 1:
 			break
+		if ('ERROR' in l):
+			if opts.doShort:
+				print ('# %s : %s' % (title,l.strip()))
+			else:
+				print ('#  %s' % (l.strip()))
+			nerror += 1
+			continue
 		if not('NORM. FRINGE PEAKS' in l):
 			continue
 		#"FOR IF #59. NORM. FRINGE PEAKS:
@@ -134,42 +169,41 @@ def reportOnLog(fn,do_pols_check=False):
 		LL = float( f.readline().split()[-1] )
 		RL = float( f.readline().split()[-1] )
 		LR = float( f.readline().split()[-1] )
-		verdict = bcolors.GREEN + 'good' + bcolors.ENDC
-		if (RL > 0.5*RR) or (LR > 0.5*LL):
-			verdict = bcolors.ORANGE + 'poor' + bcolors.ENDC
-		if (RL > 0.9*RR) or (LR > 0.9*LL):
-			verdict = bcolors.RED + 'bad' + bcolors.ENDC
-		if nprinted == 0:
-			print ('# %s %s %s : %s' % (job,scan,src,fn))
-		print ('# %s IF#%d SNRs : RR %6.2f, LL %6.2f, LR %6.2f, RL %6.2f : %s' % (4*' ',IF,RR,LL,RL,LR,verdict))
+		if (RL < 0.3*RR) or (LR < 0.3*LL):
+			verdict = ratings['good']
+			ngood += 1
+		elif (RL < 0.6*RR) or (LR < 0.6*LL):
+			verdict = ratings['poor']
+			npoor += 1
+		else:
+			verdict = ratings['bad']
+			nbad += 1
+		if not opts.doShort:
+			print ('#   IF#%d SNRs : RR %6.2f, LL %6.2f, LR %6.2f, RL %6.2f : %s' % (IF,RR,LL,RL,LR,verdict))
 		nprinted += 1
 	f.close()
-	if do_pols_check:
+
+	if opts.doShort and nerror <= 0:
+		overall = int( (ngood + 2.0*npoor + 3.0*nbad - 0.5) / 3.0 )
+		rating_name = ratings[overall]
+		print ('# %s : %d good, %d poor, %d bad : %s' % (title,ngood,npoor,nbad,ratings[rating_name]))
+
+	if opts.doPols:
 		s = checkDiFXViz(job)
 		print ('# %s %s' % (4*' ',s))
 
-# Command line args
-doColor = False
-doPolCheck = False
-if ('--help' in sys.argv) or ('-h' in sys.argv):
-	print (__doc__)
-	sys.exit(0)
-if ('--color' in sys.argv) or ('-c' in sys.argv):
-	doColor = True
-if ('--pols' in sys.argv) or ('-p' in sys.argv):
-	if not have_ParseDiFX:
-		print ('Warning: parseDiFX.py module not found, ignoring --pols command line argument')
-	else:
-		doPolCheck = True
-if not doColor:
-	bcolors.DEFAULT = ''
-	bcolors.GREEN = ''
-	bcolors.ORANGE = ''
-	bcolors.RED = ''
-	bcolors.ENDC = ''
 
-# Process all polconvert log files in the current working directory
-flist = glob.glob('*.polconvert-*/PolConvert.log')
-flist.sort()
-for fn in flist:
-	reportOnLog(fn,doPolCheck)
+if __name__ == "__main__":
+	p = argparse.ArgumentParser(usage=__doc__)
+	p.add_argument('-c', '--color', dest='colors', default=bcolors(False), action='store_const', const=bcolors(True), help='enable use of terminal color codes')
+	p.add_argument('-p', '--pols', dest='doPols', default=False, action='store_true', help='inspect polarizations in visibility data')
+	p.add_argument('-s', '--short', dest='doShort', default=False, action='store_true', help='condense the report')
+	opts = p.parse_args()
+	if opts.doPols and not have_ParseDiFX:
+		print ('Warning: parseDiFX.py module not found, ignoring --pols command line argument')
+		opts.doPols = False
+
+	flist = glob.glob('*.polconvert-*/PolConvert.log')
+	flist.sort()
+	for fn in flist:
+		reportOnLog(fn, opts)
