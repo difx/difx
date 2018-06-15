@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # (C) 2018 Jan Wagner
 '''
-Usage: summarizePolconvertLogs.py [--help|-h] [--color|-c] [--pols|-p] [--short|-s]
+Usage: summarizePolconvertLogs.py [--help|-h] [--color|-c] [--pols|-p]
+                                  [--short|-s] [--vex|-v <vexfile>]
 
 Inspects the output of EHT drivepolconvert.py (that invokes CASA polconvert)
 and its logfiles in the current working directory. Reports the fringe SNRs
@@ -9,12 +10,65 @@ found in the logfiles. Optionally checks the polarizations present in each
 output .difx associated with each polconvert log.
 '''
 
-import glob, sys, argparse
+import argparse, glob, re, sys
 try:
 	import parseDiFX
 	have_ParseDiFX = True
 except ImportError:
 	have_ParseDiFX = False
+
+def doFindProj(opts):
+	'''
+	Read opts.vexfile and find lines locating the scans assigned to projects.
+
+	Duplication of the function doFindProj() found in ehtc-joblist.py
+	because an import attempt
+	   from ehtc-joblist import doFindProj
+ 	results in "SyntaxError: invalid syntax" due to the '-' in the filename.
+	'''
+	try:
+		f = open(opts.vexfile, 'r')
+	except IOError as e:
+		print('Warning: could not open %s : %s' % (opts.vexfile,str(e)))
+		return {}
+	except Exception as e:
+		print('Warning: could not open %s')
+		return {}
+	lastscan = ''
+	thisproj = 'na'
+	scan_re = re.compile(r'\s*scan\s*([^;]+);')
+	first_re = re.compile(r'.*intent.*=.*"ALMA:PROJECT_FIRST_SCAN:(.*)".*$')
+	final_re = re.compile(r'.*intent.*=.*"ALMA:PROJECT_FINAL_SCAN:(.*)".*$')
+	comnt_re = re.compile(r'\s*[*]')
+	projscans = {}
+	for line in f.readlines():
+		sre = scan_re.search(line)
+		if sre:
+			lastscan = sre.group(1)
+			continue
+		first = first_re.search(line)
+		final = final_re.search(line)
+		comnt = comnt_re.search(line)
+		if not first and not final and comnt:
+			continue
+		if first:
+			thisproj = first.group(1)
+		if len(thisproj) > 0 and len(lastscan) > 0:
+			if thisproj in projscans:
+				projscans[thisproj].append(lastscan)
+			else:
+				projscans[thisproj] = [lastscan]
+		if final:
+			thisproj = 'na'
+	return projscans
+
+def reverseMapProjs(projscans):
+	'''Take a dict of {'proj':[scans]} and produce the reverse lookup {'scan<n>':'proj'}'''
+	scanprojs = {}
+	for proj in projscans:
+		for scan in projscans[proj]:
+			scanprojs[scan] = proj
+	return scanprojs
 
 class bcolors:
 	'''Global struct with terminal color codes'''
@@ -39,7 +93,7 @@ class bcolors:
 		self.RED = ''
 		self.ENDC = ''
 
-def checkDiFXViz(job):
+def checkDiFXViz(job, opts):
 	'''Inspect the DiFX output of a job (<job>.difx/DIFX_*) and look at the polarizations of the visibility data'''
 
 	# Antennas that are linear polarized
@@ -112,8 +166,9 @@ def checkDiFXViz(job):
 			polinfo += ' full-Stokes'
 		else:
 			polinfo += ' half-Stokes'
-	s = polinfo + ' in ' + difxfilename
-	return s
+	if not opts.doShort:
+		polinfo += ' in ' + difxfilename
+	return polinfo
 
 
 def getScanInfo(job):
@@ -139,11 +194,12 @@ def reportOnLog(fn, opts):
 	nprinted, ngood, npoor, nbad, nerror = 0, 0, 0, 0, 0
 	job = fn.split('.')[0]
 	src, scan = getScanInfo(job)
-	title = '%s %-7s %-9s' % (job,scan,src)
+	proj = ('proj=%-8s'%(opts.alma_projs[scan])) if opts.alma_projs else ''
+	title = '%s %-8s %-10s %s' % (job,scan,src,proj)
 
 	if not opts.doShort:
 		print ('# %s' % (title))
-		print ('#  %s' % (fn))
+		print ('#   %s' % (fn))
 
 	f = open(fn, 'r')
 	while True:
@@ -169,10 +225,12 @@ def reportOnLog(fn, opts):
 		LL = float( f.readline().split()[-1] )
 		RL = float( f.readline().split()[-1] )
 		LR = float( f.readline().split()[-1] )
-		if (RL < 0.3*RR) or (LR < 0.3*LL):
+		min_par = min(RR,LL)
+		max_cross = max(LR,RL)
+		if (max_cross < 0.3*min_par):
 			verdict = ratings['good']
 			ngood += 1
-		elif (RL < 0.6*RR) or (LR < 0.6*LL):
+		elif (max_cross < 0.6*min_par):
 			verdict = ratings['poor']
 			npoor += 1
 		else:
@@ -183,14 +241,17 @@ def reportOnLog(fn, opts):
 		nprinted += 1
 	f.close()
 
+	polinfo = ' '
+	if opts.doPols:
+		polinfo = ' : ' + checkDiFXViz(job, opts)
+
 	if opts.doShort and nerror <= 0:
 		overall = int( (ngood + 2.0*npoor + 3.0*nbad - 0.5) / 3.0 )
 		rating_name = ratings[overall]
-		print ('# %s : %d good, %d poor, %d bad : %s' % (title,ngood,npoor,nbad,ratings[rating_name]))
+		print ('# %s%s : %d good, %d poor, %d bad : %s' % (title,polinfo,ngood,npoor,nbad,ratings[rating_name]))
 
-	if opts.doPols:
-		s = checkDiFXViz(job)
-		print ('# %s %s' % (4*' ',s))
+	if opts.doPols and not opts.doShort:
+		print('#   %s' % (polinfo))
 
 
 if __name__ == "__main__":
@@ -198,12 +259,18 @@ if __name__ == "__main__":
 	p.add_argument('-c', '--color', dest='colors', default=bcolors(False), action='store_const', const=bcolors(True), help='enable use of terminal color codes')
 	p.add_argument('-p', '--pols', dest='doPols', default=False, action='store_true', help='inspect polarizations in visibility data')
 	p.add_argument('-s', '--short', dest='doShort', default=False, action='store_true', help='condense the report')
+	p.add_argument('-v', '--vex', dest='vexfile', default=None, help='a VEX file to parse for EHTC/GMVA project codes')
+
 	opts = p.parse_args()
+	opts.__dict__['alma_projs'] = reverseMapProjs(doFindProj(opts)) if opts.vexfile else None
 	if opts.doPols and not have_ParseDiFX:
 		print ('Warning: parseDiFX.py module not found, ignoring --pols command line argument')
 		opts.doPols = False
 
 	flist = glob.glob('*.polconvert-*/PolConvert.log')
+	if len(flist) <= 0:
+		print ('Warning: no polconverted jobs found in the current working directory!')
+
 	flist.sort()
 	for fn in flist:
 		reportOnLog(fn, opts)
