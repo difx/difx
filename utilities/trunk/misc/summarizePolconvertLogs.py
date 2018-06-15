@@ -1,15 +1,18 @@
 #!/usr/bin/python
 # (C) 2018 Jan Wagner
 '''
-Usage: summarizePolconvertLogs.py [--help|-h] [--color|-c] [--pols|-p]
-                                  [--short|-s] [--vex|-v <vexfile>]
+summarizePolconvertLogs.py [--help|-h] [--color|-c] 
+                           [--pols|-p] [--short|-s]
+                           [--vex|-v <vexfile>]
 
-Inspects the output of EHT drivepolconvert.py (that invokes CASA polconvert)
-and its logfiles in the current working directory. Reports the fringe SNRs
-found in the logfiles. Optionally checks the polarizations present in each
-output .difx associated with each polconvert log.
+Inspects the output of EHT drivepolconvert.py (that invokes CASA
+polconvert) and its logfiles in the current working directory.
+Reports the fringe SNRs found in the logfiles. Optionally checks
+the polarizations present in each output .difx associated with each
+polconvert log.
 '''
 
+__version__ = '1.0.1'
 import argparse, glob, re, sys
 try:
 	import parseDiFX
@@ -261,7 +264,8 @@ if __name__ == "__main__":
 	p.add_argument('-c', '--color', dest='colors', default=bcolors(False), action='store_const', const=bcolors(True), help='enable use of terminal color codes')
 	p.add_argument('-p', '--pols', dest='doPols', default=False, action='store_true', help='inspect polarizations in visibility data')
 	p.add_argument('-s', '--short', dest='doShort', default=False, action='store_true', help='condense the report')
-	p.add_argument('-v', '--vex', dest='vexfile', default=None, help='a VEX file to parse for EHTC/GMVA project codes')
+	p.add_argument('-v', '--vex', dest='vexfile', default=None, help='vex file to parse for EHTC project codes', metavar='file')
+	p.add_argument('-V', '--version', action='version', version='%(prog)s '+__version__+' svn:$Revision$') #dest='showVersion', default=False, action='store_true', help='show version')
 
 	opts = p.parse_args()
 	opts.__dict__['alma_projs'] = reverseMapProjs(doFindProj(opts)) if opts.vexfile else None
