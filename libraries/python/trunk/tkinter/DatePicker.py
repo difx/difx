@@ -81,10 +81,11 @@ class DatePicker:
         self.day_selected = day
         self.month_selected = self.month
         self.year_selected = self.year
-        self.day_name = name
+
          
         #data
 	self.selectedDate = datetime.date(self.year, self.month, day)
+        self.day_name = self.selectedDate.strftime("%A")
          
         self.clear()
         self.setup(self.year, self.month)
@@ -111,7 +112,6 @@ class DatePicker:
         for w, week in enumerate(self.cal.monthdayscalendar(y, m), 2):
             for d, day in enumerate(week):
                 if day:
-                    #print(calendar.day_name[day])
                     b = tk.Button(self.parent, width=1, text=day, command=lambda day=day:self.selection(day, calendar.day_name[(day-1) % 7]))
                     self.wid.append(b)
                     b.grid(row=w, column=d)
@@ -136,7 +136,7 @@ if __name__ == '__main__':
              
         def popup(self):
             child = tk.Toplevel()
-            cal = DatePicker(child, self.data)
+            cal = DatePicker(child)
              
         def print_selected_date(self):
             print(self.data)
