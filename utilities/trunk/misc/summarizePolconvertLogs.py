@@ -194,12 +194,14 @@ def reportOnLog(fn, opts):
 	nprinted, ngood, npoor, nbad, nerror = 0, 0, 0, 0, 0
 	job = fn.split('.')[0]
 	src, scan = getScanInfo(job)
-	proj = ('proj=%-8s'%(opts.alma_projs[scan])) if opts.alma_projs else ''
-	title = '%s %-8s %-10s %s' % (job,scan,src,proj)
+	proj = ('proj=%s'%(opts.alma_projs[scan])) if opts.alma_projs else ''
 
 	if not opts.doShort:
+		title = '%s %-8s %-10s %s' % (job,scan,src,proj)
 		print ('# %s' % (title))
 		print ('#   %s' % (fn))
+	else:
+		title = '%s %s %s %s' % (job,scan,src,proj)
 
 	f = open(fn, 'r')
 	while True:
@@ -241,14 +243,14 @@ def reportOnLog(fn, opts):
 		nprinted += 1
 	f.close()
 
-	polinfo = ' '
+	polinfo = ''
 	if opts.doPols:
 		polinfo = ' : ' + checkDiFXViz(job, opts)
 
 	if opts.doShort and nerror <= 0:
 		overall = int( (ngood + 2.0*npoor + 3.0*nbad - 0.5) / 3.0 )
 		rating_name = ratings[overall]
-		print ('# %s%s : %d good, %d poor, %d bad : %s' % (title,polinfo,ngood,npoor,nbad,ratings[rating_name]))
+		print ('# %s%s, %s (good:%d poor:%d bad:%d)' % (title,polinfo,ratings[rating_name],ngood,npoor,nbad))
 
 	if opts.doPols and not opts.doShort:
 		print('#   %s' % (polinfo))
