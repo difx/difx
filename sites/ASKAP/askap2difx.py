@@ -91,7 +91,7 @@ def writestatentry(statout, antenna, count, itrfpos):
     statout.write("      /\n\n")
     return twoletteranname
 
-def writekeyfile(keyout, obs, twoletterannames):
+def writekeyfile(keyout, obs, twoletterannames, craftcatdir):
     startyear, startmonth, startday, starthh, startmm, startss = mjd2ymdhms(float(obs["startmjd"]))
     #antennalist = []
     #for key in obs.keys():
@@ -121,6 +121,8 @@ def writekeyfile(keyout, obs, twoletterannames):
             linecount = 0
         antennastring = antennastring + a
         linecount += 1
+    if craftcatdir == "":
+        craftcatdir = os.getcwd()
     keyout.write("version  = 1\n")
     keyout.write("expt     = 'craft'\n")
     keyout.write("expcode  = 'craftfrb'\n")
@@ -149,14 +151,14 @@ def writekeyfile(keyout, obs, twoletterannames):
     keyout.write("! ================================================================\n")
     keyout.write("!       Catalogs (special askap versions)\n")
     keyout.write("! ================================================================\n")
-    keyout.write("stafile  = '%s/askapstation.dat'\n" % os.getcwd())
-    keyout.write("freqfile = '%s/askapfreq.dat'\n" % os.getcwd())
+    keyout.write("stafile  = '%s/askapstation.dat'\n" % craftcatdir)
+    keyout.write("freqfile = '%s/askapfreq.dat'\n" % craftcatdir)
     keyout.write("overwrite\n")
     keyout.write("srccat /\n")
     keyout.write("EQUINOX = J2000\n")
     keyout.write("SOURCE='%s' RA=%s DEC=%s REMARKS='Beam centre for dumped voltage data' /\n" % (obs["srcname"], obs["srcra"], obs["srcdec"]))
     keyout.write("endcat /\n\n")
-    keyout.write("setinit = askap.set /\n")
+    keyout.write("setinit = %s/askap.set /\n" % craftcatdir)
     keyout.write(" dbe      = 'rdbe_ddc'\n")
     keyout.write(" format   = 'vdif'          !  Sched doesn't understand CODIF, so lie and say VDIF.\n")
     keyout.write(" nchan    = 8               !  Put in 8x8 MHz as placeholder, overwrite later\n")
@@ -175,7 +177,7 @@ def writekeyfile(keyout, obs, twoletterannames):
     keyout.write("day      = %d\n" % startday)
     keyout.write("start    = %02d:%02d:%02d\n\n" % (starthh, startmm, int(startss)))
     keyout.write("stations = %s\n" % antennastring)
-    keyout.write("setup  = 'askap.set'\n")
+    keyout.write("setup  = '%s/askap.set'\n" % craftcatdir)
     keyout.write("minpause = 5\n\n")
     keyout.write("source = '%s'  dur = %d  gap = 0   /\n\n" % (obs["srcname"], int(0.99 + 86400.0*(float(obs["stopmjd"])-float(obs["startmjd"])))))
 
@@ -264,9 +266,18 @@ fcm = load_props(args.fcm)
 obs = load_props(args.obs)
 targetants = args.ants.split(',')
 
+# Look and see if there is a catalog directory defined
+try:
+    craftcatalogdir = os.environ['CRAFTCATDIR'] + '/'
+    if not os.path.exists(craftcatalogdir):
+        print craftcatalogdir, "specified by $CRAFTCATDIR doesn't exist"
+        sys.exit()
+except KeyError:
+    craftcatalogdir = ""
+
 ## Write the SCHED freq and antenna files, and the craftfrb.datafiles
-freqout = open("askapfreq.dat","w")
-statout = open("askapstation.dat","w")
+freqout = open(craftcatalogdir + "askapfreq.dat","w")
+statout = open(craftcatalogdir + "askapstation.dat","w")
 dataout = open("craftfrb.datafiles","w")
 count = 0
 antennanames = []
@@ -319,7 +330,7 @@ dataout.close()
 
 ## Write the key file
 keyout = open("craftfrb.key","w")
-writekeyfile(keyout, obs, twoletterannames)
+writekeyfile(keyout, obs, twoletterannames, craftcatalogdir)
 keyout.close()
 
 ## Run it through sched
