@@ -79,7 +79,7 @@ if len(stitchfreqs) == 0:
 
 # Now write the stitchconfig file, too
 basename = vexfile.split('/')[-1].split('.')[0]
-stitchout = open("%s_1.stitchconfig" % basename, "w")
+stitchout = open("%s.stitchconfig" % basename, "w")
 stitchout.write("[config]\n")
 stitchout.write("target_bw: 4.000\n")
 stitchout.write("target_nchan: 432\n")
