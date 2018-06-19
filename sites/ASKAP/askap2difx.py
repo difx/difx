@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os, sys, argparse
+from astropy.time import Time
 
 ## Convenience function to parse java style properties file
 def load_props(filepath, sep='=', comment_char='#'):
@@ -57,7 +58,17 @@ def mjd2ymdhms(mjd):
 
     return year, month, day, hour, minute, second
 
-
+# Convert string to MJD
+def str2mjd(t):
+    try:
+        m = Time(t, format='isot', scale='utc')
+    except:
+        try:
+            m = Time(float(t), format='mjd')
+        except:
+            raise('Cannot parse {}'.format(t))
+    return m.mjd
+        
 ## Function to write a SCHED frequency block
 def writefreqentry(freqout, antenna):
     freqout.write("Name = v20cm_1  Station = ASKAP%s    Priority = 1\n" % (antenna[-2:]))
@@ -184,6 +195,7 @@ def writekeyfile(keyout, obs, twoletterannames, craftcatdir):
 def writev2dfile(v2dout, obs, twoletterannames, delays, datafilelist):
     v2dout.write("#  Template v2d file for DiFX correlation of craftfrb\n\n")
     v2dout.write("vex = craftfrb.vex\n")
+    v2dout.write("startSeries = 0\n\n")
     v2dout.write("minLength = 1\n\n")
     v2dout.write("antennas = ")
     for d in datafilelist:
@@ -244,6 +256,7 @@ parser.add_argument("obs",  help="Flat text .obs file containing start/stop time
 parser.add_argument("chan", help="Flat text file containing 1 line per subband, centre freq, sideband, and bandwidth")
 parser.add_argument("-a", "--ants", help="Comma separated list of antenna names e.g., ak01,ak02,ak03 etc.  All must be present in .fcm, and all must have a akxx.codif file present in this directory.")
 parser.add_argument("-b", "--bits", help="Number of bits/sample. Default 1", type=int)
+parser.add_argument("-t", "--threads", help="Number of DIFX threads. Default 8", type=int)
 parser.add_argument("-n", "--framesize", help="Codif framesize. Default 8064", type=int)
 args = parser.parse_args()
 
@@ -258,12 +271,19 @@ if args.ants == "":
     parser.error("you must supply a list of antennas")
 bits = args.bits
 if bits==None: bits=1
+difxThreads = args.threads
+if difxThreads==None: difxThreads=8
 framesize = args.framesize
 if framesize==None: framesize=8064
 
 ## Load configuration data
 fcm = load_props(args.fcm)
 obs = load_props(args.obs)
+
+# Convert time to MJD
+if 'startmjd' in obs: obs['startmjd'] = str2mjd(obs['startmjd'])
+if 'stopmjd'  in obs: obs['stopmjd']  = str2mjd(obs['stopmjd'])
+
 targetants = args.ants.split(',')
 
 # Look and see if there is a catalog directory defined
@@ -362,44 +382,40 @@ os.system("sed -i -e 's/VDIF5032/CODIFD{}/g' craftfrb.vex".format(framesize))
 os.system("vex2difx craftfrb.v2d")
 
 ## Run calcif2
-#os.system("calcif2 craftfrb_1.calc")
-os.system("\\rm -f craftfrb_1.im")
-os.system("difxcalc craftfrb_1.calc")
+os.system("\\rm -f craftfrb.im")
+os.system("difxcalc craftfrb.calc")
 
 
 ## Create the machines and threads file - currently runs on localhost with just one core.
-machinesout = open("craftfrb_1.machines","w")
+machinesout = open("machines","w")
 for i in range(len(datafilelist) + 2):
     machinesout.write("localhost\n")
 machinesout.close()
-threadsout = open("craftfrb_1.threads","w")
+threadsout = open("craftfrb.threads","w")
 threadsout.write("NUMBER OF CORES:    1\n")
-threadsout.write("8\n")
+threadsout.write("{}\n".format(difxThreads))
 threadsout.close()
 
 ## Create a little run file for running the observations
 ## This is used in preference to startdifx because startdifx uses some MPI options we don't want
 runout = open("run.sh", "w")
 runout.write("#!/bin/sh\n\n")
-runout.write("rm -rf craftfrb_1.difx\n")
+runout.write("rm -rf craftfrb.difx\n")
 runout.write("rm -rf log*\n")
 runout.write("errormon2 6 &\n")
 runout.write("export ERRORMONPID=$!\n")
-runout.write("mpirun -machinefile machines -np %d mpifxcorr craftfrb_1.input\n" % (len(datafilelist)+2))
+runout.write("mpirun -machinefile machines -np %d mpifxcorr craftfrb.input\n" % (len(datafilelist)+2))
 runout.write("kill $ERRORMONPID\n")
-runout.write("rm -f craftfrb_1.difxlog\n")
-runout.write("mv log craftfrb_1.difxlog\n")
+runout.write("rm -f craftfrb.difxlog\n")
+runout.write("mv log craftfrb.difxlog\n")
 runout.close()
 os.chmod("run.sh", 0775)
 
-## Print the line needed to run the correlation
-#runline = "startdifx -n -f craftfrb_1.input"
-#print runline
 print "# First run the correlation:"
 runline = "./run.sh\n"
 print runline
 
 ## Print the line needed to run the stitching and then subsequently difx2fits
 print "Then run difx2fits"
-runline = "rm -rf craftfrb_1D2D.* ; mergeOversampledDiFX.py craftfrb_1.stitchconfig craftfrb_1.difx\ndifx2fits craftfrb_1D2D"
+runline = "rm -rf craftfrbD2D.* ; mergeOversampledDiFX.py craftfrb.stitchconfig craftfrb.difx\ndifx2fits craftfrbD2D"
 print runline
