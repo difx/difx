@@ -169,7 +169,7 @@ def writekeyfile(keyout, obs, twoletterannames, craftcatdir):
     keyout.write("EQUINOX = J2000\n")
     keyout.write("SOURCE='%s' RA=%s DEC=%s REMARKS='Beam centre for dumped voltage data' /\n" % (obs["srcname"], obs["srcra"], obs["srcdec"]))
     keyout.write("endcat /\n\n")
-    keyout.write("setinit = %s/askap.set /\n" % craftcatdir)
+    keyout.write("setinit = askap.set /\n")
     keyout.write(" dbe      = 'rdbe_ddc'\n")
     keyout.write(" format   = 'vdif'          !  Sched doesn't understand CODIF, so lie and say VDIF.\n")
     keyout.write(" nchan    = 8               !  Put in 8x8 MHz as placeholder, overwrite later\n")
@@ -188,7 +188,7 @@ def writekeyfile(keyout, obs, twoletterannames, craftcatdir):
     keyout.write("day      = %d\n" % startday)
     keyout.write("start    = %02d:%02d:%02d\n\n" % (starthh, startmm, int(startss)))
     keyout.write("stations = %s\n" % antennastring)
-    keyout.write("setup  = '%s/askap.set'\n" % craftcatdir)
+    keyout.write("setup  = askap.set\n")
     keyout.write("minpause = 5\n\n")
     keyout.write("source = '%s'  dur = %d  gap = 0   /\n\n" % (obs["srcname"], int(0.99 + 86400.0*(float(obs["stopmjd"])-float(obs["startmjd"])))))
 
@@ -305,7 +305,13 @@ twoletterannames = []
 delays = []
 datafilelist = []
 cwd = os.getcwd()
-for antenna in fcm["common"]["antenna"].keys():
+
+def antnum(a):
+    if a=='ant': return 0
+    return int(a[3:])
+
+for antenna in sorted(fcm["common"]["antenna"].keys(), key=antnum):
+    if antenna=='ant': continue
     if not "name" in fcm["common"]["antenna"][antenna].keys():
         continue # This one is probably a test antenna or something, ignore it
     if not "location" in list(fcm["common"]["antenna"][antenna].keys()):
