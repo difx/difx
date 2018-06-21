@@ -12,6 +12,7 @@ Version 2.6
 * PCAL: allow tone intervals denser than an integer MHz (Wettzell twin telescope workaround)
 * Support for IPP > 9 (specifically IPP 2018)
 * genmachines and mark6 datastream updates
+* add mark6 activity difx message to mark6 datastream
 
 Version 2.5
 ~~~~~~~~~~~

@@ -273,7 +273,7 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 	return results, conflicts, missingVsns, notidle, incomplete
 
 # replaces filename mark6 data source with msn, if necessary
-def adjustMark6datastreams(datastreams, inputfile):
+def adjustMark6datastreams(datastreams, inputfile, verbose):
         # get antenna module mapping from .vex.obs
         prefix = inputfile.replace('.input', '')
 	exp = prefix.split('_')[0]
@@ -314,21 +314,24 @@ def adjustMark6datastreams(datastreams, inputfile):
 	for stream in datastreams:
 	    if stream.type == 'MARK6':
 	        for i in range(len(stream.msn)):
-		    print "msn i", stream.msn[i]
 	            # skip if valid mark6 msn
 		    if len(stream.msn[i]) == 8 and '%' in stream.msn[i]:
 		        continue
                     # look for antenna in filename
+                    if verbose > 0:
+                        print 'trying to replace', stream.msn[i], 'with a valid mark6 msn'
 		    msnsplit = (stream.msn[i]).split('_')
 		    if len(msnsplit) >= 2 and len(msnsplit[1]) == 2:
 		        ant = msnsplit[1].upper()
 			# if antenna found in antenna module list, replace filename with module
 		        for antmod in antennaModuleList:
 			    if ant == antmod[0]:
+                                if verbose > 0:
+				    print 'replacing', stream.msn[i], 'with', antmod[1]
 			        stream.msn[i] = antmod[1]
 
 
-def getDatastreamsFromInputFile(inputfile):
+def getDatastreamsFromInputFile(inputfile, verbose):
         """
         Parse the datastream section of the input file to
         obtain VSNs, MSNs and file paths
@@ -395,7 +398,7 @@ def getDatastreamsFromInputFile(inputfile):
                                 datastreams[ds].msn.append(value)  
          
 	if mark6flag is True:
-	    adjustMark6datastreams(datastreams, inputfile)
+	    adjustMark6datastreams(datastreams, inputfile, verbose)
             
 	return (datastreams)
 
@@ -551,7 +554,12 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 		print 'expecting input file'
 		exit(1)
 				
-        datastreams =  getDatastreamsFromInputFile(infile)
+        datastreams =  getDatastreamsFromInputFile(infile, verbose)
+
+	if verbose > 0:
+		print 'Datastreams:'
+		for stream in datastreams:
+			print 'type', stream.type, 'vsn', stream.vsn, 'msn', stream.msn, 'path', stream.path
 
 	if not uniqueVsns(datastreams):
 		print 'ERROR: at least one duplicate VSN exists in %s !' % infile
@@ -562,7 +570,10 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 	if verbose > 0:
 		print 'Found modules:'
 		for r in results:
-			print '  %-10s : %10s %10s   %s' % (r[0], r[2], r[3], r[4])
+			if 'mark6' in r[0]:
+				print '  %-10s : %10s %10s %10s %10s' % (r[0], r[2]['slot1MSN'], r[2]['slot2MSN'], r[2]['slot3MSN'], r[2]['slot4MSN'])
+			else:
+				print '  %-10s : %10s %10s   %s' % (r[0], r[2], r[3], r[4])
 
 	if len(conflicts) > 0:
 		ok = False

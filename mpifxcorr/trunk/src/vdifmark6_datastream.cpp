@@ -69,6 +69,7 @@ void VDIFMark6DataStream::closeMark6()
 {
 	if(mark6gather != 0)
 	{
+		sendMark6Activity(MARK6_STATE_CLOSE, bytecount, fmjd, mbyterate);
 		closeMark6Gatherer(mark6gather);
 	}
 	mark6gather = 0;
@@ -106,6 +107,11 @@ void VDIFMark6DataStream::openfile(int configindex, int fileindex)
   }
 
   cinfo << startl << "Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
+  strcpy(mark6activity.scanName, datafilenames[configindex][fileindex].c_str());
+  sendMark6Activity(MARK6_STATE_OPEN, 0, 0.0, 0.0);
+  bytecount = 0;
+  lastbytecount = 0;
+  msgsenttime = time(0);
 
   // change state of module to played
   string cmd = "mk6state played " + datafilenames[configindex][fileindex];
@@ -275,9 +281,11 @@ int VDIFMark6DataStream::dataRead(int buffersegment)
 {
 	unsigned char *destination;
 	int bytes, bytestoread;
+	long long bytediff;
 	int muxReturn;
 	unsigned int bytesvisible;
 	int rbs;
+	time_t now;
 
 	rbs = readbuffersize - (readbuffersize % inputframebytes);
 
@@ -369,6 +377,18 @@ cinfo << startl << "Mark6 Gather: " << bytestoread << " requested, " << bytes <<
 
 		readnanoseconds = bufferinfo[buffersegment].scanns;
 		readseconds = bufferinfo[buffersegment].scanseconds;
+
+		bytecount += bytes;
+		now = time(0);
+		if(msgsenttime < now)
+		{
+			bytediff = bytecount - lastbytecount;
+			mbyterate = (float)bytediff / 1000000.0;
+			fmjd = corrstartday + (corrstartseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + static_cast<double>(readnanoseconds)/1000000000.0)/86400.0;
+			sendMark6Activity(MARK6_STATE_PLAY, bytecount, fmjd, mbyterate);
+			msgsenttime = now;
+			lastbytecount = bytecount;
+		}
 
 		// look at difference in data frames consumed and produced and proceed accordingly
 		int deltaDataFrames = vstats.srcUsed/(nthreads*inputframebytes) - vstats.destUsed/(nthreads*(inputframebytes-VDIF_HEADER_BYTES) + VDIF_HEADER_BYTES);
@@ -689,3 +709,28 @@ cverbose << startl << "keepreading is true" << endl;
 		cverbose << startl << "Datastream readthread is exiting, after not finding any data at all!" << endl;
 	}
 }
+
+int VDIFMark6DataStream::sendMark6Activity(enum Mark6State state, long long position, double dataMJD, float rate)
+{
+	int v = 0;
+
+	mark6activity.state = state;
+	//mark6activity.status = 0;
+	if(mark6gather)
+	{
+		strcpy(mark6activity.activeVsn, mark6gather->activeVSN);
+	}
+	else
+	{
+		return v;
+	}
+	mark6activity.position = position;
+	mark6activity.rate = rate;
+	mark6activity.dataMJD = dataMJD;
+	mark6activity.scanNumber = 0; // always
+
+	v = difxMessageSendMark6Activity(&mark6activity);
+
+	return v;
+}
+

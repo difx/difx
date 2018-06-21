@@ -30,6 +30,7 @@
 #include <vdifio.h>
 #include <vdifmark6.h>
 #include "vdiffile.h"
+#include <difxmessage.h>
 
 /**
 @class VDIFMark6DataStream 
@@ -55,6 +56,7 @@ public:
   VDIFMark6DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
   virtual ~VDIFMark6DataStream();
   virtual void openfile(int configindex, int fileindex);
+  int sendMark6Activity(enum Mark6State mark6state, long long position, double dataMJD, float rate);
 
 protected:
  /** 
@@ -73,8 +75,15 @@ protected:
 private:
   void closeMark6();
 
+  DifxMessageMark6Activity mark6activity;
+
   Mark6Gatherer *mark6gather;  /* structure for Mark6 file gathering */
   bool mark6eof;  /* if true, current file has been exhausted */
+  long long bytecount;
+  long long lastbytecount;
+  time_t msgsenttime;
+  float mbyterate;
+  double fmjd;
 };
 
 #endif
