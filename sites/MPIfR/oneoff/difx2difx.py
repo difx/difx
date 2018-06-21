@@ -7,31 +7,44 @@ baselines of a antenna, attempting to piece together a full band
 out of shorter subbands. In other words assembles immediately
 adjecent DiFX zoombands into wider bands as listed in the config file.
 
+Config file example:
+  [config]
+  target_bw: 32.000
+  target_nchan: 4096
+  stitch_antennas: AA, PV
+  stitch_basefreqs: 86476.00, 86412.00
+  verbose: false
+
 Output:
   <difx basename>/DIFX_*.stitched     frequency stitched visibility data
   <difx basename>/DIFX_*.ref_input    entries to use in a replacement .input file
-
 """
 import glob, sys, os, struct, time, math, numpy, copy, ConfigParser
 import hashlib
 import parseDiFX
 
-"""Return the cross product of two sets"""
+vis_hashtable = {}
+vis_hashtable_cleanupSec = 0
+
+
 def setCrossProd(a,b):
+	"""Return the cross product of two sets"""
 	gen = ((x, y) for x in a for y in b)
 	strconcatd = [ str(x)+str(y) for x,y in gen]
 	return (strconcatd,gen)
 
-"""Check if a frequency falls into one band in a set of frequency bands"""
+
 def getGlueIndex(f,cfg):
+	"""Check if a frequency falls into one band in a set of frequency bands"""
 	N = len(cfg['stitch_basefreqs'])
 	for n in range(N):
 		if (f >= cfg['stitch_basefreqs'][n]) and (f < cfg['stitch_endfreqs'][n]):
 			return n
 	return -1
 
-"""Read next DiFX file visibility header and return it in binary was well as a parsed struct"""
+
 def getVisibilityHeader(f):
+	"""Read next DiFX file visibility header and return it in binary was well as a parsed struct"""
 	offset = f.tell()
 	h = parseDiFX.parse_output_header(f)
 	rdlen = f.tell() - offset
@@ -39,8 +52,9 @@ def getVisibilityHeader(f):
 	bin = f.read(rdlen)
 	return (h,bin)
 
-"""Spectral averaging"""
+
 def spectralAvgRaw(rawvis, chavg, doComplex=True):
+	"""Spectral averaging of binary data reinterpreted as 32-bit real or complex float"""
 	if doComplex:
 		visdata = numpy.fromstring(rawvis, dtype='complex64')
 	else:
@@ -52,22 +66,26 @@ def spectralAvgRaw(rawvis, chavg, doComplex=True):
 	assert(len(rawout)==len(rawvis)/chavg)
 	return rawout
 
+
 def spectralAvgNumpy(visdata, chavg):
+	"""Spectral averaging of a numpy array"""
 	N = len(visdata)
 	assert((N % chavg)==0)
 	visdata = numpy.average(visdata.reshape((N/chavg,chavg)), axis=1)
 	return visdata
 
-"""
-Read a difx2difx configuration file.
-Example contents:
-  [config]
-  target_bw: 32.000
-  target_nchan: 4096
-  stitch_antennas: AA, PV
-  stitch_basefreqs: 86476.00, 86412.00, 86380.00, 86316.00, 86252.00, 86188.00, 86124.00, 86060.00, 86028.00
-"""
+
 def getConfig(cfgfilename):
+	"""
+	Read a difx2difx configuration file.
+	Example contents:
+	  [config]
+	  target_bw: 32.000
+	  target_nchan: 4096
+	  stitch_antennas: AA, PV
+	  stitch_basefreqs: 86476.00, 86412.00, 86380.00, 86316.00, 86252.00, 86188.00, 86124.00, 86060.00, 86028.00
+	  verbose: false
+	"""
 
 	cfg = {}
 
@@ -105,27 +123,29 @@ def getConfig(cfgfilename):
 
 	return cfg
 
-"""Look through dictionary for object, return key of object if it exists"""
+
 def findFreqObj(dict,freqobj):
+	"""Look through dictionary for object, return key of object if it exists"""
 	for k in dict.keys():
 		if (dict[k] == freqobj):
 			return k
 	return None
 
-"""Invent next unique (numerical) key for dictionary"""
+
 def inventNextKey(dict):
+	"""Invent next unique (numerical) key for dictionary"""
 	idNr = len(dict)
 	while idNr in dict.keys():
 		idNr += 1
 	return idNr
 
-"""Keep track of visibilities already written, via looking up Time Baseline Freq Pol in a hash table
-   Returns True if hash table already contains an entry for this visibility
-   Returns False otherwise and inserts an entry for this visibility
-"""
-vis_hashtable = {}
-vis_hashtable_cleanupSec = 0
-def vis_already_written(mjd,seconds,baseline,freqnr,polpair):
+
+def wasVisAlreadyWritten(mjd,seconds,baseline,freqnr,polpair):
+	"""
+	Keep track of visibilities already written, via looking up Time Baseline Freq Pol in a hash table
+	Returns True if hash table already contains an entry for this visibility,
+	otherwise returns False and inserts a bookkeeping entry for this visibility.
+	"""
 	global vis_hashtable
 	global vis_hashtable_cleanupSec
 
@@ -143,7 +163,7 @@ def vis_already_written(mjd,seconds,baseline,freqnr,polpair):
 			if vis_hashtable[key] < vis_hashtable_cleanupSec:
 				del vis_hashtable[key]
 				nremoved += 1
-		#print ('vis_already_written() : removed %d entries older than %d seconds' % (nremoved,history_secs))
+		#print ('wasVisAlreadyWritten() : removed %d entries older than %d seconds' % (nremoved,history_secs))
 
 	# Generate hash for this visibility
 	m = hashlib.sha256()
@@ -156,16 +176,16 @@ def vis_already_written(mjd,seconds,baseline,freqnr,polpair):
 
 	# Check if visibility exists
 	if key in vis_hashtable:
-		#print ('vis_already_written(%d, %d, %d, %d, %s) : visibility exists' % (mjd,seconds,baseline,freqnr,polpair))
+		#print ('wasVisAlreadyWritten(%d, %d, %d, %d, %s) : visibility exists' % (mjd,seconds,baseline,freqnr,polpair))
 		return True
 	else:
-		#print ('vis_already_written(%d, %d, %d, %d, %s) : visibility is NEW, hash %s' % (mjd,seconds,baseline,freqnr,polpair,key))
+		#print ('wasVisAlreadyWritten(%d, %d, %d, %d, %s) : visibility is NEW, hash %s' % (mjd,seconds,baseline,freqnr,polpair,key))
 		vis_hashtable[key] = longsecs
 		return False
 
 
-"""Copy visibilities from given base DiFX fileset into new file, while doing frequency stitching during the process"""
 def stitchVisibilityfile(basename,cfg):
+	"""Copy visibilities from given base DiFX fileset into new file, while doing frequency stitching during the process"""
 
 	# Get settings
 	target_bw = cfg['target_bw']
@@ -400,7 +420,7 @@ def stitchVisibilityfile(basename,cfg):
 			# Keep data if bandwidth matches
 			if (bw == target_bw) and (nchan == target_nchan):
 
-				if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
+				if wasVisAlreadyWritten(mjd,seconds,baseline,out_freqindex,polpair):
 					if cfg['verbose']:
 						print ('(copy): %s' % (vis_info))
 					continue
@@ -430,7 +450,7 @@ def stitchVisibilityfile(basename,cfg):
 
 				# Visibility already at target bandwidth, just copy the data
 
-				if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
+				if wasVisAlreadyWritten(mjd,seconds,baseline,out_freqindex,polpair):
 					if cfg['verbose']:
 						print ('(take): %s' % (vis_info))
 					continue
@@ -496,7 +516,7 @@ def stitchVisibilityfile(basename,cfg):
 						msg = '%s-%s/%d/%d:%.7f/%s mjd:%12.8f only %d of %d channels' % (ant1name,ant2name,baseline,stid,stitch_basefreqs[stid],polpair,T_old,ncurr,target_nchan)
 						if cfg['verbose']:
 							print ('Warning: discarded an incomplete stitch: %s' % (msg))
-					assert(ncurr < target_nchan)
+					assert(ncurr <= target_nchan)
 					stitch_timestamps[baseline][polpair][stid] = seconds
 					stitch_chcounts[baseline][polpair][stid] = 0
 					stitch_freqbws[baseline][polpair][stid] = []
@@ -517,7 +537,7 @@ def stitchVisibilityfile(basename,cfg):
 					bwsum = numpy.sum(stitch_freqbws[baseline][polpair][stid])
 					vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,TS,stitch_chcounts[baseline][polpair][stid],bwsum,str(uvw))
 	
-					if vis_already_written(mjd,seconds,baseline,out_freqindex,polpair):
+					if wasVisAlreadyWritten(mjd,seconds,baseline,out_freqindex,polpair):
 						if cfg['verbose']:
 							print ('(stch): %s' % (vis_info))
 						continue
@@ -714,11 +734,14 @@ def stitchVisibilityfile(basename,cfg):
 	print ('    changes for .input : %s' % (outputinputfile))
 	print (' ')
 
-if len(sys.argv) < 3:
-	print __doc__
-	sys.exit(-1)
 
-cfg = getConfig(sys.argv[1])
-for difxf in sys.argv[2:]:
-	stitchVisibilityfile(difxf,cfg)
+if __name__ == "__main__":
+
+	if len(sys.argv) < 3:
+		print __doc__
+		sys.exit(-1)
+
+	cfg = getConfig(sys.argv[1])
+	for difxf in sys.argv[2:]:
+		stitchVisibilityfile(difxf,cfg)
 
