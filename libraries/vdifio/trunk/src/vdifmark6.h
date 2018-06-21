@@ -108,6 +108,7 @@ typedef struct
         int nFile;
 	Mark6File *mk6Files;
 	int packetSize;
+	char *activeVSN;
 } Mark6Gatherer;
 
 

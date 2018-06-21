@@ -471,6 +471,7 @@ Mark6Gatherer *newMark6Gatherer()
 	m6g->nFile = 0;
 	m6g->mk6Files = 0;
 	m6g->packetSize = 0;
+	m6g->activeVSN = malloc(sizeof(char) * 10);
 
 	return m6g;
 }
@@ -566,6 +567,11 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 	int i;
 	int nBad = 0;
 	int startFile;
+	int gotVSN = 0;
+	char slot = ' ';
+	char disk = ' ';
+	FILE *fmsn;
+	char msnname[30];
 
 	startFile = m6g->nFile;
 	m6g->nFile += nFile;
@@ -596,6 +602,24 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 			for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
 			{
 				Mark6FileReadBlock(m6g->mk6Files + i, s);
+			}
+
+			// get VSN from metadata
+			// TO DO: This will get the VSN for the first module in a group.
+			// We may want to support messaging for all modules in a group.
+			if(gotVSN == 0 && !strncmp(fileList[i], "/mnt/disks", 10))
+			{
+				slot = fileList[i][11];
+				disk = fileList[i][13];
+				sprintf(msnname, "/mnt/disks/.meta/%c/%c/eMSN", slot, disk);
+				fmsn = fopen(msnname, "r");
+				if(!fmsn)
+				{
+					continue;
+				}
+				fgets(m6g->activeVSN, 9, fmsn);
+				fclose(fmsn);
+				gotVSN = 1;
 			}
 		}
 	}
@@ -656,6 +680,8 @@ int closeMark6Gatherer(Mark6Gatherer *m6g)
 	m6g->mk6Files = 0;
 
 	m6g->nFile = 0;
+
+	free(m6g->activeVSN);
 
 	free(m6g);
 
