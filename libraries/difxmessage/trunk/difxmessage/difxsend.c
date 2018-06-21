@@ -710,6 +710,83 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 	return difxMessageSend2(message, size);
 }
 
+int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
+	char activeVsn[10];
+	int size;
+
+	if(strlen(mark6activity->activeVsn) != 8)
+	{
+		strcpy(activeVsn, "none");
+	}
+	else
+	{
+		int i;
+
+		for(i = 0; i < 9; ++i)
+		{
+			activeVsn[i] = toupper(mark6activity->activeVsn[i]);
+		}
+	}
+
+	size = snprintf(scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN,
+		"%s", mark6activity->scanName);
+	if(size >= DIFX_MESSAGE_MAX_SCANNAME_LEN)
+	{
+		fprintf(stderr, "difxMessageSendMark6Activity: scanName too long (%d >= %d)\n", size, DIFX_MESSAGE_MAX_SCANNAME_LEN);
+
+		return -1;
+	}
+
+	size = snprintf(body, DIFX_MESSAGE_LENGTH,
+	
+		"<mark6Activity>"
+		  "%s"
+		  "<activeVSN>%s</activeVSN>"
+		  "<statusWord>0x%08x</statusWord>"
+		  "<state>%s</state>"
+		  "<scanNumber>%d</scanNumber>"
+		  "<scanName>%s</scanName>"
+		  "<position>%lld</position>"
+		  "<playRate>%5.3f</playRate>"
+		  "<dataMJD>%9.7f</dataMJD>"
+		"</mark6Activity>",
+
+		difxMessageInputFilenameTag,
+		activeVsn,
+		mark6activity->status,
+		Mark6StateStrings[mark6activity->state],
+		mark6activity->scanNumber,
+		scanName,
+		mark6activity->position,
+		mark6activity->rate,
+		mark6activity->dataMJD);
+
+	if(size >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendMark6Activity: message body overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+
+		return -1;
+	}
+
+	size = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat, 
+		DifxMessageTypeStrings[DIFX_MESSAGE_MARK6ACTIVITY],
+		difxMessageSequenceNumber++, body);
+
+	if(size >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendMark6Activity: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+
+		return -1;
+	}
+	
+	return difxMessageSend2(message, size);
+}
+
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 {
 	char message[DIFX_MESSAGE_LENGTH];

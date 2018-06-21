@@ -140,6 +140,7 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxMk5Control",
 	"DifxMark5Copy",
 	"DifxVsis",
+	"Mark6ActivityMessage",
 };
 
 /* Note! Keep this in sync with enum DifxDiagnosticType in difxmessage.h */

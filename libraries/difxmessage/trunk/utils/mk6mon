@@ -20,17 +20,6 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: mk5mon 6917 2015-08-12 01:44:54Z WalterBrisken $
-# $HeadURL: $
-# $LastChangedRevision: 6917 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2015-08-12 03:44:54 +0200 (Mi, 12. Aug 2015) $
-#
-#============================================================================
-
 from string import split, strip, find, upper, lower
 from sys import argv, exit
 from os import popen, getenv
@@ -41,6 +30,7 @@ from xml.parsers import expat
 from copy import deepcopy
 import curses
 import signal
+import time
 
 def signal_handler(signal, frame):
 	print('You pressed Ctrl+C!')
@@ -58,13 +48,14 @@ def usage(prog):
 	print '  --help'
 	print '  -h        print help information and quit\n'
 
-class Mk5state:
+class Mk6state:
 
 	def __init__(self):
 		self.ok    = False
+		self.mk6type  = ''
 		self.pid   = 0
 		self.id    = ''
-		self.mk5   = ''
+		self.mk6   = ''
 		self.seq   = 0
 		self.msn1  = 'none'
 		self.msn2  = 'none'
@@ -74,7 +65,7 @@ class Mk5state:
 		self.disks2 = 0
 		self.disks3 = 0
 		self.disks4 = 0
-		self.bank  = ' '
+		self.activeVSN  = 'none'
 		self.state = 'Unknown'
 		self.scan  = 0
 		self.name  = ''
@@ -83,29 +74,19 @@ class Mk5state:
 		self.date  = 0.0
 
 	def getstring(self):
-		if self.ok:
-			b1 = ' '
-			b2 = ' '
-			if self.bank == 'A':
-				b1 = '*'
-			elif self.bank == 'B':
-				b2 = '*'
-			if self.date > 0.0 and self.date < 1.0:
-				dateStr = '%10.4f s' % (self.date*86400.0)
-			else:
-				dateStr = '%12.6f' % self.date
-			str = '%10s %8s (%d) %8s (%d) %8s (%d) %8s (%d) %14s %7.2f %14d %4d %17s %13s ' % \
-				(self.mk5, self.msn1, self.disks1, self.msn2, self.disks2, self.msn3, self.disks3, self.msn4, self.disks4, self.state, \
-				 self.rate, self.pos, self.scan, self.name, dateStr)
-			#str = '%10s %c%8s %c%8s %14s %7.2f %14d %4d %17s %13s ' % \
-			#	(self.mk5, b1, self.msn1, b2, self.msn2, self.state, \
-			#	 self.rate, self.pos, self.scan, self.name, dateStr)
+		if self.ok and self.mk6type == 'status':
+			str = '%-12s%8s (%d)      %8s (%d)      %8s (%d)      %8s (%d)      %s' % \
+				(self.mk6, self.msn1, self.disks1, self.msn2, self.disks2, self.msn3, self.disks3, self.msn4, self.disks4, \
+                                 time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+		elif self.ok and self.mk6type == 'activity':
+			str = '%-12s%8s %14s      %7.2f %14d %17s %12.6f' % \
+				(self.mk6, self.activeVSN, self.state, self.rate * 8.0, self.pos, self.name, self.date)
 		else:
 			str = ''
 		return str
 
-	def getmk5(self):
-		return self.mk5
+	def getmk6(self):
+		return self.mk6
 
 class Parser:
 
@@ -114,8 +95,8 @@ class Parser:
 		self._parser.StartElementHandler = self.start
 		self._parser.EndElementHandler = self.end
 		self._parser.CharacterDataHandler = self.data
-		self.info = Mk5state()
 		self.tmp = ''
+		self.info = Mk6state()
 
 	def feed(self, data):
 		try:
@@ -133,36 +114,47 @@ class Parser:
 	def end(self, tag):
 		if tag == 'mark6Status':
 			self.info.ok = True
-		if tag == 'bank1MSN':
+			self.info.mk6type = 'status'
+		if tag == 'slot1MSN':
 			if len(self.tmp) != 8:
 				self.info.msn1 = 'none'
 			else:
 				self.info.msn1 = upper(self.tmp)
-		if tag == 'bank2MSN':
+		if tag == 'slot2MSN':
 			if len(self.tmp) != 8:
 				self.info.msn2 = 'none'
 			else:
 				self.info.msn2 = upper(self.tmp)
-		if tag == 'bank3MSN':
+		if tag == 'slot3MSN':
 			if len(self.tmp) != 8:
 				self.info.msn3 = 'none'
 			else:
 				self.info.msn3 = upper(self.tmp)
-		if tag == 'bank4MSN':
+		if tag == 'slot4MSN':
 			if len(self.tmp) != 8:
 				self.info.msn4 = 'none'
 			else:
 				self.info.msn4 = upper(self.tmp)
-		if tag == 'bank1Disks':
+		if tag == 'slot1Disks':
 			self.info.disks1 = int(self.tmp)
-		if tag == 'bank2Disks':
+		if tag == 'slot2Disks':
 			self.info.disks2 = int(self.tmp)
-		if tag == 'bank3Disks':
+		if tag == 'slot3Disks':
 			self.info.disks3 = int(self.tmp)
-		if tag == 'bank4Disks':
+		if tag == 'slot4Disks':
 			self.info.disks4 = int(self.tmp)
 		if tag == 'from':
-			self.info.mk5 = lower(self.tmp)
+			self.info.mk6 = lower(self.tmp)
+		if tag == 'mark6Activity':
+			self.info.ok = True
+			self.info.mk6type = 'activity'
+		if tag == 'activeVSN':
+			if len(self.tmp) != 8:
+				self.info.activeVSN = 'none'
+			else:
+				self.info.activeVSN = upper(self.tmp)
+		if tag == 'from':
+			self.info.mk6 = lower(self.tmp)
 		if tag == 'state':
 			self.info.state = self.tmp
 		if tag == 'playRate':
@@ -175,20 +167,20 @@ class Parser:
 			self.info.scan = int(self.tmp)
 		if tag == 'scanName':
 			self.info.name = self.tmp
-		if tag == 'activeBank':
-			self.info.bank = self.tmp
 
 	def data(self, data):
 		self.tmp = data
 
 	def getinfo(self):
-		return self.info.getmk5(), self.info.getstring()
+		return self.info.getmk6(), self.info, self.info.getstring()
 
 class Display:
 
 	def __init__(self):
 		self.info = {}
+		self.infoActivity = {}
 		self.rows = {}
+		self.rowsActivity = {}
 		self.curs = curses.initscr()
 		#curses.start_color()
 		#curses.init_pair(1, curses.COLOR_RED,curses.COLOR_WHITE)
@@ -205,32 +197,81 @@ class Display:
 
 	def displayrow(self, info, row):
 		#self.curs.addstr(row, 0, info, curses.color_pair(1))
-		self.curs.addstr(row, 0, info)
+		self.curs.addstr(row + 2, 0, info)
 		self.curs.refresh()
 
-	def displayall(self):
+	def displayrowActivity(self, info, row, lenstatrows):
+		#self.curs.addstr(row, 0, info, curses.color_pair(1))
+		#self.curs.addstr(row + lenstatrows + 5, 0, info[0] + ' ' + str(info[1]))
+		self.curs.addstr(row + lenstatrows + 5, 0, info[0])
+		self.curs.refresh()
+
+	def displayall(self, lenstatrows):
+		self.curs.clear()
+                self.curs.addstr(0, 0, "Mark6 Module Location")
+                self.curs.addstr(1, 0, "Machine     Slot 1 (# disks)  Slot 2 (# disks)  Slot 3 (# disks)  Slot 4 (# disks)  Status Time")
 		keys = self.rows.keys()
 		for k in keys:
-			self.curs.addstr(self.rows[k], 0, self.info[k])
-			#self.curs.addstr(self.rows[k], 0, self.info[k], curses.color_pair(1))
+			self.curs.addstr(self.rows[k] + 2, 0, self.info[k])
+
+                self.curs.addstr(lenstatrows + 3, 0, "Mark6 Unit Activity")
+                self.curs.addstr(lenstatrows + 4, 0, "Machine          VSN          State    Data Rate       Position         Scan Name     Data MJD")
+		keys = self.rowsActivity.keys()
+		for k in keys:
+			#self.curs.addstr(lenstatrows + 5 + self.rowsActivity[k], 0, self.infoActivity[k][0] + ' ' + str(self.infoActivity[k][1]))
+			self.curs.addstr(lenstatrows + 5 + self.rowsActivity[k], 0, self.infoActivity[k][0])
 
 		self.curs.refresh()
 
 	def newdata(self, data):
 		k = data[0]
-		if self.rows.has_key(k):
-			self.info[k] = data[1]
+		j = data[1].activeVSN
+		lenstatrows = len(self.rows)
+		if data[1].mk6type == 'status' and self.rows.has_key(k):
+			self.info[k] = data[2]
 			self.displayrow(self.info[k], self.rows[k])
-		else:
+		elif data[1].mk6type == 'activity' and self.rowsActivity.has_key((k,j)):
+			self.infoActivity[(k,j)] = [data[2], time.time()]
+			self.displayrowActivity(self.infoActivity[(k,j)], self.rowsActivity[(k,j)], lenstatrows)
+		elif data[1].mk6type == 'status':
 			self.rows[k] = 0
-			self.info[k] = data[1]
+			self.info[k] = data[2]
 			keys = self.rows.keys()
 			keys.sort()
 			i = 0
 			for k in keys:
 				self.rows[k] = i
 				i += 1
-			self.displayall()
+			self.displayall(len(self.rows))
+		elif data[1].mk6type == 'activity':
+			self.rowsActivity[(k,j)] = 0
+			self.infoActivity[(k,j)] = [data[2], time.time()]
+			keys = self.rowsActivity.keys()
+			keys.sort()
+			i = 0
+			for k in keys:
+				self.rowsActivity[k] = i
+				i += 1
+			self.displayall(lenstatrows)
+		# delete activity rows 30 seconds old
+		ikeys = self.infoActivity.keys()
+		rowsdeleted = False
+		for key in ikeys:
+			expired = False
+			if self.infoActivity[key][1] + 30 < time.time():
+				expired = True
+				rowsdeleted = True
+				del self.infoActivity[key]
+				del self.rowsActivity[key]
+		if rowsdeleted == True:
+			keys = self.rowsActivity.keys()
+			keys.sort()
+			i = 0
+			for k in keys:
+				self.rowsActivity[k] = i
+				i += 1
+			self.displayall(lenstatrows)
+
 
 def listen(port, group):
 	dt = 0.0
@@ -256,14 +297,13 @@ def listen(port, group):
 
 			if message[0] != '<':
 				continue
-
 			p = Parser()
 			p.feed(message)
-			machine, str = p.getinfo()
+			machine, mk6type, str = p.getinfo()
 			p.close()
 			if len(str) < 10:
 				continue
-			d.newdata([machine, str])
+			d.newdata([machine, mk6type, str])
 	except KeyboardInterrupt:
 		d.close()
 		return 0
@@ -273,33 +313,7 @@ def listen(port, group):
 	d.close()
 	return 0
 
-
-def readmachines(machinesfile, verbose):
-	machines = []
-	cores = []
-	ismk5 = {}
-	lines = open(machinesfile).readlines()
-	for l in lines:
-		l = split(strip(l), '#')[0]
-		s = split(l)
-		if len(s) >= 2:
-			machines.append(s[0])
-			cores.append(int(s[1]))
-			if len(s) >= 3:
-				ismk5[s[0]] = int(s[2])
-			else:
-				if s[0][:5] == 'mark5':
-					ismk5[s[0]] = 1
-				else:
-					ismk5[s[0]] = 0
-	if verbose > 1:
-		print 'MACHINES = ', machines
-		print 'CORES    = ', cores
-		print 'IS MK5   = ', ismk5
-
-	return machines,cores,ismk5
-
-
+# main execution
 
 signal.signal(signal.SIGINT, signal_handler)
 
@@ -325,3 +339,4 @@ if group == None:
 
 while(listen(port, group)):
 	pass
+

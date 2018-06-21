@@ -256,6 +256,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_MK5CONTROL,
 	DIFX_MESSAGE_MARK5COPY,
 	DIFX_MESSAGE_VSIS, /* stop mk5daemon VSIS to allow fuseMk5 use, start when finished with fuseMk5 */
+	DIFX_MESSAGE_MARK6ACTIVITY,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -317,6 +318,17 @@ typedef struct
         double dataMJD;
 } DifxMessageMark6Status;
 
+typedef struct
+{
+        enum Mark6State state;
+	char activeVsn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+        unsigned int status;
+        int scanNumber;
+	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
+        long long position;     /* play pointer */
+        float rate;             /* Mbps */
+        double dataMJD;
+} DifxMessageMark6Activity;
 
 typedef struct
 {
@@ -594,6 +606,7 @@ typedef struct
 		DifxMessageMk5Control  mk5Control;
 		DifxMessageMark5Copy  mark5Copy;
 		DifxMessageVsis		vsis;
+		DifxMessageMark6Activity   mark6activity;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];
@@ -661,6 +674,7 @@ const char *getDifxMessageIdentifier();
 int difxMessageSend2(const char *message, int size);
 int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status);
+int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);
 int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats);

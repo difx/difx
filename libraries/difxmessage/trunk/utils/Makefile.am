@@ -29,7 +29,8 @@ dist_bin_SCRIPTS = \
 	restartdifx \
 	difxdiagnosticmon \
 	mk5display \
-	difxwatch
+	difxwatch \
+	mk6mon
 
 probemachine_SOURCES = \
 	probemachine.c \
