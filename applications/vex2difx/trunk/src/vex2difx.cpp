@@ -1004,7 +1004,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								++nFreq;
 							}
 
-							for(int f = 0; f < D->datastream[a1].nZoomFreq; ++f)
+							for(int f = 0; f < D->datastream[ds1].nZoomFreq; ++f)
 							{
 								bool zoom2 = false;	// did antenna 2 zoom band make match? 
 
