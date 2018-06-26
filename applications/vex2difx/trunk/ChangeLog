@@ -13,7 +13,8 @@ Version 2.6.0
 * Added parameter exahustiveAutocorrs to allow correlation of cross-hand autocorrelations when polarisations are in different datastreams
 * Support units in the clock rate (e.g., usec/sec).  This change generalizes unit support to allow time in numerators.
 * Increase maximum number of allowed IFs from 4 to 32, and catch cases where this gets exceeded.
-* add mk62v2d script and call from vex2script to support mark6 prework to .v2d
+* Add mk62v2d script and call from vex2script to support mark6 prework to .v2d
+* Fix indexing bug in baseline table preparation. Affected zoom band projects where only a subset of antennas is multi-datastream.
 
 Version 2.5.0
 ~~~~~~~~~~~~~
