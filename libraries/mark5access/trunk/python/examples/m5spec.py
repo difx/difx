@@ -47,6 +47,7 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset):
 	nint  = numpy.round(float(dms.samprate)*T_int_ms*1e-3/float(nfft))
 	Tint  = float(nint*nfft)/float(dms.samprate)
 	df    = float(dms.samprate)/float(nfft)
+	nchan = len(numpy.fft.rfft([0.0]*nfft))
 	iter  = 0
 	print ('Averaging a total of %u DFTs, each with %u points, for a %f millisecond time average.' % (nint,nfft,Tint*1e3))
 
@@ -55,8 +56,8 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset):
 
 	# Result arrays
 	ch_data = [ctypes.cast(pdata[ii],ctypes.POINTER(ctypes.c_float*nfft)) for ii in range(dms.nchan)]
-	freqs = numpy.linspace(0.0, dms.samprate*1e-6, num=nfft)
-	specs = numpy.zeros(shape=(dms.nchan,nfft), dtype='float64')
+	freqs = numpy.linspace(0.0, dms.samprate*0.5e-6, num=nchan)
+	specs = numpy.zeros(shape=(dms.nchan,nchan), dtype='float64')
 
 	# Process the recorded data
 	while True:
@@ -70,7 +71,7 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset):
 		# Averaging of 'Abs(FFT(x))'
 		for ii in range(dms.nchan):
 			x = numpy.frombuffer(ch_data[ii].contents, dtype='float32')
-			specs[ii] += numpy.abs(numpy.fft.fft(x))
+			specs[ii] += numpy.abs(numpy.fft.rfft(x))
 
 		# Save data and plot at the end of an averaging period
 		iter = iter + 1
@@ -78,27 +79,27 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset):
 
 			layouts = [(None,None),  (1,1), (1,2), (1,3), (2,2), (1,5), # 1 to 5 channels
 				   (2,3), (2,4), (2,4), (3,3), (2,5), (3,4), (2,6), # 6 to 12 channels
-				   (3,5), (3,5), (3,5), (4,4)] # 13 to 16 channels
+				   (3,5), (3,5), (3,5), (4,4), # 13 to 16 channels
+				   (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), # 17 to 25 channels
+				   (6,6), (6,6), (6,6), (6,6), (6,6), (6,6), (6,6)] # 26 to 32 channels
 
-			N = int(numpy.floor(float(nfft)/2 + 1))
-			M = int(numpy.min([16,dms.nchan]))
+			M = int(numpy.min([32,dms.nchan]))
 			rows,cols = layouts[M]
 
-			f = freqs[0:N]
-			s = specs[:,0:N]
-			s /= float(nint)
-			s[:,0]  = s[:,1]
-			s[:,-1] = s[:,-2]
+			specs /= float(nint)
+			specs[:,0]  = specs[:,1]
+			specs[:,-1] = specs[:,-2]
 
-			writeOut(fout,f,s)
+			if fout != None:
+				writeOut(fout,freqs,specs)
 
-			a_min = numpy.amin(s)
-			a_max = numpy.amax(s)
+			a_min = numpy.amin(specs)
+			a_max = numpy.amax(specs)
 
 			pylab.gcf().set_facecolor('white')
 			for ch in range(M):
 				pylab.subplot(rows,cols,ch+1)
-				pylab.plot(f,abs(s[ch]),'k-')
+				pylab.plot(freqs,abs(specs[ch]),'k-')
 				pylab.title('Channel %d' % (ch+1))
 				pylab.axis('tight')
 				pylab.ylim([a_min,a_max])
@@ -137,7 +138,10 @@ def main(argv=sys.argv):
 		offset = int(argv[5])
 
 	# Start processing
-	fout = open('m5spec.txt', 'wt')
+	try:
+		fout = open('m5spec.txt', 'wt')
+	except:
+		fout = None
 	rc = m5spec(argv[1],argv[2], fout, abs(float(argv[3])), int(argv[4]), offset)
 	fout.close()
 
