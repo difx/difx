@@ -1,3 +1,8 @@
+v1.7.5
+
+- set zero weight on unphased APP subscans (phases not updated)
+- continued non-ALMA development
+
 v1.7.4
 
 - Added some protections for problematic antennas in ALMA data tables

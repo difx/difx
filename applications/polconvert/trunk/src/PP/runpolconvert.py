@@ -10,7 +10,7 @@ import shutil
 import re
 import sys
 
-pcvers='1.7.4'
+pcvers='1.7.5'
 
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.

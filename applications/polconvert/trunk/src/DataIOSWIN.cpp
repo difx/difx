@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include <string.h>
 #include <math.h>
 #include <dirent.h>
-#include "DataIOSWIN.h"
+#include "./DataIOSWIN.h"
 
 
 
@@ -727,7 +727,29 @@ for (i=0; i<4; i++) {
 
 
 
+void DataIOSWIN::zeroWeight(){
 
+long rec;
+int i, fnum = 0;
+double zero = 0.0;
+// Write:
+
+for (i=0; i<4; i++) {
+
+ if (currEntries[currFreq][i]>=0){
+  rec = currEntries[currFreq][i];
+  fnum = Records[rec].fileNumber;
+  newdifx[fnum].seekp(Records[rec].byteIni - 4*sizeof(double), newdifx[fnum].beg);
+  newdifx[fnum].write(reinterpret_cast<char*>(&zero),sizeof(double));
+ };
+};
+
+  newdifx[fnum].flush();
+  newdifx[fnum].sync();
+  newdifx[fnum].clear();
+
+
+};
 
 
 void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile) {

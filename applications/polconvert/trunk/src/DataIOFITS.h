@@ -64,7 +64,8 @@ class DataIOFITS: public DataIO {
  // Saves the result in the "bufferVis" pointer  
   void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile);
 
-
+ // Flag bad (unconvertible) data:
+  void zeroWeight();
 
 // Close all files.
    void finish();

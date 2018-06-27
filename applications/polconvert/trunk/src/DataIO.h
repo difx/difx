@@ -109,6 +109,10 @@ class DataIO {
  // Saves the result in the "bufferVis" pointer  
   virtual void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile) = 0;
 
+
+ // Flag bad (unconvertable) data:
+  virtual void zeroWeight() = 0;
+
 // Close all files.
    virtual void finish() = 0;
 

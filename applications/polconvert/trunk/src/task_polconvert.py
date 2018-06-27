@@ -1,4 +1,4 @@
-# Copyright (c) Ivan Marti-Vidal 2012. 
+# Copyright (c) Ivan Marti-Vidal 2012-2018 
 #               EU ALMA Regional Center. Nordic node.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -47,8 +47,8 @@
 #
 #
 
-__version__ = "1.7.4"
-date = 'Apr 11, 2018'     
+__version__ = "1.7.5"
+date = 'June 26, 2018'     
 
 
 ################
@@ -58,7 +58,10 @@ date = 'Apr 11, 2018'
 # Execute twice, to avoid the silly (and harmless) 
 # error regarding the different API versions of 
 # numpy between the local system and CASA:
+import os, sys
 try: 
+# mypath = os.path.dirname(os.path.realpath('__file__'))
+# sys.path.append(mypath)
  import _PolConvert as PC
  goodclib = True
  print '\nC++ shared library loaded successfully\n'
@@ -69,8 +72,13 @@ except:
  print ' (which uses the API version of your system) and should' 
  print ' be *harmless*.\n'
 
+#mypath = os.path.dirname(os.path.realpath('__file__'))
+#print mypath
+
 if not goodclib:
   try: 
+#   mypath = os.path.dirname(os.path.realpath('__file__'))
+#   sys.path.append(mypath)
    import _PolConvert as PC
    goodclib = True
    print '\nC++ shared library loaded successfully\n'
@@ -106,45 +114,44 @@ tb = gentools(['tb'])[0]
 
 
 if __name__=='__main__':
-
-  taskname           = "polconvert"
-  IDI                =  "VT23B.PASS2.1.FITS"
-  OUTPUTIDI          =  "VT23B.PASS2.1.FITS"
-  DiFXinput          =  ""
-  DiFXcalc           =  ""
-  doIF               =  []
+  IDI                =  "./e17e11-3-hi_1083.difx"
+  OUTPUTIDI          =  "TESTING"
+  DiFXinput          =  "./e17e11-3-hi_1083.input"
+  DiFXcalc           =  "./e17e11-3-hi_1083.calc"
+  doIF               =  [37, 38]
   linAntIdx          =  [1]
-  Range              =  [0,01,19,56,0,01,23,00] #[0, 1, 5, 0, 0, 1, 10, 0]
-  ALMAant            =  ""
+  Range              =  []
+  ALMAant            =  "../../TRACK_E/TRACK_E.concatenated.ms.ANTENNA"
   spw                =  -1
-  calAPP             =  ""
+  calAPP             =  "../../TRACK_E/TRACK_E.concatenated.ms.calappphase"
   calAPPTime         =  [0.0, 5.0]
   APPrefant          =  ""
-  gains              =  [['NONE']]
+  gains              =  [['../../TRACK_E/TRACK_E.concatenated.ms.bandpass-zphs', '../../TRACK_E/TRACK_E.calibrated.ms.Gxyamp.APP', '../../TRACK_E/TRACK_E.calibrated.ms.XY0.APP', '../../TRACK_E/TRACK_E.concatenated.ms.flux_inf.APP', '../../TRACK_E/TRACK_E.concatenated.ms.phase_int.APP']]
   interpolation      =  []
-  gainmode           =  []
+  gainmode           =  [['G', 'G', 'G', 'T', 'G']]
   XYavgTime          =  0.0
-  dterms             =  ['NONE']
-  amp_norm           =  0.0
-  XYadd              = [0.0] 
+  dterms             =  ['../../TRACK_E/TRACK_E.calibrated.ms.Df0.APP']
+  amp_norm           =  0.031
+  XYadd              =  [0.0]
   XYdel              =  [0.0]
   XYratio            =  [1.0]
   swapXY             =  [False]
   swapRL             =  False
   IDI_conjugated     =  False
-  plotIF             =  []
-  plotRange          =  Range
-  plotAnt            =  4
-  excludeAnts        =  [5]
-  doSolve            =  1000.0
+  plotIF             =  [37, 38]
+  plotRange          =  [0, 0, 0, 0, 2, 0, 0, 0]
+  plotAnt            =  2
+  excludeAnts        =  []
+  doSolve            =  -1
   solint             =  [1, 1]
   doTest             =  True
   npix               =  50
   solveAmp           =  True
   solveMethod        =  "gradient"
-  calstokes          = [1.,0.,0.,0.]
-  solveQU = False
-  calfield = -1
+  calstokes          =  [1.0, 0.0, 0.0, 0.0]
+  calfield           =  -1
+  
+
 #
 #
 #
@@ -523,7 +530,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      printMsg('FOR APP TABLE, TIME RUNS FROM %8.5f TO %8.5f DAYS'%(tmin,tmax))
 
 
-
+    return timeranges
 
 
   tic = time.time()
@@ -634,6 +641,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   if not os.path.exists(IDI):
     printError("ERROR! IDI file (or SWIN folder) does not exist!")
 
+  timeranges = np.array([0.,0.])
 
   if type(calAPP) is list:
     try:
@@ -641,7 +649,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       calAPP = './CALAPPPHASE.tab'
     except:
       printError('ERROR: Could not create nor interprete the CALAPPPHASE table!')
-  
 
   c0 = len(calAPP) == 0 ; c1 = len(ALMAant) == 0
   if c0 != c1: 
@@ -813,14 +820,48 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
   if isPhased:
 
+#   print calAPP
+#   os.system('ls %s'%calAPP)
 
    success = tb.open(calAPP)
+
    if not success:
     printError('ERROR: INVALID calAPP TABLE!')
     
    try:
+
     time0 = tb.getcol('startValidTime')-CALAPPDT+CALAPPTSHIFT
     time1 = tb.getcol('endValidTime')+CALAPPDT+CALAPPTSHIFT
+
+
+
+#########
+# Figure out times with unphased data:
+    ADJ = tb.getcol('adjustToken')
+    sc2flag = [i for i in range(len(ADJ)) if 'PHASE_UPDATED' not in ADJ[i]]
+    scgood = [i for i in range(len(ADJ)) if 'PHASE_UPDATED' in ADJ[i]]
+
+    SUBSCANDUR = time1[sc2flag[0]] - time0[sc2flag[0]]
+    sec = 1.
+    timeranges = []
+    if len(sc2flag)>0:
+      for si in sc2flag:
+        timerange = [time1[si]-SUBSCANDUR-sec, time1[si]+sec]
+        if timerange not in timeranges:
+          timeranges.append(timerange)
+
+    for si in scgood:
+      timerange = [time1[si]-SUBSCANDUR-sec,time0[si]+sec]
+      if si-1 in sc2flag:  
+        if timerange not in timeranges:
+          timeranges.append(timerange)
+
+# For testing:
+#    timeranges.append([4998635280., 4998635350.])
+    timeranges = np.array(timeranges)
+#########
+
+
     nphant = tb.getcol('numPhasedAntennas')
     refs = tb.getcol('refAntennaIndex')
     asdmtimes = [time0,time1]
@@ -831,7 +872,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     tb.close()
 
    except:
-    printError('ERROR: INVALID calAPP TABLE!')
+#   else:
+    printError('ERROR: INVALID calAPP TABLE CONTENT!')
 
    success = tb.open(ALMAant)
    if not success:
@@ -1500,7 +1542,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   printMsg("\n###\n### Going to PolConvert\n###")
 
   doAmpNorm = amp_norm>0.0
-  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, antmounts, isLinear,calfield)
+  didit = PC.PolConvert(nALMA, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdx, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, np.array(XYdelF), metadata, soucoords, antcoords, antmounts, isLinear,calfield,timeranges)
 
   printMsg("\n###\n### Done with PolConvert (status %d).\n###" % (didit))
 

@@ -27,13 +27,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include <fstream>
 #include <cstring>
 #include <complex.h>
-#include "Weighter.h"
+#include "./Weighter.h"
 
 
 Weighter::~Weighter(){};
 
-Weighter::Weighter(int nPhase, long *nASDMtimes, long nASDMentries, int *ASDMant, double **ASDMtimes, int *refants, double *time0, double *time1) {
+Weighter::Weighter(int nPhase, long *nASDMtimes, long nASDMentries, int *ASDMant, double **ASDMtimes, int *refants, double *time0, double *time1, double* BadTimes, int NBadTimes, FILE *logF) {
 
+
+ logFile = logF;
 
  nants = nPhase;
  nASDMEntries = nASDMentries; 
@@ -45,8 +47,25 @@ Weighter::Weighter(int nPhase, long *nASDMtimes, long nASDMentries, int *ASDMant
  Time1 = time1;
  currTime = 0.0;
  currRefAnt = 0;
+ badTimes = BadTimes;
+ NbadTimes = NBadTimes;
 
 };
+
+
+/* Returns whether ALMA was effectively phased at this time */
+bool Weighter::isPhased(double JDTime){
+
+  int i;
+  bool Phased = true;
+
+  for (i=0; i<NbadTimes; i++){
+    if(JDTime>=badTimes[2*i] && JDTime<=badTimes[2*i+1]){Phased=false;break;};
+  };
+
+  return Phased;
+};
+
 
 
 /* Returns whether the antenna is in the phased sum (true) or not (false) */
@@ -55,18 +74,27 @@ bool Weighter::getWeight(int iant, double JDtime){
   long i;
   int j;
 
-  
+  bool inside;
 
   for (j=0; j<nants; j++){
     if (ants[j] == iant){break;};
   };
 
+  inside = false;
 
-  for (i=0; i<ntimes[j]; i++){
-    if (JDtimes[j][2*i]<=JDtime && JDtimes[j][2*i+1]>=JDtime){return true;};   
+  if(j<nants){
+    for (i=0; i<ntimes[j]; i++){
+      if (JDtimes[j][2*i]<=JDtime && JDtimes[j][2*i+1]>=JDtime){inside = true; break;};   
+    };
   };
 
-  return false;
+//  if(!inside){
+//    sprintf(message,"T: %.5f ; ANT: %i ; %i\n",JDtime,iant,inside);
+//    fprintf(logFile,"%s",message);fflush(logFile);
+//  };
+
+  return inside;
+
 };
 
 

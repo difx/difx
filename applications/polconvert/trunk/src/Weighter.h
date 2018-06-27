@@ -28,14 +28,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 /* Class to determine whether an ALMA antenna was added to the phased signal and to return the Reference Antenna at any time */
 class Weighter {
   public:
-    Weighter(int nPhase, long *nASDMtimes, long nASDMEntries, int *ASDMant, double **ASDMtimes, int *refants, double *time0, double *time1);
+    Weighter(int nPhase, long *nASDMtimes, long nASDMEntries, int *ASDMant, double **ASDMtimes, int *refants, double *time0, double *time1, double *BadTimes, int NBadTimes, FILE *logF);
     ~Weighter();
 
+    bool isPhased(double JDtime);
     bool getWeight(int iant, double JDtime);
     int getRefAnt(double JDtime);
 
   private:
 
+    FILE *logFile;
+    char message[512];
     int nants;
     long *ntimes, nASDMEntries; 
     int *ants; 
@@ -45,6 +48,7 @@ class Weighter {
     double **JDtimes;
     double *Time0;
     double *Time1;
-    
+    double *badTimes;
+    int NbadTimes;
 };
 

@@ -12,6 +12,10 @@ DO_SOLVE = True
 sourcefiles = ['_PolConvert.cpp','CalTable.cpp','DataIO.cpp',
                'DataIOFITS.cpp','DataIOSWIN.cpp','Weighter.cpp']
 
+sourcefiles = ['CalTable.cpp','DataIO.cpp',
+               'DataIOFITS.cpp','DataIOSWIN.cpp','Weighter.cpp','_PolConvert.cpp']
+
+
 sourcefiles2 = ['_PolGainSolve.cpp']
 
 sourcefiles3 = ['_getAntInfo.cpp']
@@ -36,12 +40,12 @@ if DO_SOLVE:
 
 cfitsio='/usr/include/cfitsio'
 setup(
-    ext_modules=[c_ext], include_dirs=[cfitsio],
+    ext_modules=[c_ext], include_dirs=[cfitsio,'./'],
 )
 
 
 setup(
-    ext_modules=[c_ext3], include_dirs=[cfitsio],
+    ext_modules=[c_ext3], include_dirs=[cfitsio,'./'],
 )
 
 

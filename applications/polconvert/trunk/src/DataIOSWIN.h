@@ -79,6 +79,9 @@ class DataIOSWIN: public DataIO {
   void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thiAnt, FILE *plotFile);
 
 
+ // Flag bad (unconvertible) data:
+  void zeroWeight();
+
 
 // Close all files.
    void finish();

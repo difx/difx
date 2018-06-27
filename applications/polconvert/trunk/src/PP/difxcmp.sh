@@ -11,6 +11,8 @@ action=${1-'help'} ; shift
 
 skip='build mytasks.py polconvert_cli.py polconvert.py'
 skip="$skip build/temp.linux-x86_64-2.7"
+skip="$skip QA2/scriptForCalibrationAPP_C4.py"
+skip="$skip result_ALL.txt"
 
 [ $# -eq 0 ] && set -- 'no-such-file'
 
@@ -32,14 +34,14 @@ do
     ls -l $bzr/$f $dfx/$f 2>&- | sed -e "s+$bzr+\$bzr+" -e "s+$dfx+\$dfx+"
     ;;
   diff)
-    diff $bzr/$f $dfx/$f
+    diff $bzr/$f $dfx/$f || echo diff $bzr/$f $dfx/$f
     ;;
   sdiff)
     echo sdiff -lw164 $bzr/$f $dfx/$f
     sdiff -lw164 $bzr/$f $dfx/$f
     ;;
   cmp)
-    cmp $bzr/$f $dfx/$f
+    cmp $bzr/$f $dfx/$f || echo cmp $bzr/$f $dfx/$f
     ;;
   dcp)
     [ -f $dfx/$f ] || { echo \#\#\# skipping $f ; continue ; }

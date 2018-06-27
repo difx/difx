@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include <iostream>  
 #include <fstream>
 #include <cstring>
-#include "CalTable.h"
+#include "./CalTable.h"
 #define PI 3.141592653589793
 #define TWOPI 6.283185307179586
 #include <complex>
@@ -188,7 +188,6 @@ bool allflagged = true;
 //fclose(gainFile);
 //////////////////////
 
-
  if (Nchan==1){
  for (ant=0; ant<Nants; ant++) {
   allflagged = true;
@@ -222,6 +221,7 @@ bool allflagged = true;
        GainPhase[0][ant][0][index] = GainPhase[0][ant][0][auxI];
        GainPhase[1][ant][0][index] = GainPhase[1][ant][0][auxI];
        flags[ant][index] = false;            // REVISAR
+ //      sprintf(message,"INTERP ANT #%i AT TIME %i\n",ant,index);fprintf(logFile,"%s",message);fflush(logFile);
     };
   // Determine last unflagged channel
     for (tidx=Ntimes[ant]-1; tidx>=0; tidx --) {
@@ -233,6 +233,7 @@ bool allflagged = true;
        GainPhase[0][ant][0][index] = GainPhase[0][ant][0][auxI];
        GainPhase[1][ant][0][index] = GainPhase[1][ant][0][auxI];
        flags[ant][index] = false;            // REVISAR
+ //      sprintf(message,"INTERP ANT #%i AT TIME %i\n",ant,index);fprintf(logFile,"%s",message);fflush(logFile);
     };
   // Look for flagged time ranges and interpolate them:
    firstflag = false;
@@ -251,6 +252,7 @@ bool allflagged = true;
             GainPhase[1][ant][0][auxI2] = GainPhase[1][ant][0][tidx]*frchan;
             GainPhase[1][ant][0][auxI2] += GainPhase[1][ant][0][auxI]*(1.-frchan);
             flags[ant][auxI2] = false;            // REVISAR
+  //          sprintf(message,"INTERP ANT #%i AT TIME %i\n",ant,auxI2);fprintf(logFile,"%s",message);fflush(logFile);
           };
      };
    };
@@ -419,9 +421,9 @@ void CalTable::setMapping(long mschan, double *freqs)
 
 
   long i, auxI;
-  delete K0;
-  delete I0;
-  delete I1;
+  delete[] K0;
+  delete[] I0;
+  delete[] I1;
 
 
   for (i=0; i<Nants; i++) {

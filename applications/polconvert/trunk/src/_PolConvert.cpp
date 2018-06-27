@@ -65,11 +65,11 @@
 #include <iostream>
 #include <fstream>
 #include <complex.h>
-#include "DataIO.h"
-#include "DataIOFITS.h"
-#include "DataIOSWIN.h"
-#include "CalTable.h"
-#include "Weighter.h"
+#include "./DataIO.h"
+#include "./DataIOFITS.h"
+#include "./DataIOSWIN.h"
+#include "./CalTable.h"
+#include "./Weighter.h"
 #include <sstream> 
 
 
@@ -117,13 +117,13 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
     PyObject *ngain, *nsum, *gains, *ikind, *dterms, *plotRange, *IDI, *antnum, *tempPy, *ret; 
     PyObject *allphants, *nphtimes, *phanttimes, *Range, *SWAP, *doIF, *metadata, *refAnts;
-    PyObject *asdmTimes, *plIF, *isLinearObj, *XYaddObj, *XYdelObj, *antcoordObj, *soucoordObj, *antmountObj; 
+    PyObject *asdmTimes, *plIF, *isLinearObj, *XYaddObj, *XYdelObj, *antcoordObj, *soucoordObj, *antmountObj, *timeranges; 
     int nALMA, plAnt, nPhase, doTest, doConj, doNorm,calField;
     double doSolve;
  //   double XYadd;
     bool isSWIN; 
 
-    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOidiiOOOOOOOi",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doSolve, &doConj, &doNorm, &XYaddObj, &XYdelObj, &metadata, &soucoordObj, &antcoordObj, &antmountObj, &isLinearObj,&calField)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
+    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOidiiOOOOOOOiO",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doSolve, &doConj, &doNorm, &XYaddObj, &XYdelObj, &metadata, &soucoordObj, &antcoordObj, &antmountObj, &isLinearObj,&calField, &timeranges)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
 
 
 
@@ -173,6 +173,11 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
       fflush(logFile);
     };
 
+
+
+// Time ranges with unphased signal:
+   double *BadTimes = (double *)PyArray_DATA(timeranges);
+   int NBadTimes = (int) PyArray_DIM(timeranges,0);
 
 // If SWIN, read the frequency channels from the metadata: 
    int *SWINnchan = 0;  // compiler warning
@@ -313,7 +318,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
       ASDMtimes[ii] = (double *)PyArray_DATA(PyList_GetItem(phanttimes,ii));
     };
 
-    Weighter *ALMAWeight = new Weighter(nPhase,nASDMtimes,nASDMEntries,ASDMant,ASDMtimes,ALMARef,time0,time1);
+    Weighter *ALMAWeight = new Weighter(nPhase,nASDMtimes,nASDMEntries,ASDMant,ASDMtimes,ALMARef,time0,time1,BadTimes, NBadTimes, logFile);
 
 ///////////
 
@@ -602,7 +607,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
   std::complex<float> gainRatio[maxnchan];
   std::complex<float> absGainRatio;
 
-  bool allflagged, auxB ;
+  bool allflagged, auxB, Phased ;
 
   sprintf(message,"\n Will modify %li visibilities (lin-lin counted twice).\n\n",DifXData->getMixedNvis());
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -765,9 +770,12 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
      allflagged = true;
-     for (ij=0; ij<currNant; ij++) {
+     Phased = ALMAWeight->isPhased(currT);
+     if (Phased){
+       for (ij=0; ij<currNant; ij++) {
          Weight[currAntIdx][ij] = ALMAWeight->getWeight(ij,currT);
          if (Weight[currAntIdx][ij]){allflagged = false;};
+       };
      };
 
 // get ALMA refant used in the Phasing (to correct for X-Y phase offset):
@@ -786,7 +794,11 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        int hour = (int) (dayFrac*24.);
        int min = (int) ((dayFrac*24. - ((double) hour))*60.);
        int sec = (int) ((dayFrac*24. - ((double) hour) - ((double) min)/60.)*3600.);
-       sprintf(message,"WARNING: NO VALID ALMA ANTENNAS ON %i-%i:%i:%i ?!?!\n WILL CONVERT ON THIS TIME *WITHOUT* CALIBRATION\n",day,hour,min,sec);
+       if (Phased){
+         sprintf(message,"WARNING: NO VALID ALMA ANTENNAS ON %i-%i:%i:%i ?!?!\n WILL CONVERT ON THIS TIME *WITHOUT* CALIBRATION\n",day,hour,min,sec);
+       } else {
+         sprintf(message,"WARNING: ARRAY WAS UNPHASED AT TIME %i-%i:%i:%i ?!?!\n WILL SET THE WEIGHTS TO ZERO\n",day,hour,min,sec);
+       };
        fprintf(logFile,"%s",message); fflush(logFile);
        lastTFailed = currT ;
      };
@@ -804,7 +816,6 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      gchanged = allgains[currAntIdx][0]->setInterpolationTime(currT);
       for (ij=0; ij<currNant; ij++) {
         if (Weight[currAntIdx][ij]) {
-
           allgains[currAntIdx][0]->applyInterpolation(ij,0,AnG[currAntIdx][ij]); };
       };
 
@@ -1027,8 +1038,11 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      auxB = (currT>=plRange[0] && currT<=plRange[1] && plotIF && (calField<0 || currF==calField)); //plAnt == otherAnt);
 
 // Convert:
-     DifXData->applyMatrix(Ktotal[currAntIdx],XYSWAP[currAntIdx],auxB,currAntIdx,plotFile[IFplot]);
-
+     if(Phased){
+       DifXData->applyMatrix(Ktotal[currAntIdx],XYSWAP[currAntIdx],auxB,currAntIdx,plotFile[IFplot]);}
+     else {
+       DifXData->zeroWeight();
+     };
 // Write:
      if (!doTest){DifXData->setCurrentMixedVis();};
 

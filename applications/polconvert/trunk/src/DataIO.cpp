@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include <string.h>
 #include <math.h>
 #include <dirent.h>
-#include "DataIO.h"
+#include "./DataIO.h"
 #include "fitsio.h"
 
 
