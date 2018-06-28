@@ -838,8 +838,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 #########
 # Figure out times with unphased data:
     ADJ = tb.getcol('adjustToken')
-    sc2flag = [i for i in range(len(ADJ)) if 'PHASE_UPDATED' not in ADJ[i]]
-    scgood = [i for i in range(len(ADJ)) if 'PHASE_UPDATED' in ADJ[i]]
+    sc2flag = [i for i in range(len(ADJ)) if ('PHASE_UPDATED' not in ADJ[i]) and ('PHASE_NOCHANGE' not in ADJ[i])]
+    scgood = [i for i in range(len(ADJ)) if ('PHASE_UPDATED' in ADJ[i] or 'PHASE_NOCHANGE' in ADJ[i])]
 
     SUBSCANDUR = time1[sc2flag[0]] - time0[sc2flag[0]]
     sec = 1.
