@@ -160,7 +160,7 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
             if what != 'common':
                 for ii in range(len(srelist)):
                     patt = srelist[ii]
-                    if patt.match(norm):
+                    if patt != r'MATCHES-NOTHING' and patt.match(norm):
                         save[what] = norm
                         if what == 'delay':
                             dryfac = 0.0
@@ -183,7 +183,7 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
                 f.write('ABERRATION CORR:    MIXED\n')
             else:   # these are the U,V,W lines which should differ
               for patt in srelist:
-                if patt.match(norm):
+                if patt != r'MATCHES-NOTHING' and patt.match(norm):
                     f.write(natm)
                     natmout += 1
                 else:
