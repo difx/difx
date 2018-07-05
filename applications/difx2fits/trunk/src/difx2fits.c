@@ -57,12 +57,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "in directory <baseFilename>.difx/\n");
 	fprintf(stderr, "It is also assumed that at least 3 additional files exist:\n");
 	fprintf(stderr, "  <baseFilename>.input    DiFX input file\n");
-	fprintf(stderr, "  <baseFilename>.uvw      DiFX UVW file\n");
-	fprintf(stderr, "  <baseFilename>.delay    DiFX delay model\n\n");
-	fprintf(stderr, "Four other files are optionally read:\n");
-	fprintf(stderr, "  <baseFilename>.calc     Base file for calcif \n");
-	fprintf(stderr, "  <baseFilename>.im       Polynomial UVW and model\n");
-	fprintf(stderr, "  <baseFilename>.rate     Extra calcif output\n");
+        fprintf(stderr, "  <baseFilename>.calc     Base file for calcif \n");
+        fprintf(stderr, "  <baseFilename>.im       Polynomial UVW and model\n");
+	fprintf(stderr, "One other files is optionally read:\n");
 	fprintf(stderr, "  <baseFilename>.flag     Antenna-based flagging\n\n");
 	fprintf(stderr, "VLBA calibration transfer will produce 4 files:\n");
 	fprintf(stderr, "  flag, tsys, pcal, weather\n");
