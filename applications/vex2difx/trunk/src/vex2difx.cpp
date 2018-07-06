@@ -2518,7 +2518,19 @@ static void calculateScanSizes(VexData *V, const CorrParams &P)
 		int nSubband, nBaseline;
 		
 		scan = V->getScan(s);
+		if (!scan)
+		{
+			cerr << "Warning: scan " << s << " could not be looked up!" << endl;
+			continue;
+		}
+
 		mode = V->getModeByDefName(scan->modeDefName);
+		if (!mode)
+		{
+			cerr << "Warning: scan " << scan->defName << " has undefined VEX mode " << scan->modeDefName << "!" << endl;
+			continue;
+		}
+
 		const std::string &corrSetupName = P.findSetup(scan->defName, scan->sourceDefName, scan->modeDefName);
 		setup = P.getCorrSetup(corrSetupName);
 		if(!setup)
@@ -2803,6 +2815,10 @@ int main(int argc, char **argv)
 		const std::string &corrSetupName = P->findSetup(scan->defName, scan->sourceDefName, scan->modeDefName);
 		CorrSetup *corrSetup = P->getNonConstCorrSetup(corrSetupName);
 		const VexMode *mode = V->getModeByDefName(scan->modeDefName);
+		if (!mode)
+		{
+			continue;
+		}
 		for(map<string,VexSetup>::const_iterator sp = mode->setups.begin(); sp != mode->setups.end(); ++sp)
 		{
 			for(vector<VexChannel>::const_iterator cp = sp->second.channels.begin(); cp != sp->second.channels.end(); ++cp)
