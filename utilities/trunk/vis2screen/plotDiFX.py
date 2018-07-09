@@ -14,7 +14,7 @@ parser.add_option("-b", "--baseline", dest="baseline", metavar="targetbaseline",
 parser.add_option("-c", "--maxchannels", dest="maxchannels", metavar="MAXCHANNELS",
                   default="33000",
                   help="The length of the array that will be allocated to hold vis results")
-parser.add_option("-p", "--pols", dest="pollist", default="RR,RL,LR,LL,YY,YX,XY,XX",
+parser.add_option("-p", "--pols", dest="pollist", default="RR,RL,LR,LL,YY,YX,XY,XX,XL,XR,YL,YR,LX,RX,LY,RY",
                   help="Only display polarization pairs from this comma-separated list")
 parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
                   help="Turn verbose printing on")
