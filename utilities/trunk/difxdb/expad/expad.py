@@ -267,7 +267,7 @@ class MainWindow(GenericWindow):
         self.txtCode = Entry(frmDetail, text = "")
         self.txtNumber = Entry(frmDetail, text = "")
 	self.txtObsDate = Entry(frmDetail, text = "")
-        self.cboType= Listbox(frmDetail, selectmode=MULTIPLE, height=4, selectforeground="white", selectbackground="dodger blue", fg="grey" )
+        self.cboType= Listbox(frmDetail, selectmode=MULTIPLE, height=4, selectforeground="white", selectbackground="dodger blue", fg="grey", exportselection=0)
         self.cboUser = OptionMenu(frmDetail, self.cboUserVar,  *self.users, command=self.onExpDetailChange)
         self.txtNotify = Entry(frmDetail, text = "")
         self.txtNumber = Entry(frmDetail, text = "")
@@ -374,6 +374,7 @@ class MainWindow(GenericWindow):
 
 
     def onExpDetailChange(self, Event):
+        ' bind event to be called whenever experiment details have been changed by the user'
         
         self.expEdit = 0
         currentTypes = []
@@ -388,11 +389,11 @@ class MainWindow(GenericWindow):
 
         # get currently selected types
         for sel in self.cboType.curselection():
-		currentTypes.append(self.cboType.get(sel))
+		currentTypes.append(self.cboType.get(sel))                
         #get original types
         for type in selectedExperiment.types:
 		origTypes.append(type.type)
-
+        
 	selectedExperiment.status.experimentstatus = ""
         
         self.expEdit += self.setChangeColor(self.txtNotify, self.txtNotify.get(), selectedExperiment.emailnotification)
@@ -599,15 +600,15 @@ class MainWindow(GenericWindow):
 	if exp.types:
 		for type in exp.types:
 		    expTypes.append(type.type)
-    
-        # select tpyes in Listbox
+     
+        # select types in Listbox
         self.cboType.selection_clear(0,END)
         for type in expTypes:
             for index in range(0,len(self.expTypes)):
                 if (self.expTypes[index] == type):
                     self.cboType.selection_set(index)
                     break
-             
+                    
         if (exp != None):
             if exp.user is not None:
                 self.cboUserVar.set(exp.user.name)
@@ -676,6 +677,9 @@ class MainWindow(GenericWindow):
         self.getExpDetails()
     
     def updateExpEvent(self):
+        '''
+        This event will execute any updates of the experiment details done bz the user.
+        '''
         
         if self.selectedExpIndex == -1:
             return
@@ -860,7 +864,7 @@ class AddExperimentWindow(GenericWindow):
         self.txtExpCode = Entry(self.dlg) 
         self.txtObsDate =  Entry(self.dlg)   
 	self.btnObsDate = Button(self.dlg, text="Select date", command=self._selectObsDate)
-        self.cboType= Listbox(self.dlg, listvariable=self.cboTypeVar, selectmode=MULTIPLE, height=5, selectforeground="white", selectbackground="dodger blue", fg="grey" )
+        self.cboType= Listbox(self.dlg, listvariable=self.cboTypeVar, selectmode=MULTIPLE, height=5, selectforeground="white", selectbackground="dodger blue", fg="grey", exportselection=0)
         self.cboType.delete(0,END)
 	self.cboType.insert(0, *self.expTypes)
     
