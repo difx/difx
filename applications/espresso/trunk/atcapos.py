@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # =======================================================================
-# Copyright (C) 2016 Cormac Reynolds
+# Copyright (C) 2018 Cormac Reynolds
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,12 +37,12 @@ def vexdate2atca(date):
     startdate = startdate.replace("s", "")
 
     sec = int(startdate[-2:]) + 1
-    enddate =  startdate[0:-2] + "{:02d}".format(sec)
+    enddate = startdate[0:-2] + "{:02d}".format(sec)
 
     return startdate, enddate, year
-    
 
-usage = """%prog <date>
+
+usage = """%prog <date> [<date>]...
 <date> can either be in MJD, VEX, ISO8601 or VLBA format
 Returns ATCA tied array position"""
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
@@ -53,34 +53,38 @@ parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
 
 (options, args) = parser.parse_args()
 
-if len(args) != 1:
+if len(args) < 1:
     parser.print_help()
-    parser.error("Give a date in MJD, VEX, ISO8601 format")
+    parser.error("Give date(s) in MJD, VEX, ISO8601 or VLBA format")
+
+atca_url_template = (
+        "http://www.atnf.csiro.au/cgi-bin/vlbi/atca_summary.pl?"
+        "start={}&end={}&year={}&site=ATCA")
+#print >>sys.stderr, "Fetching ATCA status from", atca_url_template
 
 # get target date
-targetdate = args[0]
-# convert to vex
-targetdate = espressolib.convertdate(targetdate, "vex")
-# convert from vex to atca_summary format
-startdate, enddate, year = vexdate2atca(targetdate)
-
-# fetch atca summary data
-atca_url = (
-        "http://www.atnf.csiro.au/cgi-bin/vlbi/atca_summary.pl?"
-        "start={}&end={}&year={}&site=ATCA".format(startdate, enddate, year))
-
-print >>sys.stderr, "Fetching ATCA status from", atca_url
-atca_summary = requests.get(atca_url).content.split("\n")
-
-# parse the summary page
 refant_pad = None
-pads = []
-for iline, line in enumerate(atca_summary):
-    if iline == 1:
-        pads = line.split()
-    if iline == 2:
-        refant = re.sub("Refant:\s+CA0", "", line)
-        refant = int(refant)
-        refant_pad = pads[refant-1]
+for targetdate in args:
+    # convert to vex
+    targetdate = espressolib.convertdate(targetdate, "vex")
+    # convert from vex to atca_summary format
+    startdate, enddate, year = vexdate2atca(targetdate)
+
+    # fetch atca summary data
+    url = atca_url_template.format(startdate, enddate, year)
+
+    atca_summary = requests.get(url).content.split("\n")
+
+    # parse the summary page
+    refant_pad = None
+    pads = []
+    for iline, line in enumerate(atca_summary):
+        if iline == 1:
+            pads = line.split()
+        if iline == 2:
+            refant = re.sub("Refant:\s*CA0", "", line)
+            refant = int(refant)
+            refant_pad = pads[refant-1]
+            print "{}: {}".format(targetdate, refant_pad)
 
 print "updatepos.py ATCA AT_{}".format(refant_pad)
