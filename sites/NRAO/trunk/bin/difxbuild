@@ -2976,13 +2976,14 @@ def libmicrohttpd(origComps, params, args, verbose, pretend):
 def pgplot(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT']
+	archSrcDir = archDir + '/src/'
 	
 	opsys = lower(platform.system())
 	srcFile = 'pgplot%s.tar.gz' % pgplotVersion
 	pgplotUrl = 'ftp://ftp.astro.caltech.edu/pub/pgplot/%s' % srcFile
 	tarDir = difxBase + 'tar/'
+
 	# get file
 	ftpFile(pgplotUrl, tarDir, srcFile, args, verbose, pretend)
 	# untar source
@@ -2991,7 +2992,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 	chdir(archSrcDir)
 	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
 	# make dest dir
-	pgplotDir = difxBase + arch + '/pgplot'
+	pgplotDir = archDir + '/pgplot'
 	if isdir(pgplotDir):
 		execute('rm -rf %s' % pgplotDir, verbose, pretend)
 	execute('mkdir -p %s' % pgplotDir, verbose, pretend)
@@ -3026,7 +3027,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 	if v != 0:
 		print '\n*** Error building pgplot ***\n'
 		return 
-	linkDir = '%s/%s/lib' % (difxBase, arch)
+	linkDir = archDir + '/lib'
 	if not isdir(linkDir):
 		execute('mkdir -p %s' % linkDir, verbose, pretend)
 	for f in ['libpgplot.a', 'libcpgplot.a', 'libpgplot.so']:
