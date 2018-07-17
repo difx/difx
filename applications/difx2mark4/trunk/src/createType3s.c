@@ -415,7 +415,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                         xtones[i] = 0;
                     t309.ntones = 0;
                                         // clear record accumulators
-                    memset (&(t309.chan[0].acc[0][0]), 0, NPC_FREQS * NPC_TONES * 2 * sizeof (U32));
+                    memset (&(t309.chan[0].acc[0][0]), 0, NPC_FREQS * sizeof (t309.chan[0]));
 
                                         // loop over tones within record
                     for (np=0; np<npol; np++)
