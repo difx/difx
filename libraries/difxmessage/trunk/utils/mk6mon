@@ -79,8 +79,13 @@ class Mk6state:
 				(self.mk6, self.msn1, self.disks1, self.msn2, self.disks2, self.msn3, self.disks3, self.msn4, self.disks4, \
                                  time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
 		elif self.ok and self.mk6type == 'activity':
-			str = '%-12s%8s %14s      %7.2f %14d %17s %12.6f' % \
-				(self.mk6, self.activeVSN, self.state, self.rate * 8.0, self.pos, self.name, self.date)
+			if self.state == 'GetDirectory':
+				position = '%d - %d%%' % (self.pos / 1000, self.pos % 1000)
+				str = '%-12s%8s %14s      %7.2f %14s %17s %12.6f' % \
+					(self.mk6, self.activeVSN, self.state, self.rate * 8.0, position, self.name, self.date)
+			else:
+				str = '%-12s%8s %14s      %7.2f %14d %17s %12.6f' % \
+					(self.mk6, self.activeVSN, self.state, self.rate * 8.0, self.pos, self.name, self.date)
 		else:
 			str = ''
 		return str
