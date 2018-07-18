@@ -16,12 +16,12 @@ bin_PROGRAMS = \
 	startfusemk5 \
 	stopfusemk5
 else
-bin_PROGRAMS = 
+bin_PROGRAMS = \
+	mk6dir
 endif
 
 dist_bin_SCRIPTS = \
 	checkdir \
-	mk6dir \
         mk6state
 
 fileto5c_SOURCES = \
@@ -65,6 +65,9 @@ startfusemk5_LDADD = \
 
 stopfusemk5_LDADD = \
 	${M5ACCESS_LIBS}
+
+mk6dir_LDADD = \
+	${DIFXMESSAGE_LIBS} ${VDIFIO_LIBS}
 
 mk5cat_SOURCES = \
 	watchdog.cpp \
@@ -172,3 +175,5 @@ startfusemk5_SOURCES = \
 stopfusemk5_SOURCES = \
 	stopfusemk5.cpp
 
+mk6dir_SOURCES = \
+	mk6dir.cpp

@@ -252,6 +252,10 @@ void Mk5Daemon_delVSIError(Mk5Daemon *D, const char *errorMessage);
 int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength);
 bool Mk5Daemon_addrMatches(const Mk5Daemon *D, const char *addrString);
 
+#ifdef HAS_MARK6META
+void Mk5Daemon_getMk6FileList(Mk5Daemon *D, int slot);
+#endif
+
 #ifdef HAVE_XLRAPI_H
 int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait);
 int unlockStreamstor(Mk5Daemon *D, const char *identifier);

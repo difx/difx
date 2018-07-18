@@ -8,6 +8,7 @@ Version 2.6.0
 * mk5cp support for provided filenames
 * mk5cp try up to 3 additional times on each read error, and print some more diagnostics
 * add mk6dir and mk6state commands
+* add activity message to mk6dir, add remote control of mk6dir to mk5daemon
 
 Version 2.5.0
 ~~~~~~~~~~~~~

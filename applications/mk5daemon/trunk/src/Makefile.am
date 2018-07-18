@@ -26,6 +26,7 @@ mk5daemon_SOURCES = \
 	vsis_commands.h \
 	vsis_commands.cpp \
 	getdir.cpp \
+	getfilelist.cpp \
 	datacopy.cpp \
 	fuse.cpp \
 	condition.cpp \

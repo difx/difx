@@ -493,7 +493,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		Mk5Daemon_reboot(D);
 	}
 	else if(strcasecmp(cmd, "Poweroff") == 0)
-	{
+	{	
 		Mk5Daemon_poweroff(D);
 	}
 	else if(strcasecmp(cmd, "stopmk5daemon") == 0)
@@ -719,6 +719,18 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		printf("[%s]\n", cmd);
 	}
+#ifdef HAS_MARK6META
+	else if(strncasecmp(cmd, "GetFileList_", 12) == 0 && strlen(cmd) == 13 && isdigit(cmd[12]))
+	{
+		int slot = cmd[12] - '0';
+		if(D->isMk6 && slot >= 1 && slot <= 4)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "will execute Command=%s on slot %d\n", cmd, slot);
+			Logger_logData(D->log, message);
+			Mk5Daemon_getMk6FileList(D, slot);
+		}
+	}
+#endif
 	else
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Command=%s not recognized!\n", cmd);
