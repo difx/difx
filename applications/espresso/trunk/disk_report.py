@@ -90,7 +90,8 @@ if not difx_machines:
     difx_machines = os.environ.get("CORR_HOSTS")
     if difx_machines:
         sys.stderr.write(
-                "Warning: use of the $CORR_HOSTS variable is deprecated. Please define $DIFX_MACHINES instead\n")
+                "Warning: use of the $CORR_HOSTS variable is deprecated."
+                " Please define $DIFX_MACHINES instead\n")
     else:
         raise Exception("$DIFX_MACHINES not set!")
 

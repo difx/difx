@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 #=======================================================================
 # Copyright (C) 2016 Cormac Reynolds
-#                                                                       
-# This program is free software; you can redistribute it and/or modify  
-# it under the terms of the GNU General Public License as published by  
-# the Free Software Foundation; either version 3 of the License, or     
-# (at your option) any later version.                                   
-#                                                                       
-# This program is distributed in the hope that it will be useful,       
-# but WITHOUT ANY WARRANTY; without even the implied warranty of        
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         
-# GNU General Public License for more details.                          
-#                                                                       
-# You should have received a copy of the GNU General Public License     
-# along with this program; if not, write to the                         
-# Free Software Foundation, Inc.,                                       
-# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #=======================================================================
 
 # simplistic script to add file timeranges to a mk5 filelist simply by
@@ -89,13 +89,13 @@ for filelistfilename in filelistnames:
             if scanname.lower() in line.lower():
                 if len(scanrange):
                     scanrange[-1] += ' ' + scans[iscan][1]
-                scanrange.append(scans[iscan][1] )
+                scanrange.append(scans[iscan][1])
 
     scanrange[-1] += ' ' + '2999y001d00h00m00s'
 
-
     # add the timeranges to the filelist.
-    filelistfile = fileinput.FileInput(filelistfilename, inplace=1, backup='.org')
+    filelistfile = fileinput.FileInput(
+            filelistfilename, inplace=1, backup='.org')
     for line in filelistfile:
         line = line.rstrip('\n')
         if (filelistfile.lineno() == filelength):

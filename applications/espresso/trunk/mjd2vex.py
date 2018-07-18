@@ -27,13 +27,15 @@ import espressolib
 # parse the options
 usage = """%prog [options] <date>
 converts <date> between DiFX date formats (mjd, vex, iso, vlba).
-Multiple dates can be given (separated by spaces)"""
+Multiple dates can be given (separated by spaces)
+"""
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "2.0")
 parser.add_option(
         "--format", "-f",
         type="str", dest="outformat", default=None,
-        help="Output format (vex, vlba, iso, mjd). Default is mjd unless first input format is mjd, then vex is default")
+        help="Output format (vex, vlba, iso, mjd). "
+        "Default is mjd unless first input format is mjd, then vex is default")
 (options, args) = parser.parse_args()
 
 if len(args) < 1:
@@ -41,12 +43,14 @@ if len(args) < 1:
     parser.error("At least 1 date required")
 
 # by default, convert to MJD except for MJD which converts to vex
-if not options.outformat:
+outformat = options.outformat
+if outformat is None:
     try:
         indate = float(args[0])
-        options.outformat = "vex"
+        outformat = "vex"
     except ValueError:
-        options.outformat = "mjd"
+        outformat = "mjd"
+outformat = outformat.lower()
 
 for indate in args:
-    print espressolib.convertdate(indate, options.outformat)
+    print espressolib.convertdate(indate, outformat)

@@ -30,9 +30,12 @@ from email.mime.text import MIMEText
 
 
 def get_corrhosts(hostsfilename):
-    """Parse the host list file. Return a dict where the key is the hostname.
+    """Parse the host list file.
+    
+    Return a dict where the key is the hostname.
     The values are a list. The first element of the list is the number of
-    threads. The second element is a list of data areas."""
+    threads. The second element is a list of data areas.
+    """
 
     hostsfile = open(hostsfilename, "r").readlines()
 
@@ -52,7 +55,8 @@ def get_corrhosts(hostsfilename):
                 raise Exception("First line must be version number!")
             continue
             if version != 1:
-                print "Warning: version number in $DIFX_MACHINES is not 1. This may not work as expected"
+                print "Warning: version number in $DIFX_MACHINES is not 1."
+                print " This may not work as expected"
 
         hostdata = line.split(",")
         hostname_list = hostdata[0].strip()
@@ -101,15 +105,18 @@ def get_corrhosts(hostsfilename):
 
 
 def expandstr(inputstr):
-    """expand a string that may contain a pattern into a list of all
-    strings that match the pattern"""
+    """expand patterns in a string
+    
+    Expand a string that may contain a pattern into a list of all
+    strings that match the pattern
+    """
 
     outputstrs = [inputstr]
     globpattern = "\[.*?\]"
     for patternmatch in re.finditer(globpattern, inputstr):
         newoutputstrs = []
         startrange = False
-        pattern = inputstr[patternmatch.start()+1 : patternmatch.end()-1]
+        pattern = inputstr[patternmatch.start()+1: patternmatch.end()-1]
         for outputstr in outputstrs:
             lastchar = str()
             for character in pattern:
@@ -131,8 +138,11 @@ def expandstr(inputstr):
 
 
 def expand0int(inputstr):
-    """expand a string that may contain a range of zero-padded integers into
-    a list of all strings that match the given integer range"""
+    """Expand a string with an integer range
+    
+    Expand a string that may contain a range of zero-padded integers into
+    a list of all strings that match the given integer range
+    """
 
     outputstrs = [inputstr]
     globpattern = "\[(.*?)\]"
@@ -182,13 +192,23 @@ convertdate instead"""
             outdate = gregdate.strftime(vexformat)
         except:
             raise Exception(
-                    "Accepts dates only in VEX format, e.g. 2010y154d12h45m52s, or MJD")
+                    "Accepts dates only in VEX format,"
+                    " e.g. 2010y154d12h45m52s, or MJD")
 
     return outdate
 
 
 def convertdate(indate, outformat="mjd"):
-    """converts between DiFX date formats (mjd, vex, iso, vlba)"""
+    """converts between DiFX date formats (mjd, vex, iso, vlba)
+    
+    Example formats:
+    mjd: 58119.0
+    vex: 2018y001d00h00m00s
+    vex (truncated to day): 2018y001d
+    iso: 2018-01-01T00:00:00
+    iso (date only): 2018-01-01
+    vlba: 2018JAN01-00:00:00
+    """
 
     # MJD is a float for input, and built in to the module for output.
     # ISO8601 is built in to the module, but the output format lacks the "T",
@@ -235,7 +255,7 @@ def convertdate(indate, outformat="mjd"):
             except ValueError:
                 pass
 
-    if not date:
+    if date is None:
         raise Exception(
                 "Accepts dates only in MJD, Vex, VLBA or ISO8601 formats")
 
@@ -256,6 +276,7 @@ def convertdate(indate, outformat="mjd"):
 
 
 def daysToDhms(fracdays):
+    """Convert time in decimal days to days, hours, mins, secs"""
     days = int(fracdays)
     remainder = fracdays - days
     hours = int(remainder * 24.)
@@ -264,6 +285,7 @@ def daysToDhms(fracdays):
     remainder = remainder*60 - minutes
     seconds = int(remainder*60)
     return [days, hours, minutes, seconds]
+
 
 #def email(user, passwd, message):
 #    """Simple gmail notification message"""
@@ -282,8 +304,11 @@ def daysToDhms(fracdays):
 
 
 class Email:
-    """Simple gmail notification message. Logs in to gmail server of the given
-account and sends an email to that same account"""
+    """Simple gmail notification message. 
+    
+    Logs in to gmail server of the given account and sends an email to that
+    same account
+    """
 
     def __init__(self, user, passwd):
         self.user = user
@@ -313,10 +338,13 @@ account and sends an email to that same account"""
 
 
 class Msg_Filter:
-    """ writes output to a file (or similar object) after filtering. First
-    argument is the desired output object, remainder are the strings to
-    filter on. Should itself look like a file object. Filter is
-    case-insensitive"""
+    """Filter an input string based on match with some other string(s)
+    
+    Writes output to a file (or similar object) after filtering. 
+    First argument is the desired output object, remainder are the strings to
+    filter on.
+    Should itself look like a file object. Filter is case-insensitive
+    """
 
     def __init__(self, file, *args):
         self._file = file

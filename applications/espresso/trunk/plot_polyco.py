@@ -15,10 +15,6 @@ usage = """%prog [options] <filename>
 plots the contents of polyco in <filename>"""
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
-#parser.add_option(
-#        "--xcolumn", "-x",
-#        type="str", dest="xcol", default="1",
-#        help="list of columns for X data")
 parser.add_option(
         "--outfile", "-o",
         type="str", dest="outfile", default=None,

@@ -62,17 +62,15 @@ atca_url_template = (
         "start={}&end={}&year={}&site=ATCA")
 #print >>sys.stderr, "Fetching ATCA status from", atca_url_template
 
-# get target date
 refant_pad = None
 for targetdate in args:
-    # convert to vex
+    # convert targetdate to vex
     targetdate = espressolib.convertdate(targetdate, "vex")
     # convert from vex to atca_summary format
     startdate, enddate, year = vexdate2atca(targetdate)
 
     # fetch atca summary data
     url = atca_url_template.format(startdate, enddate, year)
-
     atca_summary = requests.get(url).content.split("\n")
 
     # parse the summary page

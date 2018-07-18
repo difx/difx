@@ -68,7 +68,8 @@ parser.add_option(
 parser.add_option(
         "--speedup_poly", "-p",
         type=int, dest="poly_order", default=False,
-        help="Fit time data with poly of order p, before differentiating to find speedup factor")
+        help="Fit time data with poly of order p, before differentiating"
+        " to find speedup factor")
 parser.add_option(
         "--removegap", "-r",
         action="store_true", dest="removegap", default=False,
@@ -190,16 +191,14 @@ for filename in args:
     else:
         nskip = 1
         sys.stderr.write(
-                filename +
-                "Warning: averaging time less than correlator integration time, resetting AVG to: " +
-                str(int_time) + "\n")
+                filename + "Warning: reducing AVG to: " + str(int_time) + "\n")
 
     # make sure averaging time is not too long
     #nskip = int(min(nskip, len(this_ydata//2) ))
     minpoints = 3
     if nskip > len(this_ydata)//minpoints:
         nskip = max(len(this_ydata)//minpoints, 1)
-        print filename, ": averaging time too long, reducing to", int_time*nskip
+        print filename, ": reducing averaging time to", int_time*nskip
 
     # remove gaps in the observation if requested
     if options.removegap:
@@ -215,7 +214,8 @@ for filename in args:
     this_xdata = this_xdata - this_xdata[0] + offset_x
 
     if options.verbose:
-        print filename, "t_int:", int_time, "n_int:", len(this_ydata), "start:", this_ydata[0]
+        print filename, "t_int:", int_time, "n_int:", len(this_ydata), 
+        print " start:", this_ydata[0]
 
     # only keep a fraction of the points (this also effectively smooths)
     this_ydata = [this_ydata[i] for i in range(nskip, len(this_ydata), nskip)]

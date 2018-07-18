@@ -24,7 +24,7 @@
 # October 2017: change to use requests module. Optional vex output.
 # EOP data from: "https://vlbi.gsfc.nasa.gov/apriori/usno_finals.erp"
 # Leap second data come from: "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat"
-# 
+#
 
 import optparse
 import re
@@ -72,9 +72,9 @@ if len(args) != 1:
     parser.error("Give a date in MJD or VEX format")
 
 if options.vex:
-  comment = "*"
+    comment = "*"
 else:
-  comment = "#"
+    comment = "#"
 
 # get target MJD
 targetMJD = args[0]
@@ -94,15 +94,16 @@ if not options.local:
             #"https://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat")
     eop_url = "https://vlbi.gsfc.nasa.gov/apriori/usno_finals.erp"
     leapsec_url = "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat"
-    
+
     print >>sys.stderr, "Fetching EOP data from ", eop_url
     eop_page = requests.get(eop_url, verify=options.verify).content.split("\n")
-    
+
     print >>sys.stderr, "Fetching leap second data from", leapsec_url
     #leapsec_page = urllib.FancyURLopener().open(leapsec_url).readlines()
     leapsec_page = requests.get(
             leapsec_url, verify=options.verify).content.split("\n")
-    print comment, "EOPs downloaded at", time.strftime("%Y-%m-%d %H:%M:%S (%z)")
+    print comment, "EOPs downloaded at", time.strftime(
+            "%Y-%m-%d %H:%M:%S (%z)")
 
 else:
     # or read from local files

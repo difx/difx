@@ -30,9 +30,11 @@ import os
 import espressolib
 import numpy
 
+
 def parseparam(param, line):
     value = re.search(param + r"\s*=\s*(\S+)", line).group(1)
     return value
+
 
 def updateclock(
         clockepoch, clockoffset, clockrate, newclockepoch, offset_adjust,
@@ -55,9 +57,9 @@ def updateclock(
 usage = """%prog [options] <expname.v2d>
 adjusts the clocks in the v2d format file <expname.v2d>
 E.g.:
-updateclock.py -o "AT=0.214,HO=0.151" -r "AT=2.1,HO=0.5" v252bl.v2d
+updateclock.py -o "AT=0.214,HO=0.151" -r "AT=2.1,HO=0.5" -e 2018y039d04h00m00s -f 8409 v252bl.v2d
 *or* equivalently:
-updateclock.py -s "AT,HO" -o "0.214,0.151" -r "2.1,0.5" v252bl.v2d
+updateclock.py -s "AT,HO" -o "0.214,0.151" -r "2.1,0.5" -e 2018y039d04h00m00s -f 8409 v252bl.v2d
 """
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
@@ -133,7 +135,7 @@ if options.offset_adjust:
             station, offset = value.split("=")
         if station not in stations:
             stations[station] = dict()
-        stations[station]["offset_adjust"]= float(offset)
+        stations[station]["offset_adjust"] = float(offset)
         stations[station]["rate_adjust"] = 0
 
 if options.rate_adjust:
@@ -164,7 +166,7 @@ if options.addmean:
     for station in stations:
         stations[station]["offset_adjust"] -= offset_mean
         stations[station]["rate_adjust"] -= rate_mean
-        
+
 if options.frequency:
     frequency = options.frequency
 else:

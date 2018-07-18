@@ -179,7 +179,7 @@ def check_file(infile, m5bopts):
             # get the start/stop time with m5bsum/vsum
             command = " ".join([summary_program, "-s", infile])
             error = str()
-            m5bsum_out, error = subprocess.Popen( 
+            m5bsum_out, error = subprocess.Popen(
                     command, shell=True, stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE).communicate()
             starttime_m5, endtime_m5 = m5bsum_out.split()[1:3]
@@ -206,7 +206,7 @@ def check_file(infile, m5bopts):
                 lastsample = 1000000
                 filesize = os.path.getsize(infile)
                 command = " ".join([m5time, infile, m5format,
-                    str(filesize-lastsample)])
+                        str(filesize-lastsample)])
                 endtime_m5, error = subprocess.Popen(
                         command, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE).communicate()
@@ -216,13 +216,12 @@ def check_file(infile, m5bopts):
                 endtime = m5_to_vextime(endtime_m5)
 
             except:
-                # couldn't decode time. 
+                # couldn't decode time.
                 sys.stderr.write("cannot decode time for " + infile + "\n\n")
                 sys.stderr.write(error)
 
                 starttime = None
                 endtime = None
-
 
         if not starttime:
             # we know nothing about this format, abandon this file
@@ -270,7 +269,7 @@ def fix_filelist(outfilelist):
     # D/STREAM is not empty. So comment out its timerange. Not desired for
     # DiFX-2.5 and later
     #for i in range(len(outfilelist)):
-    #    if "#" not in outfilelist[i]: 
+    #    if "#" not in outfilelist[i]:
     #        outfilelist[i] = re.sub(
     #                "(\s+)(\w)", r"\1#\2", outfilelist[i], count=1)
     #        break
@@ -315,7 +314,7 @@ if __name__ == "__main__":
         filelist += open(filelistname).readlines()
         filelist = [line.rstrip() for line in filelist]
 
-    # check each file, then print it with its time range. 
+    # check each file, then print it with its time range.
 
     for infile in filelist:
         outfile = check_file(infile, m5bopts)

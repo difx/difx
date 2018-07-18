@@ -96,6 +96,7 @@ def copy_jobcontrol(expname, jobname, indir, outdir, extension):
     else:
         sys.stderr.write(infile + " not found!")
 
+
 def fix_paths(inputfilename, calcfilename, indir, outdir):
     copy_inputfilename = outdir + os.sep + inputfilename
     copy_calcfilename = outdir + os.sep + calcfilename
@@ -187,7 +188,7 @@ def parse_binconfig(binconfigfilename):
 
 
 def run_lbafilecheck(
-        datafilename, stations, computehead, no_rmaps_seq, interactive, 
+        datafilename, stations, computehead, no_rmaps_seq, interactive,
         ntasks_per_node):
     # run lbafilecheck creating machines and .threads files for this job
     stations = stations.strip()
@@ -198,7 +199,7 @@ def run_lbafilecheck(
     if computehead:
         options = " ".join([options, "-H"])
     if no_rmaps_seq:
-        options = " ".join([options,"-M"])
+        options = " ".join([options, "-M"])
     if not interactive:
         options = " ".join([options, "-n"])
 
@@ -276,6 +277,7 @@ def run_interactive(corrjoblist, outdir):
 
     return bad_jobs
 
+
 def filter_log(infile, jobname):
     filtered_file = []
     for line in open(infile):
@@ -327,7 +329,7 @@ def get_jobids(jobnames, batchenv):
                         shell=True).communicate()[0]
                 jobid = jobid.strip()
             jobids.append(jobid)
-    
+
     return jobids
 
 
@@ -440,6 +442,7 @@ def set_difx_message_port(start_port=50201):
 
     return difx_message_port
 
+
 def write_difxlog(log_in, outdir, jobname):
     logfilename = outdir + jobname + ".difxlog"
     logfiles.append(jobname + ".difxlog")
@@ -456,6 +459,7 @@ def write_difxlog(log_in, outdir, jobname):
 
     return job_ok
 
+
 def print_queue(queue_command, jobids):
     print queue_command
     running_jobs = []
@@ -468,7 +472,7 @@ def print_queue(queue_command, jobids):
             print jobname,
         else:
             running_jobs.append(jobname)
-    print "\n"
+    print
     return running_jobs
 
 
@@ -501,7 +505,7 @@ parser.add_option(
 parser.add_option(
         "--clock", "-c",
         dest="clockjob", action="store_true", default=False,
-        help="Store output in a clock subdirectory. Also passes -f to vex2difx")
+        help="Store output in a clock subdirectory. Also pass -f to vex2difx")
 parser.add_option(
         "--test", "-t", dest="testjob", action="store_true", default=False,
         help="Store output in a test subdirectory. Also passes -f to vex2difx")
@@ -525,7 +529,7 @@ parser.add_option(
 parser.add_option(
         "--alljobs", "-a",
         type="str", dest="expt_all", default=None,
-        help="Correlate all jobs produced by vex2difx for the experiment" 
+        help="Correlate all jobs produced by vex2difx for the experiment"
         " specified (no other arguments required)")
 parser.add_option(
         "--nocomputehead", "-H",
@@ -561,7 +565,7 @@ parser.add_option(
 parser.add_option(
         "--ntasks_per_node",
         type="int", dest="ntasks_per_node", default=None,
-        help="Number of MPI processes per node. This is for testing purposes" 
+        help="Number of MPI processes per node. This is for testing purposes"
         " on batch systems only!")
 
 (options, args) = parser.parse_args()

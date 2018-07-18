@@ -133,9 +133,9 @@ def check_machines(machines):
 
     if machine_error and options.no_rmaps_seq:
         print "\n" * 2, "!" * 20
-        print "Warning:", machine_error, 
+        print "Warning:", machine_error,
         print " appear(s) multiple times in the machines.list file, but not",
-        print " in consecutive order. This machine file will not work unless", 
+        print " in consecutive order. This machine file will not work unless",
         print " you have openmpi v1.4 or greater!"
 
 
@@ -173,7 +173,9 @@ def write_run(expname, np, nthreads, options):
     else:
         # in case no prototype run file, this basic run file will work for
         # many sites
-        print>>RUNFILE, "mpirun -np ", np, options, "-machinefile {JOBNAME}.machines $DIFXROOT/bin/mpifxcorr {JOBNAME}.input"
+        print>>RUNFILE, "mpirun -np ", np, options,
+        print>>RUNFILE, " -machinefile {JOBNAME}.machines",
+        print>>RUNFILE, " $DIFXROOT/bin/mpifxcorr {JOBNAME}.input"
         RUNFILE.close()
     try:
         os.chmod(runfilename, 0775)
@@ -394,7 +396,7 @@ for host in sorted(hosts.keys()):
             if (options.nfs_batch and options.allcompute):
                 # if in batch environment, then must have same number of
                 # processes on every node, so add compute processes as
-                # required. 
+                # required.
                 ncompute_process = options.ntasks_per_node - 1
                 if(host in [headmachine] + datamachines):
                     ncompute_process -= 1
@@ -412,7 +414,9 @@ if options.maxcompute:
 
 if not computemachines:
     raise Exception(
-            "You have no compute nodes left after the master node and datastream nodes have been allocated! Check your hosts in $CORR_HOSTS.")
+            "You have no compute nodes left after the master node"
+            " and datastream nodes have been allocated!"
+            " Check your hosts in $CORR_HOSTS.")
 
 machines = [headmachine] + datamachines + computemachines
 check_machines(machines[:])
