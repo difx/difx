@@ -50,9 +50,10 @@ def taritup(tardir, tarfile, infile, gzip=False):
     subprocess.check_call(
             command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
 
+
 usage = """%prog <path> <destination>
 will transfer <path> and all its subdirectories to <destination> on
-data.pawsey.org.au using ashell.py. Most files are tarred before transfer, but
+data.pawsey.org.au using pshell. Most files are tarred before transfer, but
 special files and large files are transferred unmodified. Files are first
 tarred/copied to $ARCHTMP before transfer.
 
@@ -88,6 +89,8 @@ parser.add_option(
 if len(args) < 2:
     parser.print_help()
     parser.error("Give source and destination directories!")
+localdir = args[0]
+pawseydir = args[1]
 
 # get the list of subdirectories. Note that we don't want to tar large files,
 # or files that archive users want to access directly.
@@ -95,7 +98,7 @@ if len(args) < 2:
 # to transfer unmodified (both tarred files and large files will be
 # transferred).
 
-expname = os.path.normpath(args[0]).split("/")[-1]
+expname = os.path.normpath(localdir).split("/")[-1]
 archdir = os.environ.get("ARCHTMP") + os.sep + expname + os.sep
 if not archdir:
     archdir = "/tmp/"
@@ -103,7 +106,7 @@ if not archdir:
             "$ARCHTMP not set - using /tmp instead. Setting $ARCHTMP to a"
             " directory on the same filesystem as the data is preferable")
 mark4file = str()
-os.chdir(args[0])
+os.chdir(localdir)
 tarlists = dict()
 transfer = []
 
@@ -191,26 +194,31 @@ if os.path.exists("clocks"):
 if mark4file:
     taritup(archdir, expname.upper()+".MARK4.tar.gz", mark4file, gzip=True)
 
-# now archive the lot to data.pawsey.org.au
-# First try without a login, assuming we have delegation set up. If that fails,
-# try again with a login. Keep trying till we get a ^C
-login = ""
-while True:
-    try:
-        command = " ".join(
-                ["ashell.py", '"', login, "mkfolder", args[1], "+ cf", args[1],
-                    "+ put", archdir, '"'])
-        print command
-        subprocess.check_call(
-                command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
-        break
-    except KeyboardInterrupt:
-        raise Exception("Forced quit")
-    except:
-        login = "login +"
-        print "trying again"
+# now transfer the lot to data.pawsey.org.au
+try:
+    # create the parent directory if required
+    command = " ".join(["pshell", '"', "mkdir", pawseydir, '"'])
+    print command
+    subprocess.check_output(command, shell=True)
+except:
+    # pshell throws an error if mkdir already exists
+    print "Parent directory exists or cannot be created: {}".format(pawseydir)
+else:
+    print "Created: {}".format(pawseydir)
 
-if not options.keeparch:
-    shutil.rmtree(archdir)
-
-print "All done!"
+try:
+    # put the contents of archdir
+    command = " ".join(["pshell", '"', "cd", pawseydir, "&& put", archdir, '"'])
+    print command
+    subprocess.check_call(
+            command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+except KeyboardInterrupt:
+    raise Exception("Forced quit")
+except:
+    #login = "login +"
+    print "pshell transfer failed - check if your delegation expired"
+    print "Contents of {} have not been deleted".format(archdir)
+else:
+    if not options.keeparch:
+        shutil.rmtree(archdir)
+    print "All done!"
