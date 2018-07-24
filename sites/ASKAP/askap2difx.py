@@ -192,7 +192,7 @@ def writekeyfile(keyout, obs, twoletterannames, craftcatdir):
     keyout.write("minpause = 5\n\n")
     keyout.write("source = '%s'  dur = %d  gap = 0   /\n\n" % (obs["srcname"], int(0.99 + 86400.0*(float(obs["stopmjd"])-float(obs["startmjd"])))))
 
-def writev2dfile(v2dout, obs, twoletterannames, delays, datafilelist):
+def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist):
     v2dout.write("#  Template v2d file for DiFX correlation of craftfrb\n\n")
     v2dout.write("vex = craftfrb.vex\n")
     v2dout.write("startSeries = 0\n\n")
@@ -204,11 +204,10 @@ def writev2dfile(v2dout, obs, twoletterannames, delays, datafilelist):
         if not a == twoletterannames[-1]:
             v2dout.write(", ")
     v2dout.write("\n")
-    for d, delay in zip(datafilelist, delays):
+    for ant, d, delay in zip(antennanames, datafilelist, delays):
         a = d.split('=')[0]
-        #v2dout.write("ANTENNA %s { source = FAKE format=CODIF clockOffset=0 clockRate=0 clockEpoch=57000.0 }\n" % a)
-        #FIXME: Need to set the clockOffset here appropriately (where does this info come from?)
         v2dout.write("ANTENNA %s\n{\n" % a)
+        v2dout.write("  name = %s\n" % ant)
         v2dout.write("  file = %s\n" % d.split('=')[1])
         v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
         v2dout.write("  clockOffset=%.6f\n" % (-float(delay[:-2])/1000.0))
@@ -218,13 +217,6 @@ def writev2dfile(v2dout, obs, twoletterannames, delays, datafilelist):
         v2dout.write("  toneSelection=none\n")
         v2dout.write("  sampling=COMPLEX_DSB\n}\n")
 
-    # for a in twoletterannames:
-    #     v2dout.write(a)
-    #     if not a == twoletterannames[-1]:
-    #         v2dout.write(", ")
-    # v2dout.write("\n")
-    # for a in twoletterannames:
-    #     v2dout.write("ANTENNA %s { source = FAKE format=CODIF clockOffset=0 clockRate=0 clockEpoch=57000.0 }\n" % a)
     v2dout.write("\n# The nChan should never be less than 128.\n")
     v2dout.write("# For numbers of channels < 128, set specAvg so nChan/specAvg\n")
     v2dout.write("# gives the desired number of channels\n")
@@ -360,7 +352,8 @@ writekeyfile(keyout, obs, twoletterannames, craftcatalogdir)
 keyout.close()
 
 ## Run it through sched
-os.system("sched < craftfrb.key")
+ret = os.system("sched < craftfrb.key")
+if ret!=0: exit(1)
 
 ## Run getEOP and save the results
 # FIXME: remove this once you figure out why getEOP is running so slow
@@ -372,25 +365,29 @@ eoplines = open("eopjunk.txt").readlines()
 
 ## Write the v2d file
 v2dout = open("craftfrb.v2d", "w")
-writev2dfile(v2dout, obs, twoletterannames, delays, datafilelist)
+writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist)
 for line in eoplines:
    if "xPole" in line or "downloaded" in line:
        v2dout.write(line)
 v2dout.close()
 
 ## Run updateFreqs 
-os.system("updatefreqs.py craftfrb.vex " + args.chan)
+ret = os.system("updatefreqs.py craftfrb.vex " + args.chan)
+if ret!=0: exit(1)
 
 ## Update the vex file to say "CODIF" rather than "VDIF"
-os.system("sed -i -e 's/VDIF5032/CODIFD{}/g' craftfrb.vex".format(framesize))
+ret = os.system("sed -i -e 's/VDIF5032/CODIFD{}/g' craftfrb.vex".format(framesize))
+if ret!=0: exit(1)
 
 ## Run vex2difx
-os.system("vex2difx craftfrb.v2d")
+ret = os.system("vex2difx craftfrb.v2d")
+if ret!=0: exit(1)
 
 ## Run calcif2
-os.system("\\rm -f craftfrb.im")
-os.system("difxcalc craftfrb.calc")
-
+ret = os.system("\\rm -f craftfrb.im")
+if ret!=0: exit(1)
+ret = os.system("difxcalc craftfrb.calc")
+if ret!=0: exit(1)
 
 ## Create the machines and threads file - currently runs on localhost with just one core.
 machinesout = open("machines","w")
