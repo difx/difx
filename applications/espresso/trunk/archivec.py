@@ -109,6 +109,7 @@ mark4file = str()
 os.chdir(localdir)
 tarlists = dict()
 transfer = []
+publish = []
 
 for filename in os.listdir(os.curdir):
 
@@ -163,6 +164,7 @@ for filename in os.listdir(os.curdir):
     if (os.path.exists(fileWithPath) and notar):
         # transfer this large file without tarring
         transfer.append(re.escape(fileWithPath))
+        publish.append(filename)
     else:
         # add to list of files to be tarred
         tarlists[targroup] += " " + re.escape(filename)
@@ -208,17 +210,34 @@ else:
 
 try:
     # put the contents of archdir
-    command = " ".join(["pshell", '"', "cd", pawseydir, "&& put", archdir, '"'])
+    command = " ".join(
+            ["pshell", '"', "cd", pawseydir, "&& put", archdir, '"'])
     print command
     subprocess.check_call(
             command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 except KeyboardInterrupt:
     raise Exception("Forced quit")
 except:
-    #login = "login +"
     print "pshell transfer failed - check if your delegation expired"
     print "Contents of {} have not been deleted".format(archdir)
 else:
+    # publish the public files
+    try:
+        for srcfile in publish:
+            # unpublish first to work round mediaflux versioning bug for
+            # updated files
+            command = " ".join(
+                    ["pshell", '"', "cd", pawseydir + os.sep + expname,
+                    "&& unpublish", srcfile, '"'])
+            subprocess.check_call(
+                    command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+            command = " ".join(
+                    ["pshell", '"', "cd", pawseydir + os.sep + expname,
+                    "&& publish", srcfile, '"'])
+            subprocess.check_call(
+                    command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+    except:
+        print "Files not made public - please use web portal"
     if not options.keeparch:
         shutil.rmtree(archdir)
     print "All done!"
