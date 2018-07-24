@@ -69,11 +69,12 @@ output.close()
 # Run the converter for each vcraft file
 antlist = ""
 for f in vcraftfiles:
-    antname = ""
-    for line in open(f).readlines():
-        if line.split()[0] == "ANT":
-             antname = line.split()[1].lower()
-             break
+    antname = f.split('/')[-1].split('_')[0]
+    print f, ' --> ', antname
+    #for line in open(f).readlines():
+    #    if line.split()[0] == "ANT":
+    #         antname = line.split()[1].lower()
+    #         break
     if antname == "":
         print "Didn't find the antenna name in the header!"
         sys.exit()
