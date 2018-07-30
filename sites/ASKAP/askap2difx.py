@@ -358,7 +358,8 @@ if ret!=0: exit(1)
 ## Run getEOP and save the results
 # FIXME: remove this once you figure out why getEOP is running so slow
 if not os.path.exists("eopjunk.txt"):
-    os.system("getEOP.py " + str(int(float(obs["startmjd"]))) + " > eopjunk.txt")
+    ret = os.system("getEOP.py " + str(int(float(obs["startmjd"]))) + " > eopjunk.txt")
+    if (ret!=0): sys.exit(ret)
 else:
     print "Using existing EOP data - remove eopjunk.txt if you want to get new data!"
 eoplines = open("eopjunk.txt").readlines()
