@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os,sys,glob,math
+import os, sys, glob, math, argparse
 
 # Convenience function
 def posradians2string(rarad, decrad):
@@ -19,12 +19,14 @@ def posradians2string(rarad, decrad):
     decstring = decformat % (ddd, dmm, dss)
     return rastring, decstring
 
-# Check instantiation
-if not len(sys.argv) == 2:
-    print "Usage: %s <glob pattern for vcraft files>" % sys.argv[0]
-    sys.exit()
+## Argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument("-r", "--ra", help="Force RA value")
+parser.add_argument("-d", "--dec", help="Force Dec value")
+parser.add_argument('fileglob', help="glob pattern for vcraft files")
+args = parser.parse_args()
 
-vcraftglobpattern = sys.argv[1]
+vcraftglobpattern = args.fileglob
 
 vcraftfiles = glob.glob(vcraftglobpattern)
 if len(vcraftfiles) == 0:
@@ -32,29 +34,46 @@ if len(vcraftfiles) == 0:
     sys.exit()
 
 freqs = []
-beamra = -99
-beamdec = -99
-startmjd = -99
-for line in open(vcraftfiles[0]).readlines():
-    if line.split()[0] == "FREQS":
-        freqs = line.split()[1].split(',')
-    if line.split()[0] == "BEAM_RA":
-        beamra = float(line.split()[1])
-    if line.split()[0] == "BEAM_DEC":
-        beamdec = float(line.split()[1])
-    if line.split()[0] == "START_WRITE_MJD":
-        startmjd = float(line.split()[1]) + 37./86400 # Right for the current amount of leap seconds!
-        break
+beamra = None
+beamdec = None
+startmjd = None
+first = True
+for file in vcraftfiles:
+    for line in open(file).readlines():
+        if (first):
+            if line.split()[0] == "FREQS":
+                freqs = line.split()[1].split(',')
+            if line.split()[0] == "BEAM_RA":
+                beamra = float(line.split()[1])
+            if line.split()[0] == "BEAM_DEC":
+                beamdec = float(line.split()[1])
+        if line.split()[0] == "START_WRITE_MJD":
+            thisMJD = float(line.split()[1])
+            
+            if startmjd==None:
+                startmjd = thisMJD
+            elif thisMJD<startmjd:
+                startmjd = thisMJD
+                print "**startMJD now ", startmjd
+            break
 
-if beamra < -90 or beamdec < -90 or startmjd < -90:
+if beamra==None or beamdec==None or startmjd==None:
     print "Didn't find all info in", vcraftheader
     sys.exit()
 
+startmjd = math.floor(startmjd*60*60*24)/(60*60*24) # Round down to nearest second
+
 # Write the obs.txt file
 rastring, decstring = posradians2string(beamra*math.pi/180, beamdec*math.pi/180)
+
+if args.ra!=None:
+    rastring = args.ra
+if args.dec!=None:
+    decstring = args.dec
+
 output = open("obs.txt", "w")
 output.write("startmjd    = %.9f\n" % startmjd)
-output.write("stopmjd     = %.9f\n" % (startmjd + 10./86400))
+output.write("stopmjd     = %.9f\n" % (startmjd + 20./86400))
 output.write("srcname     = CRAFTSRC\n")
 output.write("srcra       = %s\n" % rastring)
 output.write("srcdec      = %s\n" % decstring)
@@ -68,19 +87,18 @@ output.close()
 
 # Run the converter for each vcraft file
 antlist = ""
+codifFiles = []
 for f in vcraftfiles:
     antname = f.split('/')[-1].split('_')[0]
-    print f, ' --> ', antname
-    #for line in open(f).readlines():
-    #    if line.split()[0] == "ANT":
-    #         antname = line.split()[1].lower()
-    #         break
     if antname == "":
         print "Didn't find the antenna name in the header!"
         sys.exit()
     antlist += antname + ","
-    print "CRAFTConverter %s %s.codif" % (f, antname)
-    os.system("CRAFTConverter %s %s.codif" % (f, antname))
+    codifName = "%s.codif" % (antname)
+    print "CRAFTConverter %s %s" % (f, codifName)
+    ret = os.system("CRAFTConverter %s %s" % (f, codifName))
+    if (ret!=0): sys.exit(ret)
+    codifFiles.append(codifName)
 
 # Write a machines file and a run.sh file
 output = open("machines","w")
@@ -102,4 +120,5 @@ output.close()
 
 # Print out the askap2difx command line to run (ultimately, could just run it ourselves)
 runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-2]
+print "\nNow run:"
 print runline
