@@ -57,7 +57,7 @@ from functools import partial
 
 # minimum database schema version required by comedia
 minSchemaMajor = 1
-minSchemaMinor = 0
+minSchemaMinor = 9
 
 class GenericWindow(object):
     def __init__(self, parent=None,rootWidget=None):
@@ -65,6 +65,13 @@ class GenericWindow(object):
         self.rootWidget = rootWidget
         self.parent = parent
         self.config = None
+    def busy(self):
+    	self.rootWidget.config(cursor="watch")
+	self.rootWidget.update()
+
+    def notbusy(self):
+   	self.rootWidget.config(cursor="")
+	self.rootWidget.update()
         
 class MainWindow(GenericWindow):
     
@@ -97,6 +104,10 @@ class MainWindow(GenericWindow):
         self.filterUnscanned = IntVar()
         self.filterExpVar = StringVar()
         self.filterModuleTypeVar = StringVar()
+	self.filterAttentionVar = IntVar()
+	self.attentionVar = IntVar()
+	self.attentionVar.set(0)
+	
         
         self.expFilterItems = []
         self.labelSizeX = 320
@@ -152,9 +163,10 @@ class MainWindow(GenericWindow):
         self.btnQuit = Button(self.rootWidget, text="Exit", command=self.rootWidget.destroy)
         
         # widgets on frmFilter       
-        self.chkRelease = Checkbutton(self.frmFilter, text = "show releasable modules", variable = self.filterReleaseList, command=self.updateSlotListbox)
-        self.chkDirLess = Checkbutton(self.frmFilter, text = "show modules without .dir file", variable = self.filterDirLess, command=self.updateSlotListbox)
-        self.chkUnscanned = Checkbutton(self.frmFilter, text = "show modules with unscanned .dir files", variable = self.filterUnscanned, command=self.updateSlotListbox)
+        self.chkRelease = Checkbutton(self.frmFilter, text = "releasable", variable = self.filterReleaseList, command=self.updateSlotListbox)
+        self.chkDirLess = Checkbutton(self.frmFilter, text = "missing .dir file", variable = self.filterDirLess, command=self.updateSlotListbox)
+        self.chkFilterUnscanned = Checkbutton(self.frmFilter, text = "unscanned .dir files", variable = self.filterUnscanned, command=self.updateSlotListbox)
+        self.chkFilterAttention = Checkbutton(self.frmFilter, text = "attention needed", variable = self.filterAttentionVar, command=self.updateSlotListbox)
         self.cboModuleType = OptionMenu(self.frmFilter, self.filterModuleTypeVar, *self.moduleTypes, command=self.applyModuleFilter)
         
         # widgets on frmMain
@@ -203,6 +215,7 @@ class MainWindow(GenericWindow):
         self.cboExperiments =  Listbox(self.frmDetail, height=3, yscrollcommand=scrollCboExperiments.set, selectmode=MULTIPLE, state=DISABLED)
         scrollCboExperiments.config(command=self.cboExperiments.yview)
         self.btnEditExp = Button (self.frmDetail, text="Change experiments", command=self.showEditExperimentsWindow,state=DISABLED)
+	self.chkAttention = Checkbutton(self.frmDetail, text = "needs attention", variable=self.attentionVar, command= lambda : self.editModuleDetailsEvent(None))
         self.txtComment = Text(self.frmDetail, height=3, width=25)
         
         # widgets on frmAction
@@ -226,7 +239,8 @@ class MainWindow(GenericWindow):
         Label(self.frmFilter, text = "state: ").grid(row=1, column=0, sticky=W)
         self.chkRelease.grid(row=1, column=1, sticky=W)
         self.chkDirLess.grid(row=2, column=1, sticky=W)
-        self.chkUnscanned.grid(row=3, column=1, sticky=W)
+        self.chkFilterUnscanned.grid(row=3, column=1, sticky=W)
+        self.chkFilterAttention.grid(row=1, column=2, sticky=W)
         Label(self.frmFilter, text = "module type: ").grid(row=10, column=0, sticky=W)
         self.cboModuleType.grid(row=10,column=1, sticky=W)
         
@@ -253,6 +267,7 @@ class MainWindow(GenericWindow):
         scrollCboExperiments.grid(row=6,column=2, rowspan=2, sticky=W+N+S)
         self.btnEditExp.grid(row=6, column=3, sticky=E)
         self.txtComment.grid(row=8, column=1, columnspan=3, sticky=E+W)
+        self.chkAttention.grid(row=10, column=1, columnspan=3, sticky=W)
         self.btnEditModule.grid(row=20, column=0, sticky=E+W)
         self.btnDeleteModule.grid(row=20, column=1, sticky=E+W)
         self.btnRescan.grid(row=20,column=2, sticky=E+W)
@@ -269,6 +284,7 @@ class MainWindow(GenericWindow):
         self.lblDatarateContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
         self.lblReceivedContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
         self.txtComment.bind("<KeyRelease>", self.editModuleDetailsEvent)
+#	self.chkAttention.bind("<ButtonRelease-1>)", self.editModuleDetailsEvent)
     
     def saveModuleList(self):
         """Saves the current selection in a file"""
@@ -372,6 +388,7 @@ class MainWindow(GenericWindow):
             slot.module.capacity = self.lblCapacityContent.get()
             slot.module.datarate = self.lblDatarateContent.get()
             slot.module.comment = self.txtComment.get(1.0,END)
+	    slot.module.needsAttention = self.attentionVar.get()
             
             # remove all experiment assigments of this module
             slot.module.experiments = []
@@ -405,6 +422,7 @@ class MainWindow(GenericWindow):
         
     def updateSlotListbox(self):
         
+	self.busy()
         session = dbConn.session()
     
         # deselect active slot
@@ -456,6 +474,11 @@ class MainWindow(GenericWindow):
             if (self.filterUnscanned.get()):
                 if (slot.module.numScans != None):
                     continue
+
+	    # check if "attention" checkbox is activated
+	    if (self.filterAttentionVar.get()):
+                if (not slot.module.needsAttention):
+                    continue
             
             expList = []
             for exp in slot.module.experiments:
@@ -469,6 +492,8 @@ class MainWindow(GenericWindow):
         self.updateSlotDetails()
         
         session.close()
+
+	self.notbusy()
    
     
     def _saveModuleDetails(self):
@@ -482,6 +507,8 @@ class MainWindow(GenericWindow):
         
         self.lastExperiments = self.cboExperiments.get(0,END)
         self.lastComment = self.txtComment.get(1.0, END)
+	self.lastAttentionVar = IntVar()
+	self.lastAttentionVar.set(self.attentionVar.get())
       
          
     def _updateExperimentListboxes(self):
@@ -506,6 +533,7 @@ class MainWindow(GenericWindow):
         self.txtComment["state"] = NORMAL
         self.btnChangeSlot["state"] = NORMAL
 	self.btnEditExp["state"] = DISABLED
+	self.chkAttention["state"] = NORMAL
         
         self.txtLocationContent.delete(0,END)
         self.lblVSNContent.delete(0,END)
@@ -544,6 +572,10 @@ class MainWindow(GenericWindow):
             self.lblDatarateContent.insert(0, slot.module.datarate)
             self.lblReceivedContent.insert(0, slot.module.received)
             self.txtComment.insert(1.0, unicode(none2String(slot.module.comment),errors='ignore'))
+	    if slot.module.needsAttention == 1:
+	    	self.attentionVar.set(1)
+	    else:
+		self.attentionVar.set(0)
             
             # update experiment listbox
             for experiment in slot.module.experiments:
@@ -577,6 +609,7 @@ class MainWindow(GenericWindow):
         self.lblReceivedContent.delete(0,END)
         self.cboExperiments.delete(0,END)
         self.txtComment.delete(1.0,END)
+	self.attentionVar.set(0)
         
         # disable fields/buttons in the Details form
         self.txtLocationContent["state"] = DISABLED
@@ -593,6 +626,7 @@ class MainWindow(GenericWindow):
         self.btnPrintLibraryLabel["state"] = DISABLED
         self.btnDeleteModule["state"] = DISABLED
         self.btnChangeSlot["state"] = DISABLED
+	self.chkAttention["state"] = DISABLED
         
         # reset colors
         self.txtLocationContent["bg"] = self.defaultBgColor
@@ -843,6 +877,13 @@ class MainWindow(GenericWindow):
             self.moduleEdit += 1
         else:
             self.lblDatarateContent["background"] = color
+
+	if (self.lastAttentionVar.get() != self.attentionVar.get()):
+	    self.chkAttention["background"] = editColor
+	    self.chkAttention["activebackground"] = editColor
+            self.moduleEdit += 1
+	else:
+	    self.chkAttention["background"] = color
           
             
         if (self.lastReceivedContent != self.lblReceivedContent.get()):
