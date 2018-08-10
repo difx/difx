@@ -192,7 +192,8 @@ def reportOnLog(fn, opts):
 	ratings = { 	'good':opts.colors.GREEN+'good'+opts.colors.ENDC,
 			'poor':opts.colors.ORANGE+'poor'+opts.colors.ENDC,
 			'bad':opts.colors.RED+'!bad'+opts.colors.ENDC,
-			1:'good', 2:'poor', 3:'bad' }
+			1:'good', 2:'poor', 3:'bad', 0:'error',
+                        'error':opts.colors.RED+'!err'+opts.colors.ENDC}
 	nprinted, ngood, npoor, nbad, nerror = 0, 0, 0, 0, 0
 	job = fn.split('.')[0]
 	src, scan = getScanInfo(job)
@@ -252,6 +253,7 @@ def reportOnLog(fn, opts):
 
 	if opts.doShort:
 		overall = int( (ngood + 2.0*npoor + 3.0*nbad - 0.5) / 3.0 )
+                if overall < 1 or overall > 3: overall = 0
 		rating_name = ratings[overall]
                 if nerror == 0:
                     errmsg = ''
