@@ -1,15 +1,14 @@
 #!/usr/bin/python
 # (C) 2018 Jan Wagner
 '''
-summarizePolconvertLogs.py [--help|-h] [--color|-c] 
-                           [--pols|-p] [--short|-s]
-                           [--vex|-v <vexfile>]
+summarizePolconvertLogs.py [options]
 
 Inspects the output of EHT drivepolconvert.py (that invokes CASA
 polconvert) and its logfiles in the current working directory.
 Reports the fringe SNRs found in the logfiles. Optionally checks
 the polarizations present in each output .difx associated with each
-polconvert log.
+polconvert log.  You can adjust the characterizations with the
+threshold adjustments.
 '''
 
 __version__ = '1.0.1'
@@ -192,7 +191,7 @@ def reportOnLog(fn, opts):
 	'''Load a polconvert log file and print a summary'''
 	ratings = { 	'good':opts.colors.GREEN+'good'+opts.colors.ENDC,
 			'poor':opts.colors.ORANGE+'poor'+opts.colors.ENDC,
-			'bad':opts.colors.RED+'bad'+opts.colors.ENDC,
+			'bad':opts.colors.RED+'!bad'+opts.colors.ENDC,
 			1:'good', 2:'poor', 3:'bad' }
 	nprinted, ngood, npoor, nbad, nerror = 0, 0, 0, 0, 0
 	job = fn.split('.')[0]
@@ -200,11 +199,11 @@ def reportOnLog(fn, opts):
 	proj = ('proj=%s'%(opts.alma_projs[scan])) if opts.alma_projs else ''
 
 	if not opts.doShort:
-		title = '%s %-8s %-10s %s' % (job,scan,src,proj)
+		title = '%s %-8s %-12.12s %-12.12s' % (job,scan,src,proj)
 		print ('# %s' % (title))
 		print ('#   %s' % (fn))
 	else:
-		title = '%s %s %s %s' % (job,scan,src,proj)
+		title = '%s %-8s %-12.12s %-12.12s' % (job,scan,src,proj)
 
 	f = open(fn, 'r')
 	while True:
@@ -212,12 +211,13 @@ def reportOnLog(fn, opts):
 		if len(l) < 1:
 			break
 		if ('ERROR' in l):
-			if opts.doShort:
+                        if opts.showErrs:
+                            if opts.doShort:
 				print ('# %s : %s' % (title,l.strip()))
-			else:
+                            else:
 				print ('#  %s' % (l.strip()))
 			nerror += 1
-			continue
+			#continue
 		if not('NORM. FRINGE PEAKS' in l):
 			continue
 		#"FOR IF #59. NORM. FRINGE PEAKS:
@@ -232,10 +232,10 @@ def reportOnLog(fn, opts):
 		LR = float( f.readline().split()[-1] )
 		min_par = min(RR,LL)
 		max_cross = max(LR,RL)
-		if (max_cross < 0.3*min_par):
+		if (max_cross < opts.goodTh*min_par):
 			verdict = ratings['good']
 			ngood += 1
-		elif (max_cross < 0.6*min_par):
+		elif (max_cross < opts.badTh*min_par):
 			verdict = ratings['poor']
 			npoor += 1
 		else:
@@ -250,10 +250,15 @@ def reportOnLog(fn, opts):
 	if opts.doPols:
 		polinfo = ' : ' + checkDiFXViz(job, opts)
 
-	if opts.doShort and nerror <= 0:
+	if opts.doShort:
 		overall = int( (ngood + 2.0*npoor + 3.0*nbad - 0.5) / 3.0 )
 		rating_name = ratings[overall]
-		print ('# %s%s, %s (good:%d poor:%d bad:%d)' % (title,polinfo,ratings[rating_name],ngood,npoor,nbad))
+                if nerror == 0:
+                    errmsg = ''
+                else:
+                    errmsg = ((opts.colors.RED+' %s errs'+opts.colors.ENDC) %
+                        nerror)
+		print ('# %s%s %s (good:%d poor:%d bad:%d)%s' % (title,polinfo,ratings[rating_name],ngood,npoor,nbad,errmsg))
 
 	if opts.doPols and not opts.doShort:
 		print('#   %s' % (polinfo))
@@ -264,6 +269,9 @@ if __name__ == "__main__":
 	p.add_argument('-c', '--color', dest='colors', default=bcolors(False), action='store_const', const=bcolors(True), help='enable use of terminal color codes')
 	p.add_argument('-p', '--pols', dest='doPols', default=False, action='store_true', help='inspect polarizations in visibility data')
 	p.add_argument('-s', '--short', dest='doShort', default=False, action='store_true', help='condense the report')
+        p.add_argument('-e', '--errors', dest='showErrs', default=False, action='store_true', help='print out any ERRORs when found')
+        p.add_argument('-g', '--goodTh', dest='goodTh', default=0.3, type=float,metavar='FLOAT', help='ratio threshold of max-cross-hands/min-parallel-hands for good rating (0.3)')
+        p.add_argument('-b', '--badTh', dest='badTh', default=0.6, type=float, metavar='FLOAT', help='ratio threshold of max-cross-hands/min-parallel-hands for poor rating (0.6)')
 	p.add_argument('-v', '--vex', dest='vexfile', default=None, help='vex file to parse for EHTC project codes', metavar='file')
 	p.add_argument('-V', '--version', action='version', version='%(prog)s '+__version__+' svn:$Revision$') #dest='showVersion', default=False, action='store_true', help='show version')
 
