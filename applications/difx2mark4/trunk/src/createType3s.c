@@ -147,8 +147,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     
     memcpy (t309.record_id, "309", 3);
     memcpy (t309.version_no, "01", 2);
-                                    // pre-calculate sample rate (samples/s)
-    srate = 2e6 * D->freq->bw * D->freq->overSamp;
                                     // loop over all antennas in scan
                                     // doy of start of observation
     mjd2dayno((int)(D->mjdStart), &refDay);
@@ -606,6 +604,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         if (abs(squad) > 10.0)
                                             squad /= 6e7;
 
+                                        // calculate sample rate (samples/s)
+                                        srate = 2e6 * D->freq[jf].bw * D->freq[jf].overSamp;
                                         // renormalize correlations to those created in the DOM
                                         norm_corr = - isb * floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
                                         memcpy (&t309.chan[ochan].acc[i][0], &norm_corr, 4);

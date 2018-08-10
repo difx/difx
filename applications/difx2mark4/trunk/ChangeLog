@@ -1,5 +1,7 @@
 Version 3.6.0
 ~~~~~~~~~~~
+* rjc 2018.8.10
+* fixed bug in case of multiple different bandwidths
 * rjc 2018.7.17
 * Fixed too-many-pcal-tones bug for many tone case
 
