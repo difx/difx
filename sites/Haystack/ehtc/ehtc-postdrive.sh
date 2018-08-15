@@ -64,6 +64,8 @@ echo ''
 # allows fitsname to be true or false from the environment
 [ -n "$fitsname" ] && [ "$fitsname" = true -o "$fitsname" = false ] &&
     fn=fitsname=$fitsname || fn=''
+# specifies a post-fourfit summary-plotter job to be run
+[ -n "$aeditjob" ] && ae=aeditjob=$aeditjob || ae=''
 
 # do the haxp thing which is similar to the swin case common to
 # both pathways above...however we need some additional setup to
@@ -123,13 +125,13 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=4fit \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label relv=$relv \
+        save=true label=$label relv=$relv $ae \
         dest=./tarballs target=$targ jobs $jobs
     $ffit && $echo \
     $ehtc/ehtc-tarballs.sh tar=4fit \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label relv=$relv \
+        save=true label=$label relv=$relv $ae \
         dest=./tarballs target=$targ jobs $jobs
     $ffit || {
         echo
@@ -142,7 +144,7 @@ $haxp && {
         echo $ehtc/ehtc-tarballs.sh tar=4fit flab=\$flab \\ && echo \
         '    'exp=\$exp vers=\$vers subv=\$subv \\ && echo \
         '    'expn=\$expn nuke=true over=true \\ && echo \
-        '    'save=true label=\$label relv=\$relv \\ && echo \
+        '    'save=true label=\$label relv=\$relv $ae \\ && echo \
         '    'dest=./tarballs target=\$targ jobs \$jobs
         echo '============================================================'
         echo
@@ -180,14 +182,14 @@ $haxp && {
     $ehtc/ehtc-tarballs.sh tar=4fit \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label relv=$relv \
+        save=true label=$label relv=$relv $ae \
         dest=./tarballs target=$targ jobs $jobs
     # no need for pc phases
     $ffit && $echo \
     $ehtc/ehtc-tarballs.sh tar=4fit \
         exp=$exp vers=$vers subv=$subv \
         expn=$expn nuke=true over=true \
-        save=true label=$label relv=$relv \
+        save=true label=$label relv=$relv $ae \
         dest=./tarballs target=$targ jobs $jobs
     $ffit || {
         echo 
@@ -200,7 +202,7 @@ $haxp && {
         echo $ehtc/ehtc-tarballs.sh tar=4fit flab=\$flab \\ && echo \
         '    'exp=\$exp vers=\$vers subv=\$subv \\ && echo \
         '    'expn=\$expn nuke=true over=true \\ && echo \
-        '    'save=true label=\$label relv=\$relv \\ && echo \
+        '    'save=true label=\$label relv=\$relv $ae \\ && echo \
         '    'dest=./tarballs target=\$targ jobs \$jobs
         echo '============================================================'
         echo

@@ -7,7 +7,7 @@
 '''
 Script to parse a joblist and a vex file and produce lists of job numbers
 
-$Id: ehtc-joblist.py 2287 2018-03-13 15:55:40Z gbc $
+$Id: ehtc-joblist.py 2493 2018-08-11 22:06:50Z gbc $
 '''
 
 import argparse
@@ -33,7 +33,7 @@ def parseOptions():
     epi += ' try this: '
     epi += ' ehtc-joblist.py -i *.input -o *.vex.obs -p na -s 3C279 -R'
     use = '%(prog)s [options]\n'
-    use += '  Version $Id: ehtc-joblist.py 2287 2018-03-13 15:55:40Z gbc $'
+    use += '  Version $Id: ehtc-joblist.py 2493 2018-08-11 22:06:50Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     inputs = parser.add_argument_group('input options', inp)
     action = parser.add_argument_group('action options', act)
@@ -84,9 +84,24 @@ def parseOptions():
     action.add_argument('-K', '--check', dest='check',
         action='store_true', default=False,
         help='provide a summary list checking 4fit products')
+    action.add_argument('-T', '--timing', dest='timing',
+        action='store_true', default=False,
+        help='provide timing information on polconversion')
     action.add_argument('-G', '--groups', dest='groups',
         action='store_true', default=False,
         help='provide a summary list of proj/targ/class groups')
+    action.add_argument('-L', '--labels', dest='labels',
+        action='store_true', default=False,
+        help='provide a summary list of proj/targ/class groups and label')
+    action.add_argument('-B', '--blprods', dest='blprods',
+        action='store_true', default=False,
+        help='provide a report on baseline-pol channel products')
+    action.add_argument('-F', '--ffconf', dest='ffconf',
+        action='store_true', default=False,
+        help='provide a report for fourfit channel usage')
+    action.add_argument('-D', '--ffdetail', dest='ffdetail',
+        action='store_true', default=False,
+        help='provide a detailed report for fourfit channel usage')
     select.add_argument('-d', '--difx', dest='difx',
 	action='store_true', default=False,
 	help='Restrict to scans with data in .difx dir')
@@ -228,7 +243,8 @@ def doInputs(o):
     o.cabbage = {}
     for inp,clc in o.pairs:
         if o.verb: print '#Input:',inp,'\n#Calc: ',clc
-        jn,dets,o.antset = parseInputCalc(inp,clc,o.verb)
+        jn,dets,antset = parseInputCalc(inp,clc,o.verb)
+        o.antset |= antset
         if dets and jn: o.cabbage[jn] = dets
 
 def parseFirst(line, o):
@@ -265,7 +281,6 @@ def doJobList(o):
     f = open(o.joblist)
     first = True
     o.jobbage = {}
-    o.antennaset = set()
     for line in f.readlines():
         if line[0] == '#': continue
         if first:
@@ -434,11 +449,11 @@ def adjustOptions(o):
     if o.joblist == '' and o.job != '': o.joblist = o.job + '.joblist'
     if o.vexobs  == '' and o.job != '': o.vexobs  = o.job + '.vex.obs'
     o.cabbage = None
-    o.antset = None
+    o.antset = set()
     if len(o.inputs) > 0:    doInputs(o)
     o.jobbage = None
     o.vexscans = {}
-    o.antennaset = None
+    o.antennaset = set()
     o.projscans = None
     o.srcs = None
     if len(o.joblist) > 0:   doJobList(o)
@@ -589,7 +604,7 @@ def doReport(o):
         else:
             print ''
 
-def doGroups(o):
+def doGroups(o, doLabels):
     '''
     Generate a list of proj=yyy targ=XXX class=sci|cal
     The logic is similar to the preceding routine.
@@ -611,8 +626,16 @@ def doGroups(o):
         elif proj != 'sgra' and targ == 'SGRA':                  clss = 'eht'
         else:                                                    clss = 'cal'
         ans.add(':'.join([proj,targ,clss]))
-    for a in sorted(list(ans)):
-        print ('export proj=%s targ=%s class=%s' % tuple(a.split(':')))
+    if doLabels:
+        print 'false && { # start with a short job'
+        for a in sorted(list(ans)):
+            exprt=('  export proj=%s targ=%s class=%s' % tuple(a.split(':')))
+            print  '%-56s ; label=$proj-$targ' % exprt
+            print  '  nohup $ehtc/ehtc-jsgrind.sh < /dev/null > $label.log 2>&1'
+        print '}'
+    else:
+        for a in sorted(list(ans)):
+            print ('export proj=%s targ=%s class=%s' % tuple(a.split(':')))
 
 def doLostScans(o):
     '''
@@ -709,7 +732,7 @@ def doCheck(o):
     '''
     doLostScans(o)
     if len(o.lostscans) > 0: doReportLostScans(o)
-    o.scodes, o.blprods = prodDict(o.verb, o.codes)
+    o.scodes, o.blproddict = prodDict(o.verb, o.codes)
     for jn in o.cabbage:
         antennas = o.cabbage[jn][2]
         vexinfo = o.cabbage[jn][3]
@@ -719,11 +742,11 @@ def doCheck(o):
         if len(ffdir) == 1:
             ffringes = glob.glob(ffdir[0] + '/' + '??.B.*.*')
             #print jn,scanname,vexstart,antennas,ffdir[0],len(ffringes)
-            print jn,scanname,'have',len(ffringes),'fringes,',
-            if len(o.blprods) > 0:
+            print jn,scanname,'have','%3d' % len(ffringes),'fringes,',
+            if len(o.blproddict) > 0:
                 efrng,edets = calcExpFringes(
-                    o.verb, o.scodes, o.blprods, antennas, ffringes)
-                print efrng,'expected',
+                    o.verb, o.scodes, o.blproddict, antennas, ffringes)
+                print '%3d' % efrng,'expected',
                 if len(edets) > 0:
                     print '( missing:',edets,')'
                 else:
@@ -733,6 +756,260 @@ def doCheck(o):
         else:
             print jn,scanname,'has no 4fit dir'
 
+def doTiming(o):
+    '''
+    Find all the polconvert directories and present timing and status.
+    '''
+    tim_re = re.compile(
+        r'([0-9]+)-([0-9]+)-([0-9]+)T([0-9]+):([0-9]+):([0-9]+)')
+    for jn in sorted(o.cabbage):
+        sdur = int(o.cabbage[jn][3][3])
+        ants = o.cabbage[jn][2]
+        for pcd in glob.glob('*_%s.polconvert-*' % jn):
+            stf = pcd + '/status'
+            if os.path.exists(stf):
+                f = open(stf, 'r')
+                try:    status = f.readlines().pop().rstrip()
+                except: status = 'busted'
+                f.close()
+            else:
+                status = 'missing'
+            tim = pcd + '/timing'
+            if os.path.exists(tim):
+                f = open(tim, 'r')
+                lines = f.readlines()
+                f.close()
+                started = tim_re.search(lines[0].rstrip())
+                finnish = tim_re.search(lines[1].rstrip())
+                if started and finnish:
+                    yrs = int(finnish.group(1)) - int(started.group(1))
+                    mos = int(finnish.group(2)) - int(started.group(2))
+                    dys = int(finnish.group(3)) - int(started.group(3))
+                    hrs = int(finnish.group(4)) - int(started.group(4))
+                    mns = int(finnish.group(5)) - int(started.group(5))
+                    scs = int(finnish.group(6)) - int(started.group(6))
+                    ptime = (60*(60*(24*dys + hrs) + mns) + scs)
+                    rate = float(ptime) / float(sdur)
+                    timing = 'at %s for %4d / %-4d = %.2fx / %d = %.2fx' % (
+                        started.group(0), ptime, sdur, rate, len(ants)-1,
+                        rate / (float(len(ants)-1)))
+                else:
+                    timing = 'busted'
+            job = pcd.split('.')[0] + ' ...'
+            print job,status,timing,'-'.join(ants)
+
+def updateBLPOL(jobinput, verb):
+    '''
+    Read the offered input file and parse the product table to provide
+    the structure of the fourfit files that will be produced.
+    This function is really just geared to the EHT setup.
+    '''
+    # input file re's:
+    ads_re = re.compile(r'^ACTIVE\s*DATASTREAMS:\s*([0-9]+)')
+    bls_re = re.compile(r'^ACTIVE\s*BASELINES:\s*([0-9]+)')
+    # Cf. BASELINE ENTRIES:   24
+    dsi_re = re.compile(r'^DATASTREAM\s*([0-9]+)\s*INDEX:\s*([0-9]+)')
+    bli_re = re.compile(r'^BASELINE\s*([0-9]+)\s*INDEX:\s*([0-9]+)')
+    fqn_re = re.compile(r'^FREQ\s*ENTRIES:\s*([0-9]+)')
+    fqe_re = re.compile(r'^FREQ\s*.MHZ.\s*([0-9]+):\s*([0-9.]+)')
+    bwm_re = re.compile(r'^BW\s*.MHZ.\s*([0-9]+):\s*([0-9.]+)')
+    sbd_re = re.compile(r'^SIDEBAND\s*([0-9]+):\s*([UL])')
+    tsi_re = re.compile(r'^TELESCOPE\s*INDEX:\s*([0-9]+)')
+    rfq_re = re.compile(r'^REC\s*FREQ\s*INDEX\s*([0-9]+):\s*([0-9]+)')
+    zfq_re = re.compile(r'^ZOOM\s*FREQ\s*INDEX\s*([0-9]+):\s*([0-9]+)')
+    pol_re = re.compile(r'^.*POL:\s*([XYRL])')
+    bla_re = re.compile(r'^D/STREAM\s*A\s*INDEX\s*([0-9]+):\s*([0-9]+)')
+    blb_re = re.compile(r'^D/STREAM\s*B\s*INDEX\s*([0-9]+):\s*([0-9]+)')
+    blf_re = re.compile(r'^D/STREAM\s*A\s*BAND\s*([0-9]+):\s*([0-9]+)')
+    blg_re = re.compile(r'^D/STREAM\s*B\s*BAND\s*([0-9]+):\s*([0-9]+)')
+    stn_re = re.compile(r'^TELESCOPE\s*NAME\s*([0-9]+):\s*([A-Z0-9]+)')
+    ant_names = {}  # dictionary of antenna names
+    ds_indices = [] # datastream indices [#,SC,P,[freqs]]
+    bl_indices = [] # baseline indices   [#,(A,B),SC-SC:PP, [(I,I,F,F)]]
+    fq_table = []   # frequency table    [#,Freq,BW,Side]
+    ds_index = -1
+    bl_index = -1
+    blndxtmp = -1
+    bl_peer = -1
+    fq_peer = -1
+    dspol = '?'     # really should be an array
+    fc = open(jobinput)
+    for liner in fc.readlines():
+        line = liner.rstrip()
+        # create datastream and baseline indices
+        ads_hit = ads_re.search(line)
+        if ads_hit: 
+            ds_indices = range(int(ads_hit.group(1)))
+            continue
+        dsi_hit = dsi_re.search(line)
+        if dsi_hit: 
+            ds_indices[int(dsi_hit.group(1))] = int(dsi_hit.group(2))
+            continue
+        bls_hit = bls_re.search(line)
+        if bls_hit: 
+            bl_indices = range(int(bls_hit.group(1)))
+            continue
+        bli_hit = bli_re.search(line)
+        if bli_hit: 
+            bl_indices[int(bli_hit.group(1))] = int(bli_hit.group(2))
+            continue
+
+        # freq table
+        fqn_hit = fqn_re.search(line)
+        if fqn_hit: 
+            fq_table = range(int(fqn_hit.group(1)))
+            continue
+        fqe_hit = fqe_re.search(line)
+        if fqe_hit: 
+            fq_table[int(fqe_hit.group(1))] = [
+                int(fqe_hit.group(1)), float(fqe_hit.group(2)), '?', 0.0]
+            continue
+        bwm_hit = bwm_re.search(line)
+        if bwm_hit:
+            fq_table[int(bwm_hit.group(1))][2] = float(bwm_hit.group(2))
+            continue
+        sbd_hit = sbd_re.search(line)
+        if sbd_hit:
+            fq_table[int(sbd_hit.group(1))][3] = sbd_hit.group(2)
+            continue
+
+        # populate datastream table
+        tsi_hit = tsi_re.search(line)
+        if tsi_hit:
+            ds_index += 1;
+            ds_indices[ds_index] = [ds_indices[ds_index],
+                ant_names[int(tsi_hit.group(1))], dspol, []]
+            continue
+        pol_hit = pol_re.search(line)
+        if pol_hit:
+            ds_indices[ds_index][2] = pol_hit.group(1)
+            # relabled in pre-polconvert
+            if ds_indices[ds_index][2] == 'X': ds_indices[ds_index][2] = 'L'
+            if ds_indices[ds_index][2] == 'Y': ds_indices[ds_index][2] = 'R'
+            continue
+        rfq_hit = rfq_re.search(line)
+        if rfq_hit:
+            ds_indices[ds_index][3].append(int(rfq_hit.group(2)))
+            continue
+        zfq_hit = zfq_re.search(line)
+        if zfq_hit:
+            ds_indices[ds_index][3].append(int(zfq_hit.group(2)))
+            continue
+
+        # populate baseline table
+        bla_hit = bla_re.search(line)
+        if bla_hit:
+            bl_index += 1
+            blndxtmp = int(bla_hit.group(1))
+            bl_peer = int(bla_hit.group(2))
+            continue
+        blb_hit = blb_re.search(line)
+        if (blb_hit and
+            bl_index == blndxtmp and int(blb_hit.group(1)) == blndxtmp):
+            bl_this = int(blb_hit.group(2))
+            bl_indices[bl_index] = [bl_index, (bl_peer, bl_this),
+                "%s|%s:%s%s" % (
+                    ds_indices[bl_peer][1], ds_indices[bl_this][1],
+                    ds_indices[bl_peer][2], ds_indices[bl_this][2]),
+                []]
+            continue
+        blf_hit = blf_re.search(line)
+        if blf_hit:
+            fq_peer = int(blf_hit.group(2))
+            fe_peer = ds_indices[bl_peer][3][fq_peer]
+            continue
+        blg_hit = blg_re.search(line)
+        if blg_hit:
+            fq_this = int(blg_hit.group(2))
+            fe_this = ds_indices[bl_this][3][fq_this]
+            if fe_peer == fe_this:
+                bl_indices[bl_index][3].append(fe_peer)
+            else:
+                bl_indices[bl_index][3].append(-1)
+            continue
+
+        # match telescope indices with names
+        stn_hit = stn_re.search(line)
+        if stn_hit:
+            ant_names[int(stn_hit.group(1))] = stn_hit.group(2)
+            continue
+    fc.close()
+    # at this point everything we need is in bl_indices and fq_table
+    if verb:
+        #print 'an',str(ant_names)
+        #print 'ds',str(ds_indices)
+        print 'bl',str(bl_indices)
+        print 'fq',str(fq_table)
+    # and we want to reduce it to some usable one-liner
+    reply = {}
+    for prod in bl_indices:
+        reply[prod[2]] = "%f..%f(%d)" % (
+            fq_table[prod[3][0]][1], fq_table[prod[3][-1]][1], len(prod[3]))
+    return reply
+
+def grokChannels(o):
+    '''
+    Take a harder look at the input files and provide a report
+    of how fourfit channels will end up being labelled.  This
+    function invokes updateBLPOL() to parse the input files and
+    provides a list of channel info in
+        o.chanalia [jobn,scan,source,bl|pp,chansig]
+    a set of signatures (of channels as keys of a dictionary)
+        o.chsig  [jobn,scan,products]
+    '''
+    if len(o.rubbage) == 0: return
+    jl = map(lambda x:"%s_%s.input" % (o.job, x), sorted(o.rubbage.keys()))
+    o.chanalia = []
+    o.signature = set()
+    for job in jl:
+        report = updateBLPOL(os.path.dirname(o.inputs) + '/' + job, o.verb)
+        label = re.sub('.input','',job)
+        jobnm = label.split('_')[1]
+        for p in report:
+            vexinfo = o.rubbage[jobnm][3]
+            source = "%-12.12s" % vexinfo[4][0:12]
+            o.chanalia.append([jobnm,vexinfo[0],source,p,report[p]])
+            ab,pol = p.split(':')
+            a,b = ab.split('|')
+            o.signature.add(a + ":" + report[p])
+            o.signature.add(b + ":" + report[p])
+    o.chsig = {}
+    for sig in o.signature:
+        o.chsig[sig] = set()
+    for cha in o.chanalia:
+        p = cha[3]
+        ab,pol = p.split(':')
+        a,b = ab.split('|')
+        o.chsig[a + ":" + cha[4]].add(cha[1] + ' ' + cha[2] + ':' + b)
+        o.chsig[b + ":" + cha[4]].add(cha[1] + ' ' + cha[2] + ':' + a)
+
+def doBLProds(o):
+    '''
+    Provide a report on the channels used by every baseline product
+    '''
+    for cha in o.chanalia:
+        print ' '.join(cha)
+
+def doFFConf(o, detailed):
+    '''
+    Provides a report of scans with a particular station-channel config.
+    '''
+    for sig in sorted(list(o.chsig)):
+        #count = len(list(o.chsig[sig]))
+        if detailed:
+            scan = 'none'
+            for partner in sorted(list(o.chsig[sig])):
+                temp,peer = partner.split(':')
+                if temp != scan:
+                    print
+                    scan = temp
+                    #print sig,count,scan,
+                    print sig,' ',scan,
+                print peer,
+        else:
+            #print sig,count,
+            print sig,' ',
+        print
 
 # main entry point
 if __name__ == '__main__':
@@ -747,8 +1024,15 @@ if __name__ == '__main__':
     if o.sources:   doSources(o)
     if o.projects:  doProjects(o)
     if o.report:    doReport(o)
-    if o.groups:    doGroups(o)
+    if o.groups:    doGroups(o, False)
+    if o.labels:    doGroups(o, True)
     if o.check:     doCheck(o)
+    if o.timing:    doTiming(o)
+    if o.blprods or o.ffconf or o.ffdetail:
+        grokChannels(o)
+        if o.blprods:   doBLProds(o)
+        if o.ffconf:    doFFConf(o, False)
+        if o.ffdetail:  doFFConf(o, True)
 
     sys.exit(0)
 

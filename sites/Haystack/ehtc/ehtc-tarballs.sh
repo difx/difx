@@ -67,6 +67,7 @@ require additional information which is also supplied via options:
     flab=<char>     an additional version label for re-fourfitting
     haxprune=true|false whether to restrict this to ALMA bl or not (true)
     fitsname=true|false provides a proper output name on FITS files (false)
+    aeditjob=<string> a script to make some aedit plots after 4fit (false)
 
 The d2?? options presume you want to process all input files in \$src
 and will refuse to run if they find that this has already been done.
@@ -189,6 +190,7 @@ over=false
 save=false
 haxprune=true
 fitsname=false
+aeditjob=false
 label=''
 flab=''
 target=none
@@ -229,6 +231,7 @@ relv=*)   eval "$1" ;;
 target=*) eval "$1" ;;
 haxprune=*) eval "$1" ;;
 fitsname=*) eval "$1" ;;
+aeditjob=*) eval "$1" ;;
 jobs)    shift ; break ;;
 esac ; shift ; done
 
@@ -265,6 +268,9 @@ $verb && echo '' && echo '' && echo $0 $args | fold && echo ''
     echo haxprune must be true or false ; exit 1; }
 [ "$fitsname" = 'true' -o "$fitsname" = 'false' ] || {
     echo fitsname must be true or false ; exit 1; }
+[ -z "$aeditjob" ] && aeditjob=false
+aej=`type -p $aeditjob`
+[ -z "$aej" ] && aej=false
 [ -z "$relv" ] && relv=$vers
 $d2m4 && [ "$expn" = '0000' ] && { echo d2m4 is true, need expn; exit 1; }
 [ "$job" = 'nojob' ] && job=$exp
@@ -290,7 +296,7 @@ com2="verb=$verb dest=$dest"
 com3="dry=$dry src=$src"
 com4="copy=$copy job=$job expn=$expn EXP=$EXP d2m4=$d2m4 d2ft=$d2ft"
 com5="over=$over save=$save label=$label target=$target flab=$flab"
-com6="haxprune=$haxprune fitsname=$fitsname jobs $jobs"
+com6="haxprune=$haxprune fitsname=$fitsname aeditjob=$aeditjob jobs $jobs"
 
 # verify write permissions in the work directory (for tar creation)
 workdir=`pwd`
@@ -607,6 +613,18 @@ fits)
         echo =================== >> $fog
         $d2ftexec $ov $jobs $fitsout >> $fog 2>&1 || {
             echo difx2fits failed; exit 4; }
+        # generate fits packaging summary with pcList.pl
+        pclist=`type -p pcList.pl`
+        [ -x $pclist ] && {
+            rm -f recor.joblist
+            for j in *.jobmatrix
+            do
+                echo $j
+                pcList.pl -s -j $j -v $evs.vex.obs
+                [ -f recor.joblist ] && cat recor.joblist && rm recor.joblist
+            done > $FITS.work/$ers-fits.pclist 2>&1
+            rm -f $evs.vex.obs.pclist recor.joblist
+        }
         $fitsname || mv $EXP* $FITS.work
         $fitsname && eval mv $FITS*$parts $FITS.work
         mv $FITS.work $FITS.fits
@@ -718,6 +736,8 @@ hops|hmix|haxp)
     alist -v6 -o $exp-$relv-$subv-$label.alist * \
         > $exp-$relv-$subv-$label.alist.warnings 2>&1
     ls -l $exp-$relv-$subv-$label.alist
+    echo Making some summary aedit plots with $aej
+    [ -n "$aej" ] && $aej ./$exp-$relv-$subv-$label.alist && ls -l *.ps *.pdf
     echo Removing symlinks prior to tarballing
     cd $workdir
     find $expn -type l -exec rm {} \;

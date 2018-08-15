@@ -48,6 +48,7 @@ export dpfu=0.0308574                          # ave over session
 export scmp='PV,MG,SW,AQ,LM,SR,SZ'             # cycle5
 export opts="-r -P15 -S $scmp -f 4 -A $dpfu"   # -q v4 if needed
 export fitsname=false
+export aeditjob=$ehtc/ehtc-aeditjob.sh
 
 # derived vars
 export release=$arch/$exp/$exp-$relv
@@ -60,7 +61,7 @@ export ptar=$pcal.APP_DELIVERABLES.tgz
 [ `( 
 echo =============================================================== && \
 echo $exp $vers .$ctry. $subv $iter $relv .$flab. $expn && \
-echo $evs $ers $opts $fitsname && \
+echo $evs $ers $opts $fitsname $aeditjob && \
 echo $dout && \
 echo $ptar $pcal && \
 echo $pdir && \
@@ -70,7 +71,7 @@ type casa && \
 type mpifxcorr && \
 type fourfit && \
 echo =============================================================== 
-) | wc -w` -eq 36 ] && echo variables are ok || echo issue with variables
+) | wc -w` -eq 37 ] && echo variables are ok || echo issue with variables
 
 # Nth TIME SETUP =================
 cd $work/$exp/v${vers}${ctry}p${iter}/$subv
