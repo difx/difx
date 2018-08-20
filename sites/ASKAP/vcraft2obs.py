@@ -37,6 +37,7 @@ freqs = []
 beamra = None
 beamdec = None
 startmjd = None
+mode = None
 first = True
 for file in vcraftfiles:
     for line in open(file).readlines():
@@ -47,15 +48,27 @@ for file in vcraftfiles:
                 beamra = float(line.split()[1])
             if line.split()[0] == "BEAM_DEC":
                 beamdec = float(line.split()[1])
-        if line.split()[0] == "START_WRITE_MJD":
+            if line.split()[0] == "MODE":
+                mode = int(line.split()[1])
+        if line.split()[0] == "TRIGGER_MJD":
             thisMJD = float(line.split()[1])
             
             if startmjd==None:
                 startmjd = thisMJD
             elif thisMJD<startmjd:
                 startmjd = thisMJD
-                print "**startMJD now ", startmjd
             break
+
+# Pinched from vcraft.py
+SAMPS_PER_WORD32 = [1,2,4,16,1,2,4,16]
+MODE_BEAMS = [72,72,72,72,2,2,2,2]
+MAX_SETS = 29172
+
+#  Number of sample vs mode
+SAMPS_MODE = [29172*32*nsamp_per_word*72/nbeams for (nsamp_per_word, nbeams) in zip(SAMPS_PER_WORD32, MODE_BEAMS)]
+
+# Correct time because TRIGGER_MJD is time at END of file
+startmjd -= (SAMPS_MODE[mode]-SAMPS_PER_WORD32[mode])*27.0/32.0*1e-6/(24*60*60)
 
 if beamra==None or beamdec==None or startmjd==None:
     print "Didn't find all info in", vcraftheader
