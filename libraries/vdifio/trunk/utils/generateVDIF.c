@@ -387,9 +387,10 @@ int main (int argc, char * const argv[]) {
     while (sampleblock % completesample) sampleblock += 64;
     sampleblock /= 64;
     
+#if USE_CODIFIO
     header = (char*)&cheader;
     headerBytes = CODIF_HEADER_BYTES;
-#if USE_CODIFIO
+
     // Need to calculate a couple of these values
     status = createCODIFHeader(&cheader, framesize, 0, 0, nbits, nchan, sampleblock, 1, samplerate, iscomplex, "Tt");
     if (status!=CODIF_NOERROR) {
