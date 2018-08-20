@@ -8,7 +8,7 @@ my %delays = ();
 
 sub usage () {
   print<<EOF;
-Usage:  delat2fcm.pl -akXX N -akXX N [--akXX N ...] <fcm>
+Usage:  delay2fcm.pl -akXX N -akXX N [--akXX N ...] <fcm>
 EOF
   exit();
 }
@@ -50,9 +50,9 @@ while (<FCM>) {
     my $delay = $3;
     my $deltaDelay = undef;
     if (exists($delays{"ak$ant"})) {
-      $deltaDelay = $delays{"ak$ant"} * 1e9;  # sec -> nsec
+      $deltaDelay = $delays{"ak$ant"};
     } elsif (exists($delays{"co$ant"})) {
-      $deltaDelay = $delays{"co$ant"} * 1e9;
+      $deltaDelay = $delays{"co$ant"};
     }
     if (defined $deltaDelay) {
       chomp;
