@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import os, sys, glob, math, argparse
 
 # Convenience function
@@ -39,8 +39,9 @@ beamdec = None
 startmjd = None
 mode = None
 first = True
+
 for file in vcraftfiles:
-    for line in open(file).readlines():
+    for line in open(file).readlines(10000):
         if (first):
             if line.split()[0] == "FREQS":
                 freqs = line.split()[1].split(',')
@@ -57,6 +58,8 @@ for file in vcraftfiles:
                 startmjd = thisMJD
             elif thisMJD<startmjd:
                 startmjd = thisMJD
+
+        if len(freqs) > 0 and beamra!=None and beamdec!=None and startmjd!=None:
             break
 
 # Pinched from vcraft.py
