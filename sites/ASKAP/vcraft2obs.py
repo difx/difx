@@ -135,6 +135,6 @@ output.write("mv log craft.difxlog\n")
 output.close()
 
 # Print out the askap2difx command line to run (ultimately, could just run it ourselves)
-runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-2]
+runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-1]
 print "\nNow run:"
 print runline
