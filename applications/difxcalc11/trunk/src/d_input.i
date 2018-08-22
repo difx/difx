@@ -4,7 +4,7 @@
 !   Set MaxStat to the maximum number of stations that will ever be 
 !    correlated plus 1 for the geocenter. (Also see Max_Stat in cmxst.i)
       Integer*4 MaxStat
-      Parameter (MaxStat = 20)
+      Parameter (MaxStat = 41)
 !
       CHARACTER*128 calc_file_name, Jobname, IM_file_name, calc_out_file
       CHARACTER*10  Base_mode, L_time, Atmdr, Atmwt, Near_Far

@@ -8,12 +8,12 @@
       Parameter (Nstation1 = 1)     
 !
       Integer*4  Nstation2      ! Maximum # of stations
-      Parameter (Nstation2 = 24) 
+      Parameter (Nstation2 = 41) 
 !      Use Maxstat instead from d_input.i
 !
       Integer*4  Max_Source     ! Maximum # of sources, 
 !                                 (pointing and phase center sources)
-      Parameter (Max_Source = 501)
+      Parameter (Max_Source = 1001)
 !
       Integer*4  IB             ! 1 for geocenter mode, 2 for baseline
       Parameter (IB = 1)
