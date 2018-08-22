@@ -131,7 +131,7 @@ def getvexscandata(station, vexfile):
 	           stationdata = line.split(':')
 		   scanlength = stationdata[2].strip()
 	           scan.append(scanlength)
-           elif 'endscan;' == line[0:8] and refpoint == False:
+           elif 'endscan;' == line[0:8] and refpoint == False and len(scan) == 3:
 	       scandata.append(scan)
 	       endscan = True
 	   elif firstscanfound == True and endscan == True:
