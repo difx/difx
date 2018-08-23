@@ -91,8 +91,7 @@ Mark6::Mark6(void)
 
     if (enumerateDevices() > 0)
     {
-        cout << "found devices: " << enumerateDevices() << endl;
-	    manageDeviceChange();
+	manageDeviceChange();
     } 
 }
 
