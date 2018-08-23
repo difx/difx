@@ -5,6 +5,7 @@ use warnings;
 
 my @args = ();
 my %delays = ();
+my %done = ();
 
 sub usage () {
   print<<EOF;
@@ -19,6 +20,7 @@ while (my $val = shift @ARGV) {
     my $arg = shift @ARGV;
     die "Missing argument for $val\n" if (! defined $arg);
     $delays{$1} = $arg;
+    $done{$1} = 0;
     
   } else {
     push @args, $val;
@@ -49,15 +51,18 @@ while (<FCM>) {
     my $ant = $2;
     my $delay = $3;
     my $deltaDelay = undef;
+    my $foundAnt = undef;
     if (exists($delays{"ak$ant"})) {
-      $deltaDelay = $delays{"ak$ant"};
+      $foundAnt = "ak$ant";
     } elsif (exists($delays{"co$ant"})) {
-      $deltaDelay = $delays{"co$ant"};
+      $foundAnt = "co$ant";
     }
-    if (defined $deltaDelay) {
+    if (defined $foundAnt) {
+      $deltaDelay = $delays{$foundAnt};
       chomp;
       my $newDelay = $delay + $deltaDelay;
       print NEWFCM "$line${newDelay}ns\n";
+      $done{$foundAnt} = 1;
     } else {
       print NEWFCM;
     }
@@ -66,6 +71,13 @@ while (<FCM>) {
   }
 }
 close(FCM);
+
+foreach (keys(%delays)) {
+  if (!$done{$_}) {
+    printf NEWFCM "common.antenna.${_}.delay=".$delays{$_}."ns\n";
+  }
+}
+
 close(NEWFCM);
 
 rename $fcm, $backupFCM;
