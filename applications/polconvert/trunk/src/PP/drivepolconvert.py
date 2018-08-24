@@ -9,6 +9,7 @@ drivepolconvert.py -- a program to drive the polconvert process
 
 import argparse
 import datetime
+import glob
 import os
 import re
 import stat
@@ -412,10 +413,17 @@ def deduceZoomIndicies(o):
                 'first is ' + str(zfirst) + ' and final is ' + str(zfinal))
         elif o.verb:
             print 'global zoom first',str(zfirst),'and final',str(zfinal)
-    o.zfirst = int(sorted(list(zfirst))[0])  # int(zfirst.pop())
-    o.zfinal = int(sorted(list(zfinal))[-1]) # int(zfinal.pop())
-    if o.verb: print 'Zoom freq. indices %d..%d found in \n  %s..%s' % (
-        o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
+    if len(zfirst) > 0 and len(zfinal) > 0:
+        o.zfirst = int(sorted(list(zfirst))[0])  # int(zfirst.pop())
+        o.zfinal = int(sorted(list(zfinal))[-1]) # int(zfinal.pop())
+    else:
+        o.zfirst = -1
+        o.zfinal = -2
+    if (len(o.nargs) > 0) and o.verb:
+        print 'Zoom freq. indices %d..%d found in \n  %s..%s' % (
+            o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
+    elif o.verb:
+        print 'Not going to be doing any real work after this: No jobs'
     # Report on remote peer for polconvert plot diagnostics
     if (len(o.remotelist) != len(o.nargs)): o.remotelist = []
     if o.verb:
@@ -430,15 +438,18 @@ def deduceZoomIndicies(o):
         raise Exception, ('Input files have disparate frequency structures:\n'
             '  Median frequencies: ' + str(mfqlst) + '\n'
             '  and these must be processed separately')
-    medianfreq = float(mfqlst.pop())
-    if   medianfreq <  90000.0: medianband = '3 (GMVA)'
-    elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
-    elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
-    elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
-    elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
-    else:                       medianband = '??? band 7 ???'
-    print 'Working with band %s based on median freq (%f)' % (
-            medianband, medianfreq)
+    elif len(mfqlst) == 1:
+        medianfreq = float(mfqlst.pop())
+        if   medianfreq <  90000.0: medianband = '3 (GMVA)'
+        elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
+        elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
+        elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
+        elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
+        else:                       medianband = '??? band 7 ???'
+        print 'Working with band %s based on median freq (%f)' % (
+                medianband, medianfreq)
+    else:
+        print 'No median frequency, so no idea about medianband'
 
 def plotPrep(o):
     '''
@@ -844,7 +855,16 @@ def reportWorkTodo(o):
         for job in o.workdirs:
             print ' job', job, 'in', o.workdirs[job]
             print ' job', job, 'w/', o.workcmds[job]
-    print 'Results are in',o.now.strftime('*.polconvert-%Y-%m-%dT%H.%M.%S')
+    pcdirstamps = o.now.strftime('*.polconvert-%Y-%m-%dT%H.%M.%S')
+    print 'Results are in',pcdirstamps
+    pcdirs = glob.glob(pcdirstamps)
+    if len(pcdirs) == len(o.jobnums):
+        print 'The number of polconvert dirs (%d) is correct.' % len(pcdirs)
+    else:
+        print 'Problem: %d workdirs and %d jobs'%(len(pcdirs),len(o.jobnums))
+    pcdirs.append('\ndrivepolconvert is finished.\n')
+    if o.verb:
+        for pc in pcdirs: print '   ',pc
 
 def executeCasaParallel(o):
     '''
@@ -854,13 +874,16 @@ def executeCasaParallel(o):
     to avoid race conditions and give the human time to read.
     '''
     if not o.run:
-        print 'CASA commands and working directories have been prepared.'
-        print 'You can execute the jobs manually, with these commands:'
-        for job in o.workdirs:
-            wdir = o.workdirs[job]
-            ccmd = o.workcmds[job]
-            print '  pushd',wdir,'; ./'+ccmd,'& popd'
-        return
+        if len(o.workdirs) > 0:
+            print 'CASA commands and working directories have been prepared.'
+            print 'You can execute the jobs manually, with these commands:'
+            for job in o.workdirs:
+                wdir = o.workdirs[job]
+                ccmd = o.workcmds[job]
+                print '  pushd',wdir,'; ./'+ccmd,'& popd'
+            return
+        else:
+            print 'There are no jobs to be run at this point, move on.'
     if o.verb:
         print 'Driving %d parallel CASA jobs' % (o.parallel)
         print '  Touch "killcasa" to terminate prematurely.'
@@ -885,8 +908,9 @@ def executeCasaParallel(o):
         print 'Some other problem...'
         raise
     finally:
-        reportWorkTodo(o)
-        try: os.unlink('killcasa')
+        try:
+            reportWorkTodo(o)
+            os.unlink('killcasa')
         except: pass
         finally: pass
 
