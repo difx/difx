@@ -317,7 +317,6 @@ int VDIFMark6DataStream::dataRead(int buffersegment)
 	}
 
 	// execute the file read
-	input.read(reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytes);
 	bytestoread = bytes;
 	bytes = mark6Gather(mark6gather, reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytestoread);
 cinfo << startl << "Mark6 Gather: " << bytestoread << " requested, " << bytes << " received." << endl;
