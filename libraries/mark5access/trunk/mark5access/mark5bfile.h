@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2016 Walter Brisken                                *
+ *   Copyright (C) 2013-2018 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -90,6 +90,8 @@ static inline int mark5bfilesummarygetbitrate(const struct mark5b_file_summary *
 }
 
 int determinemark5bframeoffset(const unsigned char *buffer, int bufferSize);
+
+int determinelastmark5bframeoffset(const unsigned char *buffer, int bufferSize);
 
 int summarizemark5bfile(struct mark5b_file_summary *sum, const char *fileName);
 

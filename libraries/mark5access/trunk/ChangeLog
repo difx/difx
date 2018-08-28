@@ -1,3 +1,6 @@
+Verion 1.5.4
+* Expose function determinelastmark5bframeoffset()
+
 Verion 1.5.3
 * Integer rounding error in m5slice
 * Add ctypes-based Python bindings 
