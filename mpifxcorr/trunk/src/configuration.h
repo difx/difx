@@ -403,6 +403,14 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return (f == MARK5B && s == MK5MODULE);
   }
+  inline bool isMark5BMark6(int datastreamindex) const
+  {
+    dataformat f;
+    datasource s;
+    f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
+    s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
+    return (f == MARK5B && s == MK6MODULE);
+  }
   inline bool isMark5BNetwork(int datastreamindex) const
   {
     dataformat f;

@@ -810,7 +810,7 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 
 	bytesvisible = fixend - fixindex;
 
-	// "fix" Mark5B data: remove stray packets/byts and put good frames on a uniform grid
+	// "fix" Mark5B data: remove stray packets/bytes and put good frames on a uniform grid
 	fixReturn = mark5bfix(destination, readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
 	if(fixReturn < 0)
 	{

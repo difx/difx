@@ -61,6 +61,12 @@ PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.1)
 CPPFLAGS="${CPPFLAGS} ${VDIFIO_CFLAGS}"
 
 dnl **********************************************************
+dnl **** Find mark6sg library                              ****
+dnl **********************************************************
+PKG_CHECK_MODULES(MARK6SG, mark6sg >= 2.0.0)
+CPPFLAGS="${CPPFLAGS} ${MARK6SG_CFLAGS}"
+
+dnl **********************************************************
 dnl **** Find mark5ipc library                            ****
 dnl **********************************************************
 m5ipc_enabled=true
@@ -122,14 +128,14 @@ AM_CONDITIONAL(WITH_SS, $ss_enabled)
 dnl **********************************************************
 dnl **** Find mark5access library                         ****
 dnl **********************************************************
-PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.5.3)
+PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.5.4)
 dnl **********************************************************
 
 dnl for Mutex lock in datastream.cpp
 AC_CHECK_LIB(rt, clock_gettime)
 
-CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${MATH_CFLAGS} ${FFTW3_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET} ${OPENMP_CXXFLAGS} ${DIRLIST_CFLAGS}"
-LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${MATH_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
+CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${MARK6SG_CFLAGS} ${MATH_CFLAGS} ${FFTW3_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET} ${OPENMP_CXXFLAGS} ${DIRLIST_CFLAGS}"
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${SS_LIBS} ${MATH_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"

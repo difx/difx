@@ -39,6 +39,7 @@ mpifxcorr_SOURCES = \
 	pcal.cpp \
 	switchedpower.cpp \
 	vdifmark6_datastream.cpp \
+	mark5bmark6_datastream.cpp \
 	$(mark5_files)
 
 library_includedir = $(includedir)/mpifxcorr
@@ -99,6 +100,7 @@ libmpifxcorr_a_SOURCES = \
 	sharedmemorybuffer.cpp \
 	datamuxer.cpp \
 	vdifmark6_datastream.cpp \
+	mark5bmark6_datastream.cpp \
 	$(mark5_files)
 
 libfxcorr_a_SOURCES = \
@@ -131,6 +133,7 @@ neuteredmpifxcorr_SOURCES = \
 	sharedmemorybuffer.cpp \
 	datamuxer.cpp \
 	vdifmark6_datastream.cpp \
+	mark5bmark6_datastream.cpp \
 	$(mark5_files)
 
 neuteredmpifxcorr_CXXFLAGS = -DNEUTERED_DIFX $(AM_CXXFLAGS)
