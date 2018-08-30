@@ -36,6 +36,7 @@
 #include <sys/socket.h>
 #include <mark5access/mark5bfile.h>
 #include <mark6sg/mark6_sg_vfs.h>
+#include <mark6sg/mark6_sg_utils.h>
 #include "config.h"
 #include "alert.h"
 #include "mode.h"
@@ -138,8 +139,10 @@ int summarizemark5bmark6(struct mark5b_file_summary *sum, const char *scanName)
 	strncpy(sum->fileName, scanName, MARK5B_SUMMARY_FILE_LENGTH-1);
 	sum->startSecond = 1<<30;
 
+        mark6_sg_set_rootpattern("/mnt/disks/[1-4]/[0-7]/data");
+
 	mk6fd = mark6_sg_open(scanName, O_RDONLY);
-	if(!mk6fd)
+	if(mk6fd < 0)
 	{
 		mark6_sg_close(mk6fd);
 
@@ -155,6 +158,8 @@ int summarizemark5bmark6(struct mark5b_file_summary *sum, const char *scanName)
 	}
 
 	sum->fileSize = st.st_size;
+
+	cinfo << startl << scanName << " is opened with size " << sum->fileSize << endl;
 
 	if(sum->fileSize < 2*bufferSize)
 	{
