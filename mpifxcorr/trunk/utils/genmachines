@@ -420,12 +420,13 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 	dsnodes = []
 	threads = []
 
+        dsBookings = {} # keep track of the DS-node assignements (can assign multiple nodes to serve the same url)
 	for stream in datastreams:
             if stream.type == "FILE":
                 # check if path for this datastream matches storage area defined in the cluster definition file
                         
-                matchCount = 0
-                matchNode = ""
+                matchNodes = []
+                currentUrl = ""
                 for node in difxmachines.getStorageNodes():
                     for url in node.fileUrls:
 			# add trailing /
@@ -434,17 +435,27 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 			#print "Trying: ", stream.path, url
                         if stream.path.startswith(url):
 			    #print "match: ", stream.path, url
-                            matchCount += 1
-                            matchNode = node.name
-			    if matchCount > 1:
-			    	print "ERROR: identical storage area is associated with different hosts: %s" % stream.path 
-			    	sys.exit(1)
+                            matchNodes.append(node.name)
+
+                            if url not in dsBookings:
+                                dsBookings[url] = {}
+                                dsBookings[url][node.name] = 0
+                            else:
+                                if node.name not in dsBookings[url]:
+                                    dsBookings[url][node.name] = 0
+
+                            currentUrl = url
                             break
-                if matchCount > 1:
-                    print "ERROR: identical storage area is associated with different hosts: %s" % path
-                    sys.exit(1)
-                elif matchCount == 1:
-                    dsnodes.append(matchNode)
+
+                if len(matchNodes) > 1:
+                    # find eligible ds node with the least number of bookings
+                    minBooking = min(dsBookings[currentUrl], key=dsBookings[currentUrl].get)
+                    dsBookings[currentUrl][minBooking] += 1
+
+                    dsnodes.append(minBooking)
+
+                elif len(matchNodes) == 1:
+                    dsnodes.append(matchNodes[0])
                 else:
                     # use compute node             
                     for node in difxmachines.getComputeNodes():
