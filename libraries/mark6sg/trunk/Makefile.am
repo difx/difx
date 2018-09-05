@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS=-I m4
 
-SUBDIRS = jsmn mark6sg test extra
+SUBDIRS = jsmn mark6sg mark6gather test extra
 
 EXTRA_DIST = COMPILING mark6sg.spec.in
 

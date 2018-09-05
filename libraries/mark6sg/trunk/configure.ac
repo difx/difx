@@ -1,4 +1,4 @@
-AC_INIT([mark6sg], [2.0.0], [Jan Wagner jwagner@kasi.re.kr])
+AC_INIT([mark6sg], [2.0.1], [Jan Wagner jwagner@kasi.re.kr])
 
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
@@ -33,6 +33,8 @@ AM_PROG_CC_C_O
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
+AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
+
 PKG_CHECK_MODULES([FUSE], [fuse], [HAVE_FUSE=1], [HAVE_FUSE=0])
 AM_CONDITIONAL([USE_FUSE], [test "$HAVE_FUSE" -eq 1])
 
@@ -57,6 +59,7 @@ AC_SUBST(version)
 AC_OUTPUT([ \
 	Makefile         \
 	mark6sg/Makefile \
+	mark6gather/Makefile \
 	test/Makefile    \
 	extra/Makefile   \
 	jsmn/Makefile    \

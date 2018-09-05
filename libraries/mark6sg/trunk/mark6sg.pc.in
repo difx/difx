@@ -8,5 +8,5 @@ Name: mark6sg
 Description: library to read Mark6 scatter-gather recordings
 Requires:
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lmark6sg
+Libs: -L${libdir} -lmark6sg -lmark6gather
 Cflags: -I${includedir}
