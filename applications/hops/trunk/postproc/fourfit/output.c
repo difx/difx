@@ -19,10 +19,12 @@
 //#include "print_page.h"
 #include "pass_struct.h"
 #include "param_struct.h"
+#include "meta_struct.h"
 #include "vex.h"
 
 #include "fileset.h"
 #include "write_lock_mechanism.h"
+#include "plot_data_dir.h"
 
 int
 output (struct vex* root, struct type_pass* pass)
@@ -38,6 +40,9 @@ output (struct vex* root, struct type_pass* pass)
     extern int max_seq_no;
     extern int msglev;
     extern struct type_param param;
+    extern struct type_status status;
+    extern struct type_meta meta;
+    extern struct type_plot plot;
 
                                         /* Generate information to create fringe plot */
                                         /* Some of this also goes into fringe file */
@@ -107,6 +112,8 @@ output (struct vex* root, struct type_pass* pass)
         fringe.allocated[fringe.nalloc] = fringe.t222;
         fringe.nalloc += 1;
         }
+                                            /* possibly dump the data */
+    DUMP_PLOT_DATA2DIR(root, pass, &param, &status, &meta, &plot, &fringe);
                                             /* Actually write the output fringe file */
     if( !test_mode)
         {

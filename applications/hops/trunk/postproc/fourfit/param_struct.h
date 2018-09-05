@@ -5,6 +5,7 @@
 #define MAX_ION_PTS 100
 #define LAG 0
 #define GLOBAL 1
+#define MAXNOTCH (8*MAXFREQ)
 
 #include "plot_struct.h"
 
@@ -51,6 +52,8 @@ struct type_param
     int         ah_phase;               /* Ad hoc phase correction mode */
     char        ah_file[2][256];        // file names for ad hoc file mode pcal
     char        ah_file_chans[2][256];  // channel codes for ah_file contents
+    char        ah_flag_files[2][256];  /* Ad hoc flag files */
+    char        plot_data_dir[2][256];  /* for dumping plot data */
     unsigned long bocf_period;          /* Correlator frame in systicks */
     int         bocfs_per_ap;           /* Correlator frames per AP */
     short       su_number[2];           /* Ref and remote SU number */
@@ -60,7 +63,7 @@ struct type_param
     double      passband[2];            /* passband for spectral filtering (MHz) */
     int         gen_cf_record;          /* whether to generate cf record */
     int         nnotches;               /* alternative to passband */
-    double      notches[MAXFREQ][2];    /* alternative to passband */
+    double      notches[MAXNOTCH][2];   /* alternative to passband */
     double      speedup;                /* ration of playback speed to record speed */
     int         first_plot;             // number of first chan to plot, when overridden
     int         nplot_chans;            // number of plot channels when overridden

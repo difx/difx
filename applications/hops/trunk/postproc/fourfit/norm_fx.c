@@ -29,6 +29,7 @@
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "adhoc_flag.h"
 
 #define signum(a) (a>=0 ? 1.0 : -1.0)
 
@@ -59,7 +60,7 @@ void norm_fx (struct type_pass *pass,
         usb_present, lsb_present,
         usb_bypol[4],lsb_bypol[4], 
         lastpol[2];                 // last pol index with data present, by sideband
-
+    int datum_uflag, datum_lflag;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L/X/H, 1:R/Y/V
     static fftw_plan fftplan;
 
@@ -115,11 +116,12 @@ void norm_fx (struct type_pass *pass,
     lastpol[0] = ips;
     lastpol[1] = ips;
                                     // check sidebands for each pol. for data
+    ADHOC_FLAG(&param, datum->flag, fr, ap, &datum_uflag, &datum_lflag);
     for (ip=ips; ip<pass->pol+1; ip++)
         {
-        usb_bypol[ip] = ((datum->flag & (USB_FLAG << 2*ip)) != 0)
+        usb_bypol[ip] = ((datum_uflag & (USB_FLAG << 2*ip)) != 0)
                      && ((pols & (1 << ip)) != 0);
-        lsb_bypol[ip] = ((datum->flag & (LSB_FLAG << 2*ip)) != 0)
+        lsb_bypol[ip] = ((datum_lflag & (LSB_FLAG << 2*ip)) != 0)
                      && ((pols & (1 << ip)) != 0);
         pass->pprods_present[ip] |= usb_bypol[ip] || lsb_bypol[ip];
 
@@ -146,8 +148,8 @@ void norm_fx (struct type_pass *pass,
         if (param.pol)
             pol = ip;
                                     // If no data for this sb/pol, go on to next
-        if (sb == 0 & usb_bypol[ip] == 0
-         || sb == 1 & lsb_bypol[ip] == 0)
+        if ((sb == 0 && usb_bypol[ip] == 0)
+         || (sb == 1 && lsb_bypol[ip] == 0))
             continue;
                                     // Pluck out the requested polarization
         switch (pol)
@@ -208,7 +210,11 @@ void norm_fx (struct type_pass *pass,
             msg ("Conflicting correlation type %d", 2, t120->type);
             return;
             }
-        
+
+        // note datum->lsbfrac or datum->usbfrac remains at -1.0
+        if (pass->control.min_weight > 0.0 &&
+            pass->control.min_weight > t120->fw.weight) continue;
+
                                     // determine data weights by sideband
         if (ip == lastpol[sb])
             {                       // last included polarization, do totals
@@ -224,7 +230,7 @@ void norm_fx (struct type_pass *pass,
                     datum->lsbfrac = t120->fw.weight;
                 status.ap_frac[sb][fr] += datum->lsbfrac;
                 status.total_ap_frac   += datum->lsbfrac;
-                status.total_lsb_frac   += datum->lsbfrac;
+                status.total_lsb_frac  += datum->lsbfrac;
                 }
             else                    // upper sideband
                 {
@@ -234,7 +240,7 @@ void norm_fx (struct type_pass *pass,
                     datum->usbfrac = t120->fw.weight;
                 status.ap_frac[sb][fr] += datum->usbfrac;
                 status.total_ap_frac   += datum->usbfrac;
-                status.total_usb_frac   += datum->usbfrac;
+                status.total_usb_frac  += datum->usbfrac;
                 }
             }
 
@@ -255,11 +261,12 @@ void norm_fx (struct type_pass *pass,
 
                                     // loop over spectral points
         for (i=0; i<nlags/2; i++)
-                                    // filter out any nan's, if present
+            {                       // filter out any nan's, if present
             if (isnan (t120->ld.spec[i].re) || isnan (t120->ld.spec[i].im))
+                {
                 msg ("omitting nan's in visibility for ap %d fr %d lag %i", 
                       2, ap, fr, i);
-                 
+                }
                                     // add in iff this is a requested pol product
             else if (param.pol & 1<<ip || param.pol == 0)
                 {           
@@ -299,16 +306,22 @@ void norm_fx (struct type_pass *pass,
                 z = z * cexp (-2.0 * M_PI * I * (diff_delay * deltaf + phase_shift));
                 xp_spec[i] += z;
                 }
+            }                       // bottom of lags loop
         }                           // bottom of polarization loop
 
                                     // also skip over this next section, if no data
-      if (sb == 0 && usb_present == 0
-       || sb == 1 && lsb_present == 0)
+      if ((sb == 0 && usb_present == 0) || (sb == 1 && lsb_present == 0))
           continue;
-
+                                    // yet another way of saying "no data"
+      if ((sb == 0 && datum->usbfrac < 0) || (sb == 1 && datum->lsbfrac < 0))
+          continue;
                                     /* apply spectral filter as needed */
       apply_passband (sb, ap, fdata, xp_spec, nlags*2, datum);
       apply_notches (sb, ap, fdata, xp_spec, nlags*2, datum);
+
+                                    // if data was filtered away...
+      if ((sb == 0 && datum->usbfrac <= 0) || (sb == 1 && datum->lsbfrac <= 0))
+          continue;
 
                                     /* Put sidebands together.  For each sb,
                                        the Xpower array, which is the FFT across
@@ -321,16 +334,16 @@ void norm_fx (struct type_pass *pass,
 
                                     // skip 0th spectral pt if DC channel suppressed
       ibegin = (pass->control.dc_block) ? 1 : 0;
-      if (sb == 0)
-          { 
+      if (sb == 0 && datum->usbfrac > 0.0)
+          {                         // USB: accumulate xp spec, no phase offset
           for (i = ibegin; i < nlags; i++)
               {
               factor = datum->usbfrac;
               S[i] += factor * xp_spec[i];
               }
           }
-      else                          /* LSB: conjugate, add phase offset */
-          {
+      else if (sb == 1 && datum->lsbfrac > 0.0)
+          {                         // LSB: accumulate conj(xp spec) with phase offset
           for (i = ibegin; i < nlags; i++)
               {
               factor = datum->lsbfrac;
@@ -372,19 +385,23 @@ void norm_fx (struct type_pass *pass,
         factor *= polcof_sum; //should be 1.0 in all other cases, so this isn't really necessary
         }
 
+    //Question:
     //why do we do this check? factor should never be negative (see above)
     //and if factor == 0, is this an error that should be flagged? 
     if (factor > 0.0)
         factor = 1.0 / factor;
+    //Answer:
+    //if neither of usbfrac or lsbfrac was set above the default (-1), then
+    //no data was seen and thus the spectral array S is here set to zero.
+    //That should result in zero values for datum->sbdelay, but why take chances.
 
-    msg ("usbfrac %f lsbfrac %f polcof_sum %f factor %1f", -2, 
-            datum->usbfrac, datum->lsbfrac, polcof_sum, factor);
-    for (i=0; i<4*nlags; i++) 
-        S[i] = S[i] * factor;
-
+    msg ("usbfrac %f lsbfrac %f polcof_sum %f factor %1f flag %x", -2, 
+            datum->usbfrac, datum->lsbfrac, polcof_sum, factor, datum->flag);
                                     /* Collect the results */
-    if(datum->flag != 0)
+    if(datum->flag != 0 && factor > 0.0)
         {
+        for (i=0; i<4*nlags; i++) 
+            S[i] = S[i] * factor;
                                     // corrections to phase as fn of freq based upon 
                                     // delay calibrations
                                     /* FFT to single-band delay */
@@ -407,9 +424,10 @@ void norm_fx (struct type_pass *pass,
             else
                 datum->sbdelay[i] = xlag[j] / (nlags / 2);
             }
-         }
-                                    /* No data */
-    else
+        }
+    else                            /* No data */
+        {
         for (i = 0; i < nlags*2; i++) 
             datum->sbdelay[i] = 0.0;
+        }
     }

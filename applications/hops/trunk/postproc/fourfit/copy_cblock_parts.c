@@ -17,8 +17,8 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
     {
     int i,j;
 
-    if (f->max_parity != NULLFLOAT)
-        t->max_parity = f->max_parity;
+    if (f->min_weight != NULLFLOAT)
+        t->min_weight = f->min_weight;
 
     if (f->pc_mode.ref != NULLINT)
         t->pc_mode.ref = f->pc_mode.ref;
@@ -193,6 +193,12 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
         if (f->adhoc_file_chans[i][0] != 0)
             strcpy (t->adhoc_file_chans[i], f->adhoc_file_chans[i]);
         
+        if (f->adhoc_flag_files[i][0] != 0)
+            strcpy (t->adhoc_flag_files[i], f->adhoc_flag_files[i]);
+        
+        if (f->plot_data_dir[i][0] != 0)
+            strcpy (t->plot_data_dir[i], f->plot_data_dir[i]);
+        
         if (f->pc_phase_offset[i].rem != NULLFLOAT)
             t->pc_phase_offset[i].rem = f->pc_phase_offset[i].rem;
             
@@ -204,7 +210,7 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
         t->gen_cf_record = f->gen_cf_record;
     if (f->nnotches != NULLINT)
         t->nnotches = f->nnotches;
-    for (i=0; i<MAXFREQ; i++)
+    for (i=0; i<MAXNOTCH; i++)
         {
         if (f->notches[i][0] != NULLFLOAT)
             t->notches[i][0] = f->notches[i][0];

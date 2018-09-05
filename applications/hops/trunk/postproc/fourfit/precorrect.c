@@ -279,6 +279,8 @@ int precorrect (struct scan_struct* ovex, struct type_pass* pass)
         {
         strcpy (param.ah_file[i], pass->control.adhoc_file[i]);
         strcpy (param.ah_file_chans[i], pass->control.adhoc_file_chans[i]);
+        strcpy (param.ah_flag_files[i], pass->control.adhoc_flag_files[i]);
+        strcpy (param.plot_data_dir[i], pass->control.plot_data_dir[i]);
         }
 
     if (do_accounting) account ("PreCorrect data");

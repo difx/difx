@@ -16,6 +16,7 @@
 /*                  mode        0=basic, 1='p' and 'n' for prev, next   */
 /*                              -1=display plot and return immediately  */
 /*                              -2=shut down display window             */
+/*                              -3 or less =display plot, sleep and ret */
 /*                                                                      */
 /*      Output:     display or hardcopy                                 */
 /*                  return value    key pressed, or space for mission   */
@@ -44,6 +45,19 @@
 #else /* GS_COPYPAGE_OK */
 # define GS_COPYPAGE_OK 0
 #endif /* GS_COPYPAGE_OK */
+
+/* Assuming this logic works, GS_COPYPAGE_OK can be purged */
+#ifndef GS_VERSION
+# define GS_VERSION 0
+#endif /* GS_VERSION */
+#if GS_VERSION < 9100
+# warning "copypage command should work for us"
+#elif GS_VERSION < 9220
+# warning ".outputpage command should work for us"
+#else
+# warning "flushpage is our best hope now"
+#endif
+
 #ifdef P_tmpdir
 # define P_tmpdir "/tmp"
 #endif /* P_tmpdir */
@@ -61,14 +75,15 @@ char
 display_221 (struct type_221 *t221,
              int mode)
     {
-    char *pplot, *end_of_plot, c, *ptr;
+    char *pplot, *end_of_plot, c, *ptr, *gs_exec = getenv("GS_EXEC");
+    char *gs_debug = getenv("GS_DEBUG");
     int i, nchar, size, xval, yval, loop;
     static int gsopen = FALSE;
     static FILE *gs;
     static char psbuf[2560], cmd[1280], response[1024], fname[1024];
-    static char ps_file[1024] = "sub-dfio_";
+    static char ps_file[1024] = "sub-dfio_", gse[1024];
     extern char progname[];
-    FILE *fp;
+    FILE *fp, *fdbg;
 
     if (mode == -2)
         {
@@ -77,6 +92,7 @@ display_221 (struct type_221 *t221,
         gsopen = FALSE;
         return ('\0');
         }
+    fdbg = (gs_debug) ? fopen(gs_debug, "w") : 0;   /* debug output file */
 
     pplot = t221->pplot;
                                         /* Locate end of original plot */
@@ -91,7 +107,16 @@ display_221 (struct type_221 *t221,
                                         /* Open gs and display the plot */
     if (! gsopen)
         {
-        gs = popen (GS_EXEC " -q -", "w");
+        if (gs_exec)
+            {
+            snprintf(gse, sizeof(gse), "%s -q -", gs_exec);
+            msg ("Using '%s' for gs child command", 3, gse);
+            gs = popen (gse, "w"); 
+            }
+        else
+            {
+            gs = popen (GS_EXEC " -q -", "w");
+            }
         gsopen = TRUE;
         if (gs == NULL)
             {
@@ -109,15 +134,18 @@ display_221 (struct type_221 *t221,
         }
                                         /* Dump the postscript instructions */
     fwrite (pplot, 1, nchar, gs);
+    if (fdbg) fwrite (pplot, 1, nchar, fdbg);
                                         /* Now add some instructions at the */
                                         /* bottom of the plot */
     sprintf (psbuf, "/Helvetica findfont 110 scalefont setfont\n");
     fwrite (psbuf, 1, strlen (psbuf), gs);
+    if (fdbg) fwrite (psbuf, 1, strlen (psbuf), fdbg);
 
     sprintf (psbuf, "0.7 0.0 0.7 setrgbcolor\n");
     fwrite (psbuf, 1, strlen (psbuf), gs);
+    if (fdbg) fwrite (psbuf, 1, strlen (psbuf), fdbg);
 
-    if (mode == -1)
+    if (mode < 0)
         ptr = "                                                             ";
     else if (mode == 0)
         ptr = "Press a key: 'h'=hardcopy, 's'=save, 'q'=quit, other=continue";
@@ -133,6 +161,7 @@ display_221 (struct type_221 *t221,
         {                           // rjc 2009.3.11
         psleft (0.1, 0.01, ptr);
         fwrite (psbuf, 1, strlen (psbuf), gs);
+        if (fdbg) fwrite (psbuf, 1, strlen (psbuf), fdbg);
         }
                                         /* Substitute copypage for showpage to */
                                         /* keep ghostscript happy */
@@ -143,17 +172,46 @@ display_221 (struct type_221 *t221,
     /* this is required by version 9.14 */
     sprintf (psbuf, "PGPLOT restore false .outputpage\n"
                     "%% copypage changed in PostScriptLevel3");
+    /*
+     * To clarify, in the transition to PS3, Adobe dropped the
+     * copypage command.  The internal .outputpage command used
+     * this way has the net effect of flushing and copying the page.
+     * The 'false' tells .outputpage (the worker behind showpage)
+     * not to erase the buffer.  I think 'restore' leaves 1 on the
+     * stack which gets used as the number of copies.
+     */
 #endif
+#if GS_VERSION > 9210
+    /* this seems to work for version 9.22 */
+    sprintf (psbuf, "PGPLOT restore flushpage showpage");
+#endif /* GS_VERSION > 9210 */
+    /* another override */
+    if (getenv("GS_COPYPAGE"))
+        {
+        strcpy(psbuf, getenv("GS_COPYPAGE"));
+        msg ("Adusted PS restore to '%s'", 3, psbuf);
+        }
     fwrite (psbuf, 1, strlen (psbuf), gs);
+    if (fdbg) fwrite (psbuf, 1, strlen (psbuf), fdbg);
     fflush (gs);
+    fflush (fdbg);
                                         /* Pause to flush and take any user */
                                         /* user input, unless mode==-1.  The */
                                         /* rest of the plot follows below. */
     loop = TRUE;
-    if (mode == -1) 
+    if (mode < 0)
         {
         c = 'q';
         fwrite (end_of_plot, 1, strlen (end_of_plot), gs);
+        if (fdbg) fwrite (end_of_plot, 1, strlen (end_of_plot), fdbg);
+        if (fdbg) fclose(fdbg);
+        fdbg = 0;
+        if (mode < -2)
+            {
+            msg ("Sleeping for %d", 3, -mode-2);
+            fflush(stderr);
+            sleep(-mode-2);
+            }
         loop = FALSE;
         }
     while (loop)
@@ -163,7 +221,10 @@ display_221 (struct type_221 *t221,
         if (end_of_plot)
         {
         fwrite (end_of_plot, 1, strlen (end_of_plot), gs);
+        if (fdbg) fwrite (end_of_plot, 1, strlen (end_of_plot), fdbg);
         end_of_plot = 0;                /* finish plot, once */
+        if (fdbg) fclose(fdbg);
+        fdbg = 0;
         }
         system ("stty echo icanon");
 

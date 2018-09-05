@@ -331,3 +331,15 @@ int fcode(char c)
 	for (i = 0; i < MAXFREQ; i++)
 		if (c == fchars[i]) return i;
 	}
+	
+char get_fchar_by_index(int i)
+	{
+		if(i < MAXFREQ)
+		{
+			return fchars[i];
+		}
+		else
+		{
+			return '\0';
+		}
+	}

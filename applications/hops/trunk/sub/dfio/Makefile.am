@@ -1,14 +1,15 @@
 #
-# $Id: Makefile.am 1699 2017-05-02 16:39:30Z gbc $
+# $Id: Makefile.am 2458 2018-07-19 21:30:23Z gbc $
 #
 
-SUBDIRS = .
+SUBDIRS = . copypage
 
 TESTS = test_compress test_mk4fringe
 TESTS_ENVIRONMENT = srcdir=$(srcdir)
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGS_EXEC=\"@GS_EXEC@\" \
-		-DGS_COPYPAGE_OK=@GS_COPYPAGE_OK@
+		-DGS_COPYPAGE_OK=@GS_COPYPAGE_OK@ \
+		-DGS_VERSION=@GS_VERSION@
 
 pkginclude_HEADERS = bytflp.h
 

@@ -22,7 +22,7 @@ nullify_cblock (struct c_block *cb_ptr)
     cb_ptr -> cb_chain        = NULL;     /* terminate c_block chain properly */
     cb_ptr -> f_group         = WILDCARD;
     cb_ptr -> skip            = NULLINT;  
-    cb_ptr -> max_parity      = NULLFLOAT;
+    cb_ptr -> min_weight      = NULLFLOAT;
     cb_ptr -> pc_mode.ref     = NULLINT;
     cb_ptr -> pc_mode.rem     = NULLINT;
     cb_ptr -> pc_period.ref   = NULLINT;
@@ -89,13 +89,15 @@ nullify_cblock (struct c_block *cb_ptr)
         cb_ptr -> ion_window[i]          = NULLFLOAT;
         cb_ptr -> adhoc_file[i][0]       = 0; 
         cb_ptr -> adhoc_file_chans[i][0] = 0; 
+        cb_ptr -> adhoc_flag_files[i][0] = 0; 
+        cb_ptr -> plot_data_dir[i][0]    = 0;
         cb_ptr -> pc_phase_offset[i].ref = NULLFLOAT;
         cb_ptr -> pc_phase_offset[i].rem = NULLFLOAT;
         }
 
     cb_ptr -> gen_cf_record = NULLINT;
     cb_ptr -> nnotches = NULLINT;
-    for (i=0; i<MAXFREQ; i++)
+    for (i=0; i<MAXNOTCH; i++)
         cb_ptr -> notches[i][0] = 
         cb_ptr -> notches[i][1] = NULLFLOAT;
 

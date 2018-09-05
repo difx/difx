@@ -19,7 +19,7 @@ default_cblock (struct c_block *cb_ptr)
     int i;
                                                             // scalar parameters
     cb_ptr -> skip          = FALSE;
-    cb_ptr -> max_parity    = 0.001;
+    cb_ptr -> min_weight    = 0.000;
     cb_ptr -> pc_mode.ref   = MULTITONE;
     cb_ptr -> pc_mode.rem   = MULTITONE;
     cb_ptr -> pc_period.ref   = 5;
@@ -52,7 +52,7 @@ default_cblock (struct c_block *cb_ptr)
 
     cb_ptr -> gen_cf_record = FALSE;
     cb_ptr -> nnotches = 0;
-    for (i=0; i<MAXFREQ; i++)
+    for (i=0; i<MAXNOTCH; i++)
         cb_ptr -> notches[i][0] = 0.0;
         cb_ptr -> notches[i][1] = 1.0E6;
 
@@ -84,6 +84,8 @@ default_cblock (struct c_block *cb_ptr)
         {
         cb_ptr -> adhoc_file[i][0] = 0;
         cb_ptr -> adhoc_file_chans[i][0] = 0;
+        cb_ptr -> adhoc_flag_files[i][0] = 0;
+        cb_ptr -> plot_data_dir[i][0] = 0;
         cb_ptr -> pc_phase_offset[i].ref = 0;
         cb_ptr -> pc_phase_offset[i].rem = 0;
         }

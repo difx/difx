@@ -203,8 +203,10 @@ calc_rms (struct type_pass *pass)
                 {
                 plot.mean_ap[fr][seg] = mean_ap / wtf;
                 plot.seg_amp[fr][seg] = cabs (vsumf) / wtf_dsb;
-                plot.seg_frac_usb[fr][seg] = usbfrac / (double)apseg;
-                plot.seg_frac_lsb[fr][seg] = lsbfrac / (double)apseg;
+                plot.seg_frac_usb[fr][seg] =
+                    (usbfrac >= 0.0) ? usbfrac / (double)apseg : 0.0;
+                plot.seg_frac_lsb[fr][seg] =
+                    (lsbfrac >= 0.0) ? lsbfrac / (double)apseg : 0.0;
                 if (ref_scount_usb == 0.0) ref_scount_usb = -1.0; /* No data, no plot */
                 if (ref_scount_lsb == 0.0) ref_scount_lsb = -1.0;
                 if (rem_scount_usb == 0.0) rem_scount_usb = -1.0;

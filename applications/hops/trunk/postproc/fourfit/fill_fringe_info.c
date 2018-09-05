@@ -43,7 +43,6 @@ char *filename)
     extern struct mk4_fringe fringe;
     extern struct type_param param;
     extern struct type_status status;
-    extern struct type_plot plot;
                                         /* Init */
     clear_mk4fringe (&fringe);
 

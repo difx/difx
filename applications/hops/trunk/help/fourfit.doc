@@ -1,5 +1,5 @@
 Documentation for the program "fourfit"
--- last update 2017.2.1
+-- last update 2018.5.26
 ---------------------------------------
 
 COMMAND NAME:   fourfit
@@ -16,8 +16,14 @@ SYNTAX:  fourfit [-a] [-b BB:F] [-c controlfile] [-d display device]
          come last.  All option flags must appear before the data file
          list.  Option flags can come in any order.
 
-    Here are two examples of command-line invocations of fourfit, with
+    Here are examples of command-line invocations of fourfit, with
     an explanation of what they do:
+
+fourfit -pt -c control 101-0620/3C279.051V4B
+        Test mode, steps through all baselines polarizations for
+        this scan.  Without the -pt, the fringes would just be
+        written in individual files in 101-0620, with one file
+        per baseline-pol-frequencygroup type.
 
 fourfit -txas -m 1 -c control 018-234505 set mb_win -0.0034 .004 freqs a b
         Test mode, xwindow display, accounting switched on, cross
@@ -150,7 +156,7 @@ OPTION FLAGS:
         -P pp
             Controls polarization processing, where the 2 character
             string pp is one of four cross-polarization 
-            states {RR, LL, RL, or LR}
+            states: LL, RR, LR, or RL.
 
         -T trefoffs
             If this option is invoked, the fourfit reference
@@ -304,6 +310,7 @@ ACTION KEYWORDS         VALUES
    adhoc_amp          float
    adhoc_file         string
    adhoc_file_chans   string
+   adhoc_flag_file    string
    adhoc_period       float
    adhoc_phase        'sinewave', 'polynomial', or 'file'
    adhoc_poly         <7 floats/integers (mixture OK)
@@ -316,9 +323,11 @@ ACTION KEYWORDS         VALUES
    delay_offs_x       n char string, followed by n floats
    delay_offs_y       n char string, followed by n floats
    dr_win             2 floats
+   est_pc_manual      int
    fmatch_bw_pct      float
    freqs              n chars
    gates              n char string, followed by 2n floats
+   gen_cf_record      'true' or 'false' (default: false)
    index              n ints
    interpolator       'iterate' or 'simul' (default: iterate)
    ionosphere         float
@@ -328,12 +337,10 @@ ACTION KEYWORDS         VALUES
    lsb_offset         float
    mb_win             2 floats
    mbd_anchor         'sbd' or 'model' (default: model)
-   optimize_closure   'true' or 'false' (default: false)
-   gen_cf_record      'true' or 'false' (default: false)
-   est_pc_manual      int
-   passband           2 floats
+   min_weight         float
    notches            2n floats
-   period             int
+   optimize_closure   'true' or 'false' (default: false)
+   passband           2 floats
    pc_amp_hcode       float
    pc_delay_l         float
    pc_delay_r         float
@@ -352,6 +359,8 @@ ACTION KEYWORDS         VALUES
    pc_mode            `normal', `ap_by_ap', `manual', or 'multitone'
    pc_period          int
    pc_tonemask        n char string, followed by n floats
+   period             int
+   plot_data_dir      string
    ra_offset          float
    ref_freq           float
    samplers           int, followed by up to 8 strings
@@ -416,15 +425,26 @@ KEYWORD SEMANTICS
                  data to be accepted, specified as RF frequencies. If the
                  lower bound is greater than the upper bound, the range
                  wraps around -- allowing a band in the middle to be
-                 excluded.
-   notches       up to 64 non-overlapping lower/upper bounds pairs (in MHz)
+                 excluded.  The data is rescaled so as to preserve the
+                 amplitude observable (as if the data excluded were perfectly
+                 valid); this means that the area under cross-power spectral
+                 plot amplitude curve is approximately conserved.
+   notches       a list of non-overlapping lower/upper bounds pairs (in MHz)
                  to exclude from the spectral passband.  (Passband may be
                  applied prior to removal of these notches.)  Note that the
                  amplitude modification calculus isn't sufficiently
                  sophisticated to detect overlaps of passband and notches,
-                 so be sure to keep your surgeries disjoint.
+                 so be sure to keep your surgeries disjoint.  (A large number
+                 is supported and you will get a complaint if you exceed it.)
+                 As with passband, the spectral data is rescaled so that
+                 the amplitude observable is in some sense preserved.
    dc_block      if set to true, zero out lowest cross-power spectral
                  channel; useful for suppressing DC bias
+   min_weight    fraction of data which must be present for inclusion.
+                 Normally, a weight between 0.0 and 1.0 is provided by
+                 the correlator to represent the fraction of data actually
+                 supporting the correlation value.  If you specify a minimum
+                 weight, any AP not meeting this threshold will be discarded.
 
    *** deprecated filtering commands - for backward compatibility only: ***
    max_parity    maximum allowable fraction of bytes in error
@@ -511,6 +531,16 @@ KEYWORD SEMANTICS
              past the most recent hour.
    adhoc_poly For the ad hoc phase polynomial model; From 1-6 coefficients
              describing a power-series model in time. (deg/sec^n)
+   adhoc_flag_file  Name of the file containing adhoc flagging.  Lines of this
+             contain times (floating point days from beginning of year) and
+             character strings to impose data flagging at a particular time
+             (which remains in effect until the next time mentioned).  The
+             character string has two characters per channel with a nonzero
+             bit for data to be retained with the bit assignments as follows:
+             (msb)USB-RL,LSB-RL,USB-LR,LSB-LR,USB-RR,LSB-RR,USB-LL,LSB-LL(lsb)
+             If the string is too short, the last byte will be replicated to
+             the remaining channels, so a single FF is adquate to retain all
+             or a single 00 to discard all.
    adhoc_file Name of the file containing phases in the ad hoc file mode.
    adhoc_file_chans String of channel labels for phases (columns) in the
              ad hoc file.
@@ -550,6 +580,12 @@ KEYWORD SEMANTICS
    sampler_delay_y synonym for sampler_delay_r.
 
 ** miscellaneous functions
+   dump_data_dir if present will be used as a path to dump the plot data
+                 in a self-documented ascii form to allow export of plot
+                 information to other arenas (specialized plots, &c).  One
+                 file per fringe is written; more help is available within
+                 the files that are produced: there is help for the options
+                 that may be used to manipulate the content.
    fmatch_bw_pct associate freqs < this percentage of bw together (25% default)
    pc_amp_hcode  generate an H code iff any pcal amps less than this (0.005 default)
    weak_channel  the ratio of single_channel_amp to coherent_sum_amp 

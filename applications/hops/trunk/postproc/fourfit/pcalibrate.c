@@ -9,6 +9,7 @@
 // multitone mode                                      rjc ~2010.10
 // variable width integration for multitone mode       rjc  2011.2.22
 // add code to copy over delay calibration delay       rjc  2011.8.9
+// allow both negative and positive pcal delay windows rjc  2018.4.27
 
 #include <stdio.h>
 #include <math.h>
@@ -60,7 +61,9 @@ void pcalibrate (struct type_pass *pass,
            ymax,
            ampmax,
            del_avg,
-           pc_amb_center;
+           pc_amb_center,
+           lo,
+           hi;
         
     complex pc_avg[2][MAX_PCF],
             pc_adj[2],
@@ -256,12 +259,20 @@ void pcalibrate (struct type_pass *pass,
                 delay = (indpeak+ymax) / 256.0 / param.pcal_spacing[stn];       
                                     // find corresponding delay in suitable range
                 pc_amb = 1 / param.pcal_spacing[stn];
-                while (delay < sdelay + pc_amb_center - pc_amb / 2.0)
+                
+                                    // find bounds of allowable resolved delay
+                lo = sdelay + pc_amb_center - pc_amb / 2.0;
+                hi = sdelay + pc_amb_center + pc_amb / 2.0;
+                while (hi < delay)  // shift delay left if necessary
+                    delay -= pc_amb;
+                while (lo > delay)  // shift delay right if necessary
                     delay += pc_amb;
+
                                     // add in a priori offset to delay for this chan & stn
                 delay += 1e-9 * status.delay_offs[fr][stn];
 
-                msg ("fr %d stn %d ipol %d delay %6.1f ns", 0, fr, stn, ipol, 1e9 * delay);
+                msg ("fr %d stn %d ipol %d ap %d delay %6.1f ns", 0, 
+                      fr, stn, ipol, ap, 1e9 * delay);
 
                                     // find mean of delay-adjusted phases at center frequency
                 nin = 0;
@@ -352,7 +363,7 @@ complex c_mean (complex *z, int n)
     return (sum);
     }
 
-// find center of sampler-based pcal ambiguity window based on freq & pol
+// look up sampler-based pcal ambiguity window based on freq & pol
 
 double get_sampler_delay (struct type_pass *pass, int ifr, int stn, int ipol)
     {

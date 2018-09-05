@@ -4,6 +4,7 @@
 #include "mk4_sizes.h"
 
 #define MAX_SAMP 16
+#define MAXNOTCH (8*MAXFREQ)
 
 
 struct gat_struct
@@ -42,7 +43,7 @@ struct c_block                     /* Elemental control block structure */
           /* Filter, corrections, etc. to apply to data within qualifying scan */
 
    short skip;                     /* iff true, don't fourfit matching scans */
-   double max_parity;              /* maximum parity error rate for AP acceptance */
+   double min_weight;              /* min t120->fw.weight for AP acceptance */
    double ref_freq;                /* force fourfit to use this ref. freq. (MHz) */
    int frequency[MAXFREQ];         /* accept USB, LSB, DSB iff = 1, 2, 3 */
    short index[2*MAXFREQ];         /* index numbers of acceptable sidebands */
@@ -80,10 +81,12 @@ struct c_block                     /* Elemental control block structure */
    double adhoc_poly[6];           /* ad hoc phase polynomial coefficients (rad/sec^n) */
    char adhoc_file[2][256];        // file names if station(s) is in pc_mode file
    char adhoc_file_chans[2][128];  // channel codes [a..zA..Z$%] for pc file phase fields
+   char adhoc_flag_files[2][256];  /* file names for ad hoc data flagging */
+   char plot_data_dir[2][256];     /* dir name(s) for dumping plot data */
    double passband[2];             /* passband for spectral filtering (MHz) */
    int gen_cf_record;              /* whether to general control file record */
    int nnotches;                   /* alternative to passband */
-   double notches[MAXFREQ][2];     /* alternative to passband */
+   double notches[MAXNOTCH][2];    /* alternative to passband */
    double t_cohere;                /* coherence time (s) for co-adding fringe rates */
    struct dstats ionosphere;       // a priori ionospheres (TEC units = 1e16 el/m^2)
    struct dstats delay_offs[MAXFREQ];// additive delay offset(ns) by channel  ##DELAY_OFFS##

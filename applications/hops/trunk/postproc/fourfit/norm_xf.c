@@ -29,7 +29,7 @@
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
-
+#include "adhoc_flag.h"
                                         /* minimum #bits for an AP to count */
 #define SLIVER   0x1000
 #define TWO_32   4294967296.0
@@ -61,6 +61,7 @@ void norm_xf (struct type_pass *pass,
         usb_present, lsb_present,
         usb_bypol[4],lsb_bypol[4];
 
+    int datum_uflag, datum_lflag;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L/X/H, 1:R/Y/V
     static fftw_plan fftplan_hw;
     static fftw_plan fftplan;
@@ -106,10 +107,11 @@ void norm_xf (struct type_pass *pass,
     usb_present = FALSE;
     lsb_present = FALSE;
                                         // check sidebands for each pol. for data
+    ADHOC_FLAG(&param, datum->flag, fr, ap, &datum_uflag, &datum_lflag);
     for (ip=ips; ip<pass->pol+1; ip++)
         {
-        usb_bypol[ip] = ((datum->flag & (USB_FLAG << 2*ip)) != 0);
-        lsb_bypol[ip] = ((datum->flag & (LSB_FLAG << 2*ip)) != 0);
+        usb_bypol[ip] = ((datum_uflag & (USB_FLAG << 2*ip)) != 0);
+        lsb_bypol[ip] = ((datum_lflag & (LSB_FLAG << 2*ip)) != 0);
 
         usb_present |= usb_bypol[ip];
         lsb_present |= lsb_bypol[ip];
@@ -128,8 +130,8 @@ void norm_xf (struct type_pass *pass,
         if (param.pol)
             pol = ip;
                                         // If no data for this sb/pol, go on to next
-        if (sb == 0 & usb_bypol[ip] == 0
-         || sb == 1 & lsb_bypol[ip] == 0)
+        if (sb == 0 && usb_bypol[ip] == 0
+         || sb == 1 && lsb_bypol[ip] == 0)
             continue;
                                         /* Pluck out the requested polarization */
         switch (pol)
@@ -219,6 +221,7 @@ void norm_xf (struct type_pass *pass,
                 msg ("Unsupported correlation type %d", 2, param.cormode);
                 return;
                 }
+            /* not sure about imposing min_weight here */
                                     /* check for (and discard) lags with no counts */
             if ((cosbits == 0) || ((sinbits == 0) && (! pass->autocorr)))
                 {
@@ -376,8 +379,8 @@ void norm_xf (struct type_pass *pass,
         }                           // bottom of polarization loop
 
                                     // also skip over this next section, if no data
-      if (sb == 0 & usb_present == 0
-       || sb == 1 & lsb_present == 0)
+      if (sb == 0 && usb_present == 0
+       || sb == 1 && lsb_present == 0)
           continue;
 
                                     /* apply spectral filter as needed */
@@ -438,8 +441,8 @@ void norm_xf (struct type_pass *pass,
     factor *= polcof_sum;
     if (factor > 0.0)
         factor = 1.0 / factor;
-    msg ("usbfrac %f lsbfrac %f polcof_sum %f factor %1f", -2, 
-            datum->usbfrac, datum->lsbfrac, polcof_sum, factor);
+    msg ("usbfrac %f lsbfrac %f polcof_sum %f factor %1f flag %x", -2, 
+            datum->usbfrac, datum->lsbfrac, polcof_sum, factor, datum->flag);
     for (i=0; i<4*nlags; i++) 
         S[i] = S[i] * factor;
 

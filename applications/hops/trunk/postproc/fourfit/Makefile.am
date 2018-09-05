@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1711 2017-05-06 19:14:37Z gbc $
+# $Id: Makefile.am 2363 2018-06-02 15:53:08Z gbc $
 #
 
 SUBDIRS = .
@@ -9,9 +9,9 @@ AM_CPPFLAGS = @HOPS_INC@
 TESTS_ENVIRONMENT = srcdir=$(srcdir)
 TESTS             = fft_chk
 
-noinst_HEADERS = control.h filter.h freqlist.h param_struct.h \
-		 parser.h pass_struct.h plot_struct.h refringe.h \
-		 statistics.h
+noinst_HEADERS = adhoc_flag.h control.h filter.h freqlist.h meta_struct.h \
+		 param_struct.h  parser.h pass_struct.h plot_struct.h \
+		 plot_data_dir.h refringe.h statistics.h
 
 bin_PROGRAMS = fourfit
 bin_SCRIPTS = 
@@ -54,7 +54,8 @@ fourfit_sources = \
 		  norm_xf.c norm_fx.c make_plotdata.c output.c read_sdata.c \
 		  diff_file_phase.c generate_graphs.c generate_text.c \
 		  create_lockfile.c wait_for_write_lock.c \
-		  fourfit_signal_handler.c est_pc_manual.c
+		  fourfit_signal_handler.c est_pc_manual.c adhoc_flag.c \
+		  plot_data_dir.c
 fourfit_SOURCES = $(fourfit_sources)
 
 fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \

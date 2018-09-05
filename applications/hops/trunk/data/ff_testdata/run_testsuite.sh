@@ -7,7 +7,7 @@
 
 verb=false
 [ -n "$testverb" ] && verb=true
-[ -n "$testverb" -a "$testverb" -gt 1 ] && set -x
+[ -n "$testverb" ] && [ "$testverb" -gt 1 ] && set -x
 
 [ -d "$srcdir" ] || { echo srcdir not set; exit 1; }
 ${HOPS_SETUP-'false'} || . $srcdir/chk_env.sh

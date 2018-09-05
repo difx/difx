@@ -40,7 +40,7 @@ struct token_struct
 #define RPAREN_          12
 #define LESS_THAN_       13
 #define GREATER_THAN_    14
-#define MAX_PARITY_      15
+#define MIN_WEIGHT_      15
 #define X_CRC_           16
 #define Y_CRC_           17
 #define X_SLIP_SYNC_     18
@@ -137,7 +137,9 @@ struct token_struct
 #define NOTCHES_           109
 #define GEN_CF_RECORD_     110
 #define EST_PC_MANUAL_     111
-#define MAX_TOKENS         112   /* Increase to equal or exceed # tokens */
+#define ADHOC_FLAG_FILE_   112
+#define PLOT_DATA_DIR_     113
+#define MAX_TOKENS         114   /* Increase to equal or exceed # tokens */
 
 
         /* Definitions of token categories */

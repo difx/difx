@@ -34,6 +34,7 @@
 #include "control.h"                    /* Definition of control structure */
 #include "param_struct.h"               /* Definition of 2 structures (param & status) */
 #include "pass_struct.h"                /* Pass-specific parameters */
+#include "meta_struct.h"                /* Various pass observables */
 #include "fstruct.h"                    /* For handling file specifiers on cmd line */
 #include "refringe.h"                   /* Specific to -r option */
 #include "fileset.h"
@@ -46,6 +47,7 @@ struct mk4_fringe fringe;
 struct mk4_corel cdata;
 struct mk4_sdata sdata[MAXSTATIONS];
 struct type_plot plot;
+struct type_meta meta;
 
 struct c_block *cb_head;
 

@@ -1,4 +1,1052 @@
 ------------------------------------------------------------------------
+r2461 | gbc | 2018-07-20 16:34:58 -0400 (Fri, 20 Jul 2018) | 1 line
+Changed paths:
+   A /trunk/sub/dfio/copypage/PDF32000_2008.pdf
+
+might as well grab this too
+
+------------------------------------------------------------------------
+r2460 | gbc | 2018-07-20 16:27:50 -0400 (Fri, 20 Jul 2018) | 1 line
+Changed paths:
+   A /trunk/sub/dfio/copypage/PLRM.pdf
+   M /trunk/sub/dfio/copypage/flush_postscript.txt
+
+saving for the future
+
+------------------------------------------------------------------------
+r2458 | gbc | 2018-07-19 17:30:23 -0400 (Thu, 19 Jul 2018) | 2 lines
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/src/display_221.c
+   M /trunk/configure.ac
+   M /trunk/sub/dfio/Makefile.am
+   M /trunk/sub/dfio/copypage/Makefile.am
+   M /trunk/sub/dfio/copypage/flush_postscript.txt
+   M /trunk/sub/dfio/copypage/fplot_test.c
+   M /trunk/sub/dfio/display_221.c
+
+Implemented a fix for gs version 9.22
+
+
+------------------------------------------------------------------------
+r2457 | gbc | 2018-07-19 14:56:02 -0400 (Thu, 19 Jul 2018) | 4 lines
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/src/display_221.c
+   M /trunk/configure.ac
+   M /trunk/sub/dfio/Makefile.am
+   A /trunk/sub/dfio/copypage
+   A /trunk/sub/dfio/copypage/AI.X.2.oifhak
+   A /trunk/sub/dfio/copypage/Makefile.am
+   A /trunk/sub/dfio/copypage/TN5608.Copypage.pdf
+   A /trunk/sub/dfio/copypage/flush_postscript.txt
+   A /trunk/sub/dfio/copypage/fplot_test.c
+   M /trunk/sub/dfio/display_221.c
+
+Created test area for stupid-GS-games under sub/dfio
+which is more convenient than testing in postproc.
+
+
+
+------------------------------------------------------------------------
+r2456 | barrettj | 2018-07-19 08:44:41 -0400 (Thu, 19 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+
+fix file search in pcc_select to be case insensitive
+
+------------------------------------------------------------------------
+r2455 | barrettj | 2018-07-19 08:44:40 -0400 (Thu, 19 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+minor plot adjustments
+
+------------------------------------------------------------------------
+r2453 | barrettj | 2018-07-17 15:14:16 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+
+hops import to chops
+
+------------------------------------------------------------------------
+r2452 | barrettj | 2018-07-17 15:14:15 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+
+clean up debuggin statements
+
+------------------------------------------------------------------------
+r2451 | barrettj | 2018-07-17 15:14:15 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+
+bug in baseline_fringe_product fixed in last commit, seems to be working now, more testing needed
+
+------------------------------------------------------------------------
+r2450 | barrettj | 2018-07-17 15:14:15 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/baseline_fringe_product_list.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+
+bugfix in min snr
+
+------------------------------------------------------------------------
+r2449 | barrettj | 2018-07-17 15:14:14 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/baseline_fringe_product_list.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+
+debugging and fixes after re-work
+
+------------------------------------------------------------------------
+r2448 | barrettj | 2018-07-17 15:14:14 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+fixes and improvements
+
+------------------------------------------------------------------------
+r2447 | barrettj | 2018-07-17 15:14:13 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+code clean up and restructuring, needs testing
+
+------------------------------------------------------------------------
+r2446 | barrettj | 2018-07-17 15:14:13 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+working on load_batch_cut_and_sort....needs testing
+
+------------------------------------------------------------------------
+r2445 | barrettj | 2018-07-17 15:14:13 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+reverting phase_resid to get rid of seaborn
+
+------------------------------------------------------------------------
+r2444 | barrettj | 2018-07-17 15:14:12 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+fix to log/verbosity
+
+------------------------------------------------------------------------
+r2443 | barrettj | 2018-07-17 15:14:12 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+bug fix and changes to phase resid plotting tick marks
+
+------------------------------------------------------------------------
+r2442 | barrettj | 2018-07-17 15:14:12 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+
+tweaking batch fourfitting script
+
+------------------------------------------------------------------------
+r2441 | barrettj | 2018-07-17 15:14:11 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+
+batch fourfit script working, needs logging mechanism
+
+------------------------------------------------------------------------
+r2440 | barrettj | 2018-07-17 15:14:11 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+getting batch fourfitter up and running
+
+------------------------------------------------------------------------
+r2439 | barrettj | 2018-07-17 15:14:11 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   M /trunk/configure.ac
+
+working on script to do batch fourfitting
+
+------------------------------------------------------------------------
+r2438 | barrettj | 2018-07-17 15:14:10 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+
+make sure we filter out 'I' mode files
+
+------------------------------------------------------------------------
+r2437 | barrettj | 2018-07-17 15:14:10 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+phase resid plotting
+
+------------------------------------------------------------------------
+r2436 | barrettj | 2018-07-17 15:14:09 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/baseline_fringe_product_list.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_objects.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+work on phase residual plotting a-la BEC's phase disp program
+
+------------------------------------------------------------------------
+r2435 | barrettj | 2018-07-17 15:14:09 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_objects.py
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+   M /trunk/configure.ac
+
+work on phase residual plotting util
+
+------------------------------------------------------------------------
+r2434 | barrettj | 2018-07-17 15:14:08 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+looking at yebes phase resid
+
+------------------------------------------------------------------------
+r2433 | barrettj | 2018-07-17 15:14:08 -0400 (Tue, 17 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+
+fix set change during iter bug
+
+------------------------------------------------------------------------
+r2430 | gbc | 2018-07-05 09:53:31 -0400 (Thu, 05 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_dump.sh
+
+geoff cannot count
+
+------------------------------------------------------------------------
+r2428 | gbc | 2018-07-03 11:05:27 -0400 (Tue, 03 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+
+lowered some msg levels
+
+------------------------------------------------------------------------
+r2427 | gbc | 2018-07-03 11:01:36 -0400 (Tue, 03 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_dump.sh
+
+clarified error message
+
+------------------------------------------------------------------------
+r2426 | gbc | 2018-07-03 10:59:26 -0400 (Tue, 03 Jul 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_dump.sh
+
+allow for a few more minor diffs
+
+------------------------------------------------------------------------
+r2424 | rjc | 2018-06-29 12:33:07 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/scripts/tpcplot.in
+
+deleted minor tpcplot debugging print stmt.
+
+------------------------------------------------------------------------
+r2423 | barrettj | 2018-06-29 11:06:53 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/lex.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/adhoc_flag.h
+   M /trunk/chops/source/python_src/phorc_module/Makefile.am.in
+   D /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_handle.py
+
+fix checksums, cleanup
+
+------------------------------------------------------------------------
+r2422 | barrettj | 2018-06-29 11:06:52 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+
+bugfix for vgoscf_gen single scan and averaging mode, remove some print outs
+
+------------------------------------------------------------------------
+r2421 | barrettj | 2018-06-29 11:06:52 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+
+fixed bug in ref station pc_phases corrections, printed out of order
+
+------------------------------------------------------------------------
+r2420 | barrettj | 2018-06-29 11:06:51 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_objects.py
+
+vgoscf and ffres2pcp are running...but reference station phase corrections are wrong
+
+------------------------------------------------------------------------
+r2419 | barrettj | 2018-06-29 11:06:51 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/Makefile.am
+   M /trunk/chops/source/python_src/phorc_module/phorc/__init__.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   A /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_objects.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+
+finishing up ffres2pcp re-vamp...getting ready for long debugging session
+
+------------------------------------------------------------------------
+r2418 | barrettj | 2018-06-29 11:06:51 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+
+working on converting list usage to dict
+
+------------------------------------------------------------------------
+r2417 | barrettj | 2018-06-29 11:06:50 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+
+fixing problems in ffcontrol due to changes in to cblock structure
+
+------------------------------------------------------------------------
+r2416 | barrettj | 2018-06-29 11:06:50 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/Makefile.am
+
+remove chops checksum from XFAIL_TESTs
+
+------------------------------------------------------------------------
+r2415 | barrettj | 2018-06-29 11:06:50 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/dfio/src/display_221.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/parser.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/default_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/init_tokens.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_fringe_info.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/import_ffplot.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/include
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/include/meta_struct.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/include/plot_data_dir.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/output.c
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_data_dir.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/include
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/adhoc_flag.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adhoc_flag.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_rms.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/precorrect.c
+
+importing Geoff's adhoc and plot text changes to chops
+
+------------------------------------------------------------------------
+r2414 | barrettj | 2018-06-29 11:06:48 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_handle.py
+
+wip
+
+------------------------------------------------------------------------
+r2413 | barrettj | 2018-06-29 11:06:48 -0400 (Fri, 29 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/lex.c
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/postproc/fourfit/lex.c
+
+staring work on channel deletion in ffres2pcp
+
+------------------------------------------------------------------------
+r2409 | gbc | 2018-06-26 10:58:25 -0400 (Tue, 26 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/postproc/fourfit/adhoc_flag.h
+
+fixed to work again on linux
+
+------------------------------------------------------------------------
+r2408 | gbc | 2018-06-26 10:13:28 -0400 (Tue, 26 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/postproc/fourfit/adhoc_flag.c
+   M /trunk/postproc/fourfit/adhoc_flag.h
+
+protected adhoc_flagging capability on MacOS
+
+------------------------------------------------------------------------
+r2406 | barrettj | 2018-06-24 23:17:23 -0400 (Sun, 24 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+adding tpcplot to configure.ac
+
+------------------------------------------------------------------------
+r2404 | rjc | 2018-06-22 12:03:23 -0400 (Fri, 22 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/scripts/Makefile.am
+   M /trunk/scripts/pcplot.in
+   A /trunk/scripts/tpcplot.in
+
+enhanced pcplot, added new program tpcplot for pcal plotting over multiple scans
+
+------------------------------------------------------------------------
+r2402 | barrettj | 2018-06-21 13:37:51 -0400 (Thu, 21 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/correlator/CorAsc2/CorAsc2.c
+
+channel number fix for type_205 in CorAsc2
+
+------------------------------------------------------------------------
+r2399 | gbc | 2018-06-19 15:54:09 -0400 (Tue, 19 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_notches.sh
+
+notches test probably ok
+
+------------------------------------------------------------------------
+r2398 | gbc | 2018-06-19 15:53:59 -0400 (Tue, 19 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+
+more correct, now
+
+------------------------------------------------------------------------
+r2397 | gbc | 2018-06-19 14:17:05 -0400 (Tue, 19 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/generate_text.c
+
+fixed a typo
+
+------------------------------------------------------------------------
+r2394 | gbc | 2018-06-18 16:47:20 -0400 (Mon, 18 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/data/ff_testdata/chk_notches.sh
+
+after fixing passband; notches is next
+
+------------------------------------------------------------------------
+r2393 | gbc | 2018-06-18 16:45:51 -0400 (Mon, 18 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/norm_fx.c
+
+fixed passband to work more correctly
+
+------------------------------------------------------------------------
+r2392 | gbc | 2018-06-18 16:19:04 -0400 (Mon, 18 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/help/fourfit.doc
+
+clarified what should happen with passband and notches
+
+------------------------------------------------------------------------
+r2390 | gbc | 2018-06-17 12:27:38 -0400 (Sun, 17 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/apply_notches.c
+
+added some debugging while investigating 
+
+------------------------------------------------------------------------
+r2389 | gbc | 2018-06-17 12:27:20 -0400 (Sun, 17 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/generate_text.c
+
+fixed some character generation issues
+
+------------------------------------------------------------------------
+r2388 | gbc | 2018-06-17 12:27:04 -0400 (Sun, 17 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/plot_data_dir.c
+
+revised variable output format
+
+------------------------------------------------------------------------
+r2387 | gbc | 2018-06-17 12:24:06 -0400 (Sun, 17 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_notches.sh
+
+still a work in progress
+
+------------------------------------------------------------------------
+r2385 | gbc | 2018-06-15 10:36:32 -0400 (Fri, 15 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/help/fourfit.doc
+
+added a bit of help
+
+------------------------------------------------------------------------
+r2383 | gbc | 2018-06-13 09:09:21 -0400 (Wed, 13 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+
+missed a local clean rule
+
+------------------------------------------------------------------------
+r2381 | gbc | 2018-06-12 16:46:35 -0400 (Tue, 12 Jun 2018) | 2 lines
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   A /trunk/data/ff_testdata/chk_notches.sh (from /trunk/data/ff_testdata/chk_frmrsrch.sh:2380)
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/plot_data_dir.c
+
+boosted notches up to 512 just to see if anything breaks.
+
+
+------------------------------------------------------------------------
+r2379 | gbc | 2018-06-11 17:21:26 -0400 (Mon, 11 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/plot_data_dir.c
+
+yet more things
+
+------------------------------------------------------------------------
+r2377 | gbc | 2018-06-08 16:27:25 -0400 (Fri, 08 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/plot_data_dir.c
+
+another step forwards
+
+------------------------------------------------------------------------
+r2374 | gbc | 2018-06-07 16:50:08 -0400 (Thu, 07 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/generate_text.c
+   M /trunk/postproc/fourfit/meta_struct.h
+   M /trunk/postproc/fourfit/output.c
+   M /trunk/postproc/fourfit/plot_data_dir.c
+   M /trunk/postproc/fourfit/plot_data_dir.h
+
+added more stuff to the output file
+
+------------------------------------------------------------------------
+r2373 | gbc | 2018-06-07 14:27:16 -0400 (Thu, 07 Jun 2018) | 3 lines
+Changed paths:
+   M /trunk/postproc/fourfit/adhoc_flag.c
+   M /trunk/postproc/fourfit/plot_data_dir.c
+   M /trunk/postproc/fourfit/plot_data_dir.h
+
+Fixed up ad hoc flag reporting and documented plot_data_dir
+properly within the output file.  Now needs more stuff to dump.
+
+
+------------------------------------------------------------------------
+r2371 | gbc | 2018-06-06 15:51:40 -0400 (Wed, 06 Jun 2018) | 2 lines
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_dump.sh
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/plot_data_dir.c
+
+got the plot_data_dir.c working to support ad hoc flag files.
+
+
+------------------------------------------------------------------------
+r2369 | gbc | 2018-06-05 17:22:05 -0400 (Tue, 05 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_dump.sh
+   M /trunk/postproc/fourfit/plot_data_dir.c
+   M /trunk/postproc/fourfit/plot_data_dir.h
+
+another step forward
+
+------------------------------------------------------------------------
+r2367 | gbc | 2018-06-03 12:25:58 -0400 (Sun, 03 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/plot_data_dir.c
+
+fixed up some indexing errors and completed access to plot_struct
+
+------------------------------------------------------------------------
+r2365 | gbc | 2018-06-02 16:52:21 -0400 (Sat, 02 Jun 2018) | 3 lines
+Changed paths:
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/make_plotdata.c
+   M /trunk/postproc/fourfit/meta_struct.h
+   M /trunk/postproc/fourfit/output.c
+   M /trunk/postproc/fourfit/plot_data_dir.c
+   M /trunk/postproc/fourfit/plot_data_dir.h
+
+now generates some output.
+
+
+
+------------------------------------------------------------------------
+r2364 | gbc | 2018-06-02 11:54:19 -0400 (Sat, 02 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   A /trunk/data/ff_testdata/chk_ff_dump.sh (from /trunk/data/ff_testdata/chk_ff_2843.sh:2360)
+
+added chk_ff_dump.sh to check that capability
+
+------------------------------------------------------------------------
+r2363 | gbc | 2018-06-02 11:53:08 -0400 (Sat, 02 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/generate_text.c
+   A /trunk/postproc/fourfit/meta_struct.h
+   M /trunk/postproc/fourfit/output.c
+   M /trunk/postproc/fourfit/plot_data_dir.c
+   M /trunk/postproc/fourfit/plot_data_dir.h
+
+generated a framework for pulling in the text too
+
+------------------------------------------------------------------------
+r2360 | gbc | 2018-06-01 17:33:17 -0400 (Fri, 01 Jun 2018) | 3 lines
+Changed paths:
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/data-flagging.txt
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/init_tokens.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/output.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/parser.h
+   A /trunk/postproc/fourfit/plot_data_dir.c
+   A /trunk/postproc/fourfit/plot_data_dir.h
+   M /trunk/postproc/fourfit/precorrect.c
+
+Implemented the basic plot_data_dir capability.
+Next step is to populate it with useful data.
+
+
+------------------------------------------------------------------------
+r2359 | gbc | 2018-06-01 09:39:51 -0400 (Fri, 01 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/adhoc_flag.c
+
+fixed segfault issue
+
+------------------------------------------------------------------------
+r2358 | gbc | 2018-06-01 09:22:23 -0400 (Fri, 01 Jun 2018) | 8 lines
+Changed paths:
+   M /trunk/sub/dfio/display_221.c
+
+The GS folks are tracking Adobe decisions and things are not
+working properly.  Added a GS_COPYPAGE environment command
+to allow experimentation with the 'PGPLOT restore showpage'
+replacement.  In early code it was: PGPLOT restore copypage
+but if that works in later versions of GS, it doesn't do the
+right thing.
+
+
+
+------------------------------------------------------------------------
+r2357 | gbc | 2018-06-01 09:07:45 -0400 (Fri, 01 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/sub/dfio/display_221.c
+
+nicer message
+
+------------------------------------------------------------------------
+r2356 | gbc | 2018-06-01 09:06:02 -0400 (Fri, 01 Jun 2018) | 1 line
+Changed paths:
+   M /trunk/sub/dfio/display_221.c
+
+added capability to use GS_EXEC from env
+
+------------------------------------------------------------------------
+r2354 | gbc | 2018-05-30 16:54:49 -0400 (Wed, 30 May 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/fill_fringe_info.c
+
+removed unused extern ref
+
+------------------------------------------------------------------------
+r2353 | gbc | 2018-05-30 16:41:15 -0400 (Wed, 30 May 2018) | 1 line
+Changed paths:
+   M /trunk/sub/dfio/display_221.c
+
+added a note
+
+------------------------------------------------------------------------
+r2352 | gbc | 2018-05-30 11:47:41 -0400 (Wed, 30 May 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/data/ff_testdata/chk_flagging.sh
+   M /trunk/postproc/fourfit/adhoc_flag.c
+
+Fixed up the test case and adjusted verbosity; probably works now
+
+------------------------------------------------------------------------
+r2350 | gbc | 2018-05-29 19:12:07 -0400 (Tue, 29 May 2018) | 4 lines
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   A /trunk/data/ff_testdata/chk_flagging.sh (from /trunk/data/ff_testdata/chk_ff_3372.sh:2348)
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/adhoc_flag.c
+   M /trunk/postproc/fourfit/adhoc_flag.h
+   M /trunk/postproc/fourfit/data-flagging.txt
+   M /trunk/postproc/fourfit/precorrect.c
+
+Fleshed out the code; goes through the motions and
+actually does some of the right things--a bit more
+work is needed before release into the wild.
+
+
+------------------------------------------------------------------------
+r2349 | gbc | 2018-05-29 10:57:33 -0400 (Tue, 29 May 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/adhoc_flag.c
+   M /trunk/postproc/fourfit/adhoc_flag.h
+
+connected up adhoc_flag() to be used if invoked.  tests pass
+
+------------------------------------------------------------------------
+r2347 | gbc | 2018-05-26 13:55:49 -0400 (Sat, 26 May 2018) | 2 lines
+Changed paths:
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/Makefile.am
+   A /trunk/postproc/fourfit/adhoc_flag.c
+   A /trunk/postproc/fourfit/adhoc_flag.h
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/data-flagging.txt
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/init_tokens.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/parser.h
+
+Added machinery to support adhoc flag files, no meat, yet.
+
+
+------------------------------------------------------------------------
+r2346 | gbc | 2018-05-26 11:51:58 -0400 (Sat, 26 May 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/data-flagging.txt
+
+sync-up
+
+------------------------------------------------------------------------
+r2344 | gbc | 2018-05-23 15:34:03 -0400 (Wed, 23 May 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/data/ff_testdata/chk_ff_3571.sh
+   A /trunk/data/ff_testdata/chk_min_weight.sh (from /trunk/data/ff_testdata/chk_ff_3571.sh:2343)
+
+added a test for min_weight
+
+------------------------------------------------------------------------
+r2342 | gbc | 2018-05-22 15:09:19 -0400 (Tue, 22 May 2018) | 2 lines
+Changed paths:
+   M /trunk/postproc/fourfit/data-flagging.txt
+   M /trunk/postproc/fourfit/norm_fx.c
+
+treating this case like missing data
+
+
+------------------------------------------------------------------------
+r2341 | gbc | 2018-05-22 15:08:52 -0400 (Tue, 22 May 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/calc_rms.c
+
+some armoring for ?sbfrac<0 or comments thereon
+
+------------------------------------------------------------------------
+r2337 | gbc | 2018-05-21 16:45:45 -0400 (Mon, 21 May 2018) | 6 lines
+Changed paths:
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/norm_fx.c
+
+Added some commentary to generate_graphs.c and changed
+colors if min_weight is being used; adjust datum->.sbfrac
+values based on min_weight.  Goes through the motions,
+no errors in captured cases, probably needs more testing.
+
+
+
+------------------------------------------------------------------------
+r2335 | gbc | 2018-05-19 11:43:27 -0400 (Sat, 19 May 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/testdata/2836/cf2836
+   A /trunk/data/ff_testdata/testdata/2836/cf2836.w-max-parity (from /trunk/data/ff_testdata/testdata/2836/cf2836:2333)
+
+max parity now fully deprecated
+
+------------------------------------------------------------------------
+r2334 | gbc | 2018-05-19 11:41:05 -0400 (Sat, 19 May 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_2836.sh
+
+reverting change
+
+------------------------------------------------------------------------
+r2333 | gbc | 2018-05-19 11:34:09 -0400 (Sat, 19 May 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_2836.sh
+
+remove max_parity
+
+------------------------------------------------------------------------
+r2330 | gbc | 2018-05-18 17:22:28 -0400 (Fri, 18 May 2018) | 8 lines
+Changed paths:
+   M /trunk/chops/Makefile.am
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   A /trunk/postproc/fourfit/data-flagging.txt
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/init_tokens.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/parser.h
+
+Purged max_parity and introduced min_weight.
+(max_parity has been disconnected for some time,
+and min_weight will supply a similar sort of functionality).
+The 'boilerplate' changes have been made and cause no issues
+with the tests, the implementation of min_weight will have to
+wait until next week.  The chops checksum test is marked as
+failing for the time being.
+
+
+------------------------------------------------------------------------
+r2327 | barrettj | 2018-05-18 11:56:39 -0400 (Fri, 18 May 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+
+fix bug in pcc_generate when delay fit fails for some bands/pols
+
+------------------------------------------------------------------------
+r2326 | gbc | 2018-05-18 11:17:13 -0400 (Fri, 18 May 2018) | 1 line
+Changed paths:
+   A /trunk/postproc/fourfit/attic/cf_default (from /trunk/postproc/fourfit/cf_default:2325)
+   D /trunk/postproc/fourfit/cf_default
+
+file no longer used, apparently
+
+------------------------------------------------------------------------
+r2321 | barrettj | 2018-05-16 13:20:24 -0400 (Wed, 16 May 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+
+make pcal tone freq look-up more robust to deal with spurious extra tones in band D y-pol
+
+------------------------------------------------------------------------
+r2318 | barrettj | 2018-05-15 15:43:27 -0400 (Tue, 15 May 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/pcalibrate.c
+
+import pcalibrate changes to chops
+
+------------------------------------------------------------------------
+r2317 | barrettj | 2018-05-15 15:43:27 -0400 (Tue, 15 May 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/phorc_module/Makefile.am
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+
+fix build system to avoid setup.py deletion problem
+
+------------------------------------------------------------------------
+r2313 | rjc | 2018-04-27 11:31:37 -0400 (Fri, 27 Apr 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/pcalibrate.c
+
+modified ff to allow negative station_delay+sampler_delay
+
+------------------------------------------------------------------------
+r2311 | barrettj | 2018-04-24 14:05:09 -0400 (Tue, 24 Apr 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/src/addr_221.c
+   M /trunk/chops/source/c_src/dfio/src/addr_222.c
+   M /trunk/chops/source/c_src/dfio/src/read_mk4fringe.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/rotate_pcal.c
+
+import changes to chops
+
+------------------------------------------------------------------------
+r2310 | barrettj | 2018-04-24 14:05:08 -0400 (Tue, 24 Apr 2018) | 1 line
+Changed paths:
+   M /trunk/sub/dfio/addr_221.c
+   M /trunk/sub/dfio/addr_222.c
+   M /trunk/sub/dfio/read_mk4fringe.c
+
+bug fix for fringex when type_222 is present
+
+------------------------------------------------------------------------
+r2308 | rjc | 2018-04-20 12:48:33 -0400 (Fri, 20 Apr 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/pcal_interp.c
+
+fixed ff pcal code to handle 128 ch or 64 freqs
+
+------------------------------------------------------------------------
+r2307 | rjc | 2018-04-20 09:57:33 -0400 (Fri, 20 Apr 2018) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/cf_keywords.tex
+   M /trunk/doc/fourfit/fourfit_users_manual.pdf
+
+small additions to ff users manual
+
+------------------------------------------------------------------------
+r2305 | rjc | 2018-04-12 12:21:21 -0400 (Thu, 12 Apr 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/rotate_pcal.c
+
+fix indexing bug in adhoc phase models
+
+------------------------------------------------------------------------
+r2303 | gbc | 2018-04-03 17:00:16 -0400 (Tue, 03 Apr 2018) | 1 line
+Changed paths:
+   A /trunk/misc/mk4patch
+   A /trunk/misc/mk4patch/mk4patch.tgz
+   A /trunk/misc/mk4patch/mk4patch.txt
+
+mark4 patch code for rootfix and other things
+
+------------------------------------------------------------------------
+r2302 | barrettj | 2018-04-03 16:10:32 -0400 (Tue, 03 Apr 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+   M /trunk/postproc/fourfit/est_pc_manual.c
+
+git-svn doesn't seem to like svn keywords
+
+------------------------------------------------------------------------
+r2301 | barrettj | 2018-04-03 15:37:36 -0400 (Tue, 03 Apr 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+
+making proxy cable cal utils more user friendly
+
+------------------------------------------------------------------------
+r2298 | barrettj | 2018-03-27 14:24:54 -0400 (Tue, 27 Mar 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+import logger changes to vgoscf_generate script
+
+------------------------------------------------------------------------
+r2297 | barrettj | 2018-03-27 09:07:06 -0400 (Tue, 27 Mar 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+
+import
+
+------------------------------------------------------------------------
+r2294 | barrettj | 2018-03-23 13:21:27 -0400 (Fri, 23 Mar 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+
+fix checksum mismatch
+
+------------------------------------------------------------------------
+r2293 | barrettj | 2018-03-23 13:07:55 -0400 (Fri, 23 Mar 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_handle.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   M /trunk/chops/source/python_src/phorc_module/phorc/source_analysis_lib.py
+
+squash merging logger work and pc_phases averaging in phorc
+
+------------------------------------------------------------------------
+r2288 | gbc | 2018-03-13 14:00:55 -0400 (Tue, 13 Mar 2018) | 1 line
+Changed paths:
+   A /trunk/doc/difx-tagging-2.5.2.txt
+
+for future reference
+
+------------------------------------------------------------------------
+r2277 | gbc | 2018-03-09 13:07:45 -0500 (Fri, 09 Mar 2018) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/run_testsuite.sh
+
+fixed logic
+
+------------------------------------------------------------------------
+r2260 | gbc | 2018-03-06 13:25:38 -0500 (Tue, 06 Mar 2018) | 1 line
+Changed paths:
+   M /trunk/scripts/hops_vex2ovex.py
+
+removed gratuitous check
+
+------------------------------------------------------------------------
+r2256 | gbc | 2018-03-01 15:17:10 -0500 (Thu, 01 Mar 2018) | 1 line
+Changed paths:
+   A /trunk/doc/fourfit-fringe-plot.txt
+
+a basic description
+
+------------------------------------------------------------------------
 r2248 | barrettj | 2018-02-27 15:55:11 -0500 (Tue, 27 Feb 2018) | 1 line
 Changed paths:
    M /trunk/chops/source/c_src/mk4util/src/root_id.c

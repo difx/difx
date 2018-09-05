@@ -1,0 +1,231 @@
+#!@PYTHON@
+#
+# tpcplot - plot pcal for one station over time (multiple scans)
+#
+# first created                         2018.1.26  rjc
+
+import datetime
+import optparse
+import re
+import string
+import sys
+import os
+import fnmatch
+import math
+import cmath
+import numpy as np
+import matplotlib.pyplot as plt
+
+from subprocess import Popen, PIPE
+
+import mk4b
+
+def main():
+    usage_text = '\n tpcplot <station code> <ch name> <directory optional, defaults to .>'
+    parser = optparse.OptionParser(usage=usage_text)
+
+    parser.add_option(
+        '-v', '--verbose', action='store_true', dest='verbose', 
+        help='verbose mode (default false)', default=False)
+
+    parser.add_option(
+        '-t', '--type', dest='plot_type', 
+        help='1: all tone phases (default)           \
+              2: all tones, phase-connected          \
+              3: phases relative to first tone       \
+              4: phases rel to mean of all tones', default=1)
+
+    parser.add_option(
+        '-o', '--outfile', action='store_true', dest='ofile',
+        help='create output file (default false)', default=False)
+
+    parser.add_option(
+        '-f', '--filename', dest='fout', 
+        help='set output file name (default ./out.pdf)', default='./out.pdf')
+
+    (opts, args) = parser.parse_args()
+
+    if len (args) < 2 or len (args) > 3:
+        print "use -h option for help"
+        sys.exit(0)
+
+    if opts.verbose:
+        print 'opts: ', opts
+        print 'args: ', args
+
+    opts.plot_type = int (opts.plot_type)
+    stn = args[0]
+    ch_name = args[1]
+    if len (args) > 2:
+        directory = args[2]
+        if directory[-1:] != '/':
+            directory += ('/')
+    else:
+        directory = './'
+    print 'stn', stn, 'directory', directory
+
+    philes = []
+                                        # find all of this station's files 
+    for root, dirs, files in os.walk (directory):
+        if len (files) > 0:
+            for phile in files:
+                if fnmatch.fnmatch (phile, stn + '..??????'):
+                    if root[len(root)-1] == '/':
+                        philes.append (root + phile)
+                    else:
+                        philes.append (root + '/' + phile)
+    print len (philes), 'files for station', stn
+    """
+    for ff in philes:
+        print ff
+    """
+                
+                                        # get data samples from midpoint of each file
+    rots = []
+    amps = []
+    phases = []
+    for phile in philes:                # loop over scans
+        stn_data = mk4b.mk4sdata (phile)
+        tmid = stn_data.n309 / 2
+        #print phile, 'has', stn_data.n309, 'type 309 records w/ midpoint', tmid
+        t309 = stn_data.t309[tmid]
+
+        found = False
+        for ch in range (64):
+            if t309.contents.chan[ch].chan_name == ch_name:
+                #print 'ch', ch, t309.contents.chan[ch].chan_name, 'fr', t309.contents.chan[ch].freq
+                found = True
+                break
+        if not found:
+            print "couldn't find channel", ch_name, "in type 309 record of", phile
+            quit ()
+        rots.append (t309.contents.rot / (32e6 * 8.64e4))
+        
+        am = []
+        ph = []
+        for tone in range (64):
+            if t309.contents.chan[ch].acc[tone][0] != 0:
+                #print 'rot %18.2f' % t309.contents.rot, 'ch', ch, 'tone', tone, \
+                #      t309.contents.chan[ch].acc[tone][0], t309.contents.chan[ch].acc[tone][1] 
+                phasor = convert_integer_phasor_to_float (t309.contents.chan[ch].acc[tone][0], 
+                                                          t309.contents.chan[ch].acc[tone][1],
+                                                          t309.contents.acc_period)
+                am.append (abs (phasor))
+                ph.append (cmath.phase (phasor) * 180.0 / cmath.pi)
+
+        amps.append (am)                # append tone vector for this scan/time
+        phases.append (ph)
+
+    #print '\namps', amps
+    #print '\nphases', phases
+
+    ctamps = map (list, zip (*amps))
+    ctphases = map (list, zip (*phases))
+                                        # corner-turn to get times within tone
+    #print '\nctamps', ctamps
+    #print '\nctphases', ctphases
+
+    #print data
+    # print len(rots), 'rots:', rots
+    '''
+    for j in range (len (rots)):
+        #print 'j', j, '# of tones',len(amps[j])
+        print '%8.5f %6.2f %6.2f' % (rots[j], amps[j][0], phases[j][0]),philes[j]
+    '''
+                                        # modify data for plotting
+    massage_data (opts, rots, ctamps, ctphases)
+                                        # now generate plots
+    plot_data (opts, rots, ctamps, ctphases, ch_name)
+
+
+
+# modify data according to the chosen plot type
+def massage_data (opts, rots, amps, phases):
+                                        # plot_type 1 requires no changes
+                                        # for types 2..4 we need to unwrap phases
+    if opts.plot_type != 1:
+        for i in range (len (phases)):  # loop over tones
+            for j in range (1, len (phases[i])):
+                while phases[i][j] - phases[i][j-1] > 180.0:
+                    phases[i][j] -= 360.0
+                while phases[i][j] - phases[i][j-1] < -180.0:
+                    phases[i][j] += 360.0
+
+    if opts.plot_type == 3:             # form differences from 1st tone
+        for i in range (1, len (phases)):
+            for j in range (len (phases[i])):
+                phases[i][j] -= phases[0][j]
+            
+    elif opts.plot_type == 4:           # form differences from mean phase (over tones)
+        for j in range (len (phases[0])):
+            avg = 0.0
+            for i in range (len (phases)):
+                avg += phases[i][j]
+            avg = (avg / len (phases))
+            
+            for i in range (len (phases)):
+                phases[i][j] -= avg
+            
+
+
+def plot_data (opts, rots, amps, phases, ch_name):
+    cols = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'b']
+
+    if opts.plot_type == 1:
+        label = 'phases by tone for channel ' + ch_name
+    if opts.plot_type == 2:
+        label = 'phase-connected by tone for channel ' + ch_name
+    elif opts.plot_type == 3:
+        label = 'phase diffs wrt tone 0 for channel ' + ch_name
+    elif opts.plot_type == 4:
+        label = 'phase diffs wrt mean of tones for ch ' + ch_name
+
+    plt.figure (label, figsize=(8,10.5))
+    plt.suptitle (label)
+
+    for j in range (len (phases)):
+        plt.subplot (4, 2, j+1)
+        plt.plot (rots, phases[j], '.', color=cols[j])
+                                        # phase-connect need big range, diff mean needs small
+        if opts.plot_type == 1:
+            plt.ylim (-180.0, 180.0)
+    plt.xlabel ('time (doy)')
+    plt.ylabel ('phase (deg)')
+
+    if opts.ofile:                      # save output to file if requested
+        plt.savefig (opts.fout)
+
+    plt.show ()
+
+
+def convert_integer_phasor_to_float (u, v, acc_period):
+    #convert to double (taken from pcal_interp.c)
+    #correct for 2's complement arithmetic
+    if u < TWO31:
+        u = u
+    else:
+        u = u - TWO32
+    
+    if v < TWO31:
+        v = v
+    else:
+        v = v - TWO32
+
+    #scale such that 1000 = 100% correlation
+    #and match SU phase by shifting 180 degrees
+    #what is the origin of the hard-coded value 128?
+    pc_real = (float (u) * 1e-6 ) / (-128.0 * acc_period) 
+    pc_imag = (float (v) * 1e-6 ) / (-128.0 * acc_period) 
+    cp = complex (pc_real, pc_imag)
+    return cp
+
+
+
+
+
+if __name__ == '__main__':          # official entry point
+    TWO31 = 2147483648.0
+    TWO32 = 4294967296.0
+
+    main()
+    sys.exit(0)

@@ -79,6 +79,7 @@ addr_221_impl (short version,
                     *size = 8 * (n8 + 1);
                     }
                 }
+            return (NULL);
         }
         else
         {

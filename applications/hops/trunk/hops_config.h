@@ -123,6 +123,9 @@
 /* Define to 1 if you have the <gsl/gsl_randist.h> header file. */
 /* #undef HAVE_GSL_GSL_RANDIST_H */
 
+/* Define to 1 if you have the `hsearch_r' function. */
+#define HAVE_HSEARCH_R 1
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
@@ -319,10 +322,10 @@
 #define HAVE_XLRGetDriveTemp 0
 
 /* HOPS package rev number */
-#define HOPS_REVISION 3.18
+#define HOPS_REVISION 3.19
 
 /* Haystack SVN rev number */
-#define HOPS_SVN_REV 2251
+#define HOPS_SVN_REV 2512
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
@@ -361,13 +364,13 @@
 #define PACKAGE_NAME "hops"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "hops 3.18"
+#define PACKAGE_STRING "hops 3.19"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "hops"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.18"
+#define PACKAGE_VERSION "3.19"
 
 /* Python install dir */
 /* #undef PYTHON_SITE_PREFIX */
@@ -390,7 +393,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "3.18"
+#define VERSION "3.19"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

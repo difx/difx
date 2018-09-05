@@ -143,16 +143,20 @@ for st in range (0, 2):
                                     # plot according to type
 
         if opts.plot_type == 1:     # type 1: amp & phase vs tone #
-            plt.subplot (nranks, nfiles, ch+1)
+            axes = plt.subplot (nranks, nfiles, ch+1)
                                     # pad phase range a little for beauty
-            phimin = np.amin (phases) - 10.0
-            phimax = np.amax (phases) + 10.0
-                                    # normalize amp to plot with 0-150 scale
-            for k in range (0, len (phases)):
-                amps[k] = amps[k] / 150 * (phimax - phimin) + phimin
+            phimin = np.amin (phases) - 15.0
+            phimax = np.amax (phases) +  5.0
+            ampmax = max (amps)
+                                    # normalize amp into phase unit space
+            for k in range (0, len (amps)):
+                amps[k] = 0.9 * amps[k] / ampmax * (phimax - phimin) + phimin
             #print 'st', st, 'ch', ch, 'phases', phases
             plt.plot (tone_nums, phases, '-ro', tone_nums, amps, '-bo')
-            plt.xlabel (" ch '" + codes[ch] + "'")
+            axes.tick_params (labelsize=8)
+            astr = 'amp (0..' + str (int (ampmax / 0.9 + 0.5)) + ')'
+            axes.legend (['phase (deg)', astr], loc=8, fontsize=6)
+            plt.xlabel ('chan ' + codes[ch], fontsize=8)
 
             plt.ylim (phimin, phimax)
 

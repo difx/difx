@@ -1006,6 +1006,7 @@ int main (int argc, char *argv[])
         if (strncmp (t1->recId, "205", 3) == 0)
             {           /* Type 205? */
             /* Fourfit setup */
+            k = (strncmp (t205->version_no, "00", 2) == 0) ? 16 : 64; /* number of channels v0, v1*/
             (void) printf (" utc_central = %d %03d %02d%02d%05.2f \n",
                        flip_short(t205->utc_central.year), flip_short(t205->utc_central.day),
                        flip_short(t205->utc_central.hour), flip_short(t205->utc_central.minute),
@@ -1031,7 +1032,7 @@ int main (int argc, char *argv[])
                        flip_short(t205->stop.year), flip_short(t205->stop.day), flip_short(t205->stop.hour),
                        flip_short(t205->stop.minute), flip_float(t205->stop.second));
             (void) printf (" ref_freq = %.2f \n", flip_double(t205->ref_freq));
-            for (i = 0; i < 16; i++)
+            for (i = 0; i < k; i++)
                 {           /* Each fourfit channel */
                 if (t205->ffit_chan[i].ffit_chan_id == ' ') /* In use? */
                     continue;       /* Nope */

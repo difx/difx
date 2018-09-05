@@ -1,6 +1,4 @@
 /*
- * $Id: est_pc_manual.c 1765 2017-06-05 16:47:51Z gbc $
- *
  * If invoked, estimate ph phase and
  * delay values to use in manual mode.
  * pc_phase_? and delay_offs_? values report.

@@ -151,8 +151,8 @@ int parser (void)
                        cb_ptr -> adhoc_phase = tval;
                    else if (toknum == SKIP_)
                        cb_ptr -> skip = TRUE;
-                   else if (toknum == MAX_PARITY_)
-                       cb_ptr -> max_parity = float_values[tval];
+                   else if (toknum == MIN_WEIGHT_)
+                       cb_ptr -> min_weight = float_values[tval];
                    else if (toknum == REF_FREQ_)
                        cb_ptr -> ref_freq = float_values[tval];
                    else if (toknum == RA_OFFSET_)
@@ -536,9 +536,9 @@ int parser (void)
 
                    else if (toknum == NOTCHES_)
                        {
-                       if (nv > MAXFREQ*2)
+                       if (nv > MAXNOTCH*2)
                            {
-                           msg ("Only %d notches allowed",2,MAXFREQ);
+                           msg ("Only %d notches are allowed",2,MAXNOTCH);
                            return (-1);
                            }
                        if (tokens[ntok].category == INTEGER)
@@ -770,6 +770,27 @@ int parser (void)
                            strncpy (cb_ptr -> adhoc_file_chans[1], 
                                     char_values+tval, 128);
                        }
+               else if (toknum == ADHOC_FLAG_FILE_)
+                   for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
+                       {
+                       if (cb_ptr -> baseline[1] == WILDCARD)      // ref station
+                           strncpy (cb_ptr -> adhoc_flag_files[0],
+                                    char_values+tval, 256);
+                       else if (cb_ptr -> baseline[0] == WILDCARD) // rem station
+                           strncpy (cb_ptr -> adhoc_flag_files[1],
+                                    char_values+tval, 256);
+                       }
+               else if (toknum == PLOT_DATA_DIR_)
+                   for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
+                       {
+                       if (cb_ptr -> baseline[1] == WILDCARD)      // ref station
+                           strncpy (cb_ptr -> plot_data_dir[0],
+                                    char_values+tval, 256);
+                       else if (cb_ptr -> baseline[0] == WILDCARD) // rem station
+                           strncpy (cb_ptr -> plot_data_dir[1],
+                                    char_values+tval, 256);
+                       }
+
                break;
 
             case POP_TOKEN:

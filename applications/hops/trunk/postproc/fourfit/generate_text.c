@@ -16,6 +16,7 @@
 #include <complex.h>
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "meta_struct.h"
 #include "ovex.h"
 
 #define pi 3.141592654
@@ -58,6 +59,7 @@ void generate_text (struct scan_struct *root,
     extern struct mk4_fringe fringe;
     extern struct type_param param;
     extern struct type_status status;
+    extern struct type_meta meta;
     extern int test_mode;
     extern int msglev;
     extern char control_filename[];
@@ -131,12 +133,15 @@ void generate_text (struct scan_struct *root,
         sprintf (buffer, "Mk4/hdw. %s %s rev %hd", 
                  progname, version_no, fringe.t200->software_rev[0]);
     psleft (0.0, 0.98, buffer)
+    strncpy(meta.corrvers, buffer, sizeof(meta.corrvers));
                                         /* Identification information */
     if ((rootname = strrchr (root->filename, '/')) == NULL)
         rootname = root->filename;
     else rootname++;
+    param.baseline[2] = 0;
     sprintf (buf, "%s, %s, %s", rootname, root->scan_name, param.baseline);
     psright (1.0, 0.98, buf);
+    strncpy(meta.rt_sn_bl, buf, sizeof(meta.rt_sn_bl));
                                         /* Convert to pol. string */
     polars = 0;
     if (param.pol == 0)
@@ -160,6 +165,10 @@ void generate_text (struct scan_struct *root,
             {
             sprintf (polstr, "RL");
             polars |= RREF | LREM;
+            }
+        else
+            {
+            sprintf (polstr, "nopol");
             }
         }
     else if (param.pol < 16)
@@ -185,17 +194,21 @@ void generate_text (struct scan_struct *root,
             strcat (polstrx, "+RL");
             polars |= RREF | LREM;
             }
-        strcpy (polstr, polstrx+1);      // chop off leading '+'
+        if (polstrx[0] == '+')
+            strcpy (polstr, polstrx+1);      // chop off leading '+'
+        else
+            sprintf(polstr, "NOPOL");
         }
     else
         {
         sprintf (polstr, "Ixy");
         polars |= LREF | LREM | RREF | RREM;
         }
-                                        // substitute linear pol symbols if apropos
+                                    // substitute linear pol symbols if apropos
     modify_pol (pass, polstr);
     sprintf (buf, "%.8s - %.8s, fgroup %c, pol %s", fringe.t202->ref_name,
                     fringe.t202->rem_name, pass->pass_data[0].fgroup, polstr);
+    strncpy(meta.polstr, polstr, sizeof(meta.polstr));
     pscat ("/Helvetica-Bold findfont 140 scalefont setfont\n");
     psright (1.0, 0.965, buf);
                                         /* Some solution essentials in a visible spot */
@@ -240,12 +253,15 @@ void generate_text (struct scan_struct *root,
                                         /* Global scan information */
     sprintf (buf, "%.8s", root->exper_name);
     psright (1.0, ypos, buf); ypos -= spacing;
+    strncpy(meta.exper_name, root->exper_name, sizeof(meta.exper_name));
     sprintf (buf, "%d", root->exper_num);
     psright (1.0, ypos, buf); ypos -= spacing;
+    meta.exper_num = root->exper_num;
     year = fringe.t200->scantime.year;
     if (year < 150) year += 1900;
     sprintf (buf, "%d:%03d", year, fringe.t200->scantime.day);
     psright (1.0, ypos, buf); ypos -= spacing;
+    strncpy(meta.yr_doy, buf, sizeof(meta.yr_doy));
     sec1 = fmod (pass->start, 8.64e4);
     hr1 = sec1 / 3.6e3;
     sec1 -= hr1 * 3.6e3;
@@ -258,11 +274,14 @@ void generate_text (struct scan_struct *root,
     sec2 -= min2 * 60;
     sprintf (buf, "%02d%02d%05.2f", hr1, min1, sec1);
     psright (1.0, ypos, buf); ypos -= spacing;
+    strncpy(meta.pass_start, buf, sizeof(meta.pass_start));
     sprintf (buf, "%02d%02d%05.2f", hr2, min2, sec2);
     psright (1.0, ypos, buf); ypos -= spacing;
-    sprintf (buf, "%02d%02d%05.2f", fringe.t200->frt.hour, fringe.t200->frt.minute,
-                                                        fringe.t200->frt.second);
+    strncpy(meta.pass_stop, buf, sizeof(meta.pass_stop));
+    sprintf (buf, "%02d%02d%05.2f", fringe.t200->frt.hour,
+        fringe.t200->frt.minute, fringe.t200->frt.second);
     psright (1.0, ypos, buf); ypos -= 2.0 * spacing;
+    strncpy(meta.pass_frt, buf, sizeof(meta.pass_frt));
     year = fringe.t200->corr_date.year;
     if (year < 150) year += 1900;
     sprintf (buf, "%d:%03d:%02d%02d%02d", year,
@@ -271,6 +290,7 @@ void generate_text (struct scan_struct *root,
                                 fringe.t200->corr_date.minute,
                                 (int)fringe.t200->corr_date.second);
     psright (1.0, ypos, buf); ypos -= spacing;
+    strncpy(meta.corr_time, buf, sizeof(meta.corr_time));
                                     // fourfit execution timestamp
     year = fringe.t200->fourfit_date.year;
     if (year < 150) year += 1900;
@@ -280,25 +300,33 @@ void generate_text (struct scan_struct *root,
                                 fringe.t200->fourfit_date.minute,
                                 (int)fringe.t200->fourfit_date.second);
     psright (1.0, ypos, buf); ypos -= spacing;
+    strncpy(meta.ff_time, buf, sizeof(meta.ff_time));
                                     // fourfit executable timestamp
     sprintf (which_command, "which %s", pexec);
                                     // use which command to get absolute path
     popfil = popen (which_command, "r");
     fscanf (popfil, "%s", absexec);
     pclose (popfil);
+    strncpy(meta.fourfitcmd, absexec, sizeof(meta.fourfitcmd));
                                     // use stat to get file creation timestamp
     stat (absexec, &xeq_stat);
     utc_pgm = gmtime (&(xeq_stat.st_mtime));
     sprintf (buf, "%d:%03d:%02d%02d%02d", utc_pgm->tm_year+1900, utc_pgm->tm_yday+1,
                      utc_pgm->tm_hour, utc_pgm->tm_min, utc_pgm->tm_sec);
     psright (1.0, ypos, buf); ypos -= 2.0 * spacing;
-    sprintf (buf, "%02dh%02dm%7.4fs", fringe.t201->coord.ra_hrs,
+    strncpy(meta.build_time, buf, sizeof(meta.build_time));
+    sprintf (buf, "%02dh%02dm%09.6fs", fringe.t201->coord.ra_hrs,
                             fringe.t201->coord.ra_mins,
                             fringe.t201->coord.ra_secs);
     psright (1.0, ypos, buf); ypos -= spacing;
-    sprintf (buf, "%+02d\312%02d'%6.3f\"", fringe.t201->coord.dec_degs,
+    strncpy(meta.ra, buf, sizeof(meta.ra));
+    // %+02d doesn't do what one might wish
+    sprintf (buf, "%c%02d\312%02d'%09.6f\"",
+        fringe.t201->coord.dec_degs >= 0 ? '+' : '-',
+                            fringe.t201->coord.dec_degs,
                             fringe.t201->coord.dec_mins,
                             fringe.t201->coord.dec_secs);
+    strncpy(meta.dec, buf, sizeof(meta.dec)); meta.dec[3] = 'o';
     psright (1.0, ypos, buf); ypos -= spacing;
                                         /* Labels in dark green for contrast */
     setgreen;

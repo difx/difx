@@ -169,10 +169,6 @@ read_mk4fringe_impl (char *filename, struct mk4_fringe *fringe, int truncate_dat
                     if (fringe->t221 != (struct type_221 *)ptr) alloc_ptr = fringe->t221;
                     msg ("Type 221 record address = %X", -2, fringe->t221);
                     break;
-                    // 
-                    // totbytes = bytes;
-                    // size = 0;
-                    // break;
                 }
                 else
                 {
@@ -186,8 +182,10 @@ read_mk4fringe_impl (char *filename, struct mk4_fringe *fringe, int truncate_dat
             case 222:
                 if (truncate_data)
                 {
-                    totbytes = bytes;
-                    size = 0;
+                    fringe->t222 = (struct type_222 *)addr_222_dummy(version, ptr, &size);
+                    msg ("type 222 record size = %d", 0, size);
+                    if (fringe->t222 != (struct type_222 *)ptr) alloc_ptr = fringe->t222;
+                    msg ("Type 222 record address = %X", -2, fringe->t222);
                     break;
                 }
                 else

@@ -11,6 +11,7 @@
 #include <complex.h>
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "meta_struct.h"
 #include "ovex.h"
 #include "cpgplot.h"
 
@@ -24,6 +25,7 @@ int generate_graphs (struct scan_struct *root,
     extern struct type_plot plot;
     extern struct type_param param;
     extern struct type_status status;
+    extern struct type_meta meta;
     int i, j, maxj;
     int start_plot, limit_plot;
     char buf[2560], device[256];
@@ -39,6 +41,8 @@ int generate_graphs (struct scan_struct *root,
     int nsbd, ncp, np, nplots;
     int totpts, wrap;
     int nlsb, nusb, izero;
+    double vwgt;
+    int vclr;
                                         /* Build the proper device string for */
                                         /* vertically oriented color postscript */
     sprintf (device, "%s/VCPS", ps_file);
@@ -296,8 +300,9 @@ int generate_graphs (struct scan_struct *root,
 
     start_plot = (param.first_plot == FALSE) ? 0 : param.first_plot;
     limit_plot = (param.nplot_chans == FALSE) ? pass->nfreq : param.nplot_chans;
-
     nplots = (limit_plot == 1) ? 1 : limit_plot+1;
+    meta.start_plot = start_plot;
+    meta.nplots = nplots;
    
     plotwidth = 0.88 / (double)nplots;
     if (nplots == 1) plotwidth = 0.8;
@@ -423,34 +428,37 @@ int generate_graphs (struct scan_struct *root,
         cpgslw (1);
         cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.41, 0.44);
         cpgswin (0.0, (float)pass->num_ap, -1.1, 1.1);
+                                        /* feedback on weight trimming */
+        vwgt = (pass->control.min_weight > 0) ? pass->control.min_weight : 0.95;
+        vclr = (pass->control.min_weight > 0) ? 8   /* orange */         : 2;
                                         /* USB numbers, color coded */
-        cpgsci (3);
+        cpgsci (3);                                         /* green */
         for (j=0; j<np; j++)
             {
-            if (plot.seg_frac_usb[i][j] < 0.95) continue;
+            if (plot.seg_frac_usb[i][j] < 0.95) continue;   /* valid weight */
             cpgmove (xr[j], 0.0);
             cpgdraw (xr[j], plot.seg_frac_usb[i][j]);
             }
-        cpgsci (2);
+        cpgsci (vclr);                                      /* red */
         for (j=0; j<np; j++)
             {
-            if (plot.seg_frac_usb[i][j] >= 0.95) continue;
+            if (plot.seg_frac_usb[i][j] >= 0.95) continue;  /* valid weight */
             if (plot.seg_frac_usb[i][j] <= 0.0) continue;
             cpgmove (xr[j], 0.0);
             cpgdraw (xr[j], plot.seg_frac_usb[i][j]);
             }
                                         /* LSB bars point down */
-        cpgsci (3);
+        cpgsci (3);                                         /* green */
         for (j=0; j<np; j++)
             {
-            if (plot.seg_frac_lsb[i][j] < 0.95) continue;
+            if (plot.seg_frac_lsb[i][j] < 0.95) continue;   /* valid weight */
             cpgmove (xr[j], 0.0);
             cpgdraw (xr[j], -plot.seg_frac_lsb[i][j]);
             }
-        cpgsci (2);
+        cpgsci (vclr);                                      /* red */
         for (j=0; j<np; j++)
             {
-            if (plot.seg_frac_lsb[i][j] >= 0.95) continue;
+            if (plot.seg_frac_lsb[i][j] >= 0.95) continue;  /* valid weight */
             if (plot.seg_frac_lsb[i][j] <= 0.0) continue;
             cpgmove (xr[j], 0.0);
             cpgdraw (xr[j], -plot.seg_frac_lsb[i][j]);

@@ -131,6 +131,7 @@ int make_plotdata(struct type_pass *pass)
     plot.dr_size = np;
     plot.dr_size_max = npmax;
     plot.num_ap = pass->num_ap;
+    plot.num_freq = pass->nfreq;
 
                                         /* Calculate multi band delay. */
                                         /* Apply rotator to single band delay */

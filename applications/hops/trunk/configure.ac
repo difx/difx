@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.18, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.19, gbc@haystack.mit.edu)
 AM_INIT_AUTOMAKE([foreign])
 
 #why does subdir-objects break fearfit??
@@ -154,11 +154,16 @@ AC_SUBST(GS_EXEC)
 # 9.05 (fedora 16) copypage ok
 # 9.10 (MacPorts) copypage not ok
 # 9.14 (fedora 19) copypage not ok
+# 9.16 (fedora 22) copypage not ok
+# and .outputpage stopped being the solution after 9.21?
+# 9.22 (fedora 27) .outputpage no longer the solution
 AC_ARG_VAR(GS_COPYPAGE_OK, [Set to 1 when gs version is prior to 9.10])
+AC_ARG_VAR(GS_VERSION, [Set to the gs version number])
 if [test "x$GS_EXEC" = "x/bin/false" ] ; then
     AC_GBC_NOTICE([%%% have_gs is false (required)])
     AC_GBC_NOTICE([PATH does not include ghostscript (gs)])
     GS_COPYPAGE_OK=1
+    GS_VERSION=0.0
     AC_GBC_NOTICE([no gs so no gs version])
 else
     AC_GBC_NOTICE([%%% have_gs is true (required)])
@@ -170,11 +175,15 @@ else
 #   modern autoconf macro:
 #   AS_VERSION_COMPARE([$gsvers], [9.10],
 #       [GS_COPYPAGE_OK=1], [GS_COPYPAGE_OK=0], [GS_COPYPAGE_OK=0])
+        GS_VERSION=`echo $gsvers | awk '{printf "%.0f", $1 * 1000}'`
     fi
     AC_GBC_NOTICE([$GS_EXEC version is $gsvers, cf 9.10])
 fi
 AC_GBC_NOTICE([GS_COPYPAGE_OK is $GS_COPYPAGE_OK])
+AC_GBC_NOTICE([GS_VERSION is $GS_VERSION])
 AC_SUBST(GS_COPYPAGE_OK)
+AC_SUBST(GS_VERSION)
+# in theory we should eliminate GS_COPYPAGE_OK in favor of GS_VERSION
 
 # PERL/Python might be in nonstandard locations
 AC_PATH_PROGS(PERL, perl, /bin/false)
@@ -297,10 +306,12 @@ AC_FUNC_STAT
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([floor getcwd isascii memset mkdir modf pow rint sqrt])
 AC_CHECK_FUNCS([strcasecmp strchr strdup strerror strncasecmp strrchr])
-AC_CHECK_FUNCS([strspn strstr])
+AC_CHECK_FUNC([hsearch_r], [have_hsearch=true], [have_hsearch=false])
+AC_CHECK_FUNCS([hsearch_r strspn strstr])
 AC_CHECK_FUNCS([clock_gettime gethostname gettimeofday munmap putenv])
 AC_CHECK_FUNCS([regcomp strtol strtoul])
 fi
+AM_CONDITIONAL(HAVE_HSEARCH, $have_hsearch)
 
 have_gsl=false
 ### option disabled
@@ -573,6 +584,7 @@ if [ "$have_hops" = true ] ; then
 	sub/Makefile
 	sub/afio/Makefile
 	sub/dfio/Makefile
+	sub/dfio/copypage/Makefile
 	sub/util/Makefile
 	sub/vex/Makefile
     ])
@@ -599,6 +611,10 @@ if [ "$have_hops" = true ] ; then
     AC_CONFIG_FILES(
         [scripts/pcplot],
         [chmod +x scripts/pcplot]
+    )
+    AC_CONFIG_FILES(
+        [scripts/tpcplot],
+        [chmod +x scripts/tpcplot]
     )
     if [ $have_python = "true" ] ; then
         AC_CONFIG_FILES( [data/ff_testdata/hopstestsuite.py])

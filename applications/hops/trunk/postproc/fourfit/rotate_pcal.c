@@ -7,6 +7,7 @@
 *  inverted sign for ap_by_ap pcal for remote stn rjc 2008.10.31 *
 *  save pcal phasor, rather than applying it      rjc 2011.12.21 *
 *  fixed multitone phase sign bug                 rjc 2013.5.9   *
+*  fixed index offset bug for ad hoc code         rjc 2018.4.12  *
 *****************************************************************/
 #include <stdio.h>
 #include <math.h>
@@ -51,14 +52,14 @@ rotate_pcal(struct type_pass *pass)
             {
             if (param.ah_phase == SINEWAVE)    /* evaluate ad hoc phase model */
                 {                       /* compute phase at center of AP */
-                phaze = ((ap-0.5) * param.acc_period + param.start - param.ah_tref) 
+                phaze = ((ap + 0.5) * param.acc_period + param.start - param.ah_tref) 
                         / param.ah_period * 2.0 * M_PI;
                 zeta = param.ah_amp * sin (phaze);
                 }
             else if (param.ah_phase == POLYNOMIAL)
                 {
                 zeta = 0.0;
-                thyme = (ap-1) * param.acc_period + param.start - param.ah_tref;
+                thyme = (ap + 0.5) * param.acc_period + param.start - param.ah_tref;
                 thyme_n = 1.0;
                 for (i=0; i<6; i++)
                     {
@@ -69,7 +70,7 @@ rotate_pcal(struct type_pass *pass)
                                         // in adhoc file mode, find difference phase (f,t)
             else if (param.ah_phase == PHYLE)
                 {
-                thyme = ((ap-0.5) * param.acc_period + param.start) / 8.64e4;
+                thyme = ((ap + 0.5) * param.acc_period + param.start) / 8.64e4;
                 zeta = diff_file_phase (pass, pass->pass_data[fr].freq_code, thyme);
                 }
             else

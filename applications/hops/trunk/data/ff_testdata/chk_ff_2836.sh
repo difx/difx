@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Id: chk_ff_2836.sh 1032 2015-01-23 14:24:03Z gbc $
+# $Id: chk_ff_2836.sh 2334 2018-05-19 15:41:05Z gbc $
 #
 # canonical test suite for fourfit
 #
