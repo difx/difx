@@ -13,7 +13,7 @@ Version 2.6
 * Support for IPP > 9 (specifically IPP 2018)
 * genmachines and mark6 datastream updates
 * add mark6 activity difx message to mark6 datastream
-* Implement Mark5B datastream over Mark6
+* Implement Mark5B datastream over Mark6 (untested as of yet)
 
 Version 2.5
 ~~~~~~~~~~~

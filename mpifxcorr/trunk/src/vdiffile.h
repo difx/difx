@@ -24,8 +24,8 @@
 // $LastChangedDate$
 //
 //============================================================================
-#ifndef VDIFFILE_H
-#define VDIFFILE_H
+#ifndef __VDIFFILE_H__
+#define __VDIFFILE_H__
 
 #include <vdifio.h>
 #include "datastream.h"

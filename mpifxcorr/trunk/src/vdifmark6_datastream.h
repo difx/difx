@@ -24,11 +24,10 @@
 // $LastChangedDate: 2014-08-20 17:15:54 -0500 (Wed, 20 Aug 2014) $
 //
 //============================================================================
-#ifndef VDIFMARK6FILE_H
-#define VDIFMARK6FILE_H
+#ifndef __VDIFMARK6FILE_DATASTREAM_H__
+#define __VDIFMARK6FILE_DATASTREAM_H__
 
 #include <vdifio.h>
-#include <vdifmark6.h>
 #include "vdiffile.h"
 #include <difxmessage.h>
 

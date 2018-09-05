@@ -7,6 +7,6 @@ Name: mpifxcorr
 Description: Library of all mpifxcorr objects, useful for other programs which communicate to mpifxcorr
 Requires:
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lmpifxcorr @mathlibs@
-Cflags: -I${includedir}/mpifxcorr @mathcflags@
+Libs: -L${libdir} -lmpifxcorr @mathlibs@ @difxlibs@
+Cflags: -I${includedir}/mpifxcorr @mathcflags@ @difxcflags@
 
