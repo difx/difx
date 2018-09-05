@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2015 by Walter Brisken                             *
+ *   Copyright (C) 2013-2018 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,13 +32,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vdifio.h>
-#include <vdifmark6.h>
 #include "config.h"
+
+#ifdef HAVE_MARK6SG
+#include <mark6sg/mark6gather.h>
+#include "mark6gather_vdif.h"
+#endif
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>";
-const char version[] = "0.6";
-const char verdate[] = "20190411";
+const char version[] = "0.7";
+const char verdate[] = "20180905";
 
 static void usage(const char *pgm)
 {
@@ -49,9 +53,11 @@ static void usage(const char *pgm)
 	printf("  <options> can include:\n");
 	printf("    -h or --help          print this usage information and quit\n");
 	printf("    -s or --shortsum      print a short summary, also usable for input to vex2difx\n");
+#ifdef HAVE_MARK6SG
 	printf("    -6 or --mark6         operate directly on Mark6 module data\n");
 	printf("    --allmark6            operate directly on all Mark6 scans found on mounted modules\n");
 	printf("    --mark6slot <slot>    operate directly on all Mark6 scans found on module in <slot>\n");
+#endif
 	printf("\n");
 }
 
@@ -60,11 +66,13 @@ void summarizeFile(const char *fileName, int shortSum, int isMark6)
 	struct vdif_file_summary sum;
 	int r;
 
+#ifdef HAVE_MARK6SG
 	if(isMark6)
 	{
 		r = summarizevdifmark6(&sum, fileName, 0);
 	}
 	else
+#endif
 	{
 		r = summarizevdiffile(&sum, fileName, 0);
 	}
@@ -107,6 +115,7 @@ void summarizeFile(const char *fileName, int shortSum, int isMark6)
 	}
 }
 
+#ifdef HAVE_MARK6SG
 void processAllMark6Scans(int shortSum)
 {
 	char **fileList;
@@ -134,6 +143,7 @@ void processAllMark6Scans(int shortSum)
 		free(fileList);
 	}
 }
+#endif
 
 void processMark6ScansSlot(int slot, int shortSum)
 {
@@ -191,6 +201,7 @@ int main(int argc, char **argv)
 
 				exit(EXIT_SUCCESS);
 			}
+#ifdef HAVE_MARK6SG
 			else if(strcmp(argv[a], "-6") == 0 ||
 			   strcmp(argv[a], "--mark6") == 0)
 			{
@@ -215,6 +226,7 @@ int main(int argc, char **argv)
 				
 				exit(EXIT_SUCCESS);
 			}
+#endif
 			else
 			{
 				summarizeFile(argv[a], shortSum, isMark6);

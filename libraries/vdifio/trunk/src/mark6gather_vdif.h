@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 Walter Brisken                                     *
+ *  Copyright (C) 2015-2018 by Walter Brisken                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,21 +19,31 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id$
-// $HeadURL: $
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
+// $Id: vdifmark6.h 8356 2018-06-21 20:23:00Z MarkWainright $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.c $
+// $LastChangedRevision: 8356 $
+// $Author: MarkWainright $
+// $LastChangedDate: 2018-06-21 15:23:00 -0500 (Thu, 21 Jun 2018) $
 //
 //============================================================================
 
-#ifndef __VDIFMARK6SG_H__
-#define __VDIFMARK6SG_H__
+#ifndef __MARK6_GATHER_VDIF_H__
+#define __MARK6_GATHER_VDIF_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "vdifio.h"
+
+#define MAX_VDIF_MUX_SLOTS	64
+
+/* scan name should be the template file to match */
 int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int frameSize);
 
 #ifdef __cplusplus

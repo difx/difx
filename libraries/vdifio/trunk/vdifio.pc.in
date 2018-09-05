@@ -7,5 +7,5 @@ Name: vdifio
 Description: Library for parsing VDIF header frames, multiplexing VDIF data, and summarizing contents of VDIF files
 Requires:
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lvdifio
+Libs: -L${libdir} -lvdifio @MARK6SG_LIBS@
 Cflags: -I${includedir}

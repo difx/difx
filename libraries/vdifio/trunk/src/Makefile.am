@@ -1,5 +1,15 @@
 
+if USE_MARK6SG
+mark6sg_h_sources = mark6gather_vdif.h
+mark6sg_c_sources = mark6gather_vdif.c
+else
+mark6sg_h_sources =
+mark6sg_c_sources =
+endif
+
+
 sources = \
+	$(mark6sg_c_sources) \
 	cornerturners.c \
 	dateutils.c \
 	dateutils.h \
@@ -7,13 +17,11 @@ sources = \
 	vdiffile.c \
 	vdifio.c \
 	vdifio.h \
-	vdifmark6.c \
-	vdifmark6.h \
 	vdifmux.c
 
 includeheaders = \
-	vdifio.h \
-	vdifmark6.h
+	$(mark6sg_h_sources) \
+	vdifio.h
 
 library_includedir = $(includedir)
 library_include_HEADERS = $(includeheaders)

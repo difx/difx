@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2017 by Walter Brisken, Adam Deller                *
+ *   Copyright (C) 2014-2018 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,12 +32,17 @@
 #include <string.h>
 #include <stdint.h>
 #include "vdifio.h"
-#include "vdifmark6.h"
+#include "config.h"
+
+#ifdef HAVE_MARK6SG
+#include <mark6sg/mark6gather.h>
+#include "mark6gather_vdif.h"
+#endif
 
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
-const char version[] = "0.5";
-const char verdate[] = "20170418";
+const char version[] = "0.6";
+const char verdate[] = "20180905";
 
 static void usage()
 {
@@ -57,7 +62,9 @@ static void usage()
 	fprintf(stderr, "these is used, the frame finding heuristics are bypassed.\n");
 	fprintf(stderr, "If <framesize> is not provided, or if it is set to 0, the frame size\n");
 	fprintf(stderr, "will be determined by the first frame, _even if it is invalid_!\n\n");
+#ifdef HAVE_MARK6SG
 	fprintf(stderr, "This can be run on Mark6 data directly.\n\n");
+#endif
 }
 
 int main(int argc, char **argv)
@@ -73,9 +80,11 @@ int main(int argc, char **argv)
 	int nSkip = 0;
 	int force = 0;
 	int n;	/* count read loops */
+#ifdef HAVE_MARK6SG
 	int isMark6 = 0;
 	int mk6Version = 0;
 	int mk6PacketSize = 0;
+#endif
 	int mk6BlockHeaderSize = 0;
 	int framesPerMark6Block = 0;
 	int printHeader = 1;		/* if 1, print normal output, otherwise just errors */
@@ -212,6 +221,7 @@ int main(int argc, char **argv)
 		{
 			break;
 		}
+#ifdef HAVE_MARK6SG
 		if(n == 0)
 		{
 			const Mark6Header *m6h;
@@ -236,6 +246,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+#endif
 		fill = readbytes + leftover;
 		for(;;)
 		{
@@ -247,6 +258,7 @@ int main(int argc, char **argv)
 				break;
 			}
 
+#ifdef HAVE_MARK6SG
 			if(isMark6)
 			{
 				if(fr == framesPerMark6Block)
@@ -261,6 +273,7 @@ int main(int argc, char **argv)
 					index += mk6BlockHeaderSize;
 				}
 			}
+#endif
 
 			header = (const vdif_header *)(buffer + index);
 

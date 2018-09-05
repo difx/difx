@@ -1,3 +1,4 @@
+
 AM_CPPFLAGS  = \
 	-I$(top_srcdir)/src -D_FILE_OFFSET_BITS=64
 
@@ -23,11 +24,11 @@ bin_PROGRAMS = \
 	vdif2to8 \
 	vdifChanSelect \
 	vmux \
-	vsum \
-	mk6gather \
-	mk6ls \
-	mk6summary \
-	mk6vmux
+	vsum
+
+if USE_MARK6SG
+  bin_PROGRAMS += mk6vmux
+endif
 
 if WITH_GENERATEVDIF
   bin_PROGRAMS += generateVDIF
@@ -44,15 +45,6 @@ dist_bin_SCRIPTS = \
 
 testcornerturners_SOURCES = \
 	testcornerturners.c
-
-mk6gather_SOURCES = \
-	mk6gather.c
-
-mk6ls_SOURCES = \
-	mk6ls.c
-
-mk6summary_SOURCES = \
-	mk6summary.c
 
 mk6vmux_SOURCES = \
 	mk6vmux.c

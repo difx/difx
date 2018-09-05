@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2018 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,12 +31,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <vdifio.h>
-#include <vdifmark6.h>
+#include <mark6sg/mark6gather.h>
+#include "mark6gather_vdif.h"
 
 const char program[] = "mk6vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20150923";
+const char version[] = "0.2";
+const char verdate[] = "20180905";
 
 const int defaultChunkSize = 2000000;
 
