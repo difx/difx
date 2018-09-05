@@ -342,6 +342,8 @@ if components["difxmessage"]:
     libtargets.append(["difxmessage",difx_version, True,True,True,False])
 if components["dirlist"]:
     libtargets.append(["dirlist",    difx_version, True,True,True,False])
+if components["mark6sg"]:
+    libtargets.append(["mark6sg",    difx_version, True,True,True,False])
 if components["mark5access"]:
     libtargets.append(["mark5access",difx_version, True,True,True,False])
 if components["python"]:
@@ -350,8 +352,6 @@ if components["codifio"]:
     libtargets.append(["codifio",    difx_version, True,True,True,False])
 if components["vdifio"]:
     libtargets.append(["vdifio",     difx_version, True,True,True,False])
-if components["mark6sg"]:
-    libtargets.append(["mark6sg",    difx_version, True,True,True,False])
 
 utiltargets = []
 if components["calcif2"] and not master_tag:
