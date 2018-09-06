@@ -1,13 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id:  $
+# $Id$
 # $HeadURL: $
-# $LastChangedRevision: $
-# $Author: $
-# $LastChangedDate: $
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
 #
 #===========================================================================
 
