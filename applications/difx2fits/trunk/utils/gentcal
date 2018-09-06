@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python2
 
 from sys import stderr
 from os import getenv
