@@ -1181,6 +1181,7 @@ int main(int argc, char **argv)
 	int nWithoutPhaseCentre = 0;
 	int nFits = 0;
 	DifxInput **Dset;
+	unsigned int n;
 
 	if(argc < 2)
 	{
@@ -1199,6 +1200,8 @@ int main(int argc, char **argv)
 	{
 		return EXIT_FAILURE;
 	}
+
+	resetDifxInputCompatibilityStatistics();
 
 	Dset = loadDifxInputSet(opts);
 
@@ -1228,6 +1231,13 @@ int main(int argc, char **argv)
 	if(nWithoutPhaseCentre > 0)
 	{
 		printf("%d of %d jobs lacked requested phase centre (%d)\n", nWithoutPhaseCentre, opts->nBaseFile, opts->phaseCentre);
+	}
+
+	printf("\n");
+	n = printDifxInputCompatibilityStatistics(opts->verbose);
+	if(n > 1 || opts->verbose > 0)
+	{
+		printf("\n");
 	}
 
 	if(nConverted + nWithoutPhaseCentre != opts->nBaseFile)
