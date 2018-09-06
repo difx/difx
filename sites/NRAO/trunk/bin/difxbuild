@@ -3509,6 +3509,9 @@ def usage(prog):
 		else:
 			print '%s is unset' % v
 
+	print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
+	print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."
+
 def checkPythonVersion():
 	if not environ.has_key('PYTHONPATH'):
 		return
@@ -3562,6 +3565,8 @@ def main():
 			exit(2)
 
 	run_command(args[0], args[1:], verbose, pretend)
+	print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
+	print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."
 
 #----
 
