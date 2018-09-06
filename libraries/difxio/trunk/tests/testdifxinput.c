@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 
 	printf("\n");
 	n = printDifxInputCompatibilityStatistics(verbose);
-	if(n > 0)
+	if(n > 0 || verbose > 1)
 	{
 		printf("\n");
 	}

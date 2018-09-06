@@ -86,7 +86,10 @@ unsigned int printDifxInputCompatibilityStatistics(int verbose)
 				printf("The following conditions resulted in one or more FITS file splitting:\n");
 				for(i = 0; i < NumDifxInputCompatibilityStatistics; ++i)
 				{
-					printf("  %s\n", difxInputCompatibilityDescriptions[i]);
+					if(difxInputCompatibilityStatistics[i] > 0)
+					{
+						printf("  * %s\n", difxInputCompatibilityDescriptions[i]);
+					}
 				}
 			}
 			else
