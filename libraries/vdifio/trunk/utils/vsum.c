@@ -143,7 +143,6 @@ void processAllMark6Scans(int shortSum)
 		free(fileList);
 	}
 }
-#endif
 
 void processMark6ScansSlot(int slot, int shortSum)
 {
@@ -172,6 +171,7 @@ void processMark6ScansSlot(int slot, int shortSum)
 		free(fileList);
 	}
 }
+#endif
 
 int main(int argc, char **argv)
 {
