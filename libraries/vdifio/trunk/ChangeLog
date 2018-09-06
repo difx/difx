@@ -1,6 +1,7 @@
 Version 1.3
 ~~~~~~~~~~~
 * Move all pure Mark6 functionality to mark6sg
+* Python utils: explicitly call python2
 
 Version 1.2
 ~~~~~~~~~~~
