@@ -3,6 +3,7 @@
 * Remove unneeded source file
 * New functions: evaluateDifxInputUVW, getDifxDatastreamBandPol, getDifxDatastreamBandFreqIdAndPol
 * Adding built-in catalog of some VLBI station information -- will be useful for setting antenna diameters and mount types in FITS-IDI files, and may have other uses long term.
+* Infrastructure for introspection into reason for splitting FITS files
 
 3.5.0
 * Post DiFX 2.4

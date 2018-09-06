@@ -32,6 +32,78 @@
 #include <string.h>
 #include "difxio/difx_input.h"
 
+unsigned int difxInputCompatibilityStatistics[NumDifxInputCompatibilityStatistics] = { 0 };
+
+const char difxInputCompatibilityDescriptions[][MAX_COMPATIBILITY_DESCRIPTION_LENGTH] =
+{
+	"DiFX versions differ",
+	"Number of frequencies differ",
+	"Frequencies differ",
+	"EOPs differ",
+	"Clock models differ",
+
+	"DEVELOPER ERROR: you should never see this line"
+};
+
+void resetDifxInputCompatibilityStatistics()
+{
+	unsigned int i;
+
+	for(i = 0; i < NumDifxInputCompatibilityStatistics; ++i)
+	{
+		difxInputCompatibilityStatistics[i] = 0;
+	}
+}
+
+/* FIXME: check for overlapping time, very long gaps in time, ... */
+unsigned int printDifxInputCompatibilityStatistics(int verbose)
+{
+	int i;
+	unsigned int n = 0;
+
+	for(i = 0; i < NumDifxInputCompatibilityStatistics; ++i)
+	{
+		n += difxInputCompatibilityStatistics[i];
+	}
+
+	if(verbose < 0)
+	{
+		return n;
+	}
+
+	switch(verbose)
+	{
+		case 0:
+			if(n > 0)
+			{
+				printf("Note: At least one FITS file splitting was performed due to incompatibility\n");
+				printf("of the DiFX jobs.  Rerun with increased verbosity to get some insight as to why.\n");
+			}
+			break;
+		case 1:
+			if(n > 0)
+			{
+				printf("The following conditions resulted in one or more FITS file splitting:\n");
+				for(i = 0; i < NumDifxInputCompatibilityStatistics; ++i)
+				{
+					printf("  %s\n", difxInputCompatibilityDescriptions[i]);
+				}
+			}
+			else
+			{
+				printf("No FITS file splitting based on DiFX job incompatibility occurred\n");
+			}
+			break;
+		default:
+			printf("The following reasons for file splitting were encountered as follows:\n");
+			for(i = 0; i < NumDifxInputCompatibilityStatistics; ++i)
+			{
+				printf("  %u times: %s\n", difxInputCompatibilityStatistics[i], difxInputCompatibilityDescriptions[i]);
+			}
+			break;
+
+	}
+}
 
 /* This function determines if two DifxInput are not mergable
  * because difxio does not currently support it, but could
@@ -52,6 +124,8 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 	   strncmp(D1->job->difxVersion, D2->job->difxVersion, DIFXIO_VERSION_LENGTH) ||
 	   strncmp(D1->job->difxLabel, D2->job->difxLabel, DIFXIO_VERSION_LENGTH))
 	{
+		++difxInputCompatibilityStatistics[DifxInputCompatibilityVersion];
+
 		return 0;
 	}
 
@@ -60,6 +134,8 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 	case FreqMergeModeStrict:
 		if(D1->nFreq != D2->nFreq)
 		{
+			++difxInputCompatibilityStatistics[DifxInputCompatibilityNFreq];
+
 			return 0;
 		}
 
@@ -67,6 +143,8 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 		{
 			if(isSameDifxFreq(D1->freq + f, D2->freq + f) == 0)
 			{
+				++difxInputCompatibilityStatistics[DifxInputCompatibilityFreqSet];
+
 				return 0;
 			}
 		}
@@ -83,6 +161,8 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 
 	if(areDifxEOPsCompatible(D1->eop, D1->nEOP, D2->eop, D2->nEOP, mergeOptions) == 0)
 	{
+		++difxInputCompatibilityStatistics[DifxInputCompatibilityEOP];
+
 		return 0;
 	}
 
@@ -96,6 +176,8 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 			{
 				if(!isSameDifxAntennaClock(D1->antenna + a1, D2->antenna + a2))
 				{
+					++difxInputCompatibilityStatistics[DifxInputCompatibilityClock];
+
 					return 0;
 				}
 			}

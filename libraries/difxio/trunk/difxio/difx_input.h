@@ -48,6 +48,7 @@
 #define MAX_PHASED_ARRAY_TYPE_STRING_LENGTH	16
 #define MAX_PHASED_ARRAY_FORMAT_STRING_LENGTH	16
 #define MAX_TAPER_FUNCTION_STRING_LENGTH	16
+#define MAX_COMPATIBILITY_DESCRIPTION_LENGTH	64
 
 #define DIFXIO_FILENAME_LENGTH		PATH_MAX
 #define DIFXIO_NAME_LENGTH		32
@@ -248,6 +249,19 @@ enum FreqMergeMode
 
 extern const char freqMergeModeNames[][MAX_FREQ_MERGE_MODE_STRING_LENGTH];
 
+enum DifxInputCompatibilityStatistics
+{
+	DifxInputCompatibilityVersion = 0,
+	DifxInputCompatibilityNFreq,
+	DifxInputCompatibilityFreqSet,
+	DifxInputCompatibilityEOP,
+	DifxInputCompatibilityClock,
+
+	NumDifxInputCompatibilityStatistics	/* must remain as last entry */
+};
+
+extern unsigned int difxInputCompatibilityStatistics[NumDifxInputCompatibilityStatistics];
+extern const char difxInputCompatibilityDescriptions[][MAX_COMPATIBILITY_DESCRIPTION_LENGTH];
 
 /* structure containing options that affect the ability to merge, or the merge itself, of different filesets */
 typedef struct
@@ -1002,6 +1016,8 @@ void DifxInputSetThreads(DifxInput *D, int nThread);
 int DifxInputLoadThreads(DifxInput *D);
 int DifxInputWriteThreads(const DifxInput *D);
 int polMaskValue(char polName);
+void resetDifxInputCompatibilityStatistics();
+unsigned int printDifxInputCompatibilityStatistics(int verbose);
 
 /* Writing functions */
 int writeDifxIM(const DifxInput *D);

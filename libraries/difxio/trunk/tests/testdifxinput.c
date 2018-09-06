@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2018 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,8 +34,8 @@
 
 const char program[] = "testdifxinput";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "1.3";
-const char verdate[] = "20170222";
+const char version[] = "1.4";
+const char verdate[] = "20180906";
 
 void usage()
 {
@@ -60,12 +60,13 @@ void usage()
 int main(int argc, char **argv)
 {
 	DifxInput *D = 0;
-	int a;
+	int a, n;
 	int verbose = 0;
 	int nJob = 0;
 	DifxMergeOptions mergeOptions;
 
 	resetDifxMergeOptions(&mergeOptions);
+	resetDifxInputCompatibilityStatistics();
 	mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
 	
 	for(a = 1; a < argc; ++a)
@@ -188,7 +189,14 @@ int main(int argc, char **argv)
 
 	deleteDifxInput(D);
 
-	printf("\nIt seems %d job(s) tested successfully.\n", nJob);
+	printf("\n");
+	n = printDifxInputCompatibilityStatistics(verbose);
+	if(n > 0)
+	{
+		printf("\n");
+	}
+
+	printf("It seems %d job(s) tested successfully.\n", nJob);
 
 	return EXIT_SUCCESS;
 }
