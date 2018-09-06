@@ -101,8 +101,9 @@ unsigned int printDifxInputCompatibilityStatistics(int verbose)
 				printf("  %u times: %s\n", difxInputCompatibilityStatistics[i], difxInputCompatibilityDescriptions[i]);
 			}
 			break;
-
 	}
+
+	return n;
 }
 
 /* This function determines if two DifxInput are not mergable
