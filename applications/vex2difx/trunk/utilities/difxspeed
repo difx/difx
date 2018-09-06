@@ -255,7 +255,7 @@ def benchmark(basename, verbose, run):
 		s = split(strip(c), '=')
 		if len(s) == 2:
 			key = strip(s[0])
-			if key == 'fake' and lower(s[1]) in ['f', 'false']:
+			if key == 'fake' and lower(strip(s[1])) in ['f', 'false', '0']:
 				doFake = False
 			else:
 				L = []
