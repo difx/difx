@@ -15,6 +15,9 @@ Version 2.6.0
 * Increase maximum number of allowed IFs from 4 to 32, and catch cases where this gets exceeded.
 * Add mk62v2d script and call from vex2script to support mark6 prework to .v2d
 * Fix indexing bug in baseline table preparation. Affected zoom band projects where only a subset of antennas is multi-datastream.
+* Python scripts explicitly call python2
+* difxspeed: allow benchmarking on real data
+* remove calc2xyz: was on a dead-end development path
 
 Version 2.5.0
 ~~~~~~~~~~~~~

@@ -1,16 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import getopt
 from sys import argv, exit, stdout
 from os import environ, system, getcwd
-from string import strip, split
+from string import strip, split, lower
 from re import search
 from time import sleep
 from math import sqrt
 
 program = 'difxspeed'
-version = '0.4'
-verdate = '20161023'
+version = '0.5'
+verdate = '20180906'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 inputFileExtension = '.difxspeed'
@@ -18,7 +18,6 @@ inputFileExtension = '.difxspeed'
 # TODO
 # 2. read antenna list from vex
 # 5. get dummy timestamps; populate column descriptions
-# 6. compute average, rms of all runs
 
 def usage(pgm):
 	print '\n%s ver. %s  %s  %s' % (program, version, author, verdate)
@@ -114,7 +113,7 @@ def getncore(config, cluster):
 
 	return maxCore
 
-def runtest(fd, config, cluster, filebase, verbose, run):
+def runtest(fd, config, cluster, filebase, verbose, run, doFake, remainder):
 
 	setupParams = ['tInt', 'fftSpecRes', 'specRes', 'strideLength', 'xmacLength', 'numBufferedFFTs', 'subintNS']
 	antennaParams = ['toneSelection']
@@ -136,7 +135,8 @@ def runtest(fd, config, cluster, filebase, verbose, run):
 		o = open(v2dfile, 'w')
 		o.write('# written by %s ver %s\n\n' % (program, version))
 
-		o.write('fake = true\n')
+		if doFake:
+			o.write('fake = true\n')
 		o.write('singleScan = false\n')
 		o.write('startSeries = 0\n')
 
@@ -154,12 +154,14 @@ def runtest(fd, config, cluster, filebase, verbose, run):
 				o.write(',')
 			o.write(antennas[a])
 		o.write('\n')
-		# FIXME: add other antenna parameters here
-		for a in range(nAnt):
-			o.write('ANTENNA %s\n' % antennas[a])
-			o.write('{\n')
-			o.write('  fake = x\n')
-			o.write('}\n')
+		# only write antenna sections if in fake mode
+		if doFake:
+			for a in range(nAnt):
+				# FIXME: add other antenna parameters here
+				o.write('ANTENNA %s\n' % antennas[a])
+				o.write('{\n')
+				o.write('  fake = x\n')
+				o.write('}\n')
 		
 		# write non-setup parameters here
 		for c in config:
@@ -173,6 +175,12 @@ def runtest(fd, config, cluster, filebase, verbose, run):
 			if c[0] in setupParams and c[0] not in dontWriteParams:
 				o.write('  %s = %s\n' % (c[0], c[2][c[1]]))
 		o.write('}\n')
+
+		# write remainder
+		if len(remainder) > 0:
+			o.write('\n')
+			for r in remainder:
+				o.write(r)
 
 		o.close()
 
@@ -229,23 +237,34 @@ def benchmark(basename, verbose, run):
 	clusterParams = ['datastreams', 'cores', 'antennas']
 	requiredParams = ['vex', 'nThread']
 	setupParams = ['tInt']
+	doFake = True
 
 	fd = open('%s.out' % basename, 'w')
 
 	# parse input file
 	data = open(inputFile).readlines()
-	for d in data:
+
+	l = len(data)
+	remainder = []  # explicitly include in .v2d files
+	for i in range(l):
+		d = data[i]
+		if strip(d) == '--':
+			remainder = data[i+1:]
+			break
 		c = split(d, '#')[0]
 		s = split(strip(c), '=')
 		if len(s) == 2:
 			key = strip(s[0])
-			L = []
-			for v in split(s[1], ','):
-				L.append(strip(v))
-			if key in clusterParams:
-				cluster[key] = L
+			if key == 'fake' and lower(s[1]) in ['f', 'false']:
+				doFake = False
 			else:
-				params[key] = L
+				L = []
+				for v in split(s[1], ','):
+					L.append(strip(v))
+				if key in clusterParams:
+					cluster[key] = L
+				else:
+					params[key] = L
 	bad = 0
 	for r in clusterParams:
 		if not r in cluster.keys():
@@ -268,10 +287,10 @@ def benchmark(basename, verbose, run):
 		filebase = '%s-%03d' % (basename, sequenceNumber)
 		if sequenceNumber == 1:
 			# run a first dummy test
-			v = runtest(fd, it, cluster, '%s-dummy' % basename, verbose, run)
+			v = runtest(fd, it, cluster, '%s-dummy' % basename, verbose, run, doFake, remainder)
 			if v < 0:
 				break
-		v = runtest(fd, it, cluster, filebase, verbose, run)
+		v = runtest(fd, it, cluster, filebase, verbose, run, doFake, remainder)
 		if v < 0:
 			break
 		it = nextconfig(it)
@@ -294,7 +313,7 @@ def testenviron():
 
 
 def getbasename(infile):
-	m = search('^([a-zA-Z][a-zA-Z0-9]+)%s' % inputFileExtension, infile)
+	m = search('^([a-zA-Z][a-zA-Z0-9]*)%s' % inputFileExtension, infile)
 	if m == None:
 		return None
 	else:
