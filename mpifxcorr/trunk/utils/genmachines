@@ -55,7 +55,7 @@ minMachinefileVersion = "1.0"	# cluster definition file must have at least this 
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
-ignoreIncompleteModules = True
+#ignoreIncompleteModules = True
 
 def getUsage():
         """
@@ -612,7 +612,7 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 			print '  %s' % n
 
 	if len(incomplete) > 0:
-                if ignoreIncompleteModules == False:
+                if options.ignoreIncompleteModules == False:
 		        ok = False
 		print 'Incomplete modules:'
 		for i in incomplete:
@@ -667,6 +667,7 @@ if __name__ == "__main__":
 	parser.add_option("-m", "--machines", dest="machinesfile", default="", help="use MACHINESFILE instead of $DIFX_MACHINES")
 	parser.add_option("-n", "--nothreads", dest="dothreads", action="store_false", default=True, help="don't write a .threads file")
 	parser.add_option("-d", "--difxdb", dest="usedifxdb", action="store_true", default=False, help="use difxdb to obtain data location")
+	parser.add_option("--ignore-incomplete-module", dest="ignoreIncompleteModules", action="store_true", default=True, help="Proceed even when Mark6 modules are found to be incomplete.")
 
 	(options, args) = parser.parse_args()
 
