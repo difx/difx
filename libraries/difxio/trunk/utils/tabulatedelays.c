@@ -58,6 +58,10 @@ void usage()
 	printf("evaluates delay polynomials in the .im files on a regular\n");
 	printf("time grid (every 8 seconds).  Delays and rates are both\n");
 	printf("calculated.  Output should be self explanatory.\n\n");
+	printf("When operating without --perint, the entirety of the delay polynomials\n");
+	printf("are plotted, even exceeding the time range of the scans to which they\n");
+	printf("belong.  Comments in the output separate scans cleanly.  When --perint\n");
+	printf("is used, only the time covered by the scans is output.\n\n");
 }
 
 enum Item
@@ -351,7 +355,7 @@ int main(int argc, char **argv)
 				int intmjd;
 				double sec;
 
-				mjd = D->mjdStart + (ds->startSeconds + t)/86400.0;
+				mjd = ds->mjdStart + t/86400.0;
 				intmjd = (int)(mjd);
 				sec = (mjd - intmjd)*86400.0;
 
