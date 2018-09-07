@@ -4,6 +4,9 @@
 * New functions: evaluateDifxInputUVW, getDifxDatastreamBandPol, getDifxDatastreamBandFreqIdAndPol
 * Adding built-in catalog of some VLBI station information -- will be useful for setting antenna diameters and mount types in FITS-IDI files, and may have other uses long term.
 * Infrastructure for introspection into reason for splitting FITS files
+* tabulatedelays: add option to print one line at the center of each integration time
+* tabulatedelays: add option to add clock model to delay
+* tabulatedelays: add option to simply print the clock model
 
 3.5.0
 * Post DiFX 2.4

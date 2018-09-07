@@ -328,8 +328,35 @@ double evaluateDifxAntennaClock(const DifxAntenna *da, double mjd)
 	return C;
 }
 
-DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
-	const DifxAntenna *da2, int nda2, int *antennaIdRemap, int *nda)
+/* return antenna's clock rate, in microsec per sec */
+double evaluateDifxAntennaClockRate(const DifxAntenna *da, double mjd)
+{
+	double dt;	/* [sec] time since the clock epoch */
+	double C;
+	double dtn;
+	int i;
+
+	if(!da)
+	{
+		fprintf(stderr, "Error: evaluateDifxAntennaClockRate called with null DifxAntenna pointer\n");
+
+		exit(EXIT_FAILURE);
+	}
+
+	dt = (mjd - da->clockrefmjd)*86400.0;
+
+	dtn = 1.0;
+	C = 0.0;
+	for(i = 1; i <= da->clockorder; ++i)
+	{
+		C += i*da->clockcoeff[i]*dtn;
+		dtn *= dt;
+	}
+
+	return C;
+}
+
+DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1, const DifxAntenna *da2, int nda2, int *antennaIdRemap, int *nda)
 {
 	int i, j;
 	DifxAntenna *da;

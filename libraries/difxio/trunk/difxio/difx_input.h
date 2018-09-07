@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2018 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -750,6 +750,7 @@ int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2);
 int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2);
 int getDifxAntennaShiftedClock(const DifxAntenna *da, double dt, int outputClockSize, double *clockOut);
 double evaluateDifxAntennaClock(const DifxAntenna *da, double mjd);
+double evaluateDifxAntennaClockRate(const DifxAntenna *da, double mjd);
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1, const DifxAntenna *da2, int nda2, int *antennaIdRemap, int *nda);
 int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da, int doMount, int doOffset, int doCoords, int doClock, int doShelf, int doSpacecraft);

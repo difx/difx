@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken                             *
+ *   Copyright (C) 2015-2018 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
+ * $HeadURL: $
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
@@ -34,8 +34,8 @@
 
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
-const char version[] = "0.2";
-const char verdate[] = "20170412";
+const char version[] = "0.3";
+const char verdate[] = "20180907";
 
 void usage()
 {
@@ -48,12 +48,15 @@ void usage()
 	printf("--el       print elevation [deg], rate [deg/s] instead of delay, rate\n\n");
 	printf("--dry      print dry atmosphere delay [us]\n\n");
 	printf("--wet      print wet atmosphere delay [us]\n\n");
-	printf("--uvw      print antenna u,v,w [m] instead of delay,date\n\n");
+	printf("--uvw      print antenna u,v,w [m] instead of delay, rate\n\n");
+	printf("--clock    print clock model and rate instead of delay, rate\n\n");
+	printf("--perint   print values at the center of every integration rather than every 8s\n\n");
+	printf("--addclock include clock model in delay/rate values\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 	printf("All normal program output goes to stdout.\n\n");
 	printf("This program reads through one or more difx datasets and\n");
 	printf("evaluates delay polynomials in the .im files on a regular\n");
-	printf("time grid (every 24 seconds).  Delays and rates are both\n");
+	printf("time grid (every 8 seconds).  Delays and rates are both\n");
 	printf("calculated.  Output should be self explanatory.\n\n");
 }
 
@@ -64,7 +67,8 @@ enum Item
 	ItemEl,
 	ItemDry,
 	ItemWet,
-	ItemUVW
+	ItemUVW,
+	ItemClock
 };
 
 /* Use Cramer's rule to evaluate polynomial */
@@ -113,11 +117,35 @@ double evaluatePolyDeriv(const double *p, int n, double x)
 	return y;
 }
 
+/* returns -1 if not found */
+int getPolyIndex(const DifxScan *ds, int antennaId, int mjd, double sec)
+{
+	int p;
+
+	if(ds->im[antennaId] == 0)
+	{
+		return -1;
+	}
+
+	/* get polynomial */
+	for(p = 0; p < ds->nPoly; ++p)
+	{
+		if(ds->im[antennaId][0][p].mjd == mjd && ds->im[antennaId][0][p].sec <= sec)
+		{
+			return p;
+		}
+	}
+	
+	return -1;
+}
+
 int main(int argc, char **argv)
 {
 	DifxInput *D = 0;
 	int a, s;
 	int item = ItemDelay;
+	int perint = 0;
+	int addClock = 0;
 	DifxMergeOptions mergeOptions;
 
 	resetDifxMergeOptions(&mergeOptions);
@@ -154,6 +182,18 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "--uvw") == 0)
 			{
 				item = ItemUVW;
+			}
+			else if(strcmp(argv[a], "--clock") == 0)
+			{
+				item = ItemClock;
+			}
+			else if(strcmp(argv[a], "--perint") == 0)
+			{
+				perint = 1;
+			}
+			else if(strcmp(argv[a], "--addclock") == 0)
+			{
+				addClock = 1;
 			}
 			else
 			{
@@ -196,6 +236,13 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(addClock && item != ItemDelay)
+	{
+		fprintf(stderr, "Error: The --addclock option only works when tabulating delays and rates\n");
+		
+		exit(EXIT_FAILURE);
+	}
+
 	if(!D)
 	{
 		fprintf(stderr, "Nothing to do!  Quitting.  Run with -h for help information\n");
@@ -221,8 +268,16 @@ int main(int argc, char **argv)
 		switch(item)
 		{
 		case ItemDelay:
-			printf("# %d. Antenna %d (%s) delay [us]\n", 2+2*a, a, D->antenna[a].name);
-			printf("# %d. Antenna %d (%s) rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+			if(addClock)
+			{
+				printf("# %d. Antenna %d (%s) delay including clock model [us]\n", 2+2*a, a, D->antenna[a].name);
+				printf("# %d. Antenna %d (%s) rate including clock model [us/s]\n", 3+2*a, a, D->antenna[a].name);
+			}
+			else
+			{
+				printf("# %d. Antenna %d (%s) delay not including clock model [us]\n", 2+2*a, a, D->antenna[a].name);
+				printf("# %d. Antenna %d (%s) rate not including clock model [us/s]\n", 3+2*a, a, D->antenna[a].name);
+			}
 			break;
 		case ItemAz:
 			printf("# %d. Antenna %d (%s) azimuth [deg]\n", 2+2*a, a, D->antenna[a].name);
@@ -244,6 +299,9 @@ int main(int argc, char **argv)
 			printf("# %d. Antenna %d (%s) baseline U [m]\n", 2+3*a, a, D->antenna[a].name);
 			printf("# %d. Antenna %d (%s) baseline V [m]\n", 3+3*a, a, D->antenna[a].name);
 			printf("# %d. Antenna %d (%s) baseline W [m]\n", 4+3*a, a, D->antenna[a].name);
+		case ItemClock:
+			printf("# %d. Antenna %d (%s) clock offset [us]\n", 2+2*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) clock rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
 			break;
 		}
 	}
@@ -251,10 +309,12 @@ int main(int argc, char **argv)
 	for(s = 0; s < D->nScan; ++s)
 	{
 		const DifxScan *ds;
+		const DifxConfig *dc;
 		int refAnt;	/* points to a valid antenna in this poly */
 		int p, i;
 
 		ds = D->scan + s;
+		dc = D->config + ds->configId;
 
 		printf("\n# scan %d of %d: source = %s\n", s+1, D->nScan, D->source[ds->phsCentreSrcs[0]].name);
 
@@ -281,86 +341,229 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		for(p = 0; p < ds->nPoly; ++p)
+		if(perint)
 		{
-			const int N = (p == ds->nPoly-1) ? 16 : 15;
+			double t;	/* time into scan, in seconds, initialized at tInt/2 */
 
-			for(i = 0; i < N; ++i)
+			for(t = 0.5*dc->tInt; t < ds->durSeconds; t += dc->tInt)
 			{
-				printf("%14.8f", ds->im[refAnt][0][p].mjd + (ds->im[refAnt][0][p].sec + i*8)/86400.0);
+				double mjd;
+				int intmjd;
+				double sec;
 
-				if(item == ItemUVW)
+				mjd = D->mjdStart + (ds->startSeconds + t)/86400.0;
+				intmjd = (int)(mjd);
+				sec = (mjd - intmjd)*86400.0;
+
+				printf("%14.8f", mjd);
+
+				if(item == ItemClock)
 				{
 					for(a = 0; a < D->nAntenna; ++a)
 					{
-						double u, v, w;
-
-						if(ds->im[a] == 0)
+						printf("   %12.6f %12.6f", 
+							evaluateDifxAntennaClock(D->antenna+a, mjd),
+							evaluateDifxAntennaClockRate(D->antenna+a, mjd));
+					}
+				}
+				else if(item == ItemUVW)
+				{
+					for(a = 0; a < D->nAntenna; ++a)
+					{
+						p = getPolyIndex(ds, a, intmjd, sec);
+						if(p < 0)
 						{
-							u = v = w = 0.0;
+							printf("   %12.3f %12.3f %12.3f", 0.0, 0.0, 0.0);
 						}
 						else
 						{
-							u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, 8*i);
-							v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, 8*i);
-							w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, 8*i);
-						}
+							double u, v, w;
 
-						/* print to mm precision */
-						printf("   %12.3f %12.3f %12.3f", u, v, w); 
+							if(ds->im[a] == 0)
+							{
+								u = v = w = 0.0;
+							}
+							else
+							{
+								u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+								v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+								w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+							}
+
+							/* print to mm precision */
+							printf("   %12.3f %12.3f %12.3f", u, v, w); 
+						}
 					}
 				}
 				else
 				{
 					for(a = 0; a < D->nAntenna; ++a)
 					{
-						double v1, v2;
-
-						if(a >= ds->nAntenna)
+						p = getPolyIndex(ds, a, intmjd, sec);
+						if(p < 0)
 						{
-							v1 = v2 = -1.0;
-						}
-						else if(ds->im[a] == 0)
-						{
-							/* print zeros in cases where there is no data */
-							v1 = v2 = 0.0;
+							printf("   %12.6f %12.9f", 0.0, 0.0);
 						}
 						else
 						{
-							const double *poly;
+							double v1, v2;
 
-							switch(item)
+							if(a >= ds->nAntenna)
 							{
-							case ItemDelay:
-								poly = ds->im[a][0][p].delay;
-								break;
-							case ItemAz:
-								poly = ds->im[a][0][p].az;
-								break;
-							case ItemEl:
-								poly = ds->im[a][0][p].elgeom;
-								break;
-							case ItemDry:
-								poly = ds->im[a][0][p].dry;
-								break;
-							case ItemWet:
-								poly = ds->im[a][0][p].wet;
-								break;
-							default:
-								fprintf(stderr, "Weird!\n");
+								v1 = v2 = -1.0;
+							}
+							else if(ds->im[a] == 0)
+							{
+								/* print zeros in cases where there is no data */
+								v1 = v2 = 0.0;
+							}
+							else
+							{
+								const double *poly;
 
-								exit(EXIT_FAILURE);
+								switch(item)
+								{
+								case ItemDelay:
+									poly = ds->im[a][0][p].delay;
+									break;
+								case ItemAz:
+									poly = ds->im[a][0][p].az;
+									break;
+								case ItemEl:
+									poly = ds->im[a][0][p].elgeom;
+									break;
+								case ItemDry:
+									poly = ds->im[a][0][p].dry;
+									break;
+								case ItemWet:
+									poly = ds->im[a][0][p].wet;
+									break;
+								default:
+									fprintf(stderr, "Weird!\n");
+
+									exit(EXIT_FAILURE);
+								}
+
+								v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+								v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+
+								if(addClock && item == ItemDelay)
+								{
+									v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
+									v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
+								}
 							}
 
-							v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, 8*i);
-							v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, 8*i);
+							/* print to picosecond and femtosecond/sec precision */
+							printf("   %12.6f %12.9f", v1, v2);
 						}
-
-						/* print to picosecond and femtosecond/sec precision */
-						printf("   %12.6f %12.9f", v1, v2);
 					}
-				}
 				printf("\n");
+				}
+			}
+		}
+		else
+		{
+			for(p = 0; p < ds->nPoly; ++p)
+			{
+				const int N = (p == ds->nPoly-1) ? 16 : 15;
+
+				for(i = 0; i < N; ++i)
+				{
+					double mjd;
+
+					mjd = ds->im[refAnt][0][p].mjd + (ds->im[refAnt][0][p].sec + i*8)/86400.0;
+
+					printf("%14.8f", mjd);
+
+					if(item == ItemClock)
+					{
+						for(a = 0; a < D->nAntenna; ++a)
+						{
+							printf("   %12.6f %12.6f", 
+								evaluateDifxAntennaClock(D->antenna+a, mjd),
+								evaluateDifxAntennaClockRate(D->antenna+a, mjd));
+						}
+					}
+					else if(item == ItemUVW)
+					{
+						for(a = 0; a < D->nAntenna; ++a)
+						{
+							double u, v, w;
+
+							if(ds->im[a] == 0)
+							{
+								u = v = w = 0.0;
+							}
+							else
+							{
+								u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, 8*i);
+								v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, 8*i);
+								w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, 8*i);
+							}
+
+							/* print to mm precision */
+							printf("   %12.3f %12.3f %12.3f", u, v, w); 
+						}
+					}
+					else
+					{
+						for(a = 0; a < D->nAntenna; ++a)
+						{
+							double v1, v2;
+
+							if(a >= ds->nAntenna)
+							{
+								v1 = v2 = -1.0;
+							}
+							else if(ds->im[a] == 0)
+							{
+								/* print zeros in cases where there is no data */
+								v1 = v2 = 0.0;
+							}
+							else
+							{
+								const double *poly;
+
+								switch(item)
+								{
+								case ItemDelay:
+									poly = ds->im[a][0][p].delay;
+									break;
+								case ItemAz:
+									poly = ds->im[a][0][p].az;
+									break;
+								case ItemEl:
+									poly = ds->im[a][0][p].elgeom;
+									break;
+								case ItemDry:
+									poly = ds->im[a][0][p].dry;
+									break;
+								case ItemWet:
+									poly = ds->im[a][0][p].wet;
+									break;
+								default:
+									fprintf(stderr, "Weird!\n");
+
+									exit(EXIT_FAILURE);
+								}
+
+								v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, 8*i);
+								v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, 8*i);
+
+								if(addClock && item == ItemDelay)
+								{
+									v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
+									v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
+								}
+							}
+
+							/* print to picosecond and femtosecond/sec precision */
+							printf("   %12.6f %12.9f", v1, v2);
+						}
+					}
+					printf("\n");
+				}
 			}
 		}
 	}
