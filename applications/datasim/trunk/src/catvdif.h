@@ -18,18 +18,15 @@
 *    along with this program.  If not, see <http://www.gnu.org/licenses/>.   *
 *****************************************************************************/
 
-#ifndef __VDIFZIPPER_H__
-#define __VDIFZIPPER_H__
+#ifndef __CATVDIF_H__
+#define __CATVDIF_H__
 
 #include "configuration.h"
+#include "vdifzipper.h"
 
-#define BITS 2
-#define ISCOMPLEX 0
-#define BITSPERBYTE 8
+void catvdif(string antname, size_t verbose, int antidx, size_t div);
 
-void vdifzipper(Configuration* config, int configindex, float durus, size_t verbose, int antidx, int color);
-
-#endif /* __VDIFZIPPER_H__ */
+#endif /* __CATVDIF_H__ */
 
 /*
  * eof

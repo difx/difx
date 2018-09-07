@@ -1,5 +1,5 @@
 /*****************************************************************************
-*    <DataSim: VLBI data simulator>                                          * 
+*    <DataSim: VLBI data simulator>                                          *
 *    Copyright (C) <2015> <Zheng Meyer-Zhao>                                 *
 *                                                                            *
 *    This file is part of DataSim.                                           *
@@ -17,10 +17,10 @@
 *    You should have received a copy of the GNU General Public License       *
 *    along with this program.  If not, see <http://www.gnu.org/licenses/>.   *
 *****************************************************************************/
- 
+
 #ifndef __DATASIM_H__
 #define __DATASIM_H__
-  
+
 //  #include <cstdint>
   #include <string>
   #include <vector>
@@ -31,8 +31,10 @@
   #define CORR 0.05               // amplitude of common signal relative to the station receiver noise
   #define BSMX 1024 * 1024
 
-  #define SEFD 1000
-  #endif /* __DATASIM_H__ */
+	#define ERROR 500
+
+
+#endif /* __DATASIM_H__ */
 
 /*
  * eof

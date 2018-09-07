@@ -1,0 +1,10 @@
+version 1.0:
+* simulate continuum source
+* run on only one CPU core
+version 2.0:
+* subband-based parallelization
+* added spectral line simulation
+* added phasecal simulation
+* added spectral resolution scaling parameter option
+* bug fixed:
+  - VDIF frame index mismatching

@@ -11,7 +11,7 @@ fdir=`dirname $file`
 
 verb=${VERB-'false'}
 
-export ENUM=7000
+enum=${ENUM-7000}
 
 [ -n $file -a -f $file ] && . $file && 
 	echo sourced $file ||
@@ -21,7 +21,7 @@ export ENUM=7000
 target=$SOURCE
 scanStart=$START_TIME
 scanStop=$END_TIME
-fftres=$FFTRES
+#fftres=$FFTRES
 #echo $target
 #echo $STATION
 
@@ -134,7 +134,7 @@ echo $mjdStop
 export scanName=''
 export force='--force'
 
-[ -n "$FFTRES"    ] || export FFTRES=$fftres
+[ -n "$FFTRES"    ] || export FFTRES=0.25
 [ -n "$SPECRES"   ] || export SPECRES=0.50
 [ -n "$NINT"      ] || export NINT=0.8
 [ -n "$SUBINT"    ] || export SUBINT=32000000
@@ -161,7 +161,7 @@ comment="
 #
 jobn=$tdir
 exper=$tdir
-num=$ENUM
+num=$enum
 # pick up station, mjdStart, mjdStop, scanStart, scanfile
 # [ -n "$comment" ] && echo "$comment"
 [ -z "$scanStart" ] && { echo scanStart undefined ; exit 2; }

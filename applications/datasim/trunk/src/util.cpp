@@ -1,5 +1,5 @@
 /*****************************************************************************
-*    <DataSim: VLBI data simulator>                                          * 
+*    <DataSim: VLBI data simulator>                                          *
 *    Copyright (C) <2015> <Zheng Meyer-Zhao>                                 *
 *                                                                            *
 *    This file is part of DataSim.                                           *
@@ -30,61 +30,69 @@
 
 using namespace std;
 
-     
-int initSubbands(Configuration* config, int configindex, float specRes, 
-                  float minStartFreq, vector<Subband*> &subbands, Model* model,
-                  float tdur, setup setupinfo)
+
+int initSubbands(Configuration* config, int configindex, Model* model, float specRes,
+                  float minStartFreq, vector<Subband*> &subbands, int numsubbands,
+                  float tdur, setup setupinfo, int* sbinfo, int color, float durus)
 {
-  size_t length, startIdx, blksize;
-  size_t vpsamps;   // number of samples in a vdif packet
-  size_t vpbytes;   // number of bytes in a single-thread vdif packet
-  size_t framebytes, numrecordedbands;
-  size_t numdatastreams = (size_t)config->getNumDataStreams();
-  float freq, bw;
-  string antname;
-  int mjd, seconds;
-  f64* tempcoeffs;
-  f64* delaycoeffs;
-  double vptime;
-  size_t framespersec;
-  
-  mjd = config->getStartMJD();
-  seconds = config->getStartSeconds();
-  if(setupinfo.verbose >= 1)
+  for(size_t sbnum = 0; sbnum < (size_t)numsubbands; sbnum++)
   {
-    cout << "MJD is " << mjd << ", start seconds is " << seconds << endl;
-  }
+    Subband* subband;
+    // each process initializes its corresponding subbands
+    size_t length, startIdx, blksize;
+    size_t vpsamps;   // number of samples in a vdif packet
+    size_t vpbytes;   // number of bytes in a single-thread vdif packet
+    size_t framebytes;
+    size_t numrecordedbands;
+    float freq, bw;
+    string antname;
+    int mjd, seconds;
+    f64* tempcoeffs;
+    f64* delaycoeffs;
+    double antvptime;
+    size_t antframespersec;
+    int antidx;
+    int sbidx;
 
-  // allocate memory for delaycoeffs
-  tempcoeffs = vectorAlloc_f64(2);
-  delaycoeffs = vectorAlloc_f64(2);
-
-  for(size_t i = 0; i < numdatastreams; i++)
-  {
-    framebytes = (size_t)config->getFrameBytes(configindex, i);
-    numrecordedbands = (size_t)config->getDNumRecordedBands(configindex, i);
-    framespersec = config->getFramesPerSecond(configindex, i);
-    vptime = 1.0 * 1e6 / framespersec;
-    antname = config->getTelescopeName(i);
+    antidx = sbinfo[sbnum*2];
+    sbidx = sbinfo[sbnum*2+1];
+    mjd = config->getStartMJD();
+    seconds = config->getStartSeconds();
+    seconds += durus/(float)1e6 * color;
+    framebytes = (size_t)config->getFrameBytes(configindex, antidx);
+    numrecordedbands = (size_t)config->getDNumRecordedBands(configindex, antidx);
+    antframespersec = (size_t)config->getFramesPerSecond(configindex, antidx);
+    antvptime = 1.0 * 1e6 / antframespersec;
+    antname = config->getTelescopeName(antidx);
     // change the last character of the output vdif name to lower case for fourfit postprocessing
     //antname.back() = tolower(antname.back());
     antname.at(antname.size()-1) = tolower(antname.at(antname.size()-1));
+
+    // allocate memory for delaycoeffs
+    tempcoeffs = vectorAlloc_f64(2);
+    delaycoeffs = vectorAlloc_f64(2);
+
     if(setupinfo.verbose >= 1)
-    { 
-      cout << "Antenna " << i << endl;
+    {
+      cout << "MJD is " << mjd << ", start seconds is " << seconds << endl;
+    }
+
+    if(setupinfo.verbose >= 1)
+    {
+      cout << "Antenna " << antidx << endl;
       cout << " framebytes is " << framebytes << endl;
       cout << " numrecordedbands is " << numrecordedbands << endl;
       cout << " antenna name is " << antname << endl;
     }
 
-    // only consider scan 0 sourc 0
+    // only consider scan 0 source 0
     // scanindex, offsettime in seconds, timespan in seconds, numincrements, antennaindex, scansourceindex, order, delaycoeffs
-    model->calculateDelayInterpolator(0, 0, vptime*1e-6, 1, i, 0, 1, tempcoeffs);
-    model->calculateDelayInterpolator(0, tempcoeffs[1]*1e-6, vptime*1e-6, 1, i, 0, 1, delaycoeffs);
+    model->calculateDelayInterpolator(0, 0, antvptime*1e-6, 1, antidx, 0, 1, tempcoeffs);
+    model->calculateDelayInterpolator(0, tempcoeffs[1]*1e-6, antvptime*1e-6, 1, antidx, 0, 1, delaycoeffs);
     if(setupinfo.verbose >= 2)
     {
-      cout << "delay in us for datastream " << i << " at offsettime 0s is " << tempcoeffs[1] << endl;
-      cout << "delay in us for datastream " << i << " at offsettime " << tempcoeffs[1]*1e-6 << "s " << " is " << delaycoeffs[1] << endl;
+      cout << "delay in us for datastream " << antidx << " at offsettime 0s is " << tempcoeffs[1] << endl;
+      cout << "delay in us for datastream " << antidx << " at offsettime " << tempcoeffs[1]*1e-6 << "s " << " is " << delaycoeffs[1] << endl;
     }
 
     // calculate vdif packet size in terms of bytes and number of samples
@@ -92,39 +100,41 @@ int initSubbands(Configuration* config, int configindex, float specRes,
     // therefore 2 samples per byte
     vpbytes = (framebytes - VDIF_HEADER_BYTES) / numrecordedbands + VDIF_HEADER_BYTES;
     vpsamps = (framebytes - VDIF_HEADER_BYTES) / numrecordedbands * 2;
-  
-    for(size_t j = 0; j < numrecordedbands; j++)
+
+    freq = config->getDRecordedFreq(configindex, antidx, sbidx);
+    bw = config->getDRecordedBandwidth(configindex, antidx, sbidx);
+    if(!is_integer((freq - minStartFreq) / specRes))
     {
-      freq = config->getDRecordedFreq(configindex, i, j);
-      bw = config->getDRecordedBandwidth(configindex, i, j);
-      if(!is_integer((freq - minStartFreq) / specRes))
-      {
-        cout << "StartIndex position is not an integer ... " << endl
-             << "Something is wrong here ... " << endl;
-        return EXIT_FAILURE;
-      }
-      else
-        startIdx = (freq - minStartFreq) / specRes;
-      
-      blksize = bw / specRes; // number of samples to copy from startIdx
-      length = bw * tdur * 2; // size of the array twice of tdur
-
-      if(setupinfo.verbose >= 1)
-      {
-        cout << "Ant " << i << " subband " << j << ":" << endl
-             << "  start index is " << startIdx << endl 
-             << "  block size is " << blksize << " length is " << length << endl
-             << "  each vdif packet has " << vpsamps << " samples" << endl
-             << "  VDIF_HEADER_BYTES is " << VDIF_HEADER_BYTES << " vpbytes is " << vpbytes << endl
-             << "  number of samples in vdif packet is " << vpsamps << " framebytes is " << framebytes << endl
-             << "  recorded freq is " << freq << endl;
-      }
-      subbands.push_back(new Subband(startIdx, blksize, length, i, setupinfo.antSEFDs[i], j, vpbytes, vpsamps, delaycoeffs, bw, antname, mjd, seconds, freq, setupinfo.verbose));
+      cout << "StartIndex position is not an integer ... " << endl
+           << "Something is wrong here ... " << endl;
+      return EXIT_FAILURE;
     }
-  } 
+    else
+      startIdx = (freq - minStartFreq) / specRes;
 
-  vectorFree(tempcoeffs);
-  vectorFree(delaycoeffs);
+    blksize = bw / specRes; // number of samples to copy from startIdx
+    length = bw * tdur * 2; // size of the array twice of tdur
+
+    if(setupinfo.verbose >= 1)
+    {
+      cout << "Antenna " << antidx << " subband " << sbidx << ":" << endl
+           << "  start index is " << startIdx << endl
+           << "  block size is " << blksize << " length is " << length << endl
+           << "  each vdif packet has " << vpsamps << " samples" << endl
+           << "  VDIF_HEADER_BYTES is " << VDIF_HEADER_BYTES << " vpbytes is " << vpbytes << endl
+           << "  number of samples in vdif packet is " << vpsamps << " framebytes is " << framebytes << endl
+           << "  recorded freq is " << freq << endl;
+    }
+
+    subband = new Subband(startIdx, blksize, length, antidx, antframespersec, setupinfo.antSEFDs[antidx], sbidx,
+                       vpbytes, vpsamps, delaycoeffs, bw, antname, mjd, seconds, freq, setupinfo.verbose, color);
+    subbands.push_back(subband);
+    // finish initializing subband
+    // free memories for temporary allacated arrays
+    vectorFree(tempcoeffs);
+    vectorFree(delaycoeffs);
+  }
+
   return EXIT_SUCCESS;
 }
 
@@ -189,7 +199,7 @@ int getSpecRes(Configuration* config, int configindex, float& specRes, size_t ve
 
   // if one or more results are not integers
   // divide the value of tempSpecRes by 2
-  // if GCD cannot be found at 1/(2^10), stop the calculation 
+  // if GCD cannot be found at 1/(2^10), stop the calculation
   }while(!isGCD && (cnt < 10));
 
   if(cnt == 10)
@@ -253,84 +263,14 @@ float getMinStartFreq(Configuration* config, int configindex, size_t verbose)
 
 /*
  * Generate complex numbers using GSL
+ * odd index is the real part, even index is the imaginary part
  */
-void gencplx(cf32* cpDst, size_t len, f32 stdev, gsl_rng *rng_inst, size_t verbose)
+void gencplx(float* cpDst, size_t len, f32 stdev, gsl_rng *rng_inst, size_t verbose)
 {
-  int status;
-  f32* real = vectorAlloc_f32(len);
-  f32* imag = vectorAlloc_f32(len);
-
-  for(size_t idx = 0; idx < len; idx++)
+  for(size_t idx = 0; idx < len; idx+=2)
   {
-    real[idx] = gsl_ran_gaussian_ziggurat(rng_inst, stdev);
-    imag[idx] = gsl_ran_gaussian_ziggurat(rng_inst, stdev);
-  }
-  
-  status = vectorRealToComplex_f32(real, imag, cpDst, len);
-  if(status != vecNoErr)
-    cerr << "Error assembling random signals to complex!!!" << status << endl;
-
-  if(verbose >= 3)
-  {
-    static size_t cnt = 1;
-    if(cnt == 1)
-    {
-      for(size_t i = 0; i < len; i++)
-        cout << "Real part value: " << real[i] << ", imaginary part value: " << imag[i] << endl;
-      cnt--;
-    }
-  }
-  for(size_t idx = 0; idx < len; idx++)
-  {
-    assert(cpDst[idx].re == real[idx]);
-    assert(cpDst[idx].im == imag[idx]);
-  }
-
-  vectorFree(real);
-  vectorFree(imag);
-}
-
-/*
- * Generate signal of time duration 'tdur' for all subband of all antennas
- */
-void genSignal(size_t stdur, cf32* commFreqSig, vector<Subband*>& sbVec, int numSamps, gsl_rng *rng_inst, float tdur, float sfluxdensity, size_t verbose)
-{
-  vector<Subband*>::iterator it;
-  if(verbose >= 1)
-  {
-    cout << "Generate " << tdur << " us signal" << endl;
-  }
-  for(size_t t = 0; t < stdur; t++)
-  {
-    gencplx(commFreqSig, numSamps, STDEV, rng_inst, verbose);
-    // loop through each subband array of each antenna
-    if(verbose >= 2) cout << "At time " << t << "us:" << endl;
-    for(it = sbVec.begin(); it != sbVec.end(); ++it)
-    {
-      /* select data from commFreqSig 
-       * add station noise
-       * apply Ormsby filter
-       * inverse DFT/FFT
-       * copy data to the subband array
-       */
-      if(verbose >= 2)
-      {
-        cout << " Fabricate data for Antenna " << (*it)->getantIdx() << "subband " << (*it)->getsbIdx() << endl;
-      }
-      (*it)->fabricatedata(commFreqSig, rng_inst, sfluxdensity); 
-    }
-  }
-
-  // after TDUR time signal is generated for each subband array
-  // set the current pointer of each array back to the beginning of the second half
-  for(it = sbVec.begin(); it != sbVec.end(); ++it)
-  {
-    (*it)->setcptr((*it)->getlength() / 2);
-    if(verbose >= 2) 
-    {
-      cout << "Antenna " << (*it)->getantIdx() << " subband " << (*it)->getsbIdx()
-                         << " set current pointer back to " << (*it)->getlength() / 2 << endl;
-    }
+    cpDst[idx] = gsl_ran_gaussian_ziggurat(rng_inst, stdev);
+    cpDst[idx+1] = gsl_ran_gaussian_ziggurat(rng_inst, stdev);
   }
 }
 
@@ -339,15 +279,15 @@ void genSignal(size_t stdur, cf32* commFreqSig, vector<Subband*>& sbVec, int num
  * move data from the second half of the array to the first half
  * set the process pointer to the proper location
  */
-void movedata(vector<Subband*>& sbVec, size_t verbose)
-{
-  if(verbose >= 2) cout << "Move data in each subband array forward" << endl;
-  vector<Subband*>::iterator it;
-  for(it = sbVec.begin(); it != sbVec.end(); ++it)
-  {
-    (*it)->movedata();
-  }
-}
+ void movedata(vector<Subband*>& sbVec, size_t verbose)
+ {
+   if(verbose >= 2) cout << "Move data in each subband array forward" << endl;
+   vector<Subband*>::iterator it;
+   for(it = sbVec.begin(); it != sbVec.end(); ++it)
+   {
+     (*it)->movedata();
+   }
+ }
 
 /*
  * loop through each subband of each antenna
@@ -356,30 +296,34 @@ void movedata(vector<Subband*>& sbVec, size_t verbose)
  * quantization
  * pack to vdif
  */
-int processAndPacketize(size_t framespersec, vector<Subband*>& sbVec, Model* model, size_t verbose)
-{
-  vector<Subband*>::iterator it;
-  for(it = sbVec.begin(); it != sbVec.end(); ++it)
-  {
-    if(verbose >= 2)
-      cout << "Antenna " << (*it)->getantIdx() << " Subband "
-           << (*it)->getsbIdx() << " process vdif packet" << endl;
-    (*it)->fillprocbuffer(); 
-    (*it)->processdata(); 
-    (*it)->updatevalues(model);
- 
-    (*it)->quantize();
-    (*it)->writetovdif();
-    if(verbose >= 2)
-      cout << "current seconds is " << ((vdif_header *)(*it)->getvdifbuf())->seconds
-           << ", frame number is " << ((vdif_header *)(*it)->getvdifbuf())->frame << endl;
-    //update VDIF Header for the next packet
-    nextVDIFHeader((vdif_header *) (*it)->getvdifbuf(), (int) framespersec);    
-  }
-  return (EXIT_SUCCESS);
-}
+ int processAndPacketize(vector<Subband*>& sbVec, Model* model, size_t verbose, int pcal)
+ {
+   vector<Subband*>::iterator it;
+   for(it = sbVec.begin(); it != sbVec.end(); ++it)
+   {
+     //update VDIF Header for the next packet
+     nextVDIFHeader((vdif_header *) (*it)->getvdifbuf(), (int) (*it)->getantframespersec());
+     
+     if(verbose >= 2)
+       cout << "Antenna " << (*it)->getantIdx() << " Subband "
+            << (*it)->getsbIdx() << " process vdif packet" << endl;
+     (*it)->fillprocbuffer();
+     if(pcal > EPSILON)
+       (*it)->processdatawithpcal(pcal);
+     else
+       (*it)->processdata();
+     (*it)->updatevalues(model);
 
-/*
+     (*it)->quantize();
+     (*it)->writetovdif();
+     if(verbose >= 2)
+       cout << "current seconds is " << ((vdif_header *)(*it)->getvdifbuf())->seconds
+            << ", frame number is " << ((vdif_header *)(*it)->getvdifbuf())->frame << endl;
+   }
+   return (EXIT_SUCCESS);
+ }
+
+ /*
  * calculate the lowest process pointer in terms of time among all subband arrays
  */
 double getMinProcPtrTime(vector<Subband*>& sbVec, size_t verbose)
@@ -396,4 +340,20 @@ double getMinProcPtrTime(vector<Subband*>& sbVec, size_t verbose)
     minprocptrtime = (minprocptrtime > temp) ? temp : minprocptrtime;
   }
   return minprocptrtime;
+}
+
+void gengaussianfilter(float* arr, float* linesignal, int len, float specRes)
+{
+  float filter[len];
+  float amplitude = sqrt(linesignal[1]);
+  float rms = linesignal[2];
+  float linesigidx = linesignal[0]/specRes;
+  for(size_t idx = 0; idx < (size_t)len; idx++)
+    filter[idx] = amplitude * exp(-M_PI*M_PI*pow((float)idx-linesigidx, 2) / (2*rms*rms));
+  // double the array lenth due to complex samples
+  for(size_t idx = 0; idx < (size_t)len*2; idx+=2)
+  {
+    arr[idx] = filter[idx/2];
+    arr[idx+1] = filter[idx/2];
+  }
 }
