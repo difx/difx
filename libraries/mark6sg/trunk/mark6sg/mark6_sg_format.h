@@ -55,7 +55,9 @@
 // The below structures are adopted from the source code of the
 // Mark6 program 'd-plane' version 1.12:
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdint.h>

@@ -32,7 +32,9 @@
 // These VFS-like functions open and read Mark6 scatter-gather files,
 // and have the same interface as 'man 2 open', 'man 2 read', etc.
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 

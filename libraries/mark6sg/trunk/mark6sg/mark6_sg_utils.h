@@ -29,7 +29,9 @@
 #ifndef MARK6_SG_UTILS__H
 #define MARK6_SG_UTILS__H
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdint.h>
