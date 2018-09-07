@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '2.5.0'
-VERDATE = '20170825'
+VERSION = '2.5.3'
+VERDATE = '20180907'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -727,7 +727,8 @@ optParser.add_option("--override-version", dest="override", action="store_true",
 verbose = options.verbose - options.quiet
 
 if len(args) < 1:
-	optParser.error("at least one .input or .joblist file must be given.")
+	optParser.print_help()
+	exit(1)
 
 # parse arguments
 try:
