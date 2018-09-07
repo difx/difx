@@ -10,6 +10,11 @@ AM_SANITY_CHECK
 
 AC_LANG(C++)
 
+dnl Assume Mark6 until proven otherwise
+hasmark6meta=true
+hasmark6sg=true
+hasmark6=true
+
 AC_CHECK_HEADER(expat.h)
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
@@ -19,10 +24,21 @@ AC_CHECK_LIB(expat, XML_Parse,,[AC_MSG_ERROR("need expat")])
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.4.0 difxmessage < 7])
 PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.4.0 mark5ipc < 7])
 PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.5.0])
-PKG_CHECK_MODULES(MARK6META, [mark6meta >= 0.1], [hasmark6meta=true] [AC_DEFINE(HAS_MARK6META, 1)], [hasmark6meta=false])
+PKG_CHECK_MODULES(MARK6META, [mark6meta >= 0.1], [AC_DEFINE(HAS_MARK6META, 1)], [hasmark6meta=false])
+PKG_CHECK_MODULES(MARK6SG, [mark6sg >= 2.0.1], [AC_DEFINE(HAS_MARK6SG, 1)], [hasmark6sg=false])
 PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.1)
 
 AH_TEMPLATE(HAS_MARK6META, [True if mark6meta library has been found])
+AH_TEMPLATE(HAS_MARK6SG, [True if mark6sg library has been found])
+
+if test $hasmark6meta = false; then
+	hasmark6=false
+	echo "XXXXXX  Mark6 is false"
+fi
+if test $hasmark6sg = false; then
+	hasmark6=false
+	echo "XXXXXX  Mark6 is false"
+fi
 
 streamstor_enabled=true
 PKG_CHECK_EXISTS([streamstor >= 8.0],
@@ -30,8 +46,6 @@ PKG_CHECK_EXISTS([streamstor >= 8.0],
 	[ AC_MSG_NOTICE([Did not find STREAMSTOR in $PKG_CONFIG_PATH])
 	  streamstor_enabled=false])
 if test ${streamstor_enabled} = true; then
-	CPPFLAGS="${CPPFLAGS} ${STREAMSTOR_CFLAGS}"
-	CXXFLAGS="${CXXFLAGS} ${STREAMSTOR_CFLAGS}"
 	AC_CHECK_HEADERS([xlrapi.h])
 else
 	STREAMSTOR_CFLAGS=""
@@ -42,8 +56,10 @@ else
 fi
 AM_CONDITIONAL(WITH_STREAMSTOR, $streamstor_enabled)
 AM_CONDITIONAL(WITH_MARK6META, $hasmark6meta)
+AM_CONDITIONAL(WITH_MARK6SG, $hasmark6sg)
+AM_CONDITIONAL(WITH_MARK6, $hasmark6)
 
-LIBS="${LIBS} ${STREAMSTOR_LIBS} ${VDIFIO_LIBS} `pkg-config --variable=StaticLibs difxmessage` `pkg-config --variable=StaticLibs mark5ipc` `pkg-config --variable=StaticLibs mark5access` `pkg-config --variable=StaticLibs mark6meta`"
+LIBS="${LIBS} ${STREAMSTOR_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} `pkg-config --variable=StaticLibs difxmessage` `pkg-config --variable=StaticLibs mark5ipc` `pkg-config --variable=StaticLibs mark5access` `pkg-config --variable=StaticLibs mark6meta`"
 CPPFLAGS="-D_LARGE_FILE_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK6META_CFLAGS} ${MARK5IPC_CFLAGS} ${VDIFIO_CFLAGS} ${STREAMSTOR_CFLAGS} ${CXXFLAGS} -O2 -Wall"
 CXXFLAGS="${CPPFLAGS}"
 

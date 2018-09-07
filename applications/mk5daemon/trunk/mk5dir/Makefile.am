@@ -1,5 +1,8 @@
+
+bin_PROGRAMS =
+
 if WITH_STREAMSTOR
-bin_PROGRAMS = \
+bin_PROGRAMS += \
 	fileto5c \
 	mk5cat \
 	mk5cp \
@@ -15,8 +18,10 @@ bin_PROGRAMS = \
 	vsn \
 	startfusemk5 \
 	stopfusemk5
-else
-bin_PROGRAMS = \
+endif
+
+if WITH_MARK6
+bin_PROGRAMS += \
 	mk6dir
 endif
 

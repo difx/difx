@@ -22,7 +22,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vdifio.h>
-#include <vdifmark6.h>
+#include <mark6sg/mark6gather.h>
+#include <mark6gather_vdif.h>
 #include <difxmessage.h>
 #include "config.h"
 
@@ -237,7 +238,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		int a, slot;
+		int a, slot = -1;
 
 		for(a = 1; a < argc; ++a)
 		{
@@ -310,18 +311,26 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 		}
+
 		// change state if requested
 		if(catalogState)
 		{
-			char cmd[21];
-
-			if(verbose)
+			if(slot < 0)
 			{
-				printf("Changing state of module in slot %d to \'cataloged\'.\n", slot);
+				printf("No slot was identified via command line.  Doing nothing.\n");
 			}
+			else
+			{
+				char cmd[21];
 
-			sprintf(cmd, "mk6state cataloged %d", slot);
-			system(cmd);
+				if(verbose)
+				{
+					printf("Changing state of module in slot %d to \'cataloged\'.\n", slot);
+				}
+
+				sprintf(cmd, "mk6state cataloged %d", slot);
+				system(cmd);
+			}
 		}
 	}
 
