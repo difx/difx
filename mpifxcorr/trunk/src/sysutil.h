@@ -14,4 +14,17 @@ std::ifstream * ifstreamOpen(const char* filename);
  */
 void ifstreamOpen(std::ifstream& f, const char* filename);
 
+/**
+ * Read contents of a stream into a string.
+ * \return True on success
+ */
+bool readFileToString(std::ifstream * in, std::string& out);
+
+/**
+ * Read contents of a file into a string.
+ * \return True on success
+ */
+bool readFileToString(const char* filename, std::string& out);
+
+
 #endif

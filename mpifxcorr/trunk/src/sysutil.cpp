@@ -53,16 +53,59 @@ void ifstreamOpen(std::ifstream& f, const char* filename)
   }
 }
 
+/**
+ * Read contents of a stream into a string.
+ * \return True on success
+ */
+bool readFileToString(std::ifstream * in, std::string& out)
+{
+  out.clear();
+  if(in->fail() || !in->is_open())
+    return false;
+  out = std::string((std::istreambuf_iterator<char>(*in)), (std::istreambuf_iterator<char>()));
+  return true;
+}
+
+/**
+ * Read contents of a file into a string.
+ * \return True on success
+ */
+bool readFileToString(const char* filename, std::string& out)
+{
+  out.clear();
+  std::ifstream * in = ifstreamOpen(filename);
+  bool success = readFileToString(in, out);
+  delete in;
+  return success;
+}
+
 #ifdef TEST_SYSUTIL
+// Helper functions, with DiFX lacking unit test framework can test these with:
 // g++ sysutil.cpp -I. -I.. -DTEST_SYSUTIL -o sysutil_test
+// echo -e "Line 1\nLine 2\nLine 3" > x
+// valgrind --leak-check=full ./sysutil_test x
 int main(int argc, char** argv)
 {
-  std::ifstream * f1;
-  std::ifstream f2;
-  f1 = ifstreamOpen(argv[1]);
+  std::ifstream * f1 = ifstreamOpen(argv[1]);
   std::cout << "Result: f1->fail()=" << f1->fail() << " f1->is_open()=" << f1->is_open() << std::endl;
+
+  std::ifstream f2;
   ifstreamOpen(f2, argv[1]);
   std::cout << "Result: f2.fail()=" << f2.fail() << " f2.is_open()=" << f2.is_open() << std::endl;
 
+  std::string contents;
+  bool rc = readFileToString(argv[1], contents);
+  std::cout << "Result: readFileToString(<filename>)=" << rc << std::endl;
+  if (rc) {
+    std::cout << "<<< contents >>>\n" << contents << std::endl;
+  }
+
+  rc = readFileToString(f1, contents);
+  std::cout << "Result: readFileToString(ifstream&)=" << rc << std::endl;
+  if (rc) {
+    std::cout << "<<< contents >>>\n" << contents << std::endl;
+  }
+
+  delete f1;
 }
 #endif
