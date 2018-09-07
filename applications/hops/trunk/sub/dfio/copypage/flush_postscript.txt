@@ -1,0 +1,61 @@
+https://ghostscript.com/pipermail/gs-devel/2012-February/009149.html
+
+>> In order to flush the device commands to the "page", use the .outputpage
+>> Ghostscript
+>> operator.
+>>
+>> For example: 1 false .outputpage
+>>
+>> The '1' is a copy count (not really used) and the 'false' tells
+>> Ghostscript to not erase the
+>> buffer, similar to the Level 1 and 2 'copypage' action.
+>>
+>> I hope this helps
+>>
+>> Best Regards,
+>> Ray Johnston
+
+.outputpage is an internal command whose use is not recommended.
+
+and apparently the above works differently in different contexts.
+
+-----------------------------------------------------------------------------
+Reading, e.g.
+    /usr/share/ghostscript/9.22/Resource/Init/gs_init.ps
+is generally very informative 
+
+# testing sample:
+
+srcdir=/home/gbc/HOPS/trunk/sub/dfio/copypage \
+GS_DEBUG=gs_debug.ps \
+GS_COPYPAGE='PGPLOT restore (1\n) print flush flushpage (2\n) print flush prompt showpage' \
+FP_SLEEP=-20 ./fplot_test
+
+
+-----------------------------------------------------------------------------
+https://www.adobe.com/content/dam/acom/en/devnet/actionscript/articles/PLRM.pdf
+
+-----------------------------------------------------------------------------
+Email to tmorin Aug 8 2018,
+
+My machine at home is also gs --version 922.  Comparing the guts
+of the Resource/Init directory, there were a couple of minor files
+(fonts) different and 
+
+/usr/share/ghostscript/9.22/Resource/Init/gs_init.ps
+
+parsec:
+
+ 87422 May 30 17:27 /usr/share/ghostscript/9.22/Resource/Init/gs_init.ps
+  87977 Apr 23 09:01 /usr/share/ghostscript/9.22/Resource/Init/gs_init.ps
+
+  The difference is /UndefinePDFOperators which list operators not needed
+  after startup.  Parsec listed /flushpage, my machine didn't.  Apparently
+  the concern here is people hacking unused operators....
+
+  I removed /flushpage from the list and parsec is now fine.
+
+  I can't wait to see what happens in 9.23.
+
+-----------------------------------------------------------------------------
+# eof
