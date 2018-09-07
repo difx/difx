@@ -24,6 +24,9 @@
 // $LastChangedDate$
 //
 //============================================================================
+#ifndef MK5MODE_H
+#define MK5MODE_H
+
 #include <mark5access.h>
 #include "mode.h"
 
@@ -81,4 +84,6 @@ class Mk5Mode : public Mode
     struct mark5_stream *mark5stream;
     int *invalid; // stores per-band invalid data counts after each unpack (VDIF only)
 };
+
+#endif
 // vim: shiftwidth=2:softtabstop=2:expandtab

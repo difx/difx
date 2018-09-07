@@ -24,6 +24,9 @@
 // $LastChangedDate$
 //
 //============================================================================
+#ifndef MPIFXCORR_H
+#define MPIFXCORR_H
+
 #include <string>
 
 ///constants for MPI ids
@@ -34,4 +37,6 @@ namespace fxcorr
 }
 
 static const int FLAGS_PER_INT = 30;
+
+#endif
 // vim: shiftwidth=2:softtabstop=2:expandtab

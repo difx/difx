@@ -24,6 +24,9 @@
 // $LastChangedDate$
 //
 //============================================================================
+#ifndef SWITCHEDPOWER_H
+#define SWITCHEDPOWER_H
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -67,3 +70,5 @@ public:
 	int startMJD;
 	int startSeconds;
 };
+
+#endif
