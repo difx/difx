@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Helge Rottmann            *
+ *   Copyright (C) 2008-2018 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -57,8 +57,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "in directory <baseFilename>.difx/\n");
 	fprintf(stderr, "It is also assumed that at least 3 additional files exist:\n");
 	fprintf(stderr, "  <baseFilename>.input    DiFX input file\n");
-        fprintf(stderr, "  <baseFilename>.calc     Base file for calcif \n");
-        fprintf(stderr, "  <baseFilename>.im       Polynomial UVW and model\n");
+	fprintf(stderr, "  <baseFilename>.calc     Base file for calcif \n");
+	fprintf(stderr, "  <baseFilename>.im       Polynomial UVW and model\n");
 	fprintf(stderr, "One other files is optionally read:\n");
 	fprintf(stderr, "  <baseFilename>.flag     Antenna-based flagging\n\n");
 	fprintf(stderr, "VLBA calibration transfer will produce 4 files:\n");
@@ -110,7 +110,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --profilemode       Don't discard autocorrelations for pulsar bins other than bin 0\n");
 	fprintf(stderr, "\n");
-        fprintf(stderr, "  --skip-extra-autocorrs\n");
+	fprintf(stderr, "  --skip-extra-autocorrs\n");
 	fprintf(stderr, "                      Ignore e.g. LL autocorrs in a job with only RR cross-corrs\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --history <file>\n");
@@ -129,6 +129,9 @@ static void usage(const char *pgm)
 #endif
 	fprintf(stderr, "  --union\n");
 	fprintf(stderr, "  -u                  Form union of frequency setups\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --max-jobs <max>\n");
+	fprintf(stderr, "  -m <max>            Set maximum number of jobs to merge into one FITS file to <max>\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --eop-merge-mode    Set the mode for merging differerent EOPs. Legal modes are strict (default), drop, relaxed.\n");
 	fprintf(stderr, "\n");
@@ -157,8 +160,6 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->writemodel = 1;
 	opts->sniffTime = DefaultSniffInterval;
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
-	opts->phaseCentre = 0;
-        opts->skipExtraAutocorrs = 0;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
 
@@ -204,7 +205,7 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 /* return 0 on success */
 int exceedOpenFileLimit(int numFiles)
 {
-        struct rlimit limit;
+	struct rlimit limit;
 	
 	/* Get max number of open files that the OS allows */
 	if(getrlimit(RLIMIT_NOFILE, &limit) != 0) 
@@ -262,18 +263,18 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				fprintf(stderr, "\nWarning: using mode that merges all frequency setups that are encountered into one master frequency setup.  This is experimental at this time and in most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
 			}
 			else if(strcmp(argv[i], "--zero") == 0 ||
-				strcmp(argv[i], "-0") == 0)
+			        strcmp(argv[i], "-0") == 0)
 			{
 				opts->dontIncludeVisibilities = 1;
 			}
 #ifdef HAVE_FFTW
 			else if(strcmp(argv[i], "--dont-sniff") == 0 ||
-				strcmp(argv[i], "-x") == 0)
+			        strcmp(argv[i], "-x") == 0)
 			{
 				opts->sniffTime = -1.0;
 			}
 			else if(strcmp(argv[i], "--sniff-all") == 0 ||
-				strcmp(argv[i], "-S") == 0)
+			        strcmp(argv[i], "-S") == 0)
 			{
 				opts->sniffAllBins = 1;
 				opts->sniffAllPhaseCentres = 1;
@@ -297,12 +298,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				return 0;
 			}
 			else if(strcmp(argv[i], "--keep-order") == 0 ||
-				strcmp(argv[i], "-k") == 0)
+			        strcmp(argv[i], "-k") == 0)
 			{
 				opts->keepOrder = 1;
 			}
 			else if(strcmp(argv[i], "--ac-always") == 0 ||
-				strcmp(argv[i], "-a") == 0)
+			        strcmp(argv[i], "-a") == 0)
 			{
 				opts->alwaysWriteAutocorr = 1;
 			}
@@ -314,10 +315,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				opts->overrideVersion = 1;
 			}
-                        else if(strcmp(argv[i], "--skip-extra-autocorrs") == 0)
-                        {
-                                opts->skipExtraAutocorrs = 1;
-                        }
+			else if(strcmp(argv[i], "--skip-extra-autocorrs") == 0)
+			{
+				opts->skipExtraAutocorrs = 1;
+			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
 				if(strcmp(argv[i], "--scale") == 0 ||
@@ -328,13 +329,19 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					printf("Scaling data by %f\n", opts->scale);
 				}
 				else if(strcmp(argv[i], "--deltat") == 0 ||
-					strcmp(argv[i], "-t") == 0)
+				        strcmp(argv[i], "-t") == 0)
 				{
 					++i;
 					opts->jobMatrixDeltaT = atof(argv[i]);
 				}
+				else if(strcmp(argv[i], "--max-jobs") == 0 ||
+				        strcmp(argv[i], "-m") == 0)
+				{
+					++i;
+					opts->maxJobsToMerge = atoi(argv[i]);
+				}
 				else if(strcmp(argv[i], "--difx-tsys-interval") == 0 ||
-					strcmp(argv[i], "-i") == 0)
+				        strcmp(argv[i], "-i") == 0)
 				{
 					++i;
 					opts->DifxTsysAvgSeconds = atof(argv[i]);
@@ -343,14 +350,18 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					++i;
 					if (strcmp(argv[i], "strict") == 0)
+					{
 						opts->mergeOptions.eopMergeMode = EOPMergeModeStrict;
+					}
 					else if (strcmp(argv[i], "drop") == 0)
 					{
 						opts->mergeOptions.eopMergeMode = EOPMergeModeLoose;
 						fprintf(stderr, "\nWarning: using mode that drops all EOPs, allowing merging of files including incompatible EOP values.\n\n");
 					}
 					else if (strcmp(argv[i], "relaxed") == 0)
+					{
 						opts->mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
+					}
 					else
 					{
 						fprintf(stderr, "Illegal EOP merge mode: %s\n", argv[i]);
@@ -367,19 +378,19 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					opts->DifxPcalAvgSeconds = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--sniff-time") == 0 ||
-					strcmp(argv[i], "-T") == 0)
+				        strcmp(argv[i], "-T") == 0)
 				{
 					++i;
 					opts->sniffTime = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--bin") == 0 ||
-					strcmp(argv[i], "-B") == 0)
+				        strcmp(argv[i], "-B") == 0)
 				{
 					++i;
 					opts->pulsarBin = atoi(argv[i]);
 				}
 				else if(strcasecmp(argv[i], "--phaseCentre") == 0 ||
-					strcasecmp(argv[i], "--phasecenter") == 0)
+				        strcasecmp(argv[i], "--phasecenter") == 0)
 				{
 					++i;
 					opts->phaseCentre = atoi(argv[i]);
@@ -391,7 +402,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					opts->primaryBand = strdup(argv[i]);
 				}
 				else if(strcmp(argv[i], "--history") == 0 ||
-					strcmp(argv[i], "-H") == 0)
+				        strcmp(argv[i], "-H") == 0)
 				{
 					++i;
 					opts->historyFile = strdup(argv[i]);
@@ -415,7 +426,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 		else
 		{
 	
-			if (exceedOpenFileLimit(opts->nBaseFile))
+			if(exceedOpenFileLimit(opts->nBaseFile))
 			{
 				printf("Error: The number of input files exceeds the OS limit of allowed open files!\n");
 				printf("Run ulimit -n to increase that number.\n");
@@ -619,7 +630,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	keys->ref_date = D->mjdStart;
 
 #ifdef DEBUG
-        printf("Channel bandwidth is %f, ref pixel is %f\n", keys->chan_bw, keys->ref_pixel);
+	printf("Channel bandwidth is %f, ref pixel is %f\n", keys->chan_bw, keys->ref_pixel);
 #endif
 
 	if(D->nPolar > 1)
@@ -832,45 +843,6 @@ static void deleteDifxInputSet(DifxInput **Dset, int n)
 	}
 }
 
-#if 0
-/* No used anymore.  If needed in the future, probably best to implement in difxio/difx_eop.c */
-
-/* return number of days, inclusive, spanned by a number n of provided DifxInput structures */
-static int nEOPDays(DifxInput **Dset, int n)
-{
-	int minDay = 1000000, maxDay = -1000000;	/* MJD */
-	int i;
-
-	if(n == 0)
-	{
-		return 0;
-	}
-
-	for(i = 0; i < n; ++i)
-	{
-		int e;
-
-		if(Dset[i]->nEOP == 0)
-		{
-			continue;
-		}
-		for(e = 0; e < Dset[i]->nEOP; ++e)
-		{
-			if(Dset[i]->eop[e].mjd < minDay)
-			{
-				minDay = Dset[i]->eop[e].mjd;
-			}
-			if(Dset[i]->eop[e].mjd > maxDay)
-			{
-				maxDay = Dset[i]->eop[e].mjd;
-			}
-		}
-	}
-
-	return maxDay - minDay + 1;
-}
-#endif
-
 static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 {
 	DifxInput **Dset;
@@ -1019,6 +991,10 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 		++nConverted;
 		if(opts->dontCombine)
+		{
+			break;
+		}
+		if(opts->maxJobsToMerge > 0 && nConverted >= opts->maxJobsToMerge)
 		{
 			break;
 		}
