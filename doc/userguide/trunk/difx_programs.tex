@@ -2555,7 +2555,7 @@ Program {\tt stripVDIF} strips network headers from a VDIF format basebad data f
 
 \subsection{tabulatedelays {\small $\mathrm{(package: difxio)}$}} \label{sec:tabulatedelays}
 
-Program {\tt tabulatedelays} takes one or more DiFX filesets and produces a text file containing, for each scan, a table of interferometer delays ($\mu$s) and rate ($\mu$s/s) based on the values in the {\tt .im} file at a cadence of one entry every 24 seconds (the same as that typically used in calculating the delay model polynomials).
+Program {\tt tabulatedelays} takes one or more DiFX filesets and produces a text file containing, for each scan, a table of interferometer delays ($\mu$s) and rate ($\mu$s/s) based on the values in the {\tt .im} file at a cadence of one entry every 8 seconds.
 Based on command line options values other than the delay can be extracted and tabulated.
 The details of the output files are documented in comments at the top of the output file.
 
@@ -2570,10 +2570,30 @@ The details of the output files are documented in comments at the top of the out
 \item[] {\tt --dry} : print the dry component of atmospheric delay ($\mu$s) instead of delay, rate
 \item[] {\tt --wet} : print the wet component of atmospheric delay ($\mu$s) instead of delay, rate
 \item[] {\tt --uvw} : print the antenna-based baseline coordinates $(x, y, z)$ (meters) instead of delay, rate
+\item[] {\tt --clock} : print the clock offset ($\mu$s) and rate ($\mu$s/s) instead of delay, rate
+\item[] {\tt --perint} : print values at the center of every integration rather than every 8s
+\item[] {\tt --addclock} : include clock offset/rate in printed delay/rate values
 \end{itemize}
 \end{itemize}
 
+This program reads through one or more difx datasets and evaluates delay polynomials in the {\tt .im} files on a regular time grid (every 8 seconds).
+Delays and rates are both calculated.
+Output should be self explanatory.
+Plotting utilities such as gnuplot can be used directly on the output.
 
+When operating without {\tt --perint}, the entirety of the delay polynomials are plotted, even exceeding the time range of the scans to which they belong.
+Comments in the output separate scans cleanly.
+When {\tt --perint} is used, only the time covered by the scans is output.
+
+Sign conventions:
+\begin{itemize}
+  \item Delay: a positive delay indicates wavefront arrival at the station before wavefront arrival at earth center.
+	The delay includes contribution from wet and dry atmosphere components.
+  \item Rate: simply the time derivative of Delay.
+  \item Clock Offset: sign convention is opposite that of {\tt .vex "clock\_early"} parameter; a positive clock offset indicates slow station clock.
+	The sum of Clock Offset and Delay is the total correlator delay.
+  \item Clock Rate: simply the time derivative of Clock Offset.
+\end{itemize}
 
 
 % testdifxinput ---------------------------------------------------------------
