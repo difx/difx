@@ -10,7 +10,7 @@ from math import sqrt
 
 program = 'difxspeed'
 version = '0.5'
-verdate = '20180906'
+verdate = '20180908'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 inputFileExtension = '.difxspeed'
@@ -23,8 +23,11 @@ def usage(pgm):
 	print '\n%s ver. %s  %s  %s' % (program, version, author, verdate)
 	print '\nUsage: %s <benchmarkFile> [<numIterations>]\n' % pgm
 	print 'Where:'
-	print '  <benchmarkFile> describes the series of benchmarks to run.\n'
+	print '  <benchmarkFile> describes the series of benchmarks to run.'
+	print '                  (must end in %s)\n' % inputFileExtension
 	print '  <numIterations> is the number of times to run the test.\n'
+	print 'See https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/difxspeed for'
+	print 'more information.\n'
 
 nExecute = 0
 def execute(cmd, verbose, pretend):
@@ -115,6 +118,13 @@ def getncore(config, cluster):
 
 def runtest(fd, config, cluster, filebase, verbose, run, doFake, remainder):
 
+	# useFakeSource: if true, use the new syntax: source=fake; otherwise use old syntax: fake=x (for arbitrary x)
+	useFakeSource = False
+	if environ.has_key('DIFX_VERSION'):
+		difxVersion = split(environ['DIFX_VERSION'], '-')[-1]
+		if difxVersion > '2.5' or difxVersion == 'DEVEL':
+			useFakeSource = True
+
 	setupParams = ['tInt', 'fftSpecRes', 'specRes', 'strideLength', 'xmacLength', 'numBufferedFFTs', 'subintNS']
 	antennaParams = ['toneSelection']
 	dontWriteParams = ['nAnt']
@@ -160,7 +170,10 @@ def runtest(fd, config, cluster, filebase, verbose, run, doFake, remainder):
 				# FIXME: add other antenna parameters here
 				o.write('ANTENNA %s\n' % antennas[a])
 				o.write('{\n')
-				o.write('  fake = x\n')
+				if useFakeSource:
+					o.write('  source = fake\n')
+				else:
+					o.write('  fake = x\n')
 				o.write('}\n')
 		
 		# write non-setup parameters here
