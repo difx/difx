@@ -35,11 +35,11 @@
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
 const char version[] = "0.3";
-const char verdate[] = "20180907";
+const char verdate[] = "20180908";
 
 void usage()
 {
-	printf("%s  ver. %s  %s  %s\n\n", program, version, author, verdate);
+	printf("\n%s  ver. %s  %s  %s\n\n", program, version, author, verdate);
 	printf("Usage : %s [options] <inputfilebase1> [ <inputfilebase2> [...] ]\n\n", program);
 	printf("options can include:\n");
 	printf("--help\n");
@@ -49,19 +49,29 @@ void usage()
 	printf("--dry      print dry atmosphere delay [us]\n\n");
 	printf("--wet      print wet atmosphere delay [us]\n\n");
 	printf("--uvw      print antenna u,v,w [m] instead of delay, rate\n\n");
-	printf("--clock    print clock model and rate instead of delay, rate\n\n");
+	printf("--clock    print clock offset and rate instead of delay, rate\n\n");
 	printf("--perint   print values at the center of every integration rather than every 8s\n\n");
-	printf("--addclock include clock model in delay/rate values\n\n");
+	printf("--addclock include clock offset/rate in delay/rate values\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 	printf("All normal program output goes to stdout.\n\n");
-	printf("This program reads through one or more difx datasets and\n");
-	printf("evaluates delay polynomials in the .im files on a regular\n");
-	printf("time grid (every 8 seconds).  Delays and rates are both\n");
-	printf("calculated.  Output should be self explanatory.\n\n");
+	printf("This program reads through one or more difx datasets and evaluates\n");
+	printf("delay polynomials in the .im files on a regular time grid (every\n");
+	printf("8 seconds).  Delays and rates are both calculated.  Output should\n");
+	printf("be self explanatory.  Plotting utilities such as gnuplot can be used\n");
+	printf("directly on the output.\n\n");
 	printf("When operating without --perint, the entirety of the delay polynomials\n");
 	printf("are plotted, even exceeding the time range of the scans to which they\n");
 	printf("belong.  Comments in the output separate scans cleanly.  When --perint\n");
 	printf("is used, only the time covered by the scans is output.\n\n");
+	printf("Sign conventions:\n");
+	printf("  Delay: a positive delay indicates wavefront arrival at the station\n");
+	printf("        before wavefront arrival at earth center.  The delay includes\n");
+	printf("        contribution from wet and dry atmosphere components.\n");
+	printf("  Rate: simply the time derivative of Delay.\n");
+	printf("  Clock Offset: sign convention is opposite that of .vex \"clock_early\"\n");
+	printf("        parameter; a positive clock offset indicates slow station clock.\n");
+	printf("        The sum of Clock Offset and Delay is the total correlator delay.\n");
+	printf("  Clock Rate: simply the time derivative of Clock Offset.\n\n");
 }
 
 enum Item
@@ -150,6 +160,7 @@ int main(int argc, char **argv)
 	int item = ItemDelay;
 	int perint = 0;
 	int addClock = 0;
+	int nNoIm = 0;	/* count of scans w/o model */
 	DifxMergeOptions mergeOptions;
 
 	resetDifxMergeOptions(&mergeOptions);
@@ -274,13 +285,13 @@ int main(int argc, char **argv)
 		case ItemDelay:
 			if(addClock)
 			{
-				printf("# %d. Antenna %d (%s) delay including clock model [us]\n", 2+2*a, a, D->antenna[a].name);
-				printf("# %d. Antenna %d (%s) rate including clock model [us/s]\n", 3+2*a, a, D->antenna[a].name);
+				printf("# %d. Antenna %d (%s) delay including clock offset [us]\n", 2+2*a, a, D->antenna[a].name);
+				printf("# %d. Antenna %d (%s) rate including clock rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
 			}
 			else
 			{
-				printf("# %d. Antenna %d (%s) delay not including clock model [us]\n", 2+2*a, a, D->antenna[a].name);
-				printf("# %d. Antenna %d (%s) rate not including clock model [us/s]\n", 3+2*a, a, D->antenna[a].name);
+				printf("# %d. Antenna %d (%s) delay not including clock offset [us]\n", 2+2*a, a, D->antenna[a].name);
+				printf("# %d. Antenna %d (%s) rate not including clock rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
 			}
 			break;
 		case ItemAz:
@@ -325,6 +336,7 @@ int main(int argc, char **argv)
 		if(!ds->im)
 		{
 			printf("#   No IM table for this scan\n");
+			++nNoIm;
 
 			continue;
 		}
@@ -365,7 +377,7 @@ int main(int argc, char **argv)
 				{
 					for(a = 0; a < D->nAntenna; ++a)
 					{
-						printf("   %12.6f %12.6f", 
+						printf("   %12.8f %12.9f", 
 							evaluateDifxAntennaClock(D->antenna+a, mjd),
 							evaluateDifxAntennaClockRate(D->antenna+a, mjd));
 					}
@@ -462,7 +474,8 @@ int main(int argc, char **argv)
 							printf("   %12.6f %12.9f", v1, v2);
 						}
 					}
-				printf("\n");
+					
+					printf("\n");
 				}
 			}
 		}
@@ -484,7 +497,7 @@ int main(int argc, char **argv)
 					{
 						for(a = 0; a < D->nAntenna; ++a)
 						{
-							printf("   %12.6f %12.6f", 
+							printf("   %12.8f %12.9f", 
 								evaluateDifxAntennaClock(D->antenna+a, mjd),
 								evaluateDifxAntennaClockRate(D->antenna+a, mjd));
 						}
@@ -570,6 +583,11 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+	}
+
+	if(nNoIm > 0)
+	{
+		fprintf(stderr, "\nNote: %d scans were encountered that did not have associated delay models.  Likely this is because no .im files is present.  Use difxcalc or calcif2 to create.\n", nNoIm);
 	}
 
 	deleteDifxInput(D);
