@@ -155,5 +155,6 @@ AC_OUTPUT([
 	src/Makefile \
 	src/architecture.h \
 	scripts/Makefile \
+        test/Makefile \
 	utils/Makefile\
 ])

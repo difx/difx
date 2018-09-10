@@ -1,7 +1,8 @@
-#ifndef __SYS_UTIL_H__
-#define __SYS_UTIL_H__
+#ifndef SYSUTIL_H
+#define SYSUTIL_H
 
 #include <fstream>
+#include <string>
 
 /**
  * Return "new ifstream(file)", with re-attempts if opening the file fails,
@@ -25,6 +26,5 @@ bool readFileToString(std::ifstream * in, std::string& out);
  * \return True on success
  */
 bool readFileToString(const char* filename, std::string& out);
-
 
 #endif
