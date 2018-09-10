@@ -20,12 +20,27 @@ class bcolors:
 	RED = '\033[91m'
 	ENDC = '\033[0m'
 
-'''Return per-datastream weights found in a DiFX log file. Also determine the display format (nr of decimals) of the weights in the log file.'''
+def getLatestCorrelationOffset(logfile):
+	'''Look through the log file and return byte offset of the last line containing a DiFX "STARTING" message. Useful if logfile was appended to.'''
+	found = False
+	offset = os.stat(logfile).st_size
+	for line in reversed(open(logfile,'r').readlines()):
+		if not found:
+			offset -= len(line)
+		if 'STARTING' in line:
+			found = True
+			break
+	if not found:
+		offset = 0
+	return offset
+
 def getWeights(logfile):
+	'''Return per-datastream weights found in a DiFX log file. Also determine the display format (nr of decimals) of the weights in the log file.'''
 	weights = []
 	N = 1
 	Ndecimals = 2
 	f = open(logfile, 'r')
+	f.seek(getLatestCorrelationOffset(logfile))
 	while True:
 		l = f.readline()
 		if len(l) <= 0:
@@ -49,8 +64,8 @@ def getWeights(logfile):
 	weights = [int(w*weighttrunc)/weighttrunc for w in weights] # truncate decimals
 	return (weights,weightfmt)
 
-'''Get list of antennas associated with each datastream from DiFX .input file'''
 def getWeightlabels(inputfile):
+	'''Get list of antennas associated with each datastream from DiFX .input file'''
 	telescopes = {}
 	labels = []
 	f = open(inputfile, 'r')
@@ -68,13 +83,14 @@ def getWeightlabels(inputfile):
 			labels.append(telescopes[antindex])
 	return labels
 
-'''Get runtime and scan length from a DiFX log file, as well as MPI completion status'''
 def getTimingsStr(logfile):
+	'''Get runtime and scan length from a DiFX log file, as well as MPI completion status'''
 	mpiDone = False
 	wallclockTime = -1
 	peakDatatime = -1
 
 	f = open(logfile, 'r')
+	f.seek(getLatestCorrelationOffset(logfile))
 	while True:
 		l = f.readline()
 		if len(l) <= 0:
@@ -154,7 +170,7 @@ if not doColor:
 
 # List all log files in CWD
 telescopes = set()
-files = fnmatch.filter(os.listdir('.'), '*.difxlog')
+files = fnmatch.filter(os.listdir('.'), '*_*.difxlog')
 files.sort()
 
 # Summaries
