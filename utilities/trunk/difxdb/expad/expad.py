@@ -592,24 +592,30 @@ class MainWindow(GenericWindow):
         
         session = dbConn.session()
         exp = getExperimentByCode(session, selectedCode)
+
+	if not exp:
+		return
         
         self.cboStatusVar.set("select")
 
-        # get associated experiment types
         expTypes = []
-	if exp.types:
+                    
+        if (exp != None):
+            # get associated experiment types
+
+	    if exp.types:
 		for type in exp.types:
 		    expTypes.append(type.type)
      
-        # select types in Listbox
-        self.cboType.selection_clear(0,END)
-        for type in expTypes:
-            for index in range(0,len(self.expTypes)):
-                if (self.expTypes[index] == type):
-                    self.cboType.selection_set(index)
-                    break
-                    
-        if (exp != None):
+            # select types in Listbox
+            self.cboType.selection_clear(0,END)
+            for type in expTypes:
+                for index in range(0,len(self.expTypes)):
+                    if (self.expTypes[index] == type):
+                        self.cboType.selection_set(index)
+                        break
+
+	    
             if exp.user is not None:
                 self.cboUserVar.set(exp.user.name)
             else:
