@@ -313,9 +313,12 @@ def adjustMark6datastreams(datastreams, inputfile, verbose):
 	# loop through datastreams, modifying mark6 streams if necessary
 	for stream in datastreams:
 	    if stream.type == 'MARK6':
-	        for i in range(len(stream.msn)):
+	        msnlen = len(stream.msn)
+		i = 0
+	        while i < msnlen:
 	            # skip if valid mark6 msn
 		    if len(stream.msn[i]) == 8 and '%' in stream.msn[i]:
+		        i += 1
 		        continue
                     # look for antenna in filename
                     if verbose > 0:
@@ -326,10 +329,16 @@ def adjustMark6datastreams(datastreams, inputfile, verbose):
 			# if antenna found in antenna module list, replace filename with module
 		        for antmod in antennaModuleList:
 			    if ant == antmod[0]:
-                                if verbose > 0:
-				    print 'replacing', stream.msn[i], 'with', antmod[1]
-			        stream.msn[i] = antmod[1]
-
+			        if antmod[1] not in stream.msn:
+                                    if verbose > 0:
+				        print 'replacing', stream.msn[i], 'with', antmod[1]
+			            stream.msn[i] = antmod[1]
+				    i += 1
+				else:
+				    stream.msn.pop(i)
+				    msnlen -= 1
+                            else:
+			        i += 1
 
 def getDatastreamsFromInputFile(inputfile, verbose):
         """
