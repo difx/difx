@@ -20,13 +20,13 @@ Output:
   <difx basename>/DIFX_*.stitched     frequency stitched visibility data
   <difx basename>/DIFX_*.ref_input    entries to use in a replacement .input file
 """
-import glob, sys, os, struct, time, math, numpy, copy, ConfigParser
+import glob, sys, os, shutil, struct, time, math, numpy, copy, ConfigParser
 import hashlib
 import parseDiFX
+import fileinput
 
 vis_hashtable = {}
 vis_hashtable_cleanupSec = 0
-
 
 def setCrossProd(a,b):
 	"""Return the cross product of two sets"""
@@ -725,7 +725,20 @@ def stitchVisibilityfile(basename,cfg):
 		if l[:16]=="OUTPUT FILENAME:":
 			i = in_lines.index(l)
 			in_lines[i] = "%-20s%s\n" % ("OUTPUT FILENAME:",difxoutdir)
-	
+
+	# Replace CALC FILENAME and CORE CONF FILENAME and point them to a local, renamed copy of these files
+	for l in in_lines:
+		if l[:19]=='CORE CONF FILENAME:':
+			i = in_lines.index(l)
+			orig_threadfile = l[20:].strip() 
+			in_lines[i] = "%-20s%s\n" % ("CORE CONF FILENAME:",basename_pathless+'D2D.threads')
+			shutil.copyfile(orig_threadfile, basename_pathless+'D2D.threads')	
+		elif l[:14]=="CALC FILENAME:":
+			i = in_lines.index(l)
+			orig_calcfile = l[20:].strip() 
+			in_lines[i] = "%-20s%s\n" % ("CALC FILENAME:",basename_pathless+'D2D.calc')
+			shutil.copyfile(orig_calcfile, basename_pathless+'D2D.calc')	
+
 	# Generate new reference .input for later, re-use parts of original .input
 	outputinputfile = basename_pathless + 'D2D.input'
 	fout = open(outputinputfile,"w");
@@ -743,6 +756,21 @@ def stitchVisibilityfile(basename,cfg):
 	for trailing in in_lines[idx[0]:]:
 		fout.write(trailing)
 	fout.close()
+
+	# Go through the local copy .calc file and point references therein to other local copies
+	for line in fileinput.input(basename_pathless+'D2D.calc', inplace=True):
+		# fileinput module: in this loop STDOUT is redirected by the module into the file
+		if 'IM FILENAME' in line:
+			orig_imfile = line[15:].strip()
+			copied_imfile = basename_pathless+'D2D.im'
+			shutil.copyfile(orig_imfile, copied_imfile)
+			line = '%-20s%s' % ('IM FILENAME:',copied_imfile)
+		elif 'FLAG FILENAME' in line:
+			orig_flagfile = line[15:].strip()
+			copied_flagfile = basename_pathless+'D2D.flag'
+			shutil.copyfile(orig_flagfile, copied_flagfile)
+			line = '%-20s%s' % ('FLAG FILENAME:',copied_flagfile)
+		print (line)
 
 	# Finished
 	print ('\nDone! Final statistics:')
