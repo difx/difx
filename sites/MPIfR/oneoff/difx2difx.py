@@ -238,6 +238,11 @@ def stitchVisibilityfile(basename,cfg):
 				out_freqs[id] = copy.deepcopy(freqs[fqidx])
 				in_rec_freqs += 1
 				print ("Keeping recorded frequency  : index %2d/%2d : %s" % (fqidx,id,freqs[fqidx].str()))
+			else:
+				if (freq_remaps[fqidx] < 0):
+					existing_fq = freq_remaps.index(id)
+					print ('Warning: DiFX produced duplicate FREQ entries! For telescope %d freq %d now using first identical freq %d (%s)' % (d.telescopeindex,fqidx,existing_fq,out_freqs[i].str().strip()))
+					freq_remaps[fqidx] = id
 
 	# Collect all zoom bands listed in DATASTREAMS that already match the target bandwidth
 	for d in datastreams:
