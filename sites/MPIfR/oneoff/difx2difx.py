@@ -9,8 +9,9 @@ adjecent DiFX zoombands into wider bands as listed in the config file.
 
 Config file example:
   [config]
-  target_bw: 32.000
-  target_nchan: 4096
+  target_bw: 32.000                        total bandwidth to produce per band
+  target_nchan: 4096                       number of points across target bandwidth
+  extra_chavg: 1                           further spectral averaging before output
   stitch_antennas: AA, PV
   stitch_basefreqs: 86476.00, 86412.00
   verbose: false
@@ -76,22 +77,21 @@ def spectralAvgNumpy(visdata, chavg):
 
 
 def getConfig(cfgfilename):
-	"""
-	Read a difx2difx configuration file.
-	Example contents:
-	  [config]
-	  target_bw: 32.000
-	  target_nchan: 4096
-	  stitch_antennas: AA, PV
-	  stitch_basefreqs: 86476.00, 86412.00, 86380.00, 86316.00, 86252.00, 86188.00, 86124.00, 86060.00, 86028.00
-	  verbose: false
-	"""
+	"""Read a difx2difx configuration file."""
 
 	cfg = {}
 
 	cfgparser = ConfigParser.ConfigParser()
 	cfgparser.read(cfgfilename)
 	section = (cfgparser.sections())[0]
+
+	# Catch configs from too old versions
+	try:
+		tmp = cfgparser.getint(section, 'target_chavg')
+		print("Error: obsolete config file keyword: please replace 'target_chavg' with 'extra_chavg', adjust for its changed meaning!")
+		return None
+	except:
+		pass
 
 	# User settings
 	cfg['target_bw'] = cfgparser.getfloat(section, 'target_bw')
@@ -104,9 +104,9 @@ def getConfig(cfgfilename):
 
 	# Optional settings
 	try:
-		cfg['target_chavg'] = cfgparser.getint(section, 'target_chavg')
+		cfg['extra_chavg'] = cfgparser.getint(section, 'extra_chavg')
 	except:
-		cfg['target_chavg'] = 1
+		cfg['extra_chavg'] = 1
 	try:
 		cfg['verbose'] = cfgparser.getboolean(section, 'verbose')
 	except:
@@ -253,16 +253,30 @@ def stitchVisibilityfile(basename,cfg):
 				out_freqs[id] = copy.deepcopy(zf)
 				print ("Keeping zoom frequency      : index %2d/%2d : %s" % (fqidx,id,zf.str()))
 
-	# Check stitch config: invent new zoom bands if necessary
+	# Determine how much averaging post-FFT was done in DiFX itself
+	common_difx_avgfactor = -1
+	for key in out_freqs:
+		common_difx_avgfactor = out_freqs[key].specavg
+	if common_difx_avgfactor < 1:
+		print("Warning: may have failed to detect original .input 'CHANS TO AVG' factor! Assuming factor 1!")
+		common_difx_avgfactor = 1
+
+	# Check stitch config: re-use existing USB zoom bands or freqs where possible, invent new zoom bands if necessary
 	stitch_out_ids = []
 	for fsky in stitch_basefreqs:
-		match_existing = [(out_freqs[key].freq==fsky and not out_freqs[key].lsb) for key in out_freqs.keys()]
+		match_existing = [(out_freqs[key].freq==fsky 
+				and out_freqs[key].bandwidth == target_bw
+				and out_freqs[key].numchan/out_freqs[key].specavg == target_nchan
+				and not out_freqs[key].lsb)
+			for key in out_freqs.keys()]
 		exists = any(match_existing)
 		if exists:
 			# Re-use an existing matching zoom frequency
 			i = match_existing.index(True)
 			id = out_freqs.keys()[i]
 			zf = out_freqs[id]
+			zf.numchan = target_nchan * common_difx_avgfactor
+			zf.specavg = common_difx_avgfactor
 			stitch_out_ids.append(id)
 			old_id = freq_remaps.index(id)
 			print ("Re-using zoom for stitch    : index %2d/%2d : %s" % (old_id,id,zf.str()))
@@ -271,9 +285,9 @@ def stitchVisibilityfile(basename,cfg):
 			zf = parseDiFX.Freq()
 			zf.freq = fsky
 			zf.bandwidth = target_bw
-			zf.numchan = target_nchan
-			zf.specavg = 1
-			zf.lsb = False # TODO
+			zf.numchan = target_nchan * common_difx_avgfactor
+			zf.specavg = common_difx_avgfactor
+			zf.lsb = False
 			id = inventNextKey(out_freqs)
 			out_freqs[id] = copy.deepcopy(zf)
 			stitch_out_ids.append(id)
@@ -293,10 +307,15 @@ def stitchVisibilityfile(basename,cfg):
 				# Ignore LSB. All zoom outputs should be USB.
 				print ("Ignore LSB %s" % (freqs[fi].str()))
 				continue
-			# Add to some many-to-one map of invented zoom freqs
+			# Add to many-to-one map of invented zoom freqs
 			freq_remaps[fi] = stitch_out_ids[stid]
 			freq_remaps_isNew[fi] = True
 			print ("Map zoom %s to stitched single %12.6f--%12.6f : in fq#%2d -> stitch#%d -> out fq#%2d" % (freqs[fi].str(), stitch_basefreqs[stid], stitch_endfreqs[stid],fi,stid,stitch_out_ids[stid]))
+
+	# Propagate any averaging to be done by difx2difx.py into the frequency table
+	if cfg['extra_chavg']>1:
+		for of in out_freqs.keys():
+			out_freqs[of].specavg = out_freqs[of].specavg * cfg['extra_chavg']
 
 	# Read the DiFX .difx/DIFX_* file
 	#glob_pattern = basename + '.difx/DIFX_*.s*.b*'
@@ -429,8 +448,8 @@ def stitchVisibilityfile(basename,cfg):
 
 				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
-				if cfg['target_chavg'] > 1:
-					rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'])
+				if cfg['extra_chavg'] > 1:
+					rawvis = spectralAvgRaw(rawvis, cfg['extra_chavg'])
 				difxout.write(rawvis)
 				ncopied += 1
 
@@ -459,8 +478,8 @@ def stitchVisibilityfile(basename,cfg):
 
 				assert(freq_remaps[freqindex] >= 0)
 				difxout.write(binhdr)
-				if cfg['target_chavg'] > 1:
-					rawvis = spectralAvgRaw(rawvis, cfg['target_chavg'])
+				if cfg['extra_chavg'] > 1:
+					rawvis = spectralAvgRaw(rawvis, cfg['extra_chavg'])
 				difxout.write(rawvis)
 				ncopied += 1
 
@@ -550,8 +569,8 @@ def stitchVisibilityfile(basename,cfg):
 
 					# Write header and assembled data
 					difxout.write(binhdr)
-					if cfg['target_chavg'] > 1:
-						vis = spectralAvgNumpy(stitch_workbufs[baseline][polpair][stid], cfg['target_chavg'])
+					if cfg['extra_chavg'] > 1:
+						vis = spectralAvgNumpy(stitch_workbufs[baseline][polpair][stid], cfg['extra_chavg'])
 					else:
 						vis = stitch_workbufs[baseline][polpair][stid]
 					vis.tofile(difxout)
@@ -571,10 +590,7 @@ def stitchVisibilityfile(basename,cfg):
 	## Generate new .input
 
 	# New FREQ table
-	new_freqs = []
-	for of in out_freqs.keys(): # dict into list
-		out_freqs[of].specavg = out_freqs[of].specavg * cfg['target_chavg']
-		new_freqs.append(out_freqs[of])
+	new_freqs = copy.deepcopy(out_freqs)
 
 	# New DATASTREAM table
 	new_datastreams = []
@@ -742,6 +758,9 @@ if __name__ == "__main__":
 		sys.exit(-1)
 
 	cfg = getConfig(sys.argv[1])
+	if cfg == None:
+		sys.exit(-1)
+
 	for difxf in sys.argv[2:]:
 		stitchVisibilityfile(difxf,cfg)
 
