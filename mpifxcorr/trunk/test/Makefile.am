@@ -1,5 +1,5 @@
 
-MAINCODE = ../src/
+MAINCODE = $(top_srcdir)/src/
 
 bin_PROGRAMS = configuration_test sysutil_test
 
