@@ -1,0 +1,370 @@
+being verbose
+output is to difx-help.ps
+testing 2dirlist
+  338 / 338 file `difx-help.tmp/2dirlist.ps'
+skipping addMark5b.pl
+skipping addVDIF.pl
+testing adump
+  727 / 693 file `difx-help.tmp/adump.ps'
+testing aedit
+  410 / 410 file `difx-help.tmp/aedit.ps'
+testing alist
+  373 / 373 file `difx-help.tmp/alist.ps'
+testing avgDiFX
+  479 / 479 file `difx-help.tmp/avgDiFX.ps'
+testing bbsum
+  472 / 472 file `difx-help.tmp/bbsum.ps'
+testing calcderiv
+  515 / 515 file `difx-help.tmp/calcderiv.ps'
+testing calcif2
+  1397 / 1397 file `difx-help.tmp/calcif2.ps'
+testing calcifMixed
+  1915 / 1915 file `difx-help.tmp/calcifMixed.ps'
+skipping CalcServer
+skipping calcsig
+testing captureUDPVDIF
+  868 / 868 file `difx-help.tmp/captureUDPVDIF.ps'
+skipping checkCalcServer
+skipping checkdir
+testing checkmpifxcorr
+  646 / 297 file `difx-help.tmp/checkmpifxcorr.ps'
+testing cleanVDIF
+  643 / 643 file `difx-help.tmp/cleanVDIF.ps'
+testing codifsum
+  201 / 201 file `difx-help.tmp/codifsum.ps'
+testing compare-baselines-v6.pl
+  88 / 1010 file `difx-help.tmp/compare-baselines-v6.pl.ps'
+testing computetotals
+  736 / 736 file `difx-help.tmp/computetotals.ps'
+testing CorAsc2
+  407 / 407 file `difx-help.tmp/CorAsc2.ps'
+testing countVDIFPackets
+  516 / 516 file `difx-help.tmp/countVDIFPackets.ps'
+testing cpumon
+  174 / 174 file `difx-help.tmp/cpumon.ps'
+skipping day2mjd
+skipping dedisperse_difx
+testing diffDiFX.py
+  1511 / 1511 file `difx-help.tmp/diffDiFX.py.ps'
+testing difx2fits
+  3272 / 3272 file `difx-help.tmp/difx2fits.ps'
+testing difx2mark4
+  1443 / 1443 file `difx-help.tmp/difx2mark4.ps'
+skipping difx2profile
+testing difxcalc
+  1776 / 1776 file `difx-help.tmp/difxcalc.ps'
+testing difxcalculator
+  569 / 569 file `difx-help.tmp/difxcalculator.ps'
+testing difxcopy
+  728 / 728 file `difx-help.tmp/difxcopy.ps'
+testing difxdiagnosticmon
+  240 / 240 file `difx-help.tmp/difxdiagnosticmon.ps'
+testing difxlog
+  895 / 895 file `difx-help.tmp/difxlog.ps'
+testing difxspeed
+  412 / 412 file `difx-help.tmp/difxspeed.ps'
+testing difxwatch
+  978 / 978 file `difx-help.tmp/difxwatch.ps'
+skipping dir2filelist.pl
+testing directory2filelist
+  572 / 572 file `difx-help.tmp/directory2filelist.ps'
+testing drivepolconvert.py
+  6035 / 6035 file `difx-help.tmp/drivepolconvert.py.ps'
+skipping env_check
+testing errormon
+  377 / 377 file `difx-help.tmp/errormon.ps'
+testing errormon2
+  433 / 433 file `difx-help.tmp/errormon2.ps'
+log removed
+testing est_manual_phases.py
+  2209 / 2209 file `difx-help.tmp/est_manual_phases.py.ps'
+testing extractSingleVDIFThread
+  609 / 609 file `difx-help.tmp/extractSingleVDIFThread.ps'
+skipping extractVDIFThreads
+testing fakemultiVDIF
+  710 / 710 file `difx-help.tmp/fakemultiVDIF.ps'
+skipping filelist2human.pl
+skipping fillerfrac.sh
+testing filterDifx2Fits
+  1540 / 1540 file `difx-help.tmp/filterDifx2Fits.ps'
+testing filterVDIF
+  651 / 651 file `difx-help.tmp/filterVDIF.ps'
+testing fixmark5b
+  90 / 90 file `difx-help.tmp/fixmark5b.ps'
+testing fourfit
+  2108 / 2108 file `difx-help.tmp/fourfit.ps'
+testing fourmer
+  139 / 139 file `difx-help.tmp/fourmer.ps'
+skipping fourphase
+testing fourphase_original
+  613 / 613 file `difx-help.tmp/fourphase_original.ps'
+testing fplot
+  577 / 760 file `difx-help.tmp/fplot.ps'
+testing fringeFindDiFX.py
+  1050 / 1050 file `difx-help.tmp/fringeFindDiFX.py.ps'
+testing fringex
+  1324 / 1589 file `difx-help.tmp/fringex.ps'
+testing fslog2difx.pl
+  520 / 520 file `difx-help.tmp/fslog2difx.pl.ps'
+testing fuseDBBC3
+  4488 / 4492 file `difx-help.tmp/fuseDBBC3.ps'
+testing fuseMk6
+  940 / 940 file `difx-help.tmp/fuseMk6.ps'
+testing genmachines
+  1104 / 1104 file `difx-help.tmp/genmachines.ps'
+testing geteop.pl
+  662 / 662 file `difx-help.tmp/geteop.pl.ps'
+testing getsmart
+  498 / 498 file `difx-help.tmp/getsmart.ps'
+skipping glitchplot.sh
+skipping guiServer
+skipping hammerplot.sh
+skipping hammer.sh
+testing hops.bash
+  1855 / 1855 file `difx-help.tmp/hops.bash.ps'
+testing hops_data_links.pl
+  96 / 1467 file `difx-help.tmp/hops_data_links.pl.ps'
+testing hops_vex2ovex.py
+  1105 / 1105 file `difx-help.tmp/hops_vex2ovex.py.ps'
+testing jobdisks
+  681 / 681 file `difx-help.tmp/jobdisks.ps'
+testing joblist
+  698 / 698 file `difx-help.tmp/joblist.ps'
+testing jobstatus
+  360 / 360 file `difx-help.tmp/jobstatus.ps'
+testing killjob
+  120 / 120 file `difx-help.tmp/killjob.ps'
+testing listcpus
+  541 / 541 file `difx-help.tmp/listcpus.ps'
+skipping listmedia
+testing listmodules
+  549 / 549 file `difx-help.tmp/listmodules.ps'
+testing m5bstate
+  563 / 563 file `difx-help.tmp/m5bstate.ps'
+testing m5bsum
+  605 / 605 file `difx-help.tmp/m5bsum.ps'
+testing m5d
+  824 / 824 file `difx-help.tmp/m5d.ps'
+testing m5fb
+  1008 / 1008 file `difx-help.tmp/m5fb.ps'
+skipping m5fb_makeheader
+skipping m5findformats
+testing m5fold
+  1239 / 1239 file `difx-help.tmp/m5fold.ps'
+testing m5pcal
+  1708 / 1708 file `difx-help.tmp/m5pcal.ps'
+testing m5slice
+  566 / 566 file `difx-help.tmp/m5slice.ps'
+testing m5spec
+  927 / 927 file `difx-help.tmp/m5spec.ps'
+testing m5subband
+  1563 / 1563 file `difx-help.tmp/m5subband.ps'
+testing m5test
+  592 / 592 file `difx-help.tmp/m5test.ps'
+testing m5time
+  521 / 521 file `difx-help.tmp/m5time.ps'
+testing m5timeseries
+  1171 / 1171 file `difx-help.tmp/m5timeseries.ps'
+testing m5tsys
+  650 / 650 file `difx-help.tmp/m5tsys.ps'
+skipping m6sg_blocknrs
+testing m6sg_gather
+  839 / 839 file `difx-help.tmp/m6sg_gather.ps'
+testing m6sg_mount
+  310 / 310 file `difx-help.tmp/m6sg_mount.ps'
+skipping m6sg_test1
+skipping m6sg_test2
+testing make_empty_binconfig.py
+  520 / 520 file `difx-help.tmp/make_empty_binconfig.py.ps'
+skipping makefits
+testing mjd2day
+  175 / 179 file `difx-help.tmp/mjd2day.ps'
+testing mk5bheader.pl
+  234 / 234 file `difx-help.tmp/mk5bheader.pl.ps'
+testing mk5control
+  1874 / 1874 file `difx-help.tmp/mk5control.ps'
+testing mk5daemon
+  1720 / 1720 file `difx-help.tmp/mk5daemon.ps'
+skipping mk5display
+testing mk5mon
+  503 / 503 file `difx-help.tmp/mk5mon.ps'
+skipping mk62v2d
+testing mk6copy
+  482 / 482 file `difx-help.tmp/mk6copy.ps'
+testing mk6gather
+  135 / 135 file `difx-help.tmp/mk6gather.ps'
+testing mk6ls
+  494 / 494 file `difx-help.tmp/mk6ls.ps'
+testing mk6mon
+  174 / 174 file `difx-help.tmp/mk6mon.ps'
+testing mk6state
+  1358 / 1358 file `difx-help.tmp/mk6state.ps'
+skipping mk6summary
+testing mk6vmux
+  1538 / 1538 file `difx-help.tmp/mk6vmux.ps'
+skipping mpifxcorr
+testing mpispeed
+  532 / 532 file `difx-help.tmp/mpispeed.ps'
+testing multi2singlethreadVDIF
+  1073 / 1073 file `difx-help.tmp/multi2singlethreadVDIF.ps'
+testing mvdifxhere
+  339 / 339 file `difx-help.tmp/mvdifxhere.ps'
+skipping neuteredmpifxcorr
+testing oms2v2d
+  790 / 790 file `difx-help.tmp/oms2v2d.ps'
+skipping padCalcScans
+testing padVDIF
+  619 / 619 file `difx-help.tmp/padVDIF.ps'
+skipping parseDiFX.py
+parseDiFX.pyc not executable
+testing pbgen
+  253 / 253 file `difx-help.tmp/pbgen.ps'
+testing pcList.pl
+  1221 / 1221 file `difx-help.tmp/pcList.pl.ps'
+testing pcplot
+  431 / 431 file `difx-help.tmp/pcplot.ps'
+skipping peekVDIF
+testing plotDiFXPCal.py
+  1409 / 1409 file `difx-help.tmp/plotDiFXPCal.py.ps'
+testing plotDiFX.py
+  1390 / 1390 file `difx-help.tmp/plotDiFX.py.ps'
+testing plotDynamicSpectrum.py
+  1589 / 1589 file `difx-help.tmp/plotDynamicSpectrum.py.ps'
+testing plotpcal
+  149 / 149 file `difx-help.tmp/plotpcal.ps'
+testing plotpcal2
+  306 / 306 file `difx-help.tmp/plotpcal2.ps'
+testing polswapDiFX.py
+  167 / 167 file `difx-help.tmp/polswapDiFX.py.ps'
+testing pplot_print
+  128 / 128 file `difx-help.tmp/pplot_print.ps'
+testing prepolconvert.py
+  1560 / 1560 file `difx-help.tmp/prepolconvert.py.ps'
+testing prep-one-scan.sh
+  1287 / 1469 file `difx-help.tmp/prep-one-scan.sh.ps'
+testing printDiFX
+  48 / 48 file `difx-help.tmp/printDiFX.ps'
+skipping printDiFX.py
+testing printdirlist
+  278 / 278 file `difx-help.tmp/printdirlist.ps'
+testing printVDIF
+  450 / 450 file `difx-help.tmp/printVDIF.ps'
+testing printVDIFgaps
+  580 / 580 file `difx-help.tmp/printVDIFgaps.ps'
+testing printVDIFheader
+  191 / 195 file `difx-help.tmp/printVDIFheader.ps'
+skipping probemachine
+testing profile2binconfig.py
+  999 / 999 file `difx-help.tmp/profile2binconfig.py.ps'
+testing psrflag
+  387 / 387 file `difx-help.tmp/psrflag.ps'
+testing reducepoly
+  384 / 384 file `difx-help.tmp/reducepoly.ps'
+testing removeZerovalAutoDiFX.py
+  200 / 200 file `difx-help.tmp/removeZerovalAutoDiFX.py.ps'
+testing replaceAntennaDiFX.py
+  887 / 887 file `difx-help.tmp/replaceAntennaDiFX.py.ps'
+skipping restartdifx
+testing scan_check
+  66 / 435 file `difx-help.tmp/scan_check.ps'
+testing searchVDIF
+  569 / 569 file `difx-help.tmp/searchVDIF.ps'
+skipping sec2time.pl
+testing sendsmart
+  37 / 37 file `difx-help.tmp/sendsmart.ps'
+testing sendtransient
+  103 / 103 file `difx-help.tmp/sendtransient.ps'
+testing showcal
+  882 / 882 file `difx-help.tmp/showcal.ps'
+testing smartmon
+  38 / 38 file `difx-help.tmp/smartmon.ps'
+testing snipDiFX.py
+  601 / 601 file `difx-help.tmp/snipDiFX.py.ps'
+testing snratio
+  46 / 46 file `difx-help.tmp/snratio.ps'
+skipping startCalcServer
+skipping startcorr.pl
+testing startdifx
+  2248 / 2248 file `difx-help.tmp/startdifx.ps'
+testing statemon
+  178 / 178 file `difx-help.tmp/statemon.ps'
+testing statsplot.py
+  828 / 828 file `difx-help.tmp/statsplot.py.ps'
+skipping stopmpifxcorr
+testing stripantennaDiFX.py
+  375 / 673 file `difx-help.tmp/stripantennaDiFX.py.ps'
+testing stripVDIF
+  819 / 819 file `difx-help.tmp/stripVDIF.ps'
+testing sukill
+  587 / 587 file `difx-help.tmp/sukill.ps'
+testing summarizeDifxlogs.py
+  279 / 279 file `difx-help.tmp/summarizeDifxlogs.py.ps'
+testing summarizePolconvertLogs.py
+  1123 / 1123 file `difx-help.tmp/summarizePolconvertLogs.py.ps'
+testing tabulatedelays
+  1906 / 1906 file `difx-help.tmp/tabulatedelays.ps'
+skipping test5b
+testing testdifxinput
+  612 / 612 file `difx-help.tmp/testdifxinput.ps'
+skipping testdifxmessagedrivestats
+testing testdifxmessagereceive
+  1062 / 1062 file `difx-help.tmp/testdifxmessagereceive.ps'
+skipping testdifxmessagereceivecond
+skipping testdifxmessagesend
+testing testephem
+  167 / 167 file `difx-help.tmp/testephem.ps'
+skipping testm5lock
+testing test_mark5_stream
+  91 / 91 file `difx-help.tmp/test_mark5_stream.ps'
+skipping testparsedifx
+testing testparsevis
+  133 / 133 file `difx-help.tmp/testparsevis.ps'
+testing testseqnumbers
+  757 / 757 file `difx-help.tmp/testseqnumbers.ps'
+skipping teststringarray
+skipping testtcal
+skipping test_unpacker
+skipping time2sec.pl
+skipping time.pl
+skipping tpcplot
+skipping updatedifxclock
+skipping update_eop
+testing vdif2to8
+  662 / 662 file `difx-help.tmp/vdif2to8.ps'
+testing vdifbstate
+  560 / 560 file `difx-help.tmp/vdifbstate.ps'
+testing vdifChanSelect
+  633 / 633 file `difx-help.tmp/vdifChanSelect.ps'
+testing vdifd
+  618 / 618 file `difx-help.tmp/vdifd.ps'
+testing vdiffold
+  861 / 861 file `difx-help.tmp/vdiffold.ps'
+testing vdifheader.pl
+  257 / 257 file `difx-help.tmp/vdifheader.pl.ps'
+testing vdifspec
+  818 / 818 file `difx-help.tmp/vdifspec.ps'
+testing vdif_time
+  65 / 1141 file `difx-help.tmp/vdif_time.ps'
+testing vdifuse
+  1615 / 1615 file `difx-help.tmp/vdifuse.ps'
+testing vex2difx
+  1349 / 1349 file `difx-help.tmp/vex2difx.ps'
+skipping vex2setup.pl
+testing vexpeek
+  555 / 555 file `difx-help.tmp/vexpeek.ps'
+skipping vhelp
+skipping vhelper.sh
+skipping vhelp.sh
+testing vlog
+  854 / 854 file `difx-help.tmp/vlog.ps'
+testing vmux
+  2171 / 2171 file `difx-help.tmp/vmux.ps'
+testing vsum
+  856 / 856 file `difx-help.tmp/vsum.ps'
+testing zerocorr
+  1966 / 1966 file `difx-help.tmp/zerocorr.ps'
+testing zerocorr_makeconfig
+  2949 / 2949 file `difx-help.tmp/zerocorr_makeconfig.ps'
+-rw-rw-r--. 1 gbc gbc 169178 Sep 12 15:37 difx-help.pdf
+before running again:
+rm -rf difx-help.tmp
