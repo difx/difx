@@ -82,10 +82,10 @@ class Mk6state:
 			if self.state == 'GetDirectory':
 				position = '%d - %d%%' % (self.pos / 1000, self.pos % 1000)
 				str = '%-12s%8s %14s      %7.2f %14s %17s %12.6f' % \
-					(self.mk6, self.activeVSN, self.state, self.rate * 8.0, position, self.name, self.date)
+					(self.mk6, self.activeVSN, self.state, self.rate, position, self.name, self.date)
 			else:
 				str = '%-12s%8s %14s      %7.2f %14d %17s %12.6f' % \
-					(self.mk6, self.activeVSN, self.state, self.rate * 8.0, self.pos, self.name, self.date)
+					(self.mk6, self.activeVSN, self.state, self.rate, self.pos, self.name, self.date)
 		else:
 			str = ''
 		return str
