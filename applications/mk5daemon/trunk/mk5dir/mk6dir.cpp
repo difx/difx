@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <mark5access/mark6gather_mark5b.h>
 #include <vdifio.h>
 #include <mark6sg/mark6gather.h>
 #include <mark6gather_vdif.h>
@@ -62,7 +63,43 @@ static void usage(const char *pgm)
 void summarizeFile(const char *fileName, char *vsn, char activityMsg, char verbose, int fileidx, int numfiles, FILE *summaryFile)
 {
 	struct vdif_file_summary sum;
+	struct mark5b_file_summary sum5b;
 	int r;
+	const int MaxFilenameLength = 512;
+	double mjd1, mjd2;
+	char fullFileName[MaxFilenameLength];
+
+	r = summarizemark5bmark6(&sum5b, fileName, 0);
+
+	if(r == 0)
+	{
+		mark5bfilesummaryfixmjdtoday(&sum5b);
+		mjd1 = mark5bfilesummarygetstartmjd(&sum5b) + (sum5b.startSecond % 86400)/86400.0;
+		mjd2 = mjd1 + (sum.endSecond - sum.startSecond + 1)/86400.0;
+
+		snprintf(fullFileName, MaxFilenameLength, "%s", fileName);
+		if(verbose)
+		{
+			printf("File %s is mark5b\n", fileName);
+			printf("%s %14.8f %14.8f - %4d of %d\n", fullFileName, mjd1, mjd2, fileidx + 1, numfiles);
+		}
+		if(activityMsg)
+		{
+			DifxMessageMark6Activity m6activity;
+			memset(&m6activity, 0, sizeof(m6activity));
+
+			m6activity.state = MARK6_STATE_GETDIR;
+			strcpy(m6activity.activeVsn, vsn);
+			strcpy(m6activity.scanName, fullFileName);
+			// send percent complete in last 3 digits and file index in preceding digits
+			m6activity.position = (((fileidx + 1) * 100) / numfiles) + 1000 * (fileidx + 1);
+			m6activity.dataMJD = mjd1;
+
+			difxMessageSendMark6Activity(&m6activity);
+		}
+		fprintf(summaryFile, "%s %14.8f %14.8f\n", fullFileName, mjd1, mjd2);
+		return;
+	}
 
 	r = summarizevdifmark6(&sum, fileName, 0);
 
@@ -72,16 +109,13 @@ void summarizeFile(const char *fileName, char *vsn, char activityMsg, char verbo
 	}
 	else
 	{
-		const int MaxFilenameLength = 512;
-		double mjd1, mjd2;
-		char fullFileName[MaxFilenameLength];
-
 		mjd1 = vdiffilesummarygetstartmjd(&sum) + (sum.startSecond % 86400)/86400.0;
 		mjd2 = mjd1 + (sum.endSecond - sum.startSecond + 1)/86400.0;
 
 		snprintf(fullFileName, MaxFilenameLength, "%s", fileName);
 		if(verbose)
 		{
+			printf("File %s is vdif\n", fileName);
 			printf("%s %14.8f %14.8f - %4d of %d\n", fullFileName, mjd1, mjd2, fileidx + 1, numfiles);
 		}
 		if(activityMsg)
