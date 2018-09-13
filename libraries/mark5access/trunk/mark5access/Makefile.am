@@ -1,8 +1,20 @@
+
+if USE_MARK6SG
+mark6sg_h_sources = mark6gather_mark5b.h
+mark6sg_c_sources = mark6gather_mark5b.c
+else
+mark6sg_h_sources =
+mark6sg_c_sources =
+endif
+
 h_sources = \
+        $(mark6sg_h_sources) \
 	mark5_stream.h \
 	mark5bfix.h \
 	mark5bfile.h
+
 c_sources = \
+        $(mark6sg_c_sources) \
 	mark5_stream.c \
 	mark5_stream_file.c \
 	mark5_stream_memory.c \
