@@ -6,6 +6,7 @@ check_PROGRAMS = configuration_test sysutil_test
 configuration_test_SOURCES = configuration_test.cpp \
 	$(MAINCODE)/alert.cpp \
 	$(MAINCODE)/configuration.cpp \
+	$(MAINCODE)/configurationstorage.cpp \
 	$(MAINCODE)/mode.cpp \
 	$(MAINCODE)/model.cpp \
 	$(MAINCODE)/mk5mode.cpp \
