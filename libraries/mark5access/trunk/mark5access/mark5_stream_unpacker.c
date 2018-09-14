@@ -89,8 +89,7 @@ struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders)
 {
 	struct mark5_stream_generic *V;
 
-	V = (struct mark5_stream_generic *)calloc(1,
-		sizeof(struct mark5_stream_generic));
+	V = (struct mark5_stream_generic *)calloc(1, sizeof(struct mark5_stream_generic));
 
 	V->init_stream = mark5_stream_unpacker_init;
 	if(noheaders)
