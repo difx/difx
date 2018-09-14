@@ -230,6 +230,23 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                         }
             }
         }
+
+
+                                    // if freq groups specified, remove any non-matching lines
+    if (strlen (opts->fgroups) != 0)
+        {
+        for (n=0; n<nprod; n++)
+            if (strchr (opts->fgroups, pfb[n].stn[0].chan_id[0]) == NULL)
+                {
+                for (i=n; i<nprod-1; i++) // slide remaining entries down one location
+                    pfb[i] = pfb[i+1];
+                pfb[i].stn[0].ant = 0;    // mark new end
+                nprod--;                  // one less pfb entry
+                n--;                      //need to reexamine this slot now
+                }
+
+        }
+
     if (opts->verbose > 1)
         {
         printf ("              sb p 1st a id  z pc bs  freq    bw   ch_id\n");

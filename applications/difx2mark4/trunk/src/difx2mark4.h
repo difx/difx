@@ -60,6 +60,7 @@ struct CommandLineOptions
     int phaseCentre;
     double jobMatrixDeltaT; /* seconds */
     int raw;
+    char fgroups[16];
     };
 
 typedef struct 

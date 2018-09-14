@@ -1,5 +1,7 @@
 Version 3.6.0
 ~~~~~~~~~~~
+* rjc 2018.9.14
+* trap too many channels, add -g feature to filter for freq groups
 * rjc 2018.8.10
 * fixed bug in case of multiple different bandwidths
 * rjc 2018.7.17

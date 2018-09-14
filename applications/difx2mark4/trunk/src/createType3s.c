@@ -546,6 +546,14 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                                 // new output channel #
                                                     if (m == nochan)
                                                         {
+                                                                // trap potential array overwrites
+                                                    if (m >= NPC_FREQS)
+                                                        {
+                                                        printf ("skipping write for tone in channel %s - too many channels!\n",
+                                                                 pfb[nf].stn[k].chan_id);
+                                                        break;
+                                                        }
+
                                                         ochan = m;
                                                         strcpy (t309.chan[ochan].chan_name, pfb[nf].stn[k].chan_id);
                                                         nochan++;// bump output channel #
@@ -561,12 +569,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         if (!found)
                                             continue;
 
-                                        // trap potential array overwrites
-                                        if (nochan > NPC_FREQS)
-                                            {
-                                            printf ("skipping write for tone %d since channel %d too large\n", i, b);
-                                            break;
-                                            }
+                                        // avoiding array overwrites for too many channels
+                                        if (m >= NPC_FREQS)
+                                            continue;
 
                                         // change tones to usb if this corr is a mixed usb x lsb case
                                         if (pfb[nf].stn[k].sideband != D->freq[jf].sideband)
