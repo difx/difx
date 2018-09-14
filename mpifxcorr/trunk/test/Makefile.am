@@ -1,7 +1,7 @@
 
 MAINCODE = $(top_srcdir)/src/
 
-bin_PROGRAMS = configuration_test sysutil_test
+check_PROGRAMS = configuration_test sysutil_test
 
 configuration_test_SOURCES = configuration_test.cpp \
 	$(MAINCODE)/alert.cpp \
