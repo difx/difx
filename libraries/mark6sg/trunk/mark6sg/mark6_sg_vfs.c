@@ -56,6 +56,11 @@
     #include <unistd.h>
 #endif
 
+#ifdef __APPLE__
+#define O_LARGEFILE 0
+#define off64_t off_t
+#endif
+
 #if HAVE_MMSG && __linux__
     #include <netinet/ip.h>
     #include <sys/socket.h>
@@ -350,7 +355,11 @@ int mark6_sg_creat(const char *scanname, mode_t ignored)
         vfd->writer_ctxs[i].vfd = vfd;
         vfd->writer_ctxs[i].file_id = i;
         vfd->writer_pool.inputarea_writeout_complete[i] = 1;
-        posix_memalign((void**)&vfd->writer_pool.inputareas[i], getpagesize(), vfd->writer_pool.inputareasize);
+	int ret = posix_memalign((void**)&vfd->writer_pool.inputareas[i], getpagesize(), vfd->writer_pool.inputareasize);
+	if (ret!=0) {
+	  perror("posix_memalign");
+	  return ret;
+	}
         pthread_mutex_init(&vfd->writer_pool.inputarea_mutex[i], NULL);
         pthread_cond_init(&vfd->writer_pool.inputarea_newdata_cond[i], NULL);
         pthread_create(&vfd->writer_ctxs[i].tid, NULL, writer_thread, &(vfd->writer_ctxs[i]));
