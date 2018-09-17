@@ -44,13 +44,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#ifdef __linux__
-#include <linux/limits.h> // PATH_MAX
-#endif
-#ifdef __MACH__
-#include <sys/syslimits.h> // PATH_MAX
-#endif
+#include <limits.h> // PATH_MAX since POSIX 2008
 
 // Global library debug level
 int m_m6sg_dbglevel = 0;

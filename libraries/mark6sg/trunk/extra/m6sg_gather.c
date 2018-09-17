@@ -44,13 +44,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
-
-#ifdef __linux__
-#include <linux/limits.h> // PATH_MAX
-#endif
-#ifdef __MACH__
-#include <sys/syslimits.h> // PATH_MAX
-#endif
+#include <limits.h> // PATH_MAX since POSIX 2008
 
 #include "mark6sg.h"
 
