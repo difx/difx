@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # vim: tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
 
@@ -14,16 +14,18 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.64'
-verdate = '20180410'
+version = '0.67'
+verdate = '20180916'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
+pythonProgram = 'python2'
+#openmpiVersion = '3.0'       
 openmpiVersion = '1.6'       # version in use by VLBA correlator 
 #openmpiVersion = '1.10'      # version in use by USNO correlator
 pgplotVersion = '5.2'
-schedVersion = '11.4'
+schedVersion = '11.5'
 schedUpdate = ''
 skedVersion = '2013jan23'
 m4Version = '1.4.16'
@@ -716,11 +718,11 @@ components['DIFX-DEVEL'] = \
 [ \
 	component_difxio_trunk, \
 	component_difxmessage_trunk, \
+	component_mark6sg_trunk, \
 	component_mark5access_trunk, \
 	component_vdifio_trunk, \
 	component_dirlist_trunk, \
 	component_mark6meta_trunk, \
-	component_mark6sg_trunk, \
 	component_mpifxcorr_trunk, \
 	component_difx2fits_trunk, \
 	component_difx2mark4_trunk, \
@@ -2561,7 +2563,7 @@ def remove(origComps, params, args, verbose, pretend):
 def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
 	if isfile(tarDir + srcFile):
 		print '%s file already downloaded.  Will not download again' % srcFile
-		return
+		return 0
 	wgetOptions = ''
 	if 'nopassive' in args:
 		wgetOptions = wgetOptions + ' --no-passive-ftp'
@@ -2571,6 +2573,11 @@ def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
 	chdir(tarDir)
 	execute('wget %s %s' % (wgetOptions, url), verbose, pretend)
+	fn = split(url, '/')[-1]
+	if not isfile(fn):
+		return -1
+	else:
+		return 0
 
 def autotools(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
@@ -2748,6 +2755,7 @@ def sked(origComps, params, args, verbose, pretend):
 
 def sched(origComps, params, args, verbose, pretend):
 
+
 	if not len(popen('which gfortran').readlines()) > 0:
 		print 'sched compilation currently (and maybe ultimately) only works on gfortran systems'
 		exit(0)
@@ -2770,25 +2778,35 @@ def sched(origComps, params, args, verbose, pretend):
 	spiceSrcFile = 'toolkit%s.tar.Z' % bits
 		
 	# get files
-	ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
+	tarOptions = ''
+	rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
+	if rv < 0:
+		tarOptions = '--strip-components 1'
+		schedSrcFile = 'sched_%s%s.tgz' % (schedVersion, schedUpdate)
+		schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched_%s/%s' % (schedVersion, schedSrcFile)
+		rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
+		if rv < 0:
+			print 'Cannot download sched'
+			exit(0)
 	ftpFile(spiceUrl, tarDir, spiceSrcFile, args, verbose, pretend)
 	if not isfile(tarDir + spiceSrcFile):
 		execute('mv %s/%s %s/%s' % (tarDir, spiceDownloadFile, tarDir, spiceSrcFile), verbose, pretend)
 	for lib in ['spicelib', 'support']:
-		execute('tar zxvfO %s/%s toolkit/lib/%s.a > %s/lib/%s_gfortran.a' % (tarDir, spiceSrcFile, lib, archDir, lib), verbose, pretend)
+		execute('tar zxfO %s/%s toolkit/lib/%s.a > %s/lib/%s_gfortran.a' % (tarDir, spiceSrcFile, lib, archDir, lib), verbose, pretend)
 
 	schedDir = '%s/sched-%s' % (archDir, schedVersion)
 	if isdir(schedDir):
 		print 'Stopping because %s exists' % schedDir
 		return
 	execute('mkdir -p %s' % schedDir, verbose, pretend)
+
 	if islink('%s/sched' % archDir) and isdir('%s/sched' % archDir):
 		execute('rm %s/sched' % archDir, verbose, pretend)
 	if not isfile('%s/sched' % archDir):
 		execute('ln -f -s %s %s/sched' % (schedDir, archDir), verbose, pretend)
 	
 	chdir(schedDir)
-	execute('tar zxvf %s/%s' % (tarDir, schedSrcFile), verbose, pretend)
+	execute('tar zxf %s/%s %s' % (tarDir, schedSrcFile, tarOptions), verbose, pretend)
 	chdir(schedDir + '/src')
 
 	# make sed expression that converts Makefile.master into Makefile
@@ -2894,8 +2912,8 @@ def psycopg(origComps, params, args, verbose, pretend):
 	chdir(archSrcDir)
 	execute('tar zxvf %s/%s' % (tarDir, psycopgSrcFile), verbose, pretend)
 	chdir(psycopgSrcDir)
-	execute('python setup.py build', verbose, pretend)
-	execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
+	execute('%s setup.py build' % pythonProgram, verbose, pretend)
+	execute('%s setup.py install --prefix=%s/../../..' % (pythonProgram, pythonPath), verbose, pretend)
 
 
 def libevent(origComps, params, args, verbose, pretend):
@@ -3212,7 +3230,7 @@ def update_difxbuild(origComps, params, args, verbose, pretend):
 	execute('rm -f difxbuild', verbose, pretend)
 	execute('wget %s' % difxbuildUrl, verbose, pretend)
 	print 'Current version = %s' % version
-	newVersion = strip(popen('python /tmp/difxbuild --version', 'r').readlines()[0])
+	newVersion = strip(popen('%s /tmp/difxbuild --version' % pythonProgram, 'r').readlines()[0])
 	print 'New version = %s' % newVersion
 	print 
 	if newVersion <= version and not '--force' in args:
