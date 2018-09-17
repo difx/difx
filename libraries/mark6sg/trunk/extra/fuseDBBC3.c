@@ -23,6 +23,7 @@
  * 23Nov2017 janw  replaced VDIF input files with Mark6 modules via calls to libmark6sg
  * 04Jan2018 janw  improved the interaction with libmark6sg
  */
+#include <mark6sg.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -33,8 +34,6 @@
 
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
-
-#include <mark6sg.h>
 
 #define N_VDIF_STREAMS               4
 #define N_OUTPUT_FRAMES_BUFFERED     16

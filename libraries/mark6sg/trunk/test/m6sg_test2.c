@@ -26,8 +26,13 @@
 // $LastChangedDate$
 //
 //============================================================================
-
-// A short program to test / try out some of the library write functions.
+//
+// ./m6sg_test2
+//
+// A short program to test / try out some of the library write function.
+// Attempts to create a new scan under "/mnt/disks/[1-2]/[0-7]/dummy/"
+//
+//============================================================================
 
 #include "mark6sg.h"
 

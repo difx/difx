@@ -26,14 +26,13 @@
 // $LastChangedDate$
 //
 //============================================================================
-
+//
+// m6sg_blocknrs /mnt/disks/1/[0-7]/testrecording.vdif
 //
 // This quick-check utility does not use the library.
 // It prints the Mark6 Scatter-Gather block numbers in a given list of files.
 //
-// Example:
-//   $  m6sg_blocknrs.c /mnt/disks/1/[0-7]/testrecording.vdif
-//
+//============================================================================
 
 #include <stdio.h>
 #include <glob.h>

@@ -26,11 +26,17 @@
 // $LastChangedDate$
 //
 //============================================================================
-
-// A program with functionality identical to the Mark6 utility 'gather'.
+//
+// m6sg_gather [ --list | <scanname> <destination | - > ]
+//
+// Example program for the mark6sg library. Has functionality identical to the
+// Mark6 utility 'gather'. Similar to the example program mk6copy except for
+// arguments and printout details.
 //
 // Copies a single VLBI scan into a file by gathering together all the related
-// files on the several disks of a scatter-gather mode VLBI recording.
+// files from the several disks of a scatter-gather mode VLBI recording.
+//
+//============================================================================
 
 #include <errno.h>
 #include <fcntl.h>

@@ -26,8 +26,12 @@
 // $LastChangedDate$
 //
 //============================================================================
-
+//
+// ./m6sg_test1
+//
 // A short program to test / try out some of the library functions.
+//
+//============================================================================
 
 #include <errno.h>
 #include <glob.h>

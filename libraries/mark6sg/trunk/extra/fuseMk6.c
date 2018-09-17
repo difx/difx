@@ -1,8 +1,43 @@
-#define FUSE_USE_VERSION 26
+/***************************************************************************
+ *   Copyright (C) 2014 by Jan Wagner                                      *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
+//
+// fuseMk6 [-v] [-r \"pattern\"] <mountpoint>
+//
+// Example program for the mark6sg library. Allows normal file access to
+// scatter-gather recordings on a module.
+//
+///============================================================================
+
+#include <mark6sg.h>
 
 #include <errno.h>
 #include <fcntl.h>
-#include <fuse.h>
 #include <glob.h>
 #include <memory.h>
 #include <pthread.h>
@@ -14,7 +49,8 @@
 #include <sys/inotify.h>
 #endif
 
-#include <mark6sg.h>
+#define FUSE_USE_VERSION 26
+#include <fuse.h>
 
 #define MAX_DISKS       32  // maximum number of disks mounted under /mnt/disks/, same as the max. number of files per Mark6 SG scan
 #define USE_JSON_INFOS   1  // non-zero if JSON metadata infos should be used (these are: scan create time, approximate scan size in bytes)
@@ -434,6 +470,11 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-v") == 0)
 		{
 			verbosity++;
+		}
+		else if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0))
+		{
+			usage();
+			return -1;
 		}
 		else if ((strcmp(argv[i], "-r") == 0) && ((i+1) < argc))
 		{
