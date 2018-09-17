@@ -25,18 +25,10 @@
  */
 
 #include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <libgen.h>
-#include <limits.h>
-#include <malloc.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #define FUSE_USE_VERSION 26
@@ -469,7 +461,7 @@ int myfs_open(const char *path, struct fuse_file_info *fi)
 	for (int n = 0; n < N_VDIF_STREAMS; n++) {
 		finfo->vdifframes_in[n] = calloc(1, INPUT_VDIF_FRAME_SIZE-VDIF_HEADER_SIZE);
 	}
-	finfo->vdifframe_out = memalign(4096, 4*OUTPUT_VDIF_FRAME_SIZE*N_OUTPUT_FRAMES_BUFFERED);
+ 	posix_memalign((void**)&finfo->vdifframe_out, 4096, 4*OUTPUT_VDIF_FRAME_SIZE*N_OUTPUT_FRAMES_BUFFERED);
 
 	// Time-align the individual stream files
 	// (done on-the-fly later during read())

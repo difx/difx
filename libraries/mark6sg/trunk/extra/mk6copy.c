@@ -1,13 +1,11 @@
 #include <mark6sg.h>
 
 #include <stdio.h>
-#include <errno.h>
 #include <fcntl.h>
-#include <malloc.h>
-#include <memory.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <time.h>
+#include <time.h> // clock_gettime(), TODO need alternative for OS X
 
 static char* m_root = MARK6_SG_ROOT_PATTERN;
 
@@ -93,10 +91,9 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Mark6 metadata has a strange stripe size of %zd. Using default.\n", blocksize);
 		blocksize = 10*1024*1024;
 	}
-	buf = memalign(4096, blocksize);
-	if (buf == NULL)
+	if (posix_memalign((void**)&buf, 4096, blocksize) != 0)
 	{
-		perror("memalign");
+		perror("posix_memalign");
 		mark6_sg_close(fdi);
 		return -1;
 	}
