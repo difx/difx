@@ -9,8 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/inotify.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/inotify.h>
+#endif
 
 #include <mark6sg.h>
 
@@ -108,7 +110,6 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
 static int fusem6_create(const char *path, mode_t mode_ignored, struct fuse_file_info *fi)
 {
 	int rc, framesize;
-	struct stat st;
 	char *scanname, *s;
 
         // Check that the scan does not exist
@@ -354,11 +355,12 @@ void fusem6_make_scanlist(void)
 	return;
 }
 
+#ifdef __linux__
 void *fusem6_dir_watcher(void* thread_arg)
 {
 	char buf[1024*(sizeof(struct inotify_event) + 16)];
 	ssize_t nrd;
-	int fd, wd, rc, i;
+	int fd, rc, i;
 	glob_t g;
 
 	/* Use Linux inotify API to listen for changes in Mark6 directories */
@@ -377,7 +379,7 @@ void *fusem6_dir_watcher(void* thread_arg)
 		stat(g.gl_pathv[i], &st);
 		if (S_ISDIR(st.st_mode))
 		{
-			wd = inotify_add_watch(fd, g.gl_pathv[i], IN_CLOSE_WRITE|IN_CREATE|IN_DELETE|IN_DELETE_SELF);
+			inotify_add_watch(fd, g.gl_pathv[i], IN_CLOSE_WRITE|IN_CREATE|IN_DELETE|IN_DELETE_SELF);
 		}
 	}
 	globfree(&g);
@@ -395,6 +397,7 @@ void *fusem6_dir_watcher(void* thread_arg)
 		fusem6_make_scanlist();
 	}
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////
 // FUSE Layer : entry point
@@ -462,8 +465,10 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+#ifdef __linux__
 	/* Start a thread to refresh the scan list when files change */
 	pthread_create(&tid, NULL, fusem6_dir_watcher, NULL);
+#endif
 
 	/* Start FUSE */
 	fuse_argc = 0;
