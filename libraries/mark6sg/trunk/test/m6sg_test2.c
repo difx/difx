@@ -33,7 +33,6 @@
 
 #include <errno.h>
 #include <glob.h>
-#include <linux/limits.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>

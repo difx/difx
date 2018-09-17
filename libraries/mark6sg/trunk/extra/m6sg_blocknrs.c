@@ -39,7 +39,6 @@
 #include <glob.h>
 #include <stdlib.h>
 #include <string.h>
-#include <linux/limits.h>
 
 #define MARK6_SG_MAXFILES 32
 

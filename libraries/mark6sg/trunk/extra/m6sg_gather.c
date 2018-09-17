@@ -34,11 +34,17 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <linux/limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+
+#ifdef __linux__
+#include <linux/limits.h> // PATH_MAX
+#endif
+#ifdef __MACH__
+#include <sys/syslimits.h> // PATH_MAX
+#endif
 
 #include "mark6sg.h"
 

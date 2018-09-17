@@ -26,14 +26,15 @@
 // $LastChangedDate$
 //
 //============================================================================
+#include "mark6sg.h"
 #include "mark6_sg_utils.h"
 #include "mark6_sg_format.h"
 
+#include <jsmn.h> // Jasmine/JSMN C parser library for JSON
+
 #include <assert.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <glob.h>
-#include <linux/limits.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,7 +45,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <jsmn.h> // Jasmine/JSMN C parser library for JSON
+#ifdef __linux__
+#include <linux/limits.h> // PATH_MAX
+#endif
+#ifdef __MACH__
+#include <sys/syslimits.h> // PATH_MAX
+#endif
 
 // Global library debug level
 int m_m6sg_dbglevel = 0;

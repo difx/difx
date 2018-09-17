@@ -32,6 +32,7 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdint.h>
@@ -39,11 +40,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// Defines
-#define MARK6_SG_MAXFILES           32
-#define MARK6_SG_ROOT_PATTERN       "/mnt/disks/[1-4]/[0-7]/"
-#define MARK6_SG_VFS_MAX_OPEN_FILES 8192
 
 // Debug level
 extern int m_m6sg_dbglevel;

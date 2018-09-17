@@ -26,36 +26,39 @@
 // $LastChangedDate$
 //
 //============================================================================
-#include "mark6_sg_vfs.h"
-#include "mark6_sg_utils.h"
+#include "mark6sg.h"
+#include "mark6_sg_vfs_impl.h"
 #include "mark6_sg_format.h"
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <glob.h>
-#include <linux/limits.h>
-#include <malloc.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h> // clock_gettime(), TODO need alternative for OS X
+#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <netinet/ip.h>
-#include <sys/socket.h>
 
 #if HAVE_CONFIG_H
-    #include "../config.h"
-    #if HAVE_DIFXMESSAGE
+    #include "config.h"
+#endif
+
+#if HAVE_DIFXMESSAGE
     #include <difxmessage.h>
     #include <unistd.h>
-    #endif
+#endif
+
+#if HAVE_MMSG && __linux__
+    #include <netinet/ip.h>
+    #include <sys/socket.h>
 #endif
 
 // Prefetch (via mmap() MAP_POPULATE-like threaded forced kernel page faults)
@@ -65,56 +68,6 @@
 
 // When disks have unrelocatable bad sectors that cause I/O errors, mmap()'ed regions cause SIGBUS, whereas fread() returns a handleable error
 #define AVOID_MMAP                      0  // 1 to use fread() file access instead of mapped memory access to read file data
-
-// Internal structs
-typedef struct io_thread_ctx_tt {
-    pthread_t tid;
-    void*     vfd;
-    int       file_id;
-} io_thread_ctx_t;
-
-typedef struct writer_pool_tt {
-    int       active_area;
-    size_t    inputareasize;
-    char*     inputareas[MARK6_SG_MAXFILES];                  // char[framesize*WRITER_FRAMES_PER_BLOCK]
-    off_t     inputarea_append_offset[MARK6_SG_MAXFILES];     // 0..framesize*WRITER_FRAMES_PER_BLOCK-2
-    int       inputarea_writeout_complete[MARK6_SG_MAXFILES]; // [n]='1' if inputarea[n] is available for appending data
-    pthread_mutex_t inputarea_mutex[MARK6_SG_MAXFILES];
-    pthread_cond_t  inputarea_newdata_cond[MARK6_SG_MAXFILES];
-    int             inputarea_newdata_pushed[MARK6_SG_MAXFILES];
-    int             inputareas_busy_count;
-    pthread_cond_t  any_inputarea_done;
-} writer_pool_t;
-
-typedef struct m6sg_virt_filedescr {
-    int       valid;
-    int       eof;
-    int       mode;
-    size_t    len;
-    off_t     rdoffset;
-    size_t    rdblock;
-    int       nfiles;
-    char      scanname[1024];
-    char**    filepathlist;
-    char**    filenamelist; // (unused, although populated)
-    int       fds[MARK6_SG_MAXFILES];
-    void*     fmmap[MARK6_SG_MAXFILES];
-    off_t     fsize[MARK6_SG_MAXFILES];
-    size_t    nblocks;
-    size_t    framesize;
-    pthread_mutex_t    lock;
-    m6sg_blockmeta_t*  blks;
-    io_thread_ctx_t    touch_ctxs[MARK6_SG_MAXFILES];
-    volatile int       touch_terminate;
-    io_thread_ctx_t    writer_ctxs[MARK6_SG_MAXFILES];
-    writer_pool_t      writer_pool;
-    volatile int       writers_terminate;
-} m6sg_virt_filedescr_t;
-
-typedef struct m6sg_virt_open_files {
-    int nopen;
-    m6sg_virt_filedescr_t** fd_list;
-} m6sg_virt_open_files_t;
 
 static pthread_mutex_t vfs_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -396,8 +349,8 @@ int mark6_sg_creat(const char *scanname, mode_t ignored)
         // Prepare the input buffer and associated disk-writer for this file
         vfd->writer_ctxs[i].vfd = vfd;
         vfd->writer_ctxs[i].file_id = i;
-        vfd->writer_pool.inputareas[i] = memalign(getpagesize(), vfd->writer_pool.inputareasize);
         vfd->writer_pool.inputarea_writeout_complete[i] = 1;
+        posix_memalign((void**)&vfd->writer_pool.inputareas[i], getpagesize(), vfd->writer_pool.inputareasize);
         pthread_mutex_init(&vfd->writer_pool.inputarea_mutex[i], NULL);
         pthread_cond_init(&vfd->writer_pool.inputarea_newdata_cond[i], NULL);
         pthread_create(&vfd->writer_ctxs[i].tid, NULL, writer_thread, &(vfd->writer_ctxs[i]));
@@ -667,8 +620,9 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
             snprintf(m6act.scanName, sizeof(m6act.scanName)-1, "%s", vfd->scanname);
             difxMessageSendMark6Activity(&m6act);
 
+            gettimeofday(&prev_time, NULL);
             prev_reported_offset = rdoffset;
-            prev_time = now;
+            //prev_time = now;
             //printf("difxmessage PLAY %s rate %.3fMbps off=%zu dn=%zu dt=%.3f\n", vfd->scanname, m6act.rate, rdoffset, delta_read, dt);
         }
     }
@@ -776,7 +730,7 @@ ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
 /**
  * Move data from a socket into a scattered fileset
  */
-#ifdef HAVE_MMSG
+#if HAVE_MMSG && __linux__
 ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
 {
     m6sg_virt_filedescr_t* vfd;

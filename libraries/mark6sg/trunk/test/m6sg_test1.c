@@ -31,7 +31,6 @@
 
 #include <errno.h>
 #include <glob.h>
-#include <linux/limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
