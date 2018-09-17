@@ -19,6 +19,14 @@ else
 fi
 AM_CONDITIONAL(WITH_FUSE, $with_fuse)
 
+# defines $build_cpu $build_vendor $build_os
+AC_CANONICAL_BUILD
+case $build_os in
+    *linux*|*Linux*) have_linux=true ;;
+    **) have_linux=false ;;
+esac
+AM_CONDITIONAL(HAVE_LINUX, $have_linux)
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -72,14 +80,6 @@ AC_CHECK_FUNCS([\
 # AM_CONDITIONAL(HAVE_FFTW, $hasfftw)
 PKG_CHECK_MODULES(FUSE, fuse, [hasfuse=true], [hasfuse=false])
 AM_CONDITIONAL(HAVE_FUSE, $hasfuse && $with_fuse)
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.5.0 difxmessage < 7], [hasdifxmsg=true], [hasdifxmsg=false])
-AM_CONDITIONAL(HAVE_DIFXMESSAGE, $hasdifxmsg)
-if test "$hasdifxmsg" = true; then
-    AC_DEFINE(HAVE_DIFXMESSAGE, 1, [Define if you have DiFXMessage library.])
-fi
-
-LIBS="${LIBS} ${FUSE_LIBS} ${DIFXMESSAGE_LIBS}"
-CFLAGS="${CFLAGS} ${FUSE_CFLAGS} ${DIFXMESSAGE_CFLAGS}"
 
 AC_CONFIG_FILES([Makefile])
 
