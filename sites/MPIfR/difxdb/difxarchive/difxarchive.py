@@ -162,7 +162,7 @@ def syncDir(path, user, config, fileCount):
     
     logger.info( "Syncing files from %s to: %s" % (path, server))
     
-    cmd = 'rsync -av --no-perms  --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
+    cmd = 'rsync -av --no-perms --chmod=ugo=rwX --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
         
     proc = subprocess.Popen(cmd,
                                        shell=True,
@@ -194,7 +194,7 @@ def buildReferenceOptions():
     
     includePattern = ["*.vex", "*.obs", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log", "cf_*", "rf_*"]
     
-    cmd = " --include '*/' "
+    cmd = " --exclude '*' --include '*/' "
     for pattern in includePattern:
         cmd += " --include '%s' " % pattern
     
@@ -218,6 +218,7 @@ def syncReferenceDir(path, referencePath, fileCount, options):
     
     cmd += path + " " + referencePath
     
+    print cmd 
     logger.info( "Syncing reference files from %s to: %s" % (path, referencePath))
     
     proc = subprocess.Popen(cmd,
@@ -635,7 +636,16 @@ if __name__ == "__main__":
             passCount = 0
             while True:
                 srcDir = "%s/*" % (path)
-                syncOptions = "--exclude '*/' --exclude 'difxarchive.log' --include '*' " 
+                syncOptions = "--exclude '*/' --exclude 'difxarchive.log' "
+		syncOptions += "--exclude '*.calc' " 
+		syncOptions += "--exclude '*.im' " 
+		syncOptions += "--exclude '*.threads' " 
+		syncOptions += "--exclude '*.machines' " 
+		syncOptions += "--exclude '*.flag' " 
+		syncOptions += "--exclude '*.fits' " 
+		syncOptions += "--exclude '*.FITS' " 
+		syncOptions += "--exclude '*.jobmatrix' " 
+		
                 total, fileCount = getTransferFileCount(srcDir, destDir, syncOptions)
                 if (fileCount == 0):
                     break
