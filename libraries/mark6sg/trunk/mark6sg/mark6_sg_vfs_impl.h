@@ -34,7 +34,8 @@
 #include <pthread.h>
 #include <sys/types.h>
 
-typedef struct m6sg_blockmeta_tt m6sg_blockmeta_t;
+// typedef struct m6sg_blockmeta_tt m6sg_blockmeta_t;
+#include "mark6_sg_utils.h"
 
 // Structs for internal use in the library
 

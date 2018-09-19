@@ -93,7 +93,7 @@ Options:
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
-                    "datasim", "difxcalc11"]
+                    "datasim", "difxcalc11", "mark6sg"]
 
    Remember, if you haven't signed up to the difx-users mailing list, please
    do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.
@@ -160,10 +160,10 @@ components = {"perl"          :False,
               "vex2difx"      :True,
               "difx2mark4"    :True,
               "mpifxcorr"     :True,
+              "mark6sg"       :True,
               "difxfilterbank":False,
               "hops"          :False,
               "m6support"     :False,
-              "mark6sg"       :False,
               "polconvert"    :False,
               "guiServer"     :False,
               "mk5daemon"     :False,
@@ -191,6 +191,7 @@ def setNormalComponentsFalse():
 	components["hops"] = False
 	components["polconvert"] = False
 	components["mpifxcorr"]= False
+	components["mark6sg"]= False
 	components["python"]= False
 def setOnlyComponents(only):
 	global components
@@ -231,7 +232,6 @@ if len(opts) > 0:
             components["hops"] = True
         if o == "--withm6support":
             components["m6support"] = True
-            components["mark6sg"] = True
         if o == "--withpolconvert":
             components["polconvert"] = True
         if o == "--withguiserver":
