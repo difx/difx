@@ -661,31 +661,6 @@ public:
   bool peekinputkeyval(istream * input, const std::string& expectedkey, std::string * key, std::string * val) const;
 
  /**
-  * Get an obligatory entry from a configuration input stream
-  * @param input Open input stream to read from
-  * @param key The start of the expected keyword, to compare to the actual keyword which will be read
-  */
-  template<typename T>
-  bool getInputEntry(istream * input, const std::string& key, T* dest);
-
- /**
-  * Get an obligatory entry from a configuration input stream
-  * @param input Open input stream to read from
-  * @param key The start of the expected keyword, to compare to the actual keyword which will be read
-  * @param intval An integer value which should follow startofheader
-  */
-  template<typename T>
-  bool getInputEntry(istream * input, const std::string& key, const int intval, T* dest);
-
- /**
-  * Get an optional entry from a configuration input stream
-  * @param input Open input stream to read from
-  * @param key The start of the expected keyword, to compare to the actual keyword which will be read
-  */
-  template<typename T>
-  bool getInputEntryOptional(istream * input, const std::string& key, T* dest, const T& defaultval);
-
- /**
   * Utility method which converts a year,month,day into mjd and hour,minute,second into seconds from start of day
   * @param d The MJD, which will be set
   * @param s The seconds from start of day, which will be set
@@ -1072,26 +1047,6 @@ private:
   Model * model;
   outputformat outformat;
 };
-
-template<> bool Configuration::getInputEntry<float>(istream*, const std::string&, float*);
-template<> bool Configuration::getInputEntry<double>(istream*, const std::string&, double*);
-template<> bool Configuration::getInputEntry<int>(istream*, const std::string&, int*);
-template<> bool Configuration::getInputEntry<long long>(istream*, const std::string&, long long*);
-template<> bool Configuration::getInputEntry<std::string>(istream*, const std::string&, std::string*);
-template<> bool Configuration::getInputEntry<char>(istream*, const std::string&, char*);
-template<> bool Configuration::getInputEntry<bool>(istream*, const std::string&, bool*);
-
-template<> bool Configuration::getInputEntry<float>(istream*, const std::string&, const int, float*);
-template<> bool Configuration::getInputEntry<double>(istream*, const std::string&, const int, double*);
-template<> bool Configuration::getInputEntry<int>(istream*, const std::string&, const int, int*);
-template<> bool Configuration::getInputEntry<long long>(istream*, const std::string&, const int, long long*);
-template<> bool Configuration::getInputEntry<std::string>(istream*, const std::string&, const int, std::string*);
-template<> bool Configuration::getInputEntry<char>(istream*, const std::string&, const int, char*);
-
-template<> bool Configuration::getInputEntryOptional<std::string>(istream*, const std::string&, std::string*, const std::string&);
-template<> bool Configuration::getInputEntryOptional<int>(istream*, const std::string&, int*, const int&);
-template<> bool Configuration::getInputEntryOptional<float>(istream*, const std::string&, float*, const float&);
-template<> bool Configuration::getInputEntryOptional<bool>(istream*, const std::string&, bool*, const bool&);
 
 #endif
 // vim: shiftwidth=2:softtabstop=2:expandtab
