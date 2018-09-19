@@ -2,7 +2,7 @@
 # have all needed files, that a GNU package needs
 AUTOMAKE_OPTIONS = foreign 1.4
 
-SUBDIRS = src scripts test utils
+SUBDIRS = src scripts utils
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = mpifxcorr.pc fxcorr.pc
