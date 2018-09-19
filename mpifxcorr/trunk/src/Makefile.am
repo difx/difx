@@ -139,3 +139,32 @@ neuteredmpifxcorr_SOURCES = \
 neuteredmpifxcorr_CXXFLAGS = -DNEUTERED_DIFX $(AM_CXXFLAGS)
 
 neuteredmpifxcorr_LDADD = libfxcorr.a
+
+# Test programs relocated from ./test/ to ./src/test/ due to automake
+# https://bugs.freedesktop.org/show_bug.cgi?id=69874
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=752993
+
+check_PROGRAMS = configuration_test sysutil_test
+
+configuration_test_SOURCES = \
+	test/configuration_test.cpp \
+        alert.cpp \
+        configuration.cpp \
+        configurationstorage.cpp \
+        mode.cpp \
+        model.cpp \
+        mk5mode.cpp \
+        mathutil.cpp \
+        polyco.cpp \
+        sysutil.cpp \
+        pcal.cpp
+
+configuration_test_CXXFLAGS = -g -I$(top_srcdir)/src/ -I $(AM_CXXFLAGS)
+
+sysutil_test_SOURCES = \
+	test/sysutil_test.cpp \
+        alert.cpp \
+        sysutil.cpp
+
+sysutil_test_CXXFLAGS = -g -I$(top_srcdir)/src/ -I $(AM_CXXFLAGS)
+
