@@ -103,6 +103,9 @@ cp -p $dout/*vex.obs .
 # haxp is generated in $dout so preserve $expn if found:
 [ -d $dout/$expn ] && mv $dout/$expn $dout/$expn.save
 
+# ehtc-tarballs.sh haxp expects *.codes in $dout otherwise it fails silently
+cp -p $ehtc/ehtc-cycle4.codes $dout/$exp.codes
+
 # clean slate fourfit control file
 cat > $evs.conf <<EOF
 * fourfit config file for ALMA 1mm session April 2017 $evs
