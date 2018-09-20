@@ -9,6 +9,7 @@ Version 2.6.0
 * mk5cp try up to 3 additional times on each read error, and print some more diagnostics
 * add mk6dir and mk6state commands
 * add activity message to mk6dir, add remote control of mk6dir to mk5daemon
+* add mk5map2: program to reconstruct directory of mark5 module.  Works only on Mark5B and VDIF, currently tuned for VLBA, but could be generalized later
 
 Version 2.5.0
 ~~~~~~~~~~~~~

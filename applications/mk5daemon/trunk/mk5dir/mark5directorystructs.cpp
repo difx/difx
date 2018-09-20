@@ -119,10 +119,10 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 		{
 			status = Mark5DirectoryInfoErrorVersion;
 		}
-		else if(nConnect < info->nScan/2-1)
-		{
-			status = Mark5DirectoryInfoErrorConnection;
-		}
+	//	else if(nConnect < info->nScan/2-1)
+	//	{
+	//		status = Mark5DirectoryInfoErrorConnection;
+	//	}
 		else if(nBad > info->nScan/2)
 		{
 			status = Mark5DirectoryInfoErrorGranularity;
@@ -170,10 +170,10 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 						}
 					}
 				}
-				if(nConnect < info->nScan/2-1)
-				{
-					status = Mark5DirectoryInfoErrorConnection;
-				}
+			//	if(nConnect < info->nScan/2-1)
+			//	{
+			//		status = Mark5DirectoryInfoErrorConnection;
+			//	}
 				else if(nBad > info->nScan/2)
 				{
 					status = Mark5DirectoryInfoErrorGranularity;
@@ -220,10 +220,10 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 						}
 					}
 				}
-				if(nConnect < info->nScan/2-1)
-				{
-					status = Mark5DirectoryInfoErrorConnection;
-				}
+			//	if(nConnect < info->nScan/2-1)
+			//	{
+			//		status = Mark5DirectoryInfoErrorConnection;
+			//	}
 				else if(nBad > info->nScan/2)
 				{
 					status = Mark5DirectoryInfoErrorGranularity;

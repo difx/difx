@@ -73,7 +73,7 @@ enum CopyMode
 };
 
 
-void siginthand(int j)
+static void siginthand(int j)
 {
 	if(verbose)
 	{
@@ -82,7 +82,7 @@ void siginthand(int j)
 	die = 1;
 }
 
-void sigtermhand(int j)
+static void sigtermhand(int j)
 {
 	if(verbose)
 	{
@@ -91,7 +91,7 @@ void sigtermhand(int j)
 	die = 1;
 }
 
-int usage(const char *pgm)
+static void printVersion(const char *pgm)
 {
 	int v;
 	int cat = 0;
@@ -101,13 +101,29 @@ int usage(const char *pgm)
 	{
 		cat = 1;
 	}
-	
-	fprintf(stderr, "\n%s ver. %s   %s %s\n\n", cat ? "mk5cat" : program, version, author, verdate);
+
+	fprintf(stderr, "%s ver. %s   %s %s\n", cat ? "mk5cat" : program, version, author, verdate);
+}
+
+static int usage(const char *pgm)
+{
+	int v;
+	int cat = 0;
+
+	v = strlen(pgm);
+	if(v >= 6 && strcmp(pgm+v-6, "mk5cat") == 0)
+	{
+		cat = 1;
+	}
+	fprintf(stderr, "\n");
+	printVersion(pgm);
+	fprintf(stderr, "\n");
 	fprintf(stderr, "A program to copy Mark5 module scans via XLR calls\n");
 	fprintf(stderr, "\nUsage : %s [<options>] { <bank> | <vsn> } <scans>%s\n\n", pgm, cat ? "" : " <output path>");
 	fprintf(stderr, "options can include:\n");
 	fprintf(stderr, "  --help\n");
 	fprintf(stderr, "  -h             Print this help message\n\n");
+	fprintf(stderr, "  --version      Print version information and quit\n\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v             Be more verbose\n\n");
 	fprintf(stderr, "  --quiet\n");
@@ -2111,6 +2127,12 @@ int main(int argc, char **argv)
 			strcmp(argv[a], "--help") == 0)
 		{
 			return usage(argv[0]);
+		}
+		else if(strcmp(argv[a], "--version") == 0)
+		{
+			printVersion(argv[0]);
+
+			return EXIT_SUCCESS;
 		}
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)

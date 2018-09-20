@@ -11,6 +11,7 @@ bin_PROGRAMS += \
 	mk5lock \
 	mk5putdir \
 	mk5map \
+	mk5map2 \
 	mk5test \
 	record5c \
 	recover \
@@ -130,6 +131,15 @@ mk5map_SOURCES = \
 	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	mk5map.cpp
+
+mk5map2_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	mark5directorystructs.cpp \
+	mark5directorystructs.h \
+	mk5map2.cpp
 
 record5c_SOURCES = \
 	watchdog.cpp \

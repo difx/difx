@@ -63,7 +63,7 @@ SSHANDLE xlrDevice;
 sighandler_t oldsiginthand;
 sighandler_t oldsigtermhand;
 
-void siginthand(int j)
+static void siginthand(int j)
 {
 	if(verbose)
 	{
@@ -72,7 +72,7 @@ void siginthand(int j)
 	die = 1;
 }
 
-void sigtermhand(int j)
+static void sigtermhand(int j)
 {
 	if(verbose)
 	{
@@ -81,15 +81,22 @@ void sigtermhand(int j)
 	die = 1;
 }
 
+static void printVersion()
+{
+	printf("%s ver. %s   %s %s\n", program, version, author, verdate);
+}
 
 static void usage(const char *pgm)
 {
-	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
+	printf("\n");
+	printVersion();
+	printf("\n");
 	printf("A program to extract Mark5 module directory information via XLR calls\n");
 	printf("\nUsage : %s [<options>] { <bank> | <vsn> }\n\n", pgm);
 	printf("options can include:\n");
 	printf("  --help\n");
 	printf("  -h             Print this help message\n\n");
+	printf("  --version      Print version information and quit\n\n");
 	printf("  --verbose\n");
 	printf("  -v             Be more verbose\n\n");
 	printf("  --quiet\n");
@@ -623,6 +630,12 @@ int main(int argc, char **argv)
 		   strcmp(argv[a], "--help") == 0)
 		{
 			usage(argv[0]);
+
+			return EXIT_SUCCESS;
+		}
+		if(strcmp(argv[a], "--version") == 0)
+		{
+			printVersion();
 
 			return EXIT_SUCCESS;
 		}
