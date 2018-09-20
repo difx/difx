@@ -29,13 +29,12 @@
 #ifndef MARK6_SG_VFS_IMPL__H
 #define MARK6_SG_VFS_IMPL__H
 
-#include "mark6sg.h" // MARK6_SG_MAXFILES
+#include "mark6_sg_defines.h"
+#include "mark6_sg_utils.h"
 
 #include <pthread.h>
 #include <sys/types.h>
 
-// typedef struct m6sg_blockmeta_tt m6sg_blockmeta_t;
-#include "mark6_sg_utils.h"
 
 // Structs for internal use in the library
 

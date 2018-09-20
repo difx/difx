@@ -1,4 +1,4 @@
-h_sources = mark6_sg_utils.h mark6_sg_vfs.h mark6_sg_format.h mark6_sg_vfs_impl.h
+h_sources = mark6_sg_utils.h mark6_sg_vfs.h mark6_sg_format.h mark6_sg_vfs_impl.h mark6_sg_defines.h
 c_sources = mark6_sg_utils.c mark6_sg_vfs.c
 
 library_includedir = $(includedir)/mark6sg

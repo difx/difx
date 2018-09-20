@@ -26,11 +26,11 @@
 // $LastChangedDate$
 //
 //============================================================================
-#ifndef MARK6_SG__H
-#define MARK6_SG__H
+#ifndef MARK6_SG_DEFINES__H
+#define MARK6_SG_DEFINEL__H
 
-#include <mark6_sg_defines.h>
-#include <mark6sg/mark6_sg_utils.h>
-#include <mark6sg/mark6_sg_vfs.h>
+#define MARK6_SG_MAXFILES           32
+#define MARK6_SG_ROOT_PATTERN       "/mnt/disks/[1-4]/[0-7]/"
+#define MARK6_SG_VFS_MAX_OPEN_FILES 8192
 
 #endif

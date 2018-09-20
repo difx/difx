@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <time.h> // clock_gettime(), TODO need alternative for OS X
+#include <time.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -56,15 +56,12 @@
     #include <unistd.h>
 #endif
 
-#ifdef __APPLE__
-#define O_LARGEFILE 0
-#define off64_t off_t
-#endif
-
 #if HAVE_MMSG && __linux__
     #include <netinet/ip.h>
     #include <sys/socket.h>
 #endif
+
+//////////////////////////////////////////////////////////////////////////////////////
 
 // Prefetch (via mmap() MAP_POPULATE-like threaded forced kernel page faults)
 #define USE_MMAP_POPULATE_LIKE_PREFETCH 1  // 1 to enable, 0 to disable
@@ -73,6 +70,8 @@
 
 // When disks have unrelocatable bad sectors that cause I/O errors, mmap()'ed regions cause SIGBUS, whereas fread() returns a handleable error
 #define AVOID_MMAP                      0  // 1 to use fread() file access instead of mapped memory access to read file data
+
+//////////////////////////////////////////////////////////////////////////////////////
 
 static pthread_mutex_t vfs_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -87,6 +86,31 @@ void ioerror_noop_handler(int sig)
 {
     // catch SIGBUS but do nothing
 }
+
+//////////////////////////////////////////////////////////////////////////////////////
+////// OS X support      /////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef __APPLE__
+#define O_LARGEFILE 0
+#define off64_t off_t
+#endif
+
+#ifdef __APPLExx__
+int clock_gettime_compat(int ignored, struct timespec* tp)
+{
+    // A replacement for clock_gettime() for OS X as suggested by
+    // https://www.unix.com/man-page/osx/3/pthread_cond_timedwait/
+    // although OS X 10.12 (2016) finally has a native clock_gettime())
+    struct timeval tv;
+    int rc = gettimeofday(&tv, NULL);
+    tp->tv_sec = tv.tv_sec;
+    tp->tv_nsec = tv.tv_usec*1000UL;
+    return rc;
+}
+#else
+    #define clock_gettime_compat(x,y) clock_gettime(x,y)
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////
 ////// Library Functions /////////////////////////////////////////////////////////////
@@ -348,18 +372,17 @@ int mark6_sg_creat(const char *scanname, mode_t ignored)
             int e = errno;
             perror(vfd->filepathlist[i]);
             return -e;
-            //continue;
         }
 
         // Prepare the input buffer and associated disk-writer for this file
         vfd->writer_ctxs[i].vfd = vfd;
         vfd->writer_ctxs[i].file_id = i;
         vfd->writer_pool.inputarea_writeout_complete[i] = 1;
-	int ret = posix_memalign((void**)&vfd->writer_pool.inputareas[i], getpagesize(), vfd->writer_pool.inputareasize);
-	if (ret!=0) {
-	  perror("posix_memalign");
-	  return ret;
-	}
+        int ret = posix_memalign((void**)&vfd->writer_pool.inputareas[i], getpagesize(), vfd->writer_pool.inputareasize);
+        if (ret!=0) {
+            perror("posix_memalign");
+            return -ENOMEM;
+        }
         pthread_mutex_init(&vfd->writer_pool.inputarea_mutex[i], NULL);
         pthread_cond_init(&vfd->writer_pool.inputarea_newdata_cond[i], NULL);
         pthread_create(&vfd->writer_ctxs[i].tid, NULL, writer_thread, &(vfd->writer_ctxs[i]));
@@ -692,7 +715,7 @@ ssize_t mark6_sg_write(int fd, const void *buf, size_t count)
                 while (pool->inputareas_busy_count >= vfd->nfiles)
                 {
                     struct timespec abstimeout;
-                    clock_gettime(0, &abstimeout);
+                    clock_gettime_compat(0, &abstimeout);
                     abstimeout.tv_sec += 1;
                     rc = pthread_cond_timedwait(&pool->any_inputarea_done, &vfd->lock, &abstimeout);
                     if (rc == ETIMEDOUT)
@@ -796,7 +819,7 @@ ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
                 while (pool->inputareas_busy_count >= vfd->nfiles)
                 {
                     struct timespec abstimeout;
-                    clock_gettime(0, &abstimeout);
+                    clock_gettime_compat(0, &abstimeout);
                     abstimeout.tv_sec += 1;
                     rc = pthread_cond_timedwait(&pool->any_inputarea_done, &vfd->lock, &abstimeout);
                     if (rc == ETIMEDOUT)
@@ -1116,7 +1139,7 @@ void* writer_thread(void* p_ioctx)
         {
             int rc;
             struct timespec abstimeout;
-            clock_gettime(0, &abstimeout);
+            clock_gettime_compat(0, &abstimeout);
             abstimeout.tv_sec += 1;
             rc = pthread_cond_timedwait(&pool->inputarea_newdata_cond[id], &pool->inputarea_mutex[id], &abstimeout);
             if (rc == ETIMEDOUT)
