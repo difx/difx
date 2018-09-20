@@ -96,7 +96,7 @@ void ioerror_noop_handler(int sig)
 #define off64_t off_t
 #endif
 
-#ifdef __APPLExx__
+#ifdef __APPLE__
 int clock_gettime_compat(int ignored, struct timespec* tp)
 {
     // A replacement for clock_gettime() for OS X as suggested by
