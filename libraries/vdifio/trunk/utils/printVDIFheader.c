@@ -41,14 +41,24 @@
 
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
-const char version[] = "0.6";
-const char verdate[] = "20180905";
+const char version[] = "0.7";
+const char verdate[] = "20180921";
+
+static void printVersion()
+{
+	fprintf(stderr, "%s ver. %s  %s  %s\n", program, version, author, verdate);
+}
 
 static void usage()
 {
-	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+	fprintf(stderr, "\n");
+	printVersion();
+	fprintf(stderr, "\n");
 	fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
-	fprintf(stderr, "\nUsage: %s <VDIF input file> [<framesize> [<prtlev> [<offset>] ] ]\n", program);
+	fprintf(stderr, "\nUsage: %s [options] <VDIF input file> [<framesize> [<prtlev> [<offset>] ] ]\n", program);
+	fprintf(stderr, "\n[options] can include:\n");
+	fprintf(stderr, "  -h or --help    print help information\n");
+	fprintf(stderr, "  --version       print version information\n");
 	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read (- for stdin)\n");
 	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA, 8224 for R2DBE)\n");
 	fprintf(stderr, "\n<prtlev> is output type: none hex short long\n");
@@ -94,9 +104,23 @@ int main(int argc, char **argv)
 
 	if(argc < 2 || argc > 5)
 	{
-		usage();
+		fprintf(stderr, "\nPlease run with --help to get help information\n\n");
 
 		return EXIT_FAILURE;
+	}
+
+	if(strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
+	{
+		usage();
+
+		return EXIT_SUCCESS;
+	}
+	
+	if(strcmp(argv[1], "--version") == 0)
+	{
+		printVersion();
+
+		return EXIT_SUCCESS;
 	}
 
 	if(strcmp(argv[1], "-") == 0)
