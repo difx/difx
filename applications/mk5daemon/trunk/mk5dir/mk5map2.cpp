@@ -103,14 +103,22 @@ typedef struct vdif_edv3_header {       /* VLBA extensions: see http://www.vlbi.
 sighandler_t oldsiginthand;
 sighandler_t oldsigtermhand;
 
+static void printVersion()
+{
+	printf("%s ver. %s   %s %s\n", program, version, author, verdate);
+}
+
 static void usage(const char *pgm)
 {
-	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
+	printf("\n");
+	printVersion();
+	printf("\n");
 	printf("A program to extract Mark5 module directory information via XLR calls (Mark5B and VDIF)\n");
 	printf("\nUsage : %s [<options>] { <bank> | <vsn> }\n\n", pgm);
 	printf("<options> can include:\n");
 	printf("  --help\n");
 	printf("  -h             Print this help message\n\n");
+	printf("  --version      Print version number and quit\n");
 	printf("  --verbose\n");
 	printf("  -v             Be more verbose\n\n");
 	printf("  --quiet\n");
@@ -122,7 +130,7 @@ static void usage(const char *pgm)
 	printf("  -e <E>         End search at byte position <E> [full data length]\n\n");
 }
 
-void siginthand(int j)
+static void siginthand(int j)
 {
 	if(verbose)
 	{
@@ -131,7 +139,7 @@ void siginthand(int j)
 	die = 1;
 }
 
-void sigtermhand(int j)
+static void sigtermhand(int j)
 {
 	if(verbose)
 	{
@@ -204,6 +212,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 	int maxFrame = 0;
 	int maxThread = 0;
 	int okToJump = 0;
+	int frameSize = 0;
 
 	memset(&mk5status, 0, sizeof(mk5status));
 
@@ -312,7 +321,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 			{
 				if(lastEnd - lastBegin > 1000000)
 				{
-					printf("%d %lld %lld %d\n", nScan, lastBegin, lastEnd, lastFormat);
+					printf("%d %lld %lld %d %d\n", nScan, lastBegin, lastEnd, lastFormat, frameSize);
 					fflush(stdout);
 					++nScan;
 				}
@@ -367,7 +376,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 					{
 						if(lastEnd - lastBegin > 1000000)
 						{
-							printf("%d %lld %lld %d\n", nScan, lastBegin, lastEnd - lastBegin, lastFormat);
+							printf("%d %lld %lld %d %d\n", nScan, lastBegin, lastEnd - lastBegin, lastFormat, frameSize);
 							fflush(stdout);
 							++nScan;
 						}
@@ -394,7 +403,8 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 				}
 
 				lastSecond = sec;
-				offset += vh->framelength8*8;
+				frameSize = vh->framelength8*8;
+				offset += frameSize;
 			
 				continue;
 			}
@@ -422,7 +432,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 					{
 						if(lastEnd - lastBegin > 1000000)
 						{
-							printf("%d %lld %lld %d\n", nScan, lastBegin, lastEnd - lastBegin, lastFormat);
+							printf("%d %lld %lld %d %d\n", nScan, lastBegin, lastEnd - lastBegin, lastFormat, frameSize);
 							fflush(stdout);
 							++nScan;
 						}
@@ -432,6 +442,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 					lastBegin = lastEnd = bufferStart + offset;
 					firstSecond = sec;
 					okToJump = 1;
+					frameSize = 10016;
 				}
 				else
 				{
@@ -451,7 +462,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 
 		leftover += (readSize - offset);
 
-		while(okToJump && sec > firstSecond+1)
+		while(okToJump && sec > firstSecond+1 && !die)
 		{
 			long long jump;
 			if(lastFormat == 0)	// Mark5B
@@ -464,9 +475,9 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 				int fps;
 
 				nThread = maxThread + 1;
-				for(fps = 100; fps <= maxFrame; fps *= 2) ;
+				for(fps = 100; fps < maxFrame; fps *= 2) ;
 				
-				jump = JumpSec*fps*nThread*5032;
+				jump = JumpSec*fps*nThread*frameSize;
 			}
 			else
 			{
@@ -482,19 +493,13 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 				break;
 			}
 
-			//printf("\nTotal bytes left to process: %lld\n", toRead);
-			//printf("Bytes to read: %lld\n", readSize);
-
-			fprintf(stderr, "Jumping 5 seconds = %lld bytes\n", jump);
+			fprintf(stderr, "Jumping %d seconds = %lld bytes\n", JumpSec, jump);
 
 			readPtr = readPtr - leftover + jump;
 
 			a = readPtr >> 32;
 			b = readPtr & 0xFFFFFFFFLL;
 			WATCHDOGTEST( XLRReadData(xlrDevice, (unsigned int *)buffer, a, b, JumpReadSize));
-			readPtr += readSize;
-			toRead -= readSize;
-
 
 			leftover = 0;
 
@@ -532,7 +537,6 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 			{
 				if(sec > lastSecond+JumpSec-2 && sec < lastSecond+JumpSec+2)
 				{
-					//lastSecond += JumpSec;
 					lastSecond = sec;
 				}
 				else
@@ -541,8 +545,6 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 				}
 			}
 
-			fprintf(stderr, "ok=%d sec=%d readPtr=%lld\n", okToJump, sec, readPtr);
-			
 			if(!okToJump)
 			{
 				/* here simply go back to a regular read */
@@ -596,6 +598,10 @@ int main(int argc, char **argv)
 
 			return EXIT_SUCCESS;
 		}
+		else if(strcmp(argv[a], "--version") == 0)
+		{
+			printVersion();
+		}
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
 		{
@@ -646,7 +652,7 @@ int main(int argc, char **argv)
 
 	if(vsn[0] == 0)
 	{
-		printf("Error: no module or bank specified\n");
+		fprintf(stderr, "Error: no module or bank specified\n");
 
 		return EXIT_FAILURE;
 	}

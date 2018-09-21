@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2017 by Walter Brisken                             *
+ *   Copyright (C) 2013-2018 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,8 +47,8 @@
 
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20170904";
+const char version[] = "0.4";
+const char verdate[] = "20180921";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
@@ -73,14 +73,22 @@ volatile int die = 0;
 sighandler_t oldsiginthand;
 sighandler_t oldsigtermhand;
 
+static void printVersion()
+{
+	printf("%s ver. %s   %s %s\n", program, version, author, verdate);
+}
+
 static void usage(const char *pgm)
 {
-	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
+	printf("\n");
+	printVersion();
+	printf("\n");
 	printf("A program to extract Mark5 module directory information via XLR calls\n");
 	printf("\nUsage : %s [<options>] { <bank> | <vsn> }\n\n", pgm);
 	printf("<options> can include:\n");
 	printf("  --help\n");
 	printf("  -h             Print this help message\n\n");
+	printf("  --version      Print version info and quit\n\n");
 	printf("  --verbose\n");
 	printf("  -v             Be more verbose\n\n");
 	printf("  --quiet\n");
@@ -98,6 +106,8 @@ static void usage(const char *pgm)
 	printf("  -b <B>         Begin search at byte position <B> [0]\n\n");
 	printf("  --end <E>\n");
 	printf("  -e <E>         End search at byte position <E> [full data length]\n\n");
+	printf("\n\nNOTE: this will not work for VDIF data.  For mixtures of Mark5B\n");
+	printf("and VDIF data, look at mk5map2\n\n");
 }
 
 void siginthand(int j)
@@ -729,6 +739,10 @@ int main(int argc, char **argv)
 			usage(argv[0]);
 
 			return EXIT_SUCCESS;
+		}
+		else if(strcmp(argv[a], "--version") == 0)
+		{
+			printVersion();
 		}
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
