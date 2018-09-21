@@ -862,6 +862,7 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 		{
 			printf("Loading %s\n", opts->baseFile[i]);
 		}
+
 		Dset[i] = loadDifxInput(opts->baseFile[i]);
 		if(!Dset[i])
 		{
@@ -871,6 +872,9 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 
 			return 0;
 		}
+
+		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions);
+
 		if(opts->specAvg)
 		{
 			Dset[i]->specAvg = opts->specAvg;
