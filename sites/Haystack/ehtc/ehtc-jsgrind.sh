@@ -3,12 +3,28 @@
 # Script to run the processing for one project/target group.
 # See the processing template for details.
 #
+# Usage: $ehtc/ehtc-jsgrind.sh <fourfit_conf_exists:true/false> <run_polconvert:true/false>
+#
 # While developing fourfit control file:
 #  $ehtc/ehtc-jsgrind.sh false true
 #  $ehtc/ehtc-jsgrind.sh false false
 # once fourfit control file is established:
 #  $ehtc/ehtc-jsgrind.sh #true true
 #
+[ -z "$exp"   ] && { echo exp   must be defined ; exit 1 ; }
+[ -z "$expn"  ] && { echo expn  must be defined ; exit 1 ; }
+[ -z "$opts"  ] && { echo opts  must be defined with options for polconvert ; exit 1 ; }
+[ -z "$pcal"  ] && { echo pcal  must be defined with name of QA2 package ; exit 1 ; }
+[ -z "$vers"  ] && { echo vers  must be defined ; exit 1 ; }
+[ -z "$relv"  ] && { echo relv  must be defined ; exit 1 ; }
+[ -z "$subv"  ] && { echo subv  must be defined ; exit 1 ; }
+[ -z "$iter"  ] && { echo iter  must be defined ; exit 1 ; }
+[ -z "$expn"  ] && { echo expn  must be defined ; exit 1 ; }
+# [ -z "$label" ] && { echo label must be defined ; exit 1 ; } ### FIXME: Readme-Cycle?.txt declares 'label', ignored, as it gets overwritten below
+[ -z "$targ"  ] && { echo targ  must be defined ; exit 1 ; }
+[ -z "$dout"  ] && { echo dout  must be defined ; exit 1 ; }
+[ -z "$proj"  ] && { echo proj  must be defined ; exit 1 ; }
+
 haveffconf=${1-'true'}
 [ "$haveffconf" = true -o "$haveffconf" = false ] || {
     echo "the first arg must be true(have ff conf) or false(need ff conf)"
@@ -27,6 +43,7 @@ polconvert=${2-'true'}
     echo control file and then run this script with two false arguments; }
 [ $haveffconf$polconvert = falsefalse ] && {
     echo completing the fourfit processing and making the release tarballs; }
+    ### FIXME: action doesn't seem to match description of arg haveffconf, valid should be truefalse
 [ $haveffconf$polconvert = truefalse  ] && {
     echo this is a nonsensical set of options...bailing out ; exit 1 ; }
 
@@ -34,6 +51,11 @@ polconvert=${2-'true'}
 [ -n "$class" ] || { echo "class='cal|sci|eht' must be defined"; exit 1; }
 [ -n "$proj" ] || { echo "proj must be defined"; exit 1; }
 [ -n "$targ" ] || { echo "targ must be defined"; exit 1; }
+
+if [ -d $expn ] && [ $haveffconf$polconvert = truetrue ]; then
+   echo Warning: removing existing ./$expn/ because fourfit would otherwise never run in this mode.
+   rm -rf ./$expn/
+fi
 
 # export proj=yyy targ=XXX class=cal|sci
 export label=$proj-$targ
