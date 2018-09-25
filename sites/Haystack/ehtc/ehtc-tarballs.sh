@@ -600,7 +600,7 @@ fits)
     parts="{log,xcb,wts,cpol,apd,apc,acb,jobmatrix,fits,fits_setup*}"
     $dry && {
         echo mkdir $FITS.work
-        echo $d2ftexec $ov $jobs $fitsout \> $fog
+        echo $d2ftexec -v $ov $jobs $fitsout \> $fog
         $fitsname || echo mv $EXP* $FITS.work
         $fitsname && echo mv $FITS*$parts $FITS.work
         echo mv $FITS.work $FITS.fits
@@ -609,9 +609,9 @@ fits)
         $save && savename=$fits.save
         $verb && echo follow difx2fits with: &&
             echo '  'tail -n +1 -f `pwd`/$fog
-        echo $d2ftexec $ov $jobs $fitsout > $fog
+        echo $d2ftexec -v $ov $jobs $fitsout > $fog
         echo =================== >> $fog
-        $d2ftexec $ov $jobs $fitsout >> $fog 2>&1 || {
+        $d2ftexec -v $ov $jobs $fitsout >> $fog 2>&1 || {
             echo difx2fits failed; exit 4; }
         # generate fits packaging summary with pcList.pl
         pclist=`type -p pcList.pl`
