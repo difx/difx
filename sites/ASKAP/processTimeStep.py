@@ -9,6 +9,7 @@ parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits")
 parser.add_argument("-f", "--fcm", default="fcm.txt", help="Name of the fcm file")
 parser.add_argument("-c", "--correctfpgadelays", default=False, action="store_true", help="Figure out and correct 7 microsec FPGA delays")
 parser.add_argument("--beam", default="", help="Correlate a specific beam: blank means the first one (numerically)")
+parser.add_argument("--card", default="", help="Correate only a specific card; blank means all")
 args = parser.parse_args()
 
 if args.timestep == "":
@@ -17,10 +18,10 @@ if args.timestep == "":
 timestep = args.timestep
 
 if not os.path.exists(timestep):
-    parser.error("Target directory (timestep)", timestep, "doesn't exist")
+    parser.error("Target directory (timestep) " + timestep + " doesn't exist")
 
 if not os.path.exists(args.fcm):
-    parser.error(fcm, "doesn't exist")
+    parser.error(fcm + " doesn't exist")
 
 fcm = os.path.abspath(args.fcm)
 examplefiles = []
@@ -34,7 +35,7 @@ for a in antennadirs:
             print a + "/" + args.beam + " doesn't exist, aborting"
             sys.exit()
     for b in beamdirs:
-        vcraftfiles = glob.glob(b + "/*vcraft")
+        vcraftfiles = glob.glob(b + "/*c" + args.card + "*vcraft")
         if len(vcraftfiles) > 0:
             examplefiles = sorted(vcraftfiles)
             beamname = b.split('/')[-1]
