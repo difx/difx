@@ -8,6 +8,7 @@ parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declin
 parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits")
 parser.add_argument("-f", "--fcm", default="fcm.txt", help="Name of the fcm file")
 parser.add_argument("-c", "--correctfpgadelays", default=False, action="store_true", help="Figure out and correct 7 microsec FPGA delays")
+parser.add_argument("--beam", default="", help="Correlate a specific beam: blank means the first one (numerically)")
 args = parser.parse_args()
 
 if args.timestep == "":
@@ -25,7 +26,13 @@ fcm = os.path.abspath(args.fcm)
 examplefiles = []
 antennadirs = sorted(glob.glob(timestep + "/ak*"))
 for a in antennadirs:
-    beamdirs = sorted(glob.glob(a + "/*"))
+    if args.beam == "":
+        beamdirs = sorted(glob.glob(a + "/*"))
+    else:
+        beamdirs = [a + "/" + args.beam]
+        if not os.path.exists(a + "/" + args.beam):
+            print a + "/" + args.beam + " doesn't exist, aborting"
+            sys.exit()
     for b in beamdirs:
         vcraftfiles = glob.glob(b + "/*vcraft")
         if len(vcraftfiles) > 0:
@@ -38,6 +45,8 @@ if len(examplefiles) == 0:
     sys.exit()
 
 os.chdir(timestep)
+os.mkdir(beamname)
+os.chdir(beamname)
 
 difx2fitscommand = "difx2fits -u"
 for e in examplefiles:
@@ -47,8 +56,8 @@ for e in examplefiles:
     os.mkdir(freqlabel)
     os.chdir(freqlabel)
     os.system("cp %s fcm.txt" % fcm)
-    if os.path.exists("../../eopjunk.txt"):
-        os.system("cp ../../eopjunk.txt .")
+    if os.path.exists("../../../eopjunk.txt"):
+        os.system("cp ../../../eopjunk.txt .")
 
     torun = "vcraft2obs.py"
     if not args.ra == "":
@@ -57,7 +66,7 @@ for e in examplefiles:
         torun = torun + " -d" + args.dec
     if not args.bits == "":
         torun = torun + " --bits=" + str(args.bits)
-    torun += ' "../ak*/%s/*%s*vcraft"' % (beamname, freqlabel)
+    torun += ' "../../ak*/%s/*%s*vcraft"' % (beamname, freqlabel)
 
     print torun
     os.system(torun + "> vcraft2obs.log")
@@ -67,10 +76,12 @@ for e in examplefiles:
     os.system("tail -n 2 askap2difx.log | head -n 1 > runmergedifx")
     os.system("chmod 775 runmergedifx")
     os.system("./run.sh")
+    os.system("./runmergedifx")
     if args.correctfpgadelays:
         os.system("findOffsets.py")
         os.system("./run.sh")
-    os.system("./runmergedifx")
+        os.system("rm -rf craftfrbD2D*")
+        os.system("./runmergedifx")
     os.chdir("../")
     
 output = open("rundifx2fits","w")

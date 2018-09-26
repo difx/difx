@@ -47,15 +47,15 @@ for freqgroup in range(2):
     os.system("cp craftfrb.input craftfrb.input.save") # Save of copy of the original input file
     for key in sorted(dscounts.keys()):
         if numpy.abs(dscounts[key]) > 2*mediancount:
-            clockoffset = 7.0 # microsec
+            clockoffset = 6.75 # microsec
             if dscounts[key] < 0:
-                clockoffset = -7.0 # microsec
+                clockoffset = -6.75 # microsec
             print "Adding offset of %f to datastream %s" % (clockoffset, key)
 
-            # Go through and replace clock offset of 0 with 7 microseconds where necessary
+            # Go through and replace clock offset of 0 with 6.75 microseconds where necessary
             frbinputlines = open("craftfrb.input").readlines()
             linecount = 0
-            while not "TELESCOPE INDEX:    %s" % key in frbinputlines[linecount]:
+            while not "TELESCOPE INDEX:    %d" % (int(key)-1) in frbinputlines[linecount]:
                 linecount += 1
             overwrittencount = 0
             while overwrittencount < 4:
