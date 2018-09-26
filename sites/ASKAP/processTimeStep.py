@@ -72,4 +72,5 @@ for e in examplefiles:
 output = open("rundifx2fits","w")
 output.write(difx2fitscommand + "\n")
 output.close()
+os.system("chmod 775 rundifx2fits")
 os.system(difx2fitscommand)
