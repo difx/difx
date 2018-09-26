@@ -7,6 +7,7 @@ parser.add_argument("-r", "--ra", help="Force RA value")
 parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declination is negative, i.e., -d-63:20:23.3")
 parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits")
 parser.add_argument("-f", "--fcm", default="fcm.txt", help="Name of the fcm file")
+parser.add_argument("-c", "--correctfpgadelays", default=False, action="store_true", help="Figure out and correct 7 microsec FPGA delays")
 args = parser.parse_args()
 
 if args.timestep == "":
@@ -66,8 +67,9 @@ for e in examplefiles:
     os.system("tail -n 2 askap2difx.log | head -n 1 > runmergedifx")
     os.system("chmod 775 runmergedifx")
     os.system("./run.sh")
-    os.system("findOffsets.py")
-    os.system("./run.sh")
+    if args.correctfpgadelays:
+        os.system("findOffsets.py")
+        os.system("./run.sh")
     os.system("./runmergedifx")
     os.chdir("../")
     
