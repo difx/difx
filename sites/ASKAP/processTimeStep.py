@@ -66,6 +66,8 @@ for e in examplefiles:
     os.system("tail -n 2 askap2difx.log | head -n 1 > runmergedifx")
     os.system("chmod 775 runmergedifx")
     os.system("./run.sh")
+    os.system("findOffsets.py")
+    os.system("./run.sh")
     os.system("./runmergedifx")
     os.chdir("../")
     
