@@ -211,8 +211,10 @@ def stitchVisibilityfile(basename,cfg):
 	if basename.endswith(('.difx','input')):
 		basename = basename[:basename.rfind('.')]
 	basename_pathless = basename
+        basedir = os.getcwd()
 	if basename.rfind('/') >= 0:
 		basename_pathless = basename[(basename.rfind('/')+1):]
+                basedir = basename[:basename.rfind('/')]
 	inputfile = basename + '.input'
 	inputfile_cfg = parseDiFX.get_common_settings(inputfile)
 	(numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
@@ -324,7 +326,7 @@ def stitchVisibilityfile(basename,cfg):
                 if difxfilename.rfind('/') >= 0:
                         difxfilename_pathless = difxfilename[(difxfilename.rfind('/')+1):]
                 difxfile = open(difxfilename, 'r')
-                difxoutdir = basename_pathless + 'D2D.difx'
+                difxoutdir = basedir + '/' + basename_pathless + 'D2D.difx'
                 difxoutname = difxoutdir + '/' + difxfilename_pathless
                 try:
                         os.mkdir(difxoutdir)

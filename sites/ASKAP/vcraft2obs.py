@@ -22,7 +22,8 @@ def posradians2string(rarad, decrad):
 ## Argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument("-r", "--ra", help="Force RA value")
-parser.add_argument("-d", "--dec", help="Force Dec value")
+parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declination is negative, i.e., -d-63:20:23.3")
+parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits")
 parser.add_argument('fileglob', help="glob pattern for vcraft files")
 args = parser.parse_args()
 
@@ -87,9 +88,19 @@ if args.ra!=None:
 if args.dec!=None:
     decstring = args.dec
 
+correlateseconds = 20
+framesize = 8064
+if args.bits == 4:
+    correlateseconds = 6
+    framesize = 8256
+elif args.bits == 8:
+    correlateseconds = 4
+elif args.bits == 16:
+    correlateseconds = 3
+
 output = open("obs.txt", "w")
 output.write("startmjd    = %.9f\n" % startmjd)
-output.write("stopmjd     = %.9f\n" % (startmjd + 20./86400))
+output.write("stopmjd     = %.9f\n" % (startmjd + float(correlateseconds)/86400.0))
 output.write("srcname     = CRAFTSRC\n")
 output.write("srcra       = %s\n" % rastring)
 output.write("srcdec      = %s\n" % decstring)
@@ -135,6 +146,6 @@ output.write("mv log craft.difxlog\n")
 output.close()
 
 # Print out the askap2difx command line to run (ultimately, could just run it ourselves)
-runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-1]
+runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-1] + " --bits=" + str(args.bits) + " --framesize=" + str(framesize)
 print "\nNow run:"
 print runline
