@@ -17,10 +17,12 @@ EOF
 # Grab the command line values and save delays onto hash and non-arguments onto an array
 while (my $val = shift @ARGV) {
   if ($val =~ /^-(\S+$)/ || $val =~ /^--(\S+)$/) {
+    my $ant = $1;
+    $ant =~ s/(\D+)0+(\d+)/$1$2/;
     my $arg = shift @ARGV;
     die "Missing argument for $val\n" if (! defined $arg);
-    $delays{$1} = $arg;
-    $done{$1} = 0;
+    $delays{$ant} = - $arg;
+    $done{$ant} = 0;
     
   } else {
     push @args, $val;
@@ -50,7 +52,6 @@ while (<FCM>) {
     my $line = $1;
     my $ant = $2;
     my $delay = $3;
-    my $deltaDelay = undef;
     my $foundAnt = undef;
     if (exists($delays{"ak$ant"})) {
       $foundAnt = "ak$ant";
@@ -58,9 +59,8 @@ while (<FCM>) {
       $foundAnt = "co$ant";
     }
     if (defined $foundAnt) {
-      $deltaDelay = $delays{$foundAnt};
       chomp;
-      my $newDelay = $delay + $deltaDelay;
+      my $newDelay = $delay + $delays{$foundAnt};
       print NEWFCM "$line${newDelay}ns\n";
       $done{$foundAnt} = 1;
     } else {
@@ -74,7 +74,11 @@ close(FCM);
 
 foreach (keys(%delays)) {
   if (!$done{$_}) {
-    printf NEWFCM "common.antenna.${_}.delay=".$delays{$_}."ns\n";
+    my $ant = $_;
+    $ant =~ s/ak/ant/;
+    $ant =~ s/co/ant/;
+    $ant =~ s/ant0(\d)/ant$1/;
+    printf NEWFCM "common.antenna.${ant}.delay=".$delays{$_}."ns\n";
   }
 }
 
