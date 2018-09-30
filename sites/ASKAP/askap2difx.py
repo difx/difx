@@ -192,7 +192,35 @@ def writekeyfile(keyout, obs, twoletterannames, craftcatdir):
     keyout.write("minpause = 5\n\n")
     keyout.write("source = '%s'  dur = %d  gap = 0   /\n\n" % (obs["srcname"], int(0.99 + 86400.0*(float(obs["stopmjd"])-float(obs["startmjd"])))))
 
-def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist):
+def getFPGAdelays(fpga):
+    fpga_delays = {}
+
+    if 'CRAFT_FPGA_DELAYS' in os.environ:
+        delayFile = os.environ['CRAFT_FPGA_DELAYS']
+        if os.path.exists(delayFile):
+            with open(delayFile) as f:
+                for line in f:
+                    keys = line.split()
+                    if len(keys)!=4:
+                        sys.stderr.write("Cannot parse : "+line)
+                        continue
+                    ant = keys[0]
+                    thisFPGA = keys[1]
+                    delay = keys[2:]
+                    if thisFPGA != fpga: continue
+                    fpga_delays[ant] = delay
+        else:
+            sys.stderr.write("Error: Delay file \"{}\" does not exist.".format(delayFile))
+
+    return fpga_delays
+
+def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga):
+
+    if fpga is not None:
+        fpga_delay = getFPGAdelays(fpga)
+    else:
+        fpga_delay = {}
+
     v2dout.write("#  Template v2d file for DiFX correlation of craftfrb\n\n")
     v2dout.write("vex = craftfrb.vex\n")
     v2dout.write("startSeries = 0\n\n")
@@ -211,11 +239,15 @@ def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafileli
         v2dout.write("  file = %s\n" % d.split('=')[1])
         v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
         v2dout.write("  clockOffset=%.6f\n" % (-float(delay[:-2])/1000.0))
+        if ant in fpga_delay:
+            clkDelays = [str(int(fpga_delay[ant][0])*6.75)]*4 + [str(int(fpga_delay[ant][1])*6.75)]*4
+            v2dout.write("  freqClockOffs="+','.join(clkDelays))
         v2dout.write("  clockRate=0\n")
         v2dout.write("  clockEpoch=57000.0\n")
         v2dout.write("  phaseCalInt=0\n")
         v2dout.write("  toneSelection=none\n")
         v2dout.write("  sampling=COMPLEX_DSB\n}\n")
+        #v2dout.write("  sampling=COMPLEX\n}\n")
 
     v2dout.write("\n# The nChan should never be less than 128.\n")
     v2dout.write("# For numbers of channels < 128, set specAvg so nChan/specAvg\n")
@@ -250,6 +282,7 @@ parser.add_argument("-a", "--ants", help="Comma separated list of antenna names 
 parser.add_argument("-b", "--bits", help="Number of bits/sample. Default 1", type=int)
 parser.add_argument("-t", "--threads", help="Number of DIFX threads. Default 8", type=int)
 parser.add_argument("-n", "--framesize", help="Codif framesize. Default 8064", type=int)
+parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.g. c4_f0")
 args = parser.parse_args()
 
 ## Check arguments
@@ -366,7 +399,7 @@ eoplines = open("eopjunk.txt").readlines()
 
 ## Write the v2d file
 v2dout = open("craftfrb.v2d", "w")
-writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist)
+writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, args.fpga)
 for line in eoplines:
    if "xPole" in line or "downloaded" in line:
        v2dout.write(line)
@@ -421,5 +454,10 @@ print runline
 
 ## Print the line needed to run the stitching and then subsequently difx2fits
 print "Then run difx2fits"
-runline = "rm -rf craftfrbD2D.* ; mergeOversampledDiFX.py craftfrb.stitchconfig craftfrb.difx\ndifx2fits craftfrbD2D"
+runline = "rm -rf craftfrbD2D.* ; mergeOversampledDiFX.py craftfrb.stitchconfig craftfrb.difx"
+print runline
+with open('runmergedifx', 'w') as runmerge:
+    runmerge.write(runline)
+os.chmod('runmergedifx',0o775)
+runline = "difx2fits craftfrbD2D"
 print runline

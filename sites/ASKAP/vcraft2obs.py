@@ -24,10 +24,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-r", "--ra", help="Force RA value")
 parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declination is negative, i.e., -d-63:20:23.3")
 parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits")
+parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keeop exisiting codif files")
 parser.add_argument('fileglob', help="glob pattern for vcraft files")
 args = parser.parse_args()
 
 vcraftglobpattern = args.fileglob
+keepCodif = args.keep # Don't rerun CRAFTConverter
 
 vcraftfiles = glob.glob(vcraftglobpattern)
 if len(vcraftfiles) == 0:
@@ -109,7 +111,7 @@ output.close()
 # Write the chandefs file
 output = open("chandefs.txt", "w")
 for f in freqs:
-    output.write("%s L 1.185185185185185185\n" % f)
+    output.write("%s L 1.185185185185185185\n" % str(int(f)-1))
 output.close()
 
 # Run the converter for each vcraft file
@@ -122,9 +124,10 @@ for f in vcraftfiles:
         sys.exit()
     antlist += antname + ","
     codifName = "%s.codif" % (antname)
-    print "CRAFTConverter %s %s" % (f, codifName)
-    ret = os.system("CRAFTConverter %s %s" % (f, codifName))
-    if (ret!=0): sys.exit(ret)
+    if not keepCodif or not os.path.exists(codifName):
+        print "CRAFTConverter %s %s" % (f, codifName)
+        ret = os.system("CRAFTConverter %s %s" % (f, codifName))
+        if (ret!=0): sys.exit(ret)
     codifFiles.append(codifName)
 
 # Write a machines file and a run.sh file
@@ -149,3 +152,6 @@ output.close()
 runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-1] + " --bits=" + str(args.bits) + " --framesize=" + str(framesize)
 print "\nNow run:"
 print runline
+with open('runaskap2difx', 'w') as runaskap:
+    runaskap.write(runline)
+os.chmod('runaskap2difx',0o775)
