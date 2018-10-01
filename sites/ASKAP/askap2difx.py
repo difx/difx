@@ -222,9 +222,10 @@ def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafileli
         fpga_delay = {}
 
     v2dout.write("#  Template v2d file for DiFX correlation of craftfrb\n\n")
-    v2dout.write("vex = craftfrb.vex\n")
-    v2dout.write("startSeries = 0\n\n")
-    v2dout.write("minLength = 1\n\n")
+    v2dout.write("vex = craftfrb.vex\n\n")
+    v2dout.write("startSeries = 0\n")
+    v2dout.write("minLength = 1\n")
+    v2dout.write("allowAllClockOffsets = True\n\n");
     v2dout.write("antennas = ")
     for d in datafilelist:
         a = d.split('=')[0]
