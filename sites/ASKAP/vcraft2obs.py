@@ -25,6 +25,7 @@ parser.add_argument("-r", "--ra", help="Force RA value")
 parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declination is negative, i.e., -d-63:20:23.3")
 parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits")
 parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keeop exisiting codif files")
+parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.g. c4_f0")
 parser.add_argument('fileglob', help="glob pattern for vcraft files")
 args = parser.parse_args()
 
@@ -150,6 +151,8 @@ output.close()
 
 # Print out the askap2difx command line to run (ultimately, could just run it ourselves)
 runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-1] + " --bits=" + str(args.bits) + " --framesize=" + str(framesize)
+if args.fpga is not None: runline += " --fpga {}".format(args.fpga)
+
 print "\nNow run:"
 print runline
 with open('runaskap2difx', 'w') as runaskap:

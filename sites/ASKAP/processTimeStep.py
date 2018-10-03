@@ -75,16 +75,12 @@ for e in examplefiles:
         torun = torun + " -d" + args.dec
     if not args.bits == "":
         torun = torun + " --bits=" + str(args.bits)
-    torun += ' "%s/ak*/%s/*%s*vcraft"' % (timestep, beamname, freqlabel)
+    torun += ' --fpga %s "%s/ak*/%s/*%s*vcraft"' % (freqlabel, timestep, beamname, freqlabel)
 
     print torun
     
     os.system(torun + "| tee vcraft2obs.log")
-    #os.system("tail -n 1 vcraft2obs.log > runaskap2difx")
-    #os.system("chmod 775 runaskap2difx")
     os.system("./runaskap2difx | tee askap2difx.log")
-    #os.system("tail -n 2 askap2difx.log | head -n 1 > runmergedifx")
-    #os.system("chmod 775 runmergedifx")
     os.system("./run.sh")
     os.system("./runmergedifx")
     if args.correctfpgadelays:
