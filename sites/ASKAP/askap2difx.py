@@ -201,7 +201,7 @@ def getFPGAdelays(fpga):
             with open(delayFile) as f:
                 for line in f:
                     line = line.split('#')[0] # Remove comments
-                    if a is "" or a.isspace: continue
+                    if line is "" or line.isspace: continue
                     keys = line.split()
                     if len(keys)!=4:
                         sys.stderr.write("Cannot parse : "+line)
