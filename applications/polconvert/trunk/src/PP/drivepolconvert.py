@@ -603,21 +603,22 @@ def createCasaCommand(o, job, workdir):
     basecmd = o.exp + '.' + job + '.pc-casa-command'
     cmdfile = workdir + '/' + basecmd
     os.mkdir(workdir + '/casa-logs')
-    cmd = map(str,range(13))
+    cmd = map(str,range(14))
     cmd[0]  = '#!/bin/sh'
     cmd[1]  = '[ -f killcasa ] && exit 0'
     cmd[2]  = 'cd ' + workdir + ' && echo "starting" > ./status || exit 1'
     cmd[3]  = 'date -u +%Y-%m-%dT%H:%M:%S > ./timing'
-    cmd[4]  = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
+    cmd[4]  = '%s --nologger --nogui -c %s > %s 2>&1 < /dev/null' % (
         o.casa, o.input, o.output)
-    cmd[5]  = 'echo "converted" > ./status'
-    cmd[6]  = 'mv casa*.log ipython-*.log casa-logs'
-    cmd[7]  = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
-    cmd[8]  = 'mv polconvert.last casa-logs'
-    cmd[9]  = 'echo "complete" > ./status'
-    cmd[10] = 'date -u +%Y-%m-%dT%H:%M:%S >> ./timing'
-    cmd[11] = 'echo " "CASA for job %s finished.' % job
-    cmd[12] = 'exit 0'
+    cmd[5]  = 'casarc=$?'
+    cmd[6]  = 'if [ "$casarc" == 0 ]; then echo "conversion"; else echo "conversion failed with code $casarc"; fi > ./status'
+    cmd[7]  = 'mv casa*.log ipython-*.log casa-logs'
+    cmd[8]  = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
+    cmd[9]  = 'mv polconvert.last casa-logs'
+    cmd[10] = 'if [ "$casarc" == 0 ]; then echo "completed"; else echo "failed with code $casarc"; fi > ./status'
+    cmd[11] = 'date -u +%Y-%m-%dT%H:%M:%S >> ./timing'
+    cmd[12] = 'echo " "CASA for job %s finished with return code $casarc.' % job
+    cmd[13] = 'exit 0'
     cs = open(cmdfile, 'w')
     for ii in range(len(cmd)): cs.write(cmd[ii] + '\n')
     cs.close()
@@ -708,7 +709,7 @@ def executeCasa(o):
              'PolConvert.XYGains.dat' ]
     removeTrash(o, misc)
     cmd1 = 'rm -f %s' % (o.output)
-    cmd2 = '%s --nologger -c %s > %s 2>&1 < /dev/null' % (
+    cmd2 = '%s --nologger --nogui -c %s > %s 2>&1 < /dev/null' % (
         o.casa, o.input, o.output)
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
     if o.prep: cmd4 = 'mv prepol*.log '
@@ -727,13 +728,14 @@ def executeCasa(o):
             print 'If it appears to hang, use kill -9 and then'
             print '"touch killcasa" to allow normal cleanup.'
             print 'Follow CASA run with:\n  tail -n +1 -f %s\n' % (o.output)
-        if os.system(cmd2):
+        rc = os.system(cmd2)
+        if rc:
             if os.path.exists('killcasa'):
                 print 'Removing killcasa'
                 os.unlink('killcasa')
                 print 'Proceeding with remaining cleanup'
             else:
-                raise Exception, 'CASA execution "failed"'
+                raise Exception, 'CASA execution "failed" with code %d' % (rc)
         if o.verb:
             print 'Success!  See %s for output' % o.output
         logerr = False
@@ -861,10 +863,15 @@ def reportWorkTodo(o):
     if len(pcdirs) == len(o.jobnums):
         print 'The number of polconvert dirs (%d) is correct.' % len(pcdirs)
     else:
-        print 'Problem: %d workdirs and %d jobs'%(len(pcdirs),len(o.jobnums))
-    pcdirs.append('\ndrivepolconvert is finished.\n')
+        print 'Error: %d workdirs and %d jobs'%(len(pcdirs),len(o.jobnums))
     if o.verb:
         for pc in pcdirs: print '   ',pc
+    pclogs = glob.glob(pcdirstamps+'/PolConvert.log')
+    if len(pclogs) == len(o.jobnums):
+        print 'The number of polconvert log files (%d) is correct.' % len(pclogs)
+    else:
+        print 'Error: %d polconvert log files and %d jobs'%(len(pclogs),len(o.jobnums))
+    print('drivepolconvert is finished.\n')
 
 def executeCasaParallel(o):
     '''
