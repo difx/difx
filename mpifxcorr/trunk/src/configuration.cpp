@@ -29,6 +29,7 @@
 #include <climits>
 #include <ctype.h>
 #include <cmath>
+#include "mpifxcorr.h"
 #include "mk5mode.h"
 #include "configuration.h"
 #include "mode.h"
@@ -56,7 +57,7 @@ static unsigned int calcstridelength(unsigned int arraylength)
   }
 }
 
-Configuration::Configuration(const char * configfile, int id, double restartsec)
+Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, double restartsec)
   : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec)
 {
   commonread = false;
@@ -68,6 +69,9 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   maxnumchannels = 0;
   estimatedbytes = 0;
   model = NULL;
+
+  if (MPI_Comm_dup(comm, &mpicomm) != MPI_SUCCESS)
+    cfatal << "Failed MPI setup on MPI_Comm_dup() duplication! Correlation may produce strange results!" << endl;
 
   setJobNameFromConfigfilename(string(configfile));
   char * difxmtu = getenv("DIFX_MTU");
@@ -81,49 +85,19 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   }
 
   //open the file
-  ifstream * input = ifstreamOpen(configfile);
-  if(input->fail() || !input->is_open())
+  istream * input = mpiGetFileContent(configfile);
+  if (input == NULL)
   {
     //need to write this message from all processes - sometimes it is visible to head node but no-one else...
     cfatal << startl << "Cannot open file " << configfile << " - aborting!!!" << endl;
     consistencyok = false;
-  } else
-    parseConfiguration(input);
-  input->close();
-  delete input;
-}
-
-Configuration::Configuration(istream* input, const string job_name, int id, double restartsec)
-  : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec)
-{
-  commonread = false;
-  datastreamread = false;
-  configread = false;
-  freqread = false;
-  ruleread = false;
-  baselineread = false;
-  maxnumchannels = 0;
-  estimatedbytes = 0;
-  model = NULL;
-
-  setJobNameFromConfigfilename(job_name);
-  char * difxmtu = getenv("DIFX_MTU");
-  if(difxmtu == 0)
-    mtu = 1500;
-  else
-    mtu = atoi(difxmtu);
-  if (mtu > 9000) {
-    cerror << startl << "DIFX_MTU was set to " << mtu << " - resetting to 9000 bytes (max)" << endl;
-    mtu = 9000;
   }
-
-  if(input->fail())
+  else
   {
-    //need to write this message from all processes - sometimes it is visible to head node but no-one else...
-    cfatal << startl << "Cannot read config for " << jobname << " - aborting!!!" << endl;
-    consistencyok = false;
-  } else
     parseConfiguration(input);
+    cinfo << startl << "Finished loading configuration" << endl;
+  }
+  delete input;
 }
 
 void Configuration::setJobNameFromConfigfilename(string configfilename)
@@ -137,6 +111,44 @@ void Configuration::setJobNameFromConfigfilename(string configfilename)
   if (baseend == string::npos)
     baseend = configfilename.size();
   jobname = configfilename.substr(basestart, baseend-basestart);
+}
+
+istream* Configuration::mpiGetFileContent(const char* filename)
+{
+  string filecontent;
+  int filelen = -1;
+  int mpierr;
+  if (mpiid == fxcorr::MANAGERID)
+  {
+    ifstream in(filename); // could also use ifstreamOpen() here for a persisting/reattempting open()
+    if (in.is_open() && !in.fail())
+    {
+      filecontent = string((std::istreambuf_iterator<char>(in)), (std::istreambuf_iterator<char>()));
+      filelen = filecontent.size() + 1;
+    }
+  }
+
+  MPI_Barrier(mpicomm);
+  mpierr = MPI_Bcast((void*)&filelen, 1, MPI_INT, fxcorr::MANAGERID, mpicomm);
+  if (mpierr != MPI_SUCCESS)
+    cwarn << startl << "MPI_Bcast of file length " << filelen << " for " << filename << " returned MPI error #" << mpierr << endl;
+  if (filelen < 0)
+    cwarn << startl << "File length of " << filename << " is " << filelen << endl;
+  if (filelen < 0 || mpierr != MPI_SUCCESS)
+    return NULL;
+
+  if(mpiid != fxcorr::MANAGERID)
+    filecontent.resize(filelen);
+  mpierr = MPI_Bcast(const_cast<char*>(filecontent.data()), filelen, MPI_CHAR, fxcorr::MANAGERID, mpicomm);
+  if (mpierr != MPI_SUCCESS)
+    cwarn << startl << "MPI_Bcast of file content of " << filename << " returned MPI error #" << mpierr << endl;
+
+  //if(mpiid == fxcorr::MANAGERID)
+  //  cverbose << startl << "Shared content of " << filename << " of " << filelen << " byte over MPI" << endl;
+  //else
+  //  cverbose << startl << "Received content of " << filename << " of " << filelen << " byte over MPI" << endl;
+
+  return new stringstream(filecontent);
 }
 
 void Configuration::parseConfiguration(istream* input)
@@ -1773,22 +1785,21 @@ bool Configuration::processDatastreamTable(istream * input)
     return false;
 
   //read in the core numthreads info
-  ifstream coreinput;
-  ifstreamOpen(coreinput, coreconffilename.c_str());
+  istream * coreinput = mpiGetFileContent(coreconffilename.c_str());
   numcoreconfs = 0;
-  if(!coreinput.is_open() || coreinput.bad())
+  if(coreinput == NULL)
   {
     cwarn << startl << "Could not open " << coreconffilename << " - will set all numthreads to 1!" << endl;
   }
   else
   {
-    getinputline(&coreinput, &line, "NUMBER OF CORES");
+    getinputline(coreinput, &line, "NUMBER OF CORES");
     int maxlines = atoi(line.c_str());
     numprocessthreads = new int[maxlines]();
-    getline(coreinput, line);
+    getline(*coreinput, line);
     for(int i=0;i<maxlines;i++)
     {
-      if(coreinput.eof())
+      if(coreinput->eof())
       {
         cerror << startl << "Hit the end of the file! Setting the numthread for Core " << i << " to 1" << endl;
         numprocessthreads[numcoreconfs++] = 1;
@@ -1796,11 +1807,11 @@ bool Configuration::processDatastreamTable(istream * input)
       else
       {
         numprocessthreads[numcoreconfs++] = atoi(line.c_str());
-        getline(coreinput, line);
+        getline(*coreinput, line);
       }
     }
   }
-  coreinput.close();
+  delete coreinput;
 
   datastreamread = true;
   return true;
@@ -2990,16 +3001,15 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
   bool rc;
   if(mpiid == 0) //only write one copy of this info message
     cinfo << startl << "About to process phased array file " << filename << endl;
-  ifstream phasedarrayinput;
-  ifstreamOpen(phasedarrayinput, filename.c_str());
-  if(!phasedarrayinput.is_open() || phasedarrayinput.bad())
+  istream* phasedarrayinput = mpiGetFileContent(filename.c_str());
+  if(phasedarrayinput == NULL)
   {
     if(mpiid == 0) //only write one copy of this error message
       cfatal << startl << "Could not open phased array config file " << filename << " - aborting!!!" << endl;
     return false;
   }
-  rc = processPhasedArrayConfig(&phasedarrayinput, configindex, filename);
-  phasedarrayinput.close();
+  rc = processPhasedArrayConfig(phasedarrayinput, configindex, filename);
+  delete phasedarrayinput;
   return rc;
 }
 
@@ -3100,16 +3110,15 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   if(mpiid == 0) //only write one copy of this info message
     cinfo << startl << "About to process pulsar file " << filename << endl;
 
-  ifstream pulsarinput;
-  ifstreamOpen(pulsarinput, filename.c_str());
-  if(!pulsarinput.is_open() || pulsarinput.bad())
+  istream * pulsarinput = mpiGetFileContent(filename.c_str());
+  if(pulsarinput == NULL)
   {
     if(mpiid == 0) //only write one copy of this error message
       cfatal << startl << "Could not open pulsar config file " << filename << " - aborting!!!" << endl;
     return false;
   }
-  rc = processPulsarConfig(&pulsarinput, configindex, filename);
-  pulsarinput.close();
+  rc = processPulsarConfig(pulsarinput, configindex, filename);
+  delete pulsarinput;
   return rc;
 }
 
@@ -3122,7 +3131,6 @@ bool Configuration::processPulsarConfig(istream * input, int configindex, string
   double * binweights;
   int * numsubpolycos;
   char psrline[128];
-  ifstream polycoinput;
 
   if(mpiid == 0) //only write one copy of this info message
     cinfo << startl << "About to process pulsar configuration " << reffile << endl;
@@ -3141,23 +3149,30 @@ bool Configuration::processPulsarConfig(istream * input, int configindex, string
   {
     getinputline(input, &(polycofilenames[i]), "POLYCO FILE");
     numsubpolycos[i] = 0;
-    ifstreamOpen(polycoinput, polycofilenames[i].c_str());
-    if(!polycoinput.is_open() || polycoinput.bad()) {
+    istream * polycoinput = mpiGetFileContent(polycofilenames[i].c_str());
+    if(polycoinput == NULL)
+    {
       if(mpiid == 0) //only write one copy of this error message
         cerror << startl << "Could not open polyco file " << polycofilenames[i] << ", but continuing..." << endl;
       continue;
     }
-    polycoinput.getline(psrline, 128);
-    polycoinput.getline(psrline, 128);
-    while(!(polycoinput.eof() || polycoinput.fail())) {
+    getline(*polycoinput, line);
+    getline(*polycoinput, line);
+    line.resize(sizeof(psrline));
+    strncpy(psrline, line.c_str(), sizeof(psrline));
+    while(!(polycoinput->eof() || polycoinput->fail())) {
       psrline[54] = '\0';
       ncoefficients = atoi(&(psrline[49]));
       for(int j=0;j<ncoefficients/3 + 2;j++)
-        polycoinput.getline(psrline, 128);
+      {
+        getline(*polycoinput, line);
+        line.resize(128);
+        strncpy(psrline, line.c_str(), sizeof(psrline));
+      }
       numsubpolycos[i]++;
       configs[configindex].numpolycos++;
     }
-    polycoinput.close();
+    delete polycoinput;
   }
   if(configs[configindex].numpolycos == 0) {
     if(mpiid == 0) //only write one copy of this error message
@@ -3189,9 +3204,11 @@ bool Configuration::processPulsarConfig(istream * input, int configindex, string
     for(int j=0;j<numsubpolycos[i];j++)
     {
       //cinfo << startl << "About to create polyco file " << polycocount << " from filename " << polycofilenames[i] << ", subcount " << j << endl;
-      configs[configindex].polycos[polycocount] = new Polyco(polycofilenames[i], j, configindex, configs[configindex].numbins, getMaxNumChannels(), binphaseends, binweights, double(configs[configindex].subintns)/60000000000.0);
+      istream * polycofile = mpiGetFileContent(polycofilenames[i].c_str());
+      configs[configindex].polycos[polycocount] = new Polyco(polycofilenames[i], polycofile, j, configindex, configs[configindex].numbins, getMaxNumChannels(), binphaseends, binweights, double(configs[configindex].subintns)/60000000000.0);
+      delete polycofile;
       if (!configs[configindex].polycos[polycocount]->initialisedOK()) {
-	delete [] numsubpolycos;
+        delete [] numsubpolycos;
         return false;
       }
       estimatedbytes += configs[configindex].polycos[polycocount]->getEstimatedBytes();

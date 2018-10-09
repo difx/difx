@@ -32,9 +32,10 @@ Model::Model(Configuration * conf, string cfilename)
   : config(conf), calcfilename(cfilename)
 {
   opensuccess = true;
-  ifstream * input = ifstreamOpen(calcfilename.c_str());
 
-  if(!input->is_open() || input->bad()) {
+  istream * input = config->mpiGetFileContent(calcfilename.c_str());
+  if (input == NULL)
+  {
     cfatal << startl << "Error opening model file " << calcfilename << " - aborting!!!" << endl;
     opensuccess = false;
   }
@@ -363,7 +364,7 @@ bool Model::addClockTerms(string antennaname, double refmjd, int order, double *
   return false; //mustn't have found the station
 }
 
-bool Model::readInfoData(ifstream * input)
+bool Model::readInfoData(istream * input)
 {
   string line = "";
   string key = "";
@@ -398,7 +399,7 @@ bool Model::readInfoData(ifstream * input)
   return true;
 }
 
-bool Model::readCommonData(ifstream * input)
+bool Model::readCommonData(istream * input)
 {
   int year, month, day, hour, minute, second;
   double mjd;
@@ -438,7 +439,7 @@ bool Model::readCommonData(ifstream * input)
   return true;
 }
 
-bool Model::readStationData(ifstream * input)
+bool Model::readStationData(istream * input)
 {
   string line = "";
 
@@ -467,7 +468,7 @@ bool Model::readStationData(ifstream * input)
     maxrate[i] = 0;
   return true;
 }
-bool Model::readSourceData(ifstream * input)
+bool Model::readSourceData(istream * input)
 {
   string line = "";
 
@@ -491,7 +492,7 @@ bool Model::readSourceData(ifstream * input)
   return true;
 }
 
-bool Model::readScanData(ifstream * input)
+bool Model::readScanData(istream * input)
 {
   string line = "";
 
@@ -531,7 +532,7 @@ bool Model::readScanData(ifstream * input)
   return true;
 }
 
-bool Model::readEOPData(ifstream * input)
+bool Model::readEOPData(istream * input)
 {
   string line = "";
 
@@ -553,7 +554,7 @@ bool Model::readEOPData(ifstream * input)
   return true;
 }
 
-bool Model::readSpacecraftData(ifstream * input)
+bool Model::readSpacecraftData(istream * input)
 {
   string line = "";
   string key = "";
@@ -595,7 +596,7 @@ bool Model::readSpacecraftData(ifstream * input)
   return true;
 }
 
-bool Model::readPolynomialSamples(ifstream * input)
+bool Model::readPolynomialSamples(istream * calcinput)
 {
   int year, month, day, hour, minute, second, mjd, daysec;
   string line, key;
@@ -603,11 +604,11 @@ bool Model::readPolynomialSamples(ifstream * input)
   bool hasXYZDerivatives = false;
   bool hasLMDerivatives = false;
 
-  config->getinputline(input, &imfilename, "IM FILENAME");
-  input->close();
+  config->getinputline(calcinput, &imfilename, "IM FILENAME");
 
-  ifstreamOpen(*input,imfilename.c_str());
-  if(!input->is_open() || input->bad()) {
+  istream * input = config->mpiGetFileContent(imfilename.c_str());
+  if (input == NULL)
+  {
     cfatal << startl << "Error opening IM file " << imfilename << " - aborting!!!" << endl;
     return false; //note exit here
   }

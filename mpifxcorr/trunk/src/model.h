@@ -226,14 +226,14 @@ class Model{
       f64 *** clock;
     } scan;
 
-    bool readInfoData(ifstream * input);
-    bool readCommonData(ifstream * input);
-    bool readStationData(ifstream * input);
-    bool readSourceData(ifstream * input);
-    bool readEOPData(ifstream * input);
-    bool readSpacecraftData(ifstream * input);
-    bool readScanData(ifstream * input);
-    bool readPolynomialSamples(ifstream * input);
+    bool readInfoData(istream * input);
+    bool readCommonData(istream * input);
+    bool readStationData(istream * input);
+    bool readSourceData(istream * input);
+    bool readEOPData(istream * input);
+    bool readSpacecraftData(istream * input);
+    bool readScanData(istream * input);
+    bool readPolynomialSamples(istream * input);
     bool fillPolyRow(f64* vals, string line, int npoly);
     axistype getMount(string mount);
 

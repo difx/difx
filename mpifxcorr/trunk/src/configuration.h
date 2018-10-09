@@ -27,6 +27,7 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
+#include <mpi.h>
 #include <string>
 #include <fstream>
 #include <cstdlib>
@@ -80,18 +81,10 @@ public:
   * Constructor: Reads information from an input file and stores it internally
   * @param configfile The filename of the input file containing configuration information to be read
   * @param id The MPI id of the process (0 = manager, then 1 - N datastreams, N+1 onwards cores
+  * @param comm The MPI_Comm of the process group
   * @param restartsec The restart time into the job in seconds (to restart a job which died halfway)
   */
-  Configuration(const char * configfile, int id, double restartsec=0.0);
-
- /**
-  * Constructor: Reads information from an input file and stores it internally
-  * @param input The input stream containing configuration information to be read
-  * @param job_name The name to give to the job
-  * @param id The MPI id of the process (0 = manager, then 1 - N datastreams, N+1 onwards cores
-  * @param restartsec The restart time into the job in seconds (to restart a job which died halfway)
-  */
-  Configuration(istream* input, const string job_name, int id, double restartsec=0.0);
+  Configuration(const char * configfile, int id, MPI_Comm& comm, double restartsec=0.0);
 
   ~Configuration();
 
@@ -462,6 +455,15 @@ public:
     { return configs[configindex].papols[freqindex][polindex]; }
 
 //@}
+
+ /**
+  * Open a file and return its contents as a new std::istream.
+  * A Configuration object with MPI ID #0 opens the file locally,
+  * whereas other IDs wait for file content to be broadcast over MPI.
+  * @param Name and path of file
+  * @return Contents as a new std::istream on success, NULL on failure.
+  */
+ istream* mpiGetFileContent(const char* filename);
 
  /**
   * Read information from an input stream and store it internally into this object
@@ -1022,6 +1024,7 @@ private:
   static const int DEFAULT_MONITOR_NUMCHANNELS = 32;
 
   int mpiid;
+  MPI_Comm mpicomm;
   char header[MAX_KEY_LENGTH];
   bool commonread, configread, datastreamread, freqread, ruleread, baselineread;
   bool consistencyok, commandthreadinitialised, commandthreadfailed, dumpsta, dumplta, dumpkurtosis;

@@ -33,14 +33,14 @@
 const double Polyco::BIN_TOLERANCE = 0.01;
 const double Polyco::DM_CONSTANT_SECS = 1.0/0.000241;
 
-Polyco::Polyco(string filename, int subcount, int confindex, int nbins, int maxchans, double * bphases, double * bweights, double calcmins)
+Polyco::Polyco(string filename, istream * polycofile, int subcount, int confindex, int nbins, int maxchans, double * bphases, double * bweights, double calcmins)
   : configindex(confindex), numbins(nbins), maxchannels(maxchans), numfreqs(-1), calclengthmins(calcmins)
 {
   int status;
   estimatedbytes = 0;
 
   //load the polyco file
-  readok = loadPolycoFile(filename, subcount);
+  readok = loadPolycoFile(filename, polycofile, subcount);
   if(!readok)
     cerror << startl << "Error trying to open polyco file " << filename << endl;
   else
@@ -397,15 +397,14 @@ void Polyco::calculateDMPhaseOffsets(double offsetmins)
     }
 }
 
-bool Polyco::loadPolycoFile(string filename, int subcount)
+bool Polyco::loadPolycoFile(string filename, istream * input, int subcount)
 {
     string strbuffer;
     istringstream iss;
     int hour, minute;
     double timedouble, second, mjddouble;
 
-    ifstream input(filename.c_str(), ios::in);
-    if(!input.is_open() || input.bad()) {
+    if(input == NULL || input->bad()) {
       cerror << startl << "Error trying to open polyco file " << filename << endl;
       return false; //note return with failure here!!!
     }
@@ -418,7 +417,7 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
     for(int s=0;s<=subcount;s++)
     {
       //process the first line
-      getline(input, strbuffer); 
+      getline(*input, strbuffer); 
       iss.str(strbuffer);
 
       iss >> pulsarname; //pulsarname
@@ -455,7 +454,7 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       iss.clear(); //in case we hit the end of the line
 
       //process the second line
-      getline(input, strbuffer); 
+      getline(*input, strbuffer); 
       iss.str(strbuffer);
 
       iss >> refphase; //refphase
@@ -489,7 +488,7 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       {
         if(i%3 == 0) {
           iss.clear(); //clear the eof
-          getline(input, strbuffer);
+          getline(*input, strbuffer);
           iss.str(strbuffer);
         }
         iss >> strbuffer;
@@ -514,7 +513,6 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       }
       iss.clear();
     }
-    input.close();
 
     //generate the frequency and phase coefficient arrays
     freqcoefficientarray = vectorAlloc_f64(numcoefficients);

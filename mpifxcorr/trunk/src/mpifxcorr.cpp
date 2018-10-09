@@ -350,33 +350,12 @@ int main(int argc, char *argv[])
 
   cverbose << startl << "About to process the input file.." << endl;
   //process the input file to get all the info we need
-  string inputfiledata, jobname(argv[1]);
-  int inputfiledatalen = 0;
-  if(myID == fxcorr::MANAGERID)
-  {
-    // fxmanager reads content to be exchanged via MPI Broadcast
-    ifstream* inputfile = new ifstream(argv[1]);
-    if (inputfile->is_open())
-    {
-      stringstream ssinputfiledata;
-      ssinputfiledata << inputfile->rdbuf();
-      inputfiledata = ssinputfiledata.str();
-      inputfiledatalen = inputfiledata.size()+1;
-    }
-    delete inputfile;
-  }
-  MPI_Barrier(world);
-  MPI_Bcast((void*)&inputfiledatalen, 1, MPI_INT, fxcorr::MANAGERID, world);
-  if(myID != fxcorr::MANAGERID)
-    inputfiledata.resize(inputfiledatalen+16);
-  MPI_Bcast(const_cast<char*>(inputfiledata.data()), inputfiledatalen, MPI_CHAR, fxcorr::MANAGERID, world);
-  stringstream ssinputfiledata(inputfiledata);
-  config = new Configuration(&ssinputfiledata, jobname, myID, restartseconds);
+  config = new Configuration(argv[1], myID, world, restartseconds);
   if(!config->consistencyOK())
   {
     //There was a problem with the input file, so shut down gracefully
     cfatal << startl << "Config encountered inconsistent setup in config file - aborting correlation" << endl;
-    MPI_Barrier(world); 
+    MPI_Barrier(world);
     //MPI_Finalize(); //does not always shut down, so just abort
     MPI_Abort(MPI_COMM_WORLD, 1);
     return EXIT_FAILURE;
