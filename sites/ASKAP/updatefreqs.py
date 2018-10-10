@@ -1,12 +1,16 @@
 #!/usr/bin/python
-import os,sys
+import os,sys, argparse
 
-if not len(sys.argv) == 3:
-    print "Usage: %s <vex file> <freq def file>" % sys.argv[0]
-    sys.exit()
 
-vexfile = sys.argv[1]
-freqdeffile = sys.argv[2]
+parser = argparse.ArgumentParser()
+parser.add_argument("vexfile",  help="Vexfile to update")
+parser.add_argument("chan", help="Flat text file containing 1 line per subband, centre freq, sideband, and bandwidth")
+parser.add_argument("-n", "--nchan", type=int, default=128, help="Number of spectral channels")
+args = parser.parse_args()
+
+vexfile = args.vexfile
+freqdeffile = args.chan
+nchan = args.nchan
 
 if not os.path.exists(vexfile):
     print vexfile + " doesn't exist"
@@ -77,22 +81,27 @@ if len(stitchfreqs) == 0:
     print "Couldn't find any freqs to stitch! aborting"
     sys.exit()
 
-# Now write the stitchconfig file, too
-basename = vexfile.split('/')[-1].split('.')[0]
-stitchout = open("%s.stitchconfig" % basename, "w")
-stitchout.write("[config]\n")
-stitchout.write("target_bw: 4.000\n")
-stitchout.write("target_nchan: 432\n")
-stitchout.write("target_chavg: 1\n")
-stitchout.write("stitch_oversamplenum: 32\n")
-stitchout.write("stitch_oversampledenom: 27\n")
-stitchout.write("stitch_nstokes: 1\n")
-stitchout.write("stitch_antennas: *\n")
-stitchout.write("stitch_basefreqs: ")
-for i, freq in enumerate(stitchfreqs):
-    stitchout.write("%.1f" % (freq-0.5))
-    if not i == len(stitchfreqs)-1:
-        stitchout.write(", ")
-stitchout.write("\n")
-stitchout.write("verbose: True\n")
-stitchout.close()
+if nchan%32==0: # Must be divisible by 32 to merge
+    # Now write the stitchconfig file, too
+    basename = vexfile.split('/')[-1].split('.')[0]
+    stitchout = open("%s.stitchconfig" % basename, "w")
+
+    stitchout.write('''\
+[config]
+target_bw: 4.000
+target_nchan: {}
+target_chavg: 1
+stitch_oversamplenum: 32
+stitch_oversampledenom: 27
+stitch_nstokes: 1
+stitch_antennas: *
+stitch_basefreqs: '''.format(nchan*fcount/2/32*27))
+    for i, freq in enumerate(stitchfreqs):
+        stitchout.write("%.1f" % (freq-0.5))
+        if not i == len(stitchfreqs)-1:
+            stitchout.write(", ")
+    stitchout.write("\n")
+    stitchout.write("verbose: True\n")
+    stitchout.close()
+else:
+    print "Warning: Cannot merge data in number of frequency points per coarse channel ({}) is not divisible by 32".format(nchan)
