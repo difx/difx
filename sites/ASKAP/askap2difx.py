@@ -102,7 +102,7 @@ def writestatentry(statout, antenna, count, itrfpos):
     statout.write("      /\n\n")
     return twoletteranname
 
-def writekeyfile(keyout, obs, twoletterannames, craftcatdir):
+def writekeyfile(keyout, obs, twoletterannames, craftcatdir, npol):
     startyear, startmonth, startday, starthh, startmm, startss = mjd2ymdhms(float(obs["startmjd"]))
     #antennalist = []
     #for key in obs.keys():
@@ -170,16 +170,27 @@ def writekeyfile(keyout, obs, twoletterannames, craftcatdir):
     keyout.write("SOURCE='%s' RA=%s DEC=%s REMARKS='Beam centre for dumped voltage data' /\n" % (obs["srcname"], obs["srcra"], obs["srcdec"]))
     keyout.write("endcat /\n\n")
     keyout.write("setinit = askap.set /\n")
-    keyout.write(" dbe      = 'rdbe_ddc'\n")
-    keyout.write(" format   = 'vdif'          !  Sched doesn't understand CODIF, so lie and say VDIF.\n")
-    keyout.write(" nchan    = 8               !  Put in 8x8 MHz as placeholder, overwrite later\n")
-    keyout.write(" bbfilt   = 8.0\n")
+    if npol == 1:
+        keyout.write(" dbe      = 'rdbe_ddc'\n")
+        keyout.write(" format   = 'vdif'          !  Sched doesn't understand CODIF, so lie and say VDIF.\n")
+        keyout.write(" nchan    = %d               !  Put in %dx8 MHz as placeholder, overwrite later\n" % (8*npol, 8*npol))
+        keyout.write(" bbfilt   = 8.0\n")
+    else: # Need to pretend it is PFB in order to get 16 channels
+        keyout.write(" dbe      = 'rdbe_pfb'\n")
+        keyout.write(" nchan    = %d               !  Put in %dx8 MHz as placeholder, overwrite later\n" % (8*npol, 8*npol))
+        keyout.write(" bbfilt   = 32.0\n")
     keyout.write(" netside  = U\n")
     keyout.write(" bits     = 2\n")
     keyout.write(" firstlo  = 2100.0\n")
     keyout.write(" freqref  = 2100.0\n")
-    keyout.write(" freqoff  = -608.0, -600.0, -592.0, -584.0, -576.0, -568.0, -560.0, -552.0\n")
-    keyout.write(" pol      = L, L, L, L, L, L, L, L\n")
+    if npol == 1:
+        keyout.write(" freqoff  = -608.0, -600.0, -592.0, -584.0, -576.0, -568.0, -560.0, -552.0\n")
+        keyout.write(" pol      = L, L, L, L, L, L, L, L\n")
+    else:
+        keyout.write(" freqoff  = -1008.0, -976.0, -944.0, -912.0, -880.0, -848.0, -816.0, -784.0,\n")
+        keyout.write("            -1008.0, -976.0, -944.0, -912.0, -880.0, -848.0, -816.0, -784.0\n")
+        keyout.write(" pol      = L, L, L, L, L, L, L, L,\n")
+        keyout.write("            R, R, R, R, R, R, R, R\n")
     keyout.write(" pcal     = 'off'\n")
     keyout.write("   /\n")
     keyout.write("endset /\n\n")
@@ -216,8 +227,7 @@ def getFPGAdelays(fpga):
 
     return fpga_delays
 
-def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, tInt, polyco):
-
+def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, tInt, polyco, npol):
     if fpga is not None:
         fpga_delay = getFPGAdelays(fpga)
     else:
@@ -235,18 +245,19 @@ tweakIntTime = True
 
 ''')
     v2dout.write("antennas = ")
-    for d in datafilelist:
+    for d in datafilelist[0]:
         a = d.split('=')[0]
         v2dout.write(a)
         if not a == twoletterannames[-1]:
             v2dout.write(", ")
     v2dout.write("\n")
-    for ant, d, delay in zip(antennanames, datafilelist, delays):
-        a = d.split('=')[0]
+    for ant, d0, d1, delay in zip(antennanames, datafilelist[0], datafilelist[-1], delays):
+        a = d0.split('=')[0]
+        d = [d0]
+        if npol > 1:
+            d.append(d1)
         v2dout.write("ANTENNA %s\n{\n" % a)
         v2dout.write("  name = %s\n" % ant)
-        v2dout.write("  file = %s\n" % d.split('=')[1])
-        v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
         v2dout.write("  clockOffset=%.6f\n" % (-float(delay[:-2])/1000.0))
         if ant in fpga_delay:
             clkDelays = [str(int(fpga_delay[ant][0])*6.75)]*4 + [str(int(fpga_delay[ant][1])*6.75)]*4
@@ -255,8 +266,17 @@ tweakIntTime = True
         v2dout.write("  clockEpoch=57000.0\n")
         v2dout.write("  phaseCalInt=0\n")
         v2dout.write("  toneSelection=none\n")
-        v2dout.write("  sampling=COMPLEX_DSB\n}\n")
-        #v2dout.write("  sampling=COMPLEX\n}\n")
+        if npol > 1:
+            v2dout.write("  datastreams=%s-P0,%s-P1\n}\n\n" % (a, a))
+            for i in range(npol):
+                v2dout.write("DATASTREAM %s-P%d\n{\n" % (a, i))
+                v2dout.write("  file = %s\n" % d[i].split('=')[1])
+                v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
+                v2dout.write("  sampling=COMPLEX_DSB\n}\n")
+        else:
+            v2dout.write("  file = %s\n" % d[0].split('=')[1])
+            v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
+            v2dout.write("  sampling=COMPLEX_DSB\n}\n")
 
     if nchan>=128:
         nFFTChan = nchan
@@ -334,6 +354,7 @@ parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-i", "--integration", default = "1.3824", help="Correlation integration time")
 parser.add_argument("-n", "--nchan", type=int, default=128, help="Number of spectral channels")
+parser.add_argument("--npol", help="Number of polarisations", type=int, choices=[1,2], default=1)
 args = parser.parse_args()
 
 ## Check arguments
@@ -376,12 +397,16 @@ except KeyError:
 ## Write the SCHED freq and antenna files, and the craftfrb.datafiles
 freqout = open(craftcatalogdir + "askapfreq.dat","w")
 statout = open(craftcatalogdir + "askapstation.dat","w")
-dataout = open("craftfrb.datafiles","w")
+dataout = []
+for i in range(args.npol):
+    dataout.append(open("craftfrb.p%d.datafiles" % i,"w"))
 count = 0
 antennanames = []
 twoletterannames = []
 delays = []
 datafilelist = []
+for i in range(args.npol):
+    datafilelist.append([])
 cwd = os.getcwd()
 
 def antnum(a):
@@ -409,21 +434,23 @@ for antenna in sorted(fcm["common"]["antenna"].keys(), key=antnum):
         delay = fcm["common"]["antenna"][antenna]["delay"]
     else:
         delay = "0.0ns"
-    print "Looking for %s/%s.codif" % (cwd, antennaname)
-    if os.path.exists("%s/%s.codif" % (cwd, antennaname)):
-        datafilelist.append("%s=%s/%s.codif" % (twolettername, cwd, antennaname))
-        dataout.write(datafilelist[-1] + "\n")
-    else:
-        #print "Skipping", antennaname, "as we don't have a data file for it"
-        print "Couldn't find a codif file for", antennaname, "- aborting!"
-        sys.exit()
+    for i in range(args.npol):
+        print "Looking for %s/%s.p%d.codif" % (cwd, antennaname, i)
+        if os.path.exists("%s/%s.p%d.codif" % (cwd, antennaname, i)):
+            datafilelist[i].append("%s=%s/%s.p%d.codif" % (twolettername, cwd, antennaname, i))
+            dataout[i].write(datafilelist[i][-1] + "\n")
+        else:
+            #print "Skipping", antennaname, "as we don't have a data file for it"
+            print "Couldn't find a codif file for", antennaname, "pol", i, "- aborting!"
+            sys.exit()
     antennanames.append(antennaname)
     twoletterannames.append(twolettername)
     delays.append(delay)
     count += 1
 freqout.close()
 statout.close()
-dataout.close()
+for i in range(args.npol):
+    dataout[i].close()
 
 ## Check how many datafiles we found
 #if len(datafilelist) == 0:
@@ -434,12 +461,16 @@ dataout.close()
 
 ## Write the key file
 keyout = open("craftfrb.key","w")
-writekeyfile(keyout, obs, twoletterannames, craftcatalogdir)
+writekeyfile(keyout, obs, twoletterannames, craftcatalogdir, args.npol)
 keyout.close()
 
 ## Run it through sched
 ret = os.system("sched < craftfrb.key")
 if ret!=0: sys.exit(1)
+
+## Replace Mark5B with VDIF in vex file
+ret = os.system("sed -i 's/MARK5B/VDIF/g' craftfrb.vex")
+if ret!=0: exit(1)
 
 ## Run getEOP and save the results
 # FIXME: remove this once you figure out why getEOP is running so slow
@@ -453,7 +484,7 @@ eoplines = open("eopjunk.txt").readlines()
 ## Write the v2d file
 v2dout = open("craftfrb.v2d", "w")
 writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, args.fpga,
-             args.nchan, args.integration, args.polyco)
+             args.nchan, args.integration, args.polyco, args.npol)
 for line in eoplines:
    if "xPole" in line or "downloaded" in line:
        v2dout.write(line)
@@ -481,8 +512,9 @@ ret = os.system("difxcalc craftfrb.calc")
 if ret!=0: sys.exit(1)
 
 ## Create the machines and threads file - currently runs on localhost with just one core.
+numprocesses = args.npol*len(datafilelist[0]) + 2
 machinesout = open("machines","w")
-for i in range(len(datafilelist) + 2):
+for i in range(numprocesses):
     machinesout.write("localhost\n")
 machinesout.close()
 threadsout = open("craftfrb.threads","w")
@@ -498,7 +530,7 @@ runout.write("rm -rf craftfrb.difx\n")
 runout.write("rm -rf log*\n")
 runout.write("errormon2 6 &\n")
 runout.write("export ERRORMONPID=$!\n")
-runout.write("mpirun -machinefile machines -np %d mpifxcorr craftfrb.input\n" % (len(datafilelist)+2))
+runout.write("mpirun -machinefile machines -np %d mpifxcorr craftfrb.input\n" % (numprocesses))
 runout.write("kill $ERRORMONPID\n")
 runout.write("rm -f craftfrb.difxlog\n")
 runout.write("mv log craftfrb.difxlog\n")
