@@ -39,6 +39,7 @@
 
 int main(int argc, char *argv[])
 {
+  MPI_Comm comm = MPI_COMM_WORLD;
   Configuration * config;
   Model * model;
   char * inputdifxfile;
@@ -69,7 +70,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  config = new Configuration(argv[1], 0);
+  config = new Configuration(argv[1], 0, comm);
   inputdifxfile = argv[2];
   dm = atof(argv[3]);
   if(argc == 6) {

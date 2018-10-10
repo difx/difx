@@ -25,6 +25,7 @@
 //
 //============================================================================
 
+#include <mpi.h>
 #include <stdlib.h>
 #include <difxmessage.h>
 #include "configuration.h"
@@ -76,6 +77,7 @@ void setMessageLevel(int msglevel)
 
 int main(int argc, char *argv[])
 {
+  MPI_Comm comm = MPI_COMM_WORLD;
   int msglevel = DIFX_ALERT_LEVEL_WARNING;
   int nFile = 0;
   int nBad = 0;
@@ -133,7 +135,7 @@ int main(int argc, char *argv[])
 
       ++nFile;
 
-      config = new Configuration(argv[a], 0);
+      config = new Configuration(argv[a], 0, comm);
       if(!config->consistencyOK())
       {
 	//There was a problem with the input file, so shut down gracefully
