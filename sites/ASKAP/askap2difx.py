@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, argparse
+import os, sys, argparse, math
 from astropy.time import Time
 
 ## Convenience function to parse java style properties file
@@ -216,18 +216,24 @@ def getFPGAdelays(fpga):
 
     return fpga_delays
 
-def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga):
+def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, tInt, polyco):
 
     if fpga is not None:
         fpga_delay = getFPGAdelays(fpga)
     else:
         fpga_delay = {}
 
-    v2dout.write("#  Template v2d file for DiFX correlation of craftfrb\n\n")
-    v2dout.write("vex = craftfrb.vex\n\n")
-    v2dout.write("startSeries = 0\n")
-    v2dout.write("minLength = 1\n")
-    v2dout.write("allowAllClockOffsets = True\n\n");
+    v2dout.write('''\
+#  Template v2d file for DiFX correlation of craftfrb
+
+vex = craftfrb.vex
+
+startSeries = 0
+minLength = 1
+allowAllClockOffsets = True
+tweakIntTime = True
+
+''')
     v2dout.write("antennas = ")
     for d in datafilelist:
         a = d.split('=')[0]
@@ -244,7 +250,7 @@ def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafileli
         v2dout.write("  clockOffset=%.6f\n" % (-float(delay[:-2])/1000.0))
         if ant in fpga_delay:
             clkDelays = [str(int(fpga_delay[ant][0])*6.75)]*4 + [str(int(fpga_delay[ant][1])*6.75)]*4
-            v2dout.write("  freqClockOffs="+','.join(clkDelays))
+            v2dout.write("  freqClockOffs="+','.join(clkDelays)+"\n")
         v2dout.write("  clockRate=0\n")
         v2dout.write("  clockEpoch=57000.0\n")
         v2dout.write("  phaseCalInt=0\n")
@@ -252,16 +258,54 @@ def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafileli
         v2dout.write("  sampling=COMPLEX_DSB\n}\n")
         #v2dout.write("  sampling=COMPLEX\n}\n")
 
+    if nchan>=128:
+        nFFTChan = nchan
+    else:
+        if 128 % nchan == 0:
+            nFFTChan = 128
+        else:
+            nFFTChan = ((128 / nchan) +1) * nchan
+            
     v2dout.write("\n# The nChan should never be less than 128.\n")
     v2dout.write("# For numbers of channels < 128, set specAvg so nChan/specAvg\n")
     v2dout.write("# gives the desired number of channels\n")
     v2dout.write("SETUP default\n")
     v2dout.write("{\n")
-    v2dout.write("  tInt =  1.3824\n")
-    v2dout.write("  subintNS = 13824000\n")
-    v2dout.write("  nFFTChan =    128\n")
-    v2dout.write("  nChan =  128\n")
+    if float(tInt)>1:
+        v2dout.write("  tInt =  {}\n".format(tInt))
+    else:
+        fftnSec = 27.0/32.0*1000*nFFTChan
+        intNsec = float(tInt)*1e9
+        numFFT = int(round(intNsec/fftnSec))
+        if intNsec<100000000:
+            numFFT = int(round(intNsec/fftnSec))
+            intNsec = int(round(numFFT * fftnSec))
+            subintNsec = intNsec
+            tInt = float(intNsec)/1.0e9
+        else:
+            subintNsec = 1e8 # 100millisec nominal
+            nSubint = intNsec / float(subintNsec)
+            print "Got {:.3f} subint per integration".format(nSubint)
+            if abs(round(nSubint)*subintNsec-intNsec)/intNsec < 0.05:  # Within 5%, tweak int time
+                print "DEBUG: Tweaking integration' time"
+                #numFFT = int(round(subintNsec/fftnSec))
+            else: # Otherwise tweak subInt
+                print "DEBUG: Tweaking subint' time"
+                nSubint = round(nSubint)
+                subintNsec = intNsec / float(nSubint)
+            numFFT = int(round(subintNsec/fftnSec))
+            subintNsec = int(round(numFFT * fftnSec))
+            nSubint = int(round(intNsec / float(subintNsec)))
+            tInt = float(nSubint * subintNsec)/1.0e9
+                
+        v2dout.write("  tInt =  {:.9f}\n".format(tInt))
+        v2dout.write("  subintNS = {}\n".format(subintNsec))
+            
+    v2dout.write("  nFFTChan =    {}\n".format(nFFTChan))
+    v2dout.write("  nChan =  {}\n".format(nchan))
     v2dout.write("  doPolar = True # Full stokes\n")
+    if polyco is not None:
+        v2dout.write("  binConfig = {} # Pulsar Setup\n".format(args.polyco))
     v2dout.write("}\n")
     v2dout.write("\n")
     v2dout.write("# This, along with SETUP default above, should always be done\n")
@@ -276,6 +320,7 @@ def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafileli
     v2dout.write("# Sources (pointing centers) with recorded data but no offset pointing centers:\n")
     v2dout.write("SOURCE %s { }\n\n" % obs["srcname"])
 
+    
 ## Argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument("fcm",  help="ASKAP .fcm file describing array")
@@ -284,8 +329,11 @@ parser.add_argument("chan", help="Flat text file containing 1 line per subband, 
 parser.add_argument("-a", "--ants", help="Comma separated list of antenna names e.g., ak01,ak02,ak03 etc.  All must be present in .fcm, and all must have a akxx.codif file present in this directory.")
 parser.add_argument("-b", "--bits", help="Number of bits/sample. Default 1", type=int)
 parser.add_argument("-t", "--threads", help="Number of DIFX threads. Default 8", type=int)
-parser.add_argument("-n", "--framesize", help="Codif framesize. Default 8064", type=int)
+parser.add_argument("-F", "--framesize", help="Codif framesize. Default 8064", type=int)
 parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.g. c4_f0")
+parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
+parser.add_argument("-i", "--integration", default = "1.3824", help="Correlation integration time")
+parser.add_argument("-n", "--nchan", type=int, default=128, help="Number of spectral channels")
 args = parser.parse_args()
 
 ## Check arguments
@@ -297,6 +345,8 @@ if not os.path.exists(args.chan):
     parser.error("chan file " + args.chan + " does not exist")
 if args.ants == "":
     parser.error("you must supply a list of antennas")
+if args.polyco is not None and not os.path.exists(args.polyco):
+    parser.error("binconfig file " + args.polyco + " does not exist")
 bits = args.bits
 if bits==None: bits=1
 difxThreads = args.threads
@@ -389,7 +439,7 @@ keyout.close()
 
 ## Run it through sched
 ret = os.system("sched < craftfrb.key")
-if ret!=0: exit(1)
+if ret!=0: sys.exit(1)
 
 ## Run getEOP and save the results
 # FIXME: remove this once you figure out why getEOP is running so slow
@@ -402,29 +452,33 @@ eoplines = open("eopjunk.txt").readlines()
 
 ## Write the v2d file
 v2dout = open("craftfrb.v2d", "w")
-writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, args.fpga)
+writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, args.fpga,
+             args.nchan, args.integration, args.polyco)
 for line in eoplines:
    if "xPole" in line or "downloaded" in line:
        v2dout.write(line)
 v2dout.close()
 
-## Run updateFreqs 
-ret = os.system("updatefreqs.py craftfrb.vex " + args.chan)
-if ret!=0: exit(1)
+## Run updateFreqs
+runline = "updatefreqs.py craftfrb.vex " + args.chan
+if args.nchan is not None: runline += " --nchan={}".format(args.nchan)
+print "Running: "+runline
+ret = os.system(runline)
+if ret!=0: sys.exit(1)
 
 ## Update the vex file to say "CODIF" rather than "VDIF"
 ret = os.system("sed -i -e 's/VDIF5032/CODIFD{}/g' craftfrb.vex".format(framesize))
-if ret!=0: exit(1)
+if ret!=0: sys.exit(1)
 
 ## Run vex2difx
 ret = os.system("vex2difx craftfrb.v2d")
-if ret!=0: exit(1)
+if ret!=0: sys.exit(1)
 
 ## Run calcif2
 ret = os.system("\\rm -f craftfrb.im")
-if ret!=0: exit(1)
+if ret!=0: sys.exit(1)
 ret = os.system("difxcalc craftfrb.calc")
-if ret!=0: exit(1)
+if ret!=0: sys.exit(1)
 
 ## Create the machines and threads file - currently runs on localhost with just one core.
 machinesout = open("machines","w")

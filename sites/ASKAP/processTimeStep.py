@@ -6,12 +6,15 @@ parser.add_argument("-t", "--timestep", help="Timestep (the directory name to pr
 parser.add_argument("-r", "--ra", help="Force RA value")
 parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declination is negative, i.e., -d-63:20:23.3")
 parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits. Default 1")
+parser.add_argument("-i", "--integration", type=float, help="Correlation integration time")
+parser.add_argument("-n", "--nchan", type=int, help="Number of spectral channels")
 parser.add_argument("-f", "--fcm", default="fcm.txt", help="Name of the fcm file")
+parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-c", "--correctfpgadelays", default=False, action="store_true", help="Figure out and correct 7 microsec FPGA delays")
 parser.add_argument("-s", "--separate", default=False, action="store_true", help="Don't attempt to combine data from each FPGA")
 parser.add_argument("-B", "--beam", default="", help="Correlate a specific beam: blank means the first one (numerically)")
 parser.add_argument("--card", default="", help="Correate only a specific card; blank means all")
-parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keep exisiting codif files")
+parser.add_argument("-k", "--keep",default=False, action="store_true", help="Keep exisiting codif files")
 args = parser.parse_args()
 
 if args.timestep is None:
@@ -25,6 +28,13 @@ if not os.path.exists(timestep):
 if not os.path.exists(args.fcm):
     parser.error(fcm + " doesn't exist")
 
+polyco = args.polyco
+if polyco is not None:
+    if not os.path.exists(polyco):
+        parser.error("binconfig file " + polyco + " does not exist")
+    else:
+        polyco = os.path.abspath(polyco)
+    
 fcm = os.path.abspath(args.fcm)
 examplefiles = []
 antennadirs = sorted(glob.glob(timestep + "/ak*"))
@@ -76,6 +86,8 @@ for e in examplefiles:
         torun = torun + " -d" + args.dec
     if not args.bits == "":
         torun = torun + " --bits=" + str(args.bits)
+    if polyco is not None:
+        torun += " --polyco "+polyco
     torun += ' --fpga %s "%s/ak*/%s/*%s*vcraft"' % (freqlabel, timestep, beamname, freqlabel)
 
     print torun
