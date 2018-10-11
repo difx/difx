@@ -493,7 +493,7 @@ for line in eoplines:
 v2dout.close()
 
 ## Run updateFreqs
-runline = "updatefreqs.py craftfrb.vex " + args.chan
+runline = "updatefreqs.py craftfrb.vex --npol={} {}".format(args.npol, args.chan)
 if args.nchan is not None: runline += " --nchan={}".format(args.nchan)
 print "Running: "+runline
 ret = os.system(runline)
@@ -545,7 +545,7 @@ print runline
 
 ## Print the line needed to run the stitching and then subsequently difx2fits
 print "Then run difx2fits"
-runline = "rm -rf craftfrbD2D.* ; mergeOversampledDiFX.py craftfrb.stitchconfig craftfrb.difx"
+runline = "rm -rf craftfrbD2D.* ; mergeOversampledDiFX.py craftfrb.stitchconfig craftfrb.difx\n"
 print runline
 with open('runmergedifx', 'w') as runmerge:
     runmerge.write(runline)

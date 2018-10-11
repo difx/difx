@@ -6,6 +6,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("vexfile",  help="Vexfile to update")
 parser.add_argument("chan", help="Flat text file containing 1 line per subband, centre freq, sideband, and bandwidth")
 parser.add_argument("-n", "--nchan", type=int, default=128, help="Number of spectral channels")
+parser.add_argument("--npol", help="Number of polarisations", type=int, choices=[1,2], default=1)
 args = parser.parse_args()
 
 vexfile = args.vexfile
@@ -19,6 +20,8 @@ if not os.path.exists(vexfile):
 if not os.path.exists(freqdeffile):
     print freqdeffile + " doesn't exist"
     sys.exit(1)
+
+npol = args.npol
 
 freqdeflines = open(freqdeffile).readlines()
 vexfilelines = open(vexfile).readlines()
@@ -84,8 +87,13 @@ if len(stitchfreqs) == 0:
 if nchan%32==0: # Must be divisible by 32 to merge
     # Now write the stitchconfig file, too
     basename = vexfile.split('/')[-1].split('.')[0]
-    stitchout = open("%s.stitchconfig" % basename, "w")
 
+    if npol==1:
+        nstokes=1
+    else:
+        nstokes=4
+
+    stitchout = open("%s.stitchconfig" % basename, "w")
     stitchout.write('''\
 [config]
 target_bw: 4.000
@@ -93,9 +101,9 @@ target_nchan: {}
 target_chavg: 1
 stitch_oversamplenum: 32
 stitch_oversampledenom: 27
-stitch_nstokes: 1
+stitch_nstokes: {}
 stitch_antennas: *
-stitch_basefreqs: '''.format(nchan*fcount/2/32*27))
+stitch_basefreqs: '''.format(nchan*fcount/2/32*27/npol, nstokes))
     for i, freq in enumerate(stitchfreqs):
         stitchout.write("%.1f" % (freq-0.5))
         if not i == len(stitchfreqs)-1:
