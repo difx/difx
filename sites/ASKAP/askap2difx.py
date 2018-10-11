@@ -291,35 +291,33 @@ tweakIntTime = True
     v2dout.write("# gives the desired number of channels\n")
     v2dout.write("SETUP default\n")
     v2dout.write("{\n")
-    if float(tInt)>1:
-        v2dout.write("  tInt =  {}\n".format(tInt))
+    fftnSec = 27.0/32.0*1000*nFFTChan
+    intNsec = float(tInt)*1e9
+    #numFFT = int(round(intNsec/fftnSec))
+    if intNsec>5e8:  # 0.5sec
+        subintNsec = 13824000 # 13.8 millisec
     else:
-        fftnSec = 27.0/32.0*1000*nFFTChan
-        intNsec = float(tInt)*1e9
-        numFFT = int(round(intNsec/fftnSec))
-        if intNsec<100000000:
+        if intNsec<20000000: # 20 millisec
             numFFT = int(round(intNsec/fftnSec))
             intNsec = int(round(numFFT * fftnSec))
             subintNsec = intNsec
             tInt = float(intNsec)/1.0e9
         else:
-            subintNsec = 1e8 # 100millisec nominal
+            subintNsec = 14e6 # 14 millisec nominal
             nSubint = intNsec / float(subintNsec)
             print "Got {:.3f} subint per integration".format(nSubint)
             if abs(round(nSubint)*subintNsec-intNsec)/intNsec < 0.05:  # Within 5%, tweak int time
                 print "DEBUG: Tweaking integration' time"
-                #numFFT = int(round(subintNsec/fftnSec))
             else: # Otherwise tweak subInt
                 print "DEBUG: Tweaking subint' time"
                 nSubint = round(nSubint)
                 subintNsec = intNsec / float(nSubint)
-            numFFT = int(round(subintNsec/fftnSec))
-            subintNsec = int(round(numFFT * fftnSec))
-            nSubint = int(round(intNsec / float(subintNsec)))
-            tInt = float(nSubint * subintNsec)/1.0e9
-                
-        v2dout.write("  tInt =  {:.9f}\n".format(tInt))
-        v2dout.write("  subintNS = {}\n".format(subintNsec))
+    numFFT = int(round(subintNsec/fftnSec))
+    subintNsec = int(round(numFFT * fftnSec))
+    nSubint = int(round(intNsec / float(subintNsec)))
+    tInt = float(nSubint * subintNsec)/1.0e9
+    v2dout.write("  tInt =  {:.9f}\n".format(tInt))
+    v2dout.write("  subintNS = {}\n".format(subintNsec))
             
     v2dout.write("  nFFTChan =    {}\n".format(nFFTChan))
     v2dout.write("  nChan =  {}\n".format(nchan))
@@ -371,7 +369,11 @@ if args.polyco is not None and not os.path.exists(args.polyco):
 bits = args.bits
 if bits==None: bits=1
 difxThreads = args.threads
-if difxThreads==None: difxThreads=8
+if difxThreads is None:
+    if 'CRAFT_DIFXTHREADS' in os.environ:
+        difxThreads=os.environ['CRAFT_DIFXTHREADS']
+    else:
+        difxThreads=8
 framesize = args.framesize
 if framesize==None: framesize=8064
 
