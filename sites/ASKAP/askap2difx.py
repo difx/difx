@@ -214,12 +214,12 @@ def getFPGAdelays(fpga):
                     line = line.split('#')[0] # Remove comments
                     if line == "" or line.isspace(): continue
                     keys = line.split()
-                    if len(keys)!=4:
+                    if len(keys)!=3:
                         sys.stderr.write("Cannot parse : "+line)
                         continue
                     ant = keys[0]
                     thisFPGA = keys[1]
-                    delay = keys[2:]
+                    delay = keys[2]
                     if thisFPGA != fpga: continue
                     fpga_delays[ant] = delay
         else:
@@ -260,7 +260,7 @@ tweakIntTime = True
         v2dout.write("  name = %s\n" % ant)
         v2dout.write("  clockOffset=%.6f\n" % (-float(delay[:-2])/1000.0))
         if ant in fpga_delay:
-            clkDelays = [str(int(fpga_delay[ant][0])*6.75)]*4 + [str(int(fpga_delay[ant][1])*6.75)]*4
+            clkDelays = [str(int(fpga_delay[ant])*6.75)]*4*2*npol
             v2dout.write("  freqClockOffs="+','.join(clkDelays)+"\n")
         v2dout.write("  clockRate=0\n")
         v2dout.write("  clockEpoch=57000.0\n")
