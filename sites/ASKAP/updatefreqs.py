@@ -103,7 +103,7 @@ stitch_oversamplenum: 32
 stitch_oversampledenom: 27
 stitch_nstokes: {}
 stitch_antennas: *
-stitch_basefreqs: '''.format(nchan*fcount/2/32*27/npol, nstokes))
+stitch_basefreqs: '''.format(nchan*4/32*27, nstokes))
     for i, freq in enumerate(stitchfreqs):
         stitchout.write("%.1f" % (freq-0.5))
         if not i == len(stitchfreqs)-1:
