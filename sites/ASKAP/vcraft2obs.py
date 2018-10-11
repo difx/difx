@@ -27,6 +27,7 @@ parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits")
 parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keep exisiting codif files")
 parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.g. c4_f0")
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
+parser.add_argument("-i", "--integration", type=float, help="Correlation integration time")
 parser.add_argument("--ts", default=0, type=int, help="Use taskspooler to run CRAFTConverter, with N parallel tasks")
 parser.add_argument('fileglob', help="glob pattern for vcraft files", nargs='+')
 args = parser.parse_args()
@@ -203,7 +204,8 @@ output.close()
 # Print out the askap2difx command line to run (ultimately, could just run it ourselves)
 runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-1] + " --bits=" + str(args.bits) + " --framesize=" + str(framesize) + " --npol=" + str(npol)
 if args.fpga is not None: runline += " --fpga {}".format(args.fpga)
-if args.polyco is not None: runline += " --polyco {}".format(args.polyco)
+if args.polyco is not None: runline += " --polyco={}".format(args.polyco)
+if args.integration is not None: runline += " --integration={}".format(args.integration)
 runline += "\n"
 print "\nNow run:"
 print runline

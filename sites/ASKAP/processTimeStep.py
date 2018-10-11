@@ -96,6 +96,8 @@ for e in examplefiles:
         torun = torun + " --bits=" + str(args.bits)
     if polyco is not None:
         torun += " --polyco "+polyco
+    if args.integration is not None:
+        torun += " --integration={}".format(args.integration)
     if args.ts is not None:
         torun += " --ts={}".format(args.ts)
     torun += ' --fpga %s "%s/ak*/%s/*%s*vcraft"' % (freqlabel, timestep, beamname, freqlabel)
