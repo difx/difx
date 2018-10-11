@@ -11,7 +11,7 @@ parser.add_argument("-n", "--nchan", type=int, help="Number of spectral channels
 parser.add_argument("-f", "--fcm", default="fcm.txt", help="Name of the fcm file")
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-c", "--correctfpgadelays", default=False, action="store_true", help="Figure out and correct 7 microsec FPGA delays")
-parser.add_argument("-s", "--separate", default=False, action="store_true", help="Don't attempt to combine data from each FPGA")
+parser.add_argument("-S", "--separate", default=False, action="store_true", help="Don't attempt to combine data from each FPGA")
 parser.add_argument("-B", "--beam", default="", help="Correlate a specific beam: blank means the first one (numerically)")
 parser.add_argument("--card", default="", help="Correlate only a specific card; blank means all")
 parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keep existing codif files")
