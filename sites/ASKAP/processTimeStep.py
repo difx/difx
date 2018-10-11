@@ -16,6 +16,7 @@ parser.add_argument("-B", "--beam", default="", help="Correlate a specific beam:
 parser.add_argument("--card", default="", help="Correlate only a specific card; blank means all")
 parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keep existing codif files")
 parser.add_argument("-s", "--snoopylog", help="Snoopy log file, default blank, if not default will use this to correlate on-pulse")
+parser.add_argument("--ts", default=0, type=int, help="Use taskspooler to run CRAFTConverter, with N parallel tasks")
 args = parser.parse_args()
 
 if args.timestep is None:
@@ -95,6 +96,8 @@ for e in examplefiles:
         torun = torun + " --bits=" + str(args.bits)
     if polyco is not None:
         torun += " --polyco "+polyco
+    if args.ts is not None:
+        torun += " --ts={}".format(args.ts)
     torun += ' --fpga %s "%s/ak*/%s/*%s*vcraft"' % (freqlabel, timestep, beamname, freqlabel)
 
     print torun

@@ -24,9 +24,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-r", "--ra", help="Force RA value")
 parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declination is negative, i.e., -d-63:20:23.3")
 parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits")
-parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keeop exisiting codif files")
+parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keep exisiting codif files")
 parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.g. c4_f0")
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
+parser.add_argument("--ts", default=0, type=int, help="Use taskspooler to run CRAFTConverter, with N parallel tasks")
 parser.add_argument('fileglob', help="glob pattern for vcraft files", nargs='+')
 args = parser.parse_args()
 
@@ -149,6 +150,11 @@ if npol > 1:
         output.write("%s L 1.185185185185185185\n" % str(int(f)-1))
 output.close()
 
+if args.ts > 0:
+    print "Waiting on CRAFTConverter to finish"
+    ret = os.system("tsp -S {}".format(args.ts))
+    if (ret!=0): sys.exit(ret)
+
 # Run the converter for each vcraft file
 antlist = ""
 codifFiles = []
@@ -163,11 +169,19 @@ for i in range(npol):
             antlist += antname + ","
         codifName = "%s.p%d.codif" % (antname, i)
         if not keepCodif or not os.path.exists(codifName):
-            print "CRAFTConverter %s %s" % (f, codifName)
-            ret = os.system("CRAFTConverter %s %s" % (f, codifName))
+            runline = "CRAFTConverter %s %s" % (f, codifName)
+            if args.ts > 0:
+                runline = "tsp " + runline
+            print runline
+            ret = os.system(runline)
             if (ret!=0): sys.exit(ret)
         codifFiles[i].append(codifName)
 
+if args.ts > 0:
+    print "Waiting on CRAFTConverter to finish"
+    ret = os.system("tsp -w")
+    if (ret!=0): sys.exit(ret)
+        
 # Write a machines file and a run.sh file
 output = open("machines","w")
 for i in range(nant+2):
