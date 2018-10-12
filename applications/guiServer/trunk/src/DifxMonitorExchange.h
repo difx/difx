@@ -254,7 +254,8 @@ namespace guiServer {
 
             //  Use the DiFX input file parser to find out what data products are available from this job.
             if ( _keepGoing ) {
-                _config = new Configuration( data, 0 );
+                MPI_Comm comm = MPI_COMM_WORLD;
+                _config = new Configuration( data, 0, comm );
                 if ( !_config->consistencyOK() ) {
                     _guiClient->formatPacket( ERROR, "Configuration had a problem parsing input file %s - real time monitor will not run",
                         data );
