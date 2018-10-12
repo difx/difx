@@ -58,7 +58,7 @@ static unsigned int calcstridelength(unsigned int arraylength)
 }
 
 Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, double restartsec)
-  : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec)
+  : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec), enableMpi(true)
 {
   commonread = false;
   datastreamread = false;
@@ -100,6 +100,48 @@ Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, do
   delete input;
 }
 
+
+Configuration::Configuration(const char * configfile, int id, double restartsec)
+  : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec), enableMpi(false)
+{
+  commonread = false;
+  datastreamread = false;
+  configread = false;
+  freqread = false;
+  ruleread = false;
+  baselineread = false;
+  maxnumchannels = 0;
+  estimatedbytes = 0;
+  model = NULL;
+
+  setJobNameFromConfigfilename(string(configfile));
+  char * difxmtu = getenv("DIFX_MTU");
+  if(difxmtu == 0)
+    mtu = 1500;
+  else
+    mtu = atoi(difxmtu);
+  if (mtu > 9000) {
+    cerror << startl << "DIFX_MTU was set to " << mtu << " - resetting to 9000 bytes (max)" << endl;
+    mtu = 9000;
+  }
+
+  //open the file
+  istream * input = mpiGetFileContent(configfile);
+  if (input == NULL)
+  {
+    //need to write this message from all processes - sometimes it is visible to head node but no-one else...
+    cfatal << startl << "Cannot open file " << configfile << " - aborting!!!" << endl;
+    consistencyok = false;
+  }
+  else
+  {
+    parseConfiguration(input);
+    cinfo << startl << "Finished loading configuration" << endl;
+  }
+  delete input;
+}
+
+
 void Configuration::setJobNameFromConfigfilename(string configfilename)
 {
   size_t basestart = configfilename.find_last_of('/');
@@ -118,7 +160,7 @@ istream* Configuration::mpiGetFileContent(const char* filename)
   string filecontent;
   int filelen = -1;
   int mpierr;
-  if (mpiid == fxcorr::MANAGERID)
+  if (mpiid == fxcorr::MANAGERID || !enableMpi)
   {
     ifstream in(filename); // could also use ifstreamOpen() here for a persisting/reattempting open()
     if (in.is_open() && !in.fail())
@@ -127,6 +169,9 @@ istream* Configuration::mpiGetFileContent(const char* filename)
       filelen = filecontent.size() + 1;
     }
   }
+
+  if (!enableMpi)
+    return new stringstream(filecontent);
 
   MPI_Barrier(mpicomm);
   mpierr = MPI_Bcast((void*)&filelen, 1, MPI_INT, fxcorr::MANAGERID, mpicomm);

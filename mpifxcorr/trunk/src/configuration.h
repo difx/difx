@@ -79,12 +79,22 @@ public:
 
  /**
   * Constructor: Reads information from an input file and stores it internally
+  * Content of the input file and ancillary referenced files are read locally on the fx manager node,
+  * and on all other nodes are received over MPI broadcast.
   * @param configfile The filename of the input file containing configuration information to be read
   * @param id The MPI id of the process (0 = manager, then 1 - N datastreams, N+1 onwards cores
   * @param comm The MPI_Comm of the process group
   * @param restartsec The restart time into the job in seconds (to restart a job which died halfway)
   */
   Configuration(const char * configfile, int id, MPI_Comm& comm, double restartsec=0.0);
+
+ /**
+  * Constructor: Reads information from an input file and stores it internally
+  * @param configfile The filename of the input file containing configuration information to be read
+  * @param id The MPI id of the process (0 = manager, then 1 - N datastreams, N+1 onwards cores
+  * @param restartsec The restart time into the job in seconds (to restart a job which died halfway)
+  */
+  Configuration(const char * configfile, int id, double restartsec=0.0);
 
   ~Configuration();
 
@@ -1023,8 +1033,9 @@ private:
   /// Constant for the default number of channels for visibilities sent to monitor (STA or LTA)
   static const int DEFAULT_MONITOR_NUMCHANNELS = 32;
 
-  int mpiid;
+  const int mpiid;
   MPI_Comm mpicomm;
+  const bool enableMpi;
   char header[MAX_KEY_LENGTH];
   bool commonread, configread, datastreamread, freqread, ruleread, baselineread;
   bool consistencyok, commandthreadinitialised, commandthreadfailed, dumpsta, dumplta, dumpkurtosis;
