@@ -74,6 +74,10 @@ freqs = []
 for line in freqdeflines:
     freqs.append(int(line.split()[0]))
 stitchfreqs = []
+
+if npol==2:
+    freqs=freqs[:len(freqs)/2]
+
 for freq in freqs:
     if freq+1 in freqs and freq+2 in freqs and freq+3 in freqs:
         if freq-1 in stitchfreqs or freq-2 in stitchfreqs or freq-3 in stitchfreqs:
