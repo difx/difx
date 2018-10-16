@@ -56,7 +56,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20160226");
+const string verdate("20181015");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection

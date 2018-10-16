@@ -57,7 +57,7 @@ void JobGroup::genEvents(const std::list<Event> &eventList)
 	}
 }
 
-void JobGroup::createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const
+void JobGroup::createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const VexData *V, double minLength, double maxLength, double maxSize) const
 {
 	std::list<Event>::const_iterator s, e;
 	jobs.push_back(Job());
@@ -121,7 +121,7 @@ void JobGroup::createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const 
 
 	totalTime = J->duration();
 	
-	if(totalTime <= 0.0)
+	if(totalTime <= minLength)
 	{
 		jobs.pop_back();
 	}

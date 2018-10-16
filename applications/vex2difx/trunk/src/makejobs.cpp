@@ -317,7 +317,7 @@ static void genJobs(std::vector<Job> &Js, const JobGroup &JG, const VexData *V, 
 		Interval jobTimeRange(start, *t);
 		if(jobTimeRange.duration() > P->minLength)
 		{
-			JG.createJobs(Js, jobTimeRange, V, P->maxLength, P->maxSize);
+			JG.createJobs(Js, jobTimeRange, V, P->minLength, P->maxLength, P->maxSize);
 		}
 		else
 		{

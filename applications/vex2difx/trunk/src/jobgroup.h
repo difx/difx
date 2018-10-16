@@ -46,7 +46,7 @@ public:
 
 	bool hasScan(const std::string &scanName) const;
 	void genEvents(const std::list<Event> &eventList);
-	void createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const;
+	void createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const VexData *V, double minLength, double maxLength, double maxSize) const;
 };
 
 std::ostream& operator << (std::ostream &os, const JobGroup &x);
