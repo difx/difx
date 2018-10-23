@@ -37,7 +37,7 @@ for line in vexfilelines:
     if "sample_rate" in line:
         newline = "sample_rate =  %.15f Ms/sec;  * (2bits/sample)\n" % (2*initbw)
         vexfilelines[vcount] = newline
-    if "chan_def" in line:
+    elif "chan_def" in line:
         if fcount >= len(freqdeflines):
             print "Too many chan_defs in the vex file!  Length of freqdef was ", len(freqdeflines)
             sys.exit(1)
@@ -56,9 +56,17 @@ for line in vexfilelines:
         else:
             print "Invalid sideband ", freqsplitline[1]
             sys.exit()
-        newline = "     chan_def = : %.12f MHz : %s :   %.15f MHz : &CH%02d : &BBC%02d : &U_Cal; *Rcp\n" % (freq, sideband, bw, fcount+1, fcount+1)
+        newline = "     chan_def = : %.12f MHz : %s :   %.15f MHz : &CH%02d : &BBC%02d : &U_Cal;\n" % (freq, sideband, bw, fcount+1, fcount+1)
         vexfilelines[vcount] = newline
         fcount += 1
+    elif "if_def" in line:
+        if_def = line.split(':')
+        if "R" in if_def[2]:
+            if_def[2] = ' Y '
+        elif "L" in if_def[2]:
+            if_def[2] = ' X '
+        vexfilelines[vcount] = ':'.join(if_def)
+    
     vcount += 1
 
 if not fcount == len(freqdeflines):
