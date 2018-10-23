@@ -242,6 +242,7 @@ startSeries = 0
 minLength = 1
 allowAllClockOffsets = True
 tweakIntTime = True
+exhaustiveAutocorrs = True
 
 ''')
     v2dout.write("antennas = ")
@@ -266,6 +267,8 @@ tweakIntTime = True
         v2dout.write("  clockEpoch=57000.0\n")
         v2dout.write("  phaseCalInt=0\n")
         v2dout.write("  toneSelection=none\n")
+        v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
+        v2dout.write("  sampling=COMPLEX_DSB\n")
         if npol > 1:
             v2dout.write("  datastreams=%s-P0,%s-P1\n}\n\n" % (a, a))
             for i in range(npol):
@@ -274,9 +277,7 @@ tweakIntTime = True
                 v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
                 v2dout.write("  sampling=COMPLEX_DSB\n}\n")
         else:
-            v2dout.write("  file = %s\n" % d[0].split('=')[1])
-            v2dout.write("  format=CODIFC/27/{}/{}\n".format(framesize, bits))
-            v2dout.write("  sampling=COMPLEX_DSB\n}\n")
+            v2dout.write("  file = %s\n}\n" % d[0].split('=')[1])
 
     if nchan>=128:
         nFFTChan = nchan
