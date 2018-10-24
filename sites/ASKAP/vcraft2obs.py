@@ -36,7 +36,7 @@ vcraftglobpattern = args.fileglob
 npol = len(vcraftglobpattern)
 
 if len(vcraftglobpattern) > 2:
-    print vcraftglobpattern
+    #print vcraftglobpattern
     parser.error("Can only have at most two fileglobs, corresponding to X and Y pols")
 
 keepCodif = args.keep # Don't rerun CRAFTConverter

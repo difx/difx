@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os,sys,glob,argparse
+import os,sys,glob,argparse, re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--timestep", help="Timestep (the directory name to process")
@@ -11,7 +11,7 @@ parser.add_argument("-n", "--nchan", type=int, help="Number of spectral channels
 parser.add_argument("-f", "--fcm", default="fcm.txt", help="Name of the fcm file")
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-c", "--correctfpgadelays", default=False, action="store_true", help="Figure out and correct 7 microsec FPGA delays")
-parser.add_argument("-S", "--separate", default=False, action="store_true", help="Don't attempt to combine data from each FPGA")
+parser.add_argument("-S", "--suppress", default=False, action="store_true", help="Don't create FITS file")
 parser.add_argument("-B", "--beam", help="Correlate a specific beam: blank means both")
 parser.add_argument("--card", default="", help="Correlate only a specific card; blank means all")
 parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keep existing codif files")
@@ -43,6 +43,9 @@ if polyco is not None:
         polyco = os.path.abspath(polyco)
     
 fcm = os.path.abspath(args.fcm)
+
+topDir = os.getcwd()
+
 examplefiles = []
 antennadirs = sorted(glob.glob(timestep + "/ak*"))
 
@@ -55,8 +58,6 @@ for a in antennadirs:
             print a + "/" + args.beam + " doesn't exist, aborting"
             sys.exit()
     for b in beamdirs:
-        print "* ", b
-        print b + "/*c" + args.card + "*vcraft"
         vcraftfiles = glob.glob(b + "/*c" + args.card + "*vcraft")
         
         if len(vcraftfiles) > 0:
@@ -122,8 +123,31 @@ for e in examplefiles:
     
     print torun
     os.system(torun + "| tee vcraft2obs.log")
-    
+
+    if not os.path.exists("eop.txt"):
+        topEOP = "{}/eop.txt".format(topDir)
+        if not os.path.exists(topEOP):
+            mjd = None
+            with open('obs.txt','r') as f:
+                for line in f:
+                    match = re.search("startmjd\s*=\s*(\S+)", line)
+                    if (match):
+                        mjd =  match.group(1)
+                        break
+
+            if mjd is not None:
+                ret = os.system("getEOP.py {} > {}".format(mjd, topEOP))
+                if (ret!=0): sys.exit(ret)    
+            else:
+                print "Could not find MJD in obs.txt"
+                sys.exit()
+                
+        print "Copying EOP from top dir"
+        os.system("cp {} eop.txt".format(topEOP))
+
+        
     os.system("./runaskap2difx | tee askap2difx.log")
+
     os.system("./run.sh")
     os.system("./runmergedifx")
     if args.correctfpgadelays:
@@ -131,12 +155,12 @@ for e in examplefiles:
         os.system("./run.sh")
         os.system("rm -rf craftfrbD2D*")
         os.system("./runmergedifx")
-    if args.separate:
-        os.system("difx2fits craftfrbD2D")
+#    if args.suppress:
+#        os.system("difx2fits craftfrbD2D")
     os.chdir("../")
     
 output = open("rundifx2fits","w")
-output.write(difx2fitscommand + "\n")
+output.write(difx2fitscommand + " \"$@\"\n")
 output.close()
 os.system("chmod 775 rundifx2fits")
-if not args.separate: os.system(difx2fitscommand)
+if not args.suppress: os.system(difx2fitscommand)
