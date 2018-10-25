@@ -38,6 +38,7 @@ import os
 
 def get_leapsec(leapsec_page, targetJD):
     # parse the leap seconds page
+    tai_utc = None
     for line in leapsec_page:
         linedate = float(line[17:27])
         if linedate > targetJD:
@@ -76,11 +77,12 @@ if options.vex:
 else:
     comment = "#"
 
+mjd_jd = 2400000.5
 # get target MJD
 targetMJD = args[0]
 # convert to MJD if necessary
 targetMJD = espressolib.convertdate(targetMJD, "mjd")
-targetJD = round(targetMJD) + 2400000.5
+targetJD = round(targetMJD) + mjd_jd
 
 
 # dates before June 1979 not valid (earliest EOPs)
@@ -155,14 +157,13 @@ for nlines, line in enumerate(eop_page):
     # print an EOP line if we're within 3 days of the target day
     if (abs(eop_fields[0] - targetJD) < 3):
         neop += 1
-        tai_utc = None
         tai_utc = get_leapsec(leapsec_page, eop_fields[0])
-        if not tai_utc:
-            raise Exception("Leap seconds not found! Check your dates")
+        if tai_utc is None:
+            raise Exception("Leap seconds not found! Check your UT1LS file")
         xpole = eop_fields[1]/10.
         ypole = eop_fields[2]/10.
-        ut1_utc = tai_utc+eop_fields[3]/1000000.
-        eopdate = int(eop_fields[0]-2400000.5)
+        ut1_utc = tai_utc+eop_fields[3]/1.e6
+        eopdate = int(eop_fields[0] - mjd_jd)
         if options.vex:
             eopdate = espressolib.convertdate(eopdate, outformat="vex")
         print eopformat.format(eopdate, xpole, ypole, tai_utc, ut1_utc, neop)
