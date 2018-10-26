@@ -844,6 +844,7 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 
 		if(muxReturn < 0)
 		{
+			pthread_mutex_unlock(mark5threadmutex + (lockend % lockmod));
 			cerror << startl << "vdifmux() failed with return code " << muxReturn << ", likely input buffer is too small!" << endl;
 		}
 		else
