@@ -327,8 +327,10 @@ def adjustMark6datastreams(datastreams, inputfile, verbose):
 		    if len(msnsplit) >= 2 and len(msnsplit[1]) == 2:
 		        ant = msnsplit[1].upper()
 			# if antenna found in antenna module list, replace filename with module
+			antmodfound = False
 		        for antmod in antennaModuleList:
 			    if ant == antmod[0]:
+			        antmodfound = True
 			        if antmod[1] not in stream.msn:
                                     if verbose > 0:
 				        print 'replacing', stream.msn[i], 'with', antmod[1]
@@ -337,8 +339,8 @@ def adjustMark6datastreams(datastreams, inputfile, verbose):
 				else:
 				    stream.msn.pop(i)
 				    msnlen -= 1
-                            else:
-			        i += 1
+                        if antmodfound is False:
+			    i += 1
 
 def getDatastreamsFromInputFile(inputfile, verbose):
         """
@@ -501,7 +503,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 		        # all stream msns must be in unit msns
 		        for msn in stream.msn:
 		            if msn not in r2msns:
-			        missingMsn = True
+			        missingStreamMsn = True
 			        break
                         if missingStreamMsn == False:
 			    if r[0] in difxmachines.getMk6NodeNames():
@@ -513,7 +515,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 if matchNode in difxmachines.getMk6NodeNames():
                     dsnodes.append(matchNode)
                 else:
-                    print '%s not listed as an active mark5 host in machines file' % matchNode
+                    print '%s not listed as an active mark6 host in machines file' % matchNode
                     return []
                 
 	# write machine file
