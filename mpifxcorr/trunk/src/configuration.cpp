@@ -168,6 +168,10 @@ istream* Configuration::mpiGetFileContent(const char* filename)
       filecontent = string((std::istreambuf_iterator<char>(in)), (std::istreambuf_iterator<char>()));
       filelen = filecontent.size() + 1;
     }
+    else
+    {
+      return NULL;
+    }
   }
 
   if (!enableMpi)
