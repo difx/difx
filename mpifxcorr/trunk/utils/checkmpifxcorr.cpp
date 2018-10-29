@@ -28,6 +28,7 @@
 #include <mpi.h>
 #include <stdlib.h>
 #include <difxmessage.h>
+#include <difxmessage/difxmessageinternal.h>
 #include "configuration.h"
 #include "alert.h"
 
@@ -130,6 +131,7 @@ int main(int argc, char *argv[])
       if(nFile == 0)
       {
         setMessageLevel(msglevel);
+        difxMessagePort = -1;
       }
 
       ++nFile;
