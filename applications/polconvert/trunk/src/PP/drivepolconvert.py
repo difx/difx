@@ -846,6 +846,8 @@ def executeThreads(o):
         else:
             waitForNextWorker(o)
             return
+    print 'Pausing 10s for jobs to start...'
+    time.sleep(10)
     print 'Wait for processing threads to finish.'
 
 def reportWorkTodo(o):
@@ -868,9 +870,11 @@ def reportWorkTodo(o):
         for pc in pcdirs: print '   ',pc
     pclogs = glob.glob(pcdirstamps+'/PolConvert.log')
     if len(pclogs) == len(o.jobnums):
-        print 'The number of polconvert log files (%d) is correct.' % len(pclogs)
+        print 'The number of polconvert log files (%d) is correct.' % (
+            len(pclogs))
     else:
-        print 'Error: %d polconvert log files and %d jobs'%(len(pclogs),len(o.jobnums))
+        print 'Error: %d polconvert log files and %d jobs'%(
+            len(pclogs),len(o.jobnums))
     print('drivepolconvert is finished.\n')
 
 def executeCasaParallel(o):
