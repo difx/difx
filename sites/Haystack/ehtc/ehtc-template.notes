@@ -1,0 +1,23 @@
+A Aa	ALMA Phased         # cy4 cy5 onwards
+B Aq	ALMA Single         # starting cy5
+C Sn	SMA Single          # cy4
+C Sq	SMA Single          # starting cy5
+G Gl	Greenland Telescope # starting cy5
+H Hs	Haystack            # cy4 cy5 onwards
+J Jc	JCMT                # through cy4
+J Mm	JCMT                # starting cy5
+K Kt	Kitt Peak           # cy5; conflict in ns-codes needs to be resolved
+L Lm	LMT                 # cy4 cy5 onwards
+M Nq	NOEMA Single        # cy5 onwards
+N Na	NOEMA Phased        # cy5 onwards
+P Pv	Pico Veleta         # cy5; conflict in ns-codes needs to be resolved
+R Sr	SMA Redundant       # cy4 cy5 onwards
+S Sm	SMA Phased          # cy4
+S Sw	SMA Phased          # cy5 onwards
+T Tt	(reserved)          # available, unused
+X Ap	APEX                # cy4
+X Ax	APEX                # cy5 onwards was listed as Aq
+Y Sp	SPT (South Pole)    # cy4
+Y Sz	SPT (South Pole)    # cy5 onwards
+Z Az	SMT (Arizona)       # cy4
+Z Mg	SMT (Arizona)       # cy5 onwards
