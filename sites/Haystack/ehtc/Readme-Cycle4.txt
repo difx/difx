@@ -237,19 +237,22 @@ false && {
 cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
 ls -l $release/logs
 
+# capture the performance on polconversion for future reference
+$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -T | tee $ers-performance.txt
+cp -p $ers-performance.txt $release/logs
+
 # review PolConvert progress incrementally or when done:
-summarizePolconvertLogs.py -s -c # -g 0.5 -b 0.8
+summarizePolconvertLogs.py -s -c -g 0.5 -b 0.8
 # The -g and -b values set thresholds for
 # the line between good/poor and poor/bad; the defaults (0.3 and 0.6)
 # are really only likely to get you 'good' for a realy bright source
 # (e.g. 3C279) as these are fringes of a single channel.  Also:
-$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -T | tee $ers-performance.txt
 
 # Examine some of the 4fit fringes on questionable cases with
-fplot $ers-$label-4fit.$expn.save/doy-hhmm/A[^A].B.*
+fplot $ers-*-4fit.$expn.save/$doyhhmm/A[^A].B.*
 
 # if comparisons are available (with previous releases)
-compare-baselines-v6.pl -n 10000 -f -x BL \
+compare-baselines-v6.pl -n 10000 -f -x AL \
     -a ...4fit.$expn.save/*.alist -b ...4fit.$expn.save/*.alist
 
 # verify that fits files are not missing data or report on it:
