@@ -111,7 +111,8 @@ def fix_paths(inputfilename, calcfilename, indir, outdir):
 def make_new_runfiles(
         jobname, expname, jobtime, difx_message_port,
         ntasks_per_node=1):
-    # make copies of the prototype run and .thread files
+    """make copies of the prototype run and .thread files"""
+
     runfile = "run_" + jobname
     shutil.copy("run", runfile)
     for line in fileinput.FileInput(runfile, inplace=1):
@@ -131,25 +132,43 @@ def make_new_runfiles(
     shutil.copy(expname + ".machines", machinesfilename)
 
 
-def parse_joblistfile(joblistfilename, speedup=1.0):
-    # get the full list of jobs from the joblist file Return a dictionary. Keys
-    # are the job names. For each jobname record a list of stations under key
-    # 'stations' and a list of job length under key 'joblen'
+def predict_speedup(tops, joblen):
+    """Placeholder for future idea - could be complicated"""
+    
+    speedup = (joblen*0.8e5)/tops
+    return speedup
+
+
+def parse_joblistfile(joblistfilename, set_speedup=None):
+    """Get the full list of jobs from the joblist file 
+    
+    Return a dictionary. Keys are the job names. For each jobname record a list
+    of stations under key 'stations' and a list of job length under key
+    'joblen'
+    """
+
     joblistfile = open(joblistfilename).readlines()
 
     joblistfile.pop(0)
     joblist = dict()
     for line in joblistfile:
-        jobname, jobstart, jobend = line.split()[0:3]
+        jobvals = line.split()
+        jobname, jobstart, jobend = jobvals[0:3]
+        tops = jobvals[6]
+        joblen = (float(jobend) - float(jobstart))
+        if set_speedup is None:
+            speedup = predict_speedup(tops, joblen)
+        else:
+            speedup = set_speedup
         joblist[jobname] = dict()
         stations = re.search(r"#\s+(.*)", line).group(1)
         joblist[jobname]["stations"] = stations
 
-        joblen = (float(jobend) - float(jobstart))/speedup
+        job_time = joblen/speedup
         # add 10 minutes for startup
-        joblen += 10./(24.*60.)
-        days, hours, minutes, seconds = espressolib.daysToDhms(joblen)
-        joblist[jobname]["joblen"] = (
+        job_time += 10./(24.*60.)
+        days, hours, minutes, seconds = espressolib.daysToDhms(job_time)
+        joblist[jobname]["jobtime"] = (
                 "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds))
 
     return joblist
@@ -157,6 +176,7 @@ def parse_joblistfile(joblistfilename, speedup=1.0):
 
 def parse_v2dfile(v2dfilename):
     """extract file names from the v2d file"""
+
     v2dfile = open(v2dfilename).readlines()
     vexfilename = str()
     binconfigfilename = None
@@ -175,6 +195,7 @@ def parse_v2dfile(v2dfilename):
 
 def parse_binconfig(binconfigfilename):
     """extract file names from the binconfig file"""
+
     binconfigfile = open(binconfigfilename).readlines()
     polycofilename = str()
     for line in binconfigfile:
@@ -190,7 +211,8 @@ def parse_binconfig(binconfigfilename):
 def run_lbafilecheck(
         datafilename, stations, computehead, no_rmaps_seq, interactive,
         ntasks_per_node):
-    # run lbafilecheck creating machines and .threads files for this job
+    """run lbafilecheck creating machines and .threads files for this job"""
+
     stations = stations.strip()
     stations = re.sub(r"\s+", ",", stations)
     stations = "'" + stations + "'"
@@ -210,14 +232,16 @@ def run_lbafilecheck(
 
 
 def fill_operator_log(logfile):
-    # Fire up an editor for operator comments
+    """Fire up an editor for operator comments"""
+
     editor = os.environ.get("EDITOR", "vim")
     command = " ".join([editor, logfile])
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
 
 def plot_speedup(logfiles, outdir, expname):
-    # plot the speedup factor from the difx log file
+    """plot the speedup factor from the difx log file"""
+
     speedup_plot = outdir + expname + "_speedup.pdf"
     speedup_files = " ".join(logfiles)
     plot_opt = " "
@@ -279,6 +303,8 @@ def run_interactive(corrjoblist, outdir):
 
 
 def filter_log(infile, jobname):
+    """Filter specified jobname from log file"""
+
     filtered_file = []
     for line in open(infile):
         if re.search("\s"+jobname+"\s", line):
@@ -287,17 +313,33 @@ def filter_log(infile, jobname):
 
 
 def wait_for_file(filename):
+    """Wait until specified file is available"""
+
     while not os.path.exists(filename):
         print "Waiting for", filename
         time.sleep(1)
     print filename, "found!"
 
 
-def check_batch():
+def batchq_slurm(jobnames):
+    """Make sure the squeue format accommodates the full job name"""
+
+    longest = 0
+    for jobname in jobnames:
+        if len(jobname) > longest:
+            longest = len(jobname)
+    squeue_format = "%8i %8u %.{:d}j %.12S %.12e %.10L %.5D %.10Q".format(
+            longest+2)
+    batch_q = 'squeue -o "{0:s}" -n'.format(squeue_format)
+    return batch_q
+
+
+def check_batch(jobnames):
     """Determine batch commands to use based on environment"""
+
     if espressolib.which("sbatch"):
         batch_launch = "sbatch"
-        batch_q = "squeue -n"
+        batch_q = batchq_slurm(jobnames)
         batch_cancel = "scancel -n"
         batch_sep = ","
     elif espressolib.which("qstat"):
@@ -337,7 +379,7 @@ def run_batch(corrjoblist, outdir):
     """Run jobs in a batch environment"""
 
     # get the batch commands for the slurm or pbs
-    batch_launch, batch_q, batch_cancel, batch_sep = check_batch()
+    batch_launch, batch_q, batch_cancel, batch_sep = check_batch(corrjoblist.keys())
 
     # start the correlator log
     errormon_log = "./log"
@@ -425,6 +467,7 @@ def run_batch(corrjoblist, outdir):
 def set_difx_message_port(start_port=50201):
     """set unique difx message port so unicast environment can have parallel
     jobs."""
+
     difx_message_port = start_port
     # get active connections
     connections = psutil.net_connections()
@@ -444,6 +487,8 @@ def set_difx_message_port(start_port=50201):
 
 
 def write_difxlog(log_in, outdir, jobname):
+    """Extract log entries for a given job and write to standard file"""
+
     logfilename = outdir + jobname + ".difxlog"
     logfiles.append(jobname + ".difxlog")
     logfile = open(logfilename, "w")
@@ -461,7 +506,9 @@ def write_difxlog(log_in, outdir, jobname):
 
 
 def print_queue(queue_command, jobids):
-    print queue_command
+    """Print status of jobs in batch queue"""
+
+    #print queue_command
     running_jobs = []
     queue_info = subprocess.Popen(
             queue_command, stdout=subprocess.PIPE, shell=True).communicate()[0]
@@ -494,7 +541,8 @@ usage = """%prog <jobname>
 <jobname> may be a space separated list.
 <jobname> may also include a python regular expression after the '_' in the job
 name to match multiple jobs. (The job name up to the '_' must be given
-explicitly)"""
+explicitly)
+"""
 
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
@@ -559,7 +607,7 @@ parser.add_option(
         " Format = hh:mm:ss")
 parser.add_option(
         "--speedup", "-s",
-        type="float", dest="predicted_speedup", default=1.0,
+        type="float", dest="predicted_speedup", default=0.7,
         help="Predicted speedup factor to determine job run time."
         " Default=%default")
 parser.add_option(
@@ -683,7 +731,7 @@ else:
             if re.search(jobpattern + "$", jobname):
                 corrjoblist[jobname] = fulljoblist[jobname]
 
-print "job list to correlate:", pprint.pformat(corrjoblist), "\n"
+print "job list to correlate:\n", pprint.pformat(corrjoblist), "\n"
 
 # get the paths of our input and output directories
 indir = os.getcwd() + os.sep
@@ -798,7 +846,7 @@ for jobname in sorted(corrjoblist.keys()):
     if options.jobtime:
         jobtime = options.jobtime
     else:
-        jobtime = corrjoblist[jobname]["joblen"]
+        jobtime = corrjoblist[jobname]["jobtime"]
 
     make_new_runfiles(
             jobname, expname, jobtime, str(difx_message_port),
