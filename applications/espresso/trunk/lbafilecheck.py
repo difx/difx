@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -199,7 +199,7 @@ def kill_children(pids):
 usage = """%prog [options] <datafiles.dat>
 will produce file lists for the data areas described in <datafiles.dat>
 It also creates a "run", .machines, and .threads files based on the
-available nodes in the file given by $CORR_HOST
+available nodes in the file given by $DIFX_MACHINES
 """
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
@@ -374,7 +374,7 @@ if not options.nfs_batch:
             hosts[machine][0] -= 1
 
 if len(hosts) == 0:
-    raise Exception("Did not find any hosts in your $CORR_HOSTS file")
+    raise Exception("Did not find any hosts in your $DIFX_MACHINES file")
 elif len(hosts) <= len(set(datamachines + [headmachine])):
     # all nodes already occupied by master and datastreams
     options.allcompute = True
@@ -416,7 +416,7 @@ if not computemachines:
     raise Exception(
             "You have no compute nodes left after the master node"
             " and datastream nodes have been allocated!"
-            " Check your hosts in $CORR_HOSTS.")
+            " Check your hosts in $DIFX_MACHINES.")
 
 machines = [headmachine] + datamachines + computemachines
 check_machines(machines[:])

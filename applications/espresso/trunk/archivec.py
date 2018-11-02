@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -102,9 +102,8 @@ expname = os.path.normpath(localdir).split("/")[-1]
 archdir = os.environ.get("ARCHTMP") + os.sep + expname + os.sep
 if not archdir:
     archdir = "/tmp/"
-    print (
-            "$ARCHTMP not set - using /tmp instead. Setting $ARCHTMP to a"
-            " directory on the same filesystem as the data is preferable")
+    print "$ARCHTMP not set - using /tmp instead. Setting $ARCHTMP to a",
+    print " directory on the same filesystem as the data is preferable"
 mark4file = str()
 os.chdir(localdir)
 tarlists = dict()
@@ -194,7 +193,9 @@ if os.path.exists("clocks"):
 
 # and the mark4 output dir
 if mark4file:
-    taritup(archdir, expname.upper()+".MARK4.tar.gz", mark4file, gzip=True)
+    mark4tarfile = expname.upper()+".MARK4.tar.gz"
+    taritup(archdir, mark4tarfile, mark4file, gzip=True)
+    publish.append(mark4tarfile)
 
 # now transfer the lot to data.pawsey.org.au
 try:

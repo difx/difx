@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -64,10 +64,10 @@ parser.add_option(
 parser.add_option(
         "--averaging_time", "-a",
         type=float, dest="avg", default=300,
-        help="Average the data for AVG seconds (300)")
+        help="Average the data for AVG seconds (%default)")
 parser.add_option(
         "--speedup_poly", "-p",
-        type=int, dest="poly_order", default=False,
+        type=int, dest="poly_order", default=None,
         help="Fit time data with poly of order p, before differentiating"
         " to find speedup factor")
 parser.add_option(
@@ -252,7 +252,7 @@ else:
     speedup = numpy.diff(observation)/numpy.diff(correlation)
     xdata_diff = observation[1:]
     pyplot.plot(xdata_diff, speedup, label="Instantaneous speedup")
-    if options.poly_order:
+    if options.poly_order is not None:
         # slightly silly option to fit the data with a polynomial before
         # calculating speedup
         poly_fit = numpy.polyfit(correlation, observation, options.poly_order)
