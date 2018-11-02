@@ -35,6 +35,8 @@ if len(args) < 1:
     parser.error("Give at least one .joblist file")
 
 jobfilenames = args
+line_format = "{:s}: {:s} \t {:0.3f} {:s} \t {:0.2f} {:s} \t {:d} {:s} {:s}"
+summary_format = "{:s}: {:0.3f} {:s} \t {:0.2f} {:s} \t {:0.1f} {:s}"
 
 for jobfilename in jobfilenames:
     jobfile = open(jobfilename).readlines()
@@ -47,7 +49,7 @@ for jobfilename in jobfilenames:
         jobinfo = line.split()
         jobstart = espressolib.convertdate(float(jobinfo[1]), outformat="vex")
         joblen = float(jobinfo[2]) - float(jobinfo[1])
-        jobstations = float(jobinfo[3])
+        jobstations = int(jobinfo[3])
         jobsize = float(jobinfo[6])
         station_list = " ".join(jobinfo[8:])
 
@@ -56,10 +58,10 @@ for jobfilename in jobfilenames:
         passlen += joblen
         pass_size += jobsize
 
-        print "%s: %s \t %0.3f %s \t %0.2f %s \t %d %s %s" % (
-                jobinfo[0], jobstart, joblen*24., "hours", jobsize, "MB",
+        print line_format.format(
+                jobinfo[0], jobstart, joblen*24., "hours", jobsize, "TOps",
                 jobstations, "stations", station_list)
 
-    print "%s: %0.3f %s \t %0.2f %s \t %0.1f %s" % (
-            "Total", passlen*24., "hours", pass_size, "MB", pass_stations,
+    print  summary_format.format(
+            "Total", passlen*24., "hours", pass_size, "TOps", pass_stations,
             "stations (avg)")
