@@ -347,7 +347,7 @@ static int64_t getLowestFrameNumber(const unsigned char *src, int srcSize, const
 {
 	int i, N;
 	int64_t lowest = -1;
-	int nFrame;
+	int nFrame = 0;
 
 	N = srcSize - vm->inputFrameSize;
 
