@@ -472,6 +472,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int highestSortedDestIndex = -1;
 	int vhUnset = 1;
 	int nSort;	/* try using the supplied one, but if buffers are too small, shorten nSort accordingly */
+	int framesIn = 0;
 
 	nSort = vm->nSort;
 
@@ -616,11 +617,13 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			vhUnset = 0;
 		}
 
+		++framesIn;
+
 		destIndex = frameNumber - startFrameNumber;
 
 		if(destIndex < 0)
 		{
-			/* no choice but to discard this data */
+			/* no choice but to discard this data which is to far in the past */
 			i += vm->inputFrameSize;
 			++nDiscard;
 
@@ -635,17 +638,28 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		}
 		if(destIndex > maxDestIndex)
 		{
-			/* start the shut-down procedure */
-			if(bytesProcessed == -1)
+			if(framesIn < nSort)
 			{
-				// fprintf(stderr, "src/vdifmux.c bytesProcessed = 0, shut-down procedure, setting it to %d; frameNumber=%lld startFrameNumber=%lld destIndex=%d maxDestIndex=%d : destSize=%d outFrameSize=%d\n", i, frameNumber, startFrameNumber, destIndex, maxDestIndex, destSize, vm->outputFrameSize);
-				bytesProcessed = i;
+				/* no choice but to discard this data which is too far in the future */
+				i += vm->inputFrameSize;
+				++nDiscard;
+
+				continue;
 			}
-			i += vm->inputFrameSize;
-			++nEnd;
-			if(nEnd >= nSort)
+			else
 			{
-				break;
+				/* start the shut-down procedure */
+				if(bytesProcessed == -1)
+				{
+					// fprintf(stderr, "src/vdifmux.c bytesProcessed = 0, shut-down procedure, setting it to %d; frameNumber=%lld startFrameNumber=%lld destIndex=%d maxDestIndex=%d : destSize=%d outFrameSize=%d\n", i, frameNumber, startFrameNumber, destIndex, maxDestIndex, destSize, vm->outputFrameSize);
+					bytesProcessed = i;
+				}
+				i += vm->inputFrameSize;
+				++nEnd;
+				if(nEnd >= nSort)
+				{
+					break;
+				}
 			}
 		}
 		else /* here we have a usable packet */
