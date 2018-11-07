@@ -35,8 +35,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <mark5access/mark5bfile.h>
-#include <mark6sg/mark6_sg_vfs.h>
-#include <mark6sg/mark6_sg_utils.h>
+#include <mark5access/mark6gather_mark5b.h>
 #include "config.h"
 #include "alert.h"
 #include "mode.h"
@@ -54,14 +53,14 @@
 Mark5BMark6DataStream::Mark5BMark6DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
  : Mark5BDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
-	cwarn << startl << "Starting Mark6 datastream.  This is experimental at this time!" << endl;
+	cwarn << startl << "Starting Mark5b Mark6 datastream.  This is experimental at this time!" << endl;
 	mark6gather = 0;
 	mark6eof = false;
 }
 
 Mark5BMark6DataStream::~Mark5BMark6DataStream()
 {
-	cwarn << startl << "Ending Mark6 datastream.  Maybe it worked?" << endl;
+	cwarn << startl << "Ending Mark5b Mark6 datastream.  Maybe it worked?" << endl;
 	closeMark6();
 }
 
@@ -69,7 +68,7 @@ void Mark5BMark6DataStream::closeMark6()
 {
 	if(mark6gather != 0)
 	{
-		sendMark6Activity(MARK6_STATE_CLOSE, bytecount, fmjd, mbyterate);
+		sendMark6Activity(MARK6_STATE_CLOSE, bytecount, fmjd, mbyterate * 8.0);
 		closeMark6Gatherer(mark6gather);
 	}
 	mark6gather = 0;
@@ -80,12 +79,12 @@ void Mark5BMark6DataStream::openfile(int configindex, int fileindex)
 {
   closeMark6();
 
-  cverbose << startl << "Mark6 datastream " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
+  cverbose << startl << "Mark5b Mark6 datastream " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
   if(fileindex >= confignumfiles[configindex]) //run out of files - time to stop reading
   {
     dataremaining = false;
     keepreading = false;
-    cinfo << startl << "Mark6 datastream " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
+    cinfo << startl << "Mark5b Mark6 datastream " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
     return;
   }
   
@@ -96,7 +95,7 @@ void Mark5BMark6DataStream::openfile(int configindex, int fileindex)
   cverbose << startl << "mark6gather is " << mark6gather << endl;
   if(mark6gather == 0)
   {
-    cerror << startl << "Cannot open mark6 data file " << datafilenames[configindex][fileindex] << endl;
+    cerror << startl << "Cannot open mark5b mark6 data file " << datafilenames[configindex][fileindex] << endl;
     dataremaining = false;
     return;
   }
@@ -106,7 +105,7 @@ void Mark5BMark6DataStream::openfile(int configindex, int fileindex)
     cwarn << startl << "Warning: Mark6 file " << datafilenames[configindex][fileindex] << " seems to have an incomplete set of files.  Your weights may suffer if this is true." << endl;
   }
 
-  cinfo << startl << "Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
+  cinfo << startl << "Mark5b Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
   strcpy(mark6activity.scanName, datafilenames[configindex][fileindex].c_str());
   sendMark6Activity(MARK6_STATE_OPEN, 0, 0.0, 0.0);
   bytecount = 0;
@@ -120,134 +119,6 @@ void Mark5BMark6DataStream::openfile(int configindex, int fileindex)
   isnewfile = true;
   //read the header and set the appropriate times etc based on this information
   initialiseFile(configindex, fileindex);
-}
-
-/* This procedure may better fit in mark5access/mark5bfile.c, but it requires mark6_sg, so inconvenient... */
-int summarizemark5bmark6(struct mark5b_file_summary *sum, const char *scanName)
-{
-	int bufferSize = 200000;	/* 200 kB really should be sufficient */
-	unsigned char *buffer, *p;
-	struct stat st;
-	int rv;
-	int lastOffset;
-	int seconds0, seconds1;
-	int mk6fd;
-
-	/* Initialize things */
-
-	resetmark5bfilesummary(sum);
-	strncpy(sum->fileName, scanName, MARK5B_SUMMARY_FILE_LENGTH-1);
-	sum->startSecond = 1<<30;
-
-        mark6_sg_set_rootpattern("/mnt/disks/[1-4]/[0-7]/data");
-
-	mk6fd = mark6_sg_open(scanName, O_RDONLY);
-	if(mk6fd < 0)
-	{
-		mark6_sg_close(mk6fd);
-
-		return -2;
-	}
-
-	rv = mark6_sg_fstat(mk6fd, &st);
-	if(rv < 0)
-	{
-		mark6_sg_close(mk6fd);
-
-		return -1;
-	}
-
-	sum->fileSize = st.st_size;
-
-	cinfo << startl << scanName << " is opened with size " << sum->fileSize << endl;
-
-	if(sum->fileSize < 2*bufferSize)
-	{
-		bufferSize = sum->fileSize;
-	}
-
-	buffer = (unsigned char *)malloc(bufferSize);
-	if(!buffer)
-	{
-		mark6_sg_close(mk6fd);
-
-		return -3;
-	}
-
-	
-	/* Get initial information */
-
-	rv = mark6_sg_read(mk6fd, buffer, bufferSize);
-	if(rv < bufferSize)
-	{
-		mark6_sg_close(mk6fd);
-		free(buffer);
-
-		return -4;
-	}
-
-	sum->firstFrameOffset = determinemark5bframeoffset(buffer, bufferSize);
-	if(sum->firstFrameOffset < 0)
-	{
-		mark6_sg_close(mk6fd);
-		free(buffer);
-
-		return -6;
-	}
-
-	p = buffer + sum->firstFrameOffset;
-
-	sum->startDay = (p[11] >> 4)*100 + (p[11] & 0x0F)*10 + (p[10] >> 4);
-	sum->startSecond = (p[10] & 0x0F)*10000 + (p[9] >> 4)*1000 + (p[9] & 0x0F)*100 + (p[8] >> 4)*10 +  (p[8] & 0x0F);
-	sum->startFrame = p[4] + (p[5] * 256);
-
-	
-	/* Work on end of file */
-
-	if(sum->fileSize > bufferSize)
-	{
-		rv = mark6_sg_pread(mk6fd, buffer, bufferSize, sum->fileSize - bufferSize);
-		if(rv < bufferSize)
-		{
-			mark6_sg_close(mk6fd);
-			free(buffer);
-
-			return -8;
-		}
-	}
-
-	lastOffset = determinelastmark5bframeoffset(buffer, bufferSize);
-	if(lastOffset < 0)
-	{
-		mark6_sg_close(mk6fd);
-		free(buffer);
-
-		return -9;
-	}
-
-	p = buffer + lastOffset;
-
-	sum->endDay = (p[11] >> 4)*100 + (p[11] & 0x0F)*10 + (p[10] >> 4);
-	sum->endSecond = (p[10] & 0x0F)*10000 + (p[9] >> 4)*1000 + (p[9] & 0x0F)*100 + (p[8] >> 4)*10 +  (p[8] & 0x0F);
-	sum->endFrame = p[4] + (p[5] * 256);
-
-	seconds0 = sum->startDay*86400 + sum->startSecond;
-	seconds1 = sum->endDay*86400 + sum->endSecond;
-
-	if(seconds1 > seconds0)
-	{
-		sum->framesPerSecond = (sum->fileSize/10016 - sum->endFrame + sum->startFrame)/(seconds1 - seconds0);
-
-		sum->framesPerSecond = ((sum->framesPerSecond + 50)/100)*100;
-	}
-
-
-	/* Clean up */
-
-	free(buffer);
-	mark6_sg_close(mk6fd);
-
-	return 0;
 }
 
 void Mark5BMark6DataStream::initialiseFile(int configindex, int fileindex)

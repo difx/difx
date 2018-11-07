@@ -53,7 +53,7 @@
 VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
  : VDIFDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
-	cwarn << startl << "Starting Mark6 datastream.  This is experimental at this time!" << endl;
+	cwarn << startl << "Starting VDIF Mark6 datastream.  This is experimental at this time!" << endl;
 	mark6gather = 0;
 	mark6eof = false;
 	nSort = 20;
@@ -62,7 +62,7 @@ VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, i
 
 VDIFMark6DataStream::~VDIFMark6DataStream()
 {
-	cwarn << startl << "Ending Mark6 datastream.  Maybe it worked?" << endl;
+	cwarn << startl << "Ending VDIF Mark6 datastream.  Maybe it worked?" << endl;
 	closeMark6();
 }
 
@@ -70,7 +70,7 @@ void VDIFMark6DataStream::closeMark6()
 {
 	if(mark6gather != 0)
 	{
-		sendMark6Activity(MARK6_STATE_CLOSE, bytecount, fmjd, mbyterate);
+		sendMark6Activity(MARK6_STATE_CLOSE, bytecount, fmjd, mbyterate * 8.0);
 		closeMark6Gatherer(mark6gather);
 	}
 	mark6gather = 0;
@@ -97,7 +97,7 @@ void VDIFMark6DataStream::openfile(int configindex, int fileindex)
   cverbose << startl << "mark6gather is " << mark6gather << endl;
   if(mark6gather == 0)
   {
-    cerror << startl << "Cannot open mark6 data file " << datafilenames[configindex][fileindex] << endl;
+    cerror << startl << "Cannot open vdif mark6 data file " << datafilenames[configindex][fileindex] << endl;
     dataremaining = false;
     return;
   }
@@ -107,7 +107,7 @@ void VDIFMark6DataStream::openfile(int configindex, int fileindex)
     cwarn << startl << "Warning: Mark6 file " << datafilenames[configindex][fileindex] << " seems to have an incomplete set of files.  Your weights may suffer if this is true." << endl;
   }
 
-  cinfo << startl << "Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
+  cinfo << startl << "VDIF Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
   strcpy(mark6activity.scanName, datafilenames[configindex][fileindex].c_str());
   sendMark6Activity(MARK6_STATE_OPEN, 0, 0.0, 0.0);
   bytecount = 0;
