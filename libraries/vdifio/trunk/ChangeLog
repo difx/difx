@@ -2,7 +2,10 @@ Version 1.3
 ~~~~~~~~~~~
 * Move all pure Mark6 functionality to mark6sg
 * Python utils: explicitly call python2
-* more conformant help and version information: printVDIFheader
+* More conformant help and version information: printVDIFheader
+* vdifmux(): change logic to determine first frame number if not explicitly provided -> simplified and probably faster and possibly more correct code.
+* vdifmux(): make more robust in some parameter corner cases
+* vdifmux(): nSort is now entirely referring to input frames; previously there was some use regarding output frames
 
 Version 1.2
 ~~~~~~~~~~~

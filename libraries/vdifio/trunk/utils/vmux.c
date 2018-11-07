@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2017 by Walter Brisken                             *
+ *   Copyright (C) 2013-2018 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,8 +35,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.9";
-const char verdate[] = "20170621";
+const char version[] = "0.10";
+const char verdate[] = "20181107";
 
 const int defaultChunkSize = 10000000;
 const int defaultNGap = 100;
@@ -511,8 +511,23 @@ int main(int argc, char **argv)
 		}
 
 		V = vdifmux(dest, destChunkSize, src, n+leftover, &vm, nextFrame, &stats);
+		if(verbose > 2)
+		{
+			printf("vdifmix(destSize=%d, srcSize=%d, startFrame=%Ld) -> %d\n", destChunkSize, n+leftover, (long long)nextFrame, V);
+		}
 		if(V < 0)
 		{
+			if(stats.nCall == 0)
+			{
+				if(V == -3)
+				{
+					printf("No valid frames (matching expected parameters) were found in the first %d bytes, so there will be no output.  Perhaps use printVDIFheader to determine correct frame parameters.\n", n);
+				}
+				else
+				{
+					printf("No output was provided because the input parameters didn't make sense.  vdifmux() returned %d on the first call.  Perhaps nSort, nGap or chunkSize can be changed to make this work.\n", V);
+				}
+			}
 			break;
 		}
 

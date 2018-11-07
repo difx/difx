@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2015 Walter Brisken                                *
+ *   Copyright (C) 2013-2018 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,14 +26,6 @@
 // $LastChangedDate$
 //
 //============================================================================
-
-
-/* TODO list
-
- * Constrain output lengths to frame granularity ???
-
-*/
-
 
 
 #include <stdio.h>
@@ -350,6 +342,71 @@ void printvdifmux(const struct vdif_mux *vm)
 	}
 }
 
+/* goes through array of VDIF data of size srcSize and returns the lowest frame number (seconds*fps + frame) encountered in the first vm->nSort valid frames */
+static int64_t getLowestFrameNumber(const unsigned char *src, int srcSize, const struct vdif_mux *vm)
+{
+	int i, N;
+	int64_t lowest = -1;
+	int nFrame;
+
+	N = srcSize - vm->inputFrameSize;
+
+	for(i = 0; i <= N;)
+	{
+		const unsigned char *cur;
+		const vdif_header *vh;
+		int64_t frameNumber;
+
+		cur = src + i;
+		vh = (const vdif_header *)cur;
+		if(*((uint32_t *)(cur+vm->inputFrameSize-4)) == FILL_PATTERN)
+		{
+			/* Fill pattern at end of frame or invalid bit is set */
+			i += vm->inputFrameSize;
+
+			continue;
+		}
+		if(*((uint32_t *)cur) == FILL_PATTERN)
+		{
+			/* Fill pattern at beginning of frame */
+			i += 8;
+
+			continue;
+		}
+		if(getVDIFFrameBytes(vh) != vm->inputFrameSize ||
+		   getVDIFNumChannels(vh) != vm->inputChannelsPerThread ||
+		   getVDIFBitsPerSample(vh) != vm->bitsPerSample)
+		{
+			/* here assume mismatch of key parameters is due to not being synced to the stream */
+			i += 4;
+
+			continue;
+		}
+		if( (vm->flags & VDIF_MUX_FLAG_ENABLEVALIDITY) && (getVDIFFrameInvalid(vh) > 0) )
+		{
+			/* invalid bit is set and respected */
+			i += vm->inputFrameSize;
+
+			continue;
+		}
+
+		frameNumber = (int64_t)(getVDIFFrameEpochSecOffset(vh)) * vm->inputFramesPerSecond + getVDIFFrameNumber(vh);
+
+		if(lowest < 0 || frameNumber < lowest)
+		{
+			lowest = frameNumber;
+		}
+		++nFrame;
+		i += vm->inputFrameSize;
+		if(nFrame >= vm->nSort)
+		{
+			break;
+		}
+	}
+
+	return lowest;
+}
+
 /* Params are:
  *
  * dest:
@@ -390,6 +447,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int nFill = 0;				/* counts number of bytes skipped that were fill pattern */
 	int nDup = 0;				/* number of duplicate frames found */
 	int nInvalidFrame = 0;			/* counts number of VDIF frames skipped because of invalid bits */
+	int nDiscard = 0;			/* counts number of VDIF frames dropped because of ordering */
 	int64_t startFrameNumber;		/* = seconds*inputFramesPerSecond + frameNumber */
 
 	int i;					/* index into src */
@@ -413,8 +471,18 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int epoch = -1;
 	int highestSortedDestIndex = -1;
 	int vhUnset = 1;
+	int nSort;	/* try using the supplied one, but if buffers are too small, shorten nSort accordingly */
+
+	nSort = vm->nSort;
 
 	N = srcSize - vm->inputFrameSize;
+
+
+	/* Adjust sort size if needed based on buffer sizes */
+	if(3*srcSize <= 4*nSort*vm->inputFrameSize)
+	{
+		nSort = (3*srcSize)/(4*vm->inputFrameSize);
+	}
 
 	if(vm->flags & VDIF_MUX_FLAG_GOTOEND)
 	{
@@ -422,7 +490,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 	else
 	{
-		maxSrcIndex = srcSize - vm->nSort*vm->inputFrameSize;
+		maxSrcIndex = srcSize - nSort*vm->inputFrameSize;
 	}
 
 	if(vm->flags & VDIF_MUX_FLAG_RESPECTGRANULARITY)
@@ -443,15 +511,13 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 	startFrameNumber = startOutputFrameNumber;
 
-	/* Double-check there is enough data to actually output something */
-	if((srcSize <= vm->nSort*vm->inputFrameSize) || ((destSize/vm->outputFrameSize) <= vm->nSort))
+	if(startFrameNumber < 0)
 	{
-		// the above can happen if subIntNS is mis-tuned in DiFX
-		if (stats)
+		startFrameNumber = getLowestFrameNumber(src, srcSize, vm);
+		if(startFrameNumber < 0)
 		{
-			memset(stats, 0, sizeof(struct vdif_mux_statistics));
+			return -3;
 		}
-		return -1;
 	}
 
 	/* clear mask of presence */
@@ -522,12 +588,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 		frameNumber = (int64_t)(getVDIFFrameEpochSecOffset(vh)) * vm->inputFramesPerSecond + getVDIFFrameNumber(vh);
 		
-		if(startFrameNumber < 0)	/* we haven't seen data yet */
-		{
-			startFrameNumber = frameNumber - vm->nSort;
-			startFrameNumber -= (startFrameNumber % vm->frameGranularity);	/* to ensure first frame starts on integer ns */
-		}
-
 		if(vhUnset)
 		{
 			memcpy(&outputHeader, vh, 16);
@@ -562,7 +622,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		{
 			/* no choice but to discard this data */
 			i += vm->inputFrameSize;
-			nSkip += vm->inputFrameSize;
+			++nDiscard;
 
 			continue;
 		}
@@ -583,7 +643,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			}
 			i += vm->inputFrameSize;
 			++nEnd;
-			if(nEnd >= vm->nSort)
+			if(nEnd >= nSort)
 			{
 				break;
 			}
@@ -594,40 +654,21 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			
 			if(destIndex > highestDestIndex + vm->nGap && vm->nGap > 0)
 			{
-				if(nValidFrame > vm->nSort || startOutputFrameNumber >= 0)
+				if(nValidFrame > nSort) // || startOutputFrameNumber >= 0)
 				{
+
+
+	// FIXME: revisit this logic
 					/* if we are out of the probationary nSort period, start the shut-down procedure */
 					if(bytesProcessed == -1)
 					{
 						bytesProcessed = i;
 					}
 					++nEnd;
-					if(nEnd >= vm->nSort)
+					if(nEnd >= nSort)
 					{
 						break;
 					}
-				}
-				else
-				{
-					/* otherwise we take this opportunity to reset the startFrameNumber and clear data moved up to now */
-					
-					startFrameNumber = frameNumber - vm->nSort;
-					startFrameNumber -= (startFrameNumber % vm->frameGranularity);	/* to ensure first frame starts on integer ns */
-
-					/* clear mask of presence */
-					for(destIndex = 0; destIndex < highestDestIndex; ++destIndex)
-					{
-						p = (uint64_t *)(dest + vm->outputFrameSize*destIndex);
-						p[3] = 0;
-					}
-					highestDestIndex = 0;
-
-					/* at this point we're starting over, so there are no valid frames. */
-					nSkip += nValidFrame*vm->inputFrameSize;
-					nValidFrame = 0;	
-
-					destIndex = frameNumber - startFrameNumber;
-					p = (uint64_t *)(dest + vm->outputFrameSize*destIndex);
 				}
 			}
 
@@ -650,62 +691,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				{
 					highestDestIndex = destIndex;
 				}
-				
-				/* Once we have nSort good frames, we know the earliest frame acceptable, so now scrunch forward... */
-				if(nValidFrame == vm->nSort+1 && startOutputFrameNumber < 0)
-				{
-					int firstUsed;
-
-					for(firstUsed = 0; firstUsed <= highestDestIndex; ++firstUsed)
-					{
-						p = (uint64_t *)(dest + vm->outputFrameSize*firstUsed);
-
-						if(p[3] > 0)
-						{
-							break;
-						}
-					}
-
-					if(firstUsed > 0 && firstUsed <= highestDestIndex)
-					{
-						/* Ensure frame granularity conditions remain met */
-						firstUsed -= (firstUsed % vm->frameGranularity);
-
-						/* slide data forward */
-						for(f = firstUsed; f <= highestDestIndex; ++f)
-						{
-							int e = f-firstUsed;
-							uint64_t *q;
-
-							p = (uint64_t *)(dest + vm->outputFrameSize*e);
-							q = (uint64_t *)(dest + vm->outputFrameSize*f);
-							p[3] = q[3];
-
-							if(p[3] != 0)
-							{
-								const unsigned char * const *threadBuffers2;
-
-								threadBuffers  = (const unsigned char **)(dest + vm->outputFrameSize*e + VDIF_HEADER_BYTES);
-								threadBuffers2 = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
-								memcpy(threadBuffers, threadBuffers2, vm->nThread*sizeof(const unsigned char *));
-							}
-						}
-
-						/* zero any remaining masks */
-						for(f = highestDestIndex+1-firstUsed; f <= highestDestIndex ; ++f)
-						{
-							uint64_t *q;
-
-							q = (uint64_t *)(dest + vm->outputFrameSize*f);
-							q[3] = 0;
-						}
-
-						/* change a few other indexes */
-						highestDestIndex -= firstUsed;
-						highestSortedDestIndex -= firstUsed;
-						startFrameNumber += firstUsed;
-					}
-				}
 			}
 			i += vm->inputFrameSize;
 		}
@@ -714,63 +699,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	if(bytesProcessed == -1)
 	{
 		bytesProcessed = i;
-	}
-
-	/* If there were fewer than nSort frames read and start output frame number not specified, scrunch output to front */
-	if(nValidFrame < vm->nSort && startOutputFrameNumber < 0)
-	{
-		int firstUsed;
-		uint64_t *p;
-
-		for(firstUsed = 0; firstUsed <= highestDestIndex; ++firstUsed)
-		{
-			p = (uint64_t *)(dest + vm->outputFrameSize*firstUsed);
-
-			if(p[3] == vm->goodMask)
-			{
-				break;
-			}
-		}
-		if(firstUsed > 0 && firstUsed <= highestDestIndex)
-		{
-			/* Ensure frame granularity conditions remain met */
-			firstUsed -= (firstUsed % vm->frameGranularity);
-
-			/* slide data forward */
-			for(f = firstUsed; f <= highestDestIndex; ++f)
-			{
-				int e = f-firstUsed;
-				uint64_t *q;
-
-				p = (uint64_t *)(dest + vm->outputFrameSize*e);
-				q = (uint64_t *)(dest + vm->outputFrameSize*f);
-				p[3] = q[3];
-
-				if(p[3] != 0)
-				{
-					const unsigned char **threadBuffers;
-					const unsigned char **threadBuffers2;
-
-					threadBuffers  = (const unsigned char **)(dest + vm->outputFrameSize*e + VDIF_HEADER_BYTES);
-					threadBuffers2 = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
-					memcpy(threadBuffers, threadBuffers2, vm->nThread*sizeof(const unsigned char *));
-				}
-			}
-
-			/* zero any remaining masks */
-			for(f = highestDestIndex+1-firstUsed; f <= highestDestIndex ; ++f)
-			{
-				uint64_t *q;
-
-				q = (uint64_t *)(dest + vm->outputFrameSize*f);
-				q[3] = 0;
-			}
-
-			/* change a few other indexes */
-			highestDestIndex -= firstUsed;
-			highestSortedDestIndex -= firstUsed;
-			startFrameNumber += firstUsed;
-		}
 	}
 
 	/* Here the source dried up, but we want to be able to reconstruct a complete stream later, so back up, a bit to look for most recent incomplete frame consistent with nSort */
@@ -816,7 +744,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 	else
 	{
-		int minDestIndex = highestDestIndex - vm->nSort/vm->nThread;
+		int minDestIndex = highestDestIndex - nSort/vm->nThread;
 
 		if(minDestIndex >= 0) for(f = highestDestIndex; f >= minDestIndex; --f)
 		{
@@ -979,7 +907,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		stats->nValidFrame += nValidFrame;
 		stats->nInvalidFrame += nInvalidFrame;
-		stats->nDiscardedFrame += (nValidFrame - vm->nThread*(nGoodOutput + nPartialOutput));
+		stats->nDiscardedFrame += nDiscard;
 		stats->nWrongThread += nWrongThread;
 		stats->nDuplicateFrame += nDup;
 		stats->nSkippedByte += nSkip;

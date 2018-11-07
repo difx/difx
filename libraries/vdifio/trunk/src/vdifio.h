@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Adam Deller / Walter Brisken               *
+ *   Copyright (C) 2009-2018 by Adam Deller / Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -288,8 +288,8 @@ struct vdif_mux {
   int inputChannelsPerThread;				/* default is 1, unless this is changed with setvdifmuxinputchannels() */
   int bitsPerSample;					/* per sample (a complex number is considered 2 samples here) */
   int nThread;
-  int nSort;
-  int nGap;
+  int nSort;						/* number of input frames over which out-of-order is to be tolerated */
+  int nGap;						/* frame number jump to tolerate before returning with incomplete muxing */
   int frameGranularity;
   int nOutputChan;					/* nThread rounded up to nearest power of 2, then multiplied by input chans per thread */
   int complexFactor;					/* should be 1 (real) or 2 (complex).  Used in selecting cornerturner */
