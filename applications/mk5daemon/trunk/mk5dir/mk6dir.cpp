@@ -69,7 +69,7 @@ void summarizeFile(const char *fileName, char *vsn, char activityMsg, char verbo
 	double mjd1, mjd2;
 	char fullFileName[MaxFilenameLength];
 
-	r = summarizemark5bmark6(&sum5b, fileName, 0);
+	r = summarizemark5bmark6(&sum5b, fileName);
 
 	if(r == 0)
 	{
