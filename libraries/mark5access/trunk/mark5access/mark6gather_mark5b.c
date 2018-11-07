@@ -98,7 +98,7 @@ static void *fileEndSummarizer(void *arg)
 }
 
 /* scan name should be the template file to match */
-int summarizemark5bmark6(struct mark5b_file_summary *sum, const char *scanName, int frameSize)
+int summarizemark5bmark6(struct mark5b_file_summary *sum, const char *scanName)
 {
 	int bufferSize = 200000;	/* 200 kB should be sufficient */
 	unsigned char *buffer, *p;

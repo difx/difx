@@ -32,7 +32,7 @@ extern "C" {
 #include "mark5bfile.h"
 
 /* scan name should be the template file to match */
-int summarizemark5bmark6(struct mark5b_file_summary *sum, const char *scanName, int frameSize);
+int summarizemark5bmark6(struct mark5b_file_summary *sum, const char *scanName);
 
 #ifdef __cplusplus
 }
