@@ -385,7 +385,7 @@ cinfo << startl << "Mark6 Gather: " << bytestoread << " requested, " << bytes <<
 			bytediff = bytecount - lastbytecount;
 			mbyterate = (float)bytediff / 1000000.0;
 			fmjd = corrstartday + (corrstartseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + static_cast<double>(readnanoseconds)/1000000000.0)/86400.0;
-			sendMark6Activity(MARK6_STATE_PLAY, bytecount, fmjd, mbyterate);
+			sendMark6Activity(MARK6_STATE_PLAY, bytecount, fmjd, mbyterate * 8.0);
 			msgsenttime = now;
 			lastbytecount = bytecount;
 		}
