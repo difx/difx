@@ -687,6 +687,8 @@ static int getModes(VexData *V, Vex *v)
 			p = get_all_lowl(antName.c_str(), modeDefName, T_SAMPLE_RATE, B_FREQ, v);
 			if(p == 0)
 			{
+				std::cerr << "Warning: antenna " << antName << " in mode " << modeDefName << " has no sample_rate field" << std::endl;
+				++nWarn;
 				continue;
 			}
 
