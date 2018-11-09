@@ -274,10 +274,20 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 
 # replaces filename mark6 data source with msn, if necessary
 def adjustMark6datastreams(datastreams, inputfile, verbose):
+        # get .vex.obs filename from .calc file
+        calcfilename = inputfile.replace('.input', '.calc')
+	try:
+	    calcfile = open(calcfilename)
+	    for line in calcfile:
+	        if "VEX FILE" in line:
+	            vexobsfile = (line.split(':')[1]).strip()
+		    break
+
+        except IOError:
+	    print calcfilename, "could not be openened, returning"
+	    return
+
         # get antenna module mapping from .vex.obs
-        prefix = inputfile.replace('.input', '')
-	exp = prefix.split('_')[0]
-	vexobsfile = exp + '.vex.obs'
 	try:
             tapelogObsFound = False
             ant = ''
