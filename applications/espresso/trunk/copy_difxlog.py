@@ -59,13 +59,13 @@ with open(explog_filename, "r") as infile:
         outfilename = os.path.join(outdir, jobname + ".difxlog")
         if jobname not in joblist:
             # Open file if not opened before. Rename any pre-existing version.
-            print "Found ", jobname, " at line", lineno
+            print "Found {:s} at line {:d}".format(jobname, lineno)
             joblist.append(jobname)
             if os.path.exists(outfilename):
+                bakfile = outfilename + ".bak"
                 sys.stderr.write(
-                        "Renaming " + outfilename + " to " + outfilename +
-                        ".bak\n")
-                os.rename(outfilename, outfilename + ".bak")
+                        "Renaming {:s} to {:s}\n".format(outfilename, bakfile))
+                os.rename(outfilename, bakfile)
             outfile[outfilename] = open(outfilename, "a")
         outfile[outfilename].write(line)
 
