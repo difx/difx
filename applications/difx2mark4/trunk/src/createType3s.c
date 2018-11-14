@@ -171,7 +171,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         fout = fopen (outname, "w");
         if (fout == NULL)
             {
-            perror ("difx2mark4");
+            perror (outname);
             fprintf (stderr, "fatal error opening output type3 file %s\n", outname);
             return (-1);
             }

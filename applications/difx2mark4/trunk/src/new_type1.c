@@ -118,7 +118,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
     fout[nb] = fopen (outname, "w");
     if (fout[nb] == NULL)
         {
-        perror ("difx2mark4");
+        perror (outname);
         fprintf (stderr, "fatal error opening output type1 file %s\n", outname);
         return (-1);
         }

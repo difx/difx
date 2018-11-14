@@ -37,7 +37,7 @@ int get_vis (char *vf_name,                   // name of input file
     vfile = fopen (vf_name, "r");
     if (vfile == NULL)
         {
-        perror ("difx2mark4");
+        perror (vf_name);
         fprintf (stderr, "fatal error opening input data file %s\n", vf_name);
         return (-1);
         }

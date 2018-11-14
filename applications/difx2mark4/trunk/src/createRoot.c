@@ -177,7 +177,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
     fin = fopen (D->job[jobId].vexFile, "r");
     if (fin == NULL)
         {
-        perror ("difx2mark4");
+        perror (D->job[jobId].vexFile);
         fprintf (stderr, "fatal error opening input vex file %s for job %d\n", 
                  D->job[jobId].vexFile, jobId);
         return (-1);
@@ -190,7 +190,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
     fout = fopen (rootname, "w");
     if (fout == NULL)
         {
-        perror ("difx2mark4");
+        perror (rootname);
         fprintf (stderr, "fatal error opening output file %s\n", rootname);
         fclose (fin);
         return (-1);

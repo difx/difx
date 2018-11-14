@@ -156,7 +156,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             pdir = opendir (dirname);
             if (pdir == NULL)
                 {
-                perror ("difx2mark4");
+                perror (dirname);
                 fprintf (stderr, "fatal error opening input data directory %s\n", dirname);
                 return (-1);
                 }
@@ -173,7 +173,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             if (dent == NULL)
                 {
                 if (errno)
-                    perror ("difx2mark4");
+                    perror (dirname);
                 fprintf (stderr, "problem finding data in %s\n", dirname);
                 closedir (pdir);
                 return (-1);
@@ -186,7 +186,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             gv_stat = get_vis (inname, opts, nvis, vrsize, &vrec, &nvrtot, corrdate);
             if (gv_stat < -1)       // -1 is normal (EOF); anything less is an error
                 {
-                perror ("difx2mark4");
+                perror (inname);
                 fprintf (stderr, "error (%d) accessing input data file %s\n", 
                          gv_stat, inname);
                 return (-1);

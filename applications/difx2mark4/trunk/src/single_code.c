@@ -39,7 +39,7 @@ char single_code (char *station, char *fname)
             fin = fopen (fname, "r");
             if (fin == NULL)
                 {
-                perror ("difx2mark4");
+                perror (fname);
                 fprintf (stderr, "problem opening station code file %s\n", fname);
                 return 0;
                 }
