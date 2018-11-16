@@ -68,7 +68,7 @@ get_global_deflist (struct def_list **deflist)
             if (strcmp (blist[i].deflist[j].name, ref.keyword) == 0) break;
         if (j == blist[i].ndef)
             {
-            msg ("ref to non-existent def in $GLOBAL", 2, ref.keyword);
+            msg ("ref to non-existent def '%s' in $GLOBAL", 2, ref.keyword);
             return (-1);
             }
                                         /* Store the def away */

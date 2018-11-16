@@ -40,7 +40,7 @@ param_formats (void)
     sprintf (filename, "%s/pformat.txt", textdir);
     if ((fp = fopen (filename, "r")) == NULL)
         {
-        msg ("Could not open vex format definition file", 3);
+        msg ("Could not open vex format definition file '%s'", 3, filename);
         return (-1);
         }
                                         /* Start with lots of slots */
