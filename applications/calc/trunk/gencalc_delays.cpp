@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iomanip>
+#include <unistd.h>
 
 #include "ccon.h"
 #include "cphys.h"
