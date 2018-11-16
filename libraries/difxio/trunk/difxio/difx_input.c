@@ -3325,6 +3325,12 @@ static int mergeDifxInputFreqSets(DifxInput *D, const DifxMergeOptions *mergeOpt
 	static const DifxMergeOptions defaultMergeOptions;      /* initialized to zeros */
 	int nError;
 
+	if(!D)
+	{
+		++nError;
+		return nError;
+	}
+
 	if(mergeOptions == 0)
 	{
 		mergeOptions = &defaultMergeOptions;
@@ -3360,6 +3366,13 @@ DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions)
 	}
 
 	D = deriveDifxInputValues(D);
+	if(D == NULL)
+	{
+		fprintf(stderr, "Merging Frequency Setups failed.  Could not derive input values.\n");
+
+		return 0;
+	}
+
 	nError = mergeDifxInputFreqSets(D, mergeOptions);
 	if(nError > 0)
 	{
