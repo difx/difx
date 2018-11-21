@@ -24,6 +24,7 @@ import glob, sys, os, shutil, struct, time, math, numpy, copy, ConfigParser
 import hashlib
 import parseDiFX
 import fileinput
+import shutil
 
 vis_hashtable = {}
 vis_hashtable_cleanupSec = 0
@@ -344,6 +345,11 @@ def stitchVisibilityfile(basename,cfg):
 		print ('Warning: %s already exists, skipping the processing of %s!' % (difxoutname,difxfilename))
 		return
 	difxout = open(difxoutname, 'w')
+
+	# Copy PCAL files if any
+	for pcalfile in glob.glob(inputfile_cfg['difxfile'] + '/PCAL_*'):
+		print ('Copying %s' % (pcalfile))
+		shutil.copy(pcalfile, difxoutdir + '/')
 
 	# Pull out antenna indices based on telescope names
 	telNames = [t.name for t in telescopes]
