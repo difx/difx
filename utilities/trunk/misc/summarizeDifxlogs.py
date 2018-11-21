@@ -3,7 +3,7 @@
 # (C) 2018 Jan Wagner
 #
 '''
-Usage: summarizeDifxlogs.py [--help|-h] [--color|-c]
+Usage: summarizeDifxlogs.py [--help|-h] [--color|-c] [<directory>|<file.difxlog>]
 
 Produces a summary of a DiFX correlation run in the current working directory.
 Inspects the *.difxlog and associated *.input files and reports average
@@ -170,8 +170,25 @@ if not doColor:
 
 # List all log files in CWD
 telescopes = set()
-files = fnmatch.filter(os.listdir('.'), '*_*.difxlog')
+files = []
+for arg in sys.argv[1:]:
+	if arg in ['--color', '-c', '--help', '-h']:
+		continue
+	if os.path.isfile(arg):
+		files.append(arg)
+	elif os.path.isdir(arg):
+		toAdd = fnmatch.filter(os.listdir(arg), '*_*.difxlog')
+		files += [arg + '/' + entry for entry in toAdd]
+	else:
+		print ("Warning: skipping '%s', not a file nor a directory" % (arg))
+if len(files) <= 0:
+	files += fnmatch.filter(os.listdir('.'), '*_*.difxlog')
+
+# Keep unique files only, sort
+files = list(set(files)) 
 files.sort()
+if len(files) <= 0:
+	sys.exit(0)
 
 # Summaries
 if doTimefactors:
