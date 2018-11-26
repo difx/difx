@@ -5,10 +5,10 @@ _libraries = {}
 _libraries['libvdifio.so'] = CDLL('libvdifio.so')
 
 
-VDIFHeaderPrintLevelShort = 2
 VDIFHeaderPrintLevelHex = 0
-VDIFHeaderPrintLevelColumns = 1
 VDIFHeaderPrintLevelLong = 3
+VDIFHeaderPrintLevelColumns = 1
+VDIFHeaderPrintLevelShort = 2
 class vdif_header(Structure):
     pass
 uint32_t = c_uint32
@@ -54,9 +54,82 @@ vdif_edv1_header._fields_ = [
     ('syncword', uint32_t),
     ('name', c_char * 8),
 ]
-class vdif_edv2_header(Structure):
+class vdif_edv2_header_generic(Structure):
+    pass
+vdif_edv2_header_generic._fields_ = [
+    ('seconds', uint32_t, 30),
+    ('legacymode', uint32_t, 1),
+    ('invalid', uint32_t, 1),
+    ('frame', uint32_t, 24),
+    ('epoch', uint32_t, 6),
+    ('unassigned', uint32_t, 2),
+    ('framelength8', uint32_t, 24),
+    ('nchan', uint32_t, 5),
+    ('version', uint32_t, 3),
+    ('stationid', uint32_t, 16),
+    ('threadid', uint32_t, 10),
+    ('nbits', uint32_t, 5),
+    ('iscomplex', uint32_t, 1),
+    ('notrelevant', uint32_t, 4),
+    ('subsubversion', uint32_t, 20),
+    ('eversion', uint32_t, 8),
+    ('word5', uint32_t, 32),
+    ('word6', uint32_t, 32),
+    ('word7', uint32_t, 32),
+]
+class vdif_edv2_header_alma(Structure):
     pass
 uint64_t = c_uint64
+vdif_edv2_header_alma._fields_ = [
+    ('seconds', uint32_t, 30),
+    ('legacymode', uint32_t, 1),
+    ('invalid', uint32_t, 1),
+    ('frame', uint32_t, 24),
+    ('epoch', uint32_t, 6),
+    ('unassigned', uint32_t, 2),
+    ('framelength8', uint32_t, 24),
+    ('nchan', uint32_t, 5),
+    ('version', uint32_t, 3),
+    ('stationid', uint32_t, 16),
+    ('threadid', uint32_t, 10),
+    ('nbits', uint32_t, 5),
+    ('iscomplex', uint32_t, 1),
+    ('polblock', uint32_t, 1),
+    ('quadrantminus1', uint32_t, 2),
+    ('correlator', uint32_t, 1),
+    ('subsubversion', uint32_t, 20),
+    ('eversion', uint32_t, 8),
+    ('picstatus', uint32_t),
+    ('psn', uint64_t),
+]
+class vdif_edv2_header_r2dbe(Structure):
+    pass
+int32_t = c_int32
+vdif_edv2_header_r2dbe._fields_ = [
+    ('seconds', uint32_t, 30),
+    ('legacymode', uint32_t, 1),
+    ('invalid', uint32_t, 1),
+    ('frame', uint32_t, 24),
+    ('epoch', uint32_t, 6),
+    ('unassigned', uint32_t, 2),
+    ('framelength8', uint32_t, 24),
+    ('nchan', uint32_t, 5),
+    ('version', uint32_t, 3),
+    ('stationid', uint32_t, 16),
+    ('threadid', uint32_t, 10),
+    ('nbits', uint32_t, 5),
+    ('iscomplex', uint32_t, 1),
+    ('polblock', uint32_t, 1),
+    ('bdcsideband', uint32_t, 1),
+    ('rxsideband', uint32_t, 1),
+    ('undefined', uint32_t, 1),
+    ('subsubversion', uint32_t, 20),
+    ('eversion', uint32_t, 8),
+    ('ppsdiff', int32_t, 32),
+    ('psn', uint64_t),
+]
+class vdif_edv2_header(Structure):
+    pass
 vdif_edv2_header._fields_ = [
     ('seconds', uint32_t, 30),
     ('legacymode', uint32_t, 1),
@@ -239,7 +312,9 @@ vdif_mux_statistics._fields_ = [
     ('bytesProcessed', c_longlong),
     ('nGoodFrame', c_longlong),
     ('nPartialFrame', c_longlong),
+    ('nFillerFrame', c_longlong),
     ('nCall', c_int),
+    ('nOutOfDataConditions', c_int),
     ('srcSize', c_int),
     ('srcUsed', c_int),
     ('destSize', c_int),
@@ -299,6 +374,9 @@ resetvdiffilesummary.argtypes = [POINTER(vdif_file_summary)]
 printvdiffilesummary = _libraries['libvdifio.so'].printvdiffilesummary
 printvdiffilesummary.restype = None
 printvdiffilesummary.argtypes = [POINTER(vdif_file_summary)]
+snprintvdiffilesummary = _libraries['libvdifio.so'].snprintvdiffilesummary
+snprintvdiffilesummary.restype = None
+snprintvdiffilesummary.argtypes = [STRING, c_int, POINTER(vdif_file_summary)]
 vdiffilesummarygetstartmjd = _libraries['libvdifio.so'].vdiffilesummarygetstartmjd
 vdiffilesummarygetstartmjd.restype = c_int
 vdiffilesummarygetstartmjd.argtypes = [POINTER(vdif_file_summary)]
@@ -347,14 +425,16 @@ _IO_marker._fields_ = [
     ('_sbuf', POINTER(_IO_FILE)),
     ('_pos', c_int),
 ]
-__all__ = ['configurevdifmux', 'getVDIFFrameMJD',
-           'getVDIFNumChannels', 'vdif_mux_statistics',
-           'fprintVDIFHeader', 'vdif_header', 'nextVDIFHeader',
-           'setVDIFThreadID', 'setVDIFFrameTime', 'FILE', 'int64_t',
-           'vdifmux', 'resetvdifmuxstatistics', 'setVDIFEpochMJD',
-           'vdif_edv3_header', 'setVDIFFrameSecond',
-           'printvdifmuxstatistics', 'getVDIFFrameDMJD', '__off_t',
-           'printvdiffilesummary', 'getVDIFEpochMJD', '_IO_marker',
+__all__ = ['configurevdifmux', 'vdif_edv2_header_alma',
+           'getVDIFFrameMJD', 'getVDIFNumChannels',
+           'vdif_mux_statistics', 'int32_t', 'fprintVDIFHeader',
+           'vdif_header', 'nextVDIFHeader', 'setVDIFThreadID',
+           'setVDIFFrameTime', 'FILE', 'int64_t', 'vdifmux',
+           'resetvdifmuxstatistics', 'setVDIFEpochMJD',
+           'vdif_edv3_header', 'snprintvdiffilesummary',
+           'setVDIFFrameSecond', 'printvdifmuxstatistics',
+           'getVDIFFrameDMJD', '__off_t', 'printvdiffilesummary',
+           'getVDIFEpochMJD', 'vdif_edv2_header_r2dbe', '_IO_marker',
            'getVDIFFrameMJDSec', 'VDIFHeaderPrintLevelHex',
            '__off64_t', 'size_t', 'vdiffilesummarygetstartmjd',
            'time_t', 'vdif_edv2_header', 'setVDIFNumChannels',
@@ -364,10 +444,10 @@ __all__ = ['configurevdifmux', 'getVDIFFrameMJD',
            'vdif_edv1_header', '_IO_lock_t', 'resetvdiffilesummary',
            'setVDIFFrameMJD', '__time_t',
            'VDIFHeaderPrintLevelColumns', 'setVDIFFrameBytes',
-           'incrementVDIFHeader', 'printVDIFHeader', 'vdif_mux',
-           'uint16_t', 'determinevdifframeoffset',
-           'vdif_file_summary', 'VDIFHeaderPrintLevelLong',
-           '_IO_FILE', 'testvdifcornerturners', 'uint32_t',
-           'printvdifmux', 'VDIFHeaderPrintLevel', 'uint64_t',
-           'createVDIFHeader', 'setvdifmuxinputchannels',
-           'setVDIFEpochTime']
+           'incrementVDIFHeader', 'vdif_edv2_header_generic',
+           'printVDIFHeader', 'vdif_mux', 'uint16_t',
+           'determinevdifframeoffset', 'vdif_file_summary',
+           'VDIFHeaderPrintLevelLong', '_IO_FILE',
+           'testvdifcornerturners', 'uint32_t', 'printvdifmux',
+           'VDIFHeaderPrintLevel', 'uint64_t', 'createVDIFHeader',
+           'setvdifmuxinputchannels', 'setVDIFEpochTime']
