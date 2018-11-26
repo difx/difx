@@ -270,9 +270,9 @@ static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 	fprintf(out, "  legacymode = %d\n", header->legacymode);
 	fprintf(out, "  invalid = %d\n", header->invalid);
 	fprintf(out, "  version = %d\n", header->version);
-	if(stnCode[0] >= ' ' && stnCode[0] <= 127 && (stnCode[1] >= ' ' || stnCode[1] == 0) && stnCode[1] <= 127)
+	if(isprint(stnCode[0]) && isprint(stnCode[1]))
 	{
-		fprintf(out, "  stationid = 0x%X = %d = '%c%c'\n", header->stationid, header->stationid, stnCode[0], stnCode[1]);
+		fprintf(out, "  stationid = 0x%X = %d = '%c%c'\n", header->stationid, header->stationid, stnCode[1], stnCode[0]);
 	}
 	else
 	{
@@ -285,26 +285,44 @@ static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 		if(header->eversion == 1)
 		{
 			const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
-			
+
 			fprintf(out, "  samprate = 0x%06X = %d %s\n", edv1->samprate, edv1->samprate, edv1->samprateunits ? "MHz" : "kHz");
 			fprintf(out, "  syncword = 0x%08X\n", edv1->syncword);
 			fprintf(out, "  name = %8s", edv1->name);
 		}
 		else if(header->eversion == 2)
 		{
-			const vdif_edv2_header *edv2 = (const vdif_edv2_header *)header;
-
-			fprintf(out, "  polblock = %d\n", edv2->polblock);
-			fprintf(out, "  quadrant-1 = %d\n", edv2->quadrantminus1);
-			fprintf(out, "  correlator = %d\n", edv2->correlator);
-			fprintf(out, "  sync/magic = %x\n", edv2->sync);
-			fprintf(out, "  PIC status = %" PRIu32, edv2->status);
-			fprintf(out, "  VTP PSN = %" PRIu64, edv2->psn);
+			const vdif_edv2_header_generic *edv2 = (const vdif_edv2_header_generic *)header;
+			if (edv2->subsubversion == VDIF_EDV2_SUBVER_ALMA)
+			{
+				const vdif_edv2_header_alma *edv2a = (const vdif_edv2_header_alma *)header;
+				fprintf(out, "  polblock = %d\n", edv2a->polblock);
+				fprintf(out, "  quadrant-1 = %d\n", edv2a->quadrantminus1);
+				fprintf(out, "  correlator = %d\n", edv2a->correlator);
+				fprintf(out, "  PIC status = %" PRIu32 "\n", edv2a->picstatus);
+				fprintf(out, "  VTP PSN = %" PRIu64 "\n", edv2a->psn);
+			}
+			else if (edv2->subsubversion == VDIF_EDV2_SUBVER_R2DBE)
+			{
+				const vdif_edv2_header_r2dbe *edv2r2 = (const vdif_edv2_header_r2dbe *)header;
+				fprintf(out, "  polblock = %d\n", edv2r2->polblock);
+				fprintf(out, "  BDC sideband = %d\n", edv2r2->bdcsideband);
+				fprintf(out, "  rx sideband = %d\n", edv2r2->rxsideband);
+				fprintf(out, "  1PPS offset = %+" PRId32 " = %+.4f usec\n", edv2r2->ppsdiff, edv2r2->ppsdiff/256.0f);
+				fprintf(out, "  VTP PSN = %" PRIu64 "\n", edv2r2->psn);
+			}
+			else
+			{
+				fprintf(out, "  unknown EDV2 subversion = %" PRIu32 "\n", edv2->subsubversion);
+				fprintf(out, "  word5 = %" PRIu32 "\n", edv2->word5);
+				fprintf(out, "  word6 = %" PRIu32 "\n", edv2->word6);
+				fprintf(out, "  word7 = %" PRIu32 "\n", edv2->word7);
+			}
 		}
 		else if(header->eversion == 3)
 		{
 			const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
-			
+
 			fprintf(out, "  samprate = 0x%06X = %d %s\n", edv3->samprate, edv3->samprate, edv3->samprateunits ? "MHz" : "kHz");
 			fprintf(out, "  syncword = 0x%08X\n", edv3->syncword);
 			fprintf(out, "  tuning = 0x%08X = %8.6f MHz\n", edv3->tuning, edv3->tuning/16777216.0);
@@ -352,10 +370,27 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 			samprate = edv1->samprate * (edv1->samprateunits ? 1000000LL : 1000LL);
 			fprintf(out, " %10lld 0x%08X %8s", samprate, edv1->syncword, edv1->name);
 		}
-		else if(header->eversion == 2)
+		else if(header->eversion)
 		{
-			const vdif_edv2_header *edv2 = (const vdif_edv2_header *)header;
-			fprintf(out, " %8d %13d %" PRIu64, edv2->polblock, edv2->status, edv2->psn);
+			const vdif_edv2_header_generic *edv2 = (const vdif_edv2_header_generic *)header;
+			if (edv2->subsubversion == VDIF_EDV2_SUBVER_ALMA)
+			{
+				const vdif_edv2_header_alma *edv2a = (const vdif_edv2_header_alma *)header;
+				fprintf(out, " PIC-%s-Q%d%c %13" PRIu32 " %" PRIu64,  // e.g. PIC-BL-Q1Y
+					edv2a->correlator == 0 ? "2A" : "BL",
+					edv2a->quadrantminus1+1,
+					edv2a->polblock == 0 ? 'X' : 'Y',
+					edv2a->picstatus, edv2a->psn);
+			}
+			else if (edv2->subsubversion == VDIF_EDV2_SUBVER_R2DBE)
+			{
+				const vdif_edv2_header_r2dbe *edv2r2 = (const vdif_edv2_header_r2dbe *)header;
+				fprintf(out, " %3d %3d %2d %+13d %" PRIu64, edv2r2->polblock, edv2r2->bdcsideband, edv2r2->rxsideband, edv2r2->ppsdiff, edv2r2->psn);
+			}
+			else
+			{
+				fprintf(out, " %" PRIu64 " %" PRIu64 " %" PRIu64, edv2->word5, edv2->word6, edv2->word7);
+			}
 		}
 		else if(header->eversion == 3)
 		{
@@ -393,7 +428,19 @@ static void fprintVDIFHeaderColumns(FILE *out, const vdif_header *header)
 	}
 	else if(header->eversion == 2)
 	{
-		fprintf(out, " PolBlock FPGA_PPS_diff PSN");
+		const vdif_edv2_header_generic *edv2 = (const vdif_edv2_header_generic *)header;
+		if (edv2->subsubversion == VDIF_EDV2_SUBVER_ALMA)
+		{
+			fprintf(out, "     Origin    PIC_Status PSN");
+		}
+		else if (edv2->subsubversion == VDIF_EDV2_SUBVER_R2DBE)
+		{
+			fprintf(out, " Pol BDC RX FPGA_PPS_diff PSN");
+		}
+		else
+		{
+			fprintf(out, " PolBlock FPGA_PPS_diff PSN");
+		}
 	}
 	else if(header->eversion == 3)
 	{

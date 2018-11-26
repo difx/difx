@@ -6,6 +6,7 @@ Version 1.3
 * vdifmux(): change logic to determine first frame number if not explicitly provided -> simplified and probably faster and possibly more correct code.
 * vdifmux(): make more robust in some parameter corner cases
 * vdifmux(): nSort is now entirely referring to input frames; previously there was some use regarding output frames
+* printVDIFheader: minor update for discerning two EDV Version 2 sub(sub)versions (EHT R2DBE, ALMA)
 
 Version 1.2
 ~~~~~~~~~~~

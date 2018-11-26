@@ -49,7 +49,8 @@ extern "C" {
 #define VDIF_NOERROR			0
 #define VDIF_ERROR			1
 
-#define VDIF_ALMA_SYNC			0xA5AE5
+#define VDIF_EDV2_SUBVER_ALMA		0x0A5AE5
+#define VDIF_EDV2_SUBVER_R2DBE		0x000000
 
 /* *** implemented in vdifio.c *** */
 
@@ -105,6 +106,92 @@ typedef struct vdif_edv1_header {	/* NICT extensions: see http://www.vlbi.org/vd
    
    char name[8];		// DAS/Station Name
  } vdif_edv1_header;
+
+typedef struct vdif_edv2_header_generic { /* Nominally for ALMA: https://vlbi.org/vdif/docs/alma-vdif-edv.pdf. Has sub-subversion field, defines upto 2^24 sub-versions for EDV2. */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8
+   uint32_t nchan : 5;
+   uint32_t version : 3;	// Set to 0 according to alma-vdif-edv.pdf; VDIF Version 0
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;		// Set to 1 according to alma-vdif-edv.pdf
+   uint32_t iscomplex : 1;	// Set to 0 according to alma-vdif-edv.pdf
+
+   uint32_t notrelevant : 4;	// Low 4 bit of Sub(sub)-version of EDV, meaning seems to vary by particular subsubversion
+   uint32_t subsubversion : 20;	// Sub(sub)-version of EDV;  ALMA = 0x0A5AE, R2DBE = 0x00000, others...?
+   uint32_t eversion : 8;	// EDV 0x02
+
+   uint32_t word5 : 32;		// use may vary
+   uint32_t word6 : 32;		// use may vary
+   uint32_t word7 : 32;		// use may vary
+} vdif_edv2_header_generic;
+
+typedef struct vdif_edv2_header_alma {	/* For ALMA, ratified very poorly documented on vlbi.org, incomplete document describing this from Chet to Walter via email: 20150615 */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
+   uint32_t nchan : 5;
+   uint32_t version : 3;	// Set to 2 (really?); VDIF Version 2
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;
+   uint32_t iscomplex : 1;
+
+   uint32_t polblock : 1;	// 0 = X-pol PIC, 1 = Y-pol PIC
+   uint32_t quadrantminus1 : 2;	// 0 = quadrant 1, 1 = quadrant 2, ..., 3 = quadrant 4
+   uint32_t correlator : 1;	// 0 = 2-ant correlator, 1 = BL correlator
+   uint32_t subsubversion : 20;	// Sub(sub)-version of EDV;  ALMA = 0x0A5AE
+   uint32_t eversion : 8;	// EDV 0x02
+
+   uint32_t picstatus;		// essentially undefined; "ALMA: A PIC status word (details TBD)"
+
+   uint64_t psn;		// packet serial number
+} vdif_edv2_header_alma;
+
+typedef struct vdif_edv2_header_r2dbe { /* Not documented on vlbi.org, not ratified, just emails, and sao-eht git repo roach2.py */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8
+   uint32_t nchan : 5;
+   uint32_t version : 3;	// Set to 0 according to alma-vdif-edv.pdf; VDIF Version 0
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;		// Set to 1 according to alma-vdif-edv.pdf
+   uint32_t iscomplex : 1;	// Set to 0 according to alma-vdif-edv.pdf
+
+   uint32_t polblock : 1;	// polarization label
+   uint32_t bdcsideband : 1;	// BDC sideband (U, L)
+   uint32_t rxsideband  : 1;	// Receiver sideband (U, L)
+   uint32_t undefined : 1;
+   uint32_t subsubversion : 20;	// Sub(sub)-version of EDV;  R2DBE = 0x00000 (apparently)
+   uint32_t eversion : 8;	// EDV 0x02
+
+   int32_t ppsdiff : 32;	// apparently, count of 1PPS int/ext diff in 256 MHz clock ticks
+
+   uint64_t psn;		// apparently, packet serial number
+} vdif_edv2_header_r2dbe;
 
 typedef struct vdif_edv2_header {	/* For ALMA & R2DBE, incomplete document describing this from Chet to Walter via email: 20150615 */
    uint32_t seconds : 30;
