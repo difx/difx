@@ -314,6 +314,7 @@ struct vdif_mux_statistics {
   long long nPartialFrame;		/* number of partial frames produced (EDV4 only) */
   long long nFillerFrame;		/* number of filler frames produced */
   int nCall;				/* how many calls to vdifmux since last reset */
+  int nOutOfDataConditions;             /* how many calls did not have enough source data to produce any output */
 
   /* These remaining fields are set each time */
   int srcSize;			/* length of input array (bytes) */

@@ -955,6 +955,7 @@ void printvdifmuxstatistics(const struct vdif_mux_statistics *stats)
 	{
 		printf("VDIF multiplexer statistics:\n");
 		printf("  Number of calls to vdifmux         = %d\n", stats->nCall);
+		printf("  Number of calls with insuff. data  = %d\n", stats->nOutOfDataConditions);
 		printf("  Number of valid input frames       = %lld\n", stats->nValidFrame);
 		printf("  Number of invalid input frames     = %lld\n", stats->nInvalidFrame);
 		printf("  Number of duplicate frames         = %lld\n", stats->nDuplicateFrame);
