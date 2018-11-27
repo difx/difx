@@ -33,7 +33,12 @@ import sys
 # searches.
 global_offsets = {
         "at": 43.0, "cd": -0.02, "hh": 0.65, "ke": -0.03, "mp": -0.16,
-        "pa": "0.04", "wa": 0.0, "yg": 0.26}
+        "pa": "0.04", "wa": 0.0, "ww": -0.10, "yg": 0.26}
+
+aliases = {}
+#        "at": ["atca", "ca"],
+#        "hh": ["ht"],
+#        "ho": ["hb"]}
 
 
 def kth_line(x, y, missing_val=None):
@@ -112,6 +117,13 @@ def kth_line(x, y, missing_val=None):
 
 
 def parse_clock(line):
+    """Find gps/fmout lines in the log, extract offset and time, convert to usec
+
+    Returns time and offset, or None if line did not parse
+    Example line: 
+2018.250.12:44:03.01/fmout-gps/+7.1182E-006
+    """
+
     date_re = "(\d{4})\.(\d{3})\.(\d{2}):(\d{2}):(\d{2})"
     clockline = None
     #clockline = re.match(date_re + ".*/(.*fmout.*)/(.*)$", line)
@@ -131,6 +143,34 @@ def parse_clock(line):
     vextime = year + "y" + doy + "d" + hour + "h" + minute + "m" + sec + "s"
     time = espressolib.convertdate(vextime)
     return time, offset
+
+
+def add_aliases(aliases, global_offsets):
+    for station in aliases:
+        for alias in aliases[station]:
+            global_offsets[alias] = global_offsets.get(station, 0)
+    return global_offsets
+
+
+def get_station_name(filename):
+    try:
+        station = re.search("(\w{2}).log", filename).group(1)
+        station = station.lower()
+    except AttributeError:
+        sys.stderr.write("log file name does not follow convention!\n")
+        station = "unknown"
+    return station
+
+
+def clockplot(times, offsets, p, filenames):
+    fit_x = [times[0], times[-1]]
+    fit_y = numpy.polyval(p, fit_x)
+    pyplot.title(" ".join(filenames), size="small")
+    pyplot.xlabel("Time/MJD")
+    pyplot.ylabel("GPS Offset/microsec")
+    pyplot.plot(times, offsets, ".")
+    pyplot.plot(fit_x, fit_y)
+    pyplot.show()
 
 
 # parse the options
@@ -154,6 +194,11 @@ parser.add_option(
         action="store_true", dest="vex", default=False,
         help="Produce VEX format output"
         )
+parser.add_option(
+        "--station", "-s",
+        type="str", dest="station", default=None,
+        help="Specify station name (else derive from log filename)"
+        )
 
 (options, args) = parser.parse_args()
 
@@ -164,12 +209,12 @@ if len(args) < 1:
 times = []
 offsets = []
 
-try:
-    station = re.search("(\w{2}).log", args[0]).group(1)
-    station = station.lower()
-except AttributeError:
-    sys.stderr.write("log file name does not follow convention!\n")
-    station = None
+global_offsets = add_aliases(aliases, global_offsets)
+
+if options.station:
+    station = options.station
+else:
+    station = get_station_name(args[0])
 
 for logfilename in args:
     with open(logfilename) as logfile:
@@ -179,7 +224,7 @@ for logfilename in args:
             except:
                 sys.stderr.write("Could not parse: " + line)
                 clocks = None
-            if not clocks:
+            if clocks is None:
                 continue
             times.append(clocks[0])
             offsets.append(clocks[1])
@@ -197,43 +242,45 @@ rate = p[0]
 if options.do_global_offset:
     global_offset = global_offsets.get(station, 0.0)
     sys.stderr.write(
-            "A priori offset for {:s}: {:0.2f}\n".format(station,
+            "A priori offset for {:s}: {:0.2f} usec\n".format(station,
             global_offset))
-    offset -= global_offsets.get(station, 0.0)
+    offset -= global_offset
 
 v2d_format = """
+ANTENNA {station:s} 
+{{
   clockOffset = {offset:0.3f}
   clockRate = {rate:0.3E}
   clockEpoch = {epoch:0.3f}
+}}
 """
 
 vex_format = """
-$CLOCK;
   def {station:s};
 *                 Valid from          clock_early  clock_early_epoch    rate
     clock_early = {epoch_valid:s} : {offset:0.3f} usec : {epoch:s} : {rate:0.3E} ;
   enddef;
 """
 
-output_format = v2d_format
+epoch_valid = None
 if options.vex:
+    # clock in usec, rate in sec/sec, dates in vex format, reverse sign
+    # convention
     epoch = espressolib.convertdate(times[0], outformat="vex")
-    epoch_valid = espressolib.convertdate(int(times[0]), outformat="vex")
-    output = vex_format.format(
-            station=station.upper(), epoch_valid=epoch_valid, epoch=epoch,
-            offset=offset*-1., rate=rate/(-24*3600.*1e6)) 
-else: 
-    output = v2d_format.format(
-        offset=offset, rate=rate/(24*3600.), epoch=times[0])
+    # make valid from 1 day before first gps measure
+    epoch_valid = espressolib.convertdate((times[0]-1.0), outformat="vex")
+    offset = offset*-1.
+    rate = rate/(-24.*3600.*1e6)
+    output_format = vex_format
+else:
+    # clock in usec, rate in microsec/sec, dates in MJD
+    rate = rate=rate/(24.*3600.)
+    epoch = times[0]
+    output_format = v2d_format
 
-print output
+print output_format.format(
+        station=station.upper(), epoch_valid=epoch_valid, epoch=epoch,
+        offset=offset, rate=rate)
 
 if options.plot:
-    fit_x = [times[0], times[-1]]
-    fit_y = numpy.polyval(p, fit_x)
-    pyplot.title(" ".join(args))
-    pyplot.xlabel("Time/days")
-    pyplot.ylabel("GPS Offset/microsec")
-    pyplot.plot(times, offsets, ".")
-    pyplot.plot(fit_x, fit_y)
-    pyplot.show()
+    clockplot(times, offsets, p, args)
