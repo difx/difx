@@ -370,7 +370,7 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 			samprate = edv1->samprate * (edv1->samprateunits ? 1000000LL : 1000LL);
 			fprintf(out, " %10lld 0x%08X %8s", samprate, edv1->syncword, edv1->name);
 		}
-		else if(header->eversion)
+		else if(header->eversion == 2)
 		{
 			const vdif_edv2_header_generic *edv2 = (const vdif_edv2_header_generic *)header;
 			if (edv2->subsubversion == VDIF_EDV2_SUBVER_ALMA)
