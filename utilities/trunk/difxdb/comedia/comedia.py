@@ -303,9 +303,7 @@ class MainWindow(GenericWindow):
         if file:
             
             for line in self.grdSlot.get(0,END):
-                for token in line:
-                    file.write (token + " ")
-                file.write ("\n")
+                file.write ("%s %s %s %s %s %s %s %s\n" % (line[0],line[1],line[2],line[4],line[5],line[6],line[7],line[3]))
             file.close()
         
         return
