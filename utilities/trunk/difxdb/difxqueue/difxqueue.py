@@ -415,7 +415,11 @@ def processPrintQueueAction(args):
 	for queue in queueList:
 
 		totalDur += queue.jobDuration
-		totalCor += queue.jobDuration / queue.speedupFactor
+
+		if queue.speedupFactor is not None:
+			totalCor += queue.jobDuration / queue.speedupFactor
+		else:
+			queue.speedupFactor = 0.0
 
 		line = formatTable % \
 			(queue.Pass.experiment.code, queue.Pass.passName, queue.jobNumber, \
