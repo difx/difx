@@ -20,6 +20,9 @@
 
 # Simple program to show disk usage on the main CUPPA data storage areas
 # Cormac Reynolds: 2010 June 2
+
+
+from __future__ import print_function, division
 import os
 import subprocess
 import sys
@@ -151,4 +154,4 @@ for disk_query in disk_queries:
 
 
 #JSONOUT = open ("disk.json", 'w')
-print json.dumps(diskreport, indent=4, sort_keys=True)
+print (json.dumps(diskreport, indent=4, sort_keys=True))

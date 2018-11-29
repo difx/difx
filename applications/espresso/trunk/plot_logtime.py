@@ -20,6 +20,8 @@
 
 # program to plot observation time versus correlator time from DiFX logs.
 
+
+from __future__ import print_function, division
 import sys
 import os
 import re
@@ -136,7 +138,7 @@ observation = numpy.array([0])
 new_files = []
 starttime = None
 for filename in args:
-    print "Processing:", filename
+    print ("Processing:", filename)
     thisdatafile = open(filename).readlines()
 
     this_xdata = []
@@ -179,7 +181,7 @@ for filename in args:
 
     # if empty file go to next
     if len(this_xdata) < 1:
-        print "Warning:", filename, "has no data"
+        print ("Warning:", filename, "has no data")
         continue
 
     # find the integration time - typical spacing between observation times in
@@ -198,13 +200,13 @@ for filename in args:
     minpoints = 3
     if nskip > len(this_ydata)//minpoints:
         nskip = max(len(this_ydata)//minpoints, 1)
-        print filename, ": reducing averaging time to", int_time*nskip
+        print (filename, ": reducing averaging time to", int_time*nskip)
 
     # remove gaps in the observation if requested
     if options.removegap:
         orig_length = this_ydata[-1] - this_ydata[0]
         this_ydata = numpy.arange(0, len(this_ydata)*int_time, int_time)
-        print filename, ": removed", orig_length - this_ydata[-1], "secs"
+        print (filename, ": removed", orig_length - this_ydata[-1], "secs")
 
     # move array to origin (start time=int_time for first file and
     # continues to next file without a gap)
@@ -214,8 +216,9 @@ for filename in args:
     this_xdata = this_xdata - this_xdata[0] + offset_x
 
     if options.verbose:
-        print filename, "t_int:", int_time, "n_int:", len(this_ydata), 
-        print " start:", this_ydata[0]
+        print (
+                filename, "t_int:", int_time, "n_int:", len(this_ydata),
+                "start:", this_ydata[0])
 
     # only keep a fraction of the points (this also effectively smooths)
     this_ydata = [this_ydata[i] for i in range(nskip, len(this_ydata), nskip)]
@@ -233,11 +236,11 @@ for filename in args:
 observation /= 3600.
 correlation /= 3600.
 
-print "Observation time: {0:0.3f} hours".format(
-        (observation[-1] - observation[0]))
-print "Correlation time: {0:0.3f} hours".format(
-        (correlation[-1] - correlation[0]))
-print "Speedup factor  : {0:0.3f}".format(observation[-1]/correlation[-1])
+print ("Observation time: {0:0.3f} hours".format(
+        (observation[-1] - observation[0])))
+print ("Correlation time: {0:0.3f} hours".format(
+        (correlation[-1] - correlation[0])))
+print ("Speedup factor  : {0:0.3f}".format(observation[-1]/correlation[-1]))
 
 speedup = []
 if options.plottime:

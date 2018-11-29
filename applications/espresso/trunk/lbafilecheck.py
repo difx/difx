@@ -21,6 +21,9 @@
 # Simple wrapper for ls and chk_vlbi.py to create and check the data files for
 # the correlator
 # Cormac Reynolds: 2010 June
+
+
+from __future__ import print_function, division
 import os
 import subprocess
 import time
@@ -55,7 +58,7 @@ def makefilelists(
     TEMPFILE = open(tempfilename, "w")
     command = " ".join(["ssh", machine, "'echo", filepattern, "|xargs ls'"])
     #command = " ".join(["ls", filepattern])
-    print command
+    print (command)
     filelist, error1 = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE).communicate()
@@ -67,7 +70,7 @@ def makefilelists(
     for file in filelist:
         # ignore the VSIPACK files
         if "VSIPACK" not in file and ".log" not in file:
-            print>>TEMPFILE, file
+            TEMPFILE.write(file + "\n")
 
     TEMPFILE.flush()
     TEMPFILE.close()
@@ -79,7 +82,7 @@ def makefilelists(
     chk_vlbi = espressolib.which("chk_vlbi.py")
     if not chk_vlbi:
         ERRORFILE = espressolib.openlock("file_errors.txt")
-        print>>ERRORFILE, "chk_vlbi.py not found in $PATH"
+        ERRORFILE.write("chk_vlbi.py not found in $PATH\n")
         ERRORFILE.close()
         raise Exception("chk_vlbi.py not found in $PATH")
     if refmjd is not None:
@@ -97,13 +100,13 @@ def makefilelists(
     filelist.pop()
     nbad = 0
     for file in filelist:
-        print>>OUTFILE, file
+        OUTFILE.write(file + "\n")
         if re.match("#", file):
             nbad += 1
 
     if error1 or error2:
         ERRORFILE = espressolib.openlock("file_errors.txt")
-        print>>ERRORFILE, error1, error2
+        ERRORFILE.write("{:s} {:s}\n".format(error1, error2))
         ERRORFILE.close()
 
     TEMPFILE.close()
@@ -115,7 +118,7 @@ def makefilelists(
 def write_machines(expname, machines):
     MACHINESFILE = open(expname + ".machines", "w")
     for machine in machines:
-        print>>MACHINESFILE, machine
+        MACHINESFILE.write(machine + "\n")
 
     MACHINESFILE.close()
 
@@ -132,24 +135,26 @@ def check_machines(machines):
             machine_error += " " + machine
 
     if machine_error and options.no_rmaps_seq:
-        print "\n" * 2, "!" * 20
-        print "Warning:", machine_error,
-        print " appear(s) multiple times in the machines.list file, but not",
-        print " in consecutive order. This machine file will not work unless",
-        print " you have openmpi v1.4 or greater!"
+        print ("\n" * 2, "!" * 20)
+        print (
+                "Warning:", machine_error, 
+                "appear(s) multiple times in the machines.list file, but not", 
+                "in consecutive order. This machine file will not work unless",
+                "you have openmpi v1.4 or greater!")
 
 
 def write_threads(expname, hosts, computemachines):
 
     THREADFILE = open(expname + ".threads", "w")
 
-    print>>THREADFILE, "NUMBER OF CORES:    ", len(computemachines)
+    THREADFILE.write(
+            "NUMBER OF CORES:     {:d}\n".format(len(computemachines)))
 
     #for i in range(len(computemachines)):
     #    print>>THREADFILE, threads_per_machine
 
     for machine in computemachines:
-        print>>THREADFILE, hosts[machine][0]
+        THREADFILE.write("{:d}\n".format(hosts[machine][0]))
 
     THREADFILE.close()
 
@@ -168,19 +173,19 @@ def write_run(expname, np, nthreads, options):
             line = re.sub(r"{NODES}", str(np), line)
             line = re.sub(r"{NTASKS}", str(np), line)
             line = re.sub(r"{NTHREADS}", str(nthreads), line)
-            print>>RUNFILE, line,
+            RUNFILE.write(line)
 
     else:
         # in case no prototype run file, this basic run file will work for
         # many sites
-        print>>RUNFILE, "mpirun -np ", np, options,
-        print>>RUNFILE, " -machinefile {JOBNAME}.machines",
-        print>>RUNFILE, " $DIFXROOT/bin/mpifxcorr {JOBNAME}.input"
+        RUNFILE.write("mpirun -np ", np, options)
+        RUNFILE.write(" -machinefile {JOBNAME}.machines")
+        RUNFILE.write(" $DIFXROOT/bin/mpifxcorr {JOBNAME}.input\n")
         RUNFILE.close()
     try:
         os.chmod(runfilename, 0775)
     except:
-        print "could not change permissions of", runfilename
+        print ("could not change permissions of", runfilename)
 
 
 def kill_children(pids):
@@ -293,7 +298,7 @@ pids = []
 datamachines = []
 
 if not options.nofilelist:
-    print "Wait for process to finish. Do not press ^C."
+    print ("Wait for process to finish. Do not press ^C.")
 
 # first create the filelists
 for line in sorted(telescopedirs):
@@ -318,18 +323,18 @@ for line in sorted(telescopedirs):
                 nfiles, nbad = makefilelists(
                         telescope, data_area, machine, dir_patterns,
                         globpatterns, expname, options.refmjd)
-                print "got", nfiles, "files for", telescope,
+                print ("got", nfiles, "files for", telescope, end="")
                 if nbad:
-                    print "(", nbad, "corrupt )",
-                print
+                    print ("(", nbad, "corrupt )", end="")
+                print ()
                 os._exit(0)
     except:
         # clean up jobs if something goes awry
         kill_children(pids)
         #print "\n\nERROR: killing ssh processes due to error making file lists"
-        print "\n\nERROR: killing processes due to error making file lists"
-        print "ERROR: Check formatting of", args[0] + ":"
-        print line
+        print ("\n\nERROR: killing processes due to error making file lists")
+        print ("ERROR: Check formatting of", args[0] + ":")
+        print (line)
         raise Exception("could not make file list")
 
 # and wait for the filelist creation processes to finish
@@ -432,4 +437,4 @@ write_run(
 
 
 if not options.nofilelist:
-    print "All done!"
+    print ("All done!")

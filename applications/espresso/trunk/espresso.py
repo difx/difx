@@ -21,6 +21,8 @@
 # take care of a few logistics before launching the correlator
 # Cormac Reynolds: June 2010
 
+
+from __future__ import print_function, division
 import subprocess
 import optparse
 import re
@@ -38,7 +40,7 @@ import psutil
 def run_vex2difx(v2dfilename, vex2difx_options):
     # run vex2difx, and wait for completion
     command = " ".join(["vex2difx", vex2difx_options, v2dfilename])
-    print command
+    print (command)
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
 
@@ -47,7 +49,7 @@ def change_path(inputfilename, changeparm, oldpath, newpath):
     for line in fileinput.FileInput(inputfilename, inplace=1, backup=".org"):
         if re.match(changeparm, line):
             line = line.replace(oldpath, newpath)
-        print line,
+        print (line, end="")
 
     fileinput.close()
 
@@ -61,14 +63,14 @@ def run_calcif2(jobname, calcfilename):
         if os.path.exists(file):
             os.remove(file)
     command = " ".join(["calcif2", calcfilename])
-    print command
+    print (command)
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
 
 def backup_oldrun(jobname, outdir, backupdir):
     # back up previous correlator job to subdirectory
     if os.path.exists(outdir):
-        print "will move old jobs to", backupdir
+        print ("will move old jobs to", backupdir)
         dirlist = os.listdir(outdir)
         for file in dirlist:
             if jobname in file and not re.match("\.", file):
@@ -121,7 +123,7 @@ def make_new_runfiles(
         line = re.sub(r"{TIME}", jobtime, line)
         line = re.sub(r"{DIFX_MESSAGE_PORT}", difx_message_port, line)
         line = re.sub(r"{NTASKS-PER-NODE}", ntasks_per_node, line)
-        print line,
+        print (line, end="")
     fileinput.close()
     os.chmod(runfile, 0775)
 
@@ -227,7 +229,7 @@ def run_lbafilecheck(
 
     command = " ".join(
             ["lbafilecheck.py -F", options, "-s", stations, datafilename])
-    print command
+    print (command)
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
 
@@ -262,7 +264,7 @@ def run_interactive(corrjoblist, outdir):
     difxwatch = None
     for jobname in sorted(corrjoblist.keys()):
         if options.difxwatch:
-            print "starting difxwatch in the background"
+            print ("starting difxwatch in the background")
             difxwatch = subprocess.Popen(["difxwatch", "-i 600"])
         else:
             try:
@@ -273,14 +275,14 @@ def run_interactive(corrjoblist, outdir):
                 pass
 
         # start the correlator log
-        print "starting errormon2 in the background"
+        print ("starting errormon2 in the background")
         errormon2 = subprocess.Popen("errormon2")
         #errormon2 = subprocess.Popen('errormon2 2>&1| grep ' + jobname, shell=True)
 
         try:
             runfile = jobname
             runfile = "./run_" + runfile
-            print "starting the correlator running", runfile
+            print ("starting the correlator running", runfile)
             subprocess.check_call(runfile, shell=True, stdout=sys.stdout)
         except subprocess.CalledProcessError:
             # would probably prefer just a 'finally' here so everything falls
@@ -316,9 +318,9 @@ def wait_for_file(filename):
     """Wait until specified file is available"""
 
     while not os.path.exists(filename):
-        print "Waiting for", filename
+        print ("Waiting for", filename)
         time.sleep(1)
-    print filename, "found!"
+    print (filename, "found!")
 
 
 def batchq_slurm(jobnames):
@@ -383,10 +385,10 @@ def run_batch(corrjoblist, outdir):
 
     # start the correlator log
     errormon_log = "./log"
-    print "starting errormon2 in the background"
+    print ("starting errormon2 in the background")
     try:
         os.remove(errormon_log)
-        print "removed old", errormon_log
+        print ("removed old", errormon_log)
     except:
         pass
     errormon2 = subprocess.Popen("errormon2", env=espresso_env)
@@ -400,16 +402,16 @@ def run_batch(corrjoblist, outdir):
     try:
         wait_for_file(errormon_log)
         time.sleep(1)
-        print "renaming log to", pass_logfilename
+        print ("renaming log to", pass_logfilename)
         shutil.move("./log", pass_logfilename)
     except:
-        print errormon_log, "not found! No difxlog will be produced"
+        print (errormon_log, "not found! No difxlog will be produced")
 
     # submit all the jobs to the batch scheduler
     for jobname in sorted(corrjoblist.keys()):
         try:
             runfile = "{0} ./run_{1}".format(batch_launch, jobname)
-            print "starting the correlator with:", runfile
+            print ("starting the correlator with:", runfile)
             subprocess.check_call(
                     runfile, shell=True, stdout=sys.stdout, env=espresso_env)
         except:
@@ -422,10 +424,10 @@ def run_batch(corrjoblist, outdir):
     while True:
         try:
             #command = ['squeue', '-u', '$USER']
-            print "-" * 78, "\n"
+            print ("-" * 78, "\n")
             try:
                 # remind us what the job is for
-                print open(operator_log).read()
+                print (open(operator_log).read())
             except:
                 pass
             running_jobs = print_queue(queue_command, jobids)
@@ -434,21 +436,21 @@ def run_batch(corrjoblist, outdir):
                         "Jobs submitted - hit ^C to cancel jobs."
                         " Hit return to see list of running jobs.")
             else:
-                print
-                print "-" * 78
-                print "All jobs completed:", " ".join(jobids)
+                print ()
+                print ("-" * 78)
+                print ("All jobs completed:", " ".join(jobids))
                 time.sleep(1)
                 break
         except KeyboardInterrupt:
             for jobname in jobids:
                 command = " ".join([batch_cancel, jobname])
-                print command
+                print (command)
                 subprocess.check_call(command, stdout=sys.stdout, shell=True)
             break
         except:
             # qstat (PBS) on an empty queue will throw an error which we catch
             # here.
-            print "jobs", " ".join([jobids]), "complete"
+            print ("jobs", " ".join([jobids]), "complete")
             break
 
     # tidy up log files for each job
@@ -477,10 +479,10 @@ def set_difx_message_port(start_port=50201):
 
     while True:
         if difx_message_port in ports_used:
-            print "DIFX_MESSAGE_PORT", difx_message_port, "in use"
+            print ("DIFX_MESSAGE_PORT", difx_message_port, "in use")
             difx_message_port += 1
         else:
-            print "DIFX_MESSAGE_PORT=", difx_message_port
+            print ("DIFX_MESSAGE_PORT=", difx_message_port)
             break
 
     return difx_message_port
@@ -492,12 +494,12 @@ def write_difxlog(log_in, outdir, jobname):
     logfilename = outdir + jobname + ".difxlog"
     logfiles.append(jobname + ".difxlog")
     logfile = open(logfilename, "w")
-    print "\nfiltering the log file and copying to", logfile.name
+    print ("\nfiltering the log file and copying to", logfile.name)
     #shutil.copy2('log', logfile)
     log_lines = filter_log(log_in, jobname)
     job_ok = False
     for line in log_lines:
-        print>>logfile, line,
+        logfile.write(line)
         if "BYE" in line:
             job_ok = True
     logfile.close()
@@ -512,14 +514,14 @@ def print_queue(queue_command, jobids):
     running_jobs = []
     queue_info = subprocess.Popen(
             queue_command, stdout=subprocess.PIPE, shell=True).communicate()[0]
-    print queue_info
-    print "Completed jobs:",
+    print (queue_info)
+    print ("Completed jobs:", end="")
     for jobname in jobids:
         if jobname not in queue_info:
-            print jobname,
+            print (jobname, end="")
         else:
             running_jobs.append(jobname)
-    print
+    print ()
     return running_jobs
 
 
@@ -650,7 +652,7 @@ try:
             " PROD/CLOCK/TEST/FAIL")
     fill_operator_log(operator_log)
 except:
-    print "Operator comment not saved!"
+    print ("Operator comment not saved!")
 
 # get email and password so we can notify. does not make sense for batch jobs.
 get_email = False
@@ -672,7 +674,7 @@ while get_email:
         else:
             get_email = False
     except:
-        print "Connection failed - try again"
+        print ("Connection failed - try again")
 
 
 # preliminaries: clear old input files out of the way
@@ -731,7 +733,7 @@ else:
             if re.search(jobpattern + "$", jobname):
                 corrjoblist[jobname] = fulljoblist[jobname]
 
-print "job list to correlate:\n", pprint.pformat(corrjoblist), "\n"
+print ("job list to correlate:\n", pprint.pformat(corrjoblist), "\n")
 
 # get the paths of our input and output directories
 indir = os.getcwd() + os.sep
@@ -750,7 +752,7 @@ if options.testjob:
 backupdir = outdir + time.strftime("%Y-%m-%d-%H-%M-%S") + os.sep
 
 if not os.path.exists(outdir):
-    print "making the output directory", outdir
+    print ("making the output directory", outdir)
     os.makedirs(outdir)
 
 
@@ -763,10 +765,10 @@ for jobname in sorted(corrjoblist.keys()):
     calcfilename = jobname + ".calc"
 
     # fix the output filename to point at the cuppa data disk
-    print
+    print ()
     if not options.novex:
-        print "renaming the 'OUTPUT FILENAME' in", inputfilename, "from",
-        print indir, "to", outdir
+        print ("renaming the 'OUTPUT FILENAME' in", inputfilename, "from",
+                indir, "to", outdir)
         change_path(inputfilename, 'OUTPUT FILENAME:', indir, outdir)
 
     # run calcif2
@@ -777,7 +779,7 @@ for jobname in sorted(corrjoblist.keys()):
     backup_oldrun(jobname, outdir, backupdir)
 
     # copy the model files to the output directory
-    print "copying the model files", jobname + ".*", "to", outdir
+    print ("copying the model files", jobname + ".*", "to", outdir)
     copy_models(jobname, indir, outdir)
 
     # change the path names in the copied .input and .calc to relative paths
@@ -787,31 +789,35 @@ for jobname in sorted(corrjoblist.keys()):
     fix_paths(inputfilename, calcfilename, indir, outdir)
 
     # copy job control files to output directory, and rename
-    print "copying the job control files", passname + ".[joblist|v2d]", "to",
-    print outdir
+    print (
+            "copying the job control files", passname + ".[joblist|v2d]", "to",
+            outdir)
     copy_jobcontrol(passname, jobname, indir, outdir, ".joblist")
     copy_jobcontrol(passname, jobname, indir, outdir, ".v2d")
 
     outputvex = outdir + jobname + ".vex"
-    print "copying the vex file", vexfilename, "to", outputvex
+    print ("copying the vex file", vexfilename, "to", outputvex)
     shutil.copy2(vexfilename, outputvex)
 
 # and copy the .vex .v2d, and _notes.txt unaltered for ease of reference in the
 # output dir
-print "\ncopying the vex and v2d files", vexfilename, v2dfilename, "to", outdir
+print (
+        "\ncopying the vex and v2d files", vexfilename, v2dfilename, "to",
+        outdir)
 shutil.copy2(vexfilename, outdir)
 shutil.copy2(v2dfilename, outdir)
 notesfilename = expname + "_notes.txt"
 if os.path.exists(notesfilename):
-    print "copying the notes file", notesfilename, "to", outdir
+    print ("copying the notes file", notesfilename, "to", outdir)
     shutil.copy2(notesfilename, outdir)
 # if pulsar binning, then get the binconfig and polyco too
 if binconfigfilename:
-    print "copying the binconfig and polyco files", binconfigfilename,
-    print polycofilename, "to", outdir
+    print (
+            "copying the binconfig and polyco files", binconfigfilename,
+            polycofilename, "to", outdir)
     shutil.copy2(binconfigfilename, outdir)
     shutil.copy2(polycofilename, outdir)
-print "\n"
+print ("\n")
 
 if not options.nopause:
     raw_input("Press return to initiate the correlator job or ^C to quit")
@@ -841,8 +847,9 @@ for jobname in sorted(corrjoblist.keys()):
 
     # duplicate the run and thread and machines files for the full number of
     # jobs
-    print "duplicating the run file, machines file and .threads files for",
-    print jobname, "\n"
+    print (
+            "duplicating the run file, machines file and .threads files for",
+            jobname, "\n")
     if options.jobtime:
         jobtime = options.jobtime
     else:
@@ -873,18 +880,18 @@ finally:
     try:
         speedup = plot_speedup(logfiles, outdir, passname)
     except:
-        print "Could not plot speedup factor!"
+        print ("Could not plot speedup factor!")
 
     # let someone know we've finished
     if get_email:
         try:
-            print "\nEmailing", emailserver.user
+            print ("\nEmailing", emailserver.user)
             message = str(sorted(corrjoblist.keys())) + " finished"
             emailserver.connect()
             emailserver.sendmail(message)
             emailserver.disconnect()
         except:
-            print "No notification email sent"
+            print ("No notification email sent")
 
     # and enter an operator comment
     raw_input(
@@ -897,16 +904,16 @@ finally:
 
     # clean up the forked plot process
     try:
-        print "\n\nWaiting for plotting process", speedup.pid, "to finish"
+        print ("\n\nWaiting for plotting process", speedup.pid, "to finish")
         plotmsg, ploterr = speedup.communicate()
-        print plotmsg, ploterr
+        print (plotmsg, ploterr)
     except KeyboardInterrupt:
         speedup.kill()
-        print "Speedup plot not complete!"
+        print ("Speedup plot not complete!")
 
     #if not options.clockjob and not options.testjob:
-    print "Jobs that may need redoing:"
+    print ("Jobs that may need redoing:")
     if bad_jobs:
-        print "espresso.py " + " ".join(bad_jobs)
+        print ("espresso.py " + " ".join(bad_jobs))
     else:
-        print "None"
+        print ("None")

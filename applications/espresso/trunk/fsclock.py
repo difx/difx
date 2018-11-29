@@ -21,6 +21,7 @@
 # extract a clock estimate from an FS log
 # Cormac Reynolds: Feb 2017
 
+from __future__ import print_function, division
 import optparse
 import re
 import espressolib
@@ -32,8 +33,8 @@ import sys
 # a priori corrections to the gps log values derived from previous clock
 # searches.
 global_offsets = {
-        "at": 43.0, "cd": -0.02, "hh": 0.65, "ke": -0.03, "mp": -0.16,
-        "pa": "0.04", "wa": 0.0, "ww": -0.10, "yg": 0.26}
+        "at":43.0, "bd":216.0, "cd":-0.02, "hh":0.65, "ke":-0.03, "mp":-0.16,
+        "pa":"0.04", "sv":215.35, "wa":0.0, "ww":-0.10, "yg":0.26, "zc":215.76}
 
 aliases = {}
 #        "at": ["atca", "ca"],
@@ -92,7 +93,7 @@ def kth_line(x, y, missing_val=None):
     rx = sorted(good_x)
     ry = sorted(good_y)
     if (nval % 2) == 1:
-        imed = nval/2
+        imed = nval//2
         x_med = rx[imed]
         y_med = ry[imed]
     else:
@@ -273,14 +274,14 @@ if options.vex:
     rate = rate/(-24.*3600.*1e6)
     output_format = vex_format
 else:
-    # clock in usec, rate in microsec/sec, dates in MJD
+    # clock in microsec, rate in microsec/sec, dates in MJD
     rate = rate=rate/(24.*3600.)
     epoch = times[0]
     output_format = v2d_format
 
-print output_format.format(
+print (output_format.format(
         station=station.upper(), epoch_valid=epoch_valid, epoch=epoch,
-        offset=offset, rate=rate)
+        offset=offset, rate=rate))
 
 if options.plot:
     clockplot(times, offsets, p, args)

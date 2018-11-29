@@ -21,6 +21,8 @@
 # archive FITS files to ATOA.
 # Cormac Reynolds: May 2016, first version
 
+
+from __future__ import print_function, division
 import optparse
 import re
 import subprocess

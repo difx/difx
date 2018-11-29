@@ -20,6 +20,8 @@
 
 # simple program to parse the .joblist file and return the job length
 
+
+from __future__ import print_function, division
 import optparse
 import espressolib
 
@@ -41,7 +43,7 @@ summary_format = "{:s}: {:0.3f} {:s} \t {:0.2f} {:s} \t {:0.1f} {:s}"
 for jobfilename in jobfilenames:
     jobfile = open(jobfilename).readlines()
     header = jobfile.pop(0)
-    print header
+    print (header)
     passlen = 0
     pass_size = 0
     pass_stations = 0
@@ -58,10 +60,10 @@ for jobfilename in jobfilenames:
         passlen += joblen
         pass_size += jobsize
 
-        print line_format.format(
+        print (line_format.format(
                 jobinfo[0], jobstart, joblen*24., "hours", jobsize, "TOps",
-                jobstations, "stations", station_list)
+                jobstations, "stations", station_list))
 
-    print  summary_format.format(
+    print  (summary_format.format(
             "Total", passlen*24., "hours", pass_size, "TOps", pass_stations,
-            "stations (avg)")
+            "stations (avg)"))

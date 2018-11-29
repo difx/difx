@@ -23,6 +23,8 @@
 # requested date). The parser is a bit shoddy but will work for our usual files
 # Cormac Reynolds: June 2010
 
+
+from __future__ import print_function, division
 import sys
 import re
 import optparse
@@ -215,6 +217,6 @@ OUTVEXFILE = open(vexfilename, "w")
 
 # print the output
 for out_line in vexout:
-    print>>OUTVEXFILE, out_line
+    OUTVEXFILE.write(out_line + "\n")
 
 OUTVEXFILE.close()

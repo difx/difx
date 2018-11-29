@@ -20,6 +20,8 @@
 
 # Cormac Reynolds, June 2018: program to return ATCA refant at given epoch.
 
+
+from __future__ import print_function, division
 import optparse
 import re
 import requests
@@ -83,6 +85,6 @@ for targetdate in args:
             refant = re.sub("Refant:\s*CA0", "", line)
             refant = int(refant)
             refant_pad = pads[refant-1]
-            print "{}: {}".format(targetdate, refant_pad)
+            print ("{}: {}".format(targetdate, refant_pad))
 
-print "updatepos.py ATCA AT_{}".format(refant_pad)
+print ("updatepos.py ATCA AT_{}".format(refant_pad))

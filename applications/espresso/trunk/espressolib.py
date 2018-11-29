@@ -20,6 +20,9 @@
 
 # Some functions used by the Espresso scripts
 # Cormac Reynolds, original version: 2011 November 22
+
+
+from __future__ import print_function, division
 import re
 import os
 import fcntl
@@ -55,8 +58,8 @@ def get_corrhosts(hostsfilename):
                 raise Exception("First line must be version number!")
             continue
             if version != 1:
-                print "Warning: version number in $DIFX_MACHINES is not 1."
-                print " This may not work as expected"
+                print ("Warning: version number in $DIFX_MACHINES is not 1.",
+                "This may not work as expected")
 
         hostdata = line.split(",")
         hostname_list = hostdata[0].strip()
@@ -321,7 +324,7 @@ class Email:
         try:
             self.server.login(self.user, self.passwd)
         except Exception as connectionError:
-            print connectionError
+            print (connectionError)
             raise
 
     def sendmail(self, message):

@@ -21,6 +21,8 @@
 # copy DiFX log to separate job log files.
 # Cormac Reynolds: April 2018
 
+
+from __future__ import print_function, division
 import optparse
 import os
 import re
@@ -49,7 +51,8 @@ expname = None
 if options.expname:
     expname = options.expname
 else:
-    expname = "".join(explog_filename.split(".")[0:-1])
+    expname = explog_filename.split("/")[-1]
+    expname = "".join(expname.split(".")[0:-1])
 
 joblist = []
 outfile = {}
@@ -59,7 +62,7 @@ with open(explog_filename, "r") as infile:
         outfilename = os.path.join(outdir, jobname + ".difxlog")
         if jobname not in joblist:
             # Open file if not opened before. Rename any pre-existing version.
-            print "Found {:s} at line {:d}".format(jobname, lineno)
+            print ("Found {:s} at line {:d}".format(jobname, lineno))
             joblist.append(jobname)
             if os.path.exists(outfilename):
                 bakfile = outfilename + ".bak"

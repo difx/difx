@@ -24,6 +24,8 @@
 # This script assumes the canonical directory names: <exper>-<station>
 # Cormac Reynolds. Original progam: July 2010
 
+
+from __future__ import print_function, division
 import sys
 import os
 import re
@@ -33,9 +35,9 @@ try:
     exper = sys.argv[1]
     disk_report_filename = sys.argv[2]
 except:
-    print "Usage:", sys.argv[0], "<experiment> <disk.txt>", """
-will produce an input file for lbafilecheck.py for <experiment>, where
-<disk.txt> is the output of disk_report.py"""
+    print ("Usage:", sys.argv[0], "<experiment> <disk.txt>\n", 
+    "will produce an input file for lbafilecheck.py for <experiment>,",
+    "where <disk.txt> is the output of disk_report.py")
     sys.exit()
 
 if not os.path.isfile(disk_report_filename):
@@ -64,10 +66,10 @@ outfile_name = exper + ".datafiles"
 OUTFILE = open(outfile_name, "w")
 
 #print>>OUTFILE, exper, '*.lba *no*'
-print>>OUTFILE, exper, "*"
+OUTFILE.write(exper + " *\n")
 for station in sorted(stationfiles):
-    print>>OUTFILE, station, "=",
-    print>>OUTFILE, stationfiles[station]["machine"] + ":",
+    OUTFILE.write(station + " = ")
+    OUTFILE.write(stationfiles[station]["machine"] + ":")
     for directory in stationfiles[station]["dir"]:
-        print>>OUTFILE, directory + os.sep,
-    print>>OUTFILE
+        OUTFILE.write(" " + directory + os.sep)
+    OUTFILE.write("\n")

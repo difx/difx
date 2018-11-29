@@ -21,8 +21,11 @@
 # convert between DiFX date formats.
 # Cormac Reynolds: June 2010
 
+
+from __future__ import print_function, division
 import optparse
 import espressolib
+
 
 # parse the options
 usage = """%prog [options] <date>
@@ -53,4 +56,4 @@ if outformat is None:
 outformat = outformat.lower()
 
 for indate in args:
-    print espressolib.convertdate(indate, outformat)
+    print (espressolib.convertdate(indate, outformat))

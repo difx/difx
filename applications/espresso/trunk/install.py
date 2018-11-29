@@ -19,6 +19,9 @@
 # =======================================================================
 
 # Cormac Reynolds, December 2011: almost trivial install script for espresso
+
+
+from __future__ import print_function, division
 import os
 import sys
 import shutil
@@ -43,9 +46,9 @@ if not os.path.exists(difxbin):
 
 dirlist = os.listdir(os.environ.get("PWD"))
 
-for file in dirlist:
+for filename in dirlist:
     if (
-            re.search(".py$", file) or re.search(".pl$", file) or
-            re.search(".sh$", file)):
-        print file, difxbin
-        shutil.copy2(file, difxbin)
+            re.search(".py$", filename) or re.search(".pl$", filename) or
+            re.search(".sh$", filename)):
+        print (filename, difxbin)
+        shutil.copy2(filename, difxbin)

@@ -22,6 +22,8 @@
 # The parser is a bit shoddy but will work for our usual v2d files.
 # Cormac Reynolds. Original program: May 2010
 
+
+from __future__ import print_function, division
 import sys
 import re
 import optparse
@@ -157,11 +159,11 @@ if options.addmean:
     offset_mean = sum(
             [stations[station]["offset_adjust"] for station in stations])
     offset_mean /= len(stations)
-    print "mean offset: {0:0.3f}".format(offset_mean)
+    print ("mean offset: {0:0.3f}".format(offset_mean))
     rate_mean = sum(
             [stations[station]["rate_adjust"] for station in stations])
     rate_mean /= len(stations)
-    print "mean rate: {0:0.3E}".format(rate_mean)
+    print ("mean rate: {0:0.3E}".format(rate_mean))
 
     for station in stations:
         stations[station]["offset_adjust"] -= offset_mean
@@ -286,4 +288,4 @@ OUTPUTV2D = open(v2dfilename, "w")
 
 # print the output
 for out_line in v2dout:
-    print>>OUTPUTV2D, out_line
+    OUTPUTV2D.write(out_line + "\n")

@@ -26,6 +26,7 @@
 # Leap second data come from: "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat"
 #
 
+from __future__ import print_function, division
 import optparse
 import re
 #import urllib
@@ -97,28 +98,31 @@ if not options.local:
     eop_url = "https://vlbi.gsfc.nasa.gov/apriori/usno_finals.erp"
     leapsec_url = "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat"
 
-    print >>sys.stderr, "Fetching EOP data from ", eop_url
+    sys.stderr.write("Fetching EOP data from {:s}\n".format(eop_url))
     eop_page = requests.get(eop_url, verify=options.verify).content.split("\n")
 
-    print >>sys.stderr, "Fetching leap second data from", leapsec_url
+    sys.stderr.write("Fetching leap second data from {:s}".format(leapsec_url))
     #leapsec_page = urllib.FancyURLopener().open(leapsec_url).readlines()
     leapsec_page = requests.get(
             leapsec_url, verify=options.verify).content.split("\n")
-    print comment, "EOPs downloaded at", time.strftime(
-            "%Y-%m-%d %H:%M:%S (%z)")
-
+    print ("{:s} EOPs downloaded at {:s}".format(
+            comment, time.strftime("%Y-%m-%d %H:%M:%S (%z)")))
 else:
     # or read from local files
     eop_filename = os.environ.get("DIFX_EOPS")
-    print >>sys.stderr, "Reading EOP data from ", eop_filename
+    assert eop_filename is not None, "You must set $DIFX_EOPS"
+    sys.stderr.write("Reading EOP data from {:s}\n".format(eop_filename))
     eop_page = open(eop_filename).readlines()
     eop_page_stats = os.stat(eop_filename)
     eop_update_time = time.gmtime(os.stat(eop_filename)[9])
     leapsec_filename = os.environ.get("DIFX_UT1LS")
-    print >>sys.stderr, "Reading leap second data from", leapsec_filename
+    assert leapsec_filename is not None, "You must set $DIFX_UT1LS"
+    sys.stderr.write(
+            "Reading leap second data from {:s}\n".format(leapsec_filename))
     leapsec_page = open(leapsec_filename).readlines()
-    print comment, "EOPs from", eop_filename, "last updated at", time.strftime(
-            "%Y-%m-%d %H:%M:%S (%z)", eop_update_time)
+    print ("{:s} EOPS from {:s} last updated at {:s}\n".format(
+            comment, eop_filename, time.strftime("%Y-%m-%d %H:%M:%S (%z)",
+            eop_update_time)))
 
 v2deop = "EOP {0:d} {{ xPole={1:f} yPole={2:f} tai_utc={3:d} ut1_utc={4:f} }}"
 
@@ -134,13 +138,12 @@ vexeop = """def EOP{5:d};
 enddef;"""
 
 if options.vex:
-    print "$EOP;"
+    print ("$EOP;")
     eopformat = vexeop
 else:
     eopformat = v2deop
 
 # parse the eop page
-nlines = 0
 neop = -1
 for nlines, line in enumerate(eop_page):
     # skip the first line, which isn't commented
@@ -166,6 +169,6 @@ for nlines, line in enumerate(eop_page):
         eopdate = int(eop_fields[0] - mjd_jd)
         if options.vex:
             eopdate = espressolib.convertdate(eopdate, outformat="vex")
-        print eopformat.format(eopdate, xpole, ypole, tai_utc, ut1_utc, neop)
+        print (eopformat.format(eopdate, xpole, ypole, tai_utc, ut1_utc, neop))
 
-print >>sys.stderr, "Processed {0:d} lines".format(nlines)
+sys.stderr.write("Processed {0:d} lines\n".format(nlines))

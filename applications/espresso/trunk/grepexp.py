@@ -20,6 +20,9 @@
 
 # Extract data listing from the disk_report.py output file
 # Cormac Reynolds: 2016 April 6 (original version)
+
+
+from __future__ import print_function, division
 import json
 import optparse
 
@@ -34,12 +37,12 @@ disk_report = json.load(open(args[1]))
 
 datasum = 0
 for machine in disk_report.keys():
-    print "Disk report for", machine
+    print ("Disk report for", machine)
     for data_area in disk_report[machine].keys():
         for directory in sorted(
                 disk_report[machine][data_area]["du"], key=lambda dir: dir[1]):
             if expname in directory[1]:
-                print directory[0], "GB\t", directory[1]
+                print (directory[0], "GB\t", directory[1])
                 datasum += int(directory[0])
 
-print datasum, "GB", "\ttotal"
+print (datasum, "GB", "\ttotal")

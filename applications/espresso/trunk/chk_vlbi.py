@@ -22,6 +22,8 @@
 # valid and corrupt files.
 # Cormac Reynolds: June 2012 - python parallel version replaces old perl script
 
+
+from __future__ import print_function, division
 from math import *
 import os
 import sys
@@ -326,4 +328,4 @@ if __name__ == "__main__":
     outfilelist = fix_filelist(outfilelist)
 
     for outfile in outfilelist:
-        print outfile
+        print (outfile)

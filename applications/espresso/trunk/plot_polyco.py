@@ -1,5 +1,8 @@
 #!/usr/bin/env python2
 # program to evaluate and plot polyco.
+
+
+from __future__ import print_function, division
 import sys
 import os
 import re
@@ -49,6 +52,8 @@ coeffs = []
 
 #polyco_file = open(polyc_filename).readlines()
 # parse the polyco file and build up list of coefficients
+# Note that DiFX splits lines on whitespace, not column number as the polyco
+# docs would suggest.
 with open(polyco_filename) as polyco_file:
     # assume 12 coeffs for start - will update when read line
     ncoeff = 12
@@ -83,11 +88,12 @@ with open(polyco_filename) as polyco_file:
                 coeff = []
 
 # print values of a representative polyco entry, for visual check
-print pulsar[p], date[p], utc[p], tmid[p], dm[p], doppler[p], residual[p],
-print rphase[p], f0[p], obs[p], span[p], obs_freq[p], 
+print (
+        pulsar[p], date[p], utc[p], tmid[p], dm[p], doppler[p], residual[p],
+        rphase[p], f0[p], obs[p], span[p], obs_freq[p], end=" ")
 if binary_phase:
-    print binary_phase[p]
-print coeffs[p]
+    print (binary_phase[p])
+print (coeffs[p])
 
 phases = []
 times = []
