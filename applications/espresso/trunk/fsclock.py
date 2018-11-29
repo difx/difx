@@ -97,7 +97,7 @@ def kth_line(x, y, missing_val=None):
         x_med = rx[imed]
         y_med = ry[imed]
     else:
-        imed = (nval-1)/2
+        imed = (nval-1)//2
         x_med = (rx[imed]+rx[imed+1])/2.0
         y_med = (ry[imed]+ry[imed+1])/2.0
 
