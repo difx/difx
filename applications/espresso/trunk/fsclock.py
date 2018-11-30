@@ -24,10 +24,10 @@
 from __future__ import print_function, division
 import optparse
 import re
-import espressolib
+import sys
 import numpy
 from matplotlib import pyplot
-import sys
+import espressolib
 
 
 # a priori corrections to the gps log values derived from previous clock
@@ -68,6 +68,7 @@ def kth_line(x, y, missing_val=None):
         """Given a 2-tuple, returns False if either of the values are equal
         to the supplied missing_val.
         """
+
         return ((pair[0] != missing_val) and (pair[1] != missing_val))
 
     pairs = zip(x, y)
@@ -121,14 +122,14 @@ def parse_clock(line):
     """Find gps/fmout lines in the log, extract offset and time, convert to usec
 
     Returns time and offset, or None if line did not parse
-    Example line: 
+    Example line:
 2018.250.12:44:03.01/fmout-gps/+7.1182E-006
     """
 
-    date_re = "(\d{4})\.(\d{3})\.(\d{2}):(\d{2}):(\d{2})"
+    date_re = r"(\d{4})\.(\d{3})\.(\d{2}):(\d{2}):(\d{2})"
     clockline = None
     #clockline = re.match(date_re + ".*/(.*fmout.*)/(.*)$", line)
-    clockline = re.match(date_re + ".*/(.*fmout.*)/(\S*)", line)
+    clockline = re.match(date_re + r".*/(.*fmout.*)/(\S*)", line)
     if not clockline:
         return None
     year, doy, hour, minute, sec, clocktype, offset = clockline.groups()
@@ -147,6 +148,8 @@ def parse_clock(line):
 
 
 def add_aliases(aliases, global_offsets):
+    """Add station aliases to global_offsets"""
+
     for station in aliases:
         for alias in aliases[station]:
             global_offsets[alias] = global_offsets.get(station, 0)
@@ -154,8 +157,12 @@ def add_aliases(aliases, global_offsets):
 
 
 def get_station_name(filename):
+    """Extract station name from log file name assuming standard convention:
+    <expname><2lettercode>.log
+    """
+
     try:
-        station = re.search("(\w{2}).log", filename).group(1)
+        station = re.search(r"(\w{2}).log", filename).group(1)
         station = station.lower()
     except AttributeError:
         sys.stderr.write("log file name does not follow convention!\n")
@@ -164,6 +171,8 @@ def get_station_name(filename):
 
 
 def clockplot(times, offsets, p, filenames):
+    """Plot clock values for eyeball check"""
+
     fit_x = [times[0], times[-1]]
     fit_y = numpy.polyval(p, fit_x)
     pyplot.title(" ".join(filenames), size="small")
@@ -275,7 +284,7 @@ if options.vex:
     output_format = vex_format
 else:
     # clock in microsec, rate in microsec/sec, dates in MJD
-    rate = rate=rate/(24.*3600.)
+    rate = rate/(24.*3600.)
     epoch = times[0]
     output_format = v2d_format
 

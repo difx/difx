@@ -32,20 +32,22 @@ import sys
 import time
 import fileinput
 import pprint
-import espressolib
 import getpass
 import psutil
+import espressolib
 
 
 def run_vex2difx(v2dfilename, vex2difx_options):
-    # run vex2difx, and wait for completion
+    """run vex2difx, and wait for completion"""
+
     command = " ".join(["vex2difx", vex2difx_options, v2dfilename])
     print (command)
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
 
 def change_path(inputfilename, changeparm, oldpath, newpath):
-    # modify paths in the input file
+    """modify paths in the input file"""
+
     for line in fileinput.FileInput(inputfilename, inplace=1, backup=".org"):
         if re.match(changeparm, line):
             line = line.replace(oldpath, newpath)
@@ -55,42 +57,50 @@ def change_path(inputfilename, changeparm, oldpath, newpath):
 
 
 def run_calcif2(jobname, calcfilename):
-    # tidy up old calcif2 files and run calcif2 again
+    """tidy up old calcif2 files and run calcif2 again"""
+
     calcoutputfiles = [".uvw", ".rate", ".im", ".delay"]
-    for file in calcoutputfiles:
+    for filename in calcoutputfiles:
         # clear up old calc files so we are sure it completed
-        file = jobname + file
-        if os.path.exists(file):
-            os.remove(file)
+        filename = jobname + filename
+        if os.path.exists(filename):
+            os.remove(filename)
     command = " ".join(["calcif2", calcfilename])
     print (command)
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
 
 def backup_oldrun(jobname, outdir, backupdir):
-    # back up previous correlator job to subdirectory
+    """back up previous correlator job to subdirectory"""
+
     if os.path.exists(outdir):
         print ("will move old jobs to", backupdir)
         dirlist = os.listdir(outdir)
-        for file in dirlist:
-            if jobname in file and not re.match("\.", file):
-                os.renames(outdir + file, backupdir + file)
+        for filename in dirlist:
+            if jobname in filename and not re.match(r"\.", filename):
+                os.renames(outdir + filename, backupdir + filename)
 
 
 def copy_models(jobname, indir, outdir):
-    # copy all files with the jobname in their name to the output directory.
-    # This will include all the files needed to run difx2fits, and other
-    # interesting logs.
+    """copy all files with the jobname in their name to the output directory.
+
+    This will include all the files needed to run difx2fits, and other
+    interesting logs.
+    """
+
     dirlist = os.listdir(indir)
-    for file in dirlist:
-        if jobname + "." in file and not re.match("\.", file):
-            if os.path.isfile(file):
-                shutil.copy2(indir + file, outdir)
+    for filename in dirlist:
+        if jobname + "." in filename and not re.match(r"\.", filename):
+            if os.path.isfile(filename):
+                shutil.copy2(indir + filename, outdir)
 
 
 def copy_jobcontrol(expname, jobname, indir, outdir, extension):
-    # copy files to the output directory for archiving purposes. Rename to
-    # match the jobname.
+    """copy files to the output directory for archiving purposes.
+
+    Rename to match the jobname.
+    """
+
     infile = indir + expname + extension
     outfile = outdir + jobname + extension
     if os.path.isfile(infile):
@@ -100,6 +110,8 @@ def copy_jobcontrol(expname, jobname, indir, outdir, extension):
 
 
 def fix_paths(inputfilename, calcfilename, indir, outdir):
+    """Make paths in input files relative instead of absolute"""
+
     copy_inputfilename = outdir + os.sep + inputfilename
     copy_calcfilename = outdir + os.sep + calcfilename
     change_path(copy_inputfilename, "CALC FILENAME:", indir, "./")
@@ -136,14 +148,14 @@ def make_new_runfiles(
 
 def predict_speedup(tops, joblen):
     """Placeholder for future idea - could be complicated"""
-    
+
     speedup = (joblen*0.8e5)/tops
     return speedup
 
 
 def parse_joblistfile(joblistfilename, set_speedup=None):
-    """Get the full list of jobs from the joblist file 
-    
+    """Get the full list of jobs from the joblist file
+
     Return a dictionary. Keys are the job names. For each jobname record a list
     of stations under key 'stations' and a list of job length under key
     'joblen'
@@ -251,7 +263,7 @@ def plot_speedup(logfiles, outdir, expname):
         plot_opt = " -l "
     command = " ".join(
             ["cd", outdir, "; plot_logtime.py", plot_opt, "-o", speedup_plot,
-                speedup_files])
+            speedup_files])
     speedup = subprocess.Popen(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             shell=True)
@@ -309,7 +321,7 @@ def filter_log(infile, jobname):
 
     filtered_file = []
     for line in open(infile):
-        if re.search("\s"+jobname+"\s", line):
+        if re.search(r"\s"+jobname+r"\s", line):
             filtered_file.append(line)
     return filtered_file
 
@@ -381,7 +393,8 @@ def run_batch(corrjoblist, outdir):
     """Run jobs in a batch environment"""
 
     # get the batch commands for the slurm or pbs
-    batch_launch, batch_q, batch_cancel, batch_sep = check_batch(corrjoblist.keys())
+    batch_launch, batch_q, batch_cancel, batch_sep = check_batch(
+            corrjoblist.keys())
 
     # start the correlator log
     errormon_log = "./log"
@@ -767,7 +780,8 @@ for jobname in sorted(corrjoblist.keys()):
     # fix the output filename to point at the cuppa data disk
     print ()
     if not options.novex:
-        print ("renaming the 'OUTPUT FILENAME' in", inputfilename, "from",
+        print (
+                "renaming the 'OUTPUT FILENAME' in", inputfilename, "from",
                 indir, "to", outdir)
         change_path(inputfilename, 'OUTPUT FILENAME:', indir, outdir)
 

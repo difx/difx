@@ -35,9 +35,10 @@ try:
     exper = sys.argv[1]
     disk_report_filename = sys.argv[2]
 except:
-    print ("Usage:", sys.argv[0], "<experiment> <disk.txt>\n", 
-    "will produce an input file for lbafilecheck.py for <experiment>,",
-    "where <disk.txt> is the output of disk_report.py")
+    print (
+            "Usage:", sys.argv[0], "<experiment> <disk.txt>\n",
+            "will produce an input file for lbafilecheck.py for <experiment>,",
+            "where <disk.txt> is the output of disk_report.py")
     sys.exit()
 
 if not os.path.isfile(disk_report_filename):
@@ -52,7 +53,7 @@ for machine in disk_report.keys():
         for line in disk_report[machine][data_area]["du"]:
             directory = line[1]
             #print directory
-            if re.search("/" + exper + "-\w*$", directory):
+            if re.search("/" + exper + r"-\w*$", directory):
                 station = directory.split("-")[-1].lower()
                 if station not in stationfiles:
                     stationfiles[station] = dict()

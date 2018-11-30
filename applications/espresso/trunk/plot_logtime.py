@@ -30,7 +30,7 @@ import datetime
 import time
 #import scipy
 #from scipy import interpolate
-from math import *
+#import math
 import matplotlib
 import numpy
 # Force matplotlib to not use any Xwindows backend if X display not available.

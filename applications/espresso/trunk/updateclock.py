@@ -24,16 +24,16 @@
 
 
 from __future__ import print_function, division
-import sys
 import re
 import optparse
 import time
 import os
 import espressolib
-import numpy
 
 
 def parseparam(param, line):
+    """extract val from keyword=val pair"""
+
     value = re.search(param + r"\s*=\s*(\S+)", line).group(1)
     return value
 
@@ -41,7 +41,7 @@ def parseparam(param, line):
 def updateclock(
         clockepoch, clockoffset, clockrate, newclockepoch, offset_adjust,
         rate_adjust, frequency):
-    # offsets are in microsec and rate in microsec/sec
+    """offsets are in microsec and rate in microsec/sec"""
 
     # residual rate is given in mHz at a frequency in MHz. Must convert to
     # microsec/second
@@ -109,7 +109,7 @@ station_list = []
 offset_list = []
 rate_list = []
 if options.stations:
-    station_list = re.sub("\s*", "", options.stations)
+    station_list = re.sub(r"\s*", "", options.stations)
     station_list = station_list.split(",")
     station_list = [station.upper() for station in station_list]
 if options.offset_adjust:

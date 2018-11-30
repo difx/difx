@@ -3,13 +3,8 @@
 
 
 from __future__ import print_function, division
-import sys
-import os
-import re
 import optparse
-import math
-from math import *
-import matplotlib
+#import matplotlib
 from matplotlib import pyplot
 import numpy
 

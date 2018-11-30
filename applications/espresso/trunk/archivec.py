@@ -23,6 +23,8 @@
 # unmodified.
 # Cormac Reynolds: Dec 2014
 
+
+from __future__ import print_function, division
 import optparse
 import os
 import re
@@ -33,18 +35,18 @@ import shutil
 
 def taritup(tardir, tarfile, infile, gzip=False):
 
-    print "tarring up", tarfile
+    print ("tarring up", tarfile)
     taroptions = options.taroptions
     if gzip:
         taroptions = " ".join([taroptions, "-z"])
     command = " ".join(["tar", taroptions, "-cf", archdir+tarfile, infile])
     if options.verbose:
-        print "\n" + command
+        print ("\n" + command)
     subprocess.check_call(
             command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
 
     # and print tar listing for reference
-    print "creating listing for", tarfile
+    print ("creating listing for", tarfile)
     command = " ".join(
             ["tar -tf", tardir+tarfile, ">", tardir+tarfile+".list"])
     subprocess.check_call(
@@ -102,8 +104,9 @@ expname = os.path.normpath(localdir).split("/")[-1]
 archdir = os.environ.get("ARCHTMP") + os.sep + expname + os.sep
 if not archdir:
     archdir = "/tmp/"
-    print "$ARCHTMP not set - using /tmp instead. Setting $ARCHTMP to a",
-    print " directory on the same filesystem as the data is preferable"
+    print (
+            "$ARCHTMP not set - using /tmp instead. Setting $ARCHTMP to a",
+            "directory on the same filesystem as the data is preferable")
 mark4file = str()
 os.chdir(localdir)
 tarlists = dict()
@@ -116,20 +119,20 @@ for filename in os.listdir(os.curdir):
     # Default is just the expname.
     passname = expname
     if filename.startswith(expname+"-"):
-        passname = re.sub("[_\.].*", "", filename)
+        passname = re.sub(r"[_\.].*", "", filename)
 
     targroup = passname
 
     # option to tar each job independently (useful for v. large experiments)
     if options.onejob:
-        if re.match(passname+"_\d", filename):
-            targroup = re.match(passname+"_\d+", filename).group(0)
+        if re.match(passname+r"_\d", filename):
+            targroup = re.match(passname+r"_\d+", filename).group(0)
 
     if targroup not in tarlists.keys():
         tarlists[targroup] = str()
 
     # deal with Mark4 output, clocks, test and old runs as special cases
-    if re.search("^\d\d\d\d$", filename):
+    if re.search(r"^\d\d\d\d$", filename):
         # deal with this later in its own tar file
         mark4file = filename
         continue
@@ -137,11 +140,11 @@ for filename in os.listdir(os.curdir):
         # deal with this later in its own tar file
         continue
     if filename == "test":
-        print "skipping", filename
+        print ("skipping", filename)
         # ignore this one
         continue
-    if re.match("\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d", filename):
-        print "skipping", filename
+    if re.match(r"\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d", filename):
+        print ("skipping", filename)
         # ignore these (old, superseded jobs).
         continue
 
@@ -180,11 +183,11 @@ for targroup in tarlists.keys():
         taritup(archdir, tarfile, tarlists[targroup])
 
 # transfer each of the large files in turn
-print "copying files"
+print ("copying files")
 for srcfile in transfer:
     command = " ".join(["cp", "-l", srcfile, archdir])
     if options.verbose:
-        print "\n" + command
+        print ("\n" + command)
     subprocess.check_call(command, shell=True, stdout=sys.stdout)
 
 # now tar up the clocks subdirectory
@@ -201,26 +204,28 @@ if mark4file:
 try:
     # create the parent directory if required
     command = " ".join(["pshell", '"', "mkdir", pawseydir, '"'])
-    print command
+    print (command)
     subprocess.check_output(command, shell=True)
 except:
     # pshell throws an error if mkdir already exists
-    print "Parent directory exists or cannot be created: {}".format(pawseydir)
+    print (
+            "Parent directory exists or cannot be created: {}".format(
+            pawseydir))
 else:
-    print "Created: {}".format(pawseydir)
+    print ("Created: {}".format(pawseydir))
 
 try:
     # put the contents of archdir
     command = " ".join(
             ["pshell", '"', "cd", pawseydir, "&& put", archdir, '"'])
-    print command
+    print (command)
     subprocess.check_call(
             command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 except KeyboardInterrupt:
     raise Exception("Forced quit")
 except:
-    print "pshell transfer failed - check if your delegation expired"
-    print "Contents of {} have not been deleted".format(archdir)
+    print ("pshell transfer failed - check if your delegation expired")
+    print ("Contents of {} have not been deleted".format(archdir))
 else:
     # publish the public files
     try:
@@ -238,7 +243,7 @@ else:
             subprocess.check_call(
                     command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
     except:
-        print "Files not made public - please use web portal"
+        print ("Files not made public - please use web portal")
     if not options.keeparch:
         shutil.rmtree(archdir)
-    print "All done!"
+    print ("All done!")

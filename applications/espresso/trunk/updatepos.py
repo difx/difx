@@ -25,18 +25,17 @@
 
 
 from __future__ import print_function, division
-import sys
 import re
 import optparse
 import os
-import mx.DateTime
-import math
 
 
 separator = "/"
 
 
-def parseparam(param, line, delimiter="\S+"):
+def parseparam(param, line, delimiter=r"\S+"):
+    """extract values from param=value,value"""
+
     line = line.strip(";")
     delimiter = r"\s*=\s*(" + delimiter + ")"
     value = re.search(param + delimiter, line).group(1)
@@ -44,6 +43,8 @@ def parseparam(param, line, delimiter="\S+"):
 
 
 def end_of_paragraph(line):
+    """Find end of keyin 'paragraph' (/ delimited)"""
+
     # make sure not in quotes
     find_sep = False
     line = re.sub("'.*'", "", line)
@@ -131,7 +132,7 @@ for line in vexfile:
 
     # remove the comments so we can parse the line. Store the original line in
     # a cache so we can update it at the end of the v2d section if necessary
-    line = re.sub("\*.*", "", line)
+    line = re.sub(r"\*.*", "", line)
     cache.append(line)
 
     # find the site block

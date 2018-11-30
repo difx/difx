@@ -24,17 +24,17 @@
 
 
 from __future__ import print_function, division
-from math import *
 import os
 import sys
 import re
-import mx.DateTime
-import espressolib
 import subprocess
 import optparse
+import mx.DateTime
+import espressolib
 
 
-def lbaFileLength(filesize, headervals):
+def lba_file_length(filesize, headervals):
+    """Get length of an LBA file, based on header and file size"""
 
     byterate = (
             headervals["BANDWIDTH"] * headervals["NUMBITS"] *
@@ -44,6 +44,8 @@ def lbaFileLength(filesize, headervals):
 
 
 def lbafile_timerange(filename, header):
+    """Get timerange of an LBA file"""
+
     headerkeys = {
             "TIME": str, "HEADERSIZE": int, "NUMBITS": int, "NCHAN": int,
             "BANDWIDTH": float}
@@ -69,7 +71,7 @@ def lbafile_timerange(filename, header):
 
         # calculate the length of the file in seconds
         filesize = os.path.getsize(filename)
-        filelength = lbaFileLength(filesize, parsehead)
+        filelength = lba_file_length(filesize, parsehead)
 
         enddate = startdate + mx.DateTime.RelativeDateTime(seconds=filelength)
         vexendtime = enddate.strftime(vexformat)
@@ -78,6 +80,8 @@ def lbafile_timerange(filename, header):
 
 
 def vsib_header(filename):
+    """Extract vsib header from LBA format file"""
+
     FILE = open(filename)
     header = FILE.read(4096).split("\n")
 
@@ -86,6 +90,7 @@ def vsib_header(filename):
 
 def parse_m5findformats(m5_output):
     """Select the highest data rate format consistent with data"""
+
     m5format = None
     m5_output.reverse()
     for line in m5_output:
@@ -106,7 +111,7 @@ def m5_to_vextime(m5time):
     # convert m5time to constitute parts, noting this match truncates the
     # seconds (which vextime requires anyway)
     day, hours, mins, secs = re.match(
-            "(\d+)/(\d+):(\d+):(\d+)", m5time).groups()
+            r"(\d+)/(\d+):(\d+):(\d+)", m5time).groups()
     day = int(day)
     hours = int(hours)
     mins = int(mins)
@@ -149,7 +154,7 @@ def check_file(infile, m5bopts):
     elif re.search(r".lba$", infile):
         # LBA format
         header = vsib_header(infile)
-        if not (header and re.match(r"^TIME\s\d{8}:\d{6}",  header[0])):
+        if not (header and re.match(r"^TIME\s\d{8}:\d{6}", header[0])):
             if (header):
                 sys.stderr.write(
                         "header for " + infile + " is corrupt: " + header[0] +
@@ -193,22 +198,22 @@ def check_file(infile, m5bopts):
                 # must be a mark5a then.
                 #sys.stderr.write(infile)
                 command = " ".join([m5findformats, infile])
-                stdout, error = subprocess.Popen(command, shell=True,
-                        stdout=subprocess.PIPE,
+                stdout, error = subprocess.Popen(
+                        command, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE).communicate()
                 #sys.stderr.write(error)
                 m5_output = stdout.split("\n")
                 m5format = parse_m5findformats(m5_output)
                 command = " ".join([m5time, infile, m5format])
-                starttime_m5, error = subprocess.Popen(command, shell=True,
-                        stdout=subprocess.PIPE,
+                starttime_m5, error = subprocess.Popen(
+                        command, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE).communicate()
                 #sys.stderr.write(error)
 
                 lastsample = 1000000
                 filesize = os.path.getsize(infile)
-                command = " ".join([m5time, infile, m5format,
-                        str(filesize-lastsample)])
+                command = " ".join(
+                        [m5time, infile, m5format, str(filesize-lastsample)])
                 endtime_m5, error = subprocess.Popen(
                         command, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE).communicate()
@@ -242,6 +247,7 @@ def fix_filelist(outfilelist):
     # do in reverse for convenience
     outfilelist.reverse()
     previous_starttime = None
+    idx = None
     for idx, outfile in enumerate(outfilelist):
         #sys.stderr.write(str(idx) + str(outfile))
         filename, starttime, endtime, corrupt = outfile

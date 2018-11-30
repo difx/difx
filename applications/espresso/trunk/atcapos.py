@@ -26,10 +26,11 @@ import optparse
 import re
 import requests
 import espressolib
-import sys
 
 
 def vexdate2atca(date):
+    """Convert date from vex format to ATCA cgi script format"""
+
     year_index = date.find("y")
     year = date[0:year_index]
     startdate = re.sub("^.*y", "", date)
@@ -82,7 +83,7 @@ for targetdate in args:
         if iline == 1:
             pads = line.split()
         if iline == 2:
-            refant = re.sub("Refant:\s*CA0", "", line)
+            refant = re.sub(r"Refant:\s*CA0", "", line)
             refant = int(refant)
             refant_pad = pads[refant-1]
             print ("{}: {}".format(targetdate, refant_pad))

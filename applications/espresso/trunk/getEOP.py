@@ -27,22 +27,22 @@
 #
 
 from __future__ import print_function, division
-import optparse
-import re
-#import urllib
-import requests
-import espressolib
 import sys
 import time
 import os
+import optparse
+#import urllib
+import requests
+import espressolib
 
 
-def get_leapsec(leapsec_page, targetJD):
-    # parse the leap seconds page
+def get_leapsec(leapsec_page, target_jd):
+    """parse the leap seconds page"""
+
     tai_utc = None
     for line in leapsec_page:
         linedate = float(line[17:27])
-        if linedate > targetJD:
+        if linedate > target_jd:
             break
         else:
             tai_utc = int(float(line[38:49]))
@@ -80,17 +80,18 @@ else:
 
 mjd_jd = 2400000.5
 # get target MJD
-targetMJD = args[0]
+target_mjd = args[0]
 # convert to MJD if necessary
-targetMJD = espressolib.convertdate(targetMJD, "mjd")
-targetJD = round(targetMJD) + mjd_jd
+target_mjd = espressolib.convertdate(target_mjd, "mjd")
+target_jd = round(target_mjd) + mjd_jd
 
 
 # dates before June 1979 not valid (earliest EOPs)
-if (targetJD < 2444055.5):
+if (target_jd < 2444055.5):
     raise Exception("Date too early. No valid EOPs before July 1979")
 
 # fetch EOP data
+leapsec_page = None
 if not options.local:
     #eop_url = "https://gemini.gsfc.nasa.gov/solve_save/usno_finals.erp"
     #leapsec_url = (
@@ -120,9 +121,10 @@ else:
     sys.stderr.write(
             "Reading leap second data from {:s}\n".format(leapsec_filename))
     leapsec_page = open(leapsec_filename).readlines()
-    print ("{:s} EOPS from {:s} last updated at {:s}\n".format(
-            comment, eop_filename, time.strftime("%Y-%m-%d %H:%M:%S (%z)",
-            eop_update_time)))
+    print (
+            "{:s} EOPS from {:s} last updated at {:s}\n".format(
+            comment, eop_filename,
+            time.strftime("%Y-%m-%d %H:%M:%S (%z)", eop_update_time)))
 
 v2deop = "EOP {0:d} {{ xPole={1:f} yPole={2:f} tai_utc={3:d} ut1_utc={4:f} }}"
 
@@ -145,6 +147,7 @@ else:
 
 # parse the eop page
 neop = -1
+nlines = None
 for nlines, line in enumerate(eop_page):
     # skip the first line, which isn't commented
     if (nlines == 0):
@@ -158,7 +161,7 @@ for nlines, line in enumerate(eop_page):
     eop_fields = line.split()
     eop_fields = [float(field) for field in eop_fields]
     # print an EOP line if we're within 3 days of the target day
-    if (abs(eop_fields[0] - targetJD) < 3):
+    if (abs(eop_fields[0] - target_jd) < 3):
         neop += 1
         tai_utc = get_leapsec(leapsec_page, eop_fields[0])
         if tai_utc is None:

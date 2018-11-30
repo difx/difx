@@ -26,15 +26,15 @@ from __future__ import print_function, division
 import re
 import os
 import fcntl
-import mx.DateTime
 import smtplib
 import sys
 from email.mime.text import MIMEText
+import mx.DateTime
 
 
 def get_corrhosts(hostsfilename):
     """Parse the host list file.
-    
+
     Return a dict where the key is the hostname.
     The values are a list. The first element of the list is the number of
     threads. The second element is a list of data areas.
@@ -56,10 +56,11 @@ def get_corrhosts(hostsfilename):
                 version = re.match(r"version\s*=\s*(\d+)", line).group(0)
             except:
                 raise Exception("First line must be version number!")
-            continue
             if version != 1:
-                print ("Warning: version number in $DIFX_MACHINES is not 1.",
-                "This may not work as expected")
+                sys.stderr.write(
+                        "Warning: version number in $DIFX_MACHINES is not 1."
+                        " This may not work as expected\n")
+            continue
 
         hostdata = line.split(",")
         hostname_list = hostdata[0].strip()
@@ -109,13 +110,13 @@ def get_corrhosts(hostsfilename):
 
 def expandstr(inputstr):
     """expand patterns in a string
-    
+
     Expand a string that may contain a pattern into a list of all
     strings that match the pattern
     """
 
     outputstrs = [inputstr]
-    globpattern = "\[.*?\]"
+    globpattern = r"\[.*?\]"
     for patternmatch in re.finditer(globpattern, inputstr):
         newoutputstrs = []
         startrange = False
@@ -142,13 +143,13 @@ def expandstr(inputstr):
 
 def expand0int(inputstr):
     """Expand a string with an integer range
-    
+
     Expand a string that may contain a range of zero-padded integers into
     a list of all strings that match the given integer range
     """
 
     outputstrs = [inputstr]
-    globpattern = "\[(.*?)\]"
+    globpattern = r"\[(.*?)\]"
     #for patternmatch in re.finditer(globpattern, inputstr):
     int_range = re.search(globpattern, inputstr)
     if int_range:
@@ -203,7 +204,7 @@ convertdate instead"""
 
 def convertdate(indate, outformat="mjd"):
     """converts between DiFX date formats (mjd, vex, iso, vlba)
-    
+
     Example formats:
     mjd: 58119.0
     vex: 2018y001d00h00m00s
@@ -225,7 +226,7 @@ def convertdate(indate, outformat="mjd"):
     # vex format can truncate from the right, have 2 digits for the year, and
     # decimal seconds
     vexformat_in = vexformat
-    if type(indate) is str and "y" in indate:
+    if isinstance(indate, str) and "y" in indate:
         if indate[2] == "y":
             vexformat_in = vexformat_in.replace("%Y", "%y")
         vexlen = 3
@@ -307,8 +308,8 @@ def daysToDhms(fracdays):
 
 
 class Email:
-    """Simple gmail notification message. 
-    
+    """Simple gmail notification message.
+
     Logs in to gmail server of the given account and sends an email to that
     same account
     """
@@ -316,6 +317,7 @@ class Email:
     def __init__(self, user, passwd):
         self.user = user
         self.passwd = passwd
+        self.server = None
 
     def connect(self):
         """Set up the connection to the SMTP server"""
@@ -342,15 +344,15 @@ class Email:
 
 class Msg_Filter:
     """Filter an input string based on match with some other string(s)
-    
-    Writes output to a file (or similar object) after filtering. 
+
+    Writes output to a file (or similar object) after filtering.
     First argument is the desired output object, remainder are the strings to
     filter on.
     Should itself look like a file object. Filter is case-insensitive
     """
 
-    def __init__(self, file, *args):
-        self._file = file
+    def __init__(self, filename, *args):
+        self._file = filename
         self._filters = args
 
     def write(self, string):

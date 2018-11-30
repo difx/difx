@@ -58,7 +58,7 @@ joblist = []
 outfile = {}
 with open(explog_filename, "r") as infile:
     for lineno, line in enumerate(infile):
-        jobname = re.search(expname+"\S*", line).group(0)
+        jobname = re.search(expname+r"\S*", line).group(0)
         outfilename = os.path.join(outdir, jobname + ".difxlog")
         if jobname not in joblist:
             # Open file if not opened before. Rename any pre-existing version.

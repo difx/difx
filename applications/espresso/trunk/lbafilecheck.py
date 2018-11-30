@@ -26,12 +26,8 @@
 from __future__ import print_function, division
 import os
 import subprocess
-import time
 import re
-import tempfile
 import optparse
-import time
-import shutil
 import espressolib
 
 #global threads_per_machine
@@ -67,10 +63,10 @@ def makefilelists(
     filelist = filelist.split("\n")
     filelist.pop()
     filelist = sorted(filelist, key=sortbyfilename)
-    for file in filelist:
+    for filename in filelist:
         # ignore the VSIPACK files
-        if "VSIPACK" not in file and ".log" not in file:
-            TEMPFILE.write(file + "\n")
+        if "VSIPACK" not in filename and ".log" not in filename:
+            TEMPFILE.write(filename + "\n")
 
     TEMPFILE.flush()
     TEMPFILE.close()
@@ -116,6 +112,8 @@ def makefilelists(
 
 
 def write_machines(expname, machines):
+    """Write out the MPI machines file"""
+
     MACHINESFILE = open(expname + ".machines", "w")
     for machine in machines:
         MACHINESFILE.write(machine + "\n")
@@ -137,8 +135,8 @@ def check_machines(machines):
     if machine_error and options.no_rmaps_seq:
         print ("\n" * 2, "!" * 20)
         print (
-                "Warning:", machine_error, 
-                "appear(s) multiple times in the machines.list file, but not", 
+                "Warning:", machine_error,
+                "appear(s) multiple times in the machines.list file, but not",
                 "in consecutive order. This machine file will not work unless",
                 "you have openmpi v1.4 or greater!")
 
@@ -310,7 +308,7 @@ for line in sorted(telescopedirs):
             continue
 
         telescope, data_area = re.split(r"\s*=\s*", line)
-        machine, dir_patterns = re.split("\s*:\s*", data_area)
+        machine, dir_patterns = re.split(r"\s*:\s*", data_area)
         dir_patterns = dir_patterns.split()
         datamachines.append(machine)
 

@@ -26,16 +26,20 @@ from __future__ import print_function, division
 import os
 import subprocess
 import sys
-import time
 import optparse
-import espressolib
 import multiprocessing
 from multiprocessing import Process, Queue
 from Queue import Empty
 import json
+import espressolib
 
 
 def remote_command(inputq, outputq):
+    """Form command to run remotely based on contents of inputq, and place the
+    commands in the output queue
+
+    Keep going until the inputq is exhausted"""
+
     while True:
         try:
             disk_query, machine, data_area = inputq.get(block=False)

@@ -62,7 +62,7 @@ if options.username:
 # The md5sum file must have the *same* name, but goes to a different directory.
 for fits_file in fits_files:
     header = open(fits_file).read(1000)
-    date_obs = re.search("DATE-OBS=\s+'(\d{4}-\d{2}-\d{2})'", header).group(1)
+    date_obs = re.search(r"DATE-OBS=\s+'(\d{4}-\d{2}-\d{2})'", header).group(1)
 
     outfile = date_obs + "_0000." + fits_file
     md5sumfile = outfile + ".md5sum"

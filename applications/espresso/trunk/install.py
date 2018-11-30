@@ -23,7 +23,6 @@
 
 from __future__ import print_function, division
 import os
-import sys
 import shutil
 import optparse
 import re
