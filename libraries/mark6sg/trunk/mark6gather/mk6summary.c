@@ -68,6 +68,7 @@ void summarize(const char *fileName)
 	Mark6Header H;
 	char *buffer;
 	char *data;
+	unsigned char *udata, *lastdata;
 	int i;
 	Mark6BlockHeader_ver2 *h;
 	int s;
@@ -82,10 +83,11 @@ void summarize(const char *fileName)
 		return;
 	}
 
-	v = fread(&H, sizeof(H), 1, in); // CJP Never closed?
+	v = fread(&H, sizeof(H), 1, in); // read mark6 file header
 	if(v<1)
 	{
-		fprintf(stderr, "Error reading mark6 header for %s\n", fileName);
+		fprintf(stderr, "Error reading mark6 file header for %s\n", fileName);
+		fclose(in);
 		
 		return;
 	}
@@ -95,6 +97,7 @@ void summarize(const char *fileName)
 
 	if(H.version < 2)
 	{
+		fprintf(stderr, "Mark6 file header less than version 2 for %s, exiting.\n", fileName);
 		fclose(in);
 
 		return;
@@ -105,6 +108,7 @@ void summarize(const char *fileName)
 	h = (Mark6BlockHeader_ver2 *)buffer;
 	data = buffer + s;
 
+	// VDIF first packet
 	v1 = (vdif_header *)data;
 
 	for(i = 0; ; ++i)
@@ -113,19 +117,28 @@ void summarize(const char *fileName)
 		int nSize;
 
 		nSize = 0;
-		v = fread(buffer, s, 1, in);
+		v = fread(buffer, s, 1, in); // read mark6 block header
 		if(v < 1)
 		{
 			break;
 		}
 		n = (h->wb_size-s)/H.packet_size;
-		v = fread(buffer+s, 1, h->wb_size-s, in);
+		v = fread(buffer+s, 1, h->wb_size-s, in); // read block
 		if(v < s)
 		{
 			printf("Early EOF: only %lu bytes read.  %d bytes expected.\n", v, h->wb_size-s);
 		}
 		for(j = 0; j < n; ++j)
 		{
+			// Mark5B first packet
+			if(H.packet_format == 1 && j == 0)
+			{
+				udata = (unsigned char*)(data);
+				printf("%d %d ", h->blocknum, n);
+				printf("%d:", (udata[10] & 0x0F)*10000 + (udata[9] >> 4)*1000 + (udata[9] & 0x0F)*100 + (udata[8] >> 4)*10 +  (udata[8] & 0x0F));
+				printf("%05d - ", (udata[5] * 256) + udata[4]);
+			}
+
 			vdif_header *v2;
 
 			v2 = (vdif_header *)(data + j*H.packet_size);
@@ -135,9 +148,19 @@ void summarize(const char *fileName)
 			}
 			if(j == n-1) // print summary for last one
 			{
-				printf("%d %d %d/%d  %d:%05d:%d - %d:%05d:%d\n", i, h->blocknum, nSize, n,
-					getVDIFFrameEpochSecOffset(v1), getVDIFFrameNumber(v1), getVDIFThreadID(v1),
-					getVDIFFrameEpochSecOffset(v2), getVDIFFrameNumber(v2), getVDIFThreadID(v2));
+				// Mark5B last packet
+				if(H.packet_format == 1)
+				{
+					lastdata = (unsigned char*)(data + j*H.packet_size);
+					printf("%d:", (lastdata[10] & 0x0F)*10000 + (lastdata[9] >> 4)*1000 + (lastdata[9] & 0x0F)*100 + (lastdata[8] >> 4)*10 + (lastdata[8] & 0x0F));
+					printf("%05d\n", (lastdata[5] * 256) + lastdata[4]);
+				}
+				else // VDIF last packet
+				{
+					printf("%d %d/%d  %d:%05d:%d - %d:%05d:%d\n", h->blocknum, nSize, n,
+						getVDIFFrameEpochSecOffset(v1), getVDIFFrameNumber(v1), getVDIFThreadID(v1),
+						getVDIFFrameEpochSecOffset(v2), getVDIFFrameNumber(v2), getVDIFThreadID(v2));
+				}
 			}
 		}
 	}

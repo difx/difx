@@ -68,6 +68,16 @@ typedef struct vdif_header {
 static inline int getVDIFFrameEpochSecOffset(const vdif_header *header) { return (int)header->seconds; }
 static inline int getVDIFFrameNumber(const vdif_header *header) { return (int)header->frame; }
 static inline uint64_t vdifFrame(vdif_header *vh) { return ((uint64_t)(getVDIFFrameEpochSecOffset(vh)) << 24LL) | getVDIFFrameNumber(vh); }
+static inline uint64_t mark5bFrame(char *data)
+{
+	unsigned char *udata;
+	int second;
+	int nFrame;
+	udata = data;
+	second = (udata[10] & 0x0F)*10000 + (udata[9] >> 4)*1000 + (udata[9] & 0x0F)*100 + (udata[8] >> 4)*10 + (udata[8] & 0x0F);
+	nFrame = (udata[5] * 256) + udata[4];
+	return ((uint64_t)(second) << 24LL) | nFrame; 
+}
 
 
 const char DefaultMark6Root[] = "/mnt/disks/*/*/data";
@@ -235,8 +245,15 @@ static ssize_t Mark6FileReadBlock(Mark6File *m6f, int slotIndex)
 
 		slot->index = 0;
 
-		vh = (vdif_header *)(slot->data);
-		slot->frame = vdifFrame(vh);
+		if(m6f->packetSize == 5032)
+		{
+			vh = (vdif_header *)(slot->data);
+			slot->frame = vdifFrame(vh);
+		}
+		else
+		{
+			slot->frame = mark5bFrame(slot->data);
+		}
 	}
 
 	pthread_barrier_wait(&m6f->readBarrier);
@@ -455,6 +472,8 @@ int closeMark6File(Mark6File *m6f)
 
 void printMark6File(const Mark6File *m6f)
 {
+	unsigned char *udata;
+
 	printf("Mark6 file:\n");
 	if(m6f == 0)
 	{
@@ -477,8 +496,17 @@ void printMark6File(const Mark6File *m6f)
 			printf("    Payload bytes = %d (bytes currently residing in core)\n", m6f->slot[s].payloadBytes);
 			printf("    Current block number = %d\n", m6f->slot[s].blockHeader.blocknum);
 			printf("    Current index within block = %d\n", m6f->slot[s].index);
-			printf("    Second = %d\n", (int)(m6f->slot[s].frame >> 24));
-			printf("    Frame in second = %d\n", (int)(m6f->slot[s].frame & 0xFFFFFF));
+			if(m6f->packetSize == 5032)
+			{
+				printf("    Second = %d\n", (int)(m6f->slot[s].frame >> 24));
+				printf("    Frame in second = %d\n", (int)(m6f->slot[s].frame & 0xFFFFFF));
+			}
+			else
+			{
+				udata = m6f->slot[s].data;
+				printf("    Second = %d\n", (udata[10] & 0x0F)*10000 + (udata[9] >> 4)*1000 + (udata[9] & 0x0F)*100 + (udata[8] >> 4)*10 + (udata[8] & 0x0F));
+				printf("    Frame in second = %d\n", (udata[5] * 256) + udata[4]);
+			}
 		}
 	}
 }
@@ -824,8 +852,15 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 		}
 		else
 		{
-			vdif_header *vh = (vdif_header *)(slot->data + slot->index);
-			slot->frame = vdifFrame(vh);
+			if(F->packetSize == 5032)
+			{
+				vdif_header *vh = (vdif_header *)(slot->data + slot->index);
+				slot->frame = vdifFrame(vh);
+			}
+			else
+			{
+				slot->frame = mark5bFrame(slot->data + slot->index);
+			}
 		}
 	}
 
