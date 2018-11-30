@@ -683,22 +683,39 @@ static int getModes(VexData *V, Vex *v)
 			bbc2ifName.clear();
 			ch2tracks.clear();
 
-			// Get sample rate
-			p = get_all_lowl(antName.c_str(), modeDefName, T_SAMPLE_RATE, B_FREQ, v);
-			if(p == 0)
+                        // see if the antenna is in this mode
+                        // oddly, not trivial, the vex parser is unable to list all antennas in a mode
+			// assume that if an antenna is supposed to be in Mode then it must have $IF, $BBC, $FREQ
+			std::vector<void*> reqrefs;
+			reqrefs.push_back( get_all_lowl(antName.c_str(), modeDefName, T_IF_DEF, B_IF, v) );
+			reqrefs.push_back( get_all_lowl(antName.c_str(), modeDefName, T_BBC_ASSIGN, B_BBC, v) );
+			reqrefs.push_back( get_all_lowl(antName.c_str(), modeDefName, T_CHAN_DEF, B_FREQ, v) );
+			bool all_defs = true, no_defs = true;
+			for(std::vector<void*>::const_iterator ref = reqrefs.begin(); ref != reqrefs.end(); ++ref)
 			{
-				std::cerr << "Warning: antenna " << antName << " in mode " << modeDefName << " has no sample_rate field" << std::endl;
-				++nWarn;
+				no_defs &= (*ref == 0);
+				all_defs &= (*ref != 0);
+			}
+			if (no_defs)
+			{
 				continue;
+			}
+			if (!all_defs)
+			{
+				std::cerr << "Note: Unable to find a .vex $IF, $FREQ, or $BBC reference for " << antName << " in mode " << modeDefName << ". The .vex file might need modification." << std::endl;
 			}
 
 			// if we made it this far the antenna is involved in this mode
-
 			VexSetup &setup = M->setups[V->getAntenna(a)->name];
 			VexStream &stream = setup.streams[0];	// the first stream is created by default
 
-			vex_field(T_SAMPLE_RATE, p, 1, &link, &name, &value, &units);
-			fvex_double(&value, &units, &stream.sampRate);
+			// Get sample rate
+			p = get_all_lowl(antName.c_str(), modeDefName, T_SAMPLE_RATE, B_FREQ, v);
+			if (p)
+			{
+				vex_field(T_SAMPLE_RATE, p, 1, &link, &name, &value, &units);
+				fvex_double(&value, &units, &stream.sampRate);
+			}
 
 			// init array to all zeroes
 			for(p2count = 0; p2count < MAX_IF; ++p2count)
@@ -1160,7 +1177,7 @@ static int getModes(VexData *V, Vex *v)
 
 				if(bandwidth > stream.sampRate/2)
 				{
-					std::cerr << "Error: sample rate = " << stream.sampRate << " bandwidth = " << bandwidth << std::endl;
+					std::cerr << "Error: " << modeDefName << " antenna " << antName << " has sample rate = " << stream.sampRate << " bandwidth = " << bandwidth << std::endl;
 					std::cerr << "Sample rate must be no less than twice the bandwidth in all cases." << std::endl;
 
 					exit(EXIT_FAILURE);
