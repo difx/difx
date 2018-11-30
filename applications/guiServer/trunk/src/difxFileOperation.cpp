@@ -61,6 +61,7 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	    //  operation should be silent if all goes well - any output from popen will be something bad
 	    //  (thus we generate an error message).
 		snprintf( command, MAX_COMMAND_SIZE, "mkdir -p %s 2>&1", S->path );
+		printf("MAING A DIRECTORY BLAHBALH\n");
   		FILE* fp = popen( command, "r" );
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
@@ -70,6 +71,16 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	else if ( !strcmp( S->operation, "rmdir" ) ) {
 	    //  The "rmdir" command doesn't remove content.
 		snprintf( command, MAX_COMMAND_SIZE, "rmdir %s 2>&1", S->path );
+  		FILE* fp = popen( command, "r" );
+  		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
+  		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+  		pclose( fp );	    
+    	snprintf( message, DIFX_MESSAGE_LENGTH, "%s performed", command );
+    	printf( "%s\n", message );
+	}
+	else if ( !strcmp( S->operation, "touch" ) ) {
+	    //  The "rmdir" command doesn't remove content.
+		snprintf( command, MAX_COMMAND_SIZE, "touch %s 2>&1", S->path );
   		FILE* fp = popen( command, "r" );
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
@@ -99,6 +110,16 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
   		pclose( fp );	    
   		snprintf( message, DIFX_MESSAGE_LENGTH, "%s performed!", command );
+  		printf( "%s\n", message );
+	}
+	else if ( !strcmp( S->operation, "cp" ) ) {
+		snprintf( command, MAX_COMMAND_SIZE, "cp %s %s", S->path, S->arg );
+  		FILE* fp = popen( command, "r" );
+  		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
+  		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
+  		pclose( fp );	    
+  		snprintf( message, DIFX_MESSAGE_LENGTH, "%s performed!", command );
+  		printf( "%s\n", message );
 	}
 	//  The "ls" operation actually returns data, so it must be provided with a TCP port and address.  It
 	//  can take an undetermined amount of time so it is done in a thread.
