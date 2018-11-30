@@ -44,16 +44,17 @@ def get_corrhosts(hostsfilename):
 
     hosts = dict()
     version = int()
-    for line in enumerate(hostsfile):
-        linenum, line = line
+    for linenum, line in enumerate(hostsfile):
         line.strip()
         # strip comments
         line = re.sub(r"#.*", "", line)
 
         if linenum == 0:
+            version = None
             # first line should be the version number
             try:
-                version = re.match(r"version\s*=\s*(\d+)", line).group(0)
+                version = re.match(r"version\s*=\s*(\d+)", line).group(1)
+                version = int(version)
             except:
                 raise Exception("First line must be version number!")
             if version != 1:

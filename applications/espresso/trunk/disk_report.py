@@ -105,7 +105,8 @@ if not difx_machines:
 try:
     data_areas = espressolib.get_corrhosts(difx_machines)
 except:
-    raise Exception("Problem with file: " + difx_machines)
+    sys.stderr.write("Problem with file: {:s}\n".format(difx_machines))
+    raise 
 
 # run two processes per available cpu (the work is all being done remotely)
 nproc = multiprocessing.cpu_count()*2
