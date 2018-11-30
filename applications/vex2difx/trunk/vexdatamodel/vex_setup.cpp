@@ -206,7 +206,10 @@ void VexSetup::selectTones(enum ToneSelection selection, double guardBandMHz)
 	for(std::vector<VexChannel>::iterator it = channels.begin(); it != channels.end(); ++it)
 	{
 		const VexIF *vif = getIF(it->ifName);
-		it->selectTones(vif->phaseCalIntervalMHz, vif->phaseCalBaseMHz, selection, guardBandMHz);
+		if (vif)
+		{
+			it->selectTones(vif->phaseCalIntervalMHz, vif->phaseCalBaseMHz, selection, guardBandMHz);
+		}
 	}
 }
 
