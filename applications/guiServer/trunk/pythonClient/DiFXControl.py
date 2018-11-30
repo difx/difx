@@ -1047,6 +1047,7 @@ class Client:
         packetData += "     <path>" + path + "</path>\n"
         if dataNode != None:
             packetData += "     <dataNode>" + dataNode + "</dataNode>\n"
+        print("packetData = " + packetData)
         self.sendCommandPacket( "DifxFileOperation", packetData )
         
     #<!------------------------------------------------------------------------>
@@ -1302,6 +1303,39 @@ class Client:
     def mv( self, pathFrom, pathTo ):
         channel = self.newChannel( None )
         self.fileOperation( channel, "mv", pathTo, pathFrom, None )
+        self.closeChannel( channel )
+
+
+    #<!------------------------------------------------------------------------>
+    ## Run a "cp" command on the server to copy a path to another location.
+    #
+    #    @param pathFrom Full path of the file that will be copied.
+    #    @param pathTo Full path of the destination of the copy.
+    #
+    #  Copy operations are limited to those that can be accomplished by the
+    #  user running the server (i.e. it must have appropriate permissions).
+    #  No arguments are permitted in a copy operation, only the source and
+    #  destination path names.
+    #
+    #<!------------------------------------------------------------------------>
+    def cp( self, pathFrom, pathTo ):
+        channel = self.newChannel( None )
+        self.fileOperation( channel, "cp", pathTo, pathFrom, None )
+        self.closeChannel( channel )
+
+
+    #<!------------------------------------------------------------------------>
+    ## Run a "touch" command on the server with the specified path.
+    #
+    #    @param path Full path of the directory that should be created.
+    #
+    #  The server does not currently accept any arguments to touch unfortunately.
+    #  Nor does it produce any direct feedback. 
+    #
+    #<!------------------------------------------------------------------------>
+    def touch( self, path ):
+        channel = self.newChannel( None )
+        self.fileOperation( channel, "touch", None, path, None )
         self.closeChannel( channel )
         
     #<!------------------------------------------------------------------------>
