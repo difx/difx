@@ -1129,7 +1129,7 @@ static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs)
 	return 0;
 }
 
-const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
+const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum)
 {
 	int i, l, v;
 	float visScale = 1.0;
@@ -1506,7 +1506,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #endif
 	if(jobMatrix)
 	{
-		writeJobMatrix(jobMatrix);
+		writeJobMatrix(jobMatrix, passNum);
 		deleteJobMatrix(jobMatrix);
 	}
 
