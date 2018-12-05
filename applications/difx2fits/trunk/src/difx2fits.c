@@ -645,7 +645,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	return 0;
 }
 
-static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPrivate *out, const struct CommandLineOptions *opts)
+static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -749,7 +749,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
-	D = DifxInput2FitsUV(D, &keys, out, opts);
+	D = DifxInput2FitsUV(D, &keys, out, opts, passNum);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
@@ -1141,7 +1141,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 			return 0;
 		}
 
-		if(DifxInput2FitsTables(D, &outfile, opts) == D)
+		if(DifxInput2FitsTables(D, &outfile, opts, passNum+1) == D)
 		{
 			printf("\nConversion successful\n\n");
 		}

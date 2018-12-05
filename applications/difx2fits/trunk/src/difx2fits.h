@@ -102,7 +102,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
-	const struct CommandLineOptions *opts);
+	const struct CommandLineOptions *opts, int passNum);
 
 const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

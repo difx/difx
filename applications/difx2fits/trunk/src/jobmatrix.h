@@ -39,7 +39,7 @@ typedef struct _JobMatrix JobMatrix;
 
 JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, double deltaT);
 
-void writeJobMatrix(const JobMatrix *jm);
+void writeJobMatrix(const JobMatrix *jm, int passNum);
 
 void deleteJobMatrix(JobMatrix *jm);
 

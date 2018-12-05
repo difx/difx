@@ -78,7 +78,7 @@ static int cmpfunc (const void * a, const void * b)
 /**
  * Writes the .jobmatrix file
  **/
-void writeJobMatrix(const JobMatrix *jm)
+void writeJobMatrix(const JobMatrix *jm, int passNum)
 {
 	int *jobList;
 	int *activeJobs;
@@ -96,7 +96,11 @@ void writeJobMatrix(const JobMatrix *jm)
 		return;
 	}
 
-	v = snprintf(outname, DIFXIO_FILENAME_LENGTH, "%s.jobmatrix", jm->filebase);
+	if (passNum == 0)
+		v = snprintf(outname, DIFXIO_FILENAME_LENGTH, "%s.jobmatrix", jm->filebase);
+	else
+		v = snprintf(outname, DIFXIO_FILENAME_LENGTH, "%s_setup%d.jobmatrix", jm->filebase, passNum);
+
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "Developer error: writeJobMatrix: outname wants %d bytes, not %d\n", v, DIFXIO_FILENAME_LENGTH);
