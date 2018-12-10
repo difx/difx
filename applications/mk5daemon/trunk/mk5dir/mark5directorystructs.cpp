@@ -170,14 +170,14 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 						}
 					}
 				}
-			//	if(nConnect < info->nScan/2-1)
-			//	{
-			//		status = Mark5DirectoryInfoErrorConnection;
-			//	}
-				else if(nBad > info->nScan/2)
+				if(nBad > info->nScan/2)
 				{
 					status = Mark5DirectoryInfoErrorGranularity;
 				}
+			//	else if(nConnect < info->nScan/2-1)
+			//	{
+			//		status = Mark5DirectoryInfoErrorConnection;
+			//	}
 				else
 				{
 					/* Legacy seems to fit */

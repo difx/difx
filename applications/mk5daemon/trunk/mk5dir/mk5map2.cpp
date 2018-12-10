@@ -213,6 +213,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 	int maxThread = 0;
 	int okToJump = 0;
 	int frameSize = 0;
+	int nextJumpSec = 0;
 
 	memset(&mk5status, 0, sizeof(mk5status));
 
@@ -388,6 +389,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 					maxFrame = 0;
 					maxThread = 0;
 					okToJump = 1;
+					nextJumpSec = -100;
 				}
 				else
 				{
@@ -442,6 +444,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 					lastBegin = lastEnd = bufferStart + offset;
 					firstSecond = sec;
 					okToJump = 1;
+					nextJumpSec = -100;
 					frameSize = 10016;
 				}
 				else
@@ -461,6 +464,12 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 		}
 
 		leftover += (readSize - offset);
+
+		if(sec == nextJumpSec && okToJump == 0)
+		{
+			fprintf(stderr, "Reenable jumping after a series of good seconds\n");
+			okToJump = 1;
+		}
 
 		while(okToJump && sec > firstSecond+1 && !die)
 		{
@@ -487,6 +496,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 			if(readPtr + jump > end)
 			{
 				okToJump = 0;
+				nextJumpSec = lastSecond + 6;
 				toRead = end - readPtr;
 				bufferStart = readPtr;
 
@@ -518,6 +528,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 				else
 				{	
 					okToJump = 0;
+					nextJumpSec = lastSecond + 6;
 				}
 			}
 			else
@@ -530,6 +541,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 				else
 				{
 					okToJump = 0;
+					nextJumpSec = lastSecond + 6;
 				}
 			}
 
@@ -542,6 +554,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 				else
 				{
 					okToJump = 0;
+					nextJumpSec = lastSecond + 6;
 				}
 			}
 
