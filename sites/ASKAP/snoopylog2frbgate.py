@@ -37,14 +37,14 @@ polycostartmjd = int(mjd) + float(nearestmjdstartsecond)/86400.0
 #    binconfout.write("BIN WEIGHT 1:       1.0\n")
 #    binconfout.close()
 
-# Instead cover a 100ms range with bins of size 5ms
+# Instead cover a 150ms range with bins of size 5ms
 with open("craftfrb.binconfig", "w") as binconfout:
     binconfout.write("NUM POLYCO FILES:   1\n")
     binconfout.write("POLYCO FILE 0:      craftfrb.polyco\n")
-    binconfout.write("NUM PULSAR BINS:    20\n")
-    binconfout.write("SCRUNCH OUTPUT:     TRUE\n")
-    for i in range(20):
-        binconfout.write("BIN PHASE END %02d:   %.9f\n" % (i, startphase))
+    binconfout.write("NUM PULSAR BINS:    30\n")
+    binconfout.write("SCRUNCH OUTPUT:     FALSE\n")
+    for i in range(30):
+        binconfout.write("BIN PHASE END %02d:   %.9f\n" % (i, startphase + (i-14)*0.0005))
         binconfout.write("BIN WEIGHT %02d:       1.0\n" % i)
     binconfout.close()
 
