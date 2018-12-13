@@ -32,6 +32,7 @@
 #include <string.h>
 #include <pwd.h>
 #include <fcntl.h>
+#include <sys/file.h>
 #include <network/TCPClient.h>
 #include <signal.h>
 #include <GUIClient.h>
@@ -77,7 +78,8 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
 	if ( !user ) {
     	user = getenv( "DIFX_USER_ID" );
 	}
-
+	
+	//user = "difxmgr";
 	if ( !strcmp( S->direction, "to DiFX" ) ) {
 	
     	//snprintf( message, DIFX_MESSAGE_LENGTH, "Request for transfer of file from %s on remote host to DiFX host - filesize is unknown", S->origin );
@@ -105,10 +107,14 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
             	int count = 0;
             	short blockSize = 1024;
             	char blockData[blockSize + 1];
-		        const int tmpFileSize = 100;
+	        const int tmpFileSize = 100;
             	char tmpFile[tmpFileSize];
             	snprintf( tmpFile, tmpFileSize, "/tmp/filetransfer_%d", S->port );
             	FILE *fp = fopen( tmpFile, "w" );
+		// +++MSD 2018-12-12 Get the file descriptor and use flock to place a lock on tmpFile
+		int fd = fileno(fp);
+		flock(fd, LOCK_EX);
+		printf("1. opened file %s",tmpFile);
             	rtn = 0;
             	while ( count < filesize && rtn != -1 ) {
             	    int readn = blockSize;
@@ -125,6 +131,7 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
             	        difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
             	    }
             	}
+		// +++MSD 2018-12-12 The lock should be released once the file pointer is closed 
             	fclose( fp );
             	       
       	    }
@@ -174,9 +181,9 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
                       		//  Change permissions on the temporary file so the DiFX user can read it.
                     		//snprintf( command, MAX_COMMAND_SIZE, "chmod 644 /tmp/filetransfer_%d", S->port );
                             //Mk5Daemon_system( D, command, 1 );
-      		
                             //  Copy the new file to its specified location (as the DiFX user).
-                    		snprintf( command, MAX_COMMAND_SIZE, "cp /tmp/filetransfer_%d %s", 
+				// +++MSD 2018-12-12 Added lock to cp from tmp file to destination
+                    		snprintf( command, MAX_COMMAND_SIZE, "flock  ~/.guiserver.lock -c \"cp /tmp/filetransfer_%d %s\"", 
                     				 S->port,
                     				 S->destination );
                       		int ret = system( command );
@@ -196,7 +203,8 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
             gc->writer( &n, sizeof( int ) );
 
       		//  Then clean up our litter.
-    		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
+		//  +++MSD 2018-12-12 Added lock to rm command
+    		snprintf( command, MAX_COMMAND_SIZE, "flock  ~/.guiserver.lock -c \"rm -f /tmp/filetransfer_%d\"", S->port );
             int ret = system( command );
         	if ( ret < 0 ) {
         	    snprintf( message, DIFX_MESSAGE_LENGTH, "Failed to execute command \"%s\" - transfer FAILED", command );
@@ -257,13 +265,15 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
     	
     	//  Use the DiFX user to copy the requested file to a temporary location (if there is anything to copy, that is...).
     	if ( filesize > 0 ) {
-    		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
+	        // +++MSD 2018-12-12 added a lock	
+    		snprintf( command, MAX_COMMAND_SIZE, "flock  ~/.guiserver.lock -c \"rm -f /tmp/filetransfer_%d\"", S->port );
             int ret = system( command );
         	if ( ret < 0 ) {
         	    snprintf( message, DIFX_MESSAGE_LENGTH, "Failed to execute command \"%s\" - transfer FAILED", command );
         	    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
         	}
-    		snprintf( command, MAX_COMMAND_SIZE, "cp %s /tmp/filetransfer_%d", 
+		// +++MSD 2018-12-12 added a lock
+    		snprintf( command, MAX_COMMAND_SIZE, "flock  ~/.guiserver.lock -c \"cp %s /tmp/filetransfer_%d\"", 
     				 S->origin,
     				 S->port );
       		ret = system( command );
@@ -292,7 +302,10 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
         	    char tmpFile[tmpFileSize];
         	    snprintf( tmpFile, tmpFileSize, "/tmp/filetransfer_%d", S->port );
         	    int fd = open( tmpFile, O_RDONLY );
-        	    while ( filesize > 0 ) {
+		    // +++MSD 2018-12-12 added a lock
+		    flock(fd, LOCK_EX);
+ 		    printf("2. opened %s for reading",tmpFile); 
+	       	    while ( filesize > 0 ) {
         	        short readsize = read( fd, blockData, blockSize );
         	        gc->writer( blockData, readsize );
         	        filesize -= readsize;
