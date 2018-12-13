@@ -39,8 +39,8 @@ using namespace guiServer;
 
 //-----------------------------------------------------------------------------
 //!  Called in response to a user request to perform a basic file operation
-//!  (the GUI, presumably).  File operations include mkdir, rmdir, mv, rm,
-//!  and ls.
+//!  (the GUI, presumably).  File operations include mkdir, rmdir, mv, rm, 
+//!  cp, touch and ls.
 //-----------------------------------------------------------------------------
 void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	const DifxMessageFileOperation *S;
@@ -61,7 +61,6 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	    //  operation should be silent if all goes well - any output from popen will be something bad
 	    //  (thus we generate an error message).
 		snprintf( command, MAX_COMMAND_SIZE, "mkdir -p %s 2>&1", S->path );
-		printf("MAING A DIRECTORY BLAHBALH\n");
   		FILE* fp = popen( command, "r" );
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
@@ -90,7 +89,7 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	}
 	else if ( !strcmp( S->operation, "rm" ) ) {
 	    //  Remove the files matching the given path description.
-		snprintf( command, MAX_COMMAND_SIZE, "rm %s %s 2>&1", S->arg, S->path );
+		snprintf( command, MAX_COMMAND_SIZE, "flock ~/.guiserver.lock -c \"rm %s %s 2>&1\"", S->arg, S->path );
   		FILE* fp = popen( command, "r" );
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
@@ -104,7 +103,7 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
     		difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
     		return;
 	    }
-		snprintf( command, MAX_COMMAND_SIZE, "mv %s %s", S->path, S->arg );
+		snprintf( command, MAX_COMMAND_SIZE, "flock  ~/.guiserver.lock -c \"mv %s %s\"", S->path, S->arg );
   		FILE* fp = popen( command, "r" );
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
@@ -113,7 +112,7 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
   		printf( "%s\n", message );
 	}
 	else if ( !strcmp( S->operation, "cp" ) ) {
-		snprintf( command, MAX_COMMAND_SIZE, "cp %s %s", S->path, S->arg );
+		snprintf( command, MAX_COMMAND_SIZE, "flock  ~/.guiserver.lock -c \"cp %s %s\"", S->path, S->arg );
   		FILE* fp = popen( command, "r" );
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
