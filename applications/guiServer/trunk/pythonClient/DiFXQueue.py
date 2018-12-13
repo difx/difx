@@ -95,6 +95,9 @@ def write_queue(difx,parameters):
 	# Construct string that will be inserted into the queue, the trailing 0 is the progress of
 	# the new item, here it is initialized to 0
 	queuedata_new = str(parameters.priority) + " " + parameters.input_file + " 0"	
+
+
+	
 	
 	# Read existing queue data 
 	queuedata = difx.getFile(parameters.queue)
@@ -161,8 +164,9 @@ def write_queue(difx,parameters):
 #  
 #<!------------------------------------------------------------------------>
 def spawnRunQueue(parameters):
-	args = ["/home/usno/difx/DIFX-DEVEL/src/guiServer/pythonClient/DiFXrunQueue.py","-H " + parameters.hostname,"-p " + str(parameters.port),"-Q " + parameters.queue]
-	#print(args)
+	DiFXrunQueue_fullpath = os.path.dirname(os.path.realpath("DiFXrunQueue.py")) + "/DiFXrunQueue.py"
+	args = [DiFXrunQueue_fullpath,"-H " + parameters.hostname,"-p " + str(parameters.port),"-Q " + parameters.queue]
+	print(args)
 	#exit(0)
 	subprocess.Popen([sys.executable or 'python'] + args)
 	
@@ -180,13 +184,31 @@ def close(difx):
 
 #<!------------------------------------------------------------------------>
 ##   
-#  @param difx       Instance of the difx cliente class.   
-#
-#  Closes the client connection.  
+#   Checks on the existance of temp files to make sure edits to the queue
+#   are not made at the same time
 #  
 #<!------------------------------------------------------------------------>
+def check_temp(filename):
+	filename = filename.str()
+	tmp_filename = filename + "~"
+	remote_filepath = difx.ls(tmp_filename,"-l")
+        while (remote_filepath != None):
+		remote_filepath = difx.ls(tmp_filename,"-l")
+		time.sleep(5)
+		continue
+	return
+	
+
+
+
+#<!------------------------------------------------------------------------>
+##   
+#   Runs all funtions and provides error handeling.
+#  
+#<!------------------------------------------------------------------------>
+
 def main():
-        difx = DiFXControl.Client()
+	difx = DiFXControl.Client()
 	try:
 		parameters = get_parameters()
 		initialize(difx,parameters)
