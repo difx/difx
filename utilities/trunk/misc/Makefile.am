@@ -19,7 +19,8 @@ dist_bin_SCRIPTS = \
 	update_eop \
 	vdifheader.pl \
 	vex2setup.pl \
-	mk5bheader.pl 
+	mk5bheader.pl \
+	m6modinit.py
 
 bin_PROGRAMS = m5fb_makeheader
 
