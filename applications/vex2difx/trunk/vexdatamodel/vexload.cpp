@@ -703,7 +703,15 @@ static int getModes(VexData *V, Vex *v)
 			if (!all_defs)
 			{
 				std::cerr << "Note: Unable to find a .vex $IF, $FREQ, or $BBC reference for " << antName << " in mode " << modeDefName << ". The .vex file might need modification." << std::endl;
+				continue;
 			}
+
+                        // drop all antennas without T_SAMPLE_RATE (behaviour of r8217 and earlier; now with the warning above)
+                        p = get_all_lowl(antName.c_str(), modeDefName, T_SAMPLE_RATE, B_FREQ, v);
+                        if(p == 0)
+                        {
+                                continue;
+                        }
 
 			// if we made it this far the antenna is involved in this mode
 			VexSetup &setup = M->setups[V->getAntenna(a)->name];
