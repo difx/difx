@@ -24,6 +24,7 @@ from difxdb.model.dbConnection import Schema, Connection
 from difxdb.model.model import ExportFile
 from difxdb.business.versionhistoryaction import *
 from difxdb.business.experimentaction import *
+from difxdb.business.exportfileaction import *
 from difxdb.difxdbconfig import DifxDbConfig
 from string import lower, strip
 
@@ -199,7 +200,8 @@ def deleteExportFiles(session, expCode):
             session.close()
             sys.exit("Cannot delete directory: %s. Aborting!" % dir)
     
-    experiment.exportFiles = []
+    deleteExportFilesbyExperimentId(session, experiment.id)
+
     session.flush()
     session.commit()
 
