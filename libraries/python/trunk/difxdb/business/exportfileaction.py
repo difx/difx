@@ -38,4 +38,16 @@ def getExportFilesByExperimentId(session, expId):
         ret = None
     return(ret)
 
+def deleteExportFilesbyExperimentId(session, expId):
+    '''
+    Deletes all rows from Exportfiles with the given experiment id.
+    '''
+
+    try:
+        ret = session.query(model.ExportFile).filter_by(experimentID=expId).delete()
+    except:
+        ret = None
+    return(ret)
+ 
+
 
