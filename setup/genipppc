@@ -75,7 +75,7 @@ def getarch():
 		bs = None
         pybits = pf.architecture()[0][0:2]
 	if bs == None:
-		print "Note: DIFXITS was not set - used platform.architecture to determine that bits is " + pybits
+		print "Note: DIFXBITS was not set - used platform.architecture to determine that bits is " + pybits
 		return int(pybits)
 	if int(bs) != int(pybits):
 		print "WARNING! DIFXBITS is " + bs + " but platform.architecture says number of bits is " + pybits
@@ -124,7 +124,7 @@ def genipppc(path, ippversion):
                 out.write('Cflags: -I${base}/include\n')
 
 
-	elif major == 7 or major == 8 or major == 9 or major == 2017 or major == 2018:
+	elif major == 7 or major == 8 or major == 9 or major == 2017 or major == 2018 or major == 2019:
         
 		if platform == "darwin":
 			out.write('Libs: -Wl,-rpath,${base}/ipp/lib -L${base}/ipp/lib -lipps -lippvm -lippcore\n')
