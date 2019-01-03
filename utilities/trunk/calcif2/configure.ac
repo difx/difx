@@ -18,6 +18,12 @@ AM_CONDITIONAL(WITH_GSL, $hasgsl)
 LIBS="${LIBS} ${DIFXIO_LIBS} ${GSL_LIBS}"
 CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${GSL_CFLAGS}"
 
+# rpc functionality was dropped from some flavors of linux;
+# tirpc provides the same API
+PKG_CHECK_MODULES(TIRPC, libtirpc)
+CPPFLAGS="${CPPFLAGS} ${TIRPC_CFLAGS}"
+LIBS="${LIBS} ${TIRPC_LIBS}"
+
 AC_OUTPUT([ \
 	Makefile \
 	src/Makefile \

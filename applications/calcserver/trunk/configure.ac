@@ -12,6 +12,12 @@ AM_PROG_LIBTOOL
 
 AC_CHECK_LIB(m, sin,,)
 
+# rpc functionality was dropped from some flavors of linux;
+# tirpc provides the same API
+PKG_CHECK_MODULES(TIRPC, libtirpc)
+CPPFLAGS="${CPPFLAGS} ${TIRPC_CFLAGS}"
+LIBS="${LIBS} ${TIRPC_LIBS}"
+
 AC_OUTPUT(Makefile \
 	startCalcServer \
 	src/Makefile \
