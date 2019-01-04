@@ -73,10 +73,36 @@ static inline uint64_t mark5bFrame(char *data)
 	unsigned char *udata;
 	int second;
 	int nFrame;
-	udata = data;
+	udata = (unsigned char*)data;
 	second = (udata[10] & 0x0F)*10000 + (udata[9] >> 4)*1000 + (udata[9] & 0x0F)*100 + (udata[8] >> 4)*10 + (udata[8] & 0x0F);
 	nFrame = (udata[5] * 256) + udata[4];
 	return ((uint64_t)(second) << 24LL) | nFrame; 
+}
+static inline int checkMark5BPacket(char *data)
+{
+	unsigned char *udata;
+	udata = (unsigned char*)data;
+	if(udata[0] == 0xED && udata[1] == 0xDE && udata[2] == 0xAD && udata[3] == 0xAB)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+static inline int checkVdifPacket(char *data)
+{
+	unsigned char *udata;
+	udata = (unsigned char*)data;
+	if(udata[20] == 0xED && udata[21] == 0xFE && udata[22] == 0xAB && udata[23] == 0xAC)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 
@@ -503,7 +529,7 @@ void printMark6File(const Mark6File *m6f)
 			}
 			else
 			{
-				udata = m6f->slot[s].data;
+				udata = (unsigned char*)m6f->slot[s].data;
 				printf("    Second = %d\n", (udata[10] & 0x0F)*10000 + (udata[9] >> 4)*1000 + (udata[9] & 0x0F)*100 + (udata[8] >> 4)*10 + (udata[8] & 0x0F));
 				printf("    Frame in second = %d\n", (udata[5] * 256) + udata[4]);
 			}
@@ -842,9 +868,27 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 
 		F = &m6g->mk6Files[fileIndex];
 		slot = F->slot + slotIndex;
-		memcpy(buf, slot->data + slot->index, m6g->packetSize);
-		buf += m6g->packetSize;
-		n += m6g->packetSize;
+		// check for valid packet
+		if(m6g->packetSize == 5032)
+		{
+			// check for valid vdif packet
+			if(checkVdifPacket(slot->data + slot->index))
+			{
+				memcpy(buf, slot->data + slot->index, m6g->packetSize);
+				buf += m6g->packetSize;
+				n += m6g->packetSize;
+			}
+		}
+		else
+		{
+			// check for valid mark5b packet
+			if(checkMark5BPacket(slot->data + slot->index))
+			{
+				memcpy(buf, slot->data + slot->index, m6g->packetSize);
+				buf += m6g->packetSize;
+				n += m6g->packetSize;
+			}
+		}
 		slot->index += m6g->packetSize;
 		if(slot->index >= slot->payloadBytes)
 		{
