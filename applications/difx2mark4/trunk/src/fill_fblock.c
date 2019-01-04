@@ -31,7 +31,9 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         polind,
         nant,
         nfreq,
-        zoom;
+        zoom,
+        nbw,
+        nfg;
 
     char pol,
          buff[6];
@@ -84,6 +86,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[0].bs       = pdsA->quantBits;
                 pfb[nprod].stn[0].zoom     = zoom;
                 pfb[nprod].stn[0].pcal_int = pdsA->phaseCalIntervalMHz;
+                pfb[nprod].stn[0].n_spec_chan = pfr->nChan / pfr->specAvg;
 
                                     // bandB  (remote station)
                 if (ibandB < pdsB->nRecBand)
@@ -112,6 +115,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[1].bs       = pdsB->quantBits;
                 pfb[nprod].stn[1].zoom     = zoom;
                 pfb[nprod].stn[1].pcal_int = pdsB->phaseCalIntervalMHz;
+                pfb[nprod].stn[1].n_spec_chan = pfr->nChan / pfr->specAvg;
 
                                     // if sidebands mixed, make both USB
                 if (pfb[nprod].stn[0].sideband != pfb[nprod].stn[1].sideband)
@@ -235,6 +239,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                                     // if freq groups specified, remove any non-matching lines
     if (strlen (opts->fgroups) != 0)
         {
+        nfg = 0;
         for (n=0; n<nprod; n++)
             if (strchr (opts->fgroups, pfb[n].stn[0].chan_id[0]) == NULL)
                 {
@@ -243,24 +248,46 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[i].stn[0].ant = 0;    // mark new end
                 nprod--;                  // one less pfb entry
                 n--;                      //need to reexamine this slot now
+                nfg++;
                 }
-
+        fprintf (stderr, "%d correlation product channels deleted due to fgroup not %s\n",
+                 nfg, opts->fgroups);
+        }
+                                    // if desired bandwidth specified, 
+                                    // remove any non-matching lines
+    if (strlen (opts->bandwidth) != 0)
+        {
+        nbw = 0;
+        for (n=0; n<nprod; n++)
+            if (atof (opts->bandwidth) != pfb[n].stn[0].bw)
+                {
+                for (i=n; i<nprod-1; i++) // slide remaining entries down one location
+                    pfb[i] = pfb[i+1];
+                pfb[i].stn[0].ant = 0;    // mark new end
+                nprod--;                  // one less pfb entry
+                n--;                      //need to reexamine this slot now
+                nbw++;
+                }
+        fprintf (stderr, "%d correlation product channels deleted due to bw not %s\n",
+                 nbw, opts->bandwidth);
         }
 
     if (opts->verbose > 1)
         {
-        printf ("              sb p 1st a id  z pc bs  freq    bw   ch_id\n");
+        fprintf (stderr, "               ch_id s p 1st a id  z pc bs  freq    bw   #vis\n");
         for (n=0; n<nprod; n++)     // debug - print out fblock table
-            printf ("   fblock[%03d] %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n"
-                     "               %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %s\n",
-                  n, pfb[n].stn[0].sideband, pfb[n].stn[0].pol, pfb[n].stn[0].first_time,
-                  pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].zoom, 
-                  (int)(pfb[n].stn[0].pcal_int+0.5), pfb[n].stn[0].bs, pfb[n].stn[0].freq,
-                  pfb[n].stn[0].bw, pfb[n].stn[0].chan_id,
-                  pfb[n].stn[1].sideband, pfb[n].stn[1].pol, pfb[n].stn[1].first_time,
-                  pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].zoom, 
-                  (int)(pfb[n].stn[1].pcal_int+0.5), pfb[n].stn[1].bs, pfb[n].stn[1].freq, 
-                  pfb[n].stn[1].bw, pfb[n].stn[1].chan_id);
+            fprintf (stderr,
+                    "   fblock[%03d] %s %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %4d\n"
+                     "               %s %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %4d\n",
+                  n, pfb[n].stn[0].chan_id, pfb[n].stn[0].sideband, pfb[n].stn[0].pol,
+                  pfb[n].stn[0].first_time, pfb[n].stn[0].ant, pfb[n].stn[0].find,
+                  pfb[n].stn[0].zoom, (int)(pfb[n].stn[0].pcal_int+0.5), pfb[n].stn[0].bs,
+                  pfb[n].stn[0].freq, pfb[n].stn[0].bw, pfb[n].stn[0].n_spec_chan,
+
+                  pfb[n].stn[1].chan_id, pfb[n].stn[1].sideband, pfb[n].stn[1].pol,
+                  pfb[n].stn[1].first_time, pfb[n].stn[1].ant, pfb[n].stn[1].find, 
+                  pfb[n].stn[1].zoom, (int)(pfb[n].stn[1].pcal_int+0.5), pfb[n].stn[1].bs,
+                  pfb[n].stn[1].freq, pfb[n].stn[1].bw, pfb[n].stn[1].n_spec_chan);
         }
 
     pfb[nprod].stn[0].ant = -1;     // mark end of table

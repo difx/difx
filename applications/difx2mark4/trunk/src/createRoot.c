@@ -509,7 +509,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                         {
                         // TODO: when nsite != nant the "discard" below leads to segfault further down the line?
                         if (opts->verbose > 0)
-                            printf ("        intl_name %c%c difx_name -- mk4_id - "
+                            fprintf (stderr,
+                                    "        intl_name %c%c difx_name -- mk4_id - "
                                              "difx site index --\n",
                                      current_site[0], current_site[1]);
                         line[0] = 0;

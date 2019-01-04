@@ -1,5 +1,7 @@
 Version 3.6.0
 ~~~~~~~~~~~
+* rjc 2019.1.4
+* new -w feature to allow one difx pass of mixed-bandwidth data
 * rjc 2018.9.14
 * trap too many channels, add -g feature to filter for freq groups
 * rjc 2018.8.10

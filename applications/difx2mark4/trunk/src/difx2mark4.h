@@ -32,6 +32,7 @@
 #define MAGLIM 10000.0              // threshold magnitude for vis. rejection
 #define MAX_FPPAIRS 5000            // dimensioned for b-lines x chans x pol_prods
 #define MAX_DFRQ 100                // allowed max number of *DiFX* frequencies
+#define NVRMAX 1000000              // max # of vis records
 
 enum booleans {FALSE, TRUE};
 
@@ -61,6 +62,7 @@ struct CommandLineOptions
     double jobMatrixDeltaT; /* seconds */
     int raw;
     char fgroups[16];
+    char bandwidth[8];
     };
 
 typedef struct 
@@ -68,6 +70,7 @@ typedef struct
     int sync;
     int version;
     int baseline;
+    int nvis;
     int mjd;
     double iat;
     int config_index;
@@ -112,6 +115,7 @@ struct fblock_tag
         int bs;                     // quantization bits/sample
         int first_time;             // true iff first entry in table of chan_id for ant 
         int zoom;                   // true iff this channel is zoom mode
+        int n_spec_chan;            // # of spectral channels output from difx
         double pcal_int;            // pcal interval (MHz)
         double freq;                // LO frequency (MHz); negative for LSB
         double bw;                  // bandwidth (MHz)
@@ -143,9 +147,16 @@ int createType1s (DifxInput *, struct fblock_tag *, int *, int, char *, char *,
 int createType3s (DifxInput *, struct fblock_tag *, int, int, int, char *, char *, 
                   struct stations *, struct CommandLineOptions *);
                                     // get_vis.c
-int get_vis (char *, struct CommandLineOptions *, int, int, vis_record **, int *, char *);
+int get_vis (DifxInput *, char *, struct CommandLineOptions *, int *, int *, int *, 
+                 vis_record **, char *, struct fblock_tag *);
+                                    // new_type1.c
+int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, double *,
+               struct stations *, char *, struct CommandLineOptions *, FILE **, 
+               int, char *, char *, char *, char *, int, int);
+                                    // write_t120.c
+void write_t120 (struct type_120 *, FILE *);
                                     // normalize.c
-void normalize (struct CommandLineOptions *, vis_record *, int, int, int, 
+void normalize (struct CommandLineOptions *, vis_record *, int, int *, int *, 
                 struct fblock_tag *);
                                     // root_id.c
 char *root_id(int, int, int, int, int);

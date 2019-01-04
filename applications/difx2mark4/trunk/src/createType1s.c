@@ -3,6 +3,7 @@
 //
 //  first created                              rjc  2010.2.23
 //  modify vis file read logic; normalize vis  rjc  2011.5.18
+//  handle baseline-dependent nvis & vrsize    rjc  2018.10.18
 
 #include <stdio.h>
 #include <string.h>
@@ -37,8 +38,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     int i,
         j,
         n,
-        nvis,
-        vrsize,                     // size of vis. records in bytes
         pol,
         a1, a2,                     // antenna indices for current baseline, 0-relative
         blind = 0,                  // baseline index into the baseline array structure
@@ -67,6 +66,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     static char corrdate[16];
     static int nvr = NOVIS,         // index of current visibility record
                nvrtot,              // total number of visibility records in buffer
+               nvis[NVRMAX],        // array of #visibilities for each record
+               vrsize[NVRMAX],      // array of visibility record sizes (bytes)
                currentScan;
     static vis_record *rec,
                       *vrec;
@@ -90,14 +91,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         float dummy[2*MAX_VIS+10];  // reserve enough space for MAX_VIS visibilities
         } u;
 
-                                    // function prototypes
+                                    // local function prototypes
     int recordIsFlagged (double, int, int, const DifxJob *);
     int getBaselineIndex (DifxInput *, int, int);
-    int openReadVisFile (FILE *, vis_record *, int);
-    int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, double *,
-                   struct stations *, char *, struct CommandLineOptions *, FILE **, 
-                   int, char *, char *, char *, char *, int, int);
-    void write_t120 (struct type_120 *, FILE *);
 
                                     // initialize memory as necessary
                                     // compensate for LSB fringe rotator direction
@@ -118,28 +114,13 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         scale_factor[i] = 1.0;
         n120[i] = 0;
         }
-                                    // number of (spectral) visibility points per array
-    nvis = D->nOutChan;
-    if (opts->verbose > 1)
-        printf ("      # of spectral points: %d\n", nvis);
-                                    // make sure we don't overrun our arrays
-    if (nvis > MAX_VIS)
-        {
-        fprintf (stderr, 
-                "fatal error: # visibilities (%d) exceeds array dimension (%d)\n",
-                nvis, MAX_VIS);
-        return (-1);
-        }
-                                    // calculate (variable) size of visibility record
-    vrsize = sizeof (vis_record) - sizeof (vrec->comp) + 2 * nvis * sizeof (float);
 
     memset (&u, 0, sizeof (u));
 
-                                    // type_120
+                                    // type_120 boiler-plate
     memcpy (u.t120.record_id, "120", 3);
     memcpy (u.t120.version_no, "00", 2);
     u.t120.type = SPECTRAL;
-    u.t120.nlags = nvis;
     memcpy (u.t120.rootcode, rcode, 6);
 
                                     // only open new file if one isn't already open
@@ -183,7 +164,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             strcat (inname, dent->d_name);
             closedir (pdir);
                                     // open and read a complete Swinburne file
-            gv_stat = get_vis (inname, opts, nvis, vrsize, &vrec, &nvrtot, corrdate);
+            gv_stat = get_vis (D, inname, opts, &nvrtot, nvis, vrsize, &vrec, corrdate, pfb);
             if (gv_stat < -1)       // -1 is normal (EOF); anything less is an error
                 {
                 perror (inname);
@@ -198,6 +179,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                     // unless raw mode requested, normalize visibilities
             if (opts->raw == 0)
                 normalize (opts, vrec, nvrtot, nvis, vrsize, pfb);
+            rec = vrec;
             }
 
                                     // loop over records within both scan and job
@@ -214,7 +196,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 break;
                 }
                                     // form pointer to current vis. record
-            rec = (vis_record *) ((char *) vrec + nvr * (long int) vrsize);  
+            if (nvr > 0)
+                rec = (vis_record *) ((char *) rec + vrsize[nvr-1]);
                                     // check for new scan
             oldScan = currentScan;
             currentScan = DifxInputGetScanIdByJobId (D, rec->mjd+rec->iat/8.64e4-epsilon, *jobId);
@@ -292,8 +275,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                         blind = 0;      // use first one in list and muster on
                         }
                     rc = new_type1 (D, pfb, n, a1, a2, blind, base_index, scale_factor, stns,
-                                    blines, opts, fout, nvis, rootname, node, rcode, corrdate, 
-                                    rec->baseline, scanId);
+                                    blines, opts, fout, nvis[nvr], rootname, node, rcode, 
+                                    corrdate, rec->baseline, scanId);
                     if (rc < 0)
                         return (rc);
                     break;
@@ -310,7 +293,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 continue;           // to next record 
 
                                     // copy visibilities into type 120 record
-            for (i=0; i<nvis; i++)
+            for (i=0; i<nvis[nvr]; i++)
                 {                   
                 rscaled = rec->comp[i].real;
                 iscaled = rec->comp[i].imag;
@@ -336,8 +319,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     }
                 else                // reverse order of points in LSB spectrum
                     {               // and conjugate for rotator direction difference
-                    u.t120.ld.spec[nvis-i-1].re =  rscaled;
-                    u.t120.ld.spec[nvis-i-1].im = -iscaled;
+                    u.t120.ld.spec[nvis[nvr]-i-1].re =  rscaled;
+                    u.t120.ld.spec[nvis[nvr]-i-1].im = -iscaled;
                     }
                 }
             strncpy (u.t120.baseline, blines+2*n, 2);
@@ -390,6 +373,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                             "Warning: mismatch on baseline %d (%.2s-%.2s) freq %d vis data has pol %.2s, .input has %s\n",
                             rec->baseline, (stns + a1)->intl_name, (stns + a2)->intl_name, rec->freq_index, rec->pols, allowedpols);
             }
+            u.t120.nlags = nvis[nvr];
                                     // calculate accumulation period index from start of scan
             u.t120.ap = (8.64e4 * (rec->mjd - D->scan[scanId].mjdStart) + rec->iat)
                                  / D->config[configId].tInt;
@@ -478,8 +462,4 @@ int recordIsFlagged (double t, int a1, int a2, const DifxJob *job)
             }
         }
     return 0;
-    }
-
-double scale_baseline (struct fblock_tag *pfb, int a1, int a2)
-    {
     }
