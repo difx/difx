@@ -149,6 +149,7 @@ void processMark6ScansSlot(int slot, char *vsn, char activityMsg, char verbose, 
 	{
 		fprintf(stderr, "mk6dir in processMark6ScansSlot() could not open summaryFile %s!\n", summaryFilePath);
 	}
+	setbuf(summaryFile, NULL);
 
 	n = getMark6SlotFileList(slot, &fileList);
 
