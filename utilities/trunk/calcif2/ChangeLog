@@ -1,5 +1,8 @@
 calcif2
 ~~~~~~~
+Version 2.5.3
+* looks for tirpc via pkgconfig to provide rpc/rpc.h
+
 Version 2.5.0
 * Post DiFX 2.4
 * move difxsniff to SniffTools
