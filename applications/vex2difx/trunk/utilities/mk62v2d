@@ -207,7 +207,7 @@ experName = ''
 experNameFound = False
 tapelogObsFound = False
 ant = ''
-mod = ''
+modList = []
 antennaModuleList = []
 
 vexobs = open(vexObsFile, "r")
@@ -220,18 +220,21 @@ for line in vexobs:
 	    lineend = line[i+10:len(line)-1]
 	    for i in range(len(lineend)):
 	        if lineend[i] not in [' ', '=', ';']:
-		    experName += lineend[i]
+		    experName += lineend[i].upper()
     elif tapelogObsFound is False:
         if '$TAPELOG_OBS;' in line:
 	    tapelogObsFound = True
     elif tapelogObsFound is True:
         if 'def ' in line:
 	    ant = line[4:6].upper()
+	    modList = []
 	elif '  VSN = ' in line:
 	    linesegs = line.split(':')
 	    mod = linesegs[1].strip()
-	elif 'enddef;' in line and '%' in mod:  # adds only mark6 modules to antennaModuleList
-	    antennaModuleList.append([ant,mod])
+	    if '%' in mod:   # adds only mark6 modules to modList
+	        modList.append(linesegs[1].strip())
+	elif 'enddef;' in line and len(modList) > 0:
+	    antennaModuleList.append([ant,modList])
 	elif '*-----' in line:
 	    break
 
@@ -247,31 +250,36 @@ if verbose > 1:
     print "Experiment name:", experName, "\n"
     print "List of modules recorded at antennas:"
     for antMod in antennaModuleList:
-        print "%s recorded at %s" % (antMod[1], antMod[0])
+        print "%s recorded on %s" % (antMod[0], antMod[1])
     print
 
 # make an antenna.filelist for each antenna in the antenna module list
 antList = []
 antNoModuleFileList = []
+antFileWritten = False
 for antMod in antennaModuleList:
     antList.append(antMod[0])
-    moduleFileName = antMod[1] + '.filelist'
-    moduleFilePath = dirPath + '/' + moduleFileName
     antennaFileName = antMod[0].lower() + '.filelist'
-    if isfile(moduleFilePath):
-        if verbose > 1:
-            print moduleFileName, "exists, using it to generate", antennaFileName
-        modfile = open(moduleFilePath, 'r')
-        antfile = open(antennaFileName, 'w')
-        for line in modfile:
-            if experName in line:
-	        antfile.write(line)
-        modfile.close()
-        antfile.close()
-    else:
-        if verbose > 1:
-            print moduleFileName, "does not exist"
-	antNoModuleFileList.append(antMod[0])
+    antfile = open(antennaFileName, 'w')
+    for mod in antMod[1]:
+        moduleFileName = mod + '.filelist'
+        moduleFilePath = dirPath + '/' + moduleFileName
+        if isfile(moduleFilePath):
+            if verbose > 1:
+                print moduleFileName, "exists, using it to generate", antennaFileName
+            modfile = open(moduleFilePath, 'r')
+            for line in modfile:
+                if experName in line:
+	            antfile.write(line)
+		    antFileWritten = True
+            modfile.close()
+
+if antFileWritten != True:
+    if verbose > 1:
+        print "No module filelists available for antenna", antMod[0]
+    antNoModuleFileList.append(antMod[0])
+else:
+    antfile.close()
 
 if len(antNoModuleFileList) > 0:
     for ant in antNoModuleFileList:
