@@ -104,7 +104,21 @@ static inline int checkVdifPacket(char *data)
 		return 0;
 	}
 }
-
+static unsigned char filltest[8] = {0x44, 0x33, 0x22, 0x11, 0x44, 0x33, 0x22, 0x11};
+static inline int checkFillData(char *data)
+{
+	unsigned char *udata;
+	int i;
+	udata = (unsigned char*)data;
+	for(i = 0; i < 16; i++)
+	{
+		if(memcmp(filltest, udata + i, 8) == 0)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
 
 const char DefaultMark6Root[] = "/mnt/disks/*/*/data";
 
@@ -868,26 +882,12 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 
 		F = &m6g->mk6Files[fileIndex];
 		slot = F->slot + slotIndex;
-		// check for valid packet
-		if(m6g->packetSize == 5032)
+		// don't gather fill data
+		if(checkFillData(slot->data + slot->index) == 0)
 		{
-			// check for valid vdif packet
-			if(checkVdifPacket(slot->data + slot->index))
-			{
-				memcpy(buf, slot->data + slot->index, m6g->packetSize);
-				buf += m6g->packetSize;
-				n += m6g->packetSize;
-			}
-		}
-		else
-		{
-			// check for valid mark5b packet
-			if(checkMark5BPacket(slot->data + slot->index))
-			{
-				memcpy(buf, slot->data + slot->index, m6g->packetSize);
-				buf += m6g->packetSize;
-				n += m6g->packetSize;
-			}
+			memcpy(buf, slot->data + slot->index, m6g->packetSize);
+			buf += m6g->packetSize;
+			n += m6g->packetSize;
 		}
 		slot->index += m6g->packetSize;
 		if(slot->index >= slot->payloadBytes)

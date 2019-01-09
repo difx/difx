@@ -51,6 +51,8 @@ int main(int argc, char **argv)
 	printf("Opening all files matching %s\n", argv[1]);
 	G = openMark6GathererFromTemplate(argv[1]);
 
+	printf("Gathered file size %lld\n", getMark6GathererFileSize(G));
+
 //	seekMark6Gather(G, getMark6GathererFileSize(G)/2);
 
 	out = fopen("gather.out", "w");
@@ -65,6 +67,10 @@ int main(int argc, char **argv)
 		n = mark6Gather(G, buf, GatherSize);
 		if(n <= 0)
 		{
+			if(n != 0)
+			{
+				printf("Error: mark6Gather() returned %d\n", n);
+			}
 			break;
 		}
 		printf("%d  %d/%d\n", i, n, GatherSize);
