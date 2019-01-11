@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,7 +34,7 @@
 #include <fftw3.h>
 #include "fitsUV.h"
 
-#define MAX_SNIFFER_MEMORY 2000000000LL
+#define DEFAULT_MAX_SNIFFER_MEMORY 2000000000LL
 
 struct _Sniffer;
 

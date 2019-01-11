@@ -244,6 +244,15 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	double tMax = 0.0;
 	FILE *log;
 	int i, m, v;
+	long long int maxSnifferMemory;
+	const char *e;
+
+	maxSnifferMemory = DEFAULT_MAX_SNIFFER_MEMORY;
+	e = getenv("DIFX_MAX_SNIFFER_MEMORY");
+	if(e)
+	{
+		maxSnifferMemory = atoll(e);
+	}
 
 	/* write summary to log file */
 	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.log", filebase);
@@ -321,10 +330,13 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	}
 	S->solInt = tMax * S->nTime;
 
-	S->memoryNeed = (long long)(S->nTime)*S->nChan*S->nIF*S->nPol*S->nAntenna*S->nAntenna*sizeof(fftw_complex);
-	if(S->memoryNeed > MAX_SNIFFER_MEMORY)
+	S->memoryNeed = (long long int)(S->nTime)*S->nChan*S->nIF*S->nPol*S->nAntenna*S->nAntenna*sizeof(fftw_complex);
+	if(S->memoryNeed > maxSnifferMemory)
 	{
-		fprintf(stderr, "    ** DISABLING SNIFFER AS THE MEMORY REQUIREMENTS ARE EXCESSIVE (%lldMB > %lldMB) **\n", S->memoryNeed/1000000, MAX_SNIFFER_MEMORY/1000000);
+		if(maxSnifferMemory > 0)
+		{
+			fprintf(stderr, "    ** DISABLING SNIFFER AS THE MEMORY REQUIREMENTS ARE EXCESSIVE (%lldMB > %lldMB) **\n", S->memoryNeed/1000000, maxSnifferMemory/1000000);
+		}
 		deleteSniffer(S);
 
 		return 0;

@@ -125,6 +125,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --sniff-time <t>\n");
 	fprintf(stderr, "  -T           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSniffInterval);
+	fprintf(stderr, "                      Set to zero to disable sniffing\n");
 	fprintf(stderr, "\n");
 #endif
 	fprintf(stderr, "  --union\n");
@@ -148,6 +149,14 @@ static void usage(const char *pgm)
 	fprintf(stderr, "PLEASE file all bug reports at http://svn.atnf.csiro.au/trac/difx .\n");
 	fprintf(stderr, "Include at a minimum the output of difx2fits with extra verbosity\n");
 	fprintf(stderr, "(that is with -v -v).  The .input, .im & .calc files may help too.\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "%s responds to the following environment variables:\n", program);
+	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
+	fprintf(stderr, "    DIFX_LABEL                Your local DiFX version label.\n");
+	fprintf(stderr, "    GAIN_CURVE_PATH           Path where gain curves can be found.\n");
+	fprintf(stderr, "    TCAL_PATH                 Path where switched power T_cal values are found.\n");
+	fprintf(stderr, "    TCAL_FILE                 Path to single specific T_cal file.\n");
+	fprintf(stderr, "    DIFX_MAX_SNIFFER_MEMORY   Max number of bytes to allow for sniffing.\n");
 	fprintf(stderr, "\n");
 }
 
