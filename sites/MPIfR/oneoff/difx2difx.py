@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Usage: difx2difx.py <difx2difx.cfg> <difx basename>
+Usage: difx2difx.py [-m|--meta-only] <difx2difx.cfg> <difx basename>
 
 Stitches together in frequency domain the visibility data on the
 baselines of a antenna, attempting to piece together a full band
@@ -15,6 +15,9 @@ Config file example:
   stitch_antennas: AA, PV
   stitch_basefreqs: 86476.00, 86412.00
   verbose: false
+
+Options:
+  --meta-only   write only new .input file, do not generate visibility data
 
 Output:
   <difx basename>/DIFX_*.stitched     frequency stitched visibility data
@@ -34,6 +37,13 @@ def setCrossProd(a,b):
 	gen = ((x, y) for x in a for y in b)
 	strconcatd = [ str(x)+str(y) for x,y in gen]
 	return (strconcatd,gen)
+
+
+def tupleCrossProd(a,b):
+	"""Returns the cross product of two sets, returned as a list of tuples"""
+	gen = ((x, y) for x in a for y in b)
+	res = [(x,y) for x,y in gen]
+	return res
 
 
 def getGlueIndex(f,cfg):
@@ -64,6 +74,7 @@ def spectralAvgRaw(rawvis, chavg, doComplex=True):
 	N = len(visdata)
 	assert((N % chavg)==0)
 	visdata = numpy.average(visdata.reshape((N/chavg,chavg)), axis=1)
+	#visdata = numpy.sum(visdata.reshape((N/chavg,chavg)), axis=1)
 	rawout = visdata.tostring()
 	assert(len(rawout)==len(rawvis)/chavg)
 	return rawout
@@ -74,6 +85,7 @@ def spectralAvgNumpy(visdata, chavg):
 	N = len(visdata)
 	assert((N % chavg)==0)
 	visdata = numpy.average(visdata.reshape((N/chavg,chavg)), axis=1)
+	#visdata = numpy.sum(visdata.reshape((N/chavg,chavg)), axis=1)
 	return visdata
 
 
@@ -185,7 +197,59 @@ def wasVisAlreadyWritten(mjd,seconds,baseline,freqnr,polpair):
 		return False
 
 
-def stitchVisibilityfile(basename,cfg):
+def getPolsForFreq(ds,fqId):
+	"""Look up frequency ID in datastream recorded and zoom frequencies, return 'recbandpols' for that frequency"""
+	pols = []
+	npol_expected = 0
+	if fqId in ds.recfreqindex:
+		i = ds.recfreqindex.index(fqId)
+		npol_expected = ds.recfreqpols[i]
+		nsubbands = len(ds.recbandindex)
+		pols = [ds.recbandpol[j] for j in range(nsubbands) if ds.recbandindex[j] == i]
+	if fqId in ds.zoomfreqindex:
+		i = ds.zoomfreqindex.index(fqId)
+		npol_expected = ds.zoomfreqpols[i]
+		nsubbands = len(ds.zoombandindex)
+		pols = [ds.zoombandpol[j] for j in range(nsubbands) if ds.zoombandindex[j] == i]
+	assert(npol_expected == len(pols))
+	return pols
+
+
+def getBandIndexOfFreqPol(ds,fqId,pol):
+	"""Look up the 'band index' in datastream where the given frequency and polarization are found"""
+	bandindex = -1
+	if fqId in ds.recfreqindex:
+		i = ds.recfreqindex.index(fqId)
+		nsubbands = len(ds.recbandindex)
+		bandpolpairs = [(ds.recbandpol[j],j) for j in range(nsubbands) if ds.recbandindex[j] == i]
+		for (polzn,band) in bandpolpairs:
+			if polzn == pol: bandindex = band
+	if fqId in ds.zoomfreqindex:
+		i = ds.zoomfreqindex.index(fqId)
+		nsubbands = len(ds.zoombandindex)
+		bandpolpairs = [(ds.zoombandpol[j],j) for j in range(nsubbands) if ds.zoombandindex[j] == i]
+		for (polzn,band) in bandpolpairs:
+			if polzn == pol: bandindex = band + ds.nrecband
+	return bandindex
+
+
+def getFreqPolOfBand(ds,band):
+	"""Look up the frequency and polarization of a given band"""
+	pol = ''
+	fqId = -1
+	if band < len(ds.recbandindex):
+		recfreq = ds.recbandindex[band]
+		fqId = ds.recfreqindex[recfreq]
+		pol = ds.recbandpol[band]
+	else:
+		band = band - len(ds.recbandindex)
+		recfreq = ds.zoombandindex[band]
+		fqId = ds.zoomfreqindex[recfreq]
+		pol = ds.zoombandpol[band]
+	return (fqId,pol)
+
+
+def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 	"""Copy visibilities from given base DiFX fileset into new file, while doing frequency stitching during the process"""
 
 	# Get settings
@@ -335,21 +399,27 @@ def stitchVisibilityfile(basename,cfg):
 	if difxfilename.rfind('/') >= 0:
 		difxfilename_pathless = difxfilename[(difxfilename.rfind('/')+1):]
 	difxfile = open(difxfilename, 'r')
+
+	# Output DiFX file
 	difxoutdir = basename_pathless + 'D2D.difx'
 	difxoutname = difxoutdir + '/' + difxfilename_pathless
-	try:
-		os.mkdir(difxoutdir)
-	except:
-		pass
-	if os.path.exists(difxoutname):
-		print ('Warning: %s already exists, skipping the processing of %s!' % (difxoutname,difxfilename))
-		return
-	difxout = open(difxoutname, 'w')
+	if not writeMetaOnly:
+		# New output directory and file
+		try:
+			os.mkdir(difxoutdir)
+		except:
+			pass
+		if os.path.exists(difxoutname):
+			print ('Warning: %s already exists, skipping the processing of %s!' % (difxoutname,difxfilename))
+			return
+		difxout = open(difxoutname, 'w')
 
-	# Copy PCAL files if any
-	for pcalfile in glob.glob(inputfile_cfg['difxfile'] + '/PCAL_*'):
-		print ('Copying %s' % (pcalfile))
-		shutil.copy(pcalfile, difxoutdir + '/')
+		# Copy PCAL files if any
+		for pcalfile in glob.glob(inputfile_cfg['difxfile'] + '/PCAL_*'):
+			print ('Copying %s' % (pcalfile))
+			shutil.copy(pcalfile, difxoutdir + '/')
+	else:
+		difxout = None
 
 	# Pull out antenna indices based on telescope names
 	telNames = [t.name for t in telescopes]
@@ -385,7 +455,7 @@ def stitchVisibilityfile(basename,cfg):
 	seconds_prev = -1
 	seconds_first = 0
 	seconds_report_prev = 0
-	while True:
+	while not writeMetaOnly:
 
 		(vishdr,binhdr) = getVisibilityHeader(difxfile)
 		if len(vishdr) <= 0:
@@ -406,6 +476,11 @@ def stitchVisibilityfile(basename,cfg):
 		ant2name = telescopes[ant2-1].name
 		T = mjd + seconds/86400.0
 		baselinestr = '%s-%s' % (ant1name,ant2name)					
+
+		# Stokes check:
+		if polpair not in polpairs:
+			print('Error: unexpected pol pair %s, perhaps increase stitch_nstokes (currently %d) in config file?' % (polpair,cfg['stitch_nstokes']))
+			sys.exit(-1)
 
 		# Number of channels in this baseband
 		nchan = freqs[freqindex].numchan / freqs[freqindex].specavg
@@ -437,7 +512,12 @@ def stitchVisibilityfile(basename,cfg):
 			out_freqindex = freq_remaps[freqindex]
 			vishdr[5] = out_freqindex
 			binhdr = parseDiFX.make_output_header_v1(vishdr)
-		stid = getGlueIndex(fsky,cfg)
+
+		# Destination stitch band index
+		if not freqs[freqindex].lsb:
+			stid = getGlueIndex(fsky,cfg)
+		else:
+			stid = -1
 
 		# Info string
 		vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,T,nchan,bw,str(uvw))
@@ -476,7 +556,17 @@ def stitchVisibilityfile(basename,cfg):
 			# Baseline where freq stitching was requested
 			resetStitch = False
 
-			if (bw == target_bw):
+			if (bw == target_bw) and freqs[freqindex].lsb:
+
+				# Visibility already at target bandwidth, but LSB i.e. not the expected zoom (all-USB)
+				# As the full-bw zoom ought to exist or is going to be stitched together, we skip the LSB x LSB
+				# visibility here. This avoids duplicates (since e.g. 86188 LSB x LSB rec 32 MHz == 86156 USB x USB zoom 32 MHz)
+
+				nskipped += 1
+				if cfg['verbose']:
+					print ('skip L: %s' % (vis_info))
+
+			elif (bw == target_bw):
 
 				# Visibility already at target bandwidth, just copy the data
 
@@ -569,7 +659,7 @@ def stitchVisibilityfile(basename,cfg):
 	
 					if wasVisAlreadyWritten(mjd,seconds,baseline,out_freqindex,polpair):
 						if cfg['verbose']:
-							print ('(stch): %s' % (vis_info))
+							print ('(stch dup): %s' % (vis_info))
 						continue
 					if cfg['verbose']:
 						print ('stitch: %s' % (vis_info))
@@ -606,37 +696,41 @@ def stitchVisibilityfile(basename,cfg):
 	# New DATASTREAM table
 	new_datastreams = []
 	for ds in datastreams:
-		newds = copy.deepcopy(ds)
-		ds_specific_remaps = [freq_remaps[zfi] for zfi in ds.zoomfreqindex]
 
-		# Determine number of pols in this datastream (for example ALMA has two single-pol datastreams)
-		npol = len(list(set(newds.recbandpol)))
+		# Copy the existing values, then update/replace
+		newds = copy.deepcopy(ds)
 
 		# Retain all recorded freqs and bands
-		# newds.recfreqindex = newds.recfreqindex
-		# newds.recfreqpols = newds.recfreqpols
-		# newds.recbandindex = newds.recbandindex
-		# newds.recbandpol = newds.recbandpol
 		newds.recfreqindex = [freq_remaps[rfi] for rfi in newds.recfreqindex]
+		newds.recfreqpols = [p for p in ds.recfreqpols]	
+		newds.nrecfreq = len(newds.recfreqindex)
+		if True:
+			# Sort the bands to have L R L R L R L R rather than L L L L R R R R,
+			# makes baseline table re-creation easier
+			newds.recbandpol = [x for _, x in sorted(zip(newds.recbandindex,newds.recbandpol), key=lambda pair: pair[0])]
+			newds.recbandindex.sort()
+		assert(len(newds.recfreqindex) == len(newds.recfreqpols))
+		assert(newds.nrecband == sum(newds.recfreqpols))
 
-		# Retain all bandwidth-matching zoom freqs
-		newds.zoomfreqindex = [freq_remaps[zfi] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
-		newds.zoomfreqpols = [ds.zoomfreqpols[ds.zoomfreqindex.index(zfi)] for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
+		# Retain bandwidth-matching existing zoom freqs & bands
+		# and also add all stitched/invented zoom freqs & bands
+		newds.zoomfreqindex, newds.zoomfreqpols, newds.zoombandindex, newds.zoombandpol = [], [], [], []
+		#ds_old_zooms = [zfi for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and not freq_remaps_isNew[zfi])]
+		#ds_new_zooms = [zfi for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0 and freq_remaps_isNew[zfi])]
+		all_zooms = [zfi for zfi in ds.zoomfreqindex if (freq_remaps[zfi]>=0)]
+		for zf in all_zooms:
+			if freq_remaps[zf] not in newds.zoomfreqindex:
+				pols = getPolsForFreq(ds,zf) # from original DS & Freq
+				if len(pols) < 1: continue
+				newds.zoomfreqindex.append(freq_remaps[zf])
+				newds.zoomfreqpols.append(len(pols))
+				n = newds.zoomfreqindex.index(freq_remaps[zf])
+				newds.zoombandindex += [n]*len(pols)
+				newds.zoombandpol += pols
+		newds.nzoomfreq = len(newds.zoomfreqpols)
+		newds.nzoomband = sum(newds.zoomfreqpols)
 
-		# Add all stitched invented freqs
-		newds.zoomfreqindex += [nzfi for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
-		newds.zoomfreqpols += [npol for nzfi in stitch_out_ids if nzfi in ds_specific_remaps]
-
-		newds.zoomfreqindex = list(set(newds.zoomfreqindex)) # keep uniques only, TODO: should shorten zoomfreqpols list equally!
-
-		# Translate freqs into bands
-		newds.nrecband = npol * len(newds.recfreqindex)
-		newds.nzoomband = npol * len(newds.zoomfreqindex)
-		newds.zoombandindex = [int(n/npol) for n in range(newds.nzoomband)]
-		newds.zoombandpol = ds.zoombandpol[:npol] * (newds.nzoomband/npol)
-
-		# Update the counts
-		newds.nzoomfreq = len(newds.zoomfreqindex)
+		# Store
 		new_datastreams.append(newds)
 
 		if cfg['verbose']:
@@ -648,78 +742,65 @@ def stitchVisibilityfile(basename,cfg):
 			print ("      zoom freq pols : %s" % (str(newds.zoomfreqpols)))
 			print ("      zoom bands     : %s" % (str(newds.zoombandindex)))
 			print ("      zoom band pols : %s" % (str(newds.zoombandpol)))
+			print ("      counts         : %d rec fq, %d zoom fq, %d rec band, %d zoom band" % (newds.nrecfreq,newds.nzoomfreq,newds.nrecband,newds.nzoomband))
 
 	# New BASELINE table
+	full_freq_remaps = [freq_remaps[n] if freq_remaps[n]>=0 else n for n in range(len(freq_remaps))]
+	#print ('Full remap table:',str(len(full_freq_remaps)), ' entries, ', str(full_freq_remaps))
 	new_baselines = []
-	remapped_freqs = [n for n in range(len(freq_remaps)) if freq_remaps[n]>=0]
 	for b in baselines:
-
 		newbl = copy.deepcopy(b)
-
+		ods1 = datastreams[b.dsaindex]
+		ods2 = datastreams[b.dsbindex]
 		nds1 = new_datastreams[newbl.dsaindex]
 		nds2 = new_datastreams[newbl.dsbindex]
-		npol1 = len(list(set(nds1.recbandpol)))
-		npol2 = len(list(set(nds2.recbandpol)))
-		max_stokes = npol1*npol2
+		if cfg['verbose']:
+			print ("Baseline DS%d x DS%d" % (newbl.dsaindex, newbl.dsbindex))
+			print ("     stream %d x stream %d" % (newbl.dsaindex, newbl.dsbindex))
 
-		# Keep only freqs common to both datastreams, and that match the target bandwidth
-		allfreqs1 = nds1.recfreqindex + nds1.zoomfreqindex
-		allfreqs2 = nds2.recfreqindex + nds2.zoomfreqindex
-		common_freqs = list(set(allfreqs1) & set(allfreqs2))
-		common_freqs = [fnr for fnr in common_freqs if (out_freqs[fnr].bandwidth == target_bw)]
-
-		newbl.nfreq = len(common_freqs)
 		newbl.dsabandindex = []
 		newbl.dsbbandindex = []
 		newbl.freqpols = []
-
-		if cfg['verbose']:
-			print ("Baseline DS%d x DS%d" % (newbl.dsaindex, newbl.dsbindex))
-			print ("     stream %d freqs %s" % (newbl.dsaindex, str(allfreqs1)))
-			print ("     stream %d freqs %s" % (newbl.dsbindex, str(allfreqs2)))
-			print ("     common freqs %s" % (str(common_freqs)))
-
-		for f in common_freqs:
-			npol = 2
-			assert(f in allfreqs1)
-			assert(f in allfreqs2)
-			i1 = allfreqs1.index(f)
-			i2 = allfreqs2.index(f)
-			if max_stokes == 1:
-				newbl.dsabandindex.append([npol1*i1])
-				newbl.dsbbandindex.append([npol2*i2])
-			elif max_stokes == 2:  # one of XL XR / YL YR / LL LR / RL RR
-				if npol1 == 1:
-					newbl.dsabandindex.append([npol1*i1,  npol1*i1  ])
-					newbl.dsbbandindex.append([npol2*i2+0,npol2*i2+1])
+		copied_ids = []
+		for i in range(len(b.dsabandindex)):
+			# For each baseline "frequency" entry there are two lists of bands e.g. [0,1,2,3] x [0,2,1,3]
+			# that were correlated against each other in DiFX.
+			# Datastream and Freq were updated above, hence the band indexing has changed.
+			# Re-map the referenced band numbers/indices in the lists from old to new indices.
+			# Also, look up Freq of the respective band indices and skip narrow pre-stitch zooms from Baseline.
+			bl_bands_A = b.dsabandindex[i]
+			bl_bands_B = b.dsbbandindex[i]
+			bl_new_bands_A, bl_new_bands_B = [], []
+			for (bl_band_A,bl_band_B) in zip(bl_bands_A,bl_bands_B):
+				oldFqA,polA = getFreqPolOfBand(ods1,bl_band_A)
+				oldFqB,polB = getFreqPolOfBand(ods2,bl_band_B)
+				if oldFqA < 0 or oldFqB < 0:
+					print ("Warning: unexpectedly could not locate old input band information!")
+					continue
+				newFqA = full_freq_remaps[oldFqA]
+				newFqB = full_freq_remaps[oldFqB]
+				id = '%d_%d_%s%s' % (newFqA,newFqB,polA,polB)
+				if id not in copied_ids:
+					newBandA = getBandIndexOfFreqPol(nds1,newFqA,polA)
+					newBandB = getBandIndexOfFreqPol(nds2,newFqB,polB)
+					if newBandA < 0 or newBandB < 0:
+						continue
+					bl_new_bands_A.append(newBandA)
+					bl_new_bands_B.append(newBandB)
+					copied_ids.append(id)
+					if cfg['verbose']:
+						print ("     corr %2d : bands %2d x %2d %s%s : fq %2d x %2d --> new fq %2d x %2d : copied, %s" % (i,bl_band_A,bl_band_B,polA,polB,oldFqA,oldFqB,newFqA,newFqB,id))
 				else:
-					newbl.dsabandindex.append([npol1*i1+0,npol1*i1+1])
-					newbl.dsbbandindex.append([npol2*i2,  npol2*i2  ])
-			elif max_stokes == 4:
-				if cfg['stitch_nstokes']==4:
-					newbl.dsabandindex.append([npol1*i1+0,npol1*i1+0,npol1*i1+1,npol1*i1+1])
-					newbl.dsbbandindex.append([npol2*i2+0,npol2*i2+1,npol2*i2+0,npol2*i2+1])
-				elif cfg['stitch_nstokes']==2:
-					# one XX YY / XL YR / LL RR
-					newbl.dsabandindex.append([npol1*i1+0,npol1*i1+1])
-					newbl.dsbbandindex.append([npol2*i2+0,npol2*i2+1])
-				else:
-					print("Warning: unexpected nstokes of %d" % (cfg['stitch_nstokes']))
-					newbl.dsabandindex.append([npol1*i1])
-					newbl.dsbbandindex.append([npol2*i2])
+					if cfg['verbose']:
+						print ("     corr %2d : bands %2d x %2d %s%s : fq %2d x %2d --> new fq %2d x %2d : skip, sub-stitch" % (i,bl_band_A,bl_band_B,polA,polB,oldFqA,oldFqB,newFqA,newFqB))
+			if len(bl_new_bands_A) > 0:
+				newbl.dsabandindex.append(bl_new_bands_A)
+				newbl.dsbbandindex.append(bl_new_bands_B)
+				newbl.freqpols.append(len(bl_new_bands_A))
 
-			newbl.freqpols.append(len(newbl.dsabandindex[-1]))
-
-			assert( len(newbl.dsabandindex[-1]) == len(newbl.dsbbandindex[-1]) )
-			if cfg['verbose']:
-				print ("        now freq %d = (ds1 frq %d, ds2 frq %d)" % (f,i1,2))
-				print ("            num pols = (%d, %d)" % (npol1,npol2))
-				print ("            dsa[end] = %s" % (str(newbl.dsabandindex[-1])))
-				print ("            dsb[end] = %s" % (str(newbl.dsbbandindex[-1])))
-				print ("        has %d freqpols" % (newbl.freqpols[-1]))
-				#print newbl.dsabandindex[-1], newbl.dsbbandindex[-1]
-
+		newbl.nfreq = len(newbl.dsabandindex)
 		new_baselines.append(newbl)
+	print ('\n')
 
 	# Read original .input without parsing
 	fin = open(inputfile,"r")
@@ -738,12 +819,18 @@ def stitchVisibilityfile(basename,cfg):
 			i = in_lines.index(l)
 			orig_threadfile = l[20:].strip() 
 			in_lines[i] = "%-20s%s\n" % ("CORE CONF FILENAME:",basename_pathless+'D2D.threads')
-			shutil.copyfile(orig_threadfile, basename_pathless+'D2D.threads')	
+			try:
+				shutil.copyfile(orig_threadfile, basename_pathless+'D2D.threads')
+			except:
+				print ('Note: could not copy %s ' % (orig_threadfile))
 		elif l[:14]=="CALC FILENAME:":
 			i = in_lines.index(l)
 			orig_calcfile = l[20:].strip() 
 			in_lines[i] = "%-20s%s\n" % ("CALC FILENAME:",basename_pathless+'D2D.calc')
-			shutil.copyfile(orig_calcfile, basename_pathless+'D2D.calc')	
+			try:
+				shutil.copyfile(orig_calcfile, basename_pathless+'D2D.calc')
+			except:
+				print ('Note: could not copy %s ' % (orig_calcfile))
 
 	# Generate new reference .input for later, re-use parts of original .input
 	outputinputfile = basename_pathless + 'D2D.input'
@@ -779,18 +866,30 @@ def stitchVisibilityfile(basename,cfg):
 		print (line)
 
 	# Finished
-	print ('\nDone! Final statistics:')
-	print ('    vis. copied        : %d' % (ncopied))
-	print ('    vis. skipped       : %d' % (nskipped))
-	print ('    vis. stitched      : %d' % (nstitched))
-	print ('    incomplete stitch  : %d' % (nincomplete))
-	print ('\nOutput files:')
-	print ('    visbility data     : %s' % (difxoutname))
-	print ('    changes for .input : %s' % (outputinputfile))
-	print (' ')
-
+	if not writeMetaOnly:
+		print ('\nDone! Final statistics:')
+		print ('    vis. copied        : %d' % (ncopied))
+		print ('    vis. skipped       : %d' % (nskipped))
+		print ('    vis. stitched      : %d' % (nstitched))
+		print ('    incomplete stitch  : %d' % (nincomplete))
+		print ('\nOutput files:')
+		print ('    visbility data     : %s' % (difxoutname))
+		print ('    changes for .input : %s' % (outputinputfile))
+		print (' ')
+	else:
+		print('\nDone! Metadata-only mode.')
+		print ('\nOutput files:')
+		print ('    changes for .input : %s' % (outputinputfile))
 
 if __name__ == "__main__":
+
+	writeMetaOnly = False
+	if '-m' in sys.argv:
+		sys.argv.remove('-m')
+		writeMetaOnly = True
+ 	if '--meta-only' in sys.argv:
+		sys.argv.remove('--meta-only')
+		writeMetaOnly = True
 
 	if len(sys.argv) < 3:
 		print __doc__
@@ -801,5 +900,5 @@ if __name__ == "__main__":
 		sys.exit(-1)
 
 	for difxf in sys.argv[2:]:
-		stitchVisibilityfile(difxf,cfg)
+		stitchVisibilityfile(difxf,cfg,writeMetaOnly)
 
