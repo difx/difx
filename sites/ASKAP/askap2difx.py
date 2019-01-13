@@ -505,7 +505,9 @@ if ret!=0: sys.exit(1)
 
 ## Run vex2difx
 ret = os.system("vex2difx craftfrb.v2d")
-if ret!=0: sys.exit(1)
+if ret!=0:
+    print "vex2difx failed!"
+    sys.exit(1)
 
 ## Run calcif2
 ret = os.system("\\rm -f craftfrb.im")

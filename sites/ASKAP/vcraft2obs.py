@@ -84,11 +84,13 @@ for file in vcraftfiles[0]:
 # Double check that the frequencies match
 if npol > 1:
     for file in vcraftfiles[1]:
-        for line in open(file).readlines(10000):
-             if line.split()[0] == "FREQS":
-                 if line.split()[1].split(',') != freqs:
-                     print "file", file, " has different FREQS! Aborting"
-                     sys.exit()
+        for line in open(file).readlines(4000):
+            if line.split()[0] == "FREQS":
+                if line.split()[1].split(',') != freqs:
+                    print "file", file, " has different FREQS! Aborting"
+                    sys.exit()
+                else:
+                    break
 
 # Check we found everything
 if beamra==None or beamdec==None or startmjd==None or mode == None or len(freqs) == 0:

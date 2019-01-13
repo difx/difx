@@ -14,7 +14,8 @@ with open(args.snoopylog) as snoopyin:
     dm = float(splitline[5])
     mjd = float(splitline[7])
     
-nearestmjdstartsecond = int((mjd - int(mjd))*86400)
+startmjd = mjd - inttime*pulsewidth/(2*86400000.0)
+nearestmjdstartsecond = int((startmjd - int(startmjd))*86400)
 fractionalsecond = (mjd - int(mjd))*86400 - nearestmjdstartsecond
 startphase = (fractionalsecond - pulsewidth/2000.0)/inttime # pulse width is in samples, which are 1ms??
 endphase = (fractionalsecond + pulsewidth/2000.0)/inttime # pulse width is in samples, which are 1ms??
