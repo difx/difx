@@ -146,7 +146,10 @@ for e in examplefiles:
         os.system("cp {} eop.txt".format(topEOP))
 
         
-    os.system("./runaskap2difx | tee askap2difx.log")
+    ret = os.system("./runaskap2difx | tee askap2difx.log")
+    if ret!=0:
+        print "askap2difx failed!"
+        sys.exit(1)
 
     os.system("./run.sh")
     os.system("./runmergedifx")
