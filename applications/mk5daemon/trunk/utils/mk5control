@@ -6,6 +6,12 @@ from os import getenv
 import socket
 import re
 
+hasDifxFile = True
+try:
+	from difxfile.difxmachines import DifxMachines
+except ImportError:
+	hasDifxFile == False
+
 program = 'mk5control'
 version = '0.7'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
@@ -57,10 +63,38 @@ def usage(pgm):
 	print '              difx multicast port.  Default=%d' % defaultDifxMessagePort
 	print '  DIFX_MESSAGE_GROUP: Use supplied group address to overrider default'
 	print '              difx multicast group.  Default=%s' % defaultDifxMessageGroup
+	print '  DIFX_MACHINES: Points to machines file.  Used to determine mark5'
+	print '              and mark6 units on the cluster.'
 	print '  DIFX_MARK6: a comma-separated list of 2-digit numbers. listed'
 	print '              unit numbers will be mark6 units, not mark5s.  E.g.,'
 	print '              02 maps to mark6fx02 if included, or mark5fx02 if not.'
+	print '              Note that this is not used if DIFX_MACHINES is successfully'
+	print '              found and parsed.'
 	
+
+def getMark6List():
+	mark6units = getenv('DIFX_MARK6')
+	machinesfile = getenv('DIFX_MACHINES')
+
+	print mark6units, machinesfile, hasDifxFile
+
+	if hasDifxFile and machinesfile != None:
+		mk6list = ''
+		difxmachines = DifxMachines(machinesfile)
+		mk6machines = difxmachines.getMk6NodeNames()
+		for mk6 in mk6machines:
+			if mk6list == '':
+				mk6list = mk6[-2:]
+			else:
+				mk6list = mk6list + ',' + mk6[-2:]
+		print 'Got Mark6 list from machines file: ', mk6list
+		return mk6list
+	elif mark6units != None:
+		return mark6units
+	else:
+		return None
+	
+
 
 def sendCommand(cmd, units, verbose):
 	src = socket.gethostname()
@@ -69,7 +103,7 @@ def sendCommand(cmd, units, verbose):
 		if lower(u) == 'all':
 			name = 'all'
 		elif len(u) == 2:
-			mark6units = getenv('DIFX_MARK6')
+			mark6units = getMark6List()
 			if mark6units == None:
 				mark6units = ''
 			if u in mark6units:

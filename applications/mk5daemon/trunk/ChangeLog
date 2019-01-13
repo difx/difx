@@ -11,6 +11,7 @@ Version 2.6.0
 * add activity message to mk6dir, add remote control of mk6dir to mk5daemon
 * add mk5map2: program to reconstruct directory of mark5 module.  Works only on Mark5B and VDIF, currently tuned for VLBA, but could be generalized later
 * mk5control: respond to new DIFX_MARK6 environment variable which lists 2-digit unit numbers that are mark6 units that would otherwise be assumed to be Mark5 units.
+* mk5control: use machines file rather than env var DIFX_MARK6 if found and if python utilities are installed.
 
 Version 2.5.0
 ~~~~~~~~~~~~~
