@@ -7,9 +7,9 @@ import socket
 import re
 
 program = 'mk5control'
-version = '0.6'
+version = '0.7'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20170819'
+verdate = '20190113'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -17,7 +17,7 @@ defaultDifxMessageGroup = '224.2.2.1'
 def usage(pgm):
 	print '%s ver. %s  %s %s\n' % (program, version, author, verdate)
 	print 'A program that talks to the mk5daemon programs running on the'
-	print 'software correlator computers, including the mark5s.\n'
+	print 'software correlator computers, including the mark5s and mark6s.\n'
 	print 'usage : %s <command> <machines>\n' % pgm
 	print '<command> can be one of the following (case insensitive):'
 	print '  GetVSN -- tell Mark5 unit to report is modules'
@@ -46,12 +46,20 @@ def usage(pgm):
 	print '<machines> is a list of cluster members to receive the message;'
 	print '  the format is as follows:'
 	print '    general: the explicit computer hostname, or "all" for all'
-	print '    mark5 units:  01 through 24, or "mark5" for all'
+	print '    mark5/6 units:  01 through 24, or "mark5/6" for all'
 	print '    processor node:  000 though 999, or "swc" for all'
 	print '    ranges are allowed:  12-18 or 001-010\n'
 	print 'Data copying requires additional parameters corresponding to the'
 	print 'parameters needed by program mk5cp.\n'
 	print 'Example: mk5control "copy A 12-14 /mnt/usb/bb269a/BR" 03\n'
+	print 'This program responds to the following environment variables:'
+	print '  DIFX_MESSAGE_PORT: Use supplied port number to overrider default'
+	print '              difx multicast port.  Default=%d' % defaultDifxMessagePort
+	print '  DIFX_MESSAGE_GROUP: Use supplied group address to overrider default'
+	print '              difx multicast group.  Default=%s' % defaultDifxMessageGroup
+	print '  DIFX_MARK6: a comma-separated list of 2-digit numbers. listed'
+	print '              unit numbers will be mark6 units, not mark5s.  E.g.,'
+	print '              02 maps to mark6fx02 if included, or mark5fx02 if not.'
 	
 
 def sendCommand(cmd, units, verbose):
@@ -61,7 +69,13 @@ def sendCommand(cmd, units, verbose):
 		if lower(u) == 'all':
 			name = 'all'
 		elif len(u) == 2:
-			name = 'mark5fx' + u
+			mark6units = getenv('DIFX_MARK6')
+			if mark6units == None:
+				mark6units = ''
+			if u in mark6units:
+				name = 'mark6fx' + u
+			else:
+				name = 'mark5fx' + u
 		elif len(u) == 3:
 			name = 'swc' + u
 		else:
