@@ -45,8 +45,10 @@ with open("craftfrb.binconfig", "w") as binconfout:
     binconfout.write("NUM PULSAR BINS:    30\n")
     binconfout.write("SCRUNCH OUTPUT:     FALSE\n")
     for i in range(30):
-        binconfout.write("BIN PHASE END %02d:   %.9f\n" % (i, startphase + (i-14)*0.0005))
-        binconfout.write("BIN WEIGHT %02d:       1.0\n" % i)
+        phasestr = ("BIN PHASE END %d:" % i).ljust(20)
+        weightstr = ("BIN WEIGHT %d:" % i).ljust(20)
+        binconfout.write("%s%.9f\n" % (phasestr, startphase + (i-14)*0.0005))
+        binconfout.write("%s1.0\n" % (weightstr))
     binconfout.close()
 
 
