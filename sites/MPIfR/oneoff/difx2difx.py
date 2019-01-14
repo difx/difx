@@ -296,8 +296,8 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 	# Collect all recorded freqs listed in DATASTREAMS
 	for d in datastreams:
 		for fqidx in d.recfreqindex:
-			i = findFreqObj(out_freqs,freqs[fqidx])
-			if (i == None):
+			id = findFreqObj(out_freqs,freqs[fqidx])
+			if (id == None):
 				id = inventNextKey(out_freqs)
 				freq_remaps[fqidx] = id
 				out_freqs[id] = copy.deepcopy(freqs[fqidx])
@@ -305,9 +305,11 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 				print ("Keeping recorded frequency  : index %2d/%2d : %s" % (fqidx,id,freqs[fqidx].str()))
 			else:
 				if (freq_remaps[fqidx] < 0):
-					existing_fq = freq_remaps.index(id)
-					print ('Warning: DiFX produced duplicate FREQ entries! For telescope %d freq %d now using first identical freq %d (%s)' % (d.telescopeindex,fqidx,existing_fq,out_freqs[i].str().strip()))
-					freq_remaps[fqidx] = id
+					existing_fq = id
+					# print ('Warning: DiFX produced duplicate FREQ entries! Telescope %d/%s, remapping freq[%d]-->existing freq[%d]' % (d.telescopeindex,telescopes[d.telescopeindex].name,fqidx,existing_fq))
+					out_freqs[id] = out_freqs[existing_fq]
+					freq_remaps[fqidx] = existing_fq
+					print ("Remapping duplicate freq    : index %2d/%2d : %s --> index %2d : %s" % (fqidx,id,freqs[fqidx].str(),existing_fq,out_freqs[existing_fq].str().strip()))
 
 	# Collect all zoom bands listed in DATASTREAMS that already match the target bandwidth
 	for d in datastreams:
@@ -754,8 +756,10 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 		ods2 = datastreams[b.dsbindex]
 		nds1 = new_datastreams[newbl.dsaindex]
 		nds2 = new_datastreams[newbl.dsbindex]
+		ant1 = telescopes[nds1.telescopeindex].name
+		ant2 = telescopes[nds2.telescopeindex].name
 		if cfg['verbose']:
-			print ("Baseline DS%d x DS%d" % (newbl.dsaindex, newbl.dsbindex))
+			print ("Baseline %s x %s" % (ant1, ant2))
 			print ("     stream %d x stream %d" % (newbl.dsaindex, newbl.dsbindex))
 
 		newbl.dsabandindex = []
@@ -779,6 +783,9 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 					continue
 				newFqA = full_freq_remaps[oldFqA]
 				newFqB = full_freq_remaps[oldFqB]
+				assert (freqs[oldFqA].bandwidth == freqs[oldFqB].bandwidth)
+				if (new_freqs[newFqA].bandwidth != target_bw) or (new_freqs[newFqB].bandwidth != target_bw):
+					print ("     corr %2d : fq %2d(old:%d) x %2d(old:%d) %s%s : skip, wrong bandwidth in %s x %s" % (i,newFqA,oldFqA,newFqB,oldFqB,polA,polB,new_freqs[newFqA].str(),new_freqs[newFqB].str()))
 				id = '%d_%d_%s%s' % (newFqA,newFqB,polA,polB)
 				if id not in copied_ids:
 					newBandA = getBandIndexOfFreqPol(nds1,newFqA,polA)
@@ -790,6 +797,8 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 					copied_ids.append(id)
 					if cfg['verbose']:
 						print ("     corr %2d : bands %2d x %2d %s%s : fq %2d x %2d --> new fq %2d x %2d : copied, %s" % (i,bl_band_A,bl_band_B,polA,polB,oldFqA,oldFqB,newFqA,newFqB,id))
+						#print ("                fq old %s x %s" % (freqs[oldFqA].str().strip(),freqs[oldFqB].str().strip()))
+						#print ("                fq new %s x %s" % (new_freqs[newFqA].str().strip(),new_freqs[newFqB].str().strip()))
 				else:
 					if cfg['verbose']:
 						print ("     corr %2d : bands %2d x %2d %s%s : fq %2d x %2d --> new fq %2d x %2d : skip, sub-stitch" % (i,bl_band_A,bl_band_B,polA,polB,oldFqA,oldFqB,newFqA,newFqB))
