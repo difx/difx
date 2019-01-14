@@ -87,7 +87,6 @@ def getMark6List():
 				mk6list = mk6[-2:]
 			else:
 				mk6list = mk6list + ',' + mk6[-2:]
-		print 'Got Mark6 list from machines file: ', mk6list
 		return mk6list
 	elif mark6units != None:
 		return mark6units
