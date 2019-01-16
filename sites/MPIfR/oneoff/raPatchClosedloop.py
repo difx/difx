@@ -35,7 +35,6 @@ class PolyCoeffs:
 		# https://aboutsimon.com/blog/2013/06/06/Datetime-hell-Time-zone-aware-to-UNIX-timestamp.html
 		gm = timegm( time.strptime(s + ' GMT', '%d/%m/%Y %Hh%Mm%Ss %Z') )
 		d = datetime.utcfromtimestamp(gm)
-		# print (s, d, d.isoformat())
 		return d
 
 	def __init__(self, details):
@@ -67,8 +66,6 @@ class PolyCoeffs:
 			c = [float(s) for s in cstr.split(',')]
 			self.dims = len(c)
 			self.coeffs.append(c)
-		# print ('\n')
-		# print (self.source, self.Ncoeffs, self.tstart, self.tstop, self.coeffs)
 
 class PolySet:
 	"""Storage of a set of polynomials"""
@@ -108,7 +105,6 @@ class PolySet:
 		"""
 		mjd_t0 = datetime(1858,11,17,0,0,0,0) # MJD 0 = 17 November 1858 at 00:00 UTC
 		tlookup = mjd_t0 + timedelta(days=MJD) + timedelta(seconds=sec)
-		# print (mjd_t0,tlookup)
 		for poly in self.piecewisePolys:
 			if poly.tstart == tlookup:
 				return poly
@@ -118,6 +114,17 @@ class PolySet:
 				print ('       Poly time-shift not supported yet!')
 				return None
 		return None
+
+def getKey(s):
+	"""Return key part of DiFX .im file type "key: option" string"""
+	return s.split(':')[0].strip()
+
+def getOpt(s):
+	"""Return option part of DiFX .im file type "key: option" string"""
+	return s.split(':')[1].strip()
+
+def getKeyOpt(s):
+	return (getKey(s),getOpt(s))
 
 
 def imDetectNextScanblock(lines,nstart):
@@ -133,9 +140,9 @@ def imDetectNextScanblock(lines,nstart):
 	if (n + 6) >= len(lines):
 		return None
 
-	srcname = lines[n].split(':')[1].strip()
-	mjd = int(lines[n+4].split(':')[1])
-	sec = int(lines[n+5].split(':')[1])
+	srcname = getOpt(lines[n])
+	mjd = int(getOpt(lines[n+4]))
+	sec = int(getOpt(lines[n+5]))
 	n += 4
 	istart = n
 	while n < len(lines):
@@ -161,8 +168,8 @@ def imDetectNextScanpolyblock(lines,nstart,nstop):
 	if (n + 2) >= len(lines):
 		return None
 
-	mjd = int(lines[n].split(':')[1])
-	sec = int(lines[n+1].split(':')[1])
+	mjd = int(getOpt(lines[n]))
+	sec = int(getOpt(lines[n+1]))
 	n += 2
 	nstart = n
 
@@ -176,40 +183,32 @@ def imDetectNextScanpolyblock(lines,nstart,nstop):
 
 def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=+1):
 	N_updated = 0
-	tag_t = 'ANT %d DELAY (us)' % telescope_id
-	tag_u = 'ANT %d U (m)' % telescope_id
-	tag_v = 'ANT %d V (m)' % telescope_id
-	tag_w = 'ANT %d W (m)' % telescope_id
+	map_tag_to_poly = {
+		# line identifier                      storage   axis
+		('ANT %d DELAY (us)' % telescope_id): [dpoly,    0],
+		('ANT %d U (m)' % telescope_id):      [uvwpoly,  0],
+		('ANT %d V (m)' % telescope_id):      [uvwpoly,  1],
+		('ANT %d W (m)' % telescope_id):      [uvwpoly,  2]
+	}
 	for n in range(polystart,polystop):
-		doPatch = False
-		if tag_t in lines[n]:
-			P,col = dpoly,0
-			doPatch = True
-		if tag_u in lines[n]:
-			P,col = uvwpoly,0
-			doPatch = True
-		if tag_v in lines[n]:
-			P,col = uvwpoly,1
-			doPatch = True
-		if tag_w in lines[n]:
-			P,col = uvwpoly,2
-			doPatch = True
-		if doPatch:
-			C = [ pp[col] for pp in P.coeffs ]
-			key,oldcoeffs = lines[n].split(':')
-			oldcoeffs = [float(v) for v in oldcoeffs.split('\t')]
-			newcoeffs = list(oldcoeffs)
+		for tag in map_tag_to_poly:
+			if tag in lines[n]:
+				P = map_tag_to_poly[tag][0]
+				col = map_tag_to_poly[tag][1]
 
-			# Element wise summation of correction coeffs onto polynomial
-			N = min(len(newcoeffs), len(C)) # truncate to either poly
-			for k in range(N):
-				newcoeffs[k] += sign*C[k]
-			newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
-			newline = '%s:  %s' % (key.strip(),newcoeffs_str)
-			#print (lines[n])
-			#print (newline)
-			lines[n] = newline
-			N_updated += 1
+				C = [ pp[col] for pp in P.coeffs ]
+				key,oldcoeffs = getKeyOpt(lines[n])
+				oldcoeffs = [float(v) for v in oldcoeffs.split('\t')]
+				newcoeffs = list(oldcoeffs)
+
+				# Element wise summation of correction coeffs onto polynomial
+				N = min(len(newcoeffs), len(C)) # truncate to either poly
+				for k in range(N):
+					newcoeffs[k] += sign*C[k]
+				newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
+				newline = '%s:  %s' % (key.strip(),newcoeffs_str)
+				lines[n] = newline
+				N_updated += 1
 	return N_updated
 
 
@@ -227,6 +226,8 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 		print ('Error: problem loading a valid %s!' % (imname))
 		return False
 
+	print ("\n%s\n" % (imname))
+
 	# Find telescope, poly order, poly interval
 	telescope_id = None
 	im_poly_order = 0
@@ -235,33 +236,35 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 	for line in lines:
 		# 'TELESCOPE 0 NAME:   GT'
 		if 'TELESCOPE' in line and 'NAME' in line:
-			[key,val] = line.split(':')
+			[key,val] = getKeyOpt(line)
 			if val.strip().upper() == antname:
-				telescope_id = int( key.split()[1])
+				telescope_id = int(key.split()[1])
 				break
 		# 'POLYNOMIAL ORDER:   5'
 		if 'POLYNOMIAL ORDER' in line:
-			im_poly_order = int(line.split(':')[1])
+			im_poly_order = int(getOpt(line))
 		# 'INTERVAL (SECS):    120'
 		if 'INTERVAL (SECS)' in line:
-			im_poly_interval_s = int(line.split(':')[1])
+			im_poly_interval_s = int(getOpt(line))
 
 	# Consistency check IM <-> RA coeffs
+	is_polyorder_mismatched = [poly.Ncoeffs > (im_poly_order+1) for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys]
+	is_polyinterval_mismatched = [poly.interval < im_poly_interval_s for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys]
 	if telescope_id == None:
 		print ('Error: could not find telescope %s in %s' % (antname,imname))
-	for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys:
-		if poly.Ncoeffs > (im_poly_order+1):
-			print ('Error: mismatch in polynomial order of .im file (%d) and closed-loop file (%d).' % (im_poly_order, poly.Ncoeffs-1))
-			return False
-		if poly.interval < im_poly_interval_s:
-			print ('Error: too long polynomial validity interval in .im file (%d sec) for appyling closed-loop polys (%d sec).' % (im_poly_interval_s, poly.interval))
-			return False
+		return False
+	if any(is_polyorder_mismatched):
+		print ('Warning: mismatch in polynomial order of .im file (%d) and closed-loop file (%d).' % (im_poly_order, poly.Ncoeffs-1))
+	if any(is_polyinterval_mismatched):
+		print ('Error: too long polynomial validity interval in .im file (%d sec) for appyling closed-loop polys (%d sec).' % (im_poly_interval_s, poly.interval))
+		return False
 
 	# Patch all relevant IM file lines
 	nupdated_total = 0
 	n = 0
-	print ("Patching telescope %s with id %d in DiFX/CALC '%s' into new file '%s'" % (antname,telescope_id,imname,imoutname))
+	print ("Applying closed-loop coefficients to telescope %s with id %d" % (antname,telescope_id))
 	while n < len(lines):
+
 		# Find next 'SCAN' block
 		blk = imDetectNextScanblock(lines,n)
 		if blk == None:
@@ -302,9 +305,9 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 	f = open(imoutname, 'w')
 	for line in lines:
 		f.write(line + '\n')
-	print ("Wrote new file '%s' with %d updated coefficient lines." % (imoutname,nupdated_total))
-	print ('Done.')
 
+	print ("Wrote new file '%s' with %d updated coefficient lines." % (imoutname,nupdated_total))
+	print ("Success: processed %s\n" % (imname))
 	return True
 
 if __name__ == "__main__":
@@ -327,4 +330,6 @@ if __name__ == "__main__":
 		sys.exit(-1)
 
 	for difxf in sys.argv[3:]:
-		patchImFile(difxf, dly, uvw)
+		ok = patchImFile(difxf, dly, uvw)
+		if not ok:
+			print ("Error: failed to patch %s" % (difxf))
