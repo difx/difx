@@ -833,7 +833,7 @@ static int parseDifxPulseCal(const char *line,
 				++nPolMatchError;
 				if(nPolMatchError <= 20)
 				{
-					printf("\nWarning: parseDifxPulseCal: polarization in PCAL file '%c' doesn't match expected '%d' for antenna %d, mjd %12.6f  slot=%d  bandPol=%d\n", P[0], pol, dd->antennaId, mjd, slot, bandPol);
+					printf("\nWarning: parseDifxPulseCal: polarization in PCAL file '%c' doesn't match expected '%c' for antenna %d, mjd %12.6f  slot=%d  bandPol=%d\n", P[0], D->polPair[bandPol], dd->antennaId, mjd, slot, bandPol);
 				}
 				if(nPolMatchError == 20)
 				{
