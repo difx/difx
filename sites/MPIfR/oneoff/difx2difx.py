@@ -706,9 +706,12 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 		newds.recfreqindex = [freq_remaps[rfi] for rfi in newds.recfreqindex]
 		newds.recfreqpols = [p for p in ds.recfreqpols]	
 		newds.nrecfreq = len(newds.recfreqindex)
-		if True:
+		if False:
 			# Sort the bands to have L R L R L R L R rather than L L L L R R R R,
 			# makes baseline table re-creation easier
+			# However, messes up PCAL file parsing since for some reason parser
+			# compares PCAL file pols&freqs against 'recbandpol'&'recfreq[recbandindex]'
+			# which then are in unexpected order
 			newds.recbandpol = [x for _, x in sorted(zip(newds.recbandindex,newds.recbandpol), key=lambda pair: pair[0])]
 			newds.recbandindex.sort()
 		assert(len(newds.recfreqindex) == len(newds.recfreqpols))
