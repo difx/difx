@@ -32,7 +32,7 @@
 #define MAGLIM 10000.0              // threshold magnitude for vis. rejection
 #define MAX_FPPAIRS 5000            // dimensioned for b-lines x chans x pol_prods
 #define MAX_DFRQ 100                // allowed max number of *DiFX* frequencies
-#define NVRMAX 1000000              // max # of vis records
+#define NVRMAX 4000000              // max # of vis records
 
 enum booleans {FALSE, TRUE};
 

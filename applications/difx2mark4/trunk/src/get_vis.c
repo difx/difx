@@ -16,7 +16,7 @@
 #include "difx2mark4.h"
 #include "difxio/parsevis.h"
                                     // visibility allocation chunk size (bytes)
-#define CHUNK 1000000
+#define CHUNK 5000000
 
 int get_vis (DifxInput *D,                    // ptr to difx input file data
              char *vf_name,                   // name of input file
@@ -171,6 +171,14 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
      
         vrsize_tot += vrsize[nvr];
         nvr += 1;                   // bump the record counter
+                                    // protect from visibility array overruns
+        if (nvr > NVRMAX) 
+            {
+            fprintf (stderr, 
+            "fatal error: # visibility records (%d) exceeds array dimension (%d)\n",
+            nvr, NVRMAX);
+            return (-8);
+            }
                                     // point to next record
         pch = (char *) *vrec + vrsize_tot;
         pv = (vis_record *) pch;
