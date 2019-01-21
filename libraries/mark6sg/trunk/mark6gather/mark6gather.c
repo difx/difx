@@ -858,8 +858,16 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 		uint64_t lowestFrame;
 		Mark6File *F;
 		Mark6BufferSlot *slot;
-
-		lowestFrame = m6g->mk6Files[0].slot[0].frame+1;
+		
+		for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
+		{
+			// after file is completely read, do not skip unread slots
+			if(m6g->mk6Files[0].slot[s].frame > 0)
+			{
+				lowestFrame = m6g->mk6Files[0].slot[s].frame+1;
+				break;
+			}
+		}
 		fileIndex = -1;
 		slotIndex = -1;
 
