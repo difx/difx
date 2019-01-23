@@ -93,7 +93,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
            el,
            dec,
            freq_i,
-           bw_i;
+           bw_i,
+           opt_bw;
 
     char outname[256],
          pcal_filnam[256],
@@ -147,6 +148,11 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     
     memcpy (t309.record_id, "309", 3);
     memcpy (t309.version_no, "01", 2);
+
+    if (strlen (opts->bandwidth))   // note possible bw selection for later use
+        opt_bw = atof (opts->bandwidth);
+    else
+        opt_bw = -1.0;
                                     // loop over all antennas in scan
                                     // doy of start of observation
     mjd2dayno((int)(D->mjdStart), &refDay);
@@ -489,8 +495,10 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         {
                                         record_chan = nc;
                                         jf = *(pdds->recFreqId + *(pdds->recBandFreqId + nc));
-                                        // check to see if tone is also in a zoom band
-                                        if (pdds->nZoomBand > 0)
+
+                                        // if zoom band exists and parent band isn't the 
+                                        // desired bandwidth, overwrite with tone from zoom band
+                                        if (pdds->nZoomBand > 0 && D->freq[jf].bw != opt_bw)
                                             for (i=0; i<pdds->nZoomBand; i++)
                                                 {
                                                 // skip over zoom bands with wrong polarization
