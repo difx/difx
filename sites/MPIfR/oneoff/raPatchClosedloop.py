@@ -16,6 +16,9 @@ from datetime import datetime, timedelta
 from calendar import timegm
 import sys, time
 
+SCALE_DELAY = 1e6
+SCALE_UVW = 1
+
 class PolyCoeffs:
 	"""A single polynomial with coefficients"""
 
@@ -37,7 +40,7 @@ class PolyCoeffs:
 		d = datetime.utcfromtimestamp(gm)
 		return d
 
-	def __init__(self, details):
+	def __init__(self, details, coeffscale):
 		"""Initialize coeffs using a list of strings stored in 'details'.
 		The list of strings should have the following format, with 'source',
 		'start', 'stop', and a varying number of P0..P<n> coefficient lines.
@@ -63,7 +66,7 @@ class PolyCoeffs:
 		self.coeffs = []
 		for n in range(self.Ncoeffs):
 			cstr = self.getArgs(details[3+n])
-			c = [float(s) for s in cstr.split(',')]
+			c = [coeffscale*float(s) for s in cstr.split(',')]
 			self.dims = len(c)
 			self.coeffs.append(c)
 
@@ -73,7 +76,7 @@ class PolySet:
 	piecewisePolys = []
 	dims = 0
 
-	def __init__(self, filename):
+	def __init__(self, filename, coeffscale=1):
 		"""
 		Create object and load a set of polynomials and their coefficients from a file.
 		"""
@@ -92,19 +95,23 @@ class PolySet:
 		while lnr < len(lines):
 			assert('source' in lines[lnr])
 			polyDefinition = lines[lnr:(lnr+3+N)]
-			self.piecewisePolys.append( PolyCoeffs(polyDefinition) )
+			self.piecewisePolys.append( PolyCoeffs(polyDefinition,coeffscale) )
 			self.dims = self.piecewisePolys[-1].dims
 			lnr += 3 + N
 
 	def __len__(self):
 		return len(self.piecewisePolys)
 
+	def datetimeFromMJDSec(self,MJD,sec):
+		mjd_t0 = datetime(1858,11,17,0,0,0,0) # MJD 0 = 17 November 1858 at 00:00 UTC
+		T = mjd_t0 + timedelta(days=MJD) + timedelta(seconds=sec)
+		return T
+
 	def lookupPolyFor(self,MJD,sec):
 		"""
 		Lookup up poly that was start time identical to the given MJD and second-of-day
 		"""
-		mjd_t0 = datetime(1858,11,17,0,0,0,0) # MJD 0 = 17 November 1858 at 00:00 UTC
-		tlookup = mjd_t0 + timedelta(days=MJD) + timedelta(seconds=sec)
+		tlookup = self.datetimeFromMJDSec(MJD,sec)
 		for poly in self.piecewisePolys:
 			if poly.tstart == tlookup:
 				return poly
@@ -127,30 +134,39 @@ def getKeyOpt(s):
 	return (getKey(s),getOpt(s))
 
 
+def imGetLineWith(lines,nstart,keys):
+	"""
+	Looks for the next line containing all key(s).
+	Returns (linenr,linecontent).
+	"""
+	if not(type(keys) is list):
+		keys = [keys]
+	n = nstart
+	while n < len(lines):
+		if all([k in lines[n] for k in keys]):
+			return (n,lines[n])
+		n += 1
+	return (len(lines),'')
+
 def imDetectNextScanblock(lines,nstart):
 	"""
 	Look for next SCAN block in IM file lines, starting from line nr 'nstart'.
 	Returns (istart,istop,srcname,mjd,sec) of the next scan block, or None.
 	"""
-	n = nstart
-	while n < len(lines):
-		if 'SCAN' in lines[n] and 'POINTING SRC' in lines[n]:
-			break
-		n += 1
+	n,srcline = imGetLineWith(lines,nstart,['SCAN','POINTING SRC'])
 	if (n + 6) >= len(lines):
 		return None
 
-	srcname = getOpt(lines[n])
-	mjd = int(getOpt(lines[n+4]))
-	sec = int(getOpt(lines[n+5]))
-	n += 4
-	istart = n
-	while n < len(lines):
-		if 'SCAN' in lines[n] and 'POINTING SRC' in lines[n]:
-			break
-		n += 1
-	istop = n - 1
-	return (istart,istop,srcname,mjd,sec)
+	n,mjdline = imGetLineWith(lines,n,['POLY','MJD'])
+	iscanstart = n
+	n,secline = imGetLineWith(lines,n,['POLY','SEC'])
+
+	srcname = getOpt(srcline)
+	mjd = int(getOpt(mjdline))
+	sec = int(getOpt(secline))
+
+	iscanstop,tmp = imGetLineWith(lines,n,['SCAN','POINTING SRC'])
+	return (iscanstart,iscanstop,srcname,mjd,sec)
 
 
 def imDetectNextScanpolyblock(lines,nstart,nstop):
@@ -158,30 +174,26 @@ def imDetectNextScanpolyblock(lines,nstart,nstop):
 	Looks for next "SCAN <n> POLY <m>" block in file lines, starting from line nr 'nstart'.
 	Returns (istart,istop,mjd,sec) of the next scan poly block, or None.
 	"""
-	mjd = 0
-	sec = 0
-	n = nstart
-	while n < len(lines):
-		if 'SCAN' in lines[n] and 'POLY' in lines[n]:
-			break
-		n += 1
-	if (n + 2) >= len(lines):
+	mjd, sec = 0, 0
+	n,mjdline = imGetLineWith(lines,nstart,['POLY','MJD'])
+	if n >= nstop:
 		return None
+	n,secline = imGetLineWith(lines,n,['POLY','SEC'])
+	mjd = int(getOpt(mjdline))
+	sec = int(getOpt(secline))
 
-	mjd = int(getOpt(lines[n]))
-	sec = int(getOpt(lines[n+1]))
-	n += 2
-	nstart = n
-
+	n += 1
+	ipolystart = n
 	while n < len(lines) and n < nstop:
 		if 'SCAN' in lines[n] and ('POINTING SRC' in lines[n] or 'POLY' in lines[n]):
 			break
 		n += 1
-	nstop = n - 1
-	return (nstart,nstop,mjd,sec)
+	ipolystop = n - 1
+	blk = (ipolystart,ipolystop,mjd,sec)
+	return blk
 
 
-def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=+1):
+def imApplyPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=+1):
 	N_updated = 0
 	map_tag_to_poly = {
 		# line identifier                      storage   axis
@@ -204,9 +216,16 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=+1)
 				# Element wise summation of correction coeffs onto polynomial
 				N = min(len(newcoeffs), len(C)) # truncate to either poly
 				for k in range(N):
-					newcoeffs[k] += sign*C[k]
+					# Sum the coeffs
+					#newcoeffs[k] += sign*C[k]
+					# Or just copy them!? quite unclear from RadioAstron test data (undocumented)
+					newcoeffs[k] = sign*C[k]
 				newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
 				newline = '%s:  %s' % (key.strip(),newcoeffs_str)
+
+				# print (n, lines[n], C, newline)
+				# print (lines[n], newline)
+
 				lines[n] = newline
 				N_updated += 1
 	return N_updated
@@ -285,8 +304,10 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 			dp = dlypolys.lookupPolyFor(mjd,sec)
 			uvwp = uvwpolys.lookupPolyFor(mjd,sec)
 			if dp == None or uvwp == None:
-				print('Error: no suitable poly found in coeffs file to match MJD %d sec %d!' % (MJD,sec))
-				return False
+				T = dlypolys.datetimeFromMJDSec(mjd,sec)
+				print('Warning: no suitable poly found in coeffs file to match MJD %d sec %d (%s)!' % (mjd,sec,str(T)))
+				pstart = polystop + 1
+				continue
 			if dp.source != uvwp.source:
 				print("Error: RA delay poly source '%s' does not match UVW poly source '%s'!" % (dp.source,uvwp.source))
 			if dp.source != srcname:
@@ -294,7 +315,7 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 				return False
 
 			# Apply the coeffs
-			nupdated = imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dp,uvwp)
+			nupdated = imApplyPolyCoeffs(telescope_id,lines,polystart,polystop,dp,uvwp)
 			nupdated_total += nupdated
 
 			pstart = polystop + 1
@@ -316,11 +337,11 @@ if __name__ == "__main__":
 		print(__doc__)
 		sys.exit(-1)
 
-	dly = PolySet(sys.argv[1])
+	dly = PolySet(sys.argv[1], coeffscale=SCALE_DELAY)
 	if len(dly) < 1:
 		print ("Error: could not load delay polynomials from '%s'" % (sys.argv[1]))
 		sys.exit(-1)
-	uvw = PolySet(sys.argv[2])
+	uvw = PolySet(sys.argv[2], coeffscale=SCALE_UVW)
 	if len(uvw) < 1:
 		print ("Error: could not load u,v,w polynomials from '%s'" % (sys.argv[2]))
 		sys.exit(-1)
