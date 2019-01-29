@@ -9,7 +9,7 @@ files under a new directory ./recovered/ under the current working directory.
 '''
 
 __version__ = "1.0.1"
-__author__ = "Harro Verkouter, Jan Wagner"
+__author__ = "Bob Eldering, Jan Wagner"
 
 import argparse
 import ctypes
