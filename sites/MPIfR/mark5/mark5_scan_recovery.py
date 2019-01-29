@@ -240,56 +240,53 @@ if __name__ == "__main__":
     Nscans = len(scans)
 
     output = open('tmp', 'wb')
-    while True:
+    nfilled = 0
+    linearoffset = 0
+    currscan = 0
 
-        nfilled = 0
-        linearoffset = 0
-        currscan = 0
+    inputs = [open(filename, "rb") for filename in opts.inputfile]  # todo: could use rawsources, inputs of above
+    sequence_numbers = {}
+    for file_ in inputs:
+        add_sequence_number(sequence_numbers, file_)
 
-        inputs = [open(filename, "rb") for filename in opts.inputfile]
-        sequence_numbers = {}
-        for file_ in inputs:
-            add_sequence_number(sequence_numbers, file_)
-
-        previous_sequence_number = -1
-        while sequence_numbers:
-            number = min(sequence_numbers.keys())
-            file_ = sequence_numbers.pop(number)
-            if number != previous_sequence_number + 1:
-                if debug:
-                    print "Sequence number error: expected {e}, got {g}, "\
-                        "difference {d}, source file '{f}'".format(
-                        e=previous_sequence_number+1,
-                        g=number,
-                        d=previous_sequence_number+1-number,
-                        f=file_.name)
-                nfilled = nfilled + (number - previous_sequence_number - 1)
-                if (number % 1000) == 0:
-                    print ('At block %d : loss so far %.1f%%' % (number, 100.0*nfilled/number))
-            if number < previous_sequence_number:
-                print "Removing file from read list"
-                continue
-
-            # add fill pattern for missing sequence numbers
-            for dummy in xrange(number - previous_sequence_number - 1):
-                currscan = fill(linearoffset, currscan, scans)
-                linearoffset += block_size
-
-            # copy the data
-            currscan,success = copy(file_, linearoffset, currscan, scans)
-            linearoffset += block_size
-            if success:
-                # only try to read the sequence number if the copy succeeded
-                try:
-                    add_sequence_number(sequence_numbers, file_)
-                except Exception as e:
-                    print "Failed to read next sequence number from '{f}'".\
-                        format(f=file_.name)
-            else:
-                print "Dropping source file '{f}'".format(f=file_.name)
-            previous_sequence_number = number
-
-            # reporting
+    previous_sequence_number = -1
+    while sequence_numbers:
+        number = min(sequence_numbers.keys())
+        file_ = sequence_numbers.pop(number)
+        if number != previous_sequence_number + 1:
+            if debug:
+                print "Sequence number error: expected {e}, got {g}, "\
+                    "difference {d}, source file '{f}'".format(
+                    e=previous_sequence_number+1,
+                    g=number,
+                    d=previous_sequence_number+1-number,
+                    f=file_.name)
+            nfilled = nfilled + (number - previous_sequence_number - 1)
             if (number % 1000) == 0:
-                print (scans[currscan]['name'], linearoffset, scans[currscan]['stop'], '%.1f%%' % (100.0*(linearoffset-scans[currscan]['start'])/scans[currscan]['stop']))
+                print ('At block %d : loss so far %.1f%%' % (number, 100.0*nfilled/number))
+        if number < previous_sequence_number:
+            print "Removing file from read list"
+            continue
 
+        # add fill pattern for missing sequence numbers
+        for dummy in xrange(number - previous_sequence_number - 1):
+            currscan = fill(linearoffset, currscan, scans)
+            linearoffset += block_size
+
+        # copy the data
+        currscan,success = copy(file_, linearoffset, currscan, scans)
+        linearoffset += block_size
+        if success:
+            # only try to read the sequence number if the copy succeeded
+            try:
+                add_sequence_number(sequence_numbers, file_)
+            except Exception as e:
+                print "Failed to read next sequence number from '{f}'".\
+                    format(f=file_.name)
+        else:
+            print "Dropping source file '{f}'".format(f=file_.name)
+        previous_sequence_number = number
+
+        # reporting
+        if (number % 1000) == 0:
+            print (scans[currscan]['name'], linearoffset, scans[currscan]['stop'], '%.1f%%' % (100.0*(linearoffset-scans[currscan]['start'])/scans[currscan]['stop']))
