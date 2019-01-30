@@ -11,6 +11,7 @@ bin_PROGRAMS = \
 	multi2singlethreadVDIF \
 	padVDIF \
 	cleanVDIF \
+	reorderVDIF \
 	fakemultiVDIF \
 	extractSingleVDIFThread \
 	extractVDIFThreads \
@@ -78,6 +79,9 @@ extractVDIFThreads_SOURCES = \
 
 filterVDIF_SOURCES = \
 	filterVDIF.c
+
+reorderVDIF_SOURCES = \
+	reorderVDIF.c
 
 cleanVDIF_SOURCES = \
 	cleanVDIF.c
