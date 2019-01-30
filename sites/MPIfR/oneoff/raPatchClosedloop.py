@@ -16,8 +16,8 @@ from datetime import datetime, timedelta
 from calendar import timegm
 import sys, time
 
-SCALE_DELAY = 1e6
-SCALE_UVW = 1
+SCALE_DELAY = 1e6	# scaling to get from RA_C_COH.TXT units (secs) to .im units (usec)
+SCALE_UVW = 1		# scaling to get from RA_C_COH_uvw.txt units (m?) to .im units (m)
 
 class PolyCoeffs:
 	"""A single polynomial with coefficients"""
@@ -188,25 +188,27 @@ def imDetectNextScanpolyblock(lines,nstart,nstop):
 		if 'SCAN' in lines[n] and ('POINTING SRC' in lines[n] or 'POLY' in lines[n]):
 			break
 		n += 1
-	ipolystop = n - 1
+	ipolystop = n
 	blk = (ipolystart,ipolystop,mjd,sec)
 	return blk
 
 
-def imApplyPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=+1):
+def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1):
 	N_updated = 0
 	map_tag_to_poly = {
-		# line identifier                      storage   axis
-		('ANT %d DELAY (us)' % telescope_id): [dpoly,    0],
-		('ANT %d U (m)' % telescope_id):      [uvwpoly,  0],
-		('ANT %d V (m)' % telescope_id):      [uvwpoly,  1],
-		('ANT %d W (m)' % telescope_id):      [uvwpoly,  2]
+		# line identifier                      storage   axis   type     linecount
+		('ANT %d DELAY (us)' % telescope_id): [dpoly,    0,     'T',     0],
+		('ANT %d U (m)' % telescope_id):      [uvwpoly,  0,     'uvw',   0],
+		('ANT %d V (m)' % telescope_id):      [uvwpoly,  1,     'uvw',   0],
+		('ANT %d W (m)' % telescope_id):      [uvwpoly,  2,     'uvw',   0]
 	}
+
 	for n in range(polystart,polystop):
 		for tag in map_tag_to_poly:
 			if tag in lines[n]:
-				P = map_tag_to_poly[tag][0]
-				col = map_tag_to_poly[tag][1]
+
+				P, col, type, linecount = map_tag_to_poly[tag]
+				map_tag_to_poly[tag][-1] += 1
 
 				C = [ pp[col] for pp in P.coeffs ]
 				key,oldcoeffs = getKeyOpt(lines[n])
@@ -216,18 +218,37 @@ def imApplyPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=+
 				# Element wise summation of correction coeffs onto polynomial
 				N = min(len(newcoeffs), len(C)) # truncate to either poly
 				for k in range(N):
-					# Sum the coeffs
-					#newcoeffs[k] += sign*C[k]
-					# Or just copy them!? quite unclear from RadioAstron test data (undocumented)
-					newcoeffs[k] = sign*C[k]
+					if type=='uvw':
+						# newcoeffs[k] = C[k]
+						newcoeffs[k] = oldcoeffs[0] + C[k]  # --> "Warning: UVW diff"
+					if type=='T':
+						# Add zeroth order coarse dlys, copy higher-order from ASC poly
+						if k==0:
+							# newcoeffs[0] = sign*C[0] + oldcoeffs[0]  # no fringe, sign=-1
+							# newcoeffs[0] = -sign*C[0] + oldcoeffs[0]   # no fringe, sign=-1
+							# newcoeffs[0] = sign*C[0]  # no fringe, sign=-1
+							newcoeffs[0] = oldcoeffs[0]  # fringes!! sign=-1
+						else:
+							newcoeffs[k] = sign*C[k]
+
 				newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
 				newline = '%s:  %s' % (key.strip(),newcoeffs_str)
+
+				print ('------------------------------')
+				print (n)
+				print (C)
+				print (lines[n])
+				print (newline)
+				print ('------------------------------\n')
 
 				# print (n, lines[n], C, newline)
 				# print (lines[n], newline)
 
 				lines[n] = newline
 				N_updated += 1
+
+	print (map_tag_to_poly)
+
 	return N_updated
 
 
@@ -306,7 +327,7 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 			if dp == None or uvwp == None:
 				T = dlypolys.datetimeFromMJDSec(mjd,sec)
 				print('Warning: no suitable poly found in coeffs file to match MJD %d sec %d (%s)!' % (mjd,sec,str(T)))
-				pstart = polystop + 1
+				pstart = polystop
 				continue
 			if dp.source != uvwp.source:
 				print("Error: RA delay poly source '%s' does not match UVW poly source '%s'!" % (dp.source,uvwp.source))
@@ -315,12 +336,15 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 				return False
 
 			# Apply the coeffs
-			nupdated = imApplyPolyCoeffs(telescope_id,lines,polystart,polystop,dp,uvwp)
+			nupdated = imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dp,uvwp)
 			nupdated_total += nupdated
 
-			pstart = polystop + 1
+			# Next poly segment
+			pstart = polystop
 
-		n = blkstop + 1
+		# Next poly block
+		#n = blkstop + 1
+		n = blkstop
 
 	# Write the new IM file
 	f = open(imoutname, 'w')
