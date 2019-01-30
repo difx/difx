@@ -131,6 +131,8 @@ int main(int argc, char **argv)
 	unsigned char *src;
 	unsigned char *dest;
 	FILE *in, *out;
+	struct vdif_file_reader reader;
+	int useStdin = 0;
 	int verbose = 1;
 	int n, rv;
 	int threads[MaxThreads];
@@ -139,6 +141,7 @@ int main(int argc, char **argv)
 	int nGap = defaultNGap;
 	int nSort = defaultNSort;
 	struct vdif_mux_statistics stats;
+	struct vdif_file_summary summary;
 	int leftover;
 	int srcChunkSize = (int)(defaultChunkSize*srcRatio);
 	int destChunkSize = defaultChunkSize;
@@ -376,13 +379,15 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 
+		useStdin = 1;
 		in = stdin;
 	}
 	else
 	{
-		in = fopen(inFile, "r");
+		summarizevdiffile(&summary, inFile, 0);
+		n = vdifreaderOpen(&summary, &reader);
 
-		if(!in)
+		if(n < 0)
 		{
 			fprintf(stderr, "Can't open %s for read.\n", inFile);
 
@@ -390,17 +395,7 @@ int main(int argc, char **argv)
 		}
 		else if(offset > 0)
 		{
-			int r;
-			
-			r = fseeko(in, offset, SEEK_SET);
-
-			if(r != 0)
-			{
-				fprintf(stderr, "Error encountered in seek to position %lld\n", (long long)offset);
-				fclose(in);
-
-				return EXIT_FAILURE;
-			}
+			vdifreaderSeek(&reader, offset);
 		}
 	}
 
@@ -426,11 +421,17 @@ int main(int argc, char **argv)
 	setSignals();
 
 	/* read just enough of the stream to peek at a frame header */
-	n = fread(src, 1, VDIF_HEADER_BYTES, in);
+	if (useStdin)
+	{
+		n = fread(src, 1, VDIF_HEADER_BYTES, in);
+	}
+	else
+	{
+		n = vdifreaderRead(&reader, src, VDIF_HEADER_BYTES);
+	}
 	if(n != VDIF_HEADER_BYTES)
 	{
 		fprintf(stderr, "Error reading first header.  Only %d of %d bytes were read\n", n, VDIF_HEADER_BYTES);
-
 		return EXIT_FAILURE;
 	}
 	leftover = VDIF_HEADER_BYTES;
@@ -493,7 +494,15 @@ int main(int argc, char **argv)
 	{
 		int V;
 
-		n = fread(src+leftover, 1, srcChunkSize-leftover, in);
+		if (useStdin)
+		{
+			n = fread(src+leftover, 1, srcChunkSize-leftover, in);
+		}
+		else
+		{
+			n = vdifreaderRead(&reader, src+leftover, srcChunkSize-leftover);
+		}
+
 		if(n < 1)
 		{
 			if(leftover < inputframesize)
@@ -596,9 +605,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(in != stdin)
+	if(!useStdin)
 	{
-		fclose(in);
+		vdifreaderClose(&reader);
 	}
 	
 	if(verbose > 0 && out != stdout)
