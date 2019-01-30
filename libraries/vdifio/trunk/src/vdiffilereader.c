@@ -60,11 +60,15 @@ static int vdifreader_find_next_threadframe(struct vdif_file_reader *rd, int thr
 	assert(threadIdx <= rd->details.nThread);
 
 	pos = ftello(rd->fd[threadIdx]);
+	if (pos == -1)
+	{
+		return -1;
+	}
+
 	while (1)
 	{
 		if (fread(&vh, sizeof(vh), 1, rd->fd[threadIdx]) < 1)
 		{
-			// EOF
 			return -1;
 		}
 		if (getVDIFThreadID(&vh) == rd->details.threadIds[threadIdx])
@@ -72,12 +76,20 @@ static int vdifreader_find_next_threadframe(struct vdif_file_reader *rd, int thr
 			break;
 		}
 		pos += getVDIFFrameBytes(&vh);
-		fseeko(rd->fd[threadIdx], pos, SEEK_SET);
+		if (fseeko(rd->fd[threadIdx], pos, SEEK_SET) != 0)
+		{
+			return -1;
+		}
 	}
 
 	rd->frame[threadIdx] = getVDIFFrameNumber(&vh);
 	rd->sec[threadIdx] = getVDIFFrameEpochSecOffset(&vh);
-	fseeko(rd->fd[threadIdx], pos, SEEK_SET);
+
+	pos = fseeko(rd->fd[threadIdx], pos, SEEK_SET);
+	if (pos == -1)
+	{
+		return -1;
+	}
 
 	return 0;
 }
@@ -103,6 +115,8 @@ static size_t vdifreader_reposition_all(struct vdif_file_reader *rd, size_t offs
 		fseeko(rd->fd[n], rd->offset, SEEK_SET);
 		vdifreader_find_next_threadframe(rd, n);
 	}
+
+	return rd->offset;
 }
 
 
@@ -169,8 +183,8 @@ size_t vdifreaderSeek(struct vdif_file_reader *rd, size_t offset)
 	{
 		return 0;
 	}
-	vdifreader_reposition_all(rd, offset);
-	return rd->offset;
+
+	return vdifreader_reposition_all(rd, offset);
 }
 
 
@@ -182,9 +196,11 @@ int vdifreaderClose(struct vdif_file_reader *rd)
 	{
 		return -1;
 	}
+
 	for (n=0; n<rd->details.nThread; n++)
 	{
 		fclose(rd->fd[n]);
 	}
+
 	return 0;
 }
