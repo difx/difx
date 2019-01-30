@@ -483,6 +483,41 @@ static inline int vdiffilesummarygetbytespersecond(const struct vdif_file_summar
 int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize);
 
 
+/* *** implemented in vdiffilereader.c *** */
+
+// Assistive VDIF reader. Allows opening a (multi-threaded) VDIF file and reading
+// it back with the frames of threads tightly "interleaved". The resulting data
+// may be passed to vdifmux().
+//
+// The file-based VDIF reader with pre-interleaving logic helps to counteract an
+// issue stemming from the comparably tiny memory window that vdifmux() operates on.
+//
+// When the underlying VDIF file is highly "clumpy" and its data are passed directly
+// to vdifmux(), it can happen that a thread is not found at all inside the small
+// window that vdifmux() operates on. This leads to outlier frames erroneusly considered
+// as "missing" and results in excess Invalid -marked VDIF frames from vdifmux().
+
+struct vdif_file_reader {
+  struct vdif_file_summary details;
+  FILE *fd[VDIF_SUMMARY_MAX_THREADS];
+  uint32_t frame[VDIF_SUMMARY_MAX_THREADS];
+  uint32_t sec[VDIF_SUMMARY_MAX_THREADS];
+  off_t firstframeoffset;
+  off_t offset;
+};
+
+/** Assistive VDIF reader, open a VDIF file based upon VDIF details in its summary. */
+int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader *rd);
+
+/** Read VDIF file, de-clumping VDIF threads in the process. */
+size_t vdifreaderRead(struct vdif_file_reader *rd, void *buf, size_t count);
+
+/** Seek the VDIF reader */
+size_t vdifreaderSeek(struct vdif_file_reader *rd, size_t offset);
+
+/** Close the VDIF reader */
+int vdifreaderClose(struct vdif_file_reader *rd);
+
 #ifdef __cplusplus
 }
 #endif

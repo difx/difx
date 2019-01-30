@@ -15,6 +15,7 @@ sources = \
 	dateutils.h \
 	vdifbuffer.c \
 	vdiffile.c \
+	vdiffilereader.c \
 	vdifio.c \
 	vdifio.h \
 	vdifmux.c
