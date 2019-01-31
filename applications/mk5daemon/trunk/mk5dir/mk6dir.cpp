@@ -75,6 +75,10 @@ void summarizeFile(const char *fileName, char *vsn, char activityMsg, char verbo
 	{
 		mark5bfilesummaryfixmjdtoday(&sum5b);
 		mjd1 = mark5bfilesummarygetstartmjd(&sum5b) + (sum5b.startSecond % 86400)/86400.0;
+		if(sum5b.endSecond < sum5b.startSecond)
+		{
+			sum5b.endSecond += 86400;
+		}
 		mjd2 = mjd1 + (sum5b.endSecond - sum5b.startSecond + 1)/86400.0;
 
 		snprintf(fullFileName, MaxFilenameLength, "%s", fileName);
