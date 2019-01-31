@@ -132,6 +132,7 @@ int main(int argc, char **argv)
 	unsigned char *dest;
 	FILE *in, *out;
 	struct vdif_file_reader reader;
+	struct vdif_file_reader_stats readerstats;
 	int useStdin = 0;
 	int verbose = 1;
 	int n, rv;
@@ -522,7 +523,7 @@ int main(int argc, char **argv)
 		V = vdifmux(dest, destChunkSize, src, n+leftover, &vm, nextFrame, &stats);
 		if(verbose > 2)
 		{
-			printf("vdifmix(destSize=%d, srcSize=%d, startFrame=%Ld) -> %d\n", destChunkSize, n+leftover, (long long)nextFrame, V);
+			printf("vdifmux(destSize=%d, srcSize=%d, startFrame=%Ld) -> %d\n", destChunkSize, n+leftover, (long long)nextFrame, V);
 		}
 		if(V < 0)
 		{
@@ -549,6 +550,17 @@ int main(int argc, char **argv)
 		if(verbose > 2 && out != stdout)
 		{
 			printvdifmuxstatistics(&stats);
+			if(!useStdin && nThread > 1)
+			{
+				int j;
+				vdifreaderStats(&reader, &readerstats);
+				printf("VDIF reader statistics:\n");
+				for(j = 0; j < readerstats.nThread; j++)
+				{
+					printf("  Thread %2d relative offset = %d frames\n", summary.threadIds[j], readerstats.threadOffsets[j]);
+				}
+				printf("  Largest offset            = %d frames\n", readerstats.maxOffset);
+			}
 		}
 
 		if(stats.startFrameNumber < 0)

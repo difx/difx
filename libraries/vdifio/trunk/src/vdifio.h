@@ -506,6 +506,12 @@ struct vdif_file_reader {
   off_t offset;
 };
 
+struct vdif_file_reader_stats {
+  int nThread;
+  off_t threadOffsets[VDIF_SUMMARY_MAX_THREADS];
+  off_t maxOffset;
+};
+
 /** Assistive VDIF reader, open a VDIF file based upon VDIF details in its summary. */
 int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader *rd);
 
@@ -514,6 +520,9 @@ size_t vdifreaderRead(struct vdif_file_reader *rd, void *buf, size_t count);
 
 /** Seek the VDIF reader */
 size_t vdifreaderSeek(struct vdif_file_reader *rd, size_t offset);
+
+/** Statistics to help deduce VDIF thread "clumpiness" */
+int vdifreaderStats(struct vdif_file_reader *rd, struct vdif_file_reader_stats *st);
 
 /** Close the VDIF reader */
 int vdifreaderClose(struct vdif_file_reader *rd);

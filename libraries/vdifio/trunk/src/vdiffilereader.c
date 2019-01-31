@@ -76,6 +76,10 @@ static int vdifreader_find_next_threadframe(struct vdif_file_reader *rd, int thr
 			break;
 		}
 		pos += getVDIFFrameBytes(&vh);
+		if (getVDIFFrameBytes(&vh) <= 0)
+		{
+			return -1;
+		}
 		if (fseeko(rd->fd[threadIdx], pos, SEEK_SET) != 0)
 		{
 			return -1;
@@ -185,6 +189,48 @@ size_t vdifreaderSeek(struct vdif_file_reader *rd, size_t offset)
 	}
 
 	return vdifreader_reposition_all(rd, offset);
+}
+
+
+/** Return statistics to help deduce VDIF thread "clumpiness" */
+int vdifreaderStats(struct vdif_file_reader *rd, struct vdif_file_reader_stats *st)
+{
+	int n;
+	off_t minOffset;
+	if (rd == NULL || st == NULL)
+	{
+		return -1;
+	}
+
+	// File offsets, in units of frames
+	st->nThread = rd->details.nThread;
+	for (n=0; n<rd->details.nThread; n++)
+	{
+		off_t offset = ftello(rd->fd[n]);
+		if (offset == -1)
+		{
+			return -1;
+		}
+		offset -= rd->firstframeoffset;
+		offset /= rd->details.frameSize;
+		st->threadOffsets[n] = offset;
+	}
+
+	// Lowest offset
+	minOffset = st->threadOffsets[0];
+	for (n=0; n<rd->details.nThread; n++)
+	{
+		minOffset = (st->threadOffsets[n] < minOffset) ? st->threadOffsets[n] : minOffset;
+	}
+
+	// Shift all offsets to be relative to the lowest offset, and look for the largest offset overall
+	st->maxOffset = 0;
+	for (n=0; n<rd->details.nThread; n++)
+	{
+		st->threadOffsets[n] -= minOffset;
+		st->maxOffset = (st->threadOffsets[n] > st->maxOffset) ? st->threadOffsets[n] : st->maxOffset;
+	}
+	return 0;
 }
 
 
