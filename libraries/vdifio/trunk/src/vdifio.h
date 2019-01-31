@@ -36,6 +36,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <time.h>
 
 #define VDIF_HEADER_BYTES		32
