@@ -8,6 +8,7 @@ datasim_SOURCES = subband.h \
                   util.cpp \
                   vdifzipper.h \
                   vdifzipper.cpp \
+                  catvdif.cpp \
                   datasim.h \
                   datasim.cpp
 
