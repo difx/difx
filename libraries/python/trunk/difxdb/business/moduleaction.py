@@ -87,10 +87,21 @@ def isCheckOutAllowed(session, vsn):
 
     return(True)
            
+def isMark6(vsn):
+    '''
+    Returns True if this is a Mark6 VSN; False otherwise
+    '''
+    if '%' in vsn:
+	return(True)
+    else:
+	return(False)
+
+    
 def hasDir(vsn, dirPath=None):
     '''
-    Checks whether a .dir file exists for the module with the given vsn.
-    If the optional dirPath is set the .dir file will be searched under that path.
+    Checks whether a .dir file (or filelist in case of Mark6 modules)
+    exists for the module with the given vsn.
+    If the optional dirPath is set the .dir/.filelist file will be searched under that path.
     Otherwise the MARK5_DIR_PATH environment is evaluated.
     '''
     if (dirPath == None):
@@ -98,9 +109,12 @@ def hasDir(vsn, dirPath=None):
         if (dirPath == None):
             return(False)
              
-        if (os.path.isfile(dirPath + "/" + vsn + ".dir")):
-            return(True)
-    
+	if isMark6(vsn):
+	    if (os.path.isfile(dirPath + "/" + vsn + ".filelist")):
+		return(True)
+	else:
+	    if (os.path.isfile(dirPath + "/" + vsn + ".dir")):
+		return(True)
         
     return(False)
     
