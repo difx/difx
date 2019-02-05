@@ -1,22 +1,692 @@
-* post 2.5 changes
-comedia: can show .dir file corresponding to selected module
-comedia: poperly sort numeric table columns
-comedia: exclude mark6 modules from .dir related content
-difxdbExperiment: new utility to print experiment summary information
-difxdbParseFiles: new utility to parse the FS for file-based raw data and update the database accordingly
-difxdbSyncFiles: new utility to sync the database contents for file-based data with the FS contents
-* post 2.4 changes
-getreleaselist: order output by experiment code
-comedia: email notification for modules containing unknown experiments
-expad: show number of modules for each experiment
-difxdbModule: new utility for obtaining module information
+post 2.5.2
+	* comedia/comedia.py: Allow parsing of Mark6 filelists
 
-*Version 2.4
-Tagged DiFX-2.4 on Nov 4, 2014
+2018-08-02 10:14  HelgeRottmann
 
-1.1
-* Various developmental improvements between DiFX-2.1 and DiFX-2.2
-* Tagged as DiFX-2.2 on May 31, 2013 
+	* comedia/comedia.py: Allow setting of "needs attention" flag for
+	  problematic modules
 
-*1.0 
-* Initial version
+2018-07-11 09:50  HelgeRottmann
+
+	* expad/expad.py: Fix error of loosing type information when
+	  switching between tabs
+
+2018-06-11 07:31  HelgeRottmann
+
+	* difxdbTapelog/difxdbTapelog.py: Enable svn keywords
+
+2018-06-11 07:29  HelgeRottmann
+
+	* difxdbTapelog/difxdbTapelog.py: Make station codes camelcase
+
+2018-06-08 07:24  HelgeRottmann
+
+	* expad/expad.py: Respect manually edited observation dates when
+	  adding experiments
+
+2018-05-28 10:18  HelgeRottmann
+
+	* expad/expad.py: Update experiment status
+
+2018-05-16 14:02  HelgeRottmann
+
+	* database/difxdb_mysql_full_1_8.sql,
+	  database/difxdb_mysql_update_1_7.sql,
+	  database/difxdb_mysql_update_1_8.sql: database schema updates and
+	  full dump
+
+2018-05-16 13:45  HelgeRottmann
+
+	* expad/expad.py: Allow to set date for experiment status change
+
+2018-05-16 12:53  HelgeRottmann
+
+	* expad/expad.py: Keep track of the history of experiment status
+
+2018-05-16 12:52  HelgeRottmann
+
+	* ChangeLog, difxdbParseFiles/Makefile.am,
+	  difxdbParseFiles/difxdbSyncFiles.py: Add new utility to sync the
+	  database content for file-based datasets with the file system
+	  content
+
+2018-05-16 12:50  HelgeRottmann
+
+	* difxdbParseFiles/difxdbParseFiles.py: Change loggin scheme to
+	  daily rotating logs
+
+2018-05-14 07:09  HelgeRottmann
+
+	* ., comedia, comedia/resources, conf, database, difxdbExperiment,
+	  difxdbInventory, difxdbModule, difxdbParseFiles,
+	  difxdbParseFiles/Makefile.am, difxdbTapelog, difxqueue, expad,
+	  getexplist, getmodules, getreleaselist, getslot: Add Makefile.am;
+	  set ignore pattern
+
+2018-05-11 12:42  HelgeRottmann
+
+	* expad/expad.py: various changes
+
+2018-05-11 11:11  HelgeRottmann
+
+	* difxdbParseFiles/difxdbParseFiles.py: Update help messages
+
+2018-05-11 09:56  HelgeRottmann
+
+	* ChangeLog, Makefile.am, configure.ac: Include difxdbParseFiles in
+	  automake
+
+2018-05-11 09:51  HelgeRottmann
+
+	* difxdbParseFiles, difxdbParseFiles/difxdbParseFiles.py: Add
+	  script for parsing the file system for correlation data and
+	  update the difxdb database
+
+2018-05-10 17:51  HelgeRottmann
+
+	* expad/expad.py: Show media (modules/files) and exported files
+	  linked to experiment
+
+2018-05-09 19:36  HelgeRottmann
+
+	* database/difxdb_mysql_update_1_5.sql: Add index and foreign key
+	  contraint
+
+2018-05-09 07:20  HelgeRottmann
+
+	* database/difxdb_mysql_update_1_4.sql,
+	  database/difxdb_mysql_update_1_5.sql,
+	  database/difxdb_mysql_update_1_6.sql, expad/expad.py: Add support
+	  for experiment observation date
+
+2018-05-08 13:23  HelgeRottmann
+
+	* expad/expad.py: Allow to specify obsDate on experiment creation
+
+2018-05-07 09:09  JanWagner
+
+	* comedia/comedia.py: Resolve namespace conflict of Image class
+
+2018-03-28 13:35  HelgeRottmann
+
+	* comedia/comedia.py: Replace pybarcode with reportlab package for
+	  barcode creation
+
+2018-03-08 10:58  HelgeRottmann
+
+	* comedia/comedia.py: Fix corrupted VSN label printing due to CRC
+	  character
+
+2018-02-19 13:35  HelgeRottmann
+
+	* ChangeLog, Makefile.am, configure.ac, difxdbExperiment,
+	  difxdbExperiment/Makefile, difxdbExperiment/Makefile.am,
+	  difxdbExperiment/Makefile.in,
+	  difxdbExperiment/difxdbExperiment.py, expad/expad.py: Add
+	  difxdbExperiment utility for printing experiment summary
+	  information
+
+2018-01-10 08:02  HelgeRottmann
+
+	* ChangeLog, comedia/comedia.py: enable display of .dir file for
+	  currently selected module
+
+2018-01-09 14:22  JanWagner
+
+	* comedia/comedia.py: define some columns to be numeric for proper
+	  sorting
+
+2018-01-09 13:08  JanWagner
+
+	* comedia/comedia.py: exclude mark6 modules when checking for .dir
+	  files
+
+2018-01-09 12:43  JanWagner
+
+	* comedia/comedia.py: Fix error in SATA/PATA module filter
+
+2017-05-19 11:38  HelgeRottmann
+
+	* difxdbTapelog/Makefile.am: Add missing automake file
+
+2017-02-24 12:52  HelgeRottmann
+
+	* comedia/comedia.py: Add menu option for printing VSN labels
+
+2017-02-24 12:06  HelgeRottmann
+
+	* comedia/comedia.py: Allow export to file of currently selected
+	  modules
+
+2017-02-22 15:08  HelgeRottmann
+
+	* getmodules/getmodules.py: Allow output for muliple experiments
+
+2017-02-22 14:56  HelgeRottmann
+
+	* difxdbInventory/difxdbInventory.py: fix usage information
+
+2017-01-04 16:21  HelgeRottmann
+
+	* difxdbTapelog/difxdbTapelog.py: Fix a few things
+
+2016-12-22 14:24  HelgeRottmann
+
+	* Makefile.am, configure.ac, difxdbInventory,
+	  difxdbInventory/Makefile.am, difxdbInventory/difxdbInventory.py:
+	  add new utility to print module inventory
+
+2016-12-22 13:21  HelgeRottmann
+
+	* Makefile.am, difxdbTapelog, difxdbTapelog/difxdbTapelog.py: add
+	  new utility to build TAPELOG_OBS vex section from database
+	  contents
+
+2016-10-10 14:00  HelgeRottmann
+
+	* comedia/comedia.py: enable notification by email upon module
+	  arrival
+
+2016-10-10 13:59  HelgeRottmann
+
+	* expad/expad.py: enable notification by email upon module arrival
+
+2016-01-20 12:15  HelgeRottmann
+
+	* ChangeLog, Makefile.am, configure.ac, difxdbModule,
+	  difxdbModule/Makefile.am, difxdbModule/difxdbModule.py: add new
+	  utility for displaying module information
+
+2016-01-15 12:47  HelgeRottmann
+
+	* comedia/comedia.py, difxqueue/difxqueue.py, expad/expad.py,
+	  getexplist/getexplist.py, getmodules/getmodules.py,
+	  getreleaselist/getreleaselist.py, getslot/getslot.py: Add GPLv3
+	  license
+
+2015-12-16 14:17  HelgeRottmann
+
+	* comedia/comedia.py: display warning message when reverting to
+	  default font
+
+2015-09-24 13:15  HelgeRottmann
+
+	* comedia/comedia.py: Also remove .bindir file upon module checkout
+
+2015-09-10 11:01  HelgeRottmann
+
+	* ChangeLog: ChangeLog update
+
+2015-09-10 10:59  HelgeRottmann
+
+	* comedia/comedia.py: Enable email notification for modules
+	  containing unknown experiments
+
+2015-09-10 10:57  HelgeRottmann
+
+	* expad/expad.py: display number of modules ascociated with each
+	  experiment
+
+2015-07-09 07:43  HelgeRottmann
+
+	* comedia/comedia.py: allow filtering based on module type
+	  (SATA,PATA,Mark6)
+
+2015-07-09 06:00  HelgeRottmann
+
+	* comedia/comedia.py: Enable check-in of Mark6 modules (VSN
+	  containing %)
+
+2015-07-08 13:15  HelgeRottmann
+
+	* expad/expad.py: adapt to changes in MultiListbox class
+
+2015-07-08 13:12  HelgeRottmann
+
+	* comedia/comedia.py: Add modal dialog to change assigned
+	  experiments
+
+2015-04-14 09:11  HelgeRottmann
+
+	* getreleaselist/getreleaselist.py: Ouput is now ordered
+	  alphabetically by experiment code
+
+2014-11-04 16:58  HelgeRottmann
+
+	* ChangeLog, README, configure.ac: updated version to DiFX-2.4
+
+2014-11-04 14:28  AdamDeller
+
+	* ChangeLog: Update ChangeLog in prep for DiFX-2.4
+
+2014-09-04 13:24  HelgeRottmann
+
+	* comedia/comedia.py: expad can now be called from comedia to
+	  display experiment details
+
+2014-09-04 13:05  HelgeRottmann
+
+	* expad/expad.py: Allow for selecting multiple experiments from
+	  command line
+
+2014-09-04 12:17  HelgeRottmann
+
+	* expad/expad.py: add command line option to display single
+	  experiment
+
+2014-09-03 11:42  HelgeRottmann
+
+	* comedia/comedia.py: - Fix bug (missing module.id) when checking
+	  out modules
+
+2014-05-16 12:09  HelgeRottmann
+
+	* expad/expad.py: More carefully open/close sessions on transaction
+	  boundaries to cleanly handle concurent usage
+
+2014-05-16 11:48  HelgeRottmann
+
+	* comedia/comedia.py: More carefully open/close sessions on
+	  transaction boundaries to cleanly handle concurent usage
+
+2014-03-25 09:49  HelgeRottmann
+
+	* comedia/comedia.py: Handle case where .dir file was manually
+	  deleted
+
+2013-12-04 08:39  HelgeRottmann
+
+	* comedia/comedia.py: fix bug on defunct module checkout
+
+2013-11-27 09:52  HelgeRottmann
+
+	* database/difxdb_mysql_update_1_3.sql: update of difxdb database
+	  schema
+
+2013-11-27 08:53  HelgeRottmann
+
+	* expad/expad.py: Bugfix: wrong experiment types displayed in the
+	  details section
+
+2013-11-26 13:29  HelgeRottmann
+
+	* expad/expad.py: - allow users to be assigned to experiments
+	  -allow to assign user to experiment releases
+
+2013-11-08 14:11  HelgeRottmann
+
+	* comedia/comedia.py: enable rescan of directory
+	  enable force checkout
+
+2013-11-06 13:27  HelgeRottmann
+
+	* database/difxdb_mysql_update_1_2.sql: add ExperimentType Table to
+	  DB schema
+
+2013-11-06 13:21  HelgeRottmann
+
+	* expad/expad.py: allow types for experiments
+
+2013-09-11 15:04  HelgeRottmann
+
+	* Makefile.am, comedia/comedia.py, configure.ac, getexplist,
+	  getexplist/Makefile.am, getexplist/getexplist.py: add new utility
+	  getexplist to retrieve list of experiments stored in the
+	  database
+
+2013-07-17 13:32  HelgeRottmann
+
+	* getmodules/getmodules.py: display module capacity and summary
+
+2013-05-31 20:20  AdamDeller
+
+	* ChangeLog, configure.ac: Bump difxdb version number after tagging
+	  as DiFX-2.2
+
+2013-05-31 20:18  AdamDeller
+
+	* ChangeLog, configure.ac: Bump difxdb version number before
+	  committing to DiFX-2.2
+
+2012-10-09 12:47  HelgeRottmann
+
+	* getreleaselist/getreleaselist.py: Issue warning for modules that
+	  have never been scanned
+
+2012-09-26 07:30  HelgeRottmann
+
+	* AUTHORS, ChangeLog, Makefile.am, NEWS, README,
+	  comedia/Makefile.am, configure.ac, difxqueue/Makefile.am,
+	  expad/Makefile.am, getmodules/Makefile.am,
+	  getreleaselist/Makefile.am, getslot/Makefile.am: put difxdb under
+	  automake control
+
+2012-09-26 06:18  HelgeRottmann
+
+	* README, README.mysql: rename README
+
+2012-07-23 09:39  HelgeRottmann
+
+	* comedia/comedia.py: remove left-over debug statements
+
+2012-07-23 08:23  HelgeRottmann
+
+	* comedia/comedia.py: Add possibiity to change module location
+
+2012-06-06 12:07  HelgeRottmann
+
+	* comedia/comedia.py: force VSN labels with 300dpi for better
+	  readability by hand-held scanners
+
+2012-06-06 12:06  HelgeRottmann
+
+	* expad/expad.py: add line specifying python encoding
+
+2012-06-01 20:11  WalterBrisken
+
+	* database/difxdb_schema_pgsql.sql: Make fixes to postgresql
+	  database access for capitalization compatibility and add to
+	  schema script initial population of some static tables
+
+2012-05-31 22:04  WalterBrisken
+
+	* database/difxdb_schema_pgsql.sql: Add postgresql schema. Not yet
+	  tested. Some changes to GUI code may be needed.
+
+2012-05-08 08:59  HelgeRottmann
+
+	* .: move utilities/branch/difxdb_mysql to utilities/trunk/difxdb
+
+2012-05-02 08:38  HelgeRottmann
+
+	* check current database schema version against minimum required
+	  schema version
+
+2012-04-23 08:50  HelgeRottmann
+
+	* - Store release date in DB
+	  - Display create /release dates in experiment list
+	  - Fix display of "releasedBy" field
+
+2012-04-04 13:05  HelgeRottmann
+
+	* fixed uninitiliazed releasedBy textfield
+
+2012-03-29 12:30  HelgeRottmann
+
+	* greatly extended functionality:
+	  - display /change archival information
+	  - allow comments
+	  - track release user
+	  - ...
+
+2012-03-29 12:25  HelgeRottmann
+
+	* update database schema to version 1.1
+
+2012-03-23 14:15  HelgeRottmann
+
+	* Several modifications:
+	  - verification of database schema version
+	  - update experiment status on update button click
+	  - color track experiment detail changes
+
+2012-03-23 10:52  HelgeRottmann
+
+	* Fix several issues:
+	  - verify database schema version
+	  - handle unparsable .dir files
+	  - flush database session after commits
+	  - properly update station code in module table
+	  - properly display multiple unparsable .dir files when scanning
+
+2012-01-31 09:35  HelgeRottmann
+
+	* "Initial (version 1.0) difxdb schema definition"
+
+2012-01-31 09:33  HelgeRottmann
+
+	* script for doing a full dump of the difxdb database schema stored
+	  on a MySQL server
+
+2012-01-31 09:29  HelgeRottmann
+
+	* Instructions for database versioning
+
+2012-01-27 13:48  HelgeRottmann
+
+	* - Improved workflow logic on module check-out
+	  - Modules can receive comments
+	  - Filter for modules with unscanned directories
+
+2012-01-27 07:58  HelgeRottmann
+
+	* Manually added experiments received status "scheduled" by default
+
+2012-01-26 13:38  HelgeRottmann
+
+	* Display modules without experiment in extended list
+
+2012-01-24 13:18  HelgeRottmann
+
+	* Properly handle whitespace CRC characters
+
+2012-01-24 10:39  HelgeRottmann
+
+	* update svn keywords
+
+2012-01-24 10:38  HelgeRottmann
+
+	* update svn keywords
+
+2012-01-24 10:11  HelgeRottmann
+
+	* rewrite to allow grouping by experiment
+
+2012-01-20 09:10  HelgeRottmann
+
+	* Allow manual change of stationcode
+
+2012-01-20 08:51  HelgeRottmann
+
+	* Fix: Scanning VSN labels with a numeric CRC code would result in
+	  datarate field being one character short
+
+2012-01-20 08:17  HelgeRottmann
+
+	* Add command line option for producing more detailed printout
+
+2012-01-13 13:32  HelgeRottmann
+
+	* set SVN properties
+
+2012-01-13 13:30  HelgeRottmann
+
+	* New database utility to list releasable disk modules
+
+2012-01-13 08:46  HelgeRottmann
+
+	* Sort modules by station
+
+2011-12-23 09:45  HelgeRottmann
+
+	* set path to font file in comedia.ini instead of using fixed path
+
+2011-12-09 22:10  GeoffreyCrew
+
+	* minor tweaks getting Haystack mysql going
+
+2011-12-08 21:44  HelgeRottmann
+
+	* Updated version of difxqueue that makes use of difxdb
+	  infrastructure
+
+2011-12-08 21:41  HelgeRottmann
+
+	* Created directory 'utilities/branches/difxdb_mysql/difxqueue'.
+
+2011-12-08 21:32  HelgeRottmann
+
+	* Removed utilities/branches/difxdb_mysql/difxqueue
+
+2011-12-07 21:55  HelgeRottmann
+
+	* Add SVN keywords
+
+2011-12-07 21:53  HelgeRottmann
+
+	* Add SVN keywords
+
+2011-12-07 21:51  HelgeRottmann
+
+	* Use global difxdb.ini instead of comedia specific
+	  Add ComediaConfig internal subclass
+	  Add SVN keywords
+
+2011-12-01 11:42  HelgeRottmann
+
+	* updated the difxdb setup instructions
+
+2011-12-01 11:34  HelgeRottmann
+
+	* Add tool to query frm the database all modules that belong to an
+	  experiment
+
+2011-12-01 10:42  HelgeRottmann
+
+	* update main listbox after module scan
+
+2011-11-30 09:44  HelgeRottmann
+
+	* update of database schema (separate ansi and mysql versions)
+
+2011-11-30 09:17  HelgeRottmann
+
+	* - Add function to change experiment number
+	  - Add exit button
+	  - Add experiment status column
+
+2011-11-30 08:25  HelgeRottmann
+
+	* - Print VSN labels
+	  - Remove temporary files
+
+2011-11-29 20:19  HelgeRottmann
+
+	* Added lots of new features
+
+2011-11-29 20:16  HelgeRottmann
+
+	* - Replace Listbox with MultiListbox
+	  - Major code cleanup
+
+2011-11-18 10:25  HelgeRottmann
+
+	* Minor GUI beautifications
+
+2011-11-16 14:05  HelgeRottmann
+
+	* Various minor fixes
+
+2011-11-16 10:17  HelgeRottmann
+
+	* - Autoprint library labels on module check-in
+	  - Fix several issues
+
+2011-11-16 08:10  HelgeRottmann
+
+	* Add experiment filter
+
+2011-11-15 15:29  HelgeRottmann
+
+	* - Add slot filter
+	  - Fix module -> slot backref
+	  - Don't store CRC code when scanning f VSN labels
+	  - Find and display outdated .dir files
+
+2011-11-14 13:13  HelgeRottmann
+
+	* Add consistency check between module check-in date and .dir file
+	  date
+
+2011-11-14 12:20  HelgeRottmann
+
+	* Add program for experiment administration
+
+2011-11-14 12:16  HelgeRottmann
+
+	* - Add support for oracle database
+	  - Store module station code in database
+
+2011-11-11 13:02  HelgeRottmann
+
+	* Check for module existence before doing the query
+
+2011-11-11 12:52  HelgeRottmann
+
+	* Fix error in svn keywords
+
+2011-11-11 12:48  HelgeRottmann
+
+	* Add utility to obtain slot (shelf) for a disk module
+
+2011-11-10 13:13  HelgeRottmann
+
+	* Add capability to print VSN barcode labels
+
+2011-11-10 10:52  HelgeRottmann
+
+	* Close label options dialog on OK
+
+2011-11-10 10:47  HelgeRottmann
+
+	* Fix PIL class confusion
+
+2011-11-10 10:17  HelgeRottmann
+
+	* - Delete .dir file upon module check-out
+	  - Add scrollbar to scan module window
+
+2011-11-08 13:42  HelgeRottmann
+
+	* split database definition into schema and content parts
+
+2011-11-08 13:35  HelgeRottmann
+
+	* Add lots of new features
+
+2011-11-07 08:57  HelgeRottmann
+
+	* - Extend GUI
+	  - Add workflow logic for module check-out
+	  - Code cleanup
+
+2011-10-28 12:14  HelgeRottmann
+
+	* Updated difxdb SQL schema
+
+2011-10-28 11:57  HelgeRottmann
+
+	* comedia: database driven program to handle mark5 module library
+
+2011-07-04 09:47  HelgeRottmann
+
+	* Update installation instructions
+
+2011-06-22 11:26  HelgeRottmann
+
+	* Initial commit of difxdb setup instructions
+
+2011-06-21 10:50  HelgeRottmann
+
+	* Initial commit of sample MySQL options file
+
+2011-06-21 10:44  HelgeRottmann
+
+	* Initial commit of MySQL branch version of difxqueue
+
+2011-06-21 09:25  HelgeRottmann
+
+	* Initial commit of MySQL database schema used for difxdb
+	  infrastructure
+

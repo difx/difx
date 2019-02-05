@@ -45,6 +45,7 @@ from difxdb.model import model
 from difxutil.dbutil import *
 from difxdb.difxdbconfig import DifxDbConfig
 from difxfile.difxdir import *
+from difxfile.difxfilelist import *
 
 from string import strip, upper
 from collections import deque
@@ -463,9 +464,10 @@ class MainWindow(GenericWindow):
                     releaseList.append(slot.module.vsn)
                     
             
-            # check if "dirLess" checkbox is activated (exclude mark6 modules)
+            # check if "dirLess" checkbox is activated 
             if (self.filterDirLess.get()):
-                if hasDir(slot.module.vsn) or self.patternMark6VSN.match(slot.module.vsn):
+                #if hasDir(slot.module.vsn) or self.patternMark6VSN.match(slot.module.vsn):
+                if hasDir(slot.module.vsn):
                     continue
                     
             # check if "uscanned" checkbox is activated
@@ -771,8 +773,8 @@ class MainWindow(GenericWindow):
         for slot in slots:
             
 	    # exclude mark6 modules until .dir mechanics exist
-	    if self.patternMark6VSN.match(slot.module.vsn):
-		continue
+	    #if self.patternMark6VSN.match(slot.module.vsn):
+	#	continue
 
 	    isDir = False
 	    isScan = False
@@ -977,14 +979,19 @@ class MainWindow(GenericWindow):
         dirPath = os.getenv("MARK5_DIR_PATH")
         if (dirPath == None):
             return
-
-
         
         session = dbConn.session()
         slot = model.Slot()
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
-        if (os.path.isfile(dirPath + "/" + slot.module.vsn + ".dir")):
-		self.showDirDlg.dirFilename = dirPath + "/" + slot.module.vsn + ".dir"
+
+	if (isMark6(slot.module.vsn)):
+	    ext = ".filelist"
+	else:
+	    ext = ".dir"
+	filename = dirPath + "/" + slot.module.vsn + ext
+		
+        if (os.path.isfile(filename)):
+		self.showDirDlg.dirFilename = filename
 		self.showDirDlg.show()
         
         session.close()
@@ -1264,7 +1271,6 @@ class DirFileWindow(GenericWindow):
 
 
 	try:
-	    print self.dirFilename
 	    dirFile = open(self.dirFilename, "r")
 	    self.txtDir.insert(END, dirFile.read())
 
@@ -1853,22 +1859,32 @@ class ScanModulesWindow(GenericWindow):
             
             assignedExps = deque()
             
+            
             # check if .dir file exists
             if (not hasDir(module.vsn)):
                 continue
-                     
-            try:
-                difxdir = DifxDir(settings["dirPath"], module.vsn)
-            except Exception as e:
-                tkMessageBox.showerror("Error", e)
-                continue
                 
+           
+  
+            if isMark6(module.vsn):
+                try:
+                    difxdir = DifxFilelist(settings["dirPath"], module.vsn)
+                except Exception as e:
+                    tkMessageBox.showerror("Error", e)
+                    continue
+                
+            else:
+                try:
+                    difxdir = DifxDir(settings["dirPath"], module.vsn)
+                except Exception as e:
+                    tkMessageBox.showerror("Error", e)
+                    continue
+                    
             scannedExps = difxdir.getExperiments()
-            
             if (difxdir.getFileDate() < time.mktime(module.received.timetuple())):
                 outdatedDir.append(difxdir.getFilename())
                 continue
-            
+                     
             # compare associated experiments
             for exp in module.experiments:
                 assignedExps.append(exp.code)
