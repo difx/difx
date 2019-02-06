@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #<!---======================================================================--->
 ## Script to update the queue file using the DiFX Server
 #
@@ -36,7 +37,7 @@ import DiFXControl
 import subprocess
 import os
 import argparse
-
+import glob
 
 
 #<!------------------------------------------------------------------------>
@@ -51,10 +52,10 @@ import argparse
 def get_parameters():
 	# Get input parameters from user
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--hostname","-H",help="Specify the host name were difx will run. This is a mandatory parameter, to specify the local machine you can use localhost as the host name.",required=True)
-	parser.add_argument("--port","-p",help="TCP port used to communicated with the difxServer.  This must be the same port number used by guiServer.",required=True)
-	parser.add_argument("--priority","-q",help="The priority number assigned to this queue job.  This is specified as an integer were lower numbers mean higher priority.",required=True)
-	parser.add_argument("--input_file","-i",help="Difx .input file or list of input files for difx to correlate.",required=True)
+	parser.add_argument("--hostname","-H",help="Specify the host name were difx will run. This is a mandatory parameter, to specify the local machine you can use localhost as the host name.",default="node-001")
+	parser.add_argument("--port","-p",help="TCP port used to communicated with the difxServer.  This must be the same port number used by guiServer.",default="50200")
+	parser.add_argument("--priority","-q",help="The priority number assigned to this queue job.  This is specified as an integer were lower numbers mean higher priority.",default=1)
+	parser.add_argument("--input_file","-i",help="Difx .input file or list of input files for difx to correlate.",required=True,type=str,nargs='+')
 	parser.add_argument("--queue","-Q",help="Full path and name of the queue file e.g. /path/to/queue.txt",default="/san02/data1/correlator/run/TESTS/python_queue_testing/queue.txt")
 	parser.add_argument("--start","-s",help="Start the queue processing? True/False (No by default)",default=False)
 	parameters = parser.parse_args()	
@@ -74,11 +75,67 @@ def initialize(difx,parameters):
 	# Set up difx client class instance named difx
         difx.connect(parameters.hostname,parameters.port)
         difx.monitor()
+	
+	# If DiFXQueue.py is given notation like file* for a list of files 
+	# (eg file1.input,file2.input) it will create a list if the directory is 
+	# accesable to DiFXQueue.py, if not (like when DiFXQueue.py is run
+	# in a remote setting) we'll need to perform a remote ls command 
+	# to create the list of files. 
 
-	# Check if input file exists
-	remote_filepath = difx.ls(parameters.input_file,"-l") 
-        if (remote_filepath == None): 
-		raise Exception("Input file " + parameters.input_file + " does not exist aborting.") 
+	# First check to see is parameter input file has multiple items
+	#if (parameters.input_file 
+	print (parameters.input_file)
+	if (len(parameters.input_file) > 1):
+		for filename in parameters.input_file:
+			check_file_exists(difx,filename)
+		write_file_list(difx,parameters.input_file,parameters)
+	elif (len(parameters.input_file) == 1):
+		remote_filepath = difx.ls(parameters.input_file[0])	
+		if (len(remote_filepath) > 1): 
+			for filename in remote_filepath:
+				check_file_exists(difx,filename)
+			write_file_list(difx,remote_filepath,parameters)
+		else:
+			# check if remote file path exists
+			check_file_exists(difx,remote_filepath)
+			paramters.input_file = remote_filepath
+
+#	print("paramters.input_file = ")
+#	print(parameters.input_file)
+#	exit(0)
+
+def check_file_exists(difx,filename):
+	remote_filepath = difx.ls(filename,"-l")
+        if (remote_filepath == None):
+                raise Exception("Input file " + filename + " does not exist aborting.  Note: the full path to input file(s) is required.")
+
+#<!------------------------------------------------------------------------>
+##  
+#  @param difx       Instance of the difx cliente class.  
+#  @param parameters Dictionary of input parameters for the queue
+#
+#   
+#  
+#  
+#<!------------------------------------------------------------------------>
+def write_file_list(difx,filelist,parameters):
+	# Grab path to first input file, stick inputFileList there
+	pathlist = filelist[0].split('/')
+	pathlist = pathlist[:-1]
+        path = '/'.join(pathlist)
+	print("path = " + path)
+	if (path):
+		inputFileList = path +"/inputFileList"
+	else:
+		
+		inputFileList = "inputFileList"		
+
+	difx.touch(inputFileList)
+	fileContents = '\n'.join(filelist)        
+	difx.sendFile(inputFileList,fileContents)	
+	parameters.input_file = inputFileList
+
+
 
 #<!------------------------------------------------------------------------>
 ##  
@@ -103,6 +160,7 @@ def write_queue(difx,parameters):
 	queuedata = difx.getFile(parameters.queue)
 	# If queue contains no data (or is empty) create a new file 
 	if not queuedata:
+		print("running touch")
 		difx.touch(parameters.queue)
 		difx.sendFile(parameters.queue,queuedata_new)
 		return
