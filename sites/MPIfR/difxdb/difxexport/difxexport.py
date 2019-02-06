@@ -34,7 +34,7 @@ __build__= "$Revision$"
 __date__ ="$Date$"
 __lastAuthor__="$Author$"
 
-ftpPath = "/ftp/correlator"
+ftpPath = "/ftp/vlbiarchive/correlator"
 exportName = "EXPORT"
 
 # minimum database schema version required by program
