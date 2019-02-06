@@ -1,11 +1,16 @@
+#!/usr/bin/env python
 import DiFXControl
 import DiFXJobControl
 import sys 
 import time 
 import os.path
+import os 
 import atexit
 import argparse
 import math
+import signal
+
+
 
 # Parses a range of integers
 def parseIntSet(nputstr=""):
@@ -82,7 +87,6 @@ def job_index(queuedata,job_input_file):
 #  writes a constant completion percentage to the queuue.
 def append_status(difx, job_input_file, parameters,  responder=None, jobProgress=None ):
 	#print ("Append Status, job_input_file = " + str(job_input_file))
-	
 	time_interval = 5.0
 	jobidx = 0 
 	job_done = False
@@ -104,9 +108,9 @@ def append_status(difx, job_input_file, parameters,  responder=None, jobProgress
 		queuedata[jobidx] = " ".join(first_queue_item)
 		queuedata_string = "\n".join(queuedata)	
 		difx.sendFile(parameters.queue+"~",queuedata_string)
-        	difx.mv(parameters.queue+"~",parameters.queue)
+       	 	difx.mv(parameters.queue+"~",parameters.queue)
 		#print("Job Progress = " + str(first_queue_item[-1])) 
-	# Break out of loop and just append constant jobProgress if 
+		# Break out of loop and just append constant jobProgress if 
 		# that was given
 		if (jobProgress is not None):  
 			break
@@ -116,6 +120,7 @@ def append_status(difx, job_input_file, parameters,  responder=None, jobProgress
 			if (responder.jobProgress == 100):
 				job_done = True
 			time.sleep(time_interval)
+
 
 # returns a boolean determining if the provided item is still the first item in the queue
 def check_queue_file(difx, parameters, current_queue_item):
@@ -142,7 +147,9 @@ def process_input_file_list(difx,parameters,difxJobs,list_file,job_progress):
 	scan_list = []
         jobProgress = 0 
  	idx = 0 
+
  	read_list_file(difx,scan_list,list_file)
+
 
 	# Determine full path to each "scan" file 
 	path_list = list_file.split("/")
@@ -167,16 +174,18 @@ def process_input_file_list(difx,parameters,difxJobs,list_file,job_progress):
 
         # Loop though the scans and process each one, update progress in 
  	# queue file
+	interrupted = False
  	while idx < len(scan_list):
 		scan = scan_list[idx]
 		scan_name = full_path + scan
- 		print("scan_name = " + scan_name)
- 		difxJobs.inputFile(scan_name)
-                difxJobs.waitTime(300.0)
-                currentJob = difxJobs.newJob()		
- 		# Not using the false option here becasue we don't 
+		print("scan_name = " + scan_name)
+		difxJobs.inputFile(scan_name)
+	        difxJobs.waitTime(300.0)
+       		currentJob = difxJobs.newJob()		
+		# Not using the false option here becasue we don't 
  		# want to monitor progress using the respoder
- 		currentJob.start()		
+		print ("Running DIFX")
+		currentJob.start()		
 		idx += 1 
 		jobProgress = (float(idx)/float(len(scan_list))) * 100	
 		jobProgress = round(jobProgress,1) 
@@ -188,9 +197,9 @@ def process_input_file_list(difx,parameters,difxJobs,list_file,job_progress):
 			read_list_file(difx,queuedata,parameters.queue)
 			#print("Check queue file returns true.")
 			jobidx = job_index(queuedata,list_file)
-        		#print("JOB INDEX = " + str(jobidx))
+       	 		#print("JOB INDEX = " + str(jobidx))
 			#quit()
-			break		
+ 			break			
 	return jobProgress
 
 
@@ -264,7 +273,7 @@ def check_job_status(job_input_file,difxJobs):
 	# next - move on to the next queue item
 	# start - start processing the current queue item
 	queue_action = ""
-
+        #print("job_input_file = " + job_input_file)
 	statusInfo = difxJobs.jobStatus(job_input_file,True,True) 
 
 	# Slice done status out of status info, syntax is a little wonky
@@ -273,7 +282,7 @@ def check_job_status(job_input_file,difxJobs):
 
 	# Remove leading and trailing whitespace
 	done_status = done_status.strip()
-        print("Done status = " + done_status)	
+        #print("Done status = " + done_status)	
 	# Determine queue action based on done status
 	if (done_status == 'Done' or done_status == 'MpiDone'):
 		queue_action = 'next'
@@ -315,7 +324,7 @@ def read_list_file(difx,queuedata,filename):
                 queuedata.remove('')
 
 
-def run_queue(difx,parameters):
+def run_queue(difx,difxJobs,parameters):
 	responder = Responder()
 	queue_number = 0
 	job_input_file = ""
@@ -323,48 +332,41 @@ def run_queue(difx,parameters):
 	queuedata = []
 	
 	# Set up JobControl object to run difx jobs
-	difxJobs = DiFXJobControl.Client()
 	difxJobs.connect(parameters.hostname,str(parameters.port))
 	difxJobs.monitor()
 
 	# Set up responder class to monitor difx job progress
 	initialize_responder(difxJobs,responder)
 	
+	
 	# Loop over the jobs in the queue and run each
 	while not empty_queue:
-
+	
 		# Read the queue file
 		read_list_file(difx,queuedata,parameters.queue)				
 		queuedata_items_removed = list(queuedata)
-
-		#print("#############################################")
-		#print("Queuedata is: " )
-		#print(queuedata)
-		#print("#############################################")
-
-		#print("len(queuedata)= "+ str(len(queuedata)))
-
+		
 		# If the queue is empty set empty_queue to true and terminate the loop
 		if (0 == len(queuedata)):
 			empty_queue = True
 			continue
-	
+		
 		# Parse the first item in the queue
 		jobdata = queuedata[0].split(" ")
 		queue_number = jobdata[0]
 		job_input_file = jobdata[1]
 		job_progress = jobdata[2]
 		#print("job_progress = " + str(job_progress))
-
+	
 		# Check if input file exists if not move on to the next item in the queue
 		remote_filepath = difx.ls(job_input_file,"-l")
 		if (remote_filepath == None):
 			print("Input file " + job_input_file + " does not exist, moving on to the next item in queue.")
 			# Write something in the queue file?
 			continue
-               
+	               
 		# Check input file type, if it's an input file list process it separately as
-                # one "job" with a completion percentage based on the number of scans processed
+	        # one "job" with a completion percentage based on the number of scans processed
 		# by the correlator
 		filetype = check_file_type(difx,job_input_file)
 		if (filetype == "list"):
@@ -372,55 +374,50 @@ def run_queue(difx,parameters):
 			# Check job status and remove only if complete, process_input_file_list 
 			# could break and return an unfinished job if a queue item has been added
 			# before the list finished processing
-			print("+++ job progress when deciding to remove list job or not = " + str(job_progress))
 			if (job_progress >= 100):
-				print("removed list item")
 				removeQueueItem(difx,parameters,job_input_file,queuedata,queuedata_items_removed)	
 			continue		
-
+	
 		# Check job status based on completion percentage in the queue file 
 		# and the difxlog file.  If job is not complete simply monitor progress
 		# until the job completes 
-		print ("Input file for current job: " + job_input_file)
-		print ("queue action = " + check_job_status(job_input_file,difxJobs))
 		if (check_job_status(job_input_file,difxJobs) == "start"):
 			difxJobs.inputFile(job_input_file)
 			difxJobs.waitTime(300.0)
 			currentJob = difxJobs.newJob()
-			print("STARTING")
 			currentJob.start(False)
 			append_status(difx,job_input_file,parameters,responder) 
-			print("Finished current job.")
-			# Clear job data out of queue	
 			removeQueueItem(difx,parameters,job_input_file,queuedata,queuedata_items_removed)				
 		elif (check_job_status(job_input_file,difxJobs) == "continue"):
 			append_status(difx,job_input_file,parameters,responder)
-                        print("Finished current job.")
-                        # Clear job data out of queue   
-                        removeQueueItem(difx,parameters,job_input_file,queuedata,queuedata_items_removed)
+	                removeQueueItem(difx,parameters,job_input_file,queuedata,queuedata_items_removed)
 		elif (check_job_status(job_input_file,difxJobs) == "next"):
-                        # Clear job data out of queue
-			print("Finished current job.")   
-                        removeQueueItem(difx,parameters,job_input_file,queuedata,queuedata_items_removed)
+			removeQueueItem(difx,parameters,job_input_file,queuedata,queuedata_items_removed)
 	
-	difxJobs.close()
-
 
 def close(difx):
         difx.close()
 
 def main():
         difx = DiFXControl.Client()
+	difxJobs = DiFXJobControl.Client()
 	status = 0
+
+	# Attempt to catch keyboard interupt
+	def signal_handler(*args):
+		print("Key board interrupt clean up and exit.")
+		difx.close()
+		difxJobs.close()
+		sys.exit()
+
+        signal.signal(signal.SIGINT, signal_handler)
 	try:
-    		parameters = get_parameters()
-		#print("IN RUN QueUE!")
-		#print(parameters)
-		#exit(0)
-        	initialize(difx,parameters)
-		run_queue(difx,parameters) 
+ 		parameters = get_parameters()
+       		initialize(difx,parameters)
+		run_queue(difx,difxJobs,parameters) 
 	finally:
+		close(difxJobs)
 		close(difx)
 
 if __name__=='__main__':
-    main()
+	main()
