@@ -29,10 +29,12 @@
 import os
 import sys
 from difxdb.difxdbconfig import DifxDbConfig
+from difxdb.business.moduleaction import *
 from difxdb.model.dbConnection import Schema, Connection
 from difxdb.business.experimentaction import *
 from difxdb.model import model
 from difxfile.difxdir import DifxDir
+from difxfile.difxfilelist import DifxFilelist
 from operator import  attrgetter
 from string import upper,lower
 
@@ -99,7 +101,9 @@ if __name__ == "__main__":
                 sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
 		print "$TAPELOG_OBS;"
 		
+		
 		for module in sortedModules:
+			error = 0
 			if module.stationCode != lastStationCode:
 				if station != 0:
 					print "enddef;"
@@ -110,23 +114,47 @@ if __name__ == "__main__":
 				count = 0
 				station += 1
 
-			dirFile = DifxDir(os.getenv("MARK5_DIR_PATH"), module.vsn)
-			if not dirFile.getExperimentStartDatetime(upper(expCode)):
-				start = "UNKNOWN"
-			else:
-				try:
-					start = dirFile.getExperimentStartDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
-				except:
-					sys.exit("Error parsing {}".format(dirFile))
-			if not dirFile.getExperimentStopDatetime(upper(expCode)) is not None:
-				stop = "UNKNOWN"
-			else:
-				try:
-					stop = dirFile.getExperimentStopDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
-				except:
-					sys.exit("Error parsing {}".format(dirFile))
+			try:
+				dirFile = None
+				if isMark6(module.vsn):
+					dirFile = DifxFilelist(os.getenv("MARK5_DIR_PATH"), module.vsn)
+				else:
+					dirFile = DifxDir(os.getenv("MARK5_DIR_PATH"), module.vsn)
+			except Exception as e:
+				error +=1
+				sys.stderr.write("%s\n" % e)
+
+			#print dirFile.getExperimentStopDatetime(upper(expCode)), dirFile.getExperimentStartDatetime(upper(expCode))
+
+			start = "UNKNOWN"
+			stop =  "UNKNOWN"
+
+			if not dirFile is None:
+			    if not dirFile.getExperimentStartDatetime(upper(expCode)):
+				    start = "UNKNOWN"
+			    else:
+				    try:
+					    start = dirFile.getExperimentStartDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
+				    except:
+					    print "WARNING: Error parsing {}".format(dirFile.getFilename())
+					    error += 1
+					    start = "UNKNOWN"
+					    #sys.exit("Error parsing {}".format(dirFile.getFilename()))
+			    if not dirFile.getExperimentStopDatetime(upper(expCode)) is not None:
+				    stop = "UNKNOWN"
+			    else:
+				    try:
+					    stop = dirFile.getExperimentStopDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
+				    except:
+					    #sys.exit("Error parsing {}".format(dirFile.getFilename()))
+					    print "WARNING: Error parsing {}".format(dirFile.getFilename())
+					    error += 1
+					    stop =  "UNKNOWN"
 			
-			print "VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop)
+			if error == 0:
+			    print "VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop)
+			else:
+			    print "#CHECK .dir file : VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop)
 			count += 1
 
 
@@ -135,7 +163,6 @@ if __name__ == "__main__":
         
     
     except Exception as e:
-       
         sys.exit(e)
     
    
