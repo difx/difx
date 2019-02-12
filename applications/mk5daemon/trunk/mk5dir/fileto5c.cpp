@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2017 by Walter Brisken                             *
+ *   Copyright (C) 2011-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -51,8 +51,8 @@
 
 const char program[] = "fileto5c";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.6";
-const char verdate[] = "20170904";
+const char version[] = "0.7";
+const char verdate[] = "20190211";
 
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 const unsigned int defaultChunkSizeMB = 20;
@@ -815,8 +815,6 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 
 		dirHeader->status = MODULE_STATUS_RECORDED;
 
-		WATCHDOGTEST( XLRSetUserDir(xlrDevice, *dirData, len+128) );
-
 		for(int d = 0; d < 8; ++d)
 		{
 			WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
@@ -834,6 +832,13 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 				fflush(stdout);
 			}
 		}
+
+		/* This seems to be needed to prevent hang. */
+		fprintf(stderr, "Sleeping 10 seconds...\n");
+		sleep(10);
+
+		fprintf(stderr, "Setting user dir, length = %d\n", len+128);
+		WATCHDOGTEST( XLRSetUserDir(xlrDevice, *dirData, len+128) );
 	}
 
 	WATCHDOG( XLRClose(xlrDevice) );
