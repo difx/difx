@@ -390,7 +390,7 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 			}
 			else
 			{
-				fprintf(out, " %" PRIu64 " %" PRIu64 " %" PRIu64, edv2->word5, edv2->word6, edv2->word7);
+				fprintf(out, " %" PRIu32 " %" PRIu32 " %" PRIu32, edv2->word5, edv2->word6, edv2->word7);
 			}
 		}
 		else if(header->eversion == 3)
