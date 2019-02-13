@@ -501,10 +501,16 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 struct vdif_file_reader {
   struct vdif_file_summary details;
   FILE *fd[VDIF_SUMMARY_MAX_THREADS];
-  uint32_t frame[VDIF_SUMMARY_MAX_THREADS];
-  uint32_t sec[VDIF_SUMMARY_MAX_THREADS];
+  uint_fast32_t frame[VDIF_SUMMARY_MAX_THREADS];
+  uint_fast32_t sec[VDIF_SUMMARY_MAX_THREADS];
+  off_t head[VDIF_SUMMARY_MAX_THREADS];
+  int desynched[VDIF_SUMMARY_MAX_THREADS];
+  int feof[VDIF_SUMMARY_MAX_THREADS];
+  int eof;
+  uint_fast32_t fps;
   off_t firstframeoffset;
   off_t offset;
+  off_t tail;
 };
 
 struct vdif_file_reader_stats {
@@ -523,7 +529,7 @@ size_t vdifreaderRead(struct vdif_file_reader *rd, void *buf, size_t count);
 size_t vdifreaderSeek(struct vdif_file_reader *rd, size_t offset);
 
 /** Statistics to help deduce VDIF thread "clumpiness" */
-int vdifreaderStats(struct vdif_file_reader *rd, struct vdif_file_reader_stats *st);
+int vdifreaderStats(const struct vdif_file_reader *rd, struct vdif_file_reader_stats *st);
 
 /** Close the VDIF reader */
 int vdifreaderClose(struct vdif_file_reader *rd);
