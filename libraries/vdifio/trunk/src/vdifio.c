@@ -32,6 +32,7 @@
 #include <string.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <ctype.h>
 #include "dateutils.h"
 #include "vdifio.h"
 
