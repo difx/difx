@@ -46,7 +46,10 @@ PKG_CHECK_EXISTS([streamstor >= 8.0],
 	[ AC_MSG_NOTICE([Did not find STREAMSTOR in $PKG_CONFIG_PATH])
 	  streamstor_enabled=false])
 if test ${streamstor_enabled} = true; then
+	ac_save_CPPFLAGS=$CPPFLAGS
+	CPPFLAGS="$CPPFLAGS $STREAMSTOR_CFLAGS"
 	AC_CHECK_HEADERS([xlrapi.h])
+	ac_save_CPPFLAGS=$CPPFLAGS
 else
 	STREAMSTOR_CFLAGS=""
 	STREAMSTOR_LIBS=""
