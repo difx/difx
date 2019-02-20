@@ -90,15 +90,15 @@ static void *fileEndSummarizer(void *arg)
 	}
 
 	offset = determinevdifframeoffset(buffer, S->bufferSize, S->frameSize);
-	if(offset < 0)
+	vh0 = (struct vdif_header *)(buffer + offset);
+	N = S->bufferSize - S->frameSize - VDIF_HEADER_BYTES;
+	if(offset < 0 || offset >= N)
 	{
 		fclose(in);
 		free(buffer);
 
 		return (void *)(-9);
 	}
-	vh0 = (struct vdif_header *)(buffer + offset);
-	N = S->bufferSize - S->frameSize - VDIF_HEADER_BYTES;
 
 	for(i = 0; i < N; )
 	{
@@ -111,6 +111,7 @@ static void *fileEndSummarizer(void *arg)
 		if(getVDIFFrameBytes(vh) == S->frameSize &&
 		   getVDIFEpoch(vh) == S->epoch &&
 		   getVDIFBitsPerSample(vh) == S->nBit &&
+		   !getVDIFFrameInvalid(vh) &&
 		   abs(s - getVDIFFrameEpochSecOffset(vh0)) < 2)
 		{
 			S->hasThread[getVDIFThreadID(vh)] = 1;
@@ -216,7 +217,7 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 	/* Work on beginning of file */
 
 	sum->firstFrameOffset = determinevdifframeoffset(buffer, readBytes, frameSize);
-	if(sum->firstFrameOffset < 0)
+	if(sum->firstFrameOffset < 0 || sum->firstFrameOffset >= N)
 	{
 		closeMark6Gatherer(G);
 		free(buffer);
@@ -238,6 +239,7 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 		if(getVDIFFrameBytes(vh) == frameSize &&
 		   getVDIFEpoch(vh) == sum->epoch &&
 		   getVDIFBitsPerSample(vh) == sum->nBit &&
+		   !getVDIFFrameInvalid(vh) &&
 		   abs(s - getVDIFFrameEpochSecOffset(vh0)) < 2)
 		{
 			hasThread[getVDIFThreadID(vh)] = 1;
