@@ -268,8 +268,9 @@ for antMod in antennaModuleList:
             if verbose > 1:
                 print moduleFileName, "exists, using it to generate", antennaFileName
             modfile = open(moduleFilePath, 'r')
+	    experPrefix = experName + '_' + antMod[0].upper()
             for line in modfile:
-                if experName in line:
+                if experPrefix in line:
 	            antfile.write(line)
 		    antFileWritten = True
             modfile.close()

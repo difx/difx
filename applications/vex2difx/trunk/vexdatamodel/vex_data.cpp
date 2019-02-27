@@ -835,7 +835,8 @@ void VexData::addVSNEvents(std::list<Event> &events) const
 		{
 			if(vit->streamId >= 0)
 			{
-				if(getDataSource(antId, vit->streamId) == DataSourceModule)
+				enum DataSource ds = getDataSource(antId, vit->streamId);
+				if(ds == DataSourceModule || ds == DataSourceMark6)
 				{
 					addEvent(events, vit->mjdStart, Event::RECORD_START, A->defName);
 					addEvent(events, vit->mjdStop,  Event::RECORD_STOP,  A->defName);
@@ -916,7 +917,8 @@ void VexData::setFiles(unsigned int antId, unsigned int streamId, const std::vec
 
 void VexData::setMark6Files(unsigned int antId, unsigned int streamId, const std::vector<VexBasebandData> &files)
 {
-	antennas[antId].removeBasebandData(streamId);
+	// We do not need to remove baseband data for mark6, the loaded vsns are needed for determining media change.
+	// When .input files are generated DataSourceMark6 will be detected and will use files data.
 	for(std::vector<VexBasebandData>::const_iterator it = files.begin(); it != files.end(); ++it)
 	{
 		antennas[antId].files.push_back(VexBasebandData(it->filename, -1, streamId, *it));
