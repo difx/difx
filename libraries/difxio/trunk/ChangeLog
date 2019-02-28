@@ -7,6 +7,7 @@
 * tabulatedelays: add option to print one line at the center of each integration time
 * tabulatedelays: add option to add clock model to delay
 * tabulatedelays: add option to simply print the clock model
+* print BW and FREQ with more significant digits
 
 3.5.0
 * Post DiFX 2.4

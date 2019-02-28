@@ -14,6 +14,7 @@ Version 2.6
 * genmachines and mark6 datastream updates
 * add mark6 activity difx message to mark6 datastream
 * Implement Mark5B datastream over Mark6 (untested as of yet)
+* Corrected the processing of double sideband complex data (both upper sense and lower sense)
 
 Version 2.5
 ~~~~~~~~~~~
