@@ -477,7 +477,7 @@ if ret!=0: exit(1)
 
 ## Run getEOP and save the results
 if not os.path.exists("eop.txt"):
-    ret = os.system("getEOP.py " + str(int(float(obs["startmjd"]))) + " > eop.txt")
+    ret = os.system("getEOP.py -l " + str(int(float(obs["startmjd"]))) + " > eop.txt")
     if (ret!=0): sys.exit(ret)
 else:
     print "Using existing EOP data - remove eop.txt if you want to get new data!"

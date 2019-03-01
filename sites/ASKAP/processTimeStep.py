@@ -58,7 +58,7 @@ for a in antennadirs:
             print a + "/" + args.beam + " doesn't exist, aborting"
             sys.exit()
     for b in beamdirs:
-        vcraftfiles = glob.glob(b + "/*c" + args.card + "*vcraft")
+        vcraftfiles = glob.glob(b + "/*[ac]" + args.card + "*vcraft")
         
         if len(vcraftfiles) > 0:
             examplefiles = sorted(vcraftfiles)
@@ -136,7 +136,7 @@ for e in examplefiles:
                         break
 
             if mjd is not None:
-                ret = os.system("getEOP.py {} > {}".format(mjd, topEOP))
+                ret = os.system("getEOP.py -l {} > {}".format(mjd, topEOP))
                 if (ret!=0): sys.exit(ret)    
             else:
                 print "Could not find MJD in obs.txt"

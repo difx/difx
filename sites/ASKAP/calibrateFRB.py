@@ -229,14 +229,14 @@ vlbatasks.splitmulti(targetdata, clversion, outklass, options.sourcename, seqno)
 vlbatasks.writedata(outputdata, targetoutputfilename, True)
 
 # Convert to a measurement set
-casaout = open("loadtarget.py","w")
-casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (calibratoroutputfilename, calibratormsfilename))
-casaout.close()
-os.system("casa -c loadtarget.py")
-casaout = open("loadtarget.py","w")
-casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (targetoutputfilename, targetmsfilename))
-casaout.close()
-os.system("casa -c loadtarget.py")
+#casaout = open("loadtarget.py","w")
+#casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (calibratoroutputfilename, calibratormsfilename))
+#casaout.close()
+#os.system("casa -c loadtarget.py")
+#casaout = open("loadtarget.py","w")
+#casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (targetoutputfilename, targetmsfilename))
+#casaout.close()
+#os.system("casa -c loadtarget.py")
 
 
 # Run the imaging via CASA if desired
