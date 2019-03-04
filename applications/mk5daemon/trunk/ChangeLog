@@ -13,6 +13,7 @@ Version 2.6.0
 * mk5control: respond to new DIFX_MARK6 environment variable which lists 2-digit unit numbers that are mark6 units that would otherwise be assumed to be Mark5 units.
 * mk5control: use machines file rather than env var DIFX_MARK6 if found and if python utilities are installed.
 * fileto5c: add 10 second delay before writing directory -- fixes instability.
+* Version for DiFX-2.6, Mar 4, 2019
 
 Version 2.5.0
 ~~~~~~~~~~~~~
