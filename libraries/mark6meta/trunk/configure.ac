@@ -1,4 +1,4 @@
-AC_INIT([mark6meta], [0.1], [Helge Rottmann <rottmann@mpifr-bonn.mpg.de>])
+AC_INIT([mark6meta], [0.2], [Helge Rottmann <rottmann@mpifr-bonn.mpg.de>])
 
 AM_CONFIG_HEADER([config.h])
 
