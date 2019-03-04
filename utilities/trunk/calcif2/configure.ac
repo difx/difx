@@ -1,4 +1,4 @@
-AC_INIT([calcif2], [2.6.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([calcif2], [2.7.0], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
@@ -8,7 +8,7 @@ AM_SANITY_CHECK
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
-PKG_CHECK_MODULES(DIFXIO, difxio >= 3.6.0)
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.7.0)
 PKG_CHECK_MODULES(GSL, gsl, [hasgsl=true], [hasgsl=false])
 if test "$hasgsl" == "true"; then
 	AC_DEFINE([HAVE_GSL], 1, [1=has GSL (Gnu Scientific Library)])
