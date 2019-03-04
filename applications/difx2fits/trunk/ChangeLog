@@ -1,3 +1,6 @@
+Version 3.7.0
+* Post DiFX-2.6
+
 Version 3.6.0
 * SU table: make more IDI-FITS compliant
 * AG table: fill in antenna diameters, or 0 if not known.
