@@ -1,11 +1,15 @@
+Version 2.7.0
+~~~~~~~~~~~~~
+* Post DiFX-2.6
+
 Version 2.6.0
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 * Fix for rpm build
 * add DifxMessageMark6Activity
 * Version for DiFX-2.6, Mar 4, 2019
 
 Version 2.5.0
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 * Post DiFX-2.4
 * python functions errormon, errormon2, cpumon, mk5mon, statemon: explicitly capture ctrl-C
   - seemingly needed for some operating systems ???
