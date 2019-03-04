@@ -1,4 +1,4 @@
-Version 3.6.0
+Version 1.6
 ~~~~~~~~~~~
 * rjc 2019.1.4
 * new -w feature to allow one difx pass of mixed-bandwidth data
@@ -8,34 +8,34 @@ Version 3.6.0
 * fixed bug in case of multiple different bandwidths
 * rjc 2018.7.17
 * Fixed too-many-pcal-tones bug for many tone case
-
+* Version for DiFX-2.6, Mar 4, 2019
 
 Version 1.5
 ~~~~~~~~~~~
-Version for DiFX-2.5, May 16, 2017
 * Added crossed auto correlations to type 1 files
+* Version for DiFX-2.5, May 16, 2017
 
 Version 1.4
 ~~~~~~~~~~~
-Version for DiFX-2.4, Nov 4, 2014
 * support mixed/zoom mode correlations
 * support version 1 file format for pcal
 * in mixed mode denote sidebands as upper for hops
+* Version for DiFX-2.4, Nov 4, 2014
 
 Version 1.3
 ~~~~~~~~~~~
-Version for DiFX-2.3, Dec 20, 2013
 * put data weights into type 120 record
+* Version for DiFX-2.3, Dec 20, 2013
 
 Version 1.2
 ~~~~~~~~~~~
-Version for DiFX-2.2, June 1, 2013
+* Version for DiFX-2.2, June 1, 2013
 
 Version 1.1
 ~~~~~~~~~~~
-Post DiFX 2.0.1
-Version for DiFX-2.1, May 4, 2012
+* Post DiFX 2.0.1
+* Version for DiFX-2.1, May 4, 2012
 
 Version 1.0
 ~~~~~~~~~~~
-For DiFX 2.0.1, tagged June 12, 2011
+* For DiFX 2.0.1, tagged June 12, 2011
