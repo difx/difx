@@ -1,5 +1,9 @@
 Version 2.6.0
 ~~~~~~~~~~~~~
+* Post DiFX-2.6
+
+Version 2.6.0
+~~~~~~~~~~~~~
 * Post DiFX-2.5
 * Allow mount command to work on label rather than device
 * listfs command to list available filesystems with labels
