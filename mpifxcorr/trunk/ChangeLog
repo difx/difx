@@ -15,6 +15,7 @@ Version 2.6
 * add mark6 activity difx message to mark6 datastream
 * Implement Mark5B datastream over Mark6 (untested as of yet)
 * Corrected the processing of double sideband complex data (both upper sense and lower sense)
+* Version for DiFX-2.6, Mar 4, 2019
 
 Version 2.5
 ~~~~~~~~~~~

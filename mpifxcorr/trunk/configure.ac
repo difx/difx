@@ -1,4 +1,4 @@
-AC_INIT([mpifxcorr], [2.6], [Adam Deller <deller@astron.nl>])
+AC_INIT([mpifxcorr], [2.6], [Adam Deller <adeller@astro.swin.edu.au>])
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
@@ -51,13 +51,13 @@ AC_SUBST(mathcflags, [${MATH_CFLAGS}])
 dnl **********************************************************
 dnl **** Find difxmessage library                         ****
 dnl **********************************************************
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.5.0 difxmessage < 7])
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.6.0])
 CPPFLAGS="${CPPFLAGS} ${DIFXMESSAGE_CFLAGS}"
 
 dnl **********************************************************
 dnl **** Find vdifio library                              ****
 dnl **********************************************************
-PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.1)
+PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.4)
 CPPFLAGS="${CPPFLAGS} ${VDIFIO_CFLAGS}"
 
 dnl **********************************************************
@@ -76,7 +76,7 @@ dnl **** Find mark5ipc library                            ****
 dnl **********************************************************
 m5ipc_enabled=true
 PKG_CHECK_MODULES(MARK5IPC,
-        [mark5ipc >= 2.4.0 mark5ipc < 7],
+        [mark5ipc >= 2.6.0],
 	[AC_DEFINE([HAVE_MARK5IPC], 1, [1=has MARK5IPC])],
 	m5ipc_enabled=false)
 AM_CONDITIONAL(WITH_MARK5IPC, $m5ipc_enabled)
