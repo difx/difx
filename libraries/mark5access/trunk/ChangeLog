@@ -1,10 +1,14 @@
-Verion 1.5.4
+Version 1.5.5
+* Post DiFX-2.6
+
+Version 1.5.4
+* Post DiFX-2.5
 * Expose function determinelastmark5bframeoffset()
 * m5d, m5spec: --version option
 * m5d: fix use of offset for short reads (assumes file starts on a frame header)
 * Version for DiFX-2.6, Mar 4, 2019
 
-Verion 1.5.3
+Version 1.5.3
 * Integer rounding error in m5slice
 * Add ctypes-based Python bindings 
 * Add Python examples (m5spec.py, m5stat.py, m5subband.py, m5time.py, m5tone.py, m5selfcorr.py)
