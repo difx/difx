@@ -171,7 +171,7 @@ void fprintAntennaDBEntry(FILE *out, const AntennaDBEntry *ae)
 	lat2str(latstr, StrSize, lat);
 	lon2str(lonstr, StrSize, lon);
 
-	fprintf(out, "%s  (%3.1f, %3.1f, %3.1f) = (%s, %s, %3.1f) D=%3.1fm A=%3.1fkm mount=%s\n", ae->name, ae->x, ae->y, ae->z, latstr, lonstr, alt, ae->diameter, ae->arrayExtent, ae->mountType[0] ? ae->mountType : "AZEL");
+	fprintf(out, "%s  (%3.1f, %3.1f, %3.1f) = (%s, %s, %3.1f) D=%3.1fm A=%3.1fkm mount=%s lon=%9.7f lat=%9.7f\n", ae->name, ae->x, ae->y, ae->z, latstr, lonstr, alt, ae->diameter, ae->arrayExtent, ae->mountType[0] ? ae->mountType : "AZEL", lon, lat);
 }
 
 const AntennaDBEntry *antennaDBGetByIndex(unsigned int index)
