@@ -3,6 +3,7 @@ Version 1.4
 * New helper functions to read VDIF file while pre-arranging data to be more palatable for the memory based vdifmux()
   - vdifreaderOpen(), vdifreaderRead(), vdifreaderSeek()
 * New utility: reorderVDIF based upon vdifreaderRead()
+* Version for DiFX-2.6, Mar 4, 2019
 
 Version 1.3
 ~~~~~~~~~~~
