@@ -9,6 +9,7 @@ Version 3.6.0
 * New command line option:  --max-jobs: specify maximum number of jobs to combine into a single FITS file.
 * Respect env var DIFX_MAX_SNIFFER_MEMORY
 * Update --help info to print env var that are used
+* Version for DiFX-2.6, Mar 4, 2019
 
 Version 3.5.0
 * Remove duplicate RDATE keywords from AG and ML tables
