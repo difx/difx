@@ -1,4 +1,4 @@
-AC_INIT([mark6sg], [2.0.1], [Jan Wagner <jwagner@kasi.re.kr>])
+AC_INIT([mark6sg], [2.0.2], [Jan Wagner <jwagner@kasi.re.kr>])
 
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
@@ -46,7 +46,7 @@ if test "$HAVE_MMSG" = 1; then
   AC_DEFINE(HAVE_MMSG, 1, [Define if your OS supports recvmmsg.])
 fi
 
-PKG_CHECK_MODULES([DIFXMESSAGE], [difxmessage >= 2.6.0], [HAVE_DIFXMESSAGE=1], [HAVE_DIFXMESSAGE=0])
+PKG_CHECK_MODULES([DIFXMESSAGE], [difxmessage >= 2.7.0], [HAVE_DIFXMESSAGE=1], [HAVE_DIFXMESSAGE=0])
 AM_CONDITIONAL([USE_DIFXMESSAGE], [test "$HAVE_DIFXMESSAGE" -eq 1])
 if test "$HAVE_DIFXMESSAGE" = 1; then
   AC_DEFINE(HAVE_DIFXMESSAGE, 1, [Define if you have DiFXMessage library.])
