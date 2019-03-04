@@ -18,6 +18,7 @@ Version 2.6.0
 * Python scripts explicitly call python2
 * difxspeed: allow benchmarking on real data
 * remove calc2xyz: was on a dead-end development path
+* Version for DiFX-2.6, Mar 4, 2019
 
 Version 2.5.0
 ~~~~~~~~~~~~~

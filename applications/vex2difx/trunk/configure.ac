@@ -22,8 +22,8 @@ AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
 #AC_CONFIG_MACRO_DIR([m4])
  
-PKG_CHECK_MODULES(DIFXIO, difxio >= 3.5.0)
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.5.0 difxmessage < 7])
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.6.0)
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.6.0])
 PKG_CHECK_MODULES(DIRLIST, dirlist >= 0.1)
 
 LIBS="${LEXLIB} ${LIBS} ${DIFXIO_LIBS} ${DIRLIST_LIBS}"
