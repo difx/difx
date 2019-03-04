@@ -1,4 +1,4 @@
-AC_INIT([VDIFIO], [1.4], [difx-developers@nrao.edu])
+AC_INIT([VDIFIO], [1.5], [difx-developers@nrao.edu])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
@@ -57,7 +57,7 @@ if test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes"; then
 fi
 AM_CONDITIONAL([ENABLE_PYTHON_CTYPES], [test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes" -a -n "$GOT_PYTHON_CTYPES"])
 
-PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.1], [HAVE_MARK6SG=true], [HAVE_MARK6SG=false])
+PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.2], [HAVE_MARK6SG=true], [HAVE_MARK6SG=false])
 AM_CONDITIONAL(USE_MARK6SG, $HAVE_MARK6SG)
 if test ${HAVE_MARK6SG} = true; then
   AC_DEFINE(HAVE_MARK6SG, 1, [Define if you have mark6sg library.])
