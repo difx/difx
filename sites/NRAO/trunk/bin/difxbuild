@@ -14,15 +14,15 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.67'
-verdate = '20180916'
+version = '0.68'
+verdate = '20190304'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 pythonProgram = 'python2'
-#openmpiVersion = '3.0'       
-openmpiVersion = '1.6'       # version in use by VLBA correlator 
+openmpiVersion = '3.0'       
+#openmpiVersion = '1.6'       # version in use by VLBA correlator 
 #openmpiVersion = '1.10'      # version in use by USNO correlator
 pgplotVersion = '5.2'
 schedVersion = '11.5'
@@ -33,7 +33,6 @@ autoconfVersion = '2.69'
 automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
-cxOracleVersion = '5.1.2'
 pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz
 gpstkVersion = '2.5'
 libeventVersion = '2.0.21'
@@ -1600,6 +1599,235 @@ components['DIFX-2.5'] = \
 	component_vlite_trunk, \
 ]
 
+
+component_difxio_2_6 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_6 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_dirlist_2_6 = \
+[ \
+	'dirlist', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/dirlist', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core' ] \
+]
+
+component_mark5access_2_6 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_6 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6meta_2_6 = \
+[ \
+	'mark6meta', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/mark6meta', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6sg_2_6 = \
+[ \
+	'mark6sg', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/mark6sg', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_python_2_6 = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/python', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_mpifxcorr_2_6 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_6 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_6 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_6 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_6 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_6 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_6 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_difxcalc11_2_6 = \
+[ \
+	'difxcalc11', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difxcalc11', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake', 'core'] \
+]
+
+component_datasim_2_6 = \
+[ \
+	'datasim', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/datasim', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_rcwlib_2_6 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_6 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_nraodifxdb_2_6 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.aoc.nrao.edu/repos/VLBA/nraodifxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_6 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/hops', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_guiserver_2_6 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
+component_misc_utils_2_6 = \
+[ \
+	'misc_utils', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/utilities/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_2_6 = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/utilities/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_2_6 = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/utilities/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_2_6 = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/utilities/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxmonitor_2_6 = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difx_monitor', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difxfilterbank_2_6 = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difxfilterbank', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+components['DIFX-2.6'] = \
+[ \
+	component_difxio_2_6, \
+	component_difxmessage_2_6, \
+	component_dirlist_2_6, \
+	component_mark6sg_2_6, \
+	component_mark5access_2_6, \
+	component_vdifio_2_6, \
+	component_mark6meta_2_6, \
+	component_python_2_6, \
+	component_mpifxcorr_2_6, \
+	component_difx2fits_2_6, \
+	component_difx2mark4_2_6, \
+	component_vex2difx_2_6, \
+	component_mk5daemon_2_6, \
+	component_calcif2_2_6, \
+	component_calcserver_2_6, \
+	component_difxcalc11_2_6, \
+	component_datasim_2_6, \
+	component_rcwlib_2_6, \
+	component_sniff_2_6, \
+	component_nraodifxdb_2_6, \
+	component_hops_2_6, \
+	component_guiserver_2_6, \
+	component_misc_utils_2_6, \
+	component_vis2screen_2_6, \
+	component_difx2profile_2_6, \
+	component_difxdb_2_6, \
+	component_difxfilterbank_2_6, \
+	component_difxmonitor_2_6, \
+	component_vlite_trunk, \
+]
+
 # handle patch versions cleanly
 components['DIFX-2.4.1'] = components['DIFX-2.4']
 components['DIFX-2.4.2'] = components['DIFX-2.4']
@@ -2854,36 +3082,6 @@ def pyx(origComps, params, args, verbose, pretend):
 	else:
 		execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
 
-def cxOracle(origComps, params, args, verbose, pretend):
-	if not environ.has_key('PYTHONPATH'):
-		print 'Need PYTHONPATH env var set.'
-		return
-	pythonPath = split(environ['PYTHONPATH'], ':')[0]
-	if not isdir(pythonPath):
-		execute('mkdir -p %s' % pythonPath, verbose, pretend)
-	arch = platform.machine()
-	cxoSrcFile = 'cx_Oracle-%s.tar.gz' % cxOracleVersion
-	cxoUrl = 'http://prdownloads.sourceforge.net/cx-oracle/%s?download' % cxoSrcFile
-	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
-	tarDir = difxBase + 'tar/'
-	# get file
-	ftpFile(cxoUrl, tarDir, cxoSrcFile, args, verbose, pretend)
-	if not isdir(archSrcDir):
-		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
-	
-	cxoSrcDir = '%s/cx_Oracle-%s' % (archSrcDir, cxOracleVersion)
-	if isdir(cxoSrcDir):
-		print 'Stopping because %s exists' % cxoSrcDir
-		return
-
-	chdir(archSrcDir)
-	execute('tar zxvf %s/%s' % (tarDir, cxoSrcFile), verbose, pretend)
-	chdir(cxoSrcDir)
-	execute('python setup.py build', verbose, pretend)
-	execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
-
 def psycopg(origComps, params, args, verbose, pretend):
 	if not environ.has_key('PYTHONPATH'):
 		print 'Need PYTHONPATH env var set.'
@@ -3086,7 +3284,7 @@ def fuseMk5(origComps, params, args, verbose, pretend):
 	execute('cp %s/fuseMk5 %s/bin' % (fm5Dir, archDir), verbose, pretend)
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['cxOracle', 'psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd', 'fuseMk5']
+	packages = ['psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd', 'fuseMk5']
 	if len(args) < 1:
 		print 'The "extra" option allows installation of optional software.\n'
 		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
@@ -3127,8 +3325,6 @@ def extra(origComps, params, args, verbose, pretend):
 		sched(origComps, params, [], verbose, pretend)
 	if 'sked' in args:
 		sked(origComps, params, [], verbose, pretend)
-	if 'cxOracle' in args:
-		cxOracle(origComps, params, [], verbose, pretend)
 	if 'psycopg' in args:
 		psycopg(origComps, params, [], verbose, pretend)
 	if 'pyx' in args:
@@ -3215,7 +3411,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 		chdir(cpuSrcDir)
 		execute('tar %sxvf %s%s' % (td, tarDir, openmpiTarFile), verbose, pretend)
 	chdir(openmpiSrcDir)
-	execute('./configure --prefix=%s --enable-mpi-f77=no --enable-mpi-f90=no --enable-heterogeneous' % cpuDir, verbose, pretend)
+	execute('./configure --prefix=%s --enable-mpi-f77=no --enable-mpi-f90=no --enable-heterogeneous --enable-orterun-prefix-by-default' % cpuDir, verbose, pretend)
 	v = execute('make -j %d' % numMakeCpus, verbose, pretend)
 	if v == 0:
 		v = execute('make install', verbose, pretend)
