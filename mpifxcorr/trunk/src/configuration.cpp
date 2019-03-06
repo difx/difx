@@ -71,7 +71,7 @@ Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, do
   model = NULL;
 
   if (MPI_Comm_dup(comm, &mpicomm) != MPI_SUCCESS)
-    cfatal << "Failed MPI setup on MPI_Comm_dup() duplication! Correlation may produce strange results!" << endl;
+    cfatal << startl << "Failed MPI setup on MPI_Comm_dup() duplication! Correlation may produce strange results!" << endl;
 
   setJobNameFromConfigfilename(string(configfile));
   char * difxmtu = getenv("DIFX_MTU");
