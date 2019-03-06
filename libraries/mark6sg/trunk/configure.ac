@@ -35,7 +35,10 @@ AM_SANITY_CHECK
 
 AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
 
-AC_CHECK_LIB(rt, clock_gettime,,[AC_MSG_ERROR("clock_gettime")])
+OSTYPE=`uname -s`
+if [test "x$OSTYPE" != "xDarwin" ] ; then    # Don't run on OSX
+  AC_CHECK_LIB(rt, clock_gettime,,[AC_MSG_ERROR("clock_gettime")])
+fi
 
 PKG_CHECK_MODULES([FUSE], [fuse], [HAVE_FUSE=1], [HAVE_FUSE=0])
 AM_CONDITIONAL([USE_FUSE], [test "$HAVE_FUSE" -eq 1])
