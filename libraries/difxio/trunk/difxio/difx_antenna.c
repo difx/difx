@@ -190,7 +190,7 @@ void printDifxAntennaSummary(const DifxAntenna *da)
 
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)
 {
-	if((da1->spacecraftId < 0) && (da2->spacecraftId < 0) &&
+	if((da1->spacecraftId == da2->spacecraftId) &&
 	   strcmp(da1->name, da2->name) == 0 &&
 	   fabs(da1->X - da2->X) < 1.0 &&
 	   fabs(da1->Y - da2->Y) < 1.0 &&
