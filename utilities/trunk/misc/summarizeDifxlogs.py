@@ -130,7 +130,7 @@ def getTimingsStr(logfile):
 	else:
 		s = s + bcolors.GREEN + 'MpiDone' + bcolors.ENDC
 
-	return s
+	return s,wallclockTime,wallclockTime/peakDatatime
 
 def weights2text(weights, labels, alltelescopes, weightfmt='%3.2f'):
 	s = ''
@@ -192,17 +192,23 @@ if len(files) <= 0:
 
 # Summaries
 if doTimefactors:
+	total_runtime = 0
+	avg_slowdown = 0
 	print ('## Wallclock times:')
 	for logname in files:
 		jobname = logname[:logname.rfind('.')]
-		timingsstr = getTimingsStr(logname)
+		timingsstr,runtime,slowdown = getTimingsStr(jobname + '.difxlog')
+		total_runtime += runtime
+		avg_slowdown += slowdown
 		print ('# %s : %s' % (jobname,timingsstr))
 	print ('#')
+	avg_slowdown = avg_slowdown / len(files)
+	print ('# Total wallclock: %.1f hours    Average slowdown: x%.3f' % (total_runtime/(60.0*60.0), avg_slowdown))
 if doWeights:
 	print ('## Weights:')
 	for logname in files:
 		jobname = logname[:logname.rfind('.')]
-		(weightvalues,weightfmt) = getWeights(logname)
+		(weightvalues,weightfmt) = getWeights(jobname + '.difxlog')
 		weightantennas = getWeightlabels(jobname + '.input')
 		telescopes = telescopes | set(weightantennas)
 		weightsstr = weights2text(weightvalues, weightantennas, telescopes, weightfmt)
