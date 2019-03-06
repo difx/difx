@@ -52,6 +52,9 @@ filesDir = "FILES"
 exportDir = "EXPORT"
 versionPrefix = "v"
 tmpDir = "tmp_difxarchive"
+logfile = ""
+tmpPath = ""
+code = ""
 logger = None
 
 def getUsage():
@@ -354,7 +357,7 @@ def packDirectory(rootPath, packDir, outDir, filename, recurse=True):
     tarfiles = verifyArchive(filename)
     verifyCompleteness(tarfiles, packDir)
 
-def setupLoggers(logPath):
+def setupLoggers(logPath, code):
     
     global logger 
 
@@ -362,7 +365,8 @@ def setupLoggers(logPath):
     logger.setLevel(logging.INFO)
     # logging to file
     
-    fh = logging.FileHandler(logPath + "/difxarchive.log")
+    logfile = "%s/difxarchive_%s.log" % (logPath, code)
+    fh = logging.FileHandler(logfile)
     fh.setLevel(logging.INFO)
     fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)-7s - %(message)s'))
 
@@ -473,10 +477,10 @@ def cleanup():
 
     logging.shutdown()
     time.sleep(1)
-    tmpPath = "%s/%s" % (path, tmpDir)
-    if os.path.isdir(tmpPath):
+    path = "%s/%s/%s" % (tmpPath, tmpDir, code)
+    if os.path.isdir(path):
         # remove the tmp_difxlog directory and all its subdirs
-        shutil.rmtree(tmpPath, ignore_errors=False)
+        shutil.rmtree(path, ignore_errors=False)
     
 if __name__ == "__main__":
 
@@ -491,6 +495,7 @@ if __name__ == "__main__":
     parser.add_option("-k", "--keep", dest="keep" ,action="store_true", default=False, help="Keep files on local disk after archiving.")
     parser.add_option("-v", "--verbose", action="store_true", default=False, help="Enable verbose output")
     parser.add_option("-z", "--zip", action="store_true", default=False, help="Zip archive")
+    parser.add_option("-t", "--tmp-path", dest="tmpPath", default=None, help="Path under which the temporary directory will be created that will hold the archive tars.")
 
 
     # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
@@ -515,13 +520,22 @@ if __name__ == "__main__":
 
     
     # create temporary directories for holding the archival products
-    archiveDir = "%s/%s/%s" % (path, tmpDir, code)
-    os.mkdir(path + "/" + tmpDir)
+    if (options.tmpPath):
+	tmpPath = options.tmpPath
+    else:
+ 	tmpPath = path
+
+    archiveDir = "%s/%s/%s" % (tmpPath, tmpDir, code)
+    try:
+   	os.mkdir(tmpPath + "/" + tmpDir)
+    except:
+    	pass
+
     os.mkdir(archiveDir)
 
     # setup the console and file logger
-    logPath = "%s/%s" % (path, tmpDir)
-    setupLoggers(logPath)
+    logPath = "%s/%s" % (tmpPath, tmpDir)
+    setupLoggers(logPath, code)
 
     logger.info("Starting difxarchive") 
 
@@ -636,7 +650,7 @@ if __name__ == "__main__":
             passCount = 0
             while True:
                 srcDir = "%s/*" % (path)
-                syncOptions = "--exclude '*/' --exclude 'difxarchive.log' "
+                syncOptions = "--exclude '*/' --exclude '" + logfile + "' "
 		syncOptions += "--exclude '*.calc' " 
 		syncOptions += "--exclude '*.im' " 
 		syncOptions += "--exclude '*.threads' " 
@@ -663,10 +677,10 @@ if __name__ == "__main__":
         session.close()
         logger.info("Updated database status")
 
-        # finally upload difxarchive.log
-        shutil.copy(logPath + "/difxarchive.log", archiveDir)
+        # finally upload logfile
+        shutil.copy(logfile, archiveDir)
         syncDir(archiveDir, user, config, 1)
-        syncReferenceDir(logPath + "/difxarchive.log", destDir, 1, "")
+        syncReferenceDir(logfile, destDir, 1, "")
 
         if not options.dbOnly and not options.keep:
             # delete files
