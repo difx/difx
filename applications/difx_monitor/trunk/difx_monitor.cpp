@@ -217,6 +217,8 @@ void plot_results(Configuration * config, Model * model)
 
     int ds1index = config->getBDataStream1Index(currentconfig, i);
     int ds2index = config->getBDataStream2Index(currentconfig, i);
+    int ant1 = config->getDTelescopeIndex(currentconfig, ds1index);
+    int ant2 = config->getDTelescopeIndex(currentconfig, ds2index);
 
     for(j=0;j<config->getBNumFreqs(currentconfig,i);j++)    {
       int freqindex = config->getBFreqIndex(currentconfig, i, j);
@@ -299,9 +301,9 @@ void plot_results(Configuration * config, Model * model)
 	  plcol1(4);
 	  plschr(0, 1.5);
 
-	  ss << config->getTelescopeName(ds1index) 
+	  ss << config->getTelescopeName(ant1) 
 	     << "-" 
-	     <<  config->getTelescopeName(ds2index)
+	     <<  config->getTelescopeName(ant2)
 	     << "  " << sourcename; 
 
 	  plmtex("T", -1.5,0.02, 0, ss.str().c_str());	    
@@ -586,11 +588,13 @@ void change_config(Configuration * config, int configindex, const char *inputfil
   for (int i=0;i<config->getNumBaselines();i++) {
     int ds1index = config->getBDataStream1Index(currentconfig, i);
     int ds2index = config->getBDataStream2Index(currentconfig, i);
+    int ant1 = config->getDTelescopeIndex(currentconfig, ds1index);
+    int ant2 = config->getDTelescopeIndex(currentconfig, ds2index);
 
     html << "<tr>" << endl;
     html << "<th style=\"text-align: center; background-color: rgb(204, 255, 255);\">" 
-	 << config->getTelescopeName(ds1index) << "-" 
-	 << config->getTelescopeName(ds2index) << "</th>" << endl;
+	 << config->getTelescopeName(ant1) << "-" 
+	 << config->getTelescopeName(ant2) << "</th>" << endl;
 
     for(int j=0;j<config->getBNumFreqs(currentconfig,i);j++) {
       int freqindex = config->getBFreqIndex(currentconfig, i, j);
@@ -605,8 +609,8 @@ void change_config(Configuration * config, int configindex, const char *inputfil
 	   << "<a href=\"lba-" << i << "-f" << j << ".html\">" 
 	   << config->getFreqTableFreq(freqindex) << " MHz" << "</a></td>" << endl;
       
-      ss << config->getTelescopeName(ds1index) << "-" 
-	 << config->getTelescopeName(ds2index) << "   "
+      ss << config->getTelescopeName(ant1) << "-" 
+	 << config->getTelescopeName(ant2) << "   "
 	 << config->getFreqTableFreq(freqindex) << " MHz";
       title.push_back(ss.str());
       ss.str("");

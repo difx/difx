@@ -58,7 +58,8 @@ int main(int argc, const char * argv[]) {
     for (int i=0;i<config->getNumBaselines();i++) {
       int ds1index = config->getBDataStream1Index(iconfig, i);
       int ds2index = config->getBDataStream2Index(iconfig, i);
-
+      int ant1 = config->getDTelescopeIndex(iconfig, ds1index);
+      int ant2 = config->getDTelescopeIndex(iconfig, ds2index);
       for(int j=0;j<config->getBNumFreqs(iconfig,i);j++) {
 	freqindex = config->getBFreqIndex(iconfig, i, j);
 	int freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
@@ -74,8 +75,8 @@ int main(int argc, const char * argv[]) {
 	    cout << right << setw(10) << oss.str();
 	  }
 
-	  ss << config->getTelescopeName(ds1index) << "-" 
-	     << config->getTelescopeName(ds2index);
+	  ss << config->getTelescopeName(ant1) << "-" 
+	     << config->getTelescopeName(ant2);
 	  cout << left << setw(15) << ss.str() << right;
 	  ss.str("");
 

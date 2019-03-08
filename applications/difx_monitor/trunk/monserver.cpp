@@ -346,14 +346,12 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 	for(int b=0;b<binloop;b++) {
 	  for(int k=0;k<config->getBNumPolProducts(configindex, i, j);k++) {
 	    config->getBPolPair(configindex,i,j,k,polpair);
-
-
-
-
+	    int ant1 = config->getDTelescopeIndex(configindex, ds1index);
+	    int ant2 = config->getDTelescopeIndex(configindex, ds2index);
 	    products.push_back(DIFX_ProdConfig(ds1index,
 					       ds2index,
-					       config->getTelescopeName(ds1index), 
-					       config->getTelescopeName(ds2index),
+					       config->getTelescopeName(ant1), 
+					       config->getTelescopeName(ant2),
 					       config->getFreqTableFreq(freqindex),
 					       config->getFreqTableBandwidth(freqindex),
 					       polpair,
