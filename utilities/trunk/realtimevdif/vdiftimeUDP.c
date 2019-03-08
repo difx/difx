@@ -27,7 +27,9 @@
 
 // TODO: try recvmmsg() to receive multiple UDP in one call
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <sched.h>
 #include <arpa/inet.h>
 #include <errno.h>
