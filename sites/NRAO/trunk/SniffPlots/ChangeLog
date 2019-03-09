@@ -1,3 +1,8 @@
+Version 0.994
+-------------
+* force python2
+* Version for DiFX-2.6, Mar 9, 2019
+
 Version 0.993
 -------------
 * Allow plotwt, plotbp and plotapd to send params though command line
