@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2017 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2019 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -632,6 +632,14 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 		invalidtime = 0;
 	}
 
+	// did we just come to the end of job execution time?
+	if(readseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) >= config->getExecuteSeconds())
+	{
+		keepreading = false;
+		dataremaining = false;
+		cinfo << startl << "diskToMemory: end of executeseconds reached.  stopping." << endl;
+	}
+
 	// did we just cross into next scan?
 	if(readseconds >= model->getScanDuration(readscan))
 	{
@@ -665,13 +673,6 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 			bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
 		}
 		cinfo << startl << "diskToMemory: starting schedule scan " << readscan << endl;
-	}
-
-	if(readseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) >= config->getExecuteSeconds())
-	{
-		keepreading = false;
-		dataremaining = false;
-		cinfo << startl << "diskToMemory: end of executeseconds reached.  stopping." << endl;
 	}
 
 	if(switchedpower && bufferinfo[buffersegment].validbytes > 0)

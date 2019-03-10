@@ -1,5 +1,7 @@
 Version 2.7
 ~~~~~~~~~~~
+* Fix problem with "Allow DifxParameter message to specify new stop time" that caused premature termination of the job.  Bug introduced in SVN commit 7910 on July 20, 2017
+  - Will put patch into the 2.6 branch.
 * Post DiFX-2.6
 
 Version 2.6
