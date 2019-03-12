@@ -1824,7 +1824,7 @@ components['DIFX-2.6'] = \
 	component_difx2profile_2_6, \
 	component_difxdb_2_6, \
 	component_difxfilterbank_2_6, \
-	component_difxmonitor_2_6, \
+	#component_difxmonitor_2_6, \
 	component_vlite_trunk, \
 ]
 
