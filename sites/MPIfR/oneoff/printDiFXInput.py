@@ -60,7 +60,7 @@ def getFreqPolOfBand(ds,band):
         return (fqId,pol)
 
 
-def printDiFXInput(basename,indent=2):
+def printDiFXInput(basename,indent=2,verbosity=2):
 	"""Print summary of DiFX .input file"""
 
 	# Extract meta-infos from the DiFX .INPUT file
@@ -90,6 +90,14 @@ def printDiFXInput(basename,indent=2):
 		if (len(d.zoombandindex) != d.nzoomband):
 			print((" "*2*indent) + "error: zoombandindex array has %d elements, expected %d" % (len(d.zoombandindex), d.nzoomband))
 
+		if verbosity >= 2:
+			print((" "*2*indent) + "recfreqindex: %s" % (str(d.recfreqindex)))
+			print((" "*2*indent) + "recbandindex: %s" % (str(d.recbandindex)))
+			print((" "*2*indent) + "recbandpol: %s" % (str(d.recbandpol)))
+			print((" "*2*indent) + "zoomfreqindex: %s" % (str(d.zoomfreqindex)))
+			print((" "*2*indent) + "zoombandindex: %s" % (str(d.zoombandindex)))
+			print((" "*2*indent) + "zoombandpol: %s" % (str(d.zoombandpol)))
+
 		for n in range(len(d.recfreqindex)):
 			fq = d.recfreqindex[n]
 			npol = d.recfreqpols[n]
@@ -108,7 +116,7 @@ def printDiFXInput(basename,indent=2):
 
 	# Print out all FREQ entries not referenced by DATASTREAMS
 	all_fqs_used = set(all_fqs_used)
-	unused_fqs = set(range(numfreqs)) - all_fqs_used
+	unused_fqs = list(set(range(numfreqs)) - all_fqs_used)
 	print("Frequencies not referenced by any DATASTREAMs:")
 	if len(unused_fqs) < 1:
 		print((" "*indent) + "(none)")
