@@ -360,6 +360,7 @@ def packDirectory(rootPath, packDir, outDir, filename, recurse=True):
 def setupLoggers(logPath, code):
     
     global logger 
+    global logfile
 
     logger = logging.getLogger("difxarchive")
     logger.setLevel(logging.INFO)
