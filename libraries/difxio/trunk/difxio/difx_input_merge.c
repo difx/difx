@@ -178,11 +178,25 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 		{
 			if(isSameDifxAntenna(D1->antenna + a1, D2->antenna + a2))
 			{
-				if(!isSameDifxAntennaClock(D1->antenna + a1, D2->antenna + a2))
+			        switch(mergeOptions->clockMergeMode)
 				{
-					++difxInputCompatibilityStatistics[DifxInputCompatibilityClock];
+				case ClockMergeModeStrict:
+					if(!isSameDifxAntennaClock(D1->antenna + a1, D2->antenna + a2))
+					{
+						++difxInputCompatibilityStatistics[DifxInputCompatibilityClock];
 
-					return 0;
+						return 0;
+					}
+					break;
+
+				case ClockMergeModeLoose:
+					/* nothing to check here */
+					break;
+
+				default:
+					/* should never happen */
+					fprintf(stderr, "Developer error: Unsupported Clock Merge Mode %d\n", (int)(mergeOptions->clockMergeMode));
+					exit(0);
 				}
 			}
 		}

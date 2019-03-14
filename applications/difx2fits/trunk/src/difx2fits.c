@@ -136,6 +136,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --eop-merge-mode    Set the mode for merging differerent EOPs. Legal modes are strict (default), drop, relaxed.\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --clock-merge-mode  Set the mode for merging differerent antenna clock entries. Legal modes are strict (default), drop.\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
 	fprintf(stderr, "\n");
@@ -375,11 +377,30 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					{
 						fprintf(stderr, "Illegal EOP merge mode: %s\n", argv[i]);
 						fprintf(stderr, "Legal values are: drop relaxed strict\n");
-							
 						deleteCommandLineOptions(opts);
 						return 0;
 					}
-					
+				}
+				else if(strcmp(argv[i], "--clock-merge-mode") == 0)
+				{
+					++i;
+					if (strcmp(argv[i], "strict") == 0)
+					{
+						opts->mergeOptions.clockMergeMode = ClockMergeModeStrict;
+					}
+					else if (strcmp(argv[i], "drop") == 0)
+					{
+						opts->mergeOptions.clockMergeMode = ClockMergeModeLoose;
+						fprintf(stderr, "\nWarning: using mode that drops all Antenna clock entries other than the first, allowing merging of files including antenna clock breaks values.\n\n");
+					}
+					else
+					{
+						fprintf(stderr, "Illegal clock merge mode: %s\n", argv[i]);
+						fprintf(stderr, "Legal values are: drop strict\n");
+						deleteCommandLineOptions(opts);
+						return 0;
+					}
+
 				}
 				else if(strcmp(argv[i], "--difx-pcal-interval") == 0)
 				{

@@ -44,6 +44,7 @@
 #define MAX_SAMPLING_NAME_LENGTH		16
 #define MAX_TONE_SELECTION_STRING_LENGTH	12
 #define MAX_EOP_MERGE_MODE_STRING_LENGTH	16
+#define MAX_CLOCK_MERGE_MODE_STRING_LENGTH	16
 #define MAX_FREQ_MERGE_MODE_STRING_LENGTH	16
 #define MAX_PHASED_ARRAY_TYPE_STRING_LENGTH	16
 #define MAX_PHASED_ARRAY_FORMAT_STRING_LENGTH	16
@@ -200,6 +201,16 @@ enum EOPMergeMode
 
 extern const char eopMergeModeNames[][MAX_EOP_MERGE_MODE_STRING_LENGTH];
 
+/* keep this current with eopMergeModeNames[] in difx_antenna.c */
+enum ClockMergeMode
+{
+        ClockMergeModeStrict = 0,	/* here only allow merging if antenna clock (delay, rate, ...) matches exactly */
+	ClockMergeModeLoose,		/* allow any antenna clocks i.e. do not split upon clock breaks, keep the first encountered clock data */
+
+	NumClockMergeModes		/* must remain as last entry */
+};
+
+extern const char clockMergeModeNames[][MAX_CLOCK_MERGE_MODE_STRING_LENGTH];
 
 /* keep this current with phasedArrayOutputTypeNames[] in difx_phasedarray.c */
 enum PhasedArrayOutputType
@@ -269,6 +280,7 @@ typedef struct
 	int verbose;
 	enum EOPMergeMode eopMergeMode;
 	enum FreqMergeMode freqMergeMode;
+	enum ClockMergeMode clockMergeMode;
 } DifxMergeOptions;
 
 
@@ -739,6 +751,7 @@ int isDifxFreqSetSX(const DifxFreqSet *dfs);
 void copyDifxFreqSet(DifxFreqSet *dest, const DifxFreqSet *src);
 
 /* DifxAntenna functions */
+enum ClockMergeMode stringToClockMergeMode(const char *str);
 enum AntennaMountType stringToMountType(const char *str);
 enum AntennaSiteType stringToSiteType(const char *str);
 DifxAntenna *newDifxAntennaArray(int nAntenna);
