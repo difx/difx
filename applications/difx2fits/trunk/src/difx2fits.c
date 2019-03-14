@@ -136,7 +136,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --eop-merge-mode    Set the mode for merging differerent EOPs. Legal modes are strict (default), drop, relaxed.\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --clock-merge-mode  Set the mode for merging differerent antenna clock entries. Legal modes are strict (default), drop.\n");
+	fprintf(stderr, "  --clock-merge-mode  Set the mode for merging clock entries of an antenna. Legal modes are strict (default), drop (ignore clock breaks).\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
