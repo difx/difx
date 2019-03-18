@@ -2,6 +2,7 @@ calcif2
 ~~~~~~~
 Version 2.7.0
 * Post DiFX-2.6
+* difxvmf : Tool to calculate Vienna Mapping Function and apply to .im file (incomplete as of 20190318)
 
 Version 2.6.0
 * Version for DiFX-2.6, Mar 4, 2019
