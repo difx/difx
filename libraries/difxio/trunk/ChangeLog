@@ -1,5 +1,6 @@
 3.7.0
 * Post DiFX 2.6
+* Add new column to antenna database: ivsName: the name used by IVS
 
 3.6.0
 * Post DiFX 2.5

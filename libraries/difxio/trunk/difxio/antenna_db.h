@@ -9,6 +9,7 @@
 typedef struct
 {
 	char name[ANTENNA_DB_NAME_LENGTH];
+	char ivsName[ANTENNA_DB_NAME_LENGTH];		/* Name as used in IVS situations */
 	double x, y, z;					/* ITRF coords [m]; note: not precise enough for correlation! */
 	double diameter;				/* [m] */
 	double arrayExtent;				/* [km] ; radius of array from the given xyz.  0.0 for single dishes */
