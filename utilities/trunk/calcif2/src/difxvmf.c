@@ -114,9 +114,18 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 	
 	status = calculateVMFDifxInput(D, vmfData, vmfRows, verbose);
 
+	if(verbose > 0)
+	{
+		printf("%d records were updated\n", status);
+	}
+
 	if(status == 0)
 	{
+		/* FIXME -- change to correct output name */
+		strcpy(D->job->imFile, "im.new");
+	
 		/* write data back out */
+		writeDifxIM(D);
 	}
 
 
@@ -129,6 +138,7 @@ int main(int argc, char **argv)
 {
 	int nTry = 0;
 	int nGood = 0;
+	int nRecord = 0;
 	int a;
 	int verbose = 0;
 	int versionOverride = 0;
@@ -156,7 +166,7 @@ int main(int argc, char **argv)
 
 	for(a = 1; a < argc; ++a)
 	{
-		int ok;
+		int n;
 
 		if(argv[a][0] == '-')
 		{
@@ -181,15 +191,16 @@ int main(int argc, char **argv)
 		else
 		{
 			++nTry;
-			ok = processFile(argv[a], &mergeOptions, difxVersion, versionOverride, verbose);
-			if(ok == 0)
+			n = processFile(argv[a], &mergeOptions, difxVersion, versionOverride, verbose);
+			if(n > 0)
 			{
 				++nGood;
+				nRecord += n;
 			}
 		}
 	}
 
-	printf("%d/%d file sets converted.\n", nGood, nTry);
+	printf("%d/%d file sets converted (%d total records).\n", nGood, nTry, nRecord);
 
 	return EXIT_SUCCESS;
 }

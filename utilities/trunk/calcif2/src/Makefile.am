@@ -22,6 +22,12 @@ calcif2_SOURCES = \
 	MATHCNST.H
 
 difxvmf_SOURCES = \
+	poly.c \
+	poly.h \
 	vmf.c \
 	vmf.h \
+	vmf3.c \
+	vmf3.h \
+	timeutils.c \
+	timeutils.h \
 	difxvmf.c

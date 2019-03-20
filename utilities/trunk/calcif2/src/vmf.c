@@ -1,11 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <difxio/difx_input.h>
+#include <difxio/antenna_db.h>
 #include "vmf.h"
+#include "poly.h"
+#include "timeutils.h"
+#include "vmf3.h"
 
+
+/* FIXME: move these to antenna_db.c/h in new column "ivsName" */
 const char VMFNameMap[][2][32] =
 {
 	{ "Brewster", "BR-VLBA" },
@@ -16,118 +23,11 @@ const char VMFNameMap[][2][32] =
 	{ "Mauna Kea", "MK-VLBA" },
 	{ "North Liberty", "NL-VLBA" },
 	{ "Owens Valley", "OV-VLBA" },
-	{ "Pie Town", "PT-VLBA" },
+	{ "Pie Town", "PIETOWN" },
 	{ "Saint Croix", "SC-VLBA" },
 
 	{ "", "" }	/* list terminator */
 };
-
-
-
-static int monlen[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-
-int mjd2dayno	/* convert MJD to day number of year */
-    (
-    long mjd,		/* input Modified Julian Date */
-    int *pDayNo		/* returned day number (1-366) */
-    )
-/*
- * RETURNS OK = 0 | ERROR = -1
- *
- * This function converts the given Modified Julian Date to a day number.  
- * If the date does not fall between 0001JAN01 AD (MJD = -678,575) and 
- * 10000JAN00 AD (MJD = 2,973,483) ERROR is returned.
- */
-{
-    int year, month, day;
-    int status;
-    int i;
-
-    /* convert MJD to year, month, and day */
-    if ((status = mjd2date (mjd, &year, &month, &day)) != 0)
-	return status;
-
-    /* add days previous to current month */
-    for (i = 1; i < month; i++)
-	day += monlen[i - 1];
-
-    /* add a day if leap year and past February
-       (algorithm does NOT work for 2100 but we won't be here) */
-    if (year % 4 == 0 && month > 2)
-	day++;
-
-    /* set returned day number and return */
-    *pDayNo = day;
-    return 0;
-}
-
-/*******************************************************************************
-*/
-int mjd2date		/* convert MJD to date */
-    (
-    long mjd,		/* input Modified Julian Date */
-    int *pYear,		/* pointer to returned year (1-10000) */
-    int *pMonth,	/* pointer to returned month (1-12) */
-    int *pDay		/* pointer to returned day (1-31) */
-    )
-/*
- * RETURNS OK = 0 | ERROR = -1
- *
- * This function converts the given date to a year, month, and day.  If the 
- * given date does not fall between 0001JAN01 AD (MJD = -678,575) and 
- * 10000JAN00 AD (MJD = 2,973,483) ERROR is returned.
- */
-{
-/* 2,400,000 (difference between Julian Date and Modified Julian Date) 
-   minus # days from jan 1, 4713 BC (beginning of Julian calendar) */
-#define AD 678576
-
-    int icen4;
-    int icen;
-    int iyr4;
-    int iyr;
-    int imon;
-    int iday;
-
-    /* check input range and calc days since jan 1 1 AD (Gregorian Calendar) */
-    if (mjd > 2973483)
-	return -1;
-    if ((mjd += AD - 1) < 0)
-        return -1;
-
-    /* calc number of fours of Gregorian centuries */
-    icen4 = mjd / 146097;
-
-    /* calc number of centuries since last 
-	fours of Gregorian centuries (e.g. since 1600 or 2000) */
-    mjd -= (icen4 * 146097);
-    if ((icen = mjd / 36524) == 4)
-        icen = 3; 
-
-    /* calc number of quadrenia(four years) since jan 1, 1901 */
-    mjd -= (icen * 36524);
-    iyr4 = mjd / 1461;
-
-    /* calc number of years since last quadrenia */
-    mjd -= (iyr4 * 1461);
-    if ((iyr = mjd / 365) == 4)
-        iyr = 3;
-
-    /* calc number of months, days since jan 1 of current year */
-    iday = mjd - iyr * 365;
-    for (imon = 0; iday >= 0; imon++)
-	iday = iday - monlen[imon] - ((iyr == 3 && imon == 1) ? 1 : 0);
-    imon--;		/* restore imon, iday to last loop value */
-    iday = iday + monlen[imon] + ((iyr == 3 && imon == 1) ? 1 : 0);
-
-    /* calc return values */
-    *pYear = icen4 * 400 + icen * 100 + iyr4 * 4 + iyr + 1;
-    *pMonth = imon + 1;
-    *pDay = iday + 1;
-
-    return 0;
-}
-
 
 
 int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
@@ -149,6 +49,8 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 		char filePath[MaxLength];
 		int n;
 		FILE *in;
+
+		year = month = day = doy = 0;
 
 		/* FIXME calculate year, doy */
 		mjd2date(mjd, &year, &month, &day);
@@ -274,7 +176,7 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 	return row;
 }
 
-int selectVMDData(const char *antennaName, VMFData **antennaData, int maxOut, VMFData *vmfData, int nData)
+int selectVMFData(const char *antennaName, VMFData **antennaData, int maxOut, VMFData *vmfData, int nData)
 {
 	int nOut = 0;
 	int i;
@@ -287,21 +189,26 @@ int selectVMDData(const char *antennaName, VMFData **antennaData, int maxOut, VM
 		}
 		if(strcmp(antennaName, vmfData[i].antennaName) == 0)
 		{
-			antennaData[i] = vmfData + i;
+			antennaData[nOut] = vmfData + i;
+			++nOut;
 		}
 	}
 
 	return nOut;
 }
 
-static int processScan(int scanId, DifxInput *D, int verbose)
+/* returns number of records updated */
+static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, int verbose)
 {
+	const int MaxVMFRows = 32;
+
 	int antId;
 
 	DifxScan *scan;
 	DifxJob *job;
 	int polyOrder;
 	int polyInterval;	/* (sec) length of valid polynomial */
+	int nRecord = 0;
 
 	scan = D->scan + scanId;
 	job = D->job;
@@ -311,7 +218,50 @@ static int processScan(int scanId, DifxInput *D, int verbose)
 
 	for(antId = 0; antId < scan->nAntenna; ++antId)
 	{
+		const AntennaDBEntry *antInfo;
+		const DifxAntenna *da;
 		int k;
+		int nVMF;
+		const char *vmfName;
+		VMFData *antVMFData[MaxVMFRows];
+
+		if(scan->im[antId] == 0)
+		{
+			/* No model for this antenna in this scan */
+
+			continue;
+		}
+
+		da = D->antenna + antId;
+
+		antInfo = antennaDBGetByXYZ(da->X, da->Y, da->Z);
+		if(antInfo == 0)
+		{
+			printf("Warning: Antenna %d (%s) is not found in antenna_db database; not including...\n", antId, da->name);
+
+			continue;
+		}
+
+		vmfName = 0;
+		for(k = 0; VMFNameMap[k][0][0]; ++k)
+		{
+			if(strcasecmp(VMFNameMap[k][0], antInfo->name) == 0)
+			{
+				vmfName = VMFNameMap[k][1];
+				break;
+			}
+		}
+		if(vmfName == 0)
+		{
+			printf("Warning: Antenna %d (%s == %s) is not found in VMF lookup table; not including...\n", antId, da->name, antInfo->name);
+
+			continue;
+		}
+
+		printf("Processing antId=%d = %s = %s = %s\n", antId, da->name, antInfo->name, vmfName);
+
+		nVMF = selectVMFData(vmfName, antVMFData, MaxVMFRows, vmfData, vmfRows);
+		printf("%d VMF data sets for %s\n", nVMF, vmfName);
 
 		for(k = 0; k < scan->nPhaseCentres + 1; ++k)
 		{
@@ -319,21 +269,57 @@ static int processScan(int scanId, DifxInput *D, int verbose)
 
 			for(i = 0; i < scan->nPoly; ++i)
 			{
+				DifxPolyModel *im;
+				int t;
+
+				im = &(scan->im[antId][k][i]);
+
 				/* 1. Remove atmosphere from Delay; due to sign convention, ADD the wet and dry to delay */
-				
+				for(t = 0; t <= polyOrder; ++t)
+				{
+					im->delay[t] += (im->dry[t] + im->wet[t]);
+				}
 
-				/* 2. Recompute atmosphere from scratch */
+				/* 2. Recompute atmosphere from scratch into time series; initially treat polys as time series */
+				for(t = 0; t <= polyOrder; ++t)
+				{
+					double el;		/* [radians] elevation */
+					double deltat;		/* [sec] evaluation time for polynomials */
+					double mjd;		/* [day] actual time of evaluation */
+					double mfh, mfw;	/* hydrostatic and wet mapping function */
 
-				/* 3. Add atmosphere back; due to sign convention, SUBTRACT the wet and dry from delay */
+					double ah, aw, lat, lon;
+
+					im->dry[t] = im->wet[t] = 0.0;
+
+					deltat = t*polyInterval/(double)polyOrder;
+					mjd = im->mjd + (im->sec + deltat)/86400.0;
+
+					el = evaluatePoly(im->elgeom, polyOrder+1, deltat);
+
+					vmf3(&mfh, &mfw, ah, aw, mjd, lat, lon, el);
+				}
+
+				/* 3. Turn time series into polynomial */
+				computePoly(im->dry, im->order+1, polyInterval/(double)(im->order));
+
+				/* 4. Add atmosphere back; due to sign convention, SUBTRACT the wet and dry from delay */
+				for(t = 0; t <= polyOrder; ++t)
+				{
+					im->delay[t] -= (im->dry[t] + im->wet[t]);
+				}
+
+				++nRecord;
 			}
 		}
 	}
 	
+	return nRecord;
 }
 
-int calculateVMFDifxInput(DifxInput *D, const VMFData *vmfData, int vmfRows, int verbose)
+int calculateVMFDifxInput(DifxInput *D, VMFData *vmfData, int vmfRows, int verbose)
 {
-	int status = 0;
+	int nRecord = 0;
 	int scanId;
 
 	if(!D)
@@ -351,9 +337,15 @@ int calculateVMFDifxInput(DifxInput *D, const VMFData *vmfData, int vmfRows, int
 		}
 		else
 		{
-			processScan(scanId, D, verbose);
+			int n;
+
+			n = processScan(scanId, D, vmfData, vmfRows, verbose);
+			if(n > 0)
+			{
+				nRecord += n;
+			}
 		}
 	}
 
-	return status;
+	return nRecord;
 }

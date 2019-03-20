@@ -19,8 +19,8 @@ typedef struct
 
 int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose);
 
-int selectVMDData(const char *antennaName, VMFData **antennaData, int maxOut, VMFData *vmfData, int nData);
+int selectVMFData(const char *antennaName, VMFData **antennaData, int maxOut, VMFData *vmfData, int nData);
 
-int calculateVMFDifxInput(DifxInput *D, const VMFData *vmfData, int vmfRows, int verbose);
+int calculateVMFDifxInput(DifxInput *D, VMFData *vmfData, int vmfRows, int verbose);
 
 #endif
