@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -119,7 +120,7 @@ void deleteVMFInterpolator(VMFInterpolator *vi)
 	}
 }
 
-int interpolateVMFData(VMFData *vmf, VMFInterpolator *vi, double mjd)
+void interpolateVMFData(VMFData *vmf, VMFInterpolator *vi, double mjd)
 {
 	strcpy(vmf->antennaName, vi->antennaName);
 	vmf->mjd = mjd;
@@ -398,7 +399,8 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 				/* 2. Recompute atmosphere from scratch into time series; initially treat polys as time series */
 				for(t = 0; t <= polyOrder; ++t)
 				{
-					double el;		/* [radians] elevation */
+					const double m_us = 299.792458;	/* [m/us] speed of light */
+					double el;		/* [degrees] elevation */
 					double deltat;		/* [sec] evaluation time for polynomials */
 					double mjd;		/* [day] actual time of evaluation */
 					double mfh, mfw;	/* hydrostatic and wet mapping function */
@@ -411,21 +413,23 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 
 					interpolateVMFData(&vmf, vi, mjd);
 
-					printVMFData(&vmf);
+					vmf3(&mfh, &mfw, vmf.a_hydrostatic, vmf.a_wet, mjd, lat, lon, el*M_PI/180.0);
+
+					im->dry[t] = vmf.zd_hydrostatic*mfh/m_us;
+					im->wet[t] = vmf.zd_wet*mfw/m_us;
 
 					if(verbose > 2)
 					{
-						vmf3(&mfh, &mfw, vmf.a_hydrostatic, vmf.a_wet, mjd, lat, lon, el);
+						printf("t=%d el=%fdeg mfh=%f mfw=%f  dry=%fus wet=%fus  ", t, el, mfh, mfw, im->dry[t], im->wet[t]);
+						printVMFData(&vmf);
 					}
 
-					/* FIXME */
-					im->dry[i] = 0.0;
-					im->wet[i] = 0.0;
 				}
 
 				/* 3. Turn time series into polynomial */
-				computePoly(im->dry, im->order+1, polyInterval/(double)(im->order));
-				computePoly(im->wet, im->order+1, polyInterval/(double)(im->order));
+				//computePoly(im->dry, im->order+1, polyInterval/(double)(im->order));
+				//computePoly(im->wet, im->order+1, polyInterval/(double)(im->order));
+
 
 				/* 4. Add atmosphere back; due to sign convention, SUBTRACT the wet and dry from delay */
 				for(t = 0; t <= polyOrder; ++t)

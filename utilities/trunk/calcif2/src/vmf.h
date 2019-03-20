@@ -55,7 +55,7 @@ VMFInterpolator *newVMFInterpolator(VMFData **antennaData, int nRow);
 
 void deleteVMFInterpolator(VMFInterpolator *vi);
 
-int interpolateVMFData(VMFData *vmf, VMFInterpolator *vi, double mjd);
+void interpolateVMFData(VMFData *vmf, VMFInterpolator *vi, double mjd);
 
 void printVMFData(const VMFData *vmf);
 

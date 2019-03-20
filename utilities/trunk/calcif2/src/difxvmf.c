@@ -119,13 +119,17 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 		printf("%d records were updated\n", status);
 	}
 
-	if(status == 0)
+	if(status > 0)
 	{
 		/* FIXME -- change to correct output name */
 		strcpy(D->job->imFile, "im.new");
 	
 		/* write data back out */
 		writeDifxIM(D);
+	}
+	else
+	{
+		printf("Warning: No output produced\n");
 	}
 
 
