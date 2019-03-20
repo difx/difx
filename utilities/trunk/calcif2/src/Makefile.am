@@ -1,4 +1,3 @@
-bin_PROGRAMS = calcif2 difxvmf
 
 if WITH_GSL
 noinst_PROGRAMS = testpoly
@@ -7,7 +6,14 @@ testpoly_SOURCES = \
 	poly.c \
 	poly.h \
 	testpoly.c
+
+gsl_progs = \
+	difxvmf
 endif
+
+bin_PROGRAMS = \
+	$(gsl_progs) \
+	calcif2 
 
 calcif2_SOURCES = \
 	calcif2.c \
@@ -21,6 +27,7 @@ calcif2_SOURCES = \
 	poly.h \
 	MATHCNST.H
 
+if WITH_GSL
 difxvmf_SOURCES = \
 	poly.c \
 	poly.h \
@@ -31,3 +38,4 @@ difxvmf_SOURCES = \
 	timeutils.c \
 	timeutils.h \
 	difxvmf.c
+endif

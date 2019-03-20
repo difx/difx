@@ -12,22 +12,139 @@
 #include "vmf3.h"
 
 
-/* FIXME: move these to antenna_db.c/h in new column "ivsName" */
-const char VMFNameMap[][2][32] =
+VMFInterpolator *newVMFInterpolator(VMFData **antennaData, int nRow)
 {
-	{ "Brewster", "BR-VLBA" },
-	{ "Fort Davis", "FD-VLBA" },
-	{ "Hancock", "HN-VLBA" },
-	{ "Kitt Peak", "KP-VLBA" },
-	{ "Los Alamos",  "LA-VLBA" },
-	{ "Mauna Kea", "MK-VLBA" },
-	{ "North Liberty", "NL-VLBA" },
-	{ "Owens Valley", "OV-VLBA" },
-	{ "Pie Town", "PIETOWN" },
-	{ "Saint Croix", "SC-VLBA" },
+	double *mjd, *data;
+	VMFInterpolator *vi;
+	int i;
 
-	{ "", "" }	/* list terminator */
-};
+	mjd = (double *)malloc(nRow*sizeof(double));
+	data = (double *)malloc(nRow*sizeof(double));
+	vi = (VMFInterpolator *)malloc(sizeof(VMFInterpolator));
+	strcpy(vi->antennaName, antennaData[0]->antennaName);
+
+	for(i = 0; i < nRow; ++i)
+	{
+		mjd[i] = antennaData[i]->mjd;
+	}
+
+	vi->acc_ah = gsl_interp_accel_alloc();
+	vi->spline_ah = gsl_spline_alloc(gsl_interp_cspline, nRow);
+	for(i = 0; i < nRow; ++i)
+	{
+		data[i] = antennaData[i]->a_hydrostatic;
+	}
+	gsl_spline_init(vi->spline_ah, mjd, data, nRow);
+
+	vi->acc_aw = gsl_interp_accel_alloc();
+	vi->spline_aw = gsl_spline_alloc(gsl_interp_cspline, nRow);
+	for(i = 0; i < nRow; ++i)
+	{
+		data[i] = antennaData[i]->a_wet;
+	}
+	gsl_spline_init(vi->spline_aw, mjd, data, nRow);
+
+	vi->acc_zh = gsl_interp_accel_alloc();
+	vi->spline_zh = gsl_spline_alloc(gsl_interp_cspline, nRow);
+	for(i = 0; i < nRow; ++i)
+	{
+		data[i] = antennaData[i]->zd_hydrostatic;
+	}
+	gsl_spline_init(vi->spline_zh, mjd, data, nRow);
+
+	vi->acc_zw = gsl_interp_accel_alloc();
+	vi->spline_zw = gsl_spline_alloc(gsl_interp_cspline, nRow);
+	for(i = 0; i < nRow; ++i)
+	{
+		data[i] = antennaData[i]->zd_wet;
+	}
+	gsl_spline_init(vi->spline_zw, mjd, data, nRow);
+
+	vi->acc_p = gsl_interp_accel_alloc();
+	vi->spline_p = gsl_spline_alloc(gsl_interp_cspline, nRow);
+	for(i = 0; i < nRow; ++i)
+	{
+		data[i] = antennaData[i]->pressure;
+	}
+	gsl_spline_init(vi->spline_p, mjd, data, nRow);
+
+	vi->acc_t = gsl_interp_accel_alloc();
+	vi->spline_t = gsl_spline_alloc(gsl_interp_cspline, nRow);
+	for(i = 0; i < nRow; ++i)
+	{
+		data[i] = antennaData[i]->temperature;
+	}
+	gsl_spline_init(vi->spline_t, mjd, data, nRow);
+
+	vi->acc_pw = gsl_interp_accel_alloc();
+	vi->spline_pw = gsl_spline_alloc(gsl_interp_cspline, nRow);
+	for(i = 0; i < nRow; ++i)
+	{
+		data[i] = antennaData[i]->pressure_wv;
+	}
+	gsl_spline_init(vi->spline_pw, mjd, data, nRow);
+
+	free(mjd);
+	free(data);
+
+	return vi;
+}
+
+void deleteVMFInterpolator(VMFInterpolator *vi)
+{
+	if(vi)
+	{
+		gsl_spline_free(vi->spline_ah);
+		gsl_interp_accel_free(vi->acc_ah);
+
+		gsl_spline_free(vi->spline_aw);
+		gsl_interp_accel_free(vi->acc_aw);
+
+		gsl_spline_free(vi->spline_zh);
+		gsl_interp_accel_free(vi->acc_zh);
+
+		gsl_spline_free(vi->spline_zw);
+		gsl_interp_accel_free(vi->acc_zw);
+
+		gsl_spline_free(vi->spline_p);
+		gsl_interp_accel_free(vi->acc_p);
+
+		gsl_spline_free(vi->spline_t);
+		gsl_interp_accel_free(vi->acc_t);
+
+		gsl_spline_free(vi->spline_pw);
+		gsl_interp_accel_free(vi->acc_pw);
+
+		free(vi);
+	}
+}
+
+int interpolateVMFData(VMFData *vmf, VMFInterpolator *vi, double mjd)
+{
+	strcpy(vmf->antennaName, vi->antennaName);
+	vmf->mjd = mjd;
+	vmf->a_hydrostatic  = gsl_spline_eval(vi->spline_ah, mjd, vi->acc_ah);
+	vmf->a_wet          = gsl_spline_eval(vi->spline_aw, mjd, vi->acc_aw);
+	vmf->zd_hydrostatic = gsl_spline_eval(vi->spline_zh, mjd, vi->acc_zh);
+	vmf->zd_wet         = gsl_spline_eval(vi->spline_zw, mjd, vi->acc_zw);
+	vmf->pressure       = gsl_spline_eval(vi->spline_p,  mjd, vi->acc_p );
+	vmf->temperature    = gsl_spline_eval(vi->spline_t,  mjd, vi->acc_t );
+	vmf->pressure_wv    = gsl_spline_eval(vi->spline_pw, mjd, vi->acc_pw);
+}
+
+void printVMFData(const VMFData *vmf)
+{
+	printf("VMF: %s %10.4f %f %f %f %f %f %f %f\n", 
+		vmf->antennaName,
+		vmf->mjd,
+		vmf->a_hydrostatic,
+		vmf->a_wet,
+		vmf->zd_hydrostatic,
+		vmf->zd_wet,
+		vmf->pressure,
+		vmf->temperature,
+		vmf->pressure_wv);
+}
 
 
 int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
@@ -197,6 +314,8 @@ int selectVMFData(const char *antennaName, VMFData **antennaData, int maxOut, VM
 	return nOut;
 }
 
+
+
 /* returns number of records updated */
 static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, int verbose)
 {
@@ -222,8 +341,10 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 		const DifxAntenna *da;
 		int k;
 		int nVMF;
-		const char *vmfName;
+		double lat, lon;	/* [rad] */
+		double alt;		/* [m] height above geoid */
 		VMFData *antVMFData[MaxVMFRows];
+		VMFInterpolator *vi;
 
 		if(scan->im[antId] == 0)
 		{
@@ -242,26 +363,20 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 			continue;
 		}
 
-		vmfName = 0;
-		for(k = 0; VMFNameMap[k][0][0]; ++k)
+		if(antInfo->ivsName[0] == 0)
 		{
-			if(strcasecmp(VMFNameMap[k][0], antInfo->name) == 0)
-			{
-				vmfName = VMFNameMap[k][1];
-				break;
-			}
-		}
-		if(vmfName == 0)
-		{
-			printf("Warning: Antenna %d (%s == %s) is not found in VMF lookup table; not including...\n", antId, da->name, antInfo->name);
-
-			continue;
+			printf("Warning: Antenna %d (%s=%s) does not have an IVS name; not including...\n", antId, da->name, antInfo->name);
+			
 		}
 
-		printf("Processing antId=%d = %s = %s = %s\n", antId, da->name, antInfo->name, vmfName);
+		printf("Processing antId=%d = %s = %s = %s\n", antId, da->name, antInfo->name, antInfo->ivsName);
 
-		nVMF = selectVMFData(vmfName, antVMFData, MaxVMFRows, vmfData, vmfRows);
-		printf("%d VMF data sets for %s\n", nVMF, vmfName);
+		nVMF = selectVMFData(antInfo->ivsName, antVMFData, MaxVMFRows, vmfData, vmfRows);
+		printf("%d VMF data sets for %s\n", nVMF, antInfo->ivsName);
+
+		vi = newVMFInterpolator(antVMFData, nVMF);
+
+		ecef2lla(&lat, &lon, &alt, antInfo->x, antInfo->y, antInfo->z);
 
 		for(k = 0; k < scan->nPhaseCentres + 1; ++k)
 		{
@@ -287,21 +402,30 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 					double deltat;		/* [sec] evaluation time for polynomials */
 					double mjd;		/* [day] actual time of evaluation */
 					double mfh, mfw;	/* hydrostatic and wet mapping function */
-
-					double ah, aw, lat, lon;
-
-					im->dry[t] = im->wet[t] = 0.0;
+					VMFData vmf;
 
 					deltat = t*polyInterval/(double)polyOrder;
 					mjd = im->mjd + (im->sec + deltat)/86400.0;
 
 					el = evaluatePoly(im->elgeom, polyOrder+1, deltat);
 
-					vmf3(&mfh, &mfw, ah, aw, mjd, lat, lon, el);
+					interpolateVMFData(&vmf, vi, mjd);
+
+					printVMFData(&vmf);
+
+					if(verbose > 2)
+					{
+						vmf3(&mfh, &mfw, vmf.a_hydrostatic, vmf.a_wet, mjd, lat, lon, el);
+					}
+
+					/* FIXME */
+					im->dry[i] = 0.0;
+					im->wet[i] = 0.0;
 				}
 
 				/* 3. Turn time series into polynomial */
 				computePoly(im->dry, im->order+1, polyInterval/(double)(im->order));
+				computePoly(im->wet, im->order+1, polyInterval/(double)(im->order));
 
 				/* 4. Add atmosphere back; due to sign convention, SUBTRACT the wet and dry from delay */
 				for(t = 0; t <= polyOrder; ++t)
@@ -312,6 +436,8 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 				++nRecord;
 			}
 		}
+
+		deleteVMFInterpolator(vi);
 	}
 	
 	return nRecord;
