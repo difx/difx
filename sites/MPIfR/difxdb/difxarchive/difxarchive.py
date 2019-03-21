@@ -56,6 +56,7 @@ logfile = ""
 tmpPath = ""
 code = ""
 logger = None
+tmpEnv = os.environ
 
 def getUsage():
     
@@ -75,12 +76,12 @@ def exitOnError(exception):
 	'''
 	Exit routine to be called whenever an error/exception has occured
 	'''
-        print exception
+#	print("Unexpected error:", sys.exc_info()[0])
 
         logger.error(exception)
 	
         # destroy kerberos tickets
-        #destroyTicket()
+        destroyTicket()
 
         logger.info("Aborting")
         cleanup()
@@ -92,27 +93,31 @@ def renewTicket(user):
     renews the kerberos ticket (needed for jobs that run for a very long time
     '''
     cmd = '/usr/bin/kinit -R %s@%s' % (user, krbDomain)
-    kinit = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    kinit = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True,env=tmpEnv)
     kinit.wait()
 
 def getTicket(user):
     '''
     obtains a kerberos ticket for the given user
     '''
+    global tmpEnv
     
     logger.info ("Obtaining kerberos ticket for user %s" % user)
     password = getpass.getpass("Enter password for user %s:" % (user))
+
+    # temporarily set different Kerberos cache KRB5CCNAME
+    tmpEnv["KRB5CCNAME"] = "/tmp/krb5cc_%s" % (user)
     
-    kinit = '/usr/bin/kinit'
-    kinit_args = [ kinit, '-l 48h', '-r 30d','%s@%s' % (user,krbDomain) ]
-    kinit = Popen(kinit_args, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    kinitcmd = '/usr/bin/kinit'
+    kinit_args = [ kinitcmd, '-l 48h', '-r 30d','%s@%s' % (user,krbDomain) ]
+    kinit = Popen(kinit_args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=tmpEnv)
     kinit.stdin.write('%s\n' % password)
     kinit.wait()
 
 
 def destroyTicket():
     logger.info ("Destroying kerberos ticket" )
-    subprocess.call('/usr/bin/kdestroy')
+    Popen(['/usr/bin/kdestroy'], stdin=PIPE, stdout=PIPE, stderr=PIPE, env=tmpEnv)
     
 
 def readConfig():
@@ -145,7 +150,7 @@ def getTransferFileCount(source, destination, rsyncOptions=""):
     cmd = 'rsync -az --stats --dry-run %s %s %s' % ( rsyncOptions, source, destination) 
     if options.verbose:
         print "Executing: ", cmd
-    proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=tmpEnv)
     
     remainder = proc.communicate()[0]
     
@@ -167,11 +172,7 @@ def syncDir(path, user, config, fileCount):
     
     cmd = 'rsync -av --no-perms --chmod=ugo=rwX --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
         
-    proc = subprocess.Popen(cmd,
-                                       shell=True,
-                                       stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE,
-                                       )
+    proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=tmpEnv)
     
     while True:
         output = proc.stdout.readline()
@@ -224,11 +225,7 @@ def syncReferenceDir(path, referencePath, fileCount, options):
     print cmd 
     logger.info( "Syncing reference files from %s to: %s" % (path, referencePath))
     
-    proc = subprocess.Popen(cmd,
-                                       shell=True,
-                                       stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE,
-                                       )
+    proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,env=tmpEnv)
     
     while True:
         output = proc.stdout.readline()
@@ -393,7 +390,7 @@ def confirmAction():
             print 'Not continuing.\n'
 
             # destroy kerberos tickets
-            #destroyTicket()
+            destroyTicket()
             exit(0)
 
 def confirmArchiveDirs(archiveDirs):
@@ -532,7 +529,11 @@ if __name__ == "__main__":
     except:
     	pass
 
-    os.mkdir(archiveDir)
+    try:
+    	os.mkdir(archiveDir)
+    except Exception as e:
+    	sys.exit(e)
+    	
 
     # setup the console and file logger
     logPath = "%s/%s" % (tmpPath, tmpDir)
@@ -591,6 +592,8 @@ if __name__ == "__main__":
                 packDirectory(path, dir, archiveDir, dir + ".tar", recurse=True)
                 logger.info("Done packing %s" % dir)
                 renewTicket(user)
+		logger.info("Alive")
+
             ## now pack the top-level files
             packDirectory(path, path, archiveDir, "main.tar", recurse=False)
             renewTicket(user)
@@ -694,12 +697,13 @@ if __name__ == "__main__":
         
 
     except Exception as e:
-        exitOnError(e)
+	pass
+        #exitOnError(e)
     except KeyboardInterrupt:
         sys.exit(1)
     finally:
         # destroy kerberos tickets
-        #destroyTicket()
+        destroyTicket()
         logger.info ("Done")
         cleanup()
         
