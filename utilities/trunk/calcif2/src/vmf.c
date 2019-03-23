@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2019 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id: $
+// $HeadURL: $
+// $LastChangedRevision: $
+// $Author: $
+// $LastChangedDate: $
+//
+//============================================================================
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -318,7 +347,7 @@ int selectVMFData(const char *antennaName, VMFData **antennaData, int maxOut, VM
 
 
 /* returns number of records updated */
-static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, int verbose)
+static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, WXData *wxData, int verbose)
 {
 	const int MaxVMFRows = 32;
 
@@ -404,6 +433,7 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 					double deltat;		/* [sec] evaluation time for polynomials */
 					double mjd;		/* [day] actual time of evaluation */
 					double mfh, mfw;	/* hydrostatic and wet mapping function */
+					double zdh;		/* [us] hydrostatic zenith delay */
 					VMFData vmf;
 
 					deltat = t*polyInterval/(double)polyOrder;
@@ -415,7 +445,20 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 
 					vmf3(&mfh, &mfw, vmf.a_hydrostatic, vmf.a_wet, mjd, lat, lon, el*M_PI/180.0);
 
-					im->dry[t] = vmf.zd_hydrostatic*mfh/m_us;
+					zdh = vmf.zd_hydrostatic;
+					if(wxData)
+					{
+						int ok;
+						WXDataRow wx;
+
+						ok = interpolateWXData(&wx, wxData + antId, mjd);
+						if(ok == 0)
+						{
+							zdh = zdh * wx.pressure/vmf.pressure;
+						}
+					}
+
+					im->dry[t] = zdh*mfh/m_us;
 					im->wet[t] = vmf.zd_wet*mfw/m_us;
 
 					if(verbose > 2)
@@ -427,9 +470,8 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 				}
 
 				/* 3. Turn time series into polynomial */
-				//computePoly(im->dry, im->order+1, polyInterval/(double)(im->order));
-				//computePoly(im->wet, im->order+1, polyInterval/(double)(im->order));
-
+				computePoly(im->dry, im->order+1, polyInterval/(double)(im->order));
+				computePoly(im->wet, im->order+1, polyInterval/(double)(im->order));
 
 				/* 4. Add atmosphere back; due to sign convention, SUBTRACT the wet and dry from delay */
 				for(t = 0; t <= polyOrder; ++t)
@@ -447,7 +489,7 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 	return nRecord;
 }
 
-int calculateVMFDifxInput(DifxInput *D, VMFData *vmfData, int vmfRows, int verbose)
+int calculateVMFDifxInput(DifxInput *D, VMFData *vmfData, int vmfRows, WXData *wxData, int verbose)
 {
 	int nRecord = 0;
 	int scanId;
@@ -459,6 +501,9 @@ int calculateVMFDifxInput(DifxInput *D, VMFData *vmfData, int vmfRows, int verbo
 		return -1;
 	}
 
+	strncat(D->job->calcServer, "+vmf", DIFXIO_HOSTNAME_LENGTH);
+	D->job->calcServer[DIFXIO_HOSTNAME_LENGTH-1] = 0;
+
 	for(scanId = 0; scanId < D->nScan; ++scanId)
 	{
 		if(D->scan[scanId].im == 0)
@@ -469,7 +514,7 @@ int calculateVMFDifxInput(DifxInput *D, VMFData *vmfData, int vmfRows, int verbo
 		{
 			int n;
 
-			n = processScan(scanId, D, vmfData, vmfRows, verbose);
+			n = processScan(scanId, D, vmfData, vmfRows, wxData, verbose);
 			if(n > 0)
 			{
 				nRecord += n;

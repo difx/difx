@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <difxio/difx_input.h>
 #include "vmf.h"
+#include "wxdata.h"
 
 const char program[] = "difxvmf";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
@@ -47,15 +48,18 @@ void usage()
 	printf("-v         be a bit more verbose\n\n");
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
+	printf("--usewx\n");
+	printf("-w         use measured .weather files if available\n\n");
 }
 
-int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, const char *difxVersion, int overrideVersion, int verbose)
+int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, const char *difxVersion, int overrideVersion, int useWx, int verbose)
 {
 	const int MaxVMFData = 8192;
 	DifxInput *D;
 	int status = 0;
 	VMFData vmfData[MaxVMFData];
 	int vmfRows;
+	WXData *wxData;
 
 	if(verbose > 0)
 	{
@@ -111,8 +115,21 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 		return -4;
 	}
 
+	if(useWx)
+	{
+		wxData = loadWeatherForProject(D);
+	}
+	else
+	{
+		wxData = 0;
+	}
 	
-	status = calculateVMFDifxInput(D, vmfData, vmfRows, verbose);
+	status = calculateVMFDifxInput(D, vmfData, vmfRows, wxData, verbose);
+
+	if(wxData)
+	{
+		deleteWXDataArray(wxData, D->nAntenna);
+	}
 
 	if(verbose > 0)
 	{
@@ -148,6 +165,7 @@ int main(int argc, char **argv)
 	int versionOverride = 0;
 	DifxMergeOptions mergeOptions;
 	const char *difxVersion;
+	int useWx = 0;
 
 	difxVersion = getenv("DIFX_VERSION");
 	if(difxVersion == 0)
@@ -187,6 +205,11 @@ int main(int argc, char **argv)
 
 				exit(EXIT_SUCCESS);
 			}
+			else if(strcmp(argv[a], "-w") == 0 ||
+			   strcmp(argv[a], "--usewx") == 0)
+			{
+				useWx = 1;
+			}
 			else if(strcmp(argv[a], "--override-version") == 0)
 			{
 				versionOverride = 1;
@@ -195,7 +218,7 @@ int main(int argc, char **argv)
 		else
 		{
 			++nTry;
-			n = processFile(argv[a], &mergeOptions, difxVersion, versionOverride, verbose);
+			n = processFile(argv[a], &mergeOptions, difxVersion, versionOverride, useWx, verbose);
 			if(n > 0)
 			{
 				++nGood;

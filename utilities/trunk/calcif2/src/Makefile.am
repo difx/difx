@@ -37,5 +37,7 @@ difxvmf_SOURCES = \
 	vmf3.h \
 	timeutils.c \
 	timeutils.h \
+	wxdata.c \
+	wxdata.h \
 	difxvmf.c
 endif
