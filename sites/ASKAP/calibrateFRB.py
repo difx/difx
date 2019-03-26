@@ -2,7 +2,7 @@
 #Imports ########################################################
 from AIPS import AIPS
 from AIPSTask import AIPSTask
-from AIPSData import AIPSUVData
+from AIPSData import AIPSUVData, AIPSImage
 from optparse import OptionParser
 import os, sys, glob, vlbatasks
 
@@ -39,16 +39,18 @@ parser.add_option("-g", "--tarflagfile", default="",
                   help="Flag file to apply to target data only, if desired. Used to flag any necessary channels for, e.g., RFI or missing data")
 parser.add_option("-p","--phasecenter", default="",
                   help="phase center for the target field (blank will leave it at correlation centre)")
-parser.add_option("-l", "--leakagecorrect", default=False, action="store_true", 
-                  help="Run lpcal to try and correct any leakage present")
+#parser.add_option("-l", "--leakagecorrect", default=False, action="store_true", 
+#                  help="Run lpcal to try and correct any leakage present")
+parser.add_option("-x", "--xpoldelaymodelfile", default="", help="Model to use for xpol delay correction (blank = no correction)")
 parser.add_option("--imagesize", type=int, default=128, help="Size of the image to make")
 parser.add_option("--pixelsize", type=float, default=1, help="Pixel size in arcseconds")
+parser.add_option("--uvsrt", default=False, action="store_true", help="Run UVSRT on the data after loading")
 (options, junk) = parser.parse_args()
 AIPS.userno     = options.userno
 refant          = options.refant
 imagesize       = options.imagesize
 pixelsize       = options.pixelsize
-leakagecorrect  = options.leakagecorrect
+xpolmodelfile   = options.xpoldelaymodelfile
 snversion       = 1
 clversion       = 1
 aipsdisk        = 1
@@ -56,6 +58,7 @@ aipsdisk        = 1
 # Make path names absolute if needed
 options.target = os.path.abspath(options.target)
 options.calibrator = os.path.abspath(options.calibrator)
+leakagemodelfile = os.path.abspath(leakagemodelfile)
 
 # Get some other path names
 if ".uvfits" in options.target:
@@ -83,18 +86,24 @@ if os.path.exists(calibratormsfilename):
 
 # Load up the target data
 targetdata = vlbatasks.zapAndCreateUVData("CRAFTTARG", "UVDATA", aipsdisk, 1)
-if targetdata.exists():
-    targetdata.zap()
 vlbatasks.fitld_corr(options.target, targetdata, [], '', 0.0001)
+if options.uvsrt:
+    sortedtargetdata = vlbatasks.zapAndCreateUVData("CRAFTTARG", "UVSRT", aipsdisk, 1)
+    vlbatasks.uvsrt(targetdata, sortedtargetdata)
+    targetdata.zap()
+    targetdata = sortedtargetdata
 
 # Get the number of channels in the dataset
 numchannels = vlbatasks.getNumChannels(targetdata)
 
 # Load up the calibrator data
 caldata = vlbatasks.zapAndCreateUVData("CRAFTCAL","UVDATA", aipsdisk, 1)
-if caldata.exists():
-    caldata.zap()
 vlbatasks.fitld_corr(options.calibrator, caldata, [], '', 0.0001)
+if options.uvsrt:
+    sortedcaldata = vlbatasks.zapAndCreateUVData("CRAFTCAL", "UVSRT", aipsdisk, 1)
+    vlbatasks.uvsrt(caldata, sortedcaldata)
+    caldata.zap()
+    caldata = sortedcaldata
 
 # Flag the calibrator data, if desired
 if options.flagfile != "":
@@ -105,7 +114,7 @@ if options.tarflagfile != "":
     vlbatasks.userflag(targetdata, 1, options.tarflagfile)
 
 # Run CLCOR to correct PANG if needed
-if leakagecorrect:
+if leakagemodelfile != "":
     vlbatasks.clcor_pang(caldata, clversion)
     vlbatasks.clcor_pang(targetdata, clversion)
     clversion = clversion + 1
@@ -137,11 +146,18 @@ snversion += 1
 clversion += 1
 
 # Correct for leakage if needed
-leakagedopol = 0
-if leakagecorrect:
+#leakagedopol = 0
+if xpolmodelfile != "":
     # First the xpoldelays
     xpolscan = 1
-    xpolmodel = None
+    if not os.path.exists(xpolmodelfile):
+        print "Can't find xpol delay model  " + xpolmodelfile
+        print "Aborting!!"
+        sys.exit(1)
+    xpolmodel = AIPSImage("LKGSRC", "CLEAN", 1, 1)
+    if xpolmodel.exists():
+        xpolmodel.zap()
+    vlbatasks.fitld_image(leakagemodelfile, xpolmodel)
     xpolsolintmins = 1
     inttimesecs = 0.5 # Doesn't matter if this is wrong
     xpolsnfilename = os.getcwd() + "/xpolfring.sn"
@@ -157,27 +173,27 @@ if leakagecorrect:
     snversion += 1
     clversion += 1
 
-    # Then the leakage
-    leakagefilename = os.getcwd() + "/leakage.an"
-    hasbptable = False
-    leakagemodel = None
-    leakageacalmins = 1
-    leakagepcalmins = 1
-    leakagescan = 1
-    hasbptable = False
-    leakageoutputfile = os.getcwd() + '/' + options.sourcename + "_leakagecal_uv.fits"
-    leakageuvrange = [0,0]
-    leakageweightit = 0
-    vlbatasks.leakagecalc(caldata, options.sourcename, leakagemodel, leakagefilename,
-                refant, leakageacalmins, leakagepcalmins, leakagescan, clversion,
-                hasbptable, leakageoutputfile, leakageuvrange, leakageweightit)
-    vlbatasks.deletetable(caldata, "AN", 1)
-    vlbatasks.loadtable(caldata, leakagefilename, 1)
-    vlbatasks.deletetable(targetdata, "AN", 1)
-    vlbatasks.loadtable(targetdata, leakagefilename, 1)
-    leakagedopol = 2
-    print "Need to actually use leakagedopol below here - aborting!"
-    sys.exit()
+    ## Then the leakage
+    #leakagefilename = os.getcwd() + "/leakage.an"
+    #hasbptable = False
+    #leakagemodel = xpolmodel
+    #leakageacalmins = 1
+    #leakagepcalmins = 1
+    #leakagescan = 1
+    #hasbptable = False
+    #leakageoutputfile = os.getcwd() + '/' + options.sourcename + "_leakagecal_uv.fits"
+    #leakageuvrange = [0,0]
+    #leakageweightit = 0
+    #vlbatasks.leakagecalc(caldata, options.sourcename, leakagemodel, leakagefilename,
+    #            refant, leakageacalmins, leakagepcalmins, leakagescan, clversion,
+    #            hasbptable, leakageoutputfile, leakageuvrange, leakageweightit)
+    #vlbatasks.deletetable(caldata, "AN", 1)
+    #vlbatasks.loadtable(caldata, leakagefilename, 1)
+    #vlbatasks.deletetable(targetdata, "AN", 1)
+    #vlbatasks.loadtable(targetdata, leakagefilename, 1)
+    #leakagedopol = 2
+    #print "Need to actually use leakagedopol below here - aborting!"
+    #sys.exit()
 
 ## Run BPASS
 #scannumber = 1
