@@ -224,6 +224,7 @@ static int getFirstBlocks(Mark6File *m6f)
 static void *mark6Reader(void *arg)
 {
 	Mark6File *m6f = (Mark6File *)arg;
+	int corrupted = 0;
 
 	do
 	{
@@ -231,17 +232,31 @@ static void *mark6Reader(void *arg)
 
 		pthread_barrier_wait(&m6f->readBarrier);
 
-		v = fread(&m6f->readHeader, m6f->blockHeaderSize, 1, m6f->in);
-		if(v == 1)
+		if (!corrupted)
 		{
-			m6f->readBytes = fread(m6f->readBuffer, 1, m6f->readHeader.wb_size - m6f->blockHeaderSize, m6f->in);
+			v = fread(&m6f->readHeader, m6f->blockHeaderSize, 1, m6f->in);
+			if(v == 1)
+			{
+				int nrd = m6f->readHeader.wb_size - m6f->blockHeaderSize;
+				if ((nrd <= 0) || (nrd > (m6f->maxBlockSize - m6f->blockHeaderSize)))
+				{
+					printf("Warning: corrupt scatter-gather file! Size %d of current block exeed maxBlockSize %d\n", m6f->readHeader.wb_size, m6f->maxBlockSize);
+					memset(m6f->readBuffer, 0xFF, m6f->maxBlockSize - m6f->blockHeaderSize);
+					m6f->readBytes = 0;
+					corrupted = 1;
+				}
+				else
+				{
+					m6f->readBytes = fread(m6f->readBuffer, 1, m6f->readHeader.wb_size - m6f->blockHeaderSize, m6f->in);
+				}
+			}
+			else
+			{
+				m6f->readBytes = 0;
+			}
 		}
-		else
-		{
-			m6f->readBytes = 0;
-		}
-		
-		pthread_barrier_wait(&m6f->readBarrier);
+
+		// pthread_barrier_wait(&m6f->readBarrier);
 	} while(!m6f->stopReading);
 
 	return 0;
@@ -1008,6 +1023,7 @@ int getMark6FileList(char ***fileList)
 		(*fileList)[i] = strdup(ptrs[i]);
 	}
 	free(ptrs);
+	globfree(&G);
 
 	return uniq;
 }
@@ -1075,6 +1091,7 @@ int getMark6SlotFileList(int slot, char ***fileList)
 		(*fileList)[i] = strdup(ptrs[i]);
 	}
 	free(ptrs);
+	globfree(&G);
 
 	return uniq;
 }
