@@ -58,7 +58,7 @@ aipsdisk        = 1
 # Make path names absolute if needed
 options.target = os.path.abspath(options.target)
 options.calibrator = os.path.abspath(options.calibrator)
-leakagemodelfile = os.path.abspath(leakagemodelfile)
+xpolmodelfile = os.path.abspath(xpolmodelfile)
 
 # Get some other path names
 if ".uvfits" in options.target:
@@ -114,7 +114,7 @@ if options.tarflagfile != "":
     vlbatasks.userflag(targetdata, 1, options.tarflagfile)
 
 # Run CLCOR to correct PANG if needed
-if leakagemodelfile != "":
+if xpolmodelfile != "":
     vlbatasks.clcor_pang(caldata, clversion)
     vlbatasks.clcor_pang(targetdata, clversion)
     clversion = clversion + 1
@@ -157,7 +157,7 @@ if xpolmodelfile != "":
     xpolmodel = AIPSImage("LKGSRC", "CLEAN", 1, 1)
     if xpolmodel.exists():
         xpolmodel.zap()
-    vlbatasks.fitld_image(leakagemodelfile, xpolmodel)
+    vlbatasks.fitld_image(xpolmodelfile, xpolmodel)
     xpolsolintmins = 1
     inttimesecs = 0.5 # Doesn't matter if this is wrong
     xpolsnfilename = os.getcwd() + "/xpolfring.sn"
