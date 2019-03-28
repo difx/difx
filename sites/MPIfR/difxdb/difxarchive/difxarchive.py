@@ -62,31 +62,33 @@ def getUsage():
     
     usage = ""
     usage += "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
-    usage += "A program to archive a correlated difx experiment.\n"
+    usage += "A program to archive a correlated difx experiment.\n\n"
     usage += "Usage: %s <expcode> <path> \n\n"  % __prog__
-    usage += "<expcode>:   the experiment code e.g. ey010a\n"
-    usage += "<path>:  the path to the experiment directory\n"
-    usage += "NOTE: %s requires the DIFXROOT environment to be defined." % __prog__
+    usage += "<expcode>: the experiment code e.g. ey010a\n"
+    usage += "<path>:    the path to the experiment directory\n"
+    if (os.getenv("DIFXROOT") == None):
+        usage += "NOTE: %s requires the DIFXROOT environment to be defined.\n" % __prog__
     usage += "The program reads the database configuration and other parameters from difxdb.ini located under $DIFXROOT/conf."
 
     
     return(usage)
 
 def exitOnError(exception):
-	'''
-	Exit routine to be called whenever an error/exception has occured
-	'''
-#	print("Unexpected error:", sys.exc_info()[0])
+    '''
+    Exit routine to be called whenever an error/exception has occured
+    '''
 
-        logger.error(exception)
-	
-        # destroy kerberos tickets
-        destroyTicket()
+    # print("Unexpected error:", sys.exc_info()[0])
+    logger.error(exception)
 
-        logger.info("Aborting")
-        cleanup()
-        
-	exit(1)
+    # destroy kerberos tickets
+    destroyTicket()
+
+    logger.info("Aborting")
+    cleanup()
+
+    exit(1)
+
 
 def renewTicket(user):
     '''
@@ -96,18 +98,19 @@ def renewTicket(user):
     kinit = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True,env=tmpEnv)
     kinit.wait()
 
+
 def getTicket(user):
     '''
     obtains a kerberos ticket for the given user
     '''
     global tmpEnv
-    
+
     logger.info ("Obtaining kerberos ticket for user %s" % user)
     password = getpass.getpass("Enter password for user %s:" % (user))
 
     # temporarily set different Kerberos cache KRB5CCNAME
     tmpEnv["KRB5CCNAME"] = "/tmp/krb5cc_%s" % (user)
-    
+
     kinitcmd = '/usr/bin/kinit'
     kinit_args = [ kinitcmd, '-l 48h', '-r 30d','%s@%s' % (user,krbDomain) ]
     kinit = Popen(kinit_args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=tmpEnv)
@@ -118,10 +121,9 @@ def getTicket(user):
 def destroyTicket():
     logger.info ("Destroying kerberos ticket" )
     Popen(['/usr/bin/kdestroy'], stdin=PIPE, stdout=PIPE, stderr=PIPE, env=tmpEnv)
-    
+
 
 def readConfig():
-    
     
     if (os.getenv("DIFXROOT") == None):
         exitOnError("DIFXROOT environment must be defined.")
@@ -145,13 +147,14 @@ def readConfig():
     
     return (config)
 
+
 def getTransferFileCount(source, destination, rsyncOptions=""):
 	
     cmd = 'rsync -az --stats --dry-run %s %s %s' % ( rsyncOptions, source, destination) 
     if options.verbose:
-        print "Executing: ", cmd
+        logger.info("Executing: " + str(cmd))
     proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=tmpEnv)
-    
+
     remainder = proc.communicate()[0]
     
     matchTotal = re.findall(r'Number of files: (\d+)', remainder)
@@ -159,9 +162,11 @@ def getTransferFileCount(source, destination, rsyncOptions=""):
     mn = re.findall(r'Number of files transferred: (\d+)', remainder)
     fileCount = int(mn[0])
     
-#    print "Number of files to be transferred: %d " % fileCount
+    if options.verbose:
+        logger.info ("Number of files to be transferred: %d " % fileCount)
     
     return(totalCount, fileCount)
+
 
 def syncDir(path, user, config, fileCount):
     
@@ -194,6 +199,7 @@ def syncDir(path, user, config, fileCount):
     sys.stdout.write('\n')
     return
 
+
 def buildReferenceOptions():
     
     includePattern = ["*.vex", "*.obs", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log", "cf_*", "rf_*"]
@@ -222,10 +228,10 @@ def syncReferenceDir(path, referencePath, fileCount, options):
     
     cmd += path + " " + referencePath
     
-    print cmd 
+    print (cmd)
     logger.info( "Syncing reference files from %s to: %s" % (path, referencePath))
-    
-    proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,env=tmpEnv)
+
+    proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,env=tmpEnv)    
     
     while True:
         output = proc.stdout.readline()
@@ -245,9 +251,68 @@ def syncReferenceDir(path, referencePath, fileCount, options):
     sys.stdout.write('\n')
     return
 
-def verifyArchive(filename):
+
+def makeTarfilename(outDir, filename):
+    '''
+    Generate full-path filename of tar file and suffix
+    '''
+
+    if options.zip:
+        tarfilename = "%s/%s.gz" % (outDir, filename)
+    else:
+        tarfilename = "%s/%s" % (outDir, filename)
+    return tarfilename
+
+
+def makeBasedir(rootPath):
+    baseDir = os.path.dirname(rootPath)
+    if len(baseDir) == 0:
+        baseDir = "."
+    return baseDir
+
+
+def makeFullPackdirName(rootPath, packDir):
+    '''
+    Return full path name (?) for root and subdir (?)
+    '''
+
+    baseDir = makeBasedir(rootPath)
+    expDir = os.path.basename(rootPath)
+    if rootPath == packDir:
+        actualPackDir = expDir + "/*"
+    else:
+        actualPackDir = "%s/%s" % (expDir, packDir)
+    return actualPackDir
+
+
+def archiveExists(outDir, filename):
+    '''
+    Check if archive file exists. Does not check completeness.
+    :return True if archive file exists
+    '''
+
+    tarfilename = makeTarfilename(outDir, filename)
+    return os.path.isfile(tarfilename)
+
+
+def removeArchive(outDir, filename):
+    '''
+    Remove archive file if it (still) exists
+    '''
+
+    tarfilename = makeTarfilename(outDir, filename)
+    if os.path.isfile(tarfilename):
+        try:
+            os.remove(tarfilename)
+        except OSError as e:
+            exitOnError("Could not remove old tar: %s: %s" % (tarfilename,str(e)))
+
+
+def verifyArchive(filename, fatal=True):
     '''
     Verifies the tar contents against the file system 
+    :param fatal: bool Sets behaviour at verification errors to either exit (default:True) or return.
+    :return Returns list of files in tar upon success, or 'None' upon error when in non-fatal.
     '''
 
     # get archive file info
@@ -256,76 +321,110 @@ def verifyArchive(filename):
     else:
         tar = tarfile.open(filename, "r")
 
-    tarFiles = []
-    tarDirectories = []
+    filesInTar = []
+    dirsInTar = []
 
-    logger.info( "Verifying the contents of the archive %s" % (filename))
+    logger.info("Verifying the contents of the archive %s against files" % (filename))
     for tarinfo in tar:
 
         if tarinfo.isreg():
             # verify file exists in the filesystem
             if not os.path.exists(tarinfo.name):
-                exitOnError("The archive contains a file which does not exist in the filesystem: %s" % (tarinfo.name))
+                if fatal:
+                    exitOnError("The archive contains a file which does not exist in the filesystem: %s" % (tarinfo.name))
+                logger.error("The archive contains a file which does not exist in the filesystem: %s" % (tarinfo.name))
+                return None
 
             # get info for file in the filesystem
             statinfo = os.stat(tarinfo.name)
 
             # verify file sizes
             if tarinfo.size != statinfo.st_size:
-                exitOnError( "The archive filesize differs from the filesystem size for file %s" % (tarinfo.name))
+                if fatal:
+                    exitOnError("The archive filesize differs from the filesystem size for file %s" % (tarinfo.name))
+                logger.error("The archive filesize differs from the filesystem size for file %s" % (tarinfo.name))
+                return None
 
+            # verify timestamps (note: os.stat() may return decimal time, while tarinfo might not!)
+            if int(tarinfo.mtime) != int(statinfo.st_mtime):
+                 if fatal:
+                     exitOnError("The archive file time differs from the filesystem time for file %s" % (tarinfo.name))
+                 logger.error("The archive file time differs from the filesystem time for file %s" % (tarinfo.name))
+                 return None
+
+            # success if we reached this
             if options.verbose:
-                print "Verifying: ", tarinfo.name, " size=", tarinfo.size, "fs size=", statinfo.st_size, "OK"
+                logger.info("Verifying: " + str(tarinfo.name) + " size=" + str(tarinfo.size) + "fs size=" + str(statinfo.st_size) + " OK")
 
-            tarFiles.append(tarinfo.name)
+            filesInTar.append(tarinfo.name)
 
         elif tarinfo.isdir():
-            tarDirectories.append(tarinfo.name)
+            dirsInTar.append(tarinfo.name)
 
     tar.close()
 
     logger.info( "Contents of the archive %s OK" % (filename))
-    return tarFiles
+    return filesInTar
 
-def verifyCompleteness(tarfiles, packDir):
+
+def verifyCompleteness(tarfiles, packDir, fatal=True):
     '''
-    checks that all files in the packDir and subdirectories are contained in the tarfiles
+    Checks that all files in the packDir and subdirectories are contained in the tarfiles
+    :param fatal: bool Sets behaviour at verification errors to either exit (default:True) or return.
+    :return Returns True upon success, or False upon tar incompleteness when in non-fatal mode.
     '''
 
-    logger.info( "Checking completeness of the archive ")
+    logger.info("Checking completeness of %d files in %s against content of archive" % (len(tarfiles),packDir))
+
     for subdir, dirs, files in os.walk(packDir):
         for file in files:
             checkFile = "%s/%s" % (subdir, file)
             if checkFile not in tarfiles:
-                exitOnError("Disk file %s not found in archive" % (checkFile))
+                if fatal:
+                    exitOnError("Disk file %s not found in archive" % (checkFile))
+                logger.error("Disk file %s not found in archive" % (checkFile))
+                return False
             if options.verbose:
-                print "Verified that %s is contained in the archive" % (file)
-    logger.info( "Archive is complete" )
+                logger.info("Verifying: local %s in tar OK" % (checkFile))
+    logger.info("Archive is complete")
+    return True
+
+
+def verifyMutualConsistency(rootPath, packDir, outDir, filename, fatal=True):
+    '''
+    Checks that all files found in tar also exist in packDir, and vice versa
+    :param fatal: bool Sets behaviour at verification errors to either exit (default:True) or return.
+    :return True when everything is consistent, False upon incompleteness when in non-fatal mode
+    '''
+
+    baseDir = makeBasedir(rootPath)
+    os.chdir(baseDir)
+
+    tarfilename = makeTarfilename(outDir, filename)
+    filesintar = verifyArchive(tarfilename, fatal=fatal)
+    if filesintar is None:
+        return False
+
+    actualPackDir = makeFullPackdirName(rootPath, packDir)
+    complete = verifyCompleteness(filesintar, actualPackDir, fatal=fatal)
+    return complete
+
 
 def packDirectory(rootPath, packDir, outDir, filename, recurse=True):
+    '''
+    Pack content of a directory into a new tar file.
+    The caller should afterwards call verifyMutualConsistency().
+    '''
 
-    if options.zip:
-        filename = "%s/%s.gz" % (outDir, filename)
-    else:
-        filename = "%s/%s" % (outDir, filename)
+    tarfilename = makeTarfilename(outDir, filename)
+    actualPackDir = makeFullPackdirName(rootPath, packDir)
 
-    baseDir = os.path.dirname(rootPath)
-    expDir = os.path.basename(rootPath)
-
-    if len(baseDir) == 0:
-        baseDir = "."
-
-    if rootPath == packDir:
-        packDir = expDir + "/*"
-    else:
-        packDir = "%s/%s" % (expDir, packDir)   
-
-    if os.path.isfile(filename):
-        exitOnError("File already exists (%s)" % (filename))
+    if os.path.isfile(tarfilename):
+        exitOnError("File already exists (%s)" % (tarfilename))
 
     errorCount = 0
 
-    logger.info("Creating tar file %s" % (filename))
+    logger.info("Creating tar file %s" % (tarfilename))
 #
     tarOpts = " --create "
 
@@ -338,21 +437,48 @@ def packDirectory(rootPath, packDir, outDir, filename, recurse=True):
     if recurse == False:
         tarOpts += " --no-recursion "
 
+    # Change directory to top-level of directory to be packed
+    baseDir = makeBasedir(rootPath)
     os.chdir(baseDir)
 
 #    if tarMode == "directory":
 
-    command = '/bin/bash -c "tar %s --file - %s | pv -p --timer --rate --bytes > %s"' % (tarOpts, packDir, filename)
+    command = '/bin/bash -c "tar %s --file - %s | pv -p --timer --rate --bytes > %s"' % (tarOpts, actualPackDir, tarfilename)
     if options.verbose:
-        print "Executing command: ", command
+        print ("Executing command: ", command)
 
     child = pexpect.spawn(command, logfile = sys.stdout, timeout=None)
     ret = child.expect([pexpect.EOF,pexpect.TIMEOUT, "Error"])
     if ret != 0:
-        exitOnError("Error creating archive: %s " % (filename))
+        exitOnError("Error creating archive: %s " % (tarfilename))
 
-    tarfiles = verifyArchive(filename)
-    verifyCompleteness(tarfiles, packDir)
+
+def packDirectoryResumably(rootPath, packDir, outDir, tarname, recurse=True):
+    '''
+    Pack content of a directory into a new tar file.
+    If the --keep-tar option is active, a pre-existing tar is checked
+    for reusability. It is rebuilt if not usable.
+    '''
+
+    repackage = True # default
+
+    logger.info("Now checking %s" % packDir)
+
+    if options.keepTar:
+        if archiveExists(archiveDir, tarname):
+            logger.info("Found existing %s, checking content" % (tarname))
+            repackage = not verifyMutualConsistency(rootPath, packDir, archiveDir, tarname, fatal=False)
+            logger.info("Content of existing %s is consistent with files: %s" % (tarname,str(not repackage)))
+
+    if repackage:
+       logger.info("Now packing %s" % packDir)
+       removeArchive(archiveDir, tarname)
+       packDirectory(rootPath, packDir, archiveDir, tarname, recurse=recurse)
+       verifyMutualConsistency(rootPath, packDir, archiveDir, tarname)
+       logger.info("Done packing %s" % packDir)
+    else:
+       logger.info("Verified %s is complete and consistent against %s/%s" % (tarname, rootPath, packDir))
+
 
 def setupLoggers(logPath, code):
     
@@ -382,16 +508,17 @@ def confirmAction():
      # if --force option was used skip confirmation
     if not options.force:
             
-        print 'Are you sure you want to proceed? [y/N]'
+        print ('Are you sure you want to proceed? [y/N]')
         a = lower(sys.stdin.readline())
         if strip(a) == 'y':
-            print 'OK -- proceeding\n'
+            print ('OK -- proceeding\n')
         else:
-            print 'Not continuing.\n'
+            print ('Not continuing.\n')
 
             # destroy kerberos tickets
             destroyTicket()
             exit(0)
+
 
 def confirmArchiveDirs(archiveDirs):
     while True:
@@ -401,10 +528,10 @@ def confirmArchiveDirs(archiveDirs):
 	else:
 		dirs = ' ' .join(archiveDirs)
 
-        print "-------------------------------------------------"
-        print "Will archive all files in the top-level directory"
-        print "plus the following directories: ", dirs
-        print "-------------------------------------------------"
+        print ("-------------------------------------------------")
+        print ("Will archive all files in the top-level directory")
+        print ("plus the following directories: ", dirs)
+        print ("-------------------------------------------------")
 
         while True:
             ret = raw_input("Proceed using this selection? [y/n] (n for making changes): ")
@@ -464,8 +591,8 @@ def getArchiveDirs(path):
             archiveDirs = dirnames
         else:
 
-            print "-------------------------------------------"
-            print "Found the following top-level directories: ", ' ' . join(dirnames)
+            print ("-------------------------------------------")
+            print ("Found the following top-level directories: ", ' ' . join(dirnames))
             archiveDirs = confirmArchiveDirs(archiveDirs)
 
         return archiveDirs, filenames
@@ -478,7 +605,8 @@ def cleanup():
     path = "%s/%s/%s" % (tmpPath, tmpDir, code)
     if os.path.isdir(path):
         # remove the tmp_difxlog directory and all its subdirs
-        shutil.rmtree(path, ignore_errors=False)
+        if not options.keepTar:
+            shutil.rmtree(path, ignore_errors=False)
     
 if __name__ == "__main__":
 
@@ -491,6 +619,7 @@ if __name__ == "__main__":
     parser.add_option("-a", "--all", dest="all" ,action="store_true", default=False, help="Backup all files and directories.")
     parser.add_option("-D", "--db-only", dest="dbOnly" ,action="store_true", default=False, help="Update database only, don't copy files (use with care!) ")
     parser.add_option("-k", "--keep", dest="keep" ,action="store_true", default=False, help="Keep files on local disk after archiving.")
+    parser.add_option("-K", "--keep-tar", dest="keepTar" ,action="store_true", default=False, help="For resumability, retain tar files until successfully uploaded. Allows difxarchive to be called again to continue interrupted archiving (implies --keep)")
     parser.add_option("-v", "--verbose", action="store_true", default=False, help="Enable verbose output")
     parser.add_option("-z", "--zip", action="store_true", default=False, help="Zip archive")
     parser.add_option("-t", "--tmp-path", dest="tmpPath", default=None, help="Path under which the temporary directory will be created that will hold the archive tars.")
@@ -516,30 +645,33 @@ if __name__ == "__main__":
         if not isdir(path):
             sys.exit("Directory %s does not exist" % (path))
 
-    
+    if options.keepTar:
+        # have to keep original files as well to be able to verify & resume
+        options.keep = True
+
     # create temporary directories for holding the archival products
     if (options.tmpPath):
-	tmpPath = options.tmpPath
+        tmpPath = options.tmpPath
     else:
- 	tmpPath = path
+        tmpPath = path
+
+    try:
+        os.mkdir(tmpPath + "/" + tmpDir)
+    except:
+        pass
 
     archiveDir = "%s/%s/%s" % (tmpPath, tmpDir, code)
     try:
-   	os.mkdir(tmpPath + "/" + tmpDir)
-    except:
-    	pass
-
-    try:
-    	os.mkdir(archiveDir)
-    except Exception as e:
-    	sys.exit(e)
-    	
+        os.mkdir(archiveDir)
+    except OSError as e:
+        if not options.keepTar:
+            sys.exit(e)
 
     # setup the console and file logger
     logPath = "%s/%s" % (tmpPath, tmpDir)
     setupLoggers(logPath, code)
 
-    logger.info("Starting difxarchive") 
+    logger.info("Starting difxarchive")
 
     # try to open the database connection
     config = readConfig()
@@ -563,7 +695,7 @@ if __name__ == "__main__":
         
     # check if the experiment has already been archived
     if isExperimentArchived(session, code):
-        print "Experiment has been archived already."
+        print ("Experiment has been archived already.")
         confirmAction()
     
     if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
@@ -577,6 +709,8 @@ if __name__ == "__main__":
     
     destination = user + "@" + server + ":" + remotePath
 
+    completeSuccess = False
+
     try:
         if not options.dbOnly:
 	
@@ -588,14 +722,11 @@ if __name__ == "__main__":
 
             # pack the directories
             for dir in archiveDirs:
-                logger.info("Now packing %s" % dir)
-                packDirectory(path, dir, archiveDir, dir + ".tar", recurse=True)
-                logger.info("Done packing %s" % dir)
+                packDirectoryResumably(path, dir, archiveDir, dir + ".tar", recurse=True)
                 renewTicket(user)
-		logger.info("Alive")
-
+                logger.info("Alive")
             ## now pack the top-level files
-            packDirectory(path, path, archiveDir, "main.tar", recurse=False)
+            packDirectoryResumably(path, path, archiveDir, "main.tar", recurse=False)
             renewTicket(user)
 
             # Now sync the tar files to the backup server
@@ -604,7 +735,7 @@ if __name__ == "__main__":
                 total, fileCount = getTransferFileCount(archiveDir, destination)
                 
                 if options.verbose:
-                    print "Remaining files to be transfered: ", fileCount
+                    print ("Remaining files to be transfered: ", fileCount)
 
                 if (fileCount == 0):
                     break
@@ -688,16 +819,17 @@ if __name__ == "__main__":
 
         if not options.dbOnly and not options.keep:
             # delete files
-            print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
+            print ('Archival process completed. Now deleting path %s including all files and subdirectories' % path)
             confirmAction()
             logger.info("Deleted %s" % (path))
 #
             shutil.rmtree(path, ignore_errors=True)
         
         
+        completeSuccess = True
 
     except Exception as e:
-	pass
+        pass
         #exitOnError(e)
     except KeyboardInterrupt:
         sys.exit(1)
@@ -705,6 +837,9 @@ if __name__ == "__main__":
         # destroy kerberos tickets
         destroyTicket()
         logger.info ("Done")
+        if completeSuccess:
+            # allow deletion of tar files in cleanup()
+            options.keepTar = False
         cleanup()
         
     
