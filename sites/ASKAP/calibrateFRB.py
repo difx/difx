@@ -45,6 +45,7 @@ parser.add_option("-x", "--xpoldelaymodelfile", default="", help="Model to use f
 parser.add_option("--imagesize", type=int, default=128, help="Size of the image to make")
 parser.add_option("--pixelsize", type=float, default=1, help="Pixel size in arcseconds")
 parser.add_option("--uvsrt", default=False, action="store_true", help="Run UVSRT on the data after loading")
+parser.add_option("--noisecentre", default="", help="CASA format position at which noise should be estimated, blank=don't make an off-source image")
 (options, junk) = parser.parse_args()
 AIPS.userno     = options.userno
 refant          = options.refant
@@ -273,8 +274,21 @@ if options.imagecube:
         maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize/2,imagesize/2)
         #casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask="FRB.cube.mask",nchan=-1,start=1,width=24,outframe="",veltype="radio",imsize=128,cell=["1.0arcsec", "1.0arcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, options.phasecentre, pol))
         casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, options.averagechannels, imagesize, pixelsize, pixelsize, options.phasecenter, pol))
+
+        # If desired, produce the noise image as well
+        if len(options.noisecentre) > 1:
+            offsourcebase = "OFFSOURCE.cube.%s" % (pol)
+            imagebases = '["%s","%s"]' % (imagebase,offsourcebase)
+            os.system("rm -rf %s.*" % offsourcebase)
+            maskstr2 = "[%s,'']" % (maskstr)
+            imsizestr = "[[%d,%d],[%d,%d]]" % (imagesize, imagesize, imagesize*4, imagesize*4)
+            cellstr = '["%.2farcsec", "%.2farcsec"]' % (pixelsize, pixelsize)
+            phasecenterstr = "['', '%s']" % (options.noisecentre)
+            casaout.write('clean(vis="%s",imagename=%s,outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=%s,phasecenter=%s,restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebases, maskstr2, options.averagechannels, imsizestr, cellstr, phasecenterstr, pol))
+            
         casaout.close()
         os.system("casa --nologger -c imagescript.py")
+
 
         # If desired, also make the JMFIT output
         if options.imagejmfit:
@@ -285,4 +299,3 @@ if options.imagecube:
             for i in range(numchannels/options.averagechannels):
                 locstring = "%d,%d,%d,%d,%d,%d" % (imagesize/2-12, imagesize/2-12, i, imagesize/2+12, imagesize/2+12, i)
                 os.system("jmfitfromfile.py %s.fits %s.slice%03d.jmfit.stats %s" % (imagebase, imagebase, i, locstring))
-
