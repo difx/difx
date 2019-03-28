@@ -25,11 +25,14 @@ from os.path import isfile, isdir
 from os import umask, popen, system, getcwd, getenv
 from shutil import move
 from datetime import *
+import re
 
 program = 'mk62v2d'
 version = '0.1'
 verdate = '20180412'
 author = 'Mark Wainright'
+
+MARK6_VSN_IDS = ['%']
 
 def usage(pgm):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
@@ -89,7 +92,8 @@ def convertscandata2mjd(scandata):
 	    print 'could not determine scan length:', scan[2], 'scan:', scan[0]
 	    continue
 
-def getvexscandata(station, vexfile):
+def getvexscandata(station, vexobsfile):
+    vexfile = open(vexobsfile, 'r')
     schedfound = False
     firstscanfound = False
     endscan = True
@@ -140,6 +144,88 @@ def getvexscandata(station, vexfile):
     convertscandata2mjd(scandata)
     
     return scandata       
+
+def getvexantennamodlists(vexobsfile):
+    '''
+    Returns tuple (experName,antennaModuleList,modList) for Mark6 antennas and VSNs found
+    in the given file with path vexobsfile.
+
+    On errors this function exits the script.
+    '''
+    experName = ''
+    ant = ''
+    antennaModuleList = []
+    modList = []
+
+    # Regexps to flexibly detect VEX entries and fields regardless of formatting (can test with https://regex101.com/)
+    reComment = re.compile("^\s*\*")
+    reSection = re.compile("^\s*\$\s*(.*?)\s*;")
+    reDef = re.compile("^\s*def\s+(.*?)\s*;")
+    reVSN = re.compile("\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:")
+    reEnddef = re.compile("\W*enddef\s*;")
+
+    # First pass: find experiment name
+    experNameFound = False
+    vexobs = open(vexobsfile, "r")
+    for line in vexobs:
+            i = line.find('exper_name')
+            if i != -1:
+	        experNameFound = True
+	        lineend = line[i+10:len(line)-1]
+	        for i in range(len(lineend)):
+	            if lineend[i] not in [' ', '=', ';']:
+		        experName += lineend[i].upper()
+                break
+
+    if experNameFound is False:
+        print "could not find experiment name, exiting"
+        exit(1)
+
+    # Second pass: get antennas and modules
+    tapelogObsFound = False
+    vexobs.seek(0)
+    for line in vexobs:
+
+        if reComment.match(line):
+            continue
+
+        section = reSection.search(line)
+        if section:
+            if not tapelogObsFound:
+               tapelogObsFound = section.group(1) == 'TAPELOG_OBS'
+            else:
+               # print ("New section %s after TAPELOG_OBS. Finished." % (section.group(1)))
+               break
+
+        if not tapelogObsFound:
+            continue
+
+        newdef = reDef.search(line)
+        if newdef:
+            ant = newdef.group(1)
+	    modList = []
+
+        vsn = reVSN.search(line)
+        if vsn:
+            vsnNr = int(vsn.group(1))
+            mod = vsn.group(2)
+            # add only Mark6 modules to modlist
+            if any([key in mod for key in MARK6_VSN_IDS]):
+	        modList.append(mod)
+
+        enddef = reEnddef.search(line)
+        if enddef:
+	    antennaModuleList.append([ant,modList])
+
+    if tapelogObsFound is False:
+        print "could not find TAPELOG_OBS data, exiting"
+        exit(1)
+
+    if len(antennaModuleList) is 0:
+        print "no antennas with mark6 modules found, nothing more to do, exiting"
+        exit(0)
+
+    return (experName,antennaModuleList,modList)
 
 # main execution
 
@@ -203,98 +289,64 @@ for line in f:
 f.close()
 
 # get experiment name and TAPELOG_OBS data from .vex.obs
-experName = ''
-experNameFound = False
-tapelogObsFound = False
-ant = ''
-modList = []
-antennaModuleList = []
-
-vexobs = open(vexObsFile, "r")
-for line in vexobs:
-
-    if experNameFound is False:
-        i = line.find('exper_name')
-	if i != -1:
-	    experNameFound = True
-	    lineend = line[i+10:len(line)-1]
-	    for i in range(len(lineend)):
-	        if lineend[i] not in [' ', '=', ';']:
-		    experName += lineend[i].upper()
-    elif tapelogObsFound is False:
-        if '$TAPELOG_OBS;' in line:
-	    tapelogObsFound = True
-    elif tapelogObsFound is True:
-        if 'def ' in line:
-	    ant = line[4:6].upper()
-	    modList = []
-	elif '  VSN = ' in line:
-	    linesegs = line.split(':')
-	    mod = linesegs[1].strip()
-	    if '%' in mod:   # adds only mark6 modules to modList
-	        modList.append(linesegs[1].strip())
-	elif 'enddef;' in line and len(modList) > 0:
-	    antennaModuleList.append([ant,modList])
-	elif '*-----' in line:
-	    break
-
-if experNameFound is False or tapelogObsFound is False:
-    print "could not find experiment name or TAPELOG_OBS data, exiting"
-    exit(1)
-
-if len(antennaModuleList) is 0:
-    print "no antennas with mark6 modules found, nothing more to do, exiting"
-    exit(0)
+(experName,antennaModuleList,modList) = getvexantennamodlists(vexObsFile)
 
 if verbose > 1:
-    print "Experiment name:", experName, "\n"
-    print "List of modules recorded at antennas:"
+    print ("Experiment name: %s" % (experName))
+    print ("List of modules recorded at antennas:")
     for antMod in antennaModuleList:
-        print "%s recorded on %s" % (antMod[0], antMod[1])
-    print
+        print ("%s recorded on %s" % (antMod[0], antMod[1]))
+    print ("")
 
 # make an antenna.filelist for each antenna in the antenna module list
 antList = []
 antNoModuleFileList = []
-antFileWritten = False
-for antMod in antennaModuleList:
-    antList.append(antMod[0])
-    antennaFileName = antMod[0].lower() + '.filelist'
+for (ant,modlist) in antennaModuleList:
+    antList.append(ant)
+    antennaFileName = ant.lower() + '.filelist'
+    antFileWritten = False
     antfile = open(antennaFileName, 'w')
-    for mod in antMod[1]:
+    missingAntModules = []
+    for mod in modlist:
         moduleFileName = mod + '.filelist'
         moduleFilePath = dirPath + '/' + moduleFileName
         if isfile(moduleFilePath):
             if verbose > 1:
-                print moduleFileName, "exists, using it to generate", antennaFileName
-            modfile = open(moduleFilePath, 'r')
-	    experPrefix = experName + '_' + antMod[0].upper()
-            for line in modfile:
-                if experPrefix in line:
-	            antfile.write(line)
-		    antFileWritten = True
-            modfile.close()
-
-if antFileWritten != True:
-    if verbose > 1:
-        print "No module filelists available for antenna", antMod[0]
-    antNoModuleFileList.append(antMod[0])
-else:
+                print ("%s exists, using it to generate %s" % (moduleFileName,antennaFileName))
+            with open(moduleFilePath, 'r') as modfile:
+	        experPrefix = experName + '_' + ant.upper() # ToDo: is this naming really valid always?
+                for line in modfile:
+                    if experPrefix.lower() in line.lower():
+	                antfile.write(line)
+		        antFileWritten = True
+                    elif verbose > 2:
+                        print ("   skipping %s not in %s" % (line.strip(),experPrefix))
+        else:
+            missingAntModules.append(mod)
+    if missingAntModules:
+       if verbose > 1:
+           print ("Warning: antenna %s is missing these module file lists: %s" % (ant,str(missingAntModules)))
+    if not antFileWritten:
+        if verbose > 1:
+            print ("Warning: no module filelists available for antenna %s: missing %s" % (ant,str(missingAntModules)))
+        antNoModuleFileList.append(ant)
+    else:
+        print ("Wrote %s based on VSN-matching dir file lists" % (antennaFileName))
     antfile.close()
 
 if len(antNoModuleFileList) > 0:
     for ant in antNoModuleFileList:
 	antFileName = ant.lower() + ".filelist"
         if verbose > 1:
-            print "generating", antFileName, "file from .vex.obs file:", vexObsFile
-	vexobs.seek(0)
-	scandata = getvexscandata(ant, vexobs)
+            print ("Warning: using VEX %s for antenna %s to generate tentative %s. Please verify it manually!" % (ant, vexObsFile, antFileName))
+	scandata = getvexscandata(ant, vexObsFile)
 	if len(scandata) > 0:
 	    antfile = open(antFileName, 'w')
 	    for scan in scandata:
 	        line = experName + '_' + ant.upper() + '_' + scan[0] + ' ' + scan[1] + ' ' + scan[2] + '\n'
 		antfile.write(line)
 	    antfile.close()
+            print ("Wrote %s based on VEX, please check that invented scan names match recorded names" % (antFileName))
 
 # add mark6filelist tags to .v2d file
 if verbose > 1:
@@ -315,5 +367,4 @@ for line in readv2d:
         writev2d.write(line)
 readv2d.close()
 writev2d.close()
-vexobs.close()
 
