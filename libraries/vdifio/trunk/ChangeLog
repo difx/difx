@@ -1,6 +1,7 @@
 Version 1.5
 ~~~~~~~~~~~
 * Post DiFX-2.6
+* Raise max number of threads to 256
 
 Version 1.4
 ~~~~~~~~~~~
