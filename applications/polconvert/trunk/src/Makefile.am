@@ -1,6 +1,8 @@
 #
 # Makefile for PolConvert within DiFX tree
 #
+.NOTPARALLEL:
+
 if HAVE_IT_ALL
 PolConvertSources = \
 	CalTable.cpp CalTable.h \
