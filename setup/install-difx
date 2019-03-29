@@ -46,6 +46,8 @@ Options:
 
    --withm6support Build Mark6 support (which requires FUSE)
 
+   --withmark6meta Build Mark6 metadata support
+
    --withpolconvert Build PolConvert (which requires CASA)
 
    --withpython    Build Python bindings for certain libraries (requires ctypes)
@@ -93,7 +95,7 @@ Options:
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
-                    "datasim", "difxcalc11", "mark6sg"]
+                    "datasim", "difxcalc11", "mark6sg", "mark6meta"]
 
    Remember, if you haven't signed up to the difx-users mailing list, please
    do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.
@@ -112,7 +114,7 @@ try:
          "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
          "withpolconvert", "noinstall", "reconf", "noconf", "clean",
-         "g77", "extraflags=", "makeflags=", 
+         "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
          "doonly=" ])
 except getopt.GetoptError, err:
@@ -148,6 +150,7 @@ components = {"perl"          :False,
               "difxmessage"   :True,
               "dirlist"       :True,
               "mark5access"   :True,
+              "mark6meta"     :False,
               "codifio"       :True,
               "vdifio"        :True,
               "calcif2"       :True,
@@ -177,6 +180,7 @@ def setNormalComponentsFalse():
 	components["difxmessage"] = False
 	components["dirlist"] = False
 	components["mark5access"] = False
+	components["mark6meta"] = False
 	components["codifio"] = False
 	components["vdifio"] = False
 	components["calcif2"] = False
@@ -232,6 +236,8 @@ if len(opts) > 0:
             components["hops"] = True
         if o == "--withm6support":
             components["m6support"] = True
+        if o == "--withmark6meta":
+            components["mark6meta"] = True
         if o == "--withpolconvert":
             components["polconvert"] = True
         if o == "--withguiserver":
@@ -346,6 +352,8 @@ if components["mark6sg"]:
     libtargets.append(["mark6sg",    difx_version, True,True,True,False])
 if components["mark5access"]:
     libtargets.append(["mark5access",difx_version, True,True,True,False])
+if components["mark6meta"]:
+    libtargets.append(["mark6meta",  difx_version, True,True,True,False])
 if components["python"]:
     libtargets.append(["python",     difx_version, True,True,False,False])
 if components["codifio"]:
