@@ -56,10 +56,12 @@ snversion       = 1
 clversion       = 1
 aipsdisk        = 1
 
+
 # Make path names absolute if needed
 options.target = os.path.abspath(options.target)
 options.calibrator = os.path.abspath(options.calibrator)
-xpolmodelfile = os.path.abspath(xpolmodelfile)
+if xpolmodelfile != '':
+    xpolmodelfile = os.path.abspath(xpolmodelfile)
 
 # Get some other path names
 if ".uvfits" in options.target:
