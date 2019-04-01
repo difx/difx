@@ -138,11 +138,10 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 
 	if(status > 0)
 	{
-		/* FIXME -- change to correct output name */
-		strcpy(D->job->imFile, "im.new");
-	
 		/* write data back out */
 		writeDifxIM(D);
+
+		printf("Wrote new version of %s with VMF.\n", D->job->imFile);
 	}
 	else
 	{

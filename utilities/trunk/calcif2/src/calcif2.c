@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2019 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,7 +47,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = VERSION;
-const char verdate[] = "20160226";
+const char verdate[] = "20190326";
 
 typedef struct
 {
@@ -533,6 +533,9 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 	char fn[DIFXIO_FILENAME_LENGTH];
 	int v;
 	const char *difxVersion;
+	char delayModel[DIFXIO_FILENAME_LENGTH] = "";
+	int doVMF = 0;	/* after running, replace atmosphere with Vienna Mapping Function (VMF) version */
+	int doMet = 0;	/* after running, replace atmosphere with VMF and use supplied weather data */
 
 	difxVersion = getenv("DIFX_VERSION");
 
@@ -603,6 +606,42 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 
 	if(strlen(D->job->delayModel) > 0)
 	{
+		if(strcasecmp(D->job->delayModel, "VMF") == 0)
+		{
+			doVMF = 1;
+		}
+		else if(strcasecmp(D->job->delayModel, "Met") == 0)
+		{
+			doVMF = 1;
+			doMet = 1;
+		}
+		else
+		{
+			int i;
+
+			snprintf(delayModel, DIFXIO_FILENAME_LENGTH, "%s", D->job->delayModel);
+			for(i = 0; delayModel[i]; ++i)
+			{
+				if(delayModel[i] == '+')
+				{
+					delayModel[i] = 0;
+					if(strcasecmp(delayModel+i+1, "VMF") == 0)
+					{
+						doVMF = 1;
+					}
+					else if(strcasecmp(delayModel+i+1, "Met") == 0)
+					{
+						doVMF = 1;
+						doMet = 1;
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	if(strlen(delayModel) > 0)
+	{
 		/* use specified delay model program rather than the calcserver */
 		
 		const int MaxCommandLength = 1024;
@@ -667,7 +706,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		}
 		if(opts->verbose > 0)
 		{
-			printf("About to write IM file\n");
+			printf("About to write IM file: %s\n", D->job->imFile);
 		}
 		tweakDelays(D, "calcif2.delay", opts->verbose);
 		writeDifxIM(D);
@@ -677,6 +716,23 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		}
 	}
 	deleteDifxInput(D);
+
+	if(doVMF)
+	{
+		const int MaxCmdLength=1024;
+		char cmd[MaxCmdLength];
+
+		snprintf(cmd, MaxCmdLength, "difxvmf %s %s\n", (doMet ? "-usewx" : ""), prefix);
+		if(opts->verbose > 0)
+		{
+			printf("About to push VMF%s into IM file: %s\n", (doMet ? "+WX" : ""), D->job->imFile);
+			if(opts->verbose > 1)
+			{
+				printf("  Executing: %s\n", cmd);
+			}
+		}
+		system(cmd);
+	}
 
 	return 0;
 }
