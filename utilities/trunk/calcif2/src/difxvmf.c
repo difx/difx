@@ -213,6 +213,12 @@ int main(int argc, char **argv)
 			{
 				versionOverride = 1;
 			}
+			else
+			{
+				fprintf(stderr, "Error: difxvmf: unknown argument: %s\n", argv[a]);
+
+				exit(EXIT_FAILURE);
+			}
 		}
 		else
 		{
@@ -226,7 +232,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	printf("%d/%d file sets converted (%d total records).\n", nGood, nTry, nRecord);
+	if(nTry > 1 || verbose > 0)
+	{
+		printf("%d/%d file sets converted (%d total records).\n", nGood, nTry, nRecord);
+	}
 
 	return EXIT_SUCCESS;
 }

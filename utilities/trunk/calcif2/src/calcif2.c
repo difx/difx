@@ -47,7 +47,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = VERSION;
-const char verdate[] = "20190326";
+const char verdate[] = "20190401";
 
 typedef struct
 {
@@ -652,7 +652,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 			printDifxInput(D);
 		}
 
-		snprintf(cmd, MaxCommandLength, "%s %s.calc", D->job->delayModel, prefix);
+		snprintf(cmd, MaxCommandLength, "%s %s.calc", delayModel, prefix);
 		if(opts->verbose > 0)
 		{
 			printf("Executing the following: %s\n", cmd);
@@ -722,7 +722,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		const int MaxCmdLength=1024;
 		char cmd[MaxCmdLength];
 
-		snprintf(cmd, MaxCmdLength, "difxvmf %s %s\n", (doMet ? "-usewx" : ""), prefix);
+		snprintf(cmd, MaxCmdLength, "difxvmf %s %s\n", (doMet ? "--usewx" : ""), prefix);
 		if(opts->verbose > 0)
 		{
 			printf("About to push VMF%s into IM file: %s\n", (doMet ? "+WX" : ""), D->job->imFile);

@@ -139,8 +139,6 @@ WXData *loadWeatherForProject(DifxInput *D)
 		}
 
 		n += loadWeatherForAntenna(wx + a, filename);
-
-printf("%s -> %d\n", filename, n);
 	}
 
 	if(n == 0)

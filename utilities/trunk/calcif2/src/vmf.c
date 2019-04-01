@@ -399,10 +399,16 @@ static int processScan(int scanId, DifxInput *D, VMFData *vmfData, int vmfRows, 
 			
 		}
 
-		printf("Processing antId=%d = %s = %s = %s\n", antId, da->name, antInfo->name, antInfo->ivsName);
+		if(verbose > 1)
+		{
+			printf("Processing antId=%d = %s = %s = %s\n", antId, da->name, antInfo->name, antInfo->ivsName);
+		}
 
 		nVMF = selectVMFData(antInfo->ivsName, antVMFData, MaxVMFRows, vmfData, vmfRows);
-		printf("%d VMF data sets for %s\n", nVMF, antInfo->ivsName);
+		if(verbose > 1)
+		{
+			printf("%d VMF data sets for %s\n", nVMF, antInfo->ivsName);
+		}
 
 		vi = newVMFInterpolator(antVMFData, nVMF);
 
