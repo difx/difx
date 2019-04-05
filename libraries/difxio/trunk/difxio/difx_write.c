@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,6 +27,7 @@
 //
 //============================================================================
 
+#include <time.h>
 #include "difxio/difx_write.h"
 
 double truncSeconds(double mjd)
@@ -49,68 +50,37 @@ double roundSeconds(double mjd)
 	return intmjd + intsec/86400.0;
 }
 
-#warning "FIXME: make use of libc functions here"
 static int mjd2date(long mjd, int *pYear, int *pMonth, int *pDay)
 /*
  * RETURNS OK = 0 | ERROR = -1
  *
- * This function converts the given date to a year, month, and day.  If the 
- * given date does not fall between 0001JAN01 AD (MJD = -678,575) and 
- * 10000JAN00 AD (MJD = 2,973,483) ERROR is returned.
+ * This function returns ERROR if the requested MJD precedes UNIX day 0 (MJD 40587)
  */
 {
-/* 2,400,000 (difference between Julian Date and Modified Julian Date) 
-   minus # days from jan 1, 4713 BC (beginning of Julian calendar) */
-#define AD 678576
+	const int MJD_UNIX0 = 40587;	/* MJD of start of UNIX clock */
+	struct tm tm;
+	time_t t;
 
-	static int monlen[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-
-	int icen4, icen, iyr4, iyr, imon, iday;
-
-	/* check input range and calc days since jan 1 1 AD (Gregorian Calendar) */
-	if (mjd > 2973483)
+	if(mjd < MJD_UNIX0)
 	{
 		return -1;
 	}
-	if ((mjd += AD - 1) < 0)
+
+	t = 86400LL*(mjd - MJD_UNIX0);
+	gmtime_r(&t, &tm);
+
+	if(pYear)
 	{
-		return -1;
+		*pYear = tm.tm_year + 1900;
 	}
-	/* calc number of fours of Gregorian centuries */
-	icen4 = mjd / 146097;
-
-	/* calc number of centuries since last 
-	fours of Gregorian centuries (e.g. since 1600 or 2000) */
-	mjd -= (icen4 * 146097);
-	if ((icen = mjd / 36524) == 4)
+	if(pMonth)
 	{
-		icen = 3; 
+		*pMonth = tm.tm_mon + 1;
 	}
-
-	/* calc number of quadrenia(four years) since jan 1, 1901 */
-	mjd -= (icen * 36524);
-	iyr4 = mjd / 1461;
-
-	/* calc number of years since last quadrenia */
-	mjd -= (iyr4 * 1461);
-	if ((iyr = mjd / 365) == 4)
+	if(pDay)
 	{
-		iyr = 3;
+		*pDay = tm.tm_mday;
 	}
-
-	/* calc number of months, days since jan 1 of current year */
-	iday = mjd - iyr * 365;
-	for(imon = 0; iday >= 0; ++imon)
-	{
-		iday = iday - monlen[imon] - ((iyr == 3 && imon == 1) ? 1 : 0);
-	}
-	--imon;		/* restore imon, iday to last loop value */
-	iday = iday + monlen[imon] + ((iyr == 3 && imon == 1) ? 1 : 0);
-
-	/* calc return values */
-	*pYear = icen4 * 400 + icen * 100 + iyr4 * 4 + iyr + 1;
-	*pMonth = imon + 1;
-	*pDay = iday + 1;
 
 	return 0;
 }
