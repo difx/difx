@@ -1,3 +1,9 @@
+Version 1.8
+* disable writing of log files -- was poorly implemented
+* minor clean-up on the c-side (most compile warnings, dead code removal)
+* support systemd
+  - for now, manually copy the calcserver.system file to /etc/systemd/system
+
 Version 1.7
 * looks for tirpc via pkgconfig to provide rpc/rpc.h
 * Version for DiFX-2.6, Mar 4, 2019

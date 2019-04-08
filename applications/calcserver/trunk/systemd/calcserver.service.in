@@ -1,0 +1,17 @@
+[Unit]
+Description=RPC server for CALC 9
+
+[Service]
+Type=simple
+Environment=CALC_USER=C
+Environment=WET_ATM=Y
+Environment=JPLEPH=@prefix@/share/CalcServer/JPLEPH
+Environment=HORIZONS_FILENAME=@prefix@/share/CalcServer/Horizons.lis
+Environment=HORIZONS_SRCNAME=TSTCURVE
+StandardOutput=null
+StandardError=null
+# ignore stdout
+ExecStart=@prefix@/bin/CalcServer
+
+[Install]
+WantedBy=multi-user.target

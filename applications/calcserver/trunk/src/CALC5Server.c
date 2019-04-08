@@ -7,7 +7,6 @@
 #include <time.h>
 #include <math.h>
 #include <sys/syslog.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "CALCServer.h"     /* RPCGEN creates this from CALCServer.x */
@@ -42,13 +41,10 @@ struct JPL_Horizons_Tbl {
 } solar_target[5000], *p_ss_targ;
 
 int  n_Horizons_rows;
-int  ilog_Horizons = 1;
 int  iparallax = 1;
 char Horizons_srcname[24];
 char Horizons_filename[256];
 
-int  ifirst, ilogdate = 1;
-FILE  *flog = 0;
 char spawn_time[64];
 char Version[48];
 getCALC_arg  *p_request;
@@ -138,8 +134,8 @@ double         ast_dopplr (mjdtime, u, v, w)
     double          u, v, w;
 {
 
-  double value[2], time[2], outval, lo_off;
-    double deltim, dist2_km, dist_km, vel_radial, vel_tang, vel_check;
+  double value[2], time[2], outval;
+    double deltim, dist2_km, dist_km, vel_radial;
     double srcpos[3][2], srcvel[3], src[3], srcstn[3], sdec,cdec,sra,cra;
     int    i;
 
@@ -194,14 +190,6 @@ double         ast_dopplr (mjdtime, u, v, w)
            srcvel[0] = (srcpos[0][1]-srcpos[0][0]) * dist_km / (deltim * 86400.0);
            srcvel[1] = (srcpos[1][1]-srcpos[1][0]) * dist_km / (deltim * 86400.0);
            srcvel[2] = (srcpos[2][1]-srcpos[2][0]) * dist_km / (deltim * 86400.0);
-           vel_tang = sqrt(srcvel[0]*srcvel[0] + srcvel[1]*srcvel[1]
-                           + srcvel[2]*srcvel[2]);
-           /* check that the tangential velocity has a near zero value
-            * projected on to the radial vector */
-           vel_check = srcvel[0]*(-1.0*srcpos[0][1])
-                     + srcvel[1]*(-1.0*srcpos[1][1])
-	             + srcvel[2]*(-1.0*srcpos[2][1]);
-     
 
            /* add the radial velocity component */
            srcvel[0] += vel_radial * srcpos[0][1];
@@ -247,12 +235,6 @@ double         ast_dopplr (mjdtime, u, v, w)
            /* radial velocity from station */
            outval =  srcstn[0] + srcstn[1] + srcstn[2];
 
-           lo_off = 2.2e+09 * (outval - vel_radial) / (C_LIGHT * 1.0e-03);
-           /*
-           printf ("ast_dopplr : vrad,  vtang, vchk, vproj, delvel %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e\n",
-		   vel_radial, vel_tang, vel_check,  outval, vel_radial-outval,
-                   lo_off);
-	   */
            outval = outval - vel_radial;
            break;
 	}
@@ -278,55 +260,18 @@ SVCXPRT *pTransport;
     double ast_dopplr();
     getCALC_arg argument;    /* RPC caller passes this */
     getCALC_res result;      /* we return this to RPC caller */
-    struct sockaddr_in  *sock_in;
-    struct tm *timeptr;
     time_t  timep, *tp;
 
     int     imjd, station_index_a, station_index_b, source_index;
-    int     jobnum, iret, i, itoday;
+    int     jobnum, iret, i;
     short int kflags[64];
     double  delay, rate, atmos[4], datmos[4], radtime, u, v, w;
     double  accel, risetime, settime, xelev[2], relev[2], xaz[2], raz[2];
-    double  mjd_time, partials[28], outval;
-    char    *destdotaddr, mjd_str[24], filename[256], hostname[24];
+    double  partials[28];
 
     tp = &timep;
     time (tp);
 
-    /* check if we have crossed a day boundry in local time. If so, open a
-     * new logfile */
-    if (ilogdate != 0)
-    {
-       timeptr = localtime (tp);
-       itoday = timeptr->tm_mday + 100*(timeptr->tm_mon+1) + 10000*(timeptr->tm_year+1900);
-       if (itoday != ilogdate)
-       {
-          gethostname(hostname, 23);
-          snprintf (filename, 256, "%s%02d%02d%02d:%02d%02d%02d.log", hostname, 
-             timeptr->tm_year-100,
-             timeptr->tm_mon+1, timeptr->tm_mday, timeptr->tm_hour,
-             timeptr->tm_min, timeptr->tm_sec);
-          ilogdate = itoday;
-	 if (flog != 0)
-	 {
-	   fclose(flog);
-	 }
-         if ((flog = fopen (filename, "w")) == NULL)
-         {
-            printf ("ERROR: cannot open log file %s\n", filename);
-            exit(EXIT_FAILURE);
-         }
-         printf ("opened new CALCServer log file : %s\n", filename);
-         fprintf (flog, "%s Started : %s", Version, spawn_time);
-         fprintf (flog, "Logfile Opened      : %s", ctime(tp));
-         fprintf (flog, "Horizons Table      : %s\n", Horizons_filename);
-         fprintf (flog, "Horizons Table Rows : %d\n", n_Horizons_rows);
-         fprintf (flog, "Horizons Source Name: %s\n", Horizons_srcname);
-         fprintf (flog, "Horizons Log Flag   : %d\n", ilog_Horizons);
-         fprintf (flog, "Horizons iparallax  : %d\n", iparallax);
-         ifirst = 1;
-       }
-    }
     /* handle null procedure */
     if (pRequest->rq_proc == NULLPROC)
 	{
@@ -377,6 +322,7 @@ SVCXPRT *pTransport;
 
     for (i = 0; i < 5; i++)
     {
+        char mjd_str[24];
         date2str (argument.EOP_time[i], mjd_str);
         printf ("request arg: %s %5.1f %8.5f %8.5f %8.5f\n",
                  mjd_str, argument.tai_utc[i], argument.ut1_utc[i],
@@ -394,10 +340,6 @@ SVCXPRT *pTransport;
     imjd = argument.date;
     radtime = argument.time * TWOPI;
 
-    /* Signal CALC through calcinit to write CALC state stuff into
-     * the .log file. Once only on first call to the server */
-    iret = ifirst;
-
     for (i = 0; i < 50; i++)
         p_ocean_row[i] = &oc_coeffs[0];
     if (strcmp(argument.station_a, "EC") != 0)
@@ -408,7 +350,6 @@ SVCXPRT *pTransport;
         kflags[i] = p_request->kflags[i];
 
     calcinit_ (&jobnum, &imjd, kflags, &iret);
-    if (ifirst == 1) fflush(flog);
 
     calcmodl2_ (&imjd, &radtime, &source_index, &station_index_a,
                    &station_index_b,
@@ -427,28 +368,6 @@ SVCXPRT *pTransport;
 #endif
 
     time (tp);
-
-    sock_in = svc_getcaller (pTransport);
-    destdotaddr = inet_ntoa(sock_in->sin_addr);
-
-    if (strcmp(getenv("SERVERLOG"), "ON") == 0)
-    {
-       mjd_time = (double)argument.date + argument.time;
-       date2str (mjd_time, mjd_str);
-    fprintf (flog, "request from %s:  for args  %5d %4s %4s %10s %s (dly = %20.12e) at %s", 
-             destdotaddr,
-             (int)(argument.request_id), argument.station_a, argument.station_b,
-             argument.source, mjd_str, delay, ctime (tp));
-       fflush (flog);
-    }
-    /* outval goes nowhere for now */
-    outval = 0.0;
-    if ((n_Horizons_rows > 0) &&
-        (strcmp(p_request->source, Horizons_srcname) == 0))
-    {
-       mjd_time = (double)argument.date + argument.time;
-       /* outval =  ast_dopplr (mjd_time, u, v, w); */
-    }
 
     result.getCALC_res_u.record.date  = argument.date;
     result.getCALC_res_u.record.time  = argument.time;
@@ -476,7 +395,6 @@ SVCXPRT *pTransport;
     result.getCALC_res_u.record.riseset[1] = settime;
 
     result.error = 0;
-    ifirst = 0;
 
     /* return result to client */
 
@@ -504,7 +422,6 @@ int main (int argc, char *argv[])
     SVCXPRT *pTransport;    /* transport handle */
     time_t  timep, *tp;
     char    card[200], word[20], *cp, *b_ptr;
-    const char *filename;
     int     i, nbytes, ilength, irow;
     double  rarad, decrad, rahr, ramn, rasc, decdeg, decmn, decsc, decsign;
     FILE    *fp;
@@ -518,28 +435,10 @@ int main (int argc, char *argv[])
     /* open system log file to send messages */
     openlog ("CALCServer", LOG_PID, LOG_USER);
 
-    /* if logfile name is specified in argv[1], use it instead of datetime
-    * logfile name that is opened later in the program */
-    if (argc > 1)
-    {
-       filename = argv[1];
-       if (flog != 0)
-       {
-	  fclose(flog);
-       }
-       if ((flog = fopen (filename, "w")) == NULL)
-       {
-          printf ("ERROR: cannot open log file %s\n", filename);
-          exit(EXIT_FAILURE);
-       }
-       printf ("opened new CALCServer log file %s\n", filename);
-       ilogdate = 0;
-    }
     /* print to the console the values of the environment variables */
     printf ("Env variable : JPLEPH    = %s\n", getenv("JPLEPH"));
     printf ("Env variable : CALC_USER = %s\n", getenv("CALC_USER"));
     printf ("Env variable : WET_ATM   = %s\n", getenv("WET_ATM"));
-    printf ("Env variable : SERVERLOG = %s\n", getenv("SERVERLOG"));
     printf ("Env variable : Horizons_file = %s\n", getenv("HORIZONS_FILENAME"));
     printf ("Env variable : Horizons_src  = %s\n", getenv("HORIZONS_SRCNAME"));
 
@@ -628,8 +527,6 @@ int main (int argc, char *argv[])
     }
     /*    */
 
-    ifirst = 1;
-
     /* dispatch RPC client calls */
     svc_run ();    /* should never return */
 
@@ -696,7 +593,6 @@ ENVIRONMENT: vxWorks
      if (strcmp (inword1, "LOVE_H") == 0)
         d_val = LOVE_H;
 
-     if (ifirst) fprintf (flog, "CONSTANT      %s = %20.10e\n", inword1, d_val);
      return d_val;
   }
 
@@ -992,22 +888,16 @@ char *err;	       /* some sort of error message */
 * retrieve a double precision value from user requested correlator data table
 -*/
 {
-
-    int    nrows;
     double value, mjdtime, parallax, dist_au, asteroid();
-    char in_keyword[16], in_tblname[16], mjd_str[24];
-    char ra_str[24], dec_str[24];
-
+    char in_keyword[16], in_tblname[16];
 
     strcpy (in_keyword, keyname);
     cvrtuc (in_keyword);
     strcpy (in_tblname, tbl_name);
     cvrtuc (in_tblname);
 
-    nrows = 1;
     if ((strcmp(in_tblname, "UTC")) == 0)
     {
-       nrows = 5;
        if ((strcmp(in_keyword, "TAIUTC")) == 0)
        {
           value = p_request->tai_utc[row_num];
@@ -1045,29 +935,12 @@ char *err;	       /* some sort of error message */
            (strcmp(p_request->source, Horizons_srcname) == 0))
        {
           mjdtime = (double)p_request->date + p_request->time;
-          if (ilog_Horizons == 1) {
-             date2str (mjdtime, mjd_str);
-	     fprintf (flog,"recognized  horizons source : %s %s %f\n", p_request->source, 
-                  in_keyword, mjdtime);
-          }
           if ((strcmp(in_keyword, "RA")) == 0)
 	  {
-	     if (ilog_Horizons == 1)
-	     {            
-             ingra (asteroid(mjdtime, 2)*360.0/TWOPI, &ra_str[0]);
-	     fprintf (flog,"%s : %s RA  = %s\n", p_request->source, 
-                     mjd_str, ra_str);
-	     }
              return (asteroid(mjdtime, 2));
           }
           if ((strcmp(in_keyword, "DEC")) == 0)
 	  {  
-	     if (ilog_Horizons == 1)
-	     {
-             ingdec (asteroid(mjdtime, 3)*360.0/TWOPI, &dec_str[0]);
-             fprintf (flog,"%s : %s DEC = %s\n", p_request->source, 
-                     mjd_str, dec_str);
-             }
              return (asteroid(mjdtime,3));
 	  }
           if ((strcmp(in_keyword, "PARALLAX")) == 0)
@@ -1076,12 +949,6 @@ char *err;	       /* some sort of error message */
 	     {
                 dist_au = asteroid(mjdtime, 4);
                 parallax = 206265.0 / dist_au;
-                if (ilog_Horizons == 1)
-	        {
-                fprintf (flog,"%s : %s DIST = %20.12e (au)\n", p_request->source,
-                        mjd_str, dist_au); 
-                fflush (flog);
-                }
                 return (parallax);
              } else {
 	       return (0.0);
@@ -1394,6 +1261,7 @@ int  chr1_len;		/* length of character string */
     printf ("%s\n", inword); 
     free (inword);
 }
+
 /*++****************************************************************************
 */
 void c1log_ (chr1_ptr,chr1_len)
@@ -1511,26 +1379,6 @@ int chr2_len;		/* length of second character string */
 *       character*9 s2
 -*/
 {
-    long  nchars;
-    char *inword;	/* pointer to string to copy first string into so that
-			   terminating character can be added */
-    char *in2word;	/* pointer to string to copy second string into so that
-			   terminating character can be added */
-
-    extern FILE *flog;
-
-    inword = malloc (chr1_len + 1);
-    strncpy (inword, chr1_ptr, chr1_len);
-    inword [chr1_len] = '\0';
-
-    nchars = *p_i2char;
-    in2word = malloc (nchars + 1);
-    strncpy (in2word, chr2_ptr, nchars);
-    in2word [nchars] = '\0';
-
-    fprintf (flog,"%s%s\n", inword, in2word); 
-    free (inword);
-    free (in2word);
 }
 /*++****************************************************************************
 */
@@ -1550,25 +1398,6 @@ int chr2_len;		/* length of second character string */
 *       character*9 s2
 -*/
 {
-    char *inword;	/* pointer to string to copy first string into so that
-			   terminating character can be added */
-    char *in2word;	/* pointer to string to copy second string into so that
-			   terminating character can be added */
-
-    inword = malloc (chr1_len + 1);
-    strncpy (inword, chr1_ptr, chr1_len);
-    inword [chr1_len] = '\0';
-
-    in2word = malloc (chr2_len + 1);
-    strncpy (in2word, chr2_ptr, chr2_len);
-    in2word [chr2_len] = '\0';
-/*
-    ctskPerrStrcpy (1, inword);
-    ctskPerrStrcpy (2, in2word);
-    ctskPerror (ctskERROR, 0x1122,"CALC ERROR");
-*/
-    free (inword);
-    free (in2word);
 }
 
 /*++****************************************************************************
