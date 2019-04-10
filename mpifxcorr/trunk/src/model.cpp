@@ -307,7 +307,7 @@ bool Model::addClockTerms(string antennaname, double refmjd, int order, double *
     return false; //note exit here
 
   if(order > polyorder) {
-    cfatal << "Clock order for antenna " << antennaname << " is greater than the model polynomial order - this cannot be supported! You must regenerate the model with a polynomial order at least " << order << endl;
+    cfatal << startl << "Clock order for antenna " << antennaname << " is greater than the model polynomial order - this cannot be supported! You must regenerate the model with a polynomial order at least " << order << endl;
     return false;
   }
 

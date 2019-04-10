@@ -250,7 +250,7 @@ static void generateIdentifier(const char *inputfile, char *identifier)
   identifier[i] = 0;
   if(i == DIFX_MESSAGE_PARAM_LENGTH-1) //job name was too long!
   {
-    cwarn << "Job name was too long to serve as difxmessage identifier; identifier was truncated to " << identifier << endl;
+    cwarn << startl << "Job name was too long to serve as difxmessage identifier; identifier was truncated to " << identifier << endl;
   }
 }
 
