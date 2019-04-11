@@ -30,11 +30,11 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
     {
     int err,
         vfile_status,
-        vrsize_tot,
-        allocated_tot,
         nskip=0,
         nvr,
         ipfb;
+    size_t vrsize_tot,
+        allocated_tot;
 
     FILE *vfile;
     struct tm *mod_time;
@@ -195,7 +195,7 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
             *vrec = realloc (*vrec, (size_t) allocated_tot);
             if (*vrec == NULL)
                 {
-                printf ("error reallocating memory for %d records, requested %d bytes\n",
+                printf ("error reallocating memory for %d records, requested %zu bytes\n",
                         nvr, allocated_tot);
                 return -2;
                 }
