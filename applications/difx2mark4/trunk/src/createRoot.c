@@ -332,7 +332,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                         trax2b_used = FALSE;
 
                                     // create list of quantization bits per antenna
-                        for (dstr=0; dstr<D->nDatastream; dstr++)
+                        for (dstr=0; dstr<D->job[jobId].activeDatastreams; dstr++)
                             {
                             if ((D->job[jobId]).datastreamIdRemap)
                                 redstr = *((D->job[jobId]).datastreamIdRemap + dstr);
