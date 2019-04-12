@@ -29,6 +29,8 @@ parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-i", "--integration", type=float, help="Correlation integration time")
 parser.add_argument("--ts", default=0, type=int, help="Use taskspooler to run CRAFTConverter, with N parallel tasks")
+parser.add_argument("-n", "--nchan", type=int, help="Number of spectral channels")
+parser.add_argument("--forceFFT", default=False, action="store_true", help="Force FFT size to equal number of channels (don't increase to 128)")
 parser.add_argument('fileglob', help="glob pattern for vcraft files", nargs='+')
 args = parser.parse_args()
 
@@ -208,6 +210,8 @@ runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-1] + 
 if args.fpga is not None: runline += " --fpga {}".format(args.fpga)
 if args.polyco is not None: runline += " --polyco={}".format(args.polyco)
 if args.integration is not None: runline += " --integration={}".format(args.integration)
+if args.nchan is not None: runline += " --nchan={}".format(args.nchan)
+if args.forceFFT: runline += " --forceFFT"
 runline += "\n"
 print "\nNow run:"
 print runline
