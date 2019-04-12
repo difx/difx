@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os,sys,glob,argparse, re
+import os,sys,glob,argparse,re,subprocess
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--timestep", help="Timestep (the directory name to process")
@@ -8,6 +8,7 @@ parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declin
 parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits. Default 1")
 parser.add_argument("-i", "--integration", type=float, help="Correlation integration time")
 parser.add_argument("-n", "--nchan", type=int, help="Number of spectral channels")
+parser.add_argument("--forceFFT", default=False, action="store_true", help="Force FFT size to equal number of channels (don't increase to 128)")
 parser.add_argument("-f", "--fcm", default="fcm.txt", help="Name of the fcm file")
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-c", "--correctfpgadelays", default=False, action="store_true", help="Figure out and correct 7 microsec FPGA delays")
@@ -84,6 +85,20 @@ if npol==1:
 else:
     datadir = 'data'
 
+
+def runCommand(command, log):
+    proc = subprocess.Popen(command, shell=True,
+                            stdout=subprocess.PIPE, 
+                            stderr=subprocess.PIPE)
+
+    with open(log, "w") as log_file:
+        outs, errs = proc.communicate()
+        print outs
+        print errs
+        log_file.write(outs)
+        log_file.write(errs)
+    return proc.returncode
+
 if not os.path.exists(datadir): os.mkdir(datadir)
 os.chdir(datadir)
 
@@ -114,6 +129,10 @@ for e in examplefiles:
         torun += " --integration={}".format(args.integration)
     if args.ts is not None:
         torun += " --ts={}".format(args.ts)
+    if args.nchan is not None:
+        torun += " --nchan={}".format(args.nchan)
+    if args.forceFFT:
+        torun += " --forceFFT"
 
     beamname = os.path.basename(beamdirs[0])
     torun += ' --fpga %s "%s/ak*/%s/*%s*vcraft"' % (freqlabel, timestep, beamname, freqlabel)
@@ -122,8 +141,12 @@ for e in examplefiles:
         torun += ' "%s/ak*/%s/*%s*vcraft"' % (timestep, beamname, freqlabel)
     
     print torun
-    os.system(torun + "| tee vcraft2obs.log")
-
+    #os.system(torun + "| tee vcraft2obs.log")
+    ret = runCommand(torun, "vcraft2obs.log")
+    if ret!=0:
+        print "vcraft2obs failed! (", ret, ")"
+        sys.exit(ret)
+    
     if not os.path.exists("eop.txt"):
         topEOP = "{}/eop.txt".format(topDir)
         if not os.path.exists(topEOP):
@@ -146,10 +169,11 @@ for e in examplefiles:
         os.system("cp {} eop.txt".format(topEOP))
 
         
-    ret = os.system("./runaskap2difx | tee askap2difx.log")
+    #ret = os.system("./runaskap2difx | tee askap2difx.log")
+    ret = runCommand("./runaskap2difx", "askap2difx.log")
     if ret!=0:
-        print "askap2difx failed!"
-        sys.exit(1)
+        print "askap2difx failed! (", ret, ")"
+        sys.exit(ret)
 
     os.system("./run.sh")
     os.system("./runmergedifx")
