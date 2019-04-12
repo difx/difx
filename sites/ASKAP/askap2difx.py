@@ -227,7 +227,7 @@ def getFPGAdelays(fpga):
 
     return fpga_delays
 
-def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, tInt, polyco, npol):
+def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, forceFFT, tInt, polyco, npol):
     if fpga is not None:
         fpga_delay = getFPGAdelays(fpga)
     else:
@@ -279,7 +279,7 @@ exhaustiveAutocorrs = True
         else:
             v2dout.write("  file = %s\n}\n" % d[0].split('=')[1])
 
-    if nchan>=128:
+    if forceFFT or nchan>=128:
         nFFTChan = nchan
     else:
         if 128 % nchan == 0:
@@ -353,6 +353,7 @@ parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-i", "--integration", default = "1.3824", help="Correlation integration time")
 parser.add_argument("-n", "--nchan", type=int, default=128, help="Number of spectral channels")
+parser.add_argument("--forceFFT", default=False, action="store_true", help="Force FFT size to equal number of channels (don't increase to 128)")
 parser.add_argument("--npol", help="Number of polarisations", type=int, choices=[1,2], default=1)
 args = parser.parse_args()
 
@@ -469,7 +470,9 @@ keyout.close()
 
 ## Run it through sched
 ret = os.system("sched < craftfrb.key")
-if ret!=0: sys.exit(1)
+if ret!=0:
+    print "Warning, Sched failed"
+    sys.exit(1)
 
 ## Replace Mark5B with VDIF in vex file
 ret = os.system("sed -i 's/MARK5B/VDIF/g' craftfrb.vex")
@@ -486,7 +489,7 @@ eoplines = open("eop.txt").readlines()
 ## Write the v2d file
 v2dout = open("craftfrb.v2d", "w")
 writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, args.fpga,
-             args.nchan, args.integration, args.polyco, args.npol)
+             args.nchan, args.forceFFT, args.integration, args.polyco, args.npol)
 for line in eoplines:
    if "xPole" in line or "downloaded" in line:
        v2dout.write(line)
