@@ -144,9 +144,9 @@ int main (int argc, char **argv) {
       double framepersec = getCODIFTotalSamples(header)/sampleperframe/period;
       double mjd = getCODIFFrameDMJD(header, framepersec);
 
+      mjd2cal(mjd, &day, &month, &year, &ut);
+      turns_to_string(ut, 'H', 3, 30, timestr);
       if (verbose) {
-	mjd2cal(mjd, &day, &month, &year, &ut);
-	turns_to_string(ut, 'H', 3, 30, timestr);
 	if (first) {
 	  char complextype[2] = "";
 	  if (iscomplex) complextype[0] = 'C';
