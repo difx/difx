@@ -14,14 +14,14 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.68'
-verdate = '20190304'
+version = '0.69'
+verdate = '20190416'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 pythonProgram = 'python2'
-openmpiVersion = '3.0'       
+openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.4.tar.bz2'       
 #openmpiVersion = '1.6'       # version in use by VLBA correlator 
 #openmpiVersion = '1.10'      # version in use by USNO correlator
 pgplotVersion = '5.2'
@@ -1953,8 +1953,6 @@ def writeinitfile(verbose, pretend):
 
 def bootstrap(comps, params, args, verbose, pretend):
 	setupFileName = 'setup_difx'
-	cshFileName = 'setup_difx.csh'	# to be used by non-developers
-	bashFileName = 'setup_difx.sh'	# to be used by non-developers using csh or tcsh
 	requiredConfigParams = ['difxbase', 'version', 'headnode']
 	if not isfile(params['ConfigFile']):
 		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
@@ -1997,6 +1995,11 @@ def bootstrap(comps, params, args, verbose, pretend):
 		print 'Error: version must be one of ', components.keys()
 		return
 
+	independentArchs = False
+	if config.has_key('independentarchs'):
+		if config['independentarchs'][0].upper() in ['1', 'T', 'Y']:
+			independentArchs = True
+
 	if config.has_key('symlinkdir'):
 		symlinkdir = config['symlinkdir']
 	else:
@@ -2030,8 +2033,6 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 	if 1:
 		setupFile = config['root'] + '/' + setupFileName
-		cshFile   = config['root'] + '/' +   cshFileName
-		bashFile  = config['root'] + '/' +  bashFileName
 		if verbose > 0:
 			print 'Writing setup file %s' % setupFile
 
@@ -2169,7 +2170,8 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('DIFX_PROMPT_EXTRA=""\n')
 		out.write('HWPLATFORM=`uname -m`\n')
 		out.write('\n')
-		out.write('export DIFX_ARCH_ROOT=%s/${HWPLATFORM}\n' % config['difxbase'])
+		if not independentArchs:
+			out.write('export DIFX_ARCH_ROOT=%s/${HWPLATFORM}\n' % config['difxbase'])
 		m = 0
 		for arch in platforms.keys():
 			if ipproot[arch] == 'none':
@@ -2179,8 +2181,6 @@ def bootstrap(comps, params, args, verbose, pretend):
 				out.write('el')
 			out.write('if [[ ${HWPLATFORM} = "%s" ]]; then\n' % arch)
 			out.write('  export IPPROOT=%s\n' % ipproot[arch])
-			if pyPath.has_key(arch):
-				out.write('  export PYTHONPATH=%s:%s/lib/python\n' % (pyPath[arch], config['root']))
 			if arch in ['x86_64']:
 				out.write('  export DIFXBITS=64\n')
 				out.write('  export IPPARCH=intel64\n')
@@ -2195,17 +2195,25 @@ def bootstrap(comps, params, args, verbose, pretend):
 					out.write('  elif')
 				n += 1
 				out.write(' %s; then\n' % plat[1])
+				if independentArchs:
+					out.write('    export DIFX_ARCH_ROOT=%s/${HWPLATFORM}-%s\n' % (config['difxbase'], plat[0]))
 				out.write('    export DIFXROOT=%s-%s\n' % (config['root'], plat[0]))
 				out.write('    DIFX_PROMPT_EXTRA="${DIFX_PROMPT_EXTRA} %s"\n' % plat[0])
 			if arch == primaryarch:
 				if n > 0:
 					out.write('  else\n')
+					if independentArchs:
+						out.write('    export DIFX_ARCH_ROOT=%s/${HWPLATFORM}-0\n' % config['difxbase'])
 					out.write('    export DIFXROOT=%s\n' % config['root'])
 					out.write('  fi\n')
 				else:
+					if independentArchs:
+						out.write('  export DIFX_ARCH_ROOT=%s/${HWPLATFORM}-0\n' % config['difxbase'])
 					out.write('  export DIFXROOT=%s\n' % config['root'])
 			else:
 				out.write('  fi\n')
+			if pyPath.has_key(arch):
+				out.write('  export PYTHONPATH=%s:%s/lib/python\n' % (pyPath[arch], config['root']))
 			m += 1
 					
 		out.write('fi\n')
@@ -2224,7 +2232,10 @@ def bootstrap(comps, params, args, verbose, pretend):
 			cflags = '-O2 -Wall -march=core2'
 		out.write('export CFLAGS="%s"\n' % cflags)
 		out.write('export CXXFLAGS="%s"\n' % cflags)
-		out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx\n')
+		if independentArchs:
+			out.write('export MPICXX=mpicxx\n')
+		else:
+			out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx\n')
 		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${DIFX_ARCH_ROOT}/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig\n')
 		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
 		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
@@ -2239,7 +2250,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 			out.write('unset DIFX_SVN_VERSION')
 
 		out.write('\n')
-		out.write('export PATH=%s/./:%s:~/bin:/bin:/usr/bin%s\n' % (prepathExtra, execPath, pathExtra))
+		out.write('export PATH=%s./:%s:~/bin:/bin:/usr/bin%s\n' % (prepathExtra, execPath, pathExtra))
 		out.write('export LD_LIBRARY_PATH=%s%s%s\n' % (preldExtra, ldPath, ldExtra))
 
 		for e in env:
@@ -2249,7 +2260,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write("alias bld='cd ${DIFXROOT}/build'\n")
 
 		if config.has_key('sched'):
-			if config['sched'][0] in ['1', 'Y', 'y', 't', 'T']:
+			if config['sched'][0].upper() in ['1', 'Y', 'T']:
 				out.write('export SCHED=${DIFX_ARCH_ROOT}/sched\n')
 
 		out.write('export PS1="\\u@\\h %s$DIFX_PROMPT_EXTRA \\W> "\n' % label)
@@ -2257,80 +2268,8 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write("\nif [[ ${1: -9} == difxbuild ]]; then $@; fi  # this must be the last statement in the file\n")
 		out.close()
 
-# csh user setup script
-		out = open(cshFile, 'w')
-		
-		out.write('setenv DIFX_VERSION %s\n' % config['version'])
-		out.write('setenv DIFX_LABEL %s\n' % label)
-		out.write('setenv DIFX_ARCH_ROOT %s/`uname -m`\n' % config['difxbase'])
-		out.write('setenv DIFXROOT %s\n' % config['root'])
-		out.write('setenv IPPROOT %s\n' % ipproot[arch])
-		if config.has_key('primaryarch') and config['primaryarch'] in ['i386', 'i686']:
-			out.write('setenv DIFXBITS 32\n')
-			out.write('setenv IPPARCH ia32\n')
-		else:
-			out.write('setenv DIFXBITS 64\n')
-			out.write('setenv IPPARCH intel64\n')
-		out.write('setenv CALC_SERVER %s\n' % calcserver)
-		out.write('setenv DIFX_HEAD_NODE %s\n' % config['headnode'])
-		out.write('setenv DIFX_BASE %s\n' % config['difxbase'])
-		out.write('setenv MARK5_DIR_PATH ${DIFX_BASE}/directories\n')
-		out.write('setenv PGPLOT_DIR ${DIFX_ARCH_ROOT}/pgplot\n')
-		out.write('setenv DIFX_MESSAGE_GROUP %s\n' % difxMessageGroup)
-		out.write('setenv DIFX_MESSAGE_PORT %d\n' % difxMessagePort)
-		out.write('if ! $?PATH then\n')
-		out.write('  setenv PATH %s%s%s\n' % (prepathExtra, execPath, pathExtra))
-		out.write('else\n')
-		out.write('  setenv PATH %s${PATH}:%s%s\n' % (prepathExtra, execPath, pathExtra))
-		out.write('endif\n')
-		out.write('if ! $?LD_LIBRARY_PATH then\n')
-		out.write('  setenv LD_LIBRARY_PATH %s%s%s\n' % (preldExtra, ldPath, ldExtra))
-		out.write('else\n')
-		out.write('  setenv LD_LIBRARY_PATH %s${LD_LIBRARY_PATH}:%s%s\n' % (preldExtra, ldPath, ldExtra))
-		out.write('endif\n')
-		for e in env:
-			out.write('setenv %s %s\n' % (e[0], e[1]))
-		if config.has_key('sched'):
-			if config['sched'][0] in ['1', 'Y', 'y', 't', 'T']:
-				out.write('setenv SCHED ${DIFX_ARCH_ROOT}/sched\n')
-		out.close()
 
-
-# bash user setup script
-		out = open(bashFile, 'w')
-		
-		out.write('export DIFX_VERSION=%s\n' % config['version'])
-		out.write('export DIFX_LABEL=%s\n' % label)
-		out.write('export DIFX_ARCH_ROOT=%s/`uname -m`\n' % config['difxbase'])
-		out.write('export DIFXROOT=%s\n' % config['root'])
-		out.write('export IPPROOT=%s\n' % ipproot[arch])
-		if config.has_key('primaryarch') and config['primaryarch'] in ['i386', 'i686']:
-			out.write('export DIFXBITS=32\n')
-			out.write('export IPPARCH=ia32\n')
-		else:
-			out.write('export DIFXBITS=64\n')
-			out.write('export IPPARCH=intel64\n')
-		out.write('export CALC_SERVER=%s\n' % calcserver)
-		out.write('export DIFX_HEAD_NODE=%s\n' % config['headnode'])
-		out.write('export DIFX_BASE=%s\n' % config['difxbase'])
-		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
-		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
-		out.write('export DIFX_MESSAGE_GROUP=%s\n' % difxMessageGroup)
-		out.write('export DIFX_MESSAGE_PORT=%d\n' % difxMessagePort)
-		out.write('export PATH=%s${PATH}:%s%s\n' % (prepathExtra, execPath, pathExtra))
-		out.write('export LD_LIBRARY_PATH=%s${LD_LIBRARY_PATH}:%s%s\n' % (preldExtra, ldPath, ldExtra))
-		for e in env:
-			out.write('export %s=%s\n' % (e[0], e[1]))
-
-		if config.has_key('sched'):
-			if config['sched'][0] in ['1', 'Y', 'y', 't', 'T']:
-				out.write('export SCHED=${DIFX_ARCH_ROOT}/sched\n')
-		out.close()
-
-
-		execute('chmod +x %s %s %s' % (setupFile, cshFile, bashFile), verbose, pretend)
-
-		for e in ['', '.sh', '.csh']:
+		for e in ['']:
 			execute('rm -f %s/bin/%s.%s%s' % (config['difxbase'], setupFileName, label, e), verbose, pretend)
 			execute('ln -f -s %s%s %s/bin/%s.%s%s' % (setupFile, e, config['difxbase'], setupFileName, label, e), verbose, pretend)
 
@@ -3357,7 +3296,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 	difxBase = environ['DIFX_BASE'] + '/'
 	bldLog = environ['DIFXROOT'] + '/buildlog'
 	tarDir = difxBase + 'tar/'
-	cpuDir = difxBase + platform.machine() + '/'
+	cpuDir = environ['DIFX_ARCH_ROOT'] + '/'
 	cpuSrcDir = cpuDir + 'src/'
 	if not isdir(tarDir):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
@@ -3371,30 +3310,42 @@ def openmpi(origComps, params, args, verbose, pretend):
 		execute('cp -n %s %s' % (args[0], tarDir), verbose, pretend)
 		openmpiTarFile = split(args[0], '/')[-1]
 	else:
-		openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
-		openmpiFiles = popen('wget %s/md5sums.txt -O -' % openmpiWeb, 'r').readlines()
-		if len(openmpiFiles) < 1:
-			print "I'm confused: cannot find openmpi source files from %s" % openmpiWeb
-			return
-		goodsum = split(strip(openmpiFiles[0]))[0]
-		openmpiTarFile = split(strip(openmpiFiles[0]))[1]
-		openmpiTarFile, goodsum = newestOMPI(openmpiFiles, openmpiVersion)
-		download = True
-		if isfile(tarDir+openmpiTarFile):
-			sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
-			if sum != goodsum:
-				print 'Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile)
-				execute('mv %s%s /tmp' % (tarDir, openmpiTarFile), verbose, pretend)
-			else:
-				print 'Existing file %s%s looks OK' % (tarDir, openmpiTarFile)
+		if openmpiVersion[0:4] == 'http':
+			openmpiTarFile = split(openmpiVersion, '/')[-1]
+			openmpiWeb = openmpiVersion[0:(-len(openmpiTarFile)-1)]
+			print 'Getting %s from %s' % (openmpiTarFile, openmpiWeb)
+			download = True
+			if isfile(tarDir+openmpiTarFile):
+				print 'There is an existing openmpi tar file at %s' % (tarDir+openmpiTarFile)
 				download = False
-		if download:
-			chdir(tarDir)
-			execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
-			sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
-			if sum != goodsum:
-				print 'Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum)
+			if download:
+				chdir(tarDir)
+				execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
+		else:
+			openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
+			openmpiFiles = popen('wget %s/md5sums.txt -O -' % openmpiWeb, 'r').readlines()
+			if len(openmpiFiles) < 1:
+				print "I'm confused: cannot find openmpi source files from %s" % openmpiWeb
 				return
+			goodsum = split(strip(openmpiFiles[0]))[0]
+			openmpiTarFile = split(strip(openmpiFiles[0]))[1]
+			openmpiTarFile, goodsum = newestOMPI(openmpiFiles, openmpiVersion)
+			download = True
+			if isfile(tarDir+openmpiTarFile):
+				sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
+				if sum != goodsum:
+					print 'Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile)
+					execute('mv %s%s /tmp' % (tarDir, openmpiTarFile), verbose, pretend)
+				else:
+					print 'Existing file %s%s looks OK' % (tarDir, openmpiTarFile)
+					download = False
+			if download:
+				chdir(tarDir)
+				execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
+				sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
+				if sum != goodsum:
+					print 'Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum)
+					return
 	
 	srcFileExt = split(openmpiTarFile, '.')[-1]
 	if srcFileExt == 'bz2':
