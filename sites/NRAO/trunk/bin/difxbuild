@@ -14,8 +14,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.69'
-verdate = '20190416'
+version = '0.70'
+verdate = '20190418'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -2431,7 +2431,7 @@ def build(origComps, params, args, verbose, pretend):
 	bldLog = environ['DIFXROOT'] + '/buildlog'
 	srcDir = environ['DIFX_SRC'] + '/'
 	okComps = checkFiles(comps, srcDir, 'configure', args)
-	archRoot = environ['DIFX_BASE'] + '/' + platform.machine() + '/'
+	archRoot = environ['DIFX_ARCH_ROOT'] + '/'
 	haspgplot = isfile(archRoot + 'pgplot/libpgplot.a')	# not the most robust test...
 	if len(okComps) > 0 or 'none' in args:
 		if not isdir(pkgDir):
@@ -2535,7 +2535,7 @@ def makedist(origComps, params, args, verbose, pretend):
 	srcDir = environ['DIFX_SRC'] + '/'
 	distDir = environ['DIFXROOT'] + '/dist/'
 	okComps = checkFiles(comps, srcDir, 'configure', args)
-	archRoot = environ['DIFX_BASE'] + '/' + platform.machine() + '/'
+	archRoot = environ['DIFX_ARCH_ROOT'] + '/'
 	haspgplot = isfile(archRoot + 'pgplot/libpgplot.a')	# not the most robust test...
 	if len(okComps) > 0 or 'none' in args:
 		if not isdir(distDir):
@@ -2750,8 +2750,8 @@ def autotools(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
-	archDir = difxBase + arch
-	archSrcDir = archDir + '/src'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	if not isdir(archSrcDir):
 		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
 	
@@ -2820,7 +2820,8 @@ def spice(origComps, params, args, verbose, pretend):
 		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/%s' % srcFile
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
-	archDir = difxBase + arch
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+
 	# get file
 	ftpFile(spiceUrl, tarDir, srcFile, args, verbose, pretend)
 	# untar file
@@ -2834,8 +2835,8 @@ def gpstk(origComps, params, args, verbose, pretend):
 	gpstkSrcFile = 'gpstk-%s.src.tar.gz' % gpstkVersion
 	gpstkUrl = 'http://sourceforge.net/projects/gpstk/files/gpstk/%s/%s' % (gpstkVersion, gpstkSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	tarDir = difxBase + 'tar/'
 	# get file
 	ftpFile(gpstkUrl, tarDir, gpstkSrcFile, args, verbose, pretend)
@@ -2859,7 +2860,7 @@ def gpstk(origComps, params, args, verbose, pretend):
 	chdir(gpstkSrcDir)
 	chdir(gpstkSrcDir + '/dev')
 	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
-	execute('cmake -DCMAKE_INSTALL_PREFIX:PATH=%s' % (difxBase + arch), verbose, pretend)
+	execute('cmake -DCMAKE_INSTALL_PREFIX:PATH=%s' % archDir, verbose, pretend)
 	execute('make -j%d' % numMakeCpus, verbose, pretend)
 	execute('make install', verbose, pretend)
 
@@ -2867,17 +2868,17 @@ def gpstk(origComps, params, args, verbose, pretend):
 
 	if False:
 		chdir(gpstkSrcDir)
-		execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, difxBase + arch), verbose, pretend)
-		execute('jam -sPREFIX=%s install' % (difxBase + arch), verbose, pretend)
+		execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, archDir), verbose, pretend)
+		execute('jam -sPREFIX=%s install' % archDir, verbose, pretend)
 
 		# gpstk seems to not install GNSSconstants.hpp automatically.  Do that forcefully here
-		# execute('cp src/GNSSconstants.hpp %s/include/gpstk' % (difxBase + arch), verbose, pretend)
+		# execute('cp src/GNSSconstants.hpp %s/include/gpstk' % archDir, verbose, pretend)
 
 	# make a .pc file for later convenience
-	if not isdir('%s/lib/pkgconfig' % (difxBase + arch)):
-		execute('mkdir -p %s/lib/pkgconfig' % (difxBase + arch), verbose, pretend)
-	out = open('%s/lib/pkgconfig/gpstk.pc' % (difxBase + arch), 'w')
-	out.write('prefix=%s\n' % (difxBase + arch))
+	if not isdir('%s/lib/pkgconfig' % archDir):
+		execute('mkdir -p %s/lib/pkgconfig' % archDir, verbose, pretend)
+	out = open('%s/lib/pkgconfig/gpstk.pc' % archDir, 'w')
+	out.write('prefix=%s\n' % archDir)
 	out.write('exec_prefix=${prefix}\n')
 	out.write('libdir=${exec_prefix}/lib\n')
 	out.write('includedir=${prefix}/include\n\n')
@@ -2899,8 +2900,8 @@ def sked(origComps, params, args, verbose, pretend):
 	skedSrcFile = 'sked-%s.tar.gz' % skedVersion
 	skedUrl = 'http://www.aoc.nrao.edu/~wbrisken/%s' % skedSrcFile
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	tarDir = difxBase + 'tar/'
 	# get file
 	ftpFile(skedUrl, tarDir, skedSrcFile, args, verbose, pretend)
@@ -2922,7 +2923,6 @@ def sked(origComps, params, args, verbose, pretend):
 
 def sched(origComps, params, args, verbose, pretend):
 
-
 	if not len(popen('which gfortran').readlines()) > 0:
 		print 'sched compilation currently (and maybe ultimately) only works on gfortran systems'
 		exit(0)
@@ -2931,7 +2931,7 @@ def sched(origComps, params, args, verbose, pretend):
 	schedSrcFile = 'sched_%s%s.tar.gz' % (schedVersion, schedUpdate)
 	schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched_%s/%s' % (schedVersion, schedSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
 	tarDir = difxBase + 'tar/'
 	if environ['SCHED'] != '%s/sched' % archDir:
 		print 'Error: make sure env var SCHED is set to %s/sched first!' % archDir
@@ -3000,8 +3000,8 @@ def pyx(origComps, params, args, verbose, pretend):
 	pyxSrcFile = 'PyX-%s.tar.gz' % pyxVersion
 	pyxUrl = 'http://sourceforge.net/projects/pyx/files/pyx/%s/%s' % (pyxVersion, pyxSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	tarDir = difxBase + 'tar/'
 	ftpFile(pyxUrl, tarDir, pyxSrcFile, args, verbose, pretend)
 	if not isdir(archSrcDir):
@@ -3033,8 +3033,8 @@ def psycopg(origComps, params, args, verbose, pretend):
 	psycopgSrcFile = 'psycopg2-%s.tar.gz' % psycopgVersion
 	psycopgUrl = 'http://initd.org/psycopg/tarballs/PSYCOPG-%s-%s/%s' % (verParts[0], verParts[1], psycopgSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	tarDir = difxBase + 'tar/'
 	# get file
 	ftpFile(psycopgUrl, tarDir, psycopgSrcFile, args, verbose, pretend)
@@ -3058,8 +3058,8 @@ def libevent(origComps, params, args, verbose, pretend):
 	libeventSrcFile = 'libevent-%s-stable.tar.gz' % libeventVersion
 	libeventUrl = 'https://github.com/downloads/libevent/libevent/%s' % libeventSrcFile
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	tarDir = difxBase + 'tar/'
 	# get file
 	ftpFile(libeventUrl, tarDir, libeventSrcFile, args, verbose, pretend)
@@ -3083,8 +3083,8 @@ def expat(origComps, params, args, verbose, pretend):
 	expatSrcFile = 'expat-%s.tar.gz' % expatVersion
 	expatUrl = 'http://sourceforge.net/projects/expat/files/expat/%s/%s/download' % (expatVersion, expatSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	tarDir = difxBase + 'tar/'
 	# get file
 	ftpFile(expatUrl, tarDir, expatSrcFile, args, verbose, pretend)
@@ -3108,8 +3108,8 @@ def libmicrohttpd(origComps, params, args, verbose, pretend):
 	mhdSrcFile = 'libmicrohttpd-%s.tar.gz' % libmicrohttpdVersion
 	mhdUrl = 'http://ftp.gnu.org/gnu/libmicrohttpd/%s' % mhdSrcFile
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	tarDir = difxBase + 'tar/'
 	# get file
 	ftpFile(mhdUrl, tarDir, mhdSrcFile, args, verbose, pretend)
@@ -3131,8 +3131,8 @@ def libmicrohttpd(origComps, params, args, verbose, pretend):
 def pgplot(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = environ['DIFX_ARCH_ROOT']
-	archSrcDir = archDir + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	
 	opsys = lower(platform.system())
 	srcFile = 'pgplot%s.tar.gz' % pgplotVersion
@@ -3197,8 +3197,8 @@ def fuseMk5(origComps, params, args, verbose, pretend):
 
 	arch = platform.machine()
 	difxBase = environ['DIFX_BASE'] + '/'
-	archDir = difxBase + arch
-	archSrcDir = difxBase + arch + '/src/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
 	
 	if not isdir(archSrcDir):
 		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
