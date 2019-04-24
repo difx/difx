@@ -9,6 +9,8 @@ parser.add_argument("-n", "--nbins", type=int, default=None, help="Number of ima
 parser.add_argument("-c", "--nchan", type=int, default=None, help="Number of channel slices in each cube image; note: zero-indexed")
 parser.add_argument("-s", "--src", type=str, default=None, help="Source name to be used for the spectra text file prefix")
 parser.add_argument("-r", "--res", type=float, default=None, help="Temporal resolution of data in ms")
+parser.add_argument("-z", "--zero", default=False, help="Set zeroth bin equal to zero; use for nbins>1 when the zeroth bin contains little to no signal but mostly noise", action="store_true")
+parser.add_argument("-f", "--basefreq", type=float, default=None, help="The lowest frequency in the observation in MHz")
 
 args = parser.parse_args()
 
@@ -30,16 +32,16 @@ if args.src is None:
 if args.res is None:
     parser.error("You must specify the data's temporal resolution")
 
+if args.basefreq is None:
+    parser.error("You must specify the data's lowest frequency")
+
 nbins = args.nbins
 nchan = args.nchan
 src = args.src
 res = args.res
 
-# Set figure size
-fig, ax = plt.subplots(figsize=(6,7))
-
 # Define dynamic spectra parameters
-basefreq =1129
+basefreq = args.basefreq
 bandwidth = 336
 startchan = 0
 endchan=nchan-3
@@ -53,10 +55,14 @@ dynspec = {}
 fscrunch = {}
 
 for stokes in ["I","Q","U","V","XX","YY"]:
+
+    # Set figure size
+    fig, ax = plt.subplots(figsize=(6,7))
+    
     dynspec[stokes] = np.loadtxt("{0}-imageplane-dynspectrum.stokes{1}.txt".format(src, stokes))
     fscrunch[stokes] = np.sum(dynspec[stokes], 1)
     print dynspec[stokes].shape
-    
+
     if nbins == 1:
         f = np.linspace(startfreq, endfreq, endchan)
 
@@ -67,7 +73,10 @@ for stokes in ["I","Q","U","V","XX","YY"]:
         plt.clf()
 
     else:
-        dynspec[stokes][0] = dynspec[stokes][0]/90.
+        if args.zero:
+            dynspec[stokes][0] = 0
+            print "Setting zeroth input bin equal to zero"
+        else: print "Plotting all bins"
     
         ax.imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq])
         ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
