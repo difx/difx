@@ -34,7 +34,7 @@ automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz
-gpstkVersion = '2.5'
+gpstkVersion = '2.10.6'
 libeventVersion = '2.0.21'
 expatVersion = '2.1.0'
 libmicrohttpdVersion = '0.9.35'
@@ -2133,7 +2133,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 			preldExtra = '%s:' % config['preldextra']
 		else:
 			preldExtra = ''
-		ldPath = '${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}:${PGPLOT_DIR}'
+		ldPath = '${DIFX_ARCH_ROOT}/lib:${DIFX_ARCH_ROOT}/lib64:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}:${PGPLOT_DIR}'
 
 		runscript = '%s/bin/runmpifxcorr.%s' % (config['difxbase'], label) 
 		out = open(runscript, 'w')
@@ -2832,8 +2832,8 @@ def spice(origComps, params, args, verbose, pretend):
 
 def gpstk(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
-	gpstkSrcFile = 'gpstk-%s.src.tar.gz' % gpstkVersion
-	gpstkUrl = 'http://sourceforge.net/projects/gpstk/files/gpstk/%s/%s' % (gpstkVersion, gpstkSrcFile)
+	gpstkSrcFile = 'v%s.tar.gz' % gpstkVersion
+	gpstkUrl = 'https://github.com/SGL-UT/GPSTk/archive/%s' % gpstkSrcFile
 	difxBase = environ['DIFX_BASE'] + '/'
 	archDir = environ['DIFX_ARCH_ROOT'] + '/'
 	archSrcDir = archDir + 'src/'
@@ -2843,27 +2843,17 @@ def gpstk(origComps, params, args, verbose, pretend):
 	if not isdir(archSrcDir):
 		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
 	
-	origSrcDir1 = '%s/gpstk' % archSrcDir
-	origSrcDir2 = '%s/gpstk-%s.src' % (archSrcDir, gpstkVersion)
-	gpstkSrcDir = '%s/gpstk-%s' % (archSrcDir, gpstkVersion)
+	gpstkSrcDir = '%s/GPSTk-%s' % (archSrcDir, gpstkVersion)
 	if isdir(gpstkSrcDir):
 		print 'Stopping because %s exists' % gpstkSrcDir
 		return
 	
 	chdir(archSrcDir)
 	execute('tar zxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
-	if isdir(origSrcDir1):
-		execute('mv %s %s' % (origSrcDir1, gpstkSrcDir), verbose, pretend)
-	elif isdir(origSrcDir2):
-		execute('mv %s %s' % (origSrcDir2, gpstkSrcDir), verbose, pretend)
 
 	chdir(gpstkSrcDir)
-	chdir(gpstkSrcDir + '/dev')
 	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
-	execute('cmake -DCMAKE_INSTALL_PREFIX:PATH=%s' % archDir, verbose, pretend)
-	execute('make -j%d' % numMakeCpus, verbose, pretend)
-	execute('make install', verbose, pretend)
-
+	execute('/bin/sh build.sh -e -i %s' % archDir, verbose, pretend)
 
 
 	if False:
