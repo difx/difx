@@ -77,7 +77,7 @@ export ers=$exp-$relv-$subv
 export ptar=$pcal.APP_DELIVERABLES.tgz
 
 # check:
-wordcount=`( 
+wordcount=`(
 echo =============================================================== && \
 echo $exp $vers .$ctry. $subv $iter $relv .$flab. $expn && \
 echo $evs $ers $opts $fitsname $aeditjob && \
@@ -86,7 +86,7 @@ echo $ptar $pcal && \
 echo $pdir && \
 echo $release && \
 echo =============================================================== && \
-type casa && \ 
+type casa && \
 type mpifxcorr && \
 type fourfit && \
 echo =============================================================== 
@@ -181,7 +181,11 @@ cp -p $ers*.txt $release/logs
 # suitable data for generating "good enough" manual phase cals
 #
 ### Notes on building $ers.conv
-# scans to use grep from *jobs*
+# pick scans to use grep from *jobs*
+# stations: ...
+awk '{print $5}' $evs-jobs-map.txt | tr '-' \\012 | sort | uniq -c
+# types of baselines: ...
+awk '{print $5}' $evs-jobs-map.txt | sort | uniq -c
 
 jobs=`echo $exp-$vers-${subv}_{,}.input` ; echo $jobs
 prepolconvert.py -v -k -s $dout $jobs
@@ -189,14 +193,21 @@ drivepolconvert.py -v $opts -l $pcal $jobs
 for j in $jobs ;\
 do difx2mark4 -e $expn -s $exp.codes --override-version ${j/input/difx} ; done
 
+# identify roots:
+roots=`cd $expn ; ls */3C279*` ; echo $roots
 cd $expn ; cp ../$ers.conf .
-$ehtc/est_manual_phases.py -c $ers.conf -r ...
+# for each root run this command, but set -s argument
+# with a comma-sep list of single letter station codes
+# that should be fit (relative to A as first station).
+$ehtc/est_manual_phases.py -c $ers.conf \
+    -r first-root -s AA,...
 grep ^if.station $ers.conf | sort | uniq -c
-$ehtc/est_manual_phases.py -c $ers.conf -r ...
+$ehtc/est_manual_phases.py -c $ers.conf \
+    -r second-root -s AA,...
 grep ^if.station $ers.conf | sort | uniq -c
 #...
 
-# be sure to clean up afterwards
+# be sure to clean up afterwards, especially to rm -rf $expn
 cd ..
 cp -p $expn/$ers.conf .
 cp -p $expn/$ers.conf $release/logs
