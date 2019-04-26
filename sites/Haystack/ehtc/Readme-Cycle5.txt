@@ -207,15 +207,13 @@ $ehtc/est_manual_phases.py -c $ers.conf \
 grep ^if.station $ers.conf | sort | uniq -c
 #...
 
-# be sure to clean up afterwards, especially to rm -rf $expn
+# be sure to clean up afterwards, especially to move $expn aside
 cd ..
 cp -p $expn/$ers.conf .
 cp -p $expn/$ers.conf $release/logs
-rm -rf $expn ${jobs//input/*}
+mv $expn ff-conf-$expn
+rm -rf ${jobs//input/*}
 ### now have $ers.conf
-
-# generate TODO list with:
-$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G
 } # ONE TIME SETUP
 
 # GENERAL PROCESSING TEMPLATE ======================
