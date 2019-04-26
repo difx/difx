@@ -62,6 +62,13 @@ struct wb_header_tag_v1             // write block header - version 1
     int blocknum;                   // block number, starting at 0
     };
 
+void usage(void)
+{
+    printf("\nUsage: m6sg_blocknrs <fragment files>\n\n");
+    printf("Prints the Mark6 Scatter-Gather block numbers in a given list of files.\n\n");
+    printf("Example: m6sg_blocknrs /mnt/disks/1/[0-7]/testrecording.vdif\n");
+}
+
 int main(int argc, char** argv)
 {
     FILE* f[MARK6_SG_MAXFILES];
@@ -74,13 +81,19 @@ int main(int argc, char** argv)
 
     if (nfiles <= 0)
     {
-        printf("No files specified.\n");
+        usage();
         return 0;
     }
 
     for (i=0; i<nfiles; i++)
     {
         f[i] = fopen(argv[i+1], "r");
+        if (!f[i])
+        {
+            printf("Error: Could not open %s.\n", argv[i+1]);
+            usage();
+            return 0;
+        }
         fread(&fhdr[i], sizeof(struct file_header_tag), 1, f[i]);
         printf("File %d block size %d\n", i, fhdr[i].block_size);
     }
