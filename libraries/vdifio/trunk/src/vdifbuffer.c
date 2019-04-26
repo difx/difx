@@ -32,13 +32,17 @@
 #include "config.h"
 
 /** local helper that looks at 3 back-to-back frames and checks that they are consistent for an assumed framesize */
-static int comparethreeframes(const unsigned char *buffer, int offset, int frameSize)
+static int comparethreeframes(const unsigned char *buffer, int offset, int frameSize, int bufferSize)
 {
 	struct vdif_header *vh1, *vh2, *vh3;
 
 	vh1 = (struct vdif_header *)(buffer + offset);
 	vh2 = (struct vdif_header *)(buffer + offset + frameSize);
 	vh3 = (struct vdif_header *)(buffer + offset + 2*frameSize);
+	if (offset + 2*frameSize >= bufferSize)
+	{
+		return -1;
+	}
 
 	if(getVDIFFrameBytes(vh1) == frameSize &&
 	   getVDIFFrameBytes(vh2) == frameSize &&
@@ -72,7 +76,7 @@ int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 
 	/* First check the VDIF header -reported frame size */
 	frameSize = getVDIFFrameBytes((struct vdif_header *)buffer);
-	if (comparethreeframes(buffer, 0, frameSize) > 0)
+	if (comparethreeframes(buffer, 0, frameSize, bufferSize) > 0)
 	{
 		return frameSize;
 	}
@@ -87,7 +91,7 @@ int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 		N = bufferSize - 2*frameSize - VDIF_HEADER_BYTES;
 		for(i = 0; i < N ; ++i)
 		{
-			if (comparethreeframes(buffer, i, frameSize) > 0)
+			if (comparethreeframes(buffer, i, frameSize, bufferSize) > 0)
 			{
 				return frameSize;
 			}
@@ -102,7 +106,7 @@ int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 		N = bufferSize - 2*frameSize - VDIF_HEADER_BYTES;
 		for(i = 0; i < N ; ++i)
 		{
-			if (comparethreeframes(buffer, i, frameSize) > 0)
+			if (comparethreeframes(buffer, i, frameSize, bufferSize) > 0)
 			{
 				return frameSize;
 			}
