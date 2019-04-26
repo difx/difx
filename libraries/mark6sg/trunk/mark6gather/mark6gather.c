@@ -256,8 +256,9 @@ static void *mark6Reader(void *arg)
 			}
 		}
 
-		// pthread_barrier_wait(&m6f->readBarrier);
 	} while(!m6f->stopReading);
+
+	pthread_barrier_wait(&m6f->readBarrier);
 
 	return 0;
 }
