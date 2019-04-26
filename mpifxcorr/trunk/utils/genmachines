@@ -33,6 +33,7 @@ from string import split, strip, upper, lower
 from sys import exit
 from os import getenv, umask, environ
 from os.path import isfile
+import re
 import socket
 import struct
 import subprocess
@@ -56,6 +57,8 @@ minMachinefileVersion = "1.0"	# cluster definition file must have at least this 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
 #ignoreIncompleteModules = True
+
+MARK6_VSN_IDS = ['%']
 
 def getUsage():
         """
@@ -197,13 +200,16 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
         vsnlist = []
 
 	count = 0
-        for stream in datastreams:
+	for stream in datastreams:
 	    count += 1
-            if len(stream.vsn) > 0:
-                vsnlist.append(stream.vsn)
+	    if len(stream.vsn) > 0:
+	        vsnlist.append(stream.vsn)
 	    if len(stream.msn) > 0:
-		for m in stream.msn:
-			vsnlist.append(m)
+	        for m in stream.msn:
+	            if isinstance(m,list):
+	                vsnlist += m
+	            else:
+	                vsnlist.append(m)
 
 	missingVsns = deepcopy(vsnlist)
 
@@ -256,6 +262,7 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 					if key in info[2].keys():
 						if info[2][key] in missingVsns:
 							missingVsns.remove(info[2][key])
+                                                        print 'found',info[2][key],'on',info[0]
 							if not isModuleComplete(key[:5], info[2]):
 								incomplete.append(info[2][key])
 					
@@ -271,6 +278,81 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 	incomplete.sort()
 
 	return results, conflicts, missingVsns, notidle, incomplete
+
+def getvexantennamodlists(vexobsfile):
+    '''
+    Returns tuple (experName,antennaModuleList,modList) for Mark6 antennas and VSNs found
+    in the given file with path vexobsfile.
+
+    On errors this function exits the script.
+    '''
+    experNameFound = False
+    tapelogObsFound = False
+    experName = ''
+    ant = ''
+    antennaModuleList = []
+    modList = []
+
+    # Regexps to flexibly detect VEX entries and fields; can test with https://regex101.com/
+    reComment = re.compile("^\s*\*")
+    reSection = re.compile("^\s*\$\s*(.*?)\s*;")
+    reDef = re.compile("^\s*def\s+(.*?)\s*;")
+    reVSN = re.compile("\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:")
+    reEnddef = re.compile("\W*enddef\s*;")
+
+    # Look up expt name and module info from VEX
+    vexobs = open(vexobsfile, "r")
+    for line in vexobs:
+        if reComment.match(line):
+            continue
+        # detect EXPER info
+        i = line.find('exper_name')
+        if i != -1:
+            experNameFound = True
+            lineend = line[i+10:len(line)-1]
+            for i in range(len(lineend)):
+                if lineend[i] not in [' ', '=', ';']:
+                    experName += lineend[i].upper()
+            continue
+        # detect change of VEX section
+        section = reSection.search(line)
+        if section and tapelogObsFound:
+            # encountered section after TAPELOG_OBS and if expt name also present by now, finished!
+            if experNameFound:
+               break
+        if section and not tapelogObsFound:
+            tapelogObsFound = section.group(1) == 'TAPELOG_OBS'
+        # detect entries in TAPELOG_OBS section
+        if tapelogObsFound:
+            # note the possibility of one-liners e.g. 'def Pv; VSN=0:<vsn>:<time>:<time>; enddef'
+            newdef = reDef.search(line)
+            vsn = reVSN.search(line)
+            enddef = reEnddef.search(line)
+            if newdef:
+                ant = newdef.group(1).upper()
+                modList = []
+            if vsn:
+                vsnNr = int(vsn.group(1))
+                mod = vsn.group(2)
+                # add only Mark6 modules to modlist
+                if any([key in mod for key in MARK6_VSN_IDS]):
+                    modList.append(mod)
+            if enddef:
+                antennaModuleList.append([ant,modList])
+
+    # fatal lack of info?
+    ok = experNameFound and tapelogObsFound
+    if not experNameFound:
+        print "could not find experiment name, exiting"
+    if not tapelogObsFound:
+        print "could not find TAPELOG_OBS data, exiting"
+    if not ok:
+        exit(1)
+    # harmless lack of info
+    if len(antennaModuleList) is 0:
+        print "no antennas with mark6 modules found, nothing more to do, exiting"
+        exit(0)
+    return (experName,antennaModuleList,modList)
 
 # replaces filename mark6 data source with msn, if necessary
 def adjustMark6datastreams(datastreams, inputfile, verbose):
@@ -288,28 +370,8 @@ def adjustMark6datastreams(datastreams, inputfile, verbose):
 	    return
 
         # get antenna module mapping from .vex.obs
-	try:
-            tapelogObsFound = False
-            ant = ''
-            mod = ''
-            antennaModuleList = []
-
-	    vexobs = open(vexobsfile)
-	    for line in vexobs:
-                if tapelogObsFound is False:
-                    if '$TAPELOG_OBS;' in line:
-                        tapelogObsFound = True
-                elif tapelogObsFound is True:
-                    if 'def ' in line:
-                        ant = line[4:6].upper()
-                    elif '  VSN = ' in line:
-                        linesegs = line.split(':')
-                        mod = linesegs[1].strip()
-                    elif 'enddef;' in line and '%' in mod:  # adds only mark6 modules to antennaModuleList
-                        antennaModuleList.append([ant,mod])
-                    elif '*-----' in line:
-                        break
-
+        try:
+            (experName,antennaModuleList,modList) = getvexantennamodlists(vexobsfile)
         except IOError:
 	    print vexobsfile, "could not be openened, returning"
 	    return
@@ -317,8 +379,6 @@ def adjustMark6datastreams(datastreams, inputfile, verbose):
         if len(antennaModuleList) < 1:
 	    print "no antennas using mark6 found, returning"
 	    return
-
-        print "antennaModuleList", antennaModuleList
 
 	# loop through datastreams, modifying mark6 streams if necessary
 	for stream in datastreams:
@@ -501,7 +561,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 if matchNode in difxmachines.getMk5NodeNames():
                     dsnodes.append(matchNode)
                 else:
-                    print '%s not listed as an active mark5 host in machines file' % matchNode
+                    print 'stream type MODULE with VSN %s, matching node %s not listed as an active mark5 host in machines file' % (stream.vsn,matchNode)
                     return []
 
             elif stream.type == "MARK6":
@@ -509,10 +569,12 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 		for r in results:
 		    if type(r[2]) is dict:
                         r2msns = [r[2]['slot1MSN'], r[2]['slot2MSN'], r[2]['slot3MSN'], r[2]['slot4MSN']]
+	                r2msns = set(r2msns)
 		        missingStreamMsn = False
 		        # all stream msns must be in unit msns
 		        for msn in stream.msn:
-		            if msn not in r2msns:
+	                    contained = len( r2msns.intersection(set(msn)) ) > 0
+		            if not contained:
 			        missingStreamMsn = True
 			        break
                         if missingStreamMsn == False:
@@ -525,7 +587,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 if matchNode in difxmachines.getMk6NodeNames():
                     dsnodes.append(matchNode)
                 else:
-                    print '%s not listed as an active mark6 host in machines file' % matchNode
+                    print 'stream type MARK6 with MSN %s, matching node %s not listed as an active mark6 host in machines file' % (str(stream.msn),matchNode)
                     return []
                 
 	# write machine file
