@@ -112,6 +112,9 @@ def parseOptions():
         metavar='STRING', default='',
         help='The name of the ALMA project as declared by intents ' +
             'ALMA:PROJECT_FIRST_SCAN:... and ALMA:PROJECT_FINAL_SCAN:...')
+    select.add_argument('-u', '--uniq', dest='uniq',
+        action='store_true', default=False,
+        help='Restrict jobs to a uniq set of largest job numbers')
     tester.add_argument('-V', '--Vex', dest='vex',
         metavar='VEXTIME', default='',
         help='convert a Vex Time into MJD (and exit)')
@@ -479,6 +482,12 @@ def adjustOptions(o):
             doInputSrcs(o)
             o.rubbage = o.cabbage       # can only use calc files
             o.antlers = o.antset
+    try:
+        if   os.environ['uniq'] == 'true':  o.uniq = True
+        elif os.environ['uniq'] == 'false': o.uniq = False
+        else: raise Exception, 'Illegal uniq value: ' + os.environ['uniq']
+    except:
+        pass
     return o
 
 def doSelectData(o):
@@ -528,6 +537,38 @@ def doSelectProject(o):
                 if o.verb: print '#P',j,str(newjobs[j])
     o.rubbage = newjobs
 
+def bustedCorr(o_inputs, jobnum):
+    '''
+    If required correlation files are missing, return True
+    '''
+    for ef in ['.input','.calc','.im','.difx']:
+        cfile = o_inputs + '_' + jobnum + ef
+        if not os.path.exists(cfile):
+            return True
+    return False
+
+def doSelectUniq(o):
+    '''
+    Restrict to jobs with largest job number for repeat correlations.
+    As a side effect, discard jobs that are missing correlation files.
+    o.jobbage[#] = [start,stop,[antennas],[name,start,smjd,dur,vsrc,mode]]
+    '''
+    if not o.uniq: return
+    if o.rubbage == None or len(o.rubbage) == 0: return
+    if o.verb: print '# Reducing joblist to uniq job set'
+    scandict = {}
+    joblist = sorted(o.rubbage.keys())
+    joblist.reverse()
+    for j in joblist:
+        job = o.rubbage[j]
+        ky = "%s-%s" % (job[3][0], job[3][4])
+        if ky in scandict or bustedCorr(o.inputs, j):
+            if o.verb: print '# Discarding duplicate or broken job',j
+            del(o.rubbage[j])
+            continue
+        else:
+            scandict[ky] = [j]
+
 def selectOptions(o):
     '''
     Apply selections to limit things reported
@@ -535,6 +576,7 @@ def selectOptions(o):
     doSelectData(o)
     doSelectSource(o)
     doSelectProject(o)
+    doSelectUniq(o)
     return o
 
 def doAntennas(o):

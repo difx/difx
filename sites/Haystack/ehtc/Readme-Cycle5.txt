@@ -45,6 +45,11 @@ export corr=/data-sc15/difxoper
 # run polconvert on the same machine with the files
 export work=/data-sc15/difxoper
 
+# If $work contains multiple jubs or unprocessed jobs, set this to true,
+# which implicitly sets the -u flag on any use of $ehtc/ehtc-joblist.py.
+# If $work is more messed up than that, you're on your own.
+export uniq=true    # or export uniq=false
+
 # principal vars for tracking all the revisions and forth
 export exp=e18...
 export vers=?       # major correlator version
@@ -259,9 +264,12 @@ nohup $ehtc/ehtc-jsgrind.sh < /dev/null > $label.log 2>&1
 # or on the processing host with:
 # sh this.logfile & disown
 #--------------------------------------------------------------------------
-# While processing ======================
-# save logfile incrementally or when done:
+# 
+# Final Steps ======================
+# This section is always MANUL.
+# 
 false && {
+# save logfile incrementally or when done:
 cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
 ls -l $release/logs
 
@@ -307,11 +315,17 @@ for r in tb-* ; do pushd $r ; nohup ./release.sh & popd ; done
 # and finally after everything is released count the products
 $ehtc/ehtc-release-check.sh
 
+# one last time
+cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
+ls -l $release/logs
+
 # Cleanup list ======================
 # after tarballs are delivered and if you want to recover disk space
 rm -rf $exp-$vers-${subv}_*.save
 rm -rf $exp-$relv-${subv}_*.save
 }
+# avoid worrisome error return values
+true
 
 #
 # eof

@@ -10,14 +10,18 @@ verb=${1-'false'}
 [ -n "$ers" ] || { echo ers not defined in the environment; exit 1; }
 [ -n "$expn" ] || { echo expn not defined in the environment; exit 1; }
 [ -n "$pcal" ] || { echo pcal not defined in the environment; exit 1; }
-[ `find  -maxdepth 1 -name '*.obs' | wc -l` == 1 ] || { echo found too many '*.obs' files; exit 1; }
+[ `find  -maxdepth 1 -name '*.obs' | wc -l` == 1 ] || {
+    echo found too many '*.obs' files; exit 1; }
 [ -f *.obs ] || { echo missing experiment.obs file; exit 1; }
 
 logcount=`ls -1 $release/logs | grep -v packaging | wc -l`
 $verb && echo $logcount files in $release/logs
-[ "$logcount" -eq 13 ] || { echo Error: $logcount files in $release/logs but expected 13; exit 2; }
+[ "$logcount" -eq 13 ] || {
+    echo Error: $logcount files in $release/logs but expected 13; exit 2; }
 
-set -- `$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G`
+[ -z "$uniq" ] &&
+    set -- `$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G` ||
+    set -- `$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -G -u`
 while [ $# -ge 4 ]
 do
     eval $2 ; eval $3 ; eval $4 ; shift 4
