@@ -33,6 +33,7 @@ verdate = '20180412'
 author = 'Mark Wainright'
 
 MARK6_VSN_IDS = ['%']
+MARK5_VSN_IDS = ['+', '-']
 
 def usage(pgm):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
@@ -197,13 +198,16 @@ def getvexantennamodlists(vexobsfile):
             if newdef:
                 ant = newdef.group(1)
 	        modList = []
+		mark5Mod = False
             if vsn:
                 vsnNr = int(vsn.group(1))
                 mod = vsn.group(2)
                 # add only Mark6 modules to modlist
                 if any([key in mod for key in MARK6_VSN_IDS]):
 	            modList.append(mod)
-            if enddef:
+                if any([key in mod for key in MARK5_VSN_IDS]):
+		    mark5Mod = True
+            if enddef and not mark5Mod:
                 antennaModuleList.append([ant,modList])
 
     # fatal lack of info?
@@ -299,7 +303,7 @@ def updatev2dblock(lines, insertables, commentout_keys=None, indent=2):
     lines += [(" "*indent) + ins.strip() + '\n' for ins in insertables]
     return lines
 
-def regeneratev2d(inFile):
+def regeneratev2d(inFile, antList):
     '''
     Update v2d by writing new v2d file, with Mark6 related
     entries mark6filelist=... inserted where necessary.
@@ -319,6 +323,8 @@ def regeneratev2d(inFile):
     # find all ANTENNA/DATASTREAM sections, inspect content and prepare modifications where applicable
     antblocks = getv2dblock(linesin, 'ANTENNA')
     for (ant,istart,istop,antcontent) in antblocks:
+        if ant not in antList:
+	    continue
 
         # Any DATASTREAM(s) referenced by ANTENNA?
         dsrefs = getv2dblockkey(linesin, 'ANTENNA', 'datastreams', blockname=ant)
@@ -448,7 +454,7 @@ if verbose > 1:
 antList = []
 antNoModuleFileList = []
 for (ant,modlist) in antennaModuleList:
-    antList.append(ant)
+    antList.append(ant.upper())
     antennaFileName = ant.lower() + '.filelist'
     antFileWritten = False
     antfile = open(antennaFileName, 'w')
@@ -499,6 +505,6 @@ if verbose > 1:
     print
     print "adding mark6filelist tags to", inFile
     print
-regeneratev2d(inFile)
+regeneratev2d(inFile, antList)
 print("Updated %s" % inFile)
 
