@@ -118,6 +118,6 @@ for i in range(nbins):
         os.system("mv TARGET* {0}bin{1:02g}".format(prefix, i))
         if noisecen != '':
             os.system("mv OFFSOURCE* {0}bin{1:02g}".format(prefix, i))
-        os.system("mv {0}{1}_calibrated_uv.ms {2}bin{3:02g}".format(tdata[i], bins, prefix, i))
+        os.system("mv {0}_calibrated_uv.ms {1}bin{2:02g}".format(tdata[i], prefix, i))
         os.system("mv casa*.log {0}bin{1:02g}".format(prefix, i))
 
