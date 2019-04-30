@@ -13,14 +13,16 @@
 #
 [ -z "$exp"   ] && { echo exp   must be defined ; exit 1 ; }
 [ -z "$expn"  ] && { echo expn  must be defined ; exit 1 ; }
-[ -z "$opts"  ] && { echo opts  must be defined with options for polconvert ; exit 1 ; }
-[ -z "$pcal"  ] && { echo pcal  must be defined with name of QA2 package ; exit 1 ; }
+[ -z "$opts"  ] && { echo opts  must be defined with options for polconvert ;
+    exit 1 ; }
+[ -z "$pcal"  ] && { echo pcal  must be defined with name of QA2 package ;
+    exit 1 ; }
 [ -z "$vers"  ] && { echo vers  must be defined ; exit 1 ; }
 [ -z "$relv"  ] && { echo relv  must be defined ; exit 1 ; }
 [ -z "$subv"  ] && { echo subv  must be defined ; exit 1 ; }
 [ -z "$iter"  ] && { echo iter  must be defined ; exit 1 ; }
 [ -z "$expn"  ] && { echo expn  must be defined ; exit 1 ; }
-# "$label" is ignored 
+# "$label" is ignored
 [ -z "$targ"  ] && { echo targ  must be defined ; exit 1 ; }
 [ -z "$dout"  ] && { echo dout  must be defined ; exit 1 ; }
 [ -z "$proj"  ] && { echo proj  must be defined ; exit 1 ; }

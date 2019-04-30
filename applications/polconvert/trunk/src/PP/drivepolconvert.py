@@ -288,11 +288,13 @@ def runRelatedChecks(o):
 
     if 'DIFXCASAPATH' in os.environ:
         o.casa = '%s/casa' % os.environ['DIFXCASAPATH']
+        msg = 'from DIFXCASAPATH'
     else:
         o.casa = 'casa'
+        msg = 'from "casa"'
     if o.verb: cmd = 'type %s'
     else:      cmd = 'type %s 1>/dev/null 2>/dev/null'
-    if o.verb: print 'CASA executable is %s' % o.casa
+    if o.verb: print 'CASA executable is %s (%s)' % (o.casa,msg)
 
     if o.run:
         if os.system(cmd % o.casa):
@@ -463,7 +465,6 @@ def plotPrep(o):
         o.remote = -1
         o.flist = ''
     elif o.fringe == 1:
-        o.doPlot = ''
         o.doPlot = ['','#','','#']
         o.flist = ''
     else:
@@ -818,6 +819,7 @@ def waitForNextWorker(o):
     drop to zero and then we are done.  Need to consider how to kill
     this beast.
     '''
+    print 'Please wait for all processing threads to complete'
     while True:
         for th in o.workbees:
             if th.isAlive():
@@ -840,15 +842,12 @@ def executeThreads(o):
     Once we have reached the limit, we launch new threads for the
     remaining scans as thread slots become available
     '''
-    while len(o.workdirs) > 0:
-        if len(o.workbees) < o.parallel:
-            launchNewScanWorker(o, '(original)')
-        else:
-            waitForNextWorker(o)
-            return
-    print 'Pausing 10s for jobs to start...'
-    time.sleep(10)
-    print 'Wait for processing threads to finish.'
+    if len(o.workdirs) == 0:
+        print 'Golly, gee, it seems we have no work to do...moving on.'
+        return
+    while len(o.workdirs) > 0 and len(o.workbees) < o.parallel:
+        launchNewScanWorker(o, '(original)')
+    waitForNextWorker(o)
 
 def reportWorkTodo(o):
     '''
@@ -862,19 +861,19 @@ def reportWorkTodo(o):
     pcdirstamps = o.now.strftime('*.polconvert-%Y-%m-%dT%H.%M.%S')
     print 'Results are in',pcdirstamps
     pcdirs = glob.glob(pcdirstamps)
+    pclogs = glob.glob(pcdirstamps+'/PolConvert.log')
     if len(pcdirs) == len(o.jobnums):
         print 'The number of polconvert dirs (%d) is correct.' % len(pcdirs)
     else:
         print 'Error: %d workdirs and %d jobs'%(len(pcdirs),len(o.jobnums))
-    if o.verb:
-        for pc in pcdirs: print '   ',pc
-    pclogs = glob.glob(pcdirstamps+'/PolConvert.log')
     if len(pclogs) == len(o.jobnums):
         print 'The number of polconvert log files (%d) is correct.' % (
             len(pclogs))
     else:
         print 'Error: %d polconvert log files and %d jobs'%(
             len(pclogs),len(o.jobnums))
+    if o.verb:
+        for pc in pcdirs: print '   ',pc
     print('drivepolconvert is finished.\n')
 
 def executeCasaParallel(o):

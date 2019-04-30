@@ -53,12 +53,12 @@ def parseOptions():
         help='The path of the *.vex.obs vex file')
     inputs.add_argument('-i', '--inputs', dest='inputs',
         metavar='FILE-PATTERN', default='',
-        help='The path to job input/calc files up to the '
-            + ' underscore preceding the job number.')
+        help='The path to job input/calc files up to but excluding '
+            + 'the underscore preceding the job number.')
     inputs.add_argument('-c', '--codes', dest='codes',
         metavar='FILE', default='',
         help='difx2mark4 station code file augmented with a column'
-            + ' of polarizations per station')
+            + ' of number of polarizations per station')
     action.add_argument('-A', '--antennas', dest='antennas',
         action='store_true', default=False,
         help='provide a list of antennas')
@@ -232,16 +232,28 @@ def doInputs(o):
     Use the input pattern to glob for matching input/calc
     files and read them to provide the job information.
     o.jobbage[#] = [start,stop,[antennas],[name,start,smjd,dur,vsrc,mode]]
+    o.inputs is non-empty if we were called, but we should check that
+    it points to some directory
     '''
     if o.verb: print '# globbing with:', o.inputs + '_*.input'
-    if len(o.inputs) > 0 and o.job == '':
+    dirn = os.path.dirname(o.inputs)
+    if dirn == '':
+        print '# globbing for files in the current working directory'
+    else:
+        if not os.path.exists(dirn):
+            raise Exception, '-i argument must be set sensibly'
+    if o.job == '':
         o.job = os.path.basename(o.inputs)
         if o.verb: print '# set job to', o.job
     o.inptfiles = glob.glob(o.inputs + '_*.input')
     o.calcfiles = glob.glob(o.inputs + '_*.calc')
     if len(o.inptfiles) != len(o.calcfiles):
         print 'Mismatch in number of input/calc files, bailing'
-        return
+        sys.exit(1)
+    if not o.inptfiles:
+        print 'No input files matching pattern %s_*.input found! Stopping' % (
+            o.inputs)
+        sys.exit(1)
     o.pairs = map(lambda x,y:(x,y), sorted(o.inptfiles), sorted(o.calcfiles))
     o.cabbage = {}
     for inp,clc in o.pairs:
@@ -1001,9 +1013,10 @@ def grokChannels(o):
         o.chsig  [jobn,scan,products]
     '''
     if len(o.rubbage) == 0: return
-    jl = map(lambda x:"%s_%s.input" % (o.job, x), sorted(o.rubbage.keys()))
     o.chanalia = []
     o.signature = set()
+    o.chsig = {}
+    jl = map(lambda x:"%s_%s.input" % (o.job, x), sorted(o.rubbage.keys()))
     for job in jl:
         report = updateBLPOL(os.path.dirname(o.inputs) + '/' + job, o.verb)
         label = re.sub('.input','',job)
@@ -1016,7 +1029,6 @@ def grokChannels(o):
             a,b = ab.split('|')
             o.signature.add(a + ":" + report[p])
             o.signature.add(b + ":" + report[p])
-    o.chsig = {}
     for sig in o.signature:
         o.chsig[sig] = set()
     for cha in o.chanalia:
