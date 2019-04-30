@@ -5,8 +5,11 @@ LDADD = \
 	$(top_builddir)/src/libcodifio.la
 
 bin_PROGRAMS = \
-	codifsum 
+	codifsum codif_write
 
 codifsum_SOURCES = \
 	codifsum.c
+
+codif_write_SOURCES = \
+	codif_write.c
 
