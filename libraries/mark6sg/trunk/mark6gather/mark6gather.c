@@ -226,7 +226,7 @@ static void *mark6Reader(void *arg)
 	Mark6File *m6f = (Mark6File *)arg;
 	int corrupted = 0;
 
-	do
+	while(1)
 	{
 		size_t v;
 
@@ -256,9 +256,14 @@ static void *mark6Reader(void *arg)
 			}
 		}
 
-	} while(!m6f->stopReading);
+		pthread_barrier_wait(&m6f->readBarrier);
 
-	pthread_barrier_wait(&m6f->readBarrier);
+		if (m6f->stopReading)
+		{
+			break;
+		}
+
+	}
 
 	return 0;
 }
@@ -301,7 +306,7 @@ static ssize_t Mark6FileReadBlock(Mark6File *m6f, int slotIndex)
 
 		slot->index = 0;
 
-		if(m6f->packetSize == 5032)
+		if(!checkMark5BPacket(slot->data))
 		{
 			vh = (vdif_header *)(slot->data);
 			slot->frame = vdifFrame(vh);
