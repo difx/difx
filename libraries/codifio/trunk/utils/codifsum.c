@@ -185,7 +185,7 @@ int main (int argc, char **argv) {
 	printf("\n");
 	printf("PERIOD:      %d\n", period);
 	printf("\n");
-	printf("#SAMPLES:    %llu\n", getCODIFTotalSamples(header));
+	printf("#SAMPLES:    %lu\n", getCODIFTotalSamples(header));
 	printf("\n");
 	printf("SYNC:        0X%X\n", getCODIFSync(header));
 	

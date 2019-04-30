@@ -85,6 +85,7 @@ int main (int argc, char * const argv[]) {
   codif_header *cheader=NULL;
   int16_t *s16, *cdata;
   int8_t *s8;
+  uint64_t *h32;
   uint64_t *h64;
 
   unsigned int port = DEFAULT_PORT;
@@ -215,7 +216,8 @@ int main (int argc, char * const argv[]) {
 
 
   cheader = (codif_header*)buf;
-  h64 = (uint64_t*)cheader; // Heasder as 64bit worlds
+  h32 = (uint32_t*)cheader; // Header as 32bit worlds
+  h64 = (uint64_t*)cheader; // Header as 64bit worlds
   cdata = (int16_t*) &buf[CODIF_HEADER_BYTES];
 
   status = setup_net(port, ip, &sock);
@@ -284,15 +286,13 @@ int main (int argc, char * const argv[]) {
 
     if (skip) continue;
 
-    
-    // Convert to Header then data to little endian
+    // Convert header then data to little endian
     for (i=0; i<8; i++) {
       h64[i] = bswap_64(h64[i]);
     }
     for (i=0; i<(nread-CODIF_HEADER_BYTES)/sizeof(int16_t);i++) {
       cdata[i] = bswap_16(cdata[i]);
     }
-
     t2 = tim();
 
     if (first || t2-filetime>filesize) {
@@ -324,7 +324,8 @@ int main (int argc, char * const argv[]) {
     if (scale>0) {
       s16 = cdata;
       s8 = (int8_t*)cdata;
-      for (int i=0; i< (nread-padding-CODIF_HEADER_BYTES)/sizeof(int16_t); i++) {
+      int i;
+      for (i=0; i< (nread-padding-CODIF_HEADER_BYTES)/sizeof(int16_t); i++) {
 	*s16 /= scale;
 	if (*s16>127)
 	  *s16 = 127;
