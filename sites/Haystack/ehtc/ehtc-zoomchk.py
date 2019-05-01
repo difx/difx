@@ -99,7 +99,18 @@ def deduceZoomIndicies(o):
         else:
             jskip.append(jobin)
         antmap = {}
-    if o.verb: print '##\n## Zoom mid freq is ', ' '.join(sorted(mfqlst))
+    if o.verb:
+        print '##\n## Zoom mid freq is ', ' '.join(sorted(mfqlst))
+        mfqlist = list(mfqlst)
+        medianfreq = float(mfqlist[len(mfqlist)/2])
+        if   medianfreq <  90000.0: medianband = '3 (GMVA)'
+        elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
+        elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
+        elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
+        elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
+        else:                       medianband = '??? band 7 ???'
+        print '## Working with band %s based on median freq (%f)\n##' % (
+            medianband, medianfreq)
     if o.zmchk:
       # original logic
       if (len(zfirst) != 1 or len(zfinal) != 1 or

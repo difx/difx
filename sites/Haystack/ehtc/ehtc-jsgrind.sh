@@ -91,6 +91,11 @@ $polconvert && {
     echo \
     drivepolconvert.py -v $opts -l $pcal $jobs
     drivepolconvert.py -v $opts -l $pcal $jobs
+    status=$?
+    # stop things dead in their tracks if we have an issue
+    # in order to prevent alot of stupid tarballing activity
+    [ $status -eq 0 ] && { echo drivepolconvert.py exited normally ; } ||
+        { echo drivepolconvert.py exited with status $status; exit $status; }
     # evaluate results on full set of $jobs--look at ALL_IFs plots; then
 
     #--------------------------------------------------------------------------

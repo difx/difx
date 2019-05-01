@@ -685,7 +685,7 @@ def doGroups(o, doLabels):
         for a in sorted(list(ans)):
             proj,targ,clss = a.split(':')
             exprt=('  export proj=%s targ=%s class=%s' % tuple(a.split(':')))
-            print  '%-56s    label=%s-%s' % (exprt,proj,targ)
+            print  '%-54s    label=%s-%s' % (exprt,proj,targ)
             print  '  nohup $ehtc/ehtc-jsgrind.sh < /dev/null > $label.log 2>&1'
         print '}'
     else:

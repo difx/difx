@@ -283,9 +283,9 @@ grep -l 'was NOT polconverted properly' *polcon*/casa-logs/*output |\
 polconversions=`cat $ers-jobs-map.txt | grep -v do.not | wc -l`
 allifsplots=`ls -l $ers*polcon*/*TS/ALL*png | wc -l`
 antabfiles=`ls -l $ers*polcon*/*ANTAB | wc -l`
-[ $polconversions -eq $allifsplots ] || { echo -n '###' missing plots;
+[ $polconversions -eq $allifsplots ] || { echo -n '### missing plots ';
     echo $polconversions -ne $allifsplots '(polconversions ne allifplots)' ; }
-[ $polconversions -eq $antabfiles ] || { echo -n '###' missing antabfiles;
+[ $polconversions -eq $antabfiles ] || { echo -n '### missing antabfiles ';
     echo $polconversions -ne $antabfiles '(polconversions ne $antabfiles)' ; }
 
 # Examine some of the 4fit fringes on questionable cases with

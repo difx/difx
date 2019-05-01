@@ -13,6 +13,7 @@ import glob
 import os
 import re
 import stat
+import sys
 import threading
 import time
 
@@ -436,22 +437,27 @@ def deduceZoomIndicies(o):
         print 'Remote list is',o.remotelist,'(indices start at 1)'
         print 'Jobs now',o.djobs
     # If the user supplied a band, check that it agrees
-    if len(mfqlst) > 1:
-        raise Exception, ('Input files have disparate frequency structures:\n'
-            '  Median frequencies: ' + str(mfqlst) + '\n'
-            '  and these must be processed separately')
-    elif len(mfqlst) == 1:
+    if len(mfqlst) == 1:
         medianfreq = float(mfqlst.pop())
-        if   medianfreq <  90000.0: medianband = '3 (GMVA)'
-        elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
-        elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
-        elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
-        elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
-        else:                       medianband = '??? band 7 ???'
-        print 'Working with band %s based on median freq (%f)' % (
-                medianband, medianfreq)
+    elif len(mfqlst) > 1:
+        print ('Input files have disparate frequency structures:\n' +
+            '  Median frequencies: ' + str(mfqlst) + '\n')
+        mfqlist = list(mfqlst)
+        medianfreq = float(mfqlist[len(mfqlist)/2])
+        print 'Using the median of medians: ', medianfreq
     else:
         print 'No median frequency, so no idea about medianband'
+        print 'Leaving it up to PolConvert to sort out'
+    # finally the diagnostic message
+    medianfreq = float(mfqlst.pop())
+    if   medianfreq <  90000.0: medianband = '3 (GMVA)'
+    elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
+    elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
+    elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
+    elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
+    else:                       medianband = '??? band 7 ???'
+    print 'Working with band %s based on median freq (%f)' % (
+            medianband, medianfreq)
 
 def plotPrep(o):
     '''
@@ -940,6 +946,8 @@ if __name__ == '__main__':
     else:
         createCasaInputParallel(opts)
         executeCasaParallel(opts)
+    # explicit 0 exit 
+    sys.exit(0)
 
 #
 # eof
