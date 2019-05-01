@@ -58,6 +58,7 @@ for stokes in ["I","Q","U","V","XX","YY"]:
 
     # Set figure size
     fig, ax = plt.subplots(figsize=(6,7))
+    plt.title("Stokes "+ stokes)
     
     dynspec[stokes] = np.loadtxt("{0}-imageplane-dynspectrum.stokes{1}.txt".format(src, stokes))
     fscrunch[stokes] = np.sum(dynspec[stokes], 1)
@@ -85,11 +86,19 @@ for stokes in ["I","Q","U","V","XX","YY"]:
         plt.savefig('{0}-imageplane-dynspectrum.stokes{1}.png'.format(src, stokes))
         plt.clf()
 
-times = np.arange(0, (nbins-1)*res, res)
-plt.plot(times,fscrunch["I"][1:],label="I")
-plt.plot(times,fscrunch["Q"][1:],label="Q")
-plt.plot(times,fscrunch["U"][1:],label="U")
-plt.plot(times,fscrunch["V"][1:],label="V")
+
+if args.zero:
+    times = np.arange(0, (nbins-1)*res, res)
+    plt.plot(times,fscrunch["I"][1:],label="I")
+    plt.plot(times,fscrunch["Q"][1:],label="Q")
+    plt.plot(times,fscrunch["U"][1:],label="U")
+    plt.plot(times,fscrunch["V"][1:],label="V")
+else:
+    times = np.arange(0, nbins*res, res)
+    plt.plot(times,fscrunch["I"][:],label="I")
+    plt.plot(times,fscrunch["Q"][:],label="Q")
+    plt.plot(times,fscrunch["U"][:],label="U")
+    plt.plot(times,fscrunch["V"][:],label="V")
 plt.legend()
 plt.xlabel("Time (ms)")
 plt.ylabel("Amplitude (arbitrary units)")
