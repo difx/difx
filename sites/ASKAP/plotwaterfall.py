@@ -11,6 +11,7 @@ parser.add_argument("-s", "--src", type=str, default=None, help="Source name to 
 parser.add_argument("-r", "--res", type=float, default=None, help="Temporal resolution of data in ms")
 parser.add_argument("-z", "--zero", default=False, help="Set zeroth bin equal to zero; use for nbins>1 when the zeroth bin contains little to no signal but mostly noise", action="store_true")
 parser.add_argument("-f", "--basefreq", type=float, default=None, help="The lowest frequency in the observation in MHz")
+parser.add_argument("-F", "--fscrunch", default=False, help="Make fscrunched plot")
 
 args = parser.parse_args()
 
@@ -61,7 +62,10 @@ for stokes in ["I","Q","U","V","XX","YY"]:
     plt.title("Stokes "+ stokes)
     
     dynspec[stokes] = np.loadtxt("{0}-imageplane-dynspectrum.stokes{1}.txt".format(src, stokes))
-    fscrunch[stokes] = np.sum(dynspec[stokes], 1)
+
+    if args.fscrunch:
+        fscrunch[stokes] = np.sum(dynspec[stokes], 1)
+        
     print dynspec[stokes].shape
 
     if nbins == 1:
@@ -86,20 +90,20 @@ for stokes in ["I","Q","U","V","XX","YY"]:
         plt.savefig('{0}-imageplane-dynspectrum.stokes{1}.png'.format(src, stokes))
         plt.clf()
 
-
-if args.zero:
-    times = np.arange(0, (nbins-1)*res, res)
-    plt.plot(times,fscrunch["I"][1:],label="I")
-    plt.plot(times,fscrunch["Q"][1:],label="Q")
-    plt.plot(times,fscrunch["U"][1:],label="U")
-    plt.plot(times,fscrunch["V"][1:],label="V")
-else:
-    times = np.arange(0, nbins*res, res)
-    plt.plot(times,fscrunch["I"][:],label="I")
-    plt.plot(times,fscrunch["Q"][:],label="Q")
-    plt.plot(times,fscrunch["U"][:],label="U")
-    plt.plot(times,fscrunch["V"][:],label="V")
-plt.legend()
-plt.xlabel("Time (ms)")
-plt.ylabel("Amplitude (arbitrary units)")
-plt.savefig("{0}-fscrunch.png".format(src))
+if args.fscrunch:
+    if args.zero:
+        times = np.arange(0, (nbins-1)*res, res)
+        plt.plot(times,fscrunch["I"][1:],label="I")
+        plt.plot(times,fscrunch["Q"][1:],label="Q")
+        plt.plot(times,fscrunch["U"][1:],label="U")
+        plt.plot(times,fscrunch["V"][1:],label="V")
+    else:
+        times = np.arange(0, nbins*res, res)
+        plt.plot(times,fscrunch["I"][:],label="I")
+        plt.plot(times,fscrunch["Q"][:],label="Q")
+        plt.plot(times,fscrunch["U"][:],label="U")
+        plt.plot(times,fscrunch["V"][:],label="V")
+    plt.legend()
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Amplitude (arbitrary units)")
+    plt.savefig("{0}-fscrunch.png".format(src))
