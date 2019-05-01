@@ -43,6 +43,8 @@ from optparse import OptionParser
 from xml.parsers import expat
 from copy import deepcopy
 from ast import literal_eval
+from datetime import datetime
+
 try:
     from difxfile.difxmachines import *
 except ImportError:
@@ -59,6 +61,35 @@ defaultDifxMessageGroup = '224.2.2.1'
 #ignoreIncompleteModules = True
 
 MARK6_VSN_IDS = ['%']
+
+def getmonthdate(daynumber, yearnumber):
+    md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+    mdl = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
+    if yearnumber % 4 == 0:
+        dl = mdl
+    else:
+        dl = md
+    for i in range(len(dl)):
+        if daynumber > dl[i] and daynumber <= dl[i+1]:
+	    return [i + 1, daynumber - dl[i]]
+
+def convertDateString2Mjd(dateStr):
+    mjd0 = datetime(1858, 11, 17, 0, 0)
+    if len(dateStr) == 18 and dateStr[4] == 'y' and dateStr[8] == 'd' and dateStr[11] == 'h' and dateStr[14] == 'm' and dateStr[17] == 's':
+        startyear = int(dateStr[0:4])
+	startday = int(dateStr[5:8])
+	mondate = getmonthdate(startday, startyear)
+	startmonth = mondate[0]
+	startdate = mondate[1]
+	starthour = int(dateStr[9:11])
+	startminute = int(dateStr[12:14])
+	startsecond = int(dateStr[15:17])
+	startdt = datetime(startyear, startmonth, startdate, starthour, startminute, startsecond)
+	startmjd = startdt - mjd0
+	return startmjd
+    else:
+        print 'invalid date string', dateStr
+	return datetime(1900, 1, 1, 0, 0)
 
 def getUsage():
         """
@@ -279,7 +310,15 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 
 	return results, conflicts, missingVsns, notidle, incomplete
 
-def getvexantennamodlists(vexobsfile):
+def startTimeInPackTimeRange(startTime, packStartStr, packEndStr):
+    packStartMjd = convertDateString2Mjd(packStartStr)
+    packEndMjd = convertDateString2Mjd(packEndStr)
+    if startTime.days > packStartMjd.days or (startTime.days == packStartMjd.days and startTime.seconds >= packStartMjd.seconds):
+        if startTime.days < packEndMjd.days or (startTime.days == packEndMjd.days and startTime.seconds <= packEndMjd.seconds):
+	    return True
+    return False
+
+def getvexantennamodlists(vexobsfile, startTime):
     '''
     Returns tuple (experName,antennaModuleList,modList) for Mark6 antennas and VSNs found
     in the given file with path vexobsfile.
@@ -297,7 +336,7 @@ def getvexantennamodlists(vexobsfile):
     reComment = re.compile("^\s*\*")
     reSection = re.compile("^\s*\$\s*(.*?)\s*;")
     reDef = re.compile("^\s*def\s+(.*?)\s*;")
-    reVSN = re.compile("\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:")
+    reVSN = re.compile("\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:\s*(.*?)\s*:\s*(.*?)\s*;")
     reEnddef = re.compile("\W*enddef\s*;")
 
     # Look up expt name and module info from VEX
@@ -336,7 +375,9 @@ def getvexantennamodlists(vexobsfile):
                 mod = vsn.group(2)
                 # add only Mark6 modules to modlist
                 if any([key in mod for key in MARK6_VSN_IDS]):
-                    modList.append(mod)
+		    # add only modules to modlist that contain start time for this job, next module might not be in playback unit yet
+		    if startTimeInPackTimeRange(startTime, vsn.group(3), vsn.group(4)):
+                        modList.append(mod)
             if enddef:
                 antennaModuleList.append([ant,modList])
 
@@ -355,7 +396,7 @@ def getvexantennamodlists(vexobsfile):
     return (experName,antennaModuleList,modList)
 
 # replaces filename mark6 data source with msn, if necessary
-def adjustMark6datastreams(datastreams, inputfile, verbose):
+def adjustMark6datastreams(datastreams, inputfile, verbose, startTime):
         # get .vex.obs filename from .calc file
         calcfilename = inputfile.replace('.input', '.calc')
 	try:
@@ -371,7 +412,7 @@ def adjustMark6datastreams(datastreams, inputfile, verbose):
 
         # get antenna module mapping from .vex.obs
         try:
-            (experName,antennaModuleList,modList) = getvexantennamodlists(vexobsfile)
+            (experName,antennaModuleList,modList) = getvexantennamodlists(vexobsfile, startTime)
         except IOError:
 	    print vexobsfile, "could not be openened, returning"
 	    return
@@ -412,6 +453,11 @@ def adjustMark6datastreams(datastreams, inputfile, verbose):
                         if antmodfound is False:
 			    i += 1
 
+class StartTime:
+        def __init__(self):
+                self.days = 0
+                self.seconds = 0
+
 def getDatastreamsFromInputFile(inputfile, verbose):
         """
         Parse the datastream section of the input file to
@@ -426,6 +472,7 @@ def getDatastreamsFromInputFile(inputfile, verbose):
 	input = open(inputfile).readlines()
     
         mark6flag = False
+	startTime = StartTime()
 	for inputLine in input:
 		s = split(inputLine, ':')
 		if len(s) < 2:
@@ -433,8 +480,18 @@ def getDatastreamsFromInputFile(inputfile, verbose):
 		key = s[0].strip()
 		keyparts = key.split()
 		value = s[1].strip()
+               
+                # get start mjd
+		if key == 'START MJD':
+			startMjd = int(value)
+			startTime.days = startMjd
                 
-                # find number of datastreams
+		# get start seconds
+		if key == 'START SECONDS':
+			startSeconds = int(value)
+			startTime.seconds = startSeconds
+
+		# find number of datastreams
 		if key == 'ACTIVE DATASTREAMS':
 			nds = int(value)
                         # create  empty Datastream objects
@@ -479,7 +536,7 @@ def getDatastreamsFromInputFile(inputfile, verbose):
                                 datastreams[ds].msn.append(value)  
          
 	if mark6flag is True:
-	    adjustMark6datastreams(datastreams, inputfile, verbose)
+	    adjustMark6datastreams(datastreams, inputfile, verbose, startTime)
             
 	return (datastreams)
 
