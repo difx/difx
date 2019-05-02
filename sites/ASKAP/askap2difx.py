@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, argparse, math
+import os, sys, argparse, math, getpass
 from astropy.time import Time
 
 ## Convenience function to parse java style properties file
@@ -227,7 +227,7 @@ def getFPGAdelays(fpga):
 
     return fpga_delays
 
-def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, forceFFT, tInt, polyco, npol):
+def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, forceFFT, tInt, polyco, npol,startseries):
     if fpga is not None:
         fpga_delay = getFPGAdelays(fpga)
     else:
@@ -238,13 +238,13 @@ def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafileli
 
 vex = craftfrb.vex
 
-startSeries = 0
+startSeries = {0:d}
 minLength = 1
 allowAllClockOffsets = True
 tweakIntTime = True
 exhaustiveAutocorrs = True
 
-''')
+'''.format(startseries))
     v2dout.write("antennas = ")
     for d in datafilelist[0]:
         a = d.split('=')[0]
@@ -353,6 +353,7 @@ parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-i", "--integration", default = "1.3824", help="Correlation integration time")
 parser.add_argument("-n", "--nchan", type=int, default=128, help="Number of spectral channels")
+parser.add_argument("-s", "--slurm", default=False, action="store_true", help="Use slurm batch jobs rather than running locally")
 parser.add_argument("--forceFFT", default=False, action="store_true", help="Force FFT size to equal number of channels (don't increase to 128)")
 parser.add_argument("--npol", help="Number of polarisations", type=int, choices=[1,2], default=1)
 args = parser.parse_args()
@@ -371,6 +372,8 @@ if args.polyco is not None and not os.path.exists(args.polyco):
 bits = args.bits
 if bits==None: bits=1
 difxThreads = args.threads
+if args.slurm:
+    difxThreads = 2
 if difxThreads is None:
     if 'CRAFT_DIFXTHREADS' in os.environ:
         difxThreads=os.environ['CRAFT_DIFXTHREADS']
@@ -488,8 +491,13 @@ eoplines = open("eop.txt").readlines()
 
 ## Write the v2d file
 v2dout = open("craftfrb.v2d", "w")
+startseries = 0
+basename = "craftfrb"
+if args.slurm:
+    startseries = os.getpid()
+    basename = "craftfrb_{0:d}".format(startseries)
 writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, args.fpga,
-             args.nchan, args.forceFFT, args.integration, args.polyco, args.npol)
+             args.nchan, args.forceFFT, args.integration, args.polyco, args.npol, startseries)
 for line in eoplines:
    if "xPole" in line or "downloaded" in line:
        v2dout.write(line)
@@ -512,48 +520,115 @@ if ret!=0:
     print "vex2difx failed!"
     sys.exit(1)
 
-## Run calcif2
-ret = os.system("\\rm -f craftfrb.im")
+## Run difxcalc to generate the interferometer model
+ret = os.system("\\rm -f {0}.im".format(basename))
 if ret!=0: sys.exit(1)
-ret = os.system("difxcalc craftfrb.calc")
+ret = os.system("difxcalc {0}.calc".format(basename))
 if ret!=0: sys.exit(1)
 
-## Create the machines and threads file - currently runs on localhost with just one core.
-numprocesses = args.npol*len(datafilelist[0]) + 2
-machinesout = open("machines","w")
-for i in range(numprocesses):
-    machinesout.write("localhost\n")
-machinesout.close()
-threadsout = open("craftfrb.threads","w")
-threadsout.write("NUMBER OF CORES:    1\n")
-threadsout.write("{}\n".format(difxThreads))
-threadsout.close()
+## Create the machines and threads file and a corresponding run script, or the slurm batch job, as appropriate
+if args.slurm:
+    currentdir = os.getcwd()
+    currentuser = getpass.getuser()
+    numprocesses = args.npol*len(datafilelist[0]) + 21
+    print "Approx number of processes", numprocesses
+    numprocesses = int(2**(math.floor(math.log(numprocesses, 2))+1))
+    print "Rounded to next highest number of 2:", numprocesses
+    numprocessingnodes = numprocesses - (args.npol*len(datafilelist[0]) + 1)
 
-## Create a little run file for running the observations
-## This is used in preference to startdifx because startdifx uses some MPI options we don't want
-runout = open("run.sh", "w")
-runout.write("#!/bin/sh\n\n")
-runout.write("rm -rf craftfrb.difx\n")
-runout.write("rm -rf log*\n")
-runout.write("errormon2 6 &\n")
-runout.write("export ERRORMONPID=$!\n")
-runout.write("mpirun -machinefile machines -np %d mpifxcorr craftfrb.input\n" % (numprocesses))
-runout.write("kill $ERRORMONPID\n")
-runout.write("rm -f craftfrb.difxlog\n")
-runout.write("mv log craftfrb.difxlog\n")
-runout.close()
-os.chmod("run.sh", 0775)
+    # Create a launchjob script that will handle the logging, etc
+    launchout = open("launchjob","w")
+    launchout.write("#!/usr/bin/bash\n")
+    launchout.write(". /home/{0}/setup_difx.$HOSTNAME\n".format(currentuser))
+    launchout.write("difxlog {0} {1}/{0}.difxlog 4 &\n".format(basename,currentdir))
+    launchout.write("export LOG_PID=$!\n")
+    launchout.write("export JOBSTR=$(sbatch --export=ALL,HEADNODE=$HOSTNAME runparallel)\n")
+    launchout.write("#export JOBSTR=$(sbatch runparallel --export=HEADNODE=$HEADNODE)\n")
+    launchout.write("echo $JOBSTR\n")
+    launchout.write("export JOBID=$(echo $JOBSTR | awk '{print $NF}')\n")
+    launchout.write("echo $JOBID\n")
+    launchout.write("while true; do\n")
+    launchout.write("    sleep 3\n")
+    launchout.write("    export JOBSTATUS=$(squeue -u {0})\n".format(currentuser))
+    launchout.write("    echo $JOBSTATUS\n")
+    launchout.write('    if [[ $JOBSTATUS == *"$JOBID"* ]]; then\n')
+    launchout.write("        continue\n")
+    launchout.write("    else\n")
+    launchout.write('        echo "Job is finished, cleaning up"\n')
+    launchout.write("        kill $LOG_PID\n")
+    launchout.write("        break\n")
+    launchout.write("    fi\n")
+    launchout.write("done\n")
+    launchout.close()
+    os.chmod("launchjob", 0775)
+    print "./launchjob"
 
-print "# First run the correlation:"
-runline = "./run.sh\n"
-print runline
+    # Create a run script that will actually be executed by sbatch
+    batchout = open("runparallel","w")
+    batchout.write("#!/bin/bash\n")
+    batchout.write("#\n")
+    batchout.write("#SBATCH --job-name=difx_{0}\n".format(basename))
+    batchout.write("#SBATCH --output={0}.mpilog\n".format(basename))
+    batchout.write("#\n")
+    batchout.write("#SBATCH --ntasks={0:d}\n".format(numprocesses))
+    batchout.write("#SBATCH --time=10:00\n")
+    batchout.write("#SBATCH --cpus-per-task=2\n")
+    batchout.write("#SBATCH --mem-per-cpu=500\n\n")
+    batchout.write("case $(HEADNODE) in\n")
+    batchout.write("  (farnarkle1) . /home/{0}/setup_difx.farnarkle1;;\n".format(currentuser))
+    batchout.write("  (farnarkle2) . /home/{0}/setup_difx.farnarkle2;;\n".format(currentuser))
+    batchout.write('  (*)   echo "Unknown head node $(HEADNODE)";;\n')
+    batchout.write("esac\n")
+    batchout.write("srun mpifxcorr {0}.input\n".format(basename))
+    batchout.close()
+
+    # Write the threads file
+    threadsout = open("{0}.threads".format(basename),"w")
+    threadsout.write("NUMBER OF CORES:    {0}\n".format(numprocessingnodes))
+    for i in range(numprocessingnodes):
+        threadsout.write("{}\n".format(difxThreads))
+    threadsout.close()
+else:
+    # We just want Ndatastream processes, plus a head node, plus one computational node
+    numprocesses = args.npol*len(datafilelist[0]) + 2
+
+    # Write the machines file (all running on localhost)
+    machinesout = open("machines","w")
+    for i in range(numprocesses):
+        machinesout.write("localhost\n")
+    machinesout.close()
+
+    # Write the threads file
+    threadsout = open("craftfrb.threads","w")
+    threadsout.write("NUMBER OF CORES:    1\n")
+    threadsout.write("{}\n".format(difxThreads))
+    threadsout.close()
+    
+    ## Create a little run file for running the observations
+    ## This is used in preference to startdifx because startdifx uses some MPI options we don't want
+    runout = open("run.sh", "w")
+    runout.write("#!/bin/sh\n\n")
+    runout.write("rm -rf craftfrb.difx\n")
+    runout.write("rm -rf log*\n")
+    runout.write("errormon2 6 &\n")
+    runout.write("export ERRORMONPID=$!\n")
+    runout.write("mpirun -machinefile machines -np %d mpifxcorr craftfrb.input\n" % (numprocesses))
+    runout.write("kill $ERRORMONPID\n")
+    runout.write("rm -f craftfrb.difxlog\n")
+    runout.write("mv log craftfrb.difxlog\n")
+    runout.close()
+    os.chmod("run.sh", 0775)
+    
+    print "# First run the correlation:"
+    runline = "./run.sh\n"
+    print runline
 
 ## Print the line needed to run the stitching and then subsequently difx2fits
 print "Then run difx2fits"
-runline = "rm -rf craftfrbD2D.* ; mergeOversampledDiFX.py craftfrb.stitchconfig craftfrb.difx\n"
+runline = "rm -rf {0}D2D.* ; mergeOversampledDiFX.py craftfrb.stitchconfig {0}.difx\n".format(basename)
 print runline
 with open('runmergedifx', 'w') as runmerge:
     runmerge.write(runline)
 os.chmod('runmergedifx',0o775)
-runline = "difx2fits craftfrbD2D"
+runline = "difx2fits {0}D2D".format(basename)
 print runline

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import os,sys,glob,argparse,re,subprocess
 
 parser = argparse.ArgumentParser()
@@ -17,6 +17,7 @@ parser.add_argument("-B", "--beam", help="Correlate a specific beam: blank means
 parser.add_argument("--card", default="", help="Correlate only a specific card; blank means all")
 parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keep existing codif files")
 parser.add_argument("-s", "--snoopylog", help="Snoopy log file, default blank, if not default will use this to correlate on-pulse")
+parser.add_argument("--slurm", default=False, action="store_true", help="Use slurm batch jobs rather than running locally")
 parser.add_argument("--ts", default=0, type=int, help="Use taskspooler to run CRAFTConverter, with N parallel tasks")
 args = parser.parse_args()
 
@@ -34,7 +35,7 @@ if not args.snoopylog is None and not os.path.exists(args.snoopylog):
 timestep = os.path.abspath(timestep)
 
 if not os.path.exists(args.fcm):
-    parser.error(fcm + " doesn't exist")
+    parser.error(args.fcm + " doesn't exist")
 
 polyco = args.polyco
 if polyco is not None:
@@ -133,6 +134,8 @@ for e in examplefiles:
         torun += " --nchan={}".format(args.nchan)
     if args.forceFFT:
         torun += " --forceFFT"
+    if args.slurm:
+        torun += " --slurm -k" #FIXME: Take away the -k
 
     beamname = os.path.basename(beamdirs[0])
     torun += ' --fpga %s "%s/ak*/%s/*%s*vcraft"' % (freqlabel, timestep, beamname, freqlabel)
@@ -175,7 +178,10 @@ for e in examplefiles:
         print "askap2difx failed! (", ret, ")"
         sys.exit(ret)
 
-    os.system("./run.sh")
+    if args.slurm:
+        os.system("./launchjob")
+    else:
+        os.system("./run.sh")
     os.system("./runmergedifx")
     if args.correctfpgadelays:
         os.system("findOffsets.py")

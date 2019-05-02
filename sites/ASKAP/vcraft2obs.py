@@ -29,6 +29,7 @@ parser.add_argument("-f", "--fpga", help="FPGA and card for delay correction. E.
 parser.add_argument("-p", "--polyco", help="Bin config file for pulsar gating")
 parser.add_argument("-i", "--integration", type=float, help="Correlation integration time")
 parser.add_argument("--ts", default=0, type=int, help="Use taskspooler to run CRAFTConverter, with N parallel tasks")
+parser.add_argument("-s", "--slurm", default=False, action="store_true", help="Use slurm batch jobs rather than running locally")
 parser.add_argument("-n", "--nchan", type=int, help="Number of spectral channels")
 parser.add_argument("--forceFFT", default=False, action="store_true", help="Force FFT size to equal number of channels (don't increase to 128)")
 parser.add_argument('fileglob', help="glob pattern for vcraft files", nargs='+')
@@ -160,6 +161,8 @@ if args.ts > 0:
     ret = os.system("tsp -S {}".format(args.ts))
     if (ret!=0): sys.exit(ret)
 
+# FIXME: Add ability to run CRAFTConverter via batch/slurm
+
 # Run the converter for each vcraft file
 antlist = ""
 codifFiles = []
@@ -187,26 +190,9 @@ if args.ts > 0:
     ret = os.system("tsp -w")
     if (ret!=0): sys.exit(ret)
         
-# Write a machines file and a run.sh file
-output = open("machines","w")
-for i in range(nant+2):
-    output.write("localhost\n")
-output.close()
-
-output = open("run.sh","w")
-output.write("#!/bin/sh\n\n")
-output.write("rm -rf craft.difx\n")
-output.write("rm -rf log*\n")
-output.write("errormon2 6 &\n")
-output.write("export ERRORMONPID=$!\n")
-output.write("mpirun -machinefile machines -np %d mpifxcorr craft.input\n" % (nant+2))
-output.write("kill $ERRORMONPID\n")
-output.write("rm -f craft.difxlog\n")
-output.write("mv log craft.difxlog\n")
-output.close()
-
 # Print out the askap2difx command line to run (ultimately, could just run it ourselves)
 runline = "askap2difx.py fcm.txt obs.txt chandefs.txt --ants=" + antlist[:-1] + " --bits=" + str(args.bits) + " --framesize=" + str(framesize) + " --npol=" + str(npol)
+if args.slurm: runline += " --slurm"
 if args.fpga is not None: runline += " --fpga {}".format(args.fpga)
 if args.polyco is not None: runline += " --polyco={}".format(args.polyco)
 if args.integration is not None: runline += " --integration={}".format(args.integration)
