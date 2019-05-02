@@ -93,7 +93,7 @@ int getCODIFEpochMJD(const codif_header *header)
 
 int setCODIFNumChannels(codif_header *header, int numchannels)
 {
-  header->nchan = numchannels;
+  header->nchan = numchannels-1;
   return(CODIF_NOERROR);
 }
 

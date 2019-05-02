@@ -51,43 +51,47 @@ extern "C" {
   /* *** implemented in codifio.c *** */
 
 typedef struct codif_header {
+  uint32_t frame : 32;
+
   uint32_t seconds : 30;
   uint32_t iscomplex : 1;
   uint32_t invalid : 1;
 
-  uint32_t frame : 32;
-
-  uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
-  uint32_t nbits : 5;
-  uint32_t version : 3;
 
   uint32_t stationid : 16;
   uint32_t unassigned : 6;
   uint32_t representation : 4;
   uint32_t epoch : 6;
+
+  uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
+  uint32_t nbits : 5;
+  uint32_t version : 3;
+
+  uint32_t groupid : 16;
+  uint32_t threadid : 16;
    
   uint32_t nchan : 16;
   uint32_t blocklength : 16;
 
-  uint32_t groupid : 16;
-  uint32_t threadid : 16;
+  uint32_t reserved2 : 32;
 
   uint32_t period : 16;
   uint32_t reserved1 : 16;
 
-  uint32_t reserved2 : 32;
 
   uint64_t totalsamples;
    
-  uint32_t sync;
   uint32_t reserved3;
+  uint32_t sync;
+
+  uint32_t extended2;
 
   uint32_t eversion : 8;
   uint32_t extended1 : 24;
   
-  uint32_t extended2;
-  uint32_t extended3;
   uint32_t extended4;
+  uint32_t extended3;
+
 } codif_header;
 
 /* Date manipulation functions */
@@ -120,7 +124,7 @@ static inline int getCODIFStationID(const codif_header *header) { return (int)he
 static inline int getCODIFBitsPerSample(const codif_header *header) { return ((int)header->nbits); }
 static inline int getCODIFRepresentation(const codif_header *header) { return ((int)header->representation); }
 static inline int getCODIFVersion(const codif_header *header) { return ((int)header->version); }
-static inline int getCODIFNumChannels(const codif_header *header) {return (int)header->nchan;} 
+static inline int getCODIFNumChannels(const codif_header *header) {return (int)header->nchan+1;} 
 static inline int getCODIFSampleblockLength(codif_header *header) { return (int)header->blocklength;}
 static inline int getCODIFFrameInvalid(const codif_header *header) { return (int)header->invalid; }
 static inline int getCODIFFrameEpochSecOffset(const codif_header *header) { return (int)header->seconds; }
