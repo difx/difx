@@ -51,17 +51,18 @@ static void usage(const char *pgm)
 	printf("Usage: %s [<options>] <file1> [<file2> [ ... ] ]\n\n", pgm);
 	printf("  <fileX> is the name of a VDIF data file\n\n");
 	printf("  <options> can include:\n");
-	printf("    -h or --help          print this usage information and quit\n");
-	printf("    -s or --shortsum      print a short summary, also usable for input to vex2difx\n");
+	printf("    -h or --help       Print this usage information and quit\n");
+	printf("    -s or --shortsum   Print a short summary, also usable for input to vex2difx\n");
+	printf("    -t or --timeoffset Add time offset to filetimes\n");
 #ifdef HAVE_MARK6SG
-	printf("    -6 or --mark6         operate directly on Mark6 module data\n");
-	printf("    --allmark6            operate directly on all Mark6 scans found on mounted modules\n");
-	printf("    --mark6slot <slot>    operate directly on all Mark6 scans found on module in <slot>\n");
+	printf("    -6 or --mark6      Operate directly on Mark6 module data\n");
+	printf("    --allmark6         Operate directly on all Mark6 scans found on mounted modules\n");
+	printf("    --mark6slot <slot> Operate directly on all Mark6 scans found on module in <slot>\n");
 #endif
 	printf("\n");
 }
 
-void summarizeFile(const char *fileName, int shortSum, int isMark6)
+void summarizeFile(const char *fileName, int shortSum, int isMark6, int toff)
 {
 	struct vdif_file_summary sum;
 	int r;
@@ -186,6 +187,7 @@ int main(int argc, char **argv)
 		int a, slot;
 		int shortSum = 0;
 		int isMark6 = 0;
+		int toff = 0;
 
 		for(a = 1; a < argc; ++a)
 		{
@@ -200,6 +202,12 @@ int main(int argc, char **argv)
 				usage(argv[0]);
 
 				exit(EXIT_SUCCESS);
+			}
+			else if(strcmp(argv[a], "-t") == 0 ||
+			   strcmp(argv[a], "--timeoffset") == 0)
+			{
+			       a++;
+			       toff = atoi(argv[a]);
 			}
 #ifdef HAVE_MARK6SG
 			else if(strcmp(argv[a], "-6") == 0 ||
@@ -229,7 +237,7 @@ int main(int argc, char **argv)
 #endif
 			else
 			{
-				summarizeFile(argv[a], shortSum, isMark6);
+			  summarizeFile(argv[a], shortSum, isMark6, toff);
 			}
 		}
 	}
