@@ -71,7 +71,7 @@ int createCODIFHeader(codif_header *header, int dataarraylength, uint16_t thread
   header->totalsamples = totalsamples;
   setCODIFSampleblockLength(header, sampleblocklength);
   header->frame=0;
-  header->sync = 0xABADDEED;
+  header->sync = 0xADEADBEE;
   
 
   return(CODIF_NOERROR);
