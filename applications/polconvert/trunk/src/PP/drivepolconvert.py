@@ -449,7 +449,6 @@ def deduceZoomIndicies(o):
         print 'No median frequency, so no idea about medianband'
         print 'Leaving it up to PolConvert to sort out'
     # finally the diagnostic message
-    medianfreq = float(mfqlst.pop())
     if   medianfreq <  90000.0: medianband = '3 (GMVA)'
     elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
     elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
