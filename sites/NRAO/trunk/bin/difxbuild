@@ -14,16 +14,14 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.70'
-verdate = '20190418'
+version = '0.71'
+verdate = '20190504'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 pythonProgram = 'python2'
 openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.4.tar.bz2'       
-#openmpiVersion = '1.6'       # version in use by VLBA correlator 
-#openmpiVersion = '1.10'      # version in use by USNO correlator
 pgplotVersion = '5.2'
 schedVersion = '11.5'
 schedUpdate = ''
@@ -289,7 +287,17 @@ def getarch():
 		print 'Warning: defaulting to 64 bit assumption'
 		return 64
 
+# one must have cwd set to the $IPPROOT directory before entering here
 def genipppc(path):
+
+	ippRoot = environ['IPPROOT']
+
+	G = glob('%s/lib*/pkgconfig/*ipp*.pc' % ippRoot)
+	if len(G) == 1:
+		print 'An IPP pc file was found: %s' % G[0]
+		system('cp %s ./ipp.pc' % G[0])
+		return
+
 	ippversion = getippversion(path)
 	if ippversion == None:
 		print '\nSorry: no IPP found in %s.\n\nMust quit.\n' % path
@@ -2116,6 +2124,22 @@ def bootstrap(comps, params, args, verbose, pretend):
 			if config.has_key('pythonpath%s' % arch):
 				pyPath[arch] = config['pythonpath%s' % arch]
 
+		if ipproot[arch] != 'none':
+			globStr = "%s/lib*/pkgconfig/*ipp*.pc" % ipproot[arch]
+			G = glob(globStr)
+		else:
+			G = []
+		if len(G) == 1:
+			ippLdPath = ''
+			pkgPath = G[0][0:G[0].rfind('/')]
+			pcFile = G[0][(G[0].rfind('/')+1):G[0].rfind('.')]
+			line = popen('PKG_CONFIG_PATH=%s pkg-config --libs %s' % (pkgPath, pcFile), 'r').readline().split()
+			for s in line:
+				if s[0:2] == '-L':
+					ippLdPath += ':%s' % s[2:]
+		else:
+			ippLdPath = ':${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}'
+
 		if config.has_key('pathextra'):
 			pathExtra = ':%s' % config['pathextra']
 		else:
@@ -2133,7 +2157,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 			preldExtra = '%s:' % config['preldextra']
 		else:
 			preldExtra = ''
-		ldPath = '${DIFX_ARCH_ROOT}/lib:${DIFX_ARCH_ROOT}/lib64:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}:${PGPLOT_DIR}'
+		ldPath = '${DIFX_ARCH_ROOT}/lib:${DIFX_ARCH_ROOT}/lib64:/lib:/usr/lib:${DIFXROOT}/lib%s:${PGPLOT_DIR}' % ippLdPath
 
 		runscript = '%s/bin/runmpifxcorr.%s' % (config['difxbase'], label) 
 		out = open(runscript, 'w')
