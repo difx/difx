@@ -11,7 +11,7 @@ parser.add_argument("-s", "--src", type=str, default=None, help="Source name to 
 parser.add_argument("-r", "--res", type=float, default=None, help="Temporal resolution of data in ms")
 parser.add_argument("-z", "--zero", default=False, help="Set zeroth bin equal to zero; use for nbins>1 when the zeroth bin contains little to no signal but mostly noise", action="store_true")
 parser.add_argument("-f", "--basefreq", type=float, default=None, help="The lowest frequency in the observation in MHz")
-parser.add_argument("-F", "--fscrunch", default=False, help="Make fscrunched plot")
+parser.add_argument("-F", "--fscrunch", default=False, help="Make fscrunched plot", action="store_true")
 
 args = parser.parse_args()
 
