@@ -14,8 +14,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.71'
-verdate = '20190504'
+version = '0.72'
+verdate = '20190505'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -36,6 +36,7 @@ gpstkVersion = '2.10.6'
 libeventVersion = '2.0.21'
 expatVersion = '2.1.0'
 libmicrohttpdVersion = '0.9.35'
+difxippUrl = 'https://svn.aoc.nrao.edu/repos/VLBA/difxipp'
 
 defaultDifxMessageGroup = '224.2.2.1'
 defaultDifxMessagePort = 50200
@@ -3066,6 +3067,31 @@ def psycopg(origComps, params, args, verbose, pretend):
 	execute('%s setup.py build' % pythonProgram, verbose, pretend)
 	execute('%s setup.py install --prefix=%s/../../..' % (pythonProgram, pythonPath), verbose, pretend)
 
+def difxipp(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	if arch != 'x86_64':
+		print 'difxipp is only available for x86_64.'
+		return
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	difxBase = environ['DIFX_BASE'] + '/'
+
+	chdir(archSrcDir)
+	if isdir('difxipp'):
+		chdir('difxipp')
+		execute('svn up', verbose, pretend)
+	else:
+		execute('svn so %s' % difxippUrl, verbose, pretend)
+		chdir('difxipp')
+
+	# get ipp version -- this is a bit fragile...
+	ippVersion = open('configure.ac').readline().split(',')[1].strip()[1:-1]
+	print '\nIPP version will be %s' % ippVersion
+	ippPrefix = '%sx86_64/ipp-%s' % (difxBase, ippVersion)
+	print '\nYou will want to put "ipproot = %s" in your .bootstrap files.\n' % ippPrefix
+
+	for cmd in ['aclocal', 'autoconf', 'automake -a -c', './configure --prefix=%s' % ippPrefix, 'make', 'make install']:
+		execute(cmd, verbose, pretend)
 
 def libevent(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
@@ -3237,7 +3263,7 @@ def fuseMk5(origComps, params, args, verbose, pretend):
 	execute('cp %s/fuseMk5 %s/bin' % (fm5Dir, archDir), verbose, pretend)
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd', 'fuseMk5']
+	packages = ['psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd', 'fuseMk5', 'difxipp']
 	if len(args) < 1:
 		print 'The "extra" option allows installation of optional software.\n'
 		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
@@ -3284,6 +3310,8 @@ def extra(origComps, params, args, verbose, pretend):
 		pyx(origComps, params, [], verbose, pretend)
 	if 'fuseMk5' in args:
 		fuseMk5(origComps, params, [], verbose, pretend)
+	if 'difxipp' in args:
+		difxipp(origComps, params, [], verbose, pretend)
 
 
 def newestOMPI(data, version):
