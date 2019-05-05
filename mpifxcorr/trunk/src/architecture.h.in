@@ -70,6 +70,8 @@
 #define IPP_9_API
 #elif(IPP_VERSION_MAJOR == 2018)
 #define IPP_9_API
+#elif(IPP_VERSION_MAJOR == 2019)
+#define IPP_9_API
 #endif
 
 //start with the data types
