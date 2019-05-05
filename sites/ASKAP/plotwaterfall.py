@@ -83,8 +83,8 @@ for stokes in ["I","Q","U","V","XX","YY"]:
             print "Setting zeroth input bin equal to zero"
         else: print "Plotting all bins"
     
-        ax.imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq])
-        ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
+        ax.imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+        #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("Frequency (MHz)")
         plt.savefig('{0}-imageplane-dynspectrum.stokes{1}.png'.format(src, stokes))
