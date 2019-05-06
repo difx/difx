@@ -85,7 +85,6 @@ int main (int argc, char * const argv[]) {
   codif_header *cheader=NULL;
   int16_t *s16, *cdata;
   int8_t *s8;
-  uint64_t *h32;
   uint64_t *h64;
 
   unsigned int port = DEFAULT_PORT;
@@ -216,7 +215,6 @@ int main (int argc, char * const argv[]) {
 
 
   cheader = (codif_header*)buf;
-  h32 = (uint32_t*)cheader; // Header as 32bit worlds
   h64 = (uint64_t*)cheader; // Header as 64bit worlds
   cdata = (int16_t*) &buf[CODIF_HEADER_BYTES];
 
