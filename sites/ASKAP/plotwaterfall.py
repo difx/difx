@@ -63,9 +63,6 @@ for stokes in ["I","Q","U","V","XX","YY"]:
     
     dynspec[stokes] = np.loadtxt("{0}-imageplane-dynspectrum.stokes{1}.txt".format(src, stokes))
 
-    if args.fscrunch:
-        fscrunch[stokes] = np.sum(dynspec[stokes], 1)
-        
     print dynspec[stokes].shape
 
     if nbins == 1:
@@ -82,7 +79,11 @@ for stokes in ["I","Q","U","V","XX","YY"]:
             dynspec[stokes][0] = 0
             print "Setting zeroth input bin equal to zero"
         else: print "Plotting all bins"
-    
+
+        if args.fscrunch:
+            fscrunch[stokes] = np.sum(dynspec[stokes], 1)
+        
+
         ax.imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
         #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
         ax.set_xlabel("Time (ms)")
@@ -91,19 +92,14 @@ for stokes in ["I","Q","U","V","XX","YY"]:
         plt.clf()
 
 if args.fscrunch:
-    if args.zero:
-        times = np.arange(0, (nbins-1)*res, res)
-        plt.plot(times,fscrunch["I"][1:],label="I")
-        plt.plot(times,fscrunch["Q"][1:],label="Q")
-        plt.plot(times,fscrunch["U"][1:],label="U")
-        plt.plot(times,fscrunch["V"][1:],label="V")
-    else:
-        times = np.arange(0, nbins*res, res)
-        plt.plot(times,fscrunch["I"][:],label="I")
-        plt.plot(times,fscrunch["Q"][:],label="Q")
-        plt.plot(times,fscrunch["U"][:],label="U")
-        plt.plot(times,fscrunch["V"][:],label="V")
+    print "fscrunching..."
+    times = np.arange(starttime, endtime, res)
+    plt.plot(times,fscrunch["I"][:],label="I")
+    plt.plot(times,fscrunch["Q"][:],label="Q")
+    plt.plot(times,fscrunch["U"][:],label="U")
+    plt.plot(times,fscrunch["V"][:],label="V")
     plt.legend()
     plt.xlabel("Time (ms)")
     plt.ylabel("Amplitude (arbitrary units)")
     plt.savefig("{0}-fscrunch.png".format(src))
+else: print "Done!"
