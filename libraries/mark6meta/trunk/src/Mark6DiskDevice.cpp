@@ -120,8 +120,8 @@ int Mark6DiskDevice::getPosition() const {
         return(diskId_m);
     else if ((diskId_m >= 8) && (diskId_m <= 15))
         return(diskId_m - 8);
-    else
-        return(-1);
+
+    return(-1);
     
 }
 /**
@@ -149,8 +149,8 @@ int Mark6DiskDevice::getSlot() const {
         else if ((diskId_m > 7) && (diskId_m <= 15))
             return(1);
     }
-    else
-        return(-1);
+
+    return(-1);
 }
 
 
