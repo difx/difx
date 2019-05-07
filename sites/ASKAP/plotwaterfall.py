@@ -93,11 +93,11 @@ for stokes in ["I","Q","U","V","XX","YY"]:
 
 if args.fscrunch:
     print "fscrunching..."
-    times = np.arange(starttime, endtime, res)
-    plt.plot(times,fscrunch["I"][:],label="I")
-    plt.plot(times,fscrunch["Q"][:],label="Q")
-    plt.plot(times,fscrunch["U"][:],label="U")
-    plt.plot(times,fscrunch["V"][:],label="V")
+    centretimes = np.arange(starttime+res, endtime+res, res)
+    plt.plot(centretimes,fscrunch["I"][:],label="I")
+    plt.plot(centretimes,fscrunch["Q"][:],label="Q")
+    plt.plot(centretimes,fscrunch["U"][:],label="U")
+    plt.plot(centretimes,fscrunch["V"][:],label="V")
     plt.legend()
     plt.xlabel("Time (ms)")
     plt.ylabel("Amplitude (arbitrary units)")
