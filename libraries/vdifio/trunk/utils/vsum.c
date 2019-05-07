@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2018 by Walter Brisken                             *
+ *   Copyright (C) 2013-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,8 +41,8 @@
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>";
-const char version[] = "0.7";
-const char verdate[] = "20180905";
+const char version[] = "0.8";
+const char verdate[] = "20190507";
 
 static void usage(const char *pgm)
 {
@@ -62,7 +62,8 @@ static void usage(const char *pgm)
 	printf("\n");
 }
 
-void summarizeFile(const char *fileName, int shortSum, int isMark6, int toff)
+/* NOTE: toff is never used in this function... */
+static void summarizeFile(const char *fileName, int shortSum, int isMark6, int toff)
 {
 	struct vdif_file_summary sum;
 	int r;
@@ -94,14 +95,14 @@ void summarizeFile(const char *fileName, int shortSum, int isMark6, int toff)
 		if(fileName[0] != '/' && isMark6 == 0)
 		{
 			char path[MaxFilenameLength];
-			if (getcwd(path, MaxFilenameLength)==NULL)
+			if(getcwd(path, MaxFilenameLength) == NULL)
 			{
-			  // CJP Maybe wrong behaviour or warning needed
-			  snprintf(fullFileName, MaxFilenameLength, "%s", fileName);
+				/* CJP Maybe wrong behaviour or warning needed */
+				snprintf(fullFileName, MaxFilenameLength, "%s", fileName);
 			}
 			else
 			{
-			  snprintf(fullFileName, MaxFilenameLength, "%s/%s", path, fileName);
+				snprintf(fullFileName, MaxFilenameLength, "%s/%s", path, fileName);
 			}
 		}
 		else
@@ -117,7 +118,7 @@ void summarizeFile(const char *fileName, int shortSum, int isMark6, int toff)
 }
 
 #ifdef HAVE_MARK6SG
-void processAllMark6Scans(int shortSum)
+static void processAllMark6Scans(int shortSum)
 {
 	char **fileList;
 	int n;
@@ -134,7 +135,7 @@ void processAllMark6Scans(int shortSum)
 
 		for(i = 0; i < n; ++i)
 		{
-			summarizeFile(fileList[i], shortSum, 1);
+			summarizeFile(fileList[i], shortSum, 1, 0);
 		}
 	
 		for(i = 0; i < n; ++i)
@@ -145,7 +146,7 @@ void processAllMark6Scans(int shortSum)
 	}
 }
 
-void processMark6ScansSlot(int slot, int shortSum)
+static void processMark6ScansSlot(int slot, int shortSum)
 {
 	char **fileList;
 	int n;
@@ -162,7 +163,7 @@ void processMark6ScansSlot(int slot, int shortSum)
 
 		for(i = 0; i < n; ++i)
 		{
-			summarizeFile(fileList[i], shortSum, 1);
+			summarizeFile(fileList[i], shortSum, 1, 0);
 		}
 	
 		for(i = 0; i < n; ++i)
@@ -237,7 +238,7 @@ int main(int argc, char **argv)
 #endif
 			else
 			{
-			  summarizeFile(argv[a], shortSum, isMark6, toff);
+				summarizeFile(argv[a], shortSum, isMark6, toff);
 			}
 		}
 	}
