@@ -185,6 +185,24 @@ for i in range(npol):
             if (ret!=0): sys.exit(ret)
         codifFiles[i].append(codifName)
 
+# Write a machines file and a run.sh file
+output = open("machines","w")
+for i in range(nant+2):
+    output.write("localhost\n")
+output.close()
+
+output = open("run.sh","w")
+output.write("#!/bin/sh\n\n")
+output.write("rm -rf craft.difx\n")
+output.write("rm -rf log*\n")
+output.write("errormon2 6 &\n")
+output.write("export ERRORMONPID=$!\n")
+output.write("mpirun -machinefile machines -np %d mpifxcorr craft.input\n" % (nant+2))
+output.write("kill $ERRORMONPID\n")
+output.write("rm -f craft.difxlog\n")
+output.write("mv log craft.difxlog\n")
+output.close()
+
 if args.ts > 0:
     print "Waiting on CRAFTConverter to finish"
     ret = os.system("tsp -w")
