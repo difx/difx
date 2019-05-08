@@ -76,21 +76,31 @@ int main(int argc, char **argv)
 
 	for(a = 1; a < argc; ++a)
 	{
-		if(strcmp(argv[a], "-h") == 0 || strcmp(argv[a], "--help") == 0)
+		if(argv[a][0] == '-')
 		{
-			usage(argv[0]);
-
-			exit(EXIT_SUCCESS);
-		}
-		else if(strcmp(argv[a], "-v") == 0 || strcmp(argv[a], "--verbose") == 0)
-		{
-			++verbose;
-		}
-		else if(a < argc-1)
-		{
-			if(strcmp(argv[a], "-o") == 0 || strcmp(argv[a], "--outfile") == 0)
+			if(strcmp(argv[a], "-h") == 0 || strcmp(argv[a], "--help") == 0)
 			{
-				outfile = argv[a+1];
+				usage(argv[0]);
+
+				exit(EXIT_SUCCESS);
+			}
+			else if(strcmp(argv[a], "-v") == 0 || strcmp(argv[a], "--verbose") == 0)
+			{
+				++verbose;
+			}
+			else if(a < argc-1)
+			{
+				if(strcmp(argv[a], "-o") == 0 || strcmp(argv[a], "--outfile") == 0)
+				{
+					outfile = argv[a+1];
+				}
+				else
+				{
+					fprintf(stderr, "Error: unknown command line parameter %s\n", argv[a]);
+
+					exit(EXIT_FAILURE);
+				}
+				++a;
 			}
 			else
 			{
@@ -98,7 +108,6 @@ int main(int argc, char **argv)
 
 				exit(EXIT_FAILURE);
 			}
-			++a;
 		}
 		else if(fileset == 0)
 		{
@@ -106,7 +115,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			fprintf(stderr, "Error: unknown command line parameter %s\n", argv[a]);
+			fprintf(stderr, "Error: exactly one fileset should be provided.  Not sure what to do with argument: %s.\n", argv[a]);
 
 			exit(EXIT_FAILURE);
 		}
