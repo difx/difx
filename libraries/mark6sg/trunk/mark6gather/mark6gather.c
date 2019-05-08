@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2015-2018 by Walter Brisken                              *
+ *  Copyright (C) 2015-2019 by Walter Brisken                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -240,7 +240,7 @@ static void *mark6Reader(void *arg)
 				int nrd = m6f->readHeader.wb_size - m6f->blockHeaderSize;
 				if ((nrd <= 0) || (nrd > (m6f->maxBlockSize - m6f->blockHeaderSize)))
 				{
-					printf("Warning: corrupt scatter-gather file! Size %d of current block exeed maxBlockSize %d\n", m6f->readHeader.wb_size, m6f->maxBlockSize);
+					fprintf(stderr, "Warning: corrupt scatter-gather file! Size %d of current block exceeds maxBlockSize %d\n", m6f->readHeader.wb_size, m6f->maxBlockSize);
 					memset(m6f->readBuffer, 0xFF, m6f->maxBlockSize - m6f->blockHeaderSize);
 					m6f->readBytes = 0;
 					corrupted = 1;
