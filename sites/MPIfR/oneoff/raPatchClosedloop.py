@@ -384,6 +384,10 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 
 if __name__ == "__main__":
 
+	for i, arg in enumerate(sys.argv):
+		# workaround from https://stackoverflow.com/questions/9025204/python-argparse-issue-with-optional-arguments-which-are-negative-numbers
+		if (arg[0] == '-') and arg[1].isdigit(): sys.argv[i] = ' ' + arg
+
 	args = parser.parse_args(sys.argv[1:])
 	if args.help or len(args.files) < 3:
 		print(__doc__)
