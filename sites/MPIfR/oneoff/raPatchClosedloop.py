@@ -2,7 +2,7 @@
 """
 Patch a DiFX/CALC .im file delay and uvw polynomials with RadioAstron closed-loop correction files.
 
-Usage: raPatchClosedloop.py <dly_polys.txt> <uvw_polys.txt> <difxbasename1.im> [<difxbasename2.im> ...]
+Usage: raPatchClosedloop.py [-r <add dly rate s/s>] <dly_polys.txt> <uvw_polys.txt> <difxbasename1.im> [<difxbasename2.im> ...]
 
 Input:
     dly_polys.txt     RadioAstron closed-loop delay polynomials
@@ -15,9 +15,15 @@ Output:
 from datetime import datetime, timedelta
 from calendar import timegm
 import sys, time
+import argparse
 
 SCALE_DELAY = 1e6	# scaling to get from RA_C_COH.TXT units (secs) to .im units (usec)
 SCALE_UVW = 1		# scaling to get from RA_C_COH_uvw.txt units (m?) to .im units (m)
+
+parser = argparse.ArgumentParser(add_help=False, description='Patch a DiFX/CALC .im file delay and uvw polynomials with RadioAstron closed-loop correction files.')
+parser.add_argument('-h', '--help', help='Help', action='store_true')
+parser.add_argument('-r', '--drate', default=0.0, dest='ddlyrate', help='Residual delay rate in s/s to add to dly polynomial')
+parser.add_argument('files', nargs='*')
 
 class PolyCoeffs:
 	"""A single polynomial with coefficients"""
@@ -69,6 +75,12 @@ class PolyCoeffs:
 			c = [coeffscale*float(s) for s in cstr.split(',')]
 			self.dims = len(c)
 			self.coeffs.append(c)
+
+	def add(self, corrections):
+		'''Element-wise addition of values in list 'correction' to the coefficients'''
+		for n in range(min(self.Ncoeffs,len(corrections))):
+			self.coeffs[n] += [val + corrections[n] for val in self.coeffs[n]]
+
 
 class PolySet:
 	"""Storage of a set of polynomials"""
@@ -122,13 +134,21 @@ class PolySet:
 				return None
 		return None
 
+	def add(self, corrections):
+		'''Element-wise addition of values in list 'correction' to coeffs of all polynomials'''
+		for poly in self.piecewisePolys:
+			poly.add(corrections)
+
+
 def getKey(s):
 	"""Return key part of DiFX .im file type "key: option" string"""
 	return s.split(':')[0].strip()
 
+
 def getOpt(s):
 	"""Return option part of DiFX .im file type "key: option" string"""
 	return s.split(':')[1].strip()
+
 
 def getKeyOpt(s):
 	return (getKey(s),getOpt(s))
@@ -147,6 +167,7 @@ def imGetLineWith(lines,nstart,keys):
 			return (n,lines[n])
 		n += 1
 	return (len(lines),'')
+
 
 def imDetectNextScanblock(lines,nstart):
 	"""
@@ -218,28 +239,33 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1)
 				# Element wise summation of correction coeffs onto polynomial
 				N = min(len(newcoeffs), len(C)) # truncate to either poly
 				for k in range(N):
+					# Add?
+					# newcoeffs[k] += sign*C[k]
+
+					# Just copy?
+					# newcoeffs[k] = sign*C[k]
+
 					if type=='uvw':
-						# newcoeffs[k] = C[k]
-						newcoeffs[k] = oldcoeffs[0] + C[k]  # --> "Warning: UVW diff"
+						newcoeffs[k] = C[k]
 					if type=='T':
 						# Add zeroth order coarse dlys, copy higher-order from ASC poly
 						if k==0:
-							# newcoeffs[0] = sign*C[0] + oldcoeffs[0]  # no fringe, sign=-1
-							# newcoeffs[0] = -sign*C[0] + oldcoeffs[0]   # no fringe, sign=-1
-							# newcoeffs[0] = sign*C[0]  # no fringe, sign=-1
-							newcoeffs[0] = oldcoeffs[0]  # fringes!! sign=-1
+							# newcoeffs[0] = sign*C[0] + oldcoeffs[0]
+							# newcoeffs[0] = sign*C[0] - oldcoeffs[0]
+							newcoeffs[0] = oldcoeffs[0]
+							# newcoeffs[0] = sign*C[0]
 						else:
 							newcoeffs[k] = sign*C[k]
 
 				newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
 				newline = '%s:  %s' % (key.strip(),newcoeffs_str)
 
-				print ('------------------------------')
-				print (n)
-				print (C)
-				print (lines[n])
-				print (newline)
-				print ('------------------------------\n')
+				# print ('------------------------------')
+				# print (n)
+				# print (C)
+				# print (lines[n])
+				# print (newline)
+				# print ('------------------------------\n')
 
 				# print (n, lines[n], C, newline)
 				# print (lines[n], newline)
@@ -355,26 +381,31 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 	print ("Success: processed %s\n" % (imname))
 	return True
 
+
 if __name__ == "__main__":
 
-	if len(sys.argv) < 3:
+	args = parser.parse_args(sys.argv[1:])
+	if args.help or len(args.files) < 3:
 		print(__doc__)
 		sys.exit(-1)
 
-	dly = PolySet(sys.argv[1], coeffscale=SCALE_DELAY)
+	dly = PolySet(args.files[0], coeffscale=SCALE_DELAY)
 	if len(dly) < 1:
-		print ("Error: could not load delay polynomials from '%s'" % (sys.argv[1]))
+		print ("Error: could not load delay polynomials from '%s'" % (args.files[0]))
 		sys.exit(-1)
-	uvw = PolySet(sys.argv[2], coeffscale=SCALE_UVW)
+
+	dly.add([0.0, float(args.ddlyrate)])
+
+	uvw = PolySet(args.files[1], coeffscale=SCALE_UVW)
 	if len(uvw) < 1:
-		print ("Error: could not load u,v,w polynomials from '%s'" % (sys.argv[2]))
+		print ("Error: could not load u,v,w polynomials from '%s'" % (args.files[1]))
 		sys.exit(-1)
 
 	if dly.dims != 1 or uvw.dims != 3:
-		print ("Error: coeff file poly dimensions mismatch! Expected dim. 1 for 1st file '%s' (%d), dim. 3 for 2nd file '%s' (%d)" % (sys.argv[1], dly.dims, sys.argv[2], uvw.dims))
+		print ("Error: coeff file poly dimensions mismatch! Expected dim. 1 for 1st file '%s' (%d), dim. 3 for 2nd file '%s' (%d)" % (args.files[0], dly.dims, args.files[1], uvw.dims))
 		sys.exit(-1)
 
-	for difxf in sys.argv[3:]:
+	for difxf in args.files[2:]:
 		ok = patchImFile(difxf, dly, uvw)
 		if not ok:
 			print ("Error: failed to patch %s" % (difxf))
