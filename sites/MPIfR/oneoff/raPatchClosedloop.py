@@ -79,13 +79,14 @@ class PolyCoeffs:
 	def add(self, corrections):
 		'''Element-wise addition of values in list 'correction' to the coefficients'''
 		for n in range(min(self.Ncoeffs,len(corrections))):
-			self.coeffs[n] += [val + corrections[n] for val in self.coeffs[n]]
+			self.coeffs[n] = [val + corrections[n] for val in self.coeffs[n]]
 
 
 class PolySet:
 	"""Storage of a set of polynomials"""
 
 	piecewisePolys = []
+	startSec = 1e99
 	dims = 0
 
 	def __init__(self, filename, coeffscale=1):
@@ -109,6 +110,7 @@ class PolySet:
 			polyDefinition = lines[lnr:(lnr+3+N)]
 			self.piecewisePolys.append( PolyCoeffs(polyDefinition,coeffscale) )
 			self.dims = self.piecewisePolys[-1].dims
+			self.startSec = min(self.startSec, self.piecewisePolys[-1].tstart.second)
 			lnr += 3 + N
 
 	def __len__(self):
@@ -294,6 +296,13 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 
 	print ("\n%s\n" % (imname))
 
+	# Find start time, make sure no time-shift is necessary
+	im_start_sec = -1
+	for line in lines:
+		if 'START SECOND' in line:
+			im_start_sec = float(line.split(':')[-1])
+			break
+
 	# Find telescope, poly order, poly interval
 	telescope_id = None
 	im_poly_order = 0
@@ -315,6 +324,7 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 
 	# Consistency check IM <-> RA coeffs
 	is_polyorder_mismatched = [poly.Ncoeffs > (im_poly_order+1) for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys]
+	is_polystartsec_mismatched = (im_start_sec % im_poly_interval_s) != dlypolys.startSec
 	is_polyinterval_mismatched = [poly.interval < im_poly_interval_s for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys]
 	if telescope_id == None:
 		print ('Error: could not find telescope %s in %s' % (antname,imname))
@@ -323,6 +333,15 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 		print ('Warning: mismatch in polynomial order of .im file (%d) and closed-loop file (%d).' % (im_poly_order, poly.Ncoeffs-1))
 	if any(is_polyinterval_mismatched):
 		print ('Error: too long polynomial validity interval in .im file (%d sec) for appyling closed-loop polys (%d sec).' % (im_poly_interval_s, poly.interval))
+		return False
+	if is_polystartsec_mismatched:
+		print ('Error: mismatch between .im base start time at second %d and poly start at second %d!' % (im_start_sec, dlypolys.startSec))
+		print ('Currently no support for polynomial time-shifting. Please edit these files and re-run calcif3 and patching:')
+		print ('   .calc  file set START SECOND to 0 or %d sec multiple' % (im_poly_interval_s))
+		print ('   .input file adjust START SECONDS to fall on 0 sec or %d sec boundary' % (im_poly_interval_s))
+		print ('or alternatively edit')
+		print ('   .vex   file adjust scan start=<start> to fall on 0 sec or %d sec boundary' % (im_poly_interval_s))
+		print ('          and extend scan length by %d seconds' % (im_start_sec % im_poly_interval_s))
 		return False
 
 	# Patch all relevant IM file lines
