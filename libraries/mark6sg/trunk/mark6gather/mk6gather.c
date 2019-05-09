@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 
 	if(verbose > 1 && strcmp(outfile, "-") == 0)
 	{
-		fprintf(stderr, "When streaming to stdout, verbosity level > 1 is not allowe.  Reducing verbosity.\n");
+		fprintf(stderr, "When streaming to stdout, verbosity level > 1 is not allowed.  Reducing verbosity.\n");
 		verbose = 1;
 	}
 
