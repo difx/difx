@@ -111,9 +111,9 @@ for i in range(nbins):
             refant = "--refant=" + str(args.refant)
         else: refant = ""
         
-        print "~/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant)
+        print "~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant)
         os.system("rm -rf {0}_calibrated_uv.ms".format(cdatms))
-        os.system("~/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant))
+        os.system("~pacakges/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant))
         os.system("mkdir {0}bin{1:02g}".format(prefix, i))
         os.system("mv TARGET* {0}bin{1:02g}".format(prefix, i))
         if noisecen != '':
