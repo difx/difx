@@ -530,7 +530,7 @@ if ret!=0: sys.exit(1)
 if args.slurm:
     currentdir = os.getcwd()
     currentuser = getpass.getuser()
-    numprocesses = args.npol*len(datafilelist[0]) + 21
+    numprocesses = args.npol*len(datafilelist[0]) + 11
     print "Approx number of processes", numprocesses
     numprocesses = int(2**(math.floor(math.log(numprocesses, 2))+1))
     print "Rounded to next highest number of 2:", numprocesses
@@ -571,7 +571,7 @@ if args.slurm:
     batchout.write("#SBATCH --output={0}.mpilog\n".format(basename))
     batchout.write("#\n")
     batchout.write("#SBATCH --ntasks={0:d}\n".format(numprocesses))
-    batchout.write("#SBATCH --time=10:00\n")
+    batchout.write("#SBATCH --time=1:00\n")
     batchout.write("#SBATCH --cpus-per-task=2\n")
     batchout.write("#SBATCH --mem-per-cpu=500\n\n")
     batchout.write("case $(HEADNODE) in\n")

@@ -104,10 +104,12 @@ if not os.path.exists(datadir): os.mkdir(datadir)
 os.chdir(datadir)
 
 difx2fitscommand = "difx2fits -u"
+freqlabels = []
 for e in examplefiles:
     freqlabel = e.split('/')[-1][5:10]
+    freqlabels.append(freqlabel)
     print "Going to process", freqlabel
-    difx2fitscommand = difx2fitscommand + " " + freqlabel + "/craftfrbD2D.input"
+    #difx2fitscommand = difx2fitscommand + " " + freqlabel + "/craftfrbD2D.input"
     if not os.path.exists(freqlabel): os.mkdir(freqlabel)
     os.chdir(freqlabel)
 
@@ -178,6 +180,7 @@ for e in examplefiles:
         print "askap2difx failed! (", ret, ")"
         sys.exit(ret)
 
+    #sys.exit()
     if args.slurm:
         os.system("./launchjob")
     else:
@@ -192,6 +195,12 @@ for e in examplefiles:
 #        os.system("difx2fits craftfrbD2D")
     os.chdir("../")
     
+for freqlabel in freqlabels:
+    d2dinput = glob.glob(freqlabel + "/*D2D.input")
+    if len(d2dinput) > 1:
+        print "Too many D2D inputs in", freqlabel, "aborting rundfix2fits!"
+        sys.exit()
+    difx2fitscommand = difx2fitscommand + " " + d2dinput[0]
 output = open("rundifx2fits","w")
 output.write(difx2fitscommand + " \"$@\"\n")
 output.close()
