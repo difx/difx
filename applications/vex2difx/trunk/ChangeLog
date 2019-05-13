@@ -2,6 +2,7 @@ Version 2.7.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.6
 * vexpeek: add some new options for combining kinds of output
+* more explicitly catch cases where the number of provided channels is less than the number of recorded channels for a given format.
 
 Version 2.6.0
 ~~~~~~~~~~~~~

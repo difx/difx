@@ -473,6 +473,12 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 
 	for(int i = 0; i < nRecordChan; ++i)
 	{
+		if(i + startBand >= setup.channels.size())
+		{
+			cerr << "Error: in setting format parameters, the number of provided channels was less than that expected.  This is for antenna " << antName << ".  In this particular case, " << setup.channels.size() << " were found but " << nRecordChan << " were expected." << endl;
+			break;
+		}
+
 		const VexChannel *ch = &setup.channels[i + startBand];
 		if(ch->subbandId < 0 || ch->subbandId >= static_cast<int>(mode->subbands.size()))
 		{
