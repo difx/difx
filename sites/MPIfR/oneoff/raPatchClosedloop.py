@@ -14,7 +14,7 @@ Output:
 """
 from datetime import datetime, timedelta
 from calendar import timegm
-import sys, time
+import math, sys, time
 import argparse
 
 SCALE_DELAY = 1e6	# scaling to get from RA_C_COH.TXT units (secs) to .im units (usec)
@@ -23,6 +23,8 @@ SCALE_UVW = 1		# scaling to get from RA_C_COH_uvw.txt units (m?) to .im units (m
 parser = argparse.ArgumentParser(add_help=False, description='Patch a DiFX/CALC .im file delay and uvw polynomials with RadioAstron closed-loop correction files.')
 parser.add_argument('-h', '--help', help='Help', action='store_true')
 parser.add_argument('-r', '--drate', default=0.0, dest='ddlyrate', help='Residual delay rate in s/s to add to dly polynomial')
+parser.add_argument('-t', '--dt', default=0.0, dest='dtshift', help='Time shift polys p(t) to p(t+dt) by dt seconds via change of coefficients')
+parser.add_argument('-N', '--maxorder', default=12, dest='maxorder', help='Maximum poly order; set higher coeffs to zero if present')
 parser.add_argument('files', nargs='*')
 
 class PolyCoeffs:
@@ -32,6 +34,7 @@ class PolyCoeffs:
 	Ncoeffs = 0
 	dims = 0
 	coeffs = []
+	coeffscale = 1.0
 	tstart = datetime.utcnow() 
 	tstop = tstart
 	interval = 0
@@ -70,6 +73,7 @@ class PolyCoeffs:
 		self.tstop = self.raStrToTime( self.getArgs(details[2]) )
 		self.interval = (self.tstop - self.tstart).total_seconds()
 		self.coeffs = []
+		self.coeffscale = coeffscale
 		for n in range(self.Ncoeffs):
 			cstr = self.getArgs(details[3+n])
 			c = [coeffscale*float(s) for s in cstr.split(',')]
@@ -81,6 +85,90 @@ class PolyCoeffs:
 		for n in range(min(self.Ncoeffs,len(corrections))):
 			self.coeffs[n] = [val + corrections[n] for val in self.coeffs[n]]
 
+	def trunc(self, maxorder):
+		'''Set to zero all coefficients that are present past 'maxorder' (0=const-only, 1=linear-only, etc).'''
+		for n in range(self.Ncoeffs):
+			if n > maxorder:
+				self.coeffs[n] =  [0.0]*self.dims
+
+	def binom(self, n):
+		'''Binomial coeffs, computed by the multipliative formula'''
+		n = int(n)
+		coeff_k = [0]*(n+1)
+		for k in range(n+1):
+			c = 1.0
+			for i in range(1, k+1):
+				c *= float((n+1-i))/float(i)
+			coeff_k[k] = int(c)
+		return coeff_k
+
+	def timeshift(self, dt):
+		'''Time shift polynomials p(t) to p(t+dt) via change of coefficients'''
+		# Ideally would use "Taylor shift" e.g. https://math.stackexchange.com/questions/694565/polynomial-shift
+		# but since we don't need performance, can use polynomial expansion at t+dt and update of coefficients.
+		#
+		# Illustration of the method:
+		#
+		# Shift p(t)    = a + b*t + c*t^2 + ...
+		# gives p(t+dt) = <below>
+		#
+		# order 0:  p(t+dt) = a
+		# order 1:  p(t+dt) = a + (b*t + b*dt) = (a + b*dt) + b*t
+		#           a' = a + b*dt
+		#           b' = b
+		# order 2:  p(t+dt) = a + (b*t + b*dt) + (c*t^2 + c*2*dt*t + c*dt^2)
+		#           a' = a + b*dt + c*dt^2
+		#           b' = b + c*2*dt
+		#           c' = c
+		# order 3:  p(t+dt) = a + (b*t + b*dt) + (c*t^2 + c*2*dt*t + c*dt^2) + (d*dt^3 + d*3*dt^2*t + d*3*dt*t^2 + d*t^3)
+		#           a' = a + b*dt + c*dt^2 + d*dt^3
+		#           b' = b + c*2*dt + d*3*dt^2
+		#           c' = c + d*3*dt
+		#           d' = d
+		# order 4:  add e*dt^4  + e*4*dt^3*t + e*6*dt^2*t^2 + e*4*dt*t^3 + e*t^4 
+		#           a' = a + b*dt + c*dt^2 + d*dt^3 + e*dt^4
+		#           b' = b + c*2*dt + d*3*dt^2 + e*4*dt^3
+		#           c' = c + d*3*dt + e*6*dt^2
+		#           d' = d + e*4*dt
+		#           e' = e
+		# order 5:  add f*dt^5 + f*5*dt^4*t + f*10*dt^3*t^2 + f*10*dt^2*t^3 + f*5*dt*t^4 + f*t^5
+		#           a' = a + b*dt + c*dt^2 + d*dt^3 + e*dt^4 + f*dt^5
+		#           b' = b + c*2*dt + d*3*dt^2 + e*4*dt^3 + f*5*dt^4
+		#           c' = c + d*3*dt + e*6*dt^2 + f*10*dt^3
+		#           d' = d + e*4*dt + f*10*dt^2
+		#           e' = e + f*5*dt
+		#           f' = f
+		# --> diagonals of Pascal's triangle
+
+		if not dt:
+			return
+
+		# Precompute Pascal's triangle
+		binom_nk = [[]] * (self.Ncoeffs+1)
+		for n in range(self.Ncoeffs+1):
+			binom_nk[n] = self.binom(n)
+		# print (self.Ncoeffs, binom_nk)
+
+		# Precompute dt^n for n=0..Ncoeff
+		dt = dt * self.coeffscale
+		dtpow = [math.pow(dt,n) for n in range(self.Ncoeffs+1)]
+		print dt, dtpow
+
+		# Shift the polynomial. Need to shift each poly/dimension (dly: 1D, uvw: 3D).
+		for d in range(self.dims):
+			oldcoeffs = [self.coeffs[n][d] for n in range(self.Ncoeffs)]
+			newcoeffs = [0.0] * self.Ncoeffs
+			for n in range(self.Ncoeffs):
+				print ('c[%d] = 0 ' % (n)),
+				for k in range(n, self.Ncoeffs):
+					newcoeffs[n] += oldcoeffs[k]*binom_nk[k][n]*dtpow[k-n]
+					print (' + old[%d]*%d*dt^%d' % (k,binom_nk[k][n],k-n)), 
+				print ('')
+			print ('old:', oldcoeffs)
+			print ('new:', newcoeffs)
+			print ('')
+			for n in range(self.Ncoeffs):
+				self.coeffs[n][d] = newcoeffs[n]
 
 class PolySet:
 	"""Storage of a set of polynomials"""
@@ -140,6 +228,16 @@ class PolySet:
 		'''Element-wise addition of values in list 'correction' to coeffs of all polynomials'''
 		for poly in self.piecewisePolys:
 			poly.add(corrections)
+
+	def trunc(self, maxorder):
+		'''Set to zero all coefficients that are present past 'maxorder' (0=const-only, 1=linear-only, etc).'''
+		for poly in self.piecewisePolys:
+			poly.trunc(int(maxorder))
+
+	def timeshift(self, dt):
+		'''Time shift polynomials p(t) to p(t+dt) via change of coefficients'''
+		for poly in self.piecewisePolys:
+			poly.timeshift(float(dt))
 
 
 def getKey(s):
@@ -275,7 +373,7 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1)
 				lines[n] = newline
 				N_updated += 1
 
-	print (map_tag_to_poly)
+	# print (map_tag_to_poly)
 
 	return N_updated
 
@@ -417,8 +515,6 @@ if __name__ == "__main__":
 		print ("Error: could not load delay polynomials from '%s'" % (args.files[0]))
 		sys.exit(-1)
 
-	dly.add([0.0, float(args.ddlyrate)])
-
 	uvw = PolySet(args.files[1], coeffscale=SCALE_UVW)
 	if len(uvw) < 1:
 		print ("Error: could not load u,v,w polynomials from '%s'" % (args.files[1]))
@@ -427,6 +523,12 @@ if __name__ == "__main__":
 	if dly.dims != 1 or uvw.dims != 3:
 		print ("Error: coeff file poly dimensions mismatch! Expected dim. 1 for 1st file '%s' (%d), dim. 3 for 2nd file '%s' (%d)" % (args.files[0], dly.dims, args.files[1], uvw.dims))
 		sys.exit(-1)
+
+	dly.add([0.0, float(args.ddlyrate)])
+	dly.trunc(args.maxorder)
+	dly.timeshift(args.dtshift)
+	uvw.trunc(args.maxorder)
+	# uvw.timeshift(args.dtshift)
 
 	for difxf in args.files[2:]:
 		ok = patchImFile(difxf, dly, uvw)
