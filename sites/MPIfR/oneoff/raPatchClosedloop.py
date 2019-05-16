@@ -85,6 +85,17 @@ class PolyCoeffs:
 		for n in range(min(self.Ncoeffs,len(corrections))):
 			self.coeffs[n] = [val + corrections[n] for val in self.coeffs[n]]
 
+	def eval(self, t_sec):
+		'''Evaluate poly at time t'''
+		# note: could use numpy.polyval()
+		polyval = []
+		for dim in range(self.dims):
+			v = 0.0
+			for k in range(self.Ncoeffs):
+				v += self.coeffs[k][dim]*math.pow(t_sec,k)
+			polyval.append(v)
+		return polyval
+
 	def trunc(self, maxorder):
 		'''Set to zero all coefficients that are present past 'maxorder' (0=const-only, 1=linear-only, etc).'''
 		for n in range(self.Ncoeffs):
@@ -159,16 +170,17 @@ class PolyCoeffs:
 			oldcoeffs = [self.coeffs[n][d] for n in range(self.Ncoeffs)]
 			newcoeffs = [0.0] * self.Ncoeffs
 			for n in range(self.Ncoeffs):
-				print ('c[%d] = 0 ' % (n)),
+				# print ('c[%d] = 0 ' % (n)),
 				for k in range(n, self.Ncoeffs):
 					newcoeffs[n] += oldcoeffs[k]*binom_nk[k][n]*dtpow[k-n]
-					print (' + old[%d]*%d*dt^%d' % (k,binom_nk[k][n],k-n)), 
-				print ('')
-			print ('old:', oldcoeffs)
-			print ('new:', newcoeffs)
-			print ('')
+					# print (' + old[%d]*%d*dt^%d' % (k,binom_nk[k][n],k-n)), 
+				# print ('')
+			# print ('old:', oldcoeffs)
+			# print ('new:', newcoeffs)
+			# print ('')
 			for n in range(self.Ncoeffs):
 				self.coeffs[n][d] = newcoeffs[n]
+
 
 class PolySet:
 	"""Storage of a set of polynomials"""
@@ -314,7 +326,7 @@ def imDetectNextScanpolyblock(lines,nstart,nstop):
 	return blk
 
 
-def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1):
+def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1,baseOffsets=None):
 	N_updated = 0
 	map_tag_to_poly = {
 		# line identifier                      storage   axis   type     linecount
@@ -326,56 +338,75 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1)
 
 	for n in range(polystart,polystop):
 		for tag in map_tag_to_poly:
-			if tag in lines[n]:
 
-				P, col, type, linecount = map_tag_to_poly[tag]
-				map_tag_to_poly[tag][-1] += 1
+			if not tag in lines[n]:
+				continue
 
-				C = [ pp[col] for pp in P.coeffs ]
-				key,oldcoeffs = getKeyOpt(lines[n])
-				oldcoeffs = [float(v) for v in oldcoeffs.split('\t')]
-				newcoeffs = list(oldcoeffs)
+			P, col, type, linecount = map_tag_to_poly[tag]
+			map_tag_to_poly[tag][-1] += 1
 
-				# Element wise summation of correction coeffs onto polynomial
-				N = min(len(newcoeffs), len(C)) # truncate to either poly
+			C = [ pp[col] for pp in P.coeffs ]
+			key,oldcoeffs = getKeyOpt(lines[n])
+			if 'SRC' in key:
+				sourcenr = int(key.split(' ')[1])
+			else:
+				sourcenr = None
+			oldcoeffs = [float(v) for v in oldcoeffs.split('\t')]
+			newcoeffs = list(oldcoeffs)
+
+			# Element wise copy of new coeffs into polynomial
+			N = min(len(newcoeffs), len(C)) # truncate to either poly
+			if type=='uvw':
+
+				# UVW poly: copy
 				for k in range(N):
-					# Add?
-					# newcoeffs[k] += sign*C[k]
+					newcoeffs[k] = C[k]
 
-					# Just copy?
-					# newcoeffs[k] = sign*C[k]
+			elif type=='T':
 
-					if type=='uvw':
-						newcoeffs[k] = C[k]
-					if type=='T':
-						# Add zeroth order coarse dlys, copy higher-order from ASC poly
-						if k==0:
-							# newcoeffs[0] = sign*C[0] + oldcoeffs[0]
-							# newcoeffs[0] = sign*C[0] - oldcoeffs[0]
-							newcoeffs[0] = oldcoeffs[0]
-							# newcoeffs[0] = sign*C[0]
-						else:
-							newcoeffs[k] = sign*C[k]
+				# Delay poly: mostly copy
 
-				newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
-				newline = '%s:  %s' % (key.strip(),newcoeffs_str)
+				# Keep the CALC9 0th coeff but adjust for ASC poly drift and user delta-rate drift
+				if baseOffsets==None:
+					baseOffsets = {}
+				if sourcenr not in baseOffsets:
+					# Remember starting points of CALC9 and ASC dly offsets
+					polydlydelta = P.eval(float(P.interval))[0] - P.eval(0.0)[0]
+					baseOffsets[sourcenr] = [oldcoeffs[0], polydlydelta]
+					newcoeffs[0] = oldcoeffs[0]
+				else:
+					# Adjust CALC9 dly offset to be contiguous across different polys
+					#newcoeffs[0] = oldcoeffs[0]  # old method, copy 1:1, will introduce clock jumps!
+					newcoeffs[0] = baseOffsets[sourcenr][0] + sign*baseOffsets[sourcenr][1]
+					polydlydelta = P.eval(float(P.interval))[0] - P.eval(0.0)[0]
+					baseOffsets[sourcenr] = [newcoeffs[0], polydlydelta]
 
-				# print ('------------------------------')
-				# print (n)
-				# print (C)
-				# print (lines[n])
-				# print (newline)
-				# print ('------------------------------\n')
+				# Copy high-order ASC poly coeffs
+				for k in range(1,N):
+					newcoeffs[k] = sign*C[k]
 
-				# print (n, lines[n], C, newline)
-				# print (lines[n], newline)
+				# Debug printout for Matlab/octave
+				# print sourcenr, newcoeffs, oldcoeffs[0], polydlydelta
 
-				lines[n] = newline
-				N_updated += 1
+			newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
+			newline = '%s:  %s' % (key.strip(),newcoeffs_str)
+
+			# print ('------------------------------')
+			# print (n)
+			# print (C)
+			# print (lines[n])
+			# print (newline)
+			# print ('------------------------------\n')
+
+			# print (n, lines[n], C, newline)
+			# print (lines[n], newline)
+
+			lines[n] = newline
+			N_updated += 1
 
 	# print (map_tag_to_poly)
 
-	return N_updated
+	return N_updated,baseOffsets
 
 
 def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
@@ -445,6 +476,7 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 	# Patch all relevant IM file lines
 	nupdated_total = 0
 	n = 0
+	baseoffsets = None
 	print ("Applying closed-loop coefficients to telescope %s with id %d" % (antname,telescope_id))
 	while n < len(lines):
 
@@ -479,7 +511,7 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 				return False
 
 			# Apply the coeffs
-			nupdated = imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dp,uvwp)
+			nupdated,baseoffsets = imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dp,uvwp,baseOffsets=baseoffsets)
 			nupdated_total += nupdated
 
 			# Next poly segment
