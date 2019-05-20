@@ -375,8 +375,8 @@ class Fri(object):
 						self.records[-1]['uv_rad'] * wave_len / self.ED
 
 					# Go from TAI time to UT
-					self.records[-1]['start_time'] -= timedelta(0, self.TAI_leapsecs)
-					self.records[-1]['stop_time'] -= timedelta(0, self.TAI_leapsecs)
+					self.records[-1]['start_time'] -= timedelta(seconds=self.TAI_leapsecs)
+					self.records[-1]['stop_time'] -= timedelta(seconds=self.TAI_leapsecs)
 
 
 	def max_snr(self, station=None):
@@ -597,7 +597,7 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1,
 					newcoeffs[k] = sign*C[k]
 
 				# Debug printout for Matlab/octave
-				print (sourcenr, newcoeffs, oldcoeffs[0], polydlydelta)
+				# print (sourcenr, newcoeffs, oldcoeffs[0], polydlydelta)
 
 			newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
 			newline = '%s:  %s' % (key.strip(),newcoeffs_str)
@@ -608,6 +608,24 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1,
 	# print (map_tag_to_poly)
 
 	return N_updated,baseOffsets
+
+
+def areTimerangesMatched(startA, stopA, startB, stopB, granularity_secs=1.024):
+	'''
+	Compare datetime objects of two time ranges.
+	Returns True if the time ranges roughly match, namely,
+	if timerange A resides inside timerange B (or vice versa)
+	at a given coarse granularity.
+	'''
+	t0 = startA - timedelta(microseconds=granularity_secs*1e6)
+	t1 = stopA + timedelta(microseconds=granularity_secs*1e6)
+ 	if (startB >= t0 and stopB <= t1):
+		return True
+	t0 = startB - timedelta(microseconds=granularity_secs*1e6)
+	t1 = stopB + timedelta(microseconds=granularity_secs*1e6)
+ 	if (startA >= t0 and stopA <= t1):
+		return True
+	return False
 
 
 def patchPima2Dly(dlypolys, dlyfilename, frifilename, antname_pima='RADIO-AS', refant_pima='GBT-VLBA', outfilename=None):
@@ -631,17 +649,15 @@ def patchPima2Dly(dlypolys, dlyfilename, frifilename, antname_pima='RADIO-AS', r
 	# Patch delay polys with PIMA residuals
 	for poly in dlypolys.piecewisePolys:
 		for rec in fri.records:
-			if not (poly.tstart >= rec['start_time'] and poly.tstop <= rec['stop_time']):
-				# print ('Skipping out of timerange PIMA entry', str(rec))
-				continue
 			st = [rec['sta1'], rec['sta2']]
 			if not(antname_pima in st and refant_pima in st):
-				print ('Skipping %s' % (str(st)))
+				continue
+			if not areTimerangesMatched(poly.tstart, poly.tstop, rec['start_time'], rec['stop_time']):
 				continue
 			if refant_pima in rec['sta1']:
-				sign = -1
+				sign = +1
 			else:
-				sign = 1
+				sign = -1
 			if 'accel' in rec:
 				if rec['FRIB.FINE_SEARCH'] == 'ACC':
 					accel = rec['ph_acc']
