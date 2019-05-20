@@ -22,8 +22,10 @@
 # given date and return in format suitable for appending to .v2d or .vex file.
 # Takes dates in MJD, VEX, ISO8601 or VLBA format.
 # October 2017: change to use requests module. Optional vex output.
-# EOP data from: "https://vlbi.gsfc.nasa.gov/apriori/usno_finals.erp"
-# Leap second data come from: "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat"
+# May 2019: New download site.
+#
+# EOP/ut1 data from:
+# "ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori"
 #
 
 from __future__ import print_function, division
@@ -31,8 +33,8 @@ import sys
 import time
 import os
 import optparse
-#import urllib
-import requests
+import urllib2
+#import requests
 import espressolib
 
 
@@ -93,19 +95,19 @@ if (target_jd < 2444055.5):
 # fetch EOP data
 leapsec_page = None
 if not options.local:
-    #eop_url = "https://gemini.gsfc.nasa.gov/solve_save/usno_finals.erp"
-    #leapsec_url = (
-            #"https://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat")
-    eop_url = "https://vlbi.gsfc.nasa.gov/apriori/usno_finals.erp"
-    leapsec_url = "https://vlbi.gsfc.nasa.gov/apriori/ut1ls.dat"
+    gsfc_url = "ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/"
+    eop_url = gsfc_url + "usno_finals.erp"
+    leapsec_url = gsfc_url + "ut1ls.dat"
 
     sys.stderr.write("Fetching EOP data from {:s}\n".format(eop_url))
-    eop_page = requests.get(eop_url, verify=options.verify).content.split("\n")
+    #eop_page = requests.get(eop_url, verify=options.verify).content.split("\n")
+    eop_page = urllib2.urlopen(eop_url).readlines()
 
-    sys.stderr.write("Fetching leap second data from {:s}".format(leapsec_url))
-    #leapsec_page = urllib.FancyURLopener().open(leapsec_url).readlines()
-    leapsec_page = requests.get(
-            leapsec_url, verify=options.verify).content.split("\n")
+    sys.stderr.write(
+            "Fetching leap second data from {:s}\n".format(leapsec_url))
+    #leapsec_page = requests.get(
+    #        leapsec_url, verify=options.verify).content.split("\n")
+    leapsec_page = urllib2.urlopen(leapsec_url).readlines()
     print ("{:s} EOPs downloaded at {:s}".format(
             comment, time.strftime("%Y-%m-%d %H:%M:%S (%z)")))
 else:
@@ -122,7 +124,7 @@ else:
             "Reading leap second data from {:s}\n".format(leapsec_filename))
     leapsec_page = open(leapsec_filename).readlines()
     print (
-            "{:s} EOPS from {:s} last updated at {:s}\n".format(
+            "{:s} EOPS from {:s} last updated at {:s}".format(
             comment, eop_filename,
             time.strftime("%Y-%m-%d %H:%M:%S (%z)", eop_update_time)))
 
