@@ -1,27 +1,41 @@
 #!/usr/bin/python
 """
-Patch a DiFX/CALC .im file delay and uvw polynomials with RadioAstron closed-loop correction files.
+Patch DiFX/CALC .im file delay polynomials using RadioAstron closed-loop correction files.
 
-Usage: raPatchClosedloop.py [-r <add dly rate s/s>] <dly_polys.txt> <uvw_polys.txt> <difxbasename1.im> [<difxbasename2.im> ...]
+Usage: raPatchClosedloop.py [-r <add dly rate s/s>] [-P <PIMA fri file>]
+                            <dly_polys.txt> [<difxbasename1.im> <difxbasename2.im> ...]
+
+Iterative refinement if possible by correlating first with the ASC-provided initial delay
+polynomials, fringe fitting the data in PIMA, then patching the delay polynomial data with
+the residuals of the fringe fit, and correlating again.
 
 Input:
-    dly_polys.txt     RadioAstron closed-loop delay polynomials
-    uvw_polys.txt     RadioAstron closed-loop u,v,w polynomials
-    difxbasename1.im  original DiFX/CALC .im file to patch
+    dly_polys.txt           text file with RadioAstron closed-loop delay polynomials
+    difxbasename1.im        original DiFX/CALC .im file to patch prior to DiFX correlation
+
+Output in -P <pimafile> mode:
+    dly_polys.txt.rev{n+1}       new closed-loop delay polys corrected by PIMA fringe fit
 
 Output:
-    difxbasename1.im.closedloop
+    difxbasename1.im.closedloop  new closed-loop DiFX/CALC .im to use in DiFX correlation
+
 """
+from __future__ import print_function, division
 from datetime import datetime, timedelta
 from calendar import timegm
 import math, sys, time
 import argparse
+from datetime import datetime, timedelta
+import math
+import sys
 
 SCALE_DELAY = 1e6	# scaling to get from RA_C_COH.TXT units (secs) to .im units (usec)
 SCALE_UVW = 1		# scaling to get from RA_C_COH_uvw.txt units (m?) to .im units (m)
 
 parser = argparse.ArgumentParser(add_help=False, description='Patch a DiFX/CALC .im file delay and uvw polynomials with RadioAstron closed-loop correction files.')
 parser.add_argument('-h', '--help', help='Help', action='store_true')
+parser.add_argument('-P', '--pima', default=None, dest='frifile_pima', help='PIMA .fri file with residual rates and accelerations')
+parser.add_argument('-R', '--refant', default='GBT-VLBA', dest='refant_pima', help='Reference antenna of PIMA fringe fit')
 parser.add_argument('-r', '--drate', default=0.0, dest='ddlyrate', help='Residual delay rate in s/s to add to dly polynomial')
 parser.add_argument('-t', '--dt', default=0.0, dest='dtshift', help='Time shift polys p(t) to p(t+dt) by dt seconds via change of coefficients')
 parser.add_argument('-N', '--maxorder', default=12, dest='maxorder', help='Maximum poly order; set higher coeffs to zero if present')
@@ -48,6 +62,9 @@ class PolyCoeffs:
 		gm = timegm( time.strptime(s + ' GMT', '%d/%m/%Y %Hh%Mm%Ss %Z') )
 		d = datetime.utcfromtimestamp(gm)
 		return d
+
+	def timeToRaStr(self, t):
+		return t.strftime('%d/%m/%Y %Hh%Mm%Ss')
 
 	def __init__(self, details, coeffscale):
 		"""Initialize coeffs using a list of strings stored in 'details'.
@@ -163,7 +180,6 @@ class PolyCoeffs:
 		# Precompute dt^n for n=0..Ncoeff
 		dt = dt * self.coeffscale
 		dtpow = [math.pow(dt,n) for n in range(self.Ncoeffs+1)]
-		print dt, dtpow
 
 		# Shift the polynomial. Need to shift each poly/dimension (dly: 1D, uvw: 3D).
 		for d in range(self.dims):
@@ -188,6 +204,7 @@ class PolySet:
 	piecewisePolys = []
 	startSec = 1e99
 	dims = 0
+	order = 0
 
 	def __init__(self, filename, coeffscale=1):
 		"""
@@ -211,6 +228,7 @@ class PolySet:
 			self.piecewisePolys.append( PolyCoeffs(polyDefinition,coeffscale) )
 			self.dims = self.piecewisePolys[-1].dims
 			self.startSec = min(self.startSec, self.piecewisePolys[-1].tstart.second)
+			self.order = self.piecewisePolys[-1].Ncoeffs - 1
 			lnr += 3 + N
 
 	def __len__(self):
@@ -250,6 +268,194 @@ class PolySet:
 		'''Time shift polynomials p(t) to p(t+dt) via change of coefficients'''
 		for poly in self.piecewisePolys:
 			poly.timeshift(float(dt))
+
+
+
+class Fri(object):
+	"""
+	This class represents PIMA fringe file.
+	(C) Petr Voytsik, some small additions by Jan Wagner
+	"""
+	ver100 = '# PIMA Fringe results  v  1.00  Format version of 2010.04.05'
+	ver101 = '# PIMA Fringe results  v  1.01  Format version of 2014.02.08'
+	ver102 = '# PIMA Fringe results  v  1.02  Format version of 2014.12.24'
+
+	ED = 2. * 6371e5  # Earth diameter
+	C = 2.99792458e10  # Speed of light
+	TAI_leapsecs = 37 # PIMA writes TAI time. Leaps secs while RadioAstron was still operational were 37s.
+
+	def __init__(self, fri_file=None):
+		self.records = []
+		self.index = 0
+		if fri_file is None:
+			return
+
+		started = False
+		header = {}
+
+		with open(fri_file, 'r') as fil:
+			line = fil.readline()
+			if not (line.startswith(self.ver100) or
+					line.startswith(self.ver101) or
+					line.startswith(self.ver102)):
+				print (line)
+				raise Exception('{} is not PIMA fri-file'.format(fri_file))
+			for line in fil:
+				if line.startswith('# PIMA_FRINGE started'):
+					started = True
+					header.clear()
+					continue
+				if line.startswith('# PIMA_FRINGE ended'):
+					started = False
+					continue
+				if not started:
+					continue
+				toks = line.split()
+				if len(toks) < 3:
+					continue
+				if toks[0] == '#':
+					if toks[1] == 'Control':
+						header['cnt_file'] = toks[-1]
+					elif toks[1] == 'Experiment':
+						header['exper_code'] = toks[-1]
+					elif toks[1] == 'Session':
+						header['session_code'] = toks[-1]
+					elif toks[1] == 'FRINGE_FITTING_STYLE:':
+						header['FRINGE_FITTING_STYLE'] = toks[-1]
+					elif toks[1] == 'FRIB.POLAR:':
+						header['polar'] = toks[2]
+					elif toks[1] == 'FRIB.FINE_SEARCH:':
+						header['FRIB.FINE_SEARCH'] = toks[-1]
+					elif toks[1] == 'PHASE_ACCELERATION:':
+						header['accel'] = float(toks[2].replace('D', 'e'))
+				elif toks[6] != 'FAILURE':
+					self.records.append({})
+					self.records[-1].update(header)
+					self.records[-1]['obs'] = int(toks[0])
+					self.records[-1]['scan'] = int(toks[1])
+					self.records[-1]['time_code'] = toks[2]
+					self.records[-1]['source'] = toks[3]
+					self.records[-1]['sta1'] = toks[4]
+					self.records[-1]['sta2'] = toks[5]
+					self.records[-1]['SNR'] = float(toks[7])
+					self.records[-1]['start_time'] = datetime.strptime(
+						toks[11], '%Y.%m.%d-%H:%M:%S.%f,')
+					self.records[-1]['stop_time'] = datetime.strptime(
+						toks[12], '%Y.%m.%d-%H:%M:%S.%f')
+					self.records[-1]['ampl_lsq'] = \
+						float(toks[15].replace('D', 'e'))
+					self.records[-1]['delay'] = \
+						float(toks[23].replace('D', 'e'))
+					self.records[-1]['rate'] = \
+						float(toks[31].replace('D', 'e'))
+					self.records[-1]['ph_acc'] = \
+						float(toks[37].replace('D', 'e'))
+					self.records[-1]['duration'] = \
+						float(toks[79].replace('D', 'e'))
+					self.records[-1]['U'] = \
+						float(toks[84].replace('D', 'e'))
+					self.records[-1]['V'] = \
+						float(toks[85].replace('D', 'e'))
+					self.records[-1]['ref_freq'] = \
+						float(toks[94].replace('D', 'e'))
+
+					# Calculated parameters
+
+					# UV-radius in lambda
+					self.records[-1]['uv_rad'] = math.hypot(
+						self.records[-1]['U'], self.records[-1]['V'])
+
+					# Position angle
+					self.records[-1]['PA'] = math.degrees(math.atan2(
+						self.records[-1]['U'], self.records[-1]['V']))
+					wave_len = self.C / self.records[-1]['ref_freq']
+
+					# UV-radius in Earth diameters
+					self.records[-1]['uv_rad_ed'] = \
+						self.records[-1]['uv_rad'] * wave_len / self.ED
+
+					# Go from TAI time to UT
+					self.records[-1]['start_time'] -= timedelta(0, self.TAI_leapsecs)
+					self.records[-1]['stop_time'] -= timedelta(0, self.TAI_leapsecs)
+
+
+	def max_snr(self, station=None):
+		"""
+		Return observation record with maximum SNR.
+
+		Parameters
+		----------
+		station : str, optional
+			If station name is given select observation with this station only.
+
+		Returns
+		-------
+		rec : dict
+			Returns fri-record -- dictionary with parameters of the selected
+			observation.
+
+		"""
+		rec = {}
+
+		# Select observations with 'station'
+		if station:
+			records = list(filter(lambda rec: station in [rec['sta1'], rec['sta2']], self.records))
+		else:
+			records = self.records
+
+		# Sort records b SNR
+		records = sorted(records, key=lambda rec: rec['SNR'], reverse=True)
+		if len(records) > 0:
+			rec = records[0]
+
+		return rec
+
+	def append(self, rec):
+		"""
+		Append fri-file record to the end of the list
+
+		"""
+		self.records.append(rec)
+
+	def __str__(self):
+		out = "#Obs Timecode   Source      Sta1/Sta2         SNR    Delay    \
+Rate      Accel      Base   Base   PA    Dur    Ampl\n"
+		out = out + "#    ddd-hhmm                                          us\
+     s/s       s/s^2      Mlam    ED    deg    s\n"
+		for rec in self.records:
+			if 'accel' in rec:
+				if rec['FRIB.FINE_SEARCH'] == 'ACC':
+					accel = rec['ph_acc']
+				else:
+					accel = rec['accel']
+			else:
+				accel = 0
+
+			line = '{:>3}{:>10} {:>8} {:>8}/{:>8} {:8.2f} \
+{:8.3f} {:10.3e} {:9.2e} {:8.2f} {:5.1f} {:6.1f} {:6.1f} {:8.2e}\n'.\
+				format(rec['obs'], rec['time_code'], rec['source'],
+					   rec['sta1'], rec['sta2'], rec['SNR'],
+					   1e6 * rec['delay'], rec['rate'], accel,
+					   1e-6 * rec['uv_rad'], rec['uv_rad_ed'], rec['PA'],
+					   rec['duration'], rec['ampl_lsq'])
+			out = out + line
+
+		return out
+
+	def __iter__(self):
+		return self
+
+	def __getitem__(self, ind):
+		return self.records[ind]
+
+	def __next__(self):
+		if self.index == len(self.records):
+			raise StopIteration
+		self.index = self.index + 1
+		return self.records[self.index - 1]
+
+	def __len__(self):
+		return len(self.records)
 
 
 def getKey(s):
@@ -344,6 +550,8 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1,
 
 			P, col, type, linecount = map_tag_to_poly[tag]
 			map_tag_to_poly[tag][-1] += 1
+			if not P:
+				continue
 
 			C = [ pp[col] for pp in P.coeffs ]
 			key,oldcoeffs = getKeyOpt(lines[n])
@@ -359,8 +567,11 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1,
 			if type=='uvw':
 
 				# UVW poly: copy
-				for k in range(N):
-					newcoeffs[k] = C[k]
+				#for k in range(N):
+				#	newcoeffs[k] = C[k]
+
+				# UVW poly: might also simply not copy! units, coordinate system, something is different between CALC9 and ASC (huge difference in respective polys)
+				pass
 
 			elif type=='T':
 
@@ -386,20 +597,10 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1,
 					newcoeffs[k] = sign*C[k]
 
 				# Debug printout for Matlab/octave
-				# print sourcenr, newcoeffs, oldcoeffs[0], polydlydelta
+				print (sourcenr, newcoeffs, oldcoeffs[0], polydlydelta)
 
 			newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
 			newline = '%s:  %s' % (key.strip(),newcoeffs_str)
-
-			# print ('------------------------------')
-			# print (n)
-			# print (C)
-			# print (lines[n])
-			# print (newline)
-			# print ('------------------------------\n')
-
-			# print (n, lines[n], C, newline)
-			# print (lines[n], newline)
 
 			lines[n] = newline
 			N_updated += 1
@@ -407,6 +608,71 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1,
 	# print (map_tag_to_poly)
 
 	return N_updated,baseOffsets
+
+
+def patchPima2Dly(dlypolys, dlyfilename, frifilename, antname_pima='RADIO-AS', refant_pima='GBT-VLBA', outfilename=None):
+	'''
+	Read a PIMA fringe-fit file and incorporate the residual rate and acceleration
+	into data from an ASC delay polynomial file. Store the result in a new file.
+	'''
+
+	# Check delay poly
+	if len(dlypolys) < 1:
+		print ("Error: no delay polynomials in '%s'" % (dlyfilename))
+		sys.exit(-1)
+
+	# Load PIMA fringe fit data
+	try:
+		fri = Fri(frifilename)
+	except IOError as err:
+		print("IOError: ", err, file=sys.stderr)
+		return 1
+
+	# Patch delay polys with PIMA residuals
+	for poly in dlypolys.piecewisePolys:
+		for rec in fri.records:
+			if not (poly.tstart >= rec['start_time'] and poly.tstop <= rec['stop_time']):
+				# print ('Skipping out of timerange PIMA entry', str(rec))
+				continue
+			st = [rec['sta1'], rec['sta2']]
+			if not(antname_pima in st and refant_pima in st):
+				print ('Skipping %s' % (str(st)))
+				continue
+			if refant_pima in rec['sta1']:
+				sign = -1
+			else:
+				sign = 1
+			if 'accel' in rec:
+				if rec['FRIB.FINE_SEARCH'] == 'ACC':
+					accel = rec['ph_acc']
+				else:
+					accel = rec['accel']
+			else:
+				accel = 0
+			pimaresiduals_usec = [0, sign*rec['rate']*1e6, sign*accel*1e6]
+			poly.add(pimaresiduals_usec)
+			print ('Applying PIMA residuals of %s--%s to poly time %s + %d sec' % (rec['start_time'],rec['stop_time'],str(poly.tstart),poly.interval))
+
+	# Output file name
+	if not outfilename:
+		rev = 0
+		base = dlyfilename
+		if '.rev' in dlyfilename:
+			base,rev = dlyfilename.split('.rev')
+		outfilename = '%s.rev%d' % (base, int(rev)+1)
+
+	# Dump the updated polys into the output file	
+	fo = open(outfilename, 'w')
+	fo.write('telescope = RASTRON\n')
+	fo.write('order = %d\n\n' % (dlypolys.order+1))
+	for poly in dlypolys.piecewisePolys:
+		fo.write('source = %s\n' % (poly.source))
+		fo.write('start = %s\n' % (poly.timeToRaStr(poly.tstart)))
+		fo.write('stop = %s\n' % (poly.timeToRaStr(poly.tstop)))
+		for n in range(len(poly.coeffs)):
+			fo.write('P%d = %.16e\n' % (n, poly.coeffs[n][0] / SCALE_DELAY))
+
+	print ('Wrote %s' % (outfilename))
 
 
 def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
@@ -452,9 +718,11 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 			im_poly_interval_s = int(getOpt(line))
 
 	# Consistency check IM <-> RA coeffs
-	is_polyorder_mismatched = [poly.Ncoeffs > (im_poly_order+1) for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys]
+	# is_polyorder_mismatched = [poly.Ncoeffs > (im_poly_order+1) for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys]
+	is_polyorder_mismatched = [poly.Ncoeffs > (im_poly_order+1) for poly in dlypolys.piecewisePolys]
 	is_polystartsec_mismatched = (im_start_sec % im_poly_interval_s) != dlypolys.startSec
-	is_polyinterval_mismatched = [poly.interval < im_poly_interval_s for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys]
+	# is_polyinterval_mismatched = [poly.interval < im_poly_interval_s for poly in dlypolys.piecewisePolys + uvwpolys.piecewisePolys]
+	is_polyinterval_mismatched = [poly.interval < im_poly_interval_s for poly in dlypolys.piecewisePolys]
 	if telescope_id == None:
 		print ('Error: could not find telescope %s in %s' % (antname,imname))
 		return False
@@ -498,20 +766,20 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 
 			# Get the matching Closed Loop polynomial coeffs sets
 			dp = dlypolys.lookupPolyFor(mjd,sec)
-			uvwp = uvwpolys.lookupPolyFor(mjd,sec)
-			if dp == None or uvwp == None:
+			# uvwp = uvwpolys.lookupPolyFor(mjd,sec)
+			if dp == None: # or uvwp == None:
 				T = dlypolys.datetimeFromMJDSec(mjd,sec)
 				print('Warning: no suitable poly found in coeffs file to match MJD %d sec %d (%s)!' % (mjd,sec,str(T)))
 				pstart = polystop
 				continue
-			if dp.source != uvwp.source:
-				print("Error: RA delay poly source '%s' does not match UVW poly source '%s'!" % (dp.source,uvwp.source))
+			# if dp.source != uvwp.source:
+			# 	print("Error: RA delay poly source '%s' does not match UVW poly source '%s'!" % (dp.source,uvwp.source))
 			if dp.source != srcname:
 				print("Error: IM source '%s' does not match poly coeff set source '%s'!" % (srcname,dp.source))
 				return False
 
 			# Apply the coeffs
-			nupdated,baseoffsets = imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dp,uvwp,baseOffsets=baseoffsets)
+			nupdated,baseoffsets = imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dp,None,baseOffsets=baseoffsets)
 			nupdated_total += nupdated
 
 			# Next poly segment
@@ -538,31 +806,30 @@ if __name__ == "__main__":
 		if (arg[0] == '-') and arg[1].isdigit(): sys.argv[i] = ' ' + arg
 
 	args = parser.parse_args(sys.argv[1:])
-	if args.help or len(args.files) < 3:
+	if args.help or len(args.files) < 1:
 		print(__doc__)
 		sys.exit(-1)
+
+	userresiduals = [0.0, float(args.ddlyrate)]
 
 	dly = PolySet(args.files[0], coeffscale=SCALE_DELAY)
 	if len(dly) < 1:
 		print ("Error: could not load delay polynomials from '%s'" % (args.files[0]))
 		sys.exit(-1)
 
-	uvw = PolySet(args.files[1], coeffscale=SCALE_UVW)
-	if len(uvw) < 1:
-		print ("Error: could not load u,v,w polynomials from '%s'" % (args.files[1]))
-		sys.exit(-1)
-
-	if dly.dims != 1 or uvw.dims != 3:
-		print ("Error: coeff file poly dimensions mismatch! Expected dim. 1 for 1st file '%s' (%d), dim. 3 for 2nd file '%s' (%d)" % (args.files[0], dly.dims, args.files[1], uvw.dims))
-		sys.exit(-1)
-
-	dly.add([0.0, float(args.ddlyrate)])
+	dly.add(userresiduals)
 	dly.trunc(args.maxorder)
 	dly.timeshift(args.dtshift)
-	uvw.trunc(args.maxorder)
-	# uvw.timeshift(args.dtshift)
 
-	for difxf in args.files[2:]:
-		ok = patchImFile(difxf, dly, uvw)
-		if not ok:
-			print ("Error: failed to patch %s" % (difxf))
+	if args.frifile_pima:
+
+		# Patch the poly .txt file and produce a new .txt.rev<N>
+		patchPima2Dly(dly, args.files[0], args.frifile_pima, refant_pima=args.refant_pima)
+
+	else:
+
+		# Patch the .im file using poly
+		for difxf in args.files[1:]:
+			ok = patchImFile(difxf, dly, None)
+			if not ok:
+				print ("Error: failed to patch %s" % (difxf))
