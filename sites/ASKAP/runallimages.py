@@ -92,12 +92,12 @@ for i in range(nbins):
     else: bins = ''
     
     if args.rfisub:
-        print "~/craft/psrvlbireduce/datareduction/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile[i], bins)
-        os.system("~/craft/psrvlbireduce/datareduction/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile[i], bins))
+        print "~/packages/src/difx/sites/ASKAP/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile[i], bins)
+        os.system("~/packages/src/difx/sites/ASKAP/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile[i], bins))
     
     if args.cal:
         if args.xpol:
-            xpolmodel = "-x /data/CRAFT/0407.model.fits"
+            xpolmodel = "-x /fred/oz002/askap/craft/0407.model.fits"
         else: xpolmodel = ''
         if args.noisecentre != '':
             noisecen = "--noisecentre '" + args.noisecentre + "'"
