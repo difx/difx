@@ -26,220 +26,60 @@
 // $LastChangedDate: 2018-03-28 15:00:49 +0200 (Wed, 28 Mar 2018) $
 //
 //============================================================================
-
-// Assistive VDIF reader. Allows opening a (multi-threaded) VDIF file and reading
-// it back with the frames of threads tightly "interleaved". The resulting data
-// may be passed to vdifmux().
 //
-// The file-based VDIF reader with pre-interleaving logic helps to counteract an
-// issue stemming from the comparably tiny memory window that vdifmux() operates on.
+// Assistive VDIF reader. Allows opening a (multi-threaded) VDIF file and
+// reading it back with the frames of threads tightly "interleaved".
+// The resulting data may be passed to vdifmux().
 //
-// When the underlying VDIF file is highly "clumpy" and its data are passed directly
-// to vdifmux(), it can happen that a thread is not found at all inside the small
-// window that vdifmux() operates on. This leads to outlier frames erroneusly considered
-// as "missing" and results in excess Invalid -marked VDIF frames from vdifmux().
+// The file-based VDIF reader with pre-interleaving logic helps to counteract
+// an issue stemming from the comparably small memory window that vdifmux()
+// operates on.
+//
+// When the underlying VDIF file is highly "clumpy" and its data are passed
+// directly to vdifmux(), it can happen that a thread is not found at all
+// inside the small window that vdifmux() operates on, even though frames
+// of that thread do exist further downstream.
+// This leads to outlier frames erroneusly considered as "missing" and
+// results in excess Invalid -marked VDIF frames from vdifmux().
+//
+//============================================================================
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <vdifio.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
+#include <vdifio.h>
+
 #include "dateutils.h"
 #include "config.h"
+
+//============================================================================
 
 static const size_t resyncbuffersize_ = 8*8224; // should fit 2 frames
 static unsigned char *resyncbuffer_ = NULL;
 static unsigned char *fillpattern_ = NULL;
 
-static int    vdifreader_find_next_threadframe(struct vdif_file_reader *rd, int threadIdx);
-static int    vdifreader_resync_next_frameoffset(struct vdif_file_reader *rd, int threadIdx);
+// Local helper functions
+static int    vdifreader_peek_frame(const struct vdif_file_reader *rd, int threadIdx, vdif_header* vhdr);
+static int    vdifreader_header_looks_good(const struct vdif_header *vhdr, const struct vdif_file_summary *vdifinfo);
+static int    vdifreader_estimate_fps(struct vdif_file_reader *rd);
+
+static int    vdifreader_advance_to_valid_frame(struct vdif_file_reader *rd, int threadIdx, vdif_header* store_hdr_to);
+static int    vdifreader_advance_to_frame_of_thread(struct vdif_file_reader *rd, int threadIdx);
+static int    vdifreader_get_frame(struct vdif_file_reader *rd, int threadIdx, int sec, int framenr, char* outbuf, size_t nbyte, int offset);
+
+static int    vdifreader_resync(struct vdif_file_reader *rd, int threadIdx);
 static size_t vdifreader_reposition_all(struct vdif_file_reader *rd, size_t offset);
 static int    vdifreader_check_eof(struct vdif_file_reader *rd);
-static off_t  vdifreader_check_tailptr(struct vdif_file_reader *rd);
 
+//============================================================================
 
-static int vdifreader_find_next_threadframe(struct vdif_file_reader *rd, int threadIdx)
-{
-	struct vdif_header vh;
-	int n;
-	off_t pos;
-	off_t pos0;
-
-	assert(rd != NULL);
-	assert(threadIdx <= rd->details.nThread);
-
-	// Latest frame; can be whatever thread
-	pos = ftello(rd->fd[threadIdx]);
-	if (pos == -1)
-	{
-		return -1;
-	}
-	pos0 = pos;
-
-	// printf("vdifreader_find_next_threadframe() for th %d starting search from pos %zd\n", threadIdx, pos0);
-
-	// Advance until a frame of the desired thread is found
-	while (1)
-	{
-		size_t framesz;
-		if (fread(&vh, sizeof(vh), 1, rd->fd[threadIdx]) < 1)
-		{
-			return -1;
-		}
-
-		framesz = getVDIFFrameBytes(&vh);
-		if (framesz <= 0 || framesz != rd->details.frameSize)
-		{
-			//printf("th %d, pos %zd, odd frame size %zu\n", threadIdx, pos, framesz);
-			int rc;
-			fseeko(rd->fd[threadIdx], pos, SEEK_SET);
-			rc = vdifreader_resync_next_frameoffset(rd, threadIdx);
-			if (rc < 0)
-			{
-				printf("vdifreader_find_next_threadframe() encountered strange frame size and resync failed!\n");
-				return -1;
-
-			}
-			continue;
-		}
-
-		if (getVDIFThreadID(&vh) == rd->details.threadIds[threadIdx])
-		{
-			break;
-		}
-
-		pos += framesz;
-		if (fseeko(rd->fd[threadIdx], pos, SEEK_SET) != 0)
-		{
-			return -1;
-		}
-	}
-
-	rd->frame[threadIdx] = getVDIFFrameNumber(&vh);
-	rd->sec[threadIdx] = getVDIFFrameEpochSecOffset(&vh);
-	rd->fps = (rd->frame[threadIdx] >= rd->fps) ? (rd->frame[threadIdx] + 1) : rd->fps;
-
-	// Advanced by "too much" in a multithreaded VDIF?
-	if (rd->details.nThread > 1)
-	{
-		off_t framedelta = (pos - rd->tail) / getVDIFFrameBytes(&vh);
-		rd->desynched[threadIdx] = (framedelta > 15000) && (framedelta > rd->fps/8);
-		if (rd->desynched[threadIdx])
-		{
-			// Severely desynchronized or dropped-out thread (>=0.125 sec),
-			// stay at previous frame until other threads have caught up
-			pos = rd->head[threadIdx];
-			printf(" desync, frame delta %zd, fps %zu\n", framedelta, (size_t)rd->fps);
-			// TODO: might propagage desynced[] flag into vdif header field 'Invalid' in the read() func
-		}
-	}
-
-	n = fseeko(rd->fd[threadIdx], pos, SEEK_SET);
-	if (n == -1)
-	{
-		return -1;
-	}
-	rd->head[threadIdx] = pos;
-
-	return 0;
-}
-
-/** Attempt to resynchronize. Comparing raw data in a sliding window worth two consecutive frames and tries to find
-    file offset that results in partially-matched VDIF headers again. */
-static int vdifreader_resync_next_frameoffset(struct vdif_file_reader *rd, int threadIdx)
-{
-	struct vdif_header *vh1, *vh2;
-	size_t frameSize;
-	off_t pos0;
-	int i;
-
-	assert(rd != NULL);
-	assert(threadIdx <= rd->details.nThread);
-
-	frameSize = rd->details.frameSize;
-
-	while (1)
-	{
-		pos0 = ftello(rd->fd[threadIdx]);
-		//printf("vdifreader_resync_next_frameoffset() th %d invoked, current offset %zd\n", threadIdx, pos0);
-
-		size_t nrd = fread(resyncbuffer_, 2*frameSize, 1, rd->fd[threadIdx]);
-		if (nrd < 1)
-		{
-			break;
-		}
-		for (i = 0; i < frameSize-1; i++)
-		{
-	         	vh1 = (struct vdif_header *)(resyncbuffer_ + i);
-         		vh2 = (struct vdif_header *)(resyncbuffer_ + i + frameSize);
-			// Use some simple constraints to ensure we don't get unlucky
-			if (getVDIFFrameBytes(vh1) == frameSize &&
-				getVDIFFrameBytes(vh2) == frameSize &&
-				getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
-				getVDIFFrameEpochSecOffset(vh2) - getVDIFFrameEpochSecOffset(vh1) < 2)
-			{
-				//printf("vdifreader_resync_next_frameoffset() th %d found valid frame at delta %d, framesize %d, new offset %zu\n", i, threadIdx, getVDIFFrameBytes(vh2), pos0+i);
-				fseeko(rd->fd[threadIdx], pos0+i, SEEK_SET);
-				return i;
-			}
-		}
-		fseeko(rd->fd[threadIdx], -frameSize, SEEK_CUR);
-		pos0 += frameSize;
-        }
-
-        return -1;
-}
-
-
-static size_t vdifreader_reposition_all(struct vdif_file_reader *rd, size_t offset)
-{
-	int n;
-
-	assert(rd != NULL);
-
-	// Location of first valid frame after @offset
-	fseeko(rd->fd[0], offset, SEEK_SET);
-	vdifreader_resync_next_frameoffset(rd, 0);
-	rd->offset = ftello(rd->fd[0]);
-	rd->tail = rd->offset;
-	for (n=0; n<rd->details.nThread; n++)
-	{
-		rd->head[n] = rd->offset;
-		rd->desynched[n] = 0;
-		fseeko(rd->fd[n], rd->offset, SEEK_SET);
-		vdifreader_find_next_threadframe(rd, n);
-	}
-
-	return rd->offset;
-}
-
-
-static int vdifreader_check_eof(struct vdif_file_reader *rd)
-{
-	int n;
-	int eof = 1;
-	for (n=0; n<rd->details.nThread; n++)
-	{
-		eof = eof & rd->feof[n];
-	}
-	return eof;
-}
-
-
-static off_t vdifreader_check_tailptr(struct vdif_file_reader *rd)
-{
-	int n;
-	off_t tail = rd->head[0];
-	for (n=1; n<rd->details.nThread; n++)
-	{
-		tail = (rd->head[n] < tail) ? rd->head[n] : tail;
-	}
-	return tail;
-}
-
-
-/** Assistive VDIF reader, open a VDIF file based upon VDIF details in its summary. */
+/**
+ * Create VDIF file reader based upon VDIF details in its summary.
+ */
 int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader *rd)
 {
 	int n;
@@ -249,22 +89,24 @@ int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader 
 	}
 
 	rd->details = *sum;
-	rd->offset  = 0;
-	rd->tail = 0;
+	rd->syncpoint_sec = 0;
+	rd->syncpoint_framenr = 0;
+	rd->virtualoffset = 0;
 	rd->eof = 0;
 	rd->fps = 1;
 	for (n=0; n<rd->details.nThread; n++)
 	{
+		memset(&rd->currheader[n], 0, sizeof(vdif_header));
 		rd->feof[n] = 0;
-		rd->head[n] = 0;
-		rd->desynched[n] = 0;
 		rd->fd[n] = fopen(rd->details.fileName, "r");
 	}
+
 	if (rd->fd[0] == NULL)
 	{
 		return -1;
 	}
 
+	// Helper buffers
 	resyncbuffer_ = (unsigned char *)malloc(resyncbuffersize_);
 	fillpattern_ = (unsigned char*)malloc(2*rd->details.frameSize);
 	for (n=0; n<2*rd->details.frameSize; n++)
@@ -274,64 +116,41 @@ int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader 
 		fillpattern_[n] = (v<<4) + v;
 	}
 
+	// Measure FPS over many frames until peak frame nr does not change
+	rd->fps = vdifreader_estimate_fps(rd);
+
+	// Update all thread-fds to their own first frame in file
 	vdifreader_reposition_all(rd, 0L);
 
 	return 0;
 }
 
 
-/** Read VDIF file, de-clumping VDIF threads in the process. */
-size_t vdifreaderRead(struct vdif_file_reader *rd, void *buf, size_t count)
+/**
+ * Close the VDIF file reader
+ */
+int vdifreaderClose(struct vdif_file_reader *rd)
 {
-	size_t nrd = 0, nremain = count;
-	if (rd == NULL || buf == NULL || rd->eof)
+	int n;
+	if (rd == NULL)
 	{
-		return 0;
+		return -1;
 	}
 
-	while (nrd < count)
+	for (n=0; n<rd->details.nThread; n++)
 	{
-		int threadIdx = (((size_t)rd->offset) / (size_t)rd->details.frameSize) % rd->details.nThread;
-		int inframeoffset = ((size_t)rd->offset) % ((size_t)rd->details.frameSize);
-		int inframeremain = rd->details.frameSize - inframeoffset;
-		int n = (inframeremain < nremain) ? inframeremain : nremain;
-		int err;
-
-		if (!rd->feof[threadIdx])
-		{
-			if (fread(buf, 1, n, rd->fd[threadIdx]) < 1)
-			{
-				rd->feof[threadIdx] = feof(rd->fd[threadIdx]);
-				rd->eof = vdifreader_check_eof(rd);
-				return nrd;
-			}
-			rd->tail = vdifreader_check_tailptr(rd);
-			if (n >= inframeremain)
-			{
-				err = vdifreader_find_next_threadframe(rd, threadIdx);
-				if (err)
-				{
-					rd->feof[threadIdx] = feof(rd->fd[threadIdx]);
-					rd->eof = vdifreader_check_eof(rd);
-				}
-			}
-		}
-		else
-		{
-			memcpy(buf, fillpattern_ + inframeoffset, n);
-		}
-
-		rd->offset += n;
-		nrd += n;
-		nremain -= n;
-		buf += n;
+		fclose(rd->fd[n]);
 	}
+	free(fillpattern_);
+	free(resyncbuffer_);
 
-        return nrd;
+	return 0;
 }
 
 
-/** Seek the VDIF reader */
+/**
+ * Seek the VDIF reader
+ */
 size_t vdifreaderSeek(struct vdif_file_reader *rd, size_t offset)
 {
 	int n;
@@ -344,7 +163,57 @@ size_t vdifreaderSeek(struct vdif_file_reader *rd, size_t offset)
 }
 
 
-/** Return statistics to help deduce VDIF thread "clumpiness" */
+/**
+ * Read bytes from VDIF file, de-clumping VDIF threads in the process.
+ */
+size_t vdifreaderRead(struct vdif_file_reader *rd, void *buf, size_t count)
+{
+	size_t nrd = 0, nremain = count;
+	if (rd == NULL || buf == NULL || rd->eof || count == 0)
+	{
+		return 0;
+	}
+
+	while (nrd < count)
+	{
+		int threadIdx = (((size_t)rd->virtualoffset) / (size_t)rd->details.frameSize) % rd->details.nThread;
+		int inframeoffset = ((size_t)rd->virtualoffset) % ((size_t)rd->details.frameSize);
+		int inframeremain = rd->details.frameSize - inframeoffset;
+                int nwanted = (inframeremain < nremain) ? inframeremain : nremain;
+
+		vdifreader_get_frame(rd, threadIdx, rd->syncpoint_sec, rd->syncpoint_framenr, buf, nwanted, inframeoffset);
+
+		// Bookkeeping
+		rd->virtualoffset += nwanted;
+		nrd += nwanted;
+		nremain -= nwanted;
+		buf += nwanted;
+		inframeremain -= nwanted;
+
+		// Advance to next timestamp
+		if ((inframeremain == 0) && (threadIdx == (rd->details.nThread - 1)))
+		{
+			if (rd->syncpoint_framenr < (rd->fps - 1))
+			{
+				rd->syncpoint_framenr++;
+			}
+			else
+			{
+				rd->syncpoint_sec++;
+				rd->syncpoint_framenr = 0;
+			}
+
+		}
+
+	}
+
+        return nrd;
+}
+
+
+/**
+ * Return statistics to help deduce VDIF thread "clumpiness"
+ */
 int vdifreaderStats(const struct vdif_file_reader *rd, struct vdif_file_reader_stats *st)
 {
 	int n;
@@ -386,21 +255,453 @@ int vdifreaderStats(const struct vdif_file_reader *rd, struct vdif_file_reader_s
 }
 
 
-/** Close the VDIF reader */
-int vdifreaderClose(struct vdif_file_reader *rd)
+//============================================================================
+
+
+/**
+ * Get current frame from all VDIF threads and determine
+ * the most likely common data-second and lowest frame nr
+ * in that data-second.
+ */
+static int vdifreader_determine_syncpoint(struct vdif_file_reader *rd)
 {
-	int n;
-	if (rd == NULL)
+	int maj_second = 0, maj_votes = 0;
+	int n, nr, sec;
+
+	// Majority vote on VDIF data-second (https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_majority_vote_algorithm)
+	for (n=0; n<rd->details.nThread; n++)
+	{
+
+		// Load current frame of thread into rd::currheader[n]
+		if (vdifreader_advance_to_frame_of_thread(rd, n) < 0)
+		{
+			continue;
+		}
+
+		// Keep track of most common second
+		sec = getVDIFFrameEpochSecOffset(&rd->currheader[n]);
+		//printf("thread %d is at sec %d frame %d\n", n, sec, getVDIFFrameNumber(&rd->currheader[n]));
+		if (maj_votes <= 0)
+		{
+			maj_second = sec;
+			maj_votes++;
+		}
+		else if (sec == maj_second)
+		{
+			maj_votes++;
+		}
+		else
+		{
+			maj_votes--;
+		}
+	}
+	rd->syncpoint_sec = maj_second;
+
+	// Lowest starting frame nr in that second
+	rd->syncpoint_framenr = 999999;
+	for (n=0; n<rd->details.nThread; n++)
+	{
+		if (vdifreader_header_looks_good(&rd->currheader[n], &rd->details))
+		{
+			sec = getVDIFFrameEpochSecOffset(&rd->currheader[n]);
+			nr = getVDIFFrameNumber(&rd->currheader[n]);
+			if ((sec == maj_second) && (nr < rd->syncpoint_framenr))
+			{
+				rd->syncpoint_framenr = nr;
+			}
+		}
+	}
+
+	//printf("majority vote: sec %d in %d threads\n", rd->syncpoint_sec, maj_votes);
+	//printf("lowest frame nr search: frame nr %d\n", rd->syncpoint_framenr);
+
+	return 0;
+}
+
+
+/**
+ * Read VDIF header assumed to be found at current read position
+ * of the underlying file descriptor of threadIdx. Does not
+ * alter the read pointer. Does not check whether the VDIF header
+ * is valid or garbage.
+ */
+static int vdifreader_peek_frame(const struct vdif_file_reader *rd, int threadIdx, vdif_header* vhdr)
+{
+	off_t pos;
+	assert(rd != NULL);
+	assert(vhdr != NULL);
+	assert(threadIdx <= rd->details.nThread);
+
+	if (rd->feof[threadIdx])
 	{
 		return -1;
 	}
 
-	for (n=0; n<rd->details.nThread; n++)
+	if (fread(vhdr, sizeof(vdif_header), 1, rd->fd[threadIdx]) < 1)
 	{
-		fclose(rd->fd[n]);
+		return -1;
 	}
-	free(fillpattern_);
-	free(resyncbuffer_);
+
+	if (fseeko(rd->fd[threadIdx], -sizeof(vdif_header), SEEK_CUR) < 0)
+	{
+		return -1;
+	}
 
 	return 0;
+}
+
+
+/**
+ * Check content of presumed header.
+ * @return 1 if the header looks legit, 0 if it looks like garbage
+ */
+static int vdifreader_header_looks_good(const struct vdif_header *vhdr, const struct vdif_file_summary *vdifinfo)
+{
+	int ok = (getVDIFFrameBytes(vhdr) == vdifinfo->frameSize);
+	ok &= (getVDIFBitsPerSample(vhdr) == vdifinfo->nBit);
+	ok &= (getVDIFEpoch(vhdr) == vdifinfo->epoch);
+	//ok &= (getVDIFThreadID(vhdr) <= vdifinfo->nThread); // not reliable since 1-threaded VDIF may contain Thread ID 123
+	//if (!ok)
+	//{
+	//	printf(" framebytes %d : ok %d\n", getVDIFFrameBytes(vhdr) , (getVDIFFrameBytes(vhdr) == vdifinfo->frameSize));
+	//	printf(" bits %d : ok %d\n", getVDIFBitsPerSample(vhdr) , (getVDIFBitsPerSample(vhdr) == vdifinfo->nBit));
+	//	printf(" epoch %d : ok %d\n", getVDIFEpoch(vhdr) , (getVDIFEpoch(vhdr) == vdifinfo->epoch));
+	//}
+
+	return ok;
+}
+
+
+/**
+ * Measure the frames-per-second (fps) by checking for peak frame nr
+ * over many enough frames. Stops when the peak frame nr has not
+ * changed during a largest expected nr of frames per sec per thread.
+ *
+ * @return estimated rate in frames per second
+ */
+static int vdifreader_estimate_fps(struct vdif_file_reader *rd)
+{
+	struct vdif_header vh;
+	int ndiscarded = 0;
+	int fps = 1;
+
+	// Max expected FPS: assume 16 Gbps at current frame size (max the Mark6 can cope with)
+	const int max_fps = (rd->details.nThread + 1) * 16e9 / (8.0 * (rd->details.frameSize - sizeof(vdif_header)));
+
+	// Go to beginnig of file
+	off_t orig_pos;
+	orig_pos = ftello(rd->fd[0]);
+	fseeko(rd->fd[0], 0, SEEK_SET);
+
+	// Check frame nrs until 'fps' stops incrementing
+	while (++ndiscarded < max_fps)
+	{
+		// Get frame header
+		if (vdifreader_advance_to_valid_frame(rd, 0, &vh) < 0)
+		{
+			break;
+		}
+
+		// Track peak frame number
+		if (getVDIFFrameNumber(&vh) >= fps)
+		{
+			fps = getVDIFFrameNumber(&vh) + 1;
+			ndiscarded = 0;
+		}
+
+		// Skip to next frame
+		fseeko(rd->fd[0], getVDIFFrameBytes(&vh), SEEK_CUR);
+
+		//printf("ndisc=%d fps=%d fnr=%d max_fps=%d fsz=%d\n", ndiscarded, fps, getVDIFFrameNumber(&vh), max_fps,  rd->details.frameSize );
+	}
+
+	// Revert to initial read position
+	fseeko(rd->fd[0], orig_pos, SEEK_SET);
+
+	return fps;
+}
+
+
+/**
+ * Go to a read position with a valid frame, including the current position in the search.
+ * Optionally stores the valid-looking VDIF frame header into user buffer 'hdr'.
+ *
+ * Resynchronizes to the next frame if the current position contains "garbage".
+ *
+ * @param hdr store the VDIF header into the buffer if buffer ptr not NULL
+ * @return 0 if next frame found and read pointer successfully set, or -1 on error/EOF
+ */
+static int vdifreader_advance_to_valid_frame(struct vdif_file_reader *rd, int threadIdx, vdif_header* store_hdr_to)
+{
+	static size_t framesz = 8224;
+	struct vdif_header vh;
+	int n;
+
+	assert(rd != NULL);
+	assert(threadIdx <= rd->details.nThread);
+
+	if (rd->feof[threadIdx])
+	{
+		return -1;
+	}
+
+	while (1)
+	{
+		// Get frame at current position
+		if (vdifreader_peek_frame(rd, threadIdx, &vh) <0)
+		{
+			return -1;
+		}
+
+		// Frame looks ok?
+		if (vdifreader_header_looks_good(&vh, &rd->details))
+		{
+			break;
+		}
+		else
+		{
+			// Resync to any thread ID
+			if (vdifreader_resync(rd, threadIdx) < 0)
+			{
+				printf("vdifreader_advance_to_valid_frame() encountered strange frame size and resync failed!\n");
+				rd->feof[threadIdx] = 1;
+				return -1;
+
+			}
+		}
+	}
+
+	if (store_hdr_to != NULL)
+	{
+		memcpy(store_hdr_to, &vh, sizeof(vdif_header));
+	}
+	return 0;
+}
+
+
+/**
+ * Find next frame for given thread index. Positions the read pointer of the
+ * underlying file descriptor to be at the start of the frame (header).
+ *
+ * @return 0 if next frame found and read pointer successfully set, or -1 on error/EOF
+ */
+static int vdifreader_advance_to_frame_of_thread(struct vdif_file_reader *rd, int threadIdx)
+{
+	struct vdif_header vh;
+	size_t framebytes;
+	int n, found=0;
+	off_t pos;
+
+	assert(rd != NULL);
+	assert(threadIdx <= rd->details.nThread);
+
+	if (rd->feof[threadIdx])
+	{
+		memset(&rd->currheader[n], 0, sizeof(vdif_header));
+		return -1;
+	}
+
+	while (!rd->feof[threadIdx] && !found)
+	{
+		// Look at frame header at current read position
+		if (vdifreader_advance_to_valid_frame(rd, threadIdx, &vh) < 0)
+		{
+			rd->feof[threadIdx] = 1;
+			break;
+		}
+		found = (getVDIFThreadID(&vh) == rd->details.threadIds[threadIdx]);
+
+		// Skip to next frame if no threadID match
+		if (!found)
+		{
+			if (fseeko(rd->fd[threadIdx], getVDIFFrameBytes(&vh), SEEK_CUR) != 0)
+			{
+				rd->feof[threadIdx] = 1;
+			}
+		}
+	}
+
+	if (!found)
+	{
+		memset(&rd->currheader[threadIdx], 0, sizeof(vdif_header));
+		return -1;
+	}
+
+	// Store info of current thread-frame
+	rd->sec[threadIdx] = getVDIFFrameEpochSecOffset(&vh);
+	memcpy(&rd->currheader[threadIdx], &vh, sizeof(vdif_header));
+
+	return 0;
+}
+
+
+/**
+ * Loads VDIF frame data of given second and framenr into user buffer,
+ * reading 'nbyte' number of bytes from in-frame offset 'offset'.
+ *
+ * When the thread-file is missing the requested frame, replacement
+ * data is returned instead.
+ */
+static int vdifreader_get_frame(struct vdif_file_reader *rd, int threadIdx, int sec, int framenr, char* outbuf, size_t nbyte, int offset)
+{
+	int useFile = (!rd->feof[threadIdx])
+		&& (sec == getVDIFFrameEpochSecOffset(&rd->currheader[threadIdx]))
+		&& (framenr == getVDIFFrameNumber(&rd->currheader[threadIdx]));
+
+	assert(rd->details.frameSize > 0);
+
+	// TODO: catch situation where src or framenr in a thread are not incrementing, e.g., jumbled frame order
+	// printf("vdifreader_get_frame(t:%d, sec:%d, nr:%d) thread is at sec:%d nr:%d\n", threadIdx, sec, framenr, getVDIFFrameEpochSecOffset(&rd->currheader[threadIdx]), getVDIFFrameNumber(&rd->currheader[threadIdx]));
+
+	// Crop reads to frame end
+	if ((nbyte + offset) > rd->details.frameSize)
+	{
+		nbyte = rd->details.frameSize - offset;
+	}
+
+	// Fill pattern or Invalid replacement frame if a frame is missing
+	if (!useFile)
+	{
+#if 1
+		if (offset < 32)
+		{
+			vdif_header vh = rd->currheader[threadIdx];
+			setVDIFFrameInvalid(&vh, 1);
+			setVDIFFrameEpochSecOffset(&vh, sec);
+			setVDIFFrameNumber(&vh, framenr);
+			memcpy(fillpattern_, &vh, sizeof(vh));
+
+		}
+#endif
+		memcpy(outbuf, fillpattern_ + offset, nbyte);
+	}
+	else
+	{
+		// TODO: could honor the 'offset' here rather than use it only for the fillpattern
+
+		// Actual frame from underlying thread-file
+		if (fread(outbuf, 1, nbyte, rd->fd[threadIdx]) < 1)
+		{
+			rd->feof[threadIdx] = feof(rd->fd[threadIdx]);
+			rd->eof = vdifreader_check_eof(rd);
+		}
+
+		// Next frame?
+		if ((nbyte + offset) >= rd->details.frameSize)
+		{
+			if (vdifreader_advance_to_frame_of_thread(rd, threadIdx) < 0)
+			{
+				rd->feof[threadIdx] = feof(rd->fd[threadIdx]);
+				rd->eof = vdifreader_check_eof(rd);
+			}
+		}
+
+	}
+
+	return 0;
+}
+
+
+/**
+ * Attempt to resynchronize inside the thread-stream. Does not check thread ID.
+ * Compares raw data in a sliding window worth two consecutive frames,
+ * trying to find a file offset that results in partially-matched VDIF headers.
+ *
+ * @return >=0 byte offset that produced the successful re-sync, or -1 on error/EOF
+ */
+static int vdifreader_resync(struct vdif_file_reader *rd, int threadIdx)
+{
+	struct vdif_header *vh1, *vh2;
+	off_t pos0;
+	int off;
+
+	assert(rd != NULL);
+	assert(threadIdx <= rd->details.nThread);
+
+	if (rd->feof[threadIdx])
+	{
+		return -1;
+	}
+
+	while (1)
+	{
+		pos0 = ftello(rd->fd[threadIdx]);
+
+		// Read two frames worth of data
+		size_t nrd = fread(resyncbuffer_, 2*rd->details.frameSize, 1, rd->fd[threadIdx]);
+		if (nrd < 1)
+		{
+			break;
+		}
+
+		// Determine what byte offset produces two consistent headers
+		for (off = 0; off < rd->details.frameSize-1; off++)
+		{
+	         	vh1 = (struct vdif_header *)(resyncbuffer_ + off);
+         		vh2 = (struct vdif_header *)(resyncbuffer_ + off + rd->details.frameSize);
+			if ( /* (threadID < 0 || getVDIFThreadID(vh1) == threadID) && */
+				getVDIFFrameBytes(vh1) == rd->details.frameSize &&
+				getVDIFFrameBytes(vh2) == rd->details.frameSize &&
+				getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
+				getVDIFFrameEpochSecOffset(vh2) - getVDIFFrameEpochSecOffset(vh1) < 2)
+			{
+				//printf("vdifreader_resync() th %d found valid frame at delta %d, framesize %d, new offset %zu\n", i, threadIdx, getVDIFFrameBytes(vh2), pos0+i);
+				fseeko(rd->fd[threadIdx], pos0+off, SEEK_SET);
+				return off;
+			}
+		}
+
+		// Skip first candidate "frame" (rewind by one, since had read two)
+		fseeko(rd->fd[threadIdx], -rd->details.frameSize, SEEK_CUR);
+        }
+
+	rd->feof[threadIdx] = 1;
+        return -1;
+}
+
+
+/**
+ * Restart file reader from a new byte offset.
+ */
+static size_t vdifreader_reposition_all(struct vdif_file_reader *rd, size_t offset)
+{
+	int n;
+
+	assert(rd != NULL);
+
+	// Location of first valid frame after @offset
+	fseeko(rd->fd[0], offset, SEEK_SET);
+	vdifreader_resync(rd, 0);
+	offset = ftello(rd->fd[0]);
+	rd->firstframeoffset = offset;
+	rd->virtualoffset = 0;
+
+	// Move to a valid frame in each VDIF thread
+	for (n=0; n<rd->details.nThread; n++)
+	{
+		memset(&rd->currheader[n], 0, sizeof(vdif_header));
+		rd->feof[n] = 0;
+		fseeko(rd->fd[n], offset, SEEK_SET);
+		vdifreader_advance_to_frame_of_thread(rd, n);
+	}
+
+	// Determine the (lowest-)common starting time
+	vdifreader_determine_syncpoint(rd);
+
+	return 0;
+}
+
+
+/**
+ * Check whether all VDIF threads have reached eof.
+ */
+static int vdifreader_check_eof(struct vdif_file_reader *rd)
+{
+	int eof = 1;
+	int n;
+	for (n=0; n<rd->details.nThread; n++)
+	{
+		eof = eof && rd->feof[n];
+	}
+	return eof;
 }
