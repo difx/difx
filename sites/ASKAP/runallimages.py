@@ -20,7 +20,7 @@ parser.add_argument("-x", "--xpol", help="Do xpol correction during calibration"
 parser.add_argument("-i", "--imagecube", default=False, help="Do imaging", action="store_true")
 parser.add_argument("--refant", type=int, default=3, help="Reference antenna")
 parser.add_argument("-P", "--prefix", type=str, default = "", help="Prefix for bin directory")
-
+parser.add_argument("--src", default="", help="Name of the target (e.g., FRB or Vela)")
 
 args = parser.parse_args()
 
@@ -32,6 +32,7 @@ nbins = args.nbins
 tdata = []
 targfile = []
 prefix=args.prefix
+src = args.src
 
 if args.rfisub:
     if args.targfile is '':
@@ -111,9 +112,9 @@ for i in range(nbins):
             refant = "--refant=" + str(args.refant)
         else: refant = ""
         
-        print "~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant)
+        print "~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9} --src={10}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src)
         os.system("rm -rf {0}_calibrated_uv.ms".format(cdatms))
-        os.system("~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant))
+        os.system("~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9} --src={10}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src))
         os.system("mkdir {0}bin{1:02g}".format(prefix, i))
         os.system("mv TARGET* {0}bin{1:02g}".format(prefix, i))
         if noisecen != '':
