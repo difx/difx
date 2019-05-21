@@ -538,6 +538,7 @@ int main(int argc, char **argv)
 					printf("No output was provided because the input parameters didn't make sense.  vdifmux() returned %d on the first call.  Perhaps nSort, nGap or chunkSize can be changed to make this work.\n", V);
 				}
 			}
+			printf("vdifmux() error, returned %d\n", V);
 			break;
 		}
 
@@ -602,7 +603,15 @@ int main(int argc, char **argv)
 
 		fwrite(dest, 1, stats.destUsed, out);
 
-		leftover = stats.srcSize - stats.srcUsed;
+		if (stats.srcUsed <= 0)
+		{
+				fprintf(stderr, "Weird: %d/%d bytes were consumed. Maybe input was all fill-pattern. Continuing.\n", stats.srcUsed, stats.srcSize);
+				leftover = 0;
+		}
+		else
+		{
+			leftover = stats.srcSize - stats.srcUsed;
+		}
 
 		if(leftover > 0)
 		{
