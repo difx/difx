@@ -4,7 +4,7 @@ from AIPS import AIPS
 from AIPSTask import AIPSTask
 from AIPSData import AIPSUVData, AIPSImage
 from optparse import OptionParser
-import os, sys, glob, vlbatasks
+import os, sys, datetime, socket, glob, vlbatasks
 
 ################################################################################
 # Global variables and option parsing
@@ -76,6 +76,11 @@ else:
     calibratoroutputfilename = os.getcwd() + '/' + options.calibrator.split('/')[-1][:-5] + "_calibrated_uv.fits"
 calibratormsfilename = calibratoroutputfilename[:-4] + "ms"
 
+# Define some output filenames
+bpfilename = os.path.abspath("bandpasses.bp.txt")
+fringsnfilename = os.path.abspath("delays.sn.txt")
+selfcalsnfilename = os.path.abspath("selfcal.sn.txt")
+xpolsnfilename = os.path.abspath("xpolfring.sn")
 
 # Check if the ms already exists, abort if so
 if os.path.exists(targetmsfilename):
@@ -98,6 +103,18 @@ if options.uvsrt:
 
 # Get the number of channels in the dataset
 numchannels = vlbatasks.getNumChannels(targetdata)
+
+# Get the reference frequency of the dataset
+reffreqs = []
+fqtable = targetdata.table('FQ', 1)
+for row in fqtable:
+    try:
+        for iffreq in row.if_freq:
+            freqentry = float(iffreq) + float(targetdata.header.crval[2])
+            reffreqs.append(float(iffreq) + float(targetdata.header.crval[2]))
+    except (AttributeError, TypeError):
+        freqentry = float(row.if_freq) + float(targetdata.header.crval[2])
+        reffreqs.append(float(row.if_freq) + float(targetdata.header.crval[2]))
 
 # Load up the calibrator data
 caldata = vlbatasks.zapAndCreateUVData("CRAFTCAL","UVDATA", aipsdisk, 1)
@@ -142,6 +159,9 @@ vlbatasks.fring(caldata, snversion, clversion, solintmins, inttimesecs,
 # Copy results
 vlbatasks.tacop(caldata, "SN", snversion, targetdata, snversion)
 
+# Write SN table to disk
+vlbatasks.writetable(caldata, "SN", snversion, fringsnfilename)
+
 # Calibrate
 vlbatasks.applysntable(caldata, snversion, "SELN", clversion, refant)
 vlbatasks.applysntable(targetdata, snversion, "SELN", clversion, refant)
@@ -163,7 +183,6 @@ if xpolmodelfile != "":
     vlbatasks.fitld_image(xpolmodelfile, xpolmodel)
     xpolsolintmins = 1
     inttimesecs = 0.5 # Doesn't matter if this is wrong
-    xpolsnfilename = os.getcwd() + "/xpolfring.sn"
     if os.path.exists(xpolsnfilename):
         os.remove(xpolsnfilename)
     vlbatasks.xpoldelaycal(caldata, clversion, refant,
@@ -211,6 +230,9 @@ vlbatasks.cpass(caldata, options.sourcename, clversion, scannumber)
 # Copy results
 vlbatasks.tacop(caldata, "BP", bpversion, targetdata, bpversion)
 
+# Write SN table to disk
+vlbatasks.writetable(caldata, "BP", bpversion, bpfilename)
+
 # Would be nice to plot bpass here....
 
 # Run selfcal
@@ -236,6 +258,9 @@ vlbatasks.singlesource_calib(splitcaldata, options.flux, splitsnversion, options
 vlbatasks.tacop(splitcaldata, "SN", splitsnversion, caldata, snversion)
 vlbatasks.tacop(splitcaldata, "SN", splitsnversion, targetdata, snversion)
 
+# Write SN table to disk
+vlbatasks.writetable(caldata, "SN", snversion, selfcalsnfilename)
+
 # Calibrate
 vlbatasks.applysntable(caldata, snversion, "SELN", clversion, refant)
 vlbatasks.applysntable(targetdata, snversion, "SELN", clversion, refant)
@@ -253,6 +278,32 @@ seqno = 1
 outputdata = vlbatasks.zapAndCreateUVData("CRAFTSRC","SPLIT",aipsdisk,seqno)
 vlbatasks.splitmulti(targetdata, clversion, outklass, options.sourcename, seqno)
 vlbatasks.writedata(outputdata, targetoutputfilename, True)
+
+# Create a README file for the calibration and a tarball with it plus all the calibration
+readmeout = open("README.calibration", "w")
+tarinputfiles = "%s %s %s" % (fringsnfilename.split('/')[-1], selfcalsnfilename.split('/')[-1], bpfilename.split('/')[-1])
+readmeout.write("This calibration was derived as follows:\n")
+readmeout.write("Calibrator file: %s\n" % options.calibrator)
+readmeout.write("Run on host: %s\n" % socket.gethostname())
+readmeout.write("At time: %s\n\n" % (str(datetime.datetime.now())))
+readmeout.write("The following set of files was produced and used for calibration:\n")
+readmeout.write("%s (frequency-independent delay and phase from FRING)\n" % fringsnfilename.split('/')[-1])
+readmeout.write("%s (frequency-independent complex gain [mostly just amplitude] from CALIB to set absolute flux scale)\n" % selfcalsnfilename.split('/')[-1])
+if xpolmodelfile != "":
+    readmeout.write("%s (frequency-independent, antenna-independent X-Y delay from FRING)\n" % xpolsnfilename.split('/')[-1])
+    tarinputfiles = tarinputfiles + " " + xpolsnfilename.split('/')[-1]
+readmeout.write("%s (frequency-dependent complex gain from CPASS [polynomial bandpass fit])\n\n" % bpfilename.split('/')[-1])
+readmeout.write("Remember that the delay specified in the SN tables generates zero phase at the reference frequency of the observation\n")
+readmeout.write("This reference frequency is set per subband (AIPS \"IF\"), but CRAFT datasets should only have one IF and hence one reference frequency.\n")
+readmeout.write("Reference frequency(s) of this file:\n")
+for i, reffreq in enumerate(reffreqs):
+    readmeout.write("AIPS IF %d ref (MHz): %.9f\n" % (i, reffreq))
+readmeout.write("\nFinally I note that long-term, we really should also be solving for the leakage and writing both it and the parallactic angle corrections out.\n")
+readmeout.close()
+calibtarballfile = "calibration.tar.gz"
+if os.path.exists(calibtarballfile):
+    os.system("rm -f " + calibtarballfile)
+os.system("tar cvzf %s README.calibration %s" % (calibtarballfile, tarinputfiles))
 
 # Convert to a measurement set
 casaout = open("loadtarget.py","w")
