@@ -1,8 +1,11 @@
 #!/bin/sh
+
+URL=ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori
+
 \rm -f usno500_finals.erp
-wget ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/usno500_finals.erp && \mv -f usno500_finals.erp .eops
+wget $URL/usno500_finals.erp && \mv -f usno500_finals.erp .eops
 \rm -f ut1ls.dat
-wget ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/ut1ls.dat && \mv -f ut1ls.dat .ut1ls
+wget $URL/ut1ls.dat && \mv -f ut1ls.dat .ut1ls
 
 
 
