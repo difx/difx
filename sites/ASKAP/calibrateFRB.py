@@ -46,6 +46,7 @@ parser.add_option("--imagesize", type=int, default=128, help="Size of the image 
 parser.add_option("--pixelsize", type=float, default=1, help="Pixel size in arcseconds")
 parser.add_option("--uvsrt", default=False, action="store_true", help="Run UVSRT on the data after loading")
 parser.add_option("--noisecentre", default="", help="CASA format position at which noise should be estimated, blank=don't make an off-source image")
+parser.add_option("--src", default="", help="Name of the target (e.g., FRB or Vela)")
 (options, junk) = parser.parse_args()
 AIPS.userno     = options.userno
 refant          = options.refant
@@ -77,10 +78,16 @@ else:
 calibratormsfilename = calibratoroutputfilename[:-4] + "ms"
 
 # Define some output filenames
-bpfilename = os.path.abspath("bandpasses.bp.txt")
-fringsnfilename = os.path.abspath("delays.sn.txt")
-selfcalsnfilename = os.path.abspath("selfcal.sn.txt")
-xpolsnfilename = os.path.abspath("xpolfring.sn")
+if xpolmodelfile != '':
+    xpol_prefix = '_xpol'
+else: xpol_prefix = '_noxpol'
+if options.src != '':
+    src = '_' + options.src
+else: src = options.src
+bpfilename = os.path.abspath("bandpasses{0}{1}.bp.txt".format(xpol_prefix, src))
+fringsnfilename = os.path.abspath("delays{0}{1}.sn.txt".format(xpol_prefix, src))
+selfcalsnfilename = os.path.abspath("selfcal{0}{1}.sn.txt".format(xpol_prefix, src))
+xpolsnfilename = os.path.abspath("xpolfring{0}{1}.sn".format(xpol_prefix, src))
 
 # Check if the ms already exists, abort if so
 if os.path.exists(targetmsfilename):
@@ -280,7 +287,7 @@ vlbatasks.splitmulti(targetdata, clversion, outklass, options.sourcename, seqno)
 vlbatasks.writedata(outputdata, targetoutputfilename, True)
 
 # Create a README file for the calibration and a tarball with it plus all the calibration
-readmeout = open("README.calibration", "w")
+readmeout = open("README{0}{1}.calibration".format(xpol_prefix, src), "w")
 tarinputfiles = "%s %s %s" % (fringsnfilename.split('/')[-1], selfcalsnfilename.split('/')[-1], bpfilename.split('/')[-1])
 readmeout.write("This calibration was derived as follows:\n")
 readmeout.write("Calibrator file: %s\n" % options.calibrator)
@@ -300,10 +307,10 @@ for i, reffreq in enumerate(reffreqs):
     readmeout.write("AIPS IF %d ref (MHz): %.9f\n" % (i, reffreq))
 readmeout.write("\nFinally I note that long-term, we really should also be solving for the leakage and writing both it and the parallactic angle corrections out.\n")
 readmeout.close()
-calibtarballfile = "calibration.tar.gz"
+calibtarballfile = "calibration{0}{1}.tar.gz".format(xpol_prefix, src)
 if os.path.exists(calibtarballfile):
     os.system("rm -f " + calibtarballfile)
-os.system("tar cvzf %s README.calibration %s" % (calibtarballfile, tarinputfiles))
+os.system("tar cvzf {0} README{1}{2}.calibration {3}".format(calibtarballfile, xpol_prefix, src, tarinputfiles))
 
 # Convert to a measurement set
 casaout = open("loadtarget.py","w")
