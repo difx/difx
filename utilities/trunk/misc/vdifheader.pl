@@ -4,22 +4,25 @@ use strict;
 use Getopt::Long;
 use Carp;
 use POSIX;
+use Cwd 'abs_path';
 
-sub turn2str ($);
+sub turn2str ($;$);
 sub readheader($);
 sub decodedata($$$$$);
 sub mjd2cal($);
 sub cal2mjd($$$;$);
+sub mjd2vextime($;$);
 
 my ($invalid, $legacy, $seconds, $refepoch, $frame, $version, $nchan, $framelength, $complex, $nbits, $threadid, $antid, $edv, $eud1, $eud2, $edu3, $eud4);
 
 my $once = 0;
 my $check = 0;
+my $dotime = 0;
 my $help = 0;
 my $skip = 0;
 my $data = 0;
 
-GetOptions('once'=>\$once, 'check'=>\$check, 'help'=>\$help, 'skip=i'=>\$skip, 'data'=>\$data);
+GetOptions('once'=>\$once, 'check'=>\$check, 'help'=>\$help, 'skip=i'=>\$skip, 'data'=>\$data, 'time'=>\$dotime);
 
 my ($lastframe, $lastsec);
 
@@ -30,14 +33,18 @@ Usage: vdifheader.pl [options] <vdiffile>
 Options:
    -once          Print only the first header
    -check         Do check frames increase monotonically with no gaps (single thread only?)
+   -time          Print time of first and last frame
+   -data          Decode data array
    -skip <bytes>  Skip <bytes> bytes at the start of each file    
+   
 EOF
 }
 
+my ($date);
 foreach (@ARGV) {
   open(VDIF, $_) || die "Could not open $_: $!\n";
 
-  print "Reading $_\n\n";
+  print "Reading $_\n\n" if !$dotime;
 
   my $first = 1;
   while (1) {
@@ -63,17 +70,33 @@ foreach (@ARGV) {
       last;
     }
 
-    print "-------------------\n" if (!$first && !$check);
+    print "-------------------\n" if (!$first && !$check && !$dotime);
     
     my $timestr = turn2str(fmod($seconds/60/60/24, 1.0));
 	
     my $mjd =  cal2mjd(1, ($refepoch%2)*6+1, 2000 + int($refepoch/2));
     $mjd += int($seconds/(60*60*24));
-    my ($day, $month, $year, $ut) = mjd2cal($mjd);
-    my $date = sprintf("%02d/%02d/%04d", $day, $month, $year);
-
-	
-    if (!$check) {
+    if ($dotime) {
+      $timestr = mjd2vextime($mjd);
+    } else {
+      my ($day, $month, $year, $ut) = mjd2cal($mjd);
+      $date = sprintf("%02d/%02d/%04d", $day, $month, $year);
+    }
+    
+    if ($dotime) {
+      if ($first) {
+	my $fullpath = abs_path($_);
+	print "$fullpath $timestr";
+	$first = 0;
+	my $filesize = (stat VDIF)[7];
+	my $seekpos = int (floor($filesize/$framelength)-1)*$framelength;
+	my $status = sysseek(VDIF, $seekpos, SEEK_SET);
+	next;
+      } else {
+	print "  $timestr\n";
+	last;
+      }
+    } elsif (!$check) {
       print<<EOF;
 INVALID:     $invalid
 LEGACY:      $legacy
@@ -122,8 +145,7 @@ EOF
     if ($data) {
       decodedata(*VDIF, $datasize, $nchan, $nbits, $complex);
     } else {
-      my $status;
-      $status = sysseek(VDIF, $datasize, 1);
+      my $status = sysseek(VDIF, $datasize, SEEK_CUR);
       if (!defined $status) {
 	close(VDIF);
 	last;
@@ -230,14 +252,14 @@ sub decodedata($$$$$) {
   }
 }
 
-sub turn2str ($) {
-  my($turn) = @_;
+sub turn2str ($;$) {
+  my($turn, $strsep) = @_;
   my $mode = 'H';
   if (($mode ne 'H') && ($mode ne 'D')) {
     carp 'turn2str: $mode must equal \'H\' or \'D\'';
     return undef;
   }
-  my $strsep = ':';
+  $strsep = ':' if (!defined $strsep);
 
   my ($angle, $str, $sign, $wholesec, $secfract, $min);
 
@@ -376,4 +398,45 @@ sub mjd2cal($) {
   my $day = ($temp2%306)/10+1;
 
   return($day, $month, $year, $ut);
+}
+
+sub leap ($) {
+  my $year = shift;
+  return (((!($year%4))&&($year%100))||(!($year%400)));
+}
+
+sub cal2dayno ($$$) {
+  my ($day, $month, $year) = @_;
+  my @days = (31,28,31,30,31,30,31,31,30,31,30,31);
+
+  $month--; # For array indexing
+
+  if (leap($year)) {
+    $days[1] = 29;
+  } else {
+    $days[1] = 28;
+  }
+
+  my $mon;
+  my $dayno = $day;
+  for ($mon=0; $mon<$month; $mon++) {
+    $dayno += $days[$mon];
+  }
+
+  return($dayno);
+}
+
+sub mjd2dayno($) {
+  my $mjd = shift;
+  croak "MJD negative" if ($mjd<0);
+  my ($day, $month, $year, $ut) = mjd2cal($mjd);
+
+  return  (cal2dayno($day,$month,$year), $year, $ut);
+}
+
+sub mjd2vextime($;$) {
+  my ($dayno, $year, $ut) = mjd2dayno(shift);
+  my $np = shift;
+  $np = 0 if (! defined $np);
+  return sprintf("%dy%03dd%s", $year, $dayno, turn2str($ut, 'hms'));
 }
