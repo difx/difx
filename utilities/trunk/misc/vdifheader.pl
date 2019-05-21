@@ -40,7 +40,7 @@ Options:
 EOF
 }
 
-my ($date);
+my ($date, $timestr);
 foreach (@ARGV) {
   open(VDIF, $_) || die "Could not open $_: $!\n";
 
@@ -72,15 +72,16 @@ foreach (@ARGV) {
 
     print "-------------------\n" if (!$first && !$check && !$dotime);
     
-    my $timestr = turn2str(fmod($seconds/60/60/24, 1.0));
+    #my $timestr = turn2str(fmod($seconds/60/60/24, 1.0));
 	
     my $mjd =  cal2mjd(1, ($refepoch%2)*6+1, 2000 + int($refepoch/2));
-    $mjd += int($seconds/(60*60*24));
+    $mjd += $seconds/(60*60*24);
     if ($dotime) {
       $timestr = mjd2vextime($mjd);
     } else {
       my ($day, $month, $year, $ut) = mjd2cal($mjd);
       $date = sprintf("%02d/%02d/%04d", $day, $month, $year);
+      $timestr = turn2str($ut);
     }
     
     if ($dotime) {
