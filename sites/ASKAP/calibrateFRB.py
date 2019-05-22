@@ -312,15 +312,18 @@ if os.path.exists(calibtarballfile):
     os.system("rm -f " + calibtarballfile)
 os.system("tar cvzf {0} README{1}{2}.calibration {3}".format(calibtarballfile, xpol_prefix, src, tarinputfiles))
 
+
 # Convert to a measurement set
 casaout = open("loadtarget.py","w")
 casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (calibratoroutputfilename, calibratormsfilename))
 casaout.close()
-os.system("casa --nologger -c loadtarget.py")
+os.system("~/packages/src/difx/sites/ASKAP/runloadtarget.sh")
+
 casaout = open("loadtarget.py","w")
 casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (targetoutputfilename, targetmsfilename))
 casaout.close()
-os.system("casa --nologger -c loadtarget.py")
+os.system("~/packages/src/difx/sites/ASKAP/runloadtarget.sh")
+
 
 
 # Run the imaging via CASA if desired
@@ -347,7 +350,7 @@ if options.imagecube:
             casaout.write('clean(vis="%s",imagename=%s,outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=%s,phasecenter=%s,restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebases, maskstr2, options.averagechannels, imsizestr, cellstr, phasecenterstr, pol))
             
         casaout.close()
-        os.system("casa --nologger -c imagescript.py")
+        os.system("~/packages/src/difx/sites/ASKAP/runimagescript.sh")
 
 
         # If desired, also make the JMFIT output
