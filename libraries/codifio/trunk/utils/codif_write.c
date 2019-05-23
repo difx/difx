@@ -1,3 +1,46 @@
+/***************************************************************************
+ *  Copyright (C) 2018-2019 by Chris Phillips                              *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id: $
+// $HeadURL: $
+// $LastChangedRevision: $
+// $Author:$
+// $LastChangedDate: $
+//
+//============================================================================
+
+/**********************************************************************************************
+
+  codif_write
+
+  Read UDP packets from an ADE PAF with "Streaming" Firmware and write resulting data to local file
+  Data is assumed to be 16bit complex and a lot of fixes are made to the data based on the PAF
+  format. 
+
+  Do not use on "generic" codif data stream  - this is unlikely to work
+
+
+ **********************************************************************************************/
+
+
 #ifdef __APPLE__
 #define OSX
 #define OPENOPTIONS O_WRONLY|O_CREAT|O_TRUNC
@@ -34,7 +77,7 @@
 #include <math.h>
 #include <fcntl.h>
 
-#include "codifio.h"
+#include <codifio.h>
 
 #define MAXSTR              200 
 #define MAXPACKETSIZE       9500
@@ -95,6 +138,7 @@ int main (int argc, char * const argv[]) {
   int padding = 0;
   int threadid = -1;
   int scale = 0;
+  int invert = 0;
   
   struct option options[] = {
     {"port", 1, 0, 'p'},
@@ -106,6 +150,7 @@ int main (int argc, char * const argv[]) {
     {"updatetime", 1, 0, 'u'},
     {"filesize", 1, 0, 'f'},
     {"scale", 1, 0, 's'},
+    {"invert", 0, 0, 'I'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -113,7 +158,7 @@ int main (int argc, char * const argv[]) {
   updatetime = DEFAULT_UPDATETIME;
 
   while (1) {
-    opt = getopt_long_only(argc, argv, "T:P:mGg:p:t:h", options, NULL);
+    opt = getopt_long_only(argc, argv, "i:T:P:p:t:h", options, NULL);
     if (opt==EOF) break;
 
     switch (opt) {
@@ -180,6 +225,10 @@ int main (int argc, char * const argv[]) {
 
     case 'o':
       fileprefix = strdup(optarg);
+      break;
+
+    case 'I':
+      invert = 1;
       break;
 
     case 'h':
@@ -288,8 +337,16 @@ int main (int argc, char * const argv[]) {
     for (i=0; i<8; i++) {
       h64[i] = bswap_64(h64[i]);
     }
-    for (i=0; i<(nread-CODIF_HEADER_BYTES)/sizeof(int16_t);i++) {
-      cdata[i] = bswap_16(cdata[i]);
+    if (invert) {
+      for (i=0; i<(nread-CODIF_HEADER_BYTES)/sizeof(int16_t);i++) {
+	cdata[i] = bswap_16(cdata[i]);
+	i++;
+	cdata[i] = -bswap_16(cdata[i]);
+      }
+    } else {
+      for (i=0; i<(nread-CODIF_HEADER_BYTES)/sizeof(int16_t);i++) {
+	cdata[i] = bswap_16(cdata[i]);
+      }
     }
     t2 = tim();
 
