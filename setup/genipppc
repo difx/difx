@@ -58,9 +58,9 @@ def getippversion(path):
 				print "Got version ", m.group(1)
 				return (path, m.group(1))
 			if (major == None):
-			    major = search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
+			    major = search('#define\s+IPP_VERSION_MAJOR\s+(\S+)', line)
 			if (minor == None):
-			    minor = search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
+			    minor = search('#define\s+IPP_VERSION_MINOR\s+(\S+)', line)
 		if (major != None and minor != None):
 			print "Have version ", major.group(1) + "." + minor.group(1)
 			return (path, major.group(1) + "." + minor.group(1))
