@@ -43,6 +43,7 @@ parser.add_option("-p","--phasecenter", default="",
 #                  help="Run lpcal to try and correct any leakage present")
 parser.add_option("-x", "--xpoldelaymodelfile", default="", help="Model to use for xpol delay correction (blank = no correction)")
 parser.add_option("--imagesize", type=int, default=128, help="Size of the image to make")
+parser.add_option("--xcorplotsmooth", type=int, default=32, help="Length of the smoothing kernel in channels for xcor plotting")
 parser.add_option("--pixelsize", type=float, default=1, help="Pixel size in arcseconds")
 parser.add_option("--uvsrt", default=False, action="store_true", help="Run UVSRT on the data after loading")
 parser.add_option("--noisecentre", default="", help="CASA format position at which noise should be estimated, blank=don't make an off-source image")
@@ -53,6 +54,7 @@ refant          = options.refant
 imagesize       = options.imagesize
 pixelsize       = options.pixelsize
 xpolmodelfile   = options.xpoldelaymodelfile
+xcorplotsmooth  = options.xcorplotsmooth
 snversion       = 1
 clversion       = 1
 aipsdisk        = 1
@@ -87,7 +89,10 @@ else: src = options.src
 bpfilename = os.path.abspath("bandpasses{0}{1}.bp.txt".format(xpol_prefix, src))
 fringsnfilename = os.path.abspath("delays{0}{1}.sn.txt".format(xpol_prefix, src))
 selfcalsnfilename = os.path.abspath("selfcal{0}{1}.sn.txt".format(xpol_prefix, src))
-xpolsnfilename = os.path.abspath("xpolfring{0}{1}.sn".format(xpol_prefix, src))
+xpolsnfilename = os.path.abspath("xpolfring{0}{1}.sn.txt".format(xpol_prefix, src))
+bptableplotfilename = os.path.abspath("bptable{0}{1}.ps".format(xpol_prefix, src))
+uncalxcorplotfilename = os.path.abspath("uncalxcor{0}{1}.ps".format(xpol_prefix, src))
+allcalxcorplotfilename = os.path.abspath("allcalxcor{0}{1}.ps".format(xpol_prefix, src))
 
 # Check if the ms already exists, abort if so
 if os.path.exists(targetmsfilename):
@@ -167,6 +172,8 @@ vlbatasks.fring(caldata, snversion, clversion, solintmins, inttimesecs,
 vlbatasks.tacop(caldata, "SN", snversion, targetdata, snversion)
 
 # Write SN table to disk
+if os.path.exists(fringsnfilename):
+    os.system("rm -f " + fringsnfilename)
 vlbatasks.writetable(caldata, "SN", snversion, fringsnfilename)
 
 # Calibrate
@@ -237,10 +244,16 @@ vlbatasks.cpass(caldata, options.sourcename, clversion, scannumber)
 # Copy results
 vlbatasks.tacop(caldata, "BP", bpversion, targetdata, bpversion)
 
-# Write SN table to disk
+# Write BP table to disk
+if os.path.exists(bpfilename):
+    os.system("rm -f " + bpfilename)
 vlbatasks.writetable(caldata, "BP", bpversion, bpfilename)
 
-# Would be nice to plot bpass here....
+# Plot the bandpass table
+bptableplotfilename = os.path.abspath("bptable{0}{1}.ps".format(xpol_prefix, src))
+plotsperpage = 4
+plotbptable = True
+vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, bptableplotfilename)
 
 # Run selfcal
 applybandpasscal = True
@@ -266,6 +279,8 @@ vlbatasks.tacop(splitcaldata, "SN", splitsnversion, caldata, snversion)
 vlbatasks.tacop(splitcaldata, "SN", splitsnversion, targetdata, snversion)
 
 # Write SN table to disk
+if os.path.exists(selfcalsnfilename):
+    os.system("rm -f " + selfcalsnfilename)
 vlbatasks.writetable(caldata, "SN", snversion, selfcalsnfilename)
 
 # Calibrate
@@ -273,6 +288,15 @@ vlbatasks.applysntable(caldata, snversion, "SELN", clversion, refant)
 vlbatasks.applysntable(targetdata, snversion, "SELN", clversion, refant)
 snversion += 1
 clversion += 1
+
+# Plot the uncalibrated and calibrated cross-correlation results
+uncalxcorplotfilename = os.path.abspath("uncalxcor{0}{1}.ps".format(xpol_prefix, src))
+allcalxcorplotfilename = os.path.abspath("allcalxcor{0}{1}.ps".format(xpol_prefix, src))
+plotbptable = False
+plotsperpage = 4
+ifs = [0,0]
+vlbatasks.plotbandpass(caldata, -1, plotbptable, plotsperpage, uncalxcorplotfilename, 0, ifs, xcorplotsmooth)
+vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, allcalxcorplotfilename, clversion, ifs, xcorplotsmooth)
 
 # Run SPLIT and write output data for calibrator
 seqno = 1
