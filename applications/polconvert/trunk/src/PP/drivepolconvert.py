@@ -437,6 +437,7 @@ def deduceZoomIndicies(o):
         print 'Remote list is',o.remotelist,'(indices start at 1)'
         print 'Jobs now',o.djobs
     # If the user supplied a band, check that it agrees
+    print 'mfqlst is', mfqlst
     if len(mfqlst) == 1:
         medianfreq = float(mfqlst.pop())
     elif len(mfqlst) > 1:
