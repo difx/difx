@@ -1,4 +1,4 @@
-AC_INIT([dirlist], [0.1], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([dirlist], [0.2], [Walter Brisken <wbrisken@nrao.edu>])
 
 AM_CONFIG_HEADER([config.h])
 

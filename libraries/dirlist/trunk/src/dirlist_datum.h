@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2016-2017 by Walter Brisken                             *
+ *   Copyright (C) 2016-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,7 +44,7 @@ public:
 	int getMjdStart() const { return mjdStart; }
 	double getSecStart() const { return secStart; }
 	int getIntSecStart() const { return static_cast<int>(secStart); }
-	int getIntNSStart() const { return static_cast<int>(1000000000.0*(secStart - static_cast<int>(secStart) )); }
+	int getIntNSStart() const { return static_cast<int>(1000000000.0*(secStart - static_cast<int>(secStart) ) + 0.01); }
 	double getFullMjdStart() const { return mjdStart + secStart/86400.0; }
 	double getFullMjdEnd() const { return mjdStart + (secStart+duration)/86400.0; }
 	double getDuration() const { return duration; }
