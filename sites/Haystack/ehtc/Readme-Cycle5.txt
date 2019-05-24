@@ -3,11 +3,12 @@
 #
 # This version is appropriate to Cycle5 (b1..b4)
 # The template for this file is in:     $ehtc/Readme-Cycle5.txt
-# rename it to:      $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile
+# rename it to:  $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
 #
 # Make a copy for each band/track and customize the environment
 # variables at the top of the ENVIRONMENT section.
 #  v${vers}${ctry}  refers to the DiFX correlation output used
+#  ${stry}          refers to the sub-band (b1..4) correlation try
 #  p${iter}         refers to the polconvert iteration
 #  r${relv}         refers to the release name
 #
@@ -59,6 +60,7 @@ export exp=e18...
 export vers=?       # major correlator version
 export ctry=''      # minor correlator version
 export subv=b?      # b1 b2 b3 b4
+export stry='a'     # minor correlator version
 export iter=?       # numbered consecutively
 export relv=?       # archive release name number
 export flab=''      # re-fourfitting version (if needed)
@@ -70,25 +72,31 @@ export expn=3...    # HOPS exp # (from Mike Titus)
 # casa --nologger --nologfile -c $DIFXROOT/share/polconvert/DPFU_scanner.py
 # from which a single dpfu (degrees / flux unit) should be estimated for
 # the track or campaign.
-export pcal=TRACK_?                            # per QA2 delivery
-export pdir=$hays/$exp/$exp-$vers/qa2
-export dpfu=0.0308574                          # ave over session, val TBD
-export scmp='PV,MG,SW,AX,LM,SZ'                # cycle5
-export opts="-r -P15 -S $scmp -f 4 -A $dpfu -q v8"
+export plab=<track>-<exp>-<yyyymmdd>           # external QA2 file label
+export pcal=TRACK_?                            # internal QA2 label
+
+# see the tarball script for what this does, should be false
 export fitsname=false
-export aeditjob=$ehtc/ehtc-aeditjob.sh
+
+# this is an average over the session/all bands
+export dpfu=0.0308574
+export scmp='PV,MG,SW,AX,LM,SZ,GL,MM'
+# -P is how many threads, -q v8 is the default
+export opts="-r -P15 -S $scmp -f 4 -A $dpfu -q v8"
 
 # derived vars
 export release=$arch/$exp/$exp-$relv
-export dout=$corr/$exp/v${vers}$ctry/$subv
+export dout=$corr/$exp/v${vers}$ctry/$subv$stry
 export evs=$exp-$vers-$subv
 export ers=$exp-$relv-$subv
-export ptar=$pcal???label???.APP_DELIVERABLES.tgz
+export pdir=$hays/$exp/$exp-$vers/qa2
+export ptar=$plab.APP_DELIVERABLES.tgz
+export aeditjob=$ehtc/ehtc-aeditjob.sh
 
 # check:
 wordcount=`(
 echo =============================================================== && \
-echo $exp $vers .$ctry. $subv $iter $relv .$flab. $expn && \
+echo $exp $vers .$ctry. $subv .$stry. $iter $relv .$flab. $expn && \
 echo $evs $ers $opts $fitsname $aeditjob && \
 echo $dout && \
 echo $ptar $pcal && \
@@ -100,19 +108,19 @@ type mpifxcorr && \
 type fourfit && \
 echo =============================================================== 
 ) | wc -w`
-[ "$wordcount" -eq 39 ] && echo variables are ok || echo issue with variables
+[ "$wordcount" -eq 40 ] && echo variables are ok || echo issue with variables
 
 # Nth TIME SETUP =================
-cd $work/$exp/v${vers}${ctry}p${iter}/$subv
+cd $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
 
 # ONE TIME SETUP =================
 false && { # ONE TIME SETUP
 [ -d $work/$exp/v${vers}${ctry}p${iter} ] ||
     mkdir $work/$exp/v${vers}${ctry}p${iter}
-[ -d $work/$exp/v${vers}${ctry}p${iter}/$subv ] ||
-    mkdir $work/$exp/v${vers}${ctry}p${iter}/$subv
+[ -d $work/$exp/v${vers}${ctry}p${iter}/$subv${stry} ] ||
+    mkdir $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
 [ -d $release ] || mkdir -p $release
-cd $work/$exp/v${vers}${ctry}p${iter}/$subv
+cd $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
 
 # once per trak, not per band, set up for polconvert data
 # from the mirror after consultation with the other correlator
@@ -146,6 +154,7 @@ cp -p $dout/*vex.obs .
 [ -d $dout/$expn ] && mv $dout/$expn $dout/$expn.save
 
 # ehtc-tarballs.sh haxp expects *.codes in $dout otherwise it fails silently
+[ -f $dout/$exp.codes ] && cmp $ehtc/ehtc-template.codes $dout/$exp.codes ||
 cp -p $ehtc/ehtc-template.codes $dout/$exp.codes
 
 # clean slate fourfit control file
@@ -174,7 +183,7 @@ ls -l $ers.conf
 # maintain notes while you execute and post this file periodically to
 [ -d $release/logs ] || mkdir $release/logs
 # verify that this file is:
-# $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile
+ls -l $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
 
 # provide a number of summary reports prior to any grinding
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -B > $ers-bl-pol-map.txt
@@ -184,20 +193,22 @@ $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -R > $ers-jobs-map.txt
 ( cd $dout ; summarizeDifxlogs.py    ) > $ers-difxlog-sum.txt
 ( cd $dout ; summarizeDifxlogs.py -c ) > $ers-difxlog-clr.txt
 cp -p $ers*.txt $release/logs
-cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
+cp -p $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile $release/logs
 
 #
 # run the GENERAL PROCESSING commands on one or three jobs to make
 # suitable data for generating "good enough" manual phase cals
 #
 ### Notes on building $ers.conf
-# pick scans to use grep from *jobs*
+# pick scans to use based on greps from *jobs*
 # stations: ...
 awk '{print $5}' $ers-jobs-map.txt | tr '-' \\012 | sort | uniq -c
 # types of baselines: ...
 awk '{print $5}' $ers-jobs-map.txt | sort | uniq -c
-
+# and set jobs and target accordingly
+target=...
 jobs=`echo $exp-$vers-${subv}_{,}.input` ; echo $jobs
+
 prepolconvert.py -v -k -s $dout $jobs
 drivepolconvert.py -v $opts -l $pcal $jobs
 for j in $jobs ;\
@@ -205,7 +216,7 @@ do difx2mark4 -e $expn -s $exp.codes --override-version ${j/input/difx} ; done
 
 
 # identify roots:
-roots=`cd $expn ; ls */target*` ; echo $roots
+roots=`cd $expn ; ls */$target*` ; echo $roots
 cd $expn ; cp ../$ers.conf .
 # For each root run this command, but set -s argument
 # with a comma-sep list of single letter station codes
@@ -257,11 +268,11 @@ rm -rf ${jobs//input/*}
 #--------------------------------------------------------------------------
 #
 # Final Steps ======================
-# This section is always MANUL.
+# This section is always MANUAL.
 #
 false && {
 # save logfile incrementally or when done:
-cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
+cp -p $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile $release/logs
 ls -l $release/logs
 
 # capture the performance on polconversion for future reference
@@ -320,7 +331,7 @@ for r in tb-* ; do pushd $r ; nohup ./release.sh & popd ; done
 $ehtc/ehtc-release-check.sh
 
 # one last time
-cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
+cp -p $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile $release/logs
 ls -l $release/logs
 
 # Cleanup list ======================
