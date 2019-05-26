@@ -1,6 +1,7 @@
 Version 2.0.2
 * Post DiFX-2.6
 * mk6gather: add command line arguments for output and verbosity
+* mk6gather: add command line argument for max bytes to copy
 
 Version 2.0.1
 * add "mark6gather" functions (were in vdifio).  These have partially overlapping functionality w/ the mark6sg functions.

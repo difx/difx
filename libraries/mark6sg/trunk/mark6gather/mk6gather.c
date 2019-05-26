@@ -33,8 +33,8 @@
 #include "mark6gather.h"
 
 const char program[] = "mk6gather";
-const char version[] = "1.1";
-const char verdate[] = "20190508";
+const char version[] = "1.2";
+const char verdate[] = "20190526";
 
 const char defaultOutfile[] = "gather.out";
 
@@ -49,6 +49,8 @@ const void usage(const char *prog)
 	printf("  -v             be more verbose.  -v -v for even more.\n\n");
 	printf("  --output <outfile>\n");
 	printf("  -o <outfile>   send output to <outfile> [default: %s].\n\n", defaultOutfile);
+	printf("  --bytes <bytes>\n");
+	printf("  -b <bytes>     stop process after <bytes> have been copied\n\n");
 	printf("<fileset template> is a glob expression selecting Mark6 files to.\n");
 	printf("read.  This is usually the name of the scan given to the recorder,\n");
 	printf("e.g., BB407A_LA_No0001\n\n");
@@ -66,6 +68,8 @@ int main(int argc, char **argv)
 	const char *outfile = defaultOutfile;
 	const char *fileset = 0;
 	int verbose = 0;
+	long long int maxBytes = 0;
+	long long int bytesWritten = 0;
 
 	if(argc < 2)
 	{
@@ -93,6 +97,10 @@ int main(int argc, char **argv)
 				if(strcmp(argv[a], "-o") == 0 || strcmp(argv[a], "--outfile") == 0)
 				{
 					outfile = argv[a+1];
+				}
+				else if(strcmp(argv[a], "-b") == 0 || strcmp(argv[a], "--bytes") == 0)
+				{
+					maxBytes = atoll(argv[a+1]);
 				}
 				else
 				{
@@ -175,11 +183,24 @@ int main(int argc, char **argv)
 			}
 			break;
 		}
+
+		if(maxBytes > 0 && bytesWritten + n > maxBytes)
+		{
+			n = maxBytes - bytesWritten;
+		}
+
 		if(verbose > 0)
 		{
-			fprintf(stderr, "%d  %d/%d\n", i, n, GatherSize);
+			fprintf(stderr, "%d  %d/%d  %Ld/%Ld\n", i, n, GatherSize, bytesWritten + n, maxBytes);
 		}
 		fwrite(buf, 1, n, out);
+
+		bytesWritten += n;
+
+		if(maxBytes > 0 && bytesWritten >= maxBytes)
+		{
+			break;
+		}
 	}
 	free(buf);
 

@@ -4,7 +4,7 @@ c_sources = mark6gather.c
 library_includedir = $(includedir)/mark6sg
 library_include_HEADERS = $(h_sources)
 
-INCLUDES = -I$(top_srcdir)/mark6sg
+AM_CPPFLAGS = -I$(top_srcdir)/mark6sg
 
 lib_LTLIBRARIES = libmark6gather.la
 
