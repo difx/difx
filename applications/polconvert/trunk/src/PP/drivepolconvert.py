@@ -391,7 +391,7 @@ def deduceZoomIndicies(o):
                 if site in antmap:
                     plotant = antmap[site] + 1
                     o.remotename.append(site)
-                    o.remote_map.append(str(antmap.keys()))
+                    o.remote_map.append(str(sorted(antmap.keys())))
                     break
             o.remotelist.append(plotant)
             antmap = {}
@@ -432,8 +432,9 @@ def deduceZoomIndicies(o):
     if o.verb:
         for j,r,s,m in map(lambda x,y,z,w:(x,y,z,w),
             o.nargs, o.remotelist, o.remotename, o.remote_map):
-            print "%s<->%s(%s%s)," % (j,r,s,m),
-        print '\nRemote list len is',len(o.remotelist),'index is',o.remote
+            print "%s<->%s(%s) %s" % (j,s,r,m)
+        print 'Remote list len is',len(o.remotelist),'index is',o.remote
+        if o.remote == -1: print '(index of -1 means "not used")'
         print 'Remote list is',o.remotelist,'(indices start at 1)'
         print 'Jobs now',o.djobs
     # If the user supplied a band, check that it agrees
