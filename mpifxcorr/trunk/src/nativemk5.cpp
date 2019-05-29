@@ -1150,20 +1150,27 @@ void NativeMk5DataStream::loopfileread()
       struct timespec abs_timeout = {0};
       abs_timeout.tv_sec = 5;
       perr = pthread_mutex_timedlock(&(bufferlock[lastvalidsegment]), &abs_timeout);
-      if (perr == ETIMEDOUT)
+      if(perr == ETIMEDOUT)
       {
           cinfo << startl << "NativeMk5DataStream readthread " << mpiid << " still waiting to lock buffer section " << lastvalidsegment << endl;
           (void)difxMessageSendMark5Status(&mk5status);
-          continue;
+
+          //undo the advancement of lastvalidsegment
+          lastvalidsegment = (lastvalidsegment + numdatasegments - 1)%numdatasegments;
+          
+	  continue;
       }
-      if(perr != 0)
-        csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
+      else if(perr != 0)
+      {
+          csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
+      }
 
       //unlock the previous section
       perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
       if(perr != 0)
-        csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
-
+      {
+          csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      }
       //do the read
       moduleToMemory(lastvalidsegment);
       numread++;
