@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, glob, math, argparse
+import os, sys, glob, math, argparse, getpass
 
 # Convenience function
 def posradians2string(rarad, decrad):
@@ -178,12 +178,14 @@ for i in range(npol):
         if not keepCodif or not os.path.exists(codifName):
             runline = "CRAFTConverter %s %s" % (f, codifName)
             if args.slurm:
+                currentuser = getpass.getuser()
                 totalnumcodiffiles += 1
                 output = open("convertonecodif.%d" % (totalnumcodiffiles),"w")
                 output.write("#!/bin/bash\n")
                 output.write(". /home/{0}/setup_difx.$HOSTNAME\n".format(currentuser))
                 output.write(runline + "\n")
                 output.close()
+                os.system("chmod 775 convertonecodif.%d" % totalnumcodiffiles)
             else:
                 if args.ts > 0:
                     runline = "tsp " + runline
@@ -206,7 +208,7 @@ if args.slurm:
     output.write("#SBATCH --mem-per-cpu=200\n\n")
     output.write("for i in {1..%d}\n" % totalnumcodiffiles)
     output.write("do\n")
-    output.write("   srun -n1 --exclusive ./convert.$i &\n")
+    output.write("   srun -n1 --exclusive ./convertonecodif.$i &\n")
     output.write("done\n")
     output.write("wait\n")
     output.close()
