@@ -161,9 +161,8 @@ if args.ts > 0:
     ret = os.system("tsp -S {}".format(args.ts))
     if (ret!=0): sys.exit(ret)
 
-# FIXME: Add ability to run CRAFTConverter via batch/slurm
-
-# Run the converter for each vcraft file
+# Run through each vcraft file, converting (or writing a mini-script to be run by slurm)
+totalnumcodiffiles = 0
 antlist = ""
 codifFiles = []
 for i in range(npol):
@@ -178,12 +177,42 @@ for i in range(npol):
         codifName = "%s.p%d.codif" % (antname, i)
         if not keepCodif or not os.path.exists(codifName):
             runline = "CRAFTConverter %s %s" % (f, codifName)
-            if args.ts > 0:
-                runline = "tsp " + runline
-            print runline
-            ret = os.system(runline)
-            if (ret!=0): sys.exit(ret)
+            if args.slurm:
+                totalnumcodiffiles += 1
+                output = open("convertonecodif.%d" % (totalnumcodiffiles),"w")
+                output.write("#!/bin/bash\n")
+                output.write(". /home/{0}/setup_difx.$HOSTNAME\n".format(currentuser))
+                output.write(runline + "\n")
+                output.close()
+            else:
+                if args.ts > 0:
+                    runline = "tsp " + runline
+                print runline
+                ret = os.system(runline)
+                if (ret!=0): sys.exit(ret)
         codifFiles[i].append(codifName)
+
+# If we running via batch, run that now
+if args.slurm:
+    # Produce a overall sbatch script for the CRAFT Conversion stage
+    output = open("runcraftconversionbatch.sh","w")
+    output.write("#!/bin/bash\n")
+    output.write("#\n")
+    output.write("#SBATCH --job-name=test_craftconverter\n")
+    output.write("#SBATCH --output=testt_craftconverter.txt\n")
+    output.write("#\n")
+    output.write("#SBATCH --ntasks=16\n")
+    output.write("#SBATCH --time=2:00\n")
+    output.write("#SBATCH --mem-per-cpu=200\n\n")
+    output.write("for i in {1..%d}\n" % totalnumcodiffiles)
+    output.write("do\n")
+    output.write("   srun -n1 --exclusive ./convert.$i &\n")
+    output.write("done\n")
+    output.write("wait\n")
+    output.close()
+
+    # Run that sbatch script
+    os.system("sbatch --wait runcraftconversionbatch.sh")
 
 # Write a machines file and a run.sh file
 output = open("machines","w")

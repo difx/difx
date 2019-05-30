@@ -137,7 +137,10 @@ for e in examplefiles:
     if args.forceFFT:
         torun += " --forceFFT"
     if args.slurm:
-        torun += " --slurm -k" #FIXME: Take away the -k
+        torun += " --slurm"
+        homedir = os.path.expanduser('~') + "/"
+        if os.path.exists(homedir + ".eops.new") and os.path.getsize(homedir + ".eops.new") > 0:
+            os.system("mv -f " + homedir + ".eops.new " + homedir + ".eops")
 
     beamname = os.path.basename(beamdirs[0])
     torun += ' --fpga %s "%s/ak*/%s/*%s*vcraft"' % (freqlabel, timestep, beamname, freqlabel)
