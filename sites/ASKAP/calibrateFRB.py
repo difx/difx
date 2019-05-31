@@ -37,6 +37,8 @@ parser.add_option("-F", "--flagfile", default="",
                   help="Flag file to apply to calibrator data only, if desired. Used to ensure RFI doesn't corrupt FRING or BPASS.")
 parser.add_option("-g", "--tarflagfile", default="", 
                   help="Flag file to apply to target data only, if desired. Used to flag any necessary channels for, e.g., RFI or missing data")
+parser.add_option("--shadow", nargs=2, default=None,
+                  help="Set if flagging due to shadowing is desired. Takes two arguments: arg1 > 0 flag for shadowing; shadow diameter in m. arg2 flag for cross-talk; baseline (BL) in m")
 parser.add_option("-p","--phasecenter", default="",
                   help="phase center for the target field (blank will leave it at correlation centre)")
 #parser.add_option("-l", "--leakagecorrect", default=False, action="store_true", 
@@ -140,10 +142,18 @@ if options.uvsrt:
 # Flag the calibrator data, if desired
 if options.flagfile != "":
     vlbatasks.userflag(caldata, 1, options.flagfile)
+if options.shadow:
+    shadowdiameter = float(options.shadow[0])
+    xtalkbl = float(options.shadow[1])
+    vlbatasks.shadowflag(caldata, 2, shadowdiameter, xtalkbl)
 
 # Flag the target data, if desired
 if options.tarflagfile != "":
     vlbatasks.userflag(targetdata, 1, options.tarflagfile)
+if options.shadow:
+    shadowdiameter = float(options.shadow[0])
+    xtalkbl = float(options.shadow[1])
+    vlbatasks.shadowflag(targetdata, 2, shadowdiameter, xtalkbl)
 
 # Run CLCOR to correct PANG if needed
 if xpolmodelfile != "":
@@ -347,7 +357,6 @@ casaout = open("loadtarget.py","w")
 casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (targetoutputfilename, targetmsfilename))
 casaout.close()
 os.system("~/packages/src/difx/sites/ASKAP/runloadtarget.sh")
-
 
 
 # Run the imaging via CASA if desired
