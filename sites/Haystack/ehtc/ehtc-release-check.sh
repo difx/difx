@@ -62,7 +62,7 @@ done
 logs=$release/logs
 $verb && ls -ld $logs
 [ -d $logs ] || { echo $logs is missing ; $exit 9 ; }
-lf=$logs/$exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile
+lf=$logs/$exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
 $verb && ls -l $lf
 [ -f $lf ] || { echo $lf is missing ; $exit 10 ; }
 ls=''
