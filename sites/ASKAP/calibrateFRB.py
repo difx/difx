@@ -145,7 +145,9 @@ if options.flagfile != "":
 if options.shadow:
     shadowdiameter = float(options.shadow[0])
     xtalkbl = float(options.shadow[1])
-    vlbatasks.shadowflag(caldata, 2, shadowdiameter, xtalkbl)
+    vlbatasks.shadowflag(caldata, 1, shadowdiameter, xtalkbl)
+    print "Shadowing diameter: " + str(shadowdiameter)
+    print "Cross-talk baseline: " + str(xtalkbl)
 
 # Flag the target data, if desired
 if options.tarflagfile != "":
@@ -153,7 +155,9 @@ if options.tarflagfile != "":
 if options.shadow:
     shadowdiameter = float(options.shadow[0])
     xtalkbl = float(options.shadow[1])
-    vlbatasks.shadowflag(targetdata, 2, shadowdiameter, xtalkbl)
+    vlbatasks.shadowflag(targetdata, 1, shadowdiameter, xtalkbl)
+    print "Shadowing diameter: " + str(shadowdiameter)
+    print "Cross-talk baseline: " + str(xtalkbl)
 
 # Run CLCOR to correct PANG if needed
 if xpolmodelfile != "":
