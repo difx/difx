@@ -75,6 +75,19 @@ static int    vdifreader_resync(struct vdif_file_reader *rd, int threadIdx);
 static size_t vdifreader_reposition_all(struct vdif_file_reader *rd, size_t offset);
 static int    vdifreader_check_eof(struct vdif_file_reader *rd);
 
+static void printf_vdif(const vdif_header* vhdr)
+{
+    const uint32_t* h = (const uint32_t*)vhdr;
+    printf("VDIF header : ep %d sec %d frame %d : %d bit %d byte\n",
+	getVDIFEpoch(vhdr), getVDIFFrameEpochSecOffset(vhdr),
+	getVDIFFrameNumber(vhdr), getVDIFBitsPerSample(vhdr),
+	getVDIFFrameBytes(vhdr));
+    printf("  w0 : %08X\n", h[0]);
+    printf("  w1 : %08X\n", h[1]);
+    printf("  w2 : %08X\n", h[2]);
+    printf("  w3 : %08X\n", h[3]);
+}
+
 //============================================================================
 
 /**
@@ -361,12 +374,7 @@ static int vdifreader_header_looks_good(const struct vdif_header *vhdr, const st
 	ok &= (getVDIFBitsPerSample(vhdr) == vdifinfo->nBit);
 	ok &= (getVDIFEpoch(vhdr) == vdifinfo->epoch);
 	//ok &= (getVDIFThreadID(vhdr) <= vdifinfo->nThread); // not reliable since 1-threaded VDIF may contain Thread ID 123
-	//if (!ok)
-	//{
-	//	printf(" framebytes %d : ok %d\n", getVDIFFrameBytes(vhdr) , (getVDIFFrameBytes(vhdr) == vdifinfo->frameSize));
-	//	printf(" bits %d : ok %d\n", getVDIFBitsPerSample(vhdr) , (getVDIFBitsPerSample(vhdr) == vdifinfo->nBit));
-	//	printf(" epoch %d : ok %d\n", getVDIFEpoch(vhdr) , (getVDIFEpoch(vhdr) == vdifinfo->epoch));
-	//}
+	// if (!ok) printf_vdif(vhdr);
 
 	return ok;
 }
@@ -568,7 +576,11 @@ static int vdifreader_get_frame(struct vdif_file_reader *rd, int threadIdx, int 
 			vdif_header vh = rd->currheader[threadIdx];
 			setVDIFFrameInvalid(&vh, 1);
 			setVDIFFrameEpochSecOffset(&vh, sec);
+			setVDIFEpoch(&vh, rd->details.epoch);
 			setVDIFFrameNumber(&vh, framenr);
+			setVDIFBitsPerSample(&vh, rd->details.nBit);
+			setVDIFFrameBytes(&vh, rd->details.frameSize);
+			setVDIFThreadID(&vh, rd->details.threadIds[threadIdx]);
 			memcpy(fillpattern_, &vh, sizeof(vh));
 
 		}
@@ -639,8 +651,7 @@ static int vdifreader_resync(struct vdif_file_reader *rd, int threadIdx)
 		{
 	         	vh1 = (struct vdif_header *)(resyncbuffer_ + off);
          		vh2 = (struct vdif_header *)(resyncbuffer_ + off + rd->details.frameSize);
-			if ( /* (threadID < 0 || getVDIFThreadID(vh1) == threadID) && */
-				getVDIFFrameBytes(vh1) == rd->details.frameSize &&
+			if (    getVDIFFrameBytes(vh1) == rd->details.frameSize &&
 				getVDIFFrameBytes(vh2) == rd->details.frameSize &&
 				getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
 				getVDIFFrameEpochSecOffset(vh2) - getVDIFFrameEpochSecOffset(vh1) < 2)
