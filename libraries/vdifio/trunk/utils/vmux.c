@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	int destChunkSize = defaultChunkSize;
 	int hasChunkSize = 0;
 	int framesPerSecond = 0;
-	long long nextFrame = -1;
+	int64_t nextFrame = -1;
 	const char *inFile = 0;
 	const char *outFile = 0;
 	const char *threadString = 0;
@@ -585,10 +585,10 @@ int main(int argc, char **argv)
 		/* if we encountered fill pattern at the seam between two chunkSizes we will need to write some dummy frames */
 		if(nextFrame >= 0 && nextFrame != stats.startFrameNumber)
 		{
-			int nJump = (int)(stats.startFrameNumber - nextFrame);
-			int j;
+			int64_t nJump = (int64_t)(stats.startFrameNumber - nextFrame);
+			int64_t j;
 
-			fprintf(stderr, "JUMP %d\n", nJump);
+			fprintf(stderr, "JUMP %zd\n", nJump);
 
 			/* borrow one output frame of src memory... */
 			memcpy(src, dest, VDIF_HEADER_BYTES);
@@ -605,8 +605,8 @@ int main(int argc, char **argv)
 
 		if (stats.srcUsed <= 0)
 		{
-				fprintf(stderr, "Weird: %d/%d bytes were consumed. Maybe input was all fill-pattern. Continuing.\n", stats.srcUsed, stats.srcSize);
-				leftover = 0;
+				fprintf(stderr, "Weird: %d/%d bytes were consumed. Maybe input was all fill-pattern.\n", stats.srcUsed, stats.srcSize);
+				leftover = stats.srcSize % inputframesize;
 		}
 		else
 		{

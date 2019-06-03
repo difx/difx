@@ -18,12 +18,16 @@ static void usage()
 
 int main(int argc, char **argv)
 {
-  char buffer[128*1024 + 128];
+  const size_t buffer_size = 8224*16*1024;
+  char *buffer;
   FILE * output;
   int n;
 
   struct vdif_file_summary info;
   struct vdif_file_reader reader;
+  struct vdif_file_reader_stats st;
+
+  buffer = (char*)malloc(buffer_size);
 
   if(argc != 3)
   {
@@ -55,13 +59,25 @@ int main(int argc, char **argv)
 
   while (1)
   {
-    n = vdifreaderRead(&reader, buffer, sizeof(buffer));
-    if (n == 0) break;
-    fwrite(buffer, 1, sizeof(buffer), output);
+    size_t nrd;
+    nrd = vdifreaderRead(&reader, buffer, buffer_size);
+    if (nrd == 0) break;
+    fwrite(buffer, 1, nrd, output);
+    vdifreaderStats(&reader, &st);
+    printf("VDIF reader statistics: read %zu of %zu\n", nrd, buffer_size);
+    for(n = 0; n < st.nThread; n++)
+    {
+      printf("  Thread %2d relative offset = %5d frames, sec=%d, eof=%d\n", info.threadIds[n], st.threadOffsets[n], reader.sec[n], reader.feof[n]);
+    }
+    printf("  Virtual offset = %zd\n", reader.virtualoffset);
+    printf("  Frame size     = %d\n", reader.details.frameSize);
+    printf("  Frame rate     = %d fps/thread\n", reader.fps);
+    printf("  Largest offset = %d frames\n", st.maxOffset);
   }
 
   vdifreaderClose(&reader);
   fclose(output);
+  free(buffer);
 
   return EXIT_SUCCESS;
 }
