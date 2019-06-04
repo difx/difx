@@ -1,0 +1,105 @@
+#!/bin/env python3
+
+import subprocess
+import fnmatch
+from sys import argv, exit
+from os import system
+from os.path import isfile
+
+program = 'mk6cp'
+version = '0.1'
+verdate = '20190604'
+
+def usage():
+	print('%s ver. %s  %s\n' % (program, version, verdate))
+	print('Usage: %s [options] <filematch1> [<filematch2> ... ] destination\n' % program)
+	print('<filematch> is a shell-style pattern for matching scan names\n')
+	print('destination is a directory to put files.\n')
+	print('Note: destination needs to start with . or / or end with /\n')
+	print('Note: escape the pattern with "" if there are local files!\n')
+	print('Options can be:')
+	print('  --resume')
+	print('  -r          don\'t copy files that already exist\n')
+	print('  --verbose')
+	print('  -v          print more information as it runs\n')
+	print('  --help')
+	print('  -h          print this help info and quit\n')
+	
+
+def getlist():
+	cmd = ['mk6ls']
+	p = subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE)
+	data = p.communicate()[0]
+	files = data.split('\n')
+	files.sort()
+
+	return files
+
+def filterlist(files, matches):
+	out = []
+	for f in files:
+		keep = False
+		for m in matches:
+			if fnmatch.fnmatch(f, m):
+				keep = True
+				break;
+		if keep:
+			out.append(f)
+	return out
+
+matches = []
+
+destination = None
+verbose = 0
+vrb = ''
+resume = False
+
+if len(argv) < 2:
+	usage()
+	exit(0)
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['-r', '--resume']:
+			resume = True
+		elif a in ['-v', '--verbose']:
+			vrb += ' -v'
+			verbose += 1
+		elif a in ['-h', '--help']:
+			usage()
+			exit(0)
+		else:
+			print('Error: Unknown parameter: %s\n' % a)
+			exit(0)
+	elif a[0] not in ['.', '/'] and a[-1] not in ['/']:
+		matches.append(a)
+		print('Matching: %s' % matches[-1])
+	else:
+		if destination == None:
+			destination = a
+		else:
+			print('Error: multiple destinations given: %s and %s\n' % (destination, a))
+			exit(0)
+
+
+if destination == None:
+	print('Error: no destination directory provided\n')
+	exit(0)
+
+files = getlist()
+
+keep = filterlist(files, matches)
+
+for k in keep:
+	print('To copy: %s' % k)
+
+print('Destination: %s' % destination)
+
+for k in keep:
+	if resume:
+		if isfile('%s/%s' % (destination, k)):
+			print('Not copying: %s' % k)
+			continue
+	cmd = 'mk6gather %s -o %s/%s %s' % (vrb, destination, k, k)
+	print('Executing: %s' % cmd)
+	system(cmd)

@@ -19,6 +19,9 @@ bin_PROGRAMS = \
 	mk6summary \
 	mk6gather
 
+dist_bin_SCRIPTS = \
+	mk6cp
+
 mk6gather_SOURCES = \
 	mk6gather.c
 
