@@ -163,8 +163,10 @@ if args.ts > 0:
 
 # Run through each vcraft file, converting (or writing a mini-script to be run by slurm)
 totalnumcodiffiles = 0
+ncodifparallel = 8
 antlist = ""
 codifFiles = []
+convertlines = []
 for i in range(npol):
     codifFiles.append([])
     for f in vcraftfiles[i]:
@@ -178,16 +180,8 @@ for i in range(npol):
         if not keepCodif or not os.path.exists(codifName):
             runline = "CRAFTConverter %s %s" % (f, codifName)
             if args.slurm:
-                currentuser = getpass.getuser()
                 totalnumcodiffiles += 1
-                output = open("convertonecodif.%d" % (totalnumcodiffiles),"w")
-                output.write("#!/bin/bash\n")
-                output.write("date\n ")
-                output.write(". /home/{0}/setup_difx\n".format(currentuser))
-                output.write(runline + "\n")
-                output.write("date\n ")
-                output.close()
-                os.system("chmod 775 convertonecodif.%d" % totalnumcodiffiles)
+                convertlines.append(runline)
             else:
                 if args.ts > 0:
                     runline = "tsp " + runline
@@ -196,23 +190,36 @@ for i in range(npol):
                 if (ret!=0): sys.exit(ret)
         codifFiles[i].append(codifName)
 
+if args.slurm and len(convertlines) > 0:
+    currentuser = getpass.getuser()
+    for i in range(ncodifparallel):
+        output = open("convertcodif.%d" % (i+1), "w")
+        output.write("#!/bin/bash\n")
+        output.write(". /home/{0}/setup_difx\n".format(currentuser))
+        output.close()
+    for count, runline in enumerate(convertlines):
+        output = open("convertcodif.%d" % ((count%ncodifparallel) + 1), "a")
+        output.write(runline + "\n")
+        output.close()
+    for i in range(ncodifparallel):
+        os.system("chmod 775 convertcodif.%d" % (i+1))
+
+
 # If we running via batch, run that now
 if args.slurm:
     # Produce a overall sbatch script for the CRAFT Conversion stage
+    # This will parallelise over ncodifparallel (default 8) nodes
     output = open("runcraftconversionbatch.sh","w")
     output.write("#!/bin/bash\n")
     output.write("#\n")
     output.write("#SBATCH --job-name=test_craftconverter\n")
     output.write("#SBATCH --output=testt_craftconverter.txt\n")
     output.write("#\n")
-    output.write("#SBATCH --ntasks=16\n")
+    output.write("#SBATCH --ntasks=1\n")
     output.write("#SBATCH --time=2:00\n")
-    output.write("#SBATCH --mem-per-cpu=200\n\n")
-    output.write("for i in {1..%d}\n" % totalnumcodiffiles)
-    output.write("do\n")
-    output.write("   srun -n1 --exclusive ./convertonecodif.$i &\n")
-    output.write("done\n")
-    output.write("wait\n")
+    output.write("#SBATCH --mem-per-cpu=200\n")
+    output.write("#SBATCH --array 1-%d\n\n" % ncodifparallel)
+    output.write("srun ./convertcodif.$SLURM_ARRAY_TASK_ID\n")
     output.close()
 
     # Run that sbatch script
