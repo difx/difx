@@ -182,8 +182,10 @@ for i in range(npol):
                 totalnumcodiffiles += 1
                 output = open("convertonecodif.%d" % (totalnumcodiffiles),"w")
                 output.write("#!/bin/bash\n")
+                output.write("date\n ")
                 output.write(". /home/{0}/setup_difx\n".format(currentuser))
                 output.write(runline + "\n")
+                output.write("date\n ")
                 output.close()
                 os.system("chmod 775 convertonecodif.%d" % totalnumcodiffiles)
             else:
