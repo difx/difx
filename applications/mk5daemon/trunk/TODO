@@ -4,6 +4,14 @@ mk5daemon
 x ssopen bug?
 * Add IPMI support
 
+Reboot under RHEL7:
+{
+  setuid(0);
+  execl("/usr/bin/systemctl", "reboot", "--force", NULL);
+}
+
+
+
 mk5cp
 ~~~~~
 x Listen for multicast "stop" message

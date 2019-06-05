@@ -1,6 +1,7 @@
 Version 2.6.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.6
+* mk6dir: add extra column to output contaning size of scan in bytes
 
 Version 2.6.0
 ~~~~~~~~~~~~~

@@ -30,8 +30,8 @@
 
 const char program[] = "mk6dir";
 const char author[]  = "Mark Wainright <mwainrig@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20180709";
+const char version[] = "0.2";
+const char verdate[] = "20190604";
 
 static void usage(const char *pgm)
 {
@@ -101,7 +101,7 @@ void summarizeFile(const char *fileName, char *vsn, char activityMsg, char verbo
 
 			difxMessageSendMark6Activity(&m6activity);
 		}
-		fprintf(summaryFile, "%s %14.8f %14.8f\n", fullFileName, mjd1, mjd2);
+		fprintf(summaryFile, "%s %14.8f %14.8f %Ld\n", fullFileName, mjd1, mjd2, sum5b.fileSize);
 		return;
 	}
 
@@ -136,7 +136,7 @@ void summarizeFile(const char *fileName, char *vsn, char activityMsg, char verbo
 
 			difxMessageSendMark6Activity(&m6activity);
 		}
-		fprintf(summaryFile, "%s %14.8f %14.8f\n", fullFileName, mjd1, mjd2);
+		fprintf(summaryFile, "%s %14.8f %14.8f %Ld\n", fullFileName, mjd1, mjd2, sum.fileSize);
 	}
 }
 
