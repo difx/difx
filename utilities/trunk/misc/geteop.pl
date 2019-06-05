@@ -26,7 +26,7 @@
 
 
 $FINALS_FILE = "usno_finals.erp";
-$FINALS_URL = "http://gemini.gsfc.nasa.gov/solve_save/$FINALS_FILE";
+$FINALS_URL = "ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/$FINALS_FILE";
 
 $eopCount = 0;
 $eopSuffix = "";
