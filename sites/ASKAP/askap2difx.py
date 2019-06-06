@@ -162,8 +162,8 @@ def writekeyfile(keyout, obs, twoletterannames, craftcatdir, npol):
     keyout.write("! ================================================================\n")
     keyout.write("!       Catalogs (special askap versions)\n")
     keyout.write("! ================================================================\n")
-    keyout.write("stafile  = '%s/askapstation.dat'\n" % craftcatdir)
-    keyout.write("freqfile = '%s/askapfreq.dat'\n" % craftcatdir)
+    keyout.write("stafile  = '$CATDIR/askapstation.dat'\n")
+    keyout.write("freqfile = '$CATDIR/askapfreq.dat'\n")
     keyout.write("overwrite\n")
     keyout.write("srccat /\n")
     keyout.write("EQUINOX = J2000\n")
@@ -399,7 +399,7 @@ try:
         print craftcatalogdir, "specified by $CRAFTCATDIR doesn't exist"
         sys.exit()
 except KeyError:
-    craftcatalogdir = ""
+    craftcatalogdir = os.getcwd() + "/"
 
 ## Write the SCHED freq and antenna files, and the craftfrb.datafiles
 freqout = open(craftcatalogdir + "askapfreq.dat","w")
@@ -466,13 +466,21 @@ for i in range(args.npol):
 #elif len(datafilelist) < len(antennanames):
 #    print "WARNING: Expected %d matching codif files, but only found %d" % (len(antennanames), len(datafilelist))
 
+## Write sched running file
+runsched = open("runsched.sh", "w")
+runsched.write("#!/usr/bin/bash\n")
+runsched.write("export CATDIR={0}\n".format(craftcatalogdir))
+runsched.write("sched < craftfrb.key\n")
+runsched.close()
+os.system("chmod 775 runsched.sh")
+
 ## Write the key file
 keyout = open("craftfrb.key","w")
 writekeyfile(keyout, obs, twoletterannames, craftcatalogdir, args.npol)
 keyout.close()
 
 ## Run it through sched
-ret = os.system("sched < craftfrb.key")
+ret = os.system("./runsched.sh")
 if ret!=0:
     print "Warning, Sched failed"
     sys.exit(1)
