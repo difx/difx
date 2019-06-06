@@ -216,7 +216,7 @@ if args.slurm:
     output.write("#SBATCH --output=testt_craftconverter.txt\n")
     output.write("#\n")
     output.write("#SBATCH --ntasks=1\n")
-    output.write("#SBATCH --time=2:00\n")
+    output.write("#SBATCH --time=02:00\n")
     output.write("#SBATCH --mem-per-cpu=200\n")
     output.write("#SBATCH --array 1-%d\n\n" % ncodifparallel)
     output.write("srun ./convertcodif.$SLURM_ARRAY_TASK_ID\n")
