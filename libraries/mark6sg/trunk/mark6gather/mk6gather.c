@@ -208,8 +208,6 @@ int main(int argc, char **argv)
 				
 				chunkSize = m6f->maxBlockSize - ((m6f->maxBlockSize-m6f->blockHeaderSize) % m6f->packetSize) - m6f->blockHeaderSize;
 
-fprintf(stderr, "ChunkSize = %d\n", chunkSize);
-
 				size = st.st_size;
 
 				/* truncate file if not multiple of Mark6 block size */
@@ -219,9 +217,8 @@ fprintf(stderr, "Truncating existing file from %Ld to %Ld bytes\n", (long long i
 					size -= (size % chunkSize);
 
 					truncate(outfile, size);
-
-					skipBytes = size;
 				}
+				skipBytes = size;
 				out = fopen(outfile, "a");
 			}
 			else	/* new file */

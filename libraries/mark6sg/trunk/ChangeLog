@@ -4,6 +4,7 @@ Version 2.0.2
 * mk6gather: add command line argument for max bytes to copy
 * add "mk6cp" script that uses "cp"-like syntax
 * mk6gather: add "append" and "skip" options (still experimental)
+* mark6gather seeking: fix for seek near start of file
 
 Version 2.0.1
 * add "mark6gather" functions (were in vdifio).  These have partially overlapping functionality w/ the mark6sg functions.

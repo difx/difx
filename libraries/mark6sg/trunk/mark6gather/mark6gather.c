@@ -169,7 +169,8 @@ void printMark6Header(const Mark6Header *header)
 	printf("  packet_size = %d\n", header->packet_size);
 }
 
-
+/* gets two blocks from file */
+/* FIXME: do some error checking if file size is too short for this! */
 static int getFirstBlocks(Mark6File *m6f)
 {
 	int32_t size;
@@ -268,11 +269,13 @@ static void *mark6Reader(void *arg)
 	return 0;
 }
 
+/* position is the position of the reconstructed stream to seek to */
 struct seekArgs
 {
 	Mark6File *m6f;
 	off_t position;		/* SEEK_SET argument */
 	int nFile;		/* number of files in the fileset */
+	int fileIndex;		/* index of this file [0, nFile) */
 };
 
 /* Returns 0 on EOF */
@@ -332,6 +335,9 @@ static void *mark6Seeker(void *arg)
 	int i;
 	size_t v;
 
+	blockSize = S->m6f->maxBlockSize - ((S->m6f->maxBlockSize-S->m6f->blockHeaderSize) % S->m6f->packetSize);
+	targetBlock = S->m6f->stat.st_size/(blockSize - S->m6f->blockHeaderSize)/S->nFile;
+
 	/*   1. wait for any ongoing reads to complete */
 	pthread_barrier_wait(&S->m6f->readBarrier);
 
@@ -340,15 +346,17 @@ static void *mark6Seeker(void *arg)
 	{
 		pos = sizeof(Mark6Header);
 	}
+	else if(S->m6f->stat.st_size < blockSize + sizeof(Mark6Header))
+	{
+		pos = sizeof(Mark6Header);
+	}
 	else
 	{
-		blockSize = S->m6f->maxBlockSize - ((S->m6f->maxBlockSize-S->m6f->blockHeaderSize) % S->m6f->packetSize);
 		targetBlock = S->position/(blockSize - S->m6f->blockHeaderSize);
-		pos = sizeof(Mark6Header) + blockSize*targetBlock/S->nFile;
+		pos = sizeof(Mark6Header) + blockSize*(targetBlock/S->nFile);
 
 		if(pos >= S->m6f->stat.st_size)
 		{
-			targetBlock = S->m6f->stat.st_size/(blockSize - S->m6f->blockHeaderSize)/S->nFile;
 			pos = sizeof(Mark6Header) + blockSize*targetBlock;
 		}
 
@@ -360,7 +368,11 @@ static void *mark6Seeker(void *arg)
 
 			fseeko(S->m6f->in, pos, SEEK_SET);
 			v = fread(&block, sizeof(int32_t), 1, S->m6f->in);
-			/* CJP Should check size of v */
+			if(v != 1)
+			{
+				pos -= blockSize;
+				fprintf(stderr, "Error: seek: fileindex=%d  i=%d  pos=%Ld : read of block number failed\n", S->fileIndex, i, (long long int)pos);
+			}
 			
 			deltaBlock = block - targetBlock;
 
@@ -378,10 +390,32 @@ static void *mark6Seeker(void *arg)
 			{
 				pos -= blockSize * (deltaBlock/S->nFile);
 			}
+			if(pos < 0)
+			{
+				pos = sizeof(Mark6Header);
+			}
+			if(pos >= S->m6f->stat.st_size)
+			{
+				pos -= blockSize;
+			}
 		}
 	}
 
-	/*   3. reposition the file at the correct location */
+	/*   3. advance until we are at, or just beyond target block number */
+	for(i = 0; i < 2*S->nFile; ++i)
+	{
+		int32_t block;
+		
+		fseeko(S->m6f->in, pos, SEEK_SET);
+		
+		v = fread(&block, sizeof(int32_t), 1, S->m6f->in);
+		if(block >= targetBlock)
+		{
+			break;
+		}
+		
+		pos += blockSize;
+	}
 	fseeko(S->m6f->in, pos, SEEK_SET);
 
 	/*   4. give control back to reader thread */
@@ -447,11 +481,11 @@ int openMark6File(Mark6File *m6f, const char *filename)
 	}
 	m6f->fileName = strdup(filename);
 	v = fread(&header, sizeof(header), 1, m6f->in);
-	if (v!=1)
+	if(v!=1)
 	{
 		deallocateMark6File(m6f);
 
-		return -2;
+		return -6;
 	}
 	m6f->version = header.version;
 	m6f->blockHeaderSize = mark6BlockHeaderSize(header.version);
@@ -825,6 +859,7 @@ void printMark6Gatherer(const Mark6Gatherer *m6g)
 	}
 }
 
+/* position is the position of the reconstructed stream to seek to */
 int seekMark6Gather(Mark6Gatherer *m6g, off_t position)
 {
 	pthread_attr_t attr;
@@ -850,6 +885,7 @@ int seekMark6Gather(Mark6Gatherer *m6g, off_t position)
 	{
 		S[t].m6f = &m6g->mk6Files[t];
 		S[t].nFile = m6g->nFile;
+		S[t].fileIndex = t;
 		S[t].position = position;
 		pthread_create(seekThread + t, &attr, mark6Seeker, S + t);
 	}
@@ -876,7 +912,7 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 	while(n < count)
 	{
 		int f, s, fileIndex, slotIndex;
-		uint64_t lowestFrame;
+		uint64_t lowestFrame = 0;
 		Mark6File *F;
 		Mark6BufferSlot *slot;
 		
