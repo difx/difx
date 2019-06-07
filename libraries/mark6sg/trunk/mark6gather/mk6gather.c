@@ -30,15 +30,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "mark6gather.h"
 
 const char program[] = "mk6gather";
-const char version[] = "1.2";
-const char verdate[] = "20190526";
+const char version[] = "1.3";
+const char verdate[] = "20190607";
 
 const char defaultOutfile[] = "gather.out";
 
-const void usage(const char *prog)
+void usage(const char *prog)
 {
 	printf("%s ver. %s  %s\n\n", program, version, verdate);
 	printf("Usage: %s [options] <fileset template>\n\n", prog);
@@ -51,6 +54,10 @@ const void usage(const char *prog)
 	printf("  -o <outfile>   send output to <outfile> [default: %s].\n\n", defaultOutfile);
 	printf("  --bytes <bytes>\n");
 	printf("  -b <bytes>     stop process after <bytes> have been copied\n\n");
+	printf("  --skip <bytes>\n");
+	printf("  -s <bytes>     skip <bytes> at start of file\n\n");
+	printf("  --append\n");
+	printf("  -a             append to existing file; this continues a previous gather\n\n");
 	printf("<fileset template> is a glob expression selecting Mark6 files to.\n");
 	printf("read.  This is usually the name of the scan given to the recorder,\n");
 	printf("e.g., BB407A_LA_No0001\n\n");
@@ -68,6 +75,8 @@ int main(int argc, char **argv)
 	const char *outfile = defaultOutfile;
 	const char *fileset = 0;
 	int verbose = 0;
+	int doAppend = 0;
+	long long int skipBytes = 0;
 	long long int maxBytes = 0;
 	long long int bytesWritten = 0;
 
@@ -92,6 +101,11 @@ int main(int argc, char **argv)
 			{
 				++verbose;
 			}
+			else if(strcmp(argv[a], "-a") == 0 || strcmp(argv[a], "--append") == 0)
+			{
+				doAppend = 1;
+				fprintf(stderr, "Warning: the --append option of %s is still experimental\n", program);
+			}
 			else if(a < argc-1)
 			{
 				if(strcmp(argv[a], "-o") == 0 || strcmp(argv[a], "--outfile") == 0)
@@ -101,6 +115,11 @@ int main(int argc, char **argv)
 				else if(strcmp(argv[a], "-b") == 0 || strcmp(argv[a], "--bytes") == 0)
 				{
 					maxBytes = atoll(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-s") == 0 || strcmp(argv[a], "--skip") == 0)
+				{
+					skipBytes = atoll(argv[a+1]);
+					fprintf(stderr, "Warning: the --skip option of %s is still experimental\n", program);
 				}
 				else
 				{
@@ -129,6 +148,20 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(doAppend && skipBytes > 0)
+	{
+		fprintf(stderr, "Error: --skip cannot be used with --append\n");
+
+		exit(EXIT_FAILURE);
+	}
+
+	if(doAppend && strcmp(outfile, "-") == 0)
+	{
+		fprintf(stderr, "Error: --append cannot be used when redirecting output to stdout\n");
+
+		exit(EXIT_FAILURE);
+	}
+
 	if(verbose > 1 && strcmp(outfile, "-") == 0)
 	{
 		fprintf(stderr, "When streaming to stdout, verbosity level > 1 is not allowed.  Reducing verbosity.\n");
@@ -150,10 +183,8 @@ int main(int argc, char **argv)
 
 	if(verbose > 0)
 	{
-		fprintf(stderr, "Gathered file size %lld\n", getMark6GathererFileSize(G));
+		fprintf(stderr, "Gathered file size %Ld\n", (long long int)(getMark6GathererFileSize(G)));
 	}
-
-//	seekMark6Gather(G, getMark6GathererFileSize(G)/2);
 
 	if(strcmp(outfile, "-") == 0)
 	{
@@ -161,7 +192,56 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		out = fopen(outfile, "w");
+		if(doAppend)
+		{
+			struct stat st;
+			int ok;
+
+			ok = stat(outfile, &st);
+			if(ok == 0) /* file already exists */
+			{
+				off_t size;
+				int chunkSize;	/* excludes header -- just pure VDIF data */
+				const Mark6File *m6f;
+
+				m6f = G->mk6Files;
+				
+				chunkSize = m6f->maxBlockSize - ((m6f->maxBlockSize-m6f->blockHeaderSize) % m6f->packetSize) - m6f->blockHeaderSize;
+
+fprintf(stderr, "ChunkSize = %d\n", chunkSize);
+
+				size = st.st_size;
+
+				/* truncate file if not multiple of Mark6 block size */
+				if(size % chunkSize != 0)
+				{
+fprintf(stderr, "Truncating existing file from %Ld to %Ld bytes\n", (long long int)(size), (long long int)(size - (size % chunkSize)));
+					size -= (size % chunkSize);
+
+					truncate(outfile, size);
+
+					skipBytes = size;
+				}
+				out = fopen(outfile, "a");
+			}
+			else	/* new file */
+			{
+				out = fopen(outfile, "w");
+			}
+		}
+		else
+		{
+			out = fopen(outfile, "w");
+		}
+	}
+
+	if(skipBytes > 0)
+	{
+		if(verbose > 0)
+		{
+			fprintf(stderr, "Skipping %Ld bytes into file\n", skipBytes);
+		}
+		seekMark6Gather(G, skipBytes);
 	}
 
 	if(verbose > 1)
