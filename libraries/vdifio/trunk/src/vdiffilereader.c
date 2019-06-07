@@ -131,7 +131,11 @@ int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader 
 	}
 
 	// Measure FPS over many frames until peak frame nr does not change
-	rd->fps = vdifreader_estimate_fps(rd);
+	rd->fps = rd->details.framesPerSecond;
+	if (rd->fps <= 0)
+	{
+		rd->fps = vdifreader_estimate_fps(rd);
+	}
 
 	// Update all thread-fds to their own first frame in file
 	vdifreader_reposition_all(rd, 0L);

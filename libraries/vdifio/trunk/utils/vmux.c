@@ -386,8 +386,12 @@ int main(int argc, char **argv)
 	else
 	{
 		summarizevdiffile(&summary, inFile, 0);
-		n = vdifreaderOpen(&summary, &reader);
+		if (summary.framesPerSecond <= 0)
+		{
+			summary.framesPerSecond = framesPerSecond;
+		}
 
+		n = vdifreaderOpen(&summary, &reader);
 		if(n < 0)
 		{
 			fprintf(stderr, "Can't open %s for read.\n", inFile);
