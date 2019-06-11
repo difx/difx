@@ -836,8 +836,10 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      if (ALMARefAnt>=0 && !(allgains[currAntIdx][ik]->isBandpass())){
        if (allgains[currAntIdx][ik]->getInterpolation(ALMARefAnt,0,gainXY)){
         for (ij=0; ij<nchans[ii]; ij++){
-         gainRatio[ij] *= gainXY[0]/gainXY[1];
-         gainRatio[ij] /= std::abs(gainRatio[ij]);  // Normalize gain ratio. 
+         if( std::abs(gainXY[0]) > 0.0 && std::abs(gainXY[1])>0.0){
+           // correct for changes in gaincal's refant
+           gainRatio[ij] *= gainXY[0]/gainXY[1];
+           gainRatio[ij] /= std::abs(gainRatio[ij]);};  // Normalize gain ratio. 
         };
        } else {
           sprintf(message,"ERROR with ALMA Ref. Ant. in gain table!\n");
