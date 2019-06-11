@@ -9,7 +9,16 @@ inttime = 10 # seconds
 
 with open(args.snoopylog) as snoopyin:
     snoopylines = snoopyin.readlines()
-    splitline = snoopylines[-1].split()
+    nocommentlines = []
+    for line in snoopylines:
+        print line
+        if len(line) > 1 and not line[0] =="#":
+            nocommentlines.append(line)
+            print nocommentlines
+        else:
+            if len(nocommentlines) != 1:
+                print "ERROR: No information found"
+    splitline = nocommentlines[0].split()
     pulsewidth = float(splitline[3])
     dm = float(splitline[5])
     mjd = float(splitline[7])
