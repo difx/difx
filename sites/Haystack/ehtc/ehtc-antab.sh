@@ -65,6 +65,7 @@ NR>6 && substr($2,3,1) ~/:/ {dy=$1;hr=substr($2,1,2);mn=substr($2,4,8);}
 NR>6 && NF==3 {loc=$3;hic=$3}
 NR>6 && NF>3 {loc=0.0;nlo=0; for(c=3; c<NL;c++){loc+=$c;nlo++;} loc = loc/nlo;}
 NR>6 && NF>3 {hic=0.0;nhi=0; for(c=NL;c<NF;c++){hic+=$c;nhi++;} hic = hic/nhi;}
+NR>6 && dy > 365 {dy=dy - 365;}
 NR>6 {printf("%.8f  %.4f %.4f\n", (dy+hr/24.0+mn/1440.0),loc, hic);}
 '
 
