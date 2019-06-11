@@ -245,6 +245,7 @@ tweakIntTime = True
 exhaustiveAutocorrs = True
 
 '''.format(startseries))
+    v2dout.write("visBufferLength = 8\n")
     v2dout.write("antennas = ")
     for d in datafilelist[0]:
         a = d.split('=')[0]
@@ -523,7 +524,7 @@ ret = os.system("sed -i -e 's/VDIF5032/CODIFD{}/g' craftfrb.vex".format(framesiz
 if ret!=0: sys.exit(1)
 
 ## Run vex2difx
-ret = os.system("vex2difx craftfrb.v2d")
+ret = os.system("vex2difx craftfrb.v2d > vex2difxlog.txt")
 if ret!=0:
     print "vex2difx failed!"
     sys.exit(1)
@@ -581,7 +582,7 @@ if args.slurm:
     batchout.write("#SBATCH --ntasks={0:d}\n".format(numprocesses))
     batchout.write("#SBATCH --time=1:00\n")
     batchout.write("#SBATCH --cpus-per-task=2\n")
-    batchout.write("#SBATCH --mem-per-cpu=500\n\n")
+    batchout.write("#SBATCH --mem-per-cpu=1000\n\n")
     batchout.write("case $(HEADNODE) in\n")
     batchout.write("  (farnarkle1) . /home/{0}/setup_difx.farnarkle1;;\n".format(currentuser))
     batchout.write("  (farnarkle2) . /home/{0}/setup_difx.farnarkle2;;\n".format(currentuser))
