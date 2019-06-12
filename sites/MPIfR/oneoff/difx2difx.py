@@ -8,6 +8,7 @@ out of shorter subbands. In other words assembles immediately
 adjecent DiFX zoombands into wider bands as listed in the config file.
 
 Config file example:
+
   [config]
   target_bw: 32.000                        total bandwidth to produce per band
   target_nchan: 4096                       number of points across target bandwidth
@@ -15,6 +16,10 @@ Config file example:
   stitch_antennas: AA, PV
   stitch_basefreqs: 86476.00, 86412.00
   verbose: false
+
+  [phases_deg]
+  AA = -32.0, -64.0, +16.0, -16.0, ....    phases in recorded and all zoom(!) bands,
+                                           same phase is used for both pols currently
 
 Options:
   --meta-only   write only new .input file, do not generate visibility data
@@ -80,6 +85,42 @@ def spectralAvgRaw(rawvis, chavg, doComplex=True):
 	return rawout
 
 
+def hasPhaseAdj(ant1name, ant2name, fq, antenna_freqs, cfg):
+	"""Return True if an antenna pair has phase info (for either antenna) for visibility data phase adjustment"""
+	ok = True
+	if ant1name == ant2name:
+		# Not yet for auto (parallel, crosspol)
+		ok = False
+	if not (ant1name in cfg['adhoc_phasors'] or ant2name in cfg['adhoc_phasors']):
+		ok = False
+	if ant1name in cfg['adhoc_phasors']:
+		i = antenna_freqs[ant1name].index(fq)
+		if i < 0 or i >= len(cfg['adhoc_phasors'][ant1name]):
+			ok = False
+	if ant2name in cfg['adhoc_phasors']:
+		j = antenna_freqs[ant2name].index(fq)
+		if j < 0 or j >= len(cfg['adhoc_phasors'][ant2name]):
+			ok = False
+	return ok
+
+
+def spectralPhaseAdj(rawvis, ant1name, ant2name, fq, antenna_freqs, cfg):
+	"""Apply a constant phase shift on visibility data, if antenna and frequency id have an adhoc_phasors entry in config"""
+	phasor = 1 + 0j
+	if ant1name in cfg['adhoc_phasors']:
+		i = antenna_freqs[ant1name].index(fq)
+		if i >= 0 and i < len(cfg['adhoc_phasors'][ant1name]):
+			phasor = phasor * cfg['adhoc_phasors'][ant1name][i]
+	if ant2name in cfg['adhoc_phasors']:
+		j = antenna_freqs[ant2name].index(fq)
+		if j >= 0 and j < len(cfg['adhoc_phasors'][ant2name]):
+			phasor = phasor * cfg['adhoc_phasors'][ant2name][j]
+	visdata = numpy.fromstring(rawvis, dtype='complex64')
+	visdata = visdata * phasor
+	# ToDo: fromstring() --> back to string
+	return rawvis
+
+
 def spectralAvgNumpy(visdata, chavg):
 	"""Spectral averaging of a numpy array"""
 	N = len(visdata)
@@ -96,43 +137,56 @@ def getConfig(cfgfilename):
 
 	cfgparser = ConfigParser.ConfigParser()
 	cfgparser.read(cfgfilename)
-	section = (cfgparser.sections())[0]
+	cfgsections = cfgparser.sections()
+
+	if not cfgparser.has_section('config'):
+		print ("Error: config file %s does not have a [config] section" % (cfgfilename))
+		return None
 
 	# Catch configs from too old versions
 	try:
-		tmp = cfgparser.getint(section, 'target_chavg')
+		tmp = cfgparser.getint('config', 'target_chavg')
 		print("Error: obsolete config file keyword: please replace 'target_chavg' with 'extra_chavg', adjust for its changed meaning!")
 		return None
 	except:
 		pass
 
 	# User settings
-	cfg['target_bw'] = cfgparser.getfloat(section, 'target_bw')
-	cfg['target_nchan'] = cfgparser.getint(section, 'target_nchan')
+	cfg['target_bw'] = cfgparser.getfloat('config', 'target_bw')
+	cfg['target_nchan'] = cfgparser.getint('config', 'target_nchan')
 	cfg['stitch_antennas'] = []
-	salist = cfgparser.get(section, 'stitch_antennas')
+	salist = cfgparser.get('config', 'stitch_antennas')
 	for sa in salist.split(', '):
 		cfg['stitch_antennas'].append(sa)
-	cfg['stitch_nstokes'] = int(cfgparser.get(section, 'stitch_nstokes'))
+	cfg['stitch_nstokes'] = int(cfgparser.get('config', 'stitch_nstokes'))
 
 	# Optional settings
 	try:
-		cfg['extra_chavg'] = cfgparser.getint(section, 'extra_chavg')
+		cfg['extra_chavg'] = cfgparser.getint('config', 'extra_chavg')
 	except:
 		cfg['extra_chavg'] = 1
 	try:
-		cfg['verbose'] = cfgparser.getboolean(section, 'verbose')
+		cfg['verbose'] = cfgparser.getboolean('config', 'verbose')
 	except:
 		cfg['verbose'] = False
 
 	# User frequencies
-	fqlist = cfgparser.get(section, 'stitch_basefreqs')
+	fqlist = cfgparser.get('config', 'stitch_basefreqs')
 	cfg['stitch_basefreqs'] = []
 	cfg['stitch_endfreqs'] = []
 	for fq in fqlist.split(', '):
 		f = float(fq)
 		cfg['stitch_basefreqs'].append(f)
 		cfg['stitch_endfreqs'].append(f + cfg['target_bw']) # USB assumed
+
+	# Optional ad-hoc phase adjust
+	cfg['adhoc_phasors'] = {}
+	if cfgparser.has_section('phases_deg'):
+		for station in cfgparser.options('phases_deg'):
+			station = station.upper()
+			phases = [math.radians(float(v)) for v in cfgparser.get('phases_deg', str(station)).split(',')]
+			phasors = numpy.exp([1j*eta for eta in phases])
+			cfg['adhoc_phasors'][station] = phasors
 
 	return cfg
 
@@ -316,7 +370,7 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 		for fqidx in d.zoomfreqindex:
 			zf = freqs[fqidx]
 			if (zf.bandwidth != target_bw) or ((zf.numchan/zf.specavg) != target_nchan):
-				# print ("Skipping zoom frequency     : index %d : %s" % (fqidx,zf.str()))
+				# print ("Skipping zoom frequency     : index %d : %s" % (fqidx,zf.str().strip()))
 				continue
 			i = findFreqObj(out_freqs,zf)
 			if (i == None):
@@ -324,6 +378,15 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 				freq_remaps[fqidx] = id
 				out_freqs[id] = copy.deepcopy(zf)
 				print ("Keeping zoom frequency      : index %2d/%2d : %s" % (fqidx,id,zf.str()))
+
+	# Create per-antenna list of old frequency IDs, used for adhoc phase
+	antenna_freqids = {}
+	for d in datastreams:
+		ant = telescopes[d.telescopeindex].name
+		if not ant in antenna_freqids:
+			antenna_freqids[ant] = []
+		antenna_freqids[ant] += d.recfreqindex
+		antenna_freqids[ant] += d.zoomfreqindex
 
 	# Determine how much averaging post-FFT was done in DiFX itself
 	common_difx_avgfactor = -1
@@ -383,6 +446,8 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 			freq_remaps[fi] = stitch_out_ids[stid]
 			freq_remaps_isNew[fi] = True
 			print ("Map zoom %s to stitched single %12.6f--%12.6f : in fq#%2d -> stitch#%d -> out fq#%2d" % (freqs[fi].str(), stitch_basefreqs[stid], stitch_endfreqs[stid],fi,stid,stitch_out_ids[stid]))
+		else:
+			print ("No map for index %d : %s" % (fi, freqs[fi].str()))
 
 	# Propagate any averaging to be done by difx2difx.py into the frequency table
 	if cfg['extra_chavg']>1:
@@ -523,6 +588,11 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 
 		# Info string
 		vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,T,nchan,bw,str(uvw))
+
+		# Adjust phase of adhoc per-IF phases in config file
+		if hasPhaseAdj(ant1name, ant2name, freqindex, antenna_freqids, cfg):
+			# (ToDO: always for all data, or only when visibility data will actually be used?)
+			rawvis = spectralPhaseAdj(rawvis, ant1name, ant2name, freqindex, antenna_freqids, cfg)
 
 		# Write out visibility to output file
 		if baseline not in baseline_list:
@@ -787,8 +857,12 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 				newFqA = full_freq_remaps[oldFqA]
 				newFqB = full_freq_remaps[oldFqB]
 				assert (freqs[oldFqA].bandwidth == freqs[oldFqB].bandwidth)
+				if (newFqA not in new_freqs) or (newFqB not in new_freqs):
+					# print ("     corr %2d : fq %2d(old:%d) x %2d(old:%d) %s%s : skip, lies outside of output bands" % (i,newFqA,oldFqA,newFqB,oldFqB,polA,polB))
+					continue
 				if (new_freqs[newFqA].bandwidth != target_bw) or (new_freqs[newFqB].bandwidth != target_bw):
 					print ("     corr %2d : fq %2d(old:%d) x %2d(old:%d) %s%s : skip, wrong bandwidth in %s x %s" % (i,newFqA,oldFqA,newFqB,oldFqB,polA,polB,new_freqs[newFqA].str(),new_freqs[newFqB].str()))
+					continue
 				id = '%d_%d_%s%s' % (newFqA,newFqB,polA,polB)
 				if id not in copied_ids:
 					newBandA = getBandIndexOfFreqPol(nds1,newFqA,polA)
