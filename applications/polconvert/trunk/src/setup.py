@@ -23,7 +23,7 @@ sourcefiles3 = ['_getAntInfo.cpp']
 c_ext = Extension("_PolConvert", sources=sourcefiles,
                   extra_compile_args=["-Wno-deprecated","-O3"],
                   libraries=['cfitsio'],
-		  include_dirs=[np.get_include()],
+                  include_dirs=[np.get_include()],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
 
 c_ext3 = Extension("_getAntInfo", sources=sourcefiles3,
