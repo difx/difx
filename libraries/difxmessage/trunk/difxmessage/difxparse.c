@@ -265,6 +265,10 @@ static void XMLCALL endElement(void *userData, const char *name)
 	elem = G->_xml_element[G->_xml_level];
 	s = G->_xml_string;
 
+	if (strlen(s)>DIFX_MESSAGE_LENGTH) {
+	  fprintf(stderr, "Error: Message too long: \"%s\"\n", s);
+	}
+
 	if(G->_xml_string[0] != 0)
 	{
 		if(strcmp(G->_xml_element[0], "difxMessage") == 0)

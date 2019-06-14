@@ -183,7 +183,7 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
-		fprintf(stderr, "difxMessageSendLoad: message body overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+	  fprintf(stderr, "difxMessageSendLoad: message body overflow (%d >= %d)\n(%s)\n", size, DIFX_MESSAGE_LENGTH, body);
 
 		return -1;
 	}
@@ -195,7 +195,7 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 	
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
-		fprintf(stderr, "difxMessageSendLoad: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+	  fprintf(stderr, "difxMessageSendLoad: message overflow (%d >= %d)\n(%s)\n", size, DIFX_MESSAGE_LENGTH, message);
 
 		return -1;
 	}
@@ -259,7 +259,7 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 		
 		if(size >= DIFX_MESSAGE_LENGTH)
 		{
-			fprintf(stderr, "difxMessageSendDifxAlert: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+		  fprintf(stderr, "difxMessageSendDifxAlert: message overflow (%d >= %d)\n(%s)\n", size, DIFX_MESSAGE_LENGTH, message);
 
 			return -1;
 		}
@@ -335,7 +335,7 @@ int difxMessageSendStop(const char *inputFilename, const char *mpiWrapper, const
 	
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
-		fprintf(stderr, "difxMessageSendStop: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+	  fprintf(stderr, "difxMessageSendStop: message overflow (%d >= %d)\n(%s)\n", size, DIFX_MESSAGE_LENGTH, message);
 
 		return -1;
 	}
@@ -897,6 +897,8 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, do
 	weightstr[0] = 0;
 	n = 0;
 
+	if (numdatastreams>20) numdatastreams = 20;
+	
 	for(i = 0; i < numdatastreams; ++i)
 	{
 		if(weight[i] >= 0)
@@ -931,7 +933,7 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, do
 
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
-		fprintf(stderr, "difxMessageSendDifxStatus: message body overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+	  fprintf(stderr, "difxMessageSendDifxStatus: message body overflow (%d >= %d)\n(%s)\n", size, DIFX_MESSAGE_LENGTH, body);
 
 		return -1;
 	}
@@ -943,7 +945,7 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, do
 
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
-		fprintf(stderr, "difxMessageSendDifxStatus: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+	  fprintf(stderr, "difxMessageSendDifxStatus: message overflow (%d >= %d)\n(%s)\n", size, DIFX_MESSAGE_LENGTH, message);
 
 		return -1;
 	}
@@ -1062,7 +1064,7 @@ int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
 
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
-		fprintf(stderr, "difxMessageSendDifxStatus: message body overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+	  fprintf(stderr, "difxMessageSendDifxStatus: message body overflow (%d >= %d)\n(%s)\n", size, DIFX_MESSAGE_LENGTH, body);
 
 		return -1;
 	}
