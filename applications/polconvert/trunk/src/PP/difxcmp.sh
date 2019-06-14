@@ -18,12 +18,15 @@ skip="$skip result_ALL.txt"
 
 for f
 do
+  # ignore directories
   [ -d $f ] && continue
   # ignore things that don't go to DiFX but are in bzr
   punt=false
   for s in $skip
   do [ "$f" = "$s" ] && punt=true ; done
   $punt && echo skipping $f && continue
+  F=$f
+  [ `expr $F : 'TOP.*'` -ge 3 ] && F=../`basename $f`
   # decide what to do
   case $action in
   dir)
@@ -31,36 +34,38 @@ do
     ls -ld $dfx
     ;;
   ls)
-    ls -l $bzr/$f $dfx/$f 2>&- | sed -e "s+$bzr+\$bzr+" -e "s+$dfx+\$dfx+"
+    ls -l $bzr/$f $dfx/$F 2>&- | sed -e "s+$bzr+\$bzr+" -e "s+$dfx+\$dfx+"
     ;;
   diff)
-    diff $bzr/$f $dfx/$f || echo diff $bzr/$f $dfx/$f
+    diff $bzr/$f $dfx/$F || echo diff $bzr/$f $dfx/$F
     ;;
   sdiff)
-    echo sdiff -lw164 $bzr/$f $dfx/$f
-    sdiff -lw164 $bzr/$f $dfx/$f
+    echo sdiff -lw164 $bzr/$f $dfx/$F
+    sdiff -lw164 $bzr/$f $dfx/$F
     ;;
   cmp)
-    cmp $bzr/$f $dfx/$f || echo cmp $bzr/$f $dfx/$f
+    cmp $bzr/$f $dfx/$F || echo cmp $bzr/$f $dfx/$F
     ;;
   dcp)
-    [ -f $dfx/$f ] || { echo \#\#\# skipping $f ; continue ; }
-    cmp $bzr/$f $dfx/$f 2>&- 1>&- || cp -p $bzr/$f $dfx/$f
+    [ -f $dfx/$F ] || { echo \#\#\# skipping $f ; continue ; }
+    cmp $bzr/$f $dfx/$F 2>&- 1>&- || cp -p $bzr/$f $dfx/$F
     ;;
   dget)
     [ -f $bzr/$f ] || { echo \#\#\# skipping $f ; continue ; }
-    cmp $dfx/$f $bzr/$f 2>&- 1>&- || cp -p $dfx/$f $bzr/$f
+    cmp $dfx/$F $bzr/$f 2>&- 1>&- || cp -p $dfx/$F $bzr/$f
     ;;
   cp)
-    cp -p $bzr/$f $dfx/$f
+    cp -p $bzr/$f $dfx/$F
     ;;
   get)
-    cp -p $dfx/$f $bzr/$f
+    cp -p $dfx/$F $bzr/$f
     ;;
   *)
     [ "$action" = 'help' ] || action $action is not supported
     cat <<....EOF
-    legal actions are
+    Usage: $0 action file ...
+
+    Legal actions are
       dir   -- list dirs
       ls    -- list the files
       cmp   -- run cmp
@@ -70,6 +75,8 @@ do
       get   -- difx to bzr
       dcp   -- diff and cp files different
       dget  -- diff and cp files different
+
+    The wildcards *  PP/* TOP/* (or combinations) are useful 
 ....EOF
     exit 1
     ;;
