@@ -18,8 +18,7 @@ Config file example:
   verbose: false
 
   [phases_deg]
-  AA = -32.0, -64.0, +16.0, -16.0, ....    phases in recorded and all zoom(!) bands,
-                                           same phase is used for both pols currently
+  AA = -32.0, -64.0, +16.0, -16.0, ....    phase of each recorded band
 
 Options:
   --meta-only   write only new .input file, do not generate visibility data
@@ -51,6 +50,12 @@ def tupleCrossProd(a,b):
 	return res
 
 
+def listDiff(new, existing):
+	"""Order-preserving difference of sets/lists"""
+	diff = [n for n in list(new) if n not in list(existing)]
+	return diff
+
+
 def getGlueIndex(f,cfg):
 	"""Check if a frequency falls into one band in a set of frequency bands"""
 	N = len(cfg['stitch_basefreqs'])
@@ -62,11 +67,13 @@ def getGlueIndex(f,cfg):
 
 def getVisibilityHeader(f):
 	"""Read next DiFX file visibility header and return it in binary was well as a parsed struct"""
+	bin = None
 	offset = f.tell()
 	h = parseDiFX.parse_output_header(f)
-	rdlen = f.tell() - offset
-	f.seek(offset)
-	bin = f.read(rdlen)
+	if h:
+		rdlen = f.tell() - offset
+		f.seek(offset)
+		bin = f.read(rdlen)
 	return (h,bin)
 
 
@@ -76,13 +83,22 @@ def spectralAvgRaw(rawvis, chavg, doComplex=True):
 		visdata = numpy.fromstring(rawvis, dtype='complex64')
 	else:
 		visdata = numpy.fromstring(rawvis, dtype='float32')
-	N = len(visdata)
-	assert((N % chavg)==0)
-	visdata = numpy.average(visdata.reshape((N/chavg,chavg)), axis=1)
-	#visdata = numpy.sum(visdata.reshape((N/chavg,chavg)), axis=1)
+	visdata = spectralAvgNumpy(visdata, chavg)
 	rawout = visdata.tostring()
 	assert(len(rawout)==len(rawvis)/chavg)
 	return rawout
+
+
+def spectralMeanAmp(vis, isRaw=False, isComplex=True):
+	"""Return mean amplitude of spectrum"""
+	if not isRaw:
+		P = numpy.average(numpy.abs(vis))
+	else:
+		if isComplex:
+			P = numpy.average(numpy.abs(numpy.fromstring(vis, dtype='complex64')))
+		else:
+			P = numpy.average(numpy.abs(numpy.fromstring(vis, dtype='float32')))
+	return P
 
 
 def hasPhaseAdj(ant1name, ant2name, fq, antenna_freqs, cfg):
@@ -91,7 +107,7 @@ def hasPhaseAdj(ant1name, ant2name, fq, antenna_freqs, cfg):
 	if ant1name == ant2name:
 		# Not yet for auto (parallel, crosspol)
 		ok = False
-	if not (ant1name in cfg['adhoc_phasors'] or ant2name in cfg['adhoc_phasors']):
+	if ant1name not in cfg['adhoc_phasors'] and ant2name not in cfg['adhoc_phasors']:
 		ok = False
 	if ant1name in cfg['adhoc_phasors']:
 		i = antenna_freqs[ant1name].index(fq)
@@ -117,8 +133,9 @@ def spectralPhaseAdj(rawvis, ant1name, ant2name, fq, antenna_freqs, cfg):
 			phasor = phasor * cfg['adhoc_phasors'][ant2name][j]
 	visdata = numpy.fromstring(rawvis, dtype='complex64')
 	visdata = visdata * phasor
-	# ToDo: fromstring() --> back to string
-	return rawvis
+	#if ant1name=='AA' and ant2name=='GB':
+	#	print 'aa-gb', fq, i, phasor, numpy.angle(phasor,deg=True)
+	return visdata.tostring()
 
 
 def spectralAvgNumpy(visdata, chavg):
@@ -187,7 +204,6 @@ def getConfig(cfgfilename):
 			phases = [math.radians(float(v)) for v in cfgparser.get('phases_deg', str(station)).split(',')]
 			phasors = numpy.exp([1j*eta for eta in phases])
 			cfg['adhoc_phasors'][station] = phasors
-
 	return cfg
 
 
@@ -197,6 +213,23 @@ def findFreqObj(dict,freqobj):
 		if (dict[k] == freqobj):
 			return k
 	return None
+
+
+def isParentFreq(parentcandidate, child):
+	"""Return True if child freq is within parent freq, with sideband considered"""
+	if parentcandidate.lsb:
+		pf0 = parentcandidate.freq - parentcandidate.bandwidth
+		pf1 = parentcandidate.freq
+	else:
+		pf0 = parentcandidate.freq
+		pf1 = parentcandidate.freq + parentcandidate.bandwidth
+	if child.lsb:
+		cf0 = child.freq - child.bandwidth
+		cf1 = child.freq
+	else:
+		cf0 = child.freq
+		cf1 = child.freq + child.bandwidth
+	return (pf0 <= cf0 and cf1 <= pf1)
 
 
 def inventNextKey(dict):
@@ -225,7 +258,7 @@ def wasVisAlreadyWritten(mjd,seconds,baseline,freqnr,polpair):
 		curr_keys = vis_hashtable.keys()
 		nremoved = 0
 		for key in curr_keys:
-			if not (key in vis_hashtable):
+			if key not in vis_hashtable:
 				continue
 			if vis_hashtable[key] < vis_hashtable_cleanupSec:
 				del vis_hashtable[key]
@@ -379,14 +412,28 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 				out_freqs[id] = copy.deepcopy(zf)
 				print ("Keeping zoom frequency      : index %2d/%2d : %s" % (fqidx,id,zf.str()))
 
-	# Create per-antenna list of old frequency IDs, used for adhoc phase
+	# Create per-antenna list of old frequency IDs (recs first then zooms)
 	antenna_freqids = {}
 	for d in datastreams:
 		ant = telescopes[d.telescopeindex].name
-		if not ant in antenna_freqids:
-			antenna_freqids[ant] = []
-		antenna_freqids[ant] += d.recfreqindex
-		antenna_freqids[ant] += d.zoomfreqindex
+		fqs = d.recfreqindex
+		if ant not in antenna_freqids:
+			antenna_freqids[ant] = list(fqs)
+		else:
+			antenna_freqids[ant] += listDiff(fqs, antenna_freqids[ant])
+	for ant in antenna_freqids:
+		# When antenna has adhoc phase info make sure it covers all IFs
+		if ant not in cfg['adhoc_phasors']:
+			continue
+		Nrec = len(antenna_freqids[ant])
+		Ndef = len(cfg['adhoc_phasors'][ant])
+		if Ndef != Nrec:
+			print("Error: config file section [phases_deg] provides phases for '%s' for %d of %d IFs!" % (ant,Ndef,Nrec))
+			sys.exit(1)
+	for d in datastreams:
+		ant = telescopes[d.telescopeindex].name
+		fqs = d.zoomfreqindex
+		antenna_freqids[ant] += listDiff(fqs, antenna_freqids[ant])
 
 	# Determine how much averaging post-FFT was done in DiFX itself
 	common_difx_avgfactor = -1
@@ -453,6 +500,25 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 	if cfg['extra_chavg']>1:
 		for of in out_freqs.keys():
 			out_freqs[of].specavg = out_freqs[of].specavg * cfg['extra_chavg']
+
+	# Propagate ad-hoc phase table infos from rec freq (parent) to any zoom (child)
+	for ant in antenna_freqids:
+		if ant not in cfg['adhoc_phasors']:
+			continue
+		if len(antenna_freqids[ant]) <= len(cfg['adhoc_phasors'][ant]):
+			continue
+		# Duplicate .cfg adhoc phase entries (rec bands) to e.g. zoom bands
+		Ndefined = len(cfg['adhoc_phasors'][ant])
+		Ndefneeded = len(antenna_freqids[ant])
+		freqs_w_defined_phases = antenna_freqids[ant][0:Ndefined]
+		cfg['adhoc_phasors'][ant] = numpy.append(cfg['adhoc_phasors'][ant], [1 + 0j]*(Ndefneeded - Ndefined) )
+		for n in range(Ndefined,Ndefneeded):
+			fq = antenna_freqids[ant][n]
+			for m in range(Ndefined):
+				recfq = freqs_w_defined_phases[m]
+				if isParentFreq(freqs[recfq],freqs[fq]):
+					cfg['adhoc_phasors'][ant][n] = cfg['adhoc_phasors'][ant][m]
+					print ('Adhoc phase %s phase offset : zoom %s gets config file entry %d phase of rec %s' % (ant,freqs[fq].str(),m,freqs[recfq].str()))
 
 	# Read the DiFX .difx/DIFX_* file
 	#glob_pattern = basename + '.difx/DIFX_*.s*.b*'
@@ -727,14 +793,13 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 				if stitch_chcounts[baseline][polpair][stid] >= target_nchan:
 					TS = mjd + stitch_timestamps[baseline][polpair][stid] / 86400.0
 					bwsum = numpy.sum(stitch_freqbws[baseline][polpair][stid])
+					fsky = out_freqs[out_freqindex].freq
 					vis_info = '%s-%s/%d/%d(%d):sf<%d>:%.7f/%s  mjd:%12.8f nchan:%4d bw:%.7f uvw=%s' % (ant1name,ant2name,baseline,out_freqindex,freqindex,stid,fsky,polpair,TS,stitch_chcounts[baseline][polpair][stid],bwsum,str(uvw))
 	
 					if wasVisAlreadyWritten(mjd,seconds,baseline,out_freqindex,polpair):
 						if cfg['verbose']:
 							print ('(stch dup): %s' % (vis_info))
 						continue
-					if cfg['verbose']:
-						print ('stitch: %s' % (vis_info))
 
 					# Double-check the bandwidth
 					if numpy.abs(target_bw - bwsum) > 100:
@@ -746,6 +811,10 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 						vis = spectralAvgNumpy(stitch_workbufs[baseline][polpair][stid], cfg['extra_chavg'])
 					else:
 						vis = stitch_workbufs[baseline][polpair][stid]
+
+					if cfg['verbose']:
+						print ('stitch: %s' % (vis_info))
+
 					vis.tofile(difxout)
 					nstitched += 1
 
