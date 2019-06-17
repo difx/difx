@@ -1018,7 +1018,7 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 			copied_flagfile = basename_pathless+'D2D.flag'
 			shutil.copyfile(orig_flagfile, copied_flagfile)
 			line = '%-20s%s' % ('FLAG FILENAME:',copied_flagfile)
-		print (line)
+		print (line.strip())
 
 	# Finished
 	if not writeMetaOnly:
