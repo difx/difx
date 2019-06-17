@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 CalTable::~CalTable() {};
 
 
-CalTable::CalTable(int kind, double **R1,double **P1,double **R2,double **P2, double *freqs, double **times, int Na, long *Nt, long Nc, bool **flag, bool islinear, FILE *logF)
+CalTable::CalTable(int kind, double **R1,double **P1,double **R2,double **P2, double *freqs, double **times, int Na, long *Nt, long Nc, bool **flag, bool islinear, FILE *logF, bool verbose)
 {
 
 
@@ -44,6 +44,8 @@ CalTable::CalTable(int kind, double **R1,double **P1,double **R2,double **P2, do
       Nants = Na;
 
       logFile = logF ;
+
+      Verbose = verbose;
 
       isLinear = islinear;      
 //      isTsys = istsys;
@@ -497,6 +499,7 @@ if (SignFreq) {
 
 bool CalTable::setInterpolationTime(double itime) {
 
+  if (Verbose){printf("Set interpolation at time %.3f for %i antennas \n",itime,Nants);fflush(stdout);};
 
   if (itime == currTime) {gainChanged = false; return gainChanged;};
 
@@ -515,6 +518,7 @@ bool CalTable::setInterpolationTime(double itime) {
  for (iant=0; iant<Nants; iant++) {
 
   Nts = Ntimes[iant];
+  if (Verbose){printf("Ant %i has %i times \n",iant,Nts);fflush(stdout);};
 
   if (Nts == 1) {
     pret0[iant] = 0;
@@ -554,6 +558,7 @@ bool CalTable::setInterpolationTime(double itime) {
 
  };
 
+   if (Verbose){printf("%i  %i  %.3f\n",ti0, ti1, Kt);fflush(stdout);};
 
    currTime = itime;
    return gainChanged;
@@ -584,11 +589,14 @@ void CalTable::applyInterpolation(int iant, int mode, std::complex<float> *gain[
   double Kt, Kt2;
 
   double auxF0, auxF1, auxF2, auxF3, auxT0, auxT1, auxT2, auxT3;
+  if (Verbose){printf("Apply interpolation for antenna %i\n",iant);fflush(stdout);};
 
   ti0 = pret0[iant];
   ti1 = pret1[iant];
   Kt = preKt[iant];
   Kt2 = 1.0-Kt;
+
+  if (Verbose){printf("indexes: %i %i  -  %.3f\n",ti0, ti1, Kt);fflush(stdout);};
 
  // printf("CALLED!\n");
 

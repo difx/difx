@@ -111,13 +111,15 @@ PyMODINIT_FUNC init_PolGainSolve(void)
    int *IFNum;
    int *Lant, *Cant, *NVis, *NLVis, *NCVis, *CalAnts, *NScan;
    int solveAmp, useCov, solveQU;
+   int *LinBasNum, NLinBas;
    int NIF, NIFComp;
    int NBas, NantFit, Npar;
    int npix = 0;
    double **Frequencies, ***Rates, ***Delays00, ***Delays11; 
    double *Tm;
    int *doIF, *antFit; 
-
+   
+   double *feedAngle;
    double **DStokes; // = new double*[1];
 
    double Chi2Old = 0.0;
@@ -185,6 +187,8 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
     return ret;
   };
 
+  
+// Assign dummy sizes to all variables:  
 gsl_error_handler_t *ERRH = gsl_set_error_handler_off ();
 NIF = 0;
 Npar=0;
@@ -206,6 +210,8 @@ Tm = new double[1];
 doIF = new int[1];
 antFit = new int[1];
 
+
+
 TAvg = (double) PyInt_AsLong(PyList_GetItem(solints,1));
 SolAlgor = (int) PyInt_AsLong(PyList_GetItem(solints,0));
 
@@ -216,18 +222,22 @@ fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 AddParHand = RelWeight>0.0;
 AddCrossHand = true;
 
-
+  Lant = (int *)PyArray_DATA(linant);
+  Nlin = PyArray_DIM(linant,0);
 
   CalAnts = (int *)PyArray_DATA(calant);
   NCalAnt = PyArray_DIM(calant,0);
 
+  
   int i,j,k,l;
   k=0;
 
   int MaxAnt = 0;
   for(i=0;i<NCalAnt;i++){if(CalAnts[i]>MaxAnt){MaxAnt=CalAnts[i];};};
   BasNum = new int*[MaxAnt];
-
+  LinBasNum = new int[MaxAnt];
+  NLinBas = 0;
+  
   bool isCal1, isCal2;
 
   for(i=0;i<MaxAnt;i++){
@@ -247,6 +257,9 @@ AddCrossHand = true;
 
       if (isCal1 && isCal2){
         BasNum[i][j] = k;
+        
+        for(l=0;l<Nlin; l++){if(i==Lant[l] || j==Lant[l]){LinBasNum[NLinBas]=k; NLinBas += 1; break; };};
+        
    //     BasNum[j][i] = k;
         k += 1;
       };
@@ -280,32 +293,8 @@ AddCrossHand = true;
   };
 
 
-  Lant = (int *)PyArray_DATA(linant);
-  Nlin = PyArray_DIM(linant,0);
 
 
-/*
-// Re-allocate memory:
-  if (NIF >0){
-    free(NVis); 
-    free(IFNum);
-    free(NCVis);
-    free(NLVis);
-    free(Nchan);
-    free(Frequencies);
-    free(Ant1);
-    free(Ant2);
-    free(Scan);
-    free(NScan);
-    free(Times);
-    free(PA1); 
-    free(PA2);
-    free(RR);
-    free(LR); 
-    free(RL);
-    free(LL);
-  };
-*/
 
 
   NIF = 0;
@@ -718,25 +707,7 @@ while(!MPfile.eof()){
          LL[NIF-1][currI][k] = (cplx64f) AuxLL;
        };
 
-// test rate
-  // if (Ant1[NIF-1][currI]==1){RR[NIF-1][currI][k] = std::polar(1.0,TWOPI*(Times[NIF-1][currI]-Times[NIF-1][0])/100.);};
 
-   //    if (is1c){
-   //      RR[NIF-1][currI][k] /= Exp1;
-   //      RL[NIF-1][currI][k] /= Exp1;
-   //      LR[NIF-1][currI][k] *= Exp1;
-   //      LL[NIF-1][currI][k] *= Exp1;
-   //    };
-   //    if (is2c) {
-   //      RR[NIF-1][currI][k] *= Exp2;
-   //      RL[NIF-1][currI][k] /= Exp2;
-   //      LR[NIF-1][currI][k] *= Exp2;
-   //      LL[NIF-1][currI][k] /= Exp2;
-   //    };
-
-//     if (currI<100 && k==10 && NIF==1){
-//     printf("RR for %i - %i | %i, %i = %.5e   %.5e |  %.5e   %.5e | %.5e %.5e \n",Ant1[NIF-1][currI],Ant2[NIF-1][currI],currI,k,AuxRR.real(),AuxRR.imag(),RR[NIF-1][currI][k].real(),RR[NIF-1][currI][k].imag(), abs(AuxRR), abs(RR[NIF-1][currI][k]));
-//     };
 
 
      };
@@ -749,7 +720,6 @@ while(!MPfile.eof()){
     MPfile.ignore(12*Nchan[NIF-1]*sizeof(cplx32f));
   };
 
-//printf("currI: %i\n",currI);
 
 };
 
@@ -825,7 +795,7 @@ while(!CPfile.eof()){
        CPfile.read(reinterpret_cast<char*>(&AuxLR), sizeof(cplx32f));
        CPfile.read(reinterpret_cast<char*>(&AuxLL), sizeof(cplx32f));
 
-// Apply ParAng:
+
        if (isFlipped){
          RR[NIF-1][currI][k] = conj((cplx64f) AuxRR);
          RL[NIF-1][currI][k] = conj((cplx64f) AuxLR);
@@ -838,15 +808,7 @@ while(!CPfile.eof()){
          LL[NIF-1][currI][k] = (cplx64f) AuxLL;
        };
 
- //      RR[NIF-1][currI][k] /= Exp1;
- //      RL[NIF-1][currI][k] /= Exp1;
-  //     LR[NIF-1][currI][k] *= Exp1;
-  //     LL[NIF-1][currI][k] *= Exp1;
 
-  //     RR[NIF-1][currI][k] *= Exp2;
-  //     RL[NIF-1][currI][k] /= Exp2;
-  //     LR[NIF-1][currI][k] *= Exp2;
-  //     LL[NIF-1][currI][k] /= Exp2; 
 
      };
 
@@ -1593,7 +1555,14 @@ printf("\n");
 gsl_matrix_view mm = gsl_matrix_view_array (Hessian, NantFit, NantFit);
 //gsl_matrix_view inv = gsl_matrix_view_array(CovMat,NantFit,NantFit);
 gsl_vector *xx = gsl_vector_calloc(NantFit);
+gsl_vector *dd0 = gsl_vector_calloc(NantFit);
+gsl_vector *dd1 = gsl_vector_calloc(NantFit);
+
 gsl_vector_view RateInd = gsl_vector_view_array(RateResVec,NantFit);
+gsl_vector_view Del00Ind = gsl_vector_view_array(DelResVec00,NantFit);
+gsl_vector_view Del11Ind = gsl_vector_view_array(DelResVec11,NantFit);
+
+
 
 int s;
 
@@ -1601,7 +1570,12 @@ gsl_permutation *permm = gsl_permutation_alloc (NantFit);
 
 gsl_linalg_LU_decomp (&mm.matrix, permm, &s);
 
-if(!isSingular){gsl_linalg_LU_solve (&mm.matrix, permm, &RateInd.vector, xx);};
+if(!isSingular){
+	gsl_linalg_LU_solve (&mm.matrix, permm, &RateInd.vector, xx);
+	gsl_linalg_LU_solve (&mm.matrix, permm, &Del00Ind.vector, dd0);
+	gsl_linalg_LU_solve (&mm.matrix, permm, &Del11Ind.vector, dd1);
+
+};
 
 //gsl_linalg_LU_invert (&m.matrix, perm, &inv.matrix);
 
@@ -1620,7 +1594,11 @@ for (i=0; i<NCalAnt; i++){
     if (CalAnts[i]==antFit[j]){af1 = j;};
   };
   if (af1 >=0){
-     if(applyRate>0){Rates[0][i][cScan] = -gsl_vector_get(xx,af1);};
+     if(applyRate>0){
+	     Rates[0][i][cScan] = -gsl_vector_get(xx,af1);
+	     Delays00[0][i][cScan] = -gsl_vector_get(dd0,af1);
+	     Delays11[0][i][cScan] = -gsl_vector_get(dd1,af1);
+     };
   };
 
 };
@@ -1645,7 +1623,7 @@ for (i=0; i<NIF; i++){
 for (i=0; i<NCalAnt; i++){
 
 //  sprintf(message,"Antenna %i -> Rate: %.3e Hz; RR Delay: %.3e s; LL Delay: %.3e s\n",CalAnts[i],Rates[0][i][cScan],Delays00[0][i][cScan],Delays11[0][i][cScan]);
-  sprintf(message,"Antenna %i -> Rate: %.3e Hz.\n",CalAnts[i],Rates[0][i][cScan]);
+  sprintf(message,"Antenna %i -> Rate: %.3e Hz.  Delay:  %.3e ns.\n",CalAnts[i],Rates[0][i][cScan],(Delays00[0][i][cScan]+Delays11[0][i][cScan])*0.5*1.e9);
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
 };
 
@@ -1780,7 +1758,7 @@ static PyObject *SetFit(PyObject *self, PyObject *args) {
   delete[] MBD2;
   delete[] DerIdx;
   delete[] AvVis;
-
+//  delete[] feedAngle;
 
   Tm = new double[NBas];
 
@@ -1788,15 +1766,18 @@ static PyObject *SetFit(PyObject *self, PyObject *args) {
   T1 = Times[0][NVis[0]-1];
   DT = (T1-T0)/TAvg;
 
-  PyObject *IFlist, *antList, *calstokes, *ret;
+  PyObject *IFlist, *antList, *calstokes, *ret, *feedPy;
 
-if (!PyArg_ParseTuple(args, "iOOiiOi", &Npar, &IFlist, &antList, &solveAmp, &solveQU, &calstokes, &useCov)){
+if (!PyArg_ParseTuple(args, "iOOiiOiO", &Npar, &IFlist, &antList, &solveAmp, &solveQU, &calstokes, &useCov, &feedPy)){
      sprintf(message,"Failed SetFit! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
      ret = Py_BuildValue("i",-1);
     return ret;
 };
+
+
+  feedAngle = (double *)PyArray_DATA(feedPy);
 
 
   NIFComp = (int) PyList_Size(IFlist);
@@ -1838,12 +1819,12 @@ perm = gsl_permutation_alloc (Npar);
 //////////////////////
 // if calstokes[0]<0, it means we are SOLVING for Stokes!
 double tempD = (double) PyFloat_AsDouble(PyList_GetItem(calstokes,0));
-StokesSolve = tempD<0.;
-if(!StokesSolve){
+StokesSolve = solveQU;
+//if(!StokesSolve){
   for (i=0; i<4; i++){
     Stokes[i] = (double) PyFloat_AsDouble(PyList_GetItem(calstokes,i));
   };
-};
+//};
 
 //////////////////////
 
@@ -1890,26 +1871,31 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 //int NIFComp;
 int Ch0, Ch1;
-int i,j,k,l;
+int i,j,k,l, end;
 double *CrossG;
 //int *doIF;
+
+
+
+
 
 //double *Tm = new double[NBas];
 
 double dx = 1.0e-8;
 
-double Drate1, Drate2; 
+double Drate1, Drate2, Ddelay1, Ddelay2; 
 double *DerAux1, *DerAux2;
 
 DerAux1 = new double[2];
 DerAux2 = new double[2];
 
 bool CohAvg = true; // Coherent summ for Chi2  ??
+bool FlipIt = false; // Flip 180 degrees the gains (in case R <-> L at all antennas).
 
 PyObject *pars, *ret,*LPy;
 
 
-if (!PyArg_ParseTuple(args, "OOii", &pars, &LPy, &Ch0, &Ch1)){
+if (!PyArg_ParseTuple(args, "OOiii", &pars, &LPy, &Ch0, &Ch1,&end)){
      sprintf(message,"Failed GetChi2! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
@@ -1978,16 +1964,20 @@ auxI1 = 0;
 
 
 cplx64f Error;
-cplx64f oneC, RateFactor, RRRate, RLRate, LRRate, LLRate; 
+cplx64f oneC, RateFactor, FeedFactor1, FeedFactor2, RRRate, RLRate, LRRate, LLRate; 
 
-cplx64f Rho1; 
-cplx64f Rho2; 
+cplx64f RM1, RP1; 
+cplx64f RM2, RP2; 
 cplx64f auxC1, auxC2, auxC3;
+cplx64f *AvPA1 = new cplx64f[NBas]; 
+cplx64f *AvPA2 = new cplx64f[NBas];
+
+int Nflipped = 0;
 
 double ParHandWgt = 1.0;
 double CrossHandWgt = 1.0;
 double BasWgt = 1.0;
-
+double Itot = 0.0;
 // Avoid overflow errors to very large RelWeights (i.e., divide the crosshand
 // instead of multipyling the parhand)
 if (RelWeight<1.0){ParHandWgt=RelWeight;}else{CrossHandWgt=1./RelWeight;};
@@ -2043,7 +2033,6 @@ for (i=0;i<NantFit;i++){printf(" %i ",antFit[i]);};
 
 
 
-
 for(l=0;l<Npar+1;l++){
   for(i=0;i<4;i++){DStokes[l][i] = Stokes[i];};
 };
@@ -2052,6 +2041,7 @@ for(l=0;l<Npar+1;l++){
 
 for (i=0; i<NIFComp; i++){
  
+
   currIF = doIF[i];
 
   for (k=0;k<NBas;k++){
@@ -2062,14 +2052,15 @@ for (i=0; i<NIFComp; i++){
     auxC11[k][j] = cplx64f(0., 0.);
    };
     AvVis[k] = 0;
+    AvPA1[k] = 0.0; AvPA2[2] = 0.0;
   };
+
 
 
   for(k=0;k<NBas;k++){Tm[k]=Times[currIF][0];};
 
 
   for (k=0; k<NVis[currIF]; k++){
-
 
     a1 = Ant1[currIF][k];
     a2 = Ant2[currIF][k];
@@ -2081,24 +2072,12 @@ for (i=0; i<NIFComp; i++){
       if (a2==CalAnts[j]){ac2 = j;};
     };
 
-    BNum = BasNum[a1-1][a2-1];
-    if(ac1>=0){Drate1 = TWOPI*Rates[0][ac1][cscan]*(Times[currIF][k]-T0);} else {Drate1=0.0;};
-    if(ac2>=0){Drate2 = TWOPI*Rates[0][ac2][cscan]*(Times[currIF][k]-T0);} else {Drate2=0.0;};
-
-    RateFactor = std::polar(1.0,Drate1-Drate2);
-    RRRate = RateFactor/PA1[currIF][k]*PA2[currIF][k];
-    RLRate = RateFactor/PA1[currIF][k]/PA2[currIF][k];
-    LRRate = RateFactor*PA1[currIF][k]*PA2[currIF][k];
-    LLRate = RateFactor*PA1[currIF][k]/PA2[currIF][k];
-
-
+    
     af1 = -1; af2 = -1;
     for(j=0; j<NantFit; j++) {
       if (a1==antFit[j]){af1 = j;};
       if (a2==antFit[j]){af2 = j;};
     };
-
-
 
 
 
@@ -2122,16 +2101,19 @@ for (i=0; i<NIFComp; i++){
       if (a2==Lant[j]){is2 = true;};
     };
 
+    
+    
+
+    
  //   if(is1||is2){BasWgt*=100.;};
 
 // The crossGains at the ref. channel: 
 
     Nder = 1;
     DerIdx[0] = 0;
-
      
     if (solveAmp==0){
-
+        
       if (af1 >= 0){
         G1pA = -1; G1pF = af1;
         G1[0] = std::polar(1.0, CrossG[af1]); 
@@ -2162,6 +2144,8 @@ for (i=0; i<NIFComp; i++){
 
       } else { G2[0] = std::polar(1.0, 0.0); G2pA = -1; G2pF = -1;}; 
 
+  //    printf("G: %.3e , %.3e ; %i , %i \n",CrossG[af1],CrossG[af2], af1, af2);
+      
     } else {
 
       if (af1 >= 0){
@@ -2210,14 +2194,28 @@ for (i=0; i<NIFComp; i++){
     };
 
 
+    BNum = BasNum[a1-1][a2-1];
+
+
 
     if(BNum>=0){
 
     AvVis[BNum] += 1;
 
+    FeedFactor1 = std::polar(1.0, feedAngle[a1-1])*PA1[currIF][k]; 
+    FeedFactor2 = std::polar(1.0, feedAngle[a2-1])*PA2[currIF][k];
+
+    AvPA1[BNum] += FeedFactor1;
+    AvPA2[BNum] += FeedFactor2;
+
 
  //   for (j=Ch0; j<Ch1+1; j++){
     for (j=Ch0; j<Ch1; j++){
+
+    
+
+
+
 
 // Add the multi-band delays:
      if (SolAlgor == 0){
@@ -2286,31 +2284,72 @@ if(StokesSolve){
   DerIdx[Nder]=Npar; DStokes[Npar][2] = DStokes[0][2]+dx; Nder += 1;
 };
 
+
+
+
+
+
+
+
+
+
+// Compute the instrumental phases (for all pol. products):
+
+
+    if(ac1>=0){
+            Ddelay1 = TWOPI*((Delays00[0][ac1][cscan]+Delays11[0][ac1][cscan])*0.5*(Frequencies[currIF][j]-RefNu));
+	    Drate1 = TWOPI*(Rates[0][ac1][cscan]*(Times[currIF][k]-T0));} else {Ddelay1=0.0;Drate1=0.0;};
+    if(ac2>=0){
+            Ddelay2 = TWOPI*((Delays00[0][ac2][cscan]+Delays11[0][ac2][cscan])*0.5*(Frequencies[currIF][j]-RefNu));	    
+	    Drate2 = TWOPI*(Rates[0][ac2][cscan]*(Times[currIF][k]-T0));} else {Ddelay2=0.0;Drate2=0.0;};
+
+    RateFactor = std::polar(1.0, Drate1-Drate2 + Ddelay1-Ddelay2);
+    //   printf("\n\n  RATES:  %.3e  %.3e  %.3e  %.3e  | %.3e %.3e\n\n",Drate1,Drate2,Ddelay1,Ddelay2, RateFactor.real(), RateFactor.imag());
+
+    RRRate = RateFactor*FeedFactor1/FeedFactor2; 
+    RLRate = RateFactor*FeedFactor1*FeedFactor2; 
+    LRRate = RateFactor/FeedFactor1/FeedFactor2; 
+    LLRate = RateFactor/FeedFactor1*FeedFactor2; 
+
+/*
+    RRRate = FeedFactor1/FeedFactor2;
+    RLRate = FeedFactor1*FeedFactor2;
+    LRRate = oneC/FeedFactor1/FeedFactor2; 
+    LLRate = oneC/FeedFactor1*FeedFactor2; 
+*/
+
+
+
+
+
+
 // Compute all derivatives:
 
     for (l=0; l<Nder; l++){
-//      printf("Doing der %i of %i\n",l+1,Nder); 
       currDer = DerIdx[l];
+    //  printf("Doing der %i of %i: %i\n",l+1,Nder,currDer); 
 
-    //  if(BNum==7){printf("Reached %.3f  %.3e  %i %i\n",Times[currIF][k]-Tm[BNum],DT,BNum,j); };
+  //    if(BNum==256){printf("Reached %.3f  %.3e  %i %i\n",Times[currIF][k]-Tm[BNum],DT,BNum,j); };
 
 // Convert gain ratios into leakages (for linear-pol antennas):
       
-      Rho1 = (oneC - G1nu[currDer])/(oneC + G1nu[currDer]);
-      Rho2 = (oneC - G2nu[currDer])/(oneC + G2nu[currDer]);
- 
+  //    Rho1 = (oneC - G1nu[currDer])/(oneC + G1nu[currDer]);
+  //    Rho2 = (oneC - G2nu[currDer])/(oneC + G2nu[currDer]);
+        RM1 = (oneC - G1nu[currDer]); RM2 = (oneC - G2nu[currDer]); 
+        RP1 = (oneC + G1nu[currDer]); RP2 = (oneC + G2nu[currDer]); 
 
+      
 // USE MINIMIZATION OF THE CROSS-HAND CORRELATIONS:
      if(AddCrossHand){
        if (is1 && is2){
-         auxC01[BNum][currDer] += (RL[currIF][k][j] + Rho1*LL[currIF][k][j] + Rho2*RR[currIF][k][j] + Rho1*Rho2*LR[currIF][k][j])*RLRate;
-         auxC10[BNum][currDer] += (LR[currIF][k][j] + Rho1*RR[currIF][k][j] + Rho2*LL[currIF][k][j] + Rho1*Rho2*RL[currIF][k][j])*LRRate;
+         auxC01[BNum][currDer] += (RP1*RP2*RL[currIF][k][j] + RM1*RP2*LL[currIF][k][j] + RP1*RM2*RR[currIF][k][j] + RM1*RM2*LR[currIF][k][j])*RLRate;
+         auxC10[BNum][currDer] += (RP1*RP2*LR[currIF][k][j] + RM1*RP2*RR[currIF][k][j] + RP1*RM2*LL[currIF][k][j] + RM1*RM2*RL[currIF][k][j])*LRRate;
        } else if (is1){
-         auxC01[BNum][currDer] += (RL[currIF][k][j] + Rho1*LL[currIF][k][j])*G2nu[currDer]*RLRate;
-         auxC10[BNum][currDer] += (LR[currIF][k][j] + Rho1*RR[currIF][k][j])*LRRate;
+         auxC01[BNum][currDer] += (RP1*RL[currIF][k][j] + RM1*LL[currIF][k][j])*G2nu[currDer]*RLRate;
+         auxC10[BNum][currDer] += (RP1*LR[currIF][k][j] + RM1*RR[currIF][k][j])*LRRate;
        } else if (is2){
-         auxC01[BNum][currDer] += (RL[currIF][k][j] + Rho2*RR[currIF][k][j])*RLRate;
-         auxC10[BNum][currDer] += (LR[currIF][k][j] + Rho2*LL[currIF][k][j])*G1nu[currDer]*LRRate;
+         auxC01[BNum][currDer] += (RP2*RL[currIF][k][j] + RM2*RR[currIF][k][j])*RLRate;
+         auxC10[BNum][currDer] += (RP2*LR[currIF][k][j] + RM2*LL[currIF][k][j])*G1nu[currDer]*LRRate;
        } else {
          auxC01[BNum][currDer] += (RL[currIF][k][j])*G2nu[currDer]*RLRate;
          auxC10[BNum][currDer] += (LR[currIF][k][j])*G1nu[currDer]*LRRate;
@@ -2318,21 +2357,23 @@ if(StokesSolve){
      };
 
 // USE GLOBAL CROSS-POLARIZATION FRINGE FITTING:
-     if(AddParHand){
+  //   if(AddParHand){
        if (is1 && is2){
-         auxC00[BNum][currDer] += (RR[currIF][k][j] + Rho1*LR[currIF][k][j] + Rho2*RL[currIF][k][j] + Rho1*Rho2*LL[currIF][k][j])*RRRate;
-         auxC11[BNum][currDer] += (LL[currIF][k][j] + Rho1*RL[currIF][k][j] + Rho2*LR[currIF][k][j] + Rho1*Rho2*RR[currIF][k][j])*LLRate;
+         auxC00[BNum][currDer] += (RP1*RP2*RR[currIF][k][j] + RP2*RM1*LR[currIF][k][j] + RM2*RP1*RL[currIF][k][j] + RM1*RM2*LL[currIF][k][j])*RRRate;
+         auxC11[BNum][currDer] += (RP1*RP2*LL[currIF][k][j] + RP2*RM1*RL[currIF][k][j] + RM2*RP1*LR[currIF][k][j] + RM1*RM2*RR[currIF][k][j])*LLRate;
        } else if (is1){
-         auxC00[BNum][currDer] += (RR[currIF][k][j] + Rho1*LR[currIF][k][j])*RRRate;
-         auxC11[BNum][currDer] += (LL[currIF][k][j] + Rho1*RL[currIF][k][j])*G2nu[currDer]*LLRate;
+         auxC00[BNum][currDer] += (RP1*RR[currIF][k][j] + RM1*LR[currIF][k][j])*RRRate;
+         auxC11[BNum][currDer] += (RP1*LL[currIF][k][j] + RM1*RL[currIF][k][j])*G2nu[currDer]*LLRate;
        } else if (is2){
-         auxC00[BNum][currDer] += (RR[currIF][k][j] + Rho2*RL[currIF][k][j])*RRRate;
-         auxC11[BNum][currDer] += (LL[currIF][k][j] + Rho2*LR[currIF][k][j])*G1nu[currDer]*LLRate;
+         auxC00[BNum][currDer] += (RP2*RR[currIF][k][j] + RM2*RL[currIF][k][j])*RRRate;
+         auxC11[BNum][currDer] += (RP2*LL[currIF][k][j] + RM2*LR[currIF][k][j])*G1nu[currDer]*LLRate;
        } else {
          auxC00[BNum][currDer] += RR[currIF][k][j]*RRRate;
          auxC11[BNum][currDer] += LL[currIF][k][j]*G2nu[currDer]*G1nu[currDer]*LLRate;
        };
-     };
+  //   };
+
+
 
    };  // Comes from   for (l=0; l<Nder; l++){
 
@@ -2361,58 +2402,45 @@ if(StokesSolve){
 // 
 // 
 
+  Itot = 0.5*(std::abs(auxC00[BNum][0]) + std::abs(auxC11[BNum][0]));
+
   if (AddParHand && abs(auxC11[BNum][0])>0.0){
       Error = auxC00[BNum][0]/auxC11[BNum][0];
   };
 
 if(doCov){
+
+	
 ////////////////////////////////////////////
 // CONTRIBUTION FROM THE PARALLEL HANDS:
-  if (AddParHand && abs(auxC11[BNum][0])>0.0){
+  if (RelWeight>0.0 && abs(auxC11[BNum][0])>0.0){
   for(j=1;j<Nder;j++){
     auxI1 = DerIdx[j];
     auxC1 = (auxC00[BNum][auxI1]/auxC11[BNum][auxI1]-Error)/dx;
-    if(CohAvg){
-// Coherent approach:
-     auxC2 = auxC1*std::conj(auxC1);
-     CovMat[(auxI1-1)*(Npar+1)] += 2.*auxC2.real()*ParHandWgt*BasWgt;
-    } else {
 // Incoherent approach:
      DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
      CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*ParHandWgt*BasWgt;
-    };
 
     if(useCov){
      for(l=j+1;l<Nder;l++){
       auxI2 = DerIdx[l];
 
-      if(CohAvg){
-// Coherent approach:
-        auxC3 = (auxC00[BNum][auxI2]/auxC11[BNum][auxI2]-Error)/dx;
-        auxC2 = auxC1*std::conj(auxC3) + std::conj(auxC1)*auxC3;
-        CovMat[(auxI1-1)*Npar+auxI2-1] += auxC2.real()*ParHandWgt*BasWgt;
-      } else {
 // Incoherent approach:
         auxC2 = (auxC00[BNum][auxI2]/auxC11[BNum][auxI2]-Error)/dx;
         DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
         CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*BasWgt;
-      };
+        CovMat[(auxI2-1)*Npar+auxI1-1] = CovMat[(auxI1-1)*Npar+auxI2-1];
      };  
    };
-  };
 
-  if(CohAvg){
-// Coherent approach:
-    auxC2 = ((cplx64f)ParMod - Error)*std::conj(auxC1) + std::conj((cplx64f)ParMod-Error)*auxC1;
- //   DerAux2 = (double *)&auxC2;
-    IndVec[auxI1-1] += auxC2.real()*ParHandWgt*BasWgt; 
-  } else {
 // Incoherent approach:
-    DerAux2[0] = (ParMod-Error.real())*auxC1.real(); DerAux2[1] = -Error.imag()*auxC1.imag();
+    DerAux2[0] = (1.-Error.real())*auxC1.real(); DerAux2[1] = -Error.imag()*auxC1.imag();
     IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*BasWgt; 
   };
+
   };
 
+  
 /////////////////////////////////////////////
 // CONTRIBUTION FROM THE CROSS HANDS: RL
   if (AddCrossHand){
@@ -2420,132 +2448,73 @@ if(doCov){
   for(j=1;j<Nder;j++){
     auxI1 = DerIdx[j];
 
-    TempC = cplx64f(DStokes[auxI1][1],DStokes[auxI1][1])/(DStokes[auxI1][0]+DStokes[auxI1][3]);
-    TempC -= cplx64f(DStokes[0][1],DStokes[0][2])/(DStokes[0][0]+DStokes[0][3]);
-    auxC1 = TempC/dx;
-    TempC = cplx64f(DStokes[auxI1][1],DStokes[auxI1][1])/(DStokes[auxI1][0]-DStokes[auxI1][3]);
-    TempC -= cplx64f(DStokes[0][1],DStokes[0][2])/(DStokes[0][0]-DStokes[0][3]);
-    auxC1 += TempC/dx;
+      auxC1 = auxC01[BNum][auxI1];
+      auxC1 -= auxC01[BNum][0];
+      auxC1 /= dx*Itot;
 
-    auxC1 -= (auxC01[BNum][auxI1]/auxC00[BNum][auxI1] - auxC01[BNum][0]/auxC00[BNum][0])/dx;
-    auxC1 -= (auxC01[BNum][auxI1]/auxC11[BNum][auxI1] - auxC01[BNum][0]/auxC11[BNum][0])/dx;
-
-  if(CohAvg){
-// Coherent approach:
-    auxC2 = auxC1*std::conj(auxC1);
-    CovMat[(auxI1-1)*(Npar+1)] += 2.*auxC2.real()*CrossHandWgt*BasWgt;
-
-  } else {
 // Incoherent approach:
     DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
     CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*BasWgt;
-  };
+
 
    if (useCov){
     for(l=j+1;l<Nder;l++){
       auxI2 = DerIdx[l];
 
-      TempC = cplx64f(DStokes[auxI2][1],DStokes[auxI2][1])/(DStokes[auxI2][0]+DStokes[auxI2][3]);
-      TempC -= cplx64f(DStokes[0][1],DStokes[0][2])/(DStokes[0][0]+DStokes[0][3]);
-      auxC3 = TempC/dx;
-      TempC = cplx64f(DStokes[auxI2][1],DStokes[auxI2][1])/(DStokes[auxI2][0]-DStokes[auxI2][3]);
-      TempC -= cplx64f(DStokes[0][1],DStokes[0][2])/(DStokes[0][0]-DStokes[0][3]);
-      auxC3 += TempC/dx;
+      auxC3 = auxC01[BNum][auxI2];
+      auxC3 -= auxC01[BNum][0];
+      auxC3 /= dx*Itot;
 
-      auxC3 -= (auxC01[BNum][auxI2]/auxC00[BNum][auxI2] - auxC01[BNum][0]/auxC00[BNum][0])/dx;
-      auxC3 -= (auxC01[BNum][auxI2]/auxC11[BNum][auxI2] - auxC01[BNum][0]/auxC11[BNum][0])/dx;
-
-     if(CohAvg){
-// Coherent approach:
-      auxC2 = auxC1*std::conj(auxC3) + std::conj(auxC1)*auxC3;
-      CovMat[(auxI1-1)*Npar+auxI2-1] += auxC2.real()*CrossHandWgt*BasWgt ;
-     } else {
 // Incoherent approach:
       DerAux2[0] = auxC1.real()*auxC3.real(); DerAux2[1] = auxC1.imag()*auxC3.imag();
       CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ;
-     };
+      CovMat[(auxI2-1)*Npar+auxI1-1] = CovMat[(auxI1-1)*Npar+auxI2-1];
     };  
    };
 
-   auxC3 = auxC01[BNum][0]/auxC00[BNum][0] + auxC01[BNum][0]/auxC11[BNum][0];
-   auxC3 = -cplx64f(DStokes[0][1],DStokes[0][1])/(DStokes[0][0]+DStokes[0][3]);
-   auxC3 = -cplx64f(DStokes[0][1],DStokes[0][1])/(DStokes[0][0]-DStokes[0][3]);
+     auxC3 = auxC01[BNum][0]/Itot;
 
-   if(CohAvg){
-// Coherent approach:
-    auxC2 = std::conj(auxC3)*auxC1 + auxC3*std::conj(auxC1);
-    IndVec[auxI1-1] += auxC2.real()*CrossHandWgt*BasWgt ; 
-   } else {
 // Incoherent approach:
     DerAux2[0] = auxC3.real()*auxC1.real(); DerAux2[1] = auxC3.imag()*auxC1.imag();
-    IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ; 
-   };
+    IndVec[auxI1-1] -= (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ; 
 
 
 
 /////////////////////////////////////////////
 // CONTRIBUTION FROM THE CROSS HANDS: LR
+    
+   auxC1 = auxC10[BNum][auxI1];
+   auxC1 -= auxC10[BNum][0];
+   auxC1 /= dx*Itot;
 
-    TempC = cplx64f(DStokes[auxI1][1],-DStokes[auxI1][1])/(DStokes[auxI1][0]+DStokes[auxI1][3]);
-    TempC -= cplx64f(DStokes[0][1],-DStokes[0][2])/(DStokes[0][0]+DStokes[0][3]);
-    auxC1 = TempC/dx;
-    TempC = cplx64f(DStokes[auxI1][1],-DStokes[auxI1][1])/(DStokes[auxI1][0]-DStokes[auxI1][3]);
-    TempC -= cplx64f(DStokes[0][1],-DStokes[0][2])/(DStokes[0][0]-DStokes[0][3]);
-    auxC1 += TempC/dx;
 
-    auxC1 -= (auxC10[BNum][auxI1]/auxC00[BNum][auxI1] - auxC10[BNum][0]/auxC00[BNum][0])/dx;
-    auxC1 -= (auxC10[BNum][auxI1]/auxC11[BNum][auxI1] - auxC10[BNum][0]/auxC11[BNum][0])/dx;
-
-  if(CohAvg){
-// Coherent approach:
-    auxC2 = auxC1*std::conj(auxC1);
-    CovMat[(auxI1-1)*(Npar+1)] += 2.*auxC2.real()*CrossHandWgt*BasWgt;
-
-  } else {
 // Incoherent approach:
     DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
     CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*BasWgt;
-  };
+
 
    if (useCov){
     for(l=j+1;l<Nder;l++){
       auxI2 = DerIdx[l];
 
-      TempC = cplx64f(DStokes[auxI2][1],-DStokes[auxI2][1])/(DStokes[auxI2][0]+DStokes[auxI2][3]);
-      TempC -= cplx64f(DStokes[0][1],-DStokes[0][2])/(DStokes[0][0]+DStokes[0][3]);
-      auxC3 = TempC/dx;
-      TempC = cplx64f(DStokes[auxI2][1],-DStokes[auxI2][1])/(DStokes[auxI2][0]-DStokes[auxI2][3]);
-      TempC -= cplx64f(DStokes[0][1],-DStokes[0][2])/(DStokes[0][0]-DStokes[0][3]);
-      auxC3 += TempC/dx;
+   auxC3 = auxC10[BNum][auxI2];
+   auxC3 -= auxC10[BNum][0];
+   auxC3 /= dx*Itot;
 
-      auxC3 -= (auxC10[BNum][auxI2]/auxC00[BNum][auxI2] - auxC10[BNum][0]/auxC00[BNum][0])/dx;
-      auxC3 -= (auxC10[BNum][auxI2]/auxC11[BNum][auxI2] - auxC10[BNum][0]/auxC11[BNum][0])/dx;
 
-     if(CohAvg){
-// Coherent approach:
-      auxC2 = auxC1*std::conj(auxC3) + std::conj(auxC1)*auxC3;
-      CovMat[(auxI1-1)*Npar+auxI2-1] += auxC2.real()*CrossHandWgt*BasWgt ;
-     } else {
 // Incoherent approach:
       DerAux2[0] = auxC1.real()*auxC3.real(); DerAux2[1] = auxC1.imag()*auxC3.imag();
       CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ;
-     };
+      CovMat[(auxI2-1)*Npar+auxI1-1] = CovMat[(auxI1-1)*Npar+auxI2-1];
+
     };  
    };
 
-   auxC3 = auxC10[BNum][0]/auxC00[BNum][0] + auxC10[BNum][0]/auxC11[BNum][0];
-   auxC3 = -cplx64f(DStokes[0][1],-DStokes[0][1])/(DStokes[0][0]+DStokes[0][3]);
-   auxC3 = -cplx64f(DStokes[0][1],-DStokes[0][1])/(DStokes[0][0]-DStokes[0][3]);
+     auxC3 = auxC10[BNum][0]/Itot;
 
-   if(CohAvg){
-// Coherent approach:
-    auxC2 = std::conj(auxC3)*auxC1 + auxC3*std::conj(auxC1);
-    IndVec[auxI1-1] += auxC2.real()*CrossHandWgt*BasWgt ; 
-   } else {
 // Incoherent approach:
     DerAux2[0] = auxC3.real()*auxC1.real(); DerAux2[1] = auxC3.imag()*auxC1.imag();
-    IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ; 
-   };
+    IndVec[auxI1-1] -= (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt ; 
 
 
 
@@ -2568,19 +2537,46 @@ if(doCov){
 
 //////////////////////////
 // UPDATE THE CHI SQUARE
-     if(AddCrossHand){
-        auxD1 = std::abs(auxC01[BNum][0]/auxC00[BNum][0]);  auxD2 = std::abs(auxC10[BNum][0]/auxC00[BNum][0]);
-          Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt ;
-        auxD1 = std::abs(auxC01[BNum][0]/auxC11[BNum][0]);  auxD2 = std::abs(auxC10[BNum][0]/auxC11[BNum][0]);
-          Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt ;
-     };
+  //   printf("C00: %.3e %.3ej ; C01: %.3e %.3ej\n",auxC00[BNum][0].real(),auxC00[BNum][0].imag(),auxC01[BNum][0].real(),auxC01[BNum][0].imag());
+  //   printf("C10: %.3e %.3ej ; C11: %.3e %.3ej\n",auxC10[BNum][0].real(),auxC10[BNum][0].imag(),auxC11[BNum][0].real(),auxC11[BNum][0].imag());
 
-     if (AddParHand){
+     if(AddCrossHand){
+    //    auxD1 = std::abs(auxC01[BNum][0]/auxC00[BNum][0]);  auxD2 = std::abs(auxC10[BNum][0]/auxC00[BNum][0]);
+    //      Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt ;
+    //    auxD1 = std::abs(auxC01[BNum][0]/auxC11[BNum][0]);  auxD2 = std::abs(auxC10[BNum][0]/auxC11[BNum][0]);
+    //      Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt ;
+      auxD1 = std::abs(auxC01[BNum][0])/Itot; auxD2 = std::abs(auxC10[BNum][0])/Itot; ///(std::abs(auxC00[BNum][0])*std::abs(auxC11[BNum][0])); ///(auxC11[BNum][0]*auxC00[BNum][0]));
+      Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt;   
+    };
+
+     if (RelWeight>0.0){
         if (abs(auxC11[BNum][0])>0.0){
-          auxD1 = std::abs(Error - (Stokes[0]+Stokes[3])/(Stokes[0]-Stokes[3]));
-            Chi2 += auxD1*auxD1*ParHandWgt*BasWgt ;
+	  auxC1 = Error - (Stokes[0]+Stokes[3])/(Stokes[0]-Stokes[3]);
+          auxD1 = auxC1.real()*auxC1.real() + auxC1.imag()*auxC1.imag();
+            Chi2 += auxD1*ParHandWgt*BasWgt ;
         };
      };
+
+      if(end==1){
+
+        for(l=0; l<NLinBas; l++){
+          if (LinBasNum[l]==BNum){  
+	        double GoodPhase = std::arg(auxC00[BNum][0]/auxC11[BNum][0]);
+	        double FlippedPhase = std::arg(auxC00[BNum][0]/auxC11[BNum][0]*(AvPA2[BNum]/AvPA1[BNum]));
+            if (std::abs(FlippedPhase)<std::abs(GoodPhase)){Nflipped += 1;}else{Nflipped -= 1;};	 
+            break;
+          };
+        };   
+	/* 
+         printf("\n GOOD: %.3f  ; BAD: %.3f\n",std::abs(GoodPhase)*180./3.1416,std::abs(FlippedPhase)*180./3.1416);
+      printf("\nIF: %i BNum: %i , %i-%i\n",currIF, BNum, a1, a2);
+      printf("RR/LL Obs Angle: %.3f | %.3f | %.3f %.3f\n",std::arg(auxC00[BNum][0]/auxC11[BNum][0])*180./3.141593, std::arg((PA1[currIF][k]*PA1[currIF][k])/(PA2[currIF][k]*PA2[currIF][k]))*180./3.141593, std::arg(PA1[currIF][k])*180./3.141593, std::arg(PA2[currIF][k])*180./3.141593);
+        */
+
+
+      };
+
+
 
 // Reset temporal visibility averages:
     for(j=0;j<Npar+1;j++){
@@ -2590,6 +2586,7 @@ if(doCov){
       auxC11[BNum][j] = cplx64f(0., 0.);
     };
     AvVis[BNum] = 0;
+
 
    }; // Comes from:   if (Times[currIF][k]>=Tm[BNum] + DT)
 
@@ -2615,12 +2612,12 @@ for(i=0;i<Npar;i++){
 // Fill in the Hessian's lower part:
 for(i=0;i<Npar;i++){
   DirDer[i] = CovMat[i*Npar+i];
-  for(j=i+1;j<Npar;j++){
-    if (useCov){CovMat[j*Npar+i] = CovMat[i*Npar + j];} else {
-       CovMat[j*Npar+i] = 0.0;
-       CovMat[i*Npar+j] = 0.0; 
-    };
-  };
+//  for(j=i+1;j<Npar;j++){
+//    if (useCov){CovMat[j*Npar+i] = CovMat[i*Npar + j];} else {
+//       CovMat[j*Npar+i] = 0.0;
+//       CovMat[i*Npar+j] = 0.0; 
+//    };
+//  };
   CovMat[i*Npar+i] += Lambda*(Largest);
 };
 
@@ -2645,30 +2642,15 @@ for(i=0;i<Npar;i++){
 
   Chi2Old = Chi2;
 
+    if (end==1){Chi2 = (Nflipped>0)?1.0:-1.0;};
+ //   if(FlipIt){printf("\nWill flip all phase gains by 180 degrees.\n\n\n\n");};
+
     ret = Py_BuildValue("d",Chi2);
 
-/*
-  delete[] DirDer;
-  delete[] Tm;
-  delete[] DerAux1;
-  delete[] DerAux2;
-  delete[] doIF;
-  delete[] antFit;
-  delete[] CovMat;
-  delete[] IndVec;
-  delete[] SolVec;
-  delete[] G1;
-  delete[] G2;
-  delete[] G1nu;
-  delete[] G2nu;
-  delete[] MBD1;
-  delete[] MBD2;
-  delete[] AvVis;
-  delete[] DerIdx;
 
-  for(i=0;i<Npar+1;i++){delete[] DStokes[i];};
-  delete[] DStokes;
-*/
+  delete[] AvPA1;
+  delete[] AvPA2;
+
 
   return ret;
 

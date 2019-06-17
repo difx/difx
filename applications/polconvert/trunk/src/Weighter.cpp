@@ -60,7 +60,11 @@ bool Weighter::isPhased(double JDTime){
   bool Phased = true;
 
   for (i=0; i<NbadTimes; i++){
-    if(JDTime>=badTimes[2*i] && JDTime<=badTimes[2*i+1]){Phased=false;break;};
+    if(JDTime>=badTimes[2*i] && JDTime<=badTimes[2*i+1]){
+      sprintf(message,"Bad time %i: %.8f |  %.8f %.8f!\n",i,JDTime,badTimes[2*i],badTimes[2*i+1]);
+      fprintf(logFile,"%s",message);  std::cout<<message; fflush(logFile);
+      Phased=false;break;
+    };
   };
 
   return Phased;

@@ -54,10 +54,12 @@ class DataIOSWIN: public DataIO {
 
    ~DataIOSWIN();
 
-   DataIOSWIN(int nSWIN, std::string* outputfiles, int Nant, int *Ants, double *doRange, int nIF, int *nChan, double **Freqs, bool Overwrite, bool doTest, bool doSolve, int saveSource, double jd0, ArrayGeometry *Geom, FILE *logF);
+   DataIOSWIN(int nSWIN, std::string* outputfiles, int Nant, int *Ants, double *doRange, int nIF, int *nChan, int *nChanACorr, double **Freqs, bool Overwrite, bool doTest, bool doSolve, int saveSource, double jd0, ArrayGeometry *Geom, FILE *logF);
 
    bool setCurrentIF(int i);
 
+   // Average in time the antenna autocorrelations:
+   void averageAutocorrs();
 
 /* Very important function. Finds the next combination of the 4 correlation
    products. Returns the visibilities as an array of pointers;
@@ -106,7 +108,7 @@ class DataIOSWIN: public DataIO {
     int nfiles;
     std::ifstream *olddifx;
     std::fstream *newdifx;
-    bool isOverWrite, doWriteCirc, canPlot, isAutoCorr;
+    bool isOverWrite, doWriteCirc, canPlot, isAutoCorr, isTwoLinear;
     long currEntries[MAXIF][4], nrec;
     long *filesizes;
     std::complex<float> *currentVis[4] ;

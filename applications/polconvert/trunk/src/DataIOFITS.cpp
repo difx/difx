@@ -39,7 +39,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 DataIOFITS::~DataIOFITS() {
 
+  int i,j;
+  
+  delete[] linAnts;
+  delete[] currentVis;
+  delete[] bufferVis;
+  delete[] currentData;
+  delete[] bufferData;
 
+  delete[] NAV;
+  delete[] Freqs;
+  delete[] is1;
+  delete[] is2;
+
+  for(i=0; i<NLinAnt;i++){
+    for(j=0; j<Nfreqs; j++){delete[] averAutocorrs[i][j];};
+      delete[] averAutocorrs[i];
+  };
+  delete[] averAutocorrs; 
+
+  for(i=0;i<Nfreqs;i++){delete[] Freqvals[i];};
 
 };
 
@@ -60,7 +79,7 @@ logFile = logF ;
 
 doWriteCirc = doSave;
 
-int i;
+int i, j, k;
 
 Geometry = Geom;
 //BaseLine[0] = BaseLineD[0];
@@ -129,6 +148,24 @@ bufferData = new float[12];
     saveCirculars(outputfile);
 
 };
+
+
+//  Prepare memory for average autocorrs:
+  NAV = new int[NLinAnt];
+  averAutocorrs = new float**[NLinAnt];
+  for(i=0; i<NLinAnt;i++){
+    NAV[i] = 0;  
+    averAutocorrs[i] = new float*[Nfreqs];
+    for(j=0;j<Nfreqs;j++){
+        averAutocorrs[i][j] = new float[Freqs[j].Nchan];
+        for(k=0; k<Freqs[j].Nchan; k++){
+        averAutocorrs[i][j][k] = 1.0;}
+    };
+  };
+
+
+
+
 
   if (!success){return;};
 ////////////////////////////////////

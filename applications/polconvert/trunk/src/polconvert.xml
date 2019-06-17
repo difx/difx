@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.7.5\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>\n\nVersion 1.7.6\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
       
-       <description>\n\nVersion 1.7.5\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>\n\nVersion 1.7.6\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
 
 
 <input>
@@ -113,19 +113,25 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
     <param type="any" name="XYadd" mustexist="false">
       <description>Add manually a phase between X and Y before conversion (in deg.). Either a list with one value per linear-pol station OR a list of lists (i.e., one value per IF for each antenna) OR a list of lists of lists (one value per channel, for each IF, for each linear-polarization antenna).</description>
-      <value>[0.0]</value>
+      <value>{}</value>
     </param>
 
     <param type="any" name="XYdel" mustexist="false">
       <description>Add manually a multiband delay between X and Y before conversion (in deg./chanel). One value per linear-pol station.</description>
-      <value>[0.0]</value>
+      <value>{}</value>
     </param>
 
 
     <param type="any" name="XYratio" mustexist="false">
-      <description>Add manually an amplitude ratio between X and Y before conversion (R=X/Y). Follows the same format as XYadd.</description>
-      <value>[1.0]</value>
+	    <description>Add manually an amplitude ratio between X and Y before conversion (R=X/Y). Follows the same format as XYadd. If a negative value is given for an antenna, the X/Y ratio will be estimated from its autocorrelations (the spectrum for antenna i will be computed using a running-median filter of width equal to -1/XYratio[i] of the IF bandwidth). If 0.0 is given for an antenna, the ratio will be estimated from the phasecal amplitudes (as long as usePcal is True).</description>
+      <value>{}</value>
     </param>
+
+    <param type="any" name="usePcal" mustexist="false">
+	    <description>List of booleans (one boolean per linear-polarization station). If True, use the X-Y difference of phasecal tones as an estimate of the X-Y cross-polarization phase. Default means to NOT use the phasecals.</description>
+      <value>[]</value>
+    </param>
+
 
     <param type="any" name="swapXY" mustexist="false">
       <description>Swap X-Y before conversion. One boolean per linear-pol VLBI station.</description>
@@ -136,6 +142,12 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <description>Swap R-L of the OTHER antenna(s) when plotting the fringes.</description>
       <value>False</value>
     </param>
+
+    <param type="any" name="feedRotation" mustexist="false">
+      <description>Rotation angle of the feed (one value per antenna, in degrees). Default means zero degrees (so that X is truly horizontal for the linear-pol. antennas). These angles are used in the gain-solver step.</description>
+      <value>[]</value>
+    </param>
+
 
     <param type="bool" name="IDI_conjugated" mustexist="false">
       <description>Assume a swap in the baseline defintion (i.e., conjugation) of the FITS-IDI file. This has NO effect on SWIN files. </description>
@@ -326,6 +338,29 @@ the time range 0-07:30:00 to 0-07:31:00 (AIPS format). Then:
 
 ###################
    
+     SPECIAL CASE 2:
+
+For the two linear-pol antennas, use the pcal tones to correct the 
+phase difference between X and Y. In addition to this, for the first 
+antenna, the X/Y relative amplitude is estimated from the phasecal 
+tones. For the second antenna, the X/Y amplitude spectrum is 
+estimated from the autocorrelations, using a running median
+filter of 51 channels (if the number of channels per IF is 510):
+
+
+- usePcal = [True,True]
+- XYratio = [-10., 0.0]
+
+
+Notice that, if the GCPFF algorithm is used to solve for the X/Y gains,
+these will be stored in the 'XYratio' and 'XYadd' keys of the returned
+dictionary, whereas the a-priori gains computed from the pcals and the
+autocorrelations will be stored as complex arrays in 'aPrioriXYGain'.
+
+
+
+###################
+   
      OTHER SPECIAL CASES (NOT FULLY TESTED):
 
 1.- If two antennas have linear-pol receivers (i.e., ALMA plus another one)
@@ -354,6 +389,12 @@ NOTICE THAT POLCONVERT CAN ESTIMATE THE XYADD AND XYRATIO, FROM
 THE SCAN THAT YOU ASK IT TO PLOT. IF IT IS A SCAN OF A STRONG CALIBRATOR,
 POLCONVERT CAN ESTIMATE ALL THESE QUANTITIES FOR YOUR VLBI STATIONS WITH
 LINEAR FEEDS.
+
+
+
+
+
+
 
 
 #########################################

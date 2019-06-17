@@ -69,6 +69,40 @@ double DataIO::getDay0(){return day0;};
 
 
 
+cplx32f DataIO::getAmpRatio(int ant, int spw, int chan){
+    
+
+
+ //   int i; 
+ //   int iX = -1;
+ //   int iY = -1;
+ //   double ret;
+    
+/*
+    for (i=0; i<nautos; i++){
+      if(AutoCorrs[i].AntIdx == ant && AutoCorrs[i].IF == spw){
+        if (AutoCorrs[i].Pol == 1 && std::abs(JD - AutoCorrs[i].JD) < minJDX){iX = i;};
+        if (AutoCorrs[i].Pol == 2 && std::abs(JD - AutoCorrs[i].JD) < minJDY){iY = i;};
+      }; if (iX>=0 && iY>=0){break;};
+    };
+    
+    ret = (iX>=0 && iY>= 0)? std::sqrt(AutoCorrs[iY].AC/AutoCorrs[iX].AC) : 1.0; 
+    return cplx32f(ret,0.);
+//   printf("AUTOCORRS %.2f\n",ret);
+
+*/
+
+
+
+
+
+    return cplx32f(averAutocorrs[ant][spw][chan],0.);
+    
+    
+};
+
+
+
 
 
 void DataIO::getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2){
@@ -78,6 +112,11 @@ double CH, SH, CT1, CT2, HAng, H1, H2, Elev1, Elev2;
 int ibas;
 
 Elev1 = 0.0; Elev2 = 0.0;
+
+
+// Dummy value if autocorrelation:
+if (Ant1==Ant2){P1 = -1.e9; P2 = -1.e9; return;};
+
 
 if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
 

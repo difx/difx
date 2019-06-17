@@ -30,14 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include <math.h>
 
 
-//#include <complex>
-//#include <dirent.h>
-//#include <fftw3.h>
-//#include <gsl/gsl_linalg.h>
 
-
-//typedef std::complex<double> cplx64f;
-//typedef std::complex<float> cplx32f;
 
 /* Docstrings */
 static char module_docstring[] =
@@ -151,13 +144,13 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
   };
 
   for (jj=0;jj<Nants;jj++){
-//  printf("C: %i\n",jj);
+
   fits_read_col(ifile, TDOUBLE, ist, jj+1, 1, 3, NULL, &Coords[3*jj], &iAux, &status);
   if(status){
     printf("\n\nPROBLEM ACCESSING ARRAY COORDINATES DATA!  ERR: %i\n\n",status);
     return Py_BuildValue("i",2);
   };
-//  double RE = sqrt(Coords[3*jj]*Coords[3*jj] + Coords[3*jj+1]*Coords[3*jj+1] + Coords[3*jj+2]*Coords[3*jj+2]);
+
 
   fits_read_col(ifile, TINT, imt, jj+1, 1, 1, NULL, &Mounts[jj], &iAux, &status);
   if(status){
@@ -165,7 +158,7 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
     return Py_BuildValue("i",2);
   };
 
- // printf("%i \n\n",Mounts[jj]);
+
   printf("ANTENNA %2li: X=%-9.1f Y=%-9.1f Z=%-9.1f | MOUNT: %i\n",jj,Coords[3*jj],Coords[3*jj+1],Coords[3*jj+2],Mounts[jj]);
 
 

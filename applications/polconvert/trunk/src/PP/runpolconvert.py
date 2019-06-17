@@ -10,7 +10,7 @@ import shutil
 import re
 import sys
 
-pcvers='1.7.5'
+pcvers='1.7.6'
 
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.
@@ -179,7 +179,7 @@ print 'Spectral window request is for',spwToUse
 def runPolConvert(label, spw=-1, DiFXinput='',
     DiFXoutput='', DiFXcalc='', DiFXsave='',
     timeRange=[], doTest=True, savename='', plotIF=-1, doIF=[], 
-    amp_norm=1.0, XYadd=[0.0], XYratio=[1.0], linAnt=[1], plotAnt=-1,
+    amp_norm=1.0, XYadd={}, XYratio={}, linAnt=[1], plotAnt=-1,
     npix=50, gainmeth='T', XYavgTime=0.0):
     # based on common drivepolconvert inputs above
     gains = calgains[3:]
@@ -308,8 +308,8 @@ for job in djobs:
     # DiFX output dir and input files:
     # DiFXout is defined in the input.
     DiFXinput = ('%s/%s_%s.input' % (DiFXout,expName,job))
-    #DiFXcalc = ('%s/%s_%s.calc' % (DiFXout,expName,job))
-    #DiFXcalc is not used in the default ALMA implementation
+    DiFXcalc = ('%s/%s_%s.calc' % (DiFXout,expName,job))
+    #DiFXcalc is now required in the default ALMA implementation
     SWIN = ('%s/%s_%s.difx' % (DiFXout,expName,job))
     SAVE = ('%s/%s_%s.save' % (DiFXout,expName,job))
 
@@ -322,7 +322,7 @@ for job in djobs:
 
     print '\nProceeding with job ' + job + '\n'
     runPolConvert(label, spw=spwToUse,
-        DiFXinput=DiFXinput, DiFXcalc='', DiFXoutput=SWIN, DiFXsave=SAVE,
+        DiFXinput=DiFXinput, DiFXcalc=DiFXcalc, DiFXoutput=SWIN, DiFXsave=SAVE,
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=thesavename,
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=usePlotAnt,

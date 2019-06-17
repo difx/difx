@@ -2,13 +2,30 @@ PolConvert is implemented as a CASA task and may be installed
 as described in src/INSTALL.  The machinations at this level
 are needed to integrate it into a standard DiFX build process.
 
-Prerequisits:
+Prerequisites:
 - define DIFXCASAPATH enviroment, which should point to the
   bin directory of your CASA installation
+- the code must be built with some care on the version of the
+  numpy package which has to be the same as the one used by
+  CASA.  The virtualenv package may be used to make this happen:
+
+   virtualenv --extra-search-dir=/path-to-CASA/lib/python2.7 \
+     --python=python ENV
+
+  where ENV is some directory that will hold an installation
+  of python, e.g. /opt/CASA/casa-release/lib/python2.7.  Then
+  install the correct version of numpy
+
+   source shell-fragment-to-put-CASA-at-head-of-path
+   source ENV/bin/activate
+   # python is a symbolic link to the casa executable
+   npv=`python -c 'import numpy as np ; print np.__version__'`
+   python -m pip install numpy==$npv
+   source setup-difx.bash
 
 The installed directory contains the elements needed to use
 polconvert from within CASA.  Typically you might add the
-following line to your .casa/init.py file:
+following line to your .casa/init.py file to use them:
 
 try:
     from os import environ
@@ -17,6 +34,17 @@ except:
     print 'unable to load $DIFXROOT/share/polconvert/mytasks.py'
 
 (or similar).  Create .casa/init.py if it does not exist.
+
 You can then run polconvert directly from within CASA following
 the sample input commands provided in (src/PP/)README.POLCONVERT
-which should be installed in DIFX_ROOT/share/polconvert.
+which should be installed in $DIFX_ROOT/share/polconvert.  You
+should only do this if you are an expert....
+
+Otherwise, you can run prepolconvert.py and drivepolconvert.py for
+production processing.  See ^/sites/Haystack/ehtc/Readme-Cycle5.txt
+for the EHT processing as an example.
+
+This code has not yet been generalized for other applications, but
+that should happen soon.  Really.
+
+eof

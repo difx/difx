@@ -32,6 +32,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 DataIOSWIN::~DataIOSWIN() {
 
+  int i, j; 
+  
   free(Records);
   free(ParAng[0]);
   free(ParAng[1]);
@@ -39,16 +41,41 @@ DataIOSWIN::~DataIOSWIN() {
   free(is2orig);
   free(is1);
   free(is2);
+  for (i=0; i<nautos; i++){delete[] AutoCorrs[i].AC;};
+  free(AutoCorrs);
+  
+  delete[] linAnts;
+  delete[] NAV;
+  delete[] Freqs;
+  delete[] is1;
+  delete[] is2;
 
+  for (i=0; i<4; i++){
+    delete[] currentVis[i];
+    delete[] bufferVis[i];
+    delete[] auxVis[i];
+  };
+
+  
+
+  for(i=0; i<NLinAnt;i++){
+    for(j=0; j<Nfreqs; j++){delete[] averAutocorrs[i][j];};
+      delete[] averAutocorrs[i];
+  };
+  delete[] averAutocorrs; 
+
+  for(i=0;i<Nfreqs;i++){delete[] Freqvals[i];};
+  
+  
 };
 
 
-DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt, int *LinAnt, double *Range, int nIF, int *nChan, double **FreqVal, bool Overwrite, bool doTest, bool doSolve, int saveSource, double jd0, ArrayGeometry *Geom, FILE *logF) {
+DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt, int *LinAnt, double *Range, int nIF, int *nChan, int *NchanAC, double **FreqVal, bool Overwrite, bool doTest, bool doSolve, int saveSource, double jd0, ArrayGeometry *Geom, FILE *logF) {
 
 
 doWriteCirc = doSolve;
 nfiles = nfiledifx;
-int i;
+int i, j;
 
 
 //char *message;
@@ -71,15 +98,19 @@ Geometry = Geom;
 // CosDec[i] = cos(DeclinationD[i]);
 //};
 
-
+isTwoLinear = false;
 success = true;
 NLinAnt = NlinAnt;
 linAnts = new int[NlinAnt];
 
+NAV = new int[NlinAnt];
+
 for (i=0;i<NlinAnt;i++){
   linAnts[i] = LinAnt[i];
+  NAV[i] = NchanAC[i];
 };
 
+AutoCorrs = (AutoCorrelation *) malloc(RECBUFFER*sizeof(AutoCorrelation));
 Records = (Record *) malloc(RECBUFFER*sizeof(Record)); // new Record[RECBUFFER];
 is1orig =  (bool *) malloc(RECBUFFER*sizeof(bool)); //new bool[RECBUFFER];
 is2orig = (bool *) malloc(RECBUFFER*sizeof(bool));  //new bool[RECBUFFER];
@@ -127,7 +158,120 @@ for (i=0; i<4; i++){
   openOutFiles(difxfiles);
   readHeader(doTest,saveSource);
 
+  
+//  Prepare memory for average autocorrs:
+  averAutocorrs = new float**[NLinAnt];
+  for(i=0; i<NLinAnt;i++){
+    averAutocorrs[i] = new float*[Nfreqs];
+    for(j=0; j<Nfreqs; j++){averAutocorrs[i][j] = new float[Freqs[j].Nchan];};    
+  };
+  averageAutocorrs();
+  
 };
+
+
+
+
+
+
+double getMedian(double *X, int n0, int N){
+
+  int i,j,Nmed;
+  double Aux;
+
+  if(N==1){return X[n0];};
+
+  double *Sorted = new double[N];
+  for(i=0; i<N; i++){Sorted[i] = X[i+n0];};
+
+  for(i=0;i<N-1;i++){
+    for(j=i+1; j<N; j++){
+      if(Sorted[i]>Sorted[j]){Aux = Sorted[i]; Sorted[i]=Sorted[j]; Sorted[j] = Aux;};
+    };	    
+  };	  
+
+  if(N%2){
+    Nmed = N/2 -1; 
+    return (Sorted[Nmed] + Sorted[Nmed+1])/2.;
+  } else {
+    Nmed = (N+1)/2 -1;
+    return Sorted[Nmed];
+  };	  
+
+};	
+
+
+
+
+void DataIOSWIN::averageAutocorrs(){
+  
+   int i, j, k,l, l2, NHf;
+   double Nx, Ny;
+   double *TempX, *TempY;
+   
+   for(i=0;i<NLinAnt;i++){    
+	   
+     for(j=0; j<Nfreqs; j++){	    
+	     
+       TempX = new double[Freqs[j].Nchan]; 
+       TempY = new double[Freqs[j].Nchan]; 
+       for(k=0; k<Freqs[j].Nchan; k++){
+	 TempX[k] = 0.0; TempY[k] = 0.0;      
+       };
+       Nx = 0. ; Ny = 0.;
+       for(k=0; k<nautos;k++){
+         if(AutoCorrs[k].AntIdx == i && AutoCorrs[k].IF == j){
+           if (AutoCorrs[k].Pol == 1){
+	      Nx += 1.;	   
+              for(l=0; l<Freqs[j].Nchan; l++){		      
+		 TempX[l] += AutoCorrs[k].AC[l]; 
+	      };
+	   };    
+           if (AutoCorrs[k].Pol == 2){
+              Ny += 1.;		   
+              for(l=0; l<Freqs[j].Nchan; l++){		   	    
+		TempY[l] += AutoCorrs[k].AC[l]; 
+	      };
+	   };   
+         
+	 };
+                   
+       };
+       
+       if(NAV[i]>0 && Nx > 0. && Ny > 0.){
+       	   NHf = NAV[i]/2;
+
+           for(l=0; l<Freqs[j].Nchan; l++){TempX[l] = std::sqrt(TempY[l]/TempX[l]*Nx/Ny);};
+	   for(l=0; l< NHf; l++){
+	     averAutocorrs[i][j][l] = getMedian(TempX,0,NAV[i]);
+             l2 = Freqs[j].Nchan - l -1;
+	     averAutocorrs[i][j][l2] = getMedian(TempX,Freqs[j].Nchan-NAV[i]-1,NAV[i]);
+	   };
+
+	   for(l=NHf; l< Freqs[j].Nchan - NHf; l++){
+	     l2 = l - NHf;   
+	     averAutocorrs[i][j][l] = getMedian(TempX,l2,NAV[i]);
+	   };
+       //    averAutocorrs[i][j] = (float) std::sqrt(TempY/TempX*Nx/Ny);  // GOOD
+       //    averAutocorrs[i][j] = (float) std::sqrt(TempX/TempY*Ny/Nx);  // FOR TESTING
+       } else {
+           for(l=0; l<Freqs[j].Nchan; l++){averAutocorrs[i][j][l] = 1.0;};
+       };
+
+       delete[] TempX;
+       delete[] TempY;
+     };    
+   };
+    
+};
+
+
+
+
+
+
+
+
 
 
 
@@ -172,7 +316,7 @@ void DataIOSWIN::openOutFiles(std::string* difxfiles) {
 
 
    if (!isOverWrite) {
-     newdifx[auxI].open((SEP+difxfiles[auxI]).c_str(), std::ios::out | std::ios::binary);
+     newdifx[auxI].open((SEP+difxfiles[auxI]).c_str(), std::ios::out | std::ios::binary | std::ios::in);
      newdifx[auxI] << olddifx[auxI].rdbuf();
      newdifx[auxI].close();
      newdifx[auxI].open((SEP+difxfiles[auxI]).c_str(), std::ios::out | std::ios::binary | std::ios::in);
@@ -225,6 +369,16 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 // AUXILIARY BINARY FILES TO STORE CIRCULAR VISIBILITIES:
   FILE **circFile = new FILE*[Nfreqs];
 
+// AUXILIARY BINARY FILES TO STORE AUTO-CORRELATIONS:
+  
+  FILE *autoCorrs = new FILE;
+
+//  for (ii=0; ii<Nfreqs; ii++){
+  sprintf(message,"POLCONVERT.FRINGE/AUTOCORRS.dat");
+  autoCorrs = fopen(message,"wb");
+//  };
+  
+  
 // OPEN AUXILIARY BINARY FILES:
   if (doWriteCirc){
     for (ii=0; ii<Nfreqs; ii++){
@@ -241,7 +395,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   success = true;
 
 
-
+  free(AutoCorrs);
   free(Records);
   free(ParAng[0]);
   free(ParAng[1]);
@@ -250,6 +404,9 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   delete is1;
   delete is2;
 
+  
+  
+  AutoCorrs = (AutoCorrelation *) malloc(RECBUFFER*sizeof(AutoCorrelation));
   Records = (Record *) malloc(RECBUFFER*sizeof(Record)); // new Record[RECBUFFER];
   is1orig =  (bool *) malloc(RECBUFFER*sizeof(bool)); //new bool[RECBUFFER];
   is2orig = (bool *) malloc(RECBUFFER*sizeof(bool));  //new bool[RECBUFFER];
@@ -262,11 +419,12 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 
 
 
-
+  nautos = 0;
   nrec = 0;
   long CURRSIZE = RECBUFFER;
+  long AUTOSIZE = RECBUFFER;
   int ant1, ant2, auxI, auxJ;
-
+  double auxD;
 //Assume binary index (i.e., DiFX version >= 2.0):
   sprintf(message,"\nThere are %i IFs.",Nfreqs);
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -295,7 +453,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   while(!newdifx[auxI].eof()) {
 
 
-   if(loc/bperp > cp){cp += 1; printf("\r  %li%% DONE",cp);fflush(stdout);};
+//   if(loc/bperp > cp){cp += 1; printf("\r  %li%% DONE",cp);fflush(stdout);};
 
    newdifx[auxI].seekg(loc,newdifx[auxI].beg);
    newdifx[auxI].read(reinterpret_cast<char*>(&basel), sizeof(int));
@@ -363,10 +521,63 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   };
 
 
+  
+  
 // Derive the parallactic angles:
-  getParAng(sidx,ant1,ant2,UVW,AuxPA1,AuxPA2);
+  getParAng(sidx,ant1-1,ant2-1,UVW,AuxPA1,AuxPA2);
   daytemp2 = (daytemp + day0)*86400.;
 
+  
+  
+// Read auto-correlations:
+  if (ant1==ant2){
+  //    printf("FOUND AUTOCORR: %i %i %c %c %.1f\n",ant1,fridx,pol[0],pol[1],daytemp);
+      auxD = 0.0;
+      newdifx[auxI].seekg(beg,newdifx[auxI].beg);
+      newdifx[auxI].read(reinterpret_cast<char*>(currentVis[0]),end-beg);
+
+   //   for (auxJ=1; auxJ<Freqs[fridx].Nchan-1; auxJ++){
+   //     auxD += std::abs(currentVis[0][auxJ]);
+   //   };
+      
+      auxJ = -1;
+      if( (pol[0]=='R' || pol[0]=='X') && (pol[1]=='R' || pol[1]=='X')){auxJ=1;};
+      if( (pol[0]=='L' || pol[0]=='Y') && (pol[1]=='L' || pol[1]=='Y')){auxJ=2;};
+      
+      if (auxJ>0){
+    //    auxD /= (double(Freqs[fridx].Nchan)-2.);
+        AutoCorrs[nautos].AntIdx = ant1-1;
+        AutoCorrs[nautos].IF = fridx;
+        AutoCorrs[nautos].JD = daytemp;
+        AutoCorrs[nautos].Pol = auxJ;
+        AutoCorrs[nautos].AC = new double[Freqs[fridx].Nchan];
+        for (auxJ=1; auxJ<Freqs[fridx].Nchan-1; auxJ++){
+          AutoCorrs[nautos].AC[auxJ] = std::abs(currentVis[0][auxJ]);
+        };
+
+     //   AutoCorrs[nautos].AC = auxD;        
+
+	nautos += 1;
+
+        if (nautos==AUTOSIZE){
+          AUTOSIZE += RECBUFFER; 
+          AutoCorrs = (AutoCorrelation*) realloc(AutoCorrs, AUTOSIZE*sizeof(AutoCorrelation));
+        };
+        
+        fwrite(&ant1,sizeof(int),1,autoCorrs);
+        fwrite(&auxJ,sizeof(int),1,autoCorrs);
+        fwrite(&fridx,sizeof(int),1,autoCorrs);
+        fwrite(&daytemp,sizeof(double),1,autoCorrs);
+        fwrite(&auxD,sizeof(double),1,autoCorrs);
+      };
+  
+  };
+      
+  
+  
+  
+//  if(ant1!=ant2){
+//  printf("SOU %i:  |  T: %.2f  |  PA1: %.3f  |  PA2: %.3f\n",sidx,daytemp2,AuxPA1*180./3.1416,AuxPA2*180./3.1416);};
 
 // Write circular visibilities (assume standard pol. ordering):
   if ((saveSource<0 || sidx == saveSource) && doWriteCirc && (!is1orig[nrec] && !is2orig[nrec]) && (pol[0] == 'R' || pol[0]=='X') && (pol[1] == 'R' || pol[1]=='X')){
@@ -374,7 +585,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 
     for (auxJ=0; auxJ<4; auxJ++){    
       newdifx[auxI].seekg(beg + (RecordSize + (Freqs[fridx].Nchan)*sizeof(cplx32f))*auxJ, newdifx[auxI].beg);
-      newdifx[auxI].sync();
+     // newdifxR[auxI].sync();
       newdifx[auxI].read(reinterpret_cast<char*>(currentVis[auxJ]),end-beg);
 
     };
@@ -444,6 +655,8 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 
 
 // Rewind:
+//  newdifxW[auxI].clear();
+//  newdifxW[auxI].seekg(0,newdifxW[auxI].beg);
   newdifx[auxI].clear();
   newdifx[auxI].seekg(0,newdifx[auxI].beg);
 
@@ -477,7 +690,12 @@ if (!success){
     };
   };
 
+  fclose(autoCorrs);
+
+  
   delete[] circFile;
+//  delete autoCorrs;
+
 
 
 if (nrec==0) {
@@ -510,6 +728,7 @@ double time;
 long indices[4];
 bool complete;
 
+//  printf("\n NEW VISIB! \n");
 
   if (NLinVis==0){return false;};
 
@@ -529,6 +748,9 @@ for (rec=0; rec<nrec; rec++) {
   if (Records[rec].notUsed && Records[rec].freqIndex==currFreq) {
      indices[idx] = rec;
      complete = !(is1[rec] && is2[rec]) ; 
+
+     if(!complete){isTwoLinear=true;};
+
      if (complete){
        canPlot = true;
        Records[rec].notUsed = false;};
@@ -663,18 +885,30 @@ for (i=0; i<4; i++) {
 // Case of auto-correlations (in the 2nd round of conversion):
 
 // if (currEntries[currFreq][2]==-1 && currEntries[currFreq][3]==-1 && complete && antenna == otherAnt){
- if ( antenna == otherAnt ){
-   isAutoCorr = true;
-   if (complete){
+
+ isAutoCorr = antenna == otherAnt;
+
+// if ( antenna == otherAnt ){
+//   isAutoCorr = true;
+ if (complete) {
+   if (isAutoCorr || isTwoLinear){
      for (k=0;k<Freqs[currFreq].Nchan; k++) {
        currentVis[3][k] = auxVis[3][k];
        currentVis[2][k] = auxVis[2][k];
        currentVis[0][k] = auxVis[0][k];
        currentVis[1][k] = auxVis[1][k];
-
      };
+//   } else if (isTwoLinear){
+//     for (k=0;k<Freqs[currFreq].Nchan; k++) {
+//       currentVis[3][k] = auxVis[2][k];
+//       currentVis[2][k] = auxVis[3][k];
+//       currentVis[0][k] = auxVis[0][k];
+//       currentVis[1][k] = auxVis[1][k];
+//     };
+ //   printf("READING  %i  %i\n",antenna,otherAnt);
    };
- } else {isAutoCorr = false;};
+ };
+// } else {isAutoCorr = false;};
 
 
 calField = field; 
@@ -704,6 +938,8 @@ bool DataIOSWIN::setCurrentMixedVis() {
 long rec;
 int i, fnum = 0;
 
+//  printf("\n WRITE VISIB! \n");
+
 // Write:
 
 for (i=0; i<4; i++) {
@@ -713,12 +949,12 @@ for (i=0; i<4; i++) {
   fnum = Records[rec].fileNumber;
   newdifx[fnum].seekp(Records[rec].byteIni, newdifx[fnum].beg);
   newdifx[fnum].write(reinterpret_cast<char*>(bufferVis[i]),Records[rec].byteEnd-Records[rec].byteIni);
+  newdifx[fnum].flush();
+  newdifx[fnum].clear();
+//  newdifx[fnum].sync();
  };
 };
 
-  newdifx[fnum].flush();
-  newdifx[fnum].sync();
-  newdifx[fnum].clear();
 
   return true;
 
@@ -741,13 +977,12 @@ for (i=0; i<4; i++) {
   fnum = Records[rec].fileNumber;
   newdifx[fnum].seekp(Records[rec].byteIni - 4*sizeof(double), newdifx[fnum].beg);
   newdifx[fnum].write(reinterpret_cast<char*>(&zero),sizeof(double));
+  newdifx[fnum].flush();
+//  newdifx[fnum].sync();
  };
 };
 
-  newdifx[fnum].flush();
-  newdifx[fnum].sync();
   newdifx[fnum].clear();
-
 
 };
 
@@ -862,13 +1097,14 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
 for (i=0; i<4; i++) {
 
 
- if (currEntries[currFreq][i]<0 || isAutoCorr ) {
+ if (currEntries[currFreq][i]<0 || isAutoCorr || isTwoLinear ) {
 
   if (!canPlot){ // Case of auto-correlations (2nd round of conversion):   
 
     for(k=0;k<Freqs[currFreq].Nchan; k++) {
       auxVis[i][k] = bufferVis[i][k];
     };
+ //   printf("SETTING\n");
 
   } else {
 
@@ -877,6 +1113,8 @@ for (i=0; i<4; i++) {
       //auxVis[i][k] = {0.0,0.0};
       auxVis[i][k] = (std::complex<float>)0;
     };
+    if(i==3){isTwoLinear=false;};
+ //   printf("ZEROING\n");
 
   };
 

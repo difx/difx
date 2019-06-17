@@ -1,3 +1,9 @@
+v1.7.6
+
+- New options to estimate cross-gains from station metadata (pcals).
+- New configuration keywords to fine-tune non-ALMA cases (VGOS).
+- Synchronized with DiFX 2.5.3 PP scripting for 2018
+
 v1.7.5
 
 - set zero weight on unphased APP subscans (phases not updated)

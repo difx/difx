@@ -56,6 +56,16 @@ int **BasNum;
 } ArrayGeometry;
 
 
+typedef struct {
+    int AntIdx;
+    int IF;
+    int Pol;
+    double JD;
+    double *AC;
+    
+} AutoCorrelation;
+
+
 //   int NtotAnt, NtotSou;
 //  double *BaseLine[3], *SinDec, *CosDec, *AntLon, *TanLat, **BasNum;
 //   double *ParAngs[2];
@@ -85,7 +95,10 @@ class DataIO {
 // Compute parallactic angle.
   void getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2);
 
-
+// Estimate amplitude ratios from the autocorrelations:
+  std::complex<float> getAmpRatio(int ant, int spw, int chan);
+  
+  
 // Set the current IF (and reset the mixed-vis. counter):
    virtual bool setCurrentIF(int i) = 0;
 
@@ -121,6 +134,8 @@ class DataIO {
    static const int MAXIF = 256;
    FreqSetup *Freqs;
    ArrayGeometry *Geometry;
+   AutoCorrelation *AutoCorrs;
+   float ***averAutocorrs;
    double *Freqvals[MAXIF], *doRange, *JDTimes;
    int *Basels, *Freqids, *an1, *an2, *linAnts, *field; //, *sour;
    double *ParAng[2];
@@ -128,9 +143,9 @@ class DataIO {
    long NLinVis, Nvis, currVis, *indexes;
    bool success, currConj;
    bool *conjugate, *is1, *is2, *is1orig, *is2orig;
-   int Flux;
+   int Flux, *NAV;
+   int nautos = 0;
    double day0;
-
 
 
 };

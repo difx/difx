@@ -12,7 +12,7 @@ action=${1-'help'} ; shift
 skip='build mytasks.py polconvert_cli.py polconvert.py'
 skip="$skip build/temp.linux-x86_64-2.7"
 skip="$skip QA2/scriptForCalibrationAPP_C4.py"
-skip="$skip result_ALL.txt"
+skip="$skip result_ALL.txt TODO.txt"
 
 [ $# -eq 0 ] && set -- 'no-such-file'
 

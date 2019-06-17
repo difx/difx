@@ -535,13 +535,17 @@ def getInputTemplate():
     doTest=%s
     # timeRange=[]                      # don't care
     %stimeRange = [0,0,0,0, 14,0,0,0]   # first 14 days
-    XYadd = [0.0]
     #
     spwToUse = %d
+    # default is empty dictionary, 'Aa':0.0
+    XYadd = {}
     constXYadd = %s
-    %sXYadd = [%f]
-    XYratio = [1.0]
-    print 'using XYadd %%s' %% (str(XYadd))
+    ###FIXME
+    ### %sXYadd = [%f]
+    print 'using XYadd   %%s' %% (str(XYadd))
+    # default is empty dictionary, 'Aa':1.0
+    XYratio = {}
+    print 'using XYratio %%s' %% (str(XYratio))
     #
     djobs = %s
     print 'djobs contains these jobs: ' + str(djobs)
@@ -566,6 +570,7 @@ def createCasaInput(o, joblist, caldir, workdir):
     oinput = workdir + '/' + o.input
     if o.verb: print 'Creating CASA input file\n  ' + oinput
     if o.xyadd != '':
+        ### FIXME: add a dictionary entry for station:value
         userXY = ''
         XYvalu = float(o.xyadd)
     else:

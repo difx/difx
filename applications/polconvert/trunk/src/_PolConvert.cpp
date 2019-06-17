@@ -116,21 +116,31 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     int ii, ij, ik, il, im;
 
     PyObject *ngain, *nsum, *gains, *ikind, *dterms, *plotRange, *IDI, *antnum, *tempPy, *ret; 
-    PyObject *allphants, *nphtimes, *phanttimes, *Range, *SWAP, *doIF, *metadata, *refAnts;
-    PyObject *asdmTimes, *plIF, *isLinearObj, *XYaddObj, *XYdelObj, *antcoordObj, *soucoordObj, *antmountObj, *timeranges; 
-    int nALMA, plAnt, nPhase, doTest, doConj, doNorm,calField;
+    PyObject *allphants, *nphtimes, *phanttimes, *Range, *SWAP, *doIF, *metadata, *refAnts, *ACorrPy;
+    PyObject *asdmTimes, *plIF, *isLinearObj, *XYaddObj, *antcoordObj, *soucoordObj, *antmountObj, *timeranges; 
+    int nALMA, plAnt, nPhase, doTest, doConj, doNorm, calField, verbose;
     double doSolve;
  //   double XYadd;
     bool isSWIN; 
+    
+    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOidiiOOOOOOiOOi",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doSolve, &doConj, &doNorm, &XYaddObj, &metadata, &soucoordObj, &antcoordObj, &antmountObj, &isLinearObj,&calField, &timeranges, &ACorrPy, &verbose)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
 
-    if (!PyArg_ParseTuple(args, "iOiiOOOOOOOOOOOOOOOOidiiOOOOOOOiO",&nALMA, &plIF, &plAnt, &nPhase, &doIF, &SWAP, &ngain,&nsum, &ikind, &gains, &dterms, &IDI, &antnum, &plotRange, &Range, &allphants, &nphtimes, &phanttimes, &refAnts, &asdmTimes, &doTest, &doSolve, &doConj, &doNorm, &XYaddObj, &XYdelObj, &metadata, &soucoordObj, &antcoordObj, &antmountObj, &isLinearObj,&calField, &timeranges)){printf("FAILED PolConvert! Wrong arguments!\n"); fflush(stdout);  return NULL;};
+
+   char message[512];
+    
 
 
+
+   if (verbose){
+      std::cout<<"\n\n VERBOSE MODE ON\n\n";
+     // sprintf(message,"\nCalled with parameters: %i, %i, %i, %i, %d, %i, %i, %i, %i \n",nALMA, plIF, nPhase, doTest, doSolve, doConj, calField);
+     // fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+      fflush(stdout);
+   };
 
 // OPEN LOG FILE:
  //   time_t now = time(0); 
  //   char logname[28] = {0};
-    char message[512];
 
   //  if (now != -1){
   //     strftime(logname, 28, "PolConvert.%j_%H_%M_%S.log", gmtime(&now));
@@ -194,6 +204,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
    };
 
 
+   int *ACorrs = (int *)PyArray_DATA(ACorrPy);
+//   printf("\n\n ACORRS: %i %i %i \n\n",ACorrs[0],ACorrs[1],ACorrs[2]);
 
 // Do we just test?
     if (doTest) {sprintf(message,"\n Will only compute, but not update the output file(s)\n");fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -209,7 +221,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     double *plRange = (double *)PyArray_DATA(plotRange);
     double *doRange = (double *)PyArray_DATA(Range);
 //    double *XYadd = (double *)PyArray_DATA(XYaddObj);
-    double *XYdel = (double *)PyArray_DATA(XYdelObj);
+//    double *XYdel = (double *)PyArray_DATA(XYdelObj);
 
 
 
@@ -288,10 +300,9 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     };
 
     for (i=0; i<Geometry->NtotSou;i++){
-      Geometry->SinDec[i] = sin(SouCoordArr[i]);
-      Geometry->CosDec[i] = cos(SouCoordArr[i]);
-  //    std::cout<< i << " "<< SouCoordArr[i]*180./3.1415926535 << "\n";
-
+      Geometry->SinDec[i] = sin(SouCoordArr[i+Geometry->NtotSou]);
+      Geometry->CosDec[i] = cos(SouCoordArr[i+Geometry->NtotSou]);
+//      std::cout<< i << " "<< SouCoordArr[i]*180./3.1415926535 << "\n";
     };
 
 
@@ -431,9 +442,9 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // CREATE CALIBRATION INSTANCES:   
    for (i=0; i<nALMA; i++){
      allgains[i] = new CalTable*[ngainTabs[i]];
-     alldterms[i] = new CalTable(2,dtermsArrR1[i],dtermsArrI1[i],dtermsArrR2[i],dtermsArrI2[i],dtfreqsArr[i],dttimesArr[i],nsumArr[i],ndttimeArr[i], nchanDt[i],dtflag[i],true,logFile);
+     alldterms[i] = new CalTable(2,dtermsArrR1[i],dtermsArrI1[i],dtermsArrR2[i],dtermsArrI2[i],dtfreqsArr[i],dttimesArr[i],nsumArr[i],ndttimeArr[i], nchanDt[i],dtflag[i],true,logFile,verbose);
      for (j=0; j<ngainTabs[i];j++){
-       allgains[i][j] = new CalTable(kind[i][j],gainsArrR1[i][j],gainsArrI1[i][j],gainsArrR2[i][j],gainsArrI2[i][j],freqsArr[i][j],timesArr[i][j],nsumArr[i],ntimeArr[i][j], nchanArr[i][j],gainflag[i][j],isLinear[i][j],logFile);
+       allgains[i][j] = new CalTable(kind[i][j],gainsArrR1[i][j],gainsArrI1[i][j],gainsArrR2[i][j],gainsArrI2[i][j],freqsArr[i][j],timesArr[i][j],nsumArr[i],ntimeArr[i][j], nchanArr[i][j],gainflag[i][j],isLinear[i][j],logFile,verbose);
 //////////////////////////////////////////////
 
 
@@ -460,7 +471,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        sprintf(message,"\n\n Opening and preparing SWIN files.\n");
        fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
-       DifXData = new DataIOSWIN(nSWINFiles, SWINFiles, nALMA, almanums, doRange, SWINnIF, SWINnchan, SWINFreqs, OverWrite, doTest, iDoSolve, calField, jd0, Geometry, logFile);
+       DifXData = new DataIOSWIN(nSWINFiles, SWINFiles, nALMA, almanums, doRange, SWINnIF, SWINnchan, ACorrs, SWINFreqs, OverWrite, doTest, iDoSolve, calField, jd0, Geometry, logFile);
      } else {
        sprintf(message,"\n\n Opening FITS-IDI file and reading header.\n");
        fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -665,6 +676,32 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
 
+
+
+
+
+/////////////////////////////////////
+// APPLY AUTO-CORRELATIONS CORRECTION:
+
+for (currAntIdx=0; currAntIdx<nALMA; currAntIdx++) {
+  for (im=0; im<nIFconv; im++) {
+    ii = IFs2Conv[im] - 1;
+    for (ij=0; ij<nchans[ii]; ij++){
+      PrioriGains[currAntIdx][im][ij] *= DifXData->getAmpRatio(currAntIdx, im, ij);
+    };
+  };
+};
+
+
+
+
+
+
+
+
+
+
+
 //////////////////////////////////////////////////////////
 ///////////////////////////////////
 // MAIN LOOP FOR CORRECTION (LOOP OVER IFs):
@@ -727,7 +764,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 
 
-    //   if(countNvis%1024==0){printf("\r Doing vis %i",countNvis);fflush(stdout);};
+    //   if(verbose && countNvis%1024==0){printf("\r Doing vis %i  -  %.3f",countNvis, currT);fflush(stdout);};
 
 // Check if there was an error in reading:
      if (!DifXData->succeed()){fclose(gainsFile);DifXData->finish();return ret;};
@@ -767,24 +804,28 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 // Find the ALMA antennas involved in the phasing:
 
+    if(verbose){printf(" Doing vis %i  -  %.3f  -  %i\n",countNvis, currT, currNant);fflush(stdout);};
 
 
      allflagged = true;
-     Phased = ALMAWeight->isPhased(currT);
-     if (Phased){
-       for (ij=0; ij<currNant; ij++) {
-         Weight[currAntIdx][ij] = ALMAWeight->getWeight(ij,currT);
-         if (Weight[currAntIdx][ij]){allflagged = false;};
+
+     if (currNant>1){
+       Phased = ALMAWeight->isPhased(currT);
+       if (Phased){
+         for (ij=0; ij<currNant; ij++) {
+           Weight[currAntIdx][ij] = ALMAWeight->getWeight(ij,currT);
+           if (Weight[currAntIdx][ij]){allflagged = false;};
+         };
        };
-     };
+     } else {Phased=true; Weight[currAntIdx][0] = true; allflagged = false;};
+
 
 // get ALMA refant used in the Phasing (to correct for X-Y phase offset):
      ALMARefAnt = ALMAWeight->getRefAnt(currT);
     
  
      for (ij=0; ij<nchans[ii]; ij++){
-       gainRatio[ij] = PrioriGains[currAntIdx][im][ij]*((cplx32f) std::polar(1.0,XYdel[currAntIdx]*((double) (ij-nchans[ii]/2)))); // (std::complex<float>) std::polar(1.0,XYadd[currAntIdx*nIFconv + im]+XYdel[currAntIdx]*((double) (ij-nchans[ii]/2)));
-   //    if(ii==0 && countNvis==1){printf("\n\n%i %i %i- %.2e  %.2e - %.2e  %.2e\n",ij,currAntIdx,im,gainRatio[ij].real(),gainRatio[ij].imag(),XYdel[currAntIdx],XYdel[currAntIdx]*((double) (ij-nchans[ii]/2)));};
+           gainRatio[ij] = PrioriGains[currAntIdx][im][ij]; //*((cplx32f) std::polar(1.0,XYdel[currAntIdx]*((double) (ij-nchans[ii]/2)))); 
      };
 
      if(allflagged && currT != lastTFailed){
@@ -807,18 +848,24 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
  //      printf("\nVIS: %i\n",currT);
 
    if (!allflagged){
+
+
+    if(verbose){printf(" Computing gains\n");fflush(stdout);};
+
 /////////
 // GAIN:
 
    //    printf("\nVIS: %i\n",currT);
 
     // FIRST GAIN IN NORMAL MODE, 0:
+
      gchanged = allgains[currAntIdx][0]->setInterpolationTime(currT);
       for (ij=0; ij<currNant; ij++) {
         if (Weight[currAntIdx][ij]) {
           allgains[currAntIdx][0]->applyInterpolation(ij,0,AnG[currAntIdx][ij]); };
       };
 
+    if(verbose){printf(" Normal Mode 0\n");fflush(stdout);};
 
 // FURTHER GAIN, IN PRODUCT MODE, 2:
      for (ik=1; ik<ngainTabs[currAntIdx]; ik++) {
@@ -830,16 +877,18 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
       };
     };
 
+    if(verbose){printf(" Product Mode 2\n");fflush(stdout);};
 
 // CROSS-PHASE GAIN AT THE ALMA REFERENCE ANTENNA:
+   cplx32f AuxRatio; 
    for (ik=0; ik<ngainTabs[currAntIdx]; ik++) {
      if (ALMARefAnt>=0 && !(allgains[currAntIdx][ik]->isBandpass())){
        if (allgains[currAntIdx][ik]->getInterpolation(ALMARefAnt,0,gainXY)){
         for (ij=0; ij<nchans[ii]; ij++){
-         if( std::abs(gainXY[0]) > 0.0 && std::abs(gainXY[1])>0.0){
-           // correct for changes in gaincal's refant
-           gainRatio[ij] *= gainXY[0]/gainXY[1];
-           gainRatio[ij] /= std::abs(gainRatio[ij]);};  // Normalize gain ratio. 
+         if (std::abs(gainXY[1])>0.0 && std::abs(gainXY[0])>0.0){
+         AuxRatio = gainXY[0]/gainXY[1];
+         gainRatio[ij] *= AuxRatio/std::abs(AuxRatio); };
+      //   gainRatio[ij] /= std::abs(gainRatio[ij]);  // Normalize gain ratio: NOT Good (EVN mode!)
         };
        } else {
           sprintf(message,"ERROR with ALMA Ref. Ant. in gain table!\n");
@@ -850,6 +899,9 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      }; 
    };
 
+    if(verbose){printf(" Cross Phases Mode\n");fflush(stdout);};
+
+
  //  gainRatio /= std::abs(gainRatio);  // Normalize gain ratio.
 
 /////////
@@ -859,6 +911,10 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
         if (Weight[currAntIdx][ij]) {
          alldterms[currAntIdx]->applyInterpolation(ij,0,AnDt[currAntIdx][ij]);  };
       };
+
+
+    if(verbose){printf(" D-terms Mode\n");fflush(stdout);};
+
 
 //////////////////////////////////
 
@@ -883,8 +939,6 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
        };
       };
   };
-
-
 
 ////////////
 // Compute the elements of the K matrix (only those that changed):
@@ -950,6 +1004,9 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 // Get the average:
     for (j=0; j<nchans[ii]; j++) {
 
+
+
+
      for (ij=0; ij<2; ij++) {
       for (ik=0; ik<2; ik++) {
         Ktotal[currAntIdx][ij][ik][j] /= auxD;
@@ -961,6 +1018,18 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      Ktotal[currAntIdx][1][1][j] *= gainRatio[j];
 
 ////////////
+
+     if(verbose && j==0){
+       printf("gainRatio (j=0): %.3e %.3e\n",gainRatio[j].real(), gainRatio[j].imag());
+       printf("Ktot00: %.3e %.3e\n",Ktotal[currAntIdx][0][0][j].real(), Ktotal[currAntIdx][0][0][j].imag());
+       printf("Ktot01: %.3e %.3e\n",Ktotal[currAntIdx][0][1][j].real(), Ktotal[currAntIdx][0][1][j].imag());
+       printf("Ktot10: %.3e %.3e\n",Ktotal[currAntIdx][1][0][j].real(), Ktotal[currAntIdx][1][0][j].imag());
+       printf("Ktot11: %.3e %.3e\n",Ktotal[currAntIdx][1][1][j].real(), Ktotal[currAntIdx][1][1][j].imag()); 
+     };
+
+
+
+
 
 ///////////////////////////
 // THIS CODE IS INDEPENDENT OF HOW THE AVERAGE FOR K MATRIX IS IMPLEMENTED
@@ -1009,6 +1078,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 ////////////////////////////////////
 ////////////////////
 
+
+
     };   // Comes from: for(j=0; j<nchans[ii]; j++) 
 
 
@@ -1043,6 +1114,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
      if(Phased){
        DifXData->applyMatrix(Ktotal[currAntIdx],XYSWAP[currAntIdx],auxB,currAntIdx,plotFile[IFplot]);}
      else {
+       sprintf(message,"WARNING! Zero-ing weights at time %.8f!\n",currT);
+       fprintf(logFile,"%s",message);  std::cout<<message; fflush(logFile);
        DifXData->zeroWeight();
      };
 // Write:
