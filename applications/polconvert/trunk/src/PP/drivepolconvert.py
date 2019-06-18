@@ -85,8 +85,9 @@ def parseOptions():
         help='1-based index of linear (ALMA) antenna (normally 1)')
     parser.add_argument('-x', '--xyadd', dest='xyadd',
         default='', metavar='STRING',
-        help='user supplied XY angle adjustment or empty for defaults, '
-        'normally 180.0 or 0.0')
+        help='user supplied per station XY angle adjustment dict, e.g. '
+        ' "Xx:0.0, ...", or empty for default.  Normally 180.0 or 0.0 are '
+        ' the values you might need to supply ')
     parser.add_argument('-q', '--qa2', dest='qa2',
         default='v8', metavar='STRING',
         help='table naming scheme for the QA2 tables; there should be ' +
@@ -537,13 +538,12 @@ def getInputTemplate():
     %stimeRange = [0,0,0,0, 14,0,0,0]   # first 14 days
     #
     spwToUse = %d
-    # default is empty dictionary, 'Aa':0.0
+    # default is empty dictionary, equivalent to 'Aa':0.0
     XYadd = {}
     constXYadd = %s
-    ###FIXME
-    ### %sXYadd = [%f]
+    %sXYadd = {%s}
     print 'using XYadd   %%s' %% (str(XYadd))
-    # default is empty dictionary, 'Aa':1.0
+    # default is empty dictionary, equivalent to 'Aa':1.0
     XYratio = {}
     print 'using XYratio %%s' %% (str(XYratio))
     #
@@ -569,14 +569,8 @@ def createCasaInput(o, joblist, caldir, workdir):
     '''
     oinput = workdir + '/' + o.input
     if o.verb: print 'Creating CASA input file\n  ' + oinput
-    if o.xyadd != '':
-        ### FIXME: add a dictionary entry for station:value
-        userXY = ''
-        XYvalu = float(o.xyadd)
-    else:
-        userXY = '#'
-        XYvalu = 0.0
-
+    if o.xyadd != '': userXY = ''
+    else:             userXY = '#'
     if o.test:   dotest = 'True'
     else:        dotest = 'False'
 
@@ -586,7 +580,7 @@ def createCasaInput(o, joblist, caldir, workdir):
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
         o.qa2, o.qal, o.qa2_dict, o.gainmeth, o.avgtime, o.ampnrm, o.gaindel,
         o.remote, o.remotelist, o.npix, dotest, o.doPlot[0],
-        o.spw, o.constXYadd, userXY, XYvalu, joblist, workdir)
+        o.spw, o.constXYadd, userXY, o.xyadd, joblist, workdir)
     # write the file, stripping indents
     ci = open(oinput, 'w')
     for line in script.split('\n'):
@@ -626,7 +620,7 @@ def createCasaCommand(o, job, workdir):
         o.casa, o.input, o.output)
     cmd[5]  = 'casarc=$?'
     cmd[6]  = 'if [ "$casarc" == 0 ]; then echo "conversion"; else echo "conversion failed with code $casarc"; fi > ./status'
-    cmd[7]  = 'mv casa*.log ipython-*.log casa-logs'
+    cmd[7]  = 'mv casa*.log ipython-*.log casa-logs 2>&-'
     cmd[8]  = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
     cmd[9]  = 'mv polconvert.last casa-logs'
     cmd[10] = 'if [ "$casarc" == 0 ]; then echo "completed"; else echo "failed with code $casarc"; fi > ./status'
@@ -728,7 +722,7 @@ def executeCasa(o):
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
     if o.prep: cmd4 = 'mv prepol*.log '
     else:      cmd4 = 'mv '
-    cmd4 += ' casa*.log ipython-*.log casa-logs'
+    cmd4 += ' casa*.log ipython-*.log casa-logs 2>&-'
     cmd5 = 'mv %s %s casa-logs' % (o.input, o.output)
     cmd6 = ''
     casanow = o.exp + '-casa-logs.' + datetime.datetime.now().isoformat()[:-7]

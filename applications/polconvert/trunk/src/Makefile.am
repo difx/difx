@@ -55,8 +55,10 @@ copy.them:
 $(BuiltSources): copy.them
 
 # python does an inplace build in the directory
+# note that all .so files are build with this
 _PolConvert.so: copy.them
-	export PATH=${PATH}${PATH_SEPARATOR}@DIFXCASAPATH@ ;\
+	export PATH=@DIFXCASAPATH@${PATH_SEPARATOR}${PATH} ;\
+	[ -n "${DIFXCASAVENV}" ] && source ${DIFXCASAVENV} ;\
 	python setup.py build_ext --inplace
 
 # use copy.them to distinguish build and source dirs
