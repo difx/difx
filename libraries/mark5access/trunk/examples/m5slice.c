@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
   off_t offsetbytes;
   off_t sook;
   double offset, length, framens;
-  char msg[512], *buf, *bptr, *outname, *inname, *dotptr;
+  char msg[512], *buf, *bptr, *outname, *inname, *dotptr, *baseptr;
   struct mark5_stream *ms;
 
   outname = NULL;
@@ -148,10 +148,17 @@ int main(int argc, char **argv) {
   // Create output file name if not set
   if (outname==NULL) {
 
-    // File name contained in buffer
-    dotptr = strrchr(inname, '.');
+    baseptr = strrchr(inname, '/');
+    if (baseptr==NULL) {
+      baseptr = inname;
+    } else {
+      baseptr++; // Move past "/"
+    }
 
-    outname = malloc(strlen(inname)+strlen("-slice")+1);
+    // File name contained in buffer
+    dotptr = strrchr(baseptr, '.');
+
+    outname = malloc(strlen(baseptr)+strlen("-slice")+1);
     if (outname==NULL) {
       close(infile);
       free(outname);
@@ -159,11 +166,11 @@ int main(int argc, char **argv) {
     }
 
     if (dotptr==NULL) {
-      sprintf(outname, "%s-slice", inname);
+      sprintf(outname, "%s-slice", baseptr);
     } else {
       *dotptr = 0;
       ++dotptr;
-      sprintf(outname, "%s-slice.%s", inname, dotptr);
+      sprintf(outname, "%s-slice.%s", baseptr, dotptr);
     }
   }
 
