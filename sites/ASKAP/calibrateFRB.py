@@ -29,6 +29,8 @@ parser.add_option("-f", "--flux", type=float, default=9.5, # 0407 flux
                   help="Calibrator flux in Jy,  Defaulted to correct value for 0407")
 parser.add_option("-i", "--imagecube", default=False, action="store_true",
                   help="Image the FRB in chunks (i.e., make a cube)")
+parser.add_option("--dirtyonly", default=False, action="store_true",
+                  help="Just make a dirty image, no cleaning")
 parser.add_option("-j", "--imagejmfit", default=False, action="store_true",
                   help="Jmfit the individual slices of the cube")
 parser.add_option("-a", "--averagechannels", type=int, default=24,
@@ -46,6 +48,8 @@ parser.add_option("-p","--phasecenter", default="",
 parser.add_option("-x", "--xpoldelaymodelfile", default="", help="Model to use for xpol delay correction (blank = no correction)")
 parser.add_option("--imagesize", type=int, default=128, help="Size of the image to make")
 parser.add_option("--xcorplotsmooth", type=int, default=32, help="Length of the smoothing kernel in channels for xcor plotting")
+parser.add_option("--skipplot", default=False, action="store_true",
+                  help="Skip the plotting to save time")
 parser.add_option("--pixelsize", type=float, default=1, help="Pixel size in arcseconds")
 parser.add_option("--uvsrt", default=False, action="store_true", help="Run UVSRT on the data after loading")
 parser.add_option("--noisecentre", default="", help="CASA format position at which noise should be estimated, blank=don't make an off-source image")
@@ -264,10 +268,11 @@ if os.path.exists(bpfilename):
 vlbatasks.writetable(caldata, "BP", bpversion, bpfilename)
 
 # Plot the bandpass table
-bptableplotfilename = os.path.abspath("bptable{0}{1}.ps".format(xpol_prefix, src))
-plotsperpage = 4
-plotbptable = True
-vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, bptableplotfilename)
+if not options.skipplot:
+    bptableplotfilename = os.path.abspath("bptable{0}{1}.ps".format(xpol_prefix, src))
+    plotsperpage = 4
+    plotbptable = True
+    vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, bptableplotfilename)
 
 # Run selfcal
 applybandpasscal = True
@@ -304,13 +309,14 @@ snversion += 1
 clversion += 1
 
 # Plot the uncalibrated and calibrated cross-correlation results
-uncalxcorplotfilename = os.path.abspath("uncalxcor{0}{1}.ps".format(xpol_prefix, src))
-allcalxcorplotfilename = os.path.abspath("allcalxcor{0}{1}.ps".format(xpol_prefix, src))
-plotbptable = False
-plotsperpage = 4
-ifs = [0,0]
-vlbatasks.plotbandpass(caldata, -1, plotbptable, plotsperpage, uncalxcorplotfilename, 0, ifs, xcorplotsmooth)
-vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, allcalxcorplotfilename, clversion, ifs, xcorplotsmooth)
+if not options.skipplot:
+    uncalxcorplotfilename = os.path.abspath("uncalxcor{0}{1}.ps".format(xpol_prefix, src))
+    allcalxcorplotfilename = os.path.abspath("allcalxcor{0}{1}.ps".format(xpol_prefix, src))
+    plotbptable = False
+    plotsperpage = 4
+    ifs = [0,0]
+    vlbatasks.plotbandpass(caldata, -1, plotbptable, plotsperpage, uncalxcorplotfilename, 0, ifs, xcorplotsmooth)
+    vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, allcalxcorplotfilename, clversion, ifs, xcorplotsmooth)
 
 # Run SPLIT and write output data for calibrator
 seqno = 1
@@ -355,25 +361,31 @@ os.system("tar cvzf {0} README{1}{2}.calibration {3}".format(calibtarballfile, x
 casaout = open("loadtarget.py","w")
 casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (calibratoroutputfilename, calibratormsfilename))
 casaout.close()
-os.system("~/packages/src/difx/sites/ASKAP/runloadtarget.sh")
+os.system("runloadtarget.sh")
 
 casaout = open("loadtarget.py","w")
 casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (targetoutputfilename, targetmsfilename))
 casaout.close()
-os.system("~/packages/src/difx/sites/ASKAP/runloadtarget.sh")
+os.system("runloadtarget.sh")
 
 
 # Run the imaging via CASA if desired
+polarisations = ["XX","YY","I","Q","U","V"]
+if options.dirtyonly:
+    polarisations = ["I"]
 if options.imagecube:
     # Do the cube
-    for pol in ["XX","YY","I","Q","U","V"]:
+    for pol in polarisations:
         casaout = open("imagescript.py","w")
         imagebase = "TARGET.cube.%s" % (pol)
         os.system("rm -rf %s.*" % imagebase)
         imagename = imagebase + ".image"
         maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize/2,imagesize/2)
         #casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask="FRB.cube.mask",nchan=-1,start=1,width=24,outframe="",veltype="radio",imsize=128,cell=["1.0arcsec", "1.0arcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, options.phasecentre, pol))
-        casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, options.averagechannels, imagesize, pixelsize, pixelsize, options.phasecenter, pol))
+        if options.dirtyonly:
+            casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, options.averagechannels, imagesize, pixelsize, pixelsize, options.phasecenter, pol))
+        else:
+            casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, options.averagechannels, imagesize, pixelsize, pixelsize, options.phasecenter, pol))
 
         # If desired, produce the noise image as well
         if len(options.noisecentre) > 1:
@@ -387,7 +399,7 @@ if options.imagecube:
             casaout.write('clean(vis="%s",imagename=%s,outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=%s,phasecenter=%s,restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebases, maskstr2, options.averagechannels, imsizestr, cellstr, phasecenterstr, pol))
             
         casaout.close()
-        os.system("~/packages/src/difx/sites/ASKAP/runimagescript.sh")
+        os.system("runimagescript.sh")
 
 
         # If desired, also make the JMFIT output
