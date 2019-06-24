@@ -69,7 +69,7 @@ with open("craftfrb.binconfig", "w") as binconfout:
 
 
 with open("craftfrb.polyco", "w") as polycoout:
-    polycoout.write("fake+fake DD-MMM-12 %02d%02d%.2f %.15f %.4f 0.0 0.0\n" % (hh,mm,ss,polycostartmjd, dm))
+    polycoout.write("fake+fake DD-MMM-12 %02d%02d%05.2f %.15f %.4f 0.0 0.0\n" % (hh,mm,ss,polycostartmjd, dm))
     polycoout.write("0.0 %.3f 0 100 3 %.3f\n" % (1.0/float(inttime), args.freq))
     polycoout.write("0.00000000000000000E-99 0.00000000000000000E-99 0.00000000000000000E-99\n")
     polycoout.close()
