@@ -16,7 +16,7 @@ exit=${2-'exit'}
     echo found too many '*.obs' files; exit 1; }
 [ -f *.obs ] || { echo missing experiment.obs file; exit 1; }
 
-logcount=`ls -1 $release/logs/$ers-* | grep -v packaging | wc -l`
+logcount=`ls -1 $release/logs/${ers}* | grep -v packaging | wc -l`
 $verb && echo $logcount files in $release/logs
 [ "$logcount" -eq 14 ] || {
     # files: (1) $ers-*-antab.pdf, (2-5) $ers-amp|drate|sbd|snd-time.pdf
