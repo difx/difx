@@ -469,7 +469,7 @@ for i in range(args.npol):
 
 ## Write sched running file
 runsched = open("runsched.sh", "w")
-runsched.write("#!/usr/bin/bash\n")
+runsched.write("#!/bin/sh\n")
 runsched.write("export CATDIR={0}\n".format(craftcatalogdir))
 runsched.write("sched < craftfrb.key\n")
 runsched.close()
