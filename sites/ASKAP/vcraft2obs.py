@@ -170,6 +170,10 @@ convertlines = []
 for i in range(npol):
     codifFiles.append([])
     for f in vcraftfiles[i]:
+        if not os.path.exists(".bat0"):
+            ret = os.system("bat0.pl %s" % (f))
+            if (ret!=0): sys.exit(ret)    
+        
         antname = f.split('/')[-1].split('_')[0]
         if antname == "":
             print "Didn't find the antenna name in the header!"

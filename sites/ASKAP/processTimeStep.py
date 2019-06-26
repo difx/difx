@@ -117,6 +117,10 @@ for e in examplefiles:
     if os.path.exists("../../eopjunk.txt"):
         os.system("cp ../../eopjunk.txt .")
 
+    # Copy .bat0 file if it exists
+    if os.path.exists("../../.bat0"):
+        os.system("cp ../../.bat0 .")
+                
     torun = "vcraft2obs.py"
     if args.keep:
         torun += " -k"
@@ -149,7 +153,6 @@ for e in examplefiles:
         torun += ' "%s/ak*/%s/*%s*vcraft"' % (timestep, beamname, freqlabel)
     
     print torun
-    #os.system(torun + "| tee vcraft2obs.log")
     ret = runCommand(torun, "vcraft2obs.log")
     if ret!=0:
         print "vcraft2obs failed! (", ret, ")"
@@ -183,7 +186,10 @@ for e in examplefiles:
         print "askap2difx failed! (", ret, ")"
         sys.exit(ret)
 
-    #sys.exit()
+    # if .bat0 does not exisit in upper directory, copy back
+    if not os.path.exists("../../.bat0") and os.path.exists(".bat0"):
+        os.system("cp .bat0 ../..")
+        
     if args.slurm:
         os.system("./launchjob")
     else:
