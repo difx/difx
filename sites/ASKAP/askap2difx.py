@@ -586,7 +586,7 @@ if args.slurm:
     batchout.write("case ${HEADNODE} in\n")
     batchout.write("  (farnarkle1) . /home/{0}/setup_difx.farnarkle1;;\n".format(currentuser))
     batchout.write("  (farnarkle2) . /home/{0}/setup_difx.farnarkle2;;\n".format(currentuser))
-    batchout.write('  (*)   echo "Unknown head node $(HEADNODE)";;\n')
+    batchout.write('  (*)   echo "Unknown head node ${HEADNODE}";;\n')
     batchout.write("esac\n")
     batchout.write("srun mpifxcorr {0}.input\n".format(basename))
     batchout.close()
