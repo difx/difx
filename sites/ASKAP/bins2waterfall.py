@@ -1,11 +1,16 @@
 #!/usr/bin/env python
+
+# NOTE: to use on ozstar with a local copy of CASA, you need to module load the following:
+# module load numpy/1.16.3-python-2.7.14
+# module load matplotlib/2.2.2-python-2.7.14
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os, sys,argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-n", "--nbins", type=int, default=None, help="Number of images files from which to extract the spectrum; note: zero-indexed, so nbins=11 means bin00 to bin10")
-parser.add_argument("-c", "--nchan", type=int, default=None, help="Number of channel slices in each cube image; note: zero-indexed")
+parser.add_argument("-n", "--nbins", type=int, default=None, help="Number of image files from which to extract the spectrum; note: zero-indexed, so nbins=11 means bin00 to bin10")
+parser.add_argument("-c", "--nchan", type=int, default=83, help="Number of channel slices in each cube image; note: zero-indexed")
 parser.add_argument("-s", "--src", type=str, default=None, help="Source name to be used for the spectra text file prefix")
 parser.add_argument("--rms", help="Set if noise estimation is required", action="store_true")
 parser.add_argument("-p", "--prefix", type=str, default = "", help="Prefix for bin directory")
