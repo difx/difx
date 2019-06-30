@@ -72,6 +72,7 @@ if args.rms:
         for i in range(nbins):
             noiseimage = "{0}bin{1:02g}/OFFSOURCE.cube.{2}.image".format(prefix, i, stokes)
             getnoise = "get_rms.py"
+            print noiseimage
 
             # Get RMS from noise estimation images (using 75% of 512x512 image)
             noiseout = open(getnoise, "w")
