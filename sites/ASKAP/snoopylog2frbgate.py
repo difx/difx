@@ -118,8 +118,8 @@ bindeltaphase = (rfistartphase2 - rfiendphase1)/numfinderbins
 with open("craftfrb.finder.binconfig", "w") as binconfout:
     binconfout.write("NUM POLYCO FILES:   1\n")
     binconfout.write("POLYCO FILE 0:      %s/craftfrb.polyco\n" % os.getcwd())
-    binconfout.write("NUM PULSAR BINS:    %d\n" % numbins)
-    binconfout.write("SCRUNCH OUTPUT:     TRUE\n")
+    binconfout.write("NUM PULSAR BINS:    %d\n" % numfinderbins)
+    binconfout.write("SCRUNCH OUTPUT:     FALSE\n")
     for i in range(numfinderbins+1):
         phasestr = ("BIN PHASE END %d:" % i).ljust(20)
         weightstr = ("BIN WEIGHT %d:" % i).ljust(20)
