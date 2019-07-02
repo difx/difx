@@ -113,7 +113,7 @@ binscale = bindeltaphase / (rfiendphase2 + rfiendphase1 - rfistartphase2 - rfist
 
 # And also make a "finders" binconfig, with just 5 bins spanning from the end of RFI window 1
 # through to the start of RFI window 2 (which will then normally be 2-3 ms wide each
-numifinderbins = 5
+numfinderbins = 5
 bindeltaphase = (rfistartphase2 - rfiendphase1)/numfinderbins
 with open("craftfrb.finder.binconfig", "w") as binconfout:
     binconfout.write("NUM POLYCO FILES:   1\n")
@@ -133,9 +133,9 @@ gatescale = (gateendphase - gatestartphase) / (rfiendphase2 + rfiendphase1 - rfi
 with open("dosubtractions.sh", "w") as subout:
     subout.write("uvsubScaled.py FRB_GATE.FITS FRB_RFI.FITS %.9f\n" % (gatescale))
     for i in range(numbins):
-        subout.write("uvsubScaled.py FRB_BIN%02d.FITS FRB_RFI.FITS %.9f\n" % (binscale))
+        subout.write("uvsubScaled.py FRB_BIN%02d.FITS FRB_RFI.FITS %.9f\n" % (i, binscale))
     for i in range(numfinderbins):
-        subout.write("uvsubScaled.py FRB_FINDERBIN%02d.FITS FRB_RFI.FITS %.9f\n" % (finderbinscale))
+        subout.write("uvsubScaled.py FRB_FINDERBIN%02d.FITS FRB_RFI.FITS %.9f\n" % (i, finderbinscale))
     subout.close()
 
 # Instead cover a 150ms range with bins of size 5ms
