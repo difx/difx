@@ -17,7 +17,7 @@ import vex  # same as utilized by autozooms module
 
 class Autobands:
 
-	def __init__(self, outputbandwidth=16e6, verbosity=0, permitgaps=True):
+	def __init__(self, outputbandwidth=16e6, verbosity=0, permitgaps=False):
 		self.flow = []
 		self.fhigh = []
 		self.fantenna = []
@@ -160,7 +160,8 @@ class Autobands:
 			for k in range(Nfq):
 				if span_lo >= self.flow[k] and span_hi <= self.fhigh[k]:
 					ants_in_span.append(self.fantenna[k])
-			count = len(set(ants_in_span))
+			#count = len(set(ants_in_span))
+			count = len(ants_in_span)
 
 			# Enough antennas have it, keep span?
 			if count >= Nant:
@@ -178,6 +179,11 @@ class Autobands:
 		spans['continued'] = [False]*Nspans
 		for n in range(Nspans-1):
 			spans['continued'][n] = (spans['fhi'][n] == spans['flow'][n+1])
+
+		if self.verbosity > 0:
+			overlaps = [i for i in range(len(spans['bandcounts'])) if spans['bandcounts'][i]>Nant]
+			if len(overlaps) > 0:
+				print ('Autobands::spans() these spans have redundancy with >%d bands/span: %s' % (Nant,str(overlaps)))
 
 		return spans
 
@@ -311,7 +317,7 @@ class Autobands:
 				outputbands['flow'].append(foutstart)
 				outputbands['inputs'].append([[foutstart, self.outputbw]])
 				if self.verbosity > 1:
-					print ('Autobands::outputbands()    adding %.6f MHz bw from span %d to fq %.6f MHz' % (self.outputbw,span,foutstart))
+					print ('Autobands::outputbands()    adding %.6f MHz bw from span %d @ %.6f MHz to fq %.6f MHz' % (self.outputbw,span,(foutstart-f0)*1e-6,foutstart))
 				foutstart += self.outputbw
 
 			# Generate band in Case 2 : pieces of span(s) for a later complete band, patch over to next span(s)
@@ -321,7 +327,9 @@ class Autobands:
 				# If overlap in rec bands at least at one antenna, may
 				# try a slight shift to begin at a more 'integer' MHz
 				if spans['bandcounts'][span] > Nant:
+					foutstart_1 = foutstart
 					foutstart = self.adjustStartFreq(f0, f1, foutstart, df)
+					#print ('--- overlap adj, delta %.3f kHz' % ((foutstart-foutstart_1)*1e-3))
 
 				# Now piece together 'self.outputbw' amout of band from consecutive spans
 				bw_needed = self.outputbw
@@ -330,17 +338,18 @@ class Autobands:
 				while (span < Nspans) and (bw_needed > 0):
 					# Append remaining bw from span
 					bw_utilized = min(bw_needed, bw_remain)
-					bw_inputs.append([slicestartfreq, bw_utilized])
-					slicestartfreq += bw_utilized
 					bw_needed -= bw_utilized
 					if self.verbosity > 1:
-						print ('Autobands::outputbands()    adding %10.6f MHz bw from span %d to fq %10.6f MHz, remain %10.6f MHz' % (bw_utilized*1e-6,span,foutstart*1e-6,bw_needed*1e-6))
+						print ('Autobands::outputbands()    case 2 adding %10.6f MHz bw from span %d @ %.6f MHz to fq %10.6f MHz, remain %10.6f MHz' % (bw_utilized*1e-6,span,(slicestartfreq-f0)*1e-6,foutstart*1e-6,bw_needed*1e-6))
+					bw_inputs.append([slicestartfreq, bw_utilized])
+					slicestartfreq += bw_utilized
 					# Get next span to add to bandwidth
 					span += 1
 					if (span < Nspans):
 						f0,f1,nrec = spans['flow'][span], spans['fhi'][span], spans['bandcounts'][span]
 						bw_remain = f1 - slicestartfreq
-						assert(bw_remain > 0)
+						print bw_remain, f1, slicestartfreq
+						assert(bw_remain >= 0)
 
 				# Store the complete outputband(s) details
 				if bw_needed == 0:
@@ -428,12 +437,13 @@ class Autobands:
 
 if __name__ == "__main__":
 
-	verbosity = 1
+	verbosity = 2
 
 	if len(sys.argv)>=2:
 
 		# Use VEX file
-		outbw = 58.59375e6
+		# outbw = 58.59375e6
+		outbw = 58e6
 		vexf = sys.argv[1]
 		if len(sys.argv)>=3:
 			outbw = int(float(sys.argv[2])*1e6)
@@ -445,7 +455,8 @@ if __name__ == "__main__":
 	else:
 		# Use hardcoded cases
 		# a = Autobands(32e6, verbosity)
-		a = Autobands(58.59375e6, verbosity) # ALMA spacing of overlapped 62.5M channels
+		a = Autobands(58.0e6, verbosity)     # ALMA but try 58M
+		# a = Autobands(58.59375e6, verbosity) # ALMA spacing of overlapped 62.5M channels
 
 		a.add( a.genEHT(86380.0e6) )
 		## a.addBand( 86380.0e6 + 128e6, 86380.0e6 + 1024e6 )
