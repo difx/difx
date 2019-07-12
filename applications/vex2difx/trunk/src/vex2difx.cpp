@@ -324,7 +324,6 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, const
 					snprintf(dd->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", ant->ports[d].networkPort.c_str());
 					break;
 				case DataSourceFile:
-				case DataSourceMark6:
 					{
 						int nFile = ant->files.size();
 						int count = 0;
@@ -349,6 +348,53 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, const
 								++count;
 							}
 						}
+					}
+					break;
+				case DataSourceMark6: 
+					{
+						// mark6 has both files and vsns
+						int nFile = ant->files.size();
+						int count = 0;
+
+						for(int j = 0; j < nFile; ++j)
+						{
+							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
+							{
+								++count;
+							}
+						}
+
+						DifxDatastreamAllocFiles(dd, count);
+
+						count = 0;
+
+						for(int j = 0; j < nFile; ++j)
+						{
+							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
+							{
+								dd->file[count] = strdup(ant->files[j].filename.c_str());
+								++count;
+							}
+						}
+						
+						string sVSN;
+						int nVSN = ant->vsns.size();
+						count = 0;
+
+						for(int j = 0; j < nVSN; ++j)
+						{
+							if(ant->vsns[j].streamId == d && J.overlap(ant->vsns[j]) > 0.0)
+							{
+								sVSN = ant->vsns[j].filename;
+								++count;
+							}
+						}
+
+						if(!shelf.empty())
+						{
+							shelf += ",";
+						}
+						shelf += shelves.getShelf(sVSN);
 					}
 					break;
 				case DataSourceModule:
