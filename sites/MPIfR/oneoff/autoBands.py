@@ -172,7 +172,7 @@ class Autobands:
 				spans['fhi'].append( span_hi )
 				spans['bandcounts'].append( bandcount )
 				if self.verbosity > 2:
-					print ('Autobands::spans() retain  %.6f--%.6f MHz bw %.6f MHz with %d rec bands' % (span_lo*1e-6,span_hi*1e-6,(span_hi-span_lo)*1e-6,bandcount))
+					print ('Autobands::spans() retain  %.6f--%.6f MHz bw %.6f MHz with %d rec bands, %d antennas' % (span_lo*1e-6,span_hi*1e-6,(span_hi-span_lo)*1e-6,bandcount,antcount))
 			else:
 				if self.verbosity > 2:
 					print ('Autobands::spans() discard %.6f--%.6f MHz bw %.6f MHz with %d rec bands, %d antennas < %d antennas' % (span_lo*1e-6,span_hi*1e-6,(span_hi-span_lo)*1e-6,bandcount,antcount,Nant))
@@ -190,7 +190,7 @@ class Autobands:
 
 		return spans
 
-	def visualise(self, flow=None, fhigh=None, id=None, axis=[]):
+	def visualise(self, flow=None, fhigh=None, id=None, axis=[], startmarker=ord('a')):
 		"""Show an ASCII 'bar graph' printout of the currently stored frequencies, or a list of frequencies"""
 		screenwidth = 110
 
@@ -214,7 +214,7 @@ class Autobands:
 			if L2 < 0:
 				L1 += L2
 			# indicator = chr(65+k%26)
-			indicator = chr(ord('a') + id[k] % 26)
+			indicator = chr(startmarker + id[k] % 26)
 			line = '.'*L0 + indicator*L1 + '.'*L2
 			print (line)
 		print (axislabel)
@@ -265,7 +265,7 @@ class Autobands:
 			Lfft_next = int(span_bw / res_next)
 
 			if Lfft_best < 0 or Lfft_next < Lfft_best:
-				if self.verbosity > 0:
+				if self.verbosity > 2:
 					print ('Autobands::adjustStartFreq() shift start %12.2f (%d-pt FFT) to %12.f (%d-pt FFT) at %.3f kHz from band start' % 
 						(fout_best, Lfft_best, (fout_curr+df), Lfft_next, ((fout_curr+df) - fstart)*1e-3) )
 				fout_best = fout_curr + df
@@ -273,7 +273,7 @@ class Autobands:
 
 			fout_curr = fout_curr + df
 
-		if self.verbosity > 1:
+		if self.verbosity > 2:
 			print ('Autobands::adjustStartFreq() shortest %d-pt FFT achievable at %+.3f kHz from initial freq, %+.3f kHz from span start' % (Lfft_best,(fout_best-finitial)*1e-3,(fout_best-f0)*1e-3))
 
 		return fout_best
@@ -309,7 +309,11 @@ class Autobands:
 
 			# Get span
 			f0,f1,nrec = spans['flow'][span], spans['fhi'][span], spans['bandcounts'][span]
-			if f0 < foutstart:
+
+			# Catch when large gaps between spans, e.g., geodetic/DDC mode
+			if foutstart < f0:
+				foutstart = f0
+			elif f1 < foutstart:
 				span += 1
 				continue
 
@@ -321,6 +325,7 @@ class Autobands:
 					print ('Autobands::outputbands() processing span %d at %.6f--%.6f MHz bw %.6f MHz, best fstart @ %.3f kHz' % (span,f0*1e-6,f1*1e-6,(f1-f0)*1e-6,(foutstart-foutstart_1)*1e-3))
 
 			# Generate band in Case 1 : fill span with complete bands up till max possible
+			# print ('span %d f0--f1 : %.6f--%.6f has %.6fM : foutstart %.6f MHz' % (span, f0*1e-6,f1*1e-6,(f1-f0)*1e-6,foutstart*1e-6))
 			while (foutstart + self.outputbw) <= f1:
 				outputbands['flow'].append(foutstart)
 				outputbands['inputs'].append([[foutstart, self.outputbw]])
@@ -334,17 +339,18 @@ class Autobands:
 
 				# If overlap in rec bands at least at one antenna, may
 				# try a slight shift to begin at a more 'integer' MHz
-				if spans['bandcounts'][span] > Nant:
+				if spans['bandcounts'][span] > Nant and self.permitGaps:
 					foutstart_1 = foutstart
 					foutstart = self.adjustStartFreq(f0, f1, foutstart, df)
-					#print ('--- overlap adj, delta %.3f kHz' % ((foutstart-foutstart_1)*1e-3))
+					if self.verbosity > 1 and foutstart_1 != foutstart:
+						print ('Autobands::outputbands()    case 2 able to shift by %+.3f kHz in overlapped-bands portion for better FFT' % ((foutstart-foutstart_1)*1e-3))
 
 				# Now piece together 'self.outputbw' amout of band from consecutive spans
 				bw_needed = self.outputbw
 				bw_inputs = []
 				slicestartfreq = foutstart
 				while (span < Nspans) and (bw_needed > 0):
-					# Append remaining bw from span
+					# Append more bw from span
 					if (slicestartfreq-f0) < 0:
 						break
 					bw_utilized = min(bw_needed, bw_remain)
@@ -353,17 +359,20 @@ class Autobands:
 						print ('Autobands::outputbands()    case 2 adding %10.6f MHz bw from span %d @ %.6f MHz to fq %10.6f MHz, remain %10.6f MHz' % (bw_utilized*1e-6,span,(slicestartfreq-f0)*1e-6,foutstart*1e-6,bw_needed*1e-6))
 					bw_inputs.append([slicestartfreq, bw_utilized])
 					slicestartfreq += bw_utilized
-					# Get next span to add to bandwidth
-					span += 1
-					if (span < Nspans):
-						f0,f1,nrec = spans['flow'][span], spans['fhi'][span], spans['bandcounts'][span]
-						bw_remain = f1 - slicestartfreq
-						assert(bw_remain >= 0)
+					bw_remain = f1 - slicestartfreq
+					# If out of remaining bw in this span, overflow into the next span
+					if (bw_remain <= 0):
+						span += 1
+						if (span < Nspans):
+							f0,f1,nrec = spans['flow'][span], spans['fhi'][span], spans['bandcounts'][span]
+							bw_remain = f1 - slicestartfreq
+							assert(bw_remain >= 0)
 
 				# Store the complete outputband(s) details
 				if bw_needed == 0:
 
-					# Attempt a merge of introduced inputs/zooms where possible, checking if all inputs fall into a single rec band at all antennas
+					# Attempt a merge of introduced input zooms where possible (i.e. if from overlapped rec bands),
+					# by checking whether all inputs fall into a single rec band at all antennas
 					if len(bw_inputs) > 1:
 						inputs_merged = []
 						f0 = bw_inputs[0][0]
@@ -394,9 +403,10 @@ class Autobands:
 
 				# No complete outputbands for current span
 				else:
-					foutstart += bw_needed
 					if self.verbosity > 1:
-						print ('Autobands::outputbands()    dropping incomplete out fq %.6f MHz' % (outputbands['flow'][-1]*1e-6))
+						print ('Autobands::outputbands()    dropping incomplete out fq %.6f MHz' % (foutstart*1e-6))
+					foutstart += bw_needed
+
 
 			# Case 3: no band remains in current span
 			else:
@@ -408,7 +418,7 @@ class Autobands:
 
 		# Visual summary, segmented freqs axis
 		print ('Detected spans with array-wide common cover:')
-		self.visualise(spans['flow'], spans['fhi'], [n for n in range(Nspans)], axis=[fmin,fmax])
+		self.visualise(spans['flow'], spans['fhi'], [n for n in range(Nspans)], axis=[fmin,fmax], startmarker=ord('A'))
 		for n in range(Nspans):
 			f0, f1, Nb = spans['flow'][n]*1e-6, spans['fhi'][n]*1e-6, spans['bandcounts'][n]
 			cont = spans['continued'][n]
@@ -429,6 +439,7 @@ class Autobands:
 
 		# DiFX v2d
 		total_bw = 0.0
+		total_gapbw = 0.0
 		total_zooms = 0
 		for n in range(Nout):
 			m, M = 0, len(outputbands['inputs'][n])
@@ -436,6 +447,7 @@ class Autobands:
 				gap_Hz = outputbands['flow'][n+1] - (outputbands['flow'][n]+self.outputbw)
 			else:
 				gap_Hz = 0
+			total_gapbw += gap_Hz
 			for zf,zfbw in outputbands['inputs'][n]:
 				v2dline = 'addZoomFreq = freq@%.6f/bw@%.6f/noparent@true' % (zf*1e-6,zfbw*1e-6)
 				v2dline = '  ' + v2dline + ' '*(65-len(v2dline)) + '# to output band %d, has %.3f kHz gap to next' % (n,gap_Hz*1e-3)
@@ -445,7 +457,7 @@ class Autobands:
 				total_bw += zfbw
 				total_zooms += 1
 				print (v2dline)
-		print ('  # %d zooms, %d output bands of %.3f MHz, %.3f MHz total bandwidth' % (total_zooms, Nout, self.outputbw*1e-6, total_bw*1e-6))
+		print ('  # %d zooms, %d output bands of %.3f MHz, %.3f MHz total bandwidth, %.3f MHz non-covered due gaps' % (total_zooms, Nout, self.outputbw*1e-6, total_bw*1e-6, total_gapbw*1e-6))
 
 
 class AutobandsCases:
@@ -454,7 +466,7 @@ class AutobandsCases:
 	def __init__(self):
 		global verbosity
 		self.permitGaps = False
-		self.casefuncs = ['EHT_ALMA', 'GMVA_ALMA', 'GMVA_NOEMA']
+		self.casefuncs = ['EHT', 'EHT_ALMA', 'GMVA_ALMA', 'GMVA_NOEMA']
 		self.verbosity = verbosity
 		pass
 
@@ -474,6 +486,16 @@ class AutobandsCases:
 			return None
 		func = getattr(self, 'case_' + casename, None)	
 		return func(outputbw_Hz)
+
+
+	def case_EHT(self, outputbw_Hz):
+		if not outputbw_Hz:
+			outputbw_Hz = 58e6
+		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
+		a.add( a.genEHT(214100.0e6) ) # most of EHT
+		a.add( a.genEHT(214003.0e6) ) # APEX
+		a.add( a.genEHT(214000.0e6) ) # GLT
+		return a
 
 	def case_EHT_ALMA(self, outputbw_Hz):
 		if not outputbw_Hz:
@@ -499,6 +521,7 @@ class AutobandsCases:
 		a.add( a.genDBBC3(86044.0e6) ) # 64 x 32M, start from -32 MHz (1st LSB)
 		a.add( a.genNOEMA(86044.0e6) ) # 64 x 64M, start from 0 MHz
 		return a
+
 
 if __name__ == "__main__":
 
