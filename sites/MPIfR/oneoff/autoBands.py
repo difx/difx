@@ -67,6 +67,12 @@ class Autobands:
 		bw = 64e6	# PolyFix always 64 MHz
 		Nch = 64	# PolyFix always 64 ch
 		return self.genPFB(fbase_Hz, bw, bw, Nch, sb)
+
+	def genVLBA(self, fbase_Hz, sb=+1):
+		"""Generate VLBA 2 x 128 MHz"""
+		bw = 128e6
+		Nch = 2
+		return self.genPFB(fbase_Hz, bw, bw, Nch, sb)
 	
 	def genGMVA(self, fbase_Hz, sb=+1):
 		"""Generate GMVA in PFB 32 MHz mode"""
@@ -126,17 +132,25 @@ class Autobands:
 				antennas.append(ant)
 		return (len(set(antennas)) >= self.Nant)
 
+	def granularity(self, freqs):
+		"""Return the greatest-common-divisor for a list of frequencies and bandwidths"""
+		df = reduce(fractions.gcd, freqs)
+		return df
+
 	def statistics(self, flow=None, fhigh=None):
 		"""Return min and max frequencies and common minimum freq spacing. Returns (fmin,fmax,df)."""
 		if not flow:
 			flow, fhigh = self.flow, self.fhigh
 		fqall = list(flow) + list(fhigh)
+		bw = [fhigh[n]-flow[n] for n in range(len(flow))]
+		minbw = reduce(min, bw)
+		maxbw = reduce(max, bw)
 		fmin = reduce(min, fqall)
 		fmax = reduce(max, fqall)
-		fqall += [fhigh[n]-flow[n] for n in range(len(flow))]
 		fqall.append(self.outputbw)
-		df = reduce(fractions.gcd, fqall)
-		return (fmin,fmax,df)
+		fqall += bw
+		df = self.granularity(fqall)
+		return (fmin,fmax,minbw,maxbw,df)
 
 	def spans(self, Nant=None):
 		"""Determine frequency spans where at least Nant antennas overlap.
@@ -197,7 +211,7 @@ class Autobands:
 		if not flow:
 			flow, fhigh, id = self.flow, self.fhigh, self.fantenna
 		if not axis:
-			(fmin,fmax,__) = self.statistics(flow, fhigh)
+			(fmin,fmax,__,__,__) = self.statistics(flow, fhigh)
 		else:
 			fmin,fmax = axis
 		fstep = (fmax - fmin) / screenwidth
@@ -254,14 +268,14 @@ class Autobands:
 			#   relation of zoom and parent bandwidths
 
 			# Likely FFT len needed when starting at freq
-			res_curr = reduce(fractions.gcd, [fout_curr - f0, fout_curr + band_bw - f0, band_bw, span_bw])
+			res_curr = self.granularity([fout_curr - f0, fout_curr + band_bw - f0, band_bw, span_bw])
 			Lfft_curr = int(span_bw / res_curr)
 			if Lfft_best < 0:
 				fout_best = fout_curr
 				Lfft_best = Lfft_curr
 
 			# Likely FFT len needed when starting at freq + df
-			res_next = reduce(fractions.gcd, [(fout_curr+df) - f0, (fout_curr+df) + band_bw - f0, band_bw, span_bw])
+			res_next = self.granularity([(fout_curr+df) - f0, (fout_curr+df) + band_bw - f0, band_bw, span_bw])
 			Lfft_next = int(span_bw / res_next)
 
 			if Lfft_best < 0 or Lfft_next < Lfft_best:
@@ -286,7 +300,7 @@ class Autobands:
 		"""
 
 		# Determine freq list boundaries and tuning granularity
-		(fmin,fmax,df) = self.statistics()
+		(fmin,fmax,minbw,maxbw,df) = self.statistics()
 		if self.verbosity > 0:
 			print ('Autobands::outputbands() found Common freq grid %.6f--%.6f MHz with %.3f kHz granularity' % (fmin*1e-6,fmax*1e-6,df*1e-3))
 
@@ -437,10 +451,11 @@ class Autobands:
 			for zf,zfbw in outputbands['inputs'][n]:
 				print ('   input %10.6f MHz USB @ %12.6f MHz' % (zf*1e-6,zfbw*1e-6))
 
-		# DiFX v2d
+		# Produce DiFX 2.6 v2d ZOOMs for reference
 		total_bw = 0.0
 		total_gapbw = 0.0
 		total_zooms = 0
+		granularity_inputlist = []
 		for n in range(Nout):
 			m, M = 0, len(outputbands['inputs'][n])
 			if (n+1) < Nout:
@@ -456,9 +471,14 @@ class Autobands:
 					m += 1
 				total_bw += zfbw
 				total_zooms += 1
+				granularity_inputlist.append(zf)
+				granularity_inputlist.append(zfbw)
+				granularity_inputlist.append(zf+zfbw)
 				print (v2dline)
+		df = self.granularity(granularity_inputlist)
+		fft = 2*(maxbw/df)
 		print ('  # %d zooms, %d output bands of %.3f MHz, %.3f MHz total bandwidth, %.3f MHz non-covered due gaps' % (total_zooms, Nout, self.outputbw*1e-6, total_bw*1e-6, total_gapbw*1e-6))
-
+		print ('  # at least %.6f kHz needed for fftSpecRes, %.1f-point FFT on widest rec band of %.3f MHz' % (df*1e-3,fft,maxbw*1e-6))
 
 class AutobandsCases:
 	"""Populate an Autobands object with data according to a specific case"""
@@ -466,7 +486,7 @@ class AutobandsCases:
 	def __init__(self):
 		global verbosity
 		self.permitGaps = False
-		self.casefuncs = ['EHT', 'EHT_ALMA', 'GMVA_ALMA', 'GMVA_NOEMA']
+		self.casefuncs = ['EHT', 'EHT_ALMA', 'EHT_ALMA_NOEMA', 'GMVA_ALMA', 'GMVA_NOEMA', 'GMVA_ALMA_NOEMA']
 		self.verbosity = verbosity
 		pass
 
@@ -482,8 +502,9 @@ class AutobandsCases:
 
 	def generateFromCase(self, casename = None, outputbw_Hz = None):
 		if not casename or casename not in self.casefuncs:
-			print ('Supported cases: ', str(self.casefuncs))
-			return None
+			print ('Unknown case %s.\nSupported cases are: %s' % (str(casename),str(self.casefuncs)))
+			sys.exit(-1)
+			#return None
 		func = getattr(self, 'case_' + casename, None)	
 		return func(outputbw_Hz)
 
@@ -505,11 +526,20 @@ class AutobandsCases:
 		a.add( a.genALMA(214039.453125e6) )
 		return a
 
+	def case_EHT_ALMA_NOEMA(self, outputbw_Hz):
+		if not outputbw_Hz:
+			outputbw_Hz = 58e6
+		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
+		a.add( a.genEHT(214100.0e6) )
+		a.add( a.genALMA(214039.453125e6) )
+		a.add( a.genNOEMA(214100.0e6) )
+		return a
+
 	def case_GMVA_ALMA(self, outputbw_Hz):
 		if not outputbw_Hz:
 			outputbw_Hz = 32e6
 		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
-		a.add( a.genGMVA(86380.0e6) )  #  8 x 32M old VLBA
+		# a.add( a.genVLBA(86380.0e6) )  #  2 x 128M VLBA RDBE
 		a.add( a.genDBBC3(86044.0e6) ) # 64 x 32M, start from -32 MHz (1st LSB)
 		a.add( a.genALMA(86380.0e6) )  # 64 x 62.5M, overlapped
 		return a
@@ -519,6 +549,16 @@ class AutobandsCases:
 			outputbw_Hz = 32e6
 		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
 		a.add( a.genDBBC3(86044.0e6) ) # 64 x 32M, start from -32 MHz (1st LSB)
+		a.add( a.genNOEMA(86044.0e6) ) # 64 x 64M, start from 0 MHz
+		return a
+
+	def case_GMVA_ALMA_NOEMA(self, outputbw_Hz):
+		if not outputbw_Hz:
+			outputbw_Hz = 32e6
+		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
+		a.add( a.genVLBA(86380.0e6) )  #  2 x 128M VLBA RDBE
+		a.add( a.genDBBC3(86044.0e6) ) # 64 x 32M, start from -32 MHz (1st LSB)
+		a.add( a.genALMA(86380.0e6) )  # 64 x 62.5M, overlapped
 		a.add( a.genNOEMA(86044.0e6) ) # 64 x 64M, start from 0 MHz
 		return a
 
