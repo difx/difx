@@ -28,6 +28,8 @@ class Autobands:
 		self.Nant = 0
 		self.verbosity = verbosity
 		self.permitGaps = permitgaps
+		self.detectedspans = []
+		self.outputbandconstituents = []
 		if self.outputbw < 1e6:
 			print ('Warning: Autobands() instantiated with small output bandwidth %.3f Hz, treating it as MHz' % (outputbandwidth))
 			self.outputbw = outputbandwidth*1e6
@@ -292,6 +294,41 @@ class Autobands:
 
 		return fout_best
 
+	def outputbands_merge(self, bw_inputs):
+		"""
+		Merge a list of input zooms as far as possible i.e. when from overlapped recorded bands.
+		Done by checking whether all inputs fall into a single rec band at all antennas.
+		@param bw_inputs a list of input zoom bands given as pairs of [fstart,bandwidth]
+		"""
+		inputs_merged = []
+
+		# Do the merge
+		f0 = bw_inputs[0][0]
+		for kk in range(1,len(bw_inputs)):
+			f1 = bw_inputs[kk][0] + bw_inputs[kk][1]
+			if not self.bandsHaveRange(f0, f1):
+				if self.verbosity > 4:
+					print ('Autobands::outputbands_merge() no   cover %.6f--%.6f' % (f0*1e-6,f1*1e-6))
+				inputs_merged.append([f0, bw_inputs[kk][0] - f0])
+				f0 = bw_inputs[kk][0]
+				if (kk+1) < len(bw_inputs):
+					# Set f1 ahead of exiting loop next
+					f1 = bw_inputs[kk+1][0] + bw_inputs[kk+1][1]
+			else:
+				if self.verbosity > 4:
+					print ('Autobands::outputbands_merge() does cover %.6f--%.6f, continue and try merge the next span' % (f0*1e-6,f1*1e-6))
+
+		# Handle anything remainig
+		if f1 > f0:
+			inputs_merged.append([f0, f1-f0])
+
+		# Done!
+		if self.verbosity > 1 and len(inputs_merged) < len(bw_inputs):
+			print ('Autobands::outputbands()    merged %d sub-spans into %d' % (len(bw_inputs),len(inputs_merged)))
+			for fq,bw in inputs_merged:
+				print ('Autobands::outputbands()        at fq %.6f MHz bw %.6f MHz' % (fq*1e-6,bw*1e-6))
+		return inputs_merged
+
 	def outputbands(self, Nant=None, fstart=None):
 		"""Produce a set of output bands and a list of their input bands.
 		Utilizes internally stored previously added information of antenna recorded frequencies.
@@ -307,8 +344,8 @@ class Autobands:
 		# Find frequency spans where enough antennas overlap
 		if not Nant:
 			Nant = self.Nant
-		spans = self.spans(Nant)
-		Nspans = len(spans['flow'])
+		self.detectedspans = self.spans(Nant)
+		Nspans = len(self.detectedspans['flow'])
 
 		# Generate a list of output bands, two possibilities:
 		# 1) spans are wider or same as 'self.outputbw', must try to split spans or use as-is
@@ -322,7 +359,7 @@ class Autobands:
 		while span < Nspans:
 
 			# Get span
-			f0,f1,nrec = spans['flow'][span], spans['fhi'][span], spans['bandcounts'][span]
+			f0,f1,nrec = self.detectedspans['flow'][span], self.detectedspans['fhi'][span], self.detectedspans['bandcounts'][span]
 
 			# Catch when large gaps between spans, e.g., geodetic/DDC mode
 			if foutstart < f0:
@@ -339,7 +376,6 @@ class Autobands:
 					print ('Autobands::outputbands() processing span %d at %.6f--%.6f MHz bw %.6f MHz, best fstart @ %.3f kHz' % (span,f0*1e-6,f1*1e-6,(f1-f0)*1e-6,(foutstart-foutstart_1)*1e-3))
 
 			# Generate band in Case 1 : fill span with complete bands up till max possible
-			# print ('span %d f0--f1 : %.6f--%.6f has %.6fM : foutstart %.6f MHz' % (span, f0*1e-6,f1*1e-6,(f1-f0)*1e-6,foutstart*1e-6))
 			while (foutstart + self.outputbw) <= f1:
 				outputbands['flow'].append(foutstart)
 				outputbands['inputs'].append([[foutstart, self.outputbw]])
@@ -349,11 +385,11 @@ class Autobands:
 
 			# Generate band in Case 2 : pieces of span(s) for a later complete band, patch over to next span(s)
 			bw_remain = f1 - foutstart
-			if (bw_remain) > 0 and spans['continued'][span]:
+			if (bw_remain) > 0 and self.detectedspans['continued'][span]:
 
 				# If overlap in rec bands at least at one antenna, may
 				# try a slight shift to begin at a more 'integer' MHz
-				if spans['bandcounts'][span] > Nant and self.permitGaps:
+				if self.detectedspans['bandcounts'][span] > Nant and self.permitGaps:
 					foutstart_1 = foutstart
 					foutstart = self.adjustStartFreq(f0, f1, foutstart, df)
 					if self.verbosity > 1 and foutstart_1 != foutstart:
@@ -364,6 +400,7 @@ class Autobands:
 				bw_inputs = []
 				slicestartfreq = foutstart
 				while (span < Nspans) and (bw_needed > 0):
+
 					# Append more bw from span
 					if (slicestartfreq-f0) < 0:
 						break
@@ -374,43 +411,23 @@ class Autobands:
 					bw_inputs.append([slicestartfreq, bw_utilized])
 					slicestartfreq += bw_utilized
 					bw_remain = f1 - slicestartfreq
+
 					# If out of remaining bw in this span, overflow into the next span
 					if (bw_remain <= 0):
 						span += 1
 						if (span < Nspans):
-							f0,f1,nrec = spans['flow'][span], spans['fhi'][span], spans['bandcounts'][span]
+							f0,f1,nrec = self.detectedspans['flow'][span], self.detectedspans['fhi'][span], self.detectedspans['bandcounts'][span]
 							bw_remain = f1 - slicestartfreq
 							assert(bw_remain >= 0)
 
 				# Store the complete outputband(s) details
 				if bw_needed == 0:
 
-					# Attempt a merge of introduced input zooms where possible (i.e. if from overlapped rec bands),
-					# by checking whether all inputs fall into a single rec band at all antennas
+					# First try reducing the introduced input zooms where possible i.e. from overlapped rec bands
 					if len(bw_inputs) > 1:
-						inputs_merged = []
-						f0 = bw_inputs[0][0]
-						for kk in range(1,len(bw_inputs)):
-							f1 = bw_inputs[kk][0] + bw_inputs[kk][1]
-							if not self.bandsHaveRange(f0, f1):
-								# print ('no   cover %.6f--%.6f' % (f0*1e-6,f1*1e-6))
-								inputs_merged.append([f0, bw_inputs[kk][0] - f0])
-								f0 = bw_inputs[kk][0]
-								if (kk+1) < len(bw_inputs):
-									# Set f1 ahead of exiting loop next
-									f1 = bw_inputs[kk+1][0] + bw_inputs[kk+1][1]
-							else:
-								# print ('does cover %.6f--%.6f, continue and try merge the next span' % (f0*1e-6,f1*1e-6))
-								pass
-						if f1 > f0:
-							inputs_merged.append([f0, f1-f0])
-						if self.verbosity > 1 and len(inputs_merged) < len(bw_inputs):
-							print ('Autobands::outputbands()    merged %d sub-spans into %d' % (len(bw_inputs),len(inputs_merged)))
-							for fq,bw in inputs_merged:
-								print ('Autobands::outputbands()        at fq %.6f MHz bw %.6f MHz' % (fq*1e-6,bw*1e-6))
-						bw_inputs = inputs_merged
+						bw_inputs = self.outputbands_merge(bw_inputs)
 
-					# Store
+					# Store the final outputband constituents
 					outputbands['flow'].append(foutstart)
 					outputbands['inputs'].append(bw_inputs)
 					foutstart += self.outputbw
@@ -420,50 +437,64 @@ class Autobands:
 					if self.verbosity > 1:
 						print ('Autobands::outputbands()    dropping incomplete out fq %.6f MHz' % (foutstart*1e-6))
 					foutstart += bw_needed
+					# span += 1 perhaps?
 
 
 			# Case 3: no band remains in current span
 			else:
 				span += 1
 
-		# Visual summary, inputs
-		print ('Input bands:')
+		# Store final result
+		self.outputbandconstituents = outputbands
+		return outputbands
+
+	def summarize(self):
+		"""
+		Print out a complete summary of what processing of ::outputbands() has produced, internally.
+		"""
+
+		(fmin,fmax,minbw,maxbw,df) = self.statistics()
+
+		# Show the input
+		print ('Recorded bands:')
 		self.visualise()
 
-		# Visual summary, segmented freqs axis
+		# Show auto-detected usable spans
 		print ('Detected spans with array-wide common cover:')
-		self.visualise(spans['flow'], spans['fhi'], [n for n in range(Nspans)], axis=[fmin,fmax], startmarker=ord('A'))
+		Nspans = len(self.detectedspans['flow'])
+		self.visualise(self.detectedspans['flow'], self.detectedspans['fhi'], [n for n in range(Nspans)], axis=[fmin,fmax], startmarker=ord('A'))
 		for n in range(Nspans):
-			f0, f1, Nb = spans['flow'][n]*1e-6, spans['fhi'][n]*1e-6, spans['bandcounts'][n]
-			cont = spans['continued'][n]
+			f0, f1, Nb = self.detectedspans['flow'][n]*1e-6, self.detectedspans['fhi'][n]*1e-6, self.detectedspans['bandcounts'][n]
+			cont = self.detectedspans['continued'][n]
 			print ('Span %3d %.6f--%.6f MHz, %11.6f MHz bw, %2d bands, no gap %s' % (n,f0,f1,f1-f0,Nb,str(cont)))
 
-		# Visual summary, outputs
+		# Show output bands and how they are assembled
 		print ('\nOutput bands:')
-		Nout = len(outputbands['flow'])
-		f0 = list(outputbands['flow'])
+		Nout = len(self.outputbandconstituents['flow'])
+		f0 = list(self.outputbandconstituents['flow'])
 		f1 = [ff + self.outputbw for ff in f0]
 		id = [fi + self.Nant for fi in range(len(f0))]
 		self.visualise(f0, f1, id, axis=[fmin,fmax])
 
 		for n in range(Nout):
-			print ('Output band %d: %12.2f -- %12.2f Hz' % (n, outputbands['flow'][n], outputbands['flow'][n]+self.outputbw))
-			for zf,zfbw in outputbands['inputs'][n]:
+			print ('Output band %d: %12.2f -- %12.2f Hz' % (n, self.outputbandconstituents['flow'][n], self.outputbandconstituents['flow'][n]+self.outputbw))
+			for zf,zfbw in self.outputbandconstituents['inputs'][n]:
 				print ('   input %10.6f MHz USB @ %12.6f MHz' % (zf*1e-6,zfbw*1e-6))
 
 		# Produce DiFX 2.6 v2d ZOOMs for reference
+		print ('\nReference DiFX 2.6 v2d:')
 		total_bw = 0.0
 		total_gapbw = 0.0
 		total_zooms = 0
 		granularity_inputlist = []
 		for n in range(Nout):
-			m, M = 0, len(outputbands['inputs'][n])
+			m, M = 0, len(self.outputbandconstituents['inputs'][n])
 			if (n+1) < Nout:
-				gap_Hz = outputbands['flow'][n+1] - (outputbands['flow'][n]+self.outputbw)
+				gap_Hz = self.outputbandconstituents['flow'][n+1] - (self.outputbandconstituents['flow'][n]+self.outputbw)
 			else:
 				gap_Hz = 0
 			total_gapbw += gap_Hz
-			for zf,zfbw in outputbands['inputs'][n]:
+			for zf,zfbw in self.outputbandconstituents['inputs'][n]:
 				v2dline = 'addZoomFreq = freq@%.6f/bw@%.6f/noparent@true' % (zf*1e-6,zfbw*1e-6)
 				v2dline = '  ' + v2dline + ' '*(65-len(v2dline)) + '# to output band %d, has %.3f kHz gap to next' % (n,gap_Hz*1e-3)
 				if M>1:
@@ -479,6 +510,7 @@ class Autobands:
 		fft = 2*(maxbw/df)
 		print ('  # %d zooms, %d output bands of %.3f MHz, %.3f MHz total bandwidth, %.3f MHz non-covered due gaps' % (total_zooms, Nout, self.outputbw*1e-6, total_bw*1e-6, total_gapbw*1e-6))
 		print ('  # at least %.6f kHz needed for fftSpecRes, %.1f-point FFT on widest rec band of %.3f MHz' % (df*1e-3,fft,maxbw*1e-6))
+
 
 class AutobandsCases:
 	"""Populate an Autobands object with data according to a specific case"""
@@ -507,7 +539,6 @@ class AutobandsCases:
 			#return None
 		func = getattr(self, 'case_' + casename, None)	
 		return func(outputbw_Hz)
-
 
 	def case_EHT(self, outputbw_Hz):
 		if not outputbw_Hz:
@@ -578,15 +609,23 @@ if __name__ == "__main__":
 	else:
 		outputbw_hz = None
 
-	# Populate frequency tables
-	if os.path.isfile(sys.argv[1]):
-		a = gen.generateFromVEX(casename, outputbw_hz)
+	# Check if particular case should be run, or 'all' supported ones
+	if casename == 'all':
+		cases = gen.casefuncs
 	else:
-		a = gen.generateFromCase(casename, outputbw_hz)
+		cases = [casename]
 
-	# Process
-	print ('Recorded bands:')
-	a.visualise()
-	print ('Computed bands:')
-	# a.outputbands(fstart=212162.796875e6)
-	a.outputbands()
+	# Handle the case(s)
+	for casename in cases:
+		print ('\n----------------- %s -----------------' % (casename))
+
+		# Populate frequency tables
+		if os.path.isfile(casename):
+			a = gen.generateFromVEX(casename, outputbw_hz)
+		else:
+			a = gen.generateFromCase(casename, outputbw_hz)
+
+		# Process
+		# a.outputbands(fstart=212162.796875e6)
+		a.outputbands()
+		a.summarize()
