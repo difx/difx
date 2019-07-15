@@ -53,7 +53,7 @@
 VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
  : VDIFDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
-	cwarn << startl << "Starting VDIF Mark6 datastream.  This is experimental at this time!" << endl;
+	cinfo << startl << "Starting VDIF Mark6 datastream." << endl;
 	mark6gather = 0;
 	mark6eof = false;
 	nSort = 20;
@@ -62,7 +62,7 @@ VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, i
 
 VDIFMark6DataStream::~VDIFMark6DataStream()
 {
-	cwarn << startl << "Ending VDIF Mark6 datastream.  Maybe it worked?" << endl;
+	cinfo << startl << "Ending VDIF Mark6 datastream." << endl;
 	closeMark6();
 }
 
@@ -539,8 +539,6 @@ void VDIFMark6DataStream::loopfileread()
 {
 	int perr;
 	int numread = 0;
-
-cverbose << startl << "Starting VDIFMark6DataStream::loopfileread()" << endl;
 
 	//lock the outstanding send lock
 	perr = pthread_mutex_lock(&outstandingsendlock);
