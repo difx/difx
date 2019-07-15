@@ -1,21 +1,24 @@
 #!/usr/bin/python
-#
-# Usage: autoBandsRef.py [<vexfile> <output_bandwidth_MHz>]
-#
-# Automatic "output bands" generation based upon sets
-# of recorded bands per antenna. The recorded bands
-# can be taken from a VEX file. If not VEX is specified
-# then some band test cases will be generated internally.
-#
-# Reference implementation for a later native C/C++ port.
-#
-# 01/2019 Jan Wagner
-#
+'''
+Usage: autoBands.py <casename | vexfile.vex> [<output_bandwidth_MHz>]
 
-import math, fractions, sys
+Automatic "output bands" generation based upon sets
+of recorded bands per antenna. A test case name
+has to be specified, or alternatively a VEX file
+from which the recorded bands are then extracted.
+
+Reference implementation for a later native C/C++ port.
+
+01/2019 Jan Wagner
+'''
+
+import math, fractions, os, sys
 import vex  # same as utilized by autozooms module
 
+verbosity = 3
+
 class Autobands:
+	"""Automatic output bands generation based upon a set of recorded frequencies"""
 
 	def __init__(self, outputbandwidth=16e6, verbosity=0, permitgaps=False):
 		self.flow = []
@@ -61,19 +64,19 @@ class Autobands:
 	
 	def genNOEMA(self, fbase_Hz, sb=+1):
 		"""Generate NOEMA"""
-		Nch = 64
-		bw = 64e6
+		bw = 64e6	# PolyFix always 64 MHz
+		Nch = 64	# PolyFix always 64 ch
 		return self.genPFB(fbase_Hz, bw, bw, Nch, sb)
 	
 	def genGMVA(self, fbase_Hz, sb=+1):
 		"""Generate GMVA in PFB 32 MHz mode"""
-		Nch = 8
-		bw = 32e6
+		Nch = 8		# generic 8-ch
+		bw = 32e6	# generic 32 MHz
 		return self.genPFB(fbase_Hz, bw, bw, Nch, sb)
 
 	def genEHT(self, fbase_Hz, sb=+1):
 		"""Generate EHT with 1 x 2048 MHz"""
-		bw = 2048e6
+		bw = 2048e6	# R2DBE 1 ch x 2048 MHz
 		return self.genPFB(fbase_Hz, bw, bw, 1, sb)
 
 	def genDBBC3(self, fbase_Hz, sb=+1):
@@ -160,19 +163,19 @@ class Autobands:
 			for k in range(Nfq):
 				if span_lo >= self.flow[k] and span_hi <= self.fhigh[k]:
 					ants_in_span.append(self.fantenna[k])
-			#count = len(set(ants_in_span))
-			count = len(ants_in_span)
+			antcount = len(set(ants_in_span))
+			bandcount = len(ants_in_span)
 
 			# Enough antennas have it, keep span?
-			if count >= Nant:
+			if antcount >= Nant and bandcount >= Nant:
 				spans['flow'].append( span_lo )
 				spans['fhi'].append( span_hi )
-				spans['bandcounts'].append( count )
+				spans['bandcounts'].append( bandcount )
 				if self.verbosity > 2:
-					print ('Autobands::spans() retain  %.6f--%.6f MHz bw %.6f MHz with %d rec bands' % (span_lo*1e-6,span_hi*1e-6,(span_hi-span_lo)*1e-6,count))
+					print ('Autobands::spans() retain  %.6f--%.6f MHz bw %.6f MHz with %d rec bands' % (span_lo*1e-6,span_hi*1e-6,(span_hi-span_lo)*1e-6,bandcount))
 			else:
 				if self.verbosity > 2:
-					print ('Autobands::spans() discard %.6f--%.6f MHz bw %.6f MHz with %d rec bands < %d antennas' % (span_lo*1e-6,span_hi*1e-6,(span_hi-span_lo)*1e-6,count,Nant))
+					print ('Autobands::spans() discard %.6f--%.6f MHz bw %.6f MHz with %d rec bands, %d antennas < %d antennas' % (span_lo*1e-6,span_hi*1e-6,(span_hi-span_lo)*1e-6,bandcount,antcount,Nant))
 
 		# Mark directly adjecent spans as 'continued'
 		Nspans = len(spans['flow'])
@@ -197,14 +200,19 @@ class Autobands:
 			(fmin,fmax,__) = self.statistics(flow, fhigh)
 		else:
 			fmin,fmax = axis
-		df = (fmax - fmin) / screenwidth
+		fstep = (fmax - fmin) / screenwidth
 
-		axislabel = '| %12.2f' % (fmin) + ' '*(screenwidth - 2*16) + '%12.2f |' % (fmax)
+		axislabel = ['| ', '%12.2f' % (fmin), '', '%12.2f' % (fmax), ' |']
+		axislabel[2] = ' ' * (screenwidth - len(''.join(axislabel)))
+		axislabel = ''.join(axislabel)
+
 		for k in range(len(flow)):
 			bw = fhigh[k] - flow[k]
-			L0 = int((flow[k]-fmin)/df)
-			L1 = int(math.ceil(bw/df))
+			L0 = int((flow[k]-fmin)/fstep)
+			L1 = int(math.ceil(bw/fstep))
 			L2 = screenwidth - L1 - L0
+			if L2 < 0:
+				L1 += L2
 			# indicator = chr(65+k%26)
 			indicator = chr(ord('a') + id[k] % 26)
 			line = '.'*L0 + indicator*L1 + '.'*L2
@@ -337,6 +345,8 @@ class Autobands:
 				slicestartfreq = foutstart
 				while (span < Nspans) and (bw_needed > 0):
 					# Append remaining bw from span
+					if (slicestartfreq-f0) < 0:
+						break
 					bw_utilized = min(bw_needed, bw_remain)
 					bw_needed -= bw_utilized
 					if self.verbosity > 1:
@@ -348,7 +358,6 @@ class Autobands:
 					if (span < Nspans):
 						f0,f1,nrec = spans['flow'][span], spans['fhi'][span], spans['bandcounts'][span]
 						bw_remain = f1 - slicestartfreq
-						print bw_remain, f1, slicestartfreq
 						assert(bw_remain >= 0)
 
 				# Store the complete outputband(s) details
@@ -398,7 +407,7 @@ class Autobands:
 		self.visualise()
 
 		# Visual summary, segmented freqs axis
-		print ('Detected spans:')
+		print ('Detected spans with array-wide common cover:')
 		self.visualise(spans['flow'], spans['fhi'], [n for n in range(Nspans)], axis=[fmin,fmax])
 		for n in range(Nspans):
 			f0, f1, Nb = spans['flow'][n]*1e-6, spans['fhi'][n]*1e-6, spans['bandcounts'][n]
@@ -414,11 +423,13 @@ class Autobands:
 		self.visualise(f0, f1, id, axis=[fmin,fmax])
 
 		for n in range(Nout):
-			print ('Output band: %12.2f -- %12.2f Hz' % (outputbands['flow'][n], outputbands['flow'][n]+self.outputbw))
+			print ('Output band %d: %12.2f -- %12.2f Hz' % (n, outputbands['flow'][n], outputbands['flow'][n]+self.outputbw))
 			for zf,zfbw in outputbands['inputs'][n]:
-				print ('   input %10.6f MHz USB @ %12.6f MHz from a rec band' % (zf*1e-6,zfbw*1e-6))
+				print ('   input %10.6f MHz USB @ %12.6f MHz' % (zf*1e-6,zfbw*1e-6))
 
 		# DiFX v2d
+		total_bw = 0.0
+		total_zooms = 0
 		for n in range(Nout):
 			m, M = 0, len(outputbands['inputs'][n])
 			if (n+1) < Nout:
@@ -431,48 +442,88 @@ class Autobands:
 				if M>1:
 					v2dline += ', band slice %d' % m
 					m += 1
+				total_bw += zfbw
+				total_zooms += 1
 				print (v2dline)
+		print ('  # %d zooms, %d output bands of %.3f MHz, %.3f MHz total bandwidth' % (total_zooms, Nout, self.outputbw*1e-6, total_bw*1e-6))
 
 
+class AutobandsCases:
+	"""Populate an Autobands object with data according to a specific case"""
+
+	def __init__(self):
+		global verbosity
+		self.permitGaps = False
+		self.casefuncs = ['EHT_ALMA', 'GMVA_ALMA', 'GMVA_NOEMA']
+		self.verbosity = verbosity
+		pass
+
+	def getCases(self):
+		return list(self.casefuncs)
+
+	def generateFromVEX(self, vexfile, outputbw_Hz = None):
+		if not outputbw_Hz:
+			outputbw_Hz = 32e6
+		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
+		a.addVEX(vexfile)
+		return a
+
+	def generateFromCase(self, casename = None, outputbw_Hz = None):
+		if not casename or casename not in self.casefuncs:
+			print ('Supported cases: ', str(self.casefuncs))
+			return None
+		func = getattr(self, 'case_' + casename, None)	
+		return func(outputbw_Hz)
+
+	def case_EHT_ALMA(self, outputbw_Hz):
+		if not outputbw_Hz:
+			outputbw_Hz = 58e6
+		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
+		a.add( a.genEHT(214100.0e6) )
+		a.add( a.genALMA(214039.453125e6) )
+		return a
+
+	def case_GMVA_ALMA(self, outputbw_Hz):
+		if not outputbw_Hz:
+			outputbw_Hz = 32e6
+		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
+		a.add( a.genGMVA(86380.0e6) )  #  8 x 32M old VLBA
+		a.add( a.genDBBC3(86044.0e6) ) # 64 x 32M, start from -32 MHz (1st LSB)
+		a.add( a.genALMA(86380.0e6) )  # 64 x 62.5M, overlapped
+		return a
+
+	def case_GMVA_NOEMA(self, outputbw_Hz):
+		if not outputbw_Hz:
+			outputbw_Hz = 32e6
+		a = Autobands(outputbw_Hz, self.verbosity, self.permitGaps)
+		a.add( a.genDBBC3(86044.0e6) ) # 64 x 32M, start from -32 MHz (1st LSB)
+		a.add( a.genNOEMA(86044.0e6) ) # 64 x 64M, start from 0 MHz
+		return a
 
 if __name__ == "__main__":
 
-	verbosity = 2
+	gen = AutobandsCases()
 
-	if len(sys.argv)>=2:
-
-		# Use VEX file
-		# outbw = 58.59375e6
-		outbw = 58e6
-		vexf = sys.argv[1]
-		if len(sys.argv)>=3:
-			outbw = int(float(sys.argv[2])*1e6)
-
-		a = Autobands(outbw, verbosity)
-
-		a.addVEX(vexf)
-
+	# User args
+	if len(sys.argv) < 2:
+		print (__doc__)
+		print ('Available cases: %s\n' % (str(gen.getCases())))
+		sys.exit(0)
+	casename = sys.argv[1]
+	if len(sys.argv) >= 3:
+		outputbw_hz = int(float(sys.argv[2])*1e6)
 	else:
-		# Use hardcoded cases
-		# a = Autobands(32e6, verbosity)
-		a = Autobands(58.0e6, verbosity)     # ALMA but try 58M
-		# a = Autobands(58.59375e6, verbosity) # ALMA spacing of overlapped 62.5M channels
+		outputbw_hz = None
 
-		a.add( a.genEHT(86380.0e6) )
-		## a.addBand( 86380.0e6 + 128e6, 86380.0e6 + 1024e6 )
-		#a.addBand( 86380.0e6, 86380.0e6 + 1024e6 )
-		## a.addBand( 86380.0e6 + 896e6, 86380.0e6 + 1536e6 )
-		a.add( a.genALMA(86380.0e6) )
-		## a.add( a.genNOEMA(86380.0e6) )
-		## a.add( a.genGMVA(86380.0e6, sb=-1) )
-		## a.add( a.genDBBC3(86044.00e6) )
+	# Populate frequency tables
+	if os.path.isfile(sys.argv[1]):
+		a = gen.generateFromVEX(casename, outputbw_hz)
+	else:
+		a = gen.generateFromCase(casename, outputbw_hz)
 
 	# Process
-
 	print ('Recorded bands:')
 	a.visualise()
-
 	print ('Computed bands:')
 	# a.outputbands(fstart=212162.796875e6)
 	a.outputbands()
-
