@@ -11,6 +11,66 @@ Reference implementation for a later native C/C++ port.
 
 01/2019 Jan Wagner
 '''
+'''
+The approach is as follows:
+
+ == Stage 1 ==
+ Sky freq coverage segmented into smaller freq spans
+
+ 1.1  gather info about all recorded bands,
+      which antenna/$FREQ provides what set of recorded bands
+ 1.2  build a list of low and high edge frequencies of all bands
+ 1.3  form a set out of (1.2) and sort it, placing in effect many
+      'divider marks' across the sky freq coverage of the experiment
+ 1.4  the divider marks yield a list of frequency "spans" defined
+      by a low edge frequency and delta to next span
+
+ == Stage 2 ==
+ Discard unusable spans
+
+ 2.1  filter the list of frequency "spans", discard all spans
+      that are not available from indeed every antenna/$FREQ
+ 2.2  go through the now shorter list of still retained spans
+      a) note if now any band break between a span and the next
+      b) count of number of recorded bands that provide the span
+
+      With overlapped rec bands (ALMA) the count 2.2b will exceed
+      the number of antennas/$FREQ. This redundancy can aid outputband
+      placing.
+
+ == Stage 3 ==
+ Place outputbands across spans
+
+ 3.1  note the user-requested output bandwidth or
+      determine a best suitable bandwidth from info (1.1)
+ 3.2  set start freq to beginning of first span,
+      possibly adjusting it upwards if this helps reduce FFT length
+ 3.3  fill the span with outputbands (1:1 association between recorded:output)
+ 3.4  take remaining bandwidth in the span and if by (2.2a) the current
+      span is contiguous to the next, flow over to that next span(s) to
+      continue on the same outputband (N:1 association between spans:output)
+ 3.5  for the N:1 association (3.4), loop through the N spans and attempt
+      to merge down to M underlying recorded bands when overlap (2.2b) allows
+ 3.6  clean up final list of outputbands and the band slices needed to assemble them
+
+ == Stage 4 ==
+ Build 'instructions' for correlation
+
+ 4.1  translate outputbands list into some format useful for correlation
+      - per recorded band, keep a list of band slices to come from that rec band
+      - per band slice, keep reference to right spot in final destination outputband
+      - write out band slice info as a list of DiFX 2.6 ZOOM -equivalent bands,
+        to reuse a lot of the zoom band facility
+
+ During actual correlation, after mode.cpp has made freq domain data available,
+ handle zoom bands mostly as before. Accumulate zoom content into its location 
+ in the referenced destination outputband.
+
+ May need v2d 'loOffsets=f1,f2,f3,...<Hz>' to phase-align the recorded bands
+ of an antenna. May need new v2d 'freqGains=g1,g2,g3,..' if digital backends
+ output non-flat/sloped bands.
+
+'''
 
 import math, fractions, os, sys
 import vex  # same as utilized by autozooms module
