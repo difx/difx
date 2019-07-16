@@ -24,15 +24,12 @@ class Autobands:
 		self.flow = []
 		self.fhigh = []
 		self.fantenna = []
-		self.outputbw = outputbandwidth
 		self.Nant = 0
 		self.verbosity = verbosity
 		self.permitGaps = permitgaps
 		self.detectedspans = []
 		self.outputbandconstituents = []
-		if self.outputbw < 1e6:
-			print ('Warning: Autobands() instantiated with small output bandwidth %.3f Hz, treating it as MHz' % (outputbandwidth))
-			self.outputbw = outputbandwidth*1e6
+		self.setBandwidth(outputbandwidth)
 
 	def add(self, flowhigh):
 		"""Add antenna with freqs ([band low edges], [band high edges])"""
@@ -47,6 +44,12 @@ class Autobands:
 		self.fhigh.append(fhi)
 		self.fantenna.append(self.Nant)
 		self.Nant += 1
+
+	def setBandwidth(self, outputbandwidth_Hz):
+		self.outputbw = outputbandwidth_Hz
+		if self.outputbw < 1e6:
+			print ('Warning: Autobands() instantiated with small output bandwidth %.3f Hz, treating it as MHz' % (outputbandwidth_Hz))
+			self.outputbw = outputbandwidth*1e6
 
 	def genPFB(self, fbase_Hz, bw, fstep, Nch, sb=+1):
 		"""Generate frequency list for uniform PFB"""
@@ -136,14 +139,28 @@ class Autobands:
 
 	def granularity(self, freqs):
 		"""Return the greatest-common-divisor for a list of frequencies and bandwidths"""
+		if len(freqs) < 1:
+			return 1.0
 		df = reduce(fractions.gcd, freqs)
 		return df
+
+	def autobandwidth(self):
+		"""Return automatically determined best-fit common bandwidth, or None on failure"""
+		if len(self.detectedspans) < 1:
+			self.detectedspans = self.spans()
+		(fmin,fmax,minbw,maxbw,df) = self.statistics(self.detectedspans['flow'], self.detectedspans['fhi'])
+		#print('autobandwidth: %.3fM %.3fM %.3fk' % (minbw*1e-6,maxbw*1e-6,df*1e-3))
+		if minbw == maxbw:
+			return minbw
+		return None
 
 	def statistics(self, flow=None, fhigh=None):
 		"""Return min and max frequencies and common minimum freq spacing. Returns (fmin,fmax,df)."""
 		if not flow:
 			flow, fhigh = self.flow, self.fhigh
 		fqall = list(flow) + list(fhigh)
+		if len(fqall) < 1:
+			return (None)*5
 		bw = [fhigh[n]-flow[n] for n in range(len(flow))]
 		minbw = reduce(min, bw)
 		maxbw = reduce(max, bw)
@@ -322,11 +339,13 @@ class Autobands:
 		if f1 > f0:
 			inputs_merged.append([f0, f1-f0])
 
-		# Done!
+		# Print the details if something was indeed merged
 		if self.verbosity > 1 and len(inputs_merged) < len(bw_inputs):
 			print ('Autobands::outputbands()    merged %d sub-spans into %d' % (len(bw_inputs),len(inputs_merged)))
 			for fq,bw in inputs_merged:
 				print ('Autobands::outputbands()        at fq %.6f MHz bw %.6f MHz' % (fq*1e-6,bw*1e-6))
+
+		# Done!
 		return inputs_merged
 
 	def outputbands(self, Nant=None, fstart=None):
@@ -339,7 +358,7 @@ class Autobands:
 		# Determine freq list boundaries and tuning granularity
 		(fmin,fmax,minbw,maxbw,df) = self.statistics()
 		if self.verbosity > 0:
-			print ('Autobands::outputbands() found Common freq grid %.6f--%.6f MHz with %.3f kHz granularity' % (fmin*1e-6,fmax*1e-6,df*1e-3))
+			print ('Autobands::outputbands() found common freq grid %.6f--%.6f MHz with %.3f kHz granularity' % (fmin*1e-6,fmax*1e-6,df*1e-3))
 
 		# Find frequency spans where enough antennas overlap
 		if not Nant:
@@ -627,5 +646,11 @@ if __name__ == "__main__":
 
 		# Process
 		# a.outputbands(fstart=212162.796875e6)
+		suggested_bw = a.autobandwidth()
+		if suggested_bw != None and outputbw_hz != suggested_bw:
+			print ('Determined best-fit bandwidth would be %.3f MHz' % (suggested_bw*1e-6))
+			if not outputbw_hz:
+				a.setBandwidth(suggested_bw)
+				print ('Using autodetermined bandwidth of %.3f MHz' % (suggested_bw*1e-6))
 		a.outputbands()
 		a.summarize()
