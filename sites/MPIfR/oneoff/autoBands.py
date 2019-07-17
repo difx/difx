@@ -70,6 +70,13 @@ The approach is as follows:
  of an antenna. May need new v2d 'freqGains=g1,g2,g3,..' if digital backends
  output non-flat/sloped bands.
 
+
+TODO:
+
+ Frequency-subarrayed observations are not handled correctly here,
+ key example RadioAstron with C & K-band where some ground stations
+ are C-band only, others K-band only.
+
 '''
 
 import math, fractions, os, sys
