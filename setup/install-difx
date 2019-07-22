@@ -565,6 +565,9 @@ if doclean:
     thisdir = os.getcwd()
     for libtarget in libtargets:
         targetdir = libtarget[0] + '/' + libtarget[1]
+        if not os.path.exists(targetdir):
+            print "**** Could not find "+targetdir+", trying Trunk"
+            targetdir = libtarget[0] + '/trunk/'
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
@@ -583,6 +586,9 @@ if doclean:
     thisdir = os.getcwd()
     for apptarget in apptargets:
         targetdir = apptarget[0] + '/' + apptarget[1]
+        if not os.path.exists(targetdir):
+            print "**** Could not find "+targetdir+", trying Trunk"
+            targetdir = apptarget[0] + '/trunk/'
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
@@ -604,6 +610,9 @@ if doclean:
 	    targetdir = utiltarget[0]
 	else:
 	    targetdir= utiltarget[1]  + '/' + utiltarget[0]
+        if not os.path.exists(targetdir):
+            print "**** Could not find "+targetdir+", trying Trunk"
+            targetdir = utiltarget[0] + '/trunk/'
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
@@ -618,6 +627,9 @@ if doclean:
         os_chdir(thisdir)
 
     targetdir = topdir + "/mpifxcorr/" + difx_version
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = topdir + "/mpifxcorr/trunk/"
     if os.path.exists(targetdir):
         print
         print "**** Cleaning "+targetdir
@@ -716,6 +728,9 @@ os_chdir("libraries")
 thisdir = os.getcwd()
 for libtarget in libtargets:
     targetdir = libtarget[0]  + '/' + libtarget[1] 
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = libtarget[0] + '/trunk/'
     if os.path.exists(targetdir):
         print
         print
@@ -785,6 +800,9 @@ os_chdir("applications")
 thisdir = os.getcwd()
 for apptarget in apptargets:
     targetdir = apptarget[0]  + '/' + apptarget[1] 
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = apptarget[0] + '/trunk/'
     if os.path.exists(targetdir):
         print
         print
@@ -809,6 +827,9 @@ for utiltarget in utiltargets:
         targetdir = utiltarget[0]
     else:
         targetdir= utiltarget[1]  + '/' + utiltarget[0]
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = utiltarget[0] + '/trunk/'
     if os.path.exists(targetdir):
         print
         print
