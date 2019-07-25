@@ -19,6 +19,9 @@ parser.add_argument("-k", "--keep", default=False, action="store_true", help="Ke
 parser.add_argument("-s", "--snoopylog", help="Snoopy log file, default blank, if not default will use this to correlate on-pulse")
 parser.add_argument("--slurm", default=False, action="store_true", help="Use slurm batch jobs rather than running locally")
 parser.add_argument("--ts", default=0, type=int, help="Use taskspooler to run CRAFTConverter, with N parallel tasks")
+parser.add_argument("--gstar", default=False, action="store_true", help="Set if using gstar for correlation")
+parser.add_argument("--skylake", default=False, action="store_true", help="Set if using skylake nodes for correlation")
+parser.add_argument("--large", default=False, action="store_true", help="Set if 32 nodes, 384 tasks are required (i.e., 23GB memory needed per task; else 16 nodes, 192 tasks will be used for 11.5GB per task")
 args = parser.parse_args()
 
 if args.timestep is None:
@@ -140,6 +143,12 @@ for e in examplefiles:
         torun += " --nchan={}".format(args.nchan)
     if args.forceFFT:
         torun += " --forceFFT"
+    if args.gstar:
+        torun += " --gstar"
+    if args.skylake:
+        torun += " --skylake"
+    if args.large:
+        torun += " --large"
     if args.slurm:
         torun += " --slurm"
         homedir = os.path.expanduser('~') + "/"
