@@ -357,6 +357,9 @@ parser.add_argument("-n", "--nchan", type=int, default=128, help="Number of spec
 parser.add_argument("-s", "--slurm", default=False, action="store_true", help="Use slurm batch jobs rather than running locally")
 parser.add_argument("--forceFFT", default=False, action="store_true", help="Force FFT size to equal number of channels (don't increase to 128)")
 parser.add_argument("--npol", help="Number of polarisations", type=int, choices=[1,2], default=1)
+parser.add_argument("--gstar", default=False, action="store_true", help="Set if using gstar for correlation")
+parser.add_argument("--skylake", default=False, action="store_true", help="Set if using skylake nodes for correlation")
+parser.add_argument("--large", default=False, action="store_true", help="Set if 32 nodes, 384 tasks are required (i.e., 23GB memory needed per task; else 16 nodes, 192 tasks will be used for 11.5GB per task")
 args = parser.parse_args()
 
 ## Check arguments
@@ -539,10 +542,8 @@ if ret!=0: sys.exit(1)
 if args.slurm:
     currentdir = os.getcwd()
     currentuser = getpass.getuser()
-    numprocesses = args.npol*len(datafilelist[0]) + 11
+    numprocesses = args.npol*len(datafilelist[0]) + 8
     print "Approx number of processes", numprocesses
-    numprocesses = int(2**(math.floor(math.log(numprocesses, 2))+1))
-    print "Rounded to next highest number of 2:", numprocesses
     numprocessingnodes = numprocesses - (args.npol*len(datafilelist[0]) + 1)
 
     # Create a launchjob script that will handle the logging, etc
@@ -573,23 +574,57 @@ if args.slurm:
     print "./launchjob"
 
     # Create a run script that will actually be executed by sbatch
-    batchout = open("runparallel","w")
-    batchout.write("#!/bin/bash\n")
-    batchout.write("#\n")
-    batchout.write("#SBATCH --job-name=difx_{0}\n".format(basename))
-    batchout.write("#SBATCH --output={0}.mpilog\n".format(basename))
-    batchout.write("#\n")
-    batchout.write("#SBATCH --ntasks={0:d}\n".format(numprocesses))
-    batchout.write("#SBATCH --time=2:00\n")
-    batchout.write("#SBATCH --cpus-per-task=2\n")
-    batchout.write("#SBATCH --mem-per-cpu=2000\n\n")
-    batchout.write("case ${HEADNODE} in\n")
-    batchout.write("  (farnarkle1) . /home/{0}/setup_difx.farnarkle1;;\n".format(currentuser))
-    batchout.write("  (farnarkle2) . /home/{0}/setup_difx.farnarkle2;;\n".format(currentuser))
-    batchout.write('  (*)   echo "Unknown head node ${HEADNODE}";;\n')
-    batchout.write("esac\n")
-    batchout.write("srun mpifxcorr {0}.input\n".format(basename))
-    batchout.close()
+    if args.gstar:
+        # NOTE: use either 192 or 384 for 16 or 32 node request
+        if args.large:
+            numnodes = 32
+            ntasks = 384
+        else:
+            numnodes = 16
+            ntasks = 192
+
+        numprocesses = int(2**(math.floor(math.log(numprocesses, 2))+1))
+        print "Rounded to next highest number of 2:", numprocesses
+        
+        batchout = open("runparallel","w")
+        batchout.write("#!/bin/bash\n")
+        batchout.write("#\n")
+        batchout.write("#SBATCH --job-name=difx_{0}\n".format(basename))
+        batchout.write("#SBATCH --output={0}.mpilog\n".format(basename))
+        batchout.write("#\n")
+        batchout.write("#SBATCH --nodes={0}\n".format(numnodes))
+        batchout.write("#SBATCH --ntasks={0}\n".format(ntasks))
+        batchout.write("#SBATCH --time=2:00\n")
+        # NOTE: use 46g for 11.5 or 23 GB of ram per node (16 or 32)
+        batchout.write("#SBATCH --mem=46g\n")
+
+        batchout.write("case ${HEADNODE} in\n")
+        batchout.write("  (gstar) . /home/{0}/setup_difx.gstar;;\n".format(currentuser))
+        batchout.write('  (*)   echo "Unknown head node ${HEADNODE}";;\n')
+        batchout.write("esac\n")
+        batchout.write("srun -N{0} -n{1:d} -c2 mpifxcorr {2}.input\n".format(numnodes,numprocesses,basename))
+        batchout.close()
+
+    if args.skylake:
+        numnodes = numprocesses/(32*2)
+        batchout = open("runparallel","w")
+        batchout.write("#!/bin/bash\n")
+        batchout.write("#\n")
+        batchout.write("#SBATCH --job-name=difx_{0}\n".format(basename))
+        batchout.write("#SBATCH --output={0}.mpilog\n".format(basename))
+        batchout.write("#\n")
+        # Only request 32 CPUs, so it will fit on a single node
+        batchout.write("#SBATCH --ntasks={0:d}\n".format(numprocesses))
+        batchout.write("#SBATCH --time=5:00\n")
+        batchout.write("#SBATCH --cpus-per-task=1\n")
+        batchout.write("#SBATCH --mem-per-cpu=4000\n\n")
+        batchout.write("case ${HEADNODE} in\n")
+        batchout.write("  (farnarkle1) . /home/{0}/setup_difx.farnarkle1;;\n".format(currentuser))
+        batchout.write("  (farnarkle2) . /home/{0}/setup_difx.farnarkle2;;\n".format(currentuser))
+        batchout.write('  (*)   echo "Unknown head node ${HEADNODE}";;\n')
+        batchout.write("esac\n")
+        batchout.write("srun -n{0} --overcommit mpifxcorr {1}.input\n".format(numprocesses,basename))
+        batchout.close()
 
     # Write the threads file
     threadsout = open("{0}.threads".format(basename),"w")
