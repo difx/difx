@@ -21,6 +21,8 @@ parser.add_argument("-i", "--imagecube", default=False, help="Do imaging", actio
 parser.add_argument("--refant", type=int, default=3, help="Reference antenna")
 parser.add_argument("-P", "--prefix", type=str, default = "", help="Prefix for bin directory")
 parser.add_argument("--src", default="", help="Name of the target (e.g., FRB or Vela)")
+parser.add_argument("--dirim", help="Make zero iteration dirty image with CASA tclean", action="store_true")
+parser.add_argument("--image", help="Run CASA cleaning post calibration to make full Stokes images", action="store_true")
 
 args = parser.parse_args()
 
@@ -87,14 +89,15 @@ else: pcen = '-p '+args.phasecenter
 
 
 for i in range(nbins):
+    print i
 
     if nbins > 1:
         bins = "_B{0:02g}".format(i)
     else: bins = ''
     
     if args.rfisub:
-        print "~/packages/src/difx/sites/ASKAP/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile[i], bins)
-        os.system("~/packages/src/difx/sites/ASKAP/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile[i], bins))
+        print "~/packages/src/psrvlbireduce/datareduction/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile[i], bins)
+        os.system("~/packages/src/psrvlbireduce/datareduction/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile[i], bins))
     
     if args.cal:
         if args.xpol:
@@ -111,14 +114,73 @@ for i in range(nbins):
         if args.refant != "":
             refant = "--refant=" + str(args.refant)
         else: refant = ""
-        
-        print "~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9} --src={10}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src)
+
+        print "~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}{2}.FITS {3} {4} -a {5} {6} --uvsrt {7} {8} {9} {10} --src={11}".format(cdata, tdata[i], bins, cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src)
         os.system("rm -rf {0}_calibrated_uv.ms".format(cdatms))
-        os.system("~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}.FITS {2} {3} -a {4} {5} --uvsrt {6} {7} {8} {9} --src={10}".format(cdata, tdata[i], cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src))
+        os.system("~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} -t {1}{2}.FITS {3} {4} -a {5} {6} --uvsrt {7} {8} {9} {10} --src={11} --skipplot".format(cdata, tdata[i], bins, cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src))
         os.system("mkdir {0}bin{1:02g}".format(prefix, i))
         os.system("mv TARGET* {0}bin{1:02g}".format(prefix, i))
         if noisecen != '':
             os.system("mv OFFSOURCE* {0}bin{1:02g}".format(prefix, i))
-        os.system("mv {0}_calibrated_uv.ms {1}bin{2:02g}".format(tdata[i], prefix, i))
+        os.system("mv {0}{1}_calibrated_uv.ms {2}bin{3:02g}".format(tdata[i], bins, prefix, i))
         os.system("mv casa*.log {0}bin{1:02g}".format(prefix, i))
 
+
+        if args.dirim:
+        # Write out a CASA mfs tclean script and run; used for searching for FRB in a larger region
+
+            casaout = open("dirtyimscript.py","w")
+            imagename = "TARGET.SEARCH.B{0}I".format(i)
+            vis = "{0}_calibrated_uv.ms".format(tdata[i])
+
+            casaout.write("tclean(vis='{0}', imagename='{1}', imsize=[512,512], cell=['3arcsec', '3arcsec'], stokes='I', specmode='mfs', gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=0)".format(vis, imagename))
+
+            casaout.close()
+
+            runclean = open("runclean.sh", "w")
+            runclean.write("#!/bin/bash \n")
+            runclean.write("# Script to run the CASA call for making a dirty image while coarse searching for the FRB phase range \n")
+            runclean.write("module purge \n")
+            runclean.write("module load casa/5.3.0 \n")
+            runclean.write("casa --nologger -c dirtyimscript.py")
+            runclean.close()
+
+            os.system("chmod 775 runclean.sh")
+
+            os.system("runclean.sh")
+
+            os.system("mv {0}* {1}bin{2:02g}".format(imagename, prefix, i))
+
+    if args.image:
+        bins = "_B{0:02g}".format(i)
+        # Run the imaging via CASA if desired
+        polarisations = ["XX","YY","I","Q","U","V"]
+        # Do the cube
+        for pol in polarisations:
+            casaout = open("imagescript.py","w")
+            imagebase = "TARGET.cube.%s" % (pol)
+            os.system("rm -rf %s.*" % imagebase)
+            imagename = imagebase + ".image"
+            imagesize = 128
+            pixelsize = 1
+            targetmsfilename= "bin{0:02g}/FRB_HTR_SUB{1}_calibrated_uv.ms".format(i, bins)
+            maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize/2,imagesize/2)
+#            casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, avgchan, imagesize, pixelsize, pixelsize, args.phasecenter, pol))
+
+            # If desired, produce the noise image as well
+            if len(args.noisecentre) > 1:
+                offsourcebase = "OFFSOURCE.cube.%s" % (pol)
+                imagebases = '["%s","%s"]' % (imagebase,offsourcebase)
+                os.system("rm -rf %s.*" % offsourcebase)
+                maskstr2 = "[%s,'']" % (maskstr)
+                imsizestr = "[[%d,%d],[%d,%d]]" % (imagesize, imagesize, imagesize*4, imagesize*4)
+                cellstr = '["%.2farcsec", "%.2farcsec"]' % (pixelsize, pixelsize)
+                phasecenterstr = "['', '%s']" % (args.noisecentre)
+                casaout.write('clean(vis="%s",imagename=%s,outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=%s,phasecenter=%s,restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebases, maskstr2, avgchan, imsizestr, cellstr, phasecenterstr, pol))
+            
+            casaout.close()
+            os.system("casa --nologger -c imagescript.py")
+            os.system("mv TARGET* {0}bin{1:02g}".format(prefix, i))
+            if args.noisecentre != '':
+                os.system("mv OFFSOURCE* {0}bin{1:02g}".format(prefix, i))
+            os.system("mv casa*.log {0}bin{1:02g}".format(prefix, i))
