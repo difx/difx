@@ -14,8 +14,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.72'
-verdate = '20190505'
+version = '0.74'
+verdate = '20190726'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -1844,6 +1844,7 @@ components['DIFX-2.4.2'] = components['DIFX-2.4']
 # new with 2.5 releases: simply modify template from branch
 components['DIFX-2.5.1'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.1")
 components['DIFX-2.5.2'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.2")
+components['DIFX-2.5.3'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.3")
 
 # commands each have the following elements:
 # [
@@ -3076,12 +3077,13 @@ def difxipp(origComps, params, args, verbose, pretend):
 	archSrcDir = archDir + 'src/'
 	difxBase = environ['DIFX_BASE'] + '/'
 
+	execute('mkdir -p %s' % archSrcDir, verbose, pretend)
 	chdir(archSrcDir)
 	if isdir('difxipp'):
 		chdir('difxipp')
 		execute('svn up', verbose, pretend)
 	else:
-		execute('svn so %s' % difxippUrl, verbose, pretend)
+		execute('svn co %s' % difxippUrl, verbose, pretend)
 		chdir('difxipp')
 
 	# get ipp version -- this is a bit fragile...
