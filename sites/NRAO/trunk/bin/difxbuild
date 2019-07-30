@@ -15,7 +15,7 @@ from copy import deepcopy
 
 program = 'difxbuild'
 version = '0.75'
-verdate = '20190729'
+verdate = '20190730'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -1833,13 +1833,13 @@ components['DIFX-2.6'] = \
 	component_datasim_2_6, \
 	component_rcwlib_2_6, \
 	component_sniff_2_6, \
-	component_nraodifxdb_2_6, \
 	component_hops_2_6, \
 	component_guiserver_2_6, \
 	component_misc_utils_2_6, \
 	component_vis2screen_2_6, \
 	component_difx2profile_2_6, \
 	component_difxdb_2_6, \
+	component_nraodifxdb_2_6, \
 	component_difxfilterbank_2_6, \
 	#component_difxmonitor_2_6, \
 	component_vlite_trunk, \
