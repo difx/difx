@@ -1713,6 +1713,13 @@ component_calcserver_2_6 = \
 	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
 ]
 
+component_polconvert_2_6 = \
+[ \
+	'polconvert', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/polconvert', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
 component_difxcalc11_2_6 = \
 [ \
 	'difxcalc11', \
@@ -1821,6 +1828,7 @@ components['DIFX-2.6'] = \
 	component_mk5daemon_2_6, \
 	component_calcif2_2_6, \
 	component_calcserver_2_6, \
+	component_polconvert_2_6, \
 	component_difxcalc11_2_6, \
 	component_datasim_2_6, \
 	component_rcwlib_2_6, \
