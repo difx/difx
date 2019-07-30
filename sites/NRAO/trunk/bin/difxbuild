@@ -14,8 +14,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.74'
-verdate = '20190726'
+version = '0.75'
+verdate = '20190729'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -1845,6 +1845,9 @@ components['DIFX-2.4.2'] = components['DIFX-2.4']
 components['DIFX-2.5.1'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.1")
 components['DIFX-2.5.2'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.2")
 components['DIFX-2.5.3'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.3")
+
+components['DIFX-2.6.1'] = versionReplace(components['DIFX-2.6'], "DiFX-2.6", "DiFX-2.6.1")
+
 
 # commands each have the following elements:
 # [
