@@ -45,13 +45,13 @@ main (int argc, char* argv[])
     if (parse_cmdline (argc, argv, &files, &display, &file_name) != 0)
         {
         msg ("Fatal error interpreting command line", 2);
-        syntax();
+        syntax("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/postproc/fplot/fplot.c $");
         exit(1);
         }
     if (files[0].order == -1)
         {
         msg ("No valid type-2 files found/specified", 2);
-        syntax();
+        syntax("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/postproc/fplot/fplot.c $");
         exit (1);
         }
                                         /* Loop over all filenames */

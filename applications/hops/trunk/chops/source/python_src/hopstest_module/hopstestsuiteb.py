@@ -1,0 +1,279 @@
+#!/usr/bin/python
+
+#@file
+#@brief
+#@details
+#
+#<b>Revision History:<b>
+#Date Name Brief Description
+#Mon Nov 21 08:52:26 EST 2016 J. Barrett (barrettj@mit.edu) First Version
+
+from __future__ import print_function
+
+import sys
+import os
+import pprint
+import hopstestb as ht
+import mk4b
+
+#get the TESTDATADIR environmental variable
+data_dir_env = os.getenv('TESTDATADIR', '.')
+
+#get the verbosity env
+verbosity_env = os.getenv('testverb', 'False')
+verbosity_toggle = False
+if verbosity_env != 'False':
+    verbosity_toggle = True
+
+#global pass/fail status of this test suite
+status = 0
+
+################################################################################
+
+#arguments for the 2836 test series
+option_arg = ""
+baseline_arg = "AE:X"
+control_file_path_arg = data_dir_env + "/2836/cf2836"
+root_file_path_arg = data_dir_env + "/2836/scan001/2145+067.olomfh"
+original_ff_list = ht.find_fringe_files(root_file_path_arg)
+
+ff_list = ht.fourfit_generate_fringe(option_arg, baseline_arg, control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+snr_2836_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=139.9, snr_high=140.9)
+
+if snr_2836_check_pass:
+    if verbosity_toggle:
+        print("snr 2836 check passed")
+else:
+    status = 1
+    if verbosity_toggle:
+        print("snr 2836 check failed")
+
+ht.clean_up_fringe_files(ff_list)
+
+################################################################################
+
+#arguments for the 2843 test series
+option_arg = ""
+baseline_arg = "AI:S"
+control_file_path_arg = ""
+root_file_path_arg = data_dir_env + "/2843/321-1701_0552+398/0552+398.oifhak"
+set_commands_arg = "set start -3"
+original_ff_list = ht.find_fringe_files(root_file_path_arg)
+
+ff_list = ht.fourfit_generate_fringe(option_arg, baseline_arg, control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle, set_commands= set_commands_arg)
+snr_2843_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=47.8, snr_high=48.6)
+
+if snr_2843_check_pass:
+    if verbosity_toggle:
+        print("snr 2843 check passed")
+else:
+    status = 1
+    if verbosity_toggle:
+        print("snr 2843 check failed")
+
+ht.clean_up_fringe_files(ff_list)
+
+################################################################################
+
+#arguments for the 3372 test series
+option_arg = ""
+baseline_arg = "TV:X"
+control_file_path_arg = data_dir_env + "/3372/cf3372"
+root_file_path_arg = data_dir_env + "/3372/193-1757/0529+483.vtqbsq"
+original_ff_list = ht.find_fringe_files(root_file_path_arg)
+
+ff_list = ht.fourfit_generate_fringe(option_arg, baseline_arg, control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+snr_3372_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=143.6, snr_high=144.6)
+
+if snr_3372_check_pass:
+    if verbosity_toggle:
+        print("snr 3372 check passed")
+else:
+    status = 1
+    if verbosity_toggle:
+        print("snr 3372 check failed")
+
+ht.clean_up_fringe_files(ff_list)
+
+################################################################################
+
+#arguments for the 3413 test series
+option_arg = "-P LL"
+baseline_arg = "GE"
+control_file_path_arg = data_dir_env + "/3413/cf3413"
+root_file_path_arg = data_dir_env + "/3413/278-1758/0552+398.wmtukg"
+original_ff_list = ht.find_fringe_files(root_file_path_arg)
+
+ff_list = ht.fourfit_generate_fringe(option_arg, baseline_arg, control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+snr_3413_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=123.8, snr_high=124.6)
+
+if snr_3413_check_pass:
+    if verbosity_toggle:
+        print("snr 3413 check passed")
+else:
+    status = 1
+    if verbosity_toggle:
+        print("snr 3413 check failed")
+
+ht.clean_up_fringe_files(ff_list)
+
+################################################################################
+
+#arguments for the 3571 test series
+option_arg = "-PI"
+baseline_arg = "GE"
+control_file_path_arg = data_dir_env + "/3571/cf3571_244-1249"
+root_file_path_arg = data_dir_env + "/3571/244-1717/0727-115.zbgwce"
+
+ff_list = ht.fourfit_generate_fringe(option_arg, baseline_arg, control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+snr_3571_check_pass = ht.check_snr_fringe( ff_list[0], snr_low=395.9, snr_high=396.3)
+
+if snr_3571_check_pass:
+    if verbosity_toggle:
+        print("snr 3571 check passed")
+else:
+    status = 1
+    if verbosity_toggle:
+        print("snr 3571 check failed")
+
+
+#clean up the test fringe file we made
+ht.clean_up_fringe_files(ff_list)
+
+################################################################################
+
+#arguments for the 3562 test series
+option_arg = "-PI"
+control_file_path_arg = data_dir_env + "/3562/cf3562_140-1817"
+root_file_path_arg = data_dir_env + "/3562/141-0002/0727-115.yxhoyl"
+
+#get original list of fringe files
+original_ff_list = ht.find_fringe_files(root_file_path_arg)
+original_GE = ht.find_fringe_files(root_file_path_arg, baseline="GE", freq_band="X")
+original_HE = ht.find_fringe_files(root_file_path_arg, baseline="HE", freq_band="X")
+original_GH = ht.find_fringe_files(root_file_path_arg, baseline="GH", freq_band="X")
+
+#generate and compare the fringe file contents against the originals
+current_GE = ht.fourfit_generate_fringe(option_arg, "GE", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+GE_test_value = ht.compare_fringe_files(original_GE[0], current_GE[0], verbose=verbosity_toggle, pedantic=False)
+if GE_test_value == 0:
+    if verbosity_toggle:
+        print("test 3562-GE baseline fringe file check passed")
+else:
+    status = 2
+    if verbosity_toggle:
+        print("test 3562-GE baseline fringe file check failed")
+
+
+current_HE = ht.fourfit_generate_fringe(option_arg, "HE", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+HE_test_value = ht.compare_fringe_files(original_HE[0], current_HE[0], verbose=verbosity_toggle, pedantic=False)
+if HE_test_value == 0:
+    if verbosity_toggle:
+        print("test 3562-HE baseline fringe file check passed")
+else:
+    status = 2
+    if verbosity_toggle:
+        print("test 3562-GE baseline fringe file check failed")
+
+current_GH = ht.fourfit_generate_fringe(option_arg, "GH", control_file_path_arg, root_file_path_arg, verbose=verbosity_toggle)
+GH_test_value = ht.compare_fringe_files(original_GH[0], current_GH[0], verbose=verbosity_toggle, pedantic=False)
+if GH_test_value == 0:
+    if verbosity_toggle:
+        print("test 3562-GH baseline fringe file check passed")
+else:
+    status = 2
+    if verbosity_toggle:
+        print("test 3562-GH baseline fringe file check failed")
+
+
+#4/26/17 Adding a check on the control file hash, this is only present in the newly constructed
+#fringe files, not the old reference fringe files, but we only need to check a single value
+# reference_hash_value = 799918382
+# hash_HE = ht.get_control_file_hash_from_fringe(current_HE[0])
+# hash_GE = ht.get_control_file_hash_from_fringe(current_GE[0])
+# hash_GH = ht.get_control_file_hash_from_fringe(current_GH[0])
+# print("hash HE = ", hash_HE)
+# if hash_HE != hash_GE or hash_HE != hash_GH or hash_HE != reference_hash_value:
+#     print("test 3562 control file hash failed, hash mismatch."
+#     print("hash_HE = ", hash_HE)
+#     print("hash_GE = ", hash_GE)
+#     print("hash_GH = ", hash_GH)
+#     status = 5
+
+
+#get list of recently generated test fringe files
+current_ff_list = ht.find_fringe_files(root_file_path_arg)
+
+#if the fringe file check fails, clean up and exit
+if GE_test_value != 0 or HE_test_value != 0 or GH_test_value != 0:
+    ht.clean_up_test_fringe_files(original_ff_list, current_ff_list)
+    sys.exit(status)
+
+################################################################################
+
+#now we want to create some alist files from the original fringe files and test fringe files
+
+ht.generate_fringe_alist(root_file_path_arg, data_dir_env + "/3562/3562-original.fsumm", [ original_GE[0], original_HE[0], original_GH[0] ], verbose=verbosity_toggle)
+ht.generate_fringe_alist(root_file_path_arg, data_dir_env + "/3562/3562-test.fsumm", [current_GE[0], current_HE[0], current_GH[0]], verbose=verbosity_toggle)
+
+#compare generated a-list files
+alist_result1 = ht.compare_alist_files( data_dir_env + "/3562/3562-original.fsumm", data_dir_env + "/3562/3562-test.fsumm", verbose=verbosity_toggle)
+#compare generated and captured a-list files (to check for changes in the way alist works)
+alist_result2 = ht.compare_alist_files( data_dir_env + "/3562/3562-original.fsumm", data_dir_env + "/3562/3562-captured.fsumm", verbose=verbosity_toggle)
+
+if alist_result1 == 0 and alist_result2 == 0:
+    if verbosity_toggle:
+        print("alist fringe file for test 3562 comparsion check passed")
+else:
+    status = 3
+    if verbosity_toggle:
+        print("alist fringe file for test 3562 comparsion check failed")
+
+#if we failed, clean up and exit
+if alist_result1 !=0 or alist_result2 != 0:
+    ht.clean_up_test_fringe_files(original_ff_list, current_ff_list)
+    if os.path.isfile(data_dir_env + "/3562/3562-original.fsumm"):
+        os.remove(data_dir_env + "/3562/3562-original.fsumm")
+    if os.path.isfile(data_dir_env + "/3562/3562-test.fsumm"):
+        os.remove(data_dir_env + "/3562/3562-test.fsumm")
+    sys.exit(status)
+
+#now make a closure triangle with aedit
+aedit_command_string_original = "\" batch; read " +  data_dir_env + "/3562/3562-original.fsumm; ed in; close; twrite " + data_dir_env + "/orig.tsumm; exit;\" "
+ht.execute_aedit_command_string(aedit_command_string_original, verbose=verbosity_toggle)
+
+aedit_command_string_test = "\" batch; read " +  data_dir_env + "/3562/3562-test.fsumm; ed in; close; twrite " + data_dir_env + "/test.tsumm; exit;\" "
+ht.execute_aedit_command_string(aedit_command_string_test, verbose=verbosity_toggle)
+
+#compare triangle files
+alist_result1 = ht.compare_alist_files(data_dir_env + "/orig.tsumm", data_dir_env + "/test.tsumm", verbose=verbosity_toggle)
+#compare generated and captured triangle files (to check for changes in the way alist works)
+alist_result2 = ht.compare_alist_files(data_dir_env + "/orig.tsumm", data_dir_env + "/3562/3562-captured.tsumm", verbose=verbosity_toggle)
+
+if alist_result1 == 0 and alist_result2 == 0:
+    if verbosity_toggle:
+        print("closure triangle for test 3562 comparsion check passed")
+else:
+    status = 4
+    if verbosity_toggle:
+        print("closure triangle for test 3562 comparsion check failed")
+
+#clean up the fringe files we made
+ht.clean_up_test_fringe_files(original_ff_list, current_ff_list)
+
+#clean up the alist files
+if os.path.isfile(data_dir_env + "/3562/3562-original.fsumm"):
+    os.remove(data_dir_env + "/3562/3562-original.fsumm")
+
+if os.path.isfile(data_dir_env + "/3562/3562-test.fsumm"):
+    os.remove(data_dir_env + "/3562/3562-test.fsumm")
+
+if os.path.isfile(data_dir_env + "/orig.tsumm"):
+    os.remove(data_dir_env + "/orig.tsumm")
+
+if os.path.isfile(data_dir_env + "/test.tsumm"):
+    os.remove(data_dir_env + "/test.tsumm")
+
+################################################################################
+#return pass/fail status to caller
+sys.exit(status)

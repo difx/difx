@@ -1,0 +1,285 @@
+VEX_rev = 1.5;
+*    SCHED vers: Release 11.4.  March 14, 2015
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  11.4  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = gbc1;
+*                                                      +------------+
+*                         PI revision number:          |    1.0000  |
+*                                                      +------------+
+*    mode:       Like the March EHT run
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def gbc1;
+     exper_name = gbc1;
+     exper_description = "Test";
+     PI_name = "Geoff Crew";
+     PI_email = gbc@haystack.mit.edu;
+*    address:   MIT Haystack Observatory
+*               Route 40
+*               Westford, MA 01886
+*                
+*    phone:     781 981 5400
+*    during obs:+56 224676560
+*    fax:       781 981 0590
+*
+*    year, doy: 2015, 205
+*    date     : Fri 24 Jul 2015
+*    MJD      : 57227
+     exper_nominal_start=2015y205d19h00m00s;
+     exper_nominal_stop=2015y205d19h19m00s;
+*
+     target_correlator = HAYSTACK;
+*
+*    integr_time    :     1.000 s
+*    number_channels:  2048
+*    number_antenna :  4
+*    cross_polarize : Yes
+*    weight_func    : UNIFORM
+*    distrib_medium : FTP
+*    distrib_format : FITS
+*    source_pos_cat : STANDARD
+*    distribute_to  : 
+*                     Don Sousa
+*                     MIT Haystack Observatory
+*                     Route 40
+*                     Westford, MA 01886
+*    corr_notes : 
+*               SMA data will require preprocessing at SAO
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def 1mmlcp;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 226100.00MHz1xXXXMHz:Ap:Aa;
+     ref $IF = LO@226068MHzLPolNoTone:Ap:Aa;
+     ref $BBC = 1BBCs:Ap:Aa;
+     ref $TRACKS = MARK5B.1Ch2bit1to1:Ap:Aa;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Ap:Aa;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect:Ap:Aa;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Ap;
+     ref $SITE = APEX;
+     ref $ANTENNA = APEX;
+     ref $DAS = 2NONE<;
+enddef;
+*
+def Aa;
+     ref $SITE = ALMA;
+     ref $ANTENNA = ALMA;
+     ref $DAS = 2NONE<;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def APEX;
+     site_type = fixed;
+     site_name = APEX;
+     site_ID = Ap;
+*    elev= 5104.47 long= 067:45:32. lat=-23:00:20.8
+     site_position = 2225039.52970 m:-5441197.62920 m:-2479303.35970 m;
+     site_velocity =  0.000000   m/yr:  0.000000   m/yr:  0.000000  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+enddef;
+*
+def ALMA;
+     site_type = fixed;
+     site_name = ALMA;
+     site_ID = Aa;
+*    elev= 5074.89 long= 067:45:17. lat=-23:01:45.2
+     site_position = 2225061.87310 m:-5440061.95340 m:-2481682.08380 m;
+     site_velocity =  0.000000   m/yr:  0.000000   m/yr:  0.000000  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2011y085d;
+     site_position_epoch =   55646;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def APEX;
+     axis_type = az : el;
+     antenna_motion = el :  60.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az :  60.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def ALMA;
+     axis_type = az : el;
+     antenna_motion = el : 600.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az : 600.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 2NONE<;
+     record_transport_type = Mark5C;
+     electronics_rack_type = none;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def FAKE-SRC;
+     source_name = FAKE-SRC;
+*    this source had calibrator code:  
+     ra = 12h00m00.0000000s; dec = -20d00'00.000000"; ref_coord_frame = J2000;
+*    ra = 11h57m26.3744993s; dec = -19d43'17.799094"; ref_coord_frame = B1950;
+*    ra = 12h00m47.5297230s; dec = -20d05'14.557736"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 226100.00MHz1xXXXMHz;
+* mode =  1    stations =Ap:Aa
+     sample_rate = 4000 Ms/sec;  * (2bits/sample)
+     chan_def = :226100.00 MHz : U :2048.00 MHz : &CH01 : &BBC01 : &NoCal; *Lcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@226068MHzLPolNoTone;
+* mode =  1    stations =Ap:Aa
+     if_def = &IF_A1 : A1 : L :226068.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 1BBCs;
+* mode =  1    stations =Ap:Aa
+     BBC_assign = &BBC01 :  1 : &IF_A1;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def NoDetect;
+* mode =  1    stations =Ap:Aa
+     phase_cal_detect = &NoCal;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def MARK5B.1Ch2bit1to1;
+* mode =  1    stations =Ap:Aa
+*    format = MARK5B, and fan-out = 1
+*    mode requires ******Mb/s/tr; stations using disks
+     track_frame_format = MARK5B;
+     fanout_def =   : &CH01 : sign : 1:  2;
+     fanout_def =   : &CH01 :  mag : 1:  3;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Ap:Aa
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Ap:Aa
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Ap:Aa
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment gbc1    
+* Test                                                                    
+scan No0001;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h00m00s; mode=1mmlcp; source=FAKE-SRC;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ap:    0 sec:   60 sec:    0.000 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:    0.000 GB:   :       : 1;
+endscan;
+scan No0002;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h02m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:   61.538 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:   61.538 GB:   :       : 1;
+endscan;
+scan No0003;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h04m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:  123.077 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:  123.077 GB:   :       : 1;
+endscan;
+scan No0004;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h06m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:  184.615 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:  184.615 GB:   :       : 1;
+endscan;
+scan No0005;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h08m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:  246.153 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:  246.153 GB:   :       : 1;
+endscan;
+scan No0006;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h10m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:  307.692 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:  307.692 GB:   :       : 1;
+endscan;
+scan No0007;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h12m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:  369.230 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:  369.230 GB:   :       : 1;
+endscan;
+scan No0008;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h14m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:  430.768 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:  430.768 GB:   :       : 1;
+endscan;
+scan No0009;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h16m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:  492.306 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:  492.306 GB:   :       : 1;
+endscan;
+scan No0010;
+* intent = "ALMA:AUTOPHASE_DETERMINE"
+     start=2015y205d19h18m00s; mode=1mmlcp; source=FAKE-SRC;
+     station=Ap:    0 sec:   60 sec:  553.845 GB:   :       : 1;
+     station=Aa:    0 sec:   60 sec:  553.845 GB:   :       : 1;
+endscan;

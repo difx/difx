@@ -1,0 +1,6 @@
+from distutils.core import setup
+
+setup(name='hopstestb',
+      version='0.1',
+      package_dir={ '': '@abs_srcdir@' },
+      packages=['hopstestb'])

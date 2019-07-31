@@ -1,0 +1,1553 @@
+VEX_rev = 1.5;
+*    SCHED vers: Release of about July 12, 2012
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  10.2  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = d21us;
+*                                                      +------------+
+*                         PI revision number:          |    7.0000  |
+*                                                      +------------+
+*    mode:       RDBE/DBE1
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def d21us;
+     exper_name = d21us;
+     exper_description = "US+APEX, without Europe";
+     PI_name = "S. Doeleman";
+     PI_email = dole@haystack.mit.edu;
+*    address:   MIT Haystack Observatory
+*               Off Rouge 40
+*               Westford, MA 01886
+*               USA
+*    phone:     +1(781)981-5400
+*    during obs:+1(781)981-5400
+*    fax:       +1(781)981-0590
+*    notes:     Will use RDBE_PFB and DBBC_PFB
+*
+*    year, doy: 2013,  80
+*    date     : Thu 21 Mar 2013
+*    MJD      : 56372
+     exper_nominal_start=2013y080d05h00m00s;
+     exper_nominal_stop=2013y080d17h02m00s;
+*
+     target_correlator = HAYSTACK;
+*
+*    integr_time    :     0.100 s
+*    number_channels:    64
+*    number_antenna : 11
+*    cross_polarize : Yes
+*    weight_func    : UNIFORM
+*    distrib_medium : FTP
+*    distrib_format : FITS
+*    source_pos_cat : STANDARD
+*    distribute_to  : 
+*                     Mike Titus
+*                     MIT Haystack Observatory
+*                     Off Route 40
+*                     Westford, MA 01886 USA
+*    corr_notes : 
+*               dual polarisation setup using 32 MHz channels
+*               zoom mode for PdB with 16 MHz channels USB/LSB
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def 1mmlcp;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 229361.00MHz16x32MHz:Ap:Az:Cm:Sm:Jc;
+     ref $IF = LO@228321MHzLPolTone/5:Ap:Az:Cm:Sm:Jc;
+     ref $BBC = 16BBCs:Ap:Az:Cm:Sm:Jc;
+     ref $TRACKS = MARK5B.16Ch2bit1to1:Ap:Az:Cm:Sm:Jc;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Ap:Az:Cm:Sm:Jc;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = LsbDetect:Ap:Az:Cm:Sm:Jc;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Ap;
+     ref $SITE = APEX;
+     ref $ANTENNA = APEX;
+     ref $DAS = 2RDBE+NONE<;
+enddef;
+*
+def Az;
+     ref $SITE = SMTO;
+     ref $ANTENNA = SMTO;
+     ref $DAS = 2RDBE+NONE<;
+enddef;
+*
+def Cm;
+     ref $SITE = CARMA;
+     ref $ANTENNA = CARMA;
+     ref $DAS = 2RDBE+NONE<;
+enddef;
+*
+def Sm;
+     ref $SITE = SMAP;
+     ref $ANTENNA = SMAP;
+     ref $DAS = 2RDBE+NONE<;
+enddef;
+*
+def Jc;
+     ref $SITE = JCMT;
+     ref $ANTENNA = JCMT;
+     ref $DAS = 2RDBE+NONE<;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def APEX;
+     site_type = fixed;
+     site_name = APEX;
+     site_ID = Ap;
+*    elev= 5104.47 long= 067:45:32. lat=-23:00:20.8
+     site_position = 2225039.52970 m:-5441197.62920 m:-2479303.35970 m;
+     site_velocity =  0.000000   m/yr:  0.000000   m/yr:  0.000000  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+enddef;
+*
+def SMTO;
+     site_type = fixed;
+     site_name = SMTO;
+     site_ID = Az;
+*    elev= 3158.70 long= 109:53:28. lat= 32:42:05.8
+     site_position =-1828796.20000 m:-5054406.80000 m: 3427865.20000 m;
+     site_velocity =  0.000000   m/yr:  0.000000   m/yr:  0.000000  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+     horizon_map_az =  4.0 deg: 14.0: 29.0: 34.0: 39.0: 59.0: 61.0: 64.0: 69.0:
+                                74.0: 85.0: 93.0: 98.0:103.0:107.0:113.0:118.0:
+                               133.0:148.0:153.0:158.0:180.0:187.0:192.0:207.0:
+                               218.0:223.0:243.0:248.0:262.0:272.0:295.0:325.0:
+                               337.0:340.0:360.0;
+     horizon_map_el = 20.0 deg: 18.0: 18.0: 19.0: 22.0: 22.0: 24.0: 23.0: 22.0:
+                                24.0: 24.0: 24.0: 28.0: 28.0: 28.0: 20.0: 20.0:
+                                13.0: 12.0: 13.0: 13.0: 11.0: 13.0: 13.0:  6.0:
+                                 9.0: 10.0: 12.0: 15.0: 20.0: 23.0: 24.0: 20.0:
+                                26.0: 19.0: 19.0;
+enddef;
+*
+def CARMA;
+     site_type = fixed;
+     site_name = CARMA;
+     site_ID = Cm;
+*    elev= 1188.05 long= 118:17:00. lat= 37:14:00.3
+     site_position =-2409585.79000 m:-4478197.55000 m: 3838767.46000 m;
+     site_velocity = -0.016190   m/yr:  0.006170   m/yr: -0.008370  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+enddef;
+*
+def SMAP;
+     site_type = fixed;
+     site_name = SMAP;
+     site_ID = Sm;
+*    elev= 4115.06 long= 155:28:39. lat= 19:49:27.2
+     site_position =-5464555.49300 m:-2492927.98900 m: 2150797.17600 m;
+     site_velocity =  0.000000   m/yr:  0.000000   m/yr:  0.000000  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+     horizon_map_az =  0.0 deg: 44.0: 45.0: 56.0: 57.0:359.0;
+     horizon_map_el =  8.0 deg:  8.0: 24.0: 24.0:  8.0:  8.0;
+enddef;
+*
+def JCMT;
+     site_type = fixed;
+     site_name = JCMT;
+     site_ID = Jc;
+*    elev= 3763.04 long= 155:27:19. lat= 19:48:05.0
+     site_position =-5464074.96020 m:-2495249.11560 m: 2148296.84460 m;
+     site_velocity =  0.000000   m/yr:  0.000000   m/yr:  0.000000  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def APEX;
+     axis_type = az : el;
+     antenna_motion = el :  60.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az :  60.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def SMTO;
+     axis_type = az : el;
+     antenna_motion = el :  60.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az :  60.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def CARMA;
+     axis_type = az : el;
+     antenna_motion = el :  30.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az :  60.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def SMAP;
+     axis_type = az : el;
+     antenna_motion = el : 120.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az : 240.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def JCMT;
+     axis_type = az : el;
+     antenna_motion = el :  30.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az :  60.0 deg/min : 10 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 2RDBE+NONE<;
+     record_transport_type = Mark5C;
+     electronics_rack_type = RDBE;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def SGRA;
+     source_name = SGRA;
+*    this source had calibrator code:  
+     ra = 17h45m40.0360640s; dec = -29d00'28.167260"; ref_coord_frame = J2000;
+*    ra = 17h42m29.3050710s; dec = -28d59'18.582231"; ref_coord_frame = B1950;
+*    ra = 17h46m31.5724960s; dec = -29d00'37.132363"; ref_coord_frame = Date;
+enddef;
+*
+def 0854+201;
+     source_name = 0854+201;
+*    this source had calibrator code:  
+     ra = 08h54m48.8749000s; dec =  20d06'30.640000"; ref_coord_frame = J2000;
+*    ra = 08h51m57.2505885s; dec =  20d17'58.416546"; ref_coord_frame = B1950;
+*    ra = 08h55m35.9394867s; dec =  20d03'16.608179"; ref_coord_frame = Date;
+enddef;
+*
+def 3C273;
+     source_name = 3C273;
+*    this source had calibrator code: V
+*    alternate source name: J1229+0203
+*    alternate source name: 3C273B
+*    alternate source name: 1226+023
+*    alternate source name: J1229+02
+*    GSFC 2011A astro solution     31886 Observations
+     ra = 12h29m06.6997290s; dec =  02d03'08.598280"; ref_coord_frame = J2000;
+*    ra = 12h26m33.2458327s; dec =  02d19'43.305776"; ref_coord_frame = B1950;
+*    ra = 12h29m49.3242724s; dec =  01d58'32.991527"; ref_coord_frame = Date;
+enddef;
+*
+def M87;
+     source_name = M87;
+*    this source had calibrator code: V
+*    alternate source name: J1230+1223
+*    alternate source name: 3C274
+*    alternate source name: 1228+126
+*    alternate source name: J1230+12
+*    rfc_2012b Petrov, 2012, unpublished 47163 observations
+     ra = 12h30m49.4233820s; dec =  12d23'28.043660"; ref_coord_frame = J2000;
+*    ra = 12h28m17.5692797s; dec =  12d40'01.748835"; ref_coord_frame = B1950;
+*    ra = 12h31m31.5554064s; dec =  12d18'52.449573"; ref_coord_frame = Date;
+enddef;
+*
+def 3C279;
+     source_name = 3C279;
+*    this source had calibrator code: V
+*    alternate source name: J1256-0547
+*    alternate source name: 1253-055
+*    alternate source name: J1256-05
+*    GSFC 2011A astro solution      7402 Observations
+     ra = 12h56m11.1665670s; dec = -05d47'21.524810"; ref_coord_frame = J2000;
+*    ra = 12h53m35.8312994s; dec = -05d31'07.995950"; ref_coord_frame = B1950;
+*    ra = 12h56m54.3472026s; dec = -05d51'49.944128"; ref_coord_frame = Date;
+enddef;
+*
+def 1749+096;
+     source_name = 1749+096;
+*    this source had calibrator code: V
+*    alternate source name: J1751+0939
+*    alternate source name: J1751+09
+*    rfc_2012b Petrov, 2012, unpublished 133560 observations
+     ra = 17h51m32.8185720s; dec =  09d39'00.728290"; ref_coord_frame = J2000;
+*    ra = 17h49m10.3879289s; dec =  09d39'42.825738"; ref_coord_frame = B1950;
+*    ra = 17h52m11.2652531s; dec =  09d38'45.357314"; ref_coord_frame = Date;
+enddef;
+*
+def 1921-293;
+     source_name = 1921-293;
+*    this source had calibrator code: V
+*    alternate source name: J1924-2914
+*    alternate source name: J1924-29
+*    rfc_2012b Petrov, 2012, unpublished 42837 observations
+     ra = 19h24m51.0559560s; dec = -29d14'30.121160"; ref_coord_frame = J2000;
+*    ra = 19h21m42.2341290s; dec = -29d20'26.354062"; ref_coord_frame = B1950;
+*    ra = 19h25m41.3137676s; dec = -29d12'45.363833"; ref_coord_frame = Date;
+enddef;
+*
+def BLLAC;
+     source_name = BLLAC;
+*    this source had calibrator code: V
+*    alternate source name: J2202+4216
+*    alternate source name: 2200+420
+*    alternate source name: J2202+42
+*    alternate source name: VR422201
+*    rfc_2012b Petrov, 2012, unpublished 59418 observations
+     ra = 22h02m43.2913710s; dec =  42d16'39.979870"; ref_coord_frame = J2000;
+*    ra = 22h00m39.3625043s; dec =  42d02'08.590734"; ref_coord_frame = B1950;
+*    ra = 22h03m15.5476831s; dec =  42d20'26.246296"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 229361.00MHz16x32MHz;
+* mode =  1    stations =Ap:Az:Cm:Sm:Jc
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = :229361.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &L1Cal; *Lcp
+     chan_def = :229329.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &L1Cal; *Lcp
+     chan_def = :229297.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &L1Cal; *Lcp
+     chan_def = :229265.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &L2Cal; *Lcp
+     chan_def = :229233.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &L1Cal; *Lcp
+     chan_def = :229201.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &L1Cal; *Lcp
+     chan_def = :229169.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &L1Cal; *Lcp
+     chan_def = :229137.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &L1Cal; *Lcp
+     chan_def = :229105.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &L2Cal; *Lcp
+     chan_def = :229073.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &L1Cal; *Lcp
+     chan_def = :229041.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &L1Cal; *Lcp
+     chan_def = :229009.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &L1Cal; *Lcp
+     chan_def = :228977.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &L1Cal; *Lcp
+     chan_def = :228945.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &L2Cal; *Lcp
+     chan_def = :228913.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &L1Cal; *Lcp
+     chan_def = :228881.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &L1Cal; *Lcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@228321MHzLPolTone/5;
+* mode =  1    stations =Ap:Az:Cm:Sm:Jc
+     if_def = &IF_A : A : L :228321.0 MHz : U : 5 MHz ; *
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 16BBCs;
+* mode =  1    stations =Ap:Az:Cm:Sm:Jc
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_A;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_A;
+     BBC_assign = &BBC05 :  5 : &IF_A;
+     BBC_assign = &BBC06 :  6 : &IF_A;
+     BBC_assign = &BBC07 :  7 : &IF_A;
+     BBC_assign = &BBC08 :  8 : &IF_A;
+     BBC_assign = &BBC09 :  9 : &IF_A;
+     BBC_assign = &BBC10 : 10 : &IF_A;
+     BBC_assign = &BBC11 : 11 : &IF_A;
+     BBC_assign = &BBC12 : 12 : &IF_A;
+     BBC_assign = &BBC13 : 13 : &IF_A;
+     BBC_assign = &BBC14 : 14 : &IF_A;
+     BBC_assign = &BBC15 : 15 : &IF_A;
+     BBC_assign = &BBC16 : 16 : &IF_A;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def LsbDetect;
+* mode =  1    stations =Ap:Az:Cm:Sm:Jc
+     phase_cal_detect = &L1Cal :  1;
+     phase_cal_detect = &L2Cal :  2;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def MARK5B.16Ch2bit1to1;
+* mode =  1    stations =Ap:Az:Cm:Sm:Jc
+*    format = MARK5B, and fan-out = 1
+*    mode requires  64.00Mb/s/tr; stations using disks
+     track_frame_format = MARK5B;
+     fanout_def =   : &CH01 : sign : 1:  2;
+     fanout_def =   : &CH01 :  mag : 1:  3;
+     fanout_def =   : &CH02 : sign : 1:  4;
+     fanout_def =   : &CH02 :  mag : 1:  5;
+     fanout_def =   : &CH03 : sign : 1:  6;
+     fanout_def =   : &CH03 :  mag : 1:  7;
+     fanout_def =   : &CH04 : sign : 1:  8;
+     fanout_def =   : &CH04 :  mag : 1:  9;
+     fanout_def =   : &CH05 : sign : 1: 10;
+     fanout_def =   : &CH05 :  mag : 1: 11;
+     fanout_def =   : &CH06 : sign : 1: 12;
+     fanout_def =   : &CH06 :  mag : 1: 13;
+     fanout_def =   : &CH07 : sign : 1: 14;
+     fanout_def =   : &CH07 :  mag : 1: 15;
+     fanout_def =   : &CH08 : sign : 1: 16;
+     fanout_def =   : &CH08 :  mag : 1: 17;
+     fanout_def =   : &CH09 : sign : 1: 18;
+     fanout_def =   : &CH09 :  mag : 1: 19;
+     fanout_def =   : &CH10 : sign : 1: 20;
+     fanout_def =   : &CH10 :  mag : 1: 21;
+     fanout_def =   : &CH11 : sign : 1: 22;
+     fanout_def =   : &CH11 :  mag : 1: 23;
+     fanout_def =   : &CH12 : sign : 1: 24;
+     fanout_def =   : &CH12 :  mag : 1: 25;
+     fanout_def =   : &CH13 : sign : 1: 26;
+     fanout_def =   : &CH13 :  mag : 1: 27;
+     fanout_def =   : &CH14 : sign : 1: 28;
+     fanout_def =   : &CH14 :  mag : 1: 29;
+     fanout_def =   : &CH15 : sign : 1: 30;
+     fanout_def =   : &CH15 :  mag : 1: 31;
+     fanout_def =   : &CH16 : sign : 1: 32;
+     fanout_def =   : &CH16 :  mag : 1: 33;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Ap:Az:Cm:Sm:Jc
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Ap:Az:Cm:Sm:Jc
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Ap:Az:Cm:Sm:Jc
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment d21us   
+* US+APEX, without Europe                                                 
+scan No0001;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d05h00m00s; mode=1mmlcp; source=0854+201;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ap:    0 sec:  240 sec:    0.000 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec:    0.000 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec:    0.000 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec:    0.000 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec:    0.000 GB:   :       : 1;
+endscan;
+scan No0002;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d05h07m00s; mode=1mmlcp; source=0854+201;
+     station=Ap:    0 sec:  240 sec:   61.932 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec:   61.932 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec:   61.932 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec:   61.932 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec:   61.932 GB:   :       : 1;
+endscan;
+scan No0003;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d05h16m00s; mode=1mmlcp; source=0854+201;
+     station=Ap:    0 sec:  240 sec:  123.863 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec:  123.863 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec:  123.863 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec:  123.863 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec:  123.863 GB:   :       : 1;
+endscan;
+scan No0004;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d05h25m00s; mode=1mmlcp; source=M87;
+     station=Ap:    0 sec:  480 sec:  185.795 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec:  185.795 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec:  185.795 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec:  185.795 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec:  185.795 GB:   :       : 1;
+endscan;
+scan No0005;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d05h38m10s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:   30 sec:  309.658 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec:  309.658 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec:  309.658 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec:  309.658 GB:   :       : 1;
+endscan;
+scan No0006;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d05h39m00s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:  240 sec:  317.399 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec:  317.399 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec:  317.399 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec:  317.399 GB:   :       : 1;
+endscan;
+scan No0007;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d05h48m00s; mode=1mmlcp; source=M87;
+     station=Ap:    0 sec:  480 sec:  309.658 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec:  379.331 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec:  379.331 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec:  379.331 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec:  379.331 GB:   :       : 1;
+endscan;
+scan No0008;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d06h01m10s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:   30 sec:  503.194 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec:  503.194 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec:  503.194 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec:  503.194 GB:   :       : 1;
+endscan;
+scan No0009;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d06h02m00s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:  240 sec:  510.935 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec:  510.935 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec:  510.935 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec:  510.935 GB:   :       : 1;
+endscan;
+scan No0010;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d06h11m00s; mode=1mmlcp; source=M87;
+     station=Ap:    0 sec:  480 sec:  433.521 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec:  572.867 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec:  572.867 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec:  572.867 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec:  572.867 GB:   :       : 1;
+endscan;
+scan No0011;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d06h23m10s; mode=1mmlcp; source=3C273;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Az:    0 sec:   30 sec:  696.730 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec:  696.730 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec:  696.730 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec:  696.730 GB:   :       : 1;
+endscan;
+scan No0012;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d06h24m00s; mode=1mmlcp; source=3C273;
+     station=Ap:    0 sec:  240 sec:  557.384 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec:  704.471 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec:  704.471 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec:  704.471 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec:  704.471 GB:   :       : 1;
+endscan;
+scan No0013;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d06h32m10s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:   30 sec:  619.315 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec:  766.403 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec:  766.403 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec:  766.403 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec:  766.403 GB:   :       : 1;
+endscan;
+scan No0014;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d06h33m00s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:  240 sec:  627.057 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec:  774.144 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec:  774.144 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec:  774.144 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec:  774.144 GB:   :       : 1;
+endscan;
+scan No0015;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d06h42m10s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:   30 sec:  836.076 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec:  836.076 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec:  836.076 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec:  836.076 GB:   :       : 1;
+endscan;
+scan No0016;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d06h43m00s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:  240 sec:  843.817 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec:  843.817 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec:  843.817 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec:  843.817 GB:   :       : 1;
+endscan;
+scan No0017;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d06h51m00s; mode=1mmlcp; source=M87;
+     station=Ap:    0 sec:  480 sec:  688.988 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec:  905.749 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec:  905.749 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec:  905.749 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec:  905.749 GB:   :       : 1;
+endscan;
+scan No0018;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d07h03m10s; mode=1mmlcp; source=3C273;
+     station=Az:    0 sec:   30 sec: 1029.612 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1029.612 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1029.612 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1029.612 GB:   :       : 1;
+endscan;
+scan No0019;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d07h04m00s; mode=1mmlcp; source=3C273;
+     station=Ap:    0 sec:  240 sec:  812.851 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 1037.353 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1037.353 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1037.353 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1037.353 GB:   :       : 1;
+endscan;
+scan No0020;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d07h12m10s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:   30 sec:  874.783 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 1099.285 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1099.285 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1099.285 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1099.285 GB:   :       : 1;
+endscan;
+scan No0021;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d07h13m00s; mode=1mmlcp; source=3C279;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ap:    0 sec:  240 sec:  882.524 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 1107.026 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1107.026 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1107.026 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1107.026 GB:   :       : 1;
+endscan;
+scan No0022;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d07h28m00s; mode=1mmlcp; source=M87;
+     station=Ap:    0 sec:  480 sec:  944.456 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 1168.958 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 1168.958 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 1168.958 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 1168.958 GB:   :       : 1;
+endscan;
+scan No0023;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d07h40m10s; mode=1mmlcp; source=3C273;
+     station=Az:    0 sec:   30 sec: 1292.821 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1292.821 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1292.821 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1292.821 GB:   :       : 1;
+endscan;
+scan No0024;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d07h41m00s; mode=1mmlcp; source=3C273;
+     station=Ap:    0 sec:  240 sec: 1068.319 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 1300.562 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1300.562 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1300.562 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1300.562 GB:   :       : 1;
+endscan;
+scan No0025;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d07h49m10s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:   30 sec: 1130.250 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 1362.494 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1362.494 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1362.494 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1362.494 GB:   :       : 1;
+endscan;
+scan No0026;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d07h50m00s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:  240 sec: 1137.992 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 1370.235 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1370.235 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1370.235 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1370.235 GB:   :       : 1;
+endscan;
+scan No0027;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d07h59m10s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:   30 sec: 1432.167 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1432.167 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1432.167 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1432.167 GB:   :       : 1;
+endscan;
+scan No0028;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d08h00m00s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:  240 sec: 1439.908 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1439.908 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1439.908 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1439.908 GB:   :       : 1;
+endscan;
+scan No0029;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d08h09m00s; mode=1mmlcp; source=M87;
+     station=Ap:    0 sec:  480 sec: 1199.923 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 1501.839 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 1501.839 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 1501.839 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 1501.839 GB:   :       : 1;
+endscan;
+scan No0030;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d08h21m10s; mode=1mmlcp; source=3C273;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Az:    0 sec:   30 sec: 1625.703 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1625.703 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1625.703 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1625.703 GB:   :       : 1;
+endscan;
+scan No0031;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d08h22m00s; mode=1mmlcp; source=3C273;
+     station=Ap:    0 sec:  240 sec: 1323.786 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 1633.444 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1633.444 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1633.444 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1633.444 GB:   :       : 1;
+endscan;
+scan No0032;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d08h30m10s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:   30 sec: 1695.375 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1695.375 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1695.375 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1695.375 GB:   :       : 1;
+endscan;
+scan No0033;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d08h31m00s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:  240 sec: 1385.718 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 1703.117 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1703.117 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1703.117 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1703.117 GB:   :       : 1;
+endscan;
+scan No0034;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d08h40m10s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:   30 sec: 1765.048 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1765.048 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1765.048 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1765.048 GB:   :       : 1;
+endscan;
+scan No0035;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d08h41m00s; mode=1mmlcp; source=0854+201;
+     station=Az:    0 sec:  240 sec: 1772.790 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1772.790 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1772.790 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1772.790 GB:   :       : 1;
+endscan;
+scan No0036;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d08h50m00s; mode=1mmlcp; source=M87;
+     station=Ap:    0 sec:  480 sec: 1447.649 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 1834.721 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 1834.721 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 1834.721 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 1834.721 GB:   :       : 1;
+endscan;
+scan No0037;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d09h02m10s; mode=1mmlcp; source=3C273;
+     station=Az:    0 sec:   30 sec: 1958.584 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 1958.584 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 1958.584 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 1958.584 GB:   :       : 1;
+endscan;
+scan No0038;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d09h03m00s; mode=1mmlcp; source=3C273;
+     station=Ap:    0 sec:  240 sec: 1571.512 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 1966.326 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 1966.326 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 1966.326 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 1966.326 GB:   :       : 1;
+endscan;
+scan No0039;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d09h11m10s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:   30 sec: 2028.257 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 2028.257 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 2028.257 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 2028.257 GB:   :       : 1;
+endscan;
+scan No0040;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d09h12m00s; mode=1mmlcp; source=3C279;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ap:    0 sec:  240 sec: 1633.444 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 2035.999 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 2035.999 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 2035.999 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 2035.999 GB:   :       : 1;
+endscan;
+scan No0041;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d09h21m00s; mode=1mmlcp; source=M87;
+     station=Ap:    0 sec:  480 sec: 1695.375 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 2097.930 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 2097.930 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 2097.930 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 2097.930 GB:   :       : 1;
+endscan;
+scan No0042;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d09h33m10s; mode=1mmlcp; source=3C273;
+     station=Az:    0 sec:   30 sec: 2221.793 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 2221.793 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 2221.793 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 2221.793 GB:   :       : 1;
+endscan;
+scan No0043;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d09h34m00s; mode=1mmlcp; source=3C273;
+     station=Ap:    0 sec:  240 sec: 1819.238 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 2229.535 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 2229.535 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 2229.535 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 2229.535 GB:   :       : 1;
+endscan;
+scan No0044;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d09h42m10s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:   30 sec: 2291.467 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 2291.467 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 2291.467 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 2291.467 GB:   :       : 1;
+endscan;
+scan No0045;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d09h43m00s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:  240 sec: 1881.170 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 2299.208 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 2299.208 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 2299.208 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 2299.208 GB:   :       : 1;
+endscan;
+scan No0046;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d09h58m00s; mode=1mmlcp; source=M87;
+     station=Az:    0 sec:  480 sec: 2361.140 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 2361.140 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 2361.140 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 2361.140 GB:   :       : 1;
+endscan;
+scan No0047;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d10h09m10s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:   30 sec: 1943.101 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 2485.003 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 2485.003 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 2485.003 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 2485.003 GB:   :       : 1;
+endscan;
+scan No0048;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d10h10m00s; mode=1mmlcp; source=3C279;
+     station=Ap:    0 sec:  240 sec: 1950.843 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 2492.744 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 2492.744 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 2492.744 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 2492.744 GB:   :       : 1;
+endscan;
+scan No0049;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d10h20m00s; mode=1mmlcp; source=M87;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Az:    0 sec:  480 sec: 2554.676 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 2554.676 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 2554.676 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 2554.676 GB:   :       : 1;
+endscan;
+scan No0050;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d10h31m10s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:   30 sec: 2678.539 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 2678.539 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 2678.539 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 2678.539 GB:   :       : 1;
+endscan;
+scan No0051;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d10h32m00s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:  240 sec: 2686.280 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 2686.280 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 2686.280 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 2686.280 GB:   :       : 1;
+endscan;
+scan No0052;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d10h42m10s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:   30 sec: 2012.774 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 2748.212 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 2748.212 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 2748.212 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 2748.212 GB:   :       : 1;
+endscan;
+scan No0053;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d10h43m00s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:  240 sec: 2020.516 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 2755.953 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 2755.953 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 2755.953 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 2755.953 GB:   :       : 1;
+endscan;
+scan No0054;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d10h53m00s; mode=1mmlcp; source=M87;
+     station=Az:    0 sec:  480 sec: 2817.885 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 2817.885 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 2817.885 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 2817.885 GB:   :       : 1;
+endscan;
+scan No0055;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d11h04m10s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:   30 sec: 2941.748 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 2941.748 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 2941.748 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 2941.748 GB:   :       : 1;
+endscan;
+scan No0056;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d11h05m00s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:  240 sec: 2949.490 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 2949.490 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 2949.490 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 2949.490 GB:   :       : 1;
+endscan;
+scan No0057;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d11h15m10s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:   30 sec: 2082.448 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 3011.421 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3011.421 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3011.421 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3011.421 GB:   :       : 1;
+endscan;
+scan No0058;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d11h16m00s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:  240 sec: 2090.189 GB:   :       : 1;
+     station=Az:    0 sec:  240 sec: 3019.163 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 3019.163 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 3019.163 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 3019.163 GB:   :       : 1;
+endscan;
+scan No0059;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d11h26m00s; mode=1mmlcp; source=M87;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Az:    0 sec:  480 sec: 3081.094 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 3081.094 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 3081.094 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 3081.094 GB:   :       : 1;
+endscan;
+scan No0060;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d11h37m10s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:   30 sec: 3204.957 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3204.957 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3204.957 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3204.957 GB:   :       : 1;
+endscan;
+scan No0061;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d11h38m00s; mode=1mmlcp; source=3C279;
+     station=Az:    0 sec:  240 sec: 3212.699 GB:   :       : 1;
+     station=Cm:    0 sec:  240 sec: 3212.699 GB:   :       : 1;
+     station=Sm:    0 sec:  240 sec: 3212.699 GB:   :       : 1;
+     station=Jc:    0 sec:  240 sec: 3212.699 GB:   :       : 1;
+endscan;
+scan No0062;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d11h48m10s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:   30 sec: 2152.121 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 3274.630 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3274.630 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3274.630 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3274.630 GB:   :       : 1;
+endscan;
+scan No0063;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d11h49m00s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:  300 sec: 2159.862 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 3282.372 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 3282.372 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 3282.372 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 3282.372 GB:   :       : 1;
+endscan;
+scan No0064;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d12h04m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 2237.276 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 3359.786 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3359.786 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3359.786 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3359.786 GB:   :       : 1;
+endscan;
+scan No0065;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d12h05m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 2245.018 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 3367.528 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 3367.528 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 3367.528 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 3367.528 GB:   :       : 1;
+endscan;
+scan No0066;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d12h17m10s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:   30 sec: 3491.391 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3491.391 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3491.391 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3491.391 GB:   :       : 1;
+endscan;
+scan No0067;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d12h18m00s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:  300 sec: 2368.881 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 3499.132 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 3499.132 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 3499.132 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 3499.132 GB:   :       : 1;
+endscan;
+scan No0068;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d12h28m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 2446.295 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 3576.546 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3576.546 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3576.546 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3576.546 GB:   :       : 1;
+endscan;
+scan No0069;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d12h29m00s; mode=1mmlcp; source=SGRA;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ap:    0 sec:  480 sec: 2454.037 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 3584.288 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 3584.288 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 3584.288 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 3584.288 GB:   :       : 1;
+endscan;
+scan No0070;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d12h41m10s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:   30 sec: 3708.151 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3708.151 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3708.151 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3708.151 GB:   :       : 1;
+endscan;
+scan No0071;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d12h42m00s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:  300 sec: 2577.900 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 3715.892 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 3715.892 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 3715.892 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 3715.892 GB:   :       : 1;
+endscan;
+scan No0072;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d12h52m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 2655.314 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 3793.307 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3793.307 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3793.307 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3793.307 GB:   :       : 1;
+endscan;
+scan No0073;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d12h53m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 2663.055 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 3801.048 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 3801.048 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 3801.048 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 3801.048 GB:   :       : 1;
+endscan;
+scan No0074;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d13h05m10s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:   30 sec: 3924.911 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 3924.911 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 3924.911 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 3924.911 GB:   :       : 1;
+endscan;
+scan No0075;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d13h06m00s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:  300 sec: 2786.918 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 3932.653 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 3932.653 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 3932.653 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 3932.653 GB:   :       : 1;
+endscan;
+scan No0076;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d13h16m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 2864.333 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 4010.067 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4010.067 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4010.067 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4010.067 GB:   :       : 1;
+endscan;
+scan No0077;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d13h17m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 2872.074 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 4017.808 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 4017.808 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 4017.808 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 4017.808 GB:   :       : 1;
+endscan;
+scan No0078;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d13h29m10s; mode=1mmlcp; source=1749+096;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Az:    0 sec:   30 sec: 4141.671 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4141.671 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4141.671 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4141.671 GB:   :       : 1;
+endscan;
+scan No0079;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d13h30m00s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:  300 sec: 2995.937 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 4149.413 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 4149.413 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 4149.413 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 4149.413 GB:   :       : 1;
+endscan;
+scan No0080;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d13h40m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 3073.352 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 4226.827 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4226.827 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4226.827 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4226.827 GB:   :       : 1;
+endscan;
+scan No0081;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d13h41m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 3081.093 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 4234.568 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 4234.568 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 4234.568 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 4234.568 GB:   :       : 1;
+endscan;
+scan No0082;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d13h53m10s; mode=1mmlcp; source=1921-293;
+     station=Ap:    0 sec:   30 sec: 3204.956 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 4358.432 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4358.432 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4358.432 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4358.432 GB:   :       : 1;
+endscan;
+scan No0083;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d13h54m00s; mode=1mmlcp; source=1921-293;
+     station=Ap:    0 sec:  300 sec: 3212.698 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 4366.173 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 4366.173 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 4366.173 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 4366.173 GB:   :       : 1;
+endscan;
+scan No0084;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d14h09m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 3290.112 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 4443.587 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4443.587 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4443.587 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4443.587 GB:   :       : 1;
+endscan;
+scan No0085;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d14h10m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 3297.853 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 4451.329 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 4451.329 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 4451.329 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 4451.329 GB:   :       : 1;
+endscan;
+scan No0086;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d14h22m10s; mode=1mmlcp; source=1921-293;
+     station=Az:    0 sec:   30 sec: 4575.192 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4575.192 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4575.192 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4575.192 GB:   :       : 1;
+endscan;
+scan No0087;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d14h23m00s; mode=1mmlcp; source=1921-293;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ap:    0 sec:  300 sec: 3421.716 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 4582.933 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 4582.933 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 4582.933 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 4582.933 GB:   :       : 1;
+endscan;
+scan No0088;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d14h33m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 3499.131 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 4660.348 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4660.348 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4660.348 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4660.348 GB:   :       : 1;
+endscan;
+scan No0089;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d14h34m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 3506.872 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 4668.089 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 4668.089 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 4668.089 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 4668.089 GB:   :       : 1;
+endscan;
+scan No0090;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d14h46m10s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:   30 sec: 3630.735 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 4791.952 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4791.952 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4791.952 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4791.952 GB:   :       : 1;
+endscan;
+scan No0091;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d14h47m00s; mode=1mmlcp; source=1749+096;
+     station=Ap:    0 sec:  300 sec: 3638.477 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 4799.693 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 4799.693 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 4799.693 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 4799.693 GB:   :       : 1;
+endscan;
+scan No0092;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d14h57m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 3715.891 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 4877.108 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 4877.108 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 4877.108 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 4877.108 GB:   :       : 1;
+endscan;
+scan No0093;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d14h58m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 3723.632 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 4884.849 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 4884.849 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 4884.849 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 4884.849 GB:   :       : 1;
+endscan;
+scan No0094;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d15h10m10s; mode=1mmlcp; source=1921-293;
+     station=Az:    0 sec:   30 sec: 5008.712 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5008.712 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5008.712 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5008.712 GB:   :       : 1;
+endscan;
+scan No0095;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d15h11m00s; mode=1mmlcp; source=1921-293;
+     station=Ap:    0 sec:  300 sec: 3847.495 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 5016.454 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 5016.454 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 5016.454 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 5016.454 GB:   :       : 1;
+endscan;
+scan No0096;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d15h21m10s; mode=1mmlcp; source=SGRA;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ap:    0 sec:   30 sec: 3924.910 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 5093.868 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5093.868 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5093.868 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5093.868 GB:   :       : 1;
+endscan;
+scan No0097;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d15h22m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 3932.651 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 5101.609 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 5101.609 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 5101.609 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 5101.609 GB:   :       : 1;
+endscan;
+scan No0098;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d15h35m10s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:   30 sec: 4056.514 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 5225.473 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5225.473 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5225.473 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5225.473 GB:   :       : 1;
+endscan;
+scan No0099;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d15h36m00s; mode=1mmlcp; source=SGRA;
+     station=Ap:    0 sec:  480 sec: 4064.256 GB:   :       : 1;
+     station=Az:    0 sec:  480 sec: 5233.214 GB:   :       : 1;
+     station=Cm:    0 sec:  480 sec: 5233.214 GB:   :       : 1;
+     station=Sm:    0 sec:  480 sec: 5233.214 GB:   :       : 1;
+     station=Jc:    0 sec:  480 sec: 5233.214 GB:   :       : 1;
+endscan;
+scan No0100;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d15h49m10s; mode=1mmlcp; source=1921-293;
+     station=Az:    0 sec:   30 sec: 5357.077 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5357.077 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5357.077 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5357.077 GB:   :       : 1;
+endscan;
+scan No0101;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d15h50m00s; mode=1mmlcp; source=1921-293;
+     station=Ap:    0 sec:  300 sec: 4188.119 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 5364.818 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 5364.818 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 5364.818 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 5364.818 GB:   :       : 1;
+endscan;
+scan No0102;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d16h00m10s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:   30 sec: 5442.233 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5442.233 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5442.233 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5442.233 GB:   :       : 1;
+endscan;
+scan No0103;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d16h01m00s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:  300 sec: 5449.974 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 5449.974 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 5449.974 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 5449.974 GB:   :       : 1;
+endscan;
+scan No0104;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d16h11m10s; mode=1mmlcp; source=1921-293;
+     station=Ap:    0 sec:   30 sec: 4265.533 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 5527.389 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5527.389 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5527.389 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5527.389 GB:   :       : 1;
+endscan;
+scan No0105;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d16h12m00s; mode=1mmlcp; source=1921-293;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ap:    0 sec:  300 sec: 4273.274 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 5535.130 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 5535.130 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 5535.130 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 5535.130 GB:   :       : 1;
+endscan;
+scan No0106;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d16h22m10s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:   30 sec: 5612.544 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5612.544 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5612.544 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5612.544 GB:   :       : 1;
+endscan;
+scan No0107;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d16h23m00s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:  300 sec: 5620.286 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 5620.286 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 5620.286 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 5620.286 GB:   :       : 1;
+endscan;
+scan No0108;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d16h33m10s; mode=1mmlcp; source=1921-293;
+     station=Ap:    0 sec:   30 sec: 4350.689 GB:   :       : 1;
+     station=Az:    0 sec:   30 sec: 5697.700 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5697.700 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5697.700 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5697.700 GB:   :       : 1;
+endscan;
+scan No0109;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d16h34m00s; mode=1mmlcp; source=1921-293;
+     station=Ap:    0 sec:  300 sec: 4358.430 GB:   :       : 1;
+     station=Az:    0 sec:  300 sec: 5705.441 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 5705.441 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 5705.441 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 5705.441 GB:   :       : 1;
+endscan;
+scan No0110;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d16h44m10s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:   30 sec: 5782.856 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5782.856 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5782.856 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5782.856 GB:   :       : 1;
+endscan;
+scan No0111;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d16h45m00s; mode=1mmlcp; source=1749+096;
+     station=Az:    0 sec:  300 sec: 5790.597 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 5790.597 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 5790.597 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 5790.597 GB:   :       : 1;
+endscan;
+scan No0112;
+*     Note a COMMENT was inserted during scheduling: 
+*       Rpol
+     start=2013y080d16h56m10s; mode=1mmlcp; source=BLLAC;
+     station=Az:    0 sec:   30 sec: 5868.012 GB:   :       : 1;
+     station=Cm:    0 sec:   30 sec: 5868.012 GB:   :       : 1;
+     station=Sm:    0 sec:   30 sec: 5868.012 GB:   :       : 1;
+     station=Jc:    0 sec:   30 sec: 5868.012 GB:   :       : 1;
+endscan;
+scan No0113;
+*     Note a COMMENT was inserted during scheduling: 
+*       Lpol
+     start=2013y080d16h57m00s; mode=1mmlcp; source=BLLAC;
+     station=Az:    0 sec:  300 sec: 5875.753 GB:   :       : 1;
+     station=Cm:    0 sec:  300 sec: 5875.753 GB:   :       : 1;
+     station=Sm:    0 sec:  300 sec: 5875.753 GB:   :       : 1;
+     station=Jc:    0 sec:  300 sec: 5875.753 GB:   :       : 1;
+endscan;

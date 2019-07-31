@@ -1,0 +1,88 @@
+#include <stdio.h>
+#include "usearray.h"			/* Contains defines for parameter */
+					/* id numbers, can be multiply included */
+
+					/* Static initialized extern */
+struct udat parameter_list[] =
+    {
+    "ref_pcal_amp",	MAXFREQ,	REF_PCAL_AMP,
+    "ref_pcal_phase", 	MAXFREQ,	REF_PCAL_PHASE,
+    "ref_pcal_diff", 	MAXFREQ,	REF_PCAL_DIFF,
+    "ref_pcal_freq", 	MAXFREQ,	REF_PCAL_FREQ,
+    "ref_pcal_rate", 	1,		REF_PCAL_RATE,
+    "rem_pcal_amp", 	MAXFREQ,	REM_PCAL_AMP,
+    "rem_pcal_phase", 	MAXFREQ,	REM_PCAL_PHASE,
+    "rem_pcal_diff", 	MAXFREQ,	REM_PCAL_DIFF,
+    "rem_pcal_freq", 	MAXFREQ,	REM_PCAL_FREQ,
+    "rem_pcal_rate", 	1,		REM_PCAL_RATE,
+    "trkno_ref_usb", 	MAXFREQ,	TRKNO_REF_USB,
+    "trkno_ref_lsb",	MAXFREQ,	TRKNO_REF_LSB,
+    "trkno_rem_usb",	MAXFREQ,	TRKNO_REM_USB,
+    "trkno_rem_lsb",	MAXFREQ,	TRKNO_REM_LSB,
+    "errate_ref_usb", 	MAXFREQ,	ERRATE_REF_USB,
+    "errate_ref_lsb",	MAXFREQ,	ERRATE_REF_LSB,
+    "errate_rem_usb",	MAXFREQ,	ERRATE_REM_USB,
+    "errate_rem_lsb",	MAXFREQ,	ERRATE_REM_LSB,
+    "nap_usb",		MAXFREQ,	NAP_USB,
+    "nap_lsb",		MAXFREQ,	NAP_LSB,
+    "corel_amp",	MAXFREQ,	COREL_AMP,
+    "corel_phase",	MAXFREQ,	COREL_PHASE,
+    "rate_error",	1,		RATE_ERROR,
+    "mbdelay_error",	1,		MBDELAY_ERROR,
+    "sbdelay_error",	1,		SBDELAY_ERROR,
+    "total_phase",	1,		TOTAL_PHASE,
+    "tot_phase_mid",	1,		TOT_PHASE_MID,
+    "incoh_amp_seg",	1,		INCOH_AMP_SEG,
+    "incoh_amp_freq",	1,		INCOH_AMP_FREQ,
+/***********  Redundant with A-file format version >= 2 */
+/*    "ref_elevation",	1,		REF_ELEVATION,
+    "rem_elevation",	1,		REM_ELEVATION,
+    "fr_arcsec_ns",	1,		FR_ARCSEC_NS,
+    "fr_arcsec_ew",	1,		FR_ARCSEC_EW,  */
+/*******************************************************/
+    "mhz_arcsec_ns",	1,		MHZ_ARCSEC_NS,
+    "mhz_arcsec_ew",	1,		MHZ_ARCSEC_EW,
+    "pcnt_discard",	1,		PCNT_DISCARD,
+    "min_max_ratio",	1,		MIN_MAX_RATIO,
+/***********  Redundant with A-file format version >= 2 */
+/*    "ref_frequency",	1,		REF_FREQUENCY, */
+/*******************************************************/
+    "lo_frequency",	MAXFREQ,	LO_FREQUENCY,
+    "xperror",		1,		XPERROR,
+    "yperror",		1,		YPERROR,
+    "suppress",		1,		SUPPRESS,
+    "ppupdate",		1,		PPUPDATE,
+    "xslip",		1,		XSLIP,
+    "yslip",		1,		YSLIP,
+    "badsync",		1,		BADSYNC,
+    "ref_drive",	1,		REF_DRIVE,
+    "rem_drive",	1,		REM_DRIVE,
+    "utc_central",	1,		UTC_CENTRAL,
+    "utc_epoch",	1,		UTC_EPOCH,
+    "clock_delay",	1,		CLOCK_DELAY,
+    "prob_false",       1,              PROB_FALSE,
+					/* Parameters below already in A-line */
+    "length",		1,		LENGTH,
+    "timetag",		1,		TIMETAG,
+    "amplitude",	1,		AMPLITUDE,
+    "snr",		1,		SNR,
+    "phase",		1,		PHASE,
+    "resid_sbd",	1,		RESID_SBD,
+    "resid_mbd",	1,		RESID_MBD,
+    "ambiguity",	1,		AMBIGUITY,
+    "resid_rate",	1,		RESID_RATE,
+    "ref_elevation",	1,		REF_ELEVATION,
+    "rem_elevation",	1,		REM_ELEVATION,
+    "ref_azimuth",	1,		REF_AZIMUTH,
+    "rem_azimuth",	1,		REM_AZIMUTH,
+    "u",		1,		U,
+    "v",		1,		V,
+    "ref_frequency",	1,		REF_FREQUENCY,
+    "total_ec_phase",	1,		TOTAL_EC_PHASE,
+    "total_rate",	1,		TOTAL_RATE,
+    "total_mbd",	1,		TOTAL_MBD,
+    "total_sbd-mbd",	1,		TOTAL_SBD_MBD,
+    "procdate",		1,		PROCDATE,
+    "qcode",		1,		QCODE,
+    NULL, 0, 0
+    };

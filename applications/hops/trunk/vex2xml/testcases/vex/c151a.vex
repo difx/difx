@@ -1,0 +1,3923 @@
+VEX_rev = 1.5;
+*    SCHED vers: Release 11.4.  March 14, 2015
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  11.4  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = c151a;
+*                                                      +------------+
+*                         PI revision number:          |    6.0000  |
+*                                                      +------------+
+*    mode:       2048-16-2
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def c151a;
+     exper_name = c151a;
+     exper_description = "GMVA May 14-18, 2015, part A";
+     PI_name = "Global mm-VLBI Array (GMVA)";
+     PI_email = tkrichbaum@mpifr-bonn.mpg.de;
+*    address:   Max-Planck-Institut fuer Radioastronomie
+*               Auf dem Huegel 69
+*               53121 Bonn
+*               Germany
+*    phone:     0049-228-525-295
+*    during obs:0049-2257-301-155
+*    fax:       0049-2257-301-106
+*    notes:     3mm RDBE_PFB, VLBA 7mm autopeak
+*               3mm dual polarisation
+*               measure Tsys before AND after each VLBI scan also provide tau
+*
+*    year, doy: 2015, 134
+*    date     : Thu 14 May 2015
+*    MJD      : 57156
+     exper_nominal_start=2015y134d17h00m00s;
+     exper_nominal_stop=2015y135d06h21m30s;
+*
+     target_correlator = BONN;
+*
+*    integr_time    :     1.000 s
+*    number_channels:    64
+*    number_antenna : 14
+*    cross_polarize : Yes
+*    weight_func    : UNIFORM
+*    distrib_medium : FTP
+*    distrib_format : FITS
+*    source_pos_cat : STANDARD
+*    distribute_to  : 
+*                     W. Alef
+*                     Max-Planck-Institut fuer Radioastronomie
+*                     Auf dem Huegel 69
+*                     D-53121 Bonn, Germany
+*    corr_notes : 
+*               dual polarisation setup using 32 MHz channels
+*               about 1 sec coravg at 3mm
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def 3mm_RDBE;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 86380.00MHz16x32MHz:Eb:On:Ys:PV:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $FREQ = 86140.00MHz16x16MHz:PB;
+     ref $IF = LO@85500MHzDPolTone/1#02:Eb;
+     ref $IF = LO@85500MHzDPolTone/1#03:On:Ys;
+     ref $IF = LO@85500MHzDPolTone/1#04:PV;
+     ref $IF = LO@85836MHzDPolTone/1:PB;
+     ref $IF = LO@85500MHzDPolTone/1:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $BBC = 16BBCs#02:Eb;
+     ref $BBC = 16BBCs#03:On:Ys;
+     ref $BBC = 16BBCs#04:PV;
+     ref $BBC = 16BBCs#05:PB;
+     ref $BBC = 16BBCs:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = MARK5B.16Ch2bit1to1:Eb:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = MARK5B.16Ch2bit1to1#02:On:Ys:PV;
+     ref $TRACKS = MKIV.16Ch2bit1to2:PB;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Eb:On:Ys:PV:PB:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = LsbDetect:Eb:On:Ys:PV:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $PHASE_CAL_DETECT = DsbDetect:PB;
+enddef;
+*
+*The following mode is used with FORMAT=NONE.
+*
+def ptr7mm;
+     ref $PROCEDURES = Mode_02;
+     ref $FREQ = 43312.00MHz16x32MHz:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $IF = LO@42400MHzDPolTone/1:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $BBC = 16BBCs#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = TRACKS.NONE:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = LsbDetect#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+enddef;
+*
+*The following mode is used with FORMAT=NONE.
+*
+def PulseCalOFF;
+     ref $PROCEDURES = Mode_03;
+     ref $FREQ = 43312.00MHz16x32MHz#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $IF = LO@42400MHzDPolNoTone:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $BBC = 16BBCs#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = TRACKS.NONE:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+enddef;
+*
+*The following mode is used with FORMAT=NONE.
+*
+def PulseCalOFF#02;
+     ref $PROCEDURES = Mode_04;
+     ref $FREQ = 43312.00MHz16x32MHz#03:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $IF = LO@42400MHzDPolNoTone#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $BBC = 16BBCs#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = TRACKS.NONE:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+enddef;
+*
+*The following mode is used with FORMAT=NONE.
+*
+def PulseCalOFF#03;
+     ref $PROCEDURES = Mode_05;
+     ref $FREQ = 43312.00MHz16x32MHz#04:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $IF = LO@42400MHzDPolNoTone#03:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $BBC = 16BBCs#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = TRACKS.NONE:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect#03:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+enddef;
+*
+*The following mode is used with FORMAT=NONE.
+*
+def PulseCalOFF#04;
+     ref $PROCEDURES = Mode_06;
+     ref $FREQ = 43312.00MHz16x32MHz#05:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $IF = LO@42400MHzDPolNoTone#04:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $BBC = 16BBCs#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = TRACKS.NONE:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect#04:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+enddef;
+*
+*The following mode is used with FORMAT=NONE.
+*
+def PulseCalOFF#05;
+     ref $PROCEDURES = Mode_07;
+     ref $FREQ = 43312.00MHz16x32MHz#06:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $IF = LO@42400MHzDPolNoTone#05:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $BBC = 16BBCs#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = TRACKS.NONE:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect#05:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+enddef;
+*
+*The following mode is used with FORMAT=NONE.
+*
+def PulseCalOFF#06;
+     ref $PROCEDURES = Mode_08;
+     ref $FREQ = 43312.00MHz16x32MHz#07:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $IF = LO@42400MHzDPolNoTone#06:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $BBC = 16BBCs#02:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+     ref $TRACKS = TRACKS.NONE:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect#06:Fd:Nl:Ov:Pt:Br:Kp:La:Mk;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Eb;
+     ref $SITE = EB_RDBE;
+     ref $ANTENNA = EB_RDBE;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def On;
+     ref $SITE = ONSALA60;
+     ref $ANTENNA = ONSALA60;
+     ref $DAS = 2DBBC+NONE<;
+enddef;
+*
+def Ys;
+     ref $SITE = YEBES40M;
+     ref $ANTENNA = YEBES40M;
+     ref $DAS = 2DBBC+NONE<;
+enddef;
+*
+def PV;
+     ref $SITE = PICOVEL;
+     ref $ANTENNA = PICOVEL;
+     ref $DAS = 2DBBC+NONE<;
+enddef;
+*
+def PB;
+     ref $SITE = PDBURE;
+     ref $ANTENNA = PDBURE;
+     ref $DAS = 2MKIV+NONE<Mark5A;
+enddef;
+*
+def Fd;
+     ref $SITE = VLBA_FD;
+     ref $ANTENNA = VLBA_FD;
+     ref $DAS = 2RDBE2+NONE<#02;
+enddef;
+*
+def Nl;
+     ref $SITE = VLBA_NL;
+     ref $ANTENNA = VLBA_NL;
+     ref $DAS = 2RDBE2+NONE<#02;
+enddef;
+*
+def Ov;
+     ref $SITE = VLBA_OV;
+     ref $ANTENNA = VLBA_OV;
+     ref $DAS = 2RDBE2+NONE<#02;
+enddef;
+*
+def Pt;
+     ref $SITE = VLBA_PT;
+     ref $ANTENNA = VLBA_PT;
+     ref $DAS = 2RDBE2+NONE<#02;
+enddef;
+*
+def Br;
+     ref $SITE = VLBA_BR;
+     ref $ANTENNA = VLBA_BR;
+     ref $DAS = 2RDBE2+NONE<#02;
+enddef;
+*
+def Kp;
+     ref $SITE = VLBA_KP;
+     ref $ANTENNA = VLBA_KP;
+     ref $DAS = 2RDBE2+NONE<#02;
+enddef;
+*
+def La;
+     ref $SITE = VLBA_LA;
+     ref $ANTENNA = VLBA_LA;
+     ref $DAS = 2RDBE2+NONE<#02;
+enddef;
+*
+def Mk;
+     ref $SITE = VLBA_MK;
+     ref $ANTENNA = VLBA_MK;
+     ref $DAS = 2RDBE2+NONE<#02;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+*The following def is used with FORMAT=NONE.
+*
+def Mode_02;
+     procedure_name_prefix =  "02";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+*The following def is used with FORMAT=NONE.
+*
+def Mode_03;
+     procedure_name_prefix =  "03";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+*The following def is used with FORMAT=NONE.
+*
+def Mode_04;
+     procedure_name_prefix =  "04";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+*The following def is used with FORMAT=NONE.
+*
+def Mode_05;
+     procedure_name_prefix =  "05";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+*The following def is used with FORMAT=NONE.
+*
+def Mode_06;
+     procedure_name_prefix =  "06";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+*The following def is used with FORMAT=NONE.
+*
+def Mode_07;
+     procedure_name_prefix =  "07";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+*The following def is used with FORMAT=NONE.
+*
+def Mode_08;
+     procedure_name_prefix =  "08";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def EB_RDBE;
+     site_type = fixed;
+     site_name = EB_RDBE;
+     site_ID = Eb;
+*    elev=  416.72 long=-006:53:01. lat= 50:31:29.4
+     site_position = 4033947.26160 m:  486990.78660 m: 4900430.99150 m;
+     site_velocity = -0.013620   m/yr:  0.016920   m/yr:  0.010770  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg: 10.0: 20.0: 30.0: 40.0: 50.0: 60.0: 70.0: 80.0:
+                                90.0:100.0:110.0:120.0:130.0:140.0:150.0:160.0:
+                               170.0:180.0:190.0:200.0:210.0:220.0:230.0:240.0:
+                               250.0:260.0:270.0:280.0:290.0:300.0:310.0:320.0:
+                               330.0:340.0:350.0:360.0;
+     horizon_map_el = 11.0 deg: 13.0: 16.0: 19.0: 21.0: 21.0: 21.0: 20.0: 18.0:
+                                15.0: 16.0: 16.0: 15.0: 15.0: 13.0:  8.0:  7.0:
+                                 7.0:  7.0:  7.0:  9.0: 11.0: 11.0: 11.0: 10.0:
+                                 9.0:  8.0: 12.0: 14.0: 14.0: 14.0: 14.0: 13.0:
+                                 8.0:  7.0:  8.0: 11.0;
+enddef;
+*
+def ONSALA60;
+     site_type = fixed;
+     site_name = ONSALA60;
+     site_ID = On;
+*    elev=   59.31 long=-011:55:34. lat= 57:23:45.0
+     site_position = 3370605.80100 m:  711917.71960 m: 5349830.90040 m;
+     site_velocity = -0.014020   m/yr:  0.014660   m/yr:  0.010270  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+enddef;
+*
+def YEBES40M;
+     site_type = fixed;
+     site_name = YEBES40M;
+     site_ID = Ys;
+*    elev=  988.95 long= 003:05:12. lat= 40:31:28.8
+     site_position = 4848761.82170 m: -261484.18690 m: 4123085.03870 m;
+     site_velocity = -0.004010   m/yr:  0.018590   m/yr:  0.016680  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+enddef;
+*
+def PICOVEL;
+     site_type = fixed;
+     site_name = PICOVEL;
+     site_ID = PV;
+*    elev= 2919.41 long= 003:23:33. lat= 37:03:58.1
+     site_position = 5088967.74544 m: -301681.18586 m: 3825012.20561 m;
+     site_velocity = -0.008200   m/yr:  0.019790   m/yr:  0.012480  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+enddef;
+*
+def PDBURE;
+     site_type = fixed;
+     site_name = PDBURE;
+     site_ID = PB;
+*    elev= 2617.59 long=-005:54:24. lat= 44:38:01.2
+     site_position = 4524000.43000 m:  468042.14000 m: 4460309.76000 m;
+     site_velocity =  0.000000   m/yr:  0.000000   m/yr:  0.000000  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1858y322d;
+     site_position_epoch =       0;
+enddef;
+*
+def VLBA_FD;
+     site_type = fixed;
+     site_name = VLBA_FD;
+     site_ID = Fd;
+*    elev= 1606.42 long= 103:56:41. lat= 30:38:06.1
+     site_position =-1324009.32660 m:-5332181.95470 m: 3231962.39490 m;
+     site_velocity = -0.012810   m/yr:  0.000480   m/yr: -0.004540  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0: 30.0: 35.0: 40.0: 45.0:
+                                50.0: 55.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:
+                                90.0: 95.0:100.0:105.0:110.0:115.0:150.0:155.0:
+                               160.0:220.0:225.0:230.0:240.0:245.0:250.0:255.0:
+                               260.0:265.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:325.0:330.0:335.0:340.0:
+                               345.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  5.0:  5.0:  3.0:  3.0:  2.0:  3.0:  2.0:
+                                 2.0:  3.0:  4.0:  7.0:  5.0:  4.0:  4.0:  5.0:
+                                 6.0:  6.0:  5.0:  4.0:  3.0:  2.0:  2.0:  3.0:
+                                 2.0:  2.0:  4.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:  2.0:
+                                 3.0:  4.0:  5.0:  4.0:  4.0:  5.0:  6.0:  6.0:
+                                 5.0:  5.0;
+enddef;
+*
+def VLBA_NL;
+     site_type = fixed;
+     site_name = VLBA_NL;
+     site_ID = Nl;
+*    elev=  222.24 long= 091:34:26. lat= 41:46:17.1
+     site_position = -130872.49870 m:-4762317.09250 m: 4226851.00140 m;
+     site_velocity = -0.015530   m/yr:  0.001460   m/yr: -0.002140  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 75.0: 80.0: 85.0:100.0:105.0:110.0:115.0:
+                               120.0:125.0:130.0:135.0:140.0:145.0:150.0:155.0:
+                               160.0:165.0:170.0:190.0:195.0:200.0:220.0:225.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  6.0:  6.0:  8.0:  7.0:  7.0:
+                                 6.0:  7.0:  7.0:  6.0:  6.0:  7.0:  7.0:  6.0:
+                                 5.0:  4.0:  3.0:  3.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_OV;
+     site_type = fixed;
+     site_name = VLBA_OV;
+     site_ID = Ov;
+*    elev= 1196.31 long= 118:16:37. lat= 37:13:53.9
+     site_position =-2409150.40180 m:-4478573.11800 m: 3838617.33850 m;
+     site_velocity = -0.018570   m/yr:  0.006660   m/yr: -0.003330  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0: 25.0: 30.0: 35.0: 40.0:
+                                45.0: 50.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:
+                                90.0: 95.0:100.0:105.0:110.0:115.0:120.0:125.0:
+                               130.0:145.0:150.0:155.0:175.0:180.0:185.0:190.0:
+                               195.0:200.0:205.0:210.0:230.0:235.0:240.0:245.0:
+                               250.0:260.0:265.0:270.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:350.0:355.0:360.0;
+     horizon_map_el =  3.0 deg:  5.0:  5.0:  7.0:  9.0: 10.0: 12.0: 13.0: 13.0:
+                                14.0: 15.0: 15.0: 13.0: 12.0: 11.0: 10.0:  9.0:
+                                 8.0:  7.0:  6.0:  6.0:  5.0:  4.0:  3.0:  3.0:
+                                 4.0:  4.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 5.0:  5.0:  6.0:  7.0:  7.0:  6.0:  7.0:  8.0:
+                                 9.0:  9.0:  8.0:  7.0:  7.0:  5.0:  4.0:  4.0:
+                                 3.0:  3.0:  2.0:  2.0:  3.0:  3.0;
+enddef;
+*
+def VLBA_PT;
+     site_type = fixed;
+     site_name = VLBA_PT;
+     site_ID = Pt;
+*    elev= 2364.69 long= 108:07:09. lat= 34:18:03.7
+     site_position =-1640953.93830 m:-5014816.02370 m: 3575411.79160 m;
+     site_velocity = -0.014610   m/yr: -0.000210   m/yr: -0.005210  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:165.0:
+                               170.0:180.0:185.0:190.0:195.0:200.0:240.0:245.0:
+                               250.0:255.0:265.0:270.0:275.0:280.0:285.0:360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  3.0:  2.0:  3.0:  2.0:  2.0:
+                                 3.0:  3.0:  4.0:  4.0:  3.0:  4.0:  4.0:  3.0:
+                                 4.0:  3.0:  3.0:  4.0:  3.0:  3.0:  2.0:  2.0;
+enddef;
+*
+def VLBA_BR;
+     site_type = fixed;
+     site_name = VLBA_BR;
+     site_ID = Br;
+*    elev=  250.48 long= 119:40:59. lat= 48:07:52.4
+     site_position =-2112065.20620 m:-3705356.50480 m: 4726813.67590 m;
+     site_velocity = -0.014820   m/yr:  0.000510   m/yr: -0.007190  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 25.0: 30.0: 40.0: 45.0: 70.0:
+                                75.0:120.0:125.0:130.0:135.0:155.0:160.0:185.0:
+                               190.0:195.0:220.0:225.0:235.0:240.0:245.0:250.0:
+                               255.0:265.0:270.0:275.0:300.0:305.0:310.0:315.0:
+                               330.0:335.0:340.0:345.0:350.0:360.0;
+     horizon_map_el =  2.0 deg:  2.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:  4.0:
+                                 5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:  2.0:
+                                 3.0:  4.0:  4.0:  3.0:  3.0:  4.0:  4.0:  5.0:
+                                 6.0:  6.0:  5.0:  6.0:  6.0:  5.0:  6.0:  5.0:
+                                 5.0:  4.0:  4.0:  3.0:  2.0:  2.0;
+enddef;
+*
+def VLBA_KP;
+     site_type = fixed;
+     site_name = VLBA_KP;
+     site_ID = Kp;
+*    elev= 1901.99 long= 111:36:44. lat= 31:57:22.7
+     site_position =-1995678.84020 m:-5037317.69680 m: 3357328.02510 m;
+     site_velocity = -0.013740   m/yr:  0.000790   m/yr: -0.006170  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 45.0: 50.0: 55.0: 60.0: 65.0: 70.0: 75.0:
+                                80.0: 85.0: 90.0: 95.0:105.0:110.0:115.0:120.0:
+                               150.0:155.0:165.0:170.0:180.0:185.0:215.0:220.0:
+                               225.0:230.0:235.0:240.0:255.0:260.0:265.0:270.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  5.0:  6.0:  7.0:  7.0:  8.0:  8.0:
+                                 9.0:  6.0:  3.0:  2.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 4.0:  5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_LA;
+     site_type = fixed;
+     site_name = VLBA_LA;
+     site_ID = La;
+*    elev= 1962.43 long= 106:14:44. lat= 35:46:30.4
+     site_position =-1449752.58390 m:-4975298.57570 m: 3709123.84590 m;
+     site_velocity = -0.014400   m/yr:  0.000550   m/yr: -0.004710  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 75.0: 80.0: 85.0:130.0:135.0:145.0:150.0:
+                               250.0:255.0:300.0:305.0:315.0:320.0:340.0:345.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  2.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  4.0:  4.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_MK;
+     site_type = fixed;
+     site_name = VLBA_MK;
+     site_ID = Mk;
+*    elev= 3763.02 long= 155:27:19. lat= 19:48:05.0
+     site_position =-5464075.18470 m:-2495248.10550 m: 2148297.36490 m;
+     site_velocity = -0.014440   m/yr:  0.062640   m/yr:  0.032340  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2013y001d;
+     site_position_epoch =   56293;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0:120.0:125.0:130.0:135.0:
+                               140.0:145.0:150.0:155.0:160.0:165.0:170.0:175.0:
+                               185.0:190.0:195.0:200.0:205.0:210.0:215.0:220.0:
+                               255.0:260.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:320.0:325.0:330.0:335.0:
+                               340.0:345.0:350.0:355.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  3.0:  3.0:  2.0:  2.0:  4.0:  5.0:  5.0:
+                                 4.0:  4.0:  6.0:  8.0:  8.0: 11.0: 12.0: 13.0:
+                                13.0: 11.0: 11.0:  9.0:  7.0:  5.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  5.0:  6.0:  8.0: 10.0: 12.0:
+                                14.0: 12.0: 11.0:  9.0: 10.0: 11.0: 10.0: 12.0:
+                                14.0: 12.0:  9.0:  7.0:  5.0;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def EB_RDBE;
+     axis_type = az : el;
+     antenna_motion = el :  15.0 deg/min :  9 sec;  *    0.020 deg/sec/sec
+     antenna_motion = az :  25.0 deg/min :  9 sec;  *    0.020 deg/sec/sec
+     axis_offset =    0.01450 m;
+enddef;
+*
+def ONSALA60;
+     axis_type = az : el;
+     antenna_motion = el :  57.0 deg/min :  5 sec;  *    0.400 deg/sec/sec
+     antenna_motion = az : 180.0 deg/min :  5 sec;  *    0.300 deg/sec/sec
+     axis_offset =   -0.00830 m;
+enddef;
+*
+def YEBES40M;
+     axis_type = az : el;
+     antenna_motion = el :  60.0 deg/min : 15 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az :  60.0 deg/min : 15 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    2.00030 m;
+enddef;
+*
+def PICOVEL;
+     axis_type = az : el;
+     antenna_motion = el :  30.0 deg/min : 20 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az :  30.0 deg/min : 20 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def PDBURE;
+     axis_type = az : el;
+     antenna_motion = el :  30.0 deg/min : 20 sec;  * 1000.000 deg/sec/sec
+     antenna_motion = az :  30.0 deg/min : 20 sec;  * 1000.000 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def VLBA_FD;
+     axis_type = az : el;
+     antenna_motion = el :  30.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13140 m;
+enddef;
+*
+def VLBA_NL;
+     axis_type = az : el;
+     antenna_motion = el :  28.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13080 m;
+enddef;
+*
+def VLBA_OV;
+     axis_type = az : el;
+     antenna_motion = el :  28.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13060 m;
+enddef;
+*
+def VLBA_PT;
+     axis_type = az : el;
+     antenna_motion = el :  29.3 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13750 m;
+enddef;
+*
+def VLBA_BR;
+     axis_type = az : el;
+     antenna_motion = el :  29.0 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  83.6 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.12990 m;
+enddef;
+*
+def VLBA_KP;
+     axis_type = az : el;
+     antenna_motion = el :  29.4 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  80.8 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13120 m;
+enddef;
+*
+def VLBA_LA;
+     axis_type = az : el;
+     antenna_motion = el :  29.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.0 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13210 m;
+enddef;
+*
+def VLBA_MK;
+     axis_type = az : el;
+     antenna_motion = el :  28.3 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  86.8 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13430 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 2RDBE2+NONE<;
+     record_transport_type = Mark5C;
+     electronics_rack_type = RDBE2;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*
+def 2DBBC+NONE<;
+     record_transport_type = Mark5B;
+     electronics_rack_type = DBBC;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*
+def 2MKIV+NONE<Mark5A;
+     record_transport_type = Mark5A;
+     electronics_rack_type = Mark4;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*
+def 2RDBE2+NONE<#02;
+     record_transport_type = Mark5C;
+     electronics_rack_type = RDBE2;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def OJ287;
+     source_name = OJ287;
+*    this source had calibrator code: V
+*    alternate source name: J0854+2006
+*    alternate source name: 0851+202
+*    alternate source name: J0854+20
+*    GSFC 2015a astro solution, unpublished 216540 observations.
+     ra = 08h54m48.8749264s; dec =  20d06'30.640881"; ref_coord_frame = J2000;
+*    ra = 08h51m57.2506147s; dec =  20d17'58.417428"; ref_coord_frame = B1950;
+*    ra = 08h55m41.1868183s; dec =  20d02'52.471503"; ref_coord_frame = Date;
+enddef;
+*
+def 1055+018;
+     source_name = 1055+018;
+*    this source had calibrator code: V
+*    alternate source name: J1058+0133
+*    alternate source name: J1058+01
+*    GSFC 2015a astro solution, unpublished   7063 observations.
+     ra = 10h58m29.6052075s; dec =  01d33'58.823748"; ref_coord_frame = J2000;
+*    ra = 10h55m55.3137298s; dec =  01d50'03.537243"; ref_coord_frame = B1950;
+*    ra = 10h59m17.4936262s; dec =  01d28'54.493222"; ref_coord_frame = Date;
+enddef;
+*
+def 1156+295;
+     source_name = 1156+295;
+*    this source had calibrator code: V
+*    alternate source name: J1159+2914
+*    alternate source name: J1159+29
+*    GSFC 2015a astro solution, unpublished  69878 observations.
+     ra = 11h59m31.8339117s; dec =  29d14'43.826921"; ref_coord_frame = J2000;
+*    ra = 11h56m57.7862111s; dec =  29d31'25.738823"; ref_coord_frame = B1950;
+*    ra = 12h00m19.6699963s; dec =  29d09'39.049948"; ref_coord_frame = Date;
+enddef;
+*
+def 3C279;
+     source_name = 3C279;
+*    this source had calibrator code: V
+*    alternate source name: J1256-0547
+*    alternate source name: 1253-055
+*    alternate source name: J1256-05
+*    GSFC 2015a astro solution, unpublished   7533 observations.
+     ra = 12h56m11.1665682s; dec = -05d47'21.524998"; ref_coord_frame = J2000;
+*    ra = 12h53m35.8313006s; dec = -05d31'07.996138"; ref_coord_frame = B1950;
+*    ra = 12h57m00.0567377s; dec = -05d52'24.454350"; ref_coord_frame = Date;
+enddef;
+*
+def P-RCNC;
+     source_name = P-RCNC;
+*    this source had calibrator code: L
+*    Baudry pos, sest vel
+     ra = 08h16m33.8260000s; dec =  11d43'34.600000"; ref_coord_frame = J2000;
+*    ra = 08h13m48.4798728s; dec =  11d52'51.974354"; ref_coord_frame = B1950;
+*    ra = 08h17m24.1160208s; dec =  11d40'32.316837"; ref_coord_frame = Date;
+*    velocity_wrt_LSR =      14.00 km/sec; * warning, only given here for 1st channel
+*    calculations used radio definition 
+enddef;
+*
+def P-RLMI;
+     source_name = P-RLMI;
+*    this source had calibrator code: L
+*    alternate source name: SIO-RLMI
+*    sest
+     ra = 09h45m34.1000000s; dec =  34d30'43.900000"; ref_coord_frame = J2000;
+*    ra = 09h42m34.5676220s; dec =  34d44'34.720792"; ref_coord_frame = B1950;
+*    ra = 09h46m28.8943659s; dec =  34d26'28.700876"; ref_coord_frame = Date;
+*    velocity_wrt_LSR =       2.00 km/sec; * warning, only given here for 1st channel
+*    calculations used radio definition 
+enddef;
+*
+def P-RLEO;
+     source_name = P-RLEO;
+*    this source had calibrator code: L
+*    alternate source name: SIO-RLEO
+*    alternate source name: RLEO
+*    baudry pos, sest vel.
+     ra = 09h47m33.4900000s; dec =  11d25'43.990000"; ref_coord_frame = J2000;
+*    ra = 09h44m52.2194249s; dec =  11d39'40.092138"; ref_coord_frame = B1950;
+*    ra = 09h48m23.0055172s; dec =  11d21'19.407009"; ref_coord_frame = Date;
+*    velocity_wrt_LSR =       3.00 km/sec; * warning, only given here for 1st channel
+*    calculations used radio definition 
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 86380.00MHz16x32MHz;
+* mode =  1    stations =Eb:On:Ys:PV:Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 86380.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &L_Cal; *Rcp
+     chan_def = : 86380.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &L_Cal; *Lcp
+     chan_def = : 86348.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &L_Cal; *Rcp
+     chan_def = : 86348.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &L_Cal; *Lcp
+     chan_def = : 86316.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &L_Cal; *Rcp
+     chan_def = : 86316.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &L_Cal; *Lcp
+     chan_def = : 86284.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &L_Cal; *Rcp
+     chan_def = : 86284.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &L_Cal; *Lcp
+     chan_def = : 86252.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &L_Cal; *Rcp
+     chan_def = : 86252.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &L_Cal; *Lcp
+     chan_def = : 86220.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &L_Cal; *Rcp
+     chan_def = : 86220.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &L_Cal; *Lcp
+     chan_def = : 86188.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &L_Cal; *Rcp
+     chan_def = : 86188.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &L_Cal; *Lcp
+     chan_def = : 86156.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &L_Cal; *Rcp
+     chan_def = : 86156.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &L_Cal; *Lcp
+enddef;
+*
+def 86140.00MHz16x16MHz;
+* mode =  1    stations =PB
+     sample_rate =  32.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 86140.00 MHz : L :  16.00 MHz : &CH01 : &BBC01 : &L_Cal; *Lcp
+     chan_def = : 86140.00 MHz : L :  16.00 MHz : &CH02 : &BBC05 : &L_Cal; *Rcp
+     chan_def = : 86140.00 MHz : U :  16.00 MHz : &CH03 : &BBC01 : &L_Cal; *Lcp
+     chan_def = : 86140.00 MHz : U :  16.00 MHz : &CH04 : &BBC05 : &L_Cal; *Rcp
+     chan_def = : 86172.00 MHz : L :  16.00 MHz : &CH05 : &BBC02 : &L_Cal; *Lcp
+     chan_def = : 86172.00 MHz : L :  16.00 MHz : &CH06 : &BBC06 : &L_Cal; *Rcp
+     chan_def = : 86172.00 MHz : U :  16.00 MHz : &CH07 : &BBC02 : &L_Cal; *Lcp
+     chan_def = : 86172.00 MHz : U :  16.00 MHz : &CH08 : &BBC06 : &L_Cal; *Rcp
+     chan_def = : 86204.00 MHz : L :  16.00 MHz : &CH09 : &BBC03 : &L_Cal; *Lcp
+     chan_def = : 86204.00 MHz : L :  16.00 MHz : &CH10 : &BBC07 : &L_Cal; *Rcp
+     chan_def = : 86204.00 MHz : U :  16.00 MHz : &CH11 : &BBC03 : &L_Cal; *Lcp
+     chan_def = : 86204.00 MHz : U :  16.00 MHz : &CH12 : &BBC07 : &L_Cal; *Rcp
+     chan_def = : 86236.00 MHz : L :  16.00 MHz : &CH13 : &BBC04 : &L_Cal; *Lcp
+     chan_def = : 86236.00 MHz : L :  16.00 MHz : &CH14 : &BBC08 : &L_Cal; *Rcp
+     chan_def = : 86236.00 MHz : U :  16.00 MHz : &CH15 : &BBC04 : &L_Cal; *Lcp
+     chan_def = : 86236.00 MHz : U :  16.00 MHz : &CH16 : &BBC08 : &L_Cal; *Rcp
+enddef;
+*
+def 43312.00MHz16x32MHz;
+* mode =  2    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &L_Cal; *Rcp
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &L_Cal; *Lcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &L_Cal; *Rcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &L_Cal; *Lcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &L_Cal; *Rcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &L_Cal; *Lcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &L_Cal; *Rcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &L_Cal; *Lcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &L_Cal; *Rcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &L_Cal; *Lcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &L_Cal; *Rcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &L_Cal; *Lcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &L_Cal; *Rcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &L_Cal; *Lcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &L_Cal; *Rcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &L_Cal; *Lcp
+enddef;
+*
+def 43312.00MHz16x32MHz#02;
+* mode =  3    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &NoCal; *Rcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &NoCal; *Lcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &NoCal; *Rcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &NoCal; *Lcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &NoCal; *Rcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &NoCal; *Lcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &NoCal; *Rcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &NoCal; *Lcp
+enddef;
+*
+def 43312.00MHz16x32MHz#03;
+* mode =  4    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &NoCal; *Rcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &NoCal; *Lcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &NoCal; *Rcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &NoCal; *Lcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &NoCal; *Rcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &NoCal; *Lcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &NoCal; *Rcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &NoCal; *Lcp
+enddef;
+*
+def 43312.00MHz16x32MHz#04;
+* mode =  5    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &NoCal; *Rcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &NoCal; *Lcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &NoCal; *Rcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &NoCal; *Lcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &NoCal; *Rcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &NoCal; *Lcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &NoCal; *Rcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &NoCal; *Lcp
+enddef;
+*
+def 43312.00MHz16x32MHz#05;
+* mode =  6    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &NoCal; *Rcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &NoCal; *Lcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &NoCal; *Rcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &NoCal; *Lcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &NoCal; *Rcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &NoCal; *Lcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &NoCal; *Rcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &NoCal; *Lcp
+enddef;
+*
+def 43312.00MHz16x32MHz#06;
+* mode =  7    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &NoCal; *Rcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &NoCal; *Lcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &NoCal; *Rcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &NoCal; *Lcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &NoCal; *Rcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &NoCal; *Lcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &NoCal; *Rcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &NoCal; *Lcp
+enddef;
+*
+def 43312.00MHz16x32MHz#07;
+* mode =  8    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = : 43312.00 MHz : L :  32.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = : 43280.00 MHz : L :  32.00 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = : 43248.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = : 43216.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &NoCal; *Rcp
+     chan_def = : 43184.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &NoCal; *Lcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &NoCal; *Rcp
+     chan_def = : 43152.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &NoCal; *Lcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &NoCal; *Rcp
+     chan_def = : 43120.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &NoCal; *Lcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &NoCal; *Rcp
+     chan_def = : 43088.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &NoCal; *Lcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@85500MHzDPolTone/1;
+* mode =  1    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     if_def = &IF_B : B : R : 85500.00 MHz : U : 1 MHz ; *   12900.00   4900.00  3mm 72600 NA
+     if_def = &IF_D : D : L : 85500.00 MHz : U : 1 MHz ; *   12900.00   4900.00  3mm 72600 NA
+enddef;
+*
+def LO@85500MHzDPolTone/1#02;
+* mode =  1    stations =Eb
+     if_def = &IF_A : A : R : 85500.00 MHz : U : 1 MHz ; *   0.0   0.0  3mm     0 NA
+     if_def = &IF_C : C : L : 85500.00 MHz : U : 1 MHz ; *   0.0   0.0  3mm     0 NA
+enddef;
+*
+def LO@85500MHzDPolTone/1#03;
+* mode =  1    stations =On:Ys
+     if_def = &IF_A1 : A1 : R : 85500.00 MHz : U : 1 MHz ; *   0.0   0.0  NA     0 NA
+     if_def = &IF_B3 : B3 : L : 85500.00 MHz : U : 1 MHz ; *   0.0   0.0  NA     0 NA
+enddef;
+*
+def LO@85500MHzDPolTone/1#04;
+* mode =  1    stations =PV
+     if_def = &IF_A1 : A1 : R : 85500.00 MHz : U : 1 MHz ; *   0.0   0.0  NA     0 NA
+     if_def = &IF_B4 : B4 : L : 85500.00 MHz : U : 1 MHz ; *   0.0   0.0  NA     0 NA
+enddef;
+*
+def LO@85836MHzDPolTone/1;
+* mode =  1    stations =PB
+     if_def = &IF_1N : 1N : L : 85836.00 MHz : U : 1 MHz ; *   0.0   0.0  NA     0 NA
+     if_def = &IF_2N : 2N : R : 85836.00 MHz : U : 1 MHz ; *   0.0   0.0  NA     0 NA
+enddef;
+*
+def LO@42400MHzDPolTone/1;
+* mode =  2    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     if_def = &IF_A : A : R : 42400.00 MHz : U : 1 MHz ; *    3900.00   7600.00  7mm 34800 NA
+     if_def = &IF_C : C : L : 42400.00 MHz : U : 1 MHz ; *    3900.00   7600.00  7mm 34800 NA
+enddef;
+*
+def LO@42400MHzDPolNoTone;
+* mode =  3    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     if_def = &IF_A : A : R : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+     if_def = &IF_C : C : L : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+enddef;
+*
+def LO@42400MHzDPolNoTone#02;
+* mode =  4    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     if_def = &IF_A : A : R : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+     if_def = &IF_C : C : L : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+enddef;
+*
+def LO@42400MHzDPolNoTone#03;
+* mode =  5    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     if_def = &IF_A : A : R : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+     if_def = &IF_C : C : L : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+enddef;
+*
+def LO@42400MHzDPolNoTone#04;
+* mode =  6    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     if_def = &IF_A : A : R : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+     if_def = &IF_C : C : L : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+enddef;
+*
+def LO@42400MHzDPolNoTone#05;
+* mode =  7    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     if_def = &IF_A : A : R : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+     if_def = &IF_C : C : L : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+enddef;
+*
+def LO@42400MHzDPolNoTone#06;
+* mode =  8    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     if_def = &IF_A : A : R : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+     if_def = &IF_C : C : L : 42400.00 MHz : U ; * PCall off!    3900.00   7600.00  7mm 34800 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 16BBCs;
+* mode =  1    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     BBC_assign = &BBC01 :  1 : &IF_B;
+     BBC_assign = &BBC02 :  2 : &IF_D;
+     BBC_assign = &BBC03 :  3 : &IF_B;
+     BBC_assign = &BBC04 :  4 : &IF_D;
+     BBC_assign = &BBC05 :  5 : &IF_B;
+     BBC_assign = &BBC06 :  6 : &IF_D;
+     BBC_assign = &BBC07 :  7 : &IF_B;
+     BBC_assign = &BBC08 :  8 : &IF_D;
+     BBC_assign = &BBC09 :  9 : &IF_B;
+     BBC_assign = &BBC10 : 10 : &IF_D;
+     BBC_assign = &BBC11 : 11 : &IF_B;
+     BBC_assign = &BBC12 : 12 : &IF_D;
+     BBC_assign = &BBC13 : 13 : &IF_B;
+     BBC_assign = &BBC14 : 14 : &IF_D;
+     BBC_assign = &BBC15 : 15 : &IF_B;
+     BBC_assign = &BBC16 : 16 : &IF_D;
+enddef;
+*
+def 16BBCs#02;
+* mode =  1    stations =Eb
+* mode =  2    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  3    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  4    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  5    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  6    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  7    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  8    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_C;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_C;
+     BBC_assign = &BBC05 :  5 : &IF_A;
+     BBC_assign = &BBC06 :  6 : &IF_C;
+     BBC_assign = &BBC07 :  7 : &IF_A;
+     BBC_assign = &BBC08 :  8 : &IF_C;
+     BBC_assign = &BBC09 :  9 : &IF_A;
+     BBC_assign = &BBC10 : 10 : &IF_C;
+     BBC_assign = &BBC11 : 11 : &IF_A;
+     BBC_assign = &BBC12 : 12 : &IF_C;
+     BBC_assign = &BBC13 : 13 : &IF_A;
+     BBC_assign = &BBC14 : 14 : &IF_C;
+     BBC_assign = &BBC15 : 15 : &IF_A;
+     BBC_assign = &BBC16 : 16 : &IF_C;
+enddef;
+*
+def 16BBCs#03;
+* mode =  1    stations =On:Ys
+     BBC_assign = &BBC01 :  1 : &IF_A1;
+     BBC_assign = &BBC02 :  2 : &IF_B3;
+     BBC_assign = &BBC03 :  3 : &IF_A1;
+     BBC_assign = &BBC04 :  4 : &IF_B3;
+     BBC_assign = &BBC05 :  5 : &IF_A1;
+     BBC_assign = &BBC06 :  6 : &IF_B3;
+     BBC_assign = &BBC07 :  7 : &IF_A1;
+     BBC_assign = &BBC08 :  8 : &IF_B3;
+     BBC_assign = &BBC09 :  9 : &IF_A1;
+     BBC_assign = &BBC10 : 10 : &IF_B3;
+     BBC_assign = &BBC11 : 11 : &IF_A1;
+     BBC_assign = &BBC12 : 12 : &IF_B3;
+     BBC_assign = &BBC13 : 13 : &IF_A1;
+     BBC_assign = &BBC14 : 14 : &IF_B3;
+     BBC_assign = &BBC15 : 15 : &IF_A1;
+     BBC_assign = &BBC16 : 16 : &IF_B3;
+enddef;
+*
+def 16BBCs#04;
+* mode =  1    stations =PV
+     BBC_assign = &BBC01 :  1 : &IF_A1;
+     BBC_assign = &BBC02 :  2 : &IF_B4;
+     BBC_assign = &BBC03 :  3 : &IF_A1;
+     BBC_assign = &BBC04 :  4 : &IF_B4;
+     BBC_assign = &BBC05 :  5 : &IF_A1;
+     BBC_assign = &BBC06 :  6 : &IF_B4;
+     BBC_assign = &BBC07 :  7 : &IF_A1;
+     BBC_assign = &BBC08 :  8 : &IF_B4;
+     BBC_assign = &BBC09 :  9 : &IF_A1;
+     BBC_assign = &BBC10 : 10 : &IF_B4;
+     BBC_assign = &BBC11 : 11 : &IF_A1;
+     BBC_assign = &BBC12 : 12 : &IF_B4;
+     BBC_assign = &BBC13 : 13 : &IF_A1;
+     BBC_assign = &BBC14 : 14 : &IF_B4;
+     BBC_assign = &BBC15 : 15 : &IF_A1;
+     BBC_assign = &BBC16 : 16 : &IF_B4;
+enddef;
+*
+def 16BBCs#05;
+* mode =  1    stations =PB
+     BBC_assign = &BBC01 :  1 : &IF_1N;
+     BBC_assign = &BBC05 :  5 : &IF_2N;
+     BBC_assign = &BBC02 :  2 : &IF_1N;
+     BBC_assign = &BBC06 :  6 : &IF_2N;
+     BBC_assign = &BBC03 :  3 : &IF_1N;
+     BBC_assign = &BBC07 :  7 : &IF_2N;
+     BBC_assign = &BBC04 :  4 : &IF_1N;
+     BBC_assign = &BBC08 :  8 : &IF_2N;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def LsbDetect;
+* mode =  1    stations =Eb:On:Ys:PV:Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     phase_cal_detect = &L_Cal :  2;
+enddef;
+*
+def DsbDetect;
+* mode =  1    stations =PB
+     phase_cal_detect = &L_Cal :  2;
+enddef;
+*
+def LsbDetect#02;
+* mode =  2    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     phase_cal_detect = &L_Cal :  2;
+enddef;
+*
+def NoDetect;
+* mode =  3    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     phase_cal_detect = &NoCal;
+enddef;
+*
+def NoDetect#02;
+* mode =  4    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     phase_cal_detect = &NoCal;
+enddef;
+*
+def NoDetect#03;
+* mode =  5    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     phase_cal_detect = &NoCal;
+enddef;
+*
+def NoDetect#04;
+* mode =  6    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     phase_cal_detect = &NoCal;
+enddef;
+*
+def NoDetect#05;
+* mode =  7    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     phase_cal_detect = &NoCal;
+enddef;
+*
+def NoDetect#06;
+* mode =  8    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+     phase_cal_detect = &NoCal;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def MARK5B.16Ch2bit1to1;
+* mode =  1    stations =Eb:Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+*    firmware_type = RDBE_PFB;
+*    format = MARK5B, and fan-out = 1
+*    mode requires  64.00Mb/s/tr; stations using disks
+     track_frame_format = MARK5B;
+     fanout_def =   : &CH01 : sign : 1:  2;
+     fanout_def =   : &CH01 :  mag : 1:  3;
+     fanout_def =   : &CH02 : sign : 1:  4;
+     fanout_def =   : &CH02 :  mag : 1:  5;
+     fanout_def =   : &CH03 : sign : 1:  6;
+     fanout_def =   : &CH03 :  mag : 1:  7;
+     fanout_def =   : &CH04 : sign : 1:  8;
+     fanout_def =   : &CH04 :  mag : 1:  9;
+     fanout_def =   : &CH05 : sign : 1: 10;
+     fanout_def =   : &CH05 :  mag : 1: 11;
+     fanout_def =   : &CH06 : sign : 1: 12;
+     fanout_def =   : &CH06 :  mag : 1: 13;
+     fanout_def =   : &CH07 : sign : 1: 14;
+     fanout_def =   : &CH07 :  mag : 1: 15;
+     fanout_def =   : &CH08 : sign : 1: 16;
+     fanout_def =   : &CH08 :  mag : 1: 17;
+     fanout_def =   : &CH09 : sign : 1: 18;
+     fanout_def =   : &CH09 :  mag : 1: 19;
+     fanout_def =   : &CH10 : sign : 1: 20;
+     fanout_def =   : &CH10 :  mag : 1: 21;
+     fanout_def =   : &CH11 : sign : 1: 22;
+     fanout_def =   : &CH11 :  mag : 1: 23;
+     fanout_def =   : &CH12 : sign : 1: 24;
+     fanout_def =   : &CH12 :  mag : 1: 25;
+     fanout_def =   : &CH13 : sign : 1: 26;
+     fanout_def =   : &CH13 :  mag : 1: 27;
+     fanout_def =   : &CH14 : sign : 1: 28;
+     fanout_def =   : &CH14 :  mag : 1: 29;
+     fanout_def =   : &CH15 : sign : 1: 30;
+     fanout_def =   : &CH15 :  mag : 1: 31;
+     fanout_def =   : &CH16 : sign : 1: 32;
+     fanout_def =   : &CH16 :  mag : 1: 33;
+enddef;
+*
+def MARK5B.16Ch2bit1to1#02;
+* mode =  1    stations =On:Ys:PV
+*    firmware_type = DBBC_PFB;
+*    format = MARK5B, and fan-out = 1
+*    mode requires  64.00Mb/s/tr; stations using disks
+     track_frame_format = MARK5B;
+     fanout_def =   : &CH01 : sign : 1:  2;
+     fanout_def =   : &CH01 :  mag : 1:  3;
+     fanout_def =   : &CH02 : sign : 1:  4;
+     fanout_def =   : &CH02 :  mag : 1:  5;
+     fanout_def =   : &CH03 : sign : 1:  6;
+     fanout_def =   : &CH03 :  mag : 1:  7;
+     fanout_def =   : &CH04 : sign : 1:  8;
+     fanout_def =   : &CH04 :  mag : 1:  9;
+     fanout_def =   : &CH05 : sign : 1: 10;
+     fanout_def =   : &CH05 :  mag : 1: 11;
+     fanout_def =   : &CH06 : sign : 1: 12;
+     fanout_def =   : &CH06 :  mag : 1: 13;
+     fanout_def =   : &CH07 : sign : 1: 14;
+     fanout_def =   : &CH07 :  mag : 1: 15;
+     fanout_def =   : &CH08 : sign : 1: 16;
+     fanout_def =   : &CH08 :  mag : 1: 17;
+     fanout_def =   : &CH09 : sign : 1: 18;
+     fanout_def =   : &CH09 :  mag : 1: 19;
+     fanout_def =   : &CH10 : sign : 1: 20;
+     fanout_def =   : &CH10 :  mag : 1: 21;
+     fanout_def =   : &CH11 : sign : 1: 22;
+     fanout_def =   : &CH11 :  mag : 1: 23;
+     fanout_def =   : &CH12 : sign : 1: 24;
+     fanout_def =   : &CH12 :  mag : 1: 25;
+     fanout_def =   : &CH13 : sign : 1: 26;
+     fanout_def =   : &CH13 :  mag : 1: 27;
+     fanout_def =   : &CH14 : sign : 1: 28;
+     fanout_def =   : &CH14 :  mag : 1: 29;
+     fanout_def =   : &CH15 : sign : 1: 30;
+     fanout_def =   : &CH15 :  mag : 1: 31;
+     fanout_def =   : &CH16 : sign : 1: 32;
+     fanout_def =   : &CH16 :  mag : 1: 33;
+enddef;
+*
+def MKIV.16Ch2bit1to2;
+* mode =  1    stations =PB
+*    format = MKIV1:2, and fan-out = 2
+*    mode requires  16.00Mb/s/tr; stations using disks
+     track_frame_format = Mark4;
+     data_modulation = off;
+     fanout_def =   : &CH01 : sign : 1:  2:  4;
+     fanout_def =   : &CH01 :  mag : 1:  6:  8;
+     fanout_def =   : &CH02 : sign : 1: 10: 12;
+     fanout_def =   : &CH02 :  mag : 1: 14: 16;
+     fanout_def =   : &CH03 : sign : 1: 18: 20;
+     fanout_def =   : &CH03 :  mag : 1: 22: 24;
+     fanout_def =   : &CH04 : sign : 1: 26: 28;
+     fanout_def =   : &CH04 :  mag : 1: 30: 32;
+     fanout_def =   : &CH05 : sign : 1:  3:  5;
+     fanout_def =   : &CH05 :  mag : 1:  7:  9;
+     fanout_def =   : &CH06 : sign : 1: 11: 13;
+     fanout_def =   : &CH06 :  mag : 1: 15: 17;
+     fanout_def =   : &CH07 : sign : 1: 19: 21;
+     fanout_def =   : &CH07 :  mag : 1: 23: 25;
+     fanout_def =   : &CH08 : sign : 1: 27: 29;
+     fanout_def =   : &CH08 :  mag : 1: 31: 33;
+     fanout_def =   : &CH09 : sign : 2:  2:  4;
+     fanout_def =   : &CH09 :  mag : 2:  6:  8;
+     fanout_def =   : &CH10 : sign : 2: 10: 12;
+     fanout_def =   : &CH10 :  mag : 2: 14: 16;
+     fanout_def =   : &CH11 : sign : 2: 18: 20;
+     fanout_def =   : &CH11 :  mag : 2: 22: 24;
+     fanout_def =   : &CH12 : sign : 2: 26: 28;
+     fanout_def =   : &CH12 :  mag : 2: 30: 32;
+     fanout_def =   : &CH13 : sign : 2:  3:  5;
+     fanout_def =   : &CH13 :  mag : 2:  7:  9;
+     fanout_def =   : &CH14 : sign : 2: 11: 13;
+     fanout_def =   : &CH14 :  mag : 2: 15: 17;
+     fanout_def =   : &CH15 : sign : 2: 19: 21;
+     fanout_def =   : &CH15 :  mag : 2: 23: 25;
+     fanout_def =   : &CH16 : sign : 2: 27: 29;
+     fanout_def =   : &CH16 :  mag : 2: 31: 33;
+enddef;
+*
+def TRACKS.NONE;
+* mode =  2    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  3    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  4    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  5    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  6    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  7    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  8    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+*    firmware_type = RDBE_PFB;
+* This is a fake format for non-recording observations.
+     track_frame_format = NONE;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Eb:On:Ys:PV:PB:Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  2    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  3    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  4    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  5    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  6    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  7    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  8    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Eb:On:Ys:PV:PB:Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*
+def DiskVoid#02;
+* mode =  2    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  3    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  4    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  5    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  6    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  7    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  8    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Eb:On:Ys:PV:PB:Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  2    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  3    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  4    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  5    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  6    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  7    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+* mode =  8    stations =Fd:Nl:Ov:Pt:Br:Kp:La:Mk
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment c151a   
+* GMVA May 14-18, 2015, part A                                            
+scan No0064;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d17h00m00s; mode=3mm_RDBE; source=1055+018;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Eb:    0 sec:  390 sec:    0.000 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:    0.000 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:    0.000 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:    0.000 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:    0.000 GB:   :       : 1;
+endscan;
+scan No0065;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d17h15m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec:  100.000 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  100.000 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  100.000 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  100.000 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:   49.920 GB:   :       : 1;
+endscan;
+scan No0066;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d17h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec:  199.999 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  199.999 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  199.999 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  199.999 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:   99.840 GB:   :       : 1;
+endscan;
+scan No0067;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d17h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec:  299.999 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  299.999 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  299.999 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  299.999 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  149.760 GB:   :       : 1;
+endscan;
+scan No0068;
+*     Note a COMMENT was inserted during scheduling: 
+*       option 1: fringe search on OJ287
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d18h00m00s; mode=3mm_RDBE; source=OJ287;
+     station=Eb:    0 sec:  390 sec:  399.999 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  399.999 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  399.999 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  399.999 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  199.680 GB:   :       : 1;
+endscan;
+scan No0069;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d18h15m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec:  499.999 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  499.999 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  499.999 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  499.999 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  249.600 GB:   :       : 1;
+endscan;
+scan No0070;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d18h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec:  599.998 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  599.998 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  599.998 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  599.998 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  299.520 GB:   :       : 1;
+endscan;
+scan No0071;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d18h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec:  699.998 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  699.998 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  699.998 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  699.998 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  349.440 GB:   :       : 1;
+endscan;
+scan No0072;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d19h00m00s; mode=3mm_RDBE; source=OJ287;
+     station=Eb:    0 sec:  390 sec:  799.998 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  799.998 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  799.998 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  799.998 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  399.360 GB:   :       : 1;
+endscan;
+scan No0073;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d19h15m00s; mode=3mm_RDBE; source=1055+018;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Eb:    0 sec:  390 sec:  899.998 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  899.998 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  899.998 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  899.998 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  449.280 GB:   :       : 1;
+endscan;
+scan No0074;
+*     Note a COMMENT was inserted during scheduling: 
+*       option 2: fringe search  on 3C279
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d19h30m00s; mode=3mm_RDBE; source=3C279;
+     station=Eb:    0 sec:  390 sec:  999.997 GB:   :       : 1;
+     station=On:    0 sec:  390 sec:  999.997 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec:  999.997 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec:  999.997 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  499.200 GB:   :       : 1;
+endscan;
+scan No0075;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d19h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 1099.997 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1099.997 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1099.997 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1099.997 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  549.120 GB:   :       : 1;
+endscan;
+scan No0076;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d20h00m00s; mode=3mm_RDBE; source=OJ287;
+     station=Eb:    0 sec:  390 sec: 1199.997 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1199.997 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1199.997 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1199.997 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  599.040 GB:   :       : 1;
+endscan;
+scan No0077;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d20h15m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 1299.997 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1299.997 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1299.997 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1299.997 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  648.960 GB:   :       : 1;
+endscan;
+scan No0078;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d20h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 1399.996 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1399.996 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1399.996 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1399.996 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  698.880 GB:   :       : 1;
+endscan;
+scan No0079;
+* intent = "REFERENCE_POINTING_OFF"
+     start=2015y134d20h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 1499.996 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1499.996 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1499.996 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1499.996 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  748.800 GB:   :       : 1;
+endscan;
+scan No0080;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d20h57m32s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+endscan;
+scan No0081;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d20h58m38s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+endscan;
+scan No0082;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d20h57m36s; mode=PulseCalOFF#02; source=P-RCNC;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+endscan;
+scan No0083;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d20h58m42s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:    0.000 GB:   : &n    : 0;
+endscan;
+scan No0084;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d21h00m00s; mode=3mm_RDBE; source=OJ287;
+     station=Eb:    0 sec:  390 sec: 1599.996 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1599.996 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1599.996 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1599.996 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  798.720 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:    0.000 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec:    0.000 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec:    0.000 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:  390 sec:    0.000 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:    0.000 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:    0.000 GB:   : &ccw  : 1;
+     station=La:    0 sec:  390 sec:    0.000 GB:   : &n    : 1;
+endscan;
+scan No0085;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h12m06s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Nl:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+endscan;
+scan No0086;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h13m12s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Nl:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+endscan;
+scan No0087;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d21h15m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 1699.996 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1699.996 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1699.996 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1699.996 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  848.640 GB:   :       : 1;
+     station=Nl:    0 sec:  390 sec:  100.000 GB:   : &n    : 1;
+endscan;
+scan No0088;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h12m34s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+endscan;
+scan No0089;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h13m40s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+endscan;
+scan No0090;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h12m36s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+endscan;
+scan No0091;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h13m42s; mode=PulseCalOFF#02; source=P-RCNC;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  100.000 GB:   : &n    : 0;
+endscan;
+scan No0092;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d21h15m01s; mode=3mm_RDBE; source=OJ287;
+     station=Fd:    0 sec:  390 sec:  100.000 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec:  100.000 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  100.000 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  100.000 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  100.000 GB:   : &ccw  : 1;
+     station=La:    0 sec:  390 sec:  100.000 GB:   : &n    : 1;
+endscan;
+scan No0093;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h27m06s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Nl:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+endscan;
+scan No0094;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h28m12s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Nl:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+endscan;
+scan No0095;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d21h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 1799.995 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1799.995 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1799.995 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1799.995 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  898.560 GB:   :       : 1;
+     station=Nl:    0 sec:  390 sec:  199.999 GB:   : &n    : 1;
+endscan;
+scan No0096;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h27m33s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+endscan;
+scan No0097;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h28m39s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+endscan;
+scan No0098;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h27m36s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+endscan;
+scan No0099;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h28m42s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+endscan;
+scan No0100;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d21h30m01s; mode=3mm_RDBE; source=OJ287;
+     station=Fd:    0 sec:  390 sec:  199.999 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec:  199.999 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  199.999 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  199.999 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  199.999 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec:  199.999 GB:   : &n    : 1;
+endscan;
+scan No0101;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h42m06s; mode=PulseCalOFF#03; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+endscan;
+scan No0102;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h43m12s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+endscan;
+scan No0103;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d21h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 1899.995 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1899.995 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1899.995 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1899.995 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  948.480 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:  299.999 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec:  299.999 GB:   : &n    : 1;
+endscan;
+scan No0104;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h42m33s; mode=PulseCalOFF; source=P-RCNC;
+     station=Pt:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+endscan;
+scan No0105;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h43m39s; mode=PulseCalOFF; source=P-RCNC;
+     station=Pt:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+endscan;
+scan No0106;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h42m36s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+endscan;
+scan No0107;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h43m42s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+endscan;
+scan No0108;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d21h45m01s; mode=3mm_RDBE; source=OJ287;
+     station=Ov:    0 sec:  390 sec:  299.999 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  299.999 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  299.999 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  299.999 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec:  299.999 GB:   : &n    : 1;
+endscan;
+scan No0109;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h57m29s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+endscan;
+scan No0110;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h58m35s; mode=PulseCalOFF; source=P-RCNC;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+endscan;
+scan No0111;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h57m34s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+endscan;
+scan No0112;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d21h58m40s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+endscan;
+scan No0113;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d22h00m00s; mode=3mm_RDBE; source=OJ287;
+     station=Eb:    0 sec:  390 sec: 1999.995 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 1999.995 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 1999.995 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 1999.995 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec:  998.400 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:  399.999 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec:  399.999 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec:  399.999 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  399.999 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  399.999 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  399.999 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec:  399.999 GB:   : &n    : 1;
+endscan;
+scan No0114;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h12m05s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+endscan;
+scan No0115;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h13m11s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+endscan;
+scan No0116;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d22h15m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 2099.995 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2099.995 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2099.995 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2099.995 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1048.320 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:  499.999 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec:  499.999 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  499.999 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec:  499.999 GB:   : &n    : 1;
+endscan;
+scan No0117;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h12m32s; mode=PulseCalOFF; source=P-RCNC;
+     station=Kp:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+endscan;
+scan No0118;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h13m38s; mode=PulseCalOFF; source=P-RCNC;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Kp:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+endscan;
+scan No0119;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h12m34s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+endscan;
+scan No0120;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h13m40s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+endscan;
+scan No0121;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d22h15m01s; mode=3mm_RDBE; source=OJ287;
+     station=Ov:    0 sec:  390 sec:  499.999 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  499.999 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  499.999 GB:   : &n    : 1;
+endscan;
+scan No0122;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h27m05s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+endscan;
+scan No0123;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h28m11s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+endscan;
+scan No0124;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h27m05s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+endscan;
+scan No0125;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h28m11s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+endscan;
+scan No0126;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d22h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 2199.994 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2199.994 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2199.994 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2199.994 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1098.240 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:  599.998 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec:  599.998 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec:  599.998 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  599.998 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  599.998 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec:  599.998 GB:   : &n    : 1;
+endscan;
+scan No0127;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h42m05s; mode=PulseCalOFF#03; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+endscan;
+scan No0128;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h43m11s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+endscan;
+scan No0129;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h42m05s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+endscan;
+scan No0130;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h43m11s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+endscan;
+scan No0131;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d22h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 2299.994 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2299.994 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2299.994 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2299.994 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1148.160 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:  699.998 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec:  699.998 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec:  699.998 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  699.998 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  599.998 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  699.998 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec:  699.998 GB:   : &n    : 1;
+endscan;
+scan No0132;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h57m06s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+endscan;
+scan No0133;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h58m12s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+endscan;
+scan No0134;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h57m13s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+endscan;
+scan No0135;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d22h58m19s; mode=PulseCalOFF#04; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+endscan;
+scan No0136;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d23h00m00s; mode=3mm_RDBE; source=1156+295;
+     station=Eb:    0 sec:  390 sec: 2399.994 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2399.994 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2399.994 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2399.994 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1198.080 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:  799.998 GB:   : &ccw  : 1;
+     station=Nl:    0 sec:  390 sec:  799.998 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:  390 sec:  799.998 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:  390 sec:  799.998 GB:   : &ccw  : 1;
+     station=Br:    0 sec:  390 sec:  699.998 GB:   : &ccw  : 1;
+     station=Kp:    0 sec:  390 sec:  799.998 GB:   : &ccw  : 1;
+     station=La:    0 sec:  390 sec:  799.998 GB:   : &ccw  : 1;
+endscan;
+scan No0137;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h12m06s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+endscan;
+scan No0138;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h13m12s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+endscan;
+scan No0139;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h12m05s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+endscan;
+scan No0140;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h13m11s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+endscan;
+scan No0141;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d23h15m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 2499.994 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2499.994 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2499.994 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2499.994 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1248.000 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:  899.998 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec:  899.998 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec:  899.998 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  899.998 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  799.998 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  899.998 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec:  899.998 GB:   : &n    : 1;
+endscan;
+scan No0142;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h27m06s; mode=PulseCalOFF#03; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+endscan;
+scan No0143;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h28m12s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+endscan;
+scan No0144;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h27m05s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+endscan;
+scan No0145;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h28m11s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+endscan;
+scan No0146;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d23h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 2599.993 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2599.993 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2599.993 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2599.993 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1297.920 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec:  999.997 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec:  999.997 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec:  999.997 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec:  999.997 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  899.998 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec:  999.997 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec:  999.997 GB:   : &n    : 1;
+endscan;
+scan No0147;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h42m06s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+endscan;
+scan No0148;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h43m12s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+endscan;
+scan No0149;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h42m05s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+endscan;
+scan No0150;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h43m11s; mode=PulseCalOFF#04; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+endscan;
+scan No0151;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y134d23h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Eb:    0 sec:  390 sec: 2699.993 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2699.993 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2699.993 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1347.840 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec: 1099.997 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 1099.997 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1099.997 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 1099.997 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec:  999.997 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1099.997 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 1099.997 GB:   : &n    : 1;
+endscan;
+scan No0152;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h57m07s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+endscan;
+scan No0153;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h58m13s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+endscan;
+scan No0154;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h57m07s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+endscan;
+scan No0155;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y134d23h58m13s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+endscan;
+scan No0156;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d00h00m01s; mode=3mm_RDBE; source=1055+018;
+     station=Ys:    0 sec:  390 sec: 2799.993 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2799.993 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec: 1199.997 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 1199.997 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1199.997 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 1199.997 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 1099.997 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1199.997 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 1199.997 GB:   : &n    : 1;
+endscan;
+scan No0157;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d00h00m02s; mode=3mm_RDBE; source=1156+295;
+     station=Eb:    0 sec:  390 sec: 2799.993 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2699.993 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1397.760 GB:   :       : 1;
+endscan;
+scan No0158;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h11m53s; mode=PulseCalOFF#03; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+endscan;
+scan No0159;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h12m59s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+endscan;
+scan No0160;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h12m12s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+endscan;
+scan No0161;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h13m18s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+endscan;
+scan No0162;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d00h15m00s; mode=3mm_RDBE; source=1156+295;
+     station=Eb:    0 sec:  390 sec: 2899.993 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2799.993 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2899.993 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 2899.993 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1447.680 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec: 1299.997 GB:   : &ccw  : 1;
+     station=Nl:    0 sec:  390 sec: 1299.997 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1299.997 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:  390 sec: 1299.997 GB:   : &ccw  : 1;
+     station=Br:    0 sec:  390 sec: 1199.997 GB:   : &ccw  : 1;
+     station=Kp:    0 sec:  390 sec: 1299.997 GB:   : &ccw  : 1;
+     station=La:    0 sec:  390 sec: 1299.997 GB:   : &ccw  : 1;
+endscan;
+scan No0163;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h27m07s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+endscan;
+scan No0164;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h28m13s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+endscan;
+scan No0165;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h27m04s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:    0.000 GB:   : &ccw  : 0;
+endscan;
+scan No0166;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h28m10s; mode=PulseCalOFF#04; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:    0.000 GB:   : &ccw  : 0;
+endscan;
+scan No0167;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d00h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=PV:    0 sec:  390 sec: 2999.992 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec: 1399.996 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 1399.996 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1399.996 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 1399.996 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 1299.997 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1399.996 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 1399.996 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:    0.000 GB:   : &n    : 1;
+endscan;
+scan No0168;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d00h30m02s; mode=3mm_RDBE; source=1156+295;
+     station=Eb:    0 sec:  390 sec: 2999.992 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2899.993 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 2999.992 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1497.600 GB:   :       : 1;
+endscan;
+scan No0169;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h42m08s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+endscan;
+scan No0170;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h43m14s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+endscan;
+scan No0171;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h42m04s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  100.000 GB:   : &ccw  : 0;
+endscan;
+scan No0172;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h43m10s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  100.000 GB:   : &ccw  : 0;
+endscan;
+scan No0173;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d00h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 1499.996 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 1499.996 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1499.996 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 1499.996 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 1399.996 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1499.996 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 1499.996 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  100.000 GB:   : &n    : 1;
+endscan;
+scan No0174;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d00h45m02s; mode=3mm_RDBE; source=1156+295;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Eb:    0 sec:  390 sec: 3099.992 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 2999.992 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 3099.992 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 3099.992 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1547.520 GB:   :       : 1;
+endscan;
+scan No0175;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h56m45s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+endscan;
+scan No0176;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h57m51s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+endscan;
+scan No0177;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h56m53s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+endscan;
+scan No0178;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d00h57m59s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  199.999 GB:   : &n    : 0;
+endscan;
+scan No0179;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d01h00m00s; mode=3mm_RDBE; source=1156+295;
+     station=Eb:    0 sec:  390 sec: 3199.992 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 3099.992 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 3199.992 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 3199.992 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1597.440 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec: 1599.996 GB:   : &ccw  : 1;
+     station=Nl:    0 sec:  390 sec: 1599.996 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1599.996 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:  390 sec: 1599.996 GB:   : &ccw  : 1;
+     station=Br:    0 sec:  390 sec: 1499.996 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1599.996 GB:   : &ccw  : 1;
+     station=La:    0 sec:  390 sec: 1599.996 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  199.999 GB:   : &ccw  : 1;
+endscan;
+scan No0180;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h12m21s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+endscan;
+scan No0181;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h13m27s; mode=PulseCalOFF; source=P-RCNC;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+endscan;
+scan No0182;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h12m26s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+endscan;
+scan No0183;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h13m32s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  299.999 GB:   : &n    : 0;
+endscan;
+scan No0184;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d01h15m00s; mode=3mm_RDBE; source=OJ287;
+     station=Fd:    0 sec:  390 sec: 1699.996 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 1699.996 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1699.996 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 1699.996 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 1599.996 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1699.996 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 1699.996 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  299.999 GB:   : &ccw  : 1;
+endscan;
+scan No0185;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d01h15m02s; mode=3mm_RDBE; source=1156+295;
+     station=Eb:    0 sec:  390 sec: 3299.992 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 3199.992 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 3299.992 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 3299.992 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1647.360 GB:   :       : 1;
+endscan;
+scan No0186;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h27m14s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+endscan;
+scan No0187;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h28m20s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+endscan;
+scan No0188;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h27m04s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+endscan;
+scan No0189;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h28m10s; mode=PulseCalOFF#04; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1699.996 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  399.999 GB:   : &n    : 0;
+endscan;
+scan No0190;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d01h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 1799.995 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 1799.995 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1799.995 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 1799.995 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 1699.996 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1799.995 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 1799.995 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  399.999 GB:   : &n    : 1;
+endscan;
+scan No0191;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d01h30m02s; mode=3mm_RDBE; source=1156+295;
+     station=Eb:    0 sec:  390 sec: 3399.991 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 3299.992 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 3399.991 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 3399.991 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1697.280 GB:   :       : 1;
+endscan;
+scan No0192;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h41m28s; mode=ptr7mm; source=3C279;
+     station=Fd:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+endscan;
+scan No0193;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h42m34s; mode=ptr7mm; source=3C279;
+     station=Fd:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+endscan;
+scan No0194;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h41m51s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+endscan;
+scan No0195;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h42m57s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  499.999 GB:   : &n    : 0;
+endscan;
+scan No0196;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d01h45m00s; mode=3mm_RDBE; source=1156+295;
+     station=Eb:    0 sec:  390 sec: 3499.991 GB:   :       : 1;
+     station=On:    0 sec:  390 sec: 3399.991 GB:   :       : 1;
+     station=Ys:    0 sec:  390 sec: 3499.991 GB:   :       : 1;
+     station=PV:    0 sec:  390 sec: 3499.991 GB:   :       : 1;
+     station=PB:    0 sec:  390 sec: 1747.200 GB:   :       : 1;
+     station=Fd:    0 sec:  390 sec: 1899.995 GB:   : &ccw  : 1;
+     station=Nl:    0 sec:  390 sec: 1899.995 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1899.995 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 1899.995 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 1799.995 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1899.995 GB:   : &ccw  : 1;
+     station=La:    0 sec:  390 sec: 1899.995 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  499.999 GB:   : &ccw  : 1;
+endscan;
+scan No0197;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h57m15s; mode=PulseCalOFF#03; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+endscan;
+scan No0198;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h58m21s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+endscan;
+scan No0199;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h57m04s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+endscan;
+scan No0200;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d01h58m10s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  599.998 GB:   : &n    : 0;
+endscan;
+scan No0201;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d02h00m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 1999.995 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 1999.995 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 1999.995 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 1999.995 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 1899.995 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 1999.995 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 1999.995 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  599.998 GB:   : &n    : 1;
+endscan;
+scan No0202;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h12m20s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+endscan;
+scan No0203;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h13m26s; mode=PulseCalOFF; source=P-RCNC;
+     station=Fd:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+endscan;
+scan No0204;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h12m21s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+endscan;
+scan No0205;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h13m27s; mode=PulseCalOFF#02; source=P-RCNC;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  699.998 GB:   : &n    : 0;
+endscan;
+scan No0206;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d02h15m00s; mode=3mm_RDBE; source=OJ287;
+     station=Fd:    0 sec:  390 sec: 2099.995 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2099.995 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2099.995 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2099.995 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 1999.995 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2099.995 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2099.995 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  699.998 GB:   : &ccw  : 1;
+endscan;
+scan No0207;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h27m15s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+endscan;
+scan No0208;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h28m21s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+endscan;
+scan No0209;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h27m04s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+endscan;
+scan No0210;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h28m10s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  799.998 GB:   : &n    : 0;
+endscan;
+scan No0211;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d02h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 2199.994 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2199.994 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2199.994 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2199.994 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2099.995 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2199.994 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2199.994 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  799.998 GB:   : &n    : 1;
+endscan;
+scan No0212;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h41m30s; mode=ptr7mm; source=3C279;
+     station=Fd:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+endscan;
+scan No0213;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h42m36s; mode=ptr7mm; source=3C279;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+endscan;
+scan No0214;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h41m40s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+endscan;
+scan No0215;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h42m46s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  899.998 GB:   : &n    : 0;
+endscan;
+scan No0216;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d02h45m00s; mode=3mm_RDBE; source=1156+295;
+     station=Fd:    0 sec:  390 sec: 2299.994 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2299.994 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2299.994 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2299.994 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2199.994 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2299.994 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2299.994 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  899.998 GB:   : &ccw  : 1;
+endscan;
+scan No0217;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h57m15s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+endscan;
+scan No0218;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h58m21s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+endscan;
+scan No0219;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h57m04s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+endscan;
+scan No0220;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d02h58m10s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2299.994 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec:  999.997 GB:   : &n    : 0;
+endscan;
+scan No0221;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d03h00m00s; mode=3mm_RDBE; source=1055+018;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:  390 sec: 2399.994 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2399.994 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2399.994 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2399.994 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2299.994 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2399.994 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2399.994 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec:  999.997 GB:   : &n    : 1;
+endscan;
+scan No0222;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h12m25s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+endscan;
+scan No0223;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h13m31s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+endscan;
+scan No0224;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h12m15s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+endscan;
+scan No0225;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h13m21s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2399.994 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1099.997 GB:   : &n    : 0;
+endscan;
+scan No0226;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d03h15m00s; mode=3mm_RDBE; source=OJ287;
+     station=Fd:    0 sec:  390 sec: 2499.994 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2499.994 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2499.994 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2499.994 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2399.994 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2499.994 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2499.994 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1099.997 GB:   : &ccw  : 1;
+endscan;
+scan No0227;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h27m17s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+endscan;
+scan No0228;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h28m23s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+endscan;
+scan No0229;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h27m04s; mode=PulseCalOFF#04; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+endscan;
+scan No0230;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h28m10s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2499.994 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1199.997 GB:   : &n    : 0;
+endscan;
+scan No0231;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d03h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 2599.993 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2599.993 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2599.993 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2599.993 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2499.994 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2599.993 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2599.993 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1199.997 GB:   : &n    : 1;
+endscan;
+scan No0232;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h41m32s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+endscan;
+scan No0233;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h42m38s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+endscan;
+scan No0234;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h41m41s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+endscan;
+scan No0235;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h42m47s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2599.993 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1299.997 GB:   : &n    : 0;
+endscan;
+scan No0236;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d03h45m00s; mode=3mm_RDBE; source=1156+295;
+     station=Fd:    0 sec:  390 sec: 2699.993 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2699.993 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2699.993 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2699.993 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2599.993 GB:   : &n    : 1;
+     station=Kp:    2 sec:  390 sec: 2699.993 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2699.993 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1299.997 GB:   : &ccw  : 1;
+endscan;
+scan No0237;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h57m21s; mode=PulseCalOFF#03; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2799.480 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+endscan;
+scan No0238;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h58m27s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2799.480 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+endscan;
+scan No0239;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h57m04s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+endscan;
+scan No0240;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d03h58m10s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2699.993 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1399.996 GB:   : &n    : 0;
+endscan;
+scan No0241;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d04h00m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 2799.993 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2799.993 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2799.993 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2799.993 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2699.993 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2799.480 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2799.993 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1399.996 GB:   : &n    : 1;
+endscan;
+scan No0242;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h12m31s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2899.480 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+endscan;
+scan No0243;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h13m37s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2899.480 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+endscan;
+scan No0244;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h12m20s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+endscan;
+scan No0245;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h13m26s; mode=PulseCalOFF#02; source=P-RCNC;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2799.993 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1499.996 GB:   : &n    : 0;
+endscan;
+scan No0246;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d04h15m00s; mode=3mm_RDBE; source=OJ287;
+     station=Fd:    0 sec:  390 sec: 2899.993 GB:   : &cw   : 1;
+     station=Nl:    0 sec:  390 sec: 2899.993 GB:   : &cw   : 1;
+     station=Ov:    0 sec:  390 sec: 2899.993 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2899.993 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2799.993 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2899.480 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2899.993 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1499.996 GB:   : &cw   : 1;
+endscan;
+scan No0247;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h27m24s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2999.479 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+endscan;
+scan No0248;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h28m30s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 2999.479 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+endscan;
+scan No0249;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h27m08s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+endscan;
+scan No0250;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h28m14s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 2899.993 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1599.996 GB:   : &n    : 0;
+endscan;
+scan No0251;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d04h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 2999.992 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 2999.992 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 2999.992 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 2999.992 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2899.993 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 2999.479 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 2999.992 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1599.996 GB:   : &n    : 1;
+endscan;
+scan No0252;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h41m51s; mode=PulseCalOFF#05; source=P-RLMI;
+     station=Fd:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+     station=Nl:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+     station=Pt:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+     station=Kp:    0 sec:   60 sec: 3099.479 GB:   : &cw   : 0;
+     station=La:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+endscan;
+scan No0253;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h42m57s; mode=PulseCalOFF#05; source=P-RLMI;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+     station=Nl:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+     station=Pt:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+     station=Kp:    0 sec:   60 sec: 3099.479 GB:   : &cw   : 0;
+     station=La:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+endscan;
+scan No0254;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h41m57s; mode=PulseCalOFF#06; source=P-RLMI;
+     station=Ov:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+     station=Br:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1699.996 GB:   : &ccw  : 0;
+endscan;
+scan No0255;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h43m03s; mode=PulseCalOFF#06; source=P-RLMI;
+     station=Ov:    0 sec:   60 sec: 3099.992 GB:   : &cw   : 0;
+     station=Br:    0 sec:   60 sec: 2999.992 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1699.996 GB:   : &ccw  : 0;
+endscan;
+scan No0256;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d04h45m00s; mode=3mm_RDBE; source=1156+295;
+     station=Fd:    0 sec:  390 sec: 3099.992 GB:   : &cw   : 1;
+     station=Nl:    0 sec:  390 sec: 3099.992 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 3099.992 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 3099.992 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 2999.992 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 3099.479 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 3099.992 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1699.996 GB:   : &ccw  : 1;
+endscan;
+scan No0257;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h57m27s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3199.479 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+endscan;
+scan No0258;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h58m33s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3199.479 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+endscan;
+scan No0259;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h57m01s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3099.992 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+endscan;
+scan No0260;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d04h58m07s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3099.992 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1799.995 GB:   : &n    : 0;
+endscan;
+scan No0261;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d05h00m00s; mode=3mm_RDBE; source=1055+018;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:  390 sec: 3199.992 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 3199.992 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 3199.992 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 3199.992 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 3099.992 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 3199.479 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 3199.992 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1799.995 GB:   : &n    : 1;
+endscan;
+scan No0262;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h12m31s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3299.479 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+endscan;
+scan No0263;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h13m37s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3299.479 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+endscan;
+scan No0264;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h12m21s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+endscan;
+scan No0265;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h13m27s; mode=PulseCalOFF#02; source=P-RCNC;
+     station=Ov:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3199.992 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1899.995 GB:   : &n    : 0;
+endscan;
+scan No0266;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d05h15m00s; mode=3mm_RDBE; source=OJ287;
+     station=Fd:    0 sec:  390 sec: 3299.992 GB:   : &cw   : 1;
+     station=Nl:    0 sec:  390 sec: 3299.992 GB:   : &cw   : 1;
+     station=Ov:    0 sec:  390 sec: 3299.992 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 3299.992 GB:   : &cw   : 1;
+     station=Br:    0 sec:  390 sec: 3199.992 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 3299.479 GB:   : &cw   : 1;
+     station=La:    0 sec:  390 sec: 3299.992 GB:   : &cw   : 1;
+     station=Mk:    0 sec:  390 sec: 1899.995 GB:   : &cw   : 1;
+endscan;
+scan No0267;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h27m28s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3399.479 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+endscan;
+scan No0268;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h28m34s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3399.479 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+endscan;
+scan No0269;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h26m56s; mode=PulseCalOFF#04; source=P-RLEO;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+endscan;
+scan No0270;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h28m02s; mode=PulseCalOFF#04; source=P-RLEO;
+     station=Ov:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3299.992 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 1999.995 GB:   : &n    : 0;
+endscan;
+scan No0271;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d05h30m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 3399.991 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 3399.991 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 3399.991 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 3399.991 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 3299.992 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 3399.479 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 3399.991 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 1999.995 GB:   : &n    : 1;
+endscan;
+scan No0272;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h42m27s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3499.991 GB:   : &cw   : 0;
+     station=Pt:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3499.478 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+endscan;
+scan No0273;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h43m33s; mode=PulseCalOFF#03; source=P-RLEO;
+     station=Fd:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3499.991 GB:   : &cw   : 0;
+     station=Pt:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3499.478 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+endscan;
+scan No0274;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h42m01s; mode=ptr7mm; source=3C279;
+     station=Ov:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+endscan;
+scan No0275;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h43m07s; mode=ptr7mm; source=3C279;
+     station=Ov:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3399.991 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 2099.995 GB:   : &n    : 0;
+endscan;
+scan No0276;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d05h45m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 3499.991 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 3499.991 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 3499.991 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 3499.991 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 3399.991 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 3499.478 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 3499.991 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 2099.995 GB:   : &n    : 1;
+endscan;
+scan No0277;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h57m16s; mode=ptr7mm; source=3C279;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Fd:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3599.478 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+endscan;
+scan No0278;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h58m22s; mode=ptr7mm; source=3C279;
+     station=Fd:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3599.478 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+endscan;
+scan No0279;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h57m07s; mode=ptr7mm; source=3C279;
+     station=Ov:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+endscan;
+scan No0280;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d05h58m13s; mode=ptr7mm; source=3C279;
+     station=Ov:    0 sec:   60 sec: 3599.991 GB:   : &n    : 0;
+     station=Br:    0 sec:   60 sec: 3499.991 GB:   : &n    : 0;
+     station=Mk:    0 sec:   60 sec: 2199.994 GB:   : &n    : 0;
+endscan;
+scan No0281;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d06h00m00s; mode=3mm_RDBE; source=1055+018;
+     station=Fd:    0 sec:  390 sec: 3599.991 GB:   : &n    : 1;
+     station=Nl:    0 sec:  390 sec: 3599.991 GB:   : &n    : 1;
+     station=Ov:    0 sec:  390 sec: 3599.991 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 3599.991 GB:   : &n    : 1;
+     station=Br:    0 sec:  390 sec: 3499.991 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 3599.478 GB:   : &n    : 1;
+     station=La:    0 sec:  390 sec: 3599.991 GB:   : &n    : 1;
+     station=Mk:    0 sec:  390 sec: 2199.994 GB:   : &n    : 1;
+endscan;
+scan No0282;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d06h11m59s; mode=ptr7mm; source=3C279;
+     station=Fd:    0 sec:   60 sec: 3699.991 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3699.991 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3699.991 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3699.478 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3699.991 GB:   : &n    : 0;
+endscan;
+scan No0283;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d06h13m05s; mode=ptr7mm; source=3C279;
+     station=Fd:    0 sec:   60 sec: 3699.991 GB:   : &n    : 0;
+     station=Nl:    0 sec:   60 sec: 3699.991 GB:   : &n    : 0;
+     station=Pt:    0 sec:   60 sec: 3699.991 GB:   : &n    : 0;
+     station=Kp:    0 sec:   60 sec: 3699.478 GB:   : &n    : 0;
+     station=La:    0 sec:   60 sec: 3699.991 GB:   : &n    : 0;
+endscan;
+scan No0284;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d06h11m44s; mode=PulseCalOFF#06; source=P-RLMI;
+     station=Ov:    0 sec:   60 sec: 3699.991 GB:   : &cw   : 0;
+     station=Br:    0 sec:   60 sec: 3599.991 GB:   : &cw   : 0;
+     station=Mk:    0 sec:   60 sec: 2299.994 GB:   : &cw   : 0;
+endscan;
+scan No0285;
+*     Note a COMMENT was inserted during scheduling: 
+*       Following scan added by Sched for reference pointing
+*     This is a FORMAT=NONE, non-recording scan.
+* intent = "REFERENCE_POINTING_DETERMINE"
+     start=2015y135d06h12m50s; mode=PulseCalOFF#06; source=P-RLMI;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ov:    0 sec:   60 sec: 3699.991 GB:   : &cw   : 0;
+     station=Br:    0 sec:   60 sec: 3599.991 GB:   : &cw   : 0;
+     station=Mk:    0 sec:   60 sec: 2299.994 GB:   : &cw   : 0;
+endscan;
+scan No0286;
+* intent = "REFERENCE_POINTING_APPLY"
+     start=2015y135d06h15m00s; mode=3mm_RDBE; source=1156+295;
+     station=Fd:    0 sec:  390 sec: 3699.991 GB:   : &cw   : 1;
+     station=Nl:    0 sec:  390 sec: 3699.991 GB:   : &cw   : 1;
+     station=Ov:    0 sec:  390 sec: 3699.991 GB:   : &n    : 1;
+     station=Pt:    0 sec:  390 sec: 3699.991 GB:   : &cw   : 1;
+     station=Br:    0 sec:  390 sec: 3599.991 GB:   : &n    : 1;
+     station=Kp:    0 sec:  390 sec: 3699.478 GB:   : &cw   : 1;
+     station=La:    0 sec:  390 sec: 3699.991 GB:   : &cw   : 1;
+     station=Mk:    0 sec:  390 sec: 2299.994 GB:   : &cw   : 1;
+endscan;

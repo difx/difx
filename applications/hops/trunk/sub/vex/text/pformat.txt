@@ -1,5 +1,5 @@
 *
-* $Id: pformat.txt 1800 2017-06-26 15:23:05Z gbc $
+* $Id: pformat.txt 2513 2018-09-05 14:16:07Z gbc $
 *
 * This is the vex parameter format definition file.  The format is 
 * field-based.  Comment lines begin with '*'.  All other lines must be
@@ -243,7 +243,7 @@ scheduler_email   OVEX EXPER 1.5 1
     MAN CHAR NONE
 *
 target_correlator OVEX EXPER 1.5 1
-    MAN CHAR NONE VLBA:VSOP:JIVE:Haystack:USNO:difx
+    MAN CHAR NONE VLBA:VSOP:JIVE:Haystack:USNO:difx:sfxc
 *
 ***************************************************
 ****************** FREQ block *********************

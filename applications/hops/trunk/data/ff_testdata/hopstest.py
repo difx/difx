@@ -1,61 +1,82 @@
-from __future__ import division
-from __future__ import print_function
-#@file
-#@brief
-#@details
-#
-#<b>Revision History:<b>
-#Date Name Brief Description
-#Mon Nov 21 08:52:26 EST 2016 J. Barrett (barrettj@mit.edu) First Version
+"""utility classes/functions primarily related to regression testing of HOPS/fourfit"""
 
+#core imports
+from __future__ import print_function
+from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
 from builtins import str
+from past.utils import old_div
 from builtins import range
+from io import open
 import os
 import sys
 import threading
 import subprocess
-import string
 import glob
-import pprint
-import ctypes
 import tempfile
 import bisect
+import shutil
 
 #hops package python libs
 import mk4
 import afio
 
-
-#a wrapper for the threading.Thread class, so we can get function return values
 class FourFitThread(threading.Thread):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs={}, Verbose=None):
-        threading.Thread.__init__(self, group, target, name, args, kwargs, Verbose)
+    """ a wrapper for the threading.Thread class for running fourfit instances, needed so we can get function return values """
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
+        if kwargs == None:
+            kwargs = {}
+        super(FourFitThread, self).__init__(group=group, target=target, name=name)
         self.ret_value = []
-        self.args = args
+        self.subargs = args
+        self.subkwargs = kwargs
+        if sys.version_info >= (3, 0): #deal with python3 change
+            self.thread_key = '_target'
+        else:
+            self.thread_key = '_Thread__target'
 
-    #we override the run method to capture the return value
     def run(self):
-        if self._Thread__target is not None:
-            self.ret_value = self._Thread__target(*self._Thread__args, **self._Thread__kwargs)
+        """we override the run method to capture the return value"""
+        if getattr(self, self.thread_key) != None:
+            self.ret_value = getattr(self, self.thread_key)(*self.subargs, **self.subkwargs)
 
     def get_input_args(self):
-        return self.args
+        """ return list of arguments to the subprocess """
+        return self.subargs
 
     def get_return_value(self):
+        """ return the subprocess return value """
         return self.ret_value
 
-    def join(self):
-        threading.Thread.join(self)
-        return self.ret_value
+    def as_string(self):
+        """ return subprocess os-call as string """
+        options_arg = ""
+        if self.subargs[0] != "":
+            options_arg = self.subargs[0]
 
+        baseline_arg = ""
+        if self.subargs[1] != "":
+            baseline_arg = "-b " + self.subargs[1]
 
+        control_arg = ""
+        if self.subargs[2] == "":
+            self.subargs[2] = ""
+        else:
+            control_arg = "-c " + self.subargs[2]
 
-#this function returns a list of all the fringe files
-#that share a directory with the root file, they can be sub-selected by
-#frequency band or baseline using the optional parameters
+        root_file_path = self.subargs[3]
+        set_commands = self.subargs[5]
+
+        exe_arg = "fourfit" + " -m 4 " + options_arg + " " + baseline_arg + " " + control_arg + " " + root_file_path + " " + set_commands
+
+        return exe_arg
+
 def find_fringe_files(root_file_path, baseline='*', freq_band=''):
+    """ this function returns a list of all the fringe files
+    that share a directory with the root file, they can be sub-selected by
+    frequency band or baseline using the optional parameters baseline and freq_band """
+
     (filepath, filename) = os.path.split(root_file_path)
     split_tokens = filename.split('.')
     if len(split_tokens ) != 0:
@@ -64,34 +85,35 @@ def find_fringe_files(root_file_path, baseline='*', freq_band=''):
         sys.exit("error: could not determine root file extension")
     match_string = filepath + "/" + baseline
     if freq_band == '':
-         match_string = match_string + ".*.*." + timetag_ext
+        match_string = match_string + ".*.*." + timetag_ext
     else:
-         match_string = match_string + "." + freq_band + ".*." + timetag_ext
+        match_string = match_string + "." + freq_band + ".*." + timetag_ext
     fringe_file_list = glob.glob(match_string)
     return fringe_file_list
 
 
-#returns the list of files which exist in the current_file_list but not in
-#the original_file_list
 def file_list_difference(original_file_list, current_file_list):
+    """ returns the list of files which exist in the current_file_list but not in
+    the original_file_list """
     return list( set(current_file_list).symmetric_difference(set(original_file_list)) )
 
-#removes all files in the current file list which were not in
-#the original file list
+
 def clean_up_test_fringe_files(original_file_list, current_file_list):
+    """ removes all files in the current file list which were not in
+    the original file list """
     files_to_remove = file_list_difference(original_file_list, current_file_list)
     for a in files_to_remove:
         if os.path.isfile(a):
             os.remove(a)
 
-
 def clean_up_fringe_files(files_to_remove):
+    """ remove files in the given list """
     for a in files_to_remove:
         os.remove(a)
 
-#this function calls fourfit to generate a post-script output file, the fringe
-#file is not saved
+
 def fourfit_generate_postscript(options, baseline, ps_file_path, control_file_path, root_file_path, verbose=False):
+    """" this function calls fourfit to generate a post-script output file, the fringe file is not saved """
     current_env = os.environ.copy()
     if "-pt" in options:
         option_args = options
@@ -113,9 +135,10 @@ def fourfit_generate_postscript(options, baseline, ps_file_path, control_file_pa
     stderr_log.close()
     return
 
-#this funciton calls fourfit to generate a fringe file, it returns the name
-#of the file which it generates (options must not contain -t!)
-def fourfit_generate_fringe(options, baseline, control_file_path, root_file_path, verbose=False, set_commands="", fplot=False):
+
+def fourfit_generate_fringe(options, baseline, control_file_path, root_file_path, verbose=True, set_commands="", fplot=False):
+    """ this funciton calls fourfit to generate a fringe file, it returns the name
+    of the file which it generates (fourfit options must not contain -t, -m, or -p!) """
     current_env = os.environ.copy()
     #assume there is no testing "-t" parameter in options suppressing the output
     #also need to ensure that the "-m" option is not set externally, as we need to set it to "-m 4" to get the name of the fringe file generated
@@ -151,22 +174,24 @@ def fourfit_generate_fringe(options, baseline, control_file_path, root_file_path
     new_thread = subprocess.Popen(exe_arg, shell=True, env=current_env, stdout=stdout_log, stderr=stderr_log)
     new_thread.wait()
     #now read the stderr_log file to retrieve the name of the generated fringe files
-    stderr_log.flush();
-    stderr_log.seek(0);
-    generated_file_blob = stderr_log.read();
+    stderr_log.flush()
+    stderr_log.seek(0)
+    generated_file_blob = stderr_log.read()
     stdout_log.close()
     stderr_log.close()
     file_lines = generated_file_blob.splitlines()
     generated_file_list = []
     for x in file_lines:
-        tokens = x.split()
+        tokens = x.decode().split()
         if len(tokens) == 2:
-            if(tokens[0] == "fourfit:"):
-                generated_file_list.append(tokens[1])
-    return generated_file_list;# generated_file_list
+            if tokens[0] == "fourfit:":
+                if os.path.isfile(tokens[1]):
+                    generated_file_list.append(tokens[1])
+    return generated_file_list# generated_file_list
 
-#generic call to run fourfit with a set of options and particular baseline
+
 def run_fourfit(options, baseline, control_file_path, root_file_path, verbose=False):
+    """ generic call to run fourfit with a set of options and particular baseline """
     current_env = os.environ.copy()
     #format some command arguments to call fourfit
     baseline_arg = "-b " + baseline
@@ -183,8 +208,9 @@ def run_fourfit(options, baseline, control_file_path, root_file_path, verbose=Fa
     stderr_log.close()
     return
 
-#generate an a-list file for all fringe files in a given list, associated with a single root file
+
 def generate_fringe_alist(root_file_path, output_file_path, fringe_file_list, version="6", verbose=False):
+    """ generate an a-list file for all fringe files in a given list, associated with a single root file """
     current_env = os.environ.copy()
     if os.path.isfile(output_file_path):
         os.remove(output_file_path)
@@ -203,8 +229,8 @@ def generate_fringe_alist(root_file_path, output_file_path, fringe_file_list, ve
 
 ################################################################################
 
-#generate an a-list file for all fringe files in a given list, without root_files
 def generate_fringe_collection_alist(output_file_path, fringe_file_list, sort_list=True, version="6"):
+    """ generate an a-list file for all fringe files in a given list, without root_files """
     current_env = os.environ.copy()
     if os.path.isfile(output_file_path):
         os.remove(output_file_path)
@@ -222,8 +248,8 @@ def generate_fringe_collection_alist(output_file_path, fringe_file_list, sort_li
     stdout_log.close()
     stderr_log.close()
 
-#process data using aedit using the run-file feature to execute a list of commands
 def execute_aedit_runfile(file_list, run_file_path, verbose=False):
+    """ process data using aedit using the run-file feature to execute a list of commands """
     current_env = os.environ.copy()
     stdout_log = tempfile.TemporaryFile(mode="w") #dump stdout here
     stderr_log = tempfile.TemporaryFile(mode="w") #dump stderr here
@@ -238,8 +264,8 @@ def execute_aedit_runfile(file_list, run_file_path, verbose=False):
     stdout_log.close()
     stderr_log.close()
 
-#process data using aedit using the -b option
 def execute_aedit_command_string(command_string, verbose=False):
+    """ process data using aedit using the -b (batch) option """
     current_env = os.environ.copy()
     stdout_log = tempfile.TemporaryFile(mode="w") #dump stdout here
     stderr_log = tempfile.TemporaryFile(mode="w") #dump stderr here
@@ -254,10 +280,10 @@ def execute_aedit_command_string(command_string, verbose=False):
 
 
 def check_snr_fringe(filename, snr_low, snr_high):
+    """ extract the snr value from the type 208 record in the fringe file and
+    check that it is in the allowed range """
     if os.path.isfile(filename):
         fileA = mk4.mk4fringe(filename)
-        #extract the snr value from the type 208 record in the fringe file and
-        #check that it is in the allowed range
         snr_value = fileA.t208.contents.snr
 
         if (snr_value <= snr_high) and (snr_low <= snr_value):
@@ -268,6 +294,7 @@ def check_snr_fringe(filename, snr_low, snr_high):
         return False
 
 def get_control_file_hash_from_fringe(filename):
+    """ extract the hash value associated with the control file used to generate the given finge file from the type222"""
     value = 0
     if os.path.isfile(filename):
         fileA = mk4.mk4fringe(filename)
@@ -275,6 +302,7 @@ def get_control_file_hash_from_fringe(filename):
     return value
 
 def get_file_polarization_product(filename):
+    """ usuing t203 and t205 determine the polarizations products associated with this file """
     if os.path.isfile(filename):
         ff = mk4.mk4fringe(filename)
         n_channels = 16
@@ -286,11 +314,11 @@ def get_file_polarization_product(filename):
         #this logic comes from alist, in summarize_mk4fringe.c, line 86
         refpol = ' '
         rempol = ' '
-        for n in range(0,n_channels):
+        for n in list(range(0,n_channels)):
             if ff.t205.contents.ffit_chan[n].ffit_chan_id != ' ':
-                for j in range(0,4):
+                for j in list(range(0,4)):
                     channel_index = ff.t205.contents.ffit_chan[n].channels[j]
-                    if not (channel_index < 0):
+                    if not channel_index < 0:
                         if refpol == ' ':
                             refpol = ff.t203.contents.channels[channel_index].refpol
                         elif ff.t203.contents.channels[channel_index].refpol != refpol:
@@ -308,7 +336,88 @@ def get_file_polarization_product(filename):
         else:
             return refpol + rempol
 
+def get_byte_value(char_array, index):
+    if sys.version_info > (3,):
+        return char_array[index]
+    else:
+        return ord(char_array[index])
+
+def get_file_polarization_product_provisional(filename):
+    """ determine the polarization product (passed as command line option to fourfit) that is
+    associated with a given fringe file, this method is provisional"""
+    pol_list = []
+    if os.path.isfile(filename):
+        ff = mk4.mk4fringe(filename)
+        offset = 64 #offset used to make it an alphanum char
+        polstr = ff.t208.contents.unused1 #we stashed this data in here until we can find a better place for it
+        passpol = get_byte_value(polstr,0) - offset
+        parampol = get_byte_value(polstr,1) - offset
+        polcode = 0
+
+        #determine fringe polcode
+        if parampol == 0:
+            #fringe file was generated as part of an 'all' pol-prods collection
+            polcode = passpol
+            if polcode == 0:
+                pol_list.append('XX')
+            if polcode == 1:
+                pol_list.append('YY')
+            if polcode == 2:
+                pol_list.append('XY')
+            if polcode == 3:
+                pol_list.append('YX')
+        else:
+            polcode = parampol
+            #now determine which polarization products are present and
+            #create a list of the polarization products which were included
+            #in the fit of this fringe file
+            if polcode & 0b00001 and not polcode & 0b10000:
+                pol_list.append('XX')
+            if polcode & 0b00010 and not polcode & 0b10000:
+                pol_list.append('YY')
+            if polcode & 0b00100 and not polcode & 0b10000:
+                pol_list.append('XY')
+            if polcode & 0b01000 and not polcode & 0b10000:
+                pol_list.append('YX')
+            if polcode == 31:
+                pol_list.append('I')
+
+        return pol_list
+
+def get_polarization_products_present(corel_filename):
+    """returns a list of polarization products which are available for this corel file """
+    corr = mk4.mk4corel(corel_filename)
+    pp_set = set()
+    #number of 'cross-corr' channels
+    nindex = corr.t100.contents.nindex
+    for n in list(range(0,nindex)):
+        ref_chan_id = (corr.index[n].t101[0].ref_chan_id).decode()
+        rem_chan_id = (corr.index[n].t101[0].rem_chan_id).decode()
+        refpol = ref_chan_id[-1:].upper()
+        rempol = rem_chan_id[-1:].upper()
+        pp_set.add(refpol+rempol)
+    return list(pp_set)
+
+def get_required_pol_products(ff_pp_option):
+    """ returns a list of the required pol-products needed to run the given fourfit (-P) option """
+    all_possible_pp = []
+    for p in ['X', 'Y', 'R', 'L']:
+        for q in ['X', 'Y', 'R', 'L']:
+            all_possible_pp.append( p+q )
+
+    required_pp = set()
+    for pp in all_possible_pp:
+        if pp in ff_pp_option:
+            required_pp.add(pp)
+
+    if 'I' in ff_pp_option:
+        required_pp = required_pp.union( set(['XX', 'YY', 'XY', 'YX']) )
+
+    return list(required_pp)
+
+
 def compare_fringe_files(filenameA, filenameB, verbose=True, pedantic=False, ignore_dates=True, abs_tol=1e-14, rel_tol=1e-6):
+    """ performs a rough comparison of data in two fringe files (useful for regression testing) """
     if os.path.isfile(filenameA) and os.path.isfile(filenameB):
         fileA = mk4.mk4fringe(filenameA)
         fileB = mk4.mk4fringe(filenameB)
@@ -405,7 +514,7 @@ def compare_fringe_files(filenameA, filenameB, verbose=True, pedantic=False, ign
         if n212a == n212b:
             if n212a != 0:
                 have212result = True
-                for x in range(n212a):
+                for x in list(range(n212a)):
                     if not fileA.t212[x].contents.approximately_equal(fileB.t212[x].contents, ignore_dates, verbose, abs_tol, rel_tol):
                         t212result = False
                         break
@@ -427,7 +536,7 @@ def compare_fringe_files(filenameA, filenameB, verbose=True, pedantic=False, ign
         if n230a == n230b:
             if n230a != 0:
                 have230result = True
-                for x in range(n230a):
+                for x in list(range(n230a)):
                     if not fileA.t230[x].contents.approximately_equal(fileB.t230[x].contents, ignore_dates, verbose, abs_tol, rel_tol):
                         t230result = False
                         break
@@ -462,7 +571,7 @@ def compare_fringe_files(filenameA, filenameB, verbose=True, pedantic=False, ign
             if have230result:
                 print("type_230 data is equal?", t230result)
 
-        for x in range( len(check_results) ):
+        for x in list(range( len(check_results) )):
             if not check_results[x]:
                 return result_list[x] #files do not match, return id of first non-matching type in list
 
@@ -473,8 +582,9 @@ def compare_fringe_files(filenameA, filenameB, verbose=True, pedantic=False, ign
             print("file error")
         return 1
 
-#rough comparison check for all lines in an afile
+
 def compare_alist_files(filenameA, filenameB, verbose=True, pedantic=False, exit_on_first_neq=True, abs_tol=1e-14, rel_tol=1e-6):
+    """performs rough comparison check of two afiles """
     if os.path.isfile(filenameA) and os.path.isfile(filenameB):
         fileA = afio.alist(filenameA)
         fileB = afio.alist(filenameB)
@@ -504,7 +614,7 @@ def compare_alist_files(filenameA, filenameB, verbose=True, pedantic=False, exit
         root_result = True
         if fileA.nroot != 0:
             have_root_result = True
-            for x in range(fileA.nroot):
+            for x in list(range(fileA.nroot)):
                 if not fileA.rootdata[x].approximately_equal( fileB.rootdata[x], pedantic, verbose, abs_tol, rel_tol):
                     root_result = False
                     if exit_on_first_neq:
@@ -517,7 +627,7 @@ def compare_alist_files(filenameA, filenameB, verbose=True, pedantic=False, exit
         corel_result = True
         if fileA.ncorel != 0:
             have_corel_result = True
-            for x in range(fileA.ncorel):
+            for x in list(range(fileA.ncorel)):
                 if not fileA.coreldata[x].approximately_equal( fileB.coreldata[x], pedantic, verbose, abs_tol, rel_tol):
                     corel_result = False
                     if exit_on_first_neq:
@@ -531,7 +641,7 @@ def compare_alist_files(filenameA, filenameB, verbose=True, pedantic=False, exit
         print("file has: ", fileA.nfringe, " fringes")
         if fileA.nfringe != 0:
             have_fringe_result = True
-            for x in range(fileA.nfringe):
+            for x in list(range(fileA.nfringe)):
                 if not fileA.fringedata[x].approximately_equal( fileB.fringedata[x], pedantic, verbose, abs_tol, rel_tol):
                     fringe_result = False
                     if verbose:
@@ -546,7 +656,7 @@ def compare_alist_files(filenameA, filenameB, verbose=True, pedantic=False, exit
         triangle_result = True
         if fileA.ntriangle != 0:
             have_triangle_result = True
-            for x in range(fileA.ntriangle):
+            for x in list(range(fileA.ntriangle)):
                 if not fileA.triangledata[x].approximately_equal( fileB.triangledata[x], pedantic, verbose, abs_tol, rel_tol):
                     triangle_result = False
                     if exit_on_first_neq:
@@ -559,7 +669,7 @@ def compare_alist_files(filenameA, filenameB, verbose=True, pedantic=False, exit
         quad_result = True
         if fileA.nquad != 0:
             have_quad_result = True
-            for x in range(fileA.nquad):
+            for x in list(range(fileA.nquad)):
                 if not fileA.quaddata[x].approximately_equal( fileB.quaddata[x], pedantic, verbose, abs_tol, rel_tol):
                     quad_result = False
                     if exit_on_first_neq:
@@ -568,7 +678,7 @@ def compare_alist_files(filenameA, filenameB, verbose=True, pedantic=False, exit
             check_results.append(quad_result)
             result_list.append('quad')
 
-        for x in range( len(check_results) ):
+        for x in list(range( len(check_results) )):
             if not check_results[x]:
                 if verbose:
                     print("files fail to match for lines containing a", result_list[x], "type.")
@@ -579,8 +689,9 @@ def compare_alist_files(filenameA, filenameB, verbose=True, pedantic=False, exit
 
 ################################################################################
 
-#very rough comparison check for only one field/variable
+
 def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, exit_on_first_neq=True, pedantic=False, abs_tol=1e-14, rel_tol=1e-6):
+    """performs a very rough comparison check for only one field/variable/column in two afiles"""
     if os.path.isfile(filenameA) and os.path.isfile(filenameB):
         fileA = afio.alist(filenameA)
         fileB = afio.alist(filenameB)
@@ -610,7 +721,7 @@ def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, ex
         root_result = True
         if fileA.nroot != 0:
             have_root_result = True
-            for x in range(fileA.nroot):
+            for x in list(range(fileA.nroot)):
                 if not fileA.rootdata[x].approximately_equal_field( fileB.rootdata[x], field_name, pedantic, verbose, abs_tol, rel_tol):
                     root_result = False
                     if exit_on_first_neq:
@@ -623,7 +734,7 @@ def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, ex
         corel_result = True
         if fileA.ncorel != 0:
             have_corel_result = True
-            for x in range(fileA.ncorel):
+            for x in list(range(fileA.ncorel)):
                 if not fileA.coreldata[x].approximately_equal_field( fileB.coreldata[x], field_name, pedantic, verbose, abs_tol, rel_tol):
                     corel_result = False
                     if exit_on_first_neq:
@@ -636,7 +747,7 @@ def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, ex
         fringe_result = True
         if fileA.nfringe != 0:
             have_fringe_result = True
-            for x in range(fileA.nfringe):
+            for x in list(range(fileA.nfringe)):
                 if not fileA.fringedata[x].approximately_equal_field( fileB.fringedata[x], field_name, pedantic, verbose, abs_tol, rel_tol):
                     fringe_result = False
                     if verbose:
@@ -651,7 +762,7 @@ def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, ex
         triangle_result = True
         if fileA.ntriangle != 0:
             have_triangle_result = True
-            for x in range(fileA.ntriangle):
+            for x in list(range(fileA.ntriangle)):
                 if not fileA.triangledata[x].approximately_equal_field( fileB.triangledata[x], field_name, pedantic, verbose, abs_tol, rel_tol):
                     triangle_result = False
                     if exit_on_first_neq:
@@ -664,7 +775,7 @@ def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, ex
         quad_result = True
         if fileA.nquad != 0:
             have_quad_result = True
-            for x in range(fileA.nquad):
+            for x in list(range(fileA.nquad)):
                 if not fileA.quaddata[x].approximately_equal_field( fileB.quaddata[x], field_name, pedantic, verbose, abs_tol, rel_tol):
                     quad_result = False
                     if exit_on_first_neq:
@@ -673,7 +784,7 @@ def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, ex
             check_results.append(quad_result)
             result_list.append('quad')
 
-        for x in range( len(check_results) ):
+        for x in list(range( len(check_results) )):
             if not check_results[x]:
                 if verbose:
                     print("files fail to match for lines containing a", result_list[x], "type.")
@@ -686,30 +797,45 @@ def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, ex
 ###############################################################################
 #some utilities for processing larger collections of data
 
-#returns a list of all the root files found in any directory under the current one
-def recursive_find_root_files(base_directory, sort_list=True):
+
+def recursive_find_root_files(base_directory, sort_list=True, exclude_list=None, max_depth=None):
+    """ returns a list of all the root files found in any directory (up to max_depth) under the given base_directory"""
+    if exclude_list == None:
+        exclude_list=['prepass', 'scratch']
+
     root_file_list = []
-    #exlude and root files that might exist under a directory with the word 'prepass' in it
-    exclude = set(['prepass'])
+    #exlude and root files that might exist under a directory with the word 'prepass', etc in it
+    exclude = set(exclude_list)
     assert os.path.isdir(base_directory)
     for current_root, subdirectories, files in os.walk(base_directory):
-        subdirectories[:] = [d for d in subdirectories if not any(e in d for e in exclude) ]
-        for filename in files:
-            #look for root files using some simple checks
-            if(filename.count('.') == 1): #check that there is one dot in the filename base
-                extension = os.path.splitext(filename)[1][1:].strip() #get the file extension
-                if len(extension) == 6:     #check that the extension has a length of 6 chars
-                    full_name = os.path.join(current_root, filename) # create full path
-                    filesize_kb = ( os.path.getsize(full_name) )/1024.0
-                    if filesize_kb < 500: #more than 500kb is not likely to be a root file
-                        #finally we check that the characters "VEX" are present in the first line of the file
-                        tempfile = open(full_name, 'r')
-                        firstline = tempfile.readline()
-                        if "VEX" in firstline:
-                            #very likely we have an actual root file, so add to list
-                            root_file_list.append( os.path.abspath(full_name) )
-    # for x in root_file_list:
-    #     print "found root file: ", x
+        current_depth = current_root[len(base_directory) + len(os.path.sep):].count(os.path.sep)
+        keep_going = True
+        if max_depth is None:
+            keep_going = True
+        else:
+            if current_depth < max_depth:
+                keep_going = True
+            else:
+                keep_going = False
+        if keep_going is True:
+            subdirectories[:] = [d for d in subdirectories if not any(e in d for e in exclude) ]
+            for filename in files:
+                #look for root files using some simple checks
+                if filename.count('.') == 1: #check that there is one dot in the filename base
+                    extension = os.path.splitext(filename)[1][1:].strip() #get the file extension
+                    if len(extension) == 6:     #check that the extension has a length of 6 chars
+                        full_name = os.path.join(current_root, filename) # create full path
+                        filesize_kb = old_div(( os.path.getsize(full_name) ),1024.0)
+                        if filesize_kb < 500: #more than 500kb is not likely to be a root file
+                            #finally we check that the characters "VEX" are present in the first line of the file
+                            tmp_file = open(full_name, 'r')
+                            firstline = tmp_file.readline()
+                            if "VEX" in firstline:
+                                #very likely we have an actual root file, so add to list
+                                root_file_list.append( os.path.abspath(full_name) )
+        else:
+            subdirectories[:] = []
+
     if sort_list is True:
         return sorted(root_file_list)
     else:
@@ -717,37 +843,39 @@ def recursive_find_root_files(base_directory, sort_list=True):
 
 ################################################################################
 
-def recursive_find_root_files_matching_source(base_directory, source_name, sort_list=True):
+def recursive_find_root_files_matching_source(base_directory, source_name, sort_list=True, exclude_list=None):
+    """ locate all the root (OVEX) files under the base_directory """
+    if exclude_list == None:
+        exclude_list=['prepass', 'scratch']
+
     root_file_list = []
-    #exlude and root files that might exist under a directory with the word 'prepass' in it
-    exclude = set(['prepass'])
+    #exlude and root files that might exist under a directory with the word 'prepass', etc in it
+    exclude = set(exclude_list)
     assert os.path.isdir(base_directory)
     for current_root, subdirectories, files in os.walk(base_directory):
         subdirectories[:] = [d for d in subdirectories if not any(e in d for e in exclude) ]
         for filename in files:
             #look for root files using some simple checks
-            if(filename.count('.') == 1): #check that there is one dot in the filename base
+            if filename.count('.') == 1: #check that there is one dot in the filename base
                 extension = os.path.splitext(filename)[1][1:].strip() #get the file extension
                 if len(extension) == 6:     #check that the extension has a length of 6 chars
                     full_name = os.path.join(current_root, filename) # create full path
-                    filesize_kb = ( os.path.getsize(full_name) )/1024.0
+                    filesize_kb = old_div(( os.path.getsize(full_name) ),1024.0)
                     if filesize_kb < 500: #more than 500kb is not likely to be a root file
                         #finally we check that the characters "VEX" are present in the first line of the file
-                        tempfile = open(full_name, 'r')
-                        firstline = tempfile.readline()
+                        tmp_file = open(full_name, 'r')
+                        firstline = tmp_file.readline()
                         if "VEX" in firstline:
                             #now check if the source name is in the file name
                             if source_name in full_name:
                                 root_file_list.append( os.path.abspath(full_name) )
-    # for x in root_file_list:
-    #     print "found root file: ", x
     if sort_list is True:
         return sorted(root_file_list)
     else:
         return root_file_list
 
-#returns a list of all the station files found in any directory under the current one
 def recursive_find_station_files(base_directory):
+    """ locate all of the station data files (type-3) under the base_directory """
     station_file_list = []
     assert os.path.isdir(base_directory)
     for current_root, subdirectories, files in os.walk(base_directory):
@@ -755,7 +883,7 @@ def recursive_find_station_files(base_directory):
             abs_filename = os.path.abspath(filename)
             filename_base = os.path.split(abs_filename)[1]
             #look for root files using some simple checks
-            if(filename_base.count('.') == 2): #check that there are two dots in the filename base
+            if filename_base.count('.') == 2 : #check that there are two dots in the filename base
                 stcode = filename_base.split('.')[0]
                 if len(stcode)==1: #make sure leading section of file name is 1-char station id
                     full_name = os.path.join(current_root, filename)
@@ -764,15 +892,16 @@ def recursive_find_station_files(base_directory):
                         extension = filename_base.split('.')[2] #get the file extension (root_id)
                         if len(extension) == 6:     #check that the extension has a length of 6 chars
                             station_file_list.append(  os.path.abspath(full_name) ) #probably a station file
-    # for x in station_file_list:
-    #     print "found station file: ", x
     return station_file_list
 
-#returns a list of all the fringe files found in any directory under the current one
-def recursive_find_fringe_files(base_directory, include_autos=False):
+
+def recursive_find_fringe_files(base_directory, include_autos=False, exclude_list=None):
+    """r eturns a list of all the fringe (type-2) files found in any directory under the base_directory """
+    if exclude_list == None:
+        exclude_list=['prepass', 'scratch']
     fringe_file_list = []
-    #exlude and root files that might exist under a directory with the word 'prepass' in it
-    exclude = set(['prepass'])
+    #exlude and root files that might exist under a directory with the word 'prepass',etc in it
+    exclude = set(exclude_list)
     assert os.path.isdir(base_directory)
     for current_root, subdirectories, files in os.walk(base_directory):
         subdirectories[:] = [d for d in subdirectories if not any(e in d for e in exclude) ]
@@ -780,7 +909,7 @@ def recursive_find_fringe_files(base_directory, include_autos=False):
             abs_filename = os.path.abspath(filename)
             filename_base = os.path.split(abs_filename)[1]
             #look for root files using some simple checks
-            if(filename_base.count('.') == 3): #check that there are three dots in the filename base
+            if filename_base.count('.') == 3: #check that there are three dots in the filename base
                 bline = filename_base.split('.')[0]
                 if len(bline)==2: #make sure leading section of file name is 2-char baseline
                     full_name = os.path.join(current_root, filename)
@@ -788,16 +917,16 @@ def recursive_find_fringe_files(base_directory, include_autos=False):
                         extension = filename_base.split('.')[3] #get the file extension (root_id)
                         if len(extension) == 6:     #check that the extension has a length of 6 chars
                             fringe_file_list.append(  os.path.abspath(full_name) ) #probably a fringe file
-    # for x in fringe_file_list:
-    #     print "found fringe file: ", x
     return fringe_file_list
 
 
-#returns a list of all the corel files found in any directory under the current one
-def recursive_find_corel_files(base_directory, include_autos=False):
+def recursive_find_corel_files(base_directory, include_autos=False, exclude_list=None):
+    """returns a list of all the corel (type-1) files found in any directory under the current one """
+    if exclude_list == None:
+        exclude_list=['prepass', 'scratch']
     corel_file_list = []
-    #exlude and root files that might exist under a directory with the word 'prepass' in it
-    exclude = set(['prepass'])
+    #exlude and root files that might exist under a directory with the word 'prepass', etc in it
+    exclude = set(exclude_list)
     assert os.path.isdir(base_directory)
     for current_root, subdirectories, files in os.walk(base_directory):
         subdirectories[:] = [d for d in subdirectories if not any(e in d for e in exclude) ]
@@ -805,23 +934,22 @@ def recursive_find_corel_files(base_directory, include_autos=False):
             abs_filename = os.path.abspath(filename)
             filename_base = os.path.split(abs_filename)[1]
             #look for corel files using some simple checks
-            if(filename_base.count('.') == 2): #check that there are two dots in the filename base
+            if filename_base.count('.') == 2: #check that there are two dots in the filename base
                 bline = filename_base.split('.')[0]
                 if len(bline)==2: #make sure leading section of file name is 2-char baseline
                     full_name = os.path.join(current_root, filename)
                     if (include_autos is True) or (bline[0] != bline[1]): #check that this is a cross correlation if autos excluded
                         extension = filename_base.split('.')[2] #get the file extension (root_id)
                         if len(extension) == 6:     #check that the extension has a length of 6 chars
-                            corel_file_list.append(  os.path.abspath(full_name) ) #probably a fringe file
-    # for x in corel_file_list:
-    #     print "found corel file: ", x
+                            corel_file_list.append(  os.path.abspath(full_name) ) #probably a corel file
     return corel_file_list
+
 
 ################################################################################
 
-#runs fourfit over a list of root files, for a given control file, options, baseline, and commands
-#returns a list of the generated fringe files
 def batch_fourfit_generate_fringe(options, baseline, control_file_path, root_file_list, set_commands=""):
+    """ runs fourfit over a list of root files, for a given control file, options, baseline, and commands
+    returns a list of the generated fringe files """
     generated_frige_files = []
     for rf in root_file_list:
         ff_list = fourfit_generate_fringe(options, baseline, control_file_path, rf, set_commands)
@@ -833,16 +961,15 @@ def batch_fourfit_generate_fringe(options, baseline, control_file_path, root_fil
 
 ################################################################################
 
-#runs independent fourfit jobs in parallel on a big list of files using
-#as many cores as allowed
+
 def batch_fourfit_generate_fringe_parallel(options_list, baseline_list, control_file_path, root_file_list, set_commands="", max_num_processes=1):
+    """ runs independent fourfit jobs in parallel on a list of files using as many cores as allowed
+    the organization of the work load is multiplicative across (options_list X baseline_list X root_file_list)
+    for example if you have options_list=["-P XX", "-P YY"], baseline_list=["GE"]
+    and the root_file_list=["filaA", "fileB"], this means you will end up running
+    four processes in total (2 polarization options X 1 baseline X two files)
+    the same control file and parameters in 'set_commands' are applied to every process """
 
-    #the organization of the work load is multiplicative across (options_list X baseline_list X root_file_list)
-    #for example if you have options_list=["-P XX", "-P YY"], baseline_list=["GE"]
-    #and the root_file_list=["filaA", "fileB"], this means you will end up running
-    #four processes in total (2 polarization options X 1 baseline X two files)
-
-    #the same control file and parameters in 'set_commands' are applied to every processes
     verbosity = False
     show_plot = False
 
@@ -854,9 +981,9 @@ def batch_fourfit_generate_fringe_parallel(options_list, baseline_list, control_
 
     #easiest to just construct a list arg lists for each process we need to run
     arg_list = []
-    for nf in range(0,n_files):
-        for nb in range(0,n_baselines):
-            for no in range(0,n_opts):
+    for nf in list(range(0,n_files)):
+        for nb in list(range(0,n_baselines)):
+            for no in list(range(0,n_opts)):
                 arg_list.append([options_list[no], baseline_list[nb], control_file_path, root_file_list[nf], verbosity, set_commands, show_plot])
 
     print("Executing " + str(n_total) + " fourfit processes, using up to " + str(max_num_processes) + " processes at once.")
@@ -883,7 +1010,7 @@ def batch_fourfit_generate_fringe_parallel(options_list, baseline_list, control_
                     #generated_files = thread.join()
                     generated_fringe_files.extend( generated_files )
                     threads.remove(thread)
-                    #print "Finished process!"
+                    #print("Finished process!")
     return generated_fringe_files
 
 ################################################################################
@@ -892,9 +1019,8 @@ def batch_fourfit_generate_fringe_parallel(options_list, baseline_list, control_
 ################################################################################
 ################################################################################
 
-
-#get a list of all the fringe line summaries in a afile
 def get_file_fringelines(filename):
+    """get a list of all the fringe line summaries in a afile """
     results=[]
 
     if os.path.isfile(filename):
@@ -903,21 +1029,22 @@ def get_file_fringelines(filename):
         return results
 
     if fileA.nfringe != 0:
-        for x in range(fileA.nfringe):
+        for x in list(range(fileA.nfringe)):
             results.append(fileA.fringedata[x])
     return results
 
-#simply returns the root id associated with an afile line
 def get_rootid(afile_data_element):
+    """ simply returns the root id associated with an afile line """
     return afile_data_element.root_id
 
-#sort list of afile data-lines by root id
+
 def sort_by_rootid(afile_line_list):
+    """ sort list of afile data-lines by root id """
     return sorted(afile_line_list, key=get_rootid)
 
-#function to pair up corresponding measurement lines in two separate afiles
-#which may have been processed differently and not necessarily in the same order
 def match_by_rootid(afile_line_listA, afile_line_listB):
+    """ function to pair up corresponding measurement lines in two separate afiles
+    which may have been processed differently and not necessarily in the same order """
 
     list_of_matched_elements = []
 
@@ -925,11 +1052,11 @@ def match_by_rootid(afile_line_listA, afile_line_listB):
     list_b = sort_by_rootid(afile_line_listB)
 
     id_index_pair_a = []
-    for x in range(len(list_a)):
+    for x in list(range(len(list_a))):
         id_index_pair_a.append( (list_a[x].root_id, x) )
 
     id_index_pair_b = []
-    for x in range(len(list_b)):
+    for x in list(range(len(list_b))):
         id_index_pair_b.append( (list_b[x].root_id, x) )
 
     #now search for the elements which match according to root id
@@ -964,9 +1091,9 @@ def match_by_rootid(afile_line_listA, afile_line_listB):
 
     return list_of_matched_elements
 
-#pulls out a particular element from all the objects in a list, and returns
-#them in a lsit
+
 def extract_list_field(element_list, field_name):
+    """pulls out a particular element from all the objects in a list, and returns them in a list """
     results = []
     for x in element_list:
         temp_result = getattr(x, field_name)
@@ -974,10 +1101,10 @@ def extract_list_field(element_list, field_name):
             results.append(temp_result)
     return results
 
-#extracts a single column from an a-list, by its field name (see afio.py)
-#entries are stored in row (line) order
-def extract_alist_field(filenameA, field_name):
 
+def extract_alist_field(filenameA, field_name):
+    """extracts a single column from an a-list, by its field name (see afio.py)
+    entries are stored in row (line) order """
     results = []
 
     NonObject = None
@@ -987,69 +1114,69 @@ def extract_alist_field(filenameA, field_name):
     else:
         return results
 
-    have_results = False;
+    have_results = False
 
     if fileA.nroot != 0:
-        for x in range(fileA.nroot):
+        for x in list(range(fileA.nroot)):
             temp_result = getattr(fileA.rootdata[x], field_name, NonObject)
             if temp_result is None:
                 break
             else:
-                have_results = True;
+                have_results = True
                 results.append( temp_result )
         if have_results:
             return results
 
     if fileA.ncorel != 0:
-        for x in range(fileA.ncorel):
+        for x in list(range(fileA.ncorel)):
             temp_result = getattr(fileA.coreldata[x], field_name, NonObject)
             if temp_result is None:
                 break
             else:
-                have_results = True;
+                have_results = True
                 results.append( temp_result )
         if have_results:
             return results
 
     if fileA.nfringe != 0:
-        for x in range(fileA.nfringe):
+        for x in list(range(fileA.nfringe)):
             temp_result = getattr(fileA.fringedata[x], field_name, NonObject)
             if temp_result is None:
                 break
             else:
-                print()
-                have_results = True;
+                have_results = True
                 results.append( temp_result )
         if have_results:
             return results
 
     if fileA.ntriangle != 0:
-        for x in range(fileA.ntriangle):
+        for x in list(range(fileA.ntriangle)):
             temp_result = getattr(fileA.triangledata[x], field_name, NonObject)
             if temp_result is None:
                 break
             else:
-                have_results = True;
+                have_results = True
                 results.append( temp_result )
         if have_results:
             return results
 
     if fileA.nquad != 0:
-        for x in range(fileA.nquad):
+        for x in list(range(fileA.nquad)):
             temp_result = getattr(fileA.quaddata[x], field_name, NonObject)
             if temp_result is None:
                 break
             else:
-                have_results = True;
+                have_results = True
                 results.append( temp_result )
         if have_results:
             return results
 
     return results
 
-#function to pull lines from two afiles, match them by the root_id,
-#then return them in a list of pairs
+
 def extract_alist_fringe_line_pairs(filenameA, filenameB):
+    """function to pull lines from two afiles, match them by the root_id,
+    then return them in a list of pairs"""
 
     #get fringe lines from each file
     fringesA = get_file_fringelines(filenameA)
@@ -1065,8 +1192,8 @@ def extract_alist_fringe_line_pairs(filenameA, filenameB):
     return matched_lines
 
 
-#function to pull out the field of interest from a list of matched line pairs
 def extract_alist_fringe_field_pairs(list_of_pairs, field_name):
+    """function to pull out the field of interest from a list of matched line pairs"""
     #extract the field of interest
     results = []
     NonObject = None
@@ -1081,16 +1208,17 @@ def extract_alist_fringe_field_pairs(list_of_pairs, field_name):
             results.append(tup)
     return results
 
-#function to pull lines from two afiles, match them by the root_id,
-#then extract the field/column of interest, then return them in a list of pairs
-#(combines the above two functions in one call)
 def extract_alist_fringe_field_pairs_from_file( filenameA, filenameB, field_name):
+    """ function to pull lines from two afiles, match them by the root_id,
+    then extract the field/column of interest, then return them in a list of pairs """
+    #(combines the above two functions in one call)
     matched_list = extract_alist_fringe_line_pairs(filenameA, filenameB)
     return extract_alist_fringe_field_pairs(matched_list, field_name)
 
-#function to filter out certain afile line-pairs based on some allowed range on
-#on a particular data field (numerical data only at the moment)
+
 def filter_alist_fringe_field_pairs(list_of_pairs, field_name, field_lower_limit, field_upper_limit):
+    """function to filter out certain afile line-pairs based on some allowed range on
+    on a particular data field (numerical data only at the moment) """
     results = []
     NonObject = None
     #check the field value for each element of the pair is in the specified range
@@ -1106,10 +1234,60 @@ def filter_alist_fringe_field_pairs(list_of_pairs, field_name, field_lower_limit
                     results.append(tup)
     return results
 
-#take the difference between each element in a list of paired data
 def pairwise_difference(list_of_pairs):
+    """take the difference between each element in a list of paired data"""
     results = []
     for x in list_of_pairs:
         diff = x[0] - x[1]
         results.append(diff)
     return results
+
+#some utilities needed to make scratch directories for fringe fitting work
+#this is needed so we can fringe fit without polluting the original data directory
+#and we so we do not need to completely replicate the data
+
+
+def ignore_files(directory, directory_contents):
+    """this function is to be passed to shutil.copytree in order to ignore regular files
+    as well as directories which contain a specific pattern (scratch or prepass) """
+    objects_to_ignore = []
+    for obj in directory_contents:
+        if os.path.isfile( os.path.join(directory, obj) ):
+            objects_to_ignore.append(obj)
+        elif os.path.isdir( os.path.join(directory, obj) ):
+            if 'scratch' in os.path.join(directory, obj) or 'prepass' in os.path.join(directory, obj) :
+                objects_to_ignore.append(obj)
+    return objects_to_ignore
+
+def mirror_directory_with_symlinks(source_root, dest_root, mk4types_only=True, exclude_list=None):
+    """ mirror the files in one directory to a scratch data directory containing only symlinks """
+    if exclude_list == None:
+        exclude_list=['prepass', 'scratch']
+    assert os.path.isdir(source_root)
+    #check that the destination directory doesn't already exists
+    if not os.path.exists(dest_root):
+        #first we copy the directory structure
+        shutil.copytree(source_root, dest_root, ignore=ignore_files)
+        #then we recursively create symlinks for each file from source to dest
+        #all directories which match the exclude pattern will not have symlinks placed in them
+        for current_root, subdirectories, files in os.walk(source_root):
+            subdirectories[:] = [d for d in subdirectories if not any(e in d for e in exclude_list) ]
+            for filename in files:
+                if mk4types_only is True:
+                    #only create symlink if this is a mk4type file (type-1, type-2, type-3, or ovex)
+                    full_name = os.path.join(current_root, filename)
+                    fileroot, fileext = os.path.splitext(full_name)
+                    if len(fileext.strip('. ')) == 6: #assumption is that all mk4type files have a 6-char 'root' code
+                        target_abspath = os.path.abspath(full_name)
+                        target_relpath = os.path.relpath(target_abspath, source_root)
+                        #now we create a symlink from the file to dest_root/file_relpath
+                        link_path = os.path.abspath( os.path.join(dest_root, target_relpath) )
+                        os.symlink(target_abspath, link_path)
+                else:
+                    #create symlink to this file regardless
+                    full_name = os.path.join(current_root, filename)
+                    target_abspath = os.path.abspath(full_name)
+                    target_relpath = os.path.relpath(target_abspath, source_root)
+                    #now we create a symlink from the file to dest_root/file_relpath
+                    link_path = os.path.abspath( os.path.join(dest_root, target_relpath) )
+                    os.symlink(target_abspath, link_path)

@@ -276,6 +276,8 @@ int pcal_interp (struct mk4_sdata *sd1,
                                     // difx gives time for centroid of pcal interval
                         if (param->corr_type == DIFX)
                             time[n] = t309->rot / 32e6;
+                        else if (param->corr_type == SFXC)
+                            time[n] = t309->rot / 32e6;
                         else
                             time[n] = t309->rot / 32e6 + 0.5 * t309->acc_period;
                         }
@@ -317,7 +319,7 @@ int pcal_interp (struct mk4_sdata *sd1,
                         }
                                         // correct for LSB pcal sign flip after 2012y124d
                     if (after_2012_124
-                     && param->corr_type == DIFX
+                     && (param->corr_type == DIFX || param->corr_type == SFXC)
                      && (ch == LSB_LCP || ch == LSB_RCP))
                         imagval = -imagval;
                                         /* Apply these values to corel array */

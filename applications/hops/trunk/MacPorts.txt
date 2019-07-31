@@ -1,5 +1,12 @@
 Getting HOPS running via MacPorts.
 
+00) you'll need Xcode installed for all of this, and since Mojave,
+    headers are not installed at top level.  This will fix it:
+
+    # install Xcode
+    sudo xcode-select --install
+    sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
+
 0) get Macports.
 
     http://guide.macports.org

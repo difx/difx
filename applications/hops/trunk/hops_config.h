@@ -153,6 +153,10 @@
 /* Define to 1 if you have the <locale.h> header file. */
 #define HAVE_LOCALE_H 1
 
+/* Define to 1 if the type `long double' works and has more range or precision
+   than `double'. */
+#define HAVE_LONG_DOUBLE_WIDER 1
+
 /* Define to 1 if `lstat' has the bug that it succeeds when given the
    zero-length file name argument. */
 /* #undef HAVE_LSTAT_EMPTY_STRING_BUG */
@@ -322,10 +326,10 @@
 #define HAVE_XLRGetDriveTemp 0
 
 /* HOPS package rev number */
-#define HOPS_REVISION 3.19
+#define HOPS_REVISION 3.20
 
 /* Haystack SVN rev number */
-#define HOPS_SVN_REV 2512
+#define HOPS_SVN_REV 2790
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
@@ -364,16 +368,16 @@
 #define PACKAGE_NAME "hops"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "hops 3.19"
+#define PACKAGE_STRING "hops 3.20"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "hops"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.19"
+#define PACKAGE_VERSION "3.20"
 
 /* Python install dir */
-/* #undef PYTHON_SITE_PREFIX */
+#define PYTHON_SITE_PREFIX "${prefix}/lib/python2.6/site-packages"
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
@@ -393,7 +397,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "3.19"
+#define VERSION "3.20"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

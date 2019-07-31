@@ -1,0 +1,7 @@
+from distutils.core import setup
+
+#TODO fix verions number to be auto-generated from cmake/autoconf
+setup(name='ffcontrol',
+    version='0.1',
+    package_dir={ '': '@abs_srcdir@' },
+    packages=['ffcontrol'])

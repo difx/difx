@@ -36,7 +36,7 @@ int parse_cmdline (int argc, char **argv,
 
     if (argc == 1)
         {
-        syntax ();
+        syntax("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/postproc/fringex/parse_cmdline.c $");
         return (1);
         }
                                         /* Defaults */
@@ -177,7 +177,7 @@ int parse_cmdline (int argc, char **argv,
                                         /* Bad syntax or -? specified */
     if (err)
         { 
-        syntax ();
+        syntax("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/postproc/fringex/parse_cmdline.c $");
         return (-1);
         }
 

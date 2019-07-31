@@ -36,19 +36,15 @@ export DATADIR="$CURRENT_TEST_DIR/test_data_copy"
 chmod -R u+rw $DATADIR
 
 #copy in the python libraries which have been orphaned by automake distcheck
-if [ "$DO_SETUP" == 'true' ]
-then
-  cp $srcdir/hopstest.py $CURRENT_TEST_DIR
-  cp $PATH_TO_MK4IOSOURCE/afio.py $CURRENT_TEST_DIR
-  cp $PATH_TO_MK4IOSOURCE/mk4.py $CURRENT_TEST_DIR
-  #set up some environmental variable so we can find the python libs
-  #and the libmk4io.so shared library
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PATH_TO_MK4IOLIB
-  export PYTHONPATH=$PYTHONPATH:$PATH_TO_MK4IOLIB:$CURRENT_TEST_DIR
-fi
+#set up some environmental variable so we can find the python libs
+#and the libmk4io.so shared library
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PATH_TO_MK4IOLIB
+export PYTHONPATH=$PYTHONPATH:$PATH_TO_MK4IOLIB:$CURRENT_TEST_DIR:$srcdir
 
 #run the test suite (environmental var DATADIR should be set before running this)
-python ./hopstestsuite.py
+#the -B option is makes sure that python doesn't produce any __pycache__ (.pyc)
+#files that we have to clean up later
+python -B ./hopstestsuite.py
 PASS_FAIL=$?
 
 #once again make sure we have permission to mess around in the test directory
@@ -64,17 +60,12 @@ then
     then
       rm -f $CURRENT_TEST_DIR/$pyfile.py
     fi
-    if [ -f "$CURRENT_TEST_DIR/$pyfile.pyc" ]
-    then
-      rm -f $CURRENT_TEST_DIR/$pyfile.pyc
-    fi
   done
 fi
 
 if [ -d "$DATADIR" ]; then
   rm -r "$DATADIR"
 fi
-
 
 if [ $PASS_FAIL -eq 0 ]
 then

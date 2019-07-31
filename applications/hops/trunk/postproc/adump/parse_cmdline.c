@@ -157,7 +157,7 @@ parse_cmdline (int argc,
 	msg ("", 3);
 	if (printfields)
 	    {
-	    syntax ();
+	    syntax("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/postproc/adump/parse_cmdline.c $");
 	    return (-1);
 	    }
 	else return (1);

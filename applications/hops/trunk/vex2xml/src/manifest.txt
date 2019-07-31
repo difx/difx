@@ -1,0 +1,2 @@
+Main-Class: VEX2XML
+Class-Path: . ../lib/antlr-3.5.2-complete.jar ../lib/commons-cli-1.2.jar

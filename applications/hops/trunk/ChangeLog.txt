@@ -1,4 +1,1573 @@
 ------------------------------------------------------------------------
+r2788 | barrettj | 2019-07-22 08:02:33 -0400 (Mon, 22 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+
+make checksum match
+
+------------------------------------------------------------------------
+r2786 | barrettj | 2019-07-19 14:44:24 -0400 (Fri, 19 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+
+import video band pass changes to c-to-python control file interface library
+
+------------------------------------------------------------------------
+r2785 | barrettj | 2019-07-19 14:44:24 -0400 (Fri, 19 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+fix values in fourphase make-check test
+
+------------------------------------------------------------------------
+r2784 | barrettj | 2019-07-19 14:44:23 -0400 (Fri, 19 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+note to self: need to check for dTEC closure when generate pc_phases_x/y
+
+------------------------------------------------------------------------
+r2783 | barrettj | 2019-07-19 14:44:23 -0400 (Fri, 19 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+
+clean up debug statements
+
+------------------------------------------------------------------------
+r2782 | barrettj | 2019-07-19 14:44:23 -0400 (Fri, 19 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/__init__.py
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+
+fix ion-search/fix control files
+
+------------------------------------------------------------------------
+r2779 | barrettj | 2019-07-16 09:45:35 -0400 (Tue, 16 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/parser.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/default_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/init_tokens.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_video_bp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/delay_rate.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/fringe_search.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+
+import fourfit changes (video bp correction) to chops
+
+------------------------------------------------------------------------
+r2778 | barrettj | 2019-07-16 09:45:34 -0400 (Tue, 16 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+
+get rid of silly restriction on lower-case station mk4-ids
+
+------------------------------------------------------------------------
+r2776 | gbc | 2019-07-15 10:28:08 -0400 (Mon, 15 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/MacPorts.txt
+
+a note about headers on MacOS
+
+------------------------------------------------------------------------
+r2774 | rjc | 2019-07-12 13:14:16 -0400 (Fri, 12 Jul 2019) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/Makefile.am
+   A /trunk/postproc/fourfit/apply_video_bp.c
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/delay_rate.c
+   M /trunk/postproc/fourfit/fringe_search.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/init_tokens.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/parser.h
+
+add new ff code for video bandpass corrections
+
+------------------------------------------------------------------------
+r2769 | barrettj | 2019-06-21 15:12:47 -0400 (Fri, 21 Jun 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+
+import fix into chops
+
+------------------------------------------------------------------------
+r2768 | rjc | 2019-06-21 14:13:40 -0400 (Fri, 21 Jun 2019) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/generate_text.c
+
+fixed rev 2389 bug in generate_txt
+
+------------------------------------------------------------------------
+r2767 | barrettj | 2019-06-21 12:07:11 -0400 (Fri, 21 Jun 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/__init__.py
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/tests/3593.tar.gz
+   M /trunk/chops/source/python_src/tests/test_pcc_generate.py
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/vpal/__init__.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/pcc_delay_fitting.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/pcc_plotting_utils.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+squash merge of vgos post-proc software release changes
+
+------------------------------------------------------------------------
+r2763 | rjc | 2019-06-11 12:35:59 -0400 (Tue, 11 Jun 2019) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/cf_keywords.tex
+   M /trunk/doc/fourfit/fourfit_users_manual.pdf
+
+update ff manual with video bandpass (vbp) commands
+
+------------------------------------------------------------------------
+r2760 | gbc | 2019-05-24 14:14:42 -0400 (Fri, 24 May 2019) | 1 line
+Changed paths:
+   A /trunk/doc/vgos/Asymmetric-Singleband-Delay-Functions.pdf
+
+a report from roger
+
+------------------------------------------------------------------------
+r2753 | gbc | 2019-04-26 16:13:06 -0400 (Fri, 26 Apr 2019) | 1 line
+Changed paths:
+   A /trunk/doc/vgos
+   A /trunk/doc/vgos/vgos-data-processing.pdf
+
+capturing this
+
+------------------------------------------------------------------------
+r2750 | barrettj | 2019-04-23 13:51:51 -0400 (Tue, 23 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/import_ffcore.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/make_passes.c
+
+fixing import
+
+------------------------------------------------------------------------
+r2749 | barrettj | 2019-04-23 13:51:51 -0400 (Tue, 23 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/parser.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/criteria_match.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/default_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/init_tokens.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/lex.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/set_pointers.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/gate_off.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/precorrect.c
+
+import changes to chops
+
+------------------------------------------------------------------------
+r2747 | rjc | 2019-04-19 13:59:02 -0400 (Fri, 19 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/criteria_match.c
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/gate_off.c
+   M /trunk/postproc/fourfit/init_tokens.c
+   M /trunk/postproc/fourfit/lex.c
+   M /trunk/postproc/fourfit/make_passes.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/parser.h
+   M /trunk/postproc/fourfit/precorrect.c
+   M /trunk/postproc/fourfit/set_pointers.c
+
+in fourfit new chan_ids override for single-char labels
+
+------------------------------------------------------------------------
+r2746 | rjc | 2019-04-19 12:49:35 -0400 (Fri, 19 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/cf_keywords.tex
+   M /trunk/doc/fourfit/fourfit_users_manual.pdf
+
+update ff manual to define new parameter chan_ids
+
+------------------------------------------------------------------------
+r2744 | barrettj | 2019-04-14 08:30:08 -0400 (Sun, 14 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/lifetime.c
+
+fix yet more printf
+
+------------------------------------------------------------------------
+r2742 | barrettj | 2019-04-13 19:05:13 -0400 (Sat, 13 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/check_hops_time.sh
+
+force check_hops_time to verbose
+
+------------------------------------------------------------------------
+r2741 | barrettj | 2019-04-13 19:05:13 -0400 (Sat, 13 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/lifetest.c
+
+fixing some more format specifiers
+
+------------------------------------------------------------------------
+r2739 | barrettj | 2019-04-12 15:30:02 -0400 (Fri, 12 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/Makefile.am
+   M /trunk/misc/time/check_hops_time.sh
+   M /trunk/misc/time/eph_time.c
+   M /trunk/misc/time/hops_time.c
+   M /trunk/misc/time/hops_time.h
+   M /trunk/misc/time/ht_parser.c
+   M /trunk/misc/time/ht_timeis.c
+   M /trunk/misc/time/htime.c
+   M /trunk/misc/time/htime.h
+   M /trunk/misc/time/julian.c
+   M /trunk/misc/time/julian.h
+   M /trunk/misc/time/leapsec.c
+   M /trunk/misc/time/lifetest.c
+   M /trunk/misc/time/lifetime.c
+   M /trunk/misc/time/sc_time.c
+   A /trunk/misc/time/time_float_type.h
+
+fixing time lib issues after GPS rollover
+
+------------------------------------------------------------------------
+r2736 | barrettj | 2019-04-09 13:16:22 -0400 (Tue, 09 Apr 2019) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/misc/time/htime.h
+
+bumping up GPS time precision to use long double...should be supported by most modern *nix/gcc
+
+------------------------------------------------------------------------
+r2731 | gbc | 2019-03-28 16:00:12 -0400 (Thu, 28 Mar 2019) | 1 line
+Changed paths:
+   M /trunk/Copyright
+
+updated for 2019
+
+------------------------------------------------------------------------
+r2729 | gbc | 2019-03-20 14:55:55 -0400 (Wed, 20 Mar 2019) | 1 line
+Changed paths:
+   A /trunk/doc/more-history-from-cjl.txt
+
+another fragment of the past
+
+------------------------------------------------------------------------
+r2727 | gbc | 2019-03-15 15:08:02 -0400 (Fri, 15 Mar 2019) | 1 line
+Changed paths:
+   M /trunk/help/fourfit.doc
+
+fixed typo in help which pointed at a non-existant keyword
+
+------------------------------------------------------------------------
+r2725 | barrettj | 2019-03-12 15:00:35 -0400 (Tue, 12 Mar 2019) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/cf_keywords.tex
+   M /trunk/doc/fourfit/command_line_options.tex
+   M /trunk/doc/fourfit/fourfit_users_manual.pdf
+   M /trunk/doc/fourfit/multitone_pcal.tex
+
+minor change, adding notches feature to fourfit doc
+
+------------------------------------------------------------------------
+r2722 | barrettj | 2019-02-26 08:37:45 -0500 (Tue, 26 Feb 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/fringe_search.c
+
+import to chomps
+
+------------------------------------------------------------------------
+r2720 | rjc | 2019-02-25 09:57:03 -0500 (Mon, 25 Feb 2019) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/fringe_search.c
+   M /trunk/postproc/fourfit/generate_text.c
+
+added exec. machine name to ff plot, remove unneeded gen_cb call
+
+------------------------------------------------------------------------
+r2716 | gbc | 2019-02-13 16:57:38 -0500 (Wed, 13 Feb 2019) | 1 line
+Changed paths:
+   M /trunk/chops/data/Makefile.am
+
+ --force is a linux thingy, -f is BSD/ATT
+
+------------------------------------------------------------------------
+r2715 | gbc | 2019-02-13 15:48:56 -0500 (Wed, 13 Feb 2019) | 3 lines
+Changed paths:
+   M /trunk/chops/import_hops.sh
+   M /trunk/chops/source/c_src/vex/src/scan_info.c
+   M /trunk/chops/source/c_src/vex/src/vex_init.c
+   M /trunk/sub/vex/scan_info.c
+   M /trunk/sub/vex/vex_init.c
+
+Removed duplicated symbols between scan_info.c and vex_init.c
+and migrated the definition to vex_init.c.
+
+
+------------------------------------------------------------------------
+r2701 | barrettj | 2019-01-31 14:17:28 -0500 (Thu, 31 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_harness.sh.in
+   M /trunk/configure.ac
+
+some configure fixes
+
+------------------------------------------------------------------------
+r2698 | barrettj | 2019-01-29 09:01:54 -0500 (Tue, 29 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+
+fix cached test values for fourphase test
+
+------------------------------------------------------------------------
+r2696 | barrettj | 2019-01-28 23:58:38 -0500 (Mon, 28 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+
+ensuring that ion-fixed control files are applied on a per-baseline basis by fourphase
+
+------------------------------------------------------------------------
+r2695 | barrettj | 2019-01-28 13:43:43 -0500 (Mon, 28 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/Makefile.am
+
+minor change
+
+------------------------------------------------------------------------
+r2694 | barrettj | 2019-01-28 13:43:38 -0500 (Mon, 28 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/3593.tar.gz
+   M /trunk/chops/source/python_src/tests/Makefile.am
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+   M /trunk/chops/source/python_src/tests/test_harness.sh.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+
+eliminated a order of operations sensitive bug in fourphase, ok for now, but this may need investigation in the future
+
+------------------------------------------------------------------------
+r2693 | barrettj | 2019-01-28 13:43:30 -0500 (Mon, 28 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_ffres2pcp.py
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+
+debugging test harness
+
+------------------------------------------------------------------------
+r2691 | barrettj | 2019-01-26 12:12:27 -0500 (Sat, 26 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_harness.sh.in
+
+disabling chops make-check unless env set by user
+
+------------------------------------------------------------------------
+r2689 | barrettj | 2019-01-25 21:51:05 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+
+debug
+
+------------------------------------------------------------------------
+r2688 | barrettj | 2019-01-25 21:51:04 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_harness.sh.in
+
+fix chops test harness when HOPS_SETUP exists
+
+------------------------------------------------------------------------
+r2687 | barrettj | 2019-01-25 16:25:13 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/tests/Makefile.am
+   M /trunk/chops/source/python_src/tests/test_ffres2pcp.py
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+   M /trunk/data/ff_testdata/run_testsuite.sh
+
+now have make check working for python2/3 w/ chops tests incorporated, distcheck may need work
+
+------------------------------------------------------------------------
+r2686 | barrettj | 2019-01-25 15:06:37 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/vex2xml/Makefile.am
+
+making sure vex2xml pkg data makes it into the dist tarball
+
+------------------------------------------------------------------------
+r2685 | barrettj | 2019-01-25 14:32:43 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/mk4_module/afiob/afiob.py
+   M /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py
+   M /trunk/chops/source/python_src/tests/Makefile.am
+   M /trunk/chops/source/python_src/tests/test_ffres2pcp.py
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+   D /trunk/chops/source/python_src/tests/test_harness.sh
+   A /trunk/chops/source/python_src/tests/test_harness.sh.in
+   M /trunk/chops/source/python_src/tests/test_pcc_generate.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+   M /trunk/configure.ac
+
+getting chops/vpal test code working in automake build system
+
+------------------------------------------------------------------------
+r2684 | barrettj | 2019-01-25 14:32:42 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/Makefile.am
+   A /trunk/chops/source/python_src/tests/Makefile.am
+   M /trunk/chops/source/python_src/tests/test_ffres2pcp.py
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+   M /trunk/chops/source/python_src/tests/test_harness.sh
+   M /trunk/configure.ac
+
+got non-integrated test harness working, needs to work with build
+
+------------------------------------------------------------------------
+r2683 | barrettj | 2019-01-25 14:32:41 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_ffres2pcp.py
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+   A /trunk/chops/source/python_src/tests/test_harness.sh
+   M /trunk/chops/source/python_src/tests/test_pcc_generate.py
+
+starting work to incoporate tests into make check
+
+------------------------------------------------------------------------
+r2682 | barrettj | 2019-01-25 14:32:41 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_ffres2pcp.py
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+   M /trunk/chops/source/python_src/tests/test_pcc_generate.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+getting pcc test to work, now need to integrate w/ build system
+
+------------------------------------------------------------------------
+r2681 | barrettj | 2019-01-25 14:32:36 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/tests/3593.tar.gz
+
+adding archived test data folder
+
+------------------------------------------------------------------------
+r2680 | barrettj | 2019-01-25 14:32:31 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/0727-115.zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/E..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/EE..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/EV..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/G..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/GE..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/GG..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/GV..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/V..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0000/VV..zjkxgp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0019/0552+398.zjkxhp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0019/E..zjkxhp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0019/EE..zjkxhp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0019/G..zjkxhp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0019/GE..zjkxhp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0019/GG..zjkxhp
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/0552+398.zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/E..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/EE..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/EV..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/G..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/GE..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/GG..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/GV..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/V..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/059-0116/VV..zjkxko
+   D /trunk/chops/source/python_src/tests/data/3593/cf_GEV_test
+   D /trunk/chops/source/python_src/tests/data/3593/cf_GEV_test_pcphases
+   D /trunk/chops/source/python_src/tests/data/3593.tar.gz
+
+removing test data folder, in favor of archive
+
+------------------------------------------------------------------------
+r2679 | barrettj | 2019-01-25 14:32:30 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   A /trunk/chops/source/python_src/tests/test_pcc_generate.py
+
+adding proxy cable cal test, WIP
+
+------------------------------------------------------------------------
+r2678 | barrettj | 2019-01-25 14:32:30 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+ensuring that the np.random generator is re-seeded consistently before every basinhopping fit in proxy-cable-cal, this doesn't significantly affect the results, but makes them consistent between subsequent runs
+
+------------------------------------------------------------------------
+r2677 | barrettj | 2019-01-25 14:32:30 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_fourphase.py
+
+fourphase test script
+
+------------------------------------------------------------------------
+r2676 | barrettj | 2019-01-25 14:32:29 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/tests/test_ffres2pcp.py
+   A /trunk/chops/source/python_src/tests/test_fourphase.py
+
+adding test for fourphase into chops
+
+------------------------------------------------------------------------
+r2675 | barrettj | 2019-01-25 14:32:18 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/tests
+   A /trunk/chops/source/python_src/tests/data
+   A /trunk/chops/source/python_src/tests/data/3593
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/0727-115.zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/E..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/EE..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/EV..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/G..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/GE..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/GG..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/GV..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/V..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0000/VV..zjkxgp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0019
+   A /trunk/chops/source/python_src/tests/data/3593/059-0019/0552+398.zjkxhp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0019/E..zjkxhp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0019/EE..zjkxhp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0019/G..zjkxhp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0019/GE..zjkxhp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0019/GG..zjkxhp
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/0552+398.zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/E..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/EE..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/EV..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/G..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/GE..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/GG..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/GV..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/V..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/059-0116/VV..zjkxko
+   A /trunk/chops/source/python_src/tests/data/3593/cf_GEV_test
+   A /trunk/chops/source/python_src/tests/data/3593/cf_GEV_test_pcphases
+   A /trunk/chops/source/python_src/tests/data/3593.tar.gz
+   A /trunk/chops/source/python_src/tests/test_ffres2pcp.py
+
+starting to add some integration tests for the chops/vpal package
+
+------------------------------------------------------------------------
+r2674 | barrettj | 2019-01-25 14:32:05 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+splitting final pc_phases values calculation from control file line generation in ffres2pcp
+
+------------------------------------------------------------------------
+r2673 | barrettj | 2019-01-25 14:32:05 -0500 (Fri, 25 Jan 2019) | 1 line
+Changed paths:
+   A /trunk/chops/dev_readme.txt (from /trunk/chops/readme.txt:2672)
+   D /trunk/chops/readme.txt
+
+rename readme in chops
+
+------------------------------------------------------------------------
+r2671 | barrettj | 2019-01-17 12:30:07 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/include/plot_data_dir.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_data_dir.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/adhoc_flag.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adhoc_flag.c
+   M /trunk/postproc/fourfit/adhoc_flag.c
+   M /trunk/postproc/fourfit/adhoc_flag.h
+   M /trunk/postproc/fourfit/plot_data_dir.c
+   M /trunk/postproc/fourfit/plot_data_dir.h
+
+moving implementation defines out of header for adhoc_flags and plot_data_dir, as this seems to cause order dependent compilation problems
+
+------------------------------------------------------------------------
+r2670 | barrettj | 2019-01-17 12:30:06 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adhoc_flag.c
+
+re-importing adhoc_flag.c
+
+------------------------------------------------------------------------
+r2669 | barrettj | 2019-01-17 12:30:06 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/import_ffmath.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/import_ffplot.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+
+fixing chops import scripts to catch missing files
+
+------------------------------------------------------------------------
+r2668 | barrettj | 2019-01-17 12:30:05 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/data/ff_testdata/hopstest.py
+
+correcting set() syntax to maintain backwards compatibility with python 2.6
+
+------------------------------------------------------------------------
+r2667 | barrettj | 2019-01-17 12:30:05 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/run_testsuite.sh
+
+make sure the no .pyc files are generated during distcheck
+
+------------------------------------------------------------------------
+r2666 | barrettj | 2019-01-17 12:30:05 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/__init__.py
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/__init__.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+   M /trunk/data/ff_testdata/hopstest.py
+
+some reorganization to fix distcheck
+
+------------------------------------------------------------------------
+r2665 | barrettj | 2019-01-17 12:30:04 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/sub/mk4py/afio.py.in
+   M /trunk/sub/mk4py/mk4.py.in
+
+revert library loader funcs
+
+------------------------------------------------------------------------
+r2664 | barrettj | 2019-01-17 12:30:04 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/hopstest.py
+   M /trunk/data/ff_testdata/hopstestsuite.py.in
+
+make check now passes with python-3.5
+
+------------------------------------------------------------------------
+r2663 | barrettj | 2019-01-17 12:30:04 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/sub/mk4py/afio.py.in
+   M /trunk/sub/mk4py/mk4.py.in
+
+python 3.5 changes to sub/afio.py.in and sub/mk4.py.in
+
+------------------------------------------------------------------------
+r2662 | barrettj | 2019-01-17 12:30:03 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/sub/mk4py/mk4.py.in
+
+work on python-3 compat in mk4py
+
+------------------------------------------------------------------------
+r2661 | barrettj | 2019-01-17 12:30:03 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/hopstest.py
+   M /trunk/data/ff_testdata/hopstestsuite.py.in
+   M /trunk/sub/mk4py/mk4.py.in
+
+some clean up in /sub/mk4py/mk4.py.in
+
+------------------------------------------------------------------------
+r2660 | barrettj | 2019-01-17 12:30:03 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/pypath.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+minor changes
+
+------------------------------------------------------------------------
+r2659 | barrettj | 2019-01-17 12:30:02 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/setup.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+making the progress.bar an optional dependency, now only requires numpy, scipy, and matplotlib
+
+------------------------------------------------------------------------
+r2658 | barrettj | 2019-01-17 12:30:02 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/setup.py.in
+   M /trunk/chops/source/python_src/hopstest_module/setup.py.in
+   M /trunk/chops/source/python_src/mk4_module/setup.py.in
+   M /trunk/chops/source/python_src/vex_module/setup.py.in
+   M /trunk/chops/source/python_src/vpal_module/setup.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+removing setuptools, making progress bar optional
+
+------------------------------------------------------------------------
+r2657 | barrettj | 2019-01-17 12:29:59 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/chops/source/python_src/scripts/fourphase.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+adding some abs import statements, and ability to toggle info statement in cf
+
+------------------------------------------------------------------------
+r2656 | barrettj | 2019-01-17 12:29:57 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+removing optional dependency on 'tabulate' package
+
+------------------------------------------------------------------------
+r2655 | barrettj | 2019-01-17 12:29:57 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   D /trunk/chops/source/python_src/vpal_module/deprecated_modules/control_analysis_lib.py
+   D /trunk/chops/source/python_src/vpal_module/deprecated_modules/mixedmode.py
+   D /trunk/chops/source/python_src/vpal_module/deprecated_modules/plotting.py
+   D /trunk/chops/source/python_src/vpal_module/deprecated_modules/source_analysis_lib.py
+
+removing deprecated modules, may re-introduces these again at a later time
+
+------------------------------------------------------------------------
+r2654 | barrettj | 2019-01-17 12:29:56 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/ffcontrol_module/setup.py.in
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/hopstest_module/setup.py.in
+   M /trunk/chops/source/python_src/mk4_module/afiob/afiob.py
+   M /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py
+   M /trunk/chops/source/python_src/mk4_module/setup.py.in
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/chops/source/python_src/scripts/fourphase.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_plot.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+   M /trunk/chops/source/python_src/vex_module/setup.py.in
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+   M /trunk/chops/source/python_src/vpal_module/setup.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/report_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+cleaning up imports, and adding some exception catching
+
+------------------------------------------------------------------------
+r2653 | barrettj | 2019-01-17 12:29:51 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+
+minor clean up
+
+------------------------------------------------------------------------
+r2652 | barrettj | 2019-01-17 12:29:50 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+minimal change commit to tag chops version with working py2.7 and py3.5 impl
+
+------------------------------------------------------------------------
+r2651 | barrettj | 2019-01-17 12:29:49 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/chops/source/python_src/scripts/fourphase.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+py3 chops scripts/libs looking much better now
+
+------------------------------------------------------------------------
+r2650 | barrettj | 2019-01-17 12:29:47 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+first working python-3 version of vpal lib, needs more debugging and check for py2 compat
+
+------------------------------------------------------------------------
+r2649 | barrettj | 2019-01-17 12:29:45 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/mk4_module/afiob/afiob.py
+   M /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+trying to get things working with python3...lots of issues with unicode/byte code incompatibility
+
+------------------------------------------------------------------------
+r2648 | barrettj | 2019-01-17 12:29:44 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/chops/source/python_src/scripts/fourphase.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_plot.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+applying futurize stage1/2 to scripts
+
+------------------------------------------------------------------------
+r2647 | barrettj | 2019-01-17 12:29:43 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/report_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+applying futurize stage2 to chops libs
+
+------------------------------------------------------------------------
+r2646 | barrettj | 2019-01-17 12:29:41 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+stage1 of futurize in chops
+
+------------------------------------------------------------------------
+r2645 | barrettj | 2019-01-17 12:29:40 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+fix name change
+
+------------------------------------------------------------------------
+r2644 | barrettj | 2019-01-17 12:29:39 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+fix indent
+
+------------------------------------------------------------------------
+r2643 | barrettj | 2019-01-17 12:29:39 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_plot.py.in
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+make sure matplotlib plotting backed is set to Agg in scripts but not libs
+
+------------------------------------------------------------------------
+r2642 | barrettj | 2019-01-17 12:29:38 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+should be the last of the docstrings
+
+------------------------------------------------------------------------
+r2641 | barrettj | 2019-01-17 12:29:38 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+pcc docstrings
+
+------------------------------------------------------------------------
+r2640 | barrettj | 2019-01-17 12:29:38 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+ and more docstrings
+
+------------------------------------------------------------------------
+r2639 | barrettj | 2019-01-17 12:29:37 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+yet more docstrings
+
+------------------------------------------------------------------------
+r2638 | barrettj | 2019-01-17 12:29:36 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+docstrings
+
+------------------------------------------------------------------------
+r2637 | barrettj | 2019-01-17 12:29:35 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/mk4_module/afiob/afiob.py
+   M /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+
+more docstrings
+
+------------------------------------------------------------------------
+r2636 | barrettj | 2019-01-17 12:29:33 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+
+bugfix for mean/stddev calls for stations with no data in fourphase, and add option to symlink routine to exclude non-mk4 type files
+
+------------------------------------------------------------------------
+r2635 | barrettj | 2019-01-17 12:29:32 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/__init__.py
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/__init__.py
+
+some minor fix/clean up
+
+------------------------------------------------------------------------
+r2634 | barrettj | 2019-01-17 12:29:31 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+
+adding simple function for  station pol detect, completely untested
+
+------------------------------------------------------------------------
+r2633 | barrettj | 2019-01-17 12:29:30 -0500 (Thu, 17 Jan 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+
+adding ability to select individual band-pols in pcc_select args
+
+------------------------------------------------------------------------
+r2624 | gbc | 2018-12-12 13:48:25 -0500 (Wed, 12 Dec 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+added more help on pgplot
+
+------------------------------------------------------------------------
+r2620 | rjc | 2018-12-11 09:55:52 -0500 (Tue, 11 Dec 2018) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/cf_keywords.tex
+   M /trunk/doc/fourfit/fourfit_users_manual.pdf
+   M /trunk/doc/fourfit/multitone_pcal.tex
+
+clarify fourfit manual doco on pc_period
+
+------------------------------------------------------------------------
+r2614 | gbc | 2018-11-26 13:51:15 -0500 (Mon, 26 Nov 2018) | 1 line
+Changed paths:
+   D /trunk/correlator/prog/doc/help/Help.html
+   R /trunk/correlator/prog/doc/help/index.html (from /trunk/correlator/prog/doc/help/Help.html:2613)
+   D /trunk/help/attic/html/Help.html
+   R /trunk/help/attic/html/index.html (from /trunk/help/attic/html/Help.html:2613)
+
+removed some low-level symlinks in old trash
+
+------------------------------------------------------------------------
+r2613 | barrettj | 2018-11-26 11:03:16 -0500 (Mon, 26 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+minor changes to pcc
+
+------------------------------------------------------------------------
+r2612 | barrettj | 2018-11-26 09:28:42 -0500 (Mon, 26 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+remove pynfft from pcc
+
+------------------------------------------------------------------------
+r2611 | barrettj | 2018-11-26 09:17:10 -0500 (Mon, 26 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+re-enable Agg backend for matplot lib in proxy cable cal
+
+------------------------------------------------------------------------
+r2609 | barrettj | 2018-11-21 15:58:03 -0500 (Wed, 21 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/aedit/parse_cmdline.c
+   M /trunk/postproc/alist/alist.c
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/parse_cmdline.c
+
+removing svn keywork prop from problematic files
+
+------------------------------------------------------------------------
+r2608 | barrettj | 2018-11-21 15:51:53 -0500 (Wed, 21 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+
+now removing HeadURL keywords
+
+------------------------------------------------------------------------
+r2607 | barrettj | 2018-11-21 15:44:32 -0500 (Wed, 21 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+
+experimenting with svn keyword propset...this seems to be the issue with chops checksum sometimes
+
+------------------------------------------------------------------------
+r2606 | barrettj | 2018-11-21 15:06:30 -0500 (Wed, 21 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/import_hops.sh
+   M /trunk/chops/source/c_src/applications/aedit/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+
+chops import and minor edit
+
+------------------------------------------------------------------------
+r2605 | barrettj | 2018-11-21 15:06:29 -0500 (Wed, 21 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+making proxy cable cal more robust agains bad data
+
+------------------------------------------------------------------------
+r2603 | gbc | 2018-11-17 08:07:58 -0500 (Sat, 17 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/vex/src/get_global_deflist.c
+   M /trunk/chops/source/c_src/vex/src/param_formats.c
+
+copying jan changes to chops
+
+------------------------------------------------------------------------
+r2601 | gbc | 2018-11-16 13:21:01 -0500 (Fri, 16 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/doc/a-short-history.txt
+   M /trunk/sub/vex/get_global_deflist.c
+   M /trunk/sub/vex/param_formats.c
+
+jan changes from difx r8583
+
+------------------------------------------------------------------------
+r2597 | rjc | 2018-11-08 11:16:16 -0500 (Thu, 08 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/difx/dumpvis.c
+
+made dumpvis sense number of ch's automagically
+
+------------------------------------------------------------------------
+r2593 | barrettj | 2018-11-01 16:04:46 -0400 (Thu, 01 Nov 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+bug fix in proxy cable cal to ignore station data files which are more than 1 level down in the directory hierarchy
+
+------------------------------------------------------------------------
+r2577 | barrettj | 2018-10-17 09:15:38 -0400 (Wed, 17 Oct 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vex_module/vexpy/__init__.py
+
+bug fix in vexpy
+
+------------------------------------------------------------------------
+r2575 | gbc | 2018-10-09 10:11:38 -0400 (Tue, 09 Oct 2018) | 1 line
+Changed paths:
+   A /trunk/doc/a-short-history.txt
+
+capturing a script
+
+------------------------------------------------------------------------
+r2570 | gbc | 2018-09-26 13:21:24 -0400 (Wed, 26 Sep 2018) | 2 lines
+Changed paths:
+   M /trunk/configure.ac
+
+added a safety on hops_svn_rev;
+
+
+------------------------------------------------------------------------
+r2567 | barrettj | 2018-09-20 14:24:01 -0400 (Thu, 20 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+
+make sure to remove install manifests
+
+------------------------------------------------------------------------
+r2566 | barrettj | 2018-09-20 14:11:28 -0400 (Thu, 20 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.in
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am.in
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am.in
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am.in
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am.in
+
+hopefully a fix for python uninstall problem
+
+------------------------------------------------------------------------
+r2565 | gbc | 2018-09-20 13:42:43 -0400 (Thu, 20 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/import_hops.sh
+   M /trunk/chops/source/c_src/applications/aedit/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+
+updated for checksums
+
+------------------------------------------------------------------------
+r2563 | barrettj | 2018-09-20 07:34:41 -0400 (Thu, 20 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+
+import for chops
+
+------------------------------------------------------------------------
+r2561 | gbc | 2018-09-19 11:00:08 -0400 (Wed, 19 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/vex2xml/Makefile.am
+
+hopes now enabled by default
+
+------------------------------------------------------------------------
+r2559 | barrettj | 2018-09-18 13:26:47 -0400 (Tue, 18 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+
+minor bug fix in summarize_report for fourphase when station is missing
+
+------------------------------------------------------------------------
+r2555 | barrettj | 2018-09-14 11:22:41 -0400 (Fri, 14 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/import_hops.sh
+   M /trunk/chops/source/c_src/applications/aedit/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+
+import chops
+
+------------------------------------------------------------------------
+r2554 | barrettj | 2018-09-14 11:22:41 -0400 (Fri, 14 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/chops/source/python_src/scripts/fourphase.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+reviving logging for vgos utils
+
+------------------------------------------------------------------------
+r2553 | barrettj | 2018-09-14 11:22:40 -0400 (Fri, 14 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+fix
+
+------------------------------------------------------------------------
+r2552 | barrettj | 2018-09-14 11:22:40 -0400 (Fri, 14 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+fix
+
+------------------------------------------------------------------------
+r2551 | barrettj | 2018-09-14 11:22:40 -0400 (Fri, 14 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+fix
+
+------------------------------------------------------------------------
+r2550 | barrettj | 2018-09-14 11:22:39 -0400 (Fri, 14 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+some minor logging changes in vpal
+
+------------------------------------------------------------------------
+r2549 | barrettj | 2018-09-14 11:22:39 -0400 (Fri, 14 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+
+make sure to us np.asarray when calling scipy.stats funcs
+
+------------------------------------------------------------------------
+r2548 | gbc | 2018-09-14 09:29:17 -0400 (Fri, 14 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/vex2xml/src/VEX2XML.java
+
+added property for version
+
+------------------------------------------------------------------------
+r2547 | gbc | 2018-09-14 09:28:13 -0400 (Fri, 14 Sep 2018) | 2 lines
+Changed paths:
+   M /trunk/vex2xml/src/VEX2XML.java
+
+minor formatting changes and made help/version response conforming.
+
+
+------------------------------------------------------------------------
+r2545 | gbc | 2018-09-13 13:06:21 -0400 (Thu, 13 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+vex2xml enabled by default, now
+
+------------------------------------------------------------------------
+r2544 | gbc | 2018-09-13 12:39:03 -0400 (Thu, 13 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/mk4util/include/mk4_util.h
+   M /trunk/chops/source/c_src/mk4util/src/syntax.c
+
+updated chops copy
+
+------------------------------------------------------------------------
+r2543 | gbc | 2018-09-13 12:38:04 -0400 (Thu, 13 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/sub/util/syntax.c
+
+fleshed out version info
+
+------------------------------------------------------------------------
+r2542 | gbc | 2018-09-13 11:57:00 -0400 (Thu, 13 Sep 2018) | 3 lines
+Changed paths:
+   M /trunk/include/mk4_util.h
+   M /trunk/postproc/adump/adump.c
+   M /trunk/postproc/adump/parse_cmdline.c
+   M /trunk/postproc/aedit/parse_cmdline.c
+   M /trunk/postproc/alist/alist.c
+   M /trunk/postproc/average/parse_cmdline.c
+   M /trunk/postproc/bispec/parse_cmdline.c
+   M /trunk/postproc/calamp/calamp.c
+   M /trunk/postproc/calamp/parse_cmdline.c
+   M /trunk/postproc/cofit/parse_cmdline.c
+   M /trunk/postproc/coterp/coterp.c
+   M /trunk/postproc/coterp/parse_cmdline.c
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/parse_cmdline.c
+   M /trunk/postproc/fplot/fplot.c
+   M /trunk/postproc/fringex/parse_cmdline.c
+   M /trunk/postproc/pratio/parse_cmdline.c
+   M /trunk/postproc/search/parse_cmdline.c
+   M /trunk/sub/util/syntax.c
+
+Changed syntax() to include HeadURL (or similar).
+Enabled the HeadURL property on the syntax() users.
+
+
+------------------------------------------------------------------------
+r2540 | gbc | 2018-09-13 11:36:52 -0400 (Thu, 13 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+vex2xml is no longer devel-only, fixed some indents
+
+------------------------------------------------------------------------
+r2536 | barrettj | 2018-09-12 11:51:38 -0400 (Wed, 12 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/__init__.py
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/__init__.py
+   M /trunk/chops/source/python_src/mk4_module/afiob/__init__.py
+   M /trunk/chops/source/python_src/mk4_module/mk4b/__init__.py
+   M /trunk/chops/source/python_src/vex_module/vexpy/__init__.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/__init__.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+
+fix interface to scipy.stats for older versions <=0.12.1
+
+------------------------------------------------------------------------
+r2534 | gbc | 2018-09-11 16:47:23 -0400 (Tue, 11 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/channel_aliasing.txt
+
+started some notes
+
+------------------------------------------------------------------------
+r2533 | gbc | 2018-09-11 12:18:18 -0400 (Tue, 11 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/Makefile.am
+
+fixed up tarball names
+
+------------------------------------------------------------------------
+r2531 | gbc | 2018-09-11 11:57:08 -0400 (Tue, 11 Sep 2018) | 7 lines
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/mk4util/include/mk4_util.h
+   M /trunk/chops/source/c_src/mk4util/src/report_times.c
+   M /trunk/help/fourfit.doc
+   M /trunk/include/mk4_util.h
+   M /trunk/postproc/fourfit/channel_aliasing.txt
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/parse_cmdline.c
+   M /trunk/sub/util/report_times.c
+
+Added the -e option to estimate processing time.  Supported by
+accounting changes in sub/util/report_times.c and include/mk4_util.h,
+and locally in parse_cmdline.c and fourfit.c.  The latter will bail
+from full processing in the presence of the estimation option.
+
+channel_aliasing.txt is a start on planning for this new capability.
+
+
+------------------------------------------------------------------------
+r2530 | gbc | 2018-09-11 11:55:05 -0400 (Tue, 11 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/import_hops.sh
+   M /trunk/chops/run_checksum.sh.in
+
+added help for the clueless
+
+------------------------------------------------------------------------
+r2529 | barrettj | 2018-09-11 10:49:14 -0400 (Tue, 11 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/src/set_baselines.c
+
+chops import
+
+------------------------------------------------------------------------
+r2528 | barrettj | 2018-09-11 10:49:13 -0400 (Tue, 11 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+
+line removal for control files...this is somewhat crude and cannot remove old comments
+
+------------------------------------------------------------------------
+r2526 | gbc | 2018-09-10 11:40:18 -0400 (Mon, 10 Sep 2018) | 1 line
+Changed paths:
+   A /trunk/postproc/fourfit/channel_aliasing.txt
+
+notes from teh difx mtg
+
+------------------------------------------------------------------------
+r2524 | gbc | 2018-09-07 05:38:18 -0400 (Fri, 07 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/aedit/set_baselines.c
+   M /trunk/sub/dfio/copypage/flush_postscript.txt
+
+need to boost baselines
+
+------------------------------------------------------------------------
+r2521 | barrettj | 2018-09-06 04:57:24 -0400 (Thu, 06 Sep 2018) | 19 lines
+Changed paths:
+   M /trunk/chops/CMakeLists.txt
+   M /trunk/chops/configure.ac
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/fill_param.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/vex/text/pformat.txt
+   M /trunk/chops/source/python_src/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/hopstest_module/hopstestsuiteb.py.in
+   M /trunk/chops/source/python_src/mk4_module/afiob/afiob.py
+   M /trunk/chops/source/python_src/mk4_module/mk4b/__init__.py
+   M /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py
+   D /trunk/chops/source/python_src/phorc_module/CMakeLists.txt
+   D /trunk/chops/source/python_src/phorc_module/Makefile.am
+   D /trunk/chops/source/python_src/phorc_module/Makefile.am.in
+   D /trunk/chops/source/python_src/phorc_module/phorc/__init__.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/baseline_fringe_product_list.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/control_analysis_lib.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/ffres2pcp_lib.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/fourphase_lib.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/fringe_file_objects.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/mixedmode.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/plotting.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/processing.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/scripting.py
+   D /trunk/chops/source/python_src/phorc_module/phorc/source_analysis_lib.py
+   D /trunk/chops/source/python_src/phorc_module/setup.py.in
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   A /trunk/chops/source/python_src/scripts/fourphase.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_plot.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   A /trunk/chops/source/python_src/scripts/summarize_report.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+   M /trunk/chops/source/python_src/vex_module/vexpy/vexpy.py
+   A /trunk/chops/source/python_src/vpal_module
+   A /trunk/chops/source/python_src/vpal_module/CMakeLists.txt (from /trunk/chops/source/python_src/phorc_module/CMakeLists.txt:2520)
+   A /trunk/chops/source/python_src/vpal_module/Makefile.am (from /trunk/chops/source/python_src/phorc_module/Makefile.am:2520)
+   A /trunk/chops/source/python_src/vpal_module/Makefile.am.in (from /trunk/chops/source/python_src/phorc_module/Makefile.am.in:2520)
+   A /trunk/chops/source/python_src/vpal_module/deprecated_modules
+   A /trunk/chops/source/python_src/vpal_module/deprecated_modules/control_analysis_lib.py (from /trunk/chops/source/python_src/phorc_module/phorc/control_analysis_lib.py:2520)
+   A /trunk/chops/source/python_src/vpal_module/deprecated_modules/mixedmode.py (from /trunk/chops/source/python_src/phorc_module/phorc/mixedmode.py:2520)
+   A /trunk/chops/source/python_src/vpal_module/deprecated_modules/plotting.py (from /trunk/chops/source/python_src/phorc_module/phorc/plotting.py:2520)
+   A /trunk/chops/source/python_src/vpal_module/deprecated_modules/source_analysis_lib.py (from /trunk/chops/source/python_src/phorc_module/phorc/source_analysis_lib.py:2520)
+   A /trunk/chops/source/python_src/vpal_module/setup.py.in (from /trunk/chops/source/python_src/phorc_module/setup.py.in:2520)
+   A /trunk/chops/source/python_src/vpal_module/vpal
+   A /trunk/chops/source/python_src/vpal_module/vpal/__init__.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/fringe_file_manipulation.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py (from /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py:2520)
+   A /trunk/chops/source/python_src/vpal_module/vpal/report_lib.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+   M /trunk/configure.ac
+   M /trunk/scripts/Makefile.am
+   D /trunk/scripts/fourphase.in
+   M /trunk/sub/mk4py/afio.py.in
+   M /trunk/sub/mk4py/mk4.py.in
+
+Squashed commit of the following:
+
+commit d90c790778cabe97d46dc520d971c5ada2b5385b
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Sep 6 04:19:31 2018 -0400
+
+    chops import
+
+commit 0fb323ceebf69eb6e828be50ad2228d968b86570
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Sep 6 09:52:43 2018 +0200
+
+    squash merging major vgos python lib overhaul
+
+commit adf5e3d88e086cac3aa5cb5bd4878e64a9ba6371
+Author: John Barrett <barrettj@mit.edu>
+Date:   Thu Sep 6 09:42:33 2018 +0200
+
+    fix conflict
+
+------------------------------------------------------------------------
+r2520 | barrettj | 2018-09-06 04:57:22 -0400 (Thu, 06 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/pcc_plot.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+
+adding average plot to proxy cable cal pcc_plot util
+
+------------------------------------------------------------------------
+r2519 | barrettj | 2018-09-06 04:57:21 -0400 (Thu, 06 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/pcc_plot.py.in
+
+changes to pcc plot generation
+
+------------------------------------------------------------------------
+r2518 | barrettj | 2018-09-06 04:57:21 -0400 (Thu, 06 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/pcc_plot.py.in
+
+add additional option to pcc_plot to make all axes uniform limits
+
+------------------------------------------------------------------------
+r2517 | barrettj | 2018-09-06 04:57:21 -0400 (Thu, 06 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+
+make sure pcmt file lines are sorted in time order, also make sure seconds are zero padded to 2 digits
+
+------------------------------------------------------------------------
+r2516 | barrettj | 2018-09-06 04:57:20 -0400 (Thu, 06 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/phorc_module/phorc/proxy_cable_cal.py
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/pcc_plot.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_select.py.in
+   M /trunk/configure.ac
+
+proxy cable cal plotting utilities
+
+------------------------------------------------------------------------
+r2513 | gbc | 2018-09-05 10:16:07 -0400 (Wed, 05 Sep 2018) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/fill_param.c
+   M /trunk/postproc/fourfit/generate_text.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/pcal_interp.c
+   M /trunk/sub/vex/text/pformat.txt
+
+added SFXC for Mark K
+
+------------------------------------------------------------------------
 r2461 | gbc | 2018-07-20 16:34:58 -0400 (Fri, 20 Jul 2018) | 1 line
 Changed paths:
    A /trunk/sub/dfio/copypage/PDF32000_2008.pdf

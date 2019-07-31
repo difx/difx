@@ -1,0 +1,8 @@
+#! /bin/sh
+#
+VEXSUPPORTJAVACLASSPATH=$HOPS_ROOT/$HOPS_ARCH/lib/hops
+exec java -classpath $VEXSUPPORTJAVACLASSPATH \
+    -jar $VEXSUPPORTJAVACLASSPATH/VEX2XML.jar $@
+#
+# eof
+#

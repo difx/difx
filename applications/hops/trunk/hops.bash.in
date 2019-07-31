@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id: hops.bash.in 2220 2018-02-05 20:10:57Z barrettj $
+# $Id: hops.bash.in 2621 2018-12-11 20:57:44Z gbc $
 #
 # Version @VERSION@
 #
@@ -31,6 +31,8 @@ will set up your HOPS environment by modifying the following variables:
     PGPLOT_DIR      sets this appropriately if not otherwise defined
     PGPLOT_TYPE     sets this to /xw if not defined
     PGPLOT_DEV      sets this to /xw if not defined
+    PGPLOT_FONT     may be set to location of grfont.dat
+    PGPLOT_RGB      may be set to location of rgb.txt
     PROGDOC         used by HOPS vhelp to find help texts
     TEXT            used by HOPS for text configuration files
     AHELP           used by aedit for help texts
@@ -91,6 +93,7 @@ esac
     unset HOPS_ROOT HOPS_VERS HOPS_ARCH HOPS_DOCS HOPS_PREFIX
     unset PROGDOC TEXT AHELP DEF_CONTROL DATADIR TESTDATADIR
     unset SCHEDDIR AFILEDIR SYSVEX TASK BIN TMP
+    unset PGPLOT_DIR PGPLOT_TYPE PGPLOT_DEV PGPLOT_FONT PGPLOT_RGB
     unset prefix exec_prefix datarootdir pythondir
     unset Path Info Libp Pyp
   }
@@ -157,6 +160,8 @@ hops_pythondir=$pythondir
     [ -z "$DEF_CONTROL" ] && export DEF_CONTROL=/dev/null
     [ -z "$GS_DEVICE" ] && export GS_DEVICE=x11
     [ -z "$PGPLOT_TYPE" ] && export PGPLOT_TYPE=/xw
+    [ -n "@PGPLOT_FONT@" ] && export PGPLOT_FONT=@PGPLOT_FONT@
+    [ -n "@PGPLOT_RGB@" ] && export PGPLOT_RGB=@PGPLOT_RGB@
 
     # /correlator/data is the current working equivalent
     [ -z "$DATADIR" ] && export DATADIR=$HOPS_ROOT/data

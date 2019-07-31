@@ -6,11 +6,8 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.19, gbc@haystack.mit.edu)
-AM_INIT_AUTOMAKE([foreign])
-
-#why does subdir-objects break fearfit??
-#AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects])
+AC_INIT(hops, 3.20, gbc@haystack.mit.edu)
+AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects ])
 
 AC_CONFIG_SRCDIR([hops.bash.in])
 AC_CONFIG_HEADERS([hops_config.h])
@@ -190,14 +187,13 @@ AC_PATH_PROGS(PERL, perl, /bin/false)
 #AC_PATH_PROGS(PYTHON, python, /bin/false)
 AM_PATH_PYTHON([2.4],,[:])
 
-
 if [test "$PYTHON" != : -a "$pythondir" != ""] ; then
     #check for package 'future'
-    pyfuture_test=`python -c "import future" 2>/dev/null; echo $?`
+    pyfuture_test=`$PYTHON -c "import future" 2>/dev/null; echo $?`
     if [test "$pyfuture_test" = 0 ]; then
         have_python=true
         AC_GBC_NOTICE([found python requirements.])
-    else 
+    else
         AC_GBC_NOTICE([python package future missing, python tools will not be built.])
         have_python=false
     fi
@@ -228,6 +224,9 @@ AM_CONDITIONAL(HAVE_VEX2XML, [$have_vex2xml])
 
 # Checks for libraries.
 AC_CHECK_LIB(m, floorl)
+
+### Check for >64-bit long double
+AC_TYPE_LONG_DOUBLE_WIDER
 
 # Checks for header files.
 if [$ac_hops] ; then
@@ -265,6 +264,9 @@ elif [test -f $srcdir/config.svnrev.txt] ; then
     hops_svn_rev=`cat $srcdir/config.svnrev.txt`
 else
     hops_svn_rev=0
+fi
+if [test -z "$hops_svn_rev"] ; then
+    hops_svn_rev=1
 fi
 AC_GBC_NOTICE([hops_svn_rev is $hops_svn_rev])
 AH_TOP(
@@ -382,78 +384,150 @@ AC_SUBST(X11_LIB,
 # If that is defined and PGPLOT_DIR isn't, we'll take that as a hint.
 # otherwise we'll fall back on /usr/local/pgplot as Tim intended.
 #
+# Further complicated by .so rather than .a
+#
+# The RPMfusion package provides
+#   in /usr/lib{,64}:     libpgplot.so libcpgplot.so
+#   in /usr/libexec:      pgxwin_server
+#   in /usr/share/pgplot: grfont.dat  rgb.txt
+# which violates the single-dir paradigm, but still perhaps works.
+# And tcl-pgplot supplies (and other infrastructure)
+#   in /usr/lib{,64}:     libtkpgplot.so
+#
 if [test -z "$PGPLOT_DIR" -a -n "$PGPLOTDIR" ] ; then
     pgplotdefault="$PGPLOTDIR"
 else
     pgplotdefault='/usr/local/pgplot'
 fi
+# whether to use PGPLOT_RGB and PGPLOT_FONT
+use_grfrgb=false
 #
 AC_ARG_VAR(PGPLOT_DIR, [PGPLOT installation directory])
+AC_ARG_VAR(PGPLOT_FONT, [PGPLOT path to grfont.dat])
+AC_ARG_VAR(PGPLOT_RGB, [PGPLOT path to rgb.txt])
 if [test x${enable_pgplot-yes} = xyes ] ; then
     AC_GBC_NOTICE([searching for pgxwin_server])
     AC_PATH_PROG(PGXWIN_SERVER, pgxwin_server, false,
 	[${PGPLOT_DIR-"$pgplotdefault"} /usr/lib/pgplot5 dnl
-	 /usr/lib/pgplot64 /usr/local/pgplot-png dnl
+	 /usr/lib/pgplot64 /usr/local/pgplot-png /usr/libexec/pgplot dnl
 	 /usr/bin /opt/local/bin /sw/lib/pgplot])
     pgpdir=`AS_DIRNAME(["${PGXWIN_SERVER-/no-such-dir}"])`
     if [test "$pgpdir" = '/usr/bin'] ; then
 	# for Debian packages
 	pgpdir='/usr/lib'
-	pgplib=$pgpdir/libpgplot.a
+        pgplib=$pgpdir/libpgplot.a
+        if [test -f $pgpdir/libpgplot.so ] ; then
+            pgplib=$pgpdir/libpgplot.so
+        fi
 	cpglib=$pgpdir/libcpgplot.a
+        if [test -f $pgpdir/libcpgplot.so ] ; then
+            cpglib=$pgpdir/libcpgplot.so
+        fi
 	grfont=${PGPLOT_DIR-'/usr/lib/pgplot5'}/grfont.dat
+	rgbtxt=${PGPLOT_DIR-'/usr/lib/pgplot5'}/rgb.txt
 	AC_GBC_NOTICE([pgpdir was /usr/bin, revised to $pgpdir])
     elif [test "$pgpdir" = '/opt/local/bin'] ; then
 	# for MacPorts
 	pgpdir='/opt/local/lib'
-	pgplib=$pgpdir/libpgplot.a
+        pgplib=$pgpdir/libpgplot.a
+        if [test -f $pgpdir/libpgplot.so ] ; then
+            pgplib=$pgpdir/libpgplot.so
+        fi
 	cpglib=$pgpdir/libcpgplot.a
+        if [test -f $pgpdir/libcpgplot.so ] ; then
+            cpglib=$pgpdir/libcpgplot.so
+        fi
 	grfont=/opt/local/share/pgplot/grfont.dat
+	rgbtxt=/opt/local/share/pgplot/rgb.txt
 	AC_GBC_NOTICE([pgpdir was /opt/local, revised to $pgpdir])
+    elif [test "$pgpdir" = /usr/libexec/pgplot ] ; then
+        # assume an RPM Fusion or similar installation
+        pgpdir='/usr/libexec/pgplot'
+        pgplib=`ls /usr/lib*/libpgplot.so`
+        cpglib=`ls /usr/lib*/libcpgplot.so`
+        grfont=`ls /usr/share/pgplot/grfont.dat`
+        rgbtxt=`ls /usr/share/pgplot/rgb.txt`
     else
 	# well, no pgxwin_server, but PGPLOT may yet be functional
 	if [test "$pgpdir" = '/no-such-dir'] ; then
 	    pgpdir=${PGPLOT_DIR="$pgplotdefault"}
 	fi
-	pgplib=$pgpdir/libpgplot.a
+        pgplib=$pgpdir/libpgplot.a
+        if [test -f $pgpdir/libpgplot.so ] ; then
+            pgplib=$pgpdir/libpgplot.so
+        fi
 	cpglib=$pgpdir/libcpgplot.a
+        if [test -f $pgpdir/libcpgplot.so ] ; then
+            cpglib=$pgpdir/libcpgplot.so
+        fi
 	grfont=$pgpdir/grfont.dat
+	rgbtxt=$pgpdir/rgb.txt
 	AC_GBC_NOTICE([pgpdir is $pgpdir])
     fi
-    if [test -d $pgpdir -a -f $pgplib -a -f $cpglib -a $grfont ] ; then
+    if [test -d $pgpdir -a -f $pgplib -a -f $cpglib -a $grfont -a $rgbtxt];then
 	AC_GBC_NOTICE([PGPLOT_DIR is $pgpdir])
 	have_pgplot=true
-	PGPLOT_DIR=$pgpdir
-	# PGP_LIB=['$(FLIBS) -L$(PGPLOT_DIR) -lcpgplot -lpgplot']
-	PGP_LIB=['-L$(PGPLOT_DIR) -lcpgplot -lpgplot $(FLIBS)']
+        # FLIBS should be the fortran libes used to compile pgplot
+        if [test "$pgpdir" = /usr/libexec/pgplot ] ; then
+            PGPLOT_DIR=''
+            PGP_LIB=['-lcpgplot -lpgplot $(FLIBS)']
+            use_grfrgb=true
+        else
+            PGPLOT_DIR=$pgpdir
+            # PGP_LIB=['$(FLIBS) -L$(PGPLOT_DIR) -lcpgplot -lpgplot']
+            PGP_LIB=['-L$(PGPLOT_DIR) -lcpgplot -lpgplot $(FLIBS)']
+        fi
     else
 	AC_GBC_NOTICE([PGPLOT was too hard to find.])
 	AC_GBC_NOTICE([Try setting PGPLOT_DIR to point to a directory])
 	AC_GBC_NOTICE([that contains symbolic links to the installed])
-	AC_GBC_NOTICE([files libpgplot.a, libcpgplot.a and grfont.dat,])
-	AC_GBC_NOTICE([and also make sure pgxwin_server is on your PATH.])
+	AC_GBC_NOTICE([files libpgplot.a or .so, libcpgplot.a or .so,])
+        AC_GBC_NOTICE([grfont.dat, rgb.txt and pgxwin_server.  If any])
+        AC_GBC_NOTICE([of these are not present in PGPLOT_DIR, there])
+        AC_GBC_NOTICE([will be problems.  See README.pgplot.txt.])
 	have_pgplot=false
 	PGPLOT_DIR=''
 	PGP_LIB=''
     fi
     # does this PGPLOT compilation require PNG(12)?
+    # actually this test only works for a static archive and doesn't
+    # help for a dynamic archive
     need_png=optional
-    if [test -f $pgplib] ; then
+    is_arch=`expr $pgplib : '.*\.a'`
+    if [test -f $pgplib -a $is_arch -gt 10 ] ; then
 	pndriv=`ar t $pgplib pndriv.o`
 	if [test x$pndriv = xpndriv.o] ; then
 	    need_png=required
 	fi
+        AC_GBC_NOTICE([is_arch is $is_arch pgplib is $pgplib])
+        AC_GBC_NOTICE([pndriv is $pndriv need_png is $need_png])
     fi
 fi
 AC_GBC_NOTICE([%%% have_pgplot is $have_pgplot ($need_png)])
 AM_CONDITIONAL(HAVE_PGPLOT, [test x$have_pgplot = xtrue])
 AC_SUBST(PGP_LIB)
 AC_SUBST(PGPLOT_DIR)
+if [$use_grfrgb] ; then
+    AC_GBC_NOTICE([%%% assigning PGPLOT_FONT and PGPLOT_RGB:])
+    AC_GBC_NOTICE([%%% PGPLOT_FONT file expected at $grfont])
+    AC_GBC_NOTICE([%%% PGPLOT_RGB file expected at $rgbtxt])
+else
+    AC_GBC_NOTICE([%%% not assigning PGPLOT_FONT and PGPLOT_RGB:])
+    AC_GBC_NOTICE([%%% PGPLOT_FONT file expected at $grfont])
+    AC_GBC_NOTICE([%%% PGPLOT_RGB file expected at $rgbtxt])
+    grfont=''
+    rgbtxt=''
+fi
+PGPLOT_FONT=$grfont
+PGPLOT_RGB=$rgbtxt
+AC_SUBST(PGPLOT_FONT)
+AC_SUBST(PGPLOT_RGB)
 
 # Check for PNG (primitive) which MAY be required by pgplot
 # One could provide the linkage stubs if PNG is required, but missing.
 # If built within the DiFX environment, it might be available.
 AC_ARG_VAR(PNG12_LIB, [Path to libpng12 shared object])
+# this test could be skipped if need_png is optional
 AC_CHECK_LIB(png12, png_access_version_number, have_png=true, have_png=false)
 if [$have_png] ; then
     AC_GBC_NOTICE([Found png12 normally])
@@ -597,10 +671,6 @@ if [ "$have_hops" = true ] ; then
 	[chmod +x scripts/vhelp.sh]
     )
     AC_CONFIG_FILES(
-	[scripts/fourphase],
-	[chmod +x scripts/fourphase]
-    )
-    AC_CONFIG_FILES(
         [scripts/fourphase_original],
         [chmod +x scripts/fourphase_original]
     )
@@ -619,6 +689,11 @@ if [ "$have_hops" = true ] ; then
     if [ $have_python = "true" ] ; then
         AC_CONFIG_FILES( [data/ff_testdata/hopstestsuite.py])
     fi
+fi
+
+# this was development, but now available
+if [ "$have_vex2xml" = true ] ; then
+    AC_CONFIG_FILES([vex2xml/Makefile])
 fi
 
 ### option disabled

@@ -39,7 +39,7 @@ main (int argc, char* argv[])
 	if (ret > 0)
 	    {
 	    msg ("Fatal error interpreting command line", 2);
-	    syntax();
+	    syntax("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/postproc/adump/adump.c $");
 	    }
 	exit(1);
 	}

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2363 2018-06-02 15:53:08Z gbc $
+# $Id: Makefile.am 2774 2019-07-12 17:14:16Z rjc $
 #
 
 SUBDIRS = .
@@ -55,7 +55,7 @@ fourfit_sources = \
 		  diff_file_phase.c generate_graphs.c generate_text.c \
 		  create_lockfile.c wait_for_write_lock.c \
 		  fourfit_signal_handler.c est_pc_manual.c adhoc_flag.c \
-		  plot_data_dir.c
+		  plot_data_dir.c apply_video_bp.c
 fourfit_SOURCES = $(fourfit_sources)
 
 fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \

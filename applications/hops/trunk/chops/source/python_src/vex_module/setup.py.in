@@ -1,0 +1,7 @@
+from distutils.core import setup
+
+#TODO fix verions number to generated from cmake/autoconf
+setup(name='vexpy',
+    version='0.1',
+    package_dir={ '': '@abs_srcdir@' },
+    packages=['vexpy'])

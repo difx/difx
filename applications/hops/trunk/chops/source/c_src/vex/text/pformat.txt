@@ -1,0 +1,943 @@
+*
+* $Id$
+*
+* This is the vex parameter format definition file.  The format is 
+* field-based.  Comment lines begin with '*'.  All other lines must be
+* one of two types.  
+*
+* The first is the parameter definition line, denoted by a non-whitespace
+* character in the first column.  This line must consist of five
+* whitespace-delimited fields, namely the parameter name, the type of vex file
+* (OVEX, CVEX, SVEX, IVEX, EVEX or LVEX), the $BLOCK containing this parameter
+* (to allow for duplicate names in other blocks), the vex revision level (numeric,
+* except in the case of the "rev" parameter, valid for all revs, denoted "ALL")
+* this parameter definition refers to, and the number of value definition lines
+* to follow.  The string "MANY" in addition to an integer in the fifth field
+* implies multiple value lines with identical specifications.  According to VEX
+* rules, if units are specified, the specifier in the vex file itself need only
+* occur in the string for the first value of the series, implying the same for
+* the others.  For example, if the fifth field is "4:MANY", the parser should
+* expect four value fields, followed by a series of identical fields of
+* indeterminate number.  There would be five value definition lines, four for
+* the regular values and one for the repeated value fields.  If the string
+* "MANY" is followed  by a colon and another number, the repeated fields are not
+* single fields, but groups of fields.  For example, "4:MANY:3" indicates four
+* fields, followed by an indeterminate number of groups of three fields (occurs
+* only in CVEX).  This example would require seven value definition lines.
+*
+*
+*
+* The second type of line is the value definition line, which must begin with
+* whitespace, and must contain 3 whitespace-delimited fields, with an optional 4th
+* field.  The three fields are "MAN" or "OPT" to signify a mandatory or optional
+* value, a type field which can take any one of seven values (REAL, CHAR, INT,
+* EPOCH, RA, DEC or LINK), and a units field, which can take any one of 10 values
+* (NONE, LENGTH, ANGLE, TIME, FREQ, FLUX, LENGTH_TIME, ANGLE_TIME, BITDENSITY,
+* SAMPLERATE).  The optional fourth field defines the allowed range of the value.  
+* It consists of a single string with no spaces, containing one or more 
+* colon-delimited fields.  Each field is either a value, or an inequality.  A 
+* value is considered "in range" if any value is matched, or if all inequalities 
+* are satisfied.  The range field must be sensible for the value type specified.  
+* The number of value definition lines following a parameter definition line must 
+* match the number specified in the third field of the parameter definition line, 
+* except in the case of "MANY" described above, in which case the last value 
+* definition line (or n lines in the case of "MANY:n") encountered is considered 
+* to be repeated an arbitrary number of times.
+*
+* No line may exceed 254 characters
+* No range specification may exceed 50 characters
+* Parameter names must be valid vexfile parameter names
+*
+*
+***************************************************
+****************** OVEX_REV block *****************
+***************************************************
+*
+rev             OVEX OVEX_REV ALL 1
+    MAN CHAR NONE
+*
+***************************************************
+****************** SCHED block ********************
+***************************************************
+*
+start              OVEX SCHED 1.5 1
+    MAN EPOCH NONE
+*
+mode               OVEX SCHED 1.5 1
+    MAN CHAR NONE
+*
+source             OVEX SCHED 1.5 1
+    MAN CHAR NONE
+*
+station            OVEX SCHED 1.5 7
+    MAN CHAR NONE
+    MAN REAL TIME      >=0.0
+    MAN REAL TIME      >=0.0
+    OPT REAL LENGTH    >=0.0
+    OPT CHAR NONE
+    OPT LINK NONE
+    MAN INT  NONE
+*
+fourfit_reftime    OVEX SCHED 1.5 1
+    MAN EPOCH NONE
+*
+***************************************************
+****************** ANTENNA block ******************
+***************************************************
+*
+antenna_diam       OVEX ANTENNA 1.5 1 
+    MAN REAL LENGTH  >0.0
+*
+antenna_name       OVEX ANTENNA 1.5 1 
+    MAN CHAR NONE
+*
+axis_type          OVEX ANTENNA 1.5 2 
+    MAN CHAR NONE    az:ha:x
+    MAN CHAR NONE    el:dec:yns:yew
+*
+axis_offset        OVEX ANTENNA 1.5 2 
+    MAN CHAR NONE    az:el:ha:dec:x:yns:yew
+    MAN REAL LENGTH
+*
+antenna_motion     OVEX ANTENNA 1.5 3 
+    MAN CHAR NONE    az:el:ha:dec:x:yns:yew
+    MAN REAL ANGLE_TIME
+    MAN REAL TIME
+*
+pointing_sector    OVEX ANTENNA 1.5 7 
+    MAN LINK NONE
+    MAN CHAR NONE    az:el:ha:dec:x:yns:yew
+    MAN REAL ANGLE
+    MAN REAL ANGLE
+    OPT CHAR NONE
+    OPT REAL ANGLE
+    OPT REAL ANGLE
+*
+***************************************************
+****************** BBC block **********************
+***************************************************
+*
+BBC_assign         OVEX BBC 1.5 3
+    MAN LINK NONE
+    MAN INT  NONE   >=1:<=16
+    MAN LINK NONE
+*
+***************************************************
+****************** CLOCK block ********************
+***************************************************
+*
+clock_early        OVEX CLOCK 1.5 4
+    MAN EPOCH NONE
+    MAN REAL TIME
+    OPT EPOCH NONE
+    OPT REAL NONE
+*
+***************************************************
+****************** DAS block **********************
+***************************************************
+*
+record_transport_type OVEX DAS 1.5 1
+    MAN CHAR  NONE   Mark3A:Mark4:VLBA:VLBAG:S2:K4:Mark5A:Mark5B:VLBA4
+*
+electronics_rack_type OVEX DAS 1.5 1
+    MAN CHAR  NONE   Mark3A:Mark4:Mark5:VLBA:VLBAG:S2:K4:VLBA4
+*
+number_drives         OVEX DAS 1.5 1
+    MAN INT   NONE
+*
+headstack          OVEX DAS 1.5 3
+    MAN INT   NONE   >=1:<=4
+    MAN CHAR  NONE   read:write:read/write
+    MAN INT   NONE
+*
+record_density     OVEX DAS 1.5 1
+    MAN REAL  BITDENSITY
+*
+tape_length        OVEX DAS 1.5 1
+    MAN REAL  LENGTH
+*
+recording_system_ID  OVEX DAS 1.5 1
+    MAN INT   NONE
+*
+record_transport_name OVEX DAS 1.5 1
+    MAN CHAR  NONE
+*
+electronics_rack_ID  OVEX DAS 1.5 1
+    MAN INT   NONE
+*
+electronics_rack_name  OVEX DAS 1.5 1
+    MAN CHAR  NONE
+*
+tape_motion       OVEX DAS 1.5 4
+    MAN CHAR  NONE    start_stop:continuous:adaptive
+    MAN INT   TIME    >=0
+    OPT INT   TIME
+    OPT INT   TIME
+*
+tape_control      OVEX DAS 1.5 1
+    MAN CHAR  NONE    master
+*
+***************************************************
+****************** EOP block **********************
+***************************************************
+*    
+TAI-UTC           OVEX EOP 1.5 1
+    MAN REAL TIME
+*
+A1-TAI            OVEX EOP 1.5 1
+    MAN REAL TIME
+*
+eop_ref_epoch     OVEX EOP 1.5 1
+    MAN EPOCH NONE
+*
+num_eop_points    OVEX EOP 1.5 1
+    MAN INT   NONE
+*
+eop_interval      OVEX EOP 1.5 1
+    MAN REAL  TIME
+*
+ut1-utc           OVEX EOP 1.5 0:MANY
+    MAN REAL  TIME
+*
+x_wobble          OVEX EOP 1.5 0:MANY
+    MAN REAL  ANGLE
+*
+y_wobble          OVEX EOP 1.5 0:MANY
+    MAN REAL  ANGLE
+*
+***************************************************
+****************** EXPER block ********************
+***************************************************
+*    
+exper_num         OVEX EXPER 1.5 1
+    MAN INT  NONE
+*
+exper_name        OVEX EXPER 1.5 1
+    MAN CHAR NONE
+*
+exper_description OVEX EXPER 1.5 1
+    MAN CHAR NONE
+*
+exper_nominal_start OVEX EXPER 1.5 1
+    MAN EPOCH NONE
+*
+exper_nominal_stop OVEX EXPER 1.5 1
+    MAN EPOCH NONE
+*
+PI_name           OVEX EXPER 1.5 1
+    MAN CHAR NONE
+*
+PI_email          OVEX EXPER 1.5 1
+    MAN CHAR NONE
+*
+contact_name      OVEX EXPER 1.5 1
+    MAN CHAR NONE
+*
+contact_email     OVEX EXPER 1.5 1
+    MAN CHAR NONE
+*
+scheduler_name    OVEX EXPER 1.5 1
+    MAN CHAR NONE
+*
+scheduler_email   OVEX EXPER 1.5 1
+    MAN CHAR NONE
+*
+target_correlator OVEX EXPER 1.5 1
+    MAN CHAR NONE VLBA:VSOP:JIVE:Haystack:USNO:difx:sfxc
+*
+***************************************************
+****************** FREQ block *********************
+***************************************************
+*
+chan_def          OVEX FREQ 1.5 8:MANY
+    MAN CHAR  NONE
+    OPT LINK  NONE
+    MAN REAL  FREQ
+    MAN CHAR  NONE U:L
+    MAN REAL  FREQ
+    MAN LINK  NONE
+    MAN LINK  NONE
+    MAN LINK  NONE
+    OPT INT   NONE
+*
+switching_cycle   OVEX FREQ 1.5 1:MANY
+    MAN CHAR  NONE        wrt_obs_start:wrt_min_mark
+    MAN REAL  TIME
+*
+sample_rate       OVEX FREQ 1.5 1
+    MAN REAL  SAMPLERATE
+*
+***************************************************
+****************** HEAD_POS block *****************
+***************************************************
+*
+headstack_pos     OVEX HEAD_POS 1.5 5
+    MAN INT NONE    >0
+    MAN REAL LENGTH
+    OPT REAL LENGTH
+    OPT REAL LENGTH
+    OPT REAL LENGTH
+*
+***************************************************
+****************** IF block ***********************
+***************************************************
+*
+if_def            OVEX IF 1.5 7
+    MAN LINK NONE
+    MAN CHAR NONE
+    MAN CHAR NONE   R:L:X:Y
+    MAN REAL FREQ   >0.0
+    MAN CHAR NONE   U:L
+    OPT REAL FREQ
+    OPT REAL FREQ
+*
+***************************************************
+****************** PASS_ORDER block ***************
+***************************************************
+*
+pass_order        OVEX PASS_ORDER 1.5 1:MANY
+    MAN CHAR NONE
+    OPT CHAR NONE
+*
+S2_group_order    OVEX PASS_ORDER 1.5 1:MANY
+    MAN INT NONE
+    OPT INT NONE
+*
+***************************************************
+****************** PHASE_CAL_DETECT block *********
+***************************************************
+*
+phase_cal_detect  OVEX PHASE_CAL_DETECT 1.5 1:MANY
+    MAN LINK NONE
+    MAN INT NONE
+*
+***************************************************
+****************** ROLL block *********************
+***************************************************
+*
+roll              OVEX ROLL 1.5 1
+    MAN CHAR NONE  on:off
+*
+roll_def          OVEX ROLL 1.5 2:MANY
+    MAN INT NONE   >=1:<=4
+    MAN INT NONE   >=1:<=34
+    MAN INT NONE   >=2:<=33
+*
+roll_inc_period   OVEX ROLL 1.5 1
+    MAN INT NONE   >0
+*
+roll_reinit_period OVEX ROLL 1.5 1
+    MAN REAL TIME  >0.0
+*
+***************************************************
+****************** SITE block *********************
+***************************************************
+*
+site_type          OVEX SITE 1.5 1
+    MAN CHAR NONE   fixed:earth_orbit
+*
+site_name          OVEX SITE 1.5 1
+    MAN CHAR NONE
+*
+site_ID            OVEX SITE 1.5 1
+    MAN CHAR NONE
+*
+mk4_site_ID        OVEX SITE 1.5 1
+    MAN CHAR NONE
+*
+site_position      OVEX SITE 1.5 3
+    MAN REAL LENGTH
+    MAN REAL LENGTH
+    MAN REAL LENGTH
+*
+site_position_epoch OVEX SITE 1.5 1
+    MAN EPOCH NONE
+*
+site_position_ref  OVEX SITE 1.5 1
+    MAN CHAR NONE
+*
+site_velocity      OVEX SITE 1.5 3
+    MAN REAL LENGTH_TIME
+    MAN REAL LENGTH_TIME
+    MAN REAL LENGTH_TIME
+*
+horizon_map_az     OVEX SITE 1.5 0:MANY
+    MAN REAL ANGLE
+*
+horizon_map_el     OVEX SITE 1.5 0:MANY
+    MAN REAL ANGLE
+*
+zen_atmos          OVEX SITE 1.5 1
+    MAN REAL TIME
+*
+ocean_load_vert    OVEX SITE 1.5 2
+    MAN REAL LENGTH
+    MAN REAL NONE
+*
+ocean_load_horiz   OVEX SITE 1.5 2
+    MAN REAL LENGTH
+    MAN REAL NONE
+*
+occupation_code    OVEX SITE 1.5 1
+    MAN CHAR NONE
+*
+inclination        OVEX SITE 1.5 1
+    MAN REAL ANGLE
+*
+eccentricity       OVEX SITE 1.5 1
+    MAN REAL NONE
+*
+arg_perigee        OVEX SITE 1.5 1
+    MAN REAL ANGLE
+*
+ascending_node     OVEX SITE 1.5 1
+    MAN REAL ANGLE
+*
+mean_anomaly       OVEX SITE 1.5 1
+    MAN REAL ANGLE
+*
+semi_major_axis    OVEX SITE 1.5 1
+    MAN REAL LENGTH
+*
+mean_motion        OVEX SITE 1.5 1
+    MAN REAL NONE
+*
+orbit_epoch        OVEX SITE 1.5 1
+    MAN EPOCH NONE
+*
+***************************************************
+****************** SOURCE block *******************
+***************************************************
+*
+source_type        OVEX SOURCE 1.5 2
+    MAN CHAR NONE   star:earth_satellite:quasar:dummy
+    MAN CHAR NONE   target:calibrator:dummy
+*
+source_name        OVEX SOURCE 1.5 1
+    MAN CHAR NONE
+*
+IAU_name           OVEX SOURCE 1.5 1
+    MAN CHAR NONE
+*
+source_position_ref OVEX SOURCE 1.5 1
+    MAN CHAR NONE
+*
+ra                  OVEX SOURCE 1.5 1
+    MAN RA NONE
+*
+dec                 OVEX SOURCE 1.5 1
+    MAN DEC NONE
+*
+ref_coord_frame     OVEX SOURCE 1.5 1
+    MAN CHAR NONE    B1950:J2000
+*
+ra_rate             OVEX SOURCE 1.5 1
+    MAN REAL ANGLE_TIME
+*
+dec_rate            OVEX SOURCE 1.5 1
+    MAN REAL ANGLE_TIME
+*
+source_position_epoch OVEX SOURCE 1.5 1
+    MAN EPOCH NONE
+*
+source_model        OVEX SOURCE 1.5 8
+    MAN INT NONE
+    MAN LINK NONE
+    MAN REAL FLUX
+    MAN REAL ANGLE
+    MAN REAL NONE
+    MAN REAL ANGLE
+    MAN REAL ANGLE
+    MAN REAL ANGLE
+*
+inclination        OVEX SOURCE 1.5 1
+    MAN REAL ANGLE
+*
+eccentricity       OVEX SOURCE 1.5 1
+    MAN REAL NONE
+*
+arg_perigee        OVEX SOURCE 1.5 1
+    MAN REAL ANGLE
+*
+ascending_node     OVEX SOURCE 1.5 1
+    MAN REAL ANGLE
+*
+mean_anomaly       OVEX SOURCE 1.5 1
+    MAN REAL ANGLE
+*
+semi_major_axis    OVEX SOURCE 1.5 1
+    MAN REAL LENGTH
+*
+mean_motion        OVEX SOURCE 1.5 1
+    MAN REAL NONE
+*
+orbit_epoch        OVEX SOURCE 1.5 1
+    MAN EPOCH NONE
+*
+***************************************************
+****************** TRACKS block *******************
+***************************************************
+*
+fanout_def         OVEX TRACKS 1.5 8
+    OPT CHAR NONE
+    MAN LINK NONE
+    MAN CHAR NONE   sign:mag
+    MAN INT  NONE   >=1:<=4
+    MAN INT  NONE
+    OPT INT  NONE
+    OPT INT  NONE
+    OPT INT  NONE
+*
+fanin_def          OVEX TRACKS 1.5 11
+    MAN CHAR NONE
+    MAN INT  NONE   >=1:<=4
+    MAN INT  NONE
+    MAN CHAR NONE
+    MAN CHAR NONE   sign:mag
+    OPT CHAR NONE
+    OPT CHAR NONE   sign:mag
+    OPT CHAR NONE
+    OPT CHAR NONE   sign:mag
+    OPT CHAR NONE
+    OPT CHAR NONE   sign:mag
+*
+track_frame_format OVEX TRACKS 1.5 1
+    MAN CHAR NONE   Mark3A:Mark4:VLBA:Mark5B:MARK5B:VDIF
+*
+data_modulation    OVEX TRACKS 1.5 1
+    MAN CHAR NONE   on:off
+*
+VLBA_frmtr_sys_trk OVEX TRACKS 1.5 4
+    MAN INT  NONE   0:1:34:35
+    MAN CHAR NONE   xtk_parity:duplicate
+    MAN INT  NONE   >=2:<=33
+    OPT INT  NONE   8:16
+*
+VLBA_trnsprt_sys_trk OVEX TRACKS 1.5 2
+    MAN INT  NONE   0:1:34:35
+    MAN INT  NONE   >=2:<=33
+*
+bits/sample  OVEX TRACKS 1.5 1
+    MAN INT  NONE   1:2
+*
+multiplex_ratio OVEX TRACKS 1.5 1
+    MAN INT NONE 1:2:4:8:16
+* above line changed to support Mk5B -- rjc 2006.6.13
+*   MAN INT NONE 1:2:4
+*
+***************************************************
+**** CVEX CVEX CVEX CVEX CVEX CVEX CVEX CVEX ******
+***************************************************
+****************** CVEX_REV block *****************
+***************************************************
+*
+rev             CVEX CVEX_REV ALL 1
+    MAN CHAR NONE
+*
+***************************************************
+****************** CORR_CONFIG block ************
+***************************************************
+*
+ignore_chan_names    CVEX CORR_CONFIG 1.0 1
+    MAN CHAR NONE   on:off
+auto_corr            CVEX CORR_CONFIG 1.0 1
+    MAN CHAR NONE   on:off
+*
+***************************************************
+****************** CORR_MODE block ****************
+***************************************************
+*
+board                CVEX CORR_MODE 1.0 3:MANY:4
+    MAN CHAR NONE
+    MAN CHAR NONE
+    MAN CHAR NONE
+    MAN CHAR NONE
+    MAN INT  NONE    >=0:<=31
+    MAN CHAR NONE
+    MAN CHAR NONE
+*
+cross_pol_chan_pair  CVEX CORR_MODE 1.0 2
+    MAN CHAR NONE
+    MAN CHAR NONE
+*
+***************************************************
+****************** CORR_BD_PARMS block ************
+***************************************************
+*
+accum_divide_ratio   CVEX CORR_BD_PARMS 1.0 1
+    MAN INT NONE    1:2:4:8:16
+*
+shsmp_divide_ratio   CVEX CORR_BD_PARMS 1.0 2
+    MAN INT NONE    1:2:4:8:16
+    MAN INT NONE    1:2:4:8:16
+*
+sample_count_per_lag_enable CVEX CORR_BD_PARMS 1.0 1
+    MAN CHAR NONE   on:off
+*
+***************************************************
+****************** CORR_SECTION_MODE block ********
+***************************************************
+*
+chip                 CVEX CORR_SECTION_MODE 1.0 6
+    MAN CHAR NONE
+    MAN INT  NONE
+    OPT CHAR NONE
+    OPT CHAR NONE
+    OPT CHAR NONE
+    OPT CHAR NONE
+*
+***************************************************
+****************** CORR_CHIP_MODE block ********
+***************************************************
+*
+block                CVEX CORR_CHIP_MODE 1.0 6
+    MAN CHAR NONE
+    MAN CHAR NONE    A0:A1:A2:A3:B0:B1:B2:B3
+    MAN INT  NONE    >=0:<=7
+    MAN INT  NONE    >=0:<=7
+    MAN INT  NONE    >=0:<=7
+    MAN INT  NONE    >=0:<=7
+*
+snake                CVEX CORR_CHIP_MODE 1.0 3:MANY
+    MAN CHAR NONE
+    OPT CHAR NONE
+    OPT CHAR NONE
+    MAN CHAR NONE
+*
+***************************************************
+****************** CORR_BLOCK_MODE block ********
+***************************************************
+*
+rotator_mode         CVEX CORR_BLOCK_MODE 1.0 2
+    MAN INT NONE    >=0:<=3
+    MAN INT NONE    >=0:<=3
+*
+xdelay               CVEX CORR_BLOCK_MODE 1.0 2
+    MAN INT NONE    0:1
+    MAN INT NONE    0:1
+*
+ydelay               CVEX CORR_BLOCK_MODE 1.0 2
+    MAN INT NONE    0:1
+    MAN INT NONE    0:1
+*
+tap_motion_enable    CVEX CORR_BLOCK_MODE 1.0 1
+    MAN INT NONE    0:1
+*
+invalid_on_tap_motion CVEX CORR_BLOCK_MODE 1.0 1
+    MAN INT NONE    0:1
+*
+header_mode           CVEX CORR_BLOCK_MODE 1.0 1
+    MAN INT NONE    >=0:<=3
+*
+***************************************************
+**** IVEX IVEX IVEX IVEX IVEX IVEX IVEX IVEX ******
+***************************************************
+****************** IVEX_REV block *****************
+***************************************************
+*
+rev             IVEX IVEX_REV ALL 1
+    MAN CHAR NONE
+*
+***************************************************
+****************** CORR_INIT block ****************
+***************************************************
+*
+system_tempo         IVEX CORR_INIT 1.0 1
+    MAN REAL NONE    >=0.75:<=1.0
+*
+bocf_period          IVEX CORR_INIT 1.0 1
+    MAN INT  NONE
+*
+header_duration      IVEX CORR_INIT 1.0 1
+    MAN INT  NONE   240:480:960:1920
+*
+CUCC_serial_ports    IVEX CORR_INIT 1.0 4
+    MAN INT  NONE   0:1
+    MAN CHAR NONE   TSERV0:TSERV1:TSERV2
+    MAN INT  NONE   >=1:<=16
+    MAN INT  NONE   >=1:<=16
+*
+start_stop_counter   IVEX CORR_INIT 1.0 2
+    MAN CHAR NONE   TSERV0:TSERV1:TSERV2
+    MAN INT  NONE
+*
+analog_switch        IVEX CORR_INIT 1.0 2
+    MAN CHAR NONE   TSERV0:TSERV1:TSERV2
+    MAN INT  NONE
+*
+CF_edit_mask         IVEX CORR_INIT 1.0 1
+    MAN CHAR NONE
+*
+timing_monitor       IVEX CORR_INIT 1.0 5
+    MAN CHAR NONE
+    MAN INT  NONE
+    MAN REAL NONE
+    MAN REAL NONE
+    MAN CHAR NONE
+*
+***************************************************
+****************** PBS_INIT block *****************
+***************************************************
+*
+SU_ID       IVEX PBS_INIT 1.0 2
+    MAN INT NONE    >=0:<=15
+    MAN CHAR NONE
+*
+SUCC_serial_ports    IVEX PBS_INIT 1.0 3
+    MAN CHAR NONE   TSERV0:TSERV1:TSERV2
+    MAN INT  NONE   >=1:<=16
+    MAN INT  NONE   >=1:<=16
+*
+tape_servo_interval  IVEX PBS_INIT 1.0 1
+    MAN REAL TIME   >=1.0
+*
+timing_monitor       IVEX PBS_INIT 1.0 5
+    MAN CHAR NONE
+    MAN INT  NONE
+    MAN REAL NONE
+    MAN REAL NONE
+    MAN CHAR NONE
+*
+***************************************************
+****************** DRIVE_INIT block ***************
+***************************************************
+*
+drive_type           IVEX DRIVE_INIT 1.0 2
+    MAN CHAR NONE   Mark4:VLBA:Mark5P:Mark5A:Mark5B
+    OPT CHAR NONE
+*
+mcb_address          IVEX DRIVE_INIT 1.0 2
+    MAN CHAR NONE
+    MAN CHAR NONE
+*
+capstan_relative_diameter IVEX DRIVE_INIT 1.0 1
+    MAN REAL NONE   >=0.9:<=1.1
+*
+vacuum_setting       IVEX DRIVE_INIT 1.0 0:MANY:2
+    MAN INT  NONE   >0
+    MAN CHAR NONE
+*
+tape_acceleration    IVEX DRIVE_INIT 1.0 1
+    MAN REAL NONE
+*
+headstack/DIM_connect  IVEX DRIVE_INIT 1.0 4
+    MAN INT  NONE   1:2
+    MAN CHAR NONE   odd:even
+    MAN INT  NONE   0:1:2:3
+    MAN INT  NONE   0:2:4:8:16
+*
+monitor_module_track  IVEX DRIVE_INIT 1.0 6
+    MAN INT  NONE   1:2:3:4
+    MAN INT  NONE
+    MAN INT  NONE
+    MAN INT  NONE   0:1:2:4:8:16
+    OPT INT  NONE   0:1:2:4:8:16
+    OPT INT  NONE   0:1:2:4:8:16
+*
+headstack_parms      IVEX DRIVE_INIT 1.0 9
+    MAN INT  NONE   1:2:3:4
+    MAN REAL NONE
+    MAN REAL NONE
+    MAN REAL NONE
+    MAN REAL NONE
+    MAN REAL NONE
+    MAN REAL NONE
+    MAN REAL NONE
+    MAN REAL NONE
+*
+***************************************************
+****************** TRM_CONFIG block ***************
+***************************************************
+*
+TRM_order_within_channel   IVEX TRM_CONFIG 1.0 2:MANY
+    MAN INT  NONE  1:2:4
+    MAN INT  NONE  1:2
+    MAN CHAR NONE  sign0:mag0:sign1:mag1:sign2:mag2:sign3:mag3
+*
+parity_error_limit   IVEX TRM_CONFIG 1.0 1
+    MAN REAL NONE
+*
+invalid_frame_control   IVEX TRM_CONFIG 1.0 4
+    MAN CHAR NONE   on:off
+    MAN CHAR NONE   on:off
+    MAN CHAR NONE   on:off
+    MAN CHAR NONE   on:off
+*
+***************************************************
+****************** CRM_CONFIG block ***************
+***************************************************
+*
+unroll_out_assignment    IVEX CRM_CONFIG 1.0 10
+    MAN INT  NONE   1:2:4
+    MAN INT  NONE   >=0:<=63
+    MAN INT  NONE   >=0:<=63
+    MAN INT  NONE   >=0:<=63
+    OPT INT  NONE   >=0:<=63
+    OPT INT  NONE   >=0:<=63
+    OPT INT  NONE   >=0:<=63
+    OPT INT  NONE   >=0:<=63
+    OPT INT  NONE   >=0:<=63
+    OPT INT  NONE   >=0:<=63
+*
+***************************************************
+****************** SU/CORR_CONNECT block **********
+***************************************************
+*
+SU_connect          IVEX SU/CORR_CONNECT 1.0 3
+    MAN INT  NONE   0:1:2:3
+    MAN INT  NONE   0:1:2:3
+    MAN INT  NONE   >=0:<=15
+*
+***************************************************
+**** SVEX SVEX SVEX SVEX SVEX SVEX SVEX SVEX ******
+***************************************************
+****************** SVEX_REV block *****************
+***************************************************
+*
+rev             SVEX SVEX_REV ALL 1
+    MAN CHAR NONE
+*
+***************************************************
+****************** SU_CHAN_OUT block **************
+***************************************************
+*
+channel_out_assignment   SVEX SU_CHAN_OUT 1.0 6
+    MAN INT  NONE     >=0:<16
+    MAN LINK NONE
+    OPT REAL FREQ     >=0
+    OPT REAL FREQ     >=0
+    OPT REAL FREQ     >=0
+    OPT REAL FREQ     >=0
+*
+***************************************************
+****************** PCM_CONFIG block ***************
+***************************************************
+*
+phase_cal              SVEX PCM_CONFIG 1.0 3:MANY:2
+    MAN CHAR NONE
+    MAN CHAR NONE
+    MAN CHAR NONE  sin:cos
+    MAN INT  NONE  >=0:<=8
+    MAN REAL NONE
+*
+***************************************************
+****************** PCM_TABLES block ***************
+***************************************************
+*
+table_values             SVEX PCM_TABLES 1.0 2:MANY
+    MAN INT  NONE   0:1:2:3
+    MAN CHAR NONE   sin:cos
+    MAN INT  NONE
+*
+tabular_delta_phase      SVEX PCM_TABLES 1.0 1
+    MAN REAL ANGLE  >0.0
+*
+***************************************************
+**** EVEX EVEX EVEX EVEX EVEX EVEX EVEX EVEX ******
+***************************************************
+****************** EVEX_REV block *****************
+***************************************************
+*
+rev             EVEX EVEX_REV ALL 1
+    MAN CHAR NONE
+*
+***************************************************
+****************** EVEX block *********************
+***************************************************
+*
+corr_exp#            EVEX EVEX 1.0 1
+    MAN INT NONE >0
+*
+ovex_file            EVEX EVEX 1.0 1
+    MAN CHAR NONE
+*
+cvex_file            EVEX EVEX 1.0 1
+    MAN CHAR NONE
+*
+svex_file            EVEX EVEX 1.0 1
+    MAN CHAR NONE
+*
+lvex_file            EVEX EVEX 1.0 1
+    MAN CHAR NONE
+*
+AP_length            EVEX EVEX 1.0 1
+    MAN REAL TIME    >0.0
+*
+speedup_factor       EVEX EVEX 1.0 1
+    MAN REAL NONE   0.0625:0.125:0.25:0.5:1:2:4:8:16
+*
+tape_mode            EVEX EVEX 1.0 1
+    MAN CHAR NONE   random:sequential:synchronous:continuous
+*
+mirror               EVEX EVEX 1.0 3
+    MAN CHAR NONE   allocate:no_allocate
+    MAN CHAR NONE   compare:no_compare
+    MAN CHAR NONE   no_save:save_different:save_all
+*                   added by rjc 2008.7.15
+realtime_latency     EVEX EVEX 1.0 1
+    OPT INT NONE 
+*
+***************************************************
+**** LVEX LVEX LVEX LVEX LVEX LVEX LVEX LVEX ******
+***************************************************
+****************** LVEX_REV block *****************
+***************************************************
+*
+rev             LVEX LVEX_REV ALL 1
+    MAN CHAR NONE
+*
+***************************************************
+****************** LOG block **********************
+***************************************************
+*
+VSN                 LVEX LOG 1.0 1
+    MAN CHAR NONE
+*
+disc_set_ID         LVEX LOG 1.0 2
+    MAN CHAR NONE
+    MAN INT  NONE   >=0
+*
+disc_serial         LVEX LOG 1.0 0:MANY
+    MAN CHAR NONE
+*
+disc_model          LVEX LOG 1.0 0:MANY
+    MAN CHAR NONE
+*
+disc_sizes          LVEX LOG 1.0 0:MANY
+    MAN INT NONE
+*
+head_pos            LVEX LOG 1.0 1
+    MAN REAL LENGTH
+*
+start_tape          LVEX LOG 1.0 3
+    MAN EPOCH NONE
+    MAN REAL LENGTH
+    MAN REAL LENGTH_TIME
+*
+stop_tape           LVEX LOG 1.0 2
+    MAN EPOCH NONE
+    MAN REAL LENGTH
+*
+start_disc          LVEX LOG 1.0 2
+    MAN EPOCH NONE
+    MAN CHAR NONE
+*
+stop_disc           LVEX LOG 1.0 2
+    MAN EPOCH NONE
+    MAN CHAR NONE
+*
+source              LVEX LOG 1.0 2
+    MAN CHAR NONE
+    OPT EPOCH NONE
+*
+autopeak_interval   LVEX LOG 1.0 1
+    MAN INT  NONE   >=0
+*
+pass                LVEX LOG 1.0 1
+    MAN CHAR NONE
+*
+***************************************************
+****************** END statement ******************
+***************************************************
+*
+END

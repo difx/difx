@@ -6,7 +6,7 @@ COMMAND NAME:   fourfit
 
 SYNOPSIS:  Performs fringe searching for continuum MkIV data
 
-SYNTAX:  fourfit [-a] [-b BB:F] [-c controlfile] [-d display device]
+SYNTAX:  fourfit [-a] [-b BB:F] [-c controlfile] [-d display device] [-e]
             [-f value] [-m value] [-n value] [-p] [-r afile] [-s naps]
             [-tux] [-P polar_pair] [-T trefoffs] [-X] data file list 
             [set <control file syntax statements>]
@@ -84,6 +84,13 @@ OPTION FLAGS:
                 pshardcopy        print the plot via pplot_print
                 xwindow           show the plot in an X11 window
                 psscreen          the same, but allow GS_* options
+
+        -e
+            If specified, this option estimates the time required for
+            processing by fringing the first scan and extrapolating to
+            the remaining scans.  It is equivalent to -a -t with no
+            display device, followed by some estimation.  Only the
+            first data file mentioned will be included in the estimate.
 
         -f first channel
             overrides the default first channel (0) to facilitate
@@ -580,7 +587,7 @@ KEYWORD SEMANTICS
    sampler_delay_y synonym for sampler_delay_r.
 
 ** miscellaneous functions
-   dump_data_dir if present will be used as a path to dump the plot data
+   plot_data_dir if present will be used as a path to dump the plot data
                  in a self-documented ascii form to allow export of plot
                  information to other arenas (specialized plots, &c).  One
                  file per fringe is written; more help is available within
