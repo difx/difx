@@ -74,6 +74,18 @@ AC_ARG_ENABLE(hops,
     AS_HELP_STRING([--disable-hops], [disables the post-processing tools]),
     [], [enable_hops=yes])
 AC_GBC_NOTICE([enable_hops is --$enable_hops--])
+AC_ARG_ENABLE(vex2xml,
+    AS_HELP_STRING([--enable-vex2xml], [enable VEX2XML tool]),
+    [], [enable_vex2xml=yes])
+AC_GBC_NOTICE([enable_vex2xml is --$enable_vex2xml--])
+AC_ARG_ENABLE(hopes,
+    AS_HELP_STRING([--disable-hopes], [disable enhanced development]),
+    [disable_hopes=yes], [disable_hopes=no])
+AC_GBC_NOTICE([disable_hopes is --$disable_hopes--])
+AC_ARG_ENABLE(checks,
+    AS_HELP_STRING([--disable-checks], [disables some sanity checking]),
+    [], [enable_checks=yes])
+AC_GBC_NOTICE([enable_checks is --$enable_checks--])
 ### option disabled
 AC_ARG_ENABLE(pathx,
     AS_HELP_STRING([--enable-pathx], [try normal autoconf x11 path checks]))
@@ -81,10 +93,6 @@ AC_GBC_NOTICE([enable_pathx is --$enable_pathx--])
 AC_ARG_ENABLE(xtrap,
     AS_HELP_STRING([--enable-xtrap], [try extra autoconf x11 path checks]))
 AC_GBC_NOTICE([enable_xtrap is --$enable_xtrap--])
-AC_ARG_ENABLE(checks,
-    AS_HELP_STRING([--disable-checks], [disables some sanity checking]),
-    [], [enable_checks=yes])
-AC_GBC_NOTICE([enable_checks is --$enable_checks--])
 
 #
 # An ISO time for installation tracking.
@@ -101,7 +109,21 @@ else
     have_hops=false
 fi
 
-### option disabled
+#
+# Control the new HOP(Enhanced)S toolchain
+#
+AC_ARG_VAR(USE_HOPES, [variable to indicate if we have hopes])
+if [test x$disable_hopes = xno] ; then
+    HPESDIR='chops'
+    have_hopes=true
+    USE_HOPES=true
+    AC_GBC_NOTICE([%%% have_hopes is $have_hopes (optional)])
+else
+    HPESDIR=''
+    have_hopes=false
+    USE_HOPES=false
+    # no comment
+fi
 
 AC_SUBST(HPESDIR)
 AM_CONDITIONAL(HAVE_HOPES, $have_hopes)
@@ -117,12 +139,8 @@ AC_SUBST(IFFYDIR)
 AC_SUBST(M4PYDIR)
 AM_CONDITIONAL(HAVE_DEVEL, $have_devel)
 
-
-################################################################################
-################################################################################
-################################################################################
-################################################################################
-
+##############################################################################
+##############################################################################
 
 # autoscan suggested list of checks follows
 
@@ -194,7 +212,8 @@ if [test "$PYTHON" != : -a "$pythondir" != ""] ; then
         have_python=true
         AC_GBC_NOTICE([found python requirements.])
     else
-        AC_GBC_NOTICE([python package future missing, python tools will not be built.])
+        AC_GBC_NOTICE(
+            [python package future missing, python tools will not be built.])
         have_python=false
     fi
 else
@@ -217,10 +236,35 @@ AC_SUBST(HOPSPYSHLEXT)
 
 have_vex2xml=false
 have_javas=false
-### option disabled
+if [test x$enable_vex2xml = xyes] ; then
+    have_vex2xml=true
+    VXMLDIR=vex2xml
+    # Java Compiler for VEX2XML
+    AC_PATH_PROGS(JAVA,  java,  /bin/false)
+    AC_PATH_PROGS(JAVAC, javac, /bin/false)
+    if [test "$JAVA" = '/bin/false'] ; then
+        have_java=false
+    else
+        have_java=true
+    fi
+    if [test "$JAVAC" = '/bin/false'] ; then
+        have_javac=false
+    else
+        have_javac=true
+    fi
+    AC_SUBST(JAVA)
+    AC_SUBST(JAVAC)
+else
+    have_java=false
+    have_javac=false
+fi
+if [test x$have_java = xtrue -a x$have_javac = xtrue] ; then
+    have_javas=true
+fi
 AC_SUBST(VXMLDIR)
 AM_CONDITIONAL([HAVE_JAVAS], [$have_javas])
 AM_CONDITIONAL(HAVE_VEX2XML, [$have_vex2xml])
+AC_GBC_NOTICE([%%% have_vex2xml is $have_vex2xml (optional)])
 
 # Checks for libraries.
 AC_CHECK_LIB(m, floorl)
@@ -447,6 +491,7 @@ if [test x${enable_pgplot-yes} = xyes ] ; then
         cpglib=`ls /usr/lib*/libcpgplot.so`
         grfont=`ls /usr/share/pgplot/grfont.dat`
         rgbtxt=`ls /usr/share/pgplot/rgb.txt`
+	AC_GBC_NOTICE([pgpdir is $pgpdir, assuming RPM Fusion or similar])
     else
 	# well, no pgxwin_server, but PGPLOT may yet be functional
 	if [test "$pgpdir" = '/no-such-dir'] ; then
@@ -617,10 +662,8 @@ if [test x$enable_checks = xyes] ; then
 fi
 
 
-################################################################################
-################################################################################
-################################################################################
-################################################################################
+##############################################################################
+##############################################################################
 
 
 #
@@ -697,6 +740,69 @@ if [ "$have_vex2xml" = true ] ; then
 fi
 
 ### option disabled
+
+#
+# And any HOP(Enhanced)S toys.
+# aka CHOPS (chopped up HOPS).
+#
+if [ "$have_hopes" = true ] ; then
+    AC_CONFIG_FILES([
+     chops/Makefile
+     chops/source/Makefile
+     chops/source/c_src/Makefile
+     chops/source/c_src/mk4util/Makefile
+     chops/source/c_src/dfio/Makefile
+     chops/source/c_src/afio/Makefile
+     chops/source/c_src/vex/Makefile
+     chops/source/c_src/fourfit_libs/Makefile
+     chops/source/c_src/fourfit_libs/ffcontrol/Makefile
+     chops/source/c_src/fourfit_libs/ffcore/Makefile
+     chops/source/c_src/fourfit_libs/ffio/Makefile
+     chops/source/c_src/fourfit_libs/ffmath/Makefile
+     chops/source/c_src/fourfit_libs/ffsearch/Makefile
+     chops/source/c_src/fourfit_libs/ffplot/Makefile
+     chops/source/c_src/applications/Makefile
+     chops/source/c_src/applications/fourfit/Makefile
+     chops/source/c_src/applications/alist/Makefile
+     chops/source/c_src/applications/aedit/Makefile
+     chops/data/Makefile
+    ])
+    AC_CONFIG_FILES([chops/hops_checksum.sh], [chmod +x chops/hops_checksum.sh])
+    AC_CONFIG_FILES([chops/run_checksum.sh], [chmod +x chops/run_checksum.sh])
+
+    if [ $have_python = "true" ] ; then
+        AC_CONFIG_FILES( chops/source/python_src/Makefile )
+        AC_CONFIG_FILES( chops/source/python_src/mk4_module/Makefile )
+        AC_CONFIG_FILES( chops/source/python_src/hopstest_module/Makefile )
+        AC_CONFIG_FILES( chops/source/python_src/ffcontrol_module/Makefile )
+        AC_CONFIG_FILES( chops/source/python_src/vpal_module/Makefile )
+        AC_CONFIG_FILES( chops/source/python_src/vex_module/Makefile )
+        AC_CONFIG_FILES( chops/source/python_src/scripts/Makefile )
+        AC_CONFIG_FILES( chops/source/python_src/tests/Makefile )
+        AC_CONFIG_FILES( [chops/source/python_src/mk4_module/setup.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/hopstest_module/setup.py] )
+        AC_CONFIG_FILES(
+            [chops/source/python_src/hopstest_module/hopstestsuiteb.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/ffcontrol_module/setup.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/vpal_module/setup.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/vex_module/setup.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_generate.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_select.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_plot.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/vgoscf_generate.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/phase_resid.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/batch_fourfit.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/ffres2pcp.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/fourphase.py] )
+        AC_CONFIG_FILES( [chops/source/python_src/scripts/summarize_report.py])
+        AC_CONFIG_FILES( [chops/source/python_src/tests/test_harness.sh],
+            [chmod +x chops/source/python_src/tests/test_harness.sh] )
+        AC_DEFINE_UNQUOTED([PYTHON_SITE_PREFIX], ["$pythondir"],
+            [Python install dir])
+    fi
+
+fi
+
 
 #
 # Shell setup convenience
