@@ -25,7 +25,7 @@ def parseOptions():
     Defaults are given in parentheses.
     '''
     epi = '''
-    Assuming this is in the path, "export DIFX_CALC_PROGRAM=calcifMixed.py"
+    Assuming this is in the path, "export DIFX_CALC_PROGRAM=calcifMixed"
     and "export DIFX_CALC_OPTIONS=-v" would be sufficient to get the normal
     startdifx to use this machinery on ALMA data (Aa).  The -d and -w options
     adjust the correction factor for the dry and wet components.  Note that
