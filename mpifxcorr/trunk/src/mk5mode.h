@@ -77,8 +77,9 @@ class Mk5Mode : public Mode
    * Uses mark5access library to unpack multiplexed, quantised data into the separate float arrays
    * @return The fraction of samples returned
    * @param sampleoffset The offset in number of time samples into the data array
+   * @param subloopindex The "subloop" index that is currently being unpacked for (need to know to save weights in the right place)
   */
-    virtual float unpack(int sampleoffset);
+    virtual float unpack(int sampleoffset, int subloopindex);
 
     int framesamples, framebytes, samplestounpack, fanout;
     struct mark5_stream *mark5stream;

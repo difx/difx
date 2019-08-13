@@ -914,8 +914,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                   vis1 = &(m1->getFreqs(config->getBDataStream1BandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop)[xmacstart]);
                   vis2 = &(m2->getConjugatedFreqs(config->getBDataStream2BandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop)[xmacstart]);
 
-                  weight1 = m1->getDataWeight(config->getBDataStream1RecordBandIndex(procslots[index].configindex, j, localfreqindex, p));
-                  weight2 = m2->getDataWeight(config->getBDataStream2RecordBandIndex(procslots[index].configindex, j, localfreqindex, p));
+                  weight1 = m1->getDataWeight(config->getBDataStream1RecordBandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop);
+                  weight2 = m2->getDataWeight(config->getBDataStream2RecordBandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop);
 
                   if(procslots[index].pulsarbin)
                   {
@@ -1030,8 +1030,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                   }
                   else
                   {
-                    weight1 = m1->getDataWeight(ds1recordbandindex);
-                    weight2 = m2->getDataWeight(ds2recordbandindex);
+                    weight1 = m1->getDataWeight(ds1recordbandindex, fftsubloop);
+                    weight2 = m2->getDataWeight(ds2recordbandindex, fftsubloop);
 
                     bweight = weight1*weight2;
 

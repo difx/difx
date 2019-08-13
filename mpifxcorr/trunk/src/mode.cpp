@@ -70,6 +70,12 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     isfft = false;
   }
 
+
+  dataweight = vectorAlloc_f32(config->getNumBufferedFFTs(confindex));
+  for(int i=0;i<config->getNumBufferedFFTs(confindex);++i)
+  {
+    dataweight[i] = 0.0;
+  }
   perbandweights = 0;
   model = config->getModel();
   initok = true;
@@ -188,7 +194,6 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         }
       }
     }
-    dataweight = 0.0;
 
     lookup = vectorAlloc_s16((MAX_U16+1)*samplesperlookup);
     linearunpacked = vectorAlloc_s16(numlookups*samplesperlookup);
@@ -453,8 +458,13 @@ Mode::~Mode()
 
   if(perbandweights)
   {
+    for(int i=0;i<config->getNumBufferedFFTs(configindex);++i)
+    {
+      delete [] perbandweights[i];
+    }
     delete [] perbandweights;
   }
+  vectorFree(dataweight);
   vectorFree(validflags);
   for(int j=0;j<numrecordedbands+numzoombands;j++)
   {
@@ -601,7 +611,7 @@ Mode::~Mode()
   }
 }
 
-float Mode::unpack(int sampleoffset)
+float Mode::unpack(int sampleoffset, int subloopindex)
 {
   int status, leftoversamples, stepin = 0;
 
@@ -646,12 +656,12 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
   //cout << "For Mode of datastream " << datastreamindex << ", index " << index << ", validflags is " << validflags[index/FLAGS_PER_INT] << ", after shift you get " << ((validflags[index/FLAGS_PER_INT] >> (index%FLAGS_PER_INT)) & 0x01) << endl;
 
   //since these data weights can be retreived after this processing ends, reset them to a default of zero in case they don't get updated
-  dataweight = 0.0;
+  dataweight[subloopindex] = 0.0;
   if(perbandweights)
   {
     for(int b = 0; b < numrecordedbands; ++b)
     {
-      perbandweights[b] = 0.0;
+      perbandweights[subloopindex][b] = 0.0;
     }
   }
   
@@ -703,11 +713,11 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
   if(nearestsample == -1)
   {
     nearestsample = 0;
-    dataweight = unpack(nearestsample);
+    dataweight[subloopindex] = unpack(nearestsample, subloopindex);
   }
   else if(nearestsample < unpackstartsamples || nearestsample > unpackstartsamples + unpacksamples - fftchannels)
     //need to unpack more data
-    dataweight = unpack(nearestsample);
+    dataweight[subloopindex] = unpack(nearestsample, subloopindex);
 
  /*
   * After DiFX-2.4, it is proposed to change the handling of lower sideband and dual sideband data, such
@@ -741,7 +751,7 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
   *   Would need to make a similar option for LBA data.
   */
 
-  if(!(dataweight > 0.0)) {
+  if(!(dataweight[subloopindex] > 0.0)) {
     for(int i=0;i<numrecordedbands;i++)
     {
       status = vectorZero_cf32(fftoutputs[i][subloopindex], recordedbandchannels);
@@ -1230,14 +1240,14 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
 	  if(status != vecNoErr)
 	    csevere << startl << "Error in autocorrelation!!!" << status << endl;
 
-	  //store the weight
+	  //store the weight for the autocorrelations
           if(perbandweights)
           {
-	    weights[0][j] += perbandweights[j];
+	    weights[0][j] += perbandweights[subloopindex][j];
           }
           else
           {
-	    weights[0][j] += dataweight;
+	    weights[0][j] += dataweight[subloopindex];
           }
 	}
       }
@@ -1298,13 +1308,13 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
 	//store the weights
         if(perbandweights)
         {
-	  weights[1][indices[0]] += perbandweights[indices[0]]*perbandweights[indices[1]];
-	  weights[1][indices[1]] += perbandweights[indices[0]]*perbandweights[indices[1]];
+	  weights[1][indices[0]] += perbandweights[subloopindex][indices[0]]*perbandweights[subloopindex][indices[1]];
+	  weights[1][indices[1]] += perbandweights[subloopindex][indices[0]]*perbandweights[subloopindex][indices[1]];
         }
         else
         {
-	  weights[1][indices[0]] += dataweight;
-	  weights[1][indices[1]] += dataweight;
+	  weights[1][indices[0]] += dataweight[subloopindex];
+	  weights[1][indices[1]] += dataweight[subloopindex];
         }
       }
     }
@@ -1319,11 +1329,11 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
 	//store the weight
         if(perbandweights)
         {
-	  weights[0][indices[k]] += perbandweights[indices[k]];
+	  weights[0][indices[k]] += perbandweights[subloopindex][indices[k]];
         }
         else
         {
-	  weights[0][indices[k]] += dataweight;
+	  weights[0][indices[k]] += dataweight[subloopindex];
         }
       }
     }

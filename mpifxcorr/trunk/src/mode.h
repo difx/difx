@@ -163,8 +163,9 @@ Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int
  /**
   * Grabs the data weight for a given band
   * @param outputband The band index
+  * @param subloopindex The index into the number of buffered FFTs that were processed in one batch
   */
-  inline f32 getDataWeight(int outputband) const { return perbandweights ? perbandweights[outputband] : dataweight; }
+  inline f32 getDataWeight(int outputband, int subloopindex) const { return perbandweights ? perbandweights[subloopindex][outputband] : dataweight[subloopindex]; }
 
  /**
   * Gets the expected decorrelation ("van Vleck correction" ) for a given number of bits.
@@ -236,10 +237,11 @@ protected:
   * be in the range 0.0->1.0, and set appropriately to the expected input levels such that
   * the mean autocorrelation level at nominal sampler statistics is 0.??
   * @param sampleoffset The offset in number of time samples into the data array
+  * @param subloopindex The "subloop" index that is currently being unpacked for (need to know to save weights in the right place)
   * @return The number of good samples unpacked scaled by the number of samples asked to unpack
   *         ie a weight in the range 0.0 to 1.0
   */
-  virtual float unpack(int sampleoffset);
+  virtual float unpack(int sampleoffset, int subloopindex);
   
   Configuration * config;
   int configindex, datastreamindex, recordedbandchannels, channelstoaverage, blockspersend, guardsamples, fftchannels, numrecordedfreqs, numrecordedbands, numzoombands, numbits, bytesperblocknumerator, bytesperblockdenominator, currentscan, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, unpackstartsamples, datasamples, avgdelsamples;
@@ -248,8 +250,8 @@ protected:
   double recordedbandwidth, blockclock, sampletime; //MHz, microseconds
   double a0, b0, c0, a, b, c, quadadd1, quadadd2;
   double fftstartmicrosec, fftdurationmicrosec, intclockseconds;
-  f32 dataweight;
-  f32 * perbandweights;
+  f32 * dataweight;
+  f32 ** perbandweights;
   int samplesperblock, samplesperlookup, numlookups, flaglength, autocorrwidth;
   int datascan, datasec, datans, datalengthbytes, usecomplex, usedouble;
   bool filterbank, calccrosspolautocorrs, fractionalLoFreq, initok, isfft, linear2circular;
