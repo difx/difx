@@ -12,6 +12,11 @@
 #  p${iter}         refers to the polconvert iteration
 #  r${relv}         refers to the release name
 #
+# If there are MULTIPLE PROJECTS with SEPARATE QA2 DELIVERABLES for
+# each, you will need to manage two sets of QA2 calibrations using
+# QA2_<proj> logic variables.  I.e. you will have 2 or more passes of
+# setup and grinding using this file.  Final release is still by track.
+#
 # Cut and paste from this file (which is necessary to get started).
 # Once the fourfit control file is in hand, you can execute parts of
 # the file using true && { ... } or false && { ... } for partial runs.
@@ -27,8 +32,6 @@
 # script that adds CASA 4.7.2 bin to PATH
 source ~/lib/casa.setup
 source /swc/difx/setup-DiFX-2.5.3.bash
-#source /swc/difx/setup-DiFX-2.5.2.bash
-#source /swc/difx/setup-DiFX-2.5.bash
 #source /swc/difx/setup-difx.bash
 #source /swc/difx/difx-root-YYmonDD/setup-difx.bash
 #source /swc/hops/hops.bash
@@ -50,11 +53,6 @@ export corr=/data-sc15/difxoper
 # run polconvert on the same machine with the files
 export work=/data-sc15/difxoper
 
-# If $work contains multiple jubs or unprocessed jobs, set this to true,
-# which implicitly sets the -u flag on any use of $ehtc/ehtc-joblist.py.
-# If $work is more messed up than that, you're on your own.
-export uniq=true    # or export uniq=false
-
 # principal vars for tracking all the revisions and forth
 export exp=e18...
 export vers=?       # major correlator version
@@ -66,23 +64,28 @@ export relv=?       # archive release name number
 export flab=''      # re-fourfitting version (if needed)
 export expn=3...    # HOPS exp # (from Mike Titus)
 
-# polconvert variables and other option variables
-# $pdir depend on QA2 development
-# $dpfu is estimated from QA2 products using this:
-# casa --nologger --nologfile -c $DIFXROOT/share/polconvert/DPFU_scanner.py
-# from which a single dpfu (degrees / flux unit) should be estimated for
-# the track or campaign.
-export plab=<track>-<exp>-<yyyymmdd>           # external QA2 file label
-export pcal=TRACK_?                            # internal QA2 label
+# $dpfu is estimated from QA2 products, see one-time setup
+export dpfu=0.0308574
+# a list of stations in best order for polconvert plots
+export scmp='PV,MG,SW,AX,LM,SZ,GL,MM'
+
+# define one logic variable QA2_<proj> for each QA2 project nickname <proj>
+# per # track and set plab, pcal and qpar appropriately for it--see one-time
+# setup. -P is threads, -f is fringe plots to make, -r = run
+export QA2_<proj>=true
+$QA2_<proj> && {
+    export plab=<track>-<exp>-<yyyymmdd>           # external QA2 file label
+    export pcal=???????                            # internal QA2 label
+    export qpar=v8
+}
+export opts="-r -P15 -S $scmp -f 4 -A $dpfu -q $qpar"
 
 # see the tarball script for what this does, should be false
 export fitsname=false
-
-# this is an average over the session/all bands
-export dpfu=0.0308574
-export scmp='PV,MG,SW,AX,LM,SZ,GL,MM'
-# -P is how many threads, -q v8 is the default
-export opts="-r -P15 -S $scmp -f 4 -A $dpfu -q v8"
+# If $work contains multiple jubs or unprocessed jobs, set this to true,
+# which implicitly sets the -u flag on any use of $ehtc/ehtc-joblist.py.
+# If $work is more messed up than that, you're on your own.
+export uniq=true    # or export uniq=false
 
 # derived vars
 export release=$arch/$exp/$exp-$relv
@@ -133,17 +136,27 @@ cd $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
 
 # locally, use a common qa2 dir for multiple bands
 [ -d $pdir ] || { mkdir -p $pdir && echo need DELIVERABLES tarball in $pdir ; }
-[ -d ../qa2 ] || { mkdir ../qa2 ; pushd ../qa2 ; tar zxf $pdir/$ptar ; popd ; }
+[ -d ../qa2 ] || { mkdir ../qa2 ; }
+[ -d ../qa2 -a -d ../qa2/$pcal.qa2-diagnostics ] ||
+    { pushd ../qa2 ; tar zxf $pdir/$ptar ;
+      for r in README* ; do mv $r $pcal.$r ; done ; popd ; }
 
-# link in the QA2 package tables for this band
+# for every QA2_<proj>, link in the QA2 package tables
 for d in ../qa2/$pcal.* ; do ln -s $d . ; done
-for f in ../qa2/README.* ; do ln -s $f . ; done
 ls -ld $pcal.*
+
+# for every QA2 package, estimate a common $dpfu forr the campaign
+# dpfu (degrees / flux unit) appears in the ANTAB files and it is a
+# somewhat arbitrary choice.  $pcal.APP.artifacts is a link to find tables
+ln -s $pcal.qa2-diagnostics $pcal.APP.artifacts
+casa --nologger --nologfile -c $DIFXROOT/share/polconvert/DPFU_scanner.py
+# when you are done with this remove it as, DPFU_scanner expects only one
+rm $pcal.APP.artifacts
 
 # Review README.DRIVEPOLCONVERT: it may specify something other than 'v8'
 # which is the value passed as the -q argument to drivepolconvert.py
 # via the opts='...' assignment above.  Make sure you have this right.
-echo $opts ; cat README.DRIVEPOLCONVERT
+echo -n 'CHECK: ' $opts '== ' ; cat $pcal.README.DRIVEPOLCONVERT
 
 # pull in the experiment codes
 cp -p $ehtc/ehtc-template.codes $exp.codes
@@ -196,12 +209,13 @@ cp -p $ers*.txt $release/logs
 cp -p $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile $release/logs
 
 #
-# run the GENERAL PROCESSING commands on one or three jobs to make
-# suitable data for generating "good enough" manual phase cals
+# Run the GENERAL PROCESSING commands on a few jobs to make suitable data
+# for generating "good enough" manual phase cals (i.e. for survey use)
+# Make ### notes suitable for later grepping
 #
-### Notes on building $ers.conf
-# pick scans to use based on greps from *jobs*
-# stations: ...
+# Notes on building $ers.conf:
+# pick the scans to use based on greps from *jobs*
+# available stations: ...
 awk '{print $5}' $ers-jobs-map.txt | tr '-' \\012 | sort | uniq -c
 # types of baselines: ...
 awk '{print $5}' $ers-jobs-map.txt | sort | uniq -c
@@ -213,7 +227,6 @@ prepolconvert.py -v -k -s $dout $jobs
 drivepolconvert.py -v $opts -l $pcal $jobs
 for j in $jobs ;\
 do difx2mark4 -e $expn -s $exp.codes --override-version ${j/input/difx} ; done
-
 
 # identify roots:
 roots=`cd $expn ; ls */$target*` ; echo $roots
@@ -236,14 +249,8 @@ cp -p $expn/$ers.conf .
 cp -p $expn/$ers.conf $release/logs
 mv $expn ff-conf-$expn
 rm -rf ${jobs//input/*}
-### now have $ers.conf
+# now have $ers.conf
 } # ONE TIME SETUP
-
-# GENERAL PROCESSING TEMPLATE ======================
-# (deleted; see Readme-Cycle4.txt)
-
-# GRINDING PROCESSING TEMPLATE ======================
-# (deleted; see Readme-Cycle4.txt)
 
 # EXECUTION NOTES ======================
 # Capture all commands in this file.
