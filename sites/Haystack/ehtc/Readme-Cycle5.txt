@@ -72,11 +72,17 @@ export scmp='PV,MG,SW,AX,LM,SZ,GL,MM'
 # define one logic variable QA2_<proj> for each QA2 project nickname <proj>
 # per # track and set plab, pcal and qpar appropriately for it--see one-time
 # setup. -P is threads, -f is fringe plots to make, -r = run
-export QA2_<proj>=true
+export QA2_<proj>=false # true
+export QA2_na=false # true
 $QA2_<proj> && {
     export plab=<track>-<exp>-<yyyymmdd>           # external QA2 file label
     export pcal=???????                            # internal QA2 label
-    export qpar=v8
+    export qpar=v?
+}
+$QA2_na && {
+    export plab=-track---exp---yyyymmdd-           # external QA2 file label
+    export pcal=-------                            # internal QA2 label
+    export qpar=vx
 }
 export opts="-r -P15 -S $scmp -f 4 -A $dpfu -q $qpar"
 
@@ -145,6 +151,11 @@ cd $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
 for d in ../qa2/$pcal.* ; do ln -s $d . ; done
 ls -ld $pcal.*
 
+# Review README.DRIVEPOLCONVERT: it may specify something other than 'v8'
+# which is the value passed as the -q argument to drivepolconvert.py
+# via the opts='...' assignment above.  Make sure you have this right.
+echo -n 'CHECK: ' $opts '== ' ; cat $pcal.README.DRIVEPOLCONVERT
+
 # for every QA2 package, estimate a common $dpfu forr the campaign
 # dpfu (degrees / flux unit) appears in the ANTAB files and it is a
 # somewhat arbitrary choice.  $pcal.APP.artifacts is a link to find tables
@@ -152,11 +163,6 @@ ln -s $pcal.qa2-diagnostics $pcal.APP.artifacts
 casa --nologger --nologfile -c $DIFXROOT/share/polconvert/DPFU_scanner.py
 # when you are done with this remove it as, DPFU_scanner expects only one
 rm $pcal.APP.artifacts
-
-# Review README.DRIVEPOLCONVERT: it may specify something other than 'v8'
-# which is the value passed as the -q argument to drivepolconvert.py
-# via the opts='...' assignment above.  Make sure you have this right.
-echo -n 'CHECK: ' $opts '== ' ; cat $pcal.README.DRIVEPOLCONVERT
 
 # pull in the experiment codes
 cp -p $ehtc/ehtc-template.codes $exp.codes
@@ -230,18 +236,20 @@ do difx2mark4 -e $expn -s $exp.codes --override-version ${j/input/difx} ; done
 
 # identify roots:
 roots=`cd $expn ; ls */$target*` ; echo $roots
-cd $expn ; cp ../$ers.conf .
 # For each root run this command, but set -s argument
 # with a comma-sep list of single letter station codes
 # that should be fit (relative to A as first station).
 # Refer to the station codes file for the 2-letter to 1-letter codes.
+cd $expn ; cp ../$ers.conf .
 $ehtc/est_manual_phases.py -c $ers.conf \
-    -r first-root -s A,...
+    -r first-root -s A,x,y,z,...
 grep ^if.station $ers.conf | sort | uniq -c
 $ehtc/est_manual_phases.py -c $ers.conf \
-    -r second-root -s A,...
+    -r second-root -s A,p,q,r,...
 grep ^if.station $ers.conf | sort | uniq -c
 #...
+# are all set up?
+# fourfit -bA? -c $ers.conf $roots ; fplot */A[^A].B*
 
 # be sure to clean up afterwards, especially to move $expn aside
 cd ..
