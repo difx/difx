@@ -127,9 +127,10 @@ $makerelease && {
 # stage tarballs and logs in local release directory
 mv tarballs tb-$label
 mkdir -p tb-$label/logs/packaging
-mv logs/$ers-*.log tb-$label/logs/packaging
-mv tbdir/logs/* tb-$label/logs/packaging
-mv $proj-$targ.log tb-$label/logs/packaging
+cp -a logs/$ers-*.log tb-$label/logs/packaging
+cp -a tbdir/logs/* tb-$label/logs/packaging
+cp -a $proj-$targ-$subv.log tb-$label/logs/packaging
+rm -f  logs/$ers-*.log tbdir/logs/* $proj-$targ-$subv.log
 # build the release script
 sed 's/^....//' > tb-$label/release.sh <<EOF
     [ -d $release/$proj-$class ] ||
@@ -147,7 +148,7 @@ sed 's/^....//' > tb-$label/release.sh <<EOF
     mv logs/packaging/* \\
         $release/logs/$proj-$class-packaging
     ( date ; sleep 2 ; chmod 644 nohup.out ; mv nohup.out \\
-        $release/logs/$proj-$class-packaging/$label-$class-release.log ) &
+        $release/logs/$proj-$class-packaging/$label-$class-$subv-release.log )&
     disown
 EOF
 chmod +x tb-$label/release.sh
@@ -162,7 +163,7 @@ rmdir logs || echo logs was not empty when it should be
 echo ''
 echo '#########'
 echo '# execute'
-echo '  cd tb-$label/logs ; echo nohup ./release.sh &'
+echo '  cd tb-$label ; nohup ./release.sh &'
 echo '# when you are ready to release the data'
 echo '#########'
 echo ''
