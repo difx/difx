@@ -53,6 +53,7 @@ done
 
 # note the dpfu used in production and that used in QA2
 [ -z "$dpfu" ] && dpfu='0.000'
+DPFU='NDef.'
 eval `awk 'NR==1{print $4;exit}' $qart`  # defines DPFU
 
 # find the polconvert products
@@ -79,9 +80,13 @@ NR>6 {printf("%.8f  %.4f %.4f\n", (dy+hr/24.0+mn/1440.0),loc, hic);}
 
 # build a data file; the first file being the QA2 estimate (color 0)
 # and the rest are polconvert tables; in the process gather info for
-# the titles and colors 
+# the titles and colors.  If the antab from QA2 is crap, still try
+# to make a plot...
 declare -a tit
-awk -v decimate=0 "$awks" $qart > $tag.out
+qlines=`cat $qart | wc -l`
+[ "$qlines" -gt 7 ] &&
+    awk -v decimate=0 "$awks" $qart > $tag.out || {
+    echo 'nan nan nan' > $tag.out && echo 'nan nan nan' >> $tag.out ; }
 ndx=0
 tit[0]="tit 'QA2 $band = $bb'"
 for p
@@ -101,6 +106,15 @@ done
 
 last=`tail -1 $tag.out | cut -d. -f1`
 t=`echo $last \* 24 | bc -lq`
+
+[ $qlines -gt 7 ] || {
+    final=`tail -1 $tag.out | awk '{print $1}'`
+    mv $tag.out $tag.tmp
+    sed "s/nan nan nan/$final 0.0 0.0/" $tag.tmp > $tag.out
+}
+
+mtsys=`awk '{s+=$2;s+=$3;c+=2}END{print int(2*s/c)}' $tag.out`
+[ $mtsys -gt 10 ] && echo "Warning, export plotrange='[][0:$mtsys]' suggested"
 
 # header
 max=$(($ndx + 1))
