@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2018 by Walter Brisken & Helge Rottmann            *
+ *   Copyright (C) 2008-2019 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -149,6 +149,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --primary-band <pb> Add PRIBAND keyword with value <pb> to FITS file\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
+	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
 	fprintf(stderr, "    DIFX_LABEL                Your local DiFX version label.\n");
 	fprintf(stderr, "    GAIN_CURVE_PATH           Path where gain curves can be found.\n");
