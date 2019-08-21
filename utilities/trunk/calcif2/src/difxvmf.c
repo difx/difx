@@ -36,8 +36,8 @@
 
 const char program[] = "difxvmf";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20";
+const char version[] = "0.2";
+const char verdate[] = "20190821";
 
 void usage()
 {
@@ -50,6 +50,15 @@ void usage()
 	printf("-h         print help information and quit\n\n");
 	printf("--usewx\n");
 	printf("-w         use measured .weather files if available\n\n");
+	printf("Environment variables used:\n");
+	printf("  DIFX_VERSION : to enforce DiFX version compatibility\n");
+	printf("  DIFX_VMF_DATA : writable directory for caching downloaded VMF coefficients\n\n");
+	printf("This program takes a DiFX fileset (including the .imfile) and modifies the wet\n");
+	printf("and dry troposphere values based on the Vienna Mapping Functions.  This program\n");
+	printf("retrieves the needed external data from http://vmf.geo.tuwien.ac.at .  The .im\n");
+	printf("file will be replaced with an updated version.\n\n");
+	printf("If --usewx is specified, files of the form <project>.<stn>.weather will be looked\n");
+	printf("for in the local directory and used to supply metrology data, overriding defaults.\n\n");
 }
 
 int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, const char *difxVersion, int overrideVersion, int useWx, int verbose)
