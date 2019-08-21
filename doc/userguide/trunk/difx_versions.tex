@@ -579,21 +579,9 @@ Some other variable types were changed for long term type safety
 
 \end{enumerate}
 
-\subsection{Features left to implement}
-
-Here is a list of other features to add to DiFX that are not directly tied to any particular version:
-\begin{enumerate}
-\item Support for K5 format
-\item Pulsar bins with proper output format
-\item Space VLBI support
-\item Playback of two independent modules in one Mark5 unit
-\item Non-bank-mode Mark5 support
-\item Support for antenna local oscillator offsets
-\end{enumerate}
-
 \subsection{DiFX 2.5.1}
 
-\subsubsection{New Features}
+\subsubsection{New features}
 
 \begin{enumerate}
 
@@ -640,6 +628,36 @@ supported.
 \item Various changes made between DiFX 2.4 and 2.5 are not API-compatible. Please don't mix packages from these two releases.  If you have non-DiFX software that links against the DiFX libraries, be sure to recompile them. A small number of changes may result in need to restructure such code.
 \item Unlike previous DiFX releases, each tagged version will be its own SVN copy. If the number of minor releases within the 2.5 series gets large, some (reversible) pruning of the SVN repository may occur.  There has been some debate about the best tagging strategy: bring any strong opinions to the Bologna meeting, where further changes to release and tagging policies can be discussed if needed.
 
+\end{enumerate}
+
+
+\section{DiFX 2.5.2}
+
+\subsection{Bug fixes}
+
+\begin{enumerate}
+
+\item Fixes for the HOPS 'rootid' rollover.  The new rootcode is a conventional base-36 timestamp in seconds from the start of the new epoch (zzzzzz in the old epoch).  This will last until 2087.
+\item Major fixes/improvements to PolConvert for use with ALMA by the EHTC and GMVA
+
+\end{enumerate}
+
+\section{DiFX 2.6.1}
+
+\subsection{New features}
+
+\subsection{Bug fixes}
+
+\subsection{Caveats}
+
+
+\subsection{Features left to implement}
+
+Here is a list of other features to add to DiFX that are not directly tied to any particular version:
+\begin{enumerate}
+\item Support for K5 format
+\item Pulsar bins with proper output format
+\item Space VLBI support
 \end{enumerate}
 
 

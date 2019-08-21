@@ -476,6 +476,7 @@ Several other files are optional and are typically used to populate calibration 
 \item {\tt tsys}
 \item {\tt weather}
 \item {\tt \$GAIN\_CURVE\_PATH/}
+\item {\tt .difx/*.history}
 \end{enumerate}
 With the exception of the gain curve files, all the input files to {\tt difx2fits} are expected to be in the current working directory or in the place indicated by the {\tt .input} file.
 As the visibility file ({\tt .difx}) is read, any records that are all zero are omitted.
@@ -497,11 +498,23 @@ As the visibility file ({\tt .difx}) is read, any records that are all zero are 
 \item[] {\tt -x} or {\tt --dont-sniff} : don't generate sniffer output files
 \item[] {\tt --phasecentre} {\em p} : (U.S.\ spelling okay too) Create a FITS file for all the {\em p}$^{\rm th}$ phase centers (default 0)
 \item[] {\tt --override-version} : ignore difx version clashes
+\item[] {\tt -m} {\em nJob} or {\tt --max-jobs} {\em nJob} : split into more FITS files after reaching {\em nJob} input files.
 \end{itemize}
 \item[] {\em baseFilename} is the prefix of the jobfile to convert; it is okay to use the {\tt .difx} filename instead
 \item[] {\em outFile} is the name of the {\tt FITS} file to produce; if not provided one will be made based on the project code
 \item[] Example 1: {\tt difx2fits dq109\_1 DQ109.FITS}
 \item[] Example 2: {\tt difx2fits -v -v -d}
+\end{itemize}
+
+\noindent Environment variables respected:
+\begin{itemize}
+\item {\tt DIFX\_GROUP\_ID} : if set, run difx2fits with {\tt umask(2)}.
+\item {\tt DIFX\_LABEL} : the local name of the difx install.  Used to verify matching versions and put inside FITS file; if not set, {\tt DIFX\_VERSION} will be used instead.
+\item {\tt DIFX\_MAX\_SNIFFER\_MEMORY} : maximum amount mf memory (bytes) to allow sniffer to use.
+\item {\tt DIFX\_VERSION} : the difxbuild version name.
+\item {\tt GAIN\_CURVE\_PATH} : directory containing gain files.
+\item {\tt TCAL\_PATH} : a directory containing Tcal value files.
+\item {\tt TCAL\_FILE} : if {\tt TCAL\_PATH} is not set, use the file pointed to by this env. var.
 \end{itemize}
 
 Unless disabled with the {\tt --dont-sniff} or {\tt -x} flag, four ``sniffer'' output files ({\tt .acb}, {\tt .apd}, {\tt .wts} and {\tt .xcb}) will be written for each {\tt .FITS} file produced.  
@@ -524,6 +537,7 @@ When using integration times longer than 1 second it is possible for one visibil
 Such records are dropped.
 Finally any visibilities, produced outside a normal scan start/stop time are dropped; this should not occur unless the {\tt .calc} file is modified between correlation and FITS creation.
 
+If there are any files matching {\tt .difx/*.history} for {\tt .difx/} output being converted to {\tt .FITS}, the contents of these files will be inserted into the FITS HISTORY table.
 
 
 
