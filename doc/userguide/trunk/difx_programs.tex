@@ -2097,9 +2097,49 @@ The columns being displayed are:
 
 
 
+% mk6cp -----------------------------------------------------------------------
+
+\subsection{mk6cp {\small $\mathrm{(package: mark6sg)}$} \label{sec:mk6cp}}
+
+{\tt mk6cp} is a wrapper around {\tt mk6gather} which makes the operation of copying multiple files from a Mark6 module easier.
+
+\begin{itemize}
+\item[] Usage: {\tt mk6cp} $[$ {\em options} $]$ {\em filematch1} $[$ {\em filematch2} \ldots $]$ {\em destination}
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -v} or {\tt --verbose} : increase output verbosity
+\item[] {\tt -r} or {\tt --resume} : don't copy files that exist in the destination path
+\end{itemize}
+\item[] {\em filematch1} is a shell-style pattern for matching scan names
+\item[] {\em destination} is the output path to place files; needs to start with {\tt .} or {\tt /} or end with {\tt /}  
+\end{itemize}
 
 
-% mk6gather ------------------------------------------------ INCOMPLETE -------
+
+
+% mk6gather -------------------------------------------------------------------
+
+\subsection{mk6gather {\small $\mathrm{(package: mark6sg)}$} \label{sec:mk6gather}}
+
+{\tt mk6gather} extracts data from a Mark6 module, assembling as necessary the data scattered across the disks in the module.
+
+\begin{itemize}
+\item[] Usage: {\tt mk6gather} $[$ {\em options} $]$ {\em template}
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -v} or {\tt --verbose} : increase output verbosity
+\item[] {\tt -a} or {\tt --append} : append to existing file; this continues a previous gather
+\item[] {\tt -o} {\em outfile} or {\tt --output} {\em outfile} : send output to {\em outfile} (default is {\tt gather.out})
+\item[] {\tt -b} {\em bytes} or {\tt --bytes} {\em bytes} : stop writing after {\em bytes} are written
+\item[] {\tt -s} {\em bytes} or {\tt --skip} {\em bytes} : skip first {\em bytes} of file
+\end{itemize}
+\item[] {\em template} specifies a file list to match, in a shell-style wildcard pattern, such as the name of a scan (e.g., {\tt BB407A\_LA\_No0001})
+\end{itemize}
+
+If more than one file is to be copied, it is best to use the {\tt mk6cp} (\ref{sec:mk6cp}) program instead. 
+
 
 
 
@@ -2137,10 +2177,12 @@ Three printing levels are supported:
 
 % mk6summary ----------------------------------------------- INCOMPLETE -------
 
+\subsection{mk6summary {\small $\mathrm{(package: mark6sg)}$}} \label{sec:mk6summary} 
 
 
 % mk6vmux -------------------------------------------------- INCOMPLETE -------
 
+\subsection{mk6vmux {\small $\mathrm{(package: vdifio)}$}} \label{sec:mk6vmux} 
 
 
 
@@ -2474,6 +2516,8 @@ This program is meant to work within the DiFX environment and would probably req
 \item[] {\tt -F} or {\tt --fits} : run {\tt difx2fits} on output of each job separately
 \item[] {\tt -l} or {\tt --localhead} : use the current host as the headnode, not {\tt \$DIFX\_JEAD\_NODE}
 \item[] {\tt --override-version} : ignore potential difx version conflicts
+\item[] {\tt -A} {\em agent} or {\tt --agent=}{\em agent} : call mpirun through {\em agent} with filebase as only argument
+\item[] {\tt -M} {\em machinesFile} or {\tt --machines-file=}{\em machinesFile} : use {\em machinesFile} instead of the one expected based on the job name
 \end{itemize} 
 \item[] {\em startDelay} is an optional number of seconds to jump into the job upon start
 \item[] {\em input}N is a {\tt .input} file, or its prefix
@@ -2482,8 +2526,16 @@ This program is meant to work within the DiFX environment and would probably req
 \item[] Example 3: {\tt startdifx -F *.input}
 \end{itemize}
 
-If the option to send a message to {\tt mk5daemon} to start the correlation is used, the default multicast group and port will be 224.2.2.1 and 50200 respectively.
-These can be overriden with environment variables {\tt DIFX\_MESSAGE\_GROUP} and {\tt DIFX\_MESSAGE\_PORT}.
+\noindent Environment variables respected:
+\begin{itemize}
+\item {\tt DIFX\_MESSAGE\_GROUP} : multicast group to use (when using -m option), overriding default 224.2.2.1
+\item {\tt DIFX\_MESSAGE\_PORT} : multicast port to use (when using -m option), overriding default 50200
+\item {\tt DIFX\_HEAD\_NODE} : when using -m option, this must be set, which specifies which machine will serve as the head node
+\item {\tt DIFX\_MPIRUNOPTIONS} : used to pass options to the mpirun command
+\item {\tt DIFX\_CALC\_PROGRAM} : can be used to change the delay model program (default is {\tt calcif2}); only needed if model calculations have not been done
+\item {\tt DIFX\_CALC\_OPTIONS} : used to override options to the delay model program
+\end{itemize}
+
 
 
 
@@ -2505,6 +2557,11 @@ This is mainly useful for debugging {\tt mpifxcorr} and any programs responsible
 \end{itemize}
 \end{itemize}
 
+\noindent Environment variables respected:
+\begin{itemize}
+\item {\tt DIFX\_MESSAGE\_GROUP} : multicast group to use, overriding default 224.2.2.1
+\item {\tt DIFX\_MESSAGE\_PORT} : multicast port to use, overriding default 50200
+\end{itemize}
 
 
 
