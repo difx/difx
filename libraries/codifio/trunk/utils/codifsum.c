@@ -143,6 +143,7 @@ int main (int argc, char **argv) {
       int sampleperframe = getCODIFFrameBytes(header)*8/(bits*nchan*(iscomplex+1));
       double framepersec = getCODIFTotalSamples(header)/(double)sampleperframe/period;
       double mjd = getCODIFFrameDMJD(header, framepersec);
+      if (verbose && !first) mjd += 1.0/framepersec/(24.0*60*60); // Adjust for time at end of frame
 
       mjd2cal(mjd, &day, &month, &year, &ut);
       turns_to_string(ut, 'H', 6, 40, timestr);
@@ -280,7 +281,7 @@ int turns_to_string(double turns, char type, int dps, int nstr, char str[])
   whole_turns = (int)turns;
   turns -= (double)whole_turns;
 
-  /* Calculate the scaling factor for the conversion */
+  // Calculate the scaling factor for the conversion
   i = dp;
   scale = 1.0;
   while (i > 0) {
