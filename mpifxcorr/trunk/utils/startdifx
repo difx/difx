@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 #**************************************************************************
-#   Copyright (C) 2008-2016 by Walter Brisken and Helge Rottmann          *
+#   Copyright (C) 2008-2019 by Walter Brisken and Helge Rottmann          *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '2.5.3'
-VERDATE = '20180907'
+VERSION = '2.6.1'
+VERDATE = '20190821'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -710,7 +710,7 @@ optParser.add_option("-A", "--agent", dest="agent", action="store", type="string
 optParser.add_option("-g", "--genmachines", dest="machinesPolicy", action="store_const", const=2, help="will run genmachines even if not needed [default]")
 optParser.add_option("-a", "--automachines", dest="machinesPolicy", action="store_const", const=1, help="will run genmachines if needed")
 optParser.add_option("-n", "--nomachines", dest="machinesPolicy", action="store_const", const=0, help="will not run genmachines, even if needed")
-optParser.add_option("-M", "--machines-file", dest="machinesFile", action="store", type="string", help="start difx via DifxStartMessage")
+optParser.add_option("-M", "--machines-file", dest="machinesFile", action="store", type="string", help="use supplied machines file instead of one based on job name")
 optParser.add_option("-m", "--message", dest="useStartMessage", action="store_true", help="start difx via DifxStartMessage")
 optParser.add_option("-f", "--force", dest="deletePolicy", action="store_const", const=1, help="force running even if output file exists")
 optParser.add_option("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not calculate delay model, even if needed")
