@@ -638,20 +638,93 @@ supported.
 \begin{enumerate}
 
 \item Fixes for the HOPS 'rootid' rollover.  The new rootcode is a conventional base-36 timestamp in seconds from the start of the new epoch (zzzzzz in the old epoch).  This will last until 2087.
-\item Major fixes/improvements to PolConvert for use with ALMA by the EHTC and GMVA
+\item Major fixes/improvements to PolConvert for use with ALMA by the EHTC and GMVA.
 
+\end{enumerate}
+
+
+\section{DiFX 2.5.3}
+
+\subsection{Updates}
+
+\begin{enumerate}
+
+\item genmachines
+\begin{itemize}
+  \item r8264 genmachines and mark6 datastream updates
+  \item r8357 add mark6 activity message to mark6 datastream
+  \item r8409 allow multiple nodes to serve as datastream nodes for FILE based-data in the same location
+\end{itemize}
+\item hops 3.19 new features
+\begin{itemize}
+  \item increased the number of allowed frequency ``notches'' to ridiculous levels
+  \item an “ad hoc” data flagging capability to allow improved time / channel data selection for fringing
+  \item a capability to dump all the information on the fringe plots into ascii files for “roll your own” plotting
+  \item removed obsolete {\tt max\_parity}
+  \item introduced {\tt min\_weight} (to discard APs with very little correlated data in support)
+  \item vex2xml, a program that converts VEX (v1.5) into XML to allow easy parsing via standard XML parsers.
+  \item added {\tt type\_222} to save control file contents, enabled by keyword {\tt gen\_cf\_record}.
+\end{itemize}
+    polconvert to v1.7.5 (mostly minor bug fixes and robustifications)
 \end{enumerate}
 
 \section{DiFX 2.6.1}
 
 \subsection{New features}
 
+\begin{enumerate}
+\item Improved VDIF support
+\begin{itemize}
+  \item Increased robustness in processing VDIF data with many gaps
+  \item Improvements in processing VDIF with frame sizes very different from 5000 bytes
+  \item  New in-line reordering functionality via vdifreader…() functions; allows operation on more highly skewed VDIF files
+\end{itemize}
+\item mpifxcorr {\tt .input}, {\tt .calc}, {\tt .threads}, and pulsar files are now only read by the head node
+\item mpifxcorr can be provided a new stop time via a DifxParameter message; results in clean shutdown at that time.
+\item mpifxcorr can extract pulse cals with tone spacing smaller than 1 MHz
+\item Support for Intel Performance Primitives version > 9 (specfically IPP 2018 and 2019)
+\begin{itemize}
+  \item These newer IPP versions are more readily available than earlier versions
+\end{itemize}
+\item Improved support for Mark6 playback
+\begin{itemize}
+  \item Mark6 activity messages in difxmessage
+  \item Support in genmachines with updated mk5daemon
+  \item Support playback of Mark5B data on Mark6
+  \item New and improved mark6 utilities
+\end{itemize}
+\item difx2fits: populate antenna diameters and mount types for antennas known to the difxio antenna database
+\item difx2fits: in verbose mode, explain why files are being split
+\item difx2fits: new options for merging correlator jobs run with different clock models
+\item vex2difx: new parameter {\tt exhaustiveAutocorrs} can be used to generate cross-hand autocorrelations even when the two polarizations for an antenna come from different datastreams
+\item difx2mark4: support multiple bandwidths in one pass
+\item hops: to rev 3.19 (see notes on 2.5.3 above for details on several new and useful features)
+\item polconvert: to rev 1.7.5 (see notes on 2.5.3 above for details)
+\end{enumerate}
+
 \subsection{Bug fixes}
+
+\begin{enumerate}
+\item mpifxcorr: Retry on NFS open errors of kind: ``EAGAIN Resource temporarily unavailable''
+\item mpifxcorr: Fix weight issue when the parameter {\tt nBufferedFFTs} $ > 1$
+\item startdifx/genmachines: Fixes for cases when multiple input files are provided
+\item Python 2 scripts now explicitly call python2
+\item vex2difx: allow up to 32 IFs (was 4) and warn when this is exceeded
+\item vex2difx: support units in the clock rate (e.g., usec/sec); in general support time in the numerators.
+\item Sun RPC is on its way out; support for ``tirpc'' added to calcif2 and calcserver
+\end{enumerate}
 
 \subsection{Caveats}
 
+\begin{enumerate}
+\item Moved “mark6gather” functions from vdifio to mark6sg; this changes the order of dependencies!
+\item Various changes made between DiFX 2.5 and 2.6 are not API-compatible. Please don't mix packages from these two releases. If you have non-DiFX software that links against the DiFX libraries, be sure to recompile them. A small number of changes may result in need to restructure such code.
+\item There is some suspicion that correlation of very narrow bandwidth VDIF modes on Mark6 media can result in premature termination of datastreams.
+\item difx\_monitor won't compile with IPP $\ge 9$
+\end{enumerate}
 
-\subsection{Features left to implement}
+
+\section{Features left to implement}
 
 Here is a list of other features to add to DiFX that are not directly tied to any particular version:
 \begin{enumerate}
