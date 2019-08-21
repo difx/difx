@@ -37,7 +37,7 @@ int main (int argc, char **argv) {
   uint16_t stationID;
   ssize_t nread;
   off_t sook;
-  char msg[300], buf[CODIF_HEADER_BYTES], *stnCode, timestr[30];
+  char msg[300], buf[CODIF_HEADER_BYTES], *stnCode, timestr[40];
   codif_header *header;
 
  struct option options[] = {
@@ -140,12 +140,12 @@ int main (int argc, char **argv) {
       int iscomplex = getCODIFComplex(header);
       int period = getCODIFPeriod(header);
       int framesize = getCODIFFrameBytes(header)+CODIF_HEADER_BYTES;
-      int sampleperframe = framesize*8/(bits*nchan*(iscomplex+1));
-      double framepersec = getCODIFTotalSamples(header)/sampleperframe/period;
+      int sampleperframe = getCODIFFrameBytes(header)*8/(bits*nchan*(iscomplex+1));
+      double framepersec = getCODIFTotalSamples(header)/(double)sampleperframe/period;
       double mjd = getCODIFFrameDMJD(header, framepersec);
 
       mjd2cal(mjd, &day, &month, &year, &ut);
-      turns_to_string(ut, 'H', 3, 30, timestr);
+      turns_to_string(ut, 'H', 6, 40, timestr);
       if (verbose) {
 	if (first) {
 	  char complextype[2] = "";
@@ -171,9 +171,9 @@ int main (int argc, char **argv) {
 	printf("\n");
 	printf("EPOCH:       %d\n", getCODIFEpoch(header));
 	printf("REPRESENT:   %d\n", getCODIFRepresentation(header));
-	if(stnCode[0] >= ' ' && stnCode[0] <= 127 && (stnCode[1] >= ' ' || stnCode[1] == 0) && stnCode[1] <= 127)	{
+	if(stnCode[0] >= ' ' && stnCode[0] <= 127 && (stnCode[1] >= ' ' || stnCode[1] == 0) && stnCode[1] <= 127) {
 	printf("ANTID:       %c%c\n", stnCode[1], stnCode[0]);
-	}	else {
+	} else {
 	  printf("ANTID:       %d\n", stationID);
 	}
 	printf("\n");
@@ -185,7 +185,7 @@ int main (int argc, char **argv) {
 	printf("\n");
 	printf("PERIOD:      %d\n", period);
 	printf("\n");
-	printf("#SAMPLES:    %lu\n", getCODIFTotalSamples(header));
+	printf("#SAMPLES:    %llu\n", getCODIFTotalSamples(header));
 	printf("\n");
 	printf("SYNC:        0X%X\n", getCODIFSync(header));
 	
@@ -258,12 +258,12 @@ int turns_to_string(double turns, char type, int dps, int nstr, char str[])
     /* Hours mode */
     hours = 1;
     revunit = 86400;
-    dp = (dps > 4) ? 4 : dps;
+    dp = (dps > 6) ? 6 : dps;
   } else {
     /* Degrees mode */
     hours = 0;
     revunit = 1296000;
-    dp = (dps > 3) ? 3 : dps;
+    dp = (dps > 6) ? 6 : dps;
   }
   if (dp < 0) dp = 0;
   if (dp != dps) printf("turns_to_string: Invalid number of d.p. requested, "
