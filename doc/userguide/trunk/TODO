@@ -1,4 +1,11 @@
 
+Section on calculating delay models
+* Atmosphere removal
+* VMF
+* difxcalc vs calcserver
+
+
+
 define "DiFX file set"
 
 update diagrams

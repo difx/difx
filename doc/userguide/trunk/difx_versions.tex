@@ -720,6 +720,7 @@ supported.
 \item Moved “mark6gather” functions from vdifio to mark6sg; this changes the order of dependencies!
 \item Various changes made between DiFX 2.5 and 2.6 are not API-compatible. Please don't mix packages from these two releases. If you have non-DiFX software that links against the DiFX libraries, be sure to recompile them. A small number of changes may result in need to restructure such code.
 \item There is some suspicion that correlation of very narrow bandwidth VDIF modes on Mark6 media can result in premature termination of datastreams.
+\item The {\tt .threads} file must now exist; previously (before the change to only have manager read these files), a missing {\tt .threads} file would cause each core process instance to have a single thread.
 \item difx\_monitor won't compile with IPP $\ge 9$
 \end{enumerate}
 
