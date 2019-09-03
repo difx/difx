@@ -754,7 +754,12 @@ if components["mpifxcorr"]:
     print "Making mpifxcorr"
     print
 
-    os_chdir("mpifxcorr/" + difx_version)
+    targetdir = "mpifxcorr/" + difx_version
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = 'mpifxcorr/trunk/'
+
+    os_chdir(targetdir);
     thisdir = os.getcwd()
 
     if noconf and os.path.exists('configure'):
