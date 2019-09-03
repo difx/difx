@@ -42,6 +42,18 @@ Note: all array indices in this C version are 0-based, whereas original Matlab c
 
 */
 
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
+
+
 #include <math.h>
 #include "vmf3.h"
 #include "timeutils.h"

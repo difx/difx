@@ -1,5 +1,16 @@
 #include "timeutils.h"
 
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
+
 static int monlen[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 int mjd2date		/* convert MJD to date */

@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: $
+ * $Id$
  * $HeadURL: $
- * $LastChangedRevision: $
- * $Author: $
- * $LastChangedDate: $
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -78,7 +78,7 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 	D = loadDifxInput(inputFile);
 	if(!D)
 	{
-		fprintf(stderr, "Error: loading of %s failed.\n", inputFile);
+		fprintf(stderr, "Error: %s: loading of %s failed.\n", program, inputFile);
 
 		return -2;
 	}
@@ -87,7 +87,7 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 
 	if(vmfRows <= 0)
 	{
-		fprintf(stderr, "Error: no VMF data loaded\n");
+		fprintf(stderr, "Error: %s: no VMF data loaded\n", program);
 
 		return -1;
 	}
@@ -100,11 +100,11 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 			printf("Attempting to run calcif2 from version %s on a job make for version %s\n", difxVersion, D->job->difxVersion);
 			if(overrideVersion)
 			{
-				fprintf(stderr, "Continuing because of --override-version\n");
+				fprintf(stderr, "Warning: %s: continuing despite version mismatch because of --override-version\n", program);
 			}
 			else
 			{
-				fprintf(stderr, "calcif2 won't run on mismatched version without --override-version.\n");
+				fprintf(stderr, "Error: %s: calcif2 won't run on mismatched version without --override-version.\n", program);
 				deleteDifxInput(D);
 
 				return -3;
@@ -119,7 +119,7 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 	D = updateDifxInput(D, mergeOptions);
 	if(!D)
 	{
-		fprintf(stderr, "Update of %s failed.\n", inputFile);
+		fprintf(stderr, "Error: %s updateDifxInput(): update of %s failed.\n", program, inputFile);
 
 		return -4;
 	}
@@ -154,7 +154,7 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 	}
 	else
 	{
-		printf("Warning: No output produced\n");
+		printf("Warning: %s calculateVMFDifxInput(): No output produced\n", program);
 	}
 
 
@@ -178,14 +178,14 @@ int main(int argc, char **argv)
 	difxVersion = getenv("DIFX_VERSION");
 	if(difxVersion == 0)
 	{
-		fprintf(stderr, "Error: Environment variable DIFX_VERSION must be set.\n");
+		fprintf(stderr, "Error: %s: environment variable DIFX_VERSION must be set.\n", program);
 
 		exit(EXIT_FAILURE);
 	}
 
 	if(getenv("DIFX_VMF_DATA") == 0)
 	{
-		fprintf(stderr, "Error: Environment variable DIFX_VMF_DATA must be set to a writable directory.\n");
+		fprintf(stderr, "Error: %s: environment variable DIFX_VMF_DATA must be set to a writable directory.\n", program);
 
 		exit(EXIT_FAILURE);
 	}
@@ -224,7 +224,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				fprintf(stderr, "Error: difxvmf: unknown argument: %s\n", argv[a]);
+				fprintf(stderr, "Error: %s: unknown argument: %s\n", program, argv[a]);
 
 				exit(EXIT_FAILURE);
 			}

@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: $
+// $Id$
 // $HeadURL: $
-// $LastChangedRevision: $
-// $Author: $
-// $LastChangedDate: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -206,7 +206,7 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 		n = snprintf(fileName, MaxLength, "%d%03d.vmf3_r", year, doy);
 		if(n >= MaxLength)
 		{
-			fprintf(stderr, "Developer error: loadVMFData: fileName too short: %d < %d\n", MaxLength, n+1);
+			fprintf(stderr, "Developer error: loadVMFData(): fileName too short: %d < %d\n", MaxLength, n+1);
 
 			return -1;
 		}
@@ -214,7 +214,7 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 		n = snprintf(filePath, MaxLength, "%s/%s", vmfDir, fileName);
 		if(n >= MaxLength)
 		{
-			fprintf(stderr, "Developer error: loadVMFData: filePath too short: %d < %d\n", MaxLength, n+1);
+			fprintf(stderr, "Developer error: loadVMFData(): filePath too short: %d < %d\n", MaxLength, n+1);
 
 			return -2;
 		}
@@ -229,14 +229,14 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 			n = snprintf(url, MaxCommandLength, "http://vmf.geo.tuwien.ac.at/trop_products/VLBI/VMF3/VMF3_OP/daily/%d/%s", year, fileName);
 			if(n >= MaxURLLength)
 			{
-				fprintf(stderr, "Developer error: loadVMFData: url too short: %d < %d\n", MaxURLLength, n+1);
+				fprintf(stderr, "Developer error: loadVMFData(): url too short: %d < %d\n", MaxURLLength, n+1);
 
 				return -3;
 			}
 			n = snprintf(cmd, MaxCommandLength, "wget %s -O %s\n", url, filePath);
 			if(n >= MaxURLLength)
 			{
-				fprintf(stderr, "Developer error: loadVMFData: cmd too short: %d < %d\n", MaxCommandLength, n+1);
+				fprintf(stderr, "Developer error: loadVMFData(): cmd too short: %d < %d\n", MaxCommandLength, n+1);
 
 				return -4;
 			}
@@ -250,16 +250,33 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 			n = stat(filePath, &st);
 			if(n < 0)
 			{
-				fprintf(stderr, "File fetch failed.  Command was: %s\n", cmd);
+				fprintf(stderr, "Error: loadVMFData(): file fetch failed.  Command was: %s\n", cmd);
 
 				return -5;
+			}
+
+			if(st.st_size < 1000)
+			{
+				fprintf(stderr, "Error: loadVMFData(): downloaded file %s is too small (%Ld bytes; should be about 80kB); deleting it.\n", filePath, (long long)(st.st_size));
+
+				n = snprintf(cmd, MaxCommandLength, "rm -f %s", filePath);
+				if(n >= MaxURLLength)
+				{
+					fprintf(stderr, "Developer error: loadVMFData(): url too short: %d < %d\n", MaxURLLength, n+1);
+
+					return -8;
+				}
+				
+				system(cmd);
+
+				return -9;
 			}
 		}
 
 		in = fopen(filePath, "r");
 		if(in == 0)
 		{
-			fprintf(stderr, "Error: cannot open local file: %s\n", filePath);
+			fprintf(stderr, "Error: loadVMFData(): cannot open local file: %s\n", filePath);
 
 			return -6;
 		}
