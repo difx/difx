@@ -6,7 +6,7 @@ OBJECTS=vex.o vexf.o vexf_put.o vex.yy.o vex_util.o print_vex.o vex_get.o vex_pu
 #CC=gcc -O -fnested-functions  # Enable this os gcc complains about nested functions
 CC=gcc -O
 #
-CFLAGS=-fPIC
+CFLAGS=-fPIC -arch x86_64 -arch i386
 #
 
 default: libvex.a libvex.dylib
@@ -17,7 +17,7 @@ libvex.a: $(OBJECTS)
 	ar -qc $@ $(OBJECTS)
 
 libvex.dylib: $(OBJECTS)
-	gcc -dynamiclib -single_module  -o $@ $(OBJECTS) -lfl -install_name /usr/local/lib/libvex.dylib
+	gcc -dynamiclib -single_module  -o $@ $(OBJECTS) -ll -install_name $(DIFXROOT)/lib/libvex.dylib
 
 vex.yy.o:	vex.yy.l y.tab.h
 
