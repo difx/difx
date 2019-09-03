@@ -11,6 +11,11 @@
 
 struct vex *vex_ptr=NULL;
 extern int lines;
+
+int yyparse();
+int yylex();
+void yyerror(const char *s);
+ 
 %}
 
 %union
@@ -1538,9 +1543,7 @@ value:		T_NAME  			{$$=make_dvalue($1,NULL);}
 ;
 %%
 
-yyerror(s)
-char *s;
-{
+void yyerror(const char *s) {
   fprintf(stderr,"%s at line %d\n",s,lines);
   exit(1);
 }
