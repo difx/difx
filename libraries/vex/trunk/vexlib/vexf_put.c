@@ -2831,7 +2831,7 @@ fcreate_sefd__
 #else
 fcreate_sefd
 #endif
-(str, str2, str3, str4) 
+(str, str2, str3) 
 char **str;
 char **str2;
 char **str3;
