@@ -10,6 +10,7 @@
 //============================================================================
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vex.h"
 #include "y.tab.h"
@@ -1886,7 +1887,7 @@ get_site_position_field(Site_position *site_position,int n,int *link,
   }
   return 0;
 }
-get_site_velocity_field(Site_velocity *site_velocity,int n,int *link,
+int get_site_velocity_field(Site_velocity *site_velocity,int n,int *link,
 		 int *name, char **value, char **units)
 {
   int ierr;

@@ -1120,7 +1120,7 @@ get_a_literal(struct llist *literals, char **text)
   return literals->next;
 }
 /*---------------------------------------------------------------------------*/
-char *
+void
 get_all_literals(struct llist *literals, char *array[])
 {
   int i=0;

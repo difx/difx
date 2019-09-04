@@ -11,10 +11,6 @@
 
 struct vex *vex_ptr=NULL;
 extern int lines;
-
-int yyparse();
-int yylex();
-void yyerror(const char *s);
  
 %}
 

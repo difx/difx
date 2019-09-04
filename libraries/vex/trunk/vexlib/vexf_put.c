@@ -144,7 +144,7 @@ fend_def
 /* ... */
 
 /* input: */
-/*   none
+/*   none  */
 /* output: */
 /*   VEX format def name */
 /* */
