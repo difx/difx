@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
+
 from os import popen, system
-from string import strip, split
 import argparse
 
 programname = 'mpifxcorr'
@@ -24,7 +26,7 @@ def getpids():
 	ps.close()
 	pids = []
 	for p in pslines:
-		s = split(strip(p))
+		s = p.strip().split()
 		if len(s) < 2:
 			continue
 		if s[3] != programname:
@@ -35,25 +37,25 @@ def getpids():
 pids = getpids()
 
 if verbose > 0:
-	print 'PIDs = ', pids
+	print('PIDs = ', pids)
 
 if len(pids) == 0:
-	print 'no %s process appears to be running' % programname
+	print('no %s process appears to be running' % programname)
 elif len(pids) == 1:
 	cmd = 'kill -INT %d' % (pids[0])
-	print 'killing a process with: ', cmd
+	print('killing a process with: ', cmd)
 	system(cmd)
 elif killfirst:
 	cmd = 'kill -INT %d' % (pids[0])
-	print 'killing first matching process with: ', cmd
+	print('killing first matching process with: ', cmd)
 	system(cmd)
 elif force:
 	for p in pids:
 		cmd = 'kill -INT %d' % (p)
-		print 'killing a process with: ', cmd
+		print('killing a process with: ', cmd)
 		system(cmd)
 else:
-	print 'too many processes called %s running.  not killing' % \
-		programname
-	print 'kill by hand with "kill -INT <pid>" where <pid> is one of ', \
-		pids
+	print('too many processes called %s running.  not killing' % \
+		programname)
+	print('kill by hand with "kill -INT <pid>" where <pid> is one of ', \
+		pids)
