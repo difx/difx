@@ -2,10 +2,20 @@
 
 from os import popen, system
 from string import strip, split
+import argparse
 
 programname = 'mpifxcorr'
 verbose = 1
 killfirst = False
+force = False
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '-force', '--force', help="Kill all processes", action="store_true")
+parser.add_argument('--first', '-first', help="Kill first process", action="store_true")
+args = parser.parse_args()
+
+if args.force: force = True
+if args.first: killfirst = True
 
 def getpids():
 	cmd = 'ps -e | grep %s' % programname
@@ -37,6 +47,11 @@ elif killfirst:
 	cmd = 'kill -INT %d' % (pids[0])
 	print 'killing first matching process with: ', cmd
 	system(cmd)
+elif force:
+	for p in pids:
+		cmd = 'kill -INT %d' % (p)
+		print 'killing a process with: ', cmd
+		system(cmd)
 else:
 	print 'too many processes called %s running.  not killing' % \
 		programname
