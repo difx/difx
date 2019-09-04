@@ -45,6 +45,8 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 
 =head1 Methods
 
+=over 2
+
 =item B<new>
 
   my $vex = new Astro::Vex($vexname);
@@ -61,7 +63,11 @@ Astro::Vex - Perl interface to the Haystack VEX parser
    be called with a strig argument and an obect will be returned for
    which the def label matchs the passed string.
 
+=back 
+
 =head2 VEX ACCESS
+
+=over 2
 
 =item B<vexptr>
 
@@ -80,7 +86,8 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 
 =item B<sched>
 
-  Returns a list of Astro::Vex::Scan objects for access to the vex $SCHED block
+  Returns a list of Astro::Vex::Scan objects for access to the vex
+  $SCHED block
 
     my @sched = $vex->sched();
 
@@ -102,14 +109,14 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 
 =item B<mode>
 
-  Returns a hash of Astro::Vex::StationMode objects, or hash of hash references 
-  to the same objects, for access to the $MODE object
+  Returns a hash of Astro::Vex::StationMode objects, or hash of hash 
+  references to the same objects, for access to the $MODE object
 
     my %stationmode = $vex->mode('v120_B12');
 
-  Returns a hash of StationMode object. The hash keys are antenna ids for which
-  the StationMode object corresponds to. E.g. for the above example to get the
-  transport type for Parkes, you would use:
+  Returns a hash of StationMode object. The hash keys are antenna ids
+  for which the StationMode object corresponds to. E.g. for the above
+  example to get the transport type for Parkes, you would use:
 
     my $transport = $stationmode{Pa}->record_transport_type;
 
@@ -117,17 +124,18 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 
     my %modes = $vex->mode();
 
-  which returns a hash of all modes in the $MODE section of the vexfile. The 
-  hash keys are the mode names used in vex. The values are a hash reference the 
-  same as above. E.g. to get the same result as the above you could do
+  which returns a hash of all modes in the $MODE section of the
+  vexfile. The hash keys are the mode names used in vex. The values
+  are a hash reference the same as above. E.g. to get the same result
+  as the above you could do
 
     my %modes = $vex->mode();
     my %stationmode = $mode{v120_B12};
 
 =item B<source>
 
-  Returns a list of Astro::Vex::Source objects for access to the vex $SOURCE 
-  block
+  Returns a list of Astro::Vex::Source objects for access to the vex 
+  $SOURCE block
 
     my @sources = $vex->source();
 
@@ -143,8 +151,8 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 
 =item B<station>
 
-  Returns a list of Astro::Vex::Station objects for access to the vex $STATION
-  block (including the $SITE, $ANTENNA)
+  Returns a list of Astro::Vex::Station objects for access to the vex
+  $STATION block (including the $SITE, $ANTENNA)
 
     my @stations = $vex->station();
 
@@ -160,8 +168,8 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 
 =item B<clock>
 
-  Returns a list of Astro::Vex::Clock objects for access to the vex $CLOCK
-  block (including the $SITE, $ANTENNA)
+  Returns a list of Astro::Vex::Clock objects for access to the vex
+  $CLOCK block (including the $SITE, $ANTENNA)
 
     my @clocks = $vex->clock();
 
@@ -178,6 +186,8 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 =item B<eop>
 
   Returns an Astro::Vex::EOP object for access to the vex $EOP block
+
+=back
 
 =head2 Missing Blocks
 
@@ -196,6 +206,8 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 
 =head2 Useful functions
 
+=over 2
+
 =item B<stationlist>
 
   Returns a list of station ids for all stations mentioned in the vex
@@ -204,6 +216,8 @@ Astro::Vex - Perl interface to the Haystack VEX parser
 =item B<nstations>
 
   Returns the total number of stations mentioned in the vex file
+
+=back
 
 =head2 UNITS
 
@@ -480,12 +494,12 @@ use Astro::Vex qw( vexepoch2mjd make_field );
                   the late start, scan time, tape footage etc for the
                   individual stations participating in this scan. The
                   method can be called in three ways
-                      $scan->station()      Returns list of all stations
-                                            as StationScan objects
-                      $scan->station(2)     Returns the second station as
-                                            a StationScan object
-                      $scan->station('Ef')  Returns station with id 'Ef'
-                                            as a StationScan object
+                      $scan->stations()      Returns list of all stations
+                                             as StationScan objects
+                      $scan->stations(2)     Returns the second station as
+                                             a StationScan object
+                      $scan->stations('Ef')  Returns station with id 'Ef'
+                                             as a StationScan object
 
 =head2 Missing
 
@@ -1014,8 +1028,8 @@ use Astro::Vex qw( make_field );
 
 =head1 Astro::Vex::StationMode
 
- Mode setup info for a specific station. This is a combination of $FREQ, $DAS 
- and $TRACKS.
+ Mode setup info for a specific station. This is a combination of
+ $FREQ, $DAS and $TRACKS.
 
 =head2 Fields
 
