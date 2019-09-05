@@ -49,6 +49,7 @@ make
 %{_bindir}/updatedifxclock
 %{_bindir}/difxlog
 %{_bindir}/mk5mon
+%{_bindir}/mk6mon
 %{_bindir}/cpumon
 %{_bindir}/difxwatch
 %{_bindir}/errormon
