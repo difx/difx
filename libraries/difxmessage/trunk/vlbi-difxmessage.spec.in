@@ -10,6 +10,8 @@ Requires: expat
 Prefix: /usr
 Source: difxmessage-@version@.tar.gz
 
+%define debug_package %{nil}
+
 %description
 C libraries and utilities useful for interprocess communication
 
