@@ -71,16 +71,47 @@ make
 
 %files
 %defattr(-,root,root)
+%{_bindir}/fuseDBBC3
+%{_bindir}/fuseMk6
+%{_bindir}/m6sg_blocknrs
+%{_bindir}/m6sg_gather
+%{_bindir}/m6sg_mount
+%{_bindir}/mk6copy
+%{_bindir}/mk6cp
+%{_bindir}/mk6gather
+%{_bindir}/mk6ls
+%{_bindir}/mk6summary
+%{_includedir}/mark6sg.h
+%{_includedir}/mark6sg/mark6_sg_utils.h
+%{_includedir}/mark6sg/mark6_sg_vfs.h
+%{_includedir}/jsmn.h
+%{_includedir}/mark6sg/mark6_sg_defines.h
+%{_includedir}/mark6sg/mark6_sg_format.h
+%{_includedir}/mark6sg/mark6_sg_vfs_impl.h
+%{_includedir}/mark6sg/mark6gather.h
 %{_libdir}/libmark6sg.la
 %{_libdir}/libmark6sg.so.0.0.0
 %{_libdir}/libmark6sg.so.0
 %{_libdir}/libmark6sg.so
 %{_libdir}/libmark6sg.a
-%{_includedir}/mark6sg.h
-%{_includedir}/mark6sg/mark6_sg_utils.h
-%{_includedir}/mark6sg/mark6_sg_vfs.h
+%{_libdir}/libjsmn.a
+%{_libdir}/libjsmn.la
+%{_libdir}/libjsmn.so
+%{_libdir}/libjsmn.so.0
+%{_libdir}/libjsmn.so.0.0.0
+%{_libdir}/libmark6gather.a
+%{_libdir}/libmark6gather.la
+%{_libdir}/libmark6gather.so
+%{_libdir}/libmark6gather.so.0
+%{_libdir}/libmark6gather.so.0.0.0
+%{_libdir}/pkgconfig/mark6sg.pc
 
 %changelog
-20 Nov 2014 Jan Wagner <jwagner@kasi.re.kr>
-28 Jul 2014 Jan Wagner <jwagner@kasi.re.kr> added new function to API
-09 May 2015 Jan Wagner <jwagner@kasi.re.kr> simpler prefetch code, multiple files openable simultaneously
+* Thu Sep 05 2019 Walter Brisken <wbrisken@nrao.edu>
+- rename to vlbi-mark6sg.spec.in; update based on other code changes
+
+* Sat May 09 2015 Jan Wagner <jwagner@kasi.re.kr>
+- simpler prefetch code, multiple files openable simultaneously
+
+* Mon Jul 28 2014 Jan Wagner <jwagner@kasi.re.kr>
+- added new function to API

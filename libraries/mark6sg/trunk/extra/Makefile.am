@@ -5,9 +5,7 @@ if USE_FUSE
 bin_PROGRAMS += fuseMk6 fuseDBBC3
 endif
 
-#dist_bin_SCRIPTS = m6sg_mount
-
-bin_SCRIPTS = m6sg_mount
+dist_bin_SCRIPTS = m6sg_mount
 
 m6sg_gather_CFLAGS = -I$(top_srcdir)/mark6sg -I$(top_srcdir)/jsmn -I$(top_srcdir) -Wall
 m6sg_gather_LDADD = $(top_builddir)/mark6sg/libmark6sg.la -lm

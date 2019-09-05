@@ -2,10 +2,10 @@ ACLOCAL_AMFLAGS=-I m4
 
 SUBDIRS = jsmn mark6sg mark6gather test extra
 
-EXTRA_DIST = COMPILING mark6sg.spec.in
+EXTRA_DIST = COMPILING vlbi-mark6sg.spec.in
 
-dist-hook: mark6sg.spec
-	cp mark6sg.spec $(distdir)
+dist-hook: vlbi-mark6sg.spec
+	cp vlbi-mark6sg.spec $(distdir)
 
 library_includedir = $(includedir)
 library_include_HEADERS = mark6sg.h

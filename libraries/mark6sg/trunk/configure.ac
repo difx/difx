@@ -69,5 +69,5 @@ AC_OUTPUT([ \
 	extra/Makefile   \
 	jsmn/Makefile    \
 	mark6sg.pc       \
-	mark6sg.spec
+	vlbi-mark6sg.spec
 ])
