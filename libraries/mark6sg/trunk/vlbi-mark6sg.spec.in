@@ -9,6 +9,8 @@ Requires: gcc >= 4.1.0
 Prefix: /usr
 Source: mark6sg-@version@.tar.gz
 
+%define debug_package %{nil}
+
 %description
 A library intended to help reconstruct VLBI scans that were written in
 a special scatter-gather format onto a JBOD array of disks.
