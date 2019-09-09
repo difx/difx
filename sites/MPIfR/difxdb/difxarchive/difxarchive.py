@@ -158,9 +158,16 @@ def getTransferFileCount(source, destination, rsyncOptions=""):
     remainder = proc.communicate()[0]
     
     matchTotal = re.findall(r'Number of files: (\d+)', remainder)
-    totalCount = int(matchTotal[0])
-    mn = re.findall(r'Number of files transferred: (\d+)', remainder)
-    fileCount = int(mn[0])
+    if len(matchTotal) > 0:
+	totalCount = int(matchTotal[0])
+    else:
+	exitOnError(Exception("Error parsing rsync output. Contact the developer."))
+
+    mn = re.findall(r'Number of.*files transferred: (\d+)', remainder)
+    if len(mn) > 0:
+	fileCount = int(mn[0])
+    else:
+	exitOnError(Exception("Error parsing rsync output. Contact the developer."))
     
     if options.verbose:
         logger.info ("Number of files to be transferred: %d " % fileCount)
