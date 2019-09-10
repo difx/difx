@@ -31,8 +31,14 @@ parser.add_option("-i", "--imagecube", default=False, action="store_true",
                   help="Image the FRB in chunks (i.e., make a cube)")
 parser.add_option("--dirtyonly", default=False, action="store_true",
                   help="Just make a dirty image, no cleaning")
+parser.add_option("--calibrateonly", default=False, action="store_true",
+                  help="Only generate the calibration files, don't do anything with target")
+parser.add_option("--targetonly", default=False, action="store_true",
+                  help="Use saved calibration files")
 parser.add_option("-j", "--imagejmfit", default=False, action="store_true",
                   help="Jmfit the individual slices of the cube")
+parser.add_option("--cpasspoly", default=10, type=int,
+                  help="Number of polynomial terms in CPASS")
 parser.add_option("-a", "--averagechannels", type=int, default=24,
                   help="Number of channels to average together per cube slice")
 parser.add_option("-F", "--flagfile", default="", 
@@ -109,94 +115,117 @@ if os.path.exists(calibratormsfilename):
     print calibratormsfilename, "already exists - aborting here!!!"
     sys.exit()
 
+# If we are running targetonly, then check that all the calibration files exist
+if options.targetonly:
+    missingfiles = []
+    if not os.path.exists(bpfilename):
+        missingfiles.append(bpfilename)
+    if not os.path.exists(fringsnfilename):
+        missingfiles.append(fringsnfilename)
+    if not os.path.exists(selfcalsnfilename):
+        missingfiles.append(selfcalsnfilename)
+    if xpolmodelfile != '' and not os.path.exists(xpolsnfilename):
+        missingfiles.append(xpolsnfilename)
+    if len(missingfiles) > 0:
+        print "Running targetonly but the following files are missing:", missingfiles
+        sys.exit()
 
-# Load up the target data
-targetdata = vlbatasks.zapAndCreateUVData("CRAFTTARG", "UVDATA", aipsdisk, 1)
-vlbatasks.fitld_corr(options.target, targetdata, [], '', 0.0001)
-if options.uvsrt:
-    sortedtargetdata = vlbatasks.zapAndCreateUVData("CRAFTTARG", "UVSRT", aipsdisk, 1)
-    vlbatasks.uvsrt(targetdata, sortedtargetdata)
-    targetdata.zap()
-    targetdata = sortedtargetdata
+# Load up the target data if needed
+if not options.calibrateonly:
+    targetdata = vlbatasks.zapAndCreateUVData("CRAFTTARG", "UVDATA", aipsdisk, 1)
+    vlbatasks.fitld_corr(options.target, targetdata, [], '', 0.0001)
+    if options.uvsrt:
+        sortedtargetdata = vlbatasks.zapAndCreateUVData("CRAFTTARG", "UVSRT", aipsdisk, 1)
+        vlbatasks.uvsrt(targetdata, sortedtargetdata)
+        targetdata.zap()
+        targetdata = sortedtargetdata
 
-# Get the number of channels in the dataset
-numchannels = vlbatasks.getNumChannels(targetdata)
-
-# Get the reference frequency of the dataset
-reffreqs = []
-fqtable = targetdata.table('FQ', 1)
-for row in fqtable:
-    try:
-        for iffreq in row.if_freq:
-            freqentry = float(iffreq) + float(targetdata.header.crval[2])
-            reffreqs.append(float(iffreq) + float(targetdata.header.crval[2]))
-    except (AttributeError, TypeError):
-        freqentry = float(row.if_freq) + float(targetdata.header.crval[2])
-        reffreqs.append(float(row.if_freq) + float(targetdata.header.crval[2]))
+    # Get the number of channels in the dataset
+    numchannels = vlbatasks.getNumChannels(targetdata)
 
 # Load up the calibrator data
-caldata = vlbatasks.zapAndCreateUVData("CRAFTCAL","UVDATA", aipsdisk, 1)
-vlbatasks.fitld_corr(options.calibrator, caldata, [], '', 0.0001)
-if options.uvsrt:
-    sortedcaldata = vlbatasks.zapAndCreateUVData("CRAFTCAL", "UVSRT", aipsdisk, 1)
-    vlbatasks.uvsrt(caldata, sortedcaldata)
-    caldata.zap()
-    caldata = sortedcaldata
-
-# Flag the calibrator data, if desired
-if options.flagfile != "":
-    vlbatasks.userflag(caldata, 1, options.flagfile)
-if options.shadow:
-    shadowdiameter = float(options.shadow[0])
-    xtalkbl = float(options.shadow[1])
-    vlbatasks.shadowflag(caldata, 1, shadowdiameter, xtalkbl)
-    print "Shadowing diameter: " + str(shadowdiameter)
-    print "Cross-talk baseline: " + str(xtalkbl)
-
+if not options.targetonly:
+    caldata = vlbatasks.zapAndCreateUVData("CRAFTCAL","UVDATA", aipsdisk, 1)
+    vlbatasks.fitld_corr(options.calibrator, caldata, [], '', 0.0001)
+    if options.uvsrt:
+        sortedcaldata = vlbatasks.zapAndCreateUVData("CRAFTCAL", "UVSRT", aipsdisk, 1)
+        vlbatasks.uvsrt(caldata, sortedcaldata)
+        caldata.zap()
+        caldata = sortedcaldata
+    
+    # Get the reference frequency of the dataset
+    reffreqs = []
+    fqtable = caldata.table('FQ', 1)
+    for row in fqtable:
+        try:
+            for iffreq in row.if_freq:
+                freqentry = float(iffreq) + float(caldata.header.crval[2])
+                reffreqs.append(float(iffreq) + float(caldata.header.crval[2]))
+        except (AttributeError, TypeError):
+            freqentry = float(row.if_freq) + float(caldata.header.crval[2])
+            reffreqs.append(float(row.if_freq) + float(caldata.header.crval[2]))
+    
+    # Flag the calibrator data, if desired
+    if options.flagfile != "":
+        vlbatasks.userflag(caldata, 1, options.flagfile)
+    if options.shadow:
+        shadowdiameter = float(options.shadow[0])
+        xtalkbl = float(options.shadow[1])
+        vlbatasks.shadowflag(caldata, 1, shadowdiameter, xtalkbl)
+        print "Shadowing diameter: " + str(shadowdiameter)
+        print "Cross-talk baseline: " + str(xtalkbl)
+    
 # Flag the target data, if desired
-if options.tarflagfile != "":
-    vlbatasks.userflag(targetdata, 1, options.tarflagfile)
-if options.shadow:
-    shadowdiameter = float(options.shadow[0])
-    xtalkbl = float(options.shadow[1])
-    vlbatasks.shadowflag(targetdata, 1, shadowdiameter, xtalkbl)
-    print "Shadowing diameter: " + str(shadowdiameter)
-    print "Cross-talk baseline: " + str(xtalkbl)
+if not options.calibrateonly:
+    if options.tarflagfile != "":
+        vlbatasks.userflag(targetdata, 1, options.tarflagfile)
+    if options.shadow:
+        shadowdiameter = float(options.shadow[0])
+        xtalkbl = float(options.shadow[1])
+        vlbatasks.shadowflag(targetdata, 1, shadowdiameter, xtalkbl)
+        print "Shadowing diameter: " + str(shadowdiameter)
+        print "Cross-talk baseline: " + str(xtalkbl)
 
 # Run CLCOR to correct PANG if needed
 if xpolmodelfile != "":
-    vlbatasks.clcor_pang(caldata, clversion)
-    vlbatasks.clcor_pang(targetdata, clversion)
+    if not options.targetonly:
+        vlbatasks.clcor_pang(caldata, clversion)
+    if not options.calibrateonly:
+        vlbatasks.clcor_pang(targetdata, clversion)
     clversion = clversion + 1
 
 # Run FRING
-solintmins = 1 # Long enough that we just get one solutions
-inttimesecs = 0.5 # Doesn't really matter if this is wrong
-applybandpasscal = False
-snrlimit = 6
-sumifs = False
-modeldata = None
-sumpols = False
-uvrange = [0,0]
-zerorates = True
-delaywindow = 0 # Search everything
-ratewindow = -1 # Don't search rates
-vlbatasks.fring(caldata, snversion, clversion, solintmins, inttimesecs, 
-                options.sourcename, refant, applybandpasscal, snrlimit,
-                sumifs, modeldata, sumpols, uvrange, zerorates, 
-                delaywindow, ratewindow)
+if not options.targetonly:
+    solintmins = 1 # Long enough that we just get one solutions
+    inttimesecs = 0.5 # Doesn't really matter if this is wrong
+    applybandpasscal = False
+    snrlimit = 6
+    sumifs = False
+    modeldata = None
+    sumpols = False
+    uvrange = [0,0]
+    zerorates = True
+    delaywindow = 0 # Search everything
+    ratewindow = -1 # Don't search rates
+    vlbatasks.fring(caldata, snversion, clversion, solintmins, inttimesecs, 
+                    options.sourcename, refant, applybandpasscal, snrlimit,
+                    sumifs, modeldata, sumpols, uvrange, zerorates, 
+                    delaywindow, ratewindow)
 
-# Copy results
-vlbatasks.tacop(caldata, "SN", snversion, targetdata, snversion)
+    # Write SN table to disk
+    if os.path.exists(fringsnfilename):
+        os.system("rm -f " + fringsnfilename)
+    vlbatasks.writetable(caldata, "SN", snversion, fringsnfilename)
 
-# Write SN table to disk
-if os.path.exists(fringsnfilename):
-    os.system("rm -f " + fringsnfilename)
-vlbatasks.writetable(caldata, "SN", snversion, fringsnfilename)
+# Load FRING SN table into the target
+if not options.calibrateonly:
+    vlbatasks.loadtable(targetdata, fringsnfilename, snversion)
 
 # Calibrate
-vlbatasks.applysntable(caldata, snversion, "SELN", clversion, refant)
-vlbatasks.applysntable(targetdata, snversion, "SELN", clversion, refant)
+if not options.targetonly:
+    vlbatasks.applysntable(caldata, snversion, "SELN", clversion, refant)
+if not options.calibrateonly:
+    vlbatasks.applysntable(targetdata, snversion, "SELN", clversion, refant)
 snversion += 1
 clversion += 1
 
@@ -204,26 +233,28 @@ clversion += 1
 #leakagedopol = 0
 if xpolmodelfile != "":
     # First the xpoldelays
-    xpolscan = 1
-    if not os.path.exists(xpolmodelfile):
-        print "Can't find xpol delay model  " + xpolmodelfile
-        print "Aborting!!"
-        sys.exit(1)
-    xpolmodel = AIPSImage("LKGSRC", "CLEAN", 1, 1)
-    if xpolmodel.exists():
-        xpolmodel.zap()
-    vlbatasks.fitld_image(xpolmodelfile, xpolmodel)
-    xpolsolintmins = 1
-    inttimesecs = 0.5 # Doesn't matter if this is wrong
-    if os.path.exists(xpolsnfilename):
-        os.remove(xpolsnfilename)
-    vlbatasks.xpoldelaycal(caldata, clversion, refant,
-                           options.sourcename, xpolscan, xpolmodel, xpolsolintmins,
-                           inttimesecs, xpolsnfilename, delaywindow, ratewindow)
-    vlbatasks.loadtable(caldata, xpolsnfilename, snversion)
-    vlbatasks.applysntable(caldata, snversion, '2PT', clversion, refant)
-    vlbatasks.loadtable(targetdata, xpolsnfilename, snversion)
-    vlbatasks.applysntable(targetdata, snversion, '2PT', clversion, refant)
+    if not options.targetonly:
+        xpolscan = 1
+        if not os.path.exists(xpolmodelfile):
+            print "Can't find xpol delay model  " + xpolmodelfile
+            print "Aborting!!"
+            sys.exit(1)
+        xpolmodel = AIPSImage("LKGSRC", "CLEAN", 1, 1)
+        if xpolmodel.exists():
+            xpolmodel.zap()
+        vlbatasks.fitld_image(xpolmodelfile, xpolmodel)
+        xpolsolintmins = 1
+        inttimesecs = 0.5 # Doesn't matter if this is wrong
+        if os.path.exists(xpolsnfilename):
+            os.remove(xpolsnfilename)
+        vlbatasks.xpoldelaycal(caldata, clversion, refant,
+                               options.sourcename, xpolscan, xpolmodel, xpolsolintmins,
+                               inttimesecs, xpolsnfilename, delaywindow, ratewindow)
+        vlbatasks.loadtable(caldata, xpolsnfilename, snversion)
+        vlbatasks.applysntable(caldata, snversion, '2PT', clversion, refant)
+    if not options.calibrateonly:
+        vlbatasks.loadtable(targetdata, xpolsnfilename, snversion)
+        vlbatasks.applysntable(targetdata, snversion, '2PT', clversion, refant)
     snversion += 1
     clversion += 1
 
@@ -257,157 +288,170 @@ if xpolmodelfile != "":
 # Run CPASS rather than BPASS
 scannumber = 1
 bpversion = 1
-vlbatasks.cpass(caldata, options.sourcename, clversion, scannumber)
+if not options.targetonly:
+    vlbatasks.cpass(caldata, options.sourcename, clversion, scannumber, None, options.cpasspoly)
+    
+    # Write BP table to disk
+    if os.path.exists(bpfilename):
+        os.system("rm -f " + bpfilename)
+    vlbatasks.writetable(caldata, "BP", bpversion, bpfilename)
+    
+    # Plot the bandpass table
+    if not options.skipplot:
+        bptableplotfilename = os.path.abspath("bptable{0}{1}.ps".format(xpol_prefix, src))
+        plotsperpage = 4
+        plotbptable = True
+        vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, bptableplotfilename)
 
-# Copy results
-vlbatasks.tacop(caldata, "BP", bpversion, targetdata, bpversion)
-
-# Write BP table to disk
-if os.path.exists(bpfilename):
-    os.system("rm -f " + bpfilename)
-vlbatasks.writetable(caldata, "BP", bpversion, bpfilename)
-
-# Plot the bandpass table
-if not options.skipplot:
-    bptableplotfilename = os.path.abspath("bptable{0}{1}.ps".format(xpol_prefix, src))
-    plotsperpage = 4
-    plotbptable = True
-    vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, bptableplotfilename)
+# Load up the bandpass to the target
+if not options.calibrateonly:
+    vlbatasks.loadtable(targetdata, bpfilename, bpversion)
 
 # Run selfcal
-applybandpasscal = True
 outklass = "SPLIT"
-splitsnversion = 1
-doampcal = True
-dostokesi = False
-soltype = "L1R"
-selfcalsnr = 5
-splitcaldata = AIPSUVData(options.sourcename, outklass, 1, 1)
-if splitcaldata.exists():
-    splitcaldata.zap()
-vlbatasks.split(caldata, clversion, outklass, options.sourcename)
-for i in range(1,300):
-    todeletedata = AIPSUVData(options.sourcename, "CALIB", 1, i)
-    if todeletedata.exists():
-        todeletedata.zap()
-vlbatasks.singlesource_calib(splitcaldata, options.flux, splitsnversion, options.refant, doampcal, 
-                             solintmins, dostokesi, soltype, selfcalsnr, sumifs)
+if not options.targetonly:
+    applybandpasscal = True
+    splitsnversion = 1
+    doampcal = True
+    dostokesi = False
+    soltype = "L1R"
+    selfcalsnr = 5
+    splitcaldata = AIPSUVData(options.sourcename, outklass, 1, 1)
+    if splitcaldata.exists():
+        splitcaldata.zap()
+    vlbatasks.split(caldata, clversion, outklass, options.sourcename)
+    for i in range(1,300):
+        todeletedata = AIPSUVData(options.sourcename, "CALIB", 1, i)
+        if todeletedata.exists():
+            todeletedata.zap()
+    vlbatasks.singlesource_calib(splitcaldata, options.flux, splitsnversion, options.refant, doampcal, 
+                                 solintmins, dostokesi, soltype, selfcalsnr, sumifs)
 
-# Copy results
-vlbatasks.tacop(splitcaldata, "SN", splitsnversion, caldata, snversion)
-vlbatasks.tacop(splitcaldata, "SN", splitsnversion, targetdata, snversion)
+    # Write SN table to disk
+    if os.path.exists(selfcalsnfilename):
+        os.system("rm -f " + selfcalsnfilename)
+    vlbatasks.writetable(splitcaldata, "SN", 1, selfcalsnfilename)
 
-# Write SN table to disk
-if os.path.exists(selfcalsnfilename):
-    os.system("rm -f " + selfcalsnfilename)
-vlbatasks.writetable(caldata, "SN", snversion, selfcalsnfilename)
+# Load up the selfcal SN table
+if not options.calibrateonly:
+    vlbatasks.loadtable(targetdata, selfcalsnfilename, snversion)
+if not options.targetonly:
+    vlbatasks.loadtable(caldata, selfcalsnfilename, snversion)
 
 # Calibrate
-vlbatasks.applysntable(caldata, snversion, "SELN", clversion, refant)
-vlbatasks.applysntable(targetdata, snversion, "SELN", clversion, refant)
+if not options.targetonly:
+    vlbatasks.applysntable(caldata, snversion, "SELN", clversion, refant)
+if not options.calibrateonly:
+    vlbatasks.applysntable(targetdata, snversion, "SELN", clversion, refant)
 snversion += 1
 clversion += 1
 
-# Plot the uncalibrated and calibrated cross-correlation results
-if not options.skipplot:
-    uncalxcorplotfilename = os.path.abspath("uncalxcor{0}{1}.ps".format(xpol_prefix, src))
-    allcalxcorplotfilename = os.path.abspath("allcalxcor{0}{1}.ps".format(xpol_prefix, src))
-    plotbptable = False
-    plotsperpage = 4
-    ifs = [0,0]
-    vlbatasks.plotbandpass(caldata, -1, plotbptable, plotsperpage, uncalxcorplotfilename, 0, ifs, xcorplotsmooth)
-    vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, allcalxcorplotfilename, clversion, ifs, xcorplotsmooth)
+# Plot the uncalibrated and calibrated cross-correlation results if desired
+if not options.targetonly:
+    if not options.skipplot:
+        uncalxcorplotfilename = os.path.abspath("uncalxcor{0}{1}.ps".format(xpol_prefix, src))
+        allcalxcorplotfilename = os.path.abspath("allcalxcor{0}{1}.ps".format(xpol_prefix, src))
+        plotbptable = False
+        plotsperpage = 4
+        ifs = [0,0]
+        vlbatasks.plotbandpass(caldata, -1, plotbptable, plotsperpage, uncalxcorplotfilename, 0, ifs, xcorplotsmooth)
+        vlbatasks.plotbandpass(caldata, bpversion, plotbptable, plotsperpage, allcalxcorplotfilename, clversion, ifs, xcorplotsmooth)
 
 # Run SPLIT and write output data for calibrator
 seqno = 1
-outputdata = vlbatasks.zapAndCreateUVData("CRAFTSRC","SPLIT",aipsdisk,seqno)
-vlbatasks.splitmulti(caldata, clversion, outklass, options.sourcename, seqno)
-vlbatasks.writedata(outputdata, calibratoroutputfilename, True)
+if not options.targetonly:
+    outputdata = vlbatasks.zapAndCreateUVData("CRAFTSRC","SPLIT",aipsdisk,seqno)
+    vlbatasks.splitmulti(caldata, clversion, outklass, options.sourcename, seqno)
+    vlbatasks.writedata(outputdata, calibratoroutputfilename, True)
 
 # Run SPLIT and write output data for target
 seqno = 1
-outputdata = vlbatasks.zapAndCreateUVData("CRAFTSRC","SPLIT",aipsdisk,seqno)
-vlbatasks.splitmulti(targetdata, clversion, outklass, options.sourcename, seqno)
-vlbatasks.writedata(outputdata, targetoutputfilename, True)
+if not options.calibrateonly:
+    outputdata = vlbatasks.zapAndCreateUVData("CRAFTSRC","SPLIT",aipsdisk,seqno)
+    vlbatasks.splitmulti(targetdata, clversion, outklass, options.sourcename, seqno)
+    vlbatasks.writedata(outputdata, targetoutputfilename, True)
 
 # Create a README file for the calibration and a tarball with it plus all the calibration
-readmeout = open("README{0}{1}.calibration".format(xpol_prefix, src), "w")
-tarinputfiles = "%s %s %s" % (fringsnfilename.split('/')[-1], selfcalsnfilename.split('/')[-1], bpfilename.split('/')[-1])
-readmeout.write("This calibration was derived as follows:\n")
-readmeout.write("Calibrator file: %s\n" % options.calibrator)
-readmeout.write("Run on host: %s\n" % socket.gethostname())
-readmeout.write("At time: %s\n\n" % (str(datetime.datetime.now())))
-readmeout.write("The following set of files was produced and used for calibration:\n")
-readmeout.write("%s (frequency-independent delay and phase from FRING)\n" % fringsnfilename.split('/')[-1])
-readmeout.write("%s (frequency-independent complex gain [mostly just amplitude] from CALIB to set absolute flux scale)\n" % selfcalsnfilename.split('/')[-1])
-if xpolmodelfile != "":
-    readmeout.write("%s (frequency-independent, antenna-independent X-Y delay from FRING)\n" % xpolsnfilename.split('/')[-1])
-    tarinputfiles = tarinputfiles + " " + xpolsnfilename.split('/')[-1]
-readmeout.write("%s (frequency-dependent complex gain from CPASS [polynomial bandpass fit])\n\n" % bpfilename.split('/')[-1])
-readmeout.write("Remember that the delay specified in the SN tables generates zero phase at the reference frequency of the observation\n")
-readmeout.write("This reference frequency is set per subband (AIPS \"IF\"), but CRAFT datasets should only have one IF and hence one reference frequency.\n")
-readmeout.write("Reference frequency(s) of this file:\n")
-for i, reffreq in enumerate(reffreqs):
-    readmeout.write("AIPS IF %d ref (MHz): %.9f\n" % (i, reffreq))
-readmeout.write("\nFinally I note that long-term, we really should also be solving for the leakage and writing both it and the parallactic angle corrections out.\n")
-readmeout.close()
-calibtarballfile = "calibration{0}{1}.tar.gz".format(xpol_prefix, src)
-if os.path.exists(calibtarballfile):
-    os.system("rm -f " + calibtarballfile)
-os.system("tar cvzf {0} README{1}{2}.calibration {3}".format(calibtarballfile, xpol_prefix, src, tarinputfiles))
+if not options.targetonly:
+    readmeout = open("README{0}{1}.calibration".format(xpol_prefix, src), "w")
+    tarinputfiles = "%s %s %s" % (fringsnfilename.split('/')[-1], selfcalsnfilename.split('/')[-1], bpfilename.split('/')[-1])
+    readmeout.write("This calibration was derived as follows:\n")
+    readmeout.write("Calibrator file: %s\n" % options.calibrator)
+    readmeout.write("Run on host: %s\n" % socket.gethostname())
+    readmeout.write("At time: %s\n\n" % (str(datetime.datetime.now())))
+    readmeout.write("The following set of files was produced and used for calibration:\n")
+    readmeout.write("%s (frequency-independent delay and phase from FRING)\n" % fringsnfilename.split('/')[-1])
+    readmeout.write("%s (frequency-independent complex gain [mostly just amplitude] from CALIB to set absolute flux scale)\n" % selfcalsnfilename.split('/')[-1])
+    if xpolmodelfile != "":
+        readmeout.write("%s (frequency-independent, antenna-independent X-Y delay from FRING)\n" % xpolsnfilename.split('/')[-1])
+        tarinputfiles = tarinputfiles + " " + xpolsnfilename.split('/')[-1]
+    readmeout.write("%s (frequency-dependent complex gain from CPASS [polynomial bandpass fit])\n\n" % bpfilename.split('/')[-1])
+    readmeout.write("Remember that the delay specified in the SN tables generates zero phase at the reference frequency of the observation\n")
+    readmeout.write("This reference frequency is set per subband (AIPS \"IF\"), but CRAFT datasets should only have one IF and hence one reference frequency.\n")
+    readmeout.write("Reference frequency(s) of this file:\n")
+    for i, reffreq in enumerate(reffreqs):
+        readmeout.write("AIPS IF %d ref (MHz): %.9f\n" % (i, reffreq))
+    readmeout.write("\nFinally I note that long-term, we really should also be solving for the leakage and writing both it and the parallactic angle corrections out.\n")
+    readmeout.close()
+    calibtarballfile = "calibration{0}{1}.tar.gz".format(xpol_prefix, src)
+    if os.path.exists(calibtarballfile):
+        os.system("rm -f " + calibtarballfile)
+    os.system("tar cvzf {0} README{1}{2}.calibration {3}".format(calibtarballfile, xpol_prefix, src, tarinputfiles))
 
 
 # Convert to a measurement set
-casaout = open("loadtarget.py","w")
-casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (calibratoroutputfilename, calibratormsfilename))
-casaout.close()
-os.system("runloadtarget.sh")
+if not options.targetonly:
+    casaout = open("loadtarget.py","w")
+    casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (calibratoroutputfilename, calibratormsfilename))
+    casaout.close()
+    os.system("runloadtarget.sh")
 
-casaout = open("loadtarget.py","w")
-casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (targetoutputfilename, targetmsfilename))
-casaout.close()
-os.system("runloadtarget.sh")
+if not options.calibrateonly:
+    casaout = open("loadtarget.py","w")
+    casaout.write("importuvfits(fitsfile='%s',vis='%s',antnamescheme='old')\n" % (targetoutputfilename, targetmsfilename))
+    casaout.close()
+    os.system("runloadtarget.sh")
 
 
 # Run the imaging via CASA if desired
-polarisations = ["XX","YY","I","Q","U","V"]
-if options.dirtyonly:
-    polarisations = ["I"]
-if options.imagecube:
-    # Do the cube
-    for pol in polarisations:
-        casaout = open("imagescript.py","w")
-        imagebase = "TARGET.cube.%s" % (pol)
-        os.system("rm -rf %s.*" % imagebase)
-        imagename = imagebase + ".image"
-        maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize/2,imagesize/2)
-        #casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask="FRB.cube.mask",nchan=-1,start=1,width=24,outframe="",veltype="radio",imsize=128,cell=["1.0arcsec", "1.0arcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, options.phasecentre, pol))
-        if options.dirtyonly:
-            casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, options.averagechannels, imagesize, pixelsize, pixelsize, options.phasecenter, pol))
-        else:
-            casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, options.averagechannels, imagesize, pixelsize, pixelsize, options.phasecenter, pol))
-
-        # If desired, produce the noise image as well
-        if len(options.noisecentre) > 1:
-            offsourcebase = "OFFSOURCE.cube.%s" % (pol)
-            imagebases = '["%s","%s"]' % (imagebase,offsourcebase)
-            os.system("rm -rf %s.*" % offsourcebase)
-            maskstr2 = "[%s,'']" % (maskstr)
-            imsizestr = "[[%d,%d],[%d,%d]]" % (imagesize, imagesize, imagesize*4, imagesize*4)
-            cellstr = '["%.2farcsec", "%.2farcsec"]' % (pixelsize, pixelsize)
-            phasecenterstr = "['', '%s']" % (options.noisecentre)
-            casaout.write('clean(vis="%s",imagename=%s,outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=%s,phasecenter=%s,restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebases, maskstr2, options.averagechannels, imsizestr, cellstr, phasecenterstr, pol))
-            
-        casaout.close()
-        os.system("runimagescript.sh")
-
-
-        # If desired, also make the JMFIT output
-        if options.imagejmfit:
+if not options.calibrateonly:
+    polarisations = ["XX","YY","I","Q","U","V"]
+    if options.dirtyonly:
+        polarisations = ["I"]
+    if options.imagecube:
+        # Do the cube
+        for pol in polarisations:
             casaout = open("imagescript.py","w")
-            casaout.write('exportfits(imagename="%s.image",fitsimage="%s.fits")\n' % (imagebase, imagebase))
+            imagebase = "TARGET.cube.%s" % (pol)
+            os.system("rm -rf %s.*" % imagebase)
+            imagename = imagebase + ".image"
+            maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize/2,imagesize/2)
+            #casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask="FRB.cube.mask",nchan=-1,start=1,width=24,outframe="",veltype="radio",imsize=128,cell=["1.0arcsec", "1.0arcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, options.phasecentre, pol))
+            if options.dirtyonly:
+                casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, options.averagechannels, imagesize, pixelsize, pixelsize, options.phasecenter, pol))
+            else:
+                casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, options.averagechannels, imagesize, pixelsize, pixelsize, options.phasecenter, pol))
+    
+            # If desired, produce the noise image as well
+            if len(options.noisecentre) > 1:
+                offsourcebase = "OFFSOURCE.cube.%s" % (pol)
+                imagebases = '["%s","%s"]' % (imagebase,offsourcebase)
+                os.system("rm -rf %s.*" % offsourcebase)
+                maskstr2 = "[%s,'']" % (maskstr)
+                imsizestr = "[[%d,%d],[%d,%d]]" % (imagesize, imagesize, imagesize*4, imagesize*4)
+                cellstr = '["%.2farcsec", "%.2farcsec"]' % (pixelsize, pixelsize)
+                phasecenterstr = "['', '%s']" % (options.noisecentre)
+                casaout.write('clean(vis="%s",imagename=%s,outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=0,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=%s,phasecenter=%s,restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebases, maskstr2, options.averagechannels, imsizestr, cellstr, phasecenterstr, pol))
+                
             casaout.close()
-            os.system("casa --nologger -c imagescript.py")
-            for i in range(numchannels/options.averagechannels):
-                locstring = "%d,%d,%d,%d,%d,%d" % (imagesize/2-12, imagesize/2-12, i, imagesize/2+12, imagesize/2+12, i)
-                os.system("jmfitfromfile.py %s.fits %s.slice%03d.jmfit.stats %s" % (imagebase, imagebase, i, locstring))
+            os.system("runimagescript.sh")
+    
+            # If desired, also make the JMFIT output
+            if options.imagejmfit:
+                casaout = open("imagescript.py","w")
+                casaout.write('exportfits(imagename="%s.image",fitsimage="%s.fits")\n' % (imagebase, imagebase))
+                casaout.close()
+                os.system("casa --nologger -c imagescript.py")
+                for i in range(numchannels/options.averagechannels):
+                    locstring = "%d,%d,%d,%d,%d,%d" % (imagesize/2-12, imagesize/2-12, i, imagesize/2+12, imagesize/2+12, i)
+                    os.system("jmfitfromfile.py %s.fits %s.slice%03d.jmfit.stats %s" % (imagebase, imagebase, i, locstring))
