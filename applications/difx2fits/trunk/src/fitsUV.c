@@ -342,7 +342,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 		{
 			dv->nFreq = D->nIF;
 		}
-		for(i = 0; i < D->nIF; ++i)
+		for(i = 0; i < D->freqSet[freqSetId].nIF; ++i)
 		{
 			int p;
 
