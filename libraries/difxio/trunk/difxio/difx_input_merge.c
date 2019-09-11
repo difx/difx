@@ -152,6 +152,30 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 				return 0;
 			}
 		}
+
+		if (D1->nIF != 0 && D2->nIF != 0 && D1->nIF != D2->nIF)
+		{
+			++difxInputCompatibilityStatistics[DifxInputCompatibilityFreqSet];
+			return 0;
+		}
+
+		for(f = 0; f < D1->nFreqSet; ++f)
+		{
+			if (D1->freqSet[f].nIF != D1->nIF)
+			{
+				++difxInputCompatibilityStatistics[DifxInputCompatibilityFreqSet];
+				return 0;
+			}
+		}
+		for(f = 0; f < D2->nFreqSet; ++f)
+		{
+			if (D2->freqSet[f].nIF != D2->nIF)
+			{
+				++difxInputCompatibilityStatistics[DifxInputCompatibilityFreqSet];
+				return 0;
+			}
+		}
+
 		break;
 	case FreqMergeModeUnion:
 		/* nothing to check here */
@@ -199,29 +223,6 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 					exit(0);
 				}
 			}
-		}
-	}
-
-	if (D1->nIF != 0 && D2->nIF != 0 && D1->nIF != D2->nIF)
-	{
-		++difxInputCompatibilityStatistics[DifxInputCompatibilityFreqSet];
-		return 0;
-	}
-
-	for(f = 0; f < D1->nFreqSet; ++f)
-	{
-		if (D1->freqSet[f].nIF != D1->nIF)
-		{
-			++difxInputCompatibilityStatistics[DifxInputCompatibilityFreqSet];
-			return 0;
-		}
-	}
-	for(f = 0; f < D2->nFreqSet; ++f)
-	{
-		if (D2->freqSet[f].nIF != D2->nIF)
-		{
-			++difxInputCompatibilityStatistics[DifxInputCompatibilityFreqSet];
-			return 0;
 		}
 	}
 
