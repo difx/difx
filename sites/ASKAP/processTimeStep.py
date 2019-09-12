@@ -3,6 +3,7 @@ import os,sys,glob,argparse,re,subprocess
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--timestep", help="Timestep (the directory name to process")
+parser.add_argument("--name", default="CRAFT", help="Base name for the output fits files")
 parser.add_argument("-r", "--ra", help="Force RA value")
 parser.add_argument("-d", "--dec", help="Force Dec value: use no space if declination is negative, i.e., -d-63:20:23.3")
 parser.add_argument("-b", "--bits", type=int, default=1,help="Number of bits. Default 1")
@@ -20,12 +21,18 @@ parser.add_argument("-s", "--snoopylog", help="Snoopy log file, default blank, i
 parser.add_argument("--slurm", default=False, action="store_true", help="Use slurm batch jobs rather than running locally")
 parser.add_argument("--ts", default=0, type=int, help="Use taskspooler to run CRAFTConverter, with N parallel tasks")
 parser.add_argument("--gstar", default=False, action="store_true", help="Set if using gstar for correlation")
-parser.add_argument("--skylake", default=False, action="store_true", help="Set if using skylake nodes for correlation")
 parser.add_argument("--large", default=False, action="store_true", help="Set if 32 nodes, 384 tasks are required (i.e., 23GB memory needed per task; else 16 nodes, 192 tasks will be used for 11.5GB per task")
+parser.add_argument("--numskylakenodes", default=1, type=int, help="Use 32x this many CPUs")
 args = parser.parse_args()
 
 if args.timestep is None:
     parser.error("You must specify a timestep / target directory")
+
+# Check that sensible options were given for the queue destination
+if args.large and not args.gstar:
+    parser.error("You can't run large if runnning on skylake (the default, i.e. you didn't use --gstar")
+if args.gstar and args.numskylakenodes > 1:
+    parser.error("You can't set the number of skylake nodes if you are running on gstar")
 
 timestep = args.timestep
 
@@ -41,11 +48,19 @@ if not os.path.exists(args.fcm):
     parser.error(args.fcm + " doesn't exist")
 
 polyco = args.polyco
+nbins = 1
 if polyco is not None:
     if not os.path.exists(polyco):
         parser.error("binconfig file " + polyco + " does not exist")
     else:
         polyco = os.path.abspath(polyco)
+        lines = open(polyco).readlines()
+        for i, line in enumerate(lines):
+            if "NUM PULSAR BINS" in line:
+                nbins = int(line.split(':')[-1].strip())
+                if "TRUE" in lines[i+1]:
+                    nbins = 1
+                break
     
 fcm = os.path.abspath(args.fcm)
 
@@ -106,7 +121,7 @@ def runCommand(command, log):
 if not os.path.exists(datadir): os.mkdir(datadir)
 os.chdir(datadir)
 
-difx2fitscommand = "difx2fits -u"
+difx2fitscommand = "difx2fits -u -B %d"
 freqlabels = []
 for e in examplefiles:
     freqlabel = e.split('/')[-1][5:10]
@@ -145,10 +160,10 @@ for e in examplefiles:
         torun += " --forceFFT"
     if args.gstar:
         torun += " --gstar"
-    if args.skylake:
-        torun += " --skylake"
     if args.large:
         torun += " --large"
+    if args.numskylakenodes > 1:
+        torun += " --numskylakenodes=" + str(args.numskylakenodes)
     if args.slurm:
         torun += " --slurm"
         homedir = os.path.expanduser('~') + "/"
@@ -216,11 +231,28 @@ for e in examplefiles:
 for freqlabel in freqlabels:
     d2dinput = glob.glob(freqlabel + "/*D2D.input")
     if len(d2dinput) > 1:
-        print "Too many D2D inputs in", freqlabel, "aborting rundfix2fits!"
+        print "Too many D2D inputs in", freqlabel, "aborting rundifx2fits!"
+        sys.exit()
+    elif len(d2dinput) == 0:
+        print "No D2D inputs found for", freqlabel, "aborting rundifx2fits!"
         sys.exit()
     difx2fitscommand = difx2fitscommand + " " + d2dinput[0]
-output = open("rundifx2fits","w")
-output.write(difx2fitscommand + " \"$@\"\n")
-output.close()
-os.system("chmod 775 rundifx2fits")
-if not args.suppress: os.system(difx2fitscommand)
+
+if polyco is None:
+    runfilename = "rundifx2fits.card%s" % args.card
+    output = open(runfilename,"w")
+    output.write((difx2fitscommand % (0))+ " \"$@\"\n")
+    output.write("mv CRAFTFR.0.bin0000.source0000.FITS %s_CARD%s.FITS\n" % (args.name, args.card))
+    output.close()
+    os.system("chmod 775 " + runfilename)
+    if not args.suppress: os.system("./" + runfilename)
+else:
+    for i in range(nbins):
+        runfilename = "rundifx2fits.card%s.bin%02d" % (args.card,i)
+        output = open(runfilename,"w")
+        output.write((difx2fitscommand % i) + " \"$@\"\n")
+        output.write("mv CRAFTFR.0.bin%04d.source0000.FITS %s_CARD%s_BIN%02d.FITS\n" % (i, args.name, args.card, i))
+        output.close()
+        os.system("chmod 775 " + runfilename)
+        #if not args.suppress: os.system("./" + runfilename)
+        os.system("echo \"./rundifx2fits.card%s.bin%02d\" >> runalldifx2fits" % (args.card,i))

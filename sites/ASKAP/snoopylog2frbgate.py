@@ -101,7 +101,7 @@ numbins = int((pulsewidthms + 2*extrawidth)/(binmicrosec/1000.0))
 with open("craftfrb.bin.binconfig", "w") as binconfout:
     binconfout.write("NUM POLYCO FILES:   1\n")
     binconfout.write("POLYCO FILE 0:      %s/craftfrb.polyco\n" % os.getcwd())
-    binconfout.write("NUM PULSAR BINS:    %d\n" % numbins)
+    binconfout.write("NUM PULSAR BINS:    %d\n" % (numbins+1))
     binconfout.write("SCRUNCH OUTPUT:     FALSE\n")
     for i in range(numbins+1):
         phasestr = ("BIN PHASE END %d:" % i).ljust(20)
@@ -118,7 +118,7 @@ bindeltaphase = (rfistartphase2 - rfiendphase1)/numfinderbins
 with open("craftfrb.finder.binconfig", "w") as binconfout:
     binconfout.write("NUM POLYCO FILES:   1\n")
     binconfout.write("POLYCO FILE 0:      %s/craftfrb.polyco\n" % os.getcwd())
-    binconfout.write("NUM PULSAR BINS:    %d\n" % numfinderbins)
+    binconfout.write("NUM PULSAR BINS:    %d\n" % (numfinderbins+1))
     binconfout.write("SCRUNCH OUTPUT:     FALSE\n")
     for i in range(numfinderbins+1):
         phasestr = ("BIN PHASE END %d:" % i).ljust(20)

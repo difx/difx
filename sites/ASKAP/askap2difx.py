@@ -358,8 +358,8 @@ parser.add_argument("-s", "--slurm", default=False, action="store_true", help="U
 parser.add_argument("--forceFFT", default=False, action="store_true", help="Force FFT size to equal number of channels (don't increase to 128)")
 parser.add_argument("--npol", help="Number of polarisations", type=int, choices=[1,2], default=1)
 parser.add_argument("--gstar", default=False, action="store_true", help="Set if using gstar for correlation")
-parser.add_argument("--skylake", default=False, action="store_true", help="Set if using skylake nodes for correlation")
 parser.add_argument("--large", default=False, action="store_true", help="Set if 32 nodes, 384 tasks are required (i.e., 23GB memory needed per task; else 16 nodes, 192 tasks will be used for 11.5GB per task")
+parser.add_argument("--numskylakenodes", default=1, type=int, help="Use 32x this many CPUs")
 args = parser.parse_args()
 
 ## Check arguments
@@ -373,6 +373,10 @@ if args.ants == "":
     parser.error("you must supply a list of antennas")
 if args.polyco is not None and not os.path.exists(args.polyco):
     parser.error("binconfig file " + args.polyco + " does not exist")
+if args.large and not args.gstar:
+    parser.error("You can't run large if runnning on skylake (the default, i.e. you didn't use --gstar")
+if args.gstar and args.numskylakenodes > 1:
+    parser.error("You can't set the number of skylake nodes if you are running on gstar")
 bits = args.bits
 if bits==None: bits=1
 difxThreads = args.threads
@@ -398,12 +402,18 @@ targetants = args.ants.split(',')
 
 # Look and see if there is a catalog directory defined
 try:
-    craftcatalogdir = os.environ['CRAFTCATDIR'] + '/'
-    if not os.path.exists(craftcatalogdir):
-        print craftcatalogdir, "specified by $CRAFTCATDIR doesn't exist"
+    craftcatalogbasedir = os.environ['CRAFTCATDIR'] + '/'
+    if not os.path.exists(craftcatalogbasedir):
+        print craftcatalogbasedir, "specified by $CRAFTCATDIR doesn't exist"
         sys.exit()
+    craftcatalogdir = craftcatalogbasedir + str(os.getpid()) + '/'
+    if not os.path.exists(craftcatalogdir):
+        os.mkdir(craftcatalogdir)
 except KeyError:
     craftcatalogdir = os.getcwd() + "/"
+    if len(craftcatalogdir) >= 62:
+        print "Catalog directory name is too long! I'm sorry, but I have to abort, because other sched will."
+        sys.exit()
 
 ## Write the SCHED freq and antenna files, and the craftfrb.datafiles
 freqout = open(craftcatalogdir + "askapfreq.dat","w")
@@ -472,7 +482,7 @@ for i in range(args.npol):
 
 ## Write sched running file
 runsched = open("runsched.sh", "w")
-runsched.write("#!/bin/sh\n")
+runsched.write("#!/usr/bin/bash\n")
 runsched.write("export CATDIR={0}\n".format(craftcatalogdir))
 runsched.write("sched < craftfrb.key\n")
 runsched.close()
@@ -542,7 +552,7 @@ if ret!=0: sys.exit(1)
 if args.slurm:
     currentdir = os.getcwd()
     currentuser = getpass.getuser()
-    numprocesses = args.npol*len(datafilelist[0]) + 8
+    numprocesses = args.npol*len(datafilelist[0]) + 5
     print "Approx number of processes", numprocesses
     numprocessingnodes = numprocesses - (args.npol*len(datafilelist[0]) + 1)
 
@@ -557,6 +567,7 @@ if args.slurm:
     launchout.write("echo $JOBSTR\n")
     launchout.write("export JOBID=$(echo $JOBSTR | awk '{print $NF}')\n")
     launchout.write("echo $JOBID\n")
+    launchout.write("echo $JOBID > jobid.txt\n")
     launchout.write("while true; do\n")
     launchout.write("    sleep 3\n")
     launchout.write("    export JOBSTATUS=$(squeue -u {0})\n".format(currentuser))
@@ -604,17 +615,15 @@ if args.slurm:
         batchout.write("esac\n")
         batchout.write("srun -N{0} -n{1:d} -c2 mpifxcorr {2}.input\n".format(numnodes,numprocesses,basename))
         batchout.close()
-
-    if args.skylake:
-        numnodes = numprocesses/(32*2)
+    else:
         batchout = open("runparallel","w")
         batchout.write("#!/bin/bash\n")
         batchout.write("#\n")
         batchout.write("#SBATCH --job-name=difx_{0}\n".format(basename))
         batchout.write("#SBATCH --output={0}.mpilog\n".format(basename))
         batchout.write("#\n")
-        # Only request 32 CPUs, so it will fit on a single node
-        batchout.write("#SBATCH --ntasks={0:d}\n".format(numprocesses))
+        # Request 32xnumskylakenodes CPUs, so it will fit on numskylakenodes
+        batchout.write("#SBATCH --ntasks={0:d}\n".format(32*args.numskylakenodes))
         batchout.write("#SBATCH --time=5:00\n")
         batchout.write("#SBATCH --cpus-per-task=1\n")
         batchout.write("#SBATCH --mem-per-cpu=4000\n\n")
@@ -676,3 +685,9 @@ with open('runmergedifx', 'w') as runmerge:
 os.chmod('runmergedifx',0o775)
 runline = "difx2fits {0}D2D".format(basename)
 print runline
+
+## Produce the little script needed to run difx2fits for the solveFPGA script
+runline = "difx2fits {0}D2D\n".format(basename)
+with open('runfpgadifx2fits', 'w') as rund2f:
+    rund2f.write(runline)
+os.chmod('runfpgadifx2fits',0o775)
