@@ -413,7 +413,7 @@ except KeyError:
     craftcatalogdir = os.getcwd() + "/"
     if len(craftcatalogdir) >= 62:
         print "Catalog directory name is too long! I'm sorry, but I have to abort, because other sched will."
-        sys.exit()
+#        sys.exit()
 
 ## Write the SCHED freq and antenna files, and the craftfrb.datafiles
 freqout = open(craftcatalogdir + "askapfreq.dat","w")
@@ -624,7 +624,7 @@ if args.slurm:
         batchout.write("#\n")
         # Request 32xnumskylakenodes CPUs, so it will fit on numskylakenodes
         batchout.write("#SBATCH --ntasks={0:d}\n".format(32*args.numskylakenodes))
-        batchout.write("#SBATCH --time=5:00\n")
+        batchout.write("#SBATCH --time=10:00\n") #note: nominal is 5:00
         batchout.write("#SBATCH --cpus-per-task=1\n")
         batchout.write("#SBATCH --mem-per-cpu=4000\n\n")
         batchout.write("case ${HEADNODE} in\n")
