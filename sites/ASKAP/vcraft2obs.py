@@ -34,13 +34,18 @@ parser.add_argument("-n", "--nchan", type=int, help="Number of spectral channels
 parser.add_argument("--forceFFT", default=False, action="store_true", help="Force FFT size to equal number of channels (don't increase to 128)")
 parser.add_argument('fileglob', help="glob pattern for vcraft files", nargs='+')
 parser.add_argument("--gstar", default=False, action="store_true", help="Set if using gstar for correlation")
-parser.add_argument("--skylake", default=False, action="store_true", help="Set if using skylake nodes for correlation")
 parser.add_argument("--large", default=False, action="store_true", help="Set if 32 nodes, 384 tasks are required (i.e., 23GB memory needed per task; else 16 nodes, 192 tasks will be used for 11.5GB per task")
+parser.add_argument("--numskylakenodes", default=1, type=int, help="Use 32x this many CPUs")
 args = parser.parse_args()
+
+# Check that sensible options were given for the queue destination
+if args.large and not args.gstar:
+    parser.error("You can't run large if runnning on skylake (the default, i.e. you didn't use --gstar")
+if args.gstar and args.numskylakenodes > 1:
+    parser.error("You can't set the number of skylake nodes if you are running on gstar")
 
 vcraftglobpattern = args.fileglob
 npol = len(vcraftglobpattern)
-
 if len(vcraftglobpattern) > 2:
     #print vcraftglobpattern
     parser.error("Can only have at most two fileglobs, corresponding to X and Y pols")
@@ -264,8 +269,9 @@ if args.integration is not None: runline += " --integration={}".format(args.inte
 if args.nchan is not None: runline += " --nchan={}".format(args.nchan)
 if args.forceFFT: runline += " --forceFFT"
 if args.gstar: runline += " --gstar"
-if args.skylake: runline += " --skylake"
 if args.large: runline += " --large"
+if args.numskylakenodes > 1:
+    torun += " --numskylakenodes=" + str(args.numskylakenodes)
 runline += "\n"
 print "\nNow run:"
 print runline
