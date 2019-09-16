@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
 #   Copyright (C) 2008-2019 by Walter Brisken                             *
@@ -30,7 +30,8 @@
 #
 #============================================================================
 
-from string import split, strip, find, upper, lower
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit
 from os import popen, getenv
 from glob import glob
@@ -44,19 +45,19 @@ import sys
 
 program = 'cpumon'
 author  = 'Walter Brisken'
-version = '0.5'
-verdate = '20190426'
+version = '0.6'
+verdate = '20190915'
 
 def signal_handler(signal, frame):
 	print('You pressed Ctrl+C!')
 	raise KeyboardInterrupt
 
 def usage(prog):
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s [options]\n' % prog
-	print 'options can include:'
-	print '  --help'
-	print '  -h        print help information and quit\n'
+	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
+	print('Usage: %s [options]\n' % prog)
+	print('options can include:')
+	print('  --help')
+	print('  -h        print help information and quit\n')
 
 class DifxLoad:
 
@@ -101,7 +102,7 @@ class Parser:
 		try:
 			self._parser.Parse(data, 0)
 		except expat.ExpatError:
-			print '\n\n XXX %s XXX' % data 
+			print('\n\n XXX %s XXX' % data)
 
 	def close(self):
 		self._parser.Parse("", 1) # end of data
@@ -114,7 +115,7 @@ class Parser:
 		if tag == 'difxLoad':
 			self.info.ok = True
 		if tag == 'from':
-			self.info.mk5 = lower(self.tmp)
+			self.info.mk5 = self.tmp.lower()
 		if tag == 'cpuLoad':
 			self.info.cpuLoad = float(self.tmp)
 		if tag == 'totalMemory':
@@ -163,16 +164,15 @@ class Display:
 
 	def newdata(self, data):
 		k = data[0]
-		if self.rows.has_key(k):
+		if k in self.rows:
 			self.info[k] = data[1]
 			self.displayrow(self.info[k], self.rows[k])
 		else:
 			self.rows[k] = 0
 			self.info[k] = data[1]
 			keys = self.rows.keys()
-			keys.sort()
 			i = 0
-			for k in keys:
+			for k in sorted(keys):
 				self.rows[k] = i
 				i += 1
 			self.displayall()
@@ -187,21 +187,20 @@ def listen(port, group):
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 768000)
 	s.bind(('', port))
-	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+	mreq = struct.pack("4sL", socket.inet_aton(group), socket.INADDR_ANY)
 	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 	s.settimeout(0.2)
 	d = Display()
 	try:
 		while t < maxtime:
 			try:
-				message = s.recv(1500)
+				message= s.recv(1500).decode('utf-8')
 			except socket.timeout:
 				t += dt
 				continue
 
 			if message[0] != '<':
 				continue
-
 			p = Parser()
 			p.feed(message)
 			machine, str = p.getinfo()
@@ -227,18 +226,18 @@ if len(argv) >= 2:
 		usage(argv[0])
 		exit(0)
 	else:
-		print 'Command line error.  Run with -h for help.\n'
+		print('Command line error.  Run with -h for help.\n')
 		exit(1)
 
 port = getenv('DIFX_MESSAGE_PORT')
 if port == None:
-	print 'DIFX_MESSAGE_PORT needs to be defined'
+	print('DIFX_MESSAGE_PORT needs to be defined')
 	exit(0)
 else:
 	port = int(port)
 group = getenv('DIFX_MESSAGE_GROUP')
 if group == None:
-	print 'DIFX_MESSAGE_GROUP needs to be defined'
+	print('DIFX_MESSAGE_GROUP needs to be defined')
 	exit(0)
 
 while(listen(port, group)):
