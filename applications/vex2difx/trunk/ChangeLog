@@ -4,7 +4,7 @@ Version 2.7.0
 * vexpeek: add some new options for combining kinds of output
 * more explicitly catch cases where the number of provided channels is less than the number of recorded channels for a given format.
 * difxspeed: allow "doPolar" parameter to be set
-* python3 conversion: difxspeed, oms2v2d
+* python3 conversion: difxspeed, oms2v2d, vlog
 
 Version 2.6.0
 ~~~~~~~~~~~~~

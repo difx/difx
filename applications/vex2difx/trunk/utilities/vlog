@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2018 by Walter Brisken                             *
+#   Copyright (C) 2008-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -29,40 +29,41 @@
 #
 #============================================================================
 
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, stdout, exit
 from os import getcwd, system
-from string import split, strip, find, rfind, lower
 import gzip
 
 program = 'vlog'
-version = 1.10
-verdate = '20160727'
-author  = 'Walter Brisken'
+version = 1.11
+verdate = '20190916'
+author  = 'Walter Brisken <wbrisken@nrao.edu>'
 
 # put output files here
 jobdir = 'jobs'
 
 def usage():
-	print '\n%s ver. %s   %s %s\n' % (program, version, verdate, author)
-	print 'A program to preprocess the cal files to simiplfy difx2fits.\n'
-	print 'Usage: %s [options] <TSM file> [<antenna list>]\n' % (argv[0])
-	print '  options can include:\n'
-	print '    --help'
-	print '    -h         print this help info and quit\n'
-	print '    --mjd'
-	print '    -m         use mjd rather than doy timestamps\n'
-	print '    --mark5a'
-	print '    -a         force to run in Mark5A mode\n'
-	print '    --mark5c'
-	print '    -c         force to run in Mark5C mode\n'
-	print '    --exper <exp>'
-	print '    -e <exp>   name the output files by <exp>.<ant>.<file>\n'
-	print '  <TSM file> is <project>cal.vlba or <project>cal.vlba.gz\n'
-	print '  <antenna list> is a comma separated list of antennas with'
-	print '          no spaces, e.g., FD,GB,Y.  Default -- all ants.\n'
-	print 'Output files will be placed in a subdirectory called %s' % jobdir
-	print 'which will be created if it does not already exist.\n'
-	print 'Note: this program is essentially obsolete.\n'
+	print('\n%s ver. %s   %s %s\n' % (program, version, verdate, author))
+	print('A program to preprocess the cal files to simiplfy difx2fits.\n')
+	print('Usage: %s [options] <TSM file> [<antenna list>]\n' % argv[0])
+	print('  options can include:\n')
+	print('    --help')
+	print('    -h         print this help info and quit\n')
+	print('    --mjd')
+	print('    -m         use mjd rather than doy timestamps\n')
+	print('    --mark5a')
+	print('    -a         force to run in Mark5A mode\n')
+	print('    --mark5c')
+	print('    -c         force to run in Mark5C mode\n')
+	print('    --exper <exp>')
+	print('    -e <exp>   name the output files by <exp>.<ant>.<file>\n')
+	print('  <TSM file> is <project>cal.vlba or <project>cal.vlba.gz\n')
+	print('  <antenna list> is a comma separated list of antennas with')
+	print('          no spaces, e.g., FD,GB,Y.  Default -- all ants.\n')
+	print('Output files will be placed in a subdirectory called %s' % jobdir)
+	print('which will be created if it does not already exist.\n')
+	print('Note: this program is essentially obsolete.\n')
 	exit(0)
 
 
@@ -86,13 +87,13 @@ def calctime(t, startyear, startdoy, useMJD):
 
 
 def getlist(sections, header):
-	s = split(header)
+	s = header.split()
 	sec = s[2]
 	ant = s[-2]
-	if not sections.has_key(sec):
+	if not sec in sections:
 		sections[sec] = {}
 	S = sections[sec]
-	if not S.has_key(ant):
+	if not ant in S:
 		S[ant] = []
 	return S[ant]
 
@@ -106,28 +107,28 @@ def chop(filename):
 	else:
 		lines = open(filename, 'r').readlines()
 	for D in lines:
-		d = strip(D)
-		if year == 0 and find(d, '! For UT timerange:') == 0:
-			startday = split(d)[4]
+		d = D.strip()
+		if year == 0 and d.find('! For UT timerange:') == 0:
+			startday = d.split()[4]
 			year = int(startday[:4])
-			doy = int(split(startday, '/')[-1])
+			doy = int(startday.split('/')[-1])
 
-		if find(d, ' -----') > 0:
+		if d.find(' -----') > 0:
 			current = getlist(sections, d)
 		elif len(d) > 0:
 			current.append(d)
 	return sections, year, doy
 
-def parsetime(str):
-	s = split(str, '-')
-	t = split(s[1], ':')
+def parsetime(strng):
+	s = strng.split('-')
+	t = s[1].split(':')
 	return int(s[0]) + float(t[0])/24.0 + float(t[1])/1440.0 + \
 		float(t[2])/86400.0
 
 def makeWR(sections, antenna, startyear, startdoy, useMJD):
-	if not sections.has_key('Weather'):
+	if not 'Weather' in sections:
 		return None
-	if not sections['Weather'].has_key(antenna):
+	if not antenna in sections['Weather']:
 		return None
 	WeatherData = sections['Weather'][antenna]
 	WR = []
@@ -139,7 +140,7 @@ def makeWR(sections, antenna, startyear, startdoy, useMJD):
 	for w in WeatherData:
 		if w[0] in ['*', '!']:
 			continue
-		s = split(w)
+		s = w.split()
 		if len(s) < 8:
 			continue
 		t = parsetime(s[0])
@@ -157,9 +158,9 @@ def bbcflag(flags, bbc, t1, t2, chan, reason, startyear, startdoy, useMJD):
 					flags.append('%9.7f %9.7f %d %s' % (calctime(T1, startyear, startdoy, useMJD), calctime(T2, startyear, startdoy, useMJD), i, reason))
 
 def makeFG(sections, BBCs, antenna, startyear, startdoy, useMJD):
-	if not sections.has_key('Edit'):
+	if not 'Edit' in sections:
 		return None
-	if not sections['Edit'].has_key(antenna):
+	if not antenna in sections['Edit']:
 		return None
 	bbc = BBCs[antenna]
 	FlagData = sections['Edit'][antenna]
@@ -171,16 +172,16 @@ def makeFG(sections, BBCs, antenna, startyear, startdoy, useMJD):
 	FG.append('# Ant %s.start %s.end RecChan reason' % (dateFormat, dateFormat))
 	key = "ant_name='%s'" % antenna
 	for f in FlagData:
-		s = split(f)
+		s = f.split()
 		if s[0] == key:
-			t = split(split(s[1], '=')[1], ',')
+			t = s[1].split('=')[1].split(',')
 			t1 = parsetime('%s-%s:%s:%s' % (t[0], t[1], t[2], t[3]))
 			t2 = parsetime('%s-%s:%s:%s' % (t[4], t[5], t[6], t[7]))
-			p = find(f, 'reason=')
+			p = f. find('reason=')
 			p1 = p + 9
-			p2 = p1 + find(f[p1:], "'")
+			p2 = p1 + f[p1:].find("'")
 			reason = f[p1-2:p2+1]
-			r = split(reason[1:-1])
+			r = reason[1:-1].split()
 			if r[0] == 'channel' and r[2] == 'bbc':
 				bbcflag(FG, bbc, t1, t2, r[1], reason, startyear, startdoy, useMJD)
 			else:
@@ -197,11 +198,9 @@ def countTones(ToneTable, StateTable):
 	nPol   = 0
 	nState = 0
 	# [chan, sb, pol, freq; polnum, bandnum, tonenum]
-	toneKeys = ToneTable.keys()
-	toneKeys.sort()
+	toneKeys = sorted(ToneTable.keys())
 	# [chan, sb, pol, nState; polnum, bandnum]
-	stateKeys = StateTable.keys()
-	stateKeys.sort()
+	stateKeys = sorted(StateTable.keys())
 
 	# first populate polarization list so we can force proper order
 	for key in toneKeys:
@@ -298,9 +297,9 @@ def bbc2recChan(bbcNum, t, bbcMap):
 	
 
 def makePH(sections, BBCs, antenna, startyear, startdoy, useMJD):
-	if not sections.has_key('PulseCal'):
+	if not 'PulseCal' in sections:
 		return None
-	if not sections['PulseCal'].has_key(antenna):
+	if not antenna in sections['PulseCal']:
 		return None
 	PulseCalData = sections['PulseCal'][antenna]
 	bbc = BBCs[antenna]
@@ -328,7 +327,7 @@ def makePH(sections, BBCs, antenna, startyear, startdoy, useMJD):
 	for row in PulseCalData:
 		if row[0] == '!':
 			continue
-		s = split(row)
+		s = row.split()
 		if len(s) == 0:
 			continue
 
@@ -382,12 +381,12 @@ def makePH(sections, BBCs, antenna, startyear, startdoy, useMJD):
 				try:
 					ToneData[index] = [recChan, T[3], s[3], s[4]]
 				except IndexError:
-					print 'ToneData index error: T=', T, 's=', s
-					print 'index=', index, 'array size=', len(ToneData)
-					print 'Full line from file: ', row
-					print 'nPol=%d nBand=%d nTone=%d' % (nPol, nBand, nTone)
-					print 'ToneTable=',ToneTable
-					print 'StateTable=',StateTable,'\n'
+					print('ToneData index error: T=', T, 's=', s)
+					print('index=', index, 'array size=', len(ToneData))
+					print('Full line from file: ', row)
+					print('nPol=%d nBand=%d nTone=%d' % (nPol, nBand, nTone))
+					print('ToneTable=', ToneTable)
+					print('StateTable=', StateTable, '\n')
 			elif key in StateTable:
 				S = StateTable[key]
 				pol  = S[4]
@@ -400,10 +399,10 @@ def makePH(sections, BBCs, antenna, startyear, startdoy, useMJD):
 						StateData[index][1][state] = \
 							s[3+state]
 					except IndexError:
-						print 'StateData index error: S=', S, 's=', s
-						print 'index=', index, 'array size=', len(StateData)
-						print 'Full line from file: ', row
-						print 'nPol=%d nBand=%d nTone=%d\n' % (nPol, nBand, nTone)
+						print('StateData index error: S=', S, 's=', s)
+						print('index=', index, 'array size=', len(StateData))
+						print('Full line from file: ', row)
+						print('nPol=%d nBand=%d nTone=%d\n' % (nPol, nBand, nTone))
 		if action == 3:
 			line = '%10.7f %9.7f %s %d %d %d %d %d' % \
 				(calctime(t, startyear, startdoy, useMJD), dt, ccal, nPol, nBand, nTone, nState, nBBC)
@@ -419,9 +418,9 @@ def makePH(sections, BBCs, antenna, startyear, startdoy, useMJD):
 	return PH
 
 def makeTS(sections, antenna, startyear, startdoy, useMJD):
-	if not sections.has_key('Tsys'):
+	if not 'Tsys' in sections:
 		return None, None
-	if not sections['Tsys'].has_key(antenna):
+	if not antenna in sections['Tsys']:
 		return None, None
 	TsysData = sections['Tsys'][antenna]
 
@@ -441,7 +440,7 @@ def makeTS(sections, antenna, startyear, startdoy, useMJD):
 	t1 = 0
 
 	for row in TsysData:
-		s = split(row)
+		s = row.split()
 		# check for a comment line with vital info
 		if s[0] == '!' and len(s) == 11 and \
 				s[3] in ['A', 'B', 'C', 'D'] and \
@@ -464,7 +463,7 @@ def makeTS(sections, antenna, startyear, startdoy, useMJD):
 			BBCrow.append([s[5]+s[6], int(s[1]), s[4][0]])
 			nRecChan += 1
 		elif s[0] == '!' and len(s) == 5:
-			tr = split(s[4], '/')
+			tr = s[4].split('/')
 			if len(tr) == 2 and s[1] == antenna:
 				t0 = parsetime(tr[0])
 				t1 = parsetime(tr[1])
@@ -484,12 +483,12 @@ def makeTS(sections, antenna, startyear, startdoy, useMJD):
 	return TS, BBCmap
 
 def writetable(table, filename, ants, tablename, columncount):
-	filename = lower(filename)	# to ensure some uniformity
-	print 'Writing %s' % filename
+	filename = filename.lower()	# to ensure some uniformity
+	print('Writing %s' % filename)
 	f = open(filename, 'w')
 	stdout.write('%s:' % tablename)
 	for a in ants:
-		if table.has_key(a):
+		if a in table:
 			t = table[a]
 			stdout.write(' %s' % a)
 			for row in t:
@@ -497,7 +496,7 @@ def writetable(table, filename, ants, tablename, columncount):
 					f.write('%s\n' % row)
 				else:
 					if columncount > 0:
-						s = split(row)
+						s = row.split()
 						data = a
 						for i in range(columncount-1):
 							data += ' ' + s[i]
@@ -517,8 +516,8 @@ def findantennas(sections):
 	return ants
 
 def getIsMark5C():
-	ldir = lower(getcwd())
-	if find(ldir, 'mark5a') >= 0:
+	ldir = getcwd().lower()
+	if ldir.find('mark5a') >= 0:
 		return 0
 	else:
 		return 1
@@ -537,18 +536,18 @@ takeproject = True
 for a in argv[1:]:
 	if a[0] == '-':
 		getexper = False
-		if lower(a) in ['-h', '--help']:
+		if a.lower() in ['-h', '--help']:
 			usage()
-		elif lower(a) in ['-m', '--mjd']:
+		elif a.lower() in ['-m', '--mjd']:
 			useMJD = True
-		elif lower(a) in ['-a', '--mark5a']:
+		elif a.lower() in ['-a', '--mark5a']:
 			isMark5C = 0
-		elif lower(a) in ['-c', '--mark5c']:
+		elif a.lower() in ['-c', '--mark5c']:
 			isMark5C = 1
-		elif lower(a) in ['-e', '--exper']:
+		elif a.lower() in ['-e', '--exper']:
 			getexper = True
 		else:
-			print 'unrecongized option %s' % a
+			print('unrecongized option %s' % a)
 			exit(0)
 	elif getexper:
 		getexper = False
@@ -559,7 +558,7 @@ for a in argv[1:]:
 		try:
 			sections, startyear, startdoy = chop(inputFile)
 		except IOError:
-			print 'Error opening %s' % inputFile;
+			print('Error opening %s' % inputFile)
 			exit(0)
 	elif antArg == None:
 		antArg = a
@@ -567,11 +566,11 @@ for a in argv[1:]:
 		usage()
 
 if getexper:
-	print 'An experiment name is needed when supplied with -e / --exper'
+	print('An experiment name is needed when supplied with -e / --exper')
 	exit(0)
 
 if exper != '' and takeproject:
-	print 'Cannot simultaneously specify -p / --project and -e / --exper'
+	print('Cannot simultaneously specify -p / --project and -e / --exper')
 	exit(0)
 
 if len(sections) == 0:
@@ -579,16 +578,16 @@ if len(sections) == 0:
 
 if takeproject:
 	# project code is between last / (if any) and "cal.vlba"
-	p = find(inputFile, 'cal.vlba')
-	q = rfind(inputFile, '/')+1
+	p = inputFile.find('cal.vlba')
+	q = inputFile.rfind('/')+1
 	if p < 0:
-		print 'cannot use -p / --project option with a filename unless it contains cal.vlba'
+		print('cannot use -p / --project option with a filename unless it contains cal.vlba')
 		exit(0)
 
 	exper = inputFile[q:p]
 
 if antArg != None:
-	ants = split(antArg, ',')
+	ants = antArg.split(',')
 else:
 	ants = findantennas(sections)
 
@@ -598,9 +597,9 @@ if len(ants) == 0:
 if isMark5C < 0:
 	isMark5C = getIsMark5C()
 
-print 'It looks like the observation started on day %d of year %d' % (startdoy, startyear)
+print('It looks like the observation started on day %d of year %d' % (startdoy, startyear))
 
-print 'Processing antennas:', ants
+print('Processing antennas:', ants)
 
 BBCs = {}
 TSs  = {}
@@ -620,7 +619,7 @@ for a in ants:
 		WRs[a] = wx
 
 for a in ants:
-	if BBCs.has_key(a):
+	if a in BBCs:
 		fg = makeFG(sections, BBCs, a, startyear, startdoy, useMJD)
 		if fg == None:
 			continue
@@ -662,6 +661,6 @@ if isMark5C > 0 and 'legacy' not in inputFile:
 	o.close()
 	system('gzip %s' % outputFile)
 	system('mv %s /tmp' % inputFile)
-	print '%s has been renamed %s and a warning has' % (inputFile, outputFile)
-	print 'been added.  The original file has been moved to /tmp which will be'
-	print 'deleted in some number of days.'
+	print('%s has been renamed %s and a warning has' % (inputFile, outputFile))
+	print('been added.  The original file has been moved to /tmp which will be')
+	print('deleted in some number of days.')
