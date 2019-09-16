@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2018 by Walter Brisken                             *
+#   Copyright (C) 2009-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,44 +30,45 @@
 #
 #============================================================================
 
-from string import split, strip, find, lower
+# Note: this utility can run under python2.7 or python3
+
 from sys import exit, argv
 from os.path import isfile, isdir
 from os import umask, popen, system
 
 program = 'oms2v2d'
-version = '1.6'
-verdate = '20171116'
+version = '1.7'
+verdate = '20190916'
 author = 'Walter Brisken'
 
 def usage(pgm):
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Program to take sched\'s .oms file and produce a skeleton .v2d file\n'
-	print 'Usage: %s [options] <oms file>\n' % pgm
-	print 'options can include\n'
-	print '  --help'
-	print '  -h       print this help info and quit\n'
-	print '  --force'
-	print '  -f       force operation, even if output file exits\n'
-	print '  --verbose'
-	print '  -v       be more verbose in execution (use -v -v for even more!)\n'
-	print '  --nrt'
-	print '  -n       use near-real-time options: .preobs and filelists\n'
-	print '  --datacopy'
-	print '  -d       look for files in /home/datacopy-* (VLBA only, assumes VDIF)\n'
-	print '  --datacopy5b'
-	print '           look for files in /home/datacopy-* (VLBA only, assumes Mark5B)\n'
-	print '  --file'
-	print '  -F       make .v2d file for file-based correlation\n'
-	print '  --quiet'
-	print '  -q       be less verbose\n'
-	print '<oms file> is a .oms file produced by sched\n'
+	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
+	print('Program to take sched\'s .oms file and produce a skeleton .v2d file\n')
+	print('Usage: %s [options] <oms file>\n' % pgm)
+	print('options can include\n')
+	print('  --help')
+	print('  -h       print this help info and quit\n')
+	print('  --force')
+	print('  -f       force operation, even if output file exits\n')
+	print('  --verbose')
+	print('  -v       be more verbose in execution (use -v -v for even more!)\n')
+	print('  --nrt')
+	print('  -n       use near-real-time options: .preobs and filelists\n')
+	print('  --datacopy')
+	print('  -d       look for files in /home/datacopy-* (VLBA only, assumes VDIF)\n')
+	print('  --datacopy5b')
+	print('           look for files in /home/datacopy-* (VLBA only, assumes Mark5B)\n')
+	print('  --file')
+	print('  -F       make .v2d file for file-based correlation\n')
+	print('  --quiet')
+	print('  -q       be less verbose\n')
+	print('<oms file> is a .oms file produced by sched\n')
 	exit(0)
 
 
 def readOMS(filename, verbose):
 	if verbose > 1:
-		print 'Reading: %s' % filename
+		print('Reading: %s' % filename)
 	data = open(filename).readlines()
 	section = []
 	current = {}
@@ -77,44 +78,44 @@ def readOMS(filename, verbose):
 	spaces = ''
 	for D in data:
 		n = n + 1
-		d = strip(D)
+		d = D.strip()
 		if(len(d) < 1):
 			continue
-		p = find(d, "=")
+		p = d.find("=")
 		if p < 0:
 			key = '=COMMENT'
-			value = strip(d)
+			value = d.strip()
 		else:
-			key = strip(d[0:p])
+			key = d[0:p].strip()
 			if len(key) < 1:
-				print 'Illegal line [%d] : %s' % (n, d)
+				print('Illegal line [%d] : %s' % (n, d))
 				exit(0);
-			value = strip(d[p+1:])
+			value = d[p+1:].strip()
 		if key == 'BEGIN':
 			section.append( (value, current) )
 			last = current
 			current = {}
-			if not last.has_key(value):
+			if not value in last:
 				last[value] = []
 			last[value].append(current)
 			if verbose > 2:
-				print '%sBEGIN %s' % (spaces, value)
+				print('%sBEGIN %s' % (spaces, value))
 			spaces = spaces + '  '
 		elif key == 'END':
 			spaces = spaces[:-2]
 			if len(section) == 0:
-				print 'Error: line %d unmatched END: %s' % (n, d)
+				print('Error: line %d unmatched END: %s' % (n, d))
 				exit(0)
 			oldvalue, current = section.pop()
 			if verbose > 2:
-				print '%sEND %s' % (spaces, value)
+				print('%sEND %s' % (spaces, value))
 			if oldvalue != value:
-				print 'END with value %s does not match previous BEGIN with value %s, line %d' % (value, oldvalue, n)
+				print('END with value %s does not match previous BEGIN with value %s, line %d' % (value, oldvalue, n))
 				exit(0)
 		elif key == 'BANDWIDTH':
 			if verbose > 3:
-				print '%s%s = %s' % (spaces, key, value);
-			for v in split(strip(value)):
+				print('%s%s = %s' % (spaces, key, value))
+			for v in value.strip().split():
 				f = float(v)
 				if f > maxbw:
 					maxbw = f
@@ -122,22 +123,22 @@ def readOMS(filename, verbose):
 					minbw = f
 		else:
 			if verbose > 3:
-				print '%s%s = %s' % (spaces, key, value);
-			if not current.has_key(key):
+				print('%s%s = %s' % (spaces, key, value))
+			if not key in current:
 				current[key] = []
-			for v in split(strip(value)):
+			for v in value.strip().split():
 				current[key].append(v)
 
 	if len(section) > 0:
-		print 'Error: unmatched BEGIN'
+		print('Error: unmatched BEGIN')
 		exit(0);
 	
 	current['MINBW'] = minbw
 	current['MAXBW'] = maxbw
 
 	if verbose > 1:
-		print 'Min channel bandwidth = %f MHz' % minbw
-		print 'Max channel bandwidth = %f MHz' % maxbw
+		print('Min channel bandwidth = %f MHz' % minbw)
+		print('Max channel bandwidth = %f MHz' % maxbw)
 
 	return current
 
@@ -146,7 +147,7 @@ def getDatacopyInfo():
 	data = popen('dcadmin listfs', 'r')
 	info = []
 	for d in data:
-		s = split(strip(d))
+		s = d.strip().split()
 		if len(s) > 2:
 			if s[-1] == 'Enabled':
 				info.append( (s[1], s[2]) )
@@ -154,12 +155,12 @@ def getDatacopyInfo():
 	return info
 
 def getDatacopyAntennaSetup(datacopyInfo, prefix, stn, datacopyFormat):
-	filelist = '%s.%s.filelist' % (lower(prefix), lower(stn))
+	filelist = '%s.%s.filelist' % (prefix.lower(), stn.lower())
 	if datacopyFormat == 'VDIF':
 		cmd = 'vsum -s `dcls %s %s` > %s' % (prefix, stn, filelist)
 	elif datacopyFormat == 'Mark5B':
 		cmd = 'm5bsum -s `dcls %s %s` > %s' % (prefix, stn, filelist)
-	print 'Executing: %s' % cmd
+	print('Executing: %s' % cmd)
 	system(cmd)
 
 	# get first line of file
@@ -176,7 +177,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 	corr = oms['CORRELATOR_PARAMETERS'][0]
 
 	if verbose > 0:
-		print 'Writing: %s' % v2dFile
+		print('Writing: %s' % v2dFile)
 	out = open(v2dFile, 'w')
 
 	if datacopyFormat != None:
@@ -184,18 +185,18 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 
 	bw = oms['MAXBW']
 	if bw != oms['MINBW']:
-		print 'Warning: different bandwidths used within this file.'
-		print 'Using the maximum bandwidth to set spectral resolution.'
+		print('Warning: different bandwidths used within this file.')
+		print('Using the maximum bandwidth to set spectral resolution.')
 
 	try:
 		nFFT = int(corr['FFT_SIZE'][0])
 	except KeyError:
-		print 'Warning: FFT SIZE not provided.  Assuming 256.'
+		print('Warning: FFT SIZE not provided.  Assuming 256.')
 		nFFT = 256
 	try:
 		specAvg = int(corr['SPECTRAL_AVERAGE'][0])
 	except KeyError:
-		specAvg = 256/nFFT
+		specAvg = 256//nFFT
 		if specAvg == 0:
 			specAvg = 1
 	
@@ -226,7 +227,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 
 	for s in oms['SOURCE_INFO']:
 		srcParams = ''
-		if s.has_key('CAL_CODE'):
+		if 'CAL_CODE' in s:
 			if len(s['CAL_CODE']) > 0:
 				c = s['CAL_CODE'][0]
 				if len(c) > 0:
@@ -237,13 +238,13 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 	for s in stations:
 		extra = ''
 		if nrt:
-			extra += 'filelist=%s_%s.filelist machine=%s ' % (lower(prefix), lower(s), machineMap[s])
+			extra += 'filelist=%s_%s.filelist machine=%s ' % (prefix.lower(), s.lower(), machineMap[s])
 		elif filebased:
-			extra += 'filelist=%s.filelist machine=%s ' % (lower(s), machineMap[s])
+			extra += 'filelist=%s.filelist machine=%s ' % (s.lower(), machineMap[s])
 		elif datacopyFormat != None:
 			datacopyAntennaSetup = getDatacopyAntennaSetup(datacopyInfo, prefix, s, datacopyFormat)
 			if datacopyAntennaSetup == None:
-				print 'Warning: data for antenna %s not found.  Skipping.  You will need to update the antenna list in the .v2d file.' % s
+				print('Warning: data for antenna %s not found.  Skipping.  You will need to update the antenna list in the .v2d file.' % s)
 				out.write('# ANTENNA %s -- Data not found\n' % s)
 				continue;
 			extra += datacopyAntennaSetup
@@ -257,8 +258,8 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 		out.write('  tInt = %s\n' % corr['TIME_AVERAGE'][0])
 
 	if specAvg != -1 and nFFT !=-1:
-		out.write('  fftSpecRes = %10.8f\n' % (bw/(nFFT/2)))
-		out.write('  specRes = %10.8f\n' % (bw/(nFFT/(2*specAvg))))
+		out.write('  fftSpecRes = %10.8f\n' % (bw//(nFFT//2)))
+		out.write('  specRes = %10.8f\n' % (bw//(nFFT//(2*specAvg))))
 	if 'POLARIZATION' in corr:
 		out.write('  doPolar = %s\n' % doPolar)
 	if nFFT > 256:
@@ -271,9 +272,9 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 
 # main below here
 
-umask(02)
+umask(2)
 
-print ''
+print('')
 
 inFile = ''
 force = False
@@ -301,21 +302,21 @@ for a in argv[1:]:
 		elif a in ['--datacopy5b']:
 			datacopyFormat = 'Mark5B'
 		else:
-			print 'Unknown command line option: %s' % a
+			print('Unknown command line option: %s' % a)
 			stop = True
 	else:
 		if inFile == '':
 			inFile = a
 		else:
-			print 'Extra command line arg. given: %s' % a
+			print('Extra command line arg. given: %s' % a)
 			stop = True
 
 if inFile == '':
-	print 'No input .oms file provided.'
+	print('No input .oms file provided.')
 	stop = True
 
 if stop:
-	print 'Please run with -h to get usage instructions.\n'
+	print('Please run with -h to get usage instructions.\n')
 	exit(0)
 
 
@@ -329,7 +330,7 @@ v2dFile = prefix + '.v2d'
 
 
 if not isfile(omsFile):
-	print 'oms2v2d: Input oms file %s not found.  Quitting.\n' % omsFile
+	print('oms2v2d: Input oms file %s not found.  Quitting.\n' % omsFile)
 	exit(0)
 
 if isfile(prefix + '.vex.preobs'):
@@ -340,23 +341,23 @@ elif isfile(prefix + '.vex'):
 	else:
 		vexFile = prefix + '.vex.obs'
 else:
-	print 'No vex file found here.  It should be called %s.vex or %s.vex.preobs.' % (prefix, prefix)
+	print('No vex file found here.  It should be called %s.vex or %s.vex.preobs.' % (prefix, prefix))
 	if force:
 		if nrt:
 			vexFile = prefix + '.vex.preobs'
 		else:
 			vexFile = prefix + '.vex.obs'
-		print 'Assuming vex file is called %s.\n' % (prefix + '.vex')
+		print('Assuming vex file is called %s.\n' % (prefix + '.vex'))
 	else:
-		print 'Run with --force to continue anyway.\n'
+		print('Run with --force to continue anyway.\n')
 		exit(0)
 
 if isfile(v2dFile):
 	if force:
 		if verbose > 0:
-			print 'Warning: overwriting exisiting file %s.\n' % v2dFile
+			print('Warning: overwriting exisiting file %s.\n' % v2dFile)
 	else:
-		print 'Error: output file %s exists.  Run with --force to continue.\n' % v2dFile
+		print('Error: output file %s exists.  Run with --force to continue.\n' % v2dFile)
 		exit(0)
 
 oms = readOMS(omsFile, verbose)
