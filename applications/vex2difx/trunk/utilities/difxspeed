@@ -1,16 +1,17 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
+
+# Note: this utility can run under python2.7 or python3
 
 import getopt
 from sys import argv, exit, stdout
 from os import environ, system, getcwd
-from string import strip, split, lower
 from re import search
 from time import sleep
 from math import sqrt
 
 program = 'difxspeed'
-version = '0.5'
-verdate = '20180908'
+version = '0.6'
+verdate = '20190916'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 inputFileExtension = '.difxspeed'
@@ -20,23 +21,23 @@ inputFileExtension = '.difxspeed'
 # 5. get dummy timestamps; populate column descriptions
 
 def usage(pgm):
-	print '\n%s ver. %s  %s  %s' % (program, version, author, verdate)
-	print '\nUsage: %s <benchmarkFile> [<numIterations>]\n' % pgm
-	print 'Where:'
-	print '  <benchmarkFile> describes the series of benchmarks to run.'
-	print '                  (must end in %s)\n' % inputFileExtension
-	print '  <numIterations> is the number of times to run the test.\n'
-	print 'See https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/difxspeed for'
-	print 'more information.\n'
+	print('\n%s ver. %s  %s  %s' % (program, version, author, verdate))
+	print('\nUsage: %s <benchmarkFile> [<numIterations>]\n' % pgm)
+	print('Where:')
+	print('  <benchmarkFile> describes the series of benchmarks to run.')
+	print('                  (must end in %s)\n' % inputFileExtension)
+	print('  <numIterations> is the number of times to run the test.\n')
+	print('See https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/difxspeed for')
+	print('more information.\n')
 
 nExecute = 0
 def execute(cmd, verbose, pretend):
 	global nExecute
 	nExecute += 1
 	if pretend:
-		print '[%d] In: %s\n[%d] Pretending: %s\n' % (nExecute, getcwd(), nExecute, cmd)
+		print('[%d] In: %s\n[%d] Pretending: %s\n' % (nExecute, getcwd(), nExecute, cmd))
 	else:
-		print '[%d] In: %s\n[%d] Executing: %s\n' % (nExecute, getcwd(), nExecute, cmd)
+		print('[%d] In: %s\n[%d] Executing: %s\n' % (nExecute, getcwd(), nExecute, cmd))
 		system(cmd)
 
 def firstconfig(params):
@@ -56,9 +57,9 @@ def nextconfig(config):
 	return None
 
 def printconfig(config):
-	print 'Congig:'
+	print('Congig:')
 	for c in config:
-		print '  %s = %s' % (c[0], c[2][c[1]])
+		print('  %s = %s' % (c[0], c[2][c[1]]))
 
 def writeparams(fd, config):
 	for c in config:
@@ -98,7 +99,7 @@ def getnant(config, cluster):
 		if c[0] == 'nAnt':
 			nAnt = int(c[2][c[1]])
 			if nAnt > maxAnt:
-				print 'Error: %d antennas is more than listed (%d)' % (nAnt, maxAnt)
+				print('Error: %d antennas is more than listed (%d)' % (nAnt, maxAnt))
 			else:
 				return nAnt
 	# default to all antennas
@@ -110,7 +111,7 @@ def getncore(config, cluster):
 		if c[0] == 'nCore':
 			nCore = int(c[2][c[1]])
 			if nCore > maxCore:
-				print 'Error: %d cores is more than listed (%d)' % (nCore, maxCore)
+				print('Error: %d cores is more than listed (%d)' % (nCore, maxCore))
 			else:
 				return nCore
 
@@ -118,19 +119,12 @@ def getncore(config, cluster):
 
 def runtest(fd, config, cluster, filebase, verbose, run, doFake, remainder):
 
-	# useFakeSource: if true, use the new syntax: source=fake; otherwise use old syntax: fake=x (for arbitrary x)
-	useFakeSource = False
-	if environ.has_key('DIFX_VERSION'):
-		difxVersion = split(environ['DIFX_VERSION'], '-')[-1]
-		if difxVersion > '2.5' or difxVersion == 'DEVEL':
-			useFakeSource = True
-
-	setupParams = ['tInt', 'fftSpecRes', 'specRes', 'strideLength', 'xmacLength', 'numBufferedFFTs', 'subintNS']
+	setupParams = ['tInt', 'fftSpecRes', 'specRes', 'strideLength', 'xmacLength', 'numBufferedFFTs', 'subintNS', 'doPolar']
 	antennaParams = ['toneSelection']
 	dontWriteParams = ['nAnt']
 	writeparams(fd, config)
 
-	if environ.has_key('DIFX_CALC_PROGRAM'):
+	if 'DIFX_CALC_PROGRAM' in environ:
 		calcProgram = environ['DIFX_CALC_PROGRAM']
 	else:
 		calcProgram = 'calcif2'
@@ -170,10 +164,7 @@ def runtest(fd, config, cluster, filebase, verbose, run, doFake, remainder):
 				# FIXME: add other antenna parameters here
 				o.write('ANTENNA %s\n' % antennas[a])
 				o.write('{\n')
-				if useFakeSource:
-					o.write('  source = fake\n')
-				else:
-					o.write('  fake = x\n')
+				o.write('  source = fake\n')
 				o.write('}\n')
 		
 		# write non-setup parameters here
@@ -233,7 +224,7 @@ def runtest(fd, config, cluster, filebase, verbose, run, doFake, remainder):
 				fd.write(' %f' % et)
 
 	except IOError:
-		print 'Error reading %s.difxlog' % filebase
+		print('Error reading %s.difxlog' % filebase)
 		return -1
 
 
@@ -249,7 +240,7 @@ def benchmark(basename, verbose, run):
 	cluster = {}
 	clusterParams = ['datastreams', 'cores', 'antennas']
 	requiredParams = ['vex', 'nThread']
-	setupParams = ['tInt']
+	setupParams = ['tInt', 'doPolar']
 	doFake = True
 
 	fd = open('%s.out' % basename, 'w')
@@ -261,19 +252,19 @@ def benchmark(basename, verbose, run):
 	remainder = []  # explicitly include in .v2d files
 	for i in range(l):
 		d = data[i]
-		if strip(d) == '--':
+		if d.strip() == '--':
 			remainder = data[i+1:]
 			break
-		c = split(d, '#')[0]
-		s = split(strip(c), '=')
+		c = d.split('#')[0]
+		s = c.strip().split('=')
 		if len(s) == 2:
-			key = strip(s[0])
-			if key == 'fake' and lower(strip(s[1])) in ['f', 'false', '0']:
+			key = s[0].strip()
+			if key == 'fake' and s[1].strip().lower() in ['f', 'false', '0']:
 				doFake = False
 			else:
 				L = []
-				for v in split(s[1], ','):
-					L.append(strip(v))
+				for v in s[1].split(','):
+					L.append(v.strip())
 				if key in clusterParams:
 					cluster[key] = L
 				else:
@@ -281,11 +272,11 @@ def benchmark(basename, verbose, run):
 	bad = 0
 	for r in clusterParams:
 		if not r in cluster.keys():
-			print 'Error: required parameter %s not set' % r
+			print('Error: required parameter %s not set' % r)
 			bad += 1
 	for r in requiredParams:
 		if not r in params.keys():
-			print 'Error: required parameter %s not set' % r
+			print('Error: required parameter %s not set' % r)
 			bad += 1
 	if bad > 0:
 		return -1
@@ -318,7 +309,7 @@ def testenviron():
 	bad = 0
 	for e in requiredEnviron:
 		if not e in environ.keys():
-			print 'Required environment variable %s not set' % e
+			print('Required environment variable %s not set' % e)
 			bad += 1
 
 	if bad > 0:
@@ -352,12 +343,12 @@ testenviron()
 
 basename = getbasename(argv[1])
 if basename == None:
-	print 'Error: input file must end with %s, must start with a letter, and must not have any special characters in it.' % inputFileExtension
+	print('Error: input file must end with %s, must start with a letter, and must not have any special characters in it.' % inputFileExtension)
 	exit(0)
 
 if nIter > 0:
 	for i in range(nIter):
-		print 'Iteration %d of %d' % (i+1, nIter)
+		print('Iteration %d of %d' % (i+1, nIter))
 		benchmark(basename, verbose, True)
 else:
 	benchmark(basename, verbose, False)
