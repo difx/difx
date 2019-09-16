@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
@@ -11,14 +11,14 @@
 #
 #============================================================================
 
-from string import split, strip, find, upper, lower
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit, stdout
 from glob import glob
 from optparse import OptionParser
 from xml.parsers import expat
 from copy import deepcopy
 from time import asctime, time
-import commands
 import subprocess
 import logging
 import logging.handlers
@@ -54,105 +54,105 @@ pidfile = ""
 
 def getUsage():
 
-    usage = ""
-    usage += "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
-    usage += "A watchdog program to monitor progress of difx jobs and to automatically kill hanging jobs.\n"
-    usage += "A job that has not made any progress for more than 300s (default can be overriden; see -i option below)\n"
-    usage += "is assumed to be hanging and will be ended. In addition any associated difxlog\n"
-    usage += "will also be stopped. Difxwatch parses multicast state messages to determine start\n"
-    usage += "and progress of difx jobs.\n"
-    usage += "Output is written to /tmp/difxwatch.log\n\n"
-    usage += "Usage: %s [options] \n\n"  % __prog__
-    usage += "NOTE: %s requires DIFXMESSAGE_GROUP and DIFXMESSAGE_PORT environment variables to be defined" % __prog__
+	usage = ""
+	usage += "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
+	usage += "A watchdog program to monitor progress of difx jobs and to automatically kill hanging jobs.\n"
+	usage += "A job that has not made any progress for more than 300s (default can be overriden; see -i option below)\n"
+	usage += "is assumed to be hanging and will be ended. In addition any associated difxlog\n"
+	usage += "will also be stopped. Difxwatch parses multicast state messages to determine start\n"
+	usage += "and progress of difx jobs.\n"
+	usage += "Output is written to /tmp/difxwatch.log\n\n"
+	usage += "Usage: %s [options] \n\n"  % __prog__
+	usage += "NOTE: %s requires DIFXMESSAGE_GROUP and DIFXMESSAGE_PORT environment variables to be defined" % __prog__
 
 
-    return(usage)
+	return(usage)
 
 def termination_handler (signum,frame):
-    print 'You have requested to terminate the application...'
-    stdout.flush()
-    os.unlink(pidfile)
-    exit()
+	print('You have requested to terminate the application...')
+	stdout.flush()
+	os.unlink(pidfile)
+	exit()
 
 class Parser:
 
-    def __init__(self):
-        self._parser = expat.ParserCreate()
-        self._parser.StartElementHandler = self.start
-        self._parser.EndElementHandler = self.end
-        self._parser.CharacterDataHandler = self.data
-	self.message = ''
-	self.mjd = 0.0
-	self.mjdStart = 0.0
-	self.mjdStop = 0.0
-	self.state = ''
-	self.tmp = ''
-	self.weight = {}
-	self.maxant = 0
-	self.ok = False
-	self.unit = ''
-	self.mpiid = -1
-	self.id = ''
-	self.tag = ''
-
-    def feed(self, data):
-        self._parser.Parse(data, 0)
-
-    def close(self):
-        self._parser.Parse("", 1) # end of data
-        del self._parser # get rid of circular references
-
-    def start(self, tag, attrs):
-        self.tag = tag
-        self.tmp = ''
-        if tag == 'difxStatus':
-                self.ok = True
-		self.weight = {}
-		self.maxant = 0
+	def __init__(self):
+		self._parser = expat.ParserCreate()
+		self._parser.StartElementHandler = self.start
+		self._parser.EndElementHandler = self.end
+		self._parser.CharacterDataHandler = self.data
+		self.message = ''
+		self.mjd = 0.0
 		self.mjdStart = 0.0
 		self.mjdStop = 0.0
-	elif tag == 'weight':
-		ant = int(attrs['ant'])
-		self.weight[ant] = float(attrs['wt'])
-		if ant > self.maxant:
-			self.maxant = ant
+		self.state = ''
+		self.tmp = ''
+		self.weight = {}
+		self.maxant = 0
+		self.ok = False
+		self.unit = ''
+		self.mpiid = -1
+		self.id = ''
+		self.tag = ''
+
+	def feed(self, data):
+		self._parser.Parse(data, 0)
+
+	def close(self):
+		self._parser.Parse("", 1) # end of data
+		del self._parser # get rid of circular references
+
+	def start(self, tag, attrs):
+		self.tag = tag
+		self.tmp = ''
+		if tag == 'difxStatus':
+			self.ok = True
+			self.weight = {}
+			self.maxant = 0
+			self.mjdStart = 0.0
+			self.mjdStop = 0.0
+		elif tag == 'weight':
+			ant = int(attrs['ant'])
+			self.weight[ant] = float(attrs['wt'])
+			if ant > self.maxant:
+				self.maxant = ant
 
 
-    def end(self, tag):
-        if tag == 'message' and self.ok:
-		self.message = self.tmp
-	elif tag == 'state':
-		self.state = self.tmp
-	elif tag == 'visibilityMJD':
-		self.mjd = float(self.tmp)
-	elif tag == 'jobstartMJD':
-		self.mjdStart = float(self.tmp)
-	elif tag == 'jobstopMJD':
-		self.mjdStop = float(self.tmp)
-	elif tag == 'from':
-		self.unit = lower(self.tmp)
-	elif tag == 'identifier':
-		self.id = self.tmp
-	elif tag == 'mpiProcessId':
-		self.mpiid = int(self.tmp)
+	def end(self, tag):
+		if tag == 'message' and self.ok:
+			self.message = self.tmp
+		elif tag == 'state':
+			self.state = self.tmp
+		elif tag == 'visibilityMJD':
+			self.mjd = float(self.tmp)
+		elif tag == 'jobstartMJD':
+			self.mjdStart = float(self.tmp)
+		elif tag == 'jobstopMJD':
+			self.mjdStop = float(self.tmp)
+		elif tag == 'from':
+			self.unit = self.tmp.lower()
+		elif tag == 'identifier':
+			self.id = self.tmp
+		elif tag == 'mpiProcessId':
+			self.mpiid = int(self.tmp)
 
-    def data(self, data):
-        if self.tag == 'message':
-            self.tmp = self.tmp + data	
-        else:
-            self.tmp = data
+	def data(self, data):
+		if self.tag == 'message':
+			self.tmp = self.tmp + data	
+		else:
+			self.tmp = data
 
-    def getinfo(self):
+	def getinfo(self):
 
-	if self.state == 'Starting':
-		# add job to list of running jobs
-		runJobs[self.id] = time()
-		logger.info("Job start: %s" %(self.id))
-	elif self.state == "Running":
-		# update the last activity time of the job
-		if self.id in runJobs:
-			#print '%s %5.2f%% done' % (self.id,  100.0*(self.mjd - self.mjdStart)/(self.mjdStop - self.mjdStart) )	
+		if self.state == 'Starting':
+			# add job to list of running jobs
 			runJobs[self.id] = time()
+			logger.info("Job start: %s" %(self.id))
+		elif self.state == "Running":
+			# update the last activity time of the job
+			if self.id in runJobs:
+				#print('%s %5.2f%% done' % (self.id,  100.0*(self.mjd - self.mjdStart)/(self.mjdStop - self.mjdStart) )	)
+				runJobs[self.id] = time()
 
 
 def run():
@@ -161,13 +161,13 @@ def run():
 
 	port = os.getenv('DIFX_MESSAGE_PORT')
 	if port == None:
-		print 'DIFX_MESSAGE_PORT needs to be defined'
+		print('DIFX_MESSAGE_PORT needs to be defined')
 		exit(0)
 	else:
 		port = int(port)
 	group = os.getenv('DIFX_MESSAGE_GROUP')
 	if group == None:
-		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		print('DIFX_MESSAGE_GROUP needs to be defined')
 		exit(0)
 
 	logger.debug("Listening to multicast group=%s port=%s" % (group, port))
@@ -183,13 +183,13 @@ def run():
 	try:
 		while 1:
 			try:
-			    message = s.recv(1500)
-			    if len(message) > 0 and message[0] == '<':
-				p = Parser()
-				p.feed(message)
-				info = p.getinfo()
-				p.close()
-				#if p.ok:
+				message = s.recv(1500).decode('utf-8')
+				if len(message) > 0 and message[0] == '<':
+					p = Parser()
+					p.feed(message)
+					info = p.getinfo()
+					p.close()
+					#if p.ok:
 					
 
 			except socket.timeout:
@@ -204,9 +204,7 @@ def run():
 				#logger.debug ("Running jobs: %s" % runJobs)
 
 				delJobs = []
-				for jobId, lastActivity in runJobs.iteritems():
-
-				       	# print jobId, lastActivity,  time() - lastActivity 
+				for jobId, lastActivity in runJobs.items():
 
 					# check if job has made any progress within maxIdleSec
 					if time() - lastActivity > maxIdleSec:
@@ -215,20 +213,20 @@ def run():
 						out = commands.getoutput('ps -C mpirun -o pid,cmd ' )
 
 						# kill it
-						for line in split(out, "\n"):
+						for line in out.split("\n"):
 							if jobId in line:
-								pid = split(line)[0]
+								pid = line.split()[0]
 								logger.warning("Ending job %s (pid=%s) because it was idle for more than %s seconds" % (jobId, pid, maxIdleSec))
 								subprocess.call(['kill', pid])
 
 						# get pid of difxlog instance associated with the job
-                                                out = commands.getoutput('ps -C difxlog -o pid,cmd ' )
+						out = commands.getoutput('ps -C difxlog -o pid,cmd ' )
 						
-						for line in split(out, "\n"):
-                                                        if jobId in line:
-                                                                pid = split(line)[0]
-                                                                logger.warning("Ending job %s (pid=%s) because it was idle for more than %s seconds" % (jobId, pid, maxIdleSec))
-                                                                subprocess.call(['kill', pid])
+						for line in out.split("\n"):
+							if jobId in line:
+								pid = line.split()[0]
+								logger.warning("Ending job %s (pid=%s) because it was idle for more than %s seconds" % (jobId, pid, maxIdleSec))
+								subprocess.call(['kill', pid])
 
 						# mark job for deletion from list of running jobs
 						delJobs.append(jobId)
@@ -262,11 +260,11 @@ if __name__ == "__main__":
 	pidfile = '/tmp/'+os.path.basename(__file__).split('.')[0]+'.pid'
 
 	if os.path.isfile(pidfile):
-		print "Error: difxwatch seems to be running already"
-		print "If you are sure that it doesn't remove the lockfile: %s" % pidfile
+		print("Error: difxwatch seems to be running already")
+		print("If you are sure that it doesn't remove the lockfile: %s" % pidfile)
 		exit()
 	else:
-		file(pidfile, 'w').write(pid)
+		open(pidfile, 'w').write(pid)
 
 	if options.maxIdleSec != None:
 		maxIdleSec = options.maxIdleSec

@@ -1,4 +1,4 @@
-#!/bin/env python2
+#!/bin/env python3
 
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
@@ -11,61 +11,55 @@
 #
 #============================================================================
 
+# Note: this utility can run under python2.7 or python3
+
 from os import popen, system
 from os.path import isfile
 from sys import argv, exit
-from string import split
 from glob import glob
 
 program = 'restartdifx'
-version = '0.4'
-verdate = '20120403'
+version = '0.5'
+verdate = '20190916'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
 
 def usage():
-	print '\n%s ver %s   %s  %s\n' % (program, version, verdate, author)
-	print 'Usage: %s logFile' % argv[0]
-	print '\nWhere logFile is a .difxlog file'
-	print '\nThis program mines the log file for a DiFX job and attempts to restart'
-	print 'correlation 4 seconds after the point of failure of the previous attempt.'
-	print 'This requires that a .difxlog file (as written by difxlog) be present.\n'
+	print('\n%s ver %s   %s  %s\n' % (program, version, verdate, author))
+	print('Usage: %s logFile' % argv[0])
+	print('\nWhere logFile is a .difxlog file')
+	print('\nThis program mines the log file for a DiFX job and attempts to restart')
+	print('correlation 4 seconds after the point of failure of the previous attempt.')
+	print('This requires that a .difxlog file (as written by difxlog) be present.\n')
 
 def getRestartSeconds(logFile, verbose):
 	if not isfile(logFile):
-		print "Cannot find %s so I assume the job hasn't even been run.  Not starting." % logFile
+		print("Cannot find %s so I assume the job hasn't even been run.  Not starting." % logFile)
 		return -1
 
-	cmd = 'grep "Starting Version 2.0.1" %s' % logFile
-	if verbose > 0:
-		print 'Executing: %s' % cmd
-	if len(popen(cmd, "r").readlines()) > 0:
-		print 'Restarts cannot be done on DiFX versions earlier than 2.0.2'
-		return -1
-	
 	cmd = 'grep "STATUS Ending" %s' % logFile
 	if verbose > 0:
-		print 'Executing: %s' % cmd
+		print('Executing: %s' % cmd)
 	if len(popen(cmd, "r").readlines()) > 0:
-		print 'Job ran to completion.  Not rerunning.'
+		print('Job ran to completion.  Not rerunning.')
 		return -1
 
 	cmd = 'grep "to write out time" %s | tail -n 1' % logFile
 	if verbose > 0:
-		print 'Executing: %s' % cmd
+		print('Executing: %s' % cmd)
 	p = popen(cmd, 'r').readlines()
 
 	if len(p) != 1:
 		return 4
 	
-	return float(split(p[0])[-1]) + 4
+	return float(p[0].split()[-1]) + 4
 
 def file2time(fileName):
-	f = split(fileName, '/')[-1]	# strip directory
-	g = split(f, '.')[0]	# strip source/bin suffixes
-	h = split(g, '_')
+	f = fileName.split('/')[-1]	# strip directory
+	g = f.split('.')[0]	# strip source/bin suffixes
+	h = g.split('_')
 	if len(h) != 3:
-		print 'Developer error: filename %s is not parsable.  n = %d, not 3' % (fileName, len(h))
-		print 'h = ', h
+		print('Developer error: filename %s is not parsable.  n = %d, not 3' % (fileName, len(h)))
+		print('h = ', h)
 		exit(0)
 	mjd = int(h[1])
 	sec = int(h[2])
@@ -84,18 +78,18 @@ def getLastRestartSeconds(dataDir, verbose):
 	dt = t2 - t1
 
 	if verbose > 0:
-		print 'This is restart # %d for this job' % l
-		print 'The last restart was %d seconds after original job start time' % dt
+		print('This is restart # %d for this job' % l)
+		print('The last restart was %d seconds after original job start time' % dt)
 
 	return dt
 
 def getJobDuration(inputFile, verbose):
 	cmd = 'grep EXECUTE %s' % inputFile
 	if verbose > 1:
-		print 'Reading from pipe: %s' % cmd
+		print('Reading from pipe: %s' % cmd)
 	line = popen(cmd).readline()
 	if len(line) > 0:
-		return float(split(line)[-1])
+		return float(line.split()[-1])
 	else:
 		return 0
 
@@ -107,9 +101,9 @@ if len(argv) != 2:
 
 fileName = argv[1]
 
-suffix = split(fileName, '.')[-1]
+suffix = fileName.split('.')[-1]
 if not suffix in ['input', 'difx', 'difxlog', 'calc']:
-	print 'Unrecognized difx file: %s' % fileName
+	print('Unrecognized difx file: %s' % fileName)
 	exit(0)
 
 fileBase = fileName[:-len(suffix)]
@@ -123,14 +117,14 @@ rs = getRestartSeconds(logFile, verbose)
 rs = rs + getLastRestartSeconds(dataDir, verbose)
 
 if verbose > 0:
-	print 'Restart offset = %f seconds' % rs
-	print 'Job duration = %f seconds' % jd
+	print('Restart offset = %f seconds' % rs)
+	print('Job duration = %f seconds' % jd)
 
 if rs > jd-4:	# restarting within 4 seconds of job end time
-	print "Won't restart because it looks like the job finished already"
+	print("Won't restart because it looks like the job finished already")
 else:
 	if rs > 0:
 		cmd = 'startdifx %f -v %s' % (rs, inputFile)
 		if verbose > 0:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)

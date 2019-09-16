@@ -57,7 +57,6 @@ make
 %{_bindir}/errormon
 %{_bindir}/errormon2
 %{_bindir}/statemon
-%{_bindir}/mk5display
 %{_bindir}/getsmart
 %{_bindir}/sendsmart
 %{_bindir}/smartmon

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
@@ -11,13 +11,14 @@
 #
 #============================================================================
 
+# Note: this utility can run under python2.7 or python3
+
 import socket
 import struct
 import logging
 import logging.handlers
 import getopt
 
-from string import split, strip, find, upper, lower
 from sys import argv, exit
 from os import popen, getenv, path
 from glob import glob
@@ -28,8 +29,8 @@ import signal
 
 program = 'errormon2'
 author  = 'Walter Brisken + ?'
-version = '0.7'
-verdate = '20150811'
+version = '0.8'
+verdate = '20190916'
 
 splitByID = False
 splitLoggers = {}
@@ -41,16 +42,16 @@ def signal_handler(signal, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 def usage(prog):
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s [options] [<maxlevel>]\n' % prog
-	print 'options can include:'
-	print '  --help'
-	print '  -h        print help information and quit\n'
-	print '  --split'
-	print '  -s        split messages into separate log files'
-	print '            based on the ID/experiment code\n'
-	print '<maxlevel>  is the max alert error level to print\n'
-	print 'Levels are: 0=fatal, 1=severe, 2=error, 3=warning, 4=info, 5=verbose, 6=debug\n'
+	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
+	print('Usage: %s [options] [<maxlevel>]\n' % prog)
+	print('options can include:')
+	print('  --help')
+	print('  -h        print help information and quit\n')
+	print('  --split')
+	print('  -s        split messages into separate log files')
+	print('            based on the ID/experiment code\n')
+	print('<maxlevel>  is the max alert error level to print\n')
+	print('Levels are: 0=fatal, 1=severe, 2=error, 3=warning, 4=info, 5=verbose, 6=debug\n')
 
 ##############################################################################
 # Parameters
@@ -161,7 +162,7 @@ class Parser:
 			self._parser.Parse("", 1) # end of data
 			del self._parser # get rid of circular references
 		except expat.ExpatError:
-			print 'Error parsing :', self.message, " len=", len(self.message)
+			print('Error parsing :', self.message, " len=", len(self.message))
 			exit(0)
 
 	def start(self, tag, attrs):
@@ -176,7 +177,7 @@ class Parser:
 		if tag == 'severity':
 			self.severity = int(self.tmp)
 		if tag == 'from':
-			self.unit = lower(self.tmp)
+			self.unit = self.tmp.lower()
 		if tag == 'identifier':
 			self.id = self.tmp
 		if tag == 'mpiProcessId':
@@ -197,13 +198,13 @@ class Parser:
 def run():
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
-		print 'DIFX_MESSAGE_PORT needs to be defined'
+		print('DIFX_MESSAGE_PORT needs to be defined')
 		exit(0)
 	else:
 		port = int(port)
 	group = getenv('DIFX_MESSAGE_GROUP')
 	if group == None:
-		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		print('DIFX_MESSAGE_GROUP needs to be defined')
 		exit(0)
 
 	# Is this a multicast IP address?
@@ -225,7 +226,7 @@ def run():
 	try:
 		while 1:
 			try:
-				message = s.recv(1500)
+				message = s.recv(1500).decode('utf-8')
 				if len(message) > 0 and message[0] == '<':
 					p = Parser()
 					p.feed(message)
@@ -243,8 +244,8 @@ def run():
 			except socket.timeout:
 				pass
 			except expat.ExpatError:
-				print asctime(), '*** Unparsable message received ***'
-				print message
+				print('%s *** Unparsable message received ***' % asctime())
+				print(message)
 				exit(0)
 	except KeyboardInterrupt:
 		pass
@@ -252,7 +253,7 @@ def run():
 try:
 	optlist, args = getopt.getopt(argv[1:], 'hs', ['help','split'])
 except getopt.GetoptError as err:
-	print str(err)
+	print(str(err))
 	usage(argv[0])
 	exit(0)
 

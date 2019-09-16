@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2015 by Walter Brisken                             *
+#   Copyright (C) 2008-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,7 +30,8 @@
 #
 #============================================================================
 
-from string import split, strip, find, upper, lower
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit
 from os import popen, getenv
 from glob import glob
@@ -43,8 +44,8 @@ import signal
 
 program = 'errormon'
 author  = 'Walter Brisken'
-version = '0.8'
-verdate = '20150811'
+version = '0.9'
+verdate = '20190915'
 
 alertLevels = ['FATAL', 'SEVERE', 'ERROR', 'WARNING', 'INFO', 'VERBOSE', 'DEBUG', 'IGNORE']
 
@@ -53,15 +54,15 @@ def signal_handler(signal, frame):
 	exit(0)
 
 def usage(prog):
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s [options] [<maxlevel>]\n' % prog
-	print 'options can include:'
-	print '  --help'
-	print '  -h        print help information and quit\n'
-	print '<maxlevel>  is the max alert error level to print.  The levels are:'
+	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
+	print('Usage: %s [options] [<maxlevel>]\n' % prog)
+	print('options can include:')
+	print('  --help')
+	print('  -h        print help information and quit\n')
+	print('<maxlevel>  is the max alert error level to print.  The levels are:')
 	for level in range(len(alertLevels)):
-		print '    %d = %s' % (level, alertLevels[level])
-	print ''
+		print('    %d = %s' % (level, alertLevels[level]))
+	print('')
 
 class Parser:
 
@@ -98,7 +99,7 @@ class Parser:
 		elif tag == 'severity':
 			self.severity = int(self.tmp)
 		elif tag == 'from':
-			self.unit = lower(self.tmp)
+			self.unit = self.tmp.lower()
 		elif tag == 'identifier':
 			self.id = self.tmp
 		elif tag == 'mpiProcessId':
@@ -120,18 +121,18 @@ def run(maxlevel):
 	
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
-		print 'DIFX_MESSAGE_PORT needs to be defined'
+		print('DIFX_MESSAGE_PORT needs to be defined')
 		exit(0)
 	else:
 		port = int(port)
 	group = getenv('DIFX_MESSAGE_GROUP')
 	if group == None:
-		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		print('DIFX_MESSAGE_GROUP needs to be defined')
 		exit(0)
 
 	# Is this a multicast IP address?
 	groupint = struct.unpack("!I", socket.inet_aton(group))[0]
-	if (groupint>>28==14):
+	if groupint >> 28 == 14:
 		multicast = True
 	else:
 		multicast = False
@@ -148,19 +149,19 @@ def run(maxlevel):
 	try:
 		while 1:
 			try:
-				message = s.recv(1500)
+				message = s.recv(1500).decode('utf-8')
 				if len(message) > 0 and message[0] == '<':
 					p = Parser()
 					p.feed(message)
 					info = p.getinfo()
 					p.close()
 					if len(info) > 0 and p.severity <= maxlevel:
-						print asctime(), info
+						print('%s %s' % (asctime(), info))
 			except socket.timeout:
 				pass
 			except expat.ExpatError:
-				print asctime(), '*** Unparsable message received ***'
-				print message
+				print('%s *** Unparsable message received ***' % asctime())
+				print(message)
 	except KeyboardInterrupt:
 		pass
 

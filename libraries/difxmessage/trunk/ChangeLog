@@ -2,7 +2,19 @@ Version 2.7.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.6
 * cpumon: clean up end of line
-* Port utilities to python3 (or python2.7): cpumon
+* Port utilities to python3 (or python2.7): 
+  - cpumon
+  - difxdiagnosticmon
+  - difxwatch
+  - errormon
+  - errormon2
+  - getsmart  (this functionality seems broken at the moment, both before and after python3 conversion)
+  - mk5mon
+  - mk6mon
+  - restartdifx  (this utility should be moved to mpifxcorr)
+  - smartmon
+  - statemon
+* Remove incomplete and not used utility: mk5display
 
 Version 2.6.0
 ~~~~~~~~~~~~~

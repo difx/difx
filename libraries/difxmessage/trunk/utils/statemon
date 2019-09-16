@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2011-2015 by Walter Brisken                             *
+#   Copyright (C) 2011-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,7 +30,8 @@
 #
 #============================================================================
 
-from string import split, strip, find, upper, lower
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit, stdout
 from os import popen, getenv
 from glob import glob
@@ -47,15 +48,15 @@ def signal_handler(signal, frame):
 
 program = 'statemon'
 author  = 'Walter Brisken'
-version = '0.5'
-verdate = '20150811'
+version = '0.6'
+verdate = '20190916'
 
 def usage(prog):
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s [options]\n' % prog
-	print 'options can include:'
-	print '  --help'
-	print '  -h        print help information and quit\n'
+	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
+	print('Usage: %s [options]\n' % prog)
+	print('options can include:')
+	print('  --help')
+	print('  -h        print help information and quit\n')
 
 class Parser:
 
@@ -112,7 +113,7 @@ class Parser:
 		elif tag == 'jobstopMJD':
 			self.mjdStop = float(self.tmp)
 		elif tag == 'from':
-			self.unit = lower(self.tmp)
+			self.unit = self.tmp.lower()
 		elif tag == 'identifier':
 			self.id = self.tmp
 		elif tag == 'mpiProcessId':
@@ -145,13 +146,13 @@ def run():
 	
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
-		print 'DIFX_MESSAGE_PORT needs to be defined'
+		print('DIFX_MESSAGE_PORT needs to be defined')
 		exit(0)
 	else:
 		port = int(port)
 	group = getenv('DIFX_MESSAGE_GROUP')
 	if group == None:
-		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		print('DIFX_MESSAGE_GROUP needs to be defined')
 		exit(0)
 
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -165,20 +166,20 @@ def run():
 	try:
 		while 1:
 			try:
-				message = s.recv(1500)
+				message = s.recv(1500).decode('utf-8')
 				if len(message) > 0 and message[0] == '<':
 					p = Parser()
 					p.feed(message)
 					info = p.getinfo()
 					p.close()
 					if p.ok:
-						print asctime(), info
+						print('%s %s' % (asctime(), info))
 						stdout.flush()
 			except socket.timeout:
 				pass
 			except expat.ExpatError:
-				print asctime(), '*** Unparsable message received ***'
-				print message
+				print('%s *** Unparsable message received ***' % asctime())
+				print(message)
 				exit(0)
 	except KeyboardInterrupt:
 		pass

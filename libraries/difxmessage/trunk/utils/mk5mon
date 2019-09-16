@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2015 by Walter Brisken                             *
+#   Copyright (C) 2008-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,7 +30,8 @@
 #
 #============================================================================
 
-from string import split, strip, find, upper, lower
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit
 from os import popen, getenv
 from glob import glob
@@ -78,7 +79,7 @@ class Mk5state:
 		self.state = 'Unknown'
 		self.scan  = 0
 		self.name  = ''
-		self.pos   = 0L
+		self.pos   = 0
 		self.rate  = 0.0
 		self.date  = 0.0
 		self.pollTime = 0.0
@@ -101,7 +102,7 @@ class Parser:
 		try:
 			self._parser.Parse(data, 0)
 		except expat.ExpatError:
-			print '\n\n XXX %s XXX' % data 
+			print('\n\n XXX %s XXX' % data)
 
 	def close(self):
 		self._parser.Parse("", 1) # end of data
@@ -117,25 +118,25 @@ class Parser:
 			if len(self.tmp) != 8:
 				self.info.vsnA = 'none'
 			else:
-				self.info.vsnA = upper(self.tmp)
+				self.info.vsnA = self.tmp.upper()
 				# obtain station code from DB (if enabled)
 				if self.options.difxdb == True:
 					child = subprocess.Popen(["difxdbModule", "--station", self.info.vsnA], stdout=subprocess.PIPE)
 					(stationA, stderr) = child.communicate()
-					self.info.stationA = strip(stationA)
+					self.info.stationA = stationA.strip()
 				
 		if tag == 'bankBVSN':
 			if len(self.tmp) != 8:
 				self.info.vsnB = 'none'
 			else:
-				self.info.vsnB = upper(self.tmp)
+				self.info.vsnB = self.tmp.upper()
 				# obtain station code from DB (if enabled)
 				if self.options.difxdb == True:
 					child = subprocess.Popen(["difxdbModule", "--station", self.info.vsnB], stdout=subprocess.PIPE)
 					(stationB, stderr) = child.communicate()
-					self.info.stationB = strip(stationB)
+					self.info.stationB = stationB.strip()
 		if tag == 'from':
-			self.info.mk5 = lower(self.tmp)
+			self.info.mk5 = self.tmp.lower()
 		if tag == 'state':
 			self.info.state = self.tmp
 		if tag == 'playRate':
@@ -225,7 +226,7 @@ class Display:
 	def newdata(self, data):
 		k = data[0]
 		
-		if self.rows.has_key(k):
+		if k in self.rows:
 			self.info[k] = data[1]
 			self.displayrow(self.info[k], self.rows[k])
 		else:
@@ -233,9 +234,8 @@ class Display:
 			self.rows[k] = 0
 			self.info[k] = data[1]
 			keys = self.rows.keys()
-			keys.sort()
 			i = 0
-			for k in keys:
+			for k in sorted(keys):
 				self.rows[k] = i
 				i += 1
 				self.displayrow(self.info[k], self.rows[k])
@@ -265,7 +265,7 @@ def listen(port, group, options):
 	try:
 		while t < maxtime:
 			try:
-				message = s.recv(1500)
+				message = s.recv(1500).decode('utf-8')
 			except socket.timeout:
 				t += dt
 				continue
@@ -299,8 +299,8 @@ def readmachines(machinesfile, verbose):
 	ismk5 = {}
 	lines = open(machinesfile).readlines()
 	for l in lines:
-		l = split(strip(l), '#')[0]
-		s = split(l)
+		l = l.strip().split('#')[0]
+		s = l.split()
 		if len(s) >= 2:
 			machines.append(s[0])
 			cores.append(int(s[1]))
@@ -312,9 +312,9 @@ def readmachines(machinesfile, verbose):
 				else:
 					ismk5[s[0]] = 0
 	if verbose > 1:
-		print 'MACHINES = ', machines
-		print 'CORES    = ', cores
-		print 'IS MK5   = ', ismk5
+		print('MACHINES = ', machines)
+		print('CORES    = ', cores)
+		print('IS MK5   = ', ismk5)
 
 	return machines,cores,ismk5
 
@@ -339,16 +339,16 @@ if port == None:
 	if options.port != "":
 		port = options.port
 	else:
-		print 'DIFX_MESSAGE_PORT needs to be defined, or use -p option'
+		print('DIFX_MESSAGE_PORT needs to be defined, or use -p option')
 		exit(1)
 port = int(port)
 
 group = getenv('DIFX_MESSAGE_GROUP')
 if group == None:
 	if options.group != "":
-                group = options.group
-        else:
-		print 'DIFX_MESSAGE_GROUP needs to be defined, or use -g option'
+		group = options.group
+	else:
+		print('DIFX_MESSAGE_GROUP needs to be defined, or use -g option')
 		exit(1)
 while(listen(port, group, options)):
 	pass

@@ -28,7 +28,6 @@ dist_bin_SCRIPTS = \
 	statemon \
 	restartdifx \
 	difxdiagnosticmon \
-	mk5display \
 	difxwatch \
 	mk6mon
 
