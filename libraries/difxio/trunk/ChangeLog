@@ -4,6 +4,7 @@
 * Add more antennas to antenna database
 * Use libc time routines rather than ad hoc in mjd2date()
 * C++ protectors in antenna_db.h
+* antenna_db.c: allow search by "IVS Name", and fix diameter of Arecibo
 
 3.6.0
 * Post DiFX 2.5

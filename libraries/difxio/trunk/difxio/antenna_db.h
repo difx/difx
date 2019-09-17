@@ -31,6 +31,8 @@ const AntennaDBEntry *antennaDBGetByXYZ(double x, double y, double z);
 
 const AntennaDBEntry *antennaDBGetByName(const char *name);
 
+const AntennaDBEntry *antennaDBGetByIVSName(const char *ivsName);
+
 void ecef2lla(double *lat, double *lon, double *alt, double x, double y, double z);
 
 #ifdef __cplusplus

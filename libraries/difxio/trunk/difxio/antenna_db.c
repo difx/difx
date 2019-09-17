@@ -11,7 +11,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "Algonquin",      "ALGOPARK",   918034.4879,  -4346132.3267,   4561971.2292,  46.0 },
 	{ "ALMA",           "",          2225061.1636,  -5440057.36994, -2481681.15054, 12.0, 10.0 },
 	{ "Apex",           "",          2225039.5297,  -5441197.6292,  -2479303.3597,  12.0, 0, "NASL" },
-	{ "Arecibo",        "ARECIBO",   2390486.9000,  -5564731.4400,   1994720.4500,  25.0 },
+	{ "Arecibo",        "ARECIBO",   2390486.9000,  -5564731.4400,   1994720.4500,  300.0 },
 	{ "Badary",         "BADARY",    -838201.0685,   3865751.5652,   4987670.8885,  32.0 },
 	{ "Brewster",       "BR-VLBA",  -2112065.2062,  -3705356.5048,   4726813.6759,  25.0 },
 	{ "Cambridge",      "CAMBRIDG",  3920356.1500,      2542.0200,   5014284.4200,  32.0 },
@@ -273,6 +273,22 @@ const AntennaDBEntry *antennaDBGetByName(const char *name)
 
 	return 0;
 }
+
+const AntennaDBEntry *antennaDBGetByIVSName(const char *ivsName)
+{
+	int i;
+
+	for(i = 0; antennaDBEntries[i].name[0]; ++i)
+	{
+		if(strcasecmp(antennaDBEntries[i].ivsName, ivsName) == 0)
+		{
+			return antennaDBEntries + i;
+		}
+	}
+
+	return 0;
+}
+
 
 /* input:  ITRF x, y, z [m]
  * output: WGS84 latitude [rad], longitude [rad], altitude [m]
