@@ -35,6 +35,8 @@ parser.add_option("--calibrateonly", default=False, action="store_true",
                   help="Only generate the calibration files, don't do anything with target")
 parser.add_option("--targetonly", default=False, action="store_true",
                   help="Use saved calibration files")
+parser.add_option("--bpass", default=False, action="store_true",
+                  help="Use BPASS rather than CPASS to do the bandpass correction")
 parser.add_option("-j", "--imagejmfit", default=False, action="store_true",
                   help="Jmfit the individual slices of the cube")
 parser.add_option("--cpasspoly", default=10, type=int,
@@ -285,11 +287,14 @@ if xpolmodelfile != "":
 #bpversion = 1
 #vlbatasks.bpass(caldata, options.sourcename, clversion, scannumber)
 
-# Run CPASS rather than BPASS
+# Run bandpass correction - default to CPASS, unless --bpass is specified
 scannumber = 1
 bpversion = 1
 if not options.targetonly:
-    vlbatasks.cpass(caldata, options.sourcename, clversion, scannumber, None, options.cpasspoly)
+    if options.bpass:
+        vlbatasks.bpass(caldata, options.sourcename, clversion, scannumber)
+    else:
+        vlbatasks.cpass(caldata, options.sourcename, clversion, scannumber, None, options.cpasspoly)
     
     # Write BP table to disk
     if os.path.exists(bpfilename):
