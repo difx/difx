@@ -3,6 +3,7 @@
 * Add new column to antenna database: ivsName: the name used by IVS
 * Add more antennas to antenna database
 * Use libc time routines rather than ad hoc in mjd2date()
+* C++ protectors in antenna_db.h
 
 3.6.0
 * Post DiFX 2.5

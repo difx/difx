@@ -6,6 +6,10 @@
 #define ANTENNA_DB_NAME_LENGTH		16
 #define ANTENNA_DB_MOUNT_LENGTH		8
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
 	char name[ANTENNA_DB_NAME_LENGTH];
@@ -28,5 +32,10 @@ const AntennaDBEntry *antennaDBGetByXYZ(double x, double y, double z);
 const AntennaDBEntry *antennaDBGetByName(const char *name);
 
 void ecef2lla(double *lat, double *lon, double *alt, double x, double y, double z);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
