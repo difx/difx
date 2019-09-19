@@ -62,7 +62,9 @@ parser.add_option("--pixelsize", type=float, default=1, help="Pixel size in arcs
 parser.add_option("--uvsrt", default=False, action="store_true", help="Run UVSRT on the data after loading")
 parser.add_option("--noisecentre", default="", help="CASA format position at which noise should be estimated, blank=don't make an off-source image")
 parser.add_option("--src", default="", help="Name of the target (e.g., FRB or Vela)")
+parser.add_option("--pols", type=str, default="XX,YY,I,Q,U,V", help='The polarisations to be imaged if --imagecube is set. Defaulted to all. Input as a list of strings: e.g., "XX,YY"')
 (options, junk) = parser.parse_args()
+print options.pols.split(',')
 AIPS.userno     = options.userno
 refant          = options.refant
 imagesize       = options.imagesize
@@ -420,7 +422,7 @@ if not options.calibrateonly:
 
 # Run the imaging via CASA if desired
 if not options.calibrateonly:
-    polarisations = ["XX","YY","I","Q","U","V"]
+    polarisations = options.pols.split(',')
     if options.dirtyonly:
         polarisations = ["I"]
     if options.imagecube:
