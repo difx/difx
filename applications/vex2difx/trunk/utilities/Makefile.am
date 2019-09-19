@@ -11,7 +11,7 @@
 #============================================================================
 
 dist_bin_SCRIPTS = \
-	padCalcScans \
+#	padCalcScans \
 	difxspeed \
 	oms2v2d \
 	vlog \
