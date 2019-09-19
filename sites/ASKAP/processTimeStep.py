@@ -256,3 +256,4 @@ else:
         os.system("chmod 775 " + runfilename)
         #if not args.suppress: os.system("./" + runfilename)
         os.system("echo \"./rundifx2fits.card%s.bin%02d\" >> runalldifx2fits" % (args.card,i))
+        os.system("chmod 775 runalldifx2fits")
