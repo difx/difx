@@ -7,6 +7,9 @@ Version 2.7
   - Put patch into the 2.6 branch.
 * * Fix bug affecting data weights when nBufferedFFTs > 1 and datastreams weight < 1
   - Put patch into 2.6 branch
+* Added support for CODIF format
+* Correctly set CODIF format name, bug fix int framespersecond
+* Caught case where complex data is set to use zeroth order fringe rotation (which isn't implemented)
 * Post DiFX-2.6
 
 Version 2.6

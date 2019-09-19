@@ -2896,13 +2896,13 @@ static int mark5_format_d2k_init(struct mark5_stream *ms)
 				}
 				ms->samprate = ms->framesamples*(1000000000/ms->framens);
 				datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
-				if(datarate != ms->Mbps)
+				if(datarate != (int)(ms->Mbps + 0.5))
 				{
 					if(ms->Mbps > 0)
 					{
-						fprintf(m5stderr, "Warning: data rate disagrees : %d != %d\n", datarate, ms->Mbps);
+						fprintf(m5stderr, "Warning: data rate disagrees : %d != %f\n", datarate, ms->Mbps);
 					}
-					ms->Mbps = datarate;
+					ms->Mbps = (double)datarate;
 				}
 			}
 			else
@@ -2910,6 +2910,8 @@ static int mark5_format_d2k_init(struct mark5_stream *ms)
 				fprintf(m5stderr, "Warning: mark5_format_d2k_init: assuming 2048-16-2\n");
 
 				ms->framens = 39062.5;
+				ms->framesperperiod = 25600;
+				ms->alignmentseconds = 1;
 				ms->Mbps = 2048;
 				ms->nchan = 16;
 				ms->nbit = 2;
@@ -2922,9 +2924,9 @@ static int mark5_format_d2k_init(struct mark5_stream *ms)
 	/* see if we need to advance a small number of frames to make the
 	 * first one start at integer nanosec
 	 */
-	k = ms->Mbps/1024;
-	if(k > 0)
+	if(1000000000 % ms->framesperperiod > 0)
 	{
+		k = ms->framesperperiod / (1000000000 % ms->framesperperiod);
 		if(ms->datawindow)
 		{
 			int framenum;
@@ -3045,7 +3047,9 @@ struct mark5_format_generic *new_mark5_format_d2k(int Mbps, int nchan, int nbit,
 
 	m->nbitstream = nbitstream;
 
-	f->Mbps = Mbps;
+	f->Mbps = (double)Mbps;
+	f->framesperperiod = Mbps*100;
+	f->alignmentseconds = 1;
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = m;
@@ -3060,6 +3064,7 @@ struct mark5_format_generic *new_mark5_format_d2k(int Mbps, int nchan, int nbit,
 	f->decimation = decimation;
 	f->decode = 0;
 	f->complex_decode = 0;
+	f->iscomplex = 0;
 	f->count = 0;
 	switch(decoderindex)
 	{

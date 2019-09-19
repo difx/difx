@@ -315,3 +315,40 @@ int blanker_vdif(struct mark5_stream *ms)
 		return nword;
 	}
 }
+
+int blanker_codif(struct mark5_stream *ms)
+{
+	uint64_t *data;
+	int nword;
+	
+	if(!ms->payload)
+	{
+		ms->blankzoneendvalid[0] = 0;
+
+		return 0;
+	}
+
+	data = (unsigned long long *)ms->payload;
+
+	nword = ms->databytes/8;
+
+	/* only 1 zone for VDIF data.  a packet is either good or bad. 
+	 *
+	 * To be good, it cannot have fill pattern at beginning or end 
+	 */
+
+	ms->blankzonestartvalid[0] = 0;
+
+	/* Check for fill pattern */
+	if(data[0] == MARK5_FILL_WORD64 || data[nword-1] == MARK5_FILL_WORD64)
+	{
+		ms->blankzoneendvalid[0] = 0;
+		return 0;
+	}
+	else
+	{
+		//fprintf(m5stderr, "Frame is good\n");
+		ms->blankzoneendvalid[0] = 1<<30;
+		return nword;
+	}
+}

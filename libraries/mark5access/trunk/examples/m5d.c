@@ -51,20 +51,24 @@ static void usage(const char *pgm)
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A Mark5 decoder.  Can decode VLBA, Mark3/4, and Mark5B formats using the\nmark5access library.\n\n");
-	printf("Usage : %s <file> <dataformat> <n> [<offset>]\n\n", pgm);
+	printf("Usage : %s [--format=%%f] [--help] <file> <dataformat> <n> [<offset>]\n\n", pgm);
 	printf("  <file> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
+        printf("  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
+	printf("    VDIF_1000-8000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
+        printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
+        printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("  <n> is the number of samples per channel to decode\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 	printf("The following options are supported\n\n");
 	printf("    --version   Print version information and quit\n");
 	printf("    --double    Double sideband (complex) data\n");
 	printf("                If using VDIF, specify VDIFC (complex VDIF) under dataformat\n\n");
-	printf("    --format=%%f Format specifier for sample printout (default: %%2.0f)\n\n");
+	printf("    --format=%%f Format specifier for sample printout (default: %%4.1 for CODIF, %%2.0f otherwise)\n\n");
 	printf("    --help      This list\n\n");
 }
 
@@ -360,7 +364,7 @@ static int decode_complex(const char *filename, const char *formatname, const ch
 		return EXIT_FAILURE;
 	}
 
-	data = (float complex **)malloc(ms->nchan*sizeof(float *));
+	data = (float complex **)malloc(ms->nchan*sizeof(float complex *));
 	for(i = 0; i < ms->nchan; ++i)
 	{
 		data[i] = (float complex *)malloc(chunk*sizeof(float complex));
@@ -399,7 +403,7 @@ static int decode_complex(const char *filename, const char *formatname, const ch
 		{
 			for(k = 0; k < ms->nchan; ++k)
 			{
-				printf(f, creal(data[k][j]), cimag(data[k][j]));
+				printf(f, crealf(data[k][j]), cimagf(data[k][j]));
 			}
 			printf("\n");
 		}
@@ -425,6 +429,8 @@ int main(int argc, char **argv)
 	int r;
 	int retval;
 	int doublesideband = 0;
+	int formatoverride = 0;
+	int complexdata = 0;
 	int optind = 1, optc = 0;
 	char *format = "%2.0f";
 
@@ -450,6 +456,7 @@ int main(int argc, char **argv)
 		else if(strncmp(argv[optind], "--format=", 9) == 0)
 		{
 			format = argv[optind]+9;
+			formatoverride = 1;
 		}
 		else
 		{
@@ -508,6 +515,16 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	if(strstr(argv[optind+1], "VDIFC") != NULL || strstr(argv[optind+1], "CODIFC") != NULL)
+	{
+		complexdata = 1;
+	}
+
+	if(strstr(argv[optind+1], "CODIF") && formatoverride == 0)
+	{
+		format = "%4.1f";
+	}
+
 	n = atoll(argv[optind+2]);
 
 	if(optc == 4)
@@ -515,7 +532,7 @@ int main(int argc, char **argv)
 		offset=atoll(argv[optind+3]);
 	}
 
-	if(doublesideband)
+	if(complexdata)
 	{
 		char* f = (char*)malloc(2*strlen(format)+10);
 		sprintf(f, "%s %si  ", format, format);

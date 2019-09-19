@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2017 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id$
+// $Id: format_vdif.c 7371 2016-07-14 01:27:03Z ChrisPhillips $
 // $HeadURL: $
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
+// $LastChangedRevision: 7371 $
+// $Author: ChrisPhillips $
+// $LastChangedDate: 2016-07-14 11:27:03 +1000 (Thu, 14 Jul 2016) $
 //
 //============================================================================
 
@@ -40,6 +40,8 @@
 #ifdef WORDS_BIGENDIAN
 #include <endian.h>
 #endif
+
+#include "codifio.h"
 
 #include "mark5access/mark5_stream.h"
 
@@ -60,23 +62,27 @@ static float complex complex_lut4bit[256];
 /* for use in counting high states; 2-bit support only at this time */
 static unsigned char countlut2bit[256][4];
 
-/* internal data specific to VDIF */
-struct mark5_format_vdif
+/* internal data specific to CODIF */
+struct mark5_format_codif
 {
 	int databytesperpacket;		/* = packetsize - frameheadersize */
-	int frameheadersize;		/* 16 (legacy) or 32 (normal) */
-	int leapsecs;			/* relative to reference epoch of VDIF data */
+	int frameheadersize;		/* 64 bytes */
+	int leapsecs;			/* relative to reference epoch of CODIF data */
 	int completesamplesperword;	/* number of samples for each channel in one 32-bit word */
 };
+
+#warning "********FIXME***** CODIF supports offset binary and 2s complement. Update luts"
+
+int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex_decodeFunc *complex_decode, countFunc *count);
+
 
 static void initluts()
 {
 	/* Warning: these are different than for VLBA/Mark4/Mark5B! */
-	const float lut2level[2] = {-1.0, 1.0};
-	const float lut4level[4] = {-HiMag, -1.0, 1.0, HiMag};
-	const float lut16level[16] = {-8/FourBit1sigma,-7/FourBit1sigma,-6/FourBit1sigma,-5/FourBit1sigma,-4/FourBit1sigma,
-				      -3/FourBit1sigma,-2/FourBit1sigma,-1/FourBit1sigma,0,1/FourBit1sigma,2/FourBit1sigma,
-				      3/FourBit1sigma,4/FourBit1sigma,5/FourBit1sigma,6/FourBit1sigma,7/FourBit1sigma};
+	const float lut2level[2] = {1.0, -1.0};
+	const float lut4level[4] = {1.0, HiMag, -HiMag, -1.0};
+	const float lut16level[16] = {0,1/FourBit1sigma,2/FourBit1sigma,3/FourBit1sigma,4/FourBit1sigma,5/FourBit1sigma,6/FourBit1sigma,7/FourBit1sigma,
+				      -8/FourBit1sigma,-7/FourBit1sigma,-6/FourBit1sigma,-5/FourBit1sigma,-4/FourBit1sigma,-3/FourBit1sigma,-2/FourBit1sigma,-1/FourBit1sigma};
 	int b, i, l, li;
 	
 	for(i = 0; i < 8; i++)
@@ -117,7 +123,7 @@ static void initluts()
 		}
 
 		/* lut8bit */
-		lut8bit[b] = (b*2-255)/71.0;	/* This scaling mimics 2-bit data reasonably well. */
+		lut8bit[b] = (float)((int8_t)((uint8_t)b))/71.0;
 
 		/* Complex lookups */
 
@@ -146,12 +152,13 @@ static void initluts()
 }
 
 /* inspect frame (packet) and return mjd and time */
-static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms, int *mjd, int *sec, double *ns)
+static int mark5_stream_frame_time_codif(const struct mark5_stream *ms, int *mjd, int *sec, double *ns)
 {
-	struct mark5_format_vdif *v;
-	unsigned int word0, word1;
+	struct mark5_format_codif *v;
 	int seconds, days;
 	int refepoch;
+	unsigned long long fullframens;
+	codif_header *header;
 
 	/* table below is valid for year 2000.0 to 2032.0 and contains mjd on Jan 1 and Jul 1
 	 * for each year. */
@@ -171,53 +178,36 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms, int *mjd,
 	{
 		return -1;
 	}
-
-	if(!ms->frame)
-	{
-		return -1;
-	}
-
-	v = (struct mark5_format_vdif *)(ms->formatdata);
+	v = (struct mark5_format_codif *)(ms->formatdata);
 
 #ifdef WORDS_BIGENDIAN
-	{
-		unsigned char *headerbytes;
-
-		/* Motorola byte order requires some fiddling */
-		headerbytes = ms->frame;
-		word0 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
-		headerbytes = ms->frame + 4;
-		word1 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
-	}
-#else
-	{
-		unsigned int *headerwords = (unsigned int *)(ms->frame);
-
-		/* Intel byte order does not */
-		word0 = headerwords[0];
-		word1 = headerwords[1];
-	}
+#error "bigendian not supported"
 #endif
+	header = (codif_header*)(ms->frame);
 
-	seconds = word0 & 0x3FFFFFFF;	/* bits 0 to 29 */
-	refepoch = (word1 >> 24) & 0x3F;
 
+	seconds = getCODIFFrameEpochSecOffset(header);
+	refepoch = getCODIFEpoch(header);
+
+#warning "***** Where does leapseconds come from"
 	seconds += v->leapsecs;
 	days = seconds/86400;
 	seconds -= days*86400;
 	days += mjdepochs[refepoch];
 
+	fullframens = getCODIFFrameNumber(header)*ms->framens;
+	
 	if(mjd)
 	{
 		*mjd = days;
 	}
 	if(sec)
 	{
-		*sec = seconds;
+		*sec = seconds+fullframens/1000000000;
 	}
 	if(ns)
 	{
-		*ns = (word1 & 0x00FFFFFF)*ms->framens;
+	        *ns = fullframens % 1000000000;
 	}
 
 	return 0;
@@ -225,7 +215,7 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms, int *mjd,
 
 /************************* decode routines **************************/
 
-static int vdif_decode_1channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_1channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -281,7 +271,7 @@ static int vdif_decode_1channel_1bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - 8*nblank;
 }
 
-static int vdif_decode_2channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_2channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -334,7 +324,7 @@ static int vdif_decode_2channel_1bit_decimation1(struct mark5_stream *ms, int ns
 }
 
 /* this is 3 channels packed into a 4-channel format.  The highest number channel is ignored */
-static int vdif_decode_3channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_3channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -382,7 +372,7 @@ static int vdif_decode_3channel_1bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - 2*nblank;
 }
 
-static int vdif_decode_4channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_4channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -433,7 +423,7 @@ static int vdif_decode_4channel_1bit_decimation1(struct mark5_stream *ms, int ns
 }
 
 /* this is 5 channels packed into a 8-channel format.  The 3 highest channels are ignored */
-static int vdif_decode_5channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_5channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -480,7 +470,7 @@ static int vdif_decode_5channel_1bit_decimation1(struct mark5_stream *ms, int ns
 }
 
 /* this is 6 channels packed into a 8-channel format.  The 2 highest channels are ignored */
-static int vdif_decode_6channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_6channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -528,7 +518,7 @@ static int vdif_decode_6channel_1bit_decimation1(struct mark5_stream *ms, int ns
 }
 
 /* this is 7 channels packed into a 8-channel format.  The highest channel is ignored */
-static int vdif_decode_7channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_7channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -576,7 +566,7 @@ static int vdif_decode_7channel_1bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_8channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_8channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -625,7 +615,7 @@ static int vdif_decode_8channel_1bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_16channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_16channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1;
@@ -684,7 +674,7 @@ static int vdif_decode_16channel_1bit_decimation1(struct mark5_stream *ms, int n
 	return nsamp - nblank;
 }
 
-static int vdif_decode_32channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_32channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3;
@@ -763,7 +753,7 @@ static int vdif_decode_32channel_1bit_decimation1(struct mark5_stream *ms, int n
 	return nsamp - nblank;
 }
 
-static int vdif_decode_1channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_1channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -811,7 +801,7 @@ static int vdif_decode_1channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - 4*nblank;
 }
 
-static int vdif_decode_2channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_2channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -857,7 +847,7 @@ static int vdif_decode_2channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - 2*nblank;
 }
 
-static int vdif_decode_3channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_3channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -901,7 +891,7 @@ static int vdif_decode_3channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_4channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_4channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -946,7 +936,7 @@ static int vdif_decode_4channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_5channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_5channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1;
@@ -995,7 +985,7 @@ static int vdif_decode_5channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_6channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_6channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1;
@@ -1045,7 +1035,7 @@ static int vdif_decode_6channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_7channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_7channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1;
@@ -1096,7 +1086,7 @@ static int vdif_decode_7channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_8channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_8channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1;
@@ -1148,7 +1138,7 @@ static int vdif_decode_8channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_16channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_16channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3;
@@ -1212,7 +1202,7 @@ static int vdif_decode_16channel_2bit_decimation1(struct mark5_stream *ms, int n
 	return nsamp - nblank;
 }
 
-static int vdif_decode_32channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_32channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -1300,7 +1290,7 @@ static int vdif_decode_32channel_2bit_decimation1(struct mark5_stream *ms, int n
 	return nsamp - nblank;
 }
 
-static int vdif_decode_64channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_64channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -1438,7 +1428,7 @@ static int vdif_decode_64channel_2bit_decimation1(struct mark5_stream *ms, int n
 	return nsamp - nblank;
 }
 
-static int vdif_decode_1channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_1channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -1482,7 +1472,7 @@ static int vdif_decode_1channel_4bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - 2*nblank;
 }
 
-static int vdif_decode_2channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_2channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -1525,7 +1515,7 @@ static int vdif_decode_2channel_4bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_3channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_3channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1;
@@ -1571,7 +1561,7 @@ static int vdif_decode_3channel_4bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_4channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_4channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1;
@@ -1618,7 +1608,7 @@ static int vdif_decode_4channel_4bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_5channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_5channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3;
@@ -1670,7 +1660,7 @@ static int vdif_decode_5channel_4bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_6channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_6channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3;
@@ -1723,7 +1713,7 @@ static int vdif_decode_6channel_4bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_7channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_7channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3;
@@ -1777,7 +1767,7 @@ static int vdif_decode_7channel_4bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_8channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_8channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3;
@@ -1832,7 +1822,7 @@ static int vdif_decode_8channel_4bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_1channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_1channel_8bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp;
@@ -1874,7 +1864,7 @@ static int vdif_decode_1channel_8bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_2channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_2channel_8bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1;
@@ -1918,7 +1908,7 @@ static int vdif_decode_2channel_8bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_3channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_3channel_8bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3;
@@ -1967,7 +1957,7 @@ static int vdif_decode_3channel_8bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_4channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_4channel_8bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
 	const float *fp0, *fp1, *fp2, *fp3;
@@ -2017,7 +2007,7 @@ static int vdif_decode_4channel_8bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_1channel_32bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const float *buf;
 	int o, i;
@@ -2065,7 +2055,7 @@ static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int n
 
 // Complex
 
-static int vdif_complex_decode_1channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_1channel_1bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp;
@@ -2114,7 +2104,7 @@ static int vdif_complex_decode_1channel_1bit_decimation1(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int vdif_complex_decode_2channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_2channel_1bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp;
@@ -2161,7 +2151,7 @@ static int vdif_complex_decode_2channel_1bit_decimation1(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int vdif_complex_decode_4channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_4channel_1bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp;
@@ -2206,7 +2196,7 @@ static int vdif_complex_decode_4channel_1bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_8channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_8channel_1bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp0, *fcp1;
@@ -2257,7 +2247,7 @@ static int vdif_complex_decode_8channel_1bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;  // CHECK
 }
 
-static int vdif_complex_decode_16channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_16channel_1bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp0, *fcp1, *fcp2, *fcp3;
@@ -2320,7 +2310,7 @@ static int vdif_complex_decode_16channel_1bit_decimation1(struct mark5_stream *m
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_1channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_1channel_2bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp;
@@ -2365,7 +2355,7 @@ static int vdif_complex_decode_1channel_2bit_decimation1(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int vdif_complex_decode_2channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_2channel_2bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp;
@@ -2408,7 +2398,7 @@ static int vdif_complex_decode_2channel_2bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_4channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_4channel_2bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp0, *fcp1;
@@ -2456,7 +2446,7 @@ static int vdif_complex_decode_4channel_2bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_8channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_8channel_2bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp0, *fcp1, *fcp2, *fcp3;
@@ -2512,7 +2502,7 @@ static int vdif_complex_decode_8channel_2bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_16channel_2bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp0, *fcp1, *fcp2, *fcp3, *fcp4, *fcp5, *fcp6, *fcp7;
@@ -2584,7 +2574,7 @@ static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *m
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_32channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_32channel_2bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp[16];
@@ -2635,7 +2625,7 @@ static int vdif_complex_decode_32channel_2bit_decimation1(struct mark5_stream *m
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_64channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_64channel_2bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp[32];
@@ -2687,7 +2677,7 @@ static int vdif_complex_decode_64channel_2bit_decimation1(struct mark5_stream *m
 }
 
 
-static int vdif_complex_decode_1channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_1channel_4bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp;
@@ -2729,7 +2719,7 @@ static int vdif_complex_decode_1channel_4bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_2channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_2channel_4bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp0, *fcp1;
@@ -2756,7 +2746,7 @@ static int vdif_complex_decode_2channel_4bit_decimation1(struct mark5_stream *ms
 		}
 
 		data[0][o] = fcp0[0];
-		data[1][o] = fcp0[1];
+		data[1][o] = fcp1[0];
 
 		if(i >= ms->databytes)
 		{
@@ -2774,7 +2764,7 @@ static int vdif_complex_decode_2channel_4bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_4channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_4channel_4bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	const float complex *fcp0, *fcp1, *fcp2, *fcp3;
@@ -2805,9 +2795,9 @@ static int vdif_complex_decode_4channel_4bit_decimation1(struct mark5_stream *ms
 		}
 
 		data[0][o] = fcp0[0];
-		data[1][o] = fcp0[1];
-		data[2][o] = fcp1[0];
-		data[3][o] = fcp1[1];
+		data[1][o] = fcp1[0];
+		data[2][o] = fcp2[0];
+		data[3][o] = fcp3[0];
 
 		if(i >= ms->databytes)
 		{
@@ -2825,7 +2815,49 @@ static int vdif_complex_decode_4channel_4bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_1channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_8channel_4bit(struct mark5_stream *ms, int nsamp, float complex **data)
+{
+	const unsigned char *buf;
+	const float complex *fcp0, *fcp1, *fcp2, *fcp3;
+	int o, i, j;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i >= ms->blankzoneendvalid[0])
+		{
+		    for (j=0;j<8;j++) 
+		        data[j][o] = complex_zeros[0];
+		    nblank++;
+		    i += 8;
+		}
+		else
+		{
+		  for(j=0;j<8;j++) {
+		        data[j][o] = complex_lut4bit[buf[i]];
+			i++;
+		  }
+		}
+
+		if(i >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int codif_complex_decode_1channel_8bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	int o, i;
@@ -2864,7 +2896,7 @@ static int vdif_complex_decode_1channel_8bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_2channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_2channel_8bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	int o, i;
@@ -2905,7 +2937,7 @@ static int vdif_complex_decode_2channel_8bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_4channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_4channel_8bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	int o, i;
@@ -2952,7 +2984,7 @@ static int vdif_complex_decode_4channel_8bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_8channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_8channel_8bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	int o, i;
@@ -2974,6 +3006,7 @@ static int vdif_complex_decode_8channel_8bit_decimation1(struct mark5_stream *ms
 			data[6][o] = complex_zeros[0];
 			data[7][o] = complex_zeros[0];
 			nblank++;
+			i += 16;
 		}
 		else
 		{
@@ -3011,7 +3044,7 @@ static int vdif_complex_decode_8channel_8bit_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_16channel_8bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_16channel_8bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
 	int o, i, j;
@@ -3027,6 +3060,7 @@ static int vdif_complex_decode_16channel_8bit_decimation1(struct mark5_stream *m
 		        for (j=0;j<16;j++) 
 			  data[j][o] = complex_zeros[0];
 			nblank++;
+			i += 32;
 		}
 		else
 		{
@@ -3052,7 +3086,7 @@ static int vdif_complex_decode_16channel_8bit_decimation1(struct mark5_stream *m
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_1channel_16bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_1channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const uint16_t *buf;
 	int o, i;
@@ -3091,7 +3125,7 @@ static int vdif_complex_decode_1channel_16bit_decimation1(struct mark5_stream *m
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_2channel_16bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_2channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const uint16_t *buf;
 	int o, i;
@@ -3132,7 +3166,7 @@ static int vdif_complex_decode_2channel_16bit_decimation1(struct mark5_stream *m
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_4channel_16bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_4channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const uint16_t *buf;
 	int o, i, j;
@@ -3174,13 +3208,14 @@ static int vdif_complex_decode_4channel_16bit_decimation1(struct mark5_stream *m
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_8channel_16bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_8channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const uint16_t *buf;
 	int o, i, j;
 	int nblank = 0;
 
 	buf = (const uint16_t*)ms->payload;
+
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -3195,7 +3230,7 @@ static int vdif_complex_decode_8channel_16bit_decimation1(struct mark5_stream *m
 		else
 		{
 		  for (j=0; j<8; j++) {
-		        data[j][o] = ((int16_t)(buf[i]^0x8000) + (int16_t)(buf[i+1]^0x8000)*I)/8.0;  // Assume RMS==8
+		    data[j][o] = ((int16_t)(buf[i]) + (int16_t)(buf[i+1])*I)/8.0;  // Assume RMS==8
 			i+=2;
 		  }
 		}
@@ -3216,7 +3251,50 @@ static int vdif_complex_decode_8channel_16bit_decimation1(struct mark5_stream *m
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_16channel_16bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
+{
+	const uint16_t *buf;
+	int o, i, j;
+	int nblank = 0;
+
+	buf = (const uint16_t *)ms->payload;
+	i = ms->readposition/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i*2 >= ms->blankzoneendvalid[0])
+		{
+		  for (j=0; j<14; j++) {
+			data[j][o] = complex_zeros[0];
+			nblank++;
+		  }
+		}
+		else
+		{
+		  for (j=0; j<14; j++) {
+		    //		        data[j][o] = ((int16_t)(buf[i]^0x8000) + (int16_t)(buf[i+1]^0x8000)*I)/8.0;  // Assume RMS==8
+		        data[j][o] = ((int16_t)buf[i] + (int16_t)buf[i+1]*I)/8.0;  // Assume RMS==8
+			i+=2;
+		  }
+		}
+
+		if(i*2 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const uint16_t *)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*2;
+
+	return nsamp - nblank;
+}
+
+static int codif_complex_decode_16channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const uint16_t *buf;
 	int o, i, j;
@@ -3258,7 +3336,7 @@ static int vdif_complex_decode_16channel_16bit_decimation1(struct mark5_stream *
 	return nsamp - nblank;
 }
 
-static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+static int codif_complex_decode_1channel_32bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const float *buf;
 	int o, i;
@@ -3311,7 +3389,7 @@ static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *m
 /************************ 2-bit state counters *********************/
 /* Note: these only count high vs. low states, not full state counts */
 
-static int vdif_count_1channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
+static int codif_count_1channel_2bit(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	const unsigned char *buf;
 	const unsigned char *fp;
@@ -3354,7 +3432,7 @@ static int vdif_count_1channel_2bit_decimation1(struct mark5_stream *ms, int nsa
 	return nsamp - 4*nblank;
 }
 
-static int vdif_count_2channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
+static int codif_count_2channel_2bit(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	const unsigned char *buf;
 	const unsigned char *fp;
@@ -3397,7 +3475,7 @@ static int vdif_count_2channel_2bit_decimation1(struct mark5_stream *ms, int nsa
 	return nsamp - 2*nblank;
 }
 
-static int vdif_count_4channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
+static int codif_count_4channel_2bit(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	const unsigned char *buf;
 	const unsigned char *fp;
@@ -3440,7 +3518,7 @@ static int vdif_count_4channel_2bit_decimation1(struct mark5_stream *ms, int nsa
 	return nsamp - nblank;
 }
 
-static int vdif_count_8channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
+static int codif_count_8channel_2bit(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	const unsigned char *buf;
 	const unsigned char *fp0, *fp1;
@@ -3490,7 +3568,7 @@ static int vdif_count_8channel_2bit_decimation1(struct mark5_stream *ms, int nsa
 	return nsamp - nblank;
 }
 
-static int vdif_count_16channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
+static int codif_count_16channel_2bit(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	const unsigned char *buf;
 	const unsigned char *fp0, *fp1, *fp2, *fp3;
@@ -3553,7 +3631,7 @@ static int vdif_count_16channel_2bit_decimation1(struct mark5_stream *ms, int ns
 }
 
 
-static int vdif_count_32channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
+static int codif_count_32channel_2bit(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	const unsigned char *buf;
 	const unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3639,7 +3717,7 @@ static int vdif_count_32channel_2bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
-static int vdif_count_64channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
+static int codif_count_64channel_2bit(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	const unsigned char *buf;
 	const unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3776,34 +3854,23 @@ static int vdif_count_64channel_2bit_decimation1(struct mark5_stream *ms, int ns
 
 /******************************************************************/
 
-static int mark5_format_vdif_make_formatname(struct mark5_stream *ms)
+static int mark5_format_codif_make_formatname(struct mark5_stream *ms)
 {
-	if(ms->format == MK5_FORMAT_VDIF)	/* True VDIF header, not legacy */
+	if(ms->format == MK5_FORMAT_CODIF)
 	{
 		if (ms->iscomplex) 
 		{
-			sprintf(ms->formatname, "VDIFC_%d-%dm%d-%d-%d", ms->databytes, ms->framesperperiod, ms->alignmentseconds, ms->nchan, ms->nbit);
+			sprintf(ms->formatname, "CODIFC_%d-%dm%d-%d-%d", ms->databytes, ms->framesperperiod, ms->alignmentseconds, ms->nchan, ms->nbit);
 		}
 		else
 		{
-			sprintf(ms->formatname, "VDIF_%d-%dm%d-%d-%d", ms->databytes, ms->framesperperiod, ms->alignmentseconds, ms->nchan, ms->nbit);
-		}
-	}
-	else if(ms->format == MK5_FORMAT_VDIFL)	/* Must be legacy mode, so add an L to VDIF name */
-	{
-		if (ms->iscomplex)
-		{
-			sprintf(ms->formatname, "VDIFCL_%d-%dm%d-%d-%d", ms->databytes, ms->framesperperiod, ms->alignmentseconds, ms->nchan, ms->nbit);
-		}
-		else
-		{
-			sprintf(ms->formatname, "VDIFL_%d-%dm%d-%d-%d", ms->databytes, ms->framesperperiod, ms->alignmentseconds, ms->nchan, ms->nbit);
+			sprintf(ms->formatname, "CODIF_%d-%dm%d-%d-%d", ms->databytes, ms->framesperperiod, ms->alignmentseconds, ms->nchan, ms->nbit);
 		}
 	}
 	else
 	{
-		sprintf(ms->formatname, "VDIF?");
-		fprintf(m5stderr, "Warning: mark5_format_vdif_make_formatname: format not set\n");
+		sprintf(ms->formatname, "CODIF?");
+		fprintf(m5stderr, "Warning: mark5_format_codif_make_formatname: format not set\n");
 		
 		return -1;
 	}
@@ -3811,35 +3878,119 @@ static int mark5_format_vdif_make_formatname(struct mark5_stream *ms)
 	return 0;
 }
 
-static int mark5_format_vdif_init(struct mark5_stream *ms)
+static int mark5_format_codif_init(struct mark5_stream *ms)
 {
-	struct mark5_format_vdif *f;
+
+    
+	struct mark5_format_codif *f;
 	unsigned int word2;
-	const unsigned char *headerbytes;
-	unsigned char bitspersample;
-	int framensNum, dataframelength;
-	double framensDen;
+	uint8_t bitspersample=0;
+	int framensNum, framensDen, dataarraylength, status;
 	double dns;
+	codif_header *header;
+
+#ifdef WORDS_BIGENDIAN
+		#error "bigendian not supported"
+#endif
 
 	if(!ms)
 	{
-		fprintf(m5stderr, "mark5_format_vdif_init: ms = 0\n");
+		fprintf(m5stderr, "mark5_format_codif_init: ms = 0\n");
 
 		return -1;
 	}
 
-	f = (struct mark5_format_vdif *)(ms->formatdata);
+	f = (struct mark5_format_codif *)(ms->formatdata);
 
-	bitspersample = ms->nbit;
-	if(ms->iscomplex)
-	{
-		bitspersample *= 2;
-	}
+	ms->framesamples = 0;
+	ms->framens = 0; // It gets set later
+        ms->framegranularity = 1; // Should get set later
 
 	ms->payloadoffset = f->frameheadersize;
 	ms->databytes = f->databytesperpacket;
 	ms->framebytes = f->databytesperpacket + f->frameheadersize;
-	ms->blanker = blanker_vdif;
+	ms->blanker = blanker_codif;
+
+	/* We have some data to look at to further refine the format... */
+	if(ms->datawindow)
+	{
+		ms->frame = ms->datawindow + ms->frameoffset;
+	
+		header = (codif_header*)ms->frame;
+
+
+		
+		if(f->frameheadersize != 0 && f->frameheadersize != CODIF_HEADER_BYTES)
+		{
+			fprintf(m5stderr, "CODIF Warning: Changing frameheadersize from %d to 64\n",
+				f->frameheadersize);
+		}
+		f->frameheadersize = CODIF_HEADER_BYTES;
+
+		dataarraylength = getCODIFFrameBytes(header);
+
+		if(f->databytesperpacket != 0 && f->databytesperpacket != dataarraylength)
+		{
+			fprintf(m5stderr, "CODIF Warning: Changing databytesperpacket from %d to %d\n",
+				f->databytesperpacket, dataarraylength);
+		}
+		f->databytesperpacket = dataarraylength;
+
+		if (ms->nchan != 0 && ms->nchan != getCODIFNumChannels(header))
+		{
+			fprintf(m5stderr, "CODIF Warning: Changing nchan from %d to %d\n",
+				ms->nchan, getCODIFNumChannels(header));
+		}
+		ms->nchan =  getCODIFNumChannels(header);
+
+		if (ms->nbit != 0 && ms->nbit != getCODIFBitsPerSample(header))
+		{
+			fprintf(m5stderr, "CODIF Warning: Changing nbit from %d to %d\n",
+				ms->nbit, header->nbits);
+		}
+		ms->nbit = getCODIFBitsPerSample(header);
+		bitspersample = ms->nbit;
+		if (header->iscomplex) bitspersample *=2;
+
+		ms->payload = ms->frame + ms->payloadoffset;
+		ms->framegranularity = get_codif_framegranularity(header);
+		ms->framesperperiod = get_codif_frames_per_period(header);
+		ms->alignmentseconds = get_codif_alignment_seconds(header);
+		ms->Mbps = ((double)ms->databytes * ms->framesperperiod * 8) / ms->alignmentseconds/1e6;
+		
+		ms->framens = get_codif_framens(header);
+		
+		/* get time again so ms->framens is used */
+		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+		ms->ns = (int)(dns + 0.5);
+		if (header->iscomplex)
+		  ms->iscomplex = 1;
+		else
+		  ms->iscomplex = 0;
+
+		status = set_decoder(ms->nbit, ms->nchan, header->iscomplex, &ms->decode, &ms->complex_decode, &ms->count);
+	
+		if (!status) {
+		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d\n", ms->nchan, ms->nbit);
+		  return 0;
+		}
+		
+	} 
+	else 
+	{ 
+	  //printf("DEBUG: No data to check\n");
+	}
+	
+#warning "Need to set complex decode"
+
+	if (bitspersample==0) {
+          bitspersample = ms->nbit;
+	  if (ms->iscomplex)
+	  {
+            bitspersample *= 2;
+          }
+        }
+	ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
 
 	/* FIXME: if nbit is not a power of 2, this formula breaks down! */
 	ms->samplegranularity = 8/(ms->nchan*bitspersample*ms->decimation);
@@ -3848,136 +3999,53 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->samplegranularity = 1;
 	}
 	
-	ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
-
 	// Don't think these are needed..... CJP
         f->completesamplesperword = 32/(bitspersample*ms->nchan);
 
-        ms->framegranularity = 1;
         if(ms->framesperperiod > 0 && ms->alignmentseconds > 0)
         {
-		//framensNum = ms->databytes*8*1000;     
-		//framensDen = ms->Mbps;
 
-		ms->framens = 1.0e9*(double)ms->alignmentseconds/ms->framesperperiod;
-
-		for(ms->framegranularity = 1; ms->framegranularity < 128; ms->framegranularity *= 2)
-		{
-			if((((uint64_t)1000000000)*ms->framegranularity*ms->alignmentseconds) % ((uint64_t)ms->framesperperiod) == 0)
-			{
-				break;
-			}
+		// This block sets framens, framegranularity and samprate - want to set framens above.
+		if (ms->framens==0) { // Don't reset if calculated above
+		  ms->framens = 1.0e9*(double)ms->alignmentseconds/(double)ms->framesperperiod;
 		}
 
+		for(ms->framegranularity = 1; ms->framegranularity < 128; ++ms->framegranularity)
+		{
+		        if((((uint64_t)1000000000)*ms->framegranularity*ms->alignmentseconds) % ((uint64_t)ms->framesperperiod) == 0)
+		        {
+		                break;
+		        }
+		}
+		
 		if(ms->framegranularity >= 128)
 		{
-			fprintf(m5stderr, "VDIF Warning: cannot calculate gframens %d/%d\n",
-			ms->framesperperiod, ms->alignmentseconds);
-			ms->framegranularity = 1;
+		        fprintf(m5stderr, "CODIF Warning: cannot calculate gframens %d/%d\n",
+		        ms->framesperperiod, ms->alignmentseconds);
+		        ms->framegranularity = 1;
 		}
+		
 		ms->samprate = ((int64_t)ms->framesamples)*(1000000000.0/ms->framens);
         }
         else
         {
-                fprintf(m5stderr, "Error: you must specify the framesperperiod for a VDIF mode (was set to %d)!", ms->framesperperiod);
+                fprintf(m5stderr, "Error: you must specify the framesperperiod and alignmentseconds for a ");
+		fprintf(m5stderr, "CODIF mode (was set to %d, %d)!\n", ms->framesperperiod, ms->alignmentseconds);
 
 		return -1;
         }
 
-	/* Aha: we have some data to look at to further refine the format... */
-	if(ms->datawindow)
-	{
-		ms->frame = ms->datawindow + ms->frameoffset;
-		ms->payload = ms->frame + ms->payloadoffset;
-
-#ifdef WORDS_BIGENDIAN
-		/* Motorola byte order requires some fiddling */
-		headerbytes = ms->frame + 8;
-		word2 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
-#else
-		{
-			unsigned int *headerwords = (unsigned int *)(ms->frame);
-
-			/* Intel byte order does not */
-			word2 = headerwords[2];
-		}
-#endif
-		headerbytes = ms->frame;
-		
-		if(headerbytes[3] & 0x40)	/* Legacy bit */
-		{
-			if(f->frameheadersize == 0)
-			{
-				f->frameheadersize = 16;
-			}
-			else if(f->frameheadersize != 16)
-			{
-				fprintf(m5stderr, "VDIF Warning: Changing frameheadersize from %d to 16\n",
-					f->frameheadersize);
-				f->frameheadersize = 16;
-			}
-		}
-		else
-		{
-			if(f->frameheadersize == 0)
-			{
-				f->frameheadersize = 32;
-			}
-			else if(f->frameheadersize != 32)
-			{
-				fprintf(m5stderr, "VDIF Warning: Changing frameheadersize from %d to 32\n",
-					f->frameheadersize);
-				f->frameheadersize = 32;
-			}
-		}
-
-		dataframelength = (word2 & 0x00FFFFFF)*8;
-		//fprintf(stdout, "Dataframelength as derived from the VDIF header is %d bytes\n", dataframelength);
-		if(f->databytesperpacket == 0)
-		{
-			f->databytesperpacket = dataframelength - f->frameheadersize;
-		}
-		else if(f->databytesperpacket != dataframelength - f->frameheadersize)
-		{
-			fprintf(m5stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
-				f->databytesperpacket, dataframelength - f->frameheadersize);
-			f->databytesperpacket = dataframelength - f->frameheadersize;
-		}
-
-		ms->payloadoffset = f->frameheadersize;
-		ms->databytes = f->databytesperpacket;
-		ms->framebytes = f->databytesperpacket + f->frameheadersize;
-		ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
-		
-		/* get time again so ms->framens is used */
-		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
-		ms->ns = (int)(dns + 0.5);
-
-		/* WRITEME */
-	}
+#warning "Need to set decoder"
 
 	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
 
-	if(f->frameheadersize == 32)
-	{
-		ms->format = MK5_FORMAT_VDIF;
-	}
-	else if(f->frameheadersize == 16)
-	{
-		ms->format = MK5_FORMAT_VDIFL;
-	}
-	else
-	{
-		fprintf(m5stderr, "Error: mark5_format_vdif_init: unsupported frameheadersize=%d\n", f->frameheadersize);
-		
-		return -1;
-	}
-	mark5_format_vdif_make_formatname(ms);
+	ms->format = MK5_FORMAT_CODIF;
+	mark5_format_codif_make_formatname(ms);
 
 	return 0;
 }
 
-static int mark5_format_vdif_final(struct mark5_stream *ms)
+static int mark5_format_codif_final(struct mark5_stream *ms)
 {
 	if(!ms)
 	{
@@ -3993,17 +4061,22 @@ static int mark5_format_vdif_final(struct mark5_stream *ms)
 	return 0;
 }
 
-static int mark5_format_vdif_validate(const struct mark5_stream *ms)
+static int mark5_format_codif_validate(const struct mark5_stream *ms)
 {
-	const unsigned int *header;
+	codif_header *header;
+	
+	/* Check for overly unusual header  */
+	header = (codif_header *)ms->frame;
 
-	/* Check for overly unusual header (note that VDIF has no Sync/Magic) */
-	header = (const unsigned int *)ms->frame;
-	if(header[2] == 0)
+	if(getCODIFSync(header) != 0xADEADBEE)
 	{
-#ifdef DEBUG
-		fprintf(m5stderr, "mark5_format_vdif_validate: Skipping frame with Data Frame Length of zero\n");
-#endif
+	        fprintf(m5stderr, "mark5_format_codif_validate: Skipping frame with wrong sync (0x%08X)\n", getCODIFSync(header));
+	        return 0;
+	}
+
+	if(getCODIFFrameBytes(header) == 0)
+	{
+		fprintf(m5stderr, "mark5_format_codif_validate: Skipping frame with Data Frame Length of zero\n");
 		return 0;
 	}
 
@@ -4013,7 +4086,7 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 		double ns_d;
 		long long ns_t;
 		
-		mark5_stream_frame_time_vdif(ms, &mjd_d, &sec_d, &ns_d);
+		mark5_stream_frame_time_codif(ms, &mjd_d, &sec_d, &ns_d);
 
 		ns_t = (long long)(ms->framenum/ms->framegranularity)*(long long)(ms->gframens) + (long long)(ms->ns);
 		sec_t = ns_t / 1000000000L;
@@ -4025,385 +4098,379 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 
 		if(mjd_t != mjd_d || sec_t != sec_d || fabs((double)ns_t - ns_d) > 0.000001)
 		{
-			fprintf(m5stdout, "VDIF validate[%lld]: %d %d %f : %d %d %lld\n",
+			fprintf(m5stdout, "CODIF validate[%lld]: %d %d %f : %d %d %lld\n",
 				ms->framenum,   mjd_d, sec_d, ns_d,   mjd_t, sec_t, ns_t);
-			
 			return 0;
 		}
 	}
 
 	/* Check the invalid bit */
-	if((header[0] >> 31) & 0x01)
+	if(getCODIFFrameInvalid(header))
 	{
-#ifdef DEBUG
-		fprintf(m5stderr, "mark5_format_vdif_validate: Skipping invalid frame\n");
-#endif
+		fprintf(m5stderr, "mark5_format_codif_validate: Skipping invalid frame\n");
 		return 0;
 	}
 
 	return 1;
 }
 
-static int mark5_format_vdif_resync(struct mark5_stream *ms)
+static int mark5_format_codif_resync(struct mark5_stream *ms)
 {
 	/* FIXME: not implemented yet */
-	return mark5_format_vdif_validate(ms);
+	return mark5_format_codif_validate(ms);
 }
 
-void mark5_format_vdif_set_leapsecs(struct mark5_stream *ms, int leapsecs)
+void mark5_format_codif_set_leapsecs(struct mark5_stream *ms, int leapsecs)
 {
-	struct mark5_format_vdif *f;
+	struct mark5_format_codif *f;
 	
-	f = (struct mark5_format_vdif *)(ms->formatdata);
+	f = (struct mark5_format_codif *)(ms->formatdata);
 
 	f->leapsecs = leapsecs;
 }
 
-struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
-        int nchan, int nbit, int decimation,
-        int databytesperpacket, int frameheadersize, int usecomplex)
-{
-	int alignmentseconds = 1;
-	int framesperperiod = (int)(((uint64_t)1000000)*Mbps/(databytesperpacket*8));
+int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex_decodeFunc *complex_decode, countFunc *count) {
+    int decoderindex = 0;
 
-	return new_mark5_format_generalized_vdif(framesperperiod, alignmentseconds, nchan,
-		nbit, decimation, databytesperpacket, frameheadersize, usecomplex);
+    if(nbit == 1) /* inc by 1000 for each successive value to allow full range of nchan */
+      {
+	decoderindex += 0;
+      }
+    else if (nbit == 2)
+      {
+	decoderindex += 1000;
+      }
+    else if (nbit == 4)
+      {
+	decoderindex += 2000;
+      }
+    else if (nbit == 8)
+      {
+	decoderindex += 3000;
+      }
+    else if(nbit == 16)
+      {
+	decoderindex += 4000;
+      }
+    else if(nbit == 32)
+      {
+	decoderindex += 5000;
+      }
+    else
+      {
+	fprintf(m5stderr, "CODIF nbit must be 1, 2, 4, 8, 16 or 32 for now\n");
+	return 0;
+      }
+
+    if(nchan < 1 || nchan > 512)
+      {
+	fprintf(m5stderr, "CODIF nchan must be <= 512 for now\n");
+	return 0;
+      }
+
+    decoderindex += nchan;
+
+    *decode = 0;
+    *complex_decode = 0;
+    *count = 0;
+
+    if(!usecomplex) 
+      {
+	switch(decoderindex)
+	  {
+	  case 1:
+	    *decode = codif_decode_1channel_1bit;
+	    break;
+	  case 2:
+	    *decode = codif_decode_2channel_1bit;
+	    break;
+	  case 3:
+	    *decode = codif_decode_3channel_1bit;
+	    break;
+	  case 4:
+	    *decode = codif_decode_4channel_1bit;
+	    break;
+	  case 5:
+	    *decode = codif_decode_5channel_1bit;
+	    break;
+	  case 6:
+	    *decode = codif_decode_6channel_1bit;
+	    break;
+	  case 7:
+	    *decode = codif_decode_7channel_1bit;
+	    break;
+	  case 8:
+	    *decode = codif_decode_8channel_1bit;
+	    break;
+	  case 16:
+	    *decode = codif_decode_16channel_1bit;
+	    break;
+	  case 32:
+	    *decode = codif_decode_32channel_1bit;
+	    break;
+	    
+	  case 1001:
+	    *decode = codif_decode_1channel_2bit;
+	    *count = codif_count_1channel_2bit;
+	    break;
+	  case 1002:
+	    *decode = codif_decode_2channel_2bit;
+	    *count = codif_count_2channel_2bit;
+	    break;
+	  case 1003:
+	    *decode = codif_decode_3channel_2bit;
+	    break;
+	  case 1004:
+	    *decode = codif_decode_4channel_2bit;
+	    *count = codif_count_4channel_2bit;
+	    break;
+	  case 1005:
+	    *decode = codif_decode_5channel_2bit;
+	    break;
+	  case 1006:
+	    *decode = codif_decode_6channel_2bit;
+	    break;
+	  case 1007:
+	    *decode = codif_decode_7channel_2bit;
+	    break;
+	  case 1008:
+	    *decode = codif_decode_8channel_2bit;
+	    *count = codif_count_8channel_2bit;
+	    break;
+	  case 1016:
+	    *decode = codif_decode_16channel_2bit;
+	    *count = codif_count_16channel_2bit;
+	    break;
+	  case 1032:
+	    *decode = codif_decode_32channel_2bit;
+	    *count = codif_count_32channel_2bit;
+	    break;
+	  case 1064:
+	    *decode = codif_decode_64channel_2bit;
+	    *count = codif_count_64channel_2bit;
+	    break;
+	    
+	  case 2001:
+	    *decode = codif_decode_1channel_4bit;
+	    break;
+	  case 2002:
+	    *decode = codif_decode_2channel_4bit;
+	    break;
+	  case 2003:
+	    *decode = codif_decode_3channel_4bit;
+	    break;
+	  case 2004:
+	    *decode = codif_decode_4channel_4bit;
+	    break;
+	  case 2005:
+	    *decode = codif_decode_5channel_4bit;
+	    break;
+	  case 2006:
+	    *decode = codif_decode_6channel_4bit;
+	    break;
+	  case 2007:
+	    *decode = codif_decode_7channel_4bit;
+	    break;
+	  case 2008:
+	    *decode = codif_decode_8channel_4bit;
+	    break;
+	    
+	  case 3001:
+	    *decode = codif_decode_1channel_8bit;
+	    break;
+	  case 3002:
+	    *decode = codif_decode_2channel_8bit;
+	    break;
+	  case 3003:
+	    *decode = codif_decode_3channel_8bit;
+	    break;
+	  case 3004:
+	    *decode = codif_decode_4channel_8bit;
+	    break;
+	    
+	  case 5001:
+	    *decode = codif_decode_1channel_32bit;
+	    break;
+	  }
+	
+	if(*decode == 0)
+	  {
+	    fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d\n", nchan, nbit);
+	    return 0;
+	  }
+      }      
+    else
+      {
+	switch(decoderindex)
+	  {
+	  case 1:
+	    *complex_decode = codif_complex_decode_1channel_1bit;
+	    break;
+	  case 2:
+	    *complex_decode = codif_complex_decode_2channel_1bit;
+	    break;
+	  case 4:
+	    *complex_decode = codif_complex_decode_4channel_1bit;
+	    break;
+	  case 8:
+	    *complex_decode = codif_complex_decode_8channel_1bit;
+	    break;
+	  case 16:
+	    *complex_decode = codif_complex_decode_16channel_1bit;
+	    break;
+	    
+	  case 1001:
+	    *complex_decode = codif_complex_decode_1channel_2bit;
+	    break;
+	  case 1002:
+	    *complex_decode = codif_complex_decode_2channel_2bit;
+	    break;
+	  case 1004:
+	    *complex_decode = codif_complex_decode_4channel_2bit;
+	    break;
+	  case 1008:
+	    *complex_decode = codif_complex_decode_8channel_2bit;
+	    break;
+	  case 1016:
+	    *complex_decode = codif_complex_decode_16channel_2bit;
+	    break;
+	  case 1032:
+	    *complex_decode = codif_complex_decode_32channel_2bit;
+	    break;
+	  case 1064:
+	    *complex_decode = codif_complex_decode_64channel_2bit;
+	    break;
+	    
+	  case 2001:
+	    *complex_decode = codif_complex_decode_1channel_4bit;
+	    break;
+	  case 2002:
+	    *complex_decode = codif_complex_decode_2channel_4bit;
+	    break;
+	  case 2004:
+	    *complex_decode = codif_complex_decode_4channel_4bit;
+	    break;
+	  case 2008:
+	    *complex_decode = codif_complex_decode_8channel_4bit;
+	    break;
+	    
+	  case 3001:
+	    *complex_decode = codif_complex_decode_1channel_8bit;
+	    break;
+	  case 3002:
+	    *complex_decode = codif_complex_decode_2channel_8bit;
+	    break;
+	  case 3004:
+	    *complex_decode = codif_complex_decode_4channel_8bit;
+	    break;
+	  case 3008:
+	    *complex_decode = codif_complex_decode_8channel_8bit;
+	    break;
+	  case 3016:
+	    *complex_decode = codif_complex_decode_16channel_8bit;
+	    break;
+	    
+	  case 4001:
+	    *complex_decode = codif_complex_decode_1channel_16bit;
+	    break;
+	  case 4002:
+	    *complex_decode = codif_complex_decode_2channel_16bit;
+	    break;
+	  case 4004:
+	    *complex_decode = codif_complex_decode_4channel_16bit;
+	    break;
+	  case 4008:
+	    *complex_decode = codif_complex_decode_8channel_16bit;
+	    break;
+	  case 4014:
+	    *complex_decode = codif_complex_decode_14channel_16bit;
+	    break;
+	  case 4016:
+	    *complex_decode = codif_complex_decode_16channel_16bit;
+	    break;
+	    
+	  case 5001:
+	    *complex_decode = codif_complex_decode_1channel_32bit;
+	    break;
+	  }
+	
+	if(*complex_decode == 0)
+	  {
+	    fprintf(m5stderr, "CODIF: Unsupported combination, complex channels=%d and bits=%d\n", nchan, nbit);
+	    return 0;
+	  }
+	
+      }
+    return(1);
 }
 
-
-struct mark5_format_generic *new_mark5_format_generalized_vdif(int framesperperiod, int alignmentseconds,
-	int nchan, int nbit, int decimation,
+struct mark5_format_generic *new_mark5_format_codif(int framesperperiod, 
+	int alignmentseconds, int nchan, int nbit, int decimation, 
 	int databytesperpacket, int frameheadersize, int usecomplex)
 {
-	static int first = 1;
-	struct mark5_format_generic *f;
-	struct mark5_format_vdif *v;
-	int decoderindex = 0;
+    int status;
+    static int first = 1;
+    struct mark5_format_generic *f;
+    struct mark5_format_codif *v;
+    int decoderindex = 0;
 
-	if(first)
+    if(first)
 	{
 		initluts();
 		first = 0;
 	}
 
-	if(decimation == 1) /* inc by 1024 for each successive value to allow full range of nchan and nbit */
-	{
-		decoderindex += 0;
-	}
-	else
-	{
-		fprintf(m5stderr, "VDIF decimation must be 1 for now\n");
-		
-		return 0;
-	}
 
-	if(nbit == 1) /* inc by 1000 for each successive value to allow full range of nchan */
-	{
-		decoderindex += 0;
-	}
-	else if(nbit == 2)
-	{
-		decoderindex += 1000;
-	}
-	else if(nbit == 4)
-	{
-		decoderindex += 2000;
-	}
-	else if(nbit == 8)
-	{
-		decoderindex += 3000;
-	}
-	else if(nbit == 16)
-	{
-		decoderindex += 4000;
-	}
-	else if(nbit == 32)
-	{
-		decoderindex += 5000;
-	}
-	else
-	{
-		fprintf(m5stderr, "VDIF nbit must be 1, 2, 4, 8, 16 or 32 for now\n");
-		
-		return 0;
-	}
+    
 
-	if(nchan < 1 || nchan > 512)
-	{
-		fprintf(m5stderr, "VDIF nchan must be <= 512 for now\n");
-
-		return 0;
-	}
-
-	decoderindex += nchan;
-
-	v = (struct mark5_format_vdif *)calloc(1, sizeof(struct mark5_format_vdif));
+	v = (struct mark5_format_codif *)calloc(1, sizeof(struct mark5_format_codif));
 	f = (struct mark5_format_generic *)calloc(1, sizeof(struct mark5_format_generic));
 
 	v->frameheadersize = frameheadersize;
 	v->databytesperpacket = databytesperpacket;
 
-	f->Mbps = ((double)framesperperiod*databytesperpacket)/(1e6*alignmentseconds);
-	f->alignmentseconds = alignmentseconds;
 	f->framesperperiod = framesperperiod;
+	f->alignmentseconds = alignmentseconds;
+	f->Mbps = ((double)framesperperiod*databytesperpacket*8)/alignmentseconds/1e6;
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = v;
-	f->formatdatasize = sizeof(struct mark5_format_vdif);
+	f->formatdatasize = sizeof(struct mark5_format_codif);
 	
 	/* set some function pointers */
-	f->gettime = mark5_stream_frame_time_vdif;
-	f->init_format = mark5_format_vdif_init;
-	f->final_format = mark5_format_vdif_final;
-	f->validate = mark5_format_vdif_validate;
-	f->resync = mark5_format_vdif_resync;
+	f->gettime = mark5_stream_frame_time_codif;
+	f->init_format = mark5_format_codif_init;
+	f->final_format = mark5_format_codif_final;
+	f->validate = mark5_format_codif_validate;
+	f->resync = mark5_format_codif_resync;
 	f->decimation = decimation;
 	f->decode = 0;
-	f->iscomplex = 0;
 	f->complex_decode = 0;
+	f->iscomplex = usecomplex;
 	f->count = 0;
 
-	if(!usecomplex) 
-	{
-	    switch(decoderindex)
-	    {
-	        case 1:
-			f->decode = vdif_decode_1channel_1bit_decimation1;
-			break;
-		case 2:
-			f->decode = vdif_decode_2channel_1bit_decimation1;
-			break;
-		case 3:
-			f->decode = vdif_decode_3channel_1bit_decimation1;
-			break;
-		case 4:
-			f->decode = vdif_decode_4channel_1bit_decimation1;
-			break;
-		case 5:
-			f->decode = vdif_decode_5channel_1bit_decimation1;
-			break;
-		case 6:
-			f->decode = vdif_decode_6channel_1bit_decimation1;
-			break;
-		case 7:
-			f->decode = vdif_decode_7channel_1bit_decimation1;
-			break;
-		case 8:
-			f->decode = vdif_decode_8channel_1bit_decimation1;
-			break;
-		case 16:
-			f->decode = vdif_decode_16channel_1bit_decimation1;
-			break;
-	        case 32:
-			f->decode = vdif_decode_32channel_1bit_decimation1;
-			break;
+	status = set_decoder(nbit, nchan, usecomplex, &f->decode, &f->complex_decode, &f->count);
+	
+	if (!status) {
+	  fprintf(m5stderr, "CODIF: Unsupported combination decimation=%d, channels=%d and bits=%d\n", decimation, nchan, nbit);
+	  free(v);
+	  free(f);
 
-		case 1001:
-			f->decode = vdif_decode_1channel_2bit_decimation1;
-			f->count = vdif_count_1channel_2bit_decimation1;
-			break;
-		case 1002:
-			f->decode = vdif_decode_2channel_2bit_decimation1;
-			f->count = vdif_count_2channel_2bit_decimation1;
-			break;
-		case 1003:
-			f->decode = vdif_decode_3channel_2bit_decimation1;
-			break;
-		case 1004:
-			f->decode = vdif_decode_4channel_2bit_decimation1;
-			f->count = vdif_count_4channel_2bit_decimation1;
-			break;
-		case 1005:
-			f->decode = vdif_decode_5channel_2bit_decimation1;
-			break;
-		case 1006:
-			f->decode = vdif_decode_6channel_2bit_decimation1;
-			break;
-		case 1007:
-			f->decode = vdif_decode_7channel_2bit_decimation1;
-			break;
-		case 1008:
-			f->decode = vdif_decode_8channel_2bit_decimation1;
-			f->count = vdif_count_8channel_2bit_decimation1;
-			break;
-		case 1016:
-			f->decode = vdif_decode_16channel_2bit_decimation1;
-			f->count = vdif_count_16channel_2bit_decimation1;
-			break;
-		case 1032:
-			f->decode = vdif_decode_32channel_2bit_decimation1;
-			f->count = vdif_count_32channel_2bit_decimation1;
-			break;
-		case 1064:
-			f->decode = vdif_decode_64channel_2bit_decimation1;
-			f->count = vdif_count_64channel_2bit_decimation1;
-			break;
-
-		case 2001:
-			f->decode = vdif_decode_1channel_4bit_decimation1;
-			break;
-		case 2002:
-			f->decode = vdif_decode_2channel_4bit_decimation1;
-			break;
-		case 2003:
-			f->decode = vdif_decode_3channel_4bit_decimation1;
-			break;
-		case 2004:
-			f->decode = vdif_decode_4channel_4bit_decimation1;
-			break;
-		case 2005:
-			f->decode = vdif_decode_5channel_4bit_decimation1;
-			break;
-		case 2006:
-			f->decode = vdif_decode_6channel_4bit_decimation1;
-			break;
-		case 2007:
-			f->decode = vdif_decode_7channel_4bit_decimation1;
-			break;
-		case 2008:
-			f->decode = vdif_decode_8channel_4bit_decimation1;
-			break;
-
-		case 3001:
-			f->decode = vdif_decode_1channel_8bit_decimation1;
-			break;
-		case 3002:
-			f->decode = vdif_decode_2channel_8bit_decimation1;
-			break;
-		case 3003:
-			f->decode = vdif_decode_3channel_8bit_decimation1;
-			break;
-		case 3004:
-			f->decode = vdif_decode_4channel_8bit_decimation1;
-			break;
-
-		case 5001:
-			f->decode = vdif_decode_1channel_32bit_decimation1;
-			break;
-	    }
-
-	    if(f->decode == 0)
-	    {
-		fprintf(m5stderr, "VDIF: Unsupported combination decimation=%d, channels=%d and bits=%d\n", decimation, nchan, nbit);
-		free(v);
-		free(f);
-		
-		return 0;
-	    }
-	}
-	else
-	{
-	  f->iscomplex = 1;
-	  switch(decoderindex)
-	    {
-	        case 1:
-			f->complex_decode = vdif_complex_decode_1channel_1bit_decimation1;
-			break;
-		case 2:
-			f->complex_decode = vdif_complex_decode_2channel_1bit_decimation1;
-			break;
-		case 4:
-			f->complex_decode = vdif_complex_decode_4channel_1bit_decimation1;
-			break;
-		case 8:
-			f->complex_decode = vdif_complex_decode_8channel_1bit_decimation1;
-			break;
-		case 16:
-			f->complex_decode = vdif_complex_decode_16channel_1bit_decimation1;
-			break;
-
-		case 1001:
-			f->complex_decode = vdif_complex_decode_1channel_2bit_decimation1;
-			break;
-		case 1002:
-			f->complex_decode = vdif_complex_decode_2channel_2bit_decimation1;
-			break;
-		case 1004:
-			f->complex_decode = vdif_complex_decode_4channel_2bit_decimation1;
-			break;
-		case 1008:
-			f->complex_decode = vdif_complex_decode_8channel_2bit_decimation1;
-			break;
-		case 1016:
-			f->complex_decode = vdif_complex_decode_16channel_2bit_decimation1;
-			break;
-		case 1032:
-			f->complex_decode = vdif_complex_decode_32channel_2bit_decimation1;
-			break;
-		case 1064:
-			f->complex_decode = vdif_complex_decode_64channel_2bit_decimation1;
-			break;
-
-		case 2001:
-			f->complex_decode = vdif_complex_decode_1channel_4bit_decimation1;
-			break;
-		case 2002:
-			f->complex_decode = vdif_complex_decode_2channel_4bit_decimation1;
-			break;
-		case 2004:
-			f->complex_decode = vdif_complex_decode_4channel_4bit_decimation1;
-			break;
-
-		case 3001:
-			f->complex_decode = vdif_complex_decode_1channel_8bit_decimation1;
-			break;
-		case 3002:
-			f->complex_decode = vdif_complex_decode_2channel_8bit_decimation1;
-			break;
-		case 3004:
-			f->complex_decode = vdif_complex_decode_4channel_8bit_decimation1;
-			break;
-		case 3008:
-			f->complex_decode = vdif_complex_decode_8channel_8bit_decimation1;
-			break;
-		case 3016:
-			f->complex_decode = vdif_complex_decode_16channel_8bit_decimation1;
-			break;
-
-		case 4001:
-			f->complex_decode = vdif_complex_decode_1channel_16bit_decimation1;
-			break;
-		case 4002:
-			f->complex_decode = vdif_complex_decode_2channel_16bit_decimation1;
-			break;
-		case 4004:
-			f->complex_decode = vdif_complex_decode_4channel_16bit_decimation1;
-			break;
-		case 4008:
-			f->complex_decode = vdif_complex_decode_8channel_16bit_decimation1;
-			break;
-		case 4016:
-			f->complex_decode = vdif_complex_decode_16channel_16bit_decimation1;
-			break;
-
-		case 5001:
-			f->complex_decode = vdif_complex_decode_1channel_32bit_decimation1;
-			break;
-	    }
-
-	    if(f->complex_decode == 0)
-	    {
-		fprintf(m5stderr, "VDIF: Unsupported combination decimation=%d, channels=%d and bits=%d\n", decimation, nchan, nbit);
-		free(v);
-		free(f);
-
-		return 0;
-	    }
-
+	  return 0;
 	}
 
 	return f;
 }
 
-/* here framesize includes the 32 byte header 
+/* here framesize includes the 64 byte header 
  *
  * return value: 1 if true, 0 if false
  *
  * Note: this only works for nbit = 2^n
  */
-static int is_legal_vdif_framesize(int framesize)
+static int is_legal_codif_framesize(int framesize)
 {
-	framesize -= 32;
+	framesize -= 64;
 
 	if(framesize % 8 != 0)
 	{
@@ -4431,191 +4498,151 @@ static int is_legal_vdif_framesize(int framesize)
 	}
 }
 
-static int is_legal_vdifl_framesize(int framesize)
-{
-	framesize -= 16;
-
-	if(framesize % 8 != 0)
-	{
-		return 0;
-	}
-
-	framesize /= 8;
-
-	while(framesize % 2 == 0)
-	{
-		framesize /= 2;
-	}
-	while(framesize % 5 == 0)
-	{
-		framesize /= 5;
-	}
-
-	if(framesize != 1)
-	{
-		return 0;
-	}
-	else
-	{
-		return 1;
-	}
-}
 
 /* if *framesize is set to 0, the frame size will be determined by this call
  * and returned into the same variable.
  *
- * return value is -1 on error (no VDIF found) or 0 if found.
+ * return value is -1 on error (no CODIF found) or 0 if found.
  *
- * here framesize includes the 32 byte header
+ * here framesize includes the 64 byte header
  */
-int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize)
+int find_codif_frame(const unsigned char *data, int length, size_t *offset, int *framesize, int *headersize)
 {
-	int fs, fs0, fs1;
+    int refEpochA, refEpochB, bitsA, bitsB, versionA, versionB, chanA, chanB;
+    uint32_t fsA, fsB, secA, secB;
+    codif_header *header;
+    
+    for (*offset=0; *offset<length; (*offset)++) {
+      header = (codif_header*)(data + *offset);
+      
+      if (header->sync != 0xABADDEED) continue; // Sync
 
-	if(framesize && *framesize)
-	{
-		fs0 = fs1 = *framesize;
-	}
-	else
-	{
-		fs0 = 40;
-		fs1 = 8232;
-	}
+      fsA = getCODIFFrameBytes(header);
+      if (!is_legal_codif_framesize(fsA)) {
+	//continue;
+      }
+      if (fsA+*offset*2*CODIF_HEADER_BYTES> length) continue;  // Need two frame headers plus offset
 
-	for(fs = fs0; fs <= fs1; ++fs)
-	{
-		size_t maxOffset;
+      secA = header->seconds;
+      refEpochA = header->epoch;
+      versionA = header->version;
+      chanA = getCODIFNumChannels(header);
 
-		if(!is_legal_vdif_framesize(fs))
-		{
-			continue;
-		}
+      header = (codif_header*)(data + *offset + fsA + CODIF_HEADER_BYTES);
+      
+      if (header->sync != 0xABADDEED) continue; // Sync
 
-		maxOffset = 5*fs;	/* check over a maximum of 5 frame lengths */
-		if(maxOffset > length - fs - 32)
-		{
-			maxOffset = length - fs - 32;
-		}
-
-		for(*offset = 0; *offset < maxOffset; *offset += 8)
-		{
-			unsigned int secA, secB;
-			unsigned int refEpochA, refEpochB;
-			unsigned int fsA, fsB;
-			const unsigned int *frame;
-
-			frame = ((unsigned int *)data) + *offset/4;
-			secA      = frame[0] & 0x3FFFFFFF;
-			refEpochA = (frame[1] >> 24) & 0x3F;
-			fsA       = (frame[2] & 0x00FFFFFF) << 3;
-			frame += fs/4;
-			secB      = frame[0] & 0x3FFFFFFF;
-			refEpochB = (frame[1] >> 24) & 0x3F;
-			fsB       = (frame[2] & 0x00FFFFFF) << 3;
-
-			/* does it look reasonable? */
-			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB))
-			{
-				*framesize = fs;
-
-				return 0;
-			}
-
-		}
-	}
-
-	return -1;
+      fsB = getCODIFFrameBytes(header);
+      secB = header->seconds;
+      refEpochB = header->epoch;
+      versionB = header->version;
+      chanB = getCODIFNumChannels(header);
+      
+      /* does it look reasonable? */
+      if (fsA==fsB && refEpochA==refEpochB && (secA==secB || secA+1==secB) && versionA==versionB && chanA==chanB) {
+	*framesize = fsA+CODIF_HEADER_BYTES;
+	*headersize = CODIF_HEADER_BYTES;
+	return 0;
+      }
+    }
+    return -1;
 }
 
-/* same as above, but for legacy frames */
-int find_vdifl_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize)
+int get_codif_chans_per_thread(const codif_header *header)
 {
-	int fs, fs0, fs1;
+    return getCODIFNumChannels(header);
+}
 
-	if(framesize && *framesize)
+uint64_t get_codif_samples_per_period(const codif_header *header)
+{
+    return header->totalsamples;
+}
+
+double get_codif_rate(const codif_header *header)
+{
+    double rate;
+    rate = getCODIFTotalSamples(header) * getCODIFNumChannels(header) * header ->nbits / (double)header->period / 1e6;
+    if (header->iscomplex) rate *= 2;
+    return rate;
+}
+
+uint32_t get_codif_frames_per_period(const codif_header *header)
+{
+    uint64_t databytes = (uint64_t)getCODIFFrameBytes(header);
+    uint64_t samplesperframe = (databytes*8) / (getCODIFNumChannels(header) * getCODIFBitsPerSample(header));
+    if (getCODIFComplex(header))
+    {
+        samplesperframe /= 2;
+    }
+    return (uint32_t)(getCODIFTotalSamples(header) / samplesperframe);
+}
+
+uint32_t get_codif_period(const codif_header *header)
+{
+    return getCODIFPeriod(header);
+}
+
+uint32_t get_codif_alignment_seconds(const codif_header *header)
+{
+    return getCODIFPeriod(header);;
+}
+
+int get_codif_quantization_bits(const codif_header *header)
+{
+    return getCODIFPeriod(header);
+}
+
+int get_codif_complex(const codif_header *header)
+{
+    return getCODIFComplex(header);
+}
+
+double get_codif_framens(const codif_header *header)
+{
+    double framens;
+    framens = getCODIFFrameBytes(header)*8*getCODIFPeriod(header)/(double)(header->totalsamples * getCODIFNumChannels(header) * header->nbits)*1e9;
+    if (header->iscomplex) framens /= 2;
+    return framens;
+}
+
+int get_codif_framegranularity(const codif_header *header)
+{
+	int bitspersample = header->nbits;
+	if (header->iscomplex)
 	{
-		fs0 = fs1 = *framesize;
+		bitspersample *= 2;
 	}
-	else
+	uint64_t framesperperiod = (header->totalsamples * getCODIFNumChannels(header) * bitspersample) / (getCODIFFrameBytes(header)*8);
+	int granularity;
+	for (granularity=1; granularity<1024; ++granularity)
 	{
-		fs0 = 24;
-		fs1 = 8216;
-	}
+		if (((uint64_t)1000000000*granularity*getCODIFPeriod(header)) % (framesperperiod) == 0)
+		{
+			break;
+		}
+    	}
 
-	for(fs = fs0; fs <= fs1; ++fs)
+	if (granularity>=1024)
 	{
-		size_t maxOffset;
-
-		if(!is_legal_vdifl_framesize(fs))
-		{
-			continue;
-		}
-
-		maxOffset = 5*fs;	/* check over a maximum of 5 frame lengths */
-		if(maxOffset > length - fs - 16)
-		{
-			maxOffset = length - fs - 16;
-		}
-
-		for(*offset = 0; *offset < maxOffset; *offset += 8)
-		{
-			unsigned int secA, secB;
-			unsigned int refEpochA, refEpochB;
-			unsigned int fsA, fsB;
-			const unsigned int *frame;
-
-			frame = ((unsigned int *)data) + *offset/4;
-			secA      = frame[0] & 0x3FFFFFFF;
-			refEpochA = (frame[1] >> 24) & 0x3F;
-			fsA       = (frame[2] & 0x00FFFFFF) << 3;
-			frame += fs/4;
-			secB      = frame[0] & 0x3FFFFFFF;
-			refEpochB = (frame[1] >> 24) & 0x3F;
-			fsB       = (frame[2] & 0x00FFFFFF) << 3;
-
-			/* does it look reasonable? */
-			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB))
-			{
-				*framesize = fs;
-
-				return 0;
-			}
-
-		}
+		granularity = -1;
 	}
-
-	return -1;
+	return(granularity);
 }
 
-int get_vdif_chans_per_thread(const unsigned char *data)
+int get_codif_threads(const unsigned char *data, size_t length, int dataframesize)
 {
-	return 1 << (data[11] & 0x1F);
-}
-
-int get_vdif_quantization_bits(const unsigned char *data)
-{
-	return ((data[15] >> 2) & 0x1F) + 1;
-}
-
-int get_vdif_complex(const unsigned char *data)
-{
-	return data[15] >> 7;
-}
-
-int get_vdif_threads(const unsigned char *data, size_t length, int dataframesize)
-{
-	const int maxThreads = 128;
+        const int maxThreads = 1024; //  Actual max is 2^16, but unlikely that many on one data stream
 	size_t i;
 	unsigned short int threads[maxThreads];
 	unsigned int nThread = 0;
 
 	for(i = 0; i < length-32; i += dataframesize)
 	{
-		const unsigned int *frame;
+		const uint32_t *frame;
 		unsigned short int thread;
 		unsigned short int t; 
 		
-		frame = (unsigned int *)(data+i);
+		frame = (uint32_t *)(data+i);
 
 		// sanity check that we are still in sync
 		if(dataframesize != (frame[2] & 0x00FFFFFF) << 3)
@@ -4652,209 +4679,3 @@ int get_vdif_threads(const unsigned char *data, size_t length, int dataframesize
 	return nThread;
 }
 
-typedef struct vdif_edv4_header {	/* proposed extension extensions: (WFB email to VDIF committee 2015/10/09) */
-   uint32_t seconds : 30;
-   uint32_t legacymode : 1;
-   uint32_t invalid : 1;
-   
-   uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
-   
-   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
-   uint32_t nchan : 5;
-   uint32_t version : 3;
-   
-   uint32_t stationid : 16;
-   uint32_t threadid : 10;
-   uint32_t nbits : 5;
-   uint32_t iscomplex : 1;
-
-   uint32_t dummy : 16;
-   uint32_t masklength : 8;	// number of bits in the validity mask.  Should be equal to, or exact divisor of number of channels
-   uint32_t eversion : 8;	// Should be set to 4
-   
-   uint32_t syncword;		// 0xACABFEED
-   
-   uint64_t validitymask;	// bits set if data is present
- } vdif_edv4_header;
-
-/* works only on real-valued VDIF */
-/* this function returns into invalidsamples[] number of _additional_ samples 
-   found invalid, above and beyond that found by the decoder (e.g., from frames
-   with invalid bit set or truncated frames with fill pattern */
-void blank_vdif_EDV4(const void *packed, int offsetsamples, float **unpacked, int nsamp, int *invalidsamples)
-{
-	const vdif_edv4_header *V;	
-	int nChan;
-	int frameLength;
-	int sampPerFrame;
-	uint64_t goodMask;
-	int frameNum;
-	int start, end;
-	int c, s, N;
-	int d, v;
-
-	V = (const vdif_edv4_header *)packed;
-	if ((V->eversion != 4) || (V->masklength < 1) || (V->masklength > 64))
-	{
-		// fprintf(m5stderr, "VDIF Warning: VDIF EDV4 blanker found EDV%d with masklength %d!\n", V->eversion, V->masklength);
-		return;
-	}
-	nChan = 1 << (V->nchan);
-	frameLength = V->framelength8 * 8;
-	sampPerFrame = (frameLength - 32)*8/(nChan*(V->nbits + 1));
-	goodMask = (1 << nChan) - 1;
-
-	d = nChan / V->masklength;
-
-	for(c = 0; c < nChan; ++c)
-	{
-		invalidsamples[c] = 0;
-	}
-
-	frameNum = offsetsamples / sampPerFrame;
-	V = (const vdif_edv4_header *)(packed + frameNum*frameLength);
-	start = offsetsamples % sampPerFrame;
-	if(start + nsamp < sampPerFrame)
-	{
-		end = start + nsamp;
-	}
-	else
-	{
-		end = sampPerFrame;
-	}
-
-	v = 0;
-	for(;;)
-	{
-		N = end - start;
-		if(V->invalid == 0 && V->validitymask != goodMask)
-		{
-			/* only count valid frames with incomplete validity mask */
-
-			for(c = 0; c < nChan; ++c)
-			{
-				if((V->validitymask & (1 << (c/d))) == 0)
-				{
-					for(s = 0; s < N; ++s)
-					{
-						if(unpacked[c][s+v] != 0.0)
-						{
-							unpacked[c][s+v] = 0.0;
-							++invalidsamples[c];
-						}
-					}
-				}
-			}
-		}
-	
-		nsamp -= N;
-		if(nsamp <= 0)
-		{
-			break;
-		}
-		v += N;
-		++frameNum;
-		V = (const vdif_edv4_header *)(packed + frameNum*frameLength);
-		start = 0;
-		if(nsamp < sampPerFrame)
-		{
-			end = nsamp;
-		}
-		else
-		{
-			end = sampPerFrame;
-		}
-	}
-}
-
-/* works only on complex-valued VDIF */
-/* this function returns into invalidsamples[] number of _additional_ samples 
-   found invalid, above and beyond that found by the decoder (e.g., from frames
-   with invalid bit set or truncated frames with fill pattern */
-void blank_vdif_EDV4_complex(const void *packed, int offsetsamples, mark5_float_complex **unpacked, int nsamp, int *invalidsamples)
-{
-	const vdif_edv4_header *V;	
-	int nChan;
-	int frameLength;
-	int sampPerFrame;
-	uint64_t goodMask;
-	int frameNum;
-	int start, end;
-	int c, s, N;
-	int d, v;
-
-	V = (const vdif_edv4_header *)packed;
-	if ((V->eversion != 4) || (V->masklength < 1) || (V->masklength > 64))
-	{
-		// fprintf(m5stderr, "VDIF Warning: VDIF EDV4 blanker found EDV%d with masklength %d!\n", V->eversion, V->masklength);
-		return;
-	}
-	nChan = 1 << (V->nchan);
-	frameLength = V->framelength8 * 8;
-	sampPerFrame = (frameLength - 32)*8/(nChan*(V->nbits + 1));
-	goodMask = (1 << nChan) - 1;
-
-	d = nChan / V->masklength;
-
-	for(c = 0; c < nChan; ++c)
-	{
-		invalidsamples[c] = 0;
-	}
-
-	frameNum = offsetsamples / sampPerFrame;
-	V = (const vdif_edv4_header *)(packed + frameNum*frameLength);
-	start = offsetsamples % sampPerFrame;
-	if(start + nsamp < sampPerFrame)
-	{
-		end = start + nsamp;
-	}
-	else
-	{
-		end = sampPerFrame;
-	}
-
-	v = 0;
-	for(;;)
-	{
-		N = end - start;
-		if(V->invalid == 0 && V->validitymask != goodMask)
-		{
-			/* only count valid frames with incomplete validity mask */
-
-			for(c = 0; c < nChan; ++c)
-			{
-				if((V->validitymask & (1 << (c/d))) == 0)
-				{
-					for(s = 0; s < N; ++s)
-					{
-						if(unpacked[c][s+v] != 0.0)
-						{
-							unpacked[c][s+v] = 0.0;
-							++invalidsamples[c];
-						}
-					}
-				}
-			}
-		}
-	
-		nsamp -= N;
-		if(nsamp <= 0)
-		{
-			break;
-		}
-		v += N;
-		++frameNum;
-		V = (const vdif_edv4_header *)(packed + frameNum*frameLength);
-		start = 0;
-		if(nsamp < sampPerFrame)
-		{
-			end = nsamp;
-		}
-		else
-		{
-			end = sampPerFrame;
-		}
-	}
-}

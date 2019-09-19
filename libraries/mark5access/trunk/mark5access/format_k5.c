@@ -1059,7 +1059,7 @@ static int format_k5_make_formatname(struct mark5_stream *ms)
 	
 	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH,
 		"%s-%d-%d-%d", k5formatname[k->submode],
-		ms->Mbps, ms->nchan, ms->nbit);
+		(int)(ms->Mbps + 0.5), ms->nchan, ms->nbit);
 
 	return 0;
 }
@@ -1125,7 +1125,7 @@ static int format_k5_init(struct mark5_stream *ms)
 		nchan = (k->header[6] & 0x02) ? 4 : 1; // 1 or 4
 		// But 16 channels seem to exist .. does this use 4 files?
 		rate = k5samprate[(k->header[6] >> 2) & 0x0F]; // as in look up table
-		Mbps = rate*nbit*nchan/1000000;
+		Mbps = (int)((uint64_t)rate*nbit*nchan/1000000);
 
 		if(ms->nbit <= 0)
 		{
@@ -1137,7 +1137,7 @@ static int format_k5_init(struct mark5_stream *ms)
 		}
 		if(ms->Mbps <= 0)
 		{
-			ms->Mbps = Mbps;
+			ms->Mbps = (double)Mbps;
 		}
 
 		if(nbit != ms->nbit)
@@ -1174,7 +1174,7 @@ static int format_k5_init(struct mark5_stream *ms)
 
 	ms->databytes = 1000000*ms->Mbps/8;
 	ms->framebytes = ms->databytes + k5headersize[k->submode];
-	ms->framesamples = 1000000*ms->Mbps/(ms->nbit*ms->nchan);
+	ms->framesamples = (int)((uint64_t)1000000*ms->Mbps/(ms->nbit*ms->nchan));
 	ms->samprate = ms->framesamples;
 	ms->framens = 1000000000.0; // 1 sec
 
@@ -1312,7 +1312,7 @@ struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit, 
 	k->submode = submode;
 	memset(k->header, 0, 32);
 
-	f->Mbps = Mbps;
+	f->Mbps = (double)Mbps;
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = k;
@@ -1320,7 +1320,8 @@ struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit, 
 	f->gettime = stream_frame_time_k5;
 	f->init_format = format_k5_init;
 	f->final_format = format_k5_final;
-	f->fixmjd = format_k5_fixmjd;  
+	f->fixmjd = format_k5_fixmjd;
+	f->iscomplex = 0;	
 	f->validate = one;
 	//f->resync = one;
 	f->decode = NULL;

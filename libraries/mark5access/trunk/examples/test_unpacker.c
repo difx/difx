@@ -35,10 +35,16 @@
 
 static void usage(const char *pgm)
 {
-	printf("Usage : %s <format> [<n> [<offset>] ]\n", pgm);
-	printf("\n  <format> is something like VLBA1_4-128-8-2\n");
-	printf("             or for VDIF: VDIF_1000-64-1-2\n");
-	printf("             (where 1000 is payload size in bytes)\n");
+	printf("Usage : %s <dataformat> [<n> [<offset>] ]\n", pgm);
+	printf("\n  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
+	printf("    VLBA1_2-256-8-2\n");
+	printf("    MKIV1_4-128-2-1\n");
+	printf("    Mark5B-512-16-2\n");
+	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n");
+	printf("  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
+	printf("    VDIF_1000-64000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
+	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
+	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("\n  <n>      is samples to look at [default 32]\n");
 	printf("\n  <offset> is samples to slip [default 0]\n\n");
 }

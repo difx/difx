@@ -734,7 +734,7 @@ void DataStream::updateConfig(int segmentindex)
   do {
     nsaccumulate += bufferinfo[segmentindex].bytespersampledenom*bufferinfo[segmentindex].sampletimens;
     bufferinfo[segmentindex].bytesbetweenintegerns += bufferinfo[segmentindex].bytespersamplenum;
-  } while (!(fabs(nsaccumulate - int(nsaccumulate)) < Mode::TINY));
+  } while (!(fabs(nsaccumulate - int(nsaccumulate+0.5)) < Mode::TINY));
   bufferinfo[segmentindex].nsinc = int((bufferinfo[segmentindex].sampletimens*(bufferbytes/numdatasegments)*bufferinfo[segmentindex].bytespersampledenom)/(bufferinfo[segmentindex].bytespersamplenum) + 0.5);
 
   /* in theory these parameters below can change but in practice that would lead to major complications.  In any case
@@ -1859,7 +1859,7 @@ void DataStream::diskToMemory(int buffersegment)
   // Copy any saved bytes from the last segment, if a jump in time was detected
   if (tempbytes>0) {
     nbytes -= tempbytes;
-    // Don't increment consumbed bytes as these were already counted from the last segment
+    // Don't increment consumed bytes as these were already counted from the last segment
     tempbytes=0;
   } 
 

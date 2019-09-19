@@ -1779,6 +1779,7 @@ void CorrParams::defaults()
 	tweakIntTime = false;
 	sortAntennas = true;
 	exhaustiveAutocorrs = false;
+	allowAllClockOffsets = false;
 }
 
 void pathify(std::string &filename)
@@ -1881,6 +1882,10 @@ int CorrParams::setkv(const std::string &key, const std::string &value)
 	else if(key == "exhaustiveAutocorrs")
 	{
 		exhaustiveAutocorrs = parseBoolean(value);
+	}
+	else if(key == "allowAllClockOffsets")
+	{
+		allowAllClockOffsets = parseBoolean(value);
 	}
 	else if(key == "maxLength")
 	{

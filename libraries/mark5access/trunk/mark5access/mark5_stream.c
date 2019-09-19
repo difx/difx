@@ -39,6 +39,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+
 #include "mark5access/mark5_stream.h"
 
 FILE* m5stderr = (FILE*)NULL;
@@ -227,6 +228,7 @@ static int set_format(struct mark5_stream *ms, const struct mark5_format_generic
 		ms->final_format = f->final_format;
 		ms->decode = f->decode;
 		ms->count = f->count;
+		ms->iscomplex = f->iscomplex;
 		ms->complex_decode = f->complex_decode;
 		ms->validate = f->validate;
 		ms->resync = f->resync;
@@ -239,6 +241,8 @@ static int set_format(struct mark5_stream *ms, const struct mark5_format_generic
 			memcpy(ms->formatdata, f->formatdata, f->formatdatasize);
 		}
 		ms->Mbps = f->Mbps;
+		ms->framesperperiod = f->framesperperiod;
+		ms->alignmentseconds = f->alignmentseconds;
 		ms->nchan = f->nchan;
 		ms->nbit = f->nbit;
 		ms->decimation = f->decimation;
@@ -264,24 +268,26 @@ static int set_format(struct mark5_stream *ms, const struct mark5_format_generic
 
 static int copy_format(const struct mark5_stream *ms, struct mark5_format *mf)
 {
-	mf->frameoffset = ms->frameoffset;
-	mf->framebytes  = ms->framebytes;
-	mf->databytes   = ms->databytes;
-	mf->framens     = ms->framens;
-	mf->mjd         = ms->mjd;
-	mf->sec         = ms->sec;
-	mf->ns          = ms->ns;
-	mf->Mbps        = ms->Mbps;
-	mf->nchan       = ms->nchan;
-	mf->nbit        = ms->nbit;
-	mf->decimation	= ms->decimation;
+	mf->frameoffset     = ms->frameoffset;
+	mf->framebytes      = ms->framebytes;
+	mf->databytes       = ms->databytes;
+	mf->framens         = ms->framens;
+	mf->mjd             = ms->mjd;
+	mf->sec             = ms->sec;
+	mf->ns              = ms->ns;
+	mf->Mbps            = ms->Mbps;
+	mf->framesperperiod = ms->framesperperiod;
+	mf->alignmentseconds= ms->alignmentseconds;
+	mf->nchan           = ms->nchan;
+	mf->nbit            = ms->nbit;
+	mf->decimation      = ms->decimation;
 
 	return 0;
 }
 
 static int mark5_format_init(struct mark5_stream *ms)
 {
-	ms->framenum = 0;
+        ms->framenum = 0;
 	ms->readposition = 0;
 	ms->frame = 0;
 	ms->payload = 0;
@@ -301,7 +307,7 @@ struct mark5_stream *mark5_stream_open(const char *filename, int nbit, int fanou
 	struct mark5_format_generic *f;
 	struct mark5_stream *ms;
 	int status, ntrack;
-	
+
 	s = new_mark5_stream_file(filename, offset);
 	if(!s)
 	{
@@ -379,7 +385,9 @@ struct mark5_stream *mark5_stream_open(const char *filename, int nbit, int fanou
 
 struct mark5_format_generic *new_mark5_format_generic_from_string( const char *formatname)
 {
-	int a, b, c, d, e, r;
+	int a, b, c, d, e, r, s;
+	char newformatseparator = 'm'; 	//If present in VDIF or CODIF format string, indicates new-style file name
+					//with "<FRAMESPERPERIOD>m<ALIGNEMENTSECONDS> rather than <Mbps>"
 
 	mark5_library_consistent();
 
@@ -483,73 +491,183 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 #endif
 	else if(strncasecmp(formatname, "VDIF_", 5) == 0)
 	{
-		r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
 		{
-			return 0;
+			r = sscanf(formatname+5, "%d-%dm%d-%d-%d/%d", &e, &a, &s, &b, &c, &d);
+			if(r < 5)
+			{
+				return 0;
+			}
+			if(r < 6)
+			{
+				d = 1;
+			}
+			return new_mark5_format_generalized_vdif(a, s, b, c, d, e, 32, 0);
 		}
-		if(r < 5)
+		else
 		{
-			d = 1;
+			r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+			if(r < 4)
+			{
+				return 0;
+			}
+			if(r < 5)
+			{
+				d = 1;
+			}
+			return new_mark5_format_vdif(a, b, c, d, e, 32, 0);
 		}
-
-		return new_mark5_format_vdif(a, b, c, d, e, 32, 0);
 	}
 	else if(strncasecmp(formatname, "VDIFL_", 6) == 0)
 	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
 		{
-			return 0;
+			r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &e, &a, &s, &b, &c, &d);
+			if(r < 5)
+			{
+			        return 0;
+			}
+			if(r < 6)
+			{
+			        d = 1;
+			}
+			
+			return new_mark5_format_generalized_vdif(a, s, b, c, d, e, 16, 0);
 		}
-		if(r < 5)
+		else
 		{
-			d = 1;
+			r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+			if(r < 4)
+			{
+				return 0;
+			}
+			if(r < 5)
+			{
+				d = 1;
+			}
+	
+			return new_mark5_format_vdif(a, b, c, d, e, 16, 0);
 		}
-
-		return new_mark5_format_vdif(a, b, c, d, e, 16, 0);
 	}
 	else if(strncasecmp(formatname, "VDIFB_", 6) == 0)
 	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
 		{
-			return 0;
+			r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &e, &a, &s, &b, &c, &d);
+			if(r < 5)
+			{
+			        return 0;
+			}
+			if(r < 6)
+			{
+				d = 1;
+			}
+			return new_mark5_format_generalized_vdifb(a, s, b, c, d, e, 32, 0);
 		}
-		if(r < 5)
+		else
 		{
-			d = 1;
+			r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+			if(r < 4)
+			{
+				return 0;
+			}
+			if(r < 5)
+			{
+				d = 1;
+			}
+		
+			return new_mark5_format_vdifb(a, b, c, d, e, 32, 0);
 		}
-
-		return new_mark5_format_vdifb(a, b, c, d, e, 32, 0);
 	}
 	else if(strncasecmp(formatname, "VDIFC_", 6) == 0)
 	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
 		{
-			return 0;
-		}
-		if(r < 5)
-		{
-			d = 1;
-		}
+			r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &e, &a, &s, &b, &c, &d);
+			if(r < 5)
+			{
+			        return 0;
+			}
+			if(r < 6)
+			{
+			        d = 1;
+			}
 
-		return new_mark5_format_vdif(a, b, c, d, e, 32, 1);
+			return new_mark5_format_generalized_vdif(a, s, b, c, d, e, 32, 1);
+		}
+		else
+		{
+			r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+			if(r < 4)
+			{
+				return 0;
+			}
+			if(r < 5)
+			{
+				d = 1;
+			}
+	
+			return new_mark5_format_vdif(a, b, c, d, e, 32, 1);
+		}
 	}
 	else if(strncasecmp(formatname, "VDIFCL_", 7) == 0)
 	{
-		r = sscanf(formatname+7, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
+		{
+			r = sscanf(formatname+7, "%d-%dm%d-%d-%d/%d", &e, &a, &s, &b, &c, &d);
+			if(r < 5)
+			{
+				return 0;
+			}
+			if(r < 6)
+			{
+				d = 1;
+			}
+
+			return new_mark5_format_generalized_vdif(a, s, b, c, d, e, 16, 1);
+		}
+		else
+		{
+			r = sscanf(formatname+7, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+			if(r < 4)
+			{
+				return 0;
+			}
+			if(r < 5)
+			{
+				d = 1;
+			}
+	
+			return new_mark5_format_vdif(a, b, c, d, e, 16, 1);
+		}
+	}
+	else if(strncasecmp(formatname, "CODIF_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &e, &a, &s, &b, &c, &d);
+		if(r < 5)
 		{
 			return 0;
 		}
-		if(r < 5)
+		if(r < 6)
 		{
 			d = 1;
 		}
 
-		return new_mark5_format_vdif(a, b, c, d, e, 16, 1);
+		return new_mark5_format_codif(a,s,b,c,d,e,64,0);
+	}
+	else if(strncasecmp(formatname, "CODIFC_", 7) == 0)
+	{
+		r = sscanf(formatname+7, "%d-%dm%d-%d-%d/%d", &e, &a, &s, &b, &c, &d);
+		if(r < 5)
+		{
+			return 0;
+		}
+		if(r < 6)
+		{
+			d = 1;
+		}
+
+		return new_mark5_format_codif(a,s,b,c,d,e,64,1);
 	}
 	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
 	{
@@ -573,16 +691,16 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 	}
 }
 
-/* a string containg a list of supported formats */
+/* a string containing a list of supported formats */
 const char *mark5_stream_list_formats()
 {
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*], KVN5B-*-*-*[/*], D2K-*-*-*[/*]";
+  return("VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*], KVN5B-*-*-*[/*], D2K-*-*-*[/*], CODIF_*-*m*-*-*[/*]", "CODIFC_*-*m*-*-*[/*]");
 }
 
 /* given a format string, populate a structure with info about format */
 struct mark5_format *new_mark5_format_from_name(const char *formatname)
 {
-	int a=1, b=0, c=0, d=0, e=0, ntrack=0;
+	int a=1, b=0, c=0, d=0, e=0, s=0, ntrack=0;
 	int databytes, framebytes;
 	double framens;
 	struct mark5_format *f;
@@ -590,6 +708,10 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	int decimation = 1;
 	int r;
 	int fanout = 1;
+	int framesperperiod;
+	int alignmentseconds = 1;
+	double mbps;
+	char newformatseparator = 'm';
 
 	mark5_library_consistent();
 
@@ -601,9 +723,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_VLBA;
+		mbps = (double)b;
 		databytes = 2500*a*c*d;
 		framebytes = 2520*a*c*d;
 		framens = 1000*((20000*a*c*d)/b);
+		framesperperiod = (50*b)/(a*c*d);
 		if(r > 4)
 		{
 			decimation = e;
@@ -619,9 +743,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_MARK4;
+		mbps = (double)b;
 		databytes = 2500*a*c*d;
 		framebytes = databytes;
 		framens = 1000*((20000*a*c*d)/b);
+		framesperperiod = (50*b)/(a*c*d);
 		if(r > 4)
 		{
 			decimation = e;
@@ -637,9 +763,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_MARK5B;
+		mbps = (double)b;
 		databytes = 10000;
 		framebytes = databytes+16;
 		framens = 1000.0*(8.0*databytes/(double)b);
+		framesperperiod = (b*1000000)/(8*databytes);
 		if(r > 3)
 		{
 			decimation = e;
@@ -653,9 +781,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_KVN5B;
+		mbps = (double)b;
 		databytes = 10000;
 		framebytes = databytes+16;
 		framens = 1000.0*(8.0*databytes/(double)b);
+		framesperperiod = (b*1000000)/(8*databytes);
 		if(r > 3)
 		{
 			decimation = e;
@@ -669,9 +799,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_D2K;
+		mbps = (double)b;
 		databytes = 10000;
 		framebytes = databytes+16;
 		framens = 1000.0*(8.0*databytes/(double)b);
+		framesperperiod = (b*1000000)/(8*databytes);
 		if(r > 3)
 		{
 			decimation = e;
@@ -685,9 +817,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_K5;
+		mbps = (double)b;
 		databytes = 1000000*b/8;
 		framebytes = 32 + databytes;
 		framens = 1000000000;
+		framesperperiod = 1;
 		if(r > 3)
 		{
 			decimation = e;
@@ -701,9 +835,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_K5;
+		mbps = b;
 		databytes = 1000000*b/8;
 		framebytes = databytes + 8;
 		framens = 1000000000;
+		framesperperiod = 1;
 		if(r > 3)
 		{
 			decimation = e;
@@ -714,18 +850,42 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	 */
 	else if(strncasecmp(formatname, "VDIF_", 5) == 0)
 	{
-		r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
 		{
-			return 0;
+			r = sscanf(formatname+5, "%d-%dm%d-%d-%d/%d", &a, &b, &s, &c, &d, &e);	
+			if(r < 5)
+			{
+				return 0;
+			}
+			if(r > 5)
+			{
+				decimation = e;
+			}
+			F = MK5_FORMAT_VDIF;
+			mbps = ((double)a*b*8)/s;
+			databytes = a;
+			framebytes = databytes + 32;
+			framens = 1000.0*(8.0*databytes/(double)b);
+			framesperperiod = b;
+			alignmentseconds = s;
 		}
-		F = MK5_FORMAT_VDIF;
-		databytes = a;
-		framebytes = databytes + 32;
-		framens = 1000.0*(8.0*databytes/(double)b);
-		if(r > 4)
+		else
 		{
-			decimation = e;
+			r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+			if(r < 4)
+			{
+				return 0;
+			}
+			F = MK5_FORMAT_VDIF;
+			mbps = (double)b;
+			databytes = a;
+			framebytes = databytes + 32;
+			framens = 1000.0*(8.0*databytes/(double)b);
+			framesperperiod = (b*1000000)/(8*databytes);
+			if(r > 4)
+			{
+				decimation = e;
+			}
 		}
 	}
 	/* for VDIFB, the datasize per packet must be supplied as first numeric element:
@@ -733,52 +893,124 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	 */
 	else if(strncasecmp(formatname, "VDIFB_", 6) == 0)
 	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
 		{
-			return 0;
+			r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &a, &b, &s, &c, &d, &e);
+			if(r < 5)
+			{
+				return 0;
+			}
+			if(r > 5)
+			{
+				decimation = e;
+			}
+			F = MK5_FORMAT_VDIFB;
+			mbps = ((double)a*b*8)/s;
+			databytes = a;
+			framebytes = databytes + 32;
+			framens = 1000.0*(8.0*databytes/(double)b);
+			framesperperiod = b;
+			alignmentseconds = s;
 		}
-		F = MK5_FORMAT_VDIFB;
-		databytes = a;
-		framebytes = databytes + 32;
-		framens = 1000.0*(8.0*databytes/(double)b);
-		if(r > 4)
+		else
 		{
-			decimation = e;
+			r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+			if(r < 4)
+			{
+				return 0;
+			}
+			F = MK5_FORMAT_VDIFB;
+			mbps = (double)b;
+			databytes = a;
+			framebytes = databytes + 32;
+			framens = 1000.0*(8.0*databytes/(double)b);
+			framesperperiod = (b*1000000)/(8*databytes);
+			if(r > 4)
+			{
+				decimation = e;
+			}
 		}
 	}
 	/* for VDIF with legacy (16 byte) headers, a different name is used: */
 	else if(strncasecmp(formatname, "VDIFL_", 6) == 0)
 	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
 		{
-			return 0;
+			r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &a, &b, &s, &c, &d, &e);
+			if(r < 5)
+			{
+				return 0;
+			}
+			if(r > 5)
+			{
+				decimation = e;
+			}
+			F = MK5_FORMAT_VDIF;
+			mbps = ((double)a*b*8)/s;
+			databytes = a;
+			framebytes = databytes + 16;
+			framens = 1000.0*(8.0*databytes/(double)b);
+			framesperperiod = b;
+			alignmentseconds = s;
 		}
-		F = MK5_FORMAT_VDIF;
-		databytes = a;
-		framebytes = databytes + 16;
-		framens = 1000.0*(8.0*databytes/(double)b);
-		if(r > 4)
+		else
 		{
-			decimation = e;
+			r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+			if(r < 4)
+			{
+				return 0;
+			}
+			F = MK5_FORMAT_VDIF;
+			mbps = (double)b;
+			databytes = a;
+			framebytes = databytes + 16;
+			framens = 1000.0*(8.0*databytes/(double)b);
+			framesperperiod = (b*1000000)/(8*databytes);
+			if(r > 4)
+			{
+				decimation = e;
+			}
 		}
 	}
 	/* for VDIF with complex sampling, a different name is used: */
 	else if(strncasecmp(formatname, "VDIFC_", 6) == 0)
 	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
-		if(r < 4)
+		if (strchr(formatname, newformatseparator) != NULL)
 		{
-			return 0;
+			r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &a, &b, &s, &c, &d, &e);
+			if(r < 5)
+			{
+				return 0;
+			}
+			if(r > 5)
+			{
+				decimation = e;
+			}
+			F = MK5_FORMAT_VDIF;
+			mbps = ((double)a*b*8)/s;
+			databytes = a;
+			framebytes = databytes + 32;
+			framens = 1000.0*(8.0*databytes/(double)b);
+			framesperperiod = b;
+			alignmentseconds = s;
 		}
-		F = MK5_FORMAT_VDIF;
-		databytes = a;
-		framebytes = databytes + 32;
-		framens = 1000.0*(8.0*databytes/(double)b);
-		if(r > 4)
+		else
 		{
-			decimation = e;
+			r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+			if(r < 4)
+			{
+				return 0;
+			}
+			F = MK5_FORMAT_VDIF;
+			mbps = (double)b;
+			databytes = a;
+			framebytes = databytes + 32;
+			framens = 1000.0*(8.0*databytes/(double)b);
+			framesperperiod = (b*1000000)/(8*databytes);
+			if(r > 4)
+			{
+				decimation = e;
+			}
 		}
 	}
 	else if(strncasecmp(formatname, "VDIF-", 5) == 0)
@@ -789,9 +1021,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_VDIF;
+		mbps = (double)b;
 		databytes = 0;
 		framebytes = databytes + 32;
 		framens = 1000.0*(8.0*databytes/(double)b);
+		framesperperiod = 0;
 		if(r > 4)
 		{
 			decimation = e;
@@ -805,9 +1039,11 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_VDIFB;
+		mbps = (double)b;
 		databytes = 0;
 		framebytes = databytes + 32;
 		framens = 1000.0*(8.0*databytes/(double)b);
+		framesperperiod = 0;
 		if(r > 4)
 		{
 			decimation = e;
@@ -822,13 +1058,54 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_VDIF;
+		mbps = (double)b;
 		databytes = 0;
 		framebytes = databytes + 16;
 		framens = 1000.0*(8.0*databytes/(double)b);
+		framesperperiod = 0;
 		if(r > 4)
 		{
 			decimation = e;
 		}
+	}
+	/* for CODIF */
+	else if(strncasecmp(formatname, "CODIF_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &a, &b, &s, &c, &d, &e);
+		if(r < 5)
+		{
+			return 0;
+		}
+		if(r>5)
+		{
+			decimation = e;
+		}
+		F = MK5_FORMAT_CODIF;
+		mbps = ((double)a*b*8)/s;
+		databytes = a;
+		framebytes = a+64;
+		framens = 0;
+		framesperperiod = b;
+		alignmentseconds = s;
+	}
+	else if(strncasecmp(formatname, "CODIFC_", 7) == 0)
+	{
+		r = sscanf(formatname+7, "%d-%dm%d-%d-%d/%d", &a, &b, &s, &c, &d, &e);
+		if(r < 5)
+		{
+			return 0;
+		}
+		if(r>5)
+		{
+			decimation = e;
+		}
+		F = MK5_FORMAT_CODIF;
+		mbps = ((double)a*b*8)/s;
+		databytes = a;
+		framebytes = a+64;
+		framens = 0;
+		framesperperiod = b;
+		alignmentseconds = s;
 	}
 	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
 	{
@@ -838,6 +1115,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_VLBN;
+		mbps = (double)b;
 		databytes = 2500*a*c*d;
 		framebytes = 2520*a*c*d;
 		framens = 1000*((20000*a*c*d)/b);
@@ -847,6 +1125,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		}
 		fanout = a;
 		ntrack = a*c*d;
+		framesperperiod = (50*b)/(a*c*d);
 	}
 	else
 	{
@@ -856,7 +1135,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	f = (struct mark5_format *)calloc(1, sizeof(struct mark5_format));
 	f->format = F;
 	f->fanout = fanout;
-	f->Mbps = b;
+	f->Mbps = mbps;
 	f->nchan = c;
 	f->nbit = d;
 	f->framebytes = framebytes;
@@ -864,6 +1143,8 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	f->ntrack = ntrack;
 	f->framens = framens;
 	f->decimation = decimation;
+	f->framesperperiod = framesperperiod;
+	f->alignmentseconds = alignmentseconds;
 
 	return f;
 }
@@ -875,7 +1156,7 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 	struct mark5_format *mf;
 	int status, ntrack;
 	size_t offset;
-	int framesize;
+	int framesize, headersize;
 
 	mark5_library_consistent();
 	
@@ -1055,6 +1336,46 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		}
 	}
 
+	/* CODIF */
+	framesize = 0;
+	headersize = 0;
+	if (find_codif_frame(ms->datawindow, ms->datawindowsize, &offset, &framesize, &headersize) >= 0)
+	{
+	    void * header;
+	    header = (void*)ms->datawindow+offset;
+
+	    ms->frameoffset = offset;
+	    f = new_mark5_format_codif(
+		  get_codif_frames_per_period(header),
+		  get_codif_alignment_seconds(header),
+		  get_codif_chans_per_thread(header),
+		  get_codif_quantization_bits(header),
+		  1, /* decimation */
+		  framesize-headersize,
+		  headersize,
+		  get_codif_complex(header));
+
+	    set_format(ms, f);
+	    status = mark5_format_init(ms);
+	    if(status < 0)
+	      {
+		  if(f->final_format)
+		    {
+			f->final_format(ms);
+		    }
+		  free(f);
+	      }
+	    else
+	      {
+		  copy_format(ms, mf);
+		  mf->format = MK5_FORMAT_CODIF;
+		  mf->ntrack = get_codif_threads(ms->datawindow+offset, ms->datawindowsize-offset, framesize);
+		  delete_mark5_stream(ms);
+		  
+		  return mf;
+	      }
+	}
+	
 #ifdef K5WORKS
 	/* k5 */
 	f = new_mark5_format_k5(0, 0, 0, -1);
@@ -1094,14 +1415,16 @@ void print_mark5_format(const struct mark5_format *mf)
 		return;
 	}
 	fprintf(m5stdout, "  format ID = %d\n", mf->format);
-	fprintf(m5stdout, "  Mbps = %d\n", mf->Mbps);
+	fprintf(m5stdout, "  Mbps = %f\n", mf->Mbps);
+	fprintf(m5stdout, "  Frames per period = %d\n", mf->framesperperiod);
+	fprintf(m5stdout, "  Alignment seconds = %d\n", mf->alignmentseconds);
 	fprintf(m5stdout, "  nchan = %d\n", mf->nchan);
 	fprintf(m5stdout, "  nbit = %d\n", mf->nbit);
 	fprintf(m5stdout, "  frameoffset = %d\n", mf->frameoffset);
 	fprintf(m5stdout, "  framebytes = %d\n", mf->framebytes);
 	fprintf(m5stdout, "  framens = %f\n", mf->framens);
 	fprintf(m5stdout, "  mjd = %d sec = %d ns = %d\n", mf->mjd, mf->sec, mf->ns);
-	if(mf->format == MK5_FORMAT_VDIF || mf->format == MK5_FORMAT_VDIFL || mf->format == MK5_FORMAT_VDIFB)
+	if(mf->format == MK5_FORMAT_VDIF || mf->format == MK5_FORMAT_VDIFL || mf->format == MK5_FORMAT_VDIFB || mf->format == MK5_FORMAT_CODIF)
 	{
 		fprintf(m5stdout, "  nthread = %d\n", mf->ntrack);
 	}
@@ -1306,6 +1629,9 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	fprintf(m5stdout, "  offset = %d\n", ms->frameoffset);
 	fprintf(m5stdout, "  framebytes = %d bytes\n", ms->framebytes);
 	fprintf(m5stdout, "  datasize = %d bytes\n", ms->databytes);
+	fprintf(m5stdout, "  frames per period = %d\n", ms->framesperperiod);
+	fprintf(m5stdout, "  bits = %d\n", ms->nbit);
+	fprintf(m5stdout, "  alignment seconds = %d\n", ms->alignmentseconds);
 	fprintf(m5stdout, "  sample granularity = %d\n", ms->samplegranularity);
 	fprintf(m5stdout, "  frame granularity = %d\n", ms->framegranularity);
 	fprintf(m5stdout, "  gframens = %d\n", ms->gframens);
@@ -1377,7 +1703,7 @@ int mark5_stream_copy(struct mark5_stream *ms, int nbytes, char *data)
 	}
 
 	int bitspersample = ms->nbit;
-	if (ms->complex_decode) bitspersample *= 2;
+	if (ms->iscomplex) bitspersample *= 2;
 
 	q = ms->samplegranularity*ms->nchan*bitspersample*ms->decimation/8; 
 	if (q==0) q=1;  // WALTER IS THIS RIGHT???
@@ -1496,7 +1822,7 @@ int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp, mark5_float_
 		return -1;
 	} 
 
-	if(ms->complex_decode) 
+	if(ms->iscomplex) 
 	{
 		if(ms->readposition<0)
 		{
@@ -1536,7 +1862,7 @@ int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp, mark5
 	const mark5_float_complex *fc;
 	int c, i, r;
 
-	if (ms->complex_decode) 
+	if (ms->iscomplex) 
 	{
 		r = mark5_stream_decode_complex(ms, nsamp, (mark5_float_complex**)data);
 		if(r < 0) 
@@ -1616,7 +1942,9 @@ void mark5_format_generic_print(const struct mark5_format_generic *f)
 	if(f)
 	{
 		printf("  formatdatasize = %d\n", f->formatdatasize);
-		printf("  Mbps = %d\n", f->Mbps);
+		printf("  Mbps = %f\n", f->Mbps);
+		printf("  Frames per period = %d\n", f->framesperperiod);
+		printf("  Alignment seconds = %d\n", f->alignmentseconds);
 		printf("  nchan = %d\n", f->nchan);
 		printf("  nbit = %d\n", f->nbit);
 		printf("  decimation = %d\n", f->decimation);

@@ -36,6 +36,7 @@
 #include "visibility.h"
 #include "alert.h"
 #include "vdifio.h"
+#include "codifio.h"
 #include "mathutil.h"
 #include "sysutil.h"
 
@@ -220,8 +221,9 @@ void Configuration::parseConfiguration(istream* input)
             cfatal << startl << "Input file out of order!  Attempted to read configuration details without knowledge of common settings - aborting!!!" << endl;
           consistencyok = false;
         }
-        else
+        else {
           consistencyok = processConfig(input);
+	}
         break;
       case RULE:
         if(!configread) {
@@ -229,8 +231,9 @@ void Configuration::parseConfiguration(istream* input)
             cfatal << startl << "Input file out of order!  Attempted to read rule details without knowledge of configurations - aborting!!!" << endl;
           consistencyok = false;
         }
-        else
+        else {
           consistencyok = processRuleTable(input);
+	}
         break;
       case FREQ:
         consistencyok = processFreqTable(input);
@@ -380,10 +383,12 @@ void Configuration::parseConfiguration(istream* input)
       {
 	if(configs[i].pulsarbin)
 	  {
-	    if (consistencyok)
+	    if (consistencyok) {
 	      consistencyok = processPulsarConfig(configs[i].pulsarconfigfilename, i);
-	    if (consistencyok)
+	    }
+	    if (consistencyok) {
 	      consistencyok = setPolycoFreqInfo(i);
+	    }
 	  }
 	
 	if(configs[i].phasedarray)
@@ -395,6 +400,9 @@ void Configuration::parseConfiguration(istream* input)
     if(consistencyok) {
       model = new Model(this, calcfilename);
       consistencyok = model->openSuccess();
+      if (!consistencyok) {
+	cerror << startl << "Failed to open calc file " << calcfilename << endl;
+      }
     }
     for(int i=0;i<telescopetablelength;i++) {
       if(consistencyok)
@@ -504,9 +512,9 @@ Configuration::~Configuration()
   delete [] numprocessthreads;
 }
 
-int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, int numthreads, char *formatname) const
+int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, int alignmentseconds, int numthreads, char *formatname) const
 {
-  int fanout=1, mbps;
+  int fanout=1, mbps, framesperperiod;
 
   mbps = int(2*nchan*bw*nbits + 0.5);
 
@@ -585,6 +593,17 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
 	else
 	  sprintf(formatname, "VDIFL_%d-%d-%d-%d", framebytes-VDIF_LEGACY_HEADER_BYTES, mbps, nchan, nbits);
       break;
+    case CODIF:
+      /* FIXME: Do the format name properly, not hardcoded! */
+      framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits / ((framebytes-CODIF_HEADER_BYTES) * 8) + 0.5);
+      if (sampling==COMPLEX) {
+        framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-CODIF_HEADER_BYTES) * 8) + 0.5);
+        sprintf(formatname, "CODIFC_%d-%dm%d-%d-%d", framebytes-CODIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
+      }
+      else {
+        sprintf(formatname, "CODIF_%d-%dm%d-%d-%d", framebytes-CODIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
+      }
+      break;
     default:
       cfatal << startl << "genMk5FormatName : unsupported format encountered" << endl;
       return -1;
@@ -616,6 +635,9 @@ int Configuration::getFramePayloadBytes(int configindex, int configdatastreamind
     case VDIFL:
       payloadsize = framebytes - VDIF_LEGACY_HEADER_BYTES; 
       break;
+    case CODIF:
+      payloadsize = framebytes - CODIF_HEADER_BYTES; 
+      break;
     default:
       payloadsize = framebytes;
   }
@@ -641,7 +663,7 @@ void Configuration::getFrameInc(int configindex, int configdatastreamindex, int 
   ns = int(1.0e9*(seconds - sec));
 }
 
-int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex) const
+double Configuration::getFramesPerSecond(int configindex, int configdatastreamindex) const
 {
   int nchan, qb, decimationfactor;
   int payloadsize;
@@ -653,8 +675,8 @@ int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex
   decimationfactor = getDDecimationFactor(configindex, configdatastreamindex);
   payloadsize = getFramePayloadBytes(configindex, configdatastreamindex);
 
-  // This will always work out to be an integer
-  return int(samplerate*nchan*qb*decimationfactor/(8*payloadsize) + 0.5); // Works for complex data
+  // This will always work out to be an integer -  CJP 7/11/17 Not for CODIF - change to double
+  return samplerate*nchan*qb*decimationfactor/(8*payloadsize); // Works for complex data
 }
 
 int Configuration::getMaxDataBytes() const
@@ -787,7 +809,7 @@ int Configuration::getDataBytes(int configindex, int datastreamindex) const
   const datastreamdata &currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
   const freqdata &arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
   validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
-  if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == VLBN || currentds.format == MARK5B || currentds.format == KVN5B || currentds.format == VDIF ||currentds.format == VDIFL || currentds.format == INTERLACEDVDIF)
+  if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == VLBN || currentds.format == MARK5B || currentds.format == KVN5B || currentds.format == VDIF ||currentds.format == VDIFL || currentds.format == INTERLACEDVDIF || currentds.format == CODIF)
   {
     //must be an integer number of frames, with enough margin for overlap on either side
     validlength += (arecordedfreq.decimationfactor*(int)(configs[configindex].guardns/(1000.0/(freqtable[currentds.recordedfreqtableindices[0]].bandwidth*2.0))+1.0)*currentds.numrecordedbands*currentds.numbits)/8;
@@ -972,6 +994,7 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case KVN5B:
     case VDIF:
     case VDIFL:
+    case CODIF:
     case K5VSSP:
     case K5VSSP32:
     case INTERLACEDVDIF:
@@ -1434,6 +1457,7 @@ bool Configuration::processDatastreamTable(istream * input)
     datastreamtable[i].numdatafiles = 0; //default in case its a network datastream
     datastreamtable[i].tcpwindowsizekb = 0; //default in case its a file datastream
     datastreamtable[i].portnumber = -1; //default in case its a file datastream
+    datastreamtable[i].alignmentseconds = 1; //default
 
     //get configuration index for this datastream
     for(int c=0; c<numconfigs; c++)
@@ -1497,11 +1521,18 @@ bool Configuration::processDatastreamTable(istream * input)
       datastreamtable[i].format = INTERLACEDVDIF;
       datastreamtable[i].ismuxed = true;
       setDatastreamMuxInfo(i, line.substr(15,string::npos));
+    } else if(line.substr(0,5)  == "CODIF") {
+      datastreamtable[i].format = CODIF;
+      if(line.length() < 6) {
+        cfatal << startl << "Data format " << line << " too short, expected alignment period info, see vex2difx documentation" << endl;
+        return false;
+      }
+      datastreamtable[i].alignmentseconds = atoi(line.substr(5,string::npos).c_str());
     }
     else
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, K5, MKIV, VLBA, VLBN, MARK5B, KVN5B, VDIF, VDIFL and INTERLACEDVDIF)" << endl;
+        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, K5, MKIV, VLBA, VLBN, MARK5B, KVN5B, VDIF, VDIFL, INTERLACEDVDIF and CODIF)" << endl;
       return false;
     }
     getinputline(input, &line, "QUANTISATION BITS");
@@ -2730,7 +2761,13 @@ bool Configuration::consistencyCheck()
       double nsaccumulate = 0.0;
       do {
         nsaccumulate += dsdata->bytespersampledenom*samplens;
-      } while (!(fabs(nsaccumulate - int(nsaccumulate)) < Mode::TINY));
+	if (nsaccumulate> 1e6)
+        {
+          if(mpiid == 0) //only write one copy of this error message
+            cfatal << startl << "Accumulate time between integer number of nanoseconds is too long (check bandwidth values specified) - aborting!!!" << endl;
+          return false;
+        }
+      } while (!(fabs(nsaccumulate - int(nsaccumulate+0.5)) < Mode::TINY));
       cdebug << startl << "NS accumulate is " << nsaccumulate << " and max geom slip is " << model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001 << ", maxnsslip is " << dsdata->maxnsslip << endl;
       nsaccumulate += model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001;
       if(nsaccumulate > dsdata->maxnsslip)
@@ -2788,9 +2825,9 @@ bool Configuration::consistencyCheck()
       sampletimens = 1000.0/(2.0*freqtable[datastreamtable[configs[i].datastreamindices[j]].recordedfreqtableindices[0]].bandwidth);
       ffttime = sampletimens*freqtable[datastreamtable[configs[i].datastreamindices[j]].recordedfreqtableindices[0]].numchannels*2;
       numffts = configs[i].subintns/ffttime;
-      if(ffttime - (int)(ffttime+0.5) > 0.00000001 || ffttime - (int)(ffttime+0.5) < -0.000000001)
+      if(fabs(ffttime - (int)(ffttime+0.5)) > 0.00000001)
       {
-        if(mpiid == 0) //only write one copy of this error message
+        if(mpiid == 0)  //only write one copy of this error message
           cfatal << startl << "FFT chunk time for config " << i << ", datastream " << j << " is not a whole number of nanoseconds (" << ffttime << ") - aborting!!!" << endl;
         return false;
       }

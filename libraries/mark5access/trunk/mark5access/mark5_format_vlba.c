@@ -9497,7 +9497,7 @@ static int mark5_format_vlba_make_formatname(struct mark5_stream *ms)
 	f = (const struct mark5_format_vlba *)(ms->formatdata);
 	
 	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH, "VLBA1_%d-%d-%d-%d/%d",
-		f->fanout, ms->Mbps, ms->nchan, ms->nbit, ms->decimation);
+		 f->fanout, (int)lround(ms->Mbps), ms->nchan, ms->nbit, ms->decimation);
 
 	return 0;
 }
@@ -9575,13 +9575,13 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 			}
 			ms->samprate = ms->framesamples*(1000000000/ms->framens);
 			datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
-			if(datarate != ms->Mbps)
+			if(datarate != (int)(ms->Mbps + 0.5))
 			{
-				if(ms->Mbps > 0)
+				if((int)(ms->Mbps+0.5) > 0)
 				{
-					fprintf(m5stderr, "Warning: data rate disagrees : %d != %d\n", datarate, ms->Mbps);
+					fprintf(m5stderr, "Warning: data rate disagrees : %d != %f\n", datarate, ms->Mbps);
 				}
-				ms->Mbps = datarate;
+				ms->Mbps = (double)datarate;
 			}
 		}
 	}
@@ -9718,7 +9718,9 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan, int nbit
 	v->fanout = fanout;
 	v->kday = 0;
 
-	f->Mbps = Mbps;
+	f->Mbps = (double)Mbps;
+	f->framesperperiod = (50*Mbps)/(fanout*nchan*nbit);
+	f->alignmentseconds = 1;
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = v;
@@ -9731,6 +9733,7 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan, int nbit
 	f->resync = mark5_format_vlba_resync;
 	f->genheaders = mark5_format_vlba_genheaders;
 	f->decimation = decimation;
+	f->iscomplex = 0;
 	f->complex_decode = 0;
 	f->count = 0;
 	switch(decoderindex)

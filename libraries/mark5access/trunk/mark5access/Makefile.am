@@ -27,6 +27,7 @@ c_sources = \
 	mark5_format_d2k.c \
 	format_vdif.c \
 	format_vdifb.c \
+	format_codif.c \
 	blanker_none.c \
 	blanker_mark5.c \
 	mark5bfix.c \
@@ -35,7 +36,7 @@ c_sources = \
 library_includedir = $(includedir)/mark5access
 library_include_HEADERS = $(h_sources)
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) $(CODIFIO_CFLAGS)
 
 lib_LTLIBRARIES = \
 	libmark5access.la

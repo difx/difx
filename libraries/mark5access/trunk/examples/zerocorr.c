@@ -61,7 +61,7 @@ typedef struct
 {
 	struct mark5_stream *ms;
 	double **data;
-	fftw_complex *zdata, *spec;
+        fftw_complex **cdata, *zdata, *spec;
 	fftw_plan plan;
 	double deltaF;
 
@@ -146,22 +146,6 @@ DataStream *newDataStream(FILE *in)
 	ds->fftSize = atoi(buffer[4]);
 	ds->startChan = atoi(buffer[5]);
 	ds->nChan = atoi(buffer[6]);
-	if(ds->startChan < 0 || ds->startChan > ds->fftSize/2 ||
-	   (ds->nChan > 0 && (ds->startChan + ds->nChan) > ds->fftSize/2) ||
-	   (ds->nChan < 0 && (ds->startChan + ds->nChan) < -1))
-	{
-		printf("The start channel must be in 0 .. %d, inclusive, and\n"
-		       "the number of channels to keep must be as well:\n"
-		       "For file %s\n"
-		       "you have %d < 0 or %d > %d with %d channels to keep\n",
-			ds->fftSize/2, ds->inputFile, ds->startChan,
-			ds->startChan, ds->fftSize/2, ds->nChan);
-
-		deleteDataStream(ds);
-		ds = 0;
-
-		return 0;
-	}
 
 	ds->ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(ds->inputFile, ds->offset),
@@ -179,17 +163,52 @@ DataStream *newDataStream(FILE *in)
 
 	mark5_stream_print(ds->ms);
 
-	ds->data = (double **)calloc(ds->ms->nchan, sizeof(double *));
-	for(i = 0; i < ds->ms->nchan; ++i)
+	int maxcorr;
+	if (ds->ms->iscomplex) 
+	  maxcorr = ds->fftSize;
+	else
+	  maxcorr = ds->fftSize/2;
+
+	if(ds->startChan < 0 || ds->startChan > maxcorr ||
+	   (ds->nChan > 0 && (ds->startChan + ds->nChan) > maxcorr) ||
+	   (ds->nChan < 0 && (ds->startChan + ds->nChan) < -1))
 	{
-		ds->data[i] = (double *)calloc(ds->fftSize+2, sizeof(double));
+		printf("The start channel must be in 0 .. %d, inclusive, and\n"
+		       "the number of channels to keep must be as well:\n"
+		       "For file %s\n"
+		       "you have %d < 0 or %d > %d with %d channels to keep\n",
+			maxcorr, ds->inputFile, ds->startChan,
+			ds->startChan, maxcorr, ds->nChan);
+
+		deleteDataStream(ds);
+		ds = 0;
+
+		return 0;
 	}
-	ds->zdata = (fftw_complex *)calloc(ds->fftSize/2+2, sizeof(fftw_complex));
-	ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
-	ds->plan = fftw_plan_dft_r2c_1d(ds->fftSize, ds->data[ds->subBand], ds->zdata, FFTW_ESTIMATE);
+	
 
+	if (ds->ms->iscomplex) {
+	  ds->cdata = (fftw_complex **)calloc(ds->ms->nchan, sizeof(fftw_complex *));
+	  for(i = 0; i < ds->ms->nchan; ++i)
+	    {
+	      ds->cdata[i] = (fftw_complex *)calloc(ds->fftSize, sizeof(fftw_complex));
+	    }
+	  ds->zdata = (fftw_complex *)calloc(ds->fftSize, sizeof(fftw_complex));
+	  ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
+	  ds->plan = fftw_plan_dft_1d(ds->fftSize, ds->cdata[ds->subBand], ds->zdata, FFTW_FORWARD, FFTW_MEASURE);
+	  
+	} else {
+	  ds->data = (double **)calloc(ds->ms->nchan, sizeof(double *));
+	  for(i = 0; i < ds->ms->nchan; ++i)
+	    {
+	      ds->data[i] = (double *)calloc(ds->fftSize+2, sizeof(double));
+	    }
+	  ds->zdata = (fftw_complex *)calloc(ds->fftSize/2+2, sizeof(fftw_complex));
+	  ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
+	  ds->plan = fftw_plan_dft_r2c_1d(ds->fftSize, ds->data[ds->subBand], ds->zdata, FFTW_ESTIMATE);
+	}
 	ds->deltaF = (double)(ds->ms->samprate)/(double)(ds->fftSize);
-
+	  
 	return ds;
 }
 
@@ -250,7 +269,11 @@ int feedDataStream(DataStream *ds)
 	int i, status;
 	double scale;
 
-	status = mark5_stream_decode_double(ds->ms, ds->fftSize, ds->data);
+	if (ds->ms->iscomplex) {
+	  status = mark5_stream_decode_double_complex(ds->ms, ds->fftSize, ds->cdata);
+	} else {
+	  status = mark5_stream_decode_double(ds->ms, ds->fftSize, ds->data);
+	}
 
 	if(status < 0)
 	{

@@ -2109,10 +2109,18 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 							}
 							if(antennaSetup->freqClockOffs.front() != 0.0)
 							{
-								cerr << endl;
-								cerr << "Error: AntennaSetup for " << antName << " has a non-zero clock offset for the first" << " frequency offset. This is not allowed for model " << "accountability reasons." << endl;
+								if(P->allowAllClockOffsets)
+								{
+									cerr << endl;
+									cerr << "Warning: AntennaSetup for " << antName << " has a non-zero clock offset for the first" << " frequency offset - this can compromise model accountability," << " proceeding because allowAllClockOffsets = true." << endl;
+								}
+								else
+								{
+									cerr << endl;
+									cerr << "Error: AntennaSetup for " << antName << " has a non-zero clock offset for the first" << " frequency offset. This is not allowed for model " << "accountability reasons." << endl;
 
-								exit(EXIT_FAILURE);
+									exit(EXIT_FAILURE);
+								}
 							}
 							for(int i = 0; i < D->datastream[D->nDatastream].nRecFreq; ++i)
 							{

@@ -2023,13 +2023,13 @@ static int mark5_format_vdifb_make_formatname(struct mark5_stream *ms)
 {
 	if(ms->format == MK5_FORMAT_VDIFB)	/* True VDIF header, not legacy */
 	{
-		if (ms->complex_decode) 
+		if (ms->iscomplex) 
 		{
-			sprintf(ms->formatname, "VDIFBC_%d-%d-%d-%d", ms->databytes, ms->Mbps, ms->nchan, ms->nbit);
+			sprintf(ms->formatname, "VDIFBC_%d-%d-%d-%d", ms->databytes, (int)(ms->Mbps + 0.5), ms->nchan, ms->nbit);
 		}
 		else
 		{
-			sprintf(ms->formatname, "VDIFB_%d-%d-%d-%d", ms->databytes, ms->Mbps, ms->nchan, ms->nbit);
+			sprintf(ms->formatname, "VDIFB_%d-%d-%d-%d", ms->databytes, (int)(ms->Mbps + 0.5), ms->nchan, ms->nbit);
 		}
 	}
 	else
@@ -2062,7 +2062,7 @@ static int mark5_format_vdifb_init(struct mark5_stream *ms)
 	f = (struct mark5_format_vdifb *)(ms->formatdata);
 
 	bitspersample = ms->nbit;
-	if(ms->complex_decode)
+	if(ms->iscomplex)
 	{
 		bitspersample *= 2;
 	}
@@ -2085,16 +2085,16 @@ static int mark5_format_vdifb_init(struct mark5_stream *ms)
         f->completesamplesperword = 32/(bitspersample*ms->nchan);
 
         ms->framegranularity = 1;
-        if(ms->Mbps > 0)
+        if(ms->framesperperiod > 0 && ms->alignmentseconds > 0)
         {
-		framensNum = ms->databytes*8*1000;     
-		framensDen = ms->Mbps;
+		//framensNum = ms->databytes*8*1000;     
+		//framensDen = ms->Mbps;
 
-		ms->framens = (double)framensNum/(double)framensDen;
+		ms->framens = 1.0e9*(double)ms->alignmentseconds/ms->framesperperiod;
 
 		for(ms->framegranularity = 1; ms->framegranularity < 128; ms->framegranularity *= 2)
 		{
-			if((ms->framegranularity*framensNum) % framensDen == 0)
+			if((((uint64_t)1000000000)*ms->framegranularity) % ((uint64_t)ms->framesperperiod*ms->alignmentseconds) == 0)
 			{
 				break;
 			}
@@ -2103,14 +2103,14 @@ static int mark5_format_vdifb_init(struct mark5_stream *ms)
 		if(ms->framegranularity >= 128)
 		{
 			fprintf(m5stderr, "VDIFB Warning: cannot calculate gframens %d/%d\n",
-			framensNum, framensDen);
+			ms->framesperperiod, ms->alignmentseconds);
 			ms->framegranularity = 1;
 		}
 		ms->samprate = ((int64_t)ms->framesamples)*(1000000000.0/ms->framens);
         }
         else
         {
-                fprintf(m5stderr, "Error: you must specify the data rate (Mbps) for a VDIFB mode (was set to %d)!", ms->Mbps);
+		fprintf(m5stderr, "Error: you must specify the framesperperiod for a VDIF mode (was set to %d)!", ms->framesperperiod);
 
 		return -1;
         }
@@ -2273,6 +2273,17 @@ struct mark5_format_generic *new_mark5_format_vdifb(int Mbps,
 	int nchan, int nbit, int decimation, 
 	int databytesperpacket, int frameheadersize, int usecomplex)
 {
+	int alignmentseconds = 1;
+	int framesperperiod = (int)(((uint64_t)1000000)*Mbps/databytesperpacket);
+
+	return new_mark5_format_generalized_vdifb(framesperperiod, alignmentseconds, nchan,
+		nbit, decimation, databytesperpacket, frameheadersize, usecomplex);
+}
+
+struct mark5_format_generic *new_mark5_format_generalized_vdifb(int framesperperiod,
+        int alignmentseconds, int nchan, int nbit, int decimation,
+        int databytesperpacket, int frameheadersize, int usecomplex)
+{
 	static int first = 1;
 	struct mark5_format_generic *f;
 	struct mark5_format_vdifb *v;
@@ -2363,7 +2374,9 @@ struct mark5_format_generic *new_mark5_format_vdifb(int Mbps,
 	v->frameheadersize = frameheadersize;
 	v->databytesperpacket = databytesperpacket;
 
-	f->Mbps = Mbps;
+	f->framesperperiod = framesperperiod;
+	f->alignmentseconds = alignmentseconds;
+	f->Mbps = ((double)framesperperiod*databytesperpacket)/(1e6*alignmentseconds);
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = v;
@@ -2377,7 +2390,8 @@ struct mark5_format_generic *new_mark5_format_vdifb(int Mbps,
 	f->resync = mark5_format_vdifb_resync;
 	f->decimation = decimation;
 	f->decode = 0;
-	f->complex_decode = 0;
+	f->complex_decode = 0;	
+	f->iscomplex = 0;
 	f->count = 0;
 
 	if(!usecomplex) 
@@ -2458,6 +2472,7 @@ struct mark5_format_generic *new_mark5_format_vdifb(int Mbps,
 
 	    return 0;
 #if 0
+	    f->iscomplex = 1;
 	    switch(decoderindex)
 	    {
 	        case 0:

@@ -6782,8 +6782,8 @@ static int mark5_format_mark4_make_formatname(struct mark5_stream *ms)
 
 	f = (const struct mark5_format_mark4 *)(ms->formatdata);
 	
-	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH, "MKIV1_%d-%d-%d-%d/%d",
-		f->fanout, ms->Mbps, ms->nchan, ms->nbit, ms->decimation);
+	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH, "MKIV1_%d-%.0f-%d-%d/%d",
+		 f->fanout, ms->Mbps, ms->nchan, ms->nbit, ms->decimation);
 
 	return 0;
 }
@@ -6862,13 +6862,13 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 			}
 			ms->samprate = ms->framesamples*(1000000000/ms->framens);
 			datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
-			if(datarate != ms->Mbps)
+			if(datarate != (int)(ms->Mbps + 0.5))
 			{
 				if(ms->Mbps > 0)
 				{
-					fprintf(m5stderr, "Warning: data rate disagrees : %d != %d\n", datarate, ms->Mbps);
+					fprintf(m5stderr, "Warning: data rate disagrees : %d != %f\n", datarate, ms->Mbps);
 				}
-				ms->Mbps = datarate;
+				ms->Mbps = (double)datarate;
 			}
 		}
 	}
@@ -7004,7 +7004,9 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	v->fanout = fanout;
 	v->decade = 0;	/* Assume years 2000 to 2010 initially */
 
-	f->Mbps = Mbps;
+	f->Mbps = (double)Mbps;
+	f->framesperperiod = (50*Mbps)/(fanout*nchan*nbit);
+	f->alignmentseconds = 1;
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = v;
@@ -7019,6 +7021,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	f->decimation = decimation;
 	f->decode = 0;
 	f->complex_decode = 0;
+	f->iscomplex = 0;
 	f->count = 0;
 	switch(decoderindex)
 	{

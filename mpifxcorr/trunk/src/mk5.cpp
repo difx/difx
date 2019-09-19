@@ -140,8 +140,9 @@ void Mk5DataStream::initialise()
 
 int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 {
-  int bufferindex, framesin, vlbaoffset, looksegment, payloadbytes, framespersecond, framebytes;
+  int bufferindex, framesin, vlbaoffset, looksegment, payloadbytes, framebytes;
   float datarate;
+  double framespersecond;
 
   bufferindex = DataStream::calculateControlParams(scan, offsetsec, offsetns);
 
@@ -193,7 +194,7 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 
   //set the fraction of data to use to determine system temperature based on data rate
   //the values set here work well for the today's computers and clusters...
-  datarate = static_cast<float>(framebytes)*static_cast<float>(framespersecond)*8.0/1.0e6;  // in Mbps
+  datarate = static_cast<float>(framebytes)*framespersecond*8.0/1.0e6;  // in Mbps
   if(datarate < 512)
   {
     switchedpowerincrement = 1;
@@ -228,7 +229,7 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   }
 
   // Note here a time is needed, so we only count payloadbytes
-  long long segoffns = bufferinfo[atsegment].scanns + (long long)((1000000000.0*framesin)/framespersecond);
+  long long segoffns = bufferinfo[atsegment].scanns + (long long)((1000000000.0*framesin)/framespersecond + 0.5);
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = bufferinfo[atsegment].scanseconds + ((int)(segoffns/1000000000));
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2] = ((int)(segoffns%1000000000));
 
@@ -269,7 +270,7 @@ void Mk5DataStream::updateConfig(int segmentindex)
     return;
 
   int framebytes = config->getFrameBytes(bufferinfo[segmentindex].configindex, streamnum);
-  int framespersecond = config->getFramesPerSecond(bufferinfo[segmentindex].configindex, streamnum);
+  double framespersecond = config->getFramesPerSecond(bufferinfo[segmentindex].configindex, streamnum);
   if(config->isDMuxed(bufferinfo[segmentindex].configindex, streamnum)) {
     framebytes = (framebytes - VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum) + VDIF_HEADER_BYTES;
     framespersecond /= config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum);
@@ -299,7 +300,7 @@ void Mk5DataStream::deriveFormatName(int configindex)
     if(config->isDMuxed(configindex, streamnum)) {
       framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
     }
-    fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
+    fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
     if (fanout < 0) {
       cfatal << startl << "Fanout is " << fanout << ", which is impossible - no choice but to abort!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
@@ -326,7 +327,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   if(config->isDMuxed(configindex, streamnum)) {
     nrecordedbands = 1;
   }
-  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
+  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
   if (fanout < 0) {
     cfatal << startl << "Fanout is " << fanout << ", which is impossible - no choice but to abort!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
@@ -402,7 +403,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
     framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
     nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
   }
-  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
+  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
   cverbose << startl << "About to seek to byte " << offset << " plus " << dataoffset << " to get to the first frame" << endl;
 
   input.seekg(offset + dataoffset, ios_base::beg);
@@ -454,7 +455,7 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
     if(readfromfile || readscan != 0 || readseconds != 0 || readnanoseconds != 0) //its not an error for the *first* network read
     {
       cerror << startl << "Lost Sync on segment " << buffersegment << "! Will attempt to resync. Deltatime was " << deltatime <<  "s" << endl;
-      cdebug << startl << "Corrday was " << corrday << ", corrsec was " << corrsec << ". MJD was " << mjd << ", sec was " << sec << "> Readseconds was " << bufferinfo[buffersegment].scanseconds << ". readns was " << bufferinfo[buffersegment].scanns << ", ns was " << ns << ", intclockseconds was " << intclockseconds << endl;
+      cdebug << startl << "Corrday was " << corrday << ", corrsec was " << corrsec << ". MJD was " << mjd << ", sec was " << sec << "> Readseconds was " << bufferinfo[buffersegment].scanseconds << ". readns was " << bufferinfo[buffersegment].scanns << ", ns was " << (int)ns << ", intclockseconds was " << intclockseconds << endl;
     }
     mark5stream = new_mark5_stream(
     new_mark5_stream_memory(&databuffer[buffersegment*(bufferbytes/numdatasegments)], bufferinfo[buffersegment].validbytes), new_mark5_format_generic_from_string(formatname) );

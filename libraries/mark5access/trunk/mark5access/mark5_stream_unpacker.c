@@ -131,6 +131,7 @@ int mark5_unpack_with_offset(struct mark5_stream *ms, const void *packed, int of
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (const unsigned char *)packed;
+#warning	/* FIXME: I think this should really be incremented by (offsetsamples/ms->framesamples)*ms->framebytes, but Walter is worried this might break fake mode (which is the main(only?) use case for this function */
 		ms->blanker(ms);
 	}
 	else
@@ -150,68 +151,37 @@ int mark5_unpack_with_offset(struct mark5_stream *ms, const void *packed, int of
 
 int mark5_unpack_complex(struct mark5_stream *ms, const void *packed, mark5_float_complex **unpacked, int nsamp)
 {
-	int v;
-	int c;
-
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (const unsigned char *)packed;
+		ms->blanker(ms);
 	}
 	else
 	{
-		ms->frame = (const unsigned char *)packed;
-		v = ms->validate(ms);
-		if(!v)
-		{
-			/* If validation fails, blank entire block of data */
-			ms->nvalidatefail++;
-			for(c = 0; c < ms->nchan; c++)
-			{
-				memset(unpacked[c], 0, nsamp*sizeof(mark5_float_complex));
-			}
-			return 0;
-		}
-		else
-		{
-			ms->nvalidatepass++;
-		}
-		ms->frame = 0;
-
-		ms->payload = (const unsigned char *)packed + ms->payloadoffset;
+		//go back to previous frame so we can make use of next() and its validation
+		ms->frame = (const unsigned char *)packed - ms->framebytes;
+		mark5_stream_next_frame(ms); //this also sets ms->payload()
 	}
+
 	ms->readposition = 0;
-	
-	ms->blanker(ms);
 
 	return ms->complex_decode(ms, nsamp, unpacked);
 }
 
 int mark5_unpack_complex_with_offset(struct mark5_stream *ms, const void *packed, int offsetsamples, mark5_float_complex **unpacked, int nsamp)
 {
-	int v;
-
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (const unsigned char *)packed;
+#warning	/* FIXME: I think this should really be incremented by (offsetsamples/ms->framesamples)*ms->framebytes, but Walter is worried this might break fake mode (which is the main(only?) use case for this function */
+		ms->blanker(ms);
 	}
 	else
 	{
-		ms->frame = (const unsigned char *)packed + (offsetsamples/ms->framesamples)*ms->framebytes;
-		v = ms->validate(ms);
-		if(!v)
-		{
-			ms->nvalidatefail++;
-		}
-		else
-		{
-			ms->nvalidatepass++;
-		}
-		ms->frame = 0;
-
-		ms->payload = (const unsigned char *)packed + ms->payloadoffset;
+                //go back to previous frame so we can make use of next() and its validation
+                ms->frame = (const unsigned char *)packed + (offsetsamples/ms->framesamples)*ms->framebytes - ms->framebytes;
+                mark5_stream_next_frame(ms); //this also sets ms->payload()
 	}
-	/* add to offset the integer number of frames */
-	ms->payload += ms->framebytes*(offsetsamples/ms->framesamples);
 
 	/* set readposition to first desired sample */
 	ms->readposition = (offsetsamples % ms->framesamples)*ms->nchan*ms->nbit*2*ms->decimation/8;

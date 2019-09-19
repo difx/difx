@@ -50,6 +50,7 @@ typedef float complex  mark5_float_complex;
 
 #include <stdint.h>
 #include <stdio.h>
+#include "codifio.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +68,8 @@ enum Mark5Format
 	MK5_FORMAT_VLBN    =  6,		/* VLBA format without NRZM */
 	MK5_FORMAT_KVN5B   =  7,		/* Same framing, different bit pattern as Mark5B */
 	MK5_FORMAT_VDIFB   =  8,		/* Not to be propagated as an external format */
-	MK5_FORMAT_D2K     =  9			/* Not to be propagated as an external format */
+	MK5_FORMAT_D2K     =  9,		/* Not to be propagated as an external format */
+	MK5_FORMAT_CODIF   = 10
 };
 
 #define MAXBLANKZONES		32
@@ -79,7 +81,8 @@ enum Mark5Blanker
 {
 	MK5_BLANKER_NONE  = 0,
 	MK5_BLANKER_MARK5 = 1,
-	MK5_BLANKER_VDIF  = 2
+	MK5_BLANKER_VDIF  = 2,
+	MK5_BLANKER_CODIF = 3
 };
 
 struct mark5_stream
@@ -88,9 +91,13 @@ struct mark5_stream
 	char streamname[MARK5_STREAM_ID_LENGTH]; /* name of stream */
 	char formatname[MARK5_STREAM_ID_LENGTH]; /* name of format */
 	enum Mark5Format format;/* format id */
-	int Mbps;		/* total data rate */
+	double Mbps;		/* total data rate, derived quantity for CODIF */
+				/* input or derived for VDIF, input for all others */
+	int framesperperiod;	/* Number of frames every "alignmentseconds" */
+	int alignmentseconds;	/* Smallest integer # of seconds with integer # of frames */
 	int nchan;		/* # of data channels; all will be decoded */
 	int nbit;		/* quantization bits of data */
+        int iscomplex;          /* Are voltages complex or real */
 	int samplegranularity;	/* decoding and copying must be in mults of */
 	int framegranularity;	/* min num of frames to have int. ns length */
 	int mjd;		/* date of first found frame */
@@ -160,16 +167,22 @@ struct mark5_stream_generic
 	int inputdatasize;
 };
 
+typedef	int (*decodeFunc)(struct mark5_stream*, int, float**); 
+typedef	int (*complex_decodeFunc)(struct mark5_stream*, int, mark5_float_complex**); 
+typedef int (*countFunc)(struct mark5_stream *, int, unsigned int *); 
+  
 struct mark5_format_generic
 {
 	int (*init_format)(struct mark5_stream *ms);	/* required */
 	int (*final_format)(struct mark5_stream *ms);	/* required */
-	int (*decode)(struct mark5_stream *ms, 		/* required */
-		int nsamp, float **data); 
-	int (*count)(struct mark5_stream *ms,
-		int nsamp, unsigned int *highstates); 
-	int (*complex_decode)(struct mark5_stream *ms,
-		int nsamp, mark5_float_complex **data); 
+  //	int (*decode)(struct mark5_stream *ms, 		/* required */
+  //		int nsamp, float **data); 
+        decodeFunc decode;                              /* required */
+        countFunc count;
+  //	int (*complex_decode)(struct mark5_stream *ms,
+  //		int nsamp, mark5_float_complex **data);
+        int iscomplex;
+	complex_decodeFunc complex_decode; 
 	int (*validate)(const struct mark5_stream *ms);
 	int (*resync)(struct mark5_stream *ms);
 	int (*gettime)(const struct mark5_stream *ms, 	/* required */
@@ -177,7 +190,9 @@ struct mark5_format_generic
 	int (*fixmjd)(struct mark5_stream *ms, int refmjd);
 	void *formatdata;
 	int formatdatasize;
-	int Mbps;
+	double Mbps;
+	int framesperperiod;
+	int alignmentseconds;
 	int nchan;
 	int nbit;
 	int decimation;					/* decimationling factor */
@@ -270,6 +285,8 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, int nchan, int nb
 
 struct mark5_format_generic *new_mark5_format_vdif(int Mbps, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
 
+struct mark5_format_generic *new_mark5_format_generalized_vdif(int framesperperiod, int alignmentseconds, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
+
 void mark5_format_vdif_set_leapsecs(struct mark5_stream *ms, int leapsecs);
 
 int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize);
@@ -292,6 +309,8 @@ void blank_vdif_EDV4_complex(const void *packed, int offsetsamples, mark5_float_
 
 struct mark5_format_generic *new_mark5_format_vdifb(int Mbps, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
 
+struct mark5_format_generic *new_mark5_format_generalized_vdifb(int framesperperiod, int alignmentseconds, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
+
 void mark5_format_vdifb_set_leapsecs(struct mark5_stream *ms, int leapsecs);
 
 int find_vdifb_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize);
@@ -303,6 +322,30 @@ int get_vdifb_quantization_bits(const unsigned char *data);
 int get_vdifb_complex(const unsigned char *data);
 
 int get_vdifb_threads(const unsigned char *data, size_t length, int dataframesize);
+
+  /* CODIF format: beta */
+
+struct mark5_format_generic *new_mark5_format_codif(int framesperperiod, int alignmentseconds, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
+
+int find_codif_frame(const unsigned char *data, int length, size_t *offset, int *framesize, int *headersize);
+
+int get_codif_chans_per_thread(const codif_header *header);
+
+int get_codif_quantization_bits(const codif_header *header);
+
+double get_codif_rate(const codif_header *header);
+
+uint32_t get_codif_frames_per_period(const codif_header *header);
+
+uint32_t get_codif_alignment_seconds(const codif_header *header);
+
+int get_codif_complex(const codif_header *data);
+
+int get_codif_threads(const unsigned char *data, size_t length, int dataframesize);
+
+double get_codif_framens(const codif_header *header);
+
+int get_codif_framegranularity(const codif_header *header);
 
 /*   K5 format: not yet complete */
 
@@ -337,20 +380,27 @@ int blanker_mark4(struct mark5_stream *ms);
 
 int blanker_vdif(struct mark5_stream *ms);
 
+  /* Blanker for CODIF data stored on Mark5 modules */
+
+int blanker_codif(struct mark5_stream *ms);
+
 /* TO PARTIALLY DETERMINE DATA FORMAT FROM DATA OR DESCRIPTION */
 
 /* contains information that can be determined by a glance at data or name */
 struct mark5_format
 {
 	enum Mark5Format format;  /* format type */
-	int Mbps, nchan, nbit;
+	double Mbps;
+	int nchan, nbit;
 	int frameoffset;	  /* bytes from stream start to 1st frame */
 	int framebytes;		  /* bytes in a frame */
 	int databytes;		  /* bytes of data in a frame */
 	double framens;		  /* duration of a frame in nanosec */
 	int mjd, sec, ns;	  /* date and time of first frame */
-	int ntrack;		  /* for Mark4 and VLBA formats only; used for threads in VDIF */
+	int ntrack;		  /* for Mark4 and VLBA formats only; used for threads in VDIF and CODIF */
 	int fanout;		  /* for Mark4 and VLBA formats only */
+	int framesperperiod;	  /* Number of frames every "alignmentseconds" */
+	int alignmentseconds;	  /* Smallest integer number of seconds with an integer number of frames */
 	int decimation;
 };
 

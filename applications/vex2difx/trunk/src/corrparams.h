@@ -353,6 +353,7 @@ public:
 	bool tweakIntTime;	// nadger the integration time to make values nice
 	bool sortAntennas;	// generally a good idea (defaults to true). Sorts alphabetically.
 	bool exhaustiveAutocorrs; // Turn off "normal" autocorr and generate autocorrs in the baseline table, which will also match across datastreams
+	bool allowAllClockOffsets; // Allow any value of frequency-dependent clock offset, even non-zero for the first frequency (which may compromise accountability)
 	int nCore;
 	int nThread;
 	double maxLength;	// [days]

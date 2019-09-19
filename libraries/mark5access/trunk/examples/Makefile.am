@@ -1,5 +1,5 @@
-AM_CPPFLAGS = -I$(top_srcdir)/mark5access -I$(srcdir)/..
-LDADD =    $(top_builddir)/mark5access/libmark5access.la -lm
+AM_CPPFLAGS = -I$(top_srcdir)/mark5access -I$(srcdir)/.. $(CODIFIO_CFLAGS)
+LDADD =    $(top_builddir)/mark5access/libmark5access.la $(CODIFIO_LIBS) -lm
 
 if WITH_FFTW
 fftw_programs = \

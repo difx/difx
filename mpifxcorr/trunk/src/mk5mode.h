@@ -83,7 +83,7 @@ class Mk5Mode : public Mode
 
     int framesamples, framebytes, samplestounpack, fanout;
     struct mark5_stream *mark5stream;
-    int *invalid; // stores per-band invalid data counts after each unpack (VDIF only)
+    int *invalid; // stores per-band invalid data counts after each unpack (VDIF and CODIF only)
 };
 
 #endif

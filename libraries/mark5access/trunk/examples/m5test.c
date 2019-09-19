@@ -69,7 +69,11 @@ int usage(const char *pgm)
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
-	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
+	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n");
+	printf("  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
+	printf("    VDIF_1000-64000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
+	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
+	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 	printf("  <report> use 0 to report all timestamps, 1 to report once a second\n\n");
 	return EXIT_SUCCESS;
@@ -84,8 +88,6 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 	int osec = 0, omjd = 0;
 
 	total = unpacked = 0;
-
-	printf("offset = %lld\n", offset);
 
 	ms = new_mark5_stream(
 		new_mark5_stream_file(filename, offset),
@@ -112,7 +114,11 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 		{
 			break;
 		}
-		status = mark5_stream_decode(ms, ChunkSize, data);
+
+		if (!ms->iscomplex) 
+		  status = mark5_stream_decode(ms, ChunkSize, data);
+		else
+		  status = mark5_stream_decode_complex(ms, ChunkSize/2, data);
 		
 		if(status < 0)
 		{
@@ -205,7 +211,7 @@ int main(int argc, char **argv)
 	if(argc == 2)
 	{
 		struct mark5_format *mf;
-		int bufferlen = 1<<11;
+		int bufferlen = 5e4;
 		char *buffer;
 		FILE *in;
 
@@ -225,12 +231,6 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			mf = new_mark5_format_from_stream(
-				new_mark5_stream_memory(buffer, bufferlen/2));
-
-			print_mark5_format(mf);
-			delete_mark5_format(mf);
-
 			mf = new_mark5_format_from_stream(
 				new_mark5_stream_memory(buffer, bufferlen/2));
 

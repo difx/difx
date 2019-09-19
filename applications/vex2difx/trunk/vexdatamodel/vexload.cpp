@@ -1183,7 +1183,7 @@ static int getModes(VexData *V, Vex *v)
 				vex_field(T_CHAN_DEF, p, 4, &link, &name, &value, &units);
 				fvex_double(&value, &units, &bandwidth);
 
-				if(bandwidth > stream.sampRate/2)
+				if(bandwidth - stream.sampRate/2 > 1e-6)
 				{
 					std::cerr << "Error: " << modeDefName << " antenna " << antName << " has sample rate = " << stream.sampRate << " bandwidth = " << bandwidth << std::endl;
 					std::cerr << "Sample rate must be no less than twice the bandwidth in all cases." << std::endl;
@@ -1191,7 +1191,7 @@ static int getModes(VexData *V, Vex *v)
 					exit(EXIT_FAILURE);
 				}
 
-				if(bandwidth < stream.sampRate/2)
+				if(bandwidth -  stream.sampRate/2 < -1e-6)
 				{
 					// Note: this is tested in a sanity check later.  This behavior is not always desirable.
 					bandwidth = stream.sampRate/2;
