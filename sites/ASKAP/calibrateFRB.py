@@ -64,7 +64,6 @@ parser.add_option("--noisecentre", default="", help="CASA format position at whi
 parser.add_option("--src", default="", help="Name of the target (e.g., FRB or Vela)")
 parser.add_option("--pols", type=str, default="XX,YY,I,Q,U,V", help='The polarisations to be imaged if --imagecube is set. Defaulted to all. Input as a list of strings: e.g., "XX,YY"')
 (options, junk) = parser.parse_args()
-print options.pols.split(',')
 AIPS.userno     = options.userno
 refant          = options.refant
 imagesize       = options.imagesize
