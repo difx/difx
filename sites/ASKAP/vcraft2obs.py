@@ -271,7 +271,7 @@ if args.forceFFT: runline += " --forceFFT"
 if args.gstar: runline += " --gstar"
 if args.large: runline += " --large"
 if args.numskylakenodes > 1:
-    torun += " --numskylakenodes=" + str(args.numskylakenodes)
+    runline += " --numskylakenodes=" + str(args.numskylakenodes)
 runline += "\n"
 print "\nNow run:"
 print runline
