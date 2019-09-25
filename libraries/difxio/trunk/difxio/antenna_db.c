@@ -117,7 +117,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "Tidbinbilla",    "TIDBIN64", -4460894.7273,   2682361.5296,  -3674748.4238,  64.0 },
 	{ "Torun",          "TORUN",     3638558.5100,   1221969.7200,   5077036.7600,  32.0 },
 	{ "Tsukuba",        "",         -3957409.3668,   3310228.7947,   3737494.6747,  34.0 },
-	{ "Uchinour",       "UCHINOUR", -3586229.25030,  4114103.81060,  3290224.78860, 0.0 },
+	{ "Uchinoura",      "UCHINOUR", -3586229.25030,  4114103.81060,  3290224.78860, 32.0 },
 	{ "Ulsan",          "",         -3287268.1566,   4023449.1207,   3687380.1796,  21.0 },
 	{ "Urunqi",         "URUMQI",     228310.2129,   4631922.7656,   4367064.0638,  25.0 },
 	{ "Usuda",          "USUDA64",  -3855355.4324,   3427427.5708,   3740971.1373,  64.0 },
@@ -139,6 +139,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 
 	/* Known Missing: 
 		Nyalesund 13N VGOS
+		Fort Davis VGOS
 		Seshan VGOS
 		Tianma VGOS
 		Evpatoria
