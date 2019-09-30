@@ -30,21 +30,32 @@ my $value;
 
 my $debug=0;
 my $bits=2;
-my $framesize=8000;
+my $framesize=8032;
 my $dasname='VDIF';
 my $complex = 0;
 
 GetOptions('debug'=>\$debug, 'bits=i'=>\$bits, 'framesize=i'=>\$framesize, 'das=s'=>\$dasname, 'complex'=>\$complex);
+
 
 if (@ARGV<2) {
   print<<EOF;
  
 Error: Too few argments 
 
-  vex2vdif.pl [-bits <N>] [-framesize <N] <vexfile> <StationId> [<StationID> ....]
+  addVDIF.pl [options] <vexfile> <StationId> [<StationID> ....]
 
+Options
+
+ -debug          Enable debug (default false)
+ -bits <N>       Set bit depth to N (default 2)
+ -framesize <N>  Set frame size to N (default 8032)
+ -complex        Complex samples
+ -das <DAS>      Name of DAS
+
+Non-implemented options
+
+ -legacy    Legacy headers
 EOF
-  
   exit(1);
 }
 
