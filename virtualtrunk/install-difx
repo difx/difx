@@ -12,14 +12,7 @@ def main():
 Build and Install DiFX
 
 Usage:
-    install-difx [-fhv] [--force] [--help] [--verb] \\
-        [--mk5daemon] [--withmonitor] [--perl] [--withfb] \\
-        [--withhops] [--withm6support] [--withguiserver] [--noinstall] \\
-        [--withpolconvert] [--reconf] [--withdatasim] [--noconf] [--clean] \\
-        [--g77] [--extraflags='flags'] [--makeflags='flags'] \\
-        [--noipp] [--ipp] [--nodoc] \\
-        [--cache='name'] [--targ='...'] [--pristine] \\
-        [--doonly='...']
+    install-difx [options]
 
 Builds and installs mpifxcorr and associated tools.  If invoked from the
 setup directory, the build will be within the source directory heirarchy,
@@ -52,6 +45,8 @@ Options:
    --withhops      Build HOPS (which requires pgplot)
 
    --withm6support Build Mark6 support (which requires FUSE)
+
+   --withmark6meta Build Mark6 metadata support
 
    --withpolconvert Build PolConvert (which requires CASA)
 
@@ -86,7 +81,8 @@ Options:
    --cache='name'  Speeds up the configuration using cache files
                    'name' and 'name-CXX' in the build directory
 
-   --targ='...'    Runs make ... on each of the components
+   --targ='...'    Runs make ... on each of the components.
+                   The default is 'all'.
 
    --pristine      Removes auto-built sources from source directories
                    (and implies --clean)
@@ -98,8 +94,11 @@ Options:
                     "calcif2", "difx2profile", "misc","vis2screen",
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
-                    "polconvert", "guiServer", "mk5daemon", "difx_monitor",]
+                    "polconvert", "guiServer", "mk5daemon", "difx_monitor",
+                    "datasim", "difxcalc11", "mark6sg", "mark6meta"]
 
+   Remember, if you haven't signed up to the difx-users mailing list, please
+   do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.
     """
     pass
 
@@ -115,7 +114,7 @@ try:
          "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
          "withpolconvert", "noinstall", "reconf", "noconf", "clean",
-         "g77", "extraflags=", "makeflags=", 
+         "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
          "doonly=" ])
 except getopt.GetoptError, err:
@@ -151,8 +150,11 @@ components = {"perl"          :False,
               "difxmessage"   :True,
               "dirlist"       :True,
               "mark5access"   :True,
+              "mark6meta"     :False,
+              "codifio"       :True,
               "vdifio"        :True,
               "calcif2"       :True,
+              "difxcalc11"    :True,
               "difx2profile"  :True,
               "misc"          :True,
               "vis2screen"    :True,
@@ -161,6 +163,7 @@ components = {"perl"          :False,
               "vex2difx"      :True,
               "difx2mark4"    :True,
               "mpifxcorr"     :True,
+              "mark6sg"       :True,
               "difxfilterbank":False,
               "hops"          :False,
               "m6support"     :False,
@@ -177,18 +180,22 @@ def setNormalComponentsFalse():
 	components["difxmessage"] = False
 	components["dirlist"] = False
 	components["mark5access"] = False
+	components["mark6meta"] = False
+	components["codifio"] = False
 	components["vdifio"] = False
 	components["calcif2"] = False
 	components["difx2profile"] = False
 	components["misc"] = False
 	components["vis2screen"] = False
 	components["calcserver"] = False
+	components["difxcalc11"] = False
 	components["difx2fits"] = False
 	components["vex2difx"] = False
 	components["difx2mark4"] = False
 	components["hops"] = False
 	components["polconvert"] = False
 	components["mpifxcorr"]= False
+	components["mark6sg"]= False
 	components["python"]= False
 def setOnlyComponents(only):
 	global components
@@ -229,6 +236,8 @@ if len(opts) > 0:
             components["hops"] = True
         if o == "--withm6support":
             components["m6support"] = True
+        if o == "--withmark6meta":
+            components["mark6meta"] = True
         if o == "--withpolconvert":
             components["polconvert"] = True
         if o == "--withguiserver":
@@ -330,43 +339,56 @@ if gfortran:
 ###### Targets ####################################################
 # auto_compile(doreconf, dolibtoolize, doautoheader, ..., dompicxx)
 
+# calcif2 is a utility on truck but an application on master tags
+
 libtargets = []
 if components["difxio"]:
-	libtargets.append(["difxio",     difx_version, True,True,True,False])
+    libtargets.append(["difxio",     difx_version, True,True,True,False])
 if components["difxmessage"]:
-	libtargets.append(["difxmessage",difx_version, True,True,True,False])
+    libtargets.append(["difxmessage",difx_version, True,True,True,False])
 if components["dirlist"]:
-	libtargets.append(["dirlist",    difx_version, True,True,True,False])
+    libtargets.append(["dirlist",    difx_version, True,True,True,False])
+if components["mark6sg"]:
+    libtargets.append(["mark6sg",    difx_version, True,True,True,False])
 if components["mark5access"]:
-	libtargets.append(["mark5access",difx_version, True,True,True,False])
+    libtargets.append(["mark5access",difx_version, True,True,True,False])
+if components["mark6meta"]:
+    libtargets.append(["mark6meta",  difx_version, True,True,True,False])
 if components["python"]:
-	libtargets.append(["python",     difx_version, True,True,False,False])
+    libtargets.append(["python",     difx_version, True,True,False,False])
+if components["codifio"]:
+    libtargets.append(["codifio",    difx_version, True,True,True,False])
 if components["vdifio"]:
-	libtargets.append(["vdifio",     difx_version, True,True,True,False])
+    libtargets.append(["vdifio",     difx_version, True,True,True,False])
 
 utiltargets = []
-if components["calcif2"]:
-	utiltargets.append(["calcif2",   difx_version, True,False,True,False])
+if components["calcif2"] and not master_tag:
+    utiltargets.append(["calcif2",   difx_version, True,False,True,False])
 if components["difx2profile"]:
-	utiltargets.append(["pulsar/difx2profile", difx_version, True,False,True,True])
+    utiltargets.append([
+	"pulsar/difx2profile",       difx_version, True,False,True,True])
 if components["misc"]:
-	utiltargets.append(["misc",      difx_version, True,False,False,False])
+    utiltargets.append(["misc",      difx_version, True,False,False,False])
 if components["vis2screen"]:
-	utiltargets.append(["vis2screen",difx_version, True,False,False,True])
+    utiltargets.append(["vis2screen",difx_version, True,False,False,True])
 
 apptargets = []
+if components["calcif2"] and master_tag:
+    apptargets.append(["calcif2",   difx_version, True,False,True,False])
 if components["calcserver"]:
-	apptargets.append(["calcserver", difx_version, True,True,False,False])
+    apptargets.append(["calcserver", difx_version, True,True,False,False])
+if components["difxcalc11"]:
+    apptargets.append(["difxcalc11", difx_version, True,False,False,False])
 if components["difx2fits"]:
-	apptargets.append(["difx2fits",  difx_version, True,False,True,False])
+    apptargets.append(["difx2fits",  difx_version, True,False,True,False])
 if components["vex2difx"]:
-	apptargets.append(["vex2difx",   difx_version, True,True,True,False])
+    apptargets.append(["vex2difx",   difx_version, True,True,True,False])
 if components["difx2mark4"]:
-	apptargets.append(["difx2mark4", difx_version, True,True,True,False])
+    apptargets.append(["difx2mark4", difx_version, True,True,True,False])
 if components["difxfilterbank"]:
     apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
 if components["hops"]:
-    apptargets.append(["hops",       difx_version, True,False,True,False])
+    apptargets.append(["hops",       difx_version, True,True,True,False])
 if components["m6support"]:
     apptargets.append(["m6support",  difx_version, True,False,True,False])
 if components["polconvert"]:
@@ -543,6 +565,9 @@ if doclean:
     thisdir = os.getcwd()
     for libtarget in libtargets:
         targetdir = libtarget[0] + '/' + libtarget[1]
+        if not os.path.exists(targetdir):
+            print "**** Could not find "+targetdir+", trying Trunk"
+            targetdir = libtarget[0] + '/trunk/'
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
@@ -561,6 +586,9 @@ if doclean:
     thisdir = os.getcwd()
     for apptarget in apptargets:
         targetdir = apptarget[0] + '/' + apptarget[1]
+        if not os.path.exists(targetdir):
+            print "**** Could not find "+targetdir+", trying Trunk"
+            targetdir = apptarget[0] + '/trunk/'
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
@@ -582,6 +610,9 @@ if doclean:
 	    targetdir = utiltarget[0]
 	else:
 	    targetdir= utiltarget[1]  + '/' + utiltarget[0]
+        if not os.path.exists(targetdir):
+            print "**** Could not find "+targetdir+", trying Trunk"
+            targetdir = utiltarget[0] + '/trunk/'
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
@@ -596,6 +627,9 @@ if doclean:
         os_chdir(thisdir)
 
     targetdir = topdir + "/mpifxcorr/" + difx_version
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = topdir + "/mpifxcorr/trunk/"
     if os.path.exists(targetdir):
         print
         print "**** Cleaning "+targetdir
@@ -644,7 +678,6 @@ if not noinstall:
             os_chdir(pkgdir)
             run(startdir+"/genipppc "+ipproot)
             os_chdir(topdir)
-            #run("mv ipp.pc "+pkgdir)
             print
 
 ##### Compile non-standard libraries ####################
@@ -695,6 +728,9 @@ os_chdir("libraries")
 thisdir = os.getcwd()
 for libtarget in libtargets:
     targetdir = libtarget[0]  + '/' + libtarget[1] 
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = libtarget[0] + '/trunk/'
     if os.path.exists(targetdir):
         print
         print
@@ -718,7 +754,12 @@ if components["mpifxcorr"]:
     print "Making mpifxcorr"
     print
 
-    os_chdir("mpifxcorr/" + difx_version)
+    targetdir = "mpifxcorr/" + difx_version
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = 'mpifxcorr/trunk/'
+
+    os_chdir(targetdir);
     thisdir = os.getcwd()
 
     if noconf and os.path.exists('configure'):
@@ -764,6 +805,9 @@ os_chdir("applications")
 thisdir = os.getcwd()
 for apptarget in apptargets:
     targetdir = apptarget[0]  + '/' + apptarget[1] 
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = apptarget[0] + '/trunk/'
     if os.path.exists(targetdir):
         print
         print
@@ -788,6 +832,9 @@ for utiltarget in utiltargets:
         targetdir = utiltarget[0]
     else:
         targetdir= utiltarget[1]  + '/' + utiltarget[0]
+    if not os.path.exists(targetdir):
+        print "**** Could not find "+targetdir+", trying Trunk"
+        targetdir = utiltarget[0] + '/trunk/'
     if os.path.exists(targetdir):
         print
         print
@@ -824,3 +871,7 @@ if (force and not errors == []):
         print error
 else:
     print "Done!"
+
+##### Remind people to sign up to difx-users! ############
+print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
+print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."

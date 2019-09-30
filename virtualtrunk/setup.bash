@@ -35,6 +35,18 @@ export DIFX_BINARY_PORT=50202
 ####### CALC SERVER NAME ######### 
 export CALC_SERVER=localhost
 
+####### HOPS ENVIRONMENT #########
+# uncomment/modify these lines if you have enabled HOPS
+# or alternatively be sure to source $DIFXROOT/bin/hops.bash
+# export GS_DEVICE=x11
+# export PGPLOT_TYPE=/xw
+# export DEF_CONTROL=/dev/null
+# export DATADIR=/tmp
+# export HOPS_DOCS=${DIFXROOT}/share/hops
+# export PROGDOC=${HOPS_DOCS}/vhelp
+# export AHELP=${HOPS_DOCS}/vhelp/aedit
+# export TEXT=${HOPS_DOCS}/text
+
 ####### MPI RUNTIME OPTIONS #################
 ####### Uncomment and modify if needed, #####
 ####### such as Open MPI 1.8.4 ##############
@@ -43,10 +55,10 @@ export CALC_SERVER=localhost
 ####### No User configurable values below here
 
 ####### Operating System, use $OSTYPE
-if [ "$OSTYPE" = "darwin" -o "$OSTYPE" = "darwin9.0" -o "$OSTYPE" = "darwin13"  -o "$OSTYPE" = "darwin15" ]
+if [ ${OSTYPE:0:6} = "darwin" ]
 then
  OS=darwin
-elif [ "$OSTYPE" = "linux" -o "$OSTYPE" = "linux-gnu" ] 
+elif [ "${OSTYPE:0:5}" = "linux" ] 
 then
   OS=linux
 else
