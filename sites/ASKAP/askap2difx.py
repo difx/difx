@@ -569,7 +569,7 @@ if args.slurm:
     launchout.write("echo $JOBID\n")
     launchout.write("echo $JOBID > jobid.txt\n")
     launchout.write("while true; do\n")
-    launchout.write("    sleep 3\n")
+    launchout.write("    sleep 60\n")
     launchout.write("    export JOBSTATUS=$(squeue -u {0})\n".format(currentuser))
     launchout.write("    echo $JOBSTATUS\n")
     launchout.write('    if [[ $JOBSTATUS == *"$JOBID"* ]]; then\n')
@@ -605,7 +605,7 @@ if args.slurm:
         batchout.write("#\n")
         batchout.write("#SBATCH --nodes={0}\n".format(numnodes))
         batchout.write("#SBATCH --ntasks={0}\n".format(ntasks))
-        batchout.write("#SBATCH --time=2:00\n")
+        batchout.write("#SBATCH --time=10:00\n")
         # NOTE: use 46g for 11.5 or 23 GB of ram per node (16 or 32)
         batchout.write("#SBATCH --mem=46g\n")
 
