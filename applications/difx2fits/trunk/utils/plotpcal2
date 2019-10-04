@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2014-2017 by Walter Brisken                             *
+#   Copyright (C) 2014-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -19,9 +19,10 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
+# Note: this utility can run under python2.7 or python3
+
 
 from sys import argv, exit
-from string import split, strip
 from math import *
 from os import popen
 import gzip
@@ -29,15 +30,15 @@ from pylab import np, plot, show, scatter, xlabel, ylabel, title, axes, savefig
 
 program = 'plotpcal2'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
-version = '0.3'
+version = '0.4'
 
 legalOps = ['amp', 'phase', 'delay', 'xy', 'ampphase']
 
 def usage(prog):
-	print '\n%s ver. %s  %s\n' % (program, version, author)
-	print 'Usage: %s [options] operation toneSelections dataFiles\n' % prog
-	print 'Some more details are at: https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/plotpcal\n'
-	print 'or by running   %s --doc' % prog
+	print('\n%s ver. %s  %s\n' % (program, version, author))
+	print('Usage: %s [options] operation toneSelections dataFiles\n' % prog)
+	print('Some more details are at: https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/plotpcal\n')
+	print('or by running   %s --doc' % prog)
 
 documentation = '''
  plotpcal2 is packaged the difx2fits package. It was introduced with DiFX-2.4 and currently only operates on DiFX output from DiFX-2.4 and later. It allows plotting of DiFX-extracted pulse cal tones in a number of ways. The program gets its input from the command line. The general structure of a command line is:
@@ -227,7 +228,7 @@ class Record:	# all tones for one time from one file
 
 class File:
 	def __init__(self, filename):
-		s = split(strip(filename), ':')
+		s = filename.strip().split(':')
 		self.filename = s[-1]
 		if len(s) > 1:
 			self.antenna = s[0]
@@ -248,7 +249,7 @@ class File:
 				self.tonesInRecBand[r.recBand] += 1
 			else:
 				self.tonesInRecBand[r.recBand] = 1
-		self.tonesInRecBand.keys().sort()
+		self.toneKeys = sorted(self.tonesInRecBand.keys())
 		self.nRecBand = len(self.tonesInRecBand)
 		self.totalTones = len(self.records[0].tones)
 		self.mjdStart = self.records[0].mjd
@@ -258,10 +259,10 @@ class File:
 		maxGapDay = maxGapSec/86400.0
 		breaks = []
 		freqs = self.records[0].getFreqs()
-                lastmjd = self.records[0].mjd
+		lastmjd = self.records[0].mjd
 		for r in range(1, len(self.records)):
 			fq = self.records[r].getFreqs()
-                        mjd = self.records[r].mjd
+			mjd = self.records[r].mjd
 			if fq != freqs or mjd > lastmjd + maxGapDay:
 				breaks.append(r)
 				freqs = fq
@@ -296,20 +297,20 @@ class File:
 		return self.mjdStart < other.mjdStart
 
 	def summary(self):
-		print 'Data file:'
-		print '  File = %s' % self.filename
-		print '  Section = %s' % self.section
+		print('Data file:')
+		print('  File = %s' % self.filename)
+		print('  Section = %s' % self.section)
 		if self.antenna != None:
-			print '  Antenna = %s' % self.antenna
+			print('  Antenna = %s' % self.antenna)
 		else:
-			print '  No antenna specified'
+			print('  No antenna specified')
 		if self.pcalVersion != None:
-			print '  Pcal file version = %d' % self.pcalVersion
+			print('  Pcal file version = %d' % self.pcalVersion)
 		else:
-			print '  Weird: no Pcal version determined!'
-		print '  Num records = %d' % len(self.records)
-		print '  Time range: %14.8f to %14.8f' % (self.mjdStart, self.mjdStop)
-		print '  Tone counts: ', self.tonesInRecBand
+			print('  Weird: no Pcal version determined!')
+		print('  Num records = %d' % len(self.records))
+		print('  Time range: %14.8f to %14.8f' % (self.mjdStart, self.mjdStop))
+		print('  Tone counts: ', self.tonesInRecBand)
 	
 	def load(self):
 		# here choose how to load based on extension
@@ -321,7 +322,7 @@ class File:
 			raw = open(self.filename).readlines()
 		extracts = {}	# dictionary; text of MJD is key
 		for r in raw:
-			s = split(strip(r))
+			s = r.strip().split()
 			if len(s) < 1:
 				continue
 			if self.pcalVersion == None:
@@ -387,8 +388,7 @@ class File:
 						record.append(Tone(rb, toneNum, freq, float(s[i+toneColumn]), float(s[i+toneColumn+1])))
 						toneNum += 1
 					
-		keys = extracts.keys()
-		keys.sort()
+		keys = sorted(extracts.keys())
 		for k in keys:
 			self.records.append(Record(float(k), extracts[k]))
 
@@ -412,7 +412,7 @@ def parseCommandLine():
 				usage(argv[0])
 				exit(0)
 			elif a == '--doc':
-				print documentation
+				print(documentation)
 				exit(0)
 			elif a in ['-v', '--verbose']:
 				options['verbose'] += 1
@@ -437,27 +437,27 @@ def parseCommandLine():
 	
 	die = False
 	if len(fileList) == 0:
-		print 'Error: no data files provided'
+		print('Error: no data files provided')
 		die = True
 	if len(toneSelect) == 0:
-		print 'Error: no tone selection'
+		print('Error: no tone selection')
 		die = True
 	if op == None:
-		print 'Error: operation not specified'
+		print('Error: operation not specified')
 		die = True
 	elif not op in legalOps:
-		print 'Error: operation must be one of ', legalOps
+		print('Error: operation must be one of ', legalOps)
 		die = True
 
 	if die:
-		print '\nRun with --help or --doc for more info\n'
+		print('\nRun with --help or --doc for more info\n')
 		exit(0)
 
 	if options['verbose'] > 1:
-		print 'op = %s' % op
-		print 'toneSection =', toneSelect
-		print 'data files =', fileList
-		print 'options =', options
+		print('op = %s' % op)
+		print('toneSection =', toneSelect)
+		print('data files =', fileList)
+		print('options =', options)
 
 	return op, toneSelect, fileList, options
 
@@ -532,23 +532,23 @@ def getOneToneColumns(toneSelect, d):
 	columns = []
 	record = d.records[0]
 	for ts in toneSelect:
-		tss = split(ts, '=')
+		tss = ts.split('=')
 		if tss[0] == 'rt':
 			# look for specific tone number.  Should be unambiguous
-			cd = split(tss[1], ',')	# column identifying data
+			cd = tss[1].split(',')	# column identifying data
 			rbi = int(cd[0])	# rec band (0 based)
 			if rbi < 0:
 				rbi += d.nRecBand
 			if rbi < 0 or rbi >= d.nRecBand:
-				print 'selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section)
+				print('selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section))
 				continue
-			rb = d.tonesInRecBand.keys()[rbi]
+			rb = d.toneKeys[rbi]
 			tn = int(cd[1])		# tone num
 			if tn < 0:
 				# negative number means count from back, python style
 				tn += d.tonesInRecBand[rbi]
 			if tn < 0 or tn >= d.tonesInRecBand[rbi]:
-				print 'selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section)
+				print('selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section))
 				continue
 			for t in range(d.totalTones):
 				tone = record.tones[t]
@@ -556,14 +556,14 @@ def getOneToneColumns(toneSelect, d):
 					columns.append(t)
 		elif tss[0] == 'rf':
 			# look for frequency within a specific record band.  Should be unambiguous
-			cd = split(tss[1], ',')	# column identifying data
+			cd = tss[1].split(',')	# column identifying data
 			rbi = int(cd[0])	# rec band (0 based)
 			if rbi < 0:
 				rbi += d.nRecBand
 			if rbi < 0 or rbi >= d.nRecBand:
-				print 'selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section)
+				print('selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section))
 				continue
-			rb = d.tonesInRecBand.keys()[rbi]
+			rb = d.toneKeys[rbi]
 			if cd[1][0] == '%':		# freq modulo this amount, not absolute freq
 				fq = float(cd[1][1:])	# freq (MHz)
 				for t in range(d.totalTones):
@@ -578,7 +578,7 @@ def getOneToneColumns(toneSelect, d):
 						columns.append(t)
 		elif tss[0] == 'f':
 			# look for specific frequency.  There could be many
-			cd = split(tss[1], ',')	# column identifying data
+			cd = tss[1].split(',')	# column identifying data
 			for c in cd:
 				if c[0] == '%':		# freq modulo this amount, not absolute freq
 					fq = float(c[1:])	# freq (MHz)
@@ -594,7 +594,7 @@ def getOneToneColumns(toneSelect, d):
 							columns.append(t)
 		elif tss[0] == 'r':
 			# look for all tones in given record band
-			cd = split(tss[1], ',')	# column identifying data
+			cd = tss[1].split(',')	# column identifying data
 			rbList = []
 			for c in cd:
 				rbi = int(c)	# rec band (0 based)
@@ -602,10 +602,10 @@ def getOneToneColumns(toneSelect, d):
 					rbi += d.nRecBand
 				if rbi < 0 or rbi >= d.nRecBand:
 					continue
-				rb = d.tonesInRecBand.keys()[rbi]
+				rb = d.toneKeys[rbi]
 				rbList.append(rb)
 			if len(rbList) == 0:
-				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
+				print('selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section))
 				continue
 			for t in range(d.totalTones):
 				tone = record.tones[t]
@@ -613,7 +613,7 @@ def getOneToneColumns(toneSelect, d):
 					columns.append(t)
 		elif tss[0] == 't':
 			# look for specific tone number.  Should be unambiguous
-			cd = split(tss[1], ',')	# column identifying data
+			cd = tss[1].split(',')	# column identifying data
 			tnList = []
 			for c in cd:
 				tnList.append(int(c))		# tone num
@@ -629,20 +629,20 @@ def getTwoToneColumns(toneSelect, d):
 	columns = []
 	record = d.records[0]
 	for ts in toneSelect:
-		tss = split(ts, '=')
+		tss = ts.split('=')
 		if tss[0] == 'rt':
 			# look for specific tone number.  Should be unambiguous
-			cd = split(tss[1], ',')	# column identifying data
+			cd = tss[1].split(',')	# column identifying data
 			rbi = int(cd[0])	# rec band (0 based)
 			if rbi < 0:
 				rbi += d.nRecBand
 			if rbi < 0 or rbi >= d.nRecBand:
-				print 'selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section)
+				print('selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section))
 				continue
-			rb = d.tonesInRecBand.keys()[rbi]
+			rb = d.toneKeys[rbi]
 			nTone = d.tonesInRecBand[rb]
 			if nTone < 2:
-				print 'selection %s is invalid for %s section %s.  Too few tones.  Skipping.' % (ts, d.filename, d.section)
+				print('selection %s is invalid for %s section %s.  Too few tones.  Skipping.' % (ts, d.filename, d.section))
 				continue
 			if cd[1] == 'pairs':
 				for t in range(d.totalTones, 2):
@@ -684,12 +684,12 @@ def getTwoToneColumns(toneSelect, d):
 					columns.append(tns)
 		elif tss[0] == 't':
 			# look for specific tone number.  Should be unambiguous
-			cd = split(tss[1], ',')	# column identifying data
+			cd = tss[1].split(',')	# column identifying data
 			for rbi in range(d.nRecBand):
-				rb = d.tonesInRecBand.keys()[rbi]
+				rb = d.toneKeys[rbi]
 				nTone = d.tonesInRecBand[rb]
 				if nTone < 2:
-					print 'selection %s is invalid for %s section %s.  Too few tones.  Skipping.' % (ts, d.filename, d.section)
+					print('selection %s is invalid for %s section %s.  Too few tones.  Skipping.' % (ts, d.filename, d.section))
 					continue
 				if cd[0] == 'pairs':
 					for t in range(0, d.totalTones, 2):
@@ -757,12 +757,12 @@ def generatePlots(op, toneSelect, data, options):
 
 	for d in data:
 		if len(d.records) < options['minsectionsize']:
-			print 'skipping %s sec. %s because it has only %d records' % (d.filename, d.section, len(d.records))
+			print('skipping %s sec. %s because it has only %d records' % (d.filename, d.section, len(d.records)))
 			continue
 		if op == 'amp':
 			toneColumns = getOneToneColumns(toneSelect, d)
 			if options['verbose'] > 0:
-				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
+				print('From %s, the following tone columns will be used:' % d.filename, toneColumns)
 			nColumn = 1+len(toneColumns)
 			nRow = len(d.records)
 			nPoints += nRow * len(toneColumns)
@@ -780,7 +780,7 @@ def generatePlots(op, toneSelect, data, options):
 		elif op == 'phase':
 			toneColumns = getOneToneColumns(toneSelect, d)
 			if options['verbose'] > 0:
-				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
+				print('From %s, the following tone columns will be used:' % d.filename, toneColumns)
 			nColumn = 1+len(toneColumns)
 			nRow = len(d.records)
 			plotData = np.zeros((nColumn, nRow))
@@ -801,7 +801,7 @@ def generatePlots(op, toneSelect, data, options):
 		elif op == 'delay':
 			toneColumns = getTwoToneColumns(toneSelect, d)
 			if options['verbose'] > 0:
-				print 'From %s:%s, the following tone columns will be used:' % (d.filename, d.section), toneColumns
+				print('From %s:%s, the following tone columns will be used:' % (d.filename, d.section), toneColumns)
 			nColumn = 1+len(toneColumns)
 			nRow = len(d.records)
 			plotData = np.zeros((nColumn, nRow))
@@ -819,7 +819,7 @@ def generatePlots(op, toneSelect, data, options):
 		elif op == 'xy':
 			toneColumns = getOneToneColumns(toneSelect, d)
 			if options['verbose'] > 0:
-				print 'From %s:%s, the following tone columns will be used:' % (d.filename, d.section), toneColumns
+				print('From %s:%s, the following tone columns will be used:' % (d.filename, d.section), toneColumns)
 			nColumn = len(toneColumns)
 			nRow = len(d.records)
 			plotDataX = np.zeros((nColumn, nRow))
@@ -838,10 +838,10 @@ def generatePlots(op, toneSelect, data, options):
 		elif op == 'ampphase':
 			toneColumns = getOneToneColumns(toneSelect, d)
 			if options['verbose'] > 0:
-				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
+				print('From %s, the following tone columns will be used:' % d.filename, toneColumns)
 			nColumn = len(toneColumns)
 			nRow = len(d.records)
-			print 'nCol nRow : ', nColumn, nRow
+			print('nCol nRow : ', nColumn, nRow)
 			plotDataX = np.zeros((nColumn, nRow))
 			plotDataY = np.zeros((nColumn, nRow))
 			nPoints += nRow * nColumn
@@ -859,9 +859,9 @@ def generatePlots(op, toneSelect, data, options):
 					scatter(plotDataX[i], plotDataY[i], color=colors[(i-1)%len(colors)], s=3)
 
 	if nPoints == 0:
-		print 'Nothing to see!  No data points generated.'
+		print('Nothing to see!  No data points generated.')
 	else:		
-		print 'Plotted %d points' % nPoints
+		print('Plotted %d points' % nPoints)
 		#savefig('%s-pcal-%s.pdf' % (a, op), bbox_inches='tight')
 		show()
 
@@ -876,25 +876,25 @@ for f in fileList:
 	for s in sections:
 		if len(s.records) > options['quack']+2:
 			if options['quack'] > 0:
-				print 'Quacking %d records' % options['quack']
+				print('Quacking %d records' % options['quack'])
 				s.quack(options['quack'])
 			s.summary()
 			data.append(s)
 		else:
-			print 'Dropping %s:%s because it has only %d records' % (s.filename, s.section, len(s.records))
+			print('Dropping %s:%s because it has only %d records' % (s.filename, s.section, len(s.records)))
 
 antennas = antList(data)
 
 if 'combinefiles' in options:
 	D = []
 	for A in antennas:
-		print 'Processing %s: %d files' % (A, len(D))
+		print('Processing %s: %d files' % (A, len(D)))
 		D = appendAntennaData(data, A, D)	
 	generatePlots(op, toneSelect, D, options)
 else:
 	for A in antennas:
 		D = getAntennaData(data, A)
-		print 'Processing %s: %d files' % (A, len(D))
+		print('Processing %s: %d files' % (A, len(D)))
 		generatePlots(op, toneSelect, D, options)
 
 # vim: tabstop=8:softtabstop=8:shiftwidth=8:noexpandtab

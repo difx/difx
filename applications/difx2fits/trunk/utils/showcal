@@ -1,33 +1,65 @@
-#!/bin/env python2
+#!/bin/env python3
+
+#**************************************************************************
+#   Copyright (C) 2009-2019 by Walter Brisken                             *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id: oms2v2d 9157 2019-09-16 20:04:36Z WalterBrisken $
+# $HeadURL: $
+# $LastChangedRevision: 9157 $
+# $Author: WalterBrisken $
+# $LastChangedDate: 2019-09-16 14:04:36 -0600 (Mon, 16 Sep 2019) $
+#
+#============================================================================
+
+# Note: this utility can run under python2.7 or python3
+
 
 from sys import argv, exit
 from os import popen, environ
 from os.path import isfile, isdir
-from string import replace, strip, split, lower, upper
 from glob import glob
 
 program = 'showcal'
-version = '0.1'
-verdate = '20131119'
+version = '0.2'
+verdate = '20191001'
 author  = 'Walter Brisken'
 
 def usage(pgm):
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s [options] <vexFile> [<passName>]\n' % pgm
-	print '\noptions can include:\n'
-	print '  -h or --help     print this help information and quit'
-	print '\n<vexFile> is the vex file associated with the project'
-	print '\n<passName> is the correlator pass name (.v2d file previx)'
-	print '\n\nThere are two modes of operation.  In the first, only a'
-	print 'vex file is provided.  In this case this program cannot look'
-	print 'into the DiFX output directories where pulse cal or Tsys data'
-	print 'may be found.  Without the information about the correlator'
-	print 'setup, this mode cannot determine which antennas were actually'
-	print 'to be correlated.  In the second mode, the correlator pass is'
-	print 'also specified so the DiFX output can be found.  Note that'
-	print 'in this mode only antennas specified for correlation are'
-	print 'listed.  It is most useful to run this mode only after'
-	print 'correlation has completed.\n'
+	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
+	print('Usage: %s [options] <vexFile> [<passName>]\n' % pgm)
+	print('\noptions can include:\n')
+	print('  -h or --help     print this help information and quit')
+	print('\n<vexFile> is the vex file associated with the project')
+	print('\n<passName> is the correlator pass name (.v2d file previx)')
+	print('\n\nThere are two modes of operation.  In the first, only a')
+	print('vex file is provided.  In this case this program cannot look')
+	print('into the DiFX output directories where pulse cal or Tsys data')
+	print('may be found.  Without the information about the correlator')
+	print('setup, this mode cannot determine which antennas were actually')
+	print('to be correlated.  In the second mode, the correlator pass is')
+	print('also specified so the DiFX output can be found.  Note that')
+	print('in this mode only antennas specified for correlation are')
+	print('listed.  It is most useful to run this mode only after')
+	print('correlation has completed.\n')
 
 # return project, [ants]    # all lowercase
 def parseVex(vexFile):
@@ -38,14 +70,14 @@ def parseVex(vexFile):
 	if len(data) == 0:
 		return None
 	
-	project = lower(strip(data[0]))
+	project = data[0].strip().lower()
 	if project == 'error':
 		return None
 	
 	ants = []
 	for d in data[1:]:
-		s = split(strip(d))
-		ants.append(lower(s[0]))
+		s = d.strip().split()
+		ants.append(s[0].lower())
 	
 	return project, ants
 
@@ -54,8 +86,8 @@ def fileHasAntenna(file, antenna):
 		return False
 	data = open(file).readlines()
 	for d in data:
-		s = split(d)
-		if lower(s[0]) == antenna:
+		s = d.split()
+		if s[0].lower() == antenna:
 			return True
 	return False
 
@@ -120,26 +152,26 @@ def getDiFX(project, antenna, passName, queuePath, type):
 
 	joblistFile = '%s.joblist' % passName
 	if not isfile(joblistFile):
-		print '\nError: %s not found!  Must stop.\n' % joblistFile
+		print('\nError: %s not found!  Must stop.\n' % joblistFile)
 		exit(0)
 	data = open(joblistFile).readlines()
 	if len(data) < 2:
-		print '\nError: %s has no jobs listed!  Must stop.\n' % joblistFile
+		print('\nError: %s has no jobs listed!  Must stop.\n' % joblistFile)
 		exit(0)
 	for d in data[1:]:
-		s = split(d, '#')
+		s = d.split('#')
 		if len(s) == 2:
-			if upper(antenna) in s[1]:
+			if antenna.upper() in s[1]:
 				v = ''
 				# here we have found a job with the antenna in question
-				job = split(d)[0]
+				job = d.split()[0]
 				# first look locally
 				dd = '%s.difx' % job
 				if not isdir(dd) and queuePath != None:
 					# then look in queue
-					dd = '%s/%s/%s.difx' % (queuePath, upper(project), job)
+					dd = '%s/%s/%s.difx' % (queuePath, project.upper(), job)
 				if isdir(dd):
-					g = glob('%s/%s*%s' % (dd, type, upper(antenna)))
+					g = glob('%s/%s*%s' % (dd, type, antenna.upper()))
 					if len(g) > 0:
 						return 'D'
 
@@ -154,7 +186,7 @@ for a in argv[1:]:
 			usage(argv[0])
 			exit(0)
 		else:
-			print 'Unknown option: %s' % a
+			print('Unknown option: %s' % a)
 			exit(0)
 	else:
 		if vexFile == None:
@@ -162,38 +194,38 @@ for a in argv[1:]:
 		elif passName == None:
 			passName = a
 		else:
-			print 'Error: unexpected parameter: %s' % a
+			print('Error: unexpected parameter: %s' % a)
 			exit(0)
 
 if vexFile == None:
-	print 'Error: need to provide vex filenmae'
+	print('Error: need to provide vex filename')
 	exit(0)
 
 project, ants = parseVex(vexFile)
 
-if not environ.has_key('GAIN_CURVE_PATH'):
-	print 'Warning: Env. var. GAIN_CURVE_PATH needs to be defined for gain curves to be found.'
+if not 'GAIN_CURVE_PATH' in environ:
+	print('Warning: Env. var. GAIN_CURVE_PATH needs to be defined for gain curves to be found.')
 	gainPath = ''
 else:
 	gainPath = environ['GAIN_CURVE_PATH']
 	if not isdir(gainPath):
-		print 'Warning: $GAIN_CURVE_PATH is not a directory!'
+		print('Warning: $GAIN_CURVE_PATH is not a directory!')
 		gainPath = ''
 
-if environ.has_key('DIFX_QUEUE_BASE'):
+if 'DIFX_QUEUE_BASE' in environ():
 	queuePath = environ['DIFX_QUEUE_BASE']
 else:
 	if passName != None:
-		print 'Error: Env. var. DIFX_QUEUE_BASE is required when a pass name is provided.'
+		print('Error: Env. var. DIFX_QUEUE_BASE is required when a pass name is provided.')
 		exit(0)
 	queuePath = ''
 
 # a list of file types that have been found to date
 codes = ''
 
-print '\nProject: %s\n' % upper(project)
-print 'Ant     Flag    Tsys    Weather Gain    Pcal    Cablecal'
-print '---     ----    ----    ------- ----    ----    --------'
+print('\nProject: %s\n' % project.upper())
+print('Ant     Flag    Tsys    Weather Gain    Pcal    Cablecal')
+print('---     ----    ----    ------- ----    ----    --------')
 for a in ants:
 	f = getFlag(project, a)
 	w = getWeather(project, a)
@@ -211,35 +243,35 @@ for a in ants:
 	c = getCableCal(project, a)
 	if p == 'X' or t == 'X':
 		continue
-	print '%-8s%-8s%-8s%-8s%-8s%-8s%-8s' % (upper(a), f, t, w, g, p, c)
+	print('%-8s%-8s%-8s%-8s%-8s%-8s%-8s' % (a.upper(), f, t, w, g, p, c))
 
 	codes = codes + f + t + w + g + p + c
 
-print '\nSources of data are as follows:'
+print('\nSources of data are as follows:')
 if 'F' in codes:
-	print '  F = %s.<ant>.flag' % project
+	print('  F = %s.<ant>.flag' % project)
 if 'f' in codes:
-	print '  f = flag'
+	print('  f = flag')
 if 'T' in codes:
-	print '  T = %s.<ant>.tsys' % project
+	print('  T = %s.<ant>.tsys' % project)
 if 't' in codes:
-	print '  t = tsys'
+	print('  t = tsys')
 if 'W' in codes:
-	print '  W = %s.<ant>.weather' % project
+	print('  W = %s.<ant>.weather' % project)
 if 'w' in codes:
-	print '  w = weather'
+	print('  w = weather')
 if 'G' in codes:
-	print '  G = %s.<ant>.gain' % project
+	print('  G = %s.<ant>.gain' % project)
 if 'g' in codes:
-	print '  g = $GAIN_CURVE_PATH/ = %s/' % gainPath
+	print('  g = $GAIN_CURVE_PATH/ = %s/' % gainPath)
 if 'P' in codes:
-	print '  P = %s.<ant>.pcal' % project
+	print('  P = %s.<ant>.pcal' % project)
 if 'p' in codes:
-	print '  p = pcal'
+	print('  p = pcal')
 if 'C' in codes:
-	print '  C = %s.<ant>.cablecal' % project
+	print('  C = %s.<ant>.cablecal' % project)
 if passName != None and 'D' in codes:
-	print '  D = DiFX extracted (%s_<seq>.difx/)' % passName
+	print('  D = DiFX extracted (%s_<seq>.difx/)' % passName)
 
 if passName == None:
-	print '\nWarning: no pass name given.  It cannot be determined\nif pulse cal or switched power (for Tsys) was extracted\nby DiFX.  It also is not clear which antennas were\ncorrelated; all are assumed.'
+	print('\nWarning: no pass name given.  It cannot be determined\nif pulse cal or switched power (for Tsys) was extracted\nby DiFX.  It also is not clear which antennas were\ncorrelated; all are assumed.')
