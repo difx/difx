@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2018 by Walter Brisken                             *
+ *   Copyright (C) 2013-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,8 +35,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.10";
-const char verdate[] = "20181107";
+const char version[] = "0.11";
+const char verdate[] = "20191001";
 
 const int defaultChunkSize = 10000000;
 const int defaultNGap = 100;
@@ -527,7 +527,7 @@ int main(int argc, char **argv)
 		V = vdifmux(dest, destChunkSize, src, n+leftover, &vm, nextFrame, &stats);
 		if(verbose > 2)
 		{
-			printf("vdifmux(destSize=%d, srcSize=%d, startFrame=%Ld) -> %d\n", destChunkSize, n+leftover, (long long)nextFrame, V);
+			fprintf(stderr, "vdifmux(destSize=%d, srcSize=%d, startFrame=%Ld) -> %d\n", destChunkSize, n+leftover, (long long)nextFrame, V);
 		}
 		if(V < 0)
 		{
@@ -535,14 +535,14 @@ int main(int argc, char **argv)
 			{
 				if(V == -3)
 				{
-					printf("No valid frames (matching expected parameters) were found in the first %d bytes, so there will be no output.  Perhaps use printVDIFheader to determine correct frame parameters.\n", n);
+					fprintf(stderr, "No valid frames (matching expected parameters) were found in the first %d bytes, so there will be no output.  Perhaps use printVDIFheader to determine correct frame parameters.\n", n);
 				}
 				else
 				{
-					printf("No output was provided because the input parameters didn't make sense.  vdifmux() returned %d on the first call.  Perhaps nSort, nGap or chunkSize can be changed to make this work.\n", V);
+					fprintf(stderr, "No output was provided because the input parameters didn't make sense.  vdifmux() returned %d on the first call.  Perhaps nSort, nGap or chunkSize can be changed to make this work.\n", V);
 				}
 			}
-			printf("vdifmux() error, returned %d\n", V);
+			fprintf(stderr, "vdifmux() error, returned %d\n", V);
 			break;
 		}
 
@@ -559,12 +559,12 @@ int main(int argc, char **argv)
 			{
 				int j;
 				vdifreaderStats(&reader, &readerstats);
-				printf("VDIF reader statistics:\n");
+				fprintf(stderr, "VDIF reader statistics:\n");
 				for(j = 0; j < readerstats.nThread; j++)
 				{
-					printf("  Thread %2d relative offset = %d frames\n", summary.threadIds[j], readerstats.threadOffsets[j]);
+					fprintf(stderr, "  Thread %2d relative offset = %d frames\n", summary.threadIds[j], readerstats.threadOffsets[j]);
 				}
-				printf("  Largest offset            = %d frames\n", readerstats.maxOffset);
+				fprintf(stderr, "  Largest offset            = %d frames\n", readerstats.maxOffset);
 			}
 		}
 

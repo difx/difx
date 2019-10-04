@@ -3,6 +3,7 @@ Version 1.5
 * Post DiFX-2.6
 * Raise max number of threads to 256
 * vdifd: don't pass nbit to vmux -- it is wrong.
+* vmux: don't print errors to stdout, print to stderr instead, to keep stream clean
 
 Version 1.4
 ~~~~~~~~~~~
