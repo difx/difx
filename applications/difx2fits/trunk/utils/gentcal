@@ -1,9 +1,10 @@
-#!/bin/env python2
+#!/bin/env python3
+
+# Note: this utility can run under python2.7 or python3
 
 from sys import stderr
 from os import getenv
 from os.path import isfile
-from string import strip, split
 
 vff = 1.07	# VLBA fudge factor
 
@@ -15,7 +16,7 @@ def readfile(fn, a, r):
 	stderr.write('Reading %s\n' % fn)
 	data = open(fn).readlines()
 	ready = 0
-	print '# %s' % fn
+	print('# %s' % fn)
 	for d in data:
 		if d[:8] == 'RECEIVER':
 			if ready:
@@ -23,12 +24,12 @@ def readfile(fn, a, r):
 			else:
 				ready = 1
 		else:
-			s = split(strip(d))
+			s = d.strip().split()
 			if len(s) == 3:
 				try:
-					print '%-4s %-8s %-5s %5.2f %5.2f' % (a, r, s[0], float(s[2])*ff[a], float(s[1])*ff[a])
+					print('%-4s %-8s %-5s %5.2f %5.2f' % (a, r, s[0], float(s[2])*ff[a], float(s[1])*ff[a]))
 				except ValueError:
-					print '%-4s %-8s %-5s %-5s %-5s' % (a, r, s[0], s[2], s[1])
+					print('%-4s %-8s %-5s %-5s %-5s' % (a, r, s[0], s[2], s[1]))
 
 
 tcalpath = getenv('TCAL_PATH')
@@ -36,7 +37,7 @@ tcalpath = getenv('TCAL_PATH')
 if tcalpath == None:
 	stderr.write('Error: need to have TCAL_PATH defined\n')
 else:
-	print '# Columns are: antenna, receiver, frequency(MHz), tCal_R(K), tCal_L(K)'
+	print('# Columns are: antenna, receiver, frequency(MHz), tCal_R(K), tCal_L(K)')
 	for a in antennas:
 		for r in receivers:
 			fn = '%s/%s.%s' % (tcalpath, r, a)

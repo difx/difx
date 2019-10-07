@@ -1,6 +1,6 @@
 Version 3.7.0
 * Post DiFX-2.6
-* python3 conversion: showcal, plotpcal2
+* python3 conversion: showcal, plotpcal2, gentcal, makefits
 
 Version 3.6.0
 * SU table: make more IDI-FITS compliant

@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2014 by Walter Brisken                             *
+#   Copyright (C) 2009-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,36 +30,37 @@
 #
 #============================================================================
 
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit
-from string import split, strip
 from glob import glob
 from os import getenv, chdir, system, getcwd, rmdir, umask
 from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '1.0'
+version = '1.1'
 author  = 'Walter Brisken'
-verdate = '20140213'
+verdate = '20191007'
 
 calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
 
 def usage(prog):
-	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-	print '\nUsage:  %s [options] <pass name>' % prog
-	print '\nOptions can include:'
-	print '  --verbose'
-	print '  -v         Send more output to the screen\n'
-	print '  --help'
-	print '  -h         Print this help information and quit\n'
-	print '  --override-version'
-	print '             To force operation with mixed DiFX versions\n'
-	print '  --allow-partial'
-	print '             Bypass check for complete set of correlated\n'
-	print '  --cwd'
-	print '             Look for files in the current working directory\n'
-	print '  --profilemode'
-	print '             Pass the profilemode switch to difx2fits pulsar autocorrelations\n'
+	print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+	print('\nUsage:  %s [options] <pass name>' % prog)
+	print('\nOptions can include:')
+	print('  --verbose')
+	print('  -v         Send more output to the screen\n')
+	print('  --help')
+	print('  -h         Print this help information and quit\n')
+	print('  --override-version')
+	print('             To force operation with mixed DiFX versions\n')
+	print('  --allow-partial')
+	print('             Bypass check for complete set of correlated\n')
+	print('  --cwd')
+	print('             Look for files in the current working directory\n')
+	print('  --profilemode')
+	print('             Pass the profilemode switch to difx2fits pulsar autocorrelations\n')
 	exit(0)
 
 def testgainfiles():
@@ -71,22 +72,22 @@ def testgainfiles():
 	for f in gcFiles:
 		if not isfile(f):
 			if len(missing) == 0:
-				print ''
-			print 'Warning: symlink %s is broken' % f
+				print('')
+			print('Warning: symlink %s is broken' % f)
 			missing.append(f)
 	
 	if len(missing) > 0:
-		print ''
+		print('')
 
 	return missing
 
-def parsekv(str):
+def parsekv(strg):
 	kv = {}
-	ss = split(str)
+	ss = strg.split()
 	for s in ss:
 		p = split(s, '=')
 		if len(p) != 2:
-			print 'Error parsing key=value statement: %s', s
+			print('Error parsing key=value statement: %s', s)
 			return {}
 		kv[p[0]] = p[1]
 	return kv
@@ -112,14 +113,14 @@ def mergesnifferfiles(expt, list, passname, ext, cwd, verbose, hasHeaderLine):
 	if not isdir(dir):
 		cmd = 'mkdir -p %s' % dir
 		if verbose:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 
 	outFile = '%s/%s.%s.%s' % (dir, expt, passname, ext)
 	if isfile(outFile):
 		cmd = 'mv %s %s.old' % (outFile, outFile)
 		if verbose:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 	skipFirst = False
 
@@ -129,20 +130,20 @@ def mergesnifferfiles(expt, list, passname, ext, cwd, verbose, hasHeaderLine):
 		if isfile(infile):
 			files.append(infile)
 		else:
-			print 'Warning: %s not found' % infile
+			print('Warning: %s not found' % infile)
 
 	if len(files) == 0:
-		print 'No %s files to merge!' % ext
+		print('No %s files to merge!' % ext)
 		return None
 
 	out = open(outFile, 'w')
 
 	if verbose:
-		print '\nMaking sniffer file %s from:' % outFile
+		print('\nMaking sniffer file %s from:' % outFile)
 	
 	for infile in files:
 		if verbose:
-			print '  %s' % infile
+			print('  %s' % infile)
 		data = open(infile, 'r').readlines()
 		if len(data) > 0:
 			if skipFirst == False:
@@ -162,8 +163,8 @@ def genDateStr(t):
 		d.tm_hour, d.tm_min, d.tm_sec)
 
 class Job:
-	def __init__(self, str):
-		s = split(strip(str))
+	def __init__(self, strg):
+		s = strg.strip().split()
 		if len(s) >= 6:
 			self.name = s[0]
 			self.mjdStart = float(s[1])
@@ -174,19 +175,18 @@ class Job:
 		else:
 			self.name = ''
 	def show(self, indent=0):
-		print '%sJob %s: start=%f stop=%f nPsrBins=%d nSrcFiles=%d nAnt=%d' % \
-			(' '*indent, self.name, self.mjdStart, self.mjdStop, 
-			 self.nPulsarBins, self.nSourceFiles, self.nAnt)
+		print('%sJob %s: start=%f stop=%f nPsrBins=%d nSrcFiles=%d nAnt=%d' % \
+			(' '*indent, self.name, self.mjdStart, self.mjdStop, self.nPulsarBins, self.nSourceFiles, self.nAnt))
 	def verify(self, dir):
 		files = ['.calc', '.input', '.flag', '.im']
 		for f in files:
 			file = dir + '/' + self.name + f
 			if not isfile(file):
-				print '%s not found' % file
+				print('%s not found' % file)
 				return False
 		ddir = dir + '/' + self.name + '.difx'
 		if not isdir(ddir):
-			print 'difx output dir %s not found' % ddir
+			print('difx output dir %s not found' % ddir)
 			return False
 		return True
 
@@ -198,19 +198,19 @@ class JobList:
 		self.npsrbins = 0
 		self.nsrcfiles = 1
 		if len(data) < 2:
-			print 'Malformed .joblist file %s' % filename
+			print('Malformed .joblist file %s' % filename)
 			exit(0)
 		self.kv = parsekv(data[0])
 		if len(self.kv) < 1:
-			print 'Malformed .joblist file %s line 1' % filename
+			print('Malformed .joblist file %s line 1' % filename)
 			exit(0)
 		for n in range(1, len(data)):
-			d = split(data[n], '#')[0]
+			d = data[n].split('#')[0]
 			if len(d) < 2:
 				continue
 			j = Job(d)
 			if j.name == '':
-				print 'Malformed line %d in %s' % (n+1, filename)
+				print('Malformed line %d in %s' % (n+1, filename))
 				exit(0)
 			self.jobs.append(j)
 			if self.jobs[-1].nPulsarBins > self.npsrbins:
@@ -221,7 +221,7 @@ class JobList:
 	def testversion(self, override):
 		difxVersion = getenv('DIFX_VERSION')
 		if difxVersion == None:
-			print 'Warning: env var DIFX_VERSION is not set!'
+			print('Warning: env var DIFX_VERSION is not set!')
 			if override:
 				difxVersion = 'unknown'
 			else:
@@ -229,34 +229,34 @@ class JobList:
 		else:
 			if difxVersion != self.kv['DiFX']:
 				if override:
-					print 'Overriding version mismatch: %s != %s' % (difxVersion, self.kv['DiFX'])
+					print('Overriding version mismatch: %s != %s' % (difxVersion, self.kv['DiFX']))
 					difxVersion = 'unknown'
 				else:
-					print 'Error: file DiFX version = %s' % self.kv['DiFX']
-					print 'and environment DiFX version = %s' % difxVersion
+					print('Error: file DiFX version = %s' % self.kv['DiFX'])
+					print('and environment DiFX version = %s' % difxVersion)
 					exit(0)
 
 		difxLabel = getenv('DIFX_LABEL')
 		if difxLabel != None:
 			if not 'label' in self.kv:
 				if override:
-					print 'Override causing DiFX label to be set to %s' % difxLabel
+					print('Override causing DiFX label to be set to %s' % difxLabel)
 					self.kv['label'] = difxLabel
 					difxVersion = 'unknown'
 				else:
-					print 'Error: file DiFX label is not set but environment DiFX label is %s' % difxLabel
+					print('Error: file DiFX label is not set but environment DiFX label is %s' % difxLabel)
 					exit(0)
 			if difxLabel != self.kv['label']:
 				if override:
-					print 'Overriding DiFX label mismatch: %s != %s' % (difxLabel, self.kv['label'])
+					print('Overriding DiFX label mismatch: %s != %s' % (difxLabel, self.kv['label']))
 					difxVersion = 'unknown'
 					self.kv['label'] = difxLabel
 		elif 'label' in self.kv:
 			if override:
-				print 'Override causing DiFX label to be unset (it was %s)' % self.kv['label']
+				print('Override causing DiFX label to be unset (it was %s)' % self.kv['label'])
 				del self.kv['label']
 			else:
-				print 'Error: file DiFX label is set to %s but environment DiFX label not set' % self.kv['label']
+				print('Error: file DiFX label is set to %s but environment DiFX label not set' % self.kv['label'])
 				exit(0)
 
 	def makefits(self, queuedir, verbose, sniff, usecwd, options=''):
@@ -277,20 +277,20 @@ class JobList:
 
 		tmp = dir + '/' + 'makefits.tmp'
 		if isdir(tmp):
-			print '\nError: temporary directory %s already exists.  Aborting.' % tmp
+			print('\nError: temporary directory %s already exists.  Aborting.' % tmp)
 			exit(0)
 		cmd = 'mkdir -p %s' % tmp
 		if verbose:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 
 		cmd = 'cp %s %s' % (calfiles, tmp)
 		if verbose:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 
 		if verbose:
-			print 'Changing to directory: %s' % tmp
+			print('Changing to directory: %s' % tmp)
 		chdir(tmp)
 
 		binrange = 1
@@ -305,25 +305,25 @@ class JobList:
 				for j in self.jobs:
 					cmd += ('../%s ' % j.name)
 				if verbose:
-					print 'Executing: %s' % cmd
+					print('Executing: %s' % cmd)
 				system(cmd)
 		
 		files = glob('*.*.*.*.FITS')
 		if len(files) == 0:
-			print 'Error: No fits files made'
-			print 'Please clean remove %s when you are done picking up the pieces.' % tmp
+			print('Error: No fits files made')
+			print('Please clean remove %s when you are done picking up the pieces.' % tmp)
 			exit(0)
 		if verbose:
-			print 'Made %d FITS files' % len(files)
+			print('Made %d FITS files' % len(files))
 		
-		expt = split(files[0], '.')[0]
+		expt = files[0].split('.')[0]
 
 		indices = []
 		for f in files:
-			s = split(f, '.')
+			s = f.split('.')
 			if s[0] != expt:
-				print 'Error: Unexpected variety of FITS files found:', files
-				print 'Please clean remove %s when you are done picking up the pieces.' % tmp
+				print('Error: Unexpected variety of FITS files found:', files)
+				print('Please clean remove %s when you are done picking up the pieces.' % tmp)
 				exit(0)
 			indices.append([int(s[1]), int(s[2][3:]), int(s[3][6:])])
 
@@ -332,9 +332,9 @@ class JobList:
 		j = 1
 		fitslistfile = '%s/%s.fitslist' % (cwd, self.kv['pass'])
 		if isfile(fitslistfile):
-			print "FITS listing file " + fitslistfile + " already exists; not proceeding!"
-			print "Remove this file if the FITS files listed within have already been"
-			print "archived or are not required"
+			print("FITS listing file " + fitslistfile + " already exists; not proceeding!")
+			print("Remove this file if the FITS files listed within have already been")
+			print("archived or are not required")
 			exit(0)
 		out = open(fitslistfile, 'w')
 		out.write('exper=%s  pass=%s  jobs=%s  mjd=%9.7f  DiFX=%s  difx2fits=0' % \
@@ -351,18 +351,18 @@ class JobList:
 			archiveFile = format % (self.kv['exper'], self.kv['pass'], i[1], i[2], i[0], datestr)
 			size = getsize(fileName)
 			if size % 2880 != 0:
-				print 'ERROR!!! %s is not a multiple of 2880 bytes!' % archiveFile
+				print('ERROR!!! %s is not a multiple of 2880 bytes!' % archiveFile)
 				nSizeError += 1
 			out.write('%s %4.2f %s\n' % (archiveFile, size/1000000.0, fileName))
 			cmd = 'mv %s %s/%s' % (fileName, dir, archiveFile)
 			if verbose:
-				print 'Executing: %s' % cmd
+				print('Executing: %s' % cmd)
 			system(cmd)
 			if groupId != None:
 				# make sure anyone in the difx group can remove the file later
 				cmd = 'chown -R :%s %s/%s' % (groupId, dir, archiveFile)
 				if verbose:
-					print 'Executing: %s' % cmd
+					print('Executing: %s' % cmd)
 				system(cmd)
 			j += 1
 		out.close()
@@ -375,13 +375,13 @@ class JobList:
 				archiveFile = format % (self.kv['exper'], self.kv['pass'], i[1], i[2], i[0], datestr)
 				cmd = 'mv %s %s/%s' % (fileName, dir, archiveFile)
 				if verbose:
-					print 'Executing: %s' % cmd
+					print('Executing: %s' % cmd)
 				system(cmd)
 				if groupId != None:
 					# make sure anyone in the difx group can remove the file later
 					cmd = 'chown -R :%s %s/%s' % (groupId, dir, archiveFile)
 					if verbose:
-						print 'Executing: %s' % cmd
+						print('Executing: %s' % cmd)
 					system(cmd)
 			j += 1
 
@@ -397,20 +397,20 @@ class JobList:
 		if nLog > 0:
 			cmd = cmd + ' > ' + logFile
 			if verbose:
-				print 'Executing: %s' % cmd
+				print('Executing: %s' % cmd)
 			system(cmd)
 			cmd = 'gzip -f %s' % logFile
 			if verbose:
-				print 'Executing: %s' % cmd
+				print('Executing: %s' % cmd)
 			system(cmd)
 			if groupId != None:
 				cmd = 'chown -R :%s %s.gz' % (groupId, logFile)
 				if verbose:
-					print 'Executing: %s' % cmd
+					print('Executing: %s' % cmd)
 				system(cmd)
 		else:
 			if verbose:
-				print 'No .difxlog files to merge'
+				print('No .difxlog files to merge')
 
 		# merge sniffer files
 		sniffFiles = ''
@@ -424,12 +424,12 @@ class JobList:
 			if groupId != None:
 				cmd = 'chown -R :%s %s' % (groupId, sniffFiles)
 				if verbose:
-					print 'Executing: %s' % cmd
+					print('Executing: %s' % cmd)
 				system(cmd)
 
 		cmd = 'rm %s' % calfiles
 		if verbose:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 
 		chdir(cwd)
@@ -438,7 +438,7 @@ class JobList:
 			rmdir(tmp)
 		
 		if isdir(tmp):
-			print 'Warning: unexpected files left in %s' % tmp
+			print('Warning: unexpected files left in %s' % tmp)
 
 		if nSizeError > 0:
 			return False
@@ -456,14 +456,13 @@ class JobList:
 		OK = True
 		for j in self.jobs:
 			if self.npsrbins != j.nPulsarBins:
-				print "Jobs have inconsistent number of bins (%d,%d)" % \
-					(self.npsrbins,j.nPulsarBins)
+				print('Jobs have inconsistent number of bins (%d, %d)' % (self.npsrbins, j.nPulsarBins))
 			if j.verify(dir) == False:
 				OK = False
 			else:
 				completeJobs.append(j)
 		if self.npsrbins > 0 and self.nsrcfiles > 1:
-			print "Cannot build multiple-field and pulsar files simultaneously!"
+			print('Cannot build multiple-field and pulsar files simultaneously!')
 			return False
 		if not allowPartial:
 			return OK
@@ -473,30 +472,29 @@ class JobList:
 			return True
 
 		if len(completeJobs) == 0:
-			print 'No jobs are complete.  Cannot continue'
+			print('No jobs are complete.  Cannot continue')
 			return False
 
-		print '%d of %d jobs were not complete.  Continuing anyway...' % \
-			(nFail, len(self.jobs))
+		print('%d of %d jobs were not complete.  Continuing anyway...' % (nFail, len(self.jobs)))
 		self.jobs = completeJobs
 		return True
 
 	def show(self, indent=0):
 		id = ' '*indent
-		print '%sJobList: %s' % (id, self.filename)
+		print('%sJobList: %s' % (id, self.filename))
 		id = ' '*(indent+2)
 		for key in self.kv.keys():
-			print '%sKV: %s = %s' % (id, key, self.kv[key])
+			print('%sKV: %s = %s' % (id, key, self.kv[key]))
 		for j in self.jobs:
 			j.show(indent+2)
 
 # main below here
 
-umask(02)
+umask(2)
 
 difxQueueBase = getenv('DIFX_QUEUE_BASE')
 if difxQueueBase == None:
-	print 'Error: env var DIFX_QUEUE_BASE is not set.  Cannot proceed.'
+	print('Error: env var DIFX_QUEUE_BASE is not set.  Cannot proceed.')
 	exit(0)
 
 overrideVersion = False
@@ -539,10 +537,10 @@ if opts == '':
 	opts = '-v'
 
 if len(args) < 1:
-	print 'No pass names on command line.  Run with -h for help.'
+	print('No pass names on command line.  Run with -h for help.')
 	exit(0)
 
-print 'options: %s' % opts
+print('options: %s' % opts)
 
 gcFilesMissing = testgainfiles()
 
@@ -553,7 +551,7 @@ for arg in args:
 		joblistfile = arg + '.joblist'
 
 	if not isfile(joblistfile):
-		print 'Error: file %s not found' % joblistfile
+		print('Error: file %s not found' % joblistfile)
 		exit(0)
 
 	jl = JobList(joblistfile)
@@ -567,18 +565,18 @@ for arg in args:
 
 	if not OK:
 		if not allowPartial:
-			print '\nJob list verification failed!'
-			print 'Run with --allow-partial to process a subset of data.\n'
+			print('\nJob list verification failed!')
+			print('Run with --allow-partial to process a subset of data.\n')
 		exit(0)
 
 	OK = jl.makefits(difxQueueBase, verbose, sniff, usecwd, opts)
 
 	if not OK:
-		print 'Serious errors were detected!'
+		print('Serious errors were detected!')
 
 if len(gcFilesMissing) > 0:
-	print '\nWarning: some gain curve files were not found:'
+	print('\nWarning: some gain curve files were not found:')
 	for f in fcFilesMissing:
-		print '  %s' % f
-	print ''
+		print('  %s' % f)
+	print('')
 
