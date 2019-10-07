@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2016 by Walter Brisken                             *
+#   Copyright (C) 2008-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -29,7 +29,8 @@
 #
 #============================================================================
 
-from string import split, strip, find
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit
 from os import popen, getenv
 from threading import Thread
@@ -38,22 +39,22 @@ from glob import glob
 program = 'listmodules'
 author  = 'Walter Brisken'
 version = '0.1'
-verdate = '20160727'
+verdate = '20191007'
 
 mk5list = 'mk5list'
 
 def usage():
-	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
-	print '\nA program to find required Mark5 modules and write the machines file'
-	print 'appropriate for a particular DiFX job.'
-	print '\nUsage : %s [options]' % argv[0]
-	print '\noptions can include:'
-	print '\n  -h or --help'
-	print '          print this usage info and exit'
-	print '\n  -m <machinesfile> or --machines <machinesfile>'
-	print '          use <machinesfile> instead of $DIFX_MACHINES'
-	print '\nThis program responds to the following environment variables:\n'
-	print 'DIFX_MACHINES must point to the machines file if no <machinesfile> is specifided.\n'
+	print('\n%s ver. %s  %s %s' % (program, version, author, verdate))
+	print('\nA program to find required Mark5 modules and write the machines file')
+	print('appropriate for a particular DiFX job.')
+	print('\nUsage : %s [options]' % argv[0])
+	print('\noptions can include:')
+	print('\n  -h or --help')
+	print('          print this usage info and exit')
+	print('\n  -m <machinesfile> or --machines <machinesfile>')
+	print('          use <machinesfile> instead of $DIFX_MACHINES')
+	print('\nThis program responds to the following environment variables:\n')
+	print('DIFX_MACHINES must point to the machines file if no <machinesfile> is specifided.\n')
 	exit(1)
 
 
@@ -63,8 +64,8 @@ def readmachines(machinesfile):
 	ismk5 = {}
 	lines = open(machinesfile).readlines()
 	for l in lines:
-		l = split(strip(l), '#')[0]
-		s = split(l)
+		l = l.strip().split('#')[0]
+		s = l.split()
 		if len(s) >= 2:
 			machines.append(s[0])
 			cores.append(int(s[1]))
@@ -78,7 +79,7 @@ def readmachines(machinesfile):
 
 def gethostname():
 	o = popen('hostname', 'r')
-	host = strip(o.readline())
+	host = o.readline().strip()
 	o.close()
 	return host
 
@@ -92,7 +93,7 @@ class querythread(Thread):
 		o = popen(cmd, 'r') 
 		lines = o.readlines()
 		o.close()
-		self.result = strip(lines[-1])
+		self.result = lines[-1].strip()
 
 def mk5query(machines, ismk5):
 	qlist = []
@@ -115,7 +116,7 @@ def run(machinesfile):
 	results.sort()
 
 	for r in results:
-		print r[0], r[1]
+		print(r[0], r[1])
 
 machinesfile = getenv('DIFX_MACHINES')
 
@@ -127,7 +128,7 @@ while a < len(argv):
 	elif arg == '-m' or arg == '--machinesfile':
 		a += 1
 		if a >= len(argv):
-			print 'No machinesfile specified!'
+			print('No machinesfile specified!')
 			exit(1)
 		machinesfile = argv[a]
 	a += 1
@@ -135,15 +136,15 @@ while a < len(argv):
 quit = False
 	
 if machinesfile == None:
-	print 'DIFX_MACHINES env var not defined!';
+	print('DIFX_MACHINES env var not defined!')
 	quit = True
 
-if len(glob(machinesfile)) != 1:
-	print 'Machinesfile %s not found.' % machinesfile
+elif len(glob(machinesfile)) != 1:
+	print('Machinesfile %s not found.' % machinesfile)
 	quit = True
 	
 if quit:
-	print 'listmoduels quitting.'
+	print('%s quitting.' % program)
 	exit(1)
 	
 v = run(machinesfile)

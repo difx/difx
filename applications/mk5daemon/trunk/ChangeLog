@@ -1,7 +1,10 @@
-Version 2.6.0
+Version 2.6.1
 ~~~~~~~~~~~~~
 * Post DiFX-2.6
 * mk6dir: add extra column to output contaning size of scan in bytes
+* python3ify: listcpus listmedia listmodules and killjob
+  - note that Walter has converted mk5control, but not yet committed because
+    of dependency on the difxfile module which is not yet converted
 
 Version 2.6.0
 ~~~~~~~~~~~~~

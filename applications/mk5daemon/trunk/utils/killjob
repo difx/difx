@@ -1,13 +1,15 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
+
+# Note: this utility can run under python2.7 or python3
 
 from sys import argv
 from os import system
 
 if '-h' in argv or '--help' in argv or len(argv) <= 1:
-	print 'Usage: %s <jobId1> [<jobId2> ... ]\n' % argv[0]
-	print '<jobId#> is a DiFX job name, such as bb344a_34'
+	print('Usage: %s <jobId1> [<jobId2> ... ]\n' % argv[0])
+	print('<jobId#> is a DiFX job name, such as bb344a_34')
 else:
 	for a in argv[1:]:
 		cmd = 'mk5control "killmpifxcorr %s" all' % a
-		print 'Executing: %s' % cmd
+		print('Executing: %s' % cmd)
 		system(cmd)

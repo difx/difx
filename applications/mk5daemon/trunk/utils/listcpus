@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2016 by Walter Brisken                             *
+#   Copyright (C) 2008-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -29,7 +29,8 @@
 #
 #============================================================================
 
-from string import split, strip, find
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit
 from os import popen, getenv
 from threading import Thread
@@ -37,24 +38,24 @@ from glob import glob
 
 program = 'listcpus'
 author  = 'Walter Brisken'
-version = '0.1'
-verdate = '20160727'
+version = '0.2'
+verdate = '20191007'
 
 mk5list = 'mk5list'
 
 def usage():
-	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
-	print '\nA program to list CPU info for SW corr machines'
-	print '\nUsage : %s [options]' % argv[0]
-	print '\noptions can include:'
-	print '\n  -h or --help'
-	print '          print this usage info and exit'
-	print '\n  -v or --verbose'
-	print '          increase verbosity of output'
-	print '\n  -m <machinesfile> or --machines <machinesfile>'
-	print '          use <machinesfile> instead of $DIFX_MACHINES'
-	print '\nThis program responds to the following environment variables:\n'
-	print 'DIFX_MACHINES must point to the machines file if no <machinesfile> is specifided.\n'
+	print('\n%s ver. %s  %s %s' % (program, version, author, verdate))
+	print('\nA program to list CPU info for SW corr machines')
+	print('\nUsage : %s [options]' % argv[0])
+	print('\noptions can include:')
+	print('\n  -h or --help')
+	print('          print this usage info and exit')
+	print('\n  -v or --verbose')
+	print('          increase verbosity of output')
+	print('\n  -m <machinesfile> or --machines <machinesfile>')
+	print('          use <machinesfile> instead of $DIFX_MACHINES')
+	print('\nThis program responds to the following environment variables:\n')
+	print('DIFX_MACHINES must point to the machines file if no <machinesfile> is specifided.\n')
 	exit(1)
 
 
@@ -62,12 +63,12 @@ def readmachines(machinesfile, verbose):
 	machines = []
 	lines = open(machinesfile).readlines()
 	for l in lines:
-		l = split(strip(l), '#')[0]
-		s = split(l)
+		l = l.strip.split('#')[0]
+		s = l.split()
 		if len(s) >= 2:
 			machines.append(s[0])
 	if verbose > 0:
-		print 'MACHINES = ', machines
+		print('MACHINES = ', machines)
 
 	return machines
 
@@ -83,9 +84,9 @@ class querythread(Thread):
 		o.close()
 		self.result = []
 		for l in lines:
-			s = split(l, ':')
-			if strip(s[0]) == 'model name':
-				self.result.append(strip(s[1]))
+			s = l.split(':')
+			if s[0].strip() == 'model name':
+				self.result.append(s[1].strip())
 
 def query(machines):
 	qlist = []
@@ -107,9 +108,9 @@ def run(machinesfile, verbose):
 	results.sort()
 
 	for r in results:
-		print r[0]
+		print(r[0])
 		for rr in r[1]:
-			print '  ', rr
+			print('  ', rr)
 	
 	return 0
 
@@ -126,7 +127,7 @@ while a < len(argv):
 	elif arg == '-m' or arg == '--machinesfile':
 		a += 1
 		if a >= len(argv):
-			print 'No machinesfile specified!'
+			print('No machinesfile specified!')
 			exit(1)
 		machinesfile = argv[a]
 	a += 1
@@ -134,15 +135,15 @@ while a < len(argv):
 quit = False
 
 if machinesfile == None:
-	print 'DIFX_MACHINES env var not defined!';
+	print('DIFX_MACHINES env var not defined!')
 	quit = True
 
-if len(glob(machinesfile)) != 1:
-	print 'Machinesfile %s not found.' % machinesfile
+elif len(glob(machinesfile)) != 1:
+	print('Machinesfile %s not found.' % machinesfile)
 	quit = True
 	
 if quit:
-	print 'genmachines quitting.'
+	print('%s quitting.' % program)
 	exit(1)
 	
 v = run(machinesfile, verbose)
