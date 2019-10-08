@@ -147,11 +147,11 @@ doipp = 0
 orgcwd = os.getcwd()
 components = {"perl"          :False,
               "difxio"        :True,
+              "codifio"       :True,
               "difxmessage"   :True,
               "dirlist"       :True,
               "mark5access"   :True,
               "mark6meta"     :False,
-              "codifio"       :True,
               "vdifio"        :True,
               "calcif2"       :True,
               "difxcalc11"    :True,
