@@ -85,7 +85,7 @@ def parsekv(strg):
 	kv = {}
 	ss = strg.split()
 	for s in ss:
-		p = split(s, '=')
+		p = s.split('=')
 		if len(p) != 2:
 			print('Error parsing key=value statement: %s', s)
 			return {}
@@ -298,7 +298,7 @@ class JobList:
 			binrange = self.npsrbins
 		for b in range(binrange):
 			for s in range(self.nsrcfiles):
-				initcmd = 'difx2fits -B %d --phasecentre %d %%s ' % (b,s)
+				initcmd = 'difx2fits -B %d --phasecentre %d %%s ' % (b, s)
 				cmd = initcmd % options
 				if profilemode:
 					cmd += '--profilemode '
