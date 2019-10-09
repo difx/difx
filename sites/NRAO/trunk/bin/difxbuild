@@ -7,16 +7,15 @@ from os.path import isdir, isfile, islink, join, dirname
 from sys import argv, exit, platform, version_info
 import re
 import getopt
-from string import split, strip, find, lower
 import platform
 from time import asctime
 from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.75'
-verdate = '20190730'
-author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@lbo.us>'
+version = '0.76'
+verdate = '20191009'
+author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
@@ -41,7 +40,9 @@ difxippUrl = 'https://svn.aoc.nrao.edu/repos/VLBA/difxipp'
 defaultDifxMessageGroup = '224.2.2.1'
 defaultDifxMessagePort = 50200
 
-if version_info[0] < 3 and version_info[1] < 5:
+if pythonProgram == 'python3':
+	psycopgVersion = '2.8.3'
+elif version_info[0] < 3 and version_info[1] < 5:
 	psycopgVersion = '2.4.6'
 else:
 	psycopgVersion = '2.5.1'
@@ -247,10 +248,10 @@ def getippversion(path):
 
 	if (ippheader==''):
 		print "Warning: ippversion.h not found, relying on IPP path ", path
-		s = split(path, '/')
+		s = path.split('/')
 		possibilities = []
 		for part in s:
-			t = split(part, '.')
+			t = part.split('.')
 			if len(t) > 1:
 				possibilities.append(part)
 				if len(possibilities) < 1:
@@ -306,7 +307,7 @@ def genipppc(path):
 
 	ipparch = getarch()
 
-	major = int(split(ippversion, '.')[0])
+	major = int(ippversion.split('.')[0])
 	out = open('ipp.pc', 'w')
 	out.write('base = %s\n' % path)
 	out.write('\n')
@@ -405,7 +406,7 @@ def componentList(comps):
 
 def filterComponentsOrig(origComps, args):
 	if 'cwd' in args:
-		local = split(getcwd(), '/')[-2:]
+		local = getcwd().split('/')[-2:]
 	else:
 		local = []
 	
@@ -452,7 +453,7 @@ def filterComponents(origComps, args):
 				comps.append(c)
 	else:
 		comps = []
-		local = split(getcwd(), '/')[-2:]
+		local = getcwd().split('/')[-2:]
 		for c in origComps:
 			if 'noipp' in args and 'ipp' in c[2]:
 				continue
@@ -510,6 +511,13 @@ component_mark5access_trunk = \
 	'mark5access', \
 	'https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk', \
 	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_codifio_trunk = \
+[ \
+	'codifio', \
+	'https://svn.atnf.csiro.au/difx/libraries/codifio/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
 ]
 
 component_vdifio_trunk = \
@@ -727,6 +735,7 @@ components['DIFX-DEVEL'] = \
 	component_difxio_trunk, \
 	component_difxmessage_trunk, \
 	component_mark6sg_trunk, \
+	component_codifio_trunk, \
 	component_mark5access_trunk, \
 	component_vdifio_trunk, \
 	component_dirlist_trunk, \
@@ -1885,12 +1894,12 @@ def default(comps, params, args, verbose, pretend):
 	print 'New default version of DiFX selected.'
 	print 'Make sure ". %s/bin/setup_difx" is in your .bashrc file' % environ['DIFX_BASE']
 
-def splitequals(str):
-	p = find(str, '=')
+def splitequals(strg):
+	p = strg.find('=')
 	if p < 0:
-		return [str]
+		return [strg]
 	else:
-		return [strip(str[:p]), strip(str[p+1:])]
+		return [strg[:p].strip(), strg[p+1:].strip()]
 
 def writeinitfile(verbose, pretend):
 	initdir = environ['DIFX_BASE'] + '/init.d'
@@ -1987,15 +1996,15 @@ def bootstrap(comps, params, args, verbose, pretend):
 	pyPath = {}
 	env = []
 	for c in configData:
-		c = split(c, '#')[0]	# strip comments
-		s = splitequals(strip(c))
+		c = c.split('#')[0]	# strip comments
+		s = splitequals(c.strip())
 		if len(s) == 2:
-			t = split(s[0])
+			t = s[0].split()
 			if len(t) == 1:
-				config[strip(s[0])] = strip(s[1])
+				config[s[0].strip()] = s[1].strip()
 			elif len(t) == 2:
 				if t[0] == 'env':
-					env.append([strip(t[1]), strip(s[1])])
+					env.append([t[1].strip(), s[1].strip()])
 				else:
 					print 'Error: line %s is not understood' % c
 					return
@@ -2100,9 +2109,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 			mcaFile = '%s/openmpi-mca-params.conf' % mcaPath
 			mca = ''
 			if config.has_key('mca%s' % p):
-				mca = split(config['mca%s' % p], ';')
+				mca = config['mca%s' % p].split(';')
 			elif config.has_key('mca'):
-				mca = split(config['mca'], ';')
+				mca = config['mca'].split(';')
 			if mca != '':
 				print 'Making %s' % mcaFile
 				execute('mkdir -p %s' % mcaPath, verbose, pretend)
@@ -2312,9 +2321,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 
 		# copy bootstrap file for future reference
-		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (params['ConfigFile'], config['difxbase'], split(params['ConfigFile'], '/')[-1], asctime(), version), verbose, pretend)
+		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (params['ConfigFile'], config['difxbase'], params['ConfigFile'].split('/')[-1], asctime(), version), verbose, pretend)
 		# copy setup file for future reference
-		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (setupFile, config['difxbase'], split(setupFile, '/')[-1], asctime(), version), verbose, pretend)
+		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (setupFile, config['difxbase'], setupFile.split('/')[-1], asctime(), version), verbose, pretend)
 
 		if isfile('%s/.openmpi/mca-params.conf' % environ['HOME']):
 			print '*** Warning: you have a .openmpi/mca-params.conf file in your home directory.'
@@ -2351,7 +2360,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 		if verbose > 0:
 			print 'Looking in: %s' % path
 		if isdir(path):
-			url = split(strip(popen('svn info %s | grep URL' % path, 'r').readlines()[0]))[-1]
+			url = popen('svn info %s | grep URL' % path, 'r').readlines()[0].strip().split()[-1]
 
 			if url == 'https://svn.atnf.csiro.au/difx/applications/gui/trunk/guiServer':
 				chdir(srcDir + '/' + comp[0])
@@ -2401,7 +2410,7 @@ def fromtar(origComps, params, args, verbose, pretend):
 			cmd = 'tar zxf %s' % tarFile
 			execute('rm -rf %s' % comp[0], verbose, pretend)
 			execute(cmd, verbose, pretend)
-			newDir = split(tarFile[:-7], '/')[-1]
+			newDir = tarFile[:-7].split('/')[-1]
 			execute('ln -f -s %s %s' % (newDir, comp[0]), verbose, pretend)
 		else:
 			print 'No matching .tar.gz files found in %s for %s' % (distDir, comp[0])
@@ -2777,7 +2786,7 @@ def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
 	chdir(tarDir)
 	execute('wget %s %s' % (wgetOptions, url), verbose, pretend)
-	fn = split(url, '/')[-1]
+	fn = url.split('/')[-1]
 	if not isfile(fn):
 		return -1
 	else:
@@ -3020,7 +3029,7 @@ def pyx(origComps, params, args, verbose, pretend):
 	if not environ.has_key('PYTHONPATH'):
 		print 'Need PYTHONPATH env var set.'
 		return
-	pythonPath = split(environ['PYTHONPATH'], ':')[0]
+	pythonPath = environ['PYTHONPATH'].split(':')[0]
 	if not isdir(pythonPath):
 		execute('mkdir -p %s' % pythonPath, verbose, pretend)
 	arch = platform.machine()
@@ -3052,11 +3061,11 @@ def psycopg(origComps, params, args, verbose, pretend):
 	if not environ.has_key('PYTHONPATH'):
 		print 'Need PYTHONPATH env var set.'
 		return
-	pythonPath = split(environ['PYTHONPATH'], ':')[0]
+	pythonPath = environ['PYTHONPATH'].split(':')[0]
 	if not isdir(pythonPath):
 		execute('mkdir -p %s' % pythonPath, verbose, pretend)
 	arch = platform.machine()
-	verParts = split(psycopgVersion, '.')
+	verParts = psycopgVersion.split('.')
 	psycopgSrcFile = 'psycopg2-%s.tar.gz' % psycopgVersion
 	psycopgUrl = 'http://initd.org/psycopg/tarballs/PSYCOPG-%s-%s/%s' % (verParts[0], verParts[1], psycopgSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
@@ -3187,7 +3196,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 	archDir = environ['DIFX_ARCH_ROOT'] + '/'
 	archSrcDir = archDir + 'src/'
 	
-	opsys = lower(platform.system())
+	opsys = platform.system().lower()
 	srcFile = 'pgplot%s.tar.gz' % pgplotVersion
 	pgplotUrl = 'ftp://ftp.astro.caltech.edu/pub/pgplot/%s' % srcFile
 	tarDir = difxBase + 'tar/'
@@ -3333,9 +3342,9 @@ def newestOMPI(data, version):
 	release = 0
 	m = re.compile('openmpi-%s.([0-9]+).tar.bz2' % version)
 	for q in data:
-		d = strip(split(q)[-1])
+		d = q.split()[-1].strip()
 		if d == filename:
-			md5 = split(q)[0]
+			md5 = q.split()[0]
 		else:
 			v = m.search(d)
 			if v != None:
@@ -3343,7 +3352,7 @@ def newestOMPI(data, version):
 				if r > release:
 					release = r
 					filename = 'openmpi-%s.%d.tar.bz2' % (version, release)
-					md5 = split(q)[0]
+					md5 = q.split()[0]
 
 	return filename, md5
 
@@ -3363,10 +3372,10 @@ def openmpi(origComps, params, args, verbose, pretend):
 			print 'Error: %s is not a file!' % args[0]
 			exit(2)
 		execute('cp -n %s %s' % (args[0], tarDir), verbose, pretend)
-		openmpiTarFile = split(args[0], '/')[-1]
+		openmpiTarFile = args[0].split('/')[-1]
 	else:
 		if openmpiVersion[0:4] == 'http':
-			openmpiTarFile = split(openmpiVersion, '/')[-1]
+			openmpiTarFile = openmpiVersion.split('/')[-1]
 			openmpiWeb = openmpiVersion[0:(-len(openmpiTarFile)-1)]
 			print 'Getting %s from %s' % (openmpiTarFile, openmpiWeb)
 			download = True
@@ -3382,12 +3391,12 @@ def openmpi(origComps, params, args, verbose, pretend):
 			if len(openmpiFiles) < 1:
 				print "I'm confused: cannot find openmpi source files from %s" % openmpiWeb
 				return
-			goodsum = split(strip(openmpiFiles[0]))[0]
-			openmpiTarFile = split(strip(openmpiFiles[0]))[1]
+			goodsum = openmpiFiles[0].strip().split()[0]
+			openmpiTarFile = openmpiFiles[0].strip().split()[1]
 			openmpiTarFile, goodsum = newestOMPI(openmpiFiles, openmpiVersion)
 			download = True
 			if isfile(tarDir+openmpiTarFile):
-				sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
+				sum = popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline().split()[0]
 				if sum != goodsum:
 					print 'Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile)
 					execute('mv %s%s /tmp' % (tarDir, openmpiTarFile), verbose, pretend)
@@ -3397,12 +3406,12 @@ def openmpi(origComps, params, args, verbose, pretend):
 			if download:
 				chdir(tarDir)
 				execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
-				sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
+				sum = popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline().split()[0]
 				if sum != goodsum:
 					print 'Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum)
 					return
 	
-	srcFileExt = split(openmpiTarFile, '.')[-1]
+	srcFileExt = openmpiTarFile.split('.')[-1]
 	if srcFileExt == 'bz2':
 		td = 'j'
 	elif srcFileExt == 'gz':
@@ -3410,7 +3419,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 	else:
 		td = ''
 
-	openmpiSrcDir = cpuSrcDir + strip(popen('tar t%sf %s%s' % (td, tarDir, openmpiTarFile), 'r').readline())
+	openmpiSrcDir = cpuSrcDir + popen('tar t%sf %s%s' % (td, tarDir, openmpiTarFile), 'r').readline().strip()
 	if isdir(openmpiSrcDir):
 		print '%s already untarred in %s; assuming this is a good copy' % (openmpiTarFile, cpuSrcDir)
 	else:
@@ -3432,7 +3441,7 @@ def update_difxbuild(origComps, params, args, verbose, pretend):
 	execute('rm -f difxbuild', verbose, pretend)
 	execute('wget %s' % difxbuildUrl, verbose, pretend)
 	print 'Current version = %s' % version
-	newVersion = strip(popen('%s /tmp/difxbuild --version' % pythonProgram, 'r').readlines()[0])
+	newVersion = popen('%s /tmp/difxbuild --version' % pythonProgram, 'r').readlines()[0].strip()
 	print 'New version = %s' % newVersion
 	print 
 	if newVersion <= version and not '--force' in args:
@@ -3440,7 +3449,7 @@ def update_difxbuild(origComps, params, args, verbose, pretend):
 	else:
 		execute('chmod +x /tmp/difxbuild', verbose, pretend)
 		chdir(dir)
-		if find(argv[0], '/') >= 0:
+		if argv[0].find('/') >= 0:
 			execute('cp /tmp/difxbuild %s' % argv[0], verbose, pretend)
 		else:
 			execute('cp /tmp/difxbuild `which difxbuild`', verbose, pretend)
@@ -3735,7 +3744,7 @@ def usage(prog):
 def checkPythonVersion():
 	if not environ.has_key('PYTHONPATH'):
 		return
-	pythonPath = split(environ['PYTHONPATH'], ':')[0]
+	pythonPath = environ['PYTHONPATH'].split(':')[0]
 
 	# If the python path does not match this python version raise a warning...
 	
