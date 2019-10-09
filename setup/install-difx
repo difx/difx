@@ -344,6 +344,8 @@ if gfortran:
 libtargets = []
 if components["difxio"]:
     libtargets.append(["difxio",     difx_version, True,True,True,False])
+if components["codifio"]:
+    libtargets.append(["codifio",    difx_version, True,True,True,False])
 if components["difxmessage"]:
     libtargets.append(["difxmessage",difx_version, True,True,True,False])
 if components["dirlist"]:
@@ -356,8 +358,6 @@ if components["mark6meta"]:
     libtargets.append(["mark6meta",  difx_version, True,True,True,False])
 if components["python"]:
     libtargets.append(["python",     difx_version, True,True,False,False])
-if components["codifio"]:
-    libtargets.append(["codifio",    difx_version, True,True,True,False])
 if components["vdifio"]:
     libtargets.append(["vdifio",     difx_version, True,True,True,False])
 
