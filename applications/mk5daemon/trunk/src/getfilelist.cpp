@@ -39,7 +39,8 @@ static void *mk6dirRun(void *ptr)
 	Logger_logData(params->D->log, "mk6dir starting\n");
 
 	// build mk6dir command
-        snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk6dir -c -m %d'", params->D->userID, params->slot);
+        //snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk6dir -c -m %d'", params->D->userID, params->slot);
+        snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c \"rungeneric.VLBADIFX7-TRUNK 'mk6dir -c -m %d'\"", params->D->userID, params->slot);
 
 	Mk5Daemon_system(params->D, command, 1);
 

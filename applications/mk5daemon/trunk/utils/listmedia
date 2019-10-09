@@ -41,8 +41,8 @@ import sys
 from xml.parsers import expat
 
 author  = 'Walter Brisken'
-version = '0.2'
-verdate = '20191007'
+version = '0.3'
+verdate = '20191009'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -112,7 +112,7 @@ def sendRequest(destination, command):
 	      '<from>%s</from>' \
 	      '%s' \
 	      '<mpiProcessId>-1</mpiProcessId>' \
-	      '<identifier>genmachines</identifier>' \
+	      '<identifier>listmedia</identifier>' \
 	      '<type>DifxCommand</type>' \
 	    '</header>' \
 	    '<body>' \
