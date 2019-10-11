@@ -135,7 +135,7 @@ keeplooping = True
 if not len(nextheader[0]) == 0:
     startseconds = nextheader[0][2]
 while not len(nextheader[0]) == 0 and keeplooping:
-    print "Looping..."
+    print ("Looping...")
     for i in range(numfiles):
         snr = 0
         delayoffsetus = 0
@@ -146,46 +146,46 @@ while not len(nextheader[0]) == 0 and keeplooping:
         mjd[i] = nextheader[i][1]
         seconds[i] = nextheader[i][2]
         if singlevis and seconds[i] > startseconds:
-            print "Exiting since singlevis was specified"
-	    keeplooping = False
+            print ("Exiting since singlevis was specified")
+            keeplooping = False
             break
         freqindex[i] = nextheader[i][5]
         polpair[i] = nextheader[i][6]
         nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
         vis[i] = numpy.fromstring(difxinputs[i].read(8*nchan[i]), dtype='complex64')
         if nchan[i] > maxchannels:
-            print "How embarrassing - you have tried to read files with more than " + \
-                str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
+            print ("How embarrassing - you have tried to read files with more than " + \
+                str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!")
             sys.exit()
-	if firstpermatch:
-		match_freq = (targetfreq < 0) or (freqindex[i] == targetfreq)
-		match_pol = (polpair[i]) in pollist
-		match_new = baseline[i] in unplottedbaselines
-		if match_new and match_freq and match_pol:
-			targetbaseline = baseline[i]
-			try:
-				unplottedbaselines.remove(baseline[i])
-				unplottedbaselines.remove(baseline[i])
-			except:
-				pass
-			print 'Got new baseline %s, freq %d' % (str(targetbaseline),freqindex[i])
-		else:
-			if match_new:
-				print 'Skip new baseline %s with wrong freq %d != %d' % (str(baseline[i]),freqindex[i],targetfreq)
-			if match_freq:
-				print 'Skip old baseline %s with desired freq %d = %d' % (str(baseline[i]),freqindex[i],targetfreq)
-			targetbaseline = 13
+        if firstpermatch:
+            match_freq = (targetfreq < 0) or (freqindex[i] == targetfreq)
+            match_pol = (polpair[i]) in pollist
+            match_new = baseline[i] in unplottedbaselines
+            if match_new and match_freq and match_pol:
+                targetbaseline = baseline[i]
+                try:
+                    unplottedbaselines.remove(baseline[i])
+                    unplottedbaselines.remove(baseline[i])
+                except:
+                    pass
+                print ('Got new baseline %s, freq %d' % (str(targetbaseline),freqindex[i]))
+            else:
+                if match_new:
+                    print ('Skip new baseline %s with wrong freq %d != %d' % (str(baseline[i]),freqindex[i],targetfreq))
+                if match_freq:
+                    print ('Skip old baseline %s with desired freq %d = %d' % (str(baseline[i]),freqindex[i],targetfreq))
+                targetbaseline = 13
 
         amp[i] = numpy.abs(vis[i])
         phase[i] = numpy.angle(vis[i])
 
         if unwrap:
-	    phase[i] = (numpy.unwrap(phase[i]))
+            phase[i] = (numpy.unwrap(phase[i]))
         phase[i] *= 180.0/math.pi
 
-	if (targetbaseline < 0 or targetbaseline == baseline[i]) and \
-	    (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist) and \
-	    not (noauto and (baseline[i] % 257) == 0):
+        if (targetbaseline < 0 or targetbaseline == baseline[i]) and \
+            (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist) and \
+            not (noauto and (baseline[i] % 257) == 0):
             lag[i] = fft.ifft(vis[i], nchan[i])
             for j in range(nchan[i]/2):
                 lagamp[i][j+nchan[i]/2] = abs(lag[i][j])
@@ -195,27 +195,27 @@ while not len(nextheader[0]) == 0 and keeplooping:
             if i > 0:
                 for j in range(len(nextheader[0])):
                     if nextheader[i][j] != nextheader[0][j]:
-                        print "Headers disagree!"
+                        print ("Headers disagree!")
                         if verbose:
-                            print nextheader[0]
-                            print nextheader[i]
+                            print (nextheader[0])
+                            print (nextheader[i])
                         break
             if (targetbaseline < 0 or baseline[0] == targetbaseline) and \
                (targetfreq < 0 or freqindex[0] == targetfreq) and (polpair[0] in pollist):
                 maxlag = max(lagamp[i])
                 maxindex = lagamp[i].index(maxlag)
                 delayoffsetus = (maxindex - nchan[i]/2) * 1.0/(freqs[freqindex[0]].bandwidth)
-		if singleplot:
-		    ls = linestyles[count%len(linestyles)]
-		    print "Setting linestyle to " + ls
-		    count += 1
-		else:
-		    ls = linestyles[i]
+                if singleplot:
+                    ls = linestyles[count%len(linestyles)]
+                    print ("Setting linestyle to " + ls)
+                    count += 1
+                else:
+                    ls = linestyles[i]
                 pylab.gcf().set_facecolor('white')
                 pylab.subplot(311)
                 pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], ls)
-		if amprange[1] > 0:
-		    pylab.ylim(amprange)
+                if amprange[1] > 0:
+                    pylab.ylim(amprange)
                 pylab.xlim([0, nchan[i]])
                 pylab.subplot(312)
                 pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], ls+'+')
@@ -231,8 +231,8 @@ while not len(nextheader[0]) == 0 and keeplooping:
                     lagamp[i][maxindex+1] = 0
                 rms = numpy.std(lagamp[i])
                 snr = maxlag/rms
-                print snr
-                print maxlag
+                print (snr)
+                print (maxlag)
 
     if (targetbaseline < 0 or baseline[0] == targetbaseline) and \
        (targetfreq < 0 or freqindex[0] == targetfreq) and (polpair[0] in pollist) and \
@@ -247,7 +247,7 @@ while not len(nextheader[0]) == 0 and keeplooping:
         if freqs[freqindex[0]].lsb:
             lowfreq -= freqs[freqindex[0]].bandwidth
             hifreq -= freqs[freqindex[0]].bandwidth
-        print seconds[0]
+        print (seconds[0])
         hour      = int(seconds[0]/3600)
         minute    = int(seconds[0]/60 - 60*hour)
         second    = int(seconds[0] - (3600*hour + 60*minute))
@@ -260,22 +260,22 @@ while not len(nextheader[0]) == 0 and keeplooping:
         pylab.subplot(313)
         pylab.ylabel("Lag")
         pylab.xlabel("Channel")
-	if not singleplot:
-	    pylab.subplot(311)
+        if not singleplot:
+            pylab.subplot(311)
             pylab.title(titlestr)
-	    pylab.subplot(313)
+            pylab.subplot(313)
             pylab.figtext(0.0,0.0,"Fringe S/N %0.2f @ offset %0.3f us (%s)" % \
                           (snr, delayoffsetus, "raw S/N is overestimated - corrected value ~%0.2f" % ((snr-3)/2)))
             if toscreen:
                 pylab.show()
             else:
-	        pylab.savefig("%s_baseline%03d_freq_%02d_pol_%s.png" % (inputfile, baseline[i], freqindex[i], polpair[i]))
+                pylab.savefig("%s_baseline%03d_freq_%02d_pol_%s.png" % (inputfile, baseline[i], freqindex[i], polpair[i]))
             pylab.clf()
-        print "Median values were:"
+        print ("Median values were:")
         for i in range(numfiles):
-            print "File %d: %.6f" % (i, med[i])
+            print ("File %d: %.6f" % (i, med[i]))
         if numfiles == 2:
-            print "Ratio of medians was " + str(med[1]/med[0])
+            print ("Ratio of medians was " + str(med[1]/med[0]))
     if keeplooping:
         for i in range(numfiles):
             nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])

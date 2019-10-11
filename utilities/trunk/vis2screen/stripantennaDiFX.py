@@ -69,7 +69,7 @@ def mergeDiFX(basename,antRemove,antKeep):
 
 		# Visibility properties
 		baseline = vishdr[0]
-                seconds = vishdr[2]
+		seconds = vishdr[2]
 		freqindex = vishdr[5]
 		polpair = vishdr[6]
 
@@ -119,11 +119,11 @@ while len(args) > 0:
 		antRemove = args[1].split(',')
 		args = args[2:]
 	elif (args[0][:2] == '--'):
-		print __doc__
+		print (__doc__)
 		sys.exit(-1)
 	break
 if len(args) < 1:
-	print __doc__
+	print (__doc__)
 	sys.exit(-1)
 
 print ('Keeping %s and removing %s' % (str(antKeep),str(antRemove)))

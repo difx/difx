@@ -93,7 +93,7 @@ def printVisibilityfile(basename,Nprintchans=8):
 	print ('Done')
 
 if len(sys.argv) < 2:
-	print __doc__
+	print (__doc__)
 	sys.exit(-1)
 
 for difxf in sys.argv[1:]:

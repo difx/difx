@@ -279,14 +279,14 @@ def main(argv=sys.argv):
         args = args[1:]
 
     if len(args)<2:
-       print __doc__
+       print (__doc__)
        sys.exit(1)
 
     # List the PCAL files (named like pcal-3_1.difx/PCAL_57092_055200_KT)
     pattern = "%s/PCAL_*_%s" % (args[0],args[1]) 
     antennafiles = glob.glob(pattern)
     if len(antennafiles) < 1:
-        print "Error: no PCAL files found (pattern: %s)" % pattern
+        print ("Error: no PCAL files found (pattern: %s)" % pattern)
         sys.exit(1)
 
     # Prepare the selection of bands and tones ([] means all tones)

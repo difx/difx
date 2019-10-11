@@ -34,7 +34,7 @@ parser.add_option("-v", "--verbose", dest="verbose", action="store_true", defaul
                   help="Turn verbose printing on")
 parser.add_option("-i", "--inputfile", dest="inputfile", default="",
                   help="An input file to use as guide for number of channels for each freq")
-parser.add_option("--toscreen", dest="toscreen", default=False, action="store_true",
+parser.add_option("-x", "--toscreen", dest="toscreen", default=False, action="store_true",
                   help="Plot to the screen, otherwise to png files")
 parser.add_option("--logamp", dest="logamp", default=False, action="store_true",
                   help="Take the log of amplitudes, for a flatter scaling")
@@ -69,7 +69,7 @@ scrunchbaselines= options.scrunchbaselines
 scrunchautocorrs= options.scrunchautocorrs
 chanrange      = options.chanrange.split(',')
 secondswindow  = options.secondswindow.split(',')
-print "Target baseline: %d\nTarget freq: %d\nTarget pol: %s" % (targetbaseline,targetfreq,targetpolpair)
+print ("Target baseline: %d\nTarget freq: %d\nTarget pol: %s" % (targetbaseline,targetfreq,targetpolpair))
 
 import matplotlib
 if not toscreen:
@@ -136,22 +136,22 @@ while not len(nextheader) == 0:
     polpair   = nextheader[6]
     nchan     = freqs[freqindex].numchan/freqs[freqindex].specavg
     if nchan >= maxchannels:
-        print "How embarrassing - you have tried to diff files with more than " + \
-            str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
+        print ("How embarrassing - you have tried to diff files with more than " + \
+            str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!")
         sys.exit()
     else:
-	pass
-        #print "Got visibility for baseline %d freq %d pol %s with %d channels, time %d" \
-        #      % (baseline, freqindex, polpair, nchan, seconds)
+        pass
+        #print ("Got visibility for baseline %d freq %d pol %s with %d channels, time %d" \
+        #      % (baseline, freqindex, polpair, nchan, seconds))
     if seconds != lastseconds:
         for i in range(numfreqs):
-	    for j in range(nchan):
-	        amp[i][j].append(0.0)
-		phase[i][j].append(0.0)
+            for j in range(nchan):
+                amp[i][j].append(0.0)
+                phase[i][j].append(0.0)
         lastseconds = seconds
-	if (seconds > secondswindow[0] or secondswindow[0] < 0) and \
-	   (seconds < secondswindow[1] or secondswindow[1] < 0):
-    	    vislen += 1
+        if (seconds > secondswindow[0] or secondswindow[0] < 0) and \
+           (seconds < secondswindow[1] or secondswindow[1] < 0):
+            vislen += 1
         if maxtimestep > 0 and vislen > maxtimestep:
             break
     buffer    = difxinput.read(8*nchan)
@@ -159,25 +159,25 @@ while not len(nextheader) == 0:
        (targetfreq < 0 or targetfreq == freqindex):
         if (seconds < secondswindow[0] and secondswindow[0] >= 0) or \
            (seconds > secondswindow[1] and secondswindow[1] >= 0):
-	    print "Skipping data not in specified time range"
+            print ("Skipping data not in specified time range")
             nextheader = parseDiFX.parse_output_header(difxinput)
             continue
         if scrunchautocorrs and baseline%257 != 0:
-	    print "Skipping non-autocorrelation data"
+            print ("Skipping non-autocorrelation data")
             nextheader = parseDiFX.parse_output_header(difxinput)
             continue
-	if scrunchbaselines and baseline%257 == 0:
-	    print "Skipping autocorrelation data"
-	    nextheader = parseDiFX.parse_output_header(difxinput)
-	    continue
-	if not(polpair in targetpolpair):
-	    print "Skipping polpair %s not in specified target pairs %s" % (polpair,str(targetpolpair))
-	    nextheader = parseDiFX.parse_output_header(difxinput)
-	    continue
+        if scrunchbaselines and baseline%257 == 0:
+            print ("Skipping autocorrelation data")
+            nextheader = parseDiFX.parse_output_header(difxinput)
+            continue
+        if not(polpair in targetpolpair):
+            print ("Skipping polpair %s not in specified target pairs %s" % (polpair,str(targetpolpair)))
+            nextheader = parseDiFX.parse_output_header(difxinput)
+            continue
         savednchan = nchan
         numstored = numstored + 1
-        print "Added visibility of baseline %d freq %d pol %s with %d channels, time %d : now copied %d in total per freq" \
-              % (baseline, freqindex, polpair, nchan, seconds, vislen)
+        print ("Added visibility of baseline %d freq %d pol %s with %d channels, time %d : now copied %d in total per freq" \
+              % (baseline, freqindex, polpair, nchan, seconds, vislen))
         for j in range(nchan):
             cvis = struct.unpack("ff", buffer[8*j:8*(j+1)])
             amp[freqindex][j][-1] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
@@ -190,7 +190,7 @@ if chanrange[1] < 0:
     chanrange[1] = savednchan
 
 if savednchan <= 0:
-    print "Found no data for plotting"
+    print ("Found no data for plotting")
 
 if savednchan > 0:
     if targetfreq >= 0: # We want amplitude and phase from just one freq
@@ -200,27 +200,27 @@ if savednchan > 0:
         numpyphase = numpy.zeros((chanrange[1]-chanrange[0], vislen), numpy.float32)
         for i in range(chanrange[1]-chanrange[0]):
             for j in range(vislen):
-	        numpyamp[i][j] = amp[targetfreq][i+chanrange[0]][j]
-	        numpyphase[i][j] = phase[targetfreq][i+chanrange[0]][j]
+                numpyamp[i][j] = amp[targetfreq][i+chanrange[0]][j]
+                numpyphase[i][j] = phase[targetfreq][i+chanrange[0]][j]
             if logamp:
                 numpyamp[i] = numpy.log10(numpyamp[i])
-	ax = pylab.subplot(2,1,1)
-	xformatter = FuncFormatter(xindex2ms)
+        ax = pylab.subplot(2,1,1)
+        xformatter = FuncFormatter(xindex2ms)
         yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
         if logamp:
             pylab.title("Visbility Amplitude (log10 scale)")
         else:
             pylab.title("Visibility Amplitude")
         pylab.ylabel("Freq (MHz)")
-	ax.xaxis.set_major_formatter(xformatter)
+        ax.xaxis.set_major_formatter(xformatter)
         ax.yaxis.set_major_formatter(yformatter)
         stddev = numpy.std(numpyamp, dtype=numpy.float64)
-        print "Std deviation of the amplitudes was %.6f" % stddev
+        print ("Std deviation of the amplitudes was %.6f" % stddev)
         pylab.imshow(numpyamp, aspect='auto', origin='lower')
         if showlegend:
             matplotlib.pyplot.colorbar(ax=ax)
-	ax = pylab.subplot(2,1,2)
-	pylab.title("Visibility Phase")
+        ax = pylab.subplot(2,1,2)
+        pylab.title("Visibility Phase")
         pylab.xlabel("Time (s)")
         pylab.ylabel("Freq (MHz)")
         ax.xaxis.set_major_formatter(xformatter)
@@ -228,16 +228,14 @@ if savednchan > 0:
         pylab.imshow(numpyphase, aspect='auto', origin='lower')
         if showlegend:
             matplotlib.pyplot.colorbar(ax=ax)
-	if targetbaseline < 0:
-	    if toscreen:
-	       pylab.show()
-	    else:
-               pylab.savefig("dynamicspectra.bscrunch.f%d.%s.png" % (targetfreq,targetpolpair), format="png")
-	else:
-	    if toscreen:
-	       pylab.show()
-	    else:
-	       pylab.savefig("dynamicspectra.b%d.f%d.%s.png" % (targetbaseline, targetfreq, targetpolpair), format="png")
+        if toscreen:
+            pylab.show()
+        else:
+            if targetbaseline < 0:
+                pylab.savefig("dynamicspectra.bscrunch.f%d.%s.png" % (targetfreq,targetpolpair), format="png")
+            else:
+                pylab.savefig("dynamicspectra.b%d.f%d.%s.png" % (targetbaseline, targetfreq, targetpolpair), format="png")
+
     else: # Want to display all freqs, one after another
 
         pylab.figure(figsize=(15,9))
@@ -251,40 +249,38 @@ if savednchan > 0:
             a = amp[sortedfreqinds[i]]
             offsetfreq = f.freq
             chanwidth = f.bandwidth / (f.numchan/f.specavg)
-	    numpyamp = numpy.zeros((chanrange[1]-chanrange[0], vislen), numpy.float32)
-	    for j in range(chanrange[1]-chanrange[0]):
-	        for k in range(vislen):
-		    numpyamp[j][k] = a[j+chanrange[0]][k]
+            numpyamp = numpy.zeros((chanrange[1]-chanrange[0], vislen), numpy.float32)
+            for j in range(chanrange[1]-chanrange[0]):
+                for k in range(vislen):
+                    numpyamp[j][k] = a[j+chanrange[0]][k]
                 if logamp:
                     numpyamp[i] = numpy.log10(numpyamp[i])
-	    ax = pylab.subplot(numfreqs,1,i+1)
+            ax = pylab.subplot(numfreqs,1,i+1)
             pylab.subplots_adjust(wspace=0.05, hspace=0.02,
                                   top=0.95, bottom=0.08, left=0.125, right = 0.9)
             # Only show the x axis ticks and labels for the final plot
             if i==numfreqs-1:
                 xformatter = FuncFormatter(xindex2ms)
                 ax.xaxis.set_major_formatter(xformatter)
-	        pylab.xlabel("Time (s)")
+                pylab.xlabel("Time (s)")
             else:
                 ax.xaxis.set_major_formatter(NullFormatter())
-	    yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
-	    ax.yaxis.set_major_formatter(yformatter)
+            yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
+            ax.yaxis.set_major_formatter(yformatter)
             # Limit the number of y tick labels to 4
             ax.yaxis.set_major_locator(MaxNLocator(4))
-	    pylab.ylabel("Freq (MHz)")
-	    pylab.imshow(numpyamp, aspect='auto', origin='lower')
+            pylab.ylabel("Freq (MHz)")
+            pylab.imshow(numpyamp, aspect='auto', origin='lower')
             if showlegend:
                 matplotlib.pyplot.colorbar(ax=ax)
-	if targetbaseline < 0:
-	    if toscreen:
-	       pylab.show()
-	    else:
-	       pylab.savefig("dynamicspectra.bscrunch.png", format="png")
-	else:
-	    if toscreen:
-	       pylab.show()
-	    else:
-	       pylab.savefig("dynamicspectra.b%d.png" % (targetbaseline), format="png")
+
+        if toscreen:
+            pylab.show()
+        else:
+            if targetbaseline < 0:
+               pylab.savefig("dynamicspectra.bscrunch.png", format="png")
+            else:
+               pylab.savefig("dynamicspectra.b%d.png" % (targetbaseline), format="png")
 
         # Also show phase
         pylab.figure(figsize=(15,9))
@@ -295,38 +291,35 @@ if savednchan > 0:
             a = phase[sortedfreqinds[i]]
             offsetfreq = f.freq
             chanwidth = f.bandwidth / (f.numchan/f.specavg)
-	    numpyphase = numpy.zeros((chanrange[1]-chanrange[0], vislen), numpy.float32)
-	    for j in range(chanrange[1]-chanrange[0]):
-	        for k in range(vislen):
-		    numpyphase[j][k] = a[j+chanrange[0]][k]
-	    ax = pylab.subplot(numfreqs,1,i+1)
+            numpyphase = numpy.zeros((chanrange[1]-chanrange[0], vislen), numpy.float32)
+            for j in range(chanrange[1]-chanrange[0]):
+                for k in range(vislen):
+                    numpyphase[j][k] = a[j+chanrange[0]][k]
+            ax = pylab.subplot(numfreqs,1,i+1)
             pylab.subplots_adjust(wspace=0.05, hspace=0.02,
                                   top=0.95, bottom=0.08, left=0.125, right = 0.9)
             # Only show the x axis ticks and labels for the final plot
             if i==numfreqs-1:
                 xformatter = FuncFormatter(xindex2ms)
                 ax.xaxis.set_major_formatter(xformatter)
-	        pylab.xlabel("Time (s)")
+                pylab.xlabel("Time (s)")
             else:
                 ax.xaxis.set_major_formatter(NullFormatter())
-	    yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
-	    ax.yaxis.set_major_formatter(yformatter)
+            yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
+            ax.yaxis.set_major_formatter(yformatter)
             # Limit the number of y tick labels to 4
             ax.yaxis.set_major_locator(MaxNLocator(4))
-	    pylab.ylabel("Freq (MHz)")
-	    plt = pylab.imshow(numpyphase, aspect='auto', origin='lower')
+            pylab.ylabel("Freq (MHz)")
+            plt = pylab.imshow(numpyphase, aspect='auto', origin='lower')
             if showlegend:
                 matplotlib.pyplot.colorbar(ax=ax)
-	if targetbaseline < 0:
-	    if toscreen:
-	       pylab.show()
-	    else:
-	       pylab.savefig("dynamicspectra.phase.bscrunch.png", format="png")
-	else:
-	    if toscreen:
-	       pylab.show()
-	    else:
-	       pylab.savefig("dynamicspectra.phase.b%d.png" % (targetbaseline), format="png")
+        if toscreen:
+            pylab.show()
+        else:
+            if targetbaseline < 0:
+                pylab.savefig("dynamicspectra.phase.bscrunch.png", format="png")
+            else:
+                pylab.savefig("dynamicspectra.phase.b%d.png" % (targetbaseline), format="png")
 
 else:
-    print "Didn't find any matching visibilities!"
+    print ("Didn't find any matching visibilities!")

@@ -76,7 +76,7 @@ def filterVisibilityfile(basename,targetAnts):
 
 		ant1name = telescopes[ant1-1].name
 		ant2name = telescopes[ant2-1].name
-                seconds = vishdr[2]
+		seconds = vishdr[2]
 
 		# Number of channels in this baseband
 		nchan = freqs[freqindex].numchan / freqs[freqindex].specavg
@@ -107,7 +107,7 @@ def filterVisibilityfile(basename,targetAnts):
 	print (' ')
 
 if len(sys.argv) < 3:
-	print __doc__
+	print (__doc__)
 	sys.exit(-1)
 
 ants = sys.argv[1].upper()

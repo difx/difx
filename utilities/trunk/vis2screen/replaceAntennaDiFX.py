@@ -63,7 +63,7 @@ def buildIndex(inputfilename,difxfile,antList):
 
 		# Visibility properties
 		baseline = vishdr[0]
-                seconds = vishdr[2]
+		seconds = vishdr[2]
 		freqindex = vishdr[5]
 		polpair = vishdr[6]
 		uvw = vishdr[9:12]
@@ -159,7 +159,7 @@ def patchDiFX(basename_dst,basename_src,antList):
 
 		# Visibility properties
 		baseline = vishdr[0]
-                seconds = vishdr[2]
+		seconds = vishdr[2]
 		freqindex = vishdr[5]
 		polpair = vishdr[6]
 		freq = freqs[freqindex]
@@ -230,7 +230,7 @@ def patchDiFX(basename_dst,basename_src,antList):
 if __name__ == "__main__":
 	args = sys.argv[1:]
 	if len(args) != 3:
-		print __doc__
+		print (__doc__)
 		sys.exit(-1)
 	antList = args[0].split(',')
 	patchDiFX(args[1],args[2],antList)

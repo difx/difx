@@ -12,7 +12,7 @@ def nextinputline(inputlines):
             continue
         break
     if len(inputlines) == 0:
-        print "Hit end of input file while parsing??"
+        print ("Hit end of input file while parsing??")
         sys.exit()
     sepindex = inputlines[0].find(':') + 1
     if sepindex < 20:
@@ -72,6 +72,7 @@ class Datastream:
     recfreqindex = []
     recclockoffset = []
     recfreqoffset = []
+    recgainoffset = []
     nrecband = 0
     recbandpol = []
     recbandindex = []
@@ -81,15 +82,17 @@ class Datastream:
     nzoomband = 0
     zoombandpol = []
     zoombandindex = []
-
+    version = 2.6
 
 class Baseline:
     dsaindex = 0
     dsbindex = 0
     nfreq = 0
+    destfreq = []
     freqpols = []
     dsabandindex = []
     dsbbandindex = []
+    version = 2.6
 
 def parse_output_header(input):
     toreturn = []
@@ -99,92 +102,92 @@ def parse_output_header(input):
         return toreturn
     if struct.unpack("I", buffer)[0] != SYNC_WORD:
         if buffer != "BASE": #Some weird stuff.  Return empty
-            print "Non-recognised sync word: ascii " + buffer + ", binary %x" % (struct.unpack("I", buffer)[0])
+            print ("Non-recognised sync word: ascii " + buffer + ", binary %x" % (struct.unpack("I", buffer)[0]))
             return toreturn
         #Must be the old style file.  Suck it up.
-	orgbuffer += buffer
-	buffer = input.readline()
-	orgbuffer += buffer
+        orgbuffer += buffer
+        buffer = input.readline()
+        orgbuffer += buffer
         toreturn.append(int((buffer.split(':')[1]).strip())) #baselinenum
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(int((buffer.split(':')[1]).strip())) #mjd
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(float((buffer.split(':')[1]).strip())) #seconds
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(int((buffer.split(':')[1]).strip())) #configindex
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(int((buffer.split(':')[1]).strip())) #srcindex
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(int((buffer.split(':')[1]).strip())) #freqindex
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append((buffer.split(':')[1].strip())) #polpair
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(int((buffer.split(':')[1]).strip())) #pulsarbin
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         buffer = input.readline() #Skip over flagged
-	orgbuffer += buffer
+        buffer = input.readline()
         toreturn.append(float((buffer.split(':')[1]).strip())) #dataweight
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(float((buffer.split(':')[1]).strip())) #u
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(float((buffer.split(':')[1]).strip())) #v
-	buffer = input.readline()
+        buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(float((buffer.split(':')[1]).strip())) #w
     else:
         #It is the new style file.  Hooray.
-	orgbuffer += buffer
+        orgbuffer += buffer
         buffer = input.read(4)
-	orgbuffer += buffer
+        orgbuffer += buffer
         if struct.unpack("i", buffer)[0] != 1:
             #Don't know how to unpack this version - return empty
             return toreturn
         #Ok, we can deal with this
         buffer = input.read(4)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #baselinenum
         buffer = input.read(4)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #mjd
         buffer = input.read(8)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #seconds
         buffer = input.read(4)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #configindex
         buffer = input.read(4)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #srcindex
         buffer = input.read(4)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #freqindex
         buffer = input.read(2)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(buffer)                        #polpair
         buffer = input.read(4)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #pulsarbin
         buffer = input.read(8)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #dataweight
         buffer = input.read(8)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #u
         buffer = input.read(8)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #v
         buffer = input.read(8)
-	orgbuffer += buffer
+        orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #w
     toreturn.append(orgbuffer)
     return toreturn 
@@ -283,6 +286,7 @@ def get_baselinetable_info(inputfile):
         baselines[-1].dsbindex = int(val)
         val, lines = nextinputline(lines[1:])
         baselines[-1].nfreq = int(val)
+        baselines[-1].destfreq = []
         baselines[-1].freqpols = []
         baselines[-1].dsabandindex = []
         baselines[-1].dsbbandindex = []
@@ -290,6 +294,10 @@ def get_baselinetable_info(inputfile):
             baselines[-1].dsabandindex.append([])
             baselines[-1].dsbbandindex.append([])
             val, lines = nextinputline(lines[1:])
+            if 'TARGET FREQ' in lines[0]:
+                baselines[-1].destfreq.append(int(val))
+                baselines[-1].version = 2.7
+                val, lines = nextinputline(lines[1:])
             baselines[-1].freqpols.append(int(val))
             for k in range(baselines[-1].freqpols[-1]):
                 val, lines = nextinputline(lines[1:])
@@ -344,8 +352,8 @@ def get_datastreamtable_info(inputfile):
         datastreams[-1].datasource = val
         val, lines = nextinputline(lines[1:])
         datastreams[-1].filterbankused = (val == "TRUE")
-	if "TCAL" in lines[1]:
-	    lines = lines[1:]
+        if "TCAL" in lines[1]:
+            lines = lines[1:]
         val, lines = nextinputline(lines[1:])
         datastreams[-1].phasecalint = int(val)
         val, lines = nextinputline(lines[1:])
@@ -354,6 +362,7 @@ def get_datastreamtable_info(inputfile):
         datastreams[-1].recfreqindex = []
         datastreams[-1].recclockoffset = []
         datastreams[-1].recfreqoffset = []
+        datastreams[-1].recgainoffset = []
         datastreams[-1].nrecband = 0
         for j in range(datastreams[-1].nrecfreq):
             val, lines = nextinputline(lines[1:])
@@ -363,6 +372,10 @@ def get_datastreamtable_info(inputfile):
             val, lines = nextinputline(lines[1:])
             datastreams[-1].recfreqoffset.append(float(val))
             val, lines = nextinputline(lines[1:])
+            if 'GAIN OFFSET' in lines[0]:
+                datastreams[-1].version = 2.7
+                datastreams[-1].recgainoffset.append(float(val))
+                val, lines = nextinputline(lines[1:])
             datastreams[-1].recfreqpols.append(int(val))
             datastreams[-1].nrecband  += datastreams[-1].recfreqpols[-1]
         datastreams[-1].recbandpol = []
@@ -446,15 +459,15 @@ def get_configtable_info(inputfile):
         configs[-1].name    = lines[at+0][20:]
         configs[-1].inttime = float(lines[at+1][20:])
         configs[-1].subintns= int(lines[at+2][20:])
-	configs[-1].guardns = int(lines[at+3][20:])
-	configs[-1].fringerotorder = int(lines[at+4][20:])
-	configs[-1].arraystridelen = int(lines[at+5][20:])
-	configs[-1].xmacstridelen  = int(lines[at+6][20:])
-	configs[-1].numbufferedFFTs= int(lines[at+7][20:])
-	if i < numconfigs-1:
-	    at += 11
-	    while not "CONFIG NAME:" in lines[at]:
-	        at += 1
+        configs[-1].guardns = int(lines[at+3][20:])
+        configs[-1].fringerotorder = int(lines[at+4][20:])
+        configs[-1].arraystridelen = int(lines[at+5][20:])
+        configs[-1].xmacstridelen  = int(lines[at+6][20:])
+        configs[-1].numbufferedFFTs= int(lines[at+7][20:])
+        if i < numconfigs-1:
+            at += 11
+            while not "CONFIG NAME:" in lines[at]:
+                at += 1
 
     return (numconfigs, configs)
 

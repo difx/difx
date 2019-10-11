@@ -1,3 +1,8 @@
+Version 0.9
+* New utility printDiFXInput.py for showing frequency table and baseline freq x freq pairs
+* Update parseDiFX.py to handle output bands info if present
+* python3-fixed most scripts
+
 Version 0.8
 * New dangerous utility removeZerovalAutoDiFX.py for removing zero-valued autopower spectra
   that were in some cases inserted by DiFX between two DATASTREAMs

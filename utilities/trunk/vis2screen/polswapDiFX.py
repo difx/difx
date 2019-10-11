@@ -81,7 +81,7 @@ def polswapVisibilityfile(basename,targetAnts):
 
 		ant1name = telescopes[ant1-1].name
 		ant2name = telescopes[ant2-1].name
-                seconds = vishdr[2]
+		seconds = vishdr[2]
 
 		# Number of channels in this baseband
 		nchan = freqs[freqindex].numchan / freqs[freqindex].specavg
@@ -93,19 +93,19 @@ def polswapVisibilityfile(basename,targetAnts):
 		if (ant1name in targetAnts) and (ant2name in targetAnts):
 			# Auto-corrs, or both station swaps
 			vishdr[6] = polswap[polpair[0]] + polswap[polpair[1]]
-                        binhdr = parseDiFX.make_output_header_v1(vishdr)
+			binhdr = parseDiFX.make_output_header_v1(vishdr)
 			#print ("swap: %s-%s pol %s --> %s" % (ant1name,ant2name,polpair,vishdr[6]))
 			nswapped += 1
 		elif ant1name in targetAnts:
 			# Cross-corr <station>x<any>
 			vishdr[6] = polswap[polpair[0]] + polpair[1]
-                        binhdr = parseDiFX.make_output_header_v1(vishdr)
+			binhdr = parseDiFX.make_output_header_v1(vishdr)
 			#print ("swap: bl %d %s-%s pol %s --> %s" % (baseline,ant1name,ant2name,polpair,vishdr[6]))
 			nswapped += 1
 		elif ant2name in targetAnts:
 			# Cross-corr <any>x<station>
 			vishdr[6] = polpair[0] + polswap[polpair[1]]
-                        binhdr = parseDiFX.make_output_header_v1(vishdr)
+			binhdr = parseDiFX.make_output_header_v1(vishdr)
 #			print ("swap: bl %d %s-%s pol %s --> %s" % (baseline,ant1name,ant2name,polpair,vishdr[6]))
 			nswapped += 1
 		else:
@@ -128,7 +128,7 @@ def polswapVisibilityfile(basename,targetAnts):
 	print (' ')
 
 if len(sys.argv) < 3:
-	print __doc__
+	print (__doc__)
 	sys.exit(-1)
 
 ants = sys.argv[1].upper()

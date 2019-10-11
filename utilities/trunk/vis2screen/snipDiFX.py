@@ -43,7 +43,7 @@ for j in range(maxchannels):
 
 nextheader = parseDiFX.parse_output_header(difxinput)
 if len(nextheader) == 0:
-    print "Problem with input file " + args[0] + " - aborting"
+    print ("Problem with input file " + args[0] + " - aborting")
     sys.exit()
 
 startmjd = nextheader[1]
@@ -51,8 +51,8 @@ while not len(nextheader) == 0:
     freqindex = nextheader[5]
     nchan = freqs[freqindex].numchan/freqs[freqindex].specavg
     if nchan > maxchannels:
-        print "How embarrassing - you have tried to read files with more than " + \
-              str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
+        print ("How embarrassing - you have tried to read files with more than " + \
+              str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!")
         sys.exit()
     mjd = nextheader[1]
     seconds = nextheader[2]
@@ -60,9 +60,9 @@ while not len(nextheader) == 0:
     dayfrac = (mjd - startmjd) + float(seconds)/86400.0
     if dayfrac >= starttime and dayfrac <= stoptime:
         if verbose:
-	     print "Writing time %d/%.6f to output" % (mjd, seconds)
+            print ("Writing time %d/%.6f to output" % (mjd, seconds))
         difxoutput.write(nextheader[-1])
-	difxoutput.write(buffer)
+        difxoutput.write(buffer)
     nextheader = parseDiFX.parse_output_header(difxinput)
 
 difxinput.close()

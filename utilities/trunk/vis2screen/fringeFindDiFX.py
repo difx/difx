@@ -64,8 +64,8 @@ while not len(nextheader) == 0:
     ant1name  = telescopes[ant1-1].name
     ant2name  = telescopes[ant2-1].name
     if nchan > maxchannels:
-        print "How embarrassing - you have tried to read files with more than " + \
-            str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
+        print ("How embarrassing - you have tried to read files with more than " + \
+            str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!")
         sys.exit()
     vis = numpy.fromstring(difxinput.read(8*nchan), dtype='complex64')
     amp = numpy.abs(vis)
@@ -82,16 +82,16 @@ while not len(nextheader) == 0:
         lagamprms = numpy.std(lagamp[:nchan])
         maxlagchan = numpy.argmax(lagamp[:nchan])
         if maxlagamp/lagamprms > minsnr:
-            print "Detection on time %d:%f, baseline %d (%d-%d/%s-%s), freq index %d, pol %s on channel %d at S/N: %f" % \
-                  (mjd, seconds, baseline, ant2, ant1, ant1name, ant2name, freqindex, polpair, maxlagchan - nchan/2, maxlagamp/lagamprms)
+            print ("Detection on time %d:%f, baseline %d (%d-%d/%s-%s), freq index %d, pol %s on channel %d at S/N: %f" % \
+                  (mjd, seconds, baseline, ant2, ant1, ant1name, ant2name, freqindex, polpair, maxlagchan - nchan/2, maxlagamp/lagamprms))
     nextheader = parseDiFX.parse_output_header(difxinput)
 
 if nchan < 0:
-    print "Problem opening file " + args[0]
+    print ("Problem opening file " + args[0])
     sys.exit()
 
 maxlagamp = numpy.max(lagampsum[:nchan])
 lagamprms = numpy.std(lagampsum[:nchan])
 maxlagchan = numpy.argmax(lagampsum[:nchan])
 if maxlagamp/lagamprms > minsnr:
-    print "Detection on SUM at channel %d with S/N: %f" % (maxlagchan - nchan/2, maxlagamp/lagamprms)
+    print ("Detection on SUM at channel %d with S/N: %f" % (maxlagchan - nchan/2, maxlagamp/lagamprms))
