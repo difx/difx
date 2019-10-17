@@ -11,4 +11,5 @@ AC_OUTPUT([ \
 	difxfile/Makefile \
 	difxutil/Makefile \
 	tkinter/Makefile \
+	parseDiFX/Makefile \
 ])

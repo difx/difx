@@ -1,1 +1,1 @@
-SUBDIRS = difxdb difxfile difxutil tkinter
+SUBDIRS = difxdb difxfile difxutil tkinter parseDiFX
