@@ -59,3 +59,6 @@ class VisibilityRecord:
                 return False
         self.vis = vis
         return True
+
+    def isvalid(self):
+        return self.header.isvalid()
