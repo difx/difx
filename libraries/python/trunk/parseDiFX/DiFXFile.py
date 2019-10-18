@@ -31,13 +31,15 @@ from .VisibilityRecord import VisibilityRecord
 
 class DiFXFile:
 
-    def __init__(self):
+    def __init__(self, inputfilename=None):
         self.metainfo = InputFile()
         self.visrecord = VisibilityRecord()
         self.inputfilename = ''
         self.difxfilename = ''
         self.difxfile = None
         self.valid = False
+        if inputfilename:
+            self.open(inputfilename)
 
     def open(self, inputfilename):
         self.metainfo.fromfile(inputfilename)
