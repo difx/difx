@@ -32,8 +32,8 @@ class InputFile:
         self.common = None
         self.numfreqs, self.freqs = 0, None
         self.numtelescopes, self.telescopes = 0, None
-        self.numdatastreams, self.datastream = 0, None
-        self.numbaselines, self.baseline = 0, None
+        self.numdatastreams, self.datastreams = 0, None
+        self.numbaselines, self.baselines = 0, None
         self.valid = False
 
     def fromfile(self, inputfile):
@@ -41,7 +41,7 @@ class InputFile:
         self.numfreqs, self.freqs = get_freqtable_info(inputfile)
         self.numtelescopes, self.telescopes = get_telescopetable_info(inputfile)
         self.numdatastreams, self.datastreams = get_datastreamtable_info(inputfile)
-        self.numbaselines, self.baseliens = get_baselinetable_info(inputfile)
+        self.numbaselines, self.baselines = get_baselinetable_info(inputfile)
         self.valid = self.numfreqs >= 1 and self.numtelescopes >= 1 and \
             self.numdatastreams >= 1 and self.numbaselines >= 1
 
