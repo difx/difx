@@ -1,4 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
+
 import os,sys
 import getopt
 import re
@@ -117,14 +120,14 @@ try:
          "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
          "doonly=" ])
-except getopt.GetoptError, err:
-    print err
-    print main.__doc__
+except getopt.GetoptError as err:
+    print(err)
+    print(main.__doc__)
     sys.exit(2)
 
 if not 0 <= len(args) <= 0:
-    print "Error: Wrong number of Arguments"
-    print main.__doc__
+    print("Error: Wrong number of Arguments")
+    print (main.__doc__)
     sys.exit(2)
 
 # set defaults
@@ -202,7 +205,7 @@ def setOnlyComponents(only):
 	setNormalComponentsFalse()
 	array = only.strip().split(',')
 	if(len(array)==0):
-		raise RuntimeError, "Could not find components to build in only argument '%s'"%only
+		raise RuntimeError("Could not find components to build in only argument '%s'"%only)
 	for a in array:
 		c = a.strip()
 		if(c in components):
@@ -210,7 +213,7 @@ def setOnlyComponents(only):
 			if(c == "python"):
 				dopybindings = True
 		else:
-			raise RuntimeError, "Unrecognized only component '%s'"%(a)
+			raise RuntimeError("Unrecognized only component '%s'"%(a))
 
 # read options
 if len(opts) > 0:
@@ -218,7 +221,7 @@ if len(opts) > 0:
         if o in ("-f", "--force"):
             force = True
         if o in ("-h", "--help"):
-            print main.__doc__
+            print(main.__doc__)
             sys.exit(2)
         if o in ("-v", "--verb"):
             verb = True
@@ -278,14 +281,14 @@ if len(opts) > 0:
 	        setOnlyComponents(a)
 
 ###### Get all relevant environment variables ###########
-print "************************************"
-print "Getting environmental variables"
-print
+print("************************************")
+print("Getting environmental variables")
+print()
 difxroot = os.environ.get('DIFXROOT')
 if not difxroot:
-    raise RuntimeError, "DIFXROOT must be defined"
+    raise RuntimeError("DIFXROOT must be defined")
 if not re.match("/",difxroot):
-    raise RuntimeError, "DIFXROOT must be an absolute path"
+    raise RuntimeError("DIFXROOT must be an absolute path")
 
 bindir = difxroot + '/bin/'
 libdir = difxroot + '/lib/'
@@ -301,9 +304,9 @@ platform = sys.platform
 
 if(extraflags is not None):
     ###### Get all relevant environment variables ###########
-    print "************************************"
-    print "Setting environmental variables"
-    print
+    print("************************************")
+    print("Setting environmental variables")
+    print()
     for ftype in ["CFLAGS", "CXXFLAGS", "FFLAGS"]:
         thisflags = extraflags
         if(ftype in os.environ):
@@ -314,8 +317,8 @@ if(extraflags is not None):
 ##### Check that appropriate setup has been done ########
 if not master_tag:
     if os.environ.get('DIFX_VERSION') == None:
-        print "You must have already source'd setup.bash/setup.csh!"
-        print "DIFX_VERSION was undefined - aborting compilation"
+        print("You must have already source'd setup.bash/setup.csh!")
+        print("DIFX_VERSION was undefined - aborting compilation")
         raise RuntimeError
     difx_version = os.environ.get('DIFX_VERSION')
     if difx_version != "trunk":
@@ -325,7 +328,7 @@ else:
 
 ##### OSX Specific changes
 if platform == "darwin":
-    print "Using Darwin tools"
+    print("Using Darwin tools")
     LIBTOOLIZE = "glibtoolize"
     SHAREDPOSTFIX = "dylib"
 else:
@@ -406,9 +409,9 @@ if components["datasim"]:
 def os_chdir(dir):
     os.chdir(dir)
     if verb:
-        print "--> " + dir
-        print "==> " + os.getcwd()
-        print
+        print("--> " + dir)
+        print("==> " + os.getcwd())
+        print()
     sys.stdout.flush()
 
 # work out build and source directories
@@ -431,17 +434,20 @@ os.environ['PKG_CONFIG_PATH'] = pkg_config_path
 # source dir build starts in 'setup' of the svn tree and topdir of master_tag
 if blddir == topdir + '/setup':
     if verb:
-        print;print "Building/Installing from the source directory"
+        print()
+        print("Building/Installing from the source directory")
     inbdir = False
     startdir = topdir + '/setup'
 elif master_tag and blddir == topdir:
     if verb:
-        print;print "Building/Installing from the master tag source directory"
+        print()
+        print("Building/Installing from the master tag source directory")
     inbdir = False
     startdir = topdir
 else:
     if verb:
-        print;print "Building/Installing from the build directory:"
+        print()
+        print("Building/Installing from the build directory:")
     inbdir = True
     if master_tag:
         startdir = topdir
@@ -452,38 +458,38 @@ else:
     if not repldir:
         repldir = 'no-repldir-to-replace-with-blddir'
     if verb:
-        print " Replace dir:  " + repldir
+        print(" Replace dir:  " + repldir)
 
 if cache != 'none':
     cache = ' --cache-file=' + blddir + '/' + cache
 
 if verb:
-    print "   Setup dir:  " + setupdir
-    print "  Source dir:  " + topdir
-    print "   Start dir:  " + startdir
-    print "   Build dir:  " + blddir
-    print " PkgCfg path:  " + os.environ.get('PKG_CONFIG_PATH')
-    print ""
+    print("   Setup dir:  " + setupdir)
+    print("  Source dir:  " + topdir)
+    print("   Start dir:  " + startdir)
+    print("   Build dir:  " + blddir)
+    print(" PkgCfg path:  " + os.environ.get('PKG_CONFIG_PATH'))
+    print("")
 
 ###### Subroutine to run a command and raise error on non-zero return
 def run(cmd):
     if verb:
-        print "Run(" + cmd + ") in " + os.getcwd()
+        print("Run(" + cmd + ") in " + os.getcwd())
     sys.stdout.flush()
     if os.system(cmd):
         if force:
             errors.append(os.getcwd() + ' ' + cmd + " failed.")
         else:
-            raise RuntimeError, "Error running " + cmd + " in " + os.getcwd()
+            raise RuntimeError("Error running " + cmd + " in " + os.getcwd())
 
 ###### Subroutine to do the compiling of an auto-tool ###
 def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
     thisdir = os.getcwd()   # somewhere below topdir
     if (doreconf and (reconf or os.system("autoreconf -if"))):
         if noconf and os.path.exists('configure'):
-            print "Re-using existing configuration"
+            print("Re-using existing configuration")
         else:
-            print "Reconfiguring step by step"
+            print("Reconfiguring step by step")
             if os.path.exists('m4'):
                 run("aclocal -I m4")
             else:
@@ -502,13 +508,13 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
         if not os.path.exists(blp):
             os.makedirs(blp)
             if verb:
-                print "++> " + blp + " was created"
+                print("++> " + blp + " was created")
         os_chdir(blp)
     else:
         cfp = '.'
 
     if noconf and os.path.exists('config.status'):
-        print "Re-using existing configuration"
+        print("Re-using existing configuration")
     else:
         configstring = cfp + "/configure --prefix=" + prefix
         if cache != 'none':
@@ -535,14 +541,14 @@ def check_configureAC_has(cfpath, key):
             if key in line:
                 return True
     except:
-        print "Warning: could not check %s for %s\n."
+        print("Warning: could not check %s for %s\n.")
     return False
 
 ###### Subroutine to set up documentation area ##########
 def make_doc_area(basedocdir):
     if not os.path.exists(basedocdir):
         os.mkdir(basedocdir)
-    print "cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir)
+    print("cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir))
     os.system("cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir))
 
 
@@ -556,7 +562,7 @@ autojunk += ' install-sh ltmain.sh Makefile.in missing'
 
 if doclean:
     if components["perl"]:
-        print "**** Cleaning vexlib"
+        print("**** Cleaning vexlib")
         os_chdir("libraries/vex/"+difx_version+"/vexlib")
         run(MAKEcommand + "clean")
         os_chdir(topdir)
@@ -566,19 +572,19 @@ if doclean:
     for libtarget in libtargets:
         targetdir = libtarget[0] + '/' + libtarget[1]
         if not os.path.exists(targetdir):
-            print "**** Could not find "+targetdir+", trying Trunk"
+            print("**** Could not find "+targetdir+", trying Trunk")
             targetdir = libtarget[0] + '/trunk/'
         if os.path.exists(targetdir):
-            print
-            print "**** Cleaning "+targetdir
+            print()
+            print("**** Cleaning "+targetdir)
             os_chdir(targetdir)
             run(MAKEcommand + "-k clean distclean")
             if pristine:
                 run("rm -rf " + autojunk)
         else:
-            print
-            print "**** Skipping "+targetdir
-            print
+            print()
+            print("**** Skipping "+targetdir)
+            print()
         os_chdir(thisdir)
 
     os_chdir(topdir)
@@ -587,60 +593,60 @@ if doclean:
     for apptarget in apptargets:
         targetdir = apptarget[0] + '/' + apptarget[1]
         if not os.path.exists(targetdir):
-            print "**** Could not find "+targetdir+", trying Trunk"
+            print("**** Could not find "+targetdir+", trying Trunk")
             targetdir = apptarget[0] + '/trunk/'
         if os.path.exists(targetdir):
-            print
-            print "**** Cleaning "+targetdir
+            print()
+            print("**** Cleaning "+targetdir)
             os_chdir(targetdir)
             run(MAKEcommand + "-k clean distclean")
             if pristine:
                 run("rm -rf " + autojunk)
         else:
-            print
-            print "**** Skipping "+targetdir
-            print
+            print()
+            print("**** Skipping "+targetdir)
+            print()
         os_chdir(thisdir)
-
+    
     os_chdir(topdir)
     os_chdir("utilities")
     thisdir = os.getcwd()
     for utiltarget in utiltargets:
-	if (utiltarget[1] == ''):
-	    targetdir = utiltarget[0]
-	else:
-	    targetdir= utiltarget[1]  + '/' + utiltarget[0]
-        if not os.path.exists(targetdir):
-            print "**** Could not find "+targetdir+", trying Trunk"
-            targetdir = utiltarget[0] + '/trunk/'
-        if os.path.exists(targetdir):
-            print
-            print "**** Cleaning "+targetdir
-            os_chdir(targetdir)
-            run(MAKEcommand + "-k clean distclean")
-            if pristine:
-                run("rm -rf " + autojunk)
+        if utiltarget[1] == '':
+            targetdir = utiltarget[0]
         else:
-            print
-            print "**** Skipping "+targetdir
-            print
+            targetdir= utiltarget[1]  + '/' + utiltarget[0]
+            if not os.path.exists(targetdir):
+                print("**** Could not find "+targetdir+", trying Trunk")
+                targetdir = utiltarget[0] + '/trunk/'
+            if os.path.exists(targetdir):
+                print()
+                print("**** Cleaning "+targetdir)
+                os_chdir(targetdir)
+                run(MAKEcommand + "-k clean distclean")
+                if pristine:
+                    run("rm -rf " + autojunk)
+            else:
+                print()
+                print("**** Skipping "+targetdir)
+                print()
         os_chdir(thisdir)
 
     targetdir = topdir + "/mpifxcorr/" + difx_version
     if not os.path.exists(targetdir):
-        print "**** Could not find "+targetdir+", trying Trunk"
+        print("**** Could not find "+targetdir+", trying Trunk")
         targetdir = topdir + "/mpifxcorr/trunk/"
     if os.path.exists(targetdir):
-        print
-        print "**** Cleaning "+targetdir
+        print()
+        print("**** Cleaning "+targetdir)
         os_chdir(targetdir)
         run(MAKEcommand + "-k clean distclean") 
         if pristine:
             run("rm -rf " + autojunk)
         else:
-            print
-            print "**** Skipping "+targetdir
-            print
+            print()
+            print("**** Skipping "+targetdir)
+            print()
 
     os_chdir(topdir)
     if pristine:
@@ -650,9 +656,9 @@ if doclean:
 
 ##### Make directories if required ######################
 if not noinstall:
-    print "************************************"
-    print "Setting up directories"
-    print
+    print("************************************")
+    print("Setting up directories")
+    print()
 
     if not os.path.exists(difxroot):
         os.mkdir(difxroot)
@@ -667,25 +673,25 @@ if not noinstall:
 
     ##### Install IPP package config file if appropriate  ###
     if doipp<0:
-        print "Not installing IPP .pc file"
-        print
+        print("Not installing IPP .pc file")
+        print()
     else:
         if os.path.exists(pkgdir+"/ipp.pc") and doipp==0:
-            print pkgdir+"ipp.pc already exists"
-            print
+            print(pkgdir+"ipp.pc already exists")
+            print()
         else:
-            print "Creating "+pkgdir+"ipp.pc"
+            print("Creating "+pkgdir+"ipp.pc")
             os_chdir(pkgdir)
             run(startdir+"/genipppc "+ipproot)
             os_chdir(topdir)
-            print
+            print()
 
 ##### Compile non-standard libraries ####################
 if components["perl"]:
-    print
-    print "************************************"
-    print "Building vex"
-    print
+    print()
+    print("************************************")
+    print("Building vex")
+    print()
     os_chdir("libraries/vex/"+difx_version+"/vexlib")
     if platform == "darwin":
         run(MAKEcommand + "-f Makefile.osx")
@@ -701,10 +707,10 @@ if components["perl"]:
         run(MAKEcommand + "install")
     os_chdir(topdir)
 
-    print
-    print "************************************"
-    print "Building Astro Perl"
-    print
+    print()
+    print("************************************")
+    print("Building Astro Perl")
+    print()
     os_chdir("libraries/perl/"+difx_version+"/Astro")
     run("perl Makefile.PL PREFIX="+difxroot)
     run(MAKEcommand)
@@ -712,10 +718,10 @@ if components["perl"]:
         run(MAKEcommand + "install")
         os_chdir(topdir)
 
-    print
-    print "************************************"
-    print "Building DIFX-Input Perl"
-    print
+    print()
+    print("************************************")
+    print("Building DIFX-Input Perl")
+    print()
     os.chdir("libraries/perl/"+difx_version+"/DIFX-Input")
     run("perl Makefile.PL PREFIX="+difxroot)
     run(MAKEcommand)
@@ -729,43 +735,43 @@ thisdir = os.getcwd()
 for libtarget in libtargets:
     targetdir = libtarget[0]  + '/' + libtarget[1] 
     if not os.path.exists(targetdir):
-        print "**** Could not find "+targetdir+", trying Trunk"
+        print("**** Could not find "+targetdir+", trying Trunk")
         targetdir = libtarget[0] + '/trunk/'
     if os.path.exists(targetdir):
-        print
-        print
-        print "************************************"
-        print "Building ", targetdir
-        print
+        print()
+        print()
+        print("************************************")
+        print("Building ", targetdir)
+        print()
         os_chdir(targetdir)
         auto_compile(libtarget[2], libtarget[3], libtarget[4],
             difxroot, libtarget[5])
     else:
-        print
-        print "******* Skipping "+targetdir
-        print
+        print()
+        print("******* Skipping "+targetdir)
+        print()
     os_chdir(thisdir)
 os_chdir(topdir)
 
 if components["mpifxcorr"]:
     ##### Make mpifxcorr #####################################
-    print
-    print "************************************"
-    print "Making mpifxcorr"
-    print
+    print()
+    print("************************************")
+    print("Making mpifxcorr")
+    print()
 
     targetdir = "mpifxcorr/" + difx_version
     if not os.path.exists(targetdir):
-        print "**** Could not find "+targetdir+", trying Trunk"
+        print("**** Could not find "+targetdir+", trying Trunk")
         targetdir = 'mpifxcorr/trunk/'
 
     os_chdir(targetdir);
     thisdir = os.getcwd()
 
     if noconf and os.path.exists('configure'):
-        print "Reusing mpifxcorr configuration"
+        print("Reusing mpifxcorr configuration")
     else:
-        print "Reconfiguring mpifxcorr"
+        print("Reconfiguring mpifxcorr")
         run("aclocal")
         run("autoconf")
         run("autoheader")
@@ -779,13 +785,13 @@ if components["mpifxcorr"]:
         if not os.path.exists(blp):
             os.makedirs(blp)
             if verb:
-                print "++> " + blp + " was created"
+                print("++> " + blp + " was created")
         os_chdir(blp)
     else:
         cfp = '.'
 
     if noconf and os.path.exists('config.status'):
-        print "Re-using existing mpifxcorr configuration"
+        print("Re-using existing mpifxcorr configuration")
     else:
         configstring = cfp + "/configure CXX=" + mpicxx
         configstring += " --prefix=" + difxroot
@@ -806,21 +812,21 @@ thisdir = os.getcwd()
 for apptarget in apptargets:
     targetdir = apptarget[0]  + '/' + apptarget[1] 
     if not os.path.exists(targetdir):
-        print "**** Could not find "+targetdir+", trying Trunk"
+        print("**** Could not find "+targetdir+", trying Trunk")
         targetdir = apptarget[0] + '/trunk/'
     if os.path.exists(targetdir):
-        print
-        print
-        print "************************************"
-        print "Building ", apptarget[0]
-        print
+        print()
+        print()
+        print("************************************")
+        print("Building ", apptarget[0])
+        print()
         os_chdir(targetdir)
         auto_compile(apptarget[2], apptarget[3], apptarget[4],
             difxroot, apptarget[5])
     else:
-        print
-        print "******* Skipping "+targetdir
-        print
+        print()
+        print("******* Skipping "+targetdir)
+        print()
     os_chdir(thisdir)
 os_chdir(topdir)
 
@@ -833,20 +839,20 @@ for utiltarget in utiltargets:
     else:
         targetdir= utiltarget[1]  + '/' + utiltarget[0]
     if not os.path.exists(targetdir):
-        print "**** Could not find "+targetdir+", trying Trunk"
+        print("**** Could not find "+targetdir+", trying Trunk")
         targetdir = utiltarget[0] + '/trunk/'
     if os.path.exists(targetdir):
-        print
-        print
-        print "************************************" 
-        print "Building ", utiltarget[0]
+        print()
+        print()
+        print("************************************")
+        print("Building ", utiltarget[0])
         os_chdir(targetdir)
         auto_compile(utiltarget[2], utiltarget[3], utiltarget[4],
             difxroot, utiltarget[5])
     else:
-        print
-        print "******* Skipping "+targetdir
-        print
+        print()
+        print("******* Skipping "+targetdir)
+        print()
     os_chdir(thisdir)
 os_chdir(topdir)
 
@@ -856,22 +862,22 @@ if(dodoc):
     make_doc_area(basedocdir)
     os.chdir("mpifxcorr/" + difx_version)
     if os.system("which doxygen") != 0:
-        print "No doxygen installed - skipping mpifxcorr documentation"
+        print("No doxygen installed - skipping mpifxcorr documentation")
     else:
         os.system("doxygen Doxyfile")
 
 ##### Check for errors and list if present ###############
 if (force and not errors == []):
-    print
-    print
-    print "************************************"
-    print "WARNING: Errors were encountered during installation"
-    print
+    print()
+    print()
+    print("************************************")
+    print("WARNING: Errors were encountered during installation")
+    print()
     for error in errors:
-        print error
+        print(error)
 else:
-    print "Done!"
+    print("Done!")
 
 ##### Remind people to sign up to difx-users! ############
-print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
-print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."
+print("\nRemember, if you haven't signed up to the difx-users mailing list, please")
+print("do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.")
