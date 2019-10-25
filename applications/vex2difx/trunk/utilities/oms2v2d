@@ -258,8 +258,8 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 		out.write('  tInt = %s\n' % corr['TIME_AVERAGE'][0])
 
 	if specAvg != -1 and nFFT !=-1:
-		out.write('  fftSpecRes = %10.8f\n' % (bw//(nFFT//2)))
-		out.write('  specRes = %10.8f\n' % (bw//(nFFT//(2*specAvg))))
+		out.write('  fftSpecRes = %10.8f\n' % (bw/(nFFT//2)))
+		out.write('  specRes = %10.8f\n' % (bw/(nFFT//(2*specAvg))))
 	if 'POLARIZATION' in corr:
 		out.write('  doPolar = %s\n' % doPolar)
 	if nFFT > 256:
