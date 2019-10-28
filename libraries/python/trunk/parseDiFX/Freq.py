@@ -44,6 +44,16 @@ class Freq:
         summary = "%12.6f MHz %3s [%4d-ch/%d-avg] @ %.6f MHz" % (self.bandwidth,sideband,self.numchan,self.specavg,self.freq)
         return summary
 
+    def low_edge(self):
+        if self.lsb:
+            return self.freq - self.bandwidth
+        return self.freq
+
+    def high_edge(self):
+        if self.lsb:
+            return self.freq
+        return self.freq + self.bandwidth
+
     def __eq__(self, other): 
         if isinstance(other, Freq):
             eq = (self.freq == other.freq) and (self.bandwidth == other.bandwidth) and (self.lsb == other.lsb)
