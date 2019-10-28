@@ -67,19 +67,16 @@ def printDiFXInput(basename,indent=2,verbosity=2,version=2.6):
 	if basename.endswith(('.difx','.input','.calc')):
 		basename = basename[:basename.rfind('.')]
 	inputfile = basename + '.input'
-	inputfile_cfg = parseDiFX.get_common_settings(inputfile)
-	(numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
-	(numtelescopes, telescopes) = parseDiFX.get_telescopetable_info(inputfile)
-	(numdatastreams, datastreams) = parseDiFX.get_datastreamtable_info(inputfile)
-	(numbaselines, baselines) = parseDiFX.get_baselinetable_info(inputfile)
-	if numfreqs == 0 or numtelescopes == 0 or numdatastreams == 0 or numbaselines == 0:
+	difx = parseDiFX.DiFXFile(inputfile)
+	if not difx.isvalid():
 		parser.error("Couldn't parse input file " + inputfile + " correctly")
+	cfg = difx.metainfo
 
         # Print out all recorded freqs listed in DATASTREAMS
 	print("Frequencies actually referenced by the DATASTREAMs:")
 	all_fqs_used = []
-	for d in datastreams:
-		print((" "*indent) + "Datastream %d : telescope %s" % (datastreams.index(d),telescopes[d.telescopeindex].name))
+	for d in cfg.datastreams:
+		print((" "*indent) + "Datastream %d : telescope %s" % (cfg.datastreams.index(d),cfg.telescopes[d.telescopeindex].name))
 
 		if (len(d.recfreqindex) != d.nrecfreq):
 			print((" "*2*indent) + "error: recfreqindex array has %d elements, expected %d" % (len(d.recfreqindex), d.nrecfreq))
@@ -102,13 +99,13 @@ def printDiFXInput(basename,indent=2,verbosity=2,version=2.6):
 			fq = d.recfreqindex[n]
 			npol = d.recfreqpols[n]
 			pols = getPolsForFreq(d,fq)
-			print((" "*2*indent) + "rec  %d-pol %s %s" % (npol,str(pols),freqs[fq].str().strip()))
+			print((" "*2*indent) + "rec  %d-pol %s %s" % (npol,str(pols),cfg.freqs[fq].str().strip()))
 
 		for n in range(len(d.zoomfreqindex)):
 			fq = d.zoomfreqindex[n]
 			npol = d.zoomfreqpols[n]
 			pols = getPolsForFreq(d,fq)
-			print((" "*2*indent) + "zoom %d-pol %s %s" % (npol,str(pols),freqs[fq].str().strip()))
+			print((" "*2*indent) + "zoom %d-pol %s %s" % (npol,str(pols),cfg.freqs[fq].str().strip()))
 
 		all_fqs_used = all_fqs_used + d.recfreqindex + d.zoomfreqindex
 
@@ -116,23 +113,23 @@ def printDiFXInput(basename,indent=2,verbosity=2,version=2.6):
 
 	# Print out all FREQ entries not referenced by DATASTREAMS
 	all_fqs_used = set(all_fqs_used)
-	unused_fqs = list(set(range(numfreqs)) - all_fqs_used)
+	unused_fqs = list(set(range(len(cfg.freqs))) - all_fqs_used)
 	print("Frequencies not referenced by any DATASTREAMs, probable outputbands:")
 	if len(unused_fqs) < 1:
 		print((" "*indent) + "(none)")
 	else:
 		for n in range(len(unused_fqs)):
 			fq = unused_fqs[n]
-			print((" "*indent) + freqs[fq].str().strip())	
+			print((" "*indent) + cfg.freqs[fq].str().strip())	
 	print("")
 
 	# Print out all BASELINEs
 	print("Content of BASELINE table:")
 	all_dest_fqs = []
-	for b in baselines:
-		ds1 = datastreams[b.dsaindex]
-		ds2 = datastreams[b.dsbindex]		
-		print((" "*1*indent) + "Baseline %s x %s / DS %2d x %2d" % (telescopes[ds1.telescopeindex].name,telescopes[ds2.telescopeindex].name,b.dsaindex,b.dsbindex))
+	for b in cfg.baselines:
+		ds1 = cfg.datastreams[b.dsaindex]
+		ds2 = cfg.datastreams[b.dsbindex]		
+		print((" "*1*indent) + "Baseline %s x %s / DS %2d x %2d" % (cfg.telescopes[ds1.telescopeindex].name,cfg.telescopes[ds2.telescopeindex].name,b.dsaindex,b.dsbindex))
 		if len(b.dsabandindex) != len(b.dsbbandindex):
 			print((" "*2*indent) + "error: lenghts of ds<X>bandindex do not match (DS A: %d and DS B: %d)" % (len(b.dsabandindex),len(b.dsbbandindex)))
 		baseline_outputfreq_members = {}
@@ -147,13 +144,13 @@ def printDiFXInput(basename,indent=2,verbosity=2,version=2.6):
 			if destfreq not in baseline_outputfreq_members:
 				baseline_outputfreq_members[destfreq] = []
 			all_dest_fqs.append(destfreq)
-			sdestfq = freqs[destfreq].str().strip()
+			sdestfq = cfg.freqs[destfreq].str().strip()
 			print((" "*2*indent) + "Cross-products set %d:" % (n))
 			for (bl_band_1,bl_band_2) in zip(bl_bands_1,bl_bands_2):
 				fq1,pol1 = getFreqPolOfBand(ds1,bl_band_1)
 				fq2,pol2 = getFreqPolOfBand(ds2,bl_band_2)
-				sfq1 = freqs[fq1].str().strip()
-				sfq2 = freqs[fq2].str().strip()
+				sfq1 = cfg.freqs[fq1].str().strip()
+				sfq2 = cfg.freqs[fq2].str().strip()
 				fqtype1, fqtype2 = 'rec ', 'rec '
 				if bl_band_1 >= ds1.nrecband: fqtype1 = 'zoom'
 				if bl_band_2 >= ds2.nrecband: fqtype2 = 'zoom'
@@ -173,7 +170,7 @@ def printDiFXInput(basename,indent=2,verbosity=2,version=2.6):
 		all_dest_fqs.sort()
 		print("Referenced output FREQs:")
 		for fq in all_dest_fqs:
-			print(fq, freqs[fq].str().strip())
+			print(fq, cfg.freqs[fq].str().strip())
 		print("%d total" % (len(all_dest_fqs)))
 
 if __name__ == "__main__":
