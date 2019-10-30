@@ -44,8 +44,9 @@ c_ext4 = Extension("_XPCal",sources=sourcefiles4,
 
 
 if DO_SOLVE:
+  # gsl depends on cblas
   c_ext2 = Extension("_PolGainSolve", sources=sourcefiles2,
-                  libraries=['gsl','fftw3'],
+                  libraries=['gsl','cblas','fftw3'],
                   include_dirs=[np.get_include()],
                   extra_compile_args=["-Wno-deprecated","-O3"],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
