@@ -5,6 +5,8 @@ Version 2.0.2
 * add "mk6cp" script that uses "cp"-like syntax
 * mk6gather: add "append" and "skip" options (still experimental)
 * mark6gather seeking: fix for seek near start of file
+* mk6ls: add ability to match patterns (like ls does)
+* mk6ls: add faster option to get file size (--bytes or -b)
 
 Version 2.0.1
 * add "mark6gather" functions (were in vdifio).  These have partially overlapping functionality w/ the mark6sg functions.

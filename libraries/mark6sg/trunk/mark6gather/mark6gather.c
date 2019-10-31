@@ -31,6 +31,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <glob.h>
 #include "mark6gather.h"
 
@@ -1065,6 +1066,96 @@ int getMark6FileList(char ***fileList)
 		(*fileList)[i] = strdup(ptrs[i]);
 	}
 	free(ptrs);
+	globfree(&G);
+
+	return uniq;
+}
+
+typedef struct
+{
+	char *name;
+	long long int size;
+} FileAndSize;
+
+static int compareFileAndSize(const void *a, const void *b)
+{
+	return strcmp(((const FileAndSize *)a)->name, ((const FileAndSize *)b)->name);
+}
+
+int getMark6FileListWithSizes(char ***fileList, long long int **sizeList)
+{
+	const int MaxFilenameSize = 256;
+	char fileName[MaxFilenameSize];
+	glob_t G;
+	int i, n, v;
+	FileAndSize *fands;	/* points to first character after last / of each found file */
+	const char *last;
+	int uniq;
+
+	snprintf(fileName, MaxFilenameSize, "%s/*", getMark6Root());
+
+	v = glob(fileName, GLOB_NOSORT, 0, &G);
+	if(v != 0)
+	{
+		return 0;	/* no matching files found */
+	}
+
+	n = G.gl_pathc;
+	fands = (FileAndSize *)malloc(n*sizeof(FileAndSize));
+
+	/* store just the portion after last / into new pointer array */
+	for(i = 0; i < n; ++i)
+	{
+		char *p;
+		struct stat st;                
+
+		stat(G.gl_pathv[i], &st);
+		fands[i].size = st.st_size;
+
+		p = strrchr(G.gl_pathv[i], '/');
+		if(p == 0)
+		{
+			fands[i].name = G.gl_pathv[i];
+		}
+		else
+		{
+			fands[i].name = p + 1;
+		}
+	}
+
+	/* sort */
+	qsort(fands, n, sizeof(FileAndSize), compareFileAndSize);
+
+	/* count non-duplicates */
+	last = "///";
+	uniq = 0;
+	for(i = 0; i < n; ++i)
+	{
+		if(strcmp(fands[i].name, last) != 0)
+		{
+			last = fands[i].name;
+
+			/* overwrite beginning of ptrs array with non-duplicates */
+			fands[uniq].name = fands[i].name;
+			fands[uniq].size = fands[i].size;
+
+			++uniq;
+		}
+		else
+		{
+			fands[uniq-1].size += fands[i].size;
+		}
+	}
+
+	/* populate fileList */
+	*fileList = (char **)malloc(uniq*sizeof(char *));
+	*sizeList = (long long int *)malloc(uniq*sizeof(long long int));
+	for(i = 0; i < uniq; ++i)
+	{
+		(*fileList)[i] = strdup(fands[i].name);
+		(*sizeList)[i] = fands[i].size;
+	}
+	free(fands);
 	globfree(&G);
 
 	return uniq;

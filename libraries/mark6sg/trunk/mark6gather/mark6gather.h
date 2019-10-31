@@ -164,6 +164,8 @@ const char *getMark6Root();
 
 int getMark6FileList(char ***fileList);
 
+int getMark6FileListWithSizes(char ***fileList, long long int **sizeList);
+
 int getMark6SlotFileList(int slot, char ***fileList);
 
 
