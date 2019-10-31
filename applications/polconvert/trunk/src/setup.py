@@ -44,9 +44,12 @@ c_ext4 = Extension("_XPCal",sources=sourcefiles4,
 
 
 if DO_SOLVE:
-  # gsl depends on cblas
+  # gsl depends on cblas on some machines
+  # however, cblas needs to be installed so configure tests
+  # are needed.  Commenting this out until I have time to fix this.
+  # libraries=['gsl','cblas','fftw3']
   c_ext2 = Extension("_PolGainSolve", sources=sourcefiles2,
-                  libraries=['gsl','cblas','fftw3'],
+                  libraries=['gsl','fftw3'],
                   include_dirs=[np.get_include()],
                   extra_compile_args=["-Wno-deprecated","-O3"],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
