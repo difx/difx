@@ -3,6 +3,7 @@ Version 1.5.5
 * Changed Mbps to a float, dealt with this by casting to int in legacy formats
 * m5d, mark5streamunpacker: harmonise the way CODIF and VDIF files are treated
 * format_codif, format_vdif: Fix calculation of frame granularity for CODIF (and VDIF, although that would never have been wrong)
+* m5spec: allow specification of bchan and echan to limit range of channels being printed
 * Post DiFX-2.6
 
 Version 1.5.4

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2018 by Walter Brisken & Chris Phillips            *
+ *   Copyright (C) 2008-2019 by Walter Brisken & Chris Phillips            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,8 +46,8 @@
 
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
-const char version[] = "1.5";
-const char verdate[] = "20180914";
+const char version[] = "1.6";
+const char verdate[] = "20191101";
 
 volatile int die = 0;
 
@@ -68,7 +68,7 @@ static void usage(const char *pgm)
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 spectrometer.  Can use VLBA, Mark3/4, and Mark5B formats using the\nmark5access library.\n\n");
+	printf("A Mark5 spectrometer.  Can use VLBA, Mark3/4, Mark5B, and single-\nthread VDIF formats using the mark5access library.\n\n");
 	printf("Usage : %s <infile> <dataformat> <nchan> <nint> <outfile> [<offset>]\n\n", program);
 	printf("  <infile> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
@@ -78,8 +78,8 @@ static void usage(const char *pgm)
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	printf("  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
-	printf("    VDIF_1000-64000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
-	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
+	printf("    VDIF_1000-8000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
+	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27 ~= 76 Mbps\n");
 	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("  <nchan> is the number of spectral points to make per baseband channel\n\n");
 	printf("  <nint> is the number of FFT frames to spectrometize\n\n");
@@ -87,11 +87,21 @@ static void usage(const char *pgm)
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 	printf("\n");
 	printf("The following options are supported\n\n");
-	printf("    -version   Print version info and quit\n\n");
-	printf("    -dbbc      Assume dBBC polarisation order (all Rcp then all Lcp)\n\n");
-	printf("    -nopol     Do not compute cross pol terms\n\n");
-	printf("    -double    Double sideband (complex) data\n\n");
-	printf("    -help      This list\n\n");
+	printf("    -version\n");
+	printf("    -V         Print version info and quit\n\n");
+	printf("    -dbbc\n");
+	printf("    -B         Assume DBBC polarisation order (all Rcp then all Lcp)\n");
+	printf("               Default is to assume Rcp/Lcp channel pairs\n\n");
+	printf("    -nopol\n");
+	printf("    -P         Do not compute cross pol terms\n\n");
+	printf("    -double\n");
+	printf("    -d         Double sideband (complex) data\n\n");
+	printf("    -bchan=<x>\n");
+	printf("    -b <x>     Start output at channel number <x> (0-based)\n\n");
+	printf("    -echan=<x>\n");
+	printf("    -e <x>     End output at channel number <x-1> (0-based)\n\n");
+	printf("    -help\n");
+	printf("    -h         Print this help info and quit\n\n");
 }
 
 int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked, int doublesideband)
@@ -303,7 +313,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 }
 
 
-int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int doublesideband)
+int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int doublesideband, int bchan, int echan)
 {
 	struct mark5_stream *ms;
 	double **spec;
@@ -398,14 +408,14 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 		chanbw *= 2;
 	}
 
-	for(c = 0; c < nchan; ++c)
+	for(c = bchan; c < echan; ++c)
 	{
 		fprintf(out, "%f ", (double)c*chanbw);
 		for(i = 0; i < ms->nchan; ++i)
 		{
 			fprintf(out, " %f", f*spec[i][c]);
 		}
-		if (polmode!=NOPOL)
+		if(polmode != NOPOL)
 		{
 		        for(i = 0; i < ms->nchan/2; ++i)
 			{
@@ -440,6 +450,7 @@ int main(int argc, char **argv)
 {
 	long long offset = 0;
 	int nchan, nint;
+	int bchan=-1, echan=-1;
 	int retval;
 	polmodetype polmode = VLBA;
 	int doublesideband = 0;
@@ -449,13 +460,15 @@ int main(int argc, char **argv)
 	struct option options[] = {
 		{"version", 0, 0, 'V'}, // Version
 		{"double", 0, 0, 'd'}, // Double sideband complex
-		{"dbbc", 0, 0, 'B'},  // dBBC channel ordering
+		{"dbbc", 0, 0, 'B'},  // DBBC channel ordering
 		{"nopol", 0, 0, 'P'}, // Don't compute the crosspol terms
 		{"help", 0, 0, 'h'},
+		{"bchan", 1, 0, 'b'},
+		{"echan", 1, 0, 'e'},
 		{0, 0, 0, 0}
 	};
 
-	while((opt = getopt_long_only(argc, argv, "hd", options, NULL)) != EOF)
+	while((opt = getopt_long_only(argc, argv, "VdBPhb:e:", options, NULL)) != EOF)
 	{
 		switch (opt) 
 		{
@@ -477,6 +490,14 @@ int main(int argc, char **argv)
 		case 'V': // Version
 			printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 			return EXIT_SUCCESS;
+
+		case 'b': // bchan (output selection)
+			bchan = atoi(optarg);
+			break;
+
+		case 'e': // echan (output selection)
+			echan = atoi(optarg);
+			break;
 
 		case 'h': // help
 			usage(argv[0]);
@@ -567,7 +588,23 @@ int main(int argc, char **argv)
 	new_sigint_action.sa_flags = 0;
 	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband);
+	if(bchan >= 0 && echan >= 0 && bchan >= echan)
+	{
+		fprintf(stderr, "Error: if bchan and echan are provided, echan must exceed bchan\n");
+
+		return EXIT_FAILURE;
+	}
+
+	if(bchan < 0)
+	{
+		bchan = 0;
+	}
+	if(echan > nchan || echan < 0)
+	{
+		echan = nchan;
+	}
+
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, bchan, echan);
 
 	return retval;
 }
