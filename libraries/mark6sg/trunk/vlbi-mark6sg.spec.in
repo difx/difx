@@ -1,5 +1,5 @@
 Summary: Library for reading Mark6 scatter-gather recordings
-Name: mark6sg
+Name: vlbi-mark6sg
 Version: @version@
 Release: 1
 License: GPL3
