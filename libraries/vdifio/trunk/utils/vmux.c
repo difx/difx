@@ -36,7 +36,7 @@
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.11";
-const char verdate[] = "20191001";
+const char verdate[] = "20191031";
 
 const int defaultChunkSize = 10000000;
 const int defaultNGap = 100;
@@ -91,7 +91,7 @@ void usage(const char *pgm)
 	fprintf(stderr, "  --noEDV4\n");
 	fprintf(stderr, "  -n        Don't make use of EDV4 (per-thread validity) in output\n\n");
 	fprintf(stderr, "  --EDV4\n");
-	fprintf(stderr, "  -e        Use of EDV4 (per-thread validity) in output [default]\n\n");
+	fprintf(stderr, "  -e        Use EDV4 (per-thread validity) in output [default]\n\n");
 	fprintf(stderr, "  --fanout <f>\n");
 	fprintf(stderr, "  -f <f>    Set fanout factor to <f> (used for some DBBC3 data) [default = 1]\n\n");
 	fprintf(stderr, "  --gap <g>\n");
@@ -386,7 +386,7 @@ int main(int argc, char **argv)
 	else
 	{
 		summarizevdiffile(&summary, inFile, 0);
-		if (summary.framesPerSecond <= 0)
+		if(summary.framesPerSecond <= 0)
 		{
 			summary.framesPerSecond = framesPerSecond;
 		}
@@ -426,7 +426,7 @@ int main(int argc, char **argv)
 	setSignals();
 
 	/* read just enough of the stream to peek at a frame header */
-	if (useStdin)
+	if(useStdin)
 	{
 		n = fread(src, 1, VDIF_HEADER_BYTES, in);
 	}
@@ -499,7 +499,7 @@ int main(int argc, char **argv)
 	{
 		int V;
 
-		if (useStdin)
+		if(useStdin)
 		{
 			n = fread(src+leftover, 1, srcChunkSize-leftover, in);
 		}
@@ -562,9 +562,9 @@ int main(int argc, char **argv)
 				fprintf(stderr, "VDIF reader statistics:\n");
 				for(j = 0; j < readerstats.nThread; j++)
 				{
-					fprintf(stderr, "  Thread %2d relative offset = %d frames\n", summary.threadIds[j], readerstats.threadOffsets[j]);
+					fprintf(stderr, "  Thread %2d relative offset = %d frames\n", summary.threadIds[j], (int)(readerstats.threadOffsets[j]));
 				}
-				fprintf(stderr, "  Largest offset            = %d frames\n", readerstats.maxOffset);
+				fprintf(stderr, "  Largest offset            = %d frames\n", (int)(readerstats.maxOffset));
 			}
 		}
 
