@@ -2,8 +2,8 @@
 
 program = 'vdifspec'
 author  = 'Walter Brisken'
-version = '0.4'
-verdate = '20180906'
+version = '0.5'
+verdate = '20191101'
 
 from os import system
 from string import split
@@ -14,7 +14,7 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'A VDIF spectrometer for multi-thread VDIF data.  Uses vmux'
 	print 'and m5spec to do the heavy lifting.\n'
-	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile> [nbit] [<offset>]\n' % program
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile> [<nbit> [<offset> [<bchan> [<echan>]]]]\n' % program
 	print '  <infile> is the name of the VDIF file\n'
 	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
 	print '  <data rate> is the stream data rate (Mbps)\n'
@@ -24,12 +24,14 @@ def usage():
 	print '  <outfile> is the name of the output file\n'
 	print '  <nbit> is number of bits per sample (default is 2)\n'
 	print '  <offset> optionally jump into input file by this many bytes\n'
+	print '  <bchan> and <echan> select range of channels to store in output file\n'
 	print 'Note: Only works on 2-bit real data for now...\n'
 
 if len(argv) < 8:
 	usage()
 	exit()
 
+extraArgs = ''
 infile = argv[1]
 framesize = int(argv[2])
 datarate = int(argv[3])
@@ -46,6 +48,10 @@ if len(argv) > 9:
 	offset = int(argv[9])
 else:
 	offset = 0
+if len(argv) > 10:
+	extraArgs += ' -bchan=%s' % argv[10]
+if len(argv) > 11:
+	extraArgs += ' -echan=%s' % argv[11]
 
 nc = 1
 while(nc < nt):
@@ -55,7 +61,7 @@ outputpayload = nc*(framesize-32)
 framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
 outputdatarate = outputpayload*framespersecond*8/1000000
 
-cmd = 'vmux %s %d %d %s - %d | m5spec - VDIF_%d-%d-%d-%d %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nbit, nchan, nint, outfile) 
+cmd = 'vmux %s %d %d %s - %d | m5spec %s - VDIF_%d-%d-%d-%d %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, extraArgs, outputpayload, outputdatarate, nc, nbit, nchan, nint, outfile) 
 
 print 'Executing: %s' % cmd
 system(cmd)
