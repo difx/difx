@@ -6,6 +6,7 @@ libraries/mark5access		https://svn.atnf.csiro.au/difx/libraries/mark5access/trun
 libraries/perl			https://svn.atnf.csiro.au/difx/libraries/perl/trunk
 libraries/python		https://svn.atnf.csiro.au/difx/libraries/python/trunk
 libraries/vdifio		https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk
+libraries/codifio		https://svn.atnf.csiro.au/difx/libraries/codifio/trunk
 libraries/vex			https://svn.atnf.csiro.au/difx/libraries/vex/trunk
 libraries/dirlist		https://svn.atnf.csiro.au/difx/libraries/dirlist/trunk
 applications/calcif2		https://svn.atnf.csiro.au/difx/utilities/trunk/calcif2
