@@ -122,9 +122,9 @@ int main(int argc, char **argv) {
 
   framens = ms->framens;
 
-  offsetbytes = (off_t)(ms->frameoffset + offset/framens*1e9*ms->framebytes);
+  offsetbytes = (off_t)(ms->frameoffset + lrint(offset*1e9/framens)*ms->framebytes);
 
-  readbytes = length/framens*1e9*ms->framebytes;
+  readbytes = lrint(length*1e9/framens)*ms->framebytes;
 
   delete_mark5_stream(ms);
 

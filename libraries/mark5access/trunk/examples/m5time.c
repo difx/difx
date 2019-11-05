@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
   minutes = millisec / (60*1000);
   millisec -= minutes*60*1000;
 
-  printf("%02d:%02d:%05.2f\n", hours, minutes, millisec/1000.0);
+  printf("%02d:%02d:%05.3f\n", hours, minutes, millisec/1000.0);
 
   delete_mark5_stream(ms);
 
