@@ -1303,8 +1303,15 @@ int main(int argc, char **argv)
                                 if(options.isMk6)
                                 {
 clog << "pre poll" << endl;
-                                    D->mark6->pollDevices();
-                                    D->mark6->sendStatusMessage();
+                                    try
+                                    {
+                                        D->mark6->pollDevices();
+                                        D->mark6->sendStatusMessage();
+                                    }
+                                    catch(Mark6InvalidMetadata& ex)
+                                    {
+                                        cerr << "No valid Mark6 metadata found, retrying again later. The error was: " << ex.what() << endl;   
+                                    }
                                 }
                                     //D->mark6.pollDevices();
 			}
