@@ -157,7 +157,8 @@ bool VexStream::isSingleThreadVDIF(const std::string &str)
 {
 	if(strcasecmp(str.c_str(), "VDIF") == 0 ||
 	   strcasecmp(str.c_str(), "VDIFL") == 0 ||
-	   strcasecmp(str.c_str(), "VDIFC") == 0)
+	   strcasecmp(str.c_str(), "VDIFC") == 0 ||
+	   strcasecmp(str.c_str(), "VDIFD") == 0)
 	{
 		return true;
 	}
