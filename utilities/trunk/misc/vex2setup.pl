@@ -24,6 +24,7 @@ my $nchannel = 256;
 my $tint = 1;
 my $crosspol = 0;
 my $evlbi = 0;
+my $ascii = 0;
 my $starttime = undef;
 my $v2dfile = undef;
 my $nCore = 10;
@@ -43,7 +44,8 @@ GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint,
 	   'start=s'=>\$starttime, 'v2d=s'=>\$v2dfile, 'files=s'=>\$files,
 	   'ant=s'=>\@activestations, 'cluster=s'=>\$cluster,
 	   'nodes=i'=>\$nNode, 'threads=i'=>\$nThread, 'core=i'=>\$nCore,
-	   'duration=i'=>\$requested_duration, 'scan=s'=>\$scan);
+	   'duration=i'=>\$requested_duration, 'scan=s'=>\$scan,
+	   'ascii'=>\$ascii);
 
 if (@ARGV!=1 && @ARGV!=2) {
   Usage();
@@ -235,6 +237,9 @@ if (defined $starttime || $scan) {
 }
 if (defined $requested_duration || $scan) {
   printf V2D "mjdStop = %s\n", mjd2vextime($sched_start+$duration/60/60/24);
+}
+if ($ascii) {
+  print V2D "outputFormat = ASCII\n";
 }
 
 print V2D<<EOF;
