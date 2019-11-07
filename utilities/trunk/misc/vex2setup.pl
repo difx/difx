@@ -196,7 +196,7 @@ if (defined $files) {
     }
     my $key = uc(shift @elem);
     if (exists $files{$key}) {
-      push(@{$files{$key}}, @elem);
+      push @{$files{$key}}, @elem;
     } else {
       $files{$key} = [@elem];
     }
