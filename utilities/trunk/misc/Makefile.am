@@ -20,7 +20,9 @@ dist_bin_SCRIPTS = \
 	vdifheader.pl \
 	vex2setup.pl \
 	mk5bheader.pl \
-	m6modinit.py
+	m6modinit.py \
+	updateDelay.pl \
+	updateRate.pl
 
 bin_PROGRAMS = m5fb_makeheader
 
