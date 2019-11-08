@@ -1054,17 +1054,20 @@ int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *
 
 int getDifxDatastreamBandFreqId(const DifxDatastream *dd, int band)
 {
+	int localFqId;
 	if(band < 0)
 	{
 		return -1;
 	}
 	if(band < dd->nRecBand)
 	{
-		return dd->recBandFreqId[band];
+		localFqId = dd->recBandFreqId[band];
+		return dd->recFreqId[localFqId];
 	}
 	if(band < dd->nRecBand + dd->nZoomBand)
 	{
-		return dd->zoomBandFreqId[band-dd->nRecBand];
+		localFqId = dd->zoomBandFreqId[band-dd->nRecBand];
+		return dd->zoomFreqId[localFqId];
 	}
 
 	return -1;
@@ -1089,20 +1092,23 @@ char getDifxDatastreamBandPol(const DifxDatastream *dd, int band)
 
 int getDifxDatastreamBandFreqIdAndPol(int *freqId, char *pol, const DifxDatastream *dd, int band)
 {
+	int localFqId;
 	if(band < 0)
 	{
 		return -1;
 	}
 	if(band < dd->nRecBand)
 	{
-		*freqId = dd->recBandFreqId[band];
+		localFqId = dd->recBandFreqId[band];
+		*freqId = dd->recFreqId[localFqId];
 		*pol = dd->recBandPolName[band];
 
 		return 0;
 	}
 	if(band < dd->nRecBand + dd->nZoomBand)
 	{
-		*freqId = dd->zoomBandFreqId[band-dd->nRecBand];
+		localFqId = dd->zoomBandFreqId[band-dd->nRecBand];
+		*freqId = dd->zoomFreqId[localFqId];
 		*pol = dd->zoomBandPolName[band-dd->nRecBand];
 
 		return 0;
