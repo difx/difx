@@ -1,9 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/python3
+
+# Note: this example can run under python2.7 or python3
+
 import ctypes, sys, time
 import vdifio
 
 ### Example 1: Summarize existing file 'vdifio_1.vdif'
-print ('\nExample 1: Summarize existing file "vdifio_1.vdif"')
+print('\nExample 1: Summarize existing file "vdifio_1.vdif"')
 vsum = vdifio.vdif_file_summary()
 vdifio.summarizevdiffile(vsum, 'vdifio_1.vdif', 0)
 vdifio.printvdiffilesummary(vsum)
@@ -17,7 +20,7 @@ flen  = 8192
 fps   = (fs*nchan*nbits)/(8.0*flen)
 
 if not (fps == int(fps)):
-	print 'Warning: reducing frames per second from %f to %d' % (fps,int(fps))
+	print('Warning: reducing frames per second from %f to %d' % (fps,int(fps)))
 
 fps = ctypes.c_int(int(fps))
 t0  = vdifio.time_t(int(time.time()))
@@ -32,5 +35,5 @@ vdifio.printVDIFHeader(hdr, vdifio.VDIFHeaderPrintLevelShort)
 for nn in range(10):
 	vdifio.nextVDIFHeader(hdr, fps)
 	vdifio.printVDIFHeader(hdr, vdifio.VDIFHeaderPrintLevelShort)
-print ('')
+print('')
 

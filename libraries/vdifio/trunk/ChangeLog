@@ -6,6 +6,7 @@ Version 1.5
 * vmux: don't print errors to stdout, print to stderr instead, to keep stream clean
 * functions called by vmux: don't print messages to stdout.
 * vdifspec: allow passing of bchan and echan to m5spec
+* python2 -> python3
 
 Version 1.4
 ~~~~~~~~~~~
