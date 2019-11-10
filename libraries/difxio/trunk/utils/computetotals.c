@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken                             *
+ *   Copyright (C) 2015-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,9 +33,9 @@
 #include "difx_input.h"
 
 const char program[] = "computetotals";
-const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
-const char version[] = "0.1";
-const char verdate[] = "20170413";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
+const char version[] = "0.2";
+const char verdate[] = "20191110";
 
 void usage()
 {

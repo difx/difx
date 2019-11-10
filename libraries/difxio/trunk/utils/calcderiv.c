@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken                             *
+ *   Copyright (C) 2015-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,9 +38,9 @@
 #define C_LIGHT	299792458.0
 
 const char program[] = "calcderiv";
-const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const int version = 2;	/* for this program, must be an integer */
-const char verdate[] = "20170122";
+const char verdate[] = "20191110";
 
 void usage()
 {
