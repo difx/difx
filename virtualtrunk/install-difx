@@ -134,6 +134,7 @@ noinstall = False
 gfortran = True
 extraflags = None
 MAKEcommand = "make "
+plainMAKE = MAKEcommand
 doclean = False
 target = 'all'
 verb = False
@@ -688,9 +689,9 @@ if components["perl"]:
     print
     os_chdir("libraries/vex/"+difx_version+"/vexlib")
     if platform == "darwin":
-        run(MAKEcommand + "-f Makefile.osx")
+        run(plainMAKE + "-f Makefile.osx")
     else:
-        run(MAKEcommand)
+        run(plainMAKE)
     if not noinstall:
         run("mv -f libvex." + SHAREDPOSTFIX + " " + libdir)
         run("mv -f libvex.a " + libdir)
