@@ -596,12 +596,15 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                     dsnodes.append(matchNodes[0])
                 else:
                     # use compute node             
+                    nodecount = 0
                     for node in difxmachines.getComputeNodes():
                         # skip if already used as datastream node
-                        if node.name in dsnodes:
+                        if node.name in dsnodes and nodecount < len(difxmachines.getComputeNodes()) - 1: # only keep skipping if you are not at last node
+                            nodecount += 1
                             continue
-                            
+
                         dsnodes.append(node.name)
+                        print nodecount, len(difxmachines.getComputeNodes())
                         break
                 
             elif stream.type == "MODULE":    
