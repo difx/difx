@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken                             *
+ *   Copyright (C) 2009-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -176,6 +176,9 @@ public:
 	int startBand;		// within the antenna's baseband channels (defined in vex order), where does this datastream start? [0-based]; -1 indicates not initialized
 	int nBand;		// number of baseband channels provided by this datastream
 	double tSys;		// The TSYS parameter of the .input file.  Normally this is zero
+
+	std::string filelistFile;
+	bool filelistReadFail;
 };
 
 class AntennaSetup
@@ -221,6 +224,9 @@ public:
 	DatastreamSetup defaultDatastreamSetup;	// only used to contain defaults used in creating datastreamSetups
 	std::list<std::string> datastreamList;	// list of datastreams provided in v2d file
 	std::vector<DatastreamSetup> datastreamSetups;
+
+	std::string filelistFile;
+	bool filelistReadFail;
 private:
 	void addDatastream(const std::string &dsName);
 };

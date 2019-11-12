@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2019 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -56,7 +56,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20181015");
+const string verdate("20191112");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -2915,6 +2915,11 @@ int main(int argc, char **argv)
 			{
 				antSetup->datastreamSetups[0].nBand = 0;
 				antSetup->datastreamSetups[0].startBand = 0;
+				if(antSetup->filelistReadFail)
+				{
+					cerr << "Error: file list for antenna " << ant->name << " (" << antSetup->filelistFile << ") could not be read." << endl;
+					++nError;
+				}
 			}
 			else
 			{
@@ -2930,6 +2935,11 @@ int main(int argc, char **argv)
 				chanCount = 0;
 				for(int ads = 0; ads < nads; ++ads)
 				{
+					if(antSetup->datastreamSetups[ads].filelistReadFail)
+					{
+						cerr << "Error: file list for datastream " << ads << " of antenna " << ant->name << " (" << antSetup->datastreamSetups[ads].filelistFile << ") could not be read." << endl;
+						++nError;
+					}
 					antSetup->datastreamSetups[ads].startBand = chanCount;
 					if(antSetup->datastreamSetups[ads].nBand == 0)
 					{

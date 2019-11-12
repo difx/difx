@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken                             *
+ *   Copyright (C) 2009-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -130,7 +130,8 @@ int loadBasebandFilelistOld(const std::string &fileName, std::vector<VexBaseband
 	return n;
 }
 
-int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandData> &basebandFiles)
+// Returns true on success
+bool loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandData> &basebandFiles)
 {
 	DirList D;
 	std::stringstream error;
@@ -146,9 +147,9 @@ int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandDat
 	{
 		if(e.getType() == DirListException::TypeCantOpen)
 		{
-			std::cerr << "Error: cannot open filelist file: " << fileName << std::endl;
+			std::cerr << "Note: cannot open filelist file: " << fileName << std::endl;
 
-			exit(EXIT_FAILURE);
+			return false;
 		}
 		else if(e.getType() == DirListException::TypeWrongIdentifier)
 		{
@@ -166,14 +167,14 @@ int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandDat
 			{
 				std::cerr << "Error: cannot get filelist data from " << fileName << ".  The file is not in a recognized format."  << std::endl;
 
-				exit(EXIT_FAILURE);
+				return false;
 			}
 		}
 		else
 		{
 			std::cerr << "Error: cannot get filelist data from " << fileName << ".  Error might be related to: " << error.str() << std::endl;
 
-			exit(EXIT_FAILURE);
+			return false;
 		}
 	}
 
@@ -208,7 +209,7 @@ int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandDat
 		n = loadBasebandFilelistOld(fileName, basebandFiles);
 	}
 
-	return n;
+	return true;
 }
 
 CorrSetup::CorrSetup(const std::string &name) : corrSetupName(name)
@@ -790,6 +791,8 @@ DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name)
 	startBand = -1;
 	nBand = 0;				// Zero implies all.
 	tSys = 0.0;
+
+	filelistReadFail = false;
 }
 
 
@@ -859,7 +862,8 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		dataSource = DataSourceFile;
-		loadBasebandFilelist(value, basebandFiles);
+		filelistFile = value;
+		filelistReadFail = !loadBasebandFilelist(value, basebandFiles);
 	}
 	else if(key == "mark6filelist")
 	{
@@ -869,7 +873,8 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		dataSource = DataSourceMark6;
-		loadBasebandFilelist(value, basebandFiles);
+		filelistFile = value;
+		filelistReadFail = !loadBasebandFilelist(value, basebandFiles);
 	}
 	else if(key == "recorder")
 	{
@@ -1121,6 +1126,8 @@ AntennaSetup::AntennaSetup(const std::string &name) : vexName(name), defaultData
 	// antenna is by default not constrained in start time
 	mjdStart = -1.0;
 	mjdStop = -1.0;
+
+	filelistReadFail = false;
 }
 
 int AntennaSetup::setkv(const std::string &key, const std::string &value)
@@ -1361,7 +1368,8 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		defaultDatastreamSetup.dataSource = DataSourceFile;
-		loadBasebandFilelist(value, defaultDatastreamSetup.basebandFiles);
+		filelistFile = value;
+		filelistReadFail = !loadBasebandFilelist(value, defaultDatastreamSetup.basebandFiles);
 	}
 	else if(key == "mark6filelist")
 	{
@@ -1371,7 +1379,8 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		defaultDatastreamSetup.dataSource = DataSourceMark6;
-		loadBasebandFilelist(value, defaultDatastreamSetup.basebandFiles);
+		filelistFile = value;
+		filelistReadFail = !loadBasebandFilelist(value, defaultDatastreamSetup.basebandFiles);
 	}
 	else if(key == "networkPort")
 	{
