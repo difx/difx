@@ -40,6 +40,8 @@
 #include <math.h>
 #include <errno.h>
 
+#include "config.h"
+
 #include "mark5access/mark5_stream.h"
 
 FILE* m5stderr = (FILE*)NULL;
@@ -54,7 +56,7 @@ void __attribute__ ((constructor)) autocall_mark5_library_init(void)
 
 // CODIF Stubs to allow conditional dependencies
 
-#ifndef HAVE_CODIF
+#ifndef HAVE_CODIFIO
 int get_codif_threads(const unsigned char *data, size_t length, int dataframesize) {
   fprintf(m5stderr, "mark5_stream: Error - Not compiled with CODIF!! Quitting\n");
   exit(1);
@@ -63,7 +65,6 @@ int get_codif_threads(const unsigned char *data, size_t length, int dataframesiz
 int find_codif_frame(const unsigned char *data, int length, size_t *offset, int *framesize, int *headersize) {
  fprintf(m5stderr, "mark5_stream: Error - Not compiled with CODIF!! Quitting\n");
 }
-
 #endif
 
 
@@ -659,6 +660,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 			return new_mark5_format_vdif(a, b, c, d, e, 16, 1);
 		}
 	}
+#ifdef HAVE_CODIFIO
 	else if(strncasecmp(formatname, "CODIF_", 6) == 0)
 	{
 		r = sscanf(formatname+6, "%d-%dm%d-%d-%d/%d", &e, &a, &s, &b, &c, &d);
@@ -687,6 +689,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 
 		return new_mark5_format_codif(a,s,b,c,d,e,64,1);
 	}
+#endif
 	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
 	{
 		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
@@ -1354,6 +1357,7 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		}
 	}
 
+#ifdef HAVE_CODIFIO
 	/* CODIF */
 	framesize = 0;
 	headersize = 0;
@@ -1392,6 +1396,7 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		  return mf;
 	      }
 	}
+#endif
 	
 #ifdef K5WORKS
 	/* k5 */

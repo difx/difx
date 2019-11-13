@@ -36,7 +36,6 @@ AM_SANITY_CHECK
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
-PKG_CHECK_MODULES(CODIFIO, codifio >= 0.2)
 
 AC_SUBST(FFTW3_CFLAGS)
 AC_SUBST(FFTW3_LIBS)
@@ -73,6 +72,15 @@ if test ${HAVE_MARK6SG} = true; then
   CFLAGS="${CFLAGS} ${MARK6SG_CFLAGS}"
   LIBS="${LIBS} ${MARK6SG_LIBS}"
   AC_SUBST(MARK6SG_LIBS)
+fi
+
+PKG_CHECK_MODULES([CODIFIO], [codifio >= 0.2], [HAVE_CODIFIO=true], [HAVE_CODIFIO=false])
+AM_CONDITIONAL(USE_CODIFIO, $HAVE_CODIFIO)
+if test ${HAVE_CODIFIO} = true; then
+  AC_DEFINE(HAVE_CODIFIO, 1, [Define if you have codifio library.])
+  CFLAGS="${CFLAGS} ${CODIFIO_CFLAGS}"
+  LIBS="${LIBS} ${CODIFIO_LIBS}"
+  AC_SUBST(CODIFIO_LIBS)
 fi
 
 version=AC_PACKAGE_VERSION

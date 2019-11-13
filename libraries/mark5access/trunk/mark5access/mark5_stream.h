@@ -50,7 +50,6 @@ typedef float complex  mark5_float_complex;
 
 #include <stdint.h>
 #include <stdio.h>
-#include "codifio.h"
 
 #ifdef __cplusplus
 extern "C" {

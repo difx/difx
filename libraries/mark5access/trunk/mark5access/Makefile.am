@@ -7,6 +7,12 @@ mark6sg_h_sources =
 mark6sg_c_sources =
 endif
 
+if USE_CODIFIO
+codif_c_sources = format_codif.c
+else
+codif_c_sources =
+endif
+
 h_sources = \
         $(mark6sg_h_sources) \
 	mark5_stream.h \
@@ -27,7 +33,7 @@ c_sources = \
 	mark5_format_d2k.c \
 	format_vdif.c \
 	format_vdifb.c \
-	format_codif.c \
+	$(codif_c_sources) \
 	blanker_none.c \
 	blanker_mark5.c \
 	mark5bfix.c \

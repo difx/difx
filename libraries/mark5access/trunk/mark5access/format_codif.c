@@ -41,7 +41,7 @@
 #include <endian.h>
 #endif
 
-#include "codifio.h"
+#include <codifio.h>
 
 #include "mark5access/mark5_stream.h"
 
