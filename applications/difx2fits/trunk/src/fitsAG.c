@@ -140,7 +140,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 
 		for(e = 0; e < D->nEOP; ++e)
 		{
-			if(fabs(D->eop[e].mjd - mjd) < 0.01)
+		  if(fabs(D->eop[e].mjd - mjd) < 0.01) // CJP  Surely this should just be a test for equality - they are integers
 			{
 				break;
 			}
