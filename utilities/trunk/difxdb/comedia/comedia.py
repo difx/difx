@@ -166,7 +166,7 @@ class MainWindow(GenericWindow):
         # widgets on frmFilter       
         self.chkRelease = Checkbutton(self.frmFilter, text = "releasable", variable = self.filterReleaseList, command=self.updateSlotListbox)
         self.chkDirLess = Checkbutton(self.frmFilter, text = "missing .dir file", variable = self.filterDirLess, command=self.updateSlotListbox)
-        self.chkFilterUnscanned = Checkbutton(self.frmFilter, text = "unscanned .dir files", variable = self.filterUnscanned, command=self.updateSlotListbox)
+        self.chkFilterUnscanned = Checkbutton(self.frmFilter, text = "unscanned modules", variable = self.filterUnscanned, command=self.updateSlotListbox)
         self.chkFilterAttention = Checkbutton(self.frmFilter, text = "attention needed", variable = self.filterAttentionVar, command=self.updateSlotListbox)
         self.cboModuleType = OptionMenu(self.frmFilter, self.filterModuleTypeVar, *self.moduleTypes, command=self.applyModuleFilter)
         
@@ -225,6 +225,7 @@ class MainWindow(GenericWindow):
         self.btnPrintLibraryLabel = Button (frmAction, text="Print library label", command=self.printLibraryLabel,state=DISABLED)
         self.btnPrintVSNLabel = Button (frmAction, text="Print VSN label", command=self.printVSNLabel,state=DISABLED)
         self.btnRescan = Button (frmAction, text="Rescan directory", command=self.rescanModuleEvent,state=DISABLED)
+        self.btnRetire = Button (frmAction, text="Retire module", command=self.retireModuleEvent,state=DISABLED)
         self.btnExpad = Button (frmAction, text="Show exp. details", command=self.showExpDetailEvent,state=DISABLED) 
         self.btnShowDir = Button (frmAction, text="Show .dir file", command=self.showDirFileWindow,state=DISABLED) 
 	
@@ -271,11 +272,12 @@ class MainWindow(GenericWindow):
         self.chkAttention.grid(row=10, column=1, columnspan=3, sticky=W)
         self.btnEditModule.grid(row=20, column=0, sticky=E+W)
         self.btnDeleteModule.grid(row=20, column=1, sticky=E+W)
-        self.btnRescan.grid(row=20,column=2, sticky=E+W)
-        self.btnPrintLibraryLabel.grid(row=21,column=0, sticky=E+W)
-        self.btnPrintVSNLabel.grid(row=21,column=1, sticky=E+W)
-        self.btnExpad.grid(row=21,column=2, sticky=E+W)
-        self.btnShowDir.grid(row=31,column=0, sticky=E+W)
+        self.btnRetire.grid(row=20,column=2, sticky=E+W)
+        self.btnRescan.grid(row=30,column=0, sticky=E+W)
+        self.btnPrintLibraryLabel.grid(row=30,column=1, sticky=E+W)
+        self.btnPrintVSNLabel.grid(row=30,column=2, sticky=E+W)
+        self.btnExpad.grid(row=40,column=0, sticky=E+W)
+        self.btnShowDir.grid(row=40,column=1, sticky=E+W)
 	
         # bind events to widgets
         self.txtLocationContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
@@ -518,6 +520,7 @@ class MainWindow(GenericWindow):
          
         
         self.btnPrintVSNLabel["state"] = DISABLED
+        self.btnRetire["state"] = DISABLED
         self.btnRescan["state"] = DISABLED
         self.btnExpad["state"] = DISABLED
         self.btnShowDir["state"] = DISABLED
@@ -552,6 +555,7 @@ class MainWindow(GenericWindow):
             return
         
         self.btnPrintVSNLabel["state"] = NORMAL
+        #self.btnRetire["state"] = NORMAL
         self.btnRescan["state"] = NORMAL
         self.btnPrintLibraryLabel["state"] = NORMAL
         self.btnDeleteModule["state"] = NORMAL
@@ -641,6 +645,34 @@ class MainWindow(GenericWindow):
         # save contents of the Detail form fields
         self._saveModuleDetails
         
+    def getSelectedSlot(self, session):
+    
+        if (self.selectedSlotIndex == -1):
+		return(None)
+
+    	slot = model.Slot()
+	slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+
+	return(slot)
+
+    def retireModuleEvent(self):
+
+        session = dbConn.session()
+
+	slot = self.getSelectedSlot(session)
+	print slot, slot.module.id
+	if slot == None:
+		return
+
+        if (tkMessageBox.askokcancel("Confirm module retirement", "Do you really want to retire module " + slot.module.vsn + "? ")):
+
+       	    # set retired flag
+	    retire(session, slot.module.id)
+
+	    session.close()
+
+            #self.doCheckout(module.id)
+
     def checkOutModule(self):
             
         if (self.selectedSlotIndex == -1):
@@ -654,7 +686,6 @@ class MainWindow(GenericWindow):
         if (slot == None):
             return
         
-        # delete module
         module = model.Module()
         
         try:
@@ -772,10 +803,6 @@ class MainWindow(GenericWindow):
              
         for slot in slots:
             
-	    # exclude mark6 modules until .dir mechanics exist
-	    #if self.patternMark6VSN.match(slot.module.vsn):
-	#	continue
-
 	    isDir = False
 	    isScan = False
             # find modules without .dir file
@@ -786,7 +813,8 @@ class MainWindow(GenericWindow):
         
             # find unvalidated modules
             if (slot.module.numScans == None):
-                unvalidatedCount += 1
+		if hasDir(slot.module.vsn):
+		    unvalidatedCount += 1
 	    else:
 		isScan = True
 
@@ -798,9 +826,9 @@ class MainWindow(GenericWindow):
 		
         
         self.lblNumDirLess["text"] = dirLessCount
-        self.lblNumUnscanned["text"] = unvalidatedCount - dirLessCount
+        self.lblNumUnscanned["text"] = unvalidatedCount
         
-        if (unvalidatedCount - dirLessCount > 0):
+        if (unvalidatedCount > 0):
             self.btnModuleScan["state"] = NORMAL
         else:
             self.btnModuleScan["state"] = DISABLED
@@ -1864,8 +1892,6 @@ class ScanModulesWindow(GenericWindow):
             if (not hasDir(module.vsn)):
                 continue
                 
-           
-  
             if isMark6(module.vsn):
                 try:
                     difxdir = DifxFilelist(settings["dirPath"], module.vsn)
