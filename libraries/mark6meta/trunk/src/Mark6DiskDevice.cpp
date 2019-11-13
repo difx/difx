@@ -199,7 +199,8 @@ int Mark6DiskDevice::mountPartition(int partitionNumber, string mountPath)
     
     source = "/dev/" + partitions_m[partitionNumber].deviceName;
 
-    int ret = mount(source.c_str(), mountPath.c_str(), fsType_m.c_str(), MS_MGC_VAL | MS_RDONLY , "");
+    int ret = mount(source.c_str(), mountPath.c_str(), fsType_m.c_str(), MS_MGC_VAL | MS_RDONLY | MS_NOATIME, "");
+
 
     if (ret == -1)
     {
@@ -258,7 +259,7 @@ int Mark6DiskDevice::mountDisk(string dataPath, string metaPath)
             throw Mark6MountException (string("Mount point " + dest.str() + " does not exist." ));
         }
         
-        int ret = mount(source.c_str(), dest.str().c_str(), fsType_m.c_str(), MS_MGC_VAL | MS_RDONLY , "");
+        int ret = mount(source.c_str(), dest.str().c_str(), fsType_m.c_str(), MS_MGC_VAL | MS_RDONLY | MS_NOATIME, "");
     
         if (ret == -1)
         {
