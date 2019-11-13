@@ -304,7 +304,7 @@ def listen(port, group):
 	try:
 		while t < maxtime:
 			try:
-				message = s.recv(1500).decode('utf-8')
+				message = s.recv(8000).decode('utf-8')
 			except socket.timeout:
 				t += dt
 				continue

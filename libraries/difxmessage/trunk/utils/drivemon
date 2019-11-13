@@ -145,7 +145,7 @@ def run():
 	try:
 		while 1:
 			try:
-			    message = s.recv(1500)
+			    message = s.recv(8000)
 			    if len(message) > 0 and message[0] == '<':
 				p = Parser()
 				p.feed(message)

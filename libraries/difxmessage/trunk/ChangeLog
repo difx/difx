@@ -15,6 +15,7 @@ Version 2.7.0
   - smartmon
   - statemon
 * Remove incomplete and not used utility: mk5display
+* Python utilities: multicast receive buffer size to 8000 (from 1500)
 
 Version 2.6.0
 ~~~~~~~~~~~~~

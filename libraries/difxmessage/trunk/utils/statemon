@@ -166,7 +166,7 @@ def run():
 	try:
 		while 1:
 			try:
-				message = s.recv(1500).decode('utf-8')
+				message = s.recv(8000).decode('utf-8')
 				if len(message) > 0 and message[0] == '<':
 					p = Parser()
 					p.feed(message)
