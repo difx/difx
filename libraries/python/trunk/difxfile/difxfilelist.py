@@ -93,13 +93,17 @@ class DifxFilelist(object):
                 continue
             fields = line.split()
             
-	    # e18a24_Mm_114-0942.vdif 58232.40416667 58232.40625000
-	    if (len(fields) ==3):
-                    
+	    # e18a24_Mm_114-0942.vdif 58232.40416667 58232.40625000 216411093408
+	    if (len(fields) < 3):
+		errorCount += 1
+		self.parseErrors.append("Line %d: illegal format %s" % (lineCount, fields[0]))
+	    else:
                     scan = self.FileListLine()
-                    
+
                     scan.startMJD = float(fields[1])
                     scan.stopMJD = float(fields[2])
+		    if (len(fields) == 4):
+			scan.bytes = float(fields[3])
                                  
                     # try to separate the scan name into experiment stationcode and scanname
                     nameSplit = fields[0].strip('_').split("_")
@@ -235,6 +239,7 @@ class DifxFilelist(object):
             self.stopMJD = 0
             self.startSec = 0
             self.scanDuration = 0
+	    self.bytes = 0
 
 if __name__ == "__main__":
     
