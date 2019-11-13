@@ -98,7 +98,7 @@ static void d2k_initluts()
 
 static int mark5_format_d2k_make_formatname(struct mark5_stream *ms)
 {
-	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH, "D2K-%d-%d-%d", 
+	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH, "D2K-%.0f-%d-%d", 
 		ms->Mbps, ms->nchan, ms->nbit);
 
 	return 0;

@@ -4569,17 +4569,7 @@ double get_codif_rate(const codif_header *header)
     return rate;
 }
 
-uint32_t get_codif_frames_per_period(const codif_header *header)
-{
-    uint64_t databytes = (uint64_t)getCODIFFrameBytes(header);
-    uint64_t samplesperframe = (databytes*8) / (getCODIFNumChannels(header) * getCODIFBitsPerSample(header));
-    if (getCODIFComplex(header))
-    {
-        samplesperframe /= 2;
-    }
-    return (uint32_t)(getCODIFTotalSamples(header) / samplesperframe);
-}
-
+#if 0
 uint32_t get_codif_period(const codif_header *header)
 {
     return getCODIFPeriod(header);
@@ -4594,6 +4584,7 @@ int get_codif_complex(const codif_header *header)
 {
     return getCODIFComplex(header);
 }
+#endif
 
 double get_codif_framens(const codif_header *header)
 {

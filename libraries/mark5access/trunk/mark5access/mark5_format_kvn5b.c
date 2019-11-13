@@ -2836,7 +2836,7 @@ static int kvn5b_count_32bitstream_2bit_decimation4(struct mark5_stream *ms, int
 
 static int mark5_format_kvn5b_make_formatname(struct mark5_stream *ms)
 {
-	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH, "KVN5B-%d-%d-%d", ms->Mbps, ms->nchan, ms->nbit);
+	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH, "KVN5B-%.0f-%d-%d", ms->Mbps, ms->nchan, ms->nbit);
 
 	return 0;
 }

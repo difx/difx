@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
                          }
 	                 if (ms && (decode_rc >= 0)) {
                              if (format == 3) {
-                                 snprintf(formatstring, 256, "VDIF_%d-%d-%d-%d", ms->databytes, ms->Mbps, ms->nchan, ms->nbit);
+                                 snprintf(formatstring, 256, "VDIF_%d-%.0f-%d-%d", ms->databytes, ms->Mbps, ms->nchan, ms->nbit);
                              }
                              fprintf(stdout, "OK: fmt = %s , decoded = %d/1024\n", formatstring, decode_rc);
                              longlist = strcat(longlist, formatstring);

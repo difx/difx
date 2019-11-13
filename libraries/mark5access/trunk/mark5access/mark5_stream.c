@@ -1346,14 +1346,14 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 
 	    ms->frameoffset = offset;
 	    f = new_mark5_format_codif(
-		  get_codif_frames_per_period(header),
-		  get_codif_alignment_seconds(header),
-		  get_codif_chans_per_thread(header),
-		  get_codif_quantization_bits(header),
+		  getCODIFFramesPerPeriod(header),
+		  getCODIFPeriod(header),
+		  getCODIFNumChannels(header),
+		  getCODIFBitsPerSample(header),
 		  1, /* decimation */
 		  framesize-headersize,
 		  headersize,
-		  get_codif_complex(header));
+		  getCODIFComplex(header));
 
 	    set_format(ms, f);
 	    status = mark5_format_init(ms);
@@ -1371,7 +1371,6 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		  mf->format = MK5_FORMAT_CODIF;
 		  mf->ntrack = get_codif_threads(ms->datawindow+offset, ms->datawindowsize-offset, framesize);
 		  delete_mark5_stream(ms);
-		  
 		  return mf;
 	      }
 	}
