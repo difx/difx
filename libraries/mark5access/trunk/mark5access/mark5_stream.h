@@ -330,25 +330,6 @@ struct mark5_format_generic *new_mark5_format_codif(int framesperperiod, int ali
 int find_codif_frame(const unsigned char *data, int length, size_t *offset, int *framesize, int *headersize);
 
 int get_codif_threads(const unsigned char *data, size_t length, int dataframesize);
-
-#if 0
-
-int get_codif_chans_per_thread(const codif_header *header);
-
-int get_codif_quantization_bits(const codif_header *header);
-
-double get_codif_rate(const codif_header *header);
-
-uint32_t get_codif_frames_per_period(const codif_header *header);
-
-uint32_t get_codif_alignment_seconds(const codif_header *header);
-
-int get_codif_complex(const codif_header *data);
-
-double get_codif_framens(const codif_header *header);
-
-int get_codif_framegranularity(const codif_header *header);
-#endif
   
 /*   K5 format: not yet complete */
 
