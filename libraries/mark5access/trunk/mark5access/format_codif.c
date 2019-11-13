@@ -74,6 +74,9 @@ struct mark5_format_codif
 #warning "********FIXME***** CODIF supports offset binary and 2s complement. Update luts"
 
 int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex_decodeFunc *complex_decode, countFunc *count);
+double get_codif_framens(const codif_header *header);
+uint32_t get_codif_frames_per_period(const codif_header *header);
+int get_codif_framegranularity(const codif_header *header);
 
 
 static void initluts()
@@ -3955,7 +3958,7 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		ms->payload = ms->frame + ms->payloadoffset;
 		ms->framegranularity = get_codif_framegranularity(header);
 		ms->framesperperiod = get_codif_frames_per_period(header);
-		ms->alignmentseconds = get_codif_alignment_seconds(header);
+		ms->alignmentseconds = getCODIFPeriod(header);
 		ms->Mbps = ((double)ms->databytes * ms->framesperperiod * 8) / ms->alignmentseconds/1e6;
 		
 		ms->framens = get_codif_framens(header);
@@ -4580,11 +4583,6 @@ uint32_t get_codif_frames_per_period(const codif_header *header)
 uint32_t get_codif_period(const codif_header *header)
 {
     return getCODIFPeriod(header);
-}
-
-uint32_t get_codif_alignment_seconds(const codif_header *header)
-{
-    return getCODIFPeriod(header);;
 }
 
 int get_codif_quantization_bits(const codif_header *header)

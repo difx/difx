@@ -327,6 +327,7 @@ int get_vdifb_threads(const unsigned char *data, size_t length, int dataframesiz
 
 struct mark5_format_generic *new_mark5_format_codif(int framesperperiod, int alignmentseconds, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
 
+#if 0
 int find_codif_frame(const unsigned char *data, int length, size_t *offset, int *framesize, int *headersize);
 
 int get_codif_chans_per_thread(const codif_header *header);
@@ -346,7 +347,8 @@ int get_codif_threads(const unsigned char *data, size_t length, int dataframesiz
 double get_codif_framens(const codif_header *header);
 
 int get_codif_framegranularity(const codif_header *header);
-
+#endif
+  
 /*   K5 format: not yet complete */
 
 struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit, int submode);
