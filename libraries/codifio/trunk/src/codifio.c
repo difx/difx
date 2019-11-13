@@ -424,4 +424,17 @@ void printCODIFHeader(const codif_header *header, enum CODIFHeaderPrintLevel pri
 		break;
 	}
 }
+
+uint32_t getCODIFFramesPerPeriod(const codif_header *header)
+{
+    uint64_t databytes = (uint64_t)getCODIFFrameBytes(header);
+    uint64_t samplesperframe = (databytes*8) / (getCODIFNumChannels(header) * getCODIFBitsPerSample(header));
+    if (getCODIFComplex(header))
+    {
+        samplesperframe /= 2;
+    }
+    return (uint32_t)(getCODIFTotalSamples(header) / samplesperframe);
+}
+
+
 #endif

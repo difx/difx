@@ -130,7 +130,8 @@ static inline int getCODIFFrameInvalid(const codif_header *header) { return (int
 static inline int getCODIFFrameEpochSecOffset(const codif_header *header) { return (int)header->seconds; }
 static inline int getCODIFEpoch(const codif_header *header) { return (int)header->epoch; }
 int getCODIFEpochMJD(const codif_header *header);
-
+uint32_t getCODIFFramesPerPeriod(const codif_header *header);
+  
 /* Functions to set just one value from a raw header */
 int setCODIFFrameMJD(codif_header *header, int framemjd);
 int setCODIFFrameMJDSec(codif_header *header, uint64_t mjdsec);
