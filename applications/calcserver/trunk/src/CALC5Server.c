@@ -502,7 +502,7 @@ int main (int argc, char *argv[])
 
             decsign = 1.0;
             if (decdeg < 0.0) decsign = -1.0;
-            decdeg = abs(decdeg);
+            decdeg = fabs(decdeg);
 
             rarad = (rahr + ramn/60.0 + rasc/3600.0) * TWOPI / 24.0;
             decrad= (decdeg + decmn/60.0 + decsc/3600.0) * TWOPI / 360.0;
