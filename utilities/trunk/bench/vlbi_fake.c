@@ -35,6 +35,7 @@
 #include "vheader.h"
 #include "mk5blib.h"
 #include "vdifio.h"
+#include "codifio.h"
 
 
 #define MAXVDIFTHREADS       64
@@ -67,23 +68,26 @@ double cal2mjd(int day, int month, int year);
 int netsend(int sock, char *buf, size_t len, udp *udp);
 void my_usleep(udp *udp);
 
-typedef enum {LBADR, MARK5B, VDIF} datamode;
+typedef enum {LBADR, MARK5B, VDIF, CODIF} datamode;
 
 int main(int argc, char * const argv[]) {
   unsigned short fnamesize;
   ssize_t ntowrite;
-  int i, status, opt, tmp, sock, thisday, thismonth, thisyear;
+  int i, status, opt, tmp, sock, thisday, thismonth, thisyear, header_bytes;
   int seconds, hour, min, sec, bufsize, datarate, currentthread, framepersec;
+  int sampleblocklength;
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
   long *lbuf;
-  uint64_t mjdsec, bwrote, totalpackets;
+	   uint64_t mjdsec, bwrote, totalpackets, totalsamples;
+  uint64_t mjdsec, bwrote;
   double thismjd, finishmjd, ut, t0, t1, t2, dtmp;
   float speed, ftmp;
   unsigned long long filesize, networksize, nwritten, totalsize;
   vhead *header=0;    // File header object
   mk5bheader mk5_header;
   vdif_header vdif_headers[MAXVDIFTHREADS];
+  codif_header codif_headers[MAXVDIFTHREADS];
 
   //int monitor = 0;  
   int port = 52100;    /* Write nfiles files of size total size */
@@ -146,8 +150,9 @@ int main(int argc, char * const argv[]) {
     {"mark5b", 0, 0, 'B'},
     {"mk5b", 0, 0, 'B'},
     {"vdif", 0, 0, 'v'},
+    {"codif", 0, 0, 'c'},
     {"novtp", 0, 0, 'V'},
-    {"complex", 0, 0, 'c'},
+    {"complex", 0, 0, 'C'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -164,7 +169,7 @@ int main(int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "r:n:DVvd:mhH:f:b:", 
+    opt = getopt_long_only(argc, argv, "cCr:n:DVvd:mhH:f:b:", 
 			   options, NULL);
     if (opt==EOF) break;
 
@@ -365,11 +370,15 @@ int main(int argc, char * const argv[]) {
       mode = VDIF;
       break;
 
+    case 'c':
+      mode = CODIF;
+      break;
+
     case 'V':
       udp.vtp = 0;
       break;
       
-    case 'c':
+    case 'C':
       complex = 1;
       break;
 
@@ -390,6 +399,7 @@ int main(int argc, char * const argv[]) {
       printf("  -mjd <MJD>            MJD of start time\n");
       printf("  -mark5b/mk5b          Send Mark5b format data\n");
       printf("  -vdif                 Send VDIF format data\n");
+      printf("  -codif                 Send CODIF format data\n");
       printf("  -udp <MTU>            Use UDP with given datagram size (Mark5b and VDIF only)\n");
       printf("  -sleep <USEC>         Sleep (usec) between udp packets\n");
       printf("  -u/-update <SEC>      Number of seconds to average timing statistics\n");
@@ -418,16 +428,16 @@ int main(int argc, char * const argv[]) {
   if (month==-1) month = thismonth;
   if (dayno!=-1) dayno2cal(dayno, year, &day, &month);
 
-  if (numthread > 1 && mode != VDIF) {
-    fprintf(stderr, "Multiple threads can only be used with VDIF format!\n");
+  if (numthread > 1 && !(mode==VDIF || mode==CODIF)) {
+    fprintf(stderr, "Multiple threads can only be used with VDIF or CODIF format!\n");
     exit(1);
   }
-  if (complex && mode != VDIF) {
-    fprintf(stderr, "Complex sampling can only be used with VDIF format!\n");
+  if (complex && ! (mode==VDIF || mode==CODIF)) {
+    fprintf(stderr, "Complex sampling can only be used with VDIF or CODIF format!\n");
     exit(1);
   }
   if (numthread > MAXVDIFTHREADS) {
-    fprintf(stderr, "Too many VDIF threads %d cf max %d\n", numthread, MAXVDIFTHREADS);
+    fprintf(stderr, "Too many VDIF/CODIF threads %d cf max %d\n", numthread, MAXVDIFTHREADS);
     exit(1);
   }
 
@@ -489,11 +499,23 @@ int main(int argc, char * const argv[]) {
 
     if (udp.enabled)  bufsize+=udp.size;
 
-  } else if (mode==VDIF) {
-    if (udp.enabled) 
-      bufsize = udp.size-VDIF_HEADER_BYTES;
+  } else if (mode==VDIF || mode==CODIF) {
+    if (mode==VDIF) 
+      header_bytes = VDIF_HEADER_BYTES;
+    else {
+      header_bytes = CODIF_HEADER_BYTES;
+      sampleblocklength = numchan*bits;
+      if (complex) sampleblocklength *= 2;
+      sampleblocklength /= 8;
+      if (sampleblocklength==0) sampleblocklength=1;
+      totalsamples = bandwidth*1e6;
+      if (!complex) totalsamples *=2;
+    }
+    if (udp.enabled)
+      bufsize = udp.size-header_bytes;
     else 
       bufsize=framesize;
+
     // Need to to have an integral number of frames/sec
     while (bufsize>0) {
       if ((int)(datarate*1e6) % bufsize==0) break;
@@ -503,28 +525,33 @@ int main(int argc, char * const argv[]) {
       fprintf(stderr, "Could not find frame size to suit %d Mbps\n", datarate);
       exit(1);
     }
-    printf("VDIF: Using data frame size of %d bytes\n", bufsize);
-    bufsize += VDIF_HEADER_BYTES;
+    printf("Using data frame size of %d bytes\n", bufsize);
+    bufsize += header_bytes;
     filesize = bufsize;
     if (udp.enabled) udp.size = bufsize;
 
-    framepersec =  datarate*1e6/((bufsize-VDIF_HEADER_BYTES)*8);
+    framepersec =  datarate*1e6/((bufsize-header_bytes)*8);
 
-    for(i=0;i<numthread;i++) {
-
-      status = createVDIFHeader(&vdif_headers[i], bufsize-VDIF_HEADER_BYTES, i, bits, numchan, complex, "Tt");
-      if (status!=VDIF_NOERROR) {
-        fprintf(stderr, "Error creating header (%d)\n", status);
-        exit(1);
+    mjdsec = llround(mjd*24*60*60);
+    for (i=0;i<numthread;i++) {
+      if (mode==VDIF) {
+	status = createVDIFHeader(&vdif_headers[i], bufsize-header_bytes, i, bits, numchan, complex, "Tt");
+	if (status!=VDIF_NOERROR) {
+	  fprintf(stderr, "Error creating vdif header (%d)\n", status);
+	  exit(1);
+	}
+	setVDIFEpochMJD(&vdif_headers[i],lround(floor(mjd)));
+	setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
+      } else {
+	status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i, 0, bits, numchan,
+				   sampleblocklength, 1, totalsamples, complex, "Tt");
+	if (status!=CODIF_NOERROR) {
+	  fprintf(stderr, "Error creating codif header (%d)\n", status);
+	  exit(1);
+	}
+	setCODIFEpochMJD(&codif_headers[i],lround(floor(mjd)));
+	setCODIFFrameMJDSec(&codif_headers[i], mjdsec);
       }
-    
-      mjdsec = llround(mjd*24*60*60);
-      setVDIFEpochMJD(&vdif_headers[i],lround(floor(mjd)));
-      setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
-      if (status!=VDIF_NOERROR) {
-        fprintf(stderr, "Error setting VDIF file (%d)\n", status);
-        exit(1);
-      }      
     }
     
   } else if (mode==LBADR) {
@@ -548,8 +575,8 @@ int main(int argc, char * const argv[]) {
 
   if (rate>0 && udp.enabled) {
     int packetsize = udp.size;
-    if (mode==VDIF) {
-      packetsize -= VDIF_HEADER_BYTES;
+    if (mode==VDIF || mode==CODIF) {
+      packetsize -= header_bytes;
     } else { // Mark5B
       packetsize -= packetsize*((float)MK5BHEADSIZE/(float)(MK5BHEADSIZE+MK5BFRAMESIZE));
     }
@@ -594,13 +621,13 @@ int main(int argc, char * const argv[]) {
   } else if (mode==MARK5B) {
     header = NULL; 
     strcpy(buf+MK5BHEADSIZE*4, "Chris was here");
-  } else if (mode==VDIF) {
+  } else if (mode==VDIF || mode==CODIF) {
     char start[] = "AAAA        AAAA";
     char end[] = "ZZZZ        ZZZZ";
 
-    memcpy(buf+VDIF_HEADER_BYTES, start, sizeof(start));
+    memcpy(buf+header_bytes, start, sizeof(start));
     memcpy(buf+bufsize-sizeof(end), end, sizeof(end));
-    for (i=VDIF_HEADER_BYTES+sizeof(start);i<bufsize-sizeof(end);i++) {
+    for (i=header_bytes+sizeof(start);i<bufsize-sizeof(end);i++) {
       buf[i] = (char)(i%256);
     }
   } else {
@@ -625,7 +652,10 @@ int main(int argc, char * const argv[]) {
 
     } else if (mode==VDIF) {
       ptr = buf;
-      memcpy(ptr, &vdif_headers[currentthread], VDIF_HEADER_BYTES); // Inefficent, but oh well
+      memcpy(ptr, &vdif_headers[currentthread], header_bytes); // Inefficent, but oh well
+    } else if (mode==CODIF) {
+      ptr = buf;
+      memcpy(ptr, &codif_headers[currentthread], header_bytes); // Inefficent, but oh well
     } else { // LBADR
       // Create LBADR header
       mjd2cal(mjd, &day, &month, &year, &ut);
@@ -709,6 +739,14 @@ int main(int argc, char * const argv[]) {
       if (currentthread == numthread) {
         currentthread = 0;
 	mjd = getVDIFFrameDMJD(&vdif_headers[currentthread], framepersec);
+      }
+
+    } else if (mode==CODIF) {
+      currentthread++;
+      if (currentthread == numthread) {
+        currentthread = 0;
+	nextCODIFHeader(&codif_headers[currentthread], framepersec);
+	mjd = getCODIFFrameDMJD(&codif_headers[currentthread], framepersec);
       }
 
     } else {
