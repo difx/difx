@@ -53,6 +53,17 @@ def getExperiments(session):
     '''
     return(session.query(model.Experiment).all())
 
+def getExperimentById(session, id):
+    '''
+    Returns the Experiment object referenced by the given experimentID 
+    '''
+    try:
+    	ret = session.query(model.Experiment).filter_by(id=id).one()
+    except:
+	ret = None
+    return(ret)
+
+
 def getExperimentByCode(session, code):
     '''
     Returns the Experiment object referenced by the given experiment code
