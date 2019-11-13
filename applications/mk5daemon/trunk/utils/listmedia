@@ -149,7 +149,7 @@ def getMediaListByMulticast(maxtime, verbose):
 	results = {}
 	while t < maxtime:
 		try:
-			message, address = s.recvfrom(2048)
+			message, address = s.recvfrom(8000)
 			message = message.decode('utf-8')
 			sender = socket.gethostbyaddr(address[0])[0].split('.')[0]
 			if verbose > 1:

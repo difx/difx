@@ -1,6 +1,36 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
-from string import lower, split
+#**************************************************************************
+#   Copyright (C) 2008-2019 by Walter Brisken                             *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL: $
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
+
+# Note: this utility can run under python2.7 or python3
+
 from sys import argv, exit
 from os import getenv
 import socket
@@ -13,70 +43,70 @@ except ImportError:
 	hasDifxFile == False
 
 program = 'mk5control'
-version = '0.7'
+version = '0.8'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20190113'
+verdate = '20191007'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
 
 def usage(pgm):
-	print '%s ver. %s  %s %s\n' % (program, version, author, verdate)
-	print 'A program that talks to the mk5daemon programs running on the'
-	print 'software correlator computers, including the mark5s and mark6s.\n'
-	print 'usage : %s <command> <machines>\n' % pgm
-	print '<command> can be one of the following (case insensitive):'
-	print '  GetVSN -- tell Mark5 unit to report is modules'
-	print '  ResetMark5 -- runs SSReset followed by ssopen on Mark5'
-	print '  StartMark5A -- starts the Mark5A program'
-	print '  StopMark5A -- stops the Mark5A program'
-	print '  Reboot -- reboots the machine'
-	print '  Poweroff -- powers off the machine'
-	print '  Clear -- used to clear errant "busy" state'
-	print '  stopmk5daemon -- tell the mk5daemon program to quit'
-	print '  killmpifxcorr -- kill -9 mpifxcorr and mpirin'
-	print '  getdirA, getdirB -- get directory of module in A or B'
-	print '  getdir -- get directory of all loaded modules'
-	print '  stopdir -- stop a getdir in progress'
-	print '  condition, conditionR, conditionW -- condition module A'
-	print '  stopcondition -- stop a conditioning process'
-	print '  copy -- copy data from module to file; see below'
-	print '  stopcopy -- stop a copy in progress'
-	print '  getver -- tell machine to report its version info'
-	print '  mountXX -- mount /dev/sdXX /mnt/usb'
-	print '  mountLABEL -- mount /dev/disk/by-label/LABEL /mnt/usb'
-	print '  umount -- umount /mnt/usb'
-	print '  listfs -- list filesystems with labels'
-	print '  startfuseMk5A, startfuseMk5B -- start a fuse mount of module in A or B on /mnt/diskpack'
-	print '  stopfuseMk5 -- stop fuse mount on /mnt/diskpack\n'
-	print '<machines> is a list of cluster members to receive the message;'
-	print '  the format is as follows:'
-	print '    general: the explicit computer hostname, or "all" for all'
-	print '    mark5/6 units:  01 through 24, or "mark5/6" for all'
-	print '    processor node:  000 though 999, or "swc" for all'
-	print '    ranges are allowed:  12-18 or 001-010\n'
-	print 'Data copying requires additional parameters corresponding to the'
-	print 'parameters needed by program mk5cp.\n'
-	print 'Example: mk5control "copy A 12-14 /mnt/usb/bb269a/BR" 03\n'
-	print 'This program responds to the following environment variables:'
-	print '  DIFX_MESSAGE_PORT: Use supplied port number to overrider default'
-	print '              difx multicast port.  Default=%d' % defaultDifxMessagePort
-	print '  DIFX_MESSAGE_GROUP: Use supplied group address to overrider default'
-	print '              difx multicast group.  Default=%s' % defaultDifxMessageGroup
-	print '  DIFX_MACHINES: Points to machines file.  Used to determine mark5'
-	print '              and mark6 units on the cluster.'
-	print '  DIFX_MARK6: a comma-separated list of 2-digit numbers. listed'
-	print '              unit numbers will be mark6 units, not mark5s.  E.g.,'
-	print '              02 maps to mark6fx02 if included, or mark5fx02 if not.'
-	print '              Note that this is not used if DIFX_MACHINES is successfully'
-	print '              found and parsed.'
+	print('%s ver. %s  %s %s\n' % (program, version, author, verdate))
+	print('A program that talks to the mk5daemon programs running on the')
+	print('software correlator computers, including the mark5s and mark6s.\n')
+	print('usage : %s <command> <machines>\n' % pgm)
+	print('<command> can be one of the following (case insensitive):')
+	print('  GetVSN -- tell Mark5 unit to report is modules')
+	print('  ResetMark5 -- runs SSReset followed by ssopen on Mark5')
+	print('  StartMark5A -- starts the Mark5A program')
+	print('  StopMark5A -- stops the Mark5A program')
+	print('  Reboot -- reboots the machine')
+	print('  Poweroff -- powers off the machine')
+	print('  Clear -- used to clear errant "busy" state')
+	print('  stopmk5daemon -- tell the mk5daemon program to quit')
+	print('  killmpifxcorr -- kill -9 mpifxcorr and mpirin')
+	print('  getdirA, getdirB -- get directory of module in A or B')
+	print('  getdir -- get directory of all loaded modules')
+	print('  stopdir -- stop a getdir in progress')
+	print('  condition, conditionR, conditionW -- condition module A')
+	print('  stopcondition -- stop a conditioning process')
+	print('  copy -- copy data from module to file; see below')
+	print('  stopcopy -- stop a copy in progress')
+	print('  getver -- tell machine to report its version info')
+	print('  mountXX -- mount /dev/sdXX /mnt/usb')
+	print('  mountLABEL -- mount /dev/disk/by-label/LABEL /mnt/usb')
+	print('  umount -- umount /mnt/usb')
+	print('  listfs -- list filesystems with labels')
+	print('  startfuseMk5A, startfuseMk5B -- start a fuse mount of module in A or B on /mnt/diskpack')
+	print('  stopfuseMk5 -- stop fuse mount on /mnt/diskpack\n')
+	print('<machines> is a list of cluster members to receive the message;')
+	print('  the format is as follows:')
+	print('    general: the explicit computer hostname, or "all" for all')
+	print('    mark5/6 units:  01 through 24, or "mark5/6" for all')
+	print('    processor node:  000 though 999, or "swc" for all')
+	print('    ranges are allowed:  12-18 or 001-010\n')
+	print('Data copying requires additional parameters corresponding to the')
+	print('parameters needed by program mk5cp.\n')
+	print('Example: mk5control "copy A 12-14 /mnt/usb/bb269a/BR" 03\n')
+	print('This program responds to the following environment variables:')
+	print('  DIFX_MESSAGE_PORT: Use supplied port number to overrider default')
+	print('              difx multicast port.  Default=%d' % defaultDifxMessagePort)
+	print('  DIFX_MESSAGE_GROUP: Use supplied group address to overrider default')
+	print('              difx multicast group.  Default=%s' % defaultDifxMessageGroup)
+	print('  DIFX_MACHINES: Points to machines file.  Used to determine mark5')
+	print('              and mark6 units on the cluster.')
+	print('  DIFX_MARK6: a comma-separated list of 2-digit numbers. listed')
+	print('              unit numbers will be mark6 units, not mark5s.  E.g.,')
+	print('              02 maps to mark6fx02 if included, or mark5fx02 if not.')
+	print('              Note that this is not used if DIFX_MACHINES is successfully')
+	print('              found and parsed.')
 	
 
 def getMark6List():
 	mark6units = getenv('DIFX_MARK6')
 	machinesfile = getenv('DIFX_MACHINES')
 
-	print mark6units, machinesfile, hasDifxFile
+	print(mark6units, machinesfile, hasDifxFile)
 
 	if hasDifxFile and machinesfile != None:
 		mk6list = ''
@@ -99,7 +129,7 @@ def sendCommand(cmd, units, verbose):
 	src = socket.gethostname()
 	dest = ''
 	for u in units:
-		if lower(u) == 'all':
+		if u.lower() == 'all':
 			name = 'all'
 		elif len(u) == 2:
 			mark6units = getMark6List()
@@ -133,7 +163,7 @@ def sendCommand(cmd, units, verbose):
 	  '</difxMessage>' % (src, dest, cmd)
 
 	if verbose:
-		print message
+		print(message)
 
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
@@ -146,7 +176,7 @@ def sendCommand(cmd, units, verbose):
 
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
-	sock.sendto(message, (group, port))
+	sock.sendto(message.encode('utf-8'), (group, port))
 
 if len(argv) < 3:
 	usage(argv[0])
@@ -155,23 +185,23 @@ if len(argv) < 3:
 machines = []
 p = re.compile( '^[0-9]+-[0-9]+$' )
 for a in argv[2:]:
-    if ( p.match( a ) ):
-	    s = split( a, '-')
-	    if len(s[0]) != len(s[1]):
-		    print 'bad syntax: ', a
-		    exit(0)
-	    m = int(s[0])
-	    n = int(s[1])
-	    if len(s[0]) == 2:
-		    for i in range(m, n+1):
-			    machines.append('%02d' % i)
-	    elif len(s[0]) == 3:
-		    for i in range(m, n+1):
-			    machines.append('%03d' % i)
-	    else:
-		    print 'bad syntax: ', a
-		    exit(0)
-    else:
-        machines.append(a)
+	if(p.match(a)):
+		s = a.split('-')
+		if len(s[0]) != len(s[1]):
+			print('bad syntax: ', a)
+			exit(0)
+		m = int(s[0])
+		n = int(s[1])
+		if len(s[0]) == 2:
+			for i in range(m, n+1):
+				machines.append('%02d' % i)
+		elif len(s[0]) == 3:
+			for i in range(m, n+1):
+				machines.append('%03d' % i)
+		else:
+			print('bad syntax: ', a)
+			exit(0)
+	else:
+		machines.append(a)
 
 sendCommand(argv[1], machines, False)

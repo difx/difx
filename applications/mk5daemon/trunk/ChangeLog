@@ -5,6 +5,7 @@ Version 2.6.1
 * python3ify: listcpus listmedia listmodules and killjob
   - note that Walter has converted mk5control, but not yet committed because
     of dependency on the difxfile module which is not yet converted
+* listmedia: increase receive buffer size to 8000
 
 Version 2.6.0
 ~~~~~~~~~~~~~
