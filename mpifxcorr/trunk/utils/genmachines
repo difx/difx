@@ -262,7 +262,7 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
 	incomplete = []
 	while t < maxtime and len(missingVsns) > 0:
 		try:
-			message, address = s.recvfrom(2048)
+			message, address = s.recvfrom(8000)
 			sender = split(socket.gethostbyaddr(address[0])[0], '.')[0]
 			if verbose > 1:
 				print message
