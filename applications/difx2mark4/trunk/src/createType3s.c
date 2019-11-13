@@ -612,9 +612,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                             continue;
                                             }
                                         // FIXME ad hoc temporary fix for non-normalize pcal in zoom mode
-                                        if (abs(cquad) > 10.0)
+                                        if (fabs(cquad) > 10.0)
                                             cquad /= 6e7;
-                                        if (abs(squad) > 10.0)
+                                        if (fabs(squad) > 10.0)
                                             squad /= 6e7;
 
                                         // calculate sample rate (samples/s)
