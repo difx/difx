@@ -2400,7 +2400,28 @@ int CorrParams::load(const std::string &fileName)
 				nWarn += datastreamSetup->setkv(key, value);
 				break;
 			case PARSE_MODE_ANTENNA:
-				nWarn += antennaSetup->setkv(key, value);
+				if(key == "ds_filelist")
+				{
+					// This is a special case: single command that assigns a new datastream and associated filelist
+
+					std::string dsName("_" + antennaSetup->vexName + "_" + value);
+					if(getDatastreamSetup(dsName) != 0)
+					{
+						std::cerr << "Error: two DATASTREAM blocks named " << dsName << std::endl;
+
+						exit(EXIT_FAILURE);
+					}
+					datastreamSetups.push_back(DatastreamSetup(dsName));
+					datastreamSetup = &datastreamSetups.back();
+
+					antennaSetup->addDatastream(dsName);
+					
+					nWarn += datastreamSetup->setkv("filelist", value);
+				}
+				else
+				{
+					nWarn += antennaSetup->setkv(key, value);
+				}
 				break;
 			case PARSE_MODE_EOP:
 				nWarn += eop->setkv(key, value);

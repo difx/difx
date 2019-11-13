@@ -9,6 +9,7 @@ Version 2.7.0
 * Add a new match type for file formats CODIF and CODIFD
 * Added support for CODIF format in vex files (at least, in the vex2difx parser)
 * Don't quit if unused antenna's filelist is absent
+* In ANTENNA {} now can set ds_filelist to a list of filelists, each one creating its own DATASTREAM
 
 Version 2.6.0
 ~~~~~~~~~~~~~

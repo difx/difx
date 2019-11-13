@@ -227,7 +227,7 @@ public:
 
 	std::string filelistFile;
 	bool filelistReadFail;
-private:
+
 	void addDatastream(const std::string &dsName);
 };
 
