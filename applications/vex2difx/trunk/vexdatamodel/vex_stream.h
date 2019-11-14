@@ -82,12 +82,12 @@ public:
 	unsigned int nThread;		// number of threads
 	unsigned int fanout;		// 1, 2 or 4 (VLBA, Mark4 and related formats only)
 	unsigned int VDIFFrameSize;	// size of one logical block of data
-	unsigned int alignmentPeriod;   // in seconds; always 1 for VDIF, can be >1 for CODIF
 	bool singleThread;		// true for single thread VDIF
 	std::vector<int> threads;	// ordered list of threads for VDIF
 	enum DataFormat format;
 	enum SamplingType dataSampling;	// Real or Complex
 	enum DataSource dataSource;
+	unsigned int alignmentPeriod;   // in seconds; always 1 for VDIF, can be >1 for CODIF
 	double difxTsys;		// The DiFX .input file TSYS value for this datastream
 
 private:

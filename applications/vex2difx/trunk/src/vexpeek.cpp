@@ -164,7 +164,7 @@ void antennaSummary(const VexData *V, int doFormat, int doUsage)
 		if(doUsage)
 		{
 			int p = std::cout.precision();
-			double drate, usage;
+			double drate=0.0, usage;
 			usage = totalDiskUsageGB(V, it->first, &drate);
 			std::cout.precision(3);
 			std::cout << std::fixed << " " << usage << " " << (int)drate;

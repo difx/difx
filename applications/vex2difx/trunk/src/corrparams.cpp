@@ -1360,17 +1360,6 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 		defaultDatastreamSetup.dataSource = DataSourceMark6;
 		defaultDatastreamSetup.basebandFiles.push_back(VexBasebandData(value, 0, -1));
 	}
-	else if(key == "filelist")
-	{
-		if(defaultDatastreamSetup.dataSource != DataSourceFile && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
-		{
-			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[defaultDatastreamSetup.dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
-			++nWarn;
-		}
-		defaultDatastreamSetup.dataSource = DataSourceFile;
-		filelistFile = value;
-		filelistReadFail = !loadBasebandFilelist(value, defaultDatastreamSetup.basebandFiles);
-	}
 	else if(key == "mark6filelist")
 	{
 		if(defaultDatastreamSetup.dataSource != DataSourceMark6 && defaultDatastreamSetup.dataSource != DataSourceUnspecified)
@@ -2400,7 +2389,7 @@ int CorrParams::load(const std::string &fileName)
 				nWarn += datastreamSetup->setkv(key, value);
 				break;
 			case PARSE_MODE_ANTENNA:
-				if(key == "ds_filelist")
+				if(key == "filelist")
 				{
 					// This is a special case: single command that assigns a new datastream and associated filelist
 

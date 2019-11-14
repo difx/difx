@@ -491,7 +491,7 @@ static int getToneSetId(vector<vector<unsigned int> > &toneSets, const vector<un
 	return toneSets.size() - 1;
 }
 
-static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<unsigned int> >& toneSets, const VexMode *mode, const string &antName, int startBand, const VexSetup &setup, const VexStream &stream, const CorrSetup *corrSetup, enum V2D_Mode v2dMode)
+static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<unsigned int> >& toneSets, const VexMode *mode, const string &antName, unsigned int startBand, const VexSetup &setup, const VexStream &stream, const CorrSetup *corrSetup, enum V2D_Mode v2dMode)
 {
 	vector<pair<int,int> > bandMap;
 
@@ -510,14 +510,14 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		
 		exit(EXIT_FAILURE);
 	}
-	int nRecordChan = stream.nRecordChan;
+	unsigned int nRecordChan = stream.nRecordChan;
 
 	stream.snprintDifxFormatName(D->datastream[dsId].dataFormat, DIFXIO_FORMAT_LENGTH);
 	D->datastream[dsId].dataFrameSize = stream.dataFrameSize();
 	D->datastream[dsId].quantBits = stream.nBit;
 	DifxDatastreamAllocBands(D->datastream + dsId, nRecordChan);
 
-	for(int i = 0; i < nRecordChan; ++i)
+	for(unsigned int i = 0; i < nRecordChan; ++i)
 	{
 		if(i + startBand >= setup.channels.size())
 		{
@@ -1962,7 +1962,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		{
 			const std::string &antName = it->first;
 			const VexSetup &setup = it->second;
-			int startBand;
+			unsigned int startBand;
 			startBand = 0;
 			for(unsigned int ds = 0; ds < setup.nStream(); ++ds)
 			{
@@ -1978,7 +1978,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		{
 			const std::string &antName = it->first;
 			const VexSetup &setup = it->second;
-			int startBand;
+			unsigned int startBand;
 			startBand = 0;
 
 			if(find(J.jobAntennas.begin(), J.jobAntennas.end(), antName) == J.jobAntennas.end())
@@ -2091,9 +2091,9 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 							delete [] parentFreqIndices;
 						} // if zoom freqs
 
-						int nFreqClockOffsets = antennaSetup->freqClockOffs.size();
-						int nFreqClockOffsetsDelta = antennaSetup->freqClockOffsDelta.size();
-						int nFreqPhaseDelta = antennaSetup->freqPhaseDelta.size();
+						unsigned int nFreqClockOffsets = antennaSetup->freqClockOffs.size();
+						unsigned int nFreqClockOffsetsDelta = antennaSetup->freqClockOffsDelta.size();
+						unsigned int nFreqPhaseDelta = antennaSetup->freqPhaseDelta.size();
 						if(nFreqClockOffsets > 0)
 						{
 							if((startBand + D->datastream[D->nDatastream].nRecFreq) > nFreqClockOffsets ||
@@ -2138,7 +2138,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 						}
 
 						// TODO: consider specifying loOffsets per datastream rather than per antenna
-						int nLoOffsets = antennaSetup->loOffsets.size();
+						unsigned int nLoOffsets = antennaSetup->loOffsets.size();
 						if(nLoOffsets > 0)
 						{
 							if((startBand + D->datastream[D->nDatastream].nRecFreq) > nLoOffsets)
