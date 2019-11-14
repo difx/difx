@@ -75,7 +75,6 @@ struct mark5_format_codif
 
 int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex_decodeFunc *complex_decode, countFunc *count);
 double get_codif_framens(const codif_header *header);
-uint32_t get_codif_frames_per_period(const codif_header *header);
 int get_codif_framegranularity(const codif_header *header);
 
 
@@ -3957,7 +3956,7 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 
 		ms->payload = ms->frame + ms->payloadoffset;
 		ms->framegranularity = get_codif_framegranularity(header);
-		ms->framesperperiod = get_codif_frames_per_period(header);
+		ms->framesperperiod = getCODIFFramesPerPeriod(header);
 		ms->alignmentseconds = getCODIFPeriod(header);
 		ms->Mbps = ((double)ms->databytes * ms->framesperperiod * 8) / ms->alignmentseconds/1e6;
 		

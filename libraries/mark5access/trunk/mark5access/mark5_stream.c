@@ -56,7 +56,9 @@ void __attribute__ ((constructor)) autocall_mark5_library_init(void)
 
 // CODIF Stubs to allow conditional dependencies
 
-#ifndef HAVE_CODIFIO
+#ifdef HAVE_CODIFIO
+#include "codifio.h"
+#else
 int get_codif_threads(const unsigned char *data, size_t length, int dataframesize) {
   fprintf(m5stderr, "mark5_stream: Error - Not compiled with CODIF!! Quitting\n");
   exit(1);
@@ -64,12 +66,9 @@ int get_codif_threads(const unsigned char *data, size_t length, int dataframesiz
 
 int find_codif_frame(const unsigned char *data, int length, size_t *offset, int *framesize, int *headersize) {
  fprintf(m5stderr, "mark5_stream: Error - Not compiled with CODIF!! Quitting\n");
+  exit(1);
 }
 #endif
-
-
-
-
 
 void mark5_library_init(void)
 {
