@@ -1,0 +1,39 @@
+digraph dependencies
+{
+	mpifxcorr [shape=diamond]
+	vdifio [shape=oval]
+	mark5access [shape=oval]
+	ssapi [shape=oval]
+	mark6sg [shape=oval]
+	mark6meta [shape=oval]
+	difxmessage [shape=oval]
+	codifio [shape=oval]
+	dirlist [shape=oval]
+	difxio [shape=oval]
+	difx2fits [shape=diamond]
+	difx2mark4 [shape=diamond]
+	vex2difx [shape=diamond]
+	mk5daemon [shape=diamond]
+	calcif2 [shape=diamond]
+
+	mpifxcorr -> vdifio
+	mpifxcorr -> mark5access
+	mpifxcorr -> difxmessage
+	mpifxcorr -> ssapi [style=dashed]
+	mpifxcorr -> dirlist [style=dashed]
+	mpifxcorr -> mark6sg [style=dashed]
+	vdifio -> mark6sg [style=dashed]
+	vdifio -> codifio [style=dashed]
+	mark5access -> mark6sg [style=dashed]
+	mark5access -> codifio [style=dashed]
+	mark6sg -> difxmessage [style=dashed]
+	difx2fits -> difxio
+	difx2mark4 -> difxio
+	vex2difx -> difxio
+	vex2difx -> dirlist
+	mk5daemon -> ssapi [style=dashed]
+	mk5daemon -> difxmessage
+	mk5daemon -> mark6meta [style=dashed]
+	mk5daemon -> mark6sg [style=dashed]
+	calcif2 -> difxio
+}
