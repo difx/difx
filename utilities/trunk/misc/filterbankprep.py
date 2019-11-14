@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 #
 # Command generator
 # for VLBI single-antenna data to SIGPROC filterbank conversion
