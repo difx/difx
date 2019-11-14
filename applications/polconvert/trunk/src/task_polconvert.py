@@ -706,6 +706,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     spw = int(spw)
   except:
     printError("ERROR! spw should be an integer!")
+  printMsg("suggested spw is %d" % spw)
 
 
 
@@ -1206,7 +1207,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
     spwsel = list(set(spwsel[spwsel>=0]))
     if len(spwsel)>1:
-       printError("There is more than one possible spw for some IFs!")
+       printError("There is more than one possible spw for some IFs! " + str(spwsel))
 
     spw = spwsel[0]
     printMsg('Selected spw: %d\n' % spw)

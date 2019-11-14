@@ -160,10 +160,10 @@ try:
 except Exception, ex:
     raise ex
 
-# Use 1..4 or -1 for the spw
+# Use 0..3 or -1 (figure it out) for the spw
 try:
     if type(spwToUse) == int:
-        if spwToUse in [-1, 1, 2, 3, 4]: pass
+        if spwToUse in [-1, 0, 1, 2, 3]: pass
         else:                            spwToUse = -1
 except Exception, ex:
     raise ex
