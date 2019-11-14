@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -10,7 +10,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -54,24 +54,24 @@ def getExpname():
 			return match.group(1)
 
 	# no exper_name statement found
-	print "Error: no exper_name statement found in the vex-file"
+	print("Error: no exper_name statement found in the vex-file")
 	sys.exit(1)
 
 def getEOPname():
 	'''
 	finds and returns the name of the first EOP definition found in the vexfile
 	exits program if no EOP definition was found
-        '''
+	'''
 
 	# parse EOP section
-        for i in range(index["EOP"]["start"],index["EOP"]["stop"]+1):
-                match = re.match("^def\s*(.*);", content[i])
-                if match:
-                        return match.group(1)
+	for i in range(index["EOP"]["start"],index["EOP"]["stop"]+1):
+		match = re.match("^def\s*(.*);", content[i])
+		if match:
+			return match.group(1)
 
-        # no def statement found
-        print "Error: no EOP definitions found in the vex-file"
-        sys.exit(1)
+	# no def statement found
+	print("Error: no EOP definitions found in the vex-file")
+	sys.exit(1)
 
 	
 def printGlobal(expname):
@@ -128,17 +128,17 @@ def printSite():
 	'''
 	temp = {}
 	#determine the station to site mapping
- 	for i in range(index["STATION"]["start"],index["STATION"]["stop"]+1):
-                # new definition
-                match = re.match("^def\s*(.*);", content[i])
-                if match:
+	for i in range(index["STATION"]["start"],index["STATION"]["stop"]+1):
+		# new definition
+		match = re.match("^def\s*(.*);", content[i])
+		if match:
 			station = match.group(1)
 			temp[station] = ""
-              	match = re.match("^ref\s*\$SITE\s*=\s*(.*)\s*;", content[i])
+		match = re.match("^ref\s*\$SITE\s*=\s*(.*)\s*;", content[i])
 		if match:
 			temp[station] = match.group(1)
 			
-	station2site = {v: k for k, v in temp.iteritems()}
+	station2site = {v: k for k, v in temp.items()}
 			
 
 	for i in range(index["SITE"]["start"],index["SITE"]["stop"]+1):
@@ -188,12 +188,12 @@ def printFreq():
 		if match:
 			freq = float(match.group(1))
 			selFreq = 0.0
-			for key, value in bands.iteritems():
+			for key, value in bands.items():
 				if value < freq and value > selFreq:
 					selFreq = value
 					selBand = key
 			if selFreq == 0.0:
-				print "Error: Unknown frequency found in the FREQ section"
+				print("Error: Unknown frequency found in the FREQ section")
 				sys.exit(1)
 			count += 1
 
@@ -266,7 +266,7 @@ def printClock():
 	'''
 	startTime = "" 
 
- 	# determine the start time of the first scan
+	# determine the start time of the first scan
 	for i in range(index["SCHED"]["start"],index["SCHED"]["stop"]+1):
 		match = re.match("start\s*=\s*(.*);\s*mode.*", content[i])
 		if match:
@@ -309,8 +309,8 @@ def parseVex():
 		# strip leading whitespaces
 		line = vexline.lstrip()
 		# skip comments or empty lines
-                if line.startswith('*') or len(line) == 0:
-                        continue
+		if line.startswith('*') or len(line) == 0:
+			continue
 
 		# append line to vex buffer
 		vexContent.append(line)
@@ -321,7 +321,7 @@ def parseVex():
 		match = reSection.match(line)
 		if match:
 			
-			if 'start' in section.keys():
+			if 'start' in list(section.keys()):
 				section["stop"] = count-1
 				vexIndex[sectionName] = section
 				section = {}
@@ -356,7 +356,7 @@ def buildCodeMap():
 			if len(token) == 0:
 				continue
 			if len(token) > 2:
-				print "Error: Illegal format of the code mapping file. See help for details about the correct format"
+				print("Error: Illegal format of the code mapping file. See help for details about the correct format")
 				sys.exit(1)
 			codes[token[1]] = token[0]
 	else:
@@ -365,9 +365,9 @@ def buildCodeMap():
 		for key in codes:
 			codes[key] =  chr(ascii)
 			ascii += 1
-	print "Using the following station code mapping (use --codes option to change):"
-	for key,value in codes.iteritems():
-		print "%s = %s" % (key,value)
+	print("Using the following station code mapping (use --codes option to change):")
+	for key,value in codes.items():
+		print("%s = %s" % (key,value))
 				
 	
 if __name__ == "__main__":
@@ -379,18 +379,18 @@ if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description=description, epilog=epilog)
 	parser.add_argument('vexfile', metavar='vexfile', type=argparse.FileType('r'),
-                    help='the vex file to be converted to ovex')
+		    help='the vex file to be converted to ovex')
 	parser.add_argument('ovexfile', metavar='ovexfile',
-                    help='the name of the output ovex file')
+		    help='the name of the output ovex file')
 	parser.add_argument('-c', "--codes" , type=argparse.FileType('r'), dest="codes",
-                    help='the name of the file containing the mappings of one letter to two letter station codes. For format of the mapping file see below.')
+		    help='the name of the file containing the mappings of one letter to two letter station codes. For format of the mapping file see below.')
 	parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
 	args = parser.parse_args()
 
 	# check that output file does not exist yet
 	if os.path.exists(args.ovexfile):
-		print "Output file (%s) already exist. Delete it first" % args.ovexfile
+		print("Output file (%s) already exist. Delete it first" % args.ovexfile)
 		sys.exit(1)
 
 	# open output file
@@ -426,4 +426,4 @@ if __name__ == "__main__":
 
 	out.close()
 
-	print "Successfully wrote %s" % args.ovexfile
+	print("Successfully wrote %s" % args.ovexfile)
