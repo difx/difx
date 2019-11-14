@@ -473,8 +473,6 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 
 Mode::~Mode()
 {
-  int status;
-
   if(perbandweights)
   {
     for(int i=0;i<config->getNumBufferedFFTs(configindex);++i)
@@ -543,25 +541,17 @@ Mode::~Mode()
       vectorFree(fftd);
       if(isfft) {
 	vectorFreeFFTC_cf32(pFFTSpecC);
-        if (status != vecNoErr)
-          csevere << startl << "Error in freeing FFT spec!!!" << status << endl;
       }
       else{
 	vectorFreeDFTC_cf32(pDFTSpecC);
-        if (status != vecNoErr)
-          csevere << startl << "Error in freeing DFT spec!!!" << status << endl;
       }
       break;
     case 0: //zeroth order interpolation, "post-F"
       if(isfft) {
 	vectorFreeFFTR_f32(pFFTSpecR);
-        if (status != vecNoErr)
-          csevere << startl << "Error in freeing FFT spec!!!" << status << endl;
       }
       else{
 	vectorFreeDFTR_f32(pDFTSpecR);
-        if (status != vecNoErr)
-          csevere << startl << "Error in freeing DFT spec!!!" << status << endl;
       }
       break;
   }

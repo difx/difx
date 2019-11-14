@@ -681,7 +681,6 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   const Mode * m1, * m2;
   const cf32 * vis1;
   const cf32 * vis2;
-  uint64_t offsetsamples;
   double sampletimens;
   int starttimens;
   int fftsize;
@@ -698,6 +697,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     binloop = procslots[index].numpulsarbins;
   if(procslots[index].pulsarbin)
     binweights = currentpolyco->getBinWeights();
+  else
+    binweights = 0;
   numBufferedFFTs = config->getNumBufferedFFTs(procslots[index].configindex);
 
   //set up the mode objects that will do the station-based processing
@@ -724,8 +725,6 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       // Calculate the FFT size in number of samples.
       fftsize = 2*config->getFNumChannels(config->getDRecordedFreqIndex(procslots[index].configindex, j, 0));
       
-      // Calculate the number of offset samples. The modulo PCal bins is done in the pcal object!
-      offsetsamples = static_cast<uint64_t>(starttimens/sampletimens) + startblock*fftsize;	/* FIXME: This value is never used! */
       modes[j]->resetpcal();
     }
   }
@@ -1601,6 +1600,7 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   cf32* srcpointer;
   cf32 meanresult;
 
+  applieddelay = 0.0;
   delaywindow = config->getFNumChannels(freqindex)/(config->getFreqTableBandwidth(freqindex)); //max lag (plus and minus)
   localfreqindex = config->getBLocalFreqIndex(procslots[index].configindex, baseline, freqindex);
   xmacstridelen = config->getXmacStrideLength(procslots[index].configindex);

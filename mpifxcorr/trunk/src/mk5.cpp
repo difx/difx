@@ -678,7 +678,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
   if (!tcp && lasttime!=0.0) {
     // Print statistics. 
     double delta, thistime;
-    float dropped, oo, dup, rate;
+    float dropped, oo, rate;
 
     thistime = tim();
     delta = thistime-lasttime;
@@ -689,11 +689,9 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
       if (npacket==0) {
 	dropped = 0;
 	oo = 0;
-	dup = 0;
       } else {
 	dropped = (float)packet_drop*100.0/(float)(npacket+packet_drop);
 	oo = (float)packet_oo*100.0/(float)npacket;
-	dup = (float)packet_duplicate*100.0/(float)npacket;
       }
       rate = packet_sum/delta*8/1e6;
     
@@ -739,7 +737,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
     unsigned long long sequence;
     struct msghdr msg;
     struct iovec iov[2];
-    unsigned int headerpackets;
+//    unsigned int headerpackets;
 
     memset(&msg, 0, sizeof(msg));
     msg.msg_iov        = &iov[0];
@@ -749,7 +747,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
     iov[1].iov_base = udp_buf;
     iov[1].iov_len = MAXPACKETSIZE;
 
-    headerpackets = (10016*2-1)/udpsize+2;
+//    headerpackets = (10016*2-1)/udpsize+2;
 
     packet_segmentend = packet_segmentstart+(bytestoread-(udp_offset%udpsize)-1)/udpsize;
     if (udp_offset>0 && udp_offset<bytestoread) packet_segmentend++; 
@@ -936,7 +934,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
     }
 
     // Replace missing packets with fill data
-    bool headermissed = false;
+//    bool headermissed = false;
     for (unsigned int i=0; i<segmentsize; i++) {
       if (!packets_arrived[i]) {
 	//cinfo << startl << "***** Dropped " << packet_segmentstart+i << "(" << i << ")" << endl;
@@ -951,7 +949,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
 	} else {
 	  memcpy(ptr+udp_offset+(i-1)*udpsize,invalid_buf,udpsize);	  
 	}
-	if (i<headerpackets) headermissed = true;
+//	if (i<headerpackets) headermissed = true;
       }
     }
     /*    if (headermissed) {

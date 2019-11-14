@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
   Model * model;
   char * inputdifxfile;
   int * baselineindices;
-  double * vistimes;
   double ** dmdelays;
   int ** dmoffsets;
   char ***** visibilities;
@@ -55,12 +54,12 @@ int main(int argc, char *argv[])
   ifstream input;
   ofstream output;
   string savedir, reldifxfile, savedifxfile;
-  int lastslash;
+  size_t lastslash;
   int fchan, lastconfigindex, maxnumintegrations;
   int mindelayoffset, maxdelayoffset, poloffset;
   int startmjd, currentmjd, currentfreq, baseline, offset=0;
   double dm, dur, inttime, chanfreq, startseconds, currentseconds, lastseconds=0;
-  double snipstartmjd, snipendmjd;
+  double snipstartmjd = 0.0, snipendmjd = 0.0;
   bool dotrim = false;
   pol[2] = 0;
 
@@ -180,7 +179,6 @@ int main(int argc, char *argv[])
   lastconfigindex = -1;
   tempbuffer = new char[Visibility::HEADER_BYTES + sizeof(cf32)*config->getMaxNumChannels()];
   visibilities = new char****[maxnumintegrations];
-  vistimes = new double[maxnumintegrations];
   for(int i=0;i<maxnumintegrations;i++) {
     visibilities[i] = new char***[config->getNumBaselines() + config->getNumDataStreams()];
   }

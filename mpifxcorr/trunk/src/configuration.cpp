@@ -59,7 +59,7 @@ static unsigned int calcstridelength(unsigned int arraylength)
 }
 
 Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, double restartsec)
-  : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec), enableMpi(true)
+  : mpiid(id), enableMpi(true), consistencyok(true), restartseconds(restartsec), jobname("na")
 {
   commonread = false;
   datastreamread = false;
@@ -103,7 +103,7 @@ Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, do
 
 
 Configuration::Configuration(const char * configfile, int id, double restartsec)
-  : jobname("na"), mpiid(id), consistencyok(true), restartseconds(restartsec), enableMpi(false)
+  : mpiid(id), enableMpi(false), consistencyok(true), restartseconds(restartsec), jobname("na")
 {
   commonread = false;
   datastreamread = false;
