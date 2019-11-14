@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2018 by Adam Deller                                *
+ *   Copyright (C) 2006-2019 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,12 +42,14 @@
 #include "nativemk5.h"
 #include "mark5bfile.h"
 #include "mark5bmark5.h"
-#include "mark5bmark6_datastream.h"
 #include "vdiffile.h"
 #include "vdifnetwork.h"
 #include "vdiffake.h"
 #include "vdifmark5.h"
+#ifdef HAVE_MARK6SG
+#include "mark5bmark6_datastream.h"
 #include "vdifmark6_datastream.h"
+#endif
 #include "vdifsharedmemory.h"
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
@@ -427,12 +429,14 @@ int main(int argc, char *argv[])
       if(config->isVDIFFile(datastreamnum)) {
         stream = new VDIFDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         cverbose << startl << "Opening VDIFDataStream" << endl;
+#ifdef HAVE_MARK6SG
       } else if(config->isVDIFMark6(datastreamnum)) {
         stream = new VDIFMark6DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         cverbose << startl << "Opening VDIFMark6DataStream" << endl;
       } else if(config->isMark5BMark6(datastreamnum)) {
         stream = new Mark5BMark6DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         cverbose << startl << "Opening Mark5BMark6DataStream" << endl;
+#endif
       } else if(config->isVDIFMark5(datastreamnum)) {
         stream = new VDIFMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         cverbose << startl << "Opening VDIFMark5DataStream" << endl;

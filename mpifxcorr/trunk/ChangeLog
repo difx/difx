@@ -12,6 +12,7 @@ Version 2.7
 * Caught case where complex data is set to use zeroth order fringe rotation (which isn't implemented)
 * startdifx, genmachines: increase multicast receive buffer size to 8000
 * python3: joblist, jobdisks, jobstatus
+* can compile again without mark6 libraries
 * Post DiFX-2.6
 
 Version 2.6

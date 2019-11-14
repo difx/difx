@@ -12,6 +12,14 @@ mark5_files = \
 	vdifmark5_stubs.cpp
 endif
 
+if WITH_MARK6SG
+mark6_files = \
+	vdifmark6_datastream.cpp \
+	mark5bmark6_datastream.cpp
+else
+mark6_files =
+endif
+
 bin_PROGRAMS = mpifxcorr neuteredmpifxcorr
 
 mpifxcorr_SOURCES = \
@@ -38,9 +46,8 @@ mpifxcorr_SOURCES = \
 	alert.cpp \
 	pcal.cpp \
 	switchedpower.cpp \
-	vdifmark6_datastream.cpp \
-	mark5bmark6_datastream.cpp \
-	$(mark5_files)
+	$(mark5_files) \
+	$(mark6_files)
 
 library_includedir = $(includedir)/mpifxcorr
 library_include_HEADERS = \
@@ -99,9 +106,8 @@ libmpifxcorr_a_SOURCES = \
 	vdifsharedmemory.cpp \
 	sharedmemorybuffer.cpp \
 	datamuxer.cpp \
-	vdifmark6_datastream.cpp \
-	mark5bmark6_datastream.cpp \
-	$(mark5_files)
+	$(mark5_files) \
+	$(mark6_files)
 
 libfxcorr_a_SOURCES = \
 	configuration.cpp \
@@ -132,9 +138,8 @@ neuteredmpifxcorr_SOURCES = \
 	vdifsharedmemory.cpp \
 	sharedmemorybuffer.cpp \
 	datamuxer.cpp \
-	vdifmark6_datastream.cpp \
-	mark5bmark6_datastream.cpp \
-	$(mark5_files)
+	$(mark5_files) \
+	$(mark6_files)
 
 neuteredmpifxcorr_CXXFLAGS = -DNEUTERED_DIFX $(AM_CXXFLAGS)
 

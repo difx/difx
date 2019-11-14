@@ -67,6 +67,7 @@ PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.2], [hasmark6sg=true], [hasmark6sg=
 AM_CONDITIONAL(WITH_MARK6SG, $hasmark6sg)
 if test $hasmark6sg = true; then
   CPPFLAGS="${CPPFLAGS} ${MARK6SG_CFLAGS}"
+  AC_DEFINE([HAVE_MARK6SG], 1, [1=has MARK5SG])
   AC_DEFINE(hasmark6sg, 1, [Define if you have mark6sg library.])
 fi
 
