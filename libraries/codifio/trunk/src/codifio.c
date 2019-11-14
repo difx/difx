@@ -425,6 +425,8 @@ void printCODIFHeader(const codif_header *header, enum CODIFHeaderPrintLevel pri
 	}
 }
 
+#endif
+
 uint32_t getCODIFFramesPerPeriod(const codif_header *header)
 {
     uint64_t databytes = (uint64_t)getCODIFFrameBytes(header);
@@ -437,4 +439,3 @@ uint32_t getCODIFFramesPerPeriod(const codif_header *header)
 }
 
 
-#endif
