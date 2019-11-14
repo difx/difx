@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2018 by Walter Brisken                             *
+ *   Copyright (C) 2006-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -155,7 +155,7 @@ static int decode_short(const char *filename, const char *formatname, const char
 		}
 		else
 		{
-			printf("  did a seek of %lld bytes; remaining offset = %d bytes\n", (long long)seeksize, (int)(offset-seeksize));
+			fprintf(stderr, "  did a seek of %lld bytes; remaining offset = %d bytes\n", (long long)seeksize, (int)(offset-seeksize));
 		}
 
 		offset -= seeksize;
@@ -178,9 +178,9 @@ static int decode_short(const char *filename, const char *formatname, const char
 
 	if(n % (long long)(ms->samplegranularity) > 0LL)
 	{
-		printf("EOF reached; reducing read size from %d", n);
+		fprintf(stderr, "EOF reached; reducing read size from %d", n);
 		n -= (n % (long long)(ms->samplegranularity));
-		printf(" to %d\n", n);
+		fprintf(stderr, " to %d\n", n);
 	}
 
 	start = bytes2samples(ms, offset);
@@ -194,7 +194,7 @@ static int decode_short(const char *filename, const char *formatname, const char
 		
 		if(status < 0)
 		{
-			printf("<EOF> status=%d\n", status);
+			fprintf(stderr, "<EOF> status=%d\n", status);
 			
 			break;
 		}
@@ -296,9 +296,9 @@ static int decode(const char *filename, const char *formatname, const char *f, l
 
 	if(n % (long long)(ms->samplegranularity) > 0LL)
 	{
-		printf("EOF reached; reducing read size from %lld", n);
+		fprintf(stderr, "EOF reached; reducing read size from %lld", n);
 		n -= (n % (long long)(ms->samplegranularity));
-		printf(" to %lld\n", n);
+		fprintf(stderr, " to %lld\n", n);
 	}
 
 	for(; n > 0; n -= chunk)
@@ -311,7 +311,7 @@ static int decode(const char *filename, const char *formatname, const char *f, l
 		
 		if(status < 0)
 		{
-			printf("<EOF> status=%d\n", status);
+			fprintf(stderr, "<EOF> status=%d\n", status);
 			
 			break;
 		}
@@ -374,9 +374,9 @@ static int decode_complex(const char *filename, const char *formatname, const ch
 
 	if(n % (long long)(ms->samplegranularity) > 0LL)
 	{
-		printf("EOF reached; reducing read size from %lld", n);
+		fprintf(stderr, "EOF reached; reducing read size from %lld", n);
 		n -= (n % (long long)(ms->samplegranularity));
-		printf(" to %lld\n", n);
+		fprintf(stderr, " to %lld\n", n);
 	}
 
 	for(; n > 0; n -= chunk)
@@ -389,7 +389,8 @@ static int decode_complex(const char *filename, const char *formatname, const ch
 		
 		if(status < 0)
 		{
-			printf("<EOF> status=%d\n", status);
+			fflush(stdout);
+			fprintf(stderr, "<EOF> status=%d\n", status);
 			
 			break;
 		}
@@ -408,6 +409,7 @@ static int decode_complex(const char *filename, const char *formatname, const ch
 			printf("\n");
 		}
 	}
+	fflush(stdout);
 
 	fprintf(stderr, "%lld / %lld complex samples unpacked\n", unpacked, total);
 
@@ -428,7 +430,6 @@ int main(int argc, char **argv)
 	long long n;
 	int r;
 	int retval;
-	int doublesideband = 0;
 	int formatoverride = 0;
 	int complexdata = 0;
 	int optind = 1, optc = 0;
@@ -450,7 +451,6 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[optind], "-d") == 0 ||
 		        strcmp(argv[optind], "--double") == 0)
 		{
-			doublesideband = 1;
 			printf("Assuming double sideband data\n");
 		}
 		else if(strncmp(argv[optind], "--format=", 9) == 0)

@@ -304,23 +304,6 @@ void blank_vdif_EDV4(const void *packed, int offsetsamples, float **unpacked, in
 
 void blank_vdif_EDV4_complex(const void *packed, int offsetsamples, mark5_float_complex **unpacked, int nsamp, int *invalidsamples);
 
-/*   VDIFB pseudo-format */
-
-struct mark5_format_generic *new_mark5_format_vdifb(int Mbps, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
-
-struct mark5_format_generic *new_mark5_format_generalized_vdifb(int framesperperiod, int alignmentseconds, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
-
-void mark5_format_vdifb_set_leapsecs(struct mark5_stream *ms, int leapsecs);
-
-int find_vdifb_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize);
-
-int get_vdifb_chans_per_thread(const unsigned char *data);
-
-int get_vdifb_quantization_bits(const unsigned char *data);
-
-int get_vdifb_complex(const unsigned char *data);
-
-int get_vdifb_threads(const unsigned char *data, size_t length, int dataframesize);
 
   /* CODIF format: beta */
 
@@ -330,10 +313,6 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
 
 int get_codif_threads(const unsigned char *data, size_t length, int dataframesize);
   
-/*   K5 format: not yet complete */
-
-struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit, int submode);
-
 /*   KVNMark5B format: under development */
 
 struct mark5_format_generic *new_mark5_format_kvn5b(int Mbps, int nchan, int nbit, int decimation);

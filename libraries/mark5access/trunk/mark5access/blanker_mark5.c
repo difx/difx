@@ -328,7 +328,7 @@ int blanker_codif(struct mark5_stream *ms)
 		return 0;
 	}
 
-	data = (unsigned long long *)ms->payload;
+	data = (uint64_t *)ms->payload;
 
 	nword = ms->databytes/8;
 

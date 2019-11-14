@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: format_vdif.c 7371 2016-07-14 01:27:03Z ChrisPhillips $
+// $Id$
 // $HeadURL: $
-// $LastChangedRevision: 7371 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2016-07-14 11:27:03 +1000 (Thu, 14 Jul 2016) $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -2820,7 +2820,6 @@ static int codif_complex_decode_4channel_4bit(struct mark5_stream *ms, int nsamp
 static int codif_complex_decode_8channel_4bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
-	const float complex *fcp0, *fcp1, *fcp2, *fcp3;
 	int o, i, j;
 	int nblank = 0;
 
@@ -4414,7 +4413,6 @@ struct mark5_format_generic *new_mark5_format_codif(int framesperperiod,
     static int first = 1;
     struct mark5_format_generic *f;
     struct mark5_format_codif *v;
-    int decoderindex = 0;
 
     if(first)
 	{
@@ -4510,7 +4508,7 @@ static int is_legal_codif_framesize(int framesize)
  */
 int find_codif_frame(const unsigned char *data, int length, size_t *offset, int *framesize, int *headersize)
 {
-    int refEpochA, refEpochB, bitsA, bitsB, versionA, versionB, chanA, chanB;
+    int refEpochA, refEpochB, versionA, versionB, chanA, chanB;
     uint32_t fsA, fsB, secA, secB;
     codif_header *header;
     

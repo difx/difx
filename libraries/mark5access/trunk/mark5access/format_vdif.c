@@ -3817,8 +3817,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	unsigned int word2;
 	const unsigned char *headerbytes;
 	unsigned char bitspersample;
-	int framensNum, dataframelength;
-	double framensDen;
+	int dataframelength;
 	double dns;
 
 	if(!ms)
@@ -3856,9 +3855,6 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
         ms->framegranularity = 1;
         if(ms->framesperperiod > 0 && ms->alignmentseconds > 0)
         {
-		//framensNum = ms->databytes*8*1000;     
-		//framensDen = ms->Mbps;
-
 		ms->framens = 1.0e9*(double)ms->alignmentseconds/ms->framesperperiod;
 
 		for(ms->framegranularity = 1; ms->framegranularity < 128; ms->framegranularity *= 2)

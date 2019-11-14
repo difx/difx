@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken                             *
+ *   Copyright (C) 2007-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,8 +36,8 @@
 
 const char program[] = "m5test";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.3";
-const char verdate[] = "20170426";
+const char version[] = "1.4";
+const char verdate[] = "20191114";
 
 const int ChunkSize = 10000;
 
@@ -49,7 +49,7 @@ struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
-	printf("\nBeing killed.\n\n");
+	fprintf(stderr, "\nBeing killed.\n\n");
 	die = 1;
 
 	sigaction(SIGINT, &old_sigint_action, 0);
@@ -76,6 +76,7 @@ int usage(const char *pgm)
 	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 	printf("  <report> use 0 to report all timestamps, 1 to report once a second\n\n");
+
 	return EXIT_SUCCESS;
 }
 
@@ -95,7 +96,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 
 	if(!ms)
 	{
-		printf("problem opening %s\n", filename);
+		fprintf(stderr, "problem opening %s\n", filename);
 
 		return 0;
 	}
@@ -115,14 +116,18 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 			break;
 		}
 
-		if (!ms->iscomplex) 
-		  status = mark5_stream_decode(ms, ChunkSize, data);
+		if(!ms->iscomplex) 
+		{
+			status = mark5_stream_decode(ms, ChunkSize, data);
+		}
 		else
-		  status = mark5_stream_decode_complex(ms, ChunkSize/2, data);
+		{
+			status = mark5_stream_decode_complex(ms, ChunkSize/2, (mark5_float_complex **)data);
+		}
 		
 		if(status < 0)
 		{
-			printf("<EOF> status=%d\n", status);
+			fprintf(stderr, "<EOF> status=%d\n", status);
 			break;
 		}
 		else
@@ -137,13 +142,13 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 
 			mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
 
-			if (omjd <= 0) 
+			if(omjd <= 0) 
 			{
 				omjd = mjd;
 				osec = sec;
 			}
 
-			if ((mjd - omjd) >= 2 || (mjd < omjd))
+			if((mjd - omjd) >= 2 || (mjd < omjd))
 			{
 				printf("Jump in MJD day (%d/%d.xxxxs -> %d/%.4fs), trying to resync\n", omjd, osec, mjd, sec+ns*1e-9);
 
@@ -152,7 +157,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 				continue;
 			}
 
-                        if (report_interval == 0)
+                        if(report_interval == 0)
 			{
 				printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d %llu\n",
 					ms->framenum, mjd, sec, ns,
@@ -160,7 +165,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
                         } 
 			else 
 			{
-				if (sec != osec) 
+				if(sec != osec) 
 				{
 					printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%lld n_invalid=%lld total=%llu unp=%llu\n",
 						ms->framenum, mjd, sec, ns,
@@ -183,7 +188,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 		}
 	}
 
-	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
+	printf("%lld / %lld samples unpacked\n", unpacked, total);
 
 	for(i = 0; i < ms->nchan; ++i)
 	{

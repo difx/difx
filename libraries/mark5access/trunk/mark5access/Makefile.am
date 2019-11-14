@@ -10,7 +10,7 @@ endif
 if USE_CODIFIO
 codif_c_sources = format_codif.c
 else
-codif_c_sources =
+codif_c_sources = format_codif_stubs.c
 endif
 
 h_sources = \
@@ -32,7 +32,6 @@ c_sources = \
 	mark5_format_kvn5b.c \
 	mark5_format_d2k.c \
 	format_vdif.c \
-	format_vdifb.c \
 	$(codif_c_sources) \
 	blanker_none.c \
 	blanker_mark5.c \

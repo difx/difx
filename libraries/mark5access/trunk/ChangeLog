@@ -4,6 +4,8 @@ Version 1.5.5
 * m5d, mark5streamunpacker: harmonise the way CODIF and VDIF files are treated
 * format_codif, format_vdif: Fix calculation of frame granularity for CODIF (and VDIF, although that would never have been wrong)
 * m5spec: allow specification of bchan and echan to limit range of channels being printed
+* Remove broken/incomplete support for K5 format
+* Remove support for non-format "VDIFB"
 * Post DiFX-2.6
 
 Version 1.5.4
