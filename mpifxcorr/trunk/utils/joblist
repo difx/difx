@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2013 by Walter Brisken                             *
+#   Copyright (C) 2008-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -31,34 +31,33 @@
 
 from sys import argv, exit
 from glob import glob
-from string import split, strip, find
 
 program = 'joblist'
-version = '1.5'
-verdate = '20130508'
+version = '1.6'
+verdate = '20191114'
 author  = 'Walter Brisken'
 
 showstatus = 1
 
 def usage():
-	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
-	print '\nA program to list information about DiFX job files\n'
-	print 'Usage: [options] [<dir 1> [<dir 2> [ ... ] ] ]\n'
-	print '<dir> is a directory containing .input files.  Many directories can be'
-	print '      listed.  If no directory is listed, the current directory is assumed.\n'
-	print 'options can include:'
-	print '   -h or --help  : print this usage information\n'
-	print '\nThe characters printed within [ ] indicated the following:'
-	print '  c  .calc       model parameters and others'
-	print '  m  .machines   MPI input file -- cluster configuration'
-	print '  t  .threads    how many processing threads per core node'
-	print '  i  .im         polynomials for delay, u,v,w, and atmosphere'
-	print '  v  .difx/      visibilities produced by mpifxcorr\n'
+	print('\n%s ver. %s   %s %s' % (program, version, verdate, author))
+	print('\nA program to list information about DiFX job files\n')
+	print('Usage: [options] [<dir 1> [<dir 2> [ ... ] ] ]\n')
+	print('<dir> is a directory containing .input files.  Many directories can be')
+	print('      listed.  If no directory is listed, the current directory is assumed.\n')
+	print('options can include:')
+	print('   -h or --help  : print this usage information\n')
+	print('\nThe characters printed within [ ] indicated the following:')
+	print('  c  .calc       model parameters and others')
+	print('  m  .machines   MPI input file -- cluster configuration')
+	print('  t  .threads    how many processing threads per core node')
+	print('  i  .im         polynomials for delay, u,v,w, and atmosphere')
+	print('  v  .difx/      visibilities produced by mpifxcorr\n')
 
 	exit(0)
 
 def hasfits(input):
-	s = split(input, 'job')
+	s = input.split('job')
 	if len(s) == 1:
 		f = s[0]
 	elif len(s) == 2:
@@ -126,7 +125,7 @@ def summarize(input, i, n, dotree):
 		c = '`'
 	else:
 		c = '|'
-	s = split(input, '/')
+	s = input.split('/')
 	data = open(input).readlines()
 	if showstatus:
 		stat = getstat(input)
@@ -147,7 +146,7 @@ def summarize(input, i, n, dotree):
 			nsec = int(d[20:])
 			sum = sum + (' %4.1fmin' % (float(nsec)/60.))
 		if d[:14] == 'TELESCOPE NAME':
-			ants = ants + strip(d[20:]) + ','
+			ants = ants + d[20:].strip() + ','
 		if d[:13] == 'FREQ ENTRIES:':
 			nfreq = int(d[20:])
 		if d[:18] == 'QUANTISATION BITS:':
@@ -163,9 +162,9 @@ def summarize(input, i, n, dotree):
 		if d[:18] == 'OVERSAMPLE FACTOR:':
 			oversamp *= int(d[20:])
 		if d[:11] == 'DATA FORMAT':
-			p = find(d[20:], '-')
+			p = d[20:].find('-')
 			if p > 0:
-				triple = strip(d[p+21:])
+				triple = d[p+21:].strip()
 			
 	if npol == 4:
 		nchan = nfreq*2
@@ -182,11 +181,11 @@ def summarize(input, i, n, dotree):
 		tree = '%c- ' % c
 	else:
 		tree = ''
-	print '%s%s %s' % (tree, s[-1][0:-6], sum)
+	print('%s%s %s' % (tree, s[-1][0:-6], sum))
 	
 def run(path, dotree):
 	if dotree:
-		print path
+		print(path)
 	inputs = glob(path+'/*.input')
 	inputs.sort()
 	n = len(inputs)

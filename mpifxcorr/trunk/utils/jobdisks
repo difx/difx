@@ -1,32 +1,30 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 from sys import argv, exit
-from string import find, strip, split
 from glob import glob
 
 program = 'jobdisks'
-version = '1.1'
-verdate = '20080114'
+version = '1.2'
+verdate = '20091114'
 author  = 'Walter Brisken'
 
 
 fill = '   --   '
 
 def usage():
-	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
-	print '\nA program to list all the modules used in a project'
-	print '\nUsage: %s [options] [<file 1> [<file 2> ... ] ] ]' \
-		% (argv[0])
-	print '\n<file X> is either a .fx correlator job script file or a .input DiFX input'
-	print '          file.  Any number of files can be listed.  If no files are listed,'
-	print '          all .input files in the current directory are used.  If still no'
-	print '          files are found, all the .fx files in the directory are used.'
-	print '\nOptions can include:\n'
-	print '    -h or --help     Print this help info\n'
-	print '    -c or --changes  Print module changes only\n'
-	print 'Example:  jobdisks\n'
-	print 'Example:  jobdisks job1420.*.input\n'
-	print 'Example:  jobdisks *.fx\n'
+	print('\n%s ver. %s   %s %s' % (program, version, verdate, author))
+	print('\nA program to list all the modules used in a project')
+	print('\nUsage: %s [options] [<file 1> [<file 2> ... ] ] ]' % (argv[0]))
+	print('\n<file X> is either a .fx correlator job script file or a .input DiFX input')
+	print('          file.  Any number of files can be listed.  If no files are listed,')
+	print('          all .input files in the current directory are used.  If still no')
+	print('          files are found, all the .fx files in the directory are used.')
+	print('\nOptions can include:\n')
+	print('    -h or --help     Print this help info\n')
+	print('    -c or --changes  Print module changes only\n')
+	print('Example:  jobdisks\n')
+	print('Example:  jobdisks job1420.*.input\n')
+	print('Example:  jobdisks *.fx\n')
 	exit(0)
 
 def getmodules_fx(filename, antlist):
@@ -50,7 +48,7 @@ def getmodules_input(filename, antlist):
 	ants = []
 	for d in data:
 		if d[:14] == 'TELESCOPE NAME':
-			ant = strip(d[20:])
+			ant = d[20:].strip()
 			ants.append(ant)
 			if ant in antlist:
 				pass
@@ -61,7 +59,7 @@ def getmodules_input(filename, antlist):
 			if len(ants) > 0:
 				ant = ants[0]
 				ants.remove(ant)
-				mods[ant] = split(strip(d[20:]))[0]
+				mods[ant] = d[20:].strip().split()[0]
 	return mods
 
 def getmodules(filename, antlist):
@@ -70,7 +68,7 @@ def getmodules(filename, antlist):
 	elif filename[-6:] == '.input':
 		return getmodules_input(filename, antlist)
 	else:
-		print 'Unknown filetype : %s. Ignoring.' % filename
+		print('Unknown filetype : %s. Ignoring.' % filename)
 		return []
 
 # use '-' to indicate no module for that station
@@ -92,8 +90,8 @@ def printmodlist(files, antlist, modlist):
 	for a in range(na):
 		out += ('%-10s' % antlist[a])
 		lastused[antlist[a]] = 'X'
-	out = strip(out)
-	print out
+	out = out.strip()
+	print(out)
 	for f in range(nf):
 		if files[f][-6:] == '.input':
 			out = files[f][:-6]
@@ -118,8 +116,8 @@ def printmodlist(files, antlist, modlist):
 			else:
 				out += '  '
 			out += modlist[f][ant]
-		out = strip(out)
-		print out
+		out = out.strip()
+		print(out)
 
 def printchangelist(files, antlist, modlist):
 	nf = len(files)
@@ -149,8 +147,8 @@ def printchangelist(files, antlist, modlist):
 						out = files[f][:-3]
 					else:
 						out = files[f]
-					print out
-				print '  %-2s %s' % (ant, modlist[f][ant])
+					print(out)
+				print('  %-2s %s' % (ant, modlist[f][ant]))
 	
 def checkfiles(files):
 	types = {}
@@ -158,7 +156,7 @@ def checkfiles(files):
 
 	for f in files:
 		if len(glob(f)) < 1:
-			print 'File not found : %s' % f
+			print('File not found : %s' % f)
 			quit = True
 		else:
 			if f[-3:] == '.fx':
@@ -169,7 +167,7 @@ def checkfiles(files):
 				types[f] = True
 			
 	if len(types) > 1:
-		print 'Mixture of types encountered.'
+		print('Mixture of types encountered.')
 		quit = True
 	if quit:
 		exit(0)
@@ -200,7 +198,7 @@ for arg in argv[1:]:
 		if arg[-6:] == '.input' or arg[-3:] == '.fx':
 			files.append(arg)
 		else:
-			print 'unknown file type : %s' % arg
+			print('unknown file type : %s' % arg)
 			exit(0)
 
 if len(files) < 1:
@@ -208,7 +206,7 @@ if len(files) < 1:
 	if len(files) < 1:
 		files = glob('*.fx')
 		if len(files) < 1:
-			print 'No files found.  Quitting.'
+			print('No files found.  Quitting.')
 			exit(0)
 
 files.sort()
@@ -222,4 +220,4 @@ if mode == 'Modules':
 elif mode == 'Changes':
 	printchangelist(files, antlist, modlist)
 else:
-	print 'Unknown mode of operation : %s' % mode
+	print('Unknown mode of operation : %s' % mode)

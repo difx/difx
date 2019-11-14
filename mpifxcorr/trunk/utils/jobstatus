@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2011 by Walter Brisken                             *
+#   Copyright (C) 2008-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -31,23 +31,22 @@
 
 from sys import argv, exit
 from glob import glob
-from string import split, strip, find, rfind
 import os
 import stat
 
 program = 'jobstatus'
-version = '1.1'
-verdate = '20091204'
+version = '1.2'
+verdate = '20191114'
 author  = 'Walter Brisken'
 
 def usage():
-	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
-	print '\nA program to list the status of DiFX job files\n'
-	print 'Usage: [options] [<dir 1> [<dir 2> [ ... ] ] ]\n'
-	print '<dir> is a directory containing .input files.  Many directories can be'
-	print '      listed.  If no directory is listed, the current directory is assumed.\n'
-	print 'options can include:'
-	print '   -h or --help  : print this usage information\n'
+	print('\n%s ver. %s   %s %s' % (program, version, verdate, author))
+	print('\nA program to list the status of DiFX job files\n')
+	print('Usage: [options] [<dir 1> [<dir 2> [ ... ] ] ]\n')
+	print('<dir> is a directory containing .input files.  Many directories can be')
+	print('      listed.  If no directory is listed, the current directory is assumed.\n')
+	print('options can include:')
+	print('   -h or --help  : print this usage information\n')
 	exit(0)
 
 def getelapsed(file1, file2, N):
@@ -57,24 +56,24 @@ def getelapsed(file1, file2, N):
 	P = os.popen('tail -c %d %s' % (N, file2), 'r')
 	D2 = P.read(N)
 	P.close()
-	p1 = find(D1, "MJD:      ");
-	p2 = rfind(D2[:-50], "MJD:      ");
+	p1 = D1.find("MJD:      ");
+	p2 = D2[:-50].rfind("MJD:      ");
 	
 	if p1 < 0 or p2 < 0:
 		return -1;
 
-	S1 = split(D1[p1:p1+80], '\n')
-	S2 = split(D2[p2:p2+80], '\n')
+	S1 = D1[p1:p1+80].split('\n')
+	S2 = D2[p2:p2+80].split('\n')
 
-	m1 = int(strip(S1[0][5:]))
-	m2 = int(strip(S2[0][5:]))
-	s1 = float(strip(S1[1][9:]))
-	s2 = float(strip(S2[1][9:]))
+	m1 = int(S1[0][5:].strip())
+	m2 = int(S2[0][5:].strip())
+	s1 = float(S1[1][9:].strip())
+	s2 = float(S2[1][9:].strip())
 
 	return (m2-m1)*86400.0+s2-s1
 	
 def summarize(input):
-	s = split(input, '/')
+	s = input.split('/')
 	data = open(input).readlines()
 	ants = []
 	nsec = 0
@@ -84,11 +83,11 @@ def summarize(input):
 		if d[:19] == 'EXECUTE TIME (SEC):':
 			nsec = int(d[20:])
 		if d[:14] == 'TELESCOPE NAME':
-			ants.append(strip(d[20:]))
+			ants.append(d[20:].strip())
 		if d[:11] == 'DATA FORMAT':
-			p = find(d[20:], '-')
+			p = d[20:].find('-')
 			if p > 0:
-				trippel = strip(d[p+21:])
+				trippel = d[p+21:].strip()
 		if d[:14] == 'INT TIME (SEC)':
 			tInt = float(d[20:])
 			
@@ -156,24 +155,24 @@ def run(path):
 		S = SS[i]
 		speedup = su[i]
 		nsta = len(S[1])
-		fn = split(inputs[i], '/')[-1][0:-6]
+		fn = inputs[i].split('/')[-1][0:-6]
 		fraction = 100*A[2]/S[0]
 		sta = "%s  %4.1f min  %s  ns=%2d  su=%5.2f  %3d%%" % (fn, S[0]/60.0, S[2], nsta, speedup, fraction)
 		if A[2] > 10 and fraction < 100:
 			tremain = S[0]*(1.0 - fraction/100.0)/speedup
 			sta += '  %4.1f min left' % (tremain/60.0)
-		print sta
+		print(sta)
 			
 		
 	fraction = int(100*secdone/sectot)
-	print "Total job time      = %4.1f min" % (ttot/60.0)
-	print "Fraction complete   = %3d%%" % fraction
+	print("Total job time      = %4.1f min" % (ttot/60.0))
+	print("Fraction complete   = %3d%%" % fraction)
 	jremain = ttot - tdone
 	if tdone > 0:
 		wremain = jremain*wtime/tdone
-		print "Job time remaining  = %4.1f min" % (jremain/60.0)
-		print "Wall time remaining = %4.1f min" % (wremain/60.0)
-		print "Average speedup     = %4.2f" % (tdone/wtime)
+		print("Job time remaining  = %4.1f min" % (jremain/60.0))
+		print("Wall time remaining = %4.1f min" % (wremain/60.0))
+		print("Average speedup     = %4.2f" % (tdone/wtime))
 
 if len(argv) == 1:
 	paths = ['.']
@@ -183,7 +182,7 @@ else:
 		if a == '-h' or a == '--help':
 			usage()
 		elif a[0] == '-':
-			print 'Unknown option %s .  Quitting' % a
+			print('Unknown option %s .  Quitting' % a)
 			exit(0)
 		else:
 			paths.append(a)
