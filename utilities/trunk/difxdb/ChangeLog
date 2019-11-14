@@ -1,4 +1,6 @@
-post 2.5.2
+post 2.6.1
+	* database: add Module.retired column
+DiFX-253
 	* comedia/comedia.py: Allow parsing of Mark6 filelists
 
 2018-08-02 10:14  HelgeRottmann

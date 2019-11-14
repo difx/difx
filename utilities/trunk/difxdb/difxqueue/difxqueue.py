@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
 #===========================================================================
@@ -174,7 +174,7 @@ def processSetPassTypeAction(args):
                 
         passType = getPassType(session, newType)
 
-	if not options.force:
+	if not options.yes:
 		confirmAction("change pass type")
 
         passList = getPasses(session, project, passes)
@@ -225,7 +225,7 @@ def processSetStateAction(args):
 
         jobStatus = getJobStatus(session, newStatus)
         
-	if not options.force:
+	if not options.yes:
 		confirmAction("change job state")
 
 	for queue in queueList:
@@ -515,7 +515,7 @@ def processAddAction(args):
 			if activeJob.inputFile == queueDir + "/" + job.name + ".input":
 				badList.append(queueDir + "/" + job.name)
 				
-	if len(badList) > 0:
+	if len(badList) > 0 and not options.force :
 		print '\nThe following jobs are already in the queue:'
 		for badJob in badList:
 			print '  %s' % badJob
@@ -591,8 +591,8 @@ def confirmAction(action):
 	Get user confirmation before executing commands
 	"""
 	
-	# if --force option was used skip confirmation
-	if (options.force):
+	# if --yes option was used skip confirmation
+	if (options.yes):
 		return
 
 	print '\nThe %s action is about to be applied to all matching jobs' %\
@@ -676,7 +676,8 @@ parser.add_option("-p", "--priority", dest="priority", type="int" , default = 0,
 parser.add_option("-d", "--db-only", dest="dbOnly", action="store_true", help="Operate only on database (some commands only)")
 parser.add_option("-q", "--queuedir", dest="queueDir", type="string" ,action="store", help="Specify the directory to use as the correlation base (overrides DIFX_QUEUE_BASE environment)")
 parser.add_option("-t", "--type", dest="passType", type="string" ,action="store", default="production", help="Specify the type of the jobs when adding to the queue")
-parser.add_option("-f", "--force", dest="force" ,action="store_true", default=False, help="Perform actions on multiple files without confirmation ")
+parser.add_option("-y", "--yes", dest="yes" ,action="store_true", default=False, help="Answer yes to all confirmation requests")
+parser.add_option("-f", "--force", dest="force" ,action="store_true", default=False, help="Force adding jobs to the queue even they qre queued already")
 parser.add_option("-c", "--conf", dest="dbConf", type="string", default= "", help="Specify the option file that contains the database connection parameters (default: $DIFXROOT/conf/difxdb.cnf)")
 
 
