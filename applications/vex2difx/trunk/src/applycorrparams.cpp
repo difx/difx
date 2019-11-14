@@ -480,6 +480,9 @@ int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nErro
 			case NumDataSources:
 				std::cerr << "Developer error: mergeCorrParams: DataSource=NumDataSources encountered." << std::endl;
 				exit(EXIT_FAILURE);
+			default:
+				std::cerr << "Developer error: a data source type was encountered that is not supported." << std::endl;
+				break;
 			}
 
 			if(dss.dataSampling != NumSamplingTypes)
