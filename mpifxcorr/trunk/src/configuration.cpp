@@ -1566,8 +1566,6 @@ bool Configuration::processDatastreamTable(istream * input)
       datastreamtable[i].source = MK5MODULE;
     else if(line == "MARK6")
       datastreamtable[i].source = MK6MODULE;
-    else if(line == "SHAREDMEMORY")
-      datastreamtable[i].source = SHAREDMEMORYSTREAM;
     else if(line == "NETWORK")
       datastreamtable[i].source = NETWORKSTREAM;
     else if(line == "FAKE")

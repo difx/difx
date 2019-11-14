@@ -50,7 +50,6 @@
 #include "mark5bmark6_datastream.h"
 #include "vdifmark6_datastream.h"
 #endif
-#include "vdifsharedmemory.h"
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
 #include "string.h"
@@ -440,9 +439,6 @@ int main(int argc, char *argv[])
       } else if(config->isVDIFMark5(datastreamnum)) {
         stream = new VDIFMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         cverbose << startl << "Opening VDIFMark5DataStream" << endl;
-      } else if(config->isVDIFSharedMemory(datastreamnum)) {
-        stream = new VDIFSharedMemoryDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-        cverbose << startl << "Opening VDIFSharedMemoryDataStream" << endl;
       } else if(config->isVDIFNetwork(datastreamnum)) {
         stream = new VDIFNetworkDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         cverbose << startl << "Opening VDIFNetworkDataStream" << endl;

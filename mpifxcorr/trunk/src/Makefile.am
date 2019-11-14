@@ -40,8 +40,6 @@ mpifxcorr_SOURCES = \
 	vdiffile.cpp \
 	vdiffake.cpp \
 	vdifnetwork.cpp \
-	vdifsharedmemory.cpp \
-	sharedmemorybuffer.cpp \
 	polyco.cpp \
 	alert.cpp \
 	pcal.cpp \
@@ -75,8 +73,6 @@ library_include_HEADERS = \
 	vdiffile.h \
 	vdiffake.h \
 	vdifnetwork.h \
-	vdifsharedmemory.h \
-	sharedmemorybuffer.h \
 	alert.h 
 
 # historically these have been in both $(includedir)/{.,mpifxcorr}
@@ -103,8 +99,6 @@ libmpifxcorr_a_SOURCES = \
 	vdiffile.cpp \
 	vdiffake.cpp \
 	vdifnetwork.cpp \
-	vdifsharedmemory.cpp \
-	sharedmemorybuffer.cpp \
 	datamuxer.cpp \
 	$(mark5_files) \
 	$(mark6_files)
@@ -135,8 +129,6 @@ neuteredmpifxcorr_SOURCES = \
 	vdiffile.cpp \
 	vdiffake.cpp \
 	vdifnetwork.cpp \
-	vdifsharedmemory.cpp \
-	sharedmemorybuffer.cpp \
 	datamuxer.cpp \
 	$(mark5_files) \
 	$(mark6_files)

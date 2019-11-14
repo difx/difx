@@ -13,6 +13,7 @@ Version 2.7
 * startdifx, genmachines: increase multicast receive buffer size to 8000
 * python3: joblist, jobdisks, jobstatus
 * can compile again without mark6 libraries
+* Remove experimental support for shared memory datastream -- it never worked
 * Post DiFX-2.6
 
 Version 2.6
