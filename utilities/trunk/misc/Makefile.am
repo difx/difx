@@ -1,14 +1,15 @@
 dist_bin_SCRIPTS = \
 	addMark5b.pl \
 	addVDIF.pl \
-	day2mjd \
-	difxcopy \
+	day2mjd.py \
+	difxcopy.py \
+	mvdifxhere.py \
 	dir2filelist.pl \
 	filelist2human.pl \
 	filterDifx2Fits.py \
 	fslog2difx.pl \
 	geteop.pl \
-	mjd2day \
+	mjd2day.py \
 	pcList.pl \
 	sec2time.pl \
 	startcorr.pl \
@@ -31,3 +32,7 @@ m5fb_makeheader_SOURCES = \
 
 install-exec-hook:
 	mv $(DESTDIR)$(bindir)/filterDifx2Fits.py $(DESTDIR)$(bindir)/filterDifx2Fits
+	mv $(DESTDIR)$(bindir)/mjd2day.py $(DESTDIR)$(bindir)/mjd2day
+	mv $(DESTDIR)$(bindir)/day2mjd.py $(DESTDIR)$(bindir)/day2mjd
+	mv $(DESTDIR)$(bindir)/difxcopy.py $(DESTDIR)$(bindir)/difxcopy
+	mv $(DESTDIR)$(bindir)/mvdifxhere.py $(DESTDIR)$(bindir)/mvdifxhere
