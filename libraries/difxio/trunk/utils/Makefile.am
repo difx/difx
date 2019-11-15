@@ -22,10 +22,6 @@ bin_PROGRAMS = \
 	difxcalculator \
 	tabulatedelays
 
-dist_bin_SCRIPTS = \
-	difxcopy \
-	mvdifxhere
-
 avgDiFX_SOURCES = \
 	avgDiFX.c
 

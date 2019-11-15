@@ -7,6 +7,7 @@
 * antenna_db.c: allow search by "IVS Name", and fix diameter of Arecibo
 * convert python to python3
 * replace @lbo.us with @nrao.edu email addresses
+* difxcopy and mvdifxhere no longer live in difxio; look in misc_utils
 
 3.6.0
 * Post DiFX 2.5
