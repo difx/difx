@@ -1,4 +1,4 @@
-AC_INIT([SniffPlots], [0.993], [Craig Walker <cwalker@nrao.edu>])
+AC_INIT([SniffPlots], [0.995], [Walter Brisken <wbrisken@nrao.edu> and Craig Walker <cwalker@nrao.edu>])
 
 AM_INIT_AUTOMAKE([foreign])
 
