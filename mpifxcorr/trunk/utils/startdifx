@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
 #   Copyright (C) 2008-2019 by Walter Brisken and Helge Rottmann          *
@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '2.6.1'
-VERDATE = '20190821'
+VERSION = '3.0.0'
+VERDATE = '20191115'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -48,7 +48,6 @@ agent                    = ''
 from sys import argv, exit, stdout
 from os import popen, getcwd, system, getenv, getpid, environ
 from os.path import isfile, isdir, isfile
-from string import split, strip, find, rfind, upper, lower
 from time import time, asctime
 from glob import glob
 from copy import deepcopy
@@ -75,11 +74,11 @@ def getUsage():
 	usage +=  '<joblist> as created by vex2difx (.joblist extension required)\n'
 	usage +=  '\nThis program responds to the following environment variables:\n'
 	usage +=  'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT can be used to override\n'
-        usage +=  'the default group/port of %s/%d\n' % (defaultgroup, defaultport)
+	usage +=  'the default group/port of %s/%d\n' % (defaultgroup, defaultport)
 	usage +=  'DIFX_HEAD_NODE must name the correlation head node (only with the -m option).\n'
 	usage +=  'DIFX_MPIRUNOPTIONS can be used to pass options to the mpirun command.\n'
 	usage +=  'DIFX_CALC_PROGRAM can be used to change the delay model program\n'
-        usage +=  '(the default is %s, but difxcalc can be used).\n' % defaultDelayModelProgram
+	usage +=  '(the default is %s, but difxcalc can be used).\n' % defaultDelayModelProgram
 	usage +=  'DIFX_CALC_OPTIONS can be used to override options to the delay model program.\n'
 	return(usage)
 
@@ -121,7 +120,7 @@ class Parser:
 		elif tag == 'visibilityMJD':
 			self.mjd = float(self.tmp)
 		elif tag == 'from':
-			self.unit = lower(self.tmp)
+			self.unit = self.tmp.lower()
 		elif tag == 'identifier':
 			self.id = self.tmp
 		elif tag == 'mpiProcessId':
@@ -142,17 +141,17 @@ class Parser:
 def watchJob(jobId):
 	
 	if verbose > 1:
-		print 'Watching %s:' % jobId
+		print('Watching %s:' % jobId)
 
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
-		print 'DIFX_MESSAGE_PORT needs to be defined'
+		print('DIFX_MESSAGE_PORT needs to be defined')
 		exit(0)
 	else:
 		port = int(port)
 	group = getenv('DIFX_MESSAGE_GROUP')
 	if group == None:
-		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		print('DIFX_MESSAGE_GROUP needs to be defined')
 		exit(0)
 
 	# FIXME: eventually migrate to IPv6 compliant multicast receive
@@ -165,14 +164,14 @@ def watchJob(jobId):
 	try:
 		while 1:
 			try:
-				message = s.recv(8000)
+				message = s.recv(8000).decode('utf-8')
 				if len(message) > 0 and message[0] == '<':
 					p = Parser()
 					p.feed(message)
 					info = p.getInfo()
 					p.close()
 					now = time()
-	#			print now
+					# print(now)
 					if p.ok and p.id == jobId:
 						if p.state == 'Running':
 							if verbose > 0:
@@ -190,18 +189,18 @@ def watchJob(jobId):
 		pass
 	
 	if verbose > 1:
-			print 'Watching %s:' % jobId
+		print('Watching %s:' % jobId)
 
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
-			print 'DIFX_MESSAGE_PORT needs to be defined'
-			exit(0)
+		print('DIFX_MESSAGE_PORT needs to be defined')
+		exit(0)
 	else:
-			port = int(port)
+		port = int(port)
 	group = getenv('DIFX_MESSAGE_GROUP')
 	if group == None:
-			print 'DIFX_MESSAGE_GROUP needs to be defined'
-			exit(0)
+		print('DIFX_MESSAGE_GROUP needs to be defined')
+		exit(0)
 
 	# FIXME: eventually migrate to IPv6 compliant multicast receive
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -213,14 +212,14 @@ def watchJob(jobId):
 	try:
 		while 1:
 			try:
-				message = s.recv(8000)
+				message = s.recv(8000).decode('utf-8')
 				if len(message) > 0 and message[0] == '<':
 					p = Parser()
 					p.feed(message)
 					info = p.getInfo()
 					p.close()
 					now = time()
-					#			print now
+					# print(now)
 					if p.ok and p.id == jobId:
 						if p.state == 'Running':
 							if verbose > 0:
@@ -254,7 +253,7 @@ def updateEnvironment(filename):
 		for l in lines:
 			if l[0] == '#':
 				continue
-			e = split(strip(l))
+			e = l.strip().split()
 			if len(e) == 2:
 				savedEnvironment.append([e[0], getenv(e[0])])
 				environ[e[0]] = e[1]
@@ -277,14 +276,14 @@ def getjobdifxversion(fileBase):
 
 	files = glob(fileBase+'.calc')
 	if len(files) < 1:
-		print 'Can\'t find file %s.calc.  Quitting.' % fileBase
+		print('Can\'t find file %s.calc.  Quitting.' % fileBase)
 		exit(0);
 	d = open(files[0]).readlines()
 	for l in d:
 		if l[:12] == 'DIFX VERSION':
-			version = strip(l[20:])
+			version = l[20:].strip()
 		if l[:12] == 'DIFX LABEL':
-			label = strip(l[20:])
+			label = l[20:].strip()
 	
 	return version, label
 
@@ -295,21 +294,21 @@ def testDifxVersion(fileBase, override):
 	if label == None:
 		label = ''
 	if version == None:
-		print 'Warning: env. var. DIFX_VERSION not defined!'
+		print('Warning: env. var. DIFX_VERSION not defined!')
 	if jobversion == None:
-		print 'Warning: %s.calc does not contain version info' %fileBase
+		print('Warning: %s.calc does not contain version info' % fileBase)
 	if version != None and jobversion != None and version != jobversion:
-		print 'Warning: $DIFX_VERSION and job version (in .calc file) mismatch'
-		print '    <%s> != <%s>' % (version, jobversion)
+		print('Warning: $DIFX_VERSION and job version (in .calc file) mismatch')
+		print('    <%s> != <%s>' % (version, jobversion))
 		if override:
-			print 'Continuing anyway due to --override-version'
+			print('Continuing anyway due to --override-version')
 		else:
-			print 'Quitting since --override-version not specified'
+			print('Quitting since --override-version not specified')
 			exit(0)
 
 	if label != '' and joblabel != '' and label != joblabel:
-		print 'Warning: $DIFX_LABEL and job label (in .calc file) mismatch'
-		print '    <%s> != <%s>' % (ver, jobver)
+		print('Warning: $DIFX_LABEL and job label (in .calc file) mismatch')
+		print('    <%s> != <%s>' % (ver, jobver))
 
 	if label == '':
 		label = version
@@ -328,7 +327,7 @@ def sendMessage(fileBase, state, statusmessage):
 	else:
 		port = int(port)
 		
-	identifier = split(fileBase, '/')[-1]
+	identifier = fileBase.split('/')[-1]
 	
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, defaultttl)
@@ -353,7 +352,7 @@ def sendMessage(fileBase, state, statusmessage):
 		"</difxMessage>\n" % \
 		(socket.gethostname(), identifier, state, statusmessage)
 	
-	sock.sendto(message, (group, port) )
+	sock.sendto(message.encode('utf-8'), (group, port) )
 
 
 # getNodes depends on the particular assumptions made by genmachines
@@ -371,15 +370,15 @@ def getNodes(fileBase):
 	nDatastream = len(machineData) - len(threads) - 1
 
 	for m in range(1, nDatastream+1):
-		datastreams.append(split(strip(machineData[m]))[0])
+		datastreams.append(machineData[m].strip().split()[0])
 
 	for m in range(1+nDatastream, len(machineData)):
 		i = m - 1 - nDatastream
 		t = threads[i]
 		if processors.has_key(t):
-			processors[t].append(split(strip(machineData[m]))[0])
+			processors[t].append(machineData[m].strip().split()[0])
 		else:
-			processors[t] = [(split(strip(machineData[m]))[0])]
+			processors[t] = [machineData[m].strip().split()[0]]
 
 	return datastreams, processors
 
@@ -403,7 +402,7 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
 		headNode = socket.gethostname()
 	corrHeadNode = headNode
 
-	identifier = split(fileBase, '/')[-1]
+	identifier = fileBase.split('/')[-1]
 	
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, defaultttl)
@@ -453,13 +452,13 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
 		(headNode, identifier, inputFile, corrHeadNode, dataStreams, processors, difxVersion, restartOption)
 
 	if verbose > 0:
-		print "Sending: ", message
+		print("Sending: ", message)
 
-	sock.sendto(message, (group, port) )
+	sock.sendto(message.encode('utf-8'), (group, port) )
 
-	watchJob(split(fileBase, '/')[-1])
+	watchJob(fileBase.split('/')[-1])
 
-	print "\n"
+	print("\n")
 
 
 # verify presence of .machines file
@@ -473,20 +472,20 @@ def doMachines(fileBase, machinesPolicy, cache):
 	cmd = 'grep "CORE CONF FILENAME" %s.input' % fileBase
 	f = popen(cmd, 'r').readlines()
 	if len(f) == 1:
-		threadsFile = strip(split(f[0], ':')[-1])
+		threadsFile = f[0].split(':')[-1].strip()
 	else:
 		threadsFile = fileBase + '.threads'
 
 	if cache[2] == files:
 		if verbose > 0:
-			print 'Using cached machines/threads info'
+			print('Using cached machines/threads info')
 		cmd = 'cp %s %s' % (cache[0], machinesFile);
 		if verbose > 1:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 		cmd = 'cp %s %s' % (cache[1], threadsFile);
 		if verbose > 1:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 	else:
 		if machinesPolicy == 2:
@@ -505,7 +504,7 @@ def doMachines(fileBase, machinesPolicy, cache):
 
 				cmd = '%s %s %s.input' % (genmachines, extraOpts, fileBase)
 				if verbose > 1:
-					print 'Executing: %s' % cmd
+					print('Executing: %s' % cmd)
 				v = -1
 				while v !=0 :
 					v = subprocess.call(cmd, shell=True)
@@ -526,7 +525,7 @@ def doMachines(fileBase, machinesPolicy, cache):
 	return len(open(machinesFile).readlines())
 
 def handler(signum, frame):
-	print 'Signal handler called with signal', signum
+	print('Signal handler called with signal', signum)
 	exit(0)
 
 # Start difx with DifxStartMessage
@@ -534,7 +533,7 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 
 	difxVersion, difxLabel = testDifxVersion(fileBase, override)
 
-	identifier = split(fileBase, '/')[-1]
+	identifier = fileBase.split('/')[-1]
 
 	if not isfile(fileBase+'.input'):
 		return 'Error: input file %s.input not found' % fileBase
@@ -542,28 +541,28 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 	if not isfile(fileBase+'.im'):
 		if makeModel and isfile(fileBase+'.calc'):
 			if delayModelOptions != None and len(delayModelOptions) > 0:
-			    calcOptions = delayModelOptions
+				calcOptions = delayModelOptions
 			else:
-			    calcOptions = ""
-			    if override:
-				    calcOptions += "--override-version "
-			    for i in range(verbose):
-				    calcOptions += "-v "
+				calcOptions = ""
+				if override:
+					calcOptions += "--override-version "
+				for i in range(verbose):
+					calcOptions += "-v "
 			system('%s %s %s.calc' % (delayModelProgram, calcOptions, fileBase))
 		else:
 			return 'Error: model not available for %s' % fileBase
 	
 	if restartSeconds > 0:
 		if not isdir(fileBase+'.difx'):
-			print 'Warning: restartSeconds = %d and no existing output!' % restartSeconds
+			print('Warning: restartSeconds = %d and no existing output!' % restartSeconds)
 	elif isdir(fileBase+'.difx') or isfile(fileBase+'.difx'):
 		if deletePolicy == 1:
 			if verbose > 0:
-				print 'Removing %s.difx' % fileBase
+				print('Removing %s.difx' % fileBase)
 			sendMessage(fileBase, 'Info', 'Deleting %s.difx' % fileBase)
 			system('rm -rf %s.difx' % fileBase)
 		else:
-			print 'Warning: output file %s.difx exists' % fileBase
+			print('Warning: output file %s.difx exists' % fileBase)
 			return 
 	
 	np = doMachines(fileBase, machinesPolicy, machinesCache)
@@ -579,12 +578,12 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 
 	difxVersion, difxLabel = testDifxVersion(fileBase, override)
 
-	identifier = split(fileBase, '/')[-1]
+	identifier = fileBase.split('/')[-1]
 
 	out = popen('which mpifxcorr').readlines()
 	if len(out) != 1:
 		return 'Error: mpifxcorr not found'
-	pgm = strip(out[0])
+	pgm = out[0].strip()
 
 	if not isfile(fileBase+'.input'):
 		return 'Error: input file %s.input not found' % fileBase
@@ -605,34 +604,34 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	
 	if restartSeconds > 0:
 		if not isdir(fileBase+'.difx'):
-			print 'Warning: restartSeconds = %d and no existing output!' % restartSeconds
+			print('Warning: restartSeconds = %d and no existing output!' % restartSeconds)
 	elif isdir(fileBase+'.difx') or isfile(fileBase+'.difx'):
 		if deletePolicy == 1:
 			if verbose > 0:
-				print 'Removing %s.difx' % fileBase
+				print('Removing %s.difx' % fileBase)
 			sendMessage(fileBase, 'Info', 'Deleting %s.difx' % fileBase)
 			system('rm -rf %s.difx' % fileBase)
 		else:
-			print 'Warning: output file %s.difx exists' % fileBase
+			print('Warning: output file %s.difx exists' % fileBase)
 			return
 	
 	np = doMachines(fileBase, machinesPolicy, machinesCache)
 	if np <= 0:
 		return 'Error: %s.machines not found' % fileBase
 
-        # check before proceeding
-        cmd = 'checkmpifxcorr %s.input' % fileBase
-        if verbose > 1:
-            print 'Executing: %s' % cmd
-        if (system(cmd)):
-            return 'Error: checkmpifxcorr has issues with this job'
+	# check before proceeding
+	cmd = 'checkmpifxcorr %s.input' % fileBase
+	if verbose > 1:
+		print('Executing: %s' % cmd)
+	if system(cmd):
+		return 'Error: checkmpifxcorr has issues with this job'
 
 	# spawn a logger process that will quit once this script ends
 	# this will quietly fail on systems without difxlog installed
-        cmd = ['difxlog', str(identifier), fileBase+".difxlog", "4", str(getpid())]
+	cmd = ['difxlog', str(identifier), fileBase+".difxlog", "4", str(getpid())]
 	if verbose > 1:
-		print 'Executing: %s' % ' '.join(cmd)
-        logProcess = subprocess.Popen(cmd)
+		print('Executing: %s' % ' '.join(cmd))
+	logProcess = subprocess.Popen(cmd)
 
 	if difxLabel == None or difxLabel == '':
 		difxProgram = 'mpifxcorr'
@@ -644,36 +643,34 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	else:
 		restartOption = ''
 
-        if len(agent) > 0:  # hand off to agent
-            cmd = '%s %s' % (agent, fileBase)
-        else:               # hand off to mpirun
-            cmd = 'mpirun -np %d --hostfile %s.machines %s  %s %s.input%s' % (
-                np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
+	if len(agent) > 0:	# hand off to agent
+		cmd = '%s %s' % (agent, fileBase)
+	else:			# hand off to mpirun
+		cmd = 'mpirun -np %d --hostfile %s.machines %s  %s %s.input%s' % (np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
 
 	sendMessage(fileBase, 'Spawning', 'Spawning %d processes' % np)
 	if verbose > 0:
-		print 'Executing: ', cmd
+		print('Executing: ', cmd)
 	t0 = time()
 	system(cmd)
 	t1 = time()
 	if verbose > 0:
-		print 'Elapsed time (s) =', t1-t0
+		print('Elapsed time (s) =', t1-t0)
 	groupId = getenv('DIFX_GROUP_ID')
 	if groupId != None:
 		cmd = 'chown :%s %s.difx/*' % (groupId, fileBase)
 		if verbose > 1:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 		cmd = 'chmod g+w %s.difx/*' % fileBase
 		if verbose > 1:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 	sendMessage(fileBase, 'MpiDone', '')
 
 	# end difxlog (necessary when running startdifx with joblist)
 	if runJobList:
-            logProcess.kill()
-			
+		logProcess.kill()
 
 	return None
 
@@ -753,9 +750,9 @@ for a in args[start:]:
 		for l in d:
 			parts = l.split()
 			if len(parts) == 0:
-				job = strip(l)
+				job = l.strip()
 			else:
-				job = strip(parts[0])
+				job = parts[0].strip()
 
 			if job.startswith("#") or job.startswith("exper"):
 				continue
@@ -778,19 +775,19 @@ if len(fileBaseList) < 1:
 
 # verify that machinesfile exists
 if options.machinesFile != "" and  isfile(options.machinesFile) == False:
-	print "ERROR: The machines file (%s) does not exist" % (options.machinesFile)
+	print("ERROR: The machines file (%s) does not exist" % options.machinesFile)
 	exit(1)
 
 headNode = getenv('DIFX_HEAD_NODE')
 if options.useStartMessage and options.useLocalHead == False and headNode == None:
-	print "ERROR: Environment variable DIFX_HEAD_NODE must be defined."
-	print "Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host."
+	print("ERROR: Environment variable DIFX_HEAD_NODE must be defined.")
+	print("Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host.")
 	exit(1)
 	
 nBad = 0
 for fileBase in fileBaseList:
 	if not isfile(fileBase + '.input'):
-		print 'Error: %s.input not found (or not a regular file)' % fileBase
+		print('Error: %s.input not found (or not a regular file)' % fileBase)
 		nBad += 1
 
 if nBad > 0:
@@ -799,17 +796,17 @@ if nBad > 0:
 dcp = getenv("DIFX_CALC_PROGRAM")
 if dcp != None:
 	delayModelProgram = dcp
-	print 'Environment variable DIFX_CALC_PROGRAM was set, so'
-	print 'Using specified calc program: %s' % delayModelProgram
-	print ''
+	print('Environment variable DIFX_CALC_PROGRAM was set, so')
+	print('Using specified calc program: %s' % delayModelProgram)
+	print('')
 
 for fileBase in fileBaseList:
-	a = rfind(fileBase, "/")
+	a = fileBase.rfind("/")
 	jobname = fileBase[a+1:]
 
 	if len(jobname) > 31:
 		sendMessage(fileBase, 'ABORTED', "Did not start job because jobname is too long!")
-		print "Job name %s is too long and will be skipped!" % fileBase
+		print("Job name %s is too long and will be skipped!" % fileBase)
 		exit(1)
 
 	v = run(fileBase, options.machinesPolicy, options.deletePolicy, options.makeModel, options.override, options.useStartMessage, 
@@ -817,7 +814,7 @@ for fileBase in fileBaseList:
 
 	if v != None:
 		sendMessage(fileBase, 'ABORTED', v)
-		print v
+		print(v)
 		exit(1)
 	elif options.makeFits == True:
 		system('%s %s %s.FITS' % (difx2fits, fileBase, fileBase))
