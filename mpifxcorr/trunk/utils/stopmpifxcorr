@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-from __future__ import print_function
-
+#!/usr/bin/env python3
 
 from os import popen, system
 import argparse
@@ -16,8 +13,10 @@ parser.add_argument('-f', '-force', '--force', help="Kill all processes", action
 parser.add_argument('--first', '-first', help="Kill first process", action="store_true")
 args = parser.parse_args()
 
-if args.force: force = True
-if args.first: killfirst = True
+if args.force:
+	force = True
+if args.first:
+	killfirst = True
 
 def getpids():
 	cmd = 'ps -e | grep %s' % programname
@@ -55,7 +54,5 @@ elif force:
 		print('killing a process with: ', cmd)
 		system(cmd)
 else:
-	print('too many processes called %s running.  not killing' % \
-		programname)
-	print('kill by hand with "kill -INT <pid>" where <pid> is one of ', \
-		pids)
+	print('too many processes called %s running.  not killing' % programname)
+	print('kill by hand with "kill -INT <pid>" where <pid> is one of ', pids)

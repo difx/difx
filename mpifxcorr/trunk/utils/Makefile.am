@@ -10,6 +10,7 @@ dist_bin_SCRIPTS = \
 	joblist \
 	jobstatus \
 	startdifx \
+	stopmpifxcorr \
 	calcifMixed
 
 checkmpifxcorr_SOURCES = \
