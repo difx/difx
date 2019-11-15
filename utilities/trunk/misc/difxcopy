@@ -1,15 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# Note: this utility can run under python2.7 or python3
 
 from getopt import getopt
 from sys import stdout, argv, exit
 from os.path import isfile, isdir
 from os import getcwd, system
-from string import split, strip, find
 
 program = 'difxcopy'
-version = '0.4'
+version = '0.5'
 author  = 'Walter Brisken'
-verdate = '20150126'
+verdate = '20191110'
 
 fileTypes = ['input', 'calc', 'flag']
 
@@ -17,18 +18,18 @@ def usage(prog):
 	prefixes = ''
 	for f in fileTypes:
 		prefixes = prefixes + f + ' '
-	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
-	print '\nA program to copy DiFX input (and other) files to a different directory,\nproperly modifying the path of references to other files in the process.\nThis program is typically run by difxqueue.'
-	print '\nUsage: %s [options] <jobPrefix1> [<jobPrefix2> [ ... ] ] <destDirectory>\n' % prog
-	print 'options can include\n'
-	print '  --help'
-	print '  -h         print this help information and quit\n'
-	print '  --verbose'
-	print '  -v         be more verbose in operation\n'
-	print 'jobPrefixN is the prefix of a job name, e.g., mt911_03 would be\n  the prefix for files mt911_03.input and mt911_03.calc.\n'
-	print 'destDir is the destination directory for the copy.\n'
-	print '\nFiles with the following suffixes will be copied:'
-	print '  %s\n' % prefixes
+	print('\n%s ver. %s  %s %s' % (program, version, author, verdate))
+	print('\nA program to copy DiFX input (and other) files to a different directory,\nproperly modifying the path of references to other files in the process.\nThis program is typically run by difxqueue.')
+	print('\nUsage: %s [options] <jobPrefix1> [<jobPrefix2> [ ... ] ] <destDirectory>\n' % prog)
+	print('options can include\n')
+	print('  --help')
+	print('  -h         print this help information and quit\n')
+	print('  --verbose')
+	print('  -v         be more verbose in operation\n')
+	print('jobPrefixN is the prefix of a job name, e.g., mt911_03 would be\n  the prefix for files mt911_03.input and mt911_03.calc.\n')
+	print('destDir is the destination directory for the copy.\n')
+	print('\nFiles with the following suffixes will be copied:')
+	print('  %s\n' % prefixes)
 	exit(0)
 
 def outstring(k, v):
@@ -41,18 +42,18 @@ def handleVex(pathName, destination, verbose, vexFiles):
 		vexFiles.append(pair)
 		cmd = 'cp %s %s' % (pathName, destination)
 		if verbose:
-			print 'Vex copy %s --> %s\n' % (pathName, destination)
+			print('Vex copy %s --> %s\n' % (pathName, destination))
 		system(cmd)
 	else:
 		if verbose > 1:
-			print 'Not copying vex file %s to %s more than once\n' % (pathName, destination)
+			print('Not copying vex file %s to %s more than once\n' % (pathName, destination))
 
 def copyfile(pathName, destination, listOfFiles, verbose, vexFiles):
 	if destination[-1] == '/':
 		dest = destination
 	else:
 		dest = destination + '/'
-	fileName = dest + split(pathName, '/')[-1]
+	fileName = dest + pathName.split('/')[-1]
 	
 	if pathName in listOfFiles:
 		return []
@@ -61,23 +62,23 @@ def copyfile(pathName, destination, listOfFiles, verbose, vexFiles):
 
 	if isdir(pathName):
 		if verbose:
-			print 'Skipping %s as it is a directory.' % pathName
+			print('Skipping %s as it is a directory.' % pathName)
 		return []
 	
 	if not isfile(pathName):
 		if verbose:
-			print 'File %s not found.  Skipping.' % pathName
+			print('File %s not found.  Skipping.' % pathName)
 		return []
 
 	if verbose:
-		print '%s --> %s' % (pathName, fileName)
+		print('%s --> %s' % (pathName, fileName))
 
 	indatalines = open(pathName, 'r').readlines()
 	out = open(fileName, 'w')
 	changedFiles = []
 	indatatable = False
 	for indata in indatalines:
-		colonPos = find(indata, ':')
+		colonPos = indata.find(':')
 		if len(indata) < 21:
 			outdata = indata
 		elif colonPos < 1:
@@ -89,9 +90,9 @@ def copyfile(pathName, destination, listOfFiles, verbose, vexFiles):
 		elif indata[0:12] == 'DATA FORMAT:':
 			outdata = indata
 		else:
-			fn = strip(indata[colonPos+1:])
-			s = split(fn, '/')
-			if len(s) == 1 or fn[0] != '/' or split(indata, ':')[0] == 'DATA FORMAT':
+			fn = indata[colonPos+1:].strip()
+			s = fn.split('/')
+			if len(s) == 1 or fn[0] != '/' or indata.split(':')[0] == 'DATA FORMAT':
 				outdata = indata
 			else:
 				outdata = outstring(indata[:colonPos], dest + s[-1]) + '\n'
@@ -106,7 +107,7 @@ def copyfile(pathName, destination, listOfFiles, verbose, vexFiles):
 	out.close()
 
 	if verbose:
-		print ''
+		print('')
 
 	for f in changedFiles:
 		pathName = f
@@ -118,7 +119,7 @@ def copyfile(pathName, destination, listOfFiles, verbose, vexFiles):
 			copyfile(pathName, destination, listOfFiles, verbose, vexFiles)
 
 def copyfiles(jobPrefix, destination, verbose, vexFiles):
-	j = split(jobPrefix)[-1]
+	j = jobPrefix.split()[-1]
 	listOfFiles = []
 	for f in fileTypes:
 		pathName = jobPrefix + '.' + f
@@ -151,6 +152,6 @@ vexFiles = []
 
 for p in prefixes:
 	if not isfile(p) and not isfile(p+'.input'):
-		print 'No job named %s found here.  Continuing anyway.' % p
+		print('No job named %s found here.  Continuing anyway.' % p)
 	else:
 		copyfiles(p, destination, verbose, vexFiles)
