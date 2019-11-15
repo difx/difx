@@ -57,7 +57,7 @@ class DifxMachines(object):
 		Executed when the DifxMachines instance is printed
 		"""
 		result = ""
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			result += node.__str__() + "\n"
 		return result
 
@@ -65,7 +65,7 @@ class DifxMachines(object):
 		"""Generates the characters from `c1` to `c2`, inclusive."""
 		if len(c1) > 1 or len(c2) > 1:
 			raise Exception("Illegal letter range")
-		for c in xrange(ord(c1), ord(c2)+1):
+		for c in range(ord(c1), ord(c2)+1):
 			yield chr(c)
 
 	def getMk6Nodes(self):
@@ -73,7 +73,7 @@ class DifxMachines(object):
 		returns a list of all Mk6 nodes
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if node.isMk6 == 1:
 				nodes.append(node)
 		return nodes
@@ -83,7 +83,7 @@ class DifxMachines(object):
 		returns a list of all Mk6 node names
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if node.isMk6 == 1:
 				nodes.append(node.name)
 		return nodes
@@ -93,7 +93,7 @@ class DifxMachines(object):
 		returns a list of all Mk5 nodes
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if node.isMk5 == 1:
 				nodes.append(node)
 		return nodes
@@ -103,7 +103,7 @@ class DifxMachines(object):
 		returns a list of all Mk5 node names
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if node.isMk5 == 1:
 				nodes.append(node.name)
 		return nodes
@@ -114,7 +114,7 @@ class DifxMachines(object):
 		Compute nodes have a threads setting > 0
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if node.threads > 0:
 				nodes.append(node)
 		return nodes
@@ -124,7 +124,7 @@ class DifxMachines(object):
 		returns a list of all nodes having storage areas
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if len(node.fileUrls) > 0:
 				nodes.append(node)
 		return nodes
@@ -134,7 +134,7 @@ class DifxMachines(object):
 		returns a list of allowed headnodes
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if node.isHeadnode == 1:
 				nodes.append(node)
 		return nodes
@@ -144,7 +144,7 @@ class DifxMachines(object):
 		returns a list of allowed headnode names
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if node.isHeadnode == 1:
 				nodes.append(node.name)
 		return nodes
@@ -154,7 +154,7 @@ class DifxMachines(object):
 		returns a list of all nodes serving as network nodes
 		"""
 		nodes = []
-		for name, node in self.nodes.iteritems():
+		for name, node in self.nodes.items():
 			if len(node.networkUrls) > 0:
 				nodes.append(node)
 		return nodes
@@ -232,7 +232,7 @@ class DifxMachines(object):
 
 			for nodeName in nodeNames:
 				# check if node exists already
-				if self.nodes.has_key(nodeName):
+				if nodeName in self.nodes:
 					node = self.nodes[nodeName]
 				else:
 					node = Node()
@@ -268,7 +268,7 @@ class DifxMachines(object):
 				self.nodes[nodeName] = node
 
 				# remove previous node entry if a later one is found
-				if self.nodes.has_key(node.name):
+				if node.name in self.nodes:
 					del self.nodes[node.name]
 				# add node if enabled
 				if int(result.group(2).strip()) > 0:
@@ -298,38 +298,38 @@ if __name__ == "__main__":
 	# run python difxmachines <machinefile> to execute this test code
 	
 	if len(sys.argv) < 2:
-		print "Give full path to machinefile as first argument"
+		print("Give full path to machinefile as first argument")
 		sys.exit(1)
 	difxmachines = DifxMachines(sys.argv[1])
 
-	print difxmachines
+	print(difxmachines)
 		
-	print "------------\nCompute nodes:\n------------"
+	print("------------\nCompute nodes:\n------------")
 	for node in difxmachines.getComputeNodes():
-		print node.name, node.threads
+		print(node.name, node.threads)
 				
-	print "------------\nMark5 nodes:\n------------"
+	print("------------\nMark5 nodes:\n------------")
 	for node in difxmachines.getMk5Nodes():
-		print node.name
+		print(node.name)
 
-	print "------------\nMark6 nodes:\n------------"
+	print("------------\nMark6 nodes:\n------------")
 	for node in difxmachines.getMk6Nodes():
-		print node.name
+		print(node.name)
 
 
-	print "------------\nStorage nodes:\n------------"
+	print("------------\nStorage nodes:\n------------")
 	for node in difxmachines.getStorageNodes():
-		print node.name
+		print(node.name)
 
-	print "------------\nHead nodes:\n------------"
+	print("------------\nHead nodes:\n------------")
 	for node in difxmachines.getHeadNodes():
-		print node.name
+		print(node.name)
 		
-	print "------------\nNetwork nodes:\n------------"
+	print("------------\nNetwork nodes:\n------------")
 	for node in difxmachines.getNetworkNodes():
-		print node.name
+		print(node.name)
 
-	print "------------\nVersion:\n------------"
-	print difxmachines.getVersion()
+	print("------------\nVersion:\n------------")
+	print(difxmachines.getVersion())
 	
 
