@@ -1,0 +1,58 @@
+digraph dependencies
+{
+	{ rank = same
+	mpifxcorr [shape=box]
+	difx2fits [shape=box]
+	difx2mark4 [shape=box]
+	vex2difx [shape=box]
+	mk5daemon [shape=box]
+	calcif2 [shape=box]
+	difxcalc [shape=box]
+	}
+	vdifio [shape=Mrecord]
+	mark5access [shape=Mrecord]
+	mark6sg [shape=Mrecord]
+	mark6meta [shape=Mrecord]
+	difxmessage [shape=Mrecord]
+	codifio [shape=Mrecord]
+	dirlist [shape=Mrecord]
+	difxio [shape=Mrecord]
+	{ rank = same
+	ssapi [shape=oval]
+	expat [shape=oval]
+	mpi [shape=oval]
+	ipp [shape=oval]
+	fftw [shape=oval]
+	gsl [shape=oval]
+	}
+	mpifxcorr -> vdifio
+	mpifxcorr -> mark5access
+	mpifxcorr -> difxmessage
+	mpifxcorr -> ssapi [style=dashed]
+	mpifxcorr -> dirlist [style=dashed]
+	mpifxcorr -> mark6sg [style=dashed]
+	vdifio -> mark6sg [style=dashed]
+	vdifio -> codifio [style=dashed]
+	mark5access -> mark6sg [style=dashed]
+	mark5access -> codifio [style=dashed]
+	mark6sg -> difxmessage [style=dashed]
+	difx2fits -> difxio
+	difx2mark4 -> difxio
+	vex2difx -> difxio
+	vex2difx -> dirlist
+	mk5daemon -> ssapi [style=dashed]
+	mk5daemon -> difxmessage
+	mk5daemon -> mark6meta [style=dashed]
+	mk5daemon -> mark6sg [style=dashed]
+	calcif2 -> difxio
+	calcif2 -> difxcalc [style=dotted]
+	difxmessage -> expat
+	mpifxcorr -> mpi
+	mpifxcorr -> ipp
+	mark5access -> fftw [style=dashed]
+	difx2fits -> fftw [style=dashed]
+	difxio -> fftw [style=dashed]
+	difxio -> gsl [style=dashed]
+	calcif2 -> gsl [style=dashed]
+	difxcalc -> gsl
+}
