@@ -375,7 +375,7 @@ def getNodes(fileBase):
 	for m in range(1+nDatastream, len(machineData)):
 		i = m - 1 - nDatastream
 		t = threads[i]
-		if processors.has_key(t):
+		if t in processors:
 			processors[t].append(machineData[m].strip().split()[0])
 		else:
 			processors[t] = [machineData[m].strip().split()[0]]
