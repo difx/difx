@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 '''
 Script to generate calc im files for use with the ALMA case.
@@ -66,9 +66,9 @@ def genPatterns(verb, stations, normallines):
     and return a list of compiled search patterns.
     Note we need to preserve the order of stations.
     '''
-    if verb: print 'No atmosphere on these:'
+    if verb: print('No atmosphere on these:')
     patt = re.compile(r'TELESCOPE\s+(\d+)\s+NAME:\s*(\w\w)')
-    patterns = map(lambda x: r'MATCHES-NOTHING', range(len(stations)))
+    patterns = [r'MATCHES-NOTHING' for x in range(len(stations))]
     for line in normallines:
         tele = patt.search(line)
         if tele != None:
@@ -76,9 +76,9 @@ def genPatterns(verb, stations, normallines):
                 if tele.group(2) == stations[ii]:
                     patterns[ii] = re.compile(
                         r'SRC\s+\d+\s+ANT\s+' + tele.group(1))
-                    if verb: print '',line.rstrip(),\
+                    if verb: print('',line.rstrip(),\
                         'matches SRC\s+\d+\s+ANT\s+' + tele.group(1) + \
-                        'at index ' + str(ii)
+                        'at index ' + str(ii))
     return patterns
 
 def writeDelayDryWet(save, dryfac, wetfac, f):
@@ -99,7 +99,7 @@ def writeDelayDryWet(save, dryfac, wetfac, f):
     npts = 0
     plen = 0
     prec = 0
-    for k in save.keys():
+    for k in list(save.keys()):
         # capture line length
         if len(save[k]) > llen: llen = len(save[k])
         parts[k] = save[k].split()
@@ -117,7 +117,7 @@ def writeDelayDryWet(save, dryfac, wetfac, f):
         parts['delay'][c] = (fmt % delay)
         parts['dry'][c] = (fmt % dryval)
         parts['wet'][c] = (fmt % wetval)
-    for k in save.keys():
+    for k in list(save.keys()):
         save[k] = ' '.join(parts[k]) + '\n'
         f.write(save[k])
         del(save[k])
@@ -135,8 +135,8 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
     noatmolines = f.readlines()
     f.close()
     if len(normallines) != len(noatmolines):
-        print 'Calc output for %s have disparate lengths' % (
-            im, len(normallines), len(noatmolines))
+        print('Calc output for %s have disparate lengths' % (
+            im, len(normallines), len(noatmolines)))
         return 1
     f = open(im, 'w')
     srelist = genPatterns(verb, stations, normallines)
@@ -190,8 +190,8 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
                     f.write(norm)
                     normout += 1
     f.close()
-    if verb: print '%s w/ %d common %d mathout %d normal %d noatmo lines' % (
-        im, commout, mathout, normout, natmout)
+    if verb: print('%s w/ %d common %d mathout %d normal %d noatmo lines' % (
+        im, commout, mathout, normout, natmout))
     return 0
 
 def runCalc(verb, calc, options, extra, label, job):
@@ -205,16 +205,16 @@ def runCalc(verb, calc, options, extra, label, job):
         if extra == '-A':
             extra = '-noatmo'
     calcmd = '%s %s %s %s' % (calc, options, extra, job)
-    if verb: print 'Running ' + calcmd
+    if verb: print('Running ' + calcmd)
     im = re.sub(r'calc', 'im', job)
     if os.path.exists(im): os.unlink(im)
     rv = os.system(calcmd)
     if rv == 0 and os.path.exists(im):
         os.rename(im, im + '-' + label)
     else:
-        print im + ' not found, death will result'
+        print(im + ' not found, death will result')
         return 1
-    if verb: print im + '-' + label + ' was created\n'
+    if verb: print(im + '-' + label + ' was created\n')
     return 0
 
 # main entry point
@@ -231,11 +231,11 @@ if __name__ == '__main__':
     else:
         stations = [ o.noatmos.upper() ]
     if ',' in o.dry:
-        dry = map(float, o.dry.split(','))
+        dry = list(map(float, o.dry.split(',')))
     else:
         dry = [ float(o.dry) ]
     if ',' in o.wet:
-        wet = map(float, o.wet.split(','))
+        wet = list(map(float, o.wet.split(',')))
     else:
         wet = [ float(o.wet) ]
     errors = 0
