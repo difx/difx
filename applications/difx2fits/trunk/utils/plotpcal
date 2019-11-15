@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2014 by Walter Brisken                                  *
+#   Copyright (C) 2014-2019 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -23,19 +23,18 @@
 
 
 from sys import argv, exit
-from string import split, strip
 from math import *
 from pylab import np, plot, show, scatter, xlabel, ylabel, title, axes, savefig
 
 program = 'plotpcal'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
-version = '0.1'
+version = '0.2'
 
 legalOps = ['amp', 'phase', 'delay', 'xy']
 
 def usage(prog):
-	print '\n%s ver. %s  %s\n' % (program, version, author)
-	print 'Usage: %s [options] operation toneSelections dataFiles\n' % prog
+	print('\n%s ver. %s  %s\n' % (program, version, author))
+	print('Usage: %s [options] operation toneSelections dataFiles\n' % prog)
 
 # returns: op, toneSelect, files, options
 def parseCommandLine():
@@ -69,27 +68,27 @@ def parseCommandLine():
 	
 	die = False
 	if len(data) == 0:
-		print 'Error: no data files provided'
+		print('Error: no data files provided')
 		die = True
 	if len(toneSelect) == 0:
-		print 'Error: no tone selection'
+		print('Error: no tone selection')
 		die = True
 	if op == None:
-		print 'Error: operation not specified'
+		print('Error: operation not specified')
 		die = True
 	elif not op in legalOps:
-		print 'Error: operation must be one of ', legalOps
+		print('Error: operation must be one of ', legalOps)
 		die = True
 
 	if die:
-		print '\nRun with --help for more info\n'
+		print('\nRun with --help for more info\n')
 		exit(0)
 
 	if options['verbose'] > 1:
-		print 'op = %s' % op
-		print 'toneSection =', toneSelect
-		print 'data files =', data
-		print 'options =', options
+		print('op = %s' % op)
+		print('toneSection =', toneSelect)
+		print('data files =', data)
+		print('options =', options)
 
 	return op, toneSelect, data, options
 
@@ -103,20 +102,20 @@ def fileSummary(filename):
 			if d[:17] == '# File version = ':
 				pcalVersion = int(d[17:])
 		else:
-			s = split(d)
+			s = d.split()
 			ant = s[0]
 			start = float(s[1])
-			firstLine = strip(d)
+			firstLine = d.strip()
 			break
 
 	for d in reversed(data):
 		if d[0] != '#':
-			s = split(d)
+			s = d.split()
 			stop = float(s[1])
 			break
 	
 	if start == None or stop == None:
-		print 'Error: %s seems ill-formatted.  Is this a DiFX PCAL file?' % filename
+		print('Error: %s seems ill-formatted.  Is this a DiFX PCAL file?' % filename)
 		exit(0)
 
 	return ant, start, stop, firstLine, pcalVersion
@@ -132,14 +131,13 @@ def generateDataDictionary(data):
 	return dataDict
 
 def summarizeData(dataDict):
-	ants = dataDict.keys()
-	ants.sort()
+	ants = sorted(dataDict.keys())
 	for a in ants:
-		print 'Antenna %s:' % a
+		print('Antenna %s:' % a)
 		data = dataDict[a]
 		data.sort()
 		for d in data:
-			print '  %s from %f to %f ver %d' % (d[2], d[0], d[1], d[4])
+			print('  %s from %f to %f ver %d' % (d[2], d[0], d[1], d[4]))
 
 # each tone has 4 columns.  This function returns the index to the first of them (0-based)
 # the columns are: recBand (0-based), toneFreq (MHz), re, im
@@ -148,7 +146,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 	toneOffsets = [9, 6]	# indexed by pcalVersion
 
 	columns = []
-	s = split(strip(dataLine))
+	s = dataLine.strip().split()
 	toneOffset = toneOffsets[pcalVersion]	# index to first tone
 
 	if pcalVersion == 0:
@@ -158,10 +156,10 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 		nRecBand = int(s[8])
 		totalTones = nPol*nFreq*nTone
 		for ts in toneSelect:
-			tss = split(ts, '=')
+			tss = ts.split('=')
 			if tss[0] == 'rt':
 				# look for specific tone number.  Should be unambiguous
-				cd = split(tss[1], ',')	# column identifying data
+				cd = tss[1].split(',')	# column identifying data
 				rb = int(cd[0])		# rec band (0 based)
 				if rb < 0:
 					rb += nRecBand
@@ -176,7 +174,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 							break
 			elif tss[0] == 'rf':
 				# look for frequency within a specific record band.  Should be unambiguous
-				cd = split(tss[1], ',')
+				cd = tss[1].split(',')
 				rb = int(cd[0])		# rec band (0 based)
 				if rb < 0:
 					rb += nRecBand
@@ -193,7 +191,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 							break
 			elif tss[0] == 'f':
 				# look for specific frequency.  There could be many
-				cd = split(tss[1], ',')
+				cd = tss[1].split(',')
 				if cd[0][0] == '%':
 					fq = float(cd[0][1:])	# freq (MHz)
 					for t in range(totalTones):
@@ -208,7 +206,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 								columns.append(toneOffset+4*t)
 			elif tss[0] == 'r':
 				# get all tones for one record band.
-				cd = split(tss[1], ',')
+				cd = tss[1].split(',')
 				rb = int(cd[0])		# rec band (0 based)
 				if rb < 0:
 					rb += nRecBand
@@ -217,7 +215,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 						columns.append(toneOffset+4*t)
 			elif tss[0] == 't':
 				# get specific tone number for all recorded bands, or "all", meaning all tones
-				cd = split(tss[1], ',')
+				cd = tss[1].split(',')
 				if cd[0] == 'all':
 					for t in range(totalTones):
 						if int(s[toneOffset + 4*t]) >= 0:
@@ -236,10 +234,10 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 		nRecBand = int(s[4])
 		totalTones = nRecBand*nTone
 		for ts in toneSelect:
-			tss = split(ts, '=')
+			tss = ts.split('=')
 			if tss[0] == 'rt':
 				# look for specific tone number.  Should be unambiguous
-				cd = split(tss[1], ',')	# column identifying data
+				cd = tss[1].split(',')	# column identifying data
 				rb = int(cd[0])		# rec band (0 based)
 				tn = int(cd[1])		# tone num
 				if tn < 0:
@@ -251,7 +249,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 					columns.append(toneOffset + 4*(tn + nTone*rb))
 			elif tss[0] == 'rf':
 				# look for frequency within a specific record band.  Should be unambiguous
-				cd = split(tss[1], ',')
+				cd = tss[1].split(',')
 				rb = int(cd[0])		# rec band (0 based)
 				if rb < 0:
 					rb += nRecBand
@@ -269,7 +267,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 								break
 			elif tss[0] == 'f':
 				# look for specific frequency.  There could be many
-				cd = split(tss[1], ',')
+				cd = tss[1].split(',')
 				if cd[0][0] == '%':
 					fq = float(cd[0][1:])	# freq (MHz)
 					for t in range(totalTones):
@@ -284,7 +282,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 								columns.append(toneOffset+4*t)
 			elif tss[0] == 'r':
 				# get all tones for one record band.
-				cd = split(tss[1], ',')
+				cd = tss[1].split(',')
 				rb = int(cd[0])		# rec band (0 based)
 				if rb < 0:
 					rb += nRecBand
@@ -293,7 +291,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 						columns.append(toneOffset+4*(rb*nTone + t))
 			elif tss[0] == 't':
 				# get specific tone number for all recorded bands, or "all", meaning all tones
-				cd = split(tss[1], ',')
+				cd = tss[1].split(',')
 				if cd[0] == 'all':
 					for t in range(totalTones):
 						if int(s[toneOffset + 4*t]) >= 0:
@@ -308,7 +306,7 @@ def getOneToneColumns(toneSelect, dataLine, pcalVersion):
 							if int(s[toneOffset + 4*t]) >= 0:
 								columns.append(toneOffset+4*t)
 	else:
-		print 'Error: pcal file with version %d is not supported' % pcalVersion
+		print('Error: pcal file with version %d is not supported' % pcalVersion)
 		exit(0)
 	
 	return columns
@@ -318,7 +316,7 @@ def getTwoToneColumns(toneSelect, dataLine, pcalVersion):
 	toneOffsets = [9, 6]	# indexed by pcalVersion
 	
 	columns = []
-	s = split(strip(dataLine))
+	s = dataLine.strip().split()
 	toneOffset = toneOffsets[pcalVersion]	# index to first tone
 
 	if pcalVersion == 0:
@@ -328,10 +326,10 @@ def getTwoToneColumns(toneSelect, dataLine, pcalVersion):
 		nRecBand = int(s[8])
 		totalTones = nPol*nFreq*nTone
 		for ts in toneSelect:
-			tss = split(ts, '=')
+			tss = ts.split('=')
 			if tss[0] == 'rt':
 				# look for specific tone number.  Should be unambiguous
-				cd = split(tss[1], ',')	# column identifying data
+				cd = tss[1].split(',')	# column identifying data
 				rb = int(cd[0])		# rec band (0 based)
 				if rb < 0:
 					rb += nRecBand
@@ -373,7 +371,7 @@ def getTwoToneColumns(toneSelect, dataLine, pcalVersion):
 								break
 			elif tss[0] == 't':
 				# look for specific tone number.  Should be unambiguous
-				cd = split(tss[1], ',')	# column identifying data
+				cd = tss[1].split(',')	# column identifying data
 				if cd[0] == 'ends':
 					tn1 = 0
 					tn2 = -1
@@ -405,10 +403,10 @@ def getTwoToneColumns(toneSelect, dataLine, pcalVersion):
 		nRecBand = int(s[4])
 		totalTones = nRecBand*nTone
 		for ts in toneSelect:
-			tss = split(ts, '=')
+			tss = ts.split('=')
 			if tss[0] == 'rt':
 				# look for specific tone number.  Should be unambiguous
-				cd = split(tss[1], ',')	# column identifying data
+				cd = tss[1].split(',')	# column identifying data
 				rb = int(cd[0])		# rec band (0 based)
 				if rb < 0:
 					rb += nRecBand
@@ -447,7 +445,7 @@ def getTwoToneColumns(toneSelect, dataLine, pcalVersion):
 								columns.append([toneOffset+4*(rb*nTone+tn1), toneOffset+4*(rb*nTone+tn2)])
 			elif tss[0] == 't':
 				# look for specific tone number.  Should be unambiguous
-				cd = split(tss[1], ',')	# column identifying data
+				cd = tss[1].split(',')	# column identifying data
 				if cd[0] == 'ends':
 					tn1 = 0
 					tn2 = -1
@@ -475,14 +473,14 @@ def getTwoToneColumns(toneSelect, dataLine, pcalVersion):
 						if int(s[toneOffset + 4*(rb*nTone+tn1)]) != -1 and int(s[toneOffset + 4*(rb*nTone+tn2)]) != -1:
 							columns.append([toneOffset+4*(rb*nTone+tn1), toneOffset+4*(rb*nTone+tn2)])
 	else:
-		print 'Error: pcal file with version %d is not supported' % pcalVersion
+		print('Error: pcal file with version %d is not supported' % pcalVersion)
 		exit(0)
 
 	return columns
 	
 
 def calculateComplex(plotDataReal, plotDataImag, row, difxPcalLine, toneColumns):
-	s = split(strip(difxPcalLine))
+	s = difxPcalLine.strip().split()
 	for i in range(len(toneColumns)):
 		x = float(s[toneColumns[i]+2])
 		y = float(s[toneColumns[i]+3])
@@ -490,7 +488,7 @@ def calculateComplex(plotDataReal, plotDataImag, row, difxPcalLine, toneColumns)
 		plotDataImag[i][row] = y
 
 def calculateAmplitudes(plotData, row, difxPcalLine, toneColumns):
-	s = split(strip(difxPcalLine))
+	s = difxPcalLine.strip().split()
 	plotData[0][row] = float(s[1])
 	for i in range(len(toneColumns)):
 		x = float(s[toneColumns[i]+2])
@@ -498,7 +496,7 @@ def calculateAmplitudes(plotData, row, difxPcalLine, toneColumns):
 		plotData[i+1][row] = sqrt(x*x+y*y)
 
 def calculatePhases(plotData, row, difxPcalLine, toneColumns):
-	s = split(strip(difxPcalLine))
+	s = difxPcalLine.strip().split()
 	plotData[0][row] = float(s[1])
 	for i in range(len(toneColumns)):
 		x = float(s[toneColumns[i]+2])
@@ -529,7 +527,7 @@ def calculateDelays(plotData, row, difxPcalLine, toneColumns, pcalVersion):
 	
 	freqColumns = [1, 0]	# indexed by pcalVersion
 	
-	s = split(strip(difxPcalLine))
+	s = difxPcalLine.strip().split()
 	plotData[0][row] = float(s[1])
 	
 	freqColumn = freqColumns[pcalVersion]
@@ -543,8 +541,7 @@ def calculateDelays(plotData, row, difxPcalLine, toneColumns, pcalVersion):
 		plotData[i+1][row] = 1.0e3*(atan2(y2, x2) - atan2(y1, x1))/(2*pi*df)
 
 def generatePlots(op, toneSelect, dataDict, options):
-	ants = dataDict.keys()
-	ants.sort()
+	ants = sorted(dataDict.keys())
 	colors = ['red', 'orange', 'green', 'blue', 'purple', 'brown', 'cyan', 'magenta']
 	for a in ants:
 		data = dataDict[a]
@@ -562,7 +559,7 @@ def generatePlots(op, toneSelect, dataDict, options):
 			if op == 'amp':
 				toneColumns = getOneToneColumns(toneSelect, firstLine, pcalVersion)
 				if options['verbose'] > 0:
-					print 'From %s, the following tone columns will be used:' % filename, toneColumns
+					print('From %s, the following tone columns will be used:' % filename, toneColumns)
 				nColumn = 1+len(toneColumns)
 				fileData = open(filename).readlines()
 				nRow = 0
@@ -611,9 +608,9 @@ def generatePlots(op, toneSelect, dataDict, options):
 
 			elif op == 'delay':
 				toneColumns = getTwoToneColumns(toneSelect, firstLine, pcalVersion)
-				s = split(firstLine)
+				s = firstLine.split()
 				if options['verbose'] > 0:
-					print 'From %s, the following tone columns will be used:' % filename, toneColumns
+					print('From %s, the following tone columns will be used:' % filename, toneColumns)
 				nColumn = 1+len(toneColumns)
 				fileData = open(filename).readlines()
 				nRow = 0
