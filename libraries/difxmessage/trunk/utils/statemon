@@ -49,7 +49,7 @@ def signal_handler(signal, frame):
 program = 'statemon'
 author  = 'Walter Brisken'
 version = '0.6'
-verdate = '20190916'
+verdate = '20191115'
 
 def usage(prog):
 	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
@@ -130,10 +130,10 @@ class Parser:
 			wtstr = ''
 			if self.state == 'Running':
 				for i in range(0, self.maxant+1):
-					if not self.weight.has_key(i) or self.weight[i] <= 0.0001:
+					if not i in self.weight or self.weight[i] <= 0.0001:
 						wtstr = wtstr + "  .000"
 					else:
-						wtstr = wtstr + " %5.3f" % (self.weight[i])
+						wtstr = wtstr + " %5.3f" % self.weight[i]
 			if self.state == 'Running' and self.mjdStart > 50000.0 and self.mjdStop > self.mjdStart:
 				statestr = '%5.2f%%' % ( 100.0*(self.mjd - self.mjdStart)/(self.mjdStop - self.mjdStart) )
 			else:
@@ -161,7 +161,6 @@ def run():
 	s.bind(('', port))
 	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
 	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-	#s.settimeout(dt)
 
 	try:
 		while 1:

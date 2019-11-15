@@ -4,7 +4,7 @@
 
 PROGRAM = 'getsmart'
 VERSION = '0.2'
-VERDATE = '20190916'
+VERDATE = '20191115'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -60,9 +60,9 @@ smartDescriptions = { \
 	202: (0, "Data Address Mark error count") \
 }
 
-def getSmartDesc(id):
-	if smartDescriptions.has_key(id):
-		return smartDescriptions[id]
+def getSmartDesc(smartId):
+	if smartId in smartDescriptions:
+		return smartDescriptions[smartId]
 	else:
 		return (0, "Unknown smart id")
 
