@@ -30,7 +30,7 @@
 #include <cstdlib>
 #include "applycorrparams.h"
 
-int applyCorrParams(VexData *V, const CorrParams &params, int &nWarn, int &nError, std::set<std::string> &canonicalVDIFUsers)
+int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError, std::set<std::string> &canonicalVDIFUsers)
 {
 	VexStream tmpVS;	// used to hold output of format parsing
 

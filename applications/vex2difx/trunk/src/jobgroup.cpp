@@ -121,7 +121,7 @@ void JobGroup::createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const 
 
 	totalTime = J->duration();
 	
-	if(totalTime <= minLength)
+	if(totalTime < minLength)
 	{
 		jobs.pop_back();
 	}

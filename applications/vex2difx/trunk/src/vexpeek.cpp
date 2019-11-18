@@ -40,8 +40,8 @@
 #include <vexdatamodel.h>
 
 const std::string program("vexpeek");
-const std::string version("0.9");
-const std::string verdate("20190430");
+const std::string version("0.10");
+const std::string verdate("20191118");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 	VexData *V;
 	int v;
 	int doSummary = 1;
-	int nWarn = 0;
+	unsigned int nWarn = 0;
 	int verbose = 0;
 	int doBandList = 0;
 	int doScanList = 0;

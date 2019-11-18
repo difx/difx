@@ -2755,8 +2755,7 @@ bool antennaMatch(const std::string &a1, const std::string &a2)
 
 bool baselineMatch(const std::pair<std::string,std::string> &bl, const std::string &ant1, const std::string &ant2)
 {
-	if(antennaMatch(bl.first, ant1) &&
-	   antennaMatch(bl.second, ant2) )
+	if(antennaMatch(bl.first, ant1) && antennaMatch(bl.second, ant2) )
 	{
 		return true;
 	}

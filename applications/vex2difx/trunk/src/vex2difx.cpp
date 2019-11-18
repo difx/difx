@@ -63,13 +63,13 @@ const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with 
 
 static int calculateWorstcaseGuardNS(double sampleRate, int subintNS, int nBit, int nSubband)
 {
-        double sampleTimeNS = 1.0e9/sampleRate;
+	double sampleTimeNS = 1.0e9/sampleRate;
 	double nsAccumulate = sampleTimeNS;
 	const double MaxEarthGeomSlipRate = 1600.0;	// ns/sec
 
 	while(fabs(nsAccumulate - round(nsAccumulate)) > 2.0e-11)
 	{
-	  nsAccumulate += sampleTimeNS;
+		nsAccumulate += sampleTimeNS;
 	}
 
 	if(nBit*nSubband < 8)
@@ -1200,13 +1200,13 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 {
-	int nEOP;
+	unsigned int nEOP;
 
 	nEOP = E.size();
 	D->nEOP = nEOP;
 	D->eop = newDifxEOPArray(D->nEOP);
 
-	for(int e = 0; e < nEOP; ++e)
+	for(unsigned int e = 0; e < nEOP; ++e)
 	{
 		D->eop[e].mjd = static_cast<int>(E[e].mjd);
 		D->eop[e].tai_utc = static_cast<int>(E[e].tai_utc);
@@ -1999,7 +1999,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 					dd->phaseCalIntervalMHz = setup.phaseCalIntervalMHz();
 					dd->tcalFrequency = antenna->tcalFrequency;
 
-					// FIXME: eventually zoom bands will migrate to the VexMode/VexSetup infrastructure.  until then, use antenanSetup directly
+					// FIXME: eventually zoom bands will migrate to the VexMode/VexSetup infrastructure.  until then, use antennaSetup directly
 					if(antennaSetup)
 					{
 						nZoomBands = 0;
@@ -2145,12 +2145,13 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 							{
 								cerr << endl;
 								cerr << "Error: AntennaSetup for " << antName << " has only " << nLoOffsets << " loOffsets specified but " << (startBand + dd->nRecFreq) << " recorded frequencies needed." << endl;
+
 								exit(EXIT_FAILURE);
 							}
 							for(int i = 0; i < D->datastream[D->nDatastream].nRecFreq; ++i)
 							{
 								double loOffset;
-								
+
 								loOffset = (startBand + i < nLoOffsets) ? antennaSetup->loOffsets.at(startBand + i) : 0.0;
 								D->datastream[D->nDatastream].freqOffset[i] = loOffset;
 							}
@@ -2169,27 +2170,27 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				
 			exit(EXIT_FAILURE);
 		}
-		if (config->guardNS > 0)
+		if(config->guardNS > 0)
 		{
-		    worstcaseguardns = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), config->subintNS, mode->getMinBits(), mode->getMinSubbands());
-		    if(config->guardNS < worstcaseguardns)
-		    {
-			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << config->guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
-			if(strict)
+			worstcaseguardns = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), config->subintNS, mode->getMinBits(), mode->getMinSubbands());
+			if(config->guardNS < worstcaseguardns)
 			{
-				cerr << "\nExiting since strict mode was enabled" << endl;
-				
-				exit(EXIT_FAILURE);
+				cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << config->guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
+				if(strict)
+				{
+					cerr << "\nExiting since strict mode was enabled" << endl;
+
+					exit(EXIT_FAILURE);
+				}
+				else
+				{
+					cerr << "\nContinuing since --force was specified" << endl;
+				}
 			}
-			else
-			{
-				cerr << "\nContinuing since --force was specified" << endl;
-			}
-		    }
 		}
 		config->nDatastream = nConfigDatastream;
 	} // configId loop
-		
+
 	if(nPulsar != D->nPulsar)
 	{
 		cerr << "Error: nPulsar=" << nPulsar << " != D->nPulsar=" << D->nPulsar << endl;
@@ -2575,7 +2576,7 @@ static void calculateScanSizes(VexData *V, const CorrParams &P)
 		const VexScan *scan;
 		const VexMode *mode;
 		const CorrSetup *setup;
-		int nSubband, nBaseline;
+		unsigned int nSubband, nBaseline;
 		
 		scan = V->getScan(s);
 		if (!scan)
@@ -2659,11 +2660,11 @@ int main(int argc, char **argv)
 	bool deleteOld = false;
 	bool strict = true;
 	bool mk6 = false;
-	int nWarn = 0;
-	int nError = 0;
-	int nSkip = 0;
-	int nDigit;
-	int nJob = 0;
+	unsigned int nWarn = 0;
+	unsigned int nError = 0;
+	unsigned int nSkip = 0;
+	unsigned int nDigit;
+	unsigned int nJob = 0;
 	std::list<std::pair<int,std::string> > removedAntennas;
 
 	if(argc < 2)
@@ -2875,7 +2876,7 @@ int main(int argc, char **argv)
 		const std::string &corrSetupName = P->findSetup(scan->defName, scan->sourceDefName, scan->modeDefName);
 		CorrSetup *corrSetup = P->getNonConstCorrSetup(corrSetupName);
 		const VexMode *mode = V->getModeByDefName(scan->modeDefName);
-		if (!mode)
+		if(!mode)
 		{
 			continue;
 		}

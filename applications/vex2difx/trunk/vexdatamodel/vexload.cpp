@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2018 by Walter Brisken                             *
+ *   Copyright (C) 2009-2019 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1516,7 +1516,7 @@ static int getExper(VexData *V, Vex *v)
 }
 
 
-VexData *loadVexFile(const std::string &vexFile, int *numWarnings)
+VexData *loadVexFile(const std::string &vexFile, unsigned int *numWarnings)
 {
 	VexData *V;
 	Vex *v;
