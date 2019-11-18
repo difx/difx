@@ -32,9 +32,11 @@ pkgdata_DATA = _PolConvert.so \
 install-data-am: install-pkgdataDATA install-data-local
 
 # runs the CASA local build in the install directory
+# buildmytasks is a PERL(!) script living in $DIFXCASAPATH
 install-data-local: install-pkgdataDATA
 	cd $(pkgdatadir) ;\
 	export PATH=@DIFXCASAPATH@${PATH_SEPARATOR}${PATH} ;\
+	export CASALD_LIBRARY_PATH=@DIFXCASALIBPATH@${PATH_SEPARATOR}${LD_LIBRARY_PATH} ;\
 	buildmytasks
 
 # things created in pkgdata by buildmytasks
@@ -58,8 +60,9 @@ $(BuiltSources): copy.them
 # note that all .so files are build with this
 _PolConvert.so: copy.them
 	export PATH=@DIFXCASAPATH@${PATH_SEPARATOR}${PATH} ;\
+	export LD_LIBRARY_PATH=@DIFXCASALIBPATH@${PATH_SEPARATOR}${LD_LIBRARY_PATH} ;\
 	[ -n "${DIFXCASAVENV}" ] && source ${DIFXCASAVENV} ;\
-	python setup.py build_ext --inplace
+	@DIFXCASAPATH@/python setup.py build_ext --inplace
 
 # use copy.them to distinguish build and source dirs
 clean-local:

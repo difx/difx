@@ -43,8 +43,14 @@ if [test $have_casa = true] ; then
 	AC_MSG_NOTICE([BUILDMYTASKS is $BUILDMYTASKS])
     fi
 fi
-#AC_SUBST(DIFXCASAPATH)
+# try to use whatever is in CASA
+DIFXCASALIBPATH=$DIFXCASAPATH/../lib
+AC_SUBST(DIFXCASAPATH)
+AC_SUBST(DIFXCASALIBPATH)
 AM_CONDITIONAL(HAVE_CASA, $have_casa)
+# until we figure out how to automatically write setup.py
+# this environment variable may be needed
+AC_MSG_NOTICE([POLGAINSOLVELIBS is $POLGAINSOLVELIBS])
 
 # Checks for programs.
 AC_PROG_CXX

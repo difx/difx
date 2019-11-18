@@ -12,7 +12,7 @@ action=${1-'help'} ; shift
 skip='build mytasks.py polconvert_cli.py polconvert.py'
 skip="$skip build/temp.linux-x86_64-2.7"
 skip="$skip QA2/scriptForCalibrationAPP_C4.py"
-skip="$skip result_ALL.txt TODO.txt"
+skip="$skip result_ALL.txt TODO.txt setup.py"
 
 [ $# -eq 0 ] && set -- 'no-such-file'
 
@@ -27,6 +27,8 @@ do
   $punt && echo skipping $f && continue
   F=$f
   [ `expr $F : 'TOP.*'` -ge 3 ] && F=../`basename $f`
+  # pretty dodgy
+  [ "$F" = "../setup.py" ] && F=setup.py
   # decide what to do
   case $action in
   dir)

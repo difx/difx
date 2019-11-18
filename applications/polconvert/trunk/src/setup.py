@@ -1,12 +1,27 @@
 from distutils.core import setup, Extension
-import numpy as np
+import os
 
-print ''
-print '#######################################################################'
-print '# Compiling with numpy version', np.__version__
-print '#',                              np.__file__
-print '#######################################################################'
-print ''
+try:
+    import numpy as np
+    # make sure we're compiling with whatever CASA gave us
+    libdirs = [ os.environ['DIFXCASAPATH'] + '/../lib' ]
+    print ''
+    print '###################################################################'
+    print '# Compiling with numpy version', np.__version__
+    print '#',                              np.__file__
+    print '#',                              os.environ['DIFXCASAPATH']
+    print '#',                              libdirs
+    print '###################################################################'
+    print ''
+except Exception, ex:
+    print '#######################################################'
+    print '# DIFXCASAPATH must be set in the environment, and/or #'
+    print '# numpy must be be an installed python package        #'
+    print '#######################################################'
+    raise ex
+
+if not os.path.exists(libdirs[0]):
+    raise Exception('\n\n*** No library directory ' + libdirs[0] + '\n\n')
 
 # COMPILE THE GLOBAL CROSS-POLARIZATION FRINGE FITTING.
 # IT NEEDS FFTW AND GSL:
@@ -27,12 +42,14 @@ sourcefiles4 = ['_XPCal.cpp']
 
 c_ext1 = Extension("_PolConvert", sources=sourcefiles1,
                   extra_compile_args=["-Wno-deprecated","-O3"],
+                  library_dirs=libdirs,
                   libraries=['cfitsio'],
                   include_dirs=[np.get_include()],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
 
 c_ext3 = Extension("_getAntInfo", sources=sourcefiles3,
                   extra_compile_args=["-Wno-deprecated","-O3"],
+                  library_dirs=libdirs,
                   libraries=['cfitsio'],
                   include_dirs=[np.get_include()],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
@@ -48,8 +65,13 @@ if DO_SOLVE:
   # however, cblas needs to be installed so configure tests
   # are needed.  Commenting this out until I have time to fix this.
   # libraries=['gsl','cblas','fftw3']
+  # libraries=['gsl','fftw3']
+  try:    liblist = os.environ['POLGAINSOLVELIBS'].split(',')
+  except: liblist =['gsl','fftw3']
+  print '### for PolGainSolve, libraries is',liblist
   c_ext2 = Extension("_PolGainSolve", sources=sourcefiles2,
-                  libraries=['gsl','fftw3'],
+                  library_dirs=libdirs,
+                  libraries=liblist,
                   include_dirs=[np.get_include()],
                   extra_compile_args=["-Wno-deprecated","-O3"],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
