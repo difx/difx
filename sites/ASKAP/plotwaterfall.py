@@ -15,6 +15,7 @@ parser.add_argument("-f", "--basefreq", type=float, default=None, help="The lowe
 parser.add_argument("-F", "--fscrunch", default=False, help="Make fscrunched plot", action="store_true")
 parser.add_argument("--pols", type=str, default="XX,YY,I,Q,U,V", help='The polarisations to be imaged if --imagecube is set. Defaulted to all. Input as a list of strings: e.g., "XX,YY"')
 parser.add_argument("-a", "--avg", type=int, default=24, help="Number of channels to average together per image cube slice")
+parser.add_argument("--rms", default=False, action="store_true", help="Use the off-source rms estimate")
 
 args = parser.parse_args()
 
@@ -56,10 +57,14 @@ endfreq = basefreq + (endchan*bandwidth)/nchan
 starttime = 0
 endtime = nbins*res
 dynspec = {}
+dynrms = {}
 fscrunch = {}
+fscrunchrms = {}
 
 # Change global font size
 matplotlib.rcParams.update({'font.size': 12})
+
+combinedfig, combinedaxs = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
 
 for stokes in args.pols.split(','):
 
@@ -68,6 +73,8 @@ for stokes in args.pols.split(','):
     plt.title("Stokes "+ stokes)
     
     dynspec[stokes] = np.loadtxt("{0}-imageplane-dynspectrum.stokes{1}.txt".format(src, stokes))
+    if args.rms:
+        dynrms[stokes] = np.loadtxt("{0}-imageplane-rms.stokes{1}.txt".format(src, stokes))
 
     print dynspec[stokes].shape
 
@@ -83,29 +90,52 @@ for stokes in args.pols.split(','):
     else:
         if args.zero:
             dynspec[stokes][0] = 0
-#            dynspec[stokes][1] = 0
+            if args.rms:
+                dynrms[stokes][0] = 0
             print "Setting zeroth input bin equal to zero"
         else: print "Plotting all bins"
 
         if args.fscrunch:
             fscrunch[stokes] = np.sum(dynspec[stokes], 1)
             np.savetxt("{0}-imageplane-fscrunch-spectrum.stokes{1}.txt".format(src, stokes), fscrunch[stokes])
+            if args.rms:
+                fscrunchrms[stokes] = np.divide(np.sum(dynrms[stokes], 1),np.sqrt(nchan))
 
         ax.imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
-        ax.set_aspect(0.003) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
+        #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("Frequency (MHz)")
-        plt.savefig('{0}-imageplane-dynspectrum.stokes{1}.png'.format(src, stokes), bbox_inches = 'tight')
+        plt.tight_layout()
+        plt.savefig('{0}-imageplane-dynspectrum.stokes{1}.png'.format(src, stokes))
         plt.clf()
 
+        if args.rms:
+            print dynrms[stokes]
+            ax.imshow(dynrms[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+            #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
+            ax.set_xlabel("Time (ms)")
+            ax.set_ylabel("Frequency (MHz)")
+            plt.savefig('{0}-imageplane-rms.stokes{1}.png'.format(src, stokes))
+            plt.clf()
+
+        # Also plot onto the multipanel plot
+        if stokes in ["I","Q","U","V"]:
+            combinedaxs[["I","Q","U","V"].index(stokes)].imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+
+# Save the multipanel plot
+combinedaxs[3].set_xlabel("Time (ms)")
+for i in range(4):
+    combinedaxs[i].set_ylabel("Frequency (MHz)")
+plt.figure(combinedfig.number)
+plt.tight_layout()
+plt.savefig("{0}-multipanel-dynspectrum.png".format(src))
+plt.clf()
+plt.figure(fig.number)
+
+# Plot the fscrunched time series if asked
 if args.fscrunch:
-
-    # Set figure size
-    fig, ax = plt.subplots(figsize=(8,7))
-    plt.title("Frequency averaged")
-
     print "fscrunching..."
-    centretimes = np.arange(starttime+res, endtime+res, res)
+    centretimes = np.arange(starttime+res/2.0, endtime, res)
     for stokes in args.pols.split(','):
 
         if stokes=="I": 
@@ -126,11 +156,28 @@ if args.fscrunch:
         else: 
             col='yellow'
             plotlinestyle='--'
-    
-        amp_jy = fscrunch[stokes][:] * 0.01/res
-        ax.plot(centretimes,amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
-        ax.legend()
-        ax.set_xlabel("Time (ms)")
-        ax.set_ylabel("Amplitude (Jy)")
-        plt.savefig("{0}-fscrunch.png".format(src), bbox_inches = 'tight')
+
+        amp_jy = fscrunch[stokes][:] * 10000/res
+
+        if args.rms:
+            plt.errorbar(centretimes,amp_jy,yerr=fscrunchrms[stokes][:],label=stokes,color=col, linestyle=plotlinestyle)
+        else:
+            plt.plot(centretimes,amp_jy,label=stokes,color=col, linestyle=plotlinestyle)
+    plt.legend()
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Amplitude (Jy)")
+    plt.savefig("{0}-fscrunch.png".format(src), bbox_inches = 'tight')
+    plt.clf()
+    col='k'
+    plotlinestyle=':'
+    amp_jy = fscrunch["I"][:] * 10000/res
+    if args.rms:
+        plt.errorbar(centretimes,amp_jy,yerr=fscrunchrms["I"][:],label="I")
+    else:
+        plt.plot(centretimes,amp_jy,label="I")
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Amplitude (Jy)")
+    plt.savefig("{0}-fscrunch.stokesI.png".format(src), bbox_inches = 'tight')
+    plt.clf()
+
 else: print "Done!"

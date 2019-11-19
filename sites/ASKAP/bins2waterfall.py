@@ -14,6 +14,7 @@ parser.add_argument("-c", "--nchan", type=int, default=83, help="Number of chann
 parser.add_argument("-s", "--src", type=str, default=None, help="Source name to be used for the spectra text file prefix")
 parser.add_argument("--rms", help="Set if noise estimation is required", action="store_true")
 parser.add_argument("-p", "--prefix", type=str, default = "", help="Prefix for bin directory")
+parser.add_argument("--skipbinzero", default=False, action="store_true",  help="Skip the first bin, which is generally useless anyway")
 parser.add_argument("--pols", type=str, default="XX,YY,I,Q,U,V", help='The polarisations to be imaged if --imagecube is set. Defaulted to all. Input as a list of strings: e.g., "XX,YY"')
 parser.add_argument("--imagesize", type=int, default=128, help="Size of the image to make")
 
@@ -38,6 +39,9 @@ nbins = args.nbins
 nchan = args.nchan
 src = args.src
 prefix = args.prefix
+startbin = 0
+if args.skipbinzero:
+    startbin = 1
 polarisations = args.pols.split(',')
 imagesize = args.imagesize
 
@@ -47,7 +51,7 @@ os.system("mkdir {0}bins2waterlogs".format(prefix))
 for stokes in polarisations:
     dynspec = np.zeros(nbins*nchan).reshape(nbins,nchan)
     
-    for i in range(nbins):
+    for i in range(startbin,nbins):
         inputimage = "{0}bin{1:02g}/TARGET.cube.{2}.image".format(prefix, i, stokes)
         runfile = "waterfall.py"
         print inputimage
