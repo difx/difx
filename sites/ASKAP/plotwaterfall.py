@@ -96,10 +96,10 @@ for stokes in args.pols.split(','):
         else: print "Plotting all bins"
 
         if args.fscrunch:
-            fscrunch[stokes] = np.sum(dynspec[stokes], 1)
+            fscrunch[stokes] = np.mean(dynspec[stokes], 1)
             np.savetxt("{0}-imageplane-fscrunch-spectrum.stokes{1}.txt".format(src, stokes), fscrunch[stokes])
             if args.rms:
-                fscrunchrms[stokes] = np.divide(np.sum(dynrms[stokes], 1),np.sqrt(nchan))
+                fscrunchrms[stokes] = np.divide(np.mean(dynrms[stokes], 1),np.sqrt(nchan))
 
         ax.imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
         #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
