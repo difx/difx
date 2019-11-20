@@ -126,6 +126,8 @@ for stokes in args.pols.split(','):
 combinedaxs[3].set_xlabel("Time (ms)")
 for i in range(4):
     combinedaxs[i].set_ylabel("Frequency (MHz)")
+    combinedaxs[i].title.set_text("Stokes "+["I","Q","U","V"][i])
+#combinedfig.suptitle("Stokes I, Q, U, V")
 plt.figure(combinedfig.number)
 plt.tight_layout()
 plt.savefig("{0}-multipanel-dynspectrum.png".format(src))
@@ -140,29 +142,30 @@ if args.fscrunch:
 
         if stokes=="I": 
             col='k'
-            plotlinestyle=':'
-        elif stokes=="Q": 
-            col='cyan'
             plotlinestyle='-'
+        elif stokes=="Q": 
+            col='#8c510a'
+            plotlinestyle='--'
         elif stokes=="U": 
-            col='magenta'
+            col='#d8b365'
             plotlinestyle='-.'
         elif stokes=="V": 
-            col='r'
-            plotlinestyle='--'
+            col='#01665e'
+            plotlinestyle=':'
         elif stokes=="YY": 
-            col='orange'
+            col='#dfc27d'
             plotlinestyle='-'
         else: 
-            col='yellow'
-            plotlinestyle='--'
+            col='#35978f'
+            plotlinestyle=':'
 
         amp_jy = fscrunch[stokes][:] * 10000/res
+        rms_jy = fscrunchrms[stokes][:] * 10000/res
 
         if args.rms:
-            plt.errorbar(centretimes,amp_jy,yerr=fscrunchrms[stokes][:],label=stokes,color=col, linestyle=plotlinestyle)
+            plt.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2)
         else:
-            plt.plot(centretimes,amp_jy,label=stokes,color=col, linestyle=plotlinestyle)
+            plt.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
     plt.legend()
     plt.xlabel("Time (ms)")
     plt.ylabel("Amplitude (Jy)")
@@ -171,8 +174,9 @@ if args.fscrunch:
     col='k'
     plotlinestyle=':'
     amp_jy = fscrunch["I"][:] * 10000/res
+    rms_jy = fscrunchrms["I"][:] * 10000/res
     if args.rms:
-        plt.errorbar(centretimes,amp_jy,yerr=fscrunchrms["I"][:],label="I")
+        plt.errorbar(centretimes,amp_jy,yerr=rms_jy, label="I")
     else:
         plt.plot(centretimes,amp_jy,label="I")
     plt.xlabel("Time (ms)")
