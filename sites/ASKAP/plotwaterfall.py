@@ -107,16 +107,15 @@ for stokes in args.pols.split(','):
         ax.set_ylabel("Frequency (MHz)")
         plt.tight_layout()
         plt.savefig('{0}-imageplane-dynspectrum.stokes{1}.png'.format(src, stokes))
-        plt.clf()
 
         if args.rms:
-            print dynrms[stokes]
-            ax.imshow(dynrms[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+            dynrms_jy = dynrms[stokes]*10000/res
+            print dynrms_jy
+            ax.imshow(dynrms_jy[:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
             #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
             ax.set_xlabel("Time (ms)")
             ax.set_ylabel("Frequency (MHz)")
             plt.savefig('{0}-imageplane-rms.stokes{1}.png'.format(src, stokes))
-            plt.clf()
 
         # Also plot onto the multipanel plot
         if stokes in ["I","Q","U","V"]:
@@ -127,7 +126,6 @@ combinedaxs[3].set_xlabel("Time (ms)")
 for i in range(4):
     combinedaxs[i].set_ylabel("Frequency (MHz)")
     combinedaxs[i].title.set_text("Stokes "+["I","Q","U","V"][i])
-#combinedfig.suptitle("Stokes I, Q, U, V")
 plt.figure(combinedfig.number)
 plt.tight_layout()
 plt.savefig("{0}-multipanel-dynspectrum.png".format(src))
