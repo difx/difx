@@ -116,6 +116,7 @@ for stokes in args.pols.split(','):
             ax.set_xlabel("Time (ms)")
             ax.set_ylabel("Frequency (MHz)")
             plt.savefig('{0}-imageplane-rms.stokes{1}.png'.format(src, stokes))
+        plt.clf()
 
         # Also plot onto the multipanel plot
         if stokes in ["I","Q","U","V"]:
