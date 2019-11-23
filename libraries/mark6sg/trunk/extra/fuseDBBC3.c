@@ -427,6 +427,7 @@ int myfs_open(const char *path, struct fuse_file_info *fi)
 {
 	open_file_info_t *finfo;
 	struct stat statbuf;
+	int rv;
 
 	fprintf(stderr, "myfs_open: opening %s\n", path);
 
@@ -460,7 +461,18 @@ int myfs_open(const char *path, struct fuse_file_info *fi)
 	for (int n = 0; n < N_VDIF_STREAMS; n++) {
 		finfo->vdifframes_in[n] = calloc(1, INPUT_VDIF_FRAME_SIZE-VDIF_HEADER_SIZE);
 	}
- 	posix_memalign((void**)&finfo->vdifframe_out, 4096, 4*OUTPUT_VDIF_FRAME_SIZE*N_OUTPUT_FRAMES_BUFFERED);
+ 	rv = posix_memalign((void**)&finfo->vdifframe_out, 4096, 4*OUTPUT_VDIF_FRAME_SIZE*N_OUTPUT_FRAMES_BUFFERED);
+	if (rv != 0) {
+		fprintf(stderr, "Error: posix_memalign returned %d\n", rv);
+		for (int n = 0; n < N_VDIF_STREAMS; n++) {
+			mark6_sg_close(finfo->fds[n]);
+			free(finfo->vdifframes_in[n]);
+		}
+		free(finfo);
+		fi->fh = 0;
+
+		return -ENOMEM;
+	}
 
 	// Time-align the individual stream files
 	// (done on-the-fly later during read())

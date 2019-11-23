@@ -571,7 +571,14 @@ static size_t mark6_sg_blocklist_load(int nfiles, const char** filenamelist, m6s
     // Read the cache
     *blocklist = malloc(nblks*sizeof(m6sg_blockmeta_t));
     memset(*blocklist, 0x00, nblks*sizeof(m6sg_blockmeta_t));
-    fread(*blocklist, sizeof(m6sg_blockmeta_t), nblks, cf);
+    nrd = fread(*blocklist, sizeof(m6sg_blockmeta_t), nblks, cf);
+    if (nrd < nblks)
+    {
+        free(*blocklist);
+	fclose(cf);
+	free(cachefilename);
+	return 0;
+    }
     if (m_m6sg_dbglevel > 1) { printf("mark6_sg_blocklist_load: %u blocks in %s\n", (unsigned int)nblks, cachefilename); }
     fclose(cf);
     free(cachefilename);
@@ -711,15 +718,32 @@ void mark6_sg_blocklist_store(int nfiles, const char** filenamelist, m6sg_blockm
         int fdtmp;
         char tmpname[] = "/tmp/fileXXXXXX";
         uint64_t nblks64 = nblocks;
+	size_t nwr = 0;
 
         fdtmp = mkstemp(tmpname);
-        write(fdtmp, &nblks64, sizeof(nblks64));
-        write(fdtmp, *blocklist, sizeof(m6sg_blockmeta_t)*nblocks);
-        close(fdtmp);
-        rename(tmpname, cachefilename);
+	if (fdtmp == -1)
+	{
+	    fprintf(stderr, "Error: mark6_sg_blocklist_store: mkstemp failed.\n");
+	}
+	else
+	{
+	    nwr = write(fdtmp, &nblks64, sizeof(nblks64));
+	    nwr += write(fdtmp, *blocklist, sizeof(m6sg_blockmeta_t)*nblocks);
+	    close(fdtmp);
+	}
 
-        if (m_m6sg_dbglevel) { printf("mark6_sg_blocklist_rebuild: cached %zu metadata blocks in %s\n", nblocks, cachefilename); }
+	if (nwr != sizeof(nblks64) + sizeof(m6sg_blockmeta_t)*nblocks)
+	{
+	    fprintf(stderr, "Error: mark6_sg_blocklist_store: write failed.\n");
+	    remove(tmpname);
+	    // FIXME: should we also remove the old cache file if it exists?
+	}
+	else
+	{
+            rename(tmpname, cachefilename);
+            if (m_m6sg_dbglevel) { printf("mark6_sg_blocklist_rebuild: cached %zu metadata blocks in %s\n", nblocks, cachefilename); }
 
+	}
         free(cachefilename);
     }
 }
@@ -764,6 +788,7 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
     {
         int group = (disk/8) + 1;
         int gdisk = disk % 8;
+	size_t nrd;
 
         // Read the 'group' metadata first.
         // In the current Mark6 cplane v1.12 version it is a single text line without a terminating newline,
@@ -774,8 +799,13 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         f = fopen(tmppath, "r");
         if (f != NULL)
         {
-             fread(group_meta_str, sizeof(group_meta_str)-1, 1, f);
+             nrd = fread(group_meta_str, sizeof(group_meta_str)-1, 1, f);
+	     if (nrd != 1)
+	     {
+	         if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s read failed\n", tmppath); }
+	     }
              fclose(f);
+	     memset(group_meta_str, 0, sizeof(group_meta_str));
         }
         else if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s not found\n", tmppath); }
 
@@ -792,8 +822,13 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         json_strlen = st.st_size;
 
         json = malloc(json_strlen + 16);
-        fread(json, json_strlen, 1, f);
+        nrd = fread(json, json_strlen, 1, f);
         fclose(f);
+	if (nrd < 1)
+	{
+	    if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s could not be read\n", tmppath); }
+	    continue;
+	}
 
         // Parse JSON using the he Jasmin (JSMN) JSON C parser library
         jsmn_init(&p);

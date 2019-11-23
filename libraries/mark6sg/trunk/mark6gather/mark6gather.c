@@ -761,6 +761,8 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 			// We may want to support messaging for all modules in a group.
 			if(gotVSN == 0 && !strncmp(fileList[i], "/mnt/disks", 10))
 			{
+				char *rv;
+
 				slot = fileList[i][11];
 				disk = fileList[i][13];
 				sprintf(msnname, "/mnt/disks/.meta/%c/%c/eMSN", slot, disk);
@@ -769,9 +771,15 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 				{
 					continue;
 				}
-				fgets(m6g->activeVSN, 9, fmsn);
+				rv = fgets(m6g->activeVSN, 9, fmsn);
 				fclose(fmsn);
+				if(rv == 0)
+				{
+					continue;
+				}
 				gotVSN = 1;
+
+				// FIXME: do we want to report errors in getting labels somehow?
 			}
 		}
 	}

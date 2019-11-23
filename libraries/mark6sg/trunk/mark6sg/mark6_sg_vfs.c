@@ -360,6 +360,7 @@ int mark6_sg_creat(const char *scanname, mode_t ignored)
     for (i = 0; i < vfd->nfiles; i++)
     {
         struct file_header_tag hdr;
+	int nwr;
 
         // Defaults
         vfd->fsize[i] = 0;
@@ -394,8 +395,11 @@ int mark6_sg_creat(const char *scanname, mode_t ignored)
         hdr.block_size   += sizeof(wb_header_tag_v2_t);
         hdr.version       = 2;
         hdr.packet_format = 0;  // 0:vdif, 1:mark5, 2:unknown
-        write(vfd->fds[i], &hdr, sizeof(hdr));
-
+        nwr = write(vfd->fds[i], &hdr, sizeof(hdr));
+        if (nwr != sizeof(hdr)) {
+	    perror("write");
+	    return -ENOSPC;
+	}
     }
 
     return fd;
@@ -544,7 +548,7 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
     m6sg_virt_filedescr_t* vfd;
     size_t nread = 0;
     size_t nremain = count;
-    size_t blk, prevblk;
+    size_t blk;
 
     // Catch some error conditions
     if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
@@ -566,7 +570,6 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
 
     // Perform read
     blk = vfd->rdblock;
-    prevblk = blk;
     while ((nremain > 0) && (rdoffset < vfd->len))
     {
         size_t navail, nskip, nwanted;

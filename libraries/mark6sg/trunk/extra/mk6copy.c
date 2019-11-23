@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Jan Wagner                                      *
+ *   Copyright (C) 2014-2019 by Jan Wagner                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -144,6 +144,7 @@ int main(int argc, char** argv)
 	{
 		size_t  rdsize;
 		ssize_t nrd;
+		ssize_t nwr;
 
 		if (do_progress) { clock_gettime(CLOCK_REALTIME, &t0_rd); }
 		rdsize = (nremain > blocksize) ? blocksize : nremain ;
@@ -157,7 +158,14 @@ int main(int argc, char** argv)
 		}
 
 		if (do_progress) { clock_gettime(CLOCK_REALTIME, &t0_wr); }
-		write(fdo, buf, nrd);
+		nwr = write(fdo, buf, nrd);
+		if (nwr != nrd)
+		{
+			fprintf(stderr, "Write error (disk full?)\n");
+			fprintf(stderr, "  %zd bytes written\n", ncopied + nwr);
+			fprintf(stderr, "  %zd bytes remained to be written\n", nremain - nwr);
+			break;
+		}
 		ncopied += nrd;
 		nremain -= nrd;
 		if (do_progress) { clock_gettime(CLOCK_REALTIME, &t1_wr); }

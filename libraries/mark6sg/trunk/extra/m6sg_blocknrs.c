@@ -87,14 +87,20 @@ int main(int argc, char** argv)
 
     for (i=0; i<nfiles; i++)
     {
+        size_t nrd;
+
         f[i] = fopen(argv[i+1], "r");
         if (!f[i])
         {
             printf("Error: Could not open %s.\n", argv[i+1]);
-            usage();
             return 0;
         }
-        fread(&fhdr[i], sizeof(struct file_header_tag), 1, f[i]);
+        nrd = fread(&fhdr[i], sizeof(struct file_header_tag), 1, f[i]);
+	if (nrd != 1)
+	{
+	    printf("Error: could not read block size in %s.\n", argv[i+1]);
+	    return 0;
+	}
         printf("File %d block size %d\n", i, fhdr[i].block_size);
     }
 
@@ -102,13 +108,21 @@ int main(int argc, char** argv)
     {
         for (i=0; i<nfiles; i++)
         {
-            fread(&bhdr[i], sizeof(struct wb_header_tag), 1, f[i]);
+            size_t nrd;
+
+            nrd = fread(&bhdr[i], sizeof(struct wb_header_tag), 1, f[i]);
             if (feof(f[i]))
             {
                 printf("File %d EOF\n", i);
                 done = 1;
                 continue;
             }
+	    else if (nrd != 1)
+	    {
+	        printf("Error: file %d read error, but not EOF\n", i);
+		done = 1;
+		continue;
+	    }
             fseek(f[i], bhdr[i].wb_size - sizeof(struct wb_header_tag), SEEK_CUR);
             printf("File %d block size %d has nr %d\n", i, bhdr[i].wb_size, bhdr[i].blocknum);
         }

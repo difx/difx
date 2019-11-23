@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Jan Wagner                                      *
+ *   Copyright (C) 2014-2019 by Jan Wagner                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -199,6 +199,13 @@ int main(int argc, char** argv)
         }
 
         nwr = fwrite(buf, nrd, 1, fdout);
+	if (nwr != nrd)
+	{
+            fprintf(stderr, "Write error (disk full?)\n");
+            fprintf(stderr, "  %zd bytes written\n", ncopied + nwr);
+            fprintf(stderr, "  %zd bytes remained to be written\n", nremain - nwr);
+            break;
+	}
         nremain -= nrd;
         ncopied += nrd;
 

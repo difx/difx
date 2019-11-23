@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include "mark6gather.h"
 
 const char program[] = "mk6gather";
@@ -213,10 +214,18 @@ int main(int argc, char **argv)
 				/* truncate file if not multiple of Mark6 block size */
 				if(size % chunkSize != 0)
 				{
+					int rv;
+
 fprintf(stderr, "Truncating existing file from %Ld to %Ld bytes\n", (long long int)(size), (long long int)(size - (size % chunkSize)));
 					size -= (size % chunkSize);
 
-					truncate(outfile, size);
+					rv = truncate(outfile, size);
+					if(rv != 0)
+					{
+						printf("Error: call to truncate(%s, %Ld) resulted in: %s\n", outfile, (long long)size, strerror(errno));
+
+						exit(EXIT_FAILURE);
+					}
 				}
 				skipBytes = size;
 				out = fopen(outfile, "a");
