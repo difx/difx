@@ -67,12 +67,12 @@ int main(int argc, char **argv)
     printf("VDIF reader statistics: read %zu of %zu\n", nrd, buffer_size);
     for(n = 0; n < st.nThread; n++)
     {
-      printf("  Thread %2d relative offset = %5d frames, sec=%d, eof=%d\n", info.threadIds[n], st.threadOffsets[n], reader.sec[n], reader.feof[n]);
+      printf("  Thread %2d relative offset = %5ld frames, sec=%d, eof=%d\n", info.threadIds[n], st.threadOffsets[n], (int)(reader.sec[n]), reader.feof[n]);
     }
     printf("  Virtual offset = %zd\n", reader.virtualoffset);
     printf("  Frame size     = %d\n", reader.details.frameSize);
     printf("  Frame rate     = %d fps/thread\n", reader.fps);
-    printf("  Largest offset = %d frames\n", st.maxOffset);
+    printf("  Largest offset = %ld frames\n", st.maxOffset);
   }
 
   vdifreaderClose(&reader);

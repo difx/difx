@@ -75,6 +75,7 @@ static int    vdifreader_resync(struct vdif_file_reader *rd, int threadIdx);
 static size_t vdifreader_reposition_all(struct vdif_file_reader *rd, size_t offset);
 static int    vdifreader_check_eof(struct vdif_file_reader *rd);
 
+#if 0
 static void printf_vdif(const vdif_header* vhdr)
 {
 	const uint32_t* h = (const uint32_t*)vhdr;
@@ -89,6 +90,7 @@ static void printf_vdif(const vdif_header* vhdr)
 	fprintf(stderr, "  w2 : %08X\n", h[2]);
 	fprintf(stderr, "  w3 : %08X\n", h[3]);
 }
+#endif
 
 //============================================================================
 
@@ -501,7 +503,7 @@ static int vdifreader_advance_to_valid_frame(struct vdif_file_reader *rd, int th
 static int vdifreader_advance_to_frame_of_thread(struct vdif_file_reader *rd, int threadIdx)
 {
 	struct vdif_header vh;
-	int n, found=0;
+	int found=0;
 
 	assert(rd != NULL);
 	assert(threadIdx <= rd->details.nThread);

@@ -524,7 +524,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int maxSrcIndex;
 	int bytesProcessed = -1;		/* the program return value */
 	int firstGoodByte = -1;			/* location of first non-fillpattern frame */
-	int nextGoodByte = -1;			/* location of ne'xt good frame */
 	int nEnd = 0;				/* number of frames processed after the end of the buffer first reached */
 	int nGoodOutput = 0;
 	int nBadOutput = 0;
@@ -788,7 +787,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		bytesProcessed = i;
 	}
-	nextGoodByte = bytesProcessed;
 
 	/* Here the source dried up, but we want to be able to reconstruct a complete stream later, so back up, a bit to look for most recent incomplete frame consistent with nSort */
 	if(highestSortedDestIndex >= 0)
