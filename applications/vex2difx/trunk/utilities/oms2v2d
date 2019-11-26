@@ -38,7 +38,7 @@ from os import umask, popen, system
 
 program = 'oms2v2d'
 version = '1.7'
-verdate = '20190916'
+verdate = '20191125'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -172,6 +172,15 @@ def getDatacopyAntennaSetup(datacopyInfo, prefix, stn, datacopyFormat):
 
 	return None
 
+def getMachineFromFilelist(filelistFile):
+	try:
+		line1 = open(filelistFile).readline()
+		s = line1.strip().split()
+		if s[0] == '#' and s[1] == 'machine':
+			return s[2]
+	except:
+		return None
+
 def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
 	corr = oms['CORRELATOR_PARAMETERS'][0]
@@ -240,7 +249,11 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 		if nrt:
 			extra += 'filelist=%s_%s.filelist machine=%s ' % (prefix.lower(), s.lower(), machineMap[s])
 		elif filebased:
-			extra += 'filelist=%s.filelist machine=%s ' % (s.lower(), machineMap[s])
+			filelistFile = '%s.%s.filelist' % (prefix.lower(), s.lower())
+			machine = getMachineFromFilelist(filelistFile)
+			if machine == None:
+				machine = machineMap[s]
+			extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
 		elif datacopyFormat != None:
 			datacopyAntennaSetup = getDatacopyAntennaSetup(datacopyInfo, prefix, s, datacopyFormat)
 			if datacopyAntennaSetup == None:
