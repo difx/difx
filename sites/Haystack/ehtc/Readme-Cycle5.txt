@@ -151,7 +151,10 @@ ls -l $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
 [ -d ../qa2 ] || { mkdir ../qa2 ; }
 # for every QA2_proj, define $pcal,$pdir,$ptar and untar the $pdir/$ptar files
 for pc in $plst ; do ls -d ../qa2/$pc.qa2-diagnostics ; done
-[ -d ../qa2 -a -d ../qa2/$pcal.qa2-diagnostics ] ||
+for pc in $plst ; do [ -d ../qa2 -a -d ../qa2/$pc.qa2-diagnostics ] ||
+    echo $pc tables are missing, you need to untar them. ; done
+# source the setup for each QA2_proj and then do this snippet:
+[ -d ../qa2 -a -d ../qa2/$pc.qa2-diagnostics ]
     { pushd ../qa2 ; tar zxf $pdir/$ptar ;
       for r in README* ; do mv $r $pcal.$r ; done ; popd ; }
 
