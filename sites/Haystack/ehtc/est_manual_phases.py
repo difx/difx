@@ -28,7 +28,7 @@ def parseOptions():
     '''
     use = '%(prog)s [options]\n'
     use += '  Version '
-    use += '$Id: est_manual_phases.py 1939 2017-08-03 15:11:19Z gbc $'
+    use += '$Id: est_manual_phases.py.in 2891 2019-11-24 17:50:15Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     required = parser.add_argument_group('required options')
     flaggers = parser.add_argument_group('flag options')
@@ -234,7 +234,7 @@ def genPhaseDelay(o, ref, rem, ref_pol, rem_pol, sgn):
     cor = '%s/%s%s..%s' % (o.ffdir, ref, rem, o.stamp)
     if not os.path.exists(cor):
         if o.verb: print '  Missing datafile %s, skipping...' % cor
-        return
+        return 0
     if o.verb: print '  Using datafile %s' % cor
     for ite in range(int(o.max)):
         for seq in o.sequence.split(','):
@@ -245,7 +245,8 @@ def genPhaseDelay(o, ref, rem, ref_pol, rem_pol, sgn):
             else:     converged = executeFFact(o)
             if converged:
                 if o.verb: print '    Converged'
-                return
+                return 1
+    return 0
 
 def genPhaseOffset(o, ref, rem, ref_pol, rem_pol, sgn):
     '''
@@ -260,7 +261,7 @@ def genPhaseOffset(o, ref, rem, ref_pol, rem_pol, sgn):
     cor = '%s/%s%s..%s' % (o.ffdir, ref, rem, o.stamp)
     if not os.path.exists(cor):
         if o.verb: print '  Missing datafile %s, skipping...' % cor
-        return
+        return 0
     if o.verb: print '  Using datafile %s' % cor
     o.cmd = '%s -t -c %s -b %s%s -P %s%s %s set est_pc_manual %d' % (
         'fourfit', o.control, ref, rem, ref_pol, rem_pol, o.rootfile, sgn*64)
@@ -268,6 +269,8 @@ def genPhaseOffset(o, ref, rem, ref_pol, rem_pol, sgn):
     else:     converged = executeFFact(o)
     if converged:
         if o.verb: print '    Converged'
+        return 1
+    return 0
 
 def doTheWorkMix(o):
     '''
@@ -285,36 +288,69 @@ def doTheWorkMix(o):
     doStarters(o)
     sites = o.sites.split(',')
     mixed = sites.pop(0)
+    ok = 0
+    eok = 4 + 2 * len(sites)
     if not o.additional:
         if mixed != 'A':
             raise Exception, 'ALMA is expected to be first in the list of sites'
         fixed = sites.pop(0)
         if fixed != 'L':
             raise Exception, 'LMT is expected to be second in the list of sites'
-        genPhaseDelay(o, mixed, fixed, 'R', 'L', 1)  # step a.
-        genPhaseDelay(o, mixed, fixed, 'L', 'L', 1)  # step b.
-        genPhaseDelay(o, mixed, fixed, 'L', 'R', -1)  # step c.
-        genPhaseOffset(o, mixed, fixed, 'R', 'R', -1) # step d.
+        ok += genPhaseDelay(o, mixed, fixed, 'R', 'L', 1)  # step a.
+        ok += genPhaseDelay(o, mixed, fixed, 'L', 'L', 1)  # step b.
+        ok += genPhaseDelay(o, mixed, fixed, 'L', 'R', -1)  # step c.
+        ok += genPhaseOffset(o, mixed, fixed, 'R', 'R', -1) # step d.
     for other in sites:
-        genPhaseDelay(o, mixed, other, 'R', 'R', -1)
-        genPhaseDelay(o, mixed, other, 'R', 'L', -1)
+        ok += genPhaseDelay(o, mixed, other, 'R', 'R', -1)  # step e.
+        ok += genPhaseDelay(o, mixed, other, 'R', 'L', -1)  # step e.
+    if ok == eok:
+        print 'The %d of %d steps were completed properly'%(ok,eok)
+    else:
+        print 'Only %d of %d steps were completed properly'%(ok,eok)
 
 def doTheWorkAok(o):
     '''
     Build the control file as specified in program options.
     In the standard (EHT) path, we do the following:
     0. build a site id mk4 id mapping list
-    a. Assume the first site (ALMA) is done properly: phases/delays => 0
-       This is the default, so there is no work.
+    a. If the first site is ALMA, assume done properly: phases/delays => 0
+       This is the default, so there is no work. (pop)
     b. for every additional station/pol, use
        Ax ?? to generate x R/L phase & delay (rem)
+    c. If the first site is not ALMA, assume done properly; phases/delays
+       are not zero, but are consistent with ALMA and fourfit should be
+       generating numbers consistent with that.
+    d. for every additional station/pol, proceed to generate phases/delays
+       as normally.  However, it may be necessary to
+    e. swap baselines to find the proper ref/rem combination.
     '''
     doStarters(o)
     sites = o.sites.split(',')
     mixed = sites.pop(0)
-    for other in sites:
-        genPhaseDelay(o, mixed, other, 'R', 'R', -1)
-        genPhaseDelay(o, mixed, other, 'L', 'L', -1)
+    ok = 0
+    eok = 2 * len(sites)
+    if mixed == 'A':
+        for other in sites:
+            ok += genPhaseDelay(o, mixed, other, 'R', 'R', -1)  # step a.
+            ok += genPhaseDelay(o, mixed, other, 'L', 'L', -1)  # step a.
+        if ok == eok:
+            print 'The %d of %d steps were completed properly'%(ok,eok)
+        else:
+            print 'Only %d of %d steps were completed properly'%(ok,eok)
+    else:
+        # trust the first station
+        for other in sites:
+            ans = genPhaseDelay(o, mixed, other, 'R', 'R', -1)   # step d.
+            if ans == 0:
+                ans = genPhaseDelay(o, other,mixed, 'R', 'R', 1) # step e.
+            ok += ans
+            ans = genPhaseDelay(o, mixed, other, 'L', 'L', -1)   # step d.
+            if ans == 0:
+                ans = genPhaseDelay(o, other,mixed, 'L', 'L', 1) # step e.
+        if ok == eok:
+            print 'The %d of %d steps were completed properly'%(ok,eok)
+        else:
+            print 'Only %d of %d steps were completed properly'%(ok,eok)
 
 def pruneCF(o):
     '''
@@ -414,10 +450,10 @@ if __name__ == '__main__':
         sys.exit(0)
     try:
         if o.mixed:
-            print 'Assuming ALMA is mixed.'
+            print 'Assuming ALMA is mixed (-X option used).'
             doTheWorkMix(o)
         else:
-            print 'Assuming ALMA is fixed.'
+            print 'Assuming ALMA is fixed (-X option not used).'
             doTheWorkAok(o)
         pruneCF(o)
     except KeyboardInterrupt:
