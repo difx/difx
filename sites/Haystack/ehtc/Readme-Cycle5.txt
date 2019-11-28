@@ -1,5 +1,5 @@
 #
-# Instructions for polconversion/packaging for <Observation>/<Band>
+### Instructions for polconversion/packaging for <Observation>/<Band>
 #
 # This version is appropriate to Cycle5 (b1..b4)
 # The template for this file is in:     $ehtc/Readme-Cycle5.txt
@@ -25,10 +25,7 @@
 #
 
 # ENVIRONMENT =====================
-# go to working host and cut & paste or pipe it:
-# cat this.logfile | ssh -2x host & disown
-# ---
-# setup versioned tools -- different per site
+# setup versioned tools -- very different per site
 # script that adds CASA 4.7.2 bin to PATH
 source ~/lib/casa.setup
 source /swc/difx/setup-DiFX-2.5.3.bash
@@ -42,7 +39,7 @@ source $DIFXROOT/bin/hops.bash
 # site vars: these point to the mirror or difx SVN tree
 export hays=/data-sc24/EHT_ARCHIVE/Hays_Output2
 export bonn=/data-sc24/EHT_ARCHIVE/Bonn_Output2
-export dsvn=/swc/difx/difx-svn
+#export dsvn=/swc/difx/difx-svn
 export dsvn=/swc/difx/difx-svn/master_tags/DiFX-2.5.3/
 # site vars: script area, correlator work dir and release directory
 #export ehtc=/sites/Haystack/ehtc
@@ -55,11 +52,11 @@ export work=/data-sc15/difxoper
 
 # principal vars for tracking all the revisions and forth
 export exp=e18...
-export vers=?       # major correlator version
-export ctry=''      # minor correlator version
+export vers=?       # major correlator top-level version
+export ctry=''      # minor correlator top-level version
 export subv=b?      # b1 b2 b3 b4
-export stry='a'     # minor correlator version
-export iter=?       # numbered consecutively
+export stry='a'     # minor correlator sub-band version
+export iter=?       # polconvert iteration
 export relv=?       # archive release name number
 export flab=''      # re-fourfitting version (if needed)
 export expn=3...    # HOPS exp # (from Mike Titus)
@@ -88,6 +85,8 @@ $QA2_proj && {
 $QA2_na && echo QA2 logic error && exit
 export opts="-r -P $npar -S $scmp -f $npcf -A $dpfu -q $qpar"
 export plst="list of all pcal labels"
+export pdir=$hays/$exp/$exp-$vers/qa2
+export ptar=$plab.APP_DELIVERABLES.tgz
 
 # see the tarball script for what this does, should be false
 export fitsname=false
@@ -101,8 +100,6 @@ export release=$arch/$exp/$exp-$relv
 export dout=$corr/$exp/v${vers}$ctry/$subv$stry
 export evs=$exp-$vers-$subv
 export ers=$exp-$relv-$subv
-export pdir=$hays/$exp/$exp-$vers/qa2
-export ptar=$plab.APP_DELIVERABLES.tgz
 export aeditjob=$ehtc/ehtc-aeditjob.sh
 
 # check:
@@ -128,6 +125,7 @@ echo ===============================================================
 
 # Nth TIME SETUP =================
 cd $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
+ls -l $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
 
 # ONE TIME SETUP =================
 false && { # ONE TIME SETUP
@@ -136,7 +134,8 @@ false && { # ONE TIME SETUP
 [ -d $work/$exp/v${vers}${ctry}p${iter}/$subv${stry} ] ||
     mkdir $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
 [ -d $release ] || mkdir -p $release
-cd $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
+pwd ; cd $work/$exp/v${vers}${ctry}p${iter}/$subv${stry} ; pwd
+ls -l $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
 
 # once per trak, not per band, set up for polconvert data
 # from the mirror after consultation with the other correlator
@@ -150,18 +149,23 @@ cd $work/$exp/v${vers}${ctry}p${iter}/$subv${stry}
 # locally, use a common qa2 dir for multiple bands
 [ -d $pdir ] || { mkdir -p $pdir && echo need DELIVERABLES tarball in $pdir ; }
 [ -d ../qa2 ] || { mkdir ../qa2 ; }
+# for every QA2_proj, define $pcal,$pdir,$ptar and untar the $pdir/$ptar files
+for pc in $plst ; do ls -d ../qa2/$pc.qa2-diagnostics ; done
 [ -d ../qa2 -a -d ../qa2/$pcal.qa2-diagnostics ] ||
     { pushd ../qa2 ; tar zxf $pdir/$ptar ;
       for r in README* ; do mv $r $pcal.$r ; done ; popd ; }
 
 # for every QA2_proj, link in the QA2 package tables
-for d in ../qa2/$pcal.* ; do ln -s $d . ; done
-ls -ld $pcal.*
+for pc in $plst; do
+for d in ../qa2/$pc.* ; do ln -s $d . ; done; ls -ld $pc.*
+done
 
 # Review README.DRIVEPOLCONVERT: it may specify something other than 'v8'
 # which is the value passed as the -q argument to drivepolconvert.py
 # via the opts='...' assignment above.  Make sure you have this right.
-echo -n 'CHECK: ' $opts '== ' ; cat $pcal.README.DRIVEPOLCONVERT
+for pc in $plst; do
+echo -n 'CHECK: ' $opts '== ' ; cat $pc.README.DRIVEPOLCONVERT
+done
 
 # for every QA2 package, estimate a common $dpfu forr the campaign
 # dpfu (degrees / flux unit) appears in the ANTAB files and it is a
@@ -224,6 +228,7 @@ cp -p $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile $release/logs
 #
 # Run the GENERAL PROCESSING commands on a few jobs to make suitable data
 # for generating "good enough" manual phase cals (i.e. for survey use)
+# Ideally you should use one QA2_proj.
 # Make ### notes suitable for later grepping
 #
 # Notes on building $ers.conf:
@@ -256,7 +261,8 @@ $ehtc/est_manual_phases.py -c $ers.conf \
 grep ^if.station $ers.conf | sort | uniq -c
 #...
 # are all set up?
-# fourfit -bA? -c $ers.conf $roots ; fplot */A[^A].B*
+# for r in $roots ; do fourfit -bA? -c $ers.conf $r & done ; wait
+# fplot */A[^A].B*
 
 # be sure to clean up afterwards, especially to move $expn aside
 cd ..
@@ -285,9 +291,10 @@ rm -rf ${jobs//input/*}
 
 
 # you can launch as a remote job with:
-# cat this.logfile | ssh -2x host & disown
+# cat *.logfile | ssh -2x host & disown
 # or on the processing host with:
-# sh this.logfile & disown
+# sh *.logfile & disown
+# (there should be only one *.logfile)
 #--------------------------------------------------------------------------
 #
 # Final Steps ======================
@@ -322,7 +329,8 @@ antabfiles=`ls -l $ers*polcon*/*ANTAB | wc -l`
 [ $polconversions -eq $antabfiles ] || { echo -n '### missing antabfiles ';
     echo $polconversions -ne $antabfiles '(polconversions ne $antabfiles)' ; }
 for j in `cat $ers-jobs-map.txt | grep -v do.not | awk '{print $1}'`
-    do ls *$j*/*ANTAB *$j*/*TS/ALL*png > /dev/null ; done
+    do ls *$j*/*ANTAB *$j*/*TS/A*png 2>&1 >/dev/null | sed 's/^/### /' ; done
+# and paste ### lines here
 
 # Examine some of the 4fit fringes on questionable cases with
 fplot $ers-*-4fit.$expn.save/$doyhhmm/A[^A].B.*
@@ -334,8 +342,10 @@ compare-baselines-v6.pl -n 10000 -f -x AL \
 # verify that fits files are missing what is sensible
 # (delete lines  that are only x because of missing stations)
 cat *fits*/*pclist | egrep ' AA |x ' | sort | uniq |\ 
-    grep -v '#' > $ers-fits-missing.txt ; cat $ers-fits-missing.txt
+    grep -v '#' > $ers-fits-missing.txt
 cp -p $ers-fits-missing.txt $release/logs
+cat $ers-fits-missing.txt | sed 's/^/### /'
+# and paste it here
 
 # Final steps ======================
 # generate some summary aedit pdfs

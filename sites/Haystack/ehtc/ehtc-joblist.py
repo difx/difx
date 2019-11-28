@@ -335,6 +335,8 @@ def doParseVex(o):
         if p.returncode:
             err = 'Return code %d from VEX2XML' % p.returncode
             raise RuntimeError, err
+    else:
+        raise Exception, 'no file ' + o.vexobs + ' to parse'
     o.vextree = xml.etree.ElementTree.parse(o.vxoxml)
     os.unlink(o.vxoxml)
 
@@ -971,12 +973,14 @@ def updateBLPOL(jobinput, verb):
         blf_hit = blf_re.search(line)
         if blf_hit:
             fq_peer = int(blf_hit.group(2))
-            fe_peer = ds_indices[bl_peer][3][fq_peer]
+            try: fe_peer = ds_indices[bl_peer][3][fq_peer]
+            except: fe_peer = 'nada'    ### specline error
             continue
         blg_hit = blg_re.search(line)
         if blg_hit:
             fq_this = int(blg_hit.group(2))
-            fe_this = ds_indices[bl_this][3][fq_this]
+            try: fe_this = ds_indices[bl_this][3][fq_this]
+            except: fe_this = 'nowy'    ### specline error
             if fe_peer == fe_this:
                 bl_indices[bl_index][3].append(fe_peer)
             else:
