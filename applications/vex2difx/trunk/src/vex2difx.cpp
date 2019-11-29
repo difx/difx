@@ -30,6 +30,7 @@
 #include <vector>
 #include <set>
 #include <sstream>
+#include <iomanip>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -2030,7 +2031,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 								if(parentFreqIndices[nZoom] < 0)
 								{
 									nZoomSkip++;
-									cerr << "Warning: Cannot find a parent freq for zoom band " << i << " (" << zf.frequency << ") of datastream " << ds << " for antenna " << antName << endl;
+									cerr << "Warning: Cannot find a parent freq for zoom band " << i << " (" << std::fixed << std::setprecision(3) << zf.frequency << ") of datastream " << ds << " for antenna " << antName << endl;
 
 									continue;
 								}
