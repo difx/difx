@@ -114,7 +114,7 @@ def printDiFXInput(basename,indent=2,verbosity=2,version=2.6):
 	# Print out all FREQ entries not referenced by DATASTREAMS
 	all_fqs_used = set(all_fqs_used)
 	unused_fqs = list(set(range(len(cfg.freqs))) - all_fqs_used)
-	print("Frequencies not referenced by any DATASTREAMs, probable outputbands:")
+	print("Frequencies not referenced by any DATASTREAMs:")
 	if len(unused_fqs) < 1:
 		print((" "*indent) + "(none)")
 	else:
@@ -155,23 +155,25 @@ def printDiFXInput(basename,indent=2,verbosity=2,version=2.6):
 				if bl_band_1 >= ds1.nrecband: fqtype1 = 'zoom'
 				if bl_band_2 >= ds2.nrecband: fqtype2 = 'zoom'
 				print((" "*3*indent) + "%s %2d x %s %2d : %s%s : fq %2d x %2d : %s x %s" % (fqtype1,bl_band_1,fqtype2,bl_band_2, pol1,pol2, fq1,fq2,sfq1,sfq2))
-				print((" "*3*indent) + "  part of fq %d %s" % (destfreq,sdestfq))
-				baseline_outputfreq_members[destfreq].append(fq1)
-				baseline_outputfreq_members[destfreq].append(fq2)
-			if b.version >= 2.7:
-				for outfq in baseline_outputfreq_members.keys():
-					constituents = list(set(baseline_outputfreq_members[outfq]))
-					print((" "*2*indent) + " freq %d created from freq(s) %s" % (outfq,str(constituents)))
+				if b.version >= 2.7:
+					print((" "*3*indent) + "  part of fq %d %s" % (destfreq,sdestfq))
+					baseline_outputfreq_members[destfreq].append(fq1)
+					baseline_outputfreq_members[destfreq].append(fq2)
+		if b.version >= 2.7:
+			print((" "*2*indent) + "Output band mapping:")
+			for outfq in baseline_outputfreq_members.keys():
+				constituents = list(set(baseline_outputfreq_members[outfq]))
+				print((" "*3*indent) + "output freq %d created from freq(s) %s" % (outfq,str(constituents)))
 	print("")
 
 	# Print all utilized destination freqs
 	if version >= 2.7:
 		all_dest_fqs = list(set(all_dest_fqs))
 		all_dest_fqs.sort()
-		print("Referenced output FREQs:")
+		print("All referenced output band FREQs:")
 		for fq in all_dest_fqs:
-			print(fq, cfg.freqs[fq].str().strip())
-		print("%d total" % (len(all_dest_fqs)))
+			print((" "*1*indent) + "freqId %d : %s" % (fq, cfg.freqs[fq].str().strip()))
+		print((" "*1*indent) + "%d in total" % (len(all_dest_fqs)))
 
 if __name__ == "__main__":
 
