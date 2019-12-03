@@ -16,6 +16,7 @@ parser.add_argument("-F", "--fscrunch", default=False, help="Make fscrunched plo
 parser.add_argument("--pols", type=str, default="XX,YY,I,Q,U,V", help='The polarisations to be imaged if --imagecube is set. Defaulted to all. Input as a list of strings: e.g., "XX,YY"')
 parser.add_argument("-a", "--avg", type=int, default=24, help="Number of channels to average together per image cube slice")
 parser.add_argument("--rms", default=False, action="store_true", help="Use the off-source rms estimate")
+parser.add_argument("--frbtitletext", type=str, default="", help="The name of the FRB (or source) to be used as the title of the plots")
 
 args = parser.parse_args()
 
@@ -44,6 +45,7 @@ nbins = args.nbins
 nchan = args.nchan
 src = args.src
 res = args.res
+frbtitletext = args.frbtitletext
 
 # Define dynamic spectra parameters
 basefreq = args.basefreq
@@ -62,19 +64,20 @@ fscrunch = {}
 fscrunchrms = {}
 
 # Change global font size
-matplotlib.rcParams.update({'font.size': 12})
+matplotlib.rcParams.update({'font.size': 16})
 
 combinedfig, combinedaxs = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
 
 for stokes in args.pols.split(','):
 
     # Set figure size
-    fig, ax = plt.subplots(figsize=(6,7))
+    fig, ax = plt.subplots(figsize=(7,7))
     plt.title("Stokes "+ stokes)
     
     dynspec[stokes] = np.loadtxt("{0}-imageplane-dynspectrum.stokes{1}.txt".format(src, stokes))
     if args.rms:
         dynrms[stokes] = np.loadtxt("{0}-imageplane-rms.stokes{1}.txt".format(src, stokes))
+        print "{0}-imageplane-rms.stokes{1}.txt".format(src, stokes)
 
     print dynspec[stokes].shape
 
@@ -123,10 +126,15 @@ for stokes in args.pols.split(','):
             combinedaxs[["I","Q","U","V"].index(stokes)].imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
 
 # Save the multipanel plot
+combinedfig.suptitle(frbtitletext, x=0.25, y=0.99)
 combinedaxs[3].set_xlabel("Time (ms)")
 for i in range(4):
     combinedaxs[i].set_ylabel("Frequency (MHz)")
-    combinedaxs[i].title.set_text("Stokes "+["I","Q","U","V"][i])
+    if i==0:
+        combinedaxs[i].title.set_text("\n Stokes I")
+    else:
+        combinedaxs[i].title.set_text("Stokes "+["I","Q","U","V"][i])
+combinedaxs[0].title.set_text("\n Stokes I")
 plt.figure(combinedfig.number)
 plt.tight_layout()
 plt.savefig("{0}-multipanel-dynspectrum.png".format(src))
@@ -158,12 +166,15 @@ if args.fscrunch:
             col='#35978f'
             plotlinestyle=':'
 
+        print stokes
         amp_jy = fscrunch[stokes][:] * 10000/res
         rms_jy = fscrunchrms[stokes][:] * 10000/res
 
         if args.rms:
+            plt.title('   '+frbtitletext, loc='left', pad=-20)
             plt.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2)
         else:
+            plt.title('   '+frbtitletext, loc='left', pad=-20)
             plt.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
     plt.legend()
     plt.xlabel("Time (ms)")
