@@ -5,7 +5,6 @@
 # module load matplotlib/2.2.2-python-2.7.14
 
 import numpy as np
-import matplotlib.pyplot as plt
 import os, sys,argparse
 
 parser = argparse.ArgumentParser()
