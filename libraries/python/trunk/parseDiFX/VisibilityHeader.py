@@ -34,6 +34,7 @@ class VisibilityHeader:
         self.clear()
 
     def clear(self):
+        self.raw = ''
         self.syncword = 0
         self.baseline = 0
         self.mjd = 0
@@ -55,6 +56,7 @@ class VisibilityHeader:
         if len(h) < 12:
             self.clear()
             return False
+        self.raw = h[-1]
         self.syncword = M_SYNC_WORD
         self.baseline, self.mjd, self.seconds = h[0:3]
         self.configindex, self.srcindex, self.freqindex = h[3:6]
