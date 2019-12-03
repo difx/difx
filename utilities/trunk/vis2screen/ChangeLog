@@ -1,4 +1,5 @@
 Version 1.0
+* New utility removeNonzoomAutosDiFX.py for removing rec-band autocorrelations from a zoom-only correlation
 * migrated to parseDiFX package
 
 Version 0.9
