@@ -969,6 +969,10 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									{
 										altFreqId = D->datastream[ds2].recFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
+										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
+										{
+											continue;
+										}
 										if(D->freq[altFreqId].sideband == 'L')
 										{
 											altlowedgefreq -= D->freq[altFreqId].bw;
@@ -986,6 +990,10 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									for(int f2 = 0; f2 < D->datastream[ds2].nZoomFreq; ++f2)
 									{
 										altFreqId = D->datastream[ds2].zoomFreqId[f2];
+										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
+										{
+											continue;
+										}
 										if(D->freq[freqId].freq == D->freq[altFreqId].freq &&
 										   D->freq[freqId].bw   == D->freq[altFreqId].bw &&
 										   D->freq[freqId].sideband == D->freq[altFreqId].sideband)
@@ -1002,6 +1010,10 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									{
 										altFreqId = D->datastream[ds2].zoomFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
+										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
+										{
+											continue;
+										}
 										if(D->freq[altFreqId].sideband == 'L')
 										{
 											altlowedgefreq -= D->freq[altFreqId].bw;
@@ -1080,6 +1092,10 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								for(int f2 = 0; f2 < D->datastream[ds2].nRecFreq; ++f2)
 								{
 									altFreqId = D->datastream[ds2].recFreqId[f2];
+									if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
+									{
+										continue;
+									}
 									if(D->freq[freqId].freq == D->freq[altFreqId].freq &&
 									   D->freq[freqId].bw   == D->freq[altFreqId].bw &&
 									   D->freq[altFreqId].sideband == 'U')
@@ -1095,6 +1111,10 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									{
 										altFreqId = D->datastream[ds2].recFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
+										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
+										{
+											continue;
+										}
 										if(D->freq[altFreqId].sideband == 'L')
 										{
 											altlowedgefreq -= D->freq[altFreqId].bw;
@@ -1121,6 +1141,10 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									{
 										altFreqId = D->datastream[ds2].zoomFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
+										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
+										{
+											continue;
+										}
 										if(D->freq[altFreqId].sideband == 'L')
 										{
 											altlowedgefreq -= D->freq[altFreqId].bw;
