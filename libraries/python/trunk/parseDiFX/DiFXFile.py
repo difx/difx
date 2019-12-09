@@ -53,12 +53,10 @@ class DiFXFile:
         glob_pattern = self.difxfilepath + '/DIFX_*.s*.b*'
         difxfileslist = glob.glob(glob_pattern)
         if len(difxfileslist) <= 0:
-            print ('Error: no visibility data file found in %s!' % (glob_pattern))
-            raise ValueError('No visibility files %s as referenced by %s were found' % (glob_pattern,inputfilename))
-
-        self.difxfilename = difxfileslist[0]
-        self.difxfile = open(self.difxfilename, 'rb')
-        self.valid = True
+            print ('Warning: no visibility data file found in %s!' % (glob_pattern))
+        else:
+            self.difxfilename = difxfileslist[0]
+            self.difxfile = open(self.difxfilename, 'rb')
 
     def close(self):
         self.difxfile.close()
@@ -70,7 +68,8 @@ class DiFXFile:
         return self.visrecord
 
     def nextVisibilityRecord(self):
-        self.visrecord.fromfile(self.difxfile, self.metainfo.freqs)
+        if self.difxfile is not None:
+            self.visrecord.fromfile(self.difxfile, self.metainfo.freqs)
         return self.visrecord
 
     def getFrequency(self, freqindex):
