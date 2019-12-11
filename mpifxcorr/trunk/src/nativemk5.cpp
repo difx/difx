@@ -693,6 +693,14 @@ int NativeMk5DataStream::moduleRead(u32 *destination, int nbytes, long long star
 		++destination;
 	}
 
+	if(!scanPointer)
+	{
+		cerror << startl << "Developer Error mk5: called moduleRead() but scanPointer=NULL, while noMoreData=" << noMoreData << ", dataremaining=" << dataremaining << endl;
+		dataremaining = false;
+		noMoreData = true;
+		return 0;
+	}
+
 	// if we're starting after the end of the scan, then just set flags and return
 	if(start >= scanPointer->getStart() + scanPointer->getLength())
 	{
