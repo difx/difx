@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2018 by Walter Brisken, Adam Deller                *
+ *   Copyright (C) 2014-2019 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,9 +40,9 @@
 #endif
 
 const char program[] = "printVDIFheader";
-const char author[]  = "Walter Brisken <wbrisken@lbo.us>";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.7";
-const char verdate[] = "20180921";
+const char verdate[] = "20191215";
 
 static void printVersion()
 {
