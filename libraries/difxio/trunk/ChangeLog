@@ -8,6 +8,7 @@
 * convert python to python3
 * replace @lbo.us with @nrao.edu email addresses
 * difxcopy and mvdifxhere no longer live in difxio; look in misc_utils
+* file name ending in %now.vdif% gets replaced with "%d_%05d.vdif" % (mjd, sec) (simplifies VLITE file naming)
 
 3.6.0
 * Post DiFX 2.5

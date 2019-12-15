@@ -219,7 +219,32 @@ static int writeDataTable(FILE *out, const DifxInput *D)
 			{
 				if(ds->file[j])
 				{
-					writeDifxLine2(out, "FILE %d/%d", i, j, ds->file[j]);
+					int l;
+					int writeTimeFile = 0;
+
+					l = strlen(ds->file[j]);
+					if(l > 10)
+					{
+						if(strcmp(ds->file[j]+l-10, "%now.vdif%") == 0)
+						{
+							writeTimeFile = 1;
+						}
+					}
+					if(writeTimeFile)
+					{
+						char *base;
+						char fn[100];
+
+						base = strdup(ds->file[j]);
+						base[l-10] = 0;
+						snprintf(fn, 100, "%s%5d_%05d.vdif", base, (int)(D->mjdStart), (int)((D->mjdStart - (int)(D->mjdStart))*86400.0));
+						writeDifxLine2(out, "FILE %d/%d", i, j, fn);
+						free(base);
+					}
+					else
+					{
+						writeDifxLine2(out, "FILE %d/%d", i, j, ds->file[j]);
+					}
 				}
 				else
 				{
