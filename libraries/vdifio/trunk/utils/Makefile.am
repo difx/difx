@@ -22,6 +22,7 @@ bin_PROGRAMS = \
 	printVDIFheader \
 	peekVDIF \
 	searchVDIF \
+	splitVDIFbygap \
 	vdif2to8 \
 	vdifChanSelect \
 	vmux \
@@ -100,6 +101,9 @@ printVDIFheader_SOURCES = \
 
 searchVDIF_SOURCES = \
 	searchVDIF.c
+
+splitVDIFbygap_SOURCES = \
+	splitVDIFbygap.c
 
 vdif2to8_SOURCES = \
 	vdif2to8.c
