@@ -83,11 +83,11 @@ int main(int argc, char **argv)
 	outputPrefix = argv[2];
 	if(argc > 3)
 	{
-		maxGap = atoi(argv[3]);
+		frameSize = atoi(argv[3]);
 	}
 	if(argc > 4)
 	{
-		frameSize = atoi(argv[4]);
+		maxGap = atoi(argv[4]);
 	}
 
 	if(strcmp(inputFile, "-") == 0)
@@ -139,14 +139,14 @@ int main(int argc, char **argv)
 		second = getVDIFFrameSecond(vh);
 		if(second != lastSecond)
 		{
-			if(second - lastSecond + 1 > maxGap)
+			if(verbose > 0)
+			{
+				printf("Time: MJD %d  Sec %d  Read %d  Dropped %d\n", getVDIFFrameMJD(vh), second, nRead, nDropped);
+			}
+
+			if(second - lastSecond - 1 > maxGap)
 			{
 				char filename[128];
-
-				if(verbose > 0)
-				{
-					printf("Time: MJD %d  Sec %d\n", getVDIFFrameMJD(vh), second);
-				}
 
 				if(out)
 				{
