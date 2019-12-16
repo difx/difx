@@ -57,7 +57,7 @@ for stokes in polarisations:
 
         # Get the max flux of the source from source images
         output = open(runfile, "w")
-        box = '{0},{1},{2},{0}'.format(imagesize/2, imagesize/2-1, imagesize/2+1)
+        box = '{0},{0},{1},{1}'.format(imagesize/2, imagesize/2)
         for chan in range(nchan):
             output.write('imstat(imagename="{0}",box="{1}",chans="{2:d}",logfile="waterfall.bin{3:02d}.chan{4:03d}.log")\n'.format(inputimage, box, chan, i, chan))
         output.close()
@@ -70,13 +70,36 @@ for stokes in polarisations:
         runcasa.close()
         os.system("chmod 755 casaimstat.sh")
         os.system("./casaimstat.sh")
+        specout = open("{0}-spectrum.stokes{1}.bin{2:02d}.txt".format(src, stokes, i), "w")
+        specout.write("#title: bins2waterfall spectral profile - {0}\n".format(inputimage))
         for chan in range(nchan):
             logfile = "waterfall.bin{0:02d}.chan{1:03d}.log".format(i, chan)
             loglines = open(logfile).readlines()
+            chanfreq = 0.0
+            if chan == 0: # Write the header
+                for line in loglines:
+                    if "[blc]" in line:
+                        blc = line.split(':')[-1].strip()[1:-1].split(', ')
+                    if "[trc]" in line:
+                        trc = line.split(':')[-1].strip()[1:-1].split(', ')
+                    if "[blcf]" in line:
+                        blcf = line.split(':')[-1].strip().split(', ')
+                    if "[trcf]" in line:
+                        trcf = line.split(':')[-1].strip().split(', ')
+                specout.write("#region (world): Rectangle[[{0}, {1}], [{2}, {3}]]\n".format(blcf[0], blcf[1], trcf[0], trcf[1]))
+                specout.write("#region (pixel): Rectangle[[{0}, {1}], [{2}, {3}]]\n".format(blc[0],  blc[1],  trc[0],  trc[1]))
+                specout.write("#coordinate: world\n")
+                specout.write("#xLabel: frequency [GHz]\n")
+                specout.write("#yLabel: [Jy/beam] Mean\n\n")
             for line in loglines:
+                if "bottom-left corner (world)" in line:
+                    chanfreq = float(line.split()[-1][:-2])/1e9
+                    specout.write("%.9f " % chanfreq)
                 if "maximum value [max]:" in line:
                     dynspec[i][chan] = float(line.split()[-2]) # unit = Jy/beam
+                    specout.write("%13.9f\n" % dynspec[i][chan])
                     break
+        specout.close()
         os.system("rm -f waterfall.*.log")
         os.system("mv casa*.log {0}bins2waterlogs".format(prefix))
 
