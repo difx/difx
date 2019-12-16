@@ -57,6 +57,24 @@ static void usage()
 	fprintf(stderr, "\n<max gap> is the maximum time (integer seconds; default is 1) between two consecutive frames before creating a new file.\n");
 }
 
+int findFrame(const char *buffer, int frameSize, int lastMJD)
+{
+	int i;
+
+	for(i = 0; i < frameSize - 32; ++i)
+	{
+		vdif_header *h;
+
+		h = (vdif_header *)(buffer + i);
+		if(getVDIFFrameBytes(h) == frameSize && (getVDIFFrameMJD(h) == lastMJD || getVDIFFrameMJD(h) == lastMJD+1))
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 int main(int argc, char **argv)
 {
 	const char *inputFile = 0;
@@ -65,12 +83,14 @@ int main(int argc, char **argv)
 	int frameSize = 5032;
 	FILE *in = 0;
 	FILE *out = 0;
-	int lastSecond = -99999;
+	long long int lastMjdSecond = -99999;
 	char *buffer;
 	int verbose = 1;
 	int nRead = 0;
 	int nDropped = 0;
 	const vdif_header *vh;
+	int lastMJD = 0;
+	int nNoData = 0;
 
 	if(argc < 3)
 	{
@@ -118,33 +138,102 @@ int main(int argc, char **argv)
 
 	for(;;)
 	{
-		size_t n;
-		int second;
+		int n;
+		int second, mjd;
+		long long int mjdSecond;
 
-		n = fread(buffer, frameSize, 1, in);
-		if(n != 1)
+/* The "no data" concept here is based on the VLITE Buffer behavior.  This is 
+a fuse filesystem that one can read from as data fills it in real time.  If
+no data appears within a time-out period, when the data comes back there will 
+be a 1 byte offset due to the internal read pointer's position.  Probably worth
+fixing the vlite buffer... */
+
+		if(nNoData > 0)
+		{
+			n = fread(buffer, 1, 1, in);
+		}
+		else
+		{
+			n = fread(buffer, frameSize, 1, in);
+		}
+		if(n == 0)
+		{
+			printf("No data\n");
+			++nNoData;
+			continue;
+		}
+		else if(n != 1)
 		{
 			break;
 		}
 
-		if(getVDIFFrameBytes(vh) != frameSize)
+		if(nNoData > 0)
 		{
-			fprintf(stderr, "Frame size mismatch.\n");
+			nNoData = 0;
+			printf("Found data\n");
+			continue;	/* go back around to read a full frame */
+		}
 
-			break;
+		if(getVDIFFrameBytes(vh) != frameSize)	/* maybe synchronization lost? */
+		{
+			n = findFrame(buffer, frameSize, lastMJD);
+			if(n < 0)
+			{
+				FILE *jnq;
+				fprintf(stderr, "Lost frame sync.\n");
+
+				jnq = fopen("/tmp/jnq.vdif", "w");
+				n = fwrite(buffer, frameSize, 1, jnq);
+
+				if(jnq && n == 1)
+				{
+					fprintf(stderr, "bad frame written to /tmp/jnq.vdif\n");
+				}
+				else
+				{
+					fprintf(stderr, "could not write bad frame\n");
+				}
+
+				if(jnq)
+				{
+					fclose(jnq);
+				}
+
+				break;
+			}
+			else
+			{
+				n = fread(buffer, n, 1, in);
+				if(n != 1)
+				{
+					fprintf(stderr, "Error: resyncronization failed\n");
+
+					break;
+				}
+				else
+				{
+					printf("Had to jump %d bytes to resynchronize\n", n);
+
+					++nDropped;
+
+					continue;
+				}
+			}
 		}
 
 		++nRead;
 
 		second = getVDIFFrameSecond(vh);
-		if(second != lastSecond)
+		mjd = getVDIFFrameMJD(vh);
+		mjdSecond = (long long int)mjd*86400LL + (long long int)second;
+		if(mjdSecond != lastMjdSecond)
 		{
 			if(verbose > 0)
 			{
-				printf("Time: MJD %d  Sec %d  Read %d  Dropped %d\n", getVDIFFrameMJD(vh), second, nRead, nDropped);
+				printf("Time: MJD %d  Sec %d  Read %d  Dropped %d\n", mjd, second, nRead, nDropped);
 			}
 
-			if(second - lastSecond - 1 > maxGap)
+			if(mjdSecond - lastMjdSecond - 1 > maxGap)
 			{
 				char filename[128];
 
@@ -153,7 +242,7 @@ int main(int argc, char **argv)
 					fclose(out);
 				}
 
-				snprintf(filename, 128, "%s_%d_%05d.vdif", outputPrefix, getVDIFFrameMJD(vh), second);
+				snprintf(filename, 128, "%s_%d_%05d.vdif", outputPrefix, mjd, second);
 				out = fopen(filename, "w");
 				if(!out)
 				{
@@ -167,9 +256,10 @@ int main(int argc, char **argv)
 				}
 			}
 			
-			lastSecond = second;
+			lastMjdSecond = mjdSecond;
+			lastMJD = mjd;
 		}
-		else if(second < lastSecond)
+		else if(mjdSecond < lastMjdSecond)
 		{
 			++nDropped;
 
