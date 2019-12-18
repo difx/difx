@@ -1,6 +1,7 @@
 Version 0.3
 -----------
 * Post DiFX-2.6
+* ignore non-SAS hotplug add events, such as USB hotplug device
 
 Version 0.2
 -----------

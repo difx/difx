@@ -528,23 +528,30 @@ void Mark6::pollDevices()
                         // add new disk device
                         Mark6DiskDevice disk(string(udev_device_get_sysname(dev)));
                         disk.setControllerId( parseControllerId(udev_device_get_devpath(dev)) );
-                        disk.setDiskId(parseDiskId(udev_device_get_sysattr_value(parent,"sas_address")));
-                        disk.setSerial(udev_device_get_property_value(dev,"ID_SERIAL_SHORT") );
-                        
-                        newDevices_m.push_back(disk);
-                        changeCount++;
+			if(0 != udev_device_get_sysattr_value(parent,"sas_address"))
+			{
+                            disk.setDiskId(parseDiskId(udev_device_get_sysattr_value(parent,"sas_address")));
+                            disk.setSerial(udev_device_get_property_value(dev,"ID_SERIAL_SHORT") );
+
+                            newDevices_m.push_back(disk);
+                            changeCount++;
+			}
                         //cout << "Controller ID=" << disk.getControllerId() << endl;
                         //cout << "Disk ID=" << disk.getDiskId() << endl;
                         //cout << "Disk serial=" << disk.getSerial() << endl;
                     }
                     else if (devtype == "partition")
                     {   
-                        string partitionName = string(udev_device_get_sysname(dev));
-                        // add partition to disk device object
-                        if (addPartitionDevice(partitionName) == 0)
-                        {
-                            throw Mark6Exception (string("New hotplug partition found (" + partitionName + ") without corresponding disk device") );              
-                        }
+                        udev_device *grandparent = udev_device_get_parent(parent);
+			if(0 != udev_device_get_sysattr_value(grandparent, "sas_address"))
+			{
+                            string partitionName = string(udev_device_get_sysname(dev));
+                            // add partition to disk device object
+                            if (addPartitionDevice(partitionName) == 0)
+                            {
+                                throw Mark6Exception (string("New hotplug partition found (" + partitionName + ") without corresponding disk device") );              
+                            }
+			}
                     }
                }
                else if ((action ==  "remove") && (devtype == "disk"))
