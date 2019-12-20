@@ -1,14 +1,29 @@
 #!/usr/bin/python
 """
 Usage: removeNonzoomAutosDiFX.py <difx basename>
+Or   : pypy removeNonzoomAutosDiFX.py <difx basename>
 
-Removes all autocorrelations that are not from zoom bands.
+Removes all autocorrelations that are not from zoom bands,
+preserving only those non-zoom autocorrelations that come
+from antennas that lack zoom bands.
+
+The purpose of this filtering is to get rid of duplicate
+auto records (zoom & rec) that DiFX produces in a corner
+case of zoom correlation (when zoom band == parent band).
+Duplicate autos confuse difx2fits and lead to incorrectly
+low weights in AIPS ACCOR. Filtering and reducing auto
+records to only the non-redundant non-duplicate records
+fixes difx2fits and recovers correct AIPS ACCOR weights.
 
 Output:
   <difx basename>_filtered/DIFX_*
 
 """
-import numpy
+try:
+	import numpy
+	haveNumpy = True
+except:
+	haveNumpy = False
 import sys, os, shutil, glob
 import parseDiFX
 
@@ -28,9 +43,28 @@ def filterVisibilityfile(basename):
 	difx = parseDiFX.DiFXFile()
 	difx.open(inputfile)
 
+	# Determine which antennas have zoom bands that are identical to parent band,
+	# only these antennas need to have parent band autos discarded
+	# (or more correctly, but TODO, ought to check all Baselines and determine which freqs reflect the final output freq!)
+	cfg = difx.metainfo
+	filterableAntennas = set()
+	for d in cfg.datastreams:
+		if d.nzoomfreq==0 or d.nzoomband==0:
+			print ('Telescope %s datastream %d: no zoom bands : -> no filtering' % (cfg.telescopes[d.telescopeindex].name, cfg.datastreams.index(d)))
+			continue
+		if d.nzoomband != d.nrecband:
+			print ('Telescope %s datastream %d: %d zoom bands != %d rec bands : unsupported -> no filtering ' % (cfg.telescopes[d.telescopeindex].name, cfg.datastreams.index(d), d.nzoomband, d.nrecband))
+			continue
+		# TODO: ought to check if zooms cover all parents 1:1
+		print ('Telescope %s datastream %d: %d zoom bands == %d rec bands : -> filtering!' % (cfg.telescopes[d.telescopeindex].name, cfg.datastreams.index(d), d.nzoomband, d.nrecband))
+		filterableAntennas.add(d.telescopeindex)
+	names = [cfg.telescopes[a].name for a in filterableAntennas]
+	print ('Discarding non-zoom autos for: %s / %s' % (str(filterableAntennas), ' '.join(names)))
+
 	# Prepare output
 	difxoutdir = pathless_basename + '_filtered.difx'
 	difxoutname = difxoutdir + '/' + difx.difxfilename[difx.difxfilename.rfind('/')+1:]
+	print ('Outputting to file %s' % (difxoutname))
 	try:
 		os.mkdir(difxoutdir)
 	except:
@@ -69,13 +103,19 @@ def filterVisibilityfile(basename):
 		# Copy the record?
 		doCopy = True
 		if visrec.header.antenna1 == visrec.header.antenna2:
-			# ToD: now should look up 'fq' under all datastreams of both antennas...
-			if fq.lsb:
+			antIdx = visrec.header.antenna1 - 1
+			if antIdx not in filterableAntennas:
+				# print ('Retaining auto record of recfreqs-only non-zoom antenna %d/%s' % (visrec.header.antenna1, cfg.telescopes[antIdx].name))
+				pass
+			elif fq.lsb:
 				doCopy = False
 
 		if doCopy:
 			difxout.write(visrec.header.raw)
-			visrec.vis.tofile(difxout)
+			if haveNumpy:
+				visrec.vis.tofile(difxout)
+			else:
+				difxout.write(visrec.vis)
 			npassed += 1
 		else:
 			nremoved += 1
