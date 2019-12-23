@@ -118,29 +118,34 @@ def kth_line(x, y, missing_val=None):
     return formula, stddev
 
 
-def parse_clock(line):
-    """Find gps/fmout lines in the log, extract offset and time, convert to usec
+def parse_clock(line, gps_style):
+    """Find gps/fmout lines in the log, extract offset and time, convert to
+    clock offset with common convention
 
     Returns time and offset, or None if line did not parse
     Example line:
 2018.250.12:44:03.01/fmout-gps/+7.1182E-006
+or
+2019.192.18:42:11.36#maser#/maser2gps/+7.6755E-006
     """
 
     date_re = r"(\d{4})\.(\d{3})\.(\d{2}):(\d{2}):(\d{2})"
     clockline = None
     #clockline = re.match(date_re + ".*/(.*fmout.*)/(.*)$", line)
-    clockline = re.match(date_re + r".*/(.*fmout.*)/(\S*)", line)
+    clockline = re.match(date_re + r".*/(.*gps.*)/(\S*)", line)
     if not clockline:
         return None
     year, doy, hour, minute, sec, clocktype, offset = clockline.groups()
     offset = float(offset)
-    if clocktype == "fmout-gps":
+    if re.match(gps_style+r"[-2]gps", clocktype):
         offset *= -1e6
-    elif clocktype == "gps-fmout":
+    elif re.match(r"gps[-2]"+gps_style, clocktype):
         offset *= 1e6
     else:
-        sys.stdout.write("Clock type not recognised: " + clocktype)
         return None
+    #else:
+    #    sys.stdout.write("Clock type not recognised: " + clocktype + "\n")
+    #    return None
 
     vextime = year + "y" + doy + "d" + hour + "h" + minute + "m" + sec + "s"
     time = espressolib.convertdate(vextime)
@@ -209,12 +214,22 @@ parser.add_option(
         type="str", dest="station", default=None,
         help="Specify station name (else derive from log filename)"
         )
+parser.add_option(
+        "--maser", "-m",
+        action="store_true", dest="maser", default=False,
+        help="Use maser2gps/gps2maser instead of fmout-gps/gps-fmout values"
+        )
 
 (options, args) = parser.parse_args()
 
 if len(args) < 1:
     parser.print_help()
     parser.error("Give at least one log file")
+
+if options.maser:
+    gps_style = "maser"
+else:
+    gps_style = "fmout" 
 
 times = []
 offsets = []
@@ -230,7 +245,7 @@ for logfilename in args:
     with open(logfilename) as logfile:
         for line in logfile:
             try:
-                clocks = parse_clock(line)
+                clocks = parse_clock(line, gps_style)
             except:
                 sys.stderr.write("Could not parse: " + line)
                 clocks = None
@@ -242,6 +257,8 @@ for logfilename in args:
 sort_index = numpy.argsort(times)
 times = [times[i] for i in sort_index]
 offsets = [offsets[i] for i in sort_index]
+if len(times) < 1:
+    raise Exception('No valid clock values found')
 #p = numpy.polyfit(times, offsets, 1)
 p, stddev = kth_line(times, offsets)
 offset = numpy.polyval(p, times[0])
