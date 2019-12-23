@@ -52,7 +52,7 @@ def makefilelists(
     #TEMPFILE = tempfile.NamedTemporaryFile()
     tempfilename = expname + "_" + telescope+"tempfilenamexxx.txt"
     TEMPFILE = open(tempfilename, "w")
-    command = " ".join(["ssh", machine, "'echo", filepattern, "|xargs ls'"])
+    command = " ".join(["ssh -q", machine, "'echo", filepattern, "|xargs ls -d'"])
     #command = " ".join(["ls", filepattern])
     print (command)
     filelist, error1 = subprocess.Popen(
@@ -323,7 +323,7 @@ for line in sorted(telescopedirs):
                         globpatterns, expname, options.refmjd)
                 print ("got", nfiles, "files for", telescope, end="")
                 if nbad:
-                    print ("(", nbad, "corrupt )", end="")
+                    print (" (", nbad, "corrupt )", end="")
                 print ()
                 os._exit(0)
     except:

@@ -52,15 +52,14 @@ for machine in disk_report.keys():
     for data_area in disk_report[machine].keys():
         for line in disk_report[machine][data_area]["du"]:
             directory = line[1]
-            #print directory
-            if re.search("/" + exper + r"-\w*$", directory):
+            if re.search("/" + exper + r"-\w*", directory):
                 station = directory.split("-")[-1].lower()
+                station = station.replace("/", "_")
                 if station not in stationfiles:
                     stationfiles[station] = dict()
                     stationfiles[station]["dir"] = []
                 stationfiles[station]["dir"].append(directory)
                 stationfiles[station]["machine"] = machine
-
 
 # and format the output file as expected by lbafilecheck.py
 outfile_name = exper + ".datafiles"

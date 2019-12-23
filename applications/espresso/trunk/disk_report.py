@@ -45,10 +45,11 @@ def remote_command(inputq, outputq):
             disk_query, machine, data_area = inputq.get(block=False)
             command = str()
             if disk_query == "du":
-                command = "ssh MACHINE 'du -c -B 1G DATA_AREA'"
+                # ignores directories smaller than 1MB
+                command = "ssh -q MACHINE 'du -t 1m -l -S -c -B 1G DATA_AREA'"
                 #command = "du -c -B 1G DATA_AREA"
             elif disk_query == "df":
-                command = "ssh MACHINE 'df -P -B 1G DATA_AREA'"
+                command = "ssh -q MACHINE 'df -P -B 1G DATA_AREA'"
                 #command = "df -P -B 1G DATA_AREA"
 
             command = command.replace("MACHINE", machine)
