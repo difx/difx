@@ -272,7 +272,10 @@ def plot_speedup(logfiles, outdir, expname):
 
 def run_interactive(corrjoblist, outdir):
     """Run jobs in an interactive enviroment"""
+    good_jobs = []
     bad_jobs = []
+    job_errors = []
+    errors = []
     difxwatch = None
     for jobname in sorted(corrjoblist.keys()):
         if options.difxwatch:
@@ -309,11 +312,14 @@ def run_interactive(corrjoblist, outdir):
             # we're finished with the log...
             os.kill(errormon2.pid, 9)
             time.sleep(1)
-            job_ok = write_difxlog("./log", outdir, jobname)
-            if not job_ok:
+            job_ok, job_errors = write_difxlog("./log", outdir, jobname)
+            if job_ok:
+                good_jobs.append(jobname)
+            else:
                 bad_jobs.append(jobname)
+            errors += job_errors
 
-    return bad_jobs
+    return good_jobs, bad_jobs, errors
 
 
 def filter_log(infile, jobname):
@@ -342,8 +348,8 @@ def batchq_slurm(jobnames):
     for jobname in jobnames:
         if len(jobname) > longest:
             longest = len(jobname)
-    squeue_format = "%8i %8u %.{:d}j %.12S %.12e %.10L %.5D %.10Q".format(
-            longest+2)
+    squeue_format = "%8i %8u %.{:d}j %.19S %.19e %.10L %.5D %.10Q".format(
+            longest+3)
     batch_q = 'squeue -o "{0:s}" -n'.format(squeue_format)
     return batch_q
 
@@ -467,16 +473,22 @@ def run_batch(corrjoblist, outdir):
             break
 
     # tidy up log files for each job
+    good_jobs = []
     bad_jobs = []
+    job_errors = []
+    errors = []
     for jobname in sorted(corrjoblist.keys()):
         # we're finished with the logs..
         os.kill(errormon2.pid, 9)
         #time.sleep(1)
-        job_ok = write_difxlog(pass_logfilename, outdir, jobname)
-        if not job_ok:
+        job_ok, job_errors = write_difxlog(pass_logfilename, outdir, jobname)
+        if job_ok:
+            good_jobs.append(jobname)
+        else:
             bad_jobs.append(jobname)
+        errors += job_errors
 
-    return bad_jobs
+    return good_jobs, bad_jobs, errors
 
 
 def set_difx_message_port(start_port=50201):
@@ -507,17 +519,26 @@ def write_difxlog(log_in, outdir, jobname):
     logfilename = outdir + jobname + ".difxlog"
     logfiles.append(jobname + ".difxlog")
     logfile = open(logfilename, "w")
-    print ("\nfiltering the log file and copying to", logfile.name)
+    print ("filtering the log file and copying to", logfile.name)
     #shutil.copy2('log', logfile)
     log_lines = filter_log(log_in, jobname)
-    job_ok = False
+    job_finish = False
+    job_errors = []
     for line in log_lines:
         logfile.write(line)
         if "BYE" in line:
-            job_ok = True
+            job_finish = True
+        elif "ERROR" in line:
+            job_errors.append(line)
     logfile.close()
 
-    return job_ok
+    job_ok = False
+    if job_finish and not job_errors:
+        job_ok = True
+    if not job_finish:
+        job_errors.append(jobname + " did not finish")
+
+    return job_ok, job_errors
 
 
 def print_queue(queue_command, jobids):
@@ -528,19 +549,18 @@ def print_queue(queue_command, jobids):
     queue_info = subprocess.Popen(
             queue_command, stdout=subprocess.PIPE, shell=True).communicate()[0]
     print (queue_info)
-    print ("Completed jobs:", end="")
+    print ("Completed jobs: ", end="")
     for jobname in jobids:
         if jobname not in queue_info:
-            print (jobname, end="")
+            print (jobname, end=" ")
         else:
             running_jobs.append(jobname)
     print ()
     return running_jobs
 
-
-# Main program start.
+def get_options():
 # parse the options
-usage = """%prog <jobname>
+    usage = """%prog <jobname>
     will:
     run vex2difx
     correct the output file name
@@ -559,79 +579,85 @@ name to match multiple jobs. (The job name up to the '_' must be given
 explicitly)
 """
 
+    parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
+    parser.add_option(
+            "--force", "-f",
+            dest="force", action="store_true", default=False,
+            help="run vex2difx with -f switch")
+    parser.add_option(
+            "--clock", "-c",
+            dest="clockjob", action="store_true", default=False,
+            help="Store output in a clock subdirectory. Also pass -f to"
+            " vex2difx")
+    parser.add_option(
+            "--test", "-t", dest="testjob", action="store_true", default=False,
+            help="Store output in a test subdirectory. Also passes -f to"
+            " vex2difx")
+    parser.add_option(
+            "--nocalc", "-C",
+            dest="nocalc", action="store_true", default=False,
+            help="Do not re-run calc")
+    parser.add_option(
+            "--novex", "-n",
+            dest="novex", action="store_true", default=False,
+            help="Do not re-run vex2difx")
+    #parser.add_option(
+    #        "--nofilelist", "-F",
+    #        dest="nofilelist", action="store_true", default=False,
+    #        help="Do not re-generate filelists (with lbafilecheck)")
+    parser.add_option(
+            "--nopause", "-p",
+            dest="nopause", action="store_true", default=False,
+            help="Do not pause after running calc - proceed straight to "
+            " correlation")
+    parser.add_option(
+            "--alljobs", "-a",
+            type="str", dest="expt_all", default=None,
+            help="Correlate all jobs produced by vex2difx for the experiment"
+            " specified (no other arguments required)")
+    parser.add_option(
+            "--nocomputehead", "-H",
+            dest="computehead", action="store_false", default=True,
+            help="Don't Use head and datastream nodes as compute nodes")
+    parser.add_option(
+            "--no_rmaps_seq", "-M",
+            dest="no_rmaps_seq", action="store_true", default=False,
+            help="Don't Pass the '--mca rmaps seq' instruction to mpirun")
+    parser.add_option(
+            "--no_email", "-E",
+            dest="noemail", action="store_true", default=False,
+            help="Don't prompt for notification email")
+    parser.add_option(
+            "--difxwatch", "-d",
+            dest="difxwatch", action="store_true", default=False,
+            help="Run difxwatch (only valid for interactive jobs)")
+    parser.add_option(
+            "--interactive", "-i",
+            dest="interactive", action="store_true", default=False,
+            help="Run interactively, else assume slurm/pbs batch jobs")
+    parser.add_option(
+            "--jobtime", "-j",
+            type="str", dest="jobtime", default=None,
+            help="Max. job time for batch jobs."
+            " Default is joblength * speedup + 10 mins."
+            " Format = hh:mm:ss")
+    parser.add_option(
+            "--speedup", "-s",
+            type="float", dest="predicted_speedup", default=0.7,
+            help="Predicted speedup factor to determine job run time."
+            " Default=%default")
+    parser.add_option(
+            "--ntasks_per_node",
+            type="int", dest="ntasks_per_node", default=None,
+            help="Number of MPI processes per node. This is for testing"
+            " purposes on batch systems only!")
+    
+    (options, args) = parser.parse_args()
+    return options, args
 
-parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
-parser.add_option(
-        "--force", "-f",
-        dest="force", action="store_true", default=False,
-        help="run vex2difx with -f switch")
-parser.add_option(
-        "--clock", "-c",
-        dest="clockjob", action="store_true", default=False,
-        help="Store output in a clock subdirectory. Also pass -f to vex2difx")
-parser.add_option(
-        "--test", "-t", dest="testjob", action="store_true", default=False,
-        help="Store output in a test subdirectory. Also passes -f to vex2difx")
-parser.add_option(
-        "--nocalc", "-C",
-        dest="nocalc", action="store_true", default=False,
-        help="Do not re-run calc")
-parser.add_option(
-        "--novex", "-n",
-        dest="novex", action="store_true", default=False,
-        help="Do not re-run vex2difx")
-#parser.add_option(
-#        "--nofilelist", "-F",
-#        dest="nofilelist", action="store_true", default=False,
-#        help="Do not re-generate filelists (with lbafilecheck)")
-parser.add_option(
-        "--nopause", "-p",
-        dest="nopause", action="store_true", default=False,
-        help="Do not pause after running calc - proceed straight to "
-        " correlation")
-parser.add_option(
-        "--alljobs", "-a",
-        type="str", dest="expt_all", default=None,
-        help="Correlate all jobs produced by vex2difx for the experiment"
-        " specified (no other arguments required)")
-parser.add_option(
-        "--nocomputehead", "-H",
-        dest="computehead", action="store_false", default=True,
-        help="Don't Use head and datastream nodes as compute nodes")
-parser.add_option(
-        "--no_rmaps_seq", "-M",
-        dest="no_rmaps_seq", action="store_true", default=False,
-        help="Don't Pass the '--mca rmaps seq' instruction to mpirun")
-parser.add_option(
-        "--no_email", "-E",
-        dest="noemail", action="store_true", default=False,
-        help="Don't prompt for notification email")
-parser.add_option(
-        "--difxwatch", "-d",
-        dest="difxwatch", action="store_true", default=False,
-        help="Run difxwatch (only valid for interactive jobs)")
-parser.add_option(
-        "--interactive", "-i",
-        dest="interactive", action="store_true", default=False,
-        help="Run interactively, else assume slurm/pbs batch jobs")
-parser.add_option(
-        "--jobtime", "-j",
-        type="str", dest="jobtime", default=None,
-        help="Max. job time for batch jobs."
-        " Default is joblength * speedup + 10 mins."
-        " Format = hh:mm:ss")
-parser.add_option(
-        "--speedup", "-s",
-        type="float", dest="predicted_speedup", default=0.7,
-        help="Predicted speedup factor to determine job run time."
-        " Default=%default")
-parser.add_option(
-        "--ntasks_per_node",
-        type="int", dest="ntasks_per_node", default=None,
-        help="Number of MPI processes per node. This is for testing purposes"
-        " on batch systems only!")
 
-(options, args) = parser.parse_args()
+# Main program start.
+options, args = get_options()
 
 if options.testjob and options.clockjob:
     raise Exception("Don't use both -t and -c together!")
@@ -678,7 +704,7 @@ while get_email:
     try:
         user = raw_input(
                 "Enter *gmail* address and password for notifications"
-                + " (or return to ignore):\n")
+                " (or return to ignore):\n")
         if user:
             emailserver = espressolib.Email(user, getpass.getpass())
             emailserver.connect()
@@ -876,12 +902,14 @@ for jobname in sorted(corrjoblist.keys()):
 logfiles = []
 
 # run each job
+good_jobs = []
 bad_jobs = []
+job_errors = []
 try:
     if options.interactive:
-        bad_jobs = run_interactive(corrjoblist, outdir)
+        good_jobs, bad_jobs, job_errors = run_interactive(corrjoblist, outdir)
     else:
-        bad_jobs = run_batch(corrjoblist, outdir)
+        good_jobs, bad_jobs, job_errors = run_batch(corrjoblist, outdir)
 finally:
 
     ## kill the difxwatch process (kill -INT so it cleans itself up)
@@ -910,11 +938,14 @@ finally:
     # and enter an operator comment
     raw_input(
             "\nHit return, then update the operator comment, minimally:"
-            + " PROD/CLOCK/TEST/FAIL")
+            " PROD/CLOCK/TEST/FAIL")
     fill_operator_log(operator_log)
     for jobname in corrjoblist.keys():
         operator_joblog = outdir + jobname + ".comment.txt"
         shutil.copy2(operator_log, operator_joblog)
+
+    # print accumulated errors to screen for reference
+    print ("Log errors:\n", "".join(job_errors))
 
     # clean up the forked plot process
     try:
@@ -926,8 +957,12 @@ finally:
         print ("Speedup plot not complete!")
 
     #if not options.clockjob and not options.testjob:
-    print ("Jobs that may need redoing:")
+    print ("Successful jobs:")
+    print (" ".join(good_jobs))
+    print ("Jobs that may need re-doing:")
     if bad_jobs:
-        print ("espresso.py " + " ".join(bad_jobs))
+        #switches = [switch for switch in sys.argv[1:] if switch != "-a"]
+        #print ("espresso.py", " ".join(switches+bad_jobs))
+        print ("espresso.py", " ".join(bad_jobs))
     else:
         print ("None")
