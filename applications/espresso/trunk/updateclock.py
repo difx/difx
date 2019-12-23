@@ -89,6 +89,10 @@ parser.add_option(
         "--addmean", "-m",
         action="store_true", dest="addmean", default=False,
         help="Add the mean clock offset/rate adjustment")
+parser.add_option(
+        "--global", "-g",
+        type="float", dest="global_offset", default=0.0,
+        help="Subtract specified delay from all stations")
 
 (options, args) = parser.parse_args()
 if len(args) != 1:
@@ -137,7 +141,7 @@ if options.offset_adjust:
             station, offset = value.split("=")
         if station not in stations:
             stations[station] = dict()
-        stations[station]["offset_adjust"] = float(offset)
+        stations[station]["offset_adjust"] = float(offset) - options.global_offset
         stations[station]["rate_adjust"] = 0
 
 if options.rate_adjust:
