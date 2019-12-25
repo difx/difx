@@ -37,8 +37,8 @@ from os.path import isfile, isdir
 from os import umask, popen, system
 
 program = 'oms2v2d'
-version = '1.7'
-verdate = '20191125'
+version = '1.8'
+verdate = '20191224'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -60,6 +60,10 @@ def usage(pgm):
 	print('           look for files in /home/datacopy-* (VLBA only, assumes Mark5B)\n')
 	print('  --file')
 	print('  -F       make .v2d file for file-based correlation\n')
+	print('  --evlbi')
+	print('  -e       make .v2d file for vlitebuf-based evlbi\n')
+	print('  --split')
+	print('  -s       make .v2d file for vlitebuf-based evlbi w/ 1032 byte frames\n')
 	print('  --quiet')
 	print('  -q       be less verbose\n')
 	print('<oms file> is a .oms file produced by sched\n')
@@ -181,8 +185,9 @@ def getMachineFromFilelist(filelistFile):
 	except:
 		return None
 
-def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
+def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, verbose):
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
+	machineMapEVLBI = {'BR':'swc011', 'FD':'swc012', 'HN':'swc013', 'KP':'swc014', 'LA':'swc015', 'MK':'swc016', 'NL':'swc017', 'OV':'swc018', 'PT':'swc019', 'SC':'swc020', 'Y':'swc009', 'GB':'swc008'}
 	corr = oms['CORRELATOR_PARAMETERS'][0]
 
 	if verbose > 0:
@@ -227,12 +232,12 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 	out.write('vex = %s\n\n' % vexFile)
 	out.write('antennas = %s\n\n' % stnString)
 
-	if nrt or filebased or (datacopyFormat != None):
+	if nrt or filebased or (datacopyFormat != None) or (evlbiType != None):
 		machineString = 'swc000, swc001, swc002, swc003, swc004, swc005, swc006, swc007, swc007, swc009, swc010'
 		out.write('machines = %s\n' % machineString);
 		out.write('nCore = 10\n')
-		out.write('nThread = 8\n\n')
-		out.write('singleScan  = True\n\n')
+		out.write('nThread = 12\n\n')
+		out.write('singleScan = True\n\n')
 
 	for s in oms['SOURCE_INFO']:
 		srcParams = ''
@@ -246,6 +251,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 
 	for s in stations:
 		extra = ''
+		dsExtra = ''
 		if nrt:
 			extra += 'filelist=%s_%s.filelist machine=%s ' % (prefix.lower(), s.lower(), machineMap[s])
 		elif filebased:
@@ -254,6 +260,11 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 			if machine == None:
 				machine = machineMap[s]
 			extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
+		elif evlbiType != None:
+			dsExtra += 'file="/tmp/em1/%%now.vdif%% machine=%s ' % machineMapEVLBI[s]
+			if evlbiType == 'split':
+				dsExtra += 'frameSize=1032 '
+			extra += 'datastreams=%s1 ' % s
 		elif datacopyFormat != None:
 			datacopyAntennaSetup = getDatacopyAntennaSetup(datacopyInfo, prefix, s, datacopyFormat)
 			if datacopyAntennaSetup == None:
@@ -261,6 +272,8 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose):
 				out.write('# ANTENNA %s -- Data not found\n' % s)
 				continue;
 			extra += datacopyAntennaSetup
+		if len(dsExtra) > 0:
+			out.write('DATASTREAM %s1 { %s}\n' % (s, dsExtra))
 		out.write('ANTENNA %s { toneSelection=smart %s}\n' % (s, extra))
 	out.write('\n')
 
@@ -295,6 +308,7 @@ stop = False
 nrt = False	# near real time mode
 filebased = False
 datacopyFormat = None
+evlbiType = None
 verbose = 1
 for a in argv[1:]:
 	if a[0] == '-':
@@ -314,6 +328,10 @@ for a in argv[1:]:
 			datacopyFormat = 'VDIF'
 		elif a in ['--datacopy5b']:
 			datacopyFormat = 'Mark5B'
+		elif a in ['-e', '--evlbi']:
+			evlbiType = 'vlite'
+		elif a in ['-s', '--split']:
+			evlbiType = 'split'
 		else:
 			print('Unknown command line option: %s' % a)
 			stop = True
@@ -349,7 +367,7 @@ if not isfile(omsFile):
 if isfile(prefix + '.vex.preobs'):
 	vexFile = prefix + '.vex.preobs'
 elif isfile(prefix + '.vex'):
-	if nrt:
+	if nrt or (evlbiType != None):
 		vexFile = prefix + '.vex.preobs'
 	else:
 		vexFile = prefix + '.vex.obs'
@@ -375,4 +393,4 @@ if isfile(v2dFile):
 
 oms = readOMS(omsFile, verbose)
 
-writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, verbose)
+writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, verbose)

@@ -235,6 +235,11 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 				{
 					V->setStreamBands(M->defName, it->first, ds, DS.nBand, DS.startBand);
 				}
+
+				if(DS.frameSize > 0)
+				{
+					V->setStreamFrameSize(M->defName, it->first, ds, DS.frameSize);
+				}
 			}
 
 			// apply canonical VDIF mapping if appropriate and if needed

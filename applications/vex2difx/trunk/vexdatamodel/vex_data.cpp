@@ -1264,6 +1264,37 @@ void VexData::setStreamBands(const std::string &modeName, const std::string &ant
 	}
 }
 
+void VexData::setStreamFrameSize(const std::string &modeName, const std::string &antName, int dsId, int frameSize)
+{
+	int modeId = getModeIdByDefName(modeName);
+
+	if(modeId >= 0)
+	{
+		VexMode &M = modes[modeId];
+		std::map<std::string,VexSetup>::iterator it = M.setups.find(antName);
+		if(it != M.setups.end())
+		{
+			if(frameSize > 0)
+			{
+				it->second.streams[dsId].VDIFFrameSize = frameSize;
+			}
+			// FIXME: handle startBand / bandmap
+		}
+		else
+		{
+			std::cerr << "Developer error: setStreamFrameSize being called with antName = " << antName << " which is not found in mode " << modeName << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+	{
+		std::cerr << "Developer error: setStreamFrameSize being called with modeName = " << modeName << " which returned modeId " << modeId << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+}
+
 double VexData::getEarliestScanStart() const
 {
 	double start = 1000000.0;

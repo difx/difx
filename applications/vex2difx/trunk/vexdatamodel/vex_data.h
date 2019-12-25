@@ -103,6 +103,7 @@ public:
 	VexStream::DataFormat getFormat(const std::string &modeName, const std::string &antName, int dsId) const;
 	bool setFormat(const std::string &modeName, const std::string &antName, int dsId, const std::string &formatName);
 	void setStreamBands(const std::string &modeName, const std::string &antName, int dsId, int nBand, int startBand);
+	void setStreamFrameSize(const std::string &modeName, const std::string &antName, int dsId, int frameSize);
 	double getEarliestScanStart() const;
 	double getLatestScanStop() const;
 	void generateRecordChans();
