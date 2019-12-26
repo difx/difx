@@ -123,7 +123,6 @@ __attribute__((constructor)) void init(void)
     char hostname[DIFX_MESSAGE_LENGTH];
     gethostname(hostname, sizeof(hostname)-1);
     difxMessageInitFull(-1, "libmark6sg", hostname);
-    difxMessageSendDifxAlert("libmark6sg started", DIFX_ALERT_LEVEL_INFO);
     //difxMessagePrint();
 #endif
 }
