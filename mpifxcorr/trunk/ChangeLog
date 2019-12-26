@@ -15,6 +15,7 @@ Version 2.7
 * move stopmpifxcorr from scripts/ to utils/ ; get rid of scripts dir
 * can compile again without mark6 libraries
 * Remove experimental support for shared memory datastream -- it never worked
+* startdifx: add --wait option to wait until job start time before beginning
 * Post DiFX-2.6
 
 Version 2.6

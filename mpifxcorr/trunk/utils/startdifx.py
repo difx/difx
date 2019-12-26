@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '3.0.0'
-VERDATE = '20191115'
+VERSION = '3.0.1'
+VERDATE = '20191226'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -48,7 +48,7 @@ agent                    = ''
 from sys import argv, exit, stdout
 from os import popen, getcwd, system, getenv, getpid, environ
 from os.path import isfile, isdir, isfile
-from time import time, asctime
+from time import time, sleep, asctime
 from glob import glob
 from copy import deepcopy
 from xml.parsers import expat
@@ -64,22 +64,22 @@ delayModelOptions = getenv("DIFX_CALC_OPTIONS")
 verbose = 0
 
 def getUsage():
-	usage = '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
-	usage +='A program to simplify the launching of mpifxcorr.\n'
+	usage =  '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
+	usage += 'A program to simplify the launching of mpifxcorr.\n'
 	usage += 'It can also cause model and FITS to be made.\n\n'
 	usage += 'Usage: startdifx [options] [<start delay>] <input1> [<input2> [ ... ] ]\n'
 	usage += 'or:    startdifx [options] [<start delay>] <joblist> \n\n'
-	usage +=  '<start delay> is an optional delay (seconds) to add to the job start time\n'
-	usage +=  '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
-	usage +=  '<joblist> as created by vex2difx (.joblist extension required)\n'
-	usage +=  '\nThis program responds to the following environment variables:\n'
-	usage +=  'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT can be used to override\n'
-	usage +=  'the default group/port of %s/%d\n' % (defaultgroup, defaultport)
-	usage +=  'DIFX_HEAD_NODE must name the correlation head node (only with the -m option).\n'
-	usage +=  'DIFX_MPIRUNOPTIONS can be used to pass options to the mpirun command.\n'
-	usage +=  'DIFX_CALC_PROGRAM can be used to change the delay model program\n'
-	usage +=  '(the default is %s, but difxcalc can be used).\n' % defaultDelayModelProgram
-	usage +=  'DIFX_CALC_OPTIONS can be used to override options to the delay model program.\n'
+	usage += '<start delay> is an optional delay (seconds) to add to the job start time\n'
+	usage += '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
+	usage += '<joblist> as created by vex2difx (.joblist extension required)\n'
+	usage += '\nThis program responds to the following environment variables:\n'
+	usage += 'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT can be used to override\n'
+	usage += 'the default group/port of %s/%d\n' % (defaultgroup, defaultport)
+	usage += 'DIFX_HEAD_NODE must name the correlation head node (only with the -m option).\n'
+	usage += 'DIFX_MPIRUNOPTIONS can be used to pass options to the mpirun command.\n'
+	usage += 'DIFX_CALC_PROGRAM can be used to change the delay model program\n'
+	usage += '(the default is %s, but difxcalc can be used).\n' % defaultDelayModelProgram
+	usage += 'DIFX_CALC_OPTIONS can be used to override options to the delay model program.\n'
 	return(usage)
 
 class Parser:
@@ -675,8 +675,32 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	return None
 
 
-def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, useLocalHead, machinesCache, restartSeconds):
+def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, useLocalHead, machinesCache, restartSeconds, wait):
 	
+	if wait > 0:
+		intmjd = 0
+		sec = 0.0
+		data = open(fileBase + '.input').readlines()
+		for d in data:
+			s = d.strip().split()
+			if len(s) != 3:
+				continue
+			if s[0] == 'START':
+				if s[1] == 'MJD:':
+					intmjd = int(s[2])
+				elif s[1] == 'SECONDS:':
+					sec = float(s[2])
+		mjd = intmjd + sec/86400.0
+		curmjd = time()/86400.0 + 40587.0
+		dt = (mjd - curmjd)*86400.0
+		if dt < 0.0:
+			dt = 0.0
+		if wait > 1:
+			dt += wait
+		if dt > 0.0:
+			print('Waiting %3.1f seconds before starting job' % dt)
+			sleep(dt);
+
 	savedEnvironment = updateEnvironment(fileBase+'.input.env')
 	if useStartMessage:
 		rv = runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds)
@@ -701,7 +725,7 @@ signal.signal(signal.SIGINT, handler)
 usage = getUsage()
 optParser = OptionParser(version="%prog " + VERSION , usage=usage)
 
-optParser.set_defaults(machinesPolicy=2, useStartMessage=False, deletePolicy=0, makeModel=True, difxdb=False, makeFits=False, verbose=0, quiet=0, useLocalHead=False, override=False, machinesFile="")
+optParser.set_defaults(machinesPolicy=2, useStartMessage=False, deletePolicy=0, makeModel=True, difxdb=False, makeFits=False, verbose=0, quiet=0, wait=0, useLocalHead=False, override=False, machinesFile="")
 
 optParser.add_option("-A", "--agent", dest="agent", action="store", type="string", help="call mpirun through this agent with filebase as only argument")
 optParser.add_option("-g", "--genmachines", dest="machinesPolicy", action="store_const", const=2, help="will run genmachines even if not needed [default]")
@@ -715,6 +739,7 @@ optParser.add_option("-D", "--difxdb", dest="difxdb", action="store_true", help=
 optParser.add_option("-F", "--fits", dest="makeFits", action="store_true", help="generate 1 fits file per job at end of each job")
 optParser.add_option("-v", "--verbose", dest="verbose", action="count", help="send more output to the screen and difxlog file (use -v -v for extra info)")
 optParser.add_option("-q", "--quiet", dest="quiet", action="count", help="be quieter")
+optParser.add_option("-w", "--wait", dest="wait", action="count", help="wait until job start time before launching")
 optParser.add_option("-l", "--localhead", dest="useLocalHead", action="store_true", help="use the current host as the head node. Overrides DIFX_HEAD_NODE.")
 optParser.add_option("--override-version", dest="override", action="store_true", help="ignore difx version differences")
 
@@ -810,7 +835,7 @@ for fileBase in fileBaseList:
 		exit(1)
 
 	v = run(fileBase, options.machinesPolicy, options.deletePolicy, options.makeModel, options.override, options.useStartMessage, 
-		options.useLocalHead, machinesCache, restartSeconds)
+		options.useLocalHead, machinesCache, restartSeconds, options.wait)
 
 	if v != None:
 		sendMessage(fileBase, 'ABORTED', v)
