@@ -37,8 +37,8 @@ from os.path import isfile, isdir
 from os import umask, popen, system
 
 program = 'oms2v2d'
-version = '1.8'
-verdate = '20191224'
+version = '1.9'
+verdate = '20191226'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -64,6 +64,12 @@ def usage(pgm):
 	print('  -e       make .v2d file for vlitebuf-based evlbi\n')
 	print('  --split')
 	print('  -s       make .v2d file for vlitebuf-based evlbi w/ 1032 byte frames\n')
+	print('  --dual')
+	print('  -D       configure for two datastreams\n');
+	print('  --quad')
+	print('  -Q       configure for four datastreams\n');
+	print('  --oct')
+	print('  -O       configure for eight datastreams\n');
 	print('  --quiet')
 	print('  -q       be less verbose\n')
 	print('<oms file> is a .oms file produced by sched\n')
@@ -185,7 +191,7 @@ def getMachineFromFilelist(filelistFile):
 	except:
 		return None
 
-def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, verbose):
+def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, verbose):
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
 	machineMapEVLBI = {'BR':'swc011', 'FD':'swc012', 'HN':'swc013', 'KP':'swc014', 'LA':'swc015', 'MK':'swc016', 'NL':'swc017', 'OV':'swc018', 'PT':'swc019', 'SC':'swc020', 'Y':'swc009', 'GB':'swc008'}
 	corr = oms['CORRELATOR_PARAMETERS'][0]
@@ -251,7 +257,8 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, ve
 
 	for s in stations:
 		extra = ''
-		dsExtra = ''
+		nds = 0
+		dsData = []
 		if nrt:
 			extra += 'filelist=%s_%s.filelist machine=%s ' % (prefix.lower(), s.lower(), machineMap[s])
 		elif filebased:
@@ -261,10 +268,11 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, ve
 				machine = machineMap[s]
 			extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
 		elif evlbiType != None:
-			dsExtra += 'file=/tmp/em1/%%now.vdif%% machine=%s ' % machineMapEVLBI[s]
-			if evlbiType == 'split':
-				dsExtra += 'frameSize=1032 '
-			extra += 'datastreams=%s1 ' % s
+			for d in range(nStream):
+				dsInfo = 'file=/tmp/vlitebuf%d/%%now.vdif%% machine=%s ' % (d, machineMapEVLBI[s])
+				if evlbiType == 'split':
+					dsInfo += 'frameSize=1032 '
+				dsData.append(dsInfo)
 		elif datacopyFormat != None:
 			datacopyAntennaSetup = getDatacopyAntennaSetup(datacopyInfo, prefix, s, datacopyFormat)
 			if datacopyAntennaSetup == None:
@@ -272,9 +280,19 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, ve
 				out.write('# ANTENNA %s -- Data not found\n' % s)
 				continue;
 			extra += datacopyAntennaSetup
-		if len(dsExtra) > 0:
-			out.write('DATASTREAM %s1 { %s}\n' % (s, dsExtra))
+		for ds in dsData:
+			out.write('DATASTREAM %s%d { %s}\n' % (s, nds, ds))
+			if nds == 0:
+				extra += 'datastreams='
+			else:
+				extra += ','
+			extra += '%s%d' % (s, nds)
+			nds += 1
+		if nds > 0:
+			extra += ' '
 		out.write('ANTENNA %s { toneSelection=smart %s}\n' % (s, extra))
+		if nds > 0:
+			out.write('\n')
 	out.write('\n')
 
 	out.write('SETUP default\n')
@@ -310,6 +328,7 @@ filebased = False
 datacopyFormat = None
 evlbiType = None
 verbose = 1
+nStream = 1
 for a in argv[1:]:
 	if a[0] == '-':
 		if a in ['-h', '--help']:
@@ -332,6 +351,12 @@ for a in argv[1:]:
 			evlbiType = 'vlite'
 		elif a in ['-s', '--split']:
 			evlbiType = 'split'
+		elif a in ['-D', '--dual']:
+			nStream = 2
+		elif a in ['-Q', '--quad']:
+			nStream = 4
+		elif a in ['-O', '--oct']:
+			nStream = 8
 		else:
 			print('Unknown command line option: %s' % a)
 			stop = True
@@ -393,4 +418,4 @@ if isfile(v2dFile):
 
 oms = readOMS(omsFile, verbose)
 
-writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, verbose)
+writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, verbose)
