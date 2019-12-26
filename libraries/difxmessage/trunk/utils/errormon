@@ -45,7 +45,9 @@ import signal
 program = 'errormon'
 author  = 'Walter Brisken'
 version = '0.9'
-verdate = '20190915'
+verdate = '20191226'
+
+defaultLevel = 4
 
 alertLevels = ['FATAL', 'SEVERE', 'ERROR', 'WARNING', 'INFO', 'VERBOSE', 'DEBUG', 'IGNORE']
 
@@ -61,7 +63,11 @@ def usage(prog):
 	print('  -h        print help information and quit\n')
 	print('<maxlevel>  is the max alert error level to print.  The levels are:')
 	for level in range(len(alertLevels)):
-		print('    %d = %s' % (level, alertLevels[level]))
+		if level == defaultLevel:
+			extra = " [default]"
+		else:
+			extra = ""
+		print('    %d = %s%s' % (level, alertLevels[level], extra))
 	print('')
 
 class Parser:
@@ -144,7 +150,6 @@ def run(maxlevel):
 	if (multicast):
 		mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
 		s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-	#s.settimeout(dt)
 
 	try:
 		while 1:
@@ -162,6 +167,7 @@ def run(maxlevel):
 			except expat.ExpatError:
 				print('%s *** Unparsable message received ***' % asctime())
 				print(message)
+		stdout.flush()
 	except KeyboardInterrupt:
 		pass
 
@@ -174,7 +180,7 @@ if len(argv) > 1:
 		exit(0)
 	maxlevel = int(argv[1])
 else:
-	maxlevel = 8
+	maxlevel = defaultLevel
 
 run(maxlevel)
 
