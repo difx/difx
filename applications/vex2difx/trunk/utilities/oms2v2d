@@ -261,7 +261,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, ve
 				machine = machineMap[s]
 			extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
 		elif evlbiType != None:
-			dsExtra += 'file="/tmp/em1/%%now.vdif%% machine=%s ' % machineMapEVLBI[s]
+			dsExtra += 'file=/tmp/em1/%%now.vdif%% machine=%s ' % machineMapEVLBI[s]
 			if evlbiType == 'split':
 				dsExtra += 'frameSize=1032 '
 			extra += 'datastreams=%s1 ' % s
