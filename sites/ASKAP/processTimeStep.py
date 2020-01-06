@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import os,sys,glob,argparse,re,subprocess
 
 parser = argparse.ArgumentParser()
@@ -210,7 +210,7 @@ for e in examplefiles:
         print "askap2difx failed! (", ret, ")"
         sys.exit(ret)
 
-    # if .bat0 does not exisit in upper directory, copy back
+    # if .bat0 does not exist in upper directory, copy back
     if not os.path.exists("../../.bat0") and os.path.exists(".bat0"):
         os.system("cp .bat0 ../..")
         
@@ -218,12 +218,12 @@ for e in examplefiles:
         os.system("./launchjob")
     else:
         os.system("./run.sh")
-    os.system("./runmergedifx")
-    if args.correctfpgadelays:
-        os.system("findOffsets.py")
-        os.system("./run.sh")
-        os.system("rm -rf craftfrbD2D*")
         os.system("./runmergedifx")
+        if args.correctfpgadelays:
+            os.system("findOffsets.py")
+            os.system("./run.sh")
+            os.system("rm -rf craftfrbD2D*")
+            os.system("./runmergedifx")
 #    if args.suppress:
 #        os.system("difx2fits craftfrbD2D")
     os.chdir("../")
@@ -245,7 +245,9 @@ if polyco is None:
     output.write("mv CRAFTFR.0.bin0000.source0000.FITS %s_CARD%s.FITS\n" % (args.name, args.card))
     output.close()
     os.system("chmod 775 " + runfilename)
-    if not args.suppress: os.system("./" + runfilename)
+    os.system("echo \"./rundifx2fits.card%s\" >> runalldifx2fits" % (args.card))
+    os.system("chmod 775 runalldifx2fits")
+    #if not args.suppress: os.system("./" + runfilename)
 else:
     for i in range(nbins):
         runfilename = "rundifx2fits.card%s.bin%02d" % (args.card,i)
