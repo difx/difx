@@ -1,6 +1,11 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
+from __future__ import print_function
 import os, sys, argparse, math, getpass
 from astropy.time import Time
+from six import unichr
+from six.moves import range
+from six.moves import zip
 
 ## Convenience function to parse java style properties file
 def load_props(filepath, sep='=', comment_char='#'):
@@ -18,7 +23,7 @@ def load_props(filepath, sep='=', comment_char='#'):
                 keysplit = key.split('.')
                 currentdict = props
                 while len(keysplit) > 1:
-                    if not keysplit[0] in currentdict.keys():
+                    if not keysplit[0] in list(currentdict.keys()):
                         currentdict[keysplit[0]] = {}
                     currentdict = currentdict[keysplit[0]]
                     keysplit = keysplit[1:]
@@ -36,19 +41,19 @@ def mjd2ymdhms(mjd):
     fmjd = mjd - imjd
 
     j = imjd + 32044 + 2400001
-    g = j / 146097
+    g = j // 146097
     dg = j % 146097
-    c = ((dg/36524 + 1)*3)/4
+    c = ((dg/36524 + 1)*3)//4
     dc = dg - c*36524
-    b = dc / 1461
+    b = dc // 1461
     db = dc % 1461
-    a = ((db/365 + 1)*3)/4
+    a = ((db//365 + 1)*3)//4
     da = db - a*365
     y = g*400 + c*100 + b*4 + a
-    m = (da*5 + 308)/153 - 2
-    d = da - ((m + 4)*153)/5 + 122
+    m = (da*5 + 308)//153 - 2
+    d = da - ((m + 4)*153)//5 + 122
 
-    year = y - 4800 + (m + 2)/12;
+    year = y - 4800 + (m + 2)//12;
     month = (m + 2)%12 + 1;
     day = d + 1;
 
@@ -66,7 +71,7 @@ def str2mjd(t):
         try:
             m = Time(float(t), format='mjd')
         except:
-            raise('Cannot parse {}'.format(t))
+            raise 'Cannot parse {}'
     return m.mjd
         
 ## Function to write a SCHED frequency block
@@ -286,7 +291,7 @@ exhaustiveAutocorrs = True
         if 128 % nchan == 0:
             nFFTChan = 128
         else:
-            nFFTChan = ((128 / nchan) +1) * nchan
+            nFFTChan = ((128 // nchan) +1) * nchan
             
     v2dout.write("\n# The nChan should never be less than 128.\n")
     v2dout.write("# For numbers of channels < 128, set specAvg so nChan/specAvg\n")
@@ -307,11 +312,11 @@ exhaustiveAutocorrs = True
         else:
             subintNsec = 14e6 # 14 millisec nominal
             nSubint = intNsec / float(subintNsec)
-            print "Got {:.3f} subint per integration".format(nSubint)
+            print("Got {:.3f} subint per integration".format(nSubint))
             if abs(round(nSubint)*subintNsec-intNsec)/intNsec < 0.05:  # Within 5%, tweak int time
-                print "DEBUG: Tweaking integration' time"
+                print("DEBUG: Tweaking integration' time")
             else: # Otherwise tweak subInt
-                print "DEBUG: Tweaking subint' time"
+                print("DEBUG: Tweaking subint' time")
                 nSubint = round(nSubint)
                 subintNsec = intNsec / float(nSubint)
     numFFT = int(round(subintNsec/fftnSec))
@@ -404,7 +409,7 @@ targetants = args.ants.split(',')
 try:
     craftcatalogbasedir = os.environ['CRAFTCATDIR'] + '/'
     if not os.path.exists(craftcatalogbasedir):
-        print craftcatalogbasedir, "specified by $CRAFTCATDIR doesn't exist"
+        print(craftcatalogbasedir, "specified by $CRAFTCATDIR doesn't exist")
         sys.exit()
     craftcatalogdir = craftcatalogbasedir + str(os.getpid()) + '/'
     if not os.path.exists(craftcatalogdir):
@@ -412,7 +417,7 @@ try:
 except KeyError:
     craftcatalogdir = os.getcwd() + "/"
     if len(craftcatalogdir) >= 62:
-        print "Catalog directory name is too long! I'm sorry, but I have to abort, because other sched will."
+        print("Catalog directory name is too long! I'm sorry, but I have to abort, because other sched will.")
 #        sys.exit()
 
 ## Write the SCHED freq and antenna files, and the craftfrb.datafiles
@@ -434,15 +439,15 @@ def antnum(a):
     if a=='ant': return 0
     return int(a[3:])
 
-for antenna in sorted(fcm["common"]["antenna"].keys(), key=antnum):
+for antenna in sorted(list(fcm["common"]["antenna"].keys()), key=antnum):
     if antenna=='ant': continue
-    if not "name" in fcm["common"]["antenna"][antenna].keys():
+    if not "name" in list(fcm["common"]["antenna"][antenna].keys()):
         continue # This one is probably a test antenna or something, ignore it
     if not "location" in list(fcm["common"]["antenna"][antenna].keys()):
         continue # This one is probably a test antenna or something, ignore it
     antennaname = fcm["common"]["antenna"][antenna]["name"]
     if not antennaname in targetants:
-        print "Skipping antenna", antennaname, "from fcm file as it wasn't requested."
+        print("Skipping antenna", antennaname, "from fcm file as it wasn't requested.")
         continue
     writefreqentry(freqout, antennaname)
     #print fcm["common"]["antenna"][antenna]["location"].keys()
@@ -451,18 +456,18 @@ for antenna in sorted(fcm["common"]["antenna"].keys(), key=antnum):
     #    wgs84 = fcm["common"]["antenna"][antenna]["location"]["wgs84"]
         
     twolettername = writestatentry(statout, antennaname, count, fcm["common"]["antenna"][antenna]["location"]["itrf"])
-    if "delay" in fcm["common"]["antenna"][antenna].keys():
+    if "delay" in list(fcm["common"]["antenna"][antenna].keys()):
         delay = fcm["common"]["antenna"][antenna]["delay"]
     else:
         delay = "0.0ns"
     for i in range(args.npol):
-        print "Looking for %s/%s.p%d.codif" % (cwd, antennaname, i)
+        print("Looking for %s/%s.p%d.codif" % (cwd, antennaname, i))
         if os.path.exists("%s/%s.p%d.codif" % (cwd, antennaname, i)):
             datafilelist[i].append("%s=%s/%s.p%d.codif" % (twolettername, cwd, antennaname, i))
             dataout[i].write(datafilelist[i][-1] + "\n")
         else:
             #print "Skipping", antennaname, "as we don't have a data file for it"
-            print "Couldn't find a codif file for", antennaname, "pol", i, "- aborting!"
+            print("Couldn't find a codif file for", antennaname, "pol", i, "- aborting!")
             sys.exit()
     antennanames.append(antennaname)
     twoletterannames.append(twolettername)
@@ -496,7 +501,7 @@ keyout.close()
 ## Run it through sched
 ret = os.system("./runsched.sh")
 if ret!=0:
-    print "Warning, Sched failed"
+    print("Warning, Sched failed")
     sys.exit(1)
 
 ## Replace Mark5B with VDIF in vex file
@@ -508,7 +513,7 @@ if not os.path.exists("eop.txt"):
     ret = os.system("getEOP.py -l " + str(int(float(obs["startmjd"]))) + " > eop.txt")
     if (ret!=0): sys.exit(ret)
 else:
-    print "Using existing EOP data - remove eop.txt if you want to get new data!"
+    print("Using existing EOP data - remove eop.txt if you want to get new data!")
 eoplines = open("eop.txt").readlines()
 
 ## Write the v2d file
@@ -528,7 +533,7 @@ v2dout.close()
 ## Run updateFreqs
 runline = "updatefreqs.py craftfrb.vex --npol={} {}".format(args.npol, args.chan)
 if args.nchan is not None: runline += " --nchan={}".format(args.nchan)
-print "Running: "+runline
+print("Running: "+runline)
 ret = os.system(runline)
 if ret!=0: sys.exit(1)
 
@@ -539,7 +544,7 @@ if ret!=0: sys.exit(1)
 ## Run vex2difx
 ret = os.system("vex2difx craftfrb.v2d > vex2difxlog.txt")
 if ret!=0:
-    print "vex2difx failed!"
+    print("vex2difx failed!")
     sys.exit(1)
 
 ## Run difxcalc to generate the interferometer model
@@ -553,16 +558,16 @@ if args.slurm:
     currentdir = os.getcwd()
     currentuser = getpass.getuser()
     numprocesses = args.npol*len(datafilelist[0]) + 5
-    print "Approx number of processes", numprocesses
+    print("Approx number of processes", numprocesses)
     numprocessingnodes = numprocesses - (args.npol*len(datafilelist[0]) + 1)
 
     # Create a launchjob script that will handle the logging, etc
     launchout = open("launchjob","w")
     launchout.write("#!/usr/bin/bash\n\n")
-    launchout.write("sbatch runparallel\n")
+    launchout.write("sbatch -W runparallel\n")
     launchout.close()
-    os.chmod("launchjob", 0775)
-    print "./launchjob"
+    os.chmod("launchjob", 0o775)
+    print("./launchjob")
 
     # Create a run script that will actually be executed by sbatch
     if args.gstar:
@@ -575,7 +580,7 @@ if args.slurm:
             ntasks = 192
 
         numprocesses = int(2**(math.floor(math.log(numprocesses, 2))+1))
-        print "Rounded to next highest number of 2:", numprocesses
+        print("Rounded to next highest number of 2:", numprocesses)
         
         batchout = open("runparallel","w")
         batchout.write("#!/bin/bash\n")
@@ -594,6 +599,7 @@ if args.slurm:
         batchout.write("date\n\n")
         batchout.write("difxlog {0} {1}/{0}.difxlog 4 &\n\n".format(basename,currentdir))
         batchout.write("srun -N{0} -n{1:d} -c2 mpifxcorr {2}.input --nocommandthread\n".format(numnodes,numprocesses,basename))
+        batchout.write("./runmergedifx\n")
         batchout.close()
     else:
         batchout = open("runparallel","w")
@@ -604,11 +610,16 @@ if args.slurm:
         batchout.write("#\n")
         # Request 32xnumskylakenodes CPUs, so it will fit on numskylakenodes
         batchout.write("#SBATCH --ntasks={0:d}\n".format(32*args.numskylakenodes))
-        batchout.write("#SBATCH --time=5:00\n") 
+        batchout.write("#SBATCH --time=8:00\n") 
         batchout.write("#SBATCH --cpus-per-task=1\n")
         batchout.write("#SBATCH --mem-per-cpu=4000\n\n")
         batchout.write(". /home/{0}/setup_difx\n\n".format(currentuser))
+        batchout.write("export DIFX_MESSAGE_GROUP=`hostname -i`\n")
+        batchout.write("export DIFX_BINARY_GROUP=`hostname -i`\n")
+        batchout.write("date\n\n")
+        batchout.write("difxlog {0} {1}/{0}.difxlog 4 &\n\n".format(basename,currentdir))
         batchout.write("srun -n{0} --overcommit mpifxcorr {1}.input --nocommandthread\n".format(numprocesses,basename))
+        batchout.write("./runmergedifx\n")
         batchout.close()
 
     # Write the threads file
@@ -646,21 +657,21 @@ else:
     runout.write("rm -f craftfrb.difxlog\n")
     runout.write("mv log craftfrb.difxlog\n")
     runout.close()
-    os.chmod("run.sh", 0775)
+    os.chmod("run.sh", 0o775)
     
-    print "# First run the correlation:"
+    print("# First run the correlation:")
     runline = "./run.sh\n"
-    print runline
+    print(runline)
 
 ## Print the line needed to run the stitching and then subsequently difx2fits
-print "Then run difx2fits"
+print("Then run difx2fits")
 runline = "rm -rf {0}D2D.* ; mergeOversampledDiFX.py craftfrb.stitchconfig {0}.difx\n".format(basename)
-print runline
+print(runline)
 with open('runmergedifx', 'w') as runmerge:
     runmerge.write(runline)
 os.chmod('runmergedifx',0o775)
 runline = "difx2fits {0}D2D".format(basename)
-print runline
+print(runline)
 
 ## Produce the little script needed to run difx2fits for the solveFPGA script
 runline = "difx2fits {0}D2D\n".format(basename)
