@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import os, sys, glob, math, argparse, getpass
 
 # Convenience function
@@ -68,6 +68,8 @@ beamdec = None
 startmjd = None
 mode = None
 first = True
+samprate = None
+nsamps = None
 
 for file in vcraftfiles[0]:
     for line in open(file).readlines(4000):
@@ -81,13 +83,19 @@ for file in vcraftfiles[0]:
                 beamdec = float(line.split()[1])
             if line.split()[0] == "MODE":
                 mode = int(line.split()[1])
+        if line.split()[0] == "SAMP_RATE":
+            samprate = float(line.split()[1])
+        if line.split()[0] == "NSAMPS_REQUEST": 
+            nsamps = int(line.split()[1])
         if line.split()[0] == "TRIGGER_MJD":
             thisMJD = float(line.split()[1])
             
-            if startmjd==None:
-                startmjd = thisMJD
-            elif thisMJD<startmjd:
-                startmjd = thisMJD
+            if samprate != None and nsamps != None:
+                thisMJD -= nsamps/(samprate*86400)
+                if startmjd==None:
+                    startmjd = thisMJD
+                elif thisMJD<startmjd:
+                    startmjd = thisMJD
 
         if len(freqs) > 0 and beamra!=None and beamdec!=None and startmjd!=None and mode != None:
             break
@@ -108,17 +116,18 @@ if beamra==None or beamdec==None or startmjd==None or mode == None or len(freqs)
     print "Didn't find all info in", vcraftheader
     sys.exit()
 
+## All the commented out code is no longer needed because correction is done at time of reading TRIGGER_MJD above
 
-# Pinched from vcraft.py
-SAMPS_PER_WORD32 = [1,2,4,16,1,2,4,16]
-MODE_BEAMS = [72,72,72,72,2,2,2,2]
-MAX_SETS = 29172
-
-#  Number of sample vs mode
-SAMPS_MODE = [29172*32*nsamp_per_word*72/nbeams for (nsamp_per_word, nbeams) in zip(SAMPS_PER_WORD32, MODE_BEAMS)]
-
-# Correct time because TRIGGER_MJD is time at END of file
-startmjd -= (SAMPS_MODE[mode]-SAMPS_PER_WORD32[mode])*27.0/32.0*1e-6/(24*60*60)
+## Pinched from vcraft.py
+#SAMPS_PER_WORD32 = [1,2,4,16,1,2,4,16]
+#MODE_BEAMS = [72,72,72,72,2,2,2,2]
+#MAX_SETS = 29172
+#
+##  Number of sample vs mode
+#SAMPS_MODE = [29172*32*nsamp_per_word*72/nbeams for (nsamp_per_word, nbeams) in zip(SAMPS_PER_WORD32, MODE_BEAMS)]
+#
+## Correct time because TRIGGER_MJD is time at END of file
+#startmjd -= (SAMPS_MODE[mode]-SAMPS_PER_WORD32[mode])*27.0/32.0*1e-6/(24*60*60)
 
 startmjd = math.floor(startmjd*60*60*24)/(60*60*24) # Round down to nearest second
 
