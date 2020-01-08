@@ -4,7 +4,7 @@ m5spec.py ver. 1.0   Jan Wagner  20150427
  
 Shows time-averaged autocorrelation spectra of raw VLBI data.
 
-Usage : m5spec.py <infile> <dataformat> <T_int (ms)> <Ldft> [offset]
+Usage : m5spec.py [--noscale] <infile> <dataformat> <T_int (ms)> <Ldft> [offset]
  
   <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:
     VLBA1_2-256-8-2
@@ -30,7 +30,7 @@ def usage():
 	print __doc__
 
 
-def m5spec(fn, fmt, fout, T_int_ms, nfft, offset):
+def m5spec(fn, fmt, fout, T_int_ms, nfft, offset, sameScale=True):
 	"""Form time-averaged autocorrelation spectra"""
 
 	# Open file
@@ -102,14 +102,15 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset):
 				pylab.plot(freqs,abs(specs[ch]),'k-')
 				pylab.title('Channel %d' % (ch+1))
 				pylab.axis('tight')
-				pylab.ylim([a_min,a_max])
+				if sameScale:
+					pylab.ylim([a_min,a_max])
 				if ch >= (M-cols):
 					pylab.xlabel('Frequency (MHz)')
-				else:
+				elif sameScale:
 					pylab.gca().set_xticklabels([])
 				if (ch % rows) == 0:
 					pylab.ylabel('Amplitude (Sum|FFT(x)|)')
-				else:
+				elif sameScale:
 					pylab.gca().set_yticklabels([])
 			pylab.show()
 
@@ -127,22 +128,26 @@ def writeOut(fout,f,s):
 	print ('Done.')
 
 
-def main(argv=sys.argv):
+def main(argv=sys.argv[1:]):
 
 	# Args
-	if len(argv) not in [5,6]:
+	sameScale = True
+	if '--noscale' in argv[0]:
+		sameScale = False
+		argv = argv[1:]
+	if len(argv) not in [4,5]:
 		usage()
 		sys.exit(1)
 	offset = 0
-	if len(argv) == 6:
-		offset = int(argv[5])
+	if len(argv) == 5:
+		offset = int(argv[4])
 
 	# Start processing
 	try:
 		fout = open('m5spec.txt', 'wt')
 	except:
 		fout = None
-	rc = m5spec(argv[1],argv[2], fout, abs(float(argv[3])), int(argv[4]), offset)
+	rc = m5spec(argv[0],argv[1], fout, abs(float(argv[2])), int(argv[3]), offset, sameScale)
 	fout.close()
 
 	return rc
