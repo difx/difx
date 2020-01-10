@@ -891,7 +891,7 @@ uint64_t PCalExtractorComplex::getFinalPCal (cf32* out)
                                     // order, and shifted by 1
         if (_lsb)
             {
-            int indlsb = (32 - idx) % 32;
+            int indlsb = (_N_bins - idx) % _N_bins;
             out[n].re = _cfg->dft_out[indlsb].re;
             out[n].im =-_cfg->dft_out[indlsb].im; // conjugate to get correct phase
             }
