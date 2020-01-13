@@ -112,6 +112,10 @@ int main(int argc, char **argv)
   }
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
+  if(nextnumber >= framespersecond) {
+    fprintf(stderr, "Encountered illegal frame number %d, exceeds fps-1=%d\n", nextnumber, framespersecond-1);
+    exit(EXIT_FAILURE);
+  }
  
   rewind(input); //go back to the start
 
@@ -131,6 +135,10 @@ int main(int argc, char **argv)
     if(getVDIFFrameBytes(header) != framebytes) { 
       fprintf(stderr, "Framebytes has changed! Can't deal with this, aborting\n");
       break;
+    }
+    if (framenumber >= framespersecond) {
+      fprintf(stderr, "Encountered illegal frame number %d, exceeds fps-1=%d, will ignore and try to continue.\n", framenumber, framespersecond-1);
+      continue;
     }
     framesread++;
     //check for missing frames
