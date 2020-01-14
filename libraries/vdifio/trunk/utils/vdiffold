@@ -4,8 +4,8 @@
 
 program = 'vdiffold'
 author  = 'Walter Brisken'
-version = '0.4'
-verdate = '20191110'
+version = '0.5'
+verdate = '20201114'
 
 from os import system
 from sys import exit, argv
@@ -58,7 +58,7 @@ outputpayload = nc*(framesize-32)
 framespersecond = (datarate*1000000)//(nt*(framesize-32)*8)
 outputdatarate = outputpayload*framespersecond*8//1000000
 
-cmd = 'vmux %s %d %d %s - %d %d | m5fold - VDIF_%d-%d-%d-%d %d %d %s %s' % (infile, framesize, framespersecond, threadlist, offset, nbit, outputpayload, outputdatarate, nc, nbit, nbin, nint, freq, outfile) 
+cmd = 'vmux %s %d %d %s - %d | m5fold - VDIF_%d-%d-%d-%d %d %d %s %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nbit, nbin, nint, freq, outfile) 
 
 print('Executing: %s' % cmd)
 system(cmd)
