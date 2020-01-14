@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 import os,sys,argparse
 
 parser = argparse.ArgumentParser(description='Turn a snoopy log into a binconfig and polyco for DiFX.')

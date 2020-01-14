@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 import os,sys,glob,numpy
 
 ## ORIGINALLY, THIS LOOPED OVER DIRECTORIES, BUT NOW IT IS JUST TO BE RUN ONCE PER DIRECTORY, IN THE DIRECTORY

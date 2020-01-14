@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -20,7 +22,7 @@ parser.add_argument("--frbtitletext", type=str, default="", help="The name of th
 
 args = parser.parse_args()
 
-print args
+print(args)
 
 if len(sys.argv) < 2:
     parser.print_usage()
@@ -79,7 +81,7 @@ for stokes in args.pols.split(','):
         dynrms[stokes] = np.loadtxt("{0}-imageplane-rms.stokes{1}.txt".format(src, stokes))
         print "{0}-imageplane-rms.stokes{1}.txt".format(src, stokes)
 
-    print dynspec[stokes].shape
+    print(dynspec[stokes].shape)
 
     if nbins == 1:
         f = np.linspace(startfreq, endfreq, endchan)
@@ -96,7 +98,8 @@ for stokes in args.pols.split(','):
             if args.rms:
                 dynrms[stokes][0] = 0
             print "Setting zeroth input bin equal to zero"
-        else: print "Plotting all bins"
+        else:
+            print "Plotting all bins"
 
         if args.fscrunch:
             fscrunch[stokes] = np.mean(dynspec[stokes], 1)
@@ -143,7 +146,7 @@ plt.figure(fig.number)
 
 # Plot the fscrunched time series if asked
 if args.fscrunch:
-    print "fscrunching..."
+    print("fscrunching...")
     centretimes = np.arange(starttime+res/2.0, endtime, res)
     for stokes in args.pols.split(','):
 
@@ -194,4 +197,4 @@ if args.fscrunch:
     plt.savefig("{0}-fscrunch.stokesI.png".format(src), bbox_inches = 'tight')
     plt.clf()
 
-else: print "Done!"
+else: print("Done!")

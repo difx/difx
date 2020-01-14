@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # A script to write a binconfig file for use in correlating data with pulsar tools in DiFX
 

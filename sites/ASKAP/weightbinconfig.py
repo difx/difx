@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # A script to take in a high time resolution binconfig file and re-weight the bins according to the 
 # frequency-scrunched amplitude for each bin for use in correlating data with pulsar tools in DiFX
