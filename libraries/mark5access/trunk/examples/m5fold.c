@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2017 by Walter Brisken and Chris Phillips          *
+ *   Copyright (C) 2010-2020 by Walter Brisken and Chris Phillips          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,8 +37,8 @@
 
 const char program[] = "m5fold";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.6";
-const char verdate[] = "20170422";
+const char version[] = "1.7";
+const char verdate[] = "20200114";
 
 const int ChunkSize = 10000;
 
@@ -48,7 +48,7 @@ struct sigaction old_sigint_action;
 
 void siginthand(int j)
 {
-	printf("\nBeing killed.  Partial results will be saved.\n\n");
+	fprintf(stderr, "\nBeing killed.  Partial results will be saved.\n\n");
 	die = 1;
 
 	sigaction(SIGINT, &old_sigint_action, 0);
@@ -56,34 +56,34 @@ void siginthand(int j)
 
 static void usage(const char *pgm)
 {
-	printf("\n");
+	fprintf(stderr, "\n");
 
-	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 power folder.  Can use VLBA, Mark3/4, Mark5B and VDIF " "formats using the\nmark5access library.\n\n");
-	printf("Usage: %s <infile> <dataformat> <nbin> <nint> <freq> <outfile> [<offset>]\n\n", program);
-	printf("  <infile> is the name of the input file\n\n");
-	printf("  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
-	printf("    VLBA1_2-256-8-2\n");
-	printf("    MKIV1_4-128-2-1\n");
-	printf("    Mark5B-512-16-2\n");
-	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
-	printf("  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
-	printf("    VDIF_1000-64000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
-	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
-	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
-	printf("  <nbin> is the number of bins per if across 1 period\n");
-	printf("         if negative, the conversion to true power is not performed\n\n");
-	printf("  <nint> is the number of %d sample chunks to work on\n\n", ChunkSize);
-	printf("  <freq> [Hz] -- the inverse of the period to be folded\n\n");
-	printf("  <outfile> is the name of the output file\n\n");
-	printf("  <offset> is number of bytes into file to start decoding\n\n");
-	printf("Example: look for the 80 Hz switched power:\n\n");
-	printf("  m5fold 2bit.data.vlba VLBA1_1-128-8-2 128 10000 80 switched_power.out\n\n");
-	printf("Output: A file with <nchan>+1 columns.  First column is time [s].\n");
-	printf("  Each remaining column is folded power for that baseband channel.\n");
-	printf("  If nbin is positive, the scaling is such that <v^2> = 1 yields a\n");
-	printf("  power reading of 1.0.  Optimal S/N occurs for power ~= 1.03\n\n");
-	printf("Note: This program is useless on 1-bit quantized data\n\n");
+	fprintf(stderr, "%s ver. %s   %s  %s\n\n", program, version, author, verdate);
+	fprintf(stderr, "A Mark5 power folder.  Can use VLBA, Mark3/4, Mark5B and VDIF " "formats using the\nmark5access library.\n\n");
+	fprintf(stderr, "Usage: %s <infile> <dataformat> <nbin> <nint> <freq> <outfile> [<offset>]\n\n", program);
+	fprintf(stderr, "  <infile> is the name of the input file\n\n");
+	fprintf(stderr, "  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
+	fprintf(stderr, "    VLBA1_2-256-8-2\n");
+	fprintf(stderr, "    MKIV1_4-128-2-1\n");
+	fprintf(stderr, "    Mark5B-512-16-2\n");
+	fprintf(stderr, "    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
+	fprintf(stderr, "  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
+	fprintf(stderr, "    VDIF_1000-64000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
+	fprintf(stderr, "    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
+	fprintf(stderr, "    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
+	fprintf(stderr, "  <nbin> is the number of bins per if across 1 period\n");
+	fprintf(stderr, "         if negative, the conversion to true power is not performed\n\n");
+	fprintf(stderr, "  <nint> is the number of %d sample chunks to work on\n\n", ChunkSize);
+	fprintf(stderr, "  <freq> [Hz] -- the inverse of the period to be folded\n\n");
+	fprintf(stderr, "  <outfile> is the name of the output file\n\n");
+	fprintf(stderr, "  <offset> is number of bytes into file to start decoding\n\n");
+	fprintf(stderr, "Example: look for the 80 Hz switched power:\n\n");
+	fprintf(stderr, "  m5fold 2bit.data.vlba VLBA1_1-128-8-2 128 10000 80 switched_power.out\n\n");
+	fprintf(stderr, "Output: A file with <nchan>+1 columns.  First column is time [s].\n");
+	fprintf(stderr, "  Each remaining column is folded power for that baseband channel.\n");
+	fprintf(stderr, "  If nbin is positive, the scaling is such that <v^2> = 1 yields a\n");
+	fprintf(stderr, "  power reading of 1.0.  Optimal S/N occurs for power ~= 1.03\n\n");
+	fprintf(stderr, "Note: This program is useless on 1-bit quantized data\n\n");
 }
 
 static int fold(const char *filename, const char *formatname, int nbin, int nint, double freq, const char *outfile, long long offset)
@@ -114,7 +114,7 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 
 	if(!ms)
 	{
-		printf("Error: problem opening %s\n", filename);
+		fprintf(stderr, "Error: problem opening %s\n", filename);
 
 		return EXIT_FAILURE;
 	}
@@ -133,11 +133,11 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 
 	mark5_stream_print(ms);
 
-	if (ms->iscomplex) 
-	  {
-	    printf("Complex decode\n");
-	    docomplex = 1;
-	  }
+	if(ms->iscomplex) 
+	{
+		fprintf(stderr, "Complex decode\n");
+		docomplex = 1;
+	}
 
 	sampnum = (long long)((double)ms->ns*(double)ms->samprate*1.0e-9 + 0.5);
 
@@ -201,7 +201,7 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 
 			if(ms->consecutivefails > 5)
 			{
-				printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
+				fprintf(stderr, "Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
 
 				break;
 			}
@@ -266,7 +266,7 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 
 			if(ms->consecutivefails > 5)
 			{
-				printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
+				fprintf(stderr, "Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
 
 				break;
 			}

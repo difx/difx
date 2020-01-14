@@ -42,8 +42,8 @@
 
 const char program[] = "m5d";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.5";
-const char verdate[] = "20180914";
+const char version[] = "1.6";
+const char verdate[] = "20190815";
 
 static void usage(const char *pgm)
 {
@@ -125,18 +125,28 @@ static int decode_short(const char *filename, const char *formatname, const char
 
 	total = unpacked = 0;
 
-	in = fopen(filename, "r");
-	if(!in)
+	if(strcmp(filename, "-") == 0)
 	{
-		fprintf(stderr, "Error: could not open %s for read\n", filename);
+		in = stdin;
+	}
+	else
+	{
+		in = fopen(filename, "r");
+		if(!in)
+		{
+			fprintf(stderr, "Error: could not open %s for read\n", filename);
 
-		return EXIT_FAILURE;
+			return EXIT_FAILURE;
+		}
 	}
 	ms = new_mark5_stream( new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
 	if(!ms)
 	{
 		fprintf(stderr, "Error: problem opening or decoding %s\n", filename);
-		fclose(in);
+		if(strcmp(filename, "-") != 0)
+		{
+			fclose(in);
+		}
 
 		return EXIT_FAILURE;
 	}
@@ -172,7 +182,10 @@ static int decode_short(const char *filename, const char *formatname, const char
 	validsum = (int *)calloc(ms->nchan, sizeof(int));
 
 	r = fread(raw, 1, rawsize, in);
-	fclose(in);
+	if(strcmp(filename, "-") != 0)
+	{
+		fclose(in);
+	}
 
 	mark5_stream_print(ms);
 
@@ -529,7 +542,13 @@ int main(int argc, char **argv)
 
 	if(optc == 4)
 	{
-		offset=atoll(argv[optind+3]);
+		if(strcmp(argv[optind], "-") == 0)
+		{
+			fprintf(stderr, "Error: offset cannot be used with stdin\n");
+
+			return EXIT_FAILURE;
+		}
+		offset = atoll(argv[optind+3]);
 	}
 
 	if(complexdata)

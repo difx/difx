@@ -6,6 +6,7 @@ Version 1.5.5
 * m5spec: allow specification of bchan and echan to limit range of channels being printed
 * Remove broken/incomplete support for K5 format
 * Remove support for non-format "VDIFB"
+* m5fold: change all printf() to fprintf(stderr, ) so piping is clean
 * Post DiFX-2.6
 
 Version 1.5.4
