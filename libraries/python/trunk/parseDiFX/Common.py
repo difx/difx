@@ -66,7 +66,8 @@ def parse_output_header(input):
         toreturn.append(int((buffer.split(':')[1]).strip())) #freqindex
         buffer = input.readline()
         orgbuffer += buffer
-        toreturn.append((buffer.split(':')[1].strip())) #polpair
+        binarypolpair = buffer.split(':')[1].strip() #polpair
+        toreturn.append(chr(binarypolpair[0]) + chr(binarypolpair[1]))
         buffer = input.readline()
         orgbuffer += buffer
         toreturn.append(int((buffer.split(':')[1]).strip())) #pulsarbin
@@ -113,7 +114,7 @@ def parse_output_header(input):
         toreturn.append(struct.unpack("i", buffer)[0]) #freqindex
         buffer = input.read(2)
         orgbuffer += buffer
-        toreturn.append(buffer)                        #polpair
+        toreturn.append(buffer.decode("utf-8"))        #polpair
         buffer = input.read(4)
         orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #pulsarbin
@@ -139,7 +140,7 @@ def make_output_header_v1(hdrstruct):
     packed.append(struct.pack('i', 1))
     for n in range(6):
         packed.append(struct.pack(fmt_part1[n], hdrstruct[n]))
-    packed.append(hdrstruct[6]) # polpair
+    packed.append(hdrstruct[6].encode('utf-8')) # polpair
     for n in range(7,12):
         packed.append(struct.pack(fmt_part2[n-7], hdrstruct[n]))
     binhdr = b''.join(packed)
