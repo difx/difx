@@ -79,7 +79,7 @@ for stokes in args.pols.split(','):
     dynspec[stokes] = np.loadtxt("{0}-imageplane-dynspectrum.stokes{1}.txt".format(src, stokes))
     if args.rms:
         dynrms[stokes] = np.loadtxt("{0}-imageplane-rms.stokes{1}.txt".format(src, stokes))
-        print "{0}-imageplane-rms.stokes{1}.txt".format(src, stokes)
+        print("{0}-imageplane-rms.stokes{1}.txt".format(src, stokes))
 
     print(dynspec[stokes].shape)
 
@@ -97,9 +97,9 @@ for stokes in args.pols.split(','):
             dynspec[stokes][0] = 0
             if args.rms:
                 dynrms[stokes][0] = 0
-            print "Setting zeroth input bin equal to zero"
+            print("Setting zeroth input bin equal to zero")
         else:
-            print "Plotting all bins"
+            print("Plotting all bins")
 
         if args.fscrunch:
             fscrunch[stokes] = np.mean(dynspec[stokes], 1)
@@ -116,7 +116,7 @@ for stokes in args.pols.split(','):
 
         if args.rms:
             dynrms_jy = dynrms[stokes]*10000/res
-            print dynrms_jy
+            print(dynrms_jy)
             ax.imshow(dynrms_jy[:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
             #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
             ax.set_xlabel("Time (ms)")
@@ -169,7 +169,7 @@ if args.fscrunch:
             col='#35978f'
             plotlinestyle=':'
 
-        print stokes
+        print(stokes)
         amp_jy = fscrunch[stokes][:] * 10000/res
         rms_jy = fscrunchrms[stokes][:] * 10000/res
 
