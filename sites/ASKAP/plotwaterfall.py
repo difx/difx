@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -18,6 +18,7 @@ parser.add_argument("-F", "--fscrunch", default=False, help="Make fscrunched plo
 parser.add_argument("--pols", type=str, default="XX,YY,I,Q,U,V", help='The polarisations to be imaged if --imagecube is set. Defaulted to all. Input as a list of strings: e.g., "XX,YY"')
 parser.add_argument("-a", "--avg", type=int, default=24, help="Number of channels to average together per image cube slice")
 parser.add_argument("--rms", default=False, action="store_true", help="Use the off-source rms estimate")
+parser.add_argument("--flagchans", default="", help="comma-separated list of channels to zero in the plot")
 parser.add_argument("--frbtitletext", type=str, default="", help="The name of the FRB (or source) to be used as the title of the plots")
 
 args = parser.parse_args()
@@ -45,6 +46,7 @@ if args.basefreq is None:
 
 nbins = args.nbins
 nchan = args.nchan
+flagchans = [int(x) for x in args.flagchans.split(',') if x.strip().isdigit()]
 src = args.src
 res = args.res
 frbtitletext = args.frbtitletext
@@ -53,7 +55,7 @@ frbtitletext = args.frbtitletext
 basefreq = args.basefreq
 bandwidth = args.avg/6 * nchan # MHz
 startchan = 0
-endchan=nchan-3
+endchan=nchan - 1
 
 # Define plotting parameters
 startfreq = basefreq + (startchan*bandwidth)/nchan
@@ -100,6 +102,9 @@ for stokes in args.pols.split(','):
             print("Setting zeroth input bin equal to zero")
         else:
             print("Plotting all bins")
+        for f in flagchans:
+            print("Flagging channel", f)
+            dynspec[stokes][:,f] = 0
 
         if args.fscrunch:
             fscrunch[stokes] = np.mean(dynspec[stokes], 1)
@@ -173,9 +178,9 @@ if args.fscrunch:
 
         print(stokes)
         amp_jy = fscrunch[stokes][:] * 10000/res
-        rms_jy = fscrunchrms[stokes][:] * 10000/res
 
         if args.rms:
+            rms_jy = fscrunchrms[stokes][:] * 10000/res
             plt.title('   '+frbtitletext, loc='left', pad=-20)
             scrunch_ax.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2)
         else:
@@ -189,8 +194,8 @@ if args.fscrunch:
     col='k'
     plotlinestyle=':'
     amp_jy = fscrunch["I"][:] * 10000/res
-    rms_jy = fscrunchrms["I"][:] * 10000/res
     if args.rms:
+        rms_jy = fscrunchrms["I"][:] * 10000/res
         scrunch_ax.errorbar(centretimes,amp_jy,yerr=rms_jy, label="I")
     else:
         scrunch_ax.plot(centretimes,amp_jy,label="I")
