@@ -148,6 +148,8 @@ plt.figure(fig.number)
 if args.fscrunch:
     print("fscrunching...")
     centretimes = np.arange(starttime+res/2.0, endtime, res)
+    # Set figure size
+    scrunch_fig, scrunch_ax = plt.subplots(figsize=(7,7))
     for stokes in args.pols.split(','):
 
         if stokes=="I": 
@@ -175,13 +177,13 @@ if args.fscrunch:
 
         if args.rms:
             plt.title('   '+frbtitletext, loc='left', pad=-20)
-            plt.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2)
+            scrunch_ax.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2)
         else:
             plt.title('   '+frbtitletext, loc='left', pad=-20)
-            plt.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
+            scrunch_ax.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
     plt.legend()
-    plt.xlabel("Time (ms)")
-    plt.ylabel("Amplitude (Jy)")
+    scrunch_ax.set_xlabel("Time (ms)")
+    scrunch_ax.set_ylabel("Amplitude (Jy)")
     plt.savefig("{0}-fscrunch.png".format(src), bbox_inches = 'tight')
     plt.clf()
     col='k'
@@ -189,11 +191,11 @@ if args.fscrunch:
     amp_jy = fscrunch["I"][:] * 10000/res
     rms_jy = fscrunchrms["I"][:] * 10000/res
     if args.rms:
-        plt.errorbar(centretimes,amp_jy,yerr=rms_jy, label="I")
+        scrunch_ax.errorbar(centretimes,amp_jy,yerr=rms_jy, label="I")
     else:
-        plt.plot(centretimes,amp_jy,label="I")
-    plt.xlabel("Time (ms)")
-    plt.ylabel("Amplitude (Jy)")
+        scrunch_ax.plot(centretimes,amp_jy,label="I")
+    scrunch_ax.set_xlabel("Time (ms)")
+    scrunch_ax.set_ylabel("Amplitude (Jy)")
     plt.savefig("{0}-fscrunch.stokesI.png".format(src), bbox_inches = 'tight')
     plt.clf()
 
