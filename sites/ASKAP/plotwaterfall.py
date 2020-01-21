@@ -184,7 +184,7 @@ lambda_sq = (c/(freqs*1e6))**2
 
 # Derotating using the measured RM 
 delta_pa = rotmeas * lambda_sq
-pa_corrected = pa - delta_pa
+pa_corrected = pa + delta_pa
 
 # Apply corrections to Stokes Q and U
 dynspec_rmcorrected["Q"] = p_qu * np.cos(2*pa_corrected)
