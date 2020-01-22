@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
 #   Copyright (C) 2009-2018 by Walter Brisken                             *
@@ -32,14 +32,13 @@
 
 
 program = 'checkdir'
-version = '0.8'
+version = '0.9'
 author  = 'Walter Brisken'
-verdate = '20140603'
+verdate = '20191114'
 
 from sys import exit, argv
 from os.path import isfile, isdir
 from os import getenv, system
-from string import split, strip, upper, find
 from glob import glob
 from time import time
 import datetime
@@ -49,10 +48,10 @@ dirPath = getenv("MARK5_DIR_PATH")
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
 
 def usage(prog):
-	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-	print 'A program to carefully inspect module directory files for problems.'
-	print '\nUsage: %s [options] [<list of modules>]' % prog
-	print """
+	print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+	print('A program to carefully inspect module directory files for problems.')
+	print('\nUsage: %s [options] [<list of modules>]' % prog)
+	print("""
 Options can include:
 
   --verbose
@@ -89,7 +88,7 @@ Examples:
 
   checkdir NRAO-024 NRAO+266   # check these two modules
 
-"""
+""")
 	exit(0)
 
 
@@ -117,7 +116,7 @@ class Scan:
 		self.startMJD = 0.0
 		self.stopMJD = 0.0
 		self.endBytes = 0
-		s = split(text)
+		s = text.split()
 		if len(s) >= 11:
 			try:
 				self.startBytes   = int(s[0])
@@ -138,8 +137,8 @@ class Scan:
 			except ValueError:
 				self.error = 'Conversion error'
 		else:
-			print 'Deformed line in file: %s' % text
-			print 'Cannot continue'
+			print('Deformed line in file: %s' % text)
+			print('Cannot continue')
 			exit(0)
 		if len(s) < 12:
 			self.error = 'Scan with no label'
@@ -153,7 +152,7 @@ class Scan:
 			if 1.1*R > r:
 				return r
 			else:
-				r /= 2
+				r //= 2
 		return 0
 	
 	def checkLength(self):
@@ -167,7 +166,7 @@ class Scan:
 		return None
 
 	def checkName(self):
-		if find(self.name, 'UKN') >= 0:
+		if self.name.find('UKN') >= 0:
 			return "This scan was rescued and might consist of multiple scans.  mk5map can be used to dissect it (for Mark5B format only)"
 		return None
 
@@ -271,36 +270,36 @@ def checkFile(module, histogram, verbose=1):
 	fn = dirPath + '/' + module + '.dir'
 
 	if not isfile(fn):
-		print '%s : No directory found' % module
+		print('%s : No directory found' % module)
 		return 0
 
 	text = open(fn).readlines()
 
 	if len(text) < 1:
-		print '%s : No data in directory file' % module
+		print('%s : No data in directory file' % module)
 		return 0
 
-	header = split(text[0])
+	header = text[0].split()
 	if len(header) < 4:
-		print '%s : Header malformed' % module
+		print('%s : Header malformed' % module)
 		return 0
 
 	if header[0] != module:
-		print '%s : Module ID is incorrect (%s)' % (module, header[0])
+		print('%s : Module ID is incorrect (%s)' % (module, header[0]))
 		return 0
 
 	try:
 		nScan = int(header[1])
 	except ValueError:
-		print '%s : Header number of scans value is malformed: %s' % (module, header[1])
+		print('%s : Header number of scans value is malformed: %s' % (module, header[1]))
 		return 0
 	
 	if nScan > len(text) - 1:
-		print '%s : Header number of scans is too large: %d > %d' % (module, nScan, len(text) - 1)
+		print('%s : Header number of scans is too large: %d > %d' % (module, nScan, len(text) - 1))
 		return 0
 
 	if nScan <= 0:
-		print '%s : No scans on module.  Try rereading the directory?' % module
+		print('%s : No scans on module.  Try rereading the directory?' % module)
 		return 0
 	
 	scans = []
@@ -312,7 +311,7 @@ def checkFile(module, histogram, verbose=1):
 		scans.append(scan)
 		durCheck = scan.checkDuration()
 		if durCheck != None:
-			print '%s scan %d: %s' % (module, len(scans), durCheck)
+			print('%s scan %d: %s' % (module, len(scans), durCheck))
 		if scan.error == None:
 			scan.error = scan.checkLength()
 		if scan.error == None:
@@ -330,31 +329,31 @@ def checkFile(module, histogram, verbose=1):
 		histogram[scan.dataRate()] += scan.duration
 
 	if verbose > 3:
-		print "MODULE: " + module
+		print("MODULE: " + module)
 	for s in range(len(scans)):
 		if verbose > 3:
-			print "Scan %i runs from %s to %s" % (s+1, mjd2vex(scans[s].startMJD), mjd2vex(scans[s].stopMJD))
+			print("Scan %i runs from %s to %s" % (s+1, mjd2vex(scans[s].startMJD), mjd2vex(scans[s].stopMJD)))
 		if scans[s].error != None:
 			errors.append('Scan %d : %s' % (s+1, scans[s].error))
 	
 	if len(errors) > 0:
 		if verbose > 1:
-			print '%s : Module has errors' % module
+			print('%s : Module has errors' % module)
 			for e in errors:
-				print '  %s' % e
+				print('  %s' % e)
 		else:
-			print '%s : %d / %d scans have errors' % (module, len(errors), len(scans))
+			print('%s : %d / %d scans have errors' % (module, len(errors), len(scans)))
 		return 0
 
 	err = checkForOverlap(scans)
 	if err == None:
 		err = checkForOrder(scans)
 	else:
-		print '%s : %s' % (module, err)
+		print('%s : %s' % (module, err))
 		return 0
 
 	if verbose > 0:
-		print '%s : %4d scans  %s to %s' % (module, nScan, mjd2vex(mjdStart), mjd2vex(mjdStop))
+		print('%s : %4d scans  %s to %s' % (module, nScan, mjd2vex(mjdStart), mjd2vex(mjdStop)))
 
 	return 0
 
@@ -367,16 +366,16 @@ def printHistogram(h):
 	if sum < 1.0:
 		return
 	for key in k:
-		print '%3d Mbps: %5.1f hours = %4.1f%%' % (key, h[key]/3600.0, 100.0*h[key]/sum)
+		print('%3d Mbps: %5.1f hours = %4.1f%%' % (key, h[key]/3600.0, 100.0*h[key]/sum))
 
 # main
 
 if dirPath == None:
-	print 'Error: env. var. MARK5_DIR_PATH not defined.'
+	print('Error: env. var. MARK5_DIR_PATH not defined.')
 	exit(0)
 
 if not isdir(dirPath):
-	print 'Error: env. var. MARK5_DIR_PATH does not point to a directory.'
+	print('Error: env. var. MARK5_DIR_PATH does not point to a directory.')
 	exit(0)
 
 modules = []
@@ -387,7 +386,7 @@ histo = False
 histogram = {0:0.0, 1:0.0, 2:0.0, 4:0.0, 8:0.0, 16:0.0, 32:0.0, 64:0.0, 128:0.0, 256:0.0, 512:0.0}
 
 if len(argv) == 1:
-	print 'Use -h option for help'
+	print('Use -h option for help')
 	exit(0)
 
 for a in argv[1:]:
@@ -406,35 +405,35 @@ for a in argv[1:]:
 		elif a in ['-H', '--histogram']:
 			histo = True
 		else:
-			print 'Unknown command line parameter : ', a
+			print('Unknown command line parameter : ', a)
 			exit(0)
 	else:
-		modules.append(upper(a[:8]))
+		modules.append(a[:8].upper())
 
 if show:
 	if len(modules) != 1:
-		print 'Exactly 1 module must be specified!'
+		print('Exactly 1 module must be specified!')
 	else:
 		fn = '%s/%s.dir' % (dirPath, modules[0])
-		print 'Displaying file: %s\n\n' % fn
+		print('Displaying file: %s\n\n' % fn)
 
 		system('cat %s' % fn)
 	exit(0)
 
 if doAll:
 	if len(modules) > 0:
-		print 'The doAll flag and individual modules were selected.'
-		print 'Only one can be set at a time.'
+		print('The doAll flag and individual modules were selected.')
+		print('Only one can be set at a time.')
 	files = glob(dirPath+'/????????.dir')
 	if len(files) == 0:
-		print 'No module directories found in %s' % dirPath
+		print('No module directories found in %s' % dirPath)
 		exit(0)
 	for f in files:
-		g = split(f, '/')[-1]
+		g = f.split('/')[-1]
 		if len(g) == 12 and g[-4:] == '.dir':
 			modules.append(g[:8])
-		if len(modules) == 0:
-			print 'No module directories found in %s' % dirPath
+	if len(modules) == 0:
+			print('No module directories found in %s' % dirPath)
 			exit(0)
 
 modules.sort()
@@ -447,5 +446,5 @@ for m in modules:
 		lastm = m
 
 if histo > 0:
-	print 'Histogram of data rate usage:'
+	print('Histogram of data rate usage:')
 	printHistogram(histogram)

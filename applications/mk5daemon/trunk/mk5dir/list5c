@@ -1,9 +1,8 @@
-#!/bin/env python
+#!/bin/env python3
 
 from glob import glob
 from os import getenv
 from sys import exit
-from string import split
 import datetime
 
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
@@ -23,9 +22,9 @@ def getProjects(f):
 	p = {}
 	date = -1
 	for ss in d:
-		s = split(ss)
+		s = ss.split()
 		if len(s) >= 12:
-			h = split(s[11], '_')
+			h = s[11].split('_')
 			if s[10] == '2' and len(h) == 3 and h[2][0:2] == 'No':
 				p[h[0]] = 1
 				date = int(s[2])
@@ -35,7 +34,7 @@ def getProjects(f):
 path = getenv('MARK5_DIR_PATH')
 
 if path == None:
-	print 'please set env var MARK5_DIR_PATH'
+	print('please set env var MARK5_DIR_PATH')
 	exit(0)
 
 G = glob('%s/*.dir' % path)
@@ -43,7 +42,7 @@ G = glob('%s/*.dir' % path)
 list = []
 
 for g in G:
-	module = split(g, '/')[-1][0:8]
+	module = g.split('/')[-1][0:8]
 	if module[0:4] in ['NRAO', 'UNAM', 'LANL', 'PURD']:
 		date, plist = getProjects(g)
 		if len(plist) > 0:
@@ -56,5 +55,5 @@ for l in list:
 	for q in l[2]:
 		p = '%s %-7s' % (p, q)
 	if lastp != p:
-		print p
+		print(p)
 		lastp = p
