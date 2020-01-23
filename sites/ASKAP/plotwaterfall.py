@@ -23,6 +23,7 @@ parser.add_argument("--flagchans", default="", help="comma-separated list of cha
 parser.add_argument("--frbtitletext", type=str, default="", help="The name of the FRB (or source) to be used as the title of the plots")
 parser.add_argument("--diagnostic", default=False, action="store_true", help="Set if you wish to make diagnostic plots")
 parser.add_argument("--rotmeas", type=int, default=None, help="Number of channels to average together per image cube slice")
+parser.add_argument("-t", "--threshold_factor", type=float, default=2.5, help="Factor to use in thresholding for masking the polarisation position angle for plotting")
 
 args = parser.parse_args()
 
@@ -167,6 +168,8 @@ plt.close('all')
 
 #####################################################################################
 
+# TO ADD: Polarisaion calibration
+
 # Correcting for Faraday rotation
 
 # The RM measured using the data
@@ -209,12 +212,39 @@ plt.tight_layout()
 plt.savefig('{0}-RMcorrected.stokesU.png'.format(src, stokes))
 
 
+# TO ADD: Polarisation fractions
+# Total polarisation relative to I
+# TO ADD: P/I, L/I, V/I
+
+
+#####################################################################################
+
+# FSCRUNCH DATA WORK
+
+#####################################################################################
+
 # Plot the fscrunched time series if asked
 if args.fscrunch:
     print("fscrunching...")
     centretimes = np.arange(starttime+res/2.0, endtime, res)
-    # Set figure size
-    scrunch_fig, scrunch_ax = plt.subplots(2, 1, sharex=True, figsize=(7,9))
+    # Setup figure and axes for diagnostic plot
+    scrunch_fig_diag = plt.figure(figsize=(7,11))
+    scrunch_ax0_diag = plt.subplot2grid((10,3), (0,0), rowspan=2, colspan=3)
+    scrunch_ax1_diag = plt.subplot2grid((10,3), (3,0), rowspan=2, colspan=3, sharex=scrunch_ax0_diag)
+    scrunch_ax2_diag = plt.subplot2grid((10,3), (5,0), rowspan=5, colspan=3, sharex=scrunch_ax0_diag)
+    plt.setp(scrunch_ax1_diag.get_xticklabels(), visible=False)
+    scrunch_fig_diag.subplots_adjust(hspace=0)
+    scrunch_ax1_diag.tick_params(axis='x', direction='in')
+
+    # Set up figure and axes for publication plot
+    scrunch_fig = plt.figure(figsize=(7,9))
+    scrunch_ax0 = plt.subplot2grid((7,3), (0,0), rowspan=2, colspan=3)
+    scrunch_ax1 = plt.subplot2grid((7,3), (2,0), rowspan=5, colspan=3, sharex=scrunch_ax0)
+    plt.setp(scrunch_ax0.get_xticklabels(), visible=False)
+    scrunch_fig.subplots_adjust(hspace=0)
+    scrunch_fig.subplots_adjust(hspace=0)
+    scrunch_ax0.tick_params(axis='x', direction='in')
+
     for stokes in args.pols.split(','):
 
         fscrunch_rmcorrected[stokes] = np.mean(dynspec_rmcorrected[stokes], 1)
@@ -244,37 +274,102 @@ if args.fscrunch:
 
         if args.rms:
             rms_jy = fscrunchrms[stokes][:] * 10000/res
-            plt.title('   '+frbtitletext, loc='left', pad=-20)
-            scrunch_ax[1].errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2)
+            # Diagnostic plot
+            scrunch_ax2_diag.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+            # Publication plot
+            scrunch_ax1.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
         else:
             plt.title('   '+frbtitletext, loc='left', pad=-20)
-            scrunch_ax[1].plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
+            # Diagnostic plot
+            scrunch_ax2_diag.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
+            # Publication plot
+            scrunch_ax1.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
 
+    # Get new, corrected polarisation position angle for fscrunched data
     pol_pa = 0.5*np.arctan2(fscrunch_rmcorrected["U"], fscrunch_rmcorrected["Q"])*180/np.pi
-    total_linear_pol = np.sqrt(fscrunch_rmcorrected["Q"]**2 + fscrunch_rmcorrected["U"]**2)
+    total_linear_pol_flux_meas = np.sqrt(fscrunch_rmcorrected["Q"]**2 + fscrunch_rmcorrected["U"]**2)
+    # Calculate a noise threshold for masking the polarisation position angle plot
+    sigma_I = np.sqrt((fscrunchrms["Q"]**2 + fscrunchrms["U"]**2)/2)
+    threshold_factor=args.threshold_factor
 
-    scrunch_ax[0].plot(centretimes, pol_pa, 'ko', markersize=2)
-    scrunch_ax[0].set_ylabel("Position Angle (deg)")
+    # Check that sigma_I above and fscrunchrms["I"] are roughly equivalent
+    sigma_I_fig = plt.figure(figsize=(7,7))
+    sigma_I_ax0 = plt.subplot2grid((9,3), (0,0), rowspan=5, colspan=3)
+    sigma_I_ax1 = plt.subplot2grid((9,3), (5,0), rowspan=4, colspan=3, sharex=sigma_I_ax0)
+    sigma_I_ax0.plot(centretimes, sigma_I*10000/res, label="sigma_I_Q,U")
+    sigma_I_ax0.plot(centretimes, (fscrunchrms["I"]*10000/res), label="sigma_I_image")
+    sigma_I_ax1.plot(centretimes, (fscrunchrms["I"]*10000/res)-(sigma_I*10000/res), label="sigma_I_image - sigma_I_Q,U")
+    sigma_I_ax0.legend()
+    sigma_I_ax0.set_xlabel("Time (ms)")
+    sigma_I_ax0.set_ylabel("Jy")
+    sigma_I_ax1.legend()
+    sigma_I_ax1.set_xlabel("Time (ms)")
+    sigma_I_ax1.set_ylabel("Jy")
+    sigma_I_fig.savefig("sigma_I_image_vs_QU_diagnostic.png".format(src), bbox_inches = 'tight')
 
-    plt.legend()
-    scrunch_ax[1].set_xlabel("Time (ms)")
-    scrunch_ax[1].set_ylabel("Amplitude (Jy)")
+    # Removing bias from L_measured (i.e., the total linear polarisation flux):
+    # Set L_true = sqrt( (L_meas / sigma_I)^2 - sigma_I ) for L_meas/sigma_I > 1.57 and 0 otherwise,
+    # following Everett, J. E.; Weisberg, J. M. 2001 (Sec. 3.2)
+    total_linear_pol_flux_true = np.zeros(len(total_linear_pol_flux_meas))
+    total_linear_pol_flux_true[total_linear_pol_flux_meas / sigma_I > 1.57] = (np.sqrt( (total_linear_pol_flux_meas/sigma_I)**2 - 1)*sigma_I)[total_linear_pol_flux_meas / sigma_I > 1.57]
+    print("sigma: {0}".format(sigma_I))
+    print("L_meas / sigma: {0}".format(total_linear_pol_flux_meas/sigma_I))
+    print("L_meas: {0}".format(total_linear_pol_flux_meas))
+    print("L_true: {0}".format(total_linear_pol_flux_true))
+    # Prepare the arrays for masking
+    pol_pa_to_mask = np.ma.array(pol_pa)
+    # Mask values below threshold_factor x sigma_I
+    pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true < threshold_factor*sigma_I, pol_pa_to_mask)
+    pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_masked)
+
+    pa_rms = (180/np.pi) * (np.sqrt( ((fscrunch_rmcorrected["Q"]**2 * fscrunchrms["U"]**2) + (fscrunch_rmcorrected["U"]**2 *fscrunchrms["Q"]**2))/(4*(fscrunch_rmcorrected["Q"]**2 + fscrunch_rmcorrected["U"]**2)**2) ))
+    print("PA rms: {0}".format(pa_rms))
+    pol_pa_rms_to_mask = np.ma.array(pa_rms)
+    pol_pa_rms_masked = np.ma.masked_where(total_linear_pol_flux_true < threshold_factor*sigma_I, pol_pa_rms_to_mask)
+    pol_pa_rms_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_rms_masked)
+#    print(pol_pa_to_mask)
+#    print(fscrunch_rmcorrected["U"])
+#    print(fscrunch_rmcorrected["Q"])
+#    print(fscrunch["Q"])
+#    print(fscrunch["U"])
+
+    # Diagnostic plots
+    scrunch_ax1_diag.set_title('   '+frbtitletext)
+    scrunch_ax0_diag.errorbar(centretimes, pol_pa, yerr=pa_rms, fmt='ko', markersize=2)
+    scrunch_ax0.set_ylabel("Position Angle (deg)")
+    scrunch_ax1_diag.errorbar(centretimes, pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
+    scrunch_ax1_diag.set_ylabel("Position Angle (deg)")
+    scrunch_ax2_diag.legend()
+    scrunch_ax2_diag.set_xlabel("Time (ms)")
+    scrunch_ax2_diag.set_ylabel("Flux Density (Jy)")
+
+    # Publication plots
+    scrunch_ax0.set_title('   '+frbtitletext)
+    scrunch_ax0.errorbar(centretimes, pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
+    scrunch_ax0.set_ylabel("Position Angle (deg)")
+    scrunch_ax1.legend()
+    scrunch_ax1.set_xlabel("Time (ms)")
+    scrunch_ax1.set_ylabel("Flux Density (Jy)")
     if args.diagnostic:
         plt.show()
     else: print("Just saving plots")
-    plt.savefig("{0}-fscrunch.RMcorrected.png".format(src), bbox_inches = 'tight')
-    plt.clf()
+    scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic.png".format(src), bbox_inches = 'tight')
+    scrunch_fig.savefig("{0}-fscrunch.RMcorrected.png".format(src), bbox_inches = 'tight')
+    scrunch_fig.clf()
+
+    scrunch_i_fig, scrunch_i_ax = plt.subplots(figsize=(7,7))
     col='k'
     plotlinestyle=':'
     amp_jy = fscrunch_rmcorrected["I"][:] * 10000/res
     if args.rms:
         rms_jy = fscrunchrms["I"][:] * 10000/res
-        scrunch_ax[1].errorbar(centretimes,amp_jy,yerr=rms_jy, label="I")
+        scrunch_i_ax.errorbar(centretimes,amp_jy,yerr=rms_jy, label="I", capsize=2, elinewidth=2)
     else:
-        scrunch_ax[1].plot(centretimes,amp_jy,label="I")
-    scrunch_ax[1].set_xlabel("Time (ms)")
-    scrunch_ax[1].set_ylabel("Amplitude (Jy)")
-    plt.savefig("{0}-fscrunch.RMcorrected.stokesI.png".format(src), bbox_inches = 'tight')
-    plt.clf()
+        scrunch_i_ax.plot(centretimes,amp_jy,label="I")
+    scrunch_i_ax.set_xlabel("Time (ms)")
+    scrunch_i_ax.set_ylabel("Flux Density (Jy)")
+    scrunch_i_ax.legend()
+    scrunch_i_fig.savefig("{0}-fscrunch.RMcorrected.stokesI.png".format(src), bbox_inches = 'tight')
+    scrunch_i_fig.clf()
 
 else: print("Done!")
