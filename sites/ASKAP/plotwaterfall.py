@@ -21,9 +21,10 @@ parser.add_argument("-a", "--avg", type=int, default=16, help="Number of channel
 parser.add_argument("--rms", default=False, action="store_true", help="Use the off-source rms estimate")
 parser.add_argument("--flagchans", default="", help="comma-separated list of channels to zero in the plot")
 parser.add_argument("--frbtitletext", type=str, default="", help="The name of the FRB (or source) to be used as the title of the plots")
-parser.add_argument("--diagnostic", default=False, action="store_true", help="Set if you wish to make diagnostic plots")
 parser.add_argument("--rotmeas", type=int, default=None, help="Number of channels to average together per image cube slice")
 parser.add_argument("-t", "--threshold_factor", type=float, default=2.5, help="Factor to use in thresholding for masking the polarisation position angle for plotting")
+parser.add_argument("--pulse_number", type=int, default=None, help="Number of the pulse of interest for determining the polarisation fraction values")
+parser.add_argument("--binstartstop", type=str, default=None, help="Start and end bins for integrating over the pulse to get the polarisation fraction totals; input as a comma separated string")
 
 args = parser.parse_args()
 
@@ -51,12 +52,21 @@ if args.basefreq is None:
 if args.rotmeas is None:
     parser.error("You must specify the data's RM in order to derotate Stokes Q and U!")
 
+if args.pulse_number is None:
+    parser.error("You must specify the pulse number for which you want to obtain the polarisation fractions")
+
+if args.binstartstop is None:
+    parser.error("You must specify the start and stop bins for the pulse for which you want to obtain the polarisation fractions")
+
 nbins = args.nbins
 nchan = args.nchan
 flagchans = [int(x) for x in args.flagchans.split(',') if x.strip().isdigit()]
 src = args.src
 res = args.res
 frbtitletext = args.frbtitletext
+pulse_number = args.pulse_number
+binstart = int(args.binstartstop.split(',')[0])
+binstop = int(args.binstartstop.split(',')[1])
 
 # Define dynamic spectra parameters
 basefreq = args.basefreq
@@ -211,12 +221,6 @@ pol_ax.set_ylabel("Frequency (MHz)")
 plt.tight_layout()
 plt.savefig('{0}-RMcorrected.stokesU.png'.format(src, stokes))
 
-
-# TO ADD: Polarisation fractions
-# Total polarisation relative to I
-# TO ADD: P/I, L/I, V/I
-
-
 #####################################################################################
 
 # FSCRUNCH DATA WORK
@@ -327,11 +331,6 @@ if args.fscrunch:
     pol_pa_rms_to_mask = np.ma.array(pa_rms)
     pol_pa_rms_masked = np.ma.masked_where(total_linear_pol_flux_true < threshold_factor*sigma_I, pol_pa_rms_to_mask)
     pol_pa_rms_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_rms_masked)
-#    print(pol_pa_to_mask)
-#    print(fscrunch_rmcorrected["U"])
-#    print(fscrunch_rmcorrected["Q"])
-#    print(fscrunch["Q"])
-#    print(fscrunch["U"])
 
     # Diagnostic plots
     scrunch_ax1_diag.set_title('   '+frbtitletext)
@@ -350,9 +349,6 @@ if args.fscrunch:
     scrunch_ax1.legend()
     scrunch_ax1.set_xlabel("Time (ms)")
     scrunch_ax1.set_ylabel("Flux Density (Jy)")
-    if args.diagnostic:
-        plt.show()
-    else: print("Just saving plots")
     scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic.png".format(src), bbox_inches = 'tight')
     scrunch_fig.savefig("{0}-fscrunch.RMcorrected.png".format(src), bbox_inches = 'tight')
     scrunch_fig.clf()
@@ -371,5 +367,73 @@ if args.fscrunch:
     scrunch_i_ax.legend()
     scrunch_i_fig.savefig("{0}-fscrunch.RMcorrected.stokesI.png".format(src), bbox_inches = 'tight')
     scrunch_i_fig.clf()
+
+    # POLARISATION FRACTIONS:
+
+    # Total intensity
+    I = fscrunch_rmcorrected["I"] * 10000/res
+    I_rms = fscrunchrms["I"] * 10000/res
+    # Total circularly polarised flux
+    V = fscrunch_rmcorrected["V"] * 10000/res
+    V_rms = fscrunchrms["V"] * 10000/res
+    # Total linearly polarised flux
+    L = total_linear_pol_flux_true * 10000/res
+    L_rms = np.sqrt( ((fscrunch_rmcorrected["Q"]*10000/res)**2 * (fscrunchrms["Q"]*10000/res)**2) + ((fscrunch_rmcorrected["U"]*10000/res)**2 * (fscrunchrms["U"]*10000/res)**2) ) / L**2
+    # Total polarised flux
+    P = np.sqrt(L**2 + V**2)
+    P_rms = np.sqrt( ((L**2 * L_rms**2) + (V**2 * V_rms**2)) / (L**2 + V**2) )
+
+    # Plot the polarisations
+    pol_fig, pol_ax = plt.subplots(figsize=(7,7))
+    pol_ax.set_title('   '+frbtitletext)
+    pol_ax.errorbar(centretimes, I, label="I", yerr=I_rms, linestyle='-', color='k', linewidth=1.5, elinewidth=2, capsize=2)
+    pol_ax.errorbar(centretimes, V, label="V", yerr=V_rms, linestyle=':', color='#01665e', linewidth=1.5, elinewidth=2, capsize=2)
+    pol_ax.errorbar(centretimes, L, label="L", yerr=L_rms, linestyle='--', color='#8c510a', linewidth=1.5, elinewidth=2, capsize=2)
+    pol_ax.errorbar(centretimes, P, label="P", yerr=P_rms, linestyle='-.', color='#d8b365', linewidth=1.5, elinewidth=2, capsize=2)
+    pol_ax.set_xlabel("Time (ms)")
+    pol_ax.set_ylabel("Flux density (Jy)")
+    pol_ax.set_xlim(centretimes[binstart],centretimes[binstop])
+    pol_ax.legend()
+    pol_fig.savefig("{0}-polarisation.fluxes.png".format(src), bbox_inches = 'tight')
+    pol_fig.clf()
+
+    # Total fraction of polarised flux using the de-biased L_true
+    P_on_I = P / I
+    # Total fraction of linearly polarised flux using the de-biased L_true
+    L_on_I = L / I
+    # Total fraction of circularly polarised flux
+    V_on_I = V / I
+
+    # Print out polarisations and fractions for sanity check
+    print("P/I: {0}".format(P_on_I))
+    print("L/I: {0}".format(L_on_I))
+    print("V/I: {0}".format(V_on_I))
+    print("P: {0}".format(P))
+    print("L: {0}".format(L))
+    print("V: {0}".format(V))
+    print("I: {0}".format(I))
+
+    # Plot the polarisation fractions
+    polfrac_fig, polfrac_ax = plt.subplots(figsize=(7,7))
+    polfrac_ax.set_title('   '+frbtitletext)
+    polfrac_ax.plot(centretimes, P_on_I, label="P/I", linestyle='-', color='k')
+    polfrac_ax.plot(centretimes, L_on_I, label="L/I", linestyle='--', color='#8c510a')
+    polfrac_ax.plot(centretimes, V_on_I, label="V/I", linestyle='-.', color='#01665e')
+    polfrac_ax.set_xlabel("Time (ms)")
+    polfrac_ax.set_ylabel("Degree of polarisation")
+    polfrac_ax.legend()
+    polfrac_ax.set_xlim(centretimes[binstart],centretimes[binstop])
+    polfrac_fig.savefig("{0}-polarisation.fractions_diagnostic.png".format(src), bbox_inches = 'tight')
+    polfrac_fig.clf()
+
+    # Get total fractional polarisations (integrated across the sub pulses)
+    print("Bin start and stop for pulse {0}: {1},{2}".format(pulse_number, binstart, binstop))
+    print("Pulse {0} integrated from {1} ms to {2} ms".format(pulse_number, binstart*res, binstop*res))
+    P_on_I_total = np.sum(P_on_I[binstart:binstop])
+    print("Total P/I over pulse {0}: {1}".format(pulse_number, P_on_I_total))
+    L_on_I_total = np.sum(L_on_I[binstart:binstop])
+    print("Total L/I over pulse {0}: {1}".format(pulse_number, L_on_I_total))
+    V_on_I_total = np.sum(V_on_I[binstart:binstop])
+    print("Total V/I over pulse {0}: {1}".format(pulse_number, V_on_I_total))
 
 else: print("Done!")
