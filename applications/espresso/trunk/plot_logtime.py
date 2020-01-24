@@ -42,12 +42,26 @@ if "DISPLAY" not in os.environ.keys():
 from matplotlib import pyplot
 
 
-def corrtime2secs(obstime_match):
-    corrtime = obstime_match.groups()[0]
-    corr_fracsec = int(obstime_match.groups()[1]) * 1e-3
-    corrdatetime = datetime.datetime.strptime(corrtime, "%Y-%m-%d %H:%M:%S")
-    corr_secs = time.mktime(corrdatetime.timetuple()) + corr_fracsec
+def logtime2secs(line):
+    # difxlog format
+    time_format1 = "%a %b %d %H:%M:%S %Y"
+    # errormon2 format
+    time_format2 = "%Y-%m-%d %H:%M:%S"
+    corrdatetime = None
+    try:
+        logtime = line[0:24]
+        corrdatetime = datetime.datetime.strptime(logtime, time_format1)
+    except:
+        try:
+            logtime = line[0:19]
+            corrdatetime = datetime.datetime.strptime(logtime, time_format2)
+        except:
+            #raise
+            return None
+
+    corr_secs = time.mktime(corrdatetime.timetuple())
     return corr_secs
+
 
 
 usage = """%prog [options] <difxlog>
@@ -147,35 +161,33 @@ for filename in args:
     for line in thisdatafile:
         line = line.strip()
 
-        # match the correlator time and observation time in the log file
-        #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
-        obstime_match = re.search(
-                r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)", line)
-        if not obstime_match:
-            continue
-        if (options.grep is not False) and not re.search(options.grep, line):
-            continue
-
         # get the time of the first line in the log file
-        if not starttime:
-            starttime_match = re.search(
-                    r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})", line)
-            starttime = corrtime2secs(starttime_match)
+        if starttime is None:
+            starttime = logtime2secs(line)
+            if starttime is None:
+                continue
             this_xdata.append(starttime)
             # give this an observation time of -1 (first vis. is at time 0)
             this_ydata.append(-1)
             continue
 
+        obstime_match = re.search("to write out time (.*)", line)
+        if not obstime_match:
+            continue
+        if (options.grep is not False) and not re.search(options.grep, line):
+            continue
+
         # convert correlator and observation time strings to seconds
-        corr_secs = corrtime2secs(obstime_match)
+        corr_secs = logtime2secs(line)
         #obstime_day, obstime_secs = obstime_match.groups()[2].split('/')
         #obs_secs = int(obstime_day)*(24*60*60.) + int(obstime_secs)
-        obs_secs = float(obstime_match.groups()[2])
+        obs_secs = float(obstime_match.groups()[0])
 
         # this_* are the data extracted for the current log file only
         this_xdata.append(corr_secs)
         this_ydata.append(obs_secs)
 
+    #print (this_xdata, this_ydata)
     this_xdata = numpy.array(this_xdata)
     this_ydata = numpy.array(this_ydata)
 
