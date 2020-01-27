@@ -1,12 +1,12 @@
 #!/usr/bin/python
 """ 
-m5tone.py ver. 1.0   Jan Wagner  20150413
+m5tone.py ver. 1.1   Jan Wagner  20200127
  
 Extracts a single Phase Calibration tone from one channel in raw VLBI data.
 Reads the formats supported by the mark5access library.
  
 Usage : m5tone.py [--plot] <infile> <dataformat> <outfile>
-                  <if_nr> <Tint (s)> <tonefreq (Hz)> <Ldft> [<offset>]
+                  <if_nr> <Tint (s)> <tonefreq (Hz)> <Ldft> [<offset>] [rate Hz]
  
   --plot      plot the tone phase, amplitude, etc, against time
  
@@ -22,7 +22,9 @@ Usage : m5tone.py [--plot] <infile> <dataformat> <outfile>
   <tonefreq>  baseband frequency in Hz of the tone, for example 125e3
   <Ldft>      the desired length of the DFT/FFT across the baseband
  
-  <offset> is the byte offset into the file
+  <offset>    is the byte offset into the file
+  <rate Hz>   is a drift rate (Hz) by which to phase rotate the sample
+              data prior to complex DFT
 """
 
 import ctypes, numpy, sys
@@ -31,9 +33,9 @@ import mark5access as m5lib
 from datetime import datetime
 
 def usage():
-	print __doc__
+	print (__doc__)
 
-def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=False, doFast=True):
+def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, phaseRateHz=0, doPlot=False, doFast=True):
 	"""Extracts a single tone from the desired channel in a VLBI recording"""
 
 	# Open file
@@ -55,6 +57,7 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 	nint  = numpy.round(float(dms.samprate)*Tint_sec/float(Ldft))
 	Tint  = float(nint*Ldft)/float(dms.samprate)
 	pcbin = Ldft*float(tonefreq_Hz)/float(dms.samprate)
+	drift_phase0 = 0
 	iter  = 0
 
 	# Safety checks
@@ -75,12 +78,12 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 	winf  = numpy.kaiser(Ldft, 7.0)                      # Kaiser window function
 	spec  = numpy.zeros(shape=(Ldft), dtype='complex64') # Accumulated spectrum
 	tavg  = numpy.zeros(shape=(Ldft), dtype='float32')   # Accumulated time domain data
-        pcamp = 0.0                                          # Total abs amplitude
+	pcamp = 0.0                                          # Total abs amplitude
 	history = {'amp':[], 'phase':[], 'coh':[], 'T':[], 'MJD':[]}
 
 	# Plotting
 	Lsgram = 8
-        specgram = numpy.zeros(shape=(Lsgram,Lnyq), dtype='complex64')
+	specgram = numpy.zeros(shape=(Lsgram,Lnyq), dtype='complex64')
 	if doPlot:
 		pylab.ion()
 		pylab.figure()
@@ -104,6 +107,13 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 			return 0
 		dd = numpy.frombuffer(if_data.contents, dtype='float32')
 
+		# Complex rotate the data if requested
+		if not phaseRateHz==0:
+			phasestep = 2*numpy.pi * (phaseRateHz / float(dms.samprate))
+			rotator = numpy.exp(1j * (drift_phase0 + phasestep*numpy.linspace(0, Ldft-1, Ldft)))
+			dd = numpy.multiply(dd, rotator)
+			drift_phase0 = numpy.unwrap([drift_phase0 + Ldft*phasestep])[0]
+
 		# Extract the tone
 		if not(doFast):
 			# Brute force method, benefit is that coherence can be measured
@@ -117,6 +127,7 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 
 		# Report the result at end of each averaging period
 		iter = iter + 1
+		print ('%d/%d  \r' % (iter, nint)), 
 		if (iter % nint)==0:
 
 			# Timestamp at mid-point of integration
@@ -185,6 +196,7 @@ def main(argv=sys.argv):
 	doPlot = False
 	doFast = False # False to measure also tone coherence, True to skip coherence measurement
 	offset = 0
+	rate = 0
 
 	if len(argv) not in [8,9,10]:
 		usage()
@@ -195,13 +207,15 @@ def main(argv=sys.argv):
 		argv = argv[1:]
 	if len(argv) == 9:
 		offset = int(argv[8])
+	if len(argv) == 10:
+		rate = float(argv[9])
 
 	fout  = open(argv[3], 'wb', 1)
 	if_nr = int(argv[4])
 	Tint  = float(argv[5])
 	tfreq = float(argv[6])
 	Ldft  = int(argv[7])
-	rc = m5tone(argv[1],argv[2], fout, if_nr, Tint,tfreq,Ldft, offset, doPlot, doFast)
+	rc = m5tone(argv[1],argv[2], fout, if_nr, Tint,tfreq,Ldft, offset, phaseRateHz=rate, doPlot=doPlot, doFast=doFast)
 	fout.close()
 
 	if doPlot and (rc == 0):
