@@ -12,13 +12,16 @@ askapheight = 361 # metres
 askapradius = 6374217 # metres from geocentre
 c = 299792458.0
 
-if not len(sys.argv) == 2:
-    print("Usage: %s <rawdata directory>" % sys.argv[0])
-    print("Raw data directory should contain snoopy.log and akXX/beamXX/*.vcraft.hdr files")
+if not len(sys.argv) == 3:
+    print("Usage: %s <rawdata directory> <snoopy version (v1 or v2)>" % sys.argv[0])
+    print("Raw data directory should contain snoopy.log or snoopyv2.cand and akXX/beamXX/*.vcraft.hdr files")
     sys.exit()
 
 # Grab the snoopy file
-snoopyfile = sys.argv[1] + "/snoopy.log"
+if sys.argv[2] == 'v1':
+    snoopyfile = sys.argv[1] + "/snoopy.log"
+elif sys.argv[2] == 'v2':
+    snoopyfile = sys.argv[1] + "/snoopyv2.cand"
 if not os.path.exists(snoopyfile):
     print(snoopyfile, "doesn't exist")
     sys.exit()
