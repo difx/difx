@@ -280,11 +280,12 @@ if options.station:
     new_telescopedirs = []
     for telescope in telescopedirs:
         telescope_name = telescope.split()[0].upper()
+        telescope_name = re.sub("_.*$", "", telescope_name)
         if telescope_name in station_list:
             new_telescopedirs.append(telescope)
     telescopedirs = new_telescopedirs
 
-#print telescopedirs
+#print (telescopedirs)
 
 
 try:
