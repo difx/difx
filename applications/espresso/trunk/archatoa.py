@@ -38,6 +38,10 @@ parser.add_option(
         "-l",
         type="str", dest="username", default=None,
         help="Specify your username on the ATOA host")
+parser.add_option(
+        "-d",
+        action="store_true", dest="dummy", default=None,
+        help="Dummy mode. Print commands, but do not transfer")
 
 (options, args) = parser.parse_args()
 
@@ -46,7 +50,6 @@ if len(args) < 1:
     parser.error("Give a list of FITS files")
 
 fits_files = args
-
 
 # directories on Horus for ATOA import
 atoa_fits_dir = "horus.atnf.csiro.au:/srv/atoa/received/VLBI"
@@ -61,30 +64,46 @@ if options.username:
 # the official scheduling code for the project and <whatever> is arbitrary.
 # The md5sum file must have the *same* name, but goes to a different directory.
 for fits_file in fits_files:
-    header = open(fits_file).read(1000)
-    date_obs = re.search(r"DATE-OBS=\s+'(\d{4}-\d{2}-\d{2})'", header).group(1)
+    if options.dummy is not None:
+        print(fits_file)
+    header = open(fits_file).read(2000)
+    date_obs = re.search(
+            r"DATE-OBS=\s+'(\d{4}-\d{2}-\d{2})\s*'", header).group(1)
 
     outfile = date_obs + "_0000." + fits_file
     md5sumfile = outfile + ".md5sum"
 
     try:
         # create a hard link to the FITS file with the ATOA name
-        os.link(fits_file, outfile)
+        if options.dummy is None:
+            os.link(fits_file, outfile)
+        else:
+            print("os.link", fits_file, outfile)
 
         # generate an md5sum file
         command = " ".join(["md5sum", outfile, ">", md5sumfile])
-        subprocess.check_call(command, shell=True)
+        if options.dummy is None:
+            subprocess.check_call(command, shell=True)
+        else:
+            print(command)
 
         # copy the FITS file to Horus, using the ATOA file name
         command = ["scp", outfile, atoa_fits_dir]
-        subprocess.check_call(command)
+        if options.dummy is None:
+            subprocess.check_call(command)
+        else:
+            print(command)
 
         # copy the md5sum file to Horus, using the ATOA file name
         command = ["scp", md5sumfile, os.path.join(atoa_md5sum_dir, outfile)]
-        subprocess.check_call(command)
+        if options.dummy is None:
+            subprocess.check_call(command)
+        else:
+            print(command)
     except:
         raise
     finally:
         # clean up even if transfer failed.
-        os.remove(outfile)
-        os.remove(md5sumfile)
+        if options.dummy is None:
+            os.remove(outfile)
+            os.remove(md5sumfile)
