@@ -14,8 +14,12 @@ Usage : m5spec.py [--noscale] <infile> <dataformat> <T_int (ms)> <Ldft> [offset]
  
   <T_int>     approximate integration time per spectrum in milliseconds
   <Ldft>      length in points of Fourier transform across full bandwidth
- 
-  <offset>    is the byte offset into the file
+
+  Optional:
+
+  --noscale   disable joint scaling of spectra, show axis labels for each plot
+
+  <offset>    the byte offset into the file
 """
 import ctypes, numpy, sys, pylab
 import mark5access as m5lib
@@ -132,7 +136,7 @@ def main(argv=sys.argv[1:]):
 
 	# Args
 	sameScale = True
-	if '--noscale' in argv[0]:
+	if len(argv) > 0 and '--noscale' in argv[0]:
 		sameScale = False
 		argv = argv[1:]
 	if len(argv) not in [4,5]:
