@@ -5,10 +5,11 @@ m5tone.py ver. 1.1   Jan Wagner  20200127
 Extracts a single Phase Calibration tone from one channel in raw VLBI data.
 Reads the formats supported by the mark5access library.
  
-Usage : m5tone.py [--plot] <infile> <dataformat> <outfile>
+Usage : m5tone.py [--plot] [--fast] <infile> <dataformat> <outfile>
                   <if_nr> <Tint (s)> <tonefreq (Hz)> <Ldft> [<offset>] [rate Hz]
  
   --plot      plot the tone phase, amplitude, etc, against time
+  --fast      use fast extraction, does not estimate actual coherence (always 1.0)
  
   <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:
     VLBA1_2-256-8-2
@@ -17,7 +18,7 @@ Usage : m5tone.py [--plot] <infile> <dataformat> <outfile>
     VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
  
   <outfile>   output text file for PCal time, amplitude, phase, coherence
-  <if_nr>     the IF i.e. baseband channel that contains the tone
+  <if_nr>     the IF/baseband channel (1..n) that contains the tone
   <Tint>      integration time in seconds, for example 0.256
   <tonefreq>  baseband frequency in Hz of the tone, for example 125e3
   <Ldft>      the desired length of the DFT/FFT across the baseband
@@ -28,8 +29,13 @@ Usage : m5tone.py [--plot] <infile> <dataformat> <outfile>
 """
 
 import ctypes, numpy, sys
-import pylab
 import mark5access as m5lib
+try:
+	import pylab
+	canPlot = True
+except:
+	canPlot = False
+
 from datetime import datetime
 
 def usage():
@@ -198,24 +204,33 @@ def main(argv=sys.argv):
 	offset = 0
 	rate = 0
 
-	if len(argv) not in [8,9,10]:
+	argv = argv[1:]
+	while (len(argv)>0 and argv[0][:2]=='--'):
+		if (argv[0] == '--plot'):
+			doPlot = True and canPlot
+			argv = argv[1:]
+		elif (argv[0] == '--fast'):
+			doFast = True
+			argv = argv[1:]
+
+	if len(argv) not in [7,8,9]:
 		usage()
 		sys.exit(1)
 
-	if (argv[1] == '--plot'):
-		doPlot = True
-		argv = argv[1:]
+	if len(argv) == 8:
+		offset = int(argv[7])
 	if len(argv) == 9:
-		offset = int(argv[8])
-	if len(argv) == 10:
-		rate = float(argv[9])
+		rate = float(argv[8])
 
-	fout  = open(argv[3], 'wb', 1)
-	if_nr = int(argv[4])
-	Tint  = float(argv[5])
-	tfreq = float(argv[6])
-	Ldft  = int(argv[7])
-	rc = m5tone(argv[1],argv[2], fout, if_nr, Tint,tfreq,Ldft, offset, phaseRateHz=rate, doPlot=doPlot, doFast=doFast)
+	fin   = argv[0]
+	fmt   = argv[1]
+	fout  = open(argv[2], 'wb', 1)
+	if_nr = int(argv[3])
+	Tint  = float(argv[4])
+	tfreq = float(argv[5])
+	Ldft  = int(argv[6])
+
+	rc = m5tone(fin, fmt, fout, if_nr, Tint,tfreq,Ldft, offset, phaseRateHz=rate, doPlot=doPlot, doFast=doFast)
 	fout.close()
 
 	if doPlot and (rc == 0):
