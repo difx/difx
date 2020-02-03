@@ -21,8 +21,9 @@ parser.add_argument("-a", "--avg", type=int, default=16, help="Number of channel
 parser.add_argument("--rms", default=False, action="store_true", help="Use the off-source rms estimate")
 parser.add_argument("--flagchans", default="", help="comma-separated list of channels to zero in the plot")
 parser.add_argument("--frbtitletext", type=str, default="", help="The name of the FRB (or source) to be used as the title of the plots")
-parser.add_argument("--rotmeas", type=int, default=None, help="Number of channels to average together per image cube slice")
+parser.add_argument("--rotmeas", type=float, default=None, help="The rotation measure for the pulse; used to derotate the data prior to frequency scrunching")
 parser.add_argument("-t", "--threshold_factor", type=float, default=2.5, help="Factor to use in thresholding for masking the polarisation position angle for plotting")
+parser.add_argument("--isolate", default=False, action="store_true", help="Set if you want to calculate the polarisation fractions or to isolate specific sub-pulses")
 parser.add_argument("--pulse_number", type=int, default=None, help="Number of the pulse of interest for determining the polarisation fraction values")
 parser.add_argument("--binstartstop", type=str, default=None, help="Start and end bins for integrating over the pulse to get the polarisation fraction totals; input as a comma separated string")
 
@@ -52,11 +53,12 @@ if args.basefreq is None:
 if args.rotmeas is None:
     parser.error("You must specify the data's RM in order to derotate Stokes Q and U!")
 
-if args.pulse_number is None:
-    parser.error("You must specify the pulse number for which you want to obtain the polarisation fractions")
+if args.isolate:
+    if args.pulse_number is None:
+        parser.error("You must specify the pulse number for which you want to obtain the polarisation fractions")
 
-if args.binstartstop is None:
-    parser.error("You must specify the start and stop bins for the pulse for which you want to obtain the polarisation fractions")
+    if args.binstartstop is None:
+        parser.error("You must specify the start and stop bins for the pulse for which you want to obtain the polarisation fractions")
 
 nbins = args.nbins
 nchan = args.nchan
@@ -64,13 +66,21 @@ flagchans = [int(x) for x in args.flagchans.split(',') if x.strip().isdigit()]
 src = args.src
 res = args.res
 frbtitletext = args.frbtitletext
-pulse_number = args.pulse_number
-binstart = int(args.binstartstop.split(',')[0])
-binstop = int(args.binstartstop.split(',')[1])
+if args.isolate:
+    pulse_number = args.pulse_number
+    binstart = int(args.binstartstop.split(',')[0])
+    binstop = int(args.binstartstop.split(',')[1])
+else:
+    binstart = 0
+    binstop = -1
 
 # Define dynamic spectra parameters
 basefreq = args.basefreq
-bandwidth = args.avg/4 * nchan # MHz
+if args.avg == 24:
+    chunksize = 6 #MHz
+if args.avg == 16:
+    chunksize = 4 #MHz
+bandwidth = args.avg/chunksize * nchan # MHz
 print("Bandwidth: {0}".format(bandwidth))
 startchan = 0
 endchan=nchan - 1
@@ -79,6 +89,9 @@ endchan=nchan - 1
 startfreq = basefreq + (startchan*bandwidth)/nchan
 endfreq = basefreq + (endchan*bandwidth)/nchan
 freqs = np.linspace(startfreq, endfreq, nchan)
+if args.isolate:
+    starttime_isolate = binstart * res
+    endtime_isolate = binstop * res
 starttime = 0
 endtime = nbins*res
 dynspec = {}
@@ -104,7 +117,7 @@ for stokes in args.pols.split(','):
         dynrms[stokes] = np.loadtxt("{0}-imageplane-rms.stokes{1}.txt".format(src, stokes))
         print("{0}-imageplane-rms.stokes{1}.txt".format(src, stokes))
 
-    print(dynspec[stokes].shape)
+    print("Shape of Stokes {0} dynamic spectrum: {1}".format(stokes, dynspec[stokes].shape))
 
     if nbins == 1:
         f = np.linspace(startfreq, endfreq, endchan)
@@ -133,7 +146,7 @@ for stokes in args.pols.split(','):
             if args.rms:
                 fscrunchrms[stokes] = np.divide(np.mean(dynrms[stokes], 1),np.sqrt(nchan))
 
-        ax.imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+        ax.imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', origin='lower', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
         #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("Frequency (MHz)")
@@ -143,7 +156,7 @@ for stokes in args.pols.split(','):
         if args.rms:
             dynrms_jy = dynrms[stokes]*10000/res
             print(dynrms_jy)
-            ax.imshow(dynrms_jy[:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+            ax.imshow(dynrms_jy[:,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', origin='lower', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
             #ax.set_aspect(0.03) # you may also use am.imshow(..., aspect="auto") to restore the aspect ratio
             ax.set_xlabel("Time (ms)")
             ax.set_ylabel("Frequency (MHz)")
@@ -152,7 +165,25 @@ for stokes in args.pols.split(','):
 
         # Also plot onto the multipanel plot
         if stokes in ["I","Q","U","V"]:
-            combinedaxs[["I","Q","U","V"].index(stokes)].imshow(dynspec[stokes][:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+            combinedaxs[["I","Q","U","V"].index(stokes)].imshow(dynspec[stokes][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+
+        # If desired, save dynamic spectra for specific pulse
+        if args.isolate:
+            isolate_fig, isolate_ax = plt.subplots(figsize=(7,7))
+            isolate_ax.imshow(dynspec[stokes][binstart:binstop,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', origin='lower', extent=[starttime_isolate,endtime_isolate,startfreq,endfreq], aspect='auto')
+            isolate_ax.set_xlabel("Time (ms)")
+            isolate_ax.set_ylabel("Frequency (MHz)")
+            plt.tight_layout()
+            isolate_fig.savefig('{0}-imageplane-dynspectrum.stokes{1}.pulse{2}.png'.format(src, stokes, pulse_number))
+
+            if args.rms:
+                dynrms_jy = dynrms[stokes]*10000/res
+                print("Dynamic spectrum RMS for Stokes {0}, pulse {1}: {2}".format(stokes, pulse_number, dynrms_jy))
+                isolate_ax.imshow(dynrms_jy[binstart:binstop,startchan:endchan].transpose(), cmap=plt.cm.plasma, interpolation='none', origin='lower', extent=[starttime_isolate,endtime_isolate,startfreq,endfreq], aspect='auto')
+                isolate_ax.set_xlabel("Time (ms)")
+                isolate_ax.set_ylabel("Frequency (MHz)")
+                isolate_fig.savefig('{0}-imageplane-rms.stokes{1}.pulse{2}.png'.format(src, stokes, pulse_number))
+            plt.clf()
 
 # Save the multipanel plot
 combinedfig.suptitle(frbtitletext, x=0.25, y=0.99)
@@ -180,7 +211,7 @@ plt.close('all')
 
 # TO ADD: Polarisaion calibration
 
-# Correcting for Faraday rotation
+# CORRECTING FOR FARADAY ROTATION
 
 # The RM measured using the data
 rotmeas = args.rotmeas
@@ -209,6 +240,18 @@ dynspec_rmcorrected["V"] = np.copy(dynspec["V"])
 # Set figure size
 pol_fig, pol_ax = plt.subplots(figsize=(7,7))
 
+print("U: {0}".format(dynspec["U"]))
+print("RM corrected U: {0}".format(dynspec_rmcorrected["U"]))
+print("RM corrected Q: {0}".format(dynspec_rmcorrected["Q"]))
+print("I: {0}".format(dynspec_rmcorrected["I"]))
+
+# Calculate U/I ratio to determine the correct RM sign
+U_on_I = dynspec_rmcorrected["U"][1:] / dynspec_rmcorrected["I"][1:]
+print("U/I: {0}".format(U_on_I))
+print("U/I: {0}".format(U_on_I[binstart-1:binstop-1]))
+U_on_I[dynspec_rmcorrected["I"][1:] < 3*dynrms["I"][1:]] = 0
+print("U/I post threshold: {0}".format(U_on_I[binstart-1:binstop-1]))
+
 pol_ax.imshow(dynspec_rmcorrected["Q"][:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
 pol_ax.set_xlabel("Time (ms)")
 pol_ax.set_ylabel("Frequency (MHz)")
@@ -220,6 +263,14 @@ pol_ax.set_xlabel("Time (ms)")
 pol_ax.set_ylabel("Frequency (MHz)")
 plt.tight_layout()
 plt.savefig('{0}-RMcorrected.stokesU.png'.format(src, stokes))
+
+if args.isolate:
+    u_on_i_fig, u_on_i_ax = plt.subplots(figsize=(7,7))
+    u_on_i_ax.plot(np.linspace(binstart, binstop, (binstop-binstart)), U_on_I[binstart-1:binstop-1], '.') #, label="RM={0} pulse {1}".format(rotmeas, pulse_number))
+    u_on_i_ax.legend(["RM={0} pulse {1}".format(rotmeas, pulse_number)])
+    u_on_i_ax.set_xlabel("Channel number")
+    u_on_i_ax.set_ylabel("U/I")
+    u_on_i_fig.savefig('{0}-RMcorrected.stokesUonI_RMeq{1}_pulse{2}.png'.format(src, rotmeas, pulse_number))
 
 #####################################################################################
 
@@ -249,10 +300,20 @@ if args.fscrunch:
     scrunch_fig.subplots_adjust(hspace=0)
     scrunch_ax0.tick_params(axis='x', direction='in')
 
+    # Set up figure and axes for isolated pulse plot
+    isolate_scrunch_fig = plt.figure(figsize=(7,9))
+    isolate_scrunch_ax0 = plt.subplot2grid((7,3), (0,0), rowspan=2, colspan=3)
+    isolate_scrunch_ax1 = plt.subplot2grid((7,3), (2,0), rowspan=5, colspan=3, sharex=isolate_scrunch_ax0)
+    plt.setp(isolate_scrunch_ax0.get_xticklabels(), visible=False)
+    isolate_scrunch_fig.subplots_adjust(hspace=0)
+    isolate_scrunch_fig.subplots_adjust(hspace=0)
+    isolate_scrunch_ax0.tick_params(axis='x', direction='in')
+
     for stokes in args.pols.split(','):
 
         fscrunch_rmcorrected[stokes] = np.mean(dynspec_rmcorrected[stokes], 1)
 #        np.savetxt("{0}-imageplane-fscrunch-spectrum.RMcorrected.stokes{1}.txt".format(src, stokes), fscrunch_rmcorrected[stokes])
+        print("Frequency scrunched data size: {0}".format(fscrunch_rmcorrected[stokes].shape))
 
         if stokes=="I": 
             col='k'
@@ -279,15 +340,23 @@ if args.fscrunch:
         if args.rms:
             rms_jy = fscrunchrms[stokes][:] * 10000/res
             # Diagnostic plot
+            print("Amplitude array shape: {0} \n Time shape: {1}".format(amp_jy.shape, centretimes.shape))
             scrunch_ax2_diag.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
             # Publication plot
             scrunch_ax1.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+
+            # If isolated pulse plot is requested
+            if args.isolate:
+                isolate_scrunch_ax1.errorbar(centretimes[binstart:binstop], amp_jy[binstart:binstop], yerr=rms_jy[binstart:binstop], label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
         else:
             plt.title('   '+frbtitletext, loc='left', pad=-20)
             # Diagnostic plot
             scrunch_ax2_diag.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
             # Publication plot
             scrunch_ax1.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle)
+            # If isolated pulse plot is requested
+            if args.isolate:
+                isolate_scrunch_ax1.plot(centretimes[binstart:binstop], amp_jy[binstart:binstop], label=stokes, color=col, linestyle=plotlinestyle)
 
     # Get new, corrected polarisation position angle for fscrunched data
     pol_pa = 0.5*np.arctan2(fscrunch_rmcorrected["U"], fscrunch_rmcorrected["Q"])*180/np.pi
@@ -349,9 +418,20 @@ if args.fscrunch:
     scrunch_ax1.legend()
     scrunch_ax1.set_xlabel("Time (ms)")
     scrunch_ax1.set_ylabel("Flux Density (Jy)")
-    scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic.png".format(src), bbox_inches = 'tight')
-    scrunch_fig.savefig("{0}-fscrunch.RMcorrected.png".format(src), bbox_inches = 'tight')
+    scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic_RM{1}.png".format(src, rotmeas), bbox_inches = 'tight')
+    scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}.png".format(src, rotmeas), bbox_inches = 'tight')
     scrunch_fig.clf()
+
+    # Plot isolated pulses if requested
+    if args.isolate:
+        isolate_scrunch_ax0.set_title('   '+frbtitletext)
+        isolate_scrunch_ax0.errorbar(centretimes[binstart:binstop], pol_pa_masked[binstart:binstop], yerr=pol_pa_rms_masked[binstart:binstop], fmt='ko', markersize=2, capsize=2)
+        isolate_scrunch_ax0.set_ylabel("Position Angle (deg)")
+        isolate_scrunch_ax1.legend()
+        isolate_scrunch_ax1.set_xlabel("Time (ms)")
+        isolate_scrunch_ax1.set_ylabel("Flux Density (Jy)")
+        isolate_scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_pulse{2}.png".format(src, rotmeas, pulse_number), bbox_inches = 'tight')
+        isolate_scrunch_fig.clf()
 
     scrunch_i_fig, scrunch_i_ax = plt.subplots(figsize=(7,7))
     col='k'
@@ -378,23 +458,27 @@ if args.fscrunch:
     V_rms = fscrunchrms["V"] * 10000/res
     # Total linearly polarised flux
     L = total_linear_pol_flux_true * 10000/res
-    L_rms = np.sqrt( ((fscrunch_rmcorrected["Q"]*10000/res)**2 * (fscrunchrms["Q"]*10000/res)**2) + ((fscrunch_rmcorrected["U"]*10000/res)**2 * (fscrunchrms["U"]*10000/res)**2) ) / L**2
+    L_rms = np.sqrt(( ((fscrunch_rmcorrected["Q"]*10000/res)**2 * (fscrunchrms["Q"]*10000/res)**2) + ((fscrunch_rmcorrected["U"]*10000/res)**2 * (fscrunchrms["U"]*10000/res)**2)) / L**2)
+    print("L_rms {0}: ".format(L_rms))
+    print("Q_rms {0}: ".format(fscrunchrms["Q"]*10000/res))
     # Total polarised flux
     P = np.sqrt(L**2 + V**2)
     P_rms = np.sqrt( ((L**2 * L_rms**2) + (V**2 * V_rms**2)) / (L**2 + V**2) )
 
     # Plot the polarisations
+    if args.pulse_number:
+        pulse_num = ".pulse{0}".format(args.pulse_number)
+    else: pulse_num = ".all_pulses"
     pol_fig, pol_ax = plt.subplots(figsize=(7,7))
     pol_ax.set_title('   '+frbtitletext)
-    pol_ax.errorbar(centretimes, I, label="I", yerr=I_rms, linestyle='-', color='k', linewidth=1.5, elinewidth=2, capsize=2)
-    pol_ax.errorbar(centretimes, V, label="V", yerr=V_rms, linestyle=':', color='#01665e', linewidth=1.5, elinewidth=2, capsize=2)
-    pol_ax.errorbar(centretimes, L, label="L", yerr=L_rms, linestyle='--', color='#8c510a', linewidth=1.5, elinewidth=2, capsize=2)
-    pol_ax.errorbar(centretimes, P, label="P", yerr=P_rms, linestyle='-.', color='#d8b365', linewidth=1.5, elinewidth=2, capsize=2)
+    pol_ax.errorbar(centretimes[binstart:binstop], I[binstart:binstop], label="I", yerr=I_rms[binstart:binstop], linestyle='-', color='k', linewidth=1.5, elinewidth=2, capsize=2)
+    pol_ax.errorbar(centretimes[binstart:binstop], V[binstart:binstop], label="V", yerr=V_rms[binstart:binstop], linestyle=':', color='#01665e', linewidth=1.5, elinewidth=2, capsize=2)
+    pol_ax.errorbar(centretimes[binstart:binstop], L[binstart:binstop], label="L", yerr=L_rms[binstart:binstop], linestyle='--', color='#8c510a', linewidth=1.5, elinewidth=2, capsize=2)
+    pol_ax.errorbar(centretimes[binstart:binstop], P[binstart:binstop], label="P", yerr=P_rms[binstart:binstop], linestyle='-.', color='#d8b365', linewidth=1.5, elinewidth=2, capsize=2)
     pol_ax.set_xlabel("Time (ms)")
     pol_ax.set_ylabel("Flux density (Jy)")
-    pol_ax.set_xlim(centretimes[binstart],centretimes[binstop])
-    pol_ax.legend()
-    pol_fig.savefig("{0}-polarisation.fluxes.png".format(src), bbox_inches = 'tight')
+    pol_ax.legend(loc='upper right')
+    pol_fig.savefig("{0}-polarisation.fluxes.RM{1}{2}.png".format(src, rotmeas, pulse_num), bbox_inches = 'tight')
     pol_fig.clf()
 
     # Total fraction of polarised flux using the de-biased L_true
@@ -416,9 +500,9 @@ if args.fscrunch:
     # Plot the polarisation fractions
     polfrac_fig, polfrac_ax = plt.subplots(figsize=(7,7))
     polfrac_ax.set_title('   '+frbtitletext)
-    polfrac_ax.plot(centretimes, P_on_I, label="P/I", linestyle='-', color='k')
-    polfrac_ax.plot(centretimes, L_on_I, label="L/I", linestyle='--', color='#8c510a')
-    polfrac_ax.plot(centretimes, V_on_I, label="V/I", linestyle='-.', color='#01665e')
+    polfrac_ax.plot(centretimes[binstart:binstop], P_on_I[binstart:binstop]*100, label="P/I", linestyle='-', color='k')
+    polfrac_ax.plot(centretimes[binstart:binstop], L_on_I[binstart:binstop]*100, label="L/I", linestyle='--', color='#8c510a')
+    polfrac_ax.plot(centretimes[binstart:binstop], V_on_I[binstart:binstop]*100, label="V/I", linestyle='-.', color='#01665e')
     polfrac_ax.set_xlabel("Time (ms)")
     polfrac_ax.set_ylabel("Degree of polarisation")
     polfrac_ax.legend()
@@ -426,14 +510,21 @@ if args.fscrunch:
     polfrac_fig.savefig("{0}-polarisation.fractions_diagnostic.png".format(src), bbox_inches = 'tight')
     polfrac_fig.clf()
 
-    # Get total fractional polarisations (integrated across the sub pulses)
-    print("Bin start and stop for pulse {0}: {1},{2}".format(pulse_number, binstart, binstop))
-    print("Pulse {0} integrated from {1} ms to {2} ms".format(pulse_number, binstart*res, binstop*res))
-    P_on_I_total = np.sum(P_on_I[binstart:binstop])
-    print("Total P/I over pulse {0}: {1}".format(pulse_number, P_on_I_total))
-    L_on_I_total = np.sum(L_on_I[binstart:binstop])
-    print("Total L/I over pulse {0}: {1}".format(pulse_number, L_on_I_total))
-    V_on_I_total = np.sum(V_on_I[binstart:binstop])
-    print("Total V/I over pulse {0}: {1}".format(pulse_number, V_on_I_total))
+    if args.isolate:
+        # Get total fractional polarisations (integrated across the sub pulses using the weighted sum;
+        # weight each time bin by the total intensity and then sum the result; these quantities are used
+        # to calculate a pulse-averaged polarisation fractions)
+        print("Bin start and stop for pulse {0}: {1},{2}".format(pulse_number, binstart, binstop))
+        print("Pulse {0} integrated from {1} ms to {2} ms".format(pulse_number, binstart*res, binstop*res))
+        P_on_I_total = (np.sum(P[binstart:binstop]*I[binstart:binstop])/np.sum(I[binstart:binstop]**2))*100
+        print("Total P/I over pulse {0}: {1}".format(pulse_number, P_on_I_total))
+        L_on_I_total = (np.sum(L[binstart:binstop]*I[binstart:binstop])/np.sum(I[binstart:binstop]**2))*100
+        print("Total L/I over pulse {0}: {1}".format(pulse_number, L_on_I_total))
+        V_on_I_total = (np.sum(V[binstart:binstop]*I[binstart:binstop])/np.sum(I[binstart:binstop]**2))*100
+        print("Total V/I over pulse {0}: {1}".format(pulse_number, V_on_I_total))
 
 else: print("Done!")
+
+
+# ADD IN:
+# Do subband fscrunching to determine the P/I, L/I, and V/I fractions as a function of frequency
