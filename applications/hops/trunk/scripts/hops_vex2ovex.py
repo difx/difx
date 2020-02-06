@@ -252,22 +252,25 @@ def printPassOrder():
 	''' 
 	Prints the PASS_ORDER section
 	'''
-	for i in range(index["PASS_ORDER"]["start"],index["PASS_ORDER"]["stop"]+1):
-		out.write(content[i])
+	if (index.has_key("PASS_ORDER")):
+	    for i in range(index["PASS_ORDER"]["start"],index["PASS_ORDER"]["stop"]+1):
+		    out.write(content[i])
 
 def printHeadPos():
 	''' 
 	Prints the HEAD_POS section
 	'''
-	for i in range(index["HEAD_POS"]["start"],index["HEAD_POS"]["stop"]+1):
-		out.write(content[i])
+	if (index.has_key("HEAD_POS")):
+	    for i in range(index["HEAD_POS"]["start"],index["HEAD_POS"]["stop"]+1):
+		    out.write(content[i])
 
 def printRoll():
 	''' 
 	Prints the ROLL section
 	'''
-	for i in range(index["ROLL"]["start"],index["ROLL"]["stop"]+1):
-		out.write(content[i])
+	if (index.has_key("ROLL")):
+	    for i in range(index["ROLL"]["start"],index["ROLL"]["stop"]+1):
+		    out.write(content[i])
 def printSched():
 	''' 
 	Prints the SCHED section
