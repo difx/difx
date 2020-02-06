@@ -323,7 +323,7 @@ int reorderDifxFreqs(DifxInput *D)
 				{
 					int antId = D->datastream[d].antennaId;
 
-					fprintf(stderr, "Error: Antenna %s has a zoom band that is the same as a parent band\n", D->antenna[antId].name);
+					fprintf(stderr, "Error: Antenna %s has a zoom band that is the same as a parent band. If intentional, specify a non-zero PCal tone interval for parent to make bands 'different'\n", D->antenna[antId].name);
 					fprintDifxFreq(stderr, D->freq + recFreqIndex);
 					++nError;
 				}
