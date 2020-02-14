@@ -22,7 +22,7 @@ parser.add_argument("-a", "--avg", type=int, default=16, help="Number of channel
 parser.add_argument("--rms", default=False, action="store_true", help="Use the off-source rms estimate")
 parser.add_argument("--flagchans", default="", help="comma-separated list of channels to zero in the plot")
 parser.add_argument("--frbtitletext", type=str, default="", help="The name of the FRB (or source) to be used as the title of the plots")
-parser.add_argument("--rotmeas", type=float, default=0.0, help="The rotation measure for the pulse; used to derotate the data prior to frequency scrunching")
+parser.add_argument("--rotmeas", type=float, help="The rotation measure for the pulse; used to derotate the data prior to frequency scrunching")
 parser.add_argument("-t", "--threshold_factor", type=float, default=2.5, help="Factor to use in thresholding for masking the polarisation position angle for plotting")
 parser.add_argument("--isolate", default=False, action="store_true", help="Set if you want to calculate the polarisation fractions or to isolate specific sub-pulses")
 parser.add_argument("--pulse_number", type=int, default=None, help="Number of the pulse of interest for determining the polarisation fraction values")
@@ -106,9 +106,12 @@ starttime = 0
 endtime = nbins*res
 
 # Define RM correction parameters
-if args.rotmeas:
+if hasattr(args, "rotmeas"):
     rotmeas = args.rotmeas # The RM measured using the data; for single RM data
-    label_rotmeas = rotmeas + "rad/s^2"
+else: rotmeas = 0
+print("RM = {0}".format(rotmeas))
+label_rotmeas = str(rotmeas) + "rad/s^2"
+label_rotmeas_save = str(rotmeas)
 if args.multi_rotmeas: # The RMs measured using the data; for multiple RM data
     # Get the RMs and convert to floats
     multi_rotmeas_str = args.multi_rotmeas.split(',')
