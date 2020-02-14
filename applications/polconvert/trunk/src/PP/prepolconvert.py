@@ -56,6 +56,9 @@ def parseOptions():
     parser.add_argument('-k', '--clobber', dest='clobber',
         default=False, action='store_true',
         help='clobber destination files/dirs found')
+    parser.add_argument('-r', '--recbands', dest='updaterecpols',
+        default=False, action='store_true',
+        help='relabel not only ZOOM but also REC band X->R and Y->L')
     parser.add_argument('-v', '--verbose', dest='verb',
         default=False, action='store_true',
         help='be chatty about the work')
@@ -110,6 +113,11 @@ def do_input(o, src, dst):
             line = re.sub(r'X$', 'R', line)
         if (re.search(r'ZOOM.*POL:\s+Y$', line)):
             line = re.sub(r'Y$', 'L', line)
+        if o.updaterecpols:
+            if (re.search(r'REC.*POL:\s+X$', line)):
+                line = re.sub(r'X$', 'R', line)
+            if (re.search(r'REC.*POL:\s+Y$', line)):
+                line = re.sub(r'Y$', 'L', line)
         if (re.search(r'.*FILENAME:', line)):
             line = re.sub(o.srcdir, o.dstdir, line)
         out.write(line)
