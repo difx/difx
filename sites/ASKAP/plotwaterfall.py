@@ -31,6 +31,9 @@ parser.add_argument("--multi_rotmeas", type=str, default=None, help="To be used 
 parser.add_argument("--rm_bins_starts", type=str, default=None, help="The start bins used for de-rotating at a given RM; to be used with --multi_rotmeas set; input is a list of strings: e.g., RM1_start,RM2_start,RM3_start")
 parser.add_argument("--scintillation", default=False, action="store_true", help="Set if you want to calculate the scintillation decorrelation bandwidth for a pulse")
 parser.add_argument("--dm_offset", type=float, default=0.0, help="A roughly estimate of the residual DM to be corrected in a pulse")
+parser.add_argument("--delta_psi", type=float, default=0.0, help="The polarisation position angle change used in the polarisation calibration")
+parser.add_argument("--delta_t", type=float, default=0.0, help="The delay derived between the linearly polarised feeds to be used in the polarisation calibration")
+parser.add_argument("--phi", type=float, default=0.0, help="The phase offset derived between the linearly polarised feeds to be used in the polarisation calibration")
 
 args = parser.parse_args()
 
@@ -140,6 +143,11 @@ if args.multi_rotmeas: # The RMs measured using the data; for multiple RM data
 dynspec_rmcorrected = {}
 fscrunch_rmcorrected = {}
 
+# Polarisation calibration parameters
+delta_psi = args.delta_psi
+delta_t = args.delta_t
+phi = args.phi
+
 # Change global font size
 matplotlib.rcParams.update({'font.size': 16})
 
@@ -248,15 +256,42 @@ plt.close('all')
 
 #####################################################################################
 
-# TO ADD: Polarisaion calibration
+# POLARISATION CALIBRATION
+
+q_calibrated = -dynspec["Q"]*np.cos(delta_psi) - ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs*delta_t)) * np.sin(delta_psi) )
+u_calibrated = dynspec["Q"]*np.sin(delta_psi) + ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs*delta_t)) * np.cos(delta_psi) )
+v_calibrated = -dynspec["U"]*np.sin(phi + 2*np.pi*freqs*delta_t) + dynspec["V"]*np.cos(phi + 2*np.pi*freqs*delta_t)
+
+# Plotting the calibrated dynamic spectra
+combinedfig_cal, combinedaxs_cal = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
+# Save the multipanel plot
+combinedfig_cal.suptitle(frbtitletext, x=0.25, y=0.99)
+combinedaxs_cal[3].set_xlabel("Time (ms)")
+for i in range(4):
+    combinedaxs_cal[i].set_ylabel("Frequency (MHz)")
+    if i==0:
+        combinedaxs_cal[i].title.set_text("\n Stokes I")
+    else:
+        combinedaxs_cal[i].title.set_text("Stokes "+["I","Q","U","V"][i])
+combinedaxs_cal[0].title.set_text("\n Stokes I")
+combinedaxs_cal[0].imshow(dynspec["I"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+combinedaxs_cal[1].imshow(q_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+combinedaxs_cal[2].imshow(u_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+combinedaxs_cal[3].imshow(v_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+plt.figure(combinedfig_cal.number)
+plt.tight_layout()
+plt.savefig("{0}-multipanel-dynspectrum_calibrated.png".format(src))
+combinedfig_cal.clf()
+plt.figure(fig.number)
+plt.close('all')
 
 # CORRECTING FOR FARADAY ROTATION
 
 # Calculate the total linear polarisation
-p_qu = np.sqrt(dynspec["Q"]**2 + dynspec["U"]**2)
+p_qu = np.sqrt(q_calibrated**2 + u_calibrated**2)
 
 # Calculate the polarisation position angle
-pa = 0.5*np.arctan2(dynspec["U"],dynspec["Q"])
+pa = 0.5*np.arctan2(u_calibrated,q_calibrated)
 
 # Wavelength squared
 c = const.c.value # speed of light in m/s
@@ -287,7 +322,7 @@ print("pa_corrected shape: {0}".format(pa_corrected.shape))
 dynspec_rmcorrected["Q"] = p_qu * np.cos(2*pa_corrected)
 dynspec_rmcorrected["U"] = p_qu * np.sin(2*pa_corrected)
 dynspec_rmcorrected["I"] = np.copy(dynspec["I"])
-dynspec_rmcorrected["V"] = np.copy(dynspec["V"])
+dynspec_rmcorrected["V"] = np.copy(v_calibrated)
 
 # Plot to confirm that the sign of the RM is correct:
 # Set figure size
