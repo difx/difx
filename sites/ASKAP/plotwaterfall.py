@@ -31,9 +31,9 @@ parser.add_argument("--multi_rotmeas", type=str, default=None, help="To be used 
 parser.add_argument("--rm_bins_starts", type=str, default=None, help="The start bins used for de-rotating at a given RM; to be used with --multi_rotmeas set; input is a list of strings: e.g., RM1_start,RM2_start,RM3_start")
 parser.add_argument("--scintillation", default=False, action="store_true", help="Set if you want to calculate the scintillation decorrelation bandwidth for a pulse")
 parser.add_argument("--dm_offset", type=float, default=0.0, help="A roughly estimate of the residual DM to be corrected in a pulse")
-parser.add_argument("--delta_psi", type=float, default=0.0, help="The polarisation position angle change used in the polarisation calibration")
-parser.add_argument("--delta_t", type=float, default=0.0, help="The delay derived between the linearly polarised feeds to be used in the polarisation calibration")
-parser.add_argument("--phi", type=float, default=0.0, help="The phase offset derived between the linearly polarised feeds to be used in the polarisation calibration")
+parser.add_argument("--delta_psi", type=float, default=0.0, help="The polarisation position angle change used in the polarisation calibration; in radians")
+parser.add_argument("--delta_t", type=float, default=0.0, help="The delay derived between the linearly polarised feeds to be used in the polarisation calibration; in nanosec")
+parser.add_argument("--phi", type=float, default=0.0, help="The phase offset derived between the linearly polarised feeds to be used in the polarisation calibration; in radians")
 
 args = parser.parse_args()
 
@@ -101,7 +101,8 @@ fscrunchrms = {}
 # Define plotting parameters
 startfreq = basefreq + (startchan*bandwidth)/nchan
 endfreq = basefreq + (endchan*bandwidth)/nchan
-freqs = np.linspace(startfreq, endfreq, nchan)
+freqs = np.linspace(startfreq, endfreq, nchan) # MHz
+freqs_ghz = freqs * 1e-3
 if args.isolate:
     starttime_isolate = binstart * res
     endtime_isolate = binstop * res
@@ -144,9 +145,9 @@ dynspec_rmcorrected = {}
 fscrunch_rmcorrected = {}
 
 # Polarisation calibration parameters
-delta_psi = args.delta_psi
-delta_t = args.delta_t
-phi = args.phi
+delta_psi = args.delta_psi # radians
+delta_t = args.delta_t # nanoseconds
+phi = args.phi # radians
 
 # Change global font size
 matplotlib.rcParams.update({'font.size': 16})
@@ -258,9 +259,18 @@ plt.close('all')
 
 # POLARISATION CALIBRATION
 
-q_calibrated = -dynspec["Q"]*np.cos(delta_psi) - ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs*delta_t)) * np.sin(delta_psi) )
-u_calibrated = dynspec["Q"]*np.sin(delta_psi) + ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs*delta_t)) * np.cos(delta_psi) )
-v_calibrated = -dynspec["U"]*np.sin(phi + 2*np.pi*freqs*delta_t) + dynspec["V"]*np.cos(phi + 2*np.pi*freqs*delta_t)
+q_calibrated = -dynspec["Q"]*np.cos(delta_psi) - ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t)) * np.sin(delta_psi) )
+u_calibrated = -dynspec["Q"]*np.sin(delta_psi) + ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t)) * np.cos(delta_psi) )
+v_calibrated = dynspec["U"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t) + dynspec["V"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t)
+
+# Check the output of the delay and phase offset corrections
+del_phase_offset_arg = phi + 2*np.pi*freqs_ghz*delta_t
+del_ph_fig, del_ph_ax = plt.subplots(figsize=(7,7))
+del_ph_ax.plot(freqs_ghz,del_phase_offset_arg)
+del_ph_ax.set_ylabel("delay and phase offset (radians)")
+del_ph_ax.set_xlabel("frequency (GHz)")
+plt.tight_layout()
+plt.savefig('{0}-delay_phase_offset_delta-psi{1}_delta-t{2}_phi{3}.png'.format(src, delta_psi, delta_t, phi))
 
 # Plotting the calibrated dynamic spectra
 combinedfig_cal, combinedaxs_cal = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
@@ -280,7 +290,7 @@ combinedaxs_cal[2].imshow(u_calibrated[:,startchan:endchan].transpose(), origin=
 combinedaxs_cal[3].imshow(v_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
 plt.figure(combinedfig_cal.number)
 plt.tight_layout()
-plt.savefig("{0}-multipanel-dynspectrum_calibrated.png".format(src))
+plt.savefig("{0}-multipanel-dynspectrum_calibrated_delta-psi{1}_delta-t{2}_phi{3}.png".format(src, delta_psi, delta_t, phi))
 combinedfig_cal.clf()
 plt.figure(fig.number)
 plt.close('all')
@@ -296,7 +306,7 @@ pa = 0.5*np.arctan2(u_calibrated,q_calibrated)
 # Wavelength squared
 c = const.c.value # speed of light in m/s
 lambda_sq = (c/(freqs*1e6))**2
-
+print("lambda^2: {0}".format(lambda_sq))
 # If multiple RMs are supplied
 if args.multi_rotmeas:
     # Make array of RM values for each slice of data
@@ -307,20 +317,17 @@ if args.multi_rotmeas:
             k += 1
         rot_measures[num_bin] = multi_rotmeas[k]
     # Calculate the change required for PA correction and perform correction
-    delta_pa = rot_measures[:, None] * lambda_sq
-    pa_corrected = pa + delta_pa
+    rm_angle = rot_measures[:, None] * lambda_sq
+#    pa_corrected = pa + delta_pa
 # If only one RM is provided
 else:
     # Derotating using the measured RM 
-    delta_pa = rotmeas * lambda_sq
-    pa_corrected = pa + delta_pa
-
-print("delta_pa shape: {0}".format(delta_pa.shape))
-print("pa_corrected shape: {0}".format(pa_corrected.shape))
+    rm_angle = rotmeas * lambda_sq
+#    pa_corrected = pa + delta_pa
 
 # Apply corrections to Stokes Q and U
-dynspec_rmcorrected["Q"] = p_qu * np.cos(2*pa_corrected)
-dynspec_rmcorrected["U"] = p_qu * np.sin(2*pa_corrected)
+dynspec_rmcorrected["Q"] = q_calibrated*np.cos(2*rm_angle) - u_calibrated*np.sin(2*rm_angle) 
+dynspec_rmcorrected["U"] = q_calibrated*np.sin(2*rm_angle) + u_calibrated*np.cos(2*rm_angle)
 dynspec_rmcorrected["I"] = np.copy(dynspec["I"])
 dynspec_rmcorrected["V"] = np.copy(v_calibrated)
 
@@ -380,6 +387,29 @@ pol_slice_ax.set_xlabel("Time (ms)")
 pol_slice_ax.set_ylabel("Frequency (MHz)")
 plt.tight_layout()
 pol_slice_fig.savefig('{0}-RMcorrected.stokesU_on_I.RM{2}.pulse{3}.png'.format(src, stokes, label_rotmeas_save, pulse_number))
+
+# Plot the full calibrated dynamic spectra for the RM corrected data
+combinedfig_calrm, combinedaxs_calrm = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
+# Save the multipanel plot
+combinedfig_calrm.suptitle(frbtitletext, x=0.25, y=0.99)
+combinedaxs_calrm[3].set_xlabel("Time (ms)")
+for i in range(4):
+    combinedaxs_calrm[i].set_ylabel("Frequency (MHz)")
+    if i==0:
+        combinedaxs_calrm[i].title.set_text("\n Stokes I")
+    else:
+        combinedaxs_calrm[i].title.set_text("Stokes "+["I","Q","U","V"][i])
+combinedaxs_calrm[0].title.set_text("\n Stokes I")
+combinedaxs_calrm[0].imshow(dynspec_rmcorrected["I"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+combinedaxs_calrm[1].imshow(dynspec_rmcorrected["Q"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+combinedaxs_calrm[2].imshow(dynspec_rmcorrected["U"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+combinedaxs_calrm[3].imshow(dynspec_rmcorrected["V"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+plt.figure(combinedfig_calrm.number)
+plt.tight_layout()
+plt.savefig("{0}-multipanel-dynspectrum_calibrated_RMcorrected{1}delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi))
+combinedfig_calrm.clf()
+plt.figure(fig.number)
+plt.close('all')
 
 if args.isolate:
     # Time scrunch the U/I and Q/I ratios to plot the ratios vs. frequency
@@ -448,6 +478,46 @@ if args.isolate:
     uq_on_i_ax2.set_ylabel("PA (deg)")
     uq_on_i_fig.savefig('{0}-RMcorrected.stokesUQonI_RMeq{1}_pulse{2}.png'.format(src, label_rotmeas_save, pulse_number), bbox_inches = 'tight')
 
+    # Calculate and plot L pre-cal and post-cal for time-averaged pulse slice
+    l_precal = np.sqrt(np.mean(dynspec["Q"][binstart:binstop],0)**2 + np.mean(dynspec["U"][binstart:binstop],0)**2)
+    l_postcal = np.sqrt(np.mean(q_calibrated[binstart:binstop],0)**2 + np.mean(u_calibrated[binstart:binstop],0)**2)
+
+    l_fig = plt.figure(figsize=(7,9))
+    l_ax0 = plt.subplot2grid((8,3), (0,0), rowspan=4, colspan=3)
+    l_ax1 = plt.subplot2grid((8,3), (4,0), rowspan=4, colspan=3, sharex=uq_on_i_ax0)
+    plt.setp(l_ax0.get_xticklabels(), visible=False)
+    l_fig.subplots_adjust(hspace=0)
+    l_ax0.tick_params(axis='x', direction='in')
+
+    l_ax0.plot(freqs, l_precal, '.')
+    l_ax1.plot(freqs, l_postcal, '.')
+    l_ax0.legend(["pulse {1} pre-cal".format(label_rotmeas, pulse_number)])
+    l_ax1.legend(["pulse {1} post-cal".format(label_rotmeas, pulse_number)])
+    l_ax1.set_xlabel("Frequency")
+    l_ax0.set_ylabel("L amplitude")
+    l_ax1.set_ylabel("L amplitude")
+    l_fig.savefig('{0}-L_pre-post-cal_pulse{1}.png'.format(src, pulse_number), bbox_inches = 'tight')
+
+l_precal_dynspec = np.sqrt(dynspec["Q"]**2 + dynspec["U"]**2)
+l_postcal_dynspec = np.sqrt(q_calibrated**2 + u_calibrated**2)
+
+l_dynspec_fig, l_dynspec_ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(4.5,15))
+l_dynspec_fig.suptitle(frbtitletext, x=0.25, y=0.99)
+l_dynspec_ax[1].set_xlabel("Time (ms)")
+for i in range(2):
+    l_dynspec_ax[i].set_ylabel("Frequency (MHz)")
+    if i==0:
+        l_dynspec_ax[i].title.set_text("\n Pre-cal")
+    else:
+        l_dynspec_ax[i].title.set_text("\n Post-cal")
+l_dynspec_ax[0].imshow(l_precal_dynspec[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+l_dynspec_ax[1].imshow(l_postcal_dynspec[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+plt.figure(l_dynspec_fig.number)
+plt.tight_layout()
+plt.savefig("{0}-L_pre-post-cal_dynspec.png".format(src), bbox_inches = 'tight')
+l_dynspec_fig.clf()
+plt.figure(fig.number)
+plt.close('all')
 
 #####################################################################################
 
@@ -596,7 +666,7 @@ if args.fscrunch:
     scrunch_ax1.set_xlabel("Time (ms)")
     scrunch_ax1.set_ylabel("Flux Density (Jy)")
     scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic_RM{1}.png".format(src, label_rotmeas_save), bbox_inches = 'tight')
-    scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}.png".format(src, label_rotmeas_save), bbox_inches = 'tight')
+    scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi), bbox_inches = 'tight')
     scrunch_fig.clf()
 
     # Plot isolated pulses if requested
@@ -607,7 +677,7 @@ if args.fscrunch:
         isolate_scrunch_ax1.legend()
         isolate_scrunch_ax1.set_xlabel("Time (ms)")
         isolate_scrunch_ax1.set_ylabel("Flux Density (Jy)")
-        isolate_scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_pulse{2}.png".format(src, label_rotmeas_save, pulse_number), bbox_inches = 'tight')
+        isolate_scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_pulse{2}_delta-psi{3}_delta-t{4}_phi{5}.png".format(src, label_rotmeas_save, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
         isolate_scrunch_fig.clf()
 
     scrunch_i_fig, scrunch_i_ax = plt.subplots(figsize=(7,7))
@@ -622,7 +692,7 @@ if args.fscrunch:
     scrunch_i_ax.set_xlabel("Time (ms)")
     scrunch_i_ax.set_ylabel("Flux Density (Jy)")
     scrunch_i_ax.legend()
-    scrunch_i_fig.savefig("{0}-fscrunch.RMcorrected.stokesI.png".format(src), bbox_inches = 'tight')
+    scrunch_i_fig.savefig("{0}-fscrunch.RMcorrected.stokesI_delta-psi{1}_delta-t{2}_phi{3}.png".format(src, delta_psi, delta_t, phi), bbox_inches = 'tight')
     scrunch_i_fig.clf()
 
     # POLARISATION FRACTIONS:
@@ -740,7 +810,7 @@ if args.fscrunch:
         polfrac_ax.legend()
         polfrac_ax.set_ylim(-50,150)
         polfrac_ax.set_xlim(centretimes[binstart],centretimes[binstop])
-        polfrac_fig.savefig("{0}-polarisation.fractions_diagnostic.pulse{1}.png".format(src, pulse_number), bbox_inches = 'tight')
+        polfrac_fig.savefig("{0}-polarisation.fractions_diagnostic.pulse{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
         polfrac_fig.clf()
 
         # Get total fractional polarisations (integrated across the sub pulses using the weighted sum;
