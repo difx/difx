@@ -30,7 +30,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int get_codif_threads(const unsigned char *data, size_t length, int dataframesize)r
+#include "mark5access/mark5_stream.h"
+
+int get_codif_threads(const unsigned char *data, size_t length, int dataframesize)
 {
 	fprintf(m5stderr, "mark5_stream: Error - Not compiled with CODIF!! Quitting\n");
 
