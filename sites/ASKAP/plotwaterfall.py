@@ -34,6 +34,7 @@ parser.add_argument("--dm_offset", type=float, default=0.0, help="A roughly esti
 parser.add_argument("--delta_psi", type=float, default=0.0, help="The polarisation position angle change used in the polarisation calibration; in radians")
 parser.add_argument("--delta_t", type=float, default=0.0, help="The delay derived between the linearly polarised feeds to be used in the polarisation calibration; in nanosec")
 parser.add_argument("--phi", type=float, default=0.0, help="The phase offset derived between the linearly polarised feeds to be used in the polarisation calibration; in radians")
+parser.add_argument("--unwrap", default=False, action="store_true", help="Set if there is clear phase wrapping in the FRB PA")
 
 args = parser.parse_args()
 
@@ -263,6 +264,12 @@ q_calibrated = -dynspec["Q"]*np.cos(delta_psi) - ( (dynspec["U"]*np.cos(phi + 2*
 u_calibrated = -dynspec["Q"]*np.sin(delta_psi) + ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t)) * np.cos(delta_psi) )
 v_calibrated = dynspec["U"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t) + dynspec["V"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t)
 
+# Save the calibrated dynamic spectra
+np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesI.txt".format(src), dynspec["I"])
+np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesQ.txt".format(src), q_calibrated)
+np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesU.txt".format(src), u_calibrated)
+np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesV.txt".format(src), v_calibrated)
+
 # Check the output of the delay and phase offset corrections
 del_phase_offset_arg = phi + 2*np.pi*freqs_ghz*delta_t
 del_ph_fig, del_ph_ax = plt.subplots(figsize=(7,7))
@@ -306,7 +313,9 @@ pa = 0.5*np.arctan2(u_calibrated,q_calibrated)
 # Wavelength squared
 c = const.c.value # speed of light in m/s
 lambda_sq = (c/(freqs*1e6))**2
+lambda_cen_sq = lambda_sq[int(np.floor(len(lambda_sq)/2))]
 print("lambda^2: {0}".format(lambda_sq))
+print("lambda^2 centre: {0}".format(lambda_cen_sq))
 # If multiple RMs are supplied
 if args.multi_rotmeas:
     # Make array of RM values for each slice of data
@@ -316,18 +325,16 @@ if args.multi_rotmeas:
         if num_bin >= rm_bins_starts[k]-1:
             k += 1
         rot_measures[num_bin] = multi_rotmeas[k]
-    # Calculate the change required for PA correction and perform correction
-    rm_angle = rot_measures[:, None] * lambda_sq
-#    pa_corrected = pa + delta_pa
+    # Calculate the change required for PA correction and perform correction (referenced to the centre of the band)
+    rm_angle = (rot_measures[:, None] * lambda_sq) - (rot_measures[:, None] * lambda_cen_sq)
 # If only one RM is provided
 else:
-    # Derotating using the measured RM 
-    rm_angle = rotmeas * lambda_sq
-#    pa_corrected = pa + delta_pa
+    # Derotating using the measured RM (referenced to the centre of the band)
+    rm_angle = (rotmeas * lambda_sq) - (rotmeas * lambda_cen_sq)
 
 # Apply corrections to Stokes Q and U
-dynspec_rmcorrected["Q"] = q_calibrated*np.cos(2*rm_angle) - u_calibrated*np.sin(2*rm_angle) 
-dynspec_rmcorrected["U"] = q_calibrated*np.sin(2*rm_angle) + u_calibrated*np.cos(2*rm_angle)
+dynspec_rmcorrected["Q"] = q_calibrated*np.cos(2*rm_angle) + u_calibrated*np.sin(2*rm_angle) 
+dynspec_rmcorrected["U"] = u_calibrated*np.cos(2*rm_angle) - q_calibrated*np.sin(2*rm_angle)
 dynspec_rmcorrected["I"] = np.copy(dynspec["I"])
 dynspec_rmcorrected["V"] = np.copy(v_calibrated)
 
@@ -447,10 +454,18 @@ if args.isolate:
 # FIXME: add weighting to fit using rms
     # Get corrected polarisation position angle for tscrunched data
     pol_pa_tscrunched = 0.5*np.arctan2(tscrunch_U_isolated, tscrunch_Q_isolated)*180/np.pi
+    pa_pre_rm_correction = 0.5*np.arctan2(np.mean(u_calibrated[binstart:binstop], 0), np.mean(q_calibrated[binstart:binstop], 0))
     pol_pa_coefs, pol_pa_stats = P.polyfit(lambda_sq_threshold, pol_pa_tscrunched, 1, full=True)
     print("PA coefs: {0}".format(pol_pa_coefs))
     print("PA stats: {0}".format(pol_pa_stats))
     pol_pa_fit_line = pol_pa_coefs[0] + pol_pa_coefs[1]*lambda_sq_threshold
+
+    pa_fig, pa_ax = plt.subplots(figsize=(7,7))
+    pa_ax.plot(lambda_sq,pa_pre_rm_correction, '.')
+    pa_ax.legend(["pulse {0}".format(pulse_number)])
+    pa_ax.set_ylabel("PA (rad)")
+    pa_ax.set_xlabel("lambda^2")
+    pa_fig.savefig('{0}-PA_pre-RMcorrection_pulse{1}.png'.format(src, pulse_number), bbox_inches = 'tight')
 
     uq_on_i_fig = plt.figure(figsize=(7,9))
     uq_on_i_ax0 = plt.subplot2grid((12,3), (0,0), rowspan=4, colspan=3)
@@ -559,7 +574,7 @@ if args.fscrunch:
     for stokes in args.pols.split(','):
 
         fscrunch_rmcorrected[stokes] = np.mean(dynspec_rmcorrected[stokes], 1)
-#        np.savetxt("{0}-imageplane-fscrunch-spectrum.RMcorrected.stokes{1}.txt".format(src, stokes), fscrunch_rmcorrected[stokes])
+        np.savetxt("{0}-imageplane-fscrunch-spectrum.calibrated.RMcorrected.stokes{1}.txt".format(src, stokes), fscrunch_rmcorrected[stokes])
         print("Frequency scrunched data size: {0}".format(fscrunch_rmcorrected[stokes].shape))
 
         if stokes=="I": 
@@ -641,6 +656,12 @@ if args.fscrunch:
     # Mask values below threshold_factor x sigma_I
     pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true < threshold_factor*sigma_I, pol_pa_to_mask)
     pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_masked)
+    print("PA masked: {0}".format(pol_pa_masked))
+
+    # Correct for phase wrapping:
+    if args.unwrap:
+        for i in np.arange(len(pol_pa_masked)):
+            if pol_pa_masked[i] < 0: pol_pa_masked[i]+=180
 
     pa_rms = (180/np.pi) * (np.sqrt( ((fscrunch_rmcorrected["Q"][1:]**2 * fscrunchrms["U"][1:]**2) + (fscrunch_rmcorrected["U"][1:]**2 *fscrunchrms["Q"][1:]**2))/(4*(fscrunch_rmcorrected["Q"][1:]**2 + fscrunch_rmcorrected["U"][1:]**2)**2) ))
     print("PA rms: {0}".format(pa_rms))
