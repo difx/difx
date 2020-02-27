@@ -12,6 +12,8 @@ Version 2.7.0
 * In ANTENNA {} now can set ds_filelist to a list of filelists, each one creating its own DATASTREAM
 * oms2v2d: some new functionality to assist VLBA eVLBI
 * vex2difx: support override of data frame size with frameSize parametr of DATASTREAM
+* vexpeek: new verbose mode
+* oms2v2d: fix crash in some modes if no data for project is found
 
 Version 2.6.0
 ~~~~~~~~~~~~~

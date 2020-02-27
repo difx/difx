@@ -224,33 +224,47 @@ void moduleSummary(VexData *V)
 	std::cout.precision(p);
 }
 
-void scanList(const VexData *V)
+void scanList(const VexData *V, int verbose)
 {
 	std::vector<std::string> allStations;
 	for(unsigned int s = 0; s < V->nScan(); ++s)
 	{
 		const VexScan *scan = V->getScan(s);
-		std::cout << std::left << std::setw(8) << scan->defName << " ";
-		std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
-		std::cout << std::left << std::setw(12) << scan->modeDefName << "   ";
-
-		std::vector<std::string> currStations;
-		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		if(verbose > 1)
 		{
-			currStations.push_back(it->first);
-			if (std::find(allStations.begin(), allStations.end(), it->first) == allStations.end())
-			{
-				allStations.push_back(it->first);
-			}
+			std::cout << *scan;
 		}
-		for (std::vector<std::string>::iterator it = allStations.begin(); it != allStations.end(); ++it)
+		else
 		{
-			std::string ant = "--";
-			if (std::find(currStations.begin(), currStations.end(), *it) != currStations.end())
+			std::cout << std::left << std::setw(8) << scan->defName << " ";
+			std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
+			std::cout << std::left << std::setw(12) << scan->modeDefName << "   ";
+
+			std::vector<std::string> currStations;
+			for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 			{
-				ant = *it;
+				currStations.push_back(it->first);
+				if (std::find(allStations.begin(), allStations.end(), it->first) == allStations.end())
+				{
+					allStations.push_back(it->first);
+				}
 			}
-			std::cout << std::setw(3) << ant << " ";
+			if(verbose > 0)
+			{
+				int p = std::cout.precision();
+				std::cout.precision(13);
+				std::cout << " " << scan->sourceDefName << " " << scan->mjdStart << " " << scan->mjdStop << "  ";
+				std::cout.precision(p);
+			}
+			for (std::vector<std::string>::iterator it = allStations.begin(); it != allStations.end(); ++it)
+			{
+				std::string ant = "--";
+				if (std::find(currStations.begin(), currStations.end(), *it) != currStations.end())
+				{
+					ant = *it;
+				}
+				std::cout << std::setw(3) << ant << " ";
+			}
 		}
 		std::cout << std::endl;
 	}
@@ -439,7 +453,7 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(std::string(fileName), &nWarn);
 
-	if(verbose)
+	if(verbose && !doScanList)
 	{
 		std::cout << *V << std::endl;
 		std::cout << std::endl;
@@ -467,7 +481,7 @@ int main(int argc, char **argv)
 	}
 	if(doScanList)
 	{
-		scanList(V);
+		scanList(V, verbose);
 	}
 	if(doModules)
 	{
