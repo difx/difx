@@ -73,6 +73,7 @@ else
         "create_fname.c"
         "parse_cmdline.c"
         "apply_video_bp.c"
+        "ion_covariance.c"
     )
 
     source_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"

@@ -1,6 +1,8 @@
 #
-# $Id: Makefile.am 2408 2018-06-26 14:13:28Z gbc $
+# $Id: Makefile.am 2875 2019-10-09 14:44:35Z barrettj $
 #
+
+#AUTOMAKE_OPTIONS = serial-tests 
 
 SUBDIRS =
 

@@ -32,6 +32,9 @@ int fill_201 (struct scan_struct *root,
     t201->ra_rate = root->src.ra_rate;
     t201->dec_rate = root->src.dec_rate;
 
+                                        // NOTE!!!! Differential TEC is accidentally
+                                        // in the sense of reference_tec - remote_tec
+                                        // This differs from all other diff. quantities
     t201->dispersion = param->ion_diff;
                                         /* Ignore pulsar parameters for now */
     return (0);

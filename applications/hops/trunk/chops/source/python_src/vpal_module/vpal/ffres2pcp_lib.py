@@ -545,17 +545,23 @@ def get_apriori_pc_phases(control_filename, target_stations, network_reference_s
         channels = chan_def.legacy_s
 
     if network_reference_station_pol == 'X' and frequency_group == 'X':
-        # extract the apriori pc_phases_y for the reference station (only if we are in vgos mode) from the original control file
+        # extract the apriori pc_phases_x/y for the reference station (only if we are in vgos mode) from the original control file
         bl_string = network_reference_station + '?'
         cblock = ffcontrol.get_control_block(control_filename, bl_string, ' ', frequency_group, 0)
         ref_pc_phase_y = dict()
+        ref_pc_phase_x = dict() #nominally the reference station x-pol shouldn't have any non-zero a priori pc_phases, but this can happen (see VGOS memo #51 for reason why)
         for ch in channels:
             i = ffcontrol.get_fcode_index(ch)
+            ref_pc_phase_x[ch] = cblock.pc_phase[i][0].ref
             ref_pc_phase_y[ch] = cblock.pc_phase[i][1].ref
         ref_pc_y = SingleStationPCPhases(network_reference_station, 'Y')
         ref_pc_y.add_pc_phases("a-priori", bl_string, 'Y', ref_pc_phase_y)
+        ref_pc_x = SingleStationPCPhases(network_reference_station, 'X')
+        ref_pc_x.add_pc_phases("a-priori", bl_string, 'X', ref_pc_phase_x)
         refsty = network_reference_station + "_" + "Y"
+        refstx = network_reference_station + "_" + "X"
         apriori_pcp_list[refsty] = ref_pc_y
+        apriori_pcp_list[refstx] = ref_pc_x
 
     #now for other stations X/Y pol, extract the pc phases from the control file
     for st in target_stations:

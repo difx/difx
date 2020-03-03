@@ -30,20 +30,15 @@ int make_plotdata(struct type_pass *pass)
     double ap_seg, max[MAXFREQ], maxv, peak, frac,
            sbdbox[MAXFREQ], rj, c, nap,
            offset, maxamp, sumwt, q[3],
-           yy[3], eff_npol, sb_factor,
-           sigma_fr,
-           fk,
-           f0,
-           w,
-           A[3][3],                     // normal equation matrix
-           C[3][3];                     // covariance matrix
+           yy[3], eff_npol, sb_factor;
     static double ap_cnt[MAXAP], temp[MAXAP];
-
-    const double b = -1.3445;           // for correct TEC units
 
     int n, ij,
         maxi, npmax, nl;
+                                        // function prototypes
     int minvert (double [3][3], double [3][3]);
+    void ion_covariance (struct type_pass *);
+
                                         /* Make sure data will fit */
     if (param.nlags*param.num_ap > MAX_APXLAG)
         {
@@ -256,6 +251,10 @@ int make_plotdata(struct type_pass *pass)
        Z = cexp(-I * (status.sbd_max * (i-nl) * M_PI / (status.sbd_sep * 2*nl)));
        plot.cp_spectrum[i] = Z * plot.cp_spectrum[i];
        }
+                                        // if requested, fit video bandpass params
+                                        // and print them out
+    if (pass->control.vbp_fit == TRUE)
+        fit_vbp (nl);
                                         /* For each freq, interpolate through */
                                         /* 3 sband delays to find sbdbox */
     for (fr = 0; fr < MAXFREQ; fr++) 
@@ -291,9 +290,6 @@ int make_plotdata(struct type_pass *pass)
     status.inc_avg_amp = 0.0; 
     status.inc_avg_amp_freq = 0.0;
 
-    for (i=0; i<3; i++)                 // pre-clear the normal matrix
-        for (j=0; j<3; j++)
-            A[i][j] = 0.0;
     for (i = 0; i < pass->num_ap; i++)
         {
         ap_cnt[i] = 0;
@@ -344,47 +340,10 @@ int make_plotdata(struct type_pass *pass)
         status.fringe[fr] = sum_freq * c;
         msg ("status.fringe[%d] %f %f", 0, fr, status.fringe[fr]);
         status.inc_avg_amp_freq += cabs(sum_freq) * status.amp_corr_fact;
-
-                                        // increment normal equations
-        sigma_fr = sqrt ((double)pass->nfreq) * status.delres_max /
-                       (2.0 * M_PI * status.snr * cabs (status.fringe[fr])); 
-                                        // coefficient matrix weight
-        w = 1.0 / (sigma_fr * sigma_fr);
-                                        // convenience variables to match rjc memo
-        fk = 1e-3 * pass->pass_data[fr].frequency;
-        f0 = 1e-3 * param.ref_freq;     // (GHz)
-
-        A[0][0] += w * (fk - f0) * (fk - f0);
-        A[0][1] += w * (fk - f0); 
-        A[0][2] += w * b * (fk - f0) / fk; 
-        A[1][1] += w;
-        A[1][2] += w * b / fk; 
-        A[2][2] += w * (b / fk) * (b / fk); 
         }
-    A[1][0] = A[0][1];                  // fill in rest of symmetric normal matrix
-    A[2][0] = A[0][2];
-    A[2][1] = A[1][2];
-    
-                                        // invert the normal matrix to get covariance matrix
-    if (minvert (A, C))                 // error returned?
-        if (status.nion)
-            {                           // - yes
-            msg ("unable to compute ionosphere errors due to singular matrix", 2);
-            return (-1);
-            }
 
-    for (i=0; i<3; i++)             // std devs. are sqrt of diag of covariance matrix
-        status.ion_sigmas[i] = sqrt (C[i][i]);
-    for (i=0; i<3; i++)             // normalize covariance to get correlation matrix
-        for (j=0; j<3; j++)
-            C[i][j] /= (status.ion_sigmas[i] * status.ion_sigmas[j]);
-    msg ("ionospheric sigmas: delay %f (ps) phase %f (deg) dTEC %f", 0,
-          1e3 * status.ion_sigmas[0], 360 * status.ion_sigmas[1], status.ion_sigmas[2]);
-    msg ("ionosphere correlation matrix:\n"
-         "%7.3f %7.3f %7.3f\n%7.3f %7.3f %7.3f\n%7.3f %7.3f %7.3f", 1,
-         C[0][0], C[0][1], C[0][2], C[1][0], C[1][1], C[1][2], C[2][0], C[2][1], C[2][2]);
-    
-                                        // generate data for sum over all channels
+    ion_covariance (pass);              // do ionosphere covariance analysis
+
     for (ap = pass->ap_off; ap < pass->ap_off+pass->num_ap; ap++)
         {
         plot.phasor[pass->nfreq][ap] = sum_ap[ap];
@@ -400,32 +359,4 @@ int make_plotdata(struct type_pass *pass)
 
     fftw_destroy_plan (fftplan);
     return(0);
-    }
-
-// compute the inverse of a 3x3 matrix m
-// if m is singular, a code of -1 is returned; otherwise 0
-int minvert (double m[3][3], 
-             double minv[3][3])
-    {
-    double det, invdet;
-
-    det = m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2])
-        - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-        + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-    if (fabs (det) < 0.1)
-        return -1;                  // note: this short-cut test depends on scale of m 
-                                    // for general purposes condition# should be tested
-    invdet = 1 / det;
-
-    minv[0][0] = (m[1][1] * m[2][2] - m[2][1] * m[1][2]) * invdet;
-    minv[0][1] = (m[0][2] * m[2][1] - m[0][1] * m[2][2]) * invdet;
-    minv[0][2] = (m[0][1] * m[1][2] - m[0][2] * m[1][1]) * invdet;
-    minv[1][0] = (m[1][2] * m[2][0] - m[1][0] * m[2][2]) * invdet;
-    minv[1][1] = (m[0][0] * m[2][2] - m[0][2] * m[2][0]) * invdet;
-    minv[1][2] = (m[1][0] * m[0][2] - m[0][0] * m[1][2]) * invdet;
-    minv[2][0] = (m[1][0] * m[2][1] - m[2][0] * m[1][1]) * invdet;
-    minv[2][1] = (m[2][0] * m[0][1] - m[0][0] * m[2][1]) * invdet;
-    minv[2][2] = (m[0][0] * m[1][1] - m[1][0] * m[0][1]) * invdet;
-
-    return 0;                       // signify good inversion
     }

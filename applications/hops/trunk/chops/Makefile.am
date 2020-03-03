@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 TESTS = run_checksum.sh
 
-SUBDIRS = source data
+SUBDIRS = source
 
 check_SCRIPTS = run_checksum.sh hops_checksum.sh
 dist_check_SCRIPTS = run_checksum.sh hops_checksum.sh

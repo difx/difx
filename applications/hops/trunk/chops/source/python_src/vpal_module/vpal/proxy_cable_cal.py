@@ -218,7 +218,9 @@ class ComplexReImCovarianceMatrix(object):
         #but the paper only gives the results in the small angle case: tan\theta ~ \theta
         sigma_q = math.sqrt(self.iq_mx[1,1])
         mag = abs(self.complex_mean)
-        sigma_theta = math.atan( sigma_q/mag)
+        sigma_theta = 0.0
+        if abs(mag) > 1e-15:
+            sigma_theta = math.atan( sigma_q/mag)
         return sigma_theta*sigma_theta
 
         #return scipy.stats.circvar( np.array([ cmath.phase(val) for val in self.data ]), high=math.pi, low=-1*math.pi )

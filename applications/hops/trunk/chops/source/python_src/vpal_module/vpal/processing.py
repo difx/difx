@@ -259,10 +259,16 @@ def apply_fringe_file_cuts(ff_list, control_file_hash, min_snr=0.0, max_snr=1e30
 def load_and_batch_fourfit(exp_directory, network_reference_station, remote_stations, \
                            control_file_path, set_commands, \
                            network_reference_baselines_only=True, num_processes=1, \
-                           start_scan_limit="000-0000", stop_scan_limit="999-9999", pol_products=None, use_progress_ticker=True, log_fourfit_processes=False):
+                           start_scan_limit=None, stop_scan_limit=None, pol_products=None, use_progress_ticker=True, log_fourfit_processes=False):
 
     """loads any pre-existing fringe files which match the criteria and batch fourfits
     any missing items, then returns a list of the fringe-files"""
+
+    if start_scan_limit == None:
+        start_scan_limit = "000-0000"
+
+    if stop_scan_limit == None:
+        stop_scan_limit == "999-9999"
 
     if pol_products == None:
         pol_products=['XX', 'YY', 'XY', 'YX']
@@ -281,14 +287,15 @@ def load_and_batch_fourfit(exp_directory, network_reference_station, remote_stat
     root_file_list = ht.recursive_find_root_files(work_dir, True)
 
     #now strip out the root files which are outside of the specified time-range
-    tmp_root_file_list = []
-    for rf in root_file_list:
-        rf_scan_name = os.path.abspath(rf).split('/')[-2]
-        if start_scan_limit <= rf_scan_name and rf_scan_name <= stop_scan_limit:
-            tmp_root_file_list.append(rf)
+
+    if start_scan_limit != "000-0000" or stop_scan_limit != "999-9999":
+        tmp_root_file_list = []
+        for rf in root_file_list:
+            rf_scan_name = os.path.abspath(rf).split('/')[-2]
+            if start_scan_limit <= rf_scan_name and rf_scan_name <= stop_scan_limit:
+                tmp_root_file_list.append(rf)
     else:
         tmp_root_file_list = root_file_list
-    root_file_list = tmp_root_file_list
 
     processing_logger.info("load_and_batch_fourfit: attempting to load cached fringe files from: " + work_dir)
 
@@ -310,7 +317,7 @@ def load_and_batch_fourfit(exp_directory, network_reference_station, remote_stat
     #we need to figure out which scans have already been fringe-fitted
     #with the pol-products and baselines in which we are interested
     root_file_bl_pp_dict = dict()
-    for rf in root_file_list:
+    for rf in tmp_root_file_list:
         root_file_bl_pp_dict[os.path.abspath(rf)] = set()
 
     for ff in ff_list:
@@ -360,9 +367,15 @@ def load_batch_cut_and_sort(exp_directory, network_reference_station, remote_sta
                             control_file_path, set_commands, min_snr=30, max_snr=500, \
                             valid_quality_code_list=None, \
                             network_reference_baselines_only=True, num_processes=1, \
-                            start_scan_limit="000-0000", stop_scan_limit="999-9999", only_complete=True, pol_products=None, use_progress_ticker=True, log_fourfit_processes=False):
+                            start_scan_limit=None, stop_scan_limit=None, only_complete=True, pol_products=None, use_progress_ticker=True, log_fourfit_processes=False):
 
     """ convenience function to do a load-and-batch fourfit, followed by some filters, then join fringe files associated with a single scan-baseline into collections """
+
+    if start_scan_limit == None:
+        start_scan_limit = "000-0000"
+
+    if stop_scan_limit == None:
+        stop_scan_limit == "999-9999"
 
     if valid_quality_code_list == None:
         valid_quality_code_list=[3,4,5,6,7,8,9]

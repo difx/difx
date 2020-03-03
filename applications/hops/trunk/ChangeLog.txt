@@ -1,4 +1,555 @@
 ------------------------------------------------------------------------
+r2929 | barrettj | 2020-02-06 15:07:31 -0500 (Thu, 06 Feb 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/fit_vbp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/ion_covariance.c
+   M /trunk/postproc/fourfit/fit_vbp.c
+   M /trunk/postproc/fourfit/ion_covariance.c
+
+fix void function return value warning/errors
+
+------------------------------------------------------------------------
+r2928 | barrettj | 2020-02-06 15:03:57 -0500 (Thu, 06 Feb 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+fix bug in ffres2pcp which causes network reference station X-pol to loose any applied a priori phases
+
+------------------------------------------------------------------------
+r2927 | barrettj | 2020-02-06 15:03:56 -0500 (Thu, 06 Feb 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+fix div by zero bug in proxy_cable_cal.py
+
+------------------------------------------------------------------------
+r2925 | gbc | 2020-02-06 10:33:46 -0500 (Thu, 06 Feb 2020) | 1 line
+Changed paths:
+   M /trunk/scripts/hops_vex2ovex.py
+
+tracking change from difx
+
+------------------------------------------------------------------------
+r2915 | gbc | 2020-01-06 11:43:38 -0500 (Mon, 06 Jan 2020) | 1 line
+Changed paths:
+   A /trunk/doc/future/hops-development/New-HOPS-Crew.pdf
+
+presentation at Hilo special session
+
+------------------------------------------------------------------------
+r2913 | gbc | 2020-01-01 14:42:16 -0500 (Wed, 01 Jan 2020) | 1 line
+Changed paths:
+   M /trunk/misc/time/htime.c
+
+fixed up alternate date type
+
+------------------------------------------------------------------------
+r2911 | gbc | 2019-12-23 12:24:02 -0500 (Mon, 23 Dec 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/hops_time.h
+   M /trunk/misc/time/ht_timeis.c
+
+included ctype where needed
+
+------------------------------------------------------------------------
+r2910 | gbc | 2019-12-23 12:21:46 -0500 (Mon, 23 Dec 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/eph_time.c
+   M /trunk/misc/time/hops_time.h
+   M /trunk/misc/time/htime.c
+   M /trunk/misc/time/htime.h
+   M /trunk/misc/time/julian.c
+   M /trunk/misc/time/julian.h
+   M /trunk/misc/time/leapsec.c
+   M /trunk/misc/time/lifetest.c
+   M /trunk/misc/time/lifetime.c
+   M /trunk/misc/time/sc_time.c
+   M /trunk/misc/time/time_float_type.h
+
+renamed DefaultFloatType to HTLdbl for readability
+
+------------------------------------------------------------------------
+r2907 | gbc | 2019-12-17 10:48:10 -0500 (Tue, 17 Dec 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/Makefile.am
+   M /trunk/misc/time/leapsec.c
+   M /trunk/misc/time/lifetime.c
+   M /trunk/misc/time/time_float_type.h
+
+pausing after getting leapsec.c correct
+
+------------------------------------------------------------------------
+r2905 | gbc | 2019-12-16 17:43:26 -0500 (Mon, 16 Dec 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/check_hops_time.sh
+   M /trunk/misc/time/htime.c
+
+royally and truly fixed, now
+
+------------------------------------------------------------------------
+r2904 | gbc | 2019-12-16 13:32:55 -0500 (Mon, 16 Dec 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/Makefile.am
+   M /trunk/misc/time/check_hops_time.sh
+
+fixed a typo in a file name; disabled checking on DateA for now
+
+------------------------------------------------------------------------
+r2902 | gbc | 2019-12-15 19:38:57 -0500 (Sun, 15 Dec 2019) | 1 line
+Changed paths:
+   A /trunk/misc/time/CDFLeapSeconds.txt
+   M /trunk/misc/time/Makefile.am
+   A /trunk/misc/time/cnvrt_cdf_maia.c
+   M /trunk/misc/time/htime.h
+
+have a replacement table via cdf.gsfc.nasa.gov
+
+------------------------------------------------------------------------
+r2899 | gbc | 2019-12-14 20:09:40 -0500 (Sat, 14 Dec 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/ht_timeis.c
+   M /trunk/misc/time/htime.c
+   M /trunk/misc/time/htime.h
+   M /trunk/misc/time/rtype.c
+
+added alternate date parsing format for new locale date_fmt
+
+------------------------------------------------------------------------
+r2898 | gbc | 2019-12-14 16:49:16 -0500 (Sat, 14 Dec 2019) | 1 line
+Changed paths:
+   M /trunk/misc/time/check_hops_time.sh
+
+possibly repaired
+
+------------------------------------------------------------------------
+r2895 | gbc | 2019-11-26 12:30:17 -0500 (Tue, 26 Nov 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/talking-points-hilo.txt
+
+updated talking points
+
+------------------------------------------------------------------------
+r2893 | gbc | 2019-11-25 16:08:15 -0500 (Mon, 25 Nov 2019) | 1 line
+Changed paths:
+   A /trunk/doc/future/hops-development/is-hdf5-arxiv-1411.0507.pdf
+   A /trunk/doc/future/hops-development/talking-points-hilo.txt
+
+notes from today chat w/John
+
+------------------------------------------------------------------------
+r2891 | gbc | 2019-11-24 12:50:15 -0500 (Sun, 24 Nov 2019) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+first try to adapt for non-ALMA baselines
+
+------------------------------------------------------------------------
+r2890 | gbc | 2019-11-24 12:04:58 -0500 (Sun, 24 Nov 2019) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+added some important status messages
+
+------------------------------------------------------------------------
+r2887 | gbc | 2019-11-20 16:20:39 -0500 (Wed, 20 Nov 2019) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+added some additional summary output since config logs are a pain to read
+
+------------------------------------------------------------------------
+r2875 | barrettj | 2019-10-09 10:44:35 -0400 (Wed, 09 Oct 2019) | 1 line
+Changed paths:
+   M /trunk/data/ae_testdata/Makefile.am
+   M /trunk/data/ff_testdata/Makefile.am
+
+temporarily disabling serial-tests
+
+------------------------------------------------------------------------
+r2873 | barrettj | 2019-10-08 13:27:44 -0400 (Tue, 08 Oct 2019) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/data/ae_testdata/Makefile.am
+   M /trunk/data/ff_testdata/Makefile.am
+
+slighly more surgical forcing of serial-tests...however, to fix this properly we need to disentangle the serial-tests from independent tests
+
+------------------------------------------------------------------------
+r2872 | barrettj | 2019-10-08 13:18:06 -0400 (Tue, 08 Oct 2019) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+enforce serial tests for HOPS in make check
+
+------------------------------------------------------------------------
+r2868 | barrettj | 2019-09-24 14:23:18 -0400 (Tue, 24 Sep 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_201.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/import_ffmath.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/src/minvert.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/import_ffplot.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/src/fit_vbp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/ion_covariance.c
+
+importing Roger's video bandpass correction work into chops, fixing nightly check
+
+------------------------------------------------------------------------
+r2864 | gbc | 2019-09-19 12:31:20 -0400 (Thu, 19 Sep 2019) | 1 line
+Changed paths:
+   M /trunk/doc/vgos/vgos-data-processing.pdf
+
+later revision
+
+------------------------------------------------------------------------
+r2862 | rjc | 2019-09-18 11:13:04 -0400 (Wed, 18 Sep 2019) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/algorithms.tex
+   M /trunk/doc/fourfit/fourfit_users_manual.pdf
+
+minor changes to fourfit users manual
+
+------------------------------------------------------------------------
+r2861 | rjc | 2019-09-18 10:59:10 -0400 (Wed, 18 Sep 2019) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/fill_201.c
+   A /trunk/postproc/fourfit/fit_vbp.c
+   A /trunk/postproc/fourfit/ion_covariance.c
+   M /trunk/postproc/fourfit/make_plotdata.c
+   A /trunk/postproc/fourfit/minvert.c
+
+new video bandpass fitting code; ion code refactored
+
+------------------------------------------------------------------------
+r2859 | gbc | 2019-09-05 13:13:11 -0400 (Thu, 05 Sep 2019) | 1 line
+Changed paths:
+   A /trunk/doc/future/hops-development/hops-development-Aug2019.pdf
+
+reference of date
+
+------------------------------------------------------------------------
+r2858 | gbc | 2019-09-05 13:10:37 -0400 (Thu, 05 Sep 2019) | 1 line
+Changed paths:
+   A /trunk/doc/future/hops-development/feedback.txt
+
+more mush
+
+------------------------------------------------------------------------
+r2856 | gbc | 2019-09-03 15:42:32 -0400 (Tue, 03 Sep 2019) | 1 line
+Changed paths:
+   A /trunk/doc/future/hops-development/MSRI_Haystack_task_oriented_V3.mpp
+   A /trunk/doc/future/hops-development/MSRI_Haystack_task_oriented_V3.pdf
+
+what we gave j.s
+
+------------------------------------------------------------------------
+r2842 | barrettj | 2019-08-16 11:42:43 -0400 (Fri, 16 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+
+better fix when fftw3 is missing
+
+------------------------------------------------------------------------
+r2841 | barrettj | 2019-08-16 11:11:22 -0400 (Fri, 16 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+
+fix build when fftw3 is missing
+
+------------------------------------------------------------------------
+r2840 | gbc | 2019-08-16 10:17:55 -0400 (Fri, 16 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/help/fourfit.doc
+
+documented chan_ids
+
+------------------------------------------------------------------------
+r2836 | gbc | 2019-08-13 17:32:02 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+
+with preds and succs
+
+------------------------------------------------------------------------
+r2835 | gbc | 2019-08-13 16:47:12 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/designoutline.tex
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+
+boosted some effort levels
+
+------------------------------------------------------------------------
+r2834 | barrettj | 2019-08-13 14:32:31 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+
+more edits
+
+------------------------------------------------------------------------
+r2833 | barrettj | 2019-08-13 14:13:13 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/introduction.tex
+
+minor edits
+
+------------------------------------------------------------------------
+r2832 | barrettj | 2019-08-13 14:04:00 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+
+more details
+
+------------------------------------------------------------------------
+r2831 | barrettj | 2019-08-13 13:53:19 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+
+minor edits to details
+
+------------------------------------------------------------------------
+r2830 | gbc | 2019-08-13 10:02:37 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+
+more fixme done
+
+------------------------------------------------------------------------
+r2829 | gbc | 2019-08-13 09:55:55 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+
+put something in for some FIXMEs
+
+------------------------------------------------------------------------
+r2828 | gbc | 2019-08-13 09:38:45 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/hops-development.bib
+   M /trunk/doc/future/hops-development/introduction.tex
+
+more tweaks
+
+------------------------------------------------------------------------
+r2827 | barrettj | 2019-08-13 09:37:01 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+
+minor changes
+
+------------------------------------------------------------------------
+r2826 | gbc | 2019-08-13 09:13:22 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/hops-development.bib
+   M /trunk/doc/future/hops-development/hops-development.tex
+   M /trunk/doc/future/hops-development/introduction.tex
+
+fixed references
+
+------------------------------------------------------------------------
+r2825 | barrettj | 2019-08-13 09:04:48 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+
+text updates to designdetails.txt
+
+------------------------------------------------------------------------
+r2824 | barrettj | 2019-08-13 08:50:27 -0400 (Tue, 13 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+
+text updates to detailedtimeline
+
+------------------------------------------------------------------------
+r2822 | gbc | 2019-08-12 17:04:19 -0400 (Mon, 12 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/designoutline.tex
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+now have line refs
+
+------------------------------------------------------------------------
+r2821 | barrettj | 2019-08-12 16:00:04 -0400 (Mon, 12 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+0.5inch margins
+
+------------------------------------------------------------------------
+r2820 | gbc | 2019-08-12 15:45:27 -0400 (Mon, 12 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/designoutline.tex
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+   M /trunk/doc/future/hops-development/hops-development.tex
+   A /trunk/doc/future/hops-development/nuHOPStimeline.png
+
+chat with John
+
+------------------------------------------------------------------------
+r2819 | barrettj | 2019-08-12 14:55:02 -0400 (Mon, 12 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+
+edits
+
+------------------------------------------------------------------------
+r2818 | gbc | 2019-08-12 12:54:38 -0400 (Mon, 12 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/designoutline.tex
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+a bunch more structure
+
+------------------------------------------------------------------------
+r2817 | gbc | 2019-08-12 11:21:12 -0400 (Mon, 12 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/Makefile.am
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/designoutline.tex
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+ready for today
+
+------------------------------------------------------------------------
+r2816 | barrettj | 2019-08-12 09:54:41 -0400 (Mon, 12 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/Makefile.am
+
+fix typo, still broken
+
+------------------------------------------------------------------------
+r2815 | barrettj | 2019-08-12 09:45:45 -0400 (Mon, 12 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/Makefile.am
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/hops-development.bib
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+add bibtex
+
+------------------------------------------------------------------------
+r2813 | gbc | 2019-08-11 13:43:18 -0400 (Sun, 11 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/designoutline.tex
+   M /trunk/doc/future/hops-development/detailedtimeline.tex
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+added more detail
+
+------------------------------------------------------------------------
+r2812 | gbc | 2019-08-11 12:28:59 -0400 (Sun, 11 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/Makefile.am
+   A /trunk/doc/future/hops-development/designdetails.tex
+   A /trunk/doc/future/hops-development/designoutline.tex
+   A /trunk/doc/future/hops-development/detailedtimeline.tex
+   M /trunk/doc/future/hops-development/hops-development.tex
+   A /trunk/doc/future/hops-development/introduction.tex
+
+refactored with separate files
+
+------------------------------------------------------------------------
+r2810 | gbc | 2019-08-10 11:57:44 -0400 (Sat, 10 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+more words and a better plan for the tables
+
+------------------------------------------------------------------------
+r2808 | barrettj | 2019-08-09 16:06:56 -0400 (Fri, 09 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+changes to hops dev tex
+
+------------------------------------------------------------------------
+r2806 | gbc | 2019-08-07 16:41:07 -0400 (Wed, 07 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/Makefile.am
+   M /trunk/doc/future/hops-development/hops-development.tex
+
+a path forwards
+
+------------------------------------------------------------------------
+r2805 | gbc | 2019-08-07 16:04:27 -0400 (Wed, 07 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/Makefile.am
+   M /trunk/configure.ac
+   A /trunk/doc/Makefile.am
+   A /trunk/doc/fourfit/Makefile.am
+   D /trunk/doc/future/MSRI-data-processing-outlook.pdf
+   A /trunk/doc/future/Makefile.am
+   A /trunk/doc/future/hops-development/MSRI-data-processing-outlook.pdf (from /trunk/doc/future/MSRI-data-processing-outlook.pdf:2804)
+   A /trunk/doc/future/hops-development/Makefile.am
+   M /trunk/doc/future/hops-development/hops-development.tex
+   A /trunk/doc/pcplot/Makefile.am
+   A /trunk/doc/vgos/Makefile.am
+
+added doc to the automess
+
+------------------------------------------------------------------------
+r2803 | gbc | 2019-08-06 15:24:10 -0400 (Tue, 06 Aug 2019) | 1 line
+Changed paths:
+   A /trunk/doc/future/MSRI-data-processing-outlook.pdf
+
+a supporting doco
+
+------------------------------------------------------------------------
+r2802 | barrettj | 2019-08-06 14:15:59 -0400 (Tue, 06 Aug 2019) | 1 line
+Changed paths:
+   A /trunk/doc/future
+   A /trunk/doc/future/hops-development
+   A /trunk/doc/future/hops-development/hops-development.bib
+   A /trunk/doc/future/hops-development/hops-development.tex
+
+adding a doc workspace for future HOPS development planning
+
+------------------------------------------------------------------------
+r2798 | barrettj | 2019-08-02 15:54:21 -0400 (Fri, 02 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+fixing a bug which snuck into the processing lib
+
+------------------------------------------------------------------------
+r2797 | barrettj | 2019-08-02 14:36:25 -0400 (Fri, 02 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/chops/Makefile.am
+   D /trunk/chops/data/CMakeLists.txt
+   D /trunk/chops/data/Makefile.am
+   D /trunk/chops/data/testdata.tar.gz
+   M /trunk/configure.ac
+
+blowing away unused testdata duplicate in chops
+
+------------------------------------------------------------------------
+r2792 | gbc | 2019-08-01 13:26:15 -0400 (Thu, 01 Aug 2019) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+vex2xml and chops are now enabled
+
+------------------------------------------------------------------------
 r2788 | barrettj | 2019-07-22 08:02:33 -0400 (Mon, 22 Jul 2019) | 1 line
 Changed paths:
    M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h

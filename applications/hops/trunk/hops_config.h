@@ -326,10 +326,10 @@
 #define HAVE_XLRGetDriveTemp 0
 
 /* HOPS package rev number */
-#define HOPS_REVISION 3.20
+#define HOPS_REVISION 3.21
 
 /* Haystack SVN rev number */
-#define HOPS_SVN_REV 2790
+#define HOPS_SVN_REV 2936
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
@@ -368,13 +368,13 @@
 #define PACKAGE_NAME "hops"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "hops 3.20"
+#define PACKAGE_STRING "hops 3.21"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "hops"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.20"
+#define PACKAGE_VERSION "3.21"
 
 /* Python install dir */
 #define PYTHON_SITE_PREFIX "${prefix}/lib/python2.6/site-packages"
@@ -397,7 +397,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "3.20"
+#define VERSION "3.21"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

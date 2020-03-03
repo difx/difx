@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2618 2018-12-08 16:43:43Z gbc $
+# $Id: Makefile.am 2805 2019-08-07 20:04:27Z gbc $
 #
 
 #
@@ -40,6 +40,13 @@ if HAVE_OMPI
 OMPIDIRS = @OMPIDIR@
 else
 OMPIDIRS =
+endif
+
+# turn on DOCS stuff
+if HAVE_DOCS
+DOCSDIRS = @DOCSDIR@
+else
+DOCSDIRS =
 endif
 
 # turn on code that doesn't work, yet and a few other things
@@ -110,11 +117,12 @@ SUBDIRS = . $(HOPSDIRS) \
 	  $(MARK5DIRS) \
 	  $(HOPSDATA) \
 	  $(VXMLDIRS) \
-	  $(OMPIDIRS)
+	  $(OMPIDIRS) \
+	  $(DOCSDIRS)
 
 EXTRA_DIST = README.txt Fink.txt MacPorts.txt svnrev.txt Copyright \
 	apt-packages.txt configure_ac ChangeLog.txt capture-log.py \
-	pgplot-drivers.list README.pgplot.txt
+	pgplot-drivers.list README.pgplot.txt autogen.sh
 DIST_SUBDIRS = $(SUBDIRS)
 
 # m4/*.m4 macros scanned by aclocal

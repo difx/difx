@@ -131,7 +131,8 @@ logical steps
     make all
     make install
 
-that's ok.
+that's ok.  If you have problems with configuration, the autogen.sh
+contains the full set of commands to rebuild configure &c. from scratch.
 
 
 2. Checking the Installation
@@ -149,16 +150,6 @@ you can see some plots quickly flash by with:
     pushd $HOPS_ROOT/bld-@VERSION@/data/ff_testdata
     make check test_gs_device=x11
 
-Additionally, from the same directory
-
-    make check TESTS=tst_fourfit.sh
-
-to verify X11 display capabilities.  Or
-
-    pushd $HOPS_ROOT/hops-@VERSION@/data/ff_testdata
-    ./tst_fourfit.sh
-
-or just read the script and type the commands....
 
 3. Other Shells
 ---------------

@@ -135,6 +135,7 @@ def main():
             if (doy < 0) or (doy > 366) or (hour < 0) or (hour > 23) or (minute < 0) or (minute > 59):
                 print("error: could not decode end-scan format please specify as DOY-HHMM.")
                 sys.exit(1)
+
         start_scan_limit = args.begin_scan_limit
         stop_scan_limit = args.end_scan_limit
 

@@ -22,6 +22,7 @@ else
     "bcd_to_2int.c"
     "parabola.c"
     "max555.c"
+    "minvert.c"
     )
 
     source_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"

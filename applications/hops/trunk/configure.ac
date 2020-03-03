@@ -6,8 +6,8 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.20, gbc@haystack.mit.edu)
-AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects ])
+AC_INIT(hops, 3.21, gbc@haystack.mit.edu)
+AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects])
 
 AC_CONFIG_SRCDIR([hops.bash.in])
 AC_CONFIG_HEADERS([hops_config.h])
@@ -300,14 +300,18 @@ fi
 if [test -n "$hops_svn_data"] ; then
     # provided by the svn repository: hops OR difx
     hops_svn_rev=`echo "$hops_svn_data" | grep Revision | cut -d' ' -f2`
+    AC_GBC_NOTICE([hops SVN rev $hops_svn_rev via svn])
 elif [test -f $srcdir/svnrev.txt] ; then
     # provided by disthook for tarballs
     hops_svn_rev=`cat $srcdir/svnrev.txt`
+    AC_GBC_NOTICE([hops SVN rev $hops_svn_rev via svnrev.txt])
 elif [test -f $srcdir/config.svnrev.txt] ; then
     # provided by nightly for client builds
     hops_svn_rev=`cat $srcdir/config.svnrev.txt`
+    AC_GBC_NOTICE([hops SVN rev $hops_svn_rev via config.svnrev.txt])
 else
     hops_svn_rev=0
+    AC_GBC_NOTICE([hops SVN rev unknown, set to zero])
 fi
 if [test -z "$hops_svn_rev"] ; then
     hops_svn_rev=1
@@ -369,9 +373,12 @@ AM_CONDITIONAL(HAVE_GSL, $have_gsl)
 PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
 if [$hasfftw] ; then
     AC_DEFINE([HAVE_FFTW], 1, [Define to 1 if FFTW is available])
+    AC_GBC_NOTICE([FFTW3 was found via check modules])
 else
     AC_DEFINE([HAVE_FFTW], 0, [Define to 1 if FFTW is available])
+    AC_GBC_NOTICE([FFTW3 not found via check modules])
 fi
+AC_GBC_NOTICE([%%% hasfftw is $hasfftw (required)])
 AC_SUBST(FFTW3_CFLAGS)
 AC_SUBST(FFTW3_LIBS)
 AM_CONDITIONAL(HAVE_FFTW, $hasfftw)
@@ -391,6 +398,7 @@ if [test x${enable_pathx-no}${enable_xtrap-no} = xnoyes ] ; then
     AC_SUBST(X_IDIOT,'-lX11')
     AC_SUBST(X_EXTRA_LIBS)
     have_x11=true
+    AC_GBC_NOTICE([X11 set via enable-xtrap])
 fi
 # --enable-pathx
 if [test x${enable_pathx-no}${enable_xtrap-no} = xyesno ] ; then
@@ -402,6 +410,7 @@ if [test x${enable_pathx-no}${enable_xtrap-no} = xyesno ] ; then
     AC_SUBST(X_IDIOT,'-lX11')
     AC_SUBST(X_EXTRA_LIBS)
     have_x11=true
+    AC_GBC_NOTICE([X11 set via enable-pathx])
 fi
 # --enable-pathx and --enable-xtrap or neither
 if [test x$have_x11 = xfalse ] ; then
@@ -412,6 +421,7 @@ if [test x$have_x11 = xfalse ] ; then
     AC_SUBST(X_LIBS,'-lX11')
     AC_SUBST(X_IDIOT)
     AC_SUBST(X_EXTRA_LIBS)
+    AC_GBC_NOTICE([X11 set via check lib])
 fi
 AC_GBC_NOTICE([%%% have_x11 is $have_x11 (required)])
 AM_CONDITIONAL(HAVE_X11, [test x$have_x11 = xtrue])
@@ -507,7 +517,7 @@ if [test x${enable_pgplot-yes} = xyes ] ; then
         fi
 	grfont=$pgpdir/grfont.dat
 	rgbtxt=$pgpdir/rgb.txt
-	AC_GBC_NOTICE([pgpdir is $pgpdir])
+        AC_GBC_NOTICE([last resort: pgpdir is $pgpdir])
     fi
     if [test -d $pgpdir -a -f $pgplib -a -f $cpglib -a $grfont -a $rgbtxt];then
 	AC_GBC_NOTICE([PGPLOT_DIR is $pgpdir])
@@ -564,7 +574,13 @@ else
     rgbtxt=''
 fi
 PGPLOT_FONT=$grfont
+if [ -n "$PGPLOT_FONT" ] ; then
+    AC_GBC_NOTICE([PGP FONT is `ls -l $PGPLOT_FONT 2>&1`])
+fi
 PGPLOT_RGB=$rgbtxt
+if [ -n "$PGPLOT_RGB" ] ; then
+    AC_GBC_NOTICE([PGP RGB  is `ls -l $PGPLOT_RGB 2>&1`])
+fi
 AC_SUBST(PGPLOT_FONT)
 AC_SUBST(PGPLOT_RGB)
 
@@ -579,14 +595,17 @@ if [$have_png] ; then
     PNG_LIB='-lpng12'
 elif [test $need_png = required]; then
     AC_GBC_NOTICE([Looking harder for png12 need_png is $need_png])
-    if [test -z "$PNG12_LIB" ]; then
+    if [test -z "$PNG12_LIB" -a -n "$DIFX_ARCH_ROOT"]; then
 	PNG12_LIB=${DIFX_ARCH_ROOT}/lib/libpng12.so.0
+        AC_GBC_NOTICE([set png12 lib via DiFX/lib])
     elif [test -z "$PNG12_LIB" ]; then
 	PNG12_LIB=/usr/lib/libpng12.so.0
+        AC_GBC_NOTICE([set png12 lib via usr/lib])
     fi
     if [test -f "$PNG12_LIB" ] ; then
 	have_png=true
 	PNG_LIB=$PNG12_LIB
+        AC_GBC_NOTICE([set png lib via png12])
     else
 	have_png=false
 	PNG_LIB=''
@@ -628,6 +647,12 @@ have_ompi=false
 ### option disabled
 AC_SUBST(OMPIDIR)
 AM_CONDITIONAL(HAVE_OMPI, [test $have_ompi = true])
+
+have_docs=false
+DOCSDIR=''
+### option disabled
+AC_SUBST(DOCSDIR)
+AM_CONDITIONAL(HAVE_DOCS, [test $have_docs = true])
 
 have_difx=false
 ### option disabled
@@ -765,7 +790,6 @@ if [ "$have_hopes" = true ] ; then
      chops/source/c_src/applications/fourfit/Makefile
      chops/source/c_src/applications/alist/Makefile
      chops/source/c_src/applications/aedit/Makefile
-     chops/data/Makefile
     ])
     AC_CONFIG_FILES([chops/hops_checksum.sh], [chmod +x chops/hops_checksum.sh])
     AC_CONFIG_FILES([chops/run_checksum.sh], [chmod +x chops/run_checksum.sh])

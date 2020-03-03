@@ -1,5 +1,5 @@
 Documentation for the program "fourfit"
--- last update 2018.5.26
+-- last update 2019.8.16
 ---------------------------------------
 
 COMMAND NAME:   fourfit
@@ -322,6 +322,7 @@ ACTION KEYWORDS         VALUES
    adhoc_phase        'sinewave', 'polynomial', or 'file'
    adhoc_poly         <7 floats/integers (mixture OK)
    adhoc_tref         float
+   chan_ids           n char string, followed by n floats
    dc_block           `true' or `false' (default: false)
    dec_offset         float
    delay_offs         n char string, followed by n floats
@@ -587,6 +588,13 @@ KEYWORD SEMANTICS
    sampler_delay_y synonym for sampler_delay_r.
 
 ** miscellaneous functions
+   chan_ids      changes the assignment of the channel labels
+                 "abcdef..xyzABC..XYZ01..789$%" from the default values
+                 to the ones specified by the corresponding list of floats
+                 This is useful to prevent mis-matched IFs within one experiment
+                 from causing the same channel label to be ambiguously used on
+                 various baselines.  (You should ideally use exactly the same
+                 frequencies as would be assigned by default.)
    plot_data_dir if present will be used as a path to dump the plot data
                  in a self-documented ascii form to allow export of plot
                  information to other arenas (specialized plots, &c).  One

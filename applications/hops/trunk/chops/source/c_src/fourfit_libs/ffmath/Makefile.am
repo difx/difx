@@ -10,7 +10,7 @@ pkginclude_HEADERS =
 
 pkglib_LTLIBRARIES = libffmathb.la
 
-libffmathb_la_SOURCES = ./src/ap_mean.c ./src/bcd_to_2int.c ./src/interp555.c ./src/linterp.c ./src/max555.c ./src/parabola.c
+libffmathb_la_SOURCES = ./src/ap_mean.c ./src/bcd_to_2int.c ./src/interp555.c ./src/linterp.c ./src/max555.c ./src/parabola.c ./src/minvert.c
 
 libffmathb_la_LIBADD = ../../mk4util/libmk4utilb.la ../../dfio/libdfiob.la
 

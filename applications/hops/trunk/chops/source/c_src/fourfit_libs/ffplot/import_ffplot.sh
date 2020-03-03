@@ -61,6 +61,7 @@ else
     "output.c"
     "display_fplot.c"
     "plot_data_dir.c"
+    "fit_vbp.c"
     )
 
     source_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"
