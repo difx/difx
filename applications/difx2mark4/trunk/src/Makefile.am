@@ -35,7 +35,18 @@ difx2mark4_SOURCES = \
 	type_303.h \
 	type_309.h \
 	difx2mark4.h \
-	other.h
+	other.h \
+	d2m4_pcal_copy_record.c \
+	d2m4_pcal_count_unique_polarizations.c \
+	d2m4_pcal_create_list.c \
+	d2m4_pcal_dump_record.c \
+	d2m4_pcal_free_list.c \
+	d2m4_pcal_free_record.c \
+	d2m4_pcal_init_record.c \
+	d2m4_pcal_merge_datastreams_in_list.c \
+	d2m4_pcal_merge_record.c \
+	d2m4_pcal_populate_record.c \
+	d2m4_pcal_record.h
 
 
 CLEANFILES = *debug*
