@@ -95,7 +95,7 @@ export fitsname=false
 # If $work is more messed up than that, you're on your own.
 export uniq=true    # or export uniq=false
 
-# derived vars
+# other derived vars
 export release=$arch/$exp/$exp-$relv
 export dout=$corr/$exp/v${vers}$ctry/$subv$stry
 export evs=$exp-$vers-$subv
