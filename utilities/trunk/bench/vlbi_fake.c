@@ -73,14 +73,13 @@ typedef enum {LBADR, MARK5B, VDIF, CODIF} datamode;
 int main(int argc, char * const argv[]) {
   unsigned short fnamesize;
   ssize_t ntowrite;
-  int i, status, opt, tmp, sock, thisday, thismonth, thisyear, header_bytes;
+  int i, status, opt, tmp, sock, thisday, thismonth, thisyear, header_bytes=0;
   int seconds, hour, min, sec, bufsize, datarate, currentthread, framepersec;
-  int sampleblocklength;
+  int sampleblocklength=0;
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
   long *lbuf;
-	   uint64_t mjdsec, bwrote, totalpackets, totalsamples;
-  uint64_t mjdsec, bwrote;
+  uint64_t mjdsec, bwrote, totalpackets, totalsamples=0;
   double thismjd, finishmjd, ut, t0, t1, t2, dtmp;
   float speed, ftmp;
   unsigned long long filesize, networksize, nwritten, totalsize;
