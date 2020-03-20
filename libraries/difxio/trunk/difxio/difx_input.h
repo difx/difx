@@ -778,6 +778,7 @@ void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand);
 void DifxDatastreamAllocZoomFreqs(DifxDatastream *dd, int nZoomFreq);
 void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand);
 void DifxDatastreamAllocPhasecalTones(DifxDatastream *dd, int nTones);
+int DifxDatastreamGetPhasecalRange(const DifxDatastream *dd, const DifxFreq *df, double* lowest, double* highest);
 void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df);
 int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, const DifxFreq *df, int maxCount);
 void deleteDifxDatastreamInternals(DifxDatastream *dd);
