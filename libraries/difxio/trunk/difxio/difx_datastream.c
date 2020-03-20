@@ -266,17 +266,18 @@ int DifxDatastreamGetPhasecalRange(const DifxDatastream *dd, const DifxFreq *df,
 	double tonefreq;
 	int permitEdgeTone = 0;
 
+	if(lowest)
+	{
+		*lowest = 0;
+	}
+	if(highest)
+	{
+		*highest = 0;
+	}
+
 	if(dd->nRecFreq == 0 || dd->phaseCalIntervalMHz == 0)
 	{
 		/* Can't do anything... */
-		if(lowest)
-		{
-			*lowest = 0;
-		}
-		if(highest)
-		{
-			*highest = 0;
-		}
 		return 0;
 	}
 
@@ -290,34 +291,34 @@ int DifxDatastreamGetPhasecalRange(const DifxDatastream *dd, const DifxFreq *df,
 
 	/* lowest frequency pcal */
 	tonefreq = ((unsigned long)(lowEdge / dd->phaseCalIntervalMHz)) * dd->phaseCalIntervalMHz + dd->phaseCalBaseMHz;
-	if (tonefreq < lowEdge)
+	if(tonefreq < lowEdge)
 	{
 		tonefreq += dd->phaseCalIntervalMHz;
 	}
-	if (!permitEdgeTone && fabs(tonefreq-lowEdge) < 1e-6)
+	if(!permitEdgeTone && fabs(tonefreq-lowEdge) < 1e-6)
 	{
 		//skip tone in DC bin
 		tonefreq += dd->phaseCalIntervalMHz;
 	}
 
 	/* calculate number of tones that fit the band */
-	int ntones = 1;
+	int ntones = 0;
 	while (tonefreq + ntones * dd->phaseCalIntervalMHz < lowEdge + df->bw)
 	{
 		++ntones;
 	}
 
 	/* return the range (tone freqs in MHz) */
-	if(lowest)
+	if(lowest && ntones)
 	{
 		*lowest = tonefreq;
 	}
-	if(highest)
+	if(highest && ntones)
 	{
 		*highest = tonefreq + (ntones - 1) * dd->phaseCalIntervalMHz;
 	}
 
-	if (0)
+	if(0)
 	{
 		printf("full: band %.3f .. %.3f %cSB, pcal comb N*%.3f + %.3f\n", lowEdge, lowEdge + df->bw, df->sideband, dd->phaseCalIntervalMHz, dd->phaseCalBaseMHz);
 		printf("      first tone in band is %.3f\n", tonefreq);
