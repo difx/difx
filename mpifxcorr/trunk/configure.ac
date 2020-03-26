@@ -155,6 +155,5 @@ AC_OUTPUT([
 	fxcorr.pc \
 	src/Makefile \
 	src/architecture.h \
-	scripts/Makefile \
 	utils/Makefile\
 ])
