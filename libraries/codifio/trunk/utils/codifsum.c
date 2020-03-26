@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -186,7 +187,7 @@ int main (int argc, char **argv) {
 	printf("\n");
 	printf("PERIOD:      %d\n", period);
 	printf("\n");
-	printf("#SAMPLES:    %llu\n", getCODIFTotalSamples(header));
+	printf("#SAMPLES:    %"PRIu64"\n", getCODIFTotalSamples(header));
 	printf("\n");
 	printf("SYNC:        0X%X\n", getCODIFSync(header));
 	
