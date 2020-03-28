@@ -2,7 +2,7 @@
 
 import sys, socket, subprocess
 
-sites = ['sc','hn','nl','fd','la','pt','kp','br','ov','mk']
+sites = ['sc','hn','nl','fd','la','pt','kp','br','ov','mk', 'gb', 'ea']
 playbacks = ['01', '02', '03', '04', '05', '06', '07', '08']
 
 def usage():
