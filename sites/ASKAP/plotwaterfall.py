@@ -27,6 +27,7 @@ parser.add_argument("-t", "--threshold_factor", type=float, default=2.5, help="F
 parser.add_argument("--isolate", default=False, action="store_true", help="Set if you want to calculate the polarisation fractions or to isolate specific sub-pulses")
 parser.add_argument("--pulse_number", type=int, default=None, help="Number of the pulse of interest for determining the polarisation fraction values")
 parser.add_argument("--binstartstop", type=str, default=None, help="Start and end bins for integrating over the pulse to get the polarisation fraction totals; input as a comma separated string")
+parser.add_argument("--logstartstop", type=str, default=None, help="Start and end bins for fitting the log of the frequency-averaged spectra; input as a comma separated string")
 parser.add_argument("--multi_rotmeas", type=str, default=None, help="To be used for cases requiring multiple RMs; input is a list of strings: e.g., RM1,RM2")
 parser.add_argument("--rm_bins_starts", type=str, default=None, help="The start bins used for de-rotating at a given RM; to be used with --multi_rotmeas set; input is a list of strings: e.g., RM1_start,RM2_start,RM3_start")
 parser.add_argument("--scintillation", default=False, action="store_true", help="Set if you want to calculate the scintillation decorrelation bandwidth for a pulse")
@@ -66,6 +67,9 @@ if args.isolate:
     if args.binstartstop is None:
         parser.error("You must specify the start and stop bins for the pulse for which you want to obtain the polarisation fractions")
 
+if args.logstartstop is None:
+    parser.error("You must specify the start and stop bins for the pulse for which you want to obtain the log fit and plot for Stokes I")
+
 if args.multi_rotmeas:
     if args.rm_bins_starts is None:
         parser.error("You must specify the pulse number for which you want to obtain the polarisation fractions")
@@ -83,6 +87,9 @@ if args.isolate:
 else:
     binstart = 0
     binstop = -1
+
+logstart = int(args.logstartstop.split(',')[0])
+logstop = int(args.logstartstop.split(',')[1])
 
 # Define dynamic and fscrunched spectra parameters
 basefreq = args.basefreq
@@ -571,13 +578,17 @@ if args.fscrunch:
     isolate_scrunch_fig.subplots_adjust(hspace=0)
     isolate_scrunch_ax0.tick_params(axis='x', direction='in')
 
+    # Set up figure and axes for log scale plots for Stokes I
+    scrunch_log_fig, scrunch_log_ax = plt.subplots(figsize=(7,7))
+    scrunch_log_ax.set_yscale('log', nonposy='mask')
+
     for stokes in args.pols.split(','):
 
         fscrunch_rmcorrected[stokes] = np.mean(dynspec_rmcorrected[stokes], 1)
         np.savetxt("{0}-imageplane-fscrunch-spectrum.calibrated.RMcorrected.stokes{1}.txt".format(src, stokes), fscrunch_rmcorrected[stokes])
         print("Frequency scrunched data size: {0}".format(fscrunch_rmcorrected[stokes].shape))
 
-        if stokes=="I": 
+        if stokes=="I":
             col='k'
             plotlinestyle='-'
         elif stokes=="Q": 
@@ -599,6 +610,15 @@ if args.fscrunch:
         print(stokes)
         amp_jy = fscrunch_rmcorrected[stokes][:] * 10000/res
 
+        # Log scale fit of Stokes I over specified range
+        if stokes == "I":
+            poly_coeffs = np.polyfit(centretimes[logstart:logstop], np.log(amp_jy[logstart:logstop]), deg=1)
+            print("Stokes I log fit coefficients: {}".format(poly_coeffs))
+            amp_fit = centretimes*poly_coeffs[0] + poly_coeffs[1]
+            print("Stokes I log fit line: {}".format(amp_fit))
+            max_value_log_plot = 10 * np.round((np.max(amp_jy)/10)) # Round maximum amplitude value to the nearest factor of 10
+            print("Nearest factor of ten for amplitude: {}".format(max_value_log_plot))
+
         if args.rms:
             rms_jy = fscrunchrms[stokes][:] * 10000/res
             # Diagnostic plot
@@ -610,6 +630,12 @@ if args.fscrunch:
             # If isolated pulse plot is requested
             if args.isolate:
                 isolate_scrunch_ax1.errorbar(centretimes[binstart:binstop], amp_jy[binstart:binstop], yerr=rms_jy[binstart:binstop], label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+
+            # Log scale plot of Stokes I and fit
+            if stokes == "I":
+                scrunch_log_ax.errorbar(centretimes, amp_jy, yerr=rms_jy, label="Stokes "+stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+                scrunch_log_ax.plot(centretimes, np.e**amp_fit, label='linear fit', color='#dfc27d', linestyle=plotlinestyle, linewidth=1.5)
+
         else:
             plt.title('   '+frbtitletext, loc='left', pad=-20)
             # Diagnostic plot
@@ -619,6 +645,10 @@ if args.fscrunch:
             # If isolated pulse plot is requested
             if args.isolate:
                 isolate_scrunch_ax1.plot(centretimes[binstart:binstop], amp_jy[binstart:binstop], label=stokes, color=col, linestyle=plotlinestyle)
+                # Log scale plot of Stokes I
+            if stokes == "I":
+                scrunch_log_ax.plot(centretimes[logstart:logstop], amp_jy[logstart:logstop], label="Stokes "+stokes, color=col, linestyle=plotlinestyle)
+                scrunch_log_ax.plot(centretimes, np.e**amp_fit, label='linear fit', color='#dfc27d', linestyle=plotlinestyle, linewidth=1.5)
 
     # Get new, corrected polarisation position angle for fscrunched data
     pol_pa = 0.5*np.arctan2(fscrunch_rmcorrected["U"][1:], fscrunch_rmcorrected["Q"][1:])*180/np.pi
@@ -626,6 +656,11 @@ if args.fscrunch:
     # Calculate a noise threshold for masking the polarisation position angle plot
     sigma_I = np.sqrt((fscrunchrms["Q"][1:]**2 + fscrunchrms["U"][1:]**2)/2)
     threshold_factor=args.threshold_factor
+
+    # Correct for phase wrapping:
+    if args.unwrap:
+        for i in np.arange(len(pol_pa)):
+            if pol_pa[i] < 0: pol_pa[i]+=180
 
     # Check that sigma_I above and fscrunchrms["I"] are roughly equivalent
     sigma_I_fig = plt.figure(figsize=(7,7))
@@ -658,11 +693,6 @@ if args.fscrunch:
     pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_masked)
     print("PA masked: {0}".format(pol_pa_masked))
 
-    # Correct for phase wrapping:
-    if args.unwrap:
-        for i in np.arange(len(pol_pa_masked)):
-            if pol_pa_masked[i] < 0: pol_pa_masked[i]+=180
-
     pa_rms = (180/np.pi) * (np.sqrt( ((fscrunch_rmcorrected["Q"][1:]**2 * fscrunchrms["U"][1:]**2) + (fscrunch_rmcorrected["U"][1:]**2 *fscrunchrms["Q"][1:]**2))/(4*(fscrunch_rmcorrected["Q"][1:]**2 + fscrunch_rmcorrected["U"][1:]**2)**2) ))
     print("PA rms: {0}".format(pa_rms))
     pol_pa_rms_to_mask = np.ma.array(pa_rms)
@@ -672,9 +702,12 @@ if args.fscrunch:
     # Diagnostic plots
     scrunch_ax1_diag.set_title('   '+frbtitletext)
     scrunch_ax0_diag.errorbar(centretimes[1:], pol_pa, yerr=pa_rms, fmt='ko', markersize=2)
-    scrunch_ax0.set_ylabel("Position Angle (deg)")
+    if args.unwrap:
+        scrunch_ax0_diag.set_ylim(0,180)
     scrunch_ax1_diag.errorbar(centretimes[1:], pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
     scrunch_ax1_diag.set_ylabel("Position Angle (deg)")
+    if args.unwrap:
+        scrunch_ax1_diag.set_ylim(0,180)
     scrunch_ax2_diag.legend()
     scrunch_ax2_diag.set_xlabel("Time (ms)")
     scrunch_ax2_diag.set_ylabel("Flux Density (Jy)")
@@ -683,6 +716,8 @@ if args.fscrunch:
     scrunch_ax0.set_title('   '+frbtitletext)
     scrunch_ax0.errorbar(centretimes[1:], pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
     scrunch_ax0.set_ylabel("Position Angle (deg)")
+    if args.unwrap:
+        scrunch_ax0.set_ylim(0,180)
     scrunch_ax1.legend()
     scrunch_ax1.set_xlabel("Time (ms)")
     scrunch_ax1.set_ylabel("Flux Density (Jy)")
@@ -700,6 +735,15 @@ if args.fscrunch:
         isolate_scrunch_ax1.set_ylabel("Flux Density (Jy)")
         isolate_scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_pulse{2}_delta-psi{3}_delta-t{4}_phi{5}.png".format(src, label_rotmeas_save, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
         isolate_scrunch_fig.clf()
+
+    # Log plots
+    scrunch_log_ax.set_title('   '+frbtitletext)
+    scrunch_log_ax.legend()
+    scrunch_log_ax.set_xlabel("Time (ms)")
+    scrunch_log_ax.set_ylabel("Flux Density (Jy)")
+    scrunch_log_ax.set_ylim(top=max_value_log_plot)
+    scrunch_log_fig.savefig("{0}-fscrunch.RMcorrected_logscale_pulse{1}_RM{2}.png".format(src, pulse_number, label_rotmeas_save), bbox_inches = 'tight')
+    scrunch_log_fig.clf()
 
     scrunch_i_fig, scrunch_i_ax = plt.subplots(figsize=(7,7))
     col='k'
