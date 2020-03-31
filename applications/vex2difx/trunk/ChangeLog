@@ -14,6 +14,8 @@ Version 2.7.0
 * vex2difx: support override of data frame size with frameSize parametr of DATASTREAM
 * vexpeek: new verbose mode
 * oms2v2d: fix crash in some modes if no data for project is found
+* vexpeek: option to view station coordinates
+* oms2v2d: use "difxcalc" for VLBA observing with sched 11.6 and newer
 
 Version 2.6.0
 ~~~~~~~~~~~~~

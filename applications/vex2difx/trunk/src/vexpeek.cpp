@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2019 by Walter Brisken and Jan Wagner              *
+ *   Copyright (C) 2009-2020 by Walter Brisken and Jan Wagner              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,8 +40,8 @@
 #include <vexdatamodel.h>
 
 const std::string program("vexpeek");
-const std::string version("0.10");
-const std::string verdate("20191118");
+const std::string version("0.11");
+const std::string verdate("20200323");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -61,9 +61,10 @@ void usage(const char *pgm)
 	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
 	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
 	std::cout << "  -m or --modules : print disk modules used (from TAPELOG_OBS)" << std::endl;
+	std::cout << "  -c or --coords : print station coordinates" << std::endl;
 	std::cout << "  -a or --all : print summary, bands, scans, and modules" << std::endl;
 	std::cout << std::endl;
-	std::cout << "  -B, -S, and/or -M can be used to add one of these sections to the output." << std::endl;
+	std::cout << "  -B, -S, -M and/or -C can be used to add one of these sections to the output." << std::endl;
 	std::cout << std::endl;
 }
 
@@ -224,47 +225,33 @@ void moduleSummary(VexData *V)
 	std::cout.precision(p);
 }
 
-void scanList(const VexData *V, int verbose)
+void scanList(const VexData *V)
 {
 	std::vector<std::string> allStations;
 	for(unsigned int s = 0; s < V->nScan(); ++s)
 	{
 		const VexScan *scan = V->getScan(s);
-		if(verbose > 1)
-		{
-			std::cout << *scan;
-		}
-		else
-		{
-			std::cout << std::left << std::setw(8) << scan->defName << " ";
-			std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
-			std::cout << std::left << std::setw(12) << scan->modeDefName << "   ";
+		std::cout << std::left << std::setw(8) << scan->defName << " ";
+		std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
+		std::cout << std::left << std::setw(12) << scan->modeDefName << "   ";
 
-			std::vector<std::string> currStations;
-			for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		std::vector<std::string> currStations;
+		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		{
+			currStations.push_back(it->first);
+			if (std::find(allStations.begin(), allStations.end(), it->first) == allStations.end())
 			{
-				currStations.push_back(it->first);
-				if (std::find(allStations.begin(), allStations.end(), it->first) == allStations.end())
-				{
-					allStations.push_back(it->first);
-				}
+				allStations.push_back(it->first);
 			}
-			if(verbose > 0)
+		}
+		for (std::vector<std::string>::iterator it = allStations.begin(); it != allStations.end(); ++it)
+		{
+			std::string ant = "--";
+			if (std::find(currStations.begin(), currStations.end(), *it) != currStations.end())
 			{
-				int p = std::cout.precision();
-				std::cout.precision(13);
-				std::cout << " " << scan->sourceDefName << " " << scan->mjdStart << " " << scan->mjdStop << "  ";
-				std::cout.precision(p);
+				ant = *it;
 			}
-			for (std::vector<std::string>::iterator it = allStations.begin(); it != allStations.end(); ++it)
-			{
-				std::string ant = "--";
-				if (std::find(currStations.begin(), currStations.end(), *it) != currStations.end())
-				{
-					ant = *it;
-				}
-				std::cout << std::setw(3) << ant << " ";
-			}
+			std::cout << std::setw(3) << ant << " ";
 		}
 		std::cout << std::endl;
 	}
@@ -292,6 +279,24 @@ void bandList(const VexData *V)
 		std::cout << *b << " ";
 	}
 	std::cout << std::endl;
+}
+
+void antCoords(const VexData *V)
+{
+	const double secPerYear = 86400.0*365.25;
+	int nAntenna = V->nAntenna();
+	int p = std::cout.precision();
+	std::cout.precision(6);
+	std::cout << std::fixed;
+
+	for(int a = 0; a < nAntenna; ++a)
+	{
+		const VexAntenna *A = V->getAntenna(a);
+		std::cout << A->name << " " << A->x << " " << A->y << " " << A->z << "  " << (A->dx*secPerYear) << " " << (A->dy*secPerYear) << " " << (A->dz*secPerYear) << "  " << A->posEpoch << std::endl;
+	}
+
+	std::cout.precision(p);
+	std::cout << std::scientific;
 }
 
 int testVex(const std::string &vexFile)
@@ -346,6 +351,7 @@ int main(int argc, char **argv)
 	int doUsage = 0;
 	int doModules = 0;
 	int doTime = 0;
+	int doCoords = 0;
 	int a;
 	const char *fileName = 0;
 
@@ -396,6 +402,12 @@ int main(int argc, char **argv)
 			++doModules;
 			doSummary = 0;
 		}
+		else if(strcmp(argv[a], "-c") == 0 ||
+			strcmp(argv[a], "--coords") == 0)
+		{
+			++doCoords;
+			doSummary = 0;
+		}
 		else if(strcmp(argv[a], "-B") == 0 ||
 		        strcmp(argv[a], "--Bands") == 0)
 		{
@@ -411,12 +423,18 @@ int main(int argc, char **argv)
 		{
 			++doModules;
 		}
+		else if(strcmp(argv[a], "-C") == 0 ||
+			strcmp(argv[a], "--Coords") == 0)
+		{
+			++doCoords;
+		}
 		else if(strcmp(argv[a], "-a") == 0 ||
 		        strcmp(argv[a], "--all") == 0)
 		{
 			++doBandList;
 			++doScanList;
 			++doModules;
+			++doCoords;
 		}
 		else if(argv[a][0] == '-')
 		{
@@ -453,7 +471,7 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(std::string(fileName), &nWarn);
 
-	if(verbose && !doScanList)
+	if(verbose)
 	{
 		std::cout << *V << std::endl;
 		std::cout << std::endl;
@@ -481,11 +499,15 @@ int main(int argc, char **argv)
 	}
 	if(doScanList)
 	{
-		scanList(V, verbose);
+		scanList(V);
 	}
 	if(doModules)
 	{
 		moduleSummary(V);
+	}
+	if(doCoords)
+	{
+		antCoords(V);
 	}
 
 	delete V;
