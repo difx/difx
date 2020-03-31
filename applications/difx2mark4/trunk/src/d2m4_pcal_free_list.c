@@ -22,5 +22,5 @@ void d2m4_pcal_free_list(struct d2m4_pcal_list_node* pcal_list)
         //now destroy the previous tail
         free(prev_tail);
     }
-    while(tail->next != NULL);
+    while(tail != NULL && tail->next != NULL);
 }

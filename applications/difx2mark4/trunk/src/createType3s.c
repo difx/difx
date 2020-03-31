@@ -147,19 +147,19 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // fill in record boiler-plate and unchanging fields
     memcpy (t000.record_id, "000", 3);
     memcpy (t000.version_no, "01", 2);
-    
+
     memcpy (t300.record_id, "300", 3);
     memcpy (t300.version_no, "00", 2);
-    
+
     memcpy (t301.record_id, "301", 3);
     memcpy (t301.version_no, "00", 2);
-    
+
     memcpy (t302.record_id, "302", 3);
     memcpy (t302.version_no, "00", 2);
-    
+
     memcpy (t303.record_id, "303", 3);
     memcpy (t303.version_no, "00", 2);
-    
+
     memcpy (t309.record_id, "309", 3);
     memcpy (t309.version_no, "01", 2);
 
@@ -172,7 +172,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     mjd2dayno((int)(D->mjdStart), &refDay);
 
     for (n = 0; n < D->nAntenna; n++)
-        {                           // n incremented at bottom 
+        {                           // n incremented at bottom
                                     // and at every continue
         if (stns[n].invis == 0)
             continue;
@@ -268,7 +268,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 t303.interval = t301.interval;
                                     // units of difx are usec, ff uses sec
                                     // shift clock polynomial to start of model interval
-                deltat = 8.64e4 * ((**(D->scan[scanId].im+n)+j)->mjd - (D->antenna+n)->clockrefmjd) 
+                deltat = 8.64e4 * ((**(D->scan[scanId].im+n)+j)->mjd - (D->antenna+n)->clockrefmjd)
                                                    + (**(D->scan[scanId].im+n)+j)->sec;
                 nclock = getDifxAntennaShiftedClock (D->antenna+n, deltat, 6, clock);
                                     // difx delay doesn't have clock added in, so
@@ -276,7 +276,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // for opposite delay convention
                 for (l=0; l<6; l++)
                     {
-                    t301.delay_spline[l] 
+                    t301.delay_spline[l]
                       = -1.e-6 * (**(D->scan[scanId].im+n)+j)->delay[l];
 
                     if (l < nclock) // add in those clock coefficients that are valid
@@ -293,20 +293,20 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     if (l == 0)
                         {
                                     // calculate geocentric latitude (rad)
-                        geoc_lat = atan2 (D->antenna[n].Z, 
+                        geoc_lat = atan2 (D->antenna[n].Z,
                                           sqrt (D->antenna[n].X * D->antenna[n].X
                                               + D->antenna[n].Y * D->antenna[n].Y));
                                     // get declination for this source
                         sourceId = D->scan[scanId].pointingCentreSrc;
                         dec = D->source[sourceId].dec;
                                     // evaluate az & el at midpoint of model interval
-                        el = M_PI / 180.0 * (t303.elevation[0] 
+                        el = M_PI / 180.0 * (t303.elevation[0]
                                 + 0.5 * D->scan[scanId].durSeconds * t303.elevation[1]);
-                        az = M_PI / 180.0 * (t303.azimuth[0] 
+                        az = M_PI / 180.0 * (t303.azimuth[0]
                                 + 0.5 * D->scan[scanId].durSeconds * t303.azimuth[1]);
                                     // evaluate sin and cos of the local hour angle
                         sha = - cos(el) * sin(az) / cos(dec);
-                        cha = (sin(el) - sin(geoc_lat) * sin(dec)) 
+                        cha = (sin(el) - sin(geoc_lat) * sin(dec))
                             / (cos(geoc_lat) * cos(dec));
                                     // approximate (first order in f) conversion
                         geod_lat = atan(1.00674 * tan(geoc_lat));
@@ -334,7 +334,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             {
             strncpy (pcal_filnam, D->job[j].outputFile, 242);
             strcat (pcal_filnam, "/PCAL_*");    // for restart case
-            strcat (pcal_filnam, t300.name); 
+            strcat (pcal_filnam, t300.name);
             pcalglob.gl_offs = 0;
             if (0 == glob(pcal_filnam, 0, 0, &pcalglob) && 1 == pcalglob.gl_pathc)
                 fin = fopen ( pcalglob.gl_pathv[0], "r");
@@ -347,7 +347,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             else
                 {                       // input data is present - loop over records
                 if (opts->verbose > 1)  // debug print
-                    printf ("      getting pcal data from file %s\n", pcal_filnam); 
+                    printf ("      getting pcal data from file %s\n", pcal_filnam);
 
                 //HAVE PCAL DATA, SO READ AND MERGE THE DATASTREAMS FIRST...
                 //THEN WE WILL LOOP OVER IT TO CREATE THE TYPE309s
@@ -403,9 +403,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     ntones = pcal_tail->pcal_record->ntones;
                     npol = 1;// d2m4_pcal_count_unique_polarizations(pcal_tail->pcal_record);       // for compatible np-loop control
 
+                    #ifdef D2M4_PCAL_DEBUG
                     tmpbuff_size = d2m4_pcal_dump_record(pcal_tail->pcal_record, lbuff, LBUFF_SIZE);
                     lbuff[tmpbuff_size] = '\0';
-                    #ifdef D2M4_PCAL_DEBUG
                     printf("record dump = %s\n", lbuff);
                     #endif
                     t = mjd + refDay - (int)(D->mjdStart);
@@ -436,7 +436,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     for (i=0; i < D->job[j].nFlag; i++)
                         {
                         if ((D->job+j)->flag[i].antennaId == n
-                        && mjd > (D->job+j)->flag[i].mjd1 
+                        && mjd > (D->job+j)->flag[i].mjd1
                         && mjd < (D->job+j)->flag[i].mjd2)
                             {
                             if (opts->verbose > 1)
@@ -462,7 +462,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                         xtones[i] = 0;
                     t309.ntones = 0;
                                         // clear record accumulators
-                    memset (&(t309.chan[0].acc[0][0]), 0, NPC_FREQS * sizeof (t309.chan[0]));
+                    //printf("memsetting ptr, size, itemsize = %p, %d, %d \n", &(t309.chan[0].acc[0][0]), NPC_FREQS * sizeof (t309.chan[0]),  sizeof (t309.chan[0]) );
+                    memset( &(t309.chan[0]), 0, NPC_FREQS * sizeof (t309.chan[0]));
 
                                         // loop over tones within record
                     for (np=0; np<npol; np++)
@@ -540,7 +541,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         record_chan = nc;
                                         jf = *(pdds->recFreqId + *(pdds->recBandFreqId + nc));
 
-                                        // if zoom band exists and parent band isn't the 
+                                        // if zoom band exists and parent band isn't the
                                         // desired bandwidth, overwrite with tone from zoom band
                                         if (pdds->nZoomBand > 0 && D->freq[jf].bw != opt_bw)
                                             for (i=0; i<pdds->nZoomBand; i++)
@@ -578,7 +579,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                    && pfb[nf].stn[k].sideband == D->freq[jf].sideband)
                                                  || ((pfb[nf].stn[k].freq + pfb[nf].stn[k].bw == D->freq[jf].freq)
                                                  && pfb[nf].stn[k].sideband == 'U' && D->freq[jf].sideband == 'L'))
-                                                 && pfb[nf].stn[k].bw       == D->freq[jf].bw  
+                                                 && pfb[nf].stn[k].bw       == D->freq[jf].bw
                                                  && pfb[nf].stn[k].pol      == polar //ds_pols[record_chan]
                                                  && pfb[nf].stn[k].ant      == n)
                                                     {
@@ -702,7 +703,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             {
             strncpy (pcal_filnam, D->job[j].outputFile, 242);
             strcat (pcal_filnam, "/PCAL_*");    // for restart case
-            strcat (pcal_filnam, t300.name); 
+            strcat (pcal_filnam, t300.name);
             pcalglob.gl_offs = 0;
             if (0 == glob(pcal_filnam, 0, 0, &pcalglob) && 1 == pcalglob.gl_pathc)
                 fin = fopen ( pcalglob.gl_pathv[0], "r");
@@ -715,7 +716,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             else
                 {                       // input data is present - loop over records
                 if (opts->verbose > 1)  // debug print
-                    printf ("      getting pcal data from file %s\n", pcal_filnam); 
+                    printf ("      getting pcal data from file %s\n", pcal_filnam);
 
                 while (TRUE)            // read loop over all input records
                     {
@@ -733,7 +734,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                     if (version == 0)   // legacy is version 0
                         {
-                        sscanf (line, "%s%lf%lf%lf%d%d%d%d%d%n", ant, &t, &tint, &cable_delay, 
+                        sscanf (line, "%s%lf%lf%lf%d%d%d%d%d%n", ant, &t, &tint, &cable_delay,
                                      &npol, &nchan, &ntones, &nstates, &nrc, &nchars);
                         mjd = t - refDay + (int)(D->mjdStart);
                         }
@@ -778,7 +779,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     for (i=0; i < D->job[j].nFlag; i++)
                         {
                         if ((D->job+j)->flag[i].antennaId == n
-                        && mjd > (D->job+j)->flag[i].mjd1 
+                        && mjd > (D->job+j)->flag[i].mjd1
                         && mjd < (D->job+j)->flag[i].mjd2)
                             {
                             if (opts->verbose > 1)
@@ -804,7 +805,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                         xtones[i] = 0;
                     t309.ntones = 0;
                                         // clear record accumulators
-                    memset (&(t309.chan[0].acc[0][0]), 0, NPC_FREQS * sizeof (t309.chan[0]));
+                    memset( &(t309.chan[0]), 0, NPC_FREQS * sizeof (t309.chan[0]));
+                    //memset (&(t309.chan[0].acc[0][0]), 0, NPC_FREQS * sizeof (t309.chan[0]));
 
                                         // loop over tones within record
                     for (np=0; np<npol; np++)
@@ -826,7 +828,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // identify channel and tone
                                 if (version == 0)
                                     {
-                                    sscanf (line + nchars, "%d%lf%lf%lf%n", 
+                                    sscanf (line + nchars, "%d%lf%lf%lf%n",
                                             &record_chan, &freq, &cquad, &squad, &mchars);
                                     nchars += mchars;
                                         // skip over channels which weren't recorded
@@ -836,7 +838,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                 else    // for now, version 1 is only alternative
 #ifdef INTEGER_PC_FREQ
                                     {
-                                    sscanf (line + nchars, "%d %c %lf%lf%n", 
+                                    sscanf (line + nchars, "%d %c %lf%lf%n",
                                             &ifreq, &polar, &cquad, &squad, &mchars);
                                     nchars += mchars;
                                     freq = ifreq;
@@ -846,7 +848,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     }
 #else /* INTEGER_PC_FREQ */
                                     {
-                                    sscanf (line + nchars, "%lf %c %lf%lf%n", 
+                                    sscanf (line + nchars, "%lf %c %lf%lf%n",
                                             &freq, &polar, &cquad, &squad, &mchars);
                                     nchars += mchars;
                                         // skip over tones that weren't extracted
@@ -881,7 +883,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         record_chan = nc;
                                         jf = *(pdds->recFreqId + *(pdds->recBandFreqId + nc));
 
-                                        // if zoom band exists and parent band isn't the 
+                                        // if zoom band exists and parent band isn't the
                                         // desired bandwidth, overwrite with tone from zoom band
                                         if (pdds->nZoomBand > 0 && D->freq[jf].bw != opt_bw)
                                             for (i=0; i<pdds->nZoomBand; i++)
@@ -919,7 +921,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                    && pfb[nf].stn[k].sideband == D->freq[jf].sideband)
                                                  || ((pfb[nf].stn[k].freq + pfb[nf].stn[k].bw == D->freq[jf].freq)
                                                  && pfb[nf].stn[k].sideband == 'U' && D->freq[jf].sideband == 'L'))
-                                                 && pfb[nf].stn[k].bw       == D->freq[jf].bw  
+                                                 && pfb[nf].stn[k].bw       == D->freq[jf].bw
                                                  && pfb[nf].stn[k].pol      == ds_pols[record_chan]
                                                  && pfb[nf].stn[k].ant      == n)
                                                     {
