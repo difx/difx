@@ -247,7 +247,7 @@ int computeXYZDerivatives(DifxInput *D, double deltaXYZ, const char *calcProgram
 		/* run calc11 */
 		snprintf(command, CommandLength, "rm %s", D->job->imFile);
 		system(command);
-		snprintf(command, CommandLength, "%s %s", calcProgram, D->job->calcFile);
+		snprintf(command, CommandLength, "calcif2 %s", D->job->calcFile);
 		system(command);
 		/* FIXME: vex2difx should put calc version info in .calc file */
 		/* FIXME: option for calc 9 */
