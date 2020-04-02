@@ -1019,20 +1019,25 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 	}
 	else if(format != dss->format && !dss->format.empty())
 	{
-		std::cerr << "Error: conflicting formats: " << format << " != " << format << std::endl;
+		std::cerr << "Error: conflicting formats: " << format << " != " << dss->format << std::endl;
 
 		return -2;
 	}
 
-	if(dataSampling < dss->dataSampling)
+	if(dataSampling != dss->dataSampling)
 	{
-		if(dataSampling != 0)
+		if(dataSampling != NumSamplingTypes && dss->dataSampling != NumSamplingTypes)
 		{
-			std::cerr << "Error: conflicting sampling types specified" << std::endl;
+			std::cerr << "Error: conflicting sampling types specified: "
+				<< dss->dataSampling << " (" << samplingTypeNames[dss->dataSampling] << ") while already configured for "
+				<< dataSampling << " (" << samplingTypeNames[dataSampling] << ")" << std::endl;
 
 			return -3;
 		}
-		dataSampling = dss->dataSampling;	
+		if(dss->dataSampling != NumSamplingTypes)
+		{
+			dataSampling = dss->dataSampling;
+		}
 	}
 
 	if(dataSource == DataSourceFile || dataSource == DataSourceMark6)
