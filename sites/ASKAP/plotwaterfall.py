@@ -541,6 +541,7 @@ l_dynspec_fig.clf()
 plt.figure(fig.number)
 plt.close('all')
 
+
 #####################################################################################
 
 # FSCRUNCH DATA WORK
@@ -616,7 +617,7 @@ if args.fscrunch:
             print("Stokes I log fit coefficients: {}".format(poly_coeffs))
             amp_fit = centretimes*poly_coeffs[0] + poly_coeffs[1]
             print("Stokes I log fit line: {}".format(amp_fit))
-            max_value_log_plot = 10 * np.round((np.max(amp_jy)/10)) # Round maximum amplitude value to the nearest factor of 10
+            max_value_log_plot = 10 * np.round((np.max(amp_jy)/10)) + 10 # Round maximum amplitude value to the nearest factor of 10
             print("Nearest factor of ten for amplitude: {}".format(max_value_log_plot))
 
         if args.rms:
@@ -634,6 +635,7 @@ if args.fscrunch:
             # Log scale plot of Stokes I and fit
             if stokes == "I":
                 scrunch_log_ax.errorbar(centretimes, amp_jy, yerr=rms_jy, label="Stokes "+stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+                scrunch_log_ax.errorbar(centretimes[logstart:logstop], amp_jy[logstart:logstop], yerr=rms_jy[logstart:logstop], label="Stokes "+stokes+" (used for fit)", color='#35978f', linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
                 scrunch_log_ax.plot(centretimes, np.e**amp_fit, label='linear fit', color='#dfc27d', linestyle=plotlinestyle, linewidth=1.5)
 
         else:
@@ -647,7 +649,8 @@ if args.fscrunch:
                 isolate_scrunch_ax1.plot(centretimes[binstart:binstop], amp_jy[binstart:binstop], label=stokes, color=col, linestyle=plotlinestyle)
                 # Log scale plot of Stokes I
             if stokes == "I":
-                scrunch_log_ax.plot(centretimes[logstart:logstop], amp_jy[logstart:logstop], label="Stokes "+stokes, color=col, linestyle=plotlinestyle)
+                scrunch_log_ax.plot(centretimes, amp_jy, label="Stokes "+stokes, color=col, linestyle=plotlinestyle)
+                scrunch_log_ax.plot(centretimes[logstart:logstop], amp_jy[logstart:logstop], label="Stokes "+stokes+" (used for fit)", color='#35978f', linestyle=plotlinestyle)
                 scrunch_log_ax.plot(centretimes, np.e**amp_fit, label='linear fit', color='#dfc27d', linestyle=plotlinestyle, linewidth=1.5)
 
     # Get new, corrected polarisation position angle for fscrunched data
