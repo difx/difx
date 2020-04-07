@@ -1,6 +1,8 @@
 Version 1.0
 * New utility removeNonzoomAutosDiFX.py for removing rec-band autocorrelations from a zoom-only correlation
-* migrated to parseDiFX package
+* New utility diffDiFX2.py that compares visibility records, while remapping antenna&frequency Ids as appropriate.
+  Report format differs from diffDiFX.py, hence still retaining diffDiFX.py for legacy use.
+* Migrated to parseDiFX package
 
 Version 0.9
 * New utility printDiFXInput.py for showing frequency table and baseline freq x freq pairs
