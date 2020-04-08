@@ -22,19 +22,16 @@ install-exec-local:
 		--prefix $(DESTDIR)$(prefix) \
 		--record $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_hopstest_files.txt \
 		--verbose)
-	(rm -r $(shell readlink -f $(builddir))/build)
-	(rm $(shell readlink -f $(builddir))/Makefile.am)
-	(rm $(shell readlink -f $(builddir))/Makefile.in)
 
 uninstall-local:
 	cat $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_hopstest_files.txt | xargs rm -rf
 	rm -rf $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_hopstest_files.txt
 
-CLEANFILES = $(SRC_FILES) setup.py.in hopstestsuiteb.py.in 
+CLEANFILES = $(SRC_FILES) setup.py.in hopstestsuiteb.py.in
 
 DISTCLEANFILES = setup.py
 
-endif 
+endif
 
 #
 # eof

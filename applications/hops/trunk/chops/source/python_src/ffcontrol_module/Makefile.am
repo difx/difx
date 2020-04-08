@@ -32,10 +32,6 @@ install-exec-local:
 		--prefix $(DESTDIR)$(prefix) \
 		--record $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_ffcontrol_files.txt \
 		--verbose)
-	(rm -r $(shell readlink -f $(builddir))/src)
-	(rm -r $(shell readlink -f $(builddir))/build)
-	(rm $(shell readlink -f $(builddir))/Makefile.am)
-	(rm $(shell readlink -f $(builddir))/Makefile.in)
 
 uninstall-local:
 	cat $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_ffcontrol_files.txt | xargs rm -rf
