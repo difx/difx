@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import copy, sys, os, struct, time, math
 import parseDiFX
 import numpy
@@ -21,6 +21,8 @@ parser.add_option("-e", "--epsilon", dest="epsilon", metavar="EPSILON", default=
                   help="Display any difference that exceeds allowed numerical error EPSILON")
 parser.add_option("-m", "--maxrecords", dest="maxrecords", metavar="MAXRECORDS",
                   default="-1", help="Stop after comparing MAXRECORDS (if >0) records")
+parser.add_option("-w", "--warn-undiffable", dest="warnundiffable", action="store_true", default=False,
+                  help="Show visibility records that cannot be diffed")
 parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
                   help="Turn verbose printing on")
 
@@ -34,6 +36,7 @@ targetfreq     = int(options.freq)
 threshold      = float(options.threshold) / 100.0
 epsilon        = float(options.epsilon)
 maxrecords     = int(options.maxrecords)
+warnundiffable = options.warnundiffable
 verbose        = options.verbose
 
 
@@ -259,6 +262,8 @@ if __name__ == "__main__":
 	allOk = True
 	filesIdentical = True
 
+	tmp, outFreqIsA = A.metainfo.determine_outputfreqs()
+
 	while allOk:
 
 		if (maxrecords > 0) and (apsA.ap_counter >= maxrecords):
@@ -290,13 +295,21 @@ if __name__ == "__main__":
 			if (targetfreq >= 0) and (hdrA.freqindex != targetfreq):
 				continue
 
+			if hdrA.freqindex not in outFreqIsA:
+				if warnundiffable:
+					print('SPURIOUS: file A has record for freq %d not in output freqs %s: cannot diff %s-%s/%d fq %d/%s MJD %d sec %7.2f' % (
+						hdrA.freqindex, str(outFreqIsA), A.metainfo.telescopes[hdrA.antenna1-1].name, A.metainfo.telescopes[hdrA.antenna2-1].name,
+						hdrA.baseline, hdrA.freqindex, hdrA.polpair, hdrA.mjd, hdrA.seconds))
+				continue
+
 			# Look up record from file B
 			hdrB_expect = metamap.remapHeader(hdrA)
 			offsetB = apsB.findMatchingHeader(hdrB_expect)
 			if (offsetB < 0):
-				print('NOT FOUND: no counterpart for record in B: %s-%s/%d fq %d/%s MJD %d sec %7.2f' % (
-					A.metainfo.telescopes[hdrA.antenna1-1].name, A.metainfo.telescopes[hdrA.antenna2-1].name,
-					hdrA.baseline, hdrA.freqindex, hdrA.polpair, hdrA.mjd, hdrA.seconds))
+				if warnundiffable:
+					print('NOT FOUND: no counterpart for record in B: %s-%s/%d fq %d/%s MJD %d sec %7.2f' % (
+						A.metainfo.telescopes[hdrA.antenna1-1].name, A.metainfo.telescopes[hdrA.antenna2-1].name,
+						hdrA.baseline, hdrA.freqindex, hdrA.polpair, hdrA.mjd, hdrA.seconds))
 				continue
 
 			# Load the full data
@@ -340,18 +353,9 @@ if __name__ == "__main__":
 
 			# Show differences
 			if not identicalViz:
-				prec = 7
-				# small = False
-				# nchan = len(vizA.vis)
-				# Nprintchans    = 4
-				# dataA_str = numpy.array2string(vizA.vis[:Nprintchans], precision=prec, max_line_width=1e99, separator=' ', prefix='', suppress_small=small)
-				# dataA_str += "... " + numpy.array2string(vizA.vis[nchan-Nprintchans:nchan], precision=prec, max_line_width=1e99, separator=' ', prefix='', suppress_small=small)
-				# dataB_str = numpy.array2string(vizB.vis[:Nprintchans], precision=prec, max_line_width=1e99, separator=' ', prefix='', suppress_small=small)
-				# dataB_str += "... " + numpy.array2string(vizB.vis[nchan-Nprintchans:nchan], precision=prec, max_line_width=1e99, separator=' ', prefix='', suppress_small=small)
-				# print('  A full  : %s' % (dataA_str))
-				# print('  B full  : %s' % (dataB_str))
 				print('  Channels: %s' % (str(nonequalchanslist)))
 				if True: #if verbose:
+					prec = 7
 					for ch in nonequalchanslist:
 						print('    Ch %-3d   A: %s\n'
                               '             B: %s' % (ch,
