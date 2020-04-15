@@ -12,13 +12,13 @@ import os, sys,argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--nbins", type=int, default=None, help="Number of images files from which to extract the spectrum; note: zero-indexed, so nbins=11 means bin00 to bin10")
 parser.add_argument("-c", "--nchan", type=int, default=None, help="Number of channel slices in each cube image; note: zero-indexed")
+parser.add_argument("-w", "--chanwidth", type=int, default=None, help="Width of frequency channel in MHz")
 parser.add_argument("-s", "--src", type=str, default=None, help="Source name to be used for the spectra text file prefix")
 parser.add_argument("-r", "--res", type=float, default=None, help="Temporal resolution of data in ms")
 parser.add_argument("-z", "--zero", default=False, help="Set zeroth bin equal to zero; use for nbins>1 when the zeroth bin contains little to no signal but mostly noise", action="store_true")
 parser.add_argument("-f", "--basefreq", type=float, default=None, help="The lowest frequency in the observation in MHz")
 parser.add_argument("-F", "--fscrunch", default=False, help="Make fscrunched plot", action="store_true")
 parser.add_argument("--pols", type=str, default="XX,YY,I,Q,U,V", help='The polarisations to be imaged if --imagecube is set. Defaulted to all. Input as a list of strings: e.g., "XX,YY"')
-parser.add_argument("-a", "--avg", type=int, default=16, help="Number of channels to average together per image cube slice")
 parser.add_argument("--rms", default=False, action="store_true", help="Use the off-source rms estimate")
 parser.add_argument("--flagchans", default="", help="comma-separated list of channels to zero in the plot")
 parser.add_argument("--frbtitletext", type=str, default="", help="The name of the FRB (or source) to be used as the title of the plots")
@@ -27,7 +27,7 @@ parser.add_argument("-t", "--threshold_factor", type=float, default=2.5, help="F
 parser.add_argument("--isolate", default=False, action="store_true", help="Set if you want to calculate the polarisation fractions or to isolate specific sub-pulses")
 parser.add_argument("--pulse_number", type=int, default=None, help="Number of the pulse of interest for determining the polarisation fraction values")
 parser.add_argument("--binstartstop", type=str, default=None, help="Start and end bins for integrating over the pulse to get the polarisation fraction totals; input as a comma separated string")
-parser.add_argument("--logstartstop", type=str, default=None, help="Start and end bins for fitting the log of the frequency-averaged spectra; input as a comma separated string")
+parser.add_argument("--logstartstop", type=str, default=None, help="Start and end bins for fitting the log of the frequency-averaged spectra for a given number of components; input as a comma separated string: e.g., start,stop,start2,stop2")
 parser.add_argument("--multi_rotmeas", type=str, default=None, help="To be used for cases requiring multiple RMs; input is a list of strings: e.g., RM1,RM2")
 parser.add_argument("--rm_bins_starts", type=str, default=None, help="The start bins used for de-rotating at a given RM; to be used with --multi_rotmeas set; input is a list of strings: e.g., RM1_start,RM2_start,RM3_start")
 parser.add_argument("--scintillation", default=False, action="store_true", help="Set if you want to calculate the scintillation decorrelation bandwidth for a pulse")
@@ -51,6 +51,9 @@ if args.nbins is None:
 if args.nchan is None:
     parser.error("You must specify the number of slices in the cube image")
 
+if args.chanwidth is None:
+    parser.error("You must specify the frequency channel width in MHz")
+
 if args.src is None:
     parser.error("You must specify an output spectra file name prefix")
 
@@ -68,14 +71,15 @@ if args.isolate:
         parser.error("You must specify the start and stop bins for the pulse for which you want to obtain the polarisation fractions")
 
 if args.logstartstop is None:
-    parser.error("You must specify the start and stop bins for the pulse for which you want to obtain the log fit and plot for Stokes I")
+    parser.error("You must specify the start and stop bins for the range over which you want to obtain the log fit and Stokes I plot")
 
 if args.multi_rotmeas:
     if args.rm_bins_starts is None:
-        parser.error("You must specify the pulse number for which you want to obtain the polarisation fractions")
+        parser.error("You must specify the start bins for the range of the spectrum you wish to de-rotate")
 
 nbins = args.nbins
 nchan = args.nchan
+chanwidth = args.chanwidth
 flagchans = [int(x) for x in args.flagchans.split(',') if x.strip().isdigit()]
 src = args.src
 res = args.res
@@ -88,16 +92,9 @@ else:
     binstart = 0
     binstop = -1
 
-logstart = int(args.logstartstop.split(',')[0])
-logstop = int(args.logstartstop.split(',')[1])
-
 # Define dynamic and fscrunched spectra parameters
 basefreq = args.basefreq
-if args.avg == 24:
-    chunksize = 6 #MHz
-if args.avg == 16:
-    chunksize = 4 #MHz
-bandwidth = args.avg/chunksize * nchan # MHz
+bandwidth = nchan * chanwidth
 print("Bandwidth: {0}".format(bandwidth))
 startchan = 0
 endchan=nchan - 1
@@ -580,7 +577,7 @@ if args.fscrunch:
     isolate_scrunch_ax0.tick_params(axis='x', direction='in')
 
     # Set up figure and axes for log scale plots for Stokes I
-    scrunch_log_fig, scrunch_log_ax = plt.subplots(figsize=(7,7))
+    scrunch_log_fig, scrunch_log_ax = plt.subplots(figsize=(9,9))
     scrunch_log_ax.set_yscale('log', nonposy='mask')
 
     for stokes in args.pols.split(','):
@@ -613,12 +610,24 @@ if args.fscrunch:
 
         # Log scale fit of Stokes I over specified range
         if stokes == "I":
-            poly_coeffs = np.polyfit(centretimes[logstart:logstop], np.log(amp_jy[logstart:logstop]), deg=1)
-            print("Stokes I log fit coefficients: {}".format(poly_coeffs))
-            amp_fit = centretimes*poly_coeffs[0] + poly_coeffs[1]
-            print("Stokes I log fit line: {}".format(amp_fit))
-            max_value_log_plot = 10 * np.round((np.max(amp_jy)/10)) + 10 # Round maximum amplitude value to the nearest factor of 10
-            print("Nearest factor of ten for amplitude: {}".format(max_value_log_plot))
+            numlogfits = int(len(args.logstartstop.split(','))/2)
+            logstarts = [int(start) for start in args.logstartstop.split(',')][::2] # Selects all even numbered indices (starts)
+            logstops = [int(stop) for stop in args.logstartstop.split(',')][1::2]  # Selects all odd numbered indices (stops)
+            poly_coeffs = {}
+            amp_fit = {}
+            max_value_log_plots = {}
+            if numlogfits > 1:
+                print("Multiple log fit ranges selected")
+            for comp in np.arange(numlogfits):
+                print("Log Fit Component {0}: bins {1} - {2}".format(comp+1, logstarts[comp], logstops[comp]))            
+                poly_coeffs[comp] = np.polyfit(centretimes[logstarts[comp]:logstops[comp]], np.log(amp_jy[logstarts[comp]:logstops[comp]]), deg=1)
+                print("Stokes I log fit coefficients: {}".format(poly_coeffs[comp]))
+                amp_fit[comp] = centretimes*poly_coeffs[comp][0] + poly_coeffs[comp][1]
+                print("Stokes I log fit line: {}".format(amp_fit[comp]))
+                max_value_log_plots[comp] = 10 * np.round((np.max(amp_jy)/10)) + 10 # Round maximum amplitude value to the nearest factor of 10
+                print("Nearest factor of ten for amplitude: {}".format(max_value_log_plots[comp]))
+            max_value_log_plot = max(max_value_log_plots.values())
+            print("Nearest factor of ten for amplitude to be used for plotting: {}".format(max_value_log_plot))
 
         if args.rms:
             rms_jy = fscrunchrms[stokes][:] * 10000/res
@@ -635,8 +644,9 @@ if args.fscrunch:
             # Log scale plot of Stokes I and fit
             if stokes == "I":
                 scrunch_log_ax.errorbar(centretimes, amp_jy, yerr=rms_jy, label="Stokes "+stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
-                scrunch_log_ax.errorbar(centretimes[logstart:logstop], amp_jy[logstart:logstop], yerr=rms_jy[logstart:logstop], label="Stokes "+stokes+" (used for fit)", color='#35978f', linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
-                scrunch_log_ax.plot(centretimes, np.e**amp_fit, label='linear fit', color='#dfc27d', linestyle=plotlinestyle, linewidth=1.5)
+                for comp,colfitrange,colfit in zip(np.arange(numlogfits),['#80cdc1','#35978f'],['#dfc27d','#bf812d']):
+                    scrunch_log_ax.errorbar(centretimes[logstarts[comp]:logstops[comp]], amp_jy[logstarts[comp]:logstops[comp]], yerr=rms_jy[logstarts[comp]:logstops[comp]], label="Stokes "+stokes+" (used for fit of comp {})".format(comp+1), color=colfitrange, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+                    scrunch_log_ax.plot(centretimes, np.e**amp_fit[comp], label='linear fit: comp {}'.format(comp+1), color=colfit, linestyle=plotlinestyle, linewidth=1.5)
 
         else:
             plt.title('   '+frbtitletext, loc='left', pad=-20)
@@ -649,9 +659,10 @@ if args.fscrunch:
                 isolate_scrunch_ax1.plot(centretimes[binstart:binstop], amp_jy[binstart:binstop], label=stokes, color=col, linestyle=plotlinestyle)
                 # Log scale plot of Stokes I
             if stokes == "I":
-                scrunch_log_ax.plot(centretimes, amp_jy, label="Stokes "+stokes, color=col, linestyle=plotlinestyle)
-                scrunch_log_ax.plot(centretimes[logstart:logstop], amp_jy[logstart:logstop], label="Stokes "+stokes+" (used for fit)", color='#35978f', linestyle=plotlinestyle)
-                scrunch_log_ax.plot(centretimes, np.e**amp_fit, label='linear fit', color='#dfc27d', linestyle=plotlinestyle, linewidth=1.5)
+                for comp,colfitrange,colfit in zip(np.arange(numlogfits),['#80cdc1','#35978f'],['#dfc27d','#bf812d']):
+                    scrunch_log_ax.plot(centretimes, amp_jy, label="Stokes "+stokes, color=col, linestyle=plotlinestyle)
+                    scrunch_log_ax.plot(centretimes[logstarts[comp]:logstops[comp]], amp_jy[logstarts[comp]:logstops[comp]], label="Stokes "+stokes+" (used for fit of comp {})".format(comp+1), color=colfitrange, linestyle=plotlinestyle)
+                    scrunch_log_ax.plot(centretimes, np.e**amp_fit[comp], label='linear fit: comp {}'.format(comp+1), color=colfit, linestyle=plotlinestyle, linewidth=1.5)
 
     # Get new, corrected polarisation position angle for fscrunched data
     pol_pa = 0.5*np.arctan2(fscrunch_rmcorrected["U"][1:], fscrunch_rmcorrected["Q"][1:])*180/np.pi
