@@ -578,7 +578,7 @@ if args.fscrunch:
 
     # Set up figure and axes for log scale plots for Stokes I
     scrunch_log_fig, scrunch_log_ax = plt.subplots(figsize=(9,9))
-    scrunch_log_ax.set_yscale('log', nonposy='mask')
+    scrunch_log_ax.set_yscale('log', nonposy='clip')
 
     for stokes in args.pols.split(','):
 
@@ -633,6 +633,7 @@ if args.fscrunch:
             rms_jy = fscrunchrms[stokes][:] * 10000/res
             # Diagnostic plot
             print("Amplitude array shape: {0} \n Time shape: {1}".format(amp_jy.shape, centretimes.shape))
+            print("Amplitude rms (Jy): {}".format(rms_jy))
             scrunch_ax2_diag.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
             # Publication plot
             scrunch_ax1.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
@@ -643,7 +644,12 @@ if args.fscrunch:
 
             # Log scale plot of Stokes I and fit
             if stokes == "I":
-                scrunch_log_ax.errorbar(centretimes, amp_jy, yerr=rms_jy, label="Stokes "+stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+                # Create array of zeros and ones for upper limits on clipped point error bars
+                upperlims = np.array(amp_jy < rms_jy)
+                print("Amplitude (Jy): {}".format(amp_jy))
+                print("Upper limits for log plot error bars: {0}; length of array {1}".format(upperlims, len(upperlims)))
+                amp_jy_modified = np.where(upperlims==True, 2*rms_jy, amp_jy)
+                scrunch_log_ax.errorbar(centretimes, amp_jy_modified, yerr=rms_jy, uplims=upperlims, lolims=False, label="Stokes "+stokes, color=col, linestyle='None', linewidth=1.5, capsize=2, elinewidth=2)
                 for comp,colfitrange,colfit in zip(np.arange(numlogfits),['#80cdc1','#35978f'],['#dfc27d','#bf812d']):
                     scrunch_log_ax.errorbar(centretimes[logstarts[comp]:logstops[comp]], amp_jy[logstarts[comp]:logstops[comp]], yerr=rms_jy[logstarts[comp]:logstops[comp]], label="Stokes "+stokes+" (used for fit of comp {})".format(comp+1), color=colfitrange, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
                     scrunch_log_ax.plot(centretimes, np.e**amp_fit[comp], label='linear fit: comp {}'.format(comp+1), color=colfit, linestyle=plotlinestyle, linewidth=1.5)
