@@ -39,7 +39,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
          buff[6];
 
     double temp,
-           freqs[128];
+           freqs[MAX_DFRQ];
 
     DifxBaseline *pbl;
     DifxDatastream *pdsA,
@@ -171,7 +171,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     if (!present)
                         freqs[nfreq++] = pfb[n].stn[k].freq;
                                     // sanity check
-                    if (nfreq > 128)
+                    if (nfreq > MAX_DFRQ)
                         {
                         printf ("too many frequencies; redimension\n");
                         return -1;
