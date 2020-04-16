@@ -36,6 +36,8 @@ parser.add_argument("--delta_psi", type=float, default=0.0, help="The polarisati
 parser.add_argument("--delta_t", type=float, default=0.0, help="The delay derived between the linearly polarised feeds to be used in the polarisation calibration; in nanosec")
 parser.add_argument("--phi", type=float, default=0.0, help="The phase offset derived between the linearly polarised feeds to be used in the polarisation calibration; in radians")
 parser.add_argument("--unwrap", default=False, action="store_true", help="Set if there is clear phase wrapping in the FRB PA")
+parser.add_argument("--subband", default=False, action="store_true", help="Set to subband the data into numsub subbands")
+parser.add_argument("--numsub", type=int, default=None, help="Number of subbands to divide the data into")
 
 args = parser.parse_args()
 
@@ -77,6 +79,11 @@ if args.multi_rotmeas:
     if args.rm_bins_starts is None:
         parser.error("You must specify the start bins for the range of the spectrum you wish to de-rotate")
 
+if args.subband:
+    if args.numsub is None:
+        parser.error("You must specify the number of subbands if you wish to subband the data")
+
+# Define general parameters
 nbins = args.nbins
 nchan = args.nchan
 chanwidth = args.chanwidth
@@ -153,6 +160,12 @@ fscrunch_rmcorrected = {}
 delta_psi = args.delta_psi # radians
 delta_t = args.delta_t # nanoseconds
 phi = args.phi # radians
+
+# Define number of subbands if requested
+if args.subband:
+    numsub = args.numsub
+    basename_sub = "fscrunch_subband"
+    fscrunch_subband = {}
 
 # Change global font size
 matplotlib.rcParams.update({'font.size': 16})
@@ -564,7 +577,6 @@ if args.fscrunch:
     scrunch_ax1 = plt.subplot2grid((7,3), (2,0), rowspan=5, colspan=3, sharex=scrunch_ax0)
     plt.setp(scrunch_ax0.get_xticklabels(), visible=False)
     scrunch_fig.subplots_adjust(hspace=0)
-    scrunch_fig.subplots_adjust(hspace=0)
     scrunch_ax0.tick_params(axis='x', direction='in')
 
     # Set up figure and axes for isolated pulse plot
@@ -573,18 +585,32 @@ if args.fscrunch:
     isolate_scrunch_ax1 = plt.subplot2grid((7,3), (2,0), rowspan=5, colspan=3, sharex=isolate_scrunch_ax0)
     plt.setp(isolate_scrunch_ax0.get_xticklabels(), visible=False)
     isolate_scrunch_fig.subplots_adjust(hspace=0)
-    isolate_scrunch_fig.subplots_adjust(hspace=0)
     isolate_scrunch_ax0.tick_params(axis='x', direction='in')
 
     # Set up figure and axes for log scale plots for Stokes I
     scrunch_log_fig, scrunch_log_ax = plt.subplots(figsize=(9,9))
     scrunch_log_ax.set_yscale('log', nonposy='clip')
 
+    # Set up figure and axes if subbanding has been requested for PA and fscrunched spectra
+    if args.subband:
+        sub_scrunch_fig = plt.figure(figsize=(7,9))
+        sub_scrunch_ax0 = plt.subplot2grid((7,3), (0,0), rowspan=2, colspan=3)
+        sub_scrunch_ax1 = plt.subplot2grid((7,3), (2,0), rowspan=5, colspan=3, sharex=scrunch_ax0)
+        plt.setp(sub_scrunch_ax0.get_xticklabels(), visible=False)
+        sub_scrunch_fig.subplots_adjust(hspace=0)
+        sub_scrunch_ax0.tick_params(axis='x', direction='in')
+
     for stokes in args.pols.split(','):
 
         fscrunch_rmcorrected[stokes] = np.mean(dynspec_rmcorrected[stokes], 1)
         np.savetxt("{0}-imageplane-fscrunch-spectrum.calibrated.RMcorrected.stokes{1}.txt".format(src, stokes), fscrunch_rmcorrected[stokes])
         print("Frequency scrunched data size: {0}".format(fscrunch_rmcorrected[stokes].shape))
+
+        # Subband the data and scrunch if requested
+        if args.subband:
+            subband_size = np.floor(nchan/numsub) # number of whole channels to be placed within a given subband
+#            fscrunch_subband
+            
 
         if stokes=="I":
             col='k'
