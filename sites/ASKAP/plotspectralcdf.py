@@ -124,5 +124,5 @@ for stokes in args.pols.split(','):
     plt.plot(orderednormalised, yfit, label="Best fit")
     plt.legend()
     plt.ylim(0.0,1.0)
-    plt.savefig("{0}-stokes{1}-cdf.png".format(src,stokes))
-    print("Figure saved as: {0}-stokes{1}-cdf.png".format(src,stokes))
+    plt.savefig("{0}-stokes{1}-bins{2}to{3}-cdf.png".format(src,stokes,binstart,binstop))
+    print("Figure saved as: {0}-stokes{1}-bins{2}to{3}-cdf.png".format(src,stokes,binstart,binstop))
