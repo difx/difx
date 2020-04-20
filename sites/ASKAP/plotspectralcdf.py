@@ -106,7 +106,7 @@ for stokes in args.pols.split(','):
         dynspec[stokes][:,f] = 0
 
     fscrunch[stokes] = np.mean(dynspec[stokes], 1)
-    print(dynspec[stokes][binstart:binstop+1].shape)
+    print("Shape of Stokes {0} dynamic spectrum over selected range: {1}".format(stokes, dynspec[stokes][binstart:binstop+1].shape))
     normalised = np.mean(dynspec[stokes][binstart:binstop+1], 0) / np.mean(fscrunch[stokes][binstart:binstop+1])
     orderednormalised = np.sort(normalised)
     y = np.array(range(nchan))/float(nchan)
@@ -114,10 +114,10 @@ for stokes in args.pols.split(','):
     startfitindex = 0
     while startfitindex < nchan and orderednormalised[startfitindex] < -lowestval:
         startfitindex += 1
-    print(startfitindex)
-    print(orderednormalised)
+    print("The array index at which the fit will start: {0}".format(startfitindex))
+    print("The ordered normalised data: {0}".format(orderednormalised))
     popt, pcov = curve_fit(exp_cdf, orderednormalised[startfitindex:], y[startfitindex:])
-    print(popt)
+    print("Optimal value to minimise the sum of the squared residuals: {0}".format(popt))
     yfit = exp_cdf(orderednormalised, popt[0])
     plt.figure()
     plt.plot(orderednormalised, y, label="Data")
@@ -125,3 +125,4 @@ for stokes in args.pols.split(','):
     plt.legend()
     plt.ylim(0.0,1.0)
     plt.savefig("{0}-stokes{1}-cdf.png".format(src,stokes))
+    print("Figure saved as: {0}-stokes{1}-cdf.png".format(src,stokes))
