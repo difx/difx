@@ -99,9 +99,13 @@ matplotlib.rcParams.update({'font.size': 16})
 #####################################################################################
 
 # Load calibrated data
+print("Loading data: {0}-imageplane-dynspectrum-calibrated.stokesI.txt".format(src))
 dynspec_I = np.loadtxt("{0}-imageplane-dynspectrum-calibrated.stokesI.txt".format(src))
 
-# Calculate the 1D ACF across frequency for each time bin using statsmodels.tsa.stattools.acovf
+# ACF calculation for individual bins
+print("Computing ACF for user-selected on-pulse and off-pulse bins")
+
+# Calculate the 1D ACF across frequency for each user-selected time bin using statsmodels.tsa.stattools.acovf
 acf_time_onpulse = [st.acovf(time_bin, unbiased=True, demean=True, fft=False, missing='none', nlag=nchan-1) for time_bin in dynspec_I[acfstart:acfstop+1]]
 acf_time_offpulse = st.acovf(dynspec_I[acfoffpulse], unbiased=True, demean=True, fft=False, missing='none', nlag=nchan-1)
 
@@ -111,13 +115,34 @@ print("Stop bin for ACF: {}".format(acfstop))
 print("Off-pulse time bin used: {}".format(acfoffpulse))
 
 # Set up figure and axes
-acf_fig, acf_ax = plt.subplots(figsize=(11,11))
+acf_fig, acf_ax = plt.subplots(figsize=(7,7))
 
 # Plot the ACF for the selected time bins
+print("Plotting the ACF for user-selected bins")
 for binnum, timebin in enumerate(acf_time_onpulse):
     acf_ax.plot(timebin[1:], label='Time bin {}'.format(binnum+acfstart))
 
 # Plot off-pulse time bin
 acf_ax.plot(acf_time_offpulse[1:], label='Off-pulse (bin {})'.format(acfoffpulse))
 plt.legend()
-acf_fig.savefig("{0}-ACF_selected_time_bins_{1}to{2}.png".format(src,acfstart,acfstop), bbox_inches='tight')
+acf_fig.savefig("{0}-ACF_selected_time_bins_{1}to{2}_offbin{3}.png".format(src,acfstart,acfstop,acfoffpulse), bbox_inches='tight')
+
+# ACF calculation for averaged time bins
+
+print("Averaging time bins {0} to {1} and computing ACF".format(acfstart,acfstop))
+
+# Average the user-selected time bins
+onpulse_avg = np.mean(dynspec_I[acfstart:acfstop+1], axis=0)
+
+# Calculate the 1D ACF across frequency for the averaged time bin
+acf_average_onpulse = st.acovf(onpulse_avg, unbiased=True, demean=True, fft=False, missing='none', nlag=nchan-1)
+
+# Set up figure and axes
+acf_avg_fig, acf_avg_ax = plt.subplots(figsize=(7,7))
+
+# Plot the ACF for the averaged time bins
+print("Plotting the averaged time bins")
+acf_avg_ax.plot(acf_average_onpulse, label='Averaged ACF (bins {0}-{1})'.format(acfstart,acfstop))
+acf_avg_ax.plot(acf_time_onpulse[1], label='Highest S/N bin (14)')
+plt.legend()
+acf_avg_fig.savefig("{0}-ACF_averaged_time_bins_{1}to{2}.png".format(src,acfstart,acfstop), bbox_inches='tight')

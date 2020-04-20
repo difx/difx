@@ -138,14 +138,14 @@ else: pcen = '-p '+args.phasecenter
 
 
 for i in range(nbins):
-#    print i
+#    print(i)
 
     if nbins > 1:
         bins = "_B{0:02g}".format(i)
     else: bins = ''
     
     if args.rfisub:
-        print "~/packages/src/psrvlbireduce/datareduction/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile, bins)
+        print("~/packages/src/psrvlbireduce/datareduction/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile, bins))
         os.system("~/packages/src/psrvlbireduce/datareduction/uvsubScaled.py {0}.FITS {1} {2} {3}{4}.FITS".format(targfile[i], rfi, scale, outfile, bins))
     
     if args.cal:
@@ -185,7 +185,7 @@ for i in range(nbins):
             cdata_op = "-c"+cdata
         else: cdata_op = ''
 
-        print "~/packages/src/difx/sites/ASKAP/calibrateFRB.py {0} -t {1}{2}.FITS {3} {4} -a {5} {6} --uvsrt {7} {8} {9} {10} {11} --cpasspoly={12} --pols={13} -f {14} {15} {16} {17}".format(cdata_op, tdata, bins, cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src, cpasspoly, polarisations, flux, calonly, taronly, skipploting)
+        print("~/packages/src/difx/sites/ASKAP/calibrateFRB.py {0} -t {1}{2}.FITS {3} {4} -a {5} {6} --uvsrt {7} {8} {9} {10} {11} --cpasspoly={12} --pols={13} -f {14} {15} {16} {17}".format(cdata_op, tdata, bins, cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src, cpasspoly, polarisations, flux, calonly, taronly, skipploting))
         os.system("rm -rf {0}_calibrated_uv.ms".format(cdatms))
         os.system("~/packages/src/difx/sites/ASKAP/calibrateFRB.py {0} -t {1}{2}.FITS {3} {4} -a {5} {6} --uvsrt {7} {8} {9} {10} {11} --cpasspoly={12} --pols={13} -f {14} {15} {16} {17}".format(cdata_op, tdata, bins, cflag, tflag, avgchan, pcen, xpolmodel, noisecen, doimage, refant, src, cpasspoly, polarisations, flux, calonly, taronly, skipploting))
         os.system("mkdir {0}bin{1:02g}".format(prefix, i))
@@ -276,7 +276,7 @@ if args.ast:
     else: cpasspoly = ''
 
     if args.calibrateonly:
-        print "~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} {1} -a {2} {3} --uvsrt {4} {5} {6} {7} {8} {9} -f {10}".format(astcal, cflag, avgchan, pcen, xpolmodel, refant, src, cpasspoly, bpass, calonly, flux)
+        print("~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} {1} -a {2} {3} --uvsrt {4} {5} {6} {7} {8} {9} -f {10}".format(astcal, cflag, avgchan, pcen, xpolmodel, refant, src, cpasspoly, bpass, calonly, flux))
         os.system("~/packages/src/difx/sites/ASKAP/calibrateFRB.py -c {0} {1} -a {2} {3} --uvsrt {4} {5} {6} {7} {8} {9} -f {10}".format(astcal, cflag, avgchan, pcen, xpolmodel, refant, src, cpasspoly, bpass, calonly, flux))
         os.system("mv {0} {1}_cal{2}.FITS".format(cal,src[6:],acalname))
         os.system("mv {0} {1}_cal{2}.ms".format(cal.replace('fits', 'ms'),src[6:],acalname))
@@ -286,20 +286,20 @@ if args.ast:
             asttar_new = asttar[b]
             tar_cald = asttar_new.split('/')[-1][:-5]+"_calibrated_uv.fits"
             tar_cald_ms = tar_cald.replace('.fits', '.ms')
-            print "~/packages/src/difx/sites/ASKAP/calibrateFRB.py -t {0} {1} -a {2} {3} --uvsrt {4} {5} {6} {7} {8} {9}".format(asttar_new, tflag, avgchan, pcen, xpolmodel, refant, src, cpasspoly, bpass, taronly)
+            print("~/packages/src/difx/sites/ASKAP/calibrateFRB.py -t {0} {1} -a {2} {3} --uvsrt {4} {5} {6} {7} {8} {9}".format(asttar_new, tflag, avgchan, pcen, xpolmodel, refant, src, cpasspoly, bpass, taronly))
             os.system("~/packages/src/difx/sites/ASKAP/calibrateFRB.py -t {0} {1} -a {2} {3} --uvsrt {4} {5} {6} {7} {8} {9}".format(asttar_new, tflag, avgchan, pcen, xpolmodel, refant, src, cpasspoly, bpass, taronly))
             os.system("mv {0} {1}_{2}_cal{3}".format(asttar_new,src,atarname,acalname))
-            print "mv {0} {1}_tar{2}_cal{3}.FITS".format(tar_cald,src[6:],atarname[b],acalname)
-            print "mv {0} {1}_tar{2}_cal{3}.ms".format(tar_cald_ms,src[6:],atarname[b],acalname)
+            print("mv {0} {1}_tar{2}_cal{3}.FITS".format(tar_cald,src[6:],atarname[b],acalname))
+            print("mv {0} {1}_tar{2}_cal{3}.ms".format(tar_cald_ms,src[6:],atarname[b],acalname))
 
             os.system("mkdir {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname))
-            print "mkdir {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname)
+            print("mkdir {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname))
             os.system("mv {0}_tar{1}_cal{2}.FITS {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname))
-            print "mv {0}_tar{1}_cal{2}.FITS {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname)
+            print("mv {0}_tar{1}_cal{2}.FITS {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname))
             os.system("mv {0} {1}_tar{2}cal{3}".format(cal,src[6:],atarname[b],acalname))
-            print "mv {0}_cal{2}.FITS {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname)
+            print("mv {0}_cal{2}.FITS {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname))
             os.system("mv casa*.log {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname))
-            print "mv casa*.log {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname)
+            print("mv casa*.log {0}_tar{1}cal{2}".format(src[6:],atarname[b],acalname))
 
             # Write out and run a CASA mfs tclean script for astrometry data; used to make cleaned image of the target source
             casaout = open("{0}_tar{1}cal{2}/targetimage.py".format(src[6:],atarname[b],acalname), "w")
@@ -348,7 +348,7 @@ if not args.cal and not args.ast:
             bins = "_B{0:02g}".format(i)
             polarisations = args.pols.split(',')
             for pol in polarisations:
-                print pol
+                print(pol)
                 casaout = open("{0}bin{1:02g}/imagescript.py".format(prefix,i,pol), "w")
                 imagename = "{0}bin{1:02g}/TARGET.cube.{2}".format(prefix,i,pol)
                 offsourcename = "{0}bin{1:02g}/OFFSOURCE.cube.{2}".format(prefix,i,pol)
@@ -366,7 +366,7 @@ if not args.cal and not args.ast:
                     outlierfile.close()
                     outlierfields = "'{0}bin{1:02g}/outlierfield.txt'".format(prefix,i,pol)
                 else:
-                    outlierfile = ''
+                    outlierfields = '[]'
                     os.system("rm -rf {0}.*".format(imagename))
                 if args.dirim:
                     imname = "{0}bin{1:02g}/TARGET.cube.dirim.{2}".format(prefix,i,pol)
@@ -391,4 +391,4 @@ if not args.cal and not args.ast:
                 os.system("mv casa*.log {0}bin{1:02g}".format(prefix,i))
 
 if args.test:
-    print [pol for pol in args.pols.split(',')]
+    print([pol for pol in args.pols.split(',')])
