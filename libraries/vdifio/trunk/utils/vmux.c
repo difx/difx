@@ -455,6 +455,12 @@ int main(int argc, char **argv)
 
 	src = (unsigned char *)malloc(srcChunkSize);
 	dest = (unsigned char *)malloc(destChunkSize);
+	if(!src || !dest)
+	{
+		fprintf(stderr, "Allocation failed! Reduce the chunk size and try again.\n");
+
+		return EXIT_FAILURE;
+	}
 
 	setSignals();
 
