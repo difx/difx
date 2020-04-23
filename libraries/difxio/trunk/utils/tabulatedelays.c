@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2018 by Walter Brisken                             *
+ *   Copyright (C) 2015-2020 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,12 +30,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "difx_input.h"
 
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.4";
-const char verdate[] = "20191110";
+const char version[] = "0.5";
+const char verdate[] = "20200422";
 
 void usage()
 {
@@ -52,6 +53,7 @@ void usage()
 	printf("--clock    print clock offset and rate instead of delay, rate\n\n");
 	printf("--perint   print values at the center of every integration rather than every 8s\n\n");
 	printf("--addclock include clock offset/rate in delay/rate values\n\n");
+	printf("--noaxis   remove effect of axis offset from delay/rate values\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 	printf("All normal program output goes to stdout.\n\n");
 	printf("This program reads through one or more difx datasets and evaluates\n");
@@ -160,6 +162,7 @@ int main(int argc, char **argv)
 	int item = ItemDelay;
 	int perint = 0;
 	int addClock = 0;
+	int noAxis = 0;	/* if set, remove effect of axis offset from delay/rate */
 	int nNoIm = 0;	/* count of scans w/o model */
 	DifxMergeOptions mergeOptions;
 
@@ -209,6 +212,10 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "--addclock") == 0)
 			{
 				addClock = 1;
+			}
+			else if(strcmp(argv[a], "--noaxis") == 0)
+			{
+				noAxis = 1;
 			}
 			else
 			{
@@ -285,13 +292,29 @@ int main(int argc, char **argv)
 		case ItemDelay:
 			if(addClock)
 			{
-				printf("# %d. Antenna %d (%s) delay including clock offset [us]\n", 2+2*a, a, D->antenna[a].name);
-				printf("# %d. Antenna %d (%s) rate including clock rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+				if(noAxis)
+				{
+					printf("# %d. Antenna %d (%s) delay including clock offset excluding axis offset [us]\n", 2+2*a, a, D->antenna[a].name);
+					printf("# %d. Antenna %d (%s) rate including clock rate excluding axis offset [us/s]\n", 3+2*a, a, D->antenna[a].name);
+				}
+				else
+				{
+					printf("# %d. Antenna %d (%s) delay including clock offset [us]\n", 2+2*a, a, D->antenna[a].name);
+					printf("# %d. Antenna %d (%s) rate including clock rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+				}
 			}
 			else
 			{
-				printf("# %d. Antenna %d (%s) delay not including clock offset [us]\n", 2+2*a, a, D->antenna[a].name);
-				printf("# %d. Antenna %d (%s) rate not including clock rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+				if(noAxis)
+				{
+					printf("# %d. Antenna %d (%s) delay not including clock offset excluding axis offset [us]\n", 2+2*a, a, D->antenna[a].name);
+					printf("# %d. Antenna %d (%s) rate not including clock rate excluding axis offset [us/s]\n", 3+2*a, a, D->antenna[a].name);
+				}
+				else
+				{
+					printf("# %d. Antenna %d (%s) delay not including clock offset [us]\n", 2+2*a, a, D->antenna[a].name);
+					printf("# %d. Antenna %d (%s) rate not including clock rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
+				}
 			}
 			break;
 		case ItemAz:
@@ -415,6 +438,14 @@ int main(int argc, char **argv)
 				{
 					for(a = 0; a < D->nAntenna; ++a)
 					{
+						if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
+						{
+							fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");
+							fprintf(stderr, "Antenna %s has a %s mount type.\n", D->antenna[a].name, antennaMountTypeNames[D->antenna[a].mount]);
+
+							exit(0);
+						}
+
 						p = getPolyIndex(ds, a, intmjd, sec);
 						if(p < 0)
 						{
@@ -467,6 +498,19 @@ int main(int argc, char **argv)
 								{
 									v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
 									v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
+								}
+
+								if(noAxis && item == ItemDelay)
+								{
+									const double c = 299.792458;	/* m/us */
+									double elev;			/* rad */
+									double axisOffset;		/* m */
+
+									axisOffset = D->antenna[a].offset[0];
+									elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
+
+									v1 -= axisOffset/c*cos(elev);
+									v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
 								}
 							}
 
@@ -529,6 +573,14 @@ int main(int argc, char **argv)
 						{
 							double v1, v2;
 
+							if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
+							{
+								fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");
+								fprintf(stderr, "Antenna %s has a %s mount type.\n", D->antenna[a].name, antennaMountTypeNames[D->antenna[a].mount]);
+
+								exit(0);
+							}
+
 							if(a >= ds->nAntenna)
 							{
 								v1 = v2 = -1.0;
@@ -572,6 +624,19 @@ int main(int argc, char **argv)
 								{
 									v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
 									v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
+								}
+
+								if(noAxis && item == ItemDelay)
+								{
+									const double c = 299.792458;	/* m/us */
+									double elev;			/* rad */
+									double axisOffset;		/* m */
+
+									axisOffset = D->antenna[a].offset[0];
+									elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, 8*i)*M_PI/180.0;
+
+									v1 -= axisOffset/c*cos(elev);
+									v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, 8*i)*M_PI/180.0;
 								}
 							}
 
