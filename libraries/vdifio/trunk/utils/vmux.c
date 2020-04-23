@@ -92,6 +92,8 @@ void usage(const char *pgm)
 	fprintf(stderr, "  -n        Don't make use of EDV4 (per-thread validity) in output\n\n");
 	fprintf(stderr, "  --EDV4\n");
 	fprintf(stderr, "  -e        Use EDV4 (per-thread validity) in output [default]\n\n");
+	fprintf(stderr, "  --align\n");
+	fprintf(stderr, "  -a        Pre-align multithreaded VDIF threads in problematic recordings (note: do not set 'sort').\n\n");
 	fprintf(stderr, "  --fanout <f>\n");
 	fprintf(stderr, "  -f <f>    Set fanout factor to <f> (used for some DBBC3 data) [default = 1]\n\n");
 	fprintf(stderr, "  --gap <g>\n");
@@ -135,6 +137,7 @@ int main(int argc, char **argv)
 	struct vdif_file_reader_stats readerstats;
 	int useStdin = 0;
 	int verbose = 1;
+	int prealign = 0;
 	int n, rv;
 	int threads[MaxThreads];
 	int nThread;
@@ -199,6 +202,10 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-e") == 0 || strcmp(argv[a], "--EDV4") == 0)
 			{
 				flags |= VDIF_MUX_FLAG_PROPAGATEVALIDITY;
+			}
+			else if(strcmp(argv[a], "-a") == 0 || strcmp(argv[a], "--align") == 0)
+			{
+				prealign = 1;
 			}
 			else if(a < argc - 1 && (strcmp(argv[a], "-g") == 0 || strcmp(argv[a], "--gap") == 0))
 			{
@@ -381,9 +388,35 @@ int main(int argc, char **argv)
 		}
 
 		useStdin = 1;
+		prealign = 0;
 		in = stdin;
 	}
-	else
+	else if(!prealign)
+	{
+		in = fopen(inFile, "r");
+
+		if(!in)
+		{
+			fprintf(stderr, "Can't open %s for read.\n", inFile);
+
+			return EXIT_FAILURE;
+		}
+		else if(offset > 0)
+		{
+			int r;
+
+			r = fseeko(in, offset, SEEK_SET);
+
+			if(r != 0)
+			{
+				fprintf(stderr, "Error encountered in seek to position %lld\n", (long long)offset);
+				fclose(in);
+
+                return EXIT_FAILURE;
+			}
+		}
+	}
+	else if(prealign)
 	{
 		summarizevdiffile(&summary, inFile, 0);
 		if(summary.framesPerSecond <= 0)
@@ -430,7 +463,11 @@ int main(int argc, char **argv)
 	{
 		n = fread(src, 1, VDIF_HEADER_BYTES, in);
 	}
-	else
+	else if(!prealign)
+	{
+		n = fread(src, 1, VDIF_HEADER_BYTES, in);
+	}
+	else if(prealign)
 	{
 		n = vdifreaderRead(&reader, src, VDIF_HEADER_BYTES);
 	}
@@ -499,7 +536,11 @@ int main(int argc, char **argv)
 	{
 		int V;
 
-		if(useStdin)
+		if(useStdin || !prealign)
+		{
+			n = fread(src+leftover, 1, srcChunkSize-leftover, in);
+		}
+		else if(!prealign)
 		{
 			n = fread(src+leftover, 1, srcChunkSize-leftover, in);
 		}
@@ -555,7 +596,7 @@ int main(int argc, char **argv)
 		if(verbose > 2 && out != stdout)
 		{
 			printvdifmuxstatistics(&stats);
-			if(!useStdin && nThread > 1)
+			if(!useStdin && nThread > 1 && prealign)
 			{
 				int j;
 				vdifreaderStats(&reader, &readerstats);
@@ -607,7 +648,7 @@ int main(int argc, char **argv)
 
 		fwrite(dest, 1, stats.destUsed, out);
 
-		if (stats.srcUsed <= 0)
+		if(stats.srcUsed <= 0)
 		{
 				fprintf(stderr, "Weird: %d/%d bytes were consumed. Maybe input was all fill-pattern.\n", stats.srcUsed, stats.srcSize);
 				leftover = stats.srcSize % inputframesize;
@@ -630,9 +671,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(!useStdin)
+	if(prealign)
 	{
 		vdifreaderClose(&reader);
+	}
+	else if(in != stdin)
+	{
+		fclose(in);
 	}
 	
 	if(verbose > 0 && out != stdout)
