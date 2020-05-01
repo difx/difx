@@ -118,7 +118,8 @@ def runCommand(command, log):
         log_file.write(errs)
     return proc.returncode
 
-if not os.path.exists(datadir): os.mkdir(datadir)
+if not os.path.exists(datadir):
+    os.mkdir(datadir)
 os.chdir(datadir)
 
 difx2fitscommand = "difx2fits -u -B %d"
