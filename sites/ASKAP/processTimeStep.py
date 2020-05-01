@@ -129,7 +129,8 @@ for e in examplefiles:
     freqlabels.append(freqlabel)
     print "Going to process", freqlabel
     #difx2fitscommand = difx2fitscommand + " " + freqlabel + "/craftfrbD2D.input"
-    if not os.path.exists(freqlabel): os.mkdir(freqlabel)
+    if not os.path.exists(freqlabel):
+        os.mkdir(freqlabel)
     os.chdir(freqlabel)
 
     os.system("cp %s fcm.txt" % fcm)
