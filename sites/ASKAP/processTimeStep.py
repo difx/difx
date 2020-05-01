@@ -197,7 +197,9 @@ for e in examplefiles:
 
             if mjd is not None:
                 ret = os.system("getEOP.py -l {} > {}".format(mjd, topEOP))
-                if (ret!=0): sys.exit(ret)    
+                if (ret!=0):
+                    print "WARNING: getEOP.py call not successful. Your eop.txt file is probably empty"
+                    sys.exit(ret)    
             else:
                 print "Could not find MJD in obs.txt"
                 sys.exit()
