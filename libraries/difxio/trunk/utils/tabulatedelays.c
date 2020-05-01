@@ -35,8 +35,8 @@
 
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.5";
-const char verdate[] = "20200422";
+const char version[] = "0.6";
+const char verdate[] = "20200501";
 
 void usage()
 {
@@ -45,6 +45,8 @@ void usage()
 	printf("options can include:\n");
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
+	printf("-m <file> or --mjdfile <file>\n");
+	printf("           read list of mjds from <file>; set to '-' for stdin\n\n");
 	printf("--az       print azimuth [deg], rate [deg/s] instead of delay, rate\n\n");
 	printf("--el       print elevation [deg], rate [deg/s] instead of delay, rate\n\n");
 	printf("--dry      print dry atmosphere delay [us]\n\n");
@@ -165,6 +167,7 @@ int main(int argc, char **argv)
 	int noAxis = 0;	/* if set, remove effect of axis offset from delay/rate */
 	int nNoIm = 0;	/* count of scans w/o model */
 	DifxMergeOptions mergeOptions;
+	FILE *mjdFile = 0;
 
 	resetDifxMergeOptions(&mergeOptions);
 	mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
@@ -216,6 +219,30 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "--noaxis") == 0)
 			{
 				noAxis = 1;
+			}
+			else if(strcmp(argv[a], "-m") == 0 || strcmp(argv[a], "--mjdfile") == 0)
+			{
+				if(a >= argc - 1)
+				{
+					fprintf(stderr, "Error: --mjdfile option needs an argument\n");
+
+					exit(EXIT_FAILURE);
+				}
+				++a;
+				if(strcmp(argv[a], "-") == 0)
+				{
+					mjdFile = stdin;
+				}
+				else
+				{
+					mjdFile = fopen(argv[a], "r");
+					if(mjdFile == 0)
+					{
+						fprintf(stderr, "Error: cannot open %s for read\n", argv[a]);
+
+						exit(EXIT_FAILURE);
+					}
+				}
 			}
 			else
 			{
@@ -380,7 +407,179 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		if(perint)
+		if(mjdFile)
+		{
+			while(!feof(mjdFile))
+			{
+				char line[20000];
+				double mjd;
+				int intmjd;
+				double sec;
+				char *rv;
+				int i;
+
+				rv = fgets(line, 19999, mjdFile);
+				if(!rv)
+				{
+					break;
+				}
+				for(i = 0; line[i]; ++i)
+				{
+					if(line[i] == '#')
+					{
+						line[i] = 0;
+						break;
+					}
+				}
+
+				i = sscanf(line, "%lf", &mjd);
+				if(i != 1)
+				{
+					continue;
+				}
+				if(mjd < 40000.0 || mjd > 80000.0)
+				{
+					fprintf(stderr, "Skipping nonsense MJD value: %f\n", mjd);
+					continue;
+				}
+
+				intmjd = (int)(mjd);
+				sec = (mjd - intmjd)*86400.0;
+
+				printf("%14.8f", mjd);
+
+				if(item == ItemClock)
+				{
+					for(a = 0; a < D->nAntenna; ++a)
+					{
+						printf("   %12.8f %12.9f", 
+							evaluateDifxAntennaClock(D->antenna+a, mjd),
+							evaluateDifxAntennaClockRate(D->antenna+a, mjd));
+					}
+				}
+				else if(item == ItemUVW)
+				{
+					for(a = 0; a < D->nAntenna; ++a)
+					{
+						p = getPolyIndex(ds, a, intmjd, sec);
+						if(p < 0)
+						{
+							printf("   %12.3f %12.3f %12.3f", 0.0, 0.0, 0.0);
+						}
+						else
+						{
+							double u, v, w;
+
+							if(ds->im[a] == 0)
+							{
+								u = v = w = 0.0;
+							}
+							else
+							{
+								u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+								v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+								w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+							}
+
+							/* print to mm precision */
+							printf("   %12.3f %12.3f %12.3f", u, v, w); 
+						}
+					}
+				}
+				else
+				{
+					for(a = 0; a < D->nAntenna; ++a)
+					{
+						if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
+						{
+							fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");
+							fprintf(stderr, "Antenna %s has a %s mount type.\n", D->antenna[a].name, antennaMountTypeNames[D->antenna[a].mount]);
+
+							exit(0);
+						}
+
+						p = getPolyIndex(ds, a, intmjd, sec);
+						if(p < 0)
+						{
+							printf("   %12.6f %12.9f", 0.0, 0.0);
+						}
+						else
+						{
+							double v1, v2;
+
+							if(a >= ds->nAntenna)
+							{
+								v1 = v2 = -1.0;
+							}
+							else if(ds->im[a] == 0)
+							{
+								/* print zeros in cases where there is no data */
+								v1 = v2 = 0.0;
+							}
+							else
+							{
+								const double *poly;
+
+								switch(item)
+								{
+								case ItemDelay:
+									poly = ds->im[a][0][p].delay;
+									break;
+								case ItemAz:
+									poly = ds->im[a][0][p].az;
+									break;
+								case ItemEl:
+									poly = ds->im[a][0][p].elgeom;
+									break;
+								case ItemDry:
+									poly = ds->im[a][0][p].dry;
+									break;
+								case ItemWet:
+									poly = ds->im[a][0][p].wet;
+									break;
+								default:
+									fprintf(stderr, "Weird!\n");
+
+									exit(EXIT_FAILURE);
+								}
+
+								v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+								v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+
+								if(addClock && item == ItemDelay)
+								{
+									v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
+									v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
+								}
+
+								if(noAxis && item == ItemDelay)
+								{
+									const double c = 299.792458;	/* m/us */
+									double elev;			/* rad */
+									double axisOffset;		/* m */
+
+									axisOffset = D->antenna[a].offset[0];
+									elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
+
+									v1 -= axisOffset/c*cos(elev);
+									v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
+								}
+							}
+
+							/* print to picosecond and femtosecond/sec precision */
+							printf("   %12.6f %12.9f", v1, v2);
+						}
+					}
+					
+					printf("\n");
+				}
+			}
+			if(mjdFile != stdin)
+			{
+				fclose(mjdFile);
+			}
+		}
+		else if(perint)
 		{
 			double t;	/* time into scan, in seconds, initialized at tInt/2 */
 
